@@ -143,10 +143,10 @@ let rec prod_item_of_symbol lev = function
   EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0 e)
 | Extend.Ulist1sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1sep e (Pcoq.Symbol.token (CLexer.terminal sep)) false)
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (CLexer.terminal sep)]) false)
 | Extend.Ulist0sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0sep e (Pcoq.Symbol.token (CLexer.terminal sep)) false)
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (CLexer.terminal sep)]) false)
 | Extend.Uopt s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
   EntryName (Rawwit (OptArg typ), Pcoq.Symbol.opt e)

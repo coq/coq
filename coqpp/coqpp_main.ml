@@ -238,11 +238,11 @@ and print_symbol fmt tkn = match tkn with
 | SymbList0 (s, None) ->
   fprintf fmt "(Pcoq.Symbol.list0 %a)" print_symbol s
 | SymbList0 (s, Some sep) ->
-  fprintf fmt "(Pcoq.Symbol.list0sep (%a) (%a) false)" print_symbol s print_symbol sep
+  fprintf fmt "(Pcoq.Symbol.list0sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
 | SymbList1 (s, None) ->
   fprintf fmt "(Pcoq.Symbol.list1 (%a))" print_symbol s
 | SymbList1 (s, Some sep) ->
-  fprintf fmt "(Pcoq.Symbol.list1sep (%a) (%a) false)" print_symbol s print_symbol sep
+  fprintf fmt "(Pcoq.Symbol.list1sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
 | SymbOpt s ->
   fprintf fmt "(Pcoq.Symbol.opt %a)" print_symbol s
 | SymbRules rules ->
@@ -255,6 +255,11 @@ and print_symbol fmt tkn = match tkn with
   fprintf fmt "(Pcoq.Symbol.rules %a)" pr (List.rev rules)
 | SymbQuote c ->
   fprintf fmt "(%s)" c
+
+and print_anonymized_symbol fmt tkn = match tkn with
+| SymbToken (t, s) ->
+  fprintf fmt "(Pcoq.Symbol.tokens [Pcoq.TPattern (%a)])" print_tok (t, s)
+| _ -> print_symbol fmt (SymbRules [[None, tkn], mk_code "()"])
 
 let print_rule fmt r =
   let pr_lvl fmt lvl = print_opt fmt print_string lvl in

@@ -328,12 +328,8 @@ let is_binder_level custom (custom',from) e = match e with
   custom = InConstrEntry && custom' = InConstrEntry && from = 200
 | _ -> false
 
-let make_sep_rules = function
-  | [tk] ->
-    Pcoq.Symbol.token tk
-  | tkl ->
-    let r = Pcoq.mk_rule (List.rev tkl) in
-    Pcoq.Symbol.rules [r]
+let make_sep_rules tkl =
+  Pcoq.Symbol.tokens (List.map (fun tk -> TPattern tk) tkl)
 
 type ('s, 'a) mayrec_symbol =
 | MayRecNo : ('s, Gramlib.Grammar.norec, 'a) Symbol.t -> ('s, 'a) mayrec_symbol
