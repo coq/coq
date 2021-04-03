@@ -24,6 +24,7 @@ type mayrec
 module type S = sig
   type te
   type 'c pattern
+  type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
   module Parsable : sig
     type t
@@ -63,6 +64,7 @@ module type S = sig
     val self : ('self, mayrec, 'self) t
     val next : ('self, mayrec, 'self) t
     val token : 'c pattern -> ('self, norec, 'c) t
+    val tokens : ty_pattern list -> ('self, norec, unit) t
     val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
   end and Rule : sig
