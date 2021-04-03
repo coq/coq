@@ -566,23 +566,6 @@ let is_not_small_constr = function
     ETProdConstr _ -> true
   | _ -> false
 
-let rec define_keywords_aux = function
-  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(Tok.PIDENT (Some k)) :: l
-      when is_not_small_constr e ->
-      Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
-      CLexer.add_keyword k;
-      n1 :: GramConstrTerminal(Tok.PKEYWORD k) :: define_keywords_aux l
-  | n :: l -> n :: define_keywords_aux l
-  | [] -> []
-
-  (* Ensure that IDENT articulation terminal symbols are keywords *)
-let define_keywords = function
-  | GramConstrTerminal(Tok.PIDENT (Some k))::l ->
-      Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
-      CLexer.add_keyword k;
-      GramConstrTerminal(Tok.PKEYWORD k) :: define_keywords_aux l
-  | l -> define_keywords_aux l
-
 let distribute a ll = List.map (fun l -> a @ l) ll
 
   (* Expand LIST1(t,sep);sep;t;...;t (with the trailing pattern
@@ -596,7 +579,7 @@ let distribute a ll = List.map (fun l -> a @ l) ll
 let expand_list_rule s typ tkl x n p ll =
   let camlp5_message_name = Some (add_suffix x ("_"^string_of_int n)) in
   let main = GramConstrNonTerminal (ETProdConstr (s,typ), camlp5_message_name) in
-  let tks = List.map (fun x -> GramConstrTerminal x) tkl in
+  let tks = List.map (fun (kw,s) -> GramConstrTerminal (kw, s)) tkl in
   let rec aux i hds ll =
   if i < p then aux (i+1) (main :: tks @ hds) ll
   else if Int.equal i (p+n) then
@@ -639,34 +622,44 @@ let prod_entry_type = function
   | ETConstr (s,_,p) -> ETProdConstr (s,p)
   | ETPattern (_,n) -> ETProdPattern (match n with None -> 0 | Some n -> n)
 
+let keyword_needed need s =
+  (* Ensure that IDENT articulation terminal symbols are keywords *)
+  match CLexer.terminal s with
+    | Tok.PIDENT (Some k) ->
+      if need then
+        Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
+      need
+    | _ -> true
+
 let make_production etyps symbols =
-  let rec aux = function
+  let rec aux need = function
     | [] -> [[]]
     | NonTerminal m :: l ->
-        let typ = List.assoc m etyps in
-        distribute [GramConstrNonTerminal (prod_entry_type typ, Some m)] (aux l)
+        let typ = prod_entry_type (List.assoc m etyps) in
+        distribute [GramConstrNonTerminal (typ, Some m)] (aux (is_not_small_constr typ) l)
     | Terminal s :: l ->
-        distribute [GramConstrTerminal (CLexer.terminal s)] (aux l)
+        let keyword = keyword_needed need s in
+        distribute [GramConstrTerminal (keyword,s)] (aux false l)
     | Break _ :: l ->
-        aux l
+        aux need l
     | SProdList (x,sl) :: l ->
         let tkl = List.flatten
-          (List.map (function Terminal s -> [CLexer.terminal s]
+          (List.map (function Terminal s -> [s]
             | Break _ -> []
             | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator.")) sl) in
+        let tkl = List.map_i (fun i x -> let need = (i=0) in (keyword_needed need x, x)) 0 tkl in
         match List.assoc x etyps with
         | ETConstr (s,_,(lev,_ as typ)) ->
             let p,l' = include_possible_similar_trailing_pattern (s,lev) etyps sl l in
-            expand_list_rule s typ tkl x 1 p (aux l')
+            expand_list_rule s typ tkl x 1 p (aux true l')
         | ETBinder o ->
             check_open_binder o sl x;
             let typ = if o then (assert (tkl = []); ETBinderOpen) else ETBinderClosed tkl in
             distribute
-              [GramConstrNonTerminal (ETProdBinderList typ, Some x)] (aux l)
+              [GramConstrNonTerminal (ETProdBinderList typ, Some x)] (aux false l)
         | _ ->
            user_err Pp.(str "Components of recursive patterns in notation must be terms or binders.") in
-  let prods = aux symbols in
-  List.map define_keywords prods
+  aux true symbols
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
