@@ -1,0 +1,67 @@
+Entry constr is
+[ LEFTA
+  [ "@"; global; univ_annot
+  | term LEVEL "8" ] ]
+and lconstr is
+[ LEFTA
+  [ term LEVEL "200" ] ]
+where binder_constr is
+[ LEFTA
+  [ "forall"; open_binders; ","; term LEVEL "200"
+  | "fun"; open_binders; "=>"; term LEVEL "200"
+  | "let"; "fix"; fix_decl; "in"; term LEVEL "200"
+  | "let"; "cofix"; cofix_body; "in"; term LEVEL "200"
+  | "let"; "'"; pattern LEVEL "200"; ":="; term LEVEL "200"; "in"; term LEVEL
+    "200"
+  | "let"; "'"; pattern LEVEL "200"; ":="; term LEVEL "200"; case_type; "in";
+    term LEVEL "200"
+  | "let"; "'"; pattern LEVEL "200"; "in"; pattern LEVEL "200"; ":="; term
+    LEVEL "200"; case_type; "in"; term LEVEL "200"
+  | "let"; name; binders; let_type_cstr; ":="; term LEVEL "200"; "in"; term
+    LEVEL "200"
+  | "let"; [ "("; LIST0 name SEP ","; ")" | "()" ]; as_return_type; ":=";
+    term LEVEL "200"; "in"; term LEVEL "200"
+  | "if"; term LEVEL "200"; as_return_type; "then"; term LEVEL "200"; "else";
+    term LEVEL "200"
+  | "fix"; fix_decls
+  | "cofix"; cofix_decls ] ]
+and term is
+[ "200" RIGHTA
+  [ binder_constr ]
+| "100" RIGHTA
+  [ SELF; "<:"; term LEVEL "200"
+  | SELF; "<<:"; term LEVEL "200"
+  | SELF; ":"; term LEVEL "200" ]
+| "99" RIGHTA
+  [  ]
+| "90" RIGHTA
+  [  ]
+| "10" LEFTA
+  [ SELF; LIST1 arg
+  | "@"; global; univ_annot; LIST0 NEXT
+  | "@"; pattern_ident; LIST1 identref ]
+| "9" LEFTA
+  [ ".."; term LEVEL "0"; ".." ]
+| "8" LEFTA
+  [  ]
+| "1" LEFTA
+  [ SELF; ".("; "@"; global; LIST0 (term LEVEL "9"); ")"
+  | SELF; ".("; global; LIST0 arg; ")"
+  | SELF; "%"; IDENT ]
+| "0" LEFTA
+  [ "["; term LEVEL "10"; "+"; "+"; "*"; LIST1 (term LEVEL "10") SEP ["+";
+    "+"; "*"]; "|"; term LEVEL "200"; "]"
+  | "["; term LEVEL "10"; "|"; term LEVEL "200"; "]"
+  | "("; term LEVEL "200"; ")"
+  | "{|"; record_declaration; '|}'
+  | "{"; binder_constr; "}"
+  | "`{"; term LEVEL "200"; "}"
+  | "`("; term LEVEL "200"; ")"
+  | NUMBER
+  | atomic_constr
+  | term_match
+  | ident; fields; univ_annot
+  | ident; univ_annot
+  | test_array_opening; "["; "|"; array_elems; "|"; lconstr; type_cstr;
+    test_array_closing; "|"; "]"; univ_annot ] ]
+
