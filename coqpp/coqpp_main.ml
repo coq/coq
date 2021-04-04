@@ -615,12 +615,29 @@ let pr_ast fmt = function
 | TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
 | ArgumentExt arg -> fprintf fmt "%a@\n" ArgumentExt.print_ast arg
 
-let () =
+let help () =
+  Format.eprintf "Usage: coqpp file.mlg@\n%!";
+  exit 1
+
+let parse () =
   let () =
-    if Array.length Sys.argv <> 2 then fatal "Expected exactly one command line argument"
+    if Array.length Sys.argv <> 2
+    then help ()
   in
-  let file = Sys.argv.(1) in
-  let output = Filename.chop_extension file ^ ".ml" in
+  match Sys.argv.(1) with
+  | "-help" | "--help" -> help ()
+  | file -> file
+
+let output_name file =
+  try
+    Filename.chop_extension file ^ ".ml"
+  with
+  | Invalid_argument _ ->
+    fatal "Input file must have an extension for coqpp [input.ext -> input.ml]"
+
+let () =
+  let file = parse () in
+  let output = output_name file in
   let ast = parse_file file in
   let chan = open_out output in
   let fmt = formatter_of_out_channel chan in
