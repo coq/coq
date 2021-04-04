@@ -256,17 +256,6 @@ BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
 DEPFLAGS=$(LOCALINCLUDES) -map gramlib/.pack/gramlib.ml $(if $(filter plugins/% user-contrib/%,$@),, -I ide/coqide -I ide/coqide/protocol)
 
-# On MacOS, the binaries are signed, except our private ones
-ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
-LINKMETADATA=$(if $(filter $(PRIVATEBINARIES),$@),,-ccopt "-sectcreate __TEXT __info_plist config/Info-$(notdir $@).plist")
-CODESIGN=$(if $(filter $(PRIVATEBINARIES),$@),true,codesign -s -)
-CODESIGN_HIDE=$(CODESIGN)
-else
-LINKMETADATA=
-CODESIGN=true
-CODESIGN_HIDE=$(HIDE)true
-endif
-
 ifeq ($(STRIP),true)
 STRIP_HIDE=$(HIDE)true
 else
@@ -293,7 +282,7 @@ endef
 
 define bestocaml
 $(if $(OPT),\
-$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ -linkpkg $(1) $^ && $(STRIP) $@ && $(CODESIGN) $@,\
+$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -o $@ -linkpkg $(1) $^ && $(STRIP) $@,\
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ -linkpkg $(1) $^)
 endef
 
@@ -431,9 +420,8 @@ bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) \
 			   $(SYSMOD) \
-			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
+			   $(LINKCMX) $(OPTFLAGS) $< -o $@
 	$(STRIP_HIDE) $@
-	$(CODESIGN_HIDE) $@
 
 bin/%.byte$(EXE): topbin/%_bin.ml $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
