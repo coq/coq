@@ -205,3 +205,11 @@ Notation "#" := (@id nat).
 Check # = (fun a:nat => a). (* # should inherit its maximal implicit argument *)
 
 End InheritanceMaximalImplicitPureNotation.
+
+Module TreeLikeLookAhead.
+
+Notation "6 ^" := true (at level 0, format "6 ^").
+Notation "6 ?" := false (at level 0, format "6 ?").
+Check 6.
+
+End TreeLikeLookAhead.
