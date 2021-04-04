@@ -1118,27 +1118,51 @@ let skip_if_empty bp p strm =
   if Stream.count strm == bp then fun a -> p strm
   else raise Stream.Failure
 
-let continue entry bp a s son p1 (strm__ : _ Stream.t) =
-  let a = (entry_of_symb entry s).econtinue 0 bp a strm__ in
+let continue entry bp a symb son p1 (strm__ : _ Stream.t) =
+  let a = (entry_of_symb entry symb).econtinue 0 bp a strm__ in
   let act =
     try p1 strm__ with
-      Stream.Failure -> raise (Stream.Error (tree_failed entry a s son))
+      Stream.Failure -> raise (Stream.Error (tree_failed entry a symb son))
   in
   fun _ -> act a
 
-let do_recover parser_of_tree entry nlevn alevn bp a s son
+(** Recover from a success on [symb] with result [a] followed by a
+    failure on [son] in a rule of the form [a = symb; son] *)
+let do_recover parser_of_tree entry nlevn alevn bp a symb son
     (strm__ : _ Stream.t) =
-  try parser_of_tree entry nlevn alevn (top_tree entry son) strm__ with
+  try
+    (* Try to replay the son with the top occurrence of NEXT (by
+       default at level nlevn) and trailing SELF (by default at alevn)
+       replaced with self at top level;
+       This allows for instance to recover from a failure on the
+       second SELF of « SELF; "\/"; SELF » by doing as if it were
+       « SELF; "\/"; same-entry-at-top-level » with application e.g. to
+       accept "A \/ forall x, x = x" w/o requiring the expected
+       parentheses as in "A \/ (forall x, x = x)". *)
+    parser_of_tree entry nlevn alevn (top_tree entry son) strm__
+  with
     Stream.Failure ->
       try
+      (* Discard the rule if what has been consumed before failing is
+         the empty sequence (due to some OPT or LIST0); example:
+         « OPT "!"; ident » fails to see an ident and the OPT was resolved
+         into the empty sequence, with application e.g. to being able to
+         safely write « LIST1 [ OPT "!"; id = ident -> id] ». *)
         skip_if_empty bp (fun (strm__ : _ Stream.t) -> raise Stream.Failure)
           strm__
       with Stream.Failure ->
-        continue entry bp a s son (parser_of_tree entry nlevn alevn son)
+      (* In case of success on just SELF, NEXT or an explicit call to
+         a subentry followed by a failure on the rest (son), retry
+         parsing as if this entry had been called at its toplevel;
+         example: « "{"; entry-at-some-level; "}" » fails on "}" and
+         is retried with « "{"; same-entry-at-top-level; "}" », allowing
+         e.g. to parse « {1 + 1} » while « {(1 + 1)} » would
+         have been expected according to the level. *)
+        continue entry bp a symb son (parser_of_tree entry nlevn alevn son)
           strm__
 
-let recover parser_of_tree entry nlevn alevn bp a s son strm =
-  do_recover parser_of_tree entry nlevn alevn bp a s son strm
+let recover parser_of_tree entry nlevn alevn bp a symb son strm =
+  do_recover parser_of_tree entry nlevn alevn bp a symb son strm
 
 let token_count = ref 0
 
