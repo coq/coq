@@ -159,9 +159,11 @@ and ``coqtop``, unless stated otherwise:
   short or partially qualified names.
 
   .. seealso:: Section :ref:`names-of-libraries`.
-:-top *dirpath*: Set the toplevel module name to :n:`@dirpath` instead of ``Top``.
-  Not valid for `coqc` as the toplevel module name is inferred from the
-  name of the output file.
+:-top *dirpath*: Set the logical module name to :n:`@dirpath` for the
+  `coqtop` interactive session. If no module name is specified,
+  `coqtop` will default to ``Top``. `coqc` does not accept this option
+  because the logical module name is inferred from the name of
+  the input file and the corresponding `-R` / `-Q` options.
 :-exclude-dir *directory*: Exclude any subdirectory named *directory*
   while processing options such as -R and -Q. By default, only the
   conventional version control management directories named CVS

@@ -74,6 +74,10 @@ to literally pass an argument ``foo`` to ``coqc``: in the
 example, this allows to pass the two-word option ``-w all`` (see
 :ref:`command line options <command-line-options>`).
 
+Note that it is mandatory to specify a ``-R/-Q`` flag for your
+project, so its modules are properly qualified. Omitting it will
+generate object files that are not usable except for expert cases.
+
 CoqIDE, Proof-General and VSCoq all
 understand ``_CoqProject`` files and can be used to invoke Coq with the desired options.
 
@@ -98,6 +102,8 @@ CoqMakefile.conf
   contains make variables assignments that reflect
   the contents of the ``_CoqProject`` file as well as the path relevant to
   Coq.
+
+Run ``coq_makefile --help`` for a description of command line options.
 
 The recommended approach is to invoke ``CoqMakefile`` from a standard
 ``Makefile`` of the following form:
