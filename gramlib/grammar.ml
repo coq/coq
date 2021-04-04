@@ -129,10 +129,12 @@ let tokens con =
     egram.gtokens;
   !list
 
+(** Used to propagate possible presence of SELF/NEXT in a rule (binary and) *)
 type ('a, 'b, 'c) ty_and_rec =
 | NoRec2 : (norec, norec, norec) ty_and_rec
 | MayRec2 : ('a, 'b, mayrec) ty_and_rec
 
+(** Used to propagate possible presence of SELF/NEXT in a tree (ternary and) *)
 type ('a, 'b, 'c, 'd) ty_and_rec3 =
 | NoRec3 : (norec, norec, norec, norec) ty_and_rec3
 | MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
@@ -167,6 +169,7 @@ and ('self, 'trec, 'a) ty_symbol =
 | Sself : ('self, mayrec, 'self) ty_symbol
 | Snext : ('self, mayrec, 'self) ty_symbol
 | Snterm : 'a ty_entry -> ('self, norec, 'a) ty_symbol
+    (* norec but the entry can nevertheless introduce a loop with the current entry*)
 | Snterml : 'a ty_entry * string -> ('self, norec, 'a) ty_symbol
 | Stree : ('self, 'trec, Loc.t -> 'a) ty_tree -> ('self, 'trec, 'a) ty_symbol
 
@@ -346,8 +349,11 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
   let rec insert : type trs trt tr p f k. (trs, trt, tr) ty_and_ex -> (s, trs, p) ty_symbols -> (p, k, f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree  =
     fun ar symbols pf tree action ->
     match symbols, pf with
-      TCns (ars, s, sl), RelS pf -> insert_in_tree ar ars s sl pf tree action
+      TCns (ars, s, sl), RelS pf ->
+        (* descent in tree at symbol [s] *)
+        insert_in_tree ar ars s sl pf tree action
     | TNil, Rel0 ->
+        (* insert the action *)
         let node (type tb) ({node = s; son = son; brother = bro} : (_, _, _, tb, _, _) ty_node) =
           let ar : (norec, tb, tb) ty_and_ex =
             match get_rec_tree bro with MayRec -> NR10 | NoRec -> NR11 in
@@ -381,43 +387,56 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
        | MayRec2, _, NoRec -> Node (MayRec3, node NR11)
        | NoRec2, NoRec2, NoRec -> Node (NoRec3, node NR11)
   and try_insert : type trs trs' trs'' trt tr a p f k. (trs'', trt, tr) ty_and_rec -> (trs, trs', trs'') ty_and_rec -> (s, trs, a) ty_symbol -> (s, trs', p) ty_symbols -> (p, k, a -> f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree option =
-    fun ar ars s sl pf tree action ->
+    fun ar ars symb symbl pf tree action ->
     match tree with
-      Node (arn, {node = s1; son = son; brother = bro}) ->
-        begin match eq_symbol s s1 with
+      Node (arn, {node = symb1; son = son; brother = bro}) ->
+        (* merging rule [symb; symbl -> action] in tree [symb1; son | bro] *)
+        begin match eq_symbol symb symb1 with
         | Some Refl ->
-          let MayRecNR arss = and_symbols_tree sl son in
-          let son = insert arss sl pf son action in
-          let node = {node = s1; son = son; brother = bro} in
+          (* reducing merge of [symb; symbl -> action] with [symb1; son] to merge of [symbl -> action] with [son] *)
+          let MayRecNR arss = and_symbols_tree symbl son in
+          let son = insert arss symbl pf son action in
+          let node = {node = symb1; son = son; brother = bro} in
+          (* propagate presence of SELF/NEXT *)
           begin match ar, ars, arn, arss with
           | MayRec2, _, _, _ -> Some (Node (MayRec3, node))
           | NoRec2, NoRec2, NoRec3, NR11 -> Some (Node (NoRec3, node)) end
         | None ->
         let ar' = and_and_tree ar arn bro in
-        if is_before s1 s || derive_eps s && not (derive_eps s1) then
+        if is_before symb1 symb || derive_eps symb && not (derive_eps symb1) then
+          (* inserting new rule after current rule, i.e. in [bro] *)
           let bro =
-            match try_insert ar' ars s sl pf bro action with
-              Some bro -> bro
+            match try_insert ar' ars symb symbl pf bro action with
+              Some bro ->
+                (* could insert in [bro] *)
+                bro
             | None ->
-                let MayRecNR arss = and_symbols_tree sl DeadEnd in
-                let son = insert arss sl pf DeadEnd action in
-                let node = {node = s; son = son; brother = bro} in
+                (* not ok to insert in [bro] or after; we insert now *)
+                let MayRecNR arss = and_symbols_tree symbl DeadEnd in
+                let son = insert arss symbl pf DeadEnd action in
+                let node = {node = symb; son = son; brother = bro} in
+                (* propagate presence of SELF/NEXT *)
                 match ar, ars, arn, arss with
                 | MayRec2, _, _, _ -> Node (MayRec3, node)
                 | NoRec2, NoRec2, NoRec3, NR11 -> Node (NoRec3, node)
           in
-          let node = {node = s1; son = son; brother = bro} in
+          let node = {node = symb1; son = son; brother = bro} in
+          (* propagate presence of SELF/NEXT *)
           match ar, arn with
             | MayRec2, _ -> Some (Node (MayRec3, node))
             | NoRec2, NoRec3 -> Some (Node (NoRec3, node))
         else
-          match try_insert ar' ars s sl pf bro action with
+          (* should insert in [bro] or before the tree [symb1; son | bro] *)
+          match try_insert ar' ars symb symbl pf bro action with
             Some bro ->
-              let node = {node = s1; son = son; brother = bro} in
+             (* could insert in [bro] *)
+              let node = {node = symb1; son = son; brother = bro} in
               begin match ar, arn with
                 | MayRec2, _ -> Some (Node (MayRec3, node))
                 | NoRec2, NoRec3 -> Some (Node (NoRec3, node)) end
-          | None -> None
+          | None ->
+             (* should insert before [symb1; son | bro] *)
+             None
         end
     | LocAct (_, _) -> None | DeadEnd -> None
   in
@@ -470,6 +489,7 @@ let is_level_labelled n (Level lev) =
 let insert_level (type s tr p k) entry_name (symbols : (s, tr, p) ty_symbols) (pf : (p, k, Loc.t -> s) rel_prod) (action : k) (slev : s ty_level) : s ty_level =
   match symbols with
   | TCns (_, Sself, symbols) ->
+      (* Insert a rule of the form "SELF; ...." *)
       let Level slev = slev in
       let RelS pf = pf in
       let MayRecTree lsuffix = insert_tree entry_name symbols pf action slev.lsuffix in
@@ -478,6 +498,7 @@ let insert_level (type s tr p k) entry_name (symbols : (s, tr, p) ty_symbols) (p
        lsuffix = lsuffix;
        lprefix = slev.lprefix}
   | _ ->
+      (* Insert a rule not starting with SELF *)
       let Level slev = slev in
       let MayRecTree lprefix = insert_tree entry_name symbols pf action slev.lprefix in
       Level
