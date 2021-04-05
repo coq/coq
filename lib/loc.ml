@@ -68,6 +68,10 @@ let merge_opt l1 l2 = match l1, l2 with
   | None, Some l  -> Some l
   | Some l1, Some l2 -> Some (merge l1 l2)
 
+let sub loc sh len = {loc with bp = loc.bp + sh; ep = loc.bp + sh + len}
+
+let after loc sh len = {loc with bp = loc.ep + sh; ep = loc.ep + sh + len}
+
 let finer l1 l2 = match l1, l2 with
   | None, _    -> false
   | Some l , None -> true
@@ -78,6 +82,7 @@ let unloc loc = (loc.bp, loc.ep)
 let shift_loc kb kp loc = { loc with bp = loc.bp + kb ; ep = loc.ep + kp }
 
 (** Located type *)
+
 type 'a located = t option * 'a
 
 let tag ?loc x = loc, x
@@ -96,4 +101,3 @@ let raise ?loc e =
   | Some loc ->
     let info = Exninfo.add Exninfo.null location loc in
     Exninfo.iraise (e, info)
-

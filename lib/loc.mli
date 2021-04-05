@@ -45,6 +45,15 @@ val merge : t -> t -> t
 val merge_opt : t option -> t option -> t option
 (** Merge locations, usually generating the largest possible span *)
 
+val sub : t -> int -> int -> t
+(** [sub loc sh len] is the location [loc] shifted with [sh]
+    characters and with length [len]. The previous ending position
+    of the location is lost. *)
+
+val after : t -> int -> int -> t
+(** [after loc sh len] is the location just after loc (starting at the
+    end position of [loc]) shifted with [sh] characters and of length [len]. *)
+
 val finer : t option -> t option -> bool
 (** Answers [true] when the first location is more defined, or, when
     both defined, included in the second one *)
