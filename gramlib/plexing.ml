@@ -2,8 +2,7 @@
 (* plexing.ml,v *)
 (* Copyright (c) INRIA 2007-2017 *)
 
-type location_function = int -> Loc.t
-type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te Stream.t * location_function
+type 'te lexer_func = ?source:Loc.source -> char Stream.t -> 'te LStream.t
 
 module type S = sig
   type te

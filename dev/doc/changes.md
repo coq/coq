@@ -1,3 +1,9 @@
+## Changes between Coq 8.13 and Coq 8.14
+
+Gramlib
+
+- A few functions change their interfaces to take benefit of a new abstraction level `LStream` for streams with location function.
+
 ## Changes between Coq 8.12 and Coq 8.13
 
 ### Code formatting

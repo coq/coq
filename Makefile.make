@@ -101,7 +101,7 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 # GRAMFILES must be in linking order
-GRAMFILES=$(addprefix gramlib/.pack/gramlib__,Ploc Plexing Gramext Grammar)
+GRAMFILES=$(addprefix gramlib/.pack/gramlib__,Plexing Gramext Grammar)
 GRAMMLFILES := $(addsuffix .ml, $(GRAMFILES))
 GRAMMLIFILES := $(addsuffix .mli, $(GRAMFILES))
 GENGRAMMLFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml # why is gramlib.ml not in GRAMMLFILES?

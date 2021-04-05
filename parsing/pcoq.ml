@@ -21,49 +21,49 @@ struct
 
   let err () = raise Stream.Failure
 
-  type t = Gramlib.Plexing.location_function -> int -> Tok.t Stream.t -> int option
+  type t = int -> Tok.t LStream.t -> int option
 
-  let rec contiguous tok n m =
+  let rec contiguous n m strm =
     n == m ||
-    let (_, ep) = Loc.unloc (tok n) in
-    let (bp, _) = Loc.unloc (tok (n + 1)) in
-    Int.equal ep bp && contiguous tok (succ n) m
+    let (_, ep) = Loc.unloc (LStream.get_loc n strm) in
+    let (bp, _) = Loc.unloc (LStream.get_loc (n + 1) strm) in
+    Int.equal ep bp && contiguous (succ n) m strm
 
-  let check_no_space tok m strm =
-    let n = Stream.count strm in
-    if contiguous tok n (n+m-1) then Some m else None
+  let check_no_space m strm =
+    let n = LStream.count strm in
+    if contiguous n (n+m-1) strm then Some m else None
 
   let to_entry s (lk : t) =
-    let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
-    Entry.of_parser s run
+    let run strm = match lk 0 strm with None -> err () | Some _ -> () in
+    Entry.(of_parser s { parser_fun = run })
 
-  let (>>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with
+  let (>>) (lk1 : t) lk2 n strm = match lk1 n strm with
   | None -> None
-  | Some n -> lk2 tok n strm
+  | Some n -> lk2 n strm
 
-  let (<+>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with
-  | None -> lk2 tok n strm
+  let (<+>) (lk1 : t) lk2 n strm = match lk1 n strm with
+  | None -> lk2 n strm
   | Some n -> Some n
 
-  let lk_empty tok n strm = Some n
+  let lk_empty n strm = Some n
 
-  let lk_kw kw tok n strm = match stream_nth n strm with
+  let lk_kw kw n strm = match LStream.peek_nth n strm with
   | Tok.KEYWORD kw' | Tok.IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
   | _ -> None
 
-  let lk_kws kws tok n strm = match stream_nth n strm with
+  let lk_kws kws n strm = match LStream.peek_nth n strm with
   | Tok.KEYWORD kw | Tok.IDENT kw -> if List.mem_f String.equal kw kws then Some (n + 1) else None
   | _ -> None
 
-  let lk_ident tok n strm = match stream_nth n strm with
+  let lk_ident n strm = match LStream.peek_nth n strm with
   | Tok.IDENT _ -> Some (n + 1)
   | _ -> None
 
-  let lk_ident_except idents tok n strm = match stream_nth n strm with
+  let lk_ident_except idents n strm = match LStream.peek_nth n strm with
   | Tok.IDENT ident when not (List.mem_f String.equal ident idents) -> Some (n + 1)
   | _ -> None
 
-  let lk_nat tok n strm = match stream_nth n strm with
+  let lk_nat n strm = match LStream.peek_nth n strm with
   | Tok.NUMBER p when NumTok.Unsigned.is_nat p -> Some (n + 1)
   | _ -> None
 
@@ -191,9 +191,9 @@ let eoi_entry en =
 (* Parse a string, does NOT check if the entire string was read
    (use eoi_entry) *)
 
-let parse_string f ?loc x =
+let parse_string f ?source x =
   let strm = Stream.of_string x in
-  Entry.parse f (Parsable.make ?loc strm)
+  Entry.parse f (Parsable.make ?source strm)
 
 (* universes not used by Coq build but still used by some plugins *)
 type gram_universe = string
