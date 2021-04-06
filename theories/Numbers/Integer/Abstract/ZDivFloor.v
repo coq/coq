@@ -660,6 +660,14 @@ Proof.
  auto using mod_bound_or.
 Qed.
 
+Lemma add_mul_mod_distr_l : forall a b c d, 0<=a -> 0<b -> 0<=d<c ->
+ (c*a+d) mod (c*b) == c*(a mod b)+d.
+Proof. intros. apply add_mul_mod_distr_l; assumption. Qed.
+
+Lemma add_mul_mod_distr_r: forall a b c d, 0<=a -> 0<b -> 0<=d<c ->
+ (a*c+d) mod (b*c) == (a mod b)*c+d.
+Proof. intros. apply add_mul_mod_distr_r; assumption. Qed.
+
 (** A last inequality: *)
 
 Theorem div_mul_le:

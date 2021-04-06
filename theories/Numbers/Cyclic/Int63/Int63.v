@@ -214,39 +214,16 @@ Proof. apply Z.div_lt_upper_bound; reflexivity. Qed.
 
 Theorem Zmod_le_first a b : 0 <= a -> 0 < b -> 0 <= a mod b <= a.
 Proof.
-  intros ha hb; case (Z_mod_lt a b); [ auto with zarith | ]; intros p q; apply (conj p).
-  case (Z.le_gt_cases b a). lia.
-  intros hlt; rewrite Zmod_small; lia.
+  intros. now split; [apply Z.mod_bound_pos|apply Z.mod_le].
 Qed.
 
 Theorem Zmod_distr: forall a b r t, 0 <= a <= b -> 0 <= r -> 0 <= t < 2 ^a ->
   (2 ^a * r + t) mod (2 ^ b) = (2 ^a * r) mod (2 ^ b) + t.
 Proof.
-  intros a b r t (H1, H2) H3 (H4, H5).
-  assert (t < 2 ^ b).
-  apply Z.lt_le_trans with (1:= H5); auto with zarith.
-  apply Zpower_le_monotone; auto with zarith.
-  rewrite Zplus_mod; auto with zarith.
-  rewrite -> (Zmod_small t); auto with zarith.
-  apply Zmod_small; auto with zarith.
-  split; auto with zarith.
-  assert (0 <= 2 ^a * r); auto with zarith.
-  apply Z.add_nonneg_nonneg; auto with zarith.
-  match goal with |- context [?X mod ?Y] => case (Z_mod_lt X Y) end;
-   auto with zarith.
-  pattern (2 ^ b) at 2; replace (2 ^ b) with ((2 ^ b - 2 ^a) + 2 ^ a);
-    try ring.
-  apply Z.add_le_lt_mono; auto with zarith.
-  replace b with ((b - a) + a); try ring.
-  rewrite Zpower_exp; auto with zarith.
-  pattern (2 ^a) at 4; rewrite <- (Z.mul_1_l (2 ^a));
-   try rewrite <- Z.mul_sub_distr_r.
-  rewrite (Z.mul_comm (2 ^(b - a))); rewrite  Zmult_mod_distr_l;
-   auto with zarith.
-  rewrite (Z.mul_comm (2 ^a)); apply Z.mul_le_mono_nonneg_r; auto with zarith.
-  match goal with |- context [?X mod ?Y] => case (Z_mod_lt X Y) end.
-    apply Z.lt_gt; auto with zarith.
-    auto with zarith.
+  intros a b r t ? ? ?.
+  replace (2^b) with (2^a * 2^(b-a)) by (rewrite <-Zpower_exp; [f_equal| |]; lia).
+  assert (0 < 2 ^ (b - a)) by (apply Z.pow_pos_nonneg; lia).
+  rewrite Z.add_mul_mod_distr_l, <- Z.mul_mod_distr_l; lia.
 Qed.
 
 (* Results about pow2 *)
