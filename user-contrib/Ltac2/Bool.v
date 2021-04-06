@@ -10,6 +10,8 @@
 
 Require Import Ltac2.Init.
 
+(** * Boolean operators *)
+
 Ltac2 and x y :=
   match x with
   | true => y
@@ -61,6 +63,22 @@ Ltac2 equal x y :=
        | false => true
        end
   end.
+
+(** * Boolean operators with lazy evaluation of the second argument *)
+
+Ltac2 Notation x(self) "&&" y(thunk(self)) : 2 :=
+  match x with
+  | true => y ()
+  | false => false
+  end.
+
+Ltac2 Notation x(self) "||" y(thunk(self)) : 3 :=
+  match x with
+  | true => true
+  | false => y ()
+  end.
+
+(** * Compatibility notations *)
 
 #[deprecated(note="Use Bool.equal", since="8.14")]
 Ltac2 eq := equal.
