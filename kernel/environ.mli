@@ -58,13 +58,6 @@ module Globals : sig
   val view : t -> view
 end
 
-type stratification = {
-  env_universes : UGraph.t;
-  env_sprop_allowed : bool;
-  env_universes_lbound : UGraph.Bound.t;
-  env_engagement : engagement
-}
-
 type named_context_val = private {
   env_named_ctx : Constr.named_context;
   env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
@@ -85,7 +78,8 @@ type env = private {
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
-  env_stratification : stratification;
+  env_universes : UGraph.t;
+  env_universes_lbound : UGraph.Bound.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
@@ -111,7 +105,6 @@ val opaque_tables : env -> Opaqueproof.opaquetab
 val set_opaque_tables : env -> Opaqueproof.opaquetab -> env
 
 
-val engagement    : env -> engagement
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
 val type_in_type : env -> bool
@@ -349,8 +342,8 @@ val push_subgraph : Univ.ContextSet.t -> env -> env
    also checks that they do not imply new transitive constraints
    between pre-existing universes in [env]. *)
 
-val set_engagement : engagement -> env -> env
 val set_typing_flags : typing_flags -> env -> env
+val set_impredicative_set : bool -> env -> env
 val set_cumulative_sprop : bool -> env -> env
 val set_type_in_type : bool -> env -> env
 val set_allow_sprop : bool -> env -> env

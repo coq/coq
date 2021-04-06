@@ -89,7 +89,6 @@ module NamedDecl = Context.Named.Declaration
       These fields could be deduced from [revstruct], but they allow faster
       name freshness checks.
  - [univ] and [future_cst] : current and future universe constraints
- - [engagement] : are we Set-impredicative? does the universe hierarchy collapse?
  - [required] : names and digests of Require'd libraries since big-bang.
       This field will only grow
  - [loads] : list of libraries Require'd inside the current module.
@@ -120,7 +119,6 @@ type compiled_library = {
   comp_mod : module_body;
   comp_univs : Univ.ContextSet.t;
   comp_deps : library_info array;
-  comp_enga : engagement;
 }
 
 type reimport = compiled_library * Univ.ContextSet.t * vodigest
@@ -145,7 +143,6 @@ type safe_environment =
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
     future_cst : Univ.ContextSet.t Future.computation list;
-    engagement : engagement option;
     required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
@@ -175,7 +172,6 @@ let empty_environment =
     sections = None;
     future_cst = [];
     univ = Univ.ContextSet.empty;
-    engagement = None;
     required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
@@ -202,16 +198,7 @@ type safe_transformer0 = safe_environment -> safe_environment
 type 'a safe_transformer = safe_environment -> 'a * safe_environment
 
 
-(** {6 Engagement } *)
-
-let set_engagement_opt env = function
-  | Some c -> Environ.set_engagement c env
-  | None -> env
-
-let set_engagement c senv =
-  { senv with
-    env = Environ.set_engagement c senv.env;
-    engagement = Some c }
+(** {6 Typing flags } *)
 
 let set_typing_flags c senv =
   let env = Environ.set_typing_flags c senv.env in
@@ -229,6 +216,10 @@ let set_typing_flags flags senv =
             })
   then CErrors.user_err Pp.(str "Changing typing flags inside sections is not allowed.");
   set_typing_flags flags senv
+
+let set_impredicative_set b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with impredicative_set = b } senv
 
 let set_check_guarded b senv =
   let flags = Environ.typing_flags senv.env in
@@ -267,17 +258,6 @@ let with_typing_flags ?typing_flags senv ~f =
     let orig_typing_flags = Environ.typing_flags senv.env in
     let res, senv = f (set_typing_flags typing_flags senv) in
     res, set_typing_flags orig_typing_flags senv
-
-(** Check that the engagement [c] expected by a library matches
-    the current (initial) one *)
-let check_engagement env expected_impredicative_set =
-  let impredicative_set = Environ.engagement env in
-  begin
-    match impredicative_set, expected_impredicative_set with
-    | PredicativeSet, ImpredicativeSet ->
-        CErrors.user_err Pp.(str "Needs option -impredicative-set.")
-    | _ -> ()
-  end
 
 (** {6 Stm machinery } *)
 
@@ -1148,8 +1128,6 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
       (Univ.ContextSet.union senv.univ oldsenv.univ)
       now_cst;
     future_cst = later_cst @ oldsenv.future_cst;
-    (* engagement is propagated to the upper level *)
-    engagement = senv.engagement;
     required = senv.required;
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
@@ -1165,7 +1143,6 @@ let end_module l restype senv =
   let mb, cst = build_module_body params restype senv in
   let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = set_engagement_opt newenv senv.engagement in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mb newenv in
@@ -1191,7 +1168,6 @@ let end_modtype l senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = set_engagement_opt newenv senv.engagement in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads {senv with env=newenv} in
   let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
@@ -1293,7 +1269,6 @@ let export ?except ~output_native_objects senv dir =
     comp_mod = mb;
     comp_univs = senv.univ;
     comp_deps = Array.of_list (DPmap.bindings senv.required);
-    comp_enga = Environ.engagement senv.env;
   } in
   mp, lib, (ast, symbols)
 
@@ -1301,7 +1276,6 @@ let export ?except ~output_native_objects senv dir =
  * not part of the [lib.comp_univs] field (but morally should be) *)
 let import lib cst vodigest senv =
   check_required senv.required lib.comp_deps;
-  check_engagement senv.env lib.comp_enga;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
     CErrors.user_err ~hdr:"Safe_typing.import"
      (Pp.strbrk "Cannot load a library with the same name as the current one.");

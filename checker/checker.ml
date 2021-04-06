@@ -138,14 +138,14 @@ let init_load_path () =
   includes := []
 
 
-let impredicative_set = ref Declarations.PredicativeSet
-let set_impredicative_set () = impredicative_set := Declarations.ImpredicativeSet
+let impredicative_set = ref false
+let set_impredicative_set () = impredicative_set := true
 
 let indices_matter = ref false
 
 let make_senv () =
   let senv = Safe_typing.empty_environment in
-  let senv = Safe_typing.set_engagement !impredicative_set senv in
+  let senv = Safe_typing.set_impredicative_set !impredicative_set senv in
   let senv = Safe_typing.set_indices_matter !indices_matter senv in
   let senv = Safe_typing.set_VM false senv in
   let senv = Safe_typing.set_allow_sprop true senv in (* be smarter later *)
@@ -291,7 +291,7 @@ let explain_exn = function
                              Constr.debug_print a ++ fnl ());
         Feedback.msg_notice (str"====== universes ====" ++ fnl () ++
                              (UGraph.pr_universes Univ.Level.pr
-                                (UGraph.repr (ctx.Environ.env_stratification.Environ.env_universes))));
+                                (UGraph.repr (ctx.Environ.env_universes))));
         str "CantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"

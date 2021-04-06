@@ -925,7 +925,7 @@ module ContextObjectMap = Map.Make (OrderedContextObject)
 
 let pr_assumptionset env sigma s =
   if ContextObjectMap.is_empty s &&
-       engagement env = PredicativeSet then
+       not (is_impredicative_set env) then
     str "Closed under the global context"
   else
     let safe_pr_constant env kn =

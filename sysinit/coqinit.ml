@@ -103,7 +103,7 @@ let init_runtime opts =
   Mltop.init_known_plugins ();
 
   (* Configuration *)
-  Global.set_engagement opts.config.logic.impredicative_set;
+  Global.set_impredicative_set opts.config.logic.impredicative_set;
   Global.set_indices_matter opts.config.logic.indices_matter;
   Global.set_check_universes (not opts.config.logic.type_in_type);
   Global.set_VM opts.config.enable_VM;
