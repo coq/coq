@@ -51,6 +51,9 @@
  (modes exe byte)
  (libraries coqide_gui))
 
+(documentation
+ (package coqide))
+
 ; Input-method bindings
 (executable
  (name default_bindings_src)

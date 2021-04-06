@@ -33,3 +33,6 @@
    coq-core.plugins.derive))
 
 (include_subdirs qualified)
+
+(documentation
+ (package coq-stdlib))

@@ -35,3 +35,6 @@
  (deps test-suite/summary.log))
 
 ; (dirs (:standard _build_ci))
+
+(documentation
+ (package coq))
