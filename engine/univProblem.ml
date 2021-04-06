@@ -30,7 +30,7 @@ let subst_univs fn = function
   | UEq (u, v) ->
     let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
     if Universe.equal u' v' then None
-    else Some (ULe (u',v'))
+    else Some (UEq (u',v'))
   | ULub (u, v) ->
     let u' = level_subst_of fn u and v' = level_subst_of fn v in
     if Level.equal u' v' then None
