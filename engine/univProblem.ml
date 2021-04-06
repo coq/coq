@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Univ
-open UnivSubst
 
 type t =
   | ULe of Universe.t * Universe.t
@@ -21,24 +20,6 @@ type t =
 let is_trivial = function
   | ULe (u, v) | UEq (u, v) -> Universe.equal u v
   | ULub (u, v) | UWeak (u, v) -> Level.equal u v
-
-let subst_univs fn = function
-  | ULe (u, v) ->
-    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
-    if Universe.equal u' v' then None
-    else Some (ULe (u',v'))
-  | UEq (u, v) ->
-    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
-    if Universe.equal u' v' then None
-    else Some (UEq (u',v'))
-  | ULub (u, v) ->
-    let u' = level_subst_of fn u and v' = level_subst_of fn v in
-    if Level.equal u' v' then None
-    else Some (ULub (u',v'))
-  | UWeak (u, v) ->
-    let u' = level_subst_of fn u and v' = level_subst_of fn v in
-    if Level.equal u' v' then None
-    else Some (UWeak (u',v'))
 
 module Set = struct
   module S = Set.Make(
@@ -88,11 +69,6 @@ module Set = struct
 
   let equal x y =
     x == y || equal x y
-
-  let subst_univs subst csts =
-    fold
-      (fun c -> Option.fold_right add (subst_univs subst c))
-      csts empty
 end
 
 type 'a accumulator = Set.t -> 'a -> 'a option
