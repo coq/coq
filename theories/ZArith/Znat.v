@@ -959,13 +959,6 @@ Definition inj_lt n m := proj1 (Nat2Z.inj_lt n m).
 Definition inj_ge n m := proj1 (Nat2Z.inj_ge n m).
 Definition inj_gt n m := proj1 (Nat2Z.inj_gt n m).
 
-Register neq as plugins.omega.neq.
-Register inj_eq as plugins.omega.inj_eq.
-Register inj_neq as plugins.omega.inj_neq.
-Register inj_le as plugins.omega.inj_le.
-Register inj_lt as plugins.omega.inj_lt.
-Register inj_ge as plugins.omega.inj_ge.
-Register inj_gt as plugins.omega.inj_gt.
 
 (** For the others, a Notation is fine *)
 
@@ -1033,5 +1026,3 @@ Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z.of_nat (n - m) = 0.
 Proof.
  intros. rewrite not_le_minus_0; auto with arith.
 Qed.
-
-Register inj_minus2 as plugins.omega.inj_minus2.

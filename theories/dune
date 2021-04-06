@@ -22,7 +22,6 @@
 
    coq-core.plugins.ring
    coq-core.plugins.nsatz
-   coq-core.plugins.omega
 
    coq-core.plugins.zify
    coq-core.plugins.micromega

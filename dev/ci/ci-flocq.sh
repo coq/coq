@@ -5,4 +5,10 @@ ci_dir="$(dirname "$0")"
 
 git_download flocq
 
-( cd "${CI_BUILD_DIR}/flocq" && ( if [ ! -x ./configure ]; then autoconf && ./configure; fi ) && ./remake "-j${NJOBS}" && ./remake install )
+( cd "${CI_BUILD_DIR}/flocq"
+  ( if [ ! -x ./configure ]; then
+      autoconf
+      ./configure COQEXTRAFLAGS="-compat 8.13";
+    fi )
+  ./remake "-j${NJOBS}"
+  ./remake install )

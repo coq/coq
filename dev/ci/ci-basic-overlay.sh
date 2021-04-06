@@ -139,7 +139,8 @@ project compcert "https://github.com/AbsInt/CompCert" "master"
 ########################################################################
 # VST
 ########################################################################
-project vst "https://github.com/PrincetonUniversity/VST" "master"
+# todo: 2021 03 11: switch back to master once vst merges the compcert3.9 branch
+project vst "https://github.com/PrincetonUniversity/VST" "compcert3.9"
 
 ########################################################################
 # cross-crypto
@@ -247,7 +248,7 @@ project reduction_effects "https://github.com/coq-community/reduction-effects" "
 # menhirlib
 ########################################################################
 # Note: menhirlib is now in subfolder coq-menhirlib of menhir
-project menhirlib "https://gitlab.inria.fr/fpottier/menhir" "20201122"
+project menhirlib "https://gitlab.inria.fr/fpottier/menhir" "20210310"
 
 ########################################################################
 # aac_tactics

@@ -32,8 +32,7 @@ Qed.
 
 Goal forall a:Z, (Z.abs a)*(Z.sgn a) = a.
 intros.
-zify.
-intuition; subst; lia. (* pure multiplication: omega alone can't do it *)
+intuition; subst; lia.
 Qed.
 
 Goal forall a:Z, Z.abs a = a -> a >= 0.

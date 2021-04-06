@@ -74,7 +74,7 @@ let is_tactic =
       "info"; "field"; "specialize"; "evar"; "solve"; "instantiate"; "info_auto"; "info_eauto";
       "quote"; "eexact"; "autorewrite";
       "destruct"; "destruction"; "destruct_call"; "dependent"; "elim"; "extensionality";
-      "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move"; "omega";
+      "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move";
       "set"; "assert"; "do"; "repeat";
       "cut"; "assumption"; "exact"; "split"; "subst"; "try"; "discriminate";
       "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";

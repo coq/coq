@@ -14,7 +14,6 @@ complex goals in new domains.
    :maxdepth: 1
 
    logic
-   ../../addendum/omega
    ../../addendum/micromega
    ../../addendum/ring
    ../../addendum/nsatz
