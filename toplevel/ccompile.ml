@@ -223,6 +223,7 @@ let compile_file opts stm_opts copts injections =
 (* VIO Dispatching                                                            *)
 (******************************************************************************)
 let check_vio_tasks copts =
+  Flags.async_proofs_worker_id := "VioChecking";
   let rc =
     List.fold_left (fun acc (n,f) ->
         let f_in = ensure ".vio" f f in
