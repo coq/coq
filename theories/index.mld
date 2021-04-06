@@ -1,0 +1,3 @@
+{0 coq-stdlib }
+
+The coq-stdlib package only contains Coq theory files for the standard library and no OCaml libraries.

@@ -63,3 +63,6 @@
  (files (refman-html as html/refman) (refman-pdf as pdf/refman))
  (section doc)
  (package coq-doc))
+
+(documentation
+ (package coq-doc))
