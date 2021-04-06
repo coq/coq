@@ -41,13 +41,13 @@ type cbv_value =
 
 and cbv_stack =
   | TOP
-  | APP of cbv_value array * cbv_stack
+  | APP of cbv_value list * cbv_stack
   | CASE of Univ.Instance.t * constr array * case_return * case_branch array * Constr.case_invert * case_info * cbv_value subs * cbv_stack
   | PROJ of Projection.t * cbv_stack
 
 val shift_value : int -> cbv_value -> cbv_value
 
-val stack_app : cbv_value array -> cbv_stack -> cbv_stack
+val stack_app : cbv_value list -> cbv_stack -> cbv_stack
 val strip_appl : cbv_value -> cbv_stack -> cbv_value * cbv_stack
 
 (** recursive functions... *)
