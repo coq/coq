@@ -178,7 +178,7 @@ Proof.
   intros a; destruct a; simpl; auto.
 Qed.
 
-Lemma Zmod_0_r: forall a, a mod 0 = 0.
+Lemma Zmod_0_r: forall a, a mod 0 = a.
 Proof.
   intros a; destruct a; simpl; auto.
 Qed.
@@ -221,7 +221,7 @@ Lemma Z_mod_same_full : forall a, a mod a = 0.
 Proof. intros a. zero_or_not a. apply Z.mod_same; auto. Qed.
 
 Lemma Z_mod_mult : forall a b, (a*b) mod b = 0.
-Proof. intros a b. zero_or_not b. apply Z.mod_mul. auto. Qed.
+Proof. intros a b. now zero_or_not b; [apply Z.mul_0_r|apply Z.mod_mul]. Qed.
 
 Lemma Z_div_mult_full : forall a b:Z, b <> 0 -> (a*b)/b = a.
 Proof Z.div_mul.
@@ -327,7 +327,10 @@ Qed.
 (** * Relations between usual operations and Z.modulo and Z.div *)
 
 Lemma Z_mod_plus_full : forall a b c:Z, (a + b * c) mod c = a mod c.
-Proof. intros a b c. zero_or_not c. apply Z.mod_add; auto. Qed.
+Proof. intros a b c. zero_or_not c.
+ - now rewrite Z.mul_0_r, Z.add_0_r.
+ - now apply Z.mod_add.
+Qed.
 
 Lemma Z_div_plus_full : forall a b c:Z, c <> 0 -> (a + b * c) / c = a / c + b.
 Proof Z.div_add.
@@ -346,7 +349,7 @@ Lemma Zmod_opp_opp : forall a b:Z, (-a) mod (-b) = - (a mod b).
 Proof. intros a b. zero_or_not b. apply Z.mod_opp_opp; auto. Qed.
 
 Lemma Z_mod_zero_opp_full : forall a b:Z, a mod b = 0 -> (-a) mod b = 0.
-Proof. intros a b. zero_or_not b. apply Z.mod_opp_l_z; auto. Qed.
+Proof. intros a b. now zero_or_not b; [intros; subst|apply Z.mod_opp_l_z]. Qed.
 
 Lemma Z_mod_nz_opp_full : forall a b:Z, a mod b <> 0 ->
  (-a) mod b = b - (a mod b).
@@ -357,21 +360,21 @@ Proof. intros a b. zero_or_not b. apply Z.mod_opp_r_z; auto. Qed.
 
 Lemma Z_mod_nz_opp_r : forall a b:Z, a mod b <> 0 ->
  a mod (-b) = (a mod b) - b.
-Proof. intros a b ?. zero_or_not b. apply Z.mod_opp_r_nz; auto. Qed.
+Proof. intros a b ?. now zero_or_not b; [destruct a|apply Z.mod_opp_r_nz]. Qed.
 
 Lemma Z_div_zero_opp_full : forall a b:Z, a mod b = 0 -> (-a)/b = -(a/b).
 Proof. intros a b ?. zero_or_not b. apply Z.div_opp_l_z; auto. Qed.
 
-Lemma Z_div_nz_opp_full : forall a b:Z, a mod b <> 0 ->
+Lemma Z_div_nz_opp_full : forall a b:Z, b <> 0 -> a mod b <> 0 ->
  (-a)/b = -(a/b)-1.
-Proof. intros a b. zero_or_not b. easy. intros; rewrite Z.div_opp_l_nz; auto. Qed.
+Proof. intros a b. zero_or_not b; [easy|]. intros; rewrite Z.div_opp_l_nz; auto. Qed.
 
 Lemma Z_div_zero_opp_r : forall a b:Z, a mod b = 0 -> a/(-b) = -(a/b).
 Proof. intros a b ?. zero_or_not b. apply Z.div_opp_r_z; auto. Qed.
 
-Lemma Z_div_nz_opp_r : forall a b:Z, a mod b <> 0 ->
+Lemma Z_div_nz_opp_r : forall a b:Z, b <> 0 -> a mod b <> 0 ->
  a/(-b) = -(a/b)-1.
-Proof. intros a b. zero_or_not b. easy. intros; rewrite Z.div_opp_r_nz; auto. Qed.
+Proof. intros a b. zero_or_not b; [easy|]. intros; rewrite Z.div_opp_r_nz; auto. Qed.
 
 (** Cancellations. *)
 
@@ -390,15 +393,14 @@ Lemma Zmult_mod_distr_l: forall a b c,
   (c*a) mod (c*b) = c * (a mod b).
 Proof.
  intros a b c. zero_or_not c. rewrite (Z.mul_comm c b); zero_or_not b.
- + now rewrite Z.mul_0_r.
- + rewrite (Z.mul_comm b c). apply Z.mul_mod_distr_l; auto.
+ rewrite (Z.mul_comm b c). apply Z.mul_mod_distr_l; auto.
 Qed.
 
 Lemma Zmult_mod_distr_r: forall a b c,
   (a*c) mod (b*c) = (a mod b) * c.
 Proof.
  intros a b c. zero_or_not b. rewrite (Z.mul_comm b c); zero_or_not c.
- + now rewrite Z.mul_0_r.
+ + now rewrite !Z.mul_0_r.
  + rewrite (Z.mul_comm c b). apply Z.mul_mod_distr_r; auto.
 Qed.
 
@@ -646,7 +648,7 @@ Definition Zmod' a b :=
    | Z0 => 0
    | Zpos a' =>
       match b with
-       | Z0 => 0
+       | Z0 => a
        | Zpos _ => Zmod_POS a' b
        | Zneg b' =>
           let r := Zmod_POS a' (Zpos b') in
@@ -654,7 +656,7 @@ Definition Zmod' a b :=
       end
    | Zneg a' =>
       match b with
-       | Z0 => 0
+       | Z0 => a
        | Zpos _ =>
           let r := Zmod_POS a' b in
           match r with Z0 =>  0 | _  =>  b - r end

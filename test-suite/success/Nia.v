@@ -38,10 +38,10 @@ Ltac destr_step :=
   end.
 
 Example mod_0_l: forall x : Z, 0 mod x = 0. Proof. t. Qed.
-Example mod_0_r: forall x : Z, x mod 0 = 0. Proof. intros; nia. Qed.
+Example mod_0_r: forall x : Z, x mod 0 = x. Proof. intros; nia. Qed.
 Example Z_mod_same_full: forall a : Z, a mod a = 0. Proof. t. Qed.
 Example Zmod_0_l: forall a : Z, 0 mod a = 0. Proof. t. Qed.
-Example Zmod_0_r: forall a : Z, a mod 0 = 0. Proof. intros; nia. Qed.
+Example Zmod_0_r: forall a : Z, a mod 0 = a. Proof. intros; nia. Qed.
 Example mod_mod_same: forall x y : Z, (x mod y) mod y = x mod y. Proof. t. Qed.
 Example Zmod_mod: forall a n : Z, (a mod n) mod n = a mod n. Proof. t. Qed.
 Example Zmod_1_r: forall a : Z, a mod 1 = 0. Proof. intros; nia. Qed.
@@ -237,7 +237,7 @@ Qed.
 Example Z_mod_nz_opp_r: forall a b : Z, a mod b <> 0 -> a mod - b = a mod b - b.
 Proof.
   intros a b.
-  assert (a mod b <> 0 -> a / -b = -(a/b)-1) by t.
+  assert (b <> 0 -> a mod b <> 0 -> a / -b = -(a/b)-1) by t.
   nia.
 Qed.
 Example Z_mul_mod_idemp_l: forall a b n : Z, n <> 0 -> (a mod n * b) mod n = (a * b) mod n.
@@ -252,7 +252,7 @@ Qed.
 Example Z_mod_nz_opp_full: forall a b : Z, a mod b <> 0 -> - a mod b = b - a mod b.
 Proof.
   intros a b.
-  assert (a mod b <> 0 -> -a/b = -1-a/b) by nia.
+  assert (b <> 0 -> a mod b <> 0 -> -a/b = -1-a/b) by nia.
   nia.
 Qed.
 Example Z_add_mod_idemp_r: forall a b n : Z, n <> 0 -> (a + b mod n) mod n = (a + b) mod n.
@@ -303,7 +303,7 @@ Example Z_div_opp_r_z: forall a b : Z, b <> 0 -> a mod b = 0 -> a / - b = - (a /
 Example Z_mod_opp_r_nz: forall a b : Z, b <> 0 -> a mod b <> 0 -> a mod - b = a mod b - b.
 Proof.
   intros a b.
-  assert (a mod b <> 0 -> a/(-b) = -1-a/b) by nia.
+  assert (b <> 0 -> a mod b <> 0 -> a/(-b) = -1-a/b) by nia.
   nia.
 Qed.
 Example Z_mul_mod_distr_r: forall a b c : Z, b <> 0 -> c <> 0 -> (a * c) mod (b * c) = a mod b * c.
@@ -321,12 +321,12 @@ Qed.
 Example Z_mod_opp_l_nz: forall a b : Z, b <> 0 -> a mod b <> 0 -> - a mod b = b - a mod b.
 Proof.
   intros a b.
-  assert (a mod b <> 0 -> -a/b = -1-a/b) by nia.
+  assert (b <> 0 -> a mod b <> 0 -> -a/b = -1-a/b) by nia.
   nia.
 Qed.
 Example mod_eq: forall x x' y : Z, x / y = x' / y -> x mod y = x' mod y -> y <> 0 -> x = x'. Proof. intros; nia. Qed.
-Example Z_div_nz_opp_r: forall a b : Z, a mod b <> 0 -> a / - b = - (a / b) - 1. Proof. intros; nia. Qed.
-Example Z_div_nz_opp_full: forall a b : Z, a mod b <> 0 -> - a / b = - (a / b) - 1. Proof. intros; nia. Qed.
+Example Z_div_nz_opp_r: forall a b : Z, b <> 0 -> a mod b <> 0 -> a / - b = - (a / b) - 1. Proof. intros; nia. Qed.
+Example Z_div_nz_opp_full: forall a b : Z, b <> 0 -> a mod b <> 0 -> - a / b = - (a / b) - 1. Proof. intros; nia. Qed.
 Example Zmod_unique: forall a b q r : Z, 0 <= r < b -> a = b * q + r -> r = a mod b.
 Proof.
   intros a b q r ??.

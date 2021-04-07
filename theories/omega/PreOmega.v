@@ -24,7 +24,7 @@ Local Open Scope Z_scope.
     of division/quotient and modulo/remainder. *)
 
 Module Z.
-  Lemma mod_0_r_ext x y : y = 0 -> x mod y = 0.
+  Lemma mod_0_r_ext x y : y = 0 -> x mod y = x.
   Proof. intro; subst; destruct x; reflexivity. Qed.
   Lemma div_0_r_ext x y : y = 0 -> x / y = 0.
   Proof. intro; subst; destruct x; reflexivity. Qed.

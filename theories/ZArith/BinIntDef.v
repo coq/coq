@@ -388,11 +388,13 @@ Definition iter (n:Z) {A} (f:A -> A) (x:A) :=
       fraction [a/b].
     - there is no easy sign rule.
 
-  In addition, note that we arbitrary take [a/0 = 0] and [a mod 0 = 0].
+  In addition, note that we take [a/0 = 0] and [a mod 0 = a].
+  This choice is motivated by the div-mod equation
+    [a = (a / b) * b + (a mod b)] for [b = 0].
 *)
 
 (** First, a division for positive numbers. Even if the second
-   argument is a Z, the answer is arbitrary is it isn't a Zpos. *)
+   argument is a Z, the answer is arbitrary if it isn't a Zpos. *)
 
 Fixpoint pos_div_eucl (a:positive) (b:Z) : Z * Z :=
   match a with
@@ -412,7 +414,7 @@ Fixpoint pos_div_eucl (a:positive) (b:Z) : Z * Z :=
 Definition div_eucl (a b:Z) : Z * Z :=
   match a, b with
     | 0, _ => (0, 0)
-    | _, 0 => (0, 0)
+    | _, 0 => (0, a)
     | pos a', pos _ => pos_div_eucl a' b
     | neg a', pos _ =>
       let (q, r) := pos_div_eucl a' b in
@@ -450,7 +452,9 @@ Infix "mod" := modulo (at level 40, no associativity) : Z_scope.
    - sign rule for division: [quot (-a) b = quot a (-b) = -(quot a b)]
    - and for modulo: [a rem (-b) = a rem b] and [(-a) rem b = -(a rem b)]
 
- Note that we arbitrary take here [quot a 0 = 0] and [a rem 0 = a].
+  Note that we take here [quot a 0 = 0] and [a rem 0 = a].
+  This choice is motivated by the quot-rem equation
+    [a = (quot a b) * b + (a rem b)] for [b = 0].
 *)
 
 Definition quotrem (a b:Z) : Z * Z :=
