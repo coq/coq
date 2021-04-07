@@ -32,8 +32,6 @@ module Set : sig
   include Set.S with type elt = t
 
   val pr : t -> Pp.t
-
-  val subst_univs : universe_subst_fn -> t -> t
 end
 
 type 'a accumulator = Set.t -> 'a -> 'a option
