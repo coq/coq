@@ -10,6 +10,7 @@
 
 Require Export ZArith_base.
 Require Export ZArithRing.
+Require Export ZArith.BinInt.
 Require Export Morphisms Setoid Bool.
 
 (** * Definition of [Q] and basic properties *)
@@ -57,6 +58,29 @@ Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
 Register Qeq as rat.Q.Qeq.
 Register Qle as rat.Q.Qle.
 Register Qlt as rat.Q.Qlt.
+
+(**
+  Qeq construction from parts.
+  Establishing equality by establishing equality
+  for numerator and denominator separately.
+*)
+
+Lemma Qden_cancel : forall (a b : Z) (p : positive),
+  (a#p)==(b#p) -> a=b.
+Proof.
+  intros a b p.
+  unfold Qeq.
+  apply Z.mul_cancel_r, not_eq_sym, Z.lt_neq, Pos2Z.is_pos.
+Qed.
+
+Lemma Qnum_cancel : forall (a b : positive) (z : Z),
+  z<>0%Z -> (z#a)==(z#b) -> a=b.
+Proof.
+  intros a b z Hz_ne_0.
+  unfold Qeq.
+  rewrite Z.eq_sym_iff, <- Pos2Z.inj_iff.
+  apply (Z.mul_reg_l _ _ _ Hz_ne_0).
+Qed.
 
 (** injection from Z is injective. *)
 
@@ -764,6 +788,50 @@ Lemma Qmult_inj_l (x y z: Q): ~ z == 0 -> (z * x == z * y <-> x == y).
 Proof.
  rewrite (Qmult_comm z x), (Qmult_comm z y).
  apply Qmult_inj_r.
+Qed.
+
+(**
+  Reduction of Q.
+  Removal/introduction of common factor in both numerator and denominator.
+*)
+
+Lemma Qreduce_l : forall (a : Z) (b z : positive),
+  (Zpos z)*a # z*b == a#b.
+Proof.
+  intros a b z.
+  unfold Qeq, Qnum, Qden.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
+Lemma Qreduce_r : forall (a : Z) (b z : positive),
+  a*(Zpos z) # b*z == a#b.
+Proof.
+  intros a b z.
+  unfold Qeq, Qnum, Qden.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
+(**
+  Construction of a new rational by multiplication with an integer
+  (or to be more precise multiplication with a rational of the form z/1).
+*)
+
+Lemma Qmult_inject_Z_l : forall (a : Z) (b : positive) (z : Z),
+  (inject_Z z) * (a#b) == z*a#b.
+Proof.
+  intros a b z.
+  unfold Qeq. cbn. ring.
+Qed.
+
+Lemma Qmult_inject_Z_r : forall (a : Z) (b : positive) (z : Z),
+  (a#b) * inject_Z z == a*z#b.
+Proof.
+  intros a b z.
+  unfold Qeq. cbn.
+  rewrite Pos2Z.inj_mul.
+  ring.
 Qed.
 
 (** * Properties of order upon Q. *)
