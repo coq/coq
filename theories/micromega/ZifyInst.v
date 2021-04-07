@@ -307,15 +307,15 @@ Instance Op_N_mul : BinOp N.mul :=
 Add Zify BinOp Op_N_mul.
 
 Instance Op_N_sub : BinOp N.sub :=
-  {| TBOp := fun x y => Z.max 0 (x - y) ; TBOpInj := N2Z.inj_sub_max|}.
+  {| TBOp := fun x y => Z.max 0 (x - y) ; TBOpInj := N2Z.inj_sub_max |}.
 Add Zify BinOp Op_N_sub.
 
 Instance Op_N_div : BinOp N.div :=
-  {| TBOp := Z.div ; TBOpInj := N2Z.inj_div|}.
+  {| TBOp := Z.div ; TBOpInj := N2Z.inj_div |}.
 Add Zify BinOp Op_N_div.
 
 Instance Op_N_mod : BinOp N.modulo :=
-  {| TBOp := Z.rem ; TBOpInj := N2Z.inj_rem|}.
+  {| TBOp := Z.rem ; TBOpInj := N2Z.inj_rem |}.
 Add Zify BinOp Op_N_mod.
 
 Instance Op_N_pred : UnOp N.pred :=
@@ -332,19 +332,19 @@ Add Zify UnOp Op_N_succ.
 
 (* zify_Z_rel *)
 Instance Op_Z_ge : BinRel Z.ge :=
-  {| TR := Z.ge ; TRInj := fun x y  => iff_refl (x>= y)|}.
+  {| TR := Z.ge ; TRInj := fun x y  => iff_refl (x>= y) |}.
 Add Zify BinRel Op_Z_ge.
 
 Instance Op_Z_lt : BinRel Z.lt :=
-  {| TR := Z.lt ;  TRInj := fun x y  => iff_refl (x < y)|}.
+  {| TR := Z.lt ;  TRInj := fun x y  => iff_refl (x < y) |}.
 Add Zify BinRel Op_Z_lt.
 
 Instance Op_Z_gt : BinRel Z.gt :=
-  {| TR := Z.gt ;TRInj := fun x y  => iff_refl (x > y)|}.
+  {| TR := Z.gt ;TRInj := fun x y  => iff_refl (x > y) |}.
 Add Zify BinRel Op_Z_gt.
 
 Instance Op_Z_le : BinRel Z.le :=
-  {| TR := Z.le ;TRInj := fun x y  => iff_refl (x <= y)|}.
+  {| TR := Z.le ;TRInj := fun x y  => iff_refl (x <= y) |}.
 Add Zify BinRel Op_Z_le.
 
 Instance Op_eqZ : BinRel (@eq Z) :=
@@ -460,7 +460,7 @@ Add Zify UnOp Op_Z_to_nat.
 (** Specification of derived operators over Z *)
 
 Instance ZmaxSpec : BinOpSpec Z.max :=
-  {| BPred := fun n m r => n < m /\ r = m \/ m <= n /\ r = n ; BSpec := Z.max_spec|}.
+  {| BPred := fun n m r => n < m /\ r = m \/ m <= n /\ r = n ; BSpec := Z.max_spec |}.
 Add Zify BinOpSpec ZmaxSpec.
 
 Instance ZminSpec : BinOpSpec Z.min :=
@@ -470,12 +470,12 @@ Add Zify BinOpSpec ZminSpec.
 
 Instance ZsgnSpec : UnOpSpec Z.sgn :=
   {| UPred := fun n r : Z => 0 < n /\ r = 1 \/ 0 = n /\ r = 0 \/ n < 0 /\ r = - (1) ;
-     USpec := Z.sgn_spec|}.
+     USpec := Z.sgn_spec |}.
 Add Zify UnOpSpec ZsgnSpec.
 
 Instance ZabsSpec : UnOpSpec Z.abs :=
   {| UPred := fun n r: Z =>  0 <= n /\ r = n \/ n < 0 /\ r = - n ;
-     USpec := Z.abs_spec|}.
+     USpec := Z.abs_spec |}.
 Add Zify UnOpSpec ZabsSpec.
 
 (** Saturate positivity constraints *)

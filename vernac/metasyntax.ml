@@ -1664,7 +1664,7 @@ let add_notation_interpretation env decl_ntn =
       decl_ntn_scope = sc;
     } = decl_ntn in
   match interp_non_syntax_modifiers modifiers with
-  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here")
+  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
   | Some (only_parsing,only_printing,entry) ->
     let df' = add_notation_interpretation_core ~local:false df env entry c sc only_parsing false None in
     Dumpglob.dump_notation (loc,df') sc true
@@ -1845,6 +1845,6 @@ let inCustomEntry : locality_flag * string -> obj =
 
 let declare_custom_entry local s =
   if Egramcoq.exists_custom_entry s then
-    user_err Pp.(str "Custom entry " ++ str s ++ str " already exists")
+    user_err Pp.(str "Custom entry " ++ str s ++ str " already exists.")
   else
     Lib.add_anonymous_leaf (inCustomEntry (local,s))

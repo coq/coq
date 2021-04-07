@@ -216,7 +216,7 @@ let consistency_checks exists dir dirinfo =
   else
     if Nametab.exists_dir dir then
       user_err ~hdr:"consistency_checks"
-        (DirPath.print dir ++ str " already exists")
+        (DirPath.print dir ++ str " already exists.")
 
 let compute_visibility exists i =
   if exists then Nametab.Exactly i else Nametab.Until i

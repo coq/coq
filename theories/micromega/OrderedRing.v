@@ -423,7 +423,7 @@ Qed.
 (* The following theorems are used to build a morphism from Z to R and
 prove its properties in ZCoeff.v. They are not used in RingMicromega.v. *)
 
-(* Surprisingly, multilication is needed to prove the following theorem *)
+(* Surprisingly, multiplication is needed to prove the following theorem *)
 
 Theorem Ropp_neg_pos : forall n : R, - n < 0 <-> 0 < n.
 Proof.
@@ -457,4 +457,3 @@ apply Rtimes_pos_pos. assumption. now apply -> Rlt_lt_minus.
 Qed.*)
 
 End STRICT_ORDERED_RING.
-

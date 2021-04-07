@@ -298,7 +298,7 @@ let meta_reducible_instance env evd b =
           if not is_coerce then irec g else u
          with Not_found -> u)
     | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) (* What if two nested casts? *) ->
-      let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
+      let m = try destMeta evd c with DestKO -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
           (match
           try
             let g, s = Metamap.find m metas in
