@@ -675,12 +675,12 @@ let perform_notation syn st =
     CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
   let rule = Pcoq.Production.make rule (act mk) in
-  let lev = match syn.synext_lev with
+  let pos = match syn.synext_lev with
   | None -> None
-  | Some lev -> Some (string_of_int lev)
+  | Some lev -> Some (Gramlib.Gramext.Level (string_of_int lev))
   in
-  let rule = (lev, None, [rule]) in
-  ([Pcoq.ExtendRule (Pltac.ltac2_expr, {Pcoq.pos=None; data=[rule]})], st)
+  let rule = (None, None, [rule]) in
+  ([Pcoq.ExtendRule (Pltac.ltac2_expr, {Pcoq.pos; data=[rule]})], st)
 
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation
@@ -754,7 +754,15 @@ let register_notation ?deprecation ?(local = false) tkn lev body = match tkn, le
   let ids = List.fold_left fold Id.Set.empty entries in
   (* Globalize so that names are absolute *)
   let body = Tac2intern.globalize ids body in
-  let lev = match lev with Some _ -> lev | None -> Some 5 in
+  let lev = match lev with
+  | Some n ->
+    let () =
+      if n < 0 || n > 6 then
+        user_err (str "Notation levels must range between 0 and 6")
+    in
+    lev
+  | None -> Some 5
+  in
   let ext = {
     synext_tok = tkn;
     synext_exp = body;

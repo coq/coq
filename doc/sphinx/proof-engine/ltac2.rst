@@ -1251,6 +1251,10 @@ Notations
 
    This command supports the :attr:`deprecated` attribute.
 
+   .. exn:: Notation levels must range between 0 and 6.
+
+      The level of a notation must be an integer between 0 and 6 inclusive.
+
 Abbreviations
 ~~~~~~~~~~~~~
 
