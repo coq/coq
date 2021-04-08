@@ -5,7 +5,7 @@ The underlying formal language of Coq is a
 :gdef:`Calculus of Inductive Constructions` (|Cic|) whose inference rules
 are presented in this
 chapter. The history of this formalism as well as pointers to related
-work are provided in a separate chapter; see *Credits*.
+work are provided in a separate chapter; see :ref:`history`.
 
 
 .. _The-terms:
