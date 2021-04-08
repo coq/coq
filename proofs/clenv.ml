@@ -108,8 +108,7 @@ let clenv_environments evd bound t =
       | (n, Prod (na,t1,t2)) ->
           let mv = new_meta () in
           let dep = not (noccurn evd 1 t2) in
-          let na' = if dep then na.binder_name else Anonymous in
-          let e' = meta_declare mv t1 ~name:na' e in
+          let e' = meta_declare mv t1 ~name:na.binder_name e in
           clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
             (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
