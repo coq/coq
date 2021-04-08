@@ -572,3 +572,7 @@ end
 let () = define_prim3 "tac_typeclasses_eauto" (option strategy) (option int) (option (list ident)) begin fun str n dbs ->
   Tac2tactics.typeclasses_eauto str n dbs
 end
+
+let () = define_prim3 "tac_unify" constr constr (option ident) begin fun x y db ->
+  Tac2tactics.unify x y db
+end
