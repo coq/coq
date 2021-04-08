@@ -614,11 +614,11 @@ and lambda_of_app cache env sigma f args =
       | Primitive op -> lambda_of_prim env c op (lambda_of_args cache env sigma 0 args)
       | Def csubst -> (* TODO optimize if f is a proj and argument is known *)
           if cb.const_inline_code then
-            lambda_of_app cache env sigma (Mod_subst.force_constr csubst) args
+            lambda_of_app cache env sigma csubst args
           else
           let prefix = get_const_prefix env kn in
           let t =
-            if is_lazy (Mod_subst.force_constr csubst) then
+            if is_lazy csubst then
               mkLapp Lforce [|Lconst (prefix, (kn,u))|]
             else Lconst (prefix, (kn,u))
           in

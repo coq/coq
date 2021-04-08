@@ -44,7 +44,6 @@ val ppconstr_univ : Constr.t -> unit
 (* Extern as type *)
 val pptype : Constr.types -> unit
 
-val ppsconstr : Constr.constr Mod_subst.substituted -> unit
 val ppeconstr : EConstr.constr -> unit (* Termops printer *)
 val ppconstr_expr : Constrexpr.constr_expr -> unit
 val ppglob_constr : 'a Glob_term.glob_constr_g -> unit

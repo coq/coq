@@ -534,7 +534,7 @@ let constant_value_and_type env (kn, u) =
   let uctx = Declareops.constant_polymorphic_context cb in
   let cst = Univ.AUContext.instantiate u uctx in
   let b' = match cb.const_body with
-    | Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
+    | Def l_body -> Some (subst_instance_constr u l_body)
     | OpaqueDef _ -> None
     | Undef _ | Primitive _ -> None
   in
@@ -553,8 +553,7 @@ let constant_value_in env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_body with
     | Def l_body ->
-      let b = Mod_subst.force_constr l_body in
-        subst_instance_constr u b
+      subst_instance_constr u l_body
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))

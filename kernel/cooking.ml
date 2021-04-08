@@ -156,7 +156,7 @@ type recipe = { from : Opaqueproof.opaque constant_body; info : Opaqueproof.cook
 type inline = bool
 
 type 'opaque result = {
-  cook_body : (constr Mod_subst.substituted, 'opaque) constant_def;
+  cook_body : (constr, 'opaque) constant_def;
   cook_type : types;
   cook_universes : universes;
   cook_relevance : Sorts.relevance;
@@ -236,7 +236,7 @@ let cook_constant { from = cb; info } =
   let map c = abstract_as_body (expmod c) hyps in
   let body = match cb.const_body with
   | Undef _ as x -> x
-  | Def cs -> Def (Mod_subst.from_val (map (Mod_subst.force_constr cs)))
+  | Def cs -> Def (map cs)
   | OpaqueDef o ->
     OpaqueDef (Opaqueproof.discharge_opaque info o)
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")

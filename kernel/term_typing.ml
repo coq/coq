@@ -119,7 +119,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let body = match p with
     | OT_op op -> Declarations.Primitive op
     | OT_type _ -> Undef None
-    | OT_const c -> Def (Mod_subst.from_val (CPrimitives.body_of_prim_const c))
+    | OT_const c -> Def (CPrimitives.body_of_prim_const c)
   in
   { Cooking.cook_body = body;
     cook_type = typ;
@@ -176,7 +176,7 @@ let infer_declaration env (dcl : constant_entry) =
            Vars.subst_univs_level_constr usubst tj.utj_val
       in
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
-      let def = Def (Mod_subst.from_val def) in
+      let def = Def def in
         feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
@@ -262,7 +262,7 @@ let build_constant_declaration env result =
         let ids_typ = global_vars_set env typ in
         let ids_def = match def with
         | Undef _ | Primitive _ -> Id.Set.empty
-        | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
+        | Def cs -> global_vars_set env cs
         | OpaqueDef _ ->
           (* Opaque definitions always come with their section variables *)
           assert false
@@ -275,7 +275,7 @@ let build_constant_declaration env result =
       match def with
       | Undef _ | Primitive _ | OpaqueDef _ as x -> x (* nothing to check *)
       | Def cs as x ->
-        let () = check_section_variables env declared typ (Mod_subst.force_constr cs) in
+        let () = check_section_variables env declared typ cs in
         x
   in
   let univs = result.cook_universes in
@@ -372,7 +372,7 @@ let translate_local_def env _id centry =
   | Polymorphic _ -> assert false
   in
   let c = match decl.cook_body with
-  | Def c -> Mod_subst.force_constr c
+  | Def c -> c
   | Undef _ | Primitive _ | OpaqueDef _ -> assert false
   in
   c, decl.cook_relevance, typ

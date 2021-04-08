@@ -161,6 +161,3 @@ val subst_mps : substitution -> constr -> constr
     - [Some s, a] when r is a delayed substitution [s] applied to [a] *)
 
 val repr_substituted : 'a substituted -> substitution list option * 'a
-
-val force_constr : constr substituted -> constr
-val subst_constr : substitution -> constr substituted -> constr substituted

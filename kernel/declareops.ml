@@ -100,7 +100,7 @@ let subst_const_type sub arity =
     at least for Def due to the delayed substitution [subst_constr_subst]. *)
 let subst_const_def sub def = match def with
   | Undef _ | Primitive _ -> def
-  | Def c -> Def (subst_constr sub c)
+  | Def c -> Def (subst_mps sub c)
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque sub o)
 
 let subst_const_body sub cb =
@@ -137,8 +137,7 @@ let hcons_const_def = function
   | Undef inl -> Undef inl
   | Primitive p -> Primitive p
   | Def l_constr ->
-    let constr = force_constr l_constr in
-    Def (from_val (Constr.hcons constr))
+    Def (Constr.hcons l_constr)
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
 let hcons_universes cbu =

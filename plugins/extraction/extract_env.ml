@@ -115,7 +115,7 @@ let check_arity env cb =
   if Reduction.is_arity env t then raise Impossible
 
 let get_body lbody =
-  EConstr.of_constr (Mod_subst.force_constr lbody)
+  EConstr.of_constr lbody
 
 let check_fix env sg cb i =
   match cb.const_body with

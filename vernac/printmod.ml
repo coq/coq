@@ -296,7 +296,7 @@ let print_body is_impl extent env mp (l,body) =
               | Def l when is_impl ->
                 spc () ++
                 hov 2 (str ":= " ++
-                       Printer.pr_lconstr_env env sigma (Mod_subst.force_constr l))
+                       Printer.pr_lconstr_env env sigma l)
               | _ -> mt ()) ++ str "." ++
             Printer.pr_abstract_universe_ctx sigma ctx)
     | SFBmind mib ->

@@ -193,11 +193,6 @@ let v_subst =
 
 (** kernel/lazyconstr *)
 
-let v_substituted v_a =
-  v_tuple "substituted" [|v_a; List v_subst|]
-
-let v_cstr_subst = v_substituted v_constr
-
 let v_ndecl = v_sum "named_declaration" 0
     [| [|v_binder_annot v_id; v_constr|];               (* LocalAssum *)
        [|v_binder_annot v_id; v_constr; v_constr|] |]   (* LocalDef *)
@@ -244,7 +239,7 @@ let v_primitive =
 
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_opaque|]; [|v_primitive|]|]
+    [|[|Opt Int|]; [|v_constr|]; [|v_opaque|]; [|v_primitive|]|]
 
 let v_typing_flags =
   v_tuple "typing_flags"

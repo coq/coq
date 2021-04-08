@@ -109,7 +109,7 @@ let push_rel_assum (n, t) env =
 let push_rels_assum assums =
   EConstr.push_rel_context (List.map (fun (x,t) -> LocalAssum (x,t)) assums)
 
-let get_body lconstr = EConstr.of_constr (Mod_subst.force_constr lconstr)
+let get_body lconstr = EConstr.of_constr lconstr
 
 let get_opaque env c =
   EConstr.of_constr

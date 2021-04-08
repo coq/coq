@@ -104,7 +104,7 @@ type typing_flags = {
  * the OpaqueDef *)
 type 'opaque constant_body = {
     const_hyps : Constr.named_context; (** New: younger hyp at top *)
-    const_body : (Constr.t Mod_subst.substituted, 'opaque) constant_def;
+    const_body : (Constr.t, 'opaque) constant_def;
     const_type : types;
     const_relevance : Sorts.relevance;
     const_body_code : Vmemitcodes.to_patch_substituted option;

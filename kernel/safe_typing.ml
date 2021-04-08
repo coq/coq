@@ -686,7 +686,7 @@ let inline_side_effects env body side_eff =
     let cname c r = Context.make_annot (Name (Label.to_id (Constant.label c))) r in
     let fold (subst, var, ctx, args) (c, cb) =
       let (b, opaque) = match cb.const_body with
-      | Def b -> (Mod_subst.force_constr b, false)
+      | Def b -> (b, false)
       | OpaqueDef b -> (b, true)
       | _ -> assert false
       in
@@ -780,7 +780,7 @@ let constant_entry_of_side_effect eff =
   let p =
     match cb.const_body with
     | OpaqueDef b -> b
-    | Def b -> Mod_subst.force_constr b
+    | Def b -> b
     | _ -> assert false in
   if Declareops.is_opaque cb then
   OpaqueEff {

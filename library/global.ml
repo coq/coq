@@ -159,7 +159,7 @@ let body_of_constant_body access env cb =
     | Monomorphic _ -> Opaqueproof.PrivateMonomorphic ()
     | Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, Univ.ContextSet.empty)
     in
-    Some (Mod_subst.force_constr c, u, Declareops.constant_polymorphic_context cb)
+    Some (c, u, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
     let c, u = Opaqueproof.force_proof access otab o in
     Some (c, u, Declareops.constant_polymorphic_context cb)

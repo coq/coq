@@ -1941,7 +1941,6 @@ let compile_constant env sigma con cb =
     let no_univs = 0 = Univ.AUContext.size (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
-      let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
       debug_native_compiler (fun () -> Pp.str "Generated lambda code");
       let is_lazy = is_lazy t in
@@ -2090,7 +2089,7 @@ let compile_deps env sigma prefix init t =
       let comp_stack, (mind_updates, const_updates) =
         match cb.const_body with
         | Def t ->
-           aux env lvl init (Mod_subst.force_constr t)
+           aux env lvl init t
         | _ -> init
       in
       let code = compile_constant env sigma c cb in

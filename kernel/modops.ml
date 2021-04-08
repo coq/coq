@@ -327,7 +327,7 @@ let strengthen_const mp_from l cb resolver =
     let con = constant_of_delta_kn resolver kn in
     let u = Univ.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
       { cb with
-        const_body = Def (Mod_subst.from_val (mkConstU (con,u)));
+        const_body = Def (mkConstU (con,u));
         const_body_code = Some (Vmemitcodes.from_val (Vmbytegen.compile_alias con)) }
 
 let rec strengthen_mod mp_from mp_to mb =
@@ -391,8 +391,7 @@ let inline_delta_resolver env inl mp mbid mtb delta =
         let l = make_inline delta r in
         match constant.const_body with
         | Undef _ | OpaqueDef _ | Primitive _ -> l
-        | Def body ->
-          let constr = Mod_subst.force_constr body in
+        | Def constr ->
           let ctx = Declareops.constant_polymorphic_context constant in
           let constr = Univ.{univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
           add_inline_delta_resolver kn (lev, Some constr) l

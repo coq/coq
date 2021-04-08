@@ -747,7 +747,7 @@ and lambda_of_app env f args =
       begin match cb.const_body with
       | Primitive op -> lambda_of_prim (kn,u) op (lambda_of_args env 0 args)
       | Def csubst when cb.const_inline_code ->
-          lambda_of_app env (Mod_subst.force_constr csubst) args
+          lambda_of_app env csubst args
       | Def _ | OpaqueDef _ | Undef _ -> mkLapp (Lconst c) (lambda_of_args env 0 args)
       end
   | Construct (c,_) ->

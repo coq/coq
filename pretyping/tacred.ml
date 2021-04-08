@@ -131,7 +131,7 @@ let unsafe_reference_opt_value env sigma eval =
   match eval with
   | EvalConst cst ->
     (match (lookup_constant cst env).Declarations.const_body with
-    | Declarations.Def c -> Some (EConstr.of_constr (Mod_subst.force_constr c))
+    | Declarations.Def c -> Some (EConstr.of_constr c)
     | _ -> None)
   | EvalVar id ->
       env |> lookup_named id |> NamedDecl.get_value
