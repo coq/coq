@@ -467,6 +467,7 @@ Displaying information about notations
    - `tactic` - for currently-defined tactic notations, :token:`tactic`\s and tacticals
      (corresponding to :token:`ltac_expr` in the documentation).
    - `vernac` - for :token:`command`\s
+   - `ltac2` - for Ltac2 notations (corresponding to :token:`ltac2_expr`)
 
    This command doesn't display all nonterminals of the grammar.  For example,
    productions shown by `Print Grammar tactic` refer to nonterminals `tactic_then_locality`
