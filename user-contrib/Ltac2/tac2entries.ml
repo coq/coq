@@ -50,6 +50,12 @@ let q_pose = Pcoq.Entry.create "q_pose"
 let q_assert = Pcoq.Entry.create "q_assert"
 end
 
+let () =
+  let entries = [
+    Pcoq.AnyEntry Pltac.ltac2_expr;
+  ] in
+  Pcoq.register_grammars_by_name "ltac2" entries
+
 (** Tactic definition *)
 
 type tacdef = {
