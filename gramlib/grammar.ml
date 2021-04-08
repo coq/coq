@@ -129,10 +129,12 @@ let tokens con =
     egram.gtokens;
   !list
 
+(** Used to propagate possible presence of SELF/NEXT in a rule (binary and) *)
 type ('a, 'b, 'c) ty_and_rec =
 | NoRec2 : (norec, norec, norec) ty_and_rec
 | MayRec2 : ('a, 'b, mayrec) ty_and_rec
 
+(** Used to propagate possible presence of SELF/NEXT in a tree (ternary and) *)
 type ('a, 'b, 'c, 'd) ty_and_rec3 =
 | NoRec3 : (norec, norec, norec, norec) ty_and_rec3
 | MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
@@ -167,6 +169,7 @@ and ('self, 'trec, 'a) ty_symbol =
 | Sself : ('self, mayrec, 'self) ty_symbol
 | Snext : ('self, mayrec, 'self) ty_symbol
 | Snterm : 'a ty_entry -> ('self, norec, 'a) ty_symbol
+    (* norec but the entry can nevertheless introduce a loop with the current entry*)
 | Snterml : 'a ty_entry * string -> ('self, norec, 'a) ty_symbol
 | Stree : ('self, 'trec, Loc.t -> 'a) ty_tree -> ('self, 'trec, 'a) ty_symbol
 
@@ -346,8 +349,11 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
   let rec insert : type trs trt tr p f k. (trs, trt, tr) ty_and_ex -> (s, trs, p) ty_symbols -> (p, k, f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree  =
     fun ar symbols pf tree action ->
     match symbols, pf with
-      TCns (ars, s, sl), RelS pf -> insert_in_tree ar ars s sl pf tree action
+      TCns (ars, s, sl), RelS pf ->
+        (* descent in tree at symbol [s] *)
+        insert_in_tree ar ars s sl pf tree action
     | TNil, Rel0 ->
+        (* insert the action *)
         let node (type tb) ({node = s; son = son; brother = bro} : (_, _, _, tb, _, _) ty_node) =
           let ar : (norec, tb, tb) ty_and_ex =
             match get_rec_tree bro with MayRec -> NR10 | NoRec -> NR11 in
@@ -381,43 +387,56 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
        | MayRec2, _, NoRec -> Node (MayRec3, node NR11)
        | NoRec2, NoRec2, NoRec -> Node (NoRec3, node NR11)
   and try_insert : type trs trs' trs'' trt tr a p f k. (trs'', trt, tr) ty_and_rec -> (trs, trs', trs'') ty_and_rec -> (s, trs, a) ty_symbol -> (s, trs', p) ty_symbols -> (p, k, a -> f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree option =
-    fun ar ars s sl pf tree action ->
+    fun ar ars symb symbl pf tree action ->
     match tree with
-      Node (arn, {node = s1; son = son; brother = bro}) ->
-        begin match eq_symbol s s1 with
+      Node (arn, {node = symb1; son = son; brother = bro}) ->
+        (* merging rule [symb; symbl -> action] in tree [symb1; son | bro] *)
+        begin match eq_symbol symb symb1 with
         | Some Refl ->
-          let MayRecNR arss = and_symbols_tree sl son in
-          let son = insert arss sl pf son action in
-          let node = {node = s1; son = son; brother = bro} in
+          (* reducing merge of [symb; symbl -> action] with [symb1; son] to merge of [symbl -> action] with [son] *)
+          let MayRecNR arss = and_symbols_tree symbl son in
+          let son = insert arss symbl pf son action in
+          let node = {node = symb1; son = son; brother = bro} in
+          (* propagate presence of SELF/NEXT *)
           begin match ar, ars, arn, arss with
           | MayRec2, _, _, _ -> Some (Node (MayRec3, node))
           | NoRec2, NoRec2, NoRec3, NR11 -> Some (Node (NoRec3, node)) end
         | None ->
         let ar' = and_and_tree ar arn bro in
-        if is_before s1 s || derive_eps s && not (derive_eps s1) then
+        if is_before symb1 symb || derive_eps symb && not (derive_eps symb1) then
+          (* inserting new rule after current rule, i.e. in [bro] *)
           let bro =
-            match try_insert ar' ars s sl pf bro action with
-              Some bro -> bro
+            match try_insert ar' ars symb symbl pf bro action with
+              Some bro ->
+                (* could insert in [bro] *)
+                bro
             | None ->
-                let MayRecNR arss = and_symbols_tree sl DeadEnd in
-                let son = insert arss sl pf DeadEnd action in
-                let node = {node = s; son = son; brother = bro} in
+                (* not ok to insert in [bro] or after; we insert now *)
+                let MayRecNR arss = and_symbols_tree symbl DeadEnd in
+                let son = insert arss symbl pf DeadEnd action in
+                let node = {node = symb; son = son; brother = bro} in
+                (* propagate presence of SELF/NEXT *)
                 match ar, ars, arn, arss with
                 | MayRec2, _, _, _ -> Node (MayRec3, node)
                 | NoRec2, NoRec2, NoRec3, NR11 -> Node (NoRec3, node)
           in
-          let node = {node = s1; son = son; brother = bro} in
+          let node = {node = symb1; son = son; brother = bro} in
+          (* propagate presence of SELF/NEXT *)
           match ar, arn with
             | MayRec2, _ -> Some (Node (MayRec3, node))
             | NoRec2, NoRec3 -> Some (Node (NoRec3, node))
         else
-          match try_insert ar' ars s sl pf bro action with
+          (* should insert in [bro] or before the tree [symb1; son | bro] *)
+          match try_insert ar' ars symb symbl pf bro action with
             Some bro ->
-              let node = {node = s1; son = son; brother = bro} in
+             (* could insert in [bro] *)
+              let node = {node = symb1; son = son; brother = bro} in
               begin match ar, arn with
                 | MayRec2, _ -> Some (Node (MayRec3, node))
                 | NoRec2, NoRec3 -> Some (Node (NoRec3, node)) end
-          | None -> None
+          | None ->
+             (* should insert before [symb1; son | bro] *)
+             None
         end
     | LocAct (_, _) -> None | DeadEnd -> None
   in
@@ -470,6 +489,7 @@ let is_level_labelled n (Level lev) =
 let insert_level (type s tr p k) entry_name (symbols : (s, tr, p) ty_symbols) (pf : (p, k, Loc.t -> s) rel_prod) (action : k) (slev : s ty_level) : s ty_level =
   match symbols with
   | TCns (_, Sself, symbols) ->
+      (* Insert a rule of the form "SELF; ...." *)
       let Level slev = slev in
       let RelS pf = pf in
       let MayRecTree lsuffix = insert_tree entry_name symbols pf action slev.lsuffix in
@@ -478,6 +498,7 @@ let insert_level (type s tr p k) entry_name (symbols : (s, tr, p) ty_symbols) (p
        lsuffix = lsuffix;
        lprefix = slev.lprefix}
   | _ ->
+      (* Insert a rule not starting with SELF *)
       let Level slev = slev in
       let MayRecTree lprefix = insert_tree entry_name symbols pf action slev.lprefix in
       Level
@@ -1097,27 +1118,51 @@ let skip_if_empty bp p strm =
   if Stream.count strm == bp then fun a -> p strm
   else raise Stream.Failure
 
-let continue entry bp a s son p1 (strm__ : _ Stream.t) =
-  let a = (entry_of_symb entry s).econtinue 0 bp a strm__ in
+let continue entry bp a symb son p1 (strm__ : _ Stream.t) =
+  let a = (entry_of_symb entry symb).econtinue 0 bp a strm__ in
   let act =
     try p1 strm__ with
-      Stream.Failure -> raise (Stream.Error (tree_failed entry a s son))
+      Stream.Failure -> raise (Stream.Error (tree_failed entry a symb son))
   in
   fun _ -> act a
 
-let do_recover parser_of_tree entry nlevn alevn bp a s son
+(** Recover from a success on [symb] with result [a] followed by a
+    failure on [son] in a rule of the form [a = symb; son] *)
+let do_recover parser_of_tree entry nlevn alevn bp a symb son
     (strm__ : _ Stream.t) =
-  try parser_of_tree entry nlevn alevn (top_tree entry son) strm__ with
+  try
+    (* Try to replay the son with the top occurrence of NEXT (by
+       default at level nlevn) and trailing SELF (by default at alevn)
+       replaced with self at top level;
+       This allows for instance to recover from a failure on the
+       second SELF of « SELF; "\/"; SELF » by doing as if it were
+       « SELF; "\/"; same-entry-at-top-level » with application e.g. to
+       accept "A \/ forall x, x = x" w/o requiring the expected
+       parentheses as in "A \/ (forall x, x = x)". *)
+    parser_of_tree entry nlevn alevn (top_tree entry son) strm__
+  with
     Stream.Failure ->
       try
+      (* Discard the rule if what has been consumed before failing is
+         the empty sequence (due to some OPT or LIST0); example:
+         « OPT "!"; ident » fails to see an ident and the OPT was resolved
+         into the empty sequence, with application e.g. to being able to
+         safely write « LIST1 [ OPT "!"; id = ident -> id] ». *)
         skip_if_empty bp (fun (strm__ : _ Stream.t) -> raise Stream.Failure)
           strm__
       with Stream.Failure ->
-        continue entry bp a s son (parser_of_tree entry nlevn alevn son)
+      (* In case of success on just SELF, NEXT or an explicit call to
+         a subentry followed by a failure on the rest (son), retry
+         parsing as if this entry had been called at its toplevel;
+         example: « "{"; entry-at-some-level; "}" » fails on "}" and
+         is retried with « "{"; same-entry-at-top-level; "}" », allowing
+         e.g. to parse « {1 + 1} » while « {(1 + 1)} » would
+         have been expected according to the level. *)
+        continue entry bp a symb son (parser_of_tree entry nlevn alevn son)
           strm__
 
-let recover parser_of_tree entry nlevn alevn bp a s son strm =
-  do_recover parser_of_tree entry nlevn alevn bp a s son strm
+let recover parser_of_tree entry nlevn alevn bp a symb son strm =
+  do_recover parser_of_tree entry nlevn alevn bp a symb son strm
 
 let token_count = ref 0
 
@@ -1143,15 +1188,22 @@ let token_ematch gram tok =
   let tematch = L.tok_match tok in
   fun tok -> tematch tok
 
+(**
+  nlevn: level for Snext
+  alevn: level for recursive calls on the left-hand side of the rule (depending on associativity)
+*)
+
 let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_tree -> r parser_t =
   fun entry nlevn alevn ->
   function
     DeadEnd -> (fun (strm__ : _ Stream.t) -> raise Stream.Failure)
   | LocAct (act, _) -> (fun (strm__ : _ Stream.t) -> act)
   | Node (_, {node = Sself; son = LocAct (act, _); brother = DeadEnd}) ->
+      (* SELF on the right-hand side of the last rule *)
       (fun (strm__ : _ Stream.t) ->
          let a = entry.estart alevn strm__ in act a)
   | Node (_, {node = Sself; son = LocAct (act, _); brother = bro}) ->
+      (* SELF on the right-hand side of a rule *)
       let p2 = parser_of_tree entry nlevn alevn bro in
       (fun (strm__ : _ Stream.t) ->
          match
@@ -1394,6 +1446,33 @@ and parse_top_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> a parser
   fun entry symb ->
   parser_of_symbol entry 0 (top_symb entry symb)
 
+(** [start_parser_of_levels entry clevn levels levn strm] goes
+    top-down from level [clevn] to the last level, ignoring rules
+    between [levn] and [clevn], as if starting from
+    [max(clevn,levn)]. On each rule of the form [prefix] (where
+    [prefix] is a rule not starting with [SELF]), it tries to consume
+    the stream [strm].
+
+    The interesting case is [entry.estart] which is
+    [start_parser_of_levels entry 0 entry.edesc], thus practically
+    going from [levn] to the end.
+
+    More schematically, assuming each level has the form
+
+    level n: [ a = SELF; b = suffix_tree_n -> action_n(a,b)
+             | a = prefix_tree_n -> action'_n(a) ]
+
+    then the main loop does the following:
+
+    estart n =
+      if prefix_tree_n matches the stream as a then econtinue n (action'_n(a))
+      else start (n+1)
+
+    econtinue n a =
+      if suffix_tree_n matches the stream as b then econtinue n (action_n(a,b))
+      else if n=0 then a else econtinue (n-1) a
+*)
+
 let rec start_parser_of_levels entry clevn =
   function
     [] -> (fun levn (strm__ : _ Stream.t) -> raise Stream.Failure)
@@ -1426,7 +1505,9 @@ let rec start_parser_of_levels entry clevn =
                  entry.econtinue levn bp a strm)
           | _ ->
               fun levn strm ->
-                if levn > clevn then p1 levn strm
+                if levn > clevn then
+                  (* Skip rules before [levn] *)
+                  p1 levn strm
                 else
                   let (strm__ : _ Stream.t) = strm in
                   let bp = Stream.count strm__ in
@@ -1436,6 +1517,18 @@ let rec start_parser_of_levels entry clevn =
                       let a = act (loc_of_token_interval bp ep) in
                       entry.econtinue levn bp a strm
                   | _ -> p1 levn strm__
+
+(** [continue_parser_of_levels entry clevn levels levn bp a strm] goes
+    bottom-up from the last level to level [clevn], ignoring rules
+    between [levn] and [clevn], as if stopping at [max(clevn,levn)].
+    It tries to consume the stream [strm] on the suffix of rules of
+    the form [SELF; suffix] knowing that [a] is what consumed [SELF]
+    at level [levn] (or [levn+1] depending on associativity).
+
+    The interesting case is [entry.econtinue levn bp a] which is [try
+    continue_parser_of_levels entry 0 entry.edesc levn bp a with
+    Failure -> a], thus practically going from the end to [levn].
+*)
 
 let rec continue_parser_of_levels entry clevn =
   function
@@ -1452,7 +1545,9 @@ let rec continue_parser_of_levels entry clevn =
           in
           let p2 = parser_of_tree entry (succ clevn) alevn tree in
           fun levn bp a strm ->
-            if levn > clevn then p1 levn bp a strm
+            if levn > clevn then
+              (* Skip rules before [levn] *)
+              p1 levn bp a strm
             else
               let (strm__ : _ Stream.t) = strm in
               try p1 levn bp a strm__ with
