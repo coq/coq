@@ -14,9 +14,7 @@ Create HintDb foo discriminated.
 Goal forall x, Foo1 (f x) -> Foo2 (g x).
 Proof.
   auto with foo.
-
   #[export] Hint Transparent g : foo.
-
   auto with foo.
 Qed.
 
@@ -25,10 +23,7 @@ Proof.
   intros.
   eexists.
   unify f g.
-  Fail unify f g with core.
-  unify f g with foo.
   lazy_match! goal with
-  | [ |- ?a ?b = ?rhs ] => unify ($a $b) $rhs with foo
+  | [ |- ?a ?b = ?rhs ] => unify ($a $b) $rhs
   end.
-  let dbname := @foo in Std.unify 'f 'g (Some dbname).
 Abort.

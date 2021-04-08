@@ -414,19 +414,7 @@ let typeclasses_eauto strategy depth dbs =
   in
   Class_tactics.typeclasses_eauto ~only_classes ?strategy ~depth dbs
 
-let unify x y dbname =
-  match dbname with
-  | None -> Tactics.unify x y
-  | Some name ->
-    let base = Id.to_string name in
-    let table = try Some (Hints.searchtable_map base) with Not_found -> None in
-    match table with
-    | None ->
-      let msg = str "Hint table " ++ str base ++ str " not found" in
-      Tacticals.New.tclZEROMSG msg
-    | Some t ->
-      let state = Hints.Hint_db.transparent_state t in
-      Tactics.unify ~state x y
+let unify x y = Tactics.unify x y
 
 (** Inversion *)
 
