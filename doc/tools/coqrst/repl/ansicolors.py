@@ -91,7 +91,10 @@ def parse_ansi(code):
                  leading ‘^[[’ or the final ‘m’
     """
     classes = []
-    parse_style([int(c) for c in code.split(';')], 0, classes)
+    if code == "37":
+        pass # ignore white fg
+    else:
+        parse_style([int(c) for c in code.split(';')], 0, classes)
     return ["ansi-" + cls for cls in classes]
 
 if __name__ == '__main__':
