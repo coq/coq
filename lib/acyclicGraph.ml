@@ -310,15 +310,7 @@ module Make (Point:Point) = struct
      corresponding step numbers of the algorithm described in Section
      5.1 of this paper.  *)
 
-  (* [delta] is the timeout for backward search. It might be
-      useful to tune a multiplicative constant. *)
-  let get_delta g =
-    int_of_float
-      (min (float_of_int g.n_edges ** 0.5)
-         (float_of_int g.n_nodes ** (2./.3.)))
-
   let rec backward_traverse to_revert b_traversed count g x =
-    let x = repr g x in
     let count = count - 1 in
     if count < 0 then begin
       revert_graph to_revert g;
@@ -330,6 +322,7 @@ module Make (Point:Point) = struct
       let gtge, x, g = get_gtge g x in
       let to_revert, b_traversed, count, g =
         PSet.fold (fun y (to_revert, b_traversed, count, g) ->
+            let y = repr g y in
             backward_traverse to_revert b_traversed count g y)
           gtge (to_revert, b_traversed, count, g)
       in
@@ -416,19 +409,19 @@ module Make (Point:Point) = struct
 
   let reorder g u v =
     (* STEP 2: backward search in the k-level of u. *)
-    let delta = get_delta g in
 
     (* [v_klvl] is the chosen future level for u, v and all
         traversed nodes. *)
     let b_traversed, v_klvl, g =
+      let u = repr g u in
       try
-        let to_revert, b_traversed, _, g = backward_traverse [] [] delta g u in
+        let to_revert, b_traversed, _, g = backward_traverse [] [] (u.klvl + 1) g u in
         revert_graph to_revert g;
-        let v_klvl = (repr g u).klvl in
+        let v_klvl = u.klvl in
         b_traversed, v_klvl, g
       with AbortBackward g ->
         (* Backward search was too long, use the next k-level. *)
-        let v_klvl = (repr g u).klvl + 1 in
+        let v_klvl = u.klvl + 1 in
         [], v_klvl, g
     in
     let f_traversed, g =
