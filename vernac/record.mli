@@ -35,7 +35,10 @@ val definition_structure
   -> Ast.t list
   -> GlobRef.t list
 
-val declare_existing_class : GlobRef.t -> unit
+val declare_existing_class :
+  ?mode_declaration:Typeclasses.hint_mode list
+  -> GlobRef.t
+  -> unit
 
 (* Implementation internals, consult Coq developers before using;
    current user Elpi, see https://github.com/LPCIC/coq-elpi/pull/151 *)

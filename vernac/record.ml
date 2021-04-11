@@ -614,12 +614,13 @@ let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let interp_mode mode ctx =
+let interp_mode (gr, mode) ctx =
   match mode with
   | None ->
     let default = Typeclasses.get_typeclasses_default_mode () in
     let n = Context.Rel.nhyps ctx in
-    List.make n default
+    let m = List.make n default in
+    Classes.warn_default_mode (gr, m); m
   | Some m -> m
 
 let build_class_constant ~univs ~rdata field implfs params paramimpls coers binder id proj_name =
@@ -741,7 +742,7 @@ let declare_class def ~cumulative ~ubind ~univs ~variances ?mode_declaration id 
         cl_strict = typeclasses_strict ();
         cl_unique = typeclasses_unique ();
         cl_context = params;
-        cl_mode = interp_mode mode_declaration params;
+        cl_mode = interp_mode (impl, mode_declaration) params;
         cl_props = fields;
         cl_projs = projs }
     in
@@ -751,17 +752,18 @@ let declare_class def ~cumulative ~ubind ~univs ~variances ?mode_declaration id 
   in
   List.map map data
 
-let add_constant_class env sigma cst =
+let add_constant_class env sigma ?mode_declaration cst =
   let ty, univs = Typeops.type_of_global_in_context env (GlobRef.ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, _ = decompose_prod_assum ty in
   let args = Context.Rel.to_extended_vect Constr.mkRel 0 ctx in
   let t = mkApp (mkConstU (cst, Univ.make_abstract_instance univs), args) in
+  let gr = GlobRef.ConstRef cst in
   let tc =
     { cl_univs = univs;
-      cl_impl = GlobRef.ConstRef cst;
+      cl_impl = gr;
       cl_context = ctx;
-      cl_mode = interp_mode None ctx;
+      cl_mode = interp_mode (gr, mode_declaration) ctx;
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
       cl_strict = typeclasses_strict ();
@@ -771,7 +773,7 @@ let add_constant_class env sigma cst =
   Classes.add_class env sigma tc;
   Classes.set_typeclass_transparency (Tacred.EvalConstRef cst) false false
 
-let add_inductive_class env sigma ind =
+let add_inductive_class env sigma ?mode_declaration ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
@@ -781,10 +783,11 @@ let add_inductive_class env sigma ind =
     let inst = Univ.make_abstract_instance univs in
     let ty = Inductive.type_of_inductive ((mind, oneind), inst) in
     let r = Inductive.relevance_of_inductive env ind in
+    let gr = GlobRef.IndRef ind in
       { cl_univs = univs;
-        cl_impl = GlobRef.IndRef ind;
+        cl_impl = gr;
         cl_context = ctx;
-        cl_mode = interp_mode None ctx;
+        cl_mode = interp_mode (gr, mode_declaration) ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
         cl_projs = [];
         cl_strict = typeclasses_strict ();
@@ -796,14 +799,14 @@ let warn_already_existing_class =
   CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
       Printer.pr_global g ++ str " is already declared as a typeclass.")
 
-let declare_existing_class g =
+let declare_existing_class ?mode_declaration g =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   if Typeclasses.is_class g then warn_already_existing_class g
   else
     match g with
-    | GlobRef.ConstRef x -> add_constant_class env sigma x
-    | GlobRef.IndRef x -> add_inductive_class env sigma x
+    | GlobRef.ConstRef x -> add_constant_class env sigma ?mode_declaration x
+    | GlobRef.IndRef x -> add_inductive_class env sigma ?mode_declaration x
     | _ -> user_err ~hdr:"declare_existing_class"
              (Pp.str"Unsupported class type, only constants and inductives are allowed")
 

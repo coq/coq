@@ -27,6 +27,10 @@ open Libobject
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 (*i*)
+let warn_default_mode = CWarnings.create ~name:"class-declaration-default-mode" ~category:"automation"
+  ~default:CWarnings.Disabled
+  Pp.(fun (gr, m) -> hov 2 (str "Using an inferred default mode: " ++ prlist_with_sep spc Hints.pp_hint_mode m ++
+    spc () ++ str "for" ++ spc () ++ Printer.pr_global gr))
 
 let set_typeclass_transparency c local b =
   let locality = if local then Goptions.OptLocal else Goptions.OptGlobal in
@@ -196,10 +200,13 @@ let discharge_class (_,cl) =
     let ctx, _ = List.fold_right fold rel ([], n) in
     ctx
   in
-  let extend_mode_decl  ctx m =
+  let extend_mode_decl ctx m =
     let n = Context.Rel.nhyps ctx in
-    let default = Typeclasses.get_typeclasses_default_mode () in
-    List.make n default @ m
+    if n > 0 then
+      let default = Typeclasses.get_typeclasses_default_mode () in
+      let m = List.make n default @ m in
+      warn_default_mode (cl.cl_impl, m); m
+    else m
   in
   let abs_context cl =
     let open GlobRef in

@@ -14,6 +14,9 @@ open Constrexpr
 open Typeclasses
 open Libnames
 
+(** A configurable warning to output if a default mode is used for a class declaration. *)
+val warn_default_mode : ?loc:Loc.t -> (GlobRef.t * hint_mode list) -> unit
+
 (** Instance declaration *)
 
 val declare_instance : ?warn:bool -> env -> Evd.evar_map ->

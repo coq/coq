@@ -5,9 +5,9 @@ Class Empty T := { empty : T }.
 Class EmptyIn (A T : Type) `{In A T} `{Empty T} :=
  { isempty : forall x, IsIn x empty -> False }.
 
-Hint Mode EmptyIn ! ! - - : typeclass_instances.
-Hint Mode Empty ! : typeclass_instances.
-Hint Mode In ! - : typeclass_instances.
+#[local] Hint Mode EmptyIn ! ! - - : typeclass_instances.
+#[local] Hint Mode Empty ! : typeclass_instances.
+#[local] Hint Mode In ! - : typeclass_instances.
 Existing Class IsIn.
 Goal forall A T `{In A T} `{Empty T} `{EmptyIn A T}, forall x : A, IsIn x empty -> False.
  Proof.
@@ -41,5 +41,17 @@ Module HintModeDecl.
 
   Instance default_list : FooDefault (list nat) := { foodefault := nil }.
   Type (foodefault : list _).
+  Set Warnings "class-declaration-default-mode".
+
+  Section Bla.
+    Context (A : Type).
+    #[mode="+"]
+    Class FooSec (B : Type) := { bar : A -> B -> nat }.
+  End Bla.
+  Print HintDb typeclass_instances. (* Default mode = !, FooSec -> ! + *)
+
+  Class Baz (A : Type).
+
+
 
 End HintModeDecl.

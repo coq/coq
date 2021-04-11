@@ -1328,8 +1328,11 @@ let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
   List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
-let vernac_existing_class id =
-  Record.declare_existing_class (Nametab.global id)
+let vernac_existing_class ~atts id =
+  let mode_declaration =
+    Attributes.(parse mode_declaration) atts
+  in
+  Record.declare_existing_class ?mode_declaration (Nametab.global id)
 
 (***********)
 (* Solving *)
@@ -2248,9 +2251,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacExistingInstance insts ->
     VtDefault(fun () -> with_section_locality ~atts vernac_existing_instance insts)
   | VernacExistingClass id ->
-    VtDefault(fun () ->
-        unsupported_attributes atts;
-        vernac_existing_class id)
+    VtDefault(fun () -> vernac_existing_class ~atts id)
 
   (* Solving *)
   | VernacSolveExistential (n,c) ->
