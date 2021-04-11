@@ -408,6 +408,16 @@ let declare_interpreted_string_option_and_ref ~depr ~key ~(value:'a) from_string
     } in
   fun () -> !r_opt
 
+let declare_interpreted_stringopt_option_and_ref ~depr ~key from_string to_string =
+  let r_opt = ref None in
+  let optwrite v = r_opt := Option.map from_string v in
+  let optread () = Option.map to_string !r_opt in
+  let _ = declare_stringopt_option {
+      optdepr = depr;
+      optkey = key;
+      optread; optwrite
+    } in
+  fun () -> !r_opt
 (* 3- User accessible commands *)
 
 (* Setting values of options *)

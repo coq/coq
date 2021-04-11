@@ -151,6 +151,8 @@ val declare_string_option_and_ref : (value:string -> (unit -> string)) opt_decl
 val declare_stringopt_option_and_ref : (unit -> string option) opt_decl
 val declare_interpreted_string_option_and_ref :
   (value:'a -> (string -> 'a) -> ('a -> string) -> (unit -> 'a)) opt_decl
+val declare_interpreted_stringopt_option_and_ref :
+  ((string -> 'a) -> ('a -> string) -> (unit -> 'a option)) opt_decl
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
