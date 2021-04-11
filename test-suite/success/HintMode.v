@@ -18,3 +18,12 @@ Goal forall A T `{In A T} `{Empty T} `{EmptyIn A T}, forall x : A, IsIn x empty 
 Qed.
 
 End Postponing.
+
+
+Module HintModeDecl.
+
+  #[mode="+ +"]
+  Class Foo (A : Type) (B : Type).
+
+  Print TypeClasses.
+  Print HintDb typeclass_instances.

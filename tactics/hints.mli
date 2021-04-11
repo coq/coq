@@ -141,9 +141,9 @@ module Hint_db :
     val remove_one : Environ.env -> GlobRef.t -> t -> t
     val remove_list : Environ.env -> GlobRef.t list -> t -> t
     val iter : (GlobRef.t option ->
-                hint_mode array list -> FullHint.t list -> unit) -> t -> unit
+                hint_mode array option -> FullHint.t list -> unit) -> t -> unit
 
-    val fold : (GlobRef.t option -> hint_mode array list -> FullHint.t list -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (GlobRef.t option -> hint_mode array option -> FullHint.t list -> 'a -> 'a) -> t -> 'a -> 'a
 
     val use_dn : t -> bool
     val transparent_state : t -> TransparentState.t
@@ -155,10 +155,10 @@ module Hint_db :
     val unfolds : t -> Id.Set.t * Cset.t
 
     (** [add_mode gr m] Add a mode declaration for head [gr] *)
-    val add_mode : GlobRef.t -> hint_mode array -> t -> t
+    val set_mode : GlobRef.t -> hint_mode array -> t -> t
 
-    val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
-    val modes : t -> hint_mode array list GlobRef.Map.t
+    val set_modes : hint_mode array option GlobRef.Map.t -> t -> t
+    val modes : t -> hint_mode array option GlobRef.Map.t
   end
 
 type hint_db = Hint_db.t
