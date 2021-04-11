@@ -156,7 +156,7 @@ let declare_instance ?(warn = false) env sigma info local glob =
 
 let cache_class (_,c) =
   load_class c;
-  set_typeclass_mode c.cl_impl false c.cl_mode
+  Option.iter (set_typeclass_mode c.cl_impl false) c.cl_mode
 
 let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
@@ -203,9 +203,16 @@ let discharge_class (_,cl) =
   let extend_mode_decl ctx m =
     let n = Context.Rel.nhyps ctx in
     if n > 0 then
-      let default = Typeclasses.get_typeclasses_default_mode () in
-      let m = List.make n default @ m in
-      warn_default_mode (cl.cl_impl, m); m
+      match m with
+      | None -> None
+      | Some m ->
+        match Typeclasses.get_typeclasses_default_mode () with
+        | None ->
+          CErrors.user_err Pp.(str "Discharging the class" ++ spc () ++ Printer.pr_global cl.cl_impl ++ spc () ++
+            str "would drop its mode declaration." ++ spc () ++ str"Declare the class outside a section.");
+        | Some default ->
+          let m = List.make n default @ m in
+          warn_default_mode (cl.cl_impl, m); Some m
     else m
   in
   let abs_context cl =

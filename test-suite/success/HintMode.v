@@ -39,14 +39,16 @@ Module HintModeDecl.
   Fail Type foodefault.
 
   Instance default_list : FooDefault (list nat) := { foodefault := nil }.
-  Type (foodefault : list _).
+  Type (foodefault : list _). (* list _ respects !*)
   Set Warnings "class-declaration-default-mode".
 
   Section Bla.
     Context (A : Type).
     #[mode="+"]
     Class FooSec (B : Type) := { bar : A -> B -> nat }.
-  End Bla. (* In VSCoq the warning is not displayed as it is attached to an unknown stateid, but
+  End Bla.
+
+  (* In VSCoq the warning is not displayed as it is attached to an unknown stateid, but
     coqc displays it. If the warning is made an error it is properly reported *)
   Print HintDb typeclass_instances. (* Default mode = !, FooSec -> ! + *)
 

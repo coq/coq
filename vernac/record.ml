@@ -617,11 +617,13 @@ let implicits_of_context ctx =
 let interp_mode (gr, mode) ctx =
   match mode with
   | None ->
-    let default = Typeclasses.get_typeclasses_default_mode () in
-    let n = Context.Rel.nhyps ctx in
-    let m = List.make n default in
-    Classes.warn_default_mode (gr, m); m
-  | Some m -> m
+    (match Typeclasses.get_typeclasses_default_mode () with
+    | Some default ->
+      let n = Context.Rel.nhyps ctx in
+      let m = List.make n default in
+      Classes.warn_default_mode (gr, m); Some m
+    | None -> None)
+  | Some m -> Some m
 
 let build_class_constant ~univs ~rdata field implfs params paramimpls coers binder id proj_name =
   let class_body = it_mkLambda_or_LetIn field params in

@@ -47,9 +47,9 @@ let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm 
 
 let get_typeclasses_default_mode =
   let interp = function
-    | "+" -> ModeInput
-    | "-" -> ModeOutput
-    | "!" -> ModeNoHeadEvar
+    | "+" ->  ModeInput
+    | "-" ->  ModeOutput
+    | "!" ->  ModeNoHeadEvar
     | s ->
       CErrors.user_err Pp.(str "Unrecognizable mode declaration: \"" ++ str s ++ str"\", allowed values are +, - or !")
   in
@@ -58,10 +58,9 @@ let get_typeclasses_default_mode =
     | ModeOutput -> "-"
     | ModeNoHeadEvar -> "!"
   in
-  Goptions.declare_interpreted_string_option_and_ref
+  Goptions.declare_interpreted_stringopt_option_and_ref
     ~depr:false
     ~key:["Typeclasses";"Default";"Mode"]
-    ~value:ModeOutput
     interp print
 
 type class_method = {
@@ -82,7 +81,7 @@ type typeclass = {
   cl_context : Constr.rel_context;
 
   (* The initial mode declaration of the typeclass: should match the cl_context *)
-  cl_mode : hint_mode list;
+  cl_mode : hint_mode list option;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;
