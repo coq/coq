@@ -771,7 +771,7 @@ let add_constant_class env sigma ?mode_declaration cst =
     }
   in
   Classes.add_class env sigma tc;
-  Classes.set_typeclass_transparency (Tacred.EvalConstRef cst) false false
+    Classes.set_typeclass_transparency (Tacred.EvalConstRef cst) false false
 
 let add_inductive_class env sigma ?mode_declaration ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in

@@ -503,7 +503,7 @@ let make_hints g (modes,st) only_classes sign =
         else hints)
       ([]) sign
   in
-  let db = Hint_db.set_modes modes @@ Hint_db.empty st true in
+  let db = Hint_db.add_modes modes @@ Hint_db.empty st true in
   Hint_db.add_list (pf_env g) (project g) hintlist db
 
 module Search = struct
@@ -990,7 +990,9 @@ let typeclasses_eauto ?(only_classes=false) ?(st=TransparentState.full)
                       with e when CErrors.noncritical e -> None)
               dbs
   in
-  let st, modes = match dbs with x :: _ -> Hint_db.transparent_state x, Hint_db.modes x | _ -> st, GlobRef.Map.empty in
+  let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
+  let modes = List.map Hint_db.modes dbs in
+  let modes = List.fold_left (GlobRef.Map.union (fun _ m1 m2 -> Some (m1@m2))) GlobRef.Map.empty modes in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
   Proofview.tclIGNORE
     (Search.eauto_tac (modes,st) ~only_classes ?strategy ~depth ~dep:true dbs)

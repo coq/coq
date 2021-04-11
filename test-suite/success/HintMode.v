@@ -19,7 +19,6 @@ Qed.
 
 End Postponing.
 
-
 Module HintModeDecl.
 
   Class Foo (A : Type) := foo : A.
