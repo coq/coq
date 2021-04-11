@@ -748,11 +748,7 @@ struct
 
   let set_mode gr m db =
     let se = find gr db in
-    let m =
-      if Array.for_all (fun x -> x = ModeInput) m then None
-      else Some m
-    in
-    let se = { se with sentry_mode = m } in
+    let se = { se with sentry_mode = Some m } in
     { db with hintdb_map = GlobRef.Map.add gr se db.hintdb_map }
 
   let cut db = db.hintdb_cut
@@ -945,8 +941,8 @@ let make_extern pri pat tacast =
 let make_mode ref m =
   let open Term in
   let ty, _ = Typeops.type_of_global_in_context (Global.env ()) ref in
-  let ctx, t = decompose_prod ty in
-  let n = List.length ctx in
+  let ctx, t = decompose_prod_assum ty in
+  let n = Context.Rel.nhyps ctx in
   let m' = Array.of_list m in
     if not (n == Array.length m') then
       user_err ~hdr:"Hint"
