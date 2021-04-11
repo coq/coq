@@ -47,11 +47,10 @@ Module HintModeDecl.
     Context (A : Type).
     #[mode="+"]
     Class FooSec (B : Type) := { bar : A -> B -> nat }.
-  End Bla.
+  End Bla. (* In VSCoq the warning is not displayed as it is attached to an unknown stateid, but
+    coqc displays it. If the warning is made an error it is properly reported *)
   Print HintDb typeclass_instances. (* Default mode = !, FooSec -> ! + *)
 
   Class Baz (A : Type).
-
-
 
 End HintModeDecl.
