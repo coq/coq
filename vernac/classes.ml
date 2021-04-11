@@ -33,6 +33,11 @@ let set_typeclass_transparency c local b =
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 
+let set_typeclass_mode c local mode =
+  let locality = if local then Goptions.OptLocal else Goptions.OptGlobal in
+  Hints.add_hints ~locality [typeclasses_db]
+    (Hints.HintsModeEntry (c,mode))
+
 let classes_transparent_state () =
   try
     Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db)
@@ -145,7 +150,9 @@ let declare_instance ?(warn = false) env sigma info local glob =
  * classes persistent object
  *)
 
-let cache_class (_,c) = load_class c
+let cache_class (_,c) =
+  load_class c;
+  set_typeclass_mode c.cl_impl false c.cl_mode
 
 let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
@@ -166,6 +173,7 @@ let subst_class (subst,cl) =
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_ctx cl.cl_context;
+    cl_mode = cl.cl_mode;
     cl_props = do_subst_ctx cl.cl_props;
     cl_projs = do_subst_projs cl.cl_projs;
     cl_strict = cl.cl_strict;
@@ -188,6 +196,11 @@ let discharge_class (_,cl) =
     let ctx, _ = List.fold_right fold rel ([], n) in
     ctx
   in
+  let extend_mode_decl  ctx m =
+    let n = Context.Rel.nhyps ctx in
+    let default = Typeclasses.get_typeclasses_default_mode () in
+    List.make n default @ m
+  in
   let abs_context cl =
     let open GlobRef in
     match cl.cl_impl with
@@ -208,6 +221,7 @@ let discharge_class (_,cl) =
     { cl_univs = cl_univs';
       cl_impl = cl.cl_impl;
       cl_context = context;
+      cl_mode = extend_mode_decl ctx cl.cl_mode;
       cl_props = props;
       cl_projs = List.Smart.map discharge_proj cl.cl_projs;
       cl_strict = cl.cl_strict;

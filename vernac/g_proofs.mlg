@@ -133,8 +133,8 @@ GRAMMAR EXTEND Gram
       | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,CastConv t) } ] ]
   ;
   mode:
-    [ [ l = LIST1 [ "+" -> { ModeInput }
-                  | "!" -> { ModeNoHeadEvar }
-                  | "-" -> { ModeOutput } ] -> { l } ] ]
+    [ [ l = LIST1 [ "+" -> { Typeclasses.ModeInput }
+                  | "!" -> { Typeclasses.ModeNoHeadEvar }
+                  | "-" -> { Typeclasses.ModeOutput } ] -> { l } ] ]
   ;
 END

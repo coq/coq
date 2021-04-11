@@ -304,7 +304,7 @@ type hints_expr =
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of Libnames.qualid list
   | HintsTransparency of Libnames.qualid Hints.hints_transparency_target * bool
-  | HintsMode of Libnames.qualid * Hints.hint_mode list
+  | HintsMode of Libnames.qualid * Typeclasses.hint_mode list
   | HintsConstructors of Libnames.qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 

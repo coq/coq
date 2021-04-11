@@ -269,7 +269,7 @@ let pr_reference_or_constr pr_c = function
   | HintsReference r -> pr_qualid r
   | HintsConstr c -> pr_c c
 
-let pr_hint_mode = let open Hints in function
+let pr_hint_mode = let open Typeclasses in function
   | ModeInput -> str"+"
   | ModeNoHeadEvar -> str"!"
   | ModeOutput -> str"-"

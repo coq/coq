@@ -19,6 +19,10 @@ open Typeclasses_errors
 open Context.Rel.Declaration
 
 (*i*)
+type hint_mode =
+  | ModeInput (* No evars *)
+  | ModeNoHeadEvar (* No evar at the head *)
+  | ModeOutput (* Anything *)
 
 (* Core typeclasses hints *)
 type 'a hint_info_gen =
@@ -41,6 +45,25 @@ let get_solve_one_instance, solve_one_instance_hook = Hook.make ()
 let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
   Hook.get get_solve_one_instance env evm t unique
 
+let get_typeclasses_default_mode =
+  let interp = function
+    | "+" -> ModeInput
+    | "-" -> ModeOutput
+    | "!" -> ModeNoHeadEvar
+    | s ->
+      CErrors.user_err Pp.(str "Unrecognizable mode declaration: \"" ++ str s ++ str"\", allowed values are +, - or !")
+  in
+  let print = function
+    | ModeInput -> "+"
+    | ModeOutput -> "-"
+    | ModeNoHeadEvar -> "!"
+  in
+  Goptions.declare_interpreted_string_option_and_ref
+    ~depr:false
+    ~key:["Typeclasses";"Default";"Mode"]
+    ~value:ModeOutput
+    interp print
+
 type class_method = {
   meth_name : Name.t;
   meth_info : hint_info option;
@@ -57,6 +80,9 @@ type typeclass = {
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
   cl_context : Constr.rel_context;
+
+  (* The initial mode declaration of the typeclass: should match the cl_context *)
+  cl_mode : hint_mode list;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;

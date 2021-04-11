@@ -13,6 +13,16 @@ open Constr
 open Evd
 open Environ
 
+(* As typeclasses come before hints, we must define it here so that class declarations
+  can embed a mode declaration. *)
+
+type hint_mode =
+  | ModeInput (* No evars *)
+  | ModeNoHeadEvar (* No evar at the head *)
+  | ModeOutput (* Anything *)
+
+val get_typeclasses_default_mode : unit -> hint_mode
+
 (* Core typeclasses hints *)
 type 'a hint_info_gen =
     { hint_priority : int option;
@@ -39,6 +49,9 @@ type typeclass = {
   cl_context : Constr.rel_context;
   (** Context in which the definitions are typed.
       Includes both typeclass parameters and superclasses. *)
+
+  cl_mode : hint_mode list;
+  (** The initial mode declaration of the typeclass *)
 
   cl_props : Constr.rel_context;
   (** Context of definitions and properties on defs, will not be shared *)

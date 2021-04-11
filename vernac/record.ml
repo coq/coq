@@ -614,6 +614,14 @@ let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
+let interp_mode mode ctx =
+  match mode with
+  | None ->
+    let default = Typeclasses.get_typeclasses_default_mode () in
+    let n = Context.Rel.nhyps ctx in
+    List.make n default
+  | Some m -> m
+
 let build_class_constant ~univs ~rdata field implfs params paramimpls coers binder id proj_name =
   let class_body = it_mkLambda_or_LetIn field params in
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
@@ -733,6 +741,7 @@ let declare_class def ~cumulative ~ubind ~univs ~variances id idbuild paramimpls
         cl_strict = typeclasses_strict ();
         cl_unique = typeclasses_unique ();
         cl_context = params;
+        cl_mode = interp_mode None params;
         cl_props = fields;
         cl_projs = projs }
     in
@@ -752,6 +761,7 @@ let add_constant_class env sigma cst =
     { cl_univs = univs;
       cl_impl = GlobRef.ConstRef cst;
       cl_context = ctx;
+      cl_mode = interp_mode None ctx;
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
       cl_strict = typeclasses_strict ();
@@ -774,6 +784,7 @@ let add_inductive_class env sigma ind =
       { cl_univs = univs;
         cl_impl = GlobRef.IndRef ind;
         cl_context = ctx;
+        cl_mode = interp_mode None ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
         cl_projs = [];
         cl_strict = typeclasses_strict ();

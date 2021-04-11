@@ -73,11 +73,6 @@ end
 
 type hint_entry
 
-type hint_mode =
-  | ModeInput (* No evars *)
-  | ModeNoHeadEvar (* No evar at the head *)
-  | ModeOutput (* Anything *)
-
 type 'a hints_transparency_target =
   | HintsVariables
   | HintsConstants
@@ -158,6 +153,9 @@ module Hint_db :
     val cut : t -> hints_path
 
     val unfolds : t -> Id.Set.t * Cset.t
+
+    (** [add_mode gr m] Add a mode declaration for head [gr] *)
+    val add_mode : GlobRef.t -> hint_mode array -> t -> t
 
     val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
     val modes : t -> hint_mode array list GlobRef.Map.t

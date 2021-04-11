@@ -165,11 +165,6 @@ type full_hint = hint hint_ast with_uid with_metadata
 type hint_entry = GlobRef.t option *
   raw_hint hint_ast with_uid with_metadata
 
-type hint_mode =
-  | ModeInput (* No evars *)
-  | ModeNoHeadEvar (* No evar at the head *)
-  | ModeOutput (* Anything *)
-
 type 'a hints_transparency_target =
   | HintsVariables
   | HintsConstants
