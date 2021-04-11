@@ -30,6 +30,7 @@ val definition_structure
   -> template:bool option
   -> cumulative:bool
   -> poly:bool
+  -> ?mode_declaration:Typeclasses.hint_mode list
   -> Declarations.recursivity_kind
   -> Ast.t list
   -> GlobRef.t list

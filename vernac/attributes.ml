@@ -382,3 +382,20 @@ let typing_flags_parser : Declarations.typing_flags key_parser = fun orig args -
 
 let typing_flags =
   attribute_of_list ["bypass_check", typing_flags_parser]
+
+let mode_declaration_parser : Typeclasses.hint_mode list key_parser = fun orig att ->
+  match att with
+  | VernacFlagLeaf (FlagString args) ->
+    let args = String.split_on_char ' ' args in
+    let parse_mode = function
+      | "-" -> Typeclasses.ModeOutput
+      | "+" -> Typeclasses.ModeInput
+      | "!" -> Typeclasses.ModeNoHeadEvar
+      | _ ->
+        CErrors.user_err Pp.(str "Ill-formed “mode” attribute: " ++ pr_vernac_flag_value att)
+    in  List.map parse_mode args
+  | att ->
+    CErrors.user_err Pp.(str "Ill-formed “mode” attribute: " ++ pr_vernac_flag_value att)
+
+let mode_declaration =
+  attribute_of_list ["mode", mode_declaration_parser]

@@ -702,7 +702,7 @@ let build_record_constant ~rdata ~ubind ~univs ~variances ~cumulative ~template
   2. declare the class, using the information from 1. in the form of [Classes.typeclass]
 
   *)
-let declare_class def ~cumulative ~ubind ~univs ~variances id idbuild paramimpls params
+let declare_class def ~cumulative ~ubind ~univs ~variances ?mode_declaration id idbuild paramimpls params
     rdata template ?(kind=Decls.StructureComponent) coers =
   let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -741,7 +741,7 @@ let declare_class def ~cumulative ~ubind ~univs ~variances id idbuild paramimpls
         cl_strict = typeclasses_strict ();
         cl_unique = typeclasses_unique ();
         cl_context = params;
-        cl_mode = interp_mode None params;
+        cl_mode = interp_mode mode_declaration params;
         cl_props = fields;
         cl_projs = projs }
     in
@@ -866,7 +866,7 @@ let extract_record_data records =
   ps, data
 
 (* declaring structures, common data to refactor *)
-let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params def records data =
+let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params ?mode_declaration def records data =
   let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
@@ -878,7 +878,7 @@ let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params def reco
       | Vernacexpr.NoInstance -> None)
       cfs
   in
-  declare_class def ~cumulative ~ubind ~univs name.CAst.v idbuild
+  declare_class def ~cumulative ~ubind ~univs ?mode_declaration name.CAst.v idbuild
     impargs params rdata template coers
 
 let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~params ~finite
@@ -904,7 +904,7 @@ let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~p
 (** [fs] corresponds to fields and [ps] to parameters; [coers] is a
     list telling if the corresponding fields must me declared as coercions
     or subinstances. *)
-let definition_structure udecl kind ~template ~cumulative ~poly
+let definition_structure udecl kind ~template ~cumulative ~poly ?mode_declaration
     finite (records : Ast.t list) : GlobRef.t list =
   let () = check_unique_names records in
   let () = check_priorities kind records in
@@ -921,9 +921,10 @@ let definition_structure udecl kind ~template ~cumulative ~poly
   let template = template, auto_template in
   match kind with
   | Class def ->
-    class_struture ~template ~ubind ~impargs ~cumulative ~params ~univs ~variances
+    class_struture ~template ~ubind ~impargs ~cumulative ~params ~univs ~variances ?mode_declaration
       def records data
   | Inductive_kw | CoInductive | Variant | Record | Structure ->
+    assert (mode_declaration = None);
     regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~params ~finite
       records data
 

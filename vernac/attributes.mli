@@ -58,6 +58,7 @@ val deprecation : Deprecation.t option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute
 val using : string option attribute
+val mode_declaration : Typeclasses.hint_mode list option attribute
 
 (** Enable/Disable universe checking *)
 val typing_flags : Declarations.typing_flags option attribute

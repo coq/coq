@@ -793,7 +793,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags finite records =
+let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ?mode_declaration finite records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs) =
     let idbuild = match nameopt with
     | None -> Nameops.add_prefix "Build_" name.v
@@ -819,7 +819,7 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags finite recor
     CErrors.user_err (Pp.str "typing flags are not yet supported for records")
   | None ->
     let _ : _ list =
-      Record.definition_structure ~template udecl k ~cumulative ~poly finite records in
+      Record.definition_structure ~template udecl k ~cumulative ~poly ?mode_declaration finite records in
     ()
 
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
@@ -852,8 +852,8 @@ let private_ind =
   | None -> return false
 
 let vernac_inductive ~atts kind indl =
-  let ((template, (poly, cumulative)), private_ind), typing_flags = Attributes.(
-      parse Notations.(template ++ polymorphic_cumulative ++ private_ind ++ typing_flags) atts) in
+  let ((((template, (poly, cumulative)), private_ind), typing_flags), mode_declaration) = Attributes.(
+      parse Notations.(template ++ polymorphic_cumulative ++ private_ind ++ typing_flags ++ mode_declaration) atts) in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
@@ -890,7 +890,7 @@ let vernac_inductive ~atts kind indl =
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
-    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags finite [id, bl, c, None, [f]]
+    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags ?mode_declaration finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
@@ -913,9 +913,13 @@ let vernac_inductive ~atts kind indl =
       (id, bl, c, oc, fs)
     | Constructors _ -> assert false (* ruled out above *)
     in
-    let kind = match kind with Class _ -> Class false | _ -> kind in
+    let kind = match kind, mode_declaration with
+      | Class _, _ -> Class false
+      | _, Some _ -> CErrors.user_err Pp.(str "Only Classes support the \"mode\" attribute.")
+      | _, None ->kind
+    in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags finite recordl
+    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ?mode_declaration finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
@@ -924,6 +928,10 @@ let vernac_inductive ~atts kind indl =
     | Class _ ->
       user_err (str "Inductive classes not supported")
     | Variant | Inductive_kw | CoInductive -> ()
+    in
+    let () = match mode_declaration with
+      | Some _ -> CErrors.user_err Pp.(str "Only Classes support the \"mode\" attribute.")
+      | None -> ()
     in
     let check_name ((na, _, _, _), _) = match na with
     | (true, _) ->
