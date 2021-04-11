@@ -22,8 +22,24 @@ End Postponing.
 
 Module HintModeDecl.
 
-  #[mode="+ +"]
-  Class Foo (A : Type) (B : Type).
+  Class Foo (A : Type) := foo : A.
 
-  Print TypeClasses.
-  Print HintDb typeclass_instances.
+  Instance: Foo nat := 0.
+  Type foo.
+
+  #[mode="+"]
+  Class FooPlus (A : Type) := fooplus : A.
+  Instance: FooPlus nat := 0.
+  Fail Type fooplus.
+
+  Set Typeclasses Default Mode "!".
+  Class FooDefault (A : Type) := foodefault : A.
+  Print HintDb typeclass_instances. (* mode ! *)
+
+  Instance: FooDefault nat := 0.
+  Fail Type foodefault.
+
+  Instance default_list : FooDefault (list nat) := { foodefault := nil }.
+  Type (foodefault : list _).
+
+End HintModeDecl.
