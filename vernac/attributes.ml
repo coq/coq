@@ -386,14 +386,14 @@ let typing_flags =
 let mode_declaration_parser : Typeclasses.hint_mode list key_parser = fun orig att ->
   match att with
   | VernacFlagLeaf (FlagString args) ->
-    let args = String.split_on_char ' ' args in
+    let args = CString.explode args in
     let parse_mode = function
-      | "-" -> Typeclasses.ModeOutput
-      | "+" -> Typeclasses.ModeInput
-      | "!" -> Typeclasses.ModeNoHeadEvar
-      | _ ->
-        CErrors.user_err Pp.(str "Ill-formed “mode” attribute: " ++ pr_vernac_flag_value att)
-    in  List.map parse_mode args
+      | "-" -> Some Typeclasses.ModeOutput
+      | "+" -> Some Typeclasses.ModeInput
+      | "!" -> Some Typeclasses.ModeNoHeadEvar
+      | " " -> None
+      | s -> CErrors.user_err Pp.(str "Ill-formed “mode” specification: " ++ str s)
+    in CList.map_filter parse_mode args
   | att ->
     CErrors.user_err Pp.(str "Ill-formed “mode” attribute: " ++ pr_vernac_flag_value att)
 
