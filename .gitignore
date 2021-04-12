@@ -115,6 +115,9 @@ doc/stdlib/index-body.html
 doc/stdlib/index-list.html
 doc/tools/docgram/editedGrammar
 doc/tools/docgram/prodnGrammar
+doc/tools/docgram/prodnCommands
+doc/tools/docgram/prodnTactics
+doc/tools/docgram/updated_rsts
 doc/unreleased.rst
 
 # .mll files

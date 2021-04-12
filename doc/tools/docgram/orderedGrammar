@@ -1856,7 +1856,6 @@ simple_tactic: [
 | "zify_iter_let" ltac_expr      (* micromega plugin *)
 | "zify_elim_let"      (* micromega plugin *)
 | "nsatz_compute" one_term      (* nsatz plugin *)
-| "omega"      (* omega plugin *)
 | "protect_fv" string OPT ( "in" ident )
 | "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
