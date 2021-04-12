@@ -1778,7 +1778,6 @@ simple_tactic: [
 | "zify_iter_let" tactic      (* micromega plugin *)
 | "zify_elim_let"      (* micromega plugin *)
 | "nsatz_compute" constr      (* nsatz plugin *)
-| "omega"      (* omega plugin *)
 | "protect_fv" string "in" ident      (* ring plugin *)
 | "protect_fv" string      (* ring plugin *)
 | "ring_lookup" tactic0 "[" LIST0 constr "]" LIST1 constr      (* ring plugin *)
