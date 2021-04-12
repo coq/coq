@@ -46,6 +46,7 @@ let mkrel = lazy (zify "mkrel")
 let iff_refl = lazy (zify "iff_refl")
 let eq_iff = lazy (zify "eq_iff")
 let rew_iff = lazy (zify "rew_iff")
+let rew_iff_rev = lazy (zify "rew_iff_rev")
 
 (* propositional logic *)
 
@@ -620,14 +621,20 @@ module MakeTable (E : Elt) = struct
       failwith ("Cannot register term " ^ t)
     | Some a -> E.mk_elt evd i a
 
+  let safe_ref evd c =
+    try
+      fst (EConstr.destRef evd c)
+    with DestKO -> CErrors.user_err Pp.(str "Add Zify "++str E.name ++ str ": the term "++
+                                          gl_pr_constr c ++ str " should be a global reference")
+
   let register_hint evd t elt =
     match EConstr.kind evd t with
     | App (c, _) ->
-      let gr = fst (EConstr.destRef evd c) in
-      E.table := ConstrMap.add gr (Application t, E.cast elt) !E.table
+       let gr = safe_ref evd c in
+       E.table := ConstrMap.add gr (Application t, E.cast elt) !E.table
     | _ ->
-      let gr = fst (EConstr.destRef evd t) in
-      E.table := ConstrMap.add gr (OtherTerm t, E.cast elt) !E.table
+       let gr = safe_ref evd t in
+       E.table := ConstrMap.add gr (OtherTerm t, E.cast elt) !E.table
 
   let register_constr env evd c =
     let c = EConstr.of_constr c in
@@ -1364,7 +1371,15 @@ let trans_concl prfp =
         Tactics.change_concl t')
   | TProof (t, prf) ->
     Proofview.Goal.enter (fun gl ->
-        Equality.general_rewrite true Locus.AllOccurrences true false prf)
+        let env = Tacmach.New.pf_env gl in
+        let evd = Tacmach.New.project gl in
+        let typ = get_type_of env evd prf in
+        match EConstr.kind evd typ with
+        | App (c, a) when Array.length a = 2 ->
+          Tactics.apply
+            (EConstr.mkApp (Lazy.force rew_iff_rev, [|a.(0); a.(1); prf|]))
+        | _ ->
+          raise (CErrors.anomaly Pp.(str "zify cannot transform conclusion")))
 
 let tclTHENOpt e tac tac' =
   match e with None -> tac' | Some e' -> Tacticals.New.tclTHEN (tac e') tac'
