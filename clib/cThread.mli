@@ -29,3 +29,8 @@ val thread_friendly_really_read_line : thread_ic -> string
 (* Wrapper around Thread.create that blocks signals such as Sys.sigalrm (used
  * for Timeout *)
 val create : ('a -> 'b) -> 'a -> Thread.t
+
+(*
+  Atomic mutex lock taken from https://gitlab.com/gadmm/memprof-limits/-/blob/master/src/thread_map.ml#L23-34
+*)
+val with_lock : Mutex.t -> scope:(unit -> 'a) -> 'a

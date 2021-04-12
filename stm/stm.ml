@@ -98,8 +98,7 @@ let forward_feedback, forward_feedback_hook =
   let m = Mutex.create () in
   Hook.make ~default:(function
     | { doc_id = did; span_id = id; route; contents } ->
-        try Mutex.lock m; feedback ~did ~id ~route contents; Mutex.unlock m
-        with e -> Mutex.unlock m; raise e) ()
+        CThread.with_lock m ~scope:(fun () -> feedback ~did ~id ~route contents)) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun ~doc:_ _ _ -> ()) ()
@@ -758,17 +757,16 @@ end = struct (* {{{ *)
     let worker = ref None
 
     let set_last_job j =
-      Mutex.lock m;
-      job := Some j;
-      Condition.signal c;
-      Mutex.unlock m
+      CThread.with_lock m ~scope:(fun () ->
+          job := Some j;
+          Condition.signal c)
 
     let get_last_job () =
-      Mutex.lock m;
-      while Option.is_empty !job do Condition.wait c m; done;
-      match !job with
-      | None -> assert false
-      | Some x -> job := None; Mutex.unlock m; x
+      CThread.with_lock m ~scope:(fun () ->
+          while Option.is_empty !job do Condition.wait c m; done;
+          match !job with
+          | None -> assert false
+          | Some x -> job := None; x)
 
     let run_command () =
       try while true do get_last_job () () done
