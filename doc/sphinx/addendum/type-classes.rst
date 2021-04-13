@@ -25,18 +25,31 @@ The ``pi : ti`` variables are called the *parameters* of the class and
 the ``fi : ti`` are called the *methods*. Each class definition gives
 rise to a corresponding record declaration and each instance is a
 regular definition whose name is given by `instancename` and type is an
-instantiation of the record type.
+instantiation of the record type. The :cmd:`Class` command supports the
+additional attr:`mode` attribute to set a `mode of resolution <ClassMode>`
+for queries of the class instances.
 
 We’ll use the following example class in the rest of the chapter:
 
 .. coqtop:: in
 
+   #[mode="!"]
    Class EqDec (A : Type) :=
      { eqb : A -> A -> bool ;
        eqb_leibniz : forall x y, eqb x y = true -> x = y }.
 
 This class implements a boolean equality test which is compatible with
-Leibniz equality on some type. An example implementation is:
+Leibniz equality on some type.
+
+.. note::
+   The mode declaration "!" states that ``EqDec A`` class constraints can
+   only be resolved when the index ``A`` is not an existential variable,
+   preventing typeclass resolution to arbitrarily choose an instance in
+   those cases. An even stricter choice is the mode "+" which prevents
+   resolution if an existential variable appears at any position in ``A``,
+   not just at the head.
+
+An example implementation is:
 
 .. coqtop:: in
 
@@ -208,6 +221,7 @@ superclasses as a binding context:
 
 .. coqtop:: all
 
+   #[mode="! -"]
    Class Ord `(E : EqDec A) := { le : A -> A -> bool }.
 
 Contrary to Haskell, we have no special syntax for superclasses, but
@@ -227,6 +241,10 @@ as a record type with two parameters: a type ``A`` and an ``E`` of type
 ``EqDec A``. However, one can still use it as if it had a single
 parameter inside generalizing binders: the generalization of
 superclasses will be done automatically.
+
+The mode declaration states that resolution of `Ord A E` constraints
+is restricted to cases where `A`'s head is determined, or equivalently
+when `A` is not an existential variable, but `E` can be any term.
 
 .. coqtop:: all
 
@@ -322,12 +340,30 @@ Summary of the commands
    Like any command declaring a record, this command supports the
    :attr:`universes(polymorphic)`, :attr:`universes(template)`,
    :attr:`universes(cumulative)`, and :attr:`private(matching)`
-   attributes.
+   attributes. In addition, it supports the :attr:`mode` attribute.
+
+   .. attr:: mode
+
+      This attribute can be used to set the mode of resolution of the class
+      at declaration time, using the same syntax as :cmd:`Hint Mode`,
+      and is mostly equivalent to a `Hint Mode` declaration after the
+      `Class` declaration, except that the `mode` declaration can survive
+      section closing. The setting affects when typeclass resolution can be triggered
+      on a constraint for the class, see :ref:`below <ClassMode>` for details.
+      It is recommended to always set a mode when introducing a class or use
+      a default mode.
+
+   .. error: Discharging the class @ident would drop its mode declaration. Declare the class outside a section.
+
+      If a :attr:`mode` attribute is given to a class inside a section, but no
+      `default mode <TypeclassesDefaultMode>` is set, then this results in an error at section
+      closing as we don't know how which mode the discharged variables for the class should have.
 
    .. cmd:: Existing Class @qualid
 
       This variant declares a class from a previously declared :term:`constant` or
-      inductive definition. No methods or instances are defined.
+      inductive definition. No methods or instances are defined. It also supports
+      the :attr:`mode` attribute.
 
       .. warn:: @ident is already declared as a typeclass
 
@@ -421,6 +457,8 @@ Summary of the commands
      :term:`constants <constant>` as the first argument of ``typeclasses eauto`` hence makes
      resolution with the local hypotheses use full conversion during
      unification.
+
+.. _ClassMode:
 
    + The mode hints (see :cmd:`Hint Mode`) associated with a class are
      taken into account by :tacn:`typeclasses eauto`. When a goal
@@ -521,6 +559,20 @@ Settings
    the dependent ones previously (Coq 8.5 and below). This can result in
    quite different performance behaviors of proof search.
 
+   .. _TypeclassesDefaultMode:
+
+.. option:: Typeclasses Default Mode {? ( {| "+" | "-" | "!" } ) }.
+
+   This option (unset by default) controls the default mode declaration
+   associated to a :cmd:`Class`. If set, the each class declaration uses
+   this default mode for *all* its indices, unless an attr:`mode` attribute
+   is used to set the mode explicitly.
+
+   .. warn:: Using inferred default mode declaration “mode” for “@ident”
+
+      This (by default disabled) warning informs the user when a mode has been assigned
+      automatically. It can be used to lint a library and ensure all typeclasses
+      has been assigned explicit mode declarations.
 
 .. flag:: Typeclasses Filtered Unification
 
