@@ -34,7 +34,8 @@ let usage () =
   eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
-  eprintf "  -f file : read -I, -Q, -R and filenames from _CoqProject-formatted FILE.";
+  eprintf "  -noinit : currently no effect\n";
+  eprintf "  -f file : read -I, -Q, -R and filenames from _CoqProject-formatted FILE.\n";
   eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
   eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
   eprintf "  -Q dir logname : add (recursively) and open (non recursively) dir to coq load path under logical name logname\n";
@@ -64,6 +65,7 @@ let rec parse = function
   | "-sort" :: ll -> option_sort := true; parse ll
   | "-vos" :: ll -> write_vos := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
+  | "-noinit" :: ll -> (* do nothing *) parse ll
   | "-f" :: f :: ll -> treat_coqproject f; parse ll
   | "-I" :: r :: ll -> add_caml_dir r; parse ll
   | "-I" :: [] -> usage ()
@@ -80,6 +82,8 @@ let rec parse = function
   | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
   | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
   | ("-h"|"--help"|"-help") :: _ -> usage ()
+  | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
+     coqdep_warning "unknown option %s" opt; parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
