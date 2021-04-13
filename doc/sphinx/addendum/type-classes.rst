@@ -26,7 +26,7 @@ the ``fi : ti`` are called the *methods*. Each class definition gives
 rise to a corresponding record declaration and each instance is a
 regular definition whose name is given by `instancename` and type is an
 instantiation of the record type. The :cmd:`Class` command supports the
-additional attr:`mode` attribute to set a `mode of resolution <ClassMode>`
+additional :attr:`mode` attribute to set a :ref:`mode of resolution <ClassMode>`
 for queries of the class instances.
 
 We’ll use the following example class in the rest of the chapter:
@@ -461,8 +461,8 @@ Summary of the commands
 .. _ClassMode:
 
    + The mode hints (see :cmd:`Hint Mode`) associated with a class are
-     taken into account by :tacn:`typeclasses eauto`. When a goal
-     does not match any of the declared modes for its head (if any),
+     taken into account by typeclass resolution and :tacn:`typeclasses eauto`.
+     When a goal does not match any of the declared modes for its head (if any),
      instead of failing like :tacn:`eauto`, the goal is suspended and
      resolution proceeds on the remaining goals.
      If after one run of resolution, there remains suspended goals,
@@ -561,18 +561,18 @@ Settings
 
    .. _TypeclassesDefaultMode:
 
-.. option:: Typeclasses Default Mode {? ( {| "+" | "-" | "!" } ) }.
+.. opt:: Typeclasses Default Mode {? ( {| "+" | "-" | "!" } ) }.
 
    This option (unset by default) controls the default mode declaration
    associated to a :cmd:`Class`. If set, the each class declaration uses
-   this default mode for *all* its indices, unless an attr:`mode` attribute
+   this default mode for *all* its indices, unless an :attr:`mode` attribute
    is used to set the mode explicitly.
 
    .. warn:: Using inferred default mode declaration “mode” for “@ident”
 
       This (by default disabled) warning informs the user when a mode has been assigned
       automatically. It can be used to lint a library and ensure all typeclasses
-      has been assigned explicit mode declarations.
+      have been assigned explicit mode declarations.
 
 .. flag:: Typeclasses Filtered Unification
 
