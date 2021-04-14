@@ -44,7 +44,7 @@ Leibniz equality on some type.
 .. note::
    The mode declaration "!" states that ``EqDec A`` class constraints can
    only be resolved when the index ``A`` is not an existential variable,
-   preventing typeclass resolution to arbitrarily choose an instance in
+   preventing typeclass resolution from arbitrarily choosing an instance in
    those cases. An even stricter choice is the mode "+" which prevents
    resolution if an existential variable appears at any position in ``A``,
    not just at the head.
@@ -244,7 +244,7 @@ superclasses will be done automatically.
 
 The mode declaration states that resolution of `Ord A E` constraints
 is restricted to cases where `A`'s head is determined, or equivalently
-when `A` is not an existential variable, but `E` can be any term.
+when `A` is not an existential variable and `E` is any term.
 
 .. coqtop:: all
 
@@ -344,20 +344,20 @@ Summary of the commands
 
    .. attr:: mode
 
-      This attribute can be used to set the mode of resolution of the class
+      Sets the resolution mode of the class
       at declaration time, using the same syntax as :cmd:`Hint Mode`,
-      and is mostly equivalent to a `Hint Mode` declaration after the
+      and is equivalent to a `Hint Mode` declaration after the
       `Class` declaration, except that the `mode` declaration can survive
       section closing. The setting affects when typeclass resolution can be triggered
-      on a constraint for the class, see :ref:`below <ClassMode>` for details.
-      It is recommended to always set a mode when introducing a class or use
+      for a class constraint, see :ref:`below <ClassMode>` for details.
+      We recommend always setting a mode when introducing a class or using
       a default mode.
 
    .. error: Discharging the class @ident would drop its mode declaration. Declare the class outside a section.
 
       If a :attr:`mode` attribute is given to a class inside a section, but no
-      `default mode <TypeclassesDefaultMode>` is set, then this results in an error at section
-      closing as we don't know how which mode the discharged variables for the class should have.
+      `default mode <TypeclassesDefaultMode>` is set, this results in an error at section
+      closing since Coq don't know which mode the discharged variables for the class should have.
 
    .. cmd:: Existing Class @qualid
 
@@ -570,7 +570,7 @@ Settings
 
    .. warn:: Using inferred default mode declaration “mode” for “@ident”
 
-      This (by default disabled) warning informs the user when a mode has been assigned
+      Indicates that the mode has been assigned
       automatically. It can be used to lint a library and ensure all typeclasses
       have been assigned explicit mode declarations.
 
