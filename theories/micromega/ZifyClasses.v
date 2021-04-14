@@ -274,3 +274,4 @@ Register impl_morph as ZifyClasses.impl_morph.
 Register not as ZifyClasses.not.
 Register not_morph as ZifyClasses.not_morph.
 Register True as ZifyClasses.True.
+Register I as ZifyClasses.I.

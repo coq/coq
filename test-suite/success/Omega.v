@@ -1,4 +1,3 @@
-
 Require Import Lia ZArith.
 
 (* Submitted by Xavier Urbain 18 Jan 2002 *)

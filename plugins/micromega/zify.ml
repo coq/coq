@@ -59,6 +59,7 @@ let op_iff_morph = lazy (zify "iff_morph")
 let op_not = lazy (zify "not")
 let op_not_morph = lazy (zify "not_morph")
 let op_True = lazy (zify "True")
+let op_I = lazy (zify "I")
 
 (** [unsafe_to_constr c] returns a [Constr.t] without considering an evar_map.
     This is useful for calling Constr.hash *)
@@ -1538,41 +1539,51 @@ let spec_of_hyps =
 let iter_specs = spec_of_hyps
 
 let find_hyp evd t l =
-  try Some (fst (List.find (fun (h, t') -> EConstr.eq_constr evd t t') l))
+  try
+    Some
+      (EConstr.mkVar
+         (fst (List.find (fun (h, t') -> EConstr.eq_constr evd t t') l)))
   with Not_found -> None
 
-let sat_constr c d =
-  Proofview.Goal.enter (fun gl ->
-      let evd = Tacmach.New.project gl in
-      let env = Tacmach.New.pf_env gl in
-      let hyps = Tacmach.New.pf_hyps_types gl in
-      match EConstr.kind evd c with
-      | App (c, args) ->
-        if Array.length args = 2 then
-          let h1 =
-            Tacred.cbv_beta env evd
-              (EConstr.mkApp (d.ESatT.parg1, [|args.(0)|]))
-          in
-          let h2 =
-            Tacred.cbv_beta env evd
-              (EConstr.mkApp (d.ESatT.parg2, [|args.(1)|]))
-          in
-          match (find_hyp evd h1 hyps, find_hyp evd h2 hyps) with
-          | Some h1, Some h2 ->
-            let n =
-              Tactics.fresh_id_in_env Id.Set.empty
-                (Names.Id.of_string "__sat")
-                env
-            in
-            let trm =
-              EConstr.mkApp
-                ( d.ESatT.satOK
-                , [|args.(0); args.(1); EConstr.mkVar h1; EConstr.mkVar h2|] )
-            in
-            Tactics.pose_proof (Names.Name n) trm
-          | _, _ -> Tacticals.New.tclIDTAC
-        else Tacticals.New.tclIDTAC
-      | _ -> Tacticals.New.tclIDTAC)
+let find_proof evd t l =
+  if EConstr.eq_constr evd t (Lazy.force op_True) then Some (Lazy.force op_I)
+  else find_hyp evd t l
+
+(** [sat_constr env evd sub taclist hyps c d]= (sub',taclist',hyps') where
+    -  sub' is a fresh subscript obtained from sub
+    - taclist' is obtained from taclist by posing the lemma 'd' applied to 'c'
+    - hyps' is obtained from hyps'
+    taclist and hyps are threaded to avoid adding duplicates
+ *)
+let sat_constr env evd (sub,taclist, hyps) c d =
+  match EConstr.kind evd c with
+  | App (c, args) ->
+     if Array.length args = 2 then
+       let h1 =
+         Tacred.cbv_beta env evd
+           (EConstr.mkApp (d.ESatT.parg1, [|args.(0)|]))
+       in
+       let h2 =
+         Tacred.cbv_beta env evd
+           (EConstr.mkApp (d.ESatT.parg2, [|args.(1)|]))
+       in
+       let n = Nameops.add_subscript (Names.Id.of_string "__sat") sub in
+       let trm =
+         match (find_proof evd h1 hyps, find_proof evd h2 hyps) with
+         | Some h1, Some h2 ->
+            (EConstr.mkApp (d.ESatT.satOK, [|args.(0); args.(1); h1; h2|]))
+         | Some h1, _ ->
+            EConstr.mkApp (d.ESatT.satOK, [|args.(0); args.(1); h1|])
+         | _, _ -> EConstr.mkApp (d.ESatT.satOK, [|args.(0); args.(1)|])
+       in
+       let rtrm = Tacred.cbv_beta env evd trm in
+       let typ  = Retyping.get_type_of env evd rtrm in
+       match find_hyp evd typ hyps with
+       | None -> (Nameops.Subscript.succ sub, (Tactics.pose_proof (Names.Name n) rtrm :: taclist) , (n,typ)::hyps)
+       | Some _ -> (sub, taclist, hyps)
+     else (sub,taclist,hyps)
+  | _ -> (sub,taclist,hyps)
+
 
 let get_all_sat env evd c =
   List.fold_left
@@ -1596,8 +1607,10 @@ let saturate =
           Array.iter sat args;
           if Array.length args = 2 then
             let ds = get_all_sat env evd c in
-            if ds = [] then ()
-            else List.iter (fun x -> CstrTable.HConstr.add table t x.deriv) ds
+            if ds = [] ||  CstrTable.HConstr.mem table t
+            then ()
+            else List.iter (fun x ->
+                     CstrTable.HConstr.add table t x.deriv) ds
           else ()
         | Prod (a, t1, t2) when a.Context.binder_name = Names.Anonymous ->
           sat t1; sat t2
@@ -1606,5 +1619,6 @@ let saturate =
       (* Collect all the potential saturation lemma *)
       sat concl;
       List.iter (fun (_, t) -> sat t) hyps;
-      Tacticals.New.tclTHENLIST
-        (CstrTable.HConstr.fold (fun c d acc -> sat_constr c d :: acc) table []))
+      let s0 = fresh_subscript env in
+      let (_,tacs,_) = CstrTable.HConstr.fold (fun c d acc -> sat_constr env evd acc c d) table (s0,[],hyps) in
+      Tacticals.New.tclTHENLIST tacs)

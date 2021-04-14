@@ -480,39 +480,20 @@ Add Zify UnOpSpec ZabsSpec.
 
 (** Saturate positivity constraints *)
 
-Instance SatProd : Saturate Z.mul :=
-  {|
-    PArg1 := fun x => 0 <= x;
-    PArg2 := fun y => 0 <= y;
-    PRes  := fun r => 0 <= r;
-    SatOk := Z.mul_nonneg_nonneg
-  |}.
-Add Zify Saturate SatProd.
-
-Instance SatProdPos : Saturate Z.mul :=
-  {|
-    PArg1 := fun x => 0 < x;
-    PArg2 := fun y => 0 < y;
-    PRes  := fun r => 0 < r;
-    SatOk := Z.mul_pos_pos
-  |}.
-Add Zify Saturate SatProdPos.
-
-Lemma pow_pos_strict :
-  forall a b,
-    0 < a -> 0 < b -> 0 < a ^ b.
-Proof.
-  intros.
-  apply Z.pow_pos_nonneg; auto.
-  apply Z.lt_le_incl;auto.
-Qed.
-
-
 Instance SatPowPos : Saturate Z.pow :=
   {|
     PArg1 := fun x => 0 < x;
-    PArg2 := fun y => 0 < y;
+    PArg2 := fun y => 0 <= y;
     PRes  := fun r => 0 < r;
-    SatOk := pow_pos_strict
+    SatOk := Z.pow_pos_nonneg
   |}.
 Add Zify Saturate SatPowPos.
+
+Instance SatPowNonneg : Saturate Z.pow :=
+  {|
+    PArg1 := fun x => 0 <= x;
+    PArg2 := fun y => True;
+    PRes  := fun r => 0 <= r;
+    SatOk := fun a b Ha _ => @Z.pow_nonneg a b Ha
+  |}.
+Add Zify Saturate SatPowNonneg.
