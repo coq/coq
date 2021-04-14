@@ -346,18 +346,18 @@ Summary of the commands
 
       Sets the resolution mode of the class
       at declaration time, using the same syntax as :cmd:`Hint Mode`,
-      and is equivalent to a `Hint Mode` declaration after the
-      `Class` declaration, except that the `mode` declaration can survive
+      and is equivalent to a :cmd:`Hint Mode` declaration after the
+      :cmd:`Class` declaration, except that the `mode` declaration can survive
       section closing. The setting affects when typeclass resolution can be triggered
       for a class constraint, see :ref:`below <ClassMode>` for details.
       We recommend always setting a mode when introducing a class or using
       a default mode.
 
-   .. error: Discharging the class @ident would drop its mode declaration. Declare the class outside a section.
+   .. error:: Discharging the class @ident would drop its mode declaration. Declare the class outside a section.
 
       If a :attr:`mode` attribute is given to a class inside a section, but no
-      `default mode <TypeclassesDefaultMode>` is set, this results in an error at section
-      closing since Coq don't know which mode the discharged variables for the class should have.
+      :ref:`default mode <TypeclassesDefaultMode>` is set, this results in an error at section
+      closing since Coq doesn't know which mode the discharged variables for the class should have.
 
    .. cmd:: Existing Class @qualid
 
@@ -561,11 +561,11 @@ Settings
 
    .. _TypeclassesDefaultMode:
 
-.. opt:: Typeclasses Default Mode {? ( {| "+" | "-" | "!" } ) }.
+.. opt:: Typeclasses Default Mode {| "+" | "-" | "!" }.
 
-   This option (unset by default) controls the default mode declaration
-   associated to a :cmd:`Class`. If set, the each class declaration uses
-   this default mode for *all* its indices, unless an :attr:`mode` attribute
+   Sets the default mode declaration
+   associated with a :cmd:`Class`. It is unset by default. If set, then each class declaration uses
+   this default mode for *all* its indices, unless a :attr:`mode` attribute
    is used to set the mode explicitly.
 
    .. warn:: Using inferred default mode declaration “mode” for “@ident”
