@@ -24,15 +24,6 @@ let checknav { CAst.loc; v = { expr } }  =
   if is_navigation_vernac expr && not (is_reset expr) then
     CErrors.user_err ?loc (str "Navigation commands forbidden in files.")
 
-(* Echo from a buffer based on position.
-   XXX: Should move to utility file. *)
-let vernac_echo ?loc in_chan = let open Loc in
-  Option.iter (fun loc ->
-      let len = loc.ep - loc.bp in
-      seek_in in_chan loc.bp;
-      Feedback.msg_notice @@ str @@ really_input_string in_chan len
-    ) loc
-
 (* Re-enable when we get back to feedback printing *)
 (* let is_end_of_input any = match any with *)
 (*     Stm.End_of_input -> true *)
@@ -58,7 +49,7 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
         then begin
           CAst.map (fun cmd -> { cmd with control = ControlTime state.time :: cmd.control }) com
         end else com in
-      let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
+      let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid com in
 
       (* Main STM interaction *)
       if ntip <> `NewTip then
@@ -81,16 +72,16 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       Exninfo.iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-let load_vernac_core ~echo ~check ~interactive ~state ?ldir file =
+let load_vernac_core ~check ~interactive ~state ?ldir file =
   (* Keep in sync *)
   let in_chan = open_utf8_file_in file in
-  let in_echo = if echo then Some (open_utf8_file_in file) else None in
-  let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
+  let input_cleanup () = close_in in_chan in
 
   let dirpath = Option.cata (fun ldir -> Some Names.DirPath.(to_string ldir))
       None ldir in
   let in_pa = Pcoq.Parsable.make ~loc:Loc.(initial (InFile {dirpath; file}))
       (Stream.of_channel in_chan) in
+
   let open State in
 
   (* ids = For beautify, list of parsed sids *)
@@ -103,8 +94,6 @@ let load_vernac_core ~echo ~check ~interactive ~state ?ldir file =
       input_cleanup ();
       state, ids, Pcoq.Parsable.comments in_pa
     | Some ast ->
-      (* Printing of AST for -compile-verbose *)
-      Option.iter (vernac_echo ?loc:ast.CAst.loc) in_echo;
 
       checknav ast;
 
@@ -147,6 +136,27 @@ let pr_new_syntax ?loc ft_beautify ocom =
   else
     Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)))
 
+(* Echo from a buffer based on position.
+   XXX: Should move to an utility file. *)
+let vernac_echo ?loc in_chan = let open Loc in
+  Option.iter (fun loc ->
+      let len = loc.ep - loc.bp in
+      seek_in in_chan loc.bp;
+      Feedback.msg_notice @@ str @@ really_input_string in_chan len
+    ) loc
+
+let vernac_echo_id ~in_chan ~doc id =
+  match Stm.get_ast ~doc id with
+  | None -> ()
+  | Some ast -> vernac_echo ?loc:ast.CAst.loc in_chan
+
+let echo_pass ~doc ~ids ~filename =
+  let in_chan = open_utf8_file_in filename in
+  let input_cleanup () = close_in in_chan in
+  (* Printing of AST for -compile-verbose *)
+  List.iter (vernac_echo_id ~in_chan ~doc)  ids;
+  input_cleanup ()
+
 (* load_vernac with beautify *)
 let beautify_pass ~doc ~comments ~ids ~filename =
   let ft_beautify, close_beautify =
@@ -169,8 +179,11 @@ let beautify_pass ~doc ~comments ~ids ~filename =
 (* Main driver for file loading. For now, we only do one beautify
    pass. *)
 let load_vernac ~echo ~check ~interactive ~state ?ldir filename =
-  let ostate, ids, comments = load_vernac_core ~echo ~check ~interactive ~state ?ldir filename in
+  let ostate, ids, comments = load_vernac_core ~check ~interactive ~state ?ldir filename in
+  let doc, ids = ostate.State.doc, List.rev ids in
+  (* Pass for echo *)
+  if echo then echo_pass ~doc ~ids ~filename;
   (* Pass for beautify *)
-  if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:(List.rev ids) ~filename;
+  if !Flags.beautify then beautify_pass ~doc ~comments ~ids:(List.rev ids) ~filename;
   (* End pass *)
   ostate

@@ -76,13 +76,14 @@ let ide_doc = ref None
 let get_doc () = Option.get !ide_doc
 let set_doc doc = ide_doc := Some doc
 
-let add ((s,eid),(sid,verbose)) =
+(* _ is for compat with older versions of the protocol *)
+let add ((s,eid), (sid,_)) =
   let doc = get_doc () in
   let pa = Pcoq.Parsable.make (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s may not be empty *)
   | Some ast ->
-    let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose ast in
+    let doc, newid, rc = Stm.add ~doc ~ontop:sid ast in
     set_doc doc;
     let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
     ide_cmd_warns ~id:newid ast;

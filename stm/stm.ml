@@ -122,7 +122,6 @@ end
 let async_proofs_workers_extra_env = ref [||]
 
 type aast = {
-  verbose : bool;
   indentation : int;
   strlen : int;
   mutable expr : vernac_control; (* mutable: Proof using hinted by aux file *)
@@ -1009,7 +1008,7 @@ let stm_qed_delay_proof ?route ~proof ~id ~st ~loc ~control pending : Vernacstat
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
    reduced... *)
-let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
+let stm_vernac_interp ?route id st { expr } : Vernacstate.t =
   (* The Stm will gain the capability to interpret commmads affecting
      the whole document state, such as backtrack, etc... so we start
      to design the stm command interpreter now *)
@@ -1031,7 +1030,7 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
     (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
   else begin
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    Vernacinterp.interp ?verbosely:(Some verbose) ~st expr
+    Vernacinterp.interp ~st expr
   end
 
 (****************************** CRUFT *****************************************)
@@ -1833,7 +1832,7 @@ end = struct (* {{{ *)
        * - start: r_where
        * - end  : after execution of r_what
        *)
-      ignore(stm_vernac_interp r_for st { r_what with verbose = true });
+      ignore(stm_vernac_interp r_for st r_what);
       feedback ~id:r_for Processed
     with e when CErrors.noncritical e ->
       let e = Exninfo.capture e in
@@ -2062,7 +2061,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                (* STATE: We use an updated state with proof *)
                let st = Vernacstate.freeze_interp_state ~marshallable:false in
                Option.iter (fun expr -> ignore(stm_vernac_interp id st {
-                  verbose = true; expr; indentation = 0;
+                  expr; indentation = 0;
                   strlen = 0 } ))
                recovery_command
            | _ -> assert false
@@ -2563,7 +2562,7 @@ let get_allow_nested_proofs =
 
 (** [process_transaction] adds a node in the document *)
 let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
-  let { verbose; expr } = x in
+  let { expr } = x in
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
   try
@@ -2747,7 +2746,7 @@ let compute_indentation ?loc sid = Option.cata (fun loc ->
     eff_indent, len
   ) (0, 0) loc
 
-let add ~doc ~ontop ?newtip verb ast =
+let add ~doc ~ontop ?newtip ast =
   Hooks.(call document_add ast ontop);
   let loc = ast.CAst.loc in
   let cur_tip = VCS.cur_tip () in
@@ -2759,7 +2758,7 @@ let add ~doc ~ontop ?newtip verb ast =
   let indentation, strlen = compute_indentation ?loc ontop in
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = Vernac_classifier.classify_vernac ast in
-  let aast = { verbose = verb; indentation; strlen; expr = ast } in
+  let aast = { indentation; strlen; expr = ast } in
   match process_transaction ~doc ?newtip aast clas with
   | `Ok -> doc, VCS.cur_tip (), `NewTip
   | `Unfocus qed_id -> doc, qed_id, `Unfocus (VCS.cur_tip ())
@@ -2784,7 +2783,7 @@ let query ~doc ~at ~route s =
           let indentation, strlen = compute_indentation ?loc at in
           let st = State.get_cached at in
           let aast = {
-            verbose = true; indentation; strlen;
+            indentation; strlen;
             expr = ast } in
           ignore(stm_vernac_interp ~route at st aast);
           loop ()

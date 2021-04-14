@@ -133,16 +133,20 @@ type ('a, 'b) union = ('a, 'b) Util.union
 
 (* Request/Reply message protocol between Coq and CoqIDE *)
 
-(**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
-     on top of the current edit position (that is asserted to be [sid])
-     verbosely if [v] is true.  The response [(id,(rc,s)] is the new state
+(**  [add ((s,eid), (sid,_))] adds the phrase [s] with edit id [eid]
+     on top of the current edit position (that is asserted to be [sid]).
+     The response [(id,(rc,s)] is the new state
      [id] assigned to the phrase. [rc] is [Inl] if the new
      state id is the tip of the edit point, or [Inr tip] if the new phrase
      closes a focus and [tip] is the new edit tip
 
      [s] used to contain Coq's console output and has been deprecated
      in favor of sending feedback, it will be removed in a future
-     version of the protocol.  *)
+     version of the protocol.
+
+     The missing boolean is not used now, but kept in place for
+     compatibility (it used to indicate verbosity control)
+   *)
 type add_sty = (string * edit_id) * (state_id * verbose)
 type add_rty = state_id * ((unit, state_id) union * string)
 

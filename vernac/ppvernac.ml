@@ -670,14 +670,8 @@ let pr_extend s cl =
 let pr_vernac_expr v =
   let return = tag_vernac v in
   match v with
-  | VernacLoad (f,s) ->
-    return (
-      keyword "Load"
-      ++ if f then
-        (spc() ++ keyword "Verbose" ++ spc())
-      else
-        spc() ++ qs s
-    )
+  | VernacLoad s ->
+    return (keyword "Load" ++ spc() ++ qs s)
 
   (* Proof management *)
   | VernacAbortAll ->

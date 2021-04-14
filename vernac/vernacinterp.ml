@@ -151,16 +151,16 @@ let rec interp_expr ?loc ~atts ~st c =
 
   (* This one is possible to handle here *)
   | VernacAbort id    -> CErrors.user_err (Pp.str "Abort cannot be used through the Load command")
-  | VernacLoad (verbosely, fname) ->
+  | VernacLoad fname ->
     Attributes.unsupported_attributes atts;
-    vernac_load ~verbosely fname
+    vernac_load fname
   | v ->
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
     let stack = st.Vernacstate.lemmas in
     let program = st.Vernacstate.program in
     interp_typed_vernac ~pm:program ~stack fv
 
-and vernac_load ~verbosely fname =
+and vernac_load fname =
   (* Note that no proof should be open here, so the state here is just token for now *)
   let st = Vernacstate.freeze_interp_state ~marshallable:false in
   let fname =
@@ -172,7 +172,6 @@ and vernac_load ~verbosely fname =
     Pcoq.Parsable.make ~loc:Loc.(initial (InFile { dirpath=None; file=longfname}))
         (Stream.of_channel in_chan) in
   (* Parsing loop *)
-  let v_mod = if verbosely then Flags.verbosely else Flags.silently in
   let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
       (Pcoq.Entry.parse (Pvernac.main_entry proof_mode))
   in
@@ -181,7 +180,7 @@ and vernac_load ~verbosely fname =
     match parse_sentence proof_mode input with
     | None -> stack, pm
     | Some stm ->
-      let stack, pm = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack; program = pm }) stm in
+      let stack, pm = interp_control ~st:{ st with Vernacstate.lemmas = stack; program = pm } stm in
       (load_loop [@ocaml.tailcall]) ~stack ~pm
   in
   let stack, pm = load_loop ~pm:st.Vernacstate.program ~stack:st.Vernacstate.lemmas in
@@ -242,11 +241,10 @@ let () = let open Goptions in
       optwrite = ((:=) default_timeout) }
 
 (* Be careful with the cache here in case of an exception. *)
-let interp_gen ~verbosely ~st ~interp_fn cmd =
+let interp_gen ~st ~interp_fn cmd =
   Vernacstate.unfreeze_interp_state st;
   try vernac_timeout (fun st ->
-      let v_mod = if verbosely then Flags.verbosely else Flags.silently in
-      let ontop = v_mod (interp_fn ~st) cmd in
+      let ontop = interp_fn ~st cmd in
       Vernacstate.Declare.set ontop [@ocaml.warning "-3"];
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st
@@ -257,9 +255,9 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
     Exninfo.iraise exn
 
 (* Regular interp *)
-let interp ?(verbosely=true) ~st cmd =
-  interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+let interp ~st cmd =
+  interp_gen ~st ~interp_fn:interp_control cmd
 
 let interp_qed_delayed_proof ~proof ~st ~control pe : Vernacstate.t =
-  interp_gen ~verbosely:false ~st
+  interp_gen ~st
     ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe

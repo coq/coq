@@ -88,15 +88,20 @@ val parse_sentence :
 (* Reminder: A parsable [pa] is constructed using
    [Pcoq.Parsable.t stream], where [stream : char Stream.t]. *)
 
-(* [add ~ontop ?newtip verbose cmd] adds a new command [cmd] ontop of
-   the state [ontop].
-   The [ontop] parameter just asserts that the GUI is on
-   sync, but it will eventually call edit_at on the fly if needed.
-   If [newtip] is provided, then the returned state id is guaranteed
-   to be [newtip] *)
-val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
-  bool -> Vernacexpr.vernac_control ->
-  doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+(** [add ~ontop ?newtip cmd] adds a new command [cmd] ontop of
+    the state [ontop].
+
+    The [ontop] parameter just asserts that the GUI is on
+    sync, but it will eventually call edit_at on the fly if needed.
+
+    If [newtip] is provided, then the returned state id is guaranteed
+    to be [newtip] *)
+val add
+  : doc:doc
+  -> ontop:Stateid.t
+  -> ?newtip:Stateid.t
+  -> Vernacexpr.vernac_control
+  -> doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* Returns the proof state before the last tactic that was applied at or before
 the specified state AND that has differences in the underlying proof (i.e.,

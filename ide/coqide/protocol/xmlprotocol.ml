@@ -8,12 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Protocol version of this file. This is the date of the last modification. *)
-let protocol_version = "20210506"
-
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-(** See xml-protocol.md for a description of the protocol. *)
+(** See xml-protocol.md for a description of the protocol *)
+
+(** Protocol changelog:
+
+  - 20210413: the "verbose" parameter in add call is now ignored; no
+    changes to the in-wire representation.
+
+*)
+
+(** Protocol version of this file. This is the date of the last modification. *)
+let protocol_version = "20210413"
 
 type msg_format = Richpp of { width : int; depth : int } | Ppcmds
 let msg_format = ref (Richpp { width = 72; depth = max_int })

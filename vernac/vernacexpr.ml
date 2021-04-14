@@ -103,7 +103,6 @@ type search_restriction =
   | SearchInside of qualid list
   | SearchOutside of qualid list
 
-type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = BackInstance | NoInstance
 
@@ -313,7 +312,7 @@ type hints_expr =
 
 type nonrec vernac_expr =
 
-  | VernacLoad of verbose_flag * string
+  | VernacLoad of string
   (* Syntax *)
   | VernacReservedNotation of infix_flag * (lstring * syntax_modifier CAst.t list)
   | VernacOpenCloseScope of bool * scope_name
