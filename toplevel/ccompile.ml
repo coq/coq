@@ -194,7 +194,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       if mode = BuildVio then dump_empty_vos()
 
   | Vio2Vo ->
-
+      Flags.async_proofs_worker_id := "Vio2Vo";
       let sum, lib, univs, tasks, proofs =
         Library.load_library_todo long_f_dot_in in
       let univs, proofs = Stm.finish_tasks long_f_dot_out univs proofs tasks in
@@ -223,6 +223,7 @@ let compile_file opts stm_opts copts injections =
 (* VIO Dispatching                                                            *)
 (******************************************************************************)
 let check_vio_tasks copts =
+  Flags.async_proofs_worker_id := "VioChecking";
   let rc =
     List.fold_left (fun acc (n,f) ->
         let f_in = ensure ".vio" f f in

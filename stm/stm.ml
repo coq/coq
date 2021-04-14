@@ -2447,24 +2447,21 @@ let join ~doc =
   VCS.print ();
   doc
 
-let dump_snapshot () = Slaves.dump_snapshot (), RemoteCounter.snapshot ()
-
-type tasks = int Slaves.tasks * RemoteCounter.remote_counters_status
-let check_task name (tasks,rcbackup) i =
-  RemoteCounter.restore rcbackup;
+type tasks = int Slaves.tasks
+let check_task name tasks i =
   let vcs = VCS.backup () in
   try
     let rc = State.purify (Slaves.check_task name tasks) i in
     VCS.restore vcs;
     rc
   with e when CErrors.noncritical e -> VCS.restore vcs; false
-let info_tasks (tasks,_) = Slaves.info_tasks tasks
 
-let finish_tasks name u p (t,rcbackup as tasks) =
-  RemoteCounter.restore rcbackup;
+let info_tasks = Slaves.info_tasks
+
+let finish_tasks name u p tasks =
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
-    let u = State.purify (Slaves.finish_task name u p t) i in
+    let u = State.purify (Slaves.finish_task name u p tasks) i in
     VCS.restore vcs;
     u in
   try
@@ -2515,13 +2512,13 @@ let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
     CErrors.user_err ~hdr:"stm" (str"Cannot dump a vio with open proofs");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,
   below, [snapshot] gets computed even if [create_vos] is true. *)
-  let (tasks,counters) = dump_snapshot() in
+  let tasks = Slaves.dump_snapshot() in
   let except = List.fold_left (fun e (r,_) ->
      Future.UUIDSet.add r.Stateid.uuid e) Future.UUIDSet.empty tasks in
   let todo_proofs =
     if create_vos
       then Library.ProofsTodoSomeEmpty except
-      else Library.ProofsTodoSome (except,tasks,counters)
+      else Library.ProofsTodoSome (except,tasks)
     in
   Library.save_library_to todo_proofs ~output_native_objects ldir long_f_dot_vo (Global.opaque_tables ());
   doc

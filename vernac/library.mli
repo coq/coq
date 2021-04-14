@@ -41,13 +41,13 @@ type seg_proofs = Opaqueproof.opaque_proofterm array
     argument.
     [output_native_objects]: when producing vo objects, also compile the native-code version. *)
 
-type ('document,'counters) todo_proofs =
+type 'document todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list * 'counters (* for .vio *)
+ | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list (* for .vio *)
 
 val save_library_to :
-  ('document,'counters) todo_proofs ->
+  'document todo_proofs ->
   output_native_objects:bool ->
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 

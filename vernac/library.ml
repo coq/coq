@@ -448,10 +448,10 @@ let save_library_base f sum lib univs tasks proofs =
     Sys.remove f;
     Exninfo.iraise reraise
 
-type ('document,'counters) todo_proofs =
+type 'document todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list * 'counters (* for .vio *)
+ | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list (* for .vio *)
 
 let save_library_to todo_proofs ~output_native_objects dir f otab =
   assert(
@@ -464,7 +464,7 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
   let except = match todo_proofs with
     | ProofsTodoNone -> Future.UUIDSet.empty
     | ProofsTodoSomeEmpty except -> except
-    | ProofsTodoSome (except,l,_) -> except
+    | ProofsTodoSome (except,l) -> except
     in
   let cenv, seg, ast = Declaremods.end_library ~output_native_objects ~except dir in
   let opaque_table, f2t_map = Opaqueproof.dump ~except otab in
@@ -473,13 +473,13 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
     | ProofsTodoNone -> None, None
     | ProofsTodoSomeEmpty _except ->
       None, Some (Univ.ContextSet.empty,false)
-    | ProofsTodoSome (_except, tasks, rcbackup) ->
+    | ProofsTodoSome (_except, tasks) ->
       let tasks =
         List.map Stateid.(fun (r,b) ->
             try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b
             with Not_found -> assert b; { r with uuid = -1 }, b)
           tasks in
-      Some (tasks,rcbackup),
+      Some tasks,
       Some (Univ.ContextSet.empty,false)
     in
     let sd = {
