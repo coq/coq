@@ -30,13 +30,13 @@ val definition_structure
   -> template:bool option
   -> cumulative:bool
   -> poly:bool
-  -> ?mode_declaration:Typeclasses.hint_mode list
+  -> ?modes_declaration:Typeclasses.hint_mode list list
   -> Declarations.recursivity_kind
   -> Ast.t list
   -> GlobRef.t list
 
 val declare_existing_class :
-  ?mode_declaration:Typeclasses.hint_mode list
+  ?modes_declaration:Typeclasses.hint_mode list list
   -> GlobRef.t
   -> unit
 

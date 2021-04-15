@@ -15,7 +15,7 @@ open Typeclasses
 open Libnames
 
 (** A configurable warning to output if a default mode is used for a class declaration. *)
-val warn_default_mode : ?loc:Loc.t -> (GlobRef.t * hint_mode list) -> unit
+val warn_default_modes : ?loc:Loc.t -> (GlobRef.t * hint_modes) -> unit
 
 (** Instance declaration *)
 

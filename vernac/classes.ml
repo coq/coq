@@ -27,9 +27,11 @@ open Libobject
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 (*i*)
-let warn_default_mode = CWarnings.create ~name:"class-declaration-default-mode" ~category:"automation"
+let warn_default_modes = CWarnings.create ~name:"class-declaration-default-mode" ~category:"automation"
   ~default:CWarnings.Disabled
-  Pp.(fun (gr, m) -> hov 2 (str "Using an inferred default mode: " ++ prlist_with_sep spc Hints.pp_hint_mode m ++
+  Pp.(fun (gr, m) -> hov 2 (str "Using inferred default " ++
+    str (CString.plural (List.length m) "mode") ++ str":" ++ spc () ++
+    prlist_with_sep pr_comma (prlist_with_sep spc Hints.pp_hint_mode) m ++
     spc () ++ str "for" ++ spc () ++ Printer.pr_global gr))
 
 let set_typeclass_transparency c local b =
@@ -37,10 +39,10 @@ let set_typeclass_transparency c local b =
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 
-let set_typeclass_mode c local mode =
+let set_typeclass_modes c local modes =
   let locality = if local then Goptions.OptLocal else Goptions.OptGlobal in
-  Hints.add_hints ~locality [typeclasses_db]
-    (Hints.HintsModeEntry (c,mode))
+  List.iter (fun mode -> Hints.add_hints ~locality [typeclasses_db]
+    (Hints.HintsModeEntry (c,mode))) modes
 
 let classes_transparent_state () =
   try
@@ -156,7 +158,7 @@ let declare_instance ?(warn = false) env sigma info local glob =
 
 let cache_class (_,c) =
   load_class c;
-  Option.iter (set_typeclass_mode c.cl_impl false) c.cl_mode
+  Option.iter (set_typeclass_modes c.cl_impl false) c.cl_modes
 
 let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
@@ -177,7 +179,7 @@ let subst_class (subst,cl) =
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_ctx cl.cl_context;
-    cl_mode = cl.cl_mode;
+    cl_modes = cl.cl_modes;
     cl_props = do_subst_ctx cl.cl_props;
     cl_projs = do_subst_projs cl.cl_projs;
     cl_strict = cl.cl_strict;
@@ -200,7 +202,7 @@ let discharge_class (_,cl) =
     let ctx, _ = List.fold_right fold rel ([], n) in
     ctx
   in
-  let extend_mode_decl ctx m =
+  let extend_modes_decl ctx m =
     let n = Context.Rel.nhyps ctx in
     if n > 0 then
       match m with
@@ -211,8 +213,9 @@ let discharge_class (_,cl) =
           CErrors.user_err Pp.(str "Discharging the class" ++ spc () ++ Printer.pr_global cl.cl_impl ++ spc () ++
             str "would drop its mode declaration." ++ spc () ++ str"Declare the class outside a section.");
         | Some default ->
-          let m = List.make n default @ m in
-          warn_default_mode (cl.cl_impl, m); Some m
+          let one_mode m = List.make n default @ m in
+          let modes = List.map one_mode m in
+          warn_default_modes (cl.cl_impl, modes); Some modes
     else m
   in
   let abs_context cl =
@@ -235,7 +238,7 @@ let discharge_class (_,cl) =
     { cl_univs = cl_univs';
       cl_impl = cl.cl_impl;
       cl_context = context;
-      cl_mode = extend_mode_decl ctx cl.cl_mode;
+      cl_modes = extend_modes_decl ctx cl.cl_modes;
       cl_props = props;
       cl_projs = List.Smart.map discharge_proj cl.cl_projs;
       cl_strict = cl.cl_strict;

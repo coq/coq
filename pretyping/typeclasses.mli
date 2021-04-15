@@ -21,6 +21,8 @@ type hint_mode =
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
 
+type hint_modes = hint_mode list list
+
 val get_typeclasses_default_mode : unit -> hint_mode option
 
 (* Core typeclasses hints *)
@@ -50,7 +52,7 @@ type typeclass = {
   (** Context in which the definitions are typed.
       Includes both typeclass parameters and superclasses. *)
 
-  cl_mode : hint_mode list option;
+  cl_modes : hint_modes option;
   (** The initial mode declaration of the typeclass *)
 
   cl_props : Constr.rel_context;

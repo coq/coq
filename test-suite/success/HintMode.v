@@ -26,7 +26,7 @@ Module HintModeDecl.
   Instance: Foo nat := 0.
   Type foo.
 
-  #[mode="+"]
+  #[modes="+"]
   Class FooPlus (A : Type) := fooplus : A.
   Instance: FooPlus nat := 0.
   Fail Type fooplus.
@@ -44,7 +44,7 @@ Module HintModeDecl.
 
   Section Bla.
     Context (A : Type).
-    #[mode="+"]
+    #[modes="+"]
     Class FooSec (B : Type) := { bar : A -> B -> nat }.
   End Bla.
 
@@ -53,5 +53,20 @@ Module HintModeDecl.
   Print HintDb typeclass_instances. (* Default mode = !, FooSec -> ! + *)
 
   Class Baz (A : Type).
+
+  #[modes="+ + -, - + +, + - +"]
+  Class Plus (x y z : nat).
+
+  Instance plus0 x : Plus 0 x x := {}.
+  Instance plus0' x : Plus x 0 x := {}.
+  Instance plusS x y z : Plus x y z -> Plus (S x) y (S z) := {}.
+  Instance plusS' x y z : Plus x y z -> Plus x (S y) (S z) := {}.
+
+  Check (_ : Plus 2 3 _).
+  Check (_ : Plus _ 2 3).
+  Check (_ : Plus 2 _ 3).
+  Fail Type (_ : Plus _ _ 3).
+  Fail Type (_ : Plus _ 2 _).
+  Type (_ : Plus _ 2 4).
 
 End HintModeDecl.

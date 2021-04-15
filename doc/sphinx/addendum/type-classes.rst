@@ -26,14 +26,14 @@ the ``fi : ti`` are called the *methods*. Each class definition gives
 rise to a corresponding record declaration and each instance is a
 regular definition whose name is given by `instancename` and type is an
 instantiation of the record type. The :cmd:`Class` command supports the
-additional :attr:`mode` attribute to set a :ref:`mode of resolution <ClassMode>`
+additional :attr:`modes` attribute to set a :ref:`mode of resolution <ClassModes>`
 for queries of the class instances.
 
 We’ll use the following example class in the rest of the chapter:
 
 .. coqtop:: in
 
-   #[mode="!"]
+   #[modes="!"]
    Class EqDec (A : Type) :=
      { eqb : A -> A -> bool ;
        eqb_leibniz : forall x y, eqb x y = true -> x = y }.
@@ -221,7 +221,7 @@ superclasses as a binding context:
 
 .. coqtop:: all
 
-   #[mode="! -"]
+   #[modes="! -"]
    Class Ord `(E : EqDec A) := { le : A -> A -> bool }.
 
 Contrary to Haskell, we have no special syntax for superclasses, but
@@ -340,22 +340,23 @@ Summary of the commands
    Like any command declaring a record, this command supports the
    :attr:`universes(polymorphic)`, :attr:`universes(template)`,
    :attr:`universes(cumulative)`, and :attr:`private(matching)`
-   attributes. In addition, it supports the :attr:`mode` attribute.
+   attributes. In addition, it supports the :attr:`modes` attribute.
 
-   .. attr:: mode
+   .. attr:: modes
 
-      Sets the resolution mode of the class
-      at declaration time, using the same syntax as :cmd:`Hint Mode`,
-      and is equivalent to a :cmd:`Hint Mode` declaration after the
-      :cmd:`Class` declaration, except that the `mode` declaration can survive
+      Sets the resolution modes of the class at declaration time,
+      using the same syntax as :cmd:`Hint Mode`: :n:`{+ {| + | ! | - } }`.
+      It is equivalent to :cmd:`Hint Mode` declarations for the class name
+      in the ``typeclass_instances`` database after the
+      :cmd:`Class` declaration, except that the `modes` declaration can survive
       section closing. The setting affects when typeclass resolution can be triggered
-      for a class constraint, see :ref:`below <ClassMode>` for details.
+      for a class constraint, see :ref:`below <ClassModes>` for details.
       We recommend always setting a mode when introducing a class or using
       a default mode.
 
    .. error:: Discharging the class @ident would drop its mode declaration. Declare the class outside a section.
 
-      If a :attr:`mode` attribute is given to a class inside a section, but no
+      If a :attr:`modes` attribute is given to a class inside a section, but no
       :ref:`default mode <TypeclassesDefaultMode>` is set, this results in an error at section
       closing since Coq doesn't know which mode the discharged variables for the class should have.
 
@@ -363,7 +364,7 @@ Summary of the commands
 
       This variant declares a class from a previously declared :term:`constant` or
       inductive definition. No methods or instances are defined. It also supports
-      the :attr:`mode` attribute.
+      the :attr:`modes` attribute.
 
       .. warn:: @ident is already declared as a typeclass
 
@@ -458,7 +459,7 @@ Summary of the commands
      resolution with the local hypotheses use full conversion during
      unification.
 
-.. _ClassMode:
+.. _ClassModes:
 
    + The mode hints (see :cmd:`Hint Mode`) associated with a class are
      taken into account by typeclass resolution and :tacn:`typeclasses eauto`.
@@ -565,7 +566,7 @@ Settings
 
    Sets the default mode declaration
    associated with a :cmd:`Class`. It is unset by default. If set, then each class declaration uses
-   this default mode for *all* its indices, unless a :attr:`mode` attribute
+   this default mode for *all* its indices, unless a :attr:`modes` attribute
    is used to set the mode explicitly.
 
    .. warn:: Using inferred default mode declaration “mode” for “@ident”

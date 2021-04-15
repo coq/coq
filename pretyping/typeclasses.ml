@@ -24,6 +24,8 @@ type hint_mode =
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
 
+type hint_modes = hint_mode list list
+
 (* Core typeclasses hints *)
 type 'a hint_info_gen =
     { hint_priority : int option;
@@ -81,7 +83,7 @@ type typeclass = {
   cl_context : Constr.rel_context;
 
   (* The initial mode declaration of the typeclass: should match the cl_context *)
-  cl_mode : hint_mode list option;
+  cl_modes : hint_modes option;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;

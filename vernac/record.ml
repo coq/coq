@@ -614,14 +614,14 @@ let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let interp_mode (gr, mode) ctx =
-  match mode with
+let interp_modes (gr, modes) ctx =
+  match modes with
   | None ->
     (match Typeclasses.get_typeclasses_default_mode () with
     | Some default ->
       let n = Context.Rel.nhyps ctx in
       let m = List.make n default in
-      Classes.warn_default_mode (gr, m); Some m
+      Classes.warn_default_modes (gr, [m]); Some [m]
     | None -> None)
   | Some m -> Some m
 
@@ -705,7 +705,7 @@ let build_record_constant ~rdata ~ubind ~univs ~variances ~cumulative ~template
   2. declare the class, using the information from 1. in the form of [Classes.typeclass]
 
   *)
-let declare_class def ~cumulative ~ubind ~univs ~variances ?mode_declaration id idbuild paramimpls params
+let declare_class def ~cumulative ~ubind ~univs ~variances ?modes_declaration id idbuild paramimpls params
     rdata template ?(kind=Decls.StructureComponent) coers =
   let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -744,7 +744,7 @@ let declare_class def ~cumulative ~ubind ~univs ~variances ?mode_declaration id 
         cl_strict = typeclasses_strict ();
         cl_unique = typeclasses_unique ();
         cl_context = params;
-        cl_mode = interp_mode (impl, mode_declaration) params;
+        cl_modes = interp_modes (impl, modes_declaration) params;
         cl_props = fields;
         cl_projs = projs }
     in
@@ -754,7 +754,7 @@ let declare_class def ~cumulative ~ubind ~univs ~variances ?mode_declaration id 
   in
   List.map map data
 
-let add_constant_class env sigma ?mode_declaration cst =
+let add_constant_class env sigma ?modes_declaration cst =
   let ty, univs = Typeops.type_of_global_in_context env (GlobRef.ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, _ = decompose_prod_assum ty in
@@ -765,7 +765,7 @@ let add_constant_class env sigma ?mode_declaration cst =
     { cl_univs = univs;
       cl_impl = gr;
       cl_context = ctx;
-      cl_mode = interp_mode (gr, mode_declaration) ctx;
+      cl_modes = interp_modes (gr, modes_declaration) ctx;
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
       cl_strict = typeclasses_strict ();
@@ -773,9 +773,9 @@ let add_constant_class env sigma ?mode_declaration cst =
     }
   in
   Classes.add_class env sigma tc;
-    Classes.set_typeclass_transparency (Tacred.EvalConstRef cst) false false
+  Classes.set_typeclass_transparency (Tacred.EvalConstRef cst) false false
 
-let add_inductive_class env sigma ?mode_declaration ind =
+let add_inductive_class env sigma ?modes_declaration ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
@@ -789,7 +789,7 @@ let add_inductive_class env sigma ?mode_declaration ind =
       { cl_univs = univs;
         cl_impl = gr;
         cl_context = ctx;
-        cl_mode = interp_mode (gr, mode_declaration) ctx;
+        cl_modes = interp_modes (gr, modes_declaration) ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
         cl_projs = [];
         cl_strict = typeclasses_strict ();
@@ -801,14 +801,14 @@ let warn_already_existing_class =
   CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
       Printer.pr_global g ++ str " is already declared as a typeclass.")
 
-let declare_existing_class ?mode_declaration g =
+let declare_existing_class ?modes_declaration g =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   if Typeclasses.is_class g then warn_already_existing_class g
   else
     match g with
-    | GlobRef.ConstRef x -> add_constant_class env sigma ?mode_declaration x
-    | GlobRef.IndRef x -> add_inductive_class env sigma ?mode_declaration x
+    | GlobRef.ConstRef x -> add_constant_class env sigma ?modes_declaration x
+    | GlobRef.IndRef x -> add_inductive_class env sigma ?modes_declaration x
     | _ -> user_err ~hdr:"declare_existing_class"
              (Pp.str"Unsupported class type, only constants and inductives are allowed")
 
@@ -871,7 +871,7 @@ let extract_record_data records =
   ps, data
 
 (* declaring structures, common data to refactor *)
-let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params ?mode_declaration def records data =
+let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params ?modes_declaration def records data =
   let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
@@ -883,7 +883,7 @@ let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params ?mode_de
       | Vernacexpr.NoInstance -> None)
       cfs
   in
-  declare_class def ~cumulative ~ubind ~univs ?mode_declaration name.CAst.v idbuild
+  declare_class def ~cumulative ~ubind ~univs ?modes_declaration name.CAst.v idbuild
     impargs params rdata template coers
 
 let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~params ~finite
@@ -909,7 +909,7 @@ let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~p
 (** [fs] corresponds to fields and [ps] to parameters; [coers] is a
     list telling if the corresponding fields must me declared as coercions
     or subinstances. *)
-let definition_structure udecl kind ~template ~cumulative ~poly ?mode_declaration
+let definition_structure udecl kind ~template ~cumulative ~poly ?modes_declaration
     finite (records : Ast.t list) : GlobRef.t list =
   let () = check_unique_names records in
   let () = check_priorities kind records in
@@ -926,10 +926,10 @@ let definition_structure udecl kind ~template ~cumulative ~poly ?mode_declaratio
   let template = template, auto_template in
   match kind with
   | Class def ->
-    class_struture ~template ~ubind ~impargs ~cumulative ~params ~univs ~variances ?mode_declaration
+    class_struture ~template ~ubind ~impargs ~cumulative ~params ~univs ~variances ?modes_declaration
       def records data
   | Inductive_kw | CoInductive | Variant | Record | Structure ->
-    assert (mode_declaration = None);
+    assert (modes_declaration = None);
     regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~params ~finite
       records data
 

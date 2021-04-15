@@ -383,19 +383,26 @@ let typing_flags_parser : Declarations.typing_flags key_parser = fun orig args -
 let typing_flags =
   attribute_of_list ["bypass_check", typing_flags_parser]
 
-let mode_declaration_parser : Typeclasses.hint_mode list key_parser = fun orig att ->
+let modes_declaration_parser : Typeclasses.hint_mode list list key_parser = fun orig att ->
   match att with
   | VernacFlagLeaf (FlagString args) ->
-    let args = CString.explode args in
-    let parse_mode = function
-      | "-" -> Some Typeclasses.ModeOutput
-      | "+" -> Some Typeclasses.ModeInput
-      | "!" -> Some Typeclasses.ModeNoHeadEvar
-      | " " -> None
-      | s -> CErrors.user_err Pp.(str "Ill-formed “mode” specification: " ++ str s)
-    in CList.map_filter parse_mode args
+    let modes = CString.split_on_char ',' args in
+    let one_mode mode =
+      let args = CString.explode mode in
+      let parse_mode = function
+        | "-" -> Some Typeclasses.ModeOutput
+        | "+" -> Some Typeclasses.ModeInput
+        | "!" -> Some Typeclasses.ModeNoHeadEvar
+        | " " -> None
+        | s -> CErrors.user_err Pp.(str "Ill-formed “modes” specification: " ++ str s)
+      in CList.map_filter parse_mode args
+    in
+    let modes = List.map one_mode modes in
+    if CList.is_empty modes then
+      CErrors.user_err Pp.(str "An empty “modes” declaration has no effect. Please remove the attribute.")
+    else modes
   | att ->
-    CErrors.user_err Pp.(str "Ill-formed “mode” attribute: " ++ pr_vernac_flag_value att)
+    CErrors.user_err Pp.(str "Ill-formed “modes” attribute: " ++ pr_vernac_flag_value att)
 
-let mode_declaration =
-  attribute_of_list ["mode", mode_declaration_parser]
+let modes_declaration =
+  attribute_of_list ["modes", modes_declaration_parser]
