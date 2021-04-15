@@ -342,15 +342,20 @@ Summary of the commands
    :attr:`universes(cumulative)`, and :attr:`private(matching)`
    attributes. In addition, it supports the :attr:`modes` attribute.
 
-   .. attr:: modes
+   .. attr:: modes "{+, {+ {| + | ! | - } }}"
+      :name: modes
 
       Sets the resolution modes of the class at declaration time,
-      using the same syntax as :cmd:`Hint Mode`: :n:`{+, {+ {| + | ! | - } }}`, where
-      multiple modes can be declared, separated by a comma.
+      using the same syntax as :cmd:`Hint Mode`, where
+      multiple mode declarations can be declared simultaneously,
+      separated by a comma. The comma models a disjunction, so ordering
+      and duplicate mode declarations are irrelevant.
+      In a single mode declaration, the number of mode annotations should
+      match exactly the number of (non-let) parameters of the :cmd:`Class`.
       It is equivalent to :cmd:`Hint Mode` declarations for the class name
       in the ``typeclass_instances`` database after the
       :cmd:`Class` declaration, except that the `modes` declaration can survive
-      section closing. The setting affects when typeclass resolution can be triggered
+      section closing. Mode declarations affect when typeclass resolution can be triggered
       for a class constraint, see :ref:`below <ClassModes>` for details.
       We recommend always setting a mode when introducing a class or using
       a default mode.
@@ -569,6 +574,8 @@ Settings
    It is unset by default. If set, then each class declaration uses
    this default mode for *all* its indices, unless a :attr:`modes` attribute
    is used to set the modes explicitly.
+
+   .. _TypeclassesDefaultModeWarning:
 
    .. warn:: Using inferred default mode(s): “modes” for “@ident”
 
