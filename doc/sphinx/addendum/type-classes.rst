@@ -345,7 +345,8 @@ Summary of the commands
    .. attr:: modes
 
       Sets the resolution modes of the class at declaration time,
-      using the same syntax as :cmd:`Hint Mode`: :n:`{+ {| + | ! | - } }`.
+      using the same syntax as :cmd:`Hint Mode`: :n:`{+, {+ {| + | ! | - } }}`, where
+      multiple modes can be declared, separated by a comma.
       It is equivalent to :cmd:`Hint Mode` declarations for the class name
       in the ``typeclass_instances`` database after the
       :cmd:`Class` declaration, except that the `modes` declaration can survive
@@ -354,11 +355,11 @@ Summary of the commands
       We recommend always setting a mode when introducing a class or using
       a default mode.
 
-   .. error:: Discharging the class @ident would drop its mode declaration. Declare the class outside a section.
+   .. exn:: Discharging the class @ident would drop its modes declaration. Declare the class outside a section.
 
       If a :attr:`modes` attribute is given to a class inside a section, but no
       :ref:`default mode <TypeclassesDefaultMode>` is set, this results in an error at section
-      closing since Coq doesn't know which mode the discharged variables for the class should have.
+      closing since Coq doesn't know which mode should be set for the discharged variables.
 
    .. cmd:: Existing Class @qualid
 
@@ -564,16 +565,19 @@ Settings
 
 .. opt:: Typeclasses Default Mode {| "+" | "-" | "!" }.
 
-   Sets the default mode declaration
-   associated with a :cmd:`Class`. It is unset by default. If set, then each class declaration uses
+   Sets the default mode declaration associated with a :cmd:`Class`.
+   It is unset by default. If set, then each class declaration uses
    this default mode for *all* its indices, unless a :attr:`modes` attribute
-   is used to set the mode explicitly.
+   is used to set the modes explicitly.
 
-   .. warn:: Using inferred default mode declaration “mode” for “@ident”
+   .. warn:: Using inferred default mode(s): “modes” for “@ident”
 
-      Indicates that the mode has been assigned
-      automatically. It can be used to lint a library and ensure all typeclasses
-      have been assigned explicit mode declarations.
+      Indicates that the :attr:`modes` for a :cmd:`Class` declaration have been
+      assigned automatically using the default mode.
+      This warning is named ``class-declaration-default-mode``.
+      It is disabled by default, see :opt:`Warnings` to enable it or turn it into an error.
+      It can be used to lint a library and ensure all typeclasses have been assigned
+      explicit mode declarations.
 
 .. flag:: Typeclasses Filtered Unification
 

@@ -491,6 +491,8 @@ Creating Hints
       instances and avoid ambiguity in general. Setting a parameter of a class as an
       input forces proof search to be driven by that index of the class, with ``!``
       allowing existentials to appear in the index but not at its head.
+      One can also use the :attr:`modes` attribute on :cmd:`Class` declarations to set
+      their modes at declaration time.
 
    .. note::
 
@@ -501,6 +503,43 @@ Creating Hints
         :cmd:`Hint Cut`, or :cmd:`Hint Mode`, for typeclass
         resolution, do not forget to put them in the
         ``typeclass_instances`` hint database.
+
+
+   .. example::
+
+      An example use of hint modes is to write logic programs that can be run
+      during typechecking. Here we define a `Plus` relation that is functional
+      in any two of its three arguments, allowing to infer the result of addition
+      of two numbers, or a missing operand giving a specific result after addition
+      with the other operand:
+
+      .. coqtop:: in
+
+         #[modes="+ + -, - + +, + - +"]
+         Class Plus (x y z : nat).
+
+      The :attr:`modes` attribute specifies that if any two of the indexes are
+      determined, then the last can be determined as well using proof-search.
+      The following instances implement the logic program:
+
+      .. coqtop:: in
+
+         Instance plus0 x : Plus 0 x x := {}.
+         Instance plus0' x : Plus x 0 x := {}.
+         Instance plusS x y z : Plus x y z -> Plus (S x) y (S z) := {}.
+         Instance plusS' x y z : Plus x y z -> Plus x (S y) (S z) := {}.
+
+      .. coqtop:: all
+
+         Type (_ : Plus 2 3 _).
+         Type (_ : Plus _ 2 3).
+         Type (_ : Plus 2 _ 3).
+         Type (_ : Plus _ 2 4).
+         Fail Type (_ : Plus _ _ 3).
+         Fail Type (_ : Plus _ 2 _).
+
+      The last two examples show that if the query is ambiguous as the query
+      does not match any declared mode, then proof-search fails.
 
 .. cmd:: Hint Rewrite {? {| -> | <- } } {+ @one_term } {? using @ltac_expr } {? : {* @ident } }
 
