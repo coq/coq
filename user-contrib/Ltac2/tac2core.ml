@@ -1754,6 +1754,16 @@ let () = add_scope "constr" (fun arg ->
     Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
   )
 
+let () = add_scope "open_constr" (fun arg ->
+    let delimiters = List.map (function
+        | SexprRec (_, { v = Some s }, []) -> s
+        | _ -> scope_fail "open_constr" arg)
+        arg
+    in
+    let act e = Tac2quote.of_open_constr ~delimiters e in
+    Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
+  )
+
 let add_expr_scope name entry f =
   add_scope name begin function
   | [] -> Tac2entries.ScopeRule (Pcoq.Symbol.nterm entry, f)
@@ -1782,7 +1792,6 @@ let () = add_expr_scope "constr_matching" q_constr_matching Tac2quote.of_constr_
 let () = add_expr_scope "goal_matching" q_goal_matching Tac2quote.of_goal_matching
 let () = add_expr_scope "format" Pcoq.Prim.lstring Tac2quote.of_format
 
-let () = add_generic_scope "open_constr" Pcoq.Constr.constr Tac2quote.wit_open_constr
 let () = add_generic_scope "pattern" Pcoq.Constr.constr Tac2quote.wit_pattern
 
 (** seq scope, a bit hairy *)

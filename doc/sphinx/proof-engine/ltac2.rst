@@ -1375,8 +1375,9 @@ table further down lists the classes that that are handled plainly.
     the term (as described in  :ref:`LocalInterpretationRulesForNotations`).  The last
     :token:`scope_key` is the top of the scope stack that's applied to the :token:`term`.
 
-  :n:`open_constr`
-    Parses an open :token:`term`.
+  :n:`open_constr {? ( {+, @scope_key } ) }`
+    Parses an open :token:`term`. Like :n:`constr` above, this class
+    accepts a list of notation scopes with the same effects.
 
   :n:`ident`
     Parses :token:`ident` or :n:`$@ident`.  The first form returns :n:`ident:(@ident)`,
