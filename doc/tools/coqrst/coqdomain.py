@@ -1180,8 +1180,7 @@ class StdGlossaryIndex(Index):
             if type == 'term':
                 entries = content[itemname[0].lower()]
                 entries.append([itemname, 0, docname, anchor, '', '', ''])
-        content = sorted(content.items())
-        return content, False
+        return content.items(), False
 
 def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """A grammar production not included in a ``prodn`` directive.
