@@ -74,18 +74,3 @@ jobs:
           make -j "$NJOBS" test-suite PRINT_LOGS=1
         env:
           NJOBS: "2"
-
-      - name: Create the dmg bundle
-        run: |
-          eval $(opam env)
-          export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
-          export OUTDIR="$(pwd)/_install_ci"
-          ./dev/build/osx/make-macos-dmg.sh
-        env:
-          MACOSX_DEPLOYMENT_TARGET: "10.11"
-          NJOBS: "2"
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: coq-macOS-installer
-          path: _build/*.dmg
