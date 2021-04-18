@@ -1445,10 +1445,9 @@ exception RewriteFailure of Pp.t
 
 type result = (evar_map * constr option * types) option option
 
-let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
+let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma cmp_sigma concl is_hyp : result =
   let sigma, sort = Typing.sort_of env sigma concl in
-  let evdref = ref sigma in
-  let evars = (!evdref, Evar.Set.empty) in
+  let evars = sigma, Evar.Set.empty in
   let evars, cstr =
     let prop, (evars, arrow) =
       if Sorts.is_prop sort then true, app_poly_sort true env evars impl [||]
@@ -1468,6 +1467,9 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       let (_, cstrs) = res.rew_evars in
       let evars' = solve_constraints env res.rew_evars in
       let newt = Reductionops.nf_evar evars' res.rew_to in
+      (* Substitute solved constraint evars in newly created goals so that we can remove them *)
+      let evars' = Evd.raw_map_undefined (fun ev info ->
+          if Evd.mem cmp_sigma ev then info else Evarutil.nf_evar_info evars' info) evars' in
       let evars = (* Keep only original evars (potentially instantiated) and goal evars,
                      the rest has been defined and substituted already. *)
         Evar.Set.fold
@@ -1598,11 +1600,11 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       Environ.reset_with_named_context (val_of_named_context nctx) env
     in
     try
+      let cmp_sigma = match origsigma with None -> sigma | Some sigma -> sigma in
       let res =
-        cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma ty clause
+        cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma cmp_sigma ty clause
       in
-      let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
-      treat sigma res state <*>
+      treat cmp_sigma res state <*>
       (* For compatibility *)
       beta <*> Proofview.shelve_unifiable
     with
