@@ -293,31 +293,34 @@ let match_with_equation env sigma t =
   let (hdapp,args) = destApp sigma t in
   match EConstr.kind sigma hdapp with
   | Ind (ind,u) ->
-    if Coqlib.check_ind_ref "core.eq.type" ind then
-      Some (build_coq_eq_data()),hdapp,
-      PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-    else if Coqlib.check_ind_ref "core.identity.type" ind then
-      Some (build_coq_identity_data()),hdapp,
-      PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-    else if Coqlib.check_ind_ref "core.JMeq.type" ind then
-      Some (build_coq_jmeq_data()),hdapp,
-      HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
-    else
-      let (mib,mip) = Global.lookup_inductive ind in
-        let constr_types = mip.mind_nf_lc in
-        let nconstr = Array.length mip.mind_consnames in
-        if Int.equal nconstr 1 then
-          let (ctx, cty) = constr_types.(0) in
-          let cty = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
-          if is_matching env sigma coq_refl_leibniz1_pattern cty then
-            None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
-          else if is_matching env sigma coq_refl_leibniz2_pattern cty then
-            None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-          else if is_matching env sigma coq_refl_jm_pattern cty then
-            None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
-          else raise NoEquationFound
-        else raise NoEquationFound
-    | _ -> raise NoEquationFound
+    (try
+       if Coqlib.check_ind_ref "core.eq.type" ind then
+         Some (build_coq_eq_data()),hdapp,
+         PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+       else if Coqlib.check_ind_ref "core.identity.type" ind then
+         Some (build_coq_identity_data()),hdapp,
+         PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+       else if Coqlib.check_ind_ref "core.JMeq.type" ind then
+         Some (build_coq_jmeq_data()),hdapp,
+         HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
+       else
+         let (mib,mip) = Global.lookup_inductive ind in
+         let constr_types = mip.mind_nf_lc in
+         let nconstr = Array.length mip.mind_consnames in
+         if Int.equal nconstr 1 then
+           let (ctx, cty) = constr_types.(0) in
+           let cty = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
+           if is_matching env sigma coq_refl_leibniz1_pattern cty then
+             None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
+           else if is_matching env sigma coq_refl_leibniz2_pattern cty then
+             None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+           else if is_matching env sigma coq_refl_jm_pattern cty then
+             None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
+           else raise NoEquationFound
+         else raise NoEquationFound
+     with UserError _ ->
+       raise NoEquationFound)
+  | _ -> raise NoEquationFound
 
 (* Note: An "equality type" is any type with a single argument-free
    constructor: it captures eq, eq_dep, JMeq, eq_true, etc. but also
