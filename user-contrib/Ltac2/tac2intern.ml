@@ -468,7 +468,7 @@ let polymorphic ((n, t) : type_scheme) : mix_type_scheme =
 let warn_not_unit =
   CWarnings.create ~name:"not-unit" ~category:"ltac"
     (fun (env, t) ->
-      strbrk "The following expression should have type unit but has type " ++
+      strbrk "This expression should have type unit but has type " ++
       pr_glbtype env t ++ str ".")
 
 let warn_redundant_clause =
