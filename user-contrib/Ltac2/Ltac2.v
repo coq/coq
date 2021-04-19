@@ -28,5 +28,6 @@ Require Ltac2.Pattern.
 Require Ltac2.Printf.
 Require Ltac2.Std.
 Require Ltac2.String.
+Require Ltac2.Attributes.
 
 Require Export Ltac2.Notations.

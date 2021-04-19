@@ -36,6 +36,8 @@ let control_prefix = prefix_gen "Control"
 let pattern_prefix = prefix_gen "Pattern"
 let array_prefix = prefix_gen "Array"
 let format_prefix = MPdot (prefix_gen "Message", Label.make "Format")
+let attributes_prefix = prefix_gen "Attributes"
+let attributes_attribute_prefix = MPdot (attributes_prefix, Label.make "Attribute")
 
 let kername prefix n = KerName.make prefix (Label.of_id (Id.of_string_soft n))
 let std_core n = kername Tac2env.std_prefix n
@@ -521,3 +523,24 @@ let of_format { v = fmt; loc } =
   in
   let stop = CAst.make @@ CTacApp (global_ref (kername format_prefix "stop"), [of_tuple []]) in
   List.fold_left of_format stop fmt
+
+let of_attributes =
+  let attrs_ref r = global_ref (kername attributes_prefix r) in
+  let attrs_ref_app r arg = CAst.make @@ CTacApp (attrs_ref r, [arg]) in
+  let attr_ref r = global_ref (kername attributes_attribute_prefix r) in
+  let attr_ref_app r arg = CAst.make @@ CTacApp (attr_ref r, [arg]) in
+  let rec of_attribute attr =
+    match attr with
+  | Attributes.VernacFlagEmpty -> attr_ref_app "empty" (of_tuple [])
+  | Attributes.VernacFlagLeaf (Attributes.FlagIdent id) ->
+    attr_ref_app "of_ident" (of_ident (CAst.make (Id.of_string id)))
+  | Attributes.VernacFlagLeaf (Attributes.FlagString str) ->
+    attr_ref_app "of_string" (of_string (CAst.make str))
+  | Attributes.VernacFlagList flags -> attr_ref_app "of_attributes" (of_attributes (CAst.make flags))
+  and of_attribute_pair (str, attr) =
+    CAst.make @@ CTacApp (CAst.make @@ CTacCst (AbsKn (Tuple 2)), [of_string (CAst.make str);
+      of_attribute attr])
+  and of_attributes { v = attrs; loc } =
+    of_list ?loc of_attribute_pair attrs
+  in
+    fun attrs -> attrs_ref_app "of_list" (of_attributes attrs)

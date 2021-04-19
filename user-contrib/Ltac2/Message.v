@@ -24,6 +24,8 @@ Ltac2 @ external of_constr : constr -> message := "ltac2" "message_of_constr".
 Ltac2 @ external of_exn : exn -> message := "ltac2" "message_of_exn".
 (** Panics if there is more than one goal under focus. *)
 
+Ltac2 of_bool b := if b then of_string "true" else of_string "false".
+
 Ltac2 @ external concat : message -> message -> message := "ltac2" "message_concat".
 
 Module Format.

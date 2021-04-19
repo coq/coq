@@ -430,6 +430,11 @@ let () = define2 "string_get" string int begin fun s n ->
   else wrap (fun () -> Value.of_char (Bytes.get s n))
 end
 
+let () = define1 "string_to_int" string begin fun s ->
+  wrap (fun () ->
+    of_option Value.of_int (int_of_string_opt (Bytes.to_string s)))
+end
+
 (** Terms *)
 
 (** constr -> constr *)
@@ -1035,6 +1040,98 @@ end
 let () = define2 "fresh_fresh" (repr_ext val_free) ident begin fun avoid id ->
   let nid = Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid) in
   return (Value.of_ident nid)
+end
+
+(** Attributes *)
+
+let (^.) f g = fun x -> f (g x)
+
+let () = define2 "attributes_attribute_to_message" (string) (repr_ext val_attribute) begin fun key attr ->
+  let v = Attributes.pr_vernac_flag (Bytes.to_string key, attr) in
+  return (Value.of_pp v)
+end
+
+let () = define1 "attributes_attribute_empty" unit begin fun _ ->
+  let v = Attributes.VernacFlagEmpty in
+  return (Value.of_ext Value.val_attribute v)
+end
+
+let () = define1 "attributes_attribute_of_string" (string) begin fun str ->
+  let v = Attributes.VernacFlagLeaf (Attributes.FlagString (Bytes.to_string str)) in
+  return (Value.of_ext Value.val_attribute v)
+end
+
+let () = define1 "attributes_attribute_of_ident" (ident) begin fun str ->
+  let v = Attributes.VernacFlagLeaf (Attributes.FlagIdent (Id.to_string str)) in
+  return (Value.of_ext Value.val_attribute v)
+end
+
+let () = define1 "attributes_attribute_of_attributes" (repr_ext val_attributes) begin fun attrs ->
+  let v = Attributes.VernacFlagList !attrs in
+  return (Value.of_ext Value.val_attribute v)
+end
+
+let () = define1 "attributes_attribute_to_string" (repr_ext val_attribute) begin fun attr ->
+  let v = match attr with
+  | Attributes.VernacFlagLeaf (Attributes.FlagString s) -> Some s
+  | _ -> None
+  in return (Value.of_option (Value.of_string ^. Bytes.of_string) v)
+end
+
+let () = define1 "attributes_attribute_to_ident" (repr_ext val_attribute) begin fun attr ->
+  let v = match attr with
+  | Attributes.VernacFlagLeaf (Attributes.FlagIdent id) -> Some id
+  | _ -> None
+  in return (Value.of_option (Value.of_ident ^. Id.of_string) v)
+end
+
+let () = define1 "attributes_attribute_to_attributes" (repr_ext val_attribute) begin fun attr ->
+  let v = match attr with
+  | Attributes.VernacFlagList l -> Some (ref l)
+  | _ -> None
+  in return (Value.of_option (Value.of_ext Value.val_attributes) v)
+end
+
+let () = define1 "attributes_attribute_is_empty" (repr_ext val_attribute) begin fun attr ->
+  let v = match attr with
+  | Attributes.VernacFlagEmpty -> true
+  | _ -> false
+  in return (Value.of_bool v)
+end
+
+let () = define1 "attributes_of_list" (list (pair string (repr_ext val_attribute))) begin fun attrs ->
+  let v = ref (List.map (fun (s, attr) -> Bytes.to_string s, attr) attrs) in
+  return (Value.of_ext Value.val_attributes v)
+end
+
+let () = define1 "attributes_to_message" (repr_ext val_attributes) begin fun attr ->
+  let v = prlist_with_sep Pp.pr_comma Attributes.pr_vernac_flag !attr in
+  return (Value.of_pp v)
+end
+
+let () = define1 "attributes_empty" (unit) begin fun attr ->
+  let v = ref [] in
+  return (Value.of_ext Value.val_attributes v)
+end
+
+let () = define1 "attributes_is_empty" (repr_ext val_attributes) begin fun attr ->
+  let v = match !attr with
+  | [] -> true
+  | _ -> false
+  in return (Value.of_bool v)
+end
+
+let () = define2 "attributes_consume" (repr_ext val_attributes) (string) begin fun attrs key ->
+  let value =
+    try
+      let key = Bytes.to_string key in
+      let value = List.assoc_f String.equal key !attrs in
+      let attrs' = List.remove_assoc_f String.equal key !attrs in
+      attrs := attrs'; Some value
+    with Not_found ->
+      None
+  in
+  return (Value.of_option (Value.of_ext Value.val_attribute) value)
 end
 
 (** Env *)
@@ -1837,4 +1934,13 @@ let () = add_scope "seq" begin fun toks ->
     Pcoq.(Symbol.rules [Rules.make r (apply c [])])
   in
   Tac2entries.ScopeRule (scope, (fun e -> e))
+end
+
+let () = add_scope "attributes" begin fun toks ->
+  match toks with
+  | [] ->
+    let scope = G_vernac.tactic_attributes in
+    let act attrs = Tac2quote.of_attributes (CAst.make attrs) in
+    Tac2entries.ScopeRule (Pcoq.Symbol.nterm scope, act)
+  | arg -> scope_fail "attributes" arg
 end

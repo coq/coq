@@ -41,6 +41,7 @@ let search_queries = Entry.create "search_queries"
 let subprf = Entry.create "subprf"
 
 let quoted_attributes = Entry.create "quoted_attributes"
+let tactic_attributes = Entry.create "tactic_attributes"
 let class_rawexpr = Entry.create "class_rawexpr"
 let thm_token = Entry.create "thm_token"
 let def_token = Entry.create "def_token"
@@ -85,7 +86,7 @@ let test_id_colon =
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: vernac_control quoted_attributes gallina_ext noedit_mode subprf;
+  GLOBAL: vernac_control quoted_attributes tactic_attributes gallina_ext noedit_mode subprf;
   vernac_control: FIRST
     [ [ IDENT "Time"; c = vernac_control ->
         { add_control_flag ~loc ~flag:(ControlTime false) c }
@@ -105,6 +106,10 @@ GRAMMAR EXTEND Gram
   ;
   quoted_attributes:
     [ [ "#[" ; a = attribute_list ; "]" -> { a } ]
+    ]
+  ;
+  tactic_attributes:
+    [ [ "@[" ; a = attribute_list ; "]" -> { a } ]
     ]
   ;
   attribute_list:

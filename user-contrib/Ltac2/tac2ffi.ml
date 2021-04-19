@@ -103,6 +103,8 @@ let val_case = Val.create "case"
 let val_binder = Val.create "binder"
 let val_univ = Val.create "universe"
 let val_free : Names.Id.Set.t Val.tag = Val.create "free"
+let val_attribute : Attributes.vernac_flag_value Val.tag = Val.create "attribute"
+let val_attributes : Attributes.vernac_flags ref Val.tag = Val.create "attributes"
 let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
 let val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag = Val.create "ind_data"
 
