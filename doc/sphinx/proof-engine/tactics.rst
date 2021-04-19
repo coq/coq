@@ -1148,7 +1148,7 @@ Managing the local context
       or at the bottom of the local context. All hypotheses on which the new
       hypothesis depends are moved too so as to respect the order of
       dependencies between hypotheses. It is equivalent to :n:`intro {? @ident__1 }`
-      followed by the appropriate call to :tacn:`move … after …`,
+      followed by the appropriate call to :tacn:`move`,
       :tacn:`move … before …`, :tacn:`move … at top`,
       or :tacn:`move … at bottom`.
 
@@ -1235,7 +1235,6 @@ Managing the local context
       hypotheses that depend on it.
 
 .. tacn:: move @ident__1 after @ident__2
-   :name: move … after …
 
    This moves the hypothesis named :n:`@ident__1` in the local context after
    the hypothesis named :n:`@ident__2`, where “after” is in reference to the
@@ -1256,7 +1255,7 @@ Managing the local context
       :name: move … before …
 
       This moves :n:`@ident__1` towards and just before the hypothesis
-      named :n:`@ident__2`.  As for :tacn:`move … after …`, dependencies
+      named :n:`@ident__2`.  As for :tacn:`move`, dependencies
       over :n:`@ident__1` (when :n:`@ident__1` comes before :n:`@ident__2` in
       the order of dependencies) or in the type of :n:`@ident__1`
       (when :n:`@ident__1` comes after :n:`@ident__2` in the order of
@@ -2502,7 +2501,7 @@ and an explanation of the underlying technique.
    :name: inversion ... using ...
 
    .. todo using … instead of ... in the name above gives a Sphinx error, even though
-      this works just find for :tacn:`move … after …`
+      this works just find for :tacn:`move`
 
    Let :n:`@ident` have type :g:`(I t)` (:g:`I` an inductive predicate) in the
    local context, and :n:`@ident` be a (dependent) inversion lemma. Then, this

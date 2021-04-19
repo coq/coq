@@ -609,7 +609,7 @@ Abbreviations
 
    |SSR| extends the :tacn:`set` tactic by supplying:
 
-   + an open syntax, similarly to the :tacn:`pose (ssreflect)` tactic;
+   + an open syntax, similarly to the :tacn:`pose <pose (ssreflect)>` tactic;
    + a more aggressive matching algorithm;
    + an improved interpretation of wildcards, taking advantage of the
      matching algorithm;
@@ -899,7 +899,7 @@ context of a goal thanks to the ``in`` tactical.
 
 .. tacv:: set @ident := @term in {+ @ident}
 
-   This variant of :tacn:`set (ssreflect)` introduces a defined constant
+   This variant of :tacn:`set <set (ssreflect)>` introduces a defined constant
    called :token:`ident` in the context, and folds it in
    the context entries mentioned on the right hand side of ``in``.
    The body of :token:`ident` is the first subterm matching these context
@@ -1202,7 +1202,7 @@ The move tactic.
          Goal not False.
          move.
 
-   More precisely, the :tacn:`move` tactic inspects the goal and does nothing
+   More precisely, the :tacn:`move <move (ssreflect)>` tactic inspects the goal and does nothing
    (:tacn:`idtac`) if an introduction step is possible, i.e. if the goal is a
    product or a ``let … in``, and performs :tacn:`hnf` otherwise.
 
@@ -1301,7 +1301,7 @@ The apply tactic
    this use of the :tacn:`refine` tactic implies that the tactic tries to match
    the goal up to expansion of constants and evaluation of subterms.
 
-:tacn:`apply (ssreflect)` has a special behavior on goals containing
+:tacn:`apply <apply (ssreflect)>` has a special behavior on goals containing
 existential metavariables of sort :g:`Prop`.
 
 .. example::
@@ -2461,7 +2461,7 @@ The have tactic.
    redex, and introduces the lemma under a fresh name, automatically
    chosen.
 
-Like in the case of the :n:`pose (ssreflect)` tactic (see section :ref:`definitions_ssr`), the types of
+Like in the case of the :n:`pose <pose (ssreflect)>` tactic (see section :ref:`definitions_ssr`), the types of
 the holes are abstracted in term.
 
 .. example::
@@ -3775,7 +3775,7 @@ involves the following steps:
    ``forall n, F1 n = F2 n`` for ``eq_map``).
 
 3. If so :tacn:`under` puts these n goals in head normal form (using
-   the defective form of the tactic :tacn:`move`), then executes
+   the defective form of the tactic :tacn:`move <move (ssreflect)>`), then executes
    the corresponding intro pattern :n:`@i_pattern__i` in each goal.
 
 4. Then :tacn:`under` checks that the first n subgoals
@@ -5665,6 +5665,7 @@ Tactics
 respectively.
 
 .. tacn:: move
+   :name: move (ssreflect)
 
    :tacn:`idtac` or :tacn:`hnf` (see  :ref:`bookkeeping_ssr`)
 

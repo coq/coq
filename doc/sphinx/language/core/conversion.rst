@@ -4,10 +4,80 @@ Conversion rules
 ----------------
 
 Coq has conversion rules that can be used to determine if two
-terms are equal by definition, or :term:`convertible`.
+terms are equal by definition in |CiC|, or :term:`convertible`.
 Conversion rules consist of reduction rules and expansion rules.
-See :ref:`applyingconversionrules`,
-which describes tactics that apply these conversion rules.
+Equality is determined by
+converting both terms to a normal form, then verifying they are syntactically
+equal (ignoring differences in the names of bound variables by
+:term:`alpha-conversion <alpha-convertible>`).
+
+.. seealso:: :ref:`applyingconversionrules`, which describes tactics that apply these conversion rules.
+
+:gdef:`Reductions <reduction>` convert terms to something that is incrementally
+closer to its normal form.  For example, :term:`zeta-reduction` removes
+:n:`let @ident := @term__1 in @term__2` constructs from a term by replacing
+:n:`@ident` with :n:`@term__1` wherever :n:`@ident` appears in :n:`@term__2`.
+The resulting term may be longer or shorter than the original.
+
+.. coqtop:: all
+
+   Eval cbv zeta in let i := 1 in i + i.
+
+:gdef:`Expansions <expansion>` are reductions applied in the opposite direction,
+for example expanding `2 + 2` to `let i := 2 in i + i`.  While applying
+reductions gives a unique result, the associated
+expansion may not be unique.  For example, `2 + 2` could also be
+expanded to `let i := 2 in i + 2`.  Reductions that have a unique inverse
+expansion are also referred to as :gdef:`contractions <contraction>`.
+
+The normal form is defined as the result of applying a particular
+set of conversion rules (beta-, delta-, iota- and zeta-reduction and eta-expansion)
+repeatedly until it's no longer possible to apply any of them.
+
+Sometimes the result of a reduction tactic will be a simple value, for example reducing
+`2*3+4` with `cbv beta delta iota` to `10`, which requires applying several
+reduction rules repeatedly.  In other cases, it may yield an expression containing
+variables, axioms or opaque contants that can't be reduced.
+
+The useful conversion rules are shown below.  All of them except for eta-expansion
+can be applied with conversion tactics such as :tacn:`cbv`:
+
+   .. list-table::
+      :header-rows: 1
+
+      * - Conversion name
+        - Description
+
+      * - beta-reduction
+        - eliminates `fun`
+
+      * - delta-reduction
+        - replaces a defined variable or constant with its definition
+
+      * - zeta-reduction
+        - eliminates `let`
+
+      * - eta-expansion
+        - replaces a term `f` of type `forall a : A, B` with `fun x : A => f x`
+
+      * - match-reduction
+        - eliminates `match`
+
+      * - fix-reduction
+        - replaces a `fix` with a :term:`beta-redex`;
+          recursive calls to the symbol are replaced with the `fix` term
+
+      * - cofix-reduction
+        - replaces a `cofix` with a :term:`beta-redex`;
+          recursive calls to the symbol are replaced with the `cofix` term
+
+      * - iota-reduction
+        - match-, fix- and cofix-reduction together
+
+:ref:`applyingconversionrules`
+describes tactics that only apply conversion rules.
+(Other tactics may use conversion rules in addition
+to other changes to the proof state.)
 
 α-conversion
 ~~~~~~~~~~~~
@@ -123,7 +193,7 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
    .. math::
       λ x:T.~(t~x)~\not\triangleright_η~t
 
-   This is because, in general, the type of :math:`t` need not to be convertible
+   This is because, in general, the type of :math:`t` need not be convertible
    to the type of :math:`λ x:T.~(t~x)`. E.g., if we take :math:`f` such that:
 
    .. math::
@@ -141,6 +211,30 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
 
    because the type of the reduced term :math:`∀ x:\Type(2),~\Type(1)` would not be
    convertible to the type of the original term :math:`∀ x:\Type(1),~\Type(1)`.
+
+Examples
+~~~~~~~~
+
+   .. example:: Simple delta, fix, beta and match reductions
+
+      ``+`` is a :ref:`notation <Notations>` for ``Nat.add``, which is defined
+      with a :cmd:`Fixpoint`.
+
+      .. coqtop:: all abort
+
+         Print Nat.add.
+         Goal 1 + 1 = 2.
+         cbv delta.
+         cbv fix.
+         cbv beta.
+         cbv match.
+
+      The term can be fully reduced with `cbv`:
+
+      .. coqtop:: all abort
+
+         Goal 1 + 1 = 2.
+         cbv.
 
 .. _proof-irrelevance:
 

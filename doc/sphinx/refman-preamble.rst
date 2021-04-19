@@ -15,7 +15,7 @@
 .. |c_i| replace:: `c`\ :math:`_{i}`
 .. |c_n| replace:: `c`\ :math:`_{n}`
 .. |Cic| replace:: CIC
-.. |eq_beta_delta_iota_zeta| replace:: `=`\ :math:`_{\beta\delta\iota\zeta}`
+.. |eq_beta_delta_iota_zeta| replace:: `=`\ :math:`_{βδιζ}`
 .. |Latex| replace:: :smallcaps:`LaTeX`
 .. |Ltac| replace:: `L`:sub:`tac`
 .. |p_1| replace:: `p`\ :math:`_{1}`
