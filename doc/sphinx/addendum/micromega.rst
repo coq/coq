@@ -295,7 +295,7 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
    The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
 
-.. cmd:: Add Zify @add_zify @one_term
+.. cmd:: Add Zify @add_zify @qualid
 
    .. insertprodn add_zify add_zify
 
@@ -304,6 +304,9 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
       | {| PropOp | PropBinOp | PropUOp | Saturate }
 
    Registers an instance of the specified typeclass.
+   The typeclass type (e.g. :g:`BinOp Z.mul` or :g:`BinRel (@eq Z)`) has the additional constraint that
+   the non-implicit argument (here, :g:`Z.mul` or :g:`(@eq Z)`)
+   is either a :n:`@reference` (here, :g:`Z.mul`) or the application of a :n:`@reference` (here, :g:`@eq`) to a sequence of :n:`@one_term`.
 
 .. cmd:: Show Zify @show_zify
 

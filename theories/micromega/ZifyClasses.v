@@ -7,7 +7,6 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-Set Primitive Projections.
 
 (** An alternative to [zify] in ML parametrised by user-provided classes instances.
 
@@ -220,6 +219,13 @@ Proof.
   exact (fun H => proj1 IFF H).
 Qed.
 
+Lemma rew_iff_rev  (P Q : Prop) (IFF : P <-> Q) :  Q -> P.
+Proof.
+  exact (fun H => proj2 IFF H).
+Qed.
+
+
+
 (** Registering constants for use by the plugin *)
 Register eq_iff      as ZifyClasses.eq_iff.
 Register target_prop as ZifyClasses.target_prop.
@@ -247,6 +253,7 @@ Register eq          as ZifyClasses.eq.
 Register mkinjprop   as ZifyClasses.mkinjprop.
 Register iff_refl    as ZifyClasses.iff_refl.
 Register rew_iff     as ZifyClasses.rew_iff.
+Register rew_iff_rev as ZifyClasses.rew_iff_rev.
 Register source_prop as ZifyClasses.source_prop.
 Register injprop_ok  as ZifyClasses.injprop_ok.
 Register iff         as ZifyClasses.iff.
