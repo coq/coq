@@ -28,7 +28,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 
 COQDOC_OPTIONS = ['--body-only', '--no-glob', '--no-index', '--no-externals',
-                  '-s', '--html', '--stdout', '--utf8']
+                  '-s', '--html', '--stdout', '--utf8', '--parse-comments']
 
 COQDOC_SYMBOLS = ["->", "<-", "<->", "=>", "<=", ">=", "<>", "~", "/\\", "\\/", "|-", "*", "forall", "exists"]
 COQDOC_HEADER = "".join("(** remove printing {} *)".format(s) for s in COQDOC_SYMBOLS)
@@ -68,8 +68,19 @@ def lex(source):
         if isinstance(elem, NavigableString):
             yield [], elem
         elif elem.name == "span":
-            cls = "coqdoc-{}".format(elem['title'])
-            yield [cls], elem.string
+            if elem.string:
+                cls = "coqdoc-{}".format(elem.get("title", "comment"))
+                yield [cls], elem.string
+            else:
+                # handle multi-line comments
+                children = list(elem.children)
+                mlc = children[0].startswith("(*") and children[-1].endswith ("*)")
+                for elem2 in children:
+                    if isinstance(elem2, NavigableString):
+                        cls = ["coqdoc-comment"] if mlc else []
+                        yield cls, elem2
+                    elif elem2.name == 'br':
+                        pass
         elif elem.name == 'br':
             pass
         else:

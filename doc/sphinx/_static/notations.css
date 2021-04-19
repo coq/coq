@@ -267,6 +267,11 @@ code span.error {
     color: inherit !important;
 }
 
+
+.coqdoc-comment {
+    color: #808080 !important
+}
+
 /* make the error message index readable */
 .indextable code {
     white-space: inherit;  /* break long lines */
