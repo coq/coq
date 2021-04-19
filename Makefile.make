@@ -277,7 +277,7 @@ cacheclean:
 	find theories user-contrib test-suite -name '.*.aux' -exec rm -f {} +
 
 cleanconfig:
-	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-coq config/Info-*.plist
+	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-coq
 
 distclean: clean cleanconfig cacheclean timingclean
 

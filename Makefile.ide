@@ -28,8 +28,6 @@
 
 COQIDEBYTE:=bin/coqide.byte$(EXE)
 COQIDE:=bin/coqide$(EXE)
-COQIDEAPP:=bin/CoqIDE_$(VERSION).app
-COQIDEINAPP:=$(COQIDEAPP)/Contents/MacOS/coqide
 
 ## CoqIDE source directory and files
 
@@ -154,9 +152,8 @@ $(IDETOP): ide/coqide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide/coqide -I ide/coqide/protocol/ \
 			   $(SYSMOD) \
-			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
+			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $< -o $@
 	$(STRIP_HIDE) $@
-	$(CODESIGN_HIDE) $@
 
 $(IDETOPBYTE): ide/coqide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	$(SHOW)'COQMKTOP -o $@'
@@ -217,7 +214,7 @@ ifeq ($(BEST),opt)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA:.cma=.cmxa) $(IDECMA:.cma=.a)
 endif
 
-install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same time
+install-ide-files:
 	$(MKDIR) $(FULLDATADIR)
 	$(INSTALLLIB) ide/coqide/coq.png ide/coqide/*.lang ide/coqide/coq_style.xml $(IDEBINDINGS) $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
@@ -225,76 +222,6 @@ install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same t
 install-ide-info:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) ide/coqide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
-
-###########################################################################
-# CoqIde MacOS special targets
-###########################################################################
-
-.PHONY: $(COQIDEAPP)/Contents
-
-$(COQIDEAPP)/Contents:
-	$(MKDIR) $@
-	sed -e "s/VERSION/$(VERSION4MACOS)/g" ide/coqide/MacOS/Info.plist.template > $@/Info.plist
-	$(MKDIR) "$@/MacOS"
-
-$(COQIDEINAPP): ide/coqide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
-	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	        -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
-	$(STRIP_HIDE) $@
-
-$(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
-	$(MKDIR) $@/coq/
-	$(INSTALLLIB) ide/coqide/coq.png ide/coqide/*.lang ide/coqide/coq_style.xml $(IDEBINDINGS) $@/coq/
-	$(MKDIR) $@/gtksourceview-3.0/{language-specs,styles}
-	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-3.0/language-specs/
-	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/styles/{styles.rng,classic.xml} $@/gtksourceview-3.0/styles/
-	cp -R "$(GTKSHARE)/"locale $@
-	cp -R "$(GTKSHARE)/"themes $@
-	$(MKDIR) $@/glib-2.0/schemas
-	glib-compile-schemas --targetdir=$@/glib-2.0/schemas "$(GTKSHARE)/"glib-2.0/schemas/
-	cp -R "$(ADWAITASHARE)/"icons $@
-
-$(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
-	$(MKDIR) $@
-	$(INSTALLLIB) $$("$(PIXBUFBIN)/gdk-pixbuf-query-loaders" | sed -n -e '5 s!.*= \(.*\)$$!\1!p')/libpixbufloader-png.so $@
-
-$(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
-	$(MKDIR) $@
-	$(INSTALLLIB) "$(GTKLIBS)/gtk-3.0/3.0.0/immodules/"*.dylib $@ || $(INSTALLLIB) "$(GTKLIBS)/gtk-3.0/3.0.0/immodules/"*.so $@
-
-
-$(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
-	$(MKDIR) $@/xdg/coq
-	$(MKDIR) $@/gtk-3.0
-	{ "$(PIXBUFBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
-	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \
-	> $@/gtk-3.0/gdk-pixbuf.loaders
-	{ "$(GTKBIN)/gtk-query-immodules-3.0" $@/../immodules/*.{dylib,so} |\
-	 sed -e "s!/.*\(/immodules/.*.dylib\)!@executable_path/../Resources/\1!" |\
-	 sed -e "s!/.*\(/immodules/.*.so\)!@executable_path/../Resources/\1!" |\
-	 sed -e "s!/.*\(/share/locale\)!@executable_path/../Resources/\1!"; } \
-	> $@/gtk-3.0/gtk-immodules.loaders
-	$(MKDIR) $@/pango
-	echo "[Pango]" > $@/pango/pangorc
-
-$(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $(COQIDEAPP)/Contents/Resources/loaders $(COQIDEAPP)/Contents $(COQIDEINAPP)
-	$(MKDIR) $@
-	macpack -d ../Resources/lib $(COQIDEINAPP)
-	for i in $@/../bin/*; \
-	do \
-	  macpack -d ../lib $$i; \
-	done
-	for i in $@/../loaders/*.so $@/../immodules/*.{dylib,so}; \
-	do \
-	  macpack -d ../lib $$i; \
-	done
-
-$(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)/Contents/Resources/share
-	$(INSTALLLIB) ide/coqide/MacOS/*.icns $@
-
-$(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
-	$(CODESIGN_HIDE) $@
 
 ###########################################################################
 # CoqIde for Windows special targets

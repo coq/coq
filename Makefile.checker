@@ -38,9 +38,8 @@ ifeq ($(BEST),opt)
 $(CHICKEN): config/config.cmxa clib/clib.cmxa lib/lib.cmxa kernel/kernel.cmxa \
 checker/check.cmxa $(LIBCOQRUN) checker/coqchk.mli checker/coqchk.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
+	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) -o $@ $^
 	$(STRIP_HIDE) $@
-	$(CODESIGN_HIDE) $@
 else
 $(CHICKEN): $(CHICKENBYTE)
 	rm -f $@ && cp $< $@
