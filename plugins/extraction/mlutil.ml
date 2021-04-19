@@ -1525,8 +1525,7 @@ let inline_test r t =
   else
     let c = match r with GlobRef.ConstRef c -> c | _ -> assert false in
     let has_body =
-      try constant_has_body (Global.lookup_constant c)
-      with Not_found -> false
+      Environ.mem_constant c (Global.env()) && constant_has_body (Global.lookup_constant c)
     in
     has_body &&
       (let t1 = eta_red t in

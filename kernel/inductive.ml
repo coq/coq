@@ -23,7 +23,7 @@ open Context.Rel.Declaration
 
 type mind_specif = mutual_inductive_body * one_inductive_body
 
-(* raise Not_found if not an inductive type *)
+(* raises an anomaly if not an inductive type *)
 let lookup_mind_specif env (kn,tyi) =
   let mib = Environ.lookup_mind kn env in
   if tyi >= Array.length mib.mind_packets then
