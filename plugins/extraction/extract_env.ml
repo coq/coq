@@ -35,7 +35,7 @@ let environment_until dir_opt =
     | [] -> []
     | d :: l ->
       let meb =
-        Modops.destr_nofunctor (Global.lookup_module (MPfile d)).mod_type
+        Modops.destr_nofunctor (Declareops.expand_mod_type (Global.lookup_module (MPfile d)).mod_data)
       in
       match dir_opt with
       | Some d' when DirPath.equal d d' -> [MPfile d, meb]
@@ -173,7 +173,7 @@ let flatten_modtype env mp me_alg struc_opt =
   | Some me -> me, no_delta
   | None ->
      let mtb = expand_modtype env mp me_alg in
-     mtb.mod_type, mtb.mod_delta
+     Declareops.expand_mod_type mtb.mod_data, mtb.mod_delta
 
 (** Ad-hoc update of environment, inspired by [Mod_typing.check_with_aux_def].
 *)
@@ -268,8 +268,8 @@ and extract_msignature_spec env mp1 reso = function
 
 and extract_mbody_spec : 'a. _ -> _ -> 'a generic_module_body -> _ =
   fun env mp mb -> match mb.mod_type_alg with
-  | Some ty -> extract_mexpression_spec env mp (mb.mod_type,ty)
-  | None -> extract_msignature_spec env mp mb.mod_delta mb.mod_type
+  | Some ty -> extract_mexpression_spec env mp (Declareops.expand_mod_type mb.mod_data,ty)
+  | None -> extract_msignature_spec env mp mb.mod_delta (Declareops.expand_mod_type mb.mod_data)
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to implementations.
@@ -370,20 +370,20 @@ and extract_module env mp ~all mb =
      Since we look at modules from outside, we shouldn't have variables.
      But a Declare Module at toplevel seems legal (cf #2525). For the
      moment we don't support this situation. *)
-  let impl = match mb.mod_expr with
+  let impl = match Declareops.expand_mod_impl mb.mod_data with
     | Abstract -> error_no_module_expr mp
     | Algebraic me -> extract_mexpression env mp me
     | Struct sign ->
       (* This module has a signature, otherwise it would be FullStruct.
          We extract just the elements required by this signature. *)
-      let () = add_labels mp mb.mod_type in
+      let () = add_labels mp (Declareops.expand_mod_type mb.mod_data) in
       extract_msignature env mp mb.mod_delta ~all:false sign
-    | FullStruct -> extract_msignature env mp mb.mod_delta ~all mb.mod_type
+    | FullStruct -> extract_msignature env mp mb.mod_delta ~all (Declareops.expand_mod_type mb.mod_data)
   in
   (* Slight optimization: for modules without explicit signatures
      ([FullStruct] case), we build the type out of the extracted
      implementation *)
-  let typ = match mb.mod_expr with
+  let typ = match Declareops.expand_mod_impl mb.mod_data with
     | FullStruct ->
       assert (Option.is_empty mb.mod_type_alg);
       mtyp_of_mexpr impl

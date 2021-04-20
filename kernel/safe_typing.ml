@@ -1027,7 +1027,7 @@ let add_module l me inl senv =
   let mb = Declareops.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
   let senv =
-    if Modops.is_functor mb.mod_type then senv
+    if Modops.is_functor (Declareops.expand_mod_type mb.mod_data) then senv
     else update_resolver (Mod_subst.add_delta_resolver mb.mod_delta) senv
   in
   (mp,mb.mod_delta),senv
@@ -1075,7 +1075,7 @@ let add_module_parameter mbid mte inl senv =
     | _ -> assert false
   in
   let new_paramresolver =
-    if Modops.is_functor mtb.mod_type then senv.paramresolver
+    if Modops.is_functor (Declareops.expand_mod_type mtb.mod_data) then senv.paramresolver
     else Mod_subst.add_delta_resolver mtb.mod_delta senv.paramresolver
   in
   mtb.mod_delta,
@@ -1098,8 +1098,7 @@ let propagate_loads senv =
 let functorize_module params mb =
   let f x = functorize params x in
   { mb with
-    mod_expr = Modops.implem_smartmap f f mb.mod_expr;
-    mod_type = f mb.mod_type;
+    mod_data = functorize params mb.mod_data;
     mod_type_alg = Option.map f mb.mod_type_alg }
 
 let build_module_body params restype senv =
@@ -1107,7 +1106,7 @@ let build_module_body params restype senv =
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
   let mb, cst =
     Mod_typing.finalize_module senv.env senv.modpath
-      (struc,None,senv.modresolver,Univ.Constraint.empty) restype'
+      struc senv.modresolver restype'
   in
   let mb' = functorize_module params mb in
   { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }, cst
@@ -1158,7 +1157,7 @@ let end_module l restype senv =
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mb newenv in
   let newresolver =
-    if Modops.is_functor mb.mod_type then oldsenv.modresolver
+    if Modops.is_functor (Declareops.expand_mod_type mb.mod_data) then oldsenv.modresolver
     else Mod_subst.add_delta_resolver mb.mod_delta oldsenv.modresolver
   in
   (mp,mbids,mb.mod_delta),
@@ -1166,8 +1165,7 @@ let end_module l restype senv =
 
 let build_mtb mp sign delta =
   { mod_mp = mp;
-    mod_expr = ModType;
-    mod_type = sign;
+    mod_data = sign;
     mod_type_alg = None;
     mod_delta = delta;
     mod_retroknowledge = ModTypeRK }
@@ -1182,7 +1180,7 @@ let end_modtype l senv =
   let newenv = set_engagement_opt newenv senv.engagement in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads {senv with env=newenv} in
-  let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
+  let auto_tb = functorize params (NoFunctor (ModType, NoFunctor (List.rev senv.revstruct))) in
   let mtb = build_mtb mp auto_tb senv.modresolver in
   let newenv = Environ.add_modtype mtb senv'.env in
   let newresolver = oldsenv.modresolver in
@@ -1216,7 +1214,7 @@ let add_include me is_module inl senv =
     | NoFunctor str -> resolver,str,senv
   in
   let resolver,str,senv =
-    let struc = NoFunctor (List.rev senv.revstruct) in
+    let struc = NoFunctor (ModType, NoFunctor (List.rev senv.revstruct)) in
     let mtb = build_mtb mp_sup struc senv.modresolver in
     compute_sign sign mtb resolver senv
   in
@@ -1264,8 +1262,7 @@ let export ?except ~output_native_objects senv dir =
   let str = NoFunctor (List.rev senv.revstruct) in
   let mb =
     { mod_mp = mp;
-      mod_expr = FullStruct;
-      mod_type = str;
+      mod_data = NoFunctor (FullStruct, str);
       mod_type_alg = None;
       mod_delta = senv.modresolver;
       mod_retroknowledge = ModBodyRK senv.local_retroknowledge

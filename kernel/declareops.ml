@@ -324,6 +324,32 @@ let relevance_of_projection_repr mib p =
     let _,_,rs,_ = infos.(i) in
     rs.(Names.Projection.Repr.arg p)
 
+let rec map_functorize f = function
+| NoFunctor x -> NoFunctor (f x)
+| MoreFunctor (mib, mty, e) -> MoreFunctor (mib, mty, map_functorize f e)
+
+let rec expand_mod_type : type a. a module_data -> module_signature = fun mb -> match mb with
+| NoFunctor (_, sign) -> sign
+| MoreFunctor (mib, mty, mb) -> MoreFunctor (mib, mty, expand_mod_type mb)
+
+let rec expand_mod_impl : type a. a module_data -> (module_signature, module_expression, a) module_implementation = function
+| NoFunctor (expr, _) ->
+  begin match expr with
+  | Abstract -> Abstract
+  | Algebraic e -> Algebraic (NoFunctor e)
+  | Struct s -> Struct (NoFunctor s)
+  | FullStruct -> FullStruct
+  | ModType -> ModType
+  end
+| MoreFunctor (mib, mty, mb) ->
+  begin match expand_mod_impl mb with
+  | Abstract -> Abstract
+  | Algebraic e -> Algebraic (MoreFunctor (mib, mty, e))
+  | Struct s -> Struct (MoreFunctor (mib, mty, s))
+  | FullStruct -> FullStruct
+  | ModType -> ModType
+  end
+
 (** {6 Hash-consing of inductive declarations } *)
 
 let hcons_regular_ind_arity a =
@@ -398,42 +424,50 @@ and hcons_structure_body sb =
 and hcons_module_signature ms =
   hcons_functorize hcons_module_type hcons_structure_body hcons_module_signature ms
 
-and hcons_module_expression me =
-  hcons_functorize hcons_module_type hcons_module_alg_expr hcons_module_expression me
-
-and hcons_module_implementation (type a) (mip : a module_implementation) : a module_implementation = match mip with
+and hcons_module_implementation : type a. (_, _, a) module_implementation -> (_, _, a) module_implementation =
+fun mip -> match mip with
 | Abstract -> Abstract
 | Algebraic me ->
-  let me' = hcons_module_expression me in
+  let me' = hcons_module_alg_expr me in
   if me == me' then mip else Algebraic me'
 | Struct ms ->
-  let ms' = hcons_module_signature ms in
+  let ms' = hcons_structure_body ms in
   if ms == ms' then mip else Struct ms
 | FullStruct -> FullStruct
 | ModType -> ModType
 
+and hcons_module_data : type a. a module_data -> a module_data = fun data -> match data with
+| NoFunctor (expr, sign) ->
+  let expr' = hcons_module_implementation expr in
+  let sign' = hcons_module_signature sign in
+  if expr' == expr && sign' == sign then data else NoFunctor (expr', sign')
+| MoreFunctor (mid, ty, nf) ->
+  (** FIXME *)
+  let mid' = mid in
+  let ty' = hcons_module_type ty in
+  let nf' = hcons_module_data nf in
+  if mid == mid' && ty == ty' && nf == nf' then data
+  else MoreFunctor (mid, ty', nf')
+
 and hcons_generic_module_body :
-  'a. 'a generic_module_body -> 'a generic_module_body =
+  type a. a generic_module_body -> a generic_module_body =
   fun mb ->
   let mp' = mb.mod_mp in
-  let expr' = hcons_module_implementation mb.mod_expr in
-  let type' = hcons_module_signature mb.mod_type in
+  let data' = hcons_module_data mb.mod_data in
   let type_alg' = mb.mod_type_alg in
   let delta' = mb.mod_delta in
   let retroknowledge' = mb.mod_retroknowledge in
 
   if
     mb.mod_mp == mp' &&
-    mb.mod_expr == expr' &&
-    mb.mod_type == type' &&
+    mb.mod_data == data' &&
     mb.mod_type_alg == type_alg' &&
     mb.mod_delta == delta' &&
     mb.mod_retroknowledge == retroknowledge'
   then mb
   else {
     mod_mp = mp';
-    mod_expr = expr';
-    mod_type = type';
+    mod_data = data';
     mod_type_alg = type_alg';
     mod_delta = delta';
     mod_retroknowledge = retroknowledge';

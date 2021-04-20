@@ -45,7 +45,7 @@ let split_struc k m struc =
     | h::tail -> split (h::rev_before) tail
   in split [] struc
 
-let discr_resolver mtb = match mtb.mod_type with
+let discr_resolver mtb = match Declareops.expand_mod_type mtb.mod_data with
   | NoFunctor _ -> mtb.mod_delta
   | MoreFunctor _ -> empty_delta_resolver
 
@@ -132,18 +132,18 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
         | SFBmodule mb -> mb
         | _ -> error_not_a_module (Label.to_string lab)
       in
-      begin match mb.mod_expr with
-        | Abstract ->
-          let struc = Modops.destr_nofunctor mb.mod_type in
+      begin match mb.mod_data with
+        | NoFunctor (Abstract, _) ->
+          let struc = Modops.destr_nofunctor (Declareops.expand_mod_type mb.mod_data) in
           let struc',c',cst =
             check_with_def env' struc (idl,(c,ctx)) (MPdot(mp,lab)) mb.mod_delta
           in
           let mb' = { mb with
-                      mod_type = NoFunctor struc';
+                      mod_data = NoFunctor (Abstract, NoFunctor struc');
                       mod_type_alg = None }
           in
           before@(lab,SFBmodule mb')::after, c', cst
-        | (Algebraic _ | Struct _ | FullStruct) -> error_generative_module_expected lab
+        | NoFunctor ((Algebraic _ | Struct _ | FullStruct), _) | MoreFunctor _ -> error_generative_module_expected lab
       end
   with
   | Not_found -> error_no_such_label lab
@@ -165,7 +165,7 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       (* Toplevel module definition *)
       let mb_mp1 = lookup_module mp1 env in
       let mtb_mp1 = module_type_of_module mb_mp1 in
-      let cst = match old.mod_expr with
+      let cst = match Declareops.expand_mod_impl old.mod_data with
         | Abstract ->
           let mtb_old = module_type_of_module old in
           let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
@@ -177,10 +177,12 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       in
       let mp' = MPdot (mp,lab) in
       let new_mb = strengthen_and_subst_mb mb_mp1 mp' false in
+      (* FIXME: wth are we doing *)
+      let sign = Declareops.expand_mod_type new_mb.mod_data in
       let new_mb' =
         { new_mb with
           mod_mp = mp';
-          mod_expr = Algebraic (NoFunctor (MEident mp1));
+          mod_data = NoFunctor (Algebraic (MEident mp1), sign);
         }
       in
       let new_equiv = add_delta_resolver equiv new_mb.mod_delta in
@@ -196,15 +198,16 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
         | SFBmodule msb -> msb
         | _ -> error_not_a_module (Label.to_string lab)
       in
-      begin match old.mod_expr with
+      begin match Declareops.expand_mod_impl old.mod_data with
       | Abstract ->
-        let struc = destr_nofunctor old.mod_type in
+        (* This ensures that old.mod_data is a NoFunctor *)
+        let struc = destr_nofunctor (Declareops.expand_mod_type old.mod_data) in
         let struc',equiv',cst =
           check_with_mod env' struc (idl,mp1) mp' old.mod_delta
         in
         let new_mb =
           { old with
-            mod_type = NoFunctor struc';
+            mod_data = NoFunctor (Abstract, NoFunctor struc');
             mod_type_alg = None;
             mod_delta = equiv' }
         in
@@ -262,7 +265,7 @@ let rec translate_mse env mpo inl = function
         let mt = lookup_modtype mp1 env in
         module_body_of_type mt.mod_mp mt
     in
-    mb.mod_type, me, mb.mod_delta, Univ.Constraint.empty
+    Declareops.expand_mod_type mb.mod_data, me, mb.mod_delta, Univ.Constraint.empty
   |MEapply (fe,mp1) ->
     translate_apply env inl (translate_mse env mpo inl fe) mp1 mk_alg_app
   |MEwith(me, with_decl) ->
@@ -270,35 +273,43 @@ let rec translate_mse env mpo inl = function
     let mp = mp_from_mexpr me in
     check_with env mp (translate_mse env None inl me) with_decl
 
-let mk_mod mp e ty reso =
+let mk_mod mp e reso =
   { mod_mp = mp;
-    mod_expr = e;
-    mod_type = ty;
+    mod_data = e;
     mod_type_alg = None;
     mod_delta = reso;
     mod_retroknowledge = ModBodyRK []; }
 
 let mk_modtype mp ty reso =
-  let mb = mk_mod mp Abstract ty reso in
-  { mb with mod_expr = ModType; mod_retroknowledge = ModTypeRK }
+  let mod_data = Declareops.map_functorize (fun s -> ModType, s) ty in
+  { mod_mp = mp;
+    mod_data;
+    mod_type_alg = None;
+    mod_delta = reso;
+    mod_retroknowledge = ModTypeRK; }
 
 let rec translate_mse_funct env mpo inl mse = function
   |[] ->
     let sign,alg,reso,cst = translate_mse env mpo inl mse in
-    sign, NoFunctor alg, reso, cst
+    NoFunctor (alg, sign), reso, cst
   |(mbid, ty) :: params ->
     let mp_id = MPbound mbid in
     let mtb, cst = translate_modtype env mp_id inl ([],ty) in
     let env' = add_module_type mp_id mtb env in
-    let sign,alg,reso,cst' = translate_mse_funct env' mpo inl mse params in
-    let alg' = MoreFunctor (mbid,mtb,alg) in
-    MoreFunctor (mbid, mtb, sign), alg',reso, Univ.Constraint.union cst cst'
+    let sign,reso,cst' = translate_mse_funct env' mpo inl mse params in
+    MoreFunctor (mbid, mtb, sign), reso, Univ.Constraint.union cst cst'
 
 and translate_modtype env mp inl (params,mte) =
-  let sign,alg,reso,cst = translate_mse_funct env None inl mte params in
+  let sign,reso,cst = translate_mse_funct env None inl mte params in
+  let alg = Declareops.map_functorize (fun (alg, _) -> alg) sign in
+  let sign = Declareops.map_functorize (fun (_, s) -> s) sign in
   let mtb = mk_modtype (mp_from_mexpr mte) sign reso in
   let mtb' = subst_modtype_and_resolver mtb mp in
   { mtb' with mod_type_alg = Some alg }, cst
+
+let rec skip_params = function
+| NoFunctor x -> x
+| MoreFunctor (_, _, f) -> skip_params f
 
 (** [finalize_module] :
     from an already-translated (or interactive) implementation and
@@ -306,16 +317,26 @@ and translate_modtype env mp inl (params,mte) =
 
 let finalize_module env mp (sign,alg,reso,cst1) restype = match restype with
   | None ->
-    let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
-    mk_mod mp impl sign reso, cst1
+    let map s = match alg with Some e -> Algebraic e, s | None -> FullStruct, s in
+    let impl = Declareops.map_functorize map sign in
+    mk_mod mp impl reso, cst1
   | Some (params_mte,inl) ->
     let res_mtb, cst2 = translate_modtype env mp inl params_mte in
     let auto_mtb = mk_modtype mp sign reso in
     let cst3 = Subtyping.check_subtypes env auto_mtb res_mtb in
-    let impl = match alg with Some e -> Algebraic e | None -> Struct sign in
+    let impl = match alg with
+    | Some e ->
+      Declareops.map_functorize (fun (ModType, s) -> Algebraic e, s) res_mtb.mod_data
+    | None ->
+      (* Eta-expand the functor type as much as possible. This is sound because
+         we have checked for subtyping above. *)
+      let typ = Declareops.expand_mod_type res_mtb.mod_data in
+      let sign = skip_params (skip_params sign) in
+      Declareops.map_functorize (fun s -> Struct sign, NoFunctor s) typ
+    in
     { res_mtb with
       mod_mp = mp;
-      mod_expr = impl;
+      mod_data = impl;
       mod_retroknowledge = ModBodyRK [];
     },
     (** cst from module body typing,
@@ -328,7 +349,9 @@ let translate_module env mp inl = function
     let mtb, cst = translate_modtype env mp inl (params,ty) in
     module_body_of_type mp mtb, cst
   |MExpr (params,mse,oty) ->
-    let (sg,alg,reso,cst) = translate_mse_funct env (Some mp) inl mse params in
+    let (sign,reso,cst) = translate_mse_funct env (Some mp) inl mse params in
+    let sg = Declareops.map_functorize snd sign in
+    let alg = fst (skip_params sign) in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
     finalize_module env mp (sg,Some alg,reso,cst) restype
 
@@ -346,7 +369,7 @@ let rec forbid_incl_signed_functor env = function
   |MEwith _ -> assert false (* No 'with' syntax for modules *)
   |MEident mp1 ->
     let mb = lookup_module mp1 env in
-    match mb.mod_type, mb.mod_type_alg, mb.mod_expr with
+    match Declareops.expand_mod_type mb.mod_data, mb.mod_type_alg, Declareops.expand_mod_impl mb.mod_data with
     |MoreFunctor _, Some _, _ ->
       (* functor + restricted signature = error *)
       error_include_restricted_functor mp1
@@ -358,7 +381,7 @@ let rec forbid_incl_signed_functor env = function
 let rec translate_mse_inclmod env mp inl = function
   |MEident mp1 ->
     let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp true in
-    let sign = clean_bounded_mod_expr mb.mod_type in
+    let sign = clean_bounded_mod_expr (Declareops.expand_mod_type mb.mod_data) in
     sign,(),mb.mod_delta,Univ.Constraint.empty
   |MEapply (fe,arg) ->
     let ftrans = translate_mse_inclmod env mp inl fe in
@@ -371,5 +394,9 @@ let translate_mse_incl is_mod env mp inl me =
     translate_mse_inclmod env mp inl me
   else
     let mtb, cst = translate_modtype env mp inl ([],me) in
-    let sign = clean_bounded_mod_expr mtb.mod_type in
+    let sign = clean_bounded_mod_expr (Declareops.expand_mod_type mtb.mod_data) in
     sign, (), mtb.mod_delta, cst
+
+let finalize_module env mp (sign : module_signature) reso restype =
+  let sign = Declareops.map_functorize (fun s -> NoFunctor s) sign in
+  finalize_module env mp (sign,None,reso,Univ.Constraint.empty) restype

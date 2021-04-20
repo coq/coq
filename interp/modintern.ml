@@ -66,8 +66,8 @@ let lookup_module lqid = fst (lookup_module_or_modtype Module lqid)
 
 let lookup_polymorphism env base kind fqid =
   let m = match kind with
-    | Module -> (Environ.lookup_module base env).mod_type
-    | ModType -> (Environ.lookup_modtype base env).mod_type
+    | Module -> Declareops.expand_mod_type (Environ.lookup_module base env).mod_data
+    | ModType -> Declareops.expand_mod_type (Environ.lookup_modtype base env).mod_data
     | ModAny -> assert false
   in
   let rec defunctor = function
@@ -94,9 +94,9 @@ let lookup_polymorphism env base kind fqid =
       let test (lab,obj) =
         match Id.equal (Label.to_id lab) id, obj with
         | false, _ | _, (SFBconst _ | SFBmind _) -> None
-        | true, SFBmodule body -> Some (next body.mod_type)
+        | true, SFBmodule body -> Some (next (Declareops.expand_mod_type body.mod_data))
         | true, SFBmodtype body ->  (* XXX is this valid? If not error later *)
-          Some (next body.mod_type)
+          Some (next (Declareops.expand_mod_type body.mod_data))
       in
       (try CList.find_map test m with Not_found -> false (* error later *))
   in

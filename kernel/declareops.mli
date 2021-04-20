@@ -75,6 +75,13 @@ val inductive_make_projections : Names.inductive -> mutual_inductive_body ->
 
 val relevance_of_projection_repr : mutual_inductive_body -> Names.Projection.Repr.t -> Sorts.relevance
 
+(** {6 Module accessors} *)
+
+val map_functorize : ('a -> 'b) -> ('r, 'a) functorize -> ('r, 'b) functorize
+
+val expand_mod_type : 'a module_data -> module_signature
+val expand_mod_impl : 'a module_data -> (module_signature, module_expression, 'a) module_implementation
+
 (** {6 Kernel flags} *)
 
 (** A default, safe set of flags for kernel type-checking *)

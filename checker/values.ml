@@ -43,6 +43,13 @@ let fix (f : value -> value) : value =
   let () = self := ans in
   ans
 
+let nfix (n : int) (f : int -> value array -> value) : value array =
+  let self = Array.init n (fun _ -> ref Any) in
+  let ans = Array.map (fun v -> Proxy v) self in
+  let iter i r = r := f i ans in
+  let () = Array.iteri iter self in
+  ans
+
 (** Some pseudo-constructors *)
 
 let v_tuple name v = Tuple(name,v)
@@ -345,33 +352,48 @@ let rec v_mae =
     [|v_mae; Any|]  (* SEBwith *)
   |])
 
-let rec v_sfb =
-  Sum ("struct_field_body",0,
-  [|[|v_cb|];       (* SFBconst *)
-    [|v_ind_pack|]; (* SFBmind *)
-    [|v_module|];   (* SFBmodule *)
-    [|v_modtype|]   (* SFBmodtype *)
-  |])
-and v_struc = List (Tuple ("label*sfb",[|v_id;v_sfb|]))
-and v_sign =
-  Sum ("module_sign",0,
-  [|[|v_struc|];                   (* NoFunctor *)
-    [|v_uid;v_modtype;v_sign|]|])  (* MoreFunctor *)
-and v_mexpr =
-  Sum ("module_expr",0,
-  [|[|v_mae|];                     (* NoFunctor *)
-    [|v_uid;v_modtype;v_mexpr|]|]) (* MoreFunctor *)
-and v_impl =
-  Sum ("module_impl",2, (* Abstract, FullStruct *)
-  [|[|v_mexpr|];  (* Algebraic *)
-    [|v_sign|]|])  (* Struct *)
-and v_noimpl = Sum ("module_type", 3, [||]) (* ModType, allows in practice Abstract / FullStruct but should not matter *)
-and v_module =
-  Tuple ("module_body",
-         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_resolver;v_retroknowledge|])
-and v_modtype =
-  Tuple ("module_type_body",
-         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_resolver;v_unit|])
+let v_functorize sign v = fix begin fun self ->
+  Sum ("functorize",0,
+  [|[|v|];                   (* NoFunctor *)
+    [|v_uid;sign;self|]|])  (* MoreFunctor *)
+end
+
+let v_module_block = nfix 8 begin fun i self -> match self with
+| [| v_sfb; v_struc; v_sign; v_mexpr; v_impl; v_noimpl; v_module; v_modtype |] ->
+  begin match i with
+  | 0 -> (* v_sfb *)
+    Sum ("struct_field_body",0,
+    [|[|v_cb|];       (* SFBconst *)
+      [|v_ind_pack|]; (* SFBmind *)
+      [|v_module|];   (* SFBmodule *)
+      [|v_modtype|]   (* SFBmodtype *)
+    |])
+  | 1 -> (* v_struc *)
+    List (Tuple ("label*sfb",[|v_id;v_sfb|]))
+  | 2 -> (* v_sign *)
+    v_functorize v_modtype v_struc
+  | 3 -> (* v_mexpr *)
+    v_functorize v_modtype v_mae
+  | 4 -> (* v_impl *)
+    Sum ("module_impl",2, (* Abstract, FullStruct *)
+    [|[|v_mae|];  (* Algebraic *)
+      [|v_struc|]|])  (* Struct *)
+  | 5 -> (* v_noimpl *)
+    Sum ("module_type", 3, [||]) (* ModType, allows in practice Abstract / FullStruct but should not matter *)
+  | 6 -> (* v_module *)
+    let v_data = v_functorize v_modtype (v_pair v_impl v_sign) in
+    Tuple ("module_body",
+          [|v_mp;v_data;Opt v_mexpr;v_resolver;v_retroknowledge|])
+  | 7 -> (* v_modtype *)
+    let v_data = v_functorize v_modtype (v_pair v_noimpl v_sign) in
+    Tuple ("module_type_body",
+          [|v_mp;v_data;Opt v_mexpr;v_resolver;v_unit|])
+  | _ -> assert false
+  end
+| _ -> assert false
+end
+
+let v_module = v_module_block.(6)
 
 (** kernel/safe_typing *)
 

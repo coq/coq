@@ -45,7 +45,7 @@ and translate_field mp env acc (l,x) =
           Printf.sprintf "Compiling module %s..." (ModPath.to_string mp)
         in
         Pp.str msg));
-     translate_mod mp env md.mod_type acc
+     translate_mod mp env (Declareops.expand_mod_type md.mod_data) acc
   | SFBmodtype mdtyp ->
      let mp = mdtyp.mod_mp in
      (debug_native_compiler (fun () ->
@@ -53,7 +53,7 @@ and translate_field mp env acc (l,x) =
           Printf.sprintf "Compiling module type %s..." (ModPath.to_string mp)
         in
         Pp.str msg));
-     translate_mod mp env mdtyp.mod_type acc
+     translate_mod mp env (Declareops.expand_mod_type mdtyp.mod_data) acc
 
 let dump_library mp env mod_expr =
   debug_native_compiler (fun () -> Pp.str "Compiling library...");

@@ -494,7 +494,7 @@ let rec compute_subst env mbids sign mp_l inl =
         let mb = Environ.lookup_module mp env in
         let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
         let resolver =
-          if Modops.is_functor mb.mod_type then empty_delta_resolver
+          if Modops.is_functor (Declareops.expand_mod_type mb.mod_data) then empty_delta_resolver
           else
             Modops.inline_delta_resolver env inl mp farg_id farg_b mb.mod_delta
         in
@@ -521,8 +521,8 @@ let rec replace_module_object idl mp0 objs0 mp1 objs1 =
   | idl,lobj::tail -> lobj::replace_module_object idl mp0 tail mp1 objs1
 
 let type_of_mod mp env = function
-  |true -> (Environ.lookup_module mp env).mod_type
-  |false -> (Environ.lookup_modtype mp env).mod_type
+  |true -> Declareops.expand_mod_type (Environ.lookup_module mp env).mod_data
+  |false -> Declareops.expand_mod_type (Environ.lookup_modtype mp env).mod_data
 
 let rec get_module_path = function
   |MEident mp -> mp
@@ -672,9 +672,9 @@ let build_subtypes env mp args mtys =
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
        let mtb, cst = Mod_typing.translate_modtype env mp inl ([],mte) in
-       let mod_type, cst = mk_funct_type env args (mtb.mod_type,cst) in
+       let mod_data, cst = mk_funct_type env args (mtb.mod_data,cst) in
        let ctx = Univ.ContextSet.add_constraints cst ctx in
-       ctx, { mtb with mod_type })
+       ctx, { mtb with mod_data })
     Univ.ContextSet.empty mtys
   in
   (ans, ctx)

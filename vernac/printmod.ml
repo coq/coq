@@ -256,7 +256,7 @@ let get_typ_expr_alg mtb = match mtb.mod_type_alg with
 
 let nametab_register_modparam mbid mtb =
   let id = MBId.to_id mbid in
-  match mtb.mod_type with
+  match Declareops.expand_mod_type mtb.mod_data with
   | MoreFunctor _ -> id (* functorial param : nothing to register *)
   | NoFunctor struc ->
     (* We first try to use the algebraic type expression if any,
@@ -388,7 +388,7 @@ and print_signature x =
 
 and print_modtype extent env mp locals mtb = match mtb.mod_type_alg with
   | Some me -> print_expression true extent env mp locals me
-  | None -> print_signature true extent env mp locals mtb.mod_type
+  | None -> print_signature true extent env mp locals (Declareops.expand_mod_type mtb.mod_data)
 
 let rec printable_body dir =
   let dir = pop_dirpath dir in
@@ -416,17 +416,17 @@ let print_signature' is_type extent env mp me =
 let unsafe_print_module extent env mp with_body mb =
   let name = print_modpath [] mp in
   let pr_equals = spc () ++ str ":= " in
-  let body = match with_body, mb.mod_expr with
+  let body = match with_body, Declareops.expand_mod_impl mb.mod_data with
     | false, _
     | true, Abstract -> mt()
     | _, Algebraic me -> pr_equals ++ print_expression' false extent env mp me
     | _, Struct sign -> pr_equals ++ print_signature' false extent env mp sign
-    | _, FullStruct -> pr_equals ++ print_signature' false extent env mp mb.mod_type
+    | _, FullStruct -> pr_equals ++ print_signature' false extent env mp (Declareops.expand_mod_type mb.mod_data)
   in
-  let modtype = match mb.mod_expr, mb.mod_type_alg with
+  let modtype = match Declareops.expand_mod_impl mb.mod_data, mb.mod_type_alg with
     | FullStruct, _ -> mt ()
     | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' true extent env mp ty
-    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true extent env mp mb.mod_type
+    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true extent env mp (Declareops.expand_mod_type mb.mod_data)
   in
   hv 0 (keyword "Module" ++ spc () ++ name ++ modtype ++ body)
 
@@ -450,7 +450,7 @@ let print_modtype kn =
      try
       if !short then raise ShortPrinting;
       print_signature' true WithContents
-        (Global.env ()) kn mtb.mod_type
+        (Global.env ()) kn (Declareops.expand_mod_type mtb.mod_data)
      with e when CErrors.noncritical e ->
       print_signature' true OnlyNames
-        (Global.env ()) kn mtb.mod_type)
+        (Global.env ()) kn (Declareops.expand_mod_type mtb.mod_data))

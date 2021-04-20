@@ -95,10 +95,10 @@ and fields_of_mp mp =
   in
   Modops.subst_structure subs fields
 
-and fields_of_mb subs mb args = match mb.mod_expr with
+and fields_of_mb subs mb args = match Declareops.expand_mod_impl mb.mod_data with
   |Algebraic expr -> fields_of_expression subs mb.mod_mp args expr
   |Struct sign -> fields_of_signature subs mb.mod_mp args sign
-  |Abstract|FullStruct -> fields_of_signature subs mb.mod_mp args mb.mod_type
+  |Abstract|FullStruct -> fields_of_signature subs mb.mod_mp args (Declareops.expand_mod_type mb.mod_data)
 
 (** The Abstract case above corresponds to [Declare Module] *)
 

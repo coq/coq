@@ -1075,7 +1075,7 @@ let vernac_import export refl =
     let loc = qid.loc in
     let m = try
         let m = Nametab.locate_module qid in
-        let () = if Modops.is_functor (Global.lookup_module m).Declarations.mod_type
+        let () = if Modops.is_functor (Declareops.expand_mod_type (Global.lookup_module m).Declarations.mod_data)
           then CErrors.user_err ?loc Pp.(str "Cannot import functor " ++ pr_qualid qid ++ str".")
         in
         m

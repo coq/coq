@@ -49,7 +49,7 @@ val translate_mse :
     an (optional) signature entry, produces a final [module_body] *)
 
 val finalize_module :
-  env -> ModPath.t -> (module_expression option) translation ->
+  env -> ModPath.t -> module_signature -> delta_resolver ->
   (module_type_entry * inline) option ->
   module_body * Univ.Constraint.t
 

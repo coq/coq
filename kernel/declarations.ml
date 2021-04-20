@@ -267,6 +267,18 @@ type module_alg_expr =
   | MEapply of module_alg_expr * ModPath.t
   | MEwith of module_alg_expr * with_declaration
 
+type ('body, 'expr, _) module_implementation =
+  | Abstract : ('body, 'expr, [ `modimpl ]) module_implementation
+    (** no accessible implementation *)
+  | Algebraic : 'expr ->  ('body, 'expr, [ `modimpl ]) module_implementation
+    (** non-interactive algebraic expression *)
+  | Struct : 'body ->  ('body, 'expr, [ `modimpl ]) module_implementation
+    (** interactive body *)
+  | FullStruct : ('body, 'expr, [ `modimpl ]) module_implementation
+    (** special case of [Struct] : the body is exactly [mod_type] *)
+  | ModType : ('body, 'expr, [ `modtype ]) module_implementation
+    (** this is a module type *)
+
 (** A component of a module structure *)
 
 type structure_field_body =
@@ -291,17 +303,12 @@ and module_signature = (module_type_body,structure_body) functorize
 
 and module_expression = (module_type_body,module_alg_expr) functorize
 
-and _ module_implementation =
-  | Abstract : [ `modimpl ] module_implementation (** no accessible implementation *)
-  | Algebraic : module_expression -> [ `modimpl ] module_implementation (** non-interactive algebraic expression *)
-  | Struct : module_signature -> [ `modimpl ] module_implementation (** interactive body *)
-  | FullStruct : [ `modimpl ] module_implementation (** special case of [Struct] : the body is exactly [mod_type] *)
-  | ModType : [ `modtype ] module_implementation (* this is a module type *)
+and 'a module_data = (module_type_body, (structure_body, module_alg_expr, 'a) module_implementation * module_signature) functorize
+(* Signature may contain more parameters because an algebraic implementation can be a functor *)
 
 and 'a generic_module_body =
   { mod_mp : ModPath.t; (** absolute path of the module *)
-    mod_expr : 'a module_implementation; (** implementation *)
-    mod_type : module_signature; (** expanded type *)
+    mod_data : 'a module_data; (** implementation + expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
     mod_delta : Mod_subst.delta_resolver; (**
       quotiented set of equivalent constants and inductive names *)

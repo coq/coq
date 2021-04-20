@@ -144,11 +144,13 @@ let rec functor_iter fty f0 = function
 (** {6 Misc operations } *)
 
 let module_type_of_module mb =
-  { mb with mod_expr = ModType; mod_type_alg = None;
+  let mod_data = map_functorize (fun (_, sign) -> ModType, sign) mb.mod_data in
+  { mb with mod_data; mod_type_alg = None;
     mod_retroknowledge = ModTypeRK; }
 
 let module_body_of_type mp mtb =
-  { mtb with mod_expr = Abstract; mod_mp = mp;
+  let mod_data = map_functorize (fun (_, sign) -> Abstract, sign) mtb.mod_data in
+  { mtb with mod_data; mod_mp = mp;
       mod_retroknowledge = ModBodyRK []; }
 
 let check_modpath_equiv env mp1 mp2 =
@@ -159,16 +161,18 @@ let check_modpath_equiv env mp1 mp2 =
     if ModPath.equal mp1' mp2' then ()
     else error_not_equal_modpaths mp1 mp2
 
-let implem_smartmap (type a) fs fa (impl : a module_implementation) : a module_implementation = match impl with
+let implem_smartmap (type a) fs fa (impl : (_, _, a) module_implementation) : (_, _, a) module_implementation = match impl with
   |Struct e -> let e' = fs e in if e==e' then impl else Struct e'
   |Algebraic a -> let a' = fa a in if a==a' then impl else Algebraic a'
-  |Abstract|FullStruct -> impl
+  |Abstract-> impl
+  |FullStruct -> impl
   |ModType -> ModType
 
-let implem_iter (type a) fs fa (impl : a module_implementation) = match impl with
+let implem_iter (type a) fs fa (impl : (_, _, a) module_implementation) = match impl with
   |Struct e -> fs e
   |Algebraic a -> fa a
-  |Abstract|FullStruct -> ()
+  |Abstract-> ()
+  |FullStruct -> ()
   |ModType -> ()
 
 (** {6 Substitutions of modular structures } *)
@@ -208,36 +212,39 @@ and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a
       let l' = List.Smart.map (subst_retro_action subst) l in
       if l == l' then r else ModBodyRK l
 
-and subst_body : 'a. _ -> _ -> _ -> 'a generic_module_body -> 'a generic_module_body =
+and subst_body : type a. _ -> _ -> _ -> a generic_module_body -> a generic_module_body =
   fun is_mod sub do_delta mb ->
-    let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty;
+    let { mod_mp=mp; mod_data=me; mod_type_alg=aty;
           mod_retroknowledge=retro; _ } = mb in
   let mp' = subst_mp sub mp in
   let sub =
     if ModPath.equal mp mp' then sub
-    else if is_mod && not (is_functor ty) then sub
+    else if is_mod && not (is_functor (expand_mod_type me)) then sub
     else add_mp mp mp' empty_delta_resolver sub
   in
-  let ty' = subst_signature sub do_delta ty in
-  let me' = subst_impl sub me in
+  let subst (expr, sign) =
+    implem_smartmap (subst_structure sub id_delta) (subst_expr sub id_delta) expr,
+    subst_signature sub do_delta sign
+  in
+  let me' =
+    functor_smart_map
+    (subst_modtype sub do_delta)
+    subst
+    me
+  in
   let aty' = Option.Smart.map (subst_expression sub id_delta) aty in
   let retro' = subst_retro sub retro in
   let delta' = do_delta mb.mod_delta sub in
-  if mp==mp' && me==me' && ty==ty' && aty==aty'
+  if mp==mp' && me==me' && aty==aty'
      && retro==retro' && delta'==mb.mod_delta
   then mb
   else
     { mod_mp = mp';
-      mod_expr = me';
-      mod_type = ty';
+      mod_data = me';
       mod_type_alg = aty';
       mod_retroknowledge = retro';
       mod_delta = delta';
     }
-
-and subst_impl sub me =
-  implem_smartmap
-    (subst_signature sub id_delta) (subst_expression sub id_delta) me
 
 and subst_module sub do_delta mb =
   subst_body true sub do_delta mb
@@ -301,7 +308,7 @@ let rec add_structure mp sign resolver linkinfo env =
 and add_module mb linkinfo env =
   let mp = mb.mod_mp in
   let env = Environ.shallow_add_module mb env in
-  match mb.mod_type with
+  match expand_mod_type mb.mod_data with
   |NoFunctor struc ->
     add_retroknowledge mb.mod_retroknowledge
       (add_structure mp struc mb.mod_delta linkinfo env)
@@ -334,12 +341,11 @@ let strengthen_const mp_from l cb resolver =
 
 let rec strengthen_mod mp_from mp_to mb =
   if mp_in_delta mb.mod_mp mb.mod_delta then mb
-  else match mb.mod_type with
+  else match expand_mod_type mb.mod_data with
   |NoFunctor struc ->
     let reso,struc' = strengthen_sig mp_from struc mp_to mb.mod_delta in
     { mb with
-      mod_expr = Algebraic (NoFunctor (MEident mp_to));
-      mod_type = NoFunctor struc';
+      mod_data = NoFunctor (Algebraic (MEident mp_to), NoFunctor struc');
       mod_delta =
         add_mp_delta_resolver mp_from mp_to
           (add_delta_resolver mb.mod_delta reso) }
@@ -368,11 +374,13 @@ and strengthen_sig mp_from struc mp_to reso = match struc with
 let strengthen mtb mp =
   (* Has mtb already been strengthened ? *)
   if mp_in_delta mtb.mod_mp mtb.mod_delta then mtb
-  else match mtb.mod_type with
+  else match expand_mod_type mtb.mod_data with
   |NoFunctor struc ->
+    (* Can't be a functor if well-typed *)
+    let (expr, _) = destr_nofunctor mtb.mod_data in
     let reso',struc' = strengthen_sig mtb.mod_mp struc mp mtb.mod_delta in
     { mtb with
-      mod_type = NoFunctor struc';
+      mod_data = NoFunctor (expr, NoFunctor struc');
       mod_delta =
         add_delta_resolver mtb.mod_delta
           (add_mp_delta_resolver mtb.mod_mp mp reso') }
@@ -402,7 +410,7 @@ let inline_delta_resolver env inl mp mbid mtb delta =
   make_inline delta constants
 
 let rec strengthen_and_subst_mod mb subst mp_from mp_to =
-  match mb.mod_type with
+  match expand_mod_type mb.mod_data with
   |NoFunctor struc ->
     let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
     if mb_is_an_alias then subst_module subst do_delta_dom mb
@@ -413,8 +421,7 @@ let rec strengthen_and_subst_mod mb subst mp_from mp_to =
       in
       { mb with
         mod_mp = mp_to;
-        mod_expr = Algebraic (NoFunctor (MEident mp_from));
-        mod_type = NoFunctor struc';
+        mod_data = NoFunctor (Algebraic (MEident mp_from), NoFunctor struc');
         mod_delta = add_mp_delta_resolver mp_to mp_from reso' }
   |MoreFunctor _ ->
     let subst = add_mp mb.mod_mp mp_to empty_delta_resolver subst in
@@ -488,7 +495,7 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
            on names, hence we add the fact that the functor can only
            be equivalent to itself. If we adopt an applicative
            semantic for functor this should be changed.*)
-        if is_functor mb'.mod_type then
+        if is_functor (expand_mod_type mb'.mod_data) then
           add_mp_delta_resolver mp_to' mp_to' reso', str'
         else
           add_delta_resolver reso' mb'.mod_delta, str'
@@ -517,7 +524,7 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
     - The first one is applying the substitution {P <- M} on the type of P
     - The second one is strengthening. *)
 
-let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
+let strengthen_and_subst_mb mb mp include_b = match expand_mod_type mb.mod_data with
   |NoFunctor struc ->
     let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
     (* if mb.mod_mp is an alias then the strengthening is useless
@@ -535,8 +542,7 @@ let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
     in
     { mb with
       mod_mp = mp;
-      mod_type = NoFunctor struc';
-      mod_expr = Algebraic (NoFunctor (MEident mb.mod_mp));
+      mod_data = NoFunctor (Algebraic (MEident mb.mod_mp), NoFunctor struc');
       mod_delta =
         if include_b then reso'
         else add_delta_resolver new_resolver reso' }
@@ -565,20 +571,28 @@ let rec is_bounded_expr l = function
   | _ -> false
 
 let rec clean_module_body l mb =
-  let impl, typ = mb.mod_expr, mb.mod_type in
-  let typ' = clean_signature l typ in
-  let impl' = match impl with
-    | Algebraic (NoFunctor m) when is_bounded_expr l m -> FullStruct
-    | _ -> implem_smartmap (clean_signature l) (clean_expression l) impl
+  let data' = match mb.mod_data with
+  | NoFunctor (Algebraic m, sign) when is_bounded_expr l m ->
+    let sign' = clean_signature l sign in
+    NoFunctor (FullStruct, sign')
+  | data ->
+    let clean_data (impl, typ as data) =
+      let typ' = clean_signature l typ in
+      let impl' = implem_smartmap (clean_structure l) (fun me -> me) impl in
+      if typ==typ' && impl==impl' then data
+      else (impl', typ')
+    in
+    functor_smart_map (clean_module_type l) clean_data data
   in
-  if typ==typ' && impl==impl' then mb
-  else { mb with mod_type=typ'; mod_expr=impl' }
+  if data' == mb.mod_data then mb else { mb with mod_data = data' }
 
 and clean_module_type l mb =
-  let ModType, typ = mb.mod_expr, mb.mod_type in
-  let typ' = clean_signature l typ in
-  if typ==typ' then mb
-  else { mb with mod_type=typ' }
+  let clean_data (ModType, sign as data) =
+    let sign' = clean_signature l sign in
+    if sign'==sign then data else (ModType, sign')
+  in
+  let data' = functor_smart_map (clean_module_type l) clean_data mb.mod_data in
+  if data' == mb.mod_data then mb else { mb with mod_data = data' }
 
 and clean_field l field = match field with
   |(lab,SFBmodule mb) ->
@@ -590,9 +604,6 @@ and clean_structure l = List.Smart.map (clean_field l)
 
 and clean_signature l =
   functor_smart_map (clean_module_type l) (clean_structure l)
-
-and clean_expression l =
-  functor_smart_map (clean_module_type l) (fun me -> me)
 
 let rec collect_mbid l sign =  match sign with
   |MoreFunctor (mbid,ty,m) ->
@@ -612,19 +623,21 @@ let join_constant_body except otab cb =
   | _ -> ()
 
 let join_structure except otab s =
-  let rec join_module : 'a. 'a generic_module_body -> unit = fun mb ->
+  let rec join_module : type a. a generic_module_body -> unit = fun mb ->
     Option.iter join_expression mb.mod_type_alg;
-    join_signature mb.mod_type
+    join_data mb.mod_data
   and join_field (_l,body) = match body with
     |SFBconst sb -> join_constant_body except otab sb
     |SFBmind _ -> ()
-    |SFBmodule m ->
-      implem_iter join_signature join_expression m.mod_expr;
-      join_module m
+    |SFBmodule m -> join_module m
     |SFBmodtype m -> join_module m
   and join_structure struc = List.iter join_field struc
   and join_signature sign =
     functor_iter join_module join_structure sign
-  and join_expression me = functor_iter join_module (fun _ -> ()) me in
+  and join_expression me = functor_iter join_module (fun _ -> ()) me
+  and join_data : type a. a module_data -> unit = fun data ->
+    let join (expr, sign) = implem_iter join_structure (fun _ -> ()) expr; join_signature sign in
+    functor_iter join_module join data
+  in
   join_structure s
 

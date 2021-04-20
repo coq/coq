@@ -291,7 +291,7 @@ and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
     List.fold_left check_one_body cst sig2
 
 and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
-  if mtb1==mtb2 || mtb1.mod_type == mtb2.mod_type then cst
+  if mtb1==mtb2 || mtb1.mod_data == mtb2.mod_data then cst
   else
     let rec check_structure cst env str1 str2 equiv subst1 subst2 =
       match str1,str2 with
@@ -321,10 +321,11 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
         let env = add_module_type mp2 arg_t2 env in
         let env =
           if Modops.is_functor body_t1 then env
-          else add_module
+          else
+            let data = map_functorize (fun sign -> (Abstract, NoFunctor sign)) (subst_signature subst1 body_t1) in
+            add_module
             {mod_mp = mtb1.mod_mp;
-             mod_expr = Abstract;
-             mod_type = subst_signature subst1 body_t1;
+             mod_data = data;
              mod_type_alg = None;
              mod_retroknowledge = ModBodyRK [];
              mod_delta = mtb1.mod_delta} env
@@ -332,7 +333,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
         check_structure cst env body_t1 body_t2 equiv subst1 subst2
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
     in
-    check_structure cst env mtb1.mod_type mtb2.mod_type equiv subst1 subst2
+    check_structure cst env (expand_mod_type mtb1.mod_data) (expand_mod_type mtb2.mod_data) equiv subst1 subst2
 
 let check_subtypes env sup super =
   let env = add_module_type sup.mod_mp sup env in

@@ -94,8 +94,7 @@ let lookup_module mp env =
 
 let mk_mtb mp sign delta =
   { mod_mp = mp;
-    mod_expr = ModType;
-    mod_type = sign;
+    mod_data = sign;
     mod_type_alg = None;
     mod_delta = delta;
     mod_retroknowledge = ModTypeRK; }
@@ -105,7 +104,7 @@ let rec collect_constants_without_body sign mp accu =
   | SFBconst cb ->
      let c = Constant.make2 mp lab in
      if Declareops.constant_has_body cb then s else Cset.add c s
-  | SFBmodule msb -> collect_constants_without_body msb.mod_type (MPdot(mp,lab)) s
+  | SFBmodule msb -> collect_constants_without_body (Declareops.expand_mod_type msb.mod_data) (MPdot(mp,lab)) s
   | SFBmind _ | SFBmodtype _ -> s in
   match sign with
   | MoreFunctor _ -> Cset.empty  (* currently ignored *)
@@ -116,9 +115,9 @@ let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
   let sign, opac =
-    check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
+    check_signature env opac (Declareops.expand_mod_type mb.mod_data) mb.mod_mp mb.mod_delta opacify
   in
-  let optsign, opac = match mb.mod_expr with
+  let optsign, opac = match Declareops.expand_mod_impl mb.mod_data with
     |Struct sign_struct ->
       let opacify = collect_constants_without_body sign mb.mod_mp opacify in
       let sign, opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
@@ -129,8 +128,8 @@ let rec check_module env opac mp mb opacify =
   let () = match optsign with
   |None -> ()
   |Some (sign,delta) ->
-    let mtb1 = mk_mtb mp sign delta
-    and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
+    let mtb1 = mk_mtb mp (Declareops.map_functorize (fun s -> ModType, NoFunctor s) sign) delta
+    and mtb2 = mk_mtb mp (Declareops.map_functorize (fun (_, s) -> ModType, s) mb.mod_data) mb.mod_delta in
     let env = Modops.add_module_type mp mtb1 env in
     let cu = Subtyping.check_subtypes env mtb1 mtb2 in
     if not (Environ.check_constraints cu env) then
@@ -141,7 +140,7 @@ let rec check_module env opac mp mb opacify =
 and check_module_type env mty =
   Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string mty.mod_mp));
   let (_:module_signature), _ =
-    check_signature env Cmap.empty mty.mod_type mty.mod_mp mty.mod_delta Cset.empty in
+    check_signature env Cmap.empty (Declareops.expand_mod_type mty.mod_data) mty.mod_mp mty.mod_delta Cset.empty in
   ()
 
 and check_structure_field env opac mp lab res opacify = function
@@ -163,7 +162,7 @@ and check_mexpr env opac mse mp_mse res = match mse with
   | MEident mp ->
       let mb = lookup_module mp env in
       let mb = Modops.strengthen_and_subst_mb mb mp_mse false in
-      mb.mod_type, mb.mod_delta
+      Declareops.expand_mod_type mb.mod_data, mb.mod_delta
   | MEapply (f,mp) ->
       let sign, delta = check_mexpr env opac f mp_mse res in
       let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
