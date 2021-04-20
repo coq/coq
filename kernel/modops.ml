@@ -144,7 +144,7 @@ let rec functor_iter fty f0 = function
 (** {6 Misc operations } *)
 
 let module_type_of_module mb =
-  { mb with mod_expr = (); mod_type_alg = None;
+  { mb with mod_expr = ModType; mod_type_alg = None;
     mod_retroknowledge = ModTypeRK; }
 
 let module_body_of_type mp mtb =
@@ -159,15 +159,17 @@ let check_modpath_equiv env mp1 mp2 =
     if ModPath.equal mp1' mp2' then ()
     else error_not_equal_modpaths mp1 mp2
 
-let implem_smartmap fs fa impl = match impl with
+let implem_smartmap (type a) fs fa (impl : a module_implementation) : a module_implementation = match impl with
   |Struct e -> let e' = fs e in if e==e' then impl else Struct e'
   |Algebraic a -> let a' = fa a in if a==a' then impl else Algebraic a'
   |Abstract|FullStruct -> impl
+  |ModType -> ModType
 
-let implem_iter fs fa impl = match impl with
+let implem_iter (type a) fs fa (impl : a module_implementation) = match impl with
   |Struct e -> fs e
   |Algebraic a -> fa a
   |Abstract|FullStruct -> ()
+  |ModType -> ()
 
 (** {6 Substitutions of modular structures } *)
 
@@ -206,8 +208,8 @@ and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a
       let l' = List.Smart.map (subst_retro_action subst) l in
       if l == l' then r else ModBodyRK l
 
-and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
-  fun is_mod sub subst_impl do_delta mb ->
+and subst_body : 'a. _ -> _ -> _ -> 'a generic_module_body -> 'a generic_module_body =
+  fun is_mod sub do_delta mb ->
     let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty;
           mod_retroknowledge=retro; _ } = mb in
   let mp' = subst_mp sub mp in
@@ -233,14 +235,14 @@ and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body ->
       mod_delta = delta';
     }
 
-and subst_module sub do_delta mb =
-  subst_body true sub subst_impl do_delta mb
-
 and subst_impl sub me =
   implem_smartmap
     (subst_signature sub id_delta) (subst_expression sub id_delta) me
 
-and subst_modtype sub do_delta mtb = subst_body false sub (fun _ () -> ()) do_delta mtb
+and subst_module sub do_delta mb =
+  subst_body true sub do_delta mb
+
+and subst_modtype sub do_delta mtb = subst_body false sub do_delta mtb
 
 and subst_expr sub do_delta seb = match seb with
   |MEident mp ->
@@ -573,7 +575,7 @@ let rec clean_module_body l mb =
   else { mb with mod_type=typ'; mod_expr=impl' }
 
 and clean_module_type l mb =
-  let (), typ = mb.mod_expr, mb.mod_type in
+  let ModType, typ = mb.mod_expr, mb.mod_type in
   let typ' = clean_signature l typ in
   if typ==typ' then mb
   else { mb with mod_type=typ' }

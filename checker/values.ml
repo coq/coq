@@ -365,7 +365,7 @@ and v_impl =
   Sum ("module_impl",2, (* Abstract, FullStruct *)
   [|[|v_mexpr|];  (* Algebraic *)
     [|v_sign|]|])  (* Struct *)
-and v_noimpl = v_unit
+and v_noimpl = Sum ("module_type", 3, [||]) (* ModType, allows in practice Abstract / FullStruct but should not matter *)
 and v_module =
   Tuple ("module_body",
          [|v_mp;v_impl;v_sign;Opt v_mexpr;v_resolver;v_retroknowledge|])

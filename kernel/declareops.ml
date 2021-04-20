@@ -401,7 +401,7 @@ and hcons_module_signature ms =
 and hcons_module_expression me =
   hcons_functorize hcons_module_type hcons_module_alg_expr hcons_module_expression me
 
-and hcons_module_implementation mip = match mip with
+and hcons_module_implementation (type a) (mip : a module_implementation) : a module_implementation = match mip with
 | Abstract -> Abstract
 | Algebraic me ->
   let me' = hcons_module_expression me in
@@ -410,12 +410,13 @@ and hcons_module_implementation mip = match mip with
   let ms' = hcons_module_signature ms in
   if ms == ms' then mip else Struct ms
 | FullStruct -> FullStruct
+| ModType -> ModType
 
 and hcons_generic_module_body :
-  'a. ('a -> 'a) -> 'a generic_module_body -> 'a generic_module_body =
-  fun hcons_impl mb ->
+  'a. 'a generic_module_body -> 'a generic_module_body =
+  fun mb ->
   let mp' = mb.mod_mp in
-  let expr' = hcons_impl mb.mod_expr in
+  let expr' = hcons_module_implementation mb.mod_expr in
   let type' = hcons_module_signature mb.mod_type in
   let type_alg' = mb.mod_type_alg in
   let delta' = mb.mod_delta in
@@ -439,7 +440,7 @@ and hcons_generic_module_body :
   }
 
 and hcons_module_body mb =
-  hcons_generic_module_body hcons_module_implementation mb
+  hcons_generic_module_body mb
 
 and hcons_module_type mb =
-  hcons_generic_module_body (fun () -> ()) mb
+  hcons_generic_module_body mb

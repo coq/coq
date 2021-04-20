@@ -291,15 +291,16 @@ and module_signature = (module_type_body,structure_body) functorize
 
 and module_expression = (module_type_body,module_alg_expr) functorize
 
-and module_implementation =
-  | Abstract (** no accessible implementation *)
-  | Algebraic of module_expression (** non-interactive algebraic expression *)
-  | Struct of module_signature (** interactive body *)
-  | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
+and _ module_implementation =
+  | Abstract : [ `modimpl ] module_implementation (** no accessible implementation *)
+  | Algebraic : module_expression -> [ `modimpl ] module_implementation (** non-interactive algebraic expression *)
+  | Struct : module_signature -> [ `modimpl ] module_implementation (** interactive body *)
+  | FullStruct : [ `modimpl ] module_implementation (** special case of [Struct] : the body is exactly [mod_type] *)
+  | ModType : [ `modtype ] module_implementation (* this is a module type *)
 
 and 'a generic_module_body =
   { mod_mp : ModPath.t; (** absolute path of the module *)
-    mod_expr : 'a; (** implementation *)
+    mod_expr : 'a module_implementation; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
     mod_delta : Mod_subst.delta_resolver; (**
@@ -314,19 +315,19 @@ and 'a generic_module_body =
     - [Module M : T. ... End M] then [mod_expr = Struct; mod_type_alg = Some T]
     And of course, all these situations may be functors or not. *)
 
-and module_body = module_implementation generic_module_body
+and module_body = [ `modimpl ] generic_module_body
 
 (** A [module_type_body] is just a [module_body] with no implementation and
     also an empty [mod_retroknowledge]. Its [mod_type_alg] contains
     the algebraic definition of this module type, or [None]
     if it has been built interactively. *)
 
-and module_type_body = unit generic_module_body
+and module_type_body = [ `modtype ] generic_module_body
 
 and _ module_retroknowledge =
 | ModBodyRK :
-  Retroknowledge.action list -> module_implementation module_retroknowledge
-| ModTypeRK : unit module_retroknowledge
+  Retroknowledge.action list -> [ `modimpl ] module_retroknowledge
+| ModTypeRK : [ `modtype ] module_retroknowledge
 
 (** Extra invariants :
 

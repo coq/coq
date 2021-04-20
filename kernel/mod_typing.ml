@@ -143,7 +143,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
                       mod_type_alg = None }
           in
           before@(lab,SFBmodule mb')::after, c', cst
-        | _ -> error_generative_module_expected lab
+        | (Algebraic _ | Struct _ | FullStruct) -> error_generative_module_expected lab
       end
   with
   | Not_found -> error_no_such_label lab
@@ -280,7 +280,7 @@ let mk_mod mp e ty reso =
 
 let mk_modtype mp ty reso =
   let mb = mk_mod mp Abstract ty reso in
-  { mb with mod_expr = (); mod_retroknowledge = ModTypeRK }
+  { mb with mod_expr = ModType; mod_retroknowledge = ModTypeRK }
 
 let rec translate_mse_funct env mpo inl mse = function
   |[] ->

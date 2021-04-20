@@ -1166,7 +1166,7 @@ let end_module l restype senv =
 
 let build_mtb mp sign delta =
   { mod_mp = mp;
-    mod_expr = ();
+    mod_expr = ModType;
     mod_type = sign;
     mod_type_alg = None;
     mod_delta = delta;

@@ -35,7 +35,7 @@ val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
 val implem_smartmap :
   (module_signature -> module_signature) ->
   (module_expression -> module_expression) ->
-  (module_implementation -> module_implementation)
+  ([`modimpl] module_implementation -> [`modimpl] module_implementation)
 
 (** {6 Substitutions } *)
 
@@ -57,7 +57,7 @@ val add_linked_module : module_body -> link_info -> env -> env
 (** same, for a module type *)
 val add_module_type : ModPath.t -> module_type_body -> env -> env
 
-val add_retroknowledge : module_implementation module_retroknowledge -> env -> env
+val add_retroknowledge : [`modimpl] module_retroknowledge -> env -> env
 
 (** {6 Strengthening } *)
 
