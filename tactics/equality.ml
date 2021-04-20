@@ -379,11 +379,10 @@ let find_elim hdcncl lft2rgt dep cls ot =
             let mp,l = Constant.repr2 (Constant.make1 (Constant.canonical c1)) in
             let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
             let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
-            try
-              let _ = Global.lookup_constant c1' in c1'
-            with Not_found ->
+            if not (Environ.mem_constant c1' (Global.env ())) then
               user_err ~hdr:"Equality.find_elim"
-                (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".")
+                (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
+            c1'
           end
         | _ ->
           begin match if is_eq then eq_elimination_ref false sort else None with
