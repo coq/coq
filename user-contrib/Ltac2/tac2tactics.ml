@@ -414,6 +414,8 @@ let typeclasses_eauto strategy depth dbs =
   in
   Class_tactics.typeclasses_eauto ~only_classes ?strategy ~depth dbs
 
+let unify x y = Tactics.unify x y
+
 (** Inversion *)
 
 let inversion knd arg pat ids =

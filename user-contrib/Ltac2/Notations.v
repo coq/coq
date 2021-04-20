@@ -593,6 +593,8 @@ Ltac2 Notation "typeclasses_eauto" "bfs" n(opt(tactic(0)))
 
 Ltac2 Notation typeclasses_eauto := typeclasses_eauto.
 
+Ltac2 Notation "unify" x(constr) y(constr) := Std.unify x y.
+
 (** Congruence *)
 
 Ltac2 f_equal0 () := ltac1:(f_equal).
