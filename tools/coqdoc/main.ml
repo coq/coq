@@ -131,6 +131,8 @@ let what_file f =
 (*s \textbf{Parsing of the command line.} *)
 
 let compile_targets = ref []
+type glob_source_t = NoGlob | DotGlob | GlobFile of string
+let glob_source = ref DotGlob
 
 let parse () =
   let files = ref [] in
@@ -398,7 +400,7 @@ let copy_style_file file =
 let produce_document l =
   if !target_language=HTML then copy_style_file "coqdoc.css";
   if !target_language=LaTeX then copy_style_file "coqdoc.sty";
-  (match !Cdglobals.glob_source with
+  (match !glob_source with
     | NoGlob -> ()
     | DotGlob -> List.iter read_glob_file_of l
     | GlobFile f -> read_glob_file None f);
