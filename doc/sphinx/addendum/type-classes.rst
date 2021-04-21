@@ -347,10 +347,8 @@ Summary of the commands
    matching that pattern will trigger use of the instance.  Otherwise,
    use is triggered based on the conclusion of the type.
 
-   This command supports the :attr:`global` attribute that can be
-   used on instances declared in a section so that their
-   generalization is automatically redeclared when the section is
-   closed.
+   This command supports the :attr:`local`, :attr:`global` and :attr:`export`
+   locality attributes.
 
    Like :cmd:`Definition`, it also supports the :attr:`program`
    attribute to switch the type checking to `Program` (chapter
