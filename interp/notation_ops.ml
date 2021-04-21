@@ -35,9 +35,8 @@ let rec alpha_var id1 id2 = function
 let cast_type_iter2 f t1 t2 = match t1, t2 with
   | CastConv t1, CastConv t2 -> f t1 t2
   | CastVM t1, CastVM t2 -> f t1 t2
-  | CastCoerce, CastCoerce -> ()
   | CastNative t1, CastNative t2 -> f t1 t2
-  | (CastConv _ | CastVM _ | CastCoerce | CastNative _), _ -> raise Exit
+  | (CastConv _ | CastVM _ | CastNative _), _ -> raise Exit
 
 (* used to update the notation variable with the local variables used
    in NList and NBinderList, since the iterator has its own variable *)
@@ -1319,12 +1318,9 @@ let match_cast match_fun sigma c1 c2 =
   | CastVM t1, CastVM t2
   | CastNative t1, CastNative t2 ->
     match_fun sigma t1 t2
-  | CastCoerce, CastCoerce ->
-    sigma
   | CastConv _, _
   | CastVM _, _
-  | CastNative _, _
-  | CastCoerce, _ -> raise No_match
+  | CastNative _, _ -> raise No_match
 
 let does_not_come_from_already_eta_expanded_var glob =
   (* This is hack to avoid looping on a rule with rhs of the form *)

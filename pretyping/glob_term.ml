@@ -57,7 +57,6 @@ and glob_fix_kind =
 type 'a cast_type =
   | CastConv of 'a
   | CastVM of 'a
-  | CastCoerce (** Cast to a base type (eg, an underlying inductive type) *)
   | CastNative of 'a
 
 (**  The kind of patterns that occurs in "match ... with ... end"

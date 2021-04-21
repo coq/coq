@@ -151,9 +151,7 @@ GRAMMAR EXTEND Gram
       | c1 = term; "<<:"; c2 = term LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, CastNative c2) }
       | c1 = term; ":"; c2 = term LEVEL "200" ->
-                 { CAst.make ~loc @@ CCast(c1, CastConv c2) }
-      | c1 = term; ":>" ->
-                 { CAst.make ~loc @@ CCast(c1, CastCoerce) } ]
+                 { CAst.make ~loc @@ CCast(c1, CastConv c2) } ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA

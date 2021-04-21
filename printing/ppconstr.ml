@@ -673,8 +673,7 @@ let tag_var = tag Tag.variable
                   match b with
                     | CastConv b -> str ":" ++ ws 1 ++ pr mt (LevelLe (-lcast)) b
                     | CastVM b -> str "<:" ++ ws 1 ++ pr mt (LevelLe (-lcast)) b
-                    | CastNative b -> str "<<:" ++ ws 1 ++ pr mt (LevelLe (-lcast)) b
-                    | CastCoerce -> str ":>"),
+                    | CastNative b -> str "<<:" ++ ws 1 ++ pr mt (LevelLe (-lcast)) b),
           lcast
         )
       | CNotation (_,(_,"( _ )"),([t],[],[],[])) ->

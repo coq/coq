@@ -104,9 +104,8 @@ let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
 let cast_type_eq eq t1 t2 = match t1, t2 with
   | CastConv t1, CastConv t2 -> eq t1 t2
   | CastVM t1, CastVM t2 -> eq t1 t2
-  | CastCoerce, CastCoerce -> true
   | CastNative t1, CastNative t2 -> eq t1 t2
-  | (CastConv _ | CastVM _ | CastCoerce | CastNative _), _ -> false
+  | (CastConv _ | CastVM _ | CastNative _), _ -> false
 
 let matching_var_kind_eq k1 k2 = match k1, k2 with
 | FirstOrderPatVar ido1, FirstOrderPatVar ido2 -> Id.equal ido1 ido2
@@ -188,14 +187,12 @@ let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
 let map_cast_type f = function
   | CastConv a -> CastConv (f a)
   | CastVM a -> CastVM (f a)
-  | CastCoerce -> CastCoerce
   | CastNative a -> CastNative (f a)
 
 let smartmap_cast_type f c =
   match c with
     | CastConv a -> let a' = f a in if a' == a then c else CastConv a'
     | CastVM a -> let a' = f a in if a' == a then c else CastVM a'
-    | CastCoerce -> CastCoerce
     | CastNative a -> let a' = f a in if a' == a then c else CastNative a'
 
 let map_glob_constr_left_to_right f = DAst.map (function
@@ -275,7 +272,7 @@ let fold_glob_constr f acc = DAst.with_val (function
     Array.fold_left f (Array.fold_left f acc tyl) bv
   | GCast (c,k) ->
     let acc = match k with
-      | CastConv t | CastVM t | CastNative t -> f acc t | CastCoerce -> acc in
+      | CastConv t | CastVM t | CastNative t -> f acc t in
     f acc c
   | GArray (_u,t,def,ty) -> f (f (Array.fold_left f acc t) def) ty
   | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc
@@ -318,7 +315,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
     Array.fold_left_i f' acc idl
   | GCast (c,k) ->
     let acc = match k with
-      | CastConv t | CastVM t | CastNative t -> f v acc t | CastCoerce -> acc in
+      | CastConv t | CastVM t | CastNative t -> f v acc t in
     f v acc c
   | GArray (_u, t, def, ty) -> f v (f v (Array.fold_left (f v) acc t) def) ty
   | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc))

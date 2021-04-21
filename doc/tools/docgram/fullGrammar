@@ -1,6 +1,15 @@
 (* Coq grammar generated from .mlg files.  Do not edit by hand.  Not compiled into Coq *)
 DOC_GRAMMAR
 
+vernac_toplevel: [
+| "Drop" "."
+| "Quit" "."
+| "BackTo" natural "."
+| test_show_goal "Show" "Goal" natural "at" natural "."
+| "Show" "Proof" "Diffs" OPT "removed" "."
+| Pvernac.Vernac_.main_entry
+]
+
 Constr.ident: [
 | Prim.ident
 ]
@@ -75,7 +84,6 @@ term100: [
 | term99 "<:" term200
 | term99 "<<:" term200
 | term99 ":" term200
-| term99 ":>"
 | term99
 ]
 
@@ -476,15 +484,6 @@ strategy_level: [
 | "opaque"
 | integer
 | "transparent"
-]
-
-vernac_toplevel: [
-| "Drop" "."
-| "Quit" "."
-| "BackTo" natural "."
-| test_show_goal "Show" "Goal" natural "at" natural "."
-| "Show" "Proof" "Diffs" OPT "removed" "."
-| Pvernac.Vernac_.main_entry
 ]
 
 opt_hintbases: [
