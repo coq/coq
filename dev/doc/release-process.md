@@ -191,11 +191,9 @@
     wiki](https://github.com/coq/coq/wiki/SigningReleases).
   + The Snap package has to be built and uploaded to the snap store by
     running a [platform CI job
-    manually](https://github.com/coq/platform/tree/v8.13/linux/snap/github_actions).
+    manually](https://github.com/coq/platform/tree/2021.02/linux/snap/github_actions).
     Then ask `@gares` to publish the upload or give you the password
     for the `coq-team` account on the store so that you can do it
     yourself.
-- [ ] Prepare a PR on [coq/www](https://github.com/coq/www) adding a
-  page of news on the website.
 - [ ] Announce the release to Coq-Club and Discourse
   (coq-club@inria.fr + coq+announcements@discoursemail.com).
