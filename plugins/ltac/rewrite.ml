@@ -1454,48 +1454,46 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       if Sorts.is_prop sort then true, app_poly_sort true env evars impl [||]
       else false, app_poly_sort false env evars TypeGlobal.arrow [||]
     in
-      match is_hyp with
-      | None ->
-        let evars, t = poly_inverse prop env evars (mkSort sort) arrow in
-          evars, (prop, t)
-      | Some _ -> evars, (prop, arrow)
+    match is_hyp with
+    | None ->
+      let evars, t = poly_inverse prop env evars (mkSort sort) arrow in
+      evars, (prop, t)
+    | Some _ -> evars, (prop, arrow)
   in
   let eq = apply_strategy strat env avoid concl cstr evars in
-    match eq with
-    | Fail -> None
-    | Identity -> Some None
-    | Success res ->
-      let (_, cstrs) = res.rew_evars in
-      let evars' = solve_constraints env res.rew_evars in
-      let newt = Reductionops.nf_evar evars' res.rew_to in
-      let evars = (* Keep only original evars (potentially instantiated) and goal evars,
-                     the rest has been defined and substituted already. *)
-        Evar.Set.fold
-          (fun ev acc ->
-           if not (Evd.is_defined acc ev) then
+  match eq with
+  | Fail -> None
+  | Identity -> Some None
+  | Success res ->
+    let (_, cstrs) = res.rew_evars in
+    let evars = solve_constraints env res.rew_evars in
+    let () =
+      Evar.Set.iter
+        (fun ev ->
+           if not (Evd.is_defined evars ev) then
              user_err ~hdr:"rewrite"
-                          (str "Unsolved constraint remaining: " ++ spc () ++
-                           Termops.pr_evar_info env acc (Evd.find acc ev))
-           else Evd.remove acc ev)
-          cstrs evars'
-      in
-      let res = match res.rew_prf with
-        | RewCast c -> None
-        | RewPrf (rel, p) ->
-          let p = nf_zeta env evars' (Reductionops.nf_evar evars' p) in
-          let term =
-            match abs with
-            | None -> p
-            | Some (t, ty) ->
-              let t = Reductionops.nf_evar evars' t in
-              let ty = Reductionops.nf_evar evars' ty in
-                mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) Sorts.Relevant, ty, p), [| t |])
-          in
-          let proof = match is_hyp with
-            | None -> term
-            | Some id -> mkApp (term, [| mkVar id |])
-          in Some proof
-      in Some (Some (evars, res, newt))
+               (str "Unsolved constraint remaining: " ++ spc () ++
+                Termops.pr_evar_info env evars (Evd.find evars ev)))
+        cstrs
+    in
+    let newt = res.rew_to in
+    let res = match res.rew_prf with
+      | RewCast c -> None
+      | RewPrf (rel, p) ->
+        let p = nf_zeta env evars p in
+        let term =
+          match abs with
+          | None -> p
+          | Some (t, ty) ->
+            mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) Sorts.Relevant, ty, p), [| t |])
+        in
+        let proof = match is_hyp with
+          | None -> term
+          | Some id -> mkApp (term, [| mkVar id |])
+        in
+        Some proof
+    in
+    Some (Some (evars, res, newt))
 
 (** Insert a declaration after the last declaration it depends on *)
 let rec insert_dependent env sigma decl accu hyps = match hyps with
