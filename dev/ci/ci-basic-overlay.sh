@@ -48,6 +48,8 @@ project fourcolor "https://github.com/math-comp/fourcolor" "master"
 
 project oddorder "https://github.com/math-comp/odd-order" "master"
 
+project mczify "https://github.com/math-comp/mczify" "master"
+
 ########################################################################
 # UniMath
 ########################################################################
