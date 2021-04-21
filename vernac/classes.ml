@@ -49,7 +49,10 @@ let add_instance_hint inst path ~locality info =
 
 type instance_locality =
 | InstGlobal
+| InstExport
 | InstLocal
+
+let _ = InstExport (* FIXME *)
 
 type instance_obj = {
   inst_class : GlobRef.t;
@@ -69,6 +72,10 @@ let add_instance_base inst =
        to take discharge into account itself *)
     if Global.sections_are_opened () then Goptions.OptLocal
     else Goptions.OptGlobal
+  | InstExport ->
+    (* For uniformity with hints, export instances are forbidden inside sections *)
+    if Global.sections_are_opened () then assert false
+    else Goptions.OptExport
   in
   add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
     inst.inst_info
@@ -76,9 +83,21 @@ let add_instance_base inst =
 (*
  * instances persistent object
  *)
-let cache_instance (_, i) =
+let perform_instance i =
   let i = { is_class = i.inst_class; is_info = i.inst_info; is_impl = i.inst_impl } in
-  load_instance i
+  Typeclasses.load_instance i
+
+let cache_instance (_, inst) = perform_instance inst
+
+let load_instance _ (_, inst) = match inst.inst_global with
+| InstLocal -> assert false
+| InstGlobal -> perform_instance inst
+| InstExport -> ()
+
+let open_instance i (_, inst) = match inst.inst_global with
+| InstLocal -> assert false
+| InstGlobal -> perform_instance inst
+| InstExport -> if Int.equal i 1 then perform_instance inst
 
 let subst_instance (subst, inst) =
   { inst with
@@ -88,13 +107,9 @@ let subst_instance (subst, inst) =
 let discharge_instance (_, inst) =
   match inst.inst_global with
   | InstLocal -> None
-  | InstGlobal ->
+  | InstGlobal | InstExport ->
     assert (not (isVarRef inst.inst_impl));
-    Some
-    { inst with
-      inst_global = InstGlobal;
-      inst_class = inst.inst_class;
-      inst_impl = inst.inst_impl }
+    Some inst
 
 let rebuild_instance inst =
   add_instance_base inst;
@@ -102,14 +117,14 @@ let rebuild_instance inst =
 
 let classify_instance inst = match inst.inst_global with
 | InstLocal -> Dispose
-| InstGlobal -> Substitute inst
+| InstGlobal | InstExport -> Substitute inst
 
 let instance_input : instance_obj -> obj =
   declare_object
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
-      load_function = (fun _ x -> cache_instance x);
-      open_function = simple_open (fun _ x -> cache_instance x);
+      load_function = load_instance;
+      open_function = simple_open open_instance;
       classify_function = classify_instance;
       discharge_function = discharge_instance;
       rebuild_function = rebuild_instance;
