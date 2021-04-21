@@ -8,16 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Modified by Lionel Elie Mamane <lionel@mamane.lu> on 9 & 10 Mar 2004:
- *  - handling of absolute filenames (function coq_module)
- *  - coq_module: chop ./// (arbitrary amount of slashes), not only "./"
- *  - function chop_prefix not useful anymore. Deleted.
- *  - correct typo in usage message: "-R" -> "--R"
- *  - shorten the definition of make_path
- * This notice is made to comply with section 2.a of the GPLv2.
- * It may be removed or abbreviated as far as I am concerned.
- *)
-
 open Cdglobals
 open Printf
 
@@ -77,9 +67,6 @@ let usage () =
   prerr_endline "  --inline-notmono     use a proportional width font for inline code (possibly with a different color)";
   prerr_endline "";
   exit 1
-
-let obsolete s =
-  eprintf "Warning: option %s is now obsolete; please update your scripts\n" s
 
 (*s \textbf{Banner.} Always printed. Notice that it is printed on error
     output, so that when the output of [coqdoc] is redirected this header
@@ -570,6 +557,6 @@ let produce_output fl =
 
 let _ =
   let files = parse () in
-    Index.init_coqlib_library ();
+  Index.init_coqlib_library ();
     if not !quiet then banner ();
     if files <> [] then produce_output files
