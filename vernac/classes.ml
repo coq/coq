@@ -47,25 +47,29 @@ let add_instance_hint inst path ~locality info =
           (Hints.HintsResolveEntry
              [info, false, Hints.PathHints path, inst])) ()
 
+type instance_locality =
+| InstGlobal
+| InstLocal
+
 type instance_obj = {
   inst_class : GlobRef.t;
   inst_info: hint_info;
   (* Sections where the instance should be redeclared,
      None for discard, Some 0 for none. *)
-  inst_global: int option;
+  inst_global: instance_locality;
   inst_impl: GlobRef.t;
 }
 
-let is_local_for_hint i =
-  match i.inst_global with
-  | None -> true  (* i.e. either no Global keyword not in section, or in section *)
-  | Some n -> n <> 0 (* i.e. in a section, declare the hint as local
-                        since discharge is managed by rebuild_instance which calls again
-                        add_instance_hint; don't ask hints to take discharge into account
-                        itself *)
-
 let add_instance_base inst =
-  let locality = if is_local_for_hint inst then Goptions.OptLocal else Goptions.OptGlobal in
+  let locality = match inst.inst_global with
+  | InstLocal -> Goptions.OptLocal
+  | InstGlobal ->
+    (* i.e. in a section, declare the hint as local since discharge is managed
+       by rebuild_instance which calls again add_instance_hint; don't ask hints
+       to take discharge into account itself *)
+    if Global.sections_are_opened () then Goptions.OptLocal
+    else Goptions.OptGlobal
+  in
   add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
     inst.inst_info
 
@@ -83,24 +87,22 @@ let subst_instance (subst, inst) =
 
 let discharge_instance (_, inst) =
   match inst.inst_global with
-  | None -> None
-  | Some n ->
+  | InstLocal -> None
+  | InstGlobal ->
     assert (not (isVarRef inst.inst_impl));
     Some
     { inst with
-      inst_global = Some (pred n);
+      inst_global = InstGlobal;
       inst_class = inst.inst_class;
       inst_impl = inst.inst_impl }
-
-let is_local i = Option.is_empty i.inst_global
 
 let rebuild_instance inst =
   add_instance_base inst;
   inst
 
-let classify_instance inst =
-  if is_local inst then Dispose
-  else Substitute inst
+let classify_instance inst = match inst.inst_global with
+| InstLocal -> Dispose
+| InstGlobal -> Substitute inst
 
 let instance_input : instance_obj -> obj =
   declare_object
@@ -115,10 +117,10 @@ let instance_input : instance_obj -> obj =
 
 let add_instance cl info glob impl =
   let global =
-    if glob then Some (Lib.sections_depth ())
-    else None
+    if glob then InstGlobal
+    else InstLocal
   in
-  if match global with Some n -> n>0 && isVarRef impl | _ -> false then
+  if glob && Global.sections_are_opened () && isVarRef impl then
     CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.");
   let i = {
     inst_class = cl.cl_impl;
