@@ -1767,10 +1767,13 @@ let declare_an_instance n s args =
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
+let get_locality b = if b then Goptions.OptGlobal else Goptions.OptLocal
+
 let anew_instance atts binders (name,t) fields =
+  let locality = get_locality atts.global in
   let _id = Classes.new_instance ~poly:atts.polymorphic
       name binders t (true, CAst.make @@ CRecord (fields))
-      ~global:atts.global ~generalize:false Hints.empty_hint_info
+      ~locality ~generalize:false Hints.empty_hint_info
   in
   ()
 
@@ -1943,7 +1946,7 @@ let add_morphism_as_parameter atts m n : unit =
   let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in
   let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
-  Classes.add_instance
+  Classes.Internal.add_instance
     (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst;
   declare_projection n instance_id cst
 
@@ -1958,7 +1961,7 @@ let add_morphism_interactive atts m n : Declare.Proof.t =
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
   let hook { Declare.Hook.S.dref; _ } = dref |> function
     | GlobRef.ConstRef cst ->
-      Classes.add_instance (PropGlobal.proper_class env evd) Hints.empty_hint_info
+      Classes.Internal.add_instance (PropGlobal.proper_class env evd) Hints.empty_hint_info
         atts.global (GlobRef.ConstRef cst);
       declare_projection n instance_id (GlobRef.ConstRef cst)
     | _ -> assert false
@@ -1981,8 +1984,9 @@ let add_morphism atts binders m s n =
        [cHole; s; m])
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
+  let locality = get_locality atts.global in
   let _id, lemma = Classes.new_instance_interactive
-      ~global:atts.global ~poly:atts.polymorphic
+      ~locality ~poly:atts.polymorphic
       instance_name binders instance_t
       ~generalize:false ~tac ~hook:(declare_projection n instance_id)
       Hints.empty_hint_info None

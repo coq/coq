@@ -1282,43 +1282,39 @@ let vernac_identity_coercion ~atts id qids qidt =
 let vernac_instance_program ~atts ~pm name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(option_locality ++ polymorphic))) atts
   in
-  let global = not (make_section_locality locality) in
-  let pm, _id = Classes.new_instance_program ~pm ~global ~poly name bl t props info in
+  let pm, _id = Classes.new_instance_program ~pm ~locality ~poly name bl t props info in
   pm
 
 let vernac_instance_interactive ~atts name bl t info props =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(option_locality ++ polymorphic))) atts
   in
-  let global = not (make_section_locality locality) in
   let _id, pstate =
-    Classes.new_instance_interactive ~global ~poly name bl t info props in
+    Classes.new_instance_interactive ~locality ~poly name bl t info props in
   pstate
 
 let vernac_instance ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(option_locality ++ polymorphic))) atts
   in
-  let global = not (make_section_locality locality) in
   let _id : Id.t =
-    Classes.new_instance ~global ~poly name bl t props info in
+    Classes.new_instance ~locality ~poly name bl t props info in
   ()
 
 let vernac_declare_instance ~atts id bl inst pri =
   Dumpglob.dump_definition (fst id) false "inst";
   let (program, locality), poly =
-    Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(program ++ option_locality ++ polymorphic))) atts
   in
-  let global = not (make_section_locality locality) in
-  Classes.declare_new_instance ~program_mode:program ~global ~poly id bl inst pri
+  Classes.declare_new_instance ~program_mode:program ~locality ~poly id bl inst pri
 
-let vernac_existing_instance ~section_local insts =
-  let glob = not section_local in
-  List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
+let vernac_existing_instance ~atts insts =
+  let locality = Attributes.(parse option_locality) atts in
+  List.iter (fun (id, info) -> Classes.existing_instance locality id (Some info)) insts
 
 let vernac_existing_class id =
   Record.declare_existing_class (Nametab.global id)
@@ -2238,7 +2234,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacContext sup ->
     VtDefault(fun () -> ComAssumption.context ~poly:(only_polymorphism atts) sup)
   | VernacExistingInstance insts ->
-    VtDefault(fun () -> with_section_locality ~atts vernac_existing_instance insts)
+    VtDefault(fun () -> vernac_existing_instance ~atts insts)
   | VernacExistingClass id ->
     VtDefault(fun () ->
         unsupported_attributes atts;
