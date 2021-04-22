@@ -806,6 +806,13 @@ library:ci-math_classes:
 library:ci-mathcomp:
   extends: .ci-template-flambda
 
+library:ci-mczify:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+
 library:ci-sf:
   extends: .ci-template
 

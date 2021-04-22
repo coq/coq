@@ -44,6 +44,7 @@ CI_TARGETS= \
     ci-iris \
     ci-math_classes \
     ci-mathcomp \
+	ci-mczify \
     ci-menhir \
     ci-metacoq \
     ci-mtac2 \
@@ -89,6 +90,7 @@ ci-interval: ci-mathcomp ci-flocq ci-coquelicot ci-bignums
 ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp
+ci-mczify: ci-mathcomp
 
 ci-geocoq: ci-mathcomp
 
