@@ -14,6 +14,13 @@
   open Printf
   open Lexing
 
+  let print_position_p chan p =
+    Printf.fprintf chan "%s%d, character %d"
+    (if p.pos_fname = "" then "Line " else "File \"" ^ p.pos_fname ^ "\", line ")
+    p.pos_lnum (p.pos_cnum - p.pos_bol)
+
+  let print_position chan {lex_start_p = p} = print_position_p chan p
+
   (* A list function we need *)
   let rec take n ls =
     if n = 0 then [] else
@@ -131,12 +138,18 @@
     Cdglobals.light := s.st_light
 
   let begin_show () = save_state (); Cdglobals.gallina := false; Cdglobals.light := false
-  let end_show () = restore_state ()
+  let end_show lexbuf =
+    try restore_state ()
+    with Stack.Empty -> eprintf "%a, Error: ill-bracketed 'end show'\n" print_position lexbuf; exit 1
 
   let begin_details s =
     save_state (); Cdglobals.gallina := false; Cdglobals.light := false;
     Output.start_details s
-  let end_details () = Output.stop_details (); restore_state ()
+  let end_details lexbuf =
+    Output.stop_details ();
+    try restore_state ()
+    with Stack.Empty -> eprintf "%a, Error: ill-bracketed 'end details'\n" print_position lexbuf; exit 1
+
 
   (* Reset the globals *)
 
@@ -277,13 +290,6 @@
         { lcp with
           pos_lnum = lcp.pos_lnum + n;
           pos_bol = lcp.pos_cnum }
-
-  let print_position_p chan p =
-    Printf.fprintf chan "%s%d, character %d"
-    (if p.pos_fname = "" then "Line " else "File \"" ^ p.pos_fname ^ "\", line ")
-    p.pos_lnum (p.pos_cnum - p.pos_bol)
-
-  let print_position chan {lex_start_p = p} = print_position_p chan p
 
   let warn msg lexbuf =
     eprintf "%a, warning: %s\n" print_position lexbuf msg;
@@ -534,14 +540,14 @@ rule coq_bol = parse
   | space* begin_show nl
       { new_lines 1 lexbuf; begin_show (); coq_bol lexbuf }
   | space* end_show nl
-      { new_lines 1 lexbuf; end_show (); coq_bol lexbuf }
+      { new_lines 1 lexbuf; end_show lexbuf; coq_bol lexbuf }
   | space* begin_details (* At this point, the comment remains open,
                             and will be closed by [details_body] *)
       { let s = details_body lexbuf in
         Output.end_coq (); begin_details s; Output.start_coq (); coq_bol lexbuf }
   | space* end_details nl
       { new_lines 1 lexbuf;
-        Output.end_coq (); end_details (); Output.start_coq (); coq_bol lexbuf }
+        Output.end_coq (); end_details lexbuf; Output.start_coq (); coq_bol lexbuf }
   | space* (("Local"|"Global") space+)? gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !Cdglobals.light && section_or_end s then
