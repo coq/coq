@@ -517,6 +517,17 @@ approve-output: output output-coqtop output-coqchk
 	  echo "Updated $${f%.real}!"; \
 	done
 
+approve-coqdoc: coqdoc
+	$(HIDE)(cd coqdoc; \
+	for f in *.html.out; do \
+	  cp "Coqdoc.$${f%.out}" "$$f"; \
+	  echo "Updated $$f!"; \
+	done; \
+	for f in *.tex.out; do \
+	  cat "Coqdoc.$${f%.out}" | grep -v "^%%" > "$$f"; \
+	  echo "Updated $$f!"; \
+	done)
+
 # the expected output for the MExtraction test is
 # /plugins/micromega/micromega.ml except with additional newline
 output/MExtraction.out: ../plugins/micromega/micromega.ml
