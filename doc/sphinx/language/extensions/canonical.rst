@@ -41,12 +41,54 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    This command supports the :attr:`local` attribute.  When used, the
    structure is canonical only within the :cmd:`Section` containing it.
 
-   Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
-   structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
-   Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
+   :token:`qualid` (in :token:`reference`) denotes an object :n:`(Build_struct c__1 … c__n)` in the
+   structure :g:`struct` for which the fields are :n:`x__1, …, x__n`.
+   Then, each time an equation of the form :n:`(x__i _)` |eq_beta_delta_iota_zeta| :n:`c__i` has to be
    solved during the type checking process, :token:`qualid` is used as a solution.
-   Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
-   into a complete structure built on |c_i|.
+   Otherwise said, :token:`qualid` is canonically used to extend the field :n:`x__i`
+   into a complete structure built on :n:`c__i` when :n:`c__i` unifies with :n:`(x__i _)`.
+
+   The following kinds of terms are supported for the fields :n:`c__i` of :token:`qualid`:
+
+   * :term:`Constants <constant>` and section variables of an active section,
+     applied to zero or more arguments.
+   * :token:`sort`\s.
+   * Literal functions:  `fun … => …`.
+   * Literal, non-dependent function types, i.e. implications: `… -> …`.
+   * Variables bound in :token:`qualid`.
+
+   Only the head symbol of an existing instance's field :n:`c__i`
+   is considered when searching for a canonical extension.
+   We call this head symbol the *key* and we say ":token:`qualid` *keys* the field :n:`x__i` to :n:`k`" when :n:`c__i`'s
+   head symbol is :n:`k`.
+   Keys are the only piece of information that is used for canonical extension.
+   The keys corresponding to the kinds of terms listed above are:
+
+   * For constants and section variables, potentially applied to arguments:
+     the constant or variable itself, disregarding any arguments.
+   * For sorts: the sort itself.
+   * For literal functions: skip the abstractions and use the key of the body.
+   * For literal functions types: a disembodied implication key denoted `_ -> _`, disregarding both its
+     domain and codomain.
+   * For variables bound in :token:`qualid`: a catch-all key denoted `_`.
+
+   This means that, for example, `(some_constant x1)` and `(some_constant (other_constant y1 y2) x2)`
+   are not distinct keys.
+
+   Variables bound in :token:`qualid` match any term for the purpose of canonical extension.
+   This has two major consequences for a field :n:`c__i` keyed to a variable of :token:`qualid`:
+
+   1. Unless another key—and, thus, instance—matches :n:`c__i`, the instance will always be considered by
+      unification.
+   2. :n:`c__i` will be considered overlapping not distinct from any other canonical instance
+      that keys :n:`x__i` to one of its own variables.
+
+   A record field :n:`x__i` can only be keyed once to each key.
+   Coq prints a warning when :token:`qualid` keys :n:`x__i` to a term
+   whose head symbol is already keyed by an existing canonical instance.
+   In this case, Coq will not register that :token:`qualid` as a canonical
+   extension.
+   (The remaining fields of the instance can still be used for canonical extension.)
 
    Canonical structures are particularly useful when mixed with coercions
    and strict implicit arguments.

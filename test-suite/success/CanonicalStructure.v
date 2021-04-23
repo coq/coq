@@ -70,3 +70,35 @@ Section W.
   Check (refl_equal _ : l _ = x2).
 End W.
 Fail Check (refl_equal _ : l _ = x2).
+
+(* Lambda keys *)
+Section L1.
+  Structure cs_lambda := { cs_lambda_key : nat -> nat }.
+  #[local] Canonical Structure cs_lambda_func :=
+    {| cs_lambda_key := fun x => x + 1 |}.
+  Check (refl_equal _ : cs_lambda_key _ = fun _ => _ + _).
+End L1.
+
+Section L2.
+  #[local] Canonical Structure cs_lambda_func2 :=
+    {| cs_lambda_key := fun x => 1 + x |}.
+  Check (refl_equal _ : cs_lambda_key _ = fun x => 1 + x).
+End L2.
+
+Section L3.
+  #[local] Canonical Structure cs_lambda_func3 :=
+    {| cs_lambda_key := fun x => 1 + x |}.
+  Check (refl_equal _ : cs_lambda_key _ = Nat.add 1).
+End L3.
+
+Section L4.
+  #[local] Canonical Structure cs_lambda_func4 :=
+    {| cs_lambda_key := Nat.add 1 |}.
+  Check (refl_equal _ : cs_lambda_key _ = Nat.add 1).
+End L4.
+
+Section L5.
+  #[local] Canonical Structure cs_lambda_func5 :=
+    {| cs_lambda_key := Nat.add 1 |}.
+  Check (refl_equal _ : cs_lambda_key _ = fun x => 1 + x).
+End L5.

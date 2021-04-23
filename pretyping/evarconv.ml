@@ -232,7 +232,17 @@ let occur_rigidly flags env evd (evk,_) t =
 let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let open ValuePattern in
   let (proji, u), arg = Termops.global_app_of_constr sigma t1 in
+  let t2, sk2' = decompose_app_vect sigma (shrink_eta env t2) in
+  let sk2 = Stack.append_app sk2' sk2 in
   let (sigma, solution), sk2_effective =
+    let t2 =
+      let rec remove_lambda t2 =
+        match EConstr.kind sigma t2 with
+        | Lambda (_,_,t2) -> remove_lambda t2
+        | Cast (t2,_,_) -> remove_lambda t2
+        | App (t2,_) -> t2
+        | _ -> t2 in
+      if Stack.is_empty sk2 then remove_lambda t2 else t2 in
     try
       match EConstr.kind sigma t2 with
         Prod (_,a,b) -> (* assert (l2=[]); *)
