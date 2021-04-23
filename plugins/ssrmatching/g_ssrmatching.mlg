@@ -66,11 +66,11 @@ END
 
 {
 
-let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
+let input_ssrtermkind strm = match LStream.peek_nth 0 strm with
   | Tok.KEYWORD "(" -> InParens
   | Tok.KEYWORD "@" -> WithAt
   | _ -> NoFlag
-let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
+let ssrtermkind = Pcoq.Entry.(of_parser "ssrtermkind" { parser_fun = input_ssrtermkind })
 
 }
 

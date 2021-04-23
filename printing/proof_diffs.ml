@@ -91,7 +91,7 @@ let tokenize_string s =
   But I don't understand how it's used--it looks like things get appended to it but
   it never gets cleared. *)
   let rec stream_tok acc str =
-    let e = Stream.next str in
+    let e = LStream.next str in
     if Tok.(equal e EOI) then
       List.rev acc
     else
@@ -101,7 +101,7 @@ let tokenize_string s =
   try
     let istr = Stream.of_string s in
     let lex = CLexer.LexerDiff.tok_func istr in
-    let toks = stream_tok [] (fst lex) in
+    let toks = stream_tok [] lex in
     CLexer.Lexer.State.set st;
     toks
   with exn ->

@@ -27,7 +27,7 @@ module type S = sig
 
   module Parsable : sig
     type t
-    val make : ?loc:Loc.t -> char Stream.t -> t
+    val make : ?source:Loc.source -> char Stream.t -> t
     val comments : t -> ((int * int) * string) list
   end
 
@@ -39,8 +39,9 @@ module type S = sig
     val create : string -> 'a t (* compat *)
     val parse : 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
-    val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
-    val parse_token_stream : 'a t -> te Stream.t -> 'a
+    type 'a parser_fun = { parser_fun : te LStream.t -> 'a }
+    val of_parser : string -> 'a parser_fun -> 'a t
+    val parse_token_stream : 'a t -> te LStream.t -> 'a
     val print : Format.formatter -> 'a t -> unit
   end
 

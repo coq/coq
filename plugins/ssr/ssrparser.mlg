@@ -249,25 +249,25 @@ let pr_ssrsimpl _ _ _ = pr_simpl
 
 let wit_ssrsimplrep = add_genarg "ssrsimplrep" (fun env sigma -> pr_simpl)
 
-let test_ssrslashnum b1 b2 _ strm =
-  match Util.stream_nth 0 strm with
+let test_ssrslashnum b1 b2 strm =
+  match LStream.peek_nth 0 strm with
   | Tok.KEYWORD "/" ->
-      (match Util.stream_nth 1 strm with
+      (match LStream.peek_nth 1 strm with
       | Tok.NUMBER _ when b1 ->
-         (match Util.stream_nth 2 strm with
+         (match LStream.peek_nth 2 strm with
          | Tok.KEYWORD "=" | Tok.KEYWORD "/=" when not b2 -> ()
          | Tok.KEYWORD "/" ->
              if not b2 then () else begin
-               match Util.stream_nth 3 strm with
+               match LStream.peek_nth 3 strm with
                | Tok.NUMBER _ -> ()
                | _ -> raise Stream.Failure
              end
          | _ -> raise Stream.Failure)
       | Tok.KEYWORD "/" when not b1 ->
-         (match Util.stream_nth 2 strm with
+         (match LStream.peek_nth 2 strm with
          | Tok.KEYWORD "=" when not b2 -> ()
          | Tok.NUMBER _ when b2 ->
-           (match Util.stream_nth 3 strm with
+           (match LStream.peek_nth 3 strm with
            | Tok.KEYWORD "=" -> ()
            | _ -> raise Stream.Failure)
          | _ when not b2 -> ()
@@ -275,10 +275,10 @@ let test_ssrslashnum b1 b2 _ strm =
       | Tok.KEYWORD "=" when not b1 && not b2 -> ()
       | _ -> raise Stream.Failure)
   | Tok.KEYWORD "//" when not b1 ->
-         (match Util.stream_nth 1 strm with
+         (match LStream.peek_nth 1 strm with
          | Tok.KEYWORD "=" when not b2 -> ()
          | Tok.NUMBER _ when b2 ->
-           (match Util.stream_nth 2 strm with
+           (match LStream.peek_nth 2 strm with
            | Tok.KEYWORD "=" -> ()
            | _ -> raise Stream.Failure)
          | _ when not b2 -> ()
@@ -290,23 +290,23 @@ let test_ssrslashnum11 = test_ssrslashnum true true
 let test_ssrslashnum01 = test_ssrslashnum false true
 let test_ssrslashnum00 = test_ssrslashnum false false
 
-let negate_parser f tok x =
-  let rc = try Some (f tok x) with Stream.Failure -> None in
+let negate_parser f x =
+  let rc = try Some (f x) with Stream.Failure -> None in
   match rc with
   | None -> ()
   | Some _ -> raise Stream.Failure
 
 let test_not_ssrslashnum =
-  Pcoq.Entry.of_parser
-    "test_not_ssrslashnum" (negate_parser test_ssrslashnum10)
+  Pcoq.Entry.(of_parser
+    "test_not_ssrslashnum" { parser_fun = negate_parser test_ssrslashnum10 })
 let test_ssrslashnum00 =
-  Pcoq.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum00
+  Pcoq.Entry.(of_parser "test_ssrslashnum01" { parser_fun = test_ssrslashnum00 })
 let test_ssrslashnum10 =
-  Pcoq.Entry.of_parser "test_ssrslashnum10" test_ssrslashnum10
+  Pcoq.Entry.(of_parser "test_ssrslashnum10" { parser_fun = test_ssrslashnum10 })
 let test_ssrslashnum11 =
-  Pcoq.Entry.of_parser "test_ssrslashnum11" test_ssrslashnum11
+  Pcoq.Entry.(of_parser "test_ssrslashnum11" { parser_fun = test_ssrslashnum11 })
 let test_ssrslashnum01 =
-  Pcoq.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum01
+  Pcoq.Entry.(of_parser "test_ssrslashnum01" { parser_fun = test_ssrslashnum01 })
 
 }
 
@@ -488,23 +488,23 @@ END
 
 (* Old kinds of terms *)
 
-let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
+let input_ssrtermkind strm = match LStream.peek_nth 0 strm with
   | Tok.KEYWORD "(" -> InParens
   | Tok.KEYWORD "@" -> WithAt
   | _ -> NoFlag
 
-let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
+let ssrtermkind = Pcoq.Entry.(of_parser "ssrtermkind" { parser_fun = input_ssrtermkind })
 
 (* New kinds of terms *)
 
-let input_term_annotation _ strm =
-  match Stream.npeek 2 strm with
+let input_term_annotation strm =
+  match LStream.npeek 2 strm with
   | Tok.KEYWORD "(" :: Tok.KEYWORD "(" :: _ -> `DoubleParens
   | Tok.KEYWORD "(" :: _ -> `Parens
   | Tok.KEYWORD "@" :: _ -> `At
   | _ -> `None
 let term_annotation =
-  Pcoq.Entry.of_parser "term_annotation" input_term_annotation
+  Pcoq.Entry.(of_parser "term_annotation" { parser_fun = input_term_annotation })
 
 (* terms *)
 
@@ -837,29 +837,29 @@ END
 
 {
 
-let reject_ssrhid _ strm =
-  match Util.stream_nth 0 strm with
+let reject_ssrhid strm =
+  match LStream.peek_nth 0 strm with
   | Tok.KEYWORD "[" ->
-      (match Util.stream_nth 1 strm with
+      (match LStream.peek_nth 1 strm with
       | Tok.KEYWORD ":" -> raise Stream.Failure
       | _ -> ())
   | _ -> ()
 
-let test_nohidden = Pcoq.Entry.of_parser "test_ssrhid" reject_ssrhid
+let test_nohidden = Pcoq.Entry.(of_parser "test_ssrhid" { parser_fun = reject_ssrhid })
 
-let rec reject_binder crossed_paren k tok s =
+let rec reject_binder crossed_paren k s =
   match
-    try Some (Util.stream_nth k s)
+    try Some (LStream.peek_nth k s)
     with Stream.Failure -> None
   with
-  | Some (Tok.KEYWORD "(") when not crossed_paren -> reject_binder true (k+1) tok s
-  | Some (Tok.IDENT _) when crossed_paren -> reject_binder true (k+1) tok s
+  | Some (Tok.KEYWORD "(") when not crossed_paren -> reject_binder true (k+1) s
+  | Some (Tok.IDENT _) when crossed_paren -> reject_binder true (k+1) s
   | Some (Tok.KEYWORD ":" | Tok.KEYWORD ":=") when crossed_paren ->
       raise Stream.Failure
   | Some (Tok.KEYWORD ")") when crossed_paren -> raise Stream.Failure
   | _ -> if crossed_paren then () else raise Stream.Failure
 
-let _test_nobinder = Pcoq.Entry.of_parser "test_nobinder" (reject_binder false 0)
+let _test_nobinder = Pcoq.Entry.(of_parser "test_nobinder" { parser_fun = reject_binder false 0 })
 
 }
 
@@ -1673,7 +1673,7 @@ let ssr_id_of_string loc s =
   ^ "Scripts with explicit references to anonymous variables are fragile."))
     end; Id.of_string s
 
-let ssr_null_entry = Pcoq.Entry.of_parser "ssr_null" (fun _ _ -> ())
+let ssr_null_entry = Pcoq.Entry.(of_parser "ssr_null" { parser_fun = fun _ -> () })
 
 }
 
@@ -2407,13 +2407,13 @@ let lbrace = Char.chr 123
 (** Workaround to a limitation of coqpp *)
 
 let test_ssr_rw_syntax =
-  let test _ strm  =
+  let test strm =
     if not !ssr_rw_syntax then raise Stream.Failure else
     if is_ssr_loaded () then () else
-    match Util.stream_nth 0 strm with
+    match LStream.peek_nth 0 strm with
     | Tok.KEYWORD key when List.mem key.[0] [lbrace; '['; '/'] -> ()
     | _ -> raise Stream.Failure in
-  Pcoq.Entry.of_parser "test_ssr_rw_syntax" test
+  Pcoq.Entry.(of_parser "test_ssr_rw_syntax" { parser_fun = test })
 
 }
 

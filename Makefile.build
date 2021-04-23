@@ -621,7 +621,6 @@ gramlib/.pack:
 # gramlib.ml contents
 gramlib/.pack/gramlib.ml: | gramlib/.pack
 	echo " \
-module Ploc    = Gramlib__Ploc \
 module Plexing = Gramlib__Plexing \
 module Gramext = Gramlib__Gramext \
 module Grammar = Gramlib__Grammar" > $@

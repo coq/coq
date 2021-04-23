@@ -12,6 +12,8 @@ CErrors
 CWarnings
 CDebug
 
+LStream
+
 AcyclicGraph
 Rtree
 System
