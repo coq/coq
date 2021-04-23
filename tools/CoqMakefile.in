@@ -913,8 +913,8 @@ debug:
 
 .DEFAULT_GOAL := all
 
-# This file can be created by the user to hook into double colon rules
-# or add any other Makefile code he may need, making use of defined
+# Users can create @LOCAL_LATE_FILE@ to hook into double-colon rules
+# or add other needed Makefile code, using defined
 # variables if necessary.
 -include @LOCAL_LATE_FILE@
 
