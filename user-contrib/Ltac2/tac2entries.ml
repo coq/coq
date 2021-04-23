@@ -631,7 +631,7 @@ let parse_scope = ParseToken.parse_scope
 type synext = {
   synext_tok : sexpr list;
   synext_exp : raw_tacexpr;
-  synext_lev : int option;
+  synext_lev : int;
   synext_loc : bool;
   synext_depr : Deprecation.t option;
 }
@@ -660,6 +660,14 @@ let deprecated_ltac2_notation =
     ~warning_name:"deprecated-ltac2-notation"
     (fun (toks : sexpr list) -> pr_sequence ParseToken.print_token toks)
 
+(* This is a hack to preserve the level 4 entry which is initially empty. The
+   grammar engine has the great idea to silently delete empty levels on rule
+   removal, so we have to work around this using the Pcoq API.
+   FIXME: we should really keep those levels around instead. *)
+let get_reinit = function
+| 4 -> Some (Gramlib.Gramext.LeftA, Gramlib.Gramext.After "5")
+| _ -> None
+
 let perform_notation syn st =
   let tok = List.rev_map ParseToken.parse_token syn.synext_tok in
   let KRule (rule, act) = get_rule tok in
@@ -675,12 +683,13 @@ let perform_notation syn st =
     CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
   let rule = Pcoq.Production.make rule (act mk) in
-  let pos = match syn.synext_lev with
-  | None -> None
-  | Some lev -> Some (Gramlib.Gramext.Level (string_of_int lev))
-  in
-  let rule = (None, None, [rule]) in
-  ([Pcoq.ExtendRule (Pltac.ltac2_expr, {Pcoq.pos; data=[rule]})], st)
+  let pos = Some (Gramlib.Gramext.Level (string_of_int syn.synext_lev)) in
+  let rule = {Pcoq.pos; data = [(None, None, [rule])] } in
+  match get_reinit syn.synext_lev with
+  | None ->
+    ([Pcoq.ExtendRule (Pltac.ltac2_expr, rule)], st)
+  | Some reinit ->
+    ([Pcoq.ExtendRuleReinit (Pltac.ltac2_expr, reinit, rule)], st)
 
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation
@@ -760,8 +769,8 @@ let register_notation ?deprecation ?(local = false) tkn lev body = match tkn, le
       if n < 0 || n > 6 then
         user_err (str "Notation levels must range between 0 and 6")
     in
-    lev
-  | None -> Some 5
+    n
+  | None -> 5
   in
   let ext = {
     synext_tok = tkn;
