@@ -273,40 +273,54 @@ let make_current_scope tmp scopes = match tmp, scopes with
   | Some tmp_scope, scopes -> tmp_scope :: scopes
   | None, scopes -> scopes
 
-let pr_scope_stack = function
-  | [] -> str "the empty scope stack"
-  | [a] -> str "scope " ++ str a
-  | l -> str "scope stack " ++
+let pr_scope_stack begin_of_sentence l =
+  let bstr x =
+    if begin_of_sentence then str (CString.capitalize_ascii x) else str x in
+  match l with
+  | [] -> bstr "the empty scope stack"
+  | [a] -> bstr "scope " ++ str a
+  | l -> bstr "scope stack " ++
       str "[" ++ prlist_with_sep pr_comma str l ++ str "]"
 
-let error_inconsistent_scope ?loc id scopes1 scopes2 =
-  user_err ?loc ~hdr:"set_var_scope"
-   (Id.print id ++ str " is here used in " ++
-    pr_scope_stack scopes2 ++ strbrk " while it was elsewhere used in " ++
-    pr_scope_stack scopes1)
+let warn_inconsistent_scope =
+  CWarnings.create ~name:"inconsistent-scopes" ~category:"syntax"
+    (fun (id,scopes1,scopes2) ->
+      (str "Argument " ++ Id.print id ++
+       strbrk " was previously inferred to be in " ++
+       pr_scope_stack false scopes1 ++
+       strbrk " but is here used in " ++
+       pr_scope_stack false scopes2 ++
+       strbrk ". " ++
+       pr_scope_stack true scopes1 ++
+       strbrk " will be used at parsing time unless you override it by" ++
+       strbrk " annotating the argument with an explicit scope of choice."))
 
 let error_expect_binder_notation_type ?loc id =
   user_err ?loc
    (Id.print id ++
     str " is expected to occur in binding position in the right-hand side.")
 
-let set_var_scope ?loc id istermvar (tmp_scope,subscopes as scopes) ntnvars =
+let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnvars =
   try
-    let used_as_binder,idscopes,typ = Id.Map.find id ntnvars in
-    if istermvar then begin
-      (* scopes have no effect on the interpretation of identifiers *)
-      (match !idscopes with
+    let _,idscopes,typ = Id.Map.find id ntnvars in
+    match typ with
+    | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
+    | Notation_term.NtnInternTypeAny principal ->
+      match !idscopes with
       | None -> idscopes := Some scopes
       | Some (tmp_scope', subscopes') ->
         let s' = make_current_scope tmp_scope' subscopes' in
         let s = make_current_scope tmp_scope subscopes in
-        if not (List.equal String.equal s' s) then error_inconsistent_scope ?loc id s' s);
-      (match typ with
-      | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
-      | Notation_term.NtnInternTypeAny -> ())
-      end
-    else
-      used_as_binder := true
+        if Option.is_empty principal && not (List.equal String.equal s' s) then
+          warn_inconsistent_scope ?loc (id,s',s)
+ with Not_found ->
+    (* Not in a notation *)
+    ()
+
+let set_var_is_binder ?loc id ntnvars =
+  try
+    let used_as_binder,_,_ = Id.Map.find id ntnvars in
+    used_as_binder := true
   with Not_found ->
     (* Not in a notation *)
     ()
@@ -484,7 +498,7 @@ let push_name_env ntnvars implargs env =
   | { loc; v = Name id } ->
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
-      set_var_scope ?loc id false (env.tmp_scope,env.scopes) ntnvars;
+      set_var_is_binder ?loc id ntnvars;
       let uid = var_uid id in
       Dumpglob.dump_binding ?loc uid;
       pure_push_name_env (id,(Variable,implargs,[],uid)) env
@@ -1064,7 +1078,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] a notation variable *)
   if Id.Map.mem id ntnvars then
     begin
-      if not (Id.Map.mem id env.impls) then set_var_scope ?loc id true (env.tmp_scope,env.scopes) ntnvars;
+      if not (Id.Map.mem id env.impls) then set_notation_var_scope ?loc id (env.tmp_scope,env.scopes) ntnvars;
       gvar (loc,id) us
     end
   else
@@ -1130,14 +1144,54 @@ let intern_reference qid =
   in
   Smartlocate.global_of_extended_global r
 
+let intern_sort_name ~local_univs = function
+  | CSProp -> GSProp
+  | CProp -> GProp
+  | CSet -> GSet
+  | CRawType u -> GRawUniv u
+  | CType qid ->
+    let is_id = qualid_is_ident qid in
+    let local = if not is_id then None
+      else Id.Map.find_opt (qualid_basename qid) local_univs.bound
+    in
+    match local with
+    | Some u -> GUniv u
+    | None ->
+      try GUniv (Univ.Level.make (Nametab.locate_universe qid))
+      with Not_found ->
+        if is_id && local_univs.unb_univs
+        then GLocalUniv (CAst.make ?loc:qid.loc (qualid_basename qid))
+        else
+          CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
+
+let intern_sort ~local_univs s =
+  map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) s
+
+let intern_instance ~local_univs us =
+  Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
+
+let intern_name_alias = function
+  | { CAst.v = CRef(qid,u) } ->
+      let r =
+        try Some (intern_extended_global_of_qualid qid)
+        with Not_found -> None
+      in
+      Option.bind r Smartlocate.global_of_extended_global |>
+      Option.map (fun r -> r, intern_instance ~local_univs:empty_local_univs u)
+  | _ -> None
+
 let intern_projection qid =
-  try
-    match Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) with
-    | GlobRef.ConstRef c as gr ->
-        (gr, Structure.find_from_projection c)
-    | _ -> raise Not_found
-  with Not_found ->
-    Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+  match
+    Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) |>
+    Option.map (function
+     | GlobRef.ConstRef c as x -> x, Structure.find_from_projection c
+     | _ -> raise Not_found)
+  with
+  | exception Not_found ->
+     Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+  | None ->
+     Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+  | Some x -> x
 
 (**********************************************************************)
 (* Interpreting references                                            *)
@@ -1181,37 +1235,6 @@ let glob_sort_of_level (level: glob_level) : glob_sort =
   match level with
   | UAnonymous {rigid} -> UAnonymous {rigid}
   | UNamed id -> UNamed [id,0]
-
-let intern_sort_name ~local_univs = function
-  | CSProp -> GSProp
-  | CProp -> GProp
-  | CSet -> GSet
-  | CRawType u -> GRawUniv u
-  | CType qid ->
-    let is_id = qualid_is_ident qid in
-    let local = if not is_id then None
-      else Id.Map.find_opt (qualid_basename qid) local_univs.bound
-    in
-    match local with
-    | Some u -> GUniv u
-    | None ->
-      try GUniv (Univ.Level.make (Nametab.locate_universe qid))
-      with Not_found ->
-        if is_id && local_univs.unb_univs
-        then GLocalUniv (CAst.make ?loc:qid.loc (qualid_basename qid))
-        else
-          CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
-
-let intern_sort ~local_univs s =
-  map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) s
-
-let intern_instance ~local_univs us =
-  Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
-
-let try_interp_name_alias = function
-  | [], { CAst.v = CRef (ref,u) } ->
-     NRef (intern_reference ref,intern_instance ~local_univs:empty_local_univs u)
-  | _ -> raise Not_found
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
@@ -1843,7 +1866,7 @@ let rec intern_pat genv ntnvars aliases pat =
       intern_cstr_with_all_args loc c true [] pl
     | RCPatAtom (Some ({loc;v=id},scopes)) ->
       let aliases = merge_aliases aliases (make ?loc @@ Name id) in
-      set_var_scope ?loc id false scopes ntnvars;
+      set_var_is_binder ?loc id ntnvars;
       (aliases.alias_ids,[aliases.alias_map, DAst.make ?loc @@ PatVar (alias_of aliases)]) (* TO CHECK: aura-t-on id? *)
     | RCPatAtom None ->
       let { alias_ids = ids; alias_map = asubst; } = aliases in
@@ -2561,7 +2584,11 @@ let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let ids = extract_ids env in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
-  let vl = Id.Map.map (fun typ -> (ref false, ref None, typ)) nenv.ninterp_var_type in
+  let vl = Id.Map.map (function
+    | (NtnInternTypeAny None | NtnInternTypeOnlyBinder) as typ -> (ref false, ref None, typ)
+    | NtnInternTypeAny (Some scope) as typ ->
+        (ref false, ref (Some (Some scope,[])), typ)
+    ) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize env
       {ids; unb = false;

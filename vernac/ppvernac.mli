@@ -13,6 +13,8 @@
 
 val pr_set_entry_type : ('a -> Pp.t) -> 'a Extend.constr_entry_key_gen -> Pp.t
 
+val pr_syntax_modifier : Vernacexpr.syntax_modifier -> Pp.t
+
 (** Prints a fixpoint body *)
 val pr_rec_definition : Vernacexpr.fixpoint_expr -> Pp.t
 

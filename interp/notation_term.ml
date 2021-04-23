@@ -91,7 +91,8 @@ type notation_var_instance_type =
     in a recursive pattern x..y, both x and y carry the individual type
     of each element of the list x..y *)
 type notation_var_internalization_type =
-  | NtnInternTypeAny | NtnInternTypeOnlyBinder
+  | NtnInternTypeAny of scope_name option
+  | NtnInternTypeOnlyBinder
 
 (** This characterizes to what a notation is interpreted to *)
 type interpretation =

@@ -1,0 +1,20 @@
+The command has indeed failed with message:
+Argument X was previously inferred to be in scope function_scope but is here
+used in the empty scope stack. Scope function_scope will be used at parsing
+time unless you override it by annotating the argument with an explicit scope
+of choice. [inconsistent-scopes,syntax]
+The command has indeed failed with message:
+Simple notations don't support only printing
+The command has indeed failed with message:
+The reference nonexisting was not found in the current environment.
+The command has indeed failed with message:
+Notation scope for argument X can be specified only once.
+pp I
+     : True /\ True
+The command has indeed failed with message:
+Illegal application (Non-functional construction): 
+The expression "I" of type "True" cannot be applied to the term
+ "I" : "True"
+File "stdin", line 21, characters 0-50:
+Warning: This notation will not be used for printing as it is bound to a
+single variable. [notation-bound-to-variable,parsing]

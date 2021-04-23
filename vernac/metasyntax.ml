@@ -862,6 +862,41 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 (* Interpreting user-provided modifiers *)
 
 (* XXX: We could move this to the parser itself *)
+
+module SyndefMods = struct
+
+type t = {
+  only_parsing  : bool;
+  scopes : (Id.t * scope_name) list;
+}
+
+let default = {
+  only_parsing  = false;
+  scopes = [];
+}
+
+end
+
+let interp_syndef_modifiers modl = let open SyndefMods in
+  let rec interp skipped acc = function
+    | [] -> List.rev skipped, acc
+    | SetOnlyParsing :: l ->
+        interp skipped { acc with only_parsing = true; } l
+    | SetItemScope([],_) :: l ->
+        interp skipped acc l
+    | SetItemScope(s::ids,k) :: l ->
+        let scopes = acc.scopes in
+        let id = Id.of_string s in
+        if List.mem_assoc id scopes then
+          user_err (str "Notation scope for argument " ++ str s ++
+                    str " can be specified only once.");
+        interp skipped { acc with scopes = (id,k) :: scopes }
+          (SetItemScope(ids,s) :: l)
+    | x :: l ->
+        interp (x :: skipped) acc l
+ in
+   interp [] default modl
+
 module NotationMods = struct
 
 type notation_modifier = {
@@ -872,7 +907,6 @@ type notation_modifier = {
   subtyps       : (Id.t * production_level) list;
 
   (* common to syn_data below *)
-  only_parsing  : bool;
   only_printing : bool;
   format        : lstring option;
   extra         : (string * string) list;
@@ -884,7 +918,6 @@ let default = {
   custom        = InConstrEntry;
   etyps         = [];
   subtyps       = [];
-  only_parsing  = false;
   only_printing = false;
   format        = None;
   extra         = [];
@@ -945,8 +978,6 @@ let interp_modifiers modl = let open NotationMods in
     | SetAssoc a :: l ->
         if not (Option.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
         interp subtyps { acc with assoc = Some a; } l
-     | SetOnlyParsing :: l ->
-        interp subtyps { acc with only_parsing = true; } l
     | SetOnlyPrinting :: l ->
         interp subtyps { acc with only_printing = true; } l
     | SetFormat ("text",s) :: l ->
@@ -954,8 +985,10 @@ let interp_modifiers modl = let open NotationMods in
         interp subtyps { acc with format = Some s; } l
     | SetFormat (k,s) :: l ->
         interp subtyps { acc with extra = (k,s.CAst.v)::acc.extra; } l
+    | (SetOnlyParsing | SetItemScope _) :: _ -> assert false
   in
-  let subtyps,mods = interp [] default modl in
+  let modl, syndef_mods = interp_syndef_modifiers modl in
+  let subtyps, mods = interp [] default modl in
   (* interpret item levels wrt to main entry *)
   let extra_etyps = List.map (fun (id,bko,n) -> (id,ETConstr (mods.custom,bko,n))) subtyps in
   (* Temporary hack: "ETName false" (i.e. "ident" in deprecation phase) means "ETIdent" for custom entries *)
@@ -965,10 +998,10 @@ let interp_modifiers modl = let open NotationMods in
            if mods.custom = InConstrEntry then (warn_deprecated_ident_entry (); (id,ETName true))
            else (id,ETIdent)
         | x -> x) mods.etyps } in
-  { mods with etyps = extra_etyps@mods.etyps }
+  syndef_mods, { mods with etyps = extra_etyps@mods.etyps }
 
 let check_infix_modifiers modifiers =
-  let mods = interp_modifiers modifiers in
+  let _, mods = interp_modifiers modifiers in
   let t = mods.NotationMods.etyps in
   let u = mods.NotationMods.subtyps in
   if not (List.is_empty t) || not (List.is_empty u) then
@@ -1036,7 +1069,7 @@ let join_auxiliary_recursive_types recvars etyps =
 let internalization_type_of_entry_type = function
   | ETBinder _ -> NtnInternTypeOnlyBinder
   | ETConstr _ | ETBigint | ETGlobal
-  | ETIdent | ETName _ | ETPattern _ -> NtnInternTypeAny
+  | ETIdent | ETName _ | ETPattern _ -> NtnInternTypeAny None
 
 let set_internalization_type typs =
   List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
@@ -1292,23 +1325,25 @@ let check_locality_compatibility local custom i_typs =
 
 let compute_syntax_data ~local deprecation df modifiers =
   let open SynData in
+  let open SyndefMods in
   let open NotationMods in
-  let mods = interp_modifiers modifiers in
-  let onlyprint = mods.only_printing in
-  let onlyparse = mods.only_parsing in
-  if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
+  let syndef_mods, mods = interp_modifiers modifiers in
+  let only_printing = mods.only_printing in
+  let only_parsing = syndef_mods.only_parsing in
+  if only_printing && only_parsing then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
+  if syndef_mods.scopes <> [] then user_err (str "General notations don't support 'in scope'.");
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
-  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
+  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint:only_printing df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
 
   (* Notations for interp and grammar  *)
-  let msgs,n = find_precedence mods.custom mods.level mods.etyps symbols onlyprint in
+  let msgs,n = find_precedence mods.custom mods.level mods.etyps symbols only_printing in
   let ntn_for_interp = make_notation_key mods.custom symbols in
   let symbols_for_grammar =
     if mods.custom = InConstrEntry then remove_curly_brackets symbols else symbols in
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
   let ntn_for_grammar = if need_squash then make_notation_key mods.custom symbols_for_grammar else ntn_for_interp in
-  if mods.custom = InConstrEntry && not onlyprint then check_rule_productivity symbols_for_grammar;
+  if mods.custom = InConstrEntry && not only_printing then check_rule_productivity symbols_for_grammar;
   (* To globalize... *)
   let etyps = join_auxiliary_recursive_types recvars mods.etyps in
   let sy_typs, prec =
@@ -1329,8 +1364,8 @@ let compute_syntax_data ~local deprecation df modifiers =
   (* Return relevant data for interpretation and for parsing/printing *)
   { info = i_data;
 
-    only_parsing  = mods.only_parsing;
-    only_printing = mods.only_printing;
+    only_parsing;
+    only_printing;
     deprecation;
     format        = mods.format;
     extra         = mods.extra;
@@ -1793,11 +1828,18 @@ let remove_delimiters local scope =
 let add_class_scope local scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
-let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing } =
+let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
+  let open SyndefMods in
+  let skipped, { only_parsing; scopes } = interp_syndef_modifiers modl in
+  if skipped <> [] then
+    user_err (str "Simple notations don't support " ++ Ppvernac.pr_syntax_modifier (List.hd skipped));
+  let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
-    try Id.Map.empty, try_interp_name_alias (vars,c), APrioriReversible
-    with Not_found ->
-      let fold accu id = Id.Map.add id NtnInternTypeAny accu in
+    match vars, intern_name_alias c with
+    | [], Some(r,u) ->
+      Id.Map.empty, NRef(r, u), APrioriReversible
+    | _ ->
+      let fold accu (id,scope) = Id.Map.add id (NtnInternTypeAny scope) accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
       let nenv = {
         ninterp_var_type = i_vars;
@@ -1805,11 +1847,11 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
       } in
       interp_notation_constr env nenv c
   in
-  let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
+  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
   let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] 0 acvars (List.map in_pat vars) in
-  let vars = List.map (fun x -> (x, Id.Map.find x interp)) vars in
+  let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
-  let onlyparsing = onlyparsing || fst (printability None [] false reversibility pat) in
+  let onlyparsing = only_parsing || fst (printability None [] false reversibility pat) in
   Syntax_def.declare_syntactic_definition ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)

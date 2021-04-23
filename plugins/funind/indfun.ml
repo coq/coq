@@ -80,10 +80,12 @@ let functional_induction with_clean c princl pat =
                   (elimination_sort_of_goal gl)
               in
               let princ_ref =
-                try
+                match
                   Constrintern.locate_reference
                     (Libnames.qualid_of_ident princ_name)
-                with Not_found ->
+                with
+                | Some r -> r
+                | None ->
                   user_err
                     ( str "Cannot find induction principle for "
                     ++ Printer.pr_leconstr_env (pf_env gl) sigma (mkConst c') )

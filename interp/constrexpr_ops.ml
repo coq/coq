@@ -281,10 +281,13 @@ let local_binders_loc bll = match bll with
 
 (** Folds and maps *)
 let is_constructor id =
-  try Globnames.isConstructRef
-        (Smartlocate.global_of_extended_global
-           (Nametab.locate_extended (qualid_of_ident id)))
-  with Not_found -> false
+  match
+    Smartlocate.global_of_extended_global
+      (Nametab.locate_extended (qualid_of_ident id))
+  with
+  | exception Not_found -> false
+  | None -> false
+  | Some gref -> Globnames.isConstructRef gref
 
 let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
   | CPatRecord l ->

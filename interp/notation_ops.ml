@@ -680,7 +680,7 @@ let check_variables_and_reversibility nenv
         str " position as part of a recursive pattern.") in
   let check_type x typ =
     match typ with
-    | NtnInternTypeAny ->
+    | NtnInternTypeAny _ ->
         begin
           try check_pair "term" x (Id.Map.find x recvars) foundrec
           with Not_found -> check_bound x

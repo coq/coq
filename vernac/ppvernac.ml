@@ -468,6 +468,8 @@ let pr_syntax_modifier = let open Gramlib.Gramext in function
     | SetItemLevel (l,bko,n) ->
       prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n ++
       pr_opt pr_constr_as_binder_kind bko
+    | SetItemScope (l,s) ->
+      prlist_with_sep sep_v2 str l ++ spc () ++ str"in scope" ++ str s
     | SetLevel n -> pr_at_level (NumLevel n)
     | SetCustomEntry (s,n) -> keyword "in" ++ spc() ++ keyword "custom" ++ spc() ++ str s ++ (match n with None -> mt () | Some n -> pr_at_level (NumLevel n))
     | SetAssoc LeftA -> keyword "left associativity"
@@ -483,9 +485,6 @@ let pr_syntax_modifiers = function
   | [] -> mt()
   | l -> spc() ++
          hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
-
-let pr_only_parsing_clause onlyparsing =
-  pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else [])
 
 let pr_decl_notation prc decl_ntn =
   let open Vernacexpr in
@@ -1098,12 +1097,12 @@ let pr_vernac_expr v =
     )
   | VernacHints (dbnames,h) ->
     return (pr_hints dbnames h pr_constr pr_constr_pattern_expr)
-  | VernacSyntacticDefinition (id,(ids,c),{onlyparsing}) ->
+  | VernacSyntacticDefinition (id,(ids,c),l) ->
     return (
       hov 2
         (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
          prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
-         pr_only_parsing_clause onlyparsing)
+         pr_syntax_modifiers l)
     )
   | VernacArguments (q, args, more_implicits, mods) ->
     return (

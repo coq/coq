@@ -26,4 +26,5 @@ Notation "& b" := ltac:(exact (b)%my) (at level 100, only parsing): my_scope.
 Definition test := (& (@4))%my.
 
 (* Check inconsistent scopes *)
+Set Warnings "+inconsistent-scopes".
 Fail Notation bar3 a := (let __ := ltac:(exact a%nat) in a%bool) (only parsing).

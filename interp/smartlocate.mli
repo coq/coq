@@ -19,8 +19,9 @@ open Globnames
 
 val locate_global_with_alias : ?head:bool -> qualid -> GlobRef.t
 
-(** Extract a global_reference from a reference that can be an "alias" *)
-val global_of_extended_global : extended_global_reference -> GlobRef.t
+(** Extract a global_reference from a reference that can be an "alias".
+    If the reference points to a more complex term, we return None *)
+val global_of_extended_global : extended_global_reference -> GlobRef.t option
 
 (** Locate a reference taking into account possible "alias" notations.
     May raise [Nametab.GlobalizationError _] for an unknown reference,

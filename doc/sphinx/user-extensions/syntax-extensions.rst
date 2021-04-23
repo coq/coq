@@ -1182,7 +1182,7 @@ Here are the syntax elements used by the various notation commands.
    .. prodn::
       syntax_modifier ::= at level @natural
       | in custom @ident {? at level @natural }
-      | {+, @ident } at @level
+      | {+, @ident } {| at @level | in scope @ident }
       | @ident at @level {? @binder_interp }
       | @ident @explicit_subentry
       | @ident @binder_interp
@@ -1373,6 +1373,10 @@ interpreted in the scope stack extended with the scope bound to :n:`@scope_key`.
 .. cmd:: Undelimit Scope @scope_name
 
    Removes the delimiting keys associated with a scope.
+
+The arguments of an :ref:`abbreviation <Abbreviations>` can be interpreted
+in a scope stack locally extended with a given scope by using the modifier
+:n:`{+, @ident } in scope @scope_name`.s
 
 Binding types or coercion classes to a notation scope
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1567,7 +1571,7 @@ Displaying information about scopes
 Abbreviations
 --------------
 
-.. cmd:: Notation @ident {* @ident__parm } := @one_term {? ( only parsing ) }
+.. cmd:: Notation @ident {* @ident__parm } := @one_term {? ( {+, @syntax_modifier } ) }
    :name: Notation (abbreviation)
 
    .. todo: for some reason, Sphinx doesn't complain about a duplicate name if
