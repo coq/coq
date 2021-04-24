@@ -34,8 +34,10 @@ For example, to statically link |Ltac|, you can just do:
 
 and similarly for other plugins.
 
+.. _building_coq_project:
+
 Building a Coq project
-------------------------
+----------------------
 
 As of today it is possible to build Coq projects using two tools:
 
@@ -50,7 +52,7 @@ Building a Coq project with coq_makefile
 The majority of Coq projects are very similar: a collection of ``.v``
 files and eventually some ``.ml`` ones (a Coq plugin). The main piece of
 metadata needed in order to build the project are the command line
-options to ``coqc`` (e.g. ``-R``, ``Q``, ``-I``, see :ref:`command
+options to ``coqc`` (e.g. ``-R``, ``-Q``, ``-I``, see :ref:`command
 line options <command-line-options>`). Collecting the list of files
 and options is the job of the ``_CoqProject`` file.
 
