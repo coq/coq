@@ -123,6 +123,14 @@ Section Facts.
   (** *** Facts about [app] *)
   (**************************)
 
+  Theorem list_in_cons_iff (x a : A) (l : list A) :
+    List.In x (a :: l) <-> a = x \/ List.In x l.
+  Proof.
+    split; intros H.
+    - now inversion H.
+    - now destruct H; [ constructor 1 | constructor 2].
+  Qed.
+
   (** Discrimination *)
   Theorem app_cons_not_nil (x y:list A) (a:A) : [] <> x ++ a :: y.
   Proof.
