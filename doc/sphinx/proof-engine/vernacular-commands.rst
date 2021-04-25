@@ -947,7 +947,7 @@ Controlling Typing Flags
 .. flag:: Positivity Checking
 
    This :term:`flag` can be used to enable/disable the positivity checking of inductive
-   types and the productivity checking of coinductive types. Warning: this can
+   types and the productivity checking of co-inductive types. Warning: this can
    break the consistency of the system, use at your own risk. Unchecked
    (co)inductive types are printed by :cmd:`Print Assumptions`.
 

@@ -92,9 +92,9 @@ Notation          Precedence    Associativity
 Logic
 ~~~~~
 
-The basic library of Coq comes with the definitions of standard
-(intuitionistic) logical connectives (they are defined as inductive
-constructions). They are equipped with an appealing syntax enriching the
+`Logic.v` in the basic library of Coq has the definitions of standard
+(intuitionistic) logical connectives defined as inductive
+constructions. They are equipped with an appealing syntax enriching the
 subclass :token:`form` of the syntactic class :token:`term`. The constructs
 for :production:`form` are:
 
@@ -140,7 +140,8 @@ Propositional Connectives
   single: iff (term)
   single: IF_then_else (term)
 
-First, we find propositional calculus connectives:
+First, we find propositional calculus connectives.
+At times, it's helpful to know exactly what these notations represent.
 
 .. coqdoc::
 
@@ -929,7 +930,7 @@ tactics (see Chapter :ref:`tactics`), there are also:
 
 .. tacn:: split_Rmult
 
-  Splits a condition that a product is non null into subgoals
+  Splits a condition that a product is non-null into subgoals
   corresponding to the condition on each operand of the product.
 
 .. example::

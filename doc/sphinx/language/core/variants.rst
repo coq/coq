@@ -1,3 +1,5 @@
+.. _variants:
+
 Variants and the `match` construct
 ==================================
 
@@ -105,7 +107,7 @@ where :n:`@qualid` must denote a constructor. There should be
 exactly one branch for every constructor of :math:`I`.
 
 The :n:`return @term100` clause gives the type returned by the whole match
-expression. There are several cases. In the *non dependent* case, all
+expression. There are several cases. In the *non-dependent* case, all
 branches have the same type, and the :n:`return @term100` specifies that type.
 In this case, :n:`return @term100` can usually be omitted as it can be
 inferred from the type of the branches [1]_.

@@ -154,7 +154,7 @@ The basic assertion command is:
    :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
    the statements (or the :term:`body` of the specification, depending on the point of
    view). The inductive or co-inductive types on which the induction or
-   coinduction has to be done is assumed to be non ambiguous and is guessed by
+   co-induction has to be done is assumed to be unambiguous and is guessed by
    the system.
 
    Like in a :cmd:`Fixpoint` or :cmd:`CoFixpoint` definition, the induction hypotheses

@@ -52,7 +52,7 @@ how the variables of its defining context are instantiated.
 Only the variables that are defined in another context are displayed:
 this is why an existential variable used in the same context as its
 context of definition is written with no instance.
-This behaviour may be changed: see :ref:`explicit-display-existentials`.
+This behavior may be changed: see :ref:`explicit-display-existentials`.
 
 .. coqtop:: all
 

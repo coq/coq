@@ -322,7 +322,7 @@ following command.
    all the declarations of this module will be loaded.
 
 
-Rewriting and non reflexive relations
+Rewriting and nonreflexive relations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To replace only one argument of an n-ary morphism it is necessary to
@@ -356,7 +356,7 @@ prove that the argument of the morphism is defined.
    which is equivalent to ``n = n /\ n <> 0``.
 
 
-Rewriting and non symmetric relations
+Rewriting and nonsymmetric relations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When the user works up to relations that are not symmetric, it is no

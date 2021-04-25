@@ -96,7 +96,7 @@ to CoqIDE.
 
 An incorrect proof block detection can result into an incorrect error
 recovery and hence in bogus errors. Proof block detection cannot be
-precise for bullets or any other non well parenthesized proof
+precise for bullets or any other non-well parenthesized proof
 structure. Error resilience can be turned off or selectively activated
 for any set of block kind passing to CoqIDE one of the following
 options:

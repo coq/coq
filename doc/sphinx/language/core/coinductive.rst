@@ -1,7 +1,7 @@
 Co-inductive types and co-recursive functions
 =============================================
 
-.. _coinductive-types:
+.. _co-inductive-types:
 
 Co-inductive types
 ------------------
@@ -106,8 +106,8 @@ axiom.
 
    Axiom Stream_eta : forall s: Stream, s = Seq (hd s) (tl s).
 
-More generally, as in the case of positive coinductive types, it is consistent
-to further identify extensional equality of coinductive types with propositional
+More generally, as in the case of positive co-inductive types, it is consistent
+to further identify extensional equality of co-inductive types with propositional
 equality:
 
 .. coqtop:: all
@@ -153,9 +153,9 @@ Top-level definitions of co-recursive functions
       cofix_definition ::= @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
 
    This command introduces a method for constructing an infinite object of a
-   coinductive type. For example, the stream containing all natural numbers can
-   be introduced applying the following method to the number :g:`O` (see
-   Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd`
+   co-inductive type. For example, the stream containing all natural numbers can
+   be introduced by applying the following method to the number :g:`O` (see
+   Section :ref:`co-inductive-types` for the definition of :g:`Stream`, :g:`hd`
    and :g:`tl`):
 
    .. coqtop:: all

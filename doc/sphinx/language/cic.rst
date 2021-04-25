@@ -40,7 +40,7 @@ the following rules.
    As :math:`U` depends on :math:`x`, one says that :math:`∀ x:T,~U` is
    a *dependent product*. If :math:`x` does not occur in :math:`U` then
    :math:`∀ x:T,~U` reads as
-   “if :math:`T` then :math:`U`”. A *non dependent product* can be
+   “if :math:`T` then :math:`U`”. A *non-dependent product* can be
    written: :math:`T \rightarrow U`.
 #. if :math:`x` is a variable and :math:`T`, :math:`u` are terms then
    :math:`λ x:T .~u` (:g:`fun x:T => u`
@@ -140,7 +140,7 @@ A :term:`global environment` is an ordered list of *declarations*.
 Global declarations are either *assumptions*, *definitions*
 or declarations of inductive objects. Inductive
 objects declare both constructors and inductive or
-coinductive types (see Section :ref:`inductive-definitions`).
+co-inductive types (see Section :ref:`inductive-definitions`).
 
 In the global environment,
 *assumptions* are written as

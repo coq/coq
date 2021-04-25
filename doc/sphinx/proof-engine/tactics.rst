@@ -116,7 +116,7 @@ The general form of a term with :token:`bindings` is
 + In the first form, if an :token:`ident` is specified, it must be bound in the
   type of :n:`@term` and provides the tactic with an instance for the
   parameter of this name. If a :token:`natural` is specified, it refers to
-  the ``n``-th non dependent premise of :n:`@term__tac`.
+  the ``n``-th non-dependent premise of :n:`@term__tac`.
 
   .. exn:: No such binder.
      :undocumented:
@@ -142,8 +142,9 @@ introduced by tactics.  They also let you split an introduced hypothesis into
 multiple hypotheses or subgoals.  Common tactics that accept intro patterns
 include :tacn:`assert`, :tacn:`intros` and :tacn:`destruct`.
 
+.. insertprodn intropattern equality_intropattern
+
 .. prodn::
-   intropattern_list ::= {* @intropattern }
    intropattern ::= *
    | **
    | @simple_intropattern
@@ -151,26 +152,23 @@ include :tacn:`assert`, :tacn:`intros` and :tacn:`destruct`.
    simple_intropattern_closed ::= @naming_intropattern
    | _
    | @or_and_intropattern
-   | @rewriting_intropattern
-   | @injection_intropattern
+   | @equality_intropattern
    naming_intropattern ::= @ident
    | ?
    | ?@ident
-   or_and_intropattern ::= [ {*| @intropattern_list } ]
+   or_and_intropattern ::= [ {*| {* @intropattern } } ]
    | ( {*, @simple_intropattern } )
-   | ( {*& @simple_intropattern } )
-   rewriting_intropattern ::= ->
+   | ( @simple_intropattern & {+& @simple_intropattern } )
+   equality_intropattern ::= ->
    | <-
-   injection_intropattern ::= [= @intropattern_list ]
-   or_and_intropattern_loc ::= @or_and_intropattern
-   | ident
+   | [= {* @intropattern } ]
 
 Note that the intro pattern syntax varies between tactics.
 Most tactics use :n:`@simple_intropattern` in the grammar.
 :tacn:`destruct`, :tacn:`edestruct`, :tacn:`induction`,
 :tacn:`einduction`, :tacn:`case`, :tacn:`ecase` and the various
-:tacn:`inversion` tactics use :n:`@or_and_intropattern_loc`, while
-:tacn:`intros` and :tacn:`eintros` use :n:`@intropattern_list`.
+:tacn:`inversion` tactics use :n:`@or_and_intropattern`, while
+:tacn:`intros` and :tacn:`eintros` use :n:`{* @intropattern }`.
 The :n:`eqn:` construct in various tactics uses :n:`@naming_intropattern`.
 
 **Naming patterns**
@@ -178,7 +176,7 @@ The :n:`eqn:` construct in various tactics uses :n:`@naming_intropattern`.
 Use these elementary patterns to specify a name:
 
 * :n:`@ident` — use the specified name
-* :n:`?` — let Coq choose a name
+* :n:`?` — let Coq generate a fresh name
 * :n:`?@ident` — generate a name that begins with :n:`@ident`
 * :n:`_` — discard the matched part (unless it is required for another
   hypothesis)
@@ -227,10 +225,10 @@ For a goal :g:`A \/ B`, use :tacn:`left` to replace the current goal with :g:`A`
   :ref:`single constructor with two parameters <intropattern_cons_note>`.
   :ref:`Example <intropattern_ampersand_ex>`
 
-* :n:`[ {+| @intropattern_list} ]` — splits an inductive type that has
+* :n:`[ {+| {* @intropattern } } ]` — splits an inductive type that has
   :ref:`multiple constructors <intropattern_cons_note>`
   such as :n:`A \/ B`
-  into multiple subgoals.  The number of :token:`intropattern_list` must be the same as the number of
+  into multiple subgoals.  The number of :token:`intropattern`\s must be the same as the number of
   constructors for the matched part.
 * :n:`[ {+ @intropattern} ]` — splits an inductive type that has a
   :ref:`single constructor with multiple parameters <intropattern_cons_note>`
@@ -464,7 +462,7 @@ Examples:
 
       The example is based on `Tej Chajed's coq-tricks <https://github.com/tchajed/coq-tricks/blob/8e6efe4971ed828ac8bdb5512c1f615d7d62691e/src/IntroPatterns.v>`_
 
-.. _occurrencessets:
+.. _occurrenceclauses:
 
 Occurrence clauses
 ~~~~~~~~~~~~~~~~~~
@@ -811,9 +809,6 @@ Applying theorems
       :g:`A->B` and :g:`B` does not start with a product) does the same as giving the
       sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
 
-      .. warn:: When @term contains more than one non dependent product the tactic lapply only takes into account the first product.
-         :undocumented:
-
 .. example::
 
    Assume we have a transitive relation ``R`` on ``nat``:
@@ -1079,13 +1074,13 @@ Managing the local context
       .. exn:: No such hypothesis: @ident.
          :undocumented:
 
-.. tacn:: intros @intropattern_list
+.. tacn:: intros {* @intropattern }
    :name: intros …
 
    Introduces one or more variables or hypotheses from the goal by matching the
    intro patterns.  See the description in :ref:`intropatterns`.
 
-.. tacn:: eintros @intropattern_list
+.. tacn:: eintros {* @intropattern }
    :name: eintros
 
    Works just like :tacn:`intros …` except that it creates existential variables
@@ -1256,7 +1251,7 @@ Managing the local context
       This notation allows specifying which occurrences of :token:`term` have
       to be substituted in the context. The :n:`in @goal_occurrences` clause
       is an occurrence clause whose syntax and behavior are described in
-      :ref:`goal occurrences <occurrencessets>`.
+      :ref:`goal occurrences <occurrenceclauses>`.
 
    .. tacv:: set (@ident {* @binder } := @term) {? in @goal_occurrences }
 

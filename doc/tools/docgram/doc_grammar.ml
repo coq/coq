@@ -1825,38 +1825,25 @@ let process_rst g file args seen tac_prods cmd_prods =
   finish_with_file file args
 
 let report_omitted_prods g seen label split =
-  let maybe_warn first last n =
-    if first <> "" && !show_warn then begin
-      if first <> last then
-        warn "%ss '%s' to %s'%s' not included in .rst files (%d)\n" label first split last n
-      else
-        warn "%s %s not included in .rst files\n" label first;
-    end
-  in
-
-  let included = try
-      List.map (fun prod ->
-        match prod with
-        | Snterm nt :: tl -> nt
-        | _ -> "") (NTMap.find "NOTINRSTS" !g.map)
-    with Not_found -> []
-  in
-  let first, last, n, total = List.fold_left (fun missing nt ->
-      let first, last, n, total = missing in
-      if NTMap.mem nt seen || (List.mem nt included) then begin
-        maybe_warn first last n;
-        "", "", 0, total
-      end else
-        (if first = "" then nt else first), nt, n + 1, total + 1)
-    ("", "", 0, 0) !g.order in
-  maybe_warn first last n;
-  Printf.printf "\n\n";
-  NTMap.iter (fun nt _ ->
-      if !show_warn && not (NTMap.mem nt seen || (List.mem nt included)) then
+  if !show_warn then begin
+    let included = try
+        List.map (fun prod ->
+          match prod with
+          | Snterm nt :: tl -> nt
+          | _ -> "") (NTMap.find "NOTINRSTS" !g.map)
+      with Not_found -> []
+    in
+    Printf.printf "\n\n";
+    let missing = NTMap.filter (fun nt _ ->
+        not (NTMap.mem nt seen || (List.mem nt included)))
+      !g.map in
+    NTMap.iter (fun nt _ ->
         warn "%s %s not included in .rst files\n" "Nonterminal" nt)
-    !g.map;
-  if total <> 0 then
-    Printf.eprintf "TOTAL %ss not included = %d\n" label total
+      missing;
+    let total = NTMap.cardinal missing in
+    if total <> 0 then
+      Printf.eprintf "TOTAL %ss not included = %d\n" label total
+  end
 
 let process_grammar args =
   let symdef_map = ref StringMap.empty in

@@ -1451,7 +1451,7 @@ Other nonterminals that have syntactic classes are listed here.
 
       * - :n:`intropatterns`
         - :token:`ltac2_intropatterns`
-        - :token:`intropattern_list`
+        - :n:`{* @intropattern }`
 
       * - :n:`intropattern`
         - :token:`ltac2_simple_intropattern`
@@ -1749,7 +1749,7 @@ would generate from `idtac; foo`.
 Due to intricate dynamic semantics, understanding when Ltac1 value quotations
 focus is very hard. This is why some functions return a continuation-passing
 style value, as it can dispatch dynamically between focused and unfocused
-behaviour.
+behavior.
 
 The same mechanism for explicit binding of variables as described in the
 previous section applies.

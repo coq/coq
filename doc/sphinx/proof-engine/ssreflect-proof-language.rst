@@ -67,7 +67,7 @@ allowing to switch back and forth between the computational view and
 logical view of a concept.
 
 To conclude it is worth mentioning that |SSR| tactics can be mixed
-with non |SSR| tactics in the same proof, or in the same Ltac
+with non-|SSR| tactics in the same proof, or in the same Ltac
 expression. The few exceptions to this statement are described in
 section :ref:`compatibility_issues_ssr`.
 
@@ -2601,7 +2601,7 @@ term for the intermediate lemma, using tactics of the form:
    optional :token:`ident` is present, this assumption is introduced under the
    name :token:`ident`. Note that the body of the constant is lost for the user.
 
-   Again, non inferred implicit arguments and explicit holes are
+   Again, non-inferred implicit arguments and explicit holes are
    abstracted.
 
 .. example::
@@ -4099,7 +4099,7 @@ which the function is supplied:
    + matches both sides of this equality with “term applied to some arguments”, inferring the right number of arguments from the goal and the type of term. This may expand some definitions or fixpoints;
    + generates the subgoals corresponding to pairwise equalities of the arguments present in the goal.
 
-   The goal can be a non dependent product ``P -> Q``. In that case, the
+   The goal can be a non-dependent product ``P -> Q``. In that case, the
    system asserts the equation ``P = Q``, uses it to solve the goal, and
    calls the ``congr`` tactic on the remaining goal ``P = Q``. This can be useful
    for instance to perform a transitivity step, like in the following

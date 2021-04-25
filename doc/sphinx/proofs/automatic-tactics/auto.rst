@@ -184,7 +184,7 @@ Programmable proof search
 
 .. warning::
 
-   This tactic may loop if you build non terminating rewriting systems.
+   This tactic may loop if you build non-terminating rewriting systems.
 
 .. seealso::
 
@@ -608,7 +608,7 @@ Creating Hints
    Removes the hints associated with the :n:`{+ @qualid }` in databases
    :n:`{+ @ident}`.  Note: hints created with :cmd:`Hint Extern` currently
    can't be removed.  The best workaround for this is to make the hints
-   non global and carefully select which modules you import.
+   non-global and carefully select which modules you import.
 
 .. cmd:: Print Hint {? {| * | @reference } }
 

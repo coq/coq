@@ -293,6 +293,11 @@ A sequence is an expression of the following form:
    :n:`v__2` is applied to all the goals produced by the prior
    application. Sequence is associative.
 
+   This construct uses backtracking: if :n:`@ltac_expr3__2` fails, Coq will
+   try each alternative success (if any) for :n:`@ltac_expr3__1`, retrying
+   :n:`@ltac_expr3__2` for each until both tactics succeed or all alternatives
+   have failed.  See :ref:`branching_and_backtracking`.
+
    .. todo I don't see the distinction between evaluating an ltac expression
       and applying it--how are they not the same thing?  If different, the
       "Semantics" section above should explain it.
@@ -540,6 +545,8 @@ We can check if a tactic made progress with:
 
    .. exn:: Failed to progress.
       :undocumented:
+
+.. _branching_and_backtracking:
 
 Branching and backtracking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

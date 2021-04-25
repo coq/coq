@@ -267,8 +267,16 @@ case_item: [
 | WITH term100 OPT ("as" name) OPT [ "in" pattern200 ]
 ]
 
+type: [
+| term200
+]
+
+term_forall_or_fun: [
+| "forall" open_binders "," type
+]
+
 binder_constr: [
-| MOVETO term_forall_or_fun "forall" open_binders "," term200
+| DELETE "forall" open_binders "," term200
 | MOVETO term_forall_or_fun "fun" open_binders "=>" term200
 | MOVETO term_let "let" name binders let_type_cstr ":=" term200 "in" term200
 (*| MOVETO term_let "let" ":" ssr_mpat ":=" lconstr "in" lconstr  TAG SSR *)
@@ -349,10 +357,6 @@ scope: [
 scope_delimiter: [
 | REPLACE "%" IDENT
 | WITH "%" scope_key
-]
-
-type: [
-| term200
 ]
 
 term100: [
@@ -958,7 +962,6 @@ simple_tactic: [
 | WITH "cbn" strategy_flag simple_occurrences
 | REPLACE "fold" LIST1 constr clause_dft_concl
 | WITH "fold" LIST1 constr simple_occurrences
-
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -970,6 +973,10 @@ simple_tactic: [
 | DELETE "econstructor" nat_or_var
 | REPLACE "econstructor" nat_or_var "with" bindings
 | WITH "econstructor" OPT ( nat_or_var OPT ( "with" bindings ) )
+| DELETE "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
+| "dependent" "inversion" quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
+| "dependent" "simple" "inversion" quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
+| "dependent" "inversion_clear" quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
 | DELETE "dependent" "rewrite" orient constr
 | REPLACE "dependent" "rewrite" orient constr "in" hyp
 | WITH "dependent" "rewrite" orient constr OPT ( "in" hyp )
@@ -1078,10 +1085,10 @@ simple_tactic: [
 | WITH "specialize" constr_with_bindings OPT ( "as" simple_intropattern )
 | DELETE "exists"
 | REPLACE "exists" LIST1 bindings SEP ","
-| WITH "exists" OPT ( LIST1 bindings SEP "," )
+| WITH "exists" LIST0 bindings SEP ","
 | DELETE "eexists"
 | REPLACE "eexists" LIST1 bindings SEP ","
-| WITH "eexists" OPT ( LIST1 bindings SEP "," )
+| WITH "eexists" LIST0 bindings SEP ","
 | DELETE "left"
 | REPLACE "left" "with" bindings
 | WITH "left" OPT ( "with" bindings )
@@ -1169,13 +1176,13 @@ simple_tactic: [
 (* todo: don't use DELETENT for this *)
 ne_intropatterns: [ | DELETENT ]
 
-
 or_and_intropattern: [
+| REPLACE "[" LIST1 intropatterns SEP "|" "]"
+| WITH "[" LIST0 (LIST0 intropattern) SEP "|" "]"
 | DELETE "()"
 | DELETE "(" simple_intropattern ")"
 | REPLACE "(" simple_intropattern "," LIST1 simple_intropattern SEP "," ")"
 |   WITH  "(" LIST0 simple_intropattern SEP "," ")"
-| EDIT "[" USE_NT intropattern_or LIST1 intropatterns SEP "|" "]"
 ]
 
 bar_cbrace: [
@@ -1605,13 +1612,6 @@ tac2type_body: [
 | DELETE "::=" tac2typ_knd      (* Ltac2 plugin *)
 ]
 
-intropattern_or_list_or: [
-(* todo: where does intropattern_or_list_or come from?? *)
-| REPLACE intropattern_or_list_or "|" intropatterns
-| WITH LIST0 intropattern LIST0 ( "|" intropatterns )
-| DELETE intropatterns
-]
-
 record_declaration: [
 | DELETE fields_def
 | LIST0 field_def
@@ -1825,6 +1825,7 @@ document: [
 
 (* add in ltac and Tactic Notation tactics that appear in the doc: *)
 ltac_defined_tactics: [
+| "case_eq" constr
 | "classical_left"
 | "classical_right"
 | "contradict" ident
@@ -1849,6 +1850,8 @@ ltac_defined_tactics: [
 tactic_notation_tactics: [
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
+| "dependent" "destruction" ident OPT ( "generalizing" LIST1 hyp )  OPT ( "using" constr )
+| "dependent" "induction" ident OPT ( [ "generalizing" | "in" ] LIST1 hyp )  OPT ( "using" constr )
 | "dintuition" OPT ltac_expr5
 | "dtauto"
 | "field" OPT ( "[" LIST1 constr "]" )
@@ -2146,6 +2149,23 @@ subprf: [
 
 ltac2_expr: [
 | DELETE _ltac2_expr
+]
+
+opt_clause: [
+| DELETE "in" in_clause
+| DELETE "at" occs_nums
+| DELETE
+| clause_dft_concl
+]
+
+fixdecl: [
+| REPLACE "(" ident LIST0 simple_binder struct_annot ":" lconstr ")"
+| WITH "(" ident LIST0 simple_binder struct_annot ":" type ")"
+]
+
+cofixdecl: [
+| REPLACE "(" ident LIST0 simple_binder ":" lconstr ")"
+| WITH "(" ident LIST0 simple_binder ":" type ")"
 ]
 
 ssrfwdview: [
@@ -2502,6 +2522,27 @@ conversion: [
 | WITH OPT ( constr OPT ( "at" occs_nums ) "with" ) constr
 ]
 
+induction_principle: [
+| eliminator opt_clause
+]
+
+induction_clause: [
+| REPLACE destruction_arg OPT as_or_and_ipat OPT eqn_ipat opt_clause
+| WITH destruction_arg OPT as_or_and_ipat OPT eqn_ipat opt_clause
+]
+
+induction_clause_list: [
+| DELETE LIST1 induction_clause SEP "," OPT eliminator opt_clause
+| LIST1 induction_clause SEP "," OPT induction_principle
+]
+
+(* see https://github.com/coq/coq/pull/14179#discussion_r654000296 *)
+as_or_and_ipat: [
+| DELETE "as" or_and_intropattern_loc
+| DELETE "as" equality_intropattern
+| "as" or_and_intropattern
+]
+
 SPLICE: [
 | clause
 | noedit_mode
@@ -2727,8 +2768,17 @@ SPLICE: [
 | variance
 | variance_identref
 | rewriter
+| clause_dft_all
+| or_and_intropattern_loc
+| eqn_ipat
 | conversion
 | type_cast
+| opt_clause
+| struct_annot
+| fixdecl
+| cofixdecl
+| induction_clause_list
+| as_or_and_ipat
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2791,6 +2841,7 @@ RENAME: [
 | strategy_flag reductions
 | delta_flag delta_reductions
 | q_strategy_flag q_reductions
+| destruction_arg induction_arg
 ]
 
 simple_tactic: [
