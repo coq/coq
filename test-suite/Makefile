@@ -46,7 +46,7 @@ else
   export FINDLIB_SEP=:
 endif
 
-# Be careful to use COQPREFIX when in local mode
+# Be careful to use COQPREFIX when prefix is not set
 ifeq ($(COQPREFIX),local)
 	COQPREFIX:=$(shell cd ../..;pwd)/install/default/
 endif
@@ -61,11 +61,7 @@ endif
 # COQLIB is an env variable so no quotes
 COQLIB?=
 ifeq ($(COQLIB),)
-  ifeq ($(LOCAL),true)
-	COQLIB := $(shell ocaml ocaml_pwd.ml $(ROOT)/_build_vo/default)
-  else
 	COQLIB := $(shell ocaml ocaml_pwd.ml $(COQLIBINSTALL))
-  endif
 endif
 export COQLIB
 

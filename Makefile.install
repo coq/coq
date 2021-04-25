@@ -16,9 +16,9 @@
 # by dependencies between rules, so do *not* try overly clever things like
 # 'make world install' in one unique command
 
-ifeq ($(LOCAL),true)
+ifeq ($(COQPREFIX),local)
 install:
-	@echo "Nothing to install in a local build!"
+	@echo "Prefix not set in configure, nothing to install."
 else
 install: install-coq install-coqide install-doc-$(WITHDOC)
 endif

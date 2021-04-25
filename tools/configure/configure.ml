@@ -199,8 +199,8 @@ type nativecompiler = NativeYes | NativeNo | NativeOndemand
 
 type preferences = {
   prefix : string option;
-  local : bool;
   interactive : bool;
+  output_summary : bool;
   vmbyteflags : string option;
   custom : bool option;
   bindir : string option;
@@ -236,8 +236,8 @@ module Profiles = struct
 
 let default = {
   prefix = None;
-  local = false;
   interactive = true;
+  output_summary = true;
   vmbyteflags = None;
   custom = None;
   bindir = None;
@@ -271,13 +271,15 @@ let default = {
 }
 
 let devel state = { state with
-  local = true;
   bin_annot = true;
   annot = true;
   warn_error = true;
   dune_profile = "dev";
+  interactive = false;
+  output_summary = true;
+  prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
 }
-let devel_doc = "-local -annot -bin-annot -warn-error yes"
+let devel_doc = "-annot -bin-annot -warn-error yes"
 
 let get = function
   | "devel" -> devel
@@ -341,12 +343,13 @@ let check_absolute = function
       die "argument to -prefix must be an absolute path"
     else ()
 
+let local_warning () = warn "-local option is deprecated, and equivalent to -profile devel"
+
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
     "<dir> Set installation directory to <dir> (absolute path required)";
-  "-local", arg_set (fun p local -> { p with local; dune_profile = "dev" }),
-    " Set installation directory to the current source tree";
-  "-no-ask", arg_clear (fun p interactive -> { p with interactive }),
+  "-local", arg_set (fun p _local -> local_warning (); Profiles.get "devel" p), "Deprecated option, equivalent to -profile devel";
+  "-no-ask", arg_clear (fun p interactive -> { p with interactive; output_summary = false }),
     " Don't ask questions / print variables during configure [questions will be filled with defaults]";
   "-vmbyteflags", arg_string_option (fun p vmbyteflags -> { p with vmbyteflags }),
     "<flags> Comma-separated link flags for the VM of coqtop.byte";
@@ -421,9 +424,7 @@ let parse_args () =
   Arg.parse
     args_options
     (fun s -> raise (Arg.Bad ("Unknown option: "^s)))
-    "Available options for configure are:";
-  if !prefs.local && !prefs.prefix <> None then
-    die "Options -prefix and -local are incompatible."
+    "Available options for configure are:"
 
 let _ = parse_args ()
 
@@ -836,19 +837,19 @@ type path_style =
 
 let install = [
   "BINDIR", "the Coq binaries", !prefs.bindir,
-    Relative "bin", Relative "bin", Relative "bin";
+    Relative "bin", Relative "bin";
   "COQLIBINSTALL", "the Coq library", !prefs.libdir,
-    Relative "lib", Relative "lib/coq", Relative "";
+    Relative "lib", Relative "lib/coq";
   "CONFIGDIR", "the Coqide configuration files", !prefs.configdir,
-    Relative "config", Absolute "/etc/xdg/coq", Relative "ide/coqide";
+    Relative "config", Absolute "/etc/xdg/coq";
   "DATADIR", "the Coqide data files", !prefs.datadir,
-    Relative "share", Relative "share/coq", Relative "ide/coqide";
+    Relative "share", Relative "share/coq";
   "MANDIR", "the Coq man pages", !prefs.mandir,
-    Relative "man", Relative "share/man", Relative "man";
+    Relative "man", Relative "share/man";
   "DOCDIR", "the Coq documentation", !prefs.docdir,
-    Relative "doc", Relative "share/doc/coq", Relative "doc";
+    Relative "doc", Relative "share/doc/coq";
   "COQDOCDIR", "the Coqdoc LaTeX files", !prefs.coqdocdir,
-    Relative "latex", Relative "share/texmf/tex/latex/misc", Relative "tools/coqdoc";
+    Relative "latex", Relative "share/texmf/tex/latex/misc";
  ]
 
 let strip_trailing_slash_if_any p =
@@ -875,10 +876,8 @@ let find_suffix prefix path = match prefix with
      else
        Absolute path
 
-let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,locallayout) =
+let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
   let dir,suffix =
-    if !prefs.local then (use_suffix coqtop locallayout,locallayout)
-    else
     let env_prefix =
       match !prefs.prefix with
       | None ->
@@ -972,8 +971,6 @@ let config_runtime () =
   match !prefs.vmbyteflags with
   | Some flags -> string_split ',' flags
   | _ when use_custom -> [custom_flag]
-  | _ when !prefs.local ->
-    ["-dllib";"-lcoqrun";"-dllpath";("\"" ^ coqtop ^ "/kernel/byterun\"")]
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
     build_loadpath := sprintf "export %s:=%s/kernel/byterun:$(%s)" ld coqtop ld;
@@ -1014,20 +1011,17 @@ let print_summary () =
   pr "  Coq web site                : %s\n" !prefs.coqwebsite;
   pr "  Bytecode VM enabled         : %B\n" !prefs.bytecodecompiler;
   pr "  Native Compiler enabled     : %s\n\n" (pr_native !prefs.nativecompiler);
-  if !prefs.local then
-    pr "  Local build, no installation...\n"
-  else
-    (pr "  Paths for true installation:\n";
-     List.iter
-       (fun (_,msg,dir,_) -> pr "  - %s will be copied in %s\n" msg (esc dir))
-       install_dirs);
+  (pr "  Paths for true installation:\n";
+   List.iter
+     (fun (_,msg,dir,_) -> pr "  - %s will be copied in %s\n" msg (esc dir))
+     install_dirs);
   pr "\n";
   pr "If anything is wrong above, please restart './configure'.\n\n";
   pr "*Warning* To compile the system for a new architecture\n";
   pr "          don't forget to do a 'make clean' before './configure'.\n"
 
 let _ =
-  if !prefs.interactive then print_summary ()
+  if !prefs.output_summary then print_summary ()
 
 (** * Build the dev/ocamldebug-coq file *)
 
@@ -1062,7 +1056,6 @@ let write_configml f =
   pr "(* DO NOT EDIT THIS FILE: automatically generated by ../configure *)\n";
   pr "(* Exact command that generated this file: *)\n";
   pr "(* %s *)\n\n" (String.concat " " (Array.to_list Sys.argv));
-  pr_b "local" !prefs.local;
   pr_s "coqlib" coqlib;
   pr_s "configdir" configdir;
   pr_s "datadir" datadir;
@@ -1146,8 +1139,6 @@ let write_makefile f =
   pr "##################################################################\n\n";
   pr "#Variable used to detect whether ./configure has run successfully.\n";
   pr "COQ_CONFIGURED=yes\n\n";
-  pr "# Local use (no installation)\n";
-  pr "LOCAL=%B\n\n" !prefs.local;
   pr "# Bytecode link flags : should we use -custom or not ?\n";
   pr "CUSTOM=%s\n" custom_flag;
   pr "VMBYTEFLAGS=%s\n" (String.concat " " vmbyteflags);

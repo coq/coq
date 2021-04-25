@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val local : bool        (* local use (no installation) *)
-
 (* The fields below are absolute paths *)
 val coqlib : string     (* where the std library is installed *)
 val configdir : string  (* where configuration files are installed *)

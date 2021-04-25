@@ -129,7 +129,7 @@ let guess_coqlib fail =
   let prelude = "theories/Init/Prelude.vo" in
   check_file_else ~dir:Coq_config.coqlibsuffix ~file:prelude
     (fun () ->
-      if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / prelude)
+      if Sys.file_exists (Coq_config.coqlib / prelude)
       then Coq_config.coqlib
       else
         fail "cannot guess a path for Coq libraries; please use -coqlib option \
@@ -207,9 +207,8 @@ let xdg_dirs ~warn =
 
 let print_config ?(prefix_var_name="") f coq_src_subdirs =
   let open Printf in
-  fprintf f "%sLOCAL=%s\n" prefix_var_name (if Coq_config.local then "1" else "0");
   fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
-  fprintf f "%sCOQCORELIB=%s/\n" prefix_var_name (if Coq_config.local then coqlib () else coqlib () / "../coq-core/");
+  fprintf f "%sCOQCORELIB=%s/\n" prefix_var_name (coqlib () / "../coq-core/");
   fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
   fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
   fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
