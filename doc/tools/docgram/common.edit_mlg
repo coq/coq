@@ -950,7 +950,6 @@ simple_tactic: [
 | WITH "hnf" simple_occurrences
 | REPLACE "cbv" strategy_flag clause_dft_concl
 | WITH "cbv" strategy_flag simple_occurrences
-| PRINT
 | REPLACE "compute" OPT delta_flag clause_dft_concl
 | WITH "compute" OPT delta_flag simple_occurrences
 | REPLACE "lazy" strategy_flag clause_dft_concl
@@ -1067,7 +1066,7 @@ simple_tactic: [
 | DELETE "protect_fv" string
 | DELETE "symmetry"
 | REPLACE "symmetry" "in" in_clause
-| WITH "symmetry" OPT ( "in" in_clause )
+| WITH "symmetry" OPT simple_occurrences
 | DELETE "split"
 | REPLACE "split" "with" bindings
 | WITH  "split" OPT ( "with" bindings )
@@ -1362,18 +1361,18 @@ command: [
 | WITH "String" "Notation" reference reference reference OPT string_option ":" scope_name
 
 | DELETE "Ltac2" ltac2_entry      (* was split up *)
-| DELETE "Add" "Zify" "InjTyp" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "BinOp" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "UnOp" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "CstOp" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "BinRel" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "PropOp" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "PropBinOp" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "PropUOp" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "BinOpSpec" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "UnOpSpec" constr      (* micromega plugin *)
-| DELETE "Add" "Zify" "Saturate" constr      (* micromega plugin *)
-| "Add" "Zify" add_zify constr  TAG Micromega
+| DELETE "Add" "Zify" "InjTyp" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "BinOp" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "UnOp" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "CstOp" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "BinRel" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "PropOp" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "PropBinOp" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "PropUOp" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "BinOpSpec" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "UnOpSpec" reference      (* micromega plugin *)
+| DELETE "Add" "Zify" "Saturate" reference      (* micromega plugin *)
+| "Add" "Zify" add_zify reference  TAG Micromega
 
 | DELETE "Show" "Zify" "InjTyp"      (* micromega plugin *)
 | DELETE "Show" "Zify" "BinOp"      (* micromega plugin *)

@@ -31,58 +31,63 @@ There are multiple notions of :gdef:`equality` in Coq:
   other advantages.  ":term:`Convertible <convertible>`" is another way of saying that
   two terms are definitionally equal.
 
-Equality
---------
-
-
-.. tacn:: f_equal
-   :name: f_equal
-
-   This tactic applies to a goal of the form :g:`f a`:sub:`1` :g:`... a`:sub:`n`
-   :g:`= f′a′`:sub:`1` :g:`... a′`:sub:`n`.  Using :tacn:`f_equal` on such a goal
-   leads to subgoals :g:`f=f′` and :g:`a`:sub:`1` = :g:`a′`:sub:`1` and so on up
-   to :g:`a`:sub:`n` :g:`= a′`:sub:`n`. Amongst these subgoals, the simple ones
-   (e.g. provable by :tacn:`reflexivity` or :tacn:`congruence`) are automatically
-   solved by :tacn:`f_equal`.
-
+Tactics for simple equalities
+-----------------------------
 
 .. tacn:: reflexivity
-   :name: reflexivity
 
-   This tactic applies to a goal that has the form :g:`t=u`. It checks that `t`
-   and `u` are convertible and then solves the goal. It is equivalent to
-   ``apply refl_equal``.
+   For a goal with the form :n:`{? forall @open_binders , } t = u`,
+   verifies that `t` and `u` are
+   :term:`definitionally equal <definitional equality>`, and if so,
+   solves the goal (by applying `eq_refl`).  If not, it fails.
 
-   .. exn:: The conclusion is not a substitutive equation.
+   The tactic may also be applied to goals with the form
+   :n:`{? forall @open_binders , } R @term__1 @term__2` where
+   `R` is a reflexive relation registered with the `Equivalence` or `Reflexive`
+   typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
+
+   .. exn:: The relation @ident is not a declared reflexive relation. Maybe you need to require the Coq.Classes.RelationClasses library
       :undocumented:
 
-   .. exn:: Unable to unify ... with ...
+.. tacn:: symmetry {? @simple_occurrences }
+
+   Changes a goal that has the form :n:`{? forall @open_binders , } t = u` into
+   :n:`u = t`.  :n:`@simple_occurrences`
+   may be used to apply the change in the selected hypotheses and/or the conclusion.
+
+   The tactic may also be applied to goals with the form
+   :n:`{? forall @open_binders , } R @term__1 @term__2` where
+   `R` is a symmetric relation registered with the `Equivalence` or `Symmetric`
+   typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
+
+   .. exn:: The relation @ident is not a declared symmetric relation. Maybe you need to require the Coq.Classes.RelationClasses library
       :undocumented:
 
+.. tacn:: transitivity @one_term
 
-.. tacn:: symmetry
-   :name: symmetry
+   Changes a goal that has the form :n:`{? forall @open_binders , } t = u`
+   into the two subgoals :n:`t = @one_term`
+   and :n:`@one_term = u`.
 
-   This tactic applies to a goal that has the form :g:`t=u` and changes it into
-   :g:`u=t`.
+   The tactic may also be applied to goals with the form
+   :n:`{? forall @open_binders , } R @term__1 @term__2` where
+   `R` is a transitive relation registered with the `Equivalence` or `Transitivity`
+   typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
 
-
-.. tacv:: symmetry in @ident
-
-   If the statement of the hypothesis ident has the form :g:`t=u`, the tactic
-   changes it to :g:`u=t`.
-
-
-.. tacn:: transitivity @term
-   :name: transitivity
-
-   This tactic applies to a goal that has the form :g:`t=u` and transforms it
-   into the two subgoals :n:`t=@term` and :n:`@term=u`.
-
-   .. tacv:: etransitivity
+   .. tacn:: etransitivity
 
       This tactic behaves like :tacn:`transitivity`, using a fresh evar instead of
-      a concrete :token:`term`.
+      a concrete :token:`one_term`.
+
+   .. exn:: The relation @ident is not a declared transitive relation. Maybe you need to require the Coq.Classes.RelationClasses library
+      :undocumented:
+
+.. tacn:: f_equal
+
+   For a goal with the form :n:`f a__1 ... a__n = g b__1 ... b__n`, creates
+   subgoals :n:`f = g` and :n:`a__i = b__i` for the `n` arguments. Subgoals
+   that can be proven by :tacn:`reflexivity` or :tacn:`congruence` are solved
+   automatically.
 
 .. _rewritingexpressions:
 

@@ -1,15 +1,6 @@
 (* Coq grammar generated from .mlg files.  Do not edit by hand.  Not compiled into Coq *)
 DOC_GRAMMAR
 
-vernac_toplevel: [
-| "Drop" "."
-| "Quit" "."
-| "BackTo" natural "."
-| test_show_goal "Show" "Goal" natural "at" natural "."
-| "Show" "Proof" "Diffs" OPT "removed" "."
-| Pvernac.Vernac_.main_entry
-]
-
 Constr.ident: [
 | Prim.ident
 ]
@@ -486,6 +477,15 @@ strategy_level: [
 | "transparent"
 ]
 
+vernac_toplevel: [
+| "Drop" "."
+| "Quit" "."
+| "BackTo" natural "."
+| test_show_goal "Show" "Goal" natural "at" natural "."
+| "Show" "Proof" "Diffs" OPT "removed" "."
+| Pvernac.Vernac_.main_entry
+]
+
 opt_hintbases: [
 |
 | ":" LIST1 IDENT
@@ -675,17 +675,17 @@ command: [
 | "Show" "Ltac" "Profile" "CutOff" integer
 | "Show" "Ltac" "Profile" string
 | "Show" "Lia" "Profile"      (* micromega plugin *)
-| "Add" "Zify" "InjTyp" constr      (* micromega plugin *)
-| "Add" "Zify" "BinOp" constr      (* micromega plugin *)
-| "Add" "Zify" "UnOp" constr      (* micromega plugin *)
-| "Add" "Zify" "CstOp" constr      (* micromega plugin *)
-| "Add" "Zify" "BinRel" constr      (* micromega plugin *)
-| "Add" "Zify" "PropOp" constr      (* micromega plugin *)
-| "Add" "Zify" "PropBinOp" constr      (* micromega plugin *)
-| "Add" "Zify" "PropUOp" constr      (* micromega plugin *)
-| "Add" "Zify" "BinOpSpec" constr      (* micromega plugin *)
-| "Add" "Zify" "UnOpSpec" constr      (* micromega plugin *)
-| "Add" "Zify" "Saturate" constr      (* micromega plugin *)
+| "Add" "Zify" "InjTyp" reference      (* micromega plugin *)
+| "Add" "Zify" "BinOp" reference      (* micromega plugin *)
+| "Add" "Zify" "UnOp" reference      (* micromega plugin *)
+| "Add" "Zify" "CstOp" reference      (* micromega plugin *)
+| "Add" "Zify" "BinRel" reference      (* micromega plugin *)
+| "Add" "Zify" "PropOp" reference      (* micromega plugin *)
+| "Add" "Zify" "PropBinOp" reference      (* micromega plugin *)
+| "Add" "Zify" "PropUOp" reference      (* micromega plugin *)
+| "Add" "Zify" "BinOpSpec" reference      (* micromega plugin *)
+| "Add" "Zify" "UnOpSpec" reference      (* micromega plugin *)
+| "Add" "Zify" "Saturate" reference      (* micromega plugin *)
 | "Show" "Zify" "InjTyp"      (* micromega plugin *)
 | "Show" "Zify" "BinOp"      (* micromega plugin *)
 | "Show" "Zify" "UnOp"      (* micromega plugin *)
