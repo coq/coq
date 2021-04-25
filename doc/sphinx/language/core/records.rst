@@ -191,8 +191,8 @@ other arguments are the parameters of the inductive type.
 .. note:: Records defined with the :cmd:`Record` command are not allowed to be
    recursive (references to the record's name in the type of its field
    raises an  error). To define recursive records, one can use the
-   :cmd:`Inductive` and :cmd:`CoInductive` commands, resulting in an inductive or co-inductive record.
-   Definition of mutually inductive or co-inductive records are also allowed, as long
+   :cmd:`Inductive` and :cmd:`CoInductive` commands, resulting in an inductive or coinductive record.
+   Definition of mutually inductive or coinductive records are also allowed, as long
    as all of the types in the block are records.
 
 .. note:: Induction schemes are automatically generated for inductive records.
@@ -221,7 +221,7 @@ other arguments are the parameters of the inductive type.
 .. exn:: Cannot handle mutually (co)inductive records.
 
    Records cannot be defined as part of mutually inductive (or
-   co-inductive) definitions, whether with records only or mixed with
+   coinductive) definitions, whether with records only or mixed with
    standard definitions.
 
 During the definition of the one-constructor inductive definition, all

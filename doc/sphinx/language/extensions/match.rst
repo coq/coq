@@ -337,7 +337,7 @@ Patterns
 
 The full syntax of `match` is presented in :ref:`match_term`.
 Identifiers in patterns are either constructor names or variables. Any
-identifier that is not the constructor of an inductive or co-inductive
+identifier that is not the constructor of an inductive or coinductive
 type is considered to be a variable. A variable name cannot occur more
 than once in a given pattern. It is recommended to start variable
 names by a lowercase letter.

@@ -171,7 +171,7 @@ Cumulative, NonCumulative
 .. attr:: universes(cumulative{? = {| yes | no } })
    :name: universes(cumulative); Cumulative; NonCumulative
 
-   Polymorphic inductive types, co-inductive types, variants and
+   Polymorphic inductive types, coinductive types, variants and
    records can be declared cumulative using this :term:`boolean attribute`
    or the legacy ``Cumulative`` prefix (see :n:`@legacy_attr`) which, as
    shown in the examples, is more commonly used.

@@ -1693,7 +1693,7 @@ Notations
   by Pierre Roux).
 - **Added:**
   Notations declared with the ``where`` clause in the declaration of
-  inductive types, co-inductive types, record fields, fixpoints and
+  inductive types, coinductive types, record fields, fixpoints and
   cofixpoints now support the ``only parsing`` modifier
   (`#11602 <https://github.com/coq/coq/pull/11602>`_,
   by Hugo Herbelin).
@@ -8534,7 +8534,7 @@ reason on the inductive structure of recursively defined functions.
 Jean-Marc Notin significantly contributed to the general maintenance of
 the system. He also took care of ``coqdoc``.
 
-Pierre Castéran contributed to the documentation of (co-)inductive types
+Pierre Castéran contributed to the documentation of (co)inductive types
 and suggested improvements to the libraries.
 
 Pierre Corbineau implemented a declarative mathematical proof language,
@@ -8785,7 +8785,7 @@ Language and commands
 
 - Added sort-polymorphism for definitions in Type (but finally abandoned).
 - Support for implicit arguments in the types of parameters in
-  (co-)fixpoints and (co-)inductive declarations.
+  (co)fixpoints and (co)inductive declarations.
 - Improved type inference: use as much of possible general information.
   before applying irreversible unification heuristics (allow e.g. to
   infer the predicate in "(exist _ 0 (refl_equal 0) : {n:nat | n=0 })").

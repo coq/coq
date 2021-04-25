@@ -198,7 +198,7 @@ For non-maximally inserted implicit arguments, use square brackets:
 
    Print Implicit map.
 
-For (co-)inductive datatype
+For (co)inductive datatype
 declarations, the semantics are the following: an inductive parameter
 declared as an implicit argument need not be repeated in the inductive
 definition and will become implicit for the inductive type and the constructors.

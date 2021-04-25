@@ -94,12 +94,13 @@ but these terms are also used interchangeably.
 
 A proof script, consisting of the tactics that are applied to prove a
 theorem, is often informally referred to as a "proof".
-The real proof, whether complete or incomplete, is a term, the :gdef:`proof term`,
-which users may occasionally want to examine.  (This is based on the
+The real proof, whether complete or incomplete, is the associated term,
+the :gdef:`proof term`, which users may occasionally want to examine.
+(This is based on the
 *Curry-Howard isomorphism* :cite:`How80,Bar81,Gir89,H89`, which is
 a correspondence between between proofs and terms and between
-propositions and types of λ-calculus.  The isomorphism is also
-sometimes called the "propositions-as-types correspondence".)
+:term:`propositions <proposition>` and types of λ-calculus.  The isomorphism
+is also sometimes called the "propositions-as-types correspondence".)
 
 The :cmd:`Show Proof` command displays the incomplete proof term
 before you've completed the proof.  For example, here's the proof
@@ -862,7 +863,7 @@ Requesting information
 .. cmd:: Guarded
 
    Some tactics (e.g. :tacn:`refine`) allow to build proofs using
-   fixpoint or co-fixpoint constructions. Due to the incremental nature
+   fixpoint or cofixpoint constructions. Due to the incremental nature
    of proof construction, the check of the termination (or
    guardedness) of the recursive calls in the fixpoint or cofixpoint
    constructions is postponed to the time of the completion of the proof.

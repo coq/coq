@@ -370,7 +370,7 @@ recursion. It is the local counterpart of the :cmd:`Fixpoint` command. When
 
 The association of a single fixpoint and a local definition have a special
 syntax: :n:`let fix @ident {* @binder } := @term in` stands for
-:n:`let @ident := fix @ident {* @binder } := @term in`. The same applies for co-fixpoints.
+:n:`let @ident := fix @ident {* @binder } := @term in`. The same applies for cofixpoints.
 
 Some options of :n:`@fixannot` are only supported in specific constructs.  :n:`fix` and :n:`let fix`
 only support the :n:`struct` option, while :n:`wf` and :n:`measure` are only supported in

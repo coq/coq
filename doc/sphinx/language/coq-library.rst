@@ -752,7 +752,7 @@ subdirectories:
   * **ZArith** : Basic relative integer arithmetic
   * **Numbers** : Various approaches to natural, integer and cyclic numbers (currently axiomatically and on top of 2^31 binary words)
   * **Bool** : Booleans (basic functions and results)
-  * **Lists** : Monomorphic and polymorphic lists (basic functions and results), Streams (infinite sequences defined with co-inductive types)
+  * **Lists** : Monomorphic and polymorphic lists (basic functions and results), Streams (infinite sequences defined with coinductive types)
   * **Sets** : Sets (classical, constructive, finite, infinite, power set, etc.)
   * **FSets** : Specification and implementations of finite sets and finite maps (by lists and by AVL trees)
   * **Reals** : Axiomatization of real numbers (classical, basic functions, integer part, fractional part, limit, derivative, Cauchy series, power series and results,...)
