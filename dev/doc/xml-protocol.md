@@ -30,6 +30,7 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [StopWorker](#command-stopworker)
   - [PrintAst](#command-printast)
   - [Annotate](#command-annotate)
+  - [Db_cmd](#command-db_cmd)
 * [Feedback messages](#feedback)
   - [Added Axiom](#feedback-addedaxiom)
   - [Processing](#feedback-processing)
@@ -44,6 +45,7 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [File Loaded](#feedback-fileloaded)
   - [Message](#feedback-message)
   - [Custom](#feedback-custom)
+* [Ltac-debug messages](ltac_debug)
 * [Highlighting Text](#highlighting)
 
 Sentences: each command sent to Coqtop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
@@ -629,6 +631,20 @@ take `<call val="Annotate"><string>Theorem plus_0_r : forall n : nat, n + 0 = n.
 
 -------------------------------
 
+
+
+### <a name="command-db_cmd">**Db_cmd(user_input: string)**</a>
+```html
+<call val="Db_cmd"><string>${user_input}</string></call>
+```
+#### *Returns*
+*
+
+`<call val="Db_cmd"><string>h</string></call>` passes the command "h" to the debugger.
+It returns unit.
+
+-------------------------------
+
 ## <a name="feedback">Feedback messages</a>
 
 Feedback messages are issued out-of-band,
@@ -752,6 +768,33 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
   </feedback_content>
 </feedback>
 ```
+
+-------------------------------
+
+## <a name="ltac-debug">Ltac-debug messages</a>
+
+Ltac-debug messages are issued out-of-band, similar to Feedback messages.
+The response contains an identifying tag and a `<ppdoc>`.
+Currently these tags are used:
+
+* **output** - ordinary output for display in the Messages panel
+* **goal** - the current goal for the debugger, for display in the Messages panel
+  or elsewhere
+* **prompt** - output for display in the Messages panel prompting the user to
+  enter a debug command, allowing CoqIDE to display it without
+  appending a newline.  It also signals that coqidetop is waiting to receive
+  a debugger-specific message such as [Db_cmd](#command-db_cmd).
+
+```xml
+<ltac_debug>
+prompt
+  <ppdoc val="tag">
+        :
+  </ppdoc>
+</ltac_debug>
+```
+
+-------------------------------
 
 ## <a name="highlighting">Highlighting Text</a>
 

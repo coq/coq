@@ -66,7 +66,7 @@ let message_view () : message_view =
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(box#pack ~expand:true) () in
   let view = GSourceView3.source_view
     ~source_buffer:buffer ~packing:scroll#add
-    ~editable:false ~cursor_visible:false ~wrap_mode:`CHAR ()
+    ~editable:false ~cursor_visible:false ~wrap_mode:`WORD ()
   in
   let () = Gtk_parsing.fix_double_click view in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
@@ -116,7 +116,7 @@ let message_view () : message_view =
   in
   let msgs : message_entry_kind list ref = ref [] in
   let (return, _) = GtkData.AccelGroup.parse "Return" in
-  let backspace = 65288 (*GtkData.AccelGroup.parse "Backspace"*) in
+  let (backspace, _) = GtkData.AccelGroup.parse "BackSpace" in
   let (delete, _) = GtkData.AccelGroup.parse "Delete" in
 
   (* Keypress handler *)

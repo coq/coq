@@ -772,8 +772,6 @@ let db_cmd cmd sn =  (* todo: still good? *)
 
 let send_db_cmd cmd = cb_on_current_term (db_cmd cmd) ()
 
-(* technique recommended in https://ocaml.org/releases/4.11/htmlman/comp.html#s%3Acomp-errors
-  under "Reference to undefined global" *)
 let _ = Wg_MessageView.forward_send_db_cmd := send_db_cmd
 
 let about _ =

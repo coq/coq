@@ -9,18 +9,11 @@
 (************************************************************************)
 
 (** Protocol version of this file. This is the date of the last modification. *)
+let protocol_version = "20210409"
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-(** Changelog
-
-    - 20210409: support for ltac debugger:
-      + new RPC to send a debugger_command
-      + message and new asyncronous output
-
-  *)
-
-let protocol_version = "20210409"
+(** See xml-protocol.md for a description of the protocol. *)
 
 type msg_format = Richpp of int | Ppcmds
 let msg_format = ref (Richpp 72)
