@@ -169,82 +169,93 @@ let move_location_eq m1 m2 = match m1, m2 with
 | MoveFirst, MoveFirst -> true
 | _ -> false
 
-let split_sign env sigma hfrom hto l =
-  let rec splitrec left toleft = function
-    | [] -> error_no_such_hypothesis env sigma hfrom
-    | d :: right ->
-        let hyp = NamedDecl.get_id d in
-        if Id.equal hyp hfrom then
-          (left,right,d, toleft || move_location_eq hto MoveLast)
-        else
-          let is_toleft = match hto with
-          | MoveAfter h' | MoveBefore h' -> Id.equal hyp h'
-          | _ -> false
-          in
-          splitrec (d::left) (toleft || is_toleft)
-            right
-  in
-    splitrec [] false l
+let mem_id_context id ctx = Id.Map.mem id ctx.Environ.env_named_map
 
-let hyp_of_move_location = function
-  | MoveAfter id -> id
-  | MoveBefore id -> id
-  | _ -> assert false
+let split_sign env sigma hfrom l =
+  let () = if not (mem_id_context hfrom l) then error_no_such_hypothesis env sigma hfrom in
+  let rec splitrec left sign = match EConstr.match_named_context_val sign with
+  | None -> assert false
+  | Some (d, _, right) ->
+    let hyp = NamedDecl.get_id d in
+    if Id.equal hyp hfrom then (left, right, d)
+    else splitrec (d :: left) right
+  in
+  splitrec [] l
 
 let move_hyp env sigma toleft (left,declfrom,right) hto =
-  let test_dep d d2 =
-    if toleft
-    then occur_var_in_decl env sigma (NamedDecl.get_id d2) d
-    else occur_var_in_decl env sigma (NamedDecl.get_id d) d2
-  in
-  let rec moverec first middle = function
-    | [] ->
-        if match hto with MoveFirst | MoveLast -> false | _ -> true then
-          error_no_such_hypothesis env sigma (hyp_of_move_location hto);
-        List.rev first @ List.rev middle
+  let open EConstr in
+  let push prefix sign = List.fold_right push_named_context_val prefix sign in
+  let push_rev prefix sign = List.fold_left (fun accu d -> push_named_context_val d accu) sign prefix in
+  let rec moverec_toleft ans first middle midvars = function
+    | [] -> push middle @@ push first ans
     | d :: _ as right when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
-        List.rev first @ List.rev middle @ right
+      push_rev right @@ push middle @@ push first ans
     | d :: right ->
         let hyp = NamedDecl.get_id d in
-        let (first',middle') =
-          if List.exists (test_dep d) middle then
+        let (first', middle', midvars') =
+          if occur_vars_in_decl env sigma midvars d then
             if not (move_location_eq hto (MoveAfter hyp)) then
-              (first, d::middle)
+              (first, d :: middle, Id.Set.add hyp midvars)
             else
               user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
                 pr_move_location Id.print hto ++
-                str (if toleft then ": it occurs in the type of " else ": it depends on ")
+                str ": it occurs in the type of "
                 ++ Id.print hyp ++ str ".")
           else
-            (d::first, middle)
+            (d::first, middle, midvars)
         in
         if move_location_eq hto (MoveAfter hyp) then
-          List.rev first' @ List.rev middle' @ right
+          push_rev right @@ push middle' @@ push first' ans
         else
-          moverec first' middle' right
+          moverec_toleft ans first' middle' midvars' right
   in
-  let open EConstr in
+  let rec moverec_toright first middle depvars right = match EConstr.match_named_context_val right with
+    | None -> push_rev first @@ push_rev middle right
+    | Some (d, _, _) when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
+        push_rev first @@ push_rev middle @@ right
+    | Some (d, _, right) ->
+        let hyp = NamedDecl.get_id d in
+        let (first', middle', depvars') =
+          if Id.Set.mem hyp depvars then
+            if not (move_location_eq hto (MoveAfter hyp)) then
+              let vars = global_vars_set_of_decl env sigma d in
+              let depvars = Id.Set.union vars depvars in
+              (first, d::middle, depvars)
+            else
+              user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
+                pr_move_location Id.print hto ++
+                str ": it depends on "
+                ++ Id.print hyp ++ str ".")
+          else
+            (d::first, middle, depvars)
+        in
+        if move_location_eq hto (MoveAfter hyp) then
+          push_rev first' @@ push_rev middle' @@ right
+        else
+          moverec_toright first' middle' depvars' right
+  in
   if toleft then
-    let right =
-      List.fold_right push_named_context_val right empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d sign)
-      right (moverec [] [declfrom] left)
+    let id = NamedDecl.get_id declfrom in
+    moverec_toleft right [] [declfrom] (Id.Set.singleton id) left
   else
-    let right =
-      List.fold_right push_named_context_val
-        (moverec [] [declfrom] right) empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d sign)
-      right left
+    let depvars = global_vars_set_of_decl env sigma declfrom in
+    let right = moverec_toright [] [declfrom] depvars right in
+    push_rev left @@ right
 
 let move_hyp_in_named_context env sigma hfrom hto sign =
-  let open EConstr in
-  let (left,right,declfrom,toleft) =
-    split_sign env sigma hfrom hto (named_context_of_val sign) in
+  let (left, right, declfrom) = split_sign env sigma hfrom sign in
+  let toleft = match hto with
+  | MoveLast -> true
+  | MoveAfter id | MoveBefore id ->
+    if mem_id_context id right then false
+    else if mem_id_context id sign then true
+    else error_no_such_hypothesis env sigma id
+  | MoveFirst -> false
+  in
   move_hyp env sigma toleft (left,declfrom,right) hto
 
 let insert_decl_in_named_context env sigma decl hto sign =
-  let open EConstr in
-  move_hyp env sigma false ([],decl,named_context_of_val sign) hto
+  move_hyp env sigma false ([],decl,sign) hto
 
 (**********************************************************************)
 
