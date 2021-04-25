@@ -1959,8 +1959,8 @@ induction_clause: [
 ]
 
 induction_arg: [
-| natural
 | one_term_with_bindings
+| natural
 ]
 
 induction_principle: [
