@@ -1102,6 +1102,18 @@ let add_module_parameter mbid mte inl senv =
     modvariant = new_variant;
     paramresolver = new_paramresolver }
 
+let rec module_num_parameters senv =
+  match senv.modvariant with
+  | STRUCT (params,senv) -> List.length params :: module_num_parameters senv
+  | SIG (params,senv) -> List.length params :: module_num_parameters senv
+  | _ -> []
+
+let rec module_is_modtype senv =
+  match senv.modvariant with
+  | STRUCT (_,senv) -> false :: module_is_modtype senv
+  | SIG (_,senv) -> true :: module_is_modtype senv
+  | _ -> []
+
 let functorize params init =
   List.fold_left (fun e (mbid,mt) -> MoreFunctor(mbid,mt,e)) init params
 

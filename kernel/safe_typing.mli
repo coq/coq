@@ -194,6 +194,15 @@ val add_module_parameter :
   MBId.t -> Entries.module_struct_entry -> Declarations.inline ->
     Mod_subst.delta_resolver safe_transformer
 
+(** returns the number of module (type) parameters following the nested module
+    structure. The inner module (type) comes first in the list. *)
+val module_num_parameters : safe_environment -> int list
+
+(** returns true if the module is a module type following the nested module
+    structure. The inner module (type) comes first in the list. true means
+    a module type, false a regular mofule *)
+val module_is_modtype : safe_environment -> bool list
+
 (** Traditional mode: check at end of module that no future was
     created. *)
 val allow_delayed_constants : bool ref
