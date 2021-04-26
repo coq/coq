@@ -1184,6 +1184,11 @@ and skip_to_dot_or_brace = parse
   | _ { skip_to_dot lexbuf }
 
 and body_bol = parse
+  | (space_nl+ as s) ('-'+ | '+'+ | '*'+) space*
+      { let nl_count = count_newlines s in
+        new_lines nl_count lexbuf;
+        String.iter Output.char (lexeme lexbuf);
+        if is_none !formatted then true else body_bol lexbuf }
   | space+
       { Output.indentation (fst (count_spaces (lexeme lexbuf))); body lexbuf }
   | "" { Output.indentation 0; body lexbuf }
