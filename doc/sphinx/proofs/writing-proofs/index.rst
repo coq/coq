@@ -26,7 +26,7 @@ Additional tactics are documented in the next chapter
 
    proof-mode
    ../../proof-engine/tactics
-   rewriting
+   equality
    ../../proof-engine/ssreflect-proof-language
    ../../proof-engine/detailed-tactic-examples
    ../../user-extensions/proof-schemes

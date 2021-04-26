@@ -862,7 +862,7 @@ command: [
 | "Locate" "Term" reference
 | "Locate" "Module" qualid
 | "Info" natural ltac_expr
-| "Add" "Zify" add_zify one_term      (* Micromega plugin *)
+| "Add" "Zify" add_zify qualid      (* Micromega plugin *)
 | "Show" "Zify" show_zify      (* Micromega plugin *)
 | "Locate" "Ltac" qualid
 | "Locate" "Library" qualid
@@ -1604,7 +1604,7 @@ simple_tactic: [
 | "constructor" OPT nat_or_var OPT ( "with" bindings )
 | "econstructor" OPT ( nat_or_var OPT ( "with" bindings ) )
 | "specialize" one_term OPT ( "with" bindings ) OPT ( "as" simple_intropattern )
-| "symmetry" OPT ( "in" goal_occurrences )
+| "symmetry" OPT simple_occurrences
 | "split" OPT ( "with" bindings )
 | "esplit" OPT ( "with" bindings )
 | "exists" OPT ( LIST1 bindings SEP "," )
