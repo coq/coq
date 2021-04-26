@@ -8,7 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type value =
+type value
+
+type kind =
   | Any
   (** A value that we won't check, *)
 
@@ -40,6 +42,9 @@ type value =
 
   | Int64
   | Float64
+
+val kind : value -> kind
+val make : kind -> value
 
 (** NB: List and Opt have their own constructors to make it easy to
    define eg [let rec foo = List foo]. *)

@@ -340,7 +340,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let (sd:summary_disk) = marshal_in_segment ~validate ~value:Values.v_libsum ~segment:seg_sd f ch in
       let (md:library_disk) = marshal_in_segment ~validate ~value:Values.v_lib ~segment:seg_md f ch in
       let (opaque_csts:seg_univ option) = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
-      let (tasks:'a option) = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
+      let (tasks:'a option) = marshal_in_segment ~validate ~value:Values.(make (Opt (make Any))) ~segment:seg_tasks f ch in
       let (table:seg_proofs option) =
         marshal_or_skip ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
       (* Verification of the final checksum *)

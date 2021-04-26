@@ -37,6 +37,30 @@ type value =
   | Int64
   | Float64
 
+type kind = value =
+  | Any
+  | Fail of string
+  | Tuple of string * value array
+  | Sum of string * int * value array array
+  | Array of value
+  | List of value
+  | Opt of value
+  | Int
+  | String
+  | Annot of string * value
+  | Dyn
+
+  | Proxy of value ref
+  | Int64
+  | Float64
+
+
+let rec kind (v : value) = match v with
+| Proxy r -> kind !r
+| _ -> v
+
+let make v = v
+
 let fix (f : value -> value) : value =
   let self = ref Any in
   let ans = f (Proxy self) in
