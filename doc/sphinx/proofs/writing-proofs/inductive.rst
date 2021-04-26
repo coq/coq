@@ -102,8 +102,6 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    .. prodn::
       induction_clause_list ::= {+, @induction_clause } {? using @one_term {? with @bindings } } {? @opt_clause }
       induction_clause ::= @destruction_arg {? @as_or_and_ipat } {? eqn : @naming_intropattern } {? @opt_clause }
-      destruction_arg ::= @natural
-      | @one_term_with_bindings
       opt_clause ::= in @goal_occurrences
       | at @occs_nums
 
@@ -231,7 +229,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    is the name given by :n:`intros until @natural` to the :n:`@natural` -th
    non-dependent premise of the goal.
 
-.. tacn:: case_eq @induction_clause_list
+.. tacn:: case_eq @one_term
 
    The tactic :n:`case_eq` is a variant of the :n:`case` tactic that allows
    performing case analysis on a term without completely forgetting its original
@@ -426,7 +424,6 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    premise of the goal.
 
 .. tacn:: dependent induction @ident {? {| generalizing | in } {+ @ident } } {? using @one_term }
-   :name: dependent induction
 
    The *experimental* tactic dependent induction performs induction-
    inversion on an instantiated inductive predicate. One needs to first
@@ -509,7 +506,7 @@ and an explanation of the underlying technique.
    is assumed to be a proof of a statement of
    :n:`@term__1 = @term__2` where the two terms are elements of an
    inductive set. To build the proof, the tactic traverses the normal forms
-   [3]_ of the terms looking for subterms :g:`u` and :g:`w` that are subterms
+   [1]_ of the terms looking for subterms :g:`u` and :g:`w` that are subterms
    of the normal forms of :n:`@term__1` and :n:`@term__2`, respectively,
    placed in the same positions and whose head symbols are
    different constructors. If such subterms are present, the
@@ -676,14 +673,11 @@ and an explanation of the underlying technique.
           inversion {| @ident | @natural } {? @as_or_and_ipat } {? in {+ @ident } }
    :name: inversion; _
 
-   .. insertprodn as_or_and_ipat equality_intropattern
+   .. insertprodn as_or_and_ipat as_or_and_ipat
 
    .. prodn::
       as_or_and_ipat ::= as {| @or_and_intropattern | @ident }
       | as @equality_intropattern
-      equality_intropattern ::= ->
-      | <-
-      | [= {* @intropattern } ]
 
    Let the type of :n:`@ident` in the local context be :g:`(I t)`, where :g:`I`
    is a (co)inductive predicate. Then, ``inversion`` applied to :n:`@ident`
@@ -787,7 +781,7 @@ and an explanation of the underlying technique.
 
 .. todo PR: expand "dependent" tactic in editing
 
-.. tacn:: dependent inversion {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
+.. tacn:: dependent {| simple inversion | inversion | inversion_clear } {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
 
    That must be used when :n:`@ident` appears in the current goal. It acts like
    ``inversion`` and then substitutes :n:`@ident` for the corresponding
@@ -798,7 +792,7 @@ and an explanation of the underlying technique.
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion @ident`.
 
-.. tacn:: dependent inversion_clear {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
+.. todo: tacn:: dependent inversion_clear {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
 
    Like ``dependent inversion``, except that :n:`@ident` is cleared from the
    local context.
@@ -842,11 +836,7 @@ and an explanation of the underlying technique.
    This allows naming the hypotheses introduced in the context by
    ``simple inversion``.
 
-.. tacn:: dependent simple inversion {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
-   :undocumented:
-
-   .. todo using … instead of ... in the name above gives a Sphinx error, even though
-      this works just find for :tacn:`move`
+.. todo: tacn:: dependent simple inversion {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
 
    Let :n:`@ident` have type :g:`(I t)` (:g:`I` an inductive predicate) in the
    local context, and :n:`@ident` be a (dependent) inversion lemma. Then, this
@@ -1008,6 +998,8 @@ and an explanation of the underlying technique.
 
    .. prodn::
       fixdecl ::= ( @ident {* @simple_binder } {? @struct_annot } : @term )
+      simple_binder ::= @name
+      | ( {+ @name } : @term )
       struct_annot ::= %{ struct @name %}
 
    This tactic is a primitive tactic to start a proof by induction. In
@@ -1336,7 +1328,7 @@ Generation of inversion principles with ``Derive`` ``Inversion``
 .. cmd:: Derive Inversion @ident with @one_term {? Sort @sort_family }
 
    Generates an inversion lemma for the
-   :tacn:`inversion ... using ...` tactic.  :token:`ident` is the name
+   :tacn:`inversion` tactic.  :token:`ident` is the name
    of the generated lemma.  :token:`one_term` should be in the form
    :token:`qualid` or :n:`(forall {+ @binder }, @qualid @term)` where
    :token:`qualid` is the name of an inductive

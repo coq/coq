@@ -958,7 +958,6 @@ simple_tactic: [
 | WITH "cbn" strategy_flag simple_occurrences
 | REPLACE "fold" LIST1 constr clause_dft_concl
 | WITH "fold" LIST1 constr simple_occurrences
-
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -1169,13 +1168,13 @@ simple_tactic: [
 (* todo: don't use DELETENT for this *)
 ne_intropatterns: [ | DELETENT ]
 
-
 or_and_intropattern: [
+| REPLACE "[" LIST1 intropatterns SEP "|" "]"
+| WITH "[" LIST0 (LIST0 intropattern) SEP "|" "]"
 | DELETE "()"
 | DELETE "(" simple_intropattern ")"
 | REPLACE "(" simple_intropattern "," LIST1 simple_intropattern SEP "," ")"
 |   WITH  "(" LIST0 simple_intropattern SEP "," ")"
-| EDIT "[" USE_NT intropattern_or LIST1 intropatterns SEP "|" "]"
 ]
 
 bar_cbrace: [
@@ -1605,13 +1604,6 @@ tac2type_body: [
 | DELETE "::=" tac2typ_knd      (* Ltac2 plugin *)
 ]
 
-intropattern_or_list_or: [
-(* todo: where does intropattern_or_list_or come from?? *)
-| REPLACE intropattern_or_list_or "|" intropatterns
-| WITH LIST0 intropattern LIST0 ( "|" intropatterns )
-| DELETE intropatterns
-]
-
 record_declaration: [
 | DELETE fields_def
 | LIST0 field_def
@@ -1825,6 +1817,7 @@ document: [
 
 (* add in ltac and Tactic Notation tactics that appear in the doc: *)
 ltac_defined_tactics: [
+| "case_eq" constr
 | "classical_left"
 | "classical_right"
 | "contradict" ident
@@ -1849,6 +1842,7 @@ ltac_defined_tactics: [
 tactic_notation_tactics: [
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
+| "dependent" "induction" ident OPT ( [ "generalizing" | "in" ] LIST1 hyp )  OPT ( "using" constr )
 | "dintuition" OPT ltac_expr5
 | "dtauto"
 | "field" OPT ( "[" LIST1 constr "]" )
@@ -2727,6 +2721,9 @@ SPLICE: [
 | variance
 | variance_identref
 | rewriter
+| clause_dft_all
+| or_and_intropattern_loc
+| eqn_ipat
 | conversion
 | type_cast
 ] (* end SPLICE *)

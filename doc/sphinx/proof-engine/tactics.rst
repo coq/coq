@@ -142,35 +142,33 @@ introduced by tactics.  They also let you split an introduced hypothesis into
 multiple hypotheses or subgoals.  Common tactics that accept intro patterns
 include :tacn:`assert`, :tacn:`intros` and :tacn:`destruct`.
 
+.. insertprodn intropattern or_and_intropattern
+
 .. prodn::
-   intropattern_list ::= {* @intropattern }
    intropattern ::= *
    | **
    | @simple_intropattern
    simple_intropattern ::= @simple_intropattern_closed {* % @term0 }
-   simple_intropattern_closed ::= @naming_intropattern
+   simple_intropattern_closed ::= @or_and_intropattern
+   | @equality_intropattern
    | _
-   | @or_and_intropattern
-   | @rewriting_intropattern
-   | @injection_intropattern
-   naming_intropattern ::= @ident
-   | ?
-   | ?@ident
-   or_and_intropattern ::= [ {*| @intropattern_list } ]
-   | ( {*, @simple_intropattern } )
-   | ( {*& @simple_intropattern } )
-   rewriting_intropattern ::= ->
+   | @naming_intropattern
+   equality_intropattern ::= ->
    | <-
-   injection_intropattern ::= [= @intropattern_list ]
-   or_and_intropattern_loc ::= @or_and_intropattern
-   | ident
+   | [= {* @intropattern } ]
+   naming_intropattern ::= ?@ident
+   | ?
+   | @ident
+   or_and_intropattern ::= [ {*| {* @intropattern } } ]
+   | ( {*, @simple_intropattern } )
+   | ( @simple_intropattern & {+& @simple_intropattern } )
 
 Note that the intro pattern syntax varies between tactics.
 Most tactics use :n:`@simple_intropattern` in the grammar.
 :tacn:`destruct`, :tacn:`edestruct`, :tacn:`induction`,
 :tacn:`einduction`, :tacn:`case`, :tacn:`ecase` and the various
-:tacn:`inversion` tactics use :n:`@or_and_intropattern_loc`, while
-:tacn:`intros` and :tacn:`eintros` use :n:`@intropattern_list`.
+:tacn:`inversion` tactics use :n:`@or_and_intropattern`, while
+:tacn:`intros` and :tacn:`eintros` use :n:`{* @intropattern }`.
 The :n:`eqn:` construct in various tactics uses :n:`@naming_intropattern`.
 
 **Naming patterns**
@@ -227,10 +225,10 @@ For a goal :g:`A \/ B`, use :tacn:`left` to replace the current goal with :g:`A`
   :ref:`single constructor with two parameters <intropattern_cons_note>`.
   :ref:`Example <intropattern_ampersand_ex>`
 
-* :n:`[ {+| @intropattern_list} ]` — splits an inductive type that has
+* :n:`[ {+| {* @intropattern } } ]` — splits an inductive type that has
   :ref:`multiple constructors <intropattern_cons_note>`
   such as :n:`A \/ B`
-  into multiple subgoals.  The number of :token:`intropattern_list` must be the same as the number of
+  into multiple subgoals.  The number of :token:`intropattern`\s must be the same as the number of
   constructors for the matched part.
 * :n:`[ {+ @intropattern} ]` — splits an inductive type that has a
   :ref:`single constructor with multiple parameters <intropattern_cons_note>`
@@ -1079,13 +1077,13 @@ Managing the local context
       .. exn:: No such hypothesis: @ident.
          :undocumented:
 
-.. tacn:: intros @intropattern_list
+.. tacn:: intros {* @intropattern }
    :name: intros …
 
    Introduces one or more variables or hypotheses from the goal by matching the
    intro patterns.  See the description in :ref:`intropatterns`.
 
-.. tacn:: eintros @intropattern_list
+.. tacn:: eintros {* @intropattern }
    :name: eintros
 
    Works just like :tacn:`intros …` except that it creates existential variables

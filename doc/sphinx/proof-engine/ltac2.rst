@@ -1451,7 +1451,7 @@ Other nonterminals that have syntactic classes are listed here.
 
       * - :n:`intropatterns`
         - :token:`ltac2_intropatterns`
-        - :token:`intropattern_list`
+        -
 
       * - :n:`intropattern`
         - :token:`ltac2_simple_intropattern`
