@@ -997,6 +997,9 @@ Custom entries
    This command supports the :attr:`local` attribute, which limits the entry to the
    current module.
 
+   Non-local custom entries survive module closing and are
+   declared when a file is Required.
+
 .. example::
 
    For instance, we may want to define an ad hoc
