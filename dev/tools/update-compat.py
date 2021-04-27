@@ -58,7 +58,7 @@ from io import open
 # robust to users who choose to run the script from any location.
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(SCRIPT_PATH, '..', '..'))
-CONFIGURE_PATH = os.path.join(ROOT_PATH, 'configure.ml')
+CONFIGURE_PATH = os.path.join(ROOT_PATH, 'tools/configure/configure.ml')
 HEADER_PATH = os.path.join(ROOT_PATH, 'dev', 'header.ml')
 DEFAULT_NUMBER_OF_OLD_VERSIONS = 2
 RELEASE_NUMBER_OF_OLD_VERSIONS = 2
