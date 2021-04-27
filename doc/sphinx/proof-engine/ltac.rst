@@ -1730,7 +1730,8 @@ Defining |Ltac| symbols
    exported outside the current module.
 
    :token:`qualid`
-      Name of the symbol being defined or redefined
+      Name of the symbol being defined or redefined.  For definitions, :token:`qualid`
+      must be a simple :token:`ident`.
 
    :n:`{* @name }`
       If specified, the symbol defines a function with the given parameter names.
