@@ -259,7 +259,15 @@ let process_universe_constraints uctx cstrs =
                 | Some l ->
                   Univ.Constraint.add (l, Le, r') local
                 | None ->
-                  if UGraph.check_leq univs l r then local else enforce_leq l r local
+                  (* We insert the constraint in the graph even if the graph
+                     already contains it.  Indeed, checking the existance of the
+                     constraint is costly when the constraint does not already
+                     exist directly as a single edge in the graph, but adding an
+                     edge in the graph which is implied by others is cheap.
+                     Hence, by doing this, we avoid a costly check here, and
+                     make further checks of this constraint easier since it will
+                     exist directly in the graph. *)
+                  enforce_leq l r local
               end
           | ULub (l, r) ->
               equalize_variables true (Universe.make l) l (Universe.make r) r local
