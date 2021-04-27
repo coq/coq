@@ -535,6 +535,10 @@ let change_lev (Level lev) n lname assoc =
   Level
   {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix; lprefix = lev.lprefix}
 
+let err_no_level lev e =
+  let msg = sprintf "Grammar.extend: No level labelled \"%s\" in entry \"%s\"" lev e in
+  failwith msg
+
 let get_level entry position levs =
   match position with
     Some First -> [], empty_lev, levs
@@ -542,11 +546,7 @@ let get_level entry position levs =
   | Some (Level n) ->
       let rec get =
         function
-          [] ->
-            eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
-              entry.ename;
-            flush stderr;
-            failwith "Grammar.extend"
+          [] -> err_no_level n entry.ename
         | lev :: levs ->
             if is_level_labelled n lev then [], change_lev lev n, levs
             else
@@ -556,11 +556,7 @@ let get_level entry position levs =
   | Some (Before n) ->
       let rec get =
         function
-          [] ->
-            eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
-              entry.ename;
-            flush stderr;
-            failwith "Grammar.extend"
+          [] -> err_no_level n entry.ename
         | lev :: levs ->
             if is_level_labelled n lev then [], empty_lev, lev :: levs
             else
@@ -570,11 +566,7 @@ let get_level entry position levs =
   | Some (After n) ->
       let rec get =
         function
-          [] ->
-            eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
-              entry.ename;
-            flush stderr;
-            failwith "Grammar.extend"
+          [] -> err_no_level n entry.ename
         | lev :: levs ->
             if is_level_labelled n lev then [lev], empty_lev, levs
             else
@@ -638,9 +630,8 @@ let levels_of_rules entry position rules =
     match entry.edesc with
       Dlevels elev -> elev
     | Dparser _ ->
-        eprintf "Error: entry not extensible: \"%s\"\n" entry.ename;
-        flush stderr;
-        failwith "Grammar.extend"
+        let msg = sprintf "Grammar.extend: entry not extensible: \"%s\"" entry.ename in
+        failwith msg
   in
   match rules with
   | [] -> elev
