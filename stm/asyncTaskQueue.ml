@@ -129,7 +129,7 @@ module Make(T : Task) () = struct
           | "-require-import-from" | "-require-export-from") :: _ :: _ :: tl ->
            set_slave_opt tl
         (* We need to pass some options with one argument *)
-        | ( "-I" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir"
+        | ( "-I" | "-nI" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir"
           | "-color" | "-init-file"
           | "-profile-ltac-cutoff" | "-main-channel" | "-control-channel"
           | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->

@@ -29,7 +29,7 @@ Require Export Coq.Init.Tauto.
    - tauto_plugin (in Tauto).
 *)
 Declare ML Module "cc_plugin".
-Declare ML Module "ground_plugin".
+Declare ML Module "firstorder_plugin".
 
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%hex_uint_scope.

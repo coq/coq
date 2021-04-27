@@ -9,4 +9,4 @@
 (************************************************************************)
 
 Require Coq.extraction.Extraction.
-Declare ML Module "recdef_plugin".
+Declare ML Module "funind_plugin".

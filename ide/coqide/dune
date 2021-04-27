@@ -29,7 +29,7 @@
  (package coqide-server)
  (files (idetop.bc as coqidetop.byte)))
 
-; IDE Client
+; IDE Client, we may want to add the macos_prehook.ml conditionally.
 (library
  (name coqide_gui)
  (wrapped false)

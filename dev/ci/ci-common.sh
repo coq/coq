@@ -16,15 +16,26 @@ then
     then
         export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
     fi
+elif [ -d "$PWD/_build_vo/" ];
+then
+    # Dune Ocaml build, vo build using make
+    export OCAMLPATH="$PWD/_build/install/default/lib/:$PWD/_install_ci/lib:$OCAMLPATH"
+    export COQBIN="$PWD/_build/install/default/bin"
+    export COQLIB="$PWD/_build_vo/default/"
+    # We set this due to dune + vo make mode not creating lib/coq anymore
+    export COQCORELIB="$PWD/_build/install/default/lib/coq-core"
+    CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    export CI_BRANCH
 elif [ -d "$PWD/_build/install/default/" ];
 then
-    # Dune build
+    # Full Dune build
     export OCAMLPATH="$PWD/_build/install/default/lib/:$PWD/_install_ci/lib:$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
     CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     export CI_BRANCH
 else
+    # EJGA: This is not triggered anymore, check and cleanup
     # We assume we are in `-profile devel` build, thus `-local` is set
     export OCAMLPATH="$PWD:$PWD/_install_ci/lib:$OCAMLPATH"
     export COQBIN="$PWD/bin"

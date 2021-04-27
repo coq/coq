@@ -36,8 +36,9 @@ ifeq ($(findstring CYGWIN,$(OSNAME)),CYGWIN)
 WIN_CURDIR:=$(shell cygpath -w $(CURDIR))
 SPHINXENV:=COQBIN="$(CURDIR)/bin/" COQLIB="$(WIN_CURDIR)"
 else
-SPHINXENV:=COQBIN="$(CURDIR)/bin/" COQLIB="$(CURDIR)"
+SPHINXENV:=COQBIN="$(CURDIR)/$(CBIN)" COQLIB="$(CURDIR)/$(VO_OUT_DIR)"
 endif
+
 SPHINXWARNERROR ?= 1
 ifeq ($(SPHINXWARNERROR),1)
 SPHINXOPTS= -W
@@ -63,7 +64,7 @@ doc: refman doc-stdlib
 
 SPHINX_DEPS ?=
 ifndef QUICK
-SPHINX_DEPS := coq
+SPHINX_DEPS := coq $(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.cmxs
 endif
 
 # refman-html and refman-latex
@@ -85,8 +86,12 @@ refman: $(SPHINX_DEPS)
 # compatibility alias
 sphinx: refman-html
 
+DOC_BUILD_DIR=_build/default/doc
+DOC_STDLIB_DIR=$(DOC_BUILD_DIR)/stdlib/
+DOC_STDLIB_HTML_DIR=$(DOC_BUILD_DIR)/stdlib/html/
+
 doc-html:\
-  doc/stdlib/html/index.html refman-html
+  $(DOC_STDLIB_HTML_DIR)/index.html refman-html
 
 doc-pdf:\
   doc/stdlib/Library.pdf refman-pdf
@@ -95,7 +100,7 @@ doc-ps:\
   doc/stdlib/Library.ps
 
 doc-stdlib: \
-  doc/stdlib/html/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
+  $(DOC_STDLIB_HTML_DIR)/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
 
 full-stdlib: \
   doc/stdlib/html/index.html doc/stdlib/FullLibrary.ps doc/stdlib/FullLibrary.pdf
@@ -103,9 +108,12 @@ full-stdlib: \
 sphinx-clean:
 	rm -rf $(SPHINXBUILDDIR) doc/sphinx/index.rst doc/sphinx/zebibliography.rst
 
+# We now require a install layout to be available.
 .PHONY: plugin-tutorial
-plugin-tutorial: states tools
-	+$(MAKE) COQBIN=$(PWD)/bin/ -C $(PLUGINTUTO)
+plugin-tutorial: states $(BCONTEXT)/coq-core.install | $(VO_OUT_DIR)
+	mkdir -p $(VO_OUT_DIR)/tools/
+	cp tools/CoqMakefile.in $(VO_OUT_DIR)/tools/
+	+$(MAKE) COQBIN=$(shell pwd)/$(CBIN)/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/$(VO_OUT_DIR) -C $(PLUGINTUTO)
 
 ######################################################################
 ### Implicit rules
@@ -133,26 +141,31 @@ doc/unreleased.rst: $(wildcard doc/changelog/00-title.rst doc/changelog/*/*.rst)
 # Standard library
 ######################################################################
 
-DOCLIBS=-R theories Coq -Q user-contrib/Ltac2 Ltac2
+DOCLIBS=-R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib/Ltac2 Ltac2
 
 ### Standard library (browsable html format)
 
 ifdef QUICK
-doc/stdlib/html/genindex.html:
+$(DOC_STDLIB_HTML_DIR)/genindex.html:
 else
-doc/stdlib/html/genindex.html: | $(COQDOC) $(ALLVO)
+$(DOC_STDLIB_HTML_DIR)/genindex.html: | $(COQDOC) $(COQDOCCSS) $(ALLVO)
 endif
-	- rm -rf doc/stdlib/html
-	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -d doc/stdlib/html --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
-	  $(DOCLIBS) $(VFILES)
-	mv doc/stdlib/html/index.html doc/stdlib/html/genindex.html
+	- rm -rf $(DOC_STDLIB_HTML_DIR)
+	$(MKDIR) -p $(DOC_STDLIB_HTML_DIR)
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -d $(DOC_STDLIB_HTML_DIR) --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
+	  $(DOCLIBS) $(BUILD_VFILES)
+	mv $(DOC_STDLIB_HTML_DIR)/index.html $(DOC_STDLIB_HTML_DIR)/genindex.html
 
-doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
-	./doc/stdlib/make-library-index doc/stdlib/index-list.html doc/stdlib/hidden-files
+$(DOC_STDLIB_DIR)/index-list.html.template: doc/stdlib/index-list.html.template
+	mkdir -p $(DOC_STDLIB_DIR)
+	cp -a $< $@
 
-doc/stdlib/html/index.html: doc/stdlib/html/genindex.html doc/stdlib/index-list.html
-	cat doc/common/styles/html/$(HTMLSTYLE)/header.html doc/stdlib/index-list.html > $@
+$(DOC_STDLIB_DIR)/index-list.html: $(DOC_STDLIB_DIR)/index-list.html.template doc/stdlib/make-library-index
+	./doc/stdlib/make-library-index $(DOC_STDLIB_DIR)/index-list.html doc/stdlib/hidden-files
+
+$(DOC_STDLIB_HTML_DIR)/index.html: $(DOC_STDLIB_HTML_DIR)/genindex.html $(DOC_STDLIB_DIR)/index-list.html
+	$(MKDIR) -p $(DOC_STDLIB_HTML_DIR)
+	cat doc/common/styles/html/$(HTMLSTYLE)/header.html $(DOC_STDLIB_DIR)/index-list.html > $@
 	cat doc/common/styles/html/$(HTMLSTYLE)/footer.html >> $@
 
 ### Standard library (light version, full version is definitely too big)
@@ -160,10 +173,10 @@ doc/stdlib/html/index.html: doc/stdlib/html/genindex.html doc/stdlib/index-list.
 ifdef QUICK
 doc/stdlib/Library.coqdoc.tex:
 else
-doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
+doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(COQDOCSTY) $(THEORIESLIGHTVO)
 endif
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
-            -R theories Coq $(THEORIESLIGHTVO:.$(VO)=.v) >> $@
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout \
+            -R $(VO_OUT_DIR)theories Coq $(THEORIESLIGHTVO:.$(VO)=.v) >> $@
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
 	(cd doc/stdlib;\
@@ -183,13 +196,13 @@ doc/stdlib/FullLibrary.tex: doc/stdlib/Library.tex
 
 ifdef QUICK
 doc/stdlib/FullLibrary.coqdoc.tex:
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            $(DOCLIBS) $(VFILES) > $@
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+            $(DOCLIBS) $(BUILD_VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 else
-doc/stdlib/FullLibrary.coqdoc.tex: $(COQDOC) $(ALLVO)
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            $(DOCLIBS) $(VFILES) > $@
+doc/stdlib/FullLibrary.coqdoc.tex: $(COQDOC) $(COQDOCSTY) $(ALLVO)
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+            $(DOCLIBS) $(BUILD_VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 endif
 
@@ -221,7 +234,7 @@ install-doc-html: install-doc-stdlib-html install-doc-sphinx
 
 install-doc-stdlib-html:
 	$(MKDIR) $(FULLDOCDIR)/html/stdlib
-	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
+	$(INSTALLLIB) $(DOC_STDLIB_HTML_DIR)/* $(FULLDOCDIR)/html/stdlib
 
 install-doc-printable:
 	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
@@ -239,12 +252,6 @@ install-doc-sphinx:
 ######################################################################
 # doc_grammar tool
 ######################################################################
-
-DOC_GRAMCMO := $(addsuffix .cmo, $(addprefix coqpp/, coqpp_parse coqpp_lex))
-
-$(DOC_GRAM): $(DOC_GRAMCMO) coqpp/coqpp_parser.mli coqpp/coqpp_parser.ml doc/tools/docgram/doc_grammar.ml
-	$(SHOW)'OCAMLC -a $@'
-	$(HIDE)$(OCAMLC) -I coqpp $^ -package str -linkall -linkpkg -o $@
 
 # user-contrib/*/*.mlg omitted for now (e.g. ltac2)
 PLUGIN_MLGS := $(wildcard plugins/*/*.mlg)

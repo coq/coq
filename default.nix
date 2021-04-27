@@ -41,7 +41,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     hostname
-    python3 time # coq-makefile timing tools
+    python3 time flock dune_2 # coq-makefile timing tools
   ]
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
@@ -65,7 +65,6 @@ stdenv.mkDerivation rec {
     [ jq curl gitFull gnupg ] # Dependencies of the merging script
     ++ (with ocamlPackages; [ merlin ocp-indent ocp-index utop ocamlformat ]) # Dev tools
     ++ [ graphviz ] # Useful for STM debugging
-    ++ [ dune_2 ] # Maybe the next build system
   );
 
   # OCaml and findlib are needed so that native_compute works
@@ -81,7 +80,7 @@ stdenv.mkDerivation rec {
     else
       with builtins; filterSource
         (path: _:
-           !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci" "nix"]) ./.;
+           !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci" "_build_vo" "nix"]) ./.;
 
   preConfigure = ''
     patchShebangs dev/tools/ doc/stdlib
