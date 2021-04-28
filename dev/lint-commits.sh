@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # A script to check prettyness for a range of commits
+set -e
 
 CALLNAME="$0"
 
@@ -19,10 +20,16 @@ fi
 BASE_COMMIT="$1"
 HEAD_COMMIT="$2"
 
+tmp=$(mktemp -d)
+git worktree add "$tmp" "$HEAD_COMMIT"
+pushd "$tmp"
+
 bad_ws=()
 bad_compile=()
 while IFS= read -r commit; do
     echo Checking "$commit"
+    git checkout "$commit"
+
     # git diff --check
     # uses .gitattributes to know what to check
     if ! git diff --check "${commit}^" "$commit";
@@ -33,6 +40,9 @@ while IFS= read -r commit; do
     then bad_compile+=("$commit")
     fi
 done < <(git rev-list "$HEAD_COMMIT" --not "$BASE_COMMIT" --)
+
+popd
+git worktree remove "$tmp"
 
 # report errors
 
