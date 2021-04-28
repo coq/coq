@@ -47,75 +47,107 @@ let add_instance_hint inst path ~locality info =
           (Hints.HintsResolveEntry
              [info, false, Hints.PathHints path, inst])) ()
 
-let is_local_for_hint i =
-  match i.is_global with
-  | None -> true  (* i.e. either no Global keyword not in section, or in section *)
-  | Some n -> n <> 0 (* i.e. in a section, declare the hint as local
-                        since discharge is managed by rebuild_instance which calls again
-                        add_instance_hint; don't ask hints to take discharge into account
-                        itself *)
+type instance_locality =
+| InstGlobal
+| InstExport
+| InstLocal
+
+type instance_obj = {
+  inst_class : GlobRef.t;
+  inst_info: hint_info;
+  (* Sections where the instance should be redeclared,
+     None for discard, Some 0 for none. *)
+  inst_global: instance_locality;
+  inst_impl: GlobRef.t;
+}
 
 let add_instance_base inst =
-  let locality = if is_local_for_hint inst then Goptions.OptLocal else Goptions.OptGlobal in
-  add_instance_hint (Hints.hint_globref inst.is_impl) [inst.is_impl] ~locality
-    inst.is_info
-
-let mk_instance cl info glob impl =
-  let global =
-    if glob then Some (Lib.sections_depth ())
-    else None
+  let locality = match inst.inst_global with
+  | InstLocal -> Goptions.OptLocal
+  | InstGlobal ->
+    (* i.e. in a section, declare the hint as local since discharge is managed
+       by rebuild_instance which calls again add_instance_hint; don't ask hints
+       to take discharge into account itself *)
+    if Global.sections_are_opened () then Goptions.OptLocal
+    else Goptions.OptGlobal
+  | InstExport ->
+    (* Same as above for export *)
+    if Global.sections_are_opened () then Goptions.OptLocal
+    else Goptions.OptExport
   in
-  if match global with Some n -> n>0 && isVarRef impl | _ -> false then
-    CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.");
-  { is_class = cl.cl_impl;
-    is_info = info ;
-    is_global = global ;
-    is_impl = impl }
+  add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
+    inst.inst_info
 
 (*
  * instances persistent object
  *)
-let cache_instance (_, i) =
-  load_instance i
+let perform_instance i =
+  let i = { is_class = i.inst_class; is_info = i.inst_info; is_impl = i.inst_impl } in
+  Typeclasses.load_instance i
+
+let cache_instance (_, inst) = perform_instance inst
+
+let load_instance _ (_, inst) = match inst.inst_global with
+| InstLocal -> assert false
+| InstGlobal -> perform_instance inst
+| InstExport -> ()
+
+let open_instance i (_, inst) = match inst.inst_global with
+| InstLocal -> assert false
+| InstGlobal -> perform_instance inst
+| InstExport -> if Int.equal i 1 then perform_instance inst
 
 let subst_instance (subst, inst) =
   { inst with
-      is_class = fst (subst_global subst inst.is_class);
-      is_impl = fst (subst_global subst inst.is_impl) }
+      inst_class = fst (subst_global subst inst.inst_class);
+      inst_impl = fst (subst_global subst inst.inst_impl) }
 
 let discharge_instance (_, inst) =
-  match inst.is_global with
-  | None -> None
-  | Some n ->
-    assert (not (isVarRef inst.is_impl));
-    Some
-    { inst with
-      is_global = Some (pred n);
-      is_class = inst.is_class;
-      is_impl = inst.is_impl }
-
-let is_local i = (i.is_global == None)
+  match inst.inst_global with
+  | InstLocal -> None
+  | InstGlobal | InstExport ->
+    assert (not (isVarRef inst.inst_impl));
+    Some inst
 
 let rebuild_instance inst =
   add_instance_base inst;
   inst
 
-let classify_instance inst =
-  if is_local inst then Dispose
-  else Substitute inst
+let classify_instance inst = match inst.inst_global with
+| InstLocal -> Dispose
+| InstGlobal | InstExport -> Substitute inst
 
-let instance_input : instance -> obj =
+let instance_input : instance_obj -> obj =
   declare_object
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
-      load_function = (fun _ x -> cache_instance x);
-      open_function = simple_open (fun _ x -> cache_instance x);
+      load_function = load_instance;
+      open_function = simple_open open_instance;
       classify_function = classify_instance;
       discharge_function = discharge_instance;
       rebuild_function = rebuild_instance;
       subst_function = subst_instance }
 
-let add_instance i =
+let add_instance cl info glob impl =
+  let global = match glob with
+  | Goptions.OptDefault ->
+    if Global.sections_are_opened () then InstLocal else InstGlobal
+  | Goptions.OptGlobal ->
+    if Global.sections_are_opened () && isVarRef impl then
+      CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
+    else InstGlobal
+  | Goptions.OptLocal -> InstLocal
+  | Goptions.OptExport ->
+    if Global.sections_are_opened () && isVarRef impl then
+      CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
+    else InstExport
+  in
+  let i = {
+    inst_class = cl.cl_impl;
+    inst_info = info ;
+    inst_global = global ;
+    inst_impl = impl;
+  } in
   Lib.add_anonymous_leaf (instance_input i);
   add_instance_base i
 
@@ -137,8 +169,7 @@ let declare_instance ?(warn = false) env sigma info local glob =
   let info = Option.default {hint_priority = None; hint_pattern = None} info in
   match class_of_constr env sigma (EConstr.of_constr ty) with
   | Some (rels, ((tc,_), args) as _cl) ->
-    assert (not (isVarRef glob) || local);
-    add_instance (mk_instance tc info (not local) glob)
+    add_instance tc info local glob
   | None -> if warn then warning_not_a_class (glob, ty)
 
 (*
@@ -243,7 +274,7 @@ let add_class env sigma cl =
       | Some info ->
         (match m.meth_const with
          | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
-         | Some b -> declare_instance ~warn:true env sigma (Some info) false (GlobRef.ConstRef b))
+         | Some b -> declare_instance ~warn:true env sigma (Some info) Goptions.OptGlobal (GlobRef.ConstRef b))
       | _ -> ())
     cl.cl_projs
 
@@ -263,7 +294,7 @@ let existing_instance glob g info =
   let instance, _ = Typeops.type_of_global_in_context env c in
   let _, r = Term.decompose_prod_assum instance in
     match class_of_constr env sigma (EConstr.of_constr r) with
-      | Some (_, ((tc,u), _)) -> add_instance (mk_instance tc info glob c)
+      | Some (_, ((tc,u), _)) -> add_instance tc info glob c
       | None -> user_err ?loc:g.CAst.loc
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
@@ -298,7 +329,7 @@ let instance_hook info global ?hook cst =
   let info = intern_info info in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  declare_instance env sigma (Some info) (not global) cst;
+  declare_instance env sigma (Some info) global cst;
   (match hook with Some h -> h cst | None -> ())
 
 let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma term termtype =
@@ -309,7 +340,7 @@ let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma t
   let kn = Declare.declare_definition ~cinfo ~info ~opaque:false ~body:term sigma in
   instance_hook iinfo global ?hook kn
 
-let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst name =
+let do_declare_instance sigma ~locality ~poly k u ctx ctx' pri udecl impargs subst name =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst k.cl_context
@@ -322,15 +353,15 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
   let cst = (GlobRef.ConstRef cst) in
   Impargs.maybe_declare_manual_implicits false cst impargs;
-  instance_hook pri global cst
+  instance_hook pri locality cst
 
-let declare_instance_program pm env sigma ~global ~poly name pri impargs udecl term termtype =
+let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl term termtype =
   let hook { Declare.Hook.S.scope; dref; _ } =
     let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
     let pri = intern_info pri in
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    declare_instance env sigma (Some pri) (not global) (GlobRef.ConstRef cst)
+    declare_instance env sigma (Some pri) locality (GlobRef.ConstRef cst)
   in
   let obls, _, term, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
   let hook = Declare.Hook.make hook in
@@ -343,7 +374,7 @@ let declare_instance_program pm env sigma ~global ~poly name pri impargs udecl t
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
   in pm
 
-let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl ids term termtype =
+let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
      the pretyping after the proof has opened. As a
      consequence, we use the low-level primitives to code
@@ -352,7 +383,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
   let gls = List.rev future_goals.Evd.FutureGoals.comb in
   let sigma = Evd.push_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
-  let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in
+  let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri locality ?hook dref)) in
   let info = Declare.Info.make ~hook ~kind ~udecl ~poly () in
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
@@ -454,7 +485,7 @@ let interp_props ~program_mode env' cty k u ctx ctx' subst sigma = function
     let term = it_mkLambda_or_LetIn def ctx in
     term, termtype, sigma
 
-let do_instance_interactive env env' sigma ?hook ~tac ~global ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
+let do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
   let term, termtype, sigma = match opt_props with
     | Some props ->
       on_pi1 (fun x -> Some x)
@@ -472,19 +503,19 @@ let do_instance_interactive env env' sigma ?hook ~tac ~global ~poly cty k u ctx 
       term, termtype, sigma
   in
   Flags.silently (fun () ->
-      declare_instance_open sigma ?hook ~tac ~global ~poly
+      declare_instance_open sigma ?hook ~tac ~locality ~poly
         id pri imps decl (List.map RelDecl.get_name ctx) term termtype)
     ()
 
-let do_instance env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imps subst id props =
+let do_instance env env' sigma ?hook ~locality ~poly cty k u ctx ctx' pri decl imps subst id props =
   let term, termtype, sigma =
     interp_props ~program_mode:false env' cty k u ctx ctx' subst sigma props
   in
   let termtype, sigma = do_instance_resolve_TC termtype sigma env in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
-  declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
+  declare_instance_constant pri locality imps ?hook id decl poly sigma term termtype
 
-let do_instance_program ~pm env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
+let do_instance_program ~pm env env' sigma ?hook ~locality ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
   let term, termtype, sigma =
     match opt_props with
     | Some props ->
@@ -497,10 +528,10 @@ let do_instance_program ~pm env env' sigma ?hook ~global ~poly cty k u ctx ctx' 
       term, termtype, sigma in
   let termtype, sigma = do_instance_resolve_TC termtype sigma env in
   if not (Evd.has_undefined sigma) && not (Option.is_empty opt_props) then
-    let () = declare_instance_constant pri global imps ?hook id decl poly sigma term termtype in
+    let () = declare_instance_constant pri locality imps ?hook id decl poly sigma term termtype in
     pm
   else
-    declare_instance_program pm env sigma ~global ~poly id pri imps decl term termtype
+    declare_instance_program pm env sigma ~locality ~poly id pri imps decl term termtype
 
 let auto_generalize =
   Goptions.declare_bool_option_and_ref
@@ -553,44 +584,44 @@ let new_instance_common ~program_mode ?generalize env instid ctx cl =
   let env' = push_rel_context ctx env in
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
 
-let new_instance_interactive ?(global=false)
+let new_instance_interactive ?(locality=Goptions.OptLocal)
     ~poly instid ctx cl
     ?generalize ?(tac:unit Proofview.tactic option) ?hook
     pri opt_props =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:false ?generalize env instid ctx cl in
-  id, do_instance_interactive env env' sigma ?hook ~tac ~global ~poly
+  id, do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly
     cty k u ctx ctx' pri decl imps subst id opt_props
 
-let new_instance_program ?(global=false) ~pm
+let new_instance_program ?(locality=Goptions.OptLocal) ~pm
     ~poly instid ctx cl opt_props
     ?generalize ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:true ?generalize env instid ctx cl in
   let pm =
-    do_instance_program ~pm env env' sigma ?hook ~global ~poly
+    do_instance_program ~pm env env' sigma ?hook ~locality ~poly
       cty k u ctx ctx' pri decl imps subst id opt_props in
   pm, id
 
-let new_instance ?(global=false)
+let new_instance ?(locality=Goptions.OptLocal)
     ~poly instid ctx cl props
     ?generalize ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:false ?generalize env instid ctx cl in
-  do_instance env env' sigma ?hook ~global ~poly
+  do_instance env env' sigma ?hook ~locality ~poly
     cty k u ctx ctx' pri decl imps subst id props;
   id
 
-let declare_new_instance ?(global=false) ~program_mode ~poly instid ctx cl pri =
+let declare_new_instance ?(locality=Goptions.OptLocal) ~program_mode ~poly instid ctx cl pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     interp_instance_context ~program_mode ~generalize:false env ctx pl cl
   in
-  do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst instid
+  do_declare_instance sigma ~locality ~poly k u ctx ctx' pri decl imps subst instid
 
 let refine_att =
   let open Attributes in
@@ -598,3 +629,10 @@ let refine_att =
   attribute_of_list ["refine",single_key_parser ~name:"refine" ~key:"refine" ()] >>= function
   | None -> return false
   | Some () -> return true
+
+module Internal =
+struct
+let add_instance cl info glob r =
+  let glob = if glob then Goptions.OptGlobal else Goptions.OptLocal in
+  add_instance cl info glob r
+end
