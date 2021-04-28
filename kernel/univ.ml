@@ -38,22 +38,30 @@ struct
   open Names
 
   module UGlobal = struct
-    type t = DirPath.t * string * int
+    type t = {
+      library : DirPath.t;
+      process : string;
+      uid : int;
+    }
 
-    let make dp s i = (DirPath.hcons dp,s,i)
+    let make library process uid = { library; process; uid }
 
-    let repr x : t = x
+    let repr x = (x.library, x.process, x.uid)
 
-    let equal (d, s, i) (d', s', i') = Int.equal i i' && DirPath.equal d d' && String.equal s s'
+    let equal u1 u2 =
+      Int.equal u1.uid u2.uid &&
+      DirPath.equal u1.library u2.library &&
+      String.equal u1.process u2.process
 
-    let hash (d,s,i) = Hashset.Combine.combine3 i (String.hash s) (DirPath.hash d)
+    let hash u = Hashset.Combine.combine3 u.uid (String.hash u.process) (DirPath.hash u.library)
 
-    let compare (d, s, i) (d', s', i') =
-      if i < i' then -1
-      else if i' < i then 1
-      else let c = DirPath.compare d d' in
-        if not (Int.equal c 0) then c
-        else String.compare s s'
+    let compare u1 u2 =
+      let c = Int.compare u1.uid u2.uid in
+      if c <> 0 then c
+      else
+        let c = DirPath.compare u1.library u2.library in
+        if c <> 0 then c
+        else String.compare u1.process u2.process
   end
 
   type t =
@@ -97,7 +105,7 @@ struct
       | SProp, SProp -> true
       | Prop, Prop -> true
       | Set, Set -> true
-      | Level (d,s,n), Level (d',s',n') ->
+      | UGlobal.(Level { library = d; process = s; uid = n }, Level  { library = d'; process = s'; uid = n' }) ->
         n == n' && s==s' && d == d'
       | Var n, Var n' -> n == n'
       | _ -> false
@@ -106,10 +114,10 @@ struct
     | SProp as x -> x
     | Prop as x -> x
     | Set as x -> x
-    | Level (d,s,n) as x ->
+    | UGlobal.(Level { library = d; process = s; uid = n }) as x ->
       let s' = CString.hcons s in
       let d' = Names.DirPath.hcons d in
-        if s' == s && d' == d then x else Level (d',s',n)
+        if s' == s && d' == d then x else Level (UGlobal.make d' s' n)
     | Var _n as x -> x
 
   open Hashset.Combine
@@ -200,7 +208,7 @@ module Level = struct
     | SProp -> "SProp"
     | Prop -> "Prop"
     | Set -> "Set"
-    | Level (d,s,n) ->
+    | UGlobal.(Level { library = d; process = s; uid = n }) ->
       Names.DirPath.to_string d ^
       (if CString.is_empty s then "" else "." ^ s) ^
       "." ^ string_of_int n
