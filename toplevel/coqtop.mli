@@ -51,3 +51,7 @@ type toplevel_options = {
 }
 
 val coqtop_toplevel : (toplevel_options * Stm.AsyncOpts.stm_opt,Vernac.State.t) custom_toplevel
+
+val ltac_debug_answer : DebugHook.Answer.t -> unit
+
+val ltac_debug_parse : unit -> DebugHook.Action.t

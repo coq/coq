@@ -63,19 +63,6 @@ let is_known_option cmd = match cmd with
   | VernacSetOption (_, o, OptionUnset) -> coqide_known_option o
   | _ -> false
 
-(** Check whether a command is forbidden in the IDE *)
-
-let ide_cmd_checks ~last_valid { CAst.loc; v } =
-  let user_error s =
-    try CErrors.user_err ?loc ~hdr:"IDE" (str s)
-    with e ->
-      let (e, info) = Exninfo.capture e in
-      let info = Stateid.add info ~valid:last_valid Stateid.dummy in
-      Exninfo.iraise (e, info)
-  in
-  if is_debug v.expr then
-    user_error "Debug mode not available in the IDE"
-
 let ide_cmd_warns ~id { CAst.loc; v } =
   let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
   if is_known_option v.expr then
@@ -93,22 +80,13 @@ let add ((s,eid),(sid,verbose)) =
   let doc = get_doc () in
   let pa = Pcoq.Parsable.make (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
-  | None -> assert false (* s is not an empty string *)
+  | None -> assert false (* s may not be empty *)
   | Some ast ->
-    ide_cmd_checks ~last_valid:sid ast;
     let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose ast in
     set_doc doc;
     let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
     ide_cmd_warns ~id:newid ast;
-    (* TODO: the "" parameter is a leftover of the times the protocol
-     * used to include stderr/stdout output.
-     *
-     * Currently, we force all the output meant for the to go via the
-     * feedback mechanism, and we don't manipulate stderr/stdout, which
-     * are left to the client's discrection. The parameter is still there
-     * as not to break the core protocol for this minor change, but it should
-     * be removed in the next version of the protocol.
-    *)
+    (* All output is sent through the feedback mechanism rather than stdout/stderr *)
     newid, (rc, "")
 
 let edit_at id =
@@ -377,6 +355,11 @@ let proof_diff (diff_opt, sid) =
       let old = Stm.get_prev_proof ~doc sid in
       Proof_diffs.diff_proofs ~diff_opt ?old proof
 
+let debug_cmd = ref ""
+
+let db_cmd cmd =
+  debug_cmd := cmd
+
 let get_options () =
   let table = Goptions.get_tables () in
   let fold key state accu = (key, export_option_state state) :: accu in
@@ -466,6 +449,7 @@ let eval_call c =
     Interface.status = interruptible status;
     Interface.search = interruptible search;
     Interface.proof_diff = interruptible proof_diff;
+    Interface.db_cmd = interruptible db_cmd;   (* todo: interruptible or not? *)
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -530,7 +514,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
   let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
   ignore (Feedback.add_feeder (slave_feeder (!msg_format ()) xml_oc));
-  while not !quit do
+  let process_xml_msg xml_ic xml_oc out_ch =
     try
       let xml_query = Xml_parser.parse xml_ic in
       if !Flags.xml_debug then
@@ -555,6 +539,40 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
       | any ->
         pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
         exit 1
+  in
+
+  (* output the xml message using the feeder, note that the
+     xmlprotocol file doesn't depend on vernac thus it has no access
+     to DebugHook data, we may want to fix that. *)
+  let ltac_debug_answer ans =
+    let tag, msg =
+      let open DebugHook.Answer in
+      match ans with
+      | Prompt msg -> "prompt", msg
+      | Goal msg -> "goal", (str "Goal:" ++ fnl () ++ msg)
+      | Output msg -> "output", msg
+    in
+    print_xml xml_oc Xmlprotocol.(of_ltac_debug_answer ~tag msg) in
+
+  (* XXX: no need to have a ref here *)
+  let ltac_debug_parse () =
+    let raw_cmd =
+      process_xml_msg xml_ic xml_oc out_ch;
+      !debug_cmd
+    in
+    let open DebugHook in
+    match Action.parse raw_cmd with
+    | Ok act -> act
+    | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
+  in
+
+  DebugHook.Intf.(set
+      { read_cmd = ltac_debug_parse
+      ; submit_answer = ltac_debug_answer
+      });
+
+  while not !quit do
+    process_xml_msg xml_ic xml_oc out_ch
   done;
   pr_debug "Exiting gracefully.";
   exit 0

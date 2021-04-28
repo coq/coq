@@ -1,3 +1,1 @@
-ADD { Comments "fakeide doesn't support fail as the first sentence". }
-FAILADD { Debug On. }
 ADD { Set Debug On. }

@@ -17,6 +17,10 @@ let coqc_init ((_,color_mode),_) injections ~opts =
   Flags.quiet := true;
   System.trust_file_cache := true;
   Coqtop.init_color (if opts.Coqargs.config.Coqargs.print_emacs then `EMACS else color_mode);
+  DebugHook.Intf.(set
+    { read_cmd = Coqtop.ltac_debug_parse
+    ; submit_answer = Coqtop.ltac_debug_answer
+    });
   injections
 
 let coqc_specific_usage = Usage.{

@@ -37,8 +37,33 @@ type debug_info =
 let explain_logic_error e = CErrors.print e
 let explain_logic_error_no_anomaly e = CErrors.print_no_report e
 
-let msg_tac_debug s = Proofview.NonLogical.print_debug (s++fnl())
-let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
+(* Communications with the outside world *)
+module Comm = struct
+
+  (* TODO: ideally we would check that the debugger hooks are
+     correctly set, however we don't do this yet as debugger
+     initialiation is unconditionally done for example in coqc, which
+     doesn't support the debugger interface. Improving this would
+     require some tweaks in tacinterp which are out of scope for the
+     current refactoring. *)
+  let init () = match DebugHook.Intf.get () with
+    | Some _ -> ()
+    | None -> ()
+      (* CErrors.user_err
+       *   (Pp.str "Your user interface does not support the Ltac debugger.") *)
+
+  let hook () = Option.get (DebugHook.Intf.get ())
+  let wrap = Proofview.NonLogical.make
+
+  open DebugHook.Intf
+  open DebugHook.Answer
+
+  let prompt g = wrap (fun () -> (hook ()).submit_answer (Prompt g))
+  let goal g = wrap (fun () -> (hook ()).submit_answer (Goal g))
+  let output g = wrap (fun () -> (hook ()).submit_answer (Output g))
+  let read = wrap (fun () -> (hook ()).read_cmd ())
+
+end
 
 (* Prints the goal *)
 
@@ -54,24 +79,24 @@ let db_pr_goal gl =
 let db_pr_goal =
   Proofview.Goal.enter begin fun gl ->
   let pg = db_pr_goal gl in
-  Proofview.tclLIFT (msg_tac_notice (str "Goal:" ++ fnl () ++ pg))
+  Proofview.tclLIFT (Comm.goal pg)
   end
-
 
 (* Prints the commands *)
 let help () =
-  msg_tac_debug (str "Commands: <Enter> = Continue" ++ fnl() ++
-         str "          h/? = Help" ++ fnl() ++
-         str "          r <num> = Run <num> times" ++ fnl() ++
-         str "          r <string> = Run up to next idtac <string>" ++ fnl() ++
-         str "          s = Skip" ++ fnl() ++
-         str "          x = Exit")
+  Comm.output
+    (str "Commands: <Enter> = Step" ++ fnl() ++
+     str "          h/? = Help" ++ fnl() ++
+     str "          r <num> = Run <num> times" ++ fnl() ++
+     str "          r <string> = Run up to next idtac <string>" ++ fnl() ++
+     str "          s = Skip" ++ fnl() ++
+     str "          x = Exit")
 
 (* Prints the goal and the command to be executed *)
 let goal_com tac =
   Proofview.tclTHEN
     db_pr_goal
-    (Proofview.tclLIFT (msg_tac_debug (str "Going to execute:" ++ fnl () ++ prtac tac)))
+    (Proofview.tclLIFT (Comm.output (str "Going to execute:" ++ fnl () ++ prtac tac)))
 
 (* [run (new_ref _)] gives us a ref shared among [NonLogical.t]
    expressions. It avoids parametrizing everything over a
@@ -91,74 +116,19 @@ let () =
       optread  = (fun () -> !batch);
       optwrite = (fun x -> batch := x) }
 
-let rec drop_spaces inst i =
-  if String.length inst > i && inst.[i] == ' ' then drop_spaces inst (i+1)
-  else i
-
-let possibly_unquote s =
-  if String.length s >= 2 && s.[0] == '"' && s.[String.length s - 1] == '"' then
-    String.sub s 1 (String.length s - 2)
-  else
-    s
-
 (* (Re-)initialize debugger *)
 let db_initialize =
   let open Proofview.NonLogical in
+  make Comm.init >>
   (skip:=0) >> (skipped:=0) >> (breakpoint:=None)
-
-let int_of_string s =
-  try Proofview.NonLogical.return (int_of_string s)
-  with e ->
-    let e = Exninfo.capture e in
-    Proofview.NonLogical.raise e
-
-let string_get s i =
-  try Proofview.NonLogical.return (String.get s i)
-  with e ->
-    let e = Exninfo.capture e in
-    Proofview.NonLogical.raise e
-
-let check_positive n =
-  try
-    if n < 0 then
-      raise (Invalid_argument "number must be positive")
-    else
-      Proofview.NonLogical.return ()
-  with e ->
-    let e = Exninfo.capture e in
-    Proofview.NonLogical.raise e
-
-let run_invalid_arg () =
-  let info = Exninfo.null in
-  Proofview.NonLogical.raise (Invalid_argument "run_com", info)
-
-(* Gives the number of steps or next breakpoint of a run command *)
-let run_com inst =
-  let open Proofview.NonLogical in
-  string_get inst 0 >>= fun first_char ->
-  if first_char ='r' then
-    let i = drop_spaces inst 1 in
-    if String.length inst > i then
-      let s = String.sub inst i (String.length inst - i) in
-      if inst.[0] >= '0' && inst.[0] <= '9' then
-        int_of_string s >>= fun num ->
-        check_positive num >>
-        (skip:=num) >> (skipped:=0)
-      else
-        breakpoint:=Some (possibly_unquote s)
-    else
-      run_invalid_arg ()
-  else
-    run_invalid_arg ()
 
 (* Prints the run counter *)
 let run ini =
   let open Proofview.NonLogical in
   if not ini then
     begin
-      Proofview.NonLogical.print_notice (str"\b\r\b\r") >>
       !skipped >>= fun skipped ->
-      msg_tac_debug (str "Executed expressions: " ++ int skipped ++ fnl())
+      Comm.output (str "Executed expressions: " ++ int skipped ++ fnl())
     end >>
     !skipped >>= fun x ->
     skipped := x+1
@@ -169,33 +139,24 @@ let run ini =
 let rec prompt level =
   (* spiwack: avoid overriding by the open below *)
   let runtrue = run true in
-  begin
     let open Proofview.NonLogical in
-    Proofview.NonLogical.print_notice (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
+    let nl = if Util.(!batch) then "\n" else "" in
+    Comm.prompt (tag "message.prompt"
+                   @@ fnl () ++ str "TcDebug (" ++ int level ++ str (") > " ^ nl)) >>
     if Util.(!batch) then return (DebugOn (level+1)) else
     let exit = (skip:=0) >> (skipped:=0) >> raise (Sys.Break, Exninfo.null) in
-    Proofview.NonLogical.catch Proofview.NonLogical.read_line
-      begin function (e, info) -> match e with
-        | End_of_file -> exit
-        | e -> raise (e, info)
-      end
-    >>= fun inst ->
+    Comm.read >>= fun inst ->
+    let open DebugHook.Action in
     match inst with
-    | ""  -> return (DebugOn (level+1))
-    | "s" -> return (DebugOff)
-    | "x" -> Proofview.NonLogical.print_char '\b' >> exit
-    | "h"| "?" ->
-      begin
-        help () >>
-        prompt level
-      end
-    | _ ->
-        Proofview.NonLogical.catch (run_com inst >> runtrue >> return (DebugOn (level+1)))
-          begin function (e, info) -> match e with
-            | Failure _ | Invalid_argument _ -> prompt level
-            | e -> raise (e, info)
-          end
-  end
+    | Step -> return (DebugOn (level+1))
+    | Skip -> return (DebugOff)
+    | Exit -> Proofview.NonLogical.print_char '\b' >> exit
+    | Help -> help () >> prompt level
+    | RunCnt num -> (skip:=num) >> (skipped:=0) >>
+        runtrue >> return (DebugOn (level+1))
+    | RunBreakpoint s -> (breakpoint:=(Some s)) >>
+        runtrue >> return (DebugOn (level+1))
+    | Failed -> prompt level
 
 (* Prints the state and waits for an instruction *)
 (* spiwack: the only reason why we need to take the continuation [f]
@@ -230,7 +191,7 @@ let debug_prompt lev tac f =
       Proofview.tclTHEN
         (Proofview.tclLIFT begin
           (skip:=0) >> (skipped:=0) >>
-          msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ explain_logic_error reraise)
+          Comm.output (str "Level " ++ int lev ++ str ": " ++ explain_logic_error reraise)
         end)
         (Proofview.tclZERO ~info reraise)
     end
@@ -250,7 +211,7 @@ let db_constr debug env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Evaluated term: " ++ Printer.pr_econstr_env env sigma c)
+    Comm.output (str "Evaluated term: " ++ Printer.pr_econstr_env env sigma c)
   else return ()
 
 (* Prints the pattern rule *)
@@ -259,8 +220,9 @@ let db_pattern_rule debug env sigma num r =
   is_debug debug >>= fun db ->
   if db then
   begin
-    msg_tac_debug (str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
-      str "|" ++ spc () ++ prmatchrl env sigma r)
+    Comm.output
+      (str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
+       str "|" ++ spc () ++ prmatchrl env sigma r)
   end
   else return ()
 
@@ -274,8 +236,9 @@ let db_matched_hyp debug env sigma (id,_,c) ido =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Hypothesis " ++ Id.print id ++ hyp_bound ido ++
-                str " has been matched: " ++ Printer.pr_econstr_env env sigma c)
+    Comm.output
+      (str "Hypothesis " ++ Id.print id ++ hyp_bound ido ++
+       str " has been matched: " ++ Printer.pr_econstr_env env sigma c)
   else return ()
 
 (* Prints the matched conclusion *)
@@ -283,7 +246,8 @@ let db_matched_concl debug env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Conclusion has been matched: " ++ Printer.pr_econstr_env env sigma c)
+    Comm.output
+      (str "Conclusion has been matched: " ++ Printer.pr_econstr_env env sigma c)
   else return ()
 
 (* Prints a success message when the goal has been matched *)
@@ -291,8 +255,9 @@ let db_mc_pattern_success debug =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "The goal has been successfully matched!" ++ fnl() ++
-           str "Let us execute the right-hand side part..." ++ fnl())
+    Comm.output
+      (str "The goal has been successfully matched!" ++ fnl() ++
+       str "Let us execute the right-hand side part..." ++ fnl())
   else return ()
 
 (* Prints a failure message for an hypothesis pattern *)
@@ -300,9 +265,10 @@ let db_hyp_pattern_failure debug env sigma (na,hyp) =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "The pattern hypothesis" ++ hyp_bound na ++
-                str " cannot match: " ++
-           prmatchpatt env sigma hyp)
+    Comm.output
+      (str "The pattern hypothesis" ++ hyp_bound na ++
+       str " cannot match: " ++
+       prmatchpatt env sigma hyp)
   else return ()
 
 (* Prints a matching failure message for a rule *)
@@ -310,8 +276,9 @@ let db_matching_failure debug =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "This rule has failed due to matching errors!" ++ fnl() ++
-           str "Let us try the next one...")
+    Comm.output
+      (str "This rule has failed due to matching errors!" ++ fnl() ++
+       str "Let us try the next one...")
   else return ()
 
 (* Prints an evaluation failure message for a rule *)
@@ -320,7 +287,7 @@ let db_eval_failure debug s =
   is_debug debug >>= fun db ->
   if db then
     let s = str "message \"" ++ s ++ str "\"" in
-    msg_tac_debug
+    Comm.output
       (str "This rule has failed due to \"Fail\" tactic (" ++
        s ++ str ", level 0)!" ++ fnl() ++ str "Let us try the next one...")
   else return ()
@@ -331,9 +298,11 @@ let db_logic_failure debug err =
   is_debug debug >>= fun db ->
   if db then
   begin
-    msg_tac_debug (explain_logic_error err) >>
-    msg_tac_debug (str "This rule has failed due to a logic error!" ++ fnl() ++
-           str "Let us try the next one...")
+    Comm.output
+      (explain_logic_error err) >>
+    Comm.output
+      (str "This rule has failed due to a logic error!" ++ fnl() ++
+       str "Let us try the next one...")
   end
   else return ()
 

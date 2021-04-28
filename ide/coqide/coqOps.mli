@@ -16,6 +16,8 @@ object
   method go_to_insert : unit task
   method go_to_mark : GText.mark -> unit task
   method process_next_phrase : unit task
+  method process_db_cmd : string ->
+    next:(Interface.db_cmd_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
   method raw_coq_query :
