@@ -72,7 +72,7 @@ OCAMLLIBDEP:=$(CBIN)/ocamllibdep$(EXE)
 FAKEIDE:=$(CBIN)/fake_ide$(EXE)
 USERCONTRIBDIRS:=Ltac2
 CHICKEN:=$(CBIN)/coqchk
-TOOLS:=$(VOTOUR) $(COQDOC) $(COQWC)
+TOOLS:=$(VOTOUR) $(COQDOC) $(COQWC) $(COQMAKEFILE)
 CSDPCERT:=$(CBIN)/csdpcert
 
 ifeq ($(origin COQ_SRC_DIR),undefined)
