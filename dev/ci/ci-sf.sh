@@ -5,7 +5,7 @@ ci_dir="$(dirname "$0")"
 
 git_download sf
 
-( cd lf-current  && make clean && make )
-( cd plf-current && make clean && make )
-( cd vfa-current && make clean && make )
+( cd lf-current && make )
+( cd plf-current && make )
+( cd vfa-current && make )
 # ( cd qc-current && make clean && make )
