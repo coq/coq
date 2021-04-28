@@ -351,6 +351,9 @@ windows64:
   only:
     variables:
       - $WINDOWS =~ /enabled/
+    refs:
+      - master
+      - /^v.*\..*$/
 
 lint:
   stage: stage-1
