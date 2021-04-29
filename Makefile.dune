@@ -52,7 +52,8 @@ help-install:
 	@echo "The Dune-based Coq build is split in packages; see Dune and dev/doc"
 	@echo "documentation for more details. A quick install of Coq alone can done with"
 	@echo ""
-	@echo " ./configure -prefix <install_prefix> && dune build -p coq && dune install -p coq"
+	@echo " $ ./configure -prefix <install_prefix>"
+	@echo " $ dune build -p coq-core,coq-stdlib && dune install coq-core coq-stdlib"
 	@echo ""
 	@echo " Provided opam/dune packages are:"
 	@echo ""
@@ -60,19 +61,16 @@ help-install:
 	@echo "  - coq-stdlib: Coq's standard library"
 	@echo "  - coqide-server: XML protocol language server"
 	@echo "  - coqide: CoqIDE gtk application"
+	@echo "  - coq: meta package depending on coq-core coq-stdlib"
 	@echo ""
 	@echo " To build a package, you can use:"
 	@echo ""
 	@echo "  - 'dune build package.install' : build package in developer mode"
 	@echo "  - 'dune build -p package' : build package in release mode"
 	@echo ""
-	@echo " Packages _must_ be installed using release mode, to install a package use: "
+	@echo " Packages _must_ be installed only if built using release mode, to install a package use: "
 	@echo ""
-	@echo "  - 'dune install -p package'"
-	@echo ""
-	@echo " Example: "
-	@echo ""
-	@echo "  - 'dune build -p coq,coqide-server,coqide && dune install -p coq coqide-server coqide'"
+	@echo "  - 'dune install $install_opts package'"
 	@echo ""
 	@echo " Note that building a package in release mode ignores other packages present in"
 	@echo " the worktree. See Dune documentation for more information."
@@ -115,8 +113,8 @@ release:
 
 # We define this target as to override Make's built-in one
 install:
-	@echo "To install Coq using dune, use 'dune install -p PACKAGE' where"
-	@echo "PACKAGE is any of the packages defined by opam files in the root dira"
+	@echo "To install Coq using dune, use 'dune build -p P && dune install P'"
+	@echo "where P is any of the packages defined by opam files in the root dir"
 
 fmt:
 	dune build @fmt --auto-promote
