@@ -1,0 +1,3 @@
+(executable
+ (name configure)
+ (libraries unix str))

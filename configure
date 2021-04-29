@@ -2,37 +2,13 @@
 
 ## This micro-configure shell script is here only to
 ## launch the real configuration via ocaml
+configure=./tools/configure/configure.exe
 
-ocaml=ocaml
-script=./configure.ml
-
-if [ ! -f $script ]; then
-    echo "Error: file $script not found in the current directory."
-    echo "Please run the configure script from the root of the coq sources."
-    echo "Configuration script failed!"
+## Check that dune is available, provide an error message otherwise
+if ! command -v dune > /dev/null
+then
+    1>&2 echo "Dune could not be found, please ensure you have a working OCaml enviroment"
     exit 1
 fi
 
-## Parse the args, only looking for -camldir
-## We avoid using shift to keep "$@" intact
-
-cmd=$ocaml
-last=
-for i; do
-   case $last in
-       -camldir) cmd="$i/$ocaml"; break;;
-   esac
-   last=$i
-done
-
-## We check that $cmd is ok before the real exec $cmd
-
-`$cmd -version > /dev/null 2>&1` && exec $cmd -w "-3" $script "$@"
-
-## If we're still here, something is wrong with $cmd
-
-echo "Error: failed to run $cmd"
-echo "Please use the option -camldir <dir> if 'ocaml' is installed"
-echo "in directory <dir>, or add <dir> to your path."
-echo "Configuration script failed!"
-exit 1
+dune exec -- $configure "$@"

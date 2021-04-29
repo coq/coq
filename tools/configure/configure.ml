@@ -1,15 +1,16 @@
-(**********************************)
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
 
+(**********************************)
 (**  Configuration script for Coq *)
-
 (**********************************)
-
-
-(** This file should be run via: ocaml configure.ml <opts>
-    You could also use our wrapper ./configure <opts> *)
-
-#load "unix.cma"
-#load "str.cma"
 open Printf
 
 let coq_version = "8.14+alpha"
