@@ -354,6 +354,13 @@ Summary of the commands
    This command supports the :attr:`local`, :attr:`global` and :attr:`export`
    locality attributes.
 
+   .. deprecated:: 8.14
+
+      The default value for instance locality will change in a future
+      release. Instances added outside of sections without an explicit
+      locality are now deprecated. We recommend using :attr:`export`
+      where possible.
+
    Like :cmd:`Definition`, it also supports the :attr:`program`
    attribute to switch the type checking to `Program` (chapter
    :ref:`programs`) and to use the obligation mechanism to manage missing
