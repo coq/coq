@@ -320,12 +320,14 @@ Add Parametric Relation {R : ConstructiveReals} : (CRcarrier R) (CReq R)
     transitivity proved by (CReq_trans)
       as CReq_rel.
 
+#[global]
 Instance CReq_relT : forall {R : ConstructiveReals},
     CRelationClasses.Equivalence (CReq R).
 Proof.
   split. exact CReq_refl. exact CReq_sym. exact CReq_trans.
 Qed.
 
+#[global]
 Instance CRlt_morph
   : forall {R : ConstructiveReals}, CMorphisms.Proper
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRlt R).
@@ -534,6 +536,7 @@ Proof.
   apply (CRisRingExt R).
 Qed.
 
+#[global]
 Instance CRplus_morph_T
   : forall {R : ConstructiveReals}, CMorphisms.Proper
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) (CReq R))) (CRplus R).
@@ -541,6 +544,7 @@ Proof.
   intros R x y H z t H1. apply CRplus_morph; assumption.
 Qed.
 
+#[global]
 Instance CRmult_morph_T
   : forall {R : ConstructiveReals}, CMorphisms.Proper
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) (CReq R))) (CRmult R).
@@ -548,6 +552,7 @@ Proof.
   intros R x y H z t H1. apply CRmult_morph; assumption.
 Qed.
 
+#[global]
 Instance CRopp_morph_T
   : forall {R : ConstructiveReals}, CMorphisms.Proper
       (CMorphisms.respectful (CReq R) (CReq R)) (CRopp R).
@@ -562,6 +567,7 @@ Proof.
   intros. unfold CRminus. rewrite H,H0. reflexivity.
 Qed.
 
+#[global]
 Instance CRminus_morph_T
   : forall {R : ConstructiveReals}, CMorphisms.Proper
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) (CReq R))) (CRminus R).
@@ -919,6 +925,7 @@ Proof.
   exfalso. apply (CR_of_Q_lt R r q) in q0. contradiction. exact q0.
 Qed.
 
+#[global]
 Instance CR_of_Q_morph_T
   : forall {R : ConstructiveReals}, CMorphisms.Proper
       (CMorphisms.respectful Qeq (CReq R)) (CR_of_Q R).
@@ -1127,6 +1134,7 @@ Proof.
   right. exact (CRmult_lt_reg_r r _ _ H c).
 Qed.
 
+#[global]
 Instance CRapart_morph
   : forall {R : ConstructiveReals}, CMorphisms.Proper
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRapart R).

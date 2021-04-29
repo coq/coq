@@ -58,6 +58,7 @@ Ltac destruct_max n :=
  destruct (le_ge_cases 0 n);
   [rewrite (abs_eq n) by auto | rewrite (abs_neq n) by auto].
 
+#[global]
 Instance abs_wd : Proper (eq==>eq) abs.
 Proof.
  intros x y EQ. destruct_max x.
@@ -247,6 +248,7 @@ Ltac destruct_sgn n :=
   rewrite (sgn_null n) by auto with relations|
   rewrite (sgn_neg n) by auto].
 
+#[global]
 Instance sgn_wd : Proper (eq==>eq) sgn.
 Proof.
  intros x y Hxy. destruct_sgn x.

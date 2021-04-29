@@ -243,9 +243,11 @@ Hint Extern 5 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
 
 (** Essential subrelation instances for [iff], [impl] and [pointwise_relation]. *)
 
+#[global]
 Instance iff_impl_subrelation : subrelation iff impl | 2.
 Proof. firstorder. Qed.
 
+#[global]
 Instance iff_flip_impl_subrelation : subrelation iff (flip impl) | 2.
 Proof. firstorder. Qed.
 
@@ -528,6 +530,7 @@ Ltac partial_application_tactic :=
 
 (** Bootstrap !!! *)
 
+#[global]
 Instance proper_proper {A} : Proper (relation_equivalence ==> eq ==> iff) (@Proper A).
 Proof.
   intros x y H y0 y1 e; destruct e.
@@ -663,6 +666,7 @@ Qed.
 
 (** A [PartialOrder] is compatible with its underlying equivalence. *)
 
+#[global]
 Instance PartialOrder_proper `(PartialOrder A eqA R) :
   Proper (eqA==>eqA==>iff) R.
 Proof.

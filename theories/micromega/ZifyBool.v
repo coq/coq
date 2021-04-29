@@ -13,6 +13,7 @@ Require Import ZifyInst.
 Local Open Scope Z_scope.
 (* Instances of [ZifyClasses] for dealing with boolean operators. *)
 
+#[global]
 Instance Inj_bool_bool : InjTyp bool bool :=
   { inj := (fun x => x) ; pred := (fun b => b = true \/ b = false) ;
     cstr := (ltac:(intro b; destruct b; tauto))}.
@@ -20,14 +21,17 @@ Add Zify InjTyp Inj_bool_bool.
 
 (** Boolean operators *)
 
+#[global]
 Instance Op_andb : BinOp andb :=
   { TBOp := andb ; TBOpInj := fun _ _  => eq_refl}.
 Add Zify BinOp Op_andb.
 
+#[global]
 Instance Op_orb : BinOp orb :=
   { TBOp := orb ; TBOpInj := fun _ _ => eq_refl}.
 Add Zify BinOp Op_orb.
 
+#[global]
 Instance Op_implb : BinOp implb :=
   { TBOp := implb; TBOpInj := fun _ _ => eq_refl }.
 Add Zify BinOp Op_implb.
@@ -38,48 +42,59 @@ Proof.
   destruct b1,b2 ; reflexivity.
 Qed.
 
+#[global]
 Instance Op_xorb : BinOp xorb :=
   { TBOp := fun x y => andb (orb x y) (negb (eqb x y)); TBOpInj := xorb_eq }.
 Add Zify BinOp Op_xorb.
 
+#[global]
 Instance Op_eqb : BinOp eqb :=
   { TBOp := eqb; TBOpInj := fun _ _ => eq_refl }.
 Add Zify BinOp Op_eqb.
 
+#[global]
 Instance Op_negb : UnOp negb :=
   { TUOp := negb ; TUOpInj := fun _ => eq_refl}.
 Add Zify UnOp Op_negb.
 
+#[global]
 Instance Op_eq_bool : BinRel (@eq bool) :=
   {TR := @eq bool ; TRInj := ltac:(reflexivity) }.
 Add Zify BinRel Op_eq_bool.
 
+#[global]
 Instance Op_true : CstOp true :=
   { TCst := true ; TCstInj := eq_refl }.
 Add Zify CstOp Op_true.
 
+#[global]
 Instance Op_false : CstOp false :=
   { TCst := false ; TCstInj := eq_refl }.
 Add Zify CstOp Op_false.
 
 (** Comparison over Z *)
 
+#[global]
 Instance Op_Zeqb : BinOp Z.eqb :=
   { TBOp := Z.eqb ; TBOpInj := fun _ _ => eq_refl }.
 Add Zify BinOp Op_Zeqb.
 
+#[global]
 Instance Op_Zleb : BinOp Z.leb :=
   { TBOp := Z.leb; TBOpInj :=  fun _ _ => eq_refl }.
 Add Zify BinOp Op_Zleb.
 
+#[global]
 Instance Op_Zgeb : BinOp Z.geb :=
   { TBOp := Z.geb; TBOpInj := fun _ _ => eq_refl }.
 Add Zify BinOp Op_Zgeb.
 
+#[global]
 Instance Op_Zltb : BinOp Z.ltb :=
   { TBOp := Z.ltb ; TBOpInj := fun _ _ => eq_refl }.
 Add Zify BinOp Op_Zltb.
 
+#[global]
 Instance Op_Zgtb : BinOp Z.gtb :=
   { TBOp := Z.gtb; TBOpInj := fun _ _  => eq_refl }.
 Add Zify BinOp Op_Zgtb.
@@ -116,14 +131,17 @@ Proof.
   reflexivity.
 Qed.
 
+#[global]
 Instance Op_nat_eqb : BinOp Nat.eqb :=
   { TBOp := Z.eqb; TBOpInj := Z_of_nat_eqb_iff }.
 Add Zify BinOp Op_nat_eqb.
 
+#[global]
 Instance Op_nat_leb : BinOp Nat.leb :=
   { TBOp := Z.leb; TBOpInj := Z_of_nat_leb_iff }.
 Add Zify BinOp Op_nat_leb.
 
+#[global]
 Instance Op_nat_ltb : BinOp Nat.ltb :=
   { TBOp := Z.ltb; TBOpInj := Z_of_nat_ltb_iff }.
 Add Zify BinOp Op_nat_ltb.
@@ -133,10 +151,12 @@ Proof.
   intro. destruct x ; reflexivity.
 Qed.
 
+#[global]
 Instance Op_b2n : UnOp Nat.b2n :=
   { TUOp := Z.b2z; TUOpInj := b2n_b2z }.
 Add Zify UnOp Op_b2n.
 
+#[global]
 Instance Op_b2z : UnOp Z.b2z :=
   { TUOp := Z.b2z; TUOpInj := fun _ => eq_refl }.
 Add Zify UnOp Op_b2z.
@@ -146,6 +166,7 @@ Proof.
   destruct b ; simpl; intuition congruence.
 Qed.
 
+#[global]
 Instance b2zSpec : UnOpSpec Z.b2z :=
   { UPred := fun b r => (b = true /\ r = 1) \/ (b = false /\ r = 0);
     USpec := b2z_spec

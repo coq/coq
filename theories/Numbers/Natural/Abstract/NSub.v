@@ -278,12 +278,14 @@ intro H. exists (m-S n). rewrite add_succ_l, <- add_succ_r.
 apply sub_add. now rewrite le_succ_l.
 Qed.
 
+#[global]
 Instance le_alt_wd : Proper (eq==>eq==>iff) le_alt.
 Proof.
  intros x x' Hx y y' Hy; unfold le_alt.
  setoid_rewrite Hx. setoid_rewrite Hy. auto with *.
 Qed.
 
+#[global]
 Instance lt_alt_wd : Proper (eq==>eq==>iff) lt_alt.
 Proof.
  intros x x' Hx y y' Hy; unfold lt_alt.

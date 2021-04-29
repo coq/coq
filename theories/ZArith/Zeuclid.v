@@ -24,8 +24,10 @@ Module ZEuclid.
  Definition modulo a b := Z.modulo a (Z.abs b).
  Definition div a b := (Z.sgn b) * (Z.div a (Z.abs b)).
 
+#[global]
  Instance mod_wd : Proper (eq==>eq==>eq) modulo.
  Proof. congruence. Qed.
+#[global]
  Instance div_wd : Proper (eq==>eq==>eq) div.
  Proof. congruence. Qed.
 

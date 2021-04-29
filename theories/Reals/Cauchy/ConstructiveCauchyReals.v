@@ -363,6 +363,7 @@ Add Parametric Relation : CReal CRealEq
     transitivity proved by CRealEq_trans
       as CRealEq_rel.
 
+#[global]
 Instance CRealEq_relT : CRelationClasses.Equivalence CRealEq.
 Proof.
   split.
@@ -371,6 +372,7 @@ Proof.
   - exact CRealEq_trans.
 Qed.
 
+#[global]
 Instance CRealLt_morph
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealLt.
@@ -391,6 +393,7 @@ Proof.
         assumption. assumption. contradiction.
 Qed.
 
+#[global]
 Instance CRealGt_morph
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealGt.
@@ -398,6 +401,7 @@ Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0. apply CRealLt_morph; assumption.
 Qed.
 
+#[global]
 Instance CReal_appart_morph
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CReal_appart.
@@ -556,6 +560,7 @@ Proof.
   all: assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
 Qed.
 
+#[global]
 Instance inject_Q_morph_T
   : CMorphisms.Proper
       (CMorphisms.respectful Qeq CRealEq) inject_Q.
@@ -841,6 +846,7 @@ Proof.
   - apply CReal_plus_proper_r. apply H.
 Qed.
 
+#[global]
 Instance CReal_plus_morph_T
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRealEq)) CReal_plus.

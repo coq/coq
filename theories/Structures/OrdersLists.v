@@ -73,16 +73,20 @@ Module KeyOrderedType(O:OrderedType).
 
  (* ltk is a strict order *)
 
+#[global]
  Instance ltk_strorder {elt} : StrictOrder (@ltk elt) := _.
 
+#[global]
  Instance ltk_compat {elt} : Proper (eqk==>eqk==>iff) (@ltk elt).
  Proof. unfold eqk, ltk; auto with *. Qed.
 
+#[global]
  Instance ltk_compat' {elt} : Proper (eqke==>eqke==>iff) (@ltk elt).
  Proof. eapply subrelation_proper; eauto with *. Qed.
 
  (* Additional facts *)
 
+#[global]
  Instance pair_compat {elt} : Proper (O.eq==>Logic.eq==>eqke) (@pair key elt).
  Proof. apply pair_compat. Qed.
 

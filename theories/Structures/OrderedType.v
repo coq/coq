@@ -78,6 +78,7 @@ End MOT_to_OT.
 
 Module OrderedTypeFacts (Import O: OrderedType).
 
+#[global]
   Instance eq_equiv : Equivalence eq.
   Proof. split; [ exact eq_refl | exact eq_sym | exact eq_trans ]. Qed.
 
@@ -86,6 +87,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
    intros x; intro; absurd (eq x x); auto with ordered_type.
   Qed.
 
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof. split; [ exact lt_antirefl | exact lt_trans]. Qed.
 
@@ -103,6 +105,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
    elim (lt_not_eq (lt_trans H0 Hlt))...
   Qed.
 
+#[global]
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   apply proper_sym_impl_iff_2; auto with *.
   intros x x' Hx y y' Hy H.

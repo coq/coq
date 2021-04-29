@@ -29,6 +29,10 @@ instantiation of the record type.
 
 We’ll use the following example class in the rest of the chapter:
 
+.. coqtop:: none
+
+   Set Warnings "-deprecated-instance-without-locality".
+
 .. coqtop:: in
 
    Class EqDec (A : Type) :=

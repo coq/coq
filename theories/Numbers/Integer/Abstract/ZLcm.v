@@ -212,6 +212,7 @@ Qed.
 
 Definition lcm a b := abs (a*(b/gcd a b)).
 
+#[global]
 Instance lcm_wd : Proper (eq==>eq==>eq) lcm.
 Proof. unfold lcm. solve_proper. Qed.
 

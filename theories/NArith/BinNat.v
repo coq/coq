@@ -166,6 +166,7 @@ Qed.
 Definition recursion {A} : A -> (N -> A -> A) -> N -> A :=
   peano_rect (fun _ => A).
 
+#[global]
 Instance recursion_wd {A} (Aeq : relation A) :
  Proper (Aeq==>(Logic.eq==>Aeq==>Aeq)==>Logic.eq==>Aeq) recursion.
 Proof.

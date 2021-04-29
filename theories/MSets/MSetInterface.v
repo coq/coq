@@ -132,6 +132,7 @@ Module Type WSetsOn (E : DecidableType).
 
   (** Logical predicates *)
   Parameter In : elt -> t -> Prop.
+#[global]
   Declare Instance In_compat : Proper (E.eq==>eq==>iff) In.
 
   Definition Equal s s' := forall a : elt, In a s <-> In a s'.
@@ -350,10 +351,12 @@ Module Type WRawSets (E : DecidableType).
   (** MS: 
     Dangerous instance, the [isok s = true] hypothesis cannot be discharged
    with typeclass resolution. Is it really an instance? *)
+#[global]
   Declare Instance isok_Ok s `(isok s = true) : Ok s | 10.
 
   (** Logical predicates *)
   Parameter In : elt -> t -> Prop.
+#[global]
   Declare Instance In_compat : Proper (E.eq==>eq==>iff) In.
 
   Definition Equal s s' := forall a : elt, In a s <-> In a s'.
@@ -366,19 +369,30 @@ Module Type WRawSets (E : DecidableType).
   Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
   Definition eq : t -> t -> Prop := Equal.
+#[global]
   Declare Instance eq_equiv : Equivalence eq.
 
   (** First, all operations are compatible with the well-formed predicate. *)
 
+#[global]
   Declare Instance empty_ok : Ok empty.
+#[global]
   Declare Instance add_ok s x `(Ok s) : Ok (add x s).
+#[global]
   Declare Instance remove_ok s x `(Ok s) : Ok (remove x s).
+#[global]
   Declare Instance singleton_ok x : Ok (singleton x).
+#[global]
   Declare Instance union_ok s s' `(Ok s, Ok s') : Ok (union s s').
+#[global]
   Declare Instance inter_ok s s' `(Ok s, Ok s') : Ok (inter s s').
+#[global]
   Declare Instance diff_ok s s' `(Ok s, Ok s') : Ok (diff s s').
+#[global]
   Declare Instance filter_ok s f `(Ok s) : Ok (filter f s).
+#[global]
   Declare Instance partition_ok1 s f `(Ok s) : Ok (fst (partition f s)).
+#[global]
   Declare Instance partition_ok2 s f `(Ok s) : Ok (snd (partition f s)).
 
   (** Now, the specifications, with constraints on the input sets. *)
@@ -473,11 +487,13 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
  Definition partition (f : elt -> bool)(s : t) : t * t :=
    let p := M.partition f s in (Mkt (fst p), Mkt (snd p)).
 
+#[global]
  Instance In_compat : Proper (E.eq==>eq==>iff) In.
  Proof. repeat red. intros; apply M.In_compat; congruence. Qed.
 
  Definition eq : t -> t -> Prop := Equal.
 
+#[global]
  Instance eq_equiv : Equivalence eq.
  Proof. firstorder. Qed.
 
@@ -599,12 +615,14 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
   Definition lt (s s':t) := M.lt s s'.
 
   (** Specification of [lt] *)
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof. constructor ; unfold lt; red.
     unfold complement. red. intros. apply (irreflexivity H).
     intros. transitivity y; auto.
   Qed.
 
+#[global]
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   Proof.
   repeat red. unfold eq, lt.
@@ -666,6 +684,7 @@ End Raw2Sets.
 Module Type IN (O:OrderedType).
  Parameter Inline t : Type.
  Parameter Inline In : O.t -> t -> Prop.
+#[global]
  Declare Instance In_compat : Proper (O.eq==>eq==>iff) In.
  Definition Equal s s' := forall x, In x s <-> In x s'.
  Definition Empty s := forall x, ~In x s.
@@ -676,9 +695,11 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
 
  Definition eq : t -> t -> Prop := Equal.
 
+#[global]
  Instance eq_equiv : Equivalence eq.
  Proof. firstorder. Qed.
 
+#[global]
  Instance : Proper (O.eq==>eq==>iff) In.
  Proof.
  intros x x' Ex s s' Es. rewrite Ex. apply Es.
@@ -697,36 +718,42 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
    ((In x s' /\ Below x s) \/
     (In x s  /\ exists y, In y s' /\ O.lt x y /\ EmptyBetween x y s')).
 
+#[global]
  Instance : Proper (O.eq==>eq==>eq==>iff) EquivBefore.
  Proof.
   unfold EquivBefore. intros x x' E s1 s1' E1 s2 s2' E2.
   setoid_rewrite E; setoid_rewrite E1; setoid_rewrite E2; intuition.
  Qed.
 
+#[global]
  Instance : Proper (O.eq==>eq==>iff) Below.
  Proof.
   unfold Below. intros x x' Ex s s' Es.
   setoid_rewrite Ex; setoid_rewrite Es; intuition.
  Qed.
 
+#[global]
  Instance : Proper (O.eq==>eq==>iff) Above.
  Proof.
   unfold Above. intros x x' Ex s s' Es.
   setoid_rewrite Ex; setoid_rewrite Es; intuition.
  Qed.
 
+#[global]
  Instance : Proper (O.eq==>O.eq==>eq==>iff) EmptyBetween.
  Proof.
   unfold EmptyBetween. intros x x' Ex y y' Ey s s' Es.
   setoid_rewrite Ex; setoid_rewrite Ey; setoid_rewrite Es; intuition.
  Qed.
 
+#[global]
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
  Proof.
   unfold lt. intros s1 s1' E1 s2 s2' E2.
   setoid_rewrite E1; setoid_rewrite E2; intuition.
  Qed.
 
+#[global]
  Instance lt_strorder : StrictOrder lt.
  Proof.
   split.
@@ -877,6 +904,7 @@ Module MakeListOrdering (O:OrderedType).
 
  Definition eq s s' := forall x, In x s <-> In x s'.
 
+#[global]
  Instance eq_equiv : Equivalence eq := _.
 
  Inductive lt_list : t -> t -> Prop :=
@@ -892,6 +920,7 @@ Module MakeListOrdering (O:OrderedType).
  #[global]
  Hint Unfold lt : core.
 
+ #[global]
  Instance lt_strorder : StrictOrder lt.
  Proof.
  split.
@@ -915,6 +944,7 @@ Module MakeListOrdering (O:OrderedType).
  constructor 3; auto. transitivity y; auto. unfold lt in *; auto.
  Qed.
 
+#[global]
  Instance lt_compat' :
   Proper (eqlistA O.eq==>eqlistA O.eq==>iff) lt.
  Proof.

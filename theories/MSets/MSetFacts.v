@@ -372,18 +372,21 @@ End BoolSpec.
 
 (** * Declarations of morphisms with respects to [E.eq] and [Equal] *)
 
+#[global]
 Instance In_m : Proper (E.eq==>Equal==>iff) In.
 Proof.
 unfold Equal; intros x y H s s' H0.
 rewrite (In_eq_iff s H); auto.
 Qed.
 
+#[global]
 Instance Empty_m : Proper (Equal==>iff) Empty.
 Proof.
 repeat red; unfold Empty; intros s s' E.
 setoid_rewrite E; auto.
 Qed.
 
+#[global]
 Instance is_empty_m : Proper (Equal==>Logic.eq) is_empty.
 Proof.
 intros s s' H.
@@ -391,6 +394,7 @@ generalize (is_empty_iff s). rewrite H at 1. rewrite is_empty_iff.
 destruct (is_empty s); destruct (is_empty s'); intuition.
 Qed.
 
+#[global]
 Instance mem_m : Proper (E.eq==>Equal==>Logic.eq) mem.
 Proof.
 intros x x' Hx s s' Hs.
@@ -398,41 +402,49 @@ generalize (mem_iff s x). rewrite Hs, Hx at 1; rewrite mem_iff.
 destruct (mem x s), (mem x' s'); intuition.
 Qed.
 
+#[global]
 Instance singleton_m : Proper (E.eq==>Equal) singleton.
 Proof.
 intros x y H a. rewrite !singleton_iff, H; intuition.
 Qed.
 
+#[global]
 Instance add_m : Proper (E.eq==>Equal==>Equal) add.
 Proof.
 intros x x' Hx s s' Hs a. rewrite !add_iff, Hx, Hs; intuition.
 Qed.
 
+#[global]
 Instance remove_m : Proper (E.eq==>Equal==>Equal) remove.
 Proof.
 intros x x' Hx s s' Hs a. rewrite !remove_iff, Hx, Hs; intuition.
 Qed.
 
+#[global]
 Instance union_m : Proper (Equal==>Equal==>Equal) union.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2 a. rewrite !union_iff, Hs1, Hs2; intuition.
 Qed.
 
+#[global]
 Instance inter_m : Proper (Equal==>Equal==>Equal) inter.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2 a. rewrite !inter_iff, Hs1, Hs2; intuition.
 Qed.
 
+#[global]
 Instance diff_m : Proper (Equal==>Equal==>Equal) diff.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2 a. rewrite !diff_iff, Hs1, Hs2; intuition.
 Qed.
 
+#[global]
 Instance Subset_m : Proper (Equal==>Equal==>iff) Subset.
 Proof.
 unfold Equal, Subset; firstorder.
 Qed.
 
+#[global]
 Instance subset_m : Proper (Equal==>Equal==>Logic.eq) subset.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2.
@@ -440,6 +452,7 @@ generalize (subset_iff s1 s2). rewrite Hs1, Hs2 at 1. rewrite subset_iff.
 destruct (subset s1 s2); destruct (subset s1' s2'); intuition.
 Qed.
 
+#[global]
 Instance equal_m : Proper (Equal==>Equal==>Logic.eq) equal.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2.
@@ -447,40 +460,48 @@ generalize (equal_iff s1 s2). rewrite Hs1,Hs2 at 1. rewrite equal_iff.
 destruct (equal s1 s2); destruct (equal s1' s2'); intuition.
 Qed.
 
+#[global]
 Instance SubsetSetoid : PreOrder Subset. (* reflexive + transitive *)
 Proof. firstorder. Qed.
 
 Definition Subset_refl := @PreOrder_Reflexive _ _ SubsetSetoid.
 Definition Subset_trans := @PreOrder_Transitive _ _ SubsetSetoid.
 
+#[global]
 Instance In_s_m : Morphisms.Proper (E.eq ==> Subset ++> impl) In | 1.
 Proof.
   simpl_relation. eauto with set.
 Qed.
 
+#[global]
 Instance Empty_s_m : Proper (Subset-->impl) Empty.
 Proof. firstorder. Qed.
 
+#[global]
 Instance add_s_m : Proper (E.eq==>Subset++>Subset) add.
 Proof.
 intros x x' Hx s s' Hs a. rewrite !add_iff, Hx; intuition.
 Qed.
 
+#[global]
 Instance remove_s_m : Proper (E.eq==>Subset++>Subset) remove.
 Proof.
 intros x x' Hx s s' Hs a. rewrite !remove_iff, Hx; intuition.
 Qed.
 
+#[global]
 Instance union_s_m : Proper (Subset++>Subset++>Subset) union.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2 a. rewrite !union_iff, Hs1, Hs2; intuition.
 Qed.
 
+#[global]
 Instance inter_s_m : Proper (Subset++>Subset++>Subset) inter.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2 a. rewrite !inter_iff, Hs1, Hs2; intuition.
 Qed.
 
+#[global]
 Instance diff_s_m : Proper (Subset++>Subset-->Subset) diff.
 Proof.
 intros s1 s1' Hs1 s2 s2' Hs2 a. rewrite !diff_iff, Hs1, Hs2; intuition.
@@ -492,12 +513,14 @@ Qed.
 
 Generalizable Variables f.
 
+#[global]
 Instance filter_equal : forall `(Proper _ (E.eq==>Logic.eq) f),
  Proper (Equal==>Equal) (filter f).
 Proof.
 intros f Hf s s' Hs a. rewrite !filter_iff, Hs by auto; intuition.
 Qed.
 
+#[global]
 Instance filter_subset : forall `(Proper _ (E.eq==>Logic.eq) f),
  Proper (Subset==>Subset) (filter f).
 Proof.

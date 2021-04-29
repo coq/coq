@@ -79,10 +79,13 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
 (** The equiv is buried inside the setoid, but we can recover it by specifying
    which setoid we're talking about. *)
 
+#[global]
 Program Instance nat_eq_eqdec : EqDec nat eq := eq_nat_dec.
 
+#[global]
 Program Instance bool_eqdec : EqDec bool eq := bool_dec.
 
+#[global]
 Program Instance unit_eqdec : EqDec unit eq := fun x y => in_left.
 
   Next Obligation.
@@ -93,6 +96,7 @@ Program Instance unit_eqdec : EqDec unit eq := fun x y => in_left.
 
 Obligation Tactic := unfold complement, equiv ; program_simpl.
 
+#[global]
 Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
   EqDec (prod A B) eq :=
   { equiv_dec x y :=
@@ -103,6 +107,7 @@ Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
       else in_right
     else in_right }.
 
+#[global]
 Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
   EqDec (sum A B) eq := {
   equiv_dec x y :=
@@ -115,6 +120,7 @@ Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
 (** Objects of function spaces with countable domains like bool have decidable
   equality. Proving the reflection requires functional extensionality though. *)
 
+#[global]
 Program Instance bool_function_eqdec `(EqDec A eq) : EqDec (bool -> A) eq :=
   { equiv_dec f g :=
     if f true == g true then
@@ -130,6 +136,7 @@ Program Instance bool_function_eqdec `(EqDec A eq) : EqDec (bool -> A) eq :=
 
 Require Import List.
 
+#[global]
 Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
   { equiv_dec :=
     fix aux (x y : list A) :=

@@ -128,6 +128,7 @@ Ltac cring:=
   cring_gen;
   cring_compute.
 
+#[global]
 Instance Zcri: (Cring (Rr:=Zr)).
 red. exact Z.mul_comm. Defined.
 

@@ -25,6 +25,7 @@ End PowNotation.
 Module Type Pow' (A : Typ) := Pow A <+ PowNotation A.
 
 Module Type NZPowSpec (Import A : NZOrdAxiomsSig')(Import B : Pow' A).
+#[global]
  Declare Instance pow_wd : Proper (eq==>eq==>eq) pow.
  Axiom pow_0_r : forall a, a^0 == 1.
  Axiom pow_succ_r : forall a b, 0<=b -> a^(succ b) == a * a^b.

@@ -31,6 +31,7 @@ Proof. destr_bool. Qed.
 Lemma false_le : forall b, false <= b.
 Proof. intros; constructor. Qed.
 
+#[global]
 Instance le_compat : Proper (eq ==> eq ==> iff) Bool.le.
 Proof. intuition. Qed.
 
@@ -43,6 +44,7 @@ Lemma lt_trans : forall b1 b2 b3,
   b1 < b2 -> b2 < b3 -> b1 < b3.
 Proof. destr_bool; auto. Qed.
 
+#[global]
 Instance lt_compat : Proper (eq ==> eq ==> iff) Bool.lt.
 Proof. intuition. Qed.
 
@@ -65,6 +67,7 @@ Proof. destr_bool; intuition. Qed.
 (** * Order structures *)
 
 (* Class structure *)
+#[global]
 Instance le_preorder : PreOrder Bool.le.
 Proof.
 split.
@@ -72,6 +75,7 @@ split.
 - intros b1 b2 b3; apply le_trans.
 Qed.
 
+#[global]
 Instance lt_strorder : StrictOrder Bool.lt.
 Proof.
 split.

@@ -28,12 +28,19 @@ Class Ring_ops(T:Type)
    {opp:T->T}
    {ring_eq:T->T->Prop}.
 
+#[global]
 Instance zero_notation(T:Type)`{Ring_ops T}:Zero T:= ring0. 
+#[global]
 Instance one_notation(T:Type)`{Ring_ops T}:One T:= ring1.
+#[global]
 Instance add_notation(T:Type)`{Ring_ops T}:Addition T:= add.
+#[global]
 Instance mul_notation(T:Type)`{Ring_ops T}:@Multiplication T T:= mul.
+#[global]
 Instance sub_notation(T:Type)`{Ring_ops T}:Subtraction T:= sub.
+#[global]
 Instance opp_notation(T:Type)`{Ring_ops T}:Opposite T:= opp.
+#[global]
 Instance eq_notation(T:Type)`{Ring_ops T}:@Equality T:= ring_eq.
 
 Class Ring `{Ro:Ring_ops}:={
@@ -57,10 +64,15 @@ Class Ring `{Ro:Ring_ops}:={
 Instance ring_Ring_ops(R:Type)`{Ring R}
   :@Ring_ops R 0 1 addition multiplication subtraction opposite equality.
 *)
+#[global]
 Existing Instance ring_setoid.
+#[global]
 Existing Instance ring_plus_comp.
+#[global]
 Existing Instance ring_mult_comp.
+#[global]
 Existing Instance ring_sub_comp.
+#[global]
 Existing Instance ring_opp_comp.
 
 Section Ring_power.
@@ -88,6 +100,7 @@ Definition ZN(x:Z):=
     |Zpos p | Zneg p => Npos p
 end.
 
+#[global]
 Instance power_ring {R:Type}`{Ring R} : Power:=
   {power x y := pow_N x (ZN y)}.
 

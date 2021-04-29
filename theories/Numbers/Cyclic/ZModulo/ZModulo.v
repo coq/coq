@@ -939,6 +939,8 @@ End PositiveNotOne.
 
 Module ZModuloCyclicType (P:PositiveNotOne) <: CyclicType.
  Definition t := Z.
+#[global]
  Instance ops : ZnZ.Ops t := zmod_ops P.p.
+#[global]
  Instance specs : ZnZ.Specs ops := zmod_specs P.not_one.
 End ZModuloCyclicType.

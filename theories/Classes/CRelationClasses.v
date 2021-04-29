@@ -195,9 +195,11 @@ Section Defs.
 End Defs.
 
 (** Default rewrite crelations handled by [setoid_rewrite]. *)
+#[global]
 Instance: RewriteRelation impl.
 Defined.
 
+#[global]
 Instance: RewriteRelation iff.
 Defined.
 
@@ -277,25 +279,36 @@ Local Obligation Tactic := simpl_crelation.
 
 (** Logical implication. *)
 
+#[global]
 Program Instance impl_Reflexive : Reflexive impl.
+#[global]
 Program Instance impl_Transitive : Transitive impl.
 
 (** Logical equivalence. *)
 
+#[global]
 Instance iff_Reflexive : Reflexive iff := iff_refl.
+#[global]
 Instance iff_Symmetric : Symmetric iff := iff_sym.
+#[global]
 Instance iff_Transitive : Transitive iff := iff_trans.
 
 (** Logical equivalence [iff] is an equivalence crelation. *)
 
+#[global]
 Program Instance iff_equivalence : Equivalence iff. 
+#[global]
 Program Instance arrow_Reflexive : Reflexive arrow.
+#[global]
 Program Instance arrow_Transitive : Transitive arrow.
 
+#[global]
 Instance iffT_Reflexive : Reflexive iffT. 
 Proof. firstorder. Defined.
+#[global]
 Instance iffT_Symmetric : Symmetric iffT. 
 Proof. firstorder. Defined. 
+#[global]
 Instance iffT_Transitive : Transitive iffT.
 Proof. firstorder. Defined.
 

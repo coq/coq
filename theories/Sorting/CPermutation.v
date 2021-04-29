@@ -104,6 +104,7 @@ Hint Resolve CPermutation_refl : core.
 
 Local Hint Resolve cperm CPermutation_sym CPermutation_trans : core.
 
+#[global]
 Instance CPermutation_Equivalence A : Equivalence (@CPermutation A) | 10 := {
   Equivalence_Reflexive := @CPermutation_refl A ;
   Equivalence_Symmetric := @CPermutation_sym A ;
@@ -250,6 +251,7 @@ intros f a l l' HP.
 now apply CPermutation_Permutation, Permutation_image in HP.
 Qed.
 
+#[global]
 Instance CPermutation_Forall A (P : A -> Prop) :
   Proper (@CPermutation A ==> Basics.impl) (Forall P).
 Proof.
@@ -257,6 +259,7 @@ intros ? ? [? ?] HF.
 now apply Forall_app in HF; apply Forall_app.
 Qed.
 
+#[global]
 Instance CPermutation_Exists A (P : A -> Prop) :
   Proper (@CPermutation A ==> Basics.impl) (Exists P).
 Proof.

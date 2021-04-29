@@ -408,8 +408,11 @@ Module Test20.
   | two : known_type bool.
 
   Existing Class known_type.
+  #[global]
   Existing Instances zero one two prop.
+  #[global]
   Existing Instance set | 2.
+  #[global]
   Existing Instance type | 4.
 
   Record > ty := { t : Type ; kt : known_type t }.

@@ -136,6 +136,7 @@ Hint Resolve Qeq_refl Qeq_trans : qarith.
 
 (** In a word, [Qeq] is a setoid equality. *)
 
+#[global]
 Instance Q_Setoid : Equivalence Qeq.
 Proof. split; red; eauto with qarith. Qed.
 
@@ -436,6 +437,7 @@ Qed.
 
 (** * Setoid compatibility results *)
 
+#[global]
 Instance Qplus_comp : Proper (Qeq==>Qeq==>Qeq) Qplus.
 Proof.
   unfold Qeq, Qplus; simpl.
@@ -450,6 +452,7 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qopp_comp : Proper (Qeq==>Qeq) Qopp.
 Proof.
   unfold Qeq, Qopp; simpl.
@@ -460,12 +463,14 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qminus_comp : Proper (Qeq==>Qeq==>Qeq) Qminus.
 Proof.
   intros x x' Hx y y' Hy.
   unfold Qminus. rewrite Hx, Hy; auto with qarith.
 Qed.
 
+#[global]
 Instance Qmult_comp : Proper (Qeq==>Qeq==>Qeq) Qmult.
 Proof.
   unfold Qeq; simpl.
@@ -480,6 +485,7 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qinv_comp : Proper (Qeq==>Qeq) Qinv.
 Proof.
   unfold Qeq, Qinv; simpl.
@@ -494,12 +500,14 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qdiv_comp : Proper (Qeq==>Qeq==>Qeq) Qdiv.
 Proof.
   intros x x' Hx y y' Hy; unfold Qdiv.
   rewrite Hx, Hy; auto with qarith.
 Qed.
 
+#[global]
 Instance Qcompare_comp : Proper (Qeq==>Qeq==>eq) Qcompare.
 Proof.
   unfold Qeq, Qcompare.
@@ -517,22 +525,26 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qle_comp : Proper (Qeq==>Qeq==>iff) Qle.
 Proof.
   intros p q H r s H'. rewrite 2 Qle_alt, H, H'; auto with *.
 Qed.
 
+#[global]
 Instance Qlt_compat : Proper (Qeq==>Qeq==>iff) Qlt.
 Proof.
   intros p q H r s H'. rewrite 2 Qlt_alt, H, H'; auto with *.
 Qed.
 
+#[global]
 Instance Qeqb_comp : Proper (Qeq==>Qeq==>eq) Qeq_bool.
 Proof.
  intros p q H r s H'; apply eq_true_iff_eq.
  rewrite 2 Qeq_bool_iff, H, H'; split; auto with qarith.
 Qed.
 
+#[global]
 Instance Qleb_comp : Proper (Qeq==>Qeq==>eq) Qle_bool.
 Proof.
  intros p q H r s H'; apply eq_true_iff_eq.
@@ -1186,6 +1198,7 @@ Qed.
 Definition Qpower_positive : Q -> positive -> Q :=
  pow_pos Qmult.
 
+#[global]
 Instance Qpower_positive_comp : Proper (Qeq==>eq==>Qeq) Qpower_positive.
 Proof.
 intros x x' Hx y y' Hy. rewrite <-Hy; clear y' Hy.
@@ -1207,6 +1220,7 @@ Notation " q ^ z " := (Qpower q z) : Q_scope.
 
 Register Qpower as  rat.Q.Qpower.
 
+#[global]
 Instance Qpower_comp : Proper (Qeq==>eq==>Qeq) Qpower.
 Proof.
 intros x x' Hx y y' Hy. rewrite <- Hy; clear y' Hy.

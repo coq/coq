@@ -69,9 +69,11 @@ Module R_as_OT <: OrderedTypeFull.
  Definition le := Rle.
  Definition compare := Rcompare.
 
+#[global]
  Instance lt_strorder : StrictOrder Rlt.
  Proof. split; [ exact Rlt_irrefl | exact Rlt_trans ]. Qed.
 
+#[global]
  Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) Rlt.
  Proof. repeat red; intros; subst; auto. Qed.
 

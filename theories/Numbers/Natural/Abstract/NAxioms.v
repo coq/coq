@@ -49,6 +49,7 @@ Module Type NAxiomsRec (Import NZ : NZDomainSig').
 
 Parameter Inline recursion : forall {A : Type}, A -> (t -> A -> A) -> t -> A.
 
+#[global]
 Declare Instance recursion_wd {A : Type} (Aeq : relation A) :
  Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) recursion.
 

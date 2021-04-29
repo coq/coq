@@ -65,6 +65,7 @@ Tactic Notation "decide" constr(P) :=
 
 Require Import Bool Arith ZArith.
 
+#[global]
 Program Instance Decidable_not {P} `{Decidable P} : Decidable (~ P) := {
   Decidable_witness := negb Decidable_witness
 }.
@@ -75,6 +76,7 @@ Next Obligation.
   - erewrite Decidable_sound_alt; intuition.
 Qed.
 
+#[global]
 Program Instance Decidable_eq_bool : forall (x y : bool), Decidable (eq x y) := {
   Decidable_witness := Bool.eqb x y
 }.
@@ -82,6 +84,7 @@ Next Obligation.
  apply eqb_true_iff.
 Qed.
 
+#[global]
 Program Instance Decidable_eq_nat : forall (x y : nat), Decidable (eq x y) := {
   Decidable_witness := Nat.eqb x y
 }.
@@ -89,6 +92,7 @@ Next Obligation.
  apply Nat.eqb_eq.
 Qed.
 
+#[global]
 Program Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
   Decidable_witness := Nat.leb x y
 }.
@@ -96,6 +100,7 @@ Next Obligation.
  apply Nat.leb_le.
 Qed.
 
+#[global]
 Program Instance Decidable_eq_Z : forall (x y : Z), Decidable (eq x y) := {
   Decidable_witness := Z.eqb x y
 }.

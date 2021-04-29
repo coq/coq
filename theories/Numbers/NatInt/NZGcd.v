@@ -46,6 +46,7 @@ Module NZGcdProp
 
 (** Results concerning divisibility*)
 
+#[global]
 Instance divide_wd : Proper (eq==>eq==>iff) divide.
 Proof.
  unfold divide. intros x x' Hx y y' Hy.
@@ -107,7 +108,9 @@ Proof.
  now rewrite Hr, Hq, mul_assoc.
 Qed.
 
+#[global]
 Instance divide_reflexive : Reflexive divide | 5 := divide_refl.
+#[global]
 Instance divide_transitive : Transitive divide | 5 := divide_trans.
 
 (** Due to sign, no general antisymmetry result *)
@@ -202,6 +205,7 @@ Proof.
  - now apply gcd_greatest.
 Qed.
 
+#[global]
 Instance gcd_wd : Proper (eq==>eq==>eq) gcd.
 Proof.
  intros x x' Hx y y' Hy.

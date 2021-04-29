@@ -57,6 +57,7 @@ Notation pos_mod_int := pos_mod.
 
 Import ZnZ.
 
+#[global]
 Instance int_ops : ZnZ.Ops int :=
 {|
  digits      := Pdigits; (* number of digits *)

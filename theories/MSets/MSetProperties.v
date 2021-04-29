@@ -773,6 +773,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
    eauto with set relations.
   Qed.
 
+#[global]
   Instance cardinal_m : Proper (Equal==>Logic.eq) cardinal.
   Proof.
   exact Equal_cardinal.
@@ -962,11 +963,13 @@ Module OrdProperties (M:Sets).
    destruct E.compare; intuition; try discriminate.
   Qed.
 
+#[global]
   Instance gtb_compat x : Proper (E.eq==>Logic.eq) (gtb x).
   Proof.
    intros a b H. unfold gtb. rewrite H; auto.
   Qed.
 
+#[global]
   Instance leb_compat x : Proper (E.eq==>Logic.eq) (leb x).
   Proof.
    intros a b H; unfold leb. rewrite H; auto.

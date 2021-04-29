@@ -24,6 +24,7 @@ Print Wrap.
 Print wrap.
 
 (* Instance in lemma mode used to ignore the binders. *)
+#[global]
 Instance bar@{uu} : Wrap@{uu} Set. Proof. exact nat. Qed.
 Print bar.
 
