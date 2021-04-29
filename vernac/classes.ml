@@ -128,10 +128,22 @@ let instance_input : instance_obj -> obj =
       rebuild_function = rebuild_instance;
       subst_function = subst_instance }
 
+let warn_deprecated_instance_without_locality =
+  let open Pp in
+  CWarnings.create ~name:"deprecated-instance-without-locality" ~category:"deprecated"
+    (fun () -> strbrk "The default value for instance locality is currently \
+    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
+    in a future release. For the time being, adding instances outside of sections \
+    without specifying an explicit locality is therefore deprecated. It is \
+    recommended to use \"export\" whenever possible.")
+
 let add_instance cl info glob impl =
   let global = match glob with
   | Goptions.OptDefault ->
-    if Global.sections_are_opened () then InstLocal else InstGlobal
+    if Global.sections_are_opened () then InstLocal
+    else
+      let () = warn_deprecated_instance_without_locality () in
+      InstGlobal
   | Goptions.OptGlobal ->
     if Global.sections_are_opened () && isVarRef impl then
       CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
