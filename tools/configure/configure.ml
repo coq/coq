@@ -153,8 +153,7 @@ let arg_string f = Arg.String (fun s -> prefs := f !prefs s)
 let arg_string_option f = Arg.String (fun s -> prefs := f !prefs (Some s))
 let arg_string_list c f = Arg.String (fun s -> prefs := f !prefs (string_split c s))
 
-let arg_set f = Arg.Unit (fun () -> prefs := f !prefs true)
-let arg_clear f = Arg.Unit (fun () -> prefs := f !prefs false)
+let arg_set f = Arg.Unit (fun () -> prefs := f !prefs)
 
 let arg_set_option f = Arg.Unit (fun () -> prefs := f !prefs (Some true))
 let arg_clear_option f = Arg.Unit (fun () -> prefs := f !prefs (Some false))
@@ -181,8 +180,8 @@ let coqdocdir_warning () = warn "-coqdordir option is deprecated, Coq will now u
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
     "<dir> Set installation directory to <dir> (absolute path required)";
-  "-local", arg_set (fun p _local -> local_warning (); Profiles.get "devel" p), "Deprecated option, equivalent to -profile devel";
-  "-no-ask", arg_clear (fun p interactive -> { p with interactive; output_summary = false }),
+  "-local", arg_set (fun p -> local_warning (); Profiles.get "devel" p), "Deprecated option, equivalent to -profile devel";
+  "-no-ask", arg_set (fun p -> { p with interactive = false; output_summary = false }),
     " Don't ask questions / print variables during configure [questions will be filled with defaults]";
   "-vmbyteflags", arg_string_option (fun p vmbyteflags -> { p with vmbyteflags }),
     "<flags> Comma-separated link flags for the VM of coqtop.byte";
@@ -214,23 +213,23 @@ let args_options = Arg.align [
     "(yes|no) Use dynamic loading of native code or not";
   "-coqide", arg_ide (fun p coqide -> { p with coqide }),
     "(opt|byte|no) Specifies whether or not to compile CoqIDE";
-  "-nomacintegration", arg_clear (fun p macintegration -> { p with macintegration }),
+  "-nomacintegration", arg_set (fun p -> { p with macintegration = false}),
     " Do not try to build CoqIDE MacOS integration";
   "-browser", arg_string_option (fun p browser -> { p with browser }),
     "<command> Use <command> to open URL %s";
   "-with-doc", arg_bool (fun p withdoc -> { p with withdoc }),
     "(yes|no) Compile the documentation or not";
-  "-byte-only", arg_set (fun p byteonly -> { p with byteonly }),
+  "-byte-only", arg_set (fun p -> { p with byteonly = true }),
     " Compiles only bytecode version of Coq";
-  "-nodebug", arg_clear (fun p debug -> { p with debug }),
+  "-nodebug", arg_set (fun p -> { p with debug = true }),
     " Do not add debugging information in the Coq executables";
-  "-profiling", arg_set (fun p profile -> { p with profile }),
+  "-profiling", arg_set (fun p -> { p with profile = true }),
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Unit (fun () -> die "-annotate has been removed. Please use -annot or -bin-annot instead."),
     " Removed option. Please use -annot or -bin-annot instead";
-  "-annot", arg_set (fun p annot -> { p with annot }),
+  "-annot", arg_set (fun p -> { p with annot = true }),
     " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
-  "-bin-annot", arg_set (fun p bin_annot -> { p with bin_annot }),
+  "-bin-annot", arg_set (fun p -> { p with bin_annot = true }),
     " Dumps ml binary annotation files while compiling Coq (e.g. for Merlin)";
   "-bytecode-compiler", arg_bool (fun p bytecodecompiler -> { p with bytecodecompiler }),
     "(yes|no) Enable Coq's bytecode reduction machine (VM)";
@@ -241,9 +240,9 @@ let args_options = Arg.align [
      ondemand (default): -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
     " URL of the coq website";
-  "-force-caml-version", arg_set (fun p force_caml_version -> { p with force_caml_version }),
+  "-force-caml-version", arg_set (fun p -> { p with force_caml_version = true}),
     " Force OCaml version";
-  "-force-findlib-version", arg_set (fun p force_findlib_version -> { p with force_findlib_version }),
+  "-force-findlib-version", arg_set (fun p -> { p with force_findlib_version = true}),
     " Force findlib version";
   "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
     "(yes|no) Make OCaml warnings into errors (default no)";
