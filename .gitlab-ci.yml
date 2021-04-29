@@ -80,6 +80,7 @@ before_script:
       - config/Makefile
       - config/coq_config.py
       - config/coq_config.ml
+      - config/dune.c_flags
       - dmesg.txt
     expire_in: 1 week
   script:
