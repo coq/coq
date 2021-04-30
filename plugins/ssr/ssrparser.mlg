@@ -1599,7 +1599,7 @@ let test_ssrseqvar =
     lk_ident_except sq_brace_tacnames >> (lk_kws ["[";"first";"last"])
   end
 
-let swaptacarg (loc, b) = (b, []), Some (TacId [])
+let swaptacarg (loc, b) = (b, []), Some (TacId (CAst.make ~loc []))
 
 let check_seqtacarg dir arg = match snd arg, dir with
   | ((true, []), Some (TacAtom { CAst.loc })), L2R ->
@@ -1875,14 +1875,14 @@ GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
   ssr_first: [
     [ tac = ssr_first; ipats = ssrintros_ne -> { tclintros_expr ~loc tac ipats }
-    | "["; tacl = LIST0 ltac_expr SEP "|"; "]" -> { TacFirst tacl }
+    | "["; tacl = LIST0 ltac_expr SEP "|"; "]" -> { TacFirst (CAst.make ~loc tacl) }
     ] ];
   ssr_first_else: [
-    [ tac1 = ssr_first; tac2 = ssrorelse -> { TacOrelse (tac1, tac2) }
+    [ tac1 = ssr_first; tac2 = ssrorelse -> { TacOrelse (CAst.make ~loc (tac1, tac2)) }
     | tac = ssr_first -> { tac } ]];
   ltac_expr: LEVEL "4" [ LEFTA
     [ tac1 = ltac_expr; ";"; IDENT "first"; tac2 = ssr_first_else ->
-      { TacThen (tac1, tac2) }
+      { TacThen (CAst.make ~loc (tac1, tac2)) }
     | tac = ltac_expr; ";"; IDENT "first"; arg = ssrseqarg ->
       { tclseq_expr ~loc tac L2R arg }
     | tac = ltac_expr; ";"; IDENT "last"; arg = ssrseqarg ->

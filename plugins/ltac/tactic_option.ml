@@ -11,7 +11,8 @@
 open Libobject
 open Pp
 
-let declare_tactic_option ?(default=Tacexpr.TacId []) name =
+let declare_tactic_option ?(default=Tacexpr.TacId
+    (CAst.make [])) name =
   let locality = Summary.ref false ~name:(name^"-locality") in
   let default_tactic : Tacexpr.glob_tactic_expr ref =
     Summary.ref default ~name:(name^"-default-tactic")

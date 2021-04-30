@@ -172,54 +172,57 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacInversion (InversionUsing (subst_glob_constr subst c,cl),hyp)
 
 and subst_tactic subst (t:glob_tactic_expr) = match t with
-  | TacAtom { CAst.v=t } -> TacAtom (CAst.make @@ subst_atomic subst t)
-  | TacFun tacfun -> TacFun (subst_tactic_fun subst tacfun)
-  | TacLetIn (r,l,u) ->
+  | TacAtom { CAst.loc; v=t } -> TacAtom (CAst.make ?loc @@ subst_atomic subst t)
+  | TacFun { CAst.loc; v=tacfun } -> TacFun (CAst.make ?loc(subst_tactic_fun subst tacfun))
+  | TacLetIn { CAst.loc; v=(r,l,u) } ->
       let l = List.map (fun (n,b) -> (n,subst_tacarg subst b)) l in
-      TacLetIn (r,l,subst_tactic subst u)
-  | TacMatchGoal (lz,lr,lmr) ->
-      TacMatchGoal(lz,lr, subst_match_rule subst lmr)
-  | TacMatch (lz,c,lmr) ->
-      TacMatch (lz,subst_tactic subst c,subst_match_rule subst lmr)
-  | TacId _ | TacFail _ as x -> x
-  | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
-  | TacShowHyps tac -> TacShowHyps (subst_tactic subst tac:glob_tactic_expr)
-  | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
-  | TacThen (t1,t2) ->
-      TacThen (subst_tactic subst t1, subst_tactic subst t2)
-  | TacDispatch tl -> TacDispatch (List.map (subst_tactic subst) tl)
-  | TacExtendTac (tf,t,tl) ->
-      TacExtendTac (Array.map (subst_tactic subst) tf,
+      TacLetIn (CAst.make ?loc (r,l,subst_tactic subst u))
+  | TacMatchGoal { CAst.loc; v=(lz,lr,lmr) } ->
+      TacMatchGoal (CAst.make ?loc (lz,lr, subst_match_rule subst lmr))
+  | TacMatch { CAst.loc; v=(lz,c,lmr) } ->
+      TacMatch (CAst.make ?loc (lz,subst_tactic subst c,subst_match_rule subst lmr))
+  | TacId {CAst.loc; v=t} as x -> x
+  | TacFail  {CAst.loc; v=t} as x -> x
+  | TacProgress { CAst.loc; v=tac } -> TacProgress (CAst.make ?loc (subst_tactic subst tac:glob_tactic_expr))
+  | TacShowHyps { CAst.loc; v=tac } -> TacShowHyps (CAst.make ?loc (subst_tactic subst tac:glob_tactic_expr))
+  | TacAbstract { CAst.loc; v=(tac,s) } -> TacAbstract (CAst.make ?loc (subst_tactic subst tac,s))
+  | TacThen { CAst.loc; v=(t1,t2) } ->
+      TacThen (CAst.make ?loc (subst_tactic subst t1, subst_tactic subst t2))
+  | TacDispatch { CAst.loc; v=tl } -> TacDispatch (CAst.make ?loc (List.map (subst_tactic subst) tl))
+  | TacExtendTac { CAst.loc; v=(tf,t,tl) } ->
+      TacExtendTac (CAst.make ?loc
+                    (Array.map (subst_tactic subst) tf,
                     subst_tactic subst t,
-                    Array.map (subst_tactic subst) tl)
-  | TacThens (t,tl) ->
-      TacThens (subst_tactic subst t, List.map (subst_tactic subst) tl)
-  | TacThens3parts (t1,tf,t2,tl) ->
-      TacThens3parts (subst_tactic subst t1,Array.map (subst_tactic subst) tf,
-               subst_tactic subst t2,Array.map (subst_tactic subst) tl)
-  | TacDo (n,tac) -> TacDo (n,subst_tactic subst tac)
-  | TacTimeout (n,tac) -> TacTimeout (n,subst_tactic subst tac)
-  | TacTime (s,tac) -> TacTime (s,subst_tactic subst tac)
-  | TacTry tac -> TacTry (subst_tactic subst tac)
-  | TacRepeat tac -> TacRepeat (subst_tactic subst tac)
-  | TacOr (tac1,tac2) ->
-      TacOr (subst_tactic subst tac1,subst_tactic subst tac2)
-  | TacOnce tac ->
-      TacOnce (subst_tactic subst tac)
-  | TacExactlyOnce tac ->
-      TacExactlyOnce (subst_tactic subst tac)
-  | TacIfThenCatch (tac,tact,tace) ->
-      TacIfThenCatch (
+                    Array.map (subst_tactic subst) tl))
+  | TacThens { CAst.loc; v=(t,tl) } ->
+      TacThens (CAst.make ?loc (subst_tactic subst t, List.map (subst_tactic subst) tl))
+  | TacThens3parts { CAst.loc; v=(t1,tf,t2,tl) } ->
+      TacThens3parts (CAst.make ?loc
+              (subst_tactic subst t1,Array.map (subst_tactic subst) tf,
+               subst_tactic subst t2,Array.map (subst_tactic subst) tl))
+  | TacDo { CAst.loc; v=(n,tac) } -> TacDo (CAst.make ?loc (n,subst_tactic subst tac))
+  | TacTimeout { CAst.loc; v=(n,tac) } -> TacTimeout (CAst.make ?loc (n,subst_tactic subst tac))
+  | TacTime { CAst.loc; v=(s,tac) } -> TacTime (CAst.make ?loc (s,subst_tactic subst tac))
+  | TacTry { CAst.loc; v=tac } -> TacTry (CAst.make ?loc (subst_tactic subst tac))
+  | TacRepeat { CAst.loc; v=tac } -> TacRepeat (CAst.make ?loc (subst_tactic subst tac))
+  | TacOr { CAst.loc; v=(tac1,tac2) } ->
+      TacOr (CAst.make ?loc (subst_tactic subst tac1,subst_tactic subst tac2))
+  | TacOnce { CAst.loc; v=tac } ->
+      TacOnce (CAst.make ?loc (subst_tactic subst tac))
+  | TacExactlyOnce { CAst.loc; v=tac } ->
+      TacExactlyOnce (CAst.make ?loc (subst_tactic subst tac))
+  | TacIfThenCatch { CAst.loc; v=(tac,tact,tace) } ->
+      TacIfThenCatch (CAst.make ?loc (
         subst_tactic subst tac,
         subst_tactic subst tact,
-        subst_tactic subst tace)
-  | TacOrelse (tac1,tac2) ->
-      TacOrelse (subst_tactic subst tac1,subst_tactic subst tac2)
-  | TacFirst l -> TacFirst (List.map (subst_tactic subst) l)
-  | TacSolve l -> TacSolve (List.map (subst_tactic subst) l)
+        subst_tactic subst tace))
+  | TacOrelse { CAst.loc; v=(tac1,tac2) } ->
+      TacOrelse (CAst.make ?loc (subst_tactic subst tac1,subst_tactic subst tac2))
+  | TacFirst { CAst.loc; v=l } -> TacFirst (CAst.make ?loc (List.map (subst_tactic subst) l))
+  | TacSolve { CAst.loc; v=l } -> TacSolve (CAst.make ?loc (List.map (subst_tactic subst) l))
   | TacComplete tac -> TacComplete (subst_tactic subst tac)
   | TacArg { CAst.v=a } -> TacArg (CAst.make @@ subst_tacarg subst a)
-  | TacSelect (s, tac) -> TacSelect (s, subst_tactic subst tac)
+  | TacSelect { CAst.loc; v=(s, tac) } -> TacSelect (CAst.make ?loc (s, subst_tactic subst tac))
 
   (* For extensions *)
   | TacAlias { CAst.v=(s,l) } ->

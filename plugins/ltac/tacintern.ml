@@ -72,8 +72,6 @@ let intern_name l ist = function
 
 let strict_check = ref false
 
-let adjust_loc loc = if !strict_check then None else loc
-
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist ({loc;v=id} as locid) =
   if not !strict_check then
@@ -603,77 +601,79 @@ and intern_tactic_seq onlytac ist = function
   | TacAtom { loc; v=t } ->
       let lf = ref ist.ltacvars in
       let t = intern_atomic lf ist t in
-      !lf, TacAtom (CAst.make ?loc:(adjust_loc loc) t)
-  | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
-  | TacLetIn (isrec,l,u) ->
+      !lf, TacAtom (CAst.make ?loc t)
+  | TacFun { loc; v=tacfun } -> ist.ltacvars, TacFun (CAst.make ?loc (intern_tactic_fun ist tacfun))
+  | TacLetIn { loc; v=(isrec,l,u) } ->
       let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
       let ist' = { ist with ltacvars } in
       let l = List.map (fun (n,b) ->
           (n,intern_tacarg !strict_check false (if isrec then ist' else ist) b)) l in
-      ist.ltacvars, TacLetIn (isrec,l,intern_tactic onlytac ist' u)
+      ist.ltacvars, TacLetIn (CAst.make ?loc (isrec,l,intern_tactic onlytac ist' u))
 
-  | TacMatchGoal (lz,lr,lmr) ->
-      ist.ltacvars, TacMatchGoal(lz,lr, intern_match_rule onlytac ist ~as_type:true lmr)
-  | TacMatch (lz,c,lmr) ->
+  | TacMatchGoal { loc; v=(lz,lr,lmr) } ->
+      ist.ltacvars, TacMatchGoal (CAst.make ?loc (lz,lr, intern_match_rule onlytac ist ~as_type:true lmr))
+  | TacMatch { loc; v=(lz,c,lmr) } ->
       ist.ltacvars,
-      TacMatch (lz,intern_tactic_or_tacarg ist c,intern_match_rule onlytac ist lmr)
-  | TacId l -> ist.ltacvars, TacId (intern_message ist l)
-  | TacFail (g,n,l) ->
-      ist.ltacvars, TacFail (g,intern_int_or_var ist n,intern_message ist l)
-  | TacProgress tac -> ist.ltacvars, TacProgress (intern_pure_tactic ist tac)
-  | TacShowHyps tac -> ist.ltacvars, TacShowHyps (intern_pure_tactic ist tac)
-  | TacAbstract (tac,s) ->
-      ist.ltacvars, TacAbstract (intern_pure_tactic ist tac,s)
-  | TacThen (t1,t2) ->
+      TacMatch (CAst.make ?loc (lz,intern_tactic_or_tacarg ist c,intern_match_rule onlytac ist lmr))
+  | TacId { loc; v=l } -> ist.ltacvars, TacId (CAst.make ?loc (intern_message ist l))
+  | TacFail { loc; v=(g,n,l) } ->
+      ist.ltacvars, TacFail (CAst.make ?loc (g,intern_int_or_var ist n,intern_message ist l))
+  | TacProgress { loc; v=tac } -> ist.ltacvars, TacProgress (CAst.make ?loc (intern_pure_tactic ist tac))
+  | TacShowHyps { loc; v=tac } -> ist.ltacvars, TacShowHyps (CAst.make ?loc (intern_pure_tactic ist tac))
+  | TacAbstract { loc; v=(tac,s) } ->
+      ist.ltacvars, TacAbstract (CAst.make ?loc (intern_pure_tactic ist tac,s))
+  | TacThen { loc; v=(t1,t2) } ->
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let lfun'', t2 = intern_tactic_seq onlytac { ist with ltacvars = lfun' } t2 in
-      lfun'', TacThen (t1,t2)
-  | TacDispatch tl ->
-      ist.ltacvars , TacDispatch (List.map (intern_pure_tactic ist) tl)
-  | TacExtendTac (tf,t,tl) ->
+      lfun'', TacThen (CAst.make ?loc (t1,t2))
+  | TacDispatch { loc; v=tl } ->
+      ist.ltacvars , TacDispatch (CAst.make ?loc (List.map (intern_pure_tactic ist) tl))
+  | TacExtendTac { loc; v=(tf,t,tl) } ->
       ist.ltacvars ,
-      TacExtendTac (Array.map (intern_pure_tactic ist) tf,
+      TacExtendTac (CAst.make ?loc
+                   (Array.map (intern_pure_tactic ist) tf,
                     intern_pure_tactic ist t,
-                    Array.map (intern_pure_tactic ist) tl)
-  | TacThens3parts (t1,tf,t2,tl) ->
+                    Array.map (intern_pure_tactic ist) tl))
+  | TacThens3parts { loc; v=(t1,tf,t2,tl) } ->
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let ist' = { ist with ltacvars = lfun' } in
       (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
-      lfun', TacThens3parts (t1,Array.map (intern_pure_tactic ist') tf,intern_pure_tactic ist' t2,
-                       Array.map (intern_pure_tactic ist') tl)
-  | TacThens (t,tl) ->
+      lfun', TacThens3parts (CAst.make ?loc
+                      (t1,Array.map (intern_pure_tactic ist') tf,intern_pure_tactic ist' t2,
+                      Array.map (intern_pure_tactic ist') tl))
+  | TacThens { loc; v=(t,tl) } ->
       let lfun', t = intern_tactic_seq true ist t in
       let ist' = { ist with ltacvars = lfun' } in
       (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
-      lfun', TacThens (t, List.map (intern_pure_tactic ist') tl)
-  | TacDo (n,tac) ->
-      ist.ltacvars, TacDo (intern_int_or_var ist n,intern_pure_tactic ist tac)
-  | TacTry tac -> ist.ltacvars, TacTry (intern_pure_tactic ist tac)
-  | TacRepeat tac -> ist.ltacvars, TacRepeat (intern_pure_tactic ist tac)
-  | TacTimeout (n,tac) ->
-      ist.ltacvars, TacTimeout (intern_int_or_var ist n,intern_tactic onlytac ist tac)
-  | TacTime (s,tac) ->
-      ist.ltacvars, TacTime (s,intern_tactic onlytac ist tac)
-  | TacOr (tac1,tac2) ->
-      ist.ltacvars, TacOr (intern_pure_tactic ist tac1,intern_pure_tactic ist tac2)
-  | TacOnce tac ->
-      ist.ltacvars, TacOnce (intern_pure_tactic ist tac)
-  | TacExactlyOnce tac ->
-      ist.ltacvars, TacExactlyOnce (intern_pure_tactic ist tac)
-  | TacIfThenCatch (tac,tact,tace) ->
+      lfun', TacThens (CAst.make ?loc (t, List.map (intern_pure_tactic ist') tl))
+  | TacDo { loc; v=(n,tac) } ->
+      ist.ltacvars, TacDo (CAst.make ?loc (intern_int_or_var ist n,intern_pure_tactic ist tac))
+  | TacTry { loc; v=tac } -> ist.ltacvars, TacTry (CAst.make ?loc (intern_pure_tactic ist tac))
+  | TacRepeat { loc; v=tac } -> ist.ltacvars, TacRepeat (CAst.make ?loc (intern_pure_tactic ist tac))
+  | TacTimeout { loc; v=(n,tac) } ->
+      ist.ltacvars, TacTimeout (CAst.make ?loc (intern_int_or_var ist n,intern_tactic onlytac ist tac))
+  | TacTime { loc; v=(s,tac) } ->
+      ist.ltacvars, TacTime (CAst.make ?loc (s,intern_tactic onlytac ist tac))
+  | TacOr { loc; v=(tac1,tac2) } ->
+      ist.ltacvars, TacOr (CAst.make ?loc (intern_pure_tactic ist tac1,intern_pure_tactic ist tac2))
+  | TacOnce { loc; v=tac } ->
+      ist.ltacvars, TacOnce (CAst.make ?loc (intern_pure_tactic ist tac))
+  | TacExactlyOnce { loc; v=tac } ->
+      ist.ltacvars, TacExactlyOnce (CAst.make ?loc (intern_pure_tactic ist tac))
+  | TacIfThenCatch { loc; v=(tac,tact,tace) } ->
       ist.ltacvars,
-      TacIfThenCatch (
+      TacIfThenCatch (CAst.make ?loc (
         intern_pure_tactic ist tac,
         intern_pure_tactic ist tact,
-        intern_pure_tactic ist tace)
-  | TacOrelse (tac1,tac2) ->
-      ist.ltacvars, TacOrelse (intern_pure_tactic ist tac1,intern_pure_tactic ist tac2)
-  | TacFirst l -> ist.ltacvars, TacFirst (List.map (intern_pure_tactic ist) l)
-  | TacSolve l -> ist.ltacvars, TacSolve (List.map (intern_pure_tactic ist) l)
+        intern_pure_tactic ist tace))
+  | TacOrelse { loc; v=(tac1,tac2) } ->
+      ist.ltacvars, TacOrelse (CAst.make ?loc (intern_pure_tactic ist tac1,intern_pure_tactic ist tac2))
+  | TacFirst { loc; v=l } -> ist.ltacvars, TacFirst (CAst.make ?loc (List.map (intern_pure_tactic ist) l))
+  | TacSolve { loc; v=l } -> ist.ltacvars, TacSolve (CAst.make ?loc (List.map (intern_pure_tactic ist) l))
   | TacComplete tac -> ist.ltacvars, TacComplete (intern_pure_tactic ist tac)
   | TacArg { loc; v=a } -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
-  | TacSelect (sel, tac) ->
-      ist.ltacvars, TacSelect (sel, intern_pure_tactic ist tac)
+  | TacSelect { loc; v=(sel, tac) } ->
+      ist.ltacvars, TacSelect (CAst.make ?loc (sel, intern_pure_tactic ist tac))
 
   (* For extensions *)
   | TacAlias { loc; v=(s,l) } ->
@@ -829,6 +829,6 @@ let notation_subst bindings tac =
   (* This is theoretically not correct due to potential variable
      capture, but Ltac has no true variables so one cannot simply
      substitute *)
-  TacLetIn (false, bindings, tac)
+  TacLetIn (CAst.make (false, bindings, tac))
 
 let () = Genintern.register_ntn_subst0 wit_tactic notation_subst

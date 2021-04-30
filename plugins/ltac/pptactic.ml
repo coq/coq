@@ -600,7 +600,7 @@ let pr_goal_selector ~toplevel s =
             str " ]")
 
   let pr_opt_tactic pr = function
-    | TacId [] -> mt ()
+    | TacId {CAst.loc; v=[] } -> mt ()
     | t -> pr t
 
   let pr_tac_extend_gen pr tf tm tl =
@@ -883,22 +883,21 @@ let pr_goal_selector ~toplevel s =
       pr_atom1
 
     let make_pr_tac env sigma pr strip_prod_binders tag_atom tag =
-
         let extract_binders = function
-          | Tacexp (TacFun (lvar,body)) -> (lvar,Tacexp body)
+          | Tacexp (TacFun { CAst.loc; v=(lvar,body)}) -> (lvar,Tacexp body)
           | body -> ([],body) in
         let rec pr_tac inherited tac =
           let return (doc, l) = (tag tac doc, l) in
           let (strm, prec) = return (match tac with
-            | TacAbstract (t,None) ->
+            | TacAbstract { CAst.loc; v=(t,None) } ->
               keyword "abstract " ++ pr_tac (LevelLt labstract) t, labstract
-            | TacAbstract (t,Some s) ->
+            | TacAbstract { CAst.loc; v=(t,Some s) } ->
               hov 0 (
                 keyword "abstract"
                 ++ str" (" ++ pr_tac (LevelLt labstract) t ++ str")" ++ spc ()
                 ++ keyword "using" ++ spc () ++ pr_id s),
               labstract
-            | TacLetIn (recflag,llc,u) ->
+            | TacLetIn { CAst.loc; v=(recflag,llc,u) } ->
               let llc = List.map (fun (id,t) -> (id,extract_binders t)) llc in
               v 0
                 (hv 0 (
@@ -906,7 +905,7 @@ let pr_goal_selector ~toplevel s =
                   ++ spc () ++ keyword "in"
                  ) ++ fnl () ++ pr_tac (LevelLe llet) u),
               llet
-            | TacMatch (lz,t,lrul) ->
+            | TacMatch { CAst.loc; v=(lz,t,lrul) } ->
               hov 0 (
                 pr_lazy lz ++ keyword "match" ++ spc ()
                 ++ pr_tac ltop t ++ spc () ++ keyword "with"
@@ -916,7 +915,7 @@ let pr_goal_selector ~toplevel s =
                 ) lrul
                 ++ fnl() ++ keyword "end"),
               lmatch
-            | TacMatchGoal (lz,lr,lrul) ->
+            | TacMatchGoal { CAst.loc; v=(lz,lr,lrul) } ->
               hov 0 (
                 pr_lazy lz
                 ++ keyword (if lr then "match reverse goal with" else "match goal with")
@@ -925,97 +924,97 @@ let pr_goal_selector ~toplevel s =
                   ++ pr_match_rule false (pr_tac ltop) (pr.pr_lpattern env sigma) r
                 ) lrul ++ fnl() ++ keyword "end"),
               lmatch
-            | TacFun (lvar,body) ->
+            | TacFun { CAst.loc; v=(lvar,body) } ->
               hov 2 (
                 keyword "fun"
                 ++ prlist pr_funvar lvar ++ str " =>" ++ spc ()
                 ++ pr_tac (LevelLe lfun) body),
               lfun
-            | TacThens (t,tl) ->
+            | TacThens { CAst.loc; v=(t,tl) } ->
               hov 1 (
                 pr_tac (LevelLe lseq) t ++ pr_then () ++ spc ()
                 ++ pr_seq_body (pr_opt_tactic (pr_tac ltop)) tl),
               lseq
-            | TacThen (t1,t2) ->
+            | TacThen { CAst.loc; v=(t1,t2) } ->
               hov 1 (
                 pr_tac (LevelLe lseq) t1 ++ pr_then () ++ spc ()
                 ++ pr_tac (LevelLt lseq) t2),
               lseq
-            | TacDispatch tl ->
+            | TacDispatch { CAst.loc; v=tl } ->
               pr_dispatch (pr_tac ltop) tl, lseq
-            | TacExtendTac (tf,t,tr) ->
+            | TacExtendTac { CAst.loc; v=(tf,t,tr) } ->
               pr_tac_extend (pr_tac ltop) tf t tr , lseq
-            | TacThens3parts (t1,tf,t2,tl) ->
+            | TacThens3parts { CAst.loc; v=(t1,tf,t2,tl) } ->
               hov 1 (
                 pr_tac (LevelLe lseq) t1 ++ pr_then () ++ spc ()
                 ++ pr_then_gen (pr_tac ltop) tf t2 tl),
               lseq
-            | TacTry t ->
+            | TacTry { CAst.loc; v=t } ->
               hov 1 (
                 keyword "try" ++ spc () ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacDo (n,t) ->
+            | TacDo { CAst.loc; v=(n,t) } ->
               hov 1 (
                 str "do" ++ spc ()
                 ++ pr_or_var int n ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacTimeout (n,t) ->
+            | TacTimeout { CAst.loc; v=(n,t) } ->
               hov 1 (
                 keyword "timeout "
                 ++ pr_or_var int n ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacTime (s,t) ->
+            | TacTime { CAst.loc; v=(s,t) } ->
               hov 1 (
                 keyword "time"
                 ++ pr_opt qstring s ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacRepeat t ->
+            | TacRepeat { CAst.loc; v=t } ->
               hov 1 (
                 keyword "repeat" ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacProgress t ->
+            | TacProgress { CAst.loc; v=t } ->
               hov 1 (
                 keyword "progress" ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacShowHyps t ->
+            | TacShowHyps { CAst.loc; v=t } ->
               hov 1 (
                 keyword "infoH" ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacOr (t1,t2) ->
+            | TacOr { CAst.loc; v=(t1,t2) } ->
               hov 1 (
                 pr_tac (LevelLt lorelse) t1 ++ spc ()
                 ++ str "+" ++ brk (1,1)
                 ++ pr_tac (LevelLe lorelse) t2),
               lorelse
-            | TacOnce t ->
+            | TacOnce { CAst.loc; v=t } ->
               hov 1 (
                 keyword "once" ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacExactlyOnce t ->
+            | TacExactlyOnce { CAst.loc; v=t } ->
               hov 1 (
                 keyword "exactly_once" ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacIfThenCatch (t,tt,te) ->
+            | TacIfThenCatch { CAst.loc; v=(t,tt,te) } ->
                 hov 1 (
                  str"tryif" ++ spc() ++ pr_tac (LevelLe ltactical) t ++ brk(1,1) ++
                  str"then" ++ spc() ++ pr_tac (LevelLe ltactical) tt ++ brk(1,1) ++
                  str"else" ++ spc() ++ pr_tac (LevelLe ltactical) te ++ brk(1,1)),
                 ltactical
-            | TacOrelse (t1,t2) ->
+            | TacOrelse { CAst.loc; v=(t1,t2) } ->
               hov 1 (
                 pr_tac (LevelLt lorelse) t1 ++ spc ()
                 ++ str "||" ++ brk (1,1)
                 ++ pr_tac (LevelLe lorelse) t2),
               lorelse
-            | TacFail (g,n,l) ->
+            | TacFail { CAst.loc; v=(g,n,l) } ->
               let arg =
                 match n with
                   | ArgArg 0 -> mt ()
@@ -1030,14 +1029,14 @@ let pr_goal_selector ~toplevel s =
                 name ++ arg
                 ++ prlist (pr_arg (pr_message_token pr.pr_name)) l),
               latom
-            | TacFirst tl ->
+            | TacFirst { CAst.loc; v=tl } ->
               keyword "first" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
-            | TacSolve tl ->
+            | TacSolve { CAst.loc; v=tl } ->
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacComplete t ->
               pr_tac (LevelLe lcomplete) t, lcomplete
-            | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, latom
-            | TacId l ->
+            | TacSelect { CAst.loc; v=(s, tac) } -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, latom
+            | TacId { CAst.loc; v=l } ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
             | TacAtom { CAst.loc; v=t } ->
               pr_with_comments ?loc (hov 1 (pr_atom env sigma pr strip_prod_binders tag_atom t)), ltatom

@@ -239,7 +239,7 @@ let pr_inspect env expr result =
     if has_type result (topwit wit_tacvalue) then
     match to_tacvalue result with
     | VFun (_, _, _, ist, ul, b) ->
-      let body = if List.is_empty ul then b else (TacFun (ul, b)) in
+      let body = if List.is_empty ul then b else TacFun (CAst.make (ul, b)) in
       str "a closure with body " ++ fnl() ++ pr_closure env ist body
     | VRec (ist, body) ->
       str "a recursive closure" ++ fnl () ++ pr_closure env !ist body
@@ -266,7 +266,7 @@ let propagate_trace ist loc id v =
     let tacv = to_tacvalue v in
     match tacv with
     | VFun (appl,_,_,lfun,it,b) ->
-        let t = if List.is_empty it then b else TacFun (it,b) in
+        let t = if List.is_empty it then b else TacFun (CAst.make (it,b)) in
         let trace = push_trace(loc,LtacVarCall (id,t)) ist in
         let ans = VFun (appl,trace,loc,lfun,it,b) in
         Proofview.tclUNIT (of_tacvalue ans)
@@ -1077,12 +1077,12 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
      register its name since it is syntactically a let, not a
      function.  *)
   let value_interp ist = match tac with
-  | TacFun (it, body) ->
+  | TacFun {loc;v=(it, body)} ->
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, it, body)))
-  | TacLetIn (true,l,u) -> interp_letrec ist l u
-  | TacLetIn (false,l,u) -> interp_letin ist l u
-  | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist lz lr lmr
-  | TacMatch (lz,c,lmr) -> interp_match ist lz c lmr
+  | TacLetIn {loc;v=(true,l,u)} -> interp_letrec ist l u
+  | TacLetIn {loc;v=(false,l,u)} -> interp_letin ist l u
+  | TacMatchGoal {loc;v=(lz,lr,lmr)} -> interp_match_goal ist lz lr lmr
+  | TacMatch {loc;v=(lz,c,lmr)} -> interp_match ist lz c lmr
   | TacArg {loc;v} -> interp_tacarg ist v
   | t ->
     (* Delayed evaluation *)
@@ -1107,8 +1107,8 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
       Profile_ltac.do_profile "eval_tactic:2" trace
         (catch_error_tac_loc loc true trace (interp_atomic ist t))
   | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
-  | TacId [] -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
-  | TacId s ->
+  | TacId {loc; v=[]} -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
+  | TacId {loc; v=s} ->
       let msgnl =
         let open Ftactic in
         interp_message ist s >>= fun msg ->
@@ -1120,7 +1120,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
       Ftactic.run msgnl begin fun msgnl ->
         print msgnl <*> log msgnl <*> break
       end
-  | TacFail (g,n,s) ->
+  | TacFail {loc; v=(g,n,s)} ->
       let msg = interp_message ist s in
       let tac ~info l = Tacticals.New.tclFAIL ~info (interp_int_or_var ist n) l in
       let tac =
@@ -1133,12 +1133,12 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
           tac ~info
       in
       Ftactic.run msg tac
-  | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
-  | TacShowHyps tac ->
+  | TacProgress {loc; v=tac} -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
+  | TacShowHyps {loc; v=tac} ->
          Proofview.V82.tactic begin
            Tacticals.tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
          end
-  | TacAbstract (t,ido) ->
+  | TacAbstract {loc; v=(t,ido)} ->
       let call = LtacMLCall tac in
       let trace = push_trace(None,call) ist in
       Profile_ltac.do_profile "eval_tactic:TacAbstract" trace
@@ -1146,41 +1146,41 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
         (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
       end end)
-  | TacThen (t1,t) ->
+  | TacThen {loc; v=(t1,t)} ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
-  | TacDispatch tl ->
+  | TacDispatch {loc; v=tl} ->
       Proofview.tclDISPATCH (List.map (interp_tactic ist) tl)
-  | TacExtendTac (tf,t,tl) ->
+  | TacExtendTac {loc; v=(tf,t,tl)} ->
       Proofview.tclEXTEND (Array.map_to_list (interp_tactic ist) tf)
                           (interp_tactic ist t)
                           (Array.map_to_list (interp_tactic ist) tl)
-  | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
-  | TacThens3parts (t1,tf,t,tl) ->
+  | TacThens {loc; v=(t1,tl)} -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
+  | TacThens3parts {loc; v=(t1,tf,t,tl)} ->
       Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)
         (Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
-  | TacDo (n,tac) -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
-  | TacTimeout (n,tac) -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
-  | TacTime (s,tac) -> Tacticals.New.tclTIME s (interp_tactic ist tac)
-  | TacTry tac -> Tacticals.New.tclTRY (interp_tactic ist tac)
-  | TacRepeat tac -> Tacticals.New.tclREPEAT (interp_tactic ist tac)
-  | TacOr (tac1,tac2) ->
+  | TacDo {loc; v=(n,tac)} -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
+  | TacTimeout {loc; v=(n,tac)} -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
+  | TacTime {loc; v=(s,tac)} -> Tacticals.New.tclTIME s (interp_tactic ist tac)
+  | TacTry {loc; v=tac} -> Tacticals.New.tclTRY (interp_tactic ist tac)
+  | TacRepeat {loc; v=tac} -> Tacticals.New.tclREPEAT (interp_tactic ist tac)
+  | TacOr {loc; v=(tac1,tac2)} ->
       Tacticals.New.tclOR (interp_tactic ist tac1) (interp_tactic ist tac2)
-  | TacOnce tac ->
+  | TacOnce {loc; v=tac} ->
       Tacticals.New.tclONCE (interp_tactic ist tac)
-  | TacExactlyOnce tac ->
+  | TacExactlyOnce {loc; v=tac} ->
       Tacticals.New.tclEXACTLY_ONCE (interp_tactic ist tac)
-  | TacIfThenCatch (t,tt,te) ->
+  | TacIfThenCatch {loc; v=(t,tt,te)} ->
       Tacticals.New.tclIFCATCH
         (interp_tactic ist t)
         (fun () -> interp_tactic ist tt)
         (fun () -> interp_tactic ist te)
-  | TacOrelse (tac1,tac2) ->
+  | TacOrelse {loc; v=(tac1,tac2)} ->
       Tacticals.New.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
-  | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
-  | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
+  | TacFirst {loc; v=l} -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
+  | TacSolve {loc; v=l} -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
   | TacArg {CAst.loc} -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
-  | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
+  | TacSelect {loc; v=(sel, tac)} -> Goal_select.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias {loc; v=(s,l)} ->
       let alias = Tacenv.interp_alias s in
@@ -1467,7 +1467,8 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
         ; extra = TacStore.set ist.extra f_trace trace
         } in
       let tac = eval_tactic_ist ist t in
-      let dummy = VFun (appl, extract_trace ist, loc, Id.Map.empty, [], TacId []) in
+      let dummy = VFun (appl, extract_trace ist, loc, Id.Map.empty, [],
+        TacId (CAst.make [])) in
       catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
   | _ -> Ftactic.return v
   else Ftactic.return v

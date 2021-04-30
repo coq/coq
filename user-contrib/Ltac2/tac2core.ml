@@ -1551,7 +1551,8 @@ let () =
   let () = Geninterp.register_interp0 wit_ltac2_val interp_fun in
   define1 "ltac1_lambda" valexpr begin fun f ->
     let body = Tacexpr.TacGeneric (Some "ltac2", in_gen (glbwit wit_ltac2_val) ()) in
-    let clos = Tacexpr.TacFun ([Name arg_id], Tacexpr.TacArg (CAst.make body)) in
+    let clos = Tacexpr.TacFun (CAst.make
+        ([Name arg_id], Tacexpr.TacArg (CAst.make body))) in
     let f = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) f in
     let lfun = Id.Map.singleton tac_id f in
     let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun } in
@@ -1583,7 +1584,8 @@ let () =
   let interp ist (ids, tac) = match ids with
   | [] ->
     (* Evaluate the Ltac2 quotation eagerly *)
-    let idtac = Value.of_closure { ist with lfun = Id.Map.empty } (Tacexpr.TacId []) in
+    let idtac = Value.of_closure { ist with lfun = Id.Map.empty }
+        (Tacexpr.TacId (CAst.make [])) in
     let ist = { env_ist = Id.Map.empty } in
     Tac2interp.interp ist tac >>= fun _ ->
     Ftactic.return idtac
@@ -1594,7 +1596,8 @@ let () =
     let nas = List.map (fun id -> Name id) ids in
     let mk_arg id = Tacexpr.Reference (Locus.ArgVar (CAst.make id)) in
     let args = List.map mk_arg ids in
-    let clos = Tacexpr.TacFun (nas, Tacexpr.TacML (CAst.make (ltac2_eval, mk_arg self_id :: args))) in
+    let clos = Tacexpr.TacFun (CAst.make
+        (nas, Tacexpr.TacML (CAst.make (ltac2_eval, mk_arg self_id :: args)))) in
     let self = GTacFun (List.map (fun id -> Name id) ids, tac) in
     let self = Tac2interp.interp_value { env_ist = Id.Map.empty } self in
     let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in

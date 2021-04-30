@@ -80,17 +80,17 @@ GRAMMAR EXTEND Gram
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 (OPT ltac_expr) SEP "|" ->
-        { Array.map (function None -> TacId [] | Some t -> t) (Array.of_list lta) }
+        { Array.map (function None -> TacId (CAst.make ~loc []) | Some t -> t) (Array.of_list lta) }
       | -> { [||] }
     ] ]
   ;
   for_each_goal:
     [ [ ta = ltac_expr; "|"; tg = for_each_goal -> { let (first,last) = tg in (ta::first, last) }
       | ta = ltac_expr; ".."; l = tactic_then_last -> { ([], Some (ta, l)) }
-      | ".."; l = tactic_then_last -> { ([], Some (TacId [], l)) }
+      | ".."; l = tactic_then_last -> { ([], Some (TacId (CAst.make ~loc []), l)) }
       | ta = ltac_expr -> { ([ta], None) }
-      | "|"; tg = for_each_goal -> { let (first,last) = tg in (TacId [] :: first, last) }
-      | -> { ([TacId []], None) }
+      | "|"; tg = for_each_goal -> { let (first,last) = tg in (TacId (CAst.make ~loc []) :: first, last) }
+      | -> { ([TacId (CAst.make ~loc [])], None) }
     ] ]
   ;
   tactic_then_locality: (* [true] for the local variant [TacThens] and [false]
@@ -101,65 +101,66 @@ GRAMMAR EXTEND Gram
     [ "5" RIGHTA
       [ te = binder_tactic -> { te } ]
     | "4" LEFTA
-      [ ta0 = ltac_expr; ";"; ta1 = binder_tactic -> { TacThen (ta0, ta1) }
-      | ta0 = ltac_expr; ";"; ta1 = ltac_expr -> { TacThen (ta0,ta1) }
+      [ ta0 = ltac_expr; ";"; ta1 = binder_tactic -> { TacThen (CAst.make ~loc (ta0, ta1)) }
+      | ta0 = ltac_expr; ";"; ta1 = ltac_expr -> { TacThen (CAst.make ~loc (ta0,ta1)) }
       | ta0 = ltac_expr; ";"; l = tactic_then_locality; tg = for_each_goal; "]" -> {
           let (first,tail) = tg in
           match l , tail with
-          | false , Some (t,last) -> TacThen (ta0,TacExtendTac (Array.of_list first, t, last))
-          | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
-          | false , None -> TacThen (ta0,TacDispatch first)
-          | true  , None -> TacThens (ta0,first) } ]
+          | false , Some (t,last) -> TacThen (CAst.make ~loc (ta0,
+              TacExtendTac (CAst.make ~loc (Array.of_list first, t, last))))
+          | true  , Some (t,last) -> TacThens3parts (CAst.make ~loc (ta0, Array.of_list first, t, last))
+          | false , None -> TacThen (CAst.make ~loc (ta0,TacDispatch (CAst.make ~loc first)))
+          | true  , None -> TacThens (CAst.make ~loc (ta0,first)) } ]
     | "3" RIGHTA
-      [ IDENT "try"; ta = ltac_expr -> { TacTry ta }
-      | IDENT "do"; n = nat_or_var; ta = ltac_expr -> { TacDo (n,ta) }
-      | IDENT "timeout"; n = nat_or_var; ta = ltac_expr -> { TacTimeout (n,ta) }
-      | IDENT "time"; s = OPT string; ta = ltac_expr -> { TacTime (s,ta) }
-      | IDENT "repeat"; ta = ltac_expr -> { TacRepeat ta }
-      | IDENT "progress"; ta = ltac_expr -> { TacProgress ta }
-      | IDENT "once"; ta = ltac_expr -> { TacOnce ta }
-      | IDENT "exactly_once"; ta = ltac_expr -> { TacExactlyOnce ta }
-      | IDENT "infoH"; ta = ltac_expr -> { TacShowHyps ta }
+      [ IDENT "try"; ta = ltac_expr -> { TacTry (CAst.make ~loc ta) }
+      | IDENT "do"; n = nat_or_var; ta = ltac_expr -> { TacDo (CAst.make ~loc (n,ta)) }
+      | IDENT "timeout"; n = nat_or_var; ta = ltac_expr -> { TacTimeout (CAst.make ~loc (n,ta)) }
+      | IDENT "time"; s = OPT string; ta = ltac_expr -> { TacTime (CAst.make ~loc (s,ta)) }
+      | IDENT "repeat"; ta = ltac_expr -> { TacRepeat (CAst.make ~loc ta) }
+      | IDENT "progress"; ta = ltac_expr -> { TacProgress (CAst.make ~loc ta) }
+      | IDENT "once"; ta = ltac_expr -> { TacOnce (CAst.make ~loc ta) }
+      | IDENT "exactly_once"; ta = ltac_expr -> { TacExactlyOnce (CAst.make ~loc ta) }
+      | IDENT "infoH"; ta = ltac_expr -> { TacShowHyps (CAst.make ~loc ta) }
 (*To do: put Abstract in Refiner*)
-      | IDENT "abstract"; tc = NEXT -> { TacAbstract (tc,None) }
+      | IDENT "abstract"; tc = NEXT -> { TacAbstract (CAst.make ~loc (tc,None)) }
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
-        { TacAbstract (tc,Some s) }
-      | IDENT "only"; sel = selector; ":"; ta = ltac_expr -> { TacSelect (sel, ta) } ]
+        { TacAbstract (CAst.make ~loc (tc,Some s)) }
+      | IDENT "only"; sel = selector; ":"; ta = ltac_expr -> { TacSelect (CAst.make ~loc (sel, ta)) } ]
 (*End of To do*)
     | "2" RIGHTA
-      [ ta0 = ltac_expr; "+"; ta1 = binder_tactic -> { TacOr (ta0,ta1) }
-      | ta0 = ltac_expr; "+"; ta1 = ltac_expr -> { TacOr (ta0,ta1) }
+      [ ta0 = ltac_expr; "+"; ta1 = binder_tactic -> { TacOr (CAst.make ~loc (ta0,ta1)) }
+      | ta0 = ltac_expr; "+"; ta1 = ltac_expr -> { TacOr (CAst.make ~loc (ta0,ta1)) }
       | IDENT "tryif" ; ta = ltac_expr ;
               "then" ; tat = ltac_expr ;
-              "else" ; tae = ltac_expr -> { TacIfThenCatch(ta,tat,tae) }
-      | ta0 = ltac_expr; "||"; ta1 = binder_tactic -> { TacOrelse (ta0,ta1) }
-      | ta0 = ltac_expr; "||"; ta1 = ltac_expr -> { TacOrelse (ta0,ta1) } ]
+              "else" ; tae = ltac_expr -> { TacIfThenCatch (CAst.make ~loc (ta,tat,tae)) }
+      | ta0 = ltac_expr; "||"; ta1 = binder_tactic -> { TacOrelse (CAst.make ~loc (ta0,ta1)) }
+      | ta0 = ltac_expr; "||"; ta1 = ltac_expr -> { TacOrelse (CAst.make ~loc (ta0,ta1)) } ]
     | "1" RIGHTA
       [ b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
-          { TacMatchGoal (b,false,mrl) }
+          { TacMatchGoal (CAst.make ~loc (b,false,mrl)) }
       | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->
-          { TacMatchGoal (b,true,mrl) }
+          { TacMatchGoal (CAst.make ~loc (b,true,mrl)) }
       |	b = match_key; c = ltac_expr; "with"; mrl = match_list; "end" ->
-          { TacMatch (b,c,mrl) }
+          { TacMatch (CAst.make ~loc (b,c,mrl)) }
       | IDENT "first" ; "["; l = LIST0 ltac_expr SEP "|"; "]" ->
-          { TacFirst l }
+          { TacFirst (CAst.make ~loc l) }
       | IDENT "solve" ; "["; l = LIST0 ltac_expr SEP "|"; "]" ->
-          { TacSolve l }
-      | IDENT "idtac"; l = LIST0 message_token -> { TacId l }
+          { TacSolve (CAst.make ~loc l) }
+      | IDENT "idtac"; l = LIST0 message_token -> { TacId (CAst.make ~loc l) }
       | g=failkw; n = [ n = nat_or_var -> { n } | -> { fail_default_value } ];
-          l = LIST0 message_token -> { TacFail (g,n,l) }
+          l = LIST0 message_token -> { TacFail (CAst.make ~loc (g,n,l)) }
       | st = simple_tactic -> { st }
-      | a = tactic_value -> { TacArg(CAst.make ~loc a) }
+      | a = tactic_value -> { TacArg (CAst.make ~loc a) }
       | r = reference; la = LIST0 tactic_arg ->
-        { TacArg(CAst.make ~loc @@ TacCall (CAst.make ~loc (r,la))) } ]
+        { TacArg (CAst.make ~loc @@ TacCall (CAst.make ~loc (r,la))) } ]
     | "0"
       [ "("; a = ltac_expr; ")" -> { a }
       | "["; ">"; tg = for_each_goal; "]" -> {
           let (tf,tail) = tg in
           begin match tail with
-          | Some (t,tl) -> TacExtendTac(Array.of_list tf,t,tl)
-          | None -> TacDispatch tf
+          | Some (t,tl) -> TacExtendTac (CAst.make ~loc (Array.of_list tf,t,tl))
+          | None -> TacDispatch (CAst.make ~loc tf)
           end }
       | a = tactic_atom -> { TacArg (CAst.make ~loc a) } ] ]
   ;
@@ -170,10 +171,10 @@ GRAMMAR EXTEND Gram
   binder_tactic:
     [ RIGHTA
       [ "fun"; it = LIST1 input_fun ; "=>"; body = ltac_expr LEVEL "5" ->
-          { TacFun (it,body) }
+          { TacFun (CAst.make ~loc(it,body)) }
       | "let"; isrec = [IDENT "rec" -> { true } | -> { false } ];
           llc = LIST1 let_clause SEP "with"; "in";
-          body = ltac_expr LEVEL "5" -> { TacLetIn (isrec,llc,body) } ] ]
+          body = ltac_expr LEVEL "5" -> { TacLetIn (CAst.make ~loc (isrec,llc,body)) } ] ]
   ;
   (* Tactic arguments to the right of an application *)
   tactic_arg:
@@ -228,7 +229,7 @@ GRAMMAR EXTEND Gram
       | na = ["_" -> { CAst.make ~loc Anonymous } ]; ":="; te = ltac_expr ->
          { (na, arg_of_expr te) }
       | idr = identref; args = LIST1 input_fun; ":="; te = ltac_expr ->
-         { (CAst.map (fun id -> Name id) idr, arg_of_expr (TacFun(args,te))) } ] ]
+         { (CAst.map (fun id -> Name id) idr, arg_of_expr (TacFun (CAst.make ~loc(args,te)))) } ] ]
   ;
   match_pattern:
     [ [ IDENT "context";  oid = OPT Constr.ident;
@@ -283,10 +284,10 @@ GRAMMAR EXTEND Gram
   tacdef_body:
     [ [ name = Constr.global; it=LIST1 input_fun;
         redef = ltac_def_kind; body = ltac_expr ->
-        { if redef then Tacexpr.TacticRedefinition (name, TacFun (it, body))
+        { if redef then Tacexpr.TacticRedefinition (name, TacFun (CAst.make ~loc(it, body)))
           else
             let id = reference_to_id name in
-            Tacexpr.TacticDefinition (id, TacFun (it, body)) }
+            Tacexpr.TacticDefinition (id, TacFun (CAst.make ~loc(it, body))) }
       | name = Constr.global; redef = ltac_def_kind;
         body = ltac_expr ->
         { if redef then Tacexpr.TacticRedefinition (name, body)
@@ -387,8 +388,8 @@ END
 {
 
 let rm_abstract = function
-  | TacAbstract (t,_) -> t, true
-  | TacSolve [TacAbstract (t,_)] -> TacSolve [t], true
+  | TacAbstract { CAst.loc; v=(t,_) } -> t, true
+  | TacSolve { CAst.loc; v=[TacAbstract { CAst.loc=loc2; v=(t,_) }]} -> TacSolve (CAst.make ?loc [t]), true
   | x -> x, false
 let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 
@@ -486,7 +487,7 @@ let pr_tacdef_body env sigma tacdef_body =
   in
   let idl, body =
     match body with
-      | Tacexpr.TacFun (idl,b) -> idl,b
+      | Tacexpr.TacFun {CAst.v=(idl,b)} -> idl,b
       | _ -> [], body in
   id ++
     prlist (function Name.Anonymous -> str " _"

@@ -181,61 +181,58 @@ constraint 'a = <
 and 'a gen_tactic_expr =
   | TacAtom of ('a gen_atomic_tactic_expr) CAst.t
   | TacThen of
-      'a gen_tactic_expr *
-      'a gen_tactic_expr
+      ('a gen_tactic_expr *
+      'a gen_tactic_expr) CAst.t
   | TacDispatch of
-      'a gen_tactic_expr list
+      'a gen_tactic_expr list CAst.t
   | TacExtendTac of
-      'a gen_tactic_expr array *
+      ('a gen_tactic_expr array *
       'a gen_tactic_expr *
-      'a gen_tactic_expr array
+      'a gen_tactic_expr array) CAst.t
   | TacThens of
-      'a gen_tactic_expr *
-      'a gen_tactic_expr list
+      ('a gen_tactic_expr *
+      'a gen_tactic_expr list) CAst.t
   | TacThens3parts of
-      'a gen_tactic_expr *
+      ('a gen_tactic_expr *
       'a gen_tactic_expr array *
       'a gen_tactic_expr *
-      'a gen_tactic_expr array
-  | TacFirst of 'a gen_tactic_expr list
+      'a gen_tactic_expr array) CAst.t
+  | TacFirst of 'a gen_tactic_expr list CAst.t
   | TacComplete of 'a gen_tactic_expr
-  | TacSolve of 'a gen_tactic_expr list
-  | TacTry of 'a gen_tactic_expr
+  | TacSolve of 'a gen_tactic_expr list CAst.t
+  | TacTry of 'a gen_tactic_expr CAst.t
   | TacOr of
-      'a gen_tactic_expr *
-      'a gen_tactic_expr
-  | TacOnce of
-      'a gen_tactic_expr
-  | TacExactlyOnce of
-      'a gen_tactic_expr
+      ('a gen_tactic_expr *
+      'a gen_tactic_expr) CAst.t
+  | TacOnce of 'a gen_tactic_expr CAst.t
+  | TacExactlyOnce of 'a gen_tactic_expr CAst.t
   | TacIfThenCatch of
+      ('a gen_tactic_expr *
       'a gen_tactic_expr *
-      'a gen_tactic_expr *
-      'a gen_tactic_expr
+      'a gen_tactic_expr) CAst.t
   | TacOrelse of
-      'a gen_tactic_expr *
-      'a gen_tactic_expr
-  | TacDo of int or_var * 'a gen_tactic_expr
-  | TacTimeout of int or_var * 'a gen_tactic_expr
-  | TacTime of string option * 'a gen_tactic_expr
-  | TacRepeat of 'a gen_tactic_expr
-  | TacProgress of 'a gen_tactic_expr
-  | TacShowHyps of 'a gen_tactic_expr
-  | TacAbstract of
-      'a gen_tactic_expr * Id.t option
-  | TacId of 'n message_token list
-  | TacFail of global_flag * int or_var * 'n message_token list
-  | TacLetIn of rec_flag *
+      ('a gen_tactic_expr *
+      'a gen_tactic_expr) CAst.t
+  | TacDo of (int or_var * 'a gen_tactic_expr) CAst.t
+  | TacTimeout of (int or_var * 'a gen_tactic_expr) CAst.t
+  | TacTime of (string option * 'a gen_tactic_expr) CAst.t
+  | TacRepeat of 'a gen_tactic_expr CAst.t
+  | TacProgress of 'a gen_tactic_expr CAst.t
+  | TacShowHyps of 'a gen_tactic_expr CAst.t
+  | TacAbstract of ('a gen_tactic_expr * Id.t option) CAst.t
+  | TacId of 'n message_token list CAst.t
+  | TacFail of (global_flag * int or_var * 'n message_token list) CAst.t
+  | TacLetIn of (rec_flag *
       (lname * 'a gen_tactic_arg) list *
-      'a gen_tactic_expr
-  | TacMatch of lazy_flag *
+      'a gen_tactic_expr) CAst.t
+  | TacMatch of (lazy_flag *
       'a gen_tactic_expr *
-      ('p,'a gen_tactic_expr) match_rule list
-  | TacMatchGoal of lazy_flag * direction_flag *
-      ('p,'a gen_tactic_expr) match_rule list
-  | TacFun of 'a gen_tactic_fun_ast
+      ('p,'a gen_tactic_expr) match_rule list) CAst.t
+  | TacMatchGoal of (lazy_flag * direction_flag *
+      ('p,'a gen_tactic_expr) match_rule list) CAst.t
+  | TacFun of 'a gen_tactic_fun_ast CAst.t
   | TacArg of 'a gen_tactic_arg CAst.t
-  | TacSelect of Goal_select.t * 'a gen_tactic_expr
+  | TacSelect of (Goal_select.t * 'a gen_tactic_expr) CAst.t
   (* For ML extensions *)
   | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) CAst.t
   (* For syntax extensions *)

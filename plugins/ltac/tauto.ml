@@ -203,7 +203,7 @@ let reduction_not_iff _ ist =
   let make_reduce c = TacAtom (CAst.make @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
   let tac = match !negation_unfolding with
     | true -> make_reduce [make_unfold "core.not.type"]
-    | false -> TacId []
+    | false -> TacId (CAst.make [])
   in
   eval_tactic_ist ist tac
 
@@ -259,7 +259,8 @@ let register_tauto_tactic tac name0 args =
   let name = { mltac_plugin = tauto_plugin; mltac_tactic = name0; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let () = Tacenv.register_ml_tactic name [| tac |] in
-  let tac = TacFun (ids, TacML (CAst.make (entry, []))) in
+  let tac = TacFun (CAst.make
+    (ids, TacML (CAst.make (entry, [])))) in
   let obj () = Tacenv.register_ltac true true (Id.of_string name0) tac in
   Mltop.declare_cache_obj obj tauto_plugin
 

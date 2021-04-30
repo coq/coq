@@ -321,8 +321,8 @@ let initial_atomic () =
   in
   let iter (s, t) = Tacenv.register_ltac false false (Names.Id.of_string s) t in
   List.iter iter
-      [ "idtac",TacId [];
-        "fail", TacFail(TacLocal,ArgArg 0,[]);
+      [ "idtac",TacId (CAst.make []);
+        "fail", TacFail (CAst.make (TacLocal,ArgArg 0,[]));
         "fresh", TacArg(CAst.make @@ TacFreshId [])
       ]
 
@@ -354,8 +354,10 @@ let initial_tacticals () =
   let varn n = Reference (ArgVar (CAst.make (idn n))) in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
   List.iter iter [
-    "first", TacFun ([Name (idn 0)], TacML (CAst.make (initial_entry "first", [varn 0])));
-    "solve", TacFun ([Name (idn 0)], TacML (CAst.make (initial_entry "solve", [varn 0])));
+    "first", TacFun (CAst.make
+        ([Name (idn 0)], TacML (CAst.make (initial_entry "first", [varn 0]))));
+    "solve", TacFun (CAst.make
+        ([Name (idn 0)], TacML (CAst.make (initial_entry "solve", [varn 0]))));
   ]
 
 let () = Mltop.declare_cache_obj initial_tacticals "ltac_plugin"
