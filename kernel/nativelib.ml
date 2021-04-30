@@ -56,8 +56,9 @@ let include_dirs = ref []
 let get_include_dirs () =
   let base = match !include_dirs with
   | [] ->
-    [ Envars.coqlib () / "../coq-core/kernel"; Envars.coqlib () / "kernel/.kernel.objs/byte/"
-    ; Envars.coqlib () / "../coq-core/library"; Envars.coqlib () / "library/.library.objs/byte/"
+    let coqcorelib = Envars.coqcorelib () in
+    [ coqcorelib / "kernel" ; coqcorelib / "kernel/.kernel.objs/byte/"
+    ; coqcorelib / "library"; coqcorelib / "library/.library.objs/byte/"
     ]
   | _::_ as l -> l
   in
