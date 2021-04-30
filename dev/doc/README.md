@@ -6,28 +6,37 @@ See the first section of [`INSTALL`](../../INSTALL).  Developers are
 recommended to use a recent OCaml version, which they can get through
 opam or Nix, in particular.
 
-## Building `coqtop`
-The general workflow is to first setup a development environment with
-the correct `configure` settings, then hacking on Coq, make-ing, and testing.
+## Building `coqtop` / `coqc` binaries
 
-
-This document will use `$JOBS` to refer to the number of parallel jobs one
-is willing to have with `make`.
-
+The recommended development workflow is to rely on Dune.
+See [`build-system.dune.md`](build-system.dune.md).
+In the example below, you may omit `-f Makefile.dune` by setting
+`COQ_USE_DUNE=1`.
 
 ```
-$ git clone git clone https://github.com/coq/coq.git
+$ git clone https://github.com/coq/coq.git
 $ cd coq
-$ ./configure -profile devel
-$ make -j $JOBS # Make once for `merlin`(autocompletion tool)
+$ make -f Makefile.dune # to get an idea of the available targets
+$ make -f Makefile.dune check # an example of superfast target
+$ dune exec -- dev/shim/coqc-prelude test.v # to run coqc on a test file
+$ make -f Makefile.dune world # build all the standard library
+$ _build/install/default/bin/coqide # run CoqIDE, the whole stdlib is available
+```
+
+Alternatively, one can use the legacy build system (which is now
+hybrid since it relies on Dune for the OCaml parts). If you haven't
+set `COQ_USE_DUNE=1`, then you don't need `-f Makefile.make`.
+
+```
+$ ./configure -profile devel # add -warn-error no if you don't want to
+                             # fail on warnings while building the stlib
+$ make -f Makefile.make -j $JOBS # Make once for `merlin` (autocompletion tool)
 
 <hack>
 
-$ make -j $JOBS states # builds just enough to run coqtop
-$ bin/coqtop -compile <test_file_name.v>
+$ make -f Makefile.make -j $JOBS states # builds just enough to run coqtop
+$ bin/coqc <test_file_name.v>
 <goto hack until stuff works>
-
-<run test-suite>
 ```
 
 To learn how to run the test suite, you can read
