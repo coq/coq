@@ -115,6 +115,7 @@ git_download()
 
   if [ -d "$dest" ]; then
     echo "Warning: download and unpacking of $project skipped because $dest already exists."
+    cd "$dest"
   elif [[ $ov_url ]] || [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
     git clone "$giturl" "$dest"
     cd "$dest"
