@@ -48,7 +48,10 @@ call coq_platform_make_windows.bat ^
   -extent=i ^
   -parallel=p ^
   -jobs=2 ^
-  -switch=d || GOTO ErrorCopyLogFilesAndExit
+  -switch=d ^
+  -override-dev-pkg="coq=%CI_PROJECT_URL%/-/archive/%CI_COMMIT_SHA%/coq-%CI_COMMIT_SHA%.tar.gz" ^
+  -override-dev-pkg="coqide=%CI_PROJECT_URL%/-/archive/%CI_COMMIT_SHA%/coq-%CI_COMMIT_SHA%.tar.gz" ^
+  || GOTO ErrorCopyLogFilesAndExit
 
 cd ..
 
