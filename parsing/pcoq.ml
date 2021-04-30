@@ -191,9 +191,9 @@ let eoi_entry en =
 (* Parse a string, does NOT check if the entire string was read
    (use eoi_entry) *)
 
-let parse_string f ?source x =
+let parse_string f ?loc x =
   let strm = Stream.of_string x in
-  Entry.parse f (Parsable.make ?source strm)
+  Entry.parse f (Parsable.make ?loc strm)
 
 (* universes not used by Coq build but still used by some plugins *)
 type gram_universe = string

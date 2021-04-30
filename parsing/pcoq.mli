@@ -119,7 +119,7 @@ end
 
 (** Parse a string *)
 
-val parse_string : 'a Entry.t -> ?source:Loc.source -> string -> 'a
+val parse_string : 'a Entry.t -> ?loc:Loc.t -> string -> 'a
 val eoi_entry : 'a Entry.t -> 'a Entry.t
 
 type gram_universe [@@deprecated "Deprecated in 8.13"]

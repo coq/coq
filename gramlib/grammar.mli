@@ -27,7 +27,7 @@ module type S = sig
 
   module Parsable : sig
     type t
-    val make : ?source:Loc.source -> char Stream.t -> t
+    val make : ?loc:Loc.t -> char Stream.t -> t
     val comments : t -> ((int * int) * string) list
   end
 
