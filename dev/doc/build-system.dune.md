@@ -14,6 +14,11 @@ Usually, using the latest version of Dune is recommended, see the
 first line of the `dune-project` file for the minimum required
 version.
 
+If you set `COQ_USE_DUNE=1`, then you won't need to explicitly add `-f
+Makefile.dune` in any of the commands below. However, you will then
+need an explicit `-f Makefile.make` if you want to use one of the
+legacy targets.
+
 It is strongly recommended that you use the helper targets available
 in `Makefile.dune`, `make -f Makefile.dune` will display help. Note
 that dune will call configure for you if needed, so no need to call
@@ -30,7 +35,7 @@ that dune will call configure for you if needed, so no need to call
 
 `dune build @install` will build all the public Coq artifacts; `dune
 build` will build all the targets in the workspace, including tests
-and documentations.
+and documentations (so this is usually not what you want).
 
 Dune places build artifacts in a separate directory `_build/$context`;
 usual `context` is `default`; dune also produces an "install" layout
@@ -83,6 +88,10 @@ very fast while developing.
 Note that for a fast developer build of ML files, the `check` target
 is faster, as it doesn't link the binaries and uses the non-optimizing
 compiler.
+
+If you have built the full standard library with the `world` target,
+then you should be able to run the commands from the
+`_build/install/default/bin` directories (including `coq_makefile`).
 
 ## Targets
 
