@@ -35,7 +35,6 @@ SRC_SUBDIRS       := $(COQMF_SRC_SUBDIRS)
 COQLIBS           := $(COQMF_COQLIBS)
 COQLIBS_NOML      := $(COQMF_COQLIBS_NOML)
 CMDLINE_COQLIBS   := $(COQMF_CMDLINE_COQLIBS)
-LOCAL             := $(COQMF_LOCAL)
 COQLIB            := $(COQMF_COQLIB)
 COQCORELIB        := $(COQMF_COQCORELIB)
 DOCDIR            := $(COQMF_DOCDIR)
@@ -826,7 +825,6 @@ opt:
 printenv::
 	$(warning printenv is deprecated)
 	$(warning write extensions in @LOCAL_FILE@ or include @CONF_FILE@)
-	@echo 'LOCAL = $(LOCAL)'
 	@echo 'COQLIB = $(COQLIB)'
 	@echo 'COQCORELIB = $(COQCORELIB)'
 	@echo 'DOCDIR = $(DOCDIR)'

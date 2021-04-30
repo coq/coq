@@ -27,14 +27,21 @@ HIDE := $(if $(VERBOSE),,@)
 #
 # Note, we can use this as _build/default , but unfortunately dune
 # will remove the .vos files as they are not recognized as targets
-VO_OUT_DIR=_build_vo/default/
+BUILD_OUT_DIR=_build_vo/default/
+VO_OUT_DIR=$(BUILD_OUT_DIR)/lib/coq/
 
-$(VO_OUT_DIR):
-	$(SHOW)'MKDIR     BUILD_VO'
-	$(HIDE)mkdir -p $@
-	$(HIDE)ln -s $(shell pwd)/_build/default/plugins/ $@
-	$(HIDE)ln -s $(shell pwd)/_build/default/tools/ $@
-	$(HIDE)ln -s $(shell pwd)/_build/default/kernel/ $@
+LEGACY_BIN_DIR=bin
+
+$(BUILD_OUT_DIR) $(VO_OUT_DIR):
+	$(SHOW)'MKDIR     BUILD_OUT'
+	$(HIDE)mkdir -p $(BUILD_OUT_DIR)
+	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq
+	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(LEGACY_BIN_DIR)
+	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(BUILD_OUT_DIR)/bin
+	$(HIDE)ln -s $(shell pwd)/_build/default/plugins/ $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/default/tools/ $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/default/kernel/ $(BUILD_OUT_DIR)/lib/coq-core
 
 ###########################################################################
 # Executables

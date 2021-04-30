@@ -139,5 +139,8 @@ ide/coqide/index_urls.txt
 ide/coqide/coqide.keys
 .dune.lock
 
+# bin compat directory, should be eventually be phased out
+bin
+
 # To remove when Dune 2.8 is the minimum version
 .merlin

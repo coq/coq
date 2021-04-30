@@ -7,8 +7,17 @@
 - Dune is now used to build the OCaml parts of Coq, thus:
 
   + ML object files live now in `_build`, as standard in Dune world
-  + .vo files live now in `_build_vo`
-  + you can build object files using `make _build/install/default/bin/coqc`.
+  + you can build object files using `make
+    _build/install/default/bin/coqc`, thanks to our implementation of
+    a make-Dune bridge
+  + .vo files live now in `_build_vo/`
+  + `_build_vo` follows a standard "Coq install layout", that is to say:
+    * `_build_vo/default/bin`: coq-core binaries
+    * `_build_vo/default/lib/coq-core`: coq-core libraries
+    * `_build_vo/default/lib/coq`: coq libraries, such as stdlib
+    This greatly simplifies layout as tooling can assume that
+    `_build_vo/default` has the structure of an installed Coq, thus
+    making the `-local` flag obsolete.
   + Some developer targets have changed or have been removed in favor
     of Dune's counterparts, for example `byte` and `install-byte` are
     no longer needed.
