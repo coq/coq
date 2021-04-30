@@ -880,7 +880,7 @@ let rules = [
 ] in
 
 Hook.set Tac2entries.register_constr_quotations begin fun () ->
-  Pcoq.grammar_extend Pcoq.Constr.term {pos=Some (Gramlib.Gramext.Level "0"); data=[(None, None, rules)]}
+  Pcoq.grammar_extend Pcoq.Constr.term (Pcoq.Reuse (Some"0", rules))
 end
 
 }
@@ -924,10 +924,6 @@ VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
 END
 
 {
-
-let () =
-  let dummy = (None, None, []) in
-  Pcoq.grammar_extend tac2mode {pos=None; data=[dummy]}
 
 let _ = Pvernac.register_proof_mode "Ltac2" tac2mode
 

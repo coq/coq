@@ -264,11 +264,26 @@ let print_rule fmt r =
   let pr_prd fmt prd = print_list fmt print_prod prd in
   fprintf fmt "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
 
-let print_entry fmt e =
-  let print_position_opt fmt pos = print_opt fmt print_position pos in
+let print_entry fmt e = match e.gentry_pos with
+| Some (Level _ | Top as pos) ->
+  let pos = match pos with Level n -> Some n | Top -> None | _ -> assert false in
+  let rules = match e.gentry_rules with
+  | [r] -> List.rev r.grule_prods
+  | _ -> assert false
+  in
+  let pr_pos fmt pos = print_opt fmt print_string pos in
+  let pr_prd fmt prd = print_list fmt print_prod prd in
+  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[(Pcoq.Reuse (%a, %a))@]@]@ in@ "
+    e.gentry_name pr_pos pos pr_prd rules
+| None | Some (First | Last | Before _ | After _) as pos ->
+  let pos = match pos with None -> First | Some p -> p in
   let print_rules fmt rules = print_list fmt print_rule rules in
-  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[{ Pcoq.pos=%a; data=%a}@]@]@ in@ "
-    e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
+  let pr_check fmt = function
+  | None -> fprintf fmt "let () =@ @[assert@ (Pcoq.Entry.is_empty@ %s)@]@ in@ " e.gentry_name
+  | Some _ -> fprintf fmt ""
+  in
+  fprintf fmt "%alet () =@ @[Pcoq.grammar_extend@ %s@ @[(Pcoq.Fresh@ (%a, %a))@]@]@ in@ "
+    pr_check e.gentry_pos e.gentry_name print_position pos print_rules e.gentry_rules
 
 let print_ast fmt ext =
   let () = fprintf fmt "let _ = @[" in

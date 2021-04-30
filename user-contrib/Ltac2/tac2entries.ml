@@ -683,8 +683,8 @@ let perform_notation syn st =
     CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
   let rule = Pcoq.Production.make rule (act mk) in
-  let pos = Some (Gramlib.Gramext.Level (string_of_int syn.synext_lev)) in
-  let rule = {Pcoq.pos; data = [(None, None, [rule])] } in
+  let pos = Some (string_of_int syn.synext_lev) in
+  let rule = Pcoq.Reuse (pos, [rule]) in
   match get_reinit syn.synext_lev with
   | None ->
     ([Pcoq.ExtendRule (Pltac.ltac2_expr, rule)], st)

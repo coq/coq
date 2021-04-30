@@ -112,11 +112,11 @@ let interp_entry_name interp symb =
 
 let get_tactic_entry n =
   if Int.equal n 0 then
-    Pltac.simple_tactic, Some Gramlib.Gramext.Top
+    Pltac.simple_tactic, None
   else if Int.equal n 5 then
-    Pltac.binder_tactic, Some Gramlib.Gramext.Top
+    Pltac.binder_tactic, None
   else if 1<=n && n<5 then
-    Pltac.ltac_expr, Some (Gramlib.Gramext.Level (string_of_int n))
+    Pltac.ltac_expr, Some (string_of_int n)
   else
     user_err Pp.(str ("Invalid Tactic Notation level: "^(string_of_int n)^"."))
 
@@ -188,7 +188,7 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  let r = ExtendRule (entry, { pos; data=[(None, None, [rules])]}) in
+  let r = ExtendRule (entry, Pcoq.Reuse (pos, [rules])) in
   ([r], state)
 
 let tactic_grammar =
@@ -392,8 +392,7 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
 let ltac_quotations = ref String.Set.empty
 
 let () =
-  let dummy = (None, None, []) in
-  Pcoq.grammar_extend Pltac.tactic_value {pos=None; data=[dummy]}
+  Pcoq.grammar_extend Pltac.tactic_value (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, []]))
 
 let create_ltac_quotation name cast (e, l) =
   let () =
@@ -405,9 +404,6 @@ let create_ltac_quotation name cast (e, l) =
   | None -> Pcoq.Symbol.nterm e
   | Some l -> Pcoq.Symbol.nterml e (string_of_int l)
   in
-(*   let level = Some "1" in *)
-  let level = None in
-  let assoc = None in
   let rule =
     Pcoq.(
       Rule.next
@@ -423,8 +419,8 @@ let create_ltac_quotation name cast (e, l) =
         (Symbol.token (CLexer.terminal ")")))
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
-  let gram = (level, assoc, [Pcoq.Production.make rule action]) in
-  Pcoq.grammar_extend Pltac.tactic_value {pos=Some Gramlib.Gramext.Top; data=[gram]}
+  let gram = [Pcoq.Production.make rule action] in
+  Pcoq.grammar_extend Pltac.tactic_value (Pcoq.Reuse (None, gram))
 
 (** Command *)
 
@@ -909,7 +905,7 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     e
   | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry2 name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e {pos=None; data=[(None, None, rules)]} in
+    let () = Pcoq.grammar_extend e (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in
