@@ -23,8 +23,8 @@ $ make -f Makefile.dune world # build all the standard library
 $ _build/install/default/bin/coqide # run CoqIDE, the whole stdlib is available
 ```
 
-Alternatively, one can use the legacy build system (which is now
-hybrid since it relies on Dune for the OCaml parts). If you haven't
+Alternatively, you can use the legacy build system (which is now
+a hybrid since it relies on Dune for the OCaml parts). If you haven't
 set `COQ_USE_DUNE=1`, then you don't need `-f Makefile.make`.
 
 ```
