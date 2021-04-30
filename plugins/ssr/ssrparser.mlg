@@ -102,7 +102,7 @@ let register_ssrtac name f prods =
     | TacTerm s -> None
     | TacNonTerm (_, (_, ido)) -> ido in
   let ids = List.map_filter get_id prods in
-  let tac = TacML (CAst.make (ssrtac_entry name, List.map map ids)) in
+  let tac = CAst.make (TacML (ssrtac_entry name, List.map map ids)) in
   let key = KerName.make path (Label.make ("ssrparser_" ^ name)) in
   let body = Tacenv.{ alias_args = ids; alias_body = tac; alias_deprecation = None } in
   let parule = {
@@ -688,7 +688,7 @@ let get_intro_id = function
   | _ -> assert false
 
 let rec add_intro_pattern_hyps ipat hyps =
-  let {CAst.loc=loc;v=ipat} = ipat in
+  let {CAst.loc; v=ipat} = ipat in
   match ipat with
   | IntroNaming (IntroIdentifier id) ->
     if not_section_id id then SsrHyp (loc, id) :: hyps else
@@ -1599,12 +1599,12 @@ let test_ssrseqvar =
     lk_ident_except sq_brace_tacnames >> (lk_kws ["[";"first";"last"])
   end
 
-let swaptacarg (loc, b) = (b, []), Some (TacId [])
+let swaptacarg (loc, b) = (b, []), Some (CAst.make ~loc (TacId []))
 
 let check_seqtacarg dir arg = match snd arg, dir with
-  | ((true, []), Some (TacAtom { CAst.loc })), L2R ->
+  | ((true, []), Some { CAst.loc; v=(TacAtom _)}), L2R ->
     CErrors.user_err ?loc (str "expected \"last\"")
-  | ((false, []), Some (TacAtom { CAst.loc })), R2L ->
+  | ((false, []), Some { CAst.loc; v=(TacAtom _) }), R2L ->
     CErrors.user_err ?loc (str "expected \"first\"")
   | _, _ -> arg
 
@@ -1696,7 +1696,7 @@ let _ = add_internal_name (is_tagged perm_tag)
 {
 
   let ssrtac_expr ?loc key args =
-    TacAlias (CAst.make ?loc (key, (List.map (fun x -> Tacexpr.TacGeneric (None, x)) args)))
+    CAst.make ?loc (TacAlias (key, (List.map (fun x -> Tacexpr.TacGeneric (None, x)) args)))
 
 let mk_non_term wit id =
   let open Pptactic in
@@ -1739,7 +1739,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
   ssrparentacarg: [[ "("; tac = ltac_expr; ")" -> { CAst.make ~loc (Tacexp tac) } ]];
-  ltac_expr: LEVEL "0" [[ arg = ssrparentacarg -> { TacArg arg } ]];
+  ltac_expr: LEVEL "0" [[ arg = ssrparentacarg -> { CAst.make ~loc (TacArg CAst.(arg.v)) } ]];
 END
 
 (** The internal "done" and "ssrautoprop" tactics. *)
@@ -1760,7 +1760,7 @@ let ssrautoprop =
       try Tacenv.locate_tactic (qualid_of_ident (Id.of_string "ssrautoprop"))
       with Not_found -> Tacenv.locate_tactic (ssrqid "ssrautoprop") in
     let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
-    eval_tactic (Tacexpr.TacArg tacexpr)
+    eval_tactic (CAst.make @@ Tacexpr.TacArg CAst.(tacexpr.v))
   with Not_found -> Auto.full_trivial []
   end
 
@@ -1875,14 +1875,14 @@ GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
   ssr_first: [
     [ tac = ssr_first; ipats = ssrintros_ne -> { tclintros_expr ~loc tac ipats }
-    | "["; tacl = LIST0 ltac_expr SEP "|"; "]" -> { TacFirst tacl }
+    | "["; tacl = LIST0 ltac_expr SEP "|"; "]" -> { CAst.make ~loc (TacFirst tacl) }
     ] ];
   ssr_first_else: [
-    [ tac1 = ssr_first; tac2 = ssrorelse -> { TacOrelse (tac1, tac2) }
+    [ tac1 = ssr_first; tac2 = ssrorelse -> { CAst.make ~loc (TacOrelse (tac1, tac2)) }
     | tac = ssr_first -> { tac } ]];
   ltac_expr: LEVEL "4" [ LEFTA
     [ tac1 = ltac_expr; ";"; IDENT "first"; tac2 = ssr_first_else ->
-      { TacThen (tac1, tac2) }
+      { CAst.make ~loc (TacThen (tac1, tac2)) }
     | tac = ltac_expr; ";"; IDENT "first"; arg = ssrseqarg ->
       { tclseq_expr ~loc tac L2R arg }
     | tac = ltac_expr; ";"; IDENT "last"; arg = ssrseqarg ->
@@ -2490,7 +2490,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
   ltac_expr: LEVEL "3"
     [ RIGHTA [ IDENT "abstract"; gens = ssrdgens ->
-               { TacML (CAst.make ~loc (
+               { CAst.make ~loc (TacML (
                      ssrtac_entry "abstract", [Tacexpr.TacGeneric (None, Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)]))
                  } ]];
 END

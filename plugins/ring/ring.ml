@@ -125,10 +125,11 @@ let closed_term_ast =
   } in
   fun l ->
   let l = List.map (fun gr -> ArgArg(Loc.tag gr)) l in
-  TacFun([Name(Id.of_string"t")],
-  TacML(CAst.make (tacname,
-  [TacGeneric (None, Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (DAst.make @@ GVar(Id.of_string"t"),None));
-   TacGeneric (None, Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)])))
+  CAst.make (TacFun
+    ([Name(Id.of_string"t")],
+    CAst.make (TacML (tacname,
+    [TacGeneric (None, Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (DAst.make @@ GVar(Id.of_string"t"),None));
+     TacGeneric (None, Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)]))))
 (*
 let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 *)
@@ -159,7 +160,7 @@ let decl_constant na suff univs c =
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
-  TacArg(CAst.make @@ TacCall (CAst.make (ArgArg(Loc.tag @@ Lazy.force tac),args)))
+  CAst.make @@ TacArg (TacCall (CAst.make (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
 let dummy_goal env sigma =
   let (gl,_,sigma) =
@@ -196,8 +197,8 @@ let exec_tactic env sigma n f args =
   (* Build the getter *)
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
-  let get_res = TacML (CAst.make (get_res, [TacGeneric (None, n)])) in
-  let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
+  let get_res = CAst.make (TacML (get_res, [TacGeneric (None, n)])) in
+  let getter = Tacexp (CAst.make (TacFun (List.map (fun n -> Name n) lid, get_res))) in
   (* Evaluate the whole result *)
   let gl = dummy_goal env sigma in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
@@ -504,7 +505,7 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
         closed_term_ast (List.map Smartlocate.global_with_alias lc)
     | None ->
         let t = ArgArg(Loc.tag @@ Lazy.force ltac_inv_morph_nothing) in
-              TacArg(CAst.make (TacCall(CAst.make (t,[]))))
+              CAst.make (TacArg (TacCall (CAst.make (t,[]))))
 
 let make_hyp env sigma c =
   let t = Retyping.get_type_of env sigma c in
@@ -529,7 +530,7 @@ let interp_power env sigma pow =
   | None ->
       let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
       let sigma, c = plapp sigma coq_None [|carrier|] in
-      sigma, (TacArg(CAst.make (TacCall(CAst.make (t,[])))), c)
+      sigma, (CAst.make (TacArg (TacCall (CAst.make (t,[])))), c)
   | Some (tac, spec) ->
       let tac =
         match tac with
@@ -582,11 +583,11 @@ let add_theory0 env sigma name rth eqth morphth cst_tac (pre,post) power sign di
   let pretac =
     match pre with
         Some t -> Tacintern.glob_tactic t
-      | _ -> TacId [] in
+      | _ -> CAst.make (TacId []) in
   let posttac =
     match post with
         Some t -> Tacintern.glob_tactic t
-      | _ -> TacId [] in
+      | _ -> CAst.make (TacId []) in
   let r = EConstr.to_constr sigma r in
   let req = EConstr.to_constr sigma req in
   let sth = EConstr.to_constr sigma sth in
@@ -675,8 +676,8 @@ let ltac_ring_structure e =
   let pow_tac = tacarg e.ring_pow_tac in
   let lemma1 = carg e.ring_lemma1 in
   let lemma2 = carg e.ring_lemma2 in
-  let pretac = tacarg (TacFun([Anonymous],e.ring_pre_tac)) in
-  let posttac = tacarg (TacFun([Anonymous],e.ring_post_tac)) in
+  let pretac =  tacarg (CAst.make (TacFun ([Anonymous],e.ring_pre_tac))) in
+  let posttac = tacarg (CAst.make (TacFun ([Anonymous],e.ring_post_tac))) in
   [req;sth;ext;morph;th;cst_tac;pow_tac;
    lemma1;lemma2;pretac;posttac]
 
@@ -906,11 +907,11 @@ let add_field_theory0 env sigma name fth eqth morphth cst_tac inj (pre,post) pow
   let pretac =
     match pre with
         Some t -> Tacintern.glob_tactic t
-      | _ -> TacId [] in
+      | _ -> CAst.make (TacId []) in
   let posttac =
     match post with
         Some t -> Tacintern.glob_tactic t
-      | _ -> TacId [] in
+      | _ -> CAst.make (TacId []) in
   let r = EConstr.to_constr sigma r in
   let req = EConstr.to_constr sigma req in
   let _ =
@@ -968,8 +969,8 @@ let ltac_field_structure e =
   let field_simpl_eq_ok = carg e.field_simpl_eq_ok in
   let field_simpl_eq_in_ok = carg e.field_simpl_eq_in_ok in
   let cond_ok = carg e.field_cond in
-  let pretac = tacarg (TacFun([Anonymous],e.field_pre_tac)) in
-  let posttac = tacarg (TacFun([Anonymous],e.field_post_tac)) in
+  let pretac =  tacarg (CAst.make (TacFun ([Anonymous],e.field_pre_tac))) in
+  let posttac = tacarg (CAst.make (TacFun ([Anonymous],e.field_post_tac))) in
   [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
    field_simpl_eq_in_ok;cond_ok;pretac;posttac]
 
