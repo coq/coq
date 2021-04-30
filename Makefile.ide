@@ -19,6 +19,15 @@ IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png) $(IDEBINDINGS)
 
 .PHONY: coqide
 
+ALL_IDE_FILES=$(shell find ide/coqide -name '*.ml' -or -name '*.mli' -or -name '*.mll' -or -name '*.c' -or -name '*.h')
+PROTO_IDE_FILES=$(shell find ide/coqide/protocol -name '*.ml' -or -name '*.mli' -or -name '*.mll' -or -name '*.c' -or -name '*.h')
+
+# We depend on all ide source files to trigger the dune rebuild
+$(COQIDE): $(ALL_IDE_FILES)
+
+# For idetop we depend on idetop.ml + all source files as it links to Coq
+$(IDETOP): $(ALL_ML_SOURCE_FILES) $(PROTO_IDE_FILES) ide/coqide/idetop.ml
+
 ifeq ($(HASCOQIDE),no)
 coqide:
 else
