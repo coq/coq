@@ -50,7 +50,7 @@ Require Import ssreflect ssrfun.
                             altP (idP my_formula) but circumventing the
                             dependent index capture issue; destructing
                             boolP my_formula generates two subgoals with
-                            assumptions my_formula and ~~ myformula. As
+                            assumptions my_formula and ~~ my_formula. As
                             with altP, my_formula must be an application.
             \unless C, P <-> we can assume property P when a something that
                             holds under condition C (such as C itself).
@@ -108,7 +108,7 @@ Require Import ssreflect ssrfun.
                pred_sort == the predType >-> Type projection; pred_sort is
                             itself a Coercion target class. Declaring a
                             coercion to pred_sort is an alternative way of
-                            equiping a type with a predType structure, which
+                            equipping a type with a predType structure, which
                             interoperates better with coercion subtyping.
                             This is used, e.g., for finite sets, so that finite
                             groups inherit the membership operation by
@@ -186,7 +186,7 @@ Require Import ssreflect ssrfun.
      expand manually).
    Let A : applicative_pred T := #[#pred x | ... #]#.
      This cast causes inE to turn x \in A into the applicative A x form;
-     A will then have to unfolded explicitly with the /A rule. This will
+     A will then have to be unfolded explicitly with the /A rule. This will
      also apply to any definition that reduces to A (e.g., Let B := A).
    Canonical A_app_pred := ApplicativePred A.
      This declaration, given after definition of A, similarly causes inE to
@@ -288,7 +288,7 @@ Require Import ssreflect ssrfun.
    N or n -- boolean negation, as in andbN : a && (~~ a) = false.
    P -- a characteristic property, often a reflection lemma, as in
         andP : reflect (a /\ b) (a && b).
-   r -- a right-hand operation, as orb_andr : rightt_distributive orb andb.
+   r -- a right-hand operation, as orb_andr : right_distributive orb andb.
    T or t -- boolean truth, as in andbT: right_id true andb.
    U -- predicate union, as in predU.
    W -- weakening, as in in1W : (forall x, P) -> {in D, forall x, P}.        **)
@@ -1174,7 +1174,7 @@ Ltac bool_congr :=
  Furthermore, we ensure pA is always either A or toP .... A where toP ... is
  the expansion of @topred T pT, and toP is declared as a Coercion, so pA will
  _display_ as A in either case, and the instances of @mem T (predPredType T) pA
- appearing in the premises or right-hand side of a generic lemma parametrized
+ appearing in the premises or right-hand side of a generic lemma parameterized
  by ?P will be indistinguishable from @mem T pT A.
    Users should take care not to inadvertently "strip" (mem A) down to the
  coerced A, since this will expose the internal toP coercion: Coq could then
@@ -1231,7 +1231,7 @@ Canonical boolfunPredType T := PredType (@id (T -> bool)).
 Set Warnings "redundant-canonical-projection".
 
 (** The type of abstract collective predicates.
- While {pred T} is contertible to pred T, it presents the pred_sort coercion
+ While {pred T} is convertible to pred T, it presents the pred_sort coercion
  class, which crucially does _not_ coerce to Funclass. Term whose type P coerces
  to {pred T} cannot be applied to arguments, but they _can_ be used as if P
  had a canonical predType instance, as the coercion will be inserted if the
@@ -1244,8 +1244,8 @@ Set Warnings "redundant-canonical-projection".
  main drawback of implementing predType by coercion in this way is that the
  type of the value must be known when the unification constraint is imposed:
  if we only register the constraint and then later discover later that the
- expression had type P it will be too late of insert a coercion, whereas a
- canonical instance of predType fo P would have solved the deferred constraint.
+ expression had type P it will be too late to insert a coercion, whereas a
+ canonical instance of predType for P would have solved the deferred constraint.
    Finally, definitions, lemmas and sections should use type {pred T} for
  their generic collective type parameters, as this will make it possible to
  apply such definitions and lemmas directly to values of types that implement
@@ -1286,7 +1286,7 @@ Notation "[ 'pred' x : T | E1 & E2 ]" :=
  and functors, which we do below.
    In addition we also give a predType instance for simpl_pred, which will
  be preferred to the {pred T} coercion to solve simpl_pred T =~= pred_sort ?pT
- constraints; not however that the pred_of_simpl coercion _will_ be used
+ constraints; note however that the pred_of_simpl coercion _will_ be used
  when a simpl_pred T is passed as a {pred T}, since the simplPredType T
  structure for simpl_pred T is _not_ convertible to predPredType T.  **)
 
@@ -1322,7 +1322,7 @@ Notation "{ : T }" := (T%type : predArgType) : type_scope.
 (** Boolean relations.
  Simplifying relations follow the coding pattern of 2-argument simplifying
  functions: the simplifying type constructor is applied to the _last_
- argument. This design choice will let the in_simpl componenent of inE expand
+ argument. This design choice will let the in_simpl component of inE expand
  membership in simpl_rel as well. We provide an explicit coercion to rel T
  to avoid eta-expansion during coercion; this coercion self-simplifies so it
  should be invisible.
@@ -1368,7 +1368,7 @@ Variant mem_pred T := Mem of pred T.
   be used if a mem_pred T is used as a {pred T}, which is desirable as it
   will avoid a redundant mem in a collective, e.g., passing (mem A) to a lemma
   exception a generic collective predicate p : {pred T} and premise x \in P
-  will display a subgoal x \in A rathere than x \in mem A.
+  will display a subgoal x \in A rather than x \in mem A.
     Conversely, pred_of_mem will _not_ if it is used id (mem A) is used
   applicatively or as a pred T; there the simpl_of_mem coercion defined below
   will be used, resulting in a subgoal that displays as mem A x by simplifies
@@ -1432,10 +1432,10 @@ Notation "[ 'rel' x y 'in' A ]" := [rel x y in A & A] : fun_scope.
 
 (** Aliases of pred T that let us tag instances of simpl_pred as applicative
   or collective, via bespoke coercions. This tagging will give control over
-  the simplification behaviour of inE and othe rewriting lemmas below.
+  the simplification behaviour of inE and other rewriting lemmas below.
     For this control to work it is crucial that collective_of_simpl _not_
   be convertible to either applicative_of_simpl or pred_of_simpl. Indeed
-  they differ here by a commutattive conversion (of the match and lambda).
+  they differ here by a commutative conversion (of the match and lambda).
  **)
 Definition applicative_pred T := pred T.
 Definition collective_pred T := pred T.

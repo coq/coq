@@ -64,7 +64,7 @@ Declare ML Module "ssreflect_plugin".
   - top of the stack actions:
     => /[apply]     := => hyp {}/hyp
     => /[swap]      := => x y; move: y x
-                      (also swap and perserves let bindings)
+                      (also swap and preserves let bindings)
     => /[dup]       := => x; have copy := x; move: copy x
                       (also copies and preserves let bindings)
 
@@ -294,7 +294,7 @@ Notation " #[# 'the' sT 'of' v : 'Type' #]#" := (@get Type sT v _ _)
  my_type doesn't effectively inherit the struct structure from a_type. Our
  solution is to redeclare the instance as follows
    Canonical my_type_struct := Eval hnf in #[#struct of my_type#]#.
- The special notation #[#str of _ #]# must be defined for each Strucure "str"
+ The special notation #[#str of _ #]# must be defined for each Structure "str"
  with constructor "Str", typically as follows
    Definition clone_str s :=
       let: Str _ x y ... z := s return {type of Str for s} -> str in
@@ -620,7 +620,7 @@ Module NonPropType.
  and then (8a) is solved by the check instance, yielding ?test := test_Prop T,
  and completing the solution of (2a), and _committing_ to it. But now (3) is
  inconsistent with (9a), and this makes the entire problem (1) fails.
-   If on the othe hand T does not have sort Prop then (7a) fails and the
+   If on the other hand T does not have sort Prop then (7a) fails and the
  unification resorts to delta expanding (2a), which gives
   (2b) @condition (result ?S) (test ?S) =~= tt
  which is then reduced, using the test_negative instance, to
@@ -628,7 +628,7 @@ Module NonPropType.
   (8b)                          test ?S =~= test_negative
  Both are solved using the check default instance, as in the (2a) branch, giving
   (9b)                               ?S := @check false test_negative ?frame
- Then (3) and (4) are similarly soved using check, giving the final assignment
+ Then (3) and (4) are similarly solved using check, giving the final assignment
   (9)                                ?S := notProp T
  Observe that we _must_ perform the actual test unification on the arguments
  of the initial canonical instance, and not on the instance itself as we do

@@ -801,13 +801,3 @@ Definition interchange op1 op2 :=
 End SopSisS.
 
 End OperationProperties.
-
-
-
-
-
-
-
-
-
-
