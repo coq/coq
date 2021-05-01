@@ -75,6 +75,19 @@ Lemma eqb_neq x y : (x =? y)%string = false <-> x <> y. Proof. t_eqb. Qed.
 Lemma eqb_compat: Morphisms.Proper (Morphisms.respectful eq (Morphisms.respectful eq eq)) eqb.
 Proof. t_eqb. Qed.
 
+(** *** Compare strings lexicographically *)
+
+Fixpoint leb (s1 s2 : string) : bool :=
+  match s1, s2 with
+  | EmptyString, _ => true
+  | String _ _, EmptyString => false
+  | String c1 s1', String c2 s2' =>
+    if Ascii.eqb c1 c2 then leb s1' s2'
+    else Ascii.ltb c1 c2
+  end.
+
+Infix "<=?" := leb : string_scope.
+
 (** *** Concatenation of strings *)
 
 Reserved Notation "x ++ y" (right associativity, at level 60).
