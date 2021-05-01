@@ -89,7 +89,7 @@ include Makefile.install
 
 world: coq coqide documentation revision
 byte: world
-coq: coqlib coqbinaries tools
+coq: coqlib coqbinaries tools $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
 
 world.timing.diff: coq.timing.diff
 coq.timing.diff: coqlib.timing.diff
