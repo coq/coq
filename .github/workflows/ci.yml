@@ -3,29 +3,6 @@ name: GitHub CI
 on: [push, pull_request]
 
 jobs:
-  Windows:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Cygwin
-        uses: egor-tensin/setup-cygwin@v1
-        with:
-          packages: rsync patch diffutils make unzip m4 findutils time wget curl git mingw64-x86_64-binutils mingw64-x86_64-gcc-core mingw64-x86_64-gcc-g++ mingw64-x86_64-pkg-config mingw64-x86_64-windows_default_manifest mingw64-x86_64-headers mingw64-x86_64-runtime mingw64-x86_64-pthreads mingw64-x86_64-zlib mingw64-x86_64-gmp python3
-
-      - name: Create home dir
-        run: |
-          C:\tools\cygwin\bin\bash.exe --login -c 'env'
-
-      - name: Install opam
-        run: |
-          C:\tools\cygwin\bin\bash.exe dev\ci\azure-opam.sh
-
-      - name: Build Coq
-        run: |
-          C:\tools\cygwin\bin\bash.exe dev\ci\azure-build.sh
-
   macOS:
     runs-on: macOS-10.15
 
@@ -57,7 +34,7 @@ jobs:
       - name: Build Coq
         run: |
           eval $(opam env)
-          ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no -coqide opt
+          ./configure -prefix "/usr/local" -warn-error yes -native-compiler no -coqide opt
           make -j "$NJOBS" byte
           make -j "$NJOBS"
         env:
@@ -72,7 +49,14 @@ jobs:
       - name: Run Coq Test Suite
         run: |
           eval $(opam env)
-          export OCAMLPATH="$(pwd)/_install_ci/lib":"$OCAMLPATH"
+          export OCAMLPATH="/usr/local/lib":"$OCAMLPATH"
           make -j "$NJOBS" test-suite PRINT_LOGS=1
         env:
           NJOBS: "2"
+
+      - name: Test that Coq runs from env
+        run: |
+          eval $(opam env)
+          coqc --config
+          coqc --version
+          true | coqtop
