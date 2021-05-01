@@ -37,6 +37,7 @@ jobs:
           ./configure -prefix "/usr/local" -warn-error yes -native-compiler no -coqide opt
           make -j "$NJOBS" byte
           make -j "$NJOBS"
+          dune build coq-core.install
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.11"
           NJOBS: "2"
