@@ -189,12 +189,12 @@ module Make (Point:Point) = struct
     match PMap.find u g.entries with
     | Equiv v -> repr g v
     | Canonical arc -> arc
-    | exception Not_found ->
-      CErrors.anomaly ~label:"Univ.repr"
-        Pp.(str"Universe " ++ Point.pr (Index.repr u g.table) ++ str" undefined.")
 
   let repr_node g u =
-    repr g (Index.find u g.table)
+    try repr g (Index.find u g.table)
+    with Not_found ->
+      CErrors.anomaly ~label:"Univ.repr"
+        Pp.(str"Universe " ++ Point.pr u ++ str" undefined.")
 
   exception AlreadyDeclared
 
