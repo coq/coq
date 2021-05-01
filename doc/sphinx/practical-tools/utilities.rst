@@ -667,6 +667,38 @@ See the man page of ``coqdep`` for more details and options.
 Both Dune and ``coq_makefile`` use ``coqdep`` to compute the
 dependencies among the files part of a Coq project.
 
+.. _coqnative:
+
+Split compilation of native computation files
+---------------------------------------------
+
+Coq features a :tacn:`native_compute` tactic to provide fast computation in the
+kernel. This process performs compilation of Coq terms to OCaml programs using
+the OCaml compiler, which may cause an important overhead. Hence native
+compilation is an opt-in configure flag.
+
+When native compilation is activated, Coq generates the compiled files upfront,
+i.e. during the ``coqc`` invocation on the corresponding ``.v`` file. This is
+impractical because it means one must chose in advance whether they will use
+a native-capable Coq installation. In particular, activating native compilation
+forces the recompilation of the whole Coq installation. See
+:ref:`command line options <command-line-options>` for more details.
+
+Starting from Coq 8.14, a new binary ``coqnative`` is available. It allows
+performing split native compilation by generating the native compute files out
+of the compiled ``.vo`` file rather than out of the source ``.v`` file.
+
+The ``coqnative`` command takes a name *file.vo* as argument and tries to
+perform native compilation on it. It assumes that the Coq libraries on which
+*file.vo* depends have been first compiled to their native files, and will fail
+otherwise. It accepts the ``-R``, ``-Q``, ``-I`` and ``-nI`` arguments with the
+same semantics as if the native compilation process had been performed through
+``coqc``. In particular, it means that:
+
++ ``-R`` and ``-Q`` are equivalent
+
++ ``-I`` is a no-op that is accepted only for scripting convenience
+
 Embedded Coq phrases inside |Latex| documents
 -----------------------------------------------
 
