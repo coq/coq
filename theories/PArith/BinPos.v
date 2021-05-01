@@ -1100,9 +1100,11 @@ Proof.
   apply lt_succ_r, le_lteq in H. destruct H as [H|H]; subst; auto.
 Qed.
 
+#[global]
 Instance lt_strorder : StrictOrder lt.
 Proof. split. exact lt_irrefl. exact lt_trans. Qed.
 
+#[global]
 Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) lt.
 Proof. repeat red. intros. subst; auto. Qed.
 
@@ -1148,9 +1150,11 @@ Proof.
  elim (lt_irrefl p). now transitivity q.
 Qed.
 
+#[global]
 Instance le_preorder : PreOrder le.
 Proof. split. exact le_refl. exact le_trans. Qed.
 
+#[global]
 Instance le_partorder : PartialOrder Logic.eq le.
 Proof.
  intros x y. change (x=y <-> x <= y <= x).

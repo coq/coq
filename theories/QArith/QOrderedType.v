@@ -39,9 +39,11 @@ Module Q_as_OT <: OrderedTypeFull.
  Definition le := Qle.
  Definition compare := Qcompare.
 
+#[global]
  Instance lt_strorder : StrictOrder Qlt.
  Proof. split; [ exact Qlt_irrefl | exact Qlt_trans ]. Qed.
 
+#[global]
  Instance lt_compat : Proper (Qeq==>Qeq==>iff) Qlt.
  Proof. auto with *. Qed.
 

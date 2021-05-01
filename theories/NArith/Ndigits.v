@@ -211,6 +211,7 @@ Qed.
 
 Definition eqf (f g:nat -> bool) := forall n:nat, f n = g n.
 
+#[global]
 Program Instance eqf_equiv : Equivalence eqf.
 
 Local Infix "==" := eqf (at level 70, no associativity).

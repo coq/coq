@@ -306,6 +306,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 
   (** Specification of [In] *)
 
+#[global]
   Instance In_compat : Proper (E.eq==>Logic.eq==>iff) In.
   Proof.
    intros s s' Hs x x' Hx. rewrite Hs, Hx; intuition.
@@ -599,6 +600,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 
   End lt_spec.
 
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof.
    unfold lt. split.
@@ -617,6 +619,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
    assert (C:=ct_compare x x' y). rewrite Hx in C. inversion C; auto.
   Qed.
 
+#[global]
   Instance compare_compat : Proper (eq==>eq==>Logic.eq) compare.
   Proof.
    intros x x' Hx y y' Hy. rewrite Hx.

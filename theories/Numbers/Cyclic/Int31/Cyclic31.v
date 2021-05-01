@@ -1119,6 +1119,7 @@ Section Basics.
 
 End Basics.
 
+#[global]
 Instance int31_ops : ZnZ.Ops int31 :=
 {
  digits      := 31%positive; (* number of digits *)

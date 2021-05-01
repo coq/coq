@@ -53,10 +53,13 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 
 (** Shortcuts to make proof search easier. *)
 
+#[global]
 Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv.
 
+#[global]
 Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv.
 
+#[global]
 Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv.
 
   Next Obligation.
@@ -132,15 +135,19 @@ End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
 
+#[global]
 Instance pointwise_reflexive {A} `(reflb : Reflexive B eqB) :
   Reflexive (pointwise_relation A eqB) | 9.
 Proof. firstorder. Qed.
+#[global]
 Instance pointwise_symmetric {A} `(symb : Symmetric B eqB) :
   Symmetric (pointwise_relation A eqB) | 9.
 Proof. firstorder. Qed.
+#[global]
 Instance pointwise_transitive {A} `(transb : Transitive B eqB) :
   Transitive (pointwise_relation A eqB) | 9.
 Proof. firstorder. Qed.
+#[global]
 Instance pointwise_equivalence {A} `(eqb : Equivalence B eqB) :
   Equivalence (pointwise_relation A eqB) | 9.
 Proof. split; apply _. Qed.

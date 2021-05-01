@@ -104,9 +104,11 @@ Proof.
  destruct (max_spec n m); [left|right]; intuition; order.
 Qed.
 
+#[global]
 Instance : Proper (eq==>eq==>iff) le.
 Proof. repeat red. intuition order. Qed.
 
+#[global]
 Instance max_compat : Proper (eq==>eq==>eq) max.
 Proof.
  intros x x' Hx y y' Hy.
@@ -255,6 +257,7 @@ Proof.
  destruct (min_spec n m); [left|right]; intuition; order.
 Qed.
 
+#[global]
 Instance min_compat : Proper (eq==>eq==>eq) min.
 Proof.
 intros x x' Hx y y' Hy.

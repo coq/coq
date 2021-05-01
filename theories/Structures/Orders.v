@@ -59,7 +59,9 @@ Module Type EqLtLe' := EqLtLe <+ EqLtLeNotation.
 (** Versions with logical specifications *)
 
 Module Type IsStrOrder (Import E:EqLt).
+#[global]
   Declare Instance lt_strorder : StrictOrder lt.
+#[global]
   Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
 End IsStrOrder.
 
@@ -321,6 +323,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
 
  Include HasEqBool2Dec.
 
+#[global]
  Instance eq_equiv : Equivalence eq.
  Proof.
  split.
@@ -329,6 +332,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
  - intros x y z; unfold eq, le. intuition; apply leb_trans with y; auto.
  Qed.
 
+#[global]
  Instance lt_strorder : StrictOrder lt.
  Proof.
  split.
@@ -339,6 +343,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
      apply leb_trans with x; auto.
  Qed.
 
+#[global]
  Instance lt_compat : Proper (eq ==> eq ==> iff) lt.
  Proof.
  apply proper_sym_impl_iff_2; auto with *.

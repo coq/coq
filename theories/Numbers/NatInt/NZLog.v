@@ -77,6 +77,7 @@ Qed.
 
 (** Hence log2 is a morphism. *)
 
+#[global]
 Instance log2_wd : Proper (eq==>eq) log2.
 Proof.
  intros x x' Hx.
@@ -493,6 +494,7 @@ Proof.
  intros. apply log2_up_eqn0. order'.
 Qed.
 
+#[global]
 Instance log2_up_wd : Proper (eq==>eq) log2_up.
 Proof.
  assert (Proper (eq==>eq==>Logic.eq) compare).

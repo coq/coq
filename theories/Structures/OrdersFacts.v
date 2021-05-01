@@ -55,6 +55,7 @@ Module Type CompareFacts (Import O:DecStrOrder').
 
  Global Hint Rewrite compare_eq_iff compare_lt_iff compare_gt_iff : order.
 
+#[global]
  Instance compare_compat : Proper (eq==>eq==>Logic.eq) compare.
  Proof.
  intros x x' Hxx' y y' Hyy'.
@@ -83,15 +84,19 @@ Module OrderedTypeFullFacts (Import O:OrderedTypeFull').
  Ltac order := OrderTac.order.
  Ltac iorder := intuition order.
 
+#[global]
  Instance le_compat : Proper (eq==>eq==>iff) le.
  Proof. repeat red; iorder. Qed.
 
+#[global]
  Instance le_preorder : PreOrder le.
  Proof. split; red; order. Qed.
 
+#[global]
  Instance le_order : PartialOrder eq le.
  Proof. compute; iorder. Qed.
 
+#[global]
  Instance le_antisym : Antisymmetric _ eq le.
  Proof. apply partial_order_antisym; auto with *. Qed.
 
@@ -188,6 +193,7 @@ Module OrderedTypeFacts (Import O: OrderedType').
   unfold eqb; intros; apply if_eq_dec.
   Qed.
 
+#[global]
   Instance eqb_compat : Proper (eq==>eq==>Logic.eq) eqb.
   Proof.
   intros x x' Hxx' y y' Hyy'.
@@ -239,14 +245,17 @@ Module OrderedTypeRev (O:OrderedTypeFull) <: OrderedTypeFull.
 
 Definition t := O.t.
 Definition eq := O.eq.
+#[global]
 Program Instance eq_equiv : Equivalence eq.
 Definition eq_dec := O.eq_dec.
 
 Definition lt := flip O.lt.
 Definition le := flip O.le.
 
+#[global]
 Instance lt_strorder: StrictOrder lt.
 Proof. unfold lt; auto with *. Qed.
+#[global]
 Instance lt_compat : Proper (eq==>eq==>iff) lt.
 Proof. unfold lt; auto with *. Qed.
 

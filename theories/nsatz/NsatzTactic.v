@@ -451,9 +451,11 @@ Tactic Notation "nsatz" "with"
 (* Rational numbers *)
 Require Import QArith.
 
+#[global]
 Instance Qops: (@Ring_ops Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq).
 Defined.
 
+#[global]
 Instance Qri : (Ring (Ro:=Qops)).
 constructor.
 try apply Q_Setoid.
@@ -470,9 +472,11 @@ Defined.
 Lemma Q_one_zero: not (Qeq 1%Q 0%Q).
 Proof. unfold Qeq. simpl. lia.  Qed.
 
+#[global]
 Instance Qcri: (Cring (Rr:=Qri)).
 red. exact Qmult_comm. Defined.
 
+#[global]
 Instance Qdi : (Integral_domain (Rcr:=Qcri)).
 constructor.
 exact Qmult_integral. exact Q_one_zero. Defined.
@@ -481,9 +485,11 @@ exact Qmult_integral. exact Q_one_zero. Defined.
 Lemma Z_one_zero: 1%Z <> 0%Z.
 Proof. lia. Qed.
 
+#[global]
 Instance Zcri: (Cring (Rr:=Zr)).
 red. exact Z.mul_comm. Defined.
 
+#[global]
 Instance Zdi : (Integral_domain (Rcr:=Zcri)).
 constructor.
 exact Zmult_integral. exact Z_one_zero. Defined.

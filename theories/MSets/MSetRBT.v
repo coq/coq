@@ -465,6 +465,7 @@ Proof.
  unfold singleton; intuition_in.
 Qed.
 
+#[global]
 Instance singleton_ok x : Ok (singleton x).
 Proof.
  unfold singleton; auto.
@@ -482,11 +483,13 @@ Proof.
  destruct s; simpl; intuition_in.
 Qed.
 
+#[global]
 Instance makeBlack_ok s `{Ok s} : Ok (makeBlack s).
 Proof.
  destruct s; simpl; ok.
 Qed.
 
+#[global]
 Instance makeRed_ok s `{Ok s} : Ok (makeRed s).
 Proof.
  destruct s; simpl; ok.
@@ -621,6 +624,7 @@ Proof.
  case lbal_match; intuition_in.
 Qed.
 
+#[global]
 Instance lbal_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
  Ok (lbal l x r).
 Proof.
@@ -633,6 +637,7 @@ Proof.
  case rbal_match; intuition_in.
 Qed.
 
+#[global]
 Instance rbal_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
  Ok (rbal l x r).
 Proof.
@@ -645,6 +650,7 @@ Proof.
  case rbal'_match; intuition_in.
 Qed.
 
+#[global]
 Instance rbal'_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
  Ok (rbal' l x r).
 Proof.
@@ -672,6 +678,7 @@ Proof.
 Qed.
 Global Hint Rewrite ins_spec : rb.
 
+#[global]
 Instance ins_ok s x `{Ok s} : Ok (ins x s).
 Proof.
  induct s x; auto; descolor;
@@ -693,6 +700,7 @@ Proof.
  apply add_spec'.
 Qed.
 
+#[global]
 Instance add_ok s x `{Ok s} : Ok (add x s).
 Proof.
  unfold add; auto_tc.
@@ -712,6 +720,7 @@ Proof.
    * autorew. intuition_in.
 Qed.
 
+#[global]
 Instance lbalS_ok l x r :
  forall `(Ok l, Ok r, lt_tree x l, gt_tree x r), Ok (lbalS l x r).
 Proof.
@@ -739,6 +748,7 @@ Proof.
    * autorew. intuition_in.
 Qed.
 
+#[global]
 Instance rbalS_ok l x r :
  forall `(Ok l, Ok r, lt_tree x l, gt_tree x r), Ok (rbalS l x r).
 Proof.
@@ -863,6 +873,7 @@ Qed.
 
 Global Hint Rewrite del_spec : rb.
 
+#[global]
 Instance del_ok s x `{Ok s} : Ok (del x s).
 Proof.
 induct s x.
@@ -884,6 +895,7 @@ Qed.
 
 Global Hint Rewrite remove_spec : rb.
 
+#[global]
 Instance remove_ok s x `{Ok s} : Ok (remove x s).
 Proof.
 unfold remove; auto_tc.
@@ -1078,6 +1090,7 @@ Proof.
   now auto_tc.
 Qed.
 
+#[global]
 Instance filter_ok s f `(Ok s) : Ok (filter f s).
 Proof.
  apply elements_sort_ok.
@@ -1114,9 +1127,11 @@ Lemma partition_spec2 s f :
  Equal (snd (partition f s)) (filter (fun x => negb (f x)) s).
 Proof. now rewrite partition_spec. Qed.
 
+#[global]
 Instance partition_ok1 s f `(Ok s) : Ok (fst (partition f s)).
 Proof. rewrite partition_spec; now apply filter_ok. Qed.
 
+#[global]
 Instance partition_ok2 s f `(Ok s) : Ok (snd (partition f s)).
 Proof. rewrite partition_spec; now apply filter_ok. Qed.
 
@@ -1214,12 +1229,14 @@ Proof.
    * apply IH1. eapply INV_sym, INV_lt; eauto. now apply INV_sym.
 Qed.
 
+#[global]
 Instance linear_union_ok s1 s2 `(Ok s1, Ok s2) :
  Ok (linear_union s1 s2).
 Proof.
  unfold linear_union. now apply treeify_ok, union_list_ok, INV_init.
 Qed.
 
+#[global]
 Instance fold_add_ok s1 s2 `(Ok s1, Ok s2) :
  Ok (fold add s1 s2).
 Proof.
@@ -1228,6 +1245,7 @@ Proof.
  induction (rev (elements s1)); simpl; unfold flip in *; auto_tc.
 Qed.
 
+#[global]
 Instance union_ok s1 s2 `(Ok s1, Ok s2) : Ok (union s1 s2).
 Proof.
  unfold union. destruct compare_height; auto_tc.
@@ -1299,12 +1317,14 @@ Proof.
    * apply IH1. eapply INV_drop; eauto.
 Qed.
 
+#[global]
 Instance linear_inter_ok s1 s2 `(Ok s1, Ok s2) :
  Ok (linear_inter s1 s2).
 Proof.
  unfold linear_inter. now apply treeify_ok, inter_list_ok, INV_init.
 Qed.
 
+#[global]
 Instance inter_ok s1 s2 `(Ok s1, Ok s2) : Ok (inter s1 s2).
 Proof.
  unfold inter. destruct compare_height; auto_tc.
@@ -1374,12 +1394,14 @@ Proof.
    * apply IH1. eapply INV_sym, INV_lt; eauto. now apply INV_sym.
 Qed.
 
+#[global]
 Instance diff_inter_ok s1 s2 `(Ok s1, Ok s2) :
  Ok (linear_diff s1 s2).
 Proof.
  unfold linear_inter. now apply treeify_ok, diff_list_ok, INV_init.
 Qed.
 
+#[global]
 Instance fold_remove_ok s1 s2 `(Ok s2) :
  Ok (fold remove s1 s2).
 Proof.
@@ -1388,6 +1410,7 @@ Proof.
  induction (rev (elements s1)); simpl; unfold flip in *; auto_tc.
 Qed.
 
+#[global]
 Instance diff_ok s1 s2 `(Ok s1, Ok s2) : Ok (diff s1 s2).
 Proof.
  unfold diff. destruct compare_height; auto_tc.
@@ -1712,6 +1735,7 @@ Proof.
  intros H. apply (ins_rr_rb x), ifred_or in H. intuition.
 Qed.
 
+#[global]
 Instance add_rb x s : Rbt s -> Rbt (add x s).
 Proof.
  intros (n,H). unfold add. now apply (makeBlack_rb n), ins_arb.
@@ -1775,6 +1799,7 @@ Proof.
     nonzero n. apply rbalS_rb; auto. }
 Qed.
 
+#[global]
 Instance remove_rb s x : Rbt s -> Rbt (remove x s).
 Proof.
  intros (n,H). unfold remove.
@@ -1851,6 +1876,7 @@ Qed.
 (** The black depth of [treeify l] is actually a log2, but
     we don't need to mention that. *)
 
+#[global]
 Instance treeify_rb l : Rbt (treeify l).
 Proof.
  unfold treeify.
@@ -1862,16 +1888,19 @@ Qed.
 
 (** ** Filtering *)
 
+#[global]
 Instance filter_rb f s : Rbt (filter f s).
 Proof.
  unfold filter; auto_tc.
 Qed.
 
+#[global]
 Instance partition_rb1 f s : Rbt (fst (partition f s)).
 Proof.
  unfold partition. destruct partition_aux. simpl. auto_tc.
 Qed.
 
+#[global]
 Instance partition_rb2 f s : Rbt (snd (partition f s)).
 Proof.
  unfold partition. destruct partition_aux. simpl. auto_tc.
@@ -1879,12 +1908,14 @@ Qed.
 
 (** ** Union, intersection, difference *)
 
+#[global]
 Instance fold_add_rb s1 s2 : Rbt s2 -> Rbt (fold add s1 s2).
 Proof.
  intros. rewrite fold_spec, <- fold_left_rev_right. unfold elt in *.
  induction (rev (elements s1)); simpl; unfold flip in *; auto_tc.
 Qed.
 
+#[global]
 Instance fold_remove_rb s1 s2 : Rbt s2 -> Rbt (fold remove s1 s2).
 Proof.
  intros. rewrite fold_spec, <- fold_left_rev_right. unfold elt in *.

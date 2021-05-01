@@ -785,6 +785,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   End ForNotations.
 
   Definition In := InA X.eq.
+#[global]
   Instance In_compat : Proper (X.eq==>eq==> iff) In.
   Proof. repeat red; intros; rewrite H, H0; auto. Qed.
 
@@ -794,6 +795,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Definition lt l1 l2 :=
     exists l1' l2', Ok l1' /\ Ok l2' /\ eq l1 l1' /\ eq l2 l2' /\ L.lt l1' l2'.
 
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof.
   split.
@@ -816,6 +818,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   rewrite H; auto.
   Qed.
 
+#[global]
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   Proof.
   intros s1 s2 E12 s3 s4 E34. split.

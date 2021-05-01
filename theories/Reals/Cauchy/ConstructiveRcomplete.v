@@ -50,6 +50,7 @@ Proof.
   exists n. intros. rewrite <- H0. apply H, H1.
 Qed.
 
+#[global]
 Instance seq_cv_morph
   : forall (un : nat -> CReal), CMorphisms.Proper
       (CMorphisms.respectful CRealEq CRelationClasses.iffT) (seq_cv un).

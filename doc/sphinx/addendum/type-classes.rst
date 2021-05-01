@@ -29,6 +29,10 @@ instantiation of the record type.
 
 We’ll use the following example class in the rest of the chapter:
 
+.. coqtop:: none
+
+   Set Warnings "-deprecated-instance-without-locality".
+
 .. coqtop:: in
 
    Class EqDec (A : Type) :=
@@ -349,6 +353,13 @@ Summary of the commands
 
    This command supports the :attr:`local`, :attr:`global` and :attr:`export`
    locality attributes.
+
+   .. deprecated:: 8.14
+
+      The default value for instance locality will change in a future
+      release. Instances added outside of sections without an explicit
+      locality are now deprecated. We recommend using :attr:`export`
+      where possible.
 
    Like :cmd:`Definition`, it also supports the :attr:`program`
    attribute to switch the type checking to `Program` (chapter

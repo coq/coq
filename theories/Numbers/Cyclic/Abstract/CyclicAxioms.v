@@ -326,7 +326,9 @@ End ZnZ.
 
 Module Type CyclicType.
  Parameter t : Set.
+#[global]
  Declare Instance ops : ZnZ.Ops t.
+#[global]
  Declare Instance specs : ZnZ.Specs ops.
 End CyclicType.
 

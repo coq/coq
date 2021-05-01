@@ -27,17 +27,21 @@ Module Type NZParityProp
 
 (** Morphisms *)
 
+#[global]
 Instance Even_wd : Proper (eq==>iff) Even.
 Proof. unfold Even. solve_proper. Qed.
 
+#[global]
 Instance Odd_wd : Proper (eq==>iff) Odd.
 Proof. unfold Odd. solve_proper. Qed.
 
+#[global]
 Instance even_wd : Proper (eq==>Logic.eq) even.
 Proof.
  intros x x' EQ. rewrite eq_iff_eq_true, 2 even_spec. now f_equiv.
 Qed.
 
+#[global]
 Instance odd_wd : Proper (eq==>Logic.eq) odd.
 Proof.
  intros x x' EQ. rewrite eq_iff_eq_true, 2 odd_spec. now f_equiv.

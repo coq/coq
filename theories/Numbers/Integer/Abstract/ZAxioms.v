@@ -35,6 +35,7 @@ End OppNotation.
 Module Type Opp' (T:Typ) := Opp T <+ OppNotation T.
 
 Module Type IsOpp (Import Z : NZAxiomsSig')(Import O : Opp' Z).
+#[global]
  Declare Instance opp_wd : Proper (eq==>eq) opp.
  Axiom opp_0 : - 0 == 0.
  Axiom opp_succ : forall n, - (S n) == P (- n).
@@ -98,7 +99,9 @@ End QuotRemNotation.
 Module Type QuotRem' (A : Typ) := QuotRem A <+ QuotRemNotation A.
 
 Module Type QuotRemSpec (Import A : ZAxiomsMiniSig')(Import B : QuotRem' A).
+#[global]
  Declare Instance quot_wd : Proper (eq==>eq==>eq) quot.
+#[global]
  Declare Instance rem_wd : Proper (eq==>eq==>eq) B.rem.
  Axiom quot_rem : forall a b, b ~= 0 -> a == b*(a÷b) + (a rem b).
  Axiom rem_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= a rem b < b.

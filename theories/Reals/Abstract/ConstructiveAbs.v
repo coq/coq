@@ -22,6 +22,7 @@ Local Open Scope ConstructiveReals.
     WARNING: this file is experimental and likely to change in future releases.
 *)
 
+#[global]
 Instance CRabs_morph
   : forall {R : ConstructiveReals},
     CMorphisms.Proper

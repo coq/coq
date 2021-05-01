@@ -50,6 +50,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  Definition lt :=
    (relation_disjunction (O1.lt @@1) (O1.eq * O2.lt))%signature.
 
+#[global]
  Instance lt_strorder : StrictOrder lt.
  Proof.
  split.
@@ -65,6 +66,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  right; split; etransitivity; eauto.
  Qed.
 
+#[global]
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
  Proof.
  compute.
@@ -125,11 +127,13 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
    induction x; destruct y,z; simpl; eauto; intuition.
   Qed.
 
+#[global]
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   Proof.
    intros x x' Hx y y' Hy. rewrite Hx, Hy; intuition.
   Qed.
 
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof.
    split; [ exact bits_lt_antirefl | exact bits_lt_trans ].

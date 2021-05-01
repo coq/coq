@@ -47,8 +47,11 @@ Proof. typeclasses eauto. Qed.
 Definition setoid_trans `(sa : Setoid A) : Transitive equiv.
 Proof. typeclasses eauto. Qed.
 
+#[global]
 Existing Instance setoid_refl.
+#[global]
 Existing Instance setoid_sym.
+#[global]
 Existing Instance setoid_trans.
 
 (** Standard setoids. *)
@@ -56,6 +59,7 @@ Existing Instance setoid_trans.
 (* Program Instance eq_setoid : Setoid A := *)
 (*   equiv := eq ; setoid_equiv := eq_equivalence. *)
 
+#[global]
 Program Instance iff_setoid : Setoid Prop :=
   { equiv := iff ; setoid_equiv := iff_equivalence }.
 
@@ -120,9 +124,11 @@ Ltac setoidify := repeat setoidify_tac.
 
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
+#[global]
 Program Instance setoid_morphism `(sa : Setoid A) : Proper (equiv ++> equiv ++> iff) equiv :=
   proper_prf.
 
+#[global]
 Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (equiv ++> iff) (equiv x) :=
   proper_prf.
 

@@ -466,6 +466,7 @@ Proof.
   apply CReal_isRingExt.
 Qed.
 
+#[global]
 Instance CReal_mult_morph_T
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRealEq)) CReal_mult.
@@ -480,6 +481,7 @@ Proof.
   apply (Ropp_ext CReal_isRingExt).
 Qed.
 
+#[global]
 Instance CReal_opp_morph_T
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq CRealEq) CReal_opp.
@@ -494,6 +496,7 @@ Proof.
   intros. unfold CReal_minus. rewrite H,H0. reflexivity.
 Qed.
 
+#[global]
 Instance CReal_minus_morph_T
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRealEq)) CReal_minus.

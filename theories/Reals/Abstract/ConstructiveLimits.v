@@ -176,6 +176,7 @@ Proof.
   exists n. intros. unfold CRminus. rewrite <- H0. apply H, H1.
 Qed.
 
+#[global]
 Instance CR_cv_morph
   : forall {R : ConstructiveReals} (un : nat -> CRcarrier R), CMorphisms.Proper
       (CMorphisms.respectful (CReq R) CRelationClasses.iffT) (CR_cv R un).

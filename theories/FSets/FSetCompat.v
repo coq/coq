@@ -263,9 +263,11 @@ Module Update_WSets
 
  Module MF := FSetFacts.WFacts M.
 
+#[global]
  Instance In_compat : Proper (E.eq==>Logic.eq==>iff) In.
  Proof. intros x x' Hx s s' Hs. subst. apply MF.In_eq_iff; auto. Qed.
 
+#[global]
  Instance eq_equiv : Equivalence eq := _.
 
  Section Spec.
@@ -378,6 +380,7 @@ Module Update_Sets
    choose s = Some x -> choose s' = Some y -> Equal s s' -> O.eq x y
    := M.choose_3.
 
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof.
    split.
@@ -385,6 +388,7 @@ Module Update_Sets
    exact M.lt_trans.
   Qed.
 
+#[global]
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   Proof.
   apply proper_sym_impl_iff_2. 1-2: auto with crelations.

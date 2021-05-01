@@ -88,6 +88,7 @@ Local Hint Resolve Permutation_sym Permutation_trans : core.
 (* This provides reflexivity, symmetry and transitivity and rewriting
    on morphims to come *)
 
+#[global]
 Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {
   Equivalence_Reflexive := @Permutation_refl A ;
   Equivalence_Symmetric := @Permutation_sym A ;
@@ -105,6 +106,7 @@ Proof.
   now apply IHHP; rewrite <- app_assoc.
 Qed.
 
+#[global]
 Instance Permutation_cons A :
  Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A) | 10.
 Proof.
@@ -812,6 +814,7 @@ Qed.
 
 End Permutation_alt.
 
+#[global]
 Instance Permutation_list_sum : Proper (@Permutation nat ==> eq) list_sum | 10.
 Proof.
   intros l1 l2 HP; induction HP; simpl; intuition.
@@ -820,6 +823,7 @@ Proof.
   - now transitivity (list_sum l').
 Qed.
 
+#[global]
 Instance Permutation_list_max : Proper (@Permutation nat ==> eq) list_max | 10.
 Proof.
   intros l1 l2 HP; induction HP; simpl; intuition.

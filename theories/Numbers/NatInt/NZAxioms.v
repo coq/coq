@@ -35,7 +35,9 @@ Module Type ZeroSuccPred' (T:Typ) :=
  ZeroSuccPred T <+ ZeroSuccPredNotation T.
 
 Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
+#[global]
  Declare Instance succ_wd : Proper (eq ==> eq) S.
+#[global]
  Declare Instance pred_wd : Proper (eq ==> eq) P.
  Axiom pred_succ : forall n, P (S n) == n.
  Axiom bi_induction :
@@ -86,8 +88,11 @@ End AddSubMulNotation.
 Module Type AddSubMul' (T:Typ) := AddSubMul T <+ AddSubMulNotation T.
 
 Module Type IsAddSubMul (Import E:NZDomainSig')(Import NZ:AddSubMul' E).
+#[global]
  Declare Instance add_wd : Proper (eq ==> eq ==> eq) add.
+#[global]
  Declare Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
+#[global]
  Declare Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
  Axiom add_0_l : forall n, 0 + n == n.
  Axiom add_succ_l : forall n m, (S n) + m == S (n + m).
@@ -112,6 +117,7 @@ Module Type NZOrd' := NZDomainSig' <+ HasLt <+ HasLe <+
                       LtNotation <+ LeNotation <+ LtLeNotation.
 
 Module Type IsNZOrd (Import NZ : NZOrd').
+#[global]
  Declare Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
  Axiom lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
  Axiom lt_irrefl : forall n, ~ (n < n).

@@ -18,6 +18,7 @@ Require Import NZBase NZOrder NZAddOrder Plus Minus.
 
 Local Notation "f ^ n" := (fun x => nat_rect _ x (fun _ => f) n).
 
+#[global]
 Instance nat_rect_wd n {A} (R:relation A) :
  Proper (R==>(R==>R)==>R) (fun x f => nat_rect (fun _ => _) x (fun _ => f) n).
 Proof.

@@ -53,6 +53,7 @@ Qed.
 Definition b2z (b:bool) := if b then 1 else 0.
 Local Coercion b2z : bool >-> t.
 
+#[global]
 Instance b2z_wd : Proper (Logic.eq ==> eq) b2z := _.
 
 Lemma exists_div2 a : exists a' (b:bool), a == 2*a' + b.
@@ -478,6 +479,7 @@ Qed.
 
 Definition eqf (f g:t -> bool) := forall n:t, f n = g n.
 
+#[global]
 Instance eqf_equiv : Equivalence eqf.
 Proof.
  split; congruence.
@@ -485,6 +487,7 @@ Qed.
 
 Local Infix "===" := eqf (at level 70, no associativity).
 
+#[global]
 Instance testbit_eqf : Proper (eq==>eqf) testbit.
 Proof.
  intros a a' Ha n. now rewrite Ha.
@@ -668,6 +671,7 @@ Qed.
 
 (** Shifts are morphisms *)
 
+#[global]
 Instance shiftr_wd : Proper (eq==>eq==>eq) shiftr.
 Proof.
  intros a a' Ha n n' Hn.
@@ -676,6 +680,7 @@ Proof.
  now rewrite 2 shiftr_div_pow2, Ha, Hn.
 Qed.
 
+#[global]
 Instance shiftl_wd : Proper (eq==>eq==>eq) shiftl.
 Proof.
  intros a a' Ha n n' Hn. now rewrite <- 2 shiftr_opp_r, Ha, Hn.
@@ -805,6 +810,7 @@ Proof.
  intros. rewrite div2_spec, shiftr_div_pow2. now nzsimpl. order'.
 Qed.
 
+#[global]
 Instance div2_wd : Proper (eq==>eq) div2.
 Proof.
  intros a a' Ha. now rewrite 2 div2_div, Ha.
@@ -819,21 +825,25 @@ Qed.
 (** Properties of [lxor] and others, directly deduced
     from properties of [xorb] and others. *)
 
+#[global]
 Instance lxor_wd : Proper (eq ==> eq ==> eq) lxor.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
 Qed.
 
+#[global]
 Instance land_wd : Proper (eq ==> eq ==> eq) land.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
 Qed.
 
+#[global]
 Instance lor_wd : Proper (eq ==> eq ==> eq) lor.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
 Qed.
 
+#[global]
 Instance ldiff_wd : Proper (eq ==> eq ==> eq) ldiff.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
@@ -1017,9 +1027,11 @@ Proof.
  intros. unfold clearbit. now rewrite shiftl_1_l.
 Qed.
 
+#[global]
 Instance setbit_wd : Proper (eq==>eq==>eq) setbit.
 Proof. unfold setbit. solve_proper. Qed.
 
+#[global]
 Instance clearbit_wd : Proper (eq==>eq==>eq) clearbit.
 Proof. unfold clearbit. solve_proper. Qed.
 
@@ -1159,6 +1171,7 @@ Qed.
 
 Definition lnot a := P (-a).
 
+#[global]
 Instance lnot_wd : Proper (eq==>eq) lnot.
 Proof. unfold lnot. solve_proper. Qed.
 
@@ -1297,6 +1310,7 @@ Qed.
 
 Definition ones n := P (1<<n).
 
+#[global]
 Instance ones_wd : Proper (eq==>eq) ones.
 Proof. unfold ones. solve_proper. Qed.
 
