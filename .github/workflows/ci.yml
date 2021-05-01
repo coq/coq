@@ -44,7 +44,7 @@ jobs:
       - name: Install Coq
         run: |
           eval $(opam env)
-          make install install-byte
+          sudo make install install-byte
 
       - name: Run Coq Test Suite
         run: |
