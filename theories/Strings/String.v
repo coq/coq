@@ -88,6 +88,34 @@ Fixpoint leb (s1 s2 : string) : bool :=
 
 Infix "<=?" := leb : string_scope.
 
+Lemma leb_total : forall x y : string, (x <=? y) = true \/ (y <=? x) = true.
+Proof.
+  induction x; intuition.
+  destruct y; simpl; intuition.
+  destruct (Ascii.eqb a a0) eqn:Heq.
+  - apply Ascii.eqb_eq in Heq; subst.
+    rewrite Ascii.eqb_refl.
+    intuition.
+  - destruct (Ascii.ltb a a0) eqn:Hlt; intuition.
+    right.
+    rewrite Ascii.eqb_sym.
+    rewrite Heq.
+    unfold Ascii.ltb in *.
+    unfold BinNat.N.ltb in *.
+    destruct (BinNat.N.compare (N_of_ascii a) (N_of_ascii a0)) eqn:Hcmp;
+      intuition.
+    + apply BinNat.N.compare_eq in Hcmp.
+      replace a with (ascii_of_N (N_of_ascii a)) in Heq;
+        try apply ascii_N_embedding.
+      rewrite Hcmp in Heq.
+      rewrite ascii_N_embedding in Heq.
+      apply Ascii.eqb_neq in Heq; intuition.
+    + apply BinNat.N.compare_gt_iff in Hcmp.
+      apply BinNat.N.compare_lt_iff in Hcmp.
+      rewrite Hcmp.
+      reflexivity.
+Qed.
+
 (** *** Concatenation of strings *)
 
 Reserved Notation "x ++ y" (right associativity, at level 60).
