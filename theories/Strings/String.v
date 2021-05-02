@@ -16,6 +16,7 @@ Require Import Arith.
 Require Import Ascii.
 Require Import Bool.
 Require Import Coq.Strings.Byte.
+Import IfNotations.
 
 (** *** Definition of strings *)
 
@@ -77,44 +78,65 @@ Proof. t_eqb. Qed.
 
 (** *** Compare strings lexicographically *)
 
-Fixpoint leb (s1 s2 : string) : bool :=
+Fixpoint compare (s1 s2 : string) : comparison :=
   match s1, s2 with
-  | EmptyString, _ => true
-  | String _ _, EmptyString => false
+  | EmptyString, EmptyString => Eq
+  | EmptyString, String _ _  => Lt
+  | String _ _ , EmptyString => Gt
   | String c1 s1', String c2 s2' =>
-    if Ascii.eqb c1 c2 then leb s1' s2'
-    else Ascii.ltb c1 c2
+    match Ascii.compare c1 c2 with
+    | Eq => compare s1' s2'
+    | ne => ne
+    end
   end.
 
-Infix "<=?" := leb : string_scope.
-
-Lemma leb_total : forall x y : string, (x <=? y) = true \/ (y <=? x) = true.
+Lemma compare_antisym : forall s1 s2 : string,
+    compare s1 s2 = CompOpp (compare s2 s1).
 Proof.
-  induction x; intuition.
-  destruct y; simpl; intuition.
-  destruct (Ascii.eqb a a0) eqn:Heq.
-  - apply Ascii.eqb_eq in Heq; subst.
-    rewrite Ascii.eqb_refl.
-    intuition.
-  - destruct (Ascii.ltb a a0) eqn:Hlt; intuition.
-    right.
-    rewrite Ascii.eqb_sym.
-    rewrite Heq.
-    unfold Ascii.ltb in *.
-    unfold BinNat.N.ltb in *.
-    destruct (BinNat.N.compare (N_of_ascii a) (N_of_ascii a0)) eqn:Hcmp;
-      intuition.
-    + apply BinNat.N.compare_eq in Hcmp.
-      replace a with (ascii_of_N (N_of_ascii a)) in Heq;
-        try apply ascii_N_embedding.
-      rewrite Hcmp in Heq.
-      rewrite ascii_N_embedding in Heq.
-      apply Ascii.eqb_neq in Heq; intuition.
-    + apply BinNat.N.compare_gt_iff in Hcmp.
-      apply BinNat.N.compare_lt_iff in Hcmp.
-      rewrite Hcmp.
-      reflexivity.
+  induction s1, s2; intuition.
+  simpl.
+  rewrite Ascii.compare_antisym.
+  destruct (Ascii.compare a0 a); simpl; intuition.
 Qed.
+
+Lemma compare_eq_iff : forall s1 s2 : string,
+    compare s1 s2 = Eq -> s1 = s2.
+Proof.
+  induction s1, s2; intuition; inversion H.
+  destruct (Ascii.compare a a0) eqn:Heq; try discriminate H1.
+  apply Ascii.compare_eq_iff in Heq.
+  apply IHs1 in H1.
+  subst.
+  reflexivity.
+Qed.
+
+Definition ltb (s1 s2 : string) : bool :=
+  if compare s1 s2 is Lt then true else false.
+
+Definition leb (s1 s2 : string) : bool :=
+  if compare s1 s2 is Gt then false else true.
+
+Lemma leb_antisym (s1 s2 : string) :
+  leb s1 s2 = true -> leb s2 s1 = true -> s1 = s2.
+Proof.
+  unfold leb.
+  rewrite compare_antisym.
+  destruct (compare s2 s1) eqn:Hcmp; simpl in *; intuition.
+  - apply compare_eq_iff in Hcmp. intuition.
+  - discriminate H.
+  - discriminate H0.
+Qed.
+
+Lemma leb_total (s1 s2 : string) : leb s1 s2 = true \/ leb s2 s1 = true.
+Proof.
+  unfold leb.
+  rewrite compare_antisym.
+  destruct (compare s2 s1); intuition.
+Qed.
+
+Infix "?="  := compare : string_scope.
+Infix "<?"  := ltb     : string_scope.
+Infix "<=?" := leb     : string_scope.
 
 (** *** Concatenation of strings *)
 
