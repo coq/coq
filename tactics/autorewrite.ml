@@ -255,9 +255,16 @@ let find_applied_relation ?loc env sigma c left2right =
                     (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
                        spc () ++ str"of this term does not end with an applied relation.")
 
+let warn_deprecated_hint_rewrite_without_locality =
+  CWarnings.create ~name:"deprecated-hint-rewrite-without-locality" ~category:"deprecated"
+    (fun () -> strbrk "The default value for rewriting hint locality is currently \
+    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
+    in a future release. For the time being, adding rewriting hints outside of sections \
+    without specifying an explicit locality is therefore deprecated. It is \
+    recommended to use \"export\" whenever possible.")
+
 (* To add rewriting rules to a base *)
 let add_rew_rules ~locality base lrul =
-  let () = Hints.check_hint_locality locality in
   let counter = ref 0 in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -278,5 +285,23 @@ let add_rew_rules ~locality base lrul =
   let open Goptions in
   match locality with
   | OptLocal -> cache_hintrewrite ((),(base,lrul))
-  | OptDefault | OptGlobal -> Lib.add_anonymous_leaf (inGlobalHintRewrite (base,lrul))
-  | OptExport -> Lib.add_anonymous_leaf (inExportHintRewrite (base,lrul))
+  | OptDefault ->
+    let () =
+      if not @@ Global.sections_are_opened () then
+        warn_deprecated_hint_rewrite_without_locality ()
+    in
+    Lib.add_anonymous_leaf (inGlobalHintRewrite (base,lrul))
+  | OptGlobal ->
+    let () =
+      if Global.sections_are_opened () then
+      CErrors.user_err Pp.(str
+        "This command does not support the global attribute in sections.");
+    in
+    Lib.add_anonymous_leaf (inGlobalHintRewrite (base,lrul))
+  | OptExport ->
+    let () =
+      if Global.sections_are_opened () then
+        CErrors.user_err Pp.(str
+          "This command does not support the export attribute in sections.");
+    in
+    Lib.add_anonymous_leaf (inExportHintRewrite (base,lrul))
