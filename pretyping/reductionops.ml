@@ -196,17 +196,14 @@ sig
   val is_empty : t -> bool
   val append_app : EConstr.t array -> t -> t
   val decomp : t -> (EConstr.t * t) option
-  val decomp_node_last : app_node -> t -> (EConstr.t * t)
   val decomp_rev : t -> (EConstr.t * t) option
   val compare_shape : t -> t -> bool
-  val map : (EConstr.t -> EConstr.t) -> t -> t
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a -> t -> t -> 'a
   val append_app_list : EConstr.t list -> t -> t
   val strip_app : t -> t * t
   val strip_n_app : int -> t -> (t * EConstr.t * t) option
   val not_purely_applicative : t -> bool
   val list_of_app_stack : t -> constr list option
-  val assign : t -> int -> EConstr.t -> t
   val args_size : t -> int
   val tail : int -> t -> t
   val nth : t -> int -> EConstr.t
@@ -322,19 +319,6 @@ struct
               raise IncompatibleFold2
     in aux o (List.rev sk1) (List.rev sk2)
 
-  let rec map f x = List.map (function
-                               | (Proj (_)) as e -> e
-                               | App (i,a,j) ->
-                                  let le = j - i + 1 in
-                                  App (0,Array.map f (Array.sub a i le), le-1)
-                               | Case (info,u,pms,ty,iv,br) ->
-                                  Case (info, u, Array.map f pms, on_snd f ty, iv, Array.map (on_snd f) br)
-                               | Fix ((r,(na,ty,bo)),arg) ->
-                                  Fix ((r,(na,Array.map f ty, Array.map f bo)),map f arg)
-                               | Primitive (p,c,args,kargs) ->
-                                 Primitive(p,c, map f args, kargs)
-    ) x
-
   let append_app_list l s =
     let a = Array.of_list l in
     append_app a s
@@ -382,11 +366,6 @@ struct
       | s -> ([],s) in
     let (out,s') = aux s in
     match s' with [] -> Some out | _ -> None
-
-  let assign s p c =
-    match strip_n_app p s with
-    | Some (pre,_,sk) -> pre @ (App (0,[|c|],0) :: sk)
-    | None -> assert false
 
   let tail n0 s0 =
     let rec aux n s =

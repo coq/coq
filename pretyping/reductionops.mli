@@ -72,9 +72,6 @@ module Stack : sig
   val empty : t
   val is_empty : t -> bool
 
-  val decomp_node_last : app_node -> t -> (EConstr.t * t)
-  [@@ocaml.deprecated "Use decomp_rev"]
-
   val compare_shape : t -> t -> bool
 
   exception IncompatibleFold2
@@ -83,7 +80,6 @@ module Stack : sig
       @return the result and the lifts to apply on the terms
       @raise IncompatibleFold2 when [sk1] and [sk2] have incompatible shapes *)
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a -> t -> t -> 'a
-  val map : (EConstr.t -> EConstr.t) -> t -> t
 
   (** [append_app args sk] pushes array of arguments [args] on [sk] *)
   val append_app : EConstr.t array -> t -> t
@@ -112,10 +108,6 @@ module Stack : sig
       arguments if [sk] is purely applicative and [None] otherwise *)
   val list_of_app_stack : t -> constr list option
 
-  (** [assign sk n a] changes the [n]th argument of [sk] with [a], counting from 0
-      @raise an anomaly if there is less that [n] arguments available *)
-  val assign : t -> int -> EConstr.t -> t
-
   (** [args_size sk] returns the number of arguments available at the
       head of [sk] *)
   val args_size : t -> int
@@ -123,10 +115,6 @@ module Stack : sig
   (** [tail n sk] drops the [n] first arguments of [sk]
       @raise [Invalid_argument] if there are not enough arguments *)
   val tail : int -> t -> t
-
-  (** [nth sk n] returns the [n]-th argument of [sk], counting from 0
-      @raise [Not_found] if there is no [n]th argument *)
-  val nth : t -> int -> EConstr.t
 
   (** [zip sigma t sk] *)
   val zip : evar_map -> constr * t -> constr
