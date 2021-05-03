@@ -174,51 +174,50 @@ end
 module Stack :
 sig
   open EConstr
-  type 'a app_node
-  val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
+  type app_node
+  val pr_app_node : (EConstr.t -> Pp.t) -> app_node -> Pp.t
 
-  type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
+  type case_stk =
+    case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t  pcase_invert * EConstr.t pcase_branch array
 
-  type 'a member =
-  | App of 'a app_node
-  | Case of 'a case_stk
+  type member =
+  | App of app_node
+  | Case of case_stk
   | Proj of Projection.t
-  | Fix of ('a, 'a) pfixpoint * 'a t
-  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
+  | Fix of fixpoint * t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
-  and 'a t = 'a member list
+  and t = member list
 
   exception IncompatibleFold2
 
-  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-  val empty : 'a t
-  val is_empty : 'a t -> bool
-  val append_app : 'a array -> 'a t -> 'a t
-  val decomp : 'a t -> ('a * 'a t) option
-  val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
-  val decomp_rev : 'a t -> ('a * 'a t) option
-  val compare_shape : 'a t -> 'a t -> bool
-  val map : ('a -> 'a) -> 'a t -> 'a t
-  val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
-    constr t -> constr t -> 'a
-  val append_app_list : 'a list -> 'a t -> 'a t
-  val strip_app : 'a t -> 'a t * 'a t
-  val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
-  val not_purely_applicative : 'a t -> bool
-  val list_of_app_stack : constr t -> constr list option
-  val assign : 'a t -> int -> 'a -> 'a t
-  val args_size : 'a t -> int
-  val tail : int -> 'a t -> 'a t
-  val nth : 'a t -> int -> 'a
-  val zip : evar_map -> constr * constr t -> constr
-  val check_native_args : CPrimitives.t -> 'a t -> bool
-  val get_next_primitive_args : CPrimitives.args_red -> 'a t -> CPrimitives.args_red * ('a t * 'a * 'a t) option
-  val expand_case : env -> evar_map -> constr case_stk -> constr * constr array
+  val pr : (EConstr.t -> Pp.t) -> t -> Pp.t
+  val empty : t
+  val is_empty : t -> bool
+  val append_app : EConstr.t array -> t -> t
+  val decomp : t -> (EConstr.t * t) option
+  val decomp_node_last : app_node -> t -> (EConstr.t * t)
+  val decomp_rev : t -> (EConstr.t * t) option
+  val compare_shape : t -> t -> bool
+  val map : (EConstr.t -> EConstr.t) -> t -> t
+  val fold2 : ('a -> constr -> constr -> 'a) -> 'a -> t -> t -> 'a
+  val append_app_list : EConstr.t list -> t -> t
+  val strip_app : t -> t * t
+  val strip_n_app : int -> t -> (t * EConstr.t * t) option
+  val not_purely_applicative : t -> bool
+  val list_of_app_stack : t -> constr list option
+  val assign : t -> int -> EConstr.t -> t
+  val args_size : t -> int
+  val tail : int -> t -> t
+  val nth : t -> int -> EConstr.t
+  val zip : evar_map -> constr * t -> constr
+  val check_native_args : CPrimitives.t -> t -> bool
+  val get_next_primitive_args : CPrimitives.args_red -> t -> CPrimitives.args_red * (t * EConstr.t * t) option
+  val expand_case : env -> evar_map -> case_stk -> constr * constr array
 end =
 struct
   open EConstr
-  type 'a app_node = int * 'a array * int
+  type app_node = int * EConstr.t array * int
   (* first relevant position, arguments, last relevant position *)
 
   (*
@@ -234,17 +233,17 @@ struct
                      )
 
 
-  type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
+  type case_stk =
+    case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t  pcase_invert * EConstr.t pcase_branch array
 
-  type 'a member =
-  | App of 'a app_node
-  | Case of 'a case_stk
+  type member =
+  | App of app_node
+  | Case of case_stk
   | Proj of Projection.t
-  | Fix of ('a, 'a) pfixpoint * 'a t
-  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
+  | Fix of fixpoint * t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
-  and 'a t = 'a member list
+  and t = member list
 
   (* Debugging printer *)
   let rec pr_member pr_c member =
@@ -440,7 +439,7 @@ struct
     let n = nargs kargs in
     (List.skipn (n+1) kargs, strip_n_app n stk)
 
-  let expand_case env sigma ((ci, u, pms, t, iv, br) : _ case_stk) =
+  let expand_case env sigma ((ci, u, pms, t, iv, br) : case_stk) =
     let dummy = mkProp in
     let (_, t, _, _, br) = EConstr.expand_case env sigma (ci, u, pms, t, iv, dummy, br) in
     (t, br)
@@ -448,7 +447,7 @@ struct
 end
 
 (** The type of (machine) states (= lambda-bar-calculus' cuts) *)
-type state = constr * constr Stack.t
+type state = constr * Stack.t
 
 type reduction_function = env -> evar_map -> constr -> constr
 type e_reduction_function = env -> evar_map -> constr -> evar_map * constr

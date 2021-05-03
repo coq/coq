@@ -53,86 +53,85 @@ val reduction_effect_hook : Environ.env -> Evd.evar_map -> Constant.t ->
   Constr.constr Lazy.t -> unit
 
 module Stack : sig
-  type 'a app_node
+  type app_node
 
-  val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
+  val pr_app_node : (EConstr.t -> Pp.t) -> app_node -> Pp.t
 
-  type 'a case_stk
+  type case_stk
 
-  type 'a member =
-  | App of 'a app_node
-  | Case of 'a case_stk
+  type member =
+  | App of app_node
+  | Case of case_stk
   | Proj of Projection.t
-  | Fix of ('a, 'a) pfixpoint * 'a t
-  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
-  and 'a t = 'a member list
+  | Fix of EConstr.fixpoint * t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
+  and t = member list
 
-  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
+  val pr : (EConstr.t -> Pp.t) -> t -> Pp.t
 
-  val empty : 'a t
-  val is_empty : 'a t -> bool
+  val empty : t
+  val is_empty : t -> bool
 
-  val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+  val decomp_node_last : app_node -> t -> (EConstr.t * t)
   [@@ocaml.deprecated "Use decomp_rev"]
 
-  val compare_shape : 'a t -> 'a t -> bool
+  val compare_shape : t -> t -> bool
 
   exception IncompatibleFold2
 
   (** [fold2 f x sk1 sk2] folds [f] on any pair of term in [(sk1,sk2)].
       @return the result and the lifts to apply on the terms
       @raise IncompatibleFold2 when [sk1] and [sk2] have incompatible shapes *)
-  val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
-    constr t -> constr t -> 'a
-  val map : ('a -> 'a) -> 'a t -> 'a t
+  val fold2 : ('a -> constr -> constr -> 'a) -> 'a -> t -> t -> 'a
+  val map : (EConstr.t -> EConstr.t) -> t -> t
 
   (** [append_app args sk] pushes array of arguments [args] on [sk] *)
-  val append_app : 'a array -> 'a t -> 'a t
+  val append_app : EConstr.t array -> t -> t
 
   (** [append_app_list args sk] pushes list of arguments [args] on [sk] *)
-  val append_app_list : 'a list -> 'a t -> 'a t
+  val append_app_list : EConstr.t list -> t -> t
 
   (** if [strip_app sk] = [(sk1,sk2)], then [sk = sk1 @ sk2] with
       [sk1] purely applicative and [sk2] does not start with an argument *)
-  val strip_app : 'a t -> 'a t * 'a t
+  val strip_app : t -> t * t
 
   (** @return (the nth first elements, the (n+1)th element, the remaining stack)
       if there enough of those *)
-  val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
+  val strip_n_app : int -> t -> (t * EConstr.t * t) option
 
   (** [decomp sk] extracts the first argument of [sk] is there is some *)
-  val decomp : 'a t -> ('a * 'a t) option
+  val decomp : t -> (EConstr.t * t) option
 
   (** [decomp sk] extracts the first argument of reversed stack [sk] is there is some *)
-  val decomp_rev : 'a t -> ('a * 'a t) option
+  val decomp_rev : t -> (EConstr.t * t) option
 
   (** [not_purely_applicative sk] *)
-  val not_purely_applicative : 'a t -> bool
+  val not_purely_applicative : t -> bool
 
   (** [list_of_app_stack sk] either returns [Some sk] turned into a list of
       arguments if [sk] is purely applicative and [None] otherwise *)
-  val list_of_app_stack : constr t -> constr list option
+  val list_of_app_stack : t -> constr list option
 
   (** [assign sk n a] changes the [n]th argument of [sk] with [a], counting from 0
       @raise an anomaly if there is less that [n] arguments available *)
-  val assign : 'a t -> int -> 'a -> 'a t
+  val assign : t -> int -> EConstr.t -> t
 
   (** [args_size sk] returns the number of arguments available at the
       head of [sk] *)
-  val args_size : 'a t -> int
+  val args_size : t -> int
 
   (** [tail n sk] drops the [n] first arguments of [sk]
       @raise [Invalid_argument] if there are not enough arguments *)
-  val tail : int -> 'a t -> 'a t
+  val tail : int -> t -> t
 
   (** [nth sk n] returns the [n]-th argument of [sk], counting from 0
       @raise [Not_found] if there is no [n]th argument *)
-  val nth : 'a t -> int -> 'a
+  val nth : t -> int -> EConstr.t
 
   (** [zip sigma t sk] *)
-  val zip : evar_map -> constr * constr t -> constr
+  val zip : evar_map -> constr * t -> constr
 
-  val expand_case : env -> evar_map -> constr case_stk -> constr * constr array
+  val expand_case : env -> evar_map -> case_stk -> constr * constr array
 end
 
 (************************************************************************)
@@ -270,7 +269,7 @@ val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
 
 (** {6 Heuristic for Conversion with Evar } *)
 
-type state = constr * constr Stack.t
+type state = constr * Stack.t
 
 type state_reduction_function =
     env -> evar_map -> state -> state

@@ -79,9 +79,9 @@ val check_problems_are_solved : env -> evar_map -> unit
 val check_conv_record : env -> evar_map ->
   state -> state ->
   evar_map * (constr * constr)
-  * constr * constr list * (constr Stack.t * constr Stack.t) *
-    (constr Stack.t * constr Stack.t) *
-    (constr Stack.t * constr Stack.t) * constr *
+  * constr * constr list * (Stack.t * Stack.t) *
+    (Stack.t * Stack.t) *
+    (Stack.t * Stack.t) * constr *
     (int option * constr)
 
 (** Compares two constants/inductives/constructors unifying their universes.
