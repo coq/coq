@@ -57,8 +57,7 @@ module Stack : sig
 
   val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
-  type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
+  type 'a case_stk
 
   type 'a member =
   | App of 'a app_node
@@ -132,6 +131,8 @@ module Stack : sig
 
   (** [zip sigma t sk] *)
   val zip : evar_map -> constr * constr t -> constr
+
+  val expand_case : env -> evar_map -> constr case_stk -> constr * constr array
 end
 
 (************************************************************************)

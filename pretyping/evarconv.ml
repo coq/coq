@@ -371,10 +371,9 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
       else None, x in
     match revsk1, revsk2 with
     | [], [] -> None, Success i
-    | Stack.Case (ci1,u1,pms1,t1,iv1,c1)::q1, Stack.Case (ci2,u2,pms2,t2,iv2,c2)::q2 ->
-      let dummy = mkProp in
-      let (_, t1, _, _, c1) = EConstr.expand_case env evd (ci1,u1,pms1,t1,iv1,dummy,c1) in
-      let (_, t2, _, _, c2) = EConstr.expand_case env evd (ci2,u2,pms2,t2,iv2,dummy,c2) in
+    | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
+      let (t1, c1) = Stack.expand_case env evd cse1 in
+      let (t2, c2) = Stack.expand_case env evd cse2 in
       begin
         match ise_and i [
           (fun i -> f env i CONV t1 t2);
@@ -411,10 +410,9 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
   let rec ise_rev_stack2 i revsk1 revsk2 =
     match revsk1, revsk2 with
     | [], [] -> Success i
-    | Stack.Case (ci1,u1,pms1,t1,iv1,c1)::q1, Stack.Case (ci2,u2,pms2,t2,iv2,c2)::q2 ->
-      let dummy = mkProp in
-      let (_, t1, _, _, c1) = EConstr.expand_case env evd (ci1,u1,pms1,t1,iv1,dummy,c1) in
-      let (_, t2, _, _, c2) = EConstr.expand_case env evd (ci2,u2,pms2,t2,iv2,dummy,c2) in
+    | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
+      let (t1, c1) = Stack.expand_case env evd cse1 in
+      let (t2, c2) = Stack.expand_case env evd cse2 in
       ise_and i [
       (fun i -> ise_rev_stack2 i q1 q2);
       (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2);
