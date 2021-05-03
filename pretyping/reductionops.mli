@@ -109,10 +109,6 @@ module Stack : sig
       head of [sk] *)
   val args_size : t -> int
 
-  (** [tail n sk] drops the [n] first arguments of [sk]
-      @raise [Invalid_argument] if there are not enough arguments *)
-  val tail : int -> t -> t
-
   (** [zip sigma t sk] *)
   val zip : evar_map -> constr * t -> constr
 

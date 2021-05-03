@@ -1187,18 +1187,22 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
     match get_projections env ind with
     | Some projs when mib.mind_finite == BiFinite ->
       let pars = mib.mind_nparams in
+      begin match Stack.list_of_app_stack sk1 with
+      | None -> UnifFailure (evd,NotSameHead)
+      | Some l1 ->
         (try
-           let l1' = Stack.tail pars sk1 in
+           let l1' = List.skipn pars l1 in
            let l2' =
              let term = Stack.zip evd (term2,sk2) in
                List.map (fun p -> EConstr.mkProj (Projection.make p false, term)) (Array.to_list projs)
            in
-             exact_ise_stack2 env evd (evar_conv_x { flags with with_cs = false}) l1'
-               (Stack.append_app_list l2' Stack.empty)
+          let f i t1 t2 = evar_conv_x { flags with with_cs = false } env i CONV t1 t2 in
+          ise_list2 evd f l1' l2'
          with
-         | Invalid_argument _ ->
-           (* Stack.tail: partially applied constructor *)
+         | Failure _ ->
+           (* List.skipn: partially applied constructor *)
            UnifFailure(evd,NotSameHead))
+      end
     | _ -> UnifFailure (evd,NotSameHead)
 
 let evar_conv_x flags = evar_conv_x flags
