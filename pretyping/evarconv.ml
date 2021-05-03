@@ -110,11 +110,13 @@ type flex_kind_of_term =
   | MaybeFlexible of EConstr.t (* reducible but not necessarily reduced *)
   | Flexible of EConstr.existential
 
+let has_arg s = Option.has_some (Stack.strip_n_app 0 s)
+
 let flex_kind_of_term flags env evd c sk =
   match EConstr.kind evd c with
     | LetIn _ | Rel _ | Const _ | Var _ | Proj _ ->
       Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term flags.open_ts env evd c)
-    | Lambda _ when not (Option.is_empty (Stack.decomp sk)) ->
+    | Lambda _ when has_arg sk ->
        if flags.modulo_betaiota then MaybeFlexible c
        else Rigid
     | Evar ev ->

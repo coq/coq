@@ -95,9 +95,6 @@ module Stack : sig
       if there enough of those *)
   val strip_n_app : int -> t -> (t * EConstr.t * t) option
 
-  (** [decomp sk] extracts the first argument of [sk] is there is some *)
-  val decomp : t -> (EConstr.t * t) option
-
   (** [decomp sk] extracts the first argument of reversed stack [sk] is there is some *)
   val decomp_rev : t -> (EConstr.t * t) option
 
