@@ -21,25 +21,13 @@ val coqdep_warning : ('a, Format.formatter, unit, unit) format4 -> 'a
 val find_dir_logpath: string -> string list
 
 (** Options *)
-val option_noglob : bool ref
+val option_sort : bool ref
 val option_boot : bool ref
-val write_vos : bool ref
-
-type dynlink = Opt | Byte | Both | No | Variable
-val option_dynlink : dynlink ref
-
-val norec_dirs : StrSet.t ref
-
-type dir = string option
-val treat_file : dir -> string -> unit
 
 (** ML-related manipulation *)
 val coq_dependencies : unit -> unit
 val add_known : bool -> string -> string list -> string -> unit
 val add_coqlib_known : bool -> string -> string list -> string -> unit
-
-(* Used to locate plugins for [Declare ML Module] *)
-val add_caml_dir : string -> unit
 
 (** Simply add this directory and imports it, no subdirs. This is used
     by the implicit adding of the current path. *)
@@ -55,3 +43,6 @@ val add_rec_dir_import :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
 
 val sort : unit -> unit
+
+(** Init coqdep, including argument parsing *)
+val init : unit -> unit
