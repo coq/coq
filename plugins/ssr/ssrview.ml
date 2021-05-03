@@ -401,7 +401,7 @@ end
 
 (* Entry points *********************************************************)
 
-let tclIPAT_VIEWS ~views:vs ?(clear_if_id=false) ~conclusion =
+let tclIPAT_VIEWS ~views:vs ?(clear_if_id=false) ~conclusion () =
   tclINDEPENDENTL begin
     State.vsASSERT_EMPTY <*>
     apply_all_views vs ~conclusion ~clear_if_id >>= fun was_tac ->

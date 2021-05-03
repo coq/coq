@@ -13,7 +13,7 @@ Build Requirements
 To compile Coq yourself, you need:
 
 - [OCaml](https://ocaml.org/) (version >= 4.05.0)
-  (This version of Coq has been tested up to OCaml 4.11.1)
+  (This version of Coq has been tested up to OCaml 4.12.0)
 
 - The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 2.5.1
 
@@ -52,7 +52,7 @@ CoqIDE with:
 Opam (https://opam.ocaml.org/) is recommended to install OCaml and
 the corresponding packages.
 
-    $ opam switch create coq 4.11.1+flambda
+    $ opam switch create coq --packages="ocaml-variants.4.12.0+options,ocaml-option-flambda"
     $ eval $(opam env)
     $ opam install dune ocamlfind zarith lablgtk3-sourceview3
 

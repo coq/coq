@@ -1,0 +1,4 @@
+- **Added:**
+  Support OCaml 4.12
+  (`#13885 <https://github.com/coq/coq/pull/13885>`_,
+  by Emilio Jesus Gallego Arias, review by Gaëtan Gilbert and Théo Zimmerman).

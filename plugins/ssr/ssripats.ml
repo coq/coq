@@ -454,7 +454,7 @@ let rec ipat_tac1 ipat : bool tactic =
             let inter = CList.intersect Id.equal clr extra_clear in
             List.iter duplicate_clear inter;
             let cl = CList.union Id.equal clr extra_clear in
-            intro_clear cl)
+            intro_clear cl) ()
 
   | IOpDispatchBranches ipatss ->
       tclDISPATCH (List.map ipat_tac ipatss) <*> notTAC

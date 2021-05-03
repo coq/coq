@@ -123,7 +123,7 @@ project coquelicot "https://gitlab.inria.fr/coquelicot/coquelicot" "master"
 ########################################################################
 # To revert when upstream maintainer comes back online
 # project interval "https://gitlab.inria.fr/coqinterval/interval" "master"
-project interval "https://gitlab.inria.fr/egallego/interval" "make+use_dune_for_ocaml"
+project interval "https://gitlab.inria.fr/egallego/interval" "ocaml+4.12"
 
 ########################################################################
 # Gappa stand alone tool

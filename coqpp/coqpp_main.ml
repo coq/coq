@@ -360,7 +360,7 @@ let print_body_fun state fmt r =
     print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
 
 let print_body state fmt r =
-  fprintf fmt "@[(%afun %a?loc ~atts@ -> coqpp_body %a%a)@]"
+  fprintf fmt "@[(%afun %a?loc ~atts ()@ -> coqpp_body %a%a)@]"
     (print_body_fun state) r print_binders r.vernac_toks
     print_binders r.vernac_toks print_atts_right r.vernac_atts
 

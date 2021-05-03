@@ -262,7 +262,7 @@ let inCoercion : coe_info_typ -> obj =
     classify_function = classify_coercion;
     discharge_function = discharge_coercion }
 
-let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
+let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps () =
   let isproj =
     match coef with
     | GlobRef.ConstRef c -> Structures.PrimitiveProjections.find_opt c
@@ -296,7 +296,7 @@ let warn_uniform_inheritance =
           Printer.pr_global g ++
             strbrk" does not respect the uniform inheritance condition")
 
-let add_new_coercion_core coef stre poly source target isid =
+let add_new_coercion_core coef stre poly source target isid : unit =
   check_source source;
   let env = Global.env () in
   let t, _ = Typeops.type_of_global_in_context env coef in
@@ -327,7 +327,7 @@ let add_new_coercion_core coef stre poly source target isid =
   | `LOCAL -> true
   | `GLOBAL -> false
   in
-  declare_coercion coef ~local ~isid ~src:cls ~target:clt ~params:(List.length lvs)
+  declare_coercion coef ~local ~isid ~src:cls ~target:clt ~params:(List.length lvs) ()
 
 
 let try_add_new_coercion_core ref ~local c d e f =
