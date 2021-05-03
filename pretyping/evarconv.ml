@@ -272,20 +272,20 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         (* Are we sure that ty is not an evar? *)
         try Inductiveops.find_mrectype env sigma ty
         with _ -> raise Not_found
-      in Stack.append_app_list ind_args Stack.empty, c, sk1
+      in ind_args, c, sk1
     | None ->
       match Stack.strip_n_app solution.nparams sk1 with
-      | Some (params1, c1, extra_args1) -> params1, c1, extra_args1
+      | Some (params1, c1, extra_args1) -> (Option.get @@ Stack.list_of_app_stack params1), c1, extra_args1
       | _ -> raise Not_found in
   let us2,extra_args2 =
     let l_us = List.length solution.cvalue_arguments in
-      if Int.equal l_us 0 then Stack.empty,sk2_effective
+      if Int.equal l_us 0 then [], sk2_effective
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
-      | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
+      | Some (l',el,s') -> ((Option.get @@ Stack.list_of_app_stack l') @ [el],s') in
   let h, _ = decompose_app_vect sigma solution.body in
-    sigma,(h, t2),solution.constant,solution.abstractions_ty,(Stack.append_app_list solution.params Stack.empty,params1),
-    (Stack.append_app_list solution.cvalue_arguments Stack.empty,us2),(extra_args1,extra_args2),c1,
+    sigma,(h, t2),solution.constant,solution.abstractions_ty,(solution.params,params1),
+    (solution.cvalue_arguments,us2),(extra_args1,extra_args2),c1,
     (solution.cvalue_abstraction, Stack.zip sigma (t2,sk2))
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
@@ -318,6 +318,19 @@ let ise_and evd l =
         | Success i' -> ise_and i' l
         | UnifFailure _ as x -> x in
   ise_and evd l
+
+let ise_list2 evd f l1 l2 =
+  let rec allrec k l1 l2 = match l1, l2 with
+  | [], [] -> k evd
+  | x1 :: l1, x2 :: l2 ->
+    let k evd = match k evd with
+    | Success evd -> f evd x1 x2
+    | UnifFailure _ as x -> x
+    in
+    allrec k l1 l2
+  | ([], _ :: _) | (_ :: _, []) -> UnifFailure (evd, NotSameArgSize)
+  in
+  allrec (fun i -> Success i) l1 l2
 
 let ise_array2 evd f v1 v2 =
   let rec allrec i = function
@@ -1150,12 +1163,12 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
     let app = mkApp (c, Array.rev_of_list ks) in
     ise_and evd'
       [(fun i ->
-        exact_ise_stack2 env i
-          (fun env' i' cpb x1 x -> evar_conv_x flags env' i' cpb x1 (substl ks x))
+        ise_list2 i
+          (fun i' x1 x -> evar_conv_x flags env i' CONV x1 (substl ks x))
           params1 params);
        (fun i ->
-         exact_ise_stack2 env i
-           (fun env' i' cpb u1 u -> evar_conv_x flags env' i' cpb u1 (substl ks u))
+         ise_list2 i
+           (fun i' u1 u -> evar_conv_x flags env i' CONV u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x flags env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2);

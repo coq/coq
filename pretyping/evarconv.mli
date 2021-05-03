@@ -79,8 +79,8 @@ val check_problems_are_solved : env -> evar_map -> unit
 val check_conv_record : env -> evar_map ->
   state -> state ->
   evar_map * (constr * constr)
-  * constr * constr list * (Stack.t * Stack.t) *
-    (Stack.t * Stack.t) *
+  * constr * constr list * (EConstr.t list * EConstr.t list) *
+    (EConstr.t list * EConstr.t list) *
     (Stack.t * Stack.t) * constr *
     (int option * constr)
 
