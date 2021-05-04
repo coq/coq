@@ -28,6 +28,18 @@ VFILES := $(THEORIESV) $(CONTRIBV)
 # Build directory is needed to have the glob files
 BUILD_VFILES=$(addprefix $(VO_OUT_DIR),$(VFILES))
 
+BUILD_VFILES_FILE=$(BUILD_OUT_DIR).all_v_files
+
+# This has to be kept in sync with above, used in the windows build to
+# avoid coqdep maximum number arguments problems. Paths in file have
+# to be relative to the location of the coqdep input file.
+$(BUILD_VFILES_FILE): $(BUILD_VFILES)
+ifeq ($(ARCH),"Darwin")
+	$(HIDE)find theories user-contrib -type f -name "*.v" -print0 | xargs -0 stat -f "lib/coq/%N\n" > "$@"
+else
+	$(HIDE)find theories user-contrib -type f -name "*.v" -fprintf "$@" "lib/coq/%p\n"
+endif
+
 # Needed due to special code for plugins :S
 BUILD_MLFILES= $(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.mllib
 

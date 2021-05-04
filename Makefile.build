@@ -360,9 +360,9 @@ else
   DYNDEP=-dyndep opt
 endif
 
-$(VFILED): $(BUILD_VFILES) $(BUILD_MLFILES) $(COQDEP) | all-src
+$(VFILED): $(BUILD_VFILES_FILE) $(BUILD_MLFILES) $(COQDEP) | all-src
 	$(SHOW)'COQDEP    VFILES'
-	$(HIDE)$(COQDEP) -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) $(BUILD_VFILES) $(TOTARGET)
+	$(HIDE)$(COQDEP) -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) -f $(BUILD_VFILES_FILE) $(TOTARGET)
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 Makefile $(wildcard Makefile.*) config/Makefile : ;

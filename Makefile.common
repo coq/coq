@@ -28,7 +28,7 @@ HIDE := $(if $(VERBOSE),,@)
 # Note, we can use this as _build/default , but unfortunately dune
 # will remove the .vos files as they are not recognized as targets
 BUILD_OUT_DIR=_build_vo/default/
-VO_OUT_DIR=$(BUILD_OUT_DIR)/lib/coq/
+VO_OUT_DIR=$(BUILD_OUT_DIR)lib/coq/
 
 LEGACY_BIN_DIR=bin
 
