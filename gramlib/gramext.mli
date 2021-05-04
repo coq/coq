@@ -3,7 +3,8 @@
 (* Copyright (c) INRIA 2007-2017 *)
 
 type position =
-    First
+  | Top
+  | First
   | Last
   | Before of string
   | After of string

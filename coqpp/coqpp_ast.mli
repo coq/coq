@@ -40,6 +40,7 @@ type tactic_rule = {
 type level = string
 
 type position =
+| Top
 | First
 | Last
 | Before of level

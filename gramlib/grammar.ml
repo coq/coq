@@ -573,9 +573,18 @@ let get_level entry position levs =
               let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
       in
       get levs
+  | Some Top ->
+    begin match levs with
+        lev :: levs -> [], change_lev lev "<top>", levs
+      | [] ->
+        let msg = sprintf "Grammar.extend: No top level in entry \"%s\"" entry.ename in
+        failwith msg
+    end
   | None ->
       match levs with
-        lev :: levs -> [], change_lev lev "<top>", levs
+      | _ :: _ ->
+        let msg = sprintf "Grammar.extend: Entry \"%s\" not empty" entry.ename in
+        failwith msg
       | [] -> [], empty_lev, []
 
 let change_to_self0 (type s) (type trec) (type a) (entry : s ty_entry) : (s, trec, a) ty_symbol -> (s, a) ty_mayrec_symbol =

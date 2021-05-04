@@ -96,7 +96,7 @@ let create_pos = function
 let find_position_gen current ensure assoc lev =
   match lev with
   | None ->
-    current, (None, None, None, None)
+    current, (Some Gramlib.Gramext.Top, None, None, None)
   | Some n ->
     let after = ref None in
     let init = ref None in

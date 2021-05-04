@@ -122,6 +122,7 @@ let print_local fmt ext =
     fprintf fmt "in@ "
 
 let print_position fmt pos = match pos with
+| Top -> fprintf fmt "Gramlib.Gramext.Top"
 | First -> fprintf fmt "Gramlib.Gramext.First"
 | Last -> fprintf fmt "Gramlib.Gramext.Last"
 | Before s -> fprintf fmt "Gramlib.Gramext.Before@ \"%s\"" s

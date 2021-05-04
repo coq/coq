@@ -279,7 +279,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: ssr_modlocs;
   modloc: [[ "-"; m = global -> { true, m } | m = global -> { false, m } ]];
-  ssr_modlocs: [[ "in"; ml = LIST1 modloc -> { ml } ]];
+  ssr_modlocs: TOP [[ "in"; ml = LIST1 modloc -> { ml } ]];
 END
 
 {

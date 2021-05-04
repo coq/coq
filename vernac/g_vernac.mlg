@@ -691,7 +691,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: gallina_ext hint_info scope_delimiter;
 
-  gallina_ext:
+  gallina_ext: TOP
     [ [ (* Transparent and Opaque *)
         IDENT "Transparent"; l = LIST1 smart_global ->
           { VernacSetOpacity (Conv_oracle.transparent, l) }
@@ -867,7 +867,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: command query_command class_rawexpr gallina_ext search_query search_queries;
 
-  gallina_ext:
+  gallina_ext: TOP
     [ [ IDENT "Export"; "Set"; table = setting_name; v = option_setting ->
         { VernacSetOption (true, table, v) }
       | IDENT "Export"; IDENT "Unset"; table = setting_name ->
@@ -1121,7 +1121,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: command;
 
-  command:
+  command: TOP
     [ [
 (* State management *)
         IDENT "Write"; IDENT "State"; s = IDENT -> { VernacWriteState s }

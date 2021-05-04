@@ -71,7 +71,7 @@ let no_code = { code = ""; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.du
 %token COMMAND CLASSIFIED STATE PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
 %token BANGBRACKET HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
 %token LPAREN RPAREN COLON SEMICOLON
-%token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
+%token GLOBAL TOP FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
 %token EOF
 
 %type <Coqpp_ast.t> file
@@ -339,6 +339,7 @@ position_opt:
 ;
 
 position:
+| TOP { Top }
 | FIRST { First }
 | LAST { Last }
 | BEFORE STRING { Before $2 }

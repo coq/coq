@@ -184,7 +184,7 @@ GRAMMAR EXTEND Gram
       | "()" -> { TacGeneric (None, genarg_of_unit ()) } ] ]
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
-  tactic_value:
+  tactic_value: TOP
     [ [ c = constr_eval -> { ConstrMayEval c }
       | IDENT "fresh"; l = LIST0 fresh_id -> { TacFreshId l }
       | IDENT "type_term"; c=uconstr -> { TacPretype c }
@@ -328,7 +328,7 @@ GRAMMAR EXTEND Gram
     [ [ g = OPT toplevel_selector; tac = G_vernac.query_command -> { tac g }
       | g = OPT toplevel_selector; "{" -> { Vernacexpr.VernacSubproof g } ] ]
   ;
-  command:
+  command: TOP
     [ [ IDENT "Proof"; "with"; ta = Pltac.tactic;
         l = OPT [ IDENT "using"; l = G_vernac.section_subset_expr -> { l } ] ->
           { Vernacexpr.VernacProof (Some (in_tac ta), l) }
@@ -336,7 +336,7 @@ GRAMMAR EXTEND Gram
         "with"; ta = Pltac.tactic ->
           { Vernacexpr.VernacProof (Some (in_tac ta),Some l) } ] ]
   ;
-  hint:
+  hint: TOP
     [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
         tac = Pltac.tactic ->
         { Vernacexpr.HintsExtern (n,c, in_tac tac) } ] ]

@@ -134,7 +134,7 @@ ARGUMENT EXTEND ssrtacarg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
 END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrtacarg;
-  ssrtacarg: [[ tac = ltac_expr LEVEL "5" -> { tac } ]];
+  ssrtacarg: TOP [[ tac = ltac_expr LEVEL "5" -> { tac } ]];
 END
 
 (* Copy of ssrtacarg with LEVEL "3", useful for: "under ... do ..." *)
@@ -142,7 +142,7 @@ ARGUMENT EXTEND ssrtac3arg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
 END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrtac3arg;
-  ssrtac3arg: [[ tac = ltac_expr LEVEL "3" -> { tac } ]];
+  ssrtac3arg: TOP [[ tac = ltac_expr LEVEL "3" -> { tac } ]];
 END
 
 {
@@ -318,7 +318,7 @@ END
 (* Pcoq.Prim. *)
 GRAMMAR EXTEND Gram
   GLOBAL: ssrsimpl_ne;
-  ssrsimpl_ne: [
+  ssrsimpl_ne: TOP [
     [ test_ssrslashnum11; "/"; n = natural; "/"; m = natural; "=" -> { SimplCut(n,m) }
     | test_ssrslashnum10; "/"; n = natural; "/" -> { Cut n }
     | test_ssrslashnum10; "/"; n = natural; "=" -> { Simpl n }
@@ -540,7 +540,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrterm;
-  ssrterm: [[ k = ssrtermkind; c = Pcoq.Constr.constr -> { mk_term k c } ]];
+  ssrterm: TOP [[ k = ssrtermkind; c = Pcoq.Constr.constr -> { mk_term k c } ]];
 END
 
 (* New terms *)
@@ -587,7 +587,7 @@ END
 (* Pcoq *)
 GRAMMAR EXTEND Gram
   GLOBAL: ssrbwdview;
-  ssrbwdview: [
+  ssrbwdview: TOP [
     [  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr -> { [mk_term NoFlag c] }
     |  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr; w = ssrbwdview -> {
                     (mk_term NoFlag c) :: w } ]];
@@ -610,7 +610,7 @@ END
 (* Pcoq *)
 GRAMMAR EXTEND Gram
   GLOBAL: ssrfwdview;
-  ssrfwdview: [
+  ssrfwdview: TOP [
     [  test_not_ssrslashnum; "/"; c = ast_closure_term -> { [c] }
     |  test_not_ssrslashnum; "/"; c = ast_closure_term; w = ssrfwdview -> { c :: w } ]];
 END
@@ -775,7 +775,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: ident_no_do;
-  ident_no_do: [ [ test_ident_no_do; id = IDENT -> { Id.of_string id } ] ];
+  ident_no_do: TOP [ [ test_ident_no_do; id = IDENT -> { Id.of_string id } ] ];
 END
 
 ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
@@ -876,7 +876,7 @@ GRAMMAR EXTEND Gram
   | "^~"; id = ident -> { SuffixId id }
   | "^~"; n = natural -> { SuffixNum n }
   ]];
-  ssrcpat: [
+  ssrcpat: TOP [
    [ test_nohidden; "["; hat_id = hat; "]" -> {
       IPatCase (Block(hat_id)) }
    | test_nohidden; "["; iorpat = ssriorpat; "]" -> {
@@ -887,7 +887,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssripat;
-  ssripat: [[ pat = ssrcpat -> { [pat] } ]];
+  ssripat: TOP [[ pat = ssrcpat -> { [pat] } ]];
 END
 
 ARGUMENT EXTEND ssripats_ne TYPED AS ssripat PRINTED BY { pr_ssripats }
@@ -1019,7 +1019,7 @@ let test_ssrfwdid =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrfwdid;
-  ssrfwdid: [[ test_ssrfwdid; id = Prim.ident -> { id } ]];
+  ssrfwdid: TOP [[ test_ssrfwdid; id = Prim.ident -> { id } ]];
   END
 
 
@@ -1361,7 +1361,7 @@ ARGUMENT EXTEND ssrbinder TYPED AS (ssrfwdfmt * constr) PRINTED BY { pr_ssrbinde
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrbinder;
-  ssrbinder: [
+  ssrbinder: TOP [
   [  ["of" -> { () } | "&" -> { () } ]; c = term LEVEL "99" -> {
      (FwdPose, [BFvar]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum ([CAst.make ~loc Anonymous],Default Glob_term.Explicit,c)],mkCHole (Some loc)) } ]
@@ -1620,7 +1620,7 @@ GRAMMAR EXTEND Gram
     ] ];
   ssrswap: [[ IDENT "first" -> { loc, true } | IDENT "last" -> { loc, false } ]];
   ssrorelse: [[ "||"; tac = ltac_expr LEVEL "2" -> { tac } ]];
-  ssrseqarg: [
+  ssrseqarg: TOP [
     [ arg = ssrswap -> { noindex, swaptacarg arg }
     | i = ssrseqidx; tac = ssrortacarg; def = OPT ssrorelse -> { i, (tac, def) }
     | i = ssrseqidx; arg = ssrswap -> { i, swaptacarg arg }
@@ -1679,7 +1679,7 @@ let ssr_null_entry = Pcoq.Entry.(of_parser "ssr_null" { parser_fun = fun _ -> ()
 
 GRAMMAR EXTEND Gram
   GLOBAL: Prim.ident;
-  Prim.ident: [[ s = IDENT; ssr_null_entry -> { ssr_id_of_string loc s } ]];
+  Prim.ident: TOP [[ s = IDENT; ssr_null_entry -> { ssr_id_of_string loc s } ]];
 END
 
 {
@@ -1792,7 +1792,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrhint simple_tactic;
-  ssrhint: [[ "by"; arg = ssrhintarg -> { arg } ]];
+  ssrhint: TOP [[ "by"; arg = ssrhintarg -> { arg } ]];
 END
 
 (** The "do" tactical. ********************************************************)
@@ -2017,7 +2017,7 @@ GRAMMAR EXTEND Gram
     | "->" -> { IPatRewrite (allocc, L2R) }
     | "<-" -> { IPatRewrite (allocc, R2L) }
     ]];
-  ssreqid: [
+  ssreqid: TOP [
     [ test_ssreqid; pat = ssreqpat -> { Some pat }
     | test_ssreqid -> { None }
     ]];
@@ -2308,7 +2308,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrrule_ne;
-  ssrrule_ne : [
+  ssrrule_ne : TOP [
     [ test_not_ssrslashnum; x =
         [ "/"; t = ssrterm -> { RWdef, t }
         | t = ssrterm -> { RWeq, t }
@@ -2419,7 +2419,7 @@ let test_ssr_rw_syntax =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrrwargs;
-  ssrrwargs: [[ test_ssr_rw_syntax; a = LIST1 ssrrwarg -> { a } ]];
+  ssrrwargs: TOP [[ test_ssr_rw_syntax; a = LIST1 ssrrwarg -> { a } ]];
 END
 
 (** The "rewrite" tactic *)
@@ -2629,7 +2629,7 @@ let test_idcomma =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssr_idcomma;
-  ssr_idcomma: [ [ test_idcomma;
+  ssr_idcomma: TOP [ [ test_idcomma;
     ip = [ id = IDENT -> { Some (Id.of_string id) } | "_" -> { None } ]; "," ->
     { Some ip }
   ] ];

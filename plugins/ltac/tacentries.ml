@@ -112,9 +112,9 @@ let interp_entry_name interp symb =
 
 let get_tactic_entry n =
   if Int.equal n 0 then
-    Pltac.simple_tactic, None
+    Pltac.simple_tactic, Some Gramlib.Gramext.Top
   else if Int.equal n 5 then
-    Pltac.binder_tactic, None
+    Pltac.binder_tactic, Some Gramlib.Gramext.Top
   else if 1<=n && n<5 then
     Pltac.ltac_expr, Some (Gramlib.Gramext.Level (string_of_int n))
   else
@@ -391,6 +391,10 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
 
 let ltac_quotations = ref String.Set.empty
 
+let () =
+  let dummy = (None, None, []) in
+  Pcoq.grammar_extend Pltac.tactic_value {pos=None; data=[dummy]}
+
 let create_ltac_quotation name cast (e, l) =
   let () =
     if String.Set.mem name !ltac_quotations then
@@ -420,7 +424,7 @@ let create_ltac_quotation name cast (e, l) =
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = (level, assoc, [Pcoq.Production.make rule action]) in
-  Pcoq.grammar_extend Pltac.tactic_value {pos=None; data=[gram]}
+  Pcoq.grammar_extend Pltac.tactic_value {pos=Some Gramlib.Gramext.Top; data=[gram]}
 
 (** Command *)
 

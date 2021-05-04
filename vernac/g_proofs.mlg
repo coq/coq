@@ -52,7 +52,7 @@ GRAMMAR EXTEND Gram
   [ [ -> { [] }
     | ":"; l = LIST1 [id = IDENT -> { id } ] -> { l } ] ]
   ;
-  command:
+  command: TOP
     [ [ IDENT "Goal"; c = lconstr ->
         { VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c)) }
       | IDENT "Proof" -> { VernacProof (None,None) }

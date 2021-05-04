@@ -95,7 +95,7 @@ GRAMMAR EXTEND Gram
   ssr_dthen: [[ dp = ssr_dpat; "then"; c = lconstr -> { mk_dthen ~loc dp c } ]];
   ssr_elsepat: [[ "else" -> { [[CAst.make ~loc @@ CPatAtom None]] } ]];
   ssr_else: [[ mp = ssr_elsepat; c = lconstr -> { CAst.make ~loc (mp, c) } ]];
-  binder_constr: [
+  binder_constr: TOP [
     [ "if"; c = term LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->
       { let b1, ct, rt = db1 in CAst.make ~loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2]) }
     | "if"; c = term LEVEL "200";"isn't";db1 = ssr_dthen; b2 = ssr_else ->
@@ -118,7 +118,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: closed_binder;
-  closed_binder: [
+  closed_binder: TOP [
     [ ["of" -> { () } | "&" -> { () } ]; c = term LEVEL "99" ->
       { [CLocalAssum ([CAst.make ~loc Anonymous], Default Explicit, c)] }
   ] ];
@@ -175,7 +175,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: gallina_ext;
-  gallina_ext:
+  gallina_ext: TOP
    [ [ IDENT "Import"; IDENT "Prenex"; IDENT "Implicits" ->
       { Vernacexpr.VernacSetOption (false, ["Printing"; "Implicit"; "Defensive"], Vernacexpr.OptionUnset) }
    ] ]
@@ -310,7 +310,7 @@ open G_vernac
 GRAMMAR EXTEND Gram
   GLOBAL: query_command;
 
-  query_command:
+  query_command: TOP
     [ [ IDENT "Search"; s = search_query; l = search_queries; "." ->
           { let (sl,m) = l in
             fun g ->
@@ -341,7 +341,7 @@ open Pltac
 
 GRAMMAR EXTEND Gram
   GLOBAL: hypident;
-  hypident: [
+  hypident: TOP [
   [ "("; IDENT "type"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypTypeOnly }
   | "("; IDENT "value"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypValueOnly }
   ] ];
@@ -349,7 +349,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: hloc;
-hloc: [
+hloc: TOP [
   [ "in"; "("; "Type"; "of"; id = ident; ")" ->
     { Tacexpr.HypLocation (CAst.make id, Locus.InHypTypeOnly) }
   | "in"; "("; IDENT "Value"; "of"; id = ident; ")" ->
@@ -359,7 +359,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: constr_eval;
-  constr_eval: [
+  constr_eval: TOP [
     [ IDENT "type"; "of"; c = Constr.constr -> { Genredexpr.ConstrTypeOf c }]
   ];
 END

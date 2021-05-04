@@ -925,6 +925,10 @@ END
 
 {
 
+let () =
+  let dummy = (None, None, []) in
+  Pcoq.grammar_extend tac2mode {pos=None; data=[dummy]}
+
 let _ = Pvernac.register_proof_mode "Ltac2" tac2mode
 
 open G_ltac
@@ -941,7 +945,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: tac2mode;
-  tac2mode:
+  tac2mode: TOP
     [ [ tac = G_vernac.query_command -> { tac None } ] ];
 END
 

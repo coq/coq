@@ -119,6 +119,7 @@ rule extend = parse
 | "AS" { AS }
 (** Camlp5 specific keywords *)
 | "GLOBAL" { GLOBAL }
+| "TOP" { TOP }
 | "FIRST" { FIRST }
 | "LAST" { LAST }
 | "BEFORE" { BEFORE }
