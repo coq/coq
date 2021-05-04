@@ -678,7 +678,7 @@ val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.
 
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 
-val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
+val nf_univ_variables : evar_map -> evar_map
 
 val fix_undefined_variables : evar_map -> evar_map
 

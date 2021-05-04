@@ -46,43 +46,6 @@ let level_subst_of f =
           | Some l -> l
     with Not_found -> l
 
-let subst_univs_fn_constr f c =
-  let changed = ref false in
-  let fu = Univ.subst_univs_universe f in
-  let fi = Univ.Instance.subst_fn (level_subst_of f) in
-  let rec aux t =
-    match kind t with
-    | Sort (Sorts.Type u) ->
-      let u' = fu u in
-        if u' == u then t else
-          (changed := true; mkSort (Sorts.sort_of_univ u'))
-    | Const (c, u) ->
-      let u' = fi u in
-        if u' == u then t
-        else (changed := true; mkConstU (c, u'))
-    | Ind (i, u) ->
-      let u' = fi u in
-        if u' == u then t
-        else (changed := true; mkIndU (i, u'))
-    | Construct (c, u) ->
-      let u' = fi u in
-        if u' == u then t
-        else (changed := true; mkConstructU (c, u'))
-    | Case (ci, u, pms, p, iv, c, br) ->
-      let u' = fi u in
-      if u' == u then map aux t
-      else (changed := true; map aux (mkCase (ci, u', pms, p, iv, c, br)))
-    | _ -> map aux t
-  in
-  let c' = aux c in
-    if !changed then c' else c
-
-let subst_univs_constr subst c =
-  if Univ.is_empty_subst subst then c
-  else
-    let f = Univ.make_subst subst in
-      subst_univs_fn_constr f c
-
 let normalize_univ_variable ~find =
   let rec aux cur =
     let b = find cur in
@@ -90,6 +53,8 @@ let normalize_univ_variable ~find =
       if Universe.equal b' b then b
       else b'
   in aux
+
+type universe_opt_subst = Universe.t option universe_map
 
 let normalize_univ_variable_opt_subst ectx =
   let find l =
@@ -99,16 +64,8 @@ let normalize_univ_variable_opt_subst ectx =
   in
   normalize_univ_variable ~find
 
-let normalize_univ_variable_subst subst =
-  let find l = Univ.LMap.find l subst in
-  normalize_univ_variable ~find
-
 let normalize_universe_opt_subst subst =
   let normlevel = normalize_univ_variable_opt_subst subst in
-    subst_univs_universe normlevel
-
-let normalize_universe_subst subst =
-  let normlevel = normalize_univ_variable_subst subst in
     subst_univs_universe normlevel
 
 let normalize_opt_subst ctx =
@@ -117,7 +74,15 @@ let normalize_opt_subst ctx =
       | None -> None
       | Some v -> Some (normalize v)) ctx
 
-type universe_opt_subst = Universe.t option universe_map
+let normalize_univ_variables ctx =
+  let ctx = normalize_opt_subst ctx in
+  let def, subst =
+    Univ.LMap.fold (fun u v (def, subst) ->
+      match v with
+      | None -> (def, subst)
+      | Some b -> (Univ.LSet.add u def, Univ.LMap.add u b subst))
+    ctx (Univ.LSet.empty, Univ.LMap.empty)
+  in ctx, def, subst
 
 let subst_univs_fn_puniverses f (c, u as cu) =
   let u' = Instance.subst_fn f u in
@@ -158,26 +123,6 @@ let nf_evars_and_universes_opt_subst f subst =
       else mkArray (u',elems',def',ty')
     | _ -> Constr.map aux c
   in aux
-
-let make_opt_subst s =
-  fun x ->
-    (match Univ.LMap.find x s with
-    | Some u -> u
-    | None -> raise Not_found)
-
-let subst_opt_univs_constr s =
-  let f = make_opt_subst s in
-  subst_univs_fn_constr f
-
-let normalize_univ_variables ctx =
-  let ctx = normalize_opt_subst ctx in
-  let def, subst =
-    Univ.LMap.fold (fun u v (def, subst) ->
-      match v with
-      | None -> (def, subst)
-      | Some b -> (Univ.LSet.add u def, Univ.LMap.add u b subst))
-    ctx (Univ.LSet.empty, Univ.LMap.empty)
-  in ctx, def, subst
 
 let pr_universe_body = function
   | None -> mt ()

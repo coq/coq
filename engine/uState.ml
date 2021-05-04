@@ -677,9 +677,10 @@ let normalize_variables uctx =
   in
   let uctx_local = subst_univs_context_with_def def (make_subst subst) uctx.local in
   let uctx_local', univs = refresh_constraints uctx.initial_universes uctx_local in
-    subst, { uctx with local = uctx_local';
-      univ_variables = normalized_variables;
-      universes = univs }
+  { uctx with
+    local = uctx_local';
+    univ_variables = normalized_variables;
+    universes = univs }
 
 let abstract_undefined_variables uctx =
   let vars' =

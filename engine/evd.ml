@@ -1072,14 +1072,14 @@ let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
 
 let nf_univ_variables evd =
-  let subst, uctx' = UState.normalize_variables evd.universes in
-  let evd' = {evd with universes = uctx'} in
-    evd', subst
+  let uctx = UState.normalize_variables evd.universes in
+  {evd with universes = uctx}
+
 
 let minimize_universes evd =
-  let subst, uctx' = UState.normalize_variables evd.universes in
+  let uctx' = UState.normalize_variables evd.universes in
   let uctx' = UState.minimize uctx' in
-    {evd with universes = uctx'}
+  {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
 

@@ -1355,7 +1355,7 @@ let prepare_hint check env init (sigma,c) =
   (* We re-abstract over uninstantiated evars and universes.
      It is actually a bit stupid to generalize over evars since the first
      thing make_resolves will do is to re-instantiate the products *)
-  let sigma, _ = Evd.nf_univ_variables sigma in
+  let sigma = Evd.nf_univ_variables sigma in
   let c = Evarutil.nf_evar sigma c in
   let c = drop_extra_implicit_args sigma c in
   let vars = ref (collect_vars sigma c) in
