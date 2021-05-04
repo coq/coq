@@ -19,6 +19,29 @@ SHOW := $(if $(VERBOSE),@true "",@echo "")
 HIDE := $(if $(VERBOSE),,@)
 
 ###########################################################################
+# Basic build directories
+###########################################################################
+BCONTEXT=_build/default
+CONTEXT=_build/install/default
+CBIN=_build/install/default/bin
+CSHARE=_build/install/default/share/coq
+
+_DBUILD_DEPS:=
+
+# FLOCK
+ifeq (,$(shell command -v flock 2>/dev/null))
+FLOCK:=_build/default/tools/flock/coq_flock.exe
+_DBUILD_DEPS+=$(FLOCK)
+
+$(FLOCK): tools/flock/coq_flock.ml tools/flock/flock.c
+	$(SHOW)'DUNE      $@'
+	$(HIDE)dune build $@
+else
+FLOCK:=flock
+endif
+
+
+###########################################################################
 # VO build directory
 ###########################################################################
 
@@ -46,11 +69,6 @@ $(BUILD_OUT_DIR) $(VO_OUT_DIR):
 ###########################################################################
 # Executables
 ###########################################################################
-
-BCONTEXT=_build/default
-CONTEXT=_build/install/default
-CBIN=_build/install/default/bin
-CSHARE=_build/install/default/share/coq
 
 ifeq ($(BEST),byte)
   COQC:=$(CBIN)/coqc.byte$(EXE)
@@ -96,7 +114,7 @@ ALL_ML_SOURCE_FILES=$(shell find $(ML_SOURCE_DIRS) -name '*.ml' -or -name '*.mli
 _DDISPLAY?=quiet
 _DPROFILE?=$(CONFIGURE_DPROFILE)
 _DOPT:=--display $(_DDISPLAY) --profile=$(_DPROFILE)
-_DBUILD:=flock .dune.lock dune build $(_DOPT)
+_DBUILD:=$(FLOCK) .dune.lock dune build $(_DOPT)
 
 # We rerun dune when any of the source files have changed
 
@@ -106,70 +124,70 @@ _DBUILD:=flock .dune.lock dune build $(_DOPT)
 # updated mtime in a source file may not trigger a dune rebuild it it
 # didn't change hash, thus the mtime of the target would confuse make.
 
-$(CBIN)/%: $(ALL_ML_SOURCE_FILES)
+$(CBIN)/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-$(CSHARE)/%:
+$(CSHARE)/%: $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
 ALL_PLUGIN_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/plugins -name '*.ml' -or -name '*.mli' -or -name '*.mlg') $(ALL_ML_SOURCE_FILES)
 
-_build/default/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES)
+_build/default/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/default/plugins/%.cma: $(ALL_PLUGIN_SOURCE_FILES)
+_build/default/plugins/%.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
 # Only used for the test-suite in local mode
-_build/default/tools/%: $(ALL_ML_SOURCE_FILES)
+_build/default/tools/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/install/default/lib/coq-core/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES)
+_build/install/default/lib/coq-core/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/install/default/lib/stublibs/%.so: $(ALL_ML_SOURCE_FILES)
+_build/install/default/lib/stublibs/%.so: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/install/default/lib/coq/%.cmi: $(ALL_ML_SOURCE_FILES)
+_build/install/default/lib/coq/%.cmi: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/install/default/lib/coq-core/tools/coqdoc/coqdoc.sty:
+_build/install/default/lib/coq-core/tools/coqdoc/coqdoc.sty: $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/install/default/lib/coq-core/tools/coqdoc/coqdoc.css:
+_build/install/default/lib/coq-core/tools/coqdoc/coqdoc.css: $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/default/%.install:
+_build/default/%.install: $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 
 ALL_CONTRIB_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/user-contrib -name '*.ml' -or -name '*.mli' -or -name '*.mlg') $(ALL_PLUGIN_SOURCE_FILES)
-_build/default/user-contrib/%.cmxs: $(ALL_CONTRIB_SOURCE_FILES)
+_build/default/user-contrib/%.cmxs: $(ALL_CONTRIB_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
-_build/default/user-contrib/%.cma: $(ALL_CONTRIB_SOURCE_FILES)
+_build/default/user-contrib/%.cma: $(ALL_CONTRIB_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
@@ -177,19 +195,19 @@ _build/default/user-contrib/%.cma: $(ALL_CONTRIB_SOURCE_FILES)
 .PHONY: all-src
 
 ALL_SOURCE_FILES=$(ALL_CONTRIB_SOURCE_FILES) $(ALL_PLUGIN_SOURCE_FILES) $(ALL_ML_SOURCE_FILES)
-all-src: $(ALL_SOURCE_FILES)
+all-src: $(ALL_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      sources'
 	$(HIDE)$(_DBUILD) @all-src
 
 # For docgram
-_build/default/doc/tools/%: $(ALL_ML_SOURCE_FILES)
+_build/default/doc/tools/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
 
 PLUGINTUTO := doc/plugin_tutorial
 
-revision:
+revision: $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
