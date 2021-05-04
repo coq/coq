@@ -240,9 +240,9 @@ endif
 ## When a rule redirects stdout of a command to the target file : cmd > $@
 ## then the target file will be created even if cmd has failed.
 ## Hence relaunching make will go further, as make thinks the target has been
-## done ok. To avoid this, we use the following macro:
+## done ok. To avoid this, we use the following special variable:
 
-TOTARGET = > "$@" || (RV=$$?; rm -f "$@"; exit $${RV})
+.DELETE_ON_ERROR:
 
 ###########################################################################
 # tests
@@ -360,9 +360,14 @@ else
   DYNDEP=-dyndep opt
 endif
 
+# can easily produce too long command line with many .v files prefixed by build_vo
+# so we use find + xargs to split coqdep invocation if necessary
+# OSX sed doesn't support -null-data so can't use -print0
 $(VFILED): $(BUILD_VFILES) $(BUILD_MLFILES) $(COQDEP) | all-src
 	$(SHOW)'COQDEP    VFILES'
-	$(HIDE)$(COQDEP) -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) $(BUILD_VFILES) $(TOTARGET)
+	$(HIDE)find theories $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name '*.v' | \
+	sed 's|^|$(VO_OUT_DIR)|' | \
+	xargs $(COQDEP) -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) > "$@"
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 Makefile $(wildcard Makefile.*) config/Makefile : ;
