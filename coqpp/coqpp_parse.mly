@@ -329,8 +329,15 @@ gram_entries:
 ;
 
 gram_entry:
+| qualid_or_ident COLON reuse LBRACKET LBRACKET rules_opt RBRACKET RBRACKET SEMICOLON
+  { { gentry_name = $1; gentry_rules = GDataReuse ($3, $6); } }
 | qualid_or_ident COLON position_opt LBRACKET levels RBRACKET SEMICOLON
-  { { gentry_name = $1; gentry_pos = $3; gentry_rules = $5; } }
+  { { gentry_name = $1; gentry_rules = GDataFresh ($3, $5); } }
+;
+
+reuse:
+| TOP { None }
+| LEVEL STRING { Some $2 }
 ;
 
 position_opt:
@@ -339,12 +346,10 @@ position_opt:
 ;
 
 position:
-| TOP { Top }
 | FIRST { First }
 | LAST { Last }
 | BEFORE STRING { Before $2 }
 | AFTER STRING { After $2 }
-| LEVEL STRING { Level $2 }
 ;
 
 string_opt:
@@ -427,11 +432,11 @@ doc_gram_entries:
 
 doc_gram_entry:
 | qualid_or_ident COLON LBRACKET PIPE doc_gram_rules RBRACKET
-  { { gentry_name = $1; gentry_pos = None;
-      gentry_rules = [{ grule_label = None; grule_assoc = None; grule_prods = $5; }] } }
+  { { gentry_name = $1;
+      gentry_rules = GDataFresh (None, [{ grule_label = None; grule_assoc = None; grule_prods = $5; }]) } }
 | qualid_or_ident COLON LBRACKET RBRACKET
-  { { gentry_name = $1; gentry_pos = None;
-      gentry_rules = [{ grule_label = None; grule_assoc = None; grule_prods = []; }] } }
+  { { gentry_name = $1;
+      gentry_rules = GDataFresh (None, [{ grule_label = None; grule_assoc = None; grule_prods = []; }]) } }
 ;
 
 doc_gram_rules:

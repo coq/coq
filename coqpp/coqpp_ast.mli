@@ -40,12 +40,10 @@ type tactic_rule = {
 type level = string
 
 type position =
-| Top
 | First
 | Last
 | Before of level
 | After of level
-| Level of level
 
 type assoc =
 | LeftA
@@ -80,10 +78,13 @@ type gram_rule = {
   grule_prods : gram_prod list;
 }
 
+type grammar_rules =
+| GDataFresh of position option * gram_rule list
+| GDataReuse of string option * gram_prod list
+
 type grammar_entry = {
   gentry_name : string;
-  gentry_pos : position option;
-  gentry_rules : gram_rule list;
+  gentry_rules : grammar_rules;
 }
 
 type grammar_ext = {

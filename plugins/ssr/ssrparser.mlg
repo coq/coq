@@ -1722,7 +1722,7 @@ let tclintros_expr ?loc tac ipats =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
-  ltac_expr: LEVEL "1" [ RIGHTA
+  ltac_expr: LEVEL "1" [
     [ tac = ltac_expr; intros = ssrintros_ne -> { tclintros_expr ~loc tac intros }
     ] ];
 END
@@ -1822,7 +1822,7 @@ GRAMMAR EXTEND Gram
     [ tac = ltac_expr LEVEL "3" -> { mk_hint tac }
     | tacs = ssrortacarg -> { tacs }
   ] ];
-  ltac_expr: LEVEL "3" [ RIGHTA
+  ltac_expr: LEVEL "3" [
     [ IDENT "do"; m = ssrmmod; tac = ssrdotac; clauses = ssrclauses ->
       { ssrdotac_expr ~loc noindex m tac clauses }
     | IDENT "do"; tac = ssrortacarg; clauses = ssrclauses ->
@@ -1880,7 +1880,7 @@ GRAMMAR EXTEND Gram
   ssr_first_else: [
     [ tac1 = ssr_first; tac2 = ssrorelse -> { CAst.make ~loc (TacOrelse (tac1, tac2)) }
     | tac = ssr_first -> { tac } ]];
-  ltac_expr: LEVEL "4" [ LEFTA
+  ltac_expr: LEVEL "4" [
     [ tac1 = ltac_expr; ";"; IDENT "first"; tac2 = ssr_first_else ->
       { CAst.make ~loc (TacThen (tac1, tac2)) }
     | tac = ltac_expr; ";"; IDENT "first"; arg = ssrseqarg ->
@@ -2489,7 +2489,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
   ltac_expr: LEVEL "3"
-    [ RIGHTA [ IDENT "abstract"; gens = ssrdgens ->
+    [ [ IDENT "abstract"; gens = ssrdgens ->
                { CAst.make ~loc (TacML (
                      ssrtac_entry "abstract", [Tacexpr.TacGeneric (None, Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)]))
                  } ]];
