@@ -56,6 +56,13 @@ endif
 .PHONY: install-coq install-dune install-library
 
 # --display quiet should not produce output, dune bug
+
+# Note that dune install paths are setup at dune's build time, thus
+# for example a Debian-built dune will install stuff following
+# Debian's FHS, an opam-built dune will differ and follow OPAM's layout.
+#
+# We ought to improve this, as of today the case of an opam-built dune
+# installing to a global prefix such as /usr/local/ may not follow the FHS
 install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
 	dune install --display quiet --mandir="$(MANDIR)" --prefix="$(FULLCOQPREFIX)" coq-core
 	dune install --display quiet --mandir="$(MANDIR)" --prefix="$(FULLCOQPREFIX)" coqide-server

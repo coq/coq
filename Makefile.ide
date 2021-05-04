@@ -31,7 +31,7 @@ $(IDETOP): $(ALL_ML_SOURCE_FILES) $(PROTO_IDE_FILES) ide/coqide/idetop.ml
 ifeq ($(HASCOQIDE),no)
 coqide:
 else
-coqide: $(COQIDE) $(IDETOP) $(TOPBINOPT) $(IDEBINDINGS) $(VO_OUT_DIR)theories/Init/Prelude.$(VO)
+coqide: $(COQIDE) $(IDETOP) $(TOPBINOPT) $(IDEBINDINGS) $(VO_OUT_DIR)theories/Init/Prelude.$(VO) $(BCONTEXT)/coqide.install
 endif
 
 # $(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(FULLDATADIR)
