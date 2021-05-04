@@ -260,9 +260,7 @@ MAKE_TSOPTS=-C test-suite -s VERBOSE=$(VERBOSE)
 
 check: validate test-suite
 
-TEST_SUITE_TOOLING=$(BCONTEXT)/tools/CoqMakefile.in $(BCONTEXT)/tools/coqdoc/coqdoc.sty $(BCONTEXT)/tools/coqdoc/coqdoc.css
-
-test-suite: world $(TEST_SUITE_TOOLING)
+test-suite: world
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 

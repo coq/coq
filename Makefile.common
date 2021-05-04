@@ -64,6 +64,7 @@ TOPBINOPT:=$(addsuffix .opt$(EXE), $(addprefix $(CBIN)/, coqproofworker coqtacti
 COQDEP:=$(CBIN)/coqdep$(EXE)
 DOC_GRAM:=_build/default/doc/tools/docgram/doc_grammar.exe
 COQMAKEFILE:=$(CBIN)/coq_makefile$(EXE)
+COQMAKEFILEIN:=$(BCONTEXT)/tools/CoqMakefile.in
 COQTEX:=$(CBIN)/coq-tex$(EXE)
 COQWC:=$(CBIN)/coqwc$(EXE)
 COQDOC:=$(CBIN)/coqdoc$(EXE)
@@ -79,14 +80,14 @@ OCAMLLIBDEP:=$(CBIN)/ocamllibdep$(EXE)
 FAKEIDE:=$(CBIN)/fake_ide$(EXE)
 USERCONTRIBDIRS:=Ltac2
 CHICKEN:=$(CBIN)/coqchk$(EXE)
-TOOLS:=$(VOTOUR) $(COQDOC) $(COQWC) $(COQMAKEFILE)
+TOOLS:=$(VOTOUR) $(COQDOC) $(COQDOCSTY) $(COQDOCCSS) $(COQWC) $(COQMAKEFILE) $(COQMAKEFILEIN)
 CSDPCERT:=$(CBIN)/csdpcert$(EXE)
 
 ifeq ($(origin COQ_SRC_DIR),undefined)
 COQ_SRC_DIR=.
 endif
 
-COQ_CM_LIBS=coqpp lib clib kernel library engine pretyping gramlib interp printing parsing proofs tactics vernac stm toplevel topbin
+COQ_CM_LIBS=coqpp lib clib kernel library engine pretyping gramlib interp printing parsing proofs tactics vernac stm toplevel topbin tools
 ML_SOURCE_DIRS=$(addprefix $(COQ_SRC_DIR)/,$(COQ_CM_LIBS))
 ALL_ML_SOURCE_FILES=$(shell find $(ML_SOURCE_DIRS) -name '*.ml' -or -name '*.mli' -or -name '*.c' -or -name '*.h')
 
@@ -165,10 +166,12 @@ ALL_CONTRIB_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/user-contrib -name '*.ml' -
 _build/default/user-contrib/%.cmxs: $(ALL_CONTRIB_SOURCE_FILES)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
 _build/default/user-contrib/%.cma: $(ALL_CONTRIB_SOURCE_FILES)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
 .PHONY: all-src
 
@@ -181,12 +184,14 @@ all-src: $(ALL_SOURCE_FILES)
 _build/default/doc/tools/%: $(ALL_ML_SOURCE_FILES)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
 PLUGINTUTO := doc/plugin_tutorial
 
 revision:
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
 # For emacs:
 # Local Variables:

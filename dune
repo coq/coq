@@ -25,6 +25,7 @@
 
 (rule
  (targets revision)
+ (mode fallback)
  (deps (:rev-script dev/tools/make_git_revision.sh))
  (action (with-stdout-to revision (bash %{rev-script}))))
 
