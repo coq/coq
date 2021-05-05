@@ -34,7 +34,7 @@ type args = {
   fullGrammar : bool;
   check_tacs : bool;
   check_cmds : bool;
-  no_update: bool;
+  update: bool;
   show_warn : bool;
   verbose : bool;
   verify : bool;
@@ -46,7 +46,7 @@ let default_args = {
   fullGrammar = false;
   check_tacs = false;
   check_cmds = false;
-  no_update = false;
+  update = true;
   show_warn = true;
   verbose = false;
   verify = false;
@@ -1397,7 +1397,7 @@ let check_range_consistency g start end_ =
 (* print info on symbols with a single production of a single nonterminal *)
 let check_singletons g =
   NTMap.iter (fun nt prods ->
-      if List.length prods = 1 then
+      if List.length prods = 1 && !show_warn then
         if List.length (remove_Sedit2 (List.hd prods)) = 1 then
           warn "Singleton non-terminal, maybe SPLICE?: %s\n" nt
         else
@@ -1407,7 +1407,8 @@ let check_singletons g =
 let report_bad_nts g file =
   let all_nts_ref, all_nts_def = get_refdef_nts g in
   let undef = StringSet.diff all_nts_ref all_nts_def in
-  List.iter (fun nt -> warn "%s: Undefined symbol '%s'\n" file nt) (StringSet.elements undef);
+  if !show_warn then
+    List.iter (fun nt -> warn "%s: Undefined symbol '%s'\n" file nt) (StringSet.elements undef);
 
   let reachable =
     List.fold_left (fun res sym ->
@@ -1415,7 +1416,8 @@ let report_bad_nts g file =
       StringSet.empty start_symbols
   in
   let unreachable = List.filter (fun nt -> not (StringSet.mem nt reachable)) !g.order in
-  List.iter (fun nt -> warn "%s: Unreachable symbol '%s'\n" file nt) unreachable
+  if !show_warn then
+    List.iter (fun nt -> warn "%s: Unreachable symbol '%s'\n" file nt) unreachable
 
 
 let report_info g symdef_map =
@@ -1470,7 +1472,7 @@ let reorder_grammar eg reordered_rules file =
         (* only keep nts and prods in common with editedGrammar *)
         let eg_prods = NTMap.find nt !eg.map in
         let prods = List.filter (fun prod -> (has_match prod eg_prods)) prods in
-        if NTMap.mem nt !og.map then
+        if NTMap.mem nt !og.map && !show_warn then
           warn "%s: Duplicate nonterminal '%s'\n" file nt;
         add_rule og nt prods file
       with Not_found -> ())
@@ -1552,7 +1554,7 @@ let finish_with_file old_file args =
     if not (files_eq old_file temp_file) then
       error "%s is not current\n" old_file;
     Sys.remove temp_file
-  end else if not args.no_update then
+  end else if args.update then
     Sys.rename temp_file old_file
 
 let open_temp_bin file =
@@ -1658,8 +1660,9 @@ let process_rst g file args seen tac_prods cmd_prods =
       | nt :: tl ->
         (try
           let (prev_file, prev_linenum) = NTMap.find nt !seen.nts in
-          warn "%s line %d: '%s' already included at %s line %d\n"
-              file !linenum nt prev_file prev_linenum;
+          if !show_warn then
+            warn "%s line %d: '%s' already included at %s line %d\n"
+                file !linenum nt prev_file prev_linenum;
         with Not_found ->
           seen := { !seen with nts = (NTMap.add nt (file, !linenum) !seen.nts)} );
         let prods = NTMap.find nt !g.map in
@@ -1754,7 +1757,7 @@ let process_rst g file args seen tac_prods cmd_prods =
           mtch (* update cmd/tacn *)
     in
     let map = ref seen_map in
-    if NTMap.mem first_rhs !map then
+    if NTMap.mem first_rhs !map && !show_warn then
       warn "%s line %d: Repeated %s: '%s'\n" file !linenum direc first_rhs;
 (*    if not (StringSet.mem rhs seen_map) then*)
 (*      warn "%s line %d: Unknown tactic: '%s'\n" file !linenum rhs;*)
@@ -1789,7 +1792,7 @@ let process_rst g file args seen tac_prods cmd_prods =
         let pfx = String.sub line 0 (Str.group_end 2) in
         match dir with
         | "prodn::" ->
-          if rhs = "coq" then
+          if rhs = "coq" && !show_warn then
             warn "%s line %d: Missing 'insertprodn' before 'prodn:: coq'\n" file !linenum;
           fprintf new_rst "%s\n" line;
         | "tacn::" when args.check_tacs ->
@@ -1813,7 +1816,7 @@ let process_rst g file args seen tac_prods cmd_prods =
 
 let report_omitted_prods g seen label split =
   let maybe_warn first last n =
-    if first <> "" then begin
+    if first <> "" && !show_warn then begin
       if first <> last then
         warn "%ss '%s' to %s'%s' not included in .rst files (%d)\n" label first split last n
       else
@@ -1839,7 +1842,7 @@ let report_omitted_prods g seen label split =
   maybe_warn first last n;
   Printf.printf "\n\n";
   NTMap.iter (fun nt _ ->
-      if not (NTMap.mem nt seen || (List.mem nt included)) then
+      if !show_warn && not (NTMap.mem nt seen || (List.mem nt included)) then
         warn "%s %s not included in .rst files\n" "Nonterminal" nt)
     !g.map;
   if total <> 0 then
@@ -1907,7 +1910,6 @@ let process_grammar args =
 (*      check_singletons g*)
 
       let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
-      let args = { args with no_update = false } in (* always update rsts in place for now *)
       let plist nt =
         let list = (List.map (fun t -> String.trim (prod_to_prodn t))
           (NTMap.find nt !g.map)) in
@@ -1977,8 +1979,8 @@ let parse_args () =
         match arg with
         | "-check-cmds" -> { args with check_cmds = true }
         | "-check-tacs" -> { args with check_tacs = true }
-        | "-no-warn" -> show_warn := false; { args with show_warn = true }
-        | "-no-update" -> { args with no_update = true }
+        | "-no-warn" -> show_warn := false; { args with show_warn = false }
+        | "-no-update" -> { args with update = false }
         | "-short" -> { args with fullGrammar = true }
         | "-verbose" -> { args with verbose = true }
         | "-verify" -> { args with verify = true }

@@ -91,17 +91,29 @@ for documentation purposes:
 
 5.  For reference, the tool generates `prodnGrammar`, which has the entire grammar in the form of `prodns`.
 
+6.  The tool generates `prodnCommands` (for commands) and `prodnTactics` (for tactics).
+    The former lists all commands that are under `command` in `orderedGrammar` and
+    compares it to the `:cmd:` and `:cmdv:` given in the rst files.  The latter
+    lists all tactics that are under `simple_tactic` in the grammar and compares it
+    to the `:tacn:` and `:tacv:`.  The tags at the beginning of each line mean:
+
+    - (no tag) - the grammar and the rst match exactly and uniquely
+    - `-` - a grammar production that can't be matched to an rst file entry
+    - `+` - an rst entry that doesn't match a grammar production
+    - `v` - the rst entry is a `:cmdv:` or `:tacv:`
+    - `?` - the match between the grammar and the rst files is not unique
+
 ## How to use the tool
 
 * `make doc_gram` updates `fullGrammar`.
 
-* `make doc_gram_verify` verifies that `fullGrammar` is consistent with the `.mlg` files.
-  This is for use by CI.
+* `make doc_gram_verify` verifies that `fullGrammar`, `orderedGrammar` and `*.rst`
+  are consistent with the `.mlg` files.  This is for use by CI.
 
 * `make doc_gram_rsts` updates the `*Grammar` and `.rst` files.
 
 Changes to `fullGrammar`, `orderedGrammar` and the `.rsts` should be checked in to git.
-The other `*Grammar` files should not.
+The `prodn*` and other `*Grammar` files should not.
 
 ### Command line arguments
 
