@@ -232,3 +232,12 @@ match x with
 | @D' _ _ _ _ n _ p _ => (n, p)
 end
      : J' bool (true, true) -> nat * nat
+File "stdin", line 313, characters 3-4:
+Warning: Unused variable x catches more than one case.
+[unused-pattern-matching-variable,pattern-matching]
+File "stdin", line 314, characters 6-7:
+Warning: Unused variable y catches more than one case.
+[unused-pattern-matching-variable,pattern-matching]
+File "stdin", line 314, characters 3-4:
+Warning: Unused variable x catches more than one case.
+[unused-pattern-matching-variable,pattern-matching]
