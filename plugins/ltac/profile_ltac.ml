@@ -239,7 +239,8 @@ let string_of_call ck =
     (match ck with
        | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
        | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
-       | Tacexpr.LtacVarCall (id, t) -> Names.Id.print id
+       (* todo: don't want the KerName instead? *)
+       | Tacexpr.LtacVarCall (_, id, t) -> Names.Id.print id
        | Tacexpr.LtacAtomCall te ->
          Pptactic.pr_glob_tactic (Global.env ())
             (CAst.make (Tacexpr.TacAtom te))
@@ -358,7 +359,6 @@ let do_profile s call_trace ?(count_call=true) tac =
   | true ->
     tclWRAPFINALLY
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-           if !is_profiling then
              match call_trace, Local.(!stack) with
              | (_, c) :: _, parent :: rest ->
                let name = string_of_call c in
@@ -367,7 +367,7 @@ let do_profile s call_trace ?(count_call=true) tac =
                Some (time ())
              | _ :: _, [] -> assert false
              | _ -> None
-           else None)))
+           )))
       tac
       (function
         | Some start_time ->

@@ -27,6 +27,10 @@ let cb = GData.clipboard Gdk.Atom.primary
 
 let status = GMisc.statusbar ()
 
+(* These functions seem confused:
+1. They should be per-session rather than global (e.g. for "Coq is computing")
+2. I don't see how pushing and popping is particularly useful
+   and there's no explanation of when to push/pop *)
 let push_info,pop_info,clear_info =
   let status_context = status#new_context ~name:"Messages" in
   let size = ref 0 in
@@ -139,7 +143,7 @@ let set_location = ref  (function s -> failwith "not ready")
 let display_location ins =
   let line = ins#line + 1 in
   let off = ins#line_offset + 1 in
-  let msg = Printf.sprintf "Line: %5d Char: %3d" line off in
+  let msg = Printf.sprintf "Line: %5d Char: %3d Offset: %5d" line off (ins#offset) in
   !set_location msg
 
 (** A utf8 char is either a single byte (ascii char, 0xxxxxxx)
@@ -147,11 +151,9 @@ let display_location ins =
 
 let is_extra_byte c = ((Char.code c) lsr 6 = 2)
 
-(** For a string buffer that may contain utf8 chars,
-    we convert a byte offset into a char offset
-    by only counting char-starting bytes.
-    Normally the string buffer starts with a char-starting byte
-    (buffer produced by a [#get_text]) *)
+(** Convert the byte offset in a string that may contain
+    multibyte utf-8 chars into a char offset
+    by counting the char-starting bytes. *)
 
 let byte_offset_to_char_offset s byte_offset =
   let extra_bytes = ref 0 in
@@ -160,7 +162,31 @@ let byte_offset_to_char_offset s byte_offset =
   done;
   byte_offset - !extra_bytes
 
-let glib_utf8_pos_to_offset s ~off = byte_offset_to_char_offset s off
+let ulen uni_ch =
+  if uni_ch < 0x80 then 1
+  else if uni_ch < 0x800 then 2
+  else if uni_ch < 0x10000 then 3
+  else 4
+
+(** convert UTF-8 byte offset (used by Coq) to unicode offset (used by GTK buffer) *)
+let byte_off_to_buffer_off buffer byte_off =
+  let rec cvt iter cnt =
+    if cnt <= 0 then
+      iter#offset
+    else
+      cvt iter#forward_char (cnt - (ulen iter#char))
+  in
+  cvt (buffer#get_iter `START) byte_off
+
+(** convert unicode offset (used by GTK buffer) to UTF-8 byte offset (used by Coq) *)
+let buffer_off_to_byte_off (buffer : GText.buffer) uni_off =
+  let rec cvt iter rv =
+    if iter#offset <= 0 then
+      rv
+    else
+      cvt iter#backward_char (rv + (ulen iter#char))
+  in
+  cvt (buffer#get_iter (`OFFSET uni_off)) 0
 
 let do_convert s =
   let from_loc () =
@@ -605,3 +631,7 @@ let encode_string s =
   Buffer.contents b
 
 let encode_string_list l = String.concat " " (List.map encode_string l)
+
+let filter_key ev =
+  let filter mods = List.filter (fun m -> List.mem m [`SHIFT; `CONTROL; `MOD1 (* Alt *)]) mods in
+  GdkEvent.Key.(keyval ev, (filter (state ev)))

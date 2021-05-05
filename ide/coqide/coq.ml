@@ -178,6 +178,9 @@ let with_ccb ccb e = ccb.open_ccb e
 
 let interrupter = ref (fun pid -> Unix.kill pid Sys.sigint)
 
+(* todo: does not work on windows (sigusr1 not supported) *)
+let breaker = ref (fun pid -> Unix.kill pid Sys.sigusr1)
+
 (** * The structure describing a coqtop sub-process *)
 
 let gio_channel_of_descr_socket = ref Glib.Io.channel_of_descr
@@ -204,17 +207,7 @@ type handle = {
   mutable db_waiting_for : ccb option; (* last debug call + callback *)
 }
 
-(** Coqtop process status :
-  - New    : a process has been spawned, but not initialized via [init_coqtop].
-             It will reject tasks given via [try_grab].
-  - Ready  : no current task, accepts new tasks via [try_grab].
-  - Busy   : has accepted a task via [init_coqtop] or [try_grab],
-             Non-debug tasks will be rejected for the moment
-  - DbBusy : is processing a debug task
-  - Closed : the coqide buffer has been closed, we discard any further task.
-*)
-
-type status = New | Ready | Busy | DbBusy | Closed
+type status = New | Ready | Busy | Closed
 
 type 'a task = handle -> ('a -> void) -> void
 
@@ -232,6 +225,13 @@ type coqtop = {
   (* actual coqtop process and its status *)
   mutable handle : handle;
   mutable status : status;
+  mutable stopped_in_debugger : bool;
+  (* i.e., CoqIDE has received a prompt message *)
+  mutable do_when_ready : (unit -> unit) Queue.t;
+  (* for debug msgs only; functions are called when coqtop is Ready *)
+  mutable basename : string;
+  mutable set_script_editable : bool -> unit;
+  mutable restore_bpts : unit -> unit
 }
 
 let return (x : 'a) : 'a task =
@@ -331,7 +331,7 @@ let unsafe_handle_input handle (feedback_processor, ltac_debug_processor) state 
       handle_ltac_debug ltac_debug_processor xml;
       loop ()
     | Xmlprotocol.Other ->
-      ignore (handle_final_answer handle xml);
+      ignore (handle_final_answer handle xml);  (* request completed *)
       if handle.waiting_for <> None then (* i.e., just finished a db request *)
         loop ()
   in
@@ -413,10 +413,40 @@ let clear_handle h =
     CoqTop.kill h.proc;
     ignore(CoqTop.wait h.proc);
     h.alive <- false;
+    h.db_waiting_for <- None;
   end
 
-let mkready coqtop =
-  fun () -> coqtop.status <- if coqtop.status = DbBusy then Busy else Ready; Void
+let pstatus = function
+    | Closed -> "Closed"
+    | Busy -> "Busy"
+    | Ready -> "Ready"
+    | New -> "New"
+
+let can_send_db_msg coqtop =
+  coqtop.handle.db_waiting_for = None &&
+  match coqtop.status with
+  | Busy -> coqtop.stopped_in_debugger
+  | Ready -> true
+  | _ -> false
+
+let add_do_when_ready coqtop hook =
+  let q = coqtop.do_when_ready in
+  Queue.add hook q;
+  if not (Queue.is_empty q) && can_send_db_msg coqtop then
+    let f = Queue.pop q in f ()
+
+let mkready coqtop db =
+  fun () ->
+    if not db then begin
+      coqtop.status <- Ready;
+      coqtop.set_script_editable true
+    end;
+    if coqtop.status = Ready || (db && can_send_db_msg coqtop) then begin
+      let q = coqtop.do_when_ready in
+      if not (Queue.is_empty q) then
+        let f = Queue.pop q in f ()
+    end;
+    Void
 
 let save_all = ref (fun () -> assert false)
 
@@ -426,12 +456,13 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
     let title = "Warning" in
     let icon = (warn_image ())#coerce in
     let buttons = ["Reset"; "Save all and quit"; "Quit without saving"] in
-    let ans = GToolbox.question_box ~title ~buttons ~icon "coqidetop died badly." in
+    let ans = GToolbox.question_box ~title ~buttons ~icon (coqtop.basename ^ ": coqidetop died.") in
     if ans = 2 then (!save_all (); GtkMain.Main.quit ())
     else if ans = 3 then GtkMain.Main.quit ()
   | Planned -> ()
   in
   clear_handle coqtop.handle;
+  Queue.clear coqtop.do_when_ready;
   ignore_error (fun () ->
      let processors = (coqtop.feedback_handler, coqtop.debug_prompt_handler) in
      coqtop.handle <-
@@ -443,9 +474,11 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
      If not, there isn't much we can do ... *)
   assert (coqtop.handle.alive = true);
   coqtop.status <- New;
-  ignore (coqtop.reset_handler coqtop.handle (mkready coqtop))
+  coqtop.set_script_editable true;
+  ignore (coqtop.reset_handler coqtop.handle (mkready coqtop false));
+  coqtop.restore_bpts ()  (* queue call to restore previous breakpoints *)
 
-let spawn_coqtop sup_args =
+let spawn_coqtop basename sup_args =
   bind_self_as (fun this ->
       let processors =
         (fun msg -> (this ()).feedback_handler msg)
@@ -455,19 +488,36 @@ let spawn_coqtop sup_args =
     handle = spawn_handle sup_args
                (fun () -> respawn_coqtop (this ()))
                processors;
-    sup_args = sup_args;
+    sup_args;
     reset_handler = (fun _ k -> k ());
     feedback_handler = (fun _ -> ());
     debug_prompt_handler = (fun ~tag:_ _ -> ());
     status = New;
+    stopped_in_debugger = false;
+    do_when_ready = Queue.create ();
+    basename;
+    set_script_editable = (fun v -> failwith "set_script_editable");
+    restore_bpts = (fun _ -> failwith "restore_bpts")
   })
+
+let set_restore_bpts coqtop f = coqtop.restore_bpts <- f
 
 let set_reset_handler coqtop hook = coqtop.reset_handler <- hook
 
 let set_feedback_handler coqtop hook = coqtop.feedback_handler <- hook
 let set_debug_prompt_handler coqtop hook = coqtop.debug_prompt_handler <- hook
 
+let setup_script_editable coqtop f = coqtop.set_script_editable <- f
+
 let is_computing coqtop = (coqtop.status = Busy)
+
+let is_stopped_in_debugger coqtop = coqtop.stopped_in_debugger
+
+let is_ready_or_stopped_in_debugger coqtop =
+  coqtop.status = Ready || (is_stopped_in_debugger coqtop)
+
+let set_stopped_in_debugger coqtop v =
+  coqtop.stopped_in_debugger <- v
 
 (* For closing a coqtop, we don't try to send it a Quit call anymore,
    but rather close its channels:
@@ -487,19 +537,33 @@ let set_arguments coqtop args =
   reset_coqtop coqtop
 
 let process_task ?(db=false) coqtop task =
+  (* todo: queuing is probably better than assert. *)
+  if not (coqtop.status = Ready || coqtop.status = New || (db && coqtop.status = Busy)) then
+    Printf.printf "Assert failure in process_task coqtop.status = %s db = %b\n" (pstatus coqtop.status) db;
   assert (coqtop.status = Ready || coqtop.status = New || (db && coqtop.status = Busy));
-  coqtop.status <- if db then DbBusy else Busy;
-  try ignore (task coqtop.handle (mkready coqtop))
+  if not db then begin
+    coqtop.status <- Busy;
+    coqtop.set_script_editable false
+  end;
+  try ignore (task coqtop.handle (mkready coqtop db))
   with e ->
     Minilib.log ("Coqtop writer failed, resetting: " ^ Printexc.to_string e);
     if coqtop.status <> Closed then respawn_coqtop coqtop
 
+(* todo: logic for functions such as "forward one" should not rely on try_grab
+   to discard the request; a small amount of queuing would make this a trivial
+   routine, perhaps not even needed.  The "abort" should go away. *)
 let try_grab ?(db=false) coqtop task abort =
   match coqtop.status with
-    | Closed -> ()
-    | Busy when db -> process_task ~db coqtop task
-    | Busy | DbBusy | New -> abort ()
-    | Ready -> process_task coqtop task
+    | _ when db && coqtop.handle.db_waiting_for <> None -> (abort (); false)
+    | Closed -> abort (); false
+    | Busy when db ->
+      if coqtop.stopped_in_debugger && coqtop.handle.db_waiting_for = None then
+        (process_task ~db coqtop task; true)
+      else
+        (abort (); false)
+    | Busy | New -> abort (); false
+    | Ready -> process_task ~db coqtop task; true
 
 let init_coqtop coqtop task =
   assert (coqtop.status = New);
@@ -510,6 +574,12 @@ let init_coqtop coqtop task =
 (** Cf [Ide_intf] for more details *)
 
 type 'a query = 'a Interface.value task
+
+(* todo: it's too easy to fail the asserts here when changing the code.
+   We should look at making handle.waiting_for and handle.db_waiting_for into
+   queues, perhaps have a queue for the call to Xml_printer.print with flow
+   control.  Then coqtop.do_when_ready would not be needed and other
+   logic such as mkready and coqtop initialization might be simplified. *)
 
 let eval_call ?(db=false) call handle k =
   (* Send messages to coqtop and prepare the decoding of the answer *)
@@ -537,8 +607,12 @@ let init x = eval_call (Xmlprotocol.init x)
 let stop_worker x = eval_call (Xmlprotocol.stop_worker x)
 let proof_diff x = eval_call (Xmlprotocol.proof_diff x)
 let db_cmd x = eval_call ~db:true (Xmlprotocol.db_cmd x)
+let db_upd_bpts x = eval_call ~db:true (Xmlprotocol.db_upd_bpts x)
+let db_continue x = eval_call ~db:true (Xmlprotocol.db_continue x)
+let db_stack x = eval_call ~db:true (Xmlprotocol.db_stack x)
+let db_vars x = eval_call ~db:true (Xmlprotocol.db_vars x)
 
-let break_coqtop coqtop workers =
+let interrupt_coqtop coqtop workers =
   if coqtop.status = Busy then
     try !interrupter (CoqTop.unixpid coqtop.handle.proc)
     with _ -> Minilib.log "Error while sending Ctrl-C"
@@ -548,6 +622,11 @@ let break_coqtop coqtop workers =
     | w :: ws -> stop_worker w coqtop.handle (fun _ -> aux ws)
     in
       let Void = aux workers in ()
+
+let send_break coqtop =
+  try
+    !breaker (CoqTop.unixpid coqtop.handle.proc)
+  with _ -> Minilib.log "Error while sending Break"
 
 module PrintOpt =
 struct
@@ -624,6 +703,9 @@ struct
 
   (** Transmitting options to coqtop *)
 
+  (* todo: if Coq hasn't processed any statements since the last enforce,
+     it's unnecessary to send another.  In particular, "goals" and "evars"
+     below are generally called one after the other. *)
   let enforce h k =
     let mkopt o v acc = (o, v) :: acc in
     let opts = Hashtbl.fold mkopt current_state [] in

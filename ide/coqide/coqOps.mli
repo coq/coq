@@ -18,6 +18,14 @@ object
   method process_next_phrase : unit task
   method process_db_cmd : string ->
     next:(Interface.db_cmd_rty Interface.value -> unit task) -> unit task
+  method process_db_upd_bpts : ((string * int) * bool) list ->
+    next:(Interface.db_upd_bpts_rty Interface.value -> unit task) -> unit task
+  method process_db_continue : db_continue_opt ->
+    next:(Interface.db_continue_rty Interface.value -> unit task) -> unit task
+  method process_db_stack :
+    next:(Interface.db_stack_rty Interface.value -> unit task) -> unit task
+  method process_db_vars : int ->
+    next:(Interface.db_vars_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
   method raw_coq_query :
@@ -36,6 +44,10 @@ object
   method handle_failure : handle_exn_rty -> unit task
 
   method destroy : unit -> unit
+  method scroll_to_start_of_input : unit -> unit
+  method set_forward_clear_db_highlight : (unit -> unit) -> unit
+  method set_forward_set_goals_of_dbg_session : (Pp.t -> unit) -> unit
+  method set_debug_goal : Pp.t -> unit
 end
 
 class coqops :

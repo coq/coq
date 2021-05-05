@@ -31,6 +31,11 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [PrintAst](#command-printast)
   - [Annotate](#command-annotate)
   - [Db_cmd](#command-db_cmd)
+  - [Db_loc](#command-db_loc)
+  - [Db_upd_bpts](#command-db_upd_bpts)
+  - [Db_continue](#command-db_continue)
+  - [Db_stack](#command-db_stack)
+  - [Db_vars](#command-db_vars)
 * [Feedback messages](#feedback)
   - [Added Axiom](#feedback-addedaxiom)
   - [Processing](#feedback-processing)
@@ -87,21 +92,35 @@ The string fields are the Coq version, the protocol version, the release date, a
 The protocol version is a date in YYYYMMDD format, where "20150913" corresponds to Coq 8.6. An IDE that wishes 
 to support multiple Coq versions can use the protocol version information to know how to handle output from Coqtop.
 
-### <a name="command-add">**Add(stateId: integer, command: string, verbose: boolean)**</a>
+### <a name="command-add">**Add(command: string, editId: integer, stateId: integer, verbose: boolean, bp: integer, line_nb: integer, bol_pos: integer)**</a>
 Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state.
-`verbose` controls whether out-of-band messages will be generated for the added command (e.g. "foo is assumed" in response to adding "Axiom foo: nat.").
+`verbose` controls whether out-of-band messages will be generated for the added command
+(e.g. "foo is assumed" in response to adding "Axiom foo: nat.").  `bp`, `line_nb` and
+`bol_pos` are the `Loc.t` values relative to the IDE buffer.
+
 ```html
 <call val="Add">
-  <pair>
+  <call val="Add">
     <pair>
-      <string>${command}</string>
-      <int>${editId}</int>
+      <pair>
+        <pair>
+          <pair>
+            <string>${command}</string>
+            <int>${editId}</int>
+          </pair>
+          <pair>
+            <state_id val="${stateId}"/>
+            <bool val="${verbose}"/>
+          </pair>
+        </pair>
+        <int>${bp}</int>
+      </pair>
+      <pair>
+        <int>${line_nb}</int>
+        <int>${bol_pos}</int>
+      </pair>
     </pair>
-    <pair>
-      <state_id val="${stateId}"/>
-      <bool val="${verbose}"/>
-    </pair>
-  </pair>
+  </call>
 </call>
 ```
 
@@ -111,10 +130,9 @@ Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state
 <value val="good">
   <pair>
     <state_id val="${newStateId}"/>
-    <pair>
-      <union val="in_l"><unit/></union>
-      <string>${message}</string>
-    </pair>
+    <union val="in_l">
+      <unit/>
+    </union>
   </pair>
 </value>
 ```
@@ -162,7 +180,7 @@ Moves current tip to `${stateId}`, such that commands may be added to the new st
 </value>
 ```
 
-* New focus; focusedQedStateId is the closing Qed of the new focus; senteneces between the two should be cleared
+* New focus; focusedQedStateId is the closing Qed of the new focus; sentences between the two should be cleared
 ```html
 <value val="good">
   <union val="in_r">
@@ -640,8 +658,166 @@ take `<call val="Annotate"><string>Theorem plus_0_r : forall n : nat, n + 0 = n.
 #### *Returns*
 *
 
-`<call val="Db_cmd"><string>h</string></call>` passes the command "h" to the debugger.
-It returns unit.
+`<call val="Db_cmd"><string>h</string></call>` directs Coq to process the debugger command "h".
+It returns unit.  This call is processed only when the debugger is stopped and has just
+sent a `prompt` message.
+
+
+
+-------------------------------
+
+
+
+### <a name="command-db_loc">**Db_loc()**</a>
+Returns the location where the debugger has stopped, consisting of the absolute filename
+of the .v file (or "ToplevelInput") and the beginning and ending offset therein.  Offsets
+are in bytes, not counts of unicode characters.
+```html
+<call val="Db_loc">
+  <unit/>
+</call>
+```
+#### *Returns*
+
+
+```html
+<value val="good">
+  <pair>
+    <string>ToplevelInput</string>
+    <list>
+      <int>22</int>
+      <int>31</int>
+    </list>
+  </pair>
+</value>
+```
+
+
+
+-------------------------------
+
+
+
+### <a name="command-db_upd_bpts">**Db_upd_bpts(...)**</a>
+The call passes a list of breakpoints to set or clear.  The string is the
+absolute pathname of the .v file (or "ToplevelInput"), the int is the byte offset
+within the file and the boolean is true to set a breakpoint and false to clear it.
+Breakpoints can be updated when Coq is not busy or when Coq is stopped in the
+debugger.  If this message is sent in other states, it will be received and
+processed when Coq is no longer busy or execution stops in the debugger.
+
+```html
+<call val="Db_upd_bpts">
+  <list>
+    <pair>
+      <pair>
+        <string>/home/proj/coq/ide/coqide/debug.v</string>
+        <int>22</int>
+      </pair>
+      <bool val="true"/>
+    </pair>
+  </list>
+</call>
+```
+#### *Returns*
+* Unit.
+
+
+
+-------------------------------
+
+
+
+
+### <a name="command-db_continue">**Db_continue(option: integer)**</a>
+
+Tells Coq to continue processing the proof when it is stopped in the debugger.
+The integer indicates when the debugger should stop again:
+
+```
+0: StepIn - step one tactic.  If it is an Ltac tactic, stop at the first tactic within it
+1: StepOver - step over one tactic.  if it is an Ltac tactic, don't stop within it
+2: StepOut - stop on the first tactic after exiting the current Ltac tactic
+3: Continue - continue running until the next breakpoint or the debugger exits
+4: Interrupt - generate a User interrupt (for use when stopped in the debugger; otherwise
+     interrupt is sent as a signal)
+```
+
+If the debugger encounters a breakpoint during a StepOver or a StepOut, it will
+stop at the breakpoint.
+
+```html
+<call val="Db_continue">
+  <int>1</int>
+</call>
+```
+
+#### *Returns*
+* Unit.
+
+
+
+### <a name="command-db_stack">**Db_stack()**</a>
+
+Returns the Ltac call stack.  Each entry has a description of what was called
+(e.g. the tactic name) plus the absolute pathname of the file and the offset of
+the call therein.  The top of stack is the first entry in the list.  Offsets
+are in bytes, not counts of unicode characters.
+
+```html
+<call val="Db_stack">
+  </unit>
+</call>
+```
+
+#### *Returns*
+```html
+<value val="good">
+  <list>
+    <pair>
+      <string>vars2.z</string>
+      <option val="some">
+        <pair>
+          <string>ToplevelInput</string>
+          <list>
+            <int>51</int>
+            <int>58</int>
+          </list>
+        </pair>
+      </option>
+    </pair>
+      :
+  </list>
+</value>
+```
+
+
+### <a name="command-db_vars">**Db_vars(frame: integer)**</a>
+
+Returns a list of the names and values of the local variables defined in the
+specified frame of the Ltac call stack.  (0 = top of stack, 1, 2, ...).
+
+```html
+<call val="Db_vars">
+  <int>0</int>
+</call>
+```
+
+#### *Returns*
+```html
+<value val="good">
+  <list>
+    <pair>
+      <string>w</string>
+      <ppdoc val="string">
+        <string>0</string>
+      </ppdoc>
+    </pair>
+      :
+  </list>
+</value>
+```
+
 
 -------------------------------
 

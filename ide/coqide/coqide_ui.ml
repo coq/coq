@@ -95,10 +95,10 @@ let init () =
 \n  <menu action='Navigation'>\
 \n    <menuitem action='Forward' />\
 \n    <menuitem action='Backward' />\
-\n    <menuitem action='Go to' />\
-\n    <menuitem action='Start' />\
-\n    <menuitem action='End' />\
+\n    <menuitem action='Run to cursor' />\
+\n    <menuitem action='Run to end' />\
 \n    <menuitem action='Interrupt' />\
+\n    <menuitem action='Reset' />\
 \n    <menuitem action='Previous' />\
 \n    <menuitem action='Next' />\
 \n  </menu>\
@@ -137,14 +137,23 @@ let init () =
 \n    <menuitem action='Next error' />\
 \n    <menuitem action='Make makefile' />\
 \n  </menu>\
+\n  <menu action='Debug'>\
+\n    <menuitem action='Toggle breakpoint' />\
+\n    <menuitem action='Continue' />\
+\n    <menuitem action='Step in' />\
+\n    <menuitem action='Step out' />\
+\n    <menuitem action='Break' />\
+\n    <menuitem action='Show debug panel' />\
+\n  </menu>\
 \n  <menu action='Windows'>\
-\n    <menuitem action='Detach View' />\
+\n    <menuitem action='Detach Proof' />\
 \n  </menu>\
 \n  <menu name='Help' action='Help'>\
 \n    <menuitem action='Browse Coq Manual' />\
 \n    <menuitem action='Browse Coq Library' />\
 \n    <menuitem action='Help for keyword' />\
 \n    <menuitem action='Help for μPG mode' />\
+\n    <menuitem action='Memory usage' />\
 \n    <separator />\
 \n    <menuitem name='Abt' action='About Coq' />\
 \n  </menu>\
@@ -154,11 +163,11 @@ let init () =
 \n  <toolitem action='Close buffer' />\
 \n  <toolitem action='Forward' />\
 \n  <toolitem action='Backward' />\
-\n  <toolitem action='Go to' />\
-\n  <toolitem action='Start' />\
-\n  <toolitem action='End' />\
+\n  <toolitem action='Run to cursor' />\
+\n  <toolitem action='Run to end' />\
 \n  <toolitem action='Force' />\
 \n  <toolitem action='Interrupt' />\
+\n  <toolitem action='Reset' />\
 \n  <toolitem action='Previous' />\
 \n  <toolitem action='Next' />\
 \n</toolbar>\

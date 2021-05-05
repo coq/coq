@@ -299,9 +299,25 @@ object (self)
   method set_auto_complete flag =
     provider#set_active flag
 
+  (* workaround: GtkSourceView ignores view#editable *)
+  val mutable editable2 = true
+
+  method set_editable2 v = editable2 <- v
+
+  method editable2 = editable2
+
   method recenter_insert =
-    self#scroll_to_mark
-      ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
+    let rec fwd iter =
+      if iter#is_end then iter
+      else
+        let c = iter#char in
+        if Glib.Unichar.isspace c || c = 0 then fwd (iter#forward_char)
+        else iter
+    in
+
+    let where = fwd (self#buffer#get_iter_at_mark `INSERT) in
+    ignore @@ self#scroll_to_iter
+      ~use_align:true ~yalign:0.75 ~within_margin:0.25 where
 
   (* HACK: missing gtksourceview features *)
   method! right_margin_position =
@@ -449,6 +465,27 @@ object (self)
 
   method proposal : string option = None (* FIXME *)
 
+  method clear_debugging_highlight bp ep =
+    let gtk_bp = Ideutils.byte_off_to_buffer_off self#buffer bp in
+    let gtk_ep = Ideutils.byte_off_to_buffer_off self#buffer ep in
+    let start = self#buffer#get_iter (`OFFSET gtk_bp) in
+    let stop = self#buffer#get_iter (`OFFSET gtk_ep) in
+    self#buffer#remove_tag Tags.Script.debugging ~start ~stop;
+
+  method set_debugging_highlight bp ep =
+    let gtk_bp = Ideutils.byte_off_to_buffer_off self#buffer bp in
+    let gtk_ep = Ideutils.byte_off_to_buffer_off self#buffer ep in
+    let start = self#buffer#get_iter (`OFFSET gtk_bp) in
+    let stop = self#buffer#get_iter (`OFFSET gtk_ep) in
+    self#buffer#apply_tag Tags.Script.debugging ~start ~stop;
+    self#buffer#place_cursor ~where:start;
+    let _ = self#buffer#create_mark ~name:"scroll_to" start in
+    (* todo: review uses of scroll_to_iter.
+      See https://valadoc.org/gtk+-3.0/Gtk.TextView.scroll_to_iter.html *)
+    ignore @@ Glib.Idle.add (fun _ ->
+      (* xalign is documented incorrectly in the GTK3 manual *)
+      self#scroll_to_mark ~use_align:true ~xalign:1.0 ~yalign:0.5 (`NAME "scroll_to"); false);
+
   method undo = undo_manager#undo
   method redo = undo_manager#redo
   method clear_undo = undo_manager#clear_undo
@@ -534,6 +571,20 @@ object (self)
     let () = self#completion#set_accelerators 0 in
     let () = self#completion#set_show_headers false in
     let _ = self#completion#add_provider (provider :> GSourceView3.source_completion_provider) in
+
+    (* todo: gray out cut, paste, undo, replace, [un]comment, Templates in the
+      menu when script is not editable *)
+    let nonmod_keys = List.map (fun k -> let (key, _) = GtkData.AccelGroup.parse k in key)
+      [ "Left"; "Right"; "Up"; "Down"; "Home"; "End"; "<Ctrl>A"] in
+
+    (* keypress_cb and buttonpress_cb are a workaround to allow making the script panel not editable *)
+    let keypress_cb ev =
+      let ev_key = GdkEvent.Key.keyval ev in
+      not (editable2 || List.mem ev_key nonmod_keys) in
+    let _ = view#event#connect#key_press ~callback:keypress_cb in
+
+    let buttonpress_cb ev = not (editable2 || GdkEvent.Button.button ev = 1) in
+    let _ = view#event#connect#button_press ~callback:buttonpress_cb in
 
     ()
 

@@ -56,19 +56,24 @@ class finder name (view : GText.view) =
       let stop = view#buffer#get_iter `SEL_BOUND in
       view#buffer#get_text ~start ~stop ()
 
+    val mutable is_script_editable = ((fun _ -> failwith "is_script_editable") : unit -> bool)
+
+    method setup_is_script_editable (f : unit -> bool) = is_script_editable <- f
+
     method private may_replace () =
+      (is_script_editable ()) &&
       (self#search_text <> "") &&
       (Str.string_match self#regex (self#get_selected_word ()) 0)
 
     method replace () =
-      if self#may_replace () then
+      if self#may_replace () then begin
         let txt = self#get_selected_word () in
         let () = view#buffer#begin_user_action () in
         let _ = view#buffer#delete_selection () in
         let _ = view#buffer#insert_interactive (self#replacement txt) in
         let () = view#buffer#end_user_action () in
         self#find_forward ()
-      else self#find_forward ()
+      end
 
     method private regex =
       let rex = self#search_text in
@@ -130,9 +135,11 @@ class finder name (view : GText.view) =
           let next_ct = if edited then ct + 1 else ct in
           replace_at next next_ct (tot + 1)
       in
-      let () = view#buffer#begin_user_action () in
-      let () = replace_at view#buffer#start_iter 0 0 in
-      view#buffer#end_user_action ()
+      if is_script_editable () then begin
+        let () = view#buffer#begin_user_action () in
+        let () = replace_at view#buffer#start_iter 0 0 in
+        view#buffer#end_user_action ()
+      end
 
     method private set_not_found () =
       find_entry#misc#modify_bg [`NORMAL, `NAME "#F7E6E6"];

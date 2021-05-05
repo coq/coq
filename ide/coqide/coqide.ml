@@ -70,6 +70,12 @@ let on_current_term f =
   | None -> ()
   | Some t -> ignore (f t)
 
+let on_current_term_val default f =
+  let term = try Some notebook#current_term with Invalid_argument _ -> None in
+  match term with
+  | None -> default
+  | Some t -> f t
+
 let cb_on_current_term f _ = on_current_term f
 
 (** Nota: using && here has the advantage of working both under win32 and unix.
@@ -146,14 +152,97 @@ let set_drag (w : GObj.drag_ops) =
   w#connect#data_received ~callback:drop_received
 
 (** Session management *)
+let clear_db_highlight ?(retn=false) sn () =
+  (match sn.debug_stop_pt with
+    | Some (osn,bp,ep) ->
+      if List.mem osn notebook#pages then  (* in case destroyed *)
+        osn.script#clear_debugging_highlight bp ep;
+      if retn then
+        notebook#goto_page (notebook#term_num (fun t1 t2 -> t1 == t2) sn);
+    | None -> ()
+  )
+
+let find_secondary_sn sn =
+  let rec find = function
+  | [] -> sn
+  | hd :: tl ->
+    (match hd.debug_stop_pt with
+    | Some (osn,_,_) -> osn
+    | None -> find tl)
+  in find notebook#pages
+
+let db_cmd sn cmd =
+  ignore @@ Coq.try_grab ~db:true sn.coqtop
+      (sn.coqops#process_db_cmd cmd ~next:(function | _ -> Coq.return ()))
+      (fun () -> Minilib.log "Coq busy, discarding db_cmd")
+
+let forward_db_stack = ref ((fun _ -> failwith "forward_db_stack")
+                     : session -> unit -> unit)
+let forward_db_vars = ref ((fun _ -> failwith "forward_db_vars")
+                     : session -> int -> unit)
+let forward_highlight_code = ref ((fun _ -> failwith "forward_highlight_code")
+                     : session -> string * int * int -> unit)
+let forward_restore_bpts = ref ((fun _ -> failwith "forward_restore_bpts")
+                     : session -> unit)
 
 let create_session f =
   let project_file, args = make_coqtop_args f in
   if project_file <> "" then
     flash_info (Printf.sprintf "Reading options from %s" project_file);
-  let ans = Session.create f args in
-  let _ = set_drag ans.script#drag in
-  ans
+  let sn = Session.create f args in
+  sn.debugger#set_forward_get_basename (fun _ -> sn.basename);
+  Coq.set_restore_bpts sn.coqtop (fun _ -> !forward_restore_bpts sn);
+  (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
+  (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
+  sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
+  sn.debugger#set_forward_clear_db_highlight (clear_db_highlight sn);
+  sn.debugger#set_forward_db_vars (!forward_db_vars sn);
+  sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
+  sn.coqops#set_forward_set_goals_of_dbg_session
+    (fun msg ->
+      sn.coqops#set_debug_goal msg;
+      let osn = (find_secondary_sn sn) in
+      osn.last_db_goals <- msg);
+  let _ = set_drag sn.script#drag in
+  sn
+
+
+let db_upd_bpts updates sn =
+  if updates <> [] then
+    ignore @@ Coq.try_grab ~db:true sn.coqtop
+      (sn.coqops#process_db_upd_bpts updates ~next:(function | _ -> Coq.return ()))
+      (fun () -> Minilib.log "Coq busy, discarding db_upd_bpts")
+
+let reapply_bpts sn =
+  (* breakpoints in this file *)
+  let upds = List.map (fun bp ->
+      let start = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
+      let stop = start#forward_char in
+      sn.buffer#apply_tag Tags.Script.breakpoint ~start ~stop;
+      (("ToplevelInput", bp.prev_byte_offset), true)
+    ) sn.breakpoints
+  in
+  (* plus breakpoints in other files *)
+  let upds = List.fold_left (fun upds osn ->
+      match osn.abs_file_name with
+      | _ when osn == sn -> upds
+      | None -> upds
+      | Some file ->
+        (List.map (fun bp -> ((file, bp.prev_byte_offset), true)) osn.breakpoints) @ upds
+    ) upds notebook#pages
+  in
+  db_upd_bpts upds sn
+
+(* init breakpoints for new session or re-init after reset *)
+let init_bpts sn =
+  Coq.add_do_when_ready sn.coqtop (fun _ -> reapply_bpts sn)
+
+let restore_bpts sn =
+  init_bpts sn;
+  sn.debugger#set_stack [];
+  sn.debugger#set_vars []
+
+let _ = forward_restore_bpts := restore_bpts
 
 (** Auxiliary functions for the File operations *)
 
@@ -206,7 +295,14 @@ let select_and_save ?parent ~saveas ?filename sn =
     |Some f ->
       let ok = do_save f in
       confirm_save ok;
-      if ok then sn.tab_label#set_text (Filename.basename f);
+      if ok then begin
+        sn.tab_label#set_text (Filename.basename f);
+        sn.abs_file_name <- Some (Session.to_abs_file_name f);
+        (* copying local breakpoints to other sessions seems pointless
+           for a "save as" because the saved file needs to be compiled
+           and other sessions restarted to use the new filename in
+           breakpoints *)
+      end;
       ok
 
 let check_save ?parent ~saveas sn =
@@ -220,7 +316,11 @@ let check_save ?parent ~saveas sn =
 
 exception DontQuit
 
+(* avoid getting 3 dialogs from ^C^C^C on the console.  You can still get 2 :-( *)
+let in_quit_dialog = ref false
+
 let check_quit ?parent saveall =
+  in_quit_dialog := true;
   (try save_pref ()
    with e -> flash_info ("Cannot save preferences (" ^ Printexc.to_string e ^ ")"));
   let is_modified sn = sn.buffer#modified in
@@ -237,7 +337,7 @@ let check_quit ?parent saveall =
     match answ with
       | 1 -> saveall ()
       | 2 -> ()
-      | _ -> raise DontQuit
+      | _ -> in_quit_dialog := false; raise DontQuit
   end;
   List.iter (fun sn -> Coq.close_coqtop sn.coqtop) notebook#pages
 
@@ -278,28 +378,36 @@ end
 
 let () = load_file_cb := (fun s -> FileAux.load_file s)
 
+let clear_all_bpts sn =
+  sn.breakpoints <- [];
+  init_bpts sn
+
 (** Callbacks for the File menu *)
 
 module File = struct
 
 let newfile _ =
-  let session = create_session None in
-  let index = notebook#append_term session in
-  notebook#goto_page index
+  let sn = create_session None in
+  let index = notebook#append_term sn in
+  notebook#goto_page index;
+  init_bpts sn
 
 let load ?parent _ =
   let filename =
     try notebook#current_term.fileops#filename
     with Invalid_argument _ -> None in
   let filenames = select_file_for_open ~title:"Load file" ~multiple:true ?parent ?filename () in
-  List.iter FileAux.load_file filenames
+  List.iter FileAux.load_file filenames;
+  on_current_term (fun sn -> init_bpts sn)
 
 let save ?parent _ = on_current_term (FileAux.check_save ?parent ~saveas:false)
 
 let saveas ?parent sn =
   try
     let filename = sn.fileops#filename in
-    ignore (FileAux.select_and_save ?parent ~saveas:true ?filename sn)
+    ignore (FileAux.select_and_save ?parent ~saveas:true ?filename sn);
+    (* if a new file, adds breakpoints from other files into this session *)
+    init_bpts sn
   with _ -> warning "Save Failed"
 
 let saveas ?parent = cb_on_current_term (saveas ?parent)
@@ -315,15 +423,34 @@ let () = Coq.save_all := saveall
 
 let revert_all ?parent _ =
   List.iter
-    (fun sn -> if sn.fileops#changed_on_disk then sn.fileops#revert ?parent ())
+    (fun sn -> if sn.fileops#changed_on_disk then begin
+        clear_all_bpts sn;
+        sn.fileops#revert ?parent ()
+      end)
     notebook#pages
 
 let quit ?parent _ =
-  try FileAux.check_quit ?parent saveall; exit 0
-  with FileAux.DontQuit -> ()
+  if not !FileAux.in_quit_dialog then
+    try FileAux.check_quit ?parent saveall; exit 0
+    with FileAux.DontQuit -> ()
 
 let close_buffer ?parent sn =
-  let do_remove () = notebook#remove_page notebook#current_page in
+  let do_remove () =
+    notebook#remove_page notebook#current_page;
+    (* remove breakpoints in this buffer from other sessions *)
+    if sn.breakpoints <> [] then
+      match sn.abs_file_name with
+      | None -> ()
+      | Some file ->
+        List.iter (fun osn ->
+            if sn != osn then begin
+              let upds = List.fold_left (fun upds bp ->
+                  ((file, bp.prev_byte_offset), false) :: upds)
+                [] sn.breakpoints in
+              Coq.add_do_when_ready osn.coqtop (fun _ -> db_upd_bpts upds osn)
+            end
+          ) notebook#pages
+  in
   if not sn.buffer#modified then do_remove ()
   else
     let answ = Configwin_ihm.question_box ~title:"Close"
@@ -427,10 +554,6 @@ let reset_autosave_timer () =
     FileOps.autosave_timer.run ~ms:auto_save_delay#get ~callback:autosave_all
 
 (** Export of functions used in [coqide_main] : *)
-
-let forbid_quit () =
-  try FileAux.check_quit File.saveall; false
-  with FileAux.DontQuit -> true
 
 let close_and_quit = FileAux.close_and_quit
 let crash_save = FileAux.crash_save
@@ -593,29 +716,157 @@ let find_next_occurrence ~backward sn =
     |Some(where, _) -> b#place_cursor ~where; sn.script#recenter_insert
 
 let send_to_coq_aux f sn =
-  let info () = Minilib.log ("Coq busy, discarding query") in
+  let info () = Minilib.log "Coq busy, discarding query" in
   let f = Coq.seq (f sn) (update_status sn) in
-  Coq.try_grab sn.coqtop f info
+  ignore @@ Coq.try_grab sn.coqtop f info
 
 let send_to_coq f = on_current_term (send_to_coq_aux f)
 
+let db_continue opt sn =
+  Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_continue opt
+    ~next:(function | _ -> Coq.return ()))
+    (fun () -> Minilib.log "Coq busy, discarding db_continue")
+
+(* find the session identified by sid.  If not specified and the current term
+   is the stopping point for another session, direct actions to that term *)
+let find_db_sn ?sid () =
+  let cur = notebook#current_term in
+  let f = match sid with
+  | Some sid -> fun term -> term.sid == sid
+  | None -> fun term ->
+    match term.debug_stop_pt with
+    | Some (osn,_,_) -> osn == cur
+    | None -> false
+  in
+  let res = List.filter f notebook#pages in
+  if res = [] then cur else List.hd res
+
+let resume_debugger ?sid opt =
+  let term = try Some (find_db_sn ?sid ()) with Invalid_argument _ -> None in
+  match term with
+  | None -> false
+  | Some t ->
+    if Coq.is_stopped_in_debugger t.coqtop && db_continue opt t then begin
+      Coq.set_stopped_in_debugger t.coqtop false;
+      clear_db_highlight t ();
+      t.debugger#set_stack [];
+      t.debugger#set_vars [];
+      t.messages#default_route#set_editable2 false;
+      t.messages#default_route#push Feedback.Notice (Pp.mt ());
+      (* Ideutils.push_info "Coq is computing";  todo: needs to be per-session *)
+      true
+    end else false
+
+(* figure out which breakpoint locations have changed because the script was edited *)
+let calculate_bpt_updates () =
+  let fn = "ToplevelInput" in
+  let rec update_bpts sn upd bpts_res = function
+    | bp :: tl ->
+      let iter = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
+      let has_tag = iter#has_tag Tags.Script.breakpoint in
+      let prev_byte_offset = bp.prev_byte_offset in
+      if not has_tag then begin
+        sn.buffer#delete_mark (`NAME bp.mark_id); (* remove *)
+        update_bpts sn (((fn, prev_byte_offset), false) :: upd) bpts_res tl
+      end else if iter#offset <> bp.prev_uni_offset then begin
+        bp.prev_uni_offset <- iter#offset;        (* move *)
+        let byte_offset = Ideutils.buffer_off_to_byte_off sn.buffer iter#offset in
+        bp.prev_byte_offset <- byte_offset;
+        update_bpts sn (((fn, byte_offset), true)
+            :: ((fn, prev_byte_offset), false) :: upd)
+          (bp :: bpts_res) tl (* move *)
+      end else
+        update_bpts sn upd (bp :: bpts_res) tl       (* no change, keep *)
+    | [] -> (List.rev upd, List.rev bpts_res)  (* order matters *)
+  in
+  let upds = List.map (fun sn -> update_bpts sn [] [] sn.breakpoints) notebook#pages in
+  upds
+
+let maybe_update_breakpoints () =
+  let upds = calculate_bpt_updates () in
+  List.iter2 (fun sn (_, bpts) ->
+      sn.breakpoints <- bpts;
+      let sn_upds = List.concat (List.mapi (fun n sn2 ->
+        let (upd, _) = List.nth upds n in
+        match sn2.abs_file_name with
+          | _ when sn == sn2 -> upd (* as TopLevelInput *)
+          | Some fn ->
+            List.map (fun ((_, off), set) -> ((fn, off), set)) upd
+          | None -> []
+        ) notebook#pages) in
+      if sn_upds <> [] then
+        Coq.add_do_when_ready sn.coqtop (fun _ -> db_upd_bpts sn_upds sn)
+    ) notebook#pages upds
+
 module Nav = struct
-  let forward_one _ = send_to_coq (fun sn -> sn.coqops#process_next_phrase)
-  let backward_one _ = send_to_coq (fun sn -> sn.coqops#backtrack_last_phrase)
-  let goto _ = send_to_coq (fun sn -> sn.coqops#go_to_insert)
-  let goto_end _ = send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+  let forward_one_sid ?sid _ =
+    maybe_update_breakpoints ();
+    if not (resume_debugger ?sid Interface.StepOver) then
+      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+  let forward_one x = forward_one_sid x
+  let continue ?sid _ = maybe_update_breakpoints ();
+    if not (resume_debugger ?sid Interface.Continue) then
+      send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+  let step_in ?sid _ = maybe_update_breakpoints ();
+    if not (resume_debugger ?sid Interface.StepIn) then
+      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+  let step_out ?sid _ = maybe_update_breakpoints ();
+    if not (resume_debugger ?sid Interface.StepOut) then
+      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+  let backward_one _ = maybe_update_breakpoints ();
+    send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
+  let run_to_cursor _ = maybe_update_breakpoints ();
+    send_to_coq (fun sn -> sn.coqops#go_to_insert)
+  let run_to_end _ = maybe_update_breakpoints ();
+    send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
   let previous_occ = cb_on_current_term (find_next_occurrence ~backward:true)
   let next_occ = cb_on_current_term (find_next_occurrence ~backward:false)
-  let restart sn =
+  let restart _ =
     Minilib.log "Reset Initial";
-    Coq.reset_coqtop sn.coqtop
-  let restart _ = on_current_term restart
-  let interrupt sn =
-    Minilib.log "User break received";
-    Coq.break_coqtop sn.coqtop CString.(Set.elements (Map.domain sn.jobpage#data))
-  let interrupt = cb_on_current_term interrupt
+    maybe_update_breakpoints ();
+    if notebook#pages <> [] then begin
+      let sn = notebook#current_term in
+      Coq.reset_coqtop sn.coqtop; (* calls init_bpts *)
+      sn.coqops#scroll_to_start_of_input ()
+    end
+  let interrupt _ =  (* terminate computation *)
+    Minilib.log "User interrupt received";
+    if not (resume_debugger Interface.Interrupt) && notebook#pages <> [] then begin
+      let osn = (find_db_sn ()) in
+      Coq.interrupt_coqtop osn.coqtop CString.(Set.elements (Map.domain osn.jobpage#data))
+    end
+  let break ?sid _ =  (* stop at the next possible stopping point *)
+    if notebook#pages <> [] then begin
+      let ocoqtop = (find_db_sn ?sid ()).coqtop in
+      if not (Coq.is_stopped_in_debugger ocoqtop) then
+        Coq.send_break ocoqtop
+    end
+  let show_debugger _ =
+    on_current_term (fun sn -> sn.debugger#show ())
   let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
 end
+
+let f9       = GtkData.AccelGroup.parse "F9"
+let f10      = GtkData.AccelGroup.parse "F10"
+let f11      = GtkData.AccelGroup.parse "F11"
+let shft_f10 = GtkData.AccelGroup.parse "<Shift>F10"
+let ctl_up   = GtkData.AccelGroup.parse "<Ctrl>Up"
+let ctl_down = GtkData.AccelGroup.parse "<Ctrl>Down"
+
+(* handle certain function keys from detached Messages panel
+   functions are directed to the specified session or the
+   current session, not the Messages session (debatable) *)
+let forward_keystroke key sid =
+  if      key = f9 then (Nav.continue ~sid (); true)
+  else if key = f10 then (Nav.step_in ~sid (); true)
+  else if key = f11 then (Nav.break ~sid (); true)
+  else if key = shft_f10 then (Nav.step_out ~sid (); true)
+  else if key = ctl_up then (Nav.backward_one (*~sid*) (); true)
+  else if key = ctl_down then (Nav.forward_one_sid ~sid (); true)
+  else false
+
+let _ = Wg_MessageView.forward_keystroke := forward_keystroke
+let _ = Wg_Debugger.forward_keystroke := forward_keystroke
 
 let printopts_callback opts v =
   let b = v#get_active in
@@ -681,7 +932,8 @@ let match_callback sn =
   let w = get_current_word sn in
   let coqtop = sn.coqtop in
   let query = Coq.bind (Coq.mkcases w) (display_match sn) in
-  Coq.try_grab coqtop query ignore
+  ignore @@ Coq.try_grab coqtop query
+    (fun () -> Minilib.log "Coq busy, discarding mkcases")
 
 let match_callback = cb_on_current_term match_callback
 
@@ -691,14 +943,14 @@ module Query = struct
 
 let doquery query sn =
   sn.messages#default_route#clear;
-  Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query ~route_id:0
+  ignore @@ Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query ~route_id:0
     ~next:(function
         | Interface.Fail (_, _, err) ->
             let err = Ideutils.validate err in
             sn.messages#default_route#add err;
             Coq.return ()
         | Interface.Good () -> Coq.return ()))
-  ignore
+    (fun () -> Minilib.log "Coq busy, discarding raw_coq_query")
 
 let queryif command sn =
   Option.iter (fun query -> doquery (query ^ ".") sn)
@@ -749,7 +1001,7 @@ let coq_icon () =
 
 let show_proof_diff where sn =
   sn.messages#default_route#clear;
-  Coq.try_grab sn.coqtop (sn.coqops#proof_diff where
+  ignore @@ Coq.try_grab sn.coqtop (sn.coqops#proof_diff where
     ~next:(function
         | Interface.Fail (_, _, err) ->
             let err = if (Pp.string_of_ppcmds err) <> "No proofs to diff." then err else
@@ -761,18 +1013,124 @@ let show_proof_diff where sn =
         | Interface.Good diff ->
             sn.messages#default_route#add diff;
             Coq.return ()))
-  ignore
+      (fun () -> Minilib.log "Coq busy, discarding raw_coq_query")
 
 let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
 
-let db_cmd cmd sn =  (* todo: still good? *)
-  Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_cmd cmd
-    ~next:(function | _ -> Coq.return ()))
-  ignore
+let highlight_code sn loc =
+  let (file, bp, ep) = loc in
+  let highlight () =
+    clear_db_highlight sn ();
+    notebook#current_term.script#set_debugging_highlight bp ep;
+    sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
+    (* also show goal in secondary script goal panel *)
+    notebook#current_term.coqops#set_debug_goal sn.last_db_goals
+  in
+  if file = "ToplevelInput" then begin
+    notebook#goto_term sn;
+    highlight ()
+  end else if CString.is_suffix ".v" file then begin
+    try let _ = Unix.stat file in
+      FileAux.load_file file;
+      highlight ()
+    with Unix.Unix_error (Unix.ENOENT,_,_) ->
+      (* or just show in messages panel? *)
+      let title = "Warning" in
+      let icon = (warn_image ())#coerce in
+      let buttons = ["OK"] in
+      let msg = Printf.sprintf "Can't find: %s" file in
+      let _ = GToolbox.question_box ~title ~buttons ~icon msg in
+      ()
+  end
 
-let send_db_cmd cmd = cb_on_current_term (db_cmd cmd) ()
+let _ = forward_highlight_code := highlight_code
 
-let _ = Wg_MessageView.forward_send_db_cmd := send_db_cmd
+let db_stack sn _ =
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_stack
+      ~next:(function
+          | Interface.Good stack ->
+            sn.debugger#set_stack stack;
+            Coq.return ()
+          | Interface.Fail _ ->
+            Coq.return ()
+          ))
+      (fun () -> Minilib.log "Coq busy, discarding db_stack")
+  )
+
+let _ = forward_db_stack := db_stack
+
+let db_vars sn line =
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_vars line
+      ~next:(function
+          | Interface.Good vars ->
+            sn.debugger#set_vars vars;
+            Coq.return ()
+          | Interface.Fail _ ->
+            Coq.return ()
+          ))
+      (fun () -> Minilib.log "Coq busy, discarding db_vars")
+  )
+
+let _ = forward_db_vars := db_vars
+
+let next_bpt = ref 0
+
+let compute_toggle sn =
+  let start = sn.buffer#get_iter_at_mark `INSERT in
+  let stop = start#forward_char in
+  let file = "ToplevelInput" in
+  let prev_uni_offset = start#offset in
+  let prev_byte_offset = Ideutils.buffer_off_to_byte_off sn.buffer prev_uni_offset in
+  let rec update_bpts = function
+    | bp :: tl ->
+      let iter = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
+      if iter#offset = prev_uni_offset then begin
+        sn.buffer#remove_tag Tags.Script.breakpoint ~start ~stop;
+        sn.buffer#delete_mark (`NAME bp.mark_id);
+        [((file, prev_byte_offset), false)],
+        List.filter (fun x ->
+            x.mark_id <> bp.mark_id
+          ) sn.breakpoints
+      end else
+        update_bpts tl
+    | [] ->
+      sn.buffer#apply_tag Tags.Script.breakpoint ~start ~stop;
+      incr next_bpt;
+      let mark_id = "bp" ^ (string_of_int !next_bpt) in
+      let _ = sn.buffer#create_mark ~name:mark_id start in
+      ([((file, prev_byte_offset), true)], ({ mark_id; prev_byte_offset; prev_uni_offset }
+          :: sn.breakpoints))
+  in
+  let upd, bpts_res = update_bpts sn.breakpoints in
+  sn.breakpoints <- List.rev bpts_res;
+  upd
+
+let toggle_breakpoint_i sn =
+  maybe_update_breakpoints ();
+  let upd = compute_toggle sn in
+  db_upd_bpts upd sn;
+  (* if this session has an associated file, toggle bp in all other sessions *)
+  match sn.abs_file_name with
+  | Some fname ->
+    let upd2 = List.map (fun bp ->
+        let ((_, off), toggle) = bp in
+        ((fname, off), toggle)
+      ) upd in
+    List.iter (fun osn ->
+        if osn != sn then
+          Coq.add_do_when_ready osn.coqtop (fun _ -> db_upd_bpts upd2 osn)
+      ) notebook#pages
+  | None -> ()
+
+let all_sessions_ready _ =
+  List.fold_left (fun rdy sn -> rdy && Coq.is_ready_or_stopped_in_debugger sn.coqtop)
+      true notebook#pages
+
+let toggle_breakpoint _ =
+  if all_sessions_ready () then
+    on_current_term toggle_breakpoint_i
 
 let about _ =
   let dialog = GWindow.about_dialog () in
@@ -809,10 +1167,15 @@ let apply_unicode_binding =
   cb_on_current_term (fun t ->
     t.script#apply_unicode_binding())
 
-let comment = cb_on_current_term (fun t -> t.script#comment ())
-let uncomment = cb_on_current_term (fun t -> t.script#uncomment ())
+let mem_usage =
+  cb_on_current_term (fun t ->
+    let open Gc in
+    let stats = Gc.stat () in
+    Printf.printf "live_words = %d heap_words = %d top_heap_words = %d\n%!"
+      stats.live_words stats.heap_words stats.top_heap_words)
 
 let coqtop_arguments sn =
+  init_bpts sn;
   let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
   let coqtop = sn.coqtop in
   (* Text entry *)
@@ -916,6 +1279,17 @@ let toggle_items menu_name l =
 
 let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
 
+(* workaround: GTKSourceView3 ignores editable *)
+
+(* allowed in script panel, if editable, and elsewhere *)
+let can_paste () =
+  on_current_term_val true (fun t ->
+    (t.script#is_focus && t.script#editable2) || not t.script#is_focus)
+
+(* template insert only allowed in script panel *)
+let can_template () =
+  on_current_term_val false (fun t -> t.script#is_focus && t.script#editable2)
+
 (** Create alphabetical menu items with elements in sub-items.
     [l] is a list of lists, one per initial letter *)
 
@@ -938,7 +1312,9 @@ let alpha_items menu_name item_name l =
       Buffer.contents buf
     in
     let callback _ =
-      on_current_term (fun sn -> sn.buffer#insert_interactive text')
+      on_current_term (fun sn ->
+        let text' = if can_template () then text' else "" in
+                      sn.buffer#insert_interactive text')
     in
     item (item_name^" "^(no_under text)) ~label:text ~callback menu_name
   in
@@ -965,16 +1341,17 @@ let template_item (text, offset, len, key) =
   let label = "_"^name^" __" in
   let negoffset = String.length text - offset - len in
   let callback sn =
-    let b = sn.buffer in
-    if b#insert_interactive text then begin
-      let iter = b#get_iter_at_mark `INSERT in
-      ignore (iter#nocopy#backward_chars negoffset);
-      b#move_mark `INSERT ~where:iter;
-      ignore (iter#nocopy#backward_chars len);
-      b#move_mark `SEL_BOUND ~where:iter;
-    end
-  in
-  item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
+    if can_paste () then
+      let b = sn.buffer in
+      if b#insert_interactive text then begin
+        let iter = b#get_iter_at_mark `INSERT in
+        ignore (iter#nocopy#backward_chars negoffset);
+        b#move_mark `INSERT ~where:iter;
+        ignore (iter#nocopy#backward_chars len);
+        b#move_mark `SEL_BOUND ~where:iter;
+      end
+    in
+    item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
 
 (** Create menu items for pairs (query, shortcut key). *)
 let user_queries_items menu_name item_name l =
@@ -1019,11 +1396,12 @@ let build_ui () =
   let tools_menu = GAction.action_group ~name:"Tools" () in
   let queries_menu = GAction.action_group ~name:"Queries" () in
   let compile_menu = GAction.action_group ~name:"Compile" () in
+  let debug_menu = GAction.action_group ~name:"Debug" () in
   let windows_menu = GAction.action_group ~name:"Windows" () in
   let help_menu = GAction.action_group ~name:"Help" () in
   let all_menus = [
     file_menu; edit_menu; view_menu; export_menu; navigation_menu;
-    templates_menu; tools_menu; queries_menu; compile_menu; windows_menu;
+    templates_menu; tools_menu; queries_menu; compile_menu; debug_menu; windows_menu;
     help_menu; ] in
 
   menu file_menu [
@@ -1054,15 +1432,19 @@ let build_ui () =
   menu edit_menu [
     item "Edit" ~label:"_Edit";
     item "Undo" ~accel:"<Primary>u" ~stock:`UNDO
-      ~callback:(cb_on_current_term (fun t -> t.script#undo ()));
+      ~callback:(cb_on_current_term (fun t -> if can_paste () then
+          t.script#undo ()));
     item "Redo" ~stock:`REDO
-      ~callback:(cb_on_current_term (fun t -> t.script#redo ()));
+      ~callback:(cb_on_current_term (fun t -> if can_paste () then
+          t.script#redo ()));
     item "Cut" ~stock:`CUT
-      ~callback:(fun _ -> emit_to_focus w GtkText.View.S.cut_clipboard);
+      ~callback:(fun _ -> if can_paste () then
+          emit_to_focus w GtkText.View.S.cut_clipboard);
     item "Copy" ~stock:`COPY
       ~callback:(fun _ -> emit_to_focus w GtkText.View.S.copy_clipboard);
     item "Paste" ~stock:`PASTE
-      ~callback:(fun _ -> emit_to_focus w GtkText.View.S.paste_clipboard);
+      ~callback:(fun _ -> if can_paste () then
+          emit_to_focus w GtkText.View.S.paste_clipboard);
     item "Find" ~stock:`FIND ~label:"Find / Replace"
       ~callback:(cb_on_current_term (fun t -> t.finder#show ()));
     item "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
@@ -1145,10 +1527,10 @@ let build_ui () =
   ] @ List.map navitem [
     ("Forward", "_Forward", `GO_DOWN, Nav.forward_one, "Forward one command", "Down");
     ("Backward", "_Backward", `GO_UP, Nav.backward_one, "Backward one command", "Up");
-    ("Go to", "_Go to", `JUMP_TO, Nav.goto, "Go to cursor", "Right");
-    ("Start", "_Start", `GOTO_TOP, Nav.restart, "Restart coq", "Home");
-    ("End", "_End", `GOTO_BOTTOM, Nav.goto_end, "Go to end", "End");
+    ("Run to cursor", "Run to _cursor", `JUMP_TO, Nav.run_to_cursor, "Run to cursor", "Right");
+    ("Run to end", "_Run to end", `GOTO_BOTTOM, Nav.run_to_end, "Run to end", "End");
     ("Interrupt", "_Interrupt", `STOP, Nav.interrupt, "Interrupt computations", "Break");
+    ("Reset", "_Reset", `GOTO_TOP, Nav.restart, "Reset Coq", "Home");
     (* wait for this available in GtkSourceView !
     ("Hide", "_Hide", `MISSING_IMAGE,
         ~callback:(fun _ -> let sess = notebook#current_term in
@@ -1192,9 +1574,11 @@ let build_ui () =
   menu tools_menu [
     item "Tools" ~label:"_Tools";
     item "Comment" ~label:"_Comment" ~accel:"<CTRL>D"
-      ~callback:MiscMenu.comment;
+      ~callback:(cb_on_current_term (fun t -> if can_paste () then
+          t.script#comment ()));
     item "Uncomment" ~label:"_Uncomment" ~accel:"<CTRL><SHIFT>D"
-      ~callback:MiscMenu.uncomment;
+      ~callback:(cb_on_current_term (fun t -> if can_paste () then
+          t.script#uncomment ()));
     item "Coqtop arguments" ~label:"Coqtop _arguments"
       ~callback:MiscMenu.coqtop_arguments;
     item "LaTeX-to-unicode" ~label:"_LaTeX-to-unicode" ~accel:"<Shift>space"
@@ -1211,9 +1595,21 @@ let build_ui () =
     item "Make makefile" ~label:"Make makefile" ~callback:External.coq_makefile;
   ];
 
+  menu debug_menu [
+    item "Debug" ~label:"_Debug";
+    item "Toggle breakpoint" ~label:"_Toggle breakpoint" ~accel:"F8"
+      ~callback:MiscMenu.toggle_breakpoint;
+    item "Continue" ~label:"_Continue" ~accel:"F9" ~callback:Nav.continue;
+    item "Step in" ~label:"Step in" ~accel:"F10" ~callback:Nav.step_in;
+    item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~callback:Nav.step_out;
+    (* todo: consider other names for Break and Interrupt to be clearer to users *)
+    item "Break" ~label:"Break" ~accel:"F11" ~callback:Nav.break;
+    item "Show debug panel" ~label:"Show debug panel" ~callback:Nav.show_debugger;
+  ];
+
   menu windows_menu [
     item "Windows" ~label:"_Windows";
-    item "Detach View" ~label:"Detach _View" ~callback:MiscMenu.detach_view
+    item "Detach Proof" ~label:"Detach _Proof" ~callback:MiscMenu.detach_view
   ];
 
   menu help_menu [
@@ -1231,6 +1627,8 @@ let build_ui () =
       ~callback:(fun _ -> on_current_term (fun sn ->
          sn.messages#default_route#clear;
          sn.messages#default_route#add_string (MicroPG.get_documentation ())));
+    item "Memory usage" ~label:"Memory usage"  (* temporary, for debugging *)
+      ~callback:MiscMenu.mem_usage;
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];
@@ -1245,6 +1643,7 @@ let build_ui () =
   Coqide_ui.ui_m#insert_action_group tools_menu 0;
   Coqide_ui.ui_m#insert_action_group queries_menu 0;
   Coqide_ui.ui_m#insert_action_group compile_menu 0;
+  Coqide_ui.ui_m#insert_action_group debug_menu 0;
   Coqide_ui.ui_m#insert_action_group windows_menu 0;
   Coqide_ui.ui_m#insert_action_group help_menu 0;
   w#add_accel_group Coqide_ui.ui_m#get_accel_group ;
@@ -1289,7 +1688,7 @@ let build_ui () =
 
   (* Location display *)
   let l = GMisc.label
-    ~text:"Line:     1 Char:   1"
+    ~text:"Line:     1 Char:   1 Offset:     0"
     ~packing:lower_hbox#pack ()
   in
   let () = l#coerce#misc#set_name "location" in
@@ -1298,10 +1697,12 @@ let build_ui () =
   (* Progress Bar *)
   let pbar = GRange.progress_bar ~pulse_step:0.1 () in
   let () = lower_hbox#pack pbar#coerce in
-  let ready () = pbar#set_fraction 0.0; pbar#set_text "Coq is ready" in
+  let ready () = pbar#set_fraction 0.0 in
   let pulse sn =
-    if Coq.is_computing sn.coqtop then
-      (pbar#set_text "Coq is computing"; pbar#pulse ())
+    if Coq.is_stopped_in_debugger sn.coqtop then
+      (pbar#set_pulse_step 0.0; pbar#pulse ())  (* stops slider at left end, not ideal *)
+    else if Coq.is_computing sn.coqtop then
+      (pbar#set_pulse_step 0.1; pbar#pulse ())
     else ready () in
   let callback () = on_current_term pulse; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in
@@ -1365,6 +1766,7 @@ let make_scratch_buffer () =
   ()
 
 let main files =
+  Printexc.record_backtrace true;
   let w = build_ui () in
   reset_revert_timer ();
   reset_autosave_timer ();
@@ -1388,8 +1790,9 @@ let main files =
 
 let read_coqide_args argv =
   let set_debug () =
+    CDebug.set_debug_all true;
+(*    CDebug.(set_flag misc false)*)
     Minilib.debug := true;
-    CDebug.set_debug_all true
   in
   let rec filter_coqtop coqtop project_files bindings_files out = function
     |"-unicode-bindings" :: sfilenames :: args ->
@@ -1443,7 +1846,7 @@ let read_coqide_args argv =
 
 let signals_to_crash =
   [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
-   Sys.sigill; Sys.sigpipe; Sys.sigquit; Sys.sigusr1; Sys.sigusr2]
+   Sys.sigill; Sys.sigpipe; Sys.sigquit; Sys.sigusr2]
 
 let set_signal_handlers ?parent () =
   try

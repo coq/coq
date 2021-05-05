@@ -29,7 +29,10 @@ let catch_break = ref false
 
 let init_signal_handler () =
   let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
-  Sys.set_signal Sys.sigint (Sys.Signal_handle f)
+  Sys.set_signal Sys.sigint (Sys.Signal_handle f);
+  if Sys.os_type = "Unix" then
+    Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
+      (fun _ -> DebugHook.set_break true))
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
@@ -76,9 +79,13 @@ let ide_doc = ref None
 let get_doc () = Option.get !ide_doc
 let set_doc doc = ide_doc := Some doc
 
-let add ((s,eid),(sid,verbose)) =
+let add ((((s,eid),(sid,verbose)),off),(line_nb,bol_pos)) =
   let doc = get_doc () in
-  let pa = Pcoq.Parsable.make (Stream.of_string s) in
+  let open Loc in
+  (* note: this won't yield correct values for bol_pos_last,
+     but the debugger doesn't use that *)
+  let loc = { (initial ToplevelInput) with bp=off; line_nb } in
+  let pa = Pcoq.Parsable.make ~loc (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s may not be empty *)
   | Some ast ->
@@ -87,7 +94,7 @@ let add ((s,eid),(sid,verbose)) =
     let rc = match rc with Stm.NewAddTip -> CSig.Inl () | Stm.Unfocus id -> CSig.Inr id in
     ide_cmd_warns ~id:newid ast;
     (* All output is sent through the feedback mechanism rather than stdout/stderr *)
-    newid, (rc, "")
+    newid, rc
 
 let edit_at id =
   let doc = get_doc () in
@@ -361,10 +368,120 @@ let proof_diff (diff_opt, sid) =
       let old = Stm.get_prev_proof ~doc sid in
       Proof_diffs.diff_proofs ~diff_opt ?old proof
 
-let debug_cmd = ref ""
+let debug_cmd = ref DebugHook.Action.Ignore
 
 let db_cmd cmd =
-  debug_cmd := cmd
+  debug_cmd := DebugHook.Action.Command cmd
+
+module CSet = CSet.Make (Names.DirPath)
+let bad_dirpaths = ref CSet.empty
+
+let cvt_loc loc =
+  let open Loc in
+  match loc with
+  | Some {fname=ToplevelInput; bp; ep} ->
+    Some ("ToplevelInput", [bp; ep])
+  | Some {fname=InFile {dirpath=None; file}; bp; ep} ->
+    Some (file, [bp; ep])  (* for Load command *)
+  | Some {fname=InFile {dirpath=(Some dirpath)}; bp; ep} ->
+    let open Names in
+    let dirpath = DirPath.make (List.rev_map (fun i -> Id.of_string i)
+      (String.split_on_char '.' dirpath)) in
+    let pfx = DirPath.make (List.tl (DirPath.repr dirpath)) in
+    let paths = Loadpath.find_with_logical_path pfx in
+    let basename = match DirPath.repr dirpath with
+    | hd :: tl -> (Id.to_string hd) ^ ".v"
+    | [] -> ""
+    in
+    let vs_files = List.map (fun p -> (Filename.concat (Loadpath.physical p) basename)) paths in
+    let filtered = List.filter (fun p -> Sys.file_exists p) vs_files in
+    begin match filtered with
+    | [] -> (* todo: maybe tweak this later to allow showing a popup dialog in the GUI *)
+      if not (CSet.mem dirpath !bad_dirpaths) then begin
+        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
+        let msg = Pp.(fnl () ++ str "Unable to locate source code for module " ++
+                        str (Names.DirPath.to_string dirpath)) in
+        let msg = if vs_files = [] then msg else
+          (List.fold_left (fun msg f -> msg ++ fnl() ++ str f) (msg ++ str " in:") vs_files) in
+        Feedback.msg_warning msg
+      end;
+      None
+    | [f] -> Some (f, [bp; ep])
+    | f :: tl ->
+      if not (CSet.mem dirpath !bad_dirpaths) then begin
+        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
+        let msg = Pp.(fnl () ++ str "Multiple files found matching module " ++
+            str (Names.DirPath.to_string dirpath) ++ str ":") in
+        let msg = List.fold_left (fun msg f -> msg ++ fnl() ++ str f) msg vs_files in
+        Feedback.msg_warning msg
+      end;
+      Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
+    end
+  | None -> None (* nothing to highlight, e.g. not in a .v file *)
+
+let db_continue opt =
+  let open DebugHook.Action in
+  debug_cmd := match opt with
+  | Interface.StepIn -> StepIn
+  | Interface.StepOver -> StepOver
+  | Interface.StepOut -> StepOut
+  | Interface.Continue -> Continue
+  | Interface.Interrupt -> Interrupt
+
+let db_upd_bpts updates =
+  List.iter (fun op ->
+      let ((file, offset), opt) = op in
+(*      Printf.printf "db_upd %s %d %b\n%!" file offset opt;*)
+      DebugHook.upd_ide_bpt file offset opt;
+    ) updates
+
+
+let format_frame text loc =
+  try
+    let open Loc in
+      match loc with
+      | Some { fname=InFile {dirpath=(Some dp)}; line_nb } ->
+        let dplen = String.length dp in
+        let lastdot = String.rindex dp '.' in
+        let file = String.sub dp (lastdot+1) (dplen - (lastdot + 1)) in
+        let module_name = String.sub dp 0 lastdot in
+        let routine =
+          try
+            (* try text as a kername *)
+            assert (CString.is_prefix dp text);
+            let knlen = String.length text in
+            let lastdot = String.rindex text '.' in
+            String.sub text (lastdot+1) (knlen - (lastdot + 1))
+          with _ -> text
+        in
+        Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name;
+      | Some { fname=ToplevelInput; line_nb } ->
+        let items = String.split_on_char '.' text in
+        Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items);
+      | _ -> text
+  with _ -> text
+
+let db_stack () =
+(*  Printf.printf "server: db_stack call\n%!";*)
+  let s = !DebugHook.forward_get_stack () in
+  List.map (fun (tac, loc) ->
+      let floc = cvt_loc loc in
+      match tac with
+      | Some tacn ->
+        let tacn = if loc = None then
+          tacn ^ " (no location)"
+        else
+          format_frame tacn loc in
+        (tacn, floc)
+      | None ->
+        match loc with
+        | Some { Loc.line_nb } ->
+          (":" ^ (string_of_int line_nb), floc)
+        | None -> (": (no location)", floc)
+    ) s
+
+let db_vars framenum =
+  !DebugHook.forward_get_vars framenum
 
 let get_options () =
   let table = Goptions.get_tables () in
@@ -455,7 +572,11 @@ let eval_call c =
     Interface.status = interruptible status;
     Interface.search = interruptible search;
     Interface.proof_diff = interruptible proof_diff;
-    Interface.db_cmd = interruptible db_cmd;   (* todo: interruptible or not? *)
+    Interface.db_cmd = db_cmd;
+    Interface.db_upd_bpts = db_upd_bpts;
+    Interface.db_continue = db_continue;
+    Interface.db_stack = db_stack;
+    Interface.db_vars = db_vars;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -563,18 +684,23 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
   (* XXX: no need to have a ref here *)
   let ltac_debug_parse () =
     let raw_cmd =
+      debug_cmd := DebugHook.Action.Ignore;
       process_xml_msg xml_ic xml_oc out_ch;
       !debug_cmd
     in
     let open DebugHook in
-    match Action.parse raw_cmd with
-    | Ok act -> act
-    | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
+    match raw_cmd with
+    | Action.Command cmd ->
+      (match Action.parse cmd with
+      | Ok act -> act
+      | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed)
+    | act -> act
   in
 
   DebugHook.Intf.(set
       { read_cmd = ltac_debug_parse
       ; submit_answer = ltac_debug_answer
+      ; isTerminal = false;
       });
 
   while not !quit do
