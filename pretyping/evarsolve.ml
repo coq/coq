@@ -591,8 +591,8 @@ let alias_distinct l =
   check (Int.Set.empty, Id.Set.empty) l
 
 let get_actual_deps env evd aliases l t =
-  if occur_meta_or_existential evd t then
-    (* Probably no restrictions on allowed vars in presence of evars *)
+  if occur_meta evd t then
+    (* The instance of a meta can virtually contains any variable of the context *)
     l
   else
     (* Probably strong restrictions coming from t being evar-closed *)
@@ -1263,7 +1263,7 @@ exception CannotProject of evar_map * EConstr.existential
   of subterms to eventually discard so as to be allowed to keep ti.
 *)
 
-let rec is_constrainable_in top env evd k (ev,(fv_rels,fv_ids) as g) t =
+let rec is_constrainable_in top env evd k (evk,(fv_rels,fv_ids) as g) t =
   let f,args = decompose_app_vect evd t in
   match EConstr.kind evd f with
   | Construct ((ind,_),u) ->
@@ -1274,7 +1274,9 @@ let rec is_constrainable_in top env evd k (ev,(fv_rels,fv_ids) as g) t =
       Array.for_all (is_constrainable_in false env evd k g) params
   | Ind _ -> Array.for_all (is_constrainable_in false env evd k g) args
   | Prod (na,t1,t2) -> is_constrainable_in false env evd k g t1 && is_constrainable_in false env evd k g t2
-  | Evar (ev',_) -> top || not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
+  | Evar (evk',_ as ev') ->
+    (*If ev' needed, one may also try to restrict it*)
+    top || not (Evar.equal evk' evk || occur_evar evd evk (Evd.existential_type evd ev'))
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
