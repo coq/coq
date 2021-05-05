@@ -1599,7 +1599,7 @@ module Parsable = struct
       let info =
         match Loc.get_loc info with
         | Some _ -> info
-        | None -> Loc.add_loc info (get_loc ())
+        | None -> if exc = Sys.Break then info else Loc.add_loc info (get_loc ())
       in
       Exninfo.iraise (exc,info)
 
