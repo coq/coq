@@ -46,9 +46,12 @@ of associativity and commutativity.
 
 .. example::
 
-   In the ring of integers, the normal form of 
-     :math:`x (3 + yx + 25(1 − z)) + zx` 
-   is 
+   In the ring of integers, the normal form of
+
+     :math:`x (3 + yx + 25(1 − z)) + zx`
+
+   is
+
      :math:`28x + (−24)xz + xxy`.
 
 

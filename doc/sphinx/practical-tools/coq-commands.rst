@@ -42,16 +42,54 @@ toplevel with the command ``Coqloop.loop();;``.
 Batch compilation (coqc)
 ------------------------
 
-The ``coqc`` command takes a name *file* as argument. Then it looks for a
-file named *file*.v, and tries to compile it into a
-*file*.vo file (See :ref:`compiled-files`).
+The ``coqc`` command compiles a Coq proof script file with a ".v" suffix
+to create a compiled file with a ".vo" suffix.  (See :ref:`compiled-files`.)
+The last component of the filename must be a valid Coq identifier as described in
+:ref:`lexical-conventions`; it should contain only letters, digits or
+underscores (_) with a ".v" suffix on the final component.
+For example ``/bar/foo/toto.v`` is valid, but ``/bar/foo/to-to.v`` is not.
 
-.. caution::
+We recommend specifying a logical directory name (which is also the module name)
+with the `-R` or the `-Q` options.
+Generally we recommend using utilities such as `make` (using `coq_makefile`
+to generate the `Makefile`) or `dune` to build Coq projects.
+See :ref:`building_coq_project`.
 
-   The name *file* should be a regular Coq identifier as defined in Section :ref:`lexical-conventions`.
-   It should contain only letters, digits or underscores (_). For example ``/bar/foo/toto.v`` is valid,
-   but ``/bar/foo/to-to.v`` is not.
+.. example:: Compiling and loading a single file
 
+   If `foo.v` is in Coq's current directory, you can use `coqc foo.v`
+   to compile it and then `Require foo.` in your script.  But this
+   doesn't scale well for larger projects.
+
+   Generally it's' better to define a new module:
+   To compile `foo.v` as part of a module `Mod1` that is rooted
+   at `.` (i.e. the directory containing `foo.v`), run `coqc -Q . Mod1 foo.v`.
+
+   To make the module available in `CoqIDE`, include the following line in the
+   `_CoqProject` file (see :ref:`coq_makefile`) in the directory from which you
+   start `CoqIDE`.  *<PATH>* is the pathname of the directory containing the module,
+   which can be an absolute path or relative to Coq's current directory.  For now,
+   you must close and reload a named script file for `CoqIDE` to pick up the change,
+   or restart `CoqIDE`.
+   The project file name is configurable in `Edit / Preferences / Project`.
+
+      .. coqdoc::
+         -R <PATH> Mod1
+
+   It's also possible to load a module within `coqtop` or `coqide` with
+   commands like these.  The drawback of this is that it adds
+   environment-specific information (the PATH) to your script, making
+   it non-portable, so we discourage using this approach.
+
+      .. coqdoc::
+         Add LoadPath "PATH" as Mod1.
+         Require Mod1.foo.
+
+   in which `PATH` is the pathname of the directory containing `foo.v`, which
+   can be absolute or relative to Coq's current directory.  The
+   :cmd:`Add LoadPath` is not needed if you provide the mapping from the
+   logical directory (module name) to the physical directory by including the
+   `-Q . Mod1` as command-line arguments to `coqtop` or `coqide`.
 
 Customization at launch time
 ---------------------------------

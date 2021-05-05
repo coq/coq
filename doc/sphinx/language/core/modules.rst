@@ -966,34 +966,37 @@ A logical prefix Lib can be associated with a physical path using
 the command line option ``-Q`` `path` ``Lib``. All subfolders of path are
 recursively associated with the logical path ``Lib`` extended with the
 corresponding suffix coming from the physical path. For instance, the
-folder ``path/fOO/Bar`` maps to ``Lib.fOO.Bar``. Subdirectories corresponding
+folder ``path/foo/Bar`` maps to ``Lib.foo.Bar``. Subdirectories corresponding
 to invalid Coq identifiers are skipped, and, by convention,
 subdirectories named ``CVS`` or ``_darcs`` are skipped too.
 
 Thanks to this mechanism, ``.vo`` files are made available through the
 logical name of the folder they are in, extended with their own
 basename. For example, the name associated with the file
-``path/fOO/Bar/File.vo`` is ``Lib.fOO.Bar.File``. The same caveat applies for
+``path/foo/Bar/File.vo`` is ``Lib.foo.Bar.File``. The same caveat applies for
 invalid identifiers. When compiling a source file, the ``.vo`` file stores
 its logical name, so that an error is issued if it is loaded with the
 wrong loadpath afterwards.
 
 Some folders have a special status and are automatically put in the
-path. Coq commands associate automatically a logical path to files in
-the repository trees rooted at the directory from where the command is
+path. Coq commands automatically associate a logical path to files in
+the repository tree rooted at the directory from where the command is
 launched, ``coqlib/user-contrib/``, the directories listed in the
 ``$COQPATH``, ``${XDG_DATA_HOME}/coq/`` and ``${XDG_DATA_DIRS}/coq/``
 environment variables (see `XDG base directory specification
 <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_)
 with the same physical-to-logical translation and with an empty logical prefix.
 
+.. todo: Needs a more better explanation of COQPATH and XDG* with example(s)
+   and suggest best practices for their use
+
 The command line option ``-R`` is a variant of ``-Q`` which has the strictly
 same behavior regarding loadpaths, but which also makes the
 corresponding ``.vo`` files available through their short names in a way
 similar to the :cmd:`Import` command. For instance, ``-R path Lib``
-associates to the file ``/path/fOO/Bar/File.vo`` the logical name
-``Lib.fOO.Bar.File``, but allows this file to be accessed through the
-short names ``fOO.Bar.File,Bar.File`` and ``File``. If several files with
+associates the file ``/path/foo/Bar/File.vo`` with the logical name
+``Lib.foo.Bar.File`` but allows this file to be accessed through the
+short names ``foo.Bar.File``, ``Bar.File`` and ``File``. If several files with
 identical base name are present in different subdirectories of a
 recursive loadpath, which of these files is found first may be system-
 dependent and explicit qualification is recommended. The ``From`` argument
