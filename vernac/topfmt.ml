@@ -370,7 +370,7 @@ let pr_loc loc =
     | Loc.ToplevelInput ->
       Loc.(str"Toplevel input, characters " ++ int loc.bp ++
            str"-" ++ int loc.ep ++ str":")
-    | Loc.InFile fname ->
+    | Loc.InFile (_, fname) ->
       Loc.(str"File " ++ str "\"" ++ str fname ++ str "\"" ++
            str", line " ++ int loc.line_nb ++ str", characters " ++
            int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++

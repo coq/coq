@@ -158,6 +158,7 @@ let load_md i ((sp, kn), (local, id, b, t, deprecation)) = match id with
 
 let open_md i ((sp, kn), (local, id, b, t, deprecation)) = match id with
 | None ->
+  (* todo: generate a warning when non-unique, record choices for non-unique mappings *)
   let () = if not local then push_tactic (Nametab.Exactly i) sp kn in
   add ~deprecation kn b t
 | Some kn0 -> replace kn0 kn t

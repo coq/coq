@@ -158,6 +158,20 @@ let rec prompt level =
         runtrue >> return (DebugOn (level+1))
     | Failed -> prompt level
 
+[@@@ocaml.warning "-32"]
+let at_breakpoint tac =
+  let open DebugHook in
+  let open Loc in
+  let checkbpt dirpath offset =
+(*    Printf.printf "In tactic_debug, dirpath = %s offset = %d\n%!" dirpath bp;*)
+    BPSet.mem { dirpath; offset } !breakpoints
+  in
+  match CAst.(tac.loc) with
+  | Some {Loc.fname=(InFile (Some dirpath,_)); bp} -> checkbpt dirpath bp
+  | Some {Loc.fname=(ToplevelInput);           bp} -> checkbpt "Top"   bp
+  | _ -> false
+[@@@ocaml.warning "+32"]
+
 (* Prints the state and waits for an instruction *)
 (* spiwack: the only reason why we need to take the continuation [f]
    as an argument rather than returning the new level directly seems to

@@ -161,6 +161,9 @@ sig
   val to_string : t -> string
   (** Print non-empty directory paths as ["coq_root.module.submodule"] *)
 
+  val of_string : string -> t
+  (** Create a DirPath from a string *)
+
   val print : t -> Pp.t
 end
 

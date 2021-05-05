@@ -1351,7 +1351,8 @@ let expand filename =
 let vernac_add_loadpath ~implicit pdir coq_path =
   let open Loadpath in
   let pdir = expand pdir in
-  add_vo_path { unix_path = pdir; coq_path; has_ml = true; implicit; recursive = true }
+  add_vo_path { unix_path = pdir; coq_path; has_ml = true; implicit; recursive = true };
+  DebugHook.refresh_bpts ()
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)

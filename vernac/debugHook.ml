@@ -77,3 +77,73 @@ module Intf = struct
   let get () = !ltac_debug_ref
 
 end
+
+(* breakpoints as used by tactic_debug *)
+type breakpoint = {
+  dirpath : string;
+  offset : int;
+}
+
+let compare b1 b2 =
+  let c1 = Int.compare b1.offset b2.offset in
+  if c1 <> 0 then c1 else String.compare b1.dirpath b2.dirpath
+
+module BPSet = CSet.Make(struct
+  type t = breakpoint
+  let compare = compare
+  end)
+
+let breakpoints = ref BPSet.empty
+
+(* breakpoints as defined by the debugger IDE, using absolute file names *)
+type ide_breakpoint = {
+  file : string;
+  offset : int;
+}
+
+let compare b1 b2 =
+  let c1 = Int.compare b1.offset b2.offset in
+  if c1 <> 0 then c1 else String.compare b1.file b2.file
+
+module IBPSet = CSet.Make(struct
+  type t = ide_breakpoint
+  let compare = compare
+  end)
+
+let ide_breakpoints = ref IBPSet.empty
+
+let update_bpt opt ide_bpt =
+  let open Names in
+  let fname = ide_bpt.file in
+  let dp =
+    if fname = "ToplevelInput" then  (* todo: or None? *)
+      DirPath.of_string "Top"
+    else begin (* find the DirPath matching the absolute pathname of the file *)
+      (* ? check for .v extension? *)
+      let dirname = Filename.dirname fname in
+      let basename = Filename.basename fname in
+      let base_id = Id.of_string (Filename.remove_extension basename) in
+      DirPath.make (base_id ::
+          (try
+            let p = Loadpath.find_load_path (CUnix.physical_path_of_string dirname) in
+            DirPath.repr (Loadpath.logical p)
+          with _ -> []))
+    end
+  in
+  let dirpath = DirPath.to_string dp in
+  let bp = { dirpath; offset=ide_bpt.offset } in
+  Printf.printf "update_bpt: %s -> %s  %d\n%!" fname dirpath ide_bpt.offset;
+  match opt with
+  | true  -> breakpoints := BPSet.add bp !breakpoints
+  | false -> breakpoints := BPSet.remove bp !breakpoints
+
+(* refresh breakpoints, for use when loadpaths are updated *)
+let refresh_bpts () =
+  breakpoints := BPSet.empty;
+  Seq.iter (update_bpt true) (IBPSet.to_seq !ide_breakpoints)
+
+type debugger_state = {
+  mutable cur_loc : Loc.t option
+}
+
+let debugger_state = { cur_loc=None; }

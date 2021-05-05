@@ -11,7 +11,7 @@
 (** {5 Basic types} *)
 
 type source =
-  | InFile of string
+  | InFile of string option * string (** module name and file name *)
   | ToplevelInput
 
 type t = {

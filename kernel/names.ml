@@ -185,6 +185,9 @@ struct
     | [] -> "<>"
     | sl -> String.concat "." (List.rev_map Id.to_string sl)
 
+  let of_string s =
+    make (List.rev_map (fun i -> Id.of_string i) (String.split_on_char '.' s))
+
   let print dp = str (to_string dp)
 
   let initial = [default_module_name]
