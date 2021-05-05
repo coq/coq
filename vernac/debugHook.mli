@@ -44,3 +44,31 @@ module Intf : sig
   val set : t -> unit
   val get : unit -> t option
 end
+
+(** breakpoints as used by tactic_debug *)
+type breakpoint = {
+  dirpath : string;
+  offset : int;
+}
+
+module BPSet : CSet.S with type elt = breakpoint
+
+val breakpoints : BPSet.t ref
+
+(** breakpoints as defined by the debugger IDE, using absolute file names *)
+type ide_breakpoint = {
+  file : string;
+  offset : int;
+}
+module IBPSet : CSet.S with type elt = ide_breakpoint
+
+val ide_breakpoints : IBPSet.t ref
+
+val update_bpt : bool -> ide_breakpoint -> unit
+val refresh_bpts : unit -> unit
+
+type debugger_state = {
+  mutable cur_loc : Loc.t option;
+}
+
+val debugger_state : debugger_state

@@ -116,8 +116,15 @@ let () =
       optread  = (fun () -> !batch);
       optwrite = (fun x -> batch := x) }
 
+let prev_load_paths = ref []
+
 (* (Re-)initialize debugger *)
 let db_initialize =
+  let load_paths = Loadpath.get_load_paths () in
+  if load_paths != !prev_load_paths then begin
+    prev_load_paths := load_paths;
+    DebugHook.refresh_bpts ()
+  end;
   let open Proofview.NonLogical in
   make Comm.init >>
   (skip:=0) >> (skipped:=0) >> (breakpoint:=None)
@@ -157,6 +164,19 @@ let rec prompt level =
     | RunBreakpoint s -> (breakpoint:=(Some s)) >>
         runtrue >> return (DebugOn (level+1))
     | Failed -> prompt level
+
+[@@@ocaml.warning "-32"]
+let at_breakpoint tac =
+  let open DebugHook in
+  let open Loc in
+  let checkbpt dirpath offset =
+    BPSet.mem { dirpath; offset } !breakpoints
+  in
+  match CAst.(tac.loc) with
+  | Some {fname=InFile {dirpath=Some dirpath}; bp} -> checkbpt dirpath bp
+  | Some {fname=ToplevelInput;                 bp} -> checkbpt "Top"   bp
+  | _ -> false
+[@@@ocaml.warning "+32"]
 
 (* Prints the state and waits for an instruction *)
 (* spiwack: the only reason why we need to take the continuation [f]
