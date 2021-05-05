@@ -2147,3 +2147,7 @@ Qed.
  - [Pmult_nat] cannot be unfolded (unfold [Pos.iter_op] instead).
 
 *)
+
+(** Re-export the notation for those who just [Import BinPos] *)
+Number Notation positive Pos.of_num_int Pos.to_num_hex_uint : hex_positive_scope.
+Number Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.

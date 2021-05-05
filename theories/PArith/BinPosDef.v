@@ -691,15 +691,21 @@ Definition to_hex_uint p := Hexadecimal.rev (to_little_hex_uint p).
 
 Definition to_num_uint p := Number.UIntDecimal (to_uint p).
 
+Definition to_num_hex_uint n := Number.UIntHexadecimal (to_hex_uint n).
+
 Definition to_int n := Decimal.Pos (to_uint n).
 
 Definition to_hex_int p := Hexadecimal.Pos (to_hex_uint p).
 
 Definition to_num_int n := Number.IntDecimal (to_int n).
 
+Definition to_num_hex_int n := Number.IntHexadecimal (to_hex_int n).
+
+Number Notation positive of_num_int to_num_hex_uint : hex_positive_scope.
 Number Notation positive of_num_int to_num_uint : positive_scope.
 
 End Pos.
 
 (** Re-export the notation for those who just [Import BinPosDef] *)
+Number Notation positive Pos.of_num_int Pos.to_num_hex_uint : hex_positive_scope.
 Number Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.

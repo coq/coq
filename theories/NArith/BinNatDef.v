@@ -428,15 +428,21 @@ Definition to_hex_uint n :=
 
 Definition to_num_uint n := Number.UIntDecimal (to_uint n).
 
+Definition to_num_hex_uint n := Number.UIntHexadecimal (to_hex_uint n).
+
 Definition to_int n := Decimal.Pos (to_uint n).
 
 Definition to_hex_int n := Hexadecimal.Pos (to_hex_uint n).
 
 Definition to_num_int n := Number.IntDecimal (to_int n).
 
+Definition to_num_hex_int n := Number.IntHexadecimal (to_hex_int n).
+
+Number Notation N of_num_uint to_num_hex_uint : hex_N_scope.
 Number Notation N of_num_uint to_num_uint : N_scope.
 
 End N.
 
 (** Re-export the notation for those who just [Import NatIntDef] *)
+Number Notation N N.of_num_uint N.to_num_hex_uint : hex_N_scope.
 Number Notation N N.of_num_uint N.to_num_uint : N_scope.

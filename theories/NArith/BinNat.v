@@ -1107,3 +1107,7 @@ Definition N_ind_double a P f0 f2 fS2 := N.binary_ind P f0 f2 fS2 a.
 Definition N_rec_double a P f0 f2 fS2 := N.binary_rec P f0 f2 fS2 a.
 
 (** Not kept : Ncompare_n_Sm Nplus_lt_cancel_l *)
+
+(** Re-export the notation for those who just [Import BinNat] *)
+Number Notation N N.of_num_uint N.to_num_hex_uint : hex_N_scope.
+Number Notation N N.of_num_uint N.to_num_uint : N_scope.
