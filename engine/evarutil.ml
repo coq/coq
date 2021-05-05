@@ -860,14 +860,22 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
   let open Evd in
   let t = EConstr.Unsafe.to_constr t
   and u = EConstr.Unsafe.to_constr u in
-  let fold cstr sigma =
-    try Some (add_universe_constraints sigma cstr)
-    with Univ.UniverseInconsistency _ | UniversesDiffer -> None
+  let sigma = ref extended_evd in
+  let eq_universes _ u1 u2 =
+    let u1 = normalize_universe_instance !sigma u1 in
+    let u2 = normalize_universe_instance !sigma u2 in
+    UGraph.check_eq_instances (universes !sigma) u1 u2
   in
-  let ans =
-    UnivProblem.eq_constr_univs_infer_with
-      (fun t -> kind_of_term_upto evd t)
-      (fun u -> kind_of_term_upto extended_evd u)
-      (universes extended_evd) fold t u extended_evd
+  let eq_sorts s1 s2 =
+    if Sorts.equal s1 s2 then true
+    else
+      let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+      try sigma := add_universe_constraints !sigma UnivProblem.(Set.singleton (UEq (u1, u2))); true
+      with Univ.UniverseInconsistency _ | UniversesDiffer -> false
   in
-  match ans with None -> false | Some _ -> true
+  let kind1 = kind_of_term_upto evd in
+  let kind2 = kind_of_term_upto extended_evd in
+  let rec eq_constr' nargs m n =
+    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' nargs m n
+  in
+  Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' 0 t u
