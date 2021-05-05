@@ -23,6 +23,9 @@ type t
 val logical : t -> DirPath.t
 (** Get the logical path (Coq module hierarchy) of a loadpath. *)
 
+val physical : t -> CUnix.physical_path
+(** Get the physical path of a loadpath *)
+
 val pp : t -> Pp.t
 (** Print a load path *)
 
@@ -34,7 +37,11 @@ val remove_load_path : CUnix.physical_path -> unit
     if any. *)
 
 val find_load_path : CUnix.physical_path -> t
-(** Get the binding associated to a physical path. Raises [Not_found] if there
+(** Get the binding associated with a physical path. Raises [Not_found] if there
+    is none. *)
+
+val find_logical : DirPath.t -> t
+(** Get the binding associated with a logical path. Raises [Not_found] if there
     is none. *)
 
 val locate_file : string -> string
