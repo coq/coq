@@ -1775,6 +1775,124 @@ let keyed_unify env evd kop =
           | None -> false
           | Some kc -> Keys.equiv_keys kop kc
 
+module AConstr :
+sig
+  type t
+  val proj : t -> EConstr.t
+  val make : evar_map -> EConstr.t -> t
+  val kind : t -> (t, t, ESorts.t, EInstance.t) kind_of_term
+  val mkApp : t * t array -> t
+  val closed0 : t -> bool
+end =
+struct
+
+type t = {
+  proj : EConstr.t;
+  self : (t, t, ESorts.t, EInstance.t) kind_of_term;
+  data : int;
+}
+
+let proj c = c.proj
+
+let closed0 c = Int.equal c.data 0
+
+let max (i : int) (j : int) = if i < j then j else i
+let max_array f a = Array.fold_left (fun n v -> max (f v) n) 0 a
+let lift (i : int) = if Int.equal i 0 then 0 else i - 1
+let liftn k (i : int) = if i < k then 0 else i - k
+
+let data v = v.data
+
+let kind v = v.self
+
+let mkApp (c, al) =
+  if Array.is_empty al then c
+  else match kind c with
+  | App (c0, al0) ->
+    { proj = mkApp (c.proj, Array.map proj al); self = App (c0, Array.append al0 al); data = max c.data (max_array data al) }
+  | _ ->
+    { proj = mkApp (c.proj, Array.map proj al); self = App (c, al); data = max c.data (max_array data al) }
+
+let rec make sigma c0 = match EConstr.kind sigma c0 with
+| (Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ | Int _ | Float _) as r ->
+  { proj = c0; self = r; data = 0 }
+| Rel n ->
+  { proj = c0; self = Rel n; data = n }
+| Cast (c, k, t) ->
+  let c = make sigma c in
+  let t = make sigma t in
+  { proj = c0; self = Cast (c, k, t); data = max c.data t.data }
+| Prod (na, t, c) ->
+  let t = make sigma t in
+  let c = make sigma c in
+  { proj = c0; self = Prod (na, t, c); data = max t.data (lift c.data) }
+| Lambda (na, t, c) ->
+  let t = make sigma t in
+  let c = make sigma c in
+  { proj = c0; self = Lambda (na, t, c); data = max t.data (lift c.data) }
+| LetIn (na, b, t, c) ->
+  let b = make sigma b in
+  let t = make sigma t in
+  let c = make sigma c in
+  { proj = c0; self = LetIn (na, b, t, c); data = max b.data (max t.data (lift c.data)) }
+| App (c, al) ->
+  let c = make sigma c in
+  let ald, al = make_array sigma al in
+  { proj = c0; self = App (c, al); data = max c.data ald }
+| Proj (p, t) ->
+  let t = make sigma t in
+  { proj = c0; self = Proj (p, t); data = t.data }
+| Evar (e, al) ->
+  let al = List.map (fun c -> make sigma c) al in
+  let data = List.fold_left (fun accu v -> max accu v.data) 0 al in
+  { proj = c0; self = Evar (e, al); data }
+| Case (ci, u, pms, p, iv, c, bl) ->
+  let pmsd, pms = make_array sigma pms in
+  let pd, p =
+    let (nas, p) = p in
+    let p = make sigma p in
+    liftn (Array.length nas) p.data, (nas, p)
+  in
+  let ivd, iv = match iv with
+  | NoInvert -> 0, NoInvert
+  | CaseInvert { indices } ->
+    let n, indices = make_array sigma indices in
+    n, CaseInvert { indices }
+  in
+  let c = make sigma c in
+  let fold accu (nas, p) =
+    let p = make sigma p in
+    max accu (liftn (Array.length nas) p.data), (nas, p)
+  in
+  let bld, bl = Array.fold_left_map fold 0 bl in
+  let data = max pmsd @@ max pd @@ max ivd @@ max c.data bld in
+  { proj = c0; self = Case (ci, u, pms, p, iv, c, bl); data }
+| Fix (ln, (lna, tl, bl)) ->
+  let tld, tl = make_array sigma tl in
+  let bld, bl = make_array sigma bl in
+  let data = max tld (liftn (Array.length tl) bld) in
+  { proj = c0; self = Fix (ln, (lna, tl, bl)); data }
+| CoFix(ln,(lna,tl,bl)) ->
+  let tld, tl = make_array sigma tl in
+  let bld, bl = make_array sigma bl in
+  let data = max tld (liftn (Array.length tl) bld) in
+  { proj = c0; self = CoFix (ln, (lna, tl, bl)); data }
+| Array(u,t,def,ty) ->
+  let td, t = make_array sigma t in
+  let def = make sigma def in
+  let ty = make sigma ty in
+  let data = max td (max def.data ty.data) in
+  { proj = c0; self = Array(u,t,def,ty); data }
+
+and make_array sigma v =
+  let fold accu c =
+    let c = make sigma c in
+    max accu c.data, c
+  in
+  Array.fold_left_map fold 0 v
+
+end
+
 (* Tries to find an instance of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] until it finds a match.
    Fails if no match is found *)
@@ -1783,9 +1901,15 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let kop = Keys.constr_key (fun c -> EConstr.kind evd c) op in
   let opgnd = if occur_meta_or_undefined_evar evd op then NotGround else Ground in
   let rec matchrec cl =
-    let cl = strip_outer_cast evd cl in
+    let rec strip_outer_cast c = match AConstr.kind c with
+    | Cast (c, _, _) -> strip_outer_cast c
+    | _ -> c
+    in
+    let cl = strip_outer_cast cl in
     (try
-       if closed0 evd cl && not (isEvar evd cl) && keyed_unify env evd kop cl then
+      let is_closed = AConstr.closed0 cl in
+      let cl = AConstr.proj cl in
+       if is_closed && not (isEvar evd cl) && keyed_unify env evd kop cl then
        (try
          if is_keyed_unification () then
            let f1, l1 = decompose_app_vect evd op in
@@ -1796,11 +1920,11 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
             bestexn := Some ex; user_err Pp.(str "Unsat"))
        else user_err Pp.(str "Bound 1")
      with ex when precatchable_exception ex ->
-       (match EConstr.kind evd cl with
+       (match AConstr.kind cl with
           | App (f,args) ->
               let n = Array.length args in
               assert (n>0);
-              let c1 = mkApp (f,Array.sub args 0 (n-1)) in
+              let c1 = AConstr.mkApp (f,Array.sub args 0 (n-1)) in
               let c2 = args.(n-1) in
               (try
                  matchrec c1
@@ -1955,7 +2079,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
                unify pre-existing non frozen evars of the goal or of the
                pattern *)
           set_no_delta_flags flags in
-        let t' = (strip_outer_cast evd op,t) in
+        let t' = (strip_outer_cast evd op, AConstr.make evd t) in
         let (evd',cl) =
           try
             if is_keyed_unification () then
@@ -1980,6 +2104,9 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
           else (evd',cl::l))
     oplist
     (evd,[])
+
+let w_unify_to_subterm env sigma ?flags (c, t) =
+  w_unify_to_subterm env sigma ?flags (c, AConstr.make sigma t)
 
 let secondOrderAbstraction env evd flags typ (p, oplist) =
   (* Remove delta when looking for a subterm *)
