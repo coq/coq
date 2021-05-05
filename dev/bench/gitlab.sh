@@ -43,8 +43,8 @@ check_variable "CI_JOB_URL"
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_switch:=ocaml-base-compiler.4.07.1}"
-: "${old_ocaml_switch:=ocaml-base-compiler.4.07.1}"
+: "${new_ocaml_switch:=ocaml-variants.4.12.0+gadmm-page-table}"
+: "${old_ocaml_switch:=ocaml-base-compiler.4.12.0}"
 : "${new_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${old_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
@@ -252,7 +252,7 @@ create_opam() {
 
     opam init --disable-sandboxing -qn -j$number_of_processors --bare
     # Allow beta compiler switches
-    opam repo add -q --set-default beta https://github.com/ocaml/ocaml-beta-repository.git
+    opam repo add -q --set-default beta https://github.com/ppedrot/opam-repository.git#local
     # Allow experimental compiler switches
     opam repo add -q --set-default ocaml-pr https://github.com/ejgallego/ocaml-pr-repository.git
     # Rest of default switches
