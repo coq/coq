@@ -34,8 +34,11 @@ else
 coqide: $(COQIDE) $(IDETOP) $(TOPBINOPT) $(IDEBINDINGS) $(VO_OUT_DIR)theories/Init/Prelude.$(VO) $(BCONTEXT)/coqide.install
 endif
 
-# $(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(FULLDATADIR)
-# $(INSTALLLIB) ide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
+# EJGA: Why are these still here? Check (install ...) stanzas for
+# coqide, also check DESTDIR and DESTDOCDIR if we need to resurrect this
+#
+# $(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(DATADIR)
+# $(INSTALLLIB) ide/FAQ $(DOCDIR)/FAQ-CoqIde
 
 ###########################################################################
 # CoqIde for Windows special targets
