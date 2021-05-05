@@ -1582,7 +1582,7 @@ module Parsable = struct
     let efun = entry.estart 0 in
     let ts = p.pa_tok_strm in
     let get_loc () =
-      let loc = LStream.get_loc (LStream.count ts) ts in
+      let loc = LStream.current_loc ts in
       let loc' = LStream.max_peek_loc ts in
       Loc.merge loc loc'
     in
