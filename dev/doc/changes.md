@@ -35,6 +35,18 @@
 - A few functions change their interfaces to take benefit of a new
   abstraction level `LStream` for streams with location function.
 
+- Grammar extensions now require specifying whether they create a level or they
+  reuse an existing one. In addition to the Gramlib API changes, GRAMMAR EXTEND
+  stanzas may need a few tweaks. Their grammar was changed so that level and
+  associativity arguments that would have been ignored are now forbidden.
+  Furthermore, extensions without an explicit position now expect the entry to
+  be empty. If it is not the case, the extension will fail at runtime with an
+  assertion failure located near the offending entry. To recover the old
+  behaviour, one needs to explicitly add the new TOP position to the extension.
+  This position expects the entry to be non-empty and populates the topmost
+  defined level with the provided rules. Note that this differs from FIRST,
+  which creates a new level and prepends it to the list of levels of the entry.
+
 ## Changes between Coq 8.12 and Coq 8.13
 
 ### Code formatting
