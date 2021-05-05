@@ -101,7 +101,7 @@ let console_feedback_listener fmt =
     | None     -> fprintf fmt ""
     | Some loc ->
       let where =
-        match loc.fname with InFile f -> f | ToplevelInput -> "Toplevel input" in
+        match loc.fname with InFile { file } -> file | ToplevelInput -> "Toplevel input" in
       fprintf fmt "\"%s\", line %d, characters %d-%d:@\n"
         where loc.line_nb (loc.bp-loc.bol_pos) (loc.ep-loc.bol_pos) in
   let checker_feed (fb : feedback) =

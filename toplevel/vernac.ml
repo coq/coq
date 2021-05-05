@@ -81,14 +81,15 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       Exninfo.iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-let load_vernac_core ~echo ~check ~interactive ~state file =
+let load_vernac_core ~echo ~check ~interactive ~state ?ldir file =
   (* Keep in sync *)
   let in_chan = open_utf8_file_in file in
   let in_echo = if echo then Some (open_utf8_file_in file) else None in
   let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
 
-  let in_pa =
-    Pcoq.Parsable.make ~loc:(Loc.(initial (InFile file)))
+  let dirpath = Option.cata (fun ldir -> Some Names.DirPath.(to_string ldir))
+      None ldir in
+  let in_pa = Pcoq.Parsable.make ~loc:Loc.(initial (InFile {dirpath; file}))
       (Stream.of_channel in_chan) in
   let open State in
 
@@ -167,8 +168,8 @@ let beautify_pass ~doc ~comments ~ids ~filename =
 
 (* Main driver for file loading. For now, we only do one beautify
    pass. *)
-let load_vernac ~echo ~check ~interactive ~state filename =
-  let ostate, ids, comments = load_vernac_core ~echo ~check ~interactive ~state filename in
+let load_vernac ~echo ~check ~interactive ~state ?ldir filename =
+  let ostate, ids, comments = load_vernac_core ~echo ~check ~interactive ~state ?ldir filename in
   (* Pass for beautify *)
   if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:(List.rev ids) ~filename;
   (* End pass *)

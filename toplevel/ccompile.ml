@@ -140,7 +140,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
 
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
-      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state long_f_dot_in in
+      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~ldir long_f_dot_in in
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();

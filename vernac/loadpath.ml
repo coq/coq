@@ -32,7 +32,7 @@ let pp p =
 let get_load_paths () = !load_paths
 
 let anomaly_too_many_paths path =
-  CErrors.anomaly Pp.(str "Several logical paths are associated to" ++ spc () ++ str path ++ str ".")
+  CErrors.anomaly Pp.(str "Several logical paths are associated with" ++ spc () ++ str path ++ str ".")
 
 let find_load_path phys_dir =
   let phys_dir = CUnix.canonical_path_name phys_dir in
@@ -42,6 +42,10 @@ let find_load_path phys_dir =
   | [] -> raise Not_found
   | [p] -> p
   | _ -> anomaly_too_many_paths phys_dir
+
+(* get the list of load paths that correspond to a given logical path *)
+let find_with_logical_path dirpath =
+  List.filter (fun p -> Names.DirPath.equal p.path_logical dirpath) !load_paths
 
 let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
