@@ -333,7 +333,7 @@ $(VO_OUT_DIR)theories/Init/%.vo $(VO_OUT_DIR)theories/Init/%.glob: $(VO_OUT_DIR)
 	$(HIDE)$(BOOTCOQC) $< -o $@ -noinit -R $(VO_OUT_DIR)theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
 ifdef NATIVECOMPUTE
 	$(SHOW)'COQNATIVE $*.vo'
-	$(HIDE)$(COQNATIVE) $(NATIVEINCLUDES) -coqlib . -R $(VO_OUT_DIR)theories Coq $(VO_OUT_DIR)theories/Init/$*.vo
+	$(HIDE)$(COQNATIVE) $(NATIVEINCLUDES) -coqlib $(VO_OUT_DIR) -R $(VO_OUT_DIR)theories Coq $(VO_OUT_DIR)theories/Init/$*.vo
 endif
 
 $(VO_OUT_DIR)theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP) | $(VO_OUT_DIR)
@@ -350,7 +350,7 @@ $(VO_OUT_DIR)%.vo $(VO_OUT_DIR)%.glob: $(VO_OUT_DIR)%.v $(VO_OUT_DIR)theories/In
 	$(HIDE)$(BOOTCOQC) $< -o $@ $(TIMING_ARG) $(TIMING_EXTRA)
 ifdef NATIVECOMPUTE
 	$(SHOW)'COQNATIVE $*.vo'
-	$(HIDE)$(COQNATIVE) $(NATIVEINCLUDES) -coqlib . -R $(VO_OUT_DIR)theories Coq $(VO_OUT_DIR)$*.vo
+	$(HIDE)$(COQNATIVE) $(NATIVEINCLUDES) -coqlib $(VO_OUT_DIR) -R $(VO_OUT_DIR)theories Coq $(VO_OUT_DIR)$*.vo
 endif
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
