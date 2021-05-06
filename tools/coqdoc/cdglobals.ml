@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
-
 (*s Output options *)
 
 type target_language = LaTeX | HTML | TeXmacs | Raw
@@ -44,14 +42,6 @@ let open_out_file f =
     with Sys_error s -> Printf.eprintf "%s\n" s; exit 1
 
 let close_out_file () = close_out !out_channel
-
-
-type glob_source_t =
-    | NoGlob
-    | DotGlob
-    | GlobFile of string
-
-let glob_source = ref DotGlob
 
 (*s Manipulations of paths and path aliases *)
 
