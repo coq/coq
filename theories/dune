@@ -2,7 +2,7 @@
  (name Coq)
  (package coq-stdlib)
  (synopsis "Coq's Standard Library")
- (flags -q)
+ (flags -q -w -deprecated-native-compiler-option)
  ; (mode native)
  (boot)
  ; (per_file

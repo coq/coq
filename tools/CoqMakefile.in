@@ -225,14 +225,14 @@ $(strip $(COQEXTRAFLAGS)))))
 COQACTUALNATIVEFLAG:=$(lastword $(COQMF_COQ_NATIVE_COMPILER_DEFAULT) $(COQMF_COQPROJECTNATIVEFLAG) $(COQUSERNATIVEFLAG))
 
 ifeq '$(COQACTUALNATIVEFLAG)' 'yes'
-  COQNATIVEFLAG="-native-compiler" "ondemand"
+  COQNATIVEFLAG="-w" "-deprecated-native-compiler-option" "-native-compiler" "ondemand"
   COQDONATIVE="yes"
 else
 ifeq '$(COQACTUALNATIVEFLAG)' 'ondemand'
-  COQNATIVEFLAG="-native-compiler" "ondemand"
+  COQNATIVEFLAG="-w" "-deprecated-native-compiler-option" "-native-compiler" "ondemand"
   COQDONATIVE="no"
 else
-  COQNATIVEFLAG="-native-compiler" "no"
+  COQNATIVEFLAG="-w" "-deprecated-native-compiler-option" "-native-compiler" "no"
   COQDONATIVE="no"
 endif
 endif

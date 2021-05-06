@@ -132,10 +132,17 @@ let warn_no_native_compiler =
                    strbrk " -native-compiler " ++ strbrk s ++
                    strbrk " option ignored.")
 
+let warn_deprecated_native_compiler =
+  CWarnings.create ~name:"deprecated-native-compiler-option" ~category:"deprecated"
+         (fun () ->
+          Pp.strbrk "The native-compiler option is deprecated. To compile native \
+          files ahead of time, use the coqnative binary instead.")
+
 let handle_injection = let open Coqargs in function
   | RequireInjection r -> require_file r
   | OptionInjection o -> set_option o
   | WarnNoNative s -> warn_no_native_compiler s
+  | WarnNativeDeprecated -> warn_deprecated_native_compiler ()
 
 let start_library ~top injections =
   Flags.verbosely Declaremods.start_library top;
