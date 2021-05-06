@@ -231,7 +231,7 @@ one limit the number of workers, globally.
 The utility accepts the ``-j`` argument to specify the maximum number of
 workers (defaults to 2). ``coqworkmgr`` automatically starts in the
 background and prints an environment variable assignment
-like ``COQWORKMGR_SOCKET=localhost:45634``. The user must set this variable
+like ``COQWORKMGR_SOCK=localhost:45634``. The user must set this variable
 in all the shells from which Coq processes will be started. If one
 uses just one terminal running the bash shell, then
 ``export ‘coqworkmgr -j 4‘`` will do the job.
