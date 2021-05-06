@@ -50,7 +50,14 @@ let find_logical modname =
   match paths with
   | [] -> raise Not_found
   | [p] -> p
-  | _ ->   CErrors.anomaly Pp.(str "Several physical paths are associated with" ++ spc () ++ str modname ++ str ".")
+  | hd :: tl ->
+    (* there may be duplicate entries *)
+    let p' = List.filter (fun e -> e <> hd) tl in
+    match p' with
+    | [] -> hd
+    | l -> List.iter (fun p -> Printf.eprintf "Physical path: %s\n%!" p.path_physical) (hd :: l);
+      CErrors.anomaly Pp.(str "Several physical paths are associated with"
+        ++ spc () ++ str modname ++ str ".")
 
 let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
