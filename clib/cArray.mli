@@ -80,6 +80,8 @@ sig
   (** [chop i a] returns [(a1, a2)] s.t. [a = a1 + a2] and [length a1 = n].
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)
 
+  val split : ('a * 'b) array -> 'a array * 'b array
+
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
