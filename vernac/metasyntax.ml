@@ -340,9 +340,9 @@ let unparsing_metavar i from typs =
   let x = List.nth typs (i-1) in
   let prec,side = unparsing_precedence_of_entry_type from x in
   match x with
-  | ETConstr _ | ETGlobal | ETBigint | ETIdent ->
+  | ETConstr _ | ETGlobal | ETBigint ->
      UnpMetaVar (prec,side)
-  | ETPattern _ | ETName _ ->
+  | ETPattern _ | ETName _ | ETIdent ->
      UnpBinderMetaVar (prec,NotQuotedPattern)
   | ETBinder isopen ->
      UnpBinderMetaVar (prec,QuotedPattern)
