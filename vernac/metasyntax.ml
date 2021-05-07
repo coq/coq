@@ -1862,15 +1862,11 @@ let warn_custom_entry =
          (fun s ->
           strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 
-let load_custom_entry _ _ = ()
-
-let open_custom_entry _ (_,(local,s)) =
+let load_custom_entry _ (_,(local,s)) =
   if Egramcoq.exists_custom_entry s then warn_custom_entry s
   else Egramcoq.create_custom_entry ~local s
 
-let cache_custom_entry o =
-  load_custom_entry 1 o;
-  open_custom_entry 1 o
+let cache_custom_entry o = load_custom_entry 1 o
 
 let subst_custom_entry (subst,x) = x
 
@@ -1880,7 +1876,6 @@ let classify_custom_entry (local,s as o) =
 let inCustomEntry : locality_flag * string -> obj =
   declare_object {(default_object "CUSTOM-ENTRIES") with
       cache_function = cache_custom_entry;
-      open_function = simple_open open_custom_entry;
       load_function = load_custom_entry;
       subst_function = subst_custom_entry;
       classify_function = classify_custom_entry}

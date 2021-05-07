@@ -64,7 +64,6 @@ Inductive Expr :=
  | Add : Expr -> Expr -> Expr
  | One : Expr.
 
-Declare Custom Entry expr.
 Notation "[ expr ]" := expr (expr custom expr at level 1).
 Notation "1" := One (in custom expr at level 0).
 Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
@@ -155,7 +154,6 @@ End M.
 
 Module Bug11331.
 
-Declare Custom Entry expr.
 Notation "{ p }" := (p) (in custom expr at level 201, p constr).
 Print Custom Grammar expr.
 

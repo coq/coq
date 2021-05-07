@@ -146,14 +146,17 @@ Module M16.
   Module A.
   Declare Custom Entry foo2.
   End A.
-  Fail Notation "##" := 0 (in custom foo2).
+  Notation "##" := 0 (in custom foo2).
   Import A.
-  Local Notation "##" := 0 (in custom foo2).
+  Local Notation "####" := 0 (in custom foo2).
 
   (* Test Print Grammar *)
   Print Custom Grammar foo.
   Print Custom Grammar foo2.
 End M16.
+Fail Local Notation "###" := 0 (in custom foo).
+Fail Print Custom Grammar foo.
+Notation "####" := 0 (in custom foo2).
 
 (* Example showing the need for strong evaluation of
    cases_pattern_of_glob_constr (this used to raise Not_found at some
