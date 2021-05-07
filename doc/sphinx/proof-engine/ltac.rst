@@ -2246,14 +2246,19 @@ Tracing execution
       tactic call. The unfolding level can be overridden by a call to the
       :cmd:`Info` command.
 
+.. _interactive-debugger:
+
 Interactive debugger
 ~~~~~~~~~~~~~~~~~~~~
 
 .. flag:: Ltac Debug
 
-   This :term:`flag` governs the step-by-step debugger that comes with the |Ltac| interpreter.
+   This flag, when set, enables the step-by-step debugger in the |Ltac| interpreter.
+   The debugger is supported in `coqtop` and Proof General by printing information
+   on the console and accepting typed commands.  In addition, CoqIDE now supports a
+   :ref:`visual debugger <coqide-debugger>` with additional capabilities.
 
-When the debugger is activated, it stops at every step of the evaluation of
+When the debugger is activated in `coqtop`, it stops at every step of the evaluation of
 the current |Ltac| expression and prints information on what it is doing.
 The debugger stops, prompting for a command which can be one of the
 following:
@@ -2279,8 +2284,9 @@ A non-interactive mode for the debugger is available via the flag:
 
 .. flag:: Ltac Batch Debug
 
-   This :term:`flag` has the effect of presenting a newline at every prompt, when
-   the debugger is on. The debug log thus created, which does not require
+   This flag has the effect of presenting a newline at every prompt, when
+   the debugger is on in `coqtop`.  (It has no effect when running the
+   CoqIDE debugger.)  The debug log thus created, which does not require
    user input to generate when this flag is set, can then be run through
    external tools such as diff.
 
