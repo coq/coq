@@ -222,15 +222,18 @@ $(filter-out -native-compiler-%,\
 $(subst -native-compiler ,-native-compiler-,\
 $(strip $(COQEXTRAFLAGS)))))
 
-ifneq (,$(COQUSERNATIVEFLAG))
-  COQNATIVEFLAG="-native-compiler" "$(COQUSERNATIVEFLAG)"
-  COQDONATIVE=$(COQUSERNATIVEFLAG)
-else
-ifeq '$(COQMF_COQ_NATIVE_COMPILER_DEFAULT)' 'yes'
+COQACTUALNATIVEFLAG:=$(lastword $(COQMF_COQ_NATIVE_COMPILER_DEFAULT) $(COQMF_COQPROJECTNATIVEFLAG) $(COQUSERNATIVEFLAG))
+
+ifeq '$(COQACTUALNATIVEFLAG)' 'yes'
   COQNATIVEFLAG="-native-compiler" "ondemand"
   COQDONATIVE="yes"
 else
-  COQNATIVEFLAG=
+ifeq '$(COQACTUALNATIVEFLAG)' 'ondemand'
+  COQNATIVEFLAG="-native-compiler" "ondemand"
+  COQDONATIVE="no"
+else
+  COQNATIVEFLAG="-native-compiler" "no"
+  COQDONATIVE="no"
 endif
 endif
 

@@ -21,6 +21,7 @@ type project = {
   makefile : string option;
   install_kind  : install option;
   use_ocamlopt : bool;
+  native_compiler : native_compiler option;
 
   v_files : string sourced list;
   mli_files : string sourced list;
@@ -51,13 +52,18 @@ and install =
   | NoInstall
   | TraditionalInstall
   | UserInstall
+and native_compiler =
+| NativeYes
+| NativeNo
+| NativeOndemand
 
 (* TODO generate with PPX *)
-let mk_project project_file makefile install_kind use_ocamlopt = {
+let mk_project project_file makefile install_kind use_ocamlopt native_compiler = {
   project_file;
   makefile;
   install_kind;
   use_ocamlopt;
+  native_compiler;
 
   v_files = [];
   mli_files = [];
@@ -140,6 +146,16 @@ let exists_dir dir =
     then strip_trailing_slash (String.sub dir 0 (len-1)) else dir in
   try Sys.is_directory (strip_trailing_slash dir) with Sys_error _ -> false
 
+let parse_native ~warning_fn ~error proj flag =
+  if proj.native_compiler <> None then
+    (warning_fn "-native-compiler set more than once.");
+  let native = match flag with
+    | "yes" -> NativeYes
+    | "no" -> NativeNo
+    | "ondemand" -> NativeOndemand
+    | _ -> error ("invalid option \""^flag^"\" passed to -native-compiler")
+  in
+  { proj with native_compiler = Some native }
 
 let process_cmd_line ~warning_fn orig_dir proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
@@ -185,6 +201,10 @@ let process_cmd_line ~warning_fn orig_dir proj args =
   | "-R" :: d :: lp :: r ->
     aux { proj with r_includes = proj.r_includes @ [sourced (mk_path d,lp)] } r
 
+  | "-native-compiler" :: flag :: r ->
+    let proj = parse_native ~warning_fn ~error proj flag in
+    aux proj r
+
   | "-f" :: file :: r ->
     if !parsing_project_file then
       raise (Parsing_error ("Invalid option -f in project file " ^ Option.get proj.project_file));
@@ -206,6 +226,7 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     if proj.makefile <> None then
       error "Option -o given more than once";
     aux { proj with makefile = Some file } r
+
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
@@ -228,16 +249,27 @@ let process_cmd_line ~warning_fn orig_dir proj args =
         | _ -> raise (Parsing_error ("Unknown option "^f)) in
       aux proj r
  in
-   aux proj args
+  let proj = aux proj args in
+  (* Short-circuit -native-compiler options passed via -args *)
+  let rec filter_extra proj = function
+  | [] -> { proj with extra_args = [] }
+  | { thing = "-native-compiler" } :: { thing = flag } :: r ->
+    let proj = parse_native ~warning_fn ~error proj flag in
+    filter_extra proj r
+  | extra :: r ->
+    let proj = filter_extra proj r in
+    { proj with extra_args = extra :: proj.extra_args }
+  in
+  filter_extra proj proj.extra_args
 
  (******************************* API ************************************)
 
 let cmdline_args_to_project ~warning_fn ~curdir args =
-  process_cmd_line ~warning_fn curdir (mk_project None None None true) args
+  process_cmd_line ~warning_fn curdir (mk_project None None None true None) args
 
 let read_project_file ~warning_fn f =
   process_cmd_line ~warning_fn (Filename.dirname f)
-    (mk_project (Some f) None (Some NoInstall) true) (parse f)
+    (mk_project (Some f) None (Some NoInstall) true None) (parse f)
 
 let rec find_project_file ~from ~projfile_name =
   let fname = Filename.concat from projfile_name in
