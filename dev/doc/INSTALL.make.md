@@ -2,33 +2,24 @@ Quick Installation Procedure using Make.
 ----------------------------------------
 
     $ ./configure
-    $ make
+    $ make world
     $ make install (you may need superuser rights)
 
 Detailed Installation Procedure.
 --------------------------------
 
-1. Check that you have the OCaml compiler installed on your
-   computer and that `ocamlc` (or, better, its native code version
-   `ocamlc.opt`) is in a directory which is present in your $PATH
-   environment variable. At the time of writing this document, all
-   versions of Objective Caml later or equal to 4.05.0 are
-   supported.
+Note these installation instructions are meant for users. For Coq
+developers, there is an extra set of targets better suited to them:
+please see the [contributing guide](../../CONTRIBUTING.md).
 
-   To get Coq in native-code, (which runs 4 to 10 times faster than
-   bytecode, but it takes more time to get compiled and the binary is
-   bigger), you will also need the `ocamlopt` (or its native code version
-   `ocamlopt.opt`) command.
+1. Check that you have the required dependencies as specified in the
+   top-level [INSTALL](../../INSTALL.md) file.
 
-2. The uncompression and un-tarring of the distribution file gave birth
-   to a directory named "coq-8.xx". You can rename this directory and put
-   it wherever you want. Just keep in mind that you will need some spare
-   space during the compilation (reckon on about 300 Mb of disk space
-   for the whole system in native-code compilation). Once installed, the
-   binaries take about 30 Mb, and the library about 200 Mb.
+2. Decompress Coq's source code into a build folder; the name doesn't
+   matter. You will need around 300 MiB free disk space to compile
+   Coq, and a similar amount to install it.
 
-3. First you need to configure the system. It is done automatically with
-   the command:
+3. Then, configure Coq with the command:
 
         ./configure <options>
 
@@ -87,15 +78,16 @@ Detailed Installation Procedure.
      c.f. https://caml.inria.fr/mantis/view.php?id=7630
 
    If you want your build to be reproducible, ensure that the
-   SOURCE_DATE_EPOCH environment variable is set as documented in
+   `SOURCE_DATE_EPOCH` environment variable is set as documented in
    https://reproducible-builds.org/specs/source-date-epoch/
 
-4. Still in the root directory, do
+4. Still in the Coq sources directory, do:
 
-        make
+        make world
 
-   to compile Coq in the best OCaml mode available (native-code if supported,
-   bytecode otherwise).
+   to compile Coq (this builds both native and bytecode version by
+   default, or only the bytecode version if a native OCaml port is not
+   available).
 
    This will compile the entire system. This phase can take more or less time,
    depending on your architecture and is fairly verbose. On a multi-core machine,
@@ -112,24 +104,16 @@ Detailed Installation Procedure.
 
 5. You can now install the Coq system. Executables, libraries, and
    manual pages are copied in some standard places of your system,
-   defined at configuration time (step 3). Just do
+   defined at configuration time (step 3). Just do:
 
         umask 022
         make install
 
    Of course, you may need superuser rights to do that.
 
-6. Optionally, you could build the bytecode version of Coq via:
-
-        make byte
-
-   and install it via
-
-        make install-byte
-
-  This version is much slower than the native code version of Coq, but could
-  be helpful for debugging purposes. In particular, coqtop.byte embeds an OCaml
-  toplevel accessible via the Drop command.
+6. Note that the `install` target does support the `DESTDIR` variable,
+   useful for package builders, so `make DESTDIR=tmp install` will
+   install the files under `tmp/usr/...`.
 
 7. You can now clean all the sources. (You can even erase them.)
 
@@ -143,15 +127,17 @@ cleaning them. Therefore, to avoid a duplication of binaries and library,
 it is not necessary to do the installation step (6- above).  You just have
 to tell it at configuration step (4- above) with the option -local :
 
-    ./configure -local <other options>
+    ./configure -profile devel <other options>
 
 Then compile the sources as described in step 5 above. The resulting
-binaries will reside in the subdirectory bin/.
+binaries will reside in the subdirectory `bin`, which is symlink to
+the `_build_vo/default/bin` directory.
 
-Unless you pass the -nodebug option to ./configure, the -g option of the
-OCaml compiler will be used during compilation to allow debugging.
-See the debugging file in dev/doc and the chapter 15 of the Coq Reference
-Manual for details about how to use the OCaml debugger with Coq.
+Unless you pass the `-nodebug` option to `./configure`, the `-g`
+option of the OCaml compiler will be used during compilation to allow
+debugging.  See the debugging file in `dev/doc` and the chapter 15 of
+the Coq Reference Manual for details about how to use the OCaml
+debugger with Coq.
 
 
 The Available Commands.
@@ -162,14 +148,10 @@ There are two Coq commands:
     coqtop          The Coq toplevel
     coqc            The Coq compiler
 
-Under architecture where ocamlopt is available, coqtop is the native code
-version of Coq. On such architecture, you could additionally request
-the build of the bytecode version of Coq via 'make byte' and install it via
-'make install-byte'. This will create  an extra binary named coqtop.byte,
-that could be used for debugging purpose. If native code isn't available,
-coqtop.byte is directly built by 'make', and coqtop is a link to coqtop.byte.
-coqc also invokes the fastest version of Coq. Options -opt and -byte to coqtop
-and coqc selects a particular binary.
+For architectures where `ocamlopt` is available, `coqtop` is the
+native code version of Coq. The byte-code version is `coqtop.byte`,
+which can be used for debugging. If native code isn't available,
+`coqtop` will point to `coqtop.byte`. `coqc` follows a similar scheme.
 
 * `coqtop` launches Coq in the interactive mode. By default it loads
   basic logical definitions and tactics from the Init directory.
@@ -187,58 +169,27 @@ and coqc selects a particular binary.
   directory, or read online on http://coq.inria.fr/doc/)
   and in the corresponding manual pages.
 
-Compiling For Different Architectures.
---------------------------------------
-
-This section explains how to compile Coq for several architecture, sharing
-the same sources. The important fact is that some files are architecture
-dependent (`.cmx`, `.o` and executable files for instance) but others are not
-(`.cmo` and `.vo`). Consequently, you can :
-
--  save some time during compilation by not cleaning the architecture
-   independent files;
-
--  save some space during installation by sharing the Coq standard
-   library (which is fully architecture independent).
-
-So, in order to compile Coq for a new architecture, proceed as follows:
-
-* Omit step 7 above and clean only the architecture dependent files:
-  it is done automatically with the command
-
-        make archclean
-
-* Configure the system for the new architecture:
-
-        ./configure <options>
-
-  You can specify the same directory for the standard library but you
-  MUST specify a different directory for the binaries (of course).
-
-* Compile and install the system as described in steps 5 and 6 above.
-
 Moving Binaries Or Library.
 ---------------------------
 
-If you move both the binaries and the library in a consistent way,
-Coq should be able to still run. Otherwise, Coq may be "lost",
-running "coqtop" would then return an error message of the kind:
+If you move both the binaries and the library in a consistent way, Coq
+should still be able to run. Otherwise, Coq may not be able to find
+the required prelude files and will give this error message:
 
     Error during initialization :
     Error: cannot guess a path for Coq libraries; please use -coqlib option
 
-You can then indicate the new places to Coq, using the options -coqlib :
+You can then indicate the location of the Coq's standard library using
+the option `-coqlib`:
 
     coqtop -coqlib <new directory>
-
-See also next section.
 
 Dynamically Loaded Libraries For Bytecode Executables.
 ------------------------------------------------------
 
-Some bytecode executables of Coq use the OCaml runtime, which dynamically
-loads a shared library (.so or .dll). When it is not installed properly, you
-can get an error message of this kind:
+Some bytecode executables of Coq use the OCaml runtime, which
+dynamically loads a shared library (`.so` or `.dll`). When it is not
+installed properly, you can get an error message of this kind:
 
     Fatal error: cannot load shared library dllcoqrun
     Reason: dllcoqrun.so: cannot open shared object file: No such file or directory
