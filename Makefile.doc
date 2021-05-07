@@ -48,6 +48,13 @@ endif
 SPHINXBUILD= sphinx-build
 SPHINXBUILDDIR= doc/sphinx/_build
 
+DOCGRAMWARN ?= 0
+ifeq ($(DOCGRAMWARN),0)
+DOCGRAMWARN=-no-warn
+else
+DOCGRAMWARN=
+endif
+
 # Internal variables.
 ALLSPHINXOPTS= -d $(SPHINXBUILDDIR)/doctrees $(SPHINXOPTS)
 
@@ -288,7 +295,7 @@ doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
 #todo: add a dependency of sphinx on updated_rsts when we're ready
 doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: doc/tools/docgram/fullGrammar $(DOC_GRAM) $(DOC_EDIT_MLGS)
 	$(SHOW)'DOC_GRAM_RSTS'
-	$(HIDE)$(DOC_GRAM) -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
+	$(HIDE)$(DOC_GRAM) $(DOCGRAMWARN) -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
 
 doc/tools/docgram/updated_rsts: doc/tools/docgram/orderedGrammar
 
@@ -296,9 +303,9 @@ doc/tools/docgram/updated_rsts: doc/tools/docgram/orderedGrammar
 
 doc_gram: doc/tools/docgram/fullGrammar
 
-doc_gram_verify: doc/tools/docgram/fullGrammar
+doc_gram_verify: $(DOC_GRAM) $(DOC_MLGS)
 	$(SHOW)'DOC_GRAM_VERIFY'
-	$(HIDE)$(DOC_GRAM) -short -no-warn -verify $(DOC_MLGS) $(DOC_RSTS)
+	$(HIDE)$(DOC_GRAM) -no-warn -verify $(DOC_MLGS) $(DOC_RSTS)
 
 doc_gram_rsts: doc/tools/docgram/updated_rsts
 
