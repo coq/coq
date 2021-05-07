@@ -318,3 +318,8 @@ project coqtail "https://github.com/whonore/Coqtail" "master"
 # Deriving
 ########################################################################
 project deriving "https://github.com/arthuraa/deriving" "master"
+
+########################################################################
+# VsCoq
+########################################################################
+project vscoq "https://github.com/maximedenes/vscoq" document-manager

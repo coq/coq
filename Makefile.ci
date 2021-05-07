@@ -44,7 +44,7 @@ CI_TARGETS= \
     ci-iris \
     ci-math_classes \
     ci-mathcomp \
-	ci-mczify \
+    ci-mczify \
     ci-menhir \
     ci-metacoq \
     ci-mtac2 \
@@ -62,6 +62,7 @@ CI_TARGETS= \
     ci-unimath \
     ci-unicoq \
     ci-verdi_raft \
+    ci-vscoq \
     ci-vst
 
 .PHONY: ci-all $(CI_TARGETS)
