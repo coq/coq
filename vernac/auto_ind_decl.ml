@@ -120,6 +120,10 @@ let check_no_indices mib =
   if Array.exists (fun mip -> mip.mind_nrealargs <> 0) mib.mind_packets then
     raise DecidabilityIndicesNotSupported
 
+let get_scheme handle k ind = match local_lookup_scheme handle k ind with
+| None -> assert false
+| Some c -> c
+
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let get_inductive_deps kn =
@@ -172,7 +176,7 @@ let build_beq_scheme_deps kn =
   let inds = get_inductive_deps kn in
   List.map (fun ind -> SchemeMutualDep (ind, !beq_scheme_kind_aux ())) inds
 
-let build_beq_scheme kn =
+let build_beq_scheme handle kn =
   check_bool_is_defined ();
   (* fetching global env *)
   let env = Global.env() in
@@ -259,10 +263,8 @@ let build_beq_scheme kn =
            if Environ.QMutInd.equal env kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
            else begin
                try
-                 let eq = match lookup_scheme (!beq_scheme_kind_aux()) ind' with
-                   | Some c -> mkConst c
-                   | None -> assert false
-                 in
+                 let c = get_scheme handle (!beq_scheme_kind_aux()) ind' in
+                 let eq = mkConst c in
                  let eqa = Array.of_list @@ List.map aux a in
                  let args =
                    Array.append
@@ -421,10 +423,6 @@ let destruct_ind env sigma c =
 let bl_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
-let get_scheme k ind = match lookup_scheme k ind with
-| None -> assert false
-| Some c -> Proofview.tclUNIT c
-
 (*
   In the following, avoid is the list of names to avoid.
   If the args of the Inductive type are A1 ... An
@@ -434,7 +432,7 @@ let get_scheme k ind = match lookup_scheme k ind with
 so from Ai we can find the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
-let do_replace_lb aavoid narg p q =
+let do_replace_lb handle aavoid narg p q =
   let open EConstr in
   let avoid = Array.of_list aavoid in
   let do_arg env sigma hd v offset =
@@ -465,7 +463,7 @@ let do_replace_lb aavoid narg p q =
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
     let u,v = destruct_ind env sigma type_of_pq in
-    get_scheme (!lb_scheme_kind_aux ()) (fst u) >>= fun c ->
+    let c = get_scheme handle (!lb_scheme_kind_aux ()) (fst u) in
     let lb_type_of_p = mkConst c in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
@@ -480,7 +478,7 @@ let do_replace_lb aavoid narg p q =
   end
 
 (* used in the bool -> leb side *)
-let do_replace_bl (ind,u as indu) aavoid narg lft rgt =
+let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
   let open EConstr in
   let avoid = Array.of_list aavoid in
   let do_arg env sigma hd v offset =
@@ -521,7 +519,7 @@ let do_replace_bl (ind,u as indu) aavoid narg lft rgt =
           in if Ind.CanOrd.equal (fst u) ind
              then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
-               get_scheme (!bl_scheme_kind_aux ()) (fst u) >>= fun c ->
+               let c = get_scheme handle (!bl_scheme_kind_aux ()) (fst u) in
                let bl_t1 = mkConst c in
                let bl_args =
                         Array.append (Array.append
@@ -589,14 +587,10 @@ let avoid_of_list_id list_id =
 (*
   build the right eq_I A B.. N eq_A .. eq_N
 *)
-let eqI ind list_id =
+let eqI handle ind list_id =
   let eA = Array.of_list((List.map (fun (s,_,_,_) -> mkVar s) list_id)@
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
-  and e = match lookup_scheme beq_scheme_kind ind with
-  | Some c -> mkConst c
-  | None ->
-    user_err ~hdr:"AutoIndDecl.eqI"
-      (str "The boolean equality on " ++ Printer.pr_inductive (Global.env ()) ind ++ str " is needed.");
+  and e = mkConst (get_scheme handle beq_scheme_kind ind)
   in mkApp(e,eA)
 
 (**********************************************************************)
@@ -604,9 +598,9 @@ let eqI ind list_id =
 
 open Namegen
 
-let compute_bl_goal ind lnamesparrec nparrec =
+let compute_bl_goal handle ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
-  let eqI = eqI ind list_id in
+  let eqI = eqI handle ind list_id in
   let avoid = avoid_of_list_id list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
@@ -646,7 +640,7 @@ let compute_bl_goal ind lnamesparrec nparrec =
               (mkApp(eq (),[|mkFullInd (ind,u) (nparrec+3);mkVar x;mkVar y|]))
         )))
 
-let compute_bl_tact ind lnamesparrec nparrec =
+let compute_bl_tact handle ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let first_intros =
     ( List.map (fun (s,_,_,_) -> s ) list_id )
@@ -688,7 +682,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                      if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                      then
                        Tacticals.New.tclTHEN
-                         (do_replace_bl ind
+                         (do_replace_bl handle ind
                             (List.rev fresh_first_intros)
                             nparrec (ca.(2))
                             (ca.(1)))
@@ -705,7 +699,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
       ]
     end
 
-let make_bl_scheme mind =
+let make_bl_scheme handle mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     user_err
@@ -715,11 +709,11 @@ let make_bl_scheme mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec = (* TODO subst *)
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let bl_goal = compute_bl_goal ind lnamesparrec nparrec in
+  let bl_goal = compute_bl_goal handle ind lnamesparrec nparrec in
   let uctx = UState.from_env (Global.env ()) in
   let bl_goal = EConstr.of_constr bl_goal in
   let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false (Global.env()) ~uctx ~typ:bl_goal
-    (compute_bl_tact (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
+    (compute_bl_tact handle (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 
@@ -738,11 +732,11 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 (**********************************************************************)
 (* Leibniz->Boolean *)
 
-let compute_lb_goal ind lnamesparrec nparrec =
+let compute_lb_goal handle ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eq = eq () and tt = tt () and bb = bb () in
   let avoid = avoid_of_list_id list_id in
-  let eqI = eqI ind list_id in
+  let eqI = eqI handle ind list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
     let create_input c =
@@ -782,7 +776,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar x;mkVar y|]);tt|]))
         )))
 
-let compute_lb_tact ind lnamesparrec nparrec =
+let compute_lb_tact handle ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let first_intros =
     ( List.map (fun (s,_,_,_) -> s ) list_id )
@@ -814,7 +808,7 @@ let compute_lb_tact ind lnamesparrec nparrec =
                 | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
                                 | App(c',ca') ->
                                    let n = Array.length ca' in
-                                   do_replace_lb
+                                   do_replace_lb handle
                                      (List.rev fresh_first_intros)
                                      nparrec
                                      ca'.(n-2) ca'.(n-1)
@@ -829,7 +823,7 @@ let compute_lb_tact ind lnamesparrec nparrec =
       ]
     end
 
-let make_lb_scheme mind =
+let make_lb_scheme handle mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     user_err
@@ -839,11 +833,11 @@ let make_lb_scheme mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let lb_goal = compute_lb_goal ind lnamesparrec nparrec in
+  let lb_goal = compute_lb_goal handle ind lnamesparrec nparrec in
   let uctx = UState.from_env (Global.env ()) in
   let lb_goal = EConstr.of_constr lb_goal in
   let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false (Global.env()) ~uctx ~typ:lb_goal
-    (compute_lb_tact ind lnamesparrec nparrec)
+    (compute_lb_tact handle ind lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 
@@ -924,12 +918,12 @@ let compute_dec_goal ind lnamesparrec nparrec =
         )
       )
 
-let compute_dec_tact ind lnamesparrec nparrec =
+let compute_dec_tact handle ind lnamesparrec nparrec =
   let eq = eq () and tt = tt ()
       and ff = ff () and bb = bb () in
   let list_id = list_id lnamesparrec in
-  get_scheme beq_scheme_kind ind >>= fun _ ->
-  let _non_fresh_eqI = eqI ind list_id in
+  let _ = get_scheme handle beq_scheme_kind ind in (* This is just an assertion? *)
+  let _non_fresh_eqI = eqI handle ind list_id in
   let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
   let eqfalse x = mkApp(eq,[|bb;x;ff|]) in
   let first_intros =
@@ -947,7 +941,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
       let fresh_list_id =
         List.init n (fun i -> (Array.get a i, Array.get a (i+n),
                                Array.get a (i+2*n), Array.get a (i+3*n))) in
-      eqI ind fresh_list_id
+      eqI handle ind fresh_list_id
     in
     intro_using_then (Id.of_string "x") begin fun freshn ->
       intro_using_then (Id.of_string "y") begin fun freshm ->
@@ -956,9 +950,9 @@ let compute_dec_tact ind lnamesparrec nparrec =
           let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
           let arfresh = Array.of_list fresh_first_intros in
           let xargs = Array.sub arfresh 0 (2*nparrec) in
-          get_scheme bl_scheme_kind ind >>= fun c ->
+          let c = get_scheme handle bl_scheme_kind ind in
           let blI = mkConst c in
-          get_scheme lb_scheme_kind ind >>= fun c ->
+          let c = get_scheme handle lb_scheme_kind ind in
           let lbI = mkConst c in
           Tacticals.New.tclTHENLIST [
               (*we do this so we don't have to prove the same goal twice *)
@@ -1010,7 +1004,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
       end
     end
 
-let make_eq_decidability mind =
+let make_eq_decidability handle mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     raise DecidabilityMutualNotSupported;
@@ -1023,7 +1017,7 @@ let make_eq_decidability mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false (Global.env()) ~uctx
       ~typ:(EConstr.of_constr (compute_dec_goal (ind,u) lnamesparrec nparrec))
-      (compute_dec_tact ind lnamesparrec nparrec)
+      (compute_dec_tact handle ind lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 

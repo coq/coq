@@ -25,10 +25,12 @@ open Pp
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
+type handle = Evd.side_effects
+
 type mutual_scheme_object_function =
-  MutInd.t -> constr array Evd.in_evar_universe_context
+  handle -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
-  inductive -> constr Evd.in_evar_universe_context
+  handle -> inductive -> constr Evd.in_evar_universe_context
 
 type 'a scheme_kind = string
 
@@ -90,7 +92,37 @@ let declare_definition_scheme = ref (fun ~internal ~univs ~role ~name c ->
 let lookup_scheme kind ind =
   try Some (DeclareScheme.lookup_scheme kind ind) with Not_found -> None
 
-let check_scheme kind ind = Option.has_some (lookup_scheme kind ind)
+let redeclare_schemes eff =
+  let fold c role accu = match role with
+  | Evd.Schema (ind, kind) ->
+    try
+      let _ = DeclareScheme.lookup_scheme kind ind in
+      accu
+    with Not_found ->
+      let old = try String.Map.find kind accu with Not_found -> [] in
+      String.Map.add kind ((ind, c) :: old) accu
+  in
+  let schemes = Cmap.fold fold eff.Evd.seff_roles String.Map.empty in
+  let iter kind defs =
+    let defs = Array.of_list defs in
+    DeclareScheme.declare_scheme kind defs
+  in
+  String.Map.iter iter schemes
+
+let local_lookup_scheme eff kind ind = match lookup_scheme kind ind with
+| Some _ as ans -> ans
+| None ->
+  let exception Found of Constant.t in
+  let iter c role = match role with
+  | Evd.Schema (i, k) ->
+    if String.equal k kind && Ind.CanOrd.equal i ind then raise (Found c)
+  in
+  (* Inefficient O(n), but the number of locally declared schemes is small and
+     this is very rarely called *)
+  try let _ = Cmap.iter iter eff.Evd.seff_roles in None with Found c -> Some c
+
+let local_check_scheme kind ind eff =
+  Option.has_some (local_lookup_scheme eff kind ind)
 
 let define internal role id c poly univs =
   let id = compute_name internal id in
@@ -101,7 +133,7 @@ let define internal role id c poly univs =
 
 (* Assumes that dependencies are already defined *)
 let rec define_individual_scheme_base kind suff f ~internal idopt (mind,i as ind) eff =
-  let (c, ctx) = f ind in
+  let (c, ctx) = f eff ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
@@ -109,7 +141,6 @@ let rec define_individual_scheme_base kind suff f ~internal idopt (mind,i as ind
   let role = Evd.Schema (ind, kind) in
   let const, neff = define internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
   let eff = Evd.concat_side_effects neff eff in
-  DeclareScheme.declare_scheme kind [|ind,const|];
   const, eff
 
 and define_individual_scheme kind ~internal names (mind,i as ind) =
@@ -122,7 +153,7 @@ and define_individual_scheme kind ~internal names (mind,i as ind) =
 
 (* Assumes that dependencies are already defined *)
 and define_mutual_scheme_base kind suff f ~internal names mind eff =
-  let (cl, ctx) = f mind in
+  let (cl, ctx) = f eff mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
@@ -133,8 +164,6 @@ and define_mutual_scheme_base kind suff f ~internal names mind eff =
     (Evd.concat_side_effects neff effs, cst)
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in
-  let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
-  DeclareScheme.declare_scheme kind schemes;
   consts, eff
 
 and define_mutual_scheme kind ~internal names mind =
@@ -147,23 +176,21 @@ and define_mutual_scheme kind ~internal names mind =
 
 and declare_scheme_dependence eff = function
 | SchemeIndividualDep (ind, kind) ->
-  if check_scheme kind ind then eff
+  if local_check_scheme kind ind eff then eff
   else
     let _, eff' = define_individual_scheme kind ~internal:true None ind in
     Evd.concat_side_effects eff' eff
 | SchemeMutualDep (mind, kind) ->
-  if check_scheme kind (mind, 0) then eff
+  if local_check_scheme kind (mind, 0) eff then eff
   else
     let _, eff' = define_mutual_scheme kind ~internal:true [] mind in
     Evd.concat_side_effects eff' eff
 
 let find_scheme kind (mind,i as ind) =
   let open Proofview.Notations in
-  match lookup_scheme kind ind with
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match local_lookup_scheme (Evd.eval_side_effects sigma) kind ind with
   | Some s ->
-    (* FIXME: we need to perform this call to reset the environment, since the
-       imperative scheme table is desynchronized from the monadic interface. *)
-    Proofview.tclEFFECTS Evd.empty_side_effects <*>
     Proofview.tclUNIT s
   | None ->
   match Hashtbl.find scheme_object_table kind with
@@ -179,7 +206,9 @@ let find_scheme kind (mind,i as ind) =
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
 
 let define_individual_scheme kind names ind =
-  ignore (define_individual_scheme kind ~internal:false names ind)
+  let _ , eff = define_individual_scheme kind ~internal:false names ind in
+  redeclare_schemes eff
 
 let define_mutual_scheme kind names mind =
-  ignore (define_mutual_scheme kind ~internal:false names mind)
+  let _, eff = define_mutual_scheme kind ~internal:false names mind in
+  redeclare_schemes eff

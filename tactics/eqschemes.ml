@@ -230,7 +230,7 @@ let build_sym_scheme env ind =
 
 let sym_scheme_kind =
   declare_individual_scheme_object "_sym_internal"
-  (fun ind ->
+  (fun handle ind ->
     let c, ctx = build_sym_scheme (Global.env() (* side-effect! *)) ind in
       (c, ctx))
 
@@ -250,18 +250,18 @@ let sym_scheme_kind =
 (*                                                                    *)
 (**********************************************************************)
 
-let const_of_scheme kind env ind ctx =
-  let sym_scheme = match lookup_scheme kind ind with Some cst -> cst | None -> assert false in
+let const_of_scheme kind env handle ind ctx =
+  let sym_scheme = match local_lookup_scheme handle kind ind with Some cst -> cst | None -> assert false in
   let sym, ctx = with_context_set ctx
     (UnivGen.fresh_constant_instance (Global.env()) sym_scheme) in
     mkConstU sym, ctx
 
-let build_sym_involutive_scheme env ind =
+let build_sym_involutive_scheme env handle ind =
   let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let eq,eqrefl,ctx = get_coq_eq ctx in
-  let sym, ctx = const_of_scheme sym_scheme_kind env ind ctx in
+  let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
   let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.to_extended_vect mkRel n paramsctxt) in
   let inds = snd (mind_arity mip) in
   let indr = Sorts.relevance_of_sort_family inds in
@@ -306,8 +306,8 @@ let build_sym_involutive_scheme env ind =
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "_sym_involutive"
   ~deps:(fun ind -> [SchemeIndividualDep (ind, sym_scheme_kind)])
-  (fun ind ->
-    build_sym_involutive_scheme (Global.env() (* side-effect! *)) ind)
+  (fun handle ind ->
+    build_sym_involutive_scheme (Global.env() (* side-effect! *)) handle ind)
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for conclusion associated  *)
@@ -369,12 +369,12 @@ let sym_involutive_scheme_kind =
 (*                                                                    *)
 (**********************************************************************)
 
-let build_l2r_rew_scheme dep env ind kind =
+let build_l2r_rew_scheme dep env handle ind kind =
   let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
-  let sym, ctx = const_of_scheme sym_scheme_kind env ind ctx in
-  let sym_involutive, ctx = const_of_scheme sym_involutive_scheme_kind env ind ctx in
+  let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
+  let sym_involutive, ctx = const_of_scheme sym_involutive_scheme_kind env handle ind ctx in
   let eq,eqrefl,ctx = get_coq_eq ctx in
   let cstr n p =
     mkApp (mkConstructUi(indu,1),
@@ -711,7 +711,7 @@ let rew_l2r_dep_scheme_kind =
     SchemeIndividualDep (ind, sym_scheme_kind);
     SchemeIndividualDep (ind, sym_involutive_scheme_kind);
   ])
-  (fun ind -> build_l2r_rew_scheme true (Global.env()) ind InType)
+  (fun handle ind -> build_l2r_rew_scheme true (Global.env()) handle ind InType)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in conclusion                 *)
@@ -721,7 +721,7 @@ let rew_l2r_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_dep_scheme_kind =
   declare_individual_scheme_object "_rew_dep"
-  (fun ind -> build_r2l_rew_scheme true (Global.env()) ind InType)
+  (fun _ ind -> build_r2l_rew_scheme true (Global.env()) ind InType)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in hypotheses                 *)
@@ -731,7 +731,7 @@ let rew_r2l_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_forward_dep_scheme_kind =
   declare_individual_scheme_object "_rew_fwd_dep"
-  (fun ind -> build_r2l_forward_rew_scheme true (Global.env()) ind InType)
+  (fun _ ind -> build_r2l_forward_rew_scheme true (Global.env()) ind InType)
 
 (**********************************************************************)
 (* Dependent rewrite from left-to-right in hypotheses                 *)
@@ -741,7 +741,7 @@ let rew_r2l_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_forward_dep_scheme_kind =
   declare_individual_scheme_object "_rew_fwd_r_dep"
-  (fun ind -> build_l2r_forward_rew_scheme true (Global.env()) ind InType)
+  (fun _ ind -> build_l2r_forward_rew_scheme true (Global.env()) ind InType)
 
 (**********************************************************************)
 (* Non-dependent rewrite from either left-to-right in conclusion or   *)
@@ -754,7 +754,7 @@ let rew_l2r_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "_rew_r"
-  (fun ind -> fix_r2l_forward_rew_scheme
+  (fun _ ind -> fix_r2l_forward_rew_scheme
      (build_r2l_forward_rew_scheme false (Global.env()) ind InType))
 
 (**********************************************************************)
@@ -765,7 +765,7 @@ let rew_l2r_scheme_kind =
 (**********************************************************************)
 let rew_r2l_scheme_kind =
   declare_individual_scheme_object "_rew"
-  (fun ind -> build_r2l_rew_scheme false (Global.env()) ind InType)
+  (fun _ ind -> build_r2l_rew_scheme false (Global.env()) ind InType)
 
 (* End of rewriting schemes *)
 
@@ -847,6 +847,6 @@ let build_congr env (eq,refl,ctx) ind =
   in c, UState.of_context_set ctx
 
 let congr_scheme_kind = declare_individual_scheme_object "_congr"
-  (fun ind ->
+  (fun _ ind ->
      (* May fail if equality is not defined *)
    build_congr (Global.env()) (get_coq_eq Univ.ContextSet.empty) ind)

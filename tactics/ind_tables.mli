@@ -20,14 +20,16 @@ type mutual
 type individual
 type 'a scheme_kind
 
+type handle
+
 type scheme_dependency =
 | SchemeMutualDep of MutInd.t * mutual scheme_kind
 | SchemeIndividualDep of inductive * individual scheme_kind
 
 type mutual_scheme_object_function =
-  MutInd.t -> constr array Evd.in_evar_universe_context
+  handle -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
-  inductive -> constr Evd.in_evar_universe_context
+  handle -> inductive -> constr Evd.in_evar_universe_context
 
 (** Main functions to register a scheme builder. Note these functions
    are not safe to be used by plugins as their effects won't be undone
@@ -57,6 +59,9 @@ val find_scheme : 'a scheme_kind -> inductive -> Constant.t Proofview.tactic
 
 (** Like [find_scheme] but does not generate a constant on the fly *)
 val lookup_scheme : 'a scheme_kind -> inductive -> Constant.t option
+
+(** To be used by scheme-generating functions when looking for a subscheme. *)
+val local_lookup_scheme : handle -> 'a scheme_kind -> inductive -> Constant.t option
 
 val pr_scheme_kind : 'a scheme_kind -> Pp.t
 
