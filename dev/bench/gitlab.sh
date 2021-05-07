@@ -43,7 +43,7 @@ check_variable "CI_JOB_URL"
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_switch:=ocaml-variants.4.12.0+gadmm-page-table}"
+: "${new_ocaml_switch:=ocaml-variants.4.12.0+mark-prefetching}"
 : "${old_ocaml_switch:=ocaml-base-compiler.4.12.0}"
 : "${new_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${old_coq_repository:=https://gitlab.com/coq/coq.git}"
