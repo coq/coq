@@ -192,7 +192,7 @@ the same parameter values of its specification.
 
       Check list_ind.
 
-   Once again, the types of the constructor arguments and of the conclusion can be omitted:
+   Once again, the names of the constructor arguments and the type of the conclusion can be omitted:
 
    .. coqtop:: none
 
