@@ -327,3 +327,123 @@ If you choose something else than UTF-8, then missing characters will
 be written encoded by `\x{....}` or `\x{........}` where each dot is
 an hexadecimal digit: the number between braces is the hexadecimal
 Unicode index for the missing character.
+
+.. _coqide-debugger:
+
+Debugger
+--------
+
+Version 8.14 introduces a preliminary visual debugger for Ltac tactics within
+CoqIDE.  It supports setting breakpoints visually, automatically
+displaying the stopping point in the source code with "continue",
+"step over" "step in" and "step out" operations.  It does not yet
+display the call stack or variable values.
+
+The debugger is based on the :ref:`Ltac debugger <interactive-debugger>`.
+We'd like to eventually support other scripting facilities such as Ltac2,
+but that will be addressed later.  (Since Ltac2 shares tactic evaluation
+logic with Ltac, it may already work to some extent.)
+
+Even though the debugger is incomplete, we believe it can already provide
+some value to users.  You may encounter bugs or usability issues.  The behavior
+and user interface will evolve as the debugger is completed.  Please feel free
+to suggest changes and improvements.
+
+GUI
+~~~
+
+This screenshot shows the debugger stopped at a breakpoint in the Ltac tactic
+`my_tac`.  Breakpoints are shown with a red background and the stopping point is
+shown with a dark blue background.  `Set Ltac Debugger.` enables stopping in the
+debugger.
+
+  .. image:: ../_static/debugger.png
+     :alt: CoqIDE Debugger
+
+You can control the debugger entirely with function keys.  Some messages are
+shown in the Messages panel.  You can type commands in that panel when it shows
+the debug prompt, but it's limited to the
+:ref:`debugger commands <interactive-debugger>` available in coqtop.
+
+The script is not editable while Coq is processing tactics or stopped
+in the debugger.  The "in progress" slider at the bottom edge of the window will
+indicate Coq is busy when the debugger is stopped (e.g. at a breakpoint).
+
+The function keys are listed, for the moment, with one exception, at the bottom
+of the `View` menu:
+
+  .. image:: ../_static/debugger-menu.png
+     :alt: Debugger function keys
+
+Toggle breakpoint (F8)
+  Position the cursor on the first character of the tactic name, then press F8.
+  Press again to remove the breakpoint.  Breakpoints at any point you can single-step
+  to are valid; breakpoints at other locations are not.  (The debugger engine may
+  support breakpoint in some other places that are not the beginning of tactics.)
+
+  Note that you must set at least one breakpoint in order to stop in the debugger.
+
+Continue (F9)
+  Continue processing the proof.
+
+Step over (Control ↓)
+  When stopped in the debugger,
+  execute the next tactic without stopping inside it.  If the debugger reaches
+  a breakpoint in the tactic, it will stop.  This is the same key combination used
+  for "Forward one command"--if you're stopped in the debugger then it does a "Step over"
+  and otherwise it does the "Forward".  Combining the two functions makes it easy
+  to step through a script in a natural way when some breakpoints are set.
+
+Step in (F10)
+  When stopped in the debugger,
+  if next tactic is an Ltac tactic, continue and then stop at the
+  first possible point in the tactic.  Otherwise acts as a "step over".
+
+Step out (Shift F10)
+  When stopped in the debugger, continue and
+  stop at the first possible point after exiting the current Ltac tactic.  If the
+  debugger reaches a breakpoint in the tactic, it will stop.
+
+If you single step (i.e. "Step in") through the script shown in first screenshot
+above, you'll notice that the steps for `my_tac` are:
+
+| `idtac "A"; idtac "B"; idtac "C"`
+| `idtac "A"; idtac "B"`
+| `idtac "A"`
+| `idtac "B"`
+| `idtac "C"`
+
+which reflects the two-phase execution process for the :n:`@tactic ; @tactic`
+construct.
+
+Also keep in mind that Ltac backtracking may cause the call stack to jump back to
+a previous state.  This may cause confusion.  Currently there's no special
+indication that this has happened.
+
+Supported use cases
+~~~~~~~~~~~~~~~~~~~
+
+There are two main use cases for the debugger.  They're not very compatible.
+Instead of showing warning messages or forcing the user to explicitly pick one
+mode or another, for now it's up to the user to know the limitations and avoid them.
+
+The *single file* case is running the debugger on a single *primary* script without ever
+stopping in a second (*secondary*) script.  In this case, you can edit the primary script while
+Coq is not processing tactics.  The position of breakpoints will be updated
+automatically.  It's fine to run the debugger in multiple buffers--you will not
+be confused.  The single-file case is preferable when you can use it.
+
+The *multi-file* case is when a primary script stops in a secondary script.  In this
+case, breakpoints in the secondary script that move due to script editing will be
+positioned incorrectly and won't work as you expect.  You will need to re-compile
+the secondary script and then restart the primary script to get back to a
+consistent state.
+
+If a debugger instance is stopped in a secondary script, the debugger function
+keys are directed to the debugger instance associated with the primary script
+for ease of use.  The debugger doesn't attempt to support multiple instances
+stopped in the same secondary script.  If you have a need to do this, run
+each debugger instance in a separate CoqIDE process/window.
+
+Note that if you set a breakpoint in a script that may be called by multiple debugger
+instances, you may inadvertently find you've gotten into unsupported territory.
