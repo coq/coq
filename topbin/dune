@@ -41,7 +41,7 @@
  (public_name coqnative)
  (package coq-core)
  (modules coqnative_bin)
- (libraries coq-core.toplevel)
+ (libraries coq-core.kernel)
  (link_flags -linkall))
 
 ; Workers
