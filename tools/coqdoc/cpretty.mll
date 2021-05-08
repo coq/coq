@@ -1434,7 +1434,8 @@ and st_subtitle = parse
     reset ();
     let c = open_in f in
     let lb = from_channel c in
-    let lb = { lb with lex_start_p = { lb.lex_start_p with pos_fname = f } } in
+    let lb = { lb with lex_curr_p = { lb.lex_curr_p with pos_fname = f };
+                       lex_start_p = { lb.lex_start_p with pos_fname = f } } in
       (Index.current_library := m;
        Output.initialize ();
        Output.start_module ();
