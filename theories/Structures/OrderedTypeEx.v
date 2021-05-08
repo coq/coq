@@ -325,13 +325,12 @@ Module Ascii_as_OT <: UsualOrderedType.
   Definition eq_sym := @eq_sym t.
   Definition eq_trans := @eq_trans t.
 
-  Definition cmp (a b : ascii) : comparison :=
-    N.compare (N_of_ascii a) (N_of_ascii b).
+  Definition cmp : ascii -> ascii -> comparison := Ascii.compare.
 
   Lemma cmp_eq (a b : ascii):
     cmp a b = Eq  <->  a = b.
   Proof.
-    unfold cmp.
+    unfold cmp, Ascii.compare.
     rewrite N.compare_eq_iff.
     split. 2:{ intro. now subst. }
     intro H.
@@ -343,7 +342,7 @@ Module Ascii_as_OT <: UsualOrderedType.
   Lemma cmp_lt_nat (a b : ascii):
     cmp a b = Lt  <->  (nat_of_ascii a < nat_of_ascii b)%nat.
   Proof.
-    unfold cmp. unfold nat_of_ascii.
+    unfold cmp. unfold nat_of_ascii, Ascii.compare.
     rewrite N2Nat.inj_compare.
     rewrite Nat.compare_lt_iff.
     reflexivity.
@@ -454,18 +453,7 @@ Module String_as_OT <: UsualOrderedType.
         apply Nat.lt_irrefl in H2; auto.
   Qed.
 
-  Fixpoint cmp (a b : string) : comparison :=
-    match a, b with
-    | EmptyString, EmptyString => Eq
-    | EmptyString, _ => Lt
-    | String _ _, EmptyString => Gt
-    | String a_head a_tail, String b_head b_tail =>
-      match Ascii_as_OT.cmp a_head b_head with
-      | Lt => Lt
-      | Gt => Gt
-      | Eq => cmp a_tail b_tail
-      end
-    end.
+  Definition cmp : string -> string -> comparison := String.compare.
 
   Lemma cmp_eq (a b : string):
     cmp a b = Eq  <->  a = b.
@@ -473,7 +461,7 @@ Module String_as_OT <: UsualOrderedType.
     revert b.
     induction a, b; try easy.
     cbn.
-    remember (Ascii_as_OT.cmp _ _) as c eqn:Heqc. symmetry in Heqc.
+    remember (Ascii.compare _ _) as c eqn:Heqc. symmetry in Heqc.
     destruct c; split; try discriminate;
       try rewrite Ascii_as_OT.cmp_eq in Heqc; try subst;
       try rewrite IHa; intro H.
@@ -489,7 +477,7 @@ Module String_as_OT <: UsualOrderedType.
     revert b.
     induction a, b; try easy.
     cbn. rewrite IHa. clear IHa.
-    remember (Ascii_as_OT.cmp _ _) as c eqn:Heqc. symmetry in Heqc.
+    remember (Ascii.compare _ _) as c eqn:Heqc. symmetry in Heqc.
     destruct c; rewrite Ascii_as_OT.cmp_antisym in Heqc;
       destruct Ascii_as_OT.cmp; cbn in *; easy.
   Qed.
@@ -500,7 +488,7 @@ Module String_as_OT <: UsualOrderedType.
     revert b.
     induction a as [ | a_head a_tail ], b; try easy; cbn.
     { split; trivial. intro. apply lts_empty. }
-    remember (Ascii_as_OT.cmp _ _) as c eqn:Heqc. symmetry in Heqc.
+    remember (Ascii.compare _ _) as c eqn:Heqc. symmetry in Heqc.
     destruct c; split; intro H; try discriminate; trivial.
     {
       rewrite Ascii_as_OT.cmp_eq in Heqc. subst.
@@ -521,10 +509,12 @@ Module String_as_OT <: UsualOrderedType.
     {
       exfalso. inversion H; subst.
       {
-         assert(X: Ascii_as_OT.cmp a a = Eq). { apply Ascii_as_OT.cmp_eq. trivial. }
+         assert(X: Ascii.compare a a = Eq). { apply Ascii_as_OT.cmp_eq. trivial. }
          rewrite Heqc in X. discriminate.
       }
-      rewrite<- Ascii_as_OT.cmp_lt_nat in *. rewrite Heqc in *. discriminate.
+      rewrite<- Ascii_as_OT.cmp_lt_nat in *.
+      unfold Ascii_as_OT.cmp in *.
+      rewrite Heqc in *. discriminate.
     }
   Qed.
 
