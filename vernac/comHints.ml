@@ -103,8 +103,8 @@ let interp_hints ~poly h =
       let env = Global.env () in
       let sigma = Evd.from_env env in
       let c, uctx = Constrintern.interp_constr env sigma c in
-      let subst, uctx = UState.normalize_variables uctx in
-      let c = EConstr.Vars.subst_univs_constr subst c in
+      let uctx = UState.normalize_variables uctx in
+      let c = Evarutil.nf_evar (Evd.from_ctx uctx) c in
       let diff = UState.context_set uctx in
       let c =
         if poly then (c, Some diff)

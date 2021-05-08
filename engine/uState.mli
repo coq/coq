@@ -163,7 +163,7 @@ val make_flexible_nonalgebraic : t -> t
 
 val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
 
-val normalize_variables : t -> Univ.universe_subst * t
+val normalize_variables : t -> t
 
 val constrain_variables : Univ.LSet.t -> t -> t
 

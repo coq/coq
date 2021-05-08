@@ -1088,9 +1088,6 @@ let extend_in_context_set (a, ctx) ctx' =
 
 (** Substitutions. *)
 
-let empty_subst = LMap.empty
-let is_empty_subst = LMap.is_empty
-
 let empty_level_subst = LMap.empty
 let is_empty_level_subst = LMap.is_empty
 
