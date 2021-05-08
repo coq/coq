@@ -72,8 +72,8 @@ type 'a equation =
       rhs          : 'a rhs;
       alias_stack  : Name.t list;
       eqn_loc      : Loc.t option;
-      used         : int ref;
-      catch_all_vars : Id.t CAst.t list ref }
+      orig         : int option;
+      catch_all_vars : Id.t CAst.t list }
 
 type 'a matrix = 'a equation list
 
@@ -116,7 +116,8 @@ type 'a pattern_matching_problem =
       casestyle : case_style;
       typing_function: type_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
 
-val compile : program_mode:bool -> evar_map -> 'a pattern_matching_problem -> evar_map * unsafe_judgment
+val compile : program_mode:bool -> evar_map -> 'a pattern_matching_problem ->
+  (int option * Names.Id.t CAst.t list) list * evar_map * unsafe_judgment
 
 val prepare_predicate : ?loc:Loc.t -> program_mode:bool ->
            (type_constraint ->

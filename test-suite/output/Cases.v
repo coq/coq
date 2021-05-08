@@ -284,3 +284,34 @@ Check fun x : J' bool (true,true) => match x with D' n m e => existT (fun x => e
 Check fun x : J' bool (true,true) => match x with D' n m p e => (n,p) end.
 
 End ConstructorArgumentsNumber.
+
+Module Bug14207.
+
+Inductive type {base_type : Type} := base (t : base_type) | arrow (s d : type).
+Global Arguments type : clear implicits.
+Fixpoint interp {base_type} (base_interp : base_type -> Type) (t : type base_type) : Type
+  := match t with
+     | base t => base_interp t
+     | arrow s d => @interp _ base_interp s -> @interp _ base_interp d
+     end.
+Axiom admit : forall {T}, T.
+Section with_base.
+  Context {base_type : Type}
+          {base_interp : base_type -> Type}.
+  Local Notation type := (@type base_type).
+
+  Fixpoint default {t} : interp base_interp t
+    := match t with
+       | base x => admit
+       | arrow s d => fun _ => @default d
+       end.
+End with_base.
+
+Definition c :=
+ match 0, 0 with
+ | S (S x), y => 0
+ | x, S (S y) => 1
+ | x, y => 2
+ end.
+
+End Bug14207.

@@ -49,6 +49,7 @@ sig
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
+  val split : ('a * 'b) array -> 'a array * 'b array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
@@ -331,6 +332,9 @@ let chop n v =
   let vlen = Array.length v in
   if n > vlen then failwith "Array.chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
+
+let split v =
+  (Array.map fst v, Array.map snd v)
 
 let map2_i f v1 v2 =
   let len1 = Array.length v1 in

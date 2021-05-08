@@ -132,8 +132,8 @@ type 'a equation =
       rhs          : 'a rhs;
       alias_stack  : Name.t list;
       eqn_loc      : Loc.t option;
-      used         : int ref;
-      catch_all_vars : Id.t CAst.t list ref }
+      orig         : int option;
+      catch_all_vars : Id.t CAst.t list }
 
 type 'a matrix = 'a equation list
 
@@ -555,8 +555,9 @@ let check_all_variables env sigma typ mat =
 
 let set_pattern_catch_all_var ?loc eqn = function
   | Name id when not (Id.Set.mem id eqn.rhs.rhs_vars) ->
-    eqn.catch_all_vars := CAst.make ?loc id :: !(eqn.catch_all_vars)
-  | _ -> ()
+    { eqn with catch_all_vars = CAst.make ?loc id :: eqn.catch_all_vars }
+  | _ ->
+    eqn
 
 let warn_named_multi_catch_all =
   CWarnings.create ~name:"unused-pattern-matching-variable" ~category:"pattern-matching"
@@ -568,8 +569,8 @@ let wildcard_id = Id.of_string "wildcard'"
 let is_wildcard id =
   Id.equal (Id.of_string (Nameops.atompart_of_id id)) wildcard_id
 
-let check_unused_pattern env eqn =
-  match !(eqn.used) with
+let check_unused_pattern_eqn env vars eqn =
+  match List.length vars with
   | 0 -> raise_pattern_matching_error ?loc:eqn.eqn_loc (env, Evd.empty, UnusedClause eqn.patterns)
   | 1 -> ()
   | _ ->
@@ -578,16 +579,17 @@ let check_unused_pattern env eqn =
          "wildcard'" internal name deactivate the warning *)
       if (Id.to_string id).[0] <> '_' && not (is_wildcard id)
       then warn_named_multi_catch_all ?loc id in
-    List.iter warn !(eqn.catch_all_vars)
+    List.iter warn (List.uniquize (List.flatten vars))
 
-let set_used_pattern eqn = eqn.used := !(eqn.used) + 1
+let check_unused_pattern env used matx =
+  let result = Array.init (List.length matx) (fun _ -> []) in
+  List.iter (function (Some n,vars) -> result.(n) <- vars :: result.(n) | _ -> ()) used;
+  List.iter2 (check_unused_pattern_eqn env) (Array.to_list result) matx
 
 let extract_rhs pb =
   match pb.mat with
     | [] -> user_err ~hdr:"build_leaf" (msg_may_need_inversion())
-    | eqn::_ ->
-        set_used_pattern eqn;
-        eqn.rhs
+    | eqn::_ -> ([eqn.orig,eqn.catch_all_vars], eqn.rhs)
 
 (**********************************************************************)
 (* Functions to deal with matrix factorization *)
@@ -1050,8 +1052,8 @@ let add_assert_false_case pb tomatch =
               it = None };
       alias_stack = Anonymous::aliasnames;
       eqn_loc = None;
-      used = ref 0;
-      catch_all_vars = ref [] } ]
+      orig = None;
+      catch_all_vars = [] } ]
 
 let adjust_impossible_cases sigma pb pred tomatch submat =
   match submat with
@@ -1261,11 +1263,11 @@ let group_equations pb ind current cstrs mat =
          match DAst.get (check_and_adjust_constructor !!(pb.env) ind cstrs pat) with
            | PatVar name ->
                (* This is a default clause that we expand *)
+               let rest = set_pattern_catch_all_var ?loc:pat.CAst.loc rest name in
                for i=1 to Array.length cstrs do
                  let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
                  brs.(i-1) <- (args, name, rest) :: brs.(i-1)
                done;
-               set_pattern_catch_all_var ?loc:pat.CAst.loc eqn name;
                if !only_default == None then only_default := Some true
            | PatCstr (((_,i)),args,name) ->
                (* This is a regular clause *)
@@ -1297,9 +1299,9 @@ let rec generalize_problem names sigma pb = function
 
 (* No more patterns: typing the right-hand side of equations *)
 let build_leaf sigma pb =
-  let rhs = extract_rhs pb in
+  let used, rhs = extract_rhs pb in
   let sigma, j = pb.typing_function (mk_tycon pb.pred) rhs.rhs_env sigma rhs.it in
-  sigma, j_nf_evar sigma j
+  used, sigma, j_nf_evar sigma j
 
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
 (* spiwack: the [initial] argument keeps track whether the branch is a
@@ -1462,9 +1464,11 @@ let compile ~program_mode sigma pb =
 
           (* We compile branches *)
             let fold_br sigma eqn cstr =
-              compile_branch initial current realargs (names,dep) deps sigma pb arsign eqn cstr
+              let used, sigma, j = compile_branch initial current realargs (names,dep) deps sigma pb arsign eqn cstr in
+              sigma, (used, j)
             in
             let sigma, brvals = Array.fold_left2_map fold_br sigma eqns cstrs in
+            let used, brvals = Array.split brvals in
           (* We build the (elementary) case analysis *)
             let depstocheck = current::binding_vars_of_inductive sigma typ in
             let brvals,tomatch,pred,inst =
@@ -1481,7 +1485,8 @@ let compile ~program_mode sigma pb =
             let pred = nf_betaiota !!(pb.env) sigma pred in
             let case = make_case_or_project !!(pb.env) sigma indt ci pred current brvals in
             let sigma, _ = Typing.type_of !!(pb.env) sigma pred in
-            sigma, { uj_val = applist (case, inst);
+            let used = List.flatten (Array.to_list used) in
+            used, sigma, { uj_val = applist (case, inst);
               uj_type = prod_applist sigma typ inst }
 
 
@@ -1500,8 +1505,8 @@ let compile ~program_mode sigma pb =
          pred = lift_predicate 1 pred tomatch;
          history = pop_history pb.history;
          mat = List.map (push_current_pattern ~program_mode sigma (current,ty)) pb.mat } in
-    let sigma, j = compile sigma pb in
-    sigma, { uj_val = subst1 current j.uj_val;
+    let used, sigma, j = compile sigma pb in
+    used, sigma, { uj_val = subst1 current j.uj_val;
       uj_type = subst1 current j.uj_type }
 
   (* Building the sub-problem when all patterns are variables,
@@ -1525,8 +1530,8 @@ let compile ~program_mode sigma pb =
   (* Building the sub-problem when all patterns are variables *)
   and compile_branch initial current realargs names deps sigma pb arsign eqns cstr =
     let sigma, sign, pb = build_branch ~program_mode initial current realargs deps names sigma pb arsign eqns cstr in
-    let sigma, j = compile sigma pb in
-    sigma, (sign, j.uj_val)
+    let used, sigma, j = compile sigma pb in
+    used, sigma, (sign, j.uj_val)
 
   (* Abstract over a declaration before continuing splitting *)
   and compile_generalization sigma pb i d rest =
@@ -1536,8 +1541,8 @@ let compile ~program_mode sigma pb =
          env = snd (push_rel ~hypnaming sigma d pb.env);
          tomatch = rest;
          mat = List.map (push_generalized_decl_eqn ~hypnaming pb.env sigma i d) pb.mat } in
-    let sigma, j = compile sigma pb in
-    sigma, { uj_val = mkLambda_or_LetIn d j.uj_val;
+    let used, sigma, j = compile sigma pb in
+    used, sigma, { uj_val = mkLambda_or_LetIn d j.uj_val;
       uj_type = mkProd_wo_LetIn d j.uj_type }
 
   (* spiwack: the [initial] argument keeps track whether the alias has
@@ -1555,8 +1560,8 @@ let compile ~program_mode sigma pb =
            pred = lift_predicate 1 pb.pred pb.tomatch;
            history = pop_history_pattern pb.history;
            mat = List.map (push_alias_eqn ~hypnaming sigma alias) pb.mat } in
-      let sigma, j = compile sigma pb in
-      sigma, { uj_val =
+      let used, sigma, j = compile sigma pb in
+      used, sigma, { uj_val =
           if isRel sigma c || isVar sigma c || count_occurrences sigma (mkRel 1) j.uj_val <= 1 then
             subst1 c j.uj_val
           else
@@ -1622,7 +1627,7 @@ substituer après par les initiaux *)
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in constrintern *)
 let matx_of_eqns env eqns =
-  let build_eqn {CAst.loc;v=(ids,initial_lpat,initial_rhs)} =
+  let build_eqn i {CAst.loc;v=(ids,initial_lpat,initial_rhs)} =
     let avoid = ids_of_named_context_val (named_context_val !!env) in
     let avoid = List.fold_left (fun accu id -> Id.Set.add id accu) avoid ids in
     let rhs =
@@ -1633,10 +1638,10 @@ let matx_of_eqns env eqns =
     { patterns = initial_lpat;
       alias_stack = [];
       eqn_loc = loc;
-      used = ref 0;
-      catch_all_vars = ref [];
+      orig = Some i;
+      catch_all_vars = [];
       rhs = rhs }
-  in List.map build_eqn eqns
+  in List.map_i build_eqn 0 eqns
 
 (***************** Building an inversion predicate ************************)
 
@@ -1890,8 +1895,8 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
     { patterns = patl;
       alias_stack = [];
       eqn_loc = None;
-      used = ref 0;
-      catch_all_vars = ref [];
+      orig = None;
+      catch_all_vars = [];
       rhs = { rhs_env = pb_env;
               (* we assume all vars are used; in practice we discard dependent
                  vars so that the field rhs_vars is normally not used *)
@@ -1911,8 +1916,8 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
       [ { patterns = List.map (fun _ -> DAst.make @@ PatVar Anonymous) patl;
           alias_stack = [];
           eqn_loc = None;
-          used = ref 0;
-          catch_all_vars = ref [];
+          orig = None;
+          catch_all_vars = [];
           rhs = { rhs_env = pb_env;
                   rhs_vars = Id.Set.empty;
                   avoid_ids = avoid0;
@@ -1946,7 +1951,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
       caseloc   = loc;
       casestyle = RegularStyle;
       typing_function = build_tycon ?loc env pb_env s subst} in
-  let sigma, j = compile ~program_mode sigma pb in
+  let _used, sigma, j = compile ~program_mode sigma pb in
   (sigma, j.uj_val)
 
 (* Here, [pred] is assumed to be in the context built from all *)
@@ -2694,9 +2699,9 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
       casestyle= style;
       typing_function = typing_function } in
 
-  let sigma, j = compile ~program_mode:true sigma pb in
+  let used, sigma, j = compile ~program_mode:true sigma pb in
     (* We check for unused patterns *)
-    List.iter (check_unused_pattern !!env) matx;
+    check_unused_pattern !!env used matx;
     let body = it_mkLambda_or_LetIn (applist (j.uj_val, args)) lets in
     let j =
       { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
@@ -2770,17 +2775,18 @@ let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predop
         casestyle = style;
         typing_function = typing_fun } in
 
-    let sigma, j = compile ~program_mode sigma pb in
+    let used, sigma, j = compile ~program_mode sigma pb in
 
     (* We coerce to the tycon (if an elim predicate was provided) *)
-    inh_conv_coerce_to_tycon ?loc ~program_mode !!env sigma j tycon
+    let sigma, j = inh_conv_coerce_to_tycon ?loc ~program_mode !!env sigma j tycon in
+    used, sigma, j
   in
 
   (* Return the term compiled with the first possible elimination  *)
   (* predicate for which the compilation succeeds *)
-  let j = list_try_compile compile_for_one_predicate preds in
+  let used, sigma, j = list_try_compile compile_for_one_predicate preds in
 
   (* We check for unused patterns *)
-  List.iter (check_unused_pattern !!env) matx;
+  check_unused_pattern !!env used matx;
 
-  j
+  sigma, j
