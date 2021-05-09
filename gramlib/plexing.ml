@@ -2,7 +2,7 @@
 (* plexing.ml,v *)
 (* Copyright (c) INRIA 2007-2017 *)
 
-type 'te lexer_func = ?source:Loc.source -> char Stream.t -> 'te LStream.t
+type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te LStream.t
 
 module type S = sig
   type te
@@ -23,6 +23,7 @@ module type S = sig
     val get : unit -> t
     val drop : unit -> unit
     val get_comments : t -> ((int * int) * string) list
+    val set_loc_offset : int -> unit
   end
 
 end

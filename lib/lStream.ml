@@ -18,7 +18,7 @@ type 'a t = {
   mutable max_peek : int;
 }
 
-let from ?(source=Loc.ToplevelInput) f =
+let from ?(loc=Loc.(initial ToplevelInput)) f =
   let loct = Hashtbl.create 207 in
   let loct_func loct i = Hashtbl.find loct i in
   let loct_add loct i loc = Hashtbl.add loct i loc in
@@ -29,8 +29,7 @@ let from ?(source=Loc.ToplevelInput) f =
         | None -> None
         | Some (a,loc) ->
         loct_add loct i loc; Some a) in
-  let initial = Loc.initial source in
-  let fun_loc i = if i = 0 then initial else loct_func loct (i - 1) in
+  let fun_loc i = if i = 0 then loc else loct_func loct (i - 1) in
   { strm; max_peek = 0; fun_loc }
 
 let count strm = Stream.count strm.strm

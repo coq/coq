@@ -17,7 +17,7 @@ module type S = sig
 
   module Parsable : sig
     type t
-    val make : ?source:Loc.source -> char Stream.t -> t
+    val make : ?loc:Loc.t -> char Stream.t -> t
     val comments : t -> ((int * int) * string) list
   end
 
@@ -1614,10 +1614,13 @@ module Parsable = struct
       L.State.drop ();
       Exninfo.iraise (exn,info)
 
-  let make ?source cs =
+  let make ?loc cs =
     let lexer_state = ref (L.State.init ()) in
     L.State.set !lexer_state;
-    let ts = L.tok_func ?source cs in
+    (match loc with
+    | Some loc -> L.State.set_loc_offset Loc.(loc.bp)
+    | None -> ());
+    let ts = L.tok_func ?loc cs in
     lexer_state := L.State.get ();
     {pa_tok_strm = ts; lexer_state}
 
