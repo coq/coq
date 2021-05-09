@@ -181,6 +181,12 @@ val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
     the returned value. *)
 val tclIGNORE : 'a tactic -> unit tactic
 
+(** [tclCATCHSYSTEM t cond] catches (non-monadic) system exceptions
+    [e] thrown during the execution of the tactic. Exception [e] is
+    only caught when [cond e] holds. When an exception is caught, the
+    result is isomorphic to [tclZERO (Exception e)]. *)
+val tclCATCHSYSTEM : 'a tactic -> (exn -> bool) -> 'a tactic
+
 (** Generic monadic combinators for tactics. *)
 module Monad : Monad.S with type +'a t = 'a tactic
 
