@@ -2,7 +2,7 @@
    to measure the computation speed. *)
 (* Expected time < 5.00s *)
 
-Require Import QArith Qabs.
+Require Import QArith Qabs Qpower.
 Require Import ConstructiveCauchyRealsMult.
 Require Import Lqa.
 Require Import Lia.
@@ -73,9 +73,9 @@ Proof.
   intros. destruct q as [k j]. unfold CReal_sqrt_Q_seq.
   destruct k as [|i|i].
   - ring_simplify.
-    setoid_rewrite <- Qpower.Qpower_mult.
-    setoid_rewrite QExtra.Qzero_eq.
-    pose proof QExtra.Qpower_pos_lt 2 (n*2)%Z ltac:(lra).
+    setoid_rewrite <- Qpower_mult.
+    setoid_rewrite Qreduce_zero.
+    pose proof Qpower_0_lt 2 (n*2)%Z ltac:(lra).
     lra.
   - destruct n as [|n|n].
     + pose proof (Pos.sqrt_spec (i * j)). simpl in H0.
@@ -91,7 +91,7 @@ Proof.
       apply Pos.mul_le_mono; lia.
     + pose proof (Pos.sqrt_spec (i * j)). simpl in H0.
       destruct H0 as [_ H0].
-      rewrite QExtra.Qpower_decomp'.
+      rewrite Qpower_decomp_pos.
       unfold Qlt, Qplus, Qmult, Qnum, Qden.
       rewrite PosExtra.Pos_pow_1_r.
       rewrite Pos.mul_1_r, Z.mul_1_r.
@@ -104,9 +104,9 @@ Proof.
         pose proof Pos.le_1_l (2 ^ n * j)%positive; lia.
     + pose proof (Pos.sqrt_spec (i * j * 2 ^ (2 * n))). simpl in H0.
       destruct H0 as [_ H0].
-      rewrite <- Pos2Z.opp_pos, Qpower.Qpower_opp.
-      rewrite QExtra.Qpower_decomp'.
-      rewrite <- Pos2Z.inj_pow, PosExtra.Pos_pow_1_r, <- QExtra.Qinv_swap_pos.
+      rewrite <- Pos2Z.opp_pos, Qpower_opp.
+      rewrite Qpower_decomp_pos.
+      rewrite <- Pos2Z.inj_pow, PosExtra.Pos_pow_1_r, Qinv_pos.
       unfold Qlt, Qplus, Qmult, Qnum, Qden.
       repeat rewrite  Pos2Z.inj_mul.
       ring_simplify.
@@ -161,12 +161,12 @@ Proof.
   intro q. destruct q as [k j]. destruct k.
   - intros n a b H H0.
     change (Qabs _) with 0%Q.
-    apply QExtra.Qpower_pos_lt; reflexivity.
+    apply Qpower_0_lt; reflexivity.
   - assert (forall n a b, (b<=n)%Z ->
                (CReal_sqrt_Q_seq (Z.pos p # j) a - CReal_sqrt_Q_seq (Z.pos p # j) b
                 < 2^n)%Q).
     { intros.
-      pose proof QExtra.Qpower_pos_lt 2 n eq_refl as Hpow.
+      pose proof Qpower_0_lt 2 n eq_refl as Hpow.
       rewrite <- (Qplus_lt_r _ _ (CReal_sqrt_Q_seq (Z.pos p # j) b)).
       ring_simplify. apply Qsqrt_lt.
         { apply (Qle_trans _ (0+2^n)). lra.
@@ -180,21 +180,21 @@ Proof.
                           (CReal_sqrt_Q_seq (Z.pos p # j) b + (2^b)))).
         { apply Qmult_le_r.
           - apply (Qlt_le_trans _ (0+(2^b))).
-            + rewrite Qplus_0_l. apply QExtra.Qpower_pos_lt. reflexivity.
+            + rewrite Qplus_0_l. apply Qpower_0_lt. reflexivity.
             + apply Qplus_le_l. apply CReal_sqrt_Q_pos.
-          - apply Qplus_le_r. apply QExtra.Qpower_le_compat.
+          - apply Qplus_le_r. apply Qpower_le_compat_l.
               exact H. discriminate. }
-      apply QExtra.Qmult_le_compat_nonneg.
+      apply Qmult_le_compat_nonneg.
       - split.
         + pose proof CReal_sqrt_Q_pos (Z.pos p # j) b.
           lra.
         + apply Qle_refl.
       - split.
         + pose proof CReal_sqrt_Q_pos (Z.pos p # j) b.
-          pose proof QExtra.Qpower_pos_lt 2 b eq_refl as Hpowb.
+          pose proof Qpower_0_lt 2 b eq_refl as Hpowb.
           lra.
         + apply Qplus_le_r.
-          apply QExtra.Qpower_le_compat.
+          apply Qpower_le_compat_l.
             exact H. discriminate.
     }
     intros n a b H0 H1. apply Qabs_case.
@@ -205,7 +205,7 @@ Proof.
     2: ring. apply H, H0.
   - intros n a b H H0.
     change (Qabs _) with 0%Q.
-    apply QExtra.Qpower_pos_lt; reflexivity.
+    apply Qpower_0_lt; reflexivity.
 Qed.
 
 Definition CReal_sqrt_Q_scale (q : Q) : Z
@@ -219,21 +219,21 @@ Proof.
   rewrite Qabs_pos.
     2: apply CReal_sqrt_Q_pos.
   apply Qsqrt_lt.
-    1: apply Qpower.Qpower_pos; discriminate.
+    1: apply Qpower_pos; discriminate.
   destruct (Qlt_le_dec q 0) as [Hq|Hq].
   - destruct q as [[|n|n] d].
     + discriminate Hq.
     + discriminate Hq.
     + reflexivity.
   - apply (Qle_lt_trans _ _ _ (CReal_sqrt_Q_le_below _ _ Hq)).
-    rewrite <- Qpower.Qpower_plus.
+    rewrite <- Qpower_plus.
       2: discriminate.
     rewrite Z.add_diag, Z.mul_comm.
     pose proof Zdiv.Zmod_eq (QExtra.Qbound_lt_ZExp2 q + 1) 2 eq_refl as Hmod.
     assert (forall a b c : Z, c=b-a -> a=b-c)%Z as H by (intros a b c H'; rewrite H';  ring).
     apply H in Hmod; rewrite Hmod; clear H Hmod.
     apply (Qlt_le_trans _ _ _ (QExtra.Qbound_lt_ZExp2_spec q)).
-    apply QExtra.Qpower_le_compat. 2: discriminate.
+    apply Qpower_le_compat_l. 2: discriminate.
     pose proof Z.mod_pos_bound (QExtra.Qbound_lt_ZExp2 q + 1)%Z 2%Z eq_refl.
     lia.
 Qed.

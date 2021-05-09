@@ -10,6 +10,7 @@
 
 Require Import QArith.
 Require Import Qabs.
+Require Import Qpower.
 Require Import ConstructiveCauchyReals.
 Require Import ConstructiveCauchyRealsMult.
 Require Import Lia.
@@ -103,12 +104,12 @@ Lemma CRealLt_RQ_from_single_dist : forall (r : CReal) (q : Q) (n :Z),
  -> r < inject_Q q.
 Proof.
   intros r q n Hapart.
-  pose proof Qpower_pos_lt 2 n ltac:(lra) as H2npos.
+  pose proof Qpower_0_lt 2 n ltac:(lra) as H2npos.
   destruct (QarchimedeanLowExp2_Z (q - seq r n - 2^n) ltac:(lra)) as [k Hk].
   unfold CRealLt; exists (Z.min n (k-1))%Z.
   unfold inject_Q; rewrite CReal_red_seq.
   pose proof cauchy r n n (Z.min n (k-1))%Z ltac:(lia) ltac:(lia) as Hrbnd.
-  pose proof Qpower_le_compat 2 (Z.min n (k - 1))%Z (k-1)%Z ltac:(lia) ltac:(lra).
+  pose proof Qpower_le_compat_l 2 (Z.min n (k - 1))%Z (k-1)%Z ltac:(lia) ltac:(lra).
   apply (Qmult_le_l _ _ 2 ltac:(lra)) in H.
   apply (Qle_lt_trans _ _ _ H); clear H.
   rewrite Qpower_minus_pos.
@@ -133,7 +134,7 @@ Proof.
   unfold CReal_abs, CReal_abs_seq, CReal_abs_scale;
     rewrite CReal_red_seq.
   pose proof CRealLe_0R_to_single_dist x n Hxnonneg.
-  pose proof Qpower_pos_lt 2 n ltac:(lra) as Hpowpos.
+  pose proof Qpower_0_lt 2 n ltac:(lra) as Hpowpos.
   do 2 apply Qabs_case; intros H1 H2; lra.
 Qed.
 
@@ -144,7 +145,7 @@ Proof.
     rewrite CReal_red_seq in nmaj.
   apply (Qle_not_lt _ _ (Qle_Qabs (seq x n))).
   apply Qlt_minus_iff. apply (Qlt_trans _ (2*2^n)).
-  - pose proof Qpower_pos_lt 2 n ltac:(lra); lra.
+  - pose proof Qpower_0_lt 2 n ltac:(lra); lra.
   - exact nmaj.
 Qed.
 
@@ -155,7 +156,7 @@ Proof.
     rewrite CReal_red_seq in nmaj.
   apply (Qle_not_lt _ _ (Qabs_nonneg (seq x n))).
   apply Qlt_minus_iff. apply (Qlt_trans _ (2*2^n)).
-  - pose proof Qpower_pos_lt 2 n ltac:(lra); lra.
+  - pose proof Qpower_0_lt 2 n ltac:(lra); lra.
   - exact nmaj.
 Qed.
 
@@ -167,7 +168,7 @@ Proof.
     do 3 rewrite CReal_red_seq.
   rewrite Qabs_opp. simplify_Qabs.
   rewrite Qabs_pos by lra.
-  pose proof Qpower_pos_lt 2 n; lra.
+  pose proof Qpower_0_lt 2 n; lra.
 Qed.
 
 Lemma CReal_abs_left : forall x : CReal, x <= 0 -> CReal_abs x == -x.
@@ -285,7 +286,7 @@ Proof.
   { destruct (Qlt_le_dec (seq x n) 0) as [Hdec|Hdec].
     - exact Hdec.
     - exfalso. rewrite Qabs_pos in nmaj by apply Hdec.
-      pose proof Qpower_pos_lt 2 n; lra. }
+      pose proof Qpower_0_lt 2 n; lra. }
   rewrite Qabs_neg in nmaj by apply Qlt_le_weak, H.
   apply (CRealLt_RQ_from_single_dist _ _ n); lra.
 Qed.
@@ -305,9 +306,9 @@ Proof.
   unfold CReal_abs, CReal_abs_seq, CReal_abs_scale;
     rewrite CReal_red_seq.
 
-  pose proof Qpower_pos_lt 2 (Z.min i j)%Z ltac:(lra) as Hpowij.
-  pose proof Qpower_le_compat 2 (Z.min i j)%Z i ltac:(lia) ltac:(lra) as Hpowlei.
-  pose proof Qpower_le_compat 2 (Z.min i j)%Z j ltac:(lia) ltac:(lra) as Hpowlej.
+  pose proof Qpower_0_lt 2 (Z.min i j)%Z ltac:(lra) as Hpowij.
+  pose proof Qpower_le_compat_l 2 (Z.min i j)%Z i ltac:(lia) ltac:(lra) as Hpowlei.
+  pose proof Qpower_le_compat_l 2 (Z.min i j)%Z j ltac:(lia) ltac:(lra) as Hpowlej.
   apply Qabs_case; intros Hcase; lra.
 Qed.
 
