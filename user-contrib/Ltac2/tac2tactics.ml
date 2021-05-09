@@ -402,7 +402,7 @@ let new_auto debug n lems dbs =
 let eauto debug n p lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
-  Eauto.gen_eauto (Eauto.make_dimension n p) lems dbs
+  Eauto.gen_eauto ~debug (Eauto.make_dimension n p) lems dbs
 
 let typeclasses_eauto strategy depth dbs =
   let only_classes, dbs = match dbs with
