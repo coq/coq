@@ -105,10 +105,10 @@ test-suite:
 	dune runtest --no-buffer $(DUNEOPT)
 
 refman-html:
-	dune build @refman-html
+	dune build --no-buffer @refman-html
 
 refman-pdf:
-	dune build @refman-pdf
+	dune build --no-buffer @refman-pdf
 
 stdlib-html:
 	dune build @stdlib-html
