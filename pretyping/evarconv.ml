@@ -110,11 +110,13 @@ type flex_kind_of_term =
   | MaybeFlexible of EConstr.t (* reducible but not necessarily reduced *)
   | Flexible of EConstr.existential
 
+let has_arg s = Option.has_some (Stack.strip_n_app 0 s)
+
 let flex_kind_of_term flags env evd c sk =
   match EConstr.kind evd c with
     | LetIn _ | Rel _ | Const _ | Var _ | Proj _ ->
       Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term flags.open_ts env evd c)
-    | Lambda _ when not (Option.is_empty (Stack.decomp sk)) ->
+    | Lambda _ when has_arg sk ->
        if flags.modulo_betaiota then MaybeFlexible c
        else Rigid
     | Evar ev ->
@@ -272,20 +274,20 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         (* Are we sure that ty is not an evar? *)
         try Inductiveops.find_mrectype env sigma ty
         with _ -> raise Not_found
-      in Stack.append_app_list ind_args Stack.empty, c, sk1
+      in ind_args, c, sk1
     | None ->
       match Stack.strip_n_app solution.nparams sk1 with
-      | Some (params1, c1, extra_args1) -> params1, c1, extra_args1
+      | Some (params1, c1, extra_args1) -> (Option.get @@ Stack.list_of_app_stack params1), c1, extra_args1
       | _ -> raise Not_found in
   let us2,extra_args2 =
     let l_us = List.length solution.cvalue_arguments in
-      if Int.equal l_us 0 then Stack.empty,sk2_effective
+      if Int.equal l_us 0 then [], sk2_effective
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
-      | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
+      | Some (l',el,s') -> ((Option.get @@ Stack.list_of_app_stack l') @ [el],s') in
   let h, _ = decompose_app_vect sigma solution.body in
-    sigma,(h, t2),solution.constant,solution.abstractions_ty,(Stack.append_app_list solution.params Stack.empty,params1),
-    (Stack.append_app_list solution.cvalue_arguments Stack.empty,us2),(extra_args1,extra_args2),c1,
+    sigma,(h, t2),solution.constant,solution.abstractions_ty,(solution.params,params1),
+    (solution.cvalue_arguments,us2),(extra_args1,extra_args2),c1,
     (solution.cvalue_abstraction, Stack.zip sigma (t2,sk2))
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
@@ -318,6 +320,19 @@ let ise_and evd l =
         | Success i' -> ise_and i' l
         | UnifFailure _ as x -> x in
   ise_and evd l
+
+let ise_list2 evd f l1 l2 =
+  let rec allrec k l1 l2 = match l1, l2 with
+  | [], [] -> k evd
+  | x1 :: l1, x2 :: l2 ->
+    let k evd = match k evd with
+    | Success evd -> f evd x1 x2
+    | UnifFailure _ as x -> x
+    in
+    allrec k l1 l2
+  | ([], _ :: _) | (_ :: _, []) -> UnifFailure (evd, NotSameArgSize)
+  in
+  allrec (fun i -> Success i) l1 l2
 
 let ise_array2 evd f v1 v2 =
   let rec allrec i = function
@@ -371,10 +386,9 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
       else None, x in
     match revsk1, revsk2 with
     | [], [] -> None, Success i
-    | Stack.Case (ci1,u1,pms1,t1,iv1,c1)::q1, Stack.Case (ci2,u2,pms2,t2,iv2,c2)::q2 ->
-      let dummy = mkProp in
-      let (_, t1, _, _, c1) = EConstr.expand_case env evd (ci1,u1,pms1,t1,iv1,dummy,c1) in
-      let (_, t2, _, _, c2) = EConstr.expand_case env evd (ci2,u2,pms2,t2,iv2,dummy,c2) in
+    | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
+      let (t1, c1) = Stack.expand_case env evd cse1 in
+      let (t2, c2) = Stack.expand_case env evd cse2 in
       begin
         match ise_and i [
           (fun i -> f env i CONV t1 t2);
@@ -411,10 +425,9 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
   let rec ise_rev_stack2 i revsk1 revsk2 =
     match revsk1, revsk2 with
     | [], [] -> Success i
-    | Stack.Case (ci1,u1,pms1,t1,iv1,c1)::q1, Stack.Case (ci2,u2,pms2,t2,iv2,c2)::q2 ->
-      let dummy = mkProp in
-      let (_, t1, _, _, c1) = EConstr.expand_case env evd (ci1,u1,pms1,t1,iv1,dummy,c1) in
-      let (_, t2, _, _, c2) = EConstr.expand_case env evd (ci2,u2,pms2,t2,iv2,dummy,c2) in
+    | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
+      let (t1, c1) = Stack.expand_case env evd cse1 in
+      let (t2, c2) = Stack.expand_case env evd cse2 in
       ise_and i [
       (fun i -> ise_rev_stack2 i q1 q2);
       (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2);
@@ -1152,12 +1165,12 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
     let app = mkApp (c, Array.rev_of_list ks) in
     ise_and evd'
       [(fun i ->
-        exact_ise_stack2 env i
-          (fun env' i' cpb x1 x -> evar_conv_x flags env' i' cpb x1 (substl ks x))
+        ise_list2 i
+          (fun i' x1 x -> evar_conv_x flags env i' CONV x1 (substl ks x))
           params1 params);
        (fun i ->
-         exact_ise_stack2 env i
-           (fun env' i' cpb u1 u -> evar_conv_x flags env' i' cpb u1 (substl ks u))
+         ise_list2 i
+           (fun i' u1 u -> evar_conv_x flags env i' CONV u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x flags env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2);
@@ -1174,18 +1187,22 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
     match get_projections env ind with
     | Some projs when mib.mind_finite == BiFinite ->
       let pars = mib.mind_nparams in
+      begin match Stack.list_of_app_stack sk1 with
+      | None -> UnifFailure (evd,NotSameHead)
+      | Some l1 ->
         (try
-           let l1' = Stack.tail pars sk1 in
+           let l1' = List.skipn pars l1 in
            let l2' =
              let term = Stack.zip evd (term2,sk2) in
                List.map (fun p -> EConstr.mkProj (Projection.make p false, term)) (Array.to_list projs)
            in
-             exact_ise_stack2 env evd (evar_conv_x { flags with with_cs = false}) l1'
-               (Stack.append_app_list l2' Stack.empty)
+          let f i t1 t2 = evar_conv_x { flags with with_cs = false } env i CONV t1 t2 in
+          ise_list2 evd f l1' l2'
          with
-         | Invalid_argument _ ->
-           (* Stack.tail: partially applied constructor *)
+         | Failure _ ->
+           (* List.skipn: partially applied constructor *)
            UnifFailure(evd,NotSameHead))
+      end
     | _ -> UnifFailure (evd,NotSameHead)
 
 let evar_conv_x flags = evar_conv_x flags

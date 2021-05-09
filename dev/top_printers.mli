@@ -106,8 +106,7 @@ val pp_idpred : Names.Id.Pred.t -> unit
 val pp_cpred : Names.Cpred.t -> unit
 val pp_transparent_state : TransparentState.t -> unit
 
-val pp_stack_t : Constr.t Reductionops.Stack.t -> unit
-val pp_estack_t : EConstr.t Reductionops.Stack.t -> unit
+val pp_estack_t : Reductionops.Stack.t -> unit
 val pp_state_t : Reductionops.state -> unit
 
 val ppmetas : Evd.Metaset.t -> unit
