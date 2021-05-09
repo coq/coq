@@ -7,7 +7,9 @@ ci_dir="$(dirname "$0")"
 
 git_download coqprime
 
-export COQEXTRAFLAGS='-native-compiler no'
+ulimit -s
+ulimit -s 65536
+ulimit -s
 ( cd "${CI_BUILD_DIR}/coqprime"
   make
   make install
