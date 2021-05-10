@@ -251,29 +251,37 @@ $(DOC_STDLIB_DIR)/FullLibrary.pdf: $(DOCCOMMON) $(DOC_STDLIB_DIR)/FullLibrary.co
 .PHONY: install-doc install-doc-meta install-doc-html install-doc-printable \
 	install-doc-sphinx install-doc-stdlib-html
 
+# Due to Windows paths not starting with / we can't just set the
+# default to / and always use --destdir
+ifeq ($(DESTDIR),)
+DOCDIRDEST=$(DOCDIR)
+else
+DOCDIRDEST=$(DESTDIR)/$(DOCDIR)
+endif
+
 install-doc: install-doc-meta install-doc-html install-doc-printable
 
 install-doc-meta:
-	$(MKDIR) $(FULLDOCDIR)
-	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
+	$(MKDIR) $(DOCDIRDEST)
+	$(INSTALLLIB) doc/LICENSE $(DOCDIRDEST)/LICENSE.doc
 
 install-doc-html: install-doc-stdlib-html install-doc-sphinx
 
 install-doc-stdlib-html:
-	$(MKDIR) $(FULLDOCDIR)/html/stdlib
-	$(INSTALLLIB) $(DOC_STDLIB_HTML_DIR)/* $(FULLDOCDIR)/html/stdlib
+	$(MKDIR) $(DOCDIRDEST)/html/stdlib
+	$(INSTALLLIB) $(DOC_STDLIB_HTML_DIR)/* $(DOCDIRDEST)/html/stdlib
 
 install-doc-printable:
-	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) $(DOC_STDLIB_DIR)/Library.pdf $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) $(DOC_STDLIB_DIR)/Library.ps $(FULLDOCDIR)/ps
+	$(MKDIR) $(DOCDIRDEST)/ps $(DOCDIRDEST)/pdf
+	$(INSTALLLIB) $(DOC_STDLIB_DIR)/Library.pdf $(DOCDIRDEST)/pdf
+	$(INSTALLLIB) $(DOC_STDLIB_DIR)/Library.ps $(DOCDIRDEST)/ps
 
 install-doc-sphinx:
-	$(MKDIR) $(FULLDOCDIR)/sphinx
+	$(MKDIR) $(DOCDIRDEST)/sphinx
 	(for d in html latex; do \
 	for f in `cd doc/sphinx/_build/$$d && find . -type f`; do \
-		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$d/$$f);\
-		$(INSTALLLIB) doc/sphinx/_build/$$d/$$f $(FULLDOCDIR)/sphinx/$$d/$$f;\
+		$(MKDIR) $$(dirname $(DOCDIRDEST)/sphinx/$$d/$$f);\
+		$(INSTALLLIB) doc/sphinx/_build/$$d/$$f $(DOCDIRDEST)/sphinx/$$d/$$f;\
 	done; done)
 
 ######################################################################
