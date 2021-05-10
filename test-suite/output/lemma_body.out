@@ -1,0 +1,9 @@
+The command has indeed failed with message:
+toto1 is opaque.
+The command has indeed failed with message:
+toto2 is opaque.
+The command has indeed failed with message:
+toto3 is opaque.
+File "stdin", line 11, characters 5-45:
+Error: Mutual theorems with a body are not supported
+

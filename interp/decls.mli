@@ -35,6 +35,10 @@ type definition_object_kind =
   | Method
   | Let
 
+type definition_kind =
+  | DefLike of definition_object_kind
+  | ThmLike of theorem_kind
+
 type assumption_object_kind = Definitional | Logical | Conjectural | Context
 
 (* [assumption_kind]

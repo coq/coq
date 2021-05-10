@@ -402,7 +402,7 @@ let register_struct is_rec fixpoint_exprl =
     in
     ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
       ~scope:(Locality.Global Locality.ImportDefaultBehavior)
-      ~kind:Decls.Definition univs binders None body (Some rtype);
+      ~kind:Decls.(DefLike Definition) univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
         (fun (evd, l) {Vernacexpr.fname} ->

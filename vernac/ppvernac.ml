@@ -168,6 +168,10 @@ let string_of_assumption_kind = let open Decls in function
     | Conjectural -> "Conjecture"
     | Context -> "Context"
 
+let string_of_definition_kind = let open Decls in function
+    | DefLike d -> string_of_definition_object_kind d
+    | ThmLike t -> string_of_theorem_kind t
+
 let string_of_logical_kind = let open Decls in function
     | IsAssumption k -> string_of_assumption_kind k
     | IsDefinition k -> string_of_definition_object_kind k
@@ -794,7 +798,7 @@ let pr_vernac_expr v =
       keyword (
         if Name.is_anonymous (fst id).v
         then "Goal"
-        else string_of_definition_object_kind dk)
+        else string_of_definition_kind dk)
     in
     let pr_reduce = function
       | None -> mt()

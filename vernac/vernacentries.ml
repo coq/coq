@@ -637,15 +637,15 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook 
   |> vernac_set_used_variables_opt ?using
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
-| Coercion ->
+| DefLike Coercion ->
   Some (ComCoercion.add_coercion_hook ~poly)
-| CanonicalStructure ->
+| DefLike CanonicalStructure ->
   Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
-| SubClass ->
+| DefLike SubClass ->
   Some (ComCoercion.add_subclass_hook ~poly)
-| Definition when canonical_instance ->
+| DefLike Definition when canonical_instance ->
   Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
-| Let when canonical_instance ->
+| DefLike Let when canonical_instance ->
   Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure dref)))
 | _ -> None
 
@@ -675,7 +675,11 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let poly = atts.polymorphic in
   let typing_flags = atts.typing_flags in
   let name = vernac_definition_name lid local in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?using:atts.using ?hook [(name, pl), (bl, t)]
+  let kind = let open Decls in
+    match kind with
+    | DefLike k -> IsDefinition k
+    | ThmLike t -> IsProof t in
+  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind ?using:atts.using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -691,7 +695,10 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
       let sigma = Evd.from_env env in
       Some (snd (Hook.get f_interp_redexp env sigma r)) in
   if program_mode then
-    let kind = Decls.IsDefinition kind in
+    let kind = let open Decls in
+      match kind with
+      | DefLike k -> IsDefinition k
+      | ThmLike t -> IsProof t in
     ComDefinition.do_definition_program ~pm ~name:name.v
       ~poly:atts.polymorphic ?typing_flags ~scope ~kind pl bl red_option c typ_opt ?hook
   else

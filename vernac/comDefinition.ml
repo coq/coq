@@ -125,11 +125,14 @@ let do_definition ?hook ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl r
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
   let using = definition_using env evd ~body ~types ~using in
-  let kind = Decls.IsDefinition kind in
+  let opaque, kind = let open Decls in
+    match kind with
+    | DefLike d -> false, IsDefinition d
+    | ThmLike t -> true, IsProof t in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
   let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly ?typing_flags () in
   let _ : Names.GlobRef.t =
-    Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
+    Declare.declare_definition ~info ~cinfo ~opaque ~body evd
   in ()
 
 let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =

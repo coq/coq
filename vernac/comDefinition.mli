@@ -31,7 +31,7 @@ val do_definition
   -> scope:Locality.locality
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
-  -> kind:Decls.definition_object_kind
+  -> kind:Decls.definition_kind
   -> ?using:Vernacexpr.section_subset_expr
   -> universe_decl_expr option
   -> local_binder_expr list

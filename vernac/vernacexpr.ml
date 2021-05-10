@@ -323,7 +323,7 @@ type nonrec vernac_expr =
   | VernacDeclareCustomEntry of string
 
   (* Gallina *)
-  | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr
+  | VernacDefinition of (discharge * Decls.definition_kind) * name_decl * definition_expr
   | VernacStartTheoremProof of Decls.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr

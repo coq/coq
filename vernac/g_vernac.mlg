@@ -209,11 +209,17 @@ GRAMMAR EXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
-        l = LIST0
-          [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
-          { (id,(bl,c)) } ] ->
-          { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
+    [ [ thm = thm_token; id = ident_decl; bl = binders;
+        ty = OPT [ ":"; c = lconstr -> { c } ];
+        with_ = LIST0 [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr -> { (id,(bl,c)) } ];
+        body = OPT [ ":="; red = reduce; b = lconstr -> { red,b } ] ->
+          {
+            match body, ty, with_ with
+            | Some(red,b), _, [] -> VernacDefinition ((NoDischarge,ThmLike thm), name_of_ident_decl id, DefineBody (bl, red, b, ty))
+            | None, Some c, _ -> VernacStartTheoremProof (thm, (id,(bl,c))::with_)
+            | Some _, _, _ :: _ -> user_err ~loc (str "Mutual theorems with a body are not supported")
+            | None, None, _ -> user_err ~loc (str "Theorems with no body and no statement are not supported")
+          }
       | stre = assumption_token; nl = inline; bl = assum_list ->
           { VernacAssumption (stre, nl, bl) }
       | tk = assumptions_token; nl = inline; bl = assum_list ->
@@ -221,9 +227,9 @@ GRAMMAR EXTEND Gram
             test_plural_form loc kwd bl;
             VernacAssumption (stre, nl, bl) }
       | d = def_token; id = ident_decl; b = def_body ->
-          { VernacDefinition (d, name_of_ident_decl id, b) }
+          { VernacDefinition ((fst d, DefLike (snd d)), name_of_ident_decl id, b) }
       | IDENT "Let"; id = ident_decl; b = def_body ->
-          { VernacDefinition ((DoDischarge, Let), name_of_ident_decl id, b) }
+          { VernacDefinition ((DoDischarge, DefLike Let), name_of_ident_decl id, b) }
       (* Gallina inductive declarations *)
       | f = finite_token; indl = LIST1 inductive_definition SEP "with" ->
           { VernacInductive (f, indl) }
@@ -707,14 +713,14 @@ GRAMMAR EXTEND Gram
              VernacCanonical CAst.(make ?loc:qid.CAst.loc @@ AN qid)
            | Some (u,d) ->
              let s = coerce_reference_to_id qid in
-             VernacDefinition ((NoDischarge,CanonicalStructure),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d) }
+             VernacDefinition ((NoDischarge,DefLike CanonicalStructure),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d) }
       | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; ntn = by_notation ->
           { VernacCanonical CAst.(make ~loc @@ ByNotation ntn) }
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; u = OPT univ_decl; d = def_body ->
           { let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d) }
+          VernacDefinition ((NoDischarge,DefLike Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d) }
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
            { VernacIdentityCoercion (f, s, t) }
