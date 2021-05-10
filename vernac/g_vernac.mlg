@@ -205,7 +205,7 @@ let test_variance_ident =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type
-    record_field decl_notations fix_definition ident_decl univ_decl;
+    record_field decl_notations fix_definition ident_decl univ_decl inductive_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
