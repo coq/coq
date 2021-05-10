@@ -25,6 +25,7 @@ module Vernac_ :
     val command : vernac_expr Entry.t
     val syntax : vernac_expr Entry.t
     val vernac_control : vernac_control Entry.t
+    val inductive_definition : (inductive_expr * decl_notation list) Entry.t
     val fix_definition : fixpoint_expr Entry.t
     val rec_definition : fixpoint_expr Entry.t
       [@@deprecated "Deprecated in 8.13; use 'fix_definition' instead"]
