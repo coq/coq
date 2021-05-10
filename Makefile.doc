@@ -253,6 +253,7 @@ $(DOC_STDLIB_DIR)/FullLibrary.pdf: $(DOCCOMMON) $(DOC_STDLIB_DIR)/FullLibrary.co
 
 # Due to Windows paths not starting with / we can't just set the
 # default to / and always use --destdir
+DESTDIR ?=
 ifeq ($(DESTDIR),)
 DOCDIRDEST=$(DOCDIR)
 else
