@@ -268,13 +268,14 @@ let cast_proof_entry e =
     const_entry_type = e.proof_entry_type;
     const_entry_universes = univs;
     const_entry_inline_code = e.proof_entry_inline_code;
+    const_entry_opaque = e.proof_entry_opaque;
   }
 
 type ('a, 'b) effect_entry =
 | EffectEntry : (private_constants, private_constants Entries.const_entry_body) effect_entry
 | PureEntry : (unit, Constr.constr) effect_entry
 
-let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proof_entry) : b Entries.opaque_entry =
+let cast_delayed_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proof_entry) : b Entries.delayed_entry =
   let typ = match e.proof_entry_type with
   | None -> assert false
   | Some typ -> typ
@@ -317,11 +318,11 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
     body, univs
   | EffectEntry -> e.proof_entry_body, e.proof_entry_universes
   in
-  { Entries.opaque_entry_body = body;
-    opaque_entry_secctx = secctx;
-    opaque_entry_feedback = e.proof_entry_feedback;
-    opaque_entry_type = typ;
-    opaque_entry_universes = univs;
+  { Entries.delayed_entry_body = body;
+    delayed_entry_secctx = secctx;
+    delayed_entry_feedback = e.proof_entry_feedback;
+    delayed_entry_type = typ;
+    delayed_entry_universes = univs;
   }
 
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
@@ -336,7 +337,7 @@ let define_constant ~name ~typing_flags cd =
   let decl, unsafe = match cd with
     | DefinitionEntry de ->
       (* We deal with side effects *)
-      if not de.proof_entry_opaque then
+      if not de.proof_entry_opaque || Option.is_empty de.proof_entry_type then
         let body, eff = Future.force de.proof_entry_body in
         (* This globally defines the side-effects in the environment
            and registers their libobjects. *)
@@ -348,8 +349,8 @@ let define_constant ~name ~typing_flags cd =
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain de.proof_entry_body map in
         let de = { de with proof_entry_body = body } in
-        let de = cast_opaque_proof_entry EffectEntry de in
-        OpaqueEntry de, false
+        let de = cast_delayed_proof_entry EffectEntry de in
+        DelayedEntry de, false
     | ParameterEntry e ->
       ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict())
     | PrimitiveEntry e ->
@@ -372,7 +373,7 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
       if not de.proof_entry_opaque then
         DefinitionEff (cast_proof_entry de)
       else
-        let de = cast_opaque_proof_entry PureEntry de in
+        let de = cast_delayed_proof_entry PureEntry de in
         OpaqueEff de
     in
     Global.add_private_constant name de

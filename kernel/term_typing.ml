@@ -147,9 +147,10 @@ let infer_declaration env (dcl : constant_entry) =
       cook_relevance = r;
       cook_inline = false;
       cook_context = ctx;
-    }
+    },
+    false
 
-  | PrimitiveEntry entry -> infer_primitive env entry
+  | PrimitiveEntry entry -> infer_primitive env entry, false
 
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
@@ -177,7 +178,7 @@ let infer_declaration env (dcl : constant_entry) =
       in
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
       let def = Def (Mod_subst.from_val def) in
-        feedback_completion_typecheck feedback_id;
+      feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
         cook_type = typ;
@@ -185,16 +186,17 @@ let infer_declaration env (dcl : constant_entry) =
         cook_relevance = Relevanceops.relevance_of_term env j.uj_val;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
-      }
+      },
+      c.const_entry_opaque
 
-(** Definition is opaque (Qed), so we delay the typing of its body. *)
-let infer_opaque env = function
-  | ({ opaque_entry_type = typ;
-                       opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
+(** Definition is delayed (ends with Qed), so we delay the typing of its body. *)
+let infer_delayed env = function
+  | ({ delayed_entry_type = typ;
+                       delayed_entry_universes = Monomorphic_entry univs; _ } as c) ->
       let env = push_context_set ~strict:true univs env in
-      let { opaque_entry_feedback = feedback_id; _ } = c in
+      let { delayed_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
-      let context = MonoTyCtx (env, tyj, c.opaque_entry_secctx, feedback_id) in
+      let context = MonoTyCtx (env, tyj, c.delayed_entry_secctx, feedback_id) in
       let def = OpaqueDef () in
       {
         Cooking.cook_body = def;
@@ -202,17 +204,17 @@ let infer_opaque env = function
         cook_universes = Monomorphic univs;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = false;
-        cook_context = Some c.opaque_entry_secctx;
+        cook_context = Some c.delayed_entry_secctx;
       }, context
 
-  | ({ opaque_entry_type = typ;
-                       opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
-      let { opaque_entry_feedback = feedback_id; _ } = c in
+  | ({ delayed_entry_type = typ;
+                       delayed_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
+      let { delayed_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
       let sbst, auctx = abstract_universes nas uctx in
       let usubst = make_instance_subst sbst in
-      let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx, feedback_id) in
+      let context = PolyTyCtx (env, tj, usubst, auctx, c.delayed_entry_secctx, feedback_id) in
       let def = OpaqueDef () in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
       {
@@ -221,7 +223,7 @@ let infer_opaque env = function
         cook_universes = Polymorphic auctx;
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
         cook_inline = false;
-        cook_context = Some c.opaque_entry_secctx;
+        cook_context = Some c.delayed_entry_secctx;
       }, context
 
 let check_section_variables env declared_set typ body =
@@ -244,7 +246,7 @@ let check_section_variables env declared_set typ body =
         str "to" ++ fnl () ++
         str "Proof using " ++ inferred_vars)
 
-let build_constant_declaration env result =
+let build_constant_declaration env (result, opacify) =
   let open Cooking in
   let typ = result.cook_type in
   (* We try to postpone the computation of used section variables *)
@@ -281,8 +283,10 @@ let build_constant_declaration env result =
   let univs = result.cook_universes in
   let hyps = List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env) in
   let tps =
-    let res = Vmbytegen.compile_constant_body ~fail_on_error:false env univs def in
-    Option.map Vmemitcodes.from_val res
+    if opacify then None
+    else
+      let res = Vmbytegen.compile_constant_body ~fail_on_error:false env univs def in
+      Option.map Vmemitcodes.from_val res
   in
   { const_hyps = hyps;
     const_body = def;
@@ -323,14 +327,14 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   def, Opaqueproof.PrivatePolymorphic (AUContext.size auctx, private_univs)
 
 (*s Global and local constant declaration. *)
-
 let translate_constant env _kn ce =
-  build_constant_declaration env
-    (infer_declaration env ce)
+  let def_opacify = infer_declaration env ce in
+  let cb = build_constant_declaration env def_opacify in
+  cb, snd def_opacify
 
-let translate_opaque env _kn ce =
-  let def, ctx = infer_opaque env ce in
-  build_constant_declaration env def, ctx
+let translate_delayed env _kn ce =
+  let def, ctx = infer_delayed env ce in
+  build_constant_declaration env (def,true), ctx
 
 let translate_local_assum env t =
   let j = Typeops.infer env t in
@@ -364,8 +368,9 @@ let translate_local_def env _id centry =
     const_entry_type = centry.secdef_type;
     const_entry_universes = Monomorphic_entry ContextSet.empty;
     const_entry_inline_code = false;
+    const_entry_opaque = false;
   } in
-  let decl = infer_declaration env (DefinitionEntry centry) in
+  let decl, _ = infer_declaration env (DefinitionEntry centry) in
   let typ = decl.cook_type in
   let () = match decl.cook_universes with
   | Monomorphic ctx -> assert (ContextSet.is_empty ctx)

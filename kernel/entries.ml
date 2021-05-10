@@ -69,7 +69,9 @@ type definition_entry = {
   const_entry_feedback : Stateid.t option;
   const_entry_type : types option;
   const_entry_universes : universes_entry;
-  const_entry_inline_code : bool }
+  const_entry_inline_code : bool;
+  const_entry_opaque : bool;
+}
 
 type section_def_entry = {
   secdef_body : constr;
@@ -78,14 +80,14 @@ type section_def_entry = {
   secdef_type : types option;
 }
 
-type 'a opaque_entry = {
-  opaque_entry_body   : 'a;
+type 'a delayed_entry = {
+  delayed_entry_body   : 'a;
   (* List of section variables *)
-  opaque_entry_secctx : Id.Set.t;
+  delayed_entry_secctx : Id.Set.t;
   (* State id on which the completion of type checking is reported *)
-  opaque_entry_feedback : Stateid.t option;
-  opaque_entry_type        : types;
-  opaque_entry_universes   : universes_entry;
+  delayed_entry_feedback : Stateid.t option;
+  delayed_entry_type        : types;
+  delayed_entry_universes   : universes_entry;
 }
 
 type inline = int option (* inlining level, None for no inlining *)
