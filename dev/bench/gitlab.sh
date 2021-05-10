@@ -286,7 +286,7 @@ create_opam() {
     for package in coq-core coq-stdlib coq; do
         _RES=0
         /usr/bin/time -o "$log_dir/$package.$RUNNER.1.time" --format="%U %M %F" \
-                      perf stat -e instructions:u,cycles:u -o "$log_dir/$package.$RUNNER.1.perf" \
+                      perf stat -e instructions:u,cycles:u,cache-references:u,cache-misses:u -o "$log_dir/$package.$RUNNER.1.perf" \
                       opam pin add -y -b -j "$number_of_processors" --kind=path $package.dev . \
                       3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
                       4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
@@ -375,7 +375,7 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         for iteration in $(seq $num_of_iterations); do
             _RES=0
             /usr/bin/time -o "$log_dir/$coq_opam_package.$RUNNER.$iteration.time" --format="%U %M %F" \
-                 perf stat -e instructions:u,cycles:u -o "$log_dir/$coq_opam_package.$RUNNER.$iteration.perf" \
+                 perf stat -e instructions:u,cycles:u,cache-references:u,cache-misses:u -o "$log_dir/$coq_opam_package.$RUNNER.$iteration.perf" \
                     opam install -v -b -j1 $coq_opam_package \
                      3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
                      4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
