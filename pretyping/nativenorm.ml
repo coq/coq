@@ -469,10 +469,18 @@ let start_profiler_linux profile_fn =
       [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int coq_pid |]
       Unix.stdin dev_null dev_null
   in
-  (* doesn't seem to be a way to test whether process creation succeeded *)
+  (* doesn't seem to be a way to test whether process creation succeeded
+     (create_process doesn't raise until OCaml 4.12.0) *)
   debug_native_compiler (fun () ->
     Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
   Some profiler_pid
+
+let start_profiler_linux fn =
+  try start_profiler_linux fn
+  with Unix.Unix_error _ as e ->
+    Feedback.msg_info
+      Pp.(str "Could not start native code profiler: " ++ str (Printexc.to_string e));
+    None
 
 (* kill profiler via SIGINT *)
 let stop_profiler_linux m_pid =
