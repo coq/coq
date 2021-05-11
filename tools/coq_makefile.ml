@@ -266,6 +266,17 @@ let generate_conf_doc oc { defs; q_includes; r_includes } =
     else String.concat Filename.dir_sep gcd in
   Printf.fprintf oc "COQMF_INSTALLCOQDOCROOT = %s\n" (quote root)
 
+let generate_conf_native oc native_compiler =
+  section oc "Native compiler.";
+  let flag = match native_compiler with
+  | None -> ""
+  | Some NativeYes -> "yes"
+  | Some NativeNo -> "no"
+  | Some NativeOndemand -> "ondemand"
+  in
+  Printf.fprintf oc "COQMF_COQPROJECTNATIVEFLAG = %s\n" flag
+
+
 let generate_conf_defs oc { defs; extra_args } =
   section oc "Extra variables.";
   List.iter (forget_source > (fun (k,v) -> Printf.fprintf oc "%s = %s\n" k v)) defs;
@@ -278,6 +289,7 @@ let generate_conf oc project args  =
   generate_conf_files oc project;
   generate_conf_includes oc project;
   generate_conf_coq_config oc;
+  generate_conf_native oc project.native_compiler;
   generate_conf_defs oc project;
   generate_conf_doc oc project;
   generate_conf_extra_target oc project.extra_targets;
@@ -340,6 +352,14 @@ let check_overlapping_include { q_includes; r_includes } =
   in
     aux (q_includes @ r_includes)
 ;;
+
+let check_native_compiler = function
+| None -> ()
+| Some flag ->
+  match Coq_config.native_compiler, flag with
+  | Coq_config.NativeOff, (NativeYes | NativeOndemand) ->
+    eprintf "Warning: native compilation is globally deactivated by the configure flag"
+  | _ -> ()
 
 let chop_prefix p f =
   let len_p = String.length p in
@@ -433,6 +453,8 @@ let _ =
   end;
 
   check_overlapping_include project;
+
+  check_native_compiler project.native_compiler;
 
   Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
 

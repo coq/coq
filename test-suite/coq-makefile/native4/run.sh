@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+NONATIVECOMP=$(grep "let native_compiler = NativeOff" ../../../config/coq_config.ml)||true
+if [[ $(which ocamlopt) && ! $NONATIVECOMP ]]; then
+
+. ../template/init.sh
+
+# Shoud override the _CoqProject flag "-native-compiler no"
+export COQEXTRAFLAGS="-native-compiler yes"
+
+coq_makefile -f _CoqProject -o Makefile
+cat Makefile.conf
+make
+make html mlihtml
+make install DSTROOT="$PWD/tmp"
+#make debug
+(cd "$(find tmp -name user-contrib)" && find .) | sort > actual
+sort > desired <<EOT
+.
+./test
+./test/test.glob
+./test/test_plugin.cmi
+./test/test_plugin.cmx
+./test/test_plugin.cmxa
+./test/test_plugin.cmxs
+./test/test.v
+./test/test.vo
+./test/.coq-native
+./test/.coq-native/Ntest_test.cmi
+./test/.coq-native/Ntest_test.cmx
+./test/.coq-native/Ntest_test.cmxs
+EOT
+exec diff -u desired actual
+
+fi
+exit 0 # test skipped
