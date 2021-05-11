@@ -70,7 +70,7 @@ A simple example of a ``_CoqProject`` file follows:
     src/bazaux.ml
     src/qux_plugin.mlpack
 
-where options ``-R``, ``-Q`` and ``-I`` are natively recognized, as well as
+where options ``-R``, ``-Q``, ``-I`` and ``-native-compiler`` are natively recognized, as well as
 file names. The lines of the form ``-arg foo`` are used in order to tell
 to literally pass an argument ``foo`` to ``coqc``: in the
 example, this allows to pass the two-word option ``-w all`` (see
@@ -79,6 +79,9 @@ example, this allows to pass the two-word option ``-w all`` (see
 Note that it is mandatory to specify a ``-R/-Q`` flag for your
 project, so its modules are properly qualified. Omitting it will
 generate object files that are not usable except for expert cases.
+
+The ``-native-compiler`` option given in the ``_CoqProject`` file will override
+the global one passed at configure time.
 
 CoqIDE, Proof-General and VSCoq all
 understand ``_CoqProject`` files and can be used to invoke Coq with the desired options.
