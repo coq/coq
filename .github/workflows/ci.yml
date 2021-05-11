@@ -34,8 +34,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          brew tap discoteq/discoteq
-          brew install gnu-time opam gtksourceview3 adwaita-icon-theme flock
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme
           pip3 install macpack
 
       - name: Install OCaml dependencies
