@@ -432,7 +432,7 @@ Section Elts.
     - intros [|n]; simpl.
       * left; auto.
       * destruct (IHl n); auto.
-  Qed.
+  Defined.
 
   Lemma nth_S_cons :
     forall (n:nat) (l:list A) (d a:A),

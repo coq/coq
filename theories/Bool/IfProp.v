@@ -48,4 +48,4 @@ Lemma IfProp_sum : forall (A B:Prop) (b:bool), IfProp A B b -> {A} + {B}.
 intros A B b; destruct b; intro H.
 - left; inversion H; auto with bool.
 - right; inversion H; auto with bool.
-Qed.
+Defined.

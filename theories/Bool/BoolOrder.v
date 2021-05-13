@@ -58,7 +58,7 @@ Lemma lt_le_incl : forall b1 b2, b1 < b2 -> b1 <= b2.
 Proof. destr_bool; auto. Qed.
 
 Lemma le_lteq_dec : forall b1 b2, b1 <= b2 -> { b1 < b2 } + { b1 = b2 }.
-Proof. destr_bool; auto. Qed.
+Proof. destr_bool; auto. Defined.
 
 Lemma le_lteq : forall b1 b2, b1 <= b2 <-> b1 < b2 \/ b1 = b2.
 Proof. destr_bool; intuition. Qed.

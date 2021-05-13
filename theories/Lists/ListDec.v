@@ -65,7 +65,7 @@ Proof using A dec.
      * left. destruct 1; subst; auto.
      * right. contradict IC. intros x H. apply IC; now right.
    + right. contradict IN. apply IN; now left.
-Qed.
+Defined.
 
 Lemma NoDup_dec (l:list A) : {NoDup l}+{~NoDup l}.
 Proof using A dec.
@@ -76,7 +76,7 @@ Proof using A dec.
    + destruct IH.
      * left. now constructor.
      * right. inversion_clear 1. tauto.
-Qed.
+Defined.
 
 End Dec_in_Type.
 

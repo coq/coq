@@ -25,12 +25,16 @@ Definition le_or_le_S := le_le_S_dec.
 Definition Pcompare := gt_eq_gt_dec.
 
 Lemma le_dec : forall n m, {n <= m} + {m <= n}.
-Proof le_ge_dec.
+Proof.
+  exact le_ge_dec.
+Defined.
 
 Definition lt_or_eq n m := {m > n} + {n = m}.
 
 Lemma le_decide : forall n m, n <= m -> lt_or_eq n m.
-Proof le_lt_eq_dec.
+Proof.
+  exact le_lt_eq_dec.
+Defined.
 
 Lemma le_le_S_eq : forall n m, n <= m -> S n <= m \/ n = m.
 Proof le_lt_or_eq.

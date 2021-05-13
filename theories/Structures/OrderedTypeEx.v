@@ -313,7 +313,7 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   - left. now apply Pos.compare_eq.
   - right. intro. subst y. now rewrite (Pos.compare_refl x) in *.
   - right. intro. subst y. now rewrite (Pos.compare_refl x) in *.
-  Qed.
+  Defined.
 
 End PositiveOrderedTypeBits.
 

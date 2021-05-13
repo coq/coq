@@ -103,7 +103,7 @@ Section first_definitions.
     auto with datatypes.
     right; simpl; unfold not; intros [Hc1| Hc2];
      auto with datatypes.
-  Qed.
+  Defined.
 
   Lemma set_mem_ind :
    forall (B:Type) (P:B -> Prop) (y z:B) (a:A) (x:set),
