@@ -327,7 +327,7 @@ $(VO_OUT_DIR)user-contrib/%.v: user-contrib/%.v | $(VO_OUT_DIR)
 	$(HIDE)cp -a $< $@
 
 $(VO_OUT_DIR)theories/Init/%.vo $(VO_OUT_DIR)theories/Init/%.glob: $(VO_OUT_DIR)theories/Init/%.v $(VO_TOOLS_DEP) | $(VO_OUT_DIR)
-	$(SHOW)'COQCBOOT  $<'
+	$(SHOW)'COQCBOOT  theories/Init/$*.v'
 	$(HIDE)rm -f $(VO_OUT_DIR)theories/Init/$*.glob
 	$(HIDE)mkdir -p $(shell dirname $<)
 	$(HIDE)$(BOOTCOQC) $< -o $@ -noinit -R $(VO_OUT_DIR)theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
@@ -344,7 +344,7 @@ $(VO_OUT_DIR)theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP) | $(VO_OUT_D
 # The general rule for building .vo files :
 
 $(VO_OUT_DIR)%.vo $(VO_OUT_DIR)%.glob: $(VO_OUT_DIR)%.v $(VO_OUT_DIR)theories/Init/Prelude.vo $(VO_TOOLS_DEP) | $(VO_OUT_DIR)
-	$(SHOW)'COQC      $<'
+	$(SHOW)'COQC      $*.v'
 	$(HIDE)rm -f $*.glob
 	$(HIDE)mkdir -p $(shell dirname $<)
 	$(HIDE)$(BOOTCOQC) $< -o $@ $(TIMING_ARG) $(TIMING_EXTRA)
