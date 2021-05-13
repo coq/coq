@@ -1794,3 +1794,7 @@ Lemma Z_eq_mult n m : m = 0 -> m * n = 0.
 Proof.
  intros; now subst.
 Qed.
+
+(** Re-export the notation for those who just [Import BinInt] *)
+Number Notation Z Z.of_num_int Z.to_num_hex_int : hex_Z_scope.
+Number Notation Z Z.of_num_int Z.to_num_int : Z_scope.

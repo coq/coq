@@ -351,6 +351,8 @@ Definition to_hex_int n :=
 
 Definition to_num_int n := Number.IntDecimal (to_int n).
 
+Definition to_num_hex_int n := Number.IntHexadecimal (to_hex_int n).
+
 (** ** Iteration of a function
 
     By convention, iterating a negative number of times is identity.
@@ -668,9 +670,11 @@ Definition lxor a b :=
    | neg a, neg b => of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
  end.
 
+Number Notation Z of_num_int to_num_hex_int : hex_Z_scope.
 Number Notation Z of_num_int to_num_int : Z_scope.
 
 End Z.
 
 (** Re-export the notation for those who just [Import BinIntDef] *)
+Number Notation Z Z.of_num_int Z.to_num_hex_int : hex_Z_scope.
 Number Notation Z Z.of_num_int Z.to_num_int : Z_scope.
