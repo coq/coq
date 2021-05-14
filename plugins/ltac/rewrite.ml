@@ -1930,7 +1930,7 @@ let add_setoid atts binders a aeq t n =
 let make_tactic name =
   let open Tacexpr in
   let tacqid = Libnames.qualid_of_string name in
-  TacArg (CAst.make @@ (TacCall (CAst.make (tacqid, []))))
+  CAst.make @@ TacArg (TacCall (CAst.make (tacqid, [])))
 
 let add_morphism_as_parameter atts m n : unit =
   init_setoid ();

@@ -1312,8 +1312,8 @@ let () =
   let name = { mltac_plugin = "ssrmatching_plugin"; mltac_tactic = "ssrpattern"; } in
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
-    TacFun ([Name (Id.of_string "pattern")],
-      TacML (CAst.make ({ mltac_name = name; mltac_index = 0 }, []))) in
+    CAst.make (TacFun ([Name (Id.of_string "pattern")],
+      CAst.make (TacML ({ mltac_name = name; mltac_index = 0 }, [])))) in
   let obj () =
     Tacenv.register_ltac true false (Id.of_string "ssrpattern") tac in
   Mltop.declare_cache_obj obj "ssrmatching_plugin"

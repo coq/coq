@@ -885,8 +885,8 @@ let ssr_n_tac seed n =
     with Not_found ->
       if n = -1 then fail "The ssreflect library was not loaded"
       else fail ("The tactic "^name^" was not found") in
-  let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
-  Tacinterp.eval_tactic (Tacexpr.TacArg tacexpr)
+  let tacexpr = Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
+  Tacinterp.eval_tactic @@ CAst.make (Tacexpr.TacArg tacexpr)
   end
 
 let donetac n = ssr_n_tac "done" n

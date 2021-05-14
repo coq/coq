@@ -341,7 +341,7 @@ let explain_ltac_call_trace last trace loc =
       quote (Id.print id) ++ strbrk " (bound to " ++
         prtac t ++ str ")"
   | Tacexpr.LtacAtomCall te ->
-      quote (prtac (Tacexpr.TacAtom (CAst.make te)))
+      quote (prtac (CAst.make (Tacexpr.TacAtom te)))
   | Tacexpr.LtacConstrInterp (c, { Ltac_pretype.ltac_constrs = vars }) ->
     (* XXX: This hooks into the CErrors's additional error info API so
        it is tricky to provide the right env for now. *)

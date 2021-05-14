@@ -177,8 +177,8 @@ constraint 'a = <
     't : terms, 'p : patterns, 'c : constants, 'i : inductive,
     'r : ltac refs, 'n : idents, 'l : levels *)
 
-and 'a gen_tactic_expr =
-  | TacAtom of ('a gen_atomic_tactic_expr) CAst.t
+and 'a gen_tactic_expr_r =
+  | TacAtom of 'a gen_atomic_tactic_expr
   | TacThen of
       'a gen_tactic_expr *
       'a gen_tactic_expr
@@ -233,12 +233,26 @@ and 'a gen_tactic_expr =
   | TacMatchGoal of lazy_flag * direction_flag *
       ('p,'a gen_tactic_expr) match_rule list
   | TacFun of 'a gen_tactic_fun_ast
-  | TacArg of 'a gen_tactic_arg CAst.t
+  | TacArg of 'a gen_tactic_arg
   | TacSelect of Goal_select.t * 'a gen_tactic_expr
   (* For ML extensions *)
-  | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) CAst.t
+  | TacML of ml_tactic_entry * 'a gen_tactic_arg list
   (* For syntax extensions *)
-  | TacAlias of (KerName.t * 'a gen_tactic_arg list) CAst.t
+  | TacAlias of KerName.t * 'a gen_tactic_arg list
+
+constraint 'a = <
+    term:'t;
+    dterm: 'dtrm;
+    pattern:'p;
+    constant:'c;
+    reference:'r;
+    name:'n;
+    tacexpr:'tacexpr;
+    level:'l
+>
+
+and 'a gen_tactic_expr =
+  'a gen_tactic_expr_r CAst.t
 
 constraint 'a = <
     term:'t;

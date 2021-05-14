@@ -308,7 +308,7 @@ open Tacexpr
 let initial_atomic () =
   let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
   let iter (s, t) =
-    let body = TacAtom (CAst.make t) in
+    let body = CAst.make (TacAtom t) in
     Tacenv.register_ltac false false (Names.Id.of_string s) body
   in
   let () = List.iter iter
@@ -321,9 +321,9 @@ let initial_atomic () =
   in
   let iter (s, t) = Tacenv.register_ltac false false (Names.Id.of_string s) t in
   List.iter iter
-      [ "idtac",TacId [];
-        "fail", TacFail(TacLocal,ArgArg 0,[]);
-        "fresh", TacArg(CAst.make @@ TacFreshId [])
+      [ "idtac", CAst.make (TacId []);
+        "fail", CAst.make (TacFail (TacLocal,ArgArg 0,[]));
+        "fresh", CAst.make @@ TacArg(TacFreshId [])
       ]
 
 let () = Mltop.declare_cache_obj initial_atomic "ltac_plugin"
@@ -354,8 +354,10 @@ let initial_tacticals () =
   let varn n = Reference (ArgVar (CAst.make (idn n))) in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
   List.iter iter [
-    "first", TacFun ([Name (idn 0)], TacML (CAst.make (initial_entry "first", [varn 0])));
-    "solve", TacFun ([Name (idn 0)], TacML (CAst.make (initial_entry "solve", [varn 0])));
+    "first", CAst.make (TacFun
+        ([Name (idn 0)], CAst.make (TacML (initial_entry "first", [varn 0]))));
+    "solve", CAst.make (TacFun
+        ([Name (idn 0)], CAst.make (TacML (initial_entry "solve", [varn 0]))));
   ]
 
 let () = Mltop.declare_cache_obj initial_tacticals "ltac_plugin"
