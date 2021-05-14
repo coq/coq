@@ -75,7 +75,7 @@ mkdir "$log_dir"
 
 if [ ! -z "$BENCH_DEBUG" ]
 then
-   echo "DEBUG: ocaml -version = `ocaml -version`"
+   echo "DEBUG: ocaml -version = $(ocaml -version)"
    echo "DEBUG: working_dir = $working_dir"
    echo "DEBUG: new_ocaml_switch = $new_ocaml_switch"
    echo "DEBUG: new_coq_repository = $new_coq_repository"
@@ -218,7 +218,6 @@ git remote add old_coq_repository "$old_coq_repository"
 git fetch -q "$old_coq_repository"
 git checkout -q $new_coq_commit
 
-official_coq_branch=master
 coq_opam_version=dev
 
 # --------------------------------------------------------------------------------
@@ -433,13 +432,13 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     # ever there is a package that uses some different naming scheme.
     new_base_path=$new_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
     old_base_path=$old_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
-    for vo in `cd $new_opam_root/$new_base_path/; find -name '*.vo'`; do
+    for vo in $(cd $new_opam_root/$new_base_path/; find . -name '*.vo'); do
         if [ -e $old_opam_root/$old_base_path/$vo ]; then
           echo "$coq_opam_package/$vo $(stat -c%s $old_opam_root/$old_base_path/$vo) $(stat -c%s $new_opam_root/$new_base_path/$vo)" >> "$log_dir/vosize.log"
         fi
-        if [ -e $old_opam_root/$old_base_path/${vo%%o}.timing -a \
-                -e $new_opam_root/$new_base_path/${vo%%o}.timing ]; then
-            mkdir -p $working_dir/html/$coq_opam_package/`dirname $vo`/
+        if [ -e $old_opam_root/$old_base_path/${vo%%o}.timing ] && \
+               [ -e $new_opam_root/$new_base_path/${vo%%o}.timing ]; then
+            mkdir -p $working_dir/html/$coq_opam_package/$(dirname $vo)/
             $program_path/timelog2html $new_opam_root/$new_base_path/${vo%%o} \
                                        $old_opam_root/$old_base_path/${vo%%o}.timing \
                                        $new_opam_root/$new_base_path/${vo%%o}.timing > \
@@ -476,31 +475,27 @@ if [ -z "$installable_coq_opam_packages" ]; then
     printf "\n\nINFO: failed to install: $sorted_coq_opam_packages"
     coqbot_update_comment "done" "" "$sorted_coq_opam_packages"
     exit 1
-else
-    echo "DEBUG: $program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
-    rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
-    echo "${rendered_results}"
+fi
 
-    echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
+echo "DEBUG: $program_path/render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
+rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
+echo "${rendered_results}"
 
-    cd "$coq_dir"
-    echo INFO: Old Coq version
-    git log -n 1 "$old_coq_commit"
-    echo INFO: New Coq version
-    git log -n 1 "$new_coq_commit"
+echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
 
-    not_installable_coq_opam_packages=`comm -23 <(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g'`
+cd "$coq_dir"
+echo INFO: Old Coq version
+git log -n 1 "$old_coq_commit"
+echo INFO: New Coq version
+git log -n 1 "$new_coq_commit"
 
-    coqbot_update_comment "done" "${rendered_results}" "${not_installable_coq_opam_packages}"
+not_installable_coq_opam_packages=$(comm -23 <(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g')
 
-    exit_code=0
+coqbot_update_comment "done" "${rendered_results}" "${not_installable_coq_opam_packages}"
 
-    if [ ! -z "$not_installable_coq_opam_packages" ]; then
-        # Tell the user that some of the provided OPAM-package(s)
-        # is/are not installable.
-        printf '\n\nINFO: failed to install %s\n' "$not_installable_coq_opam_packages"
-        exit_code=1
-    fi
-
-    exit 0
+if [ -n "$not_installable_coq_opam_packages" ]; then
+    # Tell the user that some of the provided OPAM-package(s)
+    # is/are not installable.
+    printf '\n\nINFO: failed to install %s\n' "$not_installable_coq_opam_packages"
+    exit 1
 fi
