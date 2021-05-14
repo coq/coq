@@ -220,6 +220,57 @@ git checkout -q $new_coq_commit
 
 coq_opam_version=dev
 
+zulip_post=""
+if [[ $ZULIP_BENCH_BOT ]]; then
+    zulip_header="Bench at $CI_JOB_URL
+For packages $coq_opam_packages
+"
+
+    # 24008 is the "github notifications" stream
+    resp=$(curl -sSX POST https://coq.zulipchat.com/api/v1/messages \
+    -u "$ZULIP_BENCH_BOT" \
+    --data-urlencode type=stream \
+    --data-urlencode to='240008' \
+    --data-urlencode subject='Bench Notifications' \
+    --data-urlencode content="$zulip_header")
+
+    zulip_post=$(echo "$resp" | jq .id)
+    case "$zulip_post" in
+        ''|*[!0-9]*) # not an int
+            echo "Failed to post to zulip: $resp"
+            zulip_post=""
+            ;;
+    esac
+fi
+
+zulip_edit() {
+    ending=$1
+    if [[ $rendered_results ]]; then
+        msg="$zulip_header
+
+~~~
+$rendered_results
+~~~
+
+$ending
+"
+    else
+        msg="$zulip_header
+
+$ending
+"
+    fi
+    curl -sSX PATCH https://coq.zulipchat.com/api/v1/messages/"$zulip_post" \
+         -u "$ZULIP_BENCH_BOT" \
+         --data-urlencode content="$msg" >/dev/null
+}
+zulip_autofail() {
+    code=$?
+    com=$BASH_COMMAND
+    zulip_edit "Failed '$com' with exit code $code."
+}
+if [[ $zulip_post ]]; then trap zulip_autofail ERR; fi
+
 # --------------------------------------------------------------------------------
 
 new_opam_root="$working_dir/opam.NEW"
@@ -294,6 +345,7 @@ create_opam() {
             echo "$package ($RUNNER) installed successfully"
         else
             echo "ERROR: \"opam install $package.$coq_opam_version\" has failed (for the $RUNNER commit = $COQ_HASH_LONG)."
+            zulip_edit "Bench failed: could not install $package ($RUNNER)."
             exit 1
         fi
 
@@ -423,6 +475,7 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         echo "${rendered_results}"
         # update the comment
         coqbot_update_comment "" "${rendered_results}" ""
+        zulip_edit "Benching continues..."
     fi
 
     # Generate HTML report for LAST run
@@ -497,5 +550,9 @@ if [ -n "$not_installable_coq_opam_packages" ]; then
     # Tell the user that some of the provided OPAM-package(s)
     # is/are not installable.
     printf '\n\nINFO: failed to install %s\n' "$not_installable_coq_opam_packages"
+    zulip_edit "Bench complete, failed to install packages:
+$not_installable_coq_opam_packages"
     exit 1
 fi
+
+zulip_edit "Bench complete: all packages successfully installed."
