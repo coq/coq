@@ -141,7 +141,7 @@ module Table :
 sig
   type header = string
   type row = string list list
-  val print : header list -> row list -> string
+  val print : header list -> row -> row list -> string
 end =
 struct
   type header = string
@@ -162,13 +162,6 @@ struct
     in
     let ls = List.map split ls in
     List.split ls
-
-  let rec last = function
-  | [] -> assert false
-  | [x] -> [], x
-  | x :: l ->
-    let (l, y) = last l in
-    (x :: l, y)
 
   let justify n s =
     let len = String.length s in
@@ -224,7 +217,7 @@ struct
 
   (* Invariant : all rows must have the same shape *)
 
-  let print (headers : header list) (rows : row list) =
+  let print (headers : header list) (top : row) (rows : row list) =
     (* Sanitize input *)
     let ncolums = List.length headers in
     let shape = ref None in
@@ -254,7 +247,7 @@ struct
         let data = match !data with None -> [] | Some s -> s in
         data :: ans
     in
-    let layout = layout ncolums rows in
+    let layout = layout ncolums (top::rows) in
     let map hd shape =
       let data_size = match shape with
       | [] -> 0
@@ -265,17 +258,16 @@ struct
     let col_size = List.map2 map headers layout in
     (* Justify the data *)
     let headers = List.map2 justify col_size headers in
+    let top = List.map2 justify col_size (List.map2 justify_row layout top) in
     let rows = List.map (fun row -> List.map2 justify col_size (List.map2 justify_row layout row)) rows in
     (* Print the table *)
-    let rows, last = last rows in
-    let sep = print_separator `Mid col_size in
-    let rows = List.concat @@ List.map (fun r -> [print_row r; sep]) rows in
     let lines =
       print_separator `Top col_size ::
       print_row headers ::
       print_blank col_size ::
-      rows @
-      print_row last ::
+      print_row top ::
+      print_separator `Mid col_size ::
+      List.map print_row rows @
       print_separator `Bot col_size ::
       []
     in
@@ -419,7 +411,7 @@ coq_opam_packages
     let descr = ["NEW"; "OLD"; "PDIFF"] in
     let top = [ [ "package_name" ]; descr; descr; descr; descr; descr ] in
 
-    printf "%s%!" (Table.print headers (top :: measurements))
+    printf "%s%!" (Table.print headers top measurements)
 ;
 
 (* ejgallego: disable this as it is very verbose and brings up little info in the log. *)
