@@ -275,7 +275,13 @@ let read_sentence ~state input =
        - if a Ctrl-C arrives after a valid start of sentence, do not
          discard_to_dot since Ctrl-C is the last read character and
          there is nothing left to discard. *)
-    if fst reraise <> Sys.Break then discard_to_dot ();
+    (match fst reraise with
+     | Sys.Break -> Pp.pp_with !Topfmt.err_ft (Pp.fnl ())
+     | _ ->
+        try discard_to_dot ()
+        with Sys.Break ->
+          Pp.pp_with !Topfmt.err_ft (Pp.fnl ());
+          raise Sys.Break);
     (* The caller of read_sentence does the error printing now, this
        should be re-enabled once we rely on the feedback error
        printer again *)
