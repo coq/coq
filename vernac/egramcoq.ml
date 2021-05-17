@@ -89,14 +89,16 @@ let error_level_assoc p current expected =
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative.")
 
+type position = NewFirst | NewAfter of int | ReuseFirst | ReuseLevel of int
+
 let create_pos = function
-  | None -> Gramlib.Gramext.First
-  | Some lev -> Gramlib.Gramext.After (constr_level lev)
+  | None -> NewFirst
+  | Some lev -> NewAfter lev
 
 let find_position_gen current ensure assoc lev =
   match lev with
   | None ->
-    current, (None, None, None, None)
+    current, (ReuseFirst, None, None, None)
   | Some n ->
     let after = ref None in
     let init = ref None in
@@ -105,7 +107,7 @@ let find_position_gen current ensure assoc lev =
       | (p,a,reinit)::l when Int.equal p n ->
         if reinit then
           let a' = create_assoc assoc in
-          (init := Some (a',create_pos q); (p,a',false)::l)
+          (init := Some (a', q); (p,a',false)::l)
         else if admissible_assoc (a,assoc) then
           raise Exit
         else
@@ -118,16 +120,16 @@ let find_position_gen current ensure assoc lev =
       begin match !init with
         | None ->
           (* Create the entry *)
-          updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
+          updated, (create_pos !after, Some assoc, Some (constr_level n), None)
         | _ ->
           (* The reinit flag has been updated *)
-          updated, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, !init)
+          updated, (ReuseLevel n, None, None, !init)
       end
     with
     (* Nothing has changed *)
       Exit ->
       (* Just inherit the existing associativity and name (None) *)
-      current, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, None)
+      current, (ReuseLevel n, None, None, None)
 
 let rec list_mem_assoc_triple x = function
   | [] -> false
@@ -517,11 +519,18 @@ let target_to_bool : type r. r target -> bool = function
 | ForPattern -> true
 
 let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
-  let empty = { pos; data = [(name, p4assoc, [])] } in
+  let empty = match pos with
+  | ReuseFirst -> Pcoq.Reuse (None, [])
+  | ReuseLevel n -> Pcoq.Reuse (Some (constr_level n), [])
+  | NewFirst -> Pcoq.Fresh (Gramlib.Gramext.First, [(name, p4assoc, [])])
+  | NewAfter n -> Pcoq.Fresh (Gramlib.Gramext.After (constr_level n), [(name, p4assoc, [])])
+  in
   match reinit with
   | None ->
     ExtendRule (target_entry where forpat, empty)
-  | Some reinit ->
+  | Some (assoc, pos) ->
+    let pos = match pos with None -> Gramlib.Gramext.First | Some n -> Gramlib.Gramext.After (constr_level n) in
+    let reinit = (assoc, pos) in
     ExtendRuleReinit (target_entry where forpat, reinit, empty)
 
 let different_levels (custom,opt_level) (custom',string_level) =
@@ -575,12 +584,20 @@ let extend_constr state forpat ng =
         | MayRecRNo symbs -> Pcoq.Production.make symbs act
         | MayRecRMay symbs -> Pcoq.Production.make symbs act
       in
-      name, p4assoc, [r] in
+      let rule = name, p4assoc, [r] in
+      match pos with
+      | NewFirst -> Pcoq.Fresh (Gramlib.Gramext.First, [rule])
+      | NewAfter n -> Pcoq.Fresh (Gramlib.Gramext.After (constr_level n), [rule])
+      | ReuseFirst -> Pcoq.Reuse (None, [r])
+      | ReuseLevel n -> Pcoq.Reuse (Some (constr_level n), [r])
+    in
     let r = match reinit with
       | None ->
-        ExtendRule (entry, { pos; data = [rule]})
-      | Some reinit ->
-        ExtendRuleReinit (entry, reinit, { pos; data = [rule]})
+        ExtendRule (entry, rule)
+      | Some (assoc, pos) ->
+        let pos = match pos with None -> Gramlib.Gramext.First | Some n -> Gramlib.Gramext.After (constr_level n) in
+        let reinit = (assoc, pos) in
+        ExtendRuleReinit (entry, reinit, rule)
     in
     (accu @ empty_rules @ [r], state)
   in

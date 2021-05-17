@@ -76,7 +76,7 @@ let ssrtermkind = Pcoq.Entry.(of_parser "ssrtermkind" { parser_fun = input_ssrte
 
 GRAMMAR EXTEND Gram
   GLOBAL: cpattern;
-  cpattern: [[ k = ssrtermkind; c = constr -> {
+  cpattern: TOP [[ k = ssrtermkind; c = constr -> {
     let pattern = mk_term k c None in
     if loc_of_cpattern pattern <> Some loc && k = InParens
     then mk_term Cpattern c None
@@ -95,7 +95,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: lcpattern;
-  lcpattern: [[ k = ssrtermkind; c = lconstr -> {
+  lcpattern: TOP [[ k = ssrtermkind; c = lconstr -> {
     let pattern = mk_term k c None in
     if loc_of_cpattern pattern <> Some loc && k = InParens
     then mk_term Cpattern c None

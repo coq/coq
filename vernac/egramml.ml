@@ -90,4 +90,8 @@ let extend_vernac_command_grammar s nt gl =
   vernac_exts := (s,gl) :: !vernac_exts;
   let mkact loc l = VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in
-  grammar_extend nt { pos=None; data=[None, None, rules]}
+  if Pcoq.Entry.is_empty nt then
+    (* Small hack to tolerate empty entries in VERNAC { ... } EXTEND *)
+    grammar_extend nt (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules]))
+  else
+    grammar_extend nt (Pcoq.Reuse (None, rules))

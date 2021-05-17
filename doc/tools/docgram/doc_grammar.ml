@@ -601,17 +601,26 @@ let read_mlg g is_edit ast file level_renames symdef_map =
       in
       let gramext_globals = ref grammar_ext.gramext_globals in
       List.iter (fun ent ->
-          let len = List.length ent.gentry_rules in
+          let pos, rules = match ent.gentry_rules with
+          | GDataFresh (pos, r) -> (pos, r)
+          | GDataReuse (lbl, r) ->
+            let r = {
+              grule_label = lbl;
+              grule_assoc = None;
+              grule_prods = r;
+            } in
+            (None, [r])
+          in
+          let len = List.length rules in
           List.iteri (fun i rule ->
               let nt = ent.gentry_name in
               if not (List.mem nt !gramext_globals) then
                 locals := StringSet.add nt !locals;
               let level = (get_label rule.grule_label) in
               let level = if level <> "" then level else
-                match ent.gentry_pos with
-                | Some Level lev
-                | Some Before lev
-                | Some After lev
+                match pos with
+                | Some (Before lev)
+                | Some (After lev)
                   -> lev
                 (* Looks like FIRST/LAST can be ignored for documenting the current grammar *)
                 | _ -> "" in
@@ -621,7 +630,7 @@ let read_mlg g is_edit ast file level_renames symdef_map =
                 error "Invalid level string `%s` for `%s`\n" level nt;
               let cur_level = nt ^ level in
               let next_level = nt ^
-                  if i+1 < len then (get_label (List.nth ent.gentry_rules (i+1)).grule_label) else "" in
+                  if i+1 < len then (get_label (List.nth rules (i+1)).grule_label) else "" in
               let right_assoc = (rule.grule_assoc = Some RightA) in
 
               if i = 0 && cur_level <> nt && not (StringMap.mem nt !level_renames) then begin
@@ -640,7 +649,7 @@ let read_mlg g is_edit ast file level_renames symdef_map =
               if cur_level <> nt && List.mem nt !gramext_globals then
                 gramext_globals := cur_level :: !gramext_globals;
               add_prods cur_level prods_to_add !gramext_globals)
-            ent.gentry_rules
+            rules
         ) grammar_ext.gramext_entries
 
     | VernacExt vernac_ext ->

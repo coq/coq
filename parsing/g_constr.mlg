@@ -93,7 +93,7 @@ GRAMMAR EXTEND Gram
   Constr.ident:
     [ [ id = Prim.ident -> { id } ] ]
   ;
-  Prim.name:
+  Prim.name: TOP
     [ [ "_" -> { CAst.make ~loc Anonymous } ] ]
   ;
   global:

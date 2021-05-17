@@ -109,20 +109,24 @@ let camlp5_entries = ref EntryDataMap.empty
 
 (** Deletion *)
 
-let grammar_delete e { pos; data } =
+let grammar_delete e r =
+  let data = match r with
+  | Fresh (_, r) -> List.map (fun (_, _, r) -> r) r
+  | Reuse (_, r) -> [r]
+  in
   List.iter
-    (fun (n,ass,lev) ->
+    (fun lev ->
       List.iter (fun pil -> safe_delete_rule e pil) (List.rev lev))
     (List.rev data)
 
-let grammar_delete_reinit e reinit ({ pos; data } as d)=
+let grammar_delete_reinit e reinit d =
   grammar_delete e d;
   let a, ext = reinit in
-  let lev = match pos with
-    | Some (Gramext.Level n) -> n
-    | _ -> assert false
+  let lev = match d with
+  | Reuse (Some n, _) -> n
+  | _ -> assert false
   in
-  let ext = { pos = Some ext; data = [Some lev,Some a,[]] } in
+  let ext = Fresh (ext, [Some lev,Some a,[]]) in
   safe_extend e ext
 
 (** Extension *)
@@ -184,7 +188,7 @@ let eoi_entry en =
   let e = Entry.make ((Entry.name en) ^ "_eoi") in
   let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
-  let ext = { pos = None; data = make_rule [Production.make symbs act] } in
+  let ext = Fresh (Gramlib.Gramext.First, make_rule [Production.make symbs act]) in
   safe_extend e ext;
   e
 
@@ -339,7 +343,7 @@ module Module =
 let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
   let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
   let entry = Entry.make "epsilon" in
-  let ext = { pos = None; data = [None, None, [r]] } in
+  let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
   let () = safe_extend entry ext in
   try Some (parse_string entry "") with _ -> None
 

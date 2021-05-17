@@ -3,10 +3,9 @@
 (* Copyright (c) INRIA 2007-2017 *)
 
 type position =
-    First
+  | First
   | Last
   | Before of string
   | After of string
-  | Level of string
 
 type g_assoc = NonA | RightA | LeftA

@@ -33,6 +33,7 @@ module type S = sig
     val of_parser : string -> 'a parser_fun -> 'a t
     val parse_token_stream : 'a t -> te LStream.t -> 'a
     val print : Format.formatter -> 'a t -> unit
+    val is_empty : 'a t -> bool
   end
 
   module rec Symbol : sig
@@ -82,9 +83,8 @@ module type S = sig
     string option * Gramext.g_assoc option * 'a Production.t list
 
   type 'a extend_statement =
-    { pos : Gramext.position option
-    ; data : 'a single_extend_statement list
-    }
+  | Reuse of string option * 'a Production.t list
+  | Fresh of Gramext.position * 'a single_extend_statement list
 
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
 
@@ -515,68 +515,53 @@ let empty_lev lname assoc =
   Level
   {assoc = assoc; lname = lname; lsuffix = DeadEnd; lprefix = DeadEnd}
 
-let change_lev (Level lev) n lname assoc =
-  let a =
-    match assoc with
-      None -> lev.assoc
-    | Some a ->
-      if a <> lev.assoc then
-        Feedback.msg_warning (Pp.str ("<W> Changing associativity of level \""^n^"\""));
-      a
-  in
-  begin
-    match lname with
-    | Some n ->
-      (* warning disabled; it was in the past *)
-      if false && lname <> lev.lname then
-        Feedback.msg_warning (Pp.str ("<W> Level label \""^n^"\" ignored"))
-    | None -> ()
-  end;
-  Level
-  {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix; lprefix = lev.lprefix}
-
 let err_no_level lev e =
   let msg = sprintf "Grammar.extend: No level labelled \"%s\" in entry \"%s\"" lev e in
   failwith msg
 
-let get_level entry position levs =
+let get_position entry position levs =
   match position with
-    Some First -> [], empty_lev, levs
-  | Some Last -> levs, empty_lev, []
-  | Some (Level n) ->
+    First -> [], levs
+  | Last -> levs, []
+  | Before n ->
       let rec get =
         function
           [] -> err_no_level n entry.ename
         | lev :: levs ->
-            if is_level_labelled n lev then [], change_lev lev n, levs
+            if is_level_labelled n lev then [], lev :: levs
             else
-              let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
+              let (levs1, levs2) = get levs in lev :: levs1, levs2
       in
       get levs
-  | Some (Before n) ->
+  | After n ->
       let rec get =
         function
           [] -> err_no_level n entry.ename
         | lev :: levs ->
-            if is_level_labelled n lev then [], empty_lev, lev :: levs
+            if is_level_labelled n lev then [lev], levs
             else
-              let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
+              let (levs1, levs2) = get levs in lev :: levs1, levs2
       in
       get levs
-  | Some (After n) ->
+
+let get_level entry name levs = match name with
+  | Some n ->
       let rec get =
         function
           [] -> err_no_level n entry.ename
         | lev :: levs ->
-            if is_level_labelled n lev then [lev], empty_lev, levs
+            if is_level_labelled n lev then [], lev, levs
             else
               let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
       in
       get levs
   | None ->
-      match levs with
-        lev :: levs -> [], change_lev lev "<top>", levs
-      | [] -> [], empty_lev, []
+    begin match levs with
+        lev :: levs -> [], lev, levs
+      | [] ->
+        let msg = sprintf "Grammar.extend: No top level in entry \"%s\"" entry.ename in
+        failwith msg
+    end
 
 let change_to_self0 (type s) (type trec) (type a) (entry : s ty_entry) : (s, trec, a) ty_symbol -> (s, a) ty_mayrec_symbol =
   function
@@ -625,7 +610,20 @@ let insert_tokens gram symbols =
   in
   linsert symbols
 
-let levels_of_rules entry position rules =
+type 'a single_extend_statement =
+  string option * Gramext.g_assoc option * 'a ty_production list
+
+type 'a extend_statement =
+| Reuse of string option * 'a ty_production list
+| Fresh of Gramext.position * 'a single_extend_statement list
+
+let add_prod entry lev (TProd (symbols, action)) =
+  let MayRecRule symbols = change_to_self entry symbols in
+  let AnyS (symbols, pf) = get_symbols symbols in
+  insert_tokens egram symbols;
+  insert_level entry.ename symbols pf action lev
+
+let levels_of_rules entry st =
   let elev =
     match entry.edesc with
       Dlevels elev -> elev
@@ -633,26 +631,20 @@ let levels_of_rules entry position rules =
         let msg = sprintf "Grammar.extend: entry not extensible: \"%s\"" entry.ename in
         failwith msg
   in
-  match rules with
-  | [] -> elev
-  | _ ->
-    let (levs1, make_lev, levs2) = get_level entry position elev in
-    let (levs, _) =
-      List.fold_left
-        (fun (levs, make_lev) (lname, assoc, level) ->
-           let lev = make_lev lname assoc in
-           let lev =
-             List.fold_left
-               (fun lev (TProd (symbols, action)) ->
-                  let MayRecRule symbols = change_to_self entry symbols in
-                  let AnyS (symbols, pf) = get_symbols symbols in
-                  insert_tokens egram symbols;
-                  insert_level entry.ename symbols pf action lev)
-               lev level
-           in
-           lev :: levs, empty_lev)
-        ([], make_lev) rules
+  match st with
+  | Reuse (name, []) -> elev
+  | Reuse (name, prods) ->
+    let (levs1, lev, levs2) = get_level entry name elev in
+    let lev = List.fold_left (fun lev prod -> add_prod entry lev prod) lev prods in
+    levs1 @ [lev] @ levs2
+  | Fresh (position, rules) ->
+    let (levs1, levs2) = get_position entry position elev in
+    let fold levs (lname, assoc, prods) =
+      let lev = empty_lev lname assoc in
+      let lev = List.fold_left (fun lev prod -> add_prod entry lev prod) lev prods in
+      lev :: levs
     in
+    let levs = List.fold_left fold [] rules in
     levs1 @ List.rev levs @ levs2
 
 let logically_eq_symbols entry =
@@ -1549,8 +1541,8 @@ let init_entry_functions entry =
        let f = continue_parser_of_entry entry in
        entry.econtinue <- f; f lev bp a strm)
 
-let extend_entry entry position rules =
-    let elev = levels_of_rules entry position rules in
+let extend_entry entry statement =
+    let elev = levels_of_rules entry statement in
     entry.edesc <- Dlevels elev; init_entry_functions entry
 
 (* Deleting a rule *)
@@ -1649,6 +1641,10 @@ module Entry = struct
         (fun _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
       edesc = Dparser p}
   let print ppf e = fprintf ppf "%a@." print_entry e
+
+  let is_empty e = match e.edesc with
+  | Dparser _ -> failwith "Arbitrary parser entry"
+  | Dlevels elev -> List.is_empty elev
 end
 
 module rec Symbol : sig
@@ -1736,16 +1732,8 @@ module Unsafe = struct
 
 end
 
-type 'a single_extend_statement =
-  string option * Gramext.g_assoc option * 'a ty_production list
-
-type 'a extend_statement =
-  { pos : Gramext.position option
-  ; data : 'a single_extend_statement list
-  }
-
-let safe_extend (e : 'a Entry.t) { pos; data } =
-  extend_entry e pos data
+let safe_extend (e : 'a Entry.t) data =
+  extend_entry e data
 
 let safe_delete_rule e (TProd (r,_act)) =
   let AnyS (symbols, _) = get_symbols r in

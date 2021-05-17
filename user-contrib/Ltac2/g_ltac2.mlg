@@ -880,7 +880,7 @@ let rules = [
 ] in
 
 Hook.set Tac2entries.register_constr_quotations begin fun () ->
-  Pcoq.grammar_extend Pcoq.Constr.term {pos=Some (Gramlib.Gramext.Level "0"); data=[(None, None, rules)]}
+  Pcoq.grammar_extend Pcoq.Constr.term (Pcoq.Reuse (Some"0", rules))
 end
 
 }
@@ -941,7 +941,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: tac2mode;
-  tac2mode:
+  tac2mode: TOP
     [ [ tac = G_vernac.query_command -> { tac None } ] ];
 END
 
