@@ -1516,36 +1516,6 @@ let kh info tab v stk = fapp_stack(kni info tab v stk)
 
 (************************************************************************)
 
-let rec zip_term zfun m stk =
-  match stk with
-    | [] -> m
-    | Zapp args :: s ->
-        zip_term zfun (mkApp(m, Array.map zfun args)) s
-    | ZcaseT(ci, u, pms, p, br, e) :: s ->
-        let zip_ctx (nas, c) =
-          let e = Esubst.subs_liftn (Array.length nas) e in
-          (nas, zfun (mk_clos e c))
-        in
-        let t = mkCase(ci, u, Array.map (fun c -> zfun (mk_clos e c)) pms, zip_ctx p,
-          NoInvert, m, Array.map zip_ctx br) in
-        zip_term zfun t s
-    | Zproj p::s ->
-        let t = mkProj (Projection.make p true, m) in
-        zip_term zfun t s
-    | Zfix(fx,par)::s ->
-        let h = mkApp(zip_term zfun (zfun fx) par,[|m|]) in
-        zip_term zfun h s
-    | Zshift(n)::s ->
-        zip_term zfun (lift n m) s
-    | Zupdate(_rf)::s ->
-        zip_term zfun m s
-    | Zprimitive(_,c,rargs, kargs)::s ->
-        let kargs = List.map (fun (_,a) -> zfun a) kargs in
-        let args =
-          List.fold_left (fun args a -> zfun a ::args) (m::kargs) rargs in
-        let h = mkApp (mkConstU c, Array.of_list args) in
-        zip_term zfun h s
-
 (* Computes the strong normal form of a term.
    1- Calls kni
    2- tries to rebuild the term. If a closure still has to be computed,
@@ -1556,7 +1526,16 @@ let rec kl info tab m =
   else
     let (nm,s) = kni info tab m [] in
     let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
-    zip_term (kl info tab) (norm_head info tab nm) s
+    zip_term info tab (norm_head info tab nm) s
+
+and klt info tab e t = match kind t with
+| Rel i -> kl info tab (clos_rel e i)
+| Var _ |Const _|CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _ ->
+  let share = info.i_cache.i_share in
+  let (nm,s) = knit info tab e t [] in
+  let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
+  zip_term info tab (norm_head info tab nm) s
+| Meta _ | Sort _ | Ind _ | Construct _ | Int _ | Float _ -> t
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
@@ -1564,37 +1543,66 @@ and norm_head info tab m =
   if is_val m then (incr prune; term_of_fconstr m) else
     match m.term with
       | FLambda(_n,tys,f,e) ->
-        let (e',info,rvtys) =
-          List.fold_left (fun (e,info,ctxt) (na,ty) ->
-              let info = push_relevance info na in
-              (subs_lift e, info, (na,kl info tab (mk_clos e ty))::ctxt))
-            (e,info,[]) tys in
-        let bd = kl info tab (mk_clos e' f) in
+        let fold (e, info, ctxt) (na, ty) =
+          let ty = klt info tab e ty in
+          let info = push_relevance info na in
+          (subs_lift e, info, (na, ty) :: ctxt)
+        in
+        let (e', info, rvtys) = List.fold_left fold (e,info,[]) tys in
+        let bd = klt info tab e' f in
         List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
       | FLetIn(na,a,b,f,e) ->
-          let c = mk_clos (subs_lift e) f in
-          mkLetIn(na, kl info tab a, kl info tab b, kl (push_relevance info na) tab c)
+          let c = klt (push_relevance info na) tab (subs_lift e) f in
+          mkLetIn(na, kl info tab a, kl info tab b, c)
       | FProd(na,dom,rng,e) ->
-          mkProd(na, kl info tab dom, kl (push_relevance info na) tab (mk_clos (subs_lift e) rng))
+        let rng = klt (push_relevance info na) tab (subs_lift e) rng in
+          mkProd(na, kl info tab dom, rng)
       | FCoFix((n,(na,tys,bds)),e) ->
-          let ftys = Array.Fun1.map mk_clos e tys in
-          let fbds =
-            Array.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
           let infobd = push_relevances info na in
-          mkCoFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl infobd tab) fbds))
+          let ftys = Array.map (fun ty -> klt info tab e ty) tys in
+          let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
+          mkCoFix (n, (na, ftys, fbds))
       | FFix((n,(na,tys,bds)),e) ->
-          let ftys = Array.Fun1.map mk_clos e tys in
-          let fbds =
-            Array.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
           let infobd = push_relevances info na in
-          mkFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl infobd tab) fbds))
+          let ftys = Array.map (fun ty -> klt info tab e ty) tys in
+          let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
+          mkFix (n, (na, ftys, fbds))
       | FEvar((i,args),env) ->
-          mkEvar(i, List.map (fun a -> kl info tab (mk_clos env a)) args)
+          mkEvar(i, List.map (fun a -> klt info tab env a) args)
       | FProj (p,c) ->
           mkProj (p, kl info tab c)
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _
       | FApp _ | FCaseT _ | FCaseInvert _ | FLIFT _ | FCLOS _ | FInt _
       | FFloat _ | FArray _ -> term_of_fconstr m
+
+and zip_term info tab m stk = match stk with
+| [] -> m
+| Zapp args :: s ->
+    zip_term info tab (mkApp(m, Array.map (kl info tab) args)) s
+| ZcaseT(ci, u, pms, p, br, e) :: s ->
+    let zip_ctx (nas, c) =
+      let e = Esubst.subs_liftn (Array.length nas) e in
+      (nas, klt info tab e c)
+    in
+    let t = mkCase(ci, u, Array.map (fun c -> klt info tab e c) pms, zip_ctx p,
+      NoInvert, m, Array.map zip_ctx br) in
+    zip_term info tab t s
+| Zproj p::s ->
+    let t = mkProj (Projection.make p true, m) in
+    zip_term info tab t s
+| Zfix(fx,par)::s ->
+    let h = mkApp(zip_term info tab (kl info tab fx) par,[|m|]) in
+    zip_term info tab h s
+| Zshift(n)::s ->
+    zip_term info tab (lift n m) s
+| Zupdate(_rf)::s ->
+    zip_term info tab m s
+| Zprimitive(_,c,rargs, kargs)::s ->
+    let kargs = List.map (fun (_,a) -> kl info tab a) kargs in
+    let args =
+      List.fold_left (fun args a -> kl info tab a ::args) (m::kargs) rargs in
+    let h = mkApp (mkConstU c, Array.of_list args) in
+    zip_term info tab h s
 
 (* Initialization and then normalization *)
 
