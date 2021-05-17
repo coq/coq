@@ -4433,7 +4433,9 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       if must_be_closed && occur_meta indclause.evd (clenv_value indclause) then
         error "Need a fully applied argument.";
       (* We lose the possibility of coercions in with-bindings *)
-      pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
+      let sigma, term = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
+      let sigma, typ = pose_all_metas_as_evars env sigma (clenv_type indclause) in
+      sigma, term, typ
     with e when noncritical e ->
     try find_clause (try_red_product env sigma typ)
     with Redelimination -> raise e in
@@ -4486,7 +4488,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let env = Proofview.Goal.env gl in
   let ccl = Proofview.Goal.concl gl in
   let check = check_enough_applied env sigma elim in
-  let (sigma', c) = use_bindings env sigma elim false (c0,lbind) t0 in
+  let sigma', c, _ = use_bindings env sigma elim false (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
@@ -4508,8 +4510,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       (Tacticals.New.tclTHENLIST [
         Refine.refine ~typecheck:false begin fun sigma ->
           let b = not with_evars && with_eq != None in
-          let (sigma, c) = use_bindings env sigma elim b (c0,lbind) t0 in
-          let t = Retyping.get_type_of env sigma c in
+          let sigma, c, t = use_bindings env sigma elim b (c0,lbind) t0 in
           mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
         end;
         if with_evars then Proofview.shelve_unifiable else guard_no_unifiable;
