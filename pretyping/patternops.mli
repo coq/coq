@@ -13,7 +13,6 @@ open Mod_subst
 open Glob_term
 open Pattern
 open EConstr
-open Ltac_pretype
 
 (** {5 Functions on patterns} *)
 
@@ -52,8 +51,7 @@ val pattern_of_constr : Environ.env -> Evd.evar_map -> Constr.constr -> constr_p
 val pattern_of_glob_constr : glob_constr ->
       patvar list * constr_pattern
 
-val instantiate_pattern : Environ.env ->
-  Evd.evar_map -> extended_patvar_map ->
-  constr_pattern -> constr_pattern
+val map_pattern_with_binders : (Name.t -> 'a -> 'a) ->
+  ('a -> constr_pattern -> constr_pattern) -> 'a -> constr_pattern -> constr_pattern
 
 val lift_pattern : int -> constr_pattern -> constr_pattern

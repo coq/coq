@@ -181,6 +181,7 @@ module PatternMatching (E:StaticEnvironment) = struct
             | Some nctx -> Proofview.tclOR (k (Some (Lazy.force m_ctx)) nctx) (fun e -> (map s e).stream k ctx)
         }
       in
+      let p = Constr_matching.instantiate_pattern E.env E.sigma Id.Map.empty p in
       map (Constr_matching.match_subterm E.env E.sigma (Id.Set.empty,p) term) imatching_error
 
   let hyp_match_type pat hyps =

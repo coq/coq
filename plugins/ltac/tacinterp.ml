@@ -1037,14 +1037,8 @@ let head_with_value (lvar,lval) =
     {!Matching.matching_result}) into a context value of Ltac.  *)
 let interp_context ctxt = in_gen (topwit wit_constr_context) ctxt
 
-(* Reads a pattern by substituting vars of lfun *)
-let use_types = false
-
-let eval_pattern lfun ist env sigma (bvars,(glob,_),pat as c) =
-  if use_types then
-    (bvars,interp_typed_pattern ist env sigma c)
-  else
-    (bvars,instantiate_pattern env sigma lfun pat)
+let eval_pattern lfun ist env sigma (bvars, _, pat) =
+  (bvars,Constr_matching.instantiate_pattern env sigma lfun pat)
 
 let read_pattern lfun ist env sigma = function
   | Subterm (ido,c) -> Subterm (ido,eval_pattern lfun ist env sigma c)

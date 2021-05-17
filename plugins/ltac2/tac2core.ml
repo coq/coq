@@ -796,6 +796,7 @@ let () = define2 "pattern_matches_subterm" pattern constr begin fun pat c ->
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
   pf_apply begin fun env sigma ->
+    let pat = Constr_matching.instantiate_pattern env sigma Id.Map.empty pat in
     let ans = Constr_matching.match_subterm env sigma (Id.Set.empty,pat) c in
     of_ans ans
   end
@@ -828,6 +829,7 @@ let () = define2 "pattern_matches_subterm_vect" pattern constr begin fun pat c -
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
   pf_apply begin fun env sigma ->
+    let pat = Constr_matching.instantiate_pattern env sigma Id.Map.empty pat in
     let ans = Constr_matching.match_subterm env sigma (Id.Set.empty,pat) c in
     of_ans ans
   end
