@@ -103,6 +103,17 @@ type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
 val tactic_extend : string -> string -> level:Int.t ->
   ?deprecation:Deprecation.t -> ty_ml list -> unit
 
+val eval_of_ty_ml :
+  ty_ml ->
+  Geninterp.Val.t list ->
+  Geninterp.interp_sign ->
+  unit Proofview.tactic
+
+(** grammar rule for [add_tactic_notation] *)
+val clause_of_ty_ml :
+  ty_ml ->
+  Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
+
 (** {5 ARGUMENT EXTEND} *)
 
 (**
