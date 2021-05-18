@@ -97,7 +97,7 @@ let div x y =
 
     (* modulo *)
 let rem x y =
-  if y = 0L then 0L else Int64.rem x y
+  if y = 0L then x else Int64.rem x y
 
 let diveucl x y = (div x y, rem x y)
 
@@ -107,7 +107,7 @@ let divs x y =
 
     (* signed modulo *)
 let rems x y =
-  if y = 0L then 0L else
+  if y = 0L then x else
     Int64.shift_right_logical (Int64.(rem (shift_left x 1) (shift_left y 1))) 1
 
 let addmuldiv p x y =

@@ -538,7 +538,7 @@ module Z =
     | Z0 -> Z0,Z0
     | Zpos a' ->
       (match b with
-       | Z0 -> Z0,Z0
+       | Z0 -> Z0,a
        | Zpos _ -> pos_div_eucl a' b
        | Zneg b' ->
          let q0,r = pos_div_eucl a' (Zpos b') in
@@ -547,7 +547,7 @@ module Z =
           | _ -> (opp (add q0 (Zpos XH))),(add b r)))
     | Zneg a' ->
       (match b with
-       | Z0 -> Z0,Z0
+       | Z0 -> Z0,a
        | Zpos _ ->
          let q0,r = pos_div_eucl a' b in
          (match r with

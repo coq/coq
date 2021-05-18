@@ -234,10 +234,10 @@ Proof.
  rewrite <- inj_mul, <- inj_add. f_equal. now apply N.div_mod.
 Qed.
 
-Lemma inj_mod n m : (m<>0)%N -> Z.of_N (n mod m) = (Z.of_N n) mod (Z.of_N m).
+Lemma inj_mod n m : Z.of_N (n mod m) = (Z.of_N n) mod (Z.of_N m).
 Proof.
- intros Hm.
- apply Z.mod_unique_pos with (Z.of_N (n / m)).
+ destruct m as [|m]. now destruct n.
+ apply Z.mod_unique_pos with (Z.of_N (n / N.pos m)).
  split. apply is_nonneg. apply inj_lt. now apply N.mod_lt.
  rewrite <- inj_mul, <- inj_add. f_equal. now apply N.div_mod.
 Qed.
@@ -253,7 +253,7 @@ Lemma inj_rem n m : Z.of_N (n mod m) = Z.rem (Z.of_N n) (Z.of_N m).
 Proof.
  destruct m.
  - now destruct n.
- - rewrite Z.rem_mod_nonneg, inj_mod; trivial. easy. apply is_nonneg. easy.
+ - rewrite Z.rem_mod_nonneg, inj_mod; trivial. apply is_nonneg. easy.
 Qed.
 
 Lemma inj_div2 n : Z.of_N (N.div2 n) = Z.div2 (Z.of_N n).
@@ -383,7 +383,7 @@ Proof.
  simpl. rewrite <- (N2Z.id (_ / _)). f_equal. now rewrite N2Z.inj_div.
 Qed.
 
-Lemma inj_mod n m : 0<=n -> 0<m ->
+Lemma inj_mod n m : 0<=n -> 0<=m ->
  Z.to_N (n mod m) = ((Z.to_N n) mod (Z.to_N m))%N.
 Proof.
  destruct n, m; trivial; intros Hn Hm;

@@ -84,7 +84,7 @@ let div (x : int) (y : int) =
 
     (* modulo *)
 let rem (x : int) (y : int) =
-  if y = 0 then 0 else Int64.to_int (Int64.rem (to_uint64 x) (to_uint64 y))
+  if y = 0 then x else Int64.to_int (Int64.rem (to_uint64 x) (to_uint64 y))
 
 let diveucl x y = (div x y, rem x y)
 
@@ -94,7 +94,7 @@ let divs (x : int) (y : int) =
 
     (* modulo *)
 let rems (x : int) (y : int) =
-  if y = 0 then 0 else x mod y
+  if y = 0 then x else x mod y
 
 let addmuldiv p x y =
   l_or (l_sl x p) (l_sr y (uint_size - p))

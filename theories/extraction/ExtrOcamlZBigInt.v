@@ -60,7 +60,7 @@ Extract Constant N.max => "Big.max".
 Extract Constant N.div =>
  "fun a b -> if Big.eq b Big.zero then Big.zero else Big.div a b".
 Extract Constant N.modulo =>
- "fun a b -> if Big.eq b Big.zero then Big.zero else Big.modulo a b".
+ "fun a b -> if Big.eq b Big.zero then a else Big.modulo a b".
 Extract Constant N.compare => "Big.compare_case Eq Lt Gt".
 
 Extract Constant Z.add => "Big.add".

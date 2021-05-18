@@ -288,7 +288,7 @@ Definition div x y :=
 
 Definition modulo x y :=
   match y with
-    | 0 => y
+    | 0 => x
     | S y' => y' - snd (divmod x y' 0 y')
   end.
 

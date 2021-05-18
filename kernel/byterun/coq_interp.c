@@ -1396,7 +1396,7 @@ value coq_interprete
         int b;
         Uint63_eq0(b, *sp);
         if (b) {
-          accu = *sp++;
+          sp++;
         }
         else {
           Uint63_mod(accu,*sp++);
@@ -1413,9 +1413,11 @@ value coq_interprete
         int b;
         Uint63_eq0(b, *sp);
         if (b) {
-          AllocPair();
-          Field(accu, 0) = *sp;
-          Field(accu, 1) = *sp++;
+          value block;
+          Alloc_small(block, 2, coq_tag_pair);
+          Field(block, 0) = *sp++;
+          Field(block, 1) = accu;
+          accu = block;
         }
         else {
           *--sp = accu;
@@ -1459,7 +1461,7 @@ value coq_interprete
         int b;
         Uint63_eq0(b, *sp);
         if (b) {
-          accu = *sp++;
+          sp++;
         }
         else {
           Uint63_mods(accu,*sp++);
