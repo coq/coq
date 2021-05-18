@@ -557,26 +557,3 @@ let join subst1 subst2 =
   let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in
   let subst = Umap.fold mp_apply_subst subst1 empty_subst in
   Umap.join subst2 subst
-
-type 'a substituted = {
-  mutable subst_value : 'a;
-  mutable subst_subst : substitution list;
-}
-
-let from_val x = { subst_value = x; subst_subst = []; }
-
-let force fsubst r = match r.subst_subst with
-| [] -> r.subst_value
-| s ->
-  let subst = List.fold_left join empty_subst (List.rev s) in
-  let x = fsubst subst r.subst_value in
-  let () = r.subst_subst <- [] in
-  let () = r.subst_value <- x in
-  x
-
-let subst_substituted s r = { r with subst_subst = s :: r.subst_subst; }
-
-(* debug *)
-let repr_substituted r = match r.subst_subst with
-| [] -> None, r.subst_value
-| s -> Some s, r.subst_value

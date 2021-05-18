@@ -101,11 +101,6 @@ val subst_dom_codom_delta_resolver :
   substitution -> delta_resolver -> delta_resolver
 
 
-type 'a substituted
-val from_val : 'a -> 'a substituted
-val force : (substitution -> 'a -> 'a) -> 'a substituted -> 'a
-val subst_substituted : substitution -> 'a substituted -> 'a substituted
-
 (**/**)
 (* debugging *)
 val debug_string_of_subst : substitution -> string
@@ -155,9 +150,3 @@ val replace_mp_in_kn : ModPath.t -> ModPath.t -> KerName.t -> KerName.t
 (** [subst_mps sub c] performs the substitution [sub] on all kernel
    names appearing in [c] *)
 val subst_mps : substitution -> constr -> constr
-
-(** [repr_substituted r] dumps the representation of a substituted:
-    - [None, a] when r is a value
-    - [Some s, a] when r is a delayed substitution [s] applied to [a] *)
-
-val repr_substituted : 'a substituted -> substitution list option * 'a
