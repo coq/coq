@@ -1700,7 +1700,7 @@ let regular_subst_tactic = ref true
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true;
       optkey   = ["Regular";"Subst";"Tactic"];
       optread  = (fun () -> !regular_subst_tactic);
       optwrite = (:=) regular_subst_tactic }
