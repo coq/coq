@@ -57,6 +57,9 @@ let preamble mod_name comment used_modules usf =
    else
      str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
      str "import qualified GHC.Base" ++ fnl () ++
+     str "#if __GLASGOW_HASKELL__ >= 900" ++ fnl () ++
+     str "import qualified GHC.Exts" ++ fnl () ++
+     str "#endif" ++ fnl () ++
      str "#else" ++ fnl () ++
      str "-- HUGS" ++ fnl () ++
      str "import qualified IOExts" ++ fnl () ++
@@ -66,7 +69,11 @@ let preamble mod_name comment used_modules usf =
    else
      str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
      str "unsafeCoerce :: a -> b" ++ fnl () ++
+     str "#if __GLASGOW_HASKELL__ >= 900" ++ fnl () ++
+     str "unsafeCoerce = GHC.Exts.unsafeCoerce#" ++ fnl () ++
+     str "#else" ++ fnl () ++
      str "unsafeCoerce = GHC.Base.unsafeCoerce#" ++ fnl () ++
+     str "#endif" ++ fnl () ++
      str "#else" ++ fnl () ++
      str "-- HUGS" ++ fnl () ++
      str "unsafeCoerce :: a -> b" ++ fnl () ++
