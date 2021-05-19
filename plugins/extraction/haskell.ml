@@ -64,13 +64,18 @@ let preamble mod_name comment used_modules usf =
   ++
   (if not usf.magic then mt ()
    else
-     str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
+     str "#ifdef __GLASGOW_HASKELL__ < 900" ++ fnl () ++
      str "unsafeCoerce :: a -> b" ++ fnl () ++
      str "unsafeCoerce = GHC.Base.unsafeCoerce#" ++ fnl () ++
      str "#else" ++ fnl () ++
+     str " #ifdef __GLASGOW_HASKELL__" ++ fnl () ++
+     str "unsafeCoerce :: a -> b" ++ fnl () ++
+     str "unsafeCoerce = GHC.Exts.unsafeCoerce#" ++ fnl () ++
+     str " #else" ++ fnl () ++
      str "-- HUGS" ++ fnl () ++
      str "unsafeCoerce :: a -> b" ++ fnl () ++
      str "unsafeCoerce = IOExts.unsafeCoerce" ++ fnl () ++
+     str " #endif" ++ fnl () ++
      str "#endif" ++ fnl2 ())
   ++
   (if not usf.tunknown then mt ()
