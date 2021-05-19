@@ -41,8 +41,10 @@ type cooking_info = {
 
 type opaque_proofterm = (Constr.t * unit delayed_universes) option
 
+type opaque_handle
+
 type indirect_accessor = {
-  access_proof : DirPath.t -> int -> opaque_proofterm;
+  access_proof : DirPath.t -> opaque_handle -> opaque_proofterm;
   access_discharge : cooking_info list ->
     (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
 }
@@ -63,6 +65,14 @@ val discharge_opaque :
 
 val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
-val dump : ?except:Future.UUIDSet.t -> opaquetab ->
-  opaque_proofterm array *
-  int Future.UUIDMap.t
+(** {5 Serialization} *)
+
+type opaque_disk
+
+val dump : ?except:Future.UUIDSet.t -> opaquetab -> opaque_disk * opaque_handle Future.UUIDMap.t
+
+val get_opaque_disk : opaque_handle -> opaque_disk -> opaque_proofterm
+val set_opaque_disk : opaque_handle -> constr * unit delayed_universes -> opaque_disk -> unit
+
+(** Only used for pretty-printing *)
+val repr_handle : opaque_handle -> int

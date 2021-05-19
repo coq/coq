@@ -180,12 +180,12 @@ let register_loaded_library m =
 
 (** Delayed / available tables of opaque terms *)
 
-type 'a table_status =
-  | ToFetch of 'a array delayed
-  | Fetched of 'a array
+type table_status =
+  | ToFetch of Opaqueproof.opaque_disk delayed
+  | Fetched of Opaqueproof.opaque_disk
 
 let opaque_tables =
-  ref (DPmap.empty : (Opaqueproof.opaque_proofterm table_status) DPmap.t)
+  ref (DPmap.empty : table_status DPmap.t)
 
 let add_opaque_table dp st =
   opaque_tables := DPmap.add dp st !opaque_tables
@@ -207,7 +207,7 @@ let access_table what tables dp i =
       tables := DPmap.add dp (Fetched t) !tables;
       t
   in
-  assert (i < Array.length t); t.(i)
+  Opaqueproof.get_opaque_disk i t
 
 let access_opaque_table dp i =
   let what = "opaque proofs" in
@@ -225,7 +225,7 @@ type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_proofterm array
+type seg_proofs = Opaqueproof.opaque_disk
 
 let mk_library sd md digests univs =
   {
@@ -476,8 +476,8 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
     | ProofsTodoSome (_except, tasks) ->
       let tasks =
         List.map Stateid.(fun (r,b) ->
-            try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b
-            with Not_found -> assert b; { r with uuid = -1 }, b)
+            try { r with uuid = Some (Future.UUIDMap.find r.uuid f2t_map) }, b
+            with Not_found -> assert b; { r with uuid = None }, b)
           tasks in
       Some tasks,
       Some (Univ.ContextSet.empty,false)

@@ -1582,12 +1582,12 @@ and Slaves : sig
 
   type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   val dump_snapshot : unit -> Future.UUID.t tasks
-  val check_task : string -> int tasks -> int -> bool
+  val check_task : string -> 'a tasks -> int -> bool
   val info_tasks : 'a tasks -> (string * float * int) list
   val finish_task :
     string ->
     Library.seg_univ -> Library.seg_proofs ->
-    int tasks -> int -> Library.seg_univ
+    Opaqueproof.opaque_handle option tasks -> int -> Library.seg_univ
 
   val cancel_worker : WorkerPool.worker_id -> unit
 
@@ -1673,9 +1673,9 @@ end = struct (* {{{ *)
 
   let finish_task name (cst,_) p l i =
     let { Stateid.uuid = bucket }, drop = List.nth l i in
-    let bucket_name =
-      if bucket < 0 then (assert drop; ", no bucket")
-      else Printf.sprintf ", bucket %d" bucket in
+    let bucket_name = match bucket with
+    | None -> (assert drop; ", no bucket")
+    | Some bucket -> Printf.sprintf ", bucket %d" (Opaqueproof.repr_handle bucket) in
     match check_task_aux bucket_name name l i with
     | `ERROR -> exit 1
     | `ERROR_ADMITTED -> cst, false
@@ -1699,10 +1699,7 @@ end = struct (* {{{ *)
           let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
           assert (Univ.ContextSet.is_empty uctx)
         in
-        let pr = Constr.hcons pr in
-        let dummy = p.(bucket) in
-        let () = assert (Option.is_empty dummy) in
-        p.(bucket) <- Some (pr, priv);
+        let () = Opaqueproof.set_opaque_disk (Option.get bucket) (pr, priv) p in
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =
@@ -2452,7 +2449,7 @@ let join ~doc =
   VCS.print ();
   doc
 
-type tasks = int Slaves.tasks
+type tasks = Opaqueproof.opaque_handle option Slaves.tasks
 let check_task name tasks i =
   let vcs = VCS.backup () in
   try
