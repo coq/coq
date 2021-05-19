@@ -35,10 +35,6 @@ INSTALLLIB:=install -m 644
 
 .PHONY: install-coq install-dune install-library
 
-# Standard DESTDIR variable as used in Debian and coq_makefile, will
-# have make install prefixing all install targets with DESTDIR
-DESTDIR ?=
-
 # Due to Windows paths not starting with / we can't just set the
 # default to / and always use --destdir
 ifeq ($(DESTDIR),)
