@@ -25,14 +25,10 @@ open Pp
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
-(** flag for internal message display *)
-type internal_flag =
-  | UserAutomaticRequest (* kernel action, a message is displayed *)
-  | InternalTacticRequest  (* kernel action, no message is displayed *)
-  | UserIndividualRequest   (* user action, a message is displayed *)
+type inline_flag = InlineDeps | KeepDeps
 
 type mutual_scheme_object_function =
-  internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
+  inline_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
   inductive -> constr Evd.in_evar_universe_context
 
@@ -113,7 +109,7 @@ let rec define_individual_scheme_base kind suff f mode idopt (mind,i as ind) eff
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let role = Evd.Schema (ind, kind) in
-  let internal = mode == InternalTacticRequest in
+  let internal = mode == InlineDeps in
   let const, neff = define internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
   let eff = Evd.concat_side_effects neff eff in
   DeclareScheme.declare_scheme kind [|ind,const|];
@@ -136,7 +132,7 @@ and define_mutual_scheme_base kind suff f mode names mind eff =
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
-    let internal = mode == InternalTacticRequest in
+    let internal = mode == InlineDeps in
     let cst, neff = define internal role id cl (Declareops.inductive_is_polymorphic mib) ctx in
     (Evd.concat_side_effects neff effs, cst)
   in
@@ -165,7 +161,7 @@ and declare_scheme_dependence mode eff = function
     let _, eff' = define_mutual_scheme kind mode [] mind in
     Evd.concat_side_effects eff' eff
 
-let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
+let find_scheme ?(mode=InlineDeps) kind (mind,i as ind) =
   let open Proofview.Notations in
   match lookup_scheme kind ind with
   | Some s ->

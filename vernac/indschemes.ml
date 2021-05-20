@@ -38,6 +38,14 @@ open Eqschemes
 open Elimschemes
 open Context.Rel.Declaration
 
+[@@@ocaml.warning "-37"]
+
+(** flag for internal message display *)
+type internal_flag =
+  | UserAutomaticRequest (* kernel action, a message is displayed *)
+  | InternalTacticRequest  (* kernel action, no message is displayed *)
+  | UserIndividualRequest   (* user action, a message is displayed *)
+
 (* Flags governing automatic synthesis of schemes *)
 
 let elim_flag = ref true
@@ -115,7 +123,11 @@ let alarm what internal msg =
   | _ -> Some msg
 
 let try_declare_scheme what f internal names kn =
-  try f internal names kn
+  let inline = match internal with
+  | UserAutomaticRequest | UserIndividualRequest -> KeepDeps
+  | InternalTacticRequest -> InlineDeps
+  in
+  try f inline names kn
   with e ->
   let e = Exninfo.capture e in
   let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
@@ -203,7 +215,7 @@ let declare_one_case_analysis_scheme ind =
        induction scheme, the other ones share the same code with the
        appropriate type *)
   if Sorts.family_leq InType kelim then
-    define_individual_scheme dep UserAutomaticRequest None ind
+    define_individual_scheme dep KeepDeps None ind
 
 (* Induction/recursion schemes *)
 
@@ -241,7 +253,7 @@ let declare_one_induction_scheme ind =
        else if depelim then kinds_from_type
        else nondep_kinds_from_type)
   in
-  List.iter (fun kind -> define_individual_scheme kind UserAutomaticRequest None ind)
+  List.iter (fun kind -> define_individual_scheme kind KeepDeps None ind)
     elims
 
 let declare_induction_schemes kn =
@@ -277,17 +289,17 @@ let ignore_error f x =
 
 let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
-    define_individual_scheme rew_r2l_scheme_kind UserAutomaticRequest None ind;
-    define_individual_scheme rew_r2l_dep_scheme_kind UserAutomaticRequest None ind;
+    define_individual_scheme rew_r2l_scheme_kind KeepDeps None ind;
+    define_individual_scheme rew_r2l_dep_scheme_kind KeepDeps None ind;
     define_individual_scheme rew_r2l_forward_dep_scheme_kind
-      UserAutomaticRequest None ind;
+      KeepDeps None ind;
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind UserAutomaticRequest None) ind;
+    ignore_error (define_individual_scheme rew_l2r_scheme_kind KeepDeps None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_dep_scheme_kind UserAutomaticRequest None) ind;
+      (define_individual_scheme rew_l2r_dep_scheme_kind KeepDeps None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_forward_dep_scheme_kind UserAutomaticRequest None) ind
+      (define_individual_scheme rew_l2r_forward_dep_scheme_kind KeepDeps None) ind
   end
 
 let warn_cannot_build_congruence =
@@ -303,7 +315,7 @@ let declare_congr_scheme ind =
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false
     then
-      define_individual_scheme congr_scheme_kind UserAutomaticRequest None ind
+      define_individual_scheme congr_scheme_kind KeepDeps None ind
     else
       warn_cannot_build_congruence ()
   end
@@ -311,7 +323,7 @@ let declare_congr_scheme ind =
 let declare_sym_scheme ind =
   if Hipattern.is_inductive_equality ind then
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme sym_scheme_kind UserAutomaticRequest None) ind
+    ignore_error (define_individual_scheme sym_scheme_kind KeepDeps None) ind
 
 (* Scheme command *)
 

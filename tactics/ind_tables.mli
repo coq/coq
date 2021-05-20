@@ -20,17 +20,14 @@ type mutual
 type individual
 type 'a scheme_kind
 
-type internal_flag =
-  | UserAutomaticRequest
-  | InternalTacticRequest
-  | UserIndividualRequest
+type inline_flag = InlineDeps | KeepDeps
 
 type scheme_dependency =
 | SchemeMutualDep of MutInd.t * mutual scheme_kind
 | SchemeIndividualDep of inductive * individual scheme_kind
 
 type mutual_scheme_object_function =
-  internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
+  inline_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
   inductive -> constr Evd.in_evar_universe_context
 
@@ -52,14 +49,14 @@ val declare_individual_scheme_object : string ->
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
 val define_individual_scheme : individual scheme_kind ->
-  internal_flag (** internal *) ->
+  inline_flag (** internal *) ->
   Id.t option -> inductive -> unit
 
-val define_mutual_scheme : mutual scheme_kind -> internal_flag (** internal *) ->
+val define_mutual_scheme : mutual scheme_kind -> inline_flag (** internal *) ->
   (int * Id.t) list -> MutInd.t -> unit
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
-val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> Constant.t Proofview.tactic
+val find_scheme : ?mode:inline_flag -> 'a scheme_kind -> inductive -> Constant.t Proofview.tactic
 
 (** Like [find_scheme] but does not generate a constant on the fly *)
 val lookup_scheme : 'a scheme_kind -> inductive -> Constant.t option

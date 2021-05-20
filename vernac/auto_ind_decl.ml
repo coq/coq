@@ -169,7 +169,7 @@ let build_beq_scheme_deps kn =
   in
   Array.fold_left_i (fun i accu _ -> make_one_eq accu i) [] mib.mind_packets
 
-let build_beq_scheme mode kn =
+let build_beq_scheme _ kn =
   check_bool_is_defined ();
   (* fetching global env *)
   let env = Global.env() in
@@ -698,9 +698,8 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let side_effect_of_mode = function
-  | UserAutomaticRequest -> false
-  | InternalTacticRequest -> true
-  | UserIndividualRequest -> false
+| InlineDeps -> true
+| KeepDeps -> false
 
 let make_bl_scheme mode mind =
   let mib = Global.lookup_mind mind in
