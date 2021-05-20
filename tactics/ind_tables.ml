@@ -34,7 +34,7 @@ type internal_flag =
 type mutual_scheme_object_function =
   internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
-  internal_flag -> inductive -> constr Evd.in_evar_universe_context
+  inductive -> constr Evd.in_evar_universe_context
 
 type 'a scheme_kind = string
 
@@ -107,7 +107,7 @@ let define internal role id c poly univs =
 
 (* Assumes that dependencies are already defined *)
 let rec define_individual_scheme_base kind suff f mode idopt (mind,i as ind) eff =
-  let (c, ctx) = f mode ind in
+  let (c, ctx) = f ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
