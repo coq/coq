@@ -161,7 +161,7 @@ and declare_scheme_dependence mode eff = function
     let _, eff' = define_mutual_scheme kind mode [] mind in
     Evd.concat_side_effects eff' eff
 
-let find_scheme ?(mode=InlineDeps) kind (mind,i as ind) =
+let find_scheme kind (mind,i as ind) =
   let open Proofview.Notations in
   match lookup_scheme kind ind with
   | Some s ->
@@ -170,6 +170,7 @@ let find_scheme ?(mode=InlineDeps) kind (mind,i as ind) =
     Proofview.tclEFFECTS Evd.empty_side_effects <*>
     Proofview.tclUNIT s
   | None ->
+  let mode = InlineDeps in
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps ind in

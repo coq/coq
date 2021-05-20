@@ -56,7 +56,7 @@ val define_mutual_scheme : mutual scheme_kind -> inline_flag (** internal *) ->
   (int * Id.t) list -> MutInd.t -> unit
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
-val find_scheme : ?mode:inline_flag -> 'a scheme_kind -> inductive -> Constant.t Proofview.tactic
+val find_scheme : 'a scheme_kind -> inductive -> Constant.t Proofview.tactic
 
 (** Like [find_scheme] but does not generate a constant on the fly *)
 val lookup_scheme : 'a scheme_kind -> inductive -> Constant.t option
