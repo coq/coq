@@ -272,6 +272,14 @@ and ``coqtop``, unless stated otherwise:
 
   .. _native-compiler-options:
 
+  .. deprecated:: 8.14
+
+     This flag has been deprecated in favor of the :ref:`coqnative` binary. The
+     toolchain has been adapted to transparently rely on the latter, so if you
+     use :ref:`coq_makefile` there is nothing to do. Otherwise you should
+     substitute calls to `coqc -native-compiler yes` to calls to `coqc` followed
+     by `coqnative` on the resulting `vo` file.
+
   .. versionchanged:: 8.13
 
      The default value is set at configure time,
