@@ -40,6 +40,9 @@ else
 FLOCK:=flock
 endif
 
+# Standard DESTDIR variable as used in Debian and coq_makefile, will
+# have make install prefixing all install targets with DESTDIR
+DESTDIR ?=
 
 ###########################################################################
 # VO build directory
