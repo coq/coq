@@ -34,6 +34,9 @@ type injection_command =
      does not cause a warning. The native option must be processed
      before injections (because it affects require), so the
      instruction to emit a message is separated. *)
+  | WarnNativeDeprecated
+  (** Used so that "-w -native-compiler-deprecated-option -native-compiler FLAG"
+      does not cause a warning, similarly to above. *)
 
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;

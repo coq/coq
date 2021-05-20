@@ -37,6 +37,7 @@ type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
   | RequireInjection of (string * string option * bool option)
   | WarnNoNative of string
+  | WarnNativeDeprecated
 
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
@@ -249,8 +250,8 @@ let get_native_compiler s =
     | _ ->
        error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler") in
   if Coq_config.native_compiler = NativeOff && n <> NativeOff then
-    NativeOff, Some (WarnNoNative s)
-  else n, None
+    NativeOff, [WarnNativeDeprecated; WarnNoNative s]
+  else n, [WarnNativeDeprecated]
 
 (* Main parsing routine *)
 (*s Parsing of the command line *)
@@ -357,7 +358,7 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-native-compiler" ->
       let native_compiler, warn = get_native_compiler (next ()) in
       { oval with config = { oval.config with native_compiler };
-                  pre = { oval.pre with injections = Option.List.cons warn oval.pre.injections }}
+                  pre = { oval.pre with injections = warn @ oval.pre.injections }}
 
     | "-set" ->
       let opt, v = parse_option_set @@ next() in

@@ -218,7 +218,7 @@ NATIVEINCLUDES=$(addprefix -nI _build/default/, kernel/.kernel.objs/byte)
 USERCONTRIBINCLUDES=$(addprefix -I _build/default/user-contrib/,$(USERCONTRIBDIRS))
 
 ifdef NATIVECOMPUTE
-  COQOPTS += -native-compiler ondemand
+  COQOPTS += -w -deprecated-native-compiler-option -native-compiler ondemand
 endif
 COQOPTS += $(COQWARNERROR) $(COQUSERFLAGS)
 # Beware this depends on the makefile being in a particular dir, we
