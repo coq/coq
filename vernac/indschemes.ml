@@ -38,12 +38,9 @@ open Eqschemes
 open Elimschemes
 open Context.Rel.Declaration
 
-[@@@ocaml.warning "-37"]
-
 (** flag for internal message display *)
 type internal_flag =
   | UserAutomaticRequest (* kernel action, a message is displayed *)
-  | InternalTacticRequest  (* kernel action, no message is displayed *)
   | UserIndividualRequest   (* user action, a message is displayed *)
 
 (* Flags governing automatic synthesis of schemes *)
@@ -109,25 +106,20 @@ let define ~poly name sigma c types =
 
 (* Boolean equality *)
 
-let declare_beq_scheme_gen internal names kn =
-  ignore (define_mutual_scheme beq_scheme_kind internal names kn)
+let declare_beq_scheme_gen names kn =
+  ignore (define_mutual_scheme beq_scheme_kind KeepDeps names kn)
 
 let alarm what internal msg =
   let debug = false in
   match internal with
-  | UserAutomaticRequest
-  | InternalTacticRequest ->
+  | UserAutomaticRequest ->
     (if debug then
       Feedback.msg_debug
         (hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
-  | _ -> Some msg
+  | UserIndividualRequest -> Some msg
 
 let try_declare_scheme what f internal names kn =
-  let inline = match internal with
-  | UserAutomaticRequest | UserIndividualRequest -> KeepDeps
-  | InternalTacticRequest -> InlineDeps
-  in
-  try f inline names kn
+  try f names kn
   with e ->
   let e = Exninfo.capture e in
   let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
@@ -266,10 +258,10 @@ let declare_induction_schemes kn =
 
 (* Decidable equality *)
 
-let declare_eq_decidability_gen internal names kn =
+let declare_eq_decidability_gen names kn =
   let mib = Global.lookup_mind kn in
   if mib.mind_finite <> Declarations.CoFinite then
-    define_mutual_scheme eq_dec_scheme_kind internal names kn
+    define_mutual_scheme eq_dec_scheme_kind KeepDeps names kn
 
 let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
   str "Decidable equality on " ++ quote (Printer.pr_inductive (Global.env()) ind)
