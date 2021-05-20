@@ -49,10 +49,9 @@ val declare_individual_scheme_object : string ->
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
 val define_individual_scheme : individual scheme_kind ->
-  inline_flag (** internal *) ->
   Id.t option -> inductive -> unit
 
-val define_mutual_scheme : mutual scheme_kind -> inline_flag (** internal *) ->
+val define_mutual_scheme : mutual scheme_kind ->
   (int * Id.t) list -> MutInd.t -> unit
 
 (** Main function to retrieve a scheme in the cache or to generate it *)

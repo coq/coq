@@ -183,8 +183,8 @@ let find_scheme kind (mind,i as ind) =
     let ca, eff = define_mutual_scheme_base kind s f mode [] mind eff in
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
 
-let define_individual_scheme kind mode names ind =
-  ignore (define_individual_scheme kind mode names ind)
+let define_individual_scheme kind names ind =
+  ignore (define_individual_scheme kind KeepDeps names ind)
 
-let define_mutual_scheme kind mode names mind =
-  ignore (define_mutual_scheme kind mode names mind)
+let define_mutual_scheme kind names mind =
+  ignore (define_mutual_scheme kind KeepDeps names mind)
