@@ -24,11 +24,11 @@ type 'a delayed_universes =
 | PrivateMonomorphic of 'a
 | PrivatePolymorphic of int * Univ.ContextSet.t
 
-type opaque_proofterm = (Constr.t * unit delayed_universes) option
+type opaque_proofterm = Constr.t * unit delayed_universes
 
 type indirect_accessor = {
-  access_proof : DirPath.t -> int -> opaque_proofterm;
-  access_discharge : cooking_info list -> (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
+  access_proof : DirPath.t -> int -> opaque_proofterm option;
+  access_discharge : cooking_info list -> opaque_proofterm -> opaque_proofterm;
 }
 
 let drop_mono = function
@@ -127,7 +127,7 @@ let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = funct
 
 module FMap = Future.UUIDMap
 
-type opaque_disk = opaque_proofterm array
+type opaque_disk = opaque_proofterm option array
 type opaque_handle = int
 
 let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =
