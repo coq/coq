@@ -948,18 +948,18 @@ let name_of_symbol : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> string =
   | Sself -> "[" ^ entry.ename ^ "]"
   | Snext -> "[" ^ entry.ename ^ "]"
   | Stoken tok -> L.tok_text tok
-  | _ -> "???"
+  | Slist0 _ -> assert false
+  | Slist1sep _ -> assert false
+  | Slist1 _ -> assert false
+  | Slist0sep _ -> assert false
+  | Sopt _ -> assert false
+  | Stree _ -> assert false
 
 type ('r, 'f) tok_list =
 | TokNil : ('f, 'f) tok_list
 | TokCns : 'a pattern * ('r, 'f) tok_list -> ('a -> 'r, 'f) tok_list
 
 type ('s, 'f) tok_tree = TokTree : 'a pattern * ('s, _, 'a -> 'r) ty_tree * ('r, 'f) tok_list -> ('s, 'f) tok_tree
-
-let rec tok_list_length : type a b. (a, b) tok_list -> int =
-  function
-  | TokNil -> 0
-  | TokCns (_, t) -> 1 + tok_list_length t
 
 let rec get_token_list : type s tr a r f.
   s ty_entry -> a pattern -> (r, f) tok_list -> (s, tr, a -> r) ty_tree -> (s, f) tok_tree option =
@@ -1012,7 +1012,7 @@ and name_of_tree_failed : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> _ =
            | TokCns (tok, t) -> build_str (L.tok_text tok ^ " " ^ s) t in
          build_str (L.tok_text last_tok) rev_tokl
       end
-  | DeadEnd -> "???" | LocAct (_, _) -> "???"
+  | DeadEnd -> "???" | LocAct (_, _) -> "action"
 
 let tree_failed (type s tr a) (entry : s ty_entry) (prev_symb_result : a) (prev_symb : (s, tr, a) ty_symbol) tree =
   let txt = name_of_tree_failed entry tree in
@@ -1174,14 +1174,14 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
          with
            Some a -> act a
          | _ -> p2 strm__)
+  | Node (_, {node = Stoken tok; son = son; brother = DeadEnd}) ->
+          parser_of_token_list entry nlevn alevn tok son
+  | Node (_, {node = Stoken tok; son = son; brother = bro}) ->
+          let p2 = parser_of_tree entry nlevn alevn bro in
+          let p1 = parser_of_token_list entry nlevn alevn tok son in
+          (fun (strm__ : _ LStream.t) ->
+            try p1 strm__ with Stream.Failure -> p2 strm__)
   | Node (_, {node = s; son = son; brother = DeadEnd}) ->
-      let tokl =
-        match s with
-          Stoken tok -> get_token_list entry tok TokNil son
-        | _ -> None
-      in
-      begin match tokl with
-        None ->
           let ps = parser_of_symbol entry nlevn s in
           let p1 = parser_of_tree entry nlevn alevn son in
           let p1 = parser_cont p1 entry nlevn alevn s son in
@@ -1194,20 +1194,7 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
                    raise (Stream.Error (tree_failed entry a s son))
              in
              act a)
-      | Some (TokTree (last_tok, son, rev_tokl)) ->
-          let lt = Stoken last_tok in
-          let p1 = parser_of_tree entry nlevn alevn son in
-          let p1 = parser_cont p1 entry nlevn alevn lt son in
-          parser_of_token_list entry son p1 rev_tokl last_tok
-      end
   | Node (_, {node = s; son = son; brother = bro}) ->
-      let tokl =
-        match s with
-          Stoken tok -> get_token_list entry tok TokNil son
-        | _ -> None
-      in
-      match tokl with
-        None ->
           let ps = parser_of_symbol entry nlevn s in
           let p1 = parser_of_tree entry nlevn alevn son in
           let p1 = parser_cont p1 entry nlevn alevn s son in
@@ -1223,50 +1210,63 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
                  | None -> raise (Stream.Error (tree_failed entry a s son))
                  end
              | None -> p2 strm)
-      | Some (TokTree (last_tok, son, rev_tokl)) ->
-          let lt = Stoken last_tok in
-          let p2 = parser_of_tree entry nlevn alevn bro in
-          let p1 = parser_of_tree entry nlevn alevn son in
-          let p1 = parser_cont p1 entry nlevn alevn lt son in
-          let p1 =
-            parser_of_token_list entry son p1 rev_tokl last_tok
-          in
-          fun (strm__ : _ LStream.t) ->
-            try p1 strm__ with Stream.Failure -> p2 strm__
 and parser_cont : type s tr tr' a r.
   (a -> r) parser_t -> s ty_entry -> int -> int -> (s, tr, a) ty_symbol -> (s, tr', a -> r) ty_tree -> int -> a -> (a -> r) parser_t =
   fun p1 entry nlevn alevn s son bp a (strm__ : _ LStream.t) ->
   try p1 strm__ with
     Stream.Failure ->
       recover parser_of_tree entry nlevn alevn bp a s son strm__
-and parser_of_token_list : type s tr lt r f.
-  s ty_entry -> (s, tr, lt -> r) ty_tree ->
-    (int -> lt -> (lt -> r) parser_t) -> (r, f) tok_list -> lt pattern -> f parser_t =
-  fun entry son p1 rev_tokl last_tok ->
-  let n = tok_list_length rev_tokl in
-  let plast : r parser_t =
-    let tematch = token_ematch last_tok in
-    let ps strm =
-      let r = tematch (LStream.peek_nth n strm) in
-      for _i = 0 to n do LStream.junk strm done; r
-    in
-    fun (strm : _ LStream.t) ->
-      let bp = LStream.count strm in
-      let a = ps strm in
-      match try Some (p1 bp a strm) with Stream.Failure -> None with
-        Some act -> act a
-      | None -> raise (Stream.Error (tree_failed entry a (Stoken last_tok) son))
-  in
-  let rec loop : type s f. _ -> (s, f) tok_list -> s parser_t -> f parser_t =
-    fun n tokl plast -> match tokl with
-    | TokNil -> plast
-    | TokCns (tok, tokl) ->
+
+(** [parser_of_token_list] attempts to look-ahead an arbitrary-long
+finite sequence of tokens. E.g., in
+[ [ "foo"; "bar1"; "bar3"; ... -> action1
+  | "foo"; "bar2"; ... -> action2
+  | other-rules ] ]
+compiled as:
+[ [ "foo"; ["bar1"; "bar3"; ... -> action1
+           |"bar2"; ... -> action2]
+  | other-rules ] ]
+this is able to look ahead "foo"; "bar1"; "bar3" and if not found
+"foo"; "bar1", then, if still not found, "foo"; "bar2" _without_
+consuming the tokens until it is sure that a longest chain of tokens
+(before finding non-terminals or the end of the production) is found
+(and backtracking to [other-rules] if no such longest chain can be
+found). *)
+and parser_of_token_list : type s tr lt r.
+  s ty_entry -> int -> int -> lt pattern -> (s, tr, lt -> r) ty_tree -> r parser_t =
+  fun entry nlevn alevn tok tree ->
+  let rec loop : type tr lt r. int -> lt pattern -> (s, tr, r) ty_tree -> lt -> r parser_t =
+    fun n last_tok tree -> match tree with
+    | Node (_, {node = Stoken tok; son = son; brother = bro}) ->
        let tematch = token_ematch tok in
-       let ps strm = tematch (LStream.peek_nth n strm) in
-       let plast = fun (strm : _ LStream.t) ->
-         let a = ps strm in let act = plast strm in act a in
-       loop (n - 1) tokl plast in
-  loop (n - 1) rev_tokl plast
+       let p2 = loop n last_tok bro in
+       let p1 = loop (n+1) tok son in
+       fun last_a strm ->
+        (match (try Some (tematch (LStream.peek_nth n strm)) with Stream.Failure -> None) with
+         | Some a ->
+           (match try Some (p1 a strm) with Stream.Failure -> None with
+            | Some act -> act a
+            | None -> p2 last_a strm)
+         | None -> p2 last_a strm)
+    | DeadEnd -> fun last_a strm -> raise Stream.Failure
+    | _ ->
+       let ps = parser_of_tree entry nlevn alevn tree in
+       fun last_a strm ->
+         for _i = 1 to n do LStream.junk strm done;
+         match
+           try Some (ps strm) with Stream.Failure ->
+           (* Tolerance: retry w/o granting the level constraint (see recover) *)
+           try Some (parser_of_tree entry nlevn alevn (top_tree entry tree) strm) with Stream.Failure -> None
+         with
+         | Some act -> act
+         | None -> raise (Stream.Error (tree_failed entry last_a (Stoken last_tok) tree))
+  in
+  let ps = loop 1 tok tree in
+  let tematch = token_ematch tok in
+  fun strm ->
+    match LStream.peek strm with
+    | Some tok -> let a = tematch tok in let act = ps a strm in act a
+    | None -> raise Stream.Failure
 and parser_of_symbol : type s tr a.
   s ty_entry -> int -> (s, tr, a) ty_symbol -> a parser_t =
   fun entry nlevn ->
