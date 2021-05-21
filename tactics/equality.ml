@@ -167,7 +167,7 @@ let instantiate_lemma gl c ty l l2r concl =
   let sigma, ct = pf_type_of gl c in
   let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
   let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
-  [eqclause]
+  eqclause
 
 let rewrite_conv_closed_core_unif_flags = {
   modulo_conv_on_closed_terms = Some TransparentState.full;
@@ -287,12 +287,12 @@ let general_elim_clause with_evars frzevars cls rew elim =
     end
 
 let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
-  let all, firstonly, tac =
+  let strat, tac =
     match tac with
-    | None -> false, false, None
-    | Some (tac, Naive) -> false, false, Some tac
-    | Some (tac, FirstSolved) -> true, true, Some (tclCOMPLETE tac)
-    | Some (tac, AllMatches) -> true, false, Some (tclCOMPLETE tac)
+    | None -> Naive, None
+    | Some (tac, Naive) -> Naive, Some tac
+    | Some (tac, FirstSolved) -> FirstSolved, Some (tclCOMPLETE tac)
+    | Some (tac, AllMatches) -> AllMatches, Some (tclCOMPLETE tac)
   in
   let try_clause c =
     side_tac
@@ -302,17 +302,20 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
       tac
   in
   Proofview.Goal.enter begin fun gl ->
-    let instantiate_lemma concl =
-      if not all then instantiate_lemma gl c t l l2r concl
-      else instantiate_lemma_all frzevars gl c t l l2r concl
-    in
     let typ = match cls with
     | None -> pf_concl gl
     | Some id -> pf_get_hyp_typ id gl
     in
-    let cs = instantiate_lemma typ in
-    if firstonly then tclFIRST (List.map try_clause cs)
-    else tclMAP try_clause cs
+    match strat with
+    | Naive ->
+      let cs = instantiate_lemma gl c t l l2r typ in
+      try_clause cs
+    | FirstSolved ->
+      let cs = instantiate_lemma_all frzevars gl c t l l2r typ in
+      tclFIRST (List.map try_clause cs)
+    | AllMatches ->
+      let cs = instantiate_lemma_all frzevars gl c t l l2r typ in
+      tclMAP try_clause cs
   end
 
 (* The next function decides in particular whether to try a regular
