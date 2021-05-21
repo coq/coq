@@ -439,6 +439,18 @@ let expand_case env (ci, _, _, _, _, _, _ as case) =
   let specif = Environ.lookup_mind (fst ci.ci_ind) env in
   expand_case_specif specif case
 
+let annotate_case env (ci, u, pms, _, iv, c, _ as case) =
+  let (_, (p,pr), _, _, bl) = expand_case env case in
+  let p =
+    (* Too bad we need to fetch this data in the environment, should be in the
+      case_info instead. *)
+    let (_, mip) = lookup_mind_specif env ci.ci_ind in
+    Term.decompose_lambda_n_decls (mip.Declarations.mind_nrealdecls + 1) p
+  in
+  let mk_br c n = Term.decompose_lambda_n_decls n c in
+  let bl = Array.map2 mk_br bl ci.ci_cstr_ndecls in
+  (ci, u, pms, (p,pr), iv, c, bl)
+
 let contract_case env (ci, (p,rp), iv, c, br) =
   let (mib, mip) = lookup_mind_specif env ci.ci_ind in
   let (arity, p) = Term.decompose_lambda_n_decls (mip.mind_nrealdecls + 1) p in
@@ -469,10 +481,68 @@ let contract_case env (ci, (p,rp), iv, c, br) =
 (************************************************************************)
 (* Type of case branches *)
 
+let bottom =
+  (* By simplicity, we approximate non-constructors arguments with
+     [forall A:Prop, A], even though it's ill-typed; what is important is
+     that it cannot be confused with Ind (and that it is compatible with
+     reduction) *)
+  mkProd (Context.anonR, mkProp, mkRel 1)
+
+let rec mask_types env a =
+  let a = whd_all env a in
+  let f, l = decompose_app a in
+  match kind f with
+  | Ind _ -> bottom
+  (* we treat binders explicitly *)
+  | Fix (i,fix) -> mkApp (mkFix (i, mask_types_rec env fix), Array.map (mask_types env) l)
+  | CoFix (i,cofix) -> mkApp (mkCoFix (i, mask_types_rec env cofix), Array.map (mask_types env) l)
+  | Prod (na,t,b) -> assert (Array.is_empty l); mkProd (na, mask_types env t, mask_types (push_rel (LocalAssum (na,t)) env) b)
+  | Lambda (na,t,b) -> assert (Array.is_empty l); mkLambda (na, t, mask_types (push_rel (LocalAssum (na,t)) env) b)
+  | Case (ci, u, pms, p, iv, c, bl) ->
+      let (ci, _, pms, (p0, pr), _, b, bl0) = annotate_case env (ci, u, pms, p, iv, c, bl) in
+      let f_ctx (nas, _) (ctx, c) = (nas, mask_types (push_rel_context ctx env) c) in
+      (* In v8 concrete syntax, predicate is after the term to match! *)
+      let b' = mask_types env b in
+      let pms' = Array.map_left (mask_types env) pms in (* does not matter *)
+      let p' = f_ctx (fst p) p0 in
+      let iv' = (* don't care *) iv in
+      let bl' = Array.map2 f_ctx bl bl0 in
+      mkCase (ci, u, pms', (p',pr), iv', b', bl')
+  | LetIn _ | App _ -> assert false (* reduced and decomposed *)
+  (* binder-free nodes are factorized *)
+  | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Const _
+  | Float _ | Int _  -> mkApp (f, Array.map (mask_types env) l)
+  | Cast (c, _, _) -> mask_types env c
+  | Proj (p, r, c) -> mkApp (mkProj (p, r, mask_types env c), Array.map (mask_types env) l)
+  | Array (u, v, c, d) -> assert (Array.is_empty l); mkArray (u, Array.map (mask_types env) v, mask_types env c, mask_types env d)
+
+and mask_types_rec env (ids,typs,bodies as rec_types) =
+  let env = push_rec_types rec_types env in
+  (ids,typs,Array.map (mask_types env) bodies)
+
+let build_branches_type_approx env (ind,u) (_,mip as specif) params (retctx,ret) =
+  let build_one i (ctx, c) =
+    let cty = Term.it_mkProd_or_LetIn c ctx in
+    let typi = full_constructor_instantiate (ind,u,specif,params) cty in
+    let (cstrsign,ccl) = Term.decompose_prod_decls typi in
+    let nargs = Context.Rel.length cstrsign in
+    let (_,allargs) = decompose_app_list ccl in
+    let (lparams,vargs) = List.chop (inductive_params specif) allargs in
+    let env = push_rel_context cstrsign env in
+    let vargs = List.map (mask_types env) vargs in
+    let cargs =
+      let cstr = ith_constructor_of_inductive ind (i+1) in
+      let dep_cstr = Term.applist (mkConstructU (cstr,u),lparams@(Context.Rel.instance_list mkRel 0 cstrsign)) in
+      vargs @ [dep_cstr] in
+    let base = substl (List.rev cargs) (liftn nargs (Array.length retctx + 1) ret) in
+    (cstrsign,base) in
+  if noccur_with_meta 1 (Array.length retctx) ret then None
+  else Some (Array.mapi build_one mip.mind_nf_lc)
+
 (* [p] is the predicate, [i] is the constructor number (starting from 0),
    and [cty] is the type of the constructor (params not instantiated) *)
 let build_branches_type (ind,u) (_,mip as specif) params p =
-  let build_one_branch i (ctx, c) =
+  let build_one i (ctx, c) =
     let cty = Term.it_mkProd_or_LetIn c ctx in
     let typi = full_constructor_instantiate (ind,u,specif,params) cty in
     let (cstrsign,ccl) = Term.decompose_prod_decls typi in
@@ -485,7 +555,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
       vargs @ [dep_cstr] in
     let base = Term.lambda_appvect_decls (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     Term.it_mkProd_or_LetIn base cstrsign in
-  Array.mapi build_one_branch mip.mind_nf_lc
+  Array.mapi build_one mip.mind_nf_lc
 
 (************************************************************************)
 (* Checking the case annotation is relevant *)
@@ -1131,12 +1201,12 @@ let check_is_subterm x tree =
   | Not_subterm | Subterm (_,Large,_) -> InvalidSubterm
   | Internally_bound_subterm l -> NeedReduceSubterm l
 
-let filter_stack_domain env nr p stack =
-  let absctx, ar = Term.decompose_lambda_decls p in
-  (* Optimization: if the predicate is not dependent, no restriction is needed
-     and we avoid building the recargs tree. *)
-  if noccur_with_meta 1 (Context.Rel.length absctx) ar then stack
-  else let env = push_rel_context absctx env in
+let filter_stack_domain env nr brtyp k stack =
+  match brtyp with
+  | None -> stack
+  | Some brtyp ->
+  let (ctx,ar) = brtyp.(k) in
+  let env = push_rel_context ctx env in
   let rec filter_stack env ar stack =
     match stack with
     | [] -> []
@@ -1227,9 +1297,11 @@ let check_one_fix renv recpos trees def =
             let nr = redex_level rs' in
             let case_spec =
               branches_specif renv (set_iota_specif nr (lazy_subterm_specif renv [] c_0)) ci in
-            let stack' = filter_stack_domain renv.env nr p stack in
+            let specif = lookup_mind_specif renv.env ci.ci_ind in
+            let brtyp = build_branches_type_approx renv.env (ci.ci_ind,u) specif (Array.to_list pms) (fst ret) in
             let rs' =
               Array.fold_left_i (fun k rs' br' ->
+                  let stack' = filter_stack_domain renv.env nr brtyp k stack in
                   let stack_br = push_stack_args case_spec.(k) stack' in
                   check_rec_call_stack renv stack_br rs' br') rs' brs in
             let needreduce_br, rs = List.sep_first rs' in

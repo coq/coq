@@ -550,6 +550,8 @@ Definition test (s:step E E) :=
     | _ => false
   end.
 
+Unset Implicit Arguments.
+
 (* Testing regression of bug 2454 ("get" used not be type-checkable when
    defined with its type constraint) *)
 
@@ -569,3 +571,48 @@ Check fun e t (d1 d2:EQ e t) =>
       with
       | R _ _, R _ _ => fun _ _ => eq_refl
       end.
+
+Module Map3.
+
+Inductive vector (A : Type) : nat -> Set :=
+    Cons : forall n : nat, vector A n -> vector A (S n).
+
+Fixpoint map3
+  (A0 A1 A2 B : Type) (n : nat) (v0 : vector A0 n)
+  (v1 : vector A1 n) (v2 : vector A2 n) {struct v2} : vector B n :=
+  match
+    v0 in (vector _ H) return (vector A2 H -> vector A1 H -> vector B H)
+  with
+  | Cons _ x tl0 =>
+      fun (H : vector A2 (S x)) (H0 : vector A1 (S x)) =>
+      match
+        H0 as v3 in (vector _ H1)
+        return
+          (match H1 as H2 return (vector A1 H2 -> Set) with
+           | 0 => fun _ : vector A1 0 => IDProp
+           | S x0 =>
+               fun _ : vector A1 (S x0) =>
+               vector A0 x0 -> vector A2 (S x0) -> vector B (S x0)
+           end v3)
+      with
+      | Cons _ x0 tl1 =>
+          fun (tl2 : vector A0 x0) (H1 : vector A2 (S x0)) =>
+          match
+            H1 as v3 in (vector _ H2)
+            return
+              (match H2 as H3 return (vector A2 H3 -> Set) with
+               | 0 => fun _ : vector A2 0 => IDProp
+               | S x1 =>
+                   fun _ : vector A2 (S x1) =>
+                   vector A0 x1 -> vector A1 x1 -> vector B (S x1)
+               end v3)
+          with
+          | Cons _ x1 tl4 =>
+              fun (tl7 : vector A0 x1)
+                (tl8 : vector A1 x1) =>
+              Cons B x1 (map3 A0 A1 A2 B x1 tl7 tl8 tl4)
+          end tl2 tl1
+      end tl0 H
+  end v2 v1.
+
+End Map3.
