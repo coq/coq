@@ -140,7 +140,7 @@ let update_bpt opt ide_bpt =
 (* refresh breakpoints, for use when loadpaths are updated *)
 let refresh_bpts () =
   breakpoints := BPSet.empty;
-  Seq.iter (update_bpt true) (IBPSet.to_seq !ide_breakpoints)
+  IBPSet.iter (update_bpt true) !ide_breakpoints
 
 type debugger_state = {
   mutable cur_loc : Loc.t option

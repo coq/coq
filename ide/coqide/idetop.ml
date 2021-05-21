@@ -386,13 +386,18 @@ let db_loc () =
     let vs_files = List.map (fun p -> (Filename.concat (Loadpath.physical p) basename)) paths in
     let filtered = List.filter (fun p -> Sys.file_exists p) vs_files in
     begin match filtered with
-    | [] -> Feedback.msg_warning Pp.(fnl () ++ str "Unable to locate source code for module " ++
-                      str (Names.DirPath.to_string dirpath)); None
+    | [] -> (* todo: maybe tweak this later to allow showing a popup dialog in the GUI *)
+      let msg = Pp.(fnl () ++ str "Unable to locate source code for module " ++
+                      str (Names.DirPath.to_string dirpath)) in
+      let msg = if vs_files = [] then msg else
+        (List.fold_left (fun msg f -> msg ++ fnl() ++ str f) (msg ++ str " in:") vs_files) in
+      Feedback.msg_warning msg;
+      None
     | [f] -> Some (f, [bp; ep])
     | f :: tl ->
       let msg = Pp.(fnl () ++ str "Multiple files found matching module " ++
           str (Names.DirPath.to_string dirpath) ++ str ":") in
-      let msg = List.fold_left (fun msg f -> cut () ++ msg ++ str f) msg vs_files in
+      let msg = List.fold_left (fun msg f -> msg ++ fnl() ++ str f) msg vs_files in
       Feedback.msg_warning msg;
       Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
     end
