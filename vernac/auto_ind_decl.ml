@@ -122,7 +122,7 @@ let check_no_indices mib =
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
-let build_beq_scheme_deps kn =
+let get_inductive_deps kn =
   (* fetching global env *)
   let env = Global.env() in
   (* fetching the mutual inductive body *)
@@ -147,8 +147,7 @@ let build_beq_scheme_deps kn =
       | Ind ((kn', _), _) ->
           if Environ.QMutInd.equal env kn kn' then accu
           else
-            let eff = SchemeMutualDep (kn', !beq_scheme_kind_aux ()) in
-            List.fold_left aux (eff :: accu) a
+            List.fold_left aux (kn' :: accu) a
       | Const (kn, u) ->
         (match Environ.constant_opt_value_in env (kn, u) with
         | Some c -> aux accu (Term.applist (c,a))
@@ -168,6 +167,10 @@ let build_beq_scheme_deps kn =
     Array.fold_left_i fold accu constrsi
   in
   Array.fold_left_i (fun i accu _ -> make_one_eq accu i) [] mib.mind_packets
+
+let build_beq_scheme_deps kn =
+  let inds = get_inductive_deps kn in
+  List.map (fun ind -> SchemeMutualDep (ind, !beq_scheme_kind_aux ())) inds
 
 let build_beq_scheme kn =
   check_bool_is_defined ();
@@ -418,6 +421,10 @@ let destruct_ind env sigma c =
 let bl_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
+let get_scheme k ind = match lookup_scheme k ind with
+| None -> assert false
+| Some c -> Proofview.tclUNIT c
+
 (*
   In the following, avoid is the list of names to avoid.
   If the args of the Inductive type are A1 ... An
@@ -458,7 +465,7 @@ let do_replace_lb aavoid narg p q =
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
     let u,v = destruct_ind env sigma type_of_pq in
-    find_scheme (!lb_scheme_kind_aux ()) (fst u) (*FIXME*) >>= fun c ->
+    get_scheme (!lb_scheme_kind_aux ()) (fst u) >>= fun c ->
     let lb_type_of_p = mkConst c in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
@@ -514,7 +521,7 @@ let do_replace_bl (ind,u as indu) aavoid narg lft rgt =
           in if Ind.CanOrd.equal (fst u) ind
              then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
-               find_scheme (!bl_scheme_kind_aux ()) (fst u) (*FIXME*) >>= fun c ->
+               get_scheme (!bl_scheme_kind_aux ()) (fst u) >>= fun c ->
                let bl_t1 = mkConst c in
                let bl_args =
                         Array.append (Array.append
@@ -716,9 +723,14 @@ let make_bl_scheme mind =
   in
   ([|ans|], ctx)
 
+let make_bl_scheme_deps ind =
+  let inds = get_inductive_deps ind in
+  let map ind = SchemeMutualDep (ind, !bl_scheme_kind_aux ()) in
+  SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
+
 let bl_scheme_kind =
   declare_mutual_scheme_object "_dec_bl"
-  ~deps:(fun ind -> [SchemeMutualDep (ind, beq_scheme_kind)])
+  ~deps:make_bl_scheme_deps
   make_bl_scheme
 
 let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
@@ -835,9 +847,14 @@ let make_lb_scheme mind =
   in
   ([|ans|], ctx)
 
+let make_lb_scheme_deps ind =
+  let inds = get_inductive_deps ind in
+  let map ind = SchemeMutualDep (ind, !lb_scheme_kind_aux ()) in
+  SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
+
 let lb_scheme_kind =
   declare_mutual_scheme_object "_dec_lb"
-  ~deps:(fun ind -> [SchemeMutualDep (ind, beq_scheme_kind)])
+  ~deps:make_lb_scheme_deps
   make_lb_scheme
 
 let _ = lb_scheme_kind_aux := fun () -> lb_scheme_kind
@@ -911,7 +928,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
   let eq = eq () and tt = tt ()
       and ff = ff () and bb = bb () in
   let list_id = list_id lnamesparrec in
-  find_scheme beq_scheme_kind ind >>= fun _ ->
+  get_scheme beq_scheme_kind ind >>= fun _ ->
   let _non_fresh_eqI = eqI ind list_id in
   let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
   let eqfalse x = mkApp(eq,[|bb;x;ff|]) in
@@ -939,9 +956,9 @@ let compute_dec_tact ind lnamesparrec nparrec =
           let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
           let arfresh = Array.of_list fresh_first_intros in
           let xargs = Array.sub arfresh 0 (2*nparrec) in
-          find_scheme bl_scheme_kind ind >>= fun c ->
+          get_scheme bl_scheme_kind ind >>= fun c ->
           let blI = mkConst c in
-          find_scheme lb_scheme_kind ind >>= fun c ->
+          get_scheme lb_scheme_kind ind >>= fun c ->
           let lbI = mkConst c in
           Tacticals.New.tclTHENLIST [
               (*we do this so we don't have to prove the same goal twice *)
@@ -1011,7 +1028,9 @@ let make_eq_decidability mind =
   ([|ans|], ctx)
 
 let eq_dec_scheme_kind =
-  declare_mutual_scheme_object "_eq_dec" make_eq_decidability
+  declare_mutual_scheme_object "_eq_dec"
+  ~deps:(fun ind -> [SchemeMutualDep (ind, bl_scheme_kind); SchemeMutualDep (ind, lb_scheme_kind)])
+  make_eq_decidability
 
 (* The eq_dec_scheme proofs depend on the equality and discr tactics
    but the inj tactics, that comes with discr, depends on the
