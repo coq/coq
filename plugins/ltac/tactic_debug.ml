@@ -167,8 +167,8 @@ let at_breakpoint tac =
     BPSet.mem { dirpath; offset } !breakpoints
   in
   match CAst.(tac.loc) with
-  | Some {Loc.fname=(InFile (Some dirpath,_)); bp} -> checkbpt dirpath bp
-  | Some {Loc.fname=(ToplevelInput);           bp} -> checkbpt "Top"   bp
+  | Some {fname=InFile {dirpath=Some dirpath}; bp} -> checkbpt dirpath bp
+  | Some {fname=ToplevelInput;                 bp} -> checkbpt "Top"   bp
   | _ -> false
 [@@@ocaml.warning "+32"]
 

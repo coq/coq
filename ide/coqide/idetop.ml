@@ -371,9 +371,9 @@ let db_loc () =
   match debugger_state.cur_loc with
   | Some {fname=ToplevelInput; bp; ep} ->
     Some ("ToplevelInput", [bp; ep])
-  | Some {fname=InFile(None, f); bp; ep} ->
-    Some (f, [bp; ep])  (* for Load command *)
-  | Some {fname=InFile(Some dirpath,_); bp; ep} ->
+  | Some {fname=InFile {dirpath=None; file}; bp; ep} ->
+    Some (file, [bp; ep])  (* for Load command *)
+  | Some {fname=InFile {dirpath=Some dirpath}; bp; ep} ->
     (* todo: check what's in Loc.t on Windows *)
     let open Names in
     let dirpath = DirPath.of_string dirpath in
