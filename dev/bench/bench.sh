@@ -52,7 +52,7 @@ check_variable "CI_JOB_URL"
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
 : "${num_of_iterations:=1}"
-: "${coq_opam_packages:=coq-performance-tests-lite coq-engine-bench-lite coq-hott coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst}"
+: "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst}"
 
 new_coq_commit=$(git rev-parse HEAD^2)
 old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
@@ -75,7 +75,7 @@ mkdir "$log_dir"
 
 if [ ! -z "$BENCH_DEBUG" ]
 then
-   echo "DEBUG: ocaml -version = `ocaml -version`"
+   echo "DEBUG: ocaml -version = $(ocaml -version)"
    echo "DEBUG: working_dir = $working_dir"
    echo "DEBUG: new_ocaml_switch = $new_ocaml_switch"
    echo "DEBUG: new_coq_repository = $new_coq_repository"
@@ -218,8 +218,58 @@ git remote add old_coq_repository "$old_coq_repository"
 git fetch -q "$old_coq_repository"
 git checkout -q $new_coq_commit
 
-official_coq_branch=master
 coq_opam_version=dev
+
+zulip_post=""
+if [[ $ZULIP_BENCH_BOT ]]; then
+    zulip_header="Bench at $CI_JOB_URL
+For packages $coq_opam_packages
+"
+
+    # 24008 is the "github notifications" stream
+    resp=$(curl -sSX POST https://coq.zulipchat.com/api/v1/messages \
+    -u "$ZULIP_BENCH_BOT" \
+    --data-urlencode type=stream \
+    --data-urlencode to='240008' \
+    --data-urlencode subject='Bench Notifications' \
+    --data-urlencode content="$zulip_header")
+
+    zulip_post=$(echo "$resp" | jq .id)
+    case "$zulip_post" in
+        ''|*[!0-9]*) # not an int
+            echo "Failed to post to zulip: $resp"
+            zulip_post=""
+            ;;
+    esac
+fi
+
+zulip_edit() {
+    ending=$1
+    if [[ $rendered_results ]]; then
+        msg="$zulip_header
+
+~~~
+$rendered_results
+~~~
+
+$ending
+"
+    else
+        msg="$zulip_header
+
+$ending
+"
+    fi
+    curl -sSX PATCH https://coq.zulipchat.com/api/v1/messages/"$zulip_post" \
+         -u "$ZULIP_BENCH_BOT" \
+         --data-urlencode content="$msg" >/dev/null
+}
+zulip_autofail() {
+    code=$?
+    com=$BASH_COMMAND
+    zulip_edit "Failed '$com' with exit code $code."
+}
+if [[ $zulip_post ]]; then trap zulip_autofail ERR; fi
 
 # --------------------------------------------------------------------------------
 
@@ -295,6 +345,7 @@ create_opam() {
             echo "$package ($RUNNER) installed successfully"
         else
             echo "ERROR: \"opam install $package.$coq_opam_version\" has failed (for the $RUNNER commit = $COQ_HASH_LONG)."
+            zulip_edit "Bench failed: could not install $package ($RUNNER)."
             exit 1
         fi
 
@@ -424,6 +475,7 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         echo "${rendered_results}"
         # update the comment
         coqbot_update_comment "" "${rendered_results}" ""
+        zulip_edit "Benching continues..."
     fi
 
     # Generate HTML report for LAST run
@@ -433,13 +485,13 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     # ever there is a package that uses some different naming scheme.
     new_base_path=$new_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
     old_base_path=$old_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
-    for vo in `cd $new_opam_root/$new_base_path/; find -name '*.vo'`; do
+    for vo in $(cd $new_opam_root/$new_base_path/; find . -name '*.vo'); do
         if [ -e $old_opam_root/$old_base_path/$vo ]; then
           echo "$coq_opam_package/$vo $(stat -c%s $old_opam_root/$old_base_path/$vo) $(stat -c%s $new_opam_root/$new_base_path/$vo)" >> "$log_dir/vosize.log"
         fi
-        if [ -e $old_opam_root/$old_base_path/${vo%%o}.timing -a \
-                -e $new_opam_root/$new_base_path/${vo%%o}.timing ]; then
-            mkdir -p $working_dir/html/$coq_opam_package/`dirname $vo`/
+        if [ -e $old_opam_root/$old_base_path/${vo%%o}.timing ] && \
+               [ -e $new_opam_root/$new_base_path/${vo%%o}.timing ]; then
+            mkdir -p $working_dir/html/$coq_opam_package/$(dirname $vo)/
             $program_path/timelog2html $new_opam_root/$new_base_path/${vo%%o} \
                                        $old_opam_root/$old_base_path/${vo%%o}.timing \
                                        $new_opam_root/$new_base_path/${vo%%o}.timing > \
@@ -476,31 +528,31 @@ if [ -z "$installable_coq_opam_packages" ]; then
     printf "\n\nINFO: failed to install: $sorted_coq_opam_packages"
     coqbot_update_comment "done" "" "$sorted_coq_opam_packages"
     exit 1
-else
-    echo "DEBUG: $program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
-    rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
-    echo "${rendered_results}"
-
-    echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
-
-    cd "$coq_dir"
-    echo INFO: Old Coq version
-    git log -n 1 "$old_coq_commit"
-    echo INFO: New Coq version
-    git log -n 1 "$new_coq_commit"
-
-    not_installable_coq_opam_packages=`comm -23 <(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g'`
-
-    coqbot_update_comment "done" "${rendered_results}" "${not_installable_coq_opam_packages}"
-
-    exit_code=0
-
-    if [ ! -z "$not_installable_coq_opam_packages" ]; then
-        # Tell the user that some of the provided OPAM-package(s)
-        # is/are not installable.
-        printf '\n\nINFO: failed to install %s\n' "$not_installable_coq_opam_packages"
-        exit_code=1
-    fi
-
-    exit 0
 fi
+
+echo "DEBUG: $program_path/render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
+rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
+echo "${rendered_results}"
+
+echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
+
+cd "$coq_dir"
+echo INFO: Old Coq version
+git log -n 1 "$old_coq_commit"
+echo INFO: New Coq version
+git log -n 1 "$new_coq_commit"
+
+not_installable_coq_opam_packages=$(comm -23 <(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g')
+
+coqbot_update_comment "done" "${rendered_results}" "${not_installable_coq_opam_packages}"
+
+if [ -n "$not_installable_coq_opam_packages" ]; then
+    # Tell the user that some of the provided OPAM-package(s)
+    # is/are not installable.
+    printf '\n\nINFO: failed to install %s\n' "$not_installable_coq_opam_packages"
+    zulip_edit "Bench complete, failed to install packages:
+$not_installable_coq_opam_packages"
+    exit 1
+fi
+
+zulip_edit "Bench complete: all packages successfully installed."
