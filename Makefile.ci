@@ -109,6 +109,15 @@ ci-gappa: ci-flocq
 $(CI_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
 
+# if we do eg "make states ci-foo", ci-foo will wait for states
+# if we just do "make ci-foo" it will just run ci-foo
+# (technically the ci-* targets depend on world but it can be
+# convenient to run them with less than world compiled)
+NON_CI_GOALS:=$(strip $(filter-out ci-%,$(MAKECMDGOALS)))
+ifneq (,$(NON_CI_GOALS))
+$(CI_TARGETS): $(NON_CI_GOALS)
+endif
+
 # For emacs:
 # Local Variables:
 # mode: makefile
