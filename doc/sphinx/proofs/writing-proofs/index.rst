@@ -12,11 +12,9 @@ theorem.
 
 The first section presents the proof mode (the core mechanism of the
 dialog between the user and the proof assistant).  Then, several
-sections describe the available tactics.  One section covers the
+sections describe the available tactics.  The last section covers the
 SSReflect proof language, which provides a consistent alternative set
-of tactics to the standard basic tactics.  The last section documents
-the ``Scheme`` family of commands, which can be used to extend the
-power of the :tacn:`induction` and :tacn:`inversion` tactics.
+of tactics to the standard basic tactics.
 
 Additional tactics are documented in the next chapter
 :ref:`automatic-tactics`.
@@ -27,6 +25,6 @@ Additional tactics are documented in the next chapter
    proof-mode
    ../../proof-engine/tactics
    equality
-   ../../proof-engine/ssreflect-proof-language
+   inductive
    ../../proof-engine/detailed-tactic-examples
-   ../../user-extensions/proof-schemes
+   ../../proof-engine/ssreflect-proof-language
