@@ -70,3 +70,7 @@ fun '{| |} => 0
               |} => (a, b, c, d)
        |}
      : T
+fun x : R => 0
+             +++
+             x.(field) 0
+     : R -> nat
