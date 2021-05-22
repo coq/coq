@@ -118,10 +118,9 @@ git_download()
 
   if [ -d "$dest" ]; then
     echo "Warning: download and unpacking of $project skipped because $dest already exists."
-    cd "$dest"
   elif [[ $ov_url ]] || [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
     git clone "$giturl" "$dest"
-    cd "$dest"
+    pushd "$dest"
     git checkout "$ref"
     git log -n 1
     if [[ $ov_url ]]; then
@@ -130,11 +129,12 @@ git_download()
         git log -n 1 HEAD^2
         git log -n 1
     fi
+    popd
   else # When possible, we download tarballs to reduce bandwidth and latency
     local archiveurl_var="${project}_CI_ARCHIVEURL"
     local archiveurl="${!archiveurl_var}"
     mkdir -p "$dest"
-    cd "$dest"
+    pushd "$dest"
     local commit
     commit=$(git ls-remote "$giturl" "refs/heads/$ref" | cut -f 1)
     if [[ "$commit" == "" ]]; then
@@ -144,6 +144,7 @@ git_download()
     wget "$archiveurl/$commit.tar.gz"
     tar xfz "$commit.tar.gz" --strip-components=1
     rm -f "$commit.tar.gz"
+    popd
   fi
 }
 
@@ -157,4 +158,10 @@ make()
     else
         command make "$@"
     fi
+}
+
+# run make -k; make again if it failed so that the failing file comes last
+# makes it easier to find the error messages in the CI log
+function make_full() {
+    if ! make -k "$@"; then make -k "$@"; exit 1; fi
 }
