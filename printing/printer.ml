@@ -442,7 +442,13 @@ let pr_predicate pr_elt (b, elts) =
     else
       if List.is_empty elts then str"none" else pr_elts
 
-let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
+let pr_cpred p =
+  let safe_pr_constant env kn =
+    try pr_constant env kn
+    with Not_found when !Flags.in_debugger || !Flags.in_toplevel ->
+      Names.Constant.print kn in
+  pr_predicate (safe_pr_constant (Global.env())) (Cpred.elements p)
+
 let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
 let pr_transparent_state ts =
