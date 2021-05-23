@@ -91,13 +91,13 @@ let subst_univs_fn_puniverses f (c, u as cu) =
 let nf_evars_and_universes_opt_subst f subst =
   let subst = normalize_univ_variable_opt_subst subst in
   let lsubst = level_subst_of subst in
-  let rec aux c =
+  let rec aux inner c =
     match kind c with
     | Evar (evk, args) ->
-      let args' = List.Smart.map aux args in
-      (match try f (evk, args') with Not_found -> None with
+      let args' = List.Smart.map (aux true) args in
+      (match try f ~inner (evk, args') with Not_found -> None with
       | None -> if args == args' then c else mkEvar (evk, args')
-      | Some c -> aux c)
+      | Some c -> aux inner c)
     | Const pu ->
       let pu' = subst_univs_fn_puniverses lsubst pu in
         if pu' == pu then c else mkConstU pu'
@@ -112,17 +112,17 @@ let nf_evars_and_universes_opt_subst f subst =
       if u' == u then c else mkSort (sort_of_univ u')
     | Case (ci,u,pms,p,iv,t,br) ->
       let u' = Instance.subst_fn lsubst u in
-      if u' == u then Constr.map aux c
-      else Constr.map aux (mkCase (ci,u',pms,p,iv,t,br))
+      if u' == u then Constr.map (aux inner) c
+      else Constr.map (aux inner) (mkCase (ci,u',pms,p,iv,t,br))
     | Array (u,elems,def,ty) ->
       let u' = Univ.Instance.subst_fn lsubst u in
-      let elems' = CArray.Smart.map aux elems in
-      let def' = aux def in
-      let ty' = aux ty in
+      let elems' = CArray.Smart.map (aux inner) elems in
+      let def' = aux inner def in
+      let ty' = aux inner ty in
       if u == u' && elems == elems' && def == def' && ty == ty' then c
       else mkArray (u',elems',def',ty')
-    | _ -> Constr.map aux c
-  in aux
+    | _ -> Constr.map (aux inner) c
+  in aux false
 
 let pr_universe_body = function
   | None -> mt ()

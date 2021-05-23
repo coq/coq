@@ -29,7 +29,7 @@ val normalize_opt_subst : universe_opt_subst -> universe_opt_subst
 
 (** Full universes substitutions into terms *)
 
-val nf_evars_and_universes_opt_subst : (existential -> constr option) ->
+val nf_evars_and_universes_opt_subst : (inner:bool -> existential -> constr option) ->
   universe_opt_subst -> constr -> constr
 
 (** Pretty-printing *)

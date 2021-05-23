@@ -77,7 +77,7 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let nf_evars_universes evm =
-  UnivSubst.nf_evars_and_universes_opt_subst (safe_evar_value evm)
+  UnivSubst.nf_evars_and_universes_opt_subst (fun ~inner -> safe_evar_value evm)
     (Evd.universe_subst evm)
 
 let nf_named_context_evar sigma ctx =

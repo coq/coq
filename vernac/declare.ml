@@ -1639,7 +1639,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
-  let subst_evar k = Evd.existential_opt_value0 sigma k in
+  let subst_evar ~inner k = Evd.existential_opt_value0 sigma k in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst initial_euctx) in
 
   (* We only support opaque proofs, this will be enforced by using
