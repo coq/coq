@@ -241,7 +241,7 @@ the same parameter values of its specification.
 
 .. flag:: Uniform Inductive Parameters
 
-     When this flag is set (it is off by default),
+     When this :term:`flag` is set (it is off by default),
      inductive definitions are abstracted over their parameters
      before type checking constructors, allowing to write:
 
@@ -1049,7 +1049,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 
 .. flag:: Auto Template Polymorphism
 
-   This flag, enabled by default, makes every inductive type declared
+   This :term:`flag`, enabled by default, makes every inductive type declared
    at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic if possible.
 

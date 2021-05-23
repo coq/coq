@@ -91,7 +91,7 @@ Programmable proof search
           Info Trivial
           Debug Trivial
 
-   These flags enable printing of informative or debug information for
+   These :term:`flags <flag>` enable printing of informative or debug information for
    the :tacn:`auto` and :tacn:`trivial` tactics.
 
 .. tacn:: eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
@@ -617,7 +617,7 @@ non-imported hints.
 
 .. opt:: Loose Hint Behavior {| "Lax" | "Warn" | "Strict" }
 
-   This option accepts three values, which control the behavior of hints w.r.t.
+   This :term:`option` accepts three values, which control the behavior of hints w.r.t.
    :cmd:`Import`:
 
    - "Lax": this is the default, and corresponds to the historical behavior,

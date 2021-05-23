@@ -114,18 +114,19 @@ The following settings let you control the display format for types:
 
 .. flag:: Printing Records
 
-   If set, use the record syntax (shown above) as the default display format.
+   When this :term:`flag` is on (this is the default),
+   use the record syntax (shown above) as the default display format.
 
 You can override the display format for specified types by adding entries to these tables:
 
 .. table:: Printing Record @qualid
 
-   Specifies a set of qualids which are displayed as records.  Use the
+   This :term:`table` specifies a set of qualids which are displayed as records.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 .. table:: Printing Constructor @qualid
 
-   Specifies a set of qualids which are displayed as constructors.  Use the
+   This :term:`table` specifies a set of qualids which are displayed as constructors.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 This syntax can also be used for pattern matching.
@@ -159,7 +160,7 @@ available:
 
 .. flag:: Printing Projections
 
-   This flag activates the dot notation for printing.
+   This :term:`flag` activates the dot notation for printing.
 
    .. example::
 
@@ -236,7 +237,7 @@ Primitive Projections
 
 .. flag:: Primitive Projections
 
-   Turns on the use of primitive
+   This :term:`flag` turns on the use of primitive
    projections when defining subsequent records (even through the ``Inductive``
    and ``CoInductive`` commands). Primitive projections
    extended the Calculus of Inductive Constructions with a new binary
@@ -251,7 +252,7 @@ Primitive Projections
 
 .. flag:: Printing Primitive Projection Parameters
 
-   This compatibility flag reconstructs internally omitted parameters at
+   This compatibility :term:`flag` reconstructs internally omitted parameters at
    printing time (even though they are absent in the actual AST manipulated
    by the kernel).
 

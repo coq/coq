@@ -259,7 +259,7 @@ Mode for automatic declaration of implicit arguments
 
 .. flag:: Implicit Arguments
 
-   This flag (off by default) allows to systematically declare implicit
+   This :term:`flag` (off by default) allows to systematically declare implicit
    the arguments detectable as such. Auto-detection of implicit arguments is
    governed by flags controlling whether strict and contextual implicit
    arguments have to be considered or not.
@@ -276,11 +276,11 @@ Controlling strict implicit arguments
    arguments plus, for historical reasons, a small subset of the non-strict
    implicit arguments. To relax this constraint and to set
    implicit all non strict implicit arguments by default, you can turn this
-   flag off.
+   :term:`flag` off.
 
 .. flag:: Strongly Strict Implicit
 
-   Use this flag (off by default) to capture exactly the strict implicit
+   Use this :term:`flag` (off by default) to capture exactly the strict implicit
    arguments and no more than the strict implicit arguments.
 
 .. _controlling-contextual-implicit-args:
@@ -291,7 +291,7 @@ Controlling contextual implicit arguments
 .. flag:: Contextual Implicit
 
    By default, Coq does not automatically set implicit the contextual
-   implicit arguments. You can turn this flag on to tell Coq to also
+   implicit arguments. You can turn this :term:`flag` on to tell Coq to also
    infer contextual implicit argument.
 
 .. _controlling-rev-pattern-implicit-args:
@@ -302,7 +302,7 @@ Controlling reversible-pattern implicit arguments
 .. flag:: Reversible Pattern Implicit
 
    By default, Coq does not automatically set implicit the reversible-pattern
-   implicit arguments. You can turn this flag on to tell Coq to also infer
+   implicit arguments. You can turn this :term:`flag` on to tell Coq to also infer
    reversible-pattern implicit argument.
 
 .. _controlling-insertion-implicit-args:
@@ -312,7 +312,7 @@ Controlling the insertion of implicit arguments not followed by explicit argumen
 
 .. flag:: Maximal Implicit Insertion
 
-   Assuming the implicit argument mode is on, this flag (off by default)
+   Assuming the implicit argument mode is on, this :term:`flag` (off by default)
    declares implicit arguments to be automatically inserted when a
    function is partially applied and the next argument of the function is
    an implicit one.
@@ -385,7 +385,7 @@ Displaying implicit arguments when pretty-printing
 .. flag:: Printing Implicit
 
    By default, the basic pretty-printing rules hide the inferable implicit
-   arguments of an application. Turn this flag on to force printing all
+   arguments of an application. Turn this :term:`flag` on to force printing all
    implicit arguments.
 
 .. flag:: Printing Implicit Defensive
@@ -393,7 +393,7 @@ Displaying implicit arguments when pretty-printing
    By default, the basic pretty-printing rules display implicit
    arguments that are not detected as strict implicit arguments. This
    “defensive” mode can quickly make the display cumbersome so this can
-   be deactivated by turning this flag off.
+   be deactivated by turning this :term:`flag` off.
 
 .. seealso:: :flag:`Printing All`.
 
@@ -446,7 +446,7 @@ function.
 
 .. flag:: Parsing Explicit
 
-   Turning this flag on (it is off by default) deactivates the use of implicit arguments.
+   Turning this :term:`flag` on (it is off by default) deactivates the use of implicit arguments.
 
    In this case, all arguments of :term:`constants <constant>`, inductive types,
    constructors, etc, including the arguments declared as implicit, have
@@ -508,7 +508,7 @@ or :g:`m` to the type :g:`nat` of natural numbers).
   By default, the type of bound variables is not printed when
   the variable name is associated with an implicit type which matches the
   actual type of the variable. This feature can be deactivated by
-  turning this flag off.
+  turning this :term:`flag` off.
 
 .. _implicit-generalization:
 

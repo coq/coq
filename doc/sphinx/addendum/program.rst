@@ -83,7 +83,7 @@ coercions.
 
 .. flag:: Program Cases
 
-   Controls the special treatment of pattern matching generating equalities
+   This :term:`flag` controls the special treatment of pattern matching generating equalities
    and disequalities when using |Program| (it is on by default). All
    pattern-matches and let-patterns are handled using the standard algorithm
    of Coq (see :ref:`extendedpatternmatching`) when this flag is
@@ -91,13 +91,13 @@ coercions.
 
 .. flag:: Program Generalized Coercion
 
-   Controls the coercion of general inductive types when using |Program|
+   This :term:`flag` controls the coercion of general inductive types when using |Program|
    (the flag is on by default). Coercion of subset types and pairs is still
    active in this case.
 
 .. flag:: Program Mode
 
-   Enables the program mode, in which 1) typechecking allows subset coercions and
+   This :term:`flag` enables the program mode, in which 1) typechecking allows subset coercions and
    2) the elaboration of pattern matching of :cmd:`Fixpoint` and
    :cmd:`Definition` acts as if the :attr:`program` attribute has been
    used, generating obligations if there are unresolved holes after
@@ -305,7 +305,7 @@ optional tactic is replaced by the default one if not specified.
 
 .. flag:: Transparent Obligations
 
-   Controls whether all obligations should be declared as transparent
+   This :term:`flag` controls whether all obligations should be declared as transparent
    (the default), or if the system should infer which obligations can be
    declared opaque.
 

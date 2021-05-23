@@ -439,19 +439,19 @@ Displaying information about notations
 
 .. flag:: Printing Notations
 
-   Controls whether to use notations for printing terms wherever possible.
+   This :term:`flag` controls whether to use notations for printing terms wherever possible.
    Default is on.
 
 .. flag:: Printing Raw Literals
 
-   Controls whether to use string and number notations for printing terms
+   This :term:`flag` controls whether to use string and number notations for printing terms
    wherever possible (see :ref:`string-notations`).
    Default is off.
 
 .. flag:: Printing Parentheses
 
-   If on, parentheses are printed even if implied by associativity and precedence
-   Default is off.
+   When this :term:`flag` is on, parentheses are printed even if
+   implied by associativity and precedence. Default is off.
 
 .. seealso::
 

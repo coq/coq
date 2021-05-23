@@ -2184,7 +2184,7 @@ Backtraces
 
 .. flag:: Ltac Backtrace
 
-   Setting this flag displays a backtrace on Ltac failures that can be useful
+   Setting this :term:`flag` displays a backtrace on Ltac failures that can be useful
    to find out what went wrong. It is disabled by default for performance
    reasons.
 
@@ -2233,7 +2233,7 @@ Tracing execution
 
    .. opt:: Info Level @natural
 
-      This option is an alternative to the :cmd:`Info` command.
+      This :term:`option` is an alternative to the :cmd:`Info` command.
 
       This will automatically print the same trace as :n:`Info @natural` at each
       tactic call. The unfolding level can be overridden by a call to the
@@ -2244,7 +2244,7 @@ Interactive debugger
 
 .. flag:: Ltac Debug
 
-   This flag governs the step-by-step debugger that comes with the |Ltac| interpreter.
+   This :term:`flag` governs the step-by-step debugger that comes with the |Ltac| interpreter.
 
 When the debugger is activated, it stops at every step of the evaluation of
 the current |Ltac| expression and prints information on what it is doing.
@@ -2272,7 +2272,7 @@ A non-interactive mode for the debugger is available via the flag:
 
 .. flag:: Ltac Batch Debug
 
-   This flag has the effect of presenting a newline at every prompt, when
+   This :term:`flag` has the effect of presenting a newline at every prompt, when
    the debugger is on. The debug log thus created, which does not require
    user input to generate when this flag is set, can then be run through
    external tools such as diff.
@@ -2293,7 +2293,7 @@ performance issue.
 
 .. flag:: Ltac Profiling
 
-   This flag enables and disables the profiler.
+   This :term:`flag` enables and disables the profiler.
 
 .. cmd:: Show Ltac Profile {? {| CutOff @integer | @string } }
 

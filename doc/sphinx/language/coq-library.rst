@@ -1066,7 +1066,7 @@ decimal constants. This ensures that the composition
 
 .. flag:: Printing Float
 
-   Turn this flag off (it is on by default) to deactivate decimal
+   Turn this :term:`flag` off (it is on by default) to deactivate decimal
    printing of floating-point constants. They will then be printed
    with an hexadecimal representation.
 

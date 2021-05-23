@@ -194,7 +194,7 @@ Printing nested patterns
    pattern matching into a single pattern matching over a nested
    pattern.
 
-   When this flag is on (default), Coq’s printer tries to do such
+   When this :term:`flag` is on (default), Coq’s printer tries to do such
    limited re-factorization.
    Turning it off tells Coq to print only simple pattern matching problems
    in the same way as the Coq kernel handles them.
@@ -207,7 +207,7 @@ Factorization of clauses with same right-hand side
 
    When several patterns share the same right-hand side, it is additionally
    possible to share the clauses using disjunctive patterns. Assuming that the
-   printing matching mode is on, this flag (on by default) tells Coq's
+   printing matching mode is on, this :term:`flag` (on by default) tells Coq's
    printer to try to do this kind of factorization.
 
 Use of a default clause
@@ -218,7 +218,7 @@ Use of a default clause
    When several patterns share the same right-hand side which do not depend on the
    arguments of the patterns, yet an extra factorization is possible: the
    disjunction of patterns can be replaced with a `_` default clause. Assuming that
-   the printing matching mode and the factorization mode are on, this flag (on by
+   the printing matching mode and the factorization mode are on, this :term:`flag` (on by
    default) tells Coq's printer to use a default clause when relevant.
 
 Printing of wildcard patterns
@@ -227,7 +227,7 @@ Printing of wildcard patterns
 .. flag:: Printing Wildcard
 
    Some variables in a pattern may not occur in the right-hand side of
-   the pattern matching clause. When this flag is on (default), the
+   the pattern matching clause. When this :term:`flag` is on (default), the
    variables having no occurrences in the right-hand side of the
    pattern matching clause are just printed using the wildcard symbol
    “_”.
@@ -240,7 +240,7 @@ Printing of the elimination predicate
 
    In most of the cases, the type of the result of a matched term is
    mechanically synthesizable. Especially, if the result type does not
-   depend of the matched term. When this flag is on (default),
+   depend of the matched term. When this :term:`flag` is on (default),
    the result type is not printed when Coq knows that it can re-
    synthesize it.
 
@@ -253,7 +253,7 @@ written using the first destructuring let syntax.
 
 .. table:: Printing Let @qualid
 
-   Specifies a set of qualids for which pattern matching is displayed using a let expression.
+   This :term:`table` specifies a set of qualids for which pattern matching is displayed using a let expression.
    Note that this only applies to pattern matching instances entered with :g:`match`.
    It doesn't affect pattern matching explicitly entered with a destructuring
    :g:`let`.
@@ -269,7 +269,7 @@ which types are written this way:
 
 .. table:: Printing If @qualid
 
-   Specifies a set of qualids for which pattern matching is displayed using
+   This :term:`table` specifies a set of qualids for which pattern matching is displayed using
    ``if`` … ``then`` … ``else`` ….  Use the :cmd:`Add` and :cmd:`Remove`
    commands to update this set.
 
@@ -592,7 +592,7 @@ When we use parameters in patterns there is an error message:
 
 .. flag:: Asymmetric Patterns
 
-   This flag (off by default) removes parameters from constructors in patterns:
+   This :term:`flag` (off by default) removes parameters from constructors in patterns:
 
 .. coqtop:: all
 

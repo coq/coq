@@ -1698,7 +1698,7 @@ Debug
 
 .. flag:: Ltac2 Backtrace
 
-   When this flag is set, toplevel failures will be printed with a backtrace.
+   When this :term:`flag` is set, toplevel failures will be printed with a backtrace.
 
 Compatibility layer with Ltac1
 ------------------------------

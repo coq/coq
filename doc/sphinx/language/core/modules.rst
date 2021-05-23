@@ -305,7 +305,7 @@ are now available through the dot notation.
 
 .. flag:: Short Module Printing
 
-   This flag (off by default) disables the printing of the types of fields,
+   This :term:`flag` (off by default) disables the printing of the types of fields,
    leaving only their names, for the commands :cmd:`Print Module` and
    :cmd:`Print Module Type`.
 
