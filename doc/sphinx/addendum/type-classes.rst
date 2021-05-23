@@ -370,7 +370,7 @@ Summary of the commands
 
    .. attr:: refine
 
-      This attribute can be used to leave holes or not provide all
+      This :term:`attribute` can be used to leave holes or not provide all
       fields in the definition of an instance and open the tactic mode
       to fill them.  It works exactly as if no :term:`body` had been given and
       the :tacn:`refine` tactic has been used first.

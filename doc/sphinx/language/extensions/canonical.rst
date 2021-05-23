@@ -132,7 +132,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 .. attr:: canonical{? = {| yes | no } }
    :name: canonical
 
-   This boolean attribute can decorate a :cmd:`Definition` or
+   This :term:`boolean attribute` can decorate a :cmd:`Definition` or
    :cmd:`Let` command.  It is equivalent to having a :cmd:`Canonical
    Structure` declaration just after the command.
 

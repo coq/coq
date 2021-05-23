@@ -303,7 +303,7 @@ When the proof is completed, you can exit proof mode with commands such as
 
 .. attr:: using
 
-   This attribute can be applied to the :cmd:`Definition`, :cmd:`Example`,
+   This :term:`attribute` can be applied to the :cmd:`Definition`, :cmd:`Example`,
    :cmd:`Fixpoint` and :cmd:`CoFixpoint` commands as well as to :cmd:`Lemma` and
    its variants.  It takes
    a :n:`@section_var_expr`, in quotes, as its value. This is equivalent to

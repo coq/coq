@@ -939,7 +939,7 @@ Controlling Typing Flags
 .. attr:: bypass_check(guard{? = {| yes | no } })
    :name: bypass_check(guard)
 
-   Similar to :flag:`Guard Checking`, but on a per-declaration
+   This :term:`boolean attribute` is similar to the :flag:`Guard Checking` flag, but on a per-declaration
    basis. Disable guard checking locally with ``bypass_check(guard)``.
 
 .. flag:: Positivity Checking
@@ -952,7 +952,7 @@ Controlling Typing Flags
 .. attr:: bypass_check(positivity{? = {| yes | no } })
    :name: bypass_check(positivity)
 
-   Similar to :flag:`Positivity Checking`, but on a per-declaration basis.
+   This :term:`boolean attribute` is similar to the :flag:`Positivity Checking` flag, but on a per-declaration basis.
    Disable positivity checking locally with ``bypass_check(positivity)``.
 
 .. flag:: Universe Checking
@@ -966,7 +966,7 @@ Controlling Typing Flags
 .. attr:: bypass_check(universes{? = {| yes | no } })
    :name: bypass_check(universes)
 
-   Similar to :flag:`Universe Checking`, but on a per-declaration basis.
+   This :term:`boolean attribute` is similar to the :flag:`Universe Checking` flag, but on a per-declaration basis.
    Disable universe checking locally with ``bypass_check(universes)``.
 
 .. cmd:: Print Typing Flags

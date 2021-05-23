@@ -1028,7 +1028,7 @@ while noting a few exceptional commands for which :attr:`local` and
 
 .. attr:: local
 
-   The :attr:`local` attribute limits the effect of the command to the
+   This :term:`attribute` limits the effect of the command to the
    current scope (section or module).
 
    The ``Local`` prefix is an alternative syntax for the :attr:`local`
@@ -1054,7 +1054,7 @@ while noting a few exceptional commands for which :attr:`local` and
 
 .. attr:: export
 
-   The :attr:`export` attribute makes the effect of the command
+   This :term:`attribute` makes the effect of the command
    persist when the section is closed and applies the effect when the
    module containing the command is imported.
 
@@ -1064,7 +1064,7 @@ while noting a few exceptional commands for which :attr:`local` and
 
 .. attr:: global
 
-   The :attr:`global` attribute makes the effect of the command
+   This :term:`attribute` makes the effect of the command
    persist even when the current section or module is closed.  Loading
    the file containing the command (possibly transitively) applies the
    effect of the command.

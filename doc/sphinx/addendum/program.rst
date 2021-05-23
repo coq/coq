@@ -243,7 +243,7 @@ automatically and fails if some unsolved obligations remain. In this
 case, one can first define the lemma’s statement using :cmd:`Definition`
 and use it as the goal afterwards. Otherwise the proof
 will be started with the elaborated version as a goal. The
-:attr:`Program` attribute can similarly be used with
+:attr:`program` attribute can similarly be used with
 :cmd:`Variable`, :cmd:`Hypothesis`, :cmd:`Axiom` etc.
 
 .. _solving_obligations:
