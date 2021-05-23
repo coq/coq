@@ -238,7 +238,7 @@ let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen
 
 let apply_heuristics env sigma fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
-  let flags = default_flags_of (Typeclasses.classes_transparent_state ()) in
+  let flags = default_flags_of (Conv_oracle.get_transp_state (Environ.oracle env)) in
   try solve_unif_constraints_with_heuristics ~flags env sigma
   with e when CErrors.noncritical e ->
     let e = Exninfo.capture e in
