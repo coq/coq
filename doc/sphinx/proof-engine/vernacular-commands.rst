@@ -811,7 +811,7 @@ Quitting and debugging
       no timeout is applied.
 
 
-.. cmd:: Fail @sentence
+.. cmd:: Fail  @sentence
 
    For debugging scripts, sometimes it is desirable to know whether a
    command or a tactic fails. If :n:`@sentence` fails, then
