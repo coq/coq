@@ -557,9 +557,17 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
         let term1 = apprec_nohdbeta flags env evd term1 in
         let term2 = apprec_nohdbeta flags env evd term2 in
         let default () =
+        match
           evar_eqappr_x flags env evd pbty
             (whd_nored_state env evd (term1,Stack.empty))
             (whd_nored_state env evd (term2,Stack.empty))
+        with
+        | UnifFailure _ as x ->
+           if Retyping.relevance_of_term env evd term1 == Sorts.Irrelevant ||
+              Retyping.relevance_of_term env evd term2 == Sorts.Irrelevant
+           then Success evd
+           else x
+        | Success _ as x -> x
         in
           begin match EConstr.kind evd term1, EConstr.kind evd term2 with
           | Evar ev, _ when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->

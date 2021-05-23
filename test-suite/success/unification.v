@@ -199,3 +199,7 @@ Check
     H ?[y] a p : x = 0.
 (* We have to solve "?P ?y[x] == x = 0" knowing from
    "p : (x=0) == (?y[x] = 0)" that "?y := x" *)
+
+(* An example involving SProp *)
+
+Check fun (A:SProp) (f g:A->A) (P:A->Type) a (x : P (f a)) => x : P (g _).
