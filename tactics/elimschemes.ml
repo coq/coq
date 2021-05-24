@@ -60,12 +60,6 @@ let build_induction_scheme_in_type dep sort ind =
   let sigma, c = build_induction_scheme env sigma pind dep sort in
     c, Evd.evar_universe_context sigma
 
-let declare_individual_scheme_object name ?aux f =
-  let f : individual_scheme_object_function =
-    fun _ ind -> f ind
-  in
-  declare_individual_scheme_object name ?aux f
-
 let rect_scheme_kind_from_type =
   declare_individual_scheme_object "_rect_nodep"
     (fun x -> build_induction_scheme_in_type false InType x)
