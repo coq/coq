@@ -59,6 +59,15 @@ OCAMLWARN         := $(COQMF_WARN)
 # practice is discouraged since _CoqProject better not contain make specific
 # code (be nice to user interfaces).
 
+# set KEEP_ERROR to prevent make from deleting files produced by failing rules.
+# For instance if coqc creates a .vo but then fails to native compile,
+# the .vo will be deleted unless KEEP_ERROR is nonempty.
+# May confuse make so use only for debugging.
+KEEP_ERROR?=
+ifneq (,$(KEEP_ERROR))
+.DELETE_ON_ERROR:
+endif
+
 # Print shell commands (set to non empty)
 VERBOSE ?=
 
