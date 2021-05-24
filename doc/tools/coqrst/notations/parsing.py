@@ -12,6 +12,18 @@ from .TacticNotationsParser import TacticNotationsParser
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
+from antlr4.Recognizer import Recognizer
+
+# Only print ANTLR version warning once
+checked_version = False
+check_version = Recognizer.checkVersion
+def checkVersion_once(*args, **kwargs):
+    global checked_version
+    if not checked_version:
+        # Using "Recognizer.checkVersion" would cause endless recursion
+        check_version(*args, **kwargs)
+        checked_version = True
+Recognizer.checkVersion = checkVersion_once
 
 SUBSTITUTIONS = [#("@bindings_list", "{+ (@id := @val) }"),
                  ("@qualid_or_string", "@id|@string")]
