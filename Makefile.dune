@@ -138,6 +138,12 @@ ireport:
 clean:
 	dune clean
 
+# ci-* targets
+
+CI_PURE_DUNE:=1
+export CI_PURE_DUNE
+include Makefile.ci
+
 # Custom targets to create subsets of the world target but with less
 # compiled files. This is desired when we want to have our Coq Dune
 # build with Coq developments that are not dunerized and thus still

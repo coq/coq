@@ -26,7 +26,7 @@ then
     then
         export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
     fi
-elif [ -d "$PWD/_build_vo/" ];
+elif [ -d "$PWD/_build_vo/" ] && [ -z "$CI_PURE_DUNE" ]
 then
     # Dune Ocaml build, vo build using make
     export OCAMLPATH="$PWD/_build_vo/default/lib/:$OCAMLPATH"
