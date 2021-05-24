@@ -343,10 +343,6 @@ type notation_rule = interp_rule * interpretation * notation_applicative_status
 let notation_rule_eq (rule1,pat1,s1 as x1) (rule2,pat2,s2 as x2) =
   x1 == x2 || (rule1 = rule2 && interpretation_eq pat1 pat2 && s1 = s2)
 
-let also_cases_notation_rule_eq (also_cases1,rule1) (also_cases2,rule2) =
-  (* No need in principle to compare also_cases as it is inferred *)
-  also_cases1 = also_cases2 && notation_rule_eq rule1 rule2
-
 let adjust_application c1 c2 =
   match c1, c2 with
   | NApp (t1, a1), (NList (_,_,NApp (_, a2),_,_) | NApp (_, a2)) when List.length a1 >= List.length a2 ->
@@ -367,7 +363,7 @@ let keymap_add key interp map =
 
 let keymap_remove key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
-  KeyMap.add key (List.remove_first (also_cases_notation_rule_eq interp) old) map
+  KeyMap.add key (List.remove_first (fun (_,rule) -> notation_rule_eq interp rule) old) map
 
 let keymap_find key map =
   try KeyMap.find key map
@@ -1446,9 +1442,9 @@ let check_printing_override (scopt,ntn) data parsingdata printingdata =
     exists) printingdata in
   parsing_update, exists
 
-let remove_uninterpretation rule also_in_cases_pattern (metas,c as pat) =
+let remove_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  notations_key_table := keymap_remove key (also_in_cases_pattern,(rule,pat,n)) !notations_key_table
+  notations_key_table := keymap_remove key ((rule,pat,n)) !notations_key_table
 
 let declare_uninterpretation ?(also_in_cases_pattern=true) rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
@@ -1745,7 +1741,7 @@ let declare_notation (scopt,ntn) pat df ~use ~also_in_cases_pattern coe deprecat
   scope_map := String.Map.add scope sc !scope_map;
   (* Update the uninterpretation cache *)
   begin match printing_update with
-  | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) also_in_cases_pattern pat
+  | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) pat
   | None -> ()
   end;
   if use <> OnlyParsing then declare_uninterpretation ~also_in_cases_pattern (NotationRule (scopt,ntn)) pat;
