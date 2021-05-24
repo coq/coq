@@ -210,7 +210,8 @@ let is_numeral_in_constr entry symbs =
   | _ ->
       false
 
-let analyze_notation_tokens ~onlyprinting entry df =
+let analyze_notation_tokens ~onlyprinting ~infix entry df =
+  let df = if infix then quote_notation_token df else df in
   let { recvars; mainvars; symbols } as res = decompose_raw_notation df in
     (* don't check for nonlinearity if printing only, see Bug 5526 *)
   (if not onlyprinting then
@@ -221,6 +222,29 @@ let analyze_notation_tokens ~onlyprinting entry df =
     | _ -> ());
   let isnumeral = is_numeral_in_constr entry symbols in
   res, isnumeral
+
+let adjust_symbols vars notation_symbols =
+  let x = Namegen.next_ident_away (Id.of_string "x") vars in
+  let y = Namegen.next_ident_away (Id.of_string "y") (Id.Set.add x vars) in
+  let notation_symbols = {
+      recvars = notation_symbols.recvars; mainvars = x::notation_symbols.mainvars@[y];
+      symbols = NonTerminal x :: notation_symbols.symbols @ [NonTerminal y];
+    } in
+  x, y, notation_symbols
+
+let adjust_reserved_infix_notation notation_symbols =
+  let vars = Id.Set.of_list (List.map_filter (function NonTerminal x -> Some x | _ -> None) notation_symbols.symbols) in
+  let _, _, notation_symbols = adjust_symbols vars notation_symbols in
+  notation_symbols
+
+let adjust_infix_notation df notation_symbols c =
+  let vars = names_of_constr_expr c in
+  let x, y, notation_symbols = adjust_symbols vars notation_symbols in
+  let df = Id.to_string x ^ " " ^ df ^ " " ^ Id.to_string y in
+  let inject_var x = CAst.make @@ CRef (qualid_of_ident x,None) in
+  let metas = [inject_var x; inject_var y] in
+  let c = mkAppC (c,metas) in
+  df, notation_symbols, c
 
 let warn_unexpected_primitive_token_modifier =
   CWarnings.create ~name:"primitive-token-modifier" ~category:"parsing"
@@ -1629,7 +1653,8 @@ let add_reserved_notation ~local ~infix ({CAst.loc;v=df},mods) =
   let open SynData in
   let (main_data,mods) = interp_non_syntax_modifiers ~reserved:true ~infix ~syndef:false None mods in
   let mods = interp_modifiers main_data.entry mods in
-  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting main_data.entry df in
+  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
+  let notation_symbols = if infix then adjust_reserved_infix_notation notation_symbols else notation_symbols in
   let ntn = make_notation_key main_data.entry notation_symbols.symbols in
   if isnumeral then user_err ?loc (str "Notations for numbers are primitive and need not be reserved.");
   let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
@@ -1653,7 +1678,7 @@ let prepare_where_notation decl_ntn =
   match mods with
   | _::_ -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
   | [] ->
-    let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting main_data.entry df in
+    let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix:false main_data.entry df in
     let ntn = make_notation_key main_data.entry notation_symbols.symbols in
     let syntax_rules =
       if isnumeral then PrimTokenSyntax else
@@ -1679,11 +1704,13 @@ let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_sym
 
 (* Main entry point for command Notation *)
 
-let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
+let add_notation ~local ~infix deprecation env c ({CAst.loc;v=df},modifiers) sc =
   (* Extract the modifiers not affecting the parsing rule *)
-  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:false deprecation modifiers in
+  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~syndef:false deprecation modifiers in
   (* Extract the modifiers not affecting the parsing rule *)
-  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting main_data.entry df in
+  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
+  (* Add variables on both sides if an infix notation *)
+  let df, notation_symbols, c = if infix then adjust_infix_notation df notation_symbols c else df, notation_symbols, c in
   (* Build the canonical identifier of the syntactic part of the notation *)
   let ntn = make_notation_key main_data.entry notation_symbols.symbols in
   (* Build or rebuild the syntax rules *)
@@ -1715,24 +1742,10 @@ let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
 
 let add_notation_extra_printing_rule df k v =
   let notk =
-    let { symbols }, isnumeral = analyze_notation_tokens ~onlyprinting:true InConstrEntry df in
+    let { symbols }, isnumeral = analyze_notation_tokens ~onlyprinting:true ~infix:false InConstrEntry df in
     if isnumeral then user_err (str "Notations for numbers are primitive.");
     make_notation_key InConstrEntry symbols in
   add_notation_extra_printing_rule notk k v
-
-(* Infix notations *)
-
-let inject_var x = CAst.make @@ CRef (qualid_of_ident x,None)
-
-let add_infix ~local deprecation env ({CAst.loc;v=inf},modifiers) pr sc =
-  (* check the precedence *)
-  let vars = names_of_constr_expr pr in
-  let x = Namegen.next_ident_away (Id.of_string "x") vars in
-  let y = Namegen.next_ident_away (Id.of_string "y") (Id.Set.add x vars) in
-  let metas = [inject_var x; inject_var y] in
-  let c = mkAppC (pr,metas) in
-  let df = CAst.make ?loc @@ Id.to_string x ^" "^(quote_notation_token inf)^" "^Id.to_string y in
-  add_notation ~local deprecation env c (df,modifiers) sc
 
 (**********************************************************************)
 (* Scopes, delimiters and classes bound to scopes                     *)

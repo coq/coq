@@ -757,22 +757,14 @@ let pr_vernac_expr v =
       keyword "Bind Scope" ++ spc () ++ str sc ++
       spc() ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_class_rawexpr cll
     )
-  | VernacInfix (({v=s},mv),q,sn) -> (* A Verifier *)
+  | VernacNotation (infix,c,({v=s},l),opt) ->
     return (
-      hov 0 (hov 0 (keyword "Infix "
-                    ++ qs s ++ str " :=" ++ pr_constrarg q) ++
-             pr_syntax_modifiers mv ++
-             (match sn with
-              | None -> mt()
-              | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
-    )
-  | VernacNotation (c,({v=s},l),opt) ->
-    return (
-      hov 2 (keyword "Notation" ++ spc() ++ qs s ++
-             str " :=" ++ Flags.without_option Flags.beautify pr_constrarg c ++ pr_syntax_modifiers l ++
+      hov 2 (hov 0 (keyword (if infix then "Infix" else "Notation") ++ spc() ++ qs s ++
+             str " :=" ++ Flags.without_option Flags.beautify pr_constrarg c) ++
+             pr_syntax_modifiers l ++
              (match opt with
               | None -> mt()
-              | Some sc -> str" :" ++ spc() ++ str sc))
+              | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
     )
   | VernacReservedNotation (_, (s, l)) ->
     return (

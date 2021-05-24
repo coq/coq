@@ -169,7 +169,7 @@ let classify_vernac e =
     | VernacDeclareCustomEntry _
     | VernacOpenCloseScope _ | VernacDeclareScope _
     | VernacDelimiters _ | VernacBindScope _
-    | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _
+    | VernacNotation _ | VernacNotationAddFormat _
     | VernacReservedNotation _
     | VernacSyntacticDefinition _
     | VernacRequire _ | VernacImport _ | VernacInclude _
