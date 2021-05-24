@@ -163,7 +163,7 @@ compatible with the rest of Coq, up to a few discrepancies:
 .. flag:: SsrRewrite
 
    Controls whether the incompatible rewrite syntax is enabled (the default).
-   Disabling the flag makes the syntax compatible with other parts of Coq.
+   Disabling the :term:`flag` makes the syntax compatible with other parts of Coq.
 
 .. flag:: SsrIdents
 
@@ -173,7 +173,7 @@ compatible with the rest of Coq, up to a few discrepancies:
    if the details of variable name generation change in future releases of Coq.
 
    The default is on, which gives an error message when the user tries to
-   create such identifiers.  Disabling the flag generates a warning instead,
+   create such identifiers.  Disabling the :term:`flag` generates a warning instead,
    increasing compatibility with other parts of Coq.
 
 Gallina extensions
@@ -2787,7 +2787,7 @@ typeclass inference.
 
 .. flag:: SsrHave NoTCResolution
 
-   This flag restores the behavior of |SSR| 1.4 and below (never resolve typeclasses).
+   This :term:`flag` restores the behavior of |SSR| 1.4 and below (never resolve typeclasses).
 
 Variants: the suff and wlog tactics
 ```````````````````````````````````
@@ -3157,7 +3157,7 @@ An :token:`r_item` can be:
 
    Controls the order in which generated subgoals (side conditions)
    are added to the
-   proof context.  The flag is off by default, which puts subgoals generated
+   proof context.  The :term:`flag` is off by default, which puts subgoals generated
    by conditional rules first, followed by the main goal.  When it is on,
    the main goal appears first.  If your proofs are organized to complete
    proving the main goal before side conditions, turning the flag on will save you

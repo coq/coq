@@ -222,7 +222,7 @@ Rewriting with Leibniz and setoid equality
 
    .. flag:: Keyed Unification
 
-      Makes higher-order unification used by :tacn:`rewrite` rely on a set of keys to drive
+      This :term:`flag` makes higher-order unification used by :tacn:`rewrite` rely on a set of keys to drive
       unification.  The subterms, considered as rewriting candidates, must start with
       the same key as the left- or right-hand side of the lemma given to rewrite, and the arguments
       are then unified up to full reduction.
@@ -298,7 +298,7 @@ Rewriting with Leibniz and setoid equality
 
    .. flag:: Regular Subst Tactic
 
-      This flag controls the behavior of :tacn:`subst`. When it is
+      This :term:`flag` controls the behavior of :tacn:`subst`. When it is
       activated (it is by default), :tacn:`subst` also deals with the following corner cases:
 
       + A context with ordered hypotheses :n:`@ident__1 = @ident__2`
@@ -831,7 +831,7 @@ to tell the kernel which reduction engine to use.
 
    .. flag:: NativeCompute Timing
 
-      This flag causes all calls to the native compiler to print
+      This :term:`flag` causes all calls to the native compiler to print
       timing information for the conversion to native code,
       compilation, execution, and reification phases of native
       compilation.  Timing is printed in units of seconds of
@@ -839,12 +839,12 @@ to tell the kernel which reduction engine to use.
 
    .. flag:: NativeCompute Profiling
 
-      On Linux, if you have the ``perf`` profiler installed, this flag makes
+      On Linux, if you have the ``perf`` profiler installed, this :term:`flag` makes
       it possible to profile :tacn:`native_compute` evaluations.
 
    .. opt:: NativeCompute Profile Filename @string
 
-      This option specifies the profile output; the default is
+      This :term:`option` specifies the profile output; the default is
       ``native_compute_profile.data``. The actual filename used
       will contain extra characters to avoid overwriting an existing file; that
       filename is reported to the user.

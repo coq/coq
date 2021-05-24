@@ -345,7 +345,7 @@ described elsewhere
 
 .. table:: Search Blacklist @string
 
-   Specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,
+   This :term:`table` specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,
    :cmd:`SearchPattern` and :cmd:`SearchRewrite` queries.  A lemma whose
    fully-qualified name contains any of the strings will be excluded from the
    search results.  The default blacklisted substrings are ``_subterm``, ``_subproof`` and
@@ -356,7 +356,7 @@ described elsewhere
 
 .. flag:: Search Output Name Only
 
-   This flag restricts the output of search commands to identifier names;
+   This :term:`flag` restricts the output of search commands to identifier names;
    turning it on causes invocations of :cmd:`Search`,
    :cmd:`SearchPattern`, :cmd:`SearchRewrite` etc. to omit types from their
    output, printing only identifiers.
@@ -452,7 +452,7 @@ Printing flags
 
 .. flag:: Fast Name Printing
 
-   When turned on, Coq uses an asymptotically faster algorithm for the
+   When this :term:`flag` is turned on, Coq uses an asymptotically faster algorithm for the
    generation of unambiguous names of bound variables while printing terms.
    While faster, it is also less clever and results in a typically less elegant
    display, e.g. it will generate more names rather than reusing certain names
@@ -806,9 +806,10 @@ Quitting and debugging
 
    .. opt:: Default Timeout @natural
 
-      If set, each :n:`@sentence` is treated as if it was prefixed with :cmd:`Timeout` :n:`@natural`,
-      except for :cmd:`Timeout` commands themselves.  If unset,
-      no timeout is applied.
+      When this :term:`option` is set, each :n:`@sentence` is treated
+      as if it was prefixed with :cmd:`Timeout` :n:`@natural`, except
+      for :cmd:`Timeout` commands themselves.  If unset, no timeout is
+      applied.
 
 
 .. cmd:: Fail @sentence
@@ -840,11 +841,11 @@ Controlling display
 
 .. flag:: Silent
 
-   This flag controls the normal displaying.
+   This :term:`flag` controls the normal displaying.
 
 .. opt:: Warnings "{+, {? {| - | + } } @ident }"
 
-   This option configures the display of warnings. It is experimental, and
+   This :term:`option` configures the display of warnings. It is experimental, and
    expects, between quotes, a comma-separated list of warning names or
    categories. Adding - in front of a warning or category disables it, adding +
    makes it an error. It is possible to use the special categories all and
@@ -854,27 +855,28 @@ Controlling display
 
 .. opt:: Debug "{+, {? - } @ident }"
 
-   Configures the display of debug messages. Each :n:`@ident` enables debug messages
+   This :term:`option` configures the display of debug messages. Each :n:`@ident` enables debug messages
    for that component, while  :n:`-@ident` disables messages for the component.
    ``all`` activates or deactivates all other components.  ``backtrace`` controls printing of
    error backtraces.
 
    :cmd:`Test` `Debug` displays the list of components and their enabled/disabled state.
+
 .. opt:: Printing Width @natural
 
-   This command sets which left-aligned part of the width of the screen is used
+   This :term:`option` sets which left-aligned part of the width of the screen is used
    for display. At the time of writing this documentation, the default value
    is 78.
 
 .. opt:: Printing Depth @natural
 
-   This option controls the nesting depth of the formatter used for pretty-
+   This :term:`option` controls the nesting depth of the formatter used for pretty-
    printing. Beyond this depth, display of subterms is replaced by dots. At the
    time of writing this documentation, the default value is 50.
 
 .. flag:: Printing Compact Contexts
 
-   This flag controls the compact display mode for goals contexts. When on,
+   This :term:`flag` controls the compact display mode for goals contexts. When on,
    the printer tries to reduce the vertical size of goals contexts by putting
    several variables (even if of different types) on the same line provided it
    does not exceed the printing width (see :opt:`Printing Width`). At the time
@@ -882,13 +884,13 @@ Controlling display
 
 .. flag:: Printing Unfocused
 
-   This flag controls whether unfocused goals are displayed. Such goals are
+   This :term:`flag` controls whether unfocused goals are displayed. Such goals are
    created by focusing other goals with bullets (see :ref:`bullets` or
    :ref:`curly braces <curly-braces>`). It is off by default.
 
 .. flag:: Printing Dependent Evars Line
 
-   This flag controls the printing of the “(dependent evars: …)” information
+   This :term:`flag` controls the printing of the “(dependent evars: …)” information
    after each tactic.  The information is used by the Prooftree tool in Proof
    General. (https://askra.de/software/prooftree)
 
@@ -904,7 +906,7 @@ Printing constructions in full
    Coercions, implicit arguments, the type of pattern matching, but also
    notations (see :ref:`syntax-extensions-and-notation-scopes`) can obfuscate the behavior of some
    tactics (typically the tactics applying to occurrences of subterms are
-   sensitive to the implicit arguments). Turning this flag on
+   sensitive to the implicit arguments). Turning this :term:`flag` on
    deactivates all high-level printing features such as coercions,
    implicit arguments, returned type of pattern matching, notations and
    various syntactic sugar for pattern matching or record projections.
@@ -930,7 +932,7 @@ Controlling Typing Flags
 
 .. flag:: Guard Checking
 
-   This flag can be used to enable/disable the guard checking of
+   This :term:`flag` can be used to enable/disable the guard checking of
    fixpoints. Warning: this can break the consistency of the system, use at your
    own risk. Decreasing argument can still be specified: the decrease is not checked
    anymore but it still affects the reduction of the term. Unchecked fixpoints are
@@ -939,12 +941,12 @@ Controlling Typing Flags
 .. attr:: bypass_check(guard{? = {| yes | no } })
    :name: bypass_check(guard)
 
-   Similar to :flag:`Guard Checking`, but on a per-declaration
+   This :term:`boolean attribute` is similar to the :flag:`Guard Checking` flag, but on a per-declaration
    basis. Disable guard checking locally with ``bypass_check(guard)``.
 
 .. flag:: Positivity Checking
 
-   This flag can be used to enable/disable the positivity checking of inductive
+   This :term:`flag` can be used to enable/disable the positivity checking of inductive
    types and the productivity checking of coinductive types. Warning: this can
    break the consistency of the system, use at your own risk. Unchecked
    (co)inductive types are printed by :cmd:`Print Assumptions`.
@@ -952,12 +954,12 @@ Controlling Typing Flags
 .. attr:: bypass_check(positivity{? = {| yes | no } })
    :name: bypass_check(positivity)
 
-   Similar to :flag:`Positivity Checking`, but on a per-declaration basis.
+   This :term:`boolean attribute` is similar to the :flag:`Positivity Checking` flag, but on a per-declaration basis.
    Disable positivity checking locally with ``bypass_check(positivity)``.
 
 .. flag:: Universe Checking
 
-   This flag can be used to enable/disable the checking of universes, providing a
+   This :term:`flag` can be used to enable/disable the checking of universes, providing a
    form of "type in type".  Warning: this breaks the consistency of the system, use
    at your own risk.  Constants relying on "type in type" are printed by
    :cmd:`Print Assumptions`. It has the same effect as `-type-in-type` command line
@@ -966,7 +968,7 @@ Controlling Typing Flags
 .. attr:: bypass_check(universes{? = {| yes | no } })
    :name: bypass_check(universes)
 
-   Similar to :flag:`Universe Checking`, but on a per-declaration basis.
+   This :term:`boolean attribute` is similar to the :flag:`Universe Checking` flag, but on a per-declaration basis.
    Disable universe checking locally with ``bypass_check(universes)``.
 
 .. cmd:: Print Typing Flags

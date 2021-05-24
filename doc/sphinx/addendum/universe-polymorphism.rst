@@ -145,7 +145,7 @@ Polymorphic, Monomorphic
 
 .. flag:: Universe Polymorphism
 
-   This flag is off by default.  When it is on, new declarations are
+   This :term:`flag` is off by default.  When it is on, new declarations are
    polymorphic unless the :attr:`universes(polymorphic=no) <universes(polymorphic)>`
    attribute is used to override the default.
 
@@ -215,7 +215,7 @@ Cumulative, NonCumulative
 
 .. flag:: Polymorphic Inductive Cumulativity
 
-   When this flag is on (it is off by default), it makes all
+   When this :term:`flag` is on (it is off by default), it makes all
    subsequent *polymorphic* inductive definitions cumulative, unless
    the :attr:`universes(cumulative=no) <universes(cumulative)>` attribute is
    used to override the default.  It has no effect on *monomorphic* inductive definitions.
@@ -313,7 +313,7 @@ Cumulativity Weak Constraints
 
 .. flag:: Cumulativity Weak Constraints
 
-   When set, which is the default, causes "weak" constraints to be produced
+   When set, which is the default, this :term:`flag` causes "weak" constraints to be produced
    when comparing universes in an irrelevant position. Processing weak
    constraints is delayed until minimization time. A weak constraint
    between `u` and `v` when neither is smaller than the other and
@@ -390,7 +390,7 @@ it is an atomic universe (i.e. not an algebraic max() universe).
 
 .. flag:: Universe Minimization ToSet
 
-   Turning this flag off (it is on by default) disallows minimization
+   Turning this :term:`flag` off (it is on by default) disallows minimization
    to the sort :g:`Set` and only collapses floating universes between
    themselves.
 
@@ -457,7 +457,7 @@ Printing universes
 
 .. flag:: Printing Universes
 
-   Turn this flag on to activate the display of the actual level of each
+   Turn this :term:`flag` on to activate the display of the actual level of each
    occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard flag, in
    combination with :flag:`Printing All` can help to diagnose failures to unify
    terms apparently identical but internally different in the Calculus of Inductive
@@ -541,7 +541,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
 .. flag:: Strict Universe Declaration
 
-   Turning this flag off allows one to freely use
+   Turning this :term:`flag` off allows one to freely use
    identifiers for universes without declaring them first, with the
    semantics that the first use declares it. In this mode, the universe
    names are not associated with the definition or proof once it has been
@@ -549,7 +549,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
 .. flag:: Private Polymorphic Universes
 
-   This flag, on by default, removes universes which appear only in
+   This :term:`flag`, on by default, removes universes which appear only in
    the :term:`body` of an opaque polymorphic definition from the definition's
    universe arguments. As such, no value needs to be provided for
    these universes when instantiating the definition. Universe

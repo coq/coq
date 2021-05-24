@@ -303,7 +303,7 @@ When the proof is completed, you can exit proof mode with commands such as
 
 .. attr:: using
 
-   This attribute can be applied to the :cmd:`Definition`, :cmd:`Example`,
+   This :term:`attribute` can be applied to the :cmd:`Definition`, :cmd:`Example`,
    :cmd:`Fixpoint` and :cmd:`CoFixpoint` commands as well as to :cmd:`Lemma` and
    its variants.  It takes
    a :n:`@section_var_expr`, in quotes, as its value. This is equivalent to
@@ -335,15 +335,16 @@ The following options modify the behavior of ``Proof using``.
 
 .. opt:: Default Proof Using "@section_var_expr"
 
-   Use :n:`@section_var_expr` as the default ``Proof using`` value. E.g. ``Set Default
-   Proof Using "a b"`` will complete all ``Proof`` commands not followed by a
+   Set this :term:`option` to use :n:`@section_var_expr` as the
+   default ``Proof using`` value. E.g. ``Set Default Proof Using "a
+   b"`` will complete all ``Proof`` commands not followed by a
    ``using`` part with ``using a b``.
 
 
 .. flag:: Suggest Proof Using
 
-   When :cmd:`Qed` is performed, suggest a ``using`` annotation if the user did not
-   provide one.
+   When this :term:`flag` is on, :cmd:`Qed` suggests
+   a ``using`` annotation if the user did not provide one.
 
 ..  _`nameaset`:
 
@@ -412,7 +413,7 @@ be changed using the following option.
 
 .. opt:: Default Proof Mode @string
 
-   Select the proof mode to use when starting a proof. Depending on the proof
+   This :term:`option` selects the proof mode to use when starting a proof. Depending on the proof
    mode, various syntactic constructs are allowed when writing a
    proof. All proof modes support commands; the proof mode determines
    which tactic language and set of tactic definitions are available.  The
@@ -664,7 +665,7 @@ Set Bullet Behavior
 
 .. opt:: Bullet Behavior {| "None" | "Strict Subproofs" }
 
-   This option controls the bullet behavior and can take two possible values:
+   This :term:`option` controls the bullet behavior and can take two possible values:
 
    - "None": this makes bullets inactive.
    - "Strict Subproofs": this makes bullets active (this is the default behavior).
@@ -946,6 +947,7 @@ How to enable diffs
 
 .. opt:: Diffs {| "on" | "off" | "removed" }
 
+   This :term:`option` is used to enable diffs.
    The “on” setting highlights added tokens in green, while the “removed” setting
    additionally reprints items with removed tokens in red.  Unchanged tokens in
    modified items are shown with pale green or red.  Diffs in error messages
@@ -1079,7 +1081,7 @@ Controlling proof mode
 
 .. opt:: Hyps Limit @natural
 
-   This option controls the maximum number of hypotheses displayed in goals
+   This :term:`option` controls the maximum number of hypotheses displayed in goals
    after the application of a tactic. All the hypotheses remain usable
    in the proof development.
    When unset, it goes back to the default mode which is to print all
@@ -1088,7 +1090,7 @@ Controlling proof mode
 
 .. flag:: Nested Proofs Allowed
 
-   When turned on (it is off by default), this flag enables support for nested
+   When turned on (it is off by default), this :term:`flag` enables support for nested
    proofs: a new assertion command can be inserted before the current proof is
    finished, in which case Coq will temporarily switch to the proof of this
    *nested lemma*. When the proof of the nested lemma is finished (with :cmd:`Qed`
@@ -1098,7 +1100,7 @@ Controlling proof mode
 
 .. flag:: Printing Goal Names
 
-   When turned on, the name of the goal is printed in
+   When this :term:`flag` is turned on, the name of the goal is printed in
    proof mode, which can be useful in cases of cross references
    between goals.
 

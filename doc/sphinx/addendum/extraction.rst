@@ -142,14 +142,14 @@ and commands:
 
 .. flag:: Extraction Optimize
 
-   Default is on. This controls all type-preserving optimizations made on
+   Default is on. This :term:`flag` controls all type-preserving optimizations made on
    the ML terms (mostly reduction of dummy beta/iota redexes, but also
    simplifications on Cases, etc). Turn this flag off if you want a
    ML term as close as possible to the Coq term.
 
 .. flag:: Extraction Conservative Types
 
-   Default is off. This controls the non type-preserving optimizations
+   Default is off. This :term:`flag` controls the non type-preserving optimizations
    made on ML terms (which try to avoid function abstraction of dummy
    types). Turn this flag on to make sure that ``e:t``
    implies that ``e':t'`` where ``e'`` and ``t'`` are the extracted
@@ -161,7 +161,7 @@ and commands:
    produces a singleton type (i.e. a type with only one constructor, and
    only one argument to this constructor), the inductive structure is
    removed and this type is seen as an alias to the inner type.
-   The typical example is ``sig``. This flag allows disabling this
+   The typical example is ``sig``. This :term:`flag` allows disabling this
    optimization when one wishes to preserve the inductive structure of types.
 
 .. flag:: Extraction AutoInline
@@ -170,7 +170,7 @@ and commands:
    some defined :term:`constants <constant>`, according to some heuristics
    like size of bodies, uselessness of some arguments, etc.
    Those heuristics are not always perfect; if you want to disable
-   this feature, turn this flag off.
+   this feature, turn this :term:`flag` off.
 
 .. cmd:: Extraction Inline {+ @qualid }
 
@@ -239,7 +239,7 @@ This behavior can be relaxed via the following flag:
 
 .. flag:: Extraction SafeImplicits
 
-   Default is on. When this flag is off, a warning is emitted
+   Default is on. When this :term:`flag` is off, a warning is emitted
    instead of an error if some implicit arguments still occur in the
    final code of an extraction. This way, the extracted code may be
    obtained nonetheless and reviewed manually to locate the source of the issue
@@ -431,11 +431,12 @@ Additional settings
 
 .. opt:: Extraction File Comment @string
 
-   Provides a comment that is included at the beginning of the output files.
+   This :term:`option` provides a comment that is
+   included at the beginning of the output files.
 
 .. opt:: Extraction Flag @natural
 
-   Controls which optimizations are used during extraction, providing a finer-grained
+   This :term:`option` controls which optimizations are used during extraction, providing a finer-grained
    control than :flag:`Extraction Optimize`.  The bits of :token:`natural` are used as a bit mask.
    Keeping an option off keeps the extracted ML more similar to the Coq term.
    Values are:
@@ -468,7 +469,7 @@ Additional settings
 
 .. flag:: Extraction TypeExpand
 
-   If set, fully expand Coq types in ML.  See the Coq source code to learn more.
+   If this :term:`flag` is set, fully expand Coq types in ML.  See the Coq source code to learn more.
 
 Differences between Coq and ML type systems
 ----------------------------------------------

@@ -668,7 +668,7 @@ and an explanation of the underlying technique.
 
    .. flag:: Structural Injection
 
-      This flag ensures that :n:`injection @term` erases the original hypothesis
+      This :term:`flag` ensures that :n:`injection @term` erases the original hypothesis
       and leaves the generated equalities in the context rather than putting them
       as antecedents of the current goal, as if giving :n:`injection @term as`
       (with an empty list of names). This flag is off by default.
@@ -677,7 +677,7 @@ and an explanation of the underlying technique.
 
       By default, :tacn:`injection` only creates new equalities between :n:`@term`\s
       whose type is in sort :g:`Type` or :g:`Set`, thus implementing a special
-      behavior for objects that are proofs of a statement in :g:`Prop`. This flag
+      behavior for objects that are proofs of a statement in :g:`Prop`. This :term:`flag`
       controls this behavior.
 
 .. tacn:: inversion @ident
@@ -1235,23 +1235,24 @@ Automatic declaration of schemes
 
 .. flag:: Elimination Schemes
 
-   Enables automatic declaration of induction principles when defining a new
+   This :term:`flag` enables automatic declaration of induction principles when defining a new
    inductive type.  Defaults to on.
 
 .. flag:: Nonrecursive Elimination Schemes
 
-   Enables automatic declaration of induction principles for types declared with the :cmd:`Variant` and
+   This :term:`flag` enables automatic declaration of induction
+   principles for types declared with the :cmd:`Variant` and
    :cmd:`Record` commands.  Defaults to off.
 
 .. flag:: Case Analysis Schemes
 
-   This flag governs the generation of case analysis lemmas for inductive types,
+   This :term:`flag` governs the generation of case analysis lemmas for inductive types,
    i.e. corresponding to the pattern matching term alone and without fixpoint.
 
 .. flag:: Boolean Equality Schemes
           Decidable Equality Schemes
 
-   These flags control the automatic declaration of those Boolean equalities (see
+   These :term:`flags <flag>` control the automatic declaration of those Boolean equalities (see
    the second variant of ``Scheme``).
 
 .. warning::
@@ -1261,7 +1262,7 @@ Automatic declaration of schemes
 
 .. flag:: Rewriting Schemes
 
-   This flag governs generation of equality-related schemes such as congruence.
+   This :term:`flag` governs generation of equality-related schemes such as congruence.
 
 Combined Scheme
 ~~~~~~~~~~~~~~~~~~~~~~

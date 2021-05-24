@@ -238,12 +238,12 @@ Activating the Printing of Coercions
 
 .. flag:: Printing Coercions
 
-   When on, this flag forces all the coercions to be printed.
+   When on, this :term:`flag` forces all the coercions to be printed.
    By default, coercions are not printed.
 
 .. table:: Printing Coercion @qualid
 
-   Specifies a set of qualids for which coercions are always displayed.  Use the
+   This :term:`table` specifies a set of qualids for which coercions are always displayed.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 .. _coercions-classes-as-records:

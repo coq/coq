@@ -20,7 +20,7 @@ Coq program or by turning the :flag:`Allow StrictProp` flag off.
 
 .. flag:: Allow StrictProp
 
-   Enables or disables the use of |SProp|.  It is enabled by default.
+   This :term:`flag` enables or disables the use of |SProp|.  It is enabled by default.
    The command-line flag ``-disallow-sprop`` disables |SProp| at
    startup.
 
@@ -177,7 +177,7 @@ Definitional UIP
 
 .. flag:: Definitional UIP
 
-   This flag, off by default, allows the declaration of non-squashed
+   This :term:`flag`, off by default, allows the declaration of non-squashed
    inductive types with 1 constructor which takes no argument in
    |SProp|. Since this includes equality types, it provides
    definitional uniqueness of identity proofs.
@@ -283,7 +283,7 @@ This means that some errors will be delayed until ``Qed``:
 
 .. flag:: Elaboration StrictProp Cumulativity
 
-   Unset this flag (it is on by default) to be strict with regard to
+   Unset this :term:`flag` (it is on by default) to be strict with regard to
    :math:`\SProp` cumulativity during elaboration.
 
 The implementation of proof irrelevance uses inferred "relevance"
@@ -319,6 +319,6 @@ so correctly converts ``x`` and ``y``.
 
 .. flag:: Cumulative StrictProp
 
-   Set this flag (it is off by default) to make the kernel accept
+   Set this :term:`flag` (it is off by default) to make the kernel accept
    cumulativity between |SProp| and other universes. This makes
    typechecking incomplete.

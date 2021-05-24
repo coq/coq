@@ -33,13 +33,13 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
    .. deprecated:: 8.14
 
-   This flag (set by default) instructs the decision procedures to
+   This :term:`flag` (set by default) instructs the decision procedures to
    use the Simplex method for solving linear goals instead of the
    deprecated Fourier elimination.
 
 .. opt:: Dump Arith
 
-   This option (unset by default) may be set to a file path where
+   This :term:`option` (unset by default) may be set to a file path where
    debug info will be written.
 
 .. cmd:: Show Lia Profile
@@ -50,15 +50,15 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
 .. flag:: Lia Cache
 
-   This flag (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`
+   This :term:`flag` (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`
 
 .. flag:: Nia Cache
 
-   This flag (set by default) instructs :tacn:`nia` to cache its results in the file `.nia.cache`
+   This :term:`flag` (set by default) instructs :tacn:`nia` to cache its results in the file `.nia.cache`
 
 .. flag:: Nra Cache
 
-   This flag (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
+   This :term:`flag` (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
 
 
 The tactics solve propositional formulas parameterized by atomic

@@ -83,7 +83,7 @@ Explicit displaying of existential instances for pretty-printing
 
 .. flag:: Printing Existential Instances
 
-   This flag (off by default) activates the full display of how the
+   This :term:`flag` (off by default) activates the full display of how the
    context of an existential variable is instantiated at each of the
    occurrences of the existential variable.
 

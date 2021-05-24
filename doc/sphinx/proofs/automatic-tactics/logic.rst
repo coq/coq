@@ -84,8 +84,8 @@ Solvers for logic and equality
 
    .. flag:: Intuition Negation Unfolding
 
-      Controls whether :tacn:`intuition` unfolds inner negations which do not need
-      to be unfolded. The flag is on by default.
+      This :term:`flag` controls whether :tacn:`intuition` unfolds inner negations which do not need
+      to be unfolded. It is on by default.
 
 .. tacn:: rtauto
 
@@ -125,7 +125,7 @@ Solvers for logic and equality
    .. opt:: Firstorder Solver @ltac_expr
 
       The default tactic used by :tacn:`firstorder` when no rule applies in
-      :g:`auto with core`.  It can be set locally or globally using this option.
+      :g:`auto with core`.  It can be set locally or globally using this :term:`option`.
 
    .. cmd:: Print Firstorder Solver
 
@@ -133,7 +133,7 @@ Solvers for logic and equality
 
    .. opt:: Firstorder Depth @natural
 
-      Controls the proof search depth bound.
+      This :term:`option` controls the proof search depth bound.
 
 .. tacn:: congruence {? @natural } {? with {+ @one_term } }
 

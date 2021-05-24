@@ -36,7 +36,7 @@ toplevel with the command ``Coqloop.loop();;``.
 
 .. flag:: Coqtop Exit On Error
 
-   This flag, off by default, causes coqtop to exit with status code
+   This :term:`flag`, off by default, causes coqtop to exit with status code
    ``1`` if a command produces an error instead of recovering from it.
 
 Batch compilation (coqc)

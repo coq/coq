@@ -82,7 +82,7 @@ specified, the default selector is used.
 .. opt:: Default Goal Selector "@toplevel_selector"
    :name: Default Goal Selector
 
-   This option controls the default selector, used when no selector is
+   This :term:`option` controls the default selector, used when no selector is
    specified when applying a tactic. The initial value is 1, hence the
    tactics are, by default, applied to the first goal.
 
@@ -897,7 +897,7 @@ Applying theorems
 
 .. flag:: Universal Lemma Under Conjunction
 
-   This flag, which preserves compatibility with versions of Coq prior to
+   This :term:`flag`, which preserves compatibility with versions of Coq prior to
    8.4 is also available for :n:`apply @term in @ident` (see :tacn:`apply … in`).
 
 .. tacn:: apply @term in @ident
@@ -1766,7 +1766,7 @@ Delaying solving unification constraints
 .. flag:: Solve Unification Constraints
 
    By default, after each tactic application, postponed typechecking unification
-   problems are resolved using heuristics. Unsetting this flag disables this
+   problems are resolved using heuristics. Unsetting this :term:`flag` disables this
    behavior, allowing tactics to leave unification constraints unsolved. Use the
    :tacn:`solve_constraints` tactic at any point to solve the constraints.
 
@@ -1787,13 +1787,14 @@ references to automatically generated names.
 
 .. flag:: Mangle Names
 
-   When set, generated names use the prefix specified in the following
+   When this :term:`flag` is set (it is off by default),
+   generated names use the prefix specified in the following
    option instead of the default prefix.
 
 .. opt:: Mangle Names Prefix @string
    :name: Mangle Names Prefix
 
-   Specifies the prefix to use when generating names.
+   This :term:`option` specifies the prefix to use when generating names.
 
 Performance-oriented tactic variants
 ------------------------------------

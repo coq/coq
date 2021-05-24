@@ -370,7 +370,7 @@ Summary of the commands
 
    .. attr:: refine
 
-      This attribute can be used to leave holes or not provide all
+      This :term:`attribute` can be used to leave holes or not provide all
       fields in the definition of an instance and open the tactic mode
       to fill them.  It works exactly as if no :term:`body` had been given and
       the :tacn:`refine` tactic has been used first.
@@ -397,7 +397,7 @@ Summary of the commands
 
       .. deprecated:: 8.13
 
-      Disabled by default, this provides compatibility with Coq
+      Disabled by default, this :term:`flag` provides compatibility with Coq
       version 8.12 and earlier.
 
       When enabled, the type of the instance is implicitly generalized
@@ -524,7 +524,7 @@ Settings
 
 .. flag:: Typeclasses Dependency Order
 
-   This flag (off by default) respects the dependency order
+   This :term:`flag` (off by default) respects the dependency order
    between subgoals, meaning that subgoals on which other subgoals depend
    come first, while the non-dependent subgoals were put before
    the dependent ones previously (Coq 8.5 and below). This can result in
@@ -533,7 +533,7 @@ Settings
 
 .. flag:: Typeclasses Filtered Unification
 
-   This flag, which is off by default, switches the
+   This :term:`flag`, which is off by default, switches the
    hint application procedure to a filter-then-unify strategy. To apply a
    hint, we first check that the goal *matches* syntactically the
    inferred or specified pattern of the hint, and only then try to
@@ -547,7 +547,7 @@ Settings
 
 .. flag:: Typeclasses Limit Intros
 
-   This flag (on by default) controls the ability to apply hints while
+   This :term:`flag` (on by default) controls the ability to apply hints while
    avoiding (functional) eta-expansions in the generated proof term. It
    does so by allowing hints that conclude in a product to apply to a
    goal with a matching product directly, avoiding an introduction.
@@ -561,7 +561,7 @@ Settings
 
 .. flag:: Typeclass Resolution For Conversion
 
-   This flag (on by default) controls the use of typeclass resolution
+   This :term:`flag` (on by default) controls the use of typeclass resolution
    when a unification problem cannot be solved during elaboration/type
    inference. With this flag on, when a unification fails, typeclass
    resolution is tried before launching unification once again.
@@ -569,7 +569,7 @@ Settings
 
 .. flag:: Typeclasses Strict Resolution
 
-   Typeclass declarations introduced when this flag is set have a
+   Typeclass declarations introduced when this :term:`flag` is set have a
    stricter resolution behavior (the flag is off by default). When
    looking for unifications of a goal with an instance of this class, we
    “freeze” all the existentials appearing in the goals, meaning that
@@ -580,31 +580,31 @@ Settings
 .. flag:: Typeclasses Unique Solutions
 
    When a typeclass resolution is launched we ensure that it has a single
-   solution or fail. This ensures that the resolution is canonical, but
+   solution or fail. This :term:`flag` ensures that the resolution is canonical, but
    can make proof search much more expensive.
 
 
 .. flag:: Typeclasses Unique Instances
 
-   Typeclass declarations introduced when this flag is set have a more
+   Typeclass declarations introduced when this :term:`flag` is set have a more
    efficient resolution behavior (the flag is off by default). When a
    solution to the typeclass goal of this class is found, we never
    backtrack on it, assuming that it is canonical.
 
 .. flag:: Typeclasses Iterative Deepening
 
-   When this flag is set, the proof search strategy is breadth-first search.
+   When this :term:`flag` is set, the proof search strategy is breadth-first search.
    Otherwise, the search strategy is depth-first search.  The default is off.
    :cmd:`Typeclasses eauto` is another way to set this flag.
 
 .. opt:: Typeclasses Depth @natural
 
-   Sets the maximum proof search depth.  The default is unbounded.
+   This :term:`option` sets the maximum proof search depth.  The default is unbounded.
    :cmd:`Typeclasses eauto` is another way to set this option.
 
 .. flag:: Typeclasses Debug
 
-   Controls whether typeclass resolution steps are shown during search.  Setting this flag
+   Controls whether typeclass resolution steps are shown during search.  Setting this :term:`flag`
    also sets :opt:`Typeclasses Debug Verbosity` to 1.  :cmd:`Typeclasses eauto`
    is another way to set this flag.
 
@@ -612,7 +612,7 @@ Settings
 
    Determines how much information is shown for typeclass resolution steps during search.
    1 is the default level.  2 shows additional information such as tried tactics and shelving
-   of goals.  Setting this option to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
+   of goals.  Setting this :term:`option` to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
    option to 0 turns that flag off.
 
 Typeclasses eauto
