@@ -1574,7 +1574,7 @@ module Parsable = struct
     let efun = entry.estart 0 in
     let ts = p.pa_tok_strm in
     let get_loc () =
-      let loc = LStream.get_loc (LStream.count ts) ts in
+      let loc = LStream.current_loc ts in
       let loc' = LStream.max_peek_loc ts in
       Loc.merge loc loc'
     in
@@ -1591,7 +1591,7 @@ module Parsable = struct
       let info =
         match Loc.get_loc info with
         | Some _ -> info
-        | None -> Loc.add_loc info (get_loc ())
+        | None -> if exc = Sys.Break then info else Loc.add_loc info (get_loc ())
       in
       Exninfo.iraise (exc,info)
 

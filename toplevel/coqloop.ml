@@ -257,7 +257,7 @@ let rec discard_to_dot () =
   try
     Pcoq.Entry.parse parse_to_dot top_buffer.tokens
   with
-    | CLexer.Error.E _ -> discard_to_dot ()
+    | CLexer.Error.E _ -> (* Lexer failed *) discard_to_dot ()
     | e when CErrors.noncritical e -> ()
 
 let read_sentence ~state input =
@@ -266,7 +266,22 @@ let read_sentence ~state input =
   try Stm.parse_sentence ~doc:state.doc state.sid ~entry:G_toplevel.vernac_toplevel input
   with reraise ->
     let reraise = Exninfo.capture reraise in
-    discard_to_dot ();
+    (* When typing Ctrl-C, two situations may arise:
+       - if a lexer/parsing arrived first, the rest of the ill-formed
+         sentence needs to be discarded, and, if Ctrl-C is found while
+         trying to discarding (in discard_to_dot), let it bypass the
+         reporting of the parsing error and report the Sys.Break
+         instead.
+       - if a Ctrl-C arrives after a valid start of sentence, do not
+         discard_to_dot since Ctrl-C is the last read character and
+         there is nothing left to discard. *)
+    (match fst reraise with
+     | Sys.Break -> Pp.pp_with !Topfmt.err_ft (Pp.fnl ())
+     | _ ->
+        try discard_to_dot ()
+        with Sys.Break ->
+          Pp.pp_with !Topfmt.err_ft (Pp.fnl ());
+          raise Sys.Break);
     (* The caller of read_sentence does the error printing now, this
        should be re-enabled once we rely on the feedback error
        printer again *)
