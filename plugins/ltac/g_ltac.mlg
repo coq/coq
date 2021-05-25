@@ -450,10 +450,13 @@ let pr_ltac_production_item = function
   in
   str arg ++ str "(" ++ Id.print id ++ sep ++ str ")"
 
+let check_non_empty_string ?loc s =
+  if String.is_empty s then CErrors.user_err ?loc (str "Invalid empty string.")
+
 }
 
 VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY { pr_ltac_production_item }
-| [ string(s) ] -> { Tacentries.TacTerm s }
+| [ string(s) ] -> { check_non_empty_string ~loc s; Tacentries.TacTerm s }
 | [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
   { Tacentries.TacNonTerm (Loc.tag ~loc ((Id.to_string nt, sep), Some p)) }
 | [ ident(nt) ] ->
