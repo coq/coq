@@ -190,6 +190,19 @@ let fold_with_full_binders g f n acc c =
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
 
+let get_constant_body kn =
+  let cb = lookup_constant kn in
+  let env = Global.env () in
+  let access = Library.indirect_accessor in
+  let otab = Environ.opaque_tables env in
+  match cb.const_body with
+  | Undef _ | Primitive _ -> None
+  | Def c -> Some (Mod_subst.force_constr c)
+  | OpaqueDef o ->
+    match Opaqueproof.force_proof access otab o with
+    | c, _ -> Some c
+    | exception _ -> None (* missing delayed body, e.g. in vok mode *)
+
 let rec traverse current ctx accu t =
   let open GlobRef in
   match Constr.kind t with
@@ -197,7 +210,7 @@ let rec traverse current ctx accu t =
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
-  let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
+  let body () = get_constant_body kn in
   traverse_object accu body (ConstRef kn)
 | Ind ((mind, _) as ind, _) ->
   traverse_inductive accu mind (IndRef ind)
@@ -209,7 +222,7 @@ let rec traverse current ctx accu t =
     begin match Constr.kind c with
     | Const (kn, _)
       when not (Declareops.constant_has_body (lookup_constant kn)) ->
-        let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
+        let body () = None in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
     | _ ->
