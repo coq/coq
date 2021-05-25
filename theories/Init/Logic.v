@@ -252,14 +252,6 @@ Proof.
   intros; split; intros [Hl Hr]; (split; intros; [ apply Hl | apply Hr]); assumption.
 Qed.
 
-(** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
-    either [P] and [Q], or [~P] and [R] *)
-
-Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
-
-Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
-  (at level 200, right associativity) : type_scope.
-
 (** * First-order quantifiers *)
 
 (** [ex P], or simply [exists x, P x], or also [exists x:A, P x],

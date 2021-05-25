@@ -68,7 +68,7 @@ least 3 characters and starting with a simple quote must be quoted
 
 .. coqtop:: in
 
-   Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3).
+   Notation "'IF' c1 'then' c2 'else' c3" := (c1 /\ c2 \/ ~ c1 /\ c3) (at level 200, right associativity).
 
 A notation binds a syntactic expression to a term. Unless the parser
 and pretty-printer of Coq already know how to deal with the syntactic
