@@ -415,6 +415,9 @@ let destruct_ind env sigma c =
   let (c,v) = Reductionops.whd_all_stack env sigma c in
   destInd sigma c, Array.of_list v
 
+let bl_scheme_kind_aux = ref (fun () -> failwith "Undefined")
+let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
+
 (*
   In the following, avoid is the list of names to avoid.
   If the args of the Inductive type are A1 ... An
@@ -424,7 +427,7 @@ let destruct_ind env sigma c =
 so from Ai we can find the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
-let do_replace_lb lb_scheme_key aavoid narg p q =
+let do_replace_lb aavoid narg p q =
   let open EConstr in
   let avoid = Array.of_list aavoid in
   let do_arg env sigma hd v offset =
@@ -455,7 +458,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
     let u,v = destruct_ind env sigma type_of_pq in
-    find_scheme lb_scheme_key (fst u) (*FIXME*) >>= fun c ->
+    find_scheme (!lb_scheme_kind_aux ()) (fst u) (*FIXME*) >>= fun c ->
     let lb_type_of_p = mkConst c in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
@@ -470,7 +473,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
   end
 
 (* used in the bool -> leb side *)
-let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
+let do_replace_bl (ind,u as indu) aavoid narg lft rgt =
   let open EConstr in
   let avoid = Array.of_list aavoid in
   let do_arg env sigma hd v offset =
@@ -511,7 +514,7 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
           in if Ind.CanOrd.equal (fst u) ind
              then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
-               find_scheme bl_scheme_key (fst u) (*FIXME*) >>= fun c ->
+               find_scheme (!bl_scheme_kind_aux ()) (fst u) (*FIXME*) >>= fun c ->
                let bl_t1 = mkConst c in
                let bl_args =
                         Array.append (Array.append
@@ -636,7 +639,7 @@ let compute_bl_goal ind lnamesparrec nparrec =
               (mkApp(eq (),[|mkFullInd (ind,u) (nparrec+3);mkVar x;mkVar y|]))
         )))
 
-let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec =
+let compute_bl_tact ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let first_intros =
     ( List.map (fun (s,_,_,_) -> s ) list_id )
@@ -678,7 +681,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                      if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                      then
                        Tacticals.New.tclTHEN
-                         (do_replace_bl bl_scheme_key ind
+                         (do_replace_bl ind
                             (List.rev fresh_first_intros)
                             nparrec (ca.(2))
                             (ca.(1)))
@@ -694,8 +697,6 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
           end
       ]
     end
-
-let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let side_effect_of_mode = function
 | InlineDeps -> true
@@ -716,7 +717,7 @@ let make_bl_scheme mode mind =
   let side_eff = side_effect_of_mode mode in
   let bl_goal = EConstr.of_constr bl_goal in
   let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:bl_goal
-    (compute_bl_tact (!bl_scheme_kind_aux()) (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
+    (compute_bl_tact (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 
@@ -774,7 +775,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar x;mkVar y|]);tt|]))
         )))
 
-let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
+let compute_lb_tact ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let first_intros =
     ( List.map (fun (s,_,_,_) -> s ) list_id )
@@ -806,7 +807,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
                 | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
                                 | App(c',ca') ->
                                    let n = Array.length ca' in
-                                   do_replace_lb lb_scheme_key
+                                   do_replace_lb
                                      (List.rev fresh_first_intros)
                                      nparrec
                                      ca'.(n-2) ca'.(n-1)
@@ -820,8 +821,6 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
           end
       ]
     end
-
-let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
 let make_lb_scheme mode mind =
   let mib = Global.lookup_mind mind in
@@ -838,7 +837,7 @@ let make_lb_scheme mode mind =
   let side_eff = side_effect_of_mode mode in
   let lb_goal = EConstr.of_constr lb_goal in
   let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:lb_goal
-    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
+    (compute_lb_tact ind lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 
