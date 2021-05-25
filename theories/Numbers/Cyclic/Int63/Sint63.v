@@ -34,7 +34,6 @@ Delimit Scope sint63_scope with sint63.
 Bind Scope sint63_scope with int.
 End Sint63NotationsInternalA.
 
-
 Module Import Sint63NotationsInternalB.
 Infix "<<" := Int63.lsl (at level 30, no associativity) : sint63_scope.
 (* TODO do we want >> to be asr or lsr? And is there a notation for the other one? *)
@@ -52,14 +51,15 @@ Infix "<?" := ltsb (at level 70, no associativity) : sint63_scope.
 Infix "<=?" := lesb (at level 70, no associativity) : sint63_scope.
 Infix "≤?" := lesb (at level 70, no associativity) : sint63_scope.
 Notation "- x" := (opp x) : sint63_scope.
-Notation "n ?= m" := (compares n m) (at level 70, no associativity) : sint63_scope.
+Notation "n ?= m" := (compares n m)
+  (at level 70, no associativity) : sint63_scope.
 End Sint63NotationsInternalB.
 
 Definition min_int := Eval vm_compute in (lsl 1 62).
 Definition max_int := Eval vm_compute in (min_int - 1)%sint63.
 
 (** Translation to and from Z *)
-Definition to_Z (i:int) :=
+Definition to_Z (i : int) :=
   if (i <? min_int)%uint63 then
     φ i%uint63
   else
@@ -219,6 +219,10 @@ Proof.
   intros bound; rewrite of_Z_spec, cmod_small; lia.
 Qed.
 
+Lemma of_pos_spec (p : positive) :
+  to_Z (of_pos p) = cmod (Zpos p) wB.
+Proof. rewrite <- of_Z_spec; simpl; reflexivity. Qed.
+
 (** Specification of operations that differ on signed and unsigned ints *)
 
 Axiom asr_spec : forall x p, to_Z (x >> p) = (to_Z x) / 2 ^ (to_Z p).
@@ -279,7 +283,7 @@ Qed.
 
 (** Behaviour when there is no under or overflow *)
 
-Lemma add_bounded (x y : int) :
+Lemma to_Z_add (x y : int) :
     to_Z min_int <= to_Z x + to_Z y <= to_Z max_int ->
   to_Z (x + y) = to_Z x + to_Z y.
 Proof.
@@ -287,7 +291,7 @@ Proof.
   now rewrite add_spec, cmod_small; [>| lia].
 Qed.
 
-Lemma sub_bounded (x y : int) :
+Lemma to_Z_sub (x y : int) :
     to_Z min_int <= to_Z x - to_Z y <= to_Z max_int ->
   to_Z (x - y) = to_Z x - to_Z y.
 Proof.
@@ -295,7 +299,7 @@ Proof.
   now rewrite sub_spec, cmod_small; [>| lia].
 Qed.
 
-Lemma mul_bounded (x y : int) :
+Lemma to_Z_mul (x y : int) :
     to_Z min_int <= to_Z x * to_Z y <= to_Z max_int ->
   to_Z (x * y) = to_Z x * to_Z y.
 Proof.
@@ -303,28 +307,38 @@ Proof.
   now rewrite mul_spec, cmod_small; [>| lia].
 Qed.
 
-Lemma succ_bounded (x : int) :
-    to_Z min_int <= to_Z x + 1 <= to_Z max_int ->
-  to_Z (succ x) = to_Z x + 1.
+Lemma to_Z_succ (x : int) :
+  x <> max_int -> to_Z (succ x) = to_Z x + 1.
 Proof.
-  rewrite to_Z_min, to_Z_max; intros bound.
-  now rewrite succ_spec, cmod_small; [>| lia].
+  intros neq_x_max.
+  rewrite succ_spec, cmod_small; [> easy |].
+  assert (to_Z x <> to_Z max_int) by now intros ?; apply neq_x_max, to_Z_inj.
+  rewrite <- to_Z_min; change (wB / 2) with (to_Z max_int + 1).
+  generalize (to_Z_bounded x); lia.
 Qed.
 
-Lemma pred_bounded (x : int) :
-    to_Z min_int <= to_Z x - 1 <= to_Z max_int ->
-  to_Z (pred x) = to_Z x - 1.
+Lemma to_Z_pred (x : int) :
+  x <> min_int -> to_Z (pred x) = to_Z x - 1.
 Proof.
-  rewrite to_Z_min, to_Z_max; intros bound.
-  now rewrite pred_spec, cmod_small; [>| lia].
+  intros neq_x_min.
+  rewrite pred_spec, cmod_small; [> easy |].
+  assert (to_Z x <> to_Z min_int) by now intros ?; apply neq_x_min, to_Z_inj.
+  rewrite <- to_Z_min; change (wB / 2) with (to_Z max_int + 1).
+  generalize (to_Z_bounded x); lia.
 Qed.
 
-Lemma opp_bounded (x : int) :
-    to_Z min_int <= - to_Z x <= to_Z max_int ->
-  to_Z (- x) = - to_Z x.
+Lemma to_Z_opp (x : int) :
+  x <> min_int -> to_Z (- x) = - to_Z x.
 Proof.
-  rewrite to_Z_min, to_Z_max; intros bound.
-  now rewrite opp_spec, cmod_small; [>| lia].
+  intros neq_x_min.
+  rewrite opp_spec, cmod_small; [> easy |].
+  rewrite <- to_Z_min; change (wB / 2) with (to_Z max_int + 1).
+  pose proof (to_Z_bounded x) as bound.
+  split.
+  - now rewrite Z.opp_le_mono, Z.opp_involutive; transitivity (to_Z max_int).
+  - rewrite Z.opp_lt_mono, Z.opp_involutive.
+    assert (to_Z x <> to_Z min_int) by now intros ?; apply neq_x_min, to_Z_inj.
+    change (- (to_Z max_int + 1)) with (to_Z min_int); lia.
 Qed.
 
 (** Relationship with of_Z *)
@@ -368,6 +382,39 @@ Proof. now apply iff_reflect; symmetry; apply ltb_spec. Qed.
 Lemma lebP x y : reflect (to_Z x <= to_Z y) (x ≤? y)%sint63.
 Proof. now apply iff_reflect; symmetry; apply leb_spec. Qed.
 
+(** Absolute value *)
+
+Definition abs (n : int) : int := if (0 <=? n)%sint63 then n else - n.
+
+Lemma abs_spec (x : int) :
+  to_Z (abs x)%sint63 = cmod (Z.abs (to_Z x)) wB.
+Proof.
+  unfold abs; case lebP.
+  - intro leq0x; rewrite Z.abs_eq by easy.
+    now rewrite <- of_Z_spec, of_to_Z.
+  - intro nleq0x; rewrite Z.abs_neq.
+    + now rewrite opp_spec.
+    + now apply Z.lt_le_incl; rewrite <- Z.nle_gt.
+Qed.
+
+Lemma to_Z_abs (x : int) :
+  x <> min_int -> to_Z (abs x) = Z.abs (to_Z x).
+Proof.
+  intros neq_x_min.
+  unfold abs; case lebP.
+  - now intros leq_0_x; rewrite Z.abs_eq.
+  - rewrite to_Z_opp by easy.
+    intros nleq_0_x; rewrite Z.abs_neq; [> easy |].
+    change 0 with (to_Z 0); lia.
+Qed.
+
+Remark abs_min_int : abs min_int = min_int.
+Proof. easy. Qed.
+
+Lemma abs_of_Z (x : int) :
+  abs x = of_Z (Z.abs (to_Z x)).
+Proof. now rewrite <- of_Z_cmod, <- abs_spec, of_to_Z. Qed.
+
 (** ASR *)
 Lemma asr_0 (i : int) : (0 >> i)%sint63 = 0%sint63.
 Proof. now apply to_Z_inj; rewrite asr_spec. Qed.
@@ -394,6 +441,7 @@ Proof.
   - rewrite Z.nle_gt; intros ltn0.
     now rewrite Z.pow_neg_r.
 Qed.
+
 
 Notation asr := asr (only parsing).
 Notation div := divs (only parsing).
