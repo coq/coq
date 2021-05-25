@@ -124,10 +124,21 @@ git_download()
     git checkout "$ref"
     git log -n 1
     if [[ $ov_url ]]; then
-        git -c pull.rebase=false -c user.email=nobody@example.invalid -c user.name=Nobody \
-            pull --no-ff "$ov_url" "$ov_ref"
-        git log -n 1 HEAD^2
-        git log -n 1
+        # In CI we merge into the upstream branch to stay synchronized
+        # Locally checkout the overlay and rebase on upstream
+        # We act differently because merging is what will happen when the PR is merged
+        # but rebasing produces something that is nicer to edit
+        if [[ $CI ]]; then
+            git -c pull.rebase=false -c user.email=nobody@example.invalid -c user.name=Nobody \
+                pull --no-ff "$ov_url" "$ov_ref"
+            git log -n 1 HEAD^2
+            git log -n 1
+        else
+            git remote add -t "$ov_ref" -f overlay "$ov_url"
+            git checkout -b "$ov_ref" overlay/"$ov_ref"
+            git rebase "$ref"
+            git log -n 1
+        fi
     fi
     popd
   else # When possible, we download tarballs to reduce bandwidth and latency

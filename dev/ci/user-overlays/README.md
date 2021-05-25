@@ -41,7 +41,7 @@ rather than `LPCIC/coq-elpi`.  Use `#` to mark any comments.
 
 If the branch name in the external project differs from the Coq branch name,
 include the external branch name as `[prbranch]` to apply it when you run
-the test suite locally, e.g. `make ci-elpi`.  (Not working as of 24 May 21)
+the test suite locally, e.g. `make ci-elpi`.
 
 Overlay files can be created automatically using the script
 [`create_overlays.sh`](../../dev/tools/create_overlays.sh).
