@@ -220,11 +220,16 @@ let rec traverse current ctx accu t =
 | Case (_, _, _, ([|_|], oty), _, c, [||]) when Vars.noccurn 1 oty ->
     (* non dependent match on an inductive with no constructors *)
     begin match Constr.kind c with
-    | Const (kn, _)
-      when not (Declareops.constant_has_body (lookup_constant kn)) ->
-        let body () = None in
-        traverse_object
-          ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
+    | Const (kn, _) when not (Declareops.constant_has_body (lookup_constant kn)) ->
+      let (curr, data, ax2ty) = accu in
+      let obj = ConstRef kn in
+      let already_in = GlobRef.Map_env.mem obj data in
+      let data = if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
+      let ty = (current, ctx, Vars.subst1 mkProp oty) in
+      let ax2ty =
+        try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
+        with Not_found -> GlobRef.Map_env.add obj [ty] ax2ty in
+      (GlobRef.Set_env.add obj curr, data, ax2ty)
     | _ ->
         fold_with_full_binders
           Context.Rel.add (traverse current) ctx accu t
@@ -232,18 +237,13 @@ let rec traverse current ctx accu t =
 | _ -> fold_with_full_binders
           Context.Rel.add (traverse current) ctx accu t
 
-and traverse_object ?inhabits (curr, data, ax2ty) body obj =
+and traverse_object (curr, data, ax2ty) body obj =
   let data, ax2ty =
     let already_in = GlobRef.Map_env.mem obj data in
     match body () with
     | None ->
         let data =
           if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
-        let ax2ty =
-          if Option.is_empty inhabits then ax2ty else
-          let ty = Option.get inhabits in
-          try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
-          with Not_found -> GlobRef.Map_env.add obj [ty] ax2ty in
         data, ax2ty
     | Some body ->
       if already_in then data, ax2ty else
