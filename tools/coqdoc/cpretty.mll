@@ -350,6 +350,8 @@ let immediate_prf_token =
 let def_token =
   "Definition"
   | "Let"
+  | "Let" space* "Fixpoint"
+  | "Let" space* "CoFixpoint"
   | "Class"
   | "SubClass"
   | "Example"
@@ -361,10 +363,12 @@ let def_token =
   | "Variant"
   | "Structure"
   | "Scheme"
+  | "Combined" space+ "Scheme"
   | "Inductive"
   | "CoInductive"
   | "Equations"
   | "Instance"
+  | "Existing" space+ ("Instance" | "Instances" | "Class")
   | "Declare" space+ "Instance"
   | "Global" space+ "Instance"
   | "Functional" space+ "Scheme"
@@ -375,6 +379,11 @@ let decl_token =
   | "Parameter" 's'?
   | "Axiom" 's'?
   | "Conjecture"
+  | "Primitive"
+  | "Constraint"
+  | "Universe"
+  | "Universes"
+  | "Register"
 
 let gallina_ext =
   "Module"
@@ -383,6 +392,8 @@ let gallina_ext =
   | "Declare" space+ "Module"
   | "Transparent"
   | "Opaque"
+  | "Typeclasses" space+ "Transparent"
+  | "Typeclasses" space+ "Opaque"
   | "Canonical"
   | "Coercion"
   | "Identity"
@@ -398,6 +409,7 @@ let notation_kw =
     "Notation"
   | "Infix"
   | "Reserved" space+ "Notation"
+  | "Reserved" space+ "Infix"
 
 let commands =
   "Pwd"
@@ -453,6 +465,7 @@ let set_kw =
 
 let gallina_kw_to_hide =
     "Implicit" space+ "Arguments"
+  | "Arguments"
   | ("Local" space+)? "Ltac"
   | "From"
   | "Require"
@@ -460,15 +473,25 @@ let gallina_kw_to_hide =
   | "Export"
   | "Load"
   | "Hint" space+ hint_kw
+  | "Create" space+ "HintDb"
+  | "Removed" space+ "Hints"
   | "Open"
   | "Close"
   | "Delimit"
+  | "Undelimit"
+  | "Declare" space+ "Scope"
+  | "Bind" space+ "Scope"
+  | "Format"
   | "Transparent"
   | "Opaque"
+  | "Strategy"
+  | "Derive"
+  | "Generalizable" space+ ("All" space+ "Variables" | "No" space+ "Variables" | "Variable" | "Variables")
   | ("Declare" space+ ("Morphism" | "Step") )
   | ("Set" | "Unset") space+ set_kw
   | "Declare" space+ ("Left" | "Right") space+ "Step"
   | "Debug" space+ ("On" | "Off")
+  | "Collection"
 
 
 let section = "*" | "**" | "***" | "****"
