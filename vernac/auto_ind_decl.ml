@@ -169,7 +169,7 @@ let build_beq_scheme_deps kn =
   in
   Array.fold_left_i (fun i accu _ -> make_one_eq accu i) [] mib.mind_packets
 
-let build_beq_scheme _ kn =
+let build_beq_scheme kn =
   check_bool_is_defined ();
   (* fetching global env *)
   let env = Global.env() in
@@ -698,7 +698,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
       ]
     end
 
-let make_bl_scheme _ mind =
+let make_bl_scheme mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     user_err
@@ -817,7 +817,7 @@ let compute_lb_tact ind lnamesparrec nparrec =
       ]
     end
 
-let make_lb_scheme _ mind =
+let make_lb_scheme mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     user_err
@@ -993,7 +993,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
       end
     end
 
-let make_eq_decidability mode mind =
+let make_eq_decidability mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     raise DecidabilityMutualNotSupported;

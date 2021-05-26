@@ -28,7 +28,7 @@ open Pp
 type inline_flag = InlineDeps | KeepDeps
 
 type mutual_scheme_object_function =
-  inline_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
+  MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
   inductive -> constr Evd.in_evar_universe_context
 
@@ -125,7 +125,7 @@ and define_individual_scheme kind mode names (mind,i as ind) =
 
 (* Assumes that dependencies are already defined *)
 and define_mutual_scheme_base kind suff f mode names mind eff =
-  let (cl, ctx) = f mode mind in
+  let (cl, ctx) = f mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
