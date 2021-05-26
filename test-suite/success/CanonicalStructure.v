@@ -112,7 +112,6 @@ Section DepProd.
 
   Section VariableTypes.
     Local Canonical Structure hello_dep2 v1 v2 := {| hello_key := forall x : list v1, x = v2 |}.
-    Set Debug Unification.
     Example ex_hello1 : _ -> _ = nil :=
       let h := _ in fun f : hello_key h => (f : forall x : list _, _ = _) (@nil nat).
   End VariableTypes.
