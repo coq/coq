@@ -698,11 +698,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
       ]
     end
 
-let side_effect_of_mode = function
-| InlineDeps -> true
-| KeepDeps -> false
-
-let make_bl_scheme mode mind =
+let make_bl_scheme _ mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     user_err
@@ -714,9 +710,8 @@ let make_bl_scheme mode mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal = compute_bl_goal ind lnamesparrec nparrec in
   let uctx = UState.from_env (Global.env ()) in
-  let side_eff = side_effect_of_mode mode in
   let bl_goal = EConstr.of_constr bl_goal in
-  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:bl_goal
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false (Global.env()) ~uctx ~typ:bl_goal
     (compute_bl_tact (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx)
@@ -822,7 +817,7 @@ let compute_lb_tact ind lnamesparrec nparrec =
       ]
     end
 
-let make_lb_scheme mode mind =
+let make_lb_scheme _ mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     user_err
@@ -834,9 +829,8 @@ let make_lb_scheme mode mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal = compute_lb_goal ind lnamesparrec nparrec in
   let uctx = UState.from_env (Global.env ()) in
-  let side_eff = side_effect_of_mode mode in
   let lb_goal = EConstr.of_constr lb_goal in
-  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:lb_goal
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false (Global.env()) ~uctx ~typ:lb_goal
     (compute_lb_tact ind lnamesparrec nparrec)
   in
   ([|ans|], ctx)
@@ -1010,8 +1004,7 @@ let make_eq_decidability mode mind =
   let uctx = UState.from_env (Global.env ()) in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let side_eff = side_effect_of_mode mode in
-  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false (Global.env()) ~uctx
       ~typ:(EConstr.of_constr (compute_dec_goal (ind,u) lnamesparrec nparrec))
       (compute_dec_tact ind lnamesparrec nparrec)
   in
