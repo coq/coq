@@ -356,6 +356,8 @@ val set_type_in_type : bool -> env -> env
 val set_allow_sprop : bool -> env -> env
 val sprop_allowed : env -> bool
 
+val same_flags : typing_flags -> typing_flags -> bool
+
 (** [update_typing_flags ?typing_flags] may update env with optional typing flags *)
 val update_typing_flags : ?typing_flags:typing_flags -> env -> env
 

@@ -1017,6 +1017,7 @@ See also :flag:`Cumulative StrictProp` in the |SProp| chapter.
             end
           end.
 
+Typing flags may not be changed while inside sections.
 
 .. _internal-registration-commands:
 

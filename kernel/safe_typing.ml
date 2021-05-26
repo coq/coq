@@ -218,6 +218,18 @@ let set_typing_flags c senv =
   if env == senv.env then senv
   else { senv with env }
 
+let set_typing_flags flags senv =
+  (* NB: we allow changing the conv_oracle inside sections because it
+     doesn't matter for consistency. *)
+  if Option.has_some senv.sections
+  && not (Environ.same_flags flags
+            {(Environ.typing_flags senv.env) with
+             conv_oracle = flags.conv_oracle;
+             share_reduction = flags.share_reduction;
+            })
+  then CErrors.user_err Pp.(str "Changing typing flags inside sections is not allowed.");
+  set_typing_flags flags senv
+
 let set_check_guarded b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with check_guarded = b } senv

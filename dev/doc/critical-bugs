@@ -366,6 +366,18 @@ Side-effects
   GH issue number: #13330
   risk: unlikely to be exploited by mistake, requires the use of unsafe tactics
 
+Forgetting unsafe flags
+
+  component: sections
+  summary: unsafe typing flags used inside a section would not be reported by Print Assumptions
+           after closing the section
+  introduced: abab878b8d8b5ca85a4da688abed68518f0b17bd (#10291, 8.11)
+              technically available earlier through plugins
+  impacted coqchk versions: none (coqchk rejects affected files)
+  found by: Anton Trunov
+  GH issue number: #14317
+  risk: low as it needs the use of explicit unsafe flags 
+
 Conflicts with axioms in library
 
   component: library of real numbers
