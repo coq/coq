@@ -48,21 +48,21 @@ let fresh_instance_from ?loc ctx = function
 
 (** Fresh universe polymorphic construction *)
 
-let fresh_global_instance ?loc ?names env gr =
+let fresh_instance_for_global ?loc ?names env gr =
   let auctx = Environ.universes_of_global env gr in
   let u, ctx = fresh_instance_from ?loc auctx names in
   u, ctx
 
 let fresh_constant_instance env c =
-  let u, ctx = fresh_global_instance env (GlobRef.ConstRef c) in
+  let u, ctx = fresh_instance_for_global env (GlobRef.ConstRef c) in
   (c, u), ctx
 
 let fresh_inductive_instance env ind =
-  let u, ctx = fresh_global_instance env (GlobRef.IndRef ind) in
+  let u, ctx = fresh_instance_for_global env (GlobRef.IndRef ind) in
   (ind, u), ctx
 
 let fresh_constructor_instance env c =
-  let u, ctx = fresh_global_instance env (GlobRef.ConstructRef c) in
+  let u, ctx = fresh_instance_for_global env (GlobRef.ConstructRef c) in
   (c, u), ctx
 
 let fresh_array_instance env =
@@ -71,12 +71,12 @@ let fresh_array_instance env =
   u, ctx
 
 let fresh_global_instance ?loc ?names env gr =
-  let u, ctx = fresh_global_instance ?loc ?names env gr in
+  let u, ctx = fresh_instance_for_global ?loc ?names env gr in
   mkRef (gr, u), ctx
 
 let constr_of_monomorphic_global gr =
   if not (Global.is_polymorphic gr) then
-    fst (fresh_global_instance (Global.env ()) gr)
+    mkRef (gr, Instance.empty)
   else CErrors.user_err ~hdr:"constr_of_global"
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")

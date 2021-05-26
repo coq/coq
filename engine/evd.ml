@@ -974,20 +974,24 @@ let make_nonalgebraic_variable evd u =
 let fresh_sort_in_family ?loc ?(rigid=univ_flexible) evd s =
   with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family s)
 
-let fresh_constant_instance ?loc ?(rigid=univ_flexible) env evd c =
-  with_context_set ?loc rigid evd (UnivGen.fresh_constant_instance env c)
+let fresh_instance_for_global ?loc ?rigid ?names env evd gr =
+  let u, uctx = UState.fresh_instance_for_global ?loc ?rigid ?names env evd.universes gr in
+  {evd with universes = uctx}, u
 
-let fresh_inductive_instance ?loc ?(rigid=univ_flexible) env evd i =
-  with_context_set ?loc rigid evd (UnivGen.fresh_inductive_instance env i)
+let fresh_constant_instance ?loc ?rigid env evd c =
+  on_snd (fun u -> c,u) (fresh_instance_for_global ?loc ?rigid env evd (GlobRef.ConstRef c))
 
-let fresh_constructor_instance ?loc ?(rigid=univ_flexible) env evd c =
-  with_context_set ?loc rigid evd (UnivGen.fresh_constructor_instance env c)
+let fresh_inductive_instance ?loc ?rigid env evd i =
+  on_snd (fun u -> i,u) (fresh_instance_for_global ?loc ?rigid env evd (GlobRef.IndRef i))
+
+let fresh_constructor_instance ?loc ?rigid env evd c =
+  on_snd (fun u -> c,u) (fresh_instance_for_global ?loc ?rigid env evd (GlobRef.ConstructRef c))
 
 let fresh_array_instance ?loc ?(rigid=univ_flexible) env evd =
   with_context_set ?loc rigid evd (UnivGen.fresh_array_instance env)
 
-let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
-  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
+let fresh_global ?loc ?rigid ?names env evd gr =
+  on_snd (fun u -> mkRef (gr,u)) (fresh_instance_for_global ?loc ?rigid ?names env evd gr)
 
 let is_sort_variable evd s = UState.is_sort_variable evd.universes s
 

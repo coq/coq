@@ -28,6 +28,9 @@ val fresh_instance : AUContext.t -> Instance.t in_universe_context_set
 val fresh_instance_from : ?loc:Loc.t -> AUContext.t -> Instance.t option ->
   Instance.t in_universe_context_set
 
+val fresh_instance_for_global : ?loc:Loc.t -> ?names:Univ.Instance.t -> env -> GlobRef.t ->
+  Instance.t in_universe_context_set
+
 val fresh_sort_in_family : Sorts.family ->
   Sorts.t in_universe_context_set
 val fresh_constant_instance : env -> Constant.t ->

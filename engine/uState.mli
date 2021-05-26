@@ -140,6 +140,9 @@ val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Leve
     univ_flexible_alg for a universe existential variable allowed to
     be instantiated with an algebraic universe *)
 
+val fresh_instance_for_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t
+  -> Environ.env -> t -> GlobRef.t -> Instance.t * t
+
 val add_global_univ : t -> Univ.Level.t -> t
 
 (** [make_flexible_variable g algebraic l]

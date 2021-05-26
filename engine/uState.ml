@@ -36,7 +36,8 @@ type t =
    universes : UGraph.t; (** The current graph extended with the local constraints *)
    universes_lbound : UGraph.Bound.t; (** The lower bound on universes (e.g. Set or Prop) *)
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
-   weak_constraints : UPairSet.t
+   weak_constraints : UPairSet.t;
+   pseudo_monomorphic_instances : Instance.t GlobRef.Map.t;
  }
 
 let initial_sprop_cumulative = UGraph.set_cumulative_sprop true UGraph.initial_universes
@@ -50,7 +51,9 @@ let empty =
     universes = initial_sprop_cumulative;
     universes_lbound = UGraph.Bound.Set;
     initial_universes = initial_sprop_cumulative;
-    weak_constraints = UPairSet.empty; }
+    weak_constraints = UPairSet.empty;
+    pseudo_monomorphic_instances = GlobRef.Map.empty;
+  }
 
 let elaboration_sprop_cumul =
   Goptions.declare_bool_option_and_ref ~depr:false
@@ -87,24 +90,34 @@ let union uctx uctx' =
                                (ContextSet.levels uctx.local) in
     let newus = LSet.diff newus (LMap.domain uctx.univ_variables) in
     let weak = UPairSet.union uctx.weak_constraints uctx'.weak_constraints in
+    let csts' = ref (snd uctx'.local) in
+    let p_m_instances = GlobRef.Map.union
+        (fun _ l r ->
+           if not (Instance.equal l r)
+           then csts' := enforce_eq_instances l r !csts';
+           Some l)
+        uctx.pseudo_monomorphic_instances
+        uctx'.pseudo_monomorphic_instances
+    in
+    let csts' = !csts' in
     let declarenew g =
       LSet.fold (fun u g -> UGraph.add_universe u ~lbound:uctx.universes_lbound ~strict:false g) newus g
     in
-      { names = (names, names_rev);
-        local = local;
-        seff_univs = seff;
-        univ_variables =
-          LMap.subst_union uctx.univ_variables uctx'.univ_variables;
-        univ_algebraic =
-          LSet.union uctx.univ_algebraic uctx'.univ_algebraic;
-        initial_universes = declarenew uctx.initial_universes;
-        universes =
-          (if local == uctx.local then uctx.universes
-           else
-             let cstrsr = ContextSet.constraints uctx'.local in
-             UGraph.merge_constraints cstrsr (declarenew uctx.universes));
-        universes_lbound = uctx.universes_lbound;
-        weak_constraints = weak}
+    { names = (names, names_rev);
+      local = local;
+      seff_univs = seff;
+      univ_variables =
+        LMap.subst_union uctx.univ_variables uctx'.univ_variables;
+      univ_algebraic =
+        LSet.union uctx.univ_algebraic uctx'.univ_algebraic;
+      initial_universes = declarenew uctx.initial_universes;
+      universes =
+        (if local == uctx.local then uctx.universes
+         else UGraph.merge_constraints csts' (declarenew uctx.universes));
+      universes_lbound = uctx.universes_lbound;
+      weak_constraints = weak;
+      pseudo_monomorphic_instances = p_m_instances;
+    }
 
 let context_set uctx = uctx.local
 
@@ -597,6 +610,29 @@ let new_univ_variable ?loc rigid name uctx =
 
 let add_global_univ uctx u = add_universe None true UGraph.Bound.Set uctx u
 
+let fresh_instance_for_global ?loc ?(rigid=univ_flexible) ?names env uctx gr =
+  let u, ctx = UnivGen.fresh_instance_for_global ?loc ?names env gr in
+  u, merge ?loc ~sideff:false rigid uctx ctx
+
+let pseudo_monomorphic = Goptions.declare_bool_option_and_ref ~depr:false
+    ~key:["Pseudo";"Monomorphic";"Instances"] ~value:false
+
+let fresh_instance_for_global ?loc ?rigid ?names env uctx gr =
+  let fallback () = fresh_instance_for_global ?loc ?rigid ?names env uctx gr in
+  (* with explicitly provided instance, we add constraints. no memoization since no fresh univs  *)
+  if Option.has_some names || not (pseudo_monomorphic ()) then fallback ()
+  else match GlobRef.Map.find_opt gr uctx.pseudo_monomorphic_instances with
+    | None ->
+      let u, uctx = fallback () in
+      let uctx =
+        { uctx with
+          pseudo_monomorphic_instances =
+            GlobRef.Map.add gr u uctx.pseudo_monomorphic_instances;
+        }
+      in
+      u, uctx
+    | Some u -> u, uctx
+
 let make_with_initial_binders ~lbound univs us =
   let uctx = make ~lbound univs in
   List.fold_left
@@ -714,15 +750,17 @@ let minimize uctx =
     let us', universes =
       refresh_constraints uctx.initial_universes us'
     in
-      { names = uctx.names;
-        local = us';
-        seff_univs = uctx.seff_univs; (* not sure about this *)
-        univ_variables = vars';
-        univ_algebraic = algs';
-        universes = universes;
-        universes_lbound = lbound;
-        initial_universes = uctx.initial_universes;
-        weak_constraints = UPairSet.empty; (* weak constraints are consumed *) }
+    { names = uctx.names;
+      local = us';
+      seff_univs = uctx.seff_univs; (* not sure about this *)
+      univ_variables = vars';
+      univ_algebraic = algs';
+      universes = universes;
+      universes_lbound = lbound;
+      initial_universes = uctx.initial_universes;
+      weak_constraints = UPairSet.empty; (* weak constraints are consumed *)
+      pseudo_monomorphic_instances = uctx.pseudo_monomorphic_instances;
+    }
 
 let universe_of_name uctx s =
   UNameMap.find s (fst uctx.names)

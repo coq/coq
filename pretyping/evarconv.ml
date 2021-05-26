@@ -55,6 +55,7 @@ let debug_ho_unification = CDebug.create ~name:"ho-unification" ()
 (* Functions to deal with impossible cases *)
 (*******************************************)
 let impossible_default_case env =
+  (* TODO use evar map *)
   let type_of_id = Coqlib.lib_ref "core.IDProp.type" in
   let c, ctx = UnivGen.fresh_global_instance env (Coqlib.(lib_ref "core.IDProp.idProp")) in
   let (_, u) = Constr.destRef c in
