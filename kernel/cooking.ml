@@ -162,6 +162,7 @@ type 'opaque result = {
   cook_relevance : Sorts.relevance;
   cook_inline : inline;
   cook_context : Id.Set.t option;
+  cook_flags : typing_flags;
 }
 
 let expmod_constr_subst cache modlist subst c =
@@ -250,6 +251,7 @@ let cook_constant { from = cb; info } =
     cook_relevance = cb.const_relevance;
     cook_inline = cb.const_inline_code;
     cook_context = Some const_hyps;
+    cook_flags = cb.const_typing_flags;
   }
 
 (********************************)

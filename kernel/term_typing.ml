@@ -127,6 +127,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     cook_inline = false;
     cook_context = None;
     cook_relevance = Sorts.Relevant;
+    cook_flags = Environ.typing_flags env;
   }
 
 let infer_declaration env (dcl : constant_entry) =
@@ -147,6 +148,7 @@ let infer_declaration env (dcl : constant_entry) =
       cook_relevance = r;
       cook_inline = false;
       cook_context = ctx;
+      cook_flags = Environ.typing_flags env;
     }
 
   | PrimitiveEntry entry -> infer_primitive env entry
@@ -185,6 +187,7 @@ let infer_declaration env (dcl : constant_entry) =
         cook_relevance = Relevanceops.relevance_of_term env j.uj_val;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
+        cook_flags = Environ.typing_flags env;
       }
 
 (** Definition is opaque (Qed), so we delay the typing of its body. *)
@@ -203,6 +206,7 @@ let infer_opaque env = function
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = false;
         cook_context = Some c.opaque_entry_secctx;
+        cook_flags = Environ.typing_flags env;
       }, context
 
   | ({ opaque_entry_type = typ;
@@ -222,6 +226,7 @@ let infer_opaque env = function
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
         cook_inline = false;
         cook_context = Some c.opaque_entry_secctx;
+        cook_flags = Environ.typing_flags env;
       }, context
 
 let check_section_variables env declared_set typ body =
@@ -291,7 +296,7 @@ let build_constant_declaration env result =
     const_universes = univs;
     const_relevance = result.cook_relevance;
     const_inline_code = result.cook_inline;
-    const_typing_flags = Environ.typing_flags env }
+    const_typing_flags = result.cook_flags }
 
 let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_output) = match tyenv with
 | MonoTyCtx (env, tyj, declared, feedback_id) ->
@@ -353,7 +358,8 @@ let translate_recipe env _kn r =
     const_universes = univs;
     const_relevance = result.cook_relevance;
     const_inline_code = result.cook_inline;
-    const_typing_flags = Environ.typing_flags env }
+    const_typing_flags = result.cook_flags;
+  }
 
 let translate_local_def env _id centry =
   let open Cooking in
