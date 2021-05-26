@@ -368,7 +368,7 @@ let error_axiom_scheme r i =
 
 let warn_extraction_inside_module =
   CWarnings.create ~name:"extraction-inside-module" ~category:"extraction"
-      (fun () -> strbrk "Extraction inside an opened module is experimental." ++
+      (fun () -> strbrk "Extraction inside an opened module is experimental." ++ spc () ++
        strbrk "In case of problem, close it first.")
 
 
