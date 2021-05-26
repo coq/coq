@@ -1005,14 +1005,8 @@ let int63_of_pos_bigint ?loc n =
   let i = int63_of_pos_bigint n in
   mkInt i
 
-let error_negative ?loc =
-  CErrors.user_err ?loc ~hdr:"interp_int63" (Pp.str "int63 are only non-negative numbers.")
-
 let error_overflow ?loc n =
   CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "overflow in int63 literal: " ++ str (Z.to_string n))
-
-let error_underflow ?loc n =
-  CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "underflow in int63 literal: " ++ str (Z.to_string n))
 
 let coqpos_neg_int63_of_bigint ?loc ind (sign,n) =
   let uint = int63_of_pos_bigint ?loc n in
@@ -1021,13 +1015,10 @@ let coqpos_neg_int63_of_bigint ?loc ind (sign,n) =
 
 let interp_int63 ?loc ind n =
   let sign = if Z.(compare n zero >= 0) then SPlus else SMinus in
-  let n = Z.abs n in
-  if Z.(leq zero n)
-  then
-    if Z.(lt n (pow z_two 63))
-    then coqpos_neg_int63_of_bigint ?loc ind (sign,n)
-    else match sign with SPlus -> error_overflow ?loc n | SMinus -> error_underflow ?loc n
-  else error_negative ?loc
+  let an = Z.abs n in
+  if Z.(lt an (pow z_two 63))
+  then coqpos_neg_int63_of_bigint ?loc ind (sign,an)
+  else error_overflow ?loc n
 
 let bigint_of_int63 c =
   match Constr.kind c with

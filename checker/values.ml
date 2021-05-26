@@ -318,7 +318,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_typing_flags|]
 
 let v_prim_ind = v_enum "prim_ind" 6
-(* Number of "Register ... as kernel.ind_..." in Int63.v and PrimFloat.v *)
+(* Number of "Register ... as kernel.ind_..." in PrimInt63.v and PrimFloat.v *)
 
 let v_prim_type = v_enum "prim_type" 3
 (* Number of constructors of prim_type in "kernel/cPrimitives.ml" *)

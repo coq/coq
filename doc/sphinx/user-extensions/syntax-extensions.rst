@@ -1721,8 +1721,8 @@ Number notations
             * :n:`Number.uint -> option @qualid__type`
             * :n:`Z -> @qualid__type`
             * :n:`Z -> option @qualid__type`
-            * :n:`Int63.int -> @qualid__type`
-            * :n:`Int63.int -> option @qualid__type`
+            * :n:`PrimInt63.int -> @qualid__type`
+            * :n:`PrimInt63.int -> option @qualid__type`
             * :n:`Number.number -> @qualid__type`
             * :n:`Number.number -> option @qualid__type`
 
@@ -1735,8 +1735,8 @@ Number notations
             * :n:`@qualid__type -> option Number.uint`
             * :n:`@qualid__type -> Z`
             * :n:`@qualid__type -> option Z`
-            * :n:`@qualid__type -> Int63.int`
-            * :n:`@qualid__type -> option Int63.int`
+            * :n:`@qualid__type -> PrimInt63.int`
+            * :n:`@qualid__type -> option PrimInt63.int`
             * :n:`@qualid__type -> Number.number`
             * :n:`@qualid__type -> option Number.number`
 
@@ -1842,20 +1842,17 @@ Number notations
      only for integers or non-negative integers, and the given number
      has a fractional or exponent part or is negative.
 
-   .. exn:: int63 are only non-negative numbers.
-
-      :n:`Int63.int` are unsigned integers.
-
    .. exn:: overflow in int63 literal @bigint
 
-      The constant is too big to fit into an unsigned 63-bit integer :n:`Int63.int`.
+      The constant's absolute value is too big to fit into a 63-bit integer :n:`PrimInt63.int`.
 
-   .. exn:: @qualid__parse should go from Number.int to @type or (option @type). Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
+   .. exn:: @qualid__parse should go from Number.int to @type or (option @type). Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or Number.number could be used (you may need to require BinNums or Number or PrimInt63 first).
 
      The parsing function given to the :cmd:`Number Notation`
      command is not of the right type.
 
-   .. exn:: @qualid__print should go from @type to Number.int or (option Number.int).  Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
+   .. exn:: @qualid__print should go from @type to Number.int or (option Number.int). Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or Number.number could be used (you may need to require BinNums or Number or PrimInt63 first).
+
 
      The printing function given to the :cmd:`Number Notation`
      command is not of the right type.
