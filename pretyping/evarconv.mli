@@ -145,4 +145,4 @@ val occur_rigidly : Evarsolve.unify_flags ->
 (**/**)
 
 (** {6 Functions to deal with impossible cases } *)
-val coq_unit_judge : env -> EConstr.unsafe_judgment Univ.in_universe_context_set
+val coq_unit_judge : env -> evar_map -> evar_map * EConstr.unsafe_judgment
