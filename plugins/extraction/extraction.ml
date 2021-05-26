@@ -1123,7 +1123,9 @@ let extract_constant env kn cb =
   in
   try
     match flag_of_type env sg typ with
-    | (Logic,TypeScheme) -> warn_log (); Dtype (r, [], Tdummy Ktype)
+    | (Logic,TypeScheme) -> warn_log ();
+        let s,vl = type_sign_vl env sg typ in
+        Dtype (r, vl, Tdummy Ktype)
     | (Logic,Default) -> warn_log (); Dterm (r, MLdummy Kprop, Tdummy Kprop)
     | (Info,TypeScheme) ->
         (match cb.const_body with
@@ -1160,7 +1162,9 @@ let extract_constant_spec env kn cb =
   let typ = EConstr.of_constr cb.const_type in
   try
     match flag_of_type env sg typ with
-    | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
+    | (Logic, TypeScheme) ->
+        let s,vl = type_sign_vl env sg typ in
+        Stype (r, vl, Some (Tdummy Ktype))
     | (Logic, Default) -> Sval (r, Tdummy Kprop)
     | (Info, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
@@ -1225,7 +1229,7 @@ let extract_inductive env kn =
 
 let logical_decl = function
   | Dterm (_,MLdummy _,Tdummy _) -> true
-  | Dtype (_,[],Tdummy _) -> true
+  | Dtype (_,_,Tdummy _) -> true
   | Dfix (_,av,tv) ->
       (Array.for_all isMLdummy av) &&
       (Array.for_all isTdummy tv)
@@ -1235,7 +1239,7 @@ let logical_decl = function
 (*s Is a [ml_spec] logical ? *)
 
 let logical_spec = function
-  | Stype (_, [], Some (Tdummy _)) -> true
+  | Stype (_, _, Some (Tdummy _)) -> true
   | Sval (_,Tdummy _) -> true
   | Sind (_,i) -> Array.for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false
