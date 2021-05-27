@@ -24,11 +24,11 @@ type 'a delayed_universes =
 | PrivateMonomorphic of 'a
 | PrivatePolymorphic of int * Univ.ContextSet.t
 
-type opaque_proofterm = (Constr.t * unit delayed_universes) option
+type opaque_proofterm = Constr.t * unit delayed_universes
 
 type indirect_accessor = {
-  access_proof : DirPath.t -> int -> opaque_proofterm;
-  access_discharge : cooking_info list -> (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
+  access_proof : DirPath.t -> int -> opaque_proofterm option;
+  access_discharge : cooking_info list -> opaque_proofterm -> opaque_proofterm;
 }
 
 let drop_mono = function
@@ -127,6 +127,9 @@ let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = funct
 
 module FMap = Future.UUIDMap
 
+type opaque_disk = opaque_proofterm option array
+type opaque_handle = int
+
 let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =
   let opaque_table = Array.make n None in
   let f2t_map = ref FMap.empty in
@@ -147,3 +150,15 @@ let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _
   in
   let () = Int.Map.iter iter otab in
   opaque_table, !f2t_map
+
+let get_opaque_disk i t =
+  let () = assert (0 <= i && i < Array.length t) in
+  t.(i)
+
+let set_opaque_disk i (c, priv) t =
+  let () = assert (0 <= i && i < Array.length t) in
+  let () = assert (Option.is_empty t.(i)) in
+  let c = Constr.hcons c in
+  t.(i) <- Some (c, priv)
+
+let repr_handle i = i
