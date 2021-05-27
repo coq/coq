@@ -62,6 +62,7 @@ let message_view () : message_view =
     ~tag_table:Tags.Message.table
     ?style_scheme:(style_manager#style_scheme source_style#get) ()
   in
+  buffer#set_max_undo_levels 0;
   let mark = buffer#create_mark ~left_gravity:false buffer#start_iter in
   let _ = buffer#create_mark ~name:"end_of_output" buffer#end_iter in
   let box = GPack.vbox () in
@@ -83,6 +84,13 @@ let message_view () : message_view =
   let cb ft = view#misc#modify_font (GPango.font_description_from_string ft) in
   stick text_font view cb;
 
+  let insert_xml ~mark buffer ~tags msg =
+    let width = Ideutils.textview_width view in
+    let before = buffer#line_count in
+    Ideutils.insert_xml ~mark buffer ~tags (Richpp.richpp_of_pp width msg);
+    buffer#line_count - before
+  in
+
   (* Inserts at point, advances the mark *)
   let insert_fb_msg (level, msg) =
     let tags = match level with
@@ -91,11 +99,11 @@ let message_view () : message_view =
       | _ -> []
     in
     let mark = `MARK mark in
-    let width = Ideutils.textview_width view in
-    Ideutils.insert_xml ~mark buffer ~tags (Richpp.richpp_of_pp width msg);
+    let lines = insert_xml ~mark buffer ~tags msg in
     buffer#insert ~iter:(buffer#end_iter) "\n";
     buffer#move_mark (`NAME "end_of_output") ~where:buffer#end_iter;
     view#scroll_to_mark `INSERT; (* scroll to end *)
+    lines
   in
 
   let forward_send_db_loc = ref ((fun x -> failwith "forward_send_db_loc")
@@ -107,8 +115,7 @@ let message_view () : message_view =
       !forward_send_db_loc ();
     let tags = [] in
     let mark = `MARK mark in
-    let width = Ideutils.textview_width view in
-    Ideutils.insert_xml ~mark buffer ~tags (Richpp.richpp_of_pp width msg);
+    let lines = insert_xml ~mark buffer ~tags msg in
     buffer#move_mark (`NAME "end_of_output") ~where:buffer#end_iter;
     view#set_editable true;
     view#set_cursor_visible true;
@@ -116,16 +123,16 @@ let message_view () : message_view =
     buffer#move_mark `INSERT ~where:buffer#end_iter;
     let ins = buffer#get_iter_at_mark `INSERT in
     buffer#select_range ins ins;  (* avoid highlighting *)
+    lines
   in
 
   let insert_msg  ?(refresh=false) = function
     | Fb (lvl,msg) -> insert_fb_msg (lvl,msg)
     | Prompt msg -> insert_ltac_debug_prompt ~refresh msg
-
   in
 
   (* List of displayed messages *)
-  let msgs : message_entry_kind list ref = ref [] in
+  let msgs : (message_entry_kind * int) list ref = ref [] in
   let last_width = ref (-1) in
 
   let refresh force =
@@ -141,21 +148,27 @@ let message_view () : message_view =
       last_width := width;
       buffer#set_text "";
       buffer#move_mark (`MARK mark) ~where:buffer#start_iter;
-      List.(iter (insert_msg ~refresh:true) (rev !msgs))
+      List.(iter (fun (m,_) -> ignore @@ insert_msg ~refresh:true m) (rev !msgs))
     end
   in
 
-  (* todo: this is crude and slow.  Improve if we're going to generate a lot of output.
-     Also verify whether msgs is still needed *)
+  (* todo: verify whether msgs is still needed *)
   let add_msg msg =
-    let max = 1000 in
-    let rec nthcdr n list = if n <= 0 then list else nthcdr (n-1) (List.tl list) in
-    if (List.length !msgs) >= max then begin
-      (* limit size of output *)
-      msgs := List.rev @@ nthcdr (max/2) (List.rev !msgs);
-      refresh true
-    end;
-    msgs := msg :: !msgs
+    let mlines = insert_msg msg in
+    msgs := (msg, mlines) :: !msgs;
+    let max_lines = 1000 in
+    if buffer#line_count > max_lines then begin
+      let rec trim lcnt res msgs =
+        match msgs with
+        | (m,len) :: tl when lcnt < max_lines ->
+            trim (lcnt+len) ((m,len) :: res) tl
+        | _ -> lcnt, res
+      in
+      let lcnt, res = trim 0 [] !msgs in
+      msgs := res;
+      let stop = buffer#start_iter#forward_lines (buffer#line_count - lcnt) in
+      buffer#delete ~start:buffer#start_iter ~stop;
+    end
   in
 
   let (return, _) = GtkData.AccelGroup.parse "Return" in
@@ -225,12 +238,10 @@ let message_view () : message_view =
 
     method push level msg =
       add_msg (Fb (level, msg));
-      insert_fb_msg (level, msg);
       push#call (level, msg)
 
     method debug_prompt msg =
       add_msg (Prompt msg);
-      insert_ltac_debug_prompt msg
 
     method add msg = self#push Feedback.Notice msg
 
