@@ -208,7 +208,7 @@ Section ZModulo.
   forall x y z, z>0 -> (x-y) mod z = 0 -> x mod z = y mod z.
  Proof.
  intros.
- generalize (Z_div_mod_eq (x-y) z H); rewrite H0, Z.add_0_r.
+ generalize (Z_div_mod_eq_full (x-y) z); rewrite H0, Z.add_0_r.
  remember ((x-y)/z) as k.
  rewrite Z.sub_move_r, Z.add_comm, Z.mul_comm. intros ->.
  now apply Z_mod_plus.

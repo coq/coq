@@ -417,7 +417,7 @@ Proof.
   apply Zdiv_mod_unique with b.
   apply Zrem_lt_pos; lia.
   rewrite Z.abs_eq by lia. apply Z_mod_lt; lia.
-  rewrite <- Z_div_mod_eq by lia.
+  rewrite <- Z_div_mod_eq_full.
   symmetry; apply Z.quot_rem; lia.
 Qed.
 

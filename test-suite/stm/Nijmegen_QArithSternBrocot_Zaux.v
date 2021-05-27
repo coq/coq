@@ -2983,8 +2983,7 @@ Proof.
  intros.
  apply Zplus_minus_eq.
  rewrite Zplus_comm.
- apply Z_div_mod_eq.
- Flip.
+ apply Z_div_mod_eq_full.
 Qed.
 
 Lemma Z_div_le :
@@ -3006,7 +3005,7 @@ Qed.
 Lemma Z_div_neg : forall a b : Z, (0 < b)%Z -> (a < 0)%Z -> (a / b < 0)%Z.
 Proof.
  intros.
- rewrite (Z_div_mod_eq a b) in H0.
+ rewrite (Z_div_mod_eq_full a b) in H0.
  elim (Z_mod_lt a b).
  intros H1 _.
  apply Znot_ge_lt.
@@ -3017,7 +3016,6 @@ Proof.
  apply Zlt_le_weak; assumption.
  Flip.
  assumption.
- Flip.
  Flip.
 Qed.
 

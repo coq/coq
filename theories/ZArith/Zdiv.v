@@ -23,7 +23,6 @@ Local Open Scope Z_scope.
 Notation Zdiv_eucl_POS := Z.pos_div_eucl (only parsing).
 Notation Zmod := Z.modulo (only parsing).
 
-Notation Z_div_mod_eq_full := Z.div_mod (only parsing).
 Notation Zmod_POS_bound := Z.pos_div_eucl_bound (only parsing).
 Notation Zmod_pos_bound := Z.mod_pos_bound (only parsing).
 Notation Zmod_neg_bound := Z.mod_neg_bound (only parsing).
@@ -108,9 +107,15 @@ Proof (fun Hb => Z.mod_pos_bound a b (Z.gt_lt _ _ Hb)).
 Lemma Z_mod_neg a b : b < 0 -> b < a mod b <= 0.
 Proof (Z.mod_neg_bound a b).
 
+Lemma Z_div_mod_eq_full a b : a = b*(a/b) + (a mod b).
+Proof.
+  now destruct (Z.eq_dec b 0) as [->|?]; [destruct a|apply Z.div_mod].
+Qed.
+
+#[deprecated(since="8.14",note="Z_div_mod_eq_full instead")]
 Lemma Z_div_mod_eq a b : b > 0 -> a = b*(a/b) + (a mod b).
 Proof.
-  intros Hb; apply Z.div_mod; now intros ->.
+  intros. apply Z_div_mod_eq_full.
 Qed.
 
 Lemma Zmod_eq_full a b : b<>0 -> a mod b = a - (a/b)*b.
@@ -236,6 +241,20 @@ Proof. intros. apply Z.div_pos; auto using Z.gt_lt. Qed.
 Lemma Z_div_ge0: forall a b, b > 0 -> a >= 0 -> a/b >=0.
 Proof.
   intros; apply Z.le_ge, Z_div_pos; auto using Z.ge_le.
+Qed.
+
+(* Division of non-negative numbers is non-negative. *)
+
+Lemma Z_div_nonneg_nonneg : forall a b, 0 <= a -> 0 <= b -> 0 <= a / b.
+Proof.
+  intros a b. destruct b; intros; now (rewrite Zdiv_0_r + apply Z_div_pos).
+Qed.
+
+(* Modulo for a non-negative divisor is non-negative. *)
+
+Lemma Z_mod_nonneg_nonneg : forall a b, 0 <= a -> 0 <= b -> 0 <= a mod b.
+Proof.
+  destruct b; intros; now (rewrite Zmod_0_r + apply Z_mod_lt).
 Qed.
 
 (** As soon as the divisor is greater or equal than 2,
@@ -717,26 +736,12 @@ Arguments Zdiv_eucl_extended : default implicits.
 
 (** * Division and modulo in Z agree with same in nat: *)
 
-Require Import PeanoNat.
-
+#[deprecated(since="8.14",note="Use Nat2Z.inj_div instead.")]
 Lemma div_Zdiv (n m: nat): m <> O ->
   Z.of_nat (n / m) = Z.of_nat n / Z.of_nat m.
-Proof.
- intros.
- apply (Zdiv_unique _ _ _ (Z.of_nat (n mod m))).
-  split. auto with zarith.
-  now apply inj_lt, Nat.mod_upper_bound.
- rewrite <- Nat2Z.inj_mul, <- Nat2Z.inj_add.
- now apply inj_eq, Nat.div_mod.
-Qed.
+Proof. intros. apply Nat2Z.inj_div. Qed.
 
+#[deprecated(since="8.14",note="Use Nat2Z.inj_mod instead.")]
 Lemma mod_Zmod (n m: nat): m <> O ->
   Z.of_nat (n mod m) = (Z.of_nat n) mod (Z.of_nat m).
-Proof.
- intros.
- apply (Zmod_unique _ _ (Z.of_nat n / Z.of_nat m)).
-  split. auto with zarith.
-  now apply inj_lt, Nat.mod_upper_bound.
- rewrite <- div_Zdiv, <- Nat2Z.inj_mul, <- Nat2Z.inj_add by trivial.
- now apply inj_eq, Nat.div_mod.
-Qed.
+Proof. intros. apply Nat2Z.inj_mod. Qed.
