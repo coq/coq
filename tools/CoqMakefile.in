@@ -913,6 +913,11 @@ debug:
 
 .DEFAULT_GOAL := all
 
+# Users can create @LOCAL_LATE_FILE@ to hook into double-colon rules
+# or add other needed Makefile code, using defined
+# variables if necessary.
+-include @LOCAL_LATE_FILE@
+
 # Local Variables:
 # mode: makefile-gmake
 # End:
