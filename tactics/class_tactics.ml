@@ -274,9 +274,8 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
-    let d = pf_last_hyp gl in
-    let hintl = make_resolve_hyp env sigma d in
-    let hints = Hint_db.add_list env sigma hintl local_db in
+    let d = NamedDecl.get_id @@ pf_last_hyp gl in
+    let hints = push_resolve_hyp env sigma d local_db in
       e_trivial_fail_db only_classes db_list hints secvars
       end
   in
@@ -464,7 +463,7 @@ let evars_to_goals p evm =
   else Some (goals, nongoals)
 
 (** Making local hints  *)
-let make_resolve_hyp env sigma st only_classes pri decl =
+let make_resolve_hyp env sigma st only_classes decl db =
   let id = NamedDecl.get_id decl in
   let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
   let rec iscl env ty =
@@ -482,29 +481,24 @@ let make_resolve_hyp env sigma st only_classes pri decl =
   let keep = not only_classes || is_class in
     if keep then
       let id = GlobRef.VarRef id in
-      make_resolves env sigma pri id
-    else []
+      push_resolves env sigma id db
+    else db
 
 let make_hints g (modes,st) only_classes sign =
-  let hintlist =
-    List.fold_left
-      (fun hints hyp ->
-        let consider =
-          not only_classes ||
-          try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
-              (* Section variable, reindex only if the type changed *)
-              not (EConstr.eq_constr (project g) (EConstr.of_constr t) (NamedDecl.get_type hyp))
-          with Not_found -> true
-        in
-        if consider then
-          let hint =
-            pf_apply make_resolve_hyp g st only_classes empty_hint_info hyp
-          in hint @ hints
-        else hints)
-      ([]) sign
-  in
   let db = Hint_db.add_modes modes @@ Hint_db.empty st true in
-  Hint_db.add_list (pf_env g) (project g) hintlist db
+  List.fold_right
+    (fun hyp hints ->
+      let consider =
+        not only_classes ||
+        try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
+            (* Section variable, reindex only if the type changed *)
+            not (EConstr.eq_constr (project g) (EConstr.of_constr t) (NamedDecl.get_type hyp))
+        with Not_found -> true
+      in
+      if consider then
+        pf_apply make_resolve_hyp g st only_classes hyp hints
+      else hints)
+    sign db
 
 module Search = struct
   type autoinfo =
@@ -743,10 +737,9 @@ module Search = struct
     let env = Goal.env gl in
     let sigma = Goal.sigma gl in
     let decl = Tacmach.New.pf_last_hyp gl in
-    let hint =
+    let ldb =
       make_resolve_hyp env sigma (Hint_db.transparent_state info.search_hints)
-                       info.search_only_classes empty_hint_info decl in
-    let ldb = Hint_db.add_list env sigma hint info.search_hints in
+                       info.search_only_classes decl info.search_hints in
     let info' =
       { info with search_hints = ldb; last_tac = lazy (str"intro");
         search_depth = 1 :: 1 :: info.search_depth }

@@ -533,7 +533,6 @@ val map_eauto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                 (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
 val map_auto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                (GlobRef.t * constr array) -> constr -> t -> full_hint list
-val add_one : env -> evar_map -> hint_entry -> t -> t
 val add_list : env -> evar_map -> hint_entry list -> t -> t
 val remove_one : Environ.env -> GlobRef.t -> t -> t
 val remove_list : Environ.env -> GlobRef.t list -> t -> t
@@ -903,8 +902,8 @@ let make_resolves env sigma (eapply, hnf) info ~check ?name cr =
   ents
 
 (* used to add an hypothesis to the local hint database *)
-let make_resolve_hyp env sigma decl =
-  let hname = NamedDecl.get_id decl in
+let make_resolve_hyp env sigma hname =
+  let decl = EConstr.lookup_named hname env in
   let c = mkVar hname in
   try
     [make_apply_entry env sigma true empty_hint_info
@@ -1425,10 +1424,6 @@ let constructor_hints env sigma eapply lems =
   List.map_append (fun lem ->
       make_resolves env sigma (eapply, true) empty_hint_info ~check:true lem) lems
 
-let make_resolves env sigma info hint =
-  let name = PathHints [hint] in
-  make_resolves env sigma (true, false) info ~check:false ~name (IsGlobRef hint)
-
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
   let lems = List.map map lems in
@@ -1437,7 +1432,7 @@ let make_local_hint_db env sigma ts eapply lems =
     | None -> Hint_db.transparent_state (searchtable_map "core")
     | Some ts -> ts
   in
-  let hintlist = List.map_append (make_resolve_hyp env sigma) sign in
+  let hintlist = List.map_append (fun decl -> make_resolve_hyp env sigma (Named.Declaration.get_id decl)) sign in
   Hint_db.empty ts false
   |> Hint_db.add_list env sigma hintlist
   |> Hint_db.add_list env sigma (constructor_hints env sigma eapply lems)
@@ -1453,6 +1448,15 @@ let make_db_list dbnames =
     try searchtable_map db with Not_found -> error_no_such_hint_database db
   in
   List.map lookup dbnames
+
+let push_resolves env sigma hint db =
+  let name = PathHints [hint] in
+  let entries = make_resolves env sigma (true, false) empty_hint_info ~check:false ~name (IsGlobRef hint) in
+  Hint_db.add_list env sigma entries db
+
+let push_resolve_hyp env sigma decl db =
+  let entries = make_resolve_hyp env sigma decl in
+  Hint_db.add_list env sigma entries db
 
 (**************************************************************************)
 (*                    Functions for printing the hints                    *)
