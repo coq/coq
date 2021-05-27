@@ -82,11 +82,6 @@ let pr_argument_type arg =
   let Val.Dyn (tag, _) = arg in
   Val.pr tag
 
-let safe_msgnl s =
-  Proofview.NonLogical.catch
-    (Proofview.NonLogical.print_debug (s++fnl()))
-    (fun _ -> Proofview.NonLogical.print_warning (str "bug in the debugger: an exception is raised while printing debug information"++fnl()))
-
 type value = Val.t
 
 let push_appl appl args =
@@ -327,8 +322,8 @@ let is_variable env id =
 (* todo in review: these messages should go through Tactic_debug.defer_output *)
 let debugging_step ist pp = (*Tactic_debug.defer_output (fun () ->*)
   match curr_debug ist with
-  | DebugOn lev ->
-      safe_msgnl (str "Level " ++ int lev ++ str": " ++ pp () ++ fnl())
+  | DebugOn lev -> Tactic_debug.defer_output
+      (fun _ -> (str "Level " ++ int lev ++ str": " ++ pp () ++ fnl()))
   | _ -> Proofview.NonLogical.return ()
 
 let debugging_exception_step ist signal_anomaly e pp =
