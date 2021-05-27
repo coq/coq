@@ -88,15 +88,19 @@ module Comm = struct
   let goal g = wrap (fun () -> (hook ()).submit_answer (Goal g))
   let output g = wrap (fun () -> (hook ()).submit_answer (Output g))
 
-  (* routines for deferring output; output is sent only if
+  (* routines for deferred output; output is sent only if
      the debugger stops at the next step *)
   let out_queue = Queue.create ()
   let defer_output f = wrap (fun () -> Queue.add f out_queue)
-  let print_deferred () = wrap (fun () ->
-    while not (Queue.is_empty out_queue)
-    do
-      (hook ()).submit_answer (Output ((Queue.pop out_queue) ()))
-    done)
+  let print_deferred () =
+    wrap (fun () ->
+      while not (Queue.is_empty out_queue)
+      do
+        try
+          (hook ()).submit_answer (Output ((Queue.pop out_queue) ()))
+        with _ -> Feedback.msg_warning
+          (str "bug in the debugger: an exception was raised while printing debug information"++fnl())
+      done)
   let clear_queue () = wrap (fun () -> Queue.clear out_queue)
 
   [@@@ocaml.warning "-32"]
@@ -373,6 +377,7 @@ let debug_prompt lev tac f stack =
               | StepOut  -> let st, st_prev = (Option.default [] stack), (Option.default [] p_stack) in
                               let l_cur, l_prev = StdList.length st, StdList.length st_prev in
                               if l_cur < l_prev then true
+                              else if l_prev = 0 then false
                               else
                                 StdList.nth st (l_cur - l_prev) != (StdList.hd st_prev)
               | _ -> failwith "action op"
