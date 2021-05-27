@@ -208,18 +208,6 @@ coqbot_update_comment "" "" ""
 
 # --------------------------------------------------------------------------------
 
-# Clone the indicated git-repository.
-
-coq_dir="$working_dir/coq"
-git clone -q "$new_coq_repository" "$coq_dir"
-cd "$coq_dir"
-git remote rename origin new_coq_repository
-git remote add old_coq_repository "$old_coq_repository"
-git fetch -q "$old_coq_repository"
-git checkout -q $new_coq_commit
-
-coq_opam_version=dev
-
 zulip_post=""
 if [[ $ZULIP_BENCH_BOT ]]; then
     pr_full=$(git log -n 1 --pretty=%s)
@@ -275,6 +263,18 @@ zulip_autofail() {
     zulip_edit "Failed '$com' with exit code $code."
 }
 if [[ $zulip_post ]]; then trap zulip_autofail ERR; fi
+
+# Clone the indicated git-repository.
+
+coq_dir="$working_dir/coq"
+git clone -q "$new_coq_repository" "$coq_dir"
+cd "$coq_dir"
+git remote rename origin new_coq_repository
+git remote add old_coq_repository "$old_coq_repository"
+git fetch -q "$old_coq_repository"
+git checkout -q $new_coq_commit
+
+coq_opam_version=dev
 
 # --------------------------------------------------------------------------------
 
