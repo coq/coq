@@ -422,6 +422,7 @@ let pstatus = function
 *)
 
 let can_send_db_msg coqtop =
+  coqtop.handle.db_waiting_for = None &&
   match coqtop.status with
   | Busy -> coqtop.stopped_in_debugger
   | Ready -> true
@@ -439,7 +440,7 @@ let mkready coqtop db =
       coqtop.status <- Ready;
       coqtop.set_script_editable true
     end;
-    if coqtop.status = Ready then begin
+    if coqtop.status = Ready || db then begin
       let q = coqtop.do_when_ready in
       if not (Queue.is_empty q) then
         let f = Queue.pop q in f ()
