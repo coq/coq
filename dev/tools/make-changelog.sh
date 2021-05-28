@@ -9,7 +9,7 @@ read -r where
 
 where="doc/changelog/$where"
 if ! [ -d "$where" ]; then where=$(echo "$where"*); fi
-where="$where/$PR-$(git rev-parse --abbrev-ref HEAD).rst"
+where="$where/$PR-$(git rev-parse --abbrev-ref HEAD | tr / -).rst"
 
 printf "Type? (type first letter)\n"
 printf "[A]dded \t[C]hanged \t[D]eprecated \t[F]ixed \t[R]emoved\n"
