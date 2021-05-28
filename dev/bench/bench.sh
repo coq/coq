@@ -208,18 +208,6 @@ coqbot_update_comment "" "" ""
 
 # --------------------------------------------------------------------------------
 
-# Clone the indicated git-repository.
-
-coq_dir="$working_dir/coq"
-git clone -q "$new_coq_repository" "$coq_dir"
-cd "$coq_dir"
-git remote rename origin new_coq_repository
-git remote add old_coq_repository "$old_coq_repository"
-git fetch -q "$old_coq_repository"
-git checkout -q $new_coq_commit
-
-coq_opam_version=dev
-
 zulip_post=""
 if [[ $ZULIP_BENCH_BOT ]]; then
     pr_full=$(git log -n 1 --pretty=%s)
@@ -275,6 +263,18 @@ zulip_autofail() {
     zulip_edit "Failed '$com' with exit code $code."
 }
 if [[ $zulip_post ]]; then trap zulip_autofail ERR; fi
+
+# Clone the indicated git-repository.
+
+coq_dir="$working_dir/coq"
+git clone -q "$new_coq_repository" "$coq_dir"
+cd "$coq_dir"
+git remote rename origin new_coq_repository
+git remote add old_coq_repository "$old_coq_repository"
+git fetch -q "$old_coq_repository"
+git checkout -q $new_coq_commit
+
+coq_opam_version=dev
 
 # --------------------------------------------------------------------------------
 
@@ -371,6 +371,15 @@ new_coq_commit_long="$COQ_HASH_LONG"
 # Create an OPAM-root to which we will install the OLD version of Coq.
 create_opam "OLD" "$old_ocaml_switch" "$old_coq_commit" "$old_coq_opam_archive_dir"
 old_coq_commit_long="$COQ_HASH_LONG"
+
+# The following variable will be set in the following cycle:
+installable_coq_opam_packages="coq-core coq-stdlib coq"
+
+echo "DEBUG: $program_path/render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
+rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
+echo "${rendered_results}"
+zulip_edit "Benching continues..."
+
 # --------------------------------------------------------------------------------
 # Measure the compilation times of the specified OPAM packages in both switches
 
@@ -383,9 +392,6 @@ fi
 
 # Generate per line timing info in devs that use coq_makefile
 export TIMING=1
-
-# The following variable will be set in the following cycle:
-installable_coq_opam_packages="coq-core coq-stdlib coq"
 
 for coq_opam_package in $sorted_coq_opam_packages; do
 
