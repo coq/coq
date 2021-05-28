@@ -54,7 +54,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
      applied to zero or more arguments.
    * :token:`sort`\s.
    * Literal functions:  `fun … => …`.
-   * Literal, non-dependent function types, i.e. implications: `… -> …`.
+   * Literal, (possibly dependent) function types: `… -> …` and `forall …, …`.
    * Variables bound in :token:`qualid`.
 
    Only the head symbol of an existing instance's field :n:`c__i`
@@ -68,7 +68,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
      the constant or variable itself, disregarding any arguments.
    * For sorts: the sort itself.
    * For literal functions: skip the abstractions and use the key of the body.
-   * For literal functions types: a disembodied implication key denoted `_ -> _`, disregarding both its
+   * For literal function types: a disembodied implication key denoted `forall _, _`, disregarding both its
      domain and codomain.
    * For variables bound in :token:`qualid`: a catch-all key denoted `_`.
 

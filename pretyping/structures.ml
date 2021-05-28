@@ -162,7 +162,7 @@ let rec of_constr env t =
     patt, n, args @ Array.to_list vargs
   | Rel n -> Default_cs, Some n, []
   | Lambda (_, _, b) -> let patt, _, _ = of_constr env b in patt, None, []
-  | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
+  | Prod (_,_,_) -> Prod_cs, None, [t]
   | Proj (p, c) -> Proj_cs (Names.Projection.repr p), None, [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []
   | _ -> Const_cs (fst @@ destRef t) , None, []
@@ -170,7 +170,7 @@ let rec of_constr env t =
 let print = function
     Const_cs c -> Nametab.pr_global_env Id.Set.empty c
   | Proj_cs p -> Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef (Names.Projection.Repr.constant p))
-  | Prod_cs -> str "_ -> _"
+  | Prod_cs -> str "forall _, _"
   | Default_cs -> str "_"
   | Sort_cs s -> Sorts.pr_sort_family s
 
