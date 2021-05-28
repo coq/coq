@@ -2181,6 +2181,23 @@ Section Cutting.
 
 End Cutting.
 
+Section CuttingMap.
+  Variables A B : Type.
+  Variable f : A -> B.
+
+  Lemma firstn_map : forall n l,
+      firstn n (map f l) = map f (firstn n l).
+  Proof.
+    intro n; induction n; intros []; simpl; f_equal; trivial.
+  Qed.
+
+  Lemma skipn_map : forall n l,
+      skipn n (map f l) = map f (skipn n l).
+  Proof.
+    intro n; induction n; intros []; simpl; trivial.
+  Qed.
+End CuttingMap.
+
 (**************************************************************)
 (** ** Combining pairs of lists of possibly-different lengths *)
 (**************************************************************)
