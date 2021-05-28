@@ -576,7 +576,7 @@ let tag_var = tag Tag.variable
         let c,l1 = List.sep_last l1 in
         let p = pr_proj (pr mt) pr_appexpl c (f,us) l1 in
         if not (List.is_empty l2) then
-          return (p ++ prlist (pr spc (LevelLt lapp)) l2, lapp)
+          return (hov 0 (p ++ prlist (pr spc (LevelLt lapp)) l2), lapp)
         else
           return (p, lproj)
       | CAppExpl ((None,qid,us),[t])
@@ -595,7 +595,7 @@ let tag_var = tag Tag.variable
         let p = pr_proj (pr mt) pr_app (fst c) f l1 in
         if not (List.is_empty l2) then
           return (
-            p ++ prlist (fun a -> spc () ++ pr_expl_args (pr mt) a) l2,
+            hov 0 (p ++ prlist (fun a -> spc () ++ pr_expl_args (pr mt) a) l2),
             lapp
           )
         else

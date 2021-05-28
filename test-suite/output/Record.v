@@ -64,3 +64,13 @@ Import LongModuleName.
 Eval compute in {|a:=c;b:=d|}.
 
 End FormattingIssue13142.
+
+Module ProjectionPrinting.
+
+Notation "a +++ b" := (a * b) (at level 40, format "'[v' a '/' +++ '/' b ']'").
+
+Record R := { field : nat -> nat }.
+Set Printing Projections.
+Check fun x => 0 +++ x.(field) 0.
+
+End ProjectionPrinting.
