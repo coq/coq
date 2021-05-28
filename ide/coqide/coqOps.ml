@@ -678,8 +678,11 @@ object(self)
       script#set_editable true;
       Minilib.log "Begin command processing";
       queue) in
+    let scroll_to = ref 0 in
     let conclude topstack =
       pop_info ();
+      let where = buffer#get_iter (`OFFSET !scroll_to) in
+      script#buffer#place_cursor ~where;
       script#recenter_insert;
       match topstack with
       | [] -> self#show_goals_aux ?move_insert ()
@@ -707,6 +710,7 @@ object(self)
               | Good (id, Util.Inl (* NewTip *) ()) ->
                   Doc.assign_tip_id document id;
                   self#commit_queue_transaction sentence;
+                  scroll_to := (buffer#get_iter_at_mark sentence.stop)#offset;
                   loop id []
               | Good (id, Util.Inr (* Unfocus *) tip) ->
                   Doc.assign_tip_id document id;
@@ -714,6 +718,7 @@ object(self)
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
                   self#mark_as_needed sentence;
+                  scroll_to := (buffer#get_iter_at_mark sentence.stop)#offset;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
