@@ -20,49 +20,9 @@ module Monomial : sig
   (** A monomial is represented by a multiset of variables  *)
   type t
 
-  (** [fold f m acc]
-       folds over the variables with multiplicities *)
-  val fold : (var -> int -> 'a -> 'a) -> t -> 'a -> 'a
-
   (** [degree m] is the sum of the degrees of each variable *)
   val degree : t -> int
 
-  (** [const]
-      @return the empty monomial i.e. without any variable *)
-  val const : t
-
-  val is_const : t -> bool
-
-  (** [var x]
-      @return the monomial x^1 *)
-  val var : var -> t
-
-  (** [prod n m]
-      @return the monomial n*m *)
-  val prod : t -> t -> t
-
-  (** [sqrt m]
-      @return [Some r] iff r^2 = m *)
-  val sqrt : t -> t option
-
-  (** [is_var m]
-      @return [true] iff m = x^1 for some variable x *)
-  val is_var : t -> bool
-
-  (** [get_var m]
-      @return [x] iff m = x^1 for  variable x *)
-  val get_var : t -> var option
-
-  (** [div m1 m2]
-      @return a pair [mr,n] such that mr * (m2)^n = m1 where n is maximum *)
-  val div : t -> t -> t * int
-
-  (** [compare m1 m2] provides a total order over monomials*)
-  val compare : t -> t -> int
-
-  (** [variables m]
-      @return the set of variables with (strictly) positive multiplicities *)
-  val variables : t -> ISet.t
 end
 
 module MonMap : sig
