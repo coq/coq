@@ -768,9 +768,8 @@ let maybe_update_breakpoints () =
 module Nav = struct
   let forward_one _ =
     maybe_update_breakpoints ();
-    if not (resume_debugger Interface.StepOver) then begin
+    if not (resume_debugger Interface.StepOver) then
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
-    end
   let continue _ = maybe_update_breakpoints ();
     ignore (resume_debugger Interface.Continue)
   let step_in _ = maybe_update_breakpoints ();
@@ -1069,7 +1068,8 @@ let toggle_breakpoint_i sn =
   | None -> ()
 
 let all_sessions_ready _ =
-  List.fold_left (fun rdy sn -> rdy && Coq.is_ready sn.coqtop) true notebook#pages
+  List.fold_left (fun rdy sn -> rdy && Coq.is_ready_or_stopped_in_debugger sn.coqtop)
+      true notebook#pages
 
 let toggle_breakpoint _ =
   if all_sessions_ready () then
