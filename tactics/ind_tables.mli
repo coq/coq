@@ -27,21 +27,21 @@ type scheme_dependency =
 | SchemeIndividualDep of inductive * individual scheme_kind
 
 type mutual_scheme_object_function =
-  handle -> MutInd.t -> constr array Evd.in_evar_universe_context
+  Environ.env -> handle -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
-  handle -> inductive -> constr Evd.in_evar_universe_context
+  Environ.env -> handle -> inductive -> constr Evd.in_evar_universe_context
 
 (** Main functions to register a scheme builder. Note these functions
    are not safe to be used by plugins as their effects won't be undone
    on backtracking *)
 
 val declare_mutual_scheme_object : string ->
-  ?deps:(MutInd.t -> scheme_dependency list) ->
+  ?deps:(Environ.env -> MutInd.t -> scheme_dependency list) ->
   ?aux:string ->
   mutual_scheme_object_function -> mutual scheme_kind
 
 val declare_individual_scheme_object : string ->
-  ?deps:(inductive -> scheme_dependency list) ->
+  ?deps:(Environ.env -> inductive -> scheme_dependency list) ->
   ?aux:string ->
   individual_scheme_object_function ->
   individual scheme_kind

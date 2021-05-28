@@ -28,9 +28,9 @@ open Pp
 type handle = Evd.side_effects
 
 type mutual_scheme_object_function =
-  handle -> MutInd.t -> constr array Evd.in_evar_universe_context
+  Environ.env -> handle -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
-  handle -> inductive -> constr Evd.in_evar_universe_context
+  Environ.env -> handle -> inductive -> constr Evd.in_evar_universe_context
 
 type 'a scheme_kind = string
 
@@ -47,8 +47,8 @@ type scheme_dependency =
 | SchemeIndividualDep of inductive * individual scheme_kind
 
 type scheme_object_function =
-  | MutualSchemeFunction of mutual_scheme_object_function * (MutInd.t -> scheme_dependency list) option
-  | IndividualSchemeFunction of individual_scheme_object_function * (inductive -> scheme_dependency list) option
+  | MutualSchemeFunction of mutual_scheme_object_function * (Environ.env -> MutInd.t -> scheme_dependency list) option
+  | IndividualSchemeFunction of individual_scheme_object_function * (Environ.env -> inductive -> scheme_dependency list) option
 
 let scheme_object_table =
   (Hashtbl.create 17 : (string, string * scheme_object_function) Hashtbl.t)
@@ -133,7 +133,8 @@ let define internal role id c poly univs =
 
 (* Assumes that dependencies are already defined *)
 let rec define_individual_scheme_base kind suff f ~internal idopt (mind,i as ind) eff =
-  let (c, ctx) = f eff ind in
+  (* FIXME: do not rely on the imperative modification of the global environment *)
+  let (c, ctx) = f (Global.env ()) eff ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
@@ -147,13 +148,14 @@ and define_individual_scheme kind ~internal names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
   | _,MutualSchemeFunction _ -> assert false
   | s,IndividualSchemeFunction (f, deps) ->
-    let deps = match deps with None -> [] | Some deps -> deps ind in
+    let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) ind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
     define_individual_scheme_base kind s f ~internal names ind eff
 
 (* Assumes that dependencies are already defined *)
 and define_mutual_scheme_base kind suff f ~internal names mind eff =
-  let (cl, ctx) = f eff mind in
+  (* FIXME: do not rely on the imperative modification of the global environment *)
+  let (cl, ctx) = f (Global.env ()) eff mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
@@ -170,7 +172,7 @@ and define_mutual_scheme kind ~internal names mind =
   match Hashtbl.find scheme_object_table kind with
   | _,IndividualSchemeFunction _ -> assert false
   | s,MutualSchemeFunction (f, deps) ->
-    let deps = match deps with None -> [] | Some deps -> deps mind in
+    let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) mind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
     define_mutual_scheme_base kind s f ~internal names mind eff
 
@@ -195,12 +197,12 @@ let find_scheme kind (mind,i as ind) =
   | None ->
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction (f, deps) ->
-    let deps = match deps with None -> [] | Some deps -> deps ind in
+    let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) ind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
     let c, eff = define_individual_scheme_base kind s f ~internal:true None ind eff in
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT c
   | s,MutualSchemeFunction (f, deps) ->
-    let deps = match deps with None -> [] | Some deps -> deps mind in
+    let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) mind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
     let ca, eff = define_mutual_scheme_base kind s f ~internal:true [] mind eff in
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
