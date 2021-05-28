@@ -307,8 +307,17 @@ object (self)
   method editable2 = editable2
 
   method recenter_insert =
-    self#scroll_to_mark
-      ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
+    let rec fwd iter =
+      if iter#is_end then iter
+      else
+        let c = iter#char in
+        if Glib.Unichar.isspace c || c = 0 then fwd (iter#forward_char)
+        else iter
+    in
+
+    let where = fwd (self#buffer#get_iter_at_mark `INSERT) in
+    ignore @@ self#scroll_to_iter
+      ~use_align:true ~yalign:0.75 ~within_margin:0.25 where
 
   (* HACK: missing gtksourceview features *)
   method! right_margin_position =
