@@ -231,7 +231,10 @@ let fold_inductives f env acc =
 (* Global constants *)
 
 let lookup_constant_key kn env =
-  Cmap_env.get kn env.env_globals.Globals.constants
+  match Cmap_env.find_opt kn env.env_globals.Globals.constants with
+  | Some v -> v
+  | None ->
+    anomaly Pp.(str "Constant " ++ Constant.print kn ++ str" does not appear in the environment.")
 
 let lookup_constant kn env =
   fst (lookup_constant_key kn env)
@@ -240,7 +243,10 @@ let mem_constant kn env = Cmap_env.mem kn env.env_globals.Globals.constants
 
 (* Mutual Inductives *)
 let lookup_mind_key kn env =
-  Mindmap_env.get kn env.env_globals.Globals.inductives
+  match Mindmap_env.find_opt kn env.env_globals.Globals.inductives with
+  | Some v -> v
+  | None ->
+    anomaly Pp.(str "Inductive " ++ MutInd.print kn ++ str" does not appear in the environment.")
 
 let lookup_mind kn env =
   fst (lookup_mind_key kn env)
