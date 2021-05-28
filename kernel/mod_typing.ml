@@ -120,7 +120,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
         { cb with
           const_body = def;
           const_universes = univs ;
-          const_body_code = Option.map Vmemitcodes.from_val
+          const_body_code =
               (Vmbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'

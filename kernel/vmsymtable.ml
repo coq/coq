@@ -153,7 +153,7 @@ let rec slot_for_getglobal env sigma kn =
       match cb.const_body_code with
       | None -> set_global (val_of_constant kn)
       | Some code ->
-         match Vmemitcodes.force code with
+         match code with
          | BCdefined(code,pl,fv) ->
            let v = eval_to_patch env sigma (code,pl,fv) in
            set_global v

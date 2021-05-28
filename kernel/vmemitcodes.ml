@@ -465,11 +465,7 @@ type body_code =
   | BCalias of Names.Constant.t
   | BCconstant
 
-type to_patch_substituted = body_code
-let from_val v = v
-let force v = v
-
-let subst_to_patch_subst s = function
+let subst_body_code s = function
 | BCdefined tp -> BCdefined (subst_to_patch s tp)
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant

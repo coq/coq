@@ -494,7 +494,7 @@ let rec get_alias env kn =
     match tps with
     | None -> kn
     | Some tps ->
-       (match Vmemitcodes.force tps with
+       (match tps with
         | BCalias kn' -> get_alias env kn'
         | _ -> kn)
 
