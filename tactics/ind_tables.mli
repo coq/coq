@@ -20,14 +20,12 @@ type mutual
 type individual
 type 'a scheme_kind
 
-type inline_flag = InlineDeps | KeepDeps
-
 type scheme_dependency =
 | SchemeMutualDep of MutInd.t * mutual scheme_kind
 | SchemeIndividualDep of inductive * individual scheme_kind
 
 type mutual_scheme_object_function =
-  inline_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
+  MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
   inductive -> constr Evd.in_evar_universe_context
 

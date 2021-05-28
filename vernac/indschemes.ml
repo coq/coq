@@ -289,6 +289,8 @@ let declare_rewriting_schemes ind =
     (* needs eq *)
     ignore_error (define_individual_scheme rew_l2r_scheme_kind None) ind;
     ignore_error
+      (define_individual_scheme sym_involutive_scheme_kind None) ind;
+    ignore_error
       (define_individual_scheme rew_l2r_dep_scheme_kind None) ind;
     ignore_error
       (define_individual_scheme rew_l2r_forward_dep_scheme_kind None) ind

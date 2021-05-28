@@ -25,10 +25,8 @@ open Pp
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
-type inline_flag = InlineDeps | KeepDeps
-
 type mutual_scheme_object_function =
-  inline_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
+  MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
   inductive -> constr Evd.in_evar_universe_context
 
@@ -102,37 +100,35 @@ let define internal role id c poly univs =
   !declare_definition_scheme ~internal ~univs ~role ~name:id c
 
 (* Assumes that dependencies are already defined *)
-let rec define_individual_scheme_base kind suff f mode idopt (mind,i as ind) eff =
+let rec define_individual_scheme_base kind suff f ~internal idopt (mind,i as ind) eff =
   let (c, ctx) = f ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let role = Evd.Schema (ind, kind) in
-  let internal = mode == InlineDeps in
   let const, neff = define internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
   let eff = Evd.concat_side_effects neff eff in
   DeclareScheme.declare_scheme kind [|ind,const|];
   const, eff
 
-and define_individual_scheme kind mode names (mind,i as ind) =
+and define_individual_scheme kind ~internal names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
   | _,MutualSchemeFunction _ -> assert false
   | s,IndividualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps ind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence mode eff dep) Evd.empty_side_effects deps in
-    define_individual_scheme_base kind s f mode names ind eff
+    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+    define_individual_scheme_base kind s f ~internal names ind eff
 
 (* Assumes that dependencies are already defined *)
-and define_mutual_scheme_base kind suff f mode names mind eff =
-  let (cl, ctx) = f mode mind in
+and define_mutual_scheme_base kind suff f ~internal names mind eff =
+  let (cl, ctx) = f mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
-    let internal = mode == InlineDeps in
     let cst, neff = define internal role id cl (Declareops.inductive_is_polymorphic mib) ctx in
     (Evd.concat_side_effects neff effs, cst)
   in
@@ -141,24 +137,24 @@ and define_mutual_scheme_base kind suff f mode names mind eff =
   DeclareScheme.declare_scheme kind schemes;
   consts, eff
 
-and define_mutual_scheme kind mode names mind =
+and define_mutual_scheme kind ~internal names mind =
   match Hashtbl.find scheme_object_table kind with
   | _,IndividualSchemeFunction _ -> assert false
   | s,MutualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps mind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence mode eff dep) Evd.empty_side_effects deps in
-    define_mutual_scheme_base kind s f mode names mind eff
+    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+    define_mutual_scheme_base kind s f ~internal names mind eff
 
-and declare_scheme_dependence mode eff = function
+and declare_scheme_dependence eff = function
 | SchemeIndividualDep (ind, kind) ->
   if check_scheme kind ind then eff
   else
-    let _, eff' = define_individual_scheme kind mode None ind in
+    let _, eff' = define_individual_scheme kind ~internal:true None ind in
     Evd.concat_side_effects eff' eff
 | SchemeMutualDep (mind, kind) ->
   if check_scheme kind (mind, 0) then eff
   else
-    let _, eff' = define_mutual_scheme kind mode [] mind in
+    let _, eff' = define_mutual_scheme kind ~internal:true [] mind in
     Evd.concat_side_effects eff' eff
 
 let find_scheme kind (mind,i as ind) =
@@ -170,21 +166,20 @@ let find_scheme kind (mind,i as ind) =
     Proofview.tclEFFECTS Evd.empty_side_effects <*>
     Proofview.tclUNIT s
   | None ->
-  let mode = InlineDeps in
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps ind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence mode eff dep) Evd.empty_side_effects deps in
-    let c, eff = define_individual_scheme_base kind s f mode None ind eff in
+    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+    let c, eff = define_individual_scheme_base kind s f ~internal:true None ind eff in
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT c
   | s,MutualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps mind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence mode eff dep) Evd.empty_side_effects deps in
-    let ca, eff = define_mutual_scheme_base kind s f mode [] mind eff in
+    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+    let ca, eff = define_mutual_scheme_base kind s f ~internal:true [] mind eff in
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
 
 let define_individual_scheme kind names ind =
-  ignore (define_individual_scheme kind KeepDeps names ind)
+  ignore (define_individual_scheme kind ~internal:false names ind)
 
 let define_mutual_scheme kind names mind =
-  ignore (define_mutual_scheme kind KeepDeps names mind)
+  ignore (define_mutual_scheme kind ~internal:false names mind)
