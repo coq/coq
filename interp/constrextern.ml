@@ -1416,7 +1416,7 @@ let extern_glob_constr vars c =
   extern false (InConstrEntrySomeLevel,empty_local_scopes) vars c
 
 let extern_glob_type ?impargs vars c =
-  extern_typ ?impargs (InConstrEntrySomeLevel,empty_local_scopes) vars c
+  extern_typ ?impargs (InConstrEntrySomeLevel,push_type_local_scope empty_local_scopes) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
