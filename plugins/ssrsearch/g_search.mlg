@@ -117,9 +117,9 @@ let interp_search_notation ?loc tag okey =
     let e = str "occurs in" ++ spc() ++ pr_and_list pr_ntn ntns' in
     err (hov 4 (str "ambiguous: " ++ qtag "in" ++ e)) in
   let (nvars, body), ((_, pat), osc) = match !scs with
-  | [sc] -> Notation.interp_notation ?loc ntn (None, [sc])
+  | [sc] -> Notation.interp_notation ?loc ntn Notation.(push_local_scope (sc,ScopeTransitiveNormal) empty_local_scopes)
   | scs' ->
-    try Notation.interp_notation ?loc ntn (None, []) with _ ->
+    try Notation.interp_notation ?loc ntn Notation.empty_local_scopes with _ ->
     let e = pr_ntn ntn ++ spc() ++ str "is defined " ++ pr_scs scs' in
     err (hov 4 (str "ambiguous: " ++ pr_tag_sc "in" ++ e)) in
   let sc = Option.default "" osc in

@@ -40,25 +40,41 @@ open NumTok
     expression, set this scope to be the current scope
 *)
 
+let scope_eq (s1:scope_name) s2 = String.equal s1 s2
+
+let _tmp_scope_status_eq scst1 scst2 =
+  match scst1, scst2 with
+  | ScopeImmediatePreemptive, ScopeImmediatePreemptive -> true
+  | ScopeImmediateImplicit, ScopeImmediateImplicit -> true
+  | (ScopeImmediatePreemptive | ScopeImmediateImplicit), _ -> false
+
+let scope_status_eq scst1 scst2 =
+  match scst1, scst2 with
+  | ScopeTransitiveLoose, ScopeTransitiveLoose -> true
+  | ScopeTransitiveNormal, ScopeTransitiveNormal -> true
+  | (ScopeTransitiveLoose | ScopeTransitiveNormal), _ -> false
+
+let local_scopes_eq sc1 sc2 =
+  Option.equal (pair_eq scope_eq (fun _ _ -> true)) sc1.tmp_scope sc2.tmp_scope &&
+  List.equal (pair_eq scope_eq scope_status_eq) sc1.local_scopes sc2.local_scopes
+
 let notation_entry_eq s1 s2 = match (s1,s2) with
 | InConstrEntry, InConstrEntry -> true
-| InCustomEntry s1, InCustomEntry s2 -> String.equal s1 s2
+| InCustomEntry s1, InCustomEntry s2 -> scope_eq s1 s2
 | (InConstrEntry | InCustomEntry _), _ -> false
 
 let notation_entry_level_eq s1 s2 = match (s1,s2) with
 | InConstrEntrySomeLevel, InConstrEntrySomeLevel -> true
-| InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
+| InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> scope_eq s1 s2 && n1 = n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
 
 let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2) with
  | LastLonelyNotation, LastLonelyNotation -> true
- | NotationInScope s1, NotationInScope s2 -> String.equal s1 s2
+ | NotationInScope s1, NotationInScope s2 -> scope_eq s1 s2
  | (LastLonelyNotation | NotationInScope _), _ -> false
 
 let notation_eq (from1,ntn1) (from2,ntn2) =
   notation_entry_eq from1 from2 && String.equal ntn1 ntn2
-
-let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
 let notation_binder_source_eq s1 s2 = match s1, s2 with
 | NtnParsedAsIdent,  NtnParsedAsIdent -> true
@@ -77,7 +93,7 @@ let ntpe_eq t1 t2 = match t1, t2 with
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
   notation_entry_level_eq entry1 entry2 &&
-  pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
+  local_scopes_eq sc1 sc2 &&
   ntpe_eq tp1 tp2
 
 let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
@@ -209,8 +225,8 @@ let normalize_scope sc =
 type scope_item = OpenScopeItem of scope_name | LonelyNotationItem of notation
 type scopes = scope_item list
 
-let scope_eq s1 s2 = match s1, s2 with
-| OpenScopeItem s1, OpenScopeItem s2 -> String.equal s1 s2
+let scope_item_eq s1 s2 = match s1, s2 with
+| OpenScopeItem s1, OpenScopeItem s2 -> scope_eq s1 s2
 | LonelyNotationItem s1, LonelyNotationItem s2 -> notation_eq s1 s2
 | OpenScopeItem _, LonelyNotationItem _
 | LonelyNotationItem _, OpenScopeItem _ -> false
@@ -220,7 +236,7 @@ let scope_stack = ref []
 let current_scopes () = !scope_stack
 
 let scope_is_open_in_scopes sc l =
-  List.exists (function OpenScopeItem sc' -> String.equal sc sc' | _ -> false) l
+  List.exists (function OpenScopeItem sc' -> scope_eq sc sc' | _ -> false) l
 
 let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 
@@ -231,7 +247,7 @@ let open_scope i (_,(local,op,sc)) =
   if Int.equal i 1 then
     scope_stack :=
       if op then sc :: !scope_stack
-      else List.except scope_eq sc !scope_stack
+      else List.except scope_item_eq sc !scope_stack
 
 let cache_scope o =
   open_scope 1 o
@@ -261,10 +277,10 @@ let empty_scope_stack = []
 
 let push_scope sc scopes = OpenScopeItem sc :: scopes
 
-let push_scopes = List.fold_right push_scope
+let push_scopes = List.fold_right (fun (sc,_) -> push_scope sc)
 
-let make_current_scopes (tmp_scope,scopes) =
-  Option.fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
+let make_current_scopes {tmp_scope;local_scopes} =
+  Option.fold_right (fun (sc,_) -> push_scope sc) tmp_scope (push_scopes local_scopes !scope_stack)
 
 (**********************************************************************)
 (* Delimiters *)
@@ -283,7 +299,7 @@ let declare_delimiters scope key =
   end;
   try
     let oldscope = String.Map.find key !delimiters_map in
-    if String.equal oldscope scope then ()
+    if scope_eq oldscope scope then ()
     else begin
       Flags.if_verbose Feedback.msg_info (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
       delimiters_map := String.Map.add key scope !delimiters_map
@@ -1433,7 +1449,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
   | OpenScopeItem scope :: scopes ->
       (* Is the expected ntn/numpr attached to the most recently open scope? *)
       begin match ntn_scope with
-      | NotationInScope scope' when String.equal scope scope' ->
+      | NotationInScope scope' when scope_eq scope scope' ->
         Some (None,None)
       | _ ->
         (* If the most recently open scope has a notation/number printer
@@ -1909,7 +1925,7 @@ let uninterp_prim_token c local_scopes =
      let l = List.map_filter uninterp l in
      let l = List.map_filter add_key l in
      let find need_delim sc =
-       let _,n,k = List.find (fun (sc',_,_) -> String.equal sc' sc) l in
+       let _,n,k = List.find (fun (sc',_,_) -> scope_eq sc' sc) l in
        if k <> None then n,k else
          let hidden =
            List.exists
@@ -1992,7 +2008,7 @@ let compute_type_scope env sigma t =
   find_scope_class_opt (try Some (compute_scope_class env sigma t) with Not_found -> None)
 
 let current_type_scope_name () =
-   find_scope_class_opt (Some CL_SORT)
+   Option.map (fun sc -> (sc,ScopeImmediateImplicit)) (find_scope_class_opt (Some CL_SORT))
 
 let scope_class_of_class (x : cl_typ) : scope_class =
   x
@@ -2173,7 +2189,7 @@ let pr_delimiters_info = function
   | Some key -> str "Delimiting key is " ++ str key
 
 let classes_of_scope sc =
-  ScopeClassMap.fold (fun cl sc' l -> if String.equal sc sc' then cl::l else l) !scope_class_map []
+  ScopeClassMap.fold (fun cl sc' l -> if scope_eq sc sc' then cl::l else l) !scope_class_map []
 
 let pr_scope_class = pr_class
 
@@ -2221,7 +2237,7 @@ let extract_notation_data (main,extra) =
   main @ extra
 
 let pr_named_scope prglob (scope,sc) =
- (if String.equal scope default_scope then
+ (if scope_eq scope default_scope then
    match NotationMap.cardinal sc.notations with
      | 0 -> str "No lonely notation"
      | n -> str "Lonely notation" ++ (if Int.equal n 1 then mt() else str"s")
@@ -2459,7 +2475,7 @@ let interp_notation_as_global_reference ?loc ~head test ntn sc =
         let def = find_default ntn !scope_stack in
         match def with
         | None -> false
-        | Some sc' -> on_parsing = Some true && String.equal sc sc'
+        | Some sc' -> on_parsing = Some true && scope_eq sc sc'
       in
       match List.filter f refs with
       | [_,_,_,_,ref] -> ref
@@ -2479,15 +2495,15 @@ let locate_notation prglob ntn scope =
           hov 0 (
             str "Notation" ++ brk (1,2) ++
             pr_notation_info prglob df r ++
-            (if String.equal sc default_scope then mt ()
+            (if scope_eq sc default_scope then mt ()
              else (brk (1,2) ++ str ": " ++ str sc)) ++
-            (if Option.equal String.equal (Some sc) scope
+            (if Option.equal scope_eq (Some sc) scope
              then brk (1,2) ++ str "(default interpretation)" else mt ()) ++
             pr_non_empty (brk (1,2)) (pr_notation_status on_parsing on_printing)))
         l) ntns
 
 let collect_notation_in_scope scope sc known =
-  assert (not (String.equal scope default_scope));
+  assert (not (scope_eq scope default_scope));
   NotationMap.fold
     (fun ntn d (l,known as acc) ->
       if List.mem_f notation_eq ntn known then acc else (extract_notation_data d @ l,ntn::known))
@@ -2509,7 +2525,7 @@ let collect_notations stack =
             let datas = extract_notation_data
               (NotationMap.find ntn (find_scope default_scope).notations) in
             let all' = match all with
-              | (s,lonelyntn)::rest when String.equal s default_scope ->
+              | (s,lonelyntn)::rest when scope_eq s default_scope ->
                   (s,datas@lonelyntn)::rest
               | _ ->
                   (default_scope,datas)::all in
@@ -2522,7 +2538,7 @@ let pr_visible_in_scope prglob (scope,ntns) =
     List.fold_right
       (fun d strm -> pr_notation_data prglob d ++ fnl () ++ strm)
       ntns (mt ()) in
-  (if String.equal scope default_scope then
+  (if scope_eq scope default_scope then
      str "Lonely notation" ++ (match ntns with [_] -> mt () | _ -> str "s")
    else
      str "Visible in scope " ++ str scope)
@@ -2534,6 +2550,28 @@ let pr_scope_stack prglob stack =
 let pr_visibility prglob = function
   | Some scope -> pr_scope_stack prglob (push_scope scope !scope_stack)
   | None -> pr_scope_stack prglob !scope_stack
+
+(**********************************************************************)
+(* Local scopes                                                       *)
+
+let empty_local_scopes = { tmp_scope = None; local_scopes = [] }
+
+let push_local_scope local_scope scopes' =
+  { tmp_scope = None;
+    local_scopes = local_scope :: scopes'.local_scopes }
+
+let push_local_scopes scopes scopes' =
+  { tmp_scope = scopes.tmp_scope;
+    local_scopes = scopes.local_scopes @ scopes'.local_scopes }
+
+let set_tmp_local_scope ?(priority=ScopeImmediateImplicit) sc scopes = { scopes with tmp_scope = Option.map (fun sc -> (sc, priority)) sc }
+
+let reset_tmp_local_scope scopes = { scopes with tmp_scope = None }
+
+let push_type_local_scope scopes = {
+    tmp_scope = current_type_scope_name ();
+    local_scopes = scopes.local_scopes;
+ }
 
 (**********************************************************************)
 (* Synchronisation with reset *)

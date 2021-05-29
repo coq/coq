@@ -57,9 +57,18 @@ type notation_constr =
 
 type scope_name = string
 
-type tmp_scope_name = scope_name
+type tmp_scope_status =
+  | ScopeImmediatePreemptive (* Scope in a notation around a variable *)
+  | ScopeImmediateImplicit (* Implicit argument scope *)
 
-type subscopes = tmp_scope_name option * scope_name list
+type scope_status =
+  | ScopeTransitiveLoose (* Scope in a notation *)
+  | ScopeTransitiveNormal (* Scope in expressions *)
+
+type subscopes = {
+    tmp_scope : (scope_name * tmp_scope_status) option;
+    local_scopes : (scope_name * scope_status) list;
+}
 
 type extended_subscopes = Constrexpr.notation_entry_level * subscopes
 
