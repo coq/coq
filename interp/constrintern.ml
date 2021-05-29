@@ -2640,7 +2640,7 @@ let intern_context env ~bound_univs impl_env binders =
                (env, bl))
             ({ids; unb = false;
               local_univs = { bound = bound_univs; unb_univs = true };
-              scopes = empty_local_scopes;
+              scopes = push_type_local_scope empty_local_scopes;
               impls = impl_env;
               binder_block_names = Some (Some AbsPi,ids)}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
