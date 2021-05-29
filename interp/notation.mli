@@ -43,6 +43,23 @@ type delimiters = string
 type scope
 type scopes (** = [scope_name list] *)
 
+val local_scopes_eq : subscopes -> subscopes -> bool (* do not compare the tmp scope status *)
+
+val empty_local_scopes : subscopes
+
+val push_local_scope : scope_name * scope_status -> subscopes -> subscopes
+
+val push_local_scopes : subscopes -> subscopes -> subscopes
+
+val set_tmp_local_scope : ?priority:tmp_scope_status -> scope_name option -> subscopes -> subscopes
+
+val reset_tmp_local_scope : subscopes -> subscopes
+
+val push_type_local_scope : subscopes -> subscopes
+
+val scope_eq : scope_name -> scope_name -> bool
+(** Equality on [scope_name]. *)
+
 val declare_scope : scope_name -> unit
 
 (* To be removed after deprecation phase *)
@@ -316,7 +333,7 @@ val compute_arguments_scope : Environ.env -> Evd.evar_map -> EConstr.types -> sc
 val compute_type_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name option
 
 (** Get the current scope bound to Sortclass, if it exists *)
-val current_type_scope_name : unit -> scope_name option
+val current_type_scope_name : unit -> (scope_name * tmp_scope_status) option
 
 val scope_class_of_class : Coercionops.cl_typ -> scope_class
 
