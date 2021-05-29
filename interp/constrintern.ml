@@ -1761,7 +1761,13 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       Dumpglob.dump_notation_location (patntn_loc ?loc fullargs ntn) ntn df;
       in_not test_kind loc scopes subst extrargs c
     | CPatDelimiters (key, e) ->
-      in_pat test_kind (push_local_scope (find_delimiters_scope ?loc key,ScopeTransitiveNormal) scopes) e
+      let sc = find_delimiters_scope ?loc key in
+      let scopes =
+        if !interning_grammar &&
+             (match e with CAst.{v=CPatAtom (Some qid)} -> qualid_is_ident qid && Option.cata (Id.Set.mem (qualid_basename qid)) false env.pat_ids | _ -> false)
+        then set_tmp_local_scope ~priority:ScopeImmediatePreemptive (Some sc) scopes
+        else push_local_scope (sc,ScopeTransitiveNormal) scopes in
+      in_pat test_kind scopes e
     | CPatPrim p ->
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc test_kind_inner.test_kind p scopes in
       rcp_of_glob scopes pat
@@ -2127,8 +2133,13 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CPrim p ->
         fst (Notation.interp_prim_token ?loc p env.scopes)
     | CDelimiters (key, e) ->
-        intern {env with scopes =
-                  push_local_scope (find_delimiters_scope ?loc key,ScopeTransitiveNormal) env.scopes} e
+        let sc = find_delimiters_scope ?loc key in
+        let scopes =
+          if !interning_grammar &&
+             (match e with CAst.{v=CRef (qid,_)} -> qualid_is_ident qid && Id.Map.mem (qualid_basename qid) ntnvars | _ -> false)
+          then set_tmp_local_scope ~priority:ScopeImmediatePreemptive (Some sc) env.scopes
+          else push_local_scope (sc,ScopeTransitiveNormal) env.scopes in
+        intern {env with scopes} e
     | CProj (expl, f, args, c) ->
         intern_proj ?loc env expl f args c []
     | CAppExpl ((ref,us), args) ->

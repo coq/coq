@@ -882,6 +882,18 @@ let extern_possible_prim_token (custom,scopes) r =
    | Some coercion ->
       insert_entry_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
+let give_local_scope_priority (_,scopes) rules =
+  let preemptive = function
+    | (NotationRule (NotationInScope sc1,_),_,_) ->
+      (match scopes.tmp_scope with
+      | Some (sc,ScopeImmediatePreemptive) -> scope_eq sc1 sc
+      | _ -> false)
+    | _ -> false
+ in
+  if scopes.tmp_scope = None then rules else
+    let l1, l2 = List.partition preemptive rules in
+    l1 @ l2
+
 let filter_enough_applied nargs l =
   (* This is to ensure that notations for coercions are used only when
      the coercion is fully applied; not explicitly done yet, but we
@@ -1289,7 +1301,9 @@ and extern_notations inctx scopes vars nargs t =
   with No_match ->
     if !print_no_symbol then raise No_match;
     let t = flatten_application t in
-    extern_notation inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
+    let rules = uninterp_notations t in
+    let rules = give_local_scope_priority scopes rules in
+    extern_notation inctx scopes vars t (filter_enough_applied nargs rules)
 
 and extern_notation inctx (custom,scopes as allscopes) vars t rules =
   match rules with
