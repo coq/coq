@@ -1,4 +1,4 @@
-Axiom X : Type.       
+Axiom X : Type.
 Axiom P : (X -> unit) -> Prop.
 
 Axiom F: unit -> unit.

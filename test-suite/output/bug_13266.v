@@ -12,7 +12,7 @@ Lemma foo :
   exec _ Tick tt ->
   True.
 Proof.
-  intros H. 
+  intros H.
   remember Tick as p.
   Fail induction H.
 Abort.

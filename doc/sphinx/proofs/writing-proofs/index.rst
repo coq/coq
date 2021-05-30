@@ -26,5 +26,4 @@ Additional tactics are documented in the next chapter
    ../../proof-engine/tactics
    equality
    inductive
-   ../../proof-engine/detailed-tactic-examples
    ../../proof-engine/ssreflect-proof-language
