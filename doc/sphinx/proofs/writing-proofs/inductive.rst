@@ -212,7 +212,7 @@ Once we have this datatype we want to do proofs on it, like weakening:
 
 .. coqtop:: in abort
 
-   Lemma weakening : forall G D tau, term (G ; D) tau -> 
+   Lemma weakening : forall G D tau, term (G ; D) tau ->
                      forall tau', term (G , tau' ; D) tau.
 
 The problem here is that we can’t just use induction on the typing
