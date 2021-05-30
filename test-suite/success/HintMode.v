@@ -18,3 +18,20 @@ Goal forall A T `{In A T} `{Empty T} `{EmptyIn A T}, forall x : A, IsIn x empty 
 Qed.
 
 End Postponing.
+
+Module Heads.
+  Set Primitive Projections.
+  Class A (X : Type) := { somex : X }.
+  Local Hint Mode A ! : typeclass_instances.
+
+  Record foo := { car : Type; obj : car }.
+  Local Instance foo_A (f : foo) : A (car f) := { somex := obj f }.
+
+  Definition onef := {| car := nat; obj := 0 |}.
+  Goal  {f : foo & A (car f)}.
+  Proof.
+    unshelve eexists; cycle 1.
+    solve [typeclasses eauto].
+    exact onef.
+  Defined.
+End Heads.

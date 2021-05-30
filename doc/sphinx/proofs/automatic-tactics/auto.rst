@@ -480,17 +480,16 @@ Creating Hints
       :n:`@qualid` can be applied or not. A mode specification is a list of ``+``,
       ``!`` or ``-`` items that specify if an argument of the identifier is to be
       treated as an input (``+``), if its head only is an input (``!``) or an output
-      (``-``) of the identifier. For a mode to match a list of arguments, input
-      terms and input heads *must not* contain existential variables or be
-      existential variables respectively, while outputs can be any term.
+      (``-``) of the identifier. Mode ``-`` matches any term, mode ``+`` matches a
+      term if and only if it does not contain existential variables, while mode ``!``
+      matches a term if and only if the *head* of the term is not an existential variable.
+      The head of a term is understood here as the applicative head, recursively,
+      ignoring casts.
 
-      The head of a term
-      is understood here as the applicative head, or the match or projection
-      scrutinee’s head, recursively, casts being ignored. :cmd:`Hint Mode` is
-      especially useful for typeclasses, when one does not want to support default
-      instances and avoid ambiguity in general. Setting a parameter of a class as an
-      input forces proof search to be driven by that index of the class, with ``!``
-      allowing existentials to appear in the index but not at its head.
+      :cmd:`Hint Mode` is especially useful for typeclasses, when one does not want
+      to support default instances and wants to avoid ambiguity in general. Setting a parameter
+      of a class as an input forces proof search to be driven by that index of the class,
+      with ``!`` allowing existentials to appear in the index but not at its head.
 
    .. note::
 
