@@ -305,6 +305,8 @@ doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: doc/tools/docgr
 	$(SHOW)'DOC_GRAM_RSTS'
 	$(HIDE)$(DOC_GRAM) $(DOCGRAMWARN) -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
 
+.PRECIOUS: doc/tools/docgram/orderedGrammar
+
 doc/tools/docgram/updated_rsts: doc/tools/docgram/orderedGrammar
 
 .PHONY: doc_gram doc_gram_verify doc_gram_rsts
