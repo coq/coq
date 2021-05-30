@@ -29,6 +29,11 @@ Inductive kind : Type :=
 Register isProp as micromega.kind.isProp.
 Register isBool as micromega.kind.isBool.
 
+Inductive Trace (A : Type) :=
+| null : Trace A
+| push : A -> Trace A -> Trace A
+| merge : Trace A -> Trace A -> Trace A
+.
 
 Section S.
   Context {TA  : Type}. (* type of interpreted atoms *)
@@ -335,8 +340,14 @@ Section S.
   Variable Term' : Type.
   Variable Annot : Type.
 
+  Local Notation Trace := (Trace Annot).
+
   Variable unsat : Term'  -> bool. (* see [unsat_prop] *)
   Variable deduce : Term' -> Term' -> option Term'. (* see [deduce_prop] *)
+
+  Local Notation null := (@null Annot).
+  Local Notation push := (@push Annot).
+  Local Notation merge := (@merge Annot).
 
   Definition clause := list  (Term' * Annot).
   Definition cnf := list clause.
@@ -505,16 +516,16 @@ Section S.
           For efficiency, this is a separate function.
      *)
 
-    Fixpoint radd_term (t : Term' * Annot) (cl : clause) : clause + list Annot :=
+    Fixpoint radd_term (t : Term' * Annot) (cl : clause) : clause + Trace :=
       match cl with
       | nil => (* if t is unsat, the clause is empty BUT t is needed. *)
         match deduce (fst t) (fst t) with
-        | Some u => if unsat u then inr ((snd t)::nil) else inl (t::nil)
+        | Some u => if unsat u then inr (push (snd t) null) else inl (t::nil)
         | None   => inl (t::nil)
         end
       | t'::cl => (* if t /\ t' is unsat, the clause is empty BUT t & t' are needed *)
         match deduce (fst t) (fst t') with
-        | Some u => if unsat u then inr ((snd t)::(snd t')::nil)
+        | Some u => if unsat u then inr (push (snd t) (push (snd t') null))
                     else match radd_term t cl with
                          | inl cl' => inl (t'::cl')
                          | inr l   => inr l
@@ -539,23 +550,23 @@ Section S.
       List.fold_left (fun '(acc,tg) e  =>
                         match ror_clause t e with
                         | inl cl => (cl :: acc,tg)
-                        | inr l => (acc,tg+++l)
-                        end) f (nil,nil).
+                        | inr l => (acc,merge tg l)
+                        end) f (nil, null).
 
     Definition ror_clause_cnf t f :=
       match t with
-      | nil => (f,nil)
+      | nil => (f, null)
       | _   => xror_clause_cnf t f
       end.
 
 
     Fixpoint ror_cnf (f f':list clause) :=
       match f with
-      | nil => (cnf_tt,nil)
+      | nil => (cnf_tt, null)
       | e :: rst =>
         let (rst_f',t) := ror_cnf rst f' in
         let (e_f', t') := ror_clause_cnf e f' in
-        (rst_f' +++ e_f', t +++ t')
+        (rst_f' +++ e_f', merge t t')
       end.
 
     Definition annot_of_clause (l : clause) : list Annot :=
@@ -567,11 +578,11 @@ Section S.
 
     Definition ror_cnf_opt f1 f2 :=
       if is_cnf_tt f1
-      then (cnf_tt ,  nil)
+      then (cnf_tt, null)
       else if is_cnf_tt f2
-           then (cnf_tt, nil)
+           then (cnf_tt, null)
            else if is_cnf_ff f2
-                then (f1,nil)
+                then (f1, null)
                 else ror_cnf f1 f2.
 
 
@@ -581,31 +592,31 @@ Section S.
       | Some e => e ::l
       end.
 
-    Definition ratom (c : cnf) (a : Annot) : cnf * list Annot :=
+    Definition ratom (c : cnf) (a : Annot) : cnf * Trace :=
       if is_cnf_ff c || is_cnf_tt c
-      then (c,a::nil)
-      else (c,nil). (* t is embedded in c *)
+      then (c,push a null)
+      else (c,null). (* t is embedded in c *)
 
     Section REC.
       Context {TX : kind -> Type} {AF : Type}.
 
-      Variable RXCNF : forall (polarity: bool) (k: kind) (f: TFormula TX AF k) , cnf * list Annot.
+      Variable RXCNF : forall (polarity: bool) (k: kind) (f: TFormula TX AF k) , cnf * Trace.
 
       Definition rxcnf_and (polarity:bool) (k: kind) (e1 e2 : TFormula TX AF k) :=
         let '(e1,t1) := RXCNF polarity e1 in
         let '(e2,t2) := RXCNF polarity e2 in
         if polarity
-        then  (and_cnf_opt e1  e2, t1 +++ t2)
+        then  (and_cnf_opt e1  e2, merge t1 t2)
         else let (f',t') := ror_cnf_opt e1 e2 in
-             (f', t1 +++ t2 +++ t').
+             (f', merge t1 (merge t2 t')).
 
       Definition rxcnf_or (polarity:bool) (k: kind) (e1 e2 : TFormula TX AF k) :=
         let '(e1,t1) := RXCNF polarity e1 in
         let '(e2,t2) := RXCNF polarity e2 in
         if polarity
         then let (f',t') := ror_cnf_opt e1 e2 in
-             (f', t1 +++ t2 +++ t')
-        else (and_cnf_opt e1 e2, t1 +++ t2).
+             (f', merge t1 (merge t2 t'))
+        else (and_cnf_opt e1 e2, merge t1 t2).
 
       Definition rxcnf_impl (polarity:bool) (k: kind) (e1 e2 : TFormula TX AF k) :=
         let '(e1 , t1) := (RXCNF (negb polarity) e1) in
@@ -619,10 +630,10 @@ Section S.
             else (* compute disjunction *)
               let '(e2 , t2) := (RXCNF polarity e2) in
               let (f',t') := ror_cnf_opt e1 e2 in
-              (f', t1 +++ t2 +++ t') (* record the hypothesis *)
+              (f', merge t1 (merge t2 t')) (* record the hypothesis *)
         else
           let '(e2 , t2) := (RXCNF polarity e2) in
-          (and_cnf_opt e1 e2, t1 +++ t2).
+          (and_cnf_opt e1 e2, merge t1 t2).
 
       Definition rxcnf_iff (polarity:bool) (k: kind) (e1 e2 : TFormula TX AF k) :=
         let '(c1,t1) := RXCNF (negb polarity) e1 in
@@ -630,17 +641,17 @@ Section S.
         let '(c3,t3) := RXCNF polarity e1 in
         let '(c4,t4) := RXCNF true e2 in
         let (f',t') := ror_cnf_opt (and_cnf_opt c1 c2) (and_cnf_opt c3 c4) in
-        (f', t1+++ t2+++t3 +++ t4 +++ t')
+        (f', merge t1 (merge t2 (merge t3 (merge t4 t'))))
       .
 
     End REC.
 
-    Fixpoint rxcnf {TX : kind -> Type} {AF: Type}(polarity : bool) (k: kind) (f : TFormula TX AF k) : cnf * list Annot :=
+    Fixpoint rxcnf {TX : kind -> Type} {AF: Type}(polarity : bool) (k: kind) (f : TFormula TX AF k) : cnf * Trace :=
 
       match f with
-      | TT _ => if polarity then (cnf_tt,nil) else (cnf_ff,nil)
-      | FF _  => if polarity then (cnf_ff,nil) else (cnf_tt,nil)
-      | X b p => if polarity then (cnf_ff,nil) else (cnf_ff,nil)
+      | TT _ => if polarity then (cnf_tt, null) else (cnf_ff, null)
+      | FF _  => if polarity then (cnf_ff, null) else (cnf_tt, null)
+      | X b p => if polarity then (cnf_ff, null) else (cnf_ff, null)
       | A _ x t  => ratom (if polarity then normalise x t else negate x t) t
       | NOT e  => rxcnf (negb polarity) e
       | AND e1 e2 => rxcnf_and rxcnf polarity e1 e2
@@ -1238,13 +1249,13 @@ Section S.
   Proof.
     unfold xror_clause_cnf.
     unfold xor_clause_cnf.
-    assert (ACC: fst (@nil clause,@nil Annot) = nil).
+    assert (ACC: fst (@nil clause, null) = nil).
     reflexivity.
     intros a f.
     set (F1:= (fun '(acc, tg) (e : clause) =>
                  match ror_clause a e with
                  | inl cl => (cl :: acc, tg)
-                 | inr l => (acc, tg +++ l)
+                 | inr l => (acc, merge tg l)
                  end)).
     set (F2:= (fun (acc : list clause) (e : clause) =>
                  match or_clause a e with
@@ -1252,7 +1263,7 @@ Section S.
                  | None => acc
                  end)).
     revert ACC.
-    generalize (@nil clause,@nil Annot).
+    generalize (@nil clause, null).
     generalize (@nil clause).
     induction f as [|a0 f IHf]; simpl ; auto.
     intros ? p ?.
@@ -1464,13 +1475,15 @@ Section S.
   Qed.
 
   Lemma eval_cnf_ff : forall env, eval_cnf env cnf_ff <-> False.
-  Proof.
+  Proof using.
+    clear.
     unfold cnf_ff, eval_cnf,eval_clause.
     simpl. tauto.
   Qed.
 
   Lemma eval_cnf_tt : forall env, eval_cnf env cnf_tt <-> True.
-  Proof.
+  Proof using.
+    clear.
     unfold cnf_tt, eval_cnf,eval_clause.
     simpl. tauto.
   Qed.
@@ -1639,8 +1652,8 @@ Section S.
   Qed.
 
   Lemma eval_cnf_cons_iff : forall env a f,  ((~ make_conj  (eval_tt env) a) /\ eval_cnf env f) <-> eval_cnf env (a::f).
-  Proof.
-    intros.
+  Proof using.
+    intros; clear.
     unfold eval_cnf in *.
     rewrite make_conj_cons ; eauto.
     unfold eval_clause.

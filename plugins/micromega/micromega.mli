@@ -258,6 +258,11 @@ type kind =
 | IsProp
 | IsBool
 
+type 'a trace =
+| Null
+| Push of 'a * 'a trace
+| Merge of 'a trace * 'a trace
+
 type ('tA, 'tX, 'aA, 'aF) gFormula =
 | TT of kind
 | FF of kind
@@ -358,53 +363,53 @@ val xcnf :
 
 val radd_term :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2) clause -> (('a1, 'a2)
-  clause, 'a2 list) sum
+  clause, 'a2 trace) sum
 
 val ror_clause :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1, 'a2) clause -> (('a1,
-  'a2) clause, 'a2 list) sum
+  'a2) clause, 'a2 trace) sum
 
 val xror_clause_cnf :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1, 'a2) clause list -> ('a1,
-  'a2) clause list * 'a2 list
+  'a2) clause list * 'a2 trace
 
 val ror_clause_cnf :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1, 'a2) clause list -> ('a1,
-  'a2) clause list * 'a2 list
+  'a2) clause list * 'a2 trace
 
 val ror_cnf :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause list -> ('a1, 'a2) clause list ->
-  ('a1, 'a2) cnf * 'a2 list
+  ('a1, 'a2) cnf * 'a2 trace
 
 val ror_cnf_opt :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf -> ('a1, 'a2)
-  cnf * 'a2 list
+  cnf * 'a2 trace
 
-val ratom : ('a1, 'a2) cnf -> 'a2 -> ('a1, 'a2) cnf * 'a2 list
+val ratom : ('a1, 'a2) cnf -> 'a2 -> ('a1, 'a2) cnf * 'a2 trace
 
 val rxcnf_and :
   ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula ->
-  ('a2, 'a3) cnf * 'a3 list) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
-  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list
+  ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
+  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace
 
 val rxcnf_or :
   ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula ->
-  ('a2, 'a3) cnf * 'a3 list) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
-  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list
+  ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
+  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace
 
 val rxcnf_impl :
   ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula ->
-  ('a2, 'a3) cnf * 'a3 list) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
-  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list
+  ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
+  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace
 
 val rxcnf_iff :
   ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula ->
-  ('a2, 'a3) cnf * 'a3 list) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
-  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list
+  ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4,
+  'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace
 
 val rxcnf :
   ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> ('a1 -> 'a3 ->
-  ('a2, 'a3) cnf) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list
+  ('a2, 'a3) cnf) -> bool -> kind -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace
 
 type ('term, 'annot, 'tX) to_constrT = { mkTT : (kind -> 'tX); mkFF : (kind -> 'tX);
                                          mkA : (kind -> 'term -> 'annot -> 'tX);
@@ -649,7 +654,7 @@ val xnegate0 : z nFormula -> z nFormula list
 
 val negate : z formula -> 'a1 -> (z nFormula, 'a1) cnf
 
-val cnfZ : kind -> (z formula, 'a1, 'a2, 'a3) tFormula -> (z nFormula, 'a1) cnf * 'a1 list
+val cnfZ : kind -> (z formula, 'a1, 'a2, 'a3) tFormula -> (z nFormula, 'a1) cnf * 'a1 trace
 
 val ceiling : z -> z -> z
 
@@ -705,7 +710,7 @@ val qdeduce : q nFormula -> q nFormula -> q nFormula option
 
 val normQ : q pExpr -> q pol
 
-val cnfQ : kind -> (q formula, 'a1, 'a2, 'a3) tFormula -> (q nFormula, 'a1) cnf * 'a1 list
+val cnfQ : kind -> (q formula, 'a1, 'a2, 'a3) tFormula -> (q nFormula, 'a1) cnf * 'a1 trace
 
 val qTautoChecker : q formula bFormula -> qWitness list -> bool
 

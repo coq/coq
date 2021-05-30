@@ -1748,6 +1748,11 @@ let formula_hyps_concl hyps concl =
   res
  *)
 
+let rec fold_trace f accu = function
+| Micromega.Null -> accu
+| Micromega.Merge (t1, t2) -> fold_trace f (fold_trace f accu t1) t2
+| Micromega.Push (x, t) -> fold_trace f (f accu x) t
+
 let micromega_tauto pre_process cnf spec prover env
     (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) gl =
   (* Express the goal as one big implication *)
@@ -1774,7 +1779,7 @@ let micromega_tauto pre_process cnf spec prover env
               (p.hyps prf) TagSet.empty
           in
           TagSet.union s tags)
-        (List.fold_left
+        (fold_trace
            (fun s (i, _) -> TagSet.add i s)
            TagSet.empty cnf_ff_tags)
         (List.combine cnf_ff res)

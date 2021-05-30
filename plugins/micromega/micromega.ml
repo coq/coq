@@ -971,6 +971,11 @@ type kind =
 | IsProp
 | IsBool
 
+type 'a trace =
+| Null
+| Push of 'a * 'a trace
+| Merge of 'a trace * 'a trace
+
 type ('tA, 'tX, 'aA, 'aF) gFormula =
 | TT of kind
 | FF of kind
@@ -1267,18 +1272,18 @@ let rec xcnf unsat deduce normalise1 negate0 pol0 _ = function
 
 (** val radd_term :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2)
-    clause -> (('a1, 'a2) clause, 'a2 list) sum **)
+    clause -> (('a1, 'a2) clause, 'a2 trace) sum **)
 
 let rec radd_term unsat deduce t0 = function
 | [] ->
   (match deduce (fst t0) (fst t0) with
-   | Some u -> if unsat u then Inr ((snd t0)::[]) else Inl (t0::[])
+   | Some u -> if unsat u then Inr (Push ((snd t0), Null)) else Inl (t0::[])
    | None -> Inl (t0::[]))
 | t'::cl0 ->
   (match deduce (fst t0) (fst t') with
    | Some u ->
      if unsat u
-     then Inr ((snd t0)::((snd t')::[]))
+     then Inr (Push ((snd t0), (Push ((snd t'), Null))))
      else (match radd_term unsat deduce t0 cl0 with
            | Inl cl' -> Inl (t'::cl')
            | Inr l -> Inr l)
@@ -1289,7 +1294,7 @@ let rec radd_term unsat deduce t0 = function
 
 (** val ror_clause :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
-    'a2) clause -> (('a1, 'a2) clause, 'a2 list) sum **)
+    'a2) clause -> (('a1, 'a2) clause, 'a2 trace) sum **)
 
 let rec ror_clause unsat deduce cl1 cl2 =
   match cl1 with
@@ -1301,85 +1306,87 @@ let rec ror_clause unsat deduce cl1 cl2 =
 
 (** val xror_clause_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
-    'a2) clause list -> ('a1, 'a2) clause list * 'a2 list **)
+    'a2) clause list -> ('a1, 'a2) clause list * 'a2 trace **)
 
 let xror_clause_cnf unsat deduce t0 f =
   fold_left (fun pat e ->
     let acc,tg = pat in
     (match ror_clause unsat deduce t0 e with
      | Inl cl -> (cl::acc),tg
-     | Inr l -> acc,(rev_append tg l))) f ([],[])
+     | Inr l -> acc,(Merge (tg, l)))) f ([],Null)
 
 (** val ror_clause_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
-    'a2) clause list -> ('a1, 'a2) clause list * 'a2 list **)
+    'a2) clause list -> ('a1, 'a2) clause list * 'a2 trace **)
 
 let ror_clause_cnf unsat deduce t0 f =
   match t0 with
-  | [] -> f,[]
+  | [] -> f,Null
   | _::_ -> xror_clause_cnf unsat deduce t0 f
 
 (** val ror_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause list ->
-    ('a1, 'a2) clause list -> ('a1, 'a2) cnf * 'a2 list **)
+    ('a1, 'a2) clause list -> ('a1, 'a2) cnf * 'a2 trace **)
 
 let rec ror_cnf unsat deduce f f' =
   match f with
-  | [] -> cnf_tt,[]
+  | [] -> cnf_tt,Null
   | e::rst ->
     let rst_f',t0 = ror_cnf unsat deduce rst f' in
     let e_f',t' = ror_clause_cnf unsat deduce e f' in
-    (rev_append rst_f' e_f'),(rev_append t0 t')
+    (rev_append rst_f' e_f'),(Merge (t0, t'))
 
 (** val ror_cnf_opt :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
-    'a2) cnf -> ('a1, 'a2) cnf * 'a2 list **)
+    'a2) cnf -> ('a1, 'a2) cnf * 'a2 trace **)
 
 let ror_cnf_opt unsat deduce f1 f2 =
   if is_cnf_tt f1
-  then cnf_tt,[]
+  then cnf_tt,Null
   else if is_cnf_tt f2
-       then cnf_tt,[]
-       else if is_cnf_ff f2 then f1,[] else ror_cnf unsat deduce f1 f2
+       then cnf_tt,Null
+       else if is_cnf_ff f2 then f1,Null else ror_cnf unsat deduce f1 f2
 
-(** val ratom : ('a1, 'a2) cnf -> 'a2 -> ('a1, 'a2) cnf * 'a2 list **)
+(** val ratom : ('a1, 'a2) cnf -> 'a2 -> ('a1, 'a2) cnf * 'a2 trace **)
 
 let ratom c a =
-  if if is_cnf_ff c then true else is_cnf_tt c then c,(a::[]) else c,[]
+  if if is_cnf_ff c then true else is_cnf_tt c
+  then c,(Push (a, Null))
+  else c,Null
 
 (** val rxcnf_and :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1,
-    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list) -> bool -> kind ->
+    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind ->
     ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2,
-    'a3) cnf * 'a3 list **)
+    'a3) cnf * 'a3 trace **)
 
 let rxcnf_and unsat deduce rXCNF polarity k e1 e2 =
   let e3,t1 = rXCNF polarity k e1 in
   let e4,t2 = rXCNF polarity k e2 in
   if polarity
-  then (and_cnf_opt e3 e4),(rev_append t1 t2)
+  then (and_cnf_opt e3 e4),(Merge (t1, t2))
   else let f',t' = ror_cnf_opt unsat deduce e3 e4 in
-       f',(rev_append t1 (rev_append t2 t'))
+       f',(Merge (t1, (Merge (t2, t'))))
 
 (** val rxcnf_or :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1,
-    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list) -> bool -> kind ->
+    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind ->
     ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2,
-    'a3) cnf * 'a3 list **)
+    'a3) cnf * 'a3 trace **)
 
 let rxcnf_or unsat deduce rXCNF polarity k e1 e2 =
   let e3,t1 = rXCNF polarity k e1 in
   let e4,t2 = rXCNF polarity k e2 in
   if polarity
   then let f',t' = ror_cnf_opt unsat deduce e3 e4 in
-       f',(rev_append t1 (rev_append t2 t'))
-  else (and_cnf_opt e3 e4),(rev_append t1 t2)
+       f',(Merge (t1, (Merge (t2, t'))))
+  else (and_cnf_opt e3 e4),(Merge (t1, t2))
 
 (** val rxcnf_impl :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1,
-    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list) -> bool -> kind ->
+    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind ->
     ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2,
-    'a3) cnf * 'a3 list **)
+    'a3) cnf * 'a3 trace **)
 
 let rxcnf_impl unsat deduce rXCNF polarity k e1 e2 =
   let e3,t1 = rXCNF (negb polarity) k e1 in
@@ -1390,15 +1397,14 @@ let rxcnf_impl unsat deduce rXCNF polarity k e1 e2 =
             then rXCNF polarity k e2
             else let e4,t2 = rXCNF polarity k e2 in
                  let f',t' = ror_cnf_opt unsat deduce e3 e4 in
-                 f',(rev_append t1 (rev_append t2 t'))
-  else let e4,t2 = rXCNF polarity k e2 in
-       (and_cnf_opt e3 e4),(rev_append t1 t2)
+                 f',(Merge (t1, (Merge (t2, t'))))
+  else let e4,t2 = rXCNF polarity k e2 in (and_cnf_opt e3 e4),(Merge (t1, t2))
 
 (** val rxcnf_iff :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> (bool -> kind -> ('a1,
-    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list) -> bool -> kind ->
+    'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace) -> bool -> kind ->
     ('a1, 'a3, 'a4, 'a5) tFormula -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2,
-    'a3) cnf * 'a3 list **)
+    'a3) cnf * 'a3 trace **)
 
 let rxcnf_iff unsat deduce rXCNF polarity k e1 e2 =
   let c1,t1 = rXCNF (negb polarity) k e1 in
@@ -1407,17 +1413,17 @@ let rxcnf_iff unsat deduce rXCNF polarity k e1 e2 =
   let c4,t4 = rXCNF true k e2 in
   let f',t' = ror_cnf_opt unsat deduce (and_cnf_opt c1 c2) (and_cnf_opt c3 c4)
   in
-  f',(rev_append t1 (rev_append t2 (rev_append t3 (rev_append t4 t'))))
+  f',(Merge (t1, (Merge (t2, (Merge (t3, (Merge (t4, t'))))))))
 
 (** val rxcnf :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3)
     cnf) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> bool -> kind -> ('a1, 'a3, 'a4,
-    'a5) tFormula -> ('a2, 'a3) cnf * 'a3 list **)
+    'a5) tFormula -> ('a2, 'a3) cnf * 'a3 trace **)
 
 let rec rxcnf unsat deduce normalise1 negate0 polarity _ = function
-| TT _ -> if polarity then cnf_tt,[] else cnf_ff,[]
-| FF _ -> if polarity then cnf_ff,[] else cnf_tt,[]
-| X (_, _) -> cnf_ff,[]
+| TT _ -> if polarity then cnf_tt,Null else cnf_ff,Null
+| FF _ -> if polarity then cnf_ff,Null else cnf_tt,Null
+| X (_, _) -> cnf_ff,Null
 | A (_, x, t0) ->
   ratom (if polarity then normalise1 x t0 else negate0 x t0) t0
 | AND (k0, e1, e2) ->
@@ -2223,7 +2229,7 @@ let negate t0 tg =
 
 (** val cnfZ :
     kind -> (z formula, 'a1, 'a2, 'a3) tFormula -> (z nFormula, 'a1)
-    cnf * 'a1 list **)
+    cnf * 'a1 trace **)
 
 let cnfZ k f =
   rxcnf zunsat zdeduce normalise0 negate true k f
@@ -2443,7 +2449,7 @@ let normQ =
 
 (** val cnfQ :
     kind -> (q formula, 'a1, 'a2, 'a3) tFormula -> (q nFormula, 'a1)
-    cnf * 'a1 list **)
+    cnf * 'a1 trace **)
 
 let cnfQ k f =
   rxcnf qunsat qdeduce qnormalise qnegate true k f
