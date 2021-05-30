@@ -241,25 +241,25 @@ Qed.
 
 Theorem sub_neg_cases : forall n m, n - m < 0 -> n < 0 \/ 0 < m.
 Proof.
-intros.
+intros n m ?.
 rewrite <- (opp_neg_pos m). apply add_neg_cases. now rewrite add_opp_r.
 Qed.
 
 Theorem sub_pos_cases : forall n m, 0 < n - m -> 0 < n \/ m < 0.
 Proof.
-intros.
+intros n m ?.
 rewrite <- (opp_pos_neg m). apply add_pos_cases. now rewrite add_opp_r.
 Qed.
 
 Theorem sub_nonpos_cases : forall n m, n - m <= 0 -> n <= 0 \/ 0 <= m.
 Proof.
-intros.
+intros n m ?.
 rewrite <- (opp_nonpos_nonneg m). apply add_nonpos_cases. now rewrite add_opp_r.
 Qed.
 
 Theorem sub_nonneg_cases : forall n m, 0 <= n - m -> 0 <= n \/ m <= 0.
 Proof.
-intros.
+intros n m ?.
 rewrite <- (opp_nonneg_nonpos m). apply add_nonneg_cases. now rewrite add_opp_r.
 Qed.
 

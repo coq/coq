@@ -121,7 +121,6 @@ end
 
 val parse_string : 'a Entry.t -> ?loc:Loc.t -> string -> 'a
 val eoi_entry : 'a Entry.t -> 'a Entry.t
-val map_entry : ('a -> 'b) -> 'a Entry.t -> 'b Entry.t
 
 type gram_universe [@@deprecated "Deprecated in 8.13"]
 [@@@ocaml.warning "-3"]
@@ -190,9 +189,9 @@ module Constr :
       [@@deprecated "Deprecated in 8.13; use 'term' instead"]
     val ident : Id.t Entry.t
     val global : qualid Entry.t
-    val universe_name : Glob_term.glob_sort_name Entry.t
-    val universe_level : Glob_term.glob_level Entry.t
-    val sort : Glob_term.glob_sort Entry.t
+    val universe_name : sort_name_expr Entry.t
+    val universe_level : univ_level_expr Entry.t
+    val sort : sort_expr Entry.t
     val sort_family : Sorts.family Entry.t
     val pattern : cases_pattern_expr Entry.t
     val constr_pattern : constr_expr Entry.t
@@ -203,6 +202,8 @@ module Constr :
     val binder : local_binder_expr list Entry.t (* closed_binder or variable *)
     val binders : local_binder_expr list Entry.t (* list of binder *)
     val open_binders : local_binder_expr list Entry.t
+    val one_open_binder : kinded_cases_pattern_expr Entry.t
+    val one_closed_binder : kinded_cases_pattern_expr Entry.t
     val binders_fixannot : (local_binder_expr list * recursion_order_expr option) Entry.t
     val typeclass_constraint : (lname * bool * constr_expr) Entry.t
     val record_declaration : constr_expr Entry.t

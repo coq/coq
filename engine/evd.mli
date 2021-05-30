@@ -153,12 +153,18 @@ type evar_map
 val empty : evar_map
 (** The empty evar map. *)
 
-val from_env : env -> evar_map
+val from_env : ?binders:lident list -> env -> evar_map
 (** The empty evar map with given universe context, taking its initial
-    universes from env. *)
+    universes from env, possibly with initial universe binders. This
+    is the main entry point at the beginning of the process of
+    interpreting a declaration (e.g. before entering the
+    interpretation of a Theorem statement). *)
 
 val from_ctx : UState.t -> evar_map
-(** The empty evar map with given universe context *)
+(** The empty evar map with given universe context. This is the main
+    entry point when resuming from a already interpreted declaration
+    (e.g.  after having interpreted a Theorem statement and preparing
+    to open a goal). *)
 
 val is_empty : evar_map -> bool
 (** Whether an evarmap is empty. *)
@@ -283,6 +289,10 @@ val restrict : Evar.t-> Filter.t -> ?candidates:econstr list ->
 (** Restrict an undefined evar into a new evar by filtering context and
     possibly limiting the instances to a set of candidates (candidates
     are filtered according to the filter) *)
+
+val update_source : evar_map -> Evar.t -> Evar_kinds.t located -> evar_map
+(** To update the source a posteriori, e.g. when an evar type of
+    another evar has to refer to this other evar, with a mutual dependency *)
 
 val get_aliased_evars : evar_map -> Evar.t Evar.Map.t
 (** The map of aliased evars *)
@@ -668,7 +678,7 @@ val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.
 
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 
-val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
+val nf_univ_variables : evar_map -> evar_map
 
 val fix_undefined_variables : evar_map -> evar_map
 
@@ -688,6 +698,8 @@ val fresh_inductive_instance : ?loc:Loc.t -> ?rigid:rigid
   -> env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : ?loc:Loc.t -> ?rigid:rigid
   -> env -> evar_map -> constructor -> evar_map * pconstructor
+val fresh_array_instance : ?loc:Loc.t -> ?rigid:rigid
+  -> env -> evar_map  -> evar_map * Univ.Instance.t
 
 val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
   evar_map -> GlobRef.t -> evar_map * econstr
@@ -760,8 +772,8 @@ module MiniEConstr : sig
     (Constr.t, Constr.types) Context.Named.Declaration.pt
   val unsafe_to_rel_decl : (t, t) Context.Rel.Declaration.pt ->
     (Constr.t, Constr.types) Context.Rel.Declaration.pt
-  val of_case_invert : (constr,Univ.Instance.t) case_invert -> (econstr,EInstance.t) case_invert
-  val unsafe_to_case_invert : (econstr,EInstance.t) case_invert -> (constr,Univ.Instance.t) case_invert
+  val of_case_invert : constr pcase_invert -> econstr pcase_invert
+  val unsafe_to_case_invert : econstr pcase_invert -> constr pcase_invert
   val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt ->
     (t, t) Context.Rel.Declaration.pt
   val to_rel_decl : evar_map -> (t, t) Context.Rel.Declaration.pt ->

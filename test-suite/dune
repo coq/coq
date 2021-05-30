@@ -9,6 +9,10 @@
  (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted ../../install/%{context_name}/lib/coq/ ))))
 
 (rule
+ (targets bin.inc)
+ (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted -trailing-slash ../../install/%{context_name}/bin/ ))))
+
+(rule
  (targets summary.log)
  (deps
    ; File that should be promoted.
@@ -25,13 +29,14 @@
    ../dev/base_include
    ../dev/inc_ltac_dune
    ../dev/include_printers
-   ../dev/include_dune
+   ../dev/include
    ../dev/top_printers.ml
    ../dev/vm_printers.ml
    ; For the changelog test
    ../config/coq_config.py
    (source_tree doc/changelog)
-   (package coq)
+   (package coq-core)
+   (package coq-stdlib)
    ; For fake_ide
    (package coqide-server)
    (source_tree .))
@@ -44,4 +49,4 @@
    ; %{bin:fake_ide}
  (action
   (progn
-   (bash "make -j %{env:NJOBS=2} BIN= COQLIB=%{read:libpath.inc} PRINT_LOGS=1 UNIT_TESTS=%{env:COQ_UNIT_TEST=unit-tests}"))))
+   (bash "make -j %{env:NJOBS=2} BIN=%{read:bin.inc} COQLIB=%{read:libpath.inc} PRINT_LOGS=1 UNIT_TESTS=%{env:COQ_UNIT_TEST=unit-tests}"))))

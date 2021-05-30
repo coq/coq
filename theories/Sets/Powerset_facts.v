@@ -348,6 +348,7 @@ Section Sets_as_an_algebra.
 
 End Sets_as_an_algebra.
 
+#[global]
 Hint Resolve Empty_set_zero Empty_set_zero' Union_associative Union_add
   singlx incl_add: sets.
 

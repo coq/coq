@@ -17,6 +17,7 @@ type level = [
   | `DEBUG
   | `INFO
   | `NOTICE
+  | `PROMPT
   | `WARNING
   | `ERROR
   | `FATAL ]
@@ -37,6 +38,7 @@ let log_pp ?(level = `DEBUG) msg =
   | `DEBUG -> "DEBUG"
   | `INFO -> "INFO"
   | `NOTICE -> "NOTICE"
+  | `PROMPT -> "PROMPT"
   | `WARNING -> "WARNING"
   | `ERROR -> "ERROR"
   | `FATAL -> "FATAL"

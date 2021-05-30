@@ -37,7 +37,6 @@ val dummy_lazy_val : unit -> lazy_val
 (** Linking information for the native compiler *)
 type link_info =
   | Linked of string
-  | LinkedInteractive of string
   | NotLinked
 
 type key = int CEphemeron.key option ref
@@ -90,7 +89,6 @@ type env = private {
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
-  native_symbols : Nativevalues.symbols DPmap.t;
 }
 
 val oracle : env -> Conv_oracle.oracle
@@ -250,6 +248,13 @@ val constant_type_in : env -> Constant.t puniverses -> types
 val constant_opt_value_in : env -> Constant.t puniverses -> constr option
 
 val is_primitive : env -> Constant.t -> bool
+val get_primitive : env -> Constant.t -> CPrimitives.t option
+
+val is_array_type : env -> Constant.t -> bool
+val is_int63_type : env -> Constant.t -> bool
+val is_float64_type : env -> Constant.t -> bool
+val is_primitive_type : env -> Constant.t -> bool
+
 
 (** {6 Primitive projections} *)
 
@@ -351,6 +356,9 @@ val set_type_in_type : bool -> env -> env
 val set_allow_sprop : bool -> env -> env
 val sprop_allowed : env -> bool
 
+(** [update_typing_flags ?typing_flags] may update env with optional typing flags *)
+val update_typing_flags : ?typing_flags:typing_flags -> env -> env
+
 val universes_of_global : env -> GlobRef.t -> AUContext.t
 
 (** {6 Sets of referred section variables }
@@ -414,6 +422,3 @@ val no_link_info : link_info
 
 (** Primitives *)
 val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env
-
-val set_native_symbols : env -> Nativevalues.symbols DPmap.t -> env
-val add_native_symbols : DirPath.t -> Nativevalues.symbols -> env -> env

@@ -231,13 +231,16 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Notation In := (InA X.eq).
 
   Existing Instance X.eq_equiv.
+  #[local]
   Hint Extern 20 => solve [order] : core.
 
   Definition IsOk s := Sort s.
 
   Class Ok (s:t) : Prop := ok : Sort s.
 
+  #[local]
   Hint Resolve ok : core.
+  #[local]
   Hint Unfold Ok : core.
 
   Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
@@ -276,6 +279,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
     destruct H; constructor; tauto.
   Qed.
 
+  #[local]
   Hint Extern 1 (Ok _) => rewrite <- isok_iff : core.
 
   Ltac inv_ok := match goal with
@@ -326,6 +330,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   intuition.
   intros; elim_compare x a; inv; intuition.
   Qed.
+  #[local]
   Hint Resolve add_inf : core.
 
   Global Instance add_ok s x : forall `(Ok s), Ok (add x s).
@@ -353,6 +358,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   intros; elim_compare x a; inv; auto.
   apply Inf_lt with a; auto.
   Qed.
+  #[local]
   Hint Resolve remove_inf : core.
 
   Global Instance remove_ok s x : forall `(Ok s), Ok (remove x s).
@@ -396,6 +402,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction2.
   Qed.
+  #[local]
   Hint Resolve union_inf : core.
 
   Global Instance union_ok s s' : forall `(Ok s, Ok s'), Ok (union s s').
@@ -422,6 +429,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   apply Hrec'; auto.
   apply Inf_lt with x'; auto.
   Qed.
+  #[local]
   Hint Resolve inter_inf : core.
 
   Global Instance inter_ok s s' : forall `(Ok s, Ok s'), Ok (inter s s').
@@ -452,6 +460,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   apply Hrec'; auto.
   apply Inf_lt with x'; auto.
   Qed.
+  #[local]
   Hint Resolve diff_inf : core.
 
   Global Instance diff_ok s s' : forall `(Ok s, Ok s'), Ok (diff s s').
@@ -776,6 +785,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   End ForNotations.
 
   Definition In := InA X.eq.
+#[global]
   Instance In_compat : Proper (X.eq==>eq==> iff) In.
   Proof. repeat red; intros; rewrite H, H0; auto. Qed.
 
@@ -785,6 +795,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Definition lt l1 l2 :=
     exists l1' l2', Ok l1' /\ Ok l2' /\ eq l1 l1' /\ eq l2 l2' /\ L.lt l1' l2'.
 
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof.
   split.
@@ -807,6 +818,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   rewrite H; auto.
   Qed.
 
+#[global]
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   Proof.
   intros s1 s2 E12 s3 s4 E34. split.

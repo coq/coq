@@ -38,7 +38,7 @@ Ltac foo :=
   let w := () in
   let z := 1 in
   pose v
-2 subgoals
+2 goals
   
   n : nat
   ============================
@@ -47,5 +47,5 @@ Ltac foo :=
                              | S n1 => a n1
                              end) n = n
 
-subgoal 2 is:
+goal 2 is:
  forall a : nat, a = 0

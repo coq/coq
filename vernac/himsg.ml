@@ -572,6 +572,13 @@ let rec explain_evar_kind env sigma evk ty =
       strbrk "the type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous ->
       strbrk "the type of this anonymous binder"
+  | Evar_kinds.EvarType (ido,evk) ->
+      let pp = match ido with
+        | Some id -> str "?" ++ Id.print id
+        | None ->
+          try pr_existential_key sigma evk
+          with (* defined *) Not_found -> strbrk "an internal placeholder" in
+      strbrk "the type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
       strbrk "the implicit parameter " ++ Id.print id ++ spc () ++ str "of" ++
@@ -744,6 +751,11 @@ let explain_bad_relevance env =
 let explain_bad_invert env =
   strbrk "Bad case inversion (maybe a bugged tactic)."
 
+let explain_bad_variance env sigma ~lev ~expected ~actual =
+  str "Incorrect variance for universe " ++ Termops.pr_evd_level sigma lev ++
+  str": expected " ++ Univ.Variance.pr expected ++
+  str " but cannot be less restrictive than " ++ Univ.Variance.pr actual ++ str "."
+
 let explain_type_error env sigma err =
   let env = make_all_name_different env sigma in
   match err with
@@ -788,6 +800,7 @@ let explain_type_error env sigma err =
   | DisallowedSProp -> explain_disallowed_sprop ()
   | BadRelevance -> explain_bad_relevance env
   | BadInvert -> explain_bad_invert env
+  | BadVariance {lev;expected;actual} -> explain_bad_variance env sigma ~lev ~expected ~actual
 
 let pr_position (cl,pos) =
   let clpos = match cl with
@@ -911,7 +924,9 @@ let explain_not_match_error = function
   | InductiveFieldExpected _ ->
     strbrk "an inductive definition is expected"
   | DefinitionFieldExpected ->
-    strbrk "a definition is expected"
+    strbrk "a definition is expected. Hint: you can rename the \
+            inductive or constructor and add a definition mapping the \
+            old name to the new name"
   | ModuleFieldExpected ->
     strbrk "a module is expected"
   | ModuleTypeFieldExpected ->
@@ -955,7 +970,7 @@ let explain_not_match_error = function
         status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
-      Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes incon
+      Univ.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
@@ -1212,7 +1227,7 @@ let error_large_non_prop_inductive_not_in_type () =
   str "Large non-propositional inductive types must be in Type."
 
 let error_inductive_missing_constraints (us,ind_univ) =
-  let pr_u = Univ.Universe.pr_with UnivNames.pr_with_global_universes in
+  let pr_u = Univ.Universe.pr_with UnivNames.(pr_with_global_universes empty_binders) in
   str "Missing universe constraint declared for inductive type:" ++ spc()
   ++ v 0 (prlist_with_sep spc (fun u ->
       hov 0 (pr_u u ++ str " <= " ++ pr_u ind_univ))
@@ -1312,14 +1327,28 @@ let decline_string n s =
   else if Int.equal n 1 then str "1 " ++ str s
   else (int n ++ str " " ++ str s ++ str "s")
 
-let explain_wrong_numarg_constructor env cstr n =
-  str "The constructor " ++ pr_constructor env cstr ++
-  str " (in type " ++ pr_inductive env (inductive_of_constructor cstr) ++
-  str ") expects " ++ decline_string n "argument" ++ str "."
+let explain_wrong_numarg_pattern expanded nargs expected_nassums expected_ndecls pp =
+  (if expanded then
+    strbrk "Once notations are expanded, the resulting "
+  else
+    strbrk "The ") ++ pp ++
+  strbrk " is expected to be applied to " ++ decline_string expected_nassums "argument" ++
+  (if expected_nassums = expected_ndecls then mt () else
+     strbrk " (or " ++ decline_string expected_ndecls "argument" ++
+     strbrk " when including variables for local definitions)") ++
+  strbrk " while it is actually applied to " ++
+  decline_string nargs "argument" ++ str "."
 
-let explain_wrong_numarg_inductive env ind n =
-  str "The inductive type " ++ pr_inductive env ind ++
-  str " expects " ++ decline_string n "argument" ++ str "."
+let explain_wrong_numarg_constructor env cstr expanded nargs expected_nassums expected_ndecls =
+  let pp =
+    strbrk "constructor " ++ pr_constructor env cstr ++
+    strbrk " (in type " ++ pr_inductive env (inductive_of_constructor cstr) ++
+    strbrk ")" in
+  explain_wrong_numarg_pattern expanded nargs expected_nassums expected_ndecls pp
+
+let explain_wrong_numarg_inductive env ind expanded nargs expected_nassums expected_ndecls =
+  let pp = strbrk "inductive type " ++ pr_inductive env ind in
+  explain_wrong_numarg_pattern expanded nargs expected_nassums expected_ndecls pp
 
 let explain_unused_clause env pats =
   str "Pattern \"" ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats) ++ strbrk "\" is redundant in this clause."
@@ -1344,10 +1373,10 @@ let explain_pattern_matching_error env sigma = function
       explain_bad_pattern env sigma c t
   | BadConstructor (c,ind) ->
       explain_bad_constructor env c ind
-  | WrongNumargConstructor (c,n) ->
-      explain_wrong_numarg_constructor env c n
-  | WrongNumargInductive (c,n) ->
-      explain_wrong_numarg_inductive env c n
+  | WrongNumargConstructor {cstr; expanded; nargs; expected_nassums; expected_ndecls} ->
+      explain_wrong_numarg_constructor env cstr expanded nargs expected_nassums expected_ndecls
+  | WrongNumargInductive {ind; expanded; nargs; expected_nassums; expected_ndecls} ->
+      explain_wrong_numarg_inductive env ind expanded nargs expected_nassums expected_ndecls
   | UnusedClause tms ->
       explain_unused_clause env tms
   | NonExhaustive tms ->
@@ -1391,7 +1420,7 @@ let explain_exn_default = function
   | Out_of_memory -> hov 0 (str "Out of memory.")
   | Stack_overflow -> hov 0 (str "Stack overflow.")
   | CErrors.Timeout -> hov 0 (str "Timeout!")
-  | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
+  | Sys.Break -> hov 0 (str "User interrupt.")
   (* Otherwise, not handled here *)
   | _ -> raise Unhandled
 
@@ -1400,7 +1429,7 @@ let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 let rec vernac_interp_error_handler = function
   | Univ.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
-    Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i ++ str "."
+    Univ.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
   | TypeError(ctx,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error ctx Evd.empty te

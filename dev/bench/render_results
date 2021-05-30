@@ -76,24 +76,12 @@ let run_and_read cmd =
 ;;
 
 let ( %> ) f g x = g (f x)
-;;
 
 let run = run_and_read %> snd
-;;
 
 module Float = struct
   let nan = Pervasives.nan
 end
-
-module Tuple4 = struct
-
-  let first (x,_,_,_) = x
-  let second (_,y,_,_) = y
-  let third (_,_,z,_) = z
-  let fourth (_,_,_,z) = z
-
-end
-;;
 
 module List = struct
   include List
@@ -149,6 +137,143 @@ module String = struct
 end
 ;;
 
+module Table :
+sig
+  type header = string
+  type row = string list list
+  val print : header list -> row -> row list -> string
+end =
+struct
+  type header = string
+
+  type row = string list list
+
+  let val_padding = 2
+  (* Padding between data in the same row *)
+  let row_padding = 1
+  (* Padding between rows *)
+
+  let homogeneous b = if b then () else failwith "Heterogeneous data"
+
+  let vert_split (ls : 'a list list) =
+    let split l = match l with
+    | [] -> failwith "vert_split"
+    | x :: l -> (x, l)
+    in
+    let ls = List.map split ls in
+    List.split ls
+
+  let justify n s =
+    let len = String.length s in
+    let () = assert (len <= n) in
+    let lft = (n - len) / 2 in
+    let rgt = n - lft - len in
+    String.make lft ' ' ^ s ^ String.make rgt ' '
+
+  let justify_row layout data =
+    let map n s =
+      let len = String.length s in
+      let () = assert (len <= n) in
+      (* Right align *)
+      let pad = n - len in
+      String.make pad ' ' ^ s
+    in
+    let data = List.map2 map layout data in
+    String.concat (String.make val_padding ' ') data
+
+  let angle hkind vkind = match hkind, vkind with
+  | `Lft, `Top -> "┌"
+  | `Rgt, `Top -> "┐"
+  | `Mid, `Top -> "┬"
+  | `Lft, `Mid -> "├"
+  | `Rgt, `Mid -> "┤"
+  | `Mid, `Mid -> "┼"
+  | `Lft, `Bot -> "└"
+  | `Rgt, `Bot -> "┘"
+  | `Mid, `Bot -> "┴"
+
+  let print_separator vkind col_size =
+    let rec dashes n = if n = 0 then "" else "─" ^ dashes (n - 1) in
+    let len = List.length col_size in
+    let pad = dashes row_padding in
+    let () = assert (0 < len) in
+    let map n = dashes n in
+    angle `Lft vkind ^ pad ^
+    String.concat (pad ^ angle `Mid vkind ^ pad) (List.map map col_size) ^
+    pad ^ angle `Rgt vkind
+
+  let print_blank col_size =
+    let len = List.length col_size in
+    let () = assert (0 < len) in
+    let pad = String.make row_padding ' ' in
+    let map n = String.make n ' ' in
+    "│" ^ pad ^ String.concat (pad ^ "│" ^ pad) (List.map map col_size) ^ pad ^ "│"
+
+  let print_row row =
+    let len = List.length row in
+    let () = assert (0 < len) in
+    let pad = String.make row_padding ' ' in
+    "│" ^ pad ^ String.concat (pad ^ "│" ^ pad) row ^ pad ^ "│"
+
+  (* Invariant : all rows must have the same shape *)
+
+  let print (headers : header list) (top : row) (rows : row list) =
+    (* Sanitize input *)
+    let ncolums = List.length headers in
+    let shape = ref None in
+    let check row =
+      let () = homogeneous (List.length row = ncolums) in
+      let rshape : int list = List.map (fun data -> List.length data) row in
+      match !shape with
+      | None -> shape := Some rshape
+      | Some s -> homogeneous (rshape = s)
+    in
+    let () = List.iter check rows in
+    (* Compute layout *)
+    let rec layout n (rows : row list) =
+      if n = 0 then []
+      else
+        let (col, rows) = vert_split rows in
+        let ans = layout (n - 1) rows in
+        let data = ref None in
+        let iter args =
+          let size = List.map String.length args in
+          match !data with
+          | None -> data := Some size
+          | Some s ->
+            data := Some (List.map2 (fun len1 len2 -> max len1 len2) s size)
+        in
+        let () = List.iter iter col in
+        let data = match !data with None -> [] | Some s -> s in
+        data :: ans
+    in
+    let layout = layout ncolums (top::rows) in
+    let map hd shape =
+      let data_size = match shape with
+      | [] -> 0
+      | n :: shape -> List.fold_left (fun accu n -> accu + n + val_padding) n shape
+      in
+      max (String.length hd) data_size
+    in
+    let col_size = List.map2 map headers layout in
+    (* Justify the data *)
+    let headers = List.map2 justify col_size headers in
+    let top = List.map2 justify col_size (List.map2 justify_row layout top) in
+    let rows = List.map (fun row -> List.map2 justify col_size (List.map2 justify_row layout row)) rows in
+    (* Print the table *)
+    let lines =
+      print_separator `Top col_size ::
+      print_row headers ::
+      print_blank col_size ::
+      print_row top ::
+      print_separator `Mid col_size ::
+      List.map print_row rows @
+      print_separator `Bot col_size ::
+      []
+    in
+    String.concat "\n" lines
+end
+
 (******************************************************************************)
 (* END Copied from batteries, to remove *)
 (******************************************************************************)
@@ -203,10 +328,6 @@ let proportional_difference_of_integers new_value old_value =
   else float_of_int (new_value - old_value) /. float_of_int old_value *. 100.0
 in
 
-let count_number_of_digits_before_decimal_point =
-  log10 %> floor %> int_of_float %> succ %> max 1
-in
-
 (* parse the *.time and *.perf files *)
 coq_opam_packages
 |> List.map
@@ -259,138 +380,39 @@ coq_opam_packages
 
 (* Below we take the measurements and format them to stdout. *)
 
+|> List.map begin fun (package_name, new_t, old_t, perc) ->
+
+  let precision = 2 in
+  let prf f = Printf.sprintf "%.*f" precision f in
+  let pri n = Printf.sprintf "%d" n in
+
+  [
+    [ package_name ];
+    [ prf new_t.user_time; prf old_t.user_time; prf perc.user_time ];
+    [ pri new_t.num_cycles; pri old_t.num_cycles; prf perc.num_cycles ];
+    [ pri new_t.num_instr; pri old_t.num_instr; prf perc.num_instr ];
+    [ pri new_t.num_mem; pri old_t.num_mem; prf perc.num_mem ];
+    [ pri new_t.num_faults; pri old_t.num_faults; prf perc.num_faults ];
+  ]
+
+  end
+
 |> fun measurements ->
 
-     let precision = 2 in
+    let headers = [
+      "";
+      "user time [s]";
+      "CPU cycles";
+      "CPU instructions";
+      "max resident mem [KB]";
+      "mem faults";
+    ] in
 
-     (* the labels that we will print *)
-     let package_name__label = "package_name" in
-     let new__label = "NEW" in
-     let old__label = "OLD" in
-     let proportional_difference__label = "PDIFF" in
+    let descr = ["NEW"; "OLD"; "PDIFF"] in
+    let top = [ [ "package_name" ]; descr; descr; descr; descr; descr ] in
 
-     (* the lengths of labels that we will print *)
-     let new__label__length = String.length new__label in
-     let proportional_difference__label__length = String.length proportional_difference__label in
-
-     (* widths of individual columns of the table *)
-     let package_name__width =
-       max (measurements |> List.map (Tuple4.first %> String.length) |> List.max)
-         (String.length package_name__label) in
-
-     let llf proj =
-       let lls = count_number_of_digits_before_decimal_point (List.max proj) + 1 + precision in
-       max lls new__label__length in
-
-     let lli proj =
-       let lls = count_number_of_digits_before_decimal_point (float_of_int (List.(max proj))) + 1 + precision in
-       max lls new__label__length in
-
-     let new_timing_width = reduce_pkg_timings llf lli @@ List.map Tuple4.second measurements in
-     let old_timing_width = reduce_pkg_timings llf lli @@ List.map Tuple4.third measurements in
-
-     let llp proj =
-       let lls =
-         count_number_of_digits_before_decimal_point List.(max List.(map abs_float proj)) + 2 + precision in
-       max lls proportional_difference__label__length in
-
-     let perc_timing_width = reduce_pkg_timings llp llp @@ List.map Tuple4.fourth measurements in
-
-     (* print the table *)
-     let rec make_dashes = function
-       | 0 -> ""
-       | count -> "─" ^ make_dashes (pred count)
-     in
-
-     let vertical_separator left_glyph middle_glyph right_glyph =
-       sprintf "%s─%s─%s─%s─%s─%s───%s─%s─%s─%s───%s─%s─%s─%s───%s─%s─%s─%s───%s─%s─%s─%s───%s\n"
-       left_glyph
-       (make_dashes package_name__width)
-       middle_glyph
-       (make_dashes new_timing_width.user_time)
-       (make_dashes old_timing_width.user_time)
-       (make_dashes perc_timing_width.user_time)
-       middle_glyph
-       (make_dashes new_timing_width.num_cycles)
-       (make_dashes old_timing_width.num_cycles)
-       (make_dashes perc_timing_width.num_cycles)
-       middle_glyph
-       (make_dashes new_timing_width.num_instr)
-       (make_dashes old_timing_width.num_instr)
-       (make_dashes perc_timing_width.num_instr)
-       middle_glyph
-       (make_dashes new_timing_width.num_mem)
-       (make_dashes old_timing_width.num_mem)
-       (make_dashes perc_timing_width.num_mem)
-       middle_glyph
-       (make_dashes new_timing_width.num_faults)
-       (make_dashes old_timing_width.num_faults)
-       (make_dashes perc_timing_width.num_faults)
-       right_glyph
-     in
-
-     let center_string string width =
-       let string_length = String.length string in
-       let width = max width string_length in
-       let left_hfill = (width - string_length) / 2 in
-       let right_hfill = width - left_hfill - string_length in
-       String.make left_hfill ' ' ^ string ^ String.make right_hfill ' '
-     in
-     printf "\n";
-     print_string (vertical_separator "┌" "┬" "┐");
-     "│" ^ String.make (1 + package_name__width + 1) ' ' ^ "│"
-     ^ center_string "user time [s]" (1 +  new_timing_width.user_time + 1 + old_timing_width.user_time + 1 + perc_timing_width.user_time + 3) ^ "│"
-     ^ center_string "CPU cycles" (1 + new_timing_width.num_cycles    + 1 + old_timing_width.num_cycles    + 1 + perc_timing_width.num_cycles + 3) ^ "│"
-     ^ center_string "CPU instructions" (1 + new_timing_width.num_instr + 1 + old_timing_width.num_instr + 1 + perc_timing_width.num_instr + 3) ^ "│"
-     ^ center_string "max resident mem [KB]" (1 + new_timing_width.num_mem + 1 + old_timing_width.num_mem + 1 + perc_timing_width.num_mem + 3) ^ "│"
-     ^ center_string "mem faults" (1 + new_timing_width.num_faults + 1 + old_timing_width.num_faults + 1 + perc_timing_width.num_faults + 3)
-     ^ "│\n" |> print_string;
-     printf "│%*s │ %*s│ %*s│ %*s│ %*s│ %*s│\n"
-       (1 + package_name__width) ""
-       (new_timing_width.user_time    + 1 + old_timing_width.user_time    + 1 + perc_timing_width.user_time + 3) ""
-       (new_timing_width.num_cycles       + 1 + old_timing_width.num_cycles       + 1 + perc_timing_width.num_cycles + 3) ""
-       (new_timing_width.num_instr + 1 + old_timing_width.num_instr + 1 + perc_timing_width.num_instr + 3) ""
-       (new_timing_width.num_mem + 1 + old_timing_width.num_mem + 1 + perc_timing_width.num_mem + 3) ""
-       (new_timing_width.num_faults + 1 + old_timing_width.num_faults + 1 + perc_timing_width.num_faults + 3) "";
-     printf "│ %*s │ %*s %*s %*s   │ %*s %*s %*s   │ %*s %*s %*s   │ %*s %*s %*s   │ %*s %*s %*s   │\n"
-       package_name__width package_name__label
-       new_timing_width.user_time new__label
-       old_timing_width.user_time old__label
-       perc_timing_width.user_time proportional_difference__label
-       new_timing_width.num_cycles new__label
-       old_timing_width.num_cycles old__label
-       perc_timing_width.num_cycles proportional_difference__label
-       new_timing_width.num_instr new__label
-       old_timing_width.num_instr old__label
-       perc_timing_width.num_instr proportional_difference__label
-       new_timing_width.num_mem new__label
-       old_timing_width.num_mem old__label
-       perc_timing_width.num_mem proportional_difference__label
-       new_timing_width.num_faults new__label
-       old_timing_width.num_faults old__label
-       perc_timing_width.num_faults proportional_difference__label;
-     measurements |> List.iter
-         (fun (package_name, new_t, old_t, perc) ->
-           print_string (vertical_separator "├" "┼" "┤");
-           printf "│ %*s │ %*.*f %*.*f %+*.*f %% │ %*d %*d %+*.*f %% │ %*d %*d %+*.*f %% │ %*d %*d %+*.*f %% │ %*d %*d %+*.*f %% │\n"
-             package_name__width package_name
-             new_timing_width.user_time precision new_t.user_time
-             old_timing_width.user_time precision old_t.user_time
-             perc_timing_width.user_time precision perc.user_time
-             new_timing_width.num_cycles new_t.num_cycles
-             old_timing_width.num_cycles old_t.num_cycles
-             perc_timing_width.num_cycles precision perc.num_cycles
-             new_timing_width.num_instr new_t.num_instr
-             old_timing_width.num_instr old_t.num_instr
-             perc_timing_width.num_instr precision perc.num_instr
-             new_timing_width.num_mem new_t.num_mem
-             old_timing_width.num_mem old_t.num_mem
-             perc_timing_width.num_mem precision perc.num_mem
-             new_timing_width.num_faults new_t.num_faults
-             old_timing_width.num_faults old_t.num_faults
-             perc_timing_width.num_faults precision perc.num_faults);
-
-print_string (vertical_separator "└" "┴" "┘");
+    printf "%s%!" (Table.print headers top measurements)
+;
 
 (* ejgallego: disable this as it is very verbose and brings up little info in the log. *)
 if false then begin

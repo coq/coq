@@ -194,52 +194,6 @@ let parse_format ({CAst.loc;v=str} : lstring) =
 (***********************)
 (* Analyzing notations *)
 
-(* Interpret notations with a recursive component *)
-
-let out_nt = function NonTerminal x -> x | _ -> assert false
-
-let msg_expected_form_of_recursive_notation =
-  "In the notation, the special symbol \"..\" must occur in\na configuration of the form \"x symbs .. symbs y\"."
-
-let rec find_pattern nt xl = function
-  | Break n as x :: l, Break n' :: l' when Int.equal n n' ->
-      find_pattern nt (x::xl) (l,l')
-  | Terminal s as x :: l, Terminal s' :: l' when String.equal s s' ->
-      find_pattern nt (x::xl) (l,l')
-  | [], NonTerminal x' :: l' ->
-      (out_nt nt,x',List.rev xl),l'
-  | _, Break s :: _ | Break s :: _, _ ->
-      user_err Pp.(str ("A break occurs on one side of \"..\" but not on the other side."))
-  | _, Terminal s :: _ | Terminal s :: _, _ ->
-      user_err ~hdr:"Metasyntax.find_pattern"
-        (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
-  | _, [] ->
-      user_err Pp.(str msg_expected_form_of_recursive_notation)
-  | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
-      anomaly (Pp.str "Only Terminal or Break expected on left, non-SProdList on right.")
-
-let rec interp_list_parser hd = function
-  | [] -> [], List.rev hd
-  | NonTerminal id :: tl when Id.equal id ldots_var ->
-      if List.is_empty hd then user_err Pp.(str msg_expected_form_of_recursive_notation);
-      let hd = List.rev hd in
-      let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
-      let xyl,tl'' = interp_list_parser [] tl' in
-      (* We remember each pair of variable denoting a recursive part to *)
-      (* remove the second copy of it afterwards *)
-      (x,y)::xyl, SProdList (x,sl) :: tl''
-  | (Terminal _ | Break _) as s :: tl ->
-      if List.is_empty hd then
-        let yl,tl' = interp_list_parser [] tl in
-        yl, s :: tl'
-      else
-        interp_list_parser (s::hd) tl
-  | NonTerminal _ as x :: tl ->
-      let xyl,tl' = interp_list_parser [x] tl in
-      xyl, List.rev_append hd tl'
-  | SProdList _ :: _ -> anomaly (Pp.str "Unexpected SProdList in interp_list_parser.")
-
-
 (* Find non-terminal tokens of notation *)
 
 (* To protect alphabetic tokens and quotes from being seen as variables *)
@@ -256,24 +210,16 @@ let is_numeral_in_constr entry symbs =
   | _ ->
       false
 
-let rec get_notation_vars onlyprint = function
-  | [] -> []
-  | NonTerminal id :: sl ->
-      let vars = get_notation_vars onlyprint sl in
-      if Id.equal id ldots_var then vars else
-        (* don't check for nonlinearity if printing only, see Bug 5526 *)
-        if not onlyprint && Id.List.mem id vars then
-          user_err ~hdr:"Metasyntax.get_notation_vars"
-            (str "Variable " ++ Id.print id ++ str " occurs more than once.")
-        else id::vars
-  | (Terminal _ | Break _) :: sl -> get_notation_vars onlyprint sl
-  | SProdList _ :: _ -> assert false
-
-let analyze_notation_tokens ~onlyprint ntn =
-  let l = decompose_raw_notation ntn in
-  let vars = get_notation_vars onlyprint l in
-  let recvars,l = interp_list_parser [] l in
-  recvars, List.subtract Id.equal vars (List.map snd recvars), l
+let analyze_notation_tokens ~onlyprint df =
+  let (recvars,mainvars,symbols as res) = decompose_raw_notation df in
+    (* don't check for nonlinearity if printing only, see Bug 5526 *)
+  (if not onlyprint then
+    match List.duplicates Id.equal (mainvars @ List.map snd recvars) with
+    | id :: _ ->
+        user_err ~hdr:"Metasyntax.get_notation_vars"
+          (str "Variable " ++ Id.print id ++ str " occurs more than once.")
+    | _ -> ());
+  res
 
 let error_not_same_scope x y =
   user_err ~hdr:"Metasyntax.error_not_name_scope"
@@ -396,12 +342,10 @@ let unparsing_metavar i from typs =
   match x with
   | ETConstr _ | ETGlobal | ETBigint ->
      UnpMetaVar (prec,side)
-  | ETPattern _ ->
-     UnpBinderMetaVar prec
-  | ETIdent ->
-     UnpBinderMetaVar prec
+  | ETPattern _ | ETName _ | ETIdent ->
+     UnpBinderMetaVar (prec,NotQuotedPattern)
   | ETBinder isopen ->
-     assert false
+     UnpBinderMetaVar (prec,QuotedPattern)
 
 (* Heuristics for building default printing rules *)
 
@@ -687,10 +631,11 @@ let include_possible_similar_trailing_pattern typ etyps sl l =
   try_aux 0 l
 
 let prod_entry_type = function
-  | ETIdent -> ETProdName
+  | ETIdent -> ETProdIdent
+  | ETName _ -> ETProdName
   | ETGlobal -> ETProdReference
   | ETBigint -> ETProdBigint
-  | ETBinder _ -> assert false (* See check_binder_type *)
+  | ETBinder o -> ETProdOneBinder o
   | ETConstr (s,_,p) -> ETProdConstr (s,p)
   | ETPattern (_,n) -> ETProdPattern (match n with None -> 0 | Some n -> n)
 
@@ -917,6 +862,41 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 (* Interpreting user-provided modifiers *)
 
 (* XXX: We could move this to the parser itself *)
+
+module SyndefMods = struct
+
+type t = {
+  only_parsing  : bool;
+  scopes : (Id.t * scope_name) list;
+}
+
+let default = {
+  only_parsing  = false;
+  scopes = [];
+}
+
+end
+
+let interp_syndef_modifiers modl = let open SyndefMods in
+  let rec interp skipped acc = function
+    | [] -> List.rev skipped, acc
+    | SetOnlyParsing :: l ->
+        interp skipped { acc with only_parsing = true; } l
+    | SetItemScope([],_) :: l ->
+        interp skipped acc l
+    | SetItemScope(s::ids,k) :: l ->
+        let scopes = acc.scopes in
+        let id = Id.of_string s in
+        if List.mem_assoc id scopes then
+          user_err (str "Notation scope for argument " ++ str s ++
+                    str " can be specified only once.");
+        interp skipped { acc with scopes = (id,k) :: scopes }
+          (SetItemScope(ids,s) :: l)
+    | x :: l ->
+        interp (x :: skipped) acc l
+ in
+   interp [] default modl
+
 module NotationMods = struct
 
 type notation_modifier = {
@@ -927,7 +907,6 @@ type notation_modifier = {
   subtyps       : (Id.t * production_level) list;
 
   (* common to syn_data below *)
-  only_parsing  : bool;
   only_printing : bool;
   format        : lstring option;
   extra         : (string * string) list;
@@ -939,13 +918,17 @@ let default = {
   custom        = InConstrEntry;
   etyps         = [];
   subtyps       = [];
-  only_parsing  = false;
   only_printing = false;
   format        = None;
   extra         = [];
 }
 
 end
+
+(* To be turned into a fatal warning in 8.14 *)
+let warn_deprecated_ident_entry =
+  CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated"
+         (fun () -> strbrk "grammar entry \"ident\" permitted \"_\" in addition to proper identifiers; this use is deprecated and its meaning will change in the future; use \"name\" instead.")
 
 let interp_modifiers modl = let open NotationMods in
   let rec interp subtyps acc = function
@@ -995,8 +978,6 @@ let interp_modifiers modl = let open NotationMods in
     | SetAssoc a :: l ->
         if not (Option.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
         interp subtyps { acc with assoc = Some a; } l
-     | SetOnlyParsing :: l ->
-        interp subtyps { acc with only_parsing = true; } l
     | SetOnlyPrinting :: l ->
         interp subtyps { acc with only_printing = true; } l
     | SetFormat ("text",s) :: l ->
@@ -1004,14 +985,23 @@ let interp_modifiers modl = let open NotationMods in
         interp subtyps { acc with format = Some s; } l
     | SetFormat (k,s) :: l ->
         interp subtyps { acc with extra = (k,s.CAst.v)::acc.extra; } l
+    | (SetOnlyParsing | SetItemScope _) :: _ -> assert false
   in
-  let subtyps,mods = interp [] default modl in
+  let modl, syndef_mods = interp_syndef_modifiers modl in
+  let subtyps, mods = interp [] default modl in
   (* interpret item levels wrt to main entry *)
   let extra_etyps = List.map (fun (id,bko,n) -> (id,ETConstr (mods.custom,bko,n))) subtyps in
-  { mods with etyps = extra_etyps@mods.etyps }
+  (* Temporary hack: "ETName false" (i.e. "ident" in deprecation phase) means "ETIdent" for custom entries *)
+  let mods =
+    { mods with etyps = List.map (function
+        | (id,ETName false) ->
+           if mods.custom = InConstrEntry then (warn_deprecated_ident_entry (); (id,ETName true))
+           else (id,ETIdent)
+        | x -> x) mods.etyps } in
+  syndef_mods, { mods with etyps = extra_etyps@mods.etyps }
 
 let check_infix_modifiers modifiers =
-  let mods = interp_modifiers modifiers in
+  let _, mods = interp_modifiers modifiers in
   let t = mods.NotationMods.etyps in
   let u = mods.NotationMods.subtyps in
   if not (List.is_empty t) || not (List.is_empty u) then
@@ -1023,15 +1013,6 @@ let check_useless_entry_types recvars mainvars etyps =
   | (x,_)::_ -> user_err ~hdr:"Metasyntax.check_useless_entry_types"
                   (Id.print x ++ str " is unbound in the notation.")
   | _ -> ()
-
-let check_binder_type recvars etyps =
-  let l1,l2 = List.split recvars in
-  let l = l1@l2 in
-  List.iter (function
-    | (x,ETBinder b) when not (List.mem x l) ->
-       CErrors.user_err (str (if b then "binder" else "closed binder") ++
-                 strbrk " is only for use in recursive notations for binders.")
-    | _ -> ()) etyps
 
 let interp_non_syntax_modifiers mods =
   let set modif (only_parsing,only_printing,entry) = match modif with
@@ -1065,7 +1046,7 @@ let set_entry_type from n etyps (x,typ) =
       | ETConstr (s,bko,n), InternalProd ->
           ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
-      | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
+      | (ETIdent | ETName _ | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
     with Not_found ->
       ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
@@ -1088,7 +1069,7 @@ let join_auxiliary_recursive_types recvars etyps =
 let internalization_type_of_entry_type = function
   | ETBinder _ -> NtnInternTypeOnlyBinder
   | ETConstr _ | ETBigint | ETGlobal
-  | ETIdent | ETPattern _ -> NtnInternTypeAny
+  | ETIdent | ETName _ | ETPattern _ -> NtnInternTypeAny None
 
 let set_internalization_type typs =
   List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
@@ -1108,11 +1089,12 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
   | ETConstr (_,None,_) -> NtnTypeConstr
   (* Others *)
   | ETIdent -> NtnTypeBinder NtnParsedAsIdent
+  | ETName _ -> NtnTypeBinder NtnParsedAsName
   | ETPattern (ppstrict,_) -> NtnTypeBinder (NtnParsedAsPattern ppstrict) (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
   | ETBigint | ETGlobal -> NtnTypeConstr
   | ETBinder _ ->
      if isrec then NtnTypeBinderList
-     else anomaly Pp.(str "Type binder is only for use in recursive notations for binders.")
+     else NtnTypeBinder NtnParsedAsBinder
 
 let subentry_of_constr_prod_entry from_level = function
   (* Specific 8.2 approximation *)
@@ -1128,7 +1110,7 @@ let subentry_of_constr_prod_entry from_level = function
   | _ -> InConstrEntrySomeLevel
 
 let make_interpretation_vars
-  (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsIdent)
+  (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
    recvars level allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     Option.equal String.equal sc1 sc2 &&
@@ -1224,7 +1206,7 @@ let find_precedence custom lev etyps symbols onlyprint =
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
         | ETConstr (s,_,(NumLevel _ | NextLevel)), s' when s = s' -> test ()
-        | (ETIdent | ETBigint | ETGlobal), _ ->
+        | (ETIdent | ETName _ | ETBigint | ETGlobal), _ ->
             begin match lev with
             | None ->
               ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")],0)
@@ -1343,24 +1325,25 @@ let check_locality_compatibility local custom i_typs =
 
 let compute_syntax_data ~local deprecation df modifiers =
   let open SynData in
+  let open SyndefMods in
   let open NotationMods in
-  let mods = interp_modifiers modifiers in
-  let onlyprint = mods.only_printing in
-  let onlyparse = mods.only_parsing in
-  if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
+  let syndef_mods, mods = interp_modifiers modifiers in
+  let only_printing = mods.only_printing in
+  let only_parsing = syndef_mods.only_parsing in
+  if only_printing && only_parsing then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
+  if syndef_mods.scopes <> [] then user_err (str "General notations don't support 'in scope'.");
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
-  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
+  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint:only_printing df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
-  let _ = check_binder_type recvars mods.etyps in
 
   (* Notations for interp and grammar  *)
-  let msgs,n = find_precedence mods.custom mods.level mods.etyps symbols onlyprint in
+  let msgs,n = find_precedence mods.custom mods.level mods.etyps symbols only_printing in
   let ntn_for_interp = make_notation_key mods.custom symbols in
   let symbols_for_grammar =
     if mods.custom = InConstrEntry then remove_curly_brackets symbols else symbols in
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
   let ntn_for_grammar = if need_squash then make_notation_key mods.custom symbols_for_grammar else ntn_for_interp in
-  if mods.custom = InConstrEntry && not onlyprint then check_rule_productivity symbols_for_grammar;
+  if mods.custom = InConstrEntry && not only_printing then check_rule_productivity symbols_for_grammar;
   (* To globalize... *)
   let etyps = join_auxiliary_recursive_types recvars mods.etyps in
   let sy_typs, prec =
@@ -1381,8 +1364,8 @@ let compute_syntax_data ~local deprecation df modifiers =
   (* Return relevant data for interpretation and for parsing/printing *)
   { info = i_data;
 
-    only_parsing  = mods.only_parsing;
-    only_printing = mods.only_printing;
+    only_parsing;
+    only_printing;
     deprecation;
     format        = mods.format;
     extra         = mods.extra;
@@ -1716,7 +1699,7 @@ let add_notation_interpretation env decl_ntn =
       decl_ntn_scope = sc;
     } = decl_ntn in
   match interp_non_syntax_modifiers modifiers with
-  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here")
+  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
   | Some (only_parsing,only_printing,entry) ->
     let df' = add_notation_interpretation_core ~local:false df env entry c sc only_parsing false None in
     Dumpglob.dump_notation (loc,df') sc true
@@ -1845,17 +1828,18 @@ let remove_delimiters local scope =
 let add_class_scope local scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
-(* Check if abbreviation to a name and avoid early insertion of
-   maximal implicit arguments *)
-let try_interp_name_alias = function
-  | [], { CAst.v = CRef (ref,_) } -> intern_reference ref
-  | _ -> raise Not_found
-
-let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing } =
+let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
+  let open SyndefMods in
+  let skipped, { only_parsing; scopes } = interp_syndef_modifiers modl in
+  if skipped <> [] then
+    user_err (str "Simple notations don't support " ++ Ppvernac.pr_syntax_modifier (List.hd skipped));
+  let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
-    try Id.Map.empty, NRef (try_interp_name_alias (vars,c)), APrioriReversible
-    with Not_found ->
-      let fold accu id = Id.Map.add id NtnInternTypeAny accu in
+    match vars, intern_name_alias c with
+    | [], Some(r,u) ->
+      Id.Map.empty, NRef(r, u), APrioriReversible
+    | _ ->
+      let fold accu (id,scope) = Id.Map.add id (NtnInternTypeAny scope) accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
       let nenv = {
         ninterp_var_type = i_vars;
@@ -1863,30 +1847,26 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
       } in
       interp_notation_constr env nenv c
   in
-  let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
-  let interp = make_interpretation_vars ~default_if_binding:AsIdentOrPattern [] 0 acvars (List.map in_pat vars) in
-  let vars = List.map (fun x -> (x, Id.Map.find x interp)) vars in
+  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
+  let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] 0 acvars (List.map in_pat vars) in
+  let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
-  let onlyparsing = onlyparsing || fst (printability None [] false reversibility pat) in
+  let onlyparsing = only_parsing || fst (printability None [] false reversibility pat) in
   Syntax_def.declare_syntactic_definition ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Declaration of custom entry                                        *)
 
 let warn_custom_entry =
-  CWarnings.create ~name:"custom-entry-overriden" ~category:"parsing"
+  CWarnings.create ~name:"custom-entry-overridden" ~category:"parsing"
          (fun s ->
-          strbrk "Custom entry " ++ str s ++ strbrk " has been overriden.")
+          strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 
-let load_custom_entry _ _ = ()
-
-let open_custom_entry _ (_,(local,s)) =
+let load_custom_entry _ (_,(local,s)) =
   if Egramcoq.exists_custom_entry s then warn_custom_entry s
   else Egramcoq.create_custom_entry ~local s
 
-let cache_custom_entry o =
-  load_custom_entry 1 o;
-  open_custom_entry 1 o
+let cache_custom_entry o = load_custom_entry 1 o
 
 let subst_custom_entry (subst,x) = x
 
@@ -1896,13 +1876,12 @@ let classify_custom_entry (local,s as o) =
 let inCustomEntry : locality_flag * string -> obj =
   declare_object {(default_object "CUSTOM-ENTRIES") with
       cache_function = cache_custom_entry;
-      open_function = simple_open open_custom_entry;
       load_function = load_custom_entry;
       subst_function = subst_custom_entry;
       classify_function = classify_custom_entry}
 
 let declare_custom_entry local s =
   if Egramcoq.exists_custom_entry s then
-    user_err Pp.(str "Custom entry " ++ str s ++ str " already exists")
+    user_err Pp.(str "Custom entry " ++ str s ++ str " already exists.")
   else
     Lib.add_anonymous_leaf (inCustomEntry (local,s))

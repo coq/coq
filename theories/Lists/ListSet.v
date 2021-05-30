@@ -193,6 +193,7 @@ Section first_definitions.
      | auto with datatypes ].
   Qed.
 
+  #[local]
   Hint Resolve set_add_intro1 set_add_intro2 : core.
 
   Lemma set_add_intro :
@@ -224,6 +225,7 @@ Section first_definitions.
    case H1; trivial.
    Qed.
 
+  #[local]
   Hint Resolve set_add_intro set_add_elim set_add_elim2 : core.
 
   Lemma set_add_not_empty : forall (a:A) (x:set), set_add a x <> empty_set.
@@ -310,6 +312,7 @@ Section first_definitions.
     intros; elim H0; auto with datatypes.
   Qed.
 
+  #[local]
   Hint Resolve set_union_intro2 set_union_intro1 : core.
 
   Lemma set_union_intro :
@@ -393,6 +396,7 @@ Section first_definitions.
     eauto with datatypes.
   Qed.
 
+  #[local]
   Hint Resolve set_inter_elim1 set_inter_elim2 : core.
 
   Lemma set_inter_elim :
@@ -471,6 +475,7 @@ Section first_definitions.
   apply (set_diff_elim1 _ _ _ H).
   Qed.
 
+#[local]
 Hint Resolve set_diff_intro set_diff_trivial : core.
 
 

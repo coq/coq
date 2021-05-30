@@ -1,178 +1,199 @@
-# Release process #
+# Release checklist #
 
-## As soon as the previous version branched off master ##
+## When the release managers for version `X.X` get nominated ##
 
-In principle, these steps should be undertaken by the RM of the next
-release. Unfortunately, we have not yet been able to nominate RMs
-early enough in the process for this person to be known at that point
-in time.
+- [ ] Create a new issue to track the release process where you can
+  copy-paste the present checklist from `dev/doc/release-process.md`.
+- [ ] Decide the release calendar with the team (date of branching,
+  preview and final release).
+- [ ] Create a wiki page that you link to from
+  https://github.com/coq/coq/wiki/Release-Plan with this information
+  and the link to the issue.
 
-- [ ] Create a new issue to track the release process where you can copy-paste
-  the present checklist from `dev/doc/release-process.md`.
-- [ ] Change the version name to the next major version and the magic
-  numbers (see [#7008](https://github.com/coq/coq/pull/7008/files)).
+## About one month before the branching date ##
+
+- [ ] Create both the upcoming final release (`X.X.0`) and the
+  following major release (`Y.Y+rc1`) milestones if they do not
+  already exist.
+- [ ] Send an announcement of the upcoming branching date on Coqdev +
+  the Coq development category on Discourse (coqdev@inria.fr +
+  coq+coq-development@discoursemail.com) and ask people to remove from
+  the `X.X+rc1` milestone any feature and clean up PRs that they
+  already know won't be ready on time.
+- [ ] In a PR on `master`, call
+  [`dev/tools/update-compat.py`](../tools/update-compat.py) with the
+  `--release` flag; this sets up Coq to support three `-compat` flag
+  arguments including the upcoming one (instead of four).  To ensure
+  that CI passes, you will have to decide what to do about all
+  test-suite files which mention `-compat U.U` or `Coq.Comapt.CoqUU`
+  (which is no longer valid, since we only keep compatibility against
+  the two previous versions), and you may have to ping maintainers of
+  projects that are still relying on the old compatibility flag so
+  that they fix this.
+- [ ] Make sure that this change is merged in time for the branching
+  date.
+
+## On the branching date ##
+
+- [ ] In a PR on `master`, change the version name to the next major
+  version and the magic numbers (see
+  [#7008](https://github.com/coq/coq/pull/7008/files)).
 
   Additionally, in the same commit, update the compatibility
   infrastructure, which consists of invoking
   [`dev/tools/update-compat.py`](../tools/update-compat.py) with the
   `--master` flag.
 
-  Note that the `update-compat.py` script must be run twice: once
-  *immediately after* branching with the `--master` flag (which sets
-  up Coq to support four `-compat` flag arguments), *in the same
-  commit* as the one that updates `coq_version` in
-  [`configure.ml`](../../configure.ml), and once again later on before
-  the next branch point with the `--release` flag (see next section).
-- [ ] Put the corresponding alpha tag using `git tag -s`.
-  The `VX.X+alpha` tag marks the first commit to be in `master` and not in the
-  branch of the previous version. Note that this commit is the first commit
+  Note that the `update-compat.py` script must be run twice: once in
+  preparation of the release with the `--release` flag (see previous
+  section) and once on the branching date with the `--master` flag to
+  mark the start of the next version.
+- [ ] Merge the above PR and create the `vX.X` branch from the last
+  merge commit before this one (using this name will ensure that the
+  branch will be automatically protected).
+- [ ] Set the next major version alpha tag using `git tag -s`.  The
+  `VY.Y+alpha` tag marks the first commit to be in `master` and not in
+  the `vX.X` release branch. Note that this commit is the first commit
   in the first PR merged in master, not the merge commit for that PR.
-  After tagging double check that `git describe` picks up
-  the tag you just made (if not, you tagged the wrong commit).
-- [ ] Create the `X.X+beta1` milestone if it did not already exist.
-- [ ] Decide the release calendar with the team (freeze date, beta date, final
-  release date) and put this information in the milestone (using the
-  description and due date fields).
-
-## Anytime after the previous version is branched off master ##
-
-- [ ] Update the compatibility infrastructure to the next release,
-  which consists of invoking
-  [`dev/tools/update-compat.py`](../tools/update-compat.py) with the
-  `--release` flag; this sets up Coq to support three `-compat` flag
-  arguments.  To ensure that CI passes, you will have to decide what
-  to do about all test-suite files which mention `-compat U.U` or
-  `Coq.Comapt.CoqUU` (which is no longer valid, since we only keep
-  compatibility against the two previous versions on releases), and
-  you may have to prepare overlays for projects using the
-  compatibility flags.
-
-## About one month before the beta ##
-
-- [ ] Create the `X.X.0` milestone and set its due date.
-- [ ] Send an announcement of the upcoming freeze on Coqdev and ask people to
-  remove from the beta milestone what they already know won't be ready on time
-  (possibly postponing to the `X.X.0` milestone for minor bug fixes,
-  infrastructure and documentation updates).
-- [ ] Determine which issues should / must be fixed before the beta, add them
-  to the beta milestone, possibly with a
-  ["priority: blocker"](https://github.com/coq/coq/labels/priority%3A%20blocker)
-  label. Make sure that all these issues are assigned (and that the assignee
-  provides an ETA).
-- [ ] Ping the development coordinator (**@mattam82**) to get him started on
-  the update to the Credits chapter of the reference manual.
-  See also [#7058](https://github.com/coq/coq/issues/7058).
-
-  The command that was used in the previous versions to get the list
-  of contributors for this version is `git shortlog -s -n
-  VX.X+alpha..master | cut -f2 | sort -k 2`. Note that the ordering is
-  approximative as it will misplace people with middle names. It is
-  also probably not correctly handling `Co-authored-by` info that we
-  have been using more lately, so should probably be updated to
-  account for this.
-
-## On the date of the feature freeze ##
-
-- [ ] Create the new version branch `vX.X` (using this name will ensure that
-  the branch will be automatically protected).
-- [ ] Pin the versions of libraries and plugins in
-  `dev/ci/ci-basic-overlays.sh` to use commit hashes or tag (or, if it
-  exists, a branch dedicated to compatibility with the corresponding
-  Coq branch). You can use the `dev/tools/pin-ci.sh` script to do this
-  semi-automatically.
-- [ ] Remove all remaining unmerged feature PRs from the beta milestone.
+  Therefore, if you proceeded as described above, this should be the
+  commit updating the version, magic numbers and compatibility
+  infrastructure.  After tagging, double-check that `git describe`
+  picks up the tag you just made (if not, you tagged the wrong
+  commit).
+- [ ] Push the new tag with `git push upstream VY.Y+alpha --dry-run`
+  (remove the `--dry-run` and redo if everything looks OK).
 - [ ] Start a new project to track PR backporting. The project should
-  have a "Request X.X+beta1 inclusion" column for the PRs that were
+  have a `Request X.X+rc1 inclusion` column for the PRs that were
   merged in `master` that are to be considered for backporting, and a
-  "Shipped in X.X+beta1" columns to put what was backported. A message
-  to **@coqbot** in the milestone description tells it to
-  automatically add merged PRs to the "Request ... inclusion" column
-  and backported PRs to the "Shipped in ..." column. See previous
-  milestones for examples. When moving to the next milestone
-  (e.g. X.X.0), you can clear and remove the "Request X.X+beta1
-  inclusion" column and create new "Request X.X.0 inclusion" and
-  "Shipped in X.X.0" columns.
+  `Shipped in X.X+rc1` columns to put what was backported. A message
+  to `@coqbot` in the milestone description tells it to automatically
+  add merged PRs to the `Request ... inclusion` column and backported
+  PRs to the `Shipped in ...` column. See previous milestones for
+  examples. When moving to the next milestone (e.g. `X.X.0`), you can
+  clear and remove the `Request X.X+rc1 inclusion` column and create
+  new `Request X.X.0 inclusion` and `Shipped in X.X.0` columns.
 
   The release manager is the person responsible for merging PRs that
-  target the version branch and backporting appropriate PRs that are
-  merged into `master`.
-- [ ] Delay non-blocking issues to the appropriate milestone and ensure
-  blocking issues are solved. If required to solve some blocking issues,
-  it is possible to revert some feature PRs in the version branch only.
-- [ ] Add a new link to the ``'versions'`` list of the refman (in
-      ``html_context`` in ``doc/sphinx/conf.py``).
+  target the release branch and backporting appropriate PRs (mostly
+  safe bug fixes, user message improvements and documentation updates)
+  that are merged into `master`.
+- [ ] Pin the versions of libraries and plugins in
+  [`dev/ci/ci-basic-overlay.sh`](../ci/ci-basic-overlay.sh) to use
+  commit hashes. You can use the
+  [`dev/tools/pin-ci.sh`](../tools/pin-ci.sh) script to do this
+  semi-automatically.
+- [ ] In a PR on `master` to be backported, add a new link to the
+  `'versions'` list of the refman (in `html_context` in
+  [`doc/sphinx/conf.py`](../../doc/sphinx/conf.py)).
 
-## Before the beta release date ##
+## In the days following the branching ##
 
-- [ ] Ensure the Credits chapter has been updated.
-- [ ] Prepare the release notes (see e.g.,
-  [#10833](https://github.com/coq/coq/pull/10833)): in a PR against the `master`
-  branch, move the contents from all files of `doc/changelog/` that appear in
-  the release branch into the manual `doc/sphinx/changes.rst`. Merge that PR
-  into the `master` branch and backport it to the version branch.
-- [ ] Ensure that an appropriate version of the plugins we will distribute with
-  Coq has been tagged.
-- [ ] Have some people test the recently auto-generated Windows and MacOS
-  packages.
-- [ ] In a PR:
-  - Change the version name from alpha to beta1 (see
-  [#7009](https://github.com/coq/coq/pull/7009/files)).
-  - We generally do not update the magic numbers at this point.
+- [ ] Make sure that all the last feature PRs that you want to include
+  in the release are finished and backported quickly and clean up the
+  milestone.  We recommend backporting as few feature PRs as possible
+  after branching.  In particular, any PR with overlays will require
+  manually bumping the pinned commits when backporting.
+- [ ] Delay non-blocking issues to the appropriate milestone and
+  ensure blocking issues are solved. If required to solve some
+  blocking issues, it is possible to revert some feature PRs in the
+  release branch only (but in this case, the blocking issue should be
+  postponed to the next major release instead of being closed).
+- [ ] Once the final list of features is known, in a PR on `master` to
+  be backported, generate the release changelog by calling
+  [`dev/tools/generate-release-changelog.sh`](../tools/generate-release-changelog.sh)
+  and include it in a new section in
+  [`doc/sphinx/changes.rst`](../../doc/sphinx/changes.rst).
+
+  At the moment, the script doesn't do it automatically, but we
+  recommend reordering the entries to show first the **Changed**, then
+  the **Removed**, **Deprecated**, **Added** and last the **Fixed**.
+- [ ] Ping the development coordinator (`@mattam82`) to get him
+  started on writing the release summary.
+
+  The `dev/tools/list-contributors.sh` script computes the number and
+  list of contributors between Coq revisions. Typically used with
+  `VX.X+alpha..vX.X` to check the contributors of version `VX.X`.
+
+  Note that this script relies on `.mailmap` to merge multiple
+  identities.  If you notice anything incorrect while using it, use
+  the opportunity to fix the `.mailmap` file.  Same thing if you want
+  to have the full name of a contributor shown instead of a pseudonym.
+
+## For each release (preview, final, patch-level) ##
+
+- [ ] Ensure that there exists a milestone for the following version.
+- [ ] Ensure the release changelog has been merged (the release
+  summary is required for the final release).
+- [ ] In a PR against `vX.X` (for testing):
+  - Update the version number.
+  - Only update the magic numbers for the final release (see
+    [#7271](https://github.com/coq/coq/pull/7271/files)).
   - Set `is_a_released_version` to `true` in `configure.ml`.
-- [ ] Put the `VX.X+beta1` tag using `git tag -s`.
-- [ ] Check using `git push --tags --dry-run` that you are not
-  pushing anything else than the new tag. If needed, remove spurious
-  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
-- [ ] Set `is_a_released_version` to `false` in `configure.ml`
-  (if you forget about it, you'll be reminded whenever you try to
-  backport a PR with a changelog entry).
-
-### These steps are the same for all releases (beta, final, patch-level) ###
-
-- [ ] Send an e-mail on Coqdev announcing that the tag has been put so that
-  package managers can start preparing package updates (including a
-  `coq-bignums` compatible version).
-- [ ] When opening the corresponding PR for `coq` in the opam repository ([`coq/opam-coq-archive`](https://github.com/coq/opam-coq-archive) or [`ocaml/opam-repository`](https://github.com/ocaml/opam-repository)),
-  the package managers can Cc `@erikmd` to request that he prepare the necessary configuration for the Docker release in [`coqorg/coq`](https://hub.docker.com/r/coqorg/coq)
-  (namely, he'll need to make sure a `coq-bignums` opam package is available in [`extra-dev`](https://github.com/coq/opam-coq-archive/tree/master/extra-dev), respectively [`released`](https://github.com/coq/opam-coq-archive/tree/master/released), so the Docker image gathering `coq` and `coq-bignums` can be built).
-- [ ] Draft a release on GitHub.
-- [ ] Sign the Windows and MacOS packages and upload them on GitHub.
-  + The Windows packages must be signed by the Inria IT security service. They
-    should be sent as a link to the binary together with its SHA256 hash in a
-    signed e-mail, via our local contact (currently `@maximedenes`).
-  + The MacOS packages should be signed by our own certificate, by sending them
-    to `@maximedenes`. A detailed step-by-step guide can be found [on the wiki](https://github.com/coq/coq/wiki/SigningReleases).
-- [ ] Prepare a page of news on the website with the link to the GitHub release
-  (see [coq/www#63](https://github.com/coq/www/pull/63)).
-- [ ] Upload the new version of the reference manual to the website.
-  *TODO: setup some continuous deployment for this.*
-- [ ] Merge the website update, publish the release
-  and send announcement e-mails.
+- [ ] Set the tag `VX.X...` using `git tag -s`.
+- [ ] Push the new tag with `git push upstream VX.X... --dry-run`
+  (remove the `--dry-run` and redo if everything looks OK).
+- [ ] Set `is_a_released_version` to `false` in `configure.ml` (if you
+  forget about it, you'll be reminded by the test-suite failing
+  whenever you try to backport a PR with a changelog entry).
 - [ ] Close the milestone
+- [ ] Send an e-mail on Coqdev + the Coq development category on
+  Discourse (coqdev@inria.fr + coq+coq-development@discoursemail.com)
+  announcing that the tag has been set so that package managers can
+  start preparing package updates (including a `coq-bignums`
+  compatible version).
+- [ ] In particular, ensure that someone is working on providing an
+  opam package (either in the main
+  [ocaml/opam-repository](https://github.com/ocaml/opam-repository)
+  for standard releases or in the `core-dev` category of the
+  [coq/opam-coq-archive](https://github.com/coq/opam-coq-archive)
+  for preview releases.
+- [ ] Make sure to cc `@erikmd` to request that he prepare the
+  necessary configuration for the Docker release in
+  [`coqorg/coq`](https://hub.docker.com/r/coqorg/coq) (namely, he'll
+  need to make sure a `coq-bignums` opam package is available in
+  [`extra-dev`](https://github.com/coq/opam-coq-archive/tree/master/extra-dev),
+  respectively
+  [`released`](https://github.com/coq/opam-coq-archive/tree/master/released),
+  so the Docker image gathering `coq` and `coq-bignums` can be built).
+- [ ] Publish a release on GitHub with the PDF version of the
+  reference manual attached.
 
-## At the final release time ##
+## For each non-preview release ##
 
-- [ ] Prepare the release notes (see above)
-- [ ] In a PR:
-  - Change the version name from X.X.0 and the magic numbers (see
-  [#7271](https://github.com/coq/coq/pull/7271/files)).
-  - Set `is_a_released_version` to `true` in `configure.ml`.
-- [ ] Put the `VX.X.0` tag.
-- [ ] Check using `git push --tags --dry-run` that you are not
-  pushing anything else than the new tag. If needed, remove spurious
-  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
-- [ ] Set `is_a_released_version` to `false` in `configure.ml`
-  (if you forget about it, you'll be reminded whenever you try to
-  backport a PR with a changelog entry).
+- [ ] Ping `@Zimmi48` to switch the default version of the reference
+  manual on the website.
 
-Repeat the generic process documented above for all releases.
+  This is done by logging into the server (`vps697916.ovh.net`),
+  editing two `ProxyPass` lines (one for the refman and one for the
+  stdlib doc) with `sudo vim /etc/apache2/sites-available/000-coq.inria.fr.conf`,
+  then running `sudo systemctl reload apache2`.
 
-Ping `@Zimmi48` to:
+  *TODO:* automate this or make it doable through the `www` git
+  repository. See [coq/www#111](https://github.com/coq/www/issues/111)
+  and [coq/www#131](https://github.com/coq/www/issues/131).
 
-- [ ] Switch the default version of the reference manual on the website.
-- [ ] Publish a new version on Zenodo.
+## Only for the final release of each major version ##
 
-## At the patch-level release time ##
+- [ ] Ping `@Zimmi48` to publish a new version on Zenodo.
 
-We generally do not update the magic numbers at this point (see
-[`2881a18`](https://github.com/coq/coq/commit/2881a18)).
+  *TODO:* automate this with coqbot.
+
+## This is now delegated to the platform maintainers ##
+
+- [ ] Sign the Windows and MacOS packages and upload them on GitHub.
+  + The Windows packages must be signed by the Inria IT security
+    service. They should be sent as a link to the binary (via
+    [filesender](https://filesender.renater.fr) for example) together
+    with its SHA256 hash in a signed e-mail to `dsi.securite` @
+    `inria.fr` putting `@maximedenes` in carbon copy.
+  + The MacOS packages should be signed with our own certificate. A
+    detailed step-by-step guide can be found [on the
+    wiki](https://github.com/coq/coq/wiki/SigningReleases).
+  + The Snap package has to be built and uploaded to the snap store by
+    running a [platform CI job
+    manually](https://github.com/coq/platform/tree/2021.02/linux/snap/github_actions).
+    Then ask `@gares` to publish the upload or give you the password
+    for the `coq-team` account on the store so that you can do it
+    yourself.
+- [ ] Announce the release to Coq-Club and Discourse
+  (coq-club@inria.fr + coq+announcements@discoursemail.com).

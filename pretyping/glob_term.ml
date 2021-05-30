@@ -26,17 +26,23 @@ type glob_sort_name =
   | GSProp (** representation of [SProp] literal *)
   | GProp (** representation of [Prop] level *)
   | GSet  (** representation of [Set] level *)
-  | GType of Libnames.qualid (** representation of a [Type] level *)
+  | GUniv of Univ.Level.t
+  | GLocalUniv of lident (** Locally bound universes (may also be nonstrict declaration) *)
+  | GRawUniv of Univ.Level.t
+  (** Hack for funind, DO NOT USE
 
-type 'a glob_sort_expr =
+      Note that producing the similar Constrexpr.CRawType for printing
+      is OK, just don't try to reinterp it. *)
+
+type 'a glob_sort_gen =
   | UAnonymous of { rigid : bool } (** not rigid = unifiable by minimization *)
   | UNamed of 'a
 
 (** levels, occurring in universe instances *)
-type glob_level = glob_sort_name glob_sort_expr
+type glob_level = glob_sort_name glob_sort_gen
 
 (** sort expressions *)
-type glob_sort = (glob_sort_name * int) list glob_sort_expr
+type glob_sort = (glob_sort_name * int) list glob_sort_gen
 
 type glob_constraint = glob_sort_name * Univ.constraint_type * glob_sort_name
 
@@ -51,7 +57,6 @@ and glob_fix_kind =
 type 'a cast_type =
   | CastConv of 'a
   | CastVM of 'a
-  | CastCoerce (** Cast to a base type (eg, an underlying inductive type) *)
   | CastNative of 'a
 
 (**  The kind of patterns that occurs in "match ... with ... end"
@@ -131,7 +136,7 @@ type cases_pattern_disjunction = [ `any ] cases_pattern_disjunction_g
 
 type 'a extended_glob_local_binder_r =
   | GLocalAssum   of Name.t * binding_kind * 'a glob_constr_g
-  | GLocalDef     of Name.t * binding_kind * 'a glob_constr_g * 'a glob_constr_g option
+  | GLocalDef     of Name.t * 'a glob_constr_g * 'a glob_constr_g option
   | GLocalPattern of ('a cases_pattern_disjunction_g * Id.t list) * Id.t * binding_kind * 'a glob_constr_g
 and 'a extended_glob_local_binder_g = ('a extended_glob_local_binder_r, 'a) DAst.t
 

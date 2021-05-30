@@ -191,6 +191,10 @@ type search_rty = string coq_object list
 type proof_diff_sty = string * Stateid.t
 type proof_diff_rty = Pp.t
 
+(** A debugger command *)
+type db_cmd_sty = string
+type db_cmd_rty = unit
+
 (** Retrieve the list of options of the current toplevel *)
 type get_options_sty = unit
 type get_options_rty = (option_name * option_state) list
@@ -257,6 +261,7 @@ type handler = {
   print_ast   : print_ast_sty   -> print_ast_rty;
   annotate    : annotate_sty    -> annotate_rty;
   proof_diff  : proof_diff_sty  -> proof_diff_rty;
+  db_cmd      : db_cmd_sty      -> db_cmd_rty;
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;

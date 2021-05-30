@@ -8,7 +8,7 @@ Implicit Coercions
 General Presentation
 ---------------------
 
-This section describes the inheritance mechanism of |Coq|. In |Coq| with
+This section describes the inheritance mechanism of Coq. In Coq with
 inheritance, we are not interested in adding any expressive power to
 our theory, but only convenience. Given a term, possibly not typable,
 we are interested in the problem of determining if it can be well
@@ -190,7 +190,7 @@ Use :n:`:>` instead of :n:`:` before the
 .. cmd:: Identity Coercion @ident : @class >-> @class
 
    If ``C`` is the source `class` and ``D`` the destination, we check
-   that ``C`` is a constant with a body of the form
+   that ``C`` is a :term:`constant` with a :term:`body` of the form
    :g:`fun (x₁:T₁)..(xₙ:Tₙ) => D t₁..tₘ` where `m` is the
    number of parameters of ``D``.  Then we define an identity
    function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
@@ -202,7 +202,6 @@ Use :n:`:>` instead of :n:`:` before the
       :undocumented:
 
    .. cmd:: SubClass @ident_decl @def_body
-      :name: SubClass
 
       If :n:`@type` is a class :n:`@ident'` applied to some arguments then
       :n:`@ident` is defined and an identity coercion of name
@@ -239,13 +238,12 @@ Activating the Printing of Coercions
 
 .. flag:: Printing Coercions
 
-   When on, this flag forces all the coercions to be printed.
+   When on, this :term:`flag` forces all the coercions to be printed.
    By default, coercions are not printed.
 
 .. table:: Printing Coercion @qualid
-   :name: Printing Coercion
 
-   Specifies a set of qualids for which coercions are always displayed.  Use the
+   This :term:`table` specifies a set of qualids for which coercions are always displayed.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 .. _coercions-classes-as-records:

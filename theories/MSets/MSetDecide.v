@@ -466,6 +466,7 @@ the above form:
     (** Here is the tactic that will throw away hypotheses that
         are not useful (for the intended scope of the [fsetdec]
         tactic). *)
+    #[global]
     Hint Constructors MSet_elt_Prop MSet_Prop : MSet_Prop.
     Ltac discard_nonMSet :=
       repeat (
@@ -488,7 +489,7 @@ the above form:
         variables.  We are going to use them with [autorewrite].
         *)
 
-    Hint Rewrite
+    Global Hint Rewrite
       F.empty_iff F.singleton_iff F.add_iff F.remove_iff
       F.union_iff F.inter_iff F.diff_iff
     : set_simpl.
@@ -498,7 +499,7 @@ the above form:
      now split.
     Qed.
 
-    Hint Rewrite eq_refl_iff : set_eq_simpl.
+    Global Hint Rewrite eq_refl_iff : set_eq_simpl.
 
     (** ** Decidability of MSet Propositions *)
 
@@ -518,6 +519,7 @@ the above form:
 
     (** The hint database [MSet_decidability] will be given to
         the [push_neg] tactic from the module [Negation]. *)
+    #[global]
     Hint Resolve dec_In dec_eq : MSet_decidability.
 
     (** ** Normalizing Propositions About Equality

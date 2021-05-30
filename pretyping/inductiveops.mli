@@ -138,6 +138,10 @@ val constructor_nrealdecls : env -> constructor -> int
 val constructor_nrealdecls_env : env -> constructor -> int
 [@@ocaml.deprecated "Alias for Inductiveops.constructor_nrealdecls"]
 
+(** @return tags of all decls: true = assumption, false = letin *)
+val inductive_alltags : env -> inductive -> bool list
+val constructor_alltags : env -> constructor -> bool list
+
 (** Is there local defs in params or args ? *)
 val constructor_has_local_defs : env -> constructor -> bool
 val inductive_has_local_defs : env -> inductive -> bool
@@ -208,8 +212,14 @@ val make_case_or_project :
   env -> evar_map -> inductive_type -> case_info ->
   (* pred *) EConstr.constr -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
+(** Sometimes [make_case_or_project] is nicer to call with a pre-built
+   [case_invert] than [inductive_type]. *)
+val simple_make_case_or_project :
+  env -> evar_map -> case_info ->
+  (* pred *) EConstr.constr -> EConstr.case_invert -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
+
 val make_case_invert : env -> inductive_type -> case_info
-  -> (EConstr.constr,EConstr.EInstance.t) case_invert
+  -> EConstr.case_invert
 
 (*i Compatibility
 val make_default_case_info : env -> case_style -> inductive -> case_info

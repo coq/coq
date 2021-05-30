@@ -174,53 +174,54 @@ end
 module Stack :
 sig
   open EConstr
-  type 'a app_node
-  val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
+  type app_node
+  val pr_app_node : (EConstr.t -> Pp.t) -> app_node -> Pp.t
 
-  type 'a member =
-  | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
+  type case_stk =
+    case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t  pcase_invert * EConstr.t pcase_branch array
+
+  type member =
+  | App of app_node
+  | Case of case_stk
   | Proj of Projection.t
-  | Fix of ('a, 'a) pfixpoint * 'a t
-  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
+  | Fix of fixpoint * t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
-  and 'a t = 'a member list
+  and t = member list
 
   exception IncompatibleFold2
 
-  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-  val empty : 'a t
-  val is_empty : 'a t -> bool
-  val append_app : 'a array -> 'a t -> 'a t
-  val decomp : 'a t -> ('a * 'a t) option
-  val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
-  val compare_shape : 'a t -> 'a t -> bool
-  val map : ('a -> 'a) -> 'a t -> 'a t
-  val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
-    constr t -> constr t -> 'a
-  val append_app_list : 'a list -> 'a t -> 'a t
-  val strip_app : 'a t -> 'a t * 'a t
-  val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
-  val not_purely_applicative : 'a t -> bool
-  val list_of_app_stack : constr t -> constr list option
-  val assign : 'a t -> int -> 'a -> 'a t
-  val args_size : 'a t -> int
-  val tail : int -> 'a t -> 'a t
-  val nth : 'a t -> int -> 'a
-  val zip : evar_map -> constr * constr t -> constr
-  val check_native_args : CPrimitives.t -> 'a t -> bool
-  val get_next_primitive_args : CPrimitives.args_red -> 'a t -> CPrimitives.args_red * ('a t * 'a * 'a t) option
+  val pr : (EConstr.t -> Pp.t) -> t -> Pp.t
+  val empty : t
+  val is_empty : t -> bool
+  val append_app : EConstr.t array -> t -> t
+  val decomp : t -> (EConstr.t * t) option
+  val decomp_rev : t -> (EConstr.t * t) option
+  val compare_shape : t -> t -> bool
+  val fold2 : ('a -> constr -> constr -> 'a) -> 'a -> t -> t -> 'a
+  val append_app_list : EConstr.t list -> t -> t
+  val strip_app : t -> t * t
+  val strip_n_app : int -> t -> (t * EConstr.t * t) option
+  val not_purely_applicative : t -> bool
+  val list_of_app_stack : t -> constr list option
+  val args_size : t -> int
+  val tail : int -> t -> t
+  val nth : t -> int -> EConstr.t
+  val zip : evar_map -> constr * t -> constr
+  val check_native_args : CPrimitives.t -> t -> bool
+  val get_next_primitive_args : CPrimitives.args_red -> t -> CPrimitives.args_red * (t * EConstr.t * t) option
+  val expand_case : env -> evar_map -> case_stk -> constr * constr array
 end =
 struct
   open EConstr
-  type 'a app_node = int * 'a array * int
-  (* first releavnt position, arguments, last relevant position *)
+  type app_node = int * EConstr.t array * int
+  (* first relevant position, arguments, last relevant position *)
 
   (*
-     Invariant that this module must ensure :
-     (behare of direct access to app_node by the rest of Reductionops)
+     Invariant that this module must ensure:
+     (beware of direct access to app_node by the rest of Reductionops)
      - in app_node (i,_,j) i <= j
-     - There is no array realocation (outside of debug printing)
+     - There is no array reallocation (outside of debug printing)
    *)
 
   let pr_app_node pr (i,a,j) =
@@ -229,14 +230,17 @@ struct
                      )
 
 
-  type 'a member =
-  | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
-  | Proj of Projection.t
-  | Fix of ('a, 'a) pfixpoint * 'a t
-  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
+  type case_stk =
+    case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t  pcase_invert * EConstr.t pcase_branch array
 
-  and 'a t = 'a member list
+  type member =
+  | App of app_node
+  | Case of case_stk
+  | Proj of Projection.t
+  | Fix of fixpoint * t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
+
+  and t = member list
 
   (* Debugging printer *)
   let rec pr_member pr_c member =
@@ -244,9 +248,9 @@ struct
     let pr_c x = hov 1 (pr_c x) in
     match member with
     | App app -> str "ZApp" ++ pr_app_node pr_c app
-    | Case (_,_,_,br) ->
+    | Case (_,_,_,_,_,br) ->
        str "ZCase(" ++
-         prvect_with_sep (pr_bar) pr_c br
+         prvect_with_sep (pr_bar) (fun (_, c) -> pr_c c) br
        ++ str ")"
     | Proj p  ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
@@ -267,12 +271,10 @@ struct
     let le = Array.length v in
     if Int.equal le 0 then s else App (0,v,pred le) :: s
 
-  let decomp_node (i,l,j) sk =
-    if i < j then (l.(i), App (succ i,l,j) :: sk)
-    else (l.(i), sk)
-
-  let decomp = function
-    | App node::s -> Some (decomp_node node s)
+  let decomp_rev = function
+    | App (i,l,j) :: sk ->
+      if i < j then Some (l.(j), App (i,l,pred j) :: sk)
+      else Some (l.(j), sk)
     | _ -> None
 
   let decomp_node_last (i,l,j) sk =
@@ -285,7 +287,7 @@ struct
         ([],[]) -> Int.equal bal 0
       | (App (i,_,j)::s1, _) -> compare_rec (bal + j + 1 - i) s1 stk2
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
-      | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
+      | (Case _ :: s1, Case _::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
       | (Proj (p)::s1, Proj(p2)::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
@@ -293,7 +295,7 @@ struct
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
       | (Primitive(_,_,a1,_)::s1, Primitive(_,_,a2,_)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
-      | ((Case _|Proj _|Fix _|Primitive _) :: _ | []) ,_ -> false in
+      | ((Case _ | Proj _ | Fix _ | Primitive _) :: _ | []) ,_ -> false in
     compare_rec 0 stk1 stk2
 
   exception IncompatibleFold2
@@ -305,8 +307,9 @@ struct
         let t1,l1 = decomp_node_last n1 q1 in
         let t2,l2 = decomp_node_last n2 q2 in
         aux (f o t1 t2) l1 l2
-      | Case (_,t1,_,a1) :: q1, Case (_,t2,_,a2) :: q2 ->
-        aux (Array.fold_left2 f (f o t1 t2) a1 a2) q1 q2
+      | Case ((_,_,pms1,(_, t1),_,a1)) :: q1, Case ((_,_,pms2, (_, t2),_,a2)) :: q2 ->
+        let f' o (_, t1) (_, t2) = f o t1 t2 in
+        aux (Array.fold_left2 f' (f (Array.fold_left2 f o pms1 pms2) t1 t2) a1 a2) q1 q2
       | Proj (p1) :: q1, Proj (p2) :: q2 ->
         aux o q1 q2
       | Fix ((_,(_,a1,b1)),s1) :: q1, Fix ((_,(_,a2,b2)),s2) :: q2 ->
@@ -316,46 +319,39 @@ struct
               raise IncompatibleFold2
     in aux o (List.rev sk1) (List.rev sk2)
 
-  let rec map f x = List.map (function
-                               | (Proj (_)) as e -> e
-                               | App (i,a,j) ->
-                                  let le = j - i + 1 in
-                                  App (0,Array.map f (Array.sub a i le), le-1)
-                               | Case (info,ty,iv,br) ->
-                                 Case (info, f ty, map_invert f iv, Array.map f br)
-                               | Fix ((r,(na,ty,bo)),arg) ->
-                                  Fix ((r,(na,Array.map f ty, Array.map f bo)),map f arg)
-                               | Primitive (p,c,args,kargs) ->
-                                 Primitive(p,c, map f args, kargs)
-    ) x
-
   let append_app_list l s =
     let a = Array.of_list l in
     append_app a s
 
   let rec args_size = function
-    | App (i,_,j)::s -> j + 1 - i + args_size s
-    | (Case _|Fix _|Proj _|Primitive _)::_ | [] -> 0
+    | App (i,_,j) :: s -> j + 1 - i + args_size s
+    | (Case _ | Fix _ | Proj _ | Primitive _) :: _ | [] -> 0
 
   let strip_app s =
     let rec aux out = function
       | ( App _ as e) :: s -> aux (e :: out) s
       | s -> List.rev out,s
     in aux [] s
+
   let strip_n_app n s =
     let rec aux n out = function
       | App (i,a,j) as e :: s ->
-         let nb = j  - i + 1 in
+         let nb = j - i + 1 in
          if n >= nb then
-           aux (n - nb) (e::out) s
+           aux (n - nb) (e :: out) s
          else
-           let p = i+n in
+           let p = i + n in
            Some (CList.rev
               (if Int.equal n 0 then out else App (i,a,p-1) :: out),
             a.(p),
-            if j > p then App(succ p,a,j)::s else s)
+            if j > p then App (succ p,a,j) :: s else s)
       | s -> None
     in aux n [] s
+
+  let decomp s =
+    match strip_n_app 0 s with
+    | Some (_,a,s) -> Some (a,s)
+    | None -> None
 
   let not_purely_applicative args =
     List.exists (function (Fix _ | Case _ | Proj _ ) -> true
@@ -369,25 +365,19 @@ struct
         (Array.fold_right (fun x y -> x::y) a' args', s')
       | s -> ([],s) in
     let (out,s') = aux s in
-    let init = match s' with [] -> true | _ -> false in
-    Option.init init out
-
-  let assign s p c =
-    match strip_n_app p s with
-    | Some (pre,_,sk) -> pre @ (App (0,[|c|],0)::sk)
-    | None -> assert false
+    match s' with [] -> Some out | _ -> None
 
   let tail n0 s0 =
     let rec aux n s =
       if Int.equal n 0 then s else
         match s with
       | App (i,a,j) :: s ->
-         let nb = j  - i + 1 in
+         let nb = j - i + 1 in
          if n >= nb then
            aux (n - nb) s
          else
            let p = i+n in
-           if j >= p then App(p,a,j)::s else s
+           if j >= p then App (p,a,j) :: s else s
         | _ -> raise (Invalid_argument "Reductionops.Stack.tail")
     in aux n0 s0
 
@@ -404,7 +394,7 @@ struct
                 then a
                 else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
-    | f, (Case (ci,rt,iv,br)::s) -> zip (mkCase (ci,rt,iv,f,br), s)
+    | f, (Case (ci,u,pms,rt,iv,br)::s) -> zip (mkCase (ci,u,pms,rt,iv,f,br), s)
   | f, (Fix (fix,st)::s) -> zip
     (mkFix fix, st @ (append_app [|f|] s))
   | f, (Proj (p)::s) -> zip (mkProj (p,f),s)
@@ -428,10 +418,15 @@ struct
     let n = nargs kargs in
     (List.skipn (n+1) kargs, strip_n_app n stk)
 
+  let expand_case env sigma ((ci, u, pms, t, iv, br) : case_stk) =
+    let dummy = mkProp in
+    let (_, t, _, _, br) = EConstr.expand_case env sigma (ci, u, pms, t, iv, dummy, br) in
+    (t, br)
+
 end
 
 (** The type of (machine) states (= lambda-bar-calculus' cuts) *)
-type state = constr * constr Stack.t
+type state = constr * Stack.t
 
 type reduction_function = env -> evar_map -> constr -> constr
 type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
@@ -456,23 +451,6 @@ let safe_evar_value = Evarutil.safe_evar_value
 let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
   with Not_found -> None
-
-let strong_with_flags whdfun flags env sigma t =
-  let push_rel_check_zeta d env =
-    let open CClosure.RedFlags in
-    let d = match d with
-      | LocalDef (na,c,t) when not (red_set flags fZETA) -> LocalAssum (na,t)
-      | d -> d in
-    push_rel d env in
-  let rec strongrec env t =
-    map_constr_with_full_binders sigma
-      push_rel_check_zeta strongrec env (whdfun flags env sigma t) in
-  strongrec env t
-
-let strong whdfun env sigma t =
-  let rec strongrec env t =
-    map_constr_with_full_binders sigma push_rel strongrec env (whdfun env sigma t) in
-  strongrec env t
 
 (*************************************)
 (*** Reduction using bindingss ***)
@@ -692,27 +670,37 @@ module CredNative = RedNative(CNativeEntries)
     contract_* in any case .
 *)
 
-let debug_RAKAM =
-  Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Debug";"RAKAM"]
-    ~value:false
+let debug_RAKAM = CDebug.create ~name:"RAKAM" ()
+
+let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
+  let args = Stack.tail ci.ci_npar args in
+  let args = Option.get (Stack.list_of_app_stack args) in
+  let br = lf.(i - 1) in
+  if Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1) then
+    (* No let-bindings *)
+    let subst = List.rev args in
+    Vars.substl subst (snd br)
+  else
+    (* For backwards compat with unification, we do not reduce the let-bindings
+       upfront. *)
+    let ctx = expand_branch env sigma u pms (ind, i) br in
+    applist (it_mkLambda_or_LetIn (snd br) ctx, args)
 
 let rec whd_state_gen flags env sigma =
   let open Context.Named.Declaration in
   let rec whrec (x, stack) : state =
-    let () = if debug_RAKAM () then
+    let () =
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
-        Feedback.msg_debug
+        debug_RAKAM (fun () ->
                (h (str "<<" ++ pr x ++
                    str "|" ++ cut () ++ Stack.pr pr stack ++
-                   str ">>"))
+                   str ">>")))
     in
     let c0 = EConstr.kind sigma x in
     let fold () =
-      let () = if debug_RAKAM () then
-          let open Pp in Feedback.msg_debug (str "<><><><><>") in
+      let () = debug_RAKAM (fun () ->
+          let open Pp in str "<><><><><>") in
       ((EConstr.of_kind c0, stack))
     in
     match c0 with
@@ -781,8 +769,8 @@ let rec whd_state_gen flags env sigma =
         | _ -> fold ())
       | _ -> fold ())
 
-    | Case (ci,p,iv,d,lf) ->
-      whrec (d, Stack.Case (ci,p,iv,lf) :: stack)
+    | Case (ci,u,pms,p,iv,d,lf) ->
+      whrec (d, Stack.Case (ci,u,pms,p,iv,lf) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -790,13 +778,14 @@ let rec whd_state_gen flags env sigma =
       |Some (bef,arg,s') ->
         whrec (arg, Stack.Fix(f,bef)::s'))
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr ,u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, _, lf)::s') when use_match ->
-          whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case case::s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
+          whrec (r, s')
         |args, (Stack.Proj (p)::s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
@@ -846,7 +835,7 @@ let rec whd_state_gen flags env sigma =
   whrec
 
 (** reduction machine without global env and refold machinery *)
-let local_whd_state_gen flags _env sigma =
+let local_whd_state_gen flags env sigma =
   let rec whrec (x, stack) =
     let c0 = EConstr.kind sigma x in
     let s = (EConstr.of_kind c0, stack) in
@@ -878,8 +867,8 @@ let local_whd_state_gen flags _env sigma =
     | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
       (whrec (c, Stack.Proj (p) :: stack))
 
-    | Case (ci,p,iv,d,lf) ->
-      whrec (d, Stack.Case (ci,p,iv,lf) :: stack)
+    | Case (ci,u,pms,p,iv,d,lf) ->
+      whrec (d, Stack.Case (ci,u,pms,p,iv,lf) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -892,13 +881,14 @@ let local_whd_state_gen flags _env sigma =
         Some c -> whrec (c,stack)
       | None -> s)
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr, u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, _, lf)::s') when use_match ->
-          whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case case :: s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
+          whrec (r, s')
         |args, (Stack.Proj (p) :: s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
@@ -930,14 +920,6 @@ let stack_red_of_state_red f =
   let f env sigma x = EConstr.decompose_app sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
   f
 
-(* Drops the Cst_stack *)
-let iterate_whd_gen flags env sigma s =
-  let rec aux t =
-  let (hd,sk) = whd_state_gen flags env sigma (t,Stack.empty) in
-  let whd_sk = Stack.map aux sk in
-  Stack.zip sigma (hd,whd_sk)
-  in aux s
-
 let red_of_state_red f env sigma x =
   Stack.zip sigma (f env sigma (x,Stack.empty))
 
@@ -958,6 +940,9 @@ let whd_betalet_stack = stack_red_of_state_red whd_betalet_state
 let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
+
+let whd_const_state c e = raw_whd_state_gen CClosure.RedFlags.(mkflags [fCONST c]) e
+let whd_const c = red_of_state_red (whd_const_state c)
 
 let whd_delta_state e = raw_whd_state_gen CClosure.delta e
 let whd_delta_stack = stack_red_of_state_red whd_delta_state
@@ -1037,13 +1022,6 @@ let nf_all env sigma =
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)
-(*
-let fkey = CProfile.declare_profile "fhnf";;
-let fhnf info v = CProfile.profile2 fkey fhnf info v;;
-
-let fakey = CProfile.declare_profile "fhnf_apply";;
-let fhnf_apply info k h a = CProfile.profile4 fakey fhnf_apply info k h a;;
-*)
 
 let is_transparent e k =
   match Conv_oracle.get_strategy (Environ.oracle e) k with
@@ -1192,11 +1170,15 @@ let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
 
 let default_plain_instance_ident = Id.of_string "H"
 
+type subst_fun = { sfun : metavariable -> EConstr.t }
+
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
-let plain_instance sigma s c =
+let plain_instance sigma s c = match s with
+| None -> c
+| Some s ->
   let rec irec n u = match EConstr.kind sigma u with
-    | Meta p -> (try lift n (Metamap.find p s) with Not_found -> u)
+    | Meta p -> (try lift n (s.sfun p) with Not_found -> u)
     | App (f,l) when isCast sigma f ->
         let (f,_,t) = destCast sigma f in
         let l' = Array.Fun1.Smart.map irec n l in
@@ -1205,7 +1187,7 @@ let plain_instance sigma s c =
             (* Don't flatten application nodes: this is used to extract a
                proof-term from a proof-tree and we want to keep the structure
                of the proof-tree *)
-            (try let g = Metamap.find p s in
+            (try let g = s.sfun p in
             match EConstr.kind sigma g with
             | App _ ->
                 let l' = Array.Fun1.Smart.map lift 1 l' in
@@ -1216,12 +1198,11 @@ let plain_instance sigma s c =
             with Not_found -> mkApp (f,l'))
         | _ -> mkApp (irec n f,l'))
     | Cast (m,_,_) when isMeta sigma m ->
-        (try lift n (Metamap.find (destMeta sigma m) s) with Not_found -> u)
+        (try lift n (s.sfun (destMeta sigma m)) with Not_found -> u)
     | _ ->
         map_with_binders sigma succ irec n u
   in
-  if Metamap.is_empty s then c
-  else irec 0 c
+  irec 0 c
 
 (* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
    has (unfortunately) different subtle side effects:
@@ -1259,7 +1240,9 @@ let plain_instance sigma s c =
 
 let instance env sigma s c =
   (* if s = [] then c else *)
-  strong whd_betaiota env sigma (plain_instance sigma s c)
+  (* No need to compute contexts under binders as whd_betaiota is local *)
+  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota env sigma t) in
+  strongrec (plain_instance sigma s c)
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
@@ -1423,23 +1406,41 @@ let is_arity env sigma c =
 (*************************************)
 (* Metas *)
 
-let meta_value env evd mv =
-  let rec valrec mv =
-    match meta_opt_fvalue evd mv with
-    | Some (b,_) ->
-      let metas = Metamap.bind valrec b.freemetas in
-      instance env evd metas b.rebus
-    | None -> mkMeta mv
-  in
-  valrec mv
+type meta_instance_subst = {
+  sigma : Evd.evar_map;
+  mutable cache : EConstr.t Metamap.t;
+}
 
-let meta_instance env sigma b =
+let create_meta_instance_subst sigma = {
+  sigma;
+  cache = Metamap.empty;
+}
+
+let eval_subst env subst =
+  let rec ans mv =
+    try Metamap.find mv subst.cache
+    with Not_found ->
+      match meta_opt_fvalue subst.sigma mv with
+      | None -> mkMeta mv
+      | Some (b, _) ->
+        let metas =
+          if Metaset.is_empty b.freemetas then None
+          else Some { sfun = ans }
+        in
+        let res = instance env subst.sigma metas b.rebus in
+        let () = subst.cache <- Metamap.add mv res subst.cache in
+        res
+  in
+  { sfun = ans }
+
+let meta_instance env subst b =
   let fm = b.freemetas in
   if Metaset.is_empty fm then b.rebus
   else
-    let c_sigma = Metamap.bind (fun mv -> meta_value env sigma mv) fm in
-    instance env sigma c_sigma b.rebus
+    let sfun = eval_subst env subst in
+    instance env subst.sigma (Some sfun) b.rebus
 
 let nf_meta env sigma c =
+  let sigma = create_meta_instance_subst sigma in
   let cl = mk_freelisted c in
   meta_instance env sigma { cl with rebus = cl.rebus }

@@ -1,0 +1,92 @@
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all except: id
+Cut: _
+For any goal ->   
+For nat ->   
+For S (modes !) ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all except: id
+Cut: _
+For any goal ->   
+For nat ->   
+For S (modes !) ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all except: id
+Cut: _
+For any goal ->   
+For nat ->   
+For S (modes !) ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all except: id
+Cut: _
+For any goal ->   
+For nat ->   
+For S (modes !) ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Cut: emp
+For any goal ->   
+For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Cut: emp
+For any goal ->   
+For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all except: id
+Cut: _
+For any goal ->   
+For nat ->   
+For S (modes !) ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Cut: emp
+For any goal ->   
+For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all except: id
+Cut: _
+For any goal ->   
+For nat ->   
+For S (modes !) ->   
+
+The command has indeed failed with message:
+This command does not support the global attribute in sections.
+The command has indeed failed with message:
+This command does not support the global attribute in sections.
+The command has indeed failed with message:
+This command does not support the global attribute in sections.
+The command has indeed failed with message:
+This command does not support the global attribute in sections.
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all except: id
+Cut: _
+For any goal ->   
+For nat ->   
+For S (modes !) ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Cut: emp
+For any goal ->   
+For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+

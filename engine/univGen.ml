@@ -13,14 +13,14 @@ open Names
 open Constr
 open Univ
 
-type univ_unique_id = int
 (* Generator of levels *)
-let new_univ_id, set_remote_new_univ_id =
-  RemoteCounter.new_counter ~name:"Universes" 0 ~incr:((+) 1)
-    ~build:(fun n -> n)
+let new_univ_id =
+  let cnt = ref 0 in
+  fun () -> incr cnt; !cnt
 
 let new_univ_global () =
-  Univ.Level.UGlobal.make (Global.current_dirpath ()) (new_univ_id ())
+  let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
+  Univ.Level.UGlobal.make (Global.current_dirpath ()) s (new_univ_id ())
 
 let fresh_level () =
   Univ.Level.make (new_univ_global ())
@@ -64,6 +64,11 @@ let fresh_inductive_instance env ind =
 let fresh_constructor_instance env c =
   let u, ctx = fresh_global_instance env (GlobRef.ConstructRef c) in
   (c, u), ctx
+
+let fresh_array_instance env =
+  let auctx = CPrimitives.typ_univs CPrimitives.PT_array in
+  let u, ctx = fresh_instance_from auctx None in
+  u, ctx
 
 let fresh_global_instance ?loc ?names env gr =
   let u, ctx = fresh_global_instance ?loc ?names env gr in

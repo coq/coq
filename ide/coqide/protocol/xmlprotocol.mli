@@ -38,6 +38,7 @@ val interp      : interp_sty      -> interp_rty call
 val print_ast   : print_ast_sty   -> print_ast_rty call
 val annotate    : annotate_sty    -> annotate_rty call
 val proof_diff  : proof_diff_sty  -> proof_diff_rty call
+val db_cmd      : db_cmd_sty      -> db_cmd_rty call
 
 val abstract_eval_call : handler -> 'a call -> 'a value
 
@@ -67,8 +68,16 @@ val pr_call : 'a call -> string
 val pr_value : 'a value -> string
 val pr_full_value : 'a call -> 'a value -> string
 
-(** * Serializaiton of feedback  *)
+(** Classification of messages handled by different mechanisms *)
+type msg_type = Feedback | LtacDebugInfo | Other
+
+(* EJGA: We could even include the decoding info here *)
+val msg_kind : xml -> msg_type
+
+(** * Serialization of feedback  *)
 val of_feedback : msg_format -> Feedback.feedback -> xml
 val to_feedback : xml -> Feedback.feedback
 
-val is_feedback : xml -> bool
+(** * Serialization of debugger output *)
+val of_ltac_debug_answer : tag:string -> Pp.t -> xml
+val to_ltac_debug_answer : xml -> string * Pp.t

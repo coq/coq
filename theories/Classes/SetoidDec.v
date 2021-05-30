@@ -42,7 +42,7 @@ Class EqDec `(S : Setoid A) :=
    take precedence of [==] defined in the type scope, hence we can have both
    at the same time. *)
 
-Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70).
+Notation " x == y " := (equiv_dec x y) (no associativity, at level 70).
 
 Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
   match x with
@@ -80,26 +80,31 @@ Require Import Coq.Arith.Arith.
 (** The equiv is buried inside the setoid, but we can recover
   it by specifying which setoid we're talking about. *)
 
+#[global]
 Program Instance eq_setoid A : Setoid A | 10 :=
   { equiv := eq ; setoid_equiv := eq_equivalence }.
 
+#[global]
 Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
   eq_nat_dec.
 
 Require Import Coq.Bool.Bool.
 
+#[global]
 Program Instance bool_eqdec : EqDec (eq_setoid bool) :=
   bool_dec.
 
+#[global]
 Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
   fun x y => in_left.
 
   Next Obligation.
   Proof.
-    destruct x ; destruct y.
+    do 2 match goal with x : () |- _ => destruct x end.
     reflexivity.
   Qed.
 
+#[global]
 Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B))
  : EqDec (eq_setoid (prod A B)) :=
   fun x y =>
@@ -115,6 +120,7 @@ Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B))
 (** Objects of function spaces with countable domains like bool
   have decidable equality. *)
 
+#[global]
 Program Instance bool_function_eqdec `(! EqDec (eq_setoid A))
  : EqDec (eq_setoid (bool -> A)) :=
   fun f g =>

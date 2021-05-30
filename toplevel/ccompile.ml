@@ -24,7 +24,7 @@ let fatal_error msg =
 let load_init_file opts ~state =
   if opts.pre.load_rcfile then
     Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
-        Coqinit.load_rcfile ~rcfile:opts.config.rcfile ~state) ()
+        Coqrc.load_rcfile ~rcfile:opts.config.rcfile ~state) ()
   else begin
     Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
     state
@@ -93,7 +93,7 @@ let create_empty_file filename =
   close_out f
 
 (* Compile a vernac file *)
-let compile opts copts ~echo ~f_in ~f_out =
+let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   let open Vernac.State in
   let check_pending_proofs () =
     let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
@@ -104,9 +104,6 @@ let compile opts copts ~echo ~f_in ~f_out =
                         |> prlist_with_sep pr_comma Names.Id.print)
                     ++ str ".")
   in
-  let ml_load_path, vo_load_path = build_load_path opts in
-  let injections = injection_commands opts in
-  let stm_options = opts.config.stm_flags in
   let output_native_objects = match opts.config.native_compiler with
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
   in
@@ -129,9 +126,7 @@ let compile opts copts ~echo ~f_in ~f_out =
   | BuildVo | BuildVok ->
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VoDoc long_f_dot_out; ml_load_path;
-                vo_load_path; injections; stm_options;
-              } in
+          Stm.{ doc_type = VoDoc long_f_dot_out; injections; stm_options; } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
@@ -139,7 +134,7 @@ let compile opts copts ~echo ~f_in ~f_out =
         ~aux_file:(aux_file_name_for long_f_dot_out)
         ~v_file:long_f_dot_in);
 
-      Dumpglob.set_glob_output copts.glob_out;
+      Dumpglob.push_output copts.glob_out;
       Dumpglob.start_dump_glob ~vfile:long_f_dot_in ~vofile:long_f_dot_out;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
 
@@ -181,8 +176,7 @@ let compile opts copts ~echo ~f_in ~f_out =
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VioDoc long_f_dot_out; ml_load_path;
-                vo_load_path; injections; stm_options;
+          Stm.{ doc_type = VioDoc long_f_dot_out; injections; stm_options;
               } in
 
       let state = { doc; sid; proof = None; time = opts.config.time } in
@@ -200,7 +194,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       if mode = BuildVio then dump_empty_vos()
 
   | Vio2Vo ->
-
+      Flags.async_proofs_worker_id := "Vio2Vo";
       let sum, lib, univs, tasks, proofs =
         Library.load_library_todo long_f_dot_in in
       let univs, proofs = Stm.finish_tasks long_f_dot_out univs proofs tasks in
@@ -209,27 +203,27 @@ let compile opts copts ~echo ~f_in ~f_out =
       dump_empty_vos();
       create_empty_file (long_f_dot_out ^ "k")
 
-let compile opts copts ~echo ~f_in ~f_out =
+let compile opts stm_opts copts injections ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile opts copts ~echo ~f_in ~f_out;
+  compile opts stm_opts injections copts ~echo ~f_in ~f_out;
   CoqworkmgrApi.giveback 1
 
-let compile_file opts copts (f_in, echo) =
+let compile_file opts stm_opts copts injections (f_in, echo) =
   let f_out = copts.compilation_output_name in
   if !Flags.beautify then
     Flags.with_option Flags.beautify_file
-      (fun f_in -> compile opts copts ~echo ~f_in ~f_out) f_in
+      (fun f_in -> compile opts stm_opts copts injections ~echo ~f_in ~f_out) f_in
   else
-    compile opts copts ~echo ~f_in ~f_out
+    compile opts stm_opts copts injections ~echo ~f_in ~f_out
 
-let compile_files opts copts =
-  let compile_list = copts.compile_list in
-  List.iter (compile_file opts copts) compile_list
+let compile_file opts stm_opts copts injections =
+  Option.iter (compile_file opts stm_opts copts injections) copts.compile_file
 
 (******************************************************************************)
 (* VIO Dispatching                                                            *)
 (******************************************************************************)
 let check_vio_tasks copts =
+  Flags.async_proofs_worker_id := "VioChecking";
   let rc =
     List.fold_left (fun acc (n,f) ->
         let f_in = ensure ".vio" f f in
@@ -248,14 +242,7 @@ let schedule_vio copts =
   else
     Vio_checking.schedule_vio_compilation copts.vio_files_j l
 
-let do_vio opts copts =
-  (* We must initialize the loadpath here as the vio scheduling
-     process happens outside of the STM *)
-  if copts.vio_files <> [] || copts.vio_tasks <> [] then
-    let ml_lp, vo_lp = build_load_path opts in
-    List.iter Mltop.add_ml_dir ml_lp;
-    List.iter Loadpath.add_vo_path vo_lp;
-
+let do_vio opts copts _injections =
   (* Vio compile pass *)
   if copts.vio_files <> [] then schedule_vio copts;
   (* Vio task pass *)

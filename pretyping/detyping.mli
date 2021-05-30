@@ -72,14 +72,6 @@ val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 
-(** Utilities to transform kernel cases to simple pattern-matching problem *)
-
-val it_destRLambda_or_LetIn_names : bool list -> glob_constr -> Name.t list * glob_constr
-val simple_cases_matrix_of_branches :
-  inductive -> (int * bool list * glob_constr) list -> cases_clauses
-val return_type_of_predicate :
-  inductive -> bool list -> glob_constr -> predicate_pattern * glob_constr option
-
 val subst_genarg_hook :
   (substitution -> Genarg.glob_generic_argument -> Genarg.glob_generic_argument) Hook.t
 

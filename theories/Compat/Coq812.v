@@ -11,4 +11,6 @@
 (** Compatibility file for making Coq act similar to Coq v8.12 *)
 
 Require Export Coq.Compat.Coq813.
+Local Set Warnings "-deprecated".
 Set Firstorder Solver auto with *.
+Export Set Instance Generalized Output.

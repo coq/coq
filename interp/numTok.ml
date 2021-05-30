@@ -85,7 +85,7 @@ struct
   let string_of_nonneg_bigint c n =
     match c with
     | CDec -> Z.format "%d" n
-    | CHex -> Z.format "0x%x" n
+    | CHex -> Z.format "%#x" n
   let of_bigint c n =
     let sign, n = if Int.equal (-1) (Z.sign n) then (SMinus, Z.neg n) else (SPlus, n) in
     (sign, string_of_nonneg_bigint c n)

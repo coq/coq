@@ -181,6 +181,13 @@ Notation "'letpair' x [1] = { a } ; 'return' ( b0 , b1 , .. , b2 )" :=
   (let x:=a in ( .. (b0,b1) .., b2)).
 Check letpair x [1] = {0}; return (1,2,3,4).
 
+(* Allow level for leftmost nonterminal when printing-only, BZ#5739 *)
+
+Notation "* x" := (id x) (only printing, at level 15, format "* x").
+Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y").
+Check (((id 1) + 2) + 3).
+Check (id (1 + 2)).
+
 (* Test spacing in #5569 *)
 
 Notation "{ { xL | xR // xcut } }" := (xL+xR+xcut)
@@ -190,13 +197,6 @@ Check 1+1+1.
 (* Test presence of notation variables in the recursive parts (introduced in dfdaf4de) *)
 Notation "!!! x .. y , b" := ((fun x => b), .. ((fun y => b), True) ..) (at level 200, x binder).
 Check !!! (x y:nat), True.
-
-(* Allow level for leftmost nonterminal when printing-only, BZ#5739 *)
-
-Notation "* x" := (id x) (only printing, at level 15, format "* x").
-Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y").
-Check (((id 1) + 2) + 3).
-Check (id (1 + 2)).
 
 (* Test contraction of "forall x, let 'pat := x in ..." into "forall 'pat, ..." *)
 (* for isolated "forall" (was not working already in 8.6) *)
@@ -305,7 +305,7 @@ Module E.
 Inductive myex2 {A:Type} (P Q:A -> Prop) : Prop :=
   myex_intro2 : forall x:A, P x -> Q x -> myex2 P Q.
 Notation "'myexists2' x : A , p & q" := (myex2 (A:=A) (fun x => p) (fun x => q))
-  (at level 200, x ident, A at level 200, p at level 200, right associativity,
+  (at level 200, x name, A at level 200, p at level 200, right associativity,
     format "'[' 'myexists2'  '/  ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
   : type_scope.
 Check myex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
@@ -410,3 +410,13 @@ Check myfoo0 1 tt. (* was printing [myfoo0 1 HI], but should print [myfoo01 HI] 
 Check myfoo01 tt. (* was printing [myfoo0 1 HI], but should print [myfoo01 HI]  *)
 
 End Issue8126.
+
+Module RecursiveNotationPartialApp.
+
+(* Discussed on Coq Club, 28 July 2020 *)
+Notation "x  ⪯ y  ⪯ ..  ⪯ z  ⪯ t" :=
+  ((fun b A a => a <= b /\ A b) y .. ((fun b A a => a <= b /\ A b) z (fun b => b <= t)) .. x)
+  (at level 70, y at next level, z at next level, t at next level).
+Check 1 ⪯ 2 ⪯ 3 ⪯ 4.
+
+End RecursiveNotationPartialApp.

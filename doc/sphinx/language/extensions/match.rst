@@ -5,7 +5,7 @@ Extended pattern matching
 
 :Authors: Cristina Cornes and Hugo Herbelin
 
-This section describes the full form of pattern matching in |Coq| terms.
+This section describes the full form of pattern matching in Coq terms.
 
 .. |rhs| replace:: right hand sides
 
@@ -85,6 +85,13 @@ Irrefutable patterns: the destructuring let variants
 Pattern-matching on terms inhabiting inductive type having only one
 constructor can be alternatively written using :g:`let … in …`
 constructions. There are two variants of them.
+
+.. insertprodn destructuring_let destructuring_let
+
+.. prodn::
+   destructuring_let ::= let ( {*, @name } ) {? {? as @name } return @term100 } := @term in @term
+   | let ' @pattern := @term {? return @term100 } in @term
+   | let ' @pattern in @pattern := @term return @term100 in @term
 
 
 First destructuring let syntax
@@ -187,10 +194,10 @@ Printing nested patterns
    pattern matching into a single pattern matching over a nested
    pattern.
 
-   When this flag is on (default), |Coq|’s printer tries to do such
+   When this :term:`flag` is on (default), Coq’s printer tries to do such
    limited re-factorization.
-   Turning it off tells |Coq| to print only simple pattern matching problems
-   in the same way as the |Coq| kernel handles them.
+   Turning it off tells Coq to print only simple pattern matching problems
+   in the same way as the Coq kernel handles them.
 
 
 Factorization of clauses with same right-hand side
@@ -200,7 +207,7 @@ Factorization of clauses with same right-hand side
 
    When several patterns share the same right-hand side, it is additionally
    possible to share the clauses using disjunctive patterns. Assuming that the
-   printing matching mode is on, this flag (on by default) tells |Coq|'s
+   printing matching mode is on, this :term:`flag` (on by default) tells Coq's
    printer to try to do this kind of factorization.
 
 Use of a default clause
@@ -211,8 +218,8 @@ Use of a default clause
    When several patterns share the same right-hand side which do not depend on the
    arguments of the patterns, yet an extra factorization is possible: the
    disjunction of patterns can be replaced with a `_` default clause. Assuming that
-   the printing matching mode and the factorization mode are on, this flag (on by
-   default) tells |Coq|'s printer to use a default clause when relevant.
+   the printing matching mode and the factorization mode are on, this :term:`flag` (on by
+   default) tells Coq's printer to use a default clause when relevant.
 
 Printing of wildcard patterns
 ++++++++++++++++++++++++++++++
@@ -220,7 +227,7 @@ Printing of wildcard patterns
 .. flag:: Printing Wildcard
 
    Some variables in a pattern may not occur in the right-hand side of
-   the pattern matching clause. When this flag is on (default), the
+   the pattern matching clause. When this :term:`flag` is on (default), the
    variables having no occurrences in the right-hand side of the
    pattern matching clause are just printed using the wildcard symbol
    “_”.
@@ -233,8 +240,8 @@ Printing of the elimination predicate
 
    In most of the cases, the type of the result of a matched term is
    mechanically synthesizable. Especially, if the result type does not
-   depend of the matched term. When this flag is on (default),
-   the result type is not printed when |Coq| knows that it can re-
+   depend of the matched term. When this :term:`flag` is on (default),
+   the result type is not printed when Coq knows that it can re-
    synthesize it.
 
 
@@ -245,9 +252,8 @@ If an inductive type has just one constructor, pattern matching can be
 written using the first destructuring let syntax.
 
 .. table:: Printing Let @qualid
-   :name: Printing Let
 
-   Specifies a set of qualids for which pattern matching is displayed using a let expression.
+   This :term:`table` specifies a set of qualids for which pattern matching is displayed using a let expression.
    Note that this only applies to pattern matching instances entered with :g:`match`.
    It doesn't affect pattern matching explicitly entered with a destructuring
    :g:`let`.
@@ -262,9 +268,8 @@ can be written using ``if`` … ``then`` … ``else`` ….  This table controls
 which types are written this way:
 
 .. table:: Printing If @qualid
-   :name: Printing If
 
-   Specifies a set of qualids for which pattern matching is displayed using
+   This :term:`table` specifies a set of qualids for which pattern matching is displayed using
    ``if`` … ``then`` … ``else`` ….  Use the :cmd:`Add` and :cmd:`Remove`
    commands to update this set.
 
@@ -295,7 +300,7 @@ Conventions about unused pattern-matching variables
 
 Pattern-matching variables that are not used on the right-hand side of ``=>`` are
 considered the sign of a potential error. For instance, it could
-result from an undetected mispelled constant constructor. By default,
+result from an undetected misspelled constant constructor. By default,
 a warning is issued in such situations.
 
 .. warn:: Unused variable @ident catches more than one case.
@@ -361,7 +366,7 @@ only simple patterns remain. The original nesting of the ``match`` expressions
 is recovered at printing time. An easy way to see the result
 of the expansion is to toggle off the nesting performed at printing
 (use here :flag:`Printing Matching`), then by printing the term with :cmd:`Print`
-if the term is a constant, or using the command :cmd:`Check`.
+if the term is a :term:`constant`, or using the command :cmd:`Check`.
 
 The extended ``match`` still accepts an optional *elimination predicate*
 given after the keyword ``return``. Given a pattern matching expression,
@@ -587,7 +592,7 @@ When we use parameters in patterns there is an error message:
 
 .. flag:: Asymmetric Patterns
 
-   This flag (off by default) removes parameters from constructors in patterns:
+   This :term:`flag` (off by default) removes parameters from constructors in patterns:
 
 .. coqtop:: all
 
@@ -676,7 +681,7 @@ Dependent pattern matching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The examples given so far do not need an explicit elimination
-predicate because all the |rhs| have the same type and |Coq|
+predicate because all the |rhs| have the same type and Coq
 succeeds to synthesize it. Unfortunately when dealing with dependent
 patterns it often happens that we need to write cases where the types
 of the |rhs| are different instances of the elimination predicate. The
@@ -713,7 +718,7 @@ Recall that a list of patterns is also a pattern. So, when we
 destructure several terms at the same time and the branches have
 different types we need to provide the elimination predicate for this
 multiple pattern. It is done using the same scheme: each term may be
-associated to an ``as`` clause and an ``in`` clause in order to introduce
+associated with an ``as`` clause and an ``in`` clause in order to introduce
 a dependent product.
 
 For example, an equivalent definition for :g:`concat` (even though the

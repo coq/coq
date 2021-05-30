@@ -420,64 +420,64 @@ let cc_tactic depth additionnal_terms =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     Coqlib.(check_required_library logic_module_name);
-    let _ = debug (fun () -> Pp.str "Reading subgoal ...") in
+    let _ = debug_congruence (fun () -> Pp.str "Reading goal ...") in
     let state = make_prb gl depth additionnal_terms in
-    let _ = debug (fun () -> Pp.str "Problem built, solving ...") in
+    let _ = debug_congruence (fun () -> Pp.str "Problem built, solving ...") in
     let sol = execute true state in
-    let _ = debug (fun () -> Pp.str "Computation completed.") in
+    let _ = debug_congruence (fun () -> Pp.str "Computation completed.") in
     let uf=forest state in
     match sol with
       None -> Tacticals.New.tclFAIL 0 (str "congruence failed")
     | Some reason ->
-        debug (fun () -> Pp.str "Goal solved, generating proof ...");
-        match reason with
-          Discrimination (i,ipac,j,jpac) ->
-            let p=build_proof (Tacmach.New.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in
-            let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
-            discriminate_tac cstr p
-        | Incomplete ->
-      let open Glob_term in
-      let env = Proofview.Goal.env gl in
-      let terms_to_complete = List.map (build_term_to_complete uf) (epsilons uf) in
-      let hole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None) in
-      let pr_missing (c, missing) =
-        let c = Detyping.detype Detyping.Now ~lax:true false Id.Set.empty env sigma c in
-        let holes = List.init missing (fun _ -> hole) in
-        Printer.pr_glob_constr_env env (DAst.make @@ GApp (c, holes))
-      in
-            let msg = Pp.(str "Goal is solvable by congruence but some arguments are missing."
-                    ++ fnl () ++
-                    str "  Try " ++
-                    hov 8
-                    begin
-                      str "\"congruence with (" ++ prlist_with_sep (fun () -> str ")" ++ spc () ++ str "(")
-                      pr_missing terms_to_complete ++ str ")\","
-                    end ++
-                    str "  replacing metavariables by arbitrary terms.") in
-      Tacticals.New.tclFAIL 0 msg
-        | Contradiction dis ->
-      let env = Proofview.Goal.env gl in
-            let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in
-            let ta=term uf dis.lhs and tb=term uf dis.rhs in
-            match dis.rule with
-              Goal -> proof_tac p
-            | Hyp id -> refute_tac (EConstr.of_constr id) ta tb p
-            | HeqG id ->
-                let id = EConstr.of_constr id in
-                convert_to_goal_tac id ta tb p
-            | HeqnH (ida,idb) ->
-                let ida = EConstr.of_constr ida in
-                let idb = EConstr.of_constr idb in
-                convert_to_hyp_tac ida ta idb tb p
+      debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
+      match reason with
+        Discrimination (i,ipac,j,jpac) ->
+        let p=build_proof (Tacmach.New.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in
+        let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
+        discriminate_tac cstr p
+      | Incomplete ->
+        let open Glob_term in
+        let env = Proofview.Goal.env gl in
+        let terms_to_complete = List.map (build_term_to_complete uf) (epsilons uf) in
+        let hole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None) in
+        let pr_missing (c, missing) =
+          let c = Detyping.detype Detyping.Now ~lax:true false Id.Set.empty env sigma c in
+          let holes = List.init missing (fun _ -> hole) in
+          Printer.pr_glob_constr_env env sigma (DAst.make @@ GApp (c, holes))
+        in
+        let msg = Pp.(str "Goal is solvable by congruence but some arguments are missing."
+                      ++ fnl () ++
+                      str "  Try " ++
+                      hov 8
+                        begin
+                          str "\"congruence with (" ++
+                          prlist_with_sep
+                            (fun () -> str ")" ++ spc () ++ str "(")
+                            pr_missing terms_to_complete ++
+                          str ")\","
+                        end ++
+                      fnl() ++ str "  replacing metavariables by arbitrary terms")
+        in
+        Tacticals.New.tclFAIL 0 msg
+      | Contradiction dis ->
+        let env = Proofview.Goal.env gl in
+        let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in
+        let ta=term uf dis.lhs and tb=term uf dis.rhs in
+        match dis.rule with
+          Goal -> proof_tac p
+        | Hyp id -> refute_tac (EConstr.of_constr id) ta tb p
+        | HeqG id ->
+          let id = EConstr.of_constr id in
+          convert_to_goal_tac id ta tb p
+        | HeqnH (ida,idb) ->
+          let ida = EConstr.of_constr ida in
+          let idb = EConstr.of_constr idb in
+          convert_to_hyp_tac ida ta idb tb p
   end
 
-let cc_fail =
-  Tacticals.New.tclZEROMSG (Pp.str "congruence failed.")
 
 let congruence_tac depth l =
-  Tacticals.New.tclORELSE
-    (Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l))
-    cc_fail
+  Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l)
 
 (* Beware: reflexivity = constructor 1 = apply refl_equal
    might be slow now, let's rather do something equivalent

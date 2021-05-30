@@ -21,10 +21,19 @@ endif
 # vo files
 ###########################################################################
 
-THEORIESVO := $(patsubst %.v,%.$(VO),$(shell find theories -type f -name "*.v"))
-CONTRIBVO := $(patsubst %.v,%.$(VO),$(shell find $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name "*.v"))
+THEORIESV := $(shell find theories -type f -name "*.v")
+CONTRIBV := $(shell find $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name "*.v")
+VFILES := $(THEORIESV) $(CONTRIBV)
+
+# Build directory is needed to have the glob files
+BUILD_VFILES=$(addprefix $(VO_OUT_DIR),$(VFILES))
+
+# Needed due to special code for plugins :S
+BUILD_MLFILES= $(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.mllib
+
+THEORIESVO := $(addprefix $(VO_OUT_DIR), $(patsubst %.v,%.$(VO),$(THEORIESV)))
+CONTRIBVO := $(addprefix $(VO_OUT_DIR), $(patsubst %.v,%.$(VO),$(CONTRIBV)))
 ALLVO := $(THEORIESVO) $(CONTRIBVO)
-VFILES := $(ALLVO:.$(VO)=.v)
 
 ## More specific targets
 
@@ -39,8 +48,8 @@ ALLMODS:=$(call vo_to_mod,$(ALLVO:.$(VO)=.vo))
 
 # Converting a stdlib filename into native compiler filenames
 # Used for install targets
-vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%,N%, $(patsubst theories/%,NCoq_%,$(vo:.$(VO)=.cm*)))))
-vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%,N%, $(patsubst theories/%,NCoq_%,$(vo:.$(VO)=.o)))))
+vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst $(VO_OUT_DIR)user-contrib/%,N%, $(patsubst $(VO_OUT_DIR)theories/%,NCoq_%,$(vo:.$(VO)=.cm*)))))
+vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst $(VO_OUT_DIR)user-contrib/%,N%, $(patsubst $(VO_OUT_DIR)theories/%,NCoq_%,$(vo:.$(VO)=.o)))))
 
 ifdef QUICK
 GLOBFILES:=

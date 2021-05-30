@@ -2,10 +2,10 @@ Declare Scope A.
 Declare Scope B.
 Delimit Scope A with A.
 Delimit Scope B with B.
-Definition to_unit (v : Numeral.uint) : option unit
+Definition to_unit (v : Number.uint) : option unit
   := match Nat.of_num_uint v with O => Some tt | _ => None end.
-Definition of_unit (v : unit) : Numeral.uint := Nat.to_num_uint 0.
-Definition of_unit' (v : unit) : Numeral.uint := Nat.to_num_uint 1.
+Definition of_unit (v : unit) : Number.uint := Nat.to_num_uint 0.
+Definition of_unit' (v : unit) : Number.uint := Nat.to_num_uint 1.
 Number Notation unit to_unit of_unit : A.
 Number Notation unit to_unit of_unit' : B.
 Definition f x : unit := x.

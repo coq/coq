@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (* enable in case of stm problems  *)
-(* let stm_debug () = !Flags.debug *)
+(* let stm_debug () = CDebug.(get_flag misc) *)
 let stm_debug = ref false
 
 let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
@@ -18,7 +18,7 @@ let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n%!" (Spawned.process_id ()) Pp.p
 let stm_prerr_endline s = if !stm_debug then begin stm_pr_err (s ()) end else ()
 let stm_pperr_endline s = if !stm_debug then begin stm_pp_err (s ()) end else ()
 
-let stm_prerr_debug   s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
+let stm_prerr_debug   s = if CDebug.(get_flag misc) then begin stm_pr_err (s ()) end else ()
 
 open Pp
 open CErrors
@@ -98,8 +98,7 @@ let forward_feedback, forward_feedback_hook =
   let m = Mutex.create () in
   Hook.make ~default:(function
     | { doc_id = did; span_id = id; route; contents } ->
-        try Mutex.lock m; feedback ~did ~id ~route contents; Mutex.unlock m
-        with e -> Mutex.unlock m; raise e) ()
+        CThread.with_lock m ~scope:(fun () -> feedback ~did ~id ~route contents)) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun ~doc:_ _ _ -> ()) ()
@@ -297,13 +296,11 @@ end (* }}} *)
 (*************************** THE DOCUMENT *************************************)
 (******************************************************************************)
 
-type interactive_top = TopLogical of DirPath.t | TopPhysical of string
-
 (* The main document type associated to a VCS *)
 type stm_doc_type =
   | VoDoc       of string
   | VioDoc      of string
-  | Interactive of interactive_top
+  | Interactive of Coqargs.top
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
 type doc = int
@@ -517,7 +514,7 @@ end = struct (* {{{ *)
   type vcs = (branch_type, transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
-  let doc_type = ref (Interactive (TopLogical (Names.DirPath.make [])))
+  let doc_type = ref (Interactive (Coqargs.TopLogical (Names.DirPath.make [])))
   let ldir = ref Names.DirPath.empty
 
   let init dt id ps =
@@ -760,17 +757,16 @@ end = struct (* {{{ *)
     let worker = ref None
 
     let set_last_job j =
-      Mutex.lock m;
-      job := Some j;
-      Condition.signal c;
-      Mutex.unlock m
+      CThread.with_lock m ~scope:(fun () ->
+          job := Some j;
+          Condition.signal c)
 
     let get_last_job () =
-      Mutex.lock m;
-      while Option.is_empty !job do Condition.wait c m; done;
-      match !job with
-      | None -> assert false
-      | Some x -> job := None; Mutex.unlock m; x
+      CThread.with_lock m ~scope:(fun () ->
+          while Option.is_empty !job do Condition.wait c m; done;
+          match !job with
+          | None -> assert false
+          | Some x -> job := None; x)
 
     let run_command () =
       try while true do get_last_job () () done
@@ -787,7 +783,7 @@ end = struct (* {{{ *)
   end
 
   let print ?(now=false) () =
-    if !Flags.debug then NB.command ~now (print_dag !vcs)
+    if CDebug.(get_flag misc) then NB.command ~now (print_dag !vcs)
 
   let backup () = !vcs
   let restore v = vcs := v
@@ -800,6 +796,9 @@ let state_of_id ~doc id =
     | ErrorState (_,(e,_)) -> `Error e
     | EmptyState | ParsingState _ -> `Valid None
   with VCS.Expired -> `Expired
+
+let () =
+  Stateid.set_is_valid (fun ~doc id -> state_of_id ~doc id <> `Expired)
 
 (****** A cache: fills in the nodes of the VCS document with their value ******)
 module State : sig
@@ -1003,9 +1002,9 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 (* Wrapper for the proof-closing special path for Qed *)
-let stm_qed_delay_proof ?route ~proof ~pinfo ~id ~st ~loc ~control pending : Vernacstate.t =
+let stm_qed_delay_proof ?route ~proof ~id ~st ~loc ~control pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  Vernacinterp.interp_qed_delayed_proof ~proof ~pinfo ~st ~control (CAst.make ?loc pending)
+  Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control (CAst.make ?loc pending)
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
@@ -1470,16 +1469,15 @@ end = struct (* {{{ *)
         (* Unfortunately close_future_proof and friends are not pure so we need
            to set the state manually here *)
           State.unfreeze st;
-          let pobject, _info =
+          let pobject =
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           let opaque = Opaque in
           try
             let _pstate =
-              let pinfo = Declare.Proof.Proof_info.default () in
               stm_qed_delay_proof ~st ~id:stop
-                ~proof:pobject ~pinfo ~loc ~control:[] (Proved (opaque,None)) in
+                ~proof:pobject ~loc ~control:[] (Proved (opaque,None)) in
             ()
           with exn ->
             (* If [stm_qed_delay_proof] fails above we need to use the
@@ -1533,7 +1531,7 @@ end = struct (* {{{ *)
         when is_tac expr && Vernacstate.Stm.same_env o n -> (* A pure tactic *)
           Some (id, `ProofOnly (prev, Vernacstate.Stm.pstate n))
       | Some _, Some s ->
-        if !Flags.debug then msg_debug (Pp.str "STM: sending back a fat state");
+        if CDebug.(get_flag misc) then msg_debug (Pp.str "STM: sending back a fat state");
           Some (id, `Full s)
       | _, Some s -> Some (id, `Full s) in
     let rec aux seen = function
@@ -1565,11 +1563,16 @@ end (* }}} *)
 and Slaves : sig
 
   (* (eventually) remote calls *)
-  val build_proof :
-    doc:doc ->
-    ?loc:Loc.t -> drop_pt:bool ->
-    exn_info:(Stateid.t * Stateid.t) -> block_start:Stateid.t -> block_stop:Stateid.t ->
-      name:string -> future_proof * AsyncTaskQueue.cancel_switch
+  val build_proof
+    : doc:doc
+    -> ?loc:Loc.t
+    -> drop_pt:bool
+    -> exn_info:(Stateid.t * Stateid.t)
+    -> block_start:Stateid.t
+    -> block_stop:Stateid.t
+    -> name:string
+    -> unit
+    -> future_proof * AsyncTaskQueue.cancel_switch
 
   (* blocking function that waits for the task queue to be empty *)
   val wait_all_done : unit -> unit
@@ -1621,11 +1624,8 @@ end = struct (* {{{ *)
       else begin
       let opaque = Opaque in
 
-      (* The original terminator, a hook, has not been saved in the .vio*)
-      let proof, _info =
+      let proof =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
-
-      let pinfo = Declare.Proof.Proof_info.default () in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
@@ -1638,7 +1638,7 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~pinfo ~loc ~control:[] (Proved (opaque,None)));
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~loc ~control:[] (Proved (opaque,None)));
       (* Is this name the same than the one in scope? *)
       let name = Declare.Proof.get_po_name proof in
       `OK name
@@ -1737,7 +1737,7 @@ end = struct (* {{{ *)
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
      | _ -> 0)
 
-  let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
+  let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname () =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
@@ -2196,7 +2196,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                         ^"the proof's statement to avoid that."));
                     let fp, cancel =
                       Slaves.build_proof ~doc
-                        ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
+                        ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name () in
                     Future.replace (Option.get ofp) fp;
                     qed.fproof <- Some (Some fp, cancel);
                     (* We don't generate a new state, but we still need
@@ -2208,7 +2208,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     let fp, cancel =
                       if delegate then
                         Slaves.build_proof ~doc
-                          ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name
+                          ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name ()
                       else
                         ProofTask.build_proof_here ~doc ?loc
                           ~drop_pt exn_info block_stop, ref false
@@ -2219,13 +2219,13 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepDefined ->
                         CErrors.anomaly (Pp.str "Cannot delegate transparent proofs, this is a bug in the STM.")
                     in
-                    let proof, pinfo =
+                    let proof =
                       PG_compat.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
                     let control, pe = extract_pe x in
-                    ignore(stm_qed_delay_proof ~id ~st ~proof ~pinfo ~loc ~control pe);
+                    ignore(stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe);
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
@@ -2264,9 +2264,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
                 let _st = match proof with
                   | None ->  stm_vernac_interp id st x
-                  | Some (proof, pinfo) ->
+                  | Some proof ->
                     let control, pe = extract_pe x in
-                    stm_qed_delay_proof ~id ~st ~proof ~pinfo ~loc ~control pe
+                    stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe
                 in
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.expr.CAst.loc "proof_check_time"
@@ -2309,34 +2309,13 @@ end (* }}} *)
 
 (** STM initialization options: *)
 
-type option_command = OptionSet of string option | OptionUnset
-
-type injection_command =
-  | OptionInjection of (Goptions.option_name * option_command)
-  (** Set flags or options before the initial state is ready. *)
-  | RequireInjection of (string * string option * bool option)
-  (** Require libraries before the initial state is
-     ready. Parameters follow [Library], that is to say,
-     [lib,prefix,import_export] means require library [lib] from
-     optional [prefix] and [import_export] if [Some false/Some true]
-     is used.  *)
-  (* -load-vernac-source interleaving is not supported yet *)
-  (* | LoadInjection of (string * bool) *)
-
 type stm_init_options =
   { doc_type : stm_doc_type
   (** The STM does set some internal flags differently depending on
      the specified [doc_type]. This distinction should disappear at
      some some point. *)
 
-  ; ml_load_path : CUnix.physical_path list
-  (** OCaml load paths for the document. *)
-
-  ; vo_load_path   : Loadpath.vo_path list
-  (** [vo] load paths for the document. Usually extracted from -R
-     options / _CoqProject *)
-
-  ; injections : injection_command list
+  ; injections : Coqargs.injection_command list
   (** Injects Require and Set/Unset commands before the initial
      state is ready *)
 
@@ -2353,67 +2332,17 @@ let doc_type_module_name (std : stm_doc_type) =
   | Interactive mn -> Names.DirPath.to_string mn
 *)
 
+let init_process stm_flags =
+  Spawned.init_channels ();
+  CoqworkmgrApi.(init stm_flags.AsyncOpts.async_proofs_worker_priority)
+
 let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   if !Flags.async_proofs_worker_id = "master" then Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers;
   State.register_root_state ()
 
-let dirpath_of_file f =
-  let ldir0 =
-    try
-      let lp = Loadpath.find_load_path (Filename.dirname f) in
-      Loadpath.logical lp
-    with Not_found -> Libnames.default_root_prefix
-  in
-  let f = try Filename.chop_extension (Filename.basename f) with Invalid_argument _ -> f in
-  let id = Id.of_string f in
-  let ldir = Libnames.add_dirpath_suffix ldir0 id in
-  ldir
 
-let new_doc { doc_type ; ml_load_path; vo_load_path; injections; stm_options } =
-
-  let require_file (dir, from, exp) =
-    let mp = Libnames.qualid_of_string dir in
-    let mfrom = Option.map Libnames.qualid_of_string from in
-    Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
-
-  let interp_set_option opt v old =
-    let open Goptions in
-    let err expect =
-      let opt = String.concat " " opt in
-      let got = v in (* avoid colliding with Pp.v *)
-      CErrors.user_err
-        Pp.(str "-set: " ++ str opt ++
-            str" expects " ++ str expect ++
-            str" but got " ++ str got)
-    in
-    match old with
-    | BoolValue _ ->
-      let v = match String.trim v with
-        | "true" -> true
-        | "false" | "" -> false
-        | _ -> err "a boolean"
-      in
-      BoolValue v
-    | IntValue _ ->
-      let v = String.trim v in
-      let v = match int_of_string_opt v with
-        | Some _ as v -> v
-        | None -> if v = "" then None else err "an int"
-      in
-      IntValue v
-    | StringValue _ -> StringValue v
-    | StringOptValue _ -> StringOptValue (Some v) in
-
-  let set_option = let open Goptions in function
-      | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
-      | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
-      | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v in
-
-  let handle_injection = function
-    | RequireInjection r -> require_file r
-    (* | LoadInjection l -> *)
-    | OptionInjection o -> set_option o in
+let new_doc { doc_type ; injections; stm_options } =
 
   (* Set the options from the new documents *)
   AsyncOpts.cur_opt := stm_options;
@@ -2423,37 +2352,27 @@ let new_doc { doc_type ; ml_load_path; vo_load_path; injections; stm_options } =
 
   let doc = VCS.init doc_type Stateid.initial (Vernacstate.Parser.init ()) in
 
-  (* Set load path; important, this has to happen before we declare
-     the library below as [Declaremods/Library] will infer the module
-     name by looking at the load path! *)
-  List.iter Mltop.add_ml_dir ml_load_path;
-  List.iter Loadpath.add_vo_path vo_load_path;
-
   Safe_typing.allow_delayed_constants := !cur_opt.async_proofs_mode <> APoff;
 
-  begin match doc_type with
-    | Interactive ln ->
-      let dp = match ln with
-        | TopLogical dp -> dp
-        | TopPhysical f -> dirpath_of_file f
-      in
-      Declaremods.start_library dp
+  let top =
+    match doc_type with
+    | Interactive top -> Coqargs.dirpath_of_top top
 
     | VoDoc f ->
-      let ldir = dirpath_of_file f in
-      let () = Flags.verbosely Declaremods.start_library ldir in
+      let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in
       VCS.set_ldir ldir;
-      set_compilation_hints f
+      set_compilation_hints f;
+      ldir
 
     | VioDoc f ->
-      let ldir = dirpath_of_file f in
-      let () = Flags.verbosely Declaremods.start_library ldir in
+      let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in
       VCS.set_ldir ldir;
-      set_compilation_hints f
-  end;
+      set_compilation_hints f;
+      ldir
+    in
 
-  (* Import initial libraries. *)
-  List.iter handle_injection injections;
+  (* Start this library and import initial libraries. *)
+  Coqinit.start_library ~top injections;
 
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;
@@ -2533,24 +2452,21 @@ let join ~doc =
   VCS.print ();
   doc
 
-let dump_snapshot () = Slaves.dump_snapshot (), RemoteCounter.snapshot ()
-
-type tasks = int Slaves.tasks * RemoteCounter.remote_counters_status
-let check_task name (tasks,rcbackup) i =
-  RemoteCounter.restore rcbackup;
+type tasks = int Slaves.tasks
+let check_task name tasks i =
   let vcs = VCS.backup () in
   try
     let rc = State.purify (Slaves.check_task name tasks) i in
     VCS.restore vcs;
     rc
   with e when CErrors.noncritical e -> VCS.restore vcs; false
-let info_tasks (tasks,_) = Slaves.info_tasks tasks
 
-let finish_tasks name u p (t,rcbackup as tasks) =
-  RemoteCounter.restore rcbackup;
+let info_tasks = Slaves.info_tasks
+
+let finish_tasks name u p tasks =
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
-    let u = State.purify (Slaves.finish_task name u p t) i in
+    let u = State.purify (Slaves.finish_task name u p tasks) i in
     VCS.restore vcs;
     u in
   try
@@ -2601,13 +2517,13 @@ let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
     CErrors.user_err ~hdr:"stm" (str"Cannot dump a vio with open proofs");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,
   below, [snapshot] gets computed even if [create_vos] is true. *)
-  let (tasks,counters) = dump_snapshot() in
+  let tasks = Slaves.dump_snapshot() in
   let except = List.fold_left (fun e (r,_) ->
      Future.UUIDSet.add r.Stateid.uuid e) Future.UUIDSet.empty tasks in
   let todo_proofs =
     if create_vos
       then Library.ProofsTodoSomeEmpty except
-      else Library.ProofsTodoSome (except,tasks,counters)
+      else Library.ProofsTodoSome (except,tasks)
     in
   Library.save_library_to todo_proofs ~output_native_objects ldir long_f_dot_vo (Global.opaque_tables ());
   doc
@@ -2649,8 +2565,8 @@ let get_allow_nested_proofs =
     ~value:false
 
 (** [process_transaction] adds a node in the document *)
-let process_transaction ~doc ?(newtip=Stateid.fresh ())
-  ({ verbose; expr } as x) c =
+let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
+  let { verbose; expr } = x in
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
   try
@@ -2685,8 +2601,10 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
       | VtStartProof (guarantee, names) ->
 
          if not (get_allow_nested_proofs ()) && VCS.proof_nesting () > 0 then
-           "Nested proofs are not allowed unless you turn the Nested Proofs Allowed flag on."
-           |> Pp.str
+          "Nested proofs are discouraged and not allowed by default. \
+           This error probably means that you forgot to close the last \"Proof.\" with \"Qed.\" or \"Defined.\". \
+           If you really intended to use nested proofs, you can do so by turning the \"Nested Proofs Allowed\" flag on."
+           |> Pp.strbrk
            |> (fun s -> (UserError (None, s), Exninfo.null))
            |> State.exn_on ~valid:Stateid.dummy newtip
            |> Exninfo.iraise

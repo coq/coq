@@ -12,7 +12,6 @@ install_printer Top_printers.ppmind
 install_printer Top_printers.ppind
 install_printer Top_printers.ppsp
 install_printer Top_printers.ppqualid
-install_printer Top_printers.ppclindex
 install_printer Top_printers.ppscheme
 install_printer Top_printers.ppwf_paths
 install_printer Top_printers.ppevar
@@ -23,6 +22,7 @@ install_printer Top_printers.ppconstr_expr
 install_printer Top_printers.ppglob_constr
 install_printer Top_printers.pppattern
 install_printer Top_printers.ppfconstr
+install_printer Top_printers.ppfsubst
 install_printer Top_printers.ppnumtokunsigned
 install_printer Top_printers.ppnumtokunsignednat
 install_printer Top_printers.ppintset
@@ -45,7 +45,7 @@ install_printer Top_printers.ppdelta
 install_printer Top_printers.pp_idpred
 install_printer Top_printers.pp_cpred
 install_printer Top_printers.pp_transparent_state
-install_printer Top_printers.pp_stack_t
+install_printer Top_printers.pp_estack_t
 install_printer Top_printers.pp_state_t
 install_printer Top_printers.ppmetas
 install_printer Top_printers.ppevm

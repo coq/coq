@@ -93,7 +93,6 @@ let commands = [
    ];
   ["Read Module";
    "Record";
-   "Variant";
    "Remark";
    "Remove LoadPath";
    "Remove Printing Constructor";
@@ -151,6 +150,7 @@ let commands = [
    "Unset Silent.";
    "Unset Undo";];
   ["Variable";
+   "Variant";
    "Variables";];
   ["Write State";];
 ]
@@ -207,7 +207,6 @@ let state_preserving = [
   "Recursive Extraction Library";
 
   "Search";
-  "SearchHead";
   "SearchPattern";
   "SearchRewrite";
 

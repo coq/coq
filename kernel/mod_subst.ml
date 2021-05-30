@@ -291,6 +291,11 @@ let subst_ind sub (ind,i as indi) =
   let ind' = subst_mind sub ind in
     if ind' == ind then indi else ind',i
 
+let subst_constructor subst (ind,j as ref) =
+  let ind' = subst_ind subst ind in
+  if ind==ind' then ref
+  else (ind',j)
+
 let subst_pind sub (ind,u) =
   (subst_ind sub ind, u)
 
@@ -340,15 +345,6 @@ let subst_retro_action subst action =
     let c' = subst_constant subst c in
     if c == c' then action else Register_type(prim, c')
 
-(* Here the semantics is completely unclear.
-   What does "Hint Unfold t" means when "t" is a parameter?
-   Does the user mean "Unfold X.t" or does she mean "Unfold y"
-   where X.t is later on instantiated with y? I choose the first
-   interpretation (i.e. an evaluable reference is never expanded). *)
-let subst_evaluable_reference subst = function
-  | EvalVarRef id -> EvalVarRef id
-  | EvalConstRef kn -> EvalConstRef (subst_constant subst kn)
-
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with
@@ -364,21 +360,26 @@ let rec map_kn f f' c =
       | Construct (((kn,i),j),u) ->
           let kn' = f kn in
           if kn'==kn then c else mkConstructU (((kn',i),j),u)
-      | Case (ci,p,iv,ct,l) ->
+      | Case (ci,u,pms,p,iv,ct,l) ->
           let ci_ind =
             let (kn,i) = ci.ci_ind in
             let kn' = f kn in
             if kn'==kn then ci.ci_ind else kn',i
           in
-          let p' = func p in
+          let f_ctx (nas, c as d) =
+            let c' = func c in
+            if c' == c then d else (nas, c')
+          in
+          let pms' = Array.Smart.map func pms in
+          let p' = f_ctx p in
           let iv' = map_invert func iv in
           let ct' = func ct in
-          let l' = Array.Smart.map func l in
-            if (ci.ci_ind==ci_ind && p'==p && iv'==iv
+          let l' = Array.Smart.map f_ctx l in
+            if (ci.ci_ind==ci_ind && pms'==pms && p'==p && iv'==iv
                 && l'==l && ct'==ct)then c
             else
-              mkCase ({ci with ci_ind = ci_ind},
-                      p',iv',ct', l')
+              mkCase ({ci with ci_ind = ci_ind}, u,
+                      pms',p',iv',ct', l')
       | Cast (ct,k,t) ->
           let ct' = func ct in
           let t'= func t in

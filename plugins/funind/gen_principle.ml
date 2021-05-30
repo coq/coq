@@ -241,7 +241,7 @@ let change_property_sort evd toSort princ princName =
   in
   let evd, princName_as_constr =
     Evd.fresh_global (Global.env ()) evd
-      (Constrintern.locate_reference (Libnames.qualid_of_ident princName))
+      (Option.get (Constrintern.locate_reference (Libnames.qualid_of_ident princName)))
   in
   let init =
     let nargs =
@@ -408,8 +408,8 @@ let register_struct is_rec fixpoint_exprl =
         (fun (evd, l) {Vernacexpr.fname} ->
           let evd, c =
             Evd.fresh_global (Global.env ()) evd
-              (Constrintern.locate_reference
-                 (Libnames.qualid_of_ident fname.CAst.v))
+              (Option.get (Constrintern.locate_reference
+                 (Libnames.qualid_of_ident fname.CAst.v)))
           in
           let cst, u = destConst evd c in
           let u = EInstance.kind evd u in
@@ -427,8 +427,8 @@ let register_struct is_rec fixpoint_exprl =
         (fun (evd, l) {Vernacexpr.fname} ->
           let evd, c =
             Evd.fresh_global (Global.env ()) evd
-              (Constrintern.locate_reference
-                 (Libnames.qualid_of_ident fname.CAst.v))
+              (Option.get (Constrintern.locate_reference
+                 (Libnames.qualid_of_ident fname.CAst.v)))
           in
           let cst, u = destConst evd c in
           let u = EInstance.kind evd u in
@@ -917,13 +917,13 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
             tclTHENLIST
               [ unfold_in_concl
                   [ ( Locus.AllOccurrences
-                    , Names.EvalVarRef (destVar sigma args.(1)) ) ]
+                    , Tacred.EvalVarRef (destVar sigma args.(1)) ) ]
               ; tclMAP
                   (fun id ->
                     tclTRY
                       (unfold_in_hyp
                          [ ( Locus.AllOccurrences
-                           , Names.EvalVarRef (destVar sigma args.(1)) ) ]
+                           , Tacred.EvalVarRef (destVar sigma args.(1)) ) ]
                          (destVar sigma args.(1), Locus.InHyp)))
                   (pf_ids_of_hyps g)
               ; intros_with_rewrite () ]
@@ -936,13 +936,13 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
             tclTHENLIST
               [ unfold_in_concl
                   [ ( Locus.AllOccurrences
-                    , Names.EvalVarRef (destVar sigma args.(2)) ) ]
+                    , Tacred.EvalVarRef (destVar sigma args.(2)) ) ]
               ; tclMAP
                   (fun id ->
                     tclTRY
                       (unfold_in_hyp
                          [ ( Locus.AllOccurrences
-                           , Names.EvalVarRef (destVar sigma args.(2)) ) ]
+                           , Tacred.EvalVarRef (destVar sigma args.(2)) ) ]
                          (destVar sigma args.(2), Locus.InHyp)))
                   (pf_ids_of_hyps g)
               ; intros_with_rewrite () ]
@@ -972,7 +972,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
                     ( UnivGen.constr_of_monomorphic_global
                     @@ Coqlib.lib_ref "core.False.type" )) ->
           tauto
-        | Case (_, _, _, v, _) ->
+        | Case (_, _, _, _, _, v, _) ->
           tclTHENLIST [simplest_case v; intros_with_rewrite ()]
         | LetIn _ ->
           tclTHENLIST
@@ -1005,7 +1005,7 @@ let rec reflexivity_with_destruct_cases () =
               (snd (destApp (Proofview.Goal.sigma g) (Proofview.Goal.concl g))).(
               2)
           with
-          | Case (_, _, _, v, _) ->
+          | Case (_, _, _, _, _, v, _) ->
             tclTHENLIST
               [ simplest_case v
               ; intros
@@ -1158,7 +1158,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
             else
               unfold_in_concl
                 [ ( Locus.AllOccurrences
-                  , Names.EvalConstRef
+                  , Tacred.EvalConstRef
                       (fst (destConst (Proofview.Goal.sigma g) f)) ) ]
           in
           (* The proof of each branche itself *)
@@ -1522,7 +1522,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
           let _, lem_cst_constr =
             Evd.fresh_global (Global.env ()) !evd
-              (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id))
+              (Option.get (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)))
           in
           let lem_cst, _ = EConstr.destConst !evd lem_cst_constr in
           update_Function {finfo with correctness_lemma = Some lem_cst})
@@ -1592,7 +1592,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           in
           let _, lem_cst_constr =
             Evd.fresh_global (Global.env ()) !evd
-              (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id))
+              (Option.get (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)))
           in
           let lem_cst, _ = destConst !evd lem_cst_constr in
           update_Function {finfo with completeness_lemma = Some lem_cst})
@@ -1615,7 +1615,7 @@ let derive_inversion fix_names =
         (fun id (evd, l) ->
           let evd, c =
             Evd.fresh_global (Global.env ()) evd
-              (Constrintern.locate_reference (Libnames.qualid_of_ident id))
+              (Option.get (Constrintern.locate_reference (Libnames.qualid_of_ident id)))
           in
           let cst, u = EConstr.destConst evd c in
           (evd, (cst, EConstr.EInstance.kind evd u) :: l))
@@ -1635,8 +1635,8 @@ let derive_inversion fix_names =
           (fun id (evd, l) ->
             let evd, id =
               Evd.fresh_global (Global.env ()) evd
-                (Constrintern.locate_reference
-                   (Libnames.qualid_of_ident (mk_rel_id id)))
+                (Option.get (Constrintern.locate_reference
+                   (Libnames.qualid_of_ident (mk_rel_id id))))
             in
             (evd, fst (EConstr.destInd evd id) :: l))
           fix_names (evd', [])
@@ -2058,13 +2058,12 @@ let make_graph (f_ref : GlobRef.t) =
   let sigma = Evd.from_env env in
   let c, c_body =
     match f_ref with
-    | GlobRef.ConstRef c -> (
-      try (c, Global.lookup_constant c)
-      with Not_found ->
+    | GlobRef.ConstRef c ->
+      if Environ.mem_constant c (Global.env ()) then (c, Global.lookup_constant c) else
         CErrors.user_err
           Pp.(
             str "Cannot find "
-            ++ Printer.pr_leconstr_env env sigma (EConstr.mkConst c)) )
+            ++ Printer.pr_leconstr_env env sigma (EConstr.mkConst c))
     | _ -> CErrors.user_err Pp.(str "Not a function reference")
   in
   match Global.body_of_constant_body Library.indirect_accessor c_body with

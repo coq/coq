@@ -45,9 +45,11 @@ Lemma Rsth : Setoid_Theory R (@eq R).
 constructor;red;intros;subst;trivial.
 Qed.
 
+#[global]
 Instance Rops: (@Ring_ops R 0%R 1%R Rplus Rmult Rminus Ropp (@eq R)).
 Defined.
 
+#[global]
 Instance Rri : (Ring (Ro:=Rops)).
 constructor;
 try (try apply Rsth;
@@ -60,8 +62,10 @@ exact Rplus_opp_r.
 Defined.
 
 Class can_compute_Z (z : Z) := dummy_can_compute_Z : True.
+#[global]
 Hint Extern 0 (can_compute_Z ?v) =>
   match isZcst v with true => exact I end : typeclass_instances.
+#[global]
 Instance reify_IZR z lvar {_ : can_compute_Z z} : reify (PEc z) lvar (IZR z).
 Defined.
 
@@ -69,9 +73,11 @@ Lemma R_one_zero: 1%R <> 0%R.
 discrR.
 Qed.
 
+#[global]
 Instance Rcri: (Cring (Rr:=Rri)).
 red. exact Rmult_comm. Defined.
 
+#[global]
 Instance Rdi : (Integral_domain (Rcr:=Rcri)).
 constructor.
 exact Rmult_integral. exact R_one_zero. Defined.

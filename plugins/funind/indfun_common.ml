@@ -108,7 +108,7 @@ let with_full_print f a =
     Constrextern.print_universes := old_printuniverses;
     Goptions.set_bool_option_value Detyping.print_allow_match_default_opt_name
       old_printallowmatchdefaultclause;
-    Dumpglob.continue ();
+    Dumpglob.pop_output ();
     res
   with reraise ->
     Impargs.make_implicit_args old_implicit_args;
@@ -118,7 +118,7 @@ let with_full_print f a =
     Constrextern.print_universes := old_printuniverses;
     Goptions.set_bool_option_value Detyping.print_allow_match_default_opt_name
       old_printallowmatchdefaultclause;
-    Dumpglob.continue ();
+    Dumpglob.pop_output ();
     raise reraise
 
 (**********************)
@@ -418,6 +418,7 @@ let make_eq () =
   with _ -> assert false
 
 let evaluable_of_global_reference r =
+  let open Tacred in
   (* Tacred.evaluable_of_global_reference (Global.env ()) *)
   match r with
   | GlobRef.ConstRef sp -> EvalConstRef sp

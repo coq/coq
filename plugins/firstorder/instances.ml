@@ -148,7 +148,7 @@ let left_instance_tac (inst,id) continue seq=
                             (deepen (record (id,None) seq))]];
             tclTRY assumption]
     | Real((m,t),_)->
-        let c = (m, EConstr.to_constr sigma t) in
+        let c = (m, EConstr.to_constr ~abort_on_undefined_evars:false sigma t) in
         if lookup env sigma (id,Some c) seq then
           tclFAIL 0 (Pp.str "already done")
         else

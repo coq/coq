@@ -10,204 +10,201 @@
 
 (** List of opcodes.
 
-    It is used to generate the [coq_instruct.h], [coq_jumptbl.h] and
-    [vmopcodes.ml] files.
+    It is used to generate the files [coq_instruct.h], [coq_jumptbl.h],
+    [coq_arity.h], and [vmopcodes.ml].
 
-    If adding an instruction, DON'T FORGET TO UPDATE coq_fix_code.c
-    with the arity of the instruction and maybe coq_tcode_of_code.
+    [STOP] needs to be the last opcode.
+
+    Arity -1 designates opcodes that need special handling in [coq_fix_code.c].
 *)
 let opcodes =
   [|
-    "ACC0";
-    "ACC1";
-    "ACC2";
-    "ACC3";
-    "ACC4";
-    "ACC5";
-    "ACC6";
-    "ACC7";
-    "ACC";
-    "PUSH";
-    "PUSHACC0";
-    "PUSHACC1";
-    "PUSHACC2";
-    "PUSHACC3";
-    "PUSHACC4";
-    "PUSHACC5";
-    "PUSHACC6";
-    "PUSHACC7";
-    "PUSHACC";
-    "POP";
-    "ENVACC0";
-    "ENVACC1";
-    "ENVACC2";
-    "ENVACC3";
-    "ENVACC";
-    "PUSHENVACC0";
-    "PUSHENVACC1";
-    "PUSHENVACC2";
-    "PUSHENVACC3";
-    "PUSHENVACC";
-    "PUSH_RETADDR";
-    "APPLY";
-    "APPLY1";
-    "APPLY2";
-    "APPLY3";
-    "APPLY4";
-    "APPTERM";
-    "APPTERM1";
-    "APPTERM2";
-    "APPTERM3";
-    "RETURN";
-    "RESTART";
-    "GRAB";
-    "GRABREC";
-    "CLOSURE";
-    "CLOSUREREC";
-    "CLOSURECOFIX";
-    "OFFSETCLOSURE0";
-    "OFFSETCLOSURE1";
-    "OFFSETCLOSURE";
-    "PUSHOFFSETCLOSURE0";
-    "PUSHOFFSETCLOSURE1";
-    "PUSHOFFSETCLOSURE";
-    "GETGLOBAL";
-    "PUSHGETGLOBAL";
-    "MAKEBLOCK";
-    "MAKEBLOCK1";
-    "MAKEBLOCK2";
-    "MAKEBLOCK3";
-    "MAKEBLOCK4";
-    "SWITCH";
-    "PUSHFIELDS";
-    "GETFIELD0";
-    "GETFIELD1";
-    "GETFIELD";
-    "SETFIELD0";
-    "SETFIELD1";
-    "SETFIELD";
-    "PROJ";
-    "ENSURESTACKCAPACITY";
-    "CONST0";
-    "CONST1";
-    "CONST2";
-    "CONST3";
-    "CONSTINT";
-    "PUSHCONST0";
-    "PUSHCONST1";
-    "PUSHCONST2";
-    "PUSHCONST3";
-    "PUSHCONSTINT";
-    "ACCUMULATE";
-    "MAKESWITCHBLOCK";
-    "MAKEACCU";
-    "MAKEPROD";
-    "BRANCH";
-    "CHECKADDINT63";
-    "ADDINT63";
-    "CHECKADDCINT63";
-    "CHECKADDCARRYCINT63";
-    "CHECKSUBINT63";
-    "SUBINT63";
-    "CHECKSUBCINT63";
-    "CHECKSUBCARRYCINT63";
-    "CHECKMULINT63";
-    "CHECKMULCINT63";
-    "CHECKDIVINT63";
-    "CHECKMODINT63";
-    "CHECKDIVEUCLINT63";
-    "CHECKDIV21INT63";
-    "CHECKLXORINT63";
-    "CHECKLORINT63";
-    "CHECKLANDINT63";
-    "CHECKLSLINT63";
-    "CHECKLSRINT63";
-    "CHECKADDMULDIVINT63";
-    "CHECKLSLINT63CONST1";
-    "CHECKLSRINT63CONST1";
-    "CHECKEQINT63";
-    "CHECKLTINT63";
-    "LTINT63";
-    "CHECKLEINT63";
-    "LEINT63";
-    "CHECKCOMPAREINT63";
-    "CHECKHEAD0INT63";
-    "CHECKTAIL0INT63";
-    "ISINT";
-    "AREINT2";
-    "CHECKOPPFLOAT";
-    "CHECKABSFLOAT";
-    "CHECKEQFLOAT";
-    "CHECKLTFLOAT";
-    "LTFLOAT";
-    "CHECKLEFLOAT";
-    "LEFLOAT";
-    "CHECKCOMPAREFLOAT";
-    "CHECKCLASSIFYFLOAT";
-    "CHECKADDFLOAT";
-    "CHECKSUBFLOAT";
-    "CHECKMULFLOAT";
-    "CHECKDIVFLOAT";
-    "CHECKSQRTFLOAT";
-    "CHECKFLOATOFINT63";
-    "CHECKFLOATNORMFRMANTISSA";
-    "CHECKFRSHIFTEXP";
-    "CHECKLDSHIFTEXP";
-    "CHECKNEXTUPFLOAT";
-    "CHECKNEXTDOWNFLOAT";
-    "ISINT_CAML_CALL2";
-    "ISARRAY_CAML_CALL1";
-    "ISARRAY_INT_CAML_CALL2";
-    "ISARRAY_INT_CAML_CALL3";
-    "STOP"
+    "ACC0", 0;
+    "ACC1", 0;
+    "ACC2", 0;
+    "ACC3", 0;
+    "ACC4", 0;
+    "ACC5", 0;
+    "ACC6", 0;
+    "ACC7", 0;
+    "ACC", 1;
+    "PUSH", 0;
+    "PUSHACC1", 0;
+    "PUSHACC2", 0;
+    "PUSHACC3", 0;
+    "PUSHACC4", 0;
+    "PUSHACC5", 0;
+    "PUSHACC6", 0;
+    "PUSHACC7", 0;
+    "PUSHACC", 1;
+    "POP", 1;
+    "ENVACC0", 0;
+    "ENVACC1", 0;
+    "ENVACC2", 0;
+    "ENVACC3", 0;
+    "ENVACC", 1;
+    "PUSHENVACC0", 0;
+    "PUSHENVACC1", 0;
+    "PUSHENVACC2", 0;
+    "PUSHENVACC3", 0;
+    "PUSHENVACC", 1;
+    "PUSH_RETADDR", 1;
+    "APPLY", 1;
+    "APPLY1", 0;
+    "APPLY2", 0;
+    "APPLY3", 0;
+    "APPLY4", 0;
+    "APPTERM", 2;
+    "APPTERM1", 1;
+    "APPTERM2", 1;
+    "APPTERM3", 1;
+    "RETURN", 1;
+    "RESTART", 0;
+    "GRAB", 1;
+    "GRABREC", 1;
+    "CLOSURE", 2;
+    "CLOSUREREC", -1;
+    "CLOSURECOFIX", -1;
+    "OFFSETCLOSURE0", 0;
+    "OFFSETCLOSURE1", 0;
+    "OFFSETCLOSURE", 1;
+    "PUSHOFFSETCLOSURE0", 0;
+    "PUSHOFFSETCLOSURE1", 0;
+    "PUSHOFFSETCLOSURE", 1;
+    "GETGLOBAL", 1;
+    "PUSHGETGLOBAL", 1;
+    "MAKEBLOCK", 2;
+    "MAKEBLOCK1", 1;
+    "MAKEBLOCK2", 1;
+    "MAKEBLOCK3", 1;
+    "MAKEBLOCK4", 1;
+    "SWITCH", -1;
+    "PUSHFIELDS", 1;
+    "GETFIELD0", 0;
+    "GETFIELD1", 0;
+    "GETFIELD", 1;
+    "SETFIELD", 1;
+    "PROJ", 2;
+    "ENSURESTACKCAPACITY", 1;
+    "CONST0", 0;
+    "CONST1", 0;
+    "CONST2", 0;
+    "CONST3", 0;
+    "CONSTINT", 1;
+    "PUSHCONST0", 0;
+    "PUSHCONST1", 0;
+    "PUSHCONST2", 0;
+    "PUSHCONST3", 0;
+    "PUSHCONSTINT", 1;
+    "ACCUMULATE", 0;
+    "MAKESWITCHBLOCK", 4;
+    "MAKEACCU", 1;
+    "BRANCH", 1;
+    "CHECKADDINT63", 1;
+    "CHECKADDCINT63", 1;
+    "CHECKADDCARRYCINT63", 1;
+    "CHECKSUBINT63", 1;
+    "CHECKSUBCINT63", 1;
+    "CHECKSUBCARRYCINT63", 1;
+    "CHECKMULINT63", 1;
+    "CHECKMULCINT63", 1;
+    "CHECKDIVINT63", 1;
+    "CHECKMODINT63", 1;
+    "CHECKDIVSINT63", 1;
+    "CHECKMODSINT63", 1;
+    "CHECKDIVEUCLINT63", 1;
+    "CHECKDIV21INT63", 1;
+    "CHECKLXORINT63", 1;
+    "CHECKLORINT63", 1;
+    "CHECKLANDINT63", 1;
+    "CHECKLSLINT63", 1;
+    "CHECKLSRINT63", 1;
+    "CHECKASRINT63", 1;
+    "CHECKADDMULDIVINT63", 1;
+    "CHECKEQINT63", 1;
+    "CHECKLTINT63", 1;
+    "CHECKLEINT63", 1;
+    "CHECKLTSINT63", 1;
+    "CHECKLESINT63", 1;
+    "CHECKCOMPAREINT63", 1;
+    "CHECKCOMPARESINT63", 1;
+    "CHECKHEAD0INT63", 1;
+    "CHECKTAIL0INT63", 1;
+    "CHECKOPPFLOAT", 1;
+    "CHECKABSFLOAT", 1;
+    "CHECKEQFLOAT", 1;
+    "CHECKLTFLOAT", 1;
+    "CHECKLEFLOAT", 1;
+    "CHECKCOMPAREFLOAT", 1;
+    "CHECKCLASSIFYFLOAT", 1;
+    "CHECKADDFLOAT", 1;
+    "CHECKSUBFLOAT", 1;
+    "CHECKMULFLOAT", 1;
+    "CHECKDIVFLOAT", 1;
+    "CHECKSQRTFLOAT", 1;
+    "CHECKFLOATOFINT63", 1;
+    "CHECKFLOATNORMFRMANTISSA", 1;
+    "CHECKFRSHIFTEXP", 1;
+    "CHECKLDSHIFTEXP", 1;
+    "CHECKNEXTUPFLOAT", 1;
+    "CHECKNEXTDOWNFLOAT", 1;
+    "CHECKNEXTUPFLOATINPLACE", 1;
+    "CHECKNEXTDOWNFLOATINPLACE", 1;
+    "CHECKCAMLCALL2_1", 2;
+    "CHECKCAMLCALL1", 2;
+    "CHECKCAMLCALL2", 2;
+    "CHECKCAMLCALL3_1", 2;
+    "STOP", 0
   |]
 
 let pp_c_comment fmt =
-  Format.fprintf fmt "/* %a */"
+  Format.fprintf fmt "/* %s */"
 
 let pp_ocaml_comment fmt =
-  Format.fprintf fmt "(* %a *)"
+  Format.fprintf fmt "(* %s *)"
 
 let pp_header isOcaml fmt =
   Format.fprintf fmt "%a"
-    (fun fmt ->
-       (if isOcaml then pp_ocaml_comment else pp_c_comment) fmt
-         Format.pp_print_string)
+    (if isOcaml then pp_ocaml_comment else pp_c_comment)
     "DO NOT EDIT: automatically generated by kernel/genOpcodeFiles.ml"
 
-let pp_with_commas fmt k =
-  Array.iteri (fun n s ->
-      Format.fprintf fmt "  %a%s@."
-        k s
-        (if n + 1 < Array.length opcodes
-         then "," else "")
-    ) opcodes
-
 let pp_coq_instruct_h fmt =
-  let line = Format.fprintf fmt "%s@." in
   pp_header false fmt;
-  line "#pragma once";
-  line "enum instructions {";
-  pp_with_commas fmt Format.pp_print_string;
-  line "};"
+  Format.fprintf fmt "#pragma once@.enum instructions {@.";
+  Array.iter (fun (name, _) ->
+      Format.fprintf fmt "  %s,@." name
+    ) opcodes;
+  Format.fprintf fmt "};@."
 
 let pp_coq_jumptbl_h fmt =
-  pp_with_commas fmt (fun fmt -> Format.fprintf fmt "&&coq_lbl_%s")
+  pp_header false fmt;
+  Array.iter (fun (name, _) ->
+      Format.fprintf fmt "  &&coq_lbl_%s,@." name
+    ) opcodes
+
+let pp_coq_arity_h fmt =
+  pp_header false fmt;
+  Format.fprintf fmt "static signed char arity[] = {@.";
+  Array.iter (fun (_, arity) ->
+      Format.fprintf fmt "  %d,@." arity
+    ) opcodes;
+  Format.fprintf fmt "};@."
 
 let pp_vmopcodes_ml fmt =
   pp_header true fmt;
   Array.iteri (fun n s ->
       Format.fprintf fmt "let op%s = %d@.@." s n
-    ) opcodes
+    ) (Array.map fst opcodes)
 
 let usage () =
-  Format.eprintf "usage: %s [enum|jump|copml]@." Sys.argv.(0);
+  Format.eprintf "usage: %s [enum|jump|arity|copml]@." Sys.argv.(0);
   exit 1
 
 let main () =
   match Sys.argv.(1) with
   | "enum" -> pp_coq_instruct_h Format.std_formatter
   | "jump" -> pp_coq_jumptbl_h Format.std_formatter
+  | "arity" -> pp_coq_arity_h Format.std_formatter
   | "copml" -> pp_vmopcodes_ml Format.std_formatter
   | _ -> usage ()
   | exception Invalid_argument _ -> usage ()

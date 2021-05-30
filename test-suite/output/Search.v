@@ -89,3 +89,16 @@ Module Bug12647.
   Search F.P.
   End Bar.
 End Bug12647.
+
+Module WithCoercions.
+  Search headconcl:(_ + _) inside Datatypes.
+  Coercion Some_nat := @Some nat.
+  Axiom f : None = 0.
+  Search (None = 0).
+End WithCoercions.
+
+Require Import List.
+
+Module Wish13349.
+Search partition "1" inside List.
+End Wish13349.

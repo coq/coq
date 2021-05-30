@@ -10,6 +10,7 @@
 
 Require Export ZArith_base.
 Require Export ZArithRing.
+Require Export ZArith.BinInt.
 Require Export Morphisms Setoid Bool.
 
 (** * Definition of [Q] and basic properties *)
@@ -17,6 +18,9 @@ Require Export Morphisms Setoid Bool.
 (** Rationals are pairs of [Z] and [positive] numbers. *)
 
 Record Q : Set := Qmake {Qnum : Z; Qden : positive}.
+
+Declare Scope hex_Q_scope.
+Delimit Scope hex_Q_scope with xQ.
 
 Declare Scope Q_scope.
 Delimit Scope Q_scope with Q.
@@ -32,104 +36,6 @@ Ltac simpl_mult := rewrite ?Pos2Z.inj_mul.
 (** [a#b] denotes the fraction [a] over [b]. *)
 
 Notation "a # b" := (Qmake a b) (at level 55, no associativity) : Q_scope.
-
-Definition of_decimal (d:Decimal.decimal) : Q :=
-  let '(i, f, e) :=
-    match d with
-    | Decimal.Decimal i f => (i, f, Decimal.Pos Decimal.Nil)
-    | Decimal.DecimalExp i f e => (i, f, e)
-    end in
-  let num := Z.of_int (Decimal.app_int i f) in
-  let e := Z.sub (Z.of_int e) (Z.of_nat (Decimal.nb_digits f)) in
-  match e with
-  | Z0 => Qmake num 1
-  | Zpos e => Qmake (Pos.iter (Z.mul 10) num e) 1
-  | Zneg e => Qmake num (Pos.iter (Pos.mul 10) 1%positive e)
-  end.
-
-Definition to_decimal (q:Q) : option Decimal.decimal :=
-  (* choose between 123e-2 and 1.23, this is purely heuristic
-     and doesn't play any soundness role *)
-  let choose_exponent i ne :=
-    let i := match i with Decimal.Pos i | Decimal.Neg i => i end in
-    let li := Decimal.nb_digits i in
-    let le := Decimal.nb_digits (Nat.to_uint ne) in
-    Nat.ltb (Nat.add li le) ne in
-  (* print 123 / 100 as 123e-2 *)
-  let decimal_exponent i ne :=
-      let e := Z.to_int (Z.opp (Z.of_nat ne)) in
-      Decimal.DecimalExp i Decimal.Nil e in
-  (* print 123 / 100 as 1.23 *)
-  let decimal_dot i ne :=
-    let ai := match i with Decimal.Pos i | Decimal.Neg i => i end in
-    let ni := Decimal.nb_digits ai in
-    if Nat.ltb ne ni then
-      let i := Decimal.del_tail_int ne i in
-      let f := Decimal.del_head (Nat.sub ni ne) ai in
-      Decimal.Decimal i f
-    else
-      let z := match i with
-        | Decimal.Pos _ => Decimal.Pos (Decimal.zero)
-        | Decimal.Neg _ => Decimal.Neg (Decimal.zero) end in
-      Decimal.Decimal z (Nat.iter (Nat.sub ne ni) Decimal.D0 ai) in
-  let num := Z.to_int (Qnum q) in
-  let (den, e_den) := Decimal.nztail (Pos.to_uint (Qden q)) in
-  match den with
-  | Decimal.D1 Decimal.Nil =>
-    match e_den with
-    | O => Some (Decimal.Decimal num Decimal.Nil)
-    | ne =>
-      if choose_exponent num ne then Some (decimal_exponent num ne)
-      else Some (decimal_dot num ne)
-    end
-  | _ => None
-  end.
-
-Definition of_hexadecimal (d:Hexadecimal.hexadecimal) : Q :=
-  let '(i, f, e) :=
-    match d with
-    | Hexadecimal.Hexadecimal i f => (i, f, Decimal.Pos Decimal.Nil)
-    | Hexadecimal.HexadecimalExp i f e => (i, f, e)
-    end in
-  let num := Z.of_hex_int (Hexadecimal.app_int i f) in
-  let e := Z.sub (Z.of_int e) (Z.mul 4 (Z.of_nat (Hexadecimal.nb_digits f))) in
-  match e with
-  | Z0 => Qmake num 1
-  | Zpos e => Qmake (Pos.iter (Z.mul 2) num e) 1
-  | Zneg e => Qmake num (Pos.iter (Pos.mul 2) 1%positive e)
-  end.
-
-Definition to_hexadecimal (q:Q) : option Hexadecimal.hexadecimal :=
-  let mk_exp i e :=
-    Hexadecimal.HexadecimalExp i Hexadecimal.Nil (Z.to_int (Z.opp e)) in
-  let num := Z.to_hex_int (Qnum q) in
-  let (den, e_den) := Hexadecimal.nztail (Pos.to_hex_uint (Qden q)) in
-  let e := Z.of_nat e_den in
-  match den with
-  | Hexadecimal.D1 Hexadecimal.Nil =>
-    match e_den with
-    | O => Some (Hexadecimal.Hexadecimal num Hexadecimal.Nil)
-    | _ => Some (mk_exp num (4 * e)%Z)
-    end
-  | Hexadecimal.D2 Hexadecimal.Nil => Some (mk_exp num (1 + 4 * e)%Z)
-  | Hexadecimal.D4 Hexadecimal.Nil => Some (mk_exp num (2 + 4 * e)%Z)
-  | Hexadecimal.D8 Hexadecimal.Nil => Some (mk_exp num (3 + 4 * e)%Z)
-  | _ => None
-  end.
-
-Definition of_numeral (d:Numeral.numeral) : option Q :=
-  match d with
-  | Numeral.Dec d => Some (of_decimal d)
-  | Numeral.Hex d => Some (of_hexadecimal d)
-  end.
-
-Definition to_numeral (q:Q) : option Numeral.numeral :=
-  match to_decimal q with
-  | None => None
-  | Some q => Some (Numeral.Dec q)
-  end.
-
-Number Notation Q of_numeral to_numeral : Q_scope.
 
 Definition inject_Z (x : Z) := Qmake x 1.
 Arguments inject_Z x%Z.
@@ -152,6 +58,29 @@ Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
 Register Qeq as rat.Q.Qeq.
 Register Qle as rat.Q.Qle.
 Register Qlt as rat.Q.Qlt.
+
+(**
+  Qeq construction from parts.
+  Establishing equality by establishing equality
+  for numerator and denominator separately.
+*)
+
+Lemma Qden_cancel : forall (a b : Z) (p : positive),
+  (a#p)==(b#p) -> a=b.
+Proof.
+  intros a b p.
+  unfold Qeq.
+  apply Z.mul_cancel_r, not_eq_sym, Z.lt_neq, Pos2Z.is_pos.
+Qed.
+
+Lemma Qnum_cancel : forall (a b : positive) (z : Z),
+  z<>0%Z -> (z#a)==(z#b) -> a=b.
+Proof.
+  intros a b z Hz_ne_0.
+  unfold Qeq.
+  rewrite Z.eq_sym_iff, <- Pos2Z.inj_iff.
+  apply (Z.mul_reg_l _ _ _ Hz_ne_0).
+Qed.
 
 (** injection from Z is injective. *)
 
@@ -190,7 +119,9 @@ Proof.
 symmetry. apply Z.ge_le_iff.
 Qed.
 
+#[global]
 Hint Unfold Qeq Qlt Qle : qarith.
+#[global]
 Hint Extern 5 (?X1 <> ?X2) => intro; discriminate: qarith.
 
 Lemma Qcompare_antisym x y : CompOpp (x ?= y) = (y ?= x).
@@ -222,11 +153,14 @@ apply Z.mul_reg_r with (QDen y); [auto with qarith|].
 now rewrite Z.mul_shuffle0, XY, Z.mul_shuffle0, YZ, Z.mul_shuffle0.
 Qed.
 
+#[global]
 Hint Immediate Qeq_sym : qarith.
+#[global]
 Hint Resolve Qeq_refl Qeq_trans : qarith.
 
 (** In a word, [Qeq] is a setoid equality. *)
 
+#[global]
 Instance Q_Setoid : Equivalence Qeq.
 Proof. split; red; eauto with qarith. Qed.
 
@@ -298,6 +232,7 @@ Proof.
   rewrite !Qeq_bool_iff; apply Qeq_trans.
 Qed.
 
+#[global]
 Hint Resolve Qnot_eq_sym : qarith.
 
 (** * Addition, multiplication and opposite *)
@@ -316,7 +251,7 @@ Definition Qminus (x y : Q) := Qplus x (Qopp y).
 
 Definition Qinv (x : Q) :=
   match Qnum x with
-  | Z0 => 0
+  | Z0 => 0#1
   | Zpos p => (QDen x)#p
   | Zneg p => (Zneg (Qden x))#p
   end.
@@ -335,6 +270,188 @@ Register Qminus as rat.Q.Qminus.
 Register Qopp   as rat.Q.Qopp.
 Register Qmult  as rat.Q.Qmult.
 
+(** Number notation for constants *)
+
+Inductive IZ :=
+  | IZpow_pos : Z -> positive -> IZ
+  | IZ0 : IZ
+  | IZpos : positive -> IZ
+  | IZneg : positive -> IZ.
+
+Inductive IQ :=
+  | IQmake : IZ -> positive -> IQ
+  | IQmult : IQ -> IQ -> IQ
+  | IQdiv : IQ -> IQ -> IQ.
+
+Definition IZ_of_Z z :=
+  match z with
+  | Z0 => IZ0
+  | Zpos e => IZpos e
+  | Zneg e => IZneg e
+  end.
+
+Definition IZ_to_Z z :=
+  match z with
+  | IZ0 => Some Z0
+  | IZpos e => Some (Zpos e)
+  | IZneg e => Some (Zneg e)
+  | IZpow_pos _ _ => None
+  end.
+
+Definition of_decimal (d:Decimal.decimal) : IQ :=
+  let '(i, f, e) :=
+    match d with
+    | Decimal.Decimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Decimal.DecimalExp i f e => (i, f, e)
+    end in
+  let num := Z.of_int (Decimal.app_int i f) in
+  let den := Nat.iter (Decimal.nb_digits f) (Pos.mul 10) 1%positive in
+  let q := IQmake (IZ_of_Z num) den in
+  let e := Z.of_int e in
+  match e with
+  | Z0 => q
+  | Zpos e => IQmult q (IQmake (IZpow_pos 10 e) 1)
+  | Zneg e => IQdiv q (IQmake (IZpow_pos 10 e) 1)
+  end.
+
+Definition IQmake_to_decimal num den :=
+  let num := Z.to_int num in
+  let (den, e_den) := Decimal.nztail (Pos.to_uint den) in
+  match den with
+  | Decimal.D1 Decimal.Nil =>
+    match e_den with
+    | O => Some (Decimal.Decimal num Decimal.Nil)
+    | ne =>
+      let ai := Decimal.abs num in
+      let ni := Decimal.nb_digits ai in
+      if Nat.ltb ne ni then
+        let i := Decimal.del_tail_int ne num in
+        let f := Decimal.del_head (Nat.sub ni ne) ai in
+        Some (Decimal.Decimal i f)
+      else
+        let z := match num with
+          | Decimal.Pos _ => Decimal.Pos (Decimal.zero)
+          | Decimal.Neg _ => Decimal.Neg (Decimal.zero) end in
+        Some (Decimal.Decimal z (Nat.iter (Nat.sub ne ni) Decimal.D0 ai))
+    end
+  | _ => None
+  end.
+
+Definition IQmake_to_decimal' num den :=
+  match IZ_to_Z num with
+  | None => None
+  | Some num => IQmake_to_decimal num den
+  end.
+
+Definition to_decimal (n : IQ) : option Decimal.decimal :=
+  match n with
+  | IQmake num den => IQmake_to_decimal' num den
+  | IQmult (IQmake num den) (IQmake (IZpow_pos 10 e) 1) =>
+    match IQmake_to_decimal' num den with
+    | Some (Decimal.Decimal i f) =>
+      Some (Decimal.DecimalExp i f (Pos.to_int e))
+    | _ => None
+    end
+  | IQdiv (IQmake num den) (IQmake (IZpow_pos 10 e) 1) =>
+    match IQmake_to_decimal' num den with
+    | Some (Decimal.Decimal i f) =>
+      Some (Decimal.DecimalExp i f (Decimal.Neg (Pos.to_uint e)))
+    | _ => None
+    end
+  | _ => None
+  end.
+
+Definition of_hexadecimal (d:Hexadecimal.hexadecimal) : IQ :=
+  let '(i, f, e) :=
+    match d with
+    | Hexadecimal.Hexadecimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Hexadecimal.HexadecimalExp i f e => (i, f, e)
+    end in
+  let num := Z.of_hex_int (Hexadecimal.app_int i f) in
+  let den := Nat.iter (Hexadecimal.nb_digits f) (Pos.mul 16) 1%positive in
+  let q := IQmake (IZ_of_Z num) den in
+  let e := Z.of_int e in
+  match e with
+  | Z0 => q
+  | Zpos e => IQmult q (IQmake (IZpow_pos 2 e) 1)
+  | Zneg e => IQdiv q (IQmake (IZpow_pos 2 e) 1)
+  end.
+
+Definition IQmake_to_hexadecimal num den :=
+  let num := Z.to_hex_int num in
+  let (den, e_den) := Hexadecimal.nztail (Pos.to_hex_uint den) in
+  match den with
+  | Hexadecimal.D1 Hexadecimal.Nil =>
+    match e_den with
+    | O => Some (Hexadecimal.Hexadecimal num Hexadecimal.Nil)
+    | ne =>
+      let ai := Hexadecimal.abs num in
+      let ni := Hexadecimal.nb_digits ai in
+      if Nat.ltb ne ni then
+        let i := Hexadecimal.del_tail_int ne num in
+        let f := Hexadecimal.del_head (Nat.sub ni ne) ai in
+        Some (Hexadecimal.Hexadecimal i f)
+      else
+        let z := match num with
+          | Hexadecimal.Pos _ => Hexadecimal.Pos (Hexadecimal.zero)
+          | Hexadecimal.Neg _ => Hexadecimal.Neg (Hexadecimal.zero) end in
+        Some (Hexadecimal.Hexadecimal z (Nat.iter (Nat.sub ne ni) Hexadecimal.D0 ai))
+    end
+  | _ => None
+  end.
+
+Definition IQmake_to_hexadecimal' num den :=
+  match IZ_to_Z num with
+  | None => None
+  | Some num => IQmake_to_hexadecimal num den
+  end.
+
+Definition to_hexadecimal (n : IQ) : option Hexadecimal.hexadecimal :=
+  match n with
+  | IQmake num den => IQmake_to_hexadecimal' num den
+  | IQmult (IQmake num den) (IQmake (IZpow_pos 2 e) 1) =>
+    match IQmake_to_hexadecimal' num den with
+    | Some (Hexadecimal.Hexadecimal i f) =>
+      Some (Hexadecimal.HexadecimalExp i f (Pos.to_int e))
+    | _ => None
+    end
+  | IQdiv (IQmake num den) (IQmake (IZpow_pos 2 e) 1) =>
+    match IQmake_to_hexadecimal' num den with
+    | Some (Hexadecimal.Hexadecimal i f) =>
+      Some (Hexadecimal.HexadecimalExp i f (Decimal.Neg (Pos.to_uint e)))
+    | _ => None
+    end
+  | _ => None
+  end.
+
+Definition of_number (n : Number.number) : IQ :=
+  match n with
+  | Number.Decimal d => of_decimal d
+  | Number.Hexadecimal h => of_hexadecimal h
+  end.
+
+Definition to_number (q:IQ) : option Number.number :=
+  match to_decimal q with
+  | None => None
+  | Some q => Some (Number.Decimal q)
+  end.
+
+Definition to_hex_number q :=
+  match to_hexadecimal q with
+  | None => None
+  | Some q => Some (Number.Hexadecimal q)
+  end.
+
+Number Notation Q of_number to_hex_number (via IQ
+  mapping [Qmake => IQmake, Qmult => IQmult, Qdiv => IQdiv,
+           Z.pow_pos => IZpow_pos, Z0 => IZ0, Zpos => IZpos, Zneg => IZneg])
+  : hex_Q_scope.
+
+Number Notation Q of_number to_number (via IQ
+  mapping [Qmake => IQmake, Qmult => IQmult, Qdiv => IQdiv,
+           Z.pow_pos => IZpow_pos, Z0 => IZ0, Zpos => IZpos, Zneg => IZneg])
+  : Q_scope.
+
 (** A light notation for [Zpos] *)
 
 Lemma Qmake_Qdiv a b : a#b==inject_Z a/inject_Z (Zpos b).
@@ -344,6 +461,7 @@ Qed.
 
 (** * Setoid compatibility results *)
 
+#[global]
 Instance Qplus_comp : Proper (Qeq==>Qeq==>Qeq) Qplus.
 Proof.
   unfold Qeq, Qplus; simpl.
@@ -358,6 +476,7 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qopp_comp : Proper (Qeq==>Qeq) Qopp.
 Proof.
   unfold Qeq, Qopp; simpl.
@@ -368,12 +487,14 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qminus_comp : Proper (Qeq==>Qeq==>Qeq) Qminus.
 Proof.
   intros x x' Hx y y' Hy.
   unfold Qminus. rewrite Hx, Hy; auto with qarith.
 Qed.
 
+#[global]
 Instance Qmult_comp : Proper (Qeq==>Qeq==>Qeq) Qmult.
 Proof.
   unfold Qeq; simpl.
@@ -388,6 +509,7 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qinv_comp : Proper (Qeq==>Qeq) Qinv.
 Proof.
   unfold Qeq, Qinv; simpl.
@@ -402,12 +524,14 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qdiv_comp : Proper (Qeq==>Qeq==>Qeq) Qdiv.
 Proof.
   intros x x' Hx y y' Hy; unfold Qdiv.
   rewrite Hx, Hy; auto with qarith.
 Qed.
 
+#[global]
 Instance Qcompare_comp : Proper (Qeq==>Qeq==>eq) Qcompare.
 Proof.
   unfold Qeq, Qcompare.
@@ -425,22 +549,26 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Instance Qle_comp : Proper (Qeq==>Qeq==>iff) Qle.
 Proof.
   intros p q H r s H'. rewrite 2 Qle_alt, H, H'; auto with *.
 Qed.
 
+#[global]
 Instance Qlt_compat : Proper (Qeq==>Qeq==>iff) Qlt.
 Proof.
   intros p q H r s H'. rewrite 2 Qlt_alt, H, H'; auto with *.
 Qed.
 
+#[global]
 Instance Qeqb_comp : Proper (Qeq==>Qeq==>eq) Qeq_bool.
 Proof.
  intros p q H r s H'; apply eq_true_iff_eq.
  rewrite 2 Qeq_bool_iff, H, H'; split; auto with qarith.
 Qed.
 
+#[global]
 Instance Qleb_comp : Proper (Qeq==>Qeq==>eq) Qle_bool.
 Proof.
  intros p q H r s H'; apply eq_true_iff_eq.
@@ -545,13 +673,13 @@ Qed.
 
 Lemma Qmult_1_l : forall n, 1*n == n.
 Proof.
-  intro; red; simpl; destruct (Qnum n); auto.
+  intro n; red; simpl; destruct (Qnum n); auto.
 Qed.
 
 Theorem Qmult_1_r : forall n, n*1==n.
 Proof.
-  intro; red; simpl.
-  rewrite Z.mul_1_r with (n := Qnum n).
+  intro n; red; simpl.
+  rewrite (Z.mul_1_r (Qnum n)).
   rewrite Pos.mul_comm; simpl; trivial.
 Qed.
 
@@ -617,7 +745,7 @@ Qed.
 Theorem Qmult_inv_r : forall x, ~ x == 0 -> x*(/x) == 1.
 Proof.
   intros (x1, x2); unfold Qeq, Qdiv, Qmult; case x1; simpl;
-    intros; simpl_mult; try ring.
+    intros H **; simpl_mult; try ring.
   elim H; auto.
 Qed.
 
@@ -630,7 +758,7 @@ Qed.
 
 Theorem Qdiv_mult_l : forall x y, ~ y == 0 -> (x*y)/y == x.
 Proof.
-  intros; unfold Qdiv.
+  intros x y H; unfold Qdiv.
   rewrite <- (Qmult_assoc x y (Qinv y)).
   rewrite (Qmult_inv_r y H).
   apply Qmult_1_r.
@@ -638,7 +766,7 @@ Qed.
 
 Theorem Qmult_div_r : forall x y, ~ y == 0 -> y*(x/y) == x.
 Proof.
-  intros; unfold Qdiv.
+  intros x y ?; unfold Qdiv.
   rewrite (Qmult_assoc y x (Qinv y)).
   rewrite (Qmult_comm y x).
   fold (Qdiv (Qmult x y) y).
@@ -674,6 +802,50 @@ Proof.
  apply Qmult_inj_r.
 Qed.
 
+(**
+  Reduction of Q.
+  Removal/introduction of common factor in both numerator and denominator.
+*)
+
+Lemma Qreduce_l : forall (a : Z) (b z : positive),
+  (Zpos z)*a # z*b == a#b.
+Proof.
+  intros a b z.
+  unfold Qeq, Qnum, Qden.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
+Lemma Qreduce_r : forall (a : Z) (b z : positive),
+  a*(Zpos z) # b*z == a#b.
+Proof.
+  intros a b z.
+  unfold Qeq, Qnum, Qden.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
+(**
+  Construction of a new rational by multiplication with an integer
+  (or to be more precise multiplication with a rational of the form z/1).
+*)
+
+Lemma Qmult_inject_Z_l : forall (a : Z) (b : positive) (z : Z),
+  (inject_Z z) * (a#b) == z*a#b.
+Proof.
+  intros a b z.
+  unfold Qeq. cbn. ring.
+Qed.
+
+Lemma Qmult_inject_Z_r : forall (a : Z) (b : positive) (z : Z),
+  (a#b) * inject_Z z == a*z#b.
+Proof.
+  intros a b z.
+  unfold Qeq. cbn.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
 (** * Properties of order upon Q. *)
 
 Lemma Qle_refl x : x<=x.
@@ -696,6 +868,7 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Hint Resolve Qle_trans : qarith.
 
 Lemma Qlt_irrefl x : ~x<x.
@@ -752,7 +925,7 @@ Qed.
 
 Lemma Qlt_trans : forall x y z, x<y -> y<z -> x<z.
 Proof.
-  intros.
+  intros x y z ? ?.
   apply Qle_lt_trans with y; auto.
   apply Qlt_le_weak; auto.
 Qed.
@@ -776,6 +949,7 @@ Proof.
   unfold Qle, Qlt, Qeq; intros; now apply Z.lt_eq_cases.
 Qed.
 
+#[global]
 Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
  Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qarith.
 
@@ -783,19 +957,19 @@ Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
 
 Lemma Q_dec : forall x y, {x<y} + {y<x} + {x==y}.
 Proof.
-  unfold Qlt, Qle, Qeq; intros.
+  unfold Qlt, Qle, Qeq; intros x y.
   exact (Z_dec' (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
 Lemma Qlt_le_dec : forall x y, {x<y} + {y<=x}.
 Proof.
-  unfold Qlt, Qle; intros.
+  unfold Qlt, Qle; intros x y.
   exact (Z_lt_le_dec (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
 Lemma Qarchimedean : forall q : Q, { p : positive | q < Z.pos p # 1 }.
 Proof.
-  intros. destruct q as [a b]. destruct a.
+  intros q. destruct q as [a b]. destruct a as [|p|p].
   - exists xH. reflexivity.
   - exists (p+1)%positive. apply (Z.lt_le_trans _ (Z.pos (p+1))).
     simpl. rewrite Pos.mul_1_r.
@@ -817,6 +991,7 @@ Proof.
 Qed.
 
 
+#[global]
 Hint Resolve Qopp_le_compat : qarith.
 
 Lemma Qle_minus_iff : forall p q, p <= q <-> 0 <= q+-p.
@@ -1074,12 +1249,12 @@ Qed.
 Lemma Qinv_lt_contravar : forall a b : Q,
     0 < a -> 0 < b -> (a < b <-> /b < /a).
 Proof.
-  intros. split.
-  - intro. rewrite <- Qmult_1_l. apply Qlt_shift_div_r. apply H0.
+  intros a b H H0. split.
+  - intro H1. rewrite <- Qmult_1_l. apply Qlt_shift_div_r. apply H0.
     rewrite <- (Qmult_inv_r a). rewrite Qmult_comm.
     apply Qmult_lt_l. apply Qinv_lt_0_compat.  apply H.
     apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
-  - intro. rewrite <- (Qinv_involutive b). rewrite <- (Qmult_1_l (// b)).
+  - intro H1. rewrite <- (Qinv_involutive b). rewrite <- (Qmult_1_l (// b)).
     apply Qlt_shift_div_l. apply Qinv_lt_0_compat. apply H0.
     rewrite <- (Qmult_inv_r a). apply Qmult_lt_l. apply H.
     apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
@@ -1091,11 +1266,12 @@ Qed.
 Definition Qpower_positive : Q -> positive -> Q :=
  pow_pos Qmult.
 
+#[global]
 Instance Qpower_positive_comp : Proper (Qeq==>eq==>Qeq) Qpower_positive.
 Proof.
 intros x x' Hx y y' Hy. rewrite <-Hy; clear y' Hy.
 unfold Qpower_positive.
-induction y; simpl;
+induction y as [y IHy|y IHy|]; simpl;
 try rewrite IHy;
 try rewrite Hx;
 reflexivity.
@@ -1112,6 +1288,7 @@ Notation " q ^ z " := (Qpower q z) : Q_scope.
 
 Register Qpower as  rat.Q.Qpower.
 
+#[global]
 Instance Qpower_comp : Proper (Qeq==>eq==>Qeq) Qpower.
 Proof.
 intros x x' Hx y y' Hy. rewrite <- Hy; clear y' Hy.

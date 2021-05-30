@@ -21,7 +21,7 @@ Inductive diveucl a b : Set :=
 
 Lemma eucl_dev : forall n, n > 0 -> forall m:nat, diveucl m n.
 Proof.
-  induction m as (m,H0) using gt_wf_rec.
+  intros n H m; induction m as (m,H0) using gt_wf_rec.
   destruct (le_gt_dec n m) as [Hlebn|Hgtbn].
   destruct (H0 (m - n)) as (q,r,Hge0,Heq); auto with arith.
   apply divex with (S q) r; trivial.
@@ -34,7 +34,7 @@ Lemma quotient :
     n > 0 ->
     forall m:nat, {q : nat |  exists r : nat, m = q * n + r /\ n > r}.
 Proof.
-  induction m as (m,H0) using gt_wf_rec.
+  intros n H m; induction m as (m,H0) using gt_wf_rec.
   destruct (le_gt_dec n m) as [Hlebn|Hgtbn].
   destruct (H0 (m - n)) as (q & Hq); auto with arith; exists (S q).
   destruct Hq as (r & Heq & Hgt); exists r; split; trivial.
@@ -47,7 +47,7 @@ Lemma modulo :
     n > 0 ->
     forall m:nat, {r : nat |  exists q : nat, m = q * n + r /\ n > r}.
 Proof.
-  induction m as (m,H0) using gt_wf_rec.
+  intros n H m; induction m as (m,H0) using gt_wf_rec.
   destruct (le_gt_dec n m) as [Hlebn|Hgtbn].
   destruct (H0 (m - n)) as (r & Hr); auto with arith; exists r.
   destruct Hr as (q & Heq & Hgt); exists (S q); split; trivial.

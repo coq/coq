@@ -1,7 +1,6 @@
-Require Import Int63 Cyclic63.
+Require Import PrimInt63.
 
 Check 2%int63.
-Check (2 + 2)%int63.
 Open Scope int63_scope.
 Check 2.
 Check 9223372036854775807.
@@ -18,12 +17,14 @@ Fail Check 0xg.
 Fail Check 0xG.
 Fail Check 00x1.
 Fail Check 0x.
-Check (Int63.add 2 2).
-Check (2+2).
-Eval vm_compute in 2+2.
-Eval vm_compute in 65675757 * 565675998.
+Check (PrimInt63.add 2 2).
 Fail Check -1.
 Fail Check 9223372036854775808.
+
+Set Printing All.
+Check 1%int63.
+Unset Printing All.
+
 Open Scope nat_scope.
 Check 2. (* : nat *)
 Check 2%int63.
@@ -36,3 +37,26 @@ Check 2.
 Close Scope nat_scope.
 Check 2.
 Close Scope int63_scope.
+
+Require Import Int63.
+
+Check (2 + 2)%int63.
+Open Scope int63_scope.
+Check (2+2).
+Eval vm_compute in 2+2.
+Eval vm_compute in 65675757 * 565675998.
+
+Eval simpl in 2+2.
+Eval hnf in 2+2.
+Eval cbn in 2+2.
+Eval hnf in PrimInt63.add.
+
+Eval simpl in (2 * 3) + (2 * 3).
+Eval hnf in (2 * 3) + (2 * 3).
+Eval cbn in (2 * 3) + (2 * 3).
+
+Section TestNoSimpl.
+Variable x : int.
+Eval simpl in 1 + 2 + x.
+Eval hnf in 1 + 2 + x.
+End TestNoSimpl.

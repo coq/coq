@@ -167,6 +167,12 @@ Goal  @zero znat = 0%nat.
   reflexivity.
 Qed.
 
+Require Import ZifyBool.
+Instance Op_bool_inj : UnOp (inj : bool -> bool) :=
+  { TUOp := id; TUOpInj := fun _ => eq_refl }.
+Add Zify UnOp Op_bool_inj.
+
+
 Goal forall (x y : positive) (F : forall (P: Pos.le x y) , positive) (P : Pos.le x y),
     (F P + 1 = 1 + F P)%positive.
 Proof.
@@ -227,6 +233,7 @@ Goal forall (f : Z -> bool), negb (negb (f 0)) = f 0.
 Proof.
   intros. lia.
 Qed.
+
 
 Ltac Zify.zify_pre_hook ::= unfold is_true in *.
 

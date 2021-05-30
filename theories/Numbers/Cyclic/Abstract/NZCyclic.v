@@ -51,13 +51,14 @@ Local Infix "+" := add.
 Local Infix "-" := sub.
 Local Infix "*" := mul.
 
-Hint Rewrite ZnZ.spec_0 ZnZ.spec_1 ZnZ.spec_succ ZnZ.spec_pred
+Global Hint Rewrite ZnZ.spec_0 ZnZ.spec_1 ZnZ.spec_succ ZnZ.spec_pred
  ZnZ.spec_add ZnZ.spec_mul ZnZ.spec_sub : cyclic.
 Ltac zify :=
  unfold eq, zero, one, two, succ, pred, add, sub, mul in *;
  autorewrite with cyclic.
 Ltac zcongruence := repeat red; intros; zify; congruence.
 
+#[global]
 Instance eq_equiv : Equivalence eq.
 Proof.
   split. 1-2: firstorder auto with crelations.
@@ -66,10 +67,15 @@ Qed.
 
 Local Obligation Tactic := zcongruence.
 
+#[global]
 Program Instance succ_wd : Proper (eq ==> eq) succ.
+#[global]
 Program Instance pred_wd : Proper (eq ==> eq) pred.
+#[global]
 Program Instance add_wd : Proper (eq ==> eq ==> eq) add.
+#[global]
 Program Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
+#[global]
 Program Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
 
 Theorem gt_wB_1 : 1 < wB.

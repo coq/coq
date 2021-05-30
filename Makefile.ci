@@ -24,6 +24,7 @@ CI_TARGETS= \
     ci-coq_performance_tests \
     ci-coq_tools \
     ci-coqprime \
+    ci-deriving \
     ci-elpi \
     ci-engine_bench \
     ci-ext_lib \
@@ -34,14 +35,20 @@ CI_TARGETS= \
     ci-fiat_crypto_ocaml \
     ci-fiat_parsers \
     ci-flocq \
+    ci-fourcolor \
+    ci-gappa \
     ci-geocoq \
     ci-coqhammer \
     ci-hott \
+    ci-interval \
     ci-iris \
     ci-math_classes \
     ci-mathcomp \
+    ci-mczify \
+    ci-menhir \
     ci-metacoq \
     ci-mtac2 \
+    ci-oddorder \
     ci-paramcoq \
     ci-perennial \
     ci-quickchick \
@@ -55,6 +62,7 @@ CI_TARGETS= \
     ci-unimath \
     ci-unicoq \
     ci-verdi_raft \
+    ci-vscoq \
     ci-vst
 
 .PHONY: ci-all $(CI_TARGETS)
@@ -68,7 +76,8 @@ ci-all: $(CI_TARGETS)
 ci-color: ci-bignums
 
 ci-coqprime: ci-bignums
-
+ci-coquelicot: ci-mathcomp
+ci-deriving: ci-mathcomp
 ci-math_classes: ci-bignums
 
 ci-corn: ci-math_classes
@@ -78,16 +87,36 @@ ci-mtac2: ci-unicoq
 ci-fiat_crypto: ci-coqprime ci-rewriter
 ci-fiat_crypto_ocaml: ci-fiat_crypto
 
+ci-interval: ci-mathcomp ci-flocq ci-coquelicot ci-bignums
+ci-fourcolor: ci-mathcomp
+ci-oddorder: ci-mathcomp
+ci-fcsl_pcm: ci-mathcomp
+ci-mczify: ci-mathcomp
+
+ci-geocoq: ci-mathcomp
+
 ci-simple_io: ci-ext_lib
-ci-quickchick: ci-ext_lib ci-simple_io
+ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
 
 ci-metacoq: ci-equations
 
 ci-vst: ci-flocq
 
+ci-compcert: ci-menhir ci-flocq
+ci-gappa: ci-flocq
+
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
+
+# if we do eg "make states ci-foo", ci-foo will wait for states
+# if we just do "make ci-foo" it will just run ci-foo
+# (technically the ci-* targets depend on world but it can be
+# convenient to run them with less than world compiled)
+NON_CI_GOALS:=$(strip $(filter-out ci-%,$(MAKECMDGOALS)))
+ifneq (,$(NON_CI_GOALS))
+$(CI_TARGETS): $(NON_CI_GOALS)
+endif
 
 # For emacs:
 # Local Variables:

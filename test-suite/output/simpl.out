@@ -1,14 +1,14 @@
-1 subgoal
+1 goal
   
   x : nat
   ============================
   x = S x
-1 subgoal
+1 goal
   
   x : nat
   ============================
   0 + x = S x
-1 subgoal
+1 goal
   
   x : nat
   ============================

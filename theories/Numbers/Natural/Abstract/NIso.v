@@ -22,6 +22,7 @@ Definition homomorphism (f : N1.t -> N2.t) : Prop :=
 Definition natural_isomorphism : N1.t -> N2.t :=
   N1.recursion N2.zero (fun (n : N1.t) (p : N2.t) => N2.succ p).
 
+#[global]
 Instance natural_isomorphism_wd : Proper (N1.eq ==> N2.eq) natural_isomorphism.
 Proof.
 unfold natural_isomorphism.

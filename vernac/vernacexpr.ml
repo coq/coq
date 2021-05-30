@@ -75,7 +75,6 @@ type search_request =
 type searchable =
   | SearchPattern of constr_pattern_expr
   | SearchRewrite of constr_pattern_expr
-  | SearchHead of constr_pattern_expr
   | Search of (bool * search_request) list
 
 type locatable =
@@ -115,10 +114,6 @@ type import_filter_expr =
   | ImportAll
   | ImportNames of one_import_filter_name list
 
-type onlyparsing_flag = { onlyparsing : bool }
- (* Some v = Parse only;  None = Print also.
-    If v<>Current, it contains the name of the coq version
-    which this notation is trying to be compatible with *)
 type locality_flag  = bool (* true = Local *)
 
 type option_setting =
@@ -129,8 +124,6 @@ type option_setting =
 
 (** Identifier and optional list of bound universes and constraints. *)
 
-type sort_expr = Sorts.family
-
 type definition_expr =
   | ProveBody of local_binder_expr list * constr_expr
   | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
@@ -138,6 +131,7 @@ type definition_expr =
 
 type syntax_modifier =
   | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
+  | SetItemScope of string list * scope_name
   | SetLevel of int
   | SetCustomEntry of string * int option
   | SetAssoc of Gramlib.Gramext.g_assoc
@@ -189,8 +183,9 @@ type inductive_params_expr = local_binder_expr list * local_binder_expr list opt
 (** If the option is nonempty the "|" marker was used *)
 
 type inductive_expr =
-  ident_decl with_coercion * inductive_params_expr * constr_expr option *
-    constructor_list_or_record_decl_expr
+  cumul_ident_decl with_coercion
+  * inductive_params_expr * constr_expr option
+  * constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
   lident * inductive_params_expr * constr_expr option * constructor_expr list
@@ -209,8 +204,8 @@ type proof_end =
   | Proved of opacity_flag * lident option
 
 type scheme =
-  | InductionScheme of bool * qualid or_by_notation * sort_expr
-  | CaseScheme of bool * qualid or_by_notation * sort_expr
+  | InductionScheme of bool * qualid or_by_notation * Sorts.family
+  | CaseScheme of bool * qualid or_by_notation * Sorts.family
   | EqualityScheme of qualid or_by_notation
 
 type section_subset_expr =
@@ -340,7 +335,7 @@ type nonrec vernac_expr =
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of Glob_term.glob_constraint list
+  | VernacConstraint of univ_constraint_expr list
 
   (* Gallina extensions *)
   | VernacBeginSection of lident
@@ -413,8 +408,7 @@ type nonrec vernac_expr =
   | VernacRemoveHints of string list * qualid list
   | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of
-      lident * (Id.t list * constr_expr) *
-      onlyparsing_flag
+      lident * (Id.t list * constr_expr) * syntax_modifier list
   | VernacArguments of
       qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *

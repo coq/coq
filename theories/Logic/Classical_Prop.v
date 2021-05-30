@@ -16,6 +16,7 @@
 
 Require Import ClassicalFacts.
 
+#[global]
 Hint Unfold not: core.
 
 Axiom classic : forall P:Prop, P \/ ~ P.

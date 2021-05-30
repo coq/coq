@@ -1,0 +1,12 @@
+File "stdin", line 13, characters 11-14:
+Warning: Ltac2 definition foo is deprecated. test_definition
+[deprecated-ltac2-definition,deprecated]
+- : unit = ()
+File "stdin", line 14, characters 11-14:
+Warning: Ltac2 alias bar is deprecated. test_notation
+[deprecated-ltac2-alias,deprecated]
+- : unit = ()
+File "stdin", line 15, characters 11-14:
+Warning: Ltac2 definition qux is deprecated. test_external
+[deprecated-ltac2-definition,deprecated]
+- : 'a array -> int = <fun>

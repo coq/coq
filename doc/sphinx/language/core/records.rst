@@ -53,10 +53,8 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
    :cmd:`Record` and :cmd:`Structure` are synonyms.
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
-   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)` and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
+   :attr:`private(matching)` attributes.
 
 More generally, a record may have explicitly defined (a.k.a. manifest)
 fields. For instance, we might have:
@@ -116,20 +114,19 @@ The following settings let you control the display format for types:
 
 .. flag:: Printing Records
 
-   If set, use the record syntax (shown above) as the default display format.
+   When this :term:`flag` is on (this is the default),
+   use the record syntax (shown above) as the default display format.
 
 You can override the display format for specified types by adding entries to these tables:
 
 .. table:: Printing Record @qualid
-   :name: Printing Record
 
-   Specifies a set of qualids which are displayed as records.  Use the
+   This :term:`table` specifies a set of qualids which are displayed as records.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 .. table:: Printing Constructor @qualid
-   :name: Printing Constructor
 
-   Specifies a set of qualids which are displayed as constructors.  Use the
+   This :term:`table` specifies a set of qualids which are displayed as constructors.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 This syntax can also be used for pattern matching.
@@ -163,7 +160,7 @@ available:
 
 .. flag:: Printing Projections
 
-   This flag activates the dot notation for printing.
+   This :term:`flag` activates the dot notation for printing.
 
    .. example::
 
@@ -210,8 +207,8 @@ other arguments are the parameters of the inductive type.
   This message is followed by an explanation of this impossibility.
   There may be three reasons:
 
-  #. The name :token:`ident` already exists in the environment (see :cmd:`Axiom`).
-  #. The body of :token:`ident` uses an incorrect elimination for
+  #. The name :token:`ident` already exists in the global environment (see :cmd:`Axiom`).
+  #. The :term:`body` of :token:`ident` uses an incorrect elimination for
      :token:`ident` (see :cmd:`Fixpoint` and :ref:`Destructors`).
   #. The type of the projections :token:`ident` depends on previous
      projections which themselves could not be defined.
@@ -240,7 +237,7 @@ Primitive Projections
 
 .. flag:: Primitive Projections
 
-   Turns on the use of primitive
+   This :term:`flag` turns on the use of primitive
    projections when defining subsequent records (even through the ``Inductive``
    and ``CoInductive`` commands). Primitive projections
    extended the Calculus of Inductive Constructions with a new binary
@@ -255,7 +252,7 @@ Primitive Projections
 
 .. flag:: Printing Primitive Projection Parameters
 
-   This compatibility flag reconstructs internally omitted parameters at
+   This compatibility :term:`flag` reconstructs internally omitted parameters at
    printing time (even though they are absent in the actual AST manipulated
    by the kernel).
 
@@ -282,7 +279,7 @@ There are currently two ways to introduce primitive records types:
    `r` ``= Build_``\ `R` ``(``\ `r`\ ``.(``\ |p_1|\ ``) …`` `r`\ ``.(``\ |p_n|\ ``))``.
    Eta-conversion allows to define dependent elimination for these types as well.
 #. Through the ``Inductive`` and ``CoInductive`` commands, when
-   the body of the definition is a record declaration of the form
+   the :term:`body` of the definition is a record declaration of the form
    ``Build_``\ `R` ``{`` |p_1| ``:`` |t_1|\ ``; … ;`` |p_n| ``:`` |t_n| ``}``.
    In this case the types can be recursive and eta-conversion is disallowed. These kind of record types
    differ from their traditional versions in the sense that dependent
@@ -294,11 +291,11 @@ Reduction
 
 The basic reduction rule of a primitive projection is
 |p_i| ``(Build_``\ `R` |t_1| … |t_n|\ ``)`` :math:`{\rightarrow_{\iota}}` |t_i|.
-However, to take the :math:`{\delta}` flag into
+However, to take the δ flag into
 account, projections can be in two states: folded or unfolded. An
 unfolded primitive projection application obeys the rule above, while
 the folded version delta-reduces to the unfolded version. This allows to
-precisely mimic the usual unfolding rules of constants. Projections
+precisely mimic the usual unfolding rules of :term:`constants <constant>`. Projections
 obey the usual ``simpl`` flags of the ``Arguments`` command in particular.
 There is currently no way to input unfolded primitive projections at the
 user-level, and there is no way to display unfolded projections differently
@@ -309,8 +306,8 @@ Compatibility Projections and :g:`match`
 ++++++++++++++++++++++++++++++++++++++++
 
 To ease compatibility with ordinary record types, each primitive
-projection is also defined as a ordinary constant taking parameters and
-an object of the record type as arguments, and whose body is an
+projection is also defined as an ordinary :term:`constant` taking parameters and
+an object of the record type as arguments, and whose :term:`body` is an
 application of the unfolded primitive projection of the same name. These
 constants are used when elaborating partial applications of the
 projection. One can distinguish them from applications of the primitive

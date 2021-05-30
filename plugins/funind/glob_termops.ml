@@ -342,7 +342,7 @@ let is_free_in id =
         | GRec _ -> user_err Pp.(str "Not handled GRec") | GSort _ -> false
         | GHole _ -> false
         | GCast (b, (CastConv t | CastVM t | CastNative t)) ->
-          is_free_in b || is_free_in t | GCast (b, CastCoerce) -> is_free_in b
+          is_free_in b || is_free_in t
         | GInt _ | GFloat _ -> false
         | GArray (_u, t, def, ty) ->
           Array.exists is_free_in t || is_free_in def || is_free_in ty)

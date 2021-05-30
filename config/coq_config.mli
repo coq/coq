@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val local : bool        (* local use (no installation) *)
-
 (* The fields below are absolute paths *)
 val coqlib : string     (* where the std library is installed *)
 val configdir : string  (* where configuration files are installed *)
@@ -33,8 +31,6 @@ val arch_is_win32 : bool
 val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)
 val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
-val date : string       (* release date *)
-val compile_date : string (* compile date *)
 val vo_version : int32
 val state_magic_number : int
 
@@ -57,4 +53,5 @@ val wwwstdlib : string
 val localwwwrefman : string
 
 val bytecode_compiler : bool
-val native_compiler : bool
+type native_compiler = NativeOff | NativeOn of { ondemand : bool }
+val native_compiler : native_compiler

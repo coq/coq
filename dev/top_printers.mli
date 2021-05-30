@@ -29,8 +29,6 @@ val ppind : Names.inductive -> unit
 val ppsp : Libnames.full_path -> unit
 val ppqualid : Libnames.qualid -> unit
 
-val ppclindex : Coercionops.cl_index -> unit
-
 val ppscheme : 'a Ind_tables.scheme_kind -> unit
 
 val prrecarg : Declarations.recarg -> Pp.t
@@ -52,6 +50,7 @@ val ppconstr_expr : Constrexpr.constr_expr -> unit
 val ppglob_constr : 'a Glob_term.glob_constr_g -> unit
 val pppattern : Pattern.constr_pattern -> unit
 val ppfconstr : CClosure.fconstr -> unit
+val ppfsubst : CClosure.fconstr Esubst.subs -> unit
 
 val ppnumtokunsigned : NumTok.Unsigned.t -> unit
 val ppnumtokunsignednat : NumTok.UnsignedNat.t -> unit
@@ -107,7 +106,7 @@ val pp_idpred : Names.Id.Pred.t -> unit
 val pp_cpred : Names.Cpred.t -> unit
 val pp_transparent_state : TransparentState.t -> unit
 
-val pp_stack_t : Constr.t Reductionops.Stack.t -> unit
+val pp_estack_t : Reductionops.Stack.t -> unit
 val pp_state_t : Reductionops.state -> unit
 
 val ppmetas : Evd.Metaset.t -> unit
@@ -163,6 +162,7 @@ val ppobj : Libobject.obj -> unit
 (* Some super raw printers *)
 val cast_kind_display : Constr.cast_kind -> string
 val constr_display : Constr.constr -> unit
+val econstr_display : EConstr.constr -> unit
 val print_pure_constr : Constr.types -> unit
 val print_pure_econstr : EConstr.types -> unit
 

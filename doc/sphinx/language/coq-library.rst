@@ -1,28 +1,28 @@
 .. _thecoqlibrary:
 
-The |Coq| library
+The Coq library
 =================
 
 .. index::
    single: Theories
 
 
-The |Coq| library has two parts:
+The Coq library has two parts:
 
   * The :gdef:`prelude`: definitions and theorems for
     the most commonly used elementary logical notions and
-    data types. |Coq| normally loads these files automatically when it starts.
+    data types. Coq normally loads these files automatically when it starts.
 
   * The :gdef:`standard library`: general-purpose libraries with
     definitions and theorems for sets, lists, sorting,
     arithmetic, etc. To use these files, users must load them explicitly
     with the ``Require`` command (see :ref:`compiled-files`)
 
-There are also many libraries provided by |Coq| users' community.
+There are also many libraries provided by Coq users' community.
 These libraries and developments are available
 for download at http://coq.inria.fr (see :ref:`userscontributions`).
 
-This chapter briefly reviews the |Coq| libraries whose contents can
+This chapter briefly reviews the Coq libraries whose contents can
 also be browsed at http://coq.inria.fr/stdlib/.
 
 
@@ -32,9 +32,9 @@ The prelude
 -----------
 
 This section lists the basic notions and results which are directly
-available in the standard |Coq| system. Most of these constructions
+available in the standard Coq system. Most of these constructions
 are defined in the ``Prelude`` module in directory ``theories/Init``
-in the |Coq| root directory; this includes the modules
+in the Coq root directory; this includes the modules
 ``Notations``,
 ``Logic``,
 ``Datatypes``,
@@ -92,7 +92,7 @@ Notation          Precedence    Associativity
 Logic
 ~~~~~
 
-The basic library of |Coq| comes with the definitions of standard
+The basic library of Coq comes with the definitions of standard
 (intuitionistic) logical connectives (they are defined as inductive
 constructions). They are equipped with an appealing syntax enriching the
 subclass :token:`form` of the syntactic class :token:`term`. The constructs
@@ -767,7 +767,7 @@ the modules they provide are compiled at installation time. So they
 are directly accessible with the command ``Require`` (see
 Section :ref:`compiled-files`).
 
-The different modules of the |Coq| standard library are documented
+The different modules of the Coq standard library are documented
 online at https://coq.inria.fr/stdlib.
 
 Peano’s arithmetic (nat)
@@ -902,7 +902,6 @@ In addition to the powerful ``ring``, ``field`` and ``lra``
 tactics (see Chapter :ref:`tactics`), there are also:
 
 .. tacn:: discrR
-  :name: discrR
 
   Proves that two real integer constants are different.
 
@@ -916,7 +915,6 @@ tactics (see Chapter :ref:`tactics`), there are also:
     discrR.
 
 .. tacn:: split_Rabs
-  :name: split_Rabs
 
   Allows unfolding the ``Rabs`` constant and splits corresponding conjunctions.
 
@@ -930,7 +928,6 @@ tactics (see Chapter :ref:`tactics`), there are also:
     intro; split_Rabs.
 
 .. tacn:: split_Rmult
-  :name: split_Rmult
 
   Splits a condition that a product is non null into subgoals
   corresponding to the condition on each operand of the product.
@@ -1069,7 +1066,7 @@ decimal constants. This ensures that the composition
 
 .. flag:: Printing Float
 
-   Turn this flag off (it is on by default) to deactivate decimal
+   Turn this :term:`flag` off (it is on by default) to deactivate decimal
    printing of floating-point constants. They will then be printed
    with an hexadecimal representation.
 

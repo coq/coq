@@ -1,10 +1,11 @@
 Typing rules
 ====================================
 
-The underlying formal language of |Coq| is a *Calculus of Inductive
-Constructions* (|Cic|) whose inference rules are presented in this
+The underlying formal language of Coq is a
+:gdef:`Calculus of Inductive Constructions` (|Cic|) whose inference rules
+are presented in this
 chapter. The history of this formalism as well as pointers to related
-work are provided in a separate chapter; see *Credits*.
+work are provided in a separate chapter; see :ref:`history`.
 
 
 .. _The-terms:
@@ -33,7 +34,7 @@ the following rules.
 #. variables, hereafter ranged over by letters :math:`x`, :math:`y`, etc., are terms
 #. constants, hereafter ranged over by letters :math:`c`, :math:`d`, etc., are terms.
 #. if :math:`x` is a variable and :math:`T`, :math:`U` are terms then
-   :math:`∀ x:T,~U` (:g:`forall x:T, U`   in |Coq| concrete syntax) is a term.
+   :math:`∀ x:T,~U` (:g:`forall x:T, U`   in Coq concrete syntax) is a term.
    If :math:`x` occurs in :math:`U`, :math:`∀ x:T,~U` reads as
    “for all :math:`x` of type :math:`T`, :math:`U`”.
    As :math:`U` depends on :math:`x`, one says that :math:`∀ x:T,~U` is
@@ -43,11 +44,11 @@ the following rules.
    written: :math:`T \rightarrow U`.
 #. if :math:`x` is a variable and :math:`T`, :math:`u` are terms then
    :math:`λ x:T .~u` (:g:`fun x:T => u`
-   in |Coq| concrete syntax) is a term. This is a notation for the
+   in Coq concrete syntax) is a term. This is a notation for the
    λ-abstraction of λ-calculus :cite:`Bar81`. The term :math:`λ x:T .~u` is a function
    which maps elements of :math:`T` to the expression :math:`u`.
 #. if :math:`t` and :math:`u` are terms then :math:`(t~u)` is a term
-   (:g:`t u` in |Coq| concrete
+   (:g:`t u` in Coq concrete
    syntax). The term :math:`(t~u)` reads as “:math:`t` applied to :math:`u`”.
 #. if :math:`x` is a variable, and :math:`t`, :math:`T` and :math:`u` are
    terms then :math:`\letin{x}{t:T}{u}` is
@@ -91,17 +92,17 @@ Let us assume that ``mult`` is a function of type :math:`\nat→\nat→\nat` and
 predicate of type :math:`\nat→\nat→ \Prop`. The λ-abstraction can serve to build
 “ordinary” functions as in :math:`λ x:\nat.~(\kw{mult}~x~x)` (i.e.
 :g:`fun x:nat => mult x x`
-in |Coq| notation) but may build also predicates over the natural
+in Coq notation) but may build also predicates over the natural
 numbers. For instance :math:`λ x:\nat.~(\kw{eqnat}~x~0)`
 (i.e. :g:`fun x:nat => eqnat x 0`
-in |Coq| notation) will represent the predicate of one variable :math:`x` which
+in Coq notation) will represent the predicate of one variable :math:`x` which
 asserts the equality of :math:`x` with :math:`0`. This predicate has type
 :math:`\nat → \Prop`
 and it can be applied to any expression of type :math:`\nat`, say :math:`t`, to give an
 object :math:`P~t` of type :math:`\Prop`, namely a proposition.
 
 Furthermore :g:`forall x:nat, P x` will represent the type of functions
-which associate to each natural number :math:`n` an object of type :math:`(P~n)` and
+which associate with each natural number :math:`n` an object of type :math:`(P~n)` and
 consequently represent the type of proofs of the formula “:math:`∀ x.~P(x)`”.
 
 
@@ -111,51 +112,49 @@ Typing rules
 ----------------
 
 As objects of type theory, terms are subjected to *type discipline*.
-The well typing of a term depends on a global environment and a local
-context.
-
+The well typing of a term depends on a local context and a global environment.
 
 .. _Local-context:
 
 **Local context.**
-A *local context* is an ordered list of *local declarations* of names
-which we call *variables*. The declaration of some variable :math:`x` is
-either a *local assumption*, written :math:`x:T` (:math:`T` is a type) or a *local
-definition*, written :math:`x:=t:T`. We use brackets to write local contexts.
-A typical example is :math:`[x:T;~y:=u:U;~z:V]`. Notice that the variables
+A :term:`local context` is an ordered list of declarations of *variables*.
+The declaration of a variable :math:`x` is
+either an *assumption*, written :math:`x:T` (where :math:`T` is a type) or a
+*definition*, written :math:`x:=t:T`. Local contexts are written in brackets,
+for example :math:`[x:T;~y:=u:U;~z:V]`. The variables
 declared in a local context must be distinct. If :math:`Γ` is a local context
-that declares some :math:`x`, we
-write :math:`x ∈ Γ`. By writing :math:`(x:T) ∈ Γ` we mean that either :math:`x:T` is an
-assumption in :math:`Γ` or that there exists some :math:`t` such that :math:`x:=t:T` is a
-definition in :math:`Γ`. If :math:`Γ` defines some :math:`x:=t:T`, we also write :math:`(x:=t:T) ∈ Γ`.
+that declares :math:`x`, we
+write :math:`x ∈ Γ`. Writing :math:`(x:T) ∈ Γ` means there is an assumption
+or a definition giving the type :math:`T` to :math:`x` in :math:`Γ`.
+If :math:`Γ` defines :math:`x:=t:T`, we also write :math:`(x:=t:T) ∈ Γ`.
 For the rest of the chapter, :math:`Γ::(y:T)` denotes the local context :math:`Γ`
 enriched with the local assumption :math:`y:T`. Similarly, :math:`Γ::(y:=t:T)` denotes
 the local context :math:`Γ` enriched with the local definition :math:`(y:=t:T)`. The
-notation :math:`[]` denotes the empty local context. By :math:`Γ_1 ; Γ_2` we mean
+notation :math:`[]` denotes the empty local context. Writing :math:`Γ_1 ; Γ_2` means
 concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2`.
-
 
 .. _Global-environment:
 
 **Global environment.**
-A *global environment* is an ordered list of *global declarations*.
-Global declarations are either *global assumptions* or *global
-definitions*, but also declarations of inductive objects. Inductive
-objects themselves declare both inductive or coinductive types and
-constructors (see Section :ref:`inductive-definitions`).
+A :term:`global environment` is an ordered list of *declarations*.
+Global declarations are either *assumptions*, *definitions*
+or declarations of inductive objects. Inductive
+objects declare both constructors and inductive or
+coinductive types (see Section :ref:`inductive-definitions`).
 
-A *global assumption* will be represented in the global environment as
-:math:`(c:T)` which assumes the name :math:`c` to be of some type :math:`T`. A *global
-definition* will be represented in the global environment as :math:`c:=t:T`
-which defines the name :math:`c` to have value :math:`t` and type :math:`T`. We shall call
-such names *constants*. For the rest of the chapter, the :math:`E;~c:T` denotes
-the global environment :math:`E` enriched with the global assumption :math:`c:T`.
+In the global environment,
+*assumptions* are written as
+:math:`(c:T)`, indicating that :math:`c` is of the type :math:`T`. *Definitions*
+are written as :math:`c:=t:T`, indicating that :math:`c` has the value :math:`t`
+and type :math:`T`. We shall call
+such names :term:`constants <constant>`. For the rest of the chapter, the :math:`E;~c:T` denotes
+the global environment :math:`E` enriched with the assumption :math:`c:T`.
 Similarly, :math:`E;~c:=t:T` denotes the global environment :math:`E` enriched with the
-global definition :math:`(c:=t:T)`.
+definition :math:`(c:=t:T)`.
 
 The rules for inductive definitions (see Section
 :ref:`inductive-definitions`) have to be considered as assumption
-rules to which the following definitions apply: if the name :math:`c`
+rules in which the following definitions apply: if the name :math:`c`
 is declared in :math:`E`, we write :math:`c ∈ E` and if :math:`c:T` or
 :math:`c:=t:T` is declared in :math:`E`, we write :math:`(c : T) ∈ E`.
 
@@ -315,7 +314,7 @@ following rules.
 .. note::
    We may have :math:`\letin{x}{t:T}{u}` well-typed without having
    :math:`((λ x:T.~u)~t)` well-typed (where :math:`T` is a type of
-   :math:`t`). This is because the value :math:`t` associated to
+   :math:`t`). This is because the value :math:`t` associated with
    :math:`x` may be used in a conversion rule
    (see Section :ref:`Conversion-rules`).
 
@@ -524,7 +523,7 @@ One can consequently derive the following property.
 The Calculus of Inductive Constructions with impredicative Set
 -----------------------------------------------------------------
 
-|Coq| can be used as a type checker for the Calculus of Inductive
+Coq can be used as a type checker for the Calculus of Inductive
 Constructions with an impredicative sort :math:`\Set` by using the compiler
 option ``-impredicative-set``. For example, using the ordinary `coqtop`
 command, the following is rejected,

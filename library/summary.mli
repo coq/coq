@@ -53,7 +53,7 @@ val ref_tag : ?freeze:(marshallable:bool -> 'a -> 'a) -> name:string -> 'a -> 'a
 module Local : sig
 
   type 'a local_ref
-  val ref : ?freeze:('a -> 'a) -> name:string -> 'a -> 'a local_ref
+  val ref : name:string -> 'a -> 'a local_ref
   val (:=) : 'a local_ref -> 'a -> unit
   val (!) : 'a local_ref -> 'a
 

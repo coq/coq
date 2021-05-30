@@ -37,6 +37,9 @@ let wit_pre_ident : string uniform_genarg_type =
 let wit_int_or_var =
   make0 ~dyn:(val_tag (topwit wit_int)) "int_or_var"
 
+let wit_nat_or_var =
+  make0 ~dyn:(val_tag (topwit wit_nat)) "nat_or_var"
+
 let wit_ident =
   make0 "ident"
 

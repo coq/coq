@@ -44,6 +44,9 @@ let open_constr_no_classes_flags =
 module Value = Tac2ffi
 open Value
 
+let val_format = Tac2print.val_format
+let format = repr_ext val_format
+
 let core_prefix path n = KerName.make path (Label.of_id (Id.of_string_soft n))
 
 let std_core n = core_prefix Tac2env.std_prefix n
@@ -109,15 +112,14 @@ let to_rec_declaration (nas, cs) =
 
 let of_case_invert = let open Constr in function
   | NoInvert -> ValInt 0
-  | CaseInvert {univs;args} ->
-    v_blk 0 [|of_instance univs; of_array of_constr args|]
+  | CaseInvert {indices} ->
+    v_blk 0 [|of_array of_constr indices|]
 
 let to_case_invert = let open Constr in function
   | ValInt 0 -> NoInvert
-  | ValBlk (0, [|univs;args|]) ->
-    let univs = to_instance univs in
-    let args = to_array to_constr args in
-    CaseInvert {univs;args}
+  | ValBlk (0, [|indices|]) ->
+    let indices = to_array to_constr indices in
+    CaseInvert {indices}
   | _ -> CErrors.anomaly Pp.(str "unexpected value shape")
 
 let of_result f = function
@@ -251,6 +253,79 @@ let () = define2 "message_concat" pp pp begin fun m1 m2 ->
   return (Value.of_pp (Pp.app m1 m2))
 end
 
+let () = define0 "format_stop" begin
+  return (Value.of_ext val_format [])
+end
+
+let () = define1 "format_string" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtString :: s))
+end
+
+let () = define1 "format_int" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtInt :: s))
+end
+
+let () = define1 "format_constr" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtConstr :: s))
+end
+
+let () = define1 "format_ident" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtIdent :: s))
+end
+
+let () = define2 "format_literal" string format begin fun lit s ->
+  return (Value.of_ext val_format (Tac2print.FmtLiteral (Bytes.to_string lit) :: s))
+end
+
+let () = define1 "format_alpha" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtAlpha :: s))
+end
+
+let () = define2 "format_kfprintf" closure format begin fun k fmt ->
+  let open Tac2print in
+  let fold accu = function
+  | FmtLiteral _ -> accu
+  | FmtString | FmtInt | FmtConstr | FmtIdent -> 1 + accu
+  | FmtAlpha -> 2 + accu
+  in
+  let pop1 l = match l with [] -> assert false | x :: l -> (x, l) in
+  let pop2 l = match l with [] | [_] -> assert false | x :: y :: l -> (x, y, l) in
+  let arity = List.fold_left fold 0 fmt in
+  let rec eval accu args fmt = match fmt with
+  | [] -> apply k [of_pp accu]
+  | tag :: fmt ->
+    match tag with
+    | FmtLiteral s ->
+      eval (Pp.app accu (Pp.str s)) args fmt
+    | FmtString ->
+      let (s, args) = pop1 args in
+      let pp = Pp.str (Bytes.to_string (to_string s)) in
+      eval (Pp.app accu pp) args fmt
+    | FmtInt ->
+      let (i, args) = pop1 args in
+      let pp = Pp.int (to_int i) in
+      eval (Pp.app accu pp) args fmt
+    | FmtConstr ->
+      let (c, args) = pop1 args in
+      let c = to_constr c in
+      pf_apply begin fun env sigma ->
+        let pp = Printer.pr_econstr_env env sigma c in
+        eval (Pp.app accu pp) args fmt
+      end
+    | FmtIdent ->
+      let (i, args) = pop1 args in
+      let pp = Id.print (to_ident i) in
+      eval (Pp.app accu pp) args fmt
+    | FmtAlpha ->
+      let (f, x, args) = pop2 args in
+      Tac2ffi.apply (to_closure f) [of_unit (); x] >>= fun pp ->
+      eval (Pp.app accu (to_pp pp)) args fmt
+  in
+  let eval v = eval (Pp.mt ()) v fmt in
+  if Int.equal arity 0 then eval []
+  else return (Tac2ffi.of_closure (Tac2ffi.abstract arity eval))
+end
+
 (** Array *)
 
 let () = define0 "array_empty" begin
@@ -378,6 +453,7 @@ end
 let () = define1 "constr_kind" constr begin fun c ->
   let open Constr in
   Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.tclENV >>= fun env ->
   return begin match EConstr.kind sigma c with
   | Rel n ->
     v_blk 0 [|Value.of_int n|]
@@ -434,7 +510,9 @@ let () = define1 "constr_kind" constr begin fun c ->
       Value.of_ext Value.val_constructor cstr;
       of_instance u;
     |]
-  | Case (ci, c, iv, t, bl) ->
+  | Case (ci, u, pms, c, iv, t, bl) ->
+    (* FIXME: also change representation Ltac2-side? *)
+    let (ci, c, iv, t, bl) = EConstr.expand_case env sigma (ci, u, pms, c, iv, t, bl) in
     v_blk 13 [|
       Value.of_ext Value.val_case ci;
       Value.of_constr c;
@@ -472,6 +550,8 @@ let () = define1 "constr_kind" constr begin fun c ->
 end
 
 let () = define1 "constr_make" valexpr begin fun knd ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.tclENV >>= fun env ->
   let c = match Tac2ffi.to_block knd with
   | (0, [|n|]) ->
     let n = Value.to_int n in
@@ -529,7 +609,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let iv = to_case_invert iv in
     let t = Value.to_constr t in
     let bl = Value.to_array Value.to_constr bl in
-    EConstr.mkCase (ci, c, iv, t, bl)
+    EConstr.mkCase (EConstr.contract_case env sigma (ci, c, iv, t, bl))
   | (14, [|recs; i; nas; cs|]) ->
     let recs = Value.to_array Value.to_int recs in
     let i = Value.to_int i in
@@ -673,6 +753,12 @@ end
 
 let () = define1 "constr_binder_type" (repr_ext val_binder) begin fun (bnd, ty) ->
   return (of_constr ty)
+end
+
+let () = define1 "constr_has_evar" constr begin fun c ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let b = Evarutil.has_undefined_evars sigma c in
+  Proofview.tclUNIT (Value.of_bool b)
 end
 
 (** Patterns *)
@@ -995,6 +1081,54 @@ let () = define1 "env_instantiate" reference begin fun r ->
   return (Value.of_constr c)
 end
 
+(** Ind *)
+
+let () = define2 "ind_equal" (repr_ext val_inductive) (repr_ext val_inductive) begin fun ind1 ind2 ->
+  return (Value.of_bool (Ind.UserOrd.equal ind1 ind2))
+end
+
+let () = define1 "ind_data" (repr_ext val_inductive) begin fun ind ->
+  Proofview.tclENV >>= fun env ->
+  if Environ.mem_mind (fst ind) env then
+    let mib = Environ.lookup_mind (fst ind) env in
+    return (Value.of_ext val_ind_data (ind, mib))
+  else
+    throw err_notfound
+end
+
+let () = define1 "ind_repr" (repr_ext val_ind_data) begin fun (ind, _) ->
+  return (Value.of_ext val_inductive ind)
+end
+
+let () = define1 "ind_index" (repr_ext val_inductive) begin fun (ind, n) ->
+  return (Value.of_int n)
+end
+
+let () = define1 "ind_nblocks" (repr_ext val_ind_data) begin fun (ind, mib) ->
+  return (Value.of_int (Array.length mib.Declarations.mind_packets))
+end
+
+let () = define1 "ind_nconstructors" (repr_ext val_ind_data) begin fun ((_, n), mib) ->
+  let open Declarations in
+  return (Value.of_int (Array.length mib.mind_packets.(n).mind_consnames))
+end
+
+let () = define2 "ind_get_block" (repr_ext val_ind_data) int begin fun (ind, mib) n ->
+  if 0 <= n && n < Array.length mib.Declarations.mind_packets then
+    return (Value.of_ext val_ind_data ((fst ind, n), mib))
+  else throw err_notfound
+end
+
+let () = define2 "ind_get_constructor" (repr_ext val_ind_data) int begin fun ((mind, n), mib) i ->
+  let open Declarations in
+  let ncons = Array.length mib.mind_packets.(n).mind_consnames in
+  if 0 <= i && i < ncons then
+    (* WARNING: In the ML API constructors are indexed from 1 for historical
+       reasons, but Ltac2 uses 0-indexing instead. *)
+    return (Value.of_ext val_constructor ((mind, n), i + 1))
+  else throw err_notfound
+end
+
 (** Ltac1 in Ltac2 *)
 
 let ltac1 = Tac2ffi.repr_ext Value.val_ltac1
@@ -1037,7 +1171,7 @@ let () = define3 "ltac1_apply" ltac1 (list ltac1) closure begin fun f args k ->
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
   let lfun = Id.Map.add (Id.of_string "F") f lfun in
   let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
-  let tac = TacArg(CAst.make @@ TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args))) in
+  let tac = CAst.make @@ TacArg (TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args))) in
   Tacinterp.val_interp ist tac k >>= fun () ->
   return v_unit
 end
@@ -1050,6 +1184,16 @@ end
 let () = define1 "ltac1_to_constr" ltac1 begin fun v ->
   let open Ltac_plugin in
   return (Value.of_option Value.of_constr (Tacinterp.Value.to_constr v))
+end
+
+let () = define1 "ltac1_of_ident" ident begin fun c ->
+  let open Ltac_plugin in
+  return (Value.of_ext val_ltac1 (Taccoerce.Value.of_ident c))
+end
+
+let () = define1 "ltac1_to_ident" ltac1 begin fun v ->
+  let open Ltac_plugin in
+  return (Value.of_option Value.of_ident (Taccoerce.Value.to_ident v))
 end
 
 let () = define1 "ltac1_of_list" (list ltac1) begin fun l ->
@@ -1100,7 +1244,7 @@ let interp_constr flags ist c =
 let () =
   let intern = intern_constr in
   let interp ist c = interp_constr constr_flags ist c in
-  let print env c = str "constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let print env sigma c = str "constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
@@ -1113,7 +1257,7 @@ let () =
 let () =
   let intern = intern_constr in
   let interp ist c = interp_constr open_constr_no_classes_flags ist c in
-  let print env c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let print env sigma c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
@@ -1125,7 +1269,7 @@ let () =
 
 let () =
   let interp _ id = return (Value.of_ident id) in
-  let print _ id = str "ident:(" ++ Id.print id ++ str ")" in
+  let print _ _ id = str "ident:(" ++ Id.print id ++ str ")" in
   let obj = {
     ml_intern = (fun _ _ id -> GlbVal id, gtypref t_ident);
     ml_interp = interp;
@@ -1147,7 +1291,7 @@ let () =
     let sigma = Evd.from_env env in
     Patternops.subst_pattern env sigma subst c
   in
-  let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
+  let print env sigma pat = str "pat:(" ++ Printer.pr_lconstr_pattern_env env sigma pat ++ str ")" in
   let interp _ c = return (Value.of_pattern c) in
   let obj = {
     ml_intern = intern;
@@ -1169,7 +1313,7 @@ let () =
     return (Value.of_ext val_preterm c)
   in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
-  let print env c = str "preterm:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let print env sigma c = str "preterm:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let obj = {
     ml_intern = (fun _ _ e -> Empty.abort e);
     ml_interp = interp;
@@ -1193,7 +1337,7 @@ let () =
   in
   let subst s c = Globnames.subst_global_reference s c in
   let interp _ gr = return (Value.of_reference gr) in
-  let print _ = function
+  let print _ _ = function
   | GlobRef.VarRef id -> str "reference:(" ++ str "&" ++ Id.print id ++ str ")"
   | r -> str "reference:(" ++ Printer.pr_global r ++ str ")"
   in
@@ -1241,7 +1385,7 @@ let () =
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac) in
-  let print env (ids, tac) =
+  let print env sigma (ids, tac) =
     let ids =
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ spc () ++ str "|-" ++ spc ()
@@ -1290,7 +1434,7 @@ let () =
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Genintern.substitute Tacarg.wit_tactic s tac) in
-  let print env (ids, tac) =
+  let print env sigma (ids, tac) =
     let ids =
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ str " |- "
@@ -1308,24 +1452,35 @@ let () =
 (** Ltac2 in terms *)
 
 let () =
-  let interp ist poly env sigma concl (ids, tac) =
+  let interp ?loc ~poly env sigma tycon (ids, tac) =
     (* Syntax prevents bound notation variables in constr quotations *)
     let () = assert (Id.Set.is_empty ids) in
-    let ist = Tac2interp.get_env ist in
+    let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let name, poly = Id.of_string "ltac2", poly in
-    let c, sigma = Proof.refine_by_tactic ~name ~poly env sigma concl tac in
-    (EConstr.of_constr c, sigma)
+    let sigma, concl = match tycon with
+    | Some ty -> sigma, ty
+    | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
+    in
+    let c, sigma = Proof.refine_by_tactic ~name ~poly (GlobEnv.renamed_env env) sigma concl tac in
+    let j = { Environ.uj_val = EConstr.of_constr c; Environ.uj_type = concl } in
+    (j, sigma)
   in
   GlobEnv.register_constr_interp0 wit_ltac2_constr interp
 
 let () =
-  let interp ist poly env sigma concl id =
-    let ist = Tac2interp.get_env ist in
+  let interp ?loc ~poly env sigma tycon id =
+    let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let c = Id.Map.find id ist.env_ist in
     let c = Value.to_constr c in
-    let sigma = Typing.check env sigma c concl in
-    (c, sigma)
+    let t = Retyping.get_type_of (GlobEnv.renamed_env env) sigma c in
+    match tycon with
+    | None ->
+      { Environ.uj_val = c; Environ.uj_type = t }, sigma
+    | Some ty ->
+      let sigma = Evarconv.unify_leq_delay (GlobEnv.renamed_env env) sigma t ty in
+      let j = { Environ.uj_val = c; Environ.uj_type = ty } in
+      j, sigma
   in
   GlobEnv.register_constr_interp0 wit_ltac2_quotation interp
 
@@ -1365,9 +1520,43 @@ let () =
   let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some "ltac2", in_gen (rawwit wit_ltac2) v) in
   Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
 
-(* Ltac1 runtime representation of Ltac2 closure quotations *)
-let typ_ltac2 : (Id.t list * glb_tacexpr) Geninterp.Val.typ =
+(* Ltac1 runtime representation of Ltac2 closures. *)
+let typ_ltac2 : valexpr Geninterp.Val.typ =
   Geninterp.Val.create "ltac2:ltac2_eval"
+
+let cast_typ (type a) (tag : a Geninterp.Val.typ) (v : Geninterp.Val.t) : a =
+  let Geninterp.Val.Dyn (tag', v) = v in
+  match Geninterp.Val.eq tag tag' with
+  | None -> assert false
+  | Some Refl -> v
+
+let () =
+  let open Ltac_plugin in
+  (* This is a hack similar to Tacentries.ml_val_tactic_extend *)
+  let intern_fun _ e = Empty.abort e in
+  let subst_fun s v = v in
+  let () = Genintern.register_intern0 wit_ltac2_val intern_fun in
+  let () = Genintern.register_subst0 wit_ltac2_val subst_fun in
+  (* These are bound names and not relevant *)
+  let tac_id = Id.of_string "F" in
+  let arg_id = Id.of_string "X" in
+  let interp_fun ist () =
+    let tac = cast_typ typ_ltac2 @@ Id.Map.get tac_id ist.Tacinterp.lfun in
+    let arg = Id.Map.get arg_id ist.Tacinterp.lfun in
+    let tac = Tac2ffi.to_closure tac in
+    Tac2ffi.apply tac [of_ltac1 arg] >>= fun ans ->
+    let ans = Tac2ffi.to_ext val_ltac1 ans in
+    Ftactic.return ans
+  in
+  let () = Geninterp.register_interp0 wit_ltac2_val interp_fun in
+  define1 "ltac1_lambda" valexpr begin fun f ->
+    let body = Tacexpr.TacGeneric (Some "ltac2", in_gen (glbwit wit_ltac2_val) ()) in
+    let clos = CAst.make (Tacexpr.TacFun ([Name arg_id], CAst.make (Tacexpr.TacArg body))) in
+    let f = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) f in
+    let lfun = Id.Map.singleton tac_id f in
+    let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun } in
+    Proofview.tclUNIT (of_ltac1 (Tacinterp.Value.of_closure ist clos))
+  end
 
 let ltac2_eval =
   let open Ltac_plugin in
@@ -1380,17 +1569,10 @@ let ltac2_eval =
   | tac :: args ->
     (* By convention the first argument is the tactic being applied, the rest
       being the arguments it should be fed with *)
-    let Geninterp.Val.Dyn (tag, tac) = tac in
-    let (ids, tac) : Id.t list * glb_tacexpr = match Geninterp.Val.eq tag typ_ltac2 with
-    | None -> assert false
-    | Some Refl -> tac
-    in
-    let fold accu id = match Id.Map.find id ist.Geninterp.lfun with
-    | v -> Id.Map.add id (Tac2ffi.of_ext val_ltac1 v) accu
-    | exception Not_found -> assert false
-    in
-    let env_ist = List.fold_left fold Id.Map.empty ids in
-    Proofview.tclIGNORE (Tac2interp.interp { env_ist } tac)
+    let tac = cast_typ typ_ltac2 tac in
+    let tac = Tac2ffi.to_closure tac in
+    let args = List.map (fun arg -> Tac2ffi.of_ext val_ltac1 arg) args in
+    Proofview.tclIGNORE (Tac2ffi.apply tac args)
   in
   let () = Tacenv.register_ml_tactic ml_name [|eval_fun|] in
   { Tacexpr.mltac_name = ml_name; mltac_index = 0 }
@@ -1398,10 +1580,11 @@ let ltac2_eval =
 let () =
   let open Ltac_plugin in
   let open Tacinterp in
-  let interp ist (ids, tac as self) = match ids with
+  let interp ist (ids, tac) = match ids with
   | [] ->
     (* Evaluate the Ltac2 quotation eagerly *)
-    let idtac = Value.of_closure { ist with lfun = Id.Map.empty } (Tacexpr.TacId []) in
+    let idtac = Value.of_closure { ist with lfun = Id.Map.empty }
+        (CAst.make (Tacexpr.TacId [])) in
     let ist = { env_ist = Id.Map.empty } in
     Tac2interp.interp ist tac >>= fun _ ->
     Ftactic.return idtac
@@ -1412,7 +1595,10 @@ let () =
     let nas = List.map (fun id -> Name id) ids in
     let mk_arg id = Tacexpr.Reference (Locus.ArgVar (CAst.make id)) in
     let args = List.map mk_arg ids in
-    let clos = Tacexpr.TacFun (nas, Tacexpr.TacML (CAst.make (ltac2_eval, mk_arg self_id :: args))) in
+    let clos = CAst.make (Tacexpr.TacFun
+        (nas, CAst.make (Tacexpr.TacML (ltac2_eval, mk_arg self_id :: args)))) in
+    let self = GTacFun (List.map (fun id -> Name id) ids, tac) in
+    let self = Tac2interp.interp_value { env_ist = Id.Map.empty } self in
     let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in
     let ist = { ist with lfun = Id.Map.singleton self_id self } in
     Ftactic.return (Value.of_closure ist clos)
@@ -1570,6 +1756,16 @@ let () = add_scope "constr" (fun arg ->
     Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
   )
 
+let () = add_scope "open_constr" (fun arg ->
+    let delimiters = List.map (function
+        | SexprRec (_, { v = Some s }, []) -> s
+        | _ -> scope_fail "open_constr" arg)
+        arg
+    in
+    let act e = Tac2quote.of_open_constr ~delimiters e in
+    Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
+  )
+
 let add_expr_scope name entry f =
   add_scope name begin function
   | [] -> Tac2entries.ScopeRule (Pcoq.Symbol.nterm entry, f)
@@ -1596,8 +1792,8 @@ let () = add_expr_scope "pose" q_pose Tac2quote.of_pose
 let () = add_expr_scope "assert" q_assert Tac2quote.of_assertion
 let () = add_expr_scope "constr_matching" q_constr_matching Tac2quote.of_constr_matching
 let () = add_expr_scope "goal_matching" q_goal_matching Tac2quote.of_goal_matching
+let () = add_expr_scope "format" Pcoq.Prim.lstring Tac2quote.of_format
 
-let () = add_generic_scope "open_constr" Pcoq.Constr.constr Tac2quote.wit_open_constr
 let () = add_generic_scope "pattern" Pcoq.Constr.constr Tac2quote.wit_pattern
 
 (** seq scope, a bit hairy *)

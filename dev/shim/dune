@@ -7,7 +7,7 @@
   (with-stdout-to coqtop-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo \"$(pwd)/%{bin:coqtop} -coqlib $(pwd)/%{project_root}\" \\$@")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
     (run chmod +x %{targets})))))
 
 (rule
@@ -19,25 +19,30 @@
   (with-stdout-to coqc-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo \"$(pwd)/%{bin:coqc} -coqlib $(pwd)/%{project_root}\" \\$@")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
 (rule
  (targets coqbyte-prelude)
  (deps
   %{bin:coqtop.byte}
-  %{lib:coq.kernel:../../stublibs/dllbyterun_stubs.so}
+  %{lib:coq-core.kernel:../../stublibs/dllcoqrun_stubs.so}
   %{project_root}/theories/Init/Prelude.vo)
  (action
   (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo \"$(pwd)/%{bin:coqtop.byte} -coqlib $(pwd)/%{project_root}\" \\$@")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
 (rule
  (targets coqide-prelude)
  (deps
+  ; without this if the gtk libs are not available dune can try to use
+  ; coqide from PATH instead of giving a nice error
+  ; there is no problem with the other shims since they don't depend on optional build products
+  %{project_root}/ide/coqide/coqide_main.exe
+
   %{bin:coqqueryworker.opt}
   %{bin:coqtacticworker.opt}
   %{bin:coqproofworker.opt}
@@ -48,5 +53,5 @@
   (with-stdout-to coqide-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo \"$(pwd)/%{bin:coqide} -coqlib $(pwd)/%{project_root}\" \\$@")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))

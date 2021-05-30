@@ -91,6 +91,13 @@ let to_int v =
     Some (out_gen (topwit wit_int) v)
   else None
 
+let of_ident id = in_gen (topwit wit_ident) id
+
+let to_ident v =
+  if has_type v (topwit wit_ident) then
+    Some (out_gen (topwit wit_ident) v)
+  else None
+
 let to_list v = prj Val.typ_list v
 
 let to_option v = prj Val.typ_opt v
@@ -276,6 +283,7 @@ let coerce_to_closed_constr env v =
   c
 
 let coerce_to_evaluable_ref env sigma v =
+  let open Tacred in
   let fail () = raise (CannotCoerceTo "an evaluable reference") in
   let ev =
   match is_intro_pattern v with
@@ -429,7 +437,15 @@ let pr_value env v =
   | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
      pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
 
-let error_ltac_variable ?loc id env v s =
-   CErrors.user_err ?loc  (str "Ltac variable " ++ Id.print id ++
+exception CoercionError of Id.t * (Environ.env * Evd.evar_map) option * Val.t * string
+
+let () = CErrors.register_handler begin function
+| CoercionError (id, env, v, s) ->
+  Some (str "Ltac variable " ++ Id.print id ++
    strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
    strbrk "which cannot be coerced to " ++ str s ++ str".")
+| _ -> None
+end
+
+let error_ltac_variable ?loc id env v s =
+  Loc.raise ?loc (CoercionError (id, env, v, s))

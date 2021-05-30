@@ -20,6 +20,7 @@ Require Export FMapInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+#[global]
 Hint Extern 1 (Equivalence _) => constructor; congruence : core.
 
 (** * Facts about weak maps *)
@@ -371,6 +372,7 @@ Proof.
 intros. rewrite eq_option_alt. intro e'. rewrite <- 2 find_mapsto_iff.
 apply add_neq_mapsto_iff; auto.
 Qed.
+#[local]
 Hint Resolve add_neq_o : map.
 
 Lemma add_o : forall m x y e,
@@ -404,6 +406,7 @@ Proof.
 intros. rewrite eq_option_alt. intro e.
 rewrite <- find_mapsto_iff, remove_mapsto_iff; now intuition.
 Qed.
+#[local]
 Hint Resolve remove_eq_o : map.
 
 Lemma remove_neq_o : forall m x y,
@@ -412,6 +415,7 @@ Proof.
 intros. rewrite eq_option_alt. intro e.
 rewrite <- find_mapsto_iff, remove_neq_mapsto_iff; now intuition.
 Qed.
+#[local]
 Hint Resolve remove_neq_o : map.
 
 Lemma remove_o : forall m x y,
@@ -1100,6 +1104,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   contradict Hnotin; rewrite <- Hnotin; exists e0; auto.
   Qed.
 
+  #[local]
   Hint Resolve NoDupA_eqk_eqke NoDupA_rev elements_3w : map.
 
   Lemma fold_Equal : forall m1 m2 i, Equal m1 m2 ->
@@ -1232,6 +1237,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   intros; rewrite cardinal_Empty; auto.
   Qed.
+  #[local]
   Hint Resolve cardinal_inv_1 : map.
 
   Lemma cardinal_inv_2 :
@@ -1846,6 +1852,7 @@ Module OrdProperties (M:S).
    unfold leb; f_equal; apply gtb_compat; auto.
   Qed.
 
+  #[local]
   Hint Resolve gtb_compat leb_compat elements_3 : map.
 
   Lemma elements_split : forall p m,

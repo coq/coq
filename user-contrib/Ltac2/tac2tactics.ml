@@ -106,7 +106,7 @@ let apply adv ev cb cl =
   | None -> Tactics.apply_with_delayed_bindings_gen adv ev cb
   | Some (id, cl) ->
     let cl = Option.map mk_intro_pattern cl in
-    Tactics.apply_delayed_in adv ev id cb cl
+    Tactics.apply_delayed_in adv ev id cb cl Tacticals.New.tclIDTAC
 
 let mk_destruction_arg = function
 | ElimOnConstr c ->
@@ -209,13 +209,13 @@ let letin_pat_tac ev ipat na c cl =
     Instead, we parse indifferently any pattern and dispatch when the tactic is
     called. *)
 let map_pattern_with_occs (pat, occ) = match pat with
-| Pattern.PRef (GlobRef.ConstRef cst) -> (mk_occurrences_expr occ, Inl (EvalConstRef cst))
-| Pattern.PRef (GlobRef.VarRef id) -> (mk_occurrences_expr occ, Inl (EvalVarRef id))
+| Pattern.PRef (GlobRef.ConstRef cst) -> (mk_occurrences_expr occ, Inl (Tacred.EvalConstRef cst))
+| Pattern.PRef (GlobRef.VarRef id) -> (mk_occurrences_expr occ, Inl (Tacred.EvalVarRef id))
 | _ -> (mk_occurrences_expr occ, Inr pat)
 
 let get_evaluable_reference = function
-| GlobRef.VarRef id -> Proofview.tclUNIT (EvalVarRef id)
-| GlobRef.ConstRef cst -> Proofview.tclUNIT (EvalConstRef cst)
+| GlobRef.VarRef id -> Proofview.tclUNIT (Tacred.EvalVarRef id)
+| GlobRef.ConstRef cst -> Proofview.tclUNIT (Tacred.EvalConstRef cst)
 | r ->
   Tacticals.New.tclZEROMSG (str "Cannot coerce" ++ spc () ++
     Nametab.pr_global_env Id.Set.empty r ++ spc () ++
@@ -402,7 +402,7 @@ let new_auto debug n lems dbs =
 let eauto debug n p lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
-  Eauto.gen_eauto (Eauto.make_dimension n p) lems dbs
+  Eauto.gen_eauto ~debug (Eauto.make_dimension n p) lems dbs
 
 let typeclasses_eauto strategy depth dbs =
   let only_classes, dbs = match dbs with
@@ -413,6 +413,8 @@ let typeclasses_eauto strategy depth dbs =
     false, dbs
   in
   Class_tactics.typeclasses_eauto ~only_classes ?strategy ~depth dbs
+
+let unify x y = Tactics.unify x y
 
 (** Inversion *)
 

@@ -55,11 +55,13 @@ val data : t -> data
 val start
   :  name:Names.Id.t
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> Evd.evar_map -> (Environ.env * EConstr.types) list -> t
 
 val dependent_start
   :  name:Names.Id.t
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> Proofview.telescope -> t
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain

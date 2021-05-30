@@ -19,6 +19,7 @@ type project = {
   makefile : string option;
   install_kind  : install option;
   use_ocamlopt : bool;
+  native_compiler : native_compiler option;
 
   v_files : string sourced list;
   mli_files : string sourced list;
@@ -49,6 +50,10 @@ and install =
   | NoInstall
   | TraditionalInstall
   | UserInstall
+and native_compiler =
+| NativeYes
+| NativeNo
+| NativeOndemand
 
 val cmdline_args_to_project : warning_fn:(string -> unit) -> curdir:string -> string list -> project
 val read_project_file : warning_fn:(string -> unit) -> string -> project

@@ -126,7 +126,6 @@ let print_position fmt pos = match pos with
 | Last -> fprintf fmt "Gramlib.Gramext.Last"
 | Before s -> fprintf fmt "Gramlib.Gramext.Before@ \"%s\"" s
 | After s -> fprintf fmt "Gramlib.Gramext.After@ \"%s\"" s
-| Level s -> fprintf fmt "Gramlib.Gramext.Level@ \"%s\"" s
 
 let print_assoc fmt = function
 | LeftA -> fprintf fmt "Gramlib.Gramext.LeftA"
@@ -263,11 +262,22 @@ let print_rule fmt r =
   let pr_prd fmt prd = print_list fmt print_prod prd in
   fprintf fmt "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
 
-let print_entry fmt e =
-  let print_position_opt fmt pos = print_opt fmt print_position pos in
+let print_entry fmt e = match e.gentry_rules with
+| GDataReuse (pos, r) ->
+  let rules = List.rev r in
+  let pr_pos fmt pos = print_opt fmt print_string pos in
+  let pr_prd fmt prd = print_list fmt print_prod prd in
+  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[(Pcoq.Reuse (%a, %a))@]@]@ in@ "
+    e.gentry_name pr_pos pos pr_prd rules
+| GDataFresh (pos, rules) ->
   let print_rules fmt rules = print_list fmt print_rule rules in
-  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[{ Pcoq.pos=%a; data=%a}@]@]@ in@ "
-    e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
+  let pr_check fmt () = match pos with
+  | None -> fprintf fmt "let () =@ @[assert@ (Pcoq.Entry.is_empty@ %s)@]@ in@\n" e.gentry_name
+  | Some _ -> fprintf fmt ""
+  in
+  let pos = match pos with None -> First | Some pos -> pos in
+  fprintf fmt "%alet () =@ @[Pcoq.grammar_extend@ %s@ @[(Pcoq.Fresh@ (%a, %a))@]@]@ in@ "
+    pr_check () e.gentry_name print_position pos print_rules rules
 
 let print_ast fmt ext =
   let () = fprintf fmt "let _ = @[" in
@@ -360,7 +370,7 @@ let print_body_fun state fmt r =
     print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
 
 let print_body state fmt r =
-  fprintf fmt "@[(%afun %a~atts@ -> coqpp_body %a%a)@]"
+  fprintf fmt "@[(%afun %a?loc ~atts ()@ -> coqpp_body %a%a)@]"
     (print_body_fun state) r print_binders r.vernac_toks
     print_binders r.vernac_toks print_atts_right r.vernac_atts
 
@@ -454,7 +464,7 @@ struct
 
 let terminal s =
   let p =
-    if s <> "" && s.[0] >= '0' && s.[0] <= '9' then "CLexer.terminal_numeral"
+    if s <> "" && s.[0] >= '0' && s.[0] <= '9' then "CLexer.terminal_number"
     else "CLexer.terminal" in
   let c = Printf.sprintf "Pcoq.Symbol.token (%s \"%s\")" p s in
   SymbQuote c
@@ -615,12 +625,29 @@ let pr_ast fmt = function
 | TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
 | ArgumentExt arg -> fprintf fmt "%a@\n" ArgumentExt.print_ast arg
 
-let () =
+let help () =
+  Format.eprintf "Usage: coqpp file.mlg@\n%!";
+  exit 1
+
+let parse () =
   let () =
-    if Array.length Sys.argv <> 2 then fatal "Expected exactly one command line argument"
+    if Array.length Sys.argv <> 2
+    then help ()
   in
-  let file = Sys.argv.(1) in
-  let output = Filename.chop_extension file ^ ".ml" in
+  match Sys.argv.(1) with
+  | "-help" | "--help" -> help ()
+  | file -> file
+
+let output_name file =
+  try
+    Filename.chop_extension file ^ ".ml"
+  with
+  | Invalid_argument _ ->
+    fatal "Input file must have an extension for coqpp [input.ext -> input.ml]"
+
+let () =
+  let file = parse () in
+  let output = output_name file in
   let ast = parse_file file in
   let chan = open_out output in
   let fmt = formatter_of_out_channel chan in

@@ -71,10 +71,9 @@ let record_backtrace b =
 let get_backtrace e = get e backtrace_info
 
 let iraise (e,i) =
-  let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let () = current := (id, (e,i)) :: remove_assoc id !current in
-  let () = Mutex.unlock lock in
+  CThread.with_lock lock ~scope:(fun () ->
+      let id = Thread.id (Thread.self ()) in
+      current := (id, (e,i)) :: remove_assoc id !current);
   match get i backtrace_info with
   | None ->
     raise e
@@ -82,12 +81,11 @@ let iraise (e,i) =
     Printexc.raise_with_backtrace e bt
 
 let find_and_remove () =
-  let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let (v, l) = find_and_remove_assoc id !current in
-  let () = current := l in
-  let () = Mutex.unlock lock in
-  v
+  CThread.with_lock lock ~scope:(fun () ->
+      let id = Thread.id (Thread.self ()) in
+      let (v, l) = find_and_remove_assoc id !current in
+      let () = current := l in
+      v)
 
 let info e =
   let (src, data) = find_and_remove () in

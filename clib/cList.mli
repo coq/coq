@@ -42,6 +42,9 @@ sig
   (** [prefix_of eq l1 l2] returns [true] if [l1] is a prefix of [l2], [false]
       otherwise. It uses [eq] to compare elements *)
 
+  val same_length : 'a list -> 'b list -> bool
+  (** A more efficient variant of [for_all2eq (fun _ _ -> true)] *)
+
   (** {6 Creating lists} *)
 
   val interval : int -> int -> int list

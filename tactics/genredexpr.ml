@@ -35,19 +35,22 @@ type 'a glob_red_flag = {
 
 (** Generic kinds of reductions *)
 
-type ('a,'b,'c) red_expr_gen =
+type ('a, 'b, 'c, 'flags) red_expr_gen0 =
   | Red of bool
   | Hnf
-  | Simpl of 'b glob_red_flag*('b,'c) Util.union Locus.with_occurrences option
-  | Cbv of 'b glob_red_flag
-  | Cbn of 'b glob_red_flag
-  | Lazy of 'b glob_red_flag
+  | Simpl of 'flags * ('b, 'c) Util.union Locus.with_occurrences option
+  | Cbv of 'flags
+  | Cbn of 'flags
+  | Lazy of 'flags
   | Unfold of 'b Locus.with_occurrences list
   | Fold of 'a list
   | Pattern of 'a Locus.with_occurrences list
   | ExtraRedExpr of string
   | CbvVm of ('b,'c) Util.union Locus.with_occurrences option
   | CbvNative of ('b,'c) Util.union Locus.with_occurrences option
+
+type ('a, 'b, 'c) red_expr_gen =
+  ('a, 'b, 'c, 'b glob_red_flag) red_expr_gen0
 
 type ('a,'b,'c) may_eval =
   | ConstrTerm of 'a
@@ -73,7 +76,7 @@ type 'a and_short_name = 'a * Names.lident option
 
 let wit_red_expr :
   ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
-   (Genintern.glob_constr_and_expr,Names.evaluable_global_reference and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
-   (EConstr.t,Names.evaluable_global_reference,Pattern.constr_pattern) red_expr_gen)
+   (Genintern.glob_constr_and_expr,Tacred.evaluable_global_reference and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
+   (EConstr.t,Tacred.evaluable_global_reference,Pattern.constr_pattern) red_expr_gen)
     Genarg.genarg_type =
   make0 "redexpr"

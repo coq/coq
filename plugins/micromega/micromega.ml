@@ -538,7 +538,7 @@ module Z =
     | Z0 -> Z0,Z0
     | Zpos a' ->
       (match b with
-       | Z0 -> Z0,Z0
+       | Z0 -> Z0,a
        | Zpos _ -> pos_div_eucl a' b
        | Zneg b' ->
          let q0,r = pos_div_eucl a' (Zpos b') in
@@ -547,7 +547,7 @@ module Z =
           | _ -> (opp (add q0 (Zpos XH))),(add b r)))
     | Zneg a' ->
       (match b with
-       | Z0 -> Z0,Z0
+       | Z0 -> Z0,a
        | Zpos _ ->
          let q0,r = pos_div_eucl a' b in
          (match r with
@@ -1384,11 +1384,13 @@ let rxcnf_or unsat deduce rXCNF polarity k e1 e2 =
 let rxcnf_impl unsat deduce rXCNF polarity k e1 e2 =
   let e3,t1 = rXCNF (negb polarity) k e1 in
   if polarity
-  then if is_cnf_ff e3
-       then rXCNF polarity k e2
-       else let e4,t2 = rXCNF polarity k e2 in
-            let f',t' = ror_cnf_opt unsat deduce e3 e4 in
-            f',(rev_append t1 (rev_append t2 t'))
+  then if is_cnf_tt e3
+       then e3,t1
+       else if is_cnf_ff e3
+            then rXCNF polarity k e2
+            else let e4,t2 = rXCNF polarity k e2 in
+                 let f',t' = ror_cnf_opt unsat deduce e3 e4 in
+                 f',(rev_append t1 (rev_append t2 t'))
   else let e4,t2 = rXCNF polarity k e2 in
        (and_cnf_opt e3 e4),(rev_append t1 t2)
 
@@ -2140,6 +2142,11 @@ let zWeakChecker =
 let psub1 =
   psub0 Z0 Z.add Z.sub Z.opp zeq_bool
 
+(** val popp1 : z pol -> z pol **)
+
+let popp1 =
+  popp0 Z.opp
+
 (** val padd1 : z pol -> z pol -> z pol **)
 
 let padd1 =
@@ -2233,6 +2240,7 @@ type zArithProof =
 | DoneProof
 | RatProof of zWitness * zArithProof
 | CutProof of zWitness * zArithProof
+| SplitProof of z polC * zArithProof * zArithProof
 | EnumProof of zWitness * zWitness * zArithProof list
 | ExProof of positive * zArithProof
 
@@ -2343,6 +2351,15 @@ let rec zChecker l = function
      (match genCuttingPlane f with
       | Some cp -> zChecker ((nformula_of_cutting_plane cp)::l) pf0
       | None -> true)
+   | None -> false)
+| SplitProof (p, pf1, pf2) ->
+  (match genCuttingPlane (p,NonStrict) with
+   | Some cp1 ->
+     (match genCuttingPlane ((popp1 p),NonStrict) with
+      | Some cp2 ->
+        (&&) (zChecker ((nformula_of_cutting_plane cp1)::l) pf1)
+          (zChecker ((nformula_of_cutting_plane cp2)::l) pf2)
+      | None -> false)
    | None -> false)
 | EnumProof (w1, w2, pf0) ->
   (match eval_Psatz0 l w1 with

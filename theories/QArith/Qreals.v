@@ -13,14 +13,13 @@ Require Export QArith_base.
 
 (** Injection of rational numbers into real numbers. *)
 
-Definition Q2R (x : Q) : R := (IZR (Qnum x) * / IZR (QDen x))%R.
-
 Lemma IZR_nz : forall p : positive, IZR (Zpos p) <> 0%R.
 Proof.
 intros.
 now apply not_O_IZR.
 Qed.
 
+#[global]
 Hint Resolve IZR_nz Rmult_integral_contrapositive : core.
 
 Lemma eqR_Qeq : forall x y : Q, Q2R x = Q2R y -> x==y.
@@ -181,4 +180,4 @@ intros; rewrite Q2R_mult.
 rewrite Q2R_inv; auto.
 Qed.
 
-Hint Rewrite Q2R_plus Q2R_mult Q2R_opp Q2R_minus Q2R_inv Q2R_div : q2r_simpl.
+Global Hint Rewrite Q2R_plus Q2R_mult Q2R_opp Q2R_minus Q2R_inv Q2R_div : q2r_simpl.

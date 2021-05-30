@@ -27,6 +27,11 @@ let _ = Detyping.print_evar_arguments := true
 let _ = Detyping.print_universes := true
 let _ = Goptions.set_bool_option_value ["Printing";"Matching"] false
 
+let with_env_evm f x =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  f env sigma x
+
 (* std_ppcmds *)
 let pp   x = Pp.pp_with !Topfmt.std_ft x
 
@@ -47,7 +52,6 @@ let ppmind kn = pp(MutInd.debug_print kn)
 let ppind (kn,i) = pp(MutInd.debug_print kn ++ str"," ++int i)
 let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
-let ppclindex cl = pp(Coercionops.pr_cl_index cl)
 let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
 
 let prrecarg = Declareops.pp_recarg
@@ -75,10 +79,19 @@ let ppeconstr x = pp (pr_econstr x)
 let ppconstr_expr x = let sigma,env = get_current_context () in pp (Ppconstr.pr_constr_expr env sigma x)
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
-let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (Global.env()) x))
+let ppglob_constr = (fun x -> pp(with_env_evm pr_lglob_constr_env x))
 let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
+
+let ppfsubst s =
+  let (s, k) = Esubst.Internal.repr s in
+  let sep () = str ";" ++ spc () in
+  let pr = function
+  | Esubst.Internal.REL n -> str "<#" ++ int n ++ str ">"
+  | Esubst.Internal.VAL (k, x) -> pr_constr (Vars.lift k (CClosure.term_of_fconstr x))
+  in
+  pp @@ str "[" ++ prlist_with_sep sep pr s ++ str "| " ++ int k ++ str "]"
 
 let ppnumtokunsigned n = pp (NumTok.Unsigned.print n)
 let ppnumtokunsignednat n = pp (NumTok.UnsignedNat.print n)
@@ -130,7 +143,7 @@ let rec pr_closure {idents=idents;typed=typed;untyped=untyped} =
 and pr_closed_glob_constr_idmap x =
   pridmap (fun _ -> pr_closed_glob_constr) x
 and pr_closed_glob_constr {closure=closure;term=term} =
-  pr_closure closure ++ (pr_lglob_constr_env Global.(env ())) term
+  pr_closure closure ++ with_env_evm pr_lglob_constr_env term
 
 let ppclosure x = pp (pr_closure x)
 let ppclosedglobconstr x = pp (pr_closed_glob_constr x)
@@ -164,7 +177,7 @@ let ppdelta s = pp (Mod_subst.debug_pr_delta s)
 let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
 let pp_transparent_state s = pp (pr_transparent_state s)
-let pp_stack_t n = pp (Reductionops.Stack.pr (EConstr.of_constr %> pr_econstr) n)
+let pp_estack_t n = pp (Reductionops.Stack.pr pr_econstr n)
 let pp_state_t n = pp (Reductionops.pr_state Global.(env()) Evd.empty n)
 
 (* proof printers *)
@@ -211,7 +224,7 @@ let pproof p = pp(Proof.pr_proof p)
 let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
 
-let prlev = UnivNames.pr_with_global_universes
+let prlev = UnivNames.pr_with_global_universes Id.Map.empty
 let ppuniverse_set l = pp (LSet.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)
@@ -225,7 +238,7 @@ let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in
     ppuniverse_context ctx
-let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
+let ppuniverses u = pp (UGraph.pr_universes Level.pr (UGraph.repr u))
 let ppnamedcontextval e =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -292,9 +305,9 @@ let constr_display csr =
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
   | Proj (p, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
-  | Case (ci,p,iv,c,bl) ->
+  | Case (ci,u,pms,(_,p),iv,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
-      ^(array_display bl)^")"
+      ^(array_display (Array.map snd bl))^")"
   | Fix ((t,i),(lna,tl,bl)) ->
       "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
         then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
@@ -405,13 +418,25 @@ let print_pure_constr csr =
       print_int i; print_string ","; print_int j;
       print_string ","; universes_display u;
       print_string ")"
-  | Case (ci,p,iv,c,bl) ->
+  | Case (ci,u,pms,p,iv,c,bl) ->
+      let pr_ctx (nas, c) =
+        Array.iter (fun na -> print_cut (); name_display na) nas;
+        print_string " |- ";
+        box_display c
+      in
       open_vbox 0;
-      print_string "<"; box_display p; print_string ">";
       print_cut(); print_string "Case";
-      print_space(); box_display c; print_space (); print_string "of";
+      print_space(); box_display c; print_space ();
+      print_cut(); print_string "in";
+      print_cut(); print_string "Ind(";
+      sp_display (fst ci.ci_ind);
+      print_string ","; print_int (snd ci.ci_ind); print_string ")";
+      print_string "@{"; universes_display u; print_string "}";
+      Array.iter (fun x -> print_space (); box_display x) pms;
+      print_cut(); print_string "return <"; pr_ctx p; print_string ">";
+      print_cut(); print_string "with";
       open_vbox 0;
-      Array.iter (fun x ->  print_cut();  box_display x) bl;
+      Array.iter (fun x ->  print_cut();  pr_ctx x) bl;
       close_box();
       print_cut();
       print_string "end";
@@ -549,7 +574,7 @@ let _ =
   let open Vernacextend in
   let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
   let cmd_sig = TyTerminal("PrintConstr", TyNonTerminal(ty_constr, TyNil)) in
-  let cmd_fn c ~atts = VtDefault (fun () -> in_current_context econstr_display c) in
+  let cmd_fn c ?loc:_ ~atts () = VtDefault (fun () -> in_current_context econstr_display c) in
   let cmd_class _ = VtQuery in
   let cmd : ty_ml = TyML (false, cmd_sig, cmd_fn, Some cmd_class) in
   vernac_extend ~command:"PrintConstr" [cmd]
@@ -558,7 +583,7 @@ let _ =
   let open Vernacextend in
   let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
   let cmd_sig = TyTerminal("PrintPureConstr", TyNonTerminal(ty_constr, TyNil)) in
-  let cmd_fn c ~atts = VtDefault (fun () -> in_current_context print_pure_econstr c) in
+  let cmd_fn c ?loc:_ ~atts () = VtDefault (fun () -> in_current_context print_pure_econstr c) in
   let cmd_class _ = VtQuery in
   let cmd : ty_ml = TyML (false, cmd_sig, cmd_fn, Some cmd_class) in
   vernac_extend ~command:"PrintPureConstr" [cmd]

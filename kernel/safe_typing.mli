@@ -93,6 +93,7 @@ val export_private_constants :
 
 (** returns the main constant *)
 val add_constant :
+  ?typing_flags:Declarations.typing_flags ->
   Label.t -> global_declaration -> Constant.t safe_transformer
 
 (** Similar to add_constant but also returns a certificate *)
@@ -102,6 +103,7 @@ val add_private_constant :
 (** Adding an inductive type *)
 
 val add_mind :
+  ?typing_flags:Declarations.typing_flags ->
   Label.t -> Entries.mutual_inductive_entry ->
     MutInd.t safe_transformer
 
@@ -191,8 +193,6 @@ val current_dirpath : safe_environment -> DirPath.t
 
 type compiled_library
 
-type native_library = Nativecode.global list
-
 val module_of_library : compiled_library -> Declarations.module_body
 val univs_of_library : compiled_library -> Univ.ContextSet.t
 
@@ -201,7 +201,7 @@ val start_library : DirPath.t -> ModPath.t safe_transformer
 val export :
   ?except:Future.UUIDSet.t -> output_native_objects:bool ->
   safe_environment -> DirPath.t ->
-    ModPath.t * compiled_library * native_library
+    ModPath.t * compiled_library * Nativelib.native_library
 
 (* Constraints are non empty iff the file is a vi2vo *)
 val import : compiled_library -> Univ.ContextSet.t -> vodigest ->

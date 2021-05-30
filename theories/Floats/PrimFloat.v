@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Int63 FloatClass.
+Require Import PrimInt63 FloatClass.
 
 (** * Definition of the interface for primitive floating-point arithmetic
 

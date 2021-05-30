@@ -16,6 +16,11 @@ open Glob_term
 
 val eq_notation_constr : Id.t list * Id.t list -> notation_constr -> notation_constr -> bool
 
+val strictly_finer_notation_constr : Id.t list * Id.t list -> notation_constr -> notation_constr -> bool
+(** Tell if [t1] is a strict refinement of [t2]
+    (this is a partial order and returning [false] does not mean that
+    [t2] is finer than [t1]) *)
+
 (** Substitution of kernel names in interpretation data                *)
 
 val subst_interpretation :
@@ -48,7 +53,7 @@ val apply_cases_pattern : ?loc:Loc.t ->
   (Id.t list * cases_pattern_disjunction) * Id.t -> glob_constr -> glob_constr
 
 val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
-  ('a -> Name.t -> 'a * ((Id.t list * cases_pattern_disjunction) * Id.t) option * Name.t) ->
+  ('a -> Name.t -> glob_constr option -> 'a * ((Id.t list * cases_pattern_disjunction) * Id.t) option * Name.t * Glob_term.binding_kind * glob_constr option) ->
   ('a -> notation_constr -> glob_constr) -> ?h:'a binder_status_fun ->
   'a -> notation_constr -> glob_constr
 
@@ -63,10 +68,11 @@ exception No_match
 
 val print_parentheses : bool ref
 
-val match_notation_constr : bool -> 'a glob_constr_g -> interpretation ->
-      ('a glob_constr_g * extended_subscopes) list * ('a glob_constr_g list * extended_subscopes) list *
-      ('a cases_pattern_disjunction_g * extended_subscopes) list *
-      ('a extended_glob_local_binder_g list * extended_subscopes) list
+val match_notation_constr : print_univ:bool -> 'a glob_constr_g -> vars:Id.Set.t -> interpretation ->
+      ((Id.Set.t * 'a glob_constr_g) * extended_subscopes) list *
+      ((Id.Set.t * 'a glob_constr_g list) * extended_subscopes) list *
+      ((Id.Set.t * 'a cases_pattern_disjunction_g) * extended_subscopes) list *
+      ((Id.Set.t * 'a extended_glob_local_binder_g list) * extended_subscopes) list
 
 val match_notation_constr_cases_pattern :
   'a cases_pattern_g -> interpretation ->

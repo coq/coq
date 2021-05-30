@@ -179,11 +179,17 @@ Proof (succ_plus_discr n 3).
 
 (** * Compatibility Hints *)
 
+#[global]
 Hint Immediate plus_comm : arith.
+#[global]
 Hint Resolve plus_assoc plus_assoc_reverse : arith.
+#[global]
 Hint Resolve plus_le_compat_l plus_le_compat_r : arith.
+#[global]
 Hint Resolve le_plus_l le_plus_r le_plus_trans : arith.
+#[global]
 Hint Immediate lt_plus_trans : arith.
+#[global]
 Hint Resolve plus_lt_compat_l plus_lt_compat_r : arith.
 
 (** For compatibility, we "Require" the same files as before *)

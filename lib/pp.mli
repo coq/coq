@@ -10,30 +10,31 @@
 
 (** Coq document type. *)
 
-(** Pretty printing guidelines ******************************************)
-(*                                                                      *)
-(* `Pp.t` is the main pretty printing document type                     *)
-(* in the Coq system. Documents are composed laying out boxes, and      *)
-(* users can add arbitrary tag metadata that backends are free          *)
-(* to interpret.                                                        *)
-(*                                                                      *)
-(* The datatype has a public view to allow serialization or advanced    *)
-(* uses, however regular users are _strongly_ warned against its use,   *)
-(* they should instead rely on the available functions below.           *)
-(*                                                                      *)
-(* Box order and number is indeed an important factor. Try to create    *)
-(* a proper amount of boxes. The `++` operator provides "efficient"     *)
-(* concatenation, but using the list constructors is usually preferred. *)
-(*                                                                      *)
-(* That is to say, this:                                                *)
-(*                                                                      *)
-(* `hov [str "Term"; hov (pr_term t); str "is defined"]`                *)
-(*                                                                      *)
-(* is preferred to:                                                     *)
-(*                                                                      *)
-(* `hov (str "Term" ++ hov (pr_term t) ++ str "is defined")`            *)
-(*                                                                      *)
-(************************************************************************)
+(**
+{4 Pretty printing guidelines}
+
+[Pp.t] is the main pretty printing document type
+in the Coq system. Documents are composed laying out boxes, and
+users can add arbitrary tag metadata that backends are free
+to interpret.
+
+The datatype has a public view to allow serialization or advanced
+uses, however regular users are _strongly_ warned against its use,
+they should instead rely on the available functions below.
+
+Box order and number is indeed an important factor. Try to create
+a proper amount of boxes. The [++] operator provides "efficient"
+concatenation, but using the list constructors is usually preferred.
+
+That is to say, this:
+
+[hov [str "Term"; hov (pr_term t); str "is defined"]]
+
+is preferred to:
+
+[hov (str "Term" ++ hov (pr_term t) ++ str "is defined")]
+*)
+
 
 (* XXX: Improve and add attributes *)
 type pp_tag = string
@@ -170,7 +171,7 @@ val prvecti_with_sep :
 
 val pr_enum : ('a -> t) -> 'a list -> t
 (** [pr_enum pr [a ; b ; ... ; c]] outputs
-    [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c]. *)
+    [pr a ++ str "," ++ spc () ++ pr b ++ str "," ++ spc () ++ ... ++ str "and" ++ spc () ++ pr c]. *)
 
 val pr_sequence : ('a -> t) -> 'a list -> t
 (** Sequence of objects separated by space (unless an element is empty). *)
@@ -186,7 +187,6 @@ val pr_vertical_list : ('b -> t) -> 'b list -> t
 val pp_with          : Format.formatter -> t -> unit
 
 val string_of_ppcmds : t -> string
-
 
 (** Tag prefix to start a multi-token diff span *)
 val start_pfx : string

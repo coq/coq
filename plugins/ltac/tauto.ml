@@ -189,6 +189,7 @@ let flatten_contravariant_disj _ ist =
   | _ -> fail
 
 let evalglobref_of_globref =
+  let open Tacred in
   function
   | GlobRef.VarRef v -> EvalVarRef v
   | GlobRef.ConstRef c -> EvalConstRef c
@@ -199,10 +200,10 @@ let make_unfold name =
   Locus.(AllOccurrences, ArgArg (const, None))
 
 let reduction_not_iff _ ist =
-  let make_reduce c = TacAtom (CAst.make @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
+  let make_reduce c = CAst.make @@ TacAtom (TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
   let tac = match !negation_unfolding with
     | true -> make_reduce [make_unfold "core.not.type"]
-    | false -> TacId []
+    | false -> CAst.make (TacId [])
   in
   eval_tactic_ist ist tac
 
@@ -250,7 +251,7 @@ let with_flags flags _ ist =
   let x = CAst.make @@ Id.of_string "x" in
   let arg = Val.Dyn (tag_tauto_flags, flags) in
   let ist = { ist with lfun = Id.Map.add x.CAst.v arg ist.lfun } in
-  eval_tactic_ist ist (TacArg (CAst.make @@ TacCall (CAst.make (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
+  eval_tactic_ist ist (CAst.make @@ TacArg (TacCall (CAst.make (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
@@ -258,7 +259,7 @@ let register_tauto_tactic tac name0 args =
   let name = { mltac_plugin = tauto_plugin; mltac_tactic = name0; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let () = Tacenv.register_ml_tactic name [| tac |] in
-  let tac = TacFun (ids, TacML (CAst.make (entry, []))) in
+  let tac = CAst.make (TacFun (ids, CAst.make (TacML (entry, [])))) in
   let obj () = Tacenv.register_ltac true true (Id.of_string name0) tac in
   Mltop.declare_cache_obj obj tauto_plugin
 

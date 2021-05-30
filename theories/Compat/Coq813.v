@@ -9,3 +9,15 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.13 *)
+
+Require Export Coq.Compat.Coq814.
+
+Require Coq.micromega.Lia.
+Module Export Coq.
+  Module Export omega.
+    Module Export Omega.
+      #[deprecated(since="8.12", note="The omega tactic was removed in v8.14.  You're now relying on the lia tactic.")]
+      Ltac omega := Lia.lia.
+    End Omega.
+  End omega.
+End Coq.

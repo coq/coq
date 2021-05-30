@@ -202,4 +202,5 @@ Section Image.
 
 End Image.
 
+#[global]
 Hint Resolve Im_def image_empty finite_image: sets.

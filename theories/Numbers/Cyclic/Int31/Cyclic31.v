@@ -467,6 +467,7 @@ Section Basics.
  apply phibis_aux_pos.
  Qed.
 
+ #[local]
  Hint Resolve phi_nonneg : zarith.
 
  Lemma phi_bounded  : forall x, (0 <= phi x < 2 ^ (Z.of_nat size))%Z.
@@ -1118,6 +1119,7 @@ Section Basics.
 
 End Basics.
 
+#[global]
 Instance int31_ops : ZnZ.Ops int31 :=
 {
  digits      := 31%positive; (* number of digits *)

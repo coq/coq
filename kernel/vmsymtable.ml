@@ -144,7 +144,7 @@ let slot_for_proj_name key =
     ProjNameTable.add proj_name_tbl key n;
     n
 
-let rec slot_for_getglobal env kn =
+let rec slot_for_getglobal env sigma kn =
   let (cb,(_,rk)) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
@@ -155,22 +155,22 @@ let rec slot_for_getglobal env kn =
       | Some code ->
          match Vmemitcodes.force code with
          | BCdefined(code,pl,fv) ->
-           let v = eval_to_patch env (code,pl,fv) in
+           let v = eval_to_patch env sigma (code,pl,fv) in
            set_global v
-         | BCalias kn' -> slot_for_getglobal env kn'
+         | BCalias kn' -> slot_for_getglobal env sigma kn'
          | BCconstant -> set_global (val_of_constant kn)
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (CEphemeron.create pos);
     pos
 
-and slot_for_fv env fv =
+and slot_for_fv env sigma fv =
   let fill_fv_cache cache id v_of_id env_of_id b =
     let v,d =
       match b with
       | None -> v_of_id id, Id.Set.empty
       | Some c ->
-          val_of_constr (env_of_id id env) c,
+          val_of_constr (env_of_id id env) sigma c,
           Environ.global_vars_set env c in
     build_lazy_val cache (v, d); v in
   let val_of_rel i = val_of_rel (nb_rel env - i) in
@@ -194,11 +194,11 @@ and slot_for_fv env fv =
   | FVuniv_var _idu ->
     assert false
 
-and eval_to_patch env (buff,pl,fv) =
+and eval_to_patch env sigma (buff,pl,fv) =
   let slots = function
     | Reloc_annot a -> slot_for_annot a
     | Reloc_const sc -> slot_for_str_cst sc
-    | Reloc_getglobal kn -> slot_for_getglobal env kn
+    | Reloc_getglobal kn -> slot_for_getglobal env sigma kn
     | Reloc_proj_name p -> slot_for_proj_name p
     | Reloc_caml_prim op -> slot_for_caml_prim op
   in
@@ -207,13 +207,13 @@ and eval_to_patch env (buff,pl,fv) =
     (* Environment should look like a closure, so free variables start at slot 2. *)
     let a = Array.make (Array.length fv + 2) crazy_val in
     a.(1) <- Obj.magic 2;
-    Array.iteri (fun i v -> a.(i + 2) <- slot_for_fv env v) fv;
+    Array.iteri (fun i v -> a.(i + 2) <- slot_for_fv env sigma v) fv;
     a in
   eval_tcode tc (get_atom_rel ()) (vm_global global_data.glob_val) vm_env
 
-and val_of_constr env c =
-  match compile ~fail_on_error:true env c with
-  | Some v -> eval_to_patch env (to_memory v)
+and val_of_constr env sigma c =
+  match compile ~fail_on_error:true env sigma c with
+  | Some v -> eval_to_patch env sigma (to_memory v)
   | None -> assert false
 
 let set_transparent_const _kn = () (* !?! *)

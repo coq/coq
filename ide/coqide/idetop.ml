@@ -35,11 +35,11 @@ let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let pr_error s = pr_with_pid s
 let pr_debug s =
-  if !Flags.debug then pr_with_pid s
+  if CDebug.(get_flag misc) then pr_with_pid s
 let pr_debug_call q =
-  if !Flags.debug then pr_with_pid ("<-- " ^ Xmlprotocol.pr_call q)
+  if CDebug.(get_flag misc) then pr_with_pid ("<-- " ^ Xmlprotocol.pr_call q)
 let pr_debug_answer q r =
-  if !Flags.debug then pr_with_pid ("--> " ^ Xmlprotocol.pr_full_value q r)
+  if CDebug.(get_flag misc) then pr_with_pid ("--> " ^ Xmlprotocol.pr_full_value q r)
 
 (** Categories of commands *)
 
@@ -63,19 +63,6 @@ let is_known_option cmd = match cmd with
   | VernacSetOption (_, o, OptionUnset) -> coqide_known_option o
   | _ -> false
 
-(** Check whether a command is forbidden in the IDE *)
-
-let ide_cmd_checks ~last_valid { CAst.loc; v } =
-  let user_error s =
-    try CErrors.user_err ?loc ~hdr:"IDE" (str s)
-    with e ->
-      let (e, info) = Exninfo.capture e in
-      let info = Stateid.add info ~valid:last_valid Stateid.dummy in
-      Exninfo.iraise (e, info)
-  in
-  if is_debug v.expr then
-    user_error "Debug mode not available in the IDE"
-
 let ide_cmd_warns ~id { CAst.loc; v } =
   let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
   if is_known_option v.expr then
@@ -93,22 +80,13 @@ let add ((s,eid),(sid,verbose)) =
   let doc = get_doc () in
   let pa = Pcoq.Parsable.make (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
-  | None -> assert false (* s is not an empty string *)
+  | None -> assert false (* s may not be empty *)
   | Some ast ->
-    ide_cmd_checks ~last_valid:sid ast;
     let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose ast in
     set_doc doc;
     let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
     ide_cmd_warns ~id:newid ast;
-    (* TODO: the "" parameter is a leftover of the times the protocol
-     * used to include stderr/stdout output.
-     *
-     * Currently, we force all the output meant for the to go via the
-     * feedback mechanism, and we don't manipulate stderr/stdout, which
-     * are left to the client's discrection. The parameter is still there
-     * as not to break the core protocol for this minor change, but it should
-     * be removed in the next version of the protocol.
-    *)
+    (* All output is sent through the feedback mechanism rather than stdout/stderr *)
     newid, (rc, "")
 
 let edit_at id =
@@ -177,7 +155,6 @@ let concl_next_tac =
     "symmetry"
   ] @ [
     "assumption";
-    "omega";
     "ring";
     "auto";
     "eauto";
@@ -195,7 +172,7 @@ let concl_next_tac =
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
   let min_env = Environ.reset_context env in
-  let id = if Printer.print_goal_names () then Names.Id.to_string (Termops.evar_suggested_name g sigma) else "" in
+  let id = if Printer.print_goal_names () then Names.Id.to_string (Termops.evar_suggested_name g sigma) else Goal.uid g in
   let ccl =
     pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
   in
@@ -378,6 +355,11 @@ let proof_diff (diff_opt, sid) =
       let old = Stm.get_prev_proof ~doc sid in
       Proof_diffs.diff_proofs ~diff_opt ?old proof
 
+let debug_cmd = ref ""
+
+let db_cmd cmd =
+  debug_cmd := cmd
+
 let get_options () =
   let table = Goptions.get_tables () in
   let fold key state accu = (key, export_option_state state) :: accu in
@@ -397,8 +379,8 @@ let set_options options =
 let about () = {
   Interface.coqtop_version = Coq_config.version;
   Interface.protocol_version = Xmlprotocol.protocol_version;
-  Interface.release_date = Coq_config.date;
-  Interface.compile_date = Coq_config.compile_date;
+  Interface.release_date = "n/a";
+  Interface.compile_date = "n/a";
 }
 
 let handle_exn (e, info) =
@@ -467,6 +449,7 @@ let eval_call c =
     Interface.status = interruptible status;
     Interface.search = interruptible search;
     Interface.proof_diff = interruptible proof_diff;
+    Interface.db_cmd = interruptible db_cmd;   (* todo: interruptible or not? *)
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -490,11 +473,11 @@ let eval_call c =
 let print_xml =
   let m = Mutex.create () in
   fun oc xml ->
-    Mutex.lock m;
-    if !Flags.xml_debug then
-      Printf.printf "SENT --> %s\n%!" (Xml_printer.to_string_fmt xml);
-    try Control.protect_sigalrm (Xml_printer.print oc) xml; Mutex.unlock m
-    with e -> let e = Exninfo.capture e in Mutex.unlock m; Exninfo.iraise e
+    CThread.with_lock m ~scope:(fun () ->
+        if !Flags.xml_debug then
+          Printf.printf "SENT --> %s\n%!" (Xml_printer.to_string_fmt xml);
+        try Control.protect_sigalrm (Xml_printer.print oc) xml
+        with e -> let e = Exninfo.capture e in Exninfo.iraise e)
 
 let slave_feeder fmt xml_oc msg =
   let xml = Xmlprotocol.(of_feedback fmt msg) in
@@ -513,9 +496,11 @@ let msg_format = ref (fun () ->
 
 (* The loop ignores the command line arguments as the current model delegates
    its handing to the toplevel container. *)
-let loop run_mode ~opts:_ state =
+let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
   match run_mode with
   | Coqtop.Batch -> exit 0
+  | Coqtop.(Query PrintTags) -> Coqtop.print_style_tags color_mode; exit 0
+  | Coqtop.(Query _) -> Printf.eprintf "Unknown query"; exit 1
   | Coqtop.Interactive ->
   let open Vernac.State in
   set_doc state.doc;
@@ -529,7 +514,7 @@ let loop run_mode ~opts:_ state =
   let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
   ignore (Feedback.add_feeder (slave_feeder (!msg_format ()) xml_oc));
-  while not !quit do
+  let process_xml_msg xml_ic xml_oc out_ch =
     try
       let xml_query = Xml_parser.parse xml_ic in
       if !Flags.xml_debug then
@@ -554,6 +539,40 @@ let loop run_mode ~opts:_ state =
       | any ->
         pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
         exit 1
+  in
+
+  (* output the xml message using the feeder, note that the
+     xmlprotocol file doesn't depend on vernac thus it has no access
+     to DebugHook data, we may want to fix that. *)
+  let ltac_debug_answer ans =
+    let tag, msg =
+      let open DebugHook.Answer in
+      match ans with
+      | Prompt msg -> "prompt", msg
+      | Goal msg -> "goal", (str "Goal:" ++ fnl () ++ msg)
+      | Output msg -> "output", msg
+    in
+    print_xml xml_oc Xmlprotocol.(of_ltac_debug_answer ~tag msg) in
+
+  (* XXX: no need to have a ref here *)
+  let ltac_debug_parse () =
+    let raw_cmd =
+      process_xml_msg xml_ic xml_oc out_ch;
+      !debug_cmd
+    in
+    let open DebugHook in
+    match Action.parse raw_cmd with
+    | Ok act -> act
+    | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
+  in
+
+  DebugHook.Intf.(set
+      { read_cmd = ltac_debug_parse
+      ; submit_answer = ltac_debug_answer
+      });
+
+  while not !quit do
+    process_xml_msg xml_ic xml_oc out_ch
   done;
   pr_debug "Exiting gracefully.";
   exit 0
@@ -580,32 +599,28 @@ coqidetop specific options:\n\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
 }
 
-let islave_parse ~opts extra_args =
+let islave_parse extra_args =
   let open Coqtop in
-  let run_mode, extra_args = coqtop_toplevel.parse_extra ~opts extra_args in
+  let ({ run_mode; color_mode }, stm_opts), extra_args = coqtop_toplevel.parse_extra extra_args in
   let extra_args = parse extra_args in
   (* One of the role of coqidetop is to find the name of buffers to open *)
   (* in the command line; Coqide is waiting these names on stdout *)
   (* (see filter_coq_opts in coq.ml), so we send them now *)
   print_string (String.concat "\n" extra_args);
-  run_mode, []
+  ( { Coqtop.run_mode; color_mode }, stm_opts), []
 
-let islave_init run_mode ~opts =
+let islave_init ( { Coqtop.run_mode; color_mode }, stm_opts) injections ~opts =
   if run_mode = Coqtop.Batch then Flags.quiet := true;
-  Coqtop.init_toploop opts
+  Coqtop.init_toploop opts stm_opts injections
 
-let islave_default_opts =
-  Coqargs.{ default with
-    config = { default.config with
-      stm_flags = { default.config.stm_flags with
-         Stm.AsyncOpts.async_proofs_worker_priority = CoqworkmgrApi.High }}}
+let islave_default_opts = Coqargs.default
 
 let () =
   let open Coqtop in
   let custom = {
       parse_extra = islave_parse ;
-      help = coqidetop_specific_usage;
-      init = islave_init;
+      usage = coqidetop_specific_usage;
+      init_extra = islave_init;
       run = loop;
-      opts = islave_default_opts } in
+      initial_args = islave_default_opts } in
   start_coq custom

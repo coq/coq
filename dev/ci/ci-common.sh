@@ -6,28 +6,42 @@ set -xe
 : "${NJOBS:=1}"
 export NJOBS
 
+# We add $PWD/_install_ci/lib unconditionally due to a hack in the
+# ci-menhir script, which will install some OCaml libraries outside
+# our docker-opam / Nix setup; we have to do this for all the 3 cases
+# below; would we fix ci-menhir, then we just do this for the first
+# branch [ci case]
+export OCAMLPATH="$PWD/_install_ci/lib:$OCAMLPATH"
+export PATH="$PWD/_install_ci/bin:$PATH"
+
+# We can remove setting COQLIB and COQCORELIB from here, but better to
+# wait until we have merged the coq.boot patch so we can do this in a
+# more controlled way.
 if [ -n "${GITLAB_CI}" ];
 then
     # Gitlab build, Coq installed into `_install_ci`
-    export OCAMLPATH="$PWD/_install_ci/lib:$OCAMLPATH"
     export COQBIN="$PWD/_install_ci/bin"
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
     if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
     then
         export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
     fi
+elif [ -d "$PWD/_build_vo/" ] && [ -z "$CI_PURE_DUNE" ]
+then
+    # Dune Ocaml build, vo build using make
+    export OCAMLPATH="$PWD/_build_vo/default/lib/:$OCAMLPATH"
+    export COQBIN="$PWD/_build_vo/default/bin"
+    export COQLIB="$PWD/_build_vo/default/lib/coq"
+    export COQCORELIB="$PWD/_build_vo/default/lib/coq-core"
+    CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    export CI_BRANCH
 elif [ -d "$PWD/_build/install/default/" ];
 then
-    # Dune build
+    # Full Dune build, we basically do what `dune exec --` does
     export OCAMLPATH="$PWD/_build/install/default/lib/:$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
-    CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-    export CI_BRANCH
-else
-    # We assume we are in `-profile devel` build, thus `-local` is set
-    export OCAMLPATH="$PWD:$OCAMLPATH"
-    export COQBIN="$PWD/bin"
+    export COQCORELIB="$PWD/_build/install/default/lib/coq-core"
     CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     export CI_BRANCH
 fi
@@ -42,28 +56,45 @@ ls -l "$COQBIN"
 # Where we download and build external developments
 CI_BUILD_DIR="$PWD/_build_ci"
 
+# Where we install external binaries and ocaml libraries
+CI_INSTALL_DIR="$PWD/_install_ci"
+
 ls -l "$CI_BUILD_DIR" || true
 
 declare -A overlays
 
-overlay()
+# overlay <project> <giturl> <ref> <prnumber> [<prbranch>]
+#   creates an overlay for project using a given url and branch which is
+#   active for prnumber or prbranch. prbranch defaults to ref.
+function overlay()
 {
     local project=$1
     local ov_url=$2
     local ov_ref=$3
+    local ov_prnumber=$4
+    local ov_prbranch=$5
+    : "${ov_prbranch:=$ov_ref}"
 
-    overlays[${project}_URL]=$ov_url
-    overlays[${project}_REF]=$ov_ref
+    if [ "$CI_PULL_REQUEST" = "$ov_prnumber" ] || [ "$CI_BRANCH" = "$ov_prbranch" ]; then
+      if ! is_in_projects "$project"; then
+        echo "Error: $1 is not a known project which can be overlayed"
+        exit 1
+      fi
+
+      overlays[${project}_URL]=$ov_url
+      overlays[${project}_REF]=$ov_ref
+    fi
 }
 
 set +x
-for overlay in "${ci_dir}"/user-overlays/*.sh; do
-    # shellcheck source=/dev/null
-    . "${overlay}"
-done
-
 # shellcheck source=ci-basic-overlay.sh
 . "${ci_dir}/ci-basic-overlay.sh"
+
+for overlay in "${ci_dir}"/user-overlays/*.sh; do
+    # shellcheck source=/dev/null
+    # the directoy can be empty
+    if [ -e "${overlay}" ]; then . "${overlay}"; fi
+done
 set -x
 
 # [git_download project] will download [project] and unpack it
@@ -89,20 +120,32 @@ git_download()
     echo "Warning: download and unpacking of $project skipped because $dest already exists."
   elif [[ $ov_url ]] || [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
     git clone "$giturl" "$dest"
-    cd "$dest"
+    pushd "$dest"
     git checkout "$ref"
     git log -n 1
     if [[ $ov_url ]]; then
-        git -c pull.rebase=false -c user.email=nobody@example.invalid -c user.name=Nobody \
-            pull --no-ff "$ov_url" "$ov_ref"
-        git log -n 1 HEAD^2
-        git log -n 1
+        # In CI we merge into the upstream branch to stay synchronized
+        # Locally checkout the overlay and rebase on upstream
+        # We act differently because merging is what will happen when the PR is merged
+        # but rebasing produces something that is nicer to edit
+        if [[ $CI ]]; then
+            git -c pull.rebase=false -c user.email=nobody@example.invalid -c user.name=Nobody \
+                pull --no-ff "$ov_url" "$ov_ref"
+            git log -n 1 HEAD^2
+            git log -n 1
+        else
+            git remote add -t "$ov_ref" -f overlay "$ov_url"
+            git checkout -b "$ov_ref" overlay/"$ov_ref"
+            git rebase "$ref"
+            git log -n 1
+        fi
     fi
+    popd
   else # When possible, we download tarballs to reduce bandwidth and latency
     local archiveurl_var="${project}_CI_ARCHIVEURL"
     local archiveurl="${!archiveurl_var}"
     mkdir -p "$dest"
-    cd "$dest"
+    pushd "$dest"
     local commit
     commit=$(git ls-remote "$giturl" "refs/heads/$ref" | cut -f 1)
     if [[ "$commit" == "" ]]; then
@@ -112,6 +155,7 @@ git_download()
     wget "$archiveurl/$commit.tar.gz"
     tar xfz "$commit.tar.gz" --strip-components=1
     rm -f "$commit.tar.gz"
+    popd
   fi
 }
 
@@ -121,38 +165,14 @@ make()
     if [ -z "${MAKEFLAGS+x}" ] && [ -n "${NJOBS}" ];
     then
         # Not submake and parallel make requested
-        command make --output-sync -j "$NJOBS" "$@"
+        command make -j "$NJOBS" "$@"
     else
-        command make --output-sync "$@"
+        command make "$@"
     fi
 }
 
-# this installs just the ssreflect library of math-comp
-install_ssreflect()
-{
-  echo 'Installing ssreflect'
-
-  git_download mathcomp
-
-  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp/ssreflect" && \
-    make && \
-    make install )
-
-}
-
-# this installs just the ssreflect + algebra library of math-comp
-install_ssralg()
-{
-  echo 'Installing ssralg'
-
-  git_download mathcomp
-
-  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && \
-    make -C ssreflect && \
-    make -C ssreflect install && \
-    make -C fingroup && \
-    make -C fingroup install && \
-    make -C algebra && \
-    make -C algebra install )
-
+# run make -k; make again if it failed so that the failing file comes last
+# makes it easier to find the error messages in the CI log
+function make_full() {
+    if ! make -k "$@"; then make -k "$@"; exit 1; fi
 }

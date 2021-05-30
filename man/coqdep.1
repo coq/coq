@@ -1,7 +1,7 @@
 .TH COQ 1
 
 .SH NAME
-coqdep \- Compute inter-module dependencies for Coq and Caml programs
+coqdep \- Compute inter-module dependencies for Coq programs
 
 .SH SYNOPSIS
 .B coqdep
@@ -23,7 +23,7 @@ coqdep \- Compute inter-module dependencies for Coq and Caml programs
 .SH DESCRIPTION
 
 .B coqdep
-compute inter-module dependencies for Coq and Caml programs,
+compute inter-module dependencies for Coq programs,
 and prints the dependencies on the standard output in a format
 readable by make.
 When a directory is given as argument, it is recursively looked at.
@@ -40,11 +40,6 @@ commands. Dependencies relative to modules from the Coq library are not
 printed except if
 .BR \-boot \&
 is given.
-
-Dependencies of Caml modules are computed by looking at
-.IR open \&
-directives and the dot notation
-.IR module.value \&.
 
 .SH OPTIONS
 
@@ -75,6 +70,21 @@ Output dependencies for .vos files (this is not the default as it breaks dune's 
 .B \-boot
 For coq developers, prints dependencies over coq library files
 (omitted by default).
+.TP
+.B \-noinit
+Currently no effect.
+
+
+.SH EXIT STATUS
+.IP "1"
+A file given on the command line cannot be found or some file
+cannot be opened.
+.IP "0"
+In all other cases. In particular, when a dependency cannot be
+found or an invalid option is encountered,
+.B coqdep
+prints a warning and exits with status
+.B 0\fR.
 
 
 .SH SEE ALSO

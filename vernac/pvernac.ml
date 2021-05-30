@@ -43,6 +43,7 @@ module Vernac_ =
     let command = Entry.create "command"
     let syntax = Entry.create "syntax_command"
     let vernac_control = Entry.create "Vernac.vernac_control"
+    let inductive_definition = Entry.create "Vernac.inductive_definition"
     let fix_definition = Entry.create "Vernac.fix_definition"
     let rec_definition = fix_definition
     let red_expr = Entry.create "red_expr"
@@ -58,7 +59,7 @@ module Vernac_ =
         Pcoq.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);
         Pcoq.(Production.make (Rule.next Rule.stop (Symbol.nterm vernac_control)) act_vernac);
       ] in
-      Pcoq.(grammar_extend main_entry {pos=None; data=[None, None, rule]})
+      Pcoq.(grammar_extend main_entry (Fresh (Gramlib.Gramext.First, [None, None, rule])))
 
     let select_tactic_entry spec =
       match spec with
@@ -66,8 +67,8 @@ module Vernac_ =
       | Some ename -> find_proof_mode ename
 
     let command_entry =
-      Pcoq.Entry.of_parser "command_entry"
-        (fun _ strm -> Pcoq.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm)
+      Pcoq.Entry.(of_parser "command_entry"
+        { parser_fun = (fun strm -> Pcoq.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm) })
 
   end
 

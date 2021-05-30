@@ -27,6 +27,7 @@ open Glob_term
 open Glob_ops
 open Pattern
 open Detyping
+open Structures
 
 module NamedDecl = Context.Named.Declaration
 (*i*)
@@ -64,7 +65,7 @@ let print_parentheses = Notation_ops.print_parentheses
 (* This forces printing universe names of Type{.} *)
 let print_universes = Detyping.print_universes
 
-(* This suppresses printing of primitive tokens (e.g. numeral) and notations *)
+(* This suppresses printing of notations *)
 let print_no_symbol = ref false
 
 (* This tells to skip types if a variable has this type by default *)
@@ -73,6 +74,9 @@ let print_use_implicit_types =
     ~depr:false
     ~key:["Printing";"Use";"Implicit";"Types"]
     ~value:true
+
+(* Print primitive tokens, like strings *)
+let print_raw_literal = ref false
 
 (**********************************************************************)
 
@@ -85,7 +89,7 @@ let is_reserved_type na t =
   | Name id ->
     try
       let pat = Reserve.find_reserved_type id in
-      let _ = match_notation_constr false t ([],pat) in
+      let _ = match_notation_constr ~print_univ:false t ~vars:Id.Set.empty ([],pat) in
       true
     with Not_found | No_match -> false
 
@@ -195,7 +199,7 @@ let toggle_scope_printing ~scope ~activate =
   else
     deactivate_scope scope
 
-let toggle_notation_printing ?scope ~notation ~activate =
+let toggle_notation_printing ?scope ~notation ~activate () =
   let inscope = match scope with
   | None -> LastLonelyNotation
   | Some sc -> NotationInScope sc in
@@ -229,7 +233,7 @@ let get_record_print =
 
 let is_record indsp =
   try
-    let _ = Recordops.lookup_structure indsp in
+    let _ = Structure.find indsp in
     true
   with Not_found -> false
 
@@ -357,18 +361,18 @@ let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 let make_notation_gen loc ntn mknot mkprim destprim l bl =
   match snd ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
-    | "- _", [Some (Numeral p)] when not (NumTok.Signed.is_zero p) ->
+    | "- _", [Some (Number p)] when not (NumTok.Signed.is_zero p) ->
         assert (bl=[]);
         mknot (loc,ntn,([mknot (loc,(InConstrEntry,"( _ )"),l,[])]),[])
     | _ ->
         match decompose_notation_key ntn, l with
         | (InConstrEntry,[Terminal "-"; Terminal x]), [] ->
            begin match NumTok.Unsigned.parse_string x with
-           | Some n -> mkprim (loc, Numeral (NumTok.SMinus,n))
+           | Some n -> mkprim (loc, Number (NumTok.SMinus,n))
            | None -> mknot (loc,ntn,l,bl) end
         | (InConstrEntry,[Terminal x]), [] ->
            begin match NumTok.Unsigned.parse_string x with
-           | Some n -> mkprim (loc, Numeral (NumTok.SPlus,n))
+           | Some n -> mkprim (loc, Number (NumTok.SPlus,n))
            | None -> mknot (loc,ntn,l,bl) end
         | _ -> mknot (loc,ntn,l,bl)
 
@@ -404,7 +408,7 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
 let extern_record_pattern cstrsp args =
   try
     if !Flags.raw_print then raise Exit;
-    let projs = Recordops.lookup_projections (fst cstrsp) in
+    let projs = Structure.find_projections (fst cstrsp) in
     if PrintingRecord.active (fst cstrsp) then
       ()
     else if PrintingConstructor.active (fst cstrsp) then
@@ -434,7 +438,7 @@ let extern_record_pattern cstrsp args =
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
   try
-    if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
+    if !Flags.in_debugger || !Flags.raw_print || !print_raw_literal then raise No_match;
     let (na,p,key) = uninterp_prim_token_cases_pattern pat scopes in
     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
       | None -> raise No_match
@@ -611,9 +615,12 @@ let is_gvar id c = match DAst.get c with
 let is_projection nargs r =
   if not !Flags.in_debugger && not !Flags.raw_print && !print_projections then
     try
-      let n = Recordops.find_projection_nparams r + 1 in
-      if n <= nargs then Some n
-      else None
+      match r with
+      | GlobRef.ConstRef c ->
+        let n = Structure.projection_nparams c + 1 in
+        if n <= nargs then Some n
+        else None
+      | _ -> None
     with Not_found -> None
   else None
 
@@ -686,33 +693,29 @@ let extern_record ref args =
   try
     if !Flags.raw_print then raise Exit;
     let cstrsp = match ref with GlobRef.ConstructRef c -> c | _ -> raise Not_found in
-    let struc = Recordops.lookup_structure (fst cstrsp) in
+    let struc = Structure.find (fst cstrsp) in
     if PrintingRecord.active (fst cstrsp) then
       ()
     else if PrintingConstructor.active (fst cstrsp) then
       raise Exit
     else if not (get_record_print ()) then
       raise Exit;
-    let projs = struc.Recordops.s_PROJ in
-    let locals = struc.Recordops.s_PROJKIND in
+    let projs = struc.Structure.projections in
     let rec cut args n =
       if Int.equal n 0 then args
       else
         match args with
         | [] -> raise No_match
         | _ :: t -> cut t (n - 1) in
-    let args = cut args struc.Recordops.s_EXPECTEDPARAM in
-    let rec ip projs locs args acc =
+    let args = cut args struc.Structure.nparams in
+    let rec ip projs args acc =
       match projs with
       | [] -> acc
-      | None :: q -> raise No_match
-      | Some c :: q ->
-         match locs with
-         | [] -> anomaly (Pp.str "projections corruption [Constrextern.extern].")
-         | { Recordops.pk_true_proj = false } :: locs' ->
+      | { Structure.proj_body = None } :: _ -> raise No_match
+      | { Structure.proj_body = Some c; proj_true = false } :: q ->
             (* we don't want to print locals *)
-            ip q locs' args acc
-         | { Recordops.pk_true_proj = true } :: locs' ->
+            ip q args acc
+      | { Structure.proj_body = Some c; proj_true = true } :: q ->
             match args with
             | [] -> raise No_match
             (* we give up since the constructor is not complete *)
@@ -720,9 +723,9 @@ let extern_record ref args =
                let arg = Lazy.force arg in
                let loc = arg.CAst.loc in
                let ref = extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c) in
-               ip q locs' tail ((ref, arg) :: acc)
+               ip q tail ((ref, arg) :: acc)
     in
-    Some (List.rev (ip projs locals args []))
+    Some (List.rev (ip projs args []))
   with
     | Not_found | No_match | Exit -> None
 
@@ -800,19 +803,21 @@ let extern_args extern env args =
 let match_coercion_app c = match DAst.get c with
   | GApp (r, args) ->
     begin match DAst.get r with
-    | GRef (r,_) -> Some (c.CAst.loc, r, 0, args)
+    | GRef (r,_) -> Some (c.CAst.loc, r, args)
     | _ -> None
     end
   | _ -> None
 
 let remove_one_coercion inctx c =
   try match match_coercion_app c with
-  | Some (loc,r,pars,args) when not (!Flags.raw_print || !print_coercions) ->
+  | Some (loc,r,args) when not (!Flags.raw_print || !print_coercions) ->
       let nargs = List.length args in
       (match Coercionops.hide_coercion r with
-          | Some n when (n - pars) < nargs && (inctx || (n - pars)+1 < nargs) ->
+          | Some nparams when
+                 let inctx = inctx || (* coercion to funclass implying being in context *) nparams+1 < nargs in
+                 nparams < nargs && inctx ->
               (* We skip the coercion *)
-              let l = List.skipn (n - pars) args in
+              let l = List.skipn nparams args in
               let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
               (* Don't flatten App's in case of funclass so that
                  (atomic) notations on [a] work; should be compatible
@@ -824,7 +829,7 @@ let remove_one_coercion inctx c =
                  have been made explicit to match *)
               let a' = if List.is_empty l then a else DAst.make ?loc @@ GApp (a,l) in
               let inctx = inctx || not (List.is_empty l) in
-              Some (n-pars+1, inctx, a')
+              Some (nparams+1, inctx, a')
           | _ -> None)
   | _ -> None
   with Not_found ->
@@ -851,6 +856,7 @@ let same_binder_type ty nal c =
 (* one with no delimiter if possible)                                 *)
 
 let extern_possible_prim_token (custom,scopes) r =
+   if !print_raw_literal then raise No_match;
    let (n,key) = uninterp_prim_token r scopes in
    match availability_of_entry_coercion custom InConstrEntrySomeLevel with
    | None -> raise No_match
@@ -867,7 +873,7 @@ let filter_enough_applied nargs l =
   | Some nargs ->
   List.filter (fun (keyrule,pat,n as _rule) ->
       match n with
-      | AppBoundedNotation n -> n > nargs
+      | AppBoundedNotation n -> n >= nargs
       | AppUnboundedNotation | NotAppNotation -> false) l
 
 (* Helper function for safe and optimal printing of primitive tokens  *)
@@ -884,9 +890,10 @@ let extern_prim_token_delimiter_if_required n key_n scope_n scopes =
 let extended_glob_local_binder_of_decl loc = function
   | (p,bk,None,t) -> GLocalAssum (p,bk,t)
   | (p,bk,Some x, t) ->
+    assert (bk = Explicit);
     match DAst.get t with
-    | GHole (_, IntroAnonymous, None) -> GLocalDef (p,bk,x,None)
-    | _ -> GLocalDef (p,bk,x,Some t)
+    | GHole (_, IntroAnonymous, None) -> GLocalDef (p,x,None)
+    | _ -> GLocalDef (p,x,Some t)
 
 let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_local_binder_of_decl loc u)
 
@@ -915,27 +922,49 @@ let extern_float f scopes =
       let hex = !Flags.raw_print || not (get_printing_float ()) in
       if hex then Float64.to_hex_string f else Float64.to_string f in
     let n = NumTok.Signed.of_string s in
-    extern_prim_token_delimiter_if_required (Numeral n)
+    extern_prim_token_delimiter_if_required (Number n)
       "float" "float_scope" scopes
 
 (**********************************************************************)
 (* mapping glob_constr to constr_expr                                    *)
 
-let extern_glob_sort = function
-  (* In case we print a glob_constr w/o having passed through detyping *)
-  | UNamed [(GSProp,0) | (GProp,0) | (GSet,0)] as u -> u
-  | UNamed _ when not !print_universes -> UAnonymous {rigid=true}
-  | UNamed _ | UAnonymous _ as u -> u
+type extern_env = Id.Set.t * UnivNames.universe_binders
+let extern_env env sigma = vars_of_env env, Evd.universe_binders sigma
+let empty_extern_env = Id.Set.empty, Id.Map.empty
 
-let extern_universes = function
-  | Some _ as l when !print_universes -> l
+let extern_glob_sort_name uvars = function
+  | GSProp -> CSProp
+  | GProp -> CProp
+  | GSet -> CSet
+  | GLocalUniv u -> CType (qualid_of_lident u)
+  | GRawUniv u -> CRawType u
+  | GUniv u -> begin match UnivNames.qualid_of_level uvars u with
+      | Some qid -> CType qid
+      | None -> CRawType u
+    end
+
+let extern_glob_sort uvars =
+  map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars)))
+
+(** wrapper to handle print_universes: don't forget small univs *)
+let extern_glob_sort uvars = function
+  (* In case we print a glob_constr w/o having passed through detyping *)
+  | UNamed [(GSProp,0) | (GProp,0) | (GSet,0)] as u -> extern_glob_sort uvars u
+  | UNamed _ when not !print_universes -> UAnonymous {rigid=true}
+  | UNamed _ | UAnonymous _ as u -> extern_glob_sort uvars u
+
+let extern_instance uvars = function
+  | Some l when !print_universes ->
+    Some (List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) l)
   | _ -> None
 
-let extern_ref vars ref us =
+let extern_ref (vars,uvars) ref us =
   extern_global (select_stronger_impargs (implicits_of_global ref))
-    (extern_reference vars ref) (extern_universes us)
+    (extern_reference vars ref) (extern_instance uvars us)
 
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
+
+let add_vname (vars,uvars) na = add_vname vars na, uvars
 
 let rec extern inctx ?impargs scopes vars r =
   match remove_one_coercion inctx (flatten_application r) with
@@ -944,7 +973,13 @@ let rec extern inctx ?impargs scopes vars r =
      with No_match -> extern inctx scopes vars r')
   | None ->
 
-  try extern_notations inctx scopes vars None r
+  let r' = match DAst.get r with
+    | GInt i when Coqlib.has_ref "num.int63.wrap_int" ->
+       let wrap = Coqlib.lib_ref "num.int63.wrap_int" in
+       DAst.make (GApp (DAst.make (GRef (wrap, None)), [r]))
+    | _ -> r in
+
+  try extern_notations inctx scopes vars None r'
   with No_match ->
 
   let loc = r.CAst.loc in
@@ -993,7 +1028,7 @@ let rec extern inctx ?impargs scopes vars r =
              (* Otherwise... *)
                extern_applied_ref inctx
                  (select_stronger_impargs (implicits_of_global ref))
-                 (ref,extern_reference ?loc vars ref) (extern_universes us) args)
+                 (ref,extern_reference ?loc (fst vars) ref) (extern_instance (snd vars) us) args)
          | _ ->
              let args = List.map (fun c -> (sub_extern true scopes vars c,None)) args in
              let head = sub_extern false scopes vars f in
@@ -1013,7 +1048,8 @@ let rec extern inctx ?impargs scopes vars r =
   | GCases (sty,rtntypopt,tml,eqns) ->
     let vars' =
       List.fold_right (Name.fold_right Id.Set.add)
-        (cases_predicate_names tml) vars in
+        (cases_predicate_names tml) (fst vars) in
+    let vars' = vars', snd vars in
     let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
                  let na' = match na, DAst.get tm with
@@ -1033,7 +1069,7 @@ let rec extern inctx ?impargs scopes vars r =
                   Option.map (fun {CAst.loc;v=(ind,nal)} ->
                               let args = List.map (fun x -> DAst.make @@ PatVar x) nal in
                               let fullargs = add_cpatt_for_params ind args in
-                              extern_ind_pattern_in_scope scopes vars ind fullargs
+                              extern_ind_pattern_in_scope scopes (fst vars) ind fullargs
                              ) x))
                 tml
     in
@@ -1056,7 +1092,7 @@ let rec extern inctx ?impargs scopes vars r =
         sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 
   | GRec (fk,idv,blv,tyv,bv) ->
-      let vars' = Array.fold_right Id.Set.add idv vars in
+      let vars' = on_fst (Array.fold_right Id.Set.add idv) vars in
       (match fk with
          | GFix (nv,n) ->
              let listdecl =
@@ -1064,8 +1100,8 @@ let rec extern inctx ?impargs scopes vars r =
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) bl in
                  let (assums,ids,bl) = extern_local_binder scopes vars bl in
-                 let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
-                 let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
+                 let vars0 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars in
+                 let vars1 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars' in
                  let n =
                    match nv.(i) with
                    | None -> None
@@ -1080,14 +1116,14 @@ let rec extern inctx ?impargs scopes vars r =
                Array.mapi (fun i fi ->
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) blv.(i) in
                  let (_,ids,bl) = extern_local_binder scopes vars bl in
-                 let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
-                 let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
+                 let vars0 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars in
+                 let vars1 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars' in
                  ((CAst.make fi),bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern true scopes vars1 bv.(i))) idv
              in
              CCoFix (CAst.(make ?loc idv.(n)),Array.to_list listdecl))
 
-  | GSort s -> CSort (extern_glob_sort s)
+  | GSort s -> CSort (extern_glob_sort (snd vars) s)
 
   | GHole (e,naming,_) -> CHole (Some e, naming, None) (* TODO: extern tactics. *)
 
@@ -1097,13 +1133,13 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GInt i ->
      extern_prim_token_delimiter_if_required
-       (Numeral (NumTok.Signed.of_int_string (Uint63.to_string i)))
+       (Number NumTok.(Signed.of_bigint CHex (Z.of_int64 (Uint63.to_int64 i))))
        "int63" "int63_scope" (snd scopes)
 
   | GFloat f -> extern_float f (snd scopes)
 
   | GArray(u,t,def,ty) ->
-    CArray(extern_universes u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
+    CArray(extern_instance (snd vars) u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
 
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
@@ -1125,8 +1161,8 @@ and factorize_prod ?impargs scopes vars na bk t c =
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = extern_typ scopes vars b in
-      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
-      let binder = CLocalPattern (make ?loc:c.loc (p,None)) in
+      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes (fst vars)) disjpat) in
+      let binder = CLocalPattern p in
       (match b.v with
       | CProdN (bl,b) -> CProdN (binder::bl,b)
       | _ -> CProdN ([binder],b))
@@ -1166,8 +1202,8 @@ and factorize_lambda inctx scopes vars na bk t c =
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = sub_extern inctx scopes vars b in
-      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
-      let binder = CLocalPattern (make ?loc:c.loc (p,None)) in
+      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes (fst vars)) disjpat) in
+      let binder = CLocalPattern p in
       (match b.v with
       | CLambdaN (bl,b) -> CLambdaN (binder::bl,b)
       | _ -> CLambdaN ([binder],b))
@@ -1192,9 +1228,9 @@ and extern_local_binder scopes vars = function
     [] -> ([],[],[])
   | b :: l ->
     match DAst.get b with
-    | GLocalDef (na,bk,bd,ty) ->
+    | GLocalDef (na,bd,ty) ->
       let (assums,ids,l) =
-        extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l in
+        extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l in
       (assums,na::ids,
        CLocalDef(CAst.make na, extern false scopes vars bd,
                    Option.map (extern_typ scopes vars) ty) :: l)
@@ -1202,7 +1238,7 @@ and extern_local_binder scopes vars = function
     | GLocalAssum (na,bk,ty) ->
       let implicit_type = is_reserved_type na ty in
       let ty = extern_typ scopes vars ty in
-      (match extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l with
+      (match extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l with
           (assums,ids,CLocalAssum(nal,k,ty')::l)
             when (constr_expr_eq ty ty' || implicit_type && constr_expr_eq ty' hole) &&
               match na with Name id -> not (occur_var_constr_expr id ty')
@@ -1217,20 +1253,24 @@ and extern_local_binder scopes vars = function
     | GLocalPattern ((p,_),_,bk,ty) ->
       let ty =
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
-      let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in
+      let p = mkCPatOr (List.map (extern_cases_pattern (fst vars)) p) in
       let (assums,ids,l) = extern_local_binder scopes vars l in
-      (assums,ids, CLocalPattern(CAst.make @@ (p,ty)) :: l)
+      let p = match ty with
+        | None -> p
+        | Some ty -> CAst.make @@ (CPatCast (p,ty)) in
+      (assums,ids, CLocalPattern p :: l)
 
 and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
-  let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in
+  let pll = List.map (List.map (extern_cases_pattern_in_scope scopes (fst vars))) pll in
   make ?loc (pll,extern inctx scopes vars c)
 
 and extern_notations inctx scopes vars nargs t =
-  if !Flags.raw_print || !print_no_symbol then raise No_match;
+  if !Flags.raw_print then raise No_match;
   try extern_possible_prim_token scopes t
   with No_match ->
-  let t = flatten_application t in
-  extern_notation inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
+    if !print_no_symbol then raise No_match;
+    let t = flatten_application t in
+    extern_notation inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
 
 and extern_notation inctx (custom,scopes as allscopes) vars t rules =
   match rules with
@@ -1272,8 +1312,9 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
             end
           | AppBoundedNotation _ -> raise No_match in
         (* Try matching ... *)
+        let vars, uvars = vars in
         let terms,termlists,binders,binderlists =
-          match_notation_constr !print_universes t pat in
+          match_notation_constr ~print_univ:(!print_universes) t ~vars pat in
         (* Try availability of interpretation ... *)
         match keyrule with
           | NotationRule (_,ntn as specific_ntn) ->
@@ -1293,36 +1334,45 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
               | Some (scopt,key) ->
                   let scopes' = Option.List.cons scopt (snd scopes) in
                   let l =
-                    List.map (fun (c,(subentry,(scopt,scl))) ->
+                    List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
                       extern (* assuming no overloading: *) true
-                        (subentry,(scopt,scl@scopes')) vars c)
-                      terms in
+                        (subentry,(scopt,scl@scopes')) (vars,uvars) c)
+                      terms
+                  in
                   let ll =
-                    List.map (fun (c,(subentry,(scopt,scl))) ->
-                      List.map (extern true (subentry,(scopt,scl@scopes')) vars) c)
-                      termlists in
+                    List.map (fun ((vars,l),(subentry,(scopt,scl))) ->
+                      List.map (extern true (subentry,(scopt,scl@scopes')) (vars,uvars)) l)
+                      termlists
+                  in
                   let bl =
-                    List.map (fun (bl,(subentry,(scopt,scl))) ->
-                      mkCPatOr (List.map (extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes')) vars) bl))
-                      binders in
+                    List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
+                        (mkCPatOr (List.map
+                                     (extern_cases_pattern_in_scope
+                                        (subentry,(scopt,scl@scopes')) vars)
+                                     bl)),
+                        Explicit)
+                      binders
+                  in
                   let bll =
-                    List.map (fun (bl,(subentry,(scopt,scl))) ->
-                      pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) vars bl))
-                      binderlists in
+                    List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
+                      pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) (vars,uvars) bl))
+                      binderlists
+                  in
                   let c = make_notation loc specific_ntn (l,ll,bl,bll) in
                   let c = insert_entry_coercion coercion (insert_delimiters c key) in
                   let args = fill_arg_scopes args argsscopes allscopes in
-                  let args = extern_args (extern true) vars args in
+                  let args = extern_args (extern true) (vars,uvars) args in
                   CAst.make ?loc @@ extern_applied_notation inctx nallargs argsimpls c args)
           | SynDefRule kn ->
               let l =
-                List.map (fun (c,(subentry,(scopt,scl))) ->
-                  extern true (subentry,(scopt,scl@snd scopes)) vars c)
-                  terms in
+                List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
+                  extern true (subentry,(scopt,scl@snd scopes)) (vars,uvars) c)
+                  terms
+              in
               let cf = Nametab.shortest_qualid_of_syndef ?loc vars kn in
               let a = CRef (cf,None) in
               let args = fill_arg_scopes args argsscopes allscopes in
-              let args = extern_args (extern true) vars args in
+              let args = extern_args (extern true) (vars,uvars) args in
               let c = CAst.make ?loc @@ extern_applied_syntactic_definition inctx nallargs argsimpls (a,cf) l args in
               if isCRef_no_univ c.CAst.v && entry_has_global custom then c
              else match availability_of_entry_coercion custom InConstrEntrySomeLevel with
@@ -1342,7 +1392,7 @@ let extern_glob_type ?impargs vars c =
 
 let extern_constr ?lax ?(inctx=false) ?scope env sigma t =
   let r = Detyping.detype Detyping.Later ?lax false Id.Set.empty env sigma t in
-  let vars = vars_of_env env in
+  let vars = extern_env env sigma in
   extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
 
 let extern_constr_in_scope ?lax ?inctx scope env sigma t =
@@ -1358,16 +1408,16 @@ let extern_type ?lax ?(goal_concl_style=false) env sigma ?impargs t =
   (* consideration; see namegen.ml for further details *)
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r = Detyping.detype Detyping.Later ?lax goal_concl_style avoid env sigma t in
-  extern_glob_type ?impargs (vars_of_env env) r
+  extern_glob_type ?impargs (extern_env env sigma) r
 
-let extern_sort sigma s = extern_glob_sort (detype_sort sigma s)
+let extern_sort sigma s = extern_glob_sort (Evd.universe_binders sigma) (detype_sort sigma s)
 
 let extern_closed_glob ?lax ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma t =
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r =
     Detyping.detype_closed_glob ?lax goal_concl_style avoid env sigma t
   in
-  let vars = vars_of_env env in
+  let vars = extern_env env sigma in
   extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
 
 (******************************************************************)
@@ -1424,23 +1474,33 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PIf (c,b1,b2) ->
       GIf (glob_of_pat avoid env sigma c, (Anonymous,None),
            glob_of_pat avoid env sigma b1, glob_of_pat avoid env sigma b2)
-  | PCase ({cip_style=Constr.LetStyle; cip_ind_tags=None},PMeta None,tm,[(0,n,b)]) ->
-      let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat avoid env sigma b) in
+  | PCase ({cip_style=Constr.LetStyle},None,tm,[(0,n,b)]) ->
+      let n, b = glob_of_pat_under_context avoid env sigma (n, b) in
+      let nal = Array.to_list n in
       GLetTuple (nal,(Anonymous,None),glob_of_pat avoid env sigma tm,b)
   | PCase (info,p,tm,bl) ->
       let mat = match bl, info.cip_ind with
         | [], _ -> []
         | _, Some ind ->
-          let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat avoid env sigma c)) bl in
-          simple_cases_matrix_of_branches ind bl'
+          let map (i, n, c) =
+            let n, c = glob_of_pat_under_context avoid env sigma (n, c) in
+            let nal = Array.to_list n in
+            let mkPatVar na = DAst.make @@ PatVar na in
+            let p = DAst.make @@ PatCstr ((ind,i+1),List.map mkPatVar nal,Anonymous) in
+            let ids = List.map_filter Nameops.Name.to_option nal in
+            CAst.make @@ (ids,[p],c)
+          in
+          List.map map bl
         | _, None -> anomaly (Pp.str "PCase with some branches but unknown inductive.")
       in
       let mat = if info.cip_extensible then mat @ [any_any_branch] else mat
       in
-      let indnames,rtn = match p, info.cip_ind, info.cip_ind_tags with
-        | PMeta None, _, _ -> (Anonymous,None),None
-        | _, Some ind, Some nargs ->
-          return_type_of_predicate ind nargs (glob_of_pat avoid env sigma p)
+      let indnames,rtn = match p, info.cip_ind with
+        | None, _ -> (Anonymous,None),None
+        | Some p, Some ind ->
+          let nas, p = glob_of_pat_under_context avoid env sigma p in
+          let nas = Array.rev_to_list nas in
+          ((List.hd nas, Some (CAst.make (ind, List.tl nas))), Some p)
         | _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
       in
       GCases (Constr.RegularStyle,rtn,[glob_of_pat avoid env sigma tm,indnames],mat)
@@ -1484,11 +1544,26 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
     let glob_of = glob_of_pat avoid env sigma in
     GArray (None, Array.map glob_of t, glob_of def, glob_of ty)
 
+and glob_of_pat_under_context avoid env sigma (nas, pat) =
+  let fold (avoid, env, nas, epat) na =
+    let na, avoid = compute_displayed_name_in_pattern sigma avoid na epat in
+    let env = Termops.add_name na env in
+    let epat = match epat with PLambda (_, _, p) -> p | _ -> assert false in
+    (avoid, env, na :: nas, epat)
+  in
+  let epat = Array.fold_right (fun na p -> PLambda (na, PMeta None, p)) nas pat in
+  let (avoid', env', nas, _) = Array.fold_left fold (avoid, env, [], epat) nas in
+  let pat = glob_of_pat avoid' env' sigma pat in
+  (Array.rev_of_list nas, pat)
+
 let extern_constr_pattern env sigma pat =
-  extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)
+  extern true (InConstrEntrySomeLevel,(None,[]))
+    (* XXX no vars? *)
+    (Id.Set.empty, Evd.universe_binders sigma)
+    (glob_of_pat Id.Set.empty env sigma pat)
 
 let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
-  let vars = vars_of_env env in
+  let vars = extern_env env sigma in
   let a = List.map (extended_glob_local_binder_of_decl) a in
   pi3 (extern_local_binder (InConstrEntrySomeLevel,(None,[])) vars a)

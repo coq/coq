@@ -58,6 +58,7 @@ Definition Cmp (elt:Type)(cmp:elt->elt->bool) e1 e2 := cmp e1 e2 = true.
 Module Type WSfun (E : DecidableType).
 
   Definition key := E.t.
+  #[global]
   Hint Transparent key : core.
 
   Parameter t : Type -> Type.
@@ -243,9 +244,11 @@ Module Type WSfun (E : DecidableType).
 	(x:key)(f:option elt->option elt'->option elt''),
         In x (map2 f m m') -> In x m \/ In x m'.
 
+  #[global]
   Hint Immediate MapsTo_1 mem_2 is_empty_2
     map_2 mapi_2 add_3 remove_3 find_2
     : map.
+  #[global]
   Hint Resolve mem_1 is_empty_1 is_empty_2 add_1 add_2 remove_1
     remove_2 find_1 fold_1 map_1 mapi_1 mapi_2
     : map.

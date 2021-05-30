@@ -206,7 +206,9 @@ val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
 val shortest_qualid_of_syndef : ?loc:Loc.t -> Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
-val shortest_qualid_of_universe : ?loc:Loc.t -> Univ.Level.UGlobal.t -> qualid
+
+(** In general we have a [UnivNames.universe_binders] around rather than a [Id.Set.t] *)
+val shortest_qualid_of_universe : ?loc:Loc.t -> 'u Id.Map.t -> Univ.Level.UGlobal.t -> qualid
 
 (** {5 Generic name handling} *)
 
@@ -236,6 +238,7 @@ module type NAMETREE = sig
   val find : user_name -> t -> elt
   val exists : user_name -> t -> bool
   val user_name : qualid -> t -> user_name
+  val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> user_name -> t -> qualid
   val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
   val match_prefixes : qualid -> t -> elt list

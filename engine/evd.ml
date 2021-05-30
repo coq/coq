@@ -525,7 +525,7 @@ end = struct
       let principal =
         if principal then
           match fgl.principal with
-          | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
+          | Some _ -> CErrors.user_err Pp.(str "Only one main goal per instantiation.")
           | None -> Some evk
         else fgl.principal
       in
@@ -832,9 +832,9 @@ let empty = {
   extras = Store.empty;
 }
 
-let from_env e = { empty with universes = UState.from_env e }
+let from_env ?binders e = { empty with universes = UState.from_env ?binders e }
 
-let from_ctx ctx = { empty with universes = ctx }
+let from_ctx uctx = { empty with universes = uctx }
 
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 
@@ -983,6 +983,9 @@ let fresh_inductive_instance ?loc ?(rigid=univ_flexible) env evd i =
 let fresh_constructor_instance ?loc ?(rigid=univ_flexible) env evd c =
   with_context_set ?loc rigid evd (UnivGen.fresh_constructor_instance env c)
 
+let fresh_array_instance ?loc ?(rigid=univ_flexible) env evd =
+  with_context_set ?loc rigid evd (UnivGen.fresh_array_instance env)
+
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
   with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
 
@@ -1069,14 +1072,14 @@ let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
 
 let nf_univ_variables evd =
-  let subst, uctx' = UState.normalize_variables evd.universes in
-  let evd' = {evd with universes = uctx'} in
-    evd', subst
+  let uctx = UState.normalize_variables evd.universes in
+  {evd with universes = uctx}
+
 
 let minimize_universes evd =
-  let subst, uctx' = UState.normalize_variables evd.universes in
+  let uctx' = UState.normalize_variables evd.universes in
   let uctx' = UState.minimize uctx' in
-    {evd with universes = uctx'}
+  {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
 
@@ -1230,6 +1233,11 @@ let restrict evk filter ?candidates ?src evd =
   let evd = remove_future_goal evd evk in
   let evd = declare_future_goal evk' evd in
   (evd, evk')
+
+let update_source evd evk src =
+  let evar_info = EvMap.find evk evd.undf_evars in
+  let evar_info' = { evar_info with evar_source = src } in
+  { evd with undf_evars = EvMap.add evk evar_info' evd.undf_evars }
 
 (**********************************************************)
 (* Accessing metas *)

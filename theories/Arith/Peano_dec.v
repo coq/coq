@@ -23,6 +23,7 @@ Defined.
 
 Notation eq_nat_dec := Nat.eq_dec (only parsing).
 
+#[global]
 Hint Resolve O_or_S eq_nat_dec: arith.
 
 Theorem dec_eq_nat n m : decidable (n = m).

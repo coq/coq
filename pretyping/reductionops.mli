@@ -19,7 +19,7 @@ open Environ
 
 exception Elimconst
 
-val debug_RAKAM : unit -> bool
+val debug_RAKAM : CDebug.t
 
 module CredNative : Primred.RedNative with
   type elem = EConstr.t and type args = EConstr.t array and type evd = Evd.evar_map
@@ -53,60 +53,69 @@ val reduction_effect_hook : Environ.env -> Evd.evar_map -> Constant.t ->
   Constr.constr Lazy.t -> unit
 
 module Stack : sig
-  type 'a app_node
+  type app_node
 
-  val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
+  val pr_app_node : (EConstr.t -> Pp.t) -> app_node -> Pp.t
 
-  type 'a member =
-  | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
+  type case_stk
+
+  type member =
+  | App of app_node
+  | Case of case_stk
   | Proj of Projection.t
-  | Fix of ('a, 'a) pfixpoint * 'a t
-  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
-  and 'a t = 'a member list
+  | Fix of EConstr.fixpoint * t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
+  and t = member list
 
-  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
+  val pr : (EConstr.t -> Pp.t) -> t -> Pp.t
 
-  val empty : 'a t
-  val is_empty : 'a t -> bool
-  val append_app : 'a array -> 'a t -> 'a t
-  val decomp : 'a t -> ('a * 'a t) option
+  val empty : t
+  val is_empty : t -> bool
 
-  val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
-
-  val compare_shape : 'a t -> 'a t -> bool
+  val compare_shape : t -> t -> bool
 
   exception IncompatibleFold2
 
   (** [fold2 f x sk1 sk2] folds [f] on any pair of term in [(sk1,sk2)].
       @return the result and the lifts to apply on the terms
       @raise IncompatibleFold2 when [sk1] and [sk2] have incompatible shapes *)
-  val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
-    constr t -> constr t -> 'a
-  val map : ('a -> 'a) -> 'a t -> 'a t
-  val append_app_list : 'a list -> 'a t -> 'a t
+  val fold2 : ('a -> constr -> constr -> 'a) -> 'a -> t -> t -> 'a
 
-  (** if [strip_app s] = [(a,b)], then [s = a @ b] and [b] does not
-      start by App *)
-  val strip_app : 'a t -> 'a t * 'a t
+  (** [append_app args sk] pushes array of arguments [args] on [sk] *)
+  val append_app : EConstr.t array -> t -> t
 
-  (** @return (the nth first elements, the (n+1)th element, the remaining stack)  *)
-  val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
+  (** [append_app_list args sk] pushes list of arguments [args] on [sk] *)
+  val append_app_list : EConstr.t list -> t -> t
 
-  val not_purely_applicative : 'a t -> bool
-  val list_of_app_stack : constr t -> constr list option
+  (** if [strip_app sk] = [(sk1,sk2)], then [sk = sk1 @ sk2] with
+      [sk1] purely applicative and [sk2] does not start with an argument *)
+  val strip_app : t -> t * t
 
-  val assign : 'a t -> int -> 'a -> 'a t
-  val args_size : 'a t -> int
-  val tail : int -> 'a t -> 'a t
-  val nth : 'a t -> int -> 'a
+  (** @return (the nth first elements, the (n+1)th element, the remaining stack)
+      if there enough of those *)
+  val strip_n_app : int -> t -> (t * EConstr.t * t) option
 
-  val zip : evar_map -> constr * constr t -> constr
+  (** [decomp sk] extracts the first argument of reversed stack [sk] is there is some *)
+  val decomp_rev : t -> (EConstr.t * t) option
+
+  (** [not_purely_applicative sk] *)
+  val not_purely_applicative : t -> bool
+
+  (** [list_of_app_stack sk] either returns [Some sk] turned into a list of
+      arguments if [sk] is purely applicative and [None] otherwise *)
+  val list_of_app_stack : t -> constr list option
+
+  (** [args_size sk] returns the number of arguments available at the
+      head of [sk] *)
+  val args_size : t -> int
+
+  (** [zip sigma t sk] *)
+  val zip : evar_map -> constr * t -> constr
+
+  val expand_case : env -> evar_map -> case_stk -> constr * constr array
 end
 
 (************************************************************************)
-
-type state = constr * constr Stack.t
 
 type reduction_function = env -> evar_map -> constr -> constr
 
@@ -114,24 +123,6 @@ type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
 
 type stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
-
-type state_reduction_function =
-    env -> evar_map -> state -> state
-
-val pr_state : env -> evar_map -> state -> Pp.t
-
-(** {6 Reduction Function Operators } *)
-
-val strong_with_flags :
-  (CClosure.RedFlags.reds -> reduction_function) ->
-  (CClosure.RedFlags.reds -> reduction_function)
-val strong : reduction_function -> reduction_function
-
-val whd_state_gen :
-  CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state
-
-val iterate_whd_gen : CClosure.RedFlags.reds ->
-  Environ.env -> Evd.evar_map -> constr -> constr
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
 
@@ -166,24 +157,14 @@ val whd_all_stack : stack_reduction_function
 val whd_allnolet_stack : stack_reduction_function
 val whd_betalet_stack : stack_reduction_function
 
-val whd_nored_state : state_reduction_function
-val whd_beta_state : state_reduction_function
-val whd_betaiota_state : state_reduction_function
-val whd_betaiotazeta_state : state_reduction_function
-val whd_all_state : state_reduction_function
-val whd_allnolet_state : state_reduction_function
-val whd_betalet_state : state_reduction_function
-
 (** {6 Head normal forms } *)
 
+val whd_const : Constant.t -> reduction_function
 val whd_delta_stack :  stack_reduction_function
-val whd_delta_state :  state_reduction_function
 val whd_delta :  reduction_function
 val whd_betadeltazeta_stack :  stack_reduction_function
-val whd_betadeltazeta_state :  state_reduction_function
 val whd_betadeltazeta :  reduction_function
 val whd_zeta_stack : stack_reduction_function
-val whd_zeta_state : state_reduction_function
 val whd_zeta : reduction_function
 
 val shrink_eta : Environ.env -> constr -> constr
@@ -269,11 +250,24 @@ val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
 
 (** {6 Heuristic for Conversion with Evar } *)
 
+type state = constr * Stack.t
+
+type state_reduction_function =
+    env -> evar_map -> state -> state
+
+val pr_state : env -> evar_map -> state -> Pp.t
+
+val whd_nored_state : state_reduction_function
+
 val whd_betaiota_deltazeta_for_iota_state :
-  TransparentState.t -> Environ.env -> Evd.evar_map -> state -> state
+  TransparentState.t -> state_reduction_function
 
 (** {6 Meta-related reduction functions } *)
-val meta_instance : env -> evar_map -> constr freelisted -> constr
+type meta_instance_subst
+
+val create_meta_instance_subst : Evd.evar_map -> meta_instance_subst
+
+val meta_instance : env -> meta_instance_subst -> constr freelisted -> constr
 val nf_meta       : env -> evar_map -> constr -> constr
 
 exception AnomalyInConversion of exn

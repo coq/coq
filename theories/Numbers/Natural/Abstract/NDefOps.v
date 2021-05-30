@@ -27,6 +27,7 @@ Definition if_zero (A : Type) (a b : A) (n : N.t) : A :=
 
 Arguments if_zero [A] a b n.
 
+#[global]
 Instance if_zero_wd (A : Type) :
  Proper (Logic.eq ==> Logic.eq ==> N.eq ==> Logic.eq) (@if_zero A).
 Proof.
@@ -53,6 +54,7 @@ Definition def_add (x y : N.t) := recursion y (fun _ => S) x.
 
 Local Infix "+++" := def_add (at level 50, left associativity).
 
+#[global]
 Instance def_add_wd : Proper (N.eq ==> N.eq ==> N.eq) def_add.
 Proof.
 unfold def_add. f_equiv'.
@@ -83,6 +85,7 @@ Definition def_mul (x y : N.t) := recursion 0 (fun _ p => p +++ x) y.
 
 Local Infix "**" := def_mul (at level 40, left associativity).
 
+#[global]
 Instance def_mul_wd : Proper (N.eq ==> N.eq ==> N.eq) def_mul.
 Proof.
 unfold def_mul. (* TODO : solve_proper SLOW + BUG *)
@@ -119,6 +122,7 @@ recursion
 
 Local Infix "<<" := ltb (at level 70, no associativity).
 
+#[global]
 Instance ltb_wd : Proper (N.eq ==> N.eq ==> Logic.eq) ltb.
 Proof.
 unfold ltb. f_equiv'.
@@ -179,6 +183,7 @@ Qed.
 
 Definition even (x : N.t) := recursion true (fun _ p => negb p) x.
 
+#[global]
 Instance even_wd : Proper (N.eq==>Logic.eq) even.
 Proof.
 unfold even. f_equiv'.
@@ -204,6 +209,7 @@ Definition half_aux (x : N.t) : N.t * N.t :=
 
 Definition half (x : N.t) := snd (half_aux x).
 
+#[global]
 Instance half_aux_wd : Proper (N.eq ==> N.eq*N.eq) half_aux.
 Proof.
 intros x x' Hx. unfold half_aux.
@@ -212,6 +218,7 @@ intros y y' Hy (u,v) (u',v') (Hu,Hv). compute in *.
 rewrite Hu, Hv; auto with *.
 Qed.
 
+#[global]
 Instance half_wd : Proper (N.eq==>N.eq) half.
 Proof.
 unfold half. f_equiv'.
@@ -329,6 +336,7 @@ Definition pow (n m : N.t) := recursion 1 (fun _ r => n*r) m.
 
 Local Infix "^^" := pow (at level 30, right associativity).
 
+#[global]
 Instance pow_wd : Proper (N.eq==>N.eq==>N.eq) pow.
 Proof.
 unfold pow. f_equiv'.
@@ -355,6 +363,7 @@ strong_rec 0
               else S (g (half x)))
            x.
 
+#[global]
 Instance log_prewd :
  Proper ((N.eq==>N.eq)==>N.eq==>N.eq)
    (fun g x => if x<<2 then 0 else S (g (half x))).
@@ -365,6 +374,7 @@ destruct (n' << 2); auto with *.
 f_equiv. apply Hg. now f_equiv.
 Qed.
 
+#[global]
 Instance log_wd : Proper (N.eq==>N.eq) log.
 Proof.
 intros x x' Exx'. unfold log.
@@ -383,6 +393,7 @@ f_equiv. apply E, half_decrease.
 rewrite two_succ, <- not_true_iff_false, ltb_lt, nlt_ge, le_succ_l in H.
 order'.
 Qed.
+#[global]
 Hint Resolve log_good_step : core.
 
 Theorem log_init : forall n, n < 2 -> log n == 0.

@@ -357,6 +357,7 @@ Proof.
  unfold singleton; intuition_in.
 Qed.
 
+#[global]
 Instance singleton_ok x : Ok (singleton x).
 Proof.
  unfold singleton; auto.
@@ -370,6 +371,7 @@ Proof.
  unfold create; split; [ inversion_clear 1 | ]; intuition.
 Qed.
 
+#[global]
 Instance create_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
  Ok (create l x r).
 Proof.
@@ -383,6 +385,7 @@ Proof.
  rewrite !create_spec; intuition_in.
 Qed.
 
+#[global]
 Instance bal_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
  Ok (bal l x r).
 Proof.
@@ -406,6 +409,7 @@ Lemma add_spec : forall s x y `{Ok s},
  InT y (add x s) <-> X.eq y x \/ InT y s.
 Proof. intros; apply add_spec'. Qed.
 
+#[global]
 Instance add_ok s x `(Ok s) : Ok (add x s).
 Proof.
  induct s x; auto; apply bal_ok; auto;
@@ -448,6 +452,7 @@ Proof.
  apply create_spec.
 Qed.
 
+#[global]
 Instance join_ok : forall l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r),
  Ok (join l x r).
 Proof.
@@ -469,6 +474,7 @@ Proof.
  rewrite bal_spec, In_node_iff, IHp, e0; simpl; intuition.
 Qed.
 
+#[global]
 Instance remove_min_ok l x r : forall h `(Ok (Node h l x r)),
  Ok (remove_min l x r)#1.
 Proof.
@@ -511,6 +517,7 @@ Proof.
  rewrite bal_spec, remove_min_spec, e1; simpl; intuition.
 Qed.
 
+#[global]
 Instance merge_ok s1 s2 : forall `(Ok s1, Ok s2)
  `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2),
  Ok (merge s1 s2).
@@ -540,6 +547,7 @@ Proof.
  rewrite bal_spec, IHr; clear IHl IHr; intuition; [order|order|intuition_in].
 Qed.
 
+#[global]
 Instance remove_ok s x `(Ok s) : Ok (remove x s).
 Proof.
  induct s x.
@@ -567,6 +575,7 @@ Proof.
  rewrite join_spec, remove_min_spec, e1; simpl; intuition.
 Qed.
 
+#[global]
 Instance concat_ok s1 s2 : forall `(Ok s1, Ok s2)
  `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2),
  Ok (concat s1 s2).
@@ -634,9 +643,11 @@ Proof.
  intros y; rewrite H; intuition.
 Qed.
 
+#[global]
 Instance split_ok1 s x `(Ok s) : Ok (split x s)#l.
 Proof. intros; destruct (@split_ok s x); auto. Qed.
 
+#[global]
 Instance split_ok2 s x `(Ok s) : Ok (split x s)#r.
 Proof. intros; destruct (@split_ok s x); auto. Qed.
 
@@ -679,6 +690,7 @@ Lemma inter_spec : forall s1 s2 y `{Ok s1, Ok s2},
  (InT y (inter s1 s2) <-> InT y s1 /\ InT y s2).
 Proof. intros; destruct (@inter_spec_ok s1 s2); auto. Qed.
 
+#[global]
 Instance inter_ok s1 s2 `(Ok s1, Ok s2) : Ok (inter s1 s2).
 Proof. intros; destruct (@inter_spec_ok s1 s2); auto. Qed.
 
@@ -714,6 +726,7 @@ Lemma diff_spec : forall s1 s2 y `{Ok s1, Ok s2},
  (InT y (diff s1 s2) <-> InT y s1 /\ ~InT y s2).
 Proof. intros; destruct (@diff_spec_ok s1 s2); auto. Qed.
 
+#[global]
 Instance diff_ok s1 s2 `(Ok s1, Ok s2) : Ok (diff s1 s2).
 Proof. intros; destruct (@diff_spec_ok s1 s2); auto. Qed.
 
@@ -731,6 +744,7 @@ Proof.
  destruct (X.compare_spec y x1); intuition_in.
 Qed.
 
+#[global]
 Instance union_ok s1 s2 : forall `(Ok s1, Ok s2), Ok (union s1 s2).
 Proof.
  functional induction union s1 s2; intros B1 B2; auto.
@@ -765,6 +779,7 @@ Proof.
    * rewrite concat_spec; intuition_in; eauto.
 Qed.
 
+#[global]
 Instance filter_ok s f `(H : Ok s) : Ok (filter f s).
 Proof.
  induction H as [ | h x l r Hl Hfl Hr Hfr Hlt Hgt ].
@@ -805,9 +820,11 @@ Lemma partition_spec2 s f :
  Equal (partition f s)#2 (filter (fun x => negb (f x)) s).
 Proof. now rewrite partition_spec2'. Qed.
 
+#[global]
 Instance partition_ok1 s f `(Ok s) : Ok (partition f s)#1.
 Proof. rewrite partition_spec1'; now apply filter_ok. Qed.
 
+#[global]
 Instance partition_ok2 s f `(Ok s) : Ok (partition f s)#2.
 Proof. rewrite partition_spec2'; now apply filter_ok. Qed.
 

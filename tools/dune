@@ -1,8 +1,13 @@
 (install
  (section lib)
- (package coq)
+ (package coq-core)
  (files
-  (CoqMakefile.in as tools/CoqMakefile.in)
+  (CoqMakefile.in as tools/CoqMakefile.in)))
+
+(install
+ (section libexec)
+ (package coq-core)
+ (files
   (TimeFileMaker.py as tools/TimeFileMaker.py)
   (make-one-time-file.py as tools/make-one-time-file.py)
   (make-both-time-files.py as tools/make-both-time-files.py)
@@ -11,30 +16,30 @@
 (executable
  (name coq_makefile)
  (public_name coq_makefile)
- (package coq)
+ (package coq-core)
  (modules coq_makefile)
- (libraries coq.lib))
+ (libraries coq-core.lib))
 
 (executable
  (name coqworkmgr)
  (public_name coqworkmgr)
- (package coq)
+ (package coq-core)
  (modules coqworkmgr)
- (libraries coq.stm))
+ (libraries coq-core.stm))
 
 (executable
  (name coqdep)
  (public_name coqdep)
- (package coq)
+ (package coq-core)
  (modules coqdep_lexer coqdep_common coqdep)
- (libraries coq.lib))
+ (libraries coq-core.lib))
 
 ; Bare-bones mllib/mlpack parser
 (executable
  (name ocamllibdep)
  (public_name ocamllibdep)
  (modules ocamllibdep)
- (package coq)
+ (package coq-core)
  (libraries unix))
 
 (ocamllex coqdep_lexer ocamllibdep)
@@ -42,7 +47,7 @@
 (executable
  (name coqwc)
  (public_name coqwc)
- (package coq)
+ (package coq-core)
  (modules coqwc)
  (libraries))
 
@@ -51,6 +56,6 @@
 (executables
  (names coq_tex)
  (public_names coq-tex)
- (package coq)
+ (package coq-core)
  (modules coq_tex)
  (libraries str))

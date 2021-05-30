@@ -3,6 +3,17 @@
 #set -x
 set -e
 
+# tools
+TTOOLSDIR="$COQPREFIX/lib/coq-core/tools"
+
+export make_both_time_files="$TTOOLSDIR"/make-both-time-files.py
+export make_one_time_file="$TTOOLSDIR"/make-one-time-file.py
+export make_both_single_timing_files="$TTOOLSDIR"/make-both-single-timing-files.py
+
+#
+NONATIVECOMP=$(grep "let native_compiler = NativeOff" ../../../config/coq_config.ml)||true
+if [[ ! $NONATIVECOMP ]]; then exit 0 ; fi
+
 . ../template/path-init.sh
 
 # reset MAKEFLAGS so that, e.g., `make -C test-suite -B coq-makefile` doesn't give us issues

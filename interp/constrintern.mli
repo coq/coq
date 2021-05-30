@@ -88,7 +88,8 @@ val intern_gen : typing_constraint -> env -> evar_map ->
 val intern_pattern : env -> cases_pattern_expr ->
   lident list * (Id.t Id.Map.t * cases_pattern) list
 
-val intern_context : env -> internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
+val intern_context : env -> bound_univs:UnivNames.universe_binders ->
+  internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
@@ -136,12 +137,23 @@ val interp_type_evars_impls : ?flags:inference_flags -> env -> evar_map ->
 
 (** Interprets constr patterns *)
 
+(** Without typing *)
 val intern_constr_pattern :
   env -> evar_map -> ?as_type:bool -> ?ltacvars:ltac_sign ->
     constr_pattern_expr -> patvar list * constr_pattern
 
-(** Raise Not_found if syndef not bound to a name and error if unexisting ref *)
-val intern_reference : qualid -> GlobRef.t
+(** With typing *)
+val interp_constr_pattern :
+  env -> evar_map -> ?expected_type:typing_constraint ->
+    constr_pattern_expr -> constr_pattern
+
+(** Returns None if it's a syndef not bound to a name, raises an error
+    if not existing *)
+val intern_reference : qualid -> GlobRef.t option
+
+(** Returns None if not a reference or a syndef not bound to a name *)
+val intern_name_alias :
+  constr_expr -> (GlobRef.t * Glob_term.glob_level list option) option
 
 (** Expands abbreviations (syndef); raise an error if not existing *)
 val interp_reference : ltac_sign -> qualid -> glob_constr
@@ -163,7 +175,7 @@ val interp_context_evars :
 (** Locating references of constructions, possibly via a syntactic definition
    (these functions do not modify the glob file) *)
 
-val locate_reference :  Libnames.qualid -> GlobRef.t
+val locate_reference :  Libnames.qualid -> GlobRef.t option
 val is_global : Id.t -> bool
 
 (** Interprets a term as the left-hand side of a notation. The returned map is
@@ -191,3 +203,17 @@ val get_asymmetric_patterns : unit -> bool
 val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
 (** Check that a list of record field definitions doesn't contain
     duplicates. *)
+
+val interp_known_level : Evd.evar_map -> sort_name_expr -> Univ.Level.t
+
+(** Local universe and constraint declarations. *)
+val interp_univ_decl : Environ.env -> universe_decl_expr ->
+                       Evd.evar_map * UState.universe_decl
+
+val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
+                       Evd.evar_map * UState.universe_decl
+
+val interp_cumul_univ_decl_opt : Environ.env -> cumul_univ_decl_expr option ->
+  Evd.evar_map * UState.universe_decl * Entries.variance_entry
+(** BEWARE the variance entry needs to be adjusted by
+   [ComInductive.variance_of_entry] if the instance is extensible. *)

@@ -20,6 +20,10 @@ make install-doc DSTROOT="$PWD/tmp"
 sort > desired <<EOT
 .
 ./test
+./test/.coq-native
+./test/.coq-native/Ntest_test.cmi
+./test/.coq-native/Ntest_test.cmx
+./test/.coq-native/Ntest_test.cmxs
 ./test/test.glob
 ./test/test.cmi
 ./test/test.cmx
@@ -30,6 +34,10 @@ sort > desired <<EOT
 ./test/test.v
 ./test/test.vo
 ./test2
+./test2/.coq-native
+./test2/.coq-native/Ntest2_test.cmi
+./test2/.coq-native/Ntest2_test.cmx
+./test2/.coq-native/Ntest2_test.cmxs
 ./test2/test.glob
 ./test2/test.v
 ./test2/test.vo
@@ -58,4 +66,5 @@ sort > desired <<EOT
 ./orphan_test_test2_test/mlihtml/type_Test_aux.html
 ./orphan_test_test2_test/mlihtml/type_Test.html
 EOT
+(coqc -config | grep -q "NATIVE_COMPILER_DEFAULT=yes") || sed -i.bak '/\.coq-native/d' desired
 exec diff -u desired actual

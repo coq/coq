@@ -189,26 +189,40 @@ Section Defs.
 End Defs.
 
 (** Default rewrite relations handled by [setoid_rewrite]. *)
+#[global]
 Instance: RewriteRelation impl.
 Defined.
+#[global]
 Instance: RewriteRelation iff.
 Defined.
 
 (** Hints to drive the typeclass resolution avoiding loops
  due to the use of full unification. *)
+#[global]
 Hint Extern 1 (Reflexive (complement _)) => class_apply @irreflexivity : typeclass_instances.
+#[global]
 Hint Extern 3 (Symmetric (complement _)) => class_apply complement_Symmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Irreflexive (complement _)) => class_apply complement_Irreflexive : typeclass_instances.
 
+#[global]
 Hint Extern 3 (Reflexive (flip _)) => apply flip_Reflexive : typeclass_instances.
+#[global]
 Hint Extern 3 (Irreflexive (flip _)) => class_apply flip_Irreflexive : typeclass_instances.
+#[global]
 Hint Extern 3 (Symmetric (flip _)) => class_apply flip_Symmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Asymmetric (flip _)) => class_apply flip_Asymmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Antisymmetric (flip _)) => class_apply flip_Antisymmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Transitive (flip _)) => class_apply flip_Transitive : typeclass_instances.
+#[global]
 Hint Extern 3 (StrictOrder (flip _)) => class_apply flip_StrictOrder : typeclass_instances.
+#[global]
 Hint Extern 3 (PreOrder (flip _)) => class_apply flip_PreOrder : typeclass_instances.
 
+#[global]
 Hint Extern 4 (subrelation (flip _) _) => 
   class_apply @subrelation_symmetric : typeclass_instances.
 
@@ -218,11 +232,10 @@ Arguments asymmetry {A} {R} {_} [x] [y] _ _.
 Arguments transitivity {A} {R} {_} [x] [y] [z] _ _.
 Arguments Antisymmetric A eqA {_} _.
 
+#[global]
 Hint Resolve irreflexivity : ord.
 
 Unset Implicit Arguments.
-
-(** A HintDb for relations. *)
 
 Ltac solve_relation :=
   match goal with
@@ -230,6 +243,7 @@ Ltac solve_relation :=
   | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
   end.
 
+#[global]
 Hint Extern 4 => solve_relation : relations.
 
 (** We can already dualize all these properties. *)
@@ -264,17 +278,23 @@ Local Obligation Tactic := try solve [ simpl_relation ].
 
 (** Logical implication. *)
 
+#[global]
 Program Instance impl_Reflexive : Reflexive impl.
+#[global]
 Program Instance impl_Transitive : Transitive impl.
 
 (** Logical equivalence. *)
 
+#[global]
 Instance iff_Reflexive : Reflexive iff := iff_refl.
+#[global]
 Instance iff_Symmetric : Symmetric iff := iff_sym.
+#[global]
 Instance iff_Transitive : Transitive iff := iff_trans.
 
 (** Logical equivalence [iff] is an equivalence relation. *)
 
+#[global]
 Program Instance iff_equivalence : Equivalence iff.
 
 (** We now develop a generalization of results on relations for arbitrary predicates.
@@ -395,7 +415,8 @@ Notation "∙⊥∙" := false_predicate : predicate_scope.
 
 (** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
 
-Program Instance predicate_equivalence_equivalence : 
+#[global]
+Program Instance predicate_equivalence_equivalence {l} :
   Equivalence (@predicate_equivalence l).
 
   Next Obligation.
@@ -413,7 +434,8 @@ Program Instance predicate_equivalence_equivalence :
       firstorder.
   Qed.
 
-Program Instance predicate_implication_preorder :
+#[global]
+Program Instance predicate_implication_preorder {l} :
   PreOrder (@predicate_implication l).
   Next Obligation.
     intro l; induction l ; firstorder.
@@ -476,11 +498,13 @@ Section Binary.
   Proof. firstorder. Qed.
 End Binary.
 
+#[global]
 Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : typeclass_instances.
 
 (** The partial order defined by subrelation and relation equivalence. *)
 
-Program Instance subrelation_partial_order :
+#[global]
+Program Instance subrelation_partial_order {A} :
   PartialOrder (@relation_equivalence A) subrelation.
 
 Next Obligation.

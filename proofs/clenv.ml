@@ -37,15 +37,28 @@ type clausenv = {
   env      : env;
   evd      : evar_map;
   templval : constr freelisted;
-  templtyp : constr freelisted }
+  templtyp : constr freelisted;
+  cache : Reductionops.meta_instance_subst;
+}
+
+let mk_clausenv env evd templval templtyp = {
+  env; evd; templval; templtyp; cache = create_meta_instance_subst evd;
+}
+
+let update_clenv_evd clenv evd =
+  mk_clausenv clenv.env evd clenv.templval clenv.templtyp
 
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let clenv_term clenv c = meta_instance clenv.env clenv.evd c
-let clenv_meta_type clenv mv = Typing.meta_type clenv.env clenv.evd mv
-let clenv_value clenv = meta_instance clenv.env clenv.evd clenv.templval
-let clenv_type clenv = meta_instance clenv.env clenv.evd clenv.templtyp
+let clenv_term clenv c = meta_instance clenv.env clenv.cache c
+let clenv_meta_type clenv mv =
+  let ty =
+    try Evd.meta_ftype clenv.evd mv
+    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
+  meta_instance clenv.env clenv.cache ty
+let clenv_value clenv = meta_instance clenv.env clenv.cache clenv.templval
+let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
@@ -67,7 +80,8 @@ let clenv_push_prod cl =
         { templval = mk_freelisted def;
           templtyp = mk_freelisted concl;
           evd = e';
-          env = cl.env }
+          env = cl.env;
+          cache = create_meta_instance_subst e' }
     | _ -> raise NotExtensibleClause
   in clrec typ
 
@@ -109,7 +123,8 @@ let mk_clenv_from_env env sigma n (c,cty) =
   { templval = mk_freelisted (applist (c,args));
     templtyp = mk_freelisted concl;
     evd = evd;
-    env = env }
+    env = env;
+    cache = create_meta_instance_subst evd }
 
 let mk_clenv_from_n gls n (c,cty) =
   let env = Proofview.Goal.env gls in
@@ -158,7 +173,7 @@ let clenv_assign mv rhs clenv =
         clenv
     else
       let st = (Conv,TypeNotProcessed) in
-      {clenv with evd = meta_assign mv (rhs_fls.rebus,st) clenv.evd}
+      update_clenv_evd clenv (meta_assign mv (rhs_fls.rebus,st) clenv.evd)
   with Not_found ->
     user_err Pp.(str "clenv_assign: undefined meta")
 
@@ -202,19 +217,19 @@ let clenv_assign mv rhs clenv =
    In any case, we respect the order given in A.
 *)
 
-let clenv_metas_in_type_of_meta env evd mv =
-  (mk_freelisted (meta_instance env evd (meta_ftype evd mv))).freemetas
+let clenv_metas_in_type_of_meta clenv mv =
+  (mk_freelisted (meta_instance clenv.env clenv.cache (meta_ftype clenv.evd mv))).freemetas
 
 let dependent_in_type_of_metas clenv mvs =
   List.fold_right
-    (fun mv -> Metaset.union (clenv_metas_in_type_of_meta clenv.env clenv.evd mv))
+    (fun mv -> Metaset.union (clenv_metas_in_type_of_meta clenv mv))
     mvs Metaset.empty
 
 let dependent_closure clenv mvs =
   let rec aux mvs acc =
     Metaset.fold
       (fun mv deps ->
-        let metas_of_meta_type = clenv_metas_in_type_of_meta clenv.env clenv.evd mv in
+        let metas_of_meta_type = clenv_metas_in_type_of_meta clenv mv in
         aux metas_of_meta_type (Metaset.union deps metas_of_meta_type))
       mvs acc in
   aux mvs mvs
@@ -253,7 +268,7 @@ let meta_reducible_instance env evd b =
   let rec irec u =
     let u = whd_betaiota env Evd.empty u (* FIXME *) in
     match EConstr.kind evd u with
-    | Case (ci,p,iv,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
+    | Case (ci,u,pms,p,iv,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
         let m = destMeta evd (strip_outer_cast evd c) in
         (match
           try
@@ -262,8 +277,10 @@ let meta_reducible_instance env evd b =
             if isConstruct evd g || not is_coerce then Some g else None
           with Not_found -> None
           with
-            | Some g -> irec (mkCase (ci,p,iv,g,bl))
-            | None -> mkCase (ci,irec p,iv,c,Array.map irec bl))
+            | Some g -> irec (mkCase (ci,u,pms,p,iv,g,bl))
+            | None ->
+              let on_ctx (na, c) = (na, irec c) in
+              mkCase (ci,u,Array.map irec pms,on_ctx p,iv,c,Array.map on_ctx bl))
     | App (f,l) when EConstr.isMeta evd (strip_outer_cast evd f) ->
         let m = destMeta evd (strip_outer_cast evd f) in
         (match
@@ -281,7 +298,7 @@ let meta_reducible_instance env evd b =
           if not is_coerce then irec g else u
          with Not_found -> u)
     | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) (* What if two nested casts? *) ->
-      let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
+      let m = try destMeta evd c with DestKO -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
           (match
           try
             let g, s = Metamap.find m metas in
@@ -297,11 +314,10 @@ let meta_reducible_instance env evd b =
   else irec b.rebus
 
 let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
-  { clenv with
-      evd = w_unify ~flags clenv.env clenv.evd cv_pb t1 t2 }
+  update_clenv_evd clenv (w_unify ~flags clenv.env clenv.evd cv_pb t1 t2)
 
 let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
-  { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
+  update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
 
 let clenv_unique_resolver_gen ?(flags=default_unify_flags ()) clenv concl =
   if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.env clenv.evd clenv.templtyp.rebus))) then
@@ -414,11 +430,13 @@ let fchain_flags () =
 
 let clenv_fchain ?with_univs ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
+  let evd = meta_merge ?with_univs nextclenv.evd clenv.evd in
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
-      evd = meta_merge ?with_univs nextclenv.evd clenv.evd;
-      env = nextclenv.env } in
+      evd;
+      env = nextclenv.env;
+      cache = create_meta_instance_subst evd } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
     clenv_unify ~flags CUMUL
@@ -538,7 +556,7 @@ let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let c_typ = nf_betaiota clenv.env clenv.evd (clenv_get_type_of clenv c) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
-  { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }
+  update_clenv_evd clenv' (meta_assign k (c,(Conv,status)) clenv'.evd)
 
 let clenv_match_args bl clenv =
   if List.is_empty bl then
@@ -611,8 +629,10 @@ let clenv_cast_meta clenv =
             else mkCast (mkMeta mv, DEFAULTcast, b)
           with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | Case(ci,p,iv,c,br) ->
-          mkCase (ci, crec_hd p, map_invert crec_hd iv, crec_hd c, Array.map crec br)
+      | Case(ci,u,pms,p,iv,c,br) ->
+          (* FIXME: we only change c because [p] is always a lambda and [br] is
+             most of the time??? *)
+          mkCase (ci, u, pms, p, iv, crec_hd c, br)
       | Proj (p, c) -> mkProj (p, crec_hd c)
       | _ -> u
   in
@@ -640,7 +660,7 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
       Typeclasses.make_unresolvables (fun x -> true) evd'
     else clenv.evd
   in
-  let clenv = { clenv with evd = evd' } in
+  let clenv = update_clenv_evd clenv evd' in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
     (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))

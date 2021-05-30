@@ -1,6 +1,6 @@
 (* Omega being smarter on recognizing nat and Z *)
 
-Require Import Omega.
+Require Import Lia ZArith.
 
 Definition nat' := nat.
 
@@ -10,13 +10,13 @@ Theorem le_not_eq_lt : forall (n m:nat),
     n < m.
 Proof.
   intros.
-  omega.
+  lia.
 Qed.
 
 Goal forall (x n : nat'), x = x + n - n.
 Proof.
   intros.
-  omega.
+  lia.
 Qed.
 
 Open Scope Z_scope.
@@ -29,5 +29,5 @@ Theorem Zle_not_eq_lt : forall n m,
     n < m.
 Proof.
   intros.
-  omega.
+  lia.
 Qed.

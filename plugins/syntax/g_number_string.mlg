@@ -1,0 +1,110 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+DECLARE PLUGIN "number_string_notation_plugin"
+
+{
+
+open Notation
+open Number
+open String_notation
+open Pp
+open Names
+open Stdarg
+open Pcoq.Prim
+
+let pr_number_after = function
+  | Nop -> mt ()
+  | Warning n -> str "warning after " ++ NumTok.UnsignedNat.print n
+  | Abstract n -> str "abstract after " ++ NumTok.UnsignedNat.print n
+
+let pr_deprecated_number_modifier m = str "(" ++ pr_number_after m ++ str ")"
+
+let warn_deprecated_numeral_notation =
+  CWarnings.create ~name:"numeral-notation" ~category:"deprecated"
+    (fun () ->
+      strbrk "Numeral Notation is deprecated, please use Number Notation instead.")
+
+let pr_number_string_mapping (b, n, n') =
+  if b then
+    str "[" ++ Libnames.pr_qualid n ++ str "]" ++ spc () ++ str "=>" ++ spc ()
+    ++ Libnames.pr_qualid n'
+  else
+    Libnames.pr_qualid n ++ spc () ++ str "=>" ++ spc ()
+    ++ Libnames.pr_qualid n'
+
+let pr_number_string_via (n, l) =
+  str "via " ++ Libnames.pr_qualid n ++ str " mapping ["
+  ++ prlist_with_sep pr_comma pr_number_string_mapping l ++ str "]"
+
+let pr_number_modifier = function
+  | After a -> pr_number_after a
+  | Via nl -> pr_number_string_via nl
+
+let pr_number_options l =
+  str "(" ++ prlist_with_sep pr_comma pr_number_modifier l ++ str ")"
+
+let pr_string_option l =
+  str "(" ++ pr_number_string_via l ++ str ")"
+
+}
+
+VERNAC ARGUMENT EXTEND deprecated_number_modifier
+  PRINTED BY { pr_deprecated_number_modifier }
+| [ ] -> { Nop }
+| [ "(" "warning" "after" bignat(waft) ")" ] -> { Warning (NumTok.UnsignedNat.of_string waft) }
+| [ "(" "abstract" "after" bignat(n) ")" ] -> { Abstract (NumTok.UnsignedNat.of_string n) }
+END
+
+VERNAC ARGUMENT EXTEND number_string_mapping
+  PRINTED BY { pr_number_string_mapping }
+| [ reference(n) "=>" reference(n') ] -> { false, n, n' }
+| [ "[" reference(n) "]" "=>" reference(n') ] -> { true, n, n' }
+END
+
+VERNAC ARGUMENT EXTEND number_string_via
+  PRINTED BY { pr_number_string_via }
+| [ "via" reference(n) "mapping" "[" ne_number_string_mapping_list_sep(l, ",") "]" ] -> { n, l }
+END
+
+VERNAC ARGUMENT EXTEND number_modifier
+  PRINTED BY { pr_number_modifier }
+| [ "warning" "after" bignat(waft) ] -> { After (Warning (NumTok.UnsignedNat.of_string waft)) }
+| [ "abstract" "after" bignat(n) ] -> { After (Abstract (NumTok.UnsignedNat.of_string n)) }
+| [ number_string_via(v) ] -> { Via v }
+END
+
+VERNAC ARGUMENT EXTEND number_options
+  PRINTED BY { pr_number_options }
+| [ "(" ne_number_modifier_list_sep(l, ",") ")" ] -> { l }
+END
+
+VERNAC ARGUMENT EXTEND string_option
+  PRINTED BY { pr_string_option }
+| [ "(" number_string_via(v) ")" ] -> { v }
+END
+
+VERNAC COMMAND EXTEND NumberNotation CLASSIFIED AS SIDEFF
+  | #[ locality = Attributes.locality; ] [ "Number" "Notation" reference(ty) reference(f) reference(g) number_options_opt(nl) ":"
+      ident(sc) ] ->
+
+    { vernac_number_notation (Locality.make_module_locality locality) ty f g (Option.default [] nl) (Id.to_string sc) }
+  | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) deprecated_number_modifier(o) ] ->
+
+    { warn_deprecated_numeral_notation ();
+      vernac_number_notation (Locality.make_module_locality locality) ty f g [After o] (Id.to_string sc) }
+END
+
+VERNAC COMMAND EXTEND StringNotation CLASSIFIED AS SIDEFF
+  | #[ locality = Attributes.locality; ] [ "String" "Notation" reference(ty) reference(f) reference(g) string_option_opt(o) ":"
+      ident(sc) ] ->
+    { vernac_string_notation (Locality.make_module_locality locality) ty f g o (Id.to_string sc) }
+END

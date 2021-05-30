@@ -351,9 +351,10 @@ let matches_core env sigma allow_bound_rels
           sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
-      | PIf (a1,b1,b1'), Case (ci,_,_,a2,[|b2;b2'|]) ->
-          let ctx_b2,b2 = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(0) b2 in
-          let ctx_b2',b2' = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(1) b2' in
+      | PIf (a1,b1,b1'), Case (ci, u2, pms2, p2, iv, a2, ([|b2;b2'|] as br2)) ->
+          let (_, _, _, p2, _, _, br2) = EConstr.annotate_case env sigma (ci, u2, pms2, p2, iv, a2, br2) in
+          let ctx_b2,b2 = br2.(0) in
+          let ctx_b2',b2' = br2.(1) in
           let n = Context.Rel.length ctx_b2 in
           let n' = Context.Rel.length ctx_b2' in
           if Vars.noccur_between sigma 1 n b2 && Vars.noccur_between sigma 1 n' b2' then
@@ -367,7 +368,8 @@ let matches_core env sigma allow_bound_rels
           else
             raise PatternMatchingFailure
 
-      | PCase (ci1,p1,a1,br1), Case (ci2,p2,_,a2,br2) ->
+      | PCase (ci1, p1, a1, br1), Case (ci2, u2, pms2, p2, iv, a2, br2) ->
+          let (_, _, _, p2, _, _, br2) = EConstr.annotate_case env sigma (ci2, u2, pms2, p2, iv, a2, br2) in
           let n2 = Array.length br2 in
           let () = match ci1.cip_ind with
           | None -> ()
@@ -380,14 +382,37 @@ let matches_core env sigma allow_bound_rels
             if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)
             then raise PatternMatchingFailure
           in
+          let sorec_under_ctx subst (n, c1) (decls, c2) =
+            let env = push_rel_context decls env in
+            let rec fold (ctx, subst) nas decls = match nas, decls with
+            | [], _ ->
+              (* Historical corner case: less bound variables are allowed in
+                destructuring let-bindings. See #13735. *)
+                (ctx, subst)
+            | na1 :: nas, d :: decls ->
+              let na2 = Context.Rel.Declaration.get_annot d in
+              let t = Context.Rel.Declaration.get_type d in
+              let ctx = push_binder na1 na2 t ctx in
+              let subst = add_binders na1 na2 binding_vars subst in
+              fold (ctx, subst) nas decls
+            | _, [] ->
+              assert false
+            in
+            let ctx, subst = fold (ctx, subst) (Array.to_list n) (List.rev decls) in
+            sorec ctx env subst c1 c2
+          in
           let chk_branch subst (j,n,c) =
             (* (ind,j+1) is normally known to be a correct constructor
                and br2 a correct match over the same inductive *)
             assert (j < n2);
-            sorec ctx env subst c br2.(j)
+            sorec_under_ctx subst (n, c) br2.(j)
           in
-          let chk_head = sorec ctx env (sorec ctx env subst a1 a2) p1 p2 in
-          List.fold_left chk_branch chk_head br1
+          let subst = sorec ctx env subst a1 a2 in
+          let subst = match p1 with
+          | None -> subst
+          | Some p1 -> sorec_under_ctx subst p1 p2
+          in
+          List.fold_left chk_branch subst br1
 
       |	PFix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(lna2,tl2,bl2))
            when Array.equal Int.equal ln1 ln2 && i1 = i2 ->
@@ -504,12 +529,30 @@ let sub_match ?(closed=true) env sigma pat c =
        | [app';c] -> mk_ctx (mkApp (app',[|c|]))
        | _ -> assert false in
      try_aux [(env, app); (env, Array.last lc)] mk_ctx next
-  | Case (ci,hd,iv,c1,lc) ->
+  | Case (ci,u,pms,hd0,iv,c1,lc0) ->
+      let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
+      let (_, hd, _, _, br) = expand_case env sigma (ci, u, pms, hd0, iv, c1, lc0) in
+      let hd =
+        let (ctx, hd) = decompose_lam_assum sigma hd in
+        (push_rel_context ctx env, hd)
+      in
+      let map i br =
+        let decls = mip.Declarations.mind_consnrealdecls.(i) in
+        let (ctx, c) = decompose_lam_n_decls sigma decls br in
+        (push_rel_context ctx env, c)
+      in
+      let lc = Array.to_list (Array.mapi map br) in
       let next_mk_ctx = function
-      | c1 :: hd :: lc -> mk_ctx (mkCase (ci,hd,iv,c1,Array.of_list lc))
+      | c1 :: rem ->
+        let pms, rem = List.chop (Array.length pms) rem in
+        let pms = Array.of_list pms in
+        let hd, lc = match rem with [] -> assert false | x :: l -> (x, l) in
+        let hd = (fst hd0, hd) in
+        let map_br (nas, _) br = (nas, br) in
+        mk_ctx (mkCase (ci,u,pms,hd,iv,c1,Array.map2 map_br lc0 (Array.of_list lc)))
       | _ -> assert false
       in
-      let sub = (env, c1) :: (env, hd) :: subargs env lc in
+      let sub = (env, c1) :: Array.fold_right (fun c accu -> (env, c) :: accu) pms (hd :: lc) in
       try_aux sub next_mk_ctx next
   | Fix (indx,(names,types,bodies as recdefs)) ->
     let nb_fix = Array.length types in
@@ -528,10 +571,9 @@ let sub_match ?(closed=true) env sigma pat c =
     let sub = subargs env types @ subargs env' bodies in
     try_aux sub next_mk_ctx next
   | Proj (p,c') ->
-    begin try
-      let term = Retyping.expand_projection env sigma p c' [] in
-      aux env term mk_ctx next
-    with Retyping.RetypeError _ -> next ()
+    begin match Retyping.expand_projection env sigma p c' [] with
+    | term -> aux env term mk_ctx next
+    | exception Retyping.RetypeError _ -> next ()
     end
   | Array(u, t, def, ty) ->
     let next_mk_ctx = function

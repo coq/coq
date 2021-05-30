@@ -12,21 +12,28 @@
 
 #define uint_of_value(val) (((uint64_t)(val)) >> 1)
 #define uint63_of_value(val) ((uint64_t)(val) >> 1)
+#define int63_of_value(val) ((int64_t)(val) >> 1)
 
 /* 2^63 * y + x as a value */
 //#define Val_intint(x,y) ((value)(((uint64_t)(x)) << 1 + ((uint64_t)(y) << 64)))
 
-#define uint63_zero ((value) 1) /* 2*0 + 1 */
+#define uint63_zero() ((value) 1) /* 2*0 + 1 */
 #define uint63_one() ((value) 3) /* 2*1 + 1 */
 
 #define uint63_eq(x,y) ((x) == (y))
 #define Uint63_eq(r,x,y) ((r) = uint63_eq(x,y))
 #define Uint63_eq0(r,x) ((r) = ((x) == (uint64_t)1))
+#define Uint63_eqm1(r,x) ((r) = ((x) == (uint64_t)(int64_t)(-1)))
 #define uint63_lt(x,y) ((uint64_t) (x) < (uint64_t) (y))
 #define Uint63_lt(r,x,y) ((r) = uint63_lt(x,y))
 #define uint63_leq(x,y) ((uint64_t) (x) <= (uint64_t) (y))
 #define Uint63_leq(r,x,y) ((r) = uint63_leq(x,y))
+#define uint63_lts(x,y) ((int64_t) (x) < (int64_t) (y))
+#define Uint63_lts(r,x,y) ((r) = uint63_lts(x,y))
+#define uint63_les(x,y) ((int64_t) (x) <= (int64_t) (y))
+#define Uint63_les(r,x,y) ((r) = uint63_les(x,y))
 
+#define Uint63_neg(x) (accu = (value)(2 - (uint64_t) x))
 #define Uint63_add(x,y) (accu = (value)((uint64_t) (x) + (uint64_t) (y) - 1))
 #define Uint63_addcarry(x,y) (accu = (value)((uint64_t) (x) + (uint64_t) (y) + 1))
 #define Uint63_sub(x,y) (accu = (value)((uint64_t) (x) - (uint64_t) (y) + 1))
@@ -34,6 +41,8 @@
 #define Uint63_mul(x,y) (accu = Val_long(uint63_of_value(x) * uint63_of_value(y)))
 #define Uint63_div(x,y) (accu = Val_long(uint63_of_value(x) / uint63_of_value(y)))
 #define Uint63_mod(x,y) (accu = Val_long(uint63_of_value(x) % uint63_of_value(y)))
+#define Uint63_divs(x,y) (accu = Val_long(int63_of_value(x) / int63_of_value(y)))
+#define Uint63_mods(x,y) (accu = Val_long(int63_of_value(x) % int63_of_value(y)))
 
 #define Uint63_lxor(x,y) (accu = (value)(((uint64_t)(x) ^ (uint64_t)(y)) | 1))
 #define Uint63_lor(x,y) (accu = (value)((uint64_t)(x) | (uint64_t)(y)))
@@ -46,17 +55,22 @@
   if (uint63_lsl_y__ < (uint64_t) 127) \
     accu = (value)((((uint64_t)(x)-1) << uint63_of_value(uint63_lsl_y__)) | 1); \
   else \
-    accu = uint63_zero; \
+    accu = uint63_zero(); \
   }while(0)
 #define Uint63_lsr(x,y) do{ \
   value uint63_lsl_y__ = (y); \
   if (uint63_lsl_y__ < (uint64_t) 127) \
     accu = (value)(((uint64_t)(x) >> uint63_of_value(uint63_lsl_y__)) | 1); \
   else \
-    accu = uint63_zero; \
+    accu = uint63_zero(); \
   }while(0)
-#define Uint63_lsl1(x) (accu = (value)((((uint64_t)(x)-1) << 1) +1))
-#define Uint63_lsr1(x) (accu = (value)(((uint64_t)(x) >> 1) |1))
+#define Uint63_asr(x,y) do{ \
+    value uint63_asr_y__ = (y); \
+    if (uint63_asr_y__ < (uint64_t) 127) \
+      accu = (value)(((int64_t)(x) >> uint63_of_value(uint63_asr_y__)) | 1); \
+    else \
+      accu = uint63_zero(); \
+  }while(0)
 
 /* addmuldiv(p,x,y) = x * 2^p + y / 2 ^ (63 - p) */
 /* (modulo 2^63) for p <= 63 */

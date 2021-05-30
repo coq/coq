@@ -16,6 +16,10 @@ open Constrexpr
 
 (** {6 Equalities on [constr_expr] related types} *)
 
+val sort_name_expr_eq : sort_name_expr -> sort_name_expr -> bool
+val univ_level_expr_eq : univ_level_expr -> univ_level_expr -> bool
+val sort_expr_eq : sort_expr -> sort_expr -> bool
+
 val explicitation_eq : explicitation -> explicitation -> bool
 (** Equality on [explicitation]. *)
 
@@ -123,10 +127,3 @@ val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> notation -
 
 (** For cases pattern parsing errors *)
 val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a
-
-(** Local universe and constraint declarations. *)
-val interp_univ_decl : Environ.env -> universe_decl_expr ->
-                       Evd.evar_map * UState.universe_decl
-
-val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
-                       Evd.evar_map * UState.universe_decl

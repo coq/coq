@@ -111,7 +111,7 @@ Qed.
 
 Lemma of_nat_to_nat_inv {m} (p : t m) : of_nat_lt (proj2_sig (to_nat p)) = p.
 Proof.
-induction p; simpl.
+induction p as [|? p]; simpl.
 - reflexivity.
 - destruct (to_nat p); simpl in *. f_equal. subst p. apply of_nat_ext.
 Qed.
@@ -119,7 +119,7 @@ Qed.
 Lemma to_nat_of_nat {p}{n} (h : p < n) : to_nat (of_nat_lt h) = exist _ p h.
 Proof.
  revert n h.
- induction p; (destruct n ; intros h; [ destruct (Lt.lt_n_O _ h) | cbn]);
+ induction p as [|p IHp]; (intro n; destruct n as [|n]; intros h; [ destruct (Lt.lt_n_O _ h) | cbn]);
  [ | rewrite (IHp _ (Lt.lt_S_n p n h))];  f_equal; apply Peano_dec.le_unique.
 Qed.
 
@@ -153,7 +153,7 @@ Fixpoint L {m} n (p : t m) : t (m + n) :=
 
 Lemma L_sanity {m} n (p : t m) : proj1_sig (to_nat (L n p)) = proj1_sig (to_nat p).
 Proof.
-induction p.
+induction p as [|? p IHp].
 - reflexivity.
 - simpl; destruct (to_nat (L n p)); simpl in *; rewrite IHp. now destruct (to_nat p).
 Qed.
@@ -163,7 +163,7 @@ Qed.
 Really really inefficient !!! *)
 Definition L_R {m} n (p : t m) : t (n + m).
 Proof.
-induction n.
+induction n as [|n IHn].
 - exact p.
 - exact ((fix LS k (p: t k) :=
     match p with
@@ -179,7 +179,7 @@ Fixpoint R {m} n (p : t m) : t (n + m) :=
 
 Lemma R_sanity {m} n (p : t m) : proj1_sig (to_nat (R n p)) = n + proj1_sig (to_nat p).
 Proof.
-induction n.
+induction n as [|n IHn].
 - reflexivity.
 - simpl; destruct (to_nat (R n p)); simpl in *; rewrite IHn. now destruct (to_nat p).
 Qed.
@@ -193,7 +193,7 @@ end.
 Lemma depair_sanity {m n} (o : t m) (p : t n) :
   proj1_sig (to_nat (depair o p)) = n * (proj1_sig (to_nat o)) + (proj1_sig (to_nat p)).
 Proof.
-induction o ; simpl.
+induction o as [|? o IHo] ; simpl.
 - rewrite L_sanity. now rewrite Mult.mult_0_r.
 
 - rewrite R_sanity. rewrite IHo.
@@ -211,7 +211,8 @@ end.
 
 Lemma eqb_nat_eq : forall m n (p : t m) (q : t n), eqb p q = true -> m = n.
 Proof.
-intros m n p; revert n; induction p; destruct q; simpl; intros; f_equal.
+intros m n p; revert n; induction p as [|? p IHp];
+ intros ? q; destruct q; simpl; intros; f_equal.
 - now apply EqNat.beq_nat_true.
 - easy.
 - easy.

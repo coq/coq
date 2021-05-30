@@ -58,13 +58,13 @@ from io import open
 # robust to users who choose to run the script from any location.
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(SCRIPT_PATH, '..', '..'))
-CONFIGURE_PATH = os.path.join(ROOT_PATH, 'configure.ml')
+CONFIGURE_PATH = os.path.join(ROOT_PATH, 'tools/configure/configure.ml')
 HEADER_PATH = os.path.join(ROOT_PATH, 'dev', 'header.ml')
 DEFAULT_NUMBER_OF_OLD_VERSIONS = 2
 RELEASE_NUMBER_OF_OLD_VERSIONS = 2
 MASTER_NUMBER_OF_OLD_VERSIONS = 3
 EXTRA_HEADER = '\n(** Compatibility file for making Coq act similar to Coq v%s *)\n'
-COQARGS_ML_PATH = os.path.join(ROOT_PATH, 'toplevel', 'coqargs.ml')
+COQARGS_ML_PATH = os.path.join(ROOT_PATH, 'sysinit', 'coqargs.ml')
 DOC_INDEX_PATH = os.path.join(ROOT_PATH, 'doc', 'stdlib', 'index-list.html.template')
 TEST_SUITE_RUN_PATH = os.path.join(ROOT_PATH, 'test-suite', 'tools', 'update-compat', 'run.sh')
 TEST_SUITE_PATHS = tuple(os.path.join(ROOT_PATH, 'test-suite', 'success', i)

@@ -121,7 +121,6 @@ type compiled_library = {
   comp_univs : Univ.ContextSet.t;
   comp_deps : library_info array;
   comp_enga : engagement;
-  comp_natsymbs : Nativevalues.symbols
 }
 
 type reimport = compiled_library * Univ.ContextSet.t * vodigest
@@ -247,6 +246,15 @@ let set_native_compiler b senv =
   set_typing_flags { flags with enable_native_compiler = b } senv
 
 let set_allow_sprop b senv = { senv with env = Environ.set_allow_sprop b senv.env }
+
+(* Temporary sets custom typing flags *)
+let with_typing_flags ?typing_flags senv ~f =
+  match typing_flags with
+  | None -> f senv
+  | Some typing_flags ->
+    let orig_typing_flags = Environ.typing_flags senv.env in
+    let res, senv = f (set_typing_flags typing_flags senv) in
+    res, set_typing_flags orig_typing_flags senv
 
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
@@ -672,7 +680,7 @@ let inline_side_effects env body side_eff =
   let side_eff = List.fold_left (fun accu (cb, _) -> cb :: accu) [] side_eff in
   let side_eff = List.rev side_eff in
   (** Most recent side-effects first in side_eff *)
-  if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs)
+  if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs, 0)
   else
     (** Second step: compute the lifts and substitutions to apply *)
     let cname c r = Context.make_annot (Name (Label.to_id (Constant.label c))) r in
@@ -726,10 +734,10 @@ let inline_side_effects env body side_eff =
       else mkLetIn (na, b, ty, accu)
     in
     let body = List.fold_right fold_arg args body in
-    (body, ctx, sigs)
+    (body, ctx, sigs, len - 1)
 
 let inline_private_constants env ((body, ctx), side_eff) =
-  let body, ctx',_ = inline_side_effects env body side_eff in
+  let body, ctx', _, _ = inline_side_effects env body side_eff in
   let ctx' = Univ.ContextSet.union ctx ctx' in
   (body, ctx')
 
@@ -881,11 +889,11 @@ let add_constant l decl senv =
       match decl with
       | OpaqueEntry ce ->
         let handle env body eff =
-          let body, uctx, signatures = inline_side_effects env body eff in
+          let body, uctx, signatures, skip = inline_side_effects env body eff in
           let trusted = check_signatures senv signatures in
           let trusted, uctx = match trusted with
           | None -> 0, uctx
-          | Some univs -> List.length signatures, Univ.ContextSet.union univs uctx
+          | Some univs -> skip, Univ.ContextSet.union univs uctx
           in
           body, uctx, trusted
         in
@@ -928,6 +936,9 @@ let add_constant l decl senv =
     | _ -> senv
   in
   kn, senv
+
+let add_constant ?typing_flags l decl senv =
+  with_typing_flags ?typing_flags senv ~f:(add_constant l decl)
 
 let add_private_constant l decl senv : (Constant.t * private_constants) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
@@ -983,6 +994,9 @@ let add_mind l mie senv =
   in
   let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in
   kn, add_checked_mind kn mib senv
+
+let add_mind ?typing_flags l mie senv =
+  with_typing_flags ?typing_flags senv ~f:(add_mind l mie)
 
 (** Insertion of module types *)
 
@@ -1139,7 +1153,6 @@ let end_module l restype senv =
   let mb, cst = build_module_body params restype senv in
   let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_native_symbols newenv senv.env.Environ.native_symbols in
   let newenv = set_engagement_opt newenv senv.engagement in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
@@ -1166,7 +1179,6 @@ let end_modtype l senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_native_symbols newenv senv.env.Environ.native_symbols in
   let newenv = set_engagement_opt newenv senv.engagement in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads {senv with env=newenv} in
@@ -1229,8 +1241,6 @@ let module_of_library lib = lib.comp_mod
 
 let univs_of_library lib = lib.comp_univs
 
-type native_library = Nativecode.global list
-
 (** FIXME: MS: remove?*)
 let current_modpath senv = senv.modpath
 let current_dirpath senv = Names.ModPath.dp (current_modpath senv)
@@ -1263,7 +1273,7 @@ let export ?except ~output_native_objects senv dir =
   in
   let ast, symbols =
     if output_native_objects then
-      Nativelibrary.dump_library mp dir senv.env str
+      Nativelibrary.dump_library mp senv.env str
     else [], Nativevalues.empty_symbols
   in
   let lib = {
@@ -1272,9 +1282,8 @@ let export ?except ~output_native_objects senv dir =
     comp_univs = senv.univ;
     comp_deps = Array.of_list (DPmap.bindings senv.required);
     comp_enga = Environ.engagement senv.env;
-    comp_natsymbs = symbols }
-  in
-  mp, lib, ast
+  } in
+  mp, lib, (ast, symbols)
 
 (* cst are the constraints that were computed by the vi2vo step and hence are
  * not part of the [lib.comp_univs] field (but morally should be) *)
@@ -1294,7 +1303,6 @@ let import lib cst vodigest senv =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
     Modops.add_linked_module mb linkinfo env
   in
-  let env = Environ.add_native_symbols lib.comp_name lib.comp_natsymbs env in
   let sections =
     Option.map (Section.map_custom (fun custom ->
         {custom with rev_reimport = (lib,cst,vodigest) :: custom.rev_reimport}))

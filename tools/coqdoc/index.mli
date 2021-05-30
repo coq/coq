@@ -44,6 +44,13 @@ val find : coq_module -> loc -> index_entry
 (* Find what data is referred to by some string in some coq module *)
 val find_string : string -> index_entry
 
+(** [add_ref cur_mod loc lib_dp sp id entry_type] *)
+val add_ref : string -> int -> coq_module -> coq_module -> string -> entry_type -> unit
+
+(** [add_def loc1 loc2 entry_type sp id] *)
+val add_def : int -> int -> entry_type -> coq_module -> string -> unit
+
+(* Add a Coq module *)
 val add_module : coq_module -> unit
 
 type module_kind = Local | External of coq_module | Unknown
@@ -53,10 +60,6 @@ val find_module : coq_module -> module_kind
 val init_coqlib_library : unit -> unit
 
 val add_external_library : string -> coq_module -> unit
-
-(*s Read globalizations from a file (produced by coqc -dump-glob) *)
-
-val read_glob : Digest.t option -> string -> unit
 
 (*s Indexes *)
 

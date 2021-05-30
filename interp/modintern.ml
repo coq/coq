@@ -106,7 +106,7 @@ let transl_with_decl env base kind = function
   | CWith_Module ({CAst.v=fqid},qid) ->
       WithMod (fqid,lookup_module qid), Univ.ContextSet.empty
   | CWith_Definition ({CAst.v=fqid},udecl,c) ->
-    let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+    let sigma, udecl = interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
     let poly = lookup_polymorphism env base kind fqid in
     begin match UState.check_univ_decl ~poly ectx udecl with

@@ -18,6 +18,7 @@ type global_data = {
   gdata_expr : glb_tacexpr;
   gdata_type : type_scheme;
   gdata_mutable : bool;
+  gdata_deprecation : Deprecation.t option;
 }
 
 type constructor_data = {
@@ -35,12 +36,17 @@ type projection_data = {
   pdata_indx : int;
 }
 
+type alias_data = {
+  alias_body : raw_tacexpr;
+  alias_depr : Deprecation.t option;
+}
+
 type ltac_state = {
   ltac_tactics : global_data KNmap.t;
   ltac_constructors : constructor_data KNmap.t;
   ltac_projections : projection_data KNmap.t;
   ltac_types : glb_quant_typedef KNmap.t;
-  ltac_aliases : raw_tacexpr KNmap.t;
+  ltac_aliases : alias_data KNmap.t;
 }
 
 let empty_state = {
@@ -79,9 +85,10 @@ let define_type kn e =
 
 let interp_type kn = KNmap.find kn ltac_state.contents.ltac_types
 
-let define_alias kn tac =
+let define_alias ?deprecation kn tac =
   let state = !ltac_state in
-  ltac_state := { state with ltac_aliases = KNmap.add kn tac state.ltac_aliases }
+  let data = { alias_body = tac; alias_depr = deprecation } in
+  ltac_state := { state with ltac_aliases = KNmap.add kn data state.ltac_aliases }
 
 let interp_alias kn = KNmap.find kn ltac_state.contents.ltac_aliases
 
@@ -196,11 +203,6 @@ let shortest_qualid_of_constructor kn =
   let sp = KNmap.find kn tab.tab_cstr_rev in
   KnTab.shortest_qualid Id.Set.empty sp tab.tab_cstr
 
-let mem_constructor qid =
-  let tab = !nametab in
-  try ignore (KnTab.locate qid tab.tab_cstr) ; true
-  with Not_found -> false
-
 let push_type vis sp kn =
   let tab = !nametab in
   let tab_type = KnTab.push vis sp kn tab.tab_type in
@@ -253,7 +255,7 @@ type ('a, 'b) ml_object = {
   ml_intern : 'r. (raw_tacexpr, glb_tacexpr, 'r) intern_fun -> ('a, 'b or_glb_tacexpr, 'r) intern_fun;
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
-  ml_print : Environ.env -> 'b -> Pp.t;
+  ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;
 }
 
 module MLTypeObj =
@@ -288,7 +290,8 @@ let ltac1_prefix =
 
 (** Generic arguments *)
 
-let wit_ltac2 = Genarg.make0 "ltac2:value"
+let wit_ltac2 = Genarg.make0 "ltac2:tactic"
+let wit_ltac2_val = Genarg.make0 "ltac2:value"
 let wit_ltac2_constr = Genarg.make0 "ltac2:in-constr"
 let wit_ltac2_quotation = Genarg.make0 "ltac2:quotation"
 let () = Geninterp.register_val0 wit_ltac2 None

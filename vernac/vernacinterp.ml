@@ -48,7 +48,7 @@ let interp_typed_vernac c ~pm ~stack =
     vernac_require_open_lemma ~stack
       (Vernacstate.LemmaStack.with_top ~f:(fun pstate -> f ~pstate));
     stack, pm
-  | VtReadProgram f -> f ~pm; stack, pm
+  | VtReadProgram f -> f ~stack ~pm; stack, pm
   | VtModifyProgram f ->
     let pm = f ~pm in stack, pm
   | VtDeclareProgram f ->
@@ -82,7 +82,9 @@ let vernac_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
   match !default_timeout, timeout with
   | _, Some n
   | Some n, None ->
-    Control.timeout n f x CErrors.Timeout
+    (match Control.timeout (float_of_int n) f x with
+    | None -> Exninfo.iraise (Exninfo.capture CErrors.Timeout)
+    | Some x -> x)
   | None, None ->
     f x
 
@@ -149,7 +151,7 @@ let interp_control_flag ~time_header (f : control_flag) ~st
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ~atts ~st c =
+let rec interp_expr ?loc ~atts ~st c =
   let stack = st.Vernacstate.lemmas in
   let program = st.Vernacstate.program in
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
@@ -172,7 +174,7 @@ let rec interp_expr ~atts ~st c =
     Attributes.unsupported_attributes atts;
     vernac_load ~verbosely fname
   | v ->
-    let fv = Vernacentries.translate_vernac ~atts v in
+    let fv = Vernacentries.translate_vernac ?loc ~atts v in
     interp_typed_vernac ~pm:program ~stack fv
 
 and vernac_load ~verbosely fname =
@@ -184,7 +186,7 @@ and vernac_load ~verbosely fname =
   let input =
     let longfname = Loadpath.locate_file fname in
     let in_chan = Util.open_utf8_file_in longfname in
-    Pcoq.Parsable.make ~loc:(Loc.initial (Loc.InFile longfname)) (Stream.of_channel in_chan) in
+    Pcoq.Parsable.make ~loc:(Loc.(initial (InFile longfname))) (Stream.of_channel in_chan) in
   (* Parsing loop *)
   let v_mod = if verbosely then Flags.verbosely else Flags.silently in
   let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
@@ -204,13 +206,13 @@ and vernac_load ~verbosely fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   stack, pm
 
-and interp_control ~st ({ CAst.v = cmd } as vernac) =
+and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
   let time_header = mk_time_header vernac in
   List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
     cmd.control
     (fun ~st ->
        let before_univs = Global.universes () in
-       let pstack, pm = interp_expr ~atts:cmd.attrs ~st cmd.expr in
+       let pstack, pm = interp_expr ?loc ~atts:cmd.attrs ~st cmd.expr in
        let after_univs = Global.universes () in
        if before_univs == after_univs then pstack, pm
        else
@@ -226,24 +228,24 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
 *)
 
 (* Interpreting a possibly delayed proof *)
-let interp_qed_delayed ~proof ~pinfo ~st pe : Vernacstate.LemmaStack.t option * Declare.OblState.t =
+let interp_qed_delayed ~proof ~st pe : Vernacstate.LemmaStack.t option * Declare.OblState.t =
   let stack = st.Vernacstate.lemmas in
   let pm = st.Vernacstate.program in
   let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
   let pm = match pe with
     | Admitted ->
-      Declare.Proof.save_lemma_admitted_delayed ~pm ~proof ~pinfo
+      Declare.Proof.save_lemma_admitted_delayed ~pm ~proof
     | Proved (_,idopt) ->
-      let pm, _ = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~pinfo ~idopt in
+      let pm, _ = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~idopt in
       pm
   in
   stack, pm
 
-let interp_qed_delayed_control ~proof ~pinfo ~st ~control { CAst.loc; v=pe } =
+let interp_qed_delayed_control ~proof ~st ~control { CAst.loc; v=pe } =
   let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in
   List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
     control
-    (fun ~st -> interp_qed_delayed ~proof ~pinfo ~st pe)
+    (fun ~st -> interp_qed_delayed ~proof ~st pe)
     ~st
 
 (* General interp with management of state *)
@@ -273,6 +275,6 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
 let interp ?(verbosely=true) ~st cmd =
   interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
 
-let interp_qed_delayed_proof ~proof ~pinfo ~st ~control pe : Vernacstate.t =
+let interp_qed_delayed_proof ~proof ~st ~control pe : Vernacstate.t =
   interp_gen ~verbosely:false ~st
-    ~interp_fn:(interp_qed_delayed_control ~proof ~pinfo ~control) pe
+    ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe

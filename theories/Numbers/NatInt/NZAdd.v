@@ -14,9 +14,9 @@ Require Import NZAxioms NZBase.
 
 Module Type NZAddProp (Import NZ : NZAxiomsSig')(Import NZBase : NZBaseProp NZ).
 
-Hint Rewrite
+Global Hint Rewrite
  pred_succ add_0_l add_succ_l mul_0_l mul_succ_l sub_0_r sub_succ_r : nz.
-Hint Rewrite one_succ two_succ : nz'.
+Global Hint Rewrite one_succ two_succ : nz'.
 Ltac nzsimpl := autorewrite with nz.
 Ltac nzsimpl' := autorewrite with nz nz'.
 
@@ -39,7 +39,7 @@ Proof.
 intros n m. now rewrite add_succ_r, add_succ_l.
 Qed.
 
-Hint Rewrite add_0_r add_succ_r : nz.
+Global Hint Rewrite add_0_r add_succ_r : nz.
 
 Theorem add_comm : forall n m, n + m == m + n.
 Proof.
@@ -58,7 +58,7 @@ Proof.
 intro n; now nzsimpl'.
 Qed.
 
-Hint Rewrite add_1_l add_1_r : nz.
+Global Hint Rewrite add_1_l add_1_r : nz.
 
 Theorem add_assoc : forall n m p, n + (m + p) == (n + m) + p.
 Proof.
@@ -104,6 +104,6 @@ Proof.
 intro n; now nzsimpl'.
 Qed.
 
-Hint Rewrite sub_1_r : nz.
+Global Hint Rewrite sub_1_r : nz.
 
 End NZAddProp.

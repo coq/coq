@@ -44,6 +44,9 @@ sig
   val is_valid : string -> bool
   (** Check that a string may be converted to an identifier. *)
 
+  val is_valid_ident_part : string -> bool
+  (** Check that a string is a valid part of an identifier *)
+
   val of_bytes : bytes -> t
   val of_string : string -> t
   (** Converts a string into an identifier.
@@ -711,16 +714,10 @@ module GlobRef : sig
 
 end
 
-(** Better to have it here that in Closure, since required in grammar.cma *)
-(* XXX: Move to a module *)
-type evaluable_global_reference =
-  | EvalVarRef of Id.t
-  | EvalConstRef of Constant.t
-
-val eq_egr : evaluable_global_reference ->  evaluable_global_reference -> bool
-
 (** Located identifiers and objects with syntax. *)
 
 type lident = Id.t CAst.t
 type lname = Name.t CAst.t
 type lstring = string CAst.t
+
+val lident_eq : lident -> lident -> bool

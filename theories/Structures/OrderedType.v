@@ -44,7 +44,9 @@ Module Type MiniOrderedType.
 
   Parameter compare : forall x y : t, Compare lt eq x y.
 
+  #[global]
   Hint Immediate eq_sym : ordered_type.
+  #[global]
   Hint Resolve eq_refl eq_trans lt_not_eq lt_trans : ordered_type.
 
 End MiniOrderedType.
@@ -63,7 +65,7 @@ Module MOT_to_OT (Import O : MiniOrderedType) <: OrderedType.
 
   Definition eq_dec : forall x y : t, {eq x y} + {~ eq x y}.
   Proof with auto with ordered_type.
-   intros; elim (compare x y); intro H; [ right | left | right ]...
+   intros x y; elim (compare x y); intro H; [ right | left | right ]...
    assert (~ eq y x)...
   Defined.
 
@@ -76,31 +78,34 @@ End MOT_to_OT.
 
 Module OrderedTypeFacts (Import O: OrderedType).
 
+#[global]
   Instance eq_equiv : Equivalence eq.
   Proof. split; [ exact eq_refl | exact eq_sym | exact eq_trans ]. Qed.
 
   Lemma lt_antirefl : forall x, ~ lt x x.
   Proof.
-   intros; intro; absurd (eq x x); auto with ordered_type.
+   intros x; intro; absurd (eq x x); auto with ordered_type.
   Qed.
 
+#[global]
   Instance lt_strorder : StrictOrder lt.
   Proof. split; [ exact lt_antirefl | exact lt_trans]. Qed.
 
   Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
   Proof with auto with ordered_type.
-   intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
+   intros x y z H ?; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
    elim (lt_not_eq H); apply eq_trans with z...
    elim (lt_not_eq (lt_trans Hlt H))...
   Qed.
 
   Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
   Proof with auto with ordered_type.
-   intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
+   intros x y z H H0; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
    elim (lt_not_eq H0); apply eq_trans with x...
    elim (lt_not_eq (lt_trans H0 Hlt))...
   Qed.
 
+#[global]
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   apply proper_sym_impl_iff_2; auto with *.
   intros x x' Hx y y' Hy H.
@@ -109,7 +114,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Qed.
 
   Lemma lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
-  Proof. intros; destruct (compare x y); auto. Qed.
+  Proof. intros x y; destruct (compare x y); auto. Qed.
 
   Module TO.
    Definition t := t.
@@ -144,15 +149,18 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma eq_not_gt x y : eq x y -> ~ lt y x. Proof. order. Qed.
   Lemma lt_not_gt x y : lt x y -> ~ lt y x. Proof. order. Qed.
 
+  #[global]
   Hint Resolve gt_not_eq eq_not_lt : ordered_type.
+  #[global]
   Hint Immediate eq_lt lt_eq le_eq eq_le neq_eq eq_neq : ordered_type.
+  #[global]
   Hint Resolve eq_not_gt lt_antirefl lt_not_gt : ordered_type.
 
   Lemma elim_compare_eq :
    forall x y : t,
    eq x y -> exists H : eq x y, compare x y = EQ H.
   Proof.
-   intros; case (compare x y); intros H'; try (exfalso; order).
+   intros x y H; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -160,7 +168,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
    forall x y : t,
    lt x y -> exists H : lt x y, compare x y = LT H.
   Proof.
-   intros; case (compare x y); intros H'; try (exfalso; order).
+   intros x y H; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -168,7 +176,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
    forall x y : t,
    lt y x -> exists H : lt y x, compare x y = GT H.
   Proof.
-   intros; case (compare x y); intros H'; try (exfalso; order).
+   intros x y H; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -198,7 +206,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma lt_dec : forall x y : t, {lt x y} + {~ lt x y}.
   Proof.
-   intros; elim (compare x y); [ left | right | right ]; auto with ordered_type.
+   intros x y; elim (compare x y); [ left | right | right ]; auto with ordered_type.
   Defined.
 
   Definition eqb x y : bool := if eq_dec x y then true else false.
@@ -206,7 +214,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma eqb_alt :
     forall x y, eqb x y = match compare x y with EQ _ => true | _ => false end.
   Proof.
-  unfold eqb; intros; destruct (eq_dec x y); elim_comp; auto.
+  unfold eqb; intros x y; destruct (eq_dec x y); elim_comp; auto.
   Qed.
 
 (* Specialization of results about lists modulo. *)
@@ -248,7 +256,9 @@ Proof. exact (SortA_NoDupA eq_equiv lt_strorder lt_compat). Qed.
 
 End ForNotations.
 
+#[global]
 Hint Resolve ListIn_In Sort_NoDup Inf_lt : ordered_type.
+#[global]
 Hint Immediate In_eq Inf_lt : ordered_type.
 
 End OrderedTypeFacts.
@@ -267,7 +277,9 @@ Module KeyOrderedType(O:OrderedType).
           eq (fst p) (fst p') /\ (snd p) = (snd p').
   Definition ltk (p p':key*elt) := lt (fst p) (fst p').
 
+  #[local]
   Hint Unfold eqk eqke ltk : ordered_type.
+  #[local]
   Hint Extern 2 (eqke ?a ?b) => split : ordered_type.
 
    (* eqke is stricter than eqk *)
@@ -284,6 +296,7 @@ Module KeyOrderedType(O:OrderedType).
 
    Lemma ltk_right_l : forall x k e e', ltk (k,e) x -> ltk (k,e') x.
    Proof. auto. Qed.
+  #[local]
    Hint Immediate ltk_right_r ltk_right_l : ordered_type.
 
   (* eqk, eqke are equalities, ltk is a strict order *)
@@ -317,11 +330,14 @@ Module KeyOrderedType(O:OrderedType).
   Lemma ltk_not_eqke : forall e e', ltk e e' -> ~eqke e e'.
   Proof.
     unfold eqke, ltk; intuition; simpl in *; subst.
-    exact (lt_not_eq H H1).
+    match goal with H : lt _ _, H1 : eq _ _ |- _ => exact (lt_not_eq H H1) end.
   Qed.
 
+  #[local]
   Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : ordered_type.
+  #[local]
   Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke : ordered_type.
+  #[local]
   Hint Immediate eqk_sym eqke_sym : ordered_type.
 
   Global Instance eqk_equiv : Equivalence eqk.
@@ -360,7 +376,9 @@ Module KeyOrderedType(O:OrderedType).
       intros (k,e) (k',e') (k'',e'').
       unfold ltk, eqk; simpl; eauto with ordered_type.
   Qed.
+  #[local]
   Hint Resolve eqk_not_ltk : ordered_type.
+  #[local]
   Hint Immediate ltk_eqk eqk_ltk : ordered_type.
 
   Lemma InA_eqke_eqk :
@@ -368,6 +386,7 @@ Module KeyOrderedType(O:OrderedType).
   Proof.
     unfold eqke; induction 1; intuition.
   Qed.
+  #[local]
   Hint Resolve InA_eqke_eqk : ordered_type.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
@@ -375,24 +394,25 @@ Module KeyOrderedType(O:OrderedType).
   Notation Sort := (sort ltk).
   Notation Inf := (lelistA ltk).
 
+  #[local]
   Hint Unfold MapsTo In : ordered_type.
 
   (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
 
   Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
   Proof with auto with ordered_type.
-  firstorder.
-    exists x...
-  induction H.
-    destruct y.
-    exists e...
-  destruct IHInA as [e H0].
+  intros k l; split; intros [y H].
+    exists y...
+  induction H as [a l eq|a l H IH].
+    destruct a as [k' y'].
+    exists y'...
+  destruct IH as [e H0].
   exists e...
   Qed.
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
-  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
+  intros l x y e **; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
   Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
@@ -406,7 +426,9 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Inf_lt : forall l x x', ltk x x' -> Inf x' l -> Inf x l.
   Proof. exact (InfA_ltA ltk_strorder). Qed.
 
+  #[local]
   Hint Immediate Inf_eq : ordered_type.
+  #[local]
   Hint Resolve Inf_lt : ordered_type.
 
   Lemma Sort_Inf_In :
@@ -418,7 +440,7 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Sort_Inf_NotIn :
       forall l k e, Sort l -> Inf (k,e) l ->  ~In k l.
   Proof.
-    intros; red; intros.
+    intros l k e H H0; red; intros H1.
     destruct H1 as [e' H2].
     elim (@ltk_not_eqk (k,e) (k,e')).
     eapply Sort_Inf_In; eauto with ordered_type.
@@ -438,50 +460,63 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Sort_In_cons_2 : forall l e e', Sort (e::l) -> InA eqk e' (e::l) ->
       ltk e e' \/ eqk e e'.
   Proof.
-    inversion_clear 2; auto with ordered_type.
+    intros l; inversion_clear 2; auto with ordered_type.
     left; apply Sort_In_cons_1 with l; auto.
   Qed.
 
   Lemma Sort_In_cons_3 :
     forall x l k e, Sort ((k,e)::l) -> In x l -> ~eq x k.
   Proof.
-    inversion_clear 1; red; intros.
+    inversion_clear 1 as [|? ? H0 H1]; red; intros H H2.
     destruct (Sort_Inf_NotIn H0 H1 (In_eq H2 H)).
   Qed.
 
   Lemma In_inv : forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
   Proof.
-    inversion 1.
-    inversion_clear H0; eauto with ordered_type.
+    inversion 1 as [? H0].
+    inversion_clear H0 as [? ? H1|]; eauto with ordered_type.
     destruct H1; simpl in *; intuition.
   Qed.
 
   Lemma In_inv_2 : forall k k' e e' l,
       InA eqk (k, e) ((k', e') :: l) -> ~ eq k k' -> InA eqk (k, e) l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   inversion_clear 1 as [? ? H0|? ? H0]; compute in H0; intuition.
   Qed.
 
   Lemma In_inv_3 : forall x x' l,
       InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   inversion_clear 1 as [? ? H0|? ? H0]; compute in H0; intuition.
   Qed.
 
  End Elt.
 
+ #[global]
  Hint Unfold eqk eqke ltk : ordered_type.
+ #[global]
  Hint Extern 2 (eqke ?a ?b) => split : ordered_type.
+ #[global]
  Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : ordered_type.
+ #[global]
  Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke : ordered_type.
+ #[global]
  Hint Immediate eqk_sym eqke_sym : ordered_type.
+ #[global]
  Hint Resolve eqk_not_ltk : ordered_type.
+ #[global]
  Hint Immediate ltk_eqk eqk_ltk : ordered_type.
+ #[global]
  Hint Resolve InA_eqke_eqk : ordered_type.
+ #[global]
  Hint Unfold MapsTo In : ordered_type.
+ #[global]
  Hint Immediate Inf_eq : ordered_type.
+ #[global]
  Hint Resolve Inf_lt : ordered_type.
+ #[global]
  Hint Resolve Sort_Inf_NotIn : ordered_type.
+ #[global]
  Hint Resolve In_inv_2 In_inv_3 : ordered_type.
 
 End KeyOrderedType.

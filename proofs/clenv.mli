@@ -22,14 +22,18 @@ open Tactypes
 
 (** {6 The Type of Constructions clausale environments.} *)
 
-type clausenv = {
+type clausenv = private {
   env      : env; (** the typing context *)
   evd      : evar_map; (** the mapping from metavar and evar numbers to their
                            types and values *)
   templval : constr freelisted; (** the template which we are trying to fill
                                     out *)
-  templtyp : constr freelisted (** its type *)}
+  templtyp : constr freelisted; (** its type *)
+  cache : Reductionops.meta_instance_subst; (* Reductionops.create_meta_instance_subst evd) *)
+}
 
+val mk_clausenv : env -> evar_map -> constr freelisted -> types freelisted -> clausenv
+val update_clenv_evd : clausenv -> evar_map -> clausenv
 
 (** subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr

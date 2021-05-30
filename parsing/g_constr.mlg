@@ -39,6 +39,10 @@ let binder_of_name expl { CAst.loc = loc; v = na } =
 let binders_of_names l =
   List.map (binder_of_name Explicit) l
 
+let pat_of_name CAst.{loc;v} = match v with
+| Anonymous -> CAst.make ?loc @@ CPatAtom None
+| Name id -> CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident id))
+
 let err () = raise Stream.Failure
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
@@ -84,11 +88,12 @@ GRAMMAR EXTEND Gram
   universe_level universe_name sort sort_family
   global constr_pattern cpattern Constr.ident
   closed_binder open_binders binder binders binders_fixannot
-  record_declaration typeclass_constraint pattern arg type_cstr;
+  record_declaration typeclass_constraint pattern arg type_cstr
+  one_closed_binder one_open_binder;
   Constr.ident:
     [ [ id = Prim.ident -> { id } ] ]
   ;
-  Prim.name:
+  Prim.name: TOP
     [ [ "_" -> { CAst.make ~loc Anonymous } ] ]
   ;
   global:
@@ -101,9 +106,9 @@ GRAMMAR EXTEND Gram
     [ [ c = lconstr -> { c } ] ]
   ;
   sort:
-    [ [ "Set"  -> { UNamed [GSet,0] }
-      | "Prop" -> { UNamed [GProp,0] }
-      | "SProp" -> { UNamed [GSProp,0] }
+    [ [ "Set"  -> { UNamed [CSet,0] }
+      | "Prop" -> { UNamed [CProp,0] }
+      | "SProp" -> { UNamed [CSProp,0] }
       | "Type" -> { UAnonymous {rigid=true} }
       | "Type"; "@{"; "_"; "}" -> { UAnonymous {rigid=false} }
       | "Type"; "@{"; u = universe; "}" -> { UNamed u } ] ]
@@ -119,9 +124,9 @@ GRAMMAR EXTEND Gram
       | -> { 0 } ] ]
   ;
   universe_name:
-    [ [ id = global -> { GType id }
-      | "Set"  -> { GSet }
-      | "Prop" -> { GProp } ] ]
+    [ [ id = global -> { CType id }
+      | "Set"  -> { CSet }
+      | "Prop" -> { CProp } ] ]
   ;
   universe_expr:
     [ [ id = universe_name; n = universe_increment -> { (id,n) } ] ]
@@ -146,9 +151,7 @@ GRAMMAR EXTEND Gram
       | c1 = term; "<<:"; c2 = term LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, CastNative c2) }
       | c1 = term; ":"; c2 = term LEVEL "200" ->
-                 { CAst.make ~loc @@ CCast(c1, CastConv c2) }
-      | c1 = term; ":>" ->
-                 { CAst.make ~loc @@ CCast(c1, CastCoerce) } ]
+                 { CAst.make ~loc @@ CCast(c1, CastConv c2) } ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
@@ -173,10 +176,10 @@ GRAMMAR EXTEND Gram
       [ c = atomic_constr -> { c }
       | c = term_match -> { c }
       | "("; c = term LEVEL "200"; ")" ->
-        { (* Preserve parentheses around numerals so that constrintern does not
-             collapse -(3) into the numeral -3. *)
+        { (* Preserve parentheses around numbers so that constrintern does not
+             collapse -(3) into the number -3. *)
           (match c.CAst.v with
-            | CPrim (Numeral (NumTok.SPlus,n)) ->
+            | CPrim (Number (NumTok.SPlus,n)) ->
                 CAst.make ~loc @@ CNotation(None,(InConstrEntry,"( _ )"),([c],[],[],[]))
             | _ -> c) }
       | "{|"; c = record_declaration; bar_cbrace -> { c }
@@ -258,7 +261,7 @@ GRAMMAR EXTEND Gram
   atomic_constr:
     [ [ g = global; i = univ_annot -> { CAst.make ~loc @@ CRef (g,i) }
       | s = sort   -> { CAst.make ~loc @@  CSort s }
-      | n = NUMBER-> { CAst.make ~loc @@ CPrim (Numeral (NumTok.SPlus,n)) }
+      | n = NUMBER-> { CAst.make ~loc @@ CPrim (Number (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) }
       | "?"; "["; id = identref; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id.CAst.v, None) }
@@ -277,12 +280,12 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   universe_level:
-    [ [ "Set" -> { UNamed GSet }
+    [ [ "Set" -> { UNamed CSet }
       (* no parsing SProp as a level *)
-      | "Prop" -> { UNamed GProp }
+      | "Prop" -> { UNamed CProp }
       | "Type" -> { UAnonymous {rigid=true} }
       | "_" -> { UAnonymous {rigid=false} }
-      | id = global -> { UNamed (GType id) } ] ]
+      | id = global -> { UNamed (CType id) } ] ]
   ;
   fix_decls:
     [ [ dcl = fix_decl -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
@@ -362,15 +365,15 @@ GRAMMAR EXTEND Gram
       | "{|"; pat = record_patterns; bar_cbrace -> { CAst.make ~loc @@ CPatRecord pat }
       | "_" -> { CAst.make ~loc @@ CPatAtom None }
       | "("; p = pattern LEVEL "200"; ")" ->
-        { (* Preserve parentheses around numerals so that constrintern does not
-             collapse -(3) into the numeral -3. *)
+        { (* Preserve parentheses around numbers so that constrintern does not
+             collapse -(3) into the number -3. *)
           match p.CAst.v with
-          | CPatPrim (Numeral (NumTok.SPlus,n)) ->
+          | CPatPrim (Number (NumTok.SPlus,n)) ->
               CAst.make ~loc @@ CPatNotation(None,(InConstrEntry,"( _ )"),([p],[]),[])
           | _ -> p }
       | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
         { CAst.make ~loc @@ CPatOr (p::pl) }
-      | n = NUMBER-> { CAst.make ~loc @@ CPatPrim (Numeral (NumTok.SPlus,n)) }
+      | n = NUMBER-> { CAst.make ~loc @@ CPatPrim (Number (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
   fixannot:
@@ -438,13 +441,20 @@ GRAMMAR EXTEND Gram
         { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (MaxImplicit, b), t)) tc }
       | "`["; tc = LIST1 typeclass_constraint SEP "," ; "]" ->
         { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (NonMaxImplicit, b), t)) tc }
-      | "'"; p = pattern LEVEL "0" ->
-        { let (p, ty) =
-            match p.CAst.v with
-            | CPatCast (p, ty) -> (p, Some ty)
-            | _ -> (p, None)
-          in
-          [CLocalPattern (CAst.make ~loc (p, ty))] } ] ]
+      | "'"; p = pattern LEVEL "0" -> { [CLocalPattern p] } ] ]
+  ;
+  one_open_binder:
+    [ [ na = name -> { (pat_of_name na, Explicit) }
+      | na = name; ":"; t = lconstr -> { (CAst.make ~loc @@ CPatCast (pat_of_name na, t), Explicit) }
+      | b = one_closed_binder -> { b } ] ]
+  ;
+  one_closed_binder:
+    [ [ "("; na = name; ":"; t = lconstr; ")" -> { (CAst.make ~loc @@ CPatCast (pat_of_name na, t), Explicit) }
+      | "{"; na = name; "}" -> { (pat_of_name na, MaxImplicit) }
+      | "{"; na = name; ":"; t = lconstr; "}" -> { (CAst.make ~loc @@ CPatCast (pat_of_name na, t), MaxImplicit) }
+      | "["; na = name; "]" -> { (pat_of_name na, NonMaxImplicit) }
+      | "["; na = name; ":"; t = lconstr; "]" -> { (CAst.make ~loc @@ CPatCast (pat_of_name na, t), NonMaxImplicit) }
+      | "'"; p = pattern LEVEL "0" -> { (p, Explicit) } ] ]
   ;
   typeclass_constraint:
     [ [ "!" ; c = term LEVEL "200" -> { (CAst.make ~loc Anonymous), true, c }

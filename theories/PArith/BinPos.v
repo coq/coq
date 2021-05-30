@@ -876,7 +876,7 @@ Lemma compare_xO_xI p q :
  (p~0 ?= q~1) = switch_Eq Lt (p ?= q).
 Proof. exact (compare_cont_spec p q Lt). Qed.
 
-Hint Rewrite compare_xO_xO compare_xI_xI compare_xI_xO compare_xO_xI : compare.
+Global Hint Rewrite compare_xO_xO compare_xI_xI compare_xI_xO compare_xO_xI : compare.
 
 Ltac simpl_compare := autorewrite with compare.
 Ltac simpl_compare_in H := autorewrite with compare in H.
@@ -1100,9 +1100,11 @@ Proof.
   apply lt_succ_r, le_lteq in H. destruct H as [H|H]; subst; auto.
 Qed.
 
+#[global]
 Instance lt_strorder : StrictOrder lt.
 Proof. split. exact lt_irrefl. exact lt_trans. Qed.
 
+#[global]
 Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) lt.
 Proof. repeat red. intros. subst; auto. Qed.
 
@@ -1148,9 +1150,11 @@ Proof.
  elim (lt_irrefl p). now transitivity q.
 Qed.
 
+#[global]
 Instance le_preorder : PreOrder le.
 Proof. split. exact le_refl. exact le_trans. Qed.
 
+#[global]
 Instance le_partorder : PartialOrder Logic.eq le.
 Proof.
  intros x y. change (x=y <-> x <= y <= x).
@@ -2143,3 +2147,7 @@ Qed.
  - [Pmult_nat] cannot be unfolded (unfold [Pos.iter_op] instead).
 
 *)
+
+(** Re-export the notation for those who just [Import BinPos] *)
+Number Notation positive Pos.of_num_int Pos.to_num_hex_uint : hex_positive_scope.
+Number Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.

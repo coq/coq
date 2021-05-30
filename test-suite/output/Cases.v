@@ -254,3 +254,64 @@ Definition bar (f : foo) :=
   end.
 
 End Wish12762.
+
+Module ConstructorArgumentsNumber.
+
+Arguments cons {A} _ _.
+
+Inductive J' A {B} (C:=(A*B)%type) (c:C) := D' : forall n {m}, let p := n+m in m=m -> J' A c.
+
+Unset Asymmetric Patterns.
+
+Fail Check fun x => match x with (y,z) w => y+z+w end.
+Fail Check fun x => match x with cons y z w => 0 | nil => 0 end.
+Fail Check fun x => match x with cons y => 0 | nil => 0 end.
+
+(* Missing a let-in to be in let-in mode *)
+Fail Check fun x => match x with D' _ _ n p e => 0 end.
+Check fun x : J' bool (true,true) => match x with D' _ _ n e => existT (fun x => eq x x) _ e end.
+Check fun x : J' bool (true,true) => match x with D' _ _ _ n p e => n+p end.
+
+Set Asymmetric Patterns.
+
+Fail Check fun x => match x with (y,z) w => y+z+w end.
+Fail Check fun x => match x with cons y z w => 0 | nil => 0 end.
+Fail Check fun x => match x with cons y => 0 | nil => 0 end.
+
+Fail Check fun x => match x with D' n _ => 0 end.
+Fail Check fun x => match x with D' n m p e _ => 0 end.
+Check fun x : J' bool (true,true) => match x with D' n m e => existT (fun x => eq x x) m e end.
+Check fun x : J' bool (true,true) => match x with D' n m p e => (n,p) end.
+
+End ConstructorArgumentsNumber.
+
+Module Bug14207.
+
+Inductive type {base_type : Type} := base (t : base_type) | arrow (s d : type).
+Global Arguments type : clear implicits.
+Fixpoint interp {base_type} (base_interp : base_type -> Type) (t : type base_type) : Type
+  := match t with
+     | base t => base_interp t
+     | arrow s d => @interp _ base_interp s -> @interp _ base_interp d
+     end.
+Axiom admit : forall {T}, T.
+Section with_base.
+  Context {base_type : Type}
+          {base_interp : base_type -> Type}.
+  Local Notation type := (@type base_type).
+
+  Fixpoint default {t} : interp base_interp t
+    := match t with
+       | base x => admit
+       | arrow s d => fun _ => @default d
+       end.
+End with_base.
+
+Definition c :=
+ match 0, 0 with
+ | S (S x), y => 0
+ | x, S (S y) => 1
+ | x, y => 2
+ end.
+
+End Bug14207.

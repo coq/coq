@@ -106,7 +106,7 @@ val pr_may_eval :
 
 val pr_and_short_name : ('a -> Pp.t) -> 'a Genredexpr.and_short_name -> Pp.t
 
-val pr_evaluable_reference_env : env -> evaluable_global_reference -> Pp.t
+val pr_evaluable_reference_env : env -> Tacred.evaluable_global_reference -> Pp.t
 
 val pr_quantified_hypothesis : quantified_hypothesis -> Pp.t
 
@@ -124,7 +124,7 @@ val pr_glb_generic : env -> Evd.evar_map -> glevel generic_argument -> Pp.t
 val pr_raw_extend: env -> Evd.evar_map -> int ->
   ml_tactic_entry -> raw_tactic_arg list -> Pp.t
 
-val pr_glob_extend: env -> Evd.evar_map -> int ->
+val pr_glob_extend: env -> int ->
   ml_tactic_entry -> glob_tactic_arg list -> Pp.t
 
 val pr_extend :

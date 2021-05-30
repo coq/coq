@@ -36,7 +36,7 @@ val of_ident : Id.t CAst.t -> raw_tacexpr
 
 val of_constr : ?delimiters:Id.t list -> Constrexpr.constr_expr -> raw_tacexpr
 
-val of_open_constr : Constrexpr.constr_expr -> raw_tacexpr
+val of_open_constr : ?delimiters:Id.t list -> Constrexpr.constr_expr -> raw_tacexpr
 
 val of_list : ?loc:Loc.t -> ('a -> raw_tacexpr) -> 'a list -> raw_tacexpr
 
@@ -84,6 +84,8 @@ val of_assertion : assertion -> raw_tacexpr
 val of_constr_matching : constr_matching -> raw_tacexpr
 
 val of_goal_matching : goal_matching -> raw_tacexpr
+
+val of_format : lstring -> raw_tacexpr
 
 (** {5 Generic arguments} *)
 

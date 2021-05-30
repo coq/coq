@@ -19,7 +19,7 @@ Local Open Scope Z_scope.
 (* Trivial, to deprecate? *)
 Lemma Dcompare_inf : forall r:comparison, {r = Eq} + {r = Lt} + {r = Gt}.
 Proof.
-  induction r; auto.
+  intros r; induction r; auto.
 Defined.
 (* end hide *)
 
@@ -92,7 +92,7 @@ Section decidability.
   Definition Z_le_lt_eq_dec : x <= y -> {x < y} + {x = y}.
   Proof.
     intro H.
-    apply Zcompare_rec with (n := x) (m := y).
+    apply (Zcompare_rec _ x y).
     intro. right. elim (Z.compare_eq_iff x y); auto with arith.
     intro. left. elim (Z.compare_eq_iff x y); auto with arith.
     intro H1. absurd (x > y); auto with arith.
@@ -111,7 +111,7 @@ Proof.
   assumption.
   intro.
   right.
-  apply Z.le_lt_trans with (m := x).
+  apply (Z.le_lt_trans _ x).
   apply Z.ge_le.
   assumption.
   assumption.
@@ -123,14 +123,14 @@ Proof.
   case (Zlt_cotrans 0 (x + y) H x).
   - now left.
   - right.
-    apply Z.add_lt_mono_l with (p := x).
+    apply (Z.add_lt_mono_l _ _ x).
     now rewrite Z.add_0_r.
 Defined.
 
 Lemma Zlt_cotrans_neg : forall n m:Z, n + m < 0 -> {n < 0} + {m < 0}.
 Proof.
   intros x y H; case (Zlt_cotrans (x + y) 0 H x); intro Hxy;
-    [ right; apply Z.add_lt_mono_l with (p := x); rewrite Z.add_0_r | left ];
+    [ right; apply (Z.add_lt_mono_l _ _ x); rewrite Z.add_0_r | left ];
     assumption.
 Defined.
 
@@ -143,7 +143,7 @@ Proof.
   assumption.
   intro H0.
   generalize (Z.ge_le _ _ H0).
-  intro.
+  intro H1.
   case (Z_le_lt_eq_dec _ _ H1).
   intro.
   right.

@@ -83,6 +83,7 @@ Qed.
 
 (** Hence sqrt is a morphism *)
 
+#[global]
 Instance sqrt_wd : Proper (eq==>eq) sqrt.
 Proof.
  intros x x' Hx.
@@ -436,6 +437,7 @@ Qed.
 
 (** [sqrt_up] is a morphism *)
 
+#[global]
 Instance sqrt_up_wd : Proper (eq==>eq) sqrt_up.
 Proof.
  assert (Proper (eq==>eq==>Logic.eq) compare).

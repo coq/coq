@@ -48,7 +48,7 @@ Ltac2 xor x y :=
        end
   end.
 
-Ltac2 eq x y :=
+Ltac2 equal x y :=
   match x with
   | true
     => match y with
@@ -61,3 +61,6 @@ Ltac2 eq x y :=
        | false => true
        end
   end.
+
+#[deprecated(note="Use Bool.equal", since="8.14")]
+Ltac2 eq := equal.

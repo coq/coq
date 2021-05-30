@@ -20,12 +20,43 @@ val or_var_map : ('a -> 'b) -> 'a or_var -> 'b or_var
 val occurrences_map :
   ('a list -> 'b list) -> 'a occurrences_gen -> 'b occurrences_gen
 
-(** From occurrences to a list of positions (or complement of positions) *)
-val convert_occs : occurrences -> bool * int list
+(** {6 Counting occurrences} *)
+
+type occurrences_count
+  (** A counter of occurrences associated to a list of occurrences *)
+
+(** Three basic functions to initialize, count, and conclude a loop
+    browsing over subterms *)
+
+val initialize_occurrence_counter : occurrences -> occurrences_count
+  (** Initialize an occurrence_counter *)
+
+val update_occurrence_counter : occurrences_count -> bool * occurrences_count
+  (** Increase the occurrence counter by one and tell if the current occurrence is selected *)
+
+val check_used_occurrences : occurrences_count -> unit
+  (** Increase the occurrence counter and tell if the current occurrence is selected *)
+
+(** Auxiliary functions about occurrence counters *)
+
+val current_occurrence : occurrences_count -> int
+  (** Tell the value of the current occurrence *)
+
+val occurrences_done : occurrences_count -> bool
+  (** Tell if there are no more occurrences to select and if the loop
+      can be shortcut *)
+
+val more_specific_occurrences : occurrences_count -> bool
+  (** Tell if there are no more occurrences to select (or unselect)
+      and if an inner loop can be shortcut *)
+
+(** {6 Miscellaneous} *)
 
 val is_selected : int -> occurrences -> bool
 
 val is_all_occurrences : 'a occurrences_gen -> bool
+
+val error_invalid_occurrence : int list -> 'a
 
 (** Usual clauses *)
 

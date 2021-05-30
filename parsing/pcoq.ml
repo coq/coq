@@ -21,49 +21,49 @@ struct
 
   let err () = raise Stream.Failure
 
-  type t = Gramlib.Plexing.location_function -> int -> Tok.t Stream.t -> int option
+  type t = int -> Tok.t LStream.t -> int option
 
-  let rec contiguous tok n m =
+  let rec contiguous n m strm =
     n == m ||
-    let (_, ep) = Loc.unloc (tok n) in
-    let (bp, _) = Loc.unloc (tok (n + 1)) in
-    Int.equal ep bp && contiguous tok (succ n) m
+    let (_, ep) = Loc.unloc (LStream.get_loc n strm) in
+    let (bp, _) = Loc.unloc (LStream.get_loc (n + 1) strm) in
+    Int.equal ep bp && contiguous (succ n) m strm
 
-  let check_no_space tok m strm =
-    let n = Stream.count strm in
-    if contiguous tok n (n+m-1) then Some m else None
+  let check_no_space m strm =
+    let n = LStream.count strm in
+    if contiguous n (n+m-1) strm then Some m else None
 
   let to_entry s (lk : t) =
-    let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
-    Entry.of_parser s run
+    let run strm = match lk 0 strm with None -> err () | Some _ -> () in
+    Entry.(of_parser s { parser_fun = run })
 
-  let (>>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with
+  let (>>) (lk1 : t) lk2 n strm = match lk1 n strm with
   | None -> None
-  | Some n -> lk2 tok n strm
+  | Some n -> lk2 n strm
 
-  let (<+>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with
-  | None -> lk2 tok n strm
+  let (<+>) (lk1 : t) lk2 n strm = match lk1 n strm with
+  | None -> lk2 n strm
   | Some n -> Some n
 
-  let lk_empty tok n strm = Some n
+  let lk_empty n strm = Some n
 
-  let lk_kw kw tok n strm = match stream_nth n strm with
+  let lk_kw kw n strm = match LStream.peek_nth n strm with
   | Tok.KEYWORD kw' | Tok.IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
   | _ -> None
 
-  let lk_kws kws tok n strm = match stream_nth n strm with
+  let lk_kws kws n strm = match LStream.peek_nth n strm with
   | Tok.KEYWORD kw | Tok.IDENT kw -> if List.mem_f String.equal kw kws then Some (n + 1) else None
   | _ -> None
 
-  let lk_ident tok n strm = match stream_nth n strm with
+  let lk_ident n strm = match LStream.peek_nth n strm with
   | Tok.IDENT _ -> Some (n + 1)
   | _ -> None
 
-  let lk_ident_except idents tok n strm = match stream_nth n strm with
+  let lk_ident_except idents n strm = match LStream.peek_nth n strm with
   | Tok.IDENT ident when not (List.mem_f String.equal ident idents) -> Some (n + 1)
   | _ -> None
 
-  let lk_nat tok n strm = match stream_nth n strm with
+  let lk_nat n strm = match LStream.peek_nth n strm with
   | Tok.NUMBER p when NumTok.Unsigned.is_nat p -> Some (n + 1)
   | _ -> None
 
@@ -109,20 +109,24 @@ let camlp5_entries = ref EntryDataMap.empty
 
 (** Deletion *)
 
-let grammar_delete e { pos; data } =
+let grammar_delete e r =
+  let data = match r with
+  | Fresh (_, r) -> List.map (fun (_, _, r) -> r) r
+  | Reuse (_, r) -> [r]
+  in
   List.iter
-    (fun (n,ass,lev) ->
+    (fun lev ->
       List.iter (fun pil -> safe_delete_rule e pil) (List.rev lev))
     (List.rev data)
 
-let grammar_delete_reinit e reinit ({ pos; data } as d)=
+let grammar_delete_reinit e reinit d =
   grammar_delete e d;
   let a, ext = reinit in
-  let lev = match pos with
-    | Some (Gramext.Level n) -> n
-    | _ -> assert false
+  let lev = match d with
+  | Reuse (Some n, _) -> n
+  | _ -> assert false
   in
-  let ext = { pos = Some ext; data = [Some lev,Some a,[]] } in
+  let ext = Fresh (ext, [Some lev,Some a,[]]) in
   safe_extend e ext
 
 (** Extension *)
@@ -179,19 +183,12 @@ let make_rule r = [None, None, r]
 
 (** An entry that checks we reached the end of the input. *)
 
+(* used by the Tactician plugin *)
 let eoi_entry en =
   let e = Entry.make ((Entry.name en) ^ "_eoi") in
   let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
-  let ext = { pos = None; data = make_rule [Production.make symbs act] } in
-  safe_extend e ext;
-  e
-
-let map_entry f en =
-  let e = Entry.make ((Entry.name en) ^ "_map") in
-  let symbs = Rule.next Rule.stop (Symbol.nterm en) in
-  let act = fun x loc -> f x in
-  let ext = { pos = None; data = make_rule [Production.make symbs act] } in
+  let ext = Fresh (Gramlib.Gramext.First, make_rule [Production.make symbs act]) in
   safe_extend e ext;
   e
 
@@ -327,6 +324,8 @@ module Constr =
     let binder = Entry.create "binder"
     let binders = Entry.create "binders"
     let open_binders = Entry.create "open_binders"
+    let one_open_binder = Entry.create "one_open_binder"
+    let one_closed_binder = Entry.create "one_closed_binder"
     let binders_fixannot = Entry.create "binders_fixannot"
     let typeclass_constraint = Entry.create "typeclass_constraint"
     let record_declaration = Entry.create "record_declaration"
@@ -344,7 +343,7 @@ module Module =
 let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
   let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
   let entry = Entry.make "epsilon" in
-  let ext = { pos = None; data = [None, None, [r]] } in
+  let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
   let () = safe_extend entry ext in
   try Some (parse_string entry "") with _ -> None
 

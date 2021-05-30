@@ -12,7 +12,7 @@ General Presentation
 
    The status of Universe Polymorphism is experimental.
 
-This section describes the universe polymorphic extension of |Coq|.
+This section describes the universe polymorphic extension of Coq.
 Universe polymorphism makes it possible to write generic definitions
 making use of universes and reuse them at different and sometimes
 incompatible universe levels.
@@ -24,7 +24,7 @@ and *monomorphic* definitions is given by the identity function:
 
    Definition identity {A : Type} (a : A) := a.
 
-By default, constant declarations are monomorphic, hence the identity
+By default, :term:`constant` declarations are monomorphic, hence the identity
 function declares a global universe (say ``Top.1``) for its domain.
 Subsequently, if we try to self-apply the identity, we will get an
 error:
@@ -122,33 +122,37 @@ in a universe strictly higher than :g:`Set`.
 Polymorphic, Monomorphic
 -------------------------
 
-.. attr:: universes(polymorphic)
-   :name: universes(polymorphic); Polymorphic
+.. attr:: universes(polymorphic{? = {| yes | no } })
+   :name: universes(polymorphic); Polymorphic; Monomorphic
 
-   This attribute can be used to declare universe polymorphic
-   definitions and inductive types.  There is also a legacy syntax
-   using the ``Polymorphic`` prefix (see :n:`@legacy_attr`) which, as
-   shown in the examples, is more commonly used.
+   This :term:`boolean attribute` can be used to control whether universe
+   polymorphism is enabled in the definition of an inductive type.
+   There is also a legacy syntax using the ``Polymorphic`` prefix (see
+   :n:`@legacy_attr`) which, as shown in the examples, is more
+   commonly used.
+
+   When ``universes(polymorphic=no)`` is used, global universe constraints
+   are produced, even when the :flag:`Universe Polymorphism` flag is
+   on. There is also a legacy syntax using the ``Monomorphic`` prefix
+   (see :n:`@legacy_attr`).
+
+.. attr:: universes(monomorphic)
+
+   .. deprecated:: 8.13
+
+      Use :attr:`universes(polymorphic=no) <universes(polymorphic)>`
+      instead.
 
 .. flag:: Universe Polymorphism
 
-   This flag is off by default.  When it is on, new declarations are
-   polymorphic unless the :attr:`universes(monomorphic)` attribute is
-   used.
-
-.. attr:: universes(monomorphic)
-   :name: universes(monomorphic); Monomorphic
-
-   This attribute can be used to declare universe monomorphic
-   definitions and inductive types (i.e. global universe constraints
-   are produced), even when the :flag:`Universe Polymorphism` flag is
-   on.  There is also a legacy syntax using the ``Monomorphic`` prefix
-   (see :n:`@legacy_attr`).
+   This :term:`flag` is off by default.  When it is on, new declarations are
+   polymorphic unless the :attr:`universes(polymorphic=no) <universes(polymorphic)>`
+   attribute is used to override the default.
 
 Many other commands can be used to declare universe polymorphic or
-monomorphic constants depending on whether the :flag:`Universe
-Polymorphism` flag is on or the :attr:`universes(polymorphic)` or
-:attr:`universes(monomorphic)` attributes are used:
+monomorphic :term:`constants <constant>` depending on whether the :flag:`Universe
+Polymorphism` flag is on or the :attr:`universes(polymorphic)`
+attribute is used:
 
 - :cmd:`Lemma`, :cmd:`Axiom`, etc. can be used to declare universe
   polymorphic constants.
@@ -171,19 +175,27 @@ Polymorphism` flag is on or the :attr:`universes(polymorphic)` or
 Cumulative, NonCumulative
 -------------------------
 
-.. attr:: universes(cumulative)
-   :name: universes(cumulative); Cumulative
+.. attr:: universes(cumulative{? = {| yes | no } })
+   :name: universes(cumulative); Cumulative; NonCumulative
 
    Polymorphic inductive types, coinductive types, variants and
-   records can be declared cumulative using this attribute or the
-   legacy ``Cumulative`` prefix (see :n:`@legacy_attr`) which, as
+   records can be declared cumulative using this :term:`boolean attribute`
+   or the legacy ``Cumulative`` prefix (see :n:`@legacy_attr`) which, as
    shown in the examples, is more commonly used.
 
    This means that two instances of the same inductive type (family)
    are convertible based on the universe variances; they do not need
    to be equal.
 
-   .. exn:: The cumulative and noncumulative attributes can only be used in a polymorphic context.
+   When the attribtue is off, the inductive type is non-cumulative
+   even if the :flag:`Polymorphic Inductive Cumulativity` flag is on.
+   There is also a legacy syntax using the ``NonCumulative`` prefix
+   (see :n:`@legacy_attr`).
+
+   This means that two instances of the same inductive type (family)
+   are convertible only if all the universes are equal.
+
+   .. exn:: The cumulative attribute can only be used in a polymorphic context.
 
       Using this attribute requires being in a polymorphic context,
       i.e. either having the :flag:`Universe Polymorphism` flag on, or
@@ -192,26 +204,21 @@ Cumulative, NonCumulative
 
    .. note::
 
-      ``#[ universes(polymorphic), universes(cumulative) ]`` can be
-      abbreviated into ``#[ universes(polymorphic, cumulative) ]``.
+      :n:`#[ universes(polymorphic{? = yes }), universes(cumulative{? = {| yes | no } }) ]` can be
+      abbreviated into :n:`#[ universes(polymorphic{? = yes }, cumulative{? = {| yes | no } }) ]`.
+
+.. attr:: universes(noncumulative)
+
+   .. deprecated:: 8.13
+
+      Use :attr:`universes(cumulative=no) <universes(cumulative)>` instead.
 
 .. flag:: Polymorphic Inductive Cumulativity
 
-   When this flag is on (it is off by default), it makes all
+   When this :term:`flag` is on (it is off by default), it makes all
    subsequent *polymorphic* inductive definitions cumulative, unless
-   the :attr:`universes(noncumulative)` attribute is used.  It has no
-   effect on *monomorphic* inductive definitions.
-
-.. attr:: universes(noncumulative)
-   :name: universes(noncumulative); NonCumulative
-
-   Declares the inductive type as non-cumulative even if the
-   :flag:`Polymorphic Inductive Cumulativity` flag is on.  There is
-   also a legacy syntax using the ``NonCumulative`` prefix (see
-   :n:`@legacy_attr`).
-
-   This means that two instances of the same inductive type (family)
-   are convertible only if all the universes are equal.
+   the :attr:`universes(cumulative=no) <universes(cumulative)>` attribute is
+   used to override the default.  It has no effect on *monomorphic* inductive definitions.
 
 Consider the examples below.
 
@@ -231,7 +238,7 @@ constraints by prefixing the level names with symbols.
 Because inductive subtypings are only produced by comparing inductives
 to themselves with universes changed, they amount to variance
 information: each universe is either invariant, covariant or
-irrelevant (there are no contravariant subtypings in |Coq|),
+irrelevant (there are no contravariant subtypings in Coq),
 respectively represented by the symbols `=`, `+` and `*`.
 
 Here we see that :g:`list` binds an irrelevant universe, so any two
@@ -246,6 +253,7 @@ The following is an example of a record with non-trivial subtyping relation:
 .. coqtop:: all
 
    Polymorphic Cumulative Record packType := {pk : Type}.
+   About packType.
 
 :g:`packType` binds a covariant universe, i.e.
 
@@ -253,6 +261,27 @@ The following is an example of a record with non-trivial subtyping relation:
 
    E[Γ] ⊢ \mathsf{packType}@\{i\} =_{βδιζη}
    \mathsf{packType}@\{j\}~\mbox{ whenever }~i ≤ j
+
+Specifying cumulativity
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The variance of the universe parameters for a cumulative inductive may be specified by the user.
+
+For the following type, universe ``a`` has its variance automatically
+inferred (it is irrelevant), ``b`` is required to be irrelevant,
+``c`` is covariant and ``d`` is invariant. With these annotations
+``c`` and ``d`` have less general variances than would be inferred.
+
+.. coqtop:: all
+
+   Polymorphic Cumulative Inductive Dummy@{a *b +c =d} : Prop := dummy.
+   About Dummy.
+
+Insufficiently restrictive variance annotations lead to errors:
+
+.. coqtop:: all
+
+   Fail Polymorphic Cumulative Record bad@{*a} := {p : Type@{a}}.
 
 An example of a proof using cumulativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -280,11 +309,11 @@ An example of a proof using cumulativity
    End down.
 
 Cumulativity Weak Constraints
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. flag:: Cumulativity Weak Constraints
 
-   When set, which is the default, causes "weak" constraints to be produced
+   When set, which is the default, this :term:`flag` causes "weak" constraints to be produced
    when comparing universes in an irrelevant position. Processing weak
    constraints is delayed until minimization time. A weak constraint
    between `u` and `v` when neither is smaller than the other and
@@ -299,7 +328,7 @@ Cumulativity Weak Constraints
 Global and local universes
 ---------------------------
 
-Each universe is declared in a global or local environment before it
+Each universe is declared in a global or local context before it
 can be used. To ensure compatibility, every *global* universe is set
 to be strictly greater than :g:`Set` when it is introduced, while every
 *local* (i.e. polymorphically quantified) universe is introduced as
@@ -312,13 +341,13 @@ Conversion and unification
 The semantics of conversion and unification have to be modified a
 little to account for the new universe instance arguments to
 polymorphic references. The semantics respect the fact that
-definitions are transparent, so indistinguishable from their bodies
+definitions are transparent, so indistinguishable from their :term:`bodies <body>`
 during conversion.
 
 This is accomplished by changing one rule of unification, the first-
 order approximation rule, which applies when two applicative terms
 with the same head are compared. It tries to short-cut unfolding by
-comparing the arguments directly. In case the constant is universe
+comparing the arguments directly. In case the :term:`constant` is universe
 polymorphic, we allow this rule to fire only when unifying the
 universes results in instantiating a so-called flexible universe
 variables (not given by the user). Similarly for conversion, if such
@@ -333,7 +362,7 @@ Minimization
 
 Universe polymorphism with cumulativity tends to generate many useless
 inclusion constraints in general. Typically at each application of a
-polymorphic constant :g:`f`, if an argument has expected type :g:`Type@{i}`
+polymorphic :term:`constant` :g:`f`, if an argument has expected type :g:`Type@{i}`
 and is given a term of type :g:`Type@{j}`, a :math:`j ≤ i` constraint will be
 generated. It is however often the case that an equation :math:`j = i` would
 be more appropriate, when :g:`f`\'s universes are fresh for example.
@@ -361,7 +390,7 @@ it is an atomic universe (i.e. not an algebraic max() universe).
 
 .. flag:: Universe Minimization ToSet
 
-   Turning this flag off (it is on by default) disallows minimization
+   Turning this :term:`flag` off (it is on by default) disallows minimization
    to the sort :g:`Set` and only collapses floating universes between
    themselves.
 
@@ -383,6 +412,7 @@ Explicit Universes
    | _
    | @qualid
    univ_decl ::= @%{ {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   cumul_univ_decl ::= @%{ {* {? {| + | = | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
    univ_constraint ::= @universe_name {| < | = | <= } @universe_name
 
 The syntax has been extended to allow users to explicitly bind names
@@ -427,7 +457,7 @@ Printing universes
 
 .. flag:: Printing Universes
 
-   Turn this flag on to activate the display of the actual level of each
+   Turn this :term:`flag` on to activate the display of the actual level of each
    occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard flag, in
    combination with :flag:`Printing All` can help to diagnose failures to unify
    terms apparently identical but internally different in the Calculus of Inductive
@@ -474,7 +504,7 @@ mode, introduced universe names can be referred to in terms. Note that
 local universe names shadow global universe names. During a proof, one
 can use :cmd:`Show Universes` to display the current context of universes.
 
-It is possible to provide only some universe levels and let |Coq| infer the others
+It is possible to provide only some universe levels and let Coq infer the others
 by adding a :g:`+` in the list of bound universe levels:
 
 .. coqtop:: all
@@ -511,7 +541,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
 .. flag:: Strict Universe Declaration
 
-   Turning this flag off allows one to freely use
+   Turning this :term:`flag` off allows one to freely use
    identifiers for universes without declaring them first, with the
    semantics that the first use declares it. In this mode, the universe
    names are not associated with the definition or proof once it has been
@@ -519,8 +549,8 @@ underscore or by omitting the annotation to a polymorphic definition.
 
 .. flag:: Private Polymorphic Universes
 
-   This flag, on by default, removes universes which appear only in
-   the body of an opaque polymorphic definition from the definition's
+   This :term:`flag`, on by default, removes universes which appear only in
+   the :term:`body` of an opaque polymorphic definition from the definition's
    universe arguments. As such, no value needs to be provided for
    these universes when instantiating the definition. Universe
    constraints are automatically adjusted.
@@ -533,18 +563,18 @@ underscore or by omitting the annotation to a polymorphic definition.
       Proof. exact Type. Qed.
       Print foo.
 
-   The universe :g:`Top.xxx` for the :g:`Type` in the body cannot be accessed, we
+   The universe :g:`Top.xxx` for the :g:`Type` in the :term:`body` cannot be accessed, we
    only care that one exists for any instantiation of the universes
    appearing in the type of :g:`foo`. This is guaranteed when the
    transitive constraint ``Set <= Top.xxx < i`` is verified. Then when
-   using the constant we don't need to put a value for the inner
+   using the :term:`constant` we don't need to put a value for the inner
    universe:
 
    .. coqtop:: all
 
       Check foo@{_}.
 
-   and when not looking at the body we don't mention the private
+   and when not looking at the :term:`body` we don't mention the private
    universe:
 
    .. coqtop:: all
@@ -587,7 +617,7 @@ definitions in the section sharing a common variable will both get
 parameterized by the universes produced by the variable declaration.
 This is in contrast to a “mononorphic” variable which introduces
 global universes and constraints, making the two definitions depend on
-the *same* global universes associated to the variable.
+the *same* global universes associated with the variable.
 
 It is possible to mix universe polymorphism and monomorphism in
 sections, except in the following ways:
@@ -613,11 +643,11 @@ sections, except in the following ways:
   (in the above example the anonymous :g:`Type` constrains polymorphic
   universe :g:`i` to be strictly smaller.)
 
-- no monomorphic constant or inductive may be declared if polymorphic
+- no monomorphic :term:`constant` or inductive may be declared if polymorphic
   universes or universe constraints are present.
 
 These restrictions are required in order to produce a sensible result
-when closing the section (the requirement on constants and inductives
+when closing the section (the requirement on :term:`constants <constant>` and inductive types
 is stricter than the one on constraints, because constants and
 inductives are abstracted by *all* the section's polymorphic universes
 and constraints).

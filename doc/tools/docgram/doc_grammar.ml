@@ -12,12 +12,14 @@ open Coqpp_parser
 open Coqpp_ast
 
 let exit_code = ref 0
+let error_count = ref 0
 let show_warn = ref true
 
 let fprintf = Printf.fprintf
 
 let error s =
   exit_code := 1;
+  incr error_count;
   Printf.eprintf "Error: ";
   Printf.eprintf s
 
@@ -32,7 +34,7 @@ type args = {
   fullGrammar : bool;
   check_tacs : bool;
   check_cmds : bool;
-  no_update: bool;
+  update: bool;
   show_warn : bool;
   verbose : bool;
   verify : bool;
@@ -44,7 +46,7 @@ let default_args = {
   fullGrammar = false;
   check_tacs = false;
   check_cmds = false;
-  no_update = false;
+  update = true;
   show_warn = true;
   verbose = false;
   verify = false;
@@ -309,6 +311,11 @@ let rec output_prodn = function
             | "{|" -> "%{%|"
             | "`{" -> "`%{"
             | "@{" -> "@%{"
+            | "|-" -> "%|-"
+            | "|->" -> "%|->"
+            | "||" -> "%||"
+            | "|||" -> "%|||"
+            | "||||" -> "%||||"
             | "{"
             | "}"
             | "|" -> "%" ^ s
@@ -354,10 +361,9 @@ and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
 let get_tag file prod =
   List.fold_left (fun rv sym ->
       match sym with
-        (* todo: temporarily limited to Ltac2 tags in prodn when not in ltac2.rst *)
-      | Sedit2 ("TAG", s2)
-        when (s2 = "Ltac2" || s2 = "not Ltac2") &&
-            file <> "doc/sphinx/proof-engine/ltac2.rst" -> "   " ^ s2
+        (* todo: only Ltac2 and SSR for now, outside of their main chapters *)
+      | Sedit2 ("TAG", "Ltac2") when file <> "doc/sphinx/proof-engine/ltac2.rst" -> "   Ltac2"
+      | Sedit2 ("TAG", "SSR") when file <> "doc/sphinx/proof-engine/ssreflect-proof-language.rst" -> "   SSR"
       | _ -> rv
     ) "" prod
 
@@ -521,29 +527,28 @@ let rec edit_SELF nt cur_level next_level right_assoc inner prod =
   prod
 
 
-let autoloaded_mlgs = [ (* in the order they are loaded by Coq *)
+let autoloaded_mlgs = [ (* productions from other mlgs are marked with TAGs *)
  "parsing/g_constr.mlg";
  "parsing/g_prim.mlg";
- "vernac/g_vernac.mlg";
- "vernac/g_proofs.mlg";
- "toplevel/g_toplevel.mlg";
- "plugins/ltac/extraargs.mlg";
- "plugins/ltac/g_obligations.mlg";
- "plugins/ltac/coretactics.mlg";
- "plugins/ltac/extratactics.mlg";
- "plugins/ltac/profile_ltac_tactics.mlg";
- "plugins/ltac/g_auto.mlg";
- "plugins/ltac/g_class.mlg";
- "plugins/ltac/g_rewrite.mlg";
- "plugins/ltac/g_eqdecide.mlg";
- "plugins/ltac/g_tactic.mlg";
- "plugins/ltac/g_ltac.mlg";
- "plugins/syntax/g_string.mlg";
  "plugins/btauto/g_btauto.mlg";
- "plugins/rtauto/g_rtauto.mlg";
  "plugins/cc/g_congruence.mlg";
  "plugins/firstorder/g_ground.mlg";
- "plugins/syntax/g_numeral.mlg";
+ "plugins/ltac/coretactics.mlg";
+ "plugins/ltac/extraargs.mlg";
+ "plugins/ltac/extratactics.mlg";
+ "plugins/ltac/g_auto.mlg";
+ "plugins/ltac/g_class.mlg";
+ "plugins/ltac/g_eqdecide.mlg";
+ "plugins/ltac/g_ltac.mlg";
+ "plugins/ltac/g_obligations.mlg";
+ "plugins/ltac/g_rewrite.mlg";
+ "plugins/ltac/g_tactic.mlg";
+ "plugins/ltac/profile_ltac_tactics.mlg";
+ "plugins/rtauto/g_rtauto.mlg";
+ "plugins/syntax/g_number_string.mlg";
+ "toplevel/g_toplevel.mlg";
+ "vernac/g_proofs.mlg";
+ "vernac/g_vernac.mlg";
 ]
 
 
@@ -555,6 +560,10 @@ let level_regex = Str.regexp "[a-zA-Z0-9_]*$"
 let get_plugin_name file =
   if file = "user-contrib/Ltac2/g_ltac2.mlg" then
     "Ltac2"
+  (* todo: would be better if g_search.mlg has an "ssr" prefix *)
+  else if List.mem file ["plugins/ssr/ssrparser.mlg"; "plugins/ssr/ssrvernac.mlg";
+      "plugins/ssrmatching/g_ssrmatching.mlg"; "plugins/ssrsearch/g_search.mlg"] then
+    "SSR"
   else if Str.string_match plugin_regex file 0 then
     Str.matched_group 1 file
   else
@@ -564,12 +573,12 @@ let read_mlg g is_edit ast file level_renames symdef_map =
   let res = ref [] in
   let locals = ref StringSet.empty in
   let dup_renames = ref StringMap.empty in
-  let add_prods nt prods =
+  let add_prods nt prods gramext_globals =
     if not is_edit then
-      if NTMap.mem nt !g.map && nt <> "command" && nt <> "simple_tactic" then begin
+      if NTMap.mem nt !g.map && not (List.mem nt gramext_globals) && nt <> "command" && nt <> "simple_tactic" then begin
         let new_name = String.uppercase_ascii (Filename.remove_extension (Filename.basename file)) ^ "_" ^ nt in
         dup_renames := StringMap.add nt new_name !dup_renames;
-        Printf.printf "** dup sym %s -> %s in %s\n" nt new_name file
+        if false then Printf.printf "** dup local sym %s -> %s in %s\n" nt new_name file
       end;
       add_symdef nt file symdef_map;
     let plugin = get_plugin_name file in
@@ -590,18 +599,28 @@ let read_mlg g is_edit ast file level_renames symdef_map =
         | Some s -> s
         | None -> ""
       in
+      let gramext_globals = ref grammar_ext.gramext_globals in
       List.iter (fun ent ->
-          let len = List.length ent.gentry_rules in
+          let pos, rules = match ent.gentry_rules with
+          | GDataFresh (pos, r) -> (pos, r)
+          | GDataReuse (lbl, r) ->
+            let r = {
+              grule_label = lbl;
+              grule_assoc = None;
+              grule_prods = r;
+            } in
+            (None, [r])
+          in
+          let len = List.length rules in
           List.iteri (fun i rule ->
               let nt = ent.gentry_name in
-              if not (List.mem nt grammar_ext.gramext_globals) then
+              if not (List.mem nt !gramext_globals) then
                 locals := StringSet.add nt !locals;
               let level = (get_label rule.grule_label) in
               let level = if level <> "" then level else
-                match ent.gentry_pos with
-                | Some Level lev
-                | Some Before lev
-                | Some After lev
+                match pos with
+                | Some (Before lev)
+                | Some (After lev)
                   -> lev
                 (* Looks like FIRST/LAST can be ignored for documenting the current grammar *)
                 | _ -> "" in
@@ -611,7 +630,7 @@ let read_mlg g is_edit ast file level_renames symdef_map =
                 error "Invalid level string `%s` for `%s`\n" level nt;
               let cur_level = nt ^ level in
               let next_level = nt ^
-                  if i+1 < len then (get_label (List.nth ent.gentry_rules (i+1)).grule_label) else "" in
+                  if i+1 < len then (get_label (List.nth rules (i+1)).grule_label) else "" in
               let right_assoc = (rule.grule_assoc = Some RightA) in
 
               if i = 0 && cur_level <> nt && not (StringMap.mem nt !level_renames) then begin
@@ -625,9 +644,12 @@ let read_mlg g is_edit ast file level_renames symdef_map =
                 if cur_level <> nt && i+1 < len then
                   edited @ [[Snterm next_level]]
                 else
-                  edited in
-              add_prods cur_level prods_to_add)
-            ent.gentry_rules
+                  edited
+              in
+              if cur_level <> nt && List.mem nt !gramext_globals then
+                gramext_globals := cur_level :: !gramext_globals;
+              add_prods cur_level prods_to_add !gramext_globals)
+            rules
         ) grammar_ext.gramext_entries
 
     | VernacExt vernac_ext ->
@@ -636,16 +658,16 @@ let read_mlg g is_edit ast file level_renames symdef_map =
       | Some c -> String.trim c.code
       in
       add_prods node
-        (List.map (fun r -> cvt_ext r.vernac_toks) vernac_ext.vernacext_rules)
+        (List.map (fun r -> cvt_ext r.vernac_toks) vernac_ext.vernacext_rules) []
     | VernacArgumentExt vernac_argument_ext ->
       add_prods vernac_argument_ext.vernacargext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) vernac_argument_ext.vernacargext_rules)
+        (List.map (fun r -> cvt_ext r.tac_toks) vernac_argument_ext.vernacargext_rules) []
     | TacticExt tactic_ext ->
       add_prods "simple_tactic"
-        (List.map (fun r -> cvt_ext r.tac_toks) tactic_ext.tacext_rules)
+        (List.map (fun r -> cvt_ext r.tac_toks) tactic_ext.tacext_rules) []
     | ArgumentExt argument_ext ->
       add_prods argument_ext.argext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules)
+        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules) []
     | _ -> ()
   in
 
@@ -1007,7 +1029,7 @@ let rec gen_nt_name sym =
   good_name name
 
 (* create a new nt for LIST* or OPT with the specified name *)
-let rec maybe_add_nt g insert_after name sym queue =
+let maybe_add_nt g insert_after name sym queue =
   let empty = [Snterm "empty"] in
   let maybe_unwrap ?(multi=false) sym =
     match sym with
@@ -1081,65 +1103,6 @@ let rec maybe_add_nt g insert_after name sym queue =
   end;
   new_nt
 
-(* expand LIST*, OPT and add "empty" *)
-(* todo: doesn't handle recursive expansions well, such as syntax_modifier_opt *)
-and expand_rule g edited_nt queue =
-  let rule = NTMap.find edited_nt !g.map in
-  let insert_after = ref edited_nt in
-  let rec expand rule =
-    let rec aux syms res =
-      match syms with
-      | [] -> res
-      | sym0 :: tl ->
-        let new_sym = match sym0 with
-          | Sterm _
-          | Snterm _ ->
-            sym0
-          | Slist1 sym
-          | Slist1sep (sym, _)
-          | Slist0 sym
-          | Slist0sep (sym, _)
-          | Sopt sym ->
-            let name = gen_nt_name sym in
-            if name <> "" then begin
-              let new_nt = maybe_add_nt g insert_after name sym0 queue in
-              Snterm new_nt
-            end else sym0
-          | Sparen slist -> Sparen (expand slist)
-          | Sprod slistlist ->
-            let has_empty = List.length (List.hd (List.rev slistlist)) = 0 in
-            let name = gen_nt_name sym0 in
-            if name <> "" then begin
-              let new_nt = maybe_add_nt g insert_after name
-                  (if has_empty then (Sopt (Sprod (List.rev (List.tl (List.rev slistlist))) ))
-                  else sym0) queue
-              in
-              Snterm new_nt
-            end else
-              Sprod (List.map expand slistlist)
-          | Sedit _
-          | Sedit2 _ ->
-            sym0 (* these constructors not used here *)
-        in
-        aux tl (new_sym :: res)
-    in
-    List.rev (aux rule (if edited_nt <> "empty" && ematch rule [] then [Snterm "empty"] else []))
-  in
-  let rule' = List.map expand rule in
-  g_update_prods g edited_nt rule'
-
-let expand_lists g =
-  (* todo: use Queue.of_seq w OCaml 4.07+ *)
-  let queue = Queue.create () in
-  List.iter (fun nt -> Queue.add nt queue) !g.order;
-  try
-    while true do
-      let nt = Queue.pop queue in
-      expand_rule g nt queue
-    done
-  with
-  | Queue.Empty -> ()
-
 let apply_merge g edit_map =
   List.iter (fun b ->
       let (from_nt, to_nt) = b in
@@ -1191,10 +1154,15 @@ let edit_all_prods g op eprods =
   | "DELETE" -> do_it op eprods 1; true
   | "SPLICE" -> do_it op eprods 1; true
   | "MERGE" -> do_it op eprods 2; true
-  | "EXPAND" ->
-    if List.length eprods > 1 || List.length (List.hd eprods) <> 0 then
-      error "'EXPAND:' expects a single empty production\n";
-    expand_lists g; true
+  | "OPTINREF" ->
+      List.iter (fun nt ->
+        let prods = NTMap.find nt !g.map in
+        if has_match [] prods then begin
+          let prods' = remove_prod [] prods nt in
+          g_update_prods g nt prods';
+          global_repl g [(Snterm nt)] [(Sopt (Snterm nt))]
+        end)
+      !g.order; true
   | _ -> false
 
 let edit_single_prod g edit0 prods nt =
@@ -1259,6 +1227,11 @@ let apply_edit_file g edits =
             with Not_found -> prods in
             let prods' = moveto nt dest_nt oprod prods in
             aux tl prods' add_nt
+          | [Snterm "COPYALL"; Snterm dest_nt] :: tl ->
+            if NTMap.mem dest_nt !g.map then
+              error "COPYALL target nonterminal `%s` already exists\n" dest_nt;
+            g_maybe_add g dest_nt prods;
+            aux tl prods add_nt
           | [Snterm "MOVEALLBUT"; Snterm dest_nt] :: tl ->
             List.iter (fun tlprod ->
                 if not (List.mem tlprod prods) then
@@ -1278,6 +1251,8 @@ let apply_edit_file g edits =
             aux tl (remove_prod [] prods nt) add_nt
           | (Snterm "INSERTALL" :: syms) :: tl ->
             aux tl (List.map (fun p -> syms @ p) prods) add_nt
+          | (Snterm "APPENDALL" :: syms) :: tl ->
+            aux tl (List.map (fun p -> p @ syms) prods) add_nt
           | (Snterm "PRINT" :: _) :: tl ->
             pr_prods nt prods;
             aux tl prods add_nt
@@ -1373,56 +1348,6 @@ let nt_subset_in_orig_order g nts =
   let subset = StringSet.of_list nts in
   List.filter (fun nt -> StringSet.mem nt subset) !g.order
 
-let print_chunk out g seen fmt title starts ends =
-  fprintf out "\n\n%s:\n%s\n" title header;
-  List.iter (fun start ->
-      let nts = (nt_closure g start ends) in
-      print_in_order out g fmt (nt_subset_in_orig_order g nts) !seen;
-      seen := StringSet.union !seen (StringSet.of_list nts))
-    starts
-
-let print_chunks g out fmt () =
-  let seen = ref StringSet.empty in
-  print_chunk out g seen fmt "lconstr" ["lconstr"] ["binder_constr"; "tactic_expr5"];
-  print_chunk out g seen fmt "Gallina syntax of terms" ["binder_constr"] ["tactic_expr5"];
-  print_chunk out g seen fmt "Gallina The Vernacular" ["gallina"] ["tactic_expr5"];
-  print_chunk out g seen fmt "intropattern_list_opt" ["intropattern_list"; "or_and_intropattern_loc"] ["operconstr"; "tactic_expr5"];
-  print_chunk out g seen fmt "simple_tactic" ["simple_tactic"]
-    ["tactic_expr5"; "tactic_expr3"; "tactic_expr2"; "tactic_expr1"; "tactic_expr0"];
-
-  (*print_chunk out g seen fmt "Ltac" ["tactic_expr5"] [];*)
-  print_chunk out g seen fmt "Ltac" ["tactic_expr5"] ["tactic_expr4"];
-  print_chunk out g seen fmt "Ltac 4" ["tactic_expr4"] ["tactic_expr3"; "tactic_expr2"];
-  print_chunk out g seen fmt "Ltac 3" ["tactic_expr3"] ["tactic_expr2"];
-  print_chunk out g seen fmt "Ltac 2" ["tactic_expr2"] ["tactic_expr1"];
-  print_chunk out g seen fmt "Ltac 1" ["tactic_expr1"] ["tactic_expr0"];
-  print_chunk out g seen fmt "Ltac 0" ["tactic_expr0"] [];
-
-
-  print_chunk out g seen fmt "command" ["command"] [];
-  print_chunk out g seen fmt "vernac_toplevel" ["vernac_toplevel"] [];
-  print_chunk out g seen fmt "vernac_control" ["vernac_control"] []
-
-  (*
-    let ssr_tops = ["ssr_dthen"; "ssr_else"; "ssr_mpat"; "ssr_rtype"] in
-    seen := StringSet.union !seen (StringSet.of_list ssr_tops);
-
-    print_chunk out g seen fmt "ssrindex" ["ssrindex"] [];
-    print_chunk out g seen fmt "command" ["command"] [];
-    print_chunk out g seen fmt "binder_constr" ["binder_constr"] [];
-    (*print_chunk out g seen fmt "closed_binder" ["closed_binder"] [];*)
-    print_chunk out g seen fmt "gallina_ext" ["gallina_ext"] [];
-    (*print_chunk out g seen fmt "hloc" ["hloc"] [];*)
-    (*print_chunk out g seen fmt "hypident" ["hypident"] [];*)
-    print_chunk out g seen fmt "simple_tactic" ["simple_tactic"] [];
-    print_chunk out g seen fmt "tactic_expr" ["tactic_expr4"; "tactic_expr1"; "tactic_expr0"] [];
-    fprintf out "\n\nRemainder:\n";
-    print_in_order g (List.filter (fun x -> not (StringSet.mem x !seen)) !g.order) StringSet.empty;
-  *)
-
-
-    (*seen := StringSet.diff !seen (StringSet.of_list ssr_tops);*)
-    (*print_chunk out g seen fmt "vernac_toplevel" ["vernac_toplevel"] [];*)
 let index_of str list =
   let rec index_of_r str list index =
     match list with
@@ -1456,89 +1381,6 @@ let get_range g start end_ =
 
 let get_rangeset g start end_ = StringSet.of_list (get_range g start end_)
 
-let print_dominated g =
-  let info nt rangeset exclude =
-    let reachable = StringSet.of_list (nt_closure g nt exclude) in
-    let unreachable = StringSet.of_list (nt_closure g (List.hd start_symbols) (nt::exclude)) in
-    let dominated = StringSet.diff reachable unreachable in
-    Printf.printf "For %s, 'attribute' is: reachable = %b, unreachable = %b, dominated = %b\n" nt
-        (StringSet.mem "attribute" reachable)
-        (StringSet.mem "attribute" unreachable)
-        (StringSet.mem "attribute" dominated);
-    Printf.printf "  rangeset = %b excluded = %b\n"
-        (StringSet.mem "attribute" rangeset)
-        (List.mem "attribute" exclude);
-    reachable, dominated
-  in
-  let pr3 nt rangeset reachable dominated =
-    let missing = StringSet.diff dominated rangeset in
-    if not (StringSet.is_empty missing) then begin
-      Printf.printf "\nMissing in range for '%s':\n" nt;
-      StringSet.iter (fun nt -> Printf.printf "  %s\n" nt) missing
-    end;
-
-    let unneeded = StringSet.diff rangeset reachable in
-    if not (StringSet.is_empty unneeded) then begin
-      Printf.printf "\nUnneeded in range for '%s':\n" nt;
-      StringSet.iter (fun nt -> Printf.printf "  %s\n" nt) unneeded
-    end;
-  in
-  let pr2 nt rangeset exclude =
-    let reachable, dominated = info nt rangeset exclude in
-    pr3 nt rangeset reachable dominated
-  in
-  let pr nt end_ = pr2 nt (get_rangeset g nt end_) [] in
-
-  let ssr_ltac = ["ssr_first_else"; "ssrmmod"; "ssrdotac"; "ssrortacarg";
-      "ssrparentacarg"] in
-  let ssr_tac = ["ssrintrosarg"; "ssrhintarg"; "ssrtclarg"; "ssrseqarg"; "ssrmovearg";
-      "ssrrpat"; "ssrclauses"; "ssrcasearg"; "ssrarg"; "ssrapplyarg"; "ssrexactarg";
-      "ssrcongrarg"; "ssrterm"; "ssrrwargs"; "ssrunlockargs"; "ssrfixfwd"; "ssrcofixfwd";
-      "ssrfwdid"; "ssrposefwd"; "ssrsetfwd"; "ssrdgens"; "ssrhavefwdwbinders"; "ssrhpats_nobs";
-      "ssrhavefwd"; "ssrsufffwd"; "ssrwlogfwd"; "ssrhint"; "ssrclear"; "ssr_idcomma";
-      "ssrrwarg"; "ssrintros_ne"; "ssrhint3arg" ] @ ssr_ltac in
-  let ssr_cmd = ["ssr_modlocs"; "ssr_search_arg"; "ssrhintref"; "ssrhintref_list";
-      "ssrviewpos"; "ssrviewposspc"] in
-  let ltac = ["ltac_expr"; "ltac_expr0"; "ltac_expr1"; "ltac_expr2"; "ltac_expr3"] in
-  let term = ["term"; "term0"; "term1"; "term10"; "term100"; "term9";
-      "pattern"; "pattern0"; "pattern1"; "pattern10"] in
-
-  pr "term" "constr";
-
-  let ltac_rangeset = List.fold_left StringSet.union StringSet.empty
-                            [(get_rangeset g "ltac_expr" "tactic_atom");
-                            (get_rangeset g "toplevel_selector" "range_selector");
-                            (get_rangeset g "ltac_match_term" "match_pattern");
-                            (get_rangeset g "ltac_match_goal" "match_pattern_opt")] in
-  pr2 "ltac_expr" ltac_rangeset ("simple_tactic" :: ssr_tac);
-
-  let dec_vern_rangeset = get_rangeset g "decorated_vernac" "opt_coercion" in
-  let dev_vern_excl =
-      ["gallina_ext"; "command"; "tactic_mode"; "syntax"; "command_entry"] @ term @ ltac @ ssr_tac in
-  pr2 "decorated_vernac" dec_vern_rangeset dev_vern_excl;
-
-  let simp_tac_range = get_rangeset g "simple_tactic" "hypident_occ_list_comma" in
-  let simp_tac_excl = ltac @ ssr_tac in
-  pr2 "simple_tactic" simp_tac_range simp_tac_excl;
-
-  let cmd_range = get_rangeset g "command" "int_or_id_list_opt" in
-  let cmd_excl = ssr_tac @ ssr_cmd in
-  pr2 "command" cmd_range cmd_excl;
-
-  let syn_range = get_rangeset g "syntax" "constr_as_binder_kind" in
-  let syn_excl = ssr_tac @ ssr_cmd in
-  pr2 "syntax" syn_range syn_excl;
-
-  let gext_range = get_rangeset g "gallina_ext" "Structure_opt" in
-  let gext_excl = ssr_tac @ ssr_cmd in
-  pr2 "gallina_ext" gext_range gext_excl;
-
-  let qry_range = get_rangeset g "query_command" "searchabout_query_list" in
-  let qry_excl = ssr_tac @ ssr_cmd in
-  pr2 "query_command" qry_range qry_excl
-
-  (* todo: tactic_mode *)
-
 let check_range_consistency g start end_ =
   let defined_list = get_range g start end_ in
   let defined = StringSet.of_list defined_list in
@@ -1564,7 +1406,7 @@ let check_range_consistency g start end_ =
 (* print info on symbols with a single production of a single nonterminal *)
 let check_singletons g =
   NTMap.iter (fun nt prods ->
-      if List.length prods = 1 then
+      if List.length prods = 1 && !show_warn then
         if List.length (remove_Sedit2 (List.hd prods)) = 1 then
           warn "Singleton non-terminal, maybe SPLICE?: %s\n" nt
         else
@@ -1574,7 +1416,8 @@ let check_singletons g =
 let report_bad_nts g file =
   let all_nts_ref, all_nts_def = get_refdef_nts g in
   let undef = StringSet.diff all_nts_ref all_nts_def in
-  List.iter (fun nt -> warn "%s: Undefined symbol '%s'\n" file nt) (StringSet.elements undef);
+  if !show_warn then
+    List.iter (fun nt -> warn "%s: Undefined symbol '%s'\n" file nt) (StringSet.elements undef);
 
   let reachable =
     List.fold_left (fun res sym ->
@@ -1582,7 +1425,8 @@ let report_bad_nts g file =
       StringSet.empty start_symbols
   in
   let unreachable = List.filter (fun nt -> not (StringSet.mem nt reachable)) !g.order in
-  List.iter (fun nt -> warn "%s: Unreachable symbol '%s'\n" file nt) unreachable
+  if !show_warn then
+    List.iter (fun nt -> warn "%s: Unreachable symbol '%s'\n" file nt) unreachable
 
 
 let report_info g symdef_map =
@@ -1637,7 +1481,7 @@ let reorder_grammar eg reordered_rules file =
         (* only keep nts and prods in common with editedGrammar *)
         let eg_prods = NTMap.find nt !eg.map in
         let prods = List.filter (fun prod -> (has_match prod eg_prods)) prods in
-        if NTMap.mem nt !og.map then
+        if NTMap.mem nt !og.map && !show_warn then
           warn "%s: Duplicate nonterminal '%s'\n" file nt;
         add_rule og nt prods file
       with Not_found -> ())
@@ -1719,7 +1563,7 @@ let finish_with_file old_file args =
     if not (files_eq old_file temp_file) then
       error "%s is not current\n" old_file;
     Sys.remove temp_file
-  end else if not args.no_update then
+  end else if args.update then
     Sys.rename temp_file old_file
 
 let open_temp_bin file =
@@ -1825,8 +1669,9 @@ let process_rst g file args seen tac_prods cmd_prods =
       | nt :: tl ->
         (try
           let (prev_file, prev_linenum) = NTMap.find nt !seen.nts in
-          warn "%s line %d: '%s' already included at %s line %d\n"
-              file !linenum nt prev_file prev_linenum;
+          if !show_warn then
+            warn "%s line %d: '%s' already included at %s line %d\n"
+                file !linenum nt prev_file prev_linenum;
         with Not_found ->
           seen := { !seen with nts = (NTMap.add nt (file, !linenum) !seen.nts)} );
         let prods = NTMap.find nt !g.map in
@@ -1891,13 +1736,10 @@ let process_rst g file args seen tac_prods cmd_prods =
     end
   in
 
-(*  let skip_files = ["doc/sphinx/proof-engine/ltac.rst"; "doc/sphinx/proof-engine/ltac2.rst";*)
-(*    "doc/sphinx/proof-engine/ssreflect-proof-language.rst"]*)
-(*  in*)
-
   let cmd_exclude_files = [
     "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
-    "doc/sphinx/proof-engine/tactics.rst"
+    "doc/sphinx/proof-engine/tactics.rst";
+    "doc/sphinx/proofs/writing-proofs/inductive.rst";
   ]
   in
 
@@ -1925,7 +1767,7 @@ let process_rst g file args seen tac_prods cmd_prods =
           mtch (* update cmd/tacn *)
     in
     let map = ref seen_map in
-    if NTMap.mem first_rhs !map then
+    if NTMap.mem first_rhs !map && !show_warn then
       warn "%s line %d: Repeated %s: '%s'\n" file !linenum direc first_rhs;
 (*    if not (StringSet.mem rhs seen_map) then*)
 (*      warn "%s line %d: Unknown tactic: '%s'\n" file !linenum rhs;*)
@@ -1960,7 +1802,7 @@ let process_rst g file args seen tac_prods cmd_prods =
         let pfx = String.sub line 0 (Str.group_end 2) in
         match dir with
         | "prodn::" ->
-          if rhs = "coq" then
+          if rhs = "coq" && !show_warn then
             warn "%s line %d: Missing 'insertprodn' before 'prodn:: coq'\n" file !linenum;
           fprintf new_rst "%s\n" line;
         | "tacn::" when args.check_tacs ->
@@ -1984,7 +1826,7 @@ let process_rst g file args seen tac_prods cmd_prods =
 
 let report_omitted_prods g seen label split =
   let maybe_warn first last n =
-    if first <> "" then begin
+    if first <> "" && !show_warn then begin
       if first <> last then
         warn "%ss '%s' to %s'%s' not included in .rst files (%d)\n" label first split last n
       else
@@ -2008,10 +1850,11 @@ let report_omitted_prods g seen label split =
         (if first = "" then nt else first), nt, n + 1, total + 1)
     ("", "", 0, 0) !g.order in
   maybe_warn first last n;
-(*    List.iter (fun nt ->
-        if not (NTMap.mem nt seen || (List.mem nt included)) then
-          warn "%s %s not included in .rst files\n" "Nonterminal" nt)
-      !g.order;*)
+  Printf.printf "\n\n";
+  NTMap.iter (fun nt _ ->
+      if !show_warn && not (NTMap.mem nt seen || (List.mem nt included)) then
+        warn "%s %s not included in .rst files\n" "Nonterminal" nt)
+    !g.map;
   if total <> 0 then
     Printf.eprintf "TOTAL %ss not included = %d\n" label total
 
@@ -2074,11 +1917,9 @@ let process_grammar args =
       print_in_order out g `MLG !g.order StringSet.empty;
       close_out out;
       finish_with_file (dir "orderedGrammar") args;
-      check_singletons g;
-(*      print_dominated g*)
+(*      check_singletons g*)
 
       let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
-      let args = { args with no_update = false } in (* always update rsts in place for now *)
       let plist nt =
         let list = (List.map (fun t -> String.trim (prod_to_prodn t))
           (NTMap.find nt !g.map)) in
@@ -2148,8 +1989,8 @@ let parse_args () =
         match arg with
         | "-check-cmds" -> { args with check_cmds = true }
         | "-check-tacs" -> { args with check_tacs = true }
-        | "-no-warn" -> show_warn := false; { args with show_warn = true }
-        | "-no-update" -> { args with no_update = true }
+        | "-no-warn" -> show_warn := false; { args with show_warn = false }
+        | "-no-update" -> { args with update = false }
         | "-short" -> { args with fullGrammar = true }
         | "-verbose" -> { args with verbose = true }
         | "-verify" -> { args with verify = true }
@@ -2169,5 +2010,7 @@ let () =
     if !exit_code = 0 then begin
       process_grammar args
     end;
+    if !error_count > 0 then
+      Printf.eprintf "%d error(s)\n" !error_count;
     exit !exit_code
   (*with _ -> Printexc.print_backtrace stdout; exit 1*)

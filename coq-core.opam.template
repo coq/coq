@@ -1,0 +1,3 @@
+build-env: [
+  [ COQ_CONFIGURE_PREFIX = "%{prefix}" ]
+]

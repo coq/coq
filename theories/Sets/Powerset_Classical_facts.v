@@ -92,6 +92,7 @@ Section Sets_as_an_algebra.
     apply Subtract_intro; auto with sets.
     red; intro H'1; apply H'; rewrite H'1; auto with sets.
   Qed.
+  #[local]
   Hint Resolve incl_soustr_add_r: sets.
 
   Lemma add_soustr_2 :
@@ -330,9 +331,15 @@ Section Sets_as_an_algebra.
 
 End Sets_as_an_algebra.
 
+#[global]
 Hint Resolve incl_soustr_in: sets.
+#[global]
 Hint Resolve incl_soustr: sets.
+#[global]
 Hint Resolve incl_soustr_add_l: sets.
+#[global]
 Hint Resolve incl_soustr_add_r: sets.
+#[global]
 Hint Resolve add_soustr_1 add_soustr_2: sets.
+#[global]
 Hint Resolve add_soustr_xy: sets.

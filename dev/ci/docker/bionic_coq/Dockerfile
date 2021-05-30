@@ -1,5 +1,4 @@
-# CACHEKEY: "bionic_coq-V2020-10-12-V89"
-# ^^ Update when modifying this file.
+# Update CACHEKEY in the .gitlab-ci.yml when modifying this file.
 
 FROM ubuntu:bionic
 LABEL maintainer="e@x80.org"
@@ -16,6 +15,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev \
+        # Dependencies of Gappa
+        libboost1.65-all-dev libmpfr-dev autoconf-archive bison flex \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
@@ -23,7 +24,7 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         texlive-science tipa
 
 # More dependencies of the sphinx doc, pytest for coqtail
-RUN pip3 install sphinx==2.3.1 sphinx_rtd_theme==0.4.3 \
+RUN pip3 install docutils==0.16 sphinx==2.3.1 sphinx_rtd_theme==0.4.3 \
         antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.2 \
         pytest==5.4.3
 
@@ -41,9 +42,9 @@ ENV NJOBS="2" \
 ENV COMPILER="4.05.0"
 
 # Common OPAM packages
-ENV BASE_OPAM="zarith.1.10 ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.1" \
-    CI_OPAM="menhir.20190626 ocamlgraph.1.8.8" \
-    BASE_ONLY_OPAM="elpi.1.11.4"
+ENV BASE_OPAM="zarith.1.10 ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.2" \
+    CI_OPAM="ocamlgraph.1.8.8 yojson.1.7.0" \
+    BASE_ONLY_OPAM="dune.2.7.1 elpi.1.13.5"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
 ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.0"
@@ -60,13 +61,16 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
         i386 env CC='gcc -m32' opam install zarith.1.10 && \
         opam install $BASE_OPAM
 
-# EDGE switch
-ENV COMPILER_EDGE="4.11.1" \
-    BASE_OPAM_EDGE="dune.2.5.1 dune-release.1.3.3 ocamlformat.0.15.0"
+# EDGE switch, dune 2.8 is required for OCaml 4.12
+ENV COMPILER_EDGE="4.12.0" \
+    BASE_OPAM_EDGE="dune.2.8.5 dune-release.1.4.0"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
-RUN opam switch create "${COMPILER_EDGE}+flambda" && eval $(opam env) && \
+RUN opam switch create 4.12.0+flambda --packages="ocaml-variants.${COMPILER_EDGE}+options,ocaml-option-flambda" && eval $(opam env) && \
     opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM $CI_OPAM
 
 RUN opam clean -a -c
+
+# set the locale for the benefit of Python
+ENV LANG C.UTF-8

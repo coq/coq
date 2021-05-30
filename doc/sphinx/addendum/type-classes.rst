@@ -13,7 +13,7 @@ Class and Instance declarations
 -------------------------------
 
 The syntax for class and instance declarations is the same as the record
-syntax of |Coq|:
+syntax of Coq:
 
 .. coqdoc::
 
@@ -28,6 +28,10 @@ regular definition whose name is given by `instancename` and type is an
 instantiation of the record type.
 
 We’ll use the following example class in the rest of the chapter:
+
+.. coqtop:: none
+
+   Set Warnings "-deprecated-instance-without-locality".
 
 .. coqtop:: in
 
@@ -61,7 +65,7 @@ Note that if you finish the proof with :cmd:`Qed` the entire instance
 will be opaque, including the fields given in the initial term.
 
 Alternatively, in :flag:`Program Mode` if one does not give all the
-members in the Instance declaration, |Coq| generates obligations for the
+members in the Instance declaration, Coq generates obligations for the
 remaining fields, e.g.:
 
 .. coqtop:: in
@@ -160,7 +164,7 @@ Sections and contexts
 ---------------------
 
 To ease developments parameterized by many instances, one can use the
-:cmd:`Context` command to introduce these parameters into section contexts,
+:cmd:`Context` command to introduce the parameters into the :term:`local context`,
 it works similarly to the command :cmd:`Variable`, except it accepts any
 binding context as an argument, so variables can be implicit, and
 :ref:`implicit-generalization` can be used.
@@ -242,7 +246,7 @@ binders. For example:
    Definition lt `{eqa : EqDec A, ! Ord eqa} (x y : A) := andb (le x y) (neqb x y).
 
 The ``!`` modifier switches the way a binder is parsed back to the usual
-interpretation of |Coq|. In particular, it uses the implicit arguments
+interpretation of Coq. In particular, it uses the implicit arguments
 mechanism if available, as shown in the example.
 
 Substructures
@@ -315,19 +319,18 @@ Summary of the commands
    inside records, and the trivial projection of an instance of such a
    class is convertible to the instance itself. This can be useful to
    make instances of existing objects easily and to reduce proof size by
-   not inserting useless projections. The class constant itself is
+   not inserting useless projections. The class :term:`constant` itself is
    declared rigid during resolution so that the class abstraction is
    maintained.
 
    Like any command declaring a record, this command supports the
-   :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
-   :attr:`universes(template)`, :attr:`universes(notemplate)`,
-   :attr:`universes(cumulative)`, :attr:`universes(noncumulative)` and
-   :attr:`private(matching)` attributes.
+   :attr:`universes(polymorphic)`, :attr:`universes(template)`,
+   :attr:`universes(cumulative)`, and :attr:`private(matching)`
+   attributes.
 
    .. cmd:: Existing Class @qualid
 
-      This variant declares a class from a previously declared constant or
+      This variant declares a class from a previously declared :term:`constant` or
       inductive definition. No methods or instances are defined.
 
       .. warn:: @ident is already declared as a typeclass
@@ -336,25 +339,27 @@ Summary of the commands
 
 .. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_def } %} | := @term } }
 
-   .. insertprodn hint_info hint_info
-
-   .. prodn::
-      hint_info ::= %| {? @natural } {? @one_term }
-
    Declares a typeclass instance named
    :token:`ident_decl` of the class :n:`@type` with the specified parameters and with
    fields defined by :token:`field_def`, where each field must be a declared field of
    the class.
 
-   Add one or more :token:`binder`\s to declare a parameterized instance. :token:`hint_info`
-   specifies the hint priority, where 0 is the highest priority as for
+   Adds one or more :token:`binder`\s to declare a parameterized instance. :token:`hint_info`
+   may be used to specify the hint priority, where 0 is the highest priority as for
    :tacn:`auto` hints. If the priority is not specified, the default is the number
-   of non-dependent binders of the instance.
+   of non-dependent binders of the instance.  If :token:`one_pattern` is given, terms
+   matching that pattern will trigger use of the instance.  Otherwise,
+   use is triggered based on the conclusion of the type.
 
-   This command supports the :attr:`global` attribute that can be
-   used on instances declared in a section so that their
-   generalization is automatically redeclared when the section is
-   closed.
+   This command supports the :attr:`local`, :attr:`global` and :attr:`export`
+   locality attributes.
+
+   .. deprecated:: 8.14
+
+      The default value for instance locality will change in a future
+      release. Instances added outside of sections without an explicit
+      locality are now deprecated. We recommend using :attr:`export`
+      where possible.
 
    Like :cmd:`Definition`, it also supports the :attr:`program`
    attribute to switch the type checking to `Program` (chapter
@@ -365,9 +370,9 @@ Summary of the commands
 
    .. attr:: refine
 
-      This attribute can be used to leave holes or not provide all
+      This :term:`attribute` can be used to leave holes or not provide all
       fields in the definition of an instance and open the tactic mode
-      to fill them.  It works exactly as if no body had been given and
+      to fill them.  It works exactly as if no :term:`body` had been given and
       the :tacn:`refine` tactic has been used first.
 
    .. cmd:: Declare Instance @ident_decl {* @binder } : @term {? @hint_info }
@@ -381,19 +386,29 @@ Summary of the commands
    .. cmd:: Existing Instance @qualid {? @hint_info }
             Existing Instances {+ @qualid } {? %| @natural }
 
-      Adds a constant whose type ends with
+      Adds a :term:`constant` whose type ends with
       an applied typeclass to the instance database with an optional
       priority :token:`natural`.  It can be used for redeclaring instances at the end of
       sections, or declaring structure projections as instances. This is
       equivalent to ``Hint Resolve ident : typeclass_instances``, except it
       registers instances for :cmd:`Print Instances`.
 
+   .. flag:: Instance Generalized Output
+
+      .. deprecated:: 8.13
+
+      Disabled by default, this :term:`flag` provides compatibility with Coq
+      version 8.12 and earlier.
+
+      When enabled, the type of the instance is implicitly generalized
+      over unbound and :ref:`generalizable <implicit-generalization>` variables as though surrounded by ``\`{}``.
+
 .. cmd:: Print Instances @reference
 
    Shows the list of instances associated with the typeclass :token:`reference`.
 
 
-.. tacn:: typeclasses eauto {? bfs } {? @int_or_var } {? with {+ @ident } }
+.. tacn:: typeclasses eauto {? bfs } {? @nat_or_var } {? with {+ @ident } }
 
    This proof search tactic uses the resolution engine that is run
    implicitly during type checking. This tactic uses a different resolution
@@ -412,11 +427,11 @@ Summary of the commands
      unifier. When considering local hypotheses, we use the transparent
      state of the first hint database given. Using an empty database
      (created with :cmd:`Create HintDb` for example) with unfoldable variables and
-     constants as the first argument of ``typeclasses eauto`` hence makes
+     :term:`constants <constant>` as the first argument of ``typeclasses eauto`` hence makes
      resolution with the local hypotheses use full conversion during
      unification.
 
-   + The mode hints (see :cmd:`Hint Mode`) associated to a class are
+   + The mode hints (see :cmd:`Hint Mode`) associated with a class are
      taken into account by :tacn:`typeclasses eauto`. When a goal
      does not match any of the declared modes for its head (if any),
      instead of failing like :tacn:`eauto`, the goal is suspended and
@@ -433,11 +448,11 @@ Summary of the commands
    + Use the :cmd:`Typeclasses eauto` command to customize the behavior of
      this tactic.
 
-   :n:`@int_or_var`
+   :n:`@nat_or_var`
      Specifies the maximum depth of the search.
 
       .. warning::
-         The semantics for the limit :n:`@int_or_var`
+         The semantics for the limit :n:`@nat_or_var`
          are different than for :tacn:`auto`. By default, if no limit is given, the
          search is unbounded. Unlike :tacn:`auto`, introduction steps count against
          the limit, which might result in larger limits being necessary when
@@ -464,7 +479,6 @@ Summary of the commands
         refinement engine will be able to backtrack.
 
 .. tacn:: autoapply @one_term with @ident
-   :name: autoapply
 
    The tactic ``autoapply`` applies :token:`one_term` using the transparency information
    of the hint database :token:`ident`, and does *no* typeclass resolution. This can
@@ -489,15 +503,15 @@ Typeclasses Transparent, Typeclasses Opaque
    Make :token:`qualid` opaque for typeclass search.
    A shortcut for :cmd:`Hint Opaque` :n:`{+ @qualid } : typeclass_instances`.
 
-   It is useful when some constants prevent some unifications and make
+   It is useful when some :term:`constants <constant>` prevent some unifications and make
    resolution fail. It is also useful to declare constants which
-   should never be unfolded during proof-search, like fixpoints or
+   should never be unfolded during proof search, like fixpoints or
    anything which does not look like an abbreviation. This can
    additionally speed up proof search as the typeclass map can be
    indexed by such rigid constants (see
    :ref:`thehintsdatabasesforautoandeauto`).
 
-By default, all constants and local variables are considered transparent. One
+By default, all :term:`constants <constant>` and local variables are considered transparent. One
 should take care not to make opaque any constant that is used to abbreviate a
 type, like:
 
@@ -510,30 +524,30 @@ Settings
 
 .. flag:: Typeclasses Dependency Order
 
-   This flag (off by default) respects the dependency order
+   This :term:`flag` (off by default) respects the dependency order
    between subgoals, meaning that subgoals on which other subgoals depend
    come first, while the non-dependent subgoals were put before
-   the dependent ones previously (|Coq| 8.5 and below). This can result in
+   the dependent ones previously (Coq 8.5 and below). This can result in
    quite different performance behaviors of proof search.
 
 
 .. flag:: Typeclasses Filtered Unification
 
-   This flag, which is off by default, switches the
+   This :term:`flag`, which is off by default, switches the
    hint application procedure to a filter-then-unify strategy. To apply a
    hint, we first check that the goal *matches* syntactically the
    inferred or specified pattern of the hint, and only then try to
    *unify* the goal with the conclusion of the hint. This can drastically
    improve performance by calling unification less often, matching
    syntactic patterns being very quick. This also provides more control
-   on the triggering of instances. For example, forcing a constant to
+   on the triggering of instances. For example, forcing a :term:`constant` to
    explicitly appear in the pattern will make it never apply on a goal
    where there is a hole in that place.
 
 
 .. flag:: Typeclasses Limit Intros
 
-   This flag (on by default) controls the ability to apply hints while
+   This :term:`flag` (on by default) controls the ability to apply hints while
    avoiding (functional) eta-expansions in the generated proof term. It
    does so by allowing hints that conclude in a product to apply to a
    goal with a matching product directly, avoiding an introduction.
@@ -543,11 +557,11 @@ Settings
       This can be expensive as it requires rebuilding hint
       clauses dynamically, and does not benefit from the invertibility
       status of the product introduction rule, resulting in potentially more
-      expensive proof-search (i.e. more useless backtracking).
+      expensive proof search (i.e. more useless backtracking).
 
 .. flag:: Typeclass Resolution For Conversion
 
-   This flag (on by default) controls the use of typeclass resolution
+   This :term:`flag` (on by default) controls the use of typeclass resolution
    when a unification problem cannot be solved during elaboration/type
    inference. With this flag on, when a unification fails, typeclass
    resolution is tried before launching unification once again.
@@ -555,7 +569,7 @@ Settings
 
 .. flag:: Typeclasses Strict Resolution
 
-   Typeclass declarations introduced when this flag is set have a
+   Typeclass declarations introduced when this :term:`flag` is set have a
    stricter resolution behavior (the flag is off by default). When
    looking for unifications of a goal with an instance of this class, we
    “freeze” all the existentials appearing in the goals, meaning that
@@ -566,48 +580,45 @@ Settings
 .. flag:: Typeclasses Unique Solutions
 
    When a typeclass resolution is launched we ensure that it has a single
-   solution or fail. This ensures that the resolution is canonical, but
+   solution or fail. This :term:`flag` ensures that the resolution is canonical, but
    can make proof search much more expensive.
 
 
 .. flag:: Typeclasses Unique Instances
 
-   Typeclass declarations introduced when this flag is set have a more
+   Typeclass declarations introduced when this :term:`flag` is set have a more
    efficient resolution behavior (the flag is off by default). When a
    solution to the typeclass goal of this class is found, we never
    backtrack on it, assuming that it is canonical.
 
 .. flag:: Typeclasses Iterative Deepening
 
-   When this flag is set, the proof search strategy is breadth-first search.
+   When this :term:`flag` is set, the proof search strategy is breadth-first search.
    Otherwise, the search strategy is depth-first search.  The default is off.
    :cmd:`Typeclasses eauto` is another way to set this flag.
 
 .. opt:: Typeclasses Depth @natural
-   :name: Typeclasses Depth
 
-   Sets the maximum proof search depth.  The default is unbounded.
+   This :term:`option` sets the maximum proof search depth.  The default is unbounded.
    :cmd:`Typeclasses eauto` is another way to set this option.
 
 .. flag:: Typeclasses Debug
 
-   Controls whether typeclass resolution steps are shown during search.  Setting this flag
+   Controls whether typeclass resolution steps are shown during search.  Setting this :term:`flag`
    also sets :opt:`Typeclasses Debug Verbosity` to 1.  :cmd:`Typeclasses eauto`
    is another way to set this flag.
 
 .. opt:: Typeclasses Debug Verbosity @natural
-   :name: Typeclasses Debug Verbosity
 
    Determines how much information is shown for typeclass resolution steps during search.
    1 is the default level.  2 shows additional information such as tried tactics and shelving
-   of goals.  Setting this option to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
+   of goals.  Setting this :term:`option` to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
    option to 0 turns that flag off.
 
 Typeclasses eauto
 ~~~~~~~~~~~~~~~~~
 
 .. cmd:: Typeclasses eauto := {? debug } {? ( {| bfs | dfs } ) } {? @natural }
-   :name: Typeclasses eauto
 
    Allows more global customization of the :tacn:`typeclasses eauto` tactic.
    The options are:

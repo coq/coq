@@ -29,6 +29,7 @@ Module Type Bits' (A:Typ) := Bits A <+ BitsNotation A.
 Module Type NZBitsSpec
  (Import A : NZOrdAxiomsSig')(Import B : Bits' A).
 
+#[global]
  Declare Instance testbit_wd : Proper (eq==>eq==>Logic.eq) testbit.
  Axiom testbit_odd_0 : forall a, (2*a+1).[0] = true.
  Axiom testbit_even_0 : forall a, (2*a).[0] = false.

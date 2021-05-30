@@ -1,0 +1,13 @@
+Literal 1
+     : Type
+[1]
+     : Type
+Literal 1
+     : Type
+[1]
+     : Type
+The command has indeed failed with message:
+The term "1" has type "Datatypes.nat" while it is expected to have type
+ "denote ?t".
+Literal 1
+     : Type

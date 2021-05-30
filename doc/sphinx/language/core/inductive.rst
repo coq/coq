@@ -11,13 +11,13 @@ Inductive types
    .. insertprodn inductive_definition constructor
 
    .. prodn::
-      inductive_definition ::= {? > } @ident_decl {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
+      inductive_definition ::= {? > } @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
       constructors_or_record ::= {? %| } {+| @constructor }
       | {? @ident } %{ {*; @record_field } {? ; } %}
       constructor ::= @ident {* @binder } {? @of_type }
 
    This command defines one or more
-   inductive types and its constructors.  |Coq| generates destructors
+   inductive types and its constructors.  Coq generates destructors
    depending on the universe that the inductive type belongs to.
 
    The destructors are named :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``,
@@ -25,19 +25,18 @@ Inductive types
    respectively correspond to elimination principles on :g:`Type`, :g:`Prop`,
    :g:`Set` and :g:`SProp`.  The type of the destructors
    expresses structural induction/recursion principles over objects of
-   type :n:`@ident`.  The constant :n:`@ident`\ ``_ind`` is always
+   type :n:`@ident`.  The :term:`constant` :n:`@ident`\ ``_ind`` is always
    generated, whereas :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_rect``
    may be impossible to derive (for example, when :n:`@ident` is a
    proposition).
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
-   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)` and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`,
+   :attr:`bypass_check(positivity)`, :attr:`bypass_check(universes)`, and
+   :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
-   The :n:`@ident`\s are simultaneously added to the environment before the types of constructors are checked.
+   The :n:`@ident`\s are simultaneously added to the global environment before the types of constructors are checked.
    Each :n:`@ident` can be used independently thereafter.
    See :ref:`mutually_inductive_types`.
 
@@ -51,10 +50,12 @@ Inductive types
 
    .. exn:: Non strictly positive occurrence of @ident in @type.
 
-      The types of the constructors have to satisfy a *positivity condition*
-      (see Section :ref:`positivity`). This condition ensures the soundness of
-      the inductive definition. The positivity checking can be disabled using
-      the :flag:`Positivity Checking` flag (see :ref:`controlling-typing-flags`).
+      The types of the constructors have to satisfy a *positivity
+      condition* (see Section :ref:`positivity`). This condition
+      ensures the soundness of the inductive definition.
+      Positivity checking can be disabled using the :flag:`Positivity
+      Checking` flag or the :attr:`bypass_check(positivity)` attribute (see
+      :ref:`controlling-typing-flags`).
 
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
@@ -85,7 +86,7 @@ A simple inductive type belongs to a universe that is a simple :n:`@sort`.
 
    The type nat is defined as the least :g:`Set` containing :g:`O` and closed by
    the :g:`S` constructor. The names :g:`nat`, :g:`O` and :g:`S` are added to the
-   environment.
+   global environment.
 
    This definition generates four elimination principles:
    :g:`nat_rect`, :g:`nat_ind`, :g:`nat_rec` and :g:`nat_sind`. The type of :g:`nat_ind` is:
@@ -191,7 +192,7 @@ the same parameter values of its specification.
 
       Check list_ind.
 
-   Once again, the types of the constructor arguments and of the conclusion can be omitted:
+   Once again, the names of the constructor arguments and the type of the conclusion can be omitted:
 
    .. coqtop:: none
 
@@ -240,7 +241,7 @@ the same parameter values of its specification.
 
 .. flag:: Uniform Inductive Parameters
 
-     When this flag is set (it is off by default),
+     When this :term:`flag` is set (it is off by default),
      inductive definitions are abstracted over their parameters
      before type checking constructors, allowing to write:
 
@@ -392,7 +393,8 @@ constructions.
    consequently :n:`forall {* @binder }, @type` and its value is equivalent
    to :n:`fun {* @binder } => @term`.
 
-   This command accepts the :attr:`program` attribute.
+   This command accepts the :attr:`program`,
+   :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
 
    To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
    constraints on a special argument called the decreasing argument. They
@@ -411,9 +413,9 @@ constructions.
    It is especially useful when defining functions over mutually defined
    inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
 
-   If :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
+   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
    This command accepts the :attr:`using` attribute.
@@ -552,7 +554,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
       \end{array}
       \right]}
 
-   which corresponds to the result of the |Coq| declaration:
+   which corresponds to the result of the Coq declaration:
 
    .. coqtop:: in reset
 
@@ -573,7 +575,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
                 \consf &:& \tree → \forest → \forest\\
                           \end{array}\right]}
 
-   which corresponds to the result of the |Coq| declaration:
+   which corresponds to the result of the Coq declaration:
 
    .. coqtop:: in
 
@@ -596,7 +598,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
                 \oddS &:& ∀ n,~\even~n → \odd~(\nS~n)
                           \end{array}\right]}
 
-   which corresponds to the result of the |Coq| declaration:
+   which corresponds to the result of the Coq declaration:
 
    .. coqtop:: in
 
@@ -634,7 +636,7 @@ contains an inductive definition.
 
 .. example::
 
-   Provided that our environment :math:`E` contains inductive definitions we showed before,
+   Provided that our global environment :math:`E` contains inductive definitions we showed before,
    these two inference rules above enable us to conclude that:
 
    .. math::
@@ -850,9 +852,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive I : Prop := not_I_I (not_I : I -> False) : I.
-      Set Positivity Checking.
+      #[bypass_check(positivity)] Inductive I : Prop := not_I_I (not_I : I -> False) : I.
 
    .. coqtop:: all
 
@@ -886,9 +886,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive Lam := lam (_ : Lam -> Lam).
-      Set Positivity Checking.
+      #[bypass_check(positivity)] Inductive Lam := lam (_ : Lam -> Lam).
 
    .. coqtop:: all
 
@@ -917,9 +915,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
-      Set Positivity Checking.
+      #[bypass_check(positivity)] Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
 
    .. coqtop:: all
 
@@ -1053,11 +1049,11 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 
 .. flag:: Auto Template Polymorphism
 
-   This flag, enabled by default, makes every inductive type declared
+   This :term:`flag`, enabled by default, makes every inductive type declared
    at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic if possible.
 
-   This can be prevented using the :attr:`universes(notemplate)`
+   This can be prevented using the :attr:`universes(template=no) <universes(template)>`
    attribute.
 
    Template polymorphism and full universe polymorphism (see Chapter
@@ -1076,11 +1072,12 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    the :attr:`universes(template)` attribute: in this case, the
    warning is not emitted.
 
-.. attr:: universes(template)
+.. attr:: universes(template{? = {| yes | no } })
+   :name: universes(template)
 
-   This attribute can be used to explicitly declare an inductive type
-   as template polymorphic, whether the :flag:`Auto Template
-   Polymorphism` flag is on or off.
+   This :term:`boolean attribute` can be used to explicitly declare an
+   inductive type as template polymorphic, whether the :flag:`Auto
+   Template Polymorphism` flag is on or off.
 
    .. exn:: template and polymorphism not compatible
 
@@ -1093,13 +1090,17 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
       The attribute was used but the inductive definition does not
       satisfy the criterion to be template polymorphic.
 
+   When ``universes(template=no)`` is used, it will prevent an
+   inductive type to be template polymorphic, even if the :flag:`Auto
+   Template Polymorphism` flag is on.
+
 .. attr:: universes(notemplate)
 
-   This attribute can be used to prevent an inductive type to be
-   template polymorphic, even if the :flag:`Auto Template
-   Polymorphism` flag is on.
+   .. deprecated:: 8.13
 
-In practice, the rule **Ind-Family** is used by |Coq| only when all the
+      Use :attr:`universes(template=no) <universes(template)>` instead.
+
+In practice, the rule **Ind-Family** is used by Coq only when all the
 inductive types of the inductive definition are declared with an arity
 whose sort is in the Type hierarchy. Then, the polymorphism is over
 the parameters whose type is an arity of sort in the Type hierarchy.
@@ -1237,7 +1238,7 @@ at the computational level it implements a generic operator for doing
 primitive recursion over the structure.
 
 But this operator is rather tedious to implement and use. We choose in
-this version of |Coq| to factorize the operator for primitive recursion
+this version of Coq to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th.
 Coquand in :cite:`Coq92`. One is the definition by pattern matching. The
 second one is a definition by guarded fixpoints.
@@ -1252,7 +1253,7 @@ The basic idea of this operator is that we have an object :math:`m` in an
 inductive type :math:`I` and we want to prove a property which possibly
 depends on :math:`m`. For this, it is enough to prove the property for
 :math:`m = (c_i~u_1 … u_{p_i} )` for each constructor of :math:`I`.
-The |Coq| term for this proof
+The Coq term for this proof
 will be written:
 
 .. math::
@@ -1267,7 +1268,7 @@ Actually, for type checking a :math:`\Match…\with…\kwend` expression we also
 to know the predicate :math:`P` to be proved by case analysis. In the general
 case where :math:`I` is an inductively defined :math:`n`-ary relation, :math:`P` is a predicate
 over :math:`n+1` arguments: the :math:`n` first ones correspond to the arguments of :math:`I`
-(parameters excluded), and the last one corresponds to object :math:`m`. |Coq|
+(parameters excluded), and the last one corresponds to object :math:`m`. Coq
 can sometimes infer this predicate but sometimes not. The concrete
 syntax for describing this predicate uses the :math:`\as…\In…\return`
 construction. For instance, let us assume that :math:`I` is an unary predicate

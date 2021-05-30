@@ -20,13 +20,14 @@
 # The "run" target runs all tests that have not been run yet. To force
 # all tests to be run, use the "clean" target.
 
+# Setup for Dune-build ML artifacts
+COQ_SRC_DIR:=..
 
 ###########################################################################
 # Includes
 ###########################################################################
 
 -include ../config/Makefile
-include ../Makefile.common
 
 #######################################################################
 # Variables
@@ -36,18 +37,32 @@ include ../Makefile.common
 # Note that this will later need an eval in shell to interpret the quotes
 ROOT='$(shell cd ..; pwd)'
 
-ifneq ($(wildcard ../_build),)
 BIN:=$(ROOT)/_build/install/default/bin/
-# COQLIB is an env variable so no quotes
-COQLIB:=$(shell cd ..; pwd)/_build/install/default/lib/coq
-else
-BIN := $(ROOT)/bin/
 
+# An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
+ifeq ($(ARCH),win32)
+  export FINDLIB_SEP=;
+else
+  export FINDLIB_SEP=:
+endif
+
+# Be careful to use COQPREFIX when prefix is not set
+ifeq ($(COQPREFIX),local)
+	COQPREFIX:=$(shell cd ../..;pwd)/install/default/
+endif
+
+export OCAMLPATH := $(shell echo $(COQPREFIX)/lib$(FINDLIB_SEP)$$OCAMLPATH)
+export CAML_LD_LIBRARY_PATH:=$(COQPREFIX)/lib/stublibs:$(CAML_LD_LIBRARY_PATH)
+
+ifneq ($(wildcard ../_build/default/config/Makefile),)
+include ../_build/default/config/Makefile
+endif
+
+# COQLIB is an env variable so no quotes
 COQLIB?=
 ifeq ($(COQLIB),)
-  COQLIB := $(shell ocaml ocaml_pwd.ml ..)
+	COQLIB := $(shell ocaml ocaml_pwd.ml $(COQLIBINSTALL))
 endif
-endif # exists ../_build
 export COQLIB
 
 COQEXTRAFLAGS?=
@@ -115,7 +130,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
   coqdoc ssr $(wildcard primitive/*) ltac2
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc ide bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
 .csdp.cache: .csdp.cache.test-suite
 	cp $< $@
@@ -143,6 +158,7 @@ bugs: $(BUGS)
 clean:
 	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
 	rm -f vos/Makefile vos/Makefile.conf
+	rm -f misc/universes/all_stdlib.v
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' \
@@ -251,7 +267,12 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  (echo "\
+	     bugs/closed/bug_3783.v \
+	     bugs/closed/bug_4157.v \
+	     bugs/closed/bug_5127.v \
+	   " | grep -q "$<") && no_native="-native-compiler no"; \
+	  $(coqc) $$no_native "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -266,20 +287,9 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 # Unit tests
 #######################################################################
 
-# An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
-ifeq ($(ARCH),win32)
-  export FINDLIB_SEP=";"
-else
-  export FINDLIB_SEP=":"
-endif
-
 # COQLIBINSTALL is quoted in config/make thus we must unquote it,
 # otherwise the directory name will include the quotes, see
 # see for example https://stackoverflow.com/questions/10424645/how-to-convert-a-quoted-string-to-a-normal-one-in-makefile
-
-ifeq ($(LOCAL),true)
-  export OCAMLPATH := $(shell echo $(COQLIBINSTALL)$(FINDLIB_SEP)$$OCAMLPATH)
-endif
 
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -313,7 +323,7 @@ unit-tests: $(UNIT_LOGFILES)
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq.toplevel,ounit2 \
+	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq-core.toplevel,ounit2 \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)./$<.test
 
@@ -506,6 +516,17 @@ approve-output: output output-coqtop output-coqchk
 	  echo "Updated $${f%.real}!"; \
 	done
 
+approve-coqdoc: coqdoc
+	$(HIDE)(cd coqdoc; \
+	for f in *.html.out; do \
+	  cp "Coqdoc.$${f%.out}" "$$f"; \
+	  echo "Updated $$f!"; \
+	done; \
+	for f in *.tex.out; do \
+	  cat "Coqdoc.$${f%.out}" | grep -v "^%%" > "$$f"; \
+	  echo "Updated $$f!"; \
+	done)
+
 # the expected output for the MExtraction test is
 # /plugins/micromega/micromega.ml except with additional newline
 output/MExtraction.out: ../plugins/micromega/micromega.ml
@@ -648,7 +669,7 @@ misc: $(patsubst %.sh,%.log,$(wildcard misc/*.sh))
 misc/universes.log: misc/universes/all_stdlib.v
 
 misc/universes/all_stdlib.v:
-	cd .. && $(MAKE) test-suite/$@
+	cd misc/universes && ./build_all_stdlib.sh > all_stdlib.v
 
 $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	@echo "TEST      $<"
@@ -756,6 +777,7 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 	@echo "TEST      coq-makefile/$*"
 	$(HIDE)(\
 	  export COQBIN=$(BIN);\
+	  export COQPREFIX=$(COQPREFIX);\
 	  cd coq-makefile/$* && \
 	  bash run.sh 2>&1; \
 	if [ $$? = 0 ]; then \

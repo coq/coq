@@ -165,6 +165,44 @@ let label_of = let open GlobRef in function
   | ConstructRef ((kn,_),_) -> MutInd.label kn
   | VarRef id -> Label.of_id id
 
+let fold_with_full_binders g f n acc c =
+  let open Context.Rel.Declaration in
+  match kind c with
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
+  | Cast (c,_, t) -> f n (f n acc c) t
+  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
+  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | Proj (_,c) -> f n acc c
+  | Evar (_,l) -> List.fold_left (f n) acc l
+  | Case (ci, u, pms, p, iv, c, bl) ->
+    let mib = lookup_mind (fst ci.ci_ind) in
+    let (ci, p, iv, c, bl) = Inductive.expand_case_specif mib (ci, u, pms, p, iv, c, bl) in
+    Array.fold_left (f n) (f n (fold_invert (f n) (f n acc p) iv) c) bl
+  | Fix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | CoFix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
+
+let get_constant_body kn =
+  let cb = lookup_constant kn in
+  let env = Global.env () in
+  let access = Library.indirect_accessor in
+  let otab = Environ.opaque_tables env in
+  match cb.const_body with
+  | Undef _ | Primitive _ -> None
+  | Def c -> Some (Mod_subst.force_constr c)
+  | OpaqueDef o ->
+    match Opaqueproof.force_proof access otab o with
+    | c, _ -> Some c
+    | exception _ -> None (* missing delayed body, e.g. in vok mode *)
+
 let rec traverse current ctx accu t =
   let open GlobRef in
   match Constr.kind t with
@@ -172,41 +210,40 @@ let rec traverse current ctx accu t =
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
-  let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
+  let body () = get_constant_body kn in
   traverse_object accu body (ConstRef kn)
 | Ind ((mind, _) as ind, _) ->
   traverse_inductive accu mind (IndRef ind)
 | Construct (((mind, _), _) as cst, _) ->
   traverse_inductive accu mind (ConstructRef cst)
 | Meta _ | Evar _ -> assert false
-| Case (_,oty,_,c,[||]) ->
+| Case (_, _, _, ([|_|], oty), _, c, [||]) when Vars.noccurn 1 oty ->
     (* non dependent match on an inductive with no constructors *)
-    begin match Constr.(kind oty, kind c) with
-    | Lambda(_,_,oty), Const (kn, _)
-      when Vars.noccurn 1 oty &&
-      not (Declareops.constant_has_body (lookup_constant kn)) ->
-        let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
-        traverse_object
-          ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
+    begin match Constr.kind c with
+    | Const (kn, _) when not (Declareops.constant_has_body (lookup_constant kn)) ->
+      let (curr, data, ax2ty) = accu in
+      let obj = ConstRef kn in
+      let already_in = GlobRef.Map_env.mem obj data in
+      let data = if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
+      let ty = (current, ctx, Vars.subst1 mkProp oty) in
+      let ax2ty =
+        try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
+        with Not_found -> GlobRef.Map_env.add obj [ty] ax2ty in
+      (GlobRef.Set_env.add obj curr, data, ax2ty)
     | _ ->
-        Constr.fold_with_full_binders
+        fold_with_full_binders
           Context.Rel.add (traverse current) ctx accu t
     end
-| _ -> Constr.fold_with_full_binders
+| _ -> fold_with_full_binders
           Context.Rel.add (traverse current) ctx accu t
 
-and traverse_object ?inhabits (curr, data, ax2ty) body obj =
+and traverse_object (curr, data, ax2ty) body obj =
   let data, ax2ty =
     let already_in = GlobRef.Map_env.mem obj data in
     match body () with
     | None ->
         let data =
           if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
-        let ax2ty =
-          if Option.is_empty inhabits then ax2ty else
-          let ty = Option.get inhabits in
-          try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
-          with Not_found -> GlobRef.Map_env.add obj [ty] ax2ty in
         data, ax2ty
     | Some body ->
       if already_in then data, ax2ty else

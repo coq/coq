@@ -1,0 +1,3 @@
+{0 coqide }
+
+The coqide package only contains the CoqIDE executable and no OCaml library.

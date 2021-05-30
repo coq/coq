@@ -8,12 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Extraction to Ocaml: conversion from/to [big_int] *)
+(** Extraction to OCaml: conversion from/to [Z.t] *)
 
-(** NB: The extracted code should be linked with [nums.cm(x)a]
-    from ocaml's stdlib and with the wrapper [big.ml] that
-    simplifies the use of [Big_int] (it can be found in the sources
-    of Coq). *)
+(** NB: The extracted code should be linked with [zarith.cm(x)a] and with
+    the [big.ml] wrapper. The latter can be found in the sources of Coq. *)
 
 Require Coq.extraction.Extraction.
 

@@ -60,3 +60,10 @@ Print Func.
 End Shortest_path.
 
 End QUX.
+
+Module A.
+Variant I := C : nat -> I.
+Record R := { n : nat }.
+End A.
+
+Print Module A.

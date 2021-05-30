@@ -13,7 +13,7 @@ open Pp
 open Util
 
 let stm_pr_err pp = Format.eprintf "%s] @[%a@]\n%!" (Spawned.process_id ()) Pp.pp_with pp
-let stm_prerr_endline s = if !Flags.debug then begin stm_pr_err (str s) end else ()
+let stm_prerr_endline s = if CDebug.(get_flag misc) then begin stm_pr_err (str s) end else ()
 
 type cancel_switch = bool ref
 let async_proofs_flags_for_workers = ref []
@@ -56,11 +56,7 @@ module Make(T : Task) () = struct
   type response =
     | Response of T.response
     | RespFeedback of Feedback.feedback
-    | RespGetCounterNewUnivLevel
   type request = Request of T.request
-
-  type more_data =
-    | MoreDataUnivLevel of UnivGen.univ_unique_id list
 
   let slave_respond (Request r) =
     let res = T.perform r in
@@ -94,16 +90,6 @@ module Make(T : Task) () = struct
     with Failure s | Invalid_argument s | Sys_error s ->
       marshal_err ("unmarshal_response: "^s)
 
-  let marshal_more_data oc (res : more_data) =
-    try marshal_to_channel oc res
-    with Failure s | Invalid_argument s | Sys_error s ->
-      marshal_err ("marshal_more_data: "^s)
-
-  let unmarshal_more_data ic =
-    try (CThread.thread_friendly_input_value ic : more_data)
-    with Failure s | Invalid_argument s | Sys_error s ->
-      marshal_err ("unmarshal_more_data: "^s)
-
   let report_status ?(id = !Flags.async_proofs_worker_id) s =
     let open Feedback in
     feedback ~id:Stateid.initial (WorkerStatus(id, s))
@@ -125,7 +111,7 @@ module Make(T : Task) () = struct
                  "-async-proofs-worker-priority";
                  CoqworkmgrApi.(string_of_priority priority)]
         (* Options to discard: 0 arguments *)
-        | "-emacs"::tl ->
+        | ("-emacs" | "--xml_format=Ppcmds" | "-batch") :: tl  ->
           set_slave_opt tl
         (* Options to discard: 1 argument *)
         | ( "-async-proofs" | "-vio2vo" | "-o"
@@ -143,7 +129,7 @@ module Make(T : Task) () = struct
           | "-require-import-from" | "-require-export-from") :: _ :: _ :: tl ->
            set_slave_opt tl
         (* We need to pass some options with one argument *)
-        | ( "-I" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir"
+        | ( "-I" | "-nI" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir"
           | "-color" | "-init-file"
           | "-profile-ltac-cutoff" | "-main-channel" | "-control-channel"
           | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->
@@ -198,8 +184,6 @@ module Make(T : Task) () = struct
         | Unix.WEXITED i -> Printf.sprintf "exit(%d)" i
         | Unix.WSIGNALED sno -> Printf.sprintf "signalled(%d)" sno
         | Unix.WSTOPPED sno -> Printf.sprintf "stopped(%d)" sno) in
-    let more_univs n =
-      CList.init n (fun _ -> UnivGen.new_univ_id ()) in
 
     let rec kill_if () =
       if not (Worker.is_alive proc) then ()
@@ -231,9 +215,6 @@ module Make(T : Task) () = struct
         marshal_request oc (Request req);
         let rec continue () =
           match unmarshal_response ic with
-          | RespGetCounterNewUnivLevel ->
-              marshal_more_data oc (MoreDataUnivLevel (more_univs 10));
-              continue ()
           | RespFeedback fbk -> T.forward_feedback fbk; continue ()
           | Response resp ->
               match T.use_response !worker_age task resp with
@@ -315,13 +296,6 @@ module Make(T : Task) () = struct
     let ic, oc = Spawned.get_channels () in
     slave_oc := Some oc; slave_ic := Some ic
 
-  let bufferize f =
-    let l = ref [] in
-    fun () ->
-      match !l with
-      | [] -> let data = f () in l := List.tl data; List.hd data
-      | x::tl -> l := tl; x
-
   let slave_handshake () =
     Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
 
@@ -339,11 +313,6 @@ module Make(T : Task) () = struct
           Marshal.to_channel oc (RespFeedback (debug_with_pid fb)) []; flush oc) ()
     in
     ignore (Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x));
-    (* We ask master to allocate universe identifiers *)
-    UnivGen.set_remote_new_univ_id (bufferize @@ Control.protect_sigalrm (fun () ->
-      marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
-      match unmarshal_more_data (Option.get !slave_ic) with
-      | MoreDataUnivLevel l -> l));
     let working = ref false in
     slave_handshake ();
     while true do

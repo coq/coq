@@ -50,7 +50,9 @@ Proof. exact (InfA_alt O.eq_equiv O.lt_strorder O.lt_compat). Qed.
 Lemma Sort_NoDup : forall l, Sort l -> NoDup l.
 Proof. exact (SortA_NoDupA O.eq_equiv O.lt_strorder O.lt_compat) . Qed.
 
+#[global]
 Hint Resolve ListIn_In Sort_NoDup Inf_lt : core.
+#[global]
 Hint Immediate In_eq Inf_lt : core.
 
 End OrderedTypeLists.
@@ -66,20 +68,25 @@ Module KeyOrderedType(O:OrderedType).
 
  Definition ltk {elt} : relation (key*elt) := O.lt @@1.
 
+ #[global]
  Hint Unfold ltk : core.
 
  (* ltk is a strict order *)
 
+#[global]
  Instance ltk_strorder {elt} : StrictOrder (@ltk elt) := _.
 
+#[global]
  Instance ltk_compat {elt} : Proper (eqk==>eqk==>iff) (@ltk elt).
  Proof. unfold eqk, ltk; auto with *. Qed.
 
+#[global]
  Instance ltk_compat' {elt} : Proper (eqke==>eqke==>iff) (@ltk elt).
  Proof. eapply subrelation_proper; eauto with *. Qed.
 
  (* Additional facts *)
 
+#[global]
  Instance pair_compat {elt} : Proper (O.eq==>Logic.eq==>eqke) (@pair key elt).
  Proof. apply pair_compat. Qed.
 
@@ -109,7 +116,9 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Inf_lt l x x' : ltk x x' -> Inf x' l -> Inf x l.
   Proof. apply InfA_ltA; auto with *. Qed.
 
+  #[local]
   Hint Immediate Inf_eq : core.
+  #[local]
   Hint Resolve Inf_lt : core.
 
   Lemma Sort_Inf_In l p q : Sort l -> Inf q l -> InA eqk p l -> ltk q p.
@@ -148,9 +157,13 @@ Module KeyOrderedType(O:OrderedType).
 
  End Elt.
 
+ #[global]
  Hint Resolve ltk_not_eqk ltk_not_eqke : core.
+ #[global]
  Hint Immediate Inf_eq : core.
+ #[global]
  Hint Resolve Inf_lt : core.
+ #[global]
  Hint Resolve Sort_Inf_NotIn : core.
 
 End KeyOrderedType.

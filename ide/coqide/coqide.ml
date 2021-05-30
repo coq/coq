@@ -765,6 +765,15 @@ let show_proof_diff where sn =
 
 let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
 
+let db_cmd cmd sn =  (* todo: still good? *)
+  Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_cmd cmd
+    ~next:(function | _ -> Coq.return ()))
+  ignore
+
+let send_db_cmd cmd = cb_on_current_term (db_cmd cmd) ()
+
+let _ = Wg_MessageView.forward_send_db_cmd := send_db_cmd
+
 let about _ =
   let dialog = GWindow.about_dialog () in
   let _ = dialog#connect#response ~callback:(fun _ -> dialog#destroy ()) in
@@ -1374,8 +1383,7 @@ let main files =
 let read_coqide_args argv =
   let set_debug () =
     Minilib.debug := true;
-    Flags.debug := true;
-    Exninfo.record_backtrace true
+    CDebug.set_debug_all true
   in
   let rec filter_coqtop coqtop project_files bindings_files out = function
     |"-unicode-bindings" :: sfilenames :: args ->
@@ -1405,6 +1413,9 @@ let read_coqide_args argv =
     |"-coqtop-flags" :: flags :: args->
       Coq.ideslave_coqtop_flags := Some flags;
       filter_coqtop coqtop project_files bindings_files out args
+    | ("-v" | "--version") :: _ ->
+      Printf.printf "CoqIDE, version %s\n" Coq_config.version;
+      exit 0
     |arg::args when out = [] && CString.is_prefix "-psn_" arg ->
       (* argument added by MacOS during .app launch *)
       filter_coqtop coqtop project_files bindings_files out args

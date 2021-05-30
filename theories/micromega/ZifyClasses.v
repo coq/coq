@@ -7,7 +7,6 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-Set Primitive Projections.
 
 (** An alternative to [zify] in ML parametrised by user-provided classes instances.
 
@@ -210,7 +209,7 @@ Qed.
 
 Lemma eq_iff : forall (P Q : Prop), P = Q -> (P <-> Q).
 Proof.
-  intros.
+  intros P Q H.
   rewrite H.
   apply iff_refl.
 Defined.
@@ -219,6 +218,13 @@ Lemma rew_iff  (P Q : Prop) (IFF : P <-> Q) :  P -> Q.
 Proof.
   exact (fun H => proj1 IFF H).
 Qed.
+
+Lemma rew_iff_rev  (P Q : Prop) (IFF : P <-> Q) :  Q -> P.
+Proof.
+  exact (fun H => proj2 IFF H).
+Qed.
+
+
 
 (** Registering constants for use by the plugin *)
 Register eq_iff      as ZifyClasses.eq_iff.
@@ -247,11 +253,22 @@ Register eq          as ZifyClasses.eq.
 Register mkinjprop   as ZifyClasses.mkinjprop.
 Register iff_refl    as ZifyClasses.iff_refl.
 Register rew_iff     as ZifyClasses.rew_iff.
+Register rew_iff_rev as ZifyClasses.rew_iff_rev.
 Register source_prop as ZifyClasses.source_prop.
 Register injprop_ok  as ZifyClasses.injprop_ok.
 Register iff         as ZifyClasses.iff.
+
+Register InjTyp      as ZifyClasses.InjTyp.
+Register BinOp       as ZifyClasses.BinOp.
+Register UnOp        as ZifyClasses.UnOp.
+Register CstOp       as ZifyClasses.CstOp.
+Register BinRel      as ZifyClasses.BinRel.
+Register PropOp   as ZifyClasses.PropOp.
+Register PropUOp     as ZifyClasses.PropUOp.
 Register BinOpSpec   as ZifyClasses.BinOpSpec.
 Register UnOpSpec    as ZifyClasses.UnOpSpec.
+Register Saturate    as ZifyClasses.Saturate.
+
 
 (** Propositional logic *)
 Register and as ZifyClasses.and.
@@ -264,3 +281,4 @@ Register impl_morph as ZifyClasses.impl_morph.
 Register not as ZifyClasses.not.
 Register not_morph as ZifyClasses.not_morph.
 Register True as ZifyClasses.True.
+Register I as ZifyClasses.I.

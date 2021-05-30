@@ -47,8 +47,6 @@ val search_filter : glob_search_item -> filter_function
 goal and the global environment for things matching [pattern] and
 satisfying module exclude/include clauses of [modinout]. *)
 
-val search_by_head : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool
-                  -> display_function -> unit
 val search_rewrite : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
 val search_pattern : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool

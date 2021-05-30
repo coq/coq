@@ -10,10 +10,17 @@
 
 (** Utility code for section variables handling in Proof using... *)
 
-val process_expr :
-  Environ.env -> Evd.evar_map ->
-  Vernacexpr.section_subset_expr -> EConstr.types list ->
-    Names.Id.t list
+(** At some point it would be good to make this abstract *)
+type t = Names.Id.Set.t
+
+(** Process a [using] expression in definitions to provide the list of
+    used terms *)
+val definition_using
+  : Environ.env
+  -> Evd.evar_map
+  -> using:Vernacexpr.section_subset_expr
+  -> terms:EConstr.constr list
+  -> t
 
 val name_set : Names.Id.t -> Vernacexpr.section_subset_expr -> unit
 

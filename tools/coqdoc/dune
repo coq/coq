@@ -1,14 +1,21 @@
 (install
  (section lib)
- (package coq)
+ (package coq-core)
  (files
   (coqdoc.css as tools/coqdoc/coqdoc.css)
   (coqdoc.sty as tools/coqdoc/coqdoc.sty)))
 
+; File needs to be here too.
+(install
+ (section share)
+ (package coq-core)
+ (files
+  (coqdoc.sty as texmf/tex/latex/misc/coqdoc.sty)))
+
 (executable
  (name main)
  (public_name coqdoc)
- (package coq)
- (libraries str coq.config coq.clib))
+ (package coq-core)
+ (libraries str coq-core.config coq-core.clib))
 
 (ocamllex cpretty)

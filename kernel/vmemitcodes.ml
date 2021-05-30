@@ -135,6 +135,16 @@ let out env opcode =
 
 let is_immed i = Uint63.le (Uint63.of_int i) Uint63.maxuint31
 
+(* Detect whether the current value of the accu register is no longer
+   needed (i.e., the register is written before being read). If so, the
+   register can be used freely; no need to save and restore it. *)
+let is_accu_dead = function
+  | [] -> false
+  | c :: _ ->
+      match c with
+      | Kacc _ | Kenvacc _ | Kconst _ | Koffsetclosure _ | Kgetglobal _ -> true
+      | _ -> false
+
 let out_int env n =
   out_word env n (n asr 8) (n asr 16) (n asr 24)
 
@@ -208,14 +218,6 @@ let slot_for_caml_prim env op =
 
 (* Emission of one instruction *)
 
-let nocheck_prim_op = function
-  | Int63add -> opADDINT63
-  | Int63sub -> opSUBINT63
-  | Int63lt  -> opLTINT63
-  | Int63le  -> opLEINT63
-  | _ -> assert false
-
-
 let check_prim_op = function
   | Int63head0     -> opCHECKHEAD0INT63
   | Int63tail0     -> opCHECKTAIL0INT63
@@ -224,8 +226,11 @@ let check_prim_op = function
   | Int63mul       -> opCHECKMULINT63
   | Int63div       -> opCHECKDIVINT63
   | Int63mod       -> opCHECKMODINT63
+  | Int63divs      -> opCHECKDIVSINT63
+  | Int63mods      -> opCHECKMODSINT63
   | Int63lsr       -> opCHECKLSRINT63
   | Int63lsl       -> opCHECKLSLINT63
+  | Int63asr       -> opCHECKASRINT63
   | Int63land      -> opCHECKLANDINT63
   | Int63lor       -> opCHECKLORINT63
   | Int63lxor      -> opCHECKLXORINT63
@@ -240,7 +245,10 @@ let check_prim_op = function
   | Int63eq        -> opCHECKEQINT63
   | Int63lt        -> opCHECKLTINT63
   | Int63le        -> opCHECKLEINT63
+  | Int63lts       -> opCHECKLTSINT63
+  | Int63les       -> opCHECKLESINT63
   | Int63compare   -> opCHECKCOMPAREINT63
+  | Int63compares  -> opCHECKCOMPARESINT63
   | Float64opp     -> opCHECKOPPFLOAT
   | Float64abs     -> opCHECKABSFLOAT
   | Float64eq      -> opCHECKEQFLOAT
@@ -259,11 +267,20 @@ let check_prim_op = function
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
   | Float64next_up    -> opCHECKNEXTUPFLOAT
   | Float64next_down  -> opCHECKNEXTDOWNFLOAT
-  | Arraymake -> opISINT_CAML_CALL2
-  | Arrayget -> opISARRAY_INT_CAML_CALL2
-  | Arrayset -> opISARRAY_INT_CAML_CALL3
+  | Arraymake -> opCHECKCAMLCALL2_1
+  | Arrayget -> opCHECKCAMLCALL2
+  | Arrayset -> opCHECKCAMLCALL3_1
   | Arraydefault | Arraycopy | Arraylength ->
-      opISARRAY_CAML_CALL1
+      opCHECKCAMLCALL1
+
+let inplace_prim_op = function
+  | Float64next_up | Float64next_down -> true
+  | _ -> false
+
+let check_prim_op_inplace = function
+  | Float64next_up   -> opCHECKNEXTUPFLOATINPLACE
+  | Float64next_down -> opCHECKNEXTDOWNFLOATINPLACE
+  | _ -> assert false
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl
@@ -283,8 +300,11 @@ let emit_instr env = function
       out env opPOP; out_int env n
   | Kpush_retaddr lbl ->
       out env opPUSH_RETADDR; out_label env lbl
+  | Kshort_apply n ->
+      assert (1 <= n && n <= 4);
+      out env(opAPPLY1 + n - 1)
   | Kapply n ->
-      if n <= 4 then out env(opAPPLY1 + n - 1) else (out env opAPPLY; out_int env n)
+      out env opAPPLY; out_int env n
   | Kappterm(n, sz) ->
       if n < 4 then (out env(opAPPTERM1 + n - 1); out_int env sz)
                else (out env opAPPTERM; out_int env n; out_int env sz)
@@ -326,8 +346,6 @@ let emit_instr env = function
       if Int.equal n 0 then invalid_arg "emit_instr : block size = 0"
       else if n < 4 then (out env(opMAKEBLOCK1 + n - 1); out_int env t)
       else (out env opMAKEBLOCK; out_int env n; out_int env t)
-  | Kmakeprod ->
-      out env opMAKEPROD
   | Kmakeswitchblock(typlbl,swlbl,annot,sz) ->
       out env opMAKESWITCHBLOCK;
       out_label env typlbl; out_label env swlbl;
@@ -348,16 +366,12 @@ let emit_instr env = function
       if n <= 1 then out env (opGETFIELD0+n)
       else (out env opGETFIELD;out_int env n)
   | Ksetfield n ->
-      if n <= 1 then out env (opSETFIELD0+n)
-      else (out env opSETFIELD;out_int env n)
+      out env opSETFIELD; out_int env n
   | Ksequence _ -> invalid_arg "Vmemitcodes.emit_instr"
   | Kproj p -> out env opPROJ; out_int env (Projection.Repr.arg p); slot_for_proj_name env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   | Kbranch lbl -> out env opBRANCH; out_label env lbl
-  | Kprim (op,None) ->
-      out env (nocheck_prim_op op)
-
-  | Kprim(op,Some (q,_u)) ->
+  | Kprim (op, (q,_u)) ->
       out env (check_prim_op op);
       slot_for_getglobal env q
 
@@ -366,12 +380,7 @@ let emit_instr env = function
     out_label env lbl;
     slot_for_caml_prim env op
 
-  | Kareint 1 -> out env opISINT
-  | Kareint 2 -> out env opAREINT2;
-
   | Kstop -> out env opSTOP
-
-  | Kareint _ -> assert false
 
 (* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
@@ -382,7 +391,9 @@ let rec emit env insns remaining = match insns with
      | (first::rest) -> emit env first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->
-      if n < 8 then out env(opPUSHACC0 + n) else (out env opPUSHACC; out_int env n);
+      if n = 0 then out env opPUSH
+      else if n < 8 then out env (opPUSHACC1 + n - 1)
+      else (out env opPUSHACC; out_int env n);
       emit env c remaining
   | Kpush :: Kenvacc n :: c ->
       if n >= 0 && n <= 3
@@ -404,10 +415,19 @@ let rec emit env insns remaining = match insns with
   | Kpush :: Kconst const :: c ->
       out env opPUSHGETGLOBAL; slot_for_const env const;
       emit env c remaining
+  | Kpushfields 1 :: c when is_accu_dead c ->
+      out env opGETFIELD0;
+      emit env (Kpush :: c) remaining
   | Kpop n :: Kjump :: c ->
       out env opRETURN; out_int env n; emit env c remaining
-  | Ksequence(c1,c2)::c ->
-      emit env c1 (c2::c::remaining)
+  | Ksequence c1 :: c ->
+      emit env c1 (c :: remaining)
+  | Kprim (op1, (q1, _)) :: Kprim (op2, (q2, _)) :: c when inplace_prim_op op2 ->
+      out env (check_prim_op op1);
+      slot_for_getglobal env q1;
+      out env (check_prim_op_inplace op2);
+      slot_for_getglobal env q2;
+      emit env c remaining
   (* Default case *)
   | instr :: c ->
       emit_instr env instr; emit env c remaining

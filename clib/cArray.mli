@@ -80,6 +80,8 @@ sig
   (** [chop i a] returns [(a1, a2)] s.t. [a = a1 + a2] and [length a1 = n].
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)
 
+  val split : ('a * 'b) array -> 'a array * 'b array
+
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
@@ -91,6 +93,9 @@ sig
 
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
   (** Iter on two arrays. Raise [Invalid_argument "Array.iter2_i"] if sizes differ. *)
+
+  val iter3 : ('a -> 'b -> 'c -> unit) -> 'a array -> 'b array -> 'c array -> unit
+  (** Iter on three arrays. Raise [Invalid_argument "Array.iter3"] if sizes differ. *)
 
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   (** [fold_left_map f e_0 [|l_1...l_n|] = e_n,[|k_1...k_n|]]

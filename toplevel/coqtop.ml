@@ -18,41 +18,19 @@ let () = at_exit flush_all
 
 let ( / ) = Filename.concat
 
-let get_version_date () =
+let get_version () =
   try
     let ch = open_in (Envars.coqlib () / "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
     let () = close_in ch in
-    (ver,rev)
-  with e when CErrors.noncritical e ->
-    (Coq_config.version,Coq_config.date)
+    Printf.sprintf "%s (%s)" ver rev
+  with _ -> Coq_config.version
 
 let print_header () =
-  let (ver,rev) = get_version_date () in
-  Feedback.msg_info (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
+  Feedback.msg_info (str "Welcome to Coq " ++ str (get_version ()));
   flush_all ()
 
-let print_memory_stat () =
-  (* -m|--memory from the command-line *)
-  Feedback.msg_notice
-    (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ());
-  (* operf-macro interface:
-     https://github.com/OCamlPro/operf-macro *)
-  try
-    let fn = Sys.getenv "OCAML_GC_STATS" in
-    let oc = open_out fn in
-    Gc.print_stat oc;
-    close_out oc
-  with _ -> ()
-
-(******************************************************************************)
-(* Input/Output State                                                         *)
-(******************************************************************************)
-let inputstate opts =
-  Option.iter (fun istate_file ->
-    let fname = Loadpath.locate_file (CUnix.make_suffix istate_file ".coq") in
-    Vernacstate.System.load fname) opts.inputstate
 
 (******************************************************************************)
 (* Fatal Errors                                                               *)
@@ -68,11 +46,44 @@ let fatal_error_exn exn =
   in
   exit exit_code
 
-(******************************************************************************)
-(* Color Options                                                              *)
-(******************************************************************************)
+type ('a,'b) custom_toplevel =
+  { parse_extra : string list -> 'a * string list
+  ; usage : Usage.specific_usage
+  ; init_extra : 'a -> Coqargs.injection_command list -> opts:Coqargs.t -> 'b
+  ; initial_args : Coqargs.t
+  ; run : 'a -> opts:Coqargs.t -> 'b -> unit
+  }
+
+(** Main init routine *)
+let init_toplevel { parse_extra; init_extra; usage; initial_args } =
+  Coqinit.init_ocaml ();
+  let opts, customopts = Coqinit.parse_arguments ~parse_extra ~usage ~initial_args () in
+  Stm.init_process (snd customopts);
+  let injections = Coqinit.init_runtime opts in
+  (* This state will be shared by all the documents *)
+  Stm.init_core ();
+  let customstate = init_extra ~opts customopts injections in
+  opts, customopts, customstate
+
+let start_coq custom =
+  let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
+  (* Init phase *)
+  let opts, custom_opts, state =
+    try init_toplevel custom
+    with any ->
+      flush_all();
+      fatal_error_exn any in
+  Feedback.del_feeder init_feeder;
+  (* Run phase *)
+  custom.run ~opts custom_opts state
+
+(** ****************************************)
+(** Specific support for coqtop executable *)
+
+type color = [`ON | `AUTO | `EMACS | `OFF]
+
 let init_color opts =
-  let has_color = match opts.color with
+  let has_color = match opts with
   | `OFF -> false
   | `EMACS -> false
   | `ON -> true
@@ -95,7 +106,7 @@ let init_color opts =
       Topfmt.default_styles (); false                 (* textual markers, no color *)
     end
   in
-  if opts.color = `EMACS then
+  if opts = `EMACS then
     Topfmt.set_emacs_print_strings ()
   else if not term_color then begin
       Proof_diffs.write_color_enabled term_color;
@@ -120,120 +131,34 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
-let init_coqlib opts = match opts.config.coqlib with
-  | None when opts.pre.boot -> ()
-  | None ->
-    Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
-  | Some s ->
-    Envars.set_user_coqlib s
+let ltac_debug_answer = let open DebugHook.Answer in function
+    | Prompt prompt ->
+      (* No newline *)
+      Format.fprintf !Topfmt.err_ft "@[%a@]%!" Pp.pp_with prompt
+    | Goal g ->
+      Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with (str "Goal:" ++ fnl () ++ g)
+    | Output o ->
+      Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with o
 
-let print_query opts = function
-  | PrintVersion -> Usage.version ()
-  | PrintMachineReadableVersion -> Usage.machine_readable_version ()
-  | PrintWhere ->
-    let () = init_coqlib opts in
-    print_endline (Envars.coqlib ())
-  | PrintHelp h -> Usage.print_usage stderr h
-  | PrintConfig ->
-    let () = init_coqlib opts in
-    Envars.print_config stdout Coq_config.all_src_dirs
-  | PrintTags -> print_style_tags opts.config
+let ltac_debug_parse () =
+  let open DebugHook in
+  let act =
+    try Action.parse (read_line ())
+    with End_of_file -> Ok Action.Exit
+  in
+  match act with
+  | Ok act -> act
+  | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
 
-(** GC tweaking *)
+type query = PrintTags | PrintModUid of string list
+type run_mode = Interactive | Batch | Query of query
 
-(** Coq is a heavy user of persistent data structures and symbolic ASTs, so the
-    minor heap is heavily solicited. Unfortunately, the default size is far too
-    small, so we enlarge it a lot (128 times larger).
+type toplevel_options = {
+  run_mode : run_mode;
+  color_mode : color;
+}
 
-    To better handle huge memory consumers, we also augment the default major
-    heap increment and the GC pressure coefficient.
-*)
-
-let init_gc () =
-  try
-    (* OCAMLRUNPARAM environment variable is set.
-     * In that case, we let ocamlrun to use the values provided by the user.
-     *)
-    ignore (Sys.getenv "OCAMLRUNPARAM")
-
-  with Not_found ->
-    (* OCAMLRUNPARAM environment variable is not set.
-     * In this case, we put in place our preferred configuration.
-     *)
-    Gc.set { (Gc.get ()) with
-             Gc.minor_heap_size = 32*1024*1024; (* 32Mwords x 8 bytes/word = 256Mb *)
-             Gc.space_overhead = 120}
-
-let init_process () =
-  (* Coq's init process, phase 1:
-     OCaml parameters, basic structures, and IO
-   *)
-  CProfile.init_profile ();
-  init_gc ();
-  Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
-  Lib.init ()
-
-let init_parse parse_extra help init_opts =
-  let opts, extras =
-    parse_args ~help:help ~init:init_opts
-      (List.tl (Array.to_list Sys.argv)) in
-  let customopts, extras = parse_extra ~opts extras in
-  if not (CList.is_empty extras) then begin
-    prerr_endline ("Don't know what to do with "^String.concat " " extras);
-    prerr_endline "See -help for the list of supported options";
-    exit 1
-    end;
-  opts, customopts
-
-(** Coq's init process, phase 2: Basic Coq environment, plugins. *)
-let init_execution opts custom_init =
-  (* If we have been spawned by the Spawn module, this has to be done
-   * early since the master waits us to connect back *)
-  Spawned.init_channels ();
-  if opts.post.memory_stat then at_exit print_memory_stat;
-  CoqworkmgrApi.(init opts.config.stm_flags.Stm.AsyncOpts.async_proofs_worker_priority);
-  Mltop.init_known_plugins ();
-  (* Configuration *)
-  Global.set_engagement opts.config.logic.impredicative_set;
-  Global.set_indices_matter opts.config.logic.indices_matter;
-  Global.set_VM opts.config.enable_VM;
-  Flags.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
-  Global.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
-
-  (* Native output dir *)
-  Nativelib.output_dir := opts.config.native_output_dir;
-  Nativelib.include_dirs := opts.config.native_include_dirs;
-
-  (* Allow the user to load an arbitrary state here *)
-  inputstate opts.pre;
-
-  (* This state will be shared by all the documents *)
-  Stm.init_core ();
-  custom_init ~opts
-
-type 'a extra_args_fn = opts:Coqargs.t -> string list -> 'a * string list
-
-type ('a,'b) custom_toplevel =
-  { parse_extra : 'a extra_args_fn
-  ; help : Usage.specific_usage
-  ; init : 'a -> opts:Coqargs.t -> 'b
-  ; run : 'a -> opts:Coqargs.t -> 'b -> unit
-  ; opts : Coqargs.t
-  }
-
-(** Main init routine *)
-let init_toplevel custom =
-  let () = init_process () in
-  let opts, customopts = init_parse custom.parse_extra custom.help custom.opts in
-  (* Querying or running? *)
-  match opts.main with
-  | Queries q -> List.iter (print_query opts) q; exit 0
-  | Run ->
-    let () = init_coqlib opts in
-    let customstate = init_execution opts (custom.init customopts) in
-    opts, customopts, customstate
-
-let init_document opts =
+let init_document opts stm_options injections =
   (* Coq init process, phase 3: Stm initialization, backtracking state.
 
      It is essential that the module system is in a consistent
@@ -242,57 +167,74 @@ let init_document opts =
   *)
   (* Next line allows loading .vos files when in interactive mode *)
   Flags.load_vos_libraries := true;
-  let ml_load_path, vo_load_path = build_load_path opts in
-  let injections = injection_commands opts in
-  let stm_options = opts.config.stm_flags in
   let open Vernac.State in
   let doc, sid =
     Stm.(new_doc
            { doc_type = Interactive opts.config.logic.toplevel_name;
-             ml_load_path; vo_load_path; injections; stm_options;
+             injections; stm_options;
            }) in
   { doc; sid; proof = None; time = opts.config.time }
 
-let start_coq custom =
-  let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
-  (* Init phase *)
-  let opts, custom_opts, state =
-    try init_toplevel custom
-    with any ->
-      flush_all();
-      fatal_error_exn any in
-  Feedback.del_feeder init_feeder;
-  (* Run phase *)
-  custom.run ~opts custom_opts state
-
-(** ****************************************)
-(** Specific support for coqtop executable *)
-
-type run_mode = Interactive | Batch
-
-let init_toploop opts =
-  let state = init_document opts in
+let init_toploop opts stm_opts injections =
+  let state = init_document opts stm_opts injections in
   let state = Ccompile.load_init_vernaculars opts ~state in
   state
 
-let coqtop_init run_mode ~opts =
-  if run_mode = Batch then Flags.quiet := true;
-  init_color opts.config;
+let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
+  if run_mode != Interactive then Flags.quiet := true;
+  init_color (if opts.config.print_emacs then `EMACS else color_mode);
   Flags.if_verbose print_header ();
-  init_toploop opts
+  DebugHook.Intf.(set
+    { read_cmd = ltac_debug_parse
+    ; submit_answer = ltac_debug_answer
+    });
+  init_toploop opts async_opts injections
 
-let coqtop_parse_extra ~opts extras =
-  let rec parse_extra run_mode = function
-  | "-batch" :: rest -> parse_extra Batch rest
+let set_color = function
+  | "yes" | "on" -> `ON
+  | "no" | "off" -> `OFF
+  | "auto" ->`AUTO
+  | _ ->
+    error_wrong_arg ("Error: on/off/auto expected after option color")
+
+let parse_extra_colors extras =
+  let rec parse_extra color_mode = function
+  | "-color" :: next :: rest -> parse_extra (set_color next) rest
+  | "-list-tags" :: rest -> parse_extra color_mode rest
   | x :: rest ->
+    let color_mode, rest = parse_extra color_mode rest in color_mode, x :: rest
+  | [] -> color_mode, [] in
+  parse_extra `AUTO extras
+
+let coqtop_parse_extra extras =
+  let rec parse_extra run_mode  = function
+  | "-batch" :: rest -> parse_extra Batch  rest
+  | "-print-mod-uid" :: rest -> Query (PrintModUid rest), []
+  |   x :: rest ->
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
   | [] -> run_mode, [] in
   let run_mode, extras = parse_extra Interactive extras in
-  run_mode, extras
+  let color_mode, extras = parse_extra_colors extras in
+  let async_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
+  ({ run_mode; color_mode}, async_opts), extras
 
-let coqtop_run run_mode ~opts state =
+let get_native_name s =
+  (* We ignore even critical errors because this mode has to be super silent *)
+  try
+    Filename.(List.fold_left concat (dirname s)
+                [ !Nativelib.output_dir
+                ; Library.native_name_from_filename s
+                ])
+  with _ -> ""
+
+let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with
   | Interactive -> Coqloop.loop ~opts ~state;
+  | Query PrintTags -> print_style_tags color_mode; exit 0
+  | Query (PrintModUid sl) ->
+      let s = String.concat " " (List.map get_native_name sl) in
+      print_endline s;
+      exit 0
   | Batch -> exit 0
 
 let coqtop_specific_usage = Usage.{
@@ -306,8 +248,8 @@ coqtop specific options:\n\
 
 let coqtop_toplevel =
   { parse_extra = coqtop_parse_extra
-  ; help = coqtop_specific_usage
-  ; init = coqtop_init
+  ; usage = coqtop_specific_usage
+  ; init_extra = coqtop_init
   ; run = coqtop_run
-  ; opts = Coqargs.default
+  ; initial_args = Coqargs.default
   }

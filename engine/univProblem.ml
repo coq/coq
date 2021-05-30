@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Univ
-open UnivSubst
 
 type t =
   | ULe of Universe.t * Universe.t
@@ -21,24 +20,6 @@ type t =
 let is_trivial = function
   | ULe (u, v) | UEq (u, v) -> Universe.equal u v
   | ULub (u, v) | UWeak (u, v) -> Level.equal u v
-
-let subst_univs fn = function
-  | ULe (u, v) ->
-    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
-    if Universe.equal u' v' then None
-    else Some (ULe (u',v'))
-  | UEq (u, v) ->
-    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
-    if Universe.equal u' v' then None
-    else Some (ULe (u',v'))
-  | ULub (u, v) ->
-    let u' = level_subst_of fn u and v' = level_subst_of fn v in
-    if Level.equal u' v' then None
-    else Some (ULub (u',v'))
-  | UWeak (u, v) ->
-    let u' = level_subst_of fn u and v' = level_subst_of fn v in
-    if Level.equal u' v' then None
-    else Some (UWeak (u',v'))
 
 module Set = struct
   module S = Set.Make(
@@ -88,11 +69,6 @@ module Set = struct
 
   let equal x y =
     x == y || equal x y
-
-  let subst_univs subst csts =
-    fold
-      (fun c -> Option.fold_right add (subst_univs subst c))
-      csts empty
 end
 
 type 'a accumulator = Set.t -> 'a -> 'a option
@@ -138,29 +114,3 @@ let to_constraints ~force_weak g s =
       end
   in
   Set.fold tr s Constraint.empty
-
-
-(** Variant of [eq_constr_univs_infer] taking kind-of-term functions,
-    to expose subterms of [m] and [n], arguments. *)
-let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
-  (* spiwack: duplicates the code of [eq_constr_univs_infer] because I
-     haven't find a way to factor the code without destroying
-     pointer-equality optimisations in [eq_constr_univs_infer].
-     Pointer equality is not sufficient to ensure equality up to
-     [kind1,kind2], because [kind1] and [kind2] may be different,
-     typically evaluating [m] and [n] in different evar maps. *)
-  let cstrs = ref accu in
-  let eq_universes _ = UGraph.check_eq_instances univs in
-  let eq_sorts s1 s2 =
-    if Sorts.equal s1 s2 then true
-    else
-      let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-      match fold (Set.singleton (UEq (u1, u2))) !cstrs with
-      | None -> false
-      | Some accu -> cstrs := accu; true
-  in
-  let rec eq_constr' nargs m n =
-    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' nargs m n
-  in
-  let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' 0 m n in
-  if res then Some !cstrs else None

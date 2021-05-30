@@ -68,7 +68,7 @@ module Strict = struct
     match sugg with
     | NeedClosingBrace -> Pp.(str"Try unfocusing with \"}\".")
     | NoBulletInUse -> assert false (* This should never raise an error. *)
-    | ProofFinished -> Pp.(str"No more subgoals.")
+    | ProofFinished -> Pp.(str"No more goals.")
     | Suggest b -> Pp.(str"Expecting " ++ pr_bullet b ++ str".")
     | Unfinished b -> Pp.(str"Current bullet " ++ pr_bullet b ++ str" is not finished.")
 

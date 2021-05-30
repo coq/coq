@@ -38,6 +38,7 @@ Proof.
 intros U R x y H'; red.
 exists y; auto with sets.
 Qed.
+#[global]
 Hint Resolve Rstar_imp_coherent : core.
 
 Theorem coherent_symmetric :

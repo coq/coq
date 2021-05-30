@@ -16,7 +16,7 @@ Ltac2 @ external get : ident list -> Std.reference option := "ltac2" "env_get".
 
 Ltac2 @ external expand : ident list -> Std.reference list := "ltac2" "env_expand".
 (** Returns the list of all global references whose absolute name contains
-    the argument list as a prefix. *)
+    the argument list as a suffix. *)
 
 Ltac2 @ external path : Std.reference -> ident list := "ltac2" "env_path".
 (** Returns the absolute name of the given reference. Panics if the reference

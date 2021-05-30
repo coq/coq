@@ -40,7 +40,7 @@ let tclPERM perm tac =
 let rot_hyps dir i hyps =
   let n = List.length hyps in
   if i = 0 then List.rev hyps else
-  if i > n then CErrors.user_err (Pp.str "Not enough subgoals") else
+  if i > n then CErrors.user_err (Pp.str "Not enough goals") else
   let rec rot i l_hyps = function
     | hyp :: hyps' when i > 0 -> rot (i - 1) (hyp :: l_hyps) hyps'
     | hyps' -> hyps' @ (List.rev l_hyps) in

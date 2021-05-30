@@ -107,6 +107,10 @@ val dEqThen : keep_proofs:(bool option) -> evars_flag -> (clear_flag -> constr -
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)
 
+(* The family cutRewriteIn expect an equality statement *)
+val cutRewriteInHyp : bool -> types -> Id.t -> unit Proofview.tactic
+val cutRewriteInConcl : bool -> constr -> unit Proofview.tactic
+
 (* The family rewriteIn expect the proof of an equality *)
 val rewriteInHyp : bool -> constr -> Id.t -> unit Proofview.tactic
 val rewriteInConcl : bool -> constr -> unit Proofview.tactic

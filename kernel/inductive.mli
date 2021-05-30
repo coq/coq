@@ -30,7 +30,7 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 
 (** {6 ... } *)
 (** Fetching information in the environment about an inductive type.
-    Raises [Not_found] if the inductive type is not found. *)
+    Raises an anomaly if the inductive type is not found. *)
 val lookup_mind_specif : env -> inductive -> mind_specif
 
 (** {6 Functions to build standard types related to inductive } *)
@@ -78,6 +78,23 @@ val type_of_constructors : pinductive -> mind_specif -> types array
 val arities_of_specif : MutInd.t puniverses -> mind_specif -> types array
 
 val inductive_params : mind_specif -> int
+
+(** Given a pattern-matching represented compactly, expands it so as to produce
+    lambda and let abstractions in front of the return clause and the pattern
+    branches. *)
+val expand_case : env -> case -> (case_info * constr * case_invert * constr * constr array)
+
+val expand_case_specif : mutual_inductive_body -> case -> (case_info * constr * case_invert * constr * constr array)
+
+(** Dual operation of the above. Fails if the return clause or branch has not
+    the expected form. *)
+val contract_case : env -> (case_info * constr * case_invert * constr * constr array) -> case
+
+(** [instantiate_context u subst nas ctx] applies both [u] and [subst]
+    to [ctx] while replacing names using [nas] (order reversed). In particular,
+    assumes that [ctx] and [nas] have the same length. *)
+val instantiate_context : Instance.t -> Vars.substl -> Name.t Context.binder_annot array ->
+  rel_context -> rel_context
 
 (** [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:

@@ -35,10 +35,6 @@ val is_quantified_hypothesis : Id.t -> Proofview.Goal.t -> bool
 val introduction    : Id.t -> unit Proofview.tactic
 val convert_concl   : check:bool -> types -> cast_kind -> unit Proofview.tactic
 val convert_hyp     : check:bool -> reorder:bool -> named_declaration -> unit Proofview.tactic
-val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
-[@@ocaml.deprecated "use [Tactics.convert_concl]"]
-val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
-[@@ocaml.deprecated "use [Tactics.convert_hyp]"]
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
 val fix             : Id.t -> int -> unit Proofview.tactic
@@ -80,11 +76,6 @@ val intros_possibly_replacing : Id.t list -> unit Proofview.tactic
 val auto_intros_tac : Names.Name.t list -> unit Proofview.tactic
 
 val intros               : unit Proofview.tactic
-
-(** [depth_of_quantified_hypothesis b h g] returns the index of [h] in
-   the conclusion of goal [g], up to head-reduction if [b] is [true] *)
-val depth_of_quantified_hypothesis :
-  bool -> quantified_hypothesis -> Proofview.Goal.t -> int
 
 val intros_until         : quantified_hypothesis -> unit Proofview.tactic
 
@@ -179,11 +170,11 @@ val normalise_in_hyp  : hyp_location -> unit Proofview.tactic
 val normalise_option  : goal_location -> unit Proofview.tactic
 val normalise_vm_in_concl : unit Proofview.tactic
 val unfold_in_concl   :
-  (occurrences * evaluable_global_reference) list -> unit Proofview.tactic
+  (occurrences * Tacred.evaluable_global_reference) list -> unit Proofview.tactic
 val unfold_in_hyp     :
-  (occurrences * evaluable_global_reference) list -> hyp_location -> unit Proofview.tactic
+  (occurrences * Tacred.evaluable_global_reference) list -> hyp_location -> unit Proofview.tactic
 val unfold_option     :
-  (occurrences * evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
+  (occurrences * Tacred.evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
 val change            :
   check:bool -> constr_pattern option -> change_arg -> clause -> unit Proofview.tactic
 val pattern_option    :
@@ -233,7 +224,7 @@ val apply_in :
 val apply_delayed_in :
   advanced_flag -> evars_flag -> Id.t ->
     (clear_flag * delayed_open_constr_with_bindings CAst.t) list ->
-    intro_pattern option -> unit Proofview.tactic
+    intro_pattern option -> unit Proofview.tactic -> unit Proofview.tactic
 
 (** {6 Elimination tactics. } *)
 

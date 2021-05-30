@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Namegen
 open Constr
 open Context
 open EConstr
@@ -252,10 +251,10 @@ end) = struct
 
   (** Folding/unfolding of the tactic constants. *)
 
-  let unfold_impl sigma t =
+  let unfold_impl n sigma t =
     match EConstr.kind sigma t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) ->
-      mkProd (make_annot Anonymous Sorts.Relevant, a, lift 1 b)
+      mkProd (make_annot n Sorts.Relevant, a, lift 1 b)
     | _ -> assert false
 
   let unfold_all sigma t =
@@ -274,16 +273,16 @@ end) = struct
       | _ -> assert false)
     | _ -> assert false
 
-  let arrow_morphism env evd ta tb a b =
+  let arrow_morphism env evd n ta tb a b =
     let ap = is_Prop (goalevars evd) ta and bp = is_Prop (goalevars evd) tb in
-      if ap && bp then app_poly env evd impl [| a; b |], unfold_impl
+      if ap && bp then app_poly env evd impl [| a; b |], unfold_impl n
       else if ap then (* Domain in Prop, CoDomain in Type *)
-        (app_poly env evd arrow [| a; b |]), unfold_impl
+        (app_poly env evd arrow [| a; b |]), unfold_impl n
         (* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-        (app_poly env evd coq_all [| a; mkLambda (make_annot Anonymous Sorts.Relevant, a, lift 1 b) |]), unfold_forall
+        (app_poly env evd coq_all [| a; mkLambda (make_annot n Sorts.Relevant, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
-        (app_poly env evd arrow [| a; b |]), unfold_impl
+        (app_poly env evd arrow [| a; b |]), unfold_impl n
 
   let rec decomp_pointwise sigma n c =
     if Int.equal n 0 then c
@@ -373,11 +372,6 @@ end) = struct
 
 
 end
-
-(* let my_type_of env evars c = Typing.e_type_of env evars c *)
-(* let mytypeofkey = CProfile.declare_profile "my_type_of";; *)
-(* let my_type_of = CProfile.profile3 mytypeofkey my_type_of *)
-
 
 let type_app_poly env env evd f args =
   let evars, c = app_poly_nocheck env evd f args in
@@ -485,7 +479,7 @@ let rec decompose_app_rel env evd t =
     let (f', argl, argr) = decompose_app_rel env evd arg in
     let ty = Retyping.get_type_of env evd argl in
     let r = Retyping.relevance_of_type env evd ty in
-    let f'' = mkLambda (make_annot (Name default_dependent_ident) r, ty,
+    let f'' = mkLambda (make_annot (Name Namegen.default_dependent_ident) r, ty,
       mkLambda (make_annot (Name (Id.of_string "y")) r, lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
     in (f'', argl, argr)
@@ -856,26 +850,20 @@ let coerce env cstr res =
   let res = { res with rew_evars = evars } in
     apply_constraint env res.rew_car rel prf cstr res
 
-let apply_rule unify loccs : int pure_strategy =
-  let (nowhere_except_in,occs) = convert_occs loccs in
-  let is_occ occ =
-    if nowhere_except_in
-    then List.mem occ occs
-    else not (List.mem occ occs)
-  in
-  { strategy = fun { state = occ ; env ;
+let apply_rule unify : occurrences_count pure_strategy =
+  { strategy = fun { state = occs ; env ;
                      term1 = t ; ty1 = ty ; cstr ; evars } ->
       let unif = if isEvar (goalevars evars) t then None else unify env evars t in
         match unif with
-        | None -> (occ, Fail)
+        | None -> (occs, Fail)
         | Some rew ->
-          let occ = succ occ in
-            if not (is_occ occ) then (occ, Fail)
-            else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occ, Identity)
+          let b, occs = update_occurrence_counter occs in
+            if not b then (occs, Fail)
+            else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occs, Identity)
             else
               let res = { rew with rew_car = ty } in
               let res = Success (coerce env cstr res) in
-              (occ, res)
+              (occs, res)
     }
 
 let apply_lemma l2r flags oc by loccs : strategy = { strategy =
@@ -891,9 +879,10 @@ let apply_lemma l2r flags oc by loccs : strategy = { strategy =
       | None -> None
       | Some rew -> Some rew
     in
-    let _, res = (apply_rule unify loccs).strategy { input with
-                                                     state = 0 ;
+    let loccs, res = (apply_rule unify).strategy { input with
+                                                     state = initialize_occurrence_counter loccs ;
                                                      evars } in
+    check_used_occurrences loccs;
     (), res
                                                    }
 
@@ -924,7 +913,8 @@ let reset_env env =
     Environ.push_rel_context (Environ.rel_context env) env'
 
 let fold_match ?(force=false) env sigma c =
-  let (ci, p, iv, c, brs) = destCase sigma c in
+  let case = destCase sigma c in
+  let (ci, p, iv, c, brs) = EConstr.expand_case env sigma case in
   let cty = Retyping.get_type_of env sigma c in
   let dep, pred, exists, sk =
     let env', ctx, body =
@@ -992,7 +982,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                     let argty = Retyping.get_type_of env (goalevars evars) arg in
                     let state, res = s.strategy { state ; env ;
                                                   unfresh ;
-                                                  term1 = arg ;	ty1 = argty ;
+                                                  term1 = arg ;        ty1 = argty ;
                                                   cstr = (prop,None) ;
                                                   evars } in
                     let res' =
@@ -1084,7 +1074,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           let arr = if prop then PropGlobal.arrow_morphism
             else TypeGlobal.arrow_morphism
           in
-          let (evars', mor), unfold = arr env evars tx tb x b in
+          let (evars', mor), unfold = arr env evars n.binder_name tx tb x b in
           let state, res = aux { state ; env ; unfresh ;
                                  term1 = mor ; ty1 = ty ;
                                  cstr = (prop,cstr) ; evars = evars' } in
@@ -1119,7 +1109,14 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
  *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
-        let n' = map_annot (Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env)) n in
+        let unfresh, n' =
+          let id = match n.binder_name with
+            | Anonymous ->  Namegen.default_dependent_ident
+            | Name id -> id
+          in
+          let id = Tactics.fresh_id_in_env unfresh id env in
+          Id.Set.add id unfresh, {n with binder_name = Name id}
+        in
         let unfresh = match n'.binder_name with
           | Anonymous -> unfresh
           | Name id -> Id.Set.add id unfresh
@@ -1152,7 +1149,8 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           | Fail | Identity -> b'
         in state, res
 
-      | Case (ci, p, iv, c, brs) ->
+      | Case (ci, u, pms, p, iv, c, brs) ->
+        let (ci, p, iv, c, brs) = EConstr.expand_case env (goalevars evars) (ci, u, pms, p, iv, c, brs) in
         let cty = Retyping.get_type_of env (goalevars evars) c in
         let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
         let cstr' = Some eqty in
@@ -1162,7 +1160,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
         let state, res =
           match c' with
           | Success r ->
-            let case = mkCase (ci, lift 1 p, map_invert (lift 1) iv, mkRel 1, Array.map (lift 1) brs) in
+            let case = mkCase (EConstr.contract_case env (goalevars evars) (ci, lift 1 p, map_invert (lift 1) iv, mkRel 1, Array.map (lift 1) brs)) in
             let res = make_leibniz_proof env case ty r in
               state, Success (coerce env (prop,cstr) res)
           | Fail | Identity ->
@@ -1184,7 +1182,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
               in
                 match found with
                 | Some r ->
-                  let ctxc = mkCase (ci, lift 1 p, map_invert (lift 1) iv, lift 1 c, Array.of_list (List.rev (brs' c'))) in
+                  let ctxc = mkCase (EConstr.contract_case env (goalevars evars) (ci, lift 1 p, map_invert (lift 1) iv, lift 1 c, Array.of_list (List.rev (brs' c')))) in
                     state, Success (make_leibniz_proof env ctxc ty r)
                 | None -> state, c'
             else
@@ -1385,7 +1383,7 @@ module Strategies =
 
     let fold_glob c : 'a pure_strategy = { strategy =
       fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
-(* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
+(*         let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
         let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
         let unfolded =
           try Tacred.try_red_product env sigma c
@@ -1417,12 +1415,13 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
       let (sigma, rew) = refresh_hypinfo env sigma c in
       unify_eqn rew l2r flags env (sigma, cstrs) None t
     in
-    let app = apply_rule unify occs in
+    let app = apply_rule unify in
     let strat =
       Strategies.fix (fun aux ->
         Strategies.choice app (subterm true default_flags aux))
     in
-    let _, res = strat.strategy { input with state = 0 } in
+    let occs, res = strat.strategy { input with state = initialize_occurrence_counter occs } in
+    check_used_occurrences occs;
     ((), res)
                                                }
 
@@ -1455,48 +1454,46 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       if Sorts.is_prop sort then true, app_poly_sort true env evars impl [||]
       else false, app_poly_sort false env evars TypeGlobal.arrow [||]
     in
-      match is_hyp with
-      | None ->
-        let evars, t = poly_inverse prop env evars (mkSort sort) arrow in
-          evars, (prop, t)
-      | Some _ -> evars, (prop, arrow)
+    match is_hyp with
+    | None ->
+      let evars, t = poly_inverse prop env evars (mkSort sort) arrow in
+      evars, (prop, t)
+    | Some _ -> evars, (prop, arrow)
   in
   let eq = apply_strategy strat env avoid concl cstr evars in
-    match eq with
-    | Fail -> None
-    | Identity -> Some None
-    | Success res ->
-      let (_, cstrs) = res.rew_evars in
-      let evars' = solve_constraints env res.rew_evars in
-      let newt = Reductionops.nf_evar evars' res.rew_to in
-      let evars = (* Keep only original evars (potentially instantiated) and goal evars,
-                     the rest has been defined and substituted already. *)
-        Evar.Set.fold
-          (fun ev acc ->
-           if not (Evd.is_defined acc ev) then
+  match eq with
+  | Fail -> None
+  | Identity -> Some None
+  | Success res ->
+    let (_, cstrs) = res.rew_evars in
+    let evars = solve_constraints env res.rew_evars in
+    let () =
+      Evar.Set.iter
+        (fun ev ->
+           if not (Evd.is_defined evars ev) then
              user_err ~hdr:"rewrite"
-                          (str "Unsolved constraint remaining: " ++ spc () ++
-                           Termops.pr_evar_info env acc (Evd.find acc ev))
-           else Evd.remove acc ev)
-          cstrs evars'
-      in
-      let res = match res.rew_prf with
-        | RewCast c -> None
-        | RewPrf (rel, p) ->
-          let p = nf_zeta env evars' (Reductionops.nf_evar evars' p) in
-          let term =
-            match abs with
-            | None -> p
-            | Some (t, ty) ->
-              let t = Reductionops.nf_evar evars' t in
-              let ty = Reductionops.nf_evar evars' ty in
-                mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) Sorts.Relevant, ty, p), [| t |])
-          in
-          let proof = match is_hyp with
-            | None -> term
-            | Some id -> mkApp (term, [| mkVar id |])
-          in Some proof
-      in Some (Some (evars, res, newt))
+               (str "Unsolved constraint remaining: " ++ spc () ++
+                Termops.pr_evar_info env evars (Evd.find evars ev)))
+        cstrs
+    in
+    let newt = res.rew_to in
+    let res = match res.rew_prf with
+      | RewCast c -> None
+      | RewPrf (rel, p) ->
+        let p = nf_zeta env evars p in
+        let term =
+          match abs with
+          | None -> p
+          | Some (t, ty) ->
+            mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) Sorts.Relevant, ty, p), [| t |])
+        in
+        let proof = match is_hyp with
+          | None -> term
+          | Some id -> mkApp (term, [| mkVar id |])
+        in
+        Some proof
+    in
+    Some (Some (evars, res, newt))
 
 (** Insert a declaration after the last declaration it depends on *)
 let rec insert_dependent env sigma decl accu hyps = match hyps with
@@ -1542,7 +1539,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   (* For compatibility *)
   let beta = Tactics.reduct_in_concl ~check:false (Reductionops.nf_betaiota, DEFAULTcast) in
   let beta_hyp id = Tactics.reduct_in_hyp ~check:false ~reorder:false Reductionops.nf_betaiota (id, InHyp) in
-  let treat sigma res =
+  let treat sigma res state =
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
     | Some None ->
@@ -1553,7 +1550,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
         let (undef, prf, newt) = res in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
         let gls = List.rev (Evd.fold_undefined fold undef []) in
-        let gls = List.map Proofview.with_empty_state gls in
+        let gls = List.map (fun gl -> Proofview.goal_with_state gl state) gls in
           match clause, prf with
         | Some id, Some p ->
             let tac = tclTHENLIST [
@@ -1583,6 +1580,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
+    let state = Proofview.Goal.state gl in
     let sigma = Tacmach.New.project gl in
     let ty = match clause with
     | None -> concl
@@ -1602,7 +1600,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
         cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma ty clause
       in
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
-      treat sigma res <*>
+      treat sigma res state <*>
       (* For compatibility *)
       beta <*> Proofview.shelve_unifiable
     with
@@ -1638,9 +1636,9 @@ let cl_rewrite_clause l left2right occs clause =
 let cl_rewrite_clause_strat strat clause =
   cl_rewrite_clause_strat false strat clause
 
-let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input) ->
+let apply_glob_constr ist c l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
-    let (sigma, c) = Pretyping.understand_tcc env sigma c in
+    let (sigma, c) = Tacinterp.interp_open_constr ist env sigma c in
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
@@ -1717,12 +1715,12 @@ let rec pr_strategy prc prr = function
 | StratEval r -> str "eval" ++ spc () ++ prr r
 | StratFold c -> str "fold" ++ spc () ++ prc c
 
-let rec strategy_of_ast = function
+let rec strategy_of_ast ist = function
   | StratId -> Strategies.id
   | StratFail -> Strategies.fail
   | StratRefl -> Strategies.refl
   | StratUnary (f, s) ->
-    let s' = strategy_of_ast s in
+    let s' = strategy_of_ast ist s in
     let f' = match f with
       | Subterms -> all_subterms
       | Subterm -> one_subterm
@@ -1736,13 +1734,13 @@ let rec strategy_of_ast = function
       | Repeat -> Strategies.repeat
     in f' s'
   | StratBinary (f, s, t) ->
-    let s' = strategy_of_ast s in
-    let t' = strategy_of_ast t in
+    let s' = strategy_of_ast ist s in
+    let t' = strategy_of_ast ist t in
     let f' = match f with
       | Compose -> Strategies.seq
       | Choice -> Strategies.choice
     in f' s' t'
-  | StratConstr (c, b) -> { strategy = apply_glob_constr (fst c) b AllOccurrences }
+  | StratConstr (c, b) -> { strategy = apply_glob_constr ist c b AllOccurrences }
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
   | StratTerms l -> { strategy =
     (fun ({ state = () ; env } as input) ->
@@ -1751,7 +1749,7 @@ let rec strategy_of_ast = function
                     }
   | StratEval r -> { strategy =
     (fun ({ state = () ; env ; evars } as input) ->
-     let (sigma,r_interp) = Tacinterp.interp_redexp env (goalevars evars) r in
+     let (sigma,r_interp) = Tacinterp.interp_red_expr ist env (goalevars evars) r in
      (Strategies.reduce r_interp).strategy { input with
                                              evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)
@@ -1767,10 +1765,13 @@ let declare_an_instance n s args =
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
+let get_locality b = if b then Goptions.OptGlobal else Goptions.OptLocal
+
 let anew_instance atts binders (name,t) fields =
+  let locality = get_locality atts.global in
   let _id = Classes.new_instance ~poly:atts.polymorphic
       name binders t (true, CAst.make @@ CRecord (fields))
-      ~global:atts.global ~generalize:false Hints.empty_hint_info
+      ~locality ~generalize:false Hints.empty_hint_info
   in
   ()
 
@@ -1929,7 +1930,7 @@ let add_setoid atts binders a aeq t n =
 let make_tactic name =
   let open Tacexpr in
   let tacqid = Libnames.qualid_of_string name in
-  TacArg (CAst.make @@ (TacCall (CAst.make (tacqid, []))))
+  CAst.make @@ TacArg (TacCall (CAst.make (tacqid, [])))
 
 let add_morphism_as_parameter atts m n : unit =
   init_setoid ();
@@ -1943,9 +1944,8 @@ let add_morphism_as_parameter atts m n : unit =
   let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in
   let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
-  Classes.add_instance
-    (Classes.mk_instance
-       (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst);
+  Classes.Internal.add_instance
+    (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst;
   declare_projection n instance_id cst
 
 let add_morphism_interactive atts m n : Declare.Proof.t =
@@ -1959,9 +1959,8 @@ let add_morphism_interactive atts m n : Declare.Proof.t =
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
   let hook { Declare.Hook.S.dref; _ } = dref |> function
     | GlobRef.ConstRef cst ->
-      Classes.add_instance (Classes.mk_instance
-                      (PropGlobal.proper_class env evd) Hints.empty_hint_info
-                      atts.global (GlobRef.ConstRef cst));
+      Classes.Internal.add_instance (PropGlobal.proper_class env evd) Hints.empty_hint_info
+        atts.global (GlobRef.ConstRef cst);
       declare_projection n instance_id (GlobRef.ConstRef cst)
     | _ -> assert false
   in
@@ -1983,8 +1982,9 @@ let add_morphism atts binders m s n =
        [cHole; s; m])
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
+  let locality = get_locality atts.global in
   let _id, lemma = Classes.new_instance_interactive
-      ~global:atts.global ~poly:atts.polymorphic
+      ~locality ~poly:atts.polymorphic
       instance_name binders instance_t
       ~generalize:false ~tac ~hook:(declare_projection n instance_id)
       Hints.empty_hint_info None
@@ -2061,19 +2061,17 @@ let get_hyp gl (c,l) clause l2r =
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
-(* let rewriteclaustac_key = CProfile.declare_profile "cl_rewrite_clause_tac";; *)
-(* let cl_rewrite_clause_tac = CProfile.profile5 rewriteclaustac_key cl_rewrite_clause_tac *)
-
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =
   Proofview.Goal.enter begin fun gl ->
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
   let unify env evars t = unify_abs res l2r sort env evars t in
-  let app = apply_rule unify occs in
+  let app = apply_rule unify in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
   let strat = { strategy = fun ({ state = () } as input) ->
-    let _, res = substrat.strategy { input with state = 0 } in
+    let occs, res = substrat.strategy { input with state = initialize_occurrence_counter occs } in
+    check_used_occurrences occs;
     (), res
               }
   in

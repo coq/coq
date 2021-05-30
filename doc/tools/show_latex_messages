@@ -1,8 +1,10 @@
 #!/bin/sh
 
+tooldir=$(dirname $0)
+
 if [ "$1" = "-no-overfull" ]; then
-  cat $2 | ../tools/latex_filter `cat $2 | wc -l` no
+  cat $2 | "$tooldir"/latex_filter `cat $2 | wc -l` no
 else
-  cat $1 | ../tools/latex_filter `cat $1 | wc -l` yes
+  cat $1 | "$tooldir"/latex_filter `cat $1 | wc -l` yes
 fi
 

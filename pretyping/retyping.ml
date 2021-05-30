@@ -67,6 +67,14 @@ let get_type_from_constraints env sigma t =
     | _ -> raise Not_found
   else raise Not_found
 
+let sort_of_arity_with_constraints env sigma t =
+  try Reductionops.sort_of_arity env sigma t
+  with Reduction.NotArity ->
+  try
+    let t = get_type_from_constraints env sigma t in
+    Reductionops.sort_of_arity env sigma t
+  with Not_found | Reduction.NotArity -> retype_error NotAnArity
+
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
@@ -121,7 +129,8 @@ let retype ?(polyprop=true) sigma =
     | Evar ev -> existential_type sigma ev
     | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
     | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
-    | Case (_,p,_iv,c,lf) ->
+    | Case (ci,u,pms,p,iv,c,lf) ->
+        let (_,p,iv,c,lf) = EConstr.expand_case env sigma (ci,u,pms,p,iv,c,lf) in
         let Inductiveops.IndType(indf,realargs) =
           let t = type_of env c in
           try Inductiveops.find_rectype env sigma t
@@ -187,9 +196,7 @@ let retype ?(polyprop=true) sigma =
       let mip = lookup_mind_specif env ind in
       let paramtyps = Array.map_to_list (fun arg () ->
           let t = type_of env arg in
-          let s = try Reductionops.sort_of_arity env sigma t
-            with Reduction.NotArity -> retype_error NotAnArity
-          in
+          let s = sort_of_arity_with_constraints env sigma t in
           Sorts.univ_of_sort (ESorts.kind sigma s))
           args
       in
@@ -242,17 +249,6 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
     | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
     | _ -> assert false
 
-(* Profiling *)
-(* let get_type_of polyprop lax env sigma c = *)
-(*   let f,_,_,_ = retype ~polyprop sigma in *)
-(*     if lax then f env c else anomaly_on_error (f env) c  *)
-
-(* let get_type_of_key = CProfile.declare_profile "get_type_of" *)
-(* let get_type_of = CProfile.profile5 get_type_of_key get_type_of *)
-
-(* let get_type_of ?(polyprop=true) ?(lax=false) env sigma c = *)
-(*   get_type_of polyprop lax env sigma c *)
-
 let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
   let f,_,_ = retype ~polyprop sigma in
     if lax then f env c else anomaly_on_error (f env) c
@@ -303,7 +299,7 @@ let relevance_of_term env sigma c =
       | Const (c,_) -> Relevanceops.relevance_of_constant env c
       | Ind _ -> Sorts.Relevant
       | Construct (c,_) -> Relevanceops.relevance_of_constructor env c
-      | Case (ci, _, _, _, _) -> ci.ci_relevance
+      | Case (ci, _, _, _, _, _, _) -> ci.ci_relevance
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
       | Proj (p, _) -> Relevanceops.relevance_of_projection env p

@@ -19,10 +19,8 @@ type lambda =
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
-  | Lprim         of pconstant option * CPrimitives.t * lambda array
-        (* No check if None *)
+  | Lprim         of pconstant * CPrimitives.t * lambda array
   | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
-  | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int
@@ -112,10 +110,6 @@ let rec pp_lam lam =
                   pp_names ids ++ str " => " ++ pp_lam c)
                (Array.to_list branches.nonconstant_branches)))
          ++ cut() ++ str "end")
-  | Lif (t, bt, bf) ->
-      v 0 (str "(if " ++ pp_lam t ++
-             cut () ++ str "then " ++ pp_lam bt ++
-             cut() ++ str "else " ++ pp_lam bf ++ str ")")
   | Lfix((t,i),(lna,tl,bl)) ->
     let fixl = Array.mapi (fun i id -> (id,t.(i),tl.(i),bl.(i))) lna in
     hov 1
@@ -148,15 +142,10 @@ let rec pp_lam lam =
   | Lval _ -> str "values"
   | Lsort s -> pp_sort s
   | Lind ((mind,i), _) -> MutInd.print mind ++ str"#" ++ int i
-  | Lprim(Some (kn,_u),_op,args) ->
+  | Lprim ((kn,_u),_op,args) ->
      hov 1
          (str "(PRIM " ++ pr_con kn ++  spc() ++
             prlist_with_sep spc pp_lam  (Array.to_list args) ++
-            str")")
-  | Lprim(None,op,args) ->
-     hov 1
-         (str "(PRIM_NC " ++ str (CPrimitives.to_string op) ++  spc() ++
-            prlist_with_sep spc pp_lam (Array.to_list args) ++
             str")")
   | Lproj(p,arg) ->
     hov 1
@@ -190,7 +179,7 @@ let decompose_Llam lam =
 let subst_id = subs_id 0
 let lift = subs_lift
 let liftn = subs_liftn
-let cons v subst = subs_cons([|v|], subst)
+let cons v subst = subs_cons v subst
 let shift subst = subs_shft (1, subst)
 
 (* A generic map function *)
@@ -237,11 +226,6 @@ let map_lam_with_binders g f n lam =
     in
     if t == t' && a == a' && branches == branches' then lam else
       Lcase(ci,rtbl,t',a',branches')
-  | Lif(t,bt,bf) ->
-      let t' = f n t in
-      let bt' = f n bt in
-      let bf' = f n bf in
-      if t == t' && bt == bt' && bf == bf' then lam else Lif(t',bt',bf')
   | Lfix(init,(ids,ltypes,lbodies)) ->
     let ltypes' = Array.Smart.map (f n) ltypes in
     let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
@@ -312,28 +296,6 @@ let can_subst lam =
   | Lval _ | Lsort _ | Lind _ -> true
   | _ -> false
 
-
-let can_merge_if bt bf =
-  match bt, bf with
-  | Llam(_idst,_), Llam(_idsf,_) -> true
-  | _ -> false
-
-let merge_if t bt bf =
-  let (idst,bodyt) = decompose_Llam bt in
-  let (idsf,bodyf) = decompose_Llam bf in
-  let nt = Array.length idst in
-  let nf = Array.length idsf in
-  let common,idst,idsf =
-    if nt = nf then idst, [||], [||]
-    else
-      if nt < nf then idst,[||], Array.sub idsf nt (nf - nt)
-      else idsf, Array.sub idst nf (nt - nf), [||] in
-  Llam(common,
-       Lif(lam_lift (Array.length common) t,
-           mkLlam idst bodyt,
-           mkLlam idsf bodyf))
-
-
 let rec simplify subst lam =
   match lam with
   | Lrel(id,i) -> lam_subst_rel lam id i subst
@@ -352,14 +314,6 @@ let rec simplify subst lam =
       | lam' -> lam'
       end
 
-  | Lif(t,bt,bf) ->
-      let t' = simplify subst t in
-      let bt' = simplify subst bt in
-      let bf' = simplify subst bf in
-      if can_merge_if bt' bf' then merge_if t' bt' bf'
-      else
-        if t == t' && bt == bt' && bf == bf' then lam
-        else Lif(t',bt',bf')
   | _ -> map_lam_with_binders liftn simplify subst lam
 
 and simplify_app substf f substa args =
@@ -442,9 +396,6 @@ let rec occurrence k kind lam =
     in
     Array.iter on_b branches.nonconstant_branches;
     !r
-  | Lif (t, bt, bf) ->
-      let kind = occurrence k kind t in
-      kind && occurrence k kind bt && occurrence k kind bf
   | Lfix(_,(ids,ltypes,lbodies))
   | Lcofix(_,(ids,ltypes,lbodies)) ->
     let kind = occurrence_args k kind ltypes in
@@ -543,10 +494,6 @@ let makeblock tag nparams arity args =
   else Lmakeblock(tag, args)
 
 let makearray args def =
-  try
-    let p = Array.map get_value args in
-    Lval (val_of_parray @@ Parray.unsafe_of_array p (get_value def))
-  with Not_found ->
     let ar = Lmakeblock(0, args) in (* build the ocaml array *)
     let kind = Lmakeblock(0, [|ar; def|]) in (* Parray.Array *)
     Lmakeblock(0,[|kind|]) (* the reference *)
@@ -566,7 +513,7 @@ let rec get_alias env kn =
 (* Compilation of primitive *)
 
 let prim kn p args =
-  Lprim(Some kn, p, args)
+  Lprim (kn, p, args)
 
 let expand_prim kn op arity =
   (* primitives are always Relevant *)
@@ -640,12 +587,14 @@ struct
 
   type t = {
     global_env : env;
+    evar_body : existential -> constr option;
     name_rel : Name.t Vect.t;
     construct_tbl : (constructor, constructor_info) Hashtbl.t;
   }
 
-  let make env = {
+  let make env sigma = {
     global_env = env;
+    evar_body = sigma;
     name_rel = Vect.make 16 Anonymous;
     construct_tbl = Hashtbl.create 111
   }
@@ -682,9 +631,13 @@ open Renv
 let rec lambda_of_constr env c =
   match Constr.kind c with
   | Meta _ -> raise (Invalid_argument "Vmbytegen.lambda_of_constr: Meta")
-  | Evar (evk, args) ->
-    let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
-    Levar (evk, args)
+  | Evar (evk, args as ev) ->
+      begin match env.evar_body ev with
+      | None ->
+          let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
+          Levar (evk, args)
+      | Some t -> lambda_of_constr env t
+      end
 
   | Cast (c, _, _) -> lambda_of_constr env c
 
@@ -723,7 +676,8 @@ let rec lambda_of_constr env c =
 
   | Construct _ ->  lambda_of_app env c empty_args
 
-  | Case(ci,t,_iv,a,branches) -> (* XXX handle iv *)
+  | Case (ci, u, pms, t, iv, a, br) -> (* XXX handle iv *)
+    let (ci, t, _iv, a, branches) = Inductive.expand_case env.global_env (ci, u, pms, t, iv, a, br) in
     let ind = ci.ci_ind in
     let mib = lookup_mind (fst ind) env.global_env in
     let oib = mib.mind_packets.(snd ind) in
@@ -822,8 +776,8 @@ let optimize_lambda lam =
   let lam = simplify subst_id lam in
   remove_let subst_id lam
 
-let lambda_of_constr ~optimize genv c =
-  let env = Renv.make genv in
+let lambda_of_constr ~optimize genv sigma c =
+  let env = Renv.make genv sigma in
   let ids = List.rev_map Context.Rel.Declaration.get_annot (rel_context genv) in
   Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env c in

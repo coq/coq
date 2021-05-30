@@ -41,7 +41,7 @@ DECLARE PLUGIN "ltac_plugin"
 
 (**********************************************************************)
 (* replace, discriminate, injection, simplify_eq                      *)
-(* dependent rewrite                                                  *)
+(* cutrewrite, dependent rewrite                                      *)
 
 let with_delayed_uconstr ist c tac =
   let flags = {
@@ -201,6 +201,12 @@ TACTIC EXTEND dependent_rewrite
     -> { rewriteInHyp b c id }
 END
 
+TACTIC EXTEND cut_rewrite
+| [ "cutrewrite" orient(b) constr(eqn) ] -> { cutRewriteInConcl b eqn }
+| [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
+    -> { cutRewriteInHyp b eqn id }
+END
+
 (**********************************************************************)
 (* Decompose                                                          *)
 
@@ -293,7 +299,7 @@ TACTIC EXTEND rewrite_star
 
 {
 
-let add_rewrite_hint ~poly bases ort t lcsr =
+let add_rewrite_hint ~locality ~poly bases ort t lcsr =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let f ce =
@@ -309,7 +315,7 @@ let add_rewrite_hint ~poly bases ort t lcsr =
     in
       CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
   let eqs = List.map f lcsr in
-  let add_hints base = add_rew_rules base eqs in
+  let add_hints base = add_rew_rules ~locality base eqs in
   List.iter add_hints bases
 
 let classify_hint _ = VtSideff ([], VtLater)
@@ -317,15 +323,15 @@ let classify_hint _ = VtSideff ([], VtLater)
 }
 
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
-| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
-  { add_rewrite_hint ~poly:polymorphic bl o None l }
-| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
+| #[ polymorphic; locality = option_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+  { add_rewrite_hint ~locality ~poly:polymorphic bl o None l }
+| #[ polymorphic; locality = option_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
-  { add_rewrite_hint ~poly:polymorphic bl o (Some t) l }
-| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
-  { add_rewrite_hint ~poly:polymorphic ["core"] o None l }
-| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
-  { add_rewrite_hint ~poly:polymorphic ["core"] o (Some t) l }
+  { add_rewrite_hint ~locality ~poly:polymorphic bl o (Some t) l }
+| #[ polymorphic; locality = option_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
+  { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o None l }
+| #[ polymorphic; locality = option_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+  { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o (Some t) l }
 END
 
 (**********************************************************************)
@@ -602,7 +608,7 @@ END
 {
 
 let subst_var_with_hole occ tid t =
-  let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
+  let occref = if occ > 0 then ref occ else Locusops.error_invalid_occurrence [occ] in
   let locref = ref 0 in
   let rec substrec x = match DAst.get x with
     | GVar id ->
@@ -622,7 +628,7 @@ let subst_var_with_hole occ tid t =
     | _ -> map_glob_constr_left_to_right substrec x in
   let t' = substrec t
   in
-  if !occref > 0 then Find_subterm.error_invalid_occurrence [occ] else t'
+  if !occref > 0 then Locusops.error_invalid_occurrence [occ] else t'
 
 let subst_hole_with_term occ tc t =
   let locref = ref 0 in
@@ -686,7 +692,7 @@ let hResolve_auto id c t =
 }
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> { hResolve id c occ t }
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" nat_or_var(occ) "in" constr(t) ] -> { hResolve id c occ t }
 | [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> { hResolve_auto id c t }
 END
 
@@ -695,7 +701,7 @@ END
 *)
 
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> { Evar_tactics.hget_evar n }
+| [ "hget_evar" nat_or_var(n) ] -> { Evar_tactics.hget_evar n }
 END
 
 (**********************************************************************)
@@ -766,9 +772,9 @@ let case_eq_intros_rewrite x =
 let rec find_a_destructable_match sigma t =
   let cl = induction_arg_of_quantified_hyp (NamedHyp (Id.of_string "x")) in
   let cl = [cl, (None, None), None], None in
-  let dest = TacAtom (CAst.make @@ TacInductionDestruct(false, false, cl)) in
+  let dest = CAst.make @@ TacAtom (TacInductionDestruct(false, false, cl)) in
   match EConstr.kind sigma t with
-    | Case (_,_,_,x,_) when closed0 sigma x ->
+    | Case (_,_,_,_,_,x,_) when closed0 sigma x ->
         if isVar sigma x then
           (* TODO check there is no rel n. *)
           raise (Found (Tacinterp.eval_tactic dest))

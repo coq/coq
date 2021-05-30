@@ -126,17 +126,17 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   fun (oc, orig_clr, occ, c_gen) -> pfLIFT begin fun gl ->
 
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
-  ppdebug(lazy(Pp.str(if is_case then "==CASE==" else "==ELIM==")));
+  debug_ssr (fun () -> (Pp.str(if is_case then "==CASE==" else "==ELIM==")));
   let fire_subst gl t = Reductionops.nf_evar (project gl) t in
   let is_undef_pat = function
   | sigma, T t -> EConstr.isEvar sigma (EConstr.of_constr t)
   | _ -> false in
   let match_pat env p occ h cl =
     let sigma0 = project orig_gl in
-    ppdebug(lazy Pp.(str"matching: " ++ pr_occ occ ++ pp_pattern env p));
+    debug_ssr (fun () -> Pp.(str"matching: " ++ pr_occ occ ++ pp_pattern env p));
     let (c,ucst), cl =
       fill_occ_pattern ~raise_NoMatch:true env sigma0 (EConstr.Unsafe.to_constr cl) p occ h in
-    ppdebug(lazy Pp.(str"     got: " ++ pr_constr_env env sigma0 c));
+    debug_ssr (fun () -> Pp.(str"     got: " ++ pr_constr_env env sigma0 c));
     c, EConstr.of_constr cl, ucst in
   let mkTpat gl t = (* takes a term, refreshes it and makes a T pattern *)
     let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in
@@ -212,10 +212,10 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
           let renamed_tys =
             Array.mapi (fun j (ctx, cty) ->
               let t = Term.it_mkProd_or_LetIn cty ctx in
-                    ppdebug(lazy Pp.(str "Search" ++ Printer.pr_constr_env env (project gl) t));
+                    debug_ssr (fun () -> Pp.(str "Search" ++ Printer.pr_constr_env env (project gl) t));
               let t = Arguments_renaming.rename_type t
                 (GlobRef.ConstructRef((kn,i),j+1)) in
-              ppdebug(lazy Pp.(str"Done Search " ++ Printer.pr_constr_env env (project gl) t));
+              debug_ssr (fun () -> Pp.(str"Done Search " ++ Printer.pr_constr_env env (project gl) t));
                 t)
             tys
           in
@@ -241,8 +241,8 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   in
   let () =
     let sigma = project gl in
-    ppdebug(lazy Pp.(str"elim= "++ pr_econstr_pat env sigma elim));
-    ppdebug(lazy Pp.(str"elimty= "++ pr_econstr_pat env sigma elimty)) in
+    debug_ssr (fun () -> Pp.(str"elim= "++ pr_econstr_pat env sigma elim));
+    debug_ssr (fun () -> Pp.(str"elimty= "++ pr_econstr_pat env sigma elimty)) in
   let open EConstr in
   let inf_deps_r = match kind_of_type (project gl) elimty with
     | AtomicType (_, args) -> List.rev (Array.to_list args)
@@ -301,7 +301,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         | Some (c, _, _,gl) -> Some(true, gl)
         | None -> None in
       first [try_c_last_arg;try_c_last_pattern] in
-  ppdebug(lazy Pp.(str"c_is_head_p= " ++ bool c_is_head_p));
+  debug_ssr (fun () -> Pp.(str"c_is_head_p= " ++ bool c_is_head_p));
   let gl, predty = pfe_type_of gl pred in
   (* Patterns for the inductive types indexes to be bound in pred are computed
    * looking at the ones provided by the user and the inferred ones looking at
@@ -321,7 +321,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
           loop (patterns @ [i, p, inf_t, occ])
             (clr_t @ clr) (i+1) (deps, inf_deps)
       | [], c :: inf_deps ->
-          ppdebug(lazy Pp.(str"adding inf pattern " ++ pr_econstr_pat env (project gl) c));
+          debug_ssr (fun () -> Pp.(str"adding inf pattern " ++ pr_econstr_pat env (project gl) c));
           loop (patterns @ [i, mkTpat gl c, c, allocc])
             clr (i+1) ([], inf_deps)
       | _::_, [] -> errorstrm Pp.(str "Too many dependent abstractions") in
@@ -337,8 +337,8 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
       loop [] orig_clr (List.length head_p+1) (List.rev deps, inf_deps_r) in
     head_p @ patterns, Util.List.uniquize clr, gl
   in
-  ppdebug(lazy Pp.(pp_concat (str"patterns=") (List.map pp_pat patterns)));
-  ppdebug(lazy Pp.(pp_concat (str"inf. patterns=") (List.map (pp_inf_pat gl) patterns)));
+  debug_ssr (fun () -> Pp.(pp_concat (str"patterns=") (List.map pp_pat patterns)));
+  debug_ssr (fun () -> Pp.(pp_concat (str"inf. patterns=") (List.map (pp_inf_pat gl) patterns)));
   (* Predicate generation, and (if necessary) tactic to generalize the
    * equation asked by the user *)
   let elim_pred, gen_eq_tac, clr, gl =
@@ -348,7 +348,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     let match_or_postpone (cl, gl, post) (h, p, inf_t, occ) =
       let p = unif_redex gl p inf_t in
       if is_undef_pat p then
-        let () = ppdebug(lazy Pp.(str"postponing " ++ pp_pattern env p)) in
+        let () = debug_ssr (fun () -> Pp.(str"postponing " ++ pp_pattern env p)) in
         cl, gl, post @ [h, p, inf_t, occ]
       else try
         let c, cl, ucst = match_pat env p occ h cl in
@@ -420,8 +420,8 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
       else gl, concl in
     concl, gen_eq_tac, clr, gl in
   let gl, pty = pf_e_type_of gl elim_pred in
-  ppdebug(lazy Pp.(str"elim_pred=" ++ pp_term gl elim_pred));
-  ppdebug(lazy Pp.(str"elim_pred_ty=" ++ pp_term gl pty));
+  debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pp_term gl elim_pred));
+  debug_ssr (fun () -> Pp.(str"elim_pred_ty=" ++ pp_term gl pty));
   let gl = pf_unify_HO gl pred elim_pred in
   let elim = fire_subst gl elim in
   let gl = pf_resolve_typeclasses ~where:elim ~fail:false gl in

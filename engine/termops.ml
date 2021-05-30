@@ -123,6 +123,13 @@ let pr_evar_source env sigma = function
       str "subterm of pattern-matching return predicate"
   | Evar_kinds.BinderType (Name id) -> str "type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
+  | Evar_kinds.EvarType (ido,evk) ->
+      let pp = match ido with
+        | Some id -> str "?" ++ Id.print id
+        | None ->
+          try pr_existential_key sigma evk
+          with (* defined *) Not_found -> str "an internal placeholder" in
+     str "type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let open Globnames in
       let print_constr = print_kconstr in
@@ -599,7 +606,7 @@ let map_left2 f a g b =
     r, s
   end
 
-let map_constr_with_binders_left_to_right sigma g f l c =
+let map_constr_with_binders_left_to_right env sigma g f l c =
   let open RelDecl in
   let open EConstr in
   match EConstr.kind sigma c with
@@ -643,14 +650,20 @@ let map_constr_with_binders_left_to_right sigma g f l c =
     let al' = List.map_left (f l) al in
       if List.for_all2 (==) al' al then c
       else mkEvar (e, al')
-  | Case (ci,p,iv,b,bl) ->
+  | Case (ci,u,pms,p,iv,b,bl) ->
+      let (ci, _, pms, p0, _, b, bl0) = annotate_case env sigma (ci, u, pms, p, iv, b, bl) in
+      let f_ctx (nas, _ as r) (ctx, c) =
+        let c' = f (List.fold_right g ctx l) c in
+        if c' == c then r else (nas, c')
+      in
       (* In v8 concrete syntax, predicate is after the term to match! *)
       let b' = f l b in
+      let pms' = Array.map_left (f l) pms in
+      let p' = f_ctx p p0 in
       let iv' = map_invert (f l) iv in
-      let p' = f l p in
-      let bl' = Array.map_left (f l) bl in
-      if b' == b && p' == p && iv' == iv && bl' == bl then c
-      else mkCase (ci, p', iv', b', bl')
+      let bl' = Array.map_left (fun (c, c0) -> f_ctx c c0) (Array.map2 (fun x y -> (x, y)) bl bl0) in
+        if b' == b && pms' == pms && p' == p && iv' == iv && bl' == bl then c
+        else mkCase (ci, u, pms', p', iv', b', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
@@ -670,25 +683,8 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       if def' == def && t' == t && ty' == ty then c
       else mkArray(u,t',def',ty')
 
-let map_under_context_with_full_binders sigma g f l n d =
-  let open EConstr in
-  let f l c = Unsafe.to_constr (f l (of_constr c)) in
-  let g d l = g (of_rel_decl d) l in
-  let d = EConstr.Unsafe.to_constr (EConstr.whd_evar sigma d) in
-  EConstr.of_constr (Constr.map_under_context_with_full_binders g f l n d)
-
-let map_branches_with_full_binders sigma g f l ci bl =
-  let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
-  let bl' = Array.map2 (map_under_context_with_full_binders sigma g f l) tags bl in
-  if Array.for_all2 (==) bl' bl then bl else bl'
-
-let map_return_predicate_with_full_binders sigma g f l ci p =
-  let n = List.length ci.ci_pp_info.ind_tags in
-  let p' = map_under_context_with_full_binders sigma g f l n p in
-  if p' == p then p else p'
-
 (* strong *)
-let map_constr_with_full_binders_gen userview sigma g f l cstr =
+let map_constr_with_full_binders env sigma g f l cstr =
   let open EConstr in
   match EConstr.kind sigma cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -720,20 +716,19 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
   | Evar (e,al) ->
       let al' = List.map (f l) al in
       if List.for_all2 (==) al al' then cstr else mkEvar (e, al')
-  | Case (ci,p,iv,c,bl) when userview ->
-      let p' = map_return_predicate_with_full_binders sigma g f l ci p in
+  | Case (ci, u, pms, p, iv, c, bl) ->
+      let (ci, _, pms, p0, _, c, bl0) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
+      let f_ctx (nas, _ as r) (ctx, c) =
+        let c' = f (List.fold_right g ctx l) c in
+        if c' == c then r else (nas, c')
+      in
+      let pms' = Array.Smart.map (f l) pms in
+      let p' = f_ctx p p0 in
       let iv' = map_invert (f l) iv in
       let c' = f l c in
-      let bl' = map_branches_with_full_binders sigma g f l ci bl in
-      if p==p' && iv'==iv && c==c' && bl'==bl then cstr else
-        mkCase (ci, p', iv', c', bl')
-  | Case (ci,p,iv,c,bl) ->
-      let p' = f l p in
-      let iv' = map_invert (f l) iv in
-      let c' = f l c in
-      let bl' = Array.map (f l) bl in
-      if p==p' && iv'==iv && c==c' && Array.for_all2 (==) bl bl' then cstr else
-        mkCase (ci, p', iv', c', bl')
+      let bl' = Array.map2 f_ctx bl bl0 in
+      if pms==pms' && p==p' && iv'==iv && c==c' && Array.for_all2 (==) bl bl' then cstr else
+        mkCase (ci, u, pms', p', iv', c', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let tl' = Array.map (f l) tl in
       let l' = fold_rec_types g fx l in
@@ -754,12 +749,6 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
       let ty' = f l ty in
       if def==def' && t == t' && ty==ty' then cstr else mkArray (u,t', def',ty')
 
-let map_constr_with_full_binders sigma g f =
-  map_constr_with_full_binders_gen false sigma g f
-
-let map_constr_with_full_binders_user_view sigma g f =
-  map_constr_with_full_binders_gen true sigma g f
-
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
    right according to the usual representation of the constructions as
@@ -767,12 +756,31 @@ let map_constr_with_full_binders_user_view sigma g f =
    index) which is processed by [g] (which typically add 1 to [n]) at
    each binder traversal; it is not recursive *)
 
-let fold_constr_with_full_binders sigma g f n acc c =
-  let open EConstr in
-  let f l acc c = f l acc (of_constr c) in
-  let g d l  = g (of_rel_decl d) l in
-  let c = Unsafe.to_constr (whd_evar sigma c) in
-  Constr.fold_with_full_binders g f n acc c
+let fold_constr_with_full_binders env sigma g f n acc c =
+  let open EConstr.Vars in
+  let open Context.Rel.Declaration in
+  match EConstr.kind sigma c with
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
+  | Cast (c,_, t) -> f n (f n acc c) t
+  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
+  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | Proj (_,c) -> f n acc c
+  | Evar (_,l) -> List.fold_left (f n) acc l
+  | Case (ci, u, pms, p, iv, c, bl) ->
+    let (ci, _, pms, p, _, c, bl) = EConstr.annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
+    let f_ctx acc (ctx, c) = f (List.fold_right g ctx n) acc c in
+    Array.fold_left f_ctx (f n (fold_invert (f n) (f_ctx (Array.fold_left (f n) acc pms) p) iv) c) bl
+  | Fix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | CoFix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
 
 let fold_constr_with_binders sigma g f n acc c =
   let open EConstr in
@@ -831,6 +839,16 @@ let occur_var env sigma id c =
   in
   try occur_rec c; false with Occur -> true
 
+let occur_vars env sigma ids c =
+  let rec occur_rec c =
+    match EConstr.destRef sigma c with
+    | gr, _ ->
+      let vars = vars_of_global env gr in
+      if not (Id.Set.is_empty (Id.Set.inter ids vars)) then raise Occur
+    | exception DestKO -> EConstr.iter sigma occur_rec c
+  in
+  try occur_rec c; false with Occur -> true
+
 exception OccurInGlobal of GlobRef.t
 
 let occur_var_indirectly env sigma id c =
@@ -844,6 +862,9 @@ let occur_var_indirectly env sigma id c =
 
 let occur_var_in_decl env sigma hyp decl =
   NamedDecl.exists (occur_var env sigma hyp) decl
+
+let occur_vars_in_decl env sigma hyps decl =
+  NamedDecl.exists (occur_vars env sigma hyps) decl
 
 let local_occur_var sigma id c =
   let rec occur c = match EConstr.kind sigma c with
@@ -971,69 +992,52 @@ let collapse_appl sigma c = match EConstr.kind sigma c with
 
 (* First utilities for avoiding telescope computation for subst_term *)
 
-let prefix_application sigma eq_fun (k,c) t =
+let prefix_application sigma eq_fun k l1 t =
   let open EConstr in
-  let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
-  match EConstr.kind sigma c', EConstr.kind sigma t' with
-    | App (f1,cl1), App (f2,cl2) ->
-        let l1 = Array.length cl1
-        and l2 = Array.length cl2 in
+  let t' = collapse_appl sigma t in
+  if 0 < l1 then match EConstr.kind sigma t' with
+    | App (f2,cl2) ->
+        let l2 = Array.length cl2 in
         if l1 <= l2
-           && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
-          Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
+           && eq_fun sigma k (mkApp (f2, Array.sub cl2 0 l1)) then
+          Some (Array.sub cl2 l1 (l2 - l1))
         else
           None
     | _ -> None
+  else None
 
-let my_prefix_application sigma eq_fun (k,c) by_c t =
-  let open EConstr in
-  let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
-  match EConstr.kind sigma c', EConstr.kind sigma t' with
-    | App (f1,cl1), App (f2,cl2) ->
-        let l1 = Array.length cl1
-        and l2 = Array.length cl2 in
-        if l1 <= l2
-           && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
-          Some (mkApp ((Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
-        else
-          None
-    | _ -> None
-
-(* Recognizing occurrences of a given subterm in a term: [subst_term c t]
-   substitutes [(Rel 1)] for all occurrences of term [c] in a term [t];
-   works if [c] has rels *)
-
-let subst_term_gen sigma eq_fun c t =
-  let open EConstr in
-  let open Vars in
-  let rec substrec (k,c as kc) t =
-    match prefix_application sigma eq_fun kc t with
-      | Some x -> x
-      | None ->
-    if eq_fun sigma c t then mkRel k
-    else
-      EConstr.map_with_binders sigma (fun (k,c) -> (k+1,lift 1 c)) substrec kc t
+let eq_upto_lift cache c sigma k t =
+  let c =
+    try Int.Map.find k !cache
+    with Not_found ->
+      let c = EConstr.Vars.lift k c in
+      let () = cache := Int.Map.add k c !cache in
+      c
   in
-  substrec (1,c) t
-
-let subst_term sigma c t = subst_term_gen sigma EConstr.eq_constr c t
+  EConstr.eq_constr sigma c t
 
 (* Recognizing occurrences of a given subterm in a term :
    [replace_term c1 c2 t] substitutes [c2] for all occurrences of
    term [c1] in a term [t]; works if [c1] and [c2] have rels *)
 
-let replace_term_gen sigma eq_fun c by_c in_t =
-  let rec substrec (k,c as kc) t =
-    match my_prefix_application sigma eq_fun kc by_c t with
-      | Some x -> x
+let replace_term_gen sigma eq_fun ar by_c in_t =
+  let rec substrec k t =
+    match prefix_application sigma eq_fun k ar t with
+      | Some args -> EConstr.mkApp (EConstr.Vars.lift k by_c, args)
       | None ->
-    (if eq_fun sigma c t then (EConstr.Vars.lift k by_c) else
-      EConstr.map_with_binders sigma (fun (k,c) -> (k+1,EConstr.Vars.lift 1 c))
-        substrec kc t)
+    (if eq_fun sigma k t then (EConstr.Vars.lift k by_c) else
+      EConstr.map_with_binders sigma succ substrec k t)
   in
-  substrec (0,c) in_t
+  substrec 0 in_t
 
-let replace_term sigma c byc t = replace_term_gen sigma EConstr.eq_constr c byc t
+let replace_term sigma c byc t =
+  let cache = ref Int.Map.empty in
+  let c = collapse_appl sigma c in
+  let ar = Array.length (snd (decompose_app_vect sigma c)) in
+  let eq sigma k t = eq_upto_lift cache c sigma k t in
+  replace_term_gen sigma eq ar byc t
+
+let subst_term sigma c t = replace_term sigma c (EConstr.mkRel 1) t
 
 let vars_of_env env =
   let s = Environ.ids_of_named_context_val (Environ.named_context_val env) in

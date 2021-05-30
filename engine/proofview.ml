@@ -909,10 +909,11 @@ let tclPROGRESS t =
   in
   let test =
     quick_test ||
+    (CList.same_length initial.comb final.comb &&
     Util.List.for_all2eq begin fun i f ->
       Progress.goal_equal ~evd:initial.solution
         ~extended_evd:final.solution (drop_state i) (drop_state f)
-    end initial.comb final.comb
+    end initial.comb final.comb)
   in
   if not test then
     tclUNIT res
@@ -926,7 +927,7 @@ let _ = CErrors.register_handler begin function
   | _ -> None
 end
 
-let tclTIMEOUT n t =
+let tclTIMEOUTF n t =
   let open Proof in
   (* spiwack: as one of the monad is a continuation passing monad, it
      doesn't force the computation to be threaded inside the underlying
@@ -937,22 +938,12 @@ let tclTIMEOUT n t =
   Proof.get >>= fun initial ->
   Proof.current >>= fun envvar ->
   Proof.lift begin
-    Logic_monad.NonLogical.catch
-      begin
-        let open Logic_monad.NonLogical in
-        timeout n (Proof.repr (Proof.run t envvar initial)) >>= fun r ->
-        match r with
-        | Logic_monad.Nil e -> return (Util.Inr e)
-        | Logic_monad.Cons (r, _) -> return (Util.Inl r)
-      end
-      begin let open Logic_monad.NonLogical in function (e, info) ->
-        match e with
-        | Logic_monad.Tac_Timeout ->
-          return (Util.Inr (Logic_monad.Tac_Timeout, info))
-        | Logic_monad.TacticFailure e ->
-          return (Util.Inr (e, info))
-        | e -> Logic_monad.NonLogical.raise (e, info)
-      end
+    let open Logic_monad.NonLogical in
+    timeout n (Proof.repr (Proof.run t envvar initial)) >>= fun r ->
+    match r with
+    | None -> return (Util.Inr (Logic_monad.Tac_Timeout, Exninfo.null))
+    | Some (Logic_monad.Nil e) -> return (Util.Inr e)
+    | Some (Logic_monad.Cons (r, _)) -> return (Util.Inl r)
   end >>= function
     | Util.Inl (res,s,m,i) ->
         Proof.set s >>
@@ -960,6 +951,8 @@ let tclTIMEOUT n t =
         Proof.update (fun _ -> i) >>
         return res
     | Util.Inr (e, info) -> tclZERO ~info e
+
+let tclTIMEOUT n t = tclTIMEOUTF (float_of_int n) t
 
 let tclTIME s t =
   let pr_time t1 t2 n msg =

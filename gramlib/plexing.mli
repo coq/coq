@@ -10,10 +10,8 @@
 
 (** Lexer type *)
 
-type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te Stream.t * location_function
-and location_function = int -> Loc.t
-  (** The type of a function giving the location of a token in the
-      source from the token number in the stream (starting from zero). *)
+(** Returning a stream equipped with a location function *)
+type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te LStream.t
 
 module type S = sig
   type te
@@ -34,6 +32,7 @@ module type S = sig
     val get : unit -> t
     val drop : unit -> unit
     val get_comments : t -> ((int * int) * string) list
+    val set_loc_offset : int -> unit
   end
 
 end

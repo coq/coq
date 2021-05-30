@@ -40,6 +40,7 @@ Definition default_relation `{DefaultRelation A R} := R.
 (** Every [Equivalence] gives a default relation, if no other is given
   (lowest priority). *)
 
+#[global]
 Instance equivalence_default `(Equivalence A R) : DefaultRelation R | 4.
 Defined.
 

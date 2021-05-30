@@ -1,4 +1,4 @@
-(* -*- coding: utf-8; coq-prog-args: ("-coqlib" "../.." "-R" ".." "Coq" "-top" "Coq.Classes.Morphisms") -*- *)
+(* -*- coding: utf-8; coq-prog-args: ("-top" "Coq.Classes.Morphisms") -*- *)
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
 (*  v      *         Copyright INRIA, CNRS and contributors             *)
@@ -81,9 +81,11 @@ End Proper.
 (** We favor the use of Leibniz equality or a declared reflexive relation 
   when resolving [ProperProxy], otherwise, if the relation is given (not an evar),
   we fall back to [Proper]. *)
+#[global]
 Hint Extern 1 (ProperProxy _ _) => 
   class_apply @eq_proper_proxy || class_apply @reflexive_proper_proxy : typeclass_instances.
 
+#[global]
 Hint Extern 2 (ProperProxy ?R _) => 
   not_evar R; class_apply @proper_proper_proxy : typeclass_instances.
 
@@ -213,8 +215,11 @@ Typeclasses Opaque respectful pointwise_relation forall_relation.
 Arguments forall_relation {A P}%type sig%signature _ _.
 Arguments pointwise_relation A%type {B}%type R%signature _ _.
   
+#[global]
 Hint Unfold Reflexive : core.
+#[global]
 Hint Unfold Symmetric : core.
+#[global]
 Hint Unfold Transitive : core.
 
 (** Resolution with subrelation: favor decomposing products over applying reflexivity
@@ -223,6 +228,7 @@ Ltac subrelation_tac T U :=
   (is_ground T ; is_ground U ; class_apply @subrelation_refl) ||
     class_apply @subrelation_respectful || class_apply @subrelation_refl.
 
+#[global]
 Hint Extern 3 (@subrelation _ ?T ?U) => subrelation_tac T U : typeclass_instances.
 
 CoInductive apply_subrelation : Prop := do_subrelation.
@@ -232,18 +238,22 @@ Ltac proper_subrelation :=
     [ H : apply_subrelation |- _ ] => clear H ; class_apply @subrelation_proper
   end.
 
+#[global]
 Hint Extern 5 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
 
 (** Essential subrelation instances for [iff], [impl] and [pointwise_relation]. *)
 
+#[global]
 Instance iff_impl_subrelation : subrelation iff impl | 2.
 Proof. firstorder. Qed.
 
+#[global]
 Instance iff_flip_impl_subrelation : subrelation iff (flip impl) | 2.
 Proof. firstorder. Qed.
 
 (** We use an extern hint to help unification. *)
 
+#[global]
 Hint Extern 4 (subrelation (@forall_relation ?A ?B ?R) (@forall_relation _ _ ?S)) =>
   apply (@forall_subrelation A B R S) ; intro : typeclass_instances.
 
@@ -309,7 +319,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_contra_inv_impl_morphism
-  `(Transitive A R) : Proper (R --> flip impl) (R x) | 3.
+  `(Transitive A R) {x} : Proper (R --> flip impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -319,7 +329,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_co_impl_morphism
-    `(Transitive A R) : Proper (R ++> impl) (R x) | 3.
+    `(Transitive A R) {x} : Proper (R ++> impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -329,7 +339,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_sym_co_inv_impl_morphism
-    `(PER A R) : Proper (R ++> flip impl) (R x) | 3.
+    `(PER A R) {x} : Proper (R ++> flip impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -338,7 +348,7 @@ Section GenericInstances.
   Qed.
 
   Global Program Instance trans_sym_contra_impl_morphism
-    `(PER A R) : Proper (R --> impl) (R x) | 3.
+    `(PER A R) {x} : Proper (R --> impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -347,7 +357,7 @@ Section GenericInstances.
   Qed.
 
   Global Program Instance per_partial_app_morphism
-  `(PER A R) : Proper (R ==> iff) (R x) | 2.
+  `(PER A R) {x} : Proper (R ==> iff) (R x) | 2.
 
   Next Obligation.
   Proof with auto.
@@ -520,9 +530,10 @@ Ltac partial_application_tactic :=
 
 (** Bootstrap !!! *)
 
-Instance proper_proper : Proper (relation_equivalence ==> eq ==> iff) (@Proper A).
+#[global]
+Instance proper_proper {A} : Proper (relation_equivalence ==> eq ==> iff) (@Proper A).
 Proof.
-  intros A x y H y0 y1 e; destruct e.
+  intros x y H y0 y1 e; destruct e.
   reduce in H.
   split ; red ; intros H0.
   - setoid_rewrite <- H.
@@ -538,17 +549,24 @@ Ltac proper_reflexive :=
   end.
 
 
+#[global]
 Hint Extern 1 (subrelation (flip _) _) => class_apply @flip1 : typeclass_instances.
+#[global]
 Hint Extern 1 (subrelation _ (flip _)) => class_apply @flip2 : typeclass_instances.
 
+#[global]
 Hint Extern 1 (Proper _ (complement _)) => apply @complement_proper 
   : typeclass_instances.
+#[global]
 Hint Extern 1 (Proper _ (flip _)) => apply @flip_proper 
   : typeclass_instances.
+#[global]
 Hint Extern 2 (@Proper _ (flip _) _) => class_apply @proper_flip_proper 
   : typeclass_instances.
+#[global]
 Hint Extern 4 (@Proper _ _ _) => partial_application_tactic 
   : typeclass_instances.
+#[global]
 Hint Extern 7 (@Proper _ _ _) => proper_reflexive 
   : typeclass_instances.
 
@@ -603,7 +621,9 @@ Ltac proper_normalization :=
       set(H:=did_normalization) ; class_apply @proper_normalizes_proper
   end.
 
+#[global]
 Hint Extern 1 (Normalizes _ _ _) => normalizes : typeclass_instances.
+#[global]
 Hint Extern 6 (@Proper _ _ _) => proper_normalization 
   : typeclass_instances.
 
@@ -646,6 +666,7 @@ Qed.
 
 (** A [PartialOrder] is compatible with its underlying equivalence. *)
 
+#[global]
 Instance PartialOrder_proper `(PartialOrder A eqA R) :
   Proper (eqA==>eqA==>iff) R.
 Proof.
@@ -693,6 +714,7 @@ split.
   + right. transitivity y; auto.
 Qed.
 
+#[global]
 Hint Extern 4 (PreOrder (relation_disjunction _ _)) => 
   class_apply StrictOrder_PreOrder : typeclass_instances.
 
@@ -705,8 +727,10 @@ elim (StrictOrder_Irreflexive x).
 transitivity y; auto.
 Qed.
 
+#[global]
 Hint Extern 4 (StrictOrder (relation_conjunction _ _)) => 
   class_apply PartialOrder_StrictOrder : typeclass_instances.
 
+#[global]
 Hint Extern 4 (PartialOrder _ (relation_disjunction _ _)) => 
   class_apply StrictOrder_PartialOrder : typeclass_instances.

@@ -239,7 +239,7 @@ let pr_inspect env expr result =
     if has_type result (topwit wit_tacvalue) then
     match to_tacvalue result with
     | VFun (_, _, _, ist, ul, b) ->
-      let body = if List.is_empty ul then b else (TacFun (ul, b)) in
+      let body = if List.is_empty ul then b else CAst.make (TacFun (ul, b)) in
       str "a closure with body " ++ fnl() ++ pr_closure env ist body
     | VRec (ist, body) ->
       str "a recursive closure" ++ fnl () ++ pr_closure env !ist body
@@ -266,7 +266,7 @@ let propagate_trace ist loc id v =
     let tacv = to_tacvalue v in
     match tacv with
     | VFun (appl,_,_,lfun,it,b) ->
-        let t = if List.is_empty it then b else TacFun (it,b) in
+        let t = if List.is_empty it then b else CAst.make (TacFun (it,b)) in
         let trace = push_trace(loc,LtacVarCall (id,t)) ist in
         let ans = VFun (appl,trace,loc,lfun,it,b) in
         Proofview.tclUNIT (of_tacvalue ans)
@@ -773,7 +773,7 @@ let interp_may_eval f ist env sigma = function
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
        Proofview.NonLogical.run (debugging_exception_step ist false (fst reraise) (fun () ->
-         str"interpretation of term " ++ pr_glob_constr_env env (fst c)));
+         str"interpretation of term " ++ pr_glob_constr_env env sigma (fst c)));
        Exninfo.iraise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)
@@ -1076,17 +1076,19 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
      [VFun]. Otherwise a [Ltac t := let x := .. in tac] would never
      register its name since it is syntactically a let, not a
      function.  *)
-  let value_interp ist = match tac with
+  let (loc,tac2) = CAst.(tac.loc, tac.v) in
+  let value_interp ist =
+  match tac2 with
   | TacFun (it, body) ->
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, it, body)))
   | TacLetIn (true,l,u) -> interp_letrec ist l u
   | TacLetIn (false,l,u) -> interp_letin ist l u
   | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist lz lr lmr
   | TacMatch (lz,c,lmr) -> interp_match ist lz c lmr
-  | TacArg {loc;v} -> interp_tacarg ist v
-  | t ->
+  | TacArg v -> interp_tacarg ist v
+  | _ ->
     (* Delayed evaluation *)
-    Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, [], t)))
+    Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, [], tac)))
   in
   let open Ftactic in
   Control.check_for_interrupt ();
@@ -1100,8 +1102,10 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
 
 
-and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
-  | TacAtom {loc;v=t} ->
+and eval_tactic_ist ist tac : unit Proofview.tactic =
+  let (loc, tac2) = CAst.(tac.loc, tac.v) in
+  match tac2 with
+  | TacAtom t ->
       let call = LtacAtomCall t in
       let trace = push_trace(loc,call) ist in
       Profile_ltac.do_profile "eval_tactic:2" trace
@@ -1179,10 +1183,10 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
   | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
-  | TacArg {CAst.loc} -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
-  | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
+  | TacArg _ -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
+  | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
-  | TacAlias {loc; v=(s,l)} ->
+  | TacAlias (s,l) ->
       let alias = Tacenv.interp_alias s in
       Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let (>>=) = Ftactic.bind in
@@ -1218,7 +1222,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
       in
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
-  | TacML {loc; v=(opn,l)} ->
+  | TacML (opn,l) ->
       let trace = push_trace (Loc.tag ?loc @@ LtacMLCall tac) ist in
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       let tac = Tacenv.interp_ml_tactic opn in
@@ -1319,7 +1323,11 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
          a VFun back on body, and then interp_app is called again...) *)
     | (VFun(appl,trace,_,olfun,(_::_ as var),body)
       |VFun(appl,trace,_,olfun,([] as var),
-         (TacFun _|TacLetIn _|TacMatchGoal _|TacMatch _| TacArg _ as body))) ->
+          (   {CAst.v=(TacFun _)}
+            | {CAst.v=(TacLetIn _)}
+            | {CAst.v=(TacMatchGoal _)}
+            | {CAst.v=(TacMatch _)}
+            | {CAst.v=(TacArg _)} as body))) ->
         let (extfun,lvar,lval)=head_with_value (var,largs) in
         let fold accu (id, v) = Id.Map.add id v accu in
         let newlfun = List.fold_left fold olfun extfun in
@@ -1429,7 +1437,7 @@ and interp_letrec ist llc u =
   Proofview.tclUNIT () >>= fun () -> (* delay for the effects of [lref], just in case. *)
   let lref = ref ist.lfun in
   let fold accu ({v=na}, b) =
-    let v = of_tacvalue (VRec (lref, TacArg (CAst.make b))) in
+    let v = of_tacvalue (VRec (lref, CAst.make (TacArg b))) in
     Name.fold_right (fun id -> Id.Map.add id v) na accu
   in
   let lfun = List.fold_left fold ist.lfun llc in
@@ -1467,7 +1475,8 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
         ; extra = TacStore.set ist.extra f_trace trace
         } in
       let tac = eval_tactic_ist ist t in
-      let dummy = VFun (appl, extract_trace ist, loc, Id.Map.empty, [], TacId []) in
+      let dummy = VFun (appl, extract_trace ist, loc, Id.Map.empty, [],
+        CAst.make (TacId [])) in
       catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
   | _ -> Ftactic.return v
   else Ftactic.return v
@@ -1667,10 +1676,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (k,(make ?loc f))) cb
         in
         let sigma,tac = match cl with
-          | None -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
-          | Some cl ->
-              let sigma,(id,cl) = interp_in_hyp_as ist env sigma cl in
-              sigma, Tactics.apply_delayed_in a ev id l cl in
+          | [] -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
+          | cl ->
+              let sigma,cl = List.fold_left_map (interp_in_hyp_as ist env) sigma cl in
+              sigma, List.fold_right (fun (id,ipat) -> Tactics.apply_delayed_in a ev id l ipat) cl Tacticals.New.tclIDTAC in
         Tacticals.New.tclWITHHOLES ev tac sigma
       end
       end
@@ -1972,7 +1981,7 @@ module Value = struct
     let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
     let lfun = Id.Map.add (Id.of_string "F") f lfun in
     let ist = { (default_ist ()) with lfun = lfun; } in
-    ist, TacArg(CAst.make @@ TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args)))
+    ist, CAst.make @@ TacArg (TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args)))
 
 
   (** Apply toplevel tactic values *)
@@ -2099,6 +2108,7 @@ let interp_pre_ident ist env sigma s =
 
 let () =
   register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
+  register_interp0 wit_nat_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
   register_interp0 wit_smart_global (lift interp_reference);
   register_interp0 wit_ref (lift interp_reference);
   register_interp0 wit_pre_ident (lift interp_pre_ident);
@@ -2147,7 +2157,8 @@ let interp_redexp env sigma r =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let eval lfun poly env sigma ty tac =
+  let eval ?loc ~poly env sigma tycon tac =
+    let lfun = GlobEnv.lfun env in
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun; poly; extra; } in
     let tac = eval_tactic_ist ist tac in
@@ -2155,8 +2166,13 @@ let _ =
        poly seems like enough to get reasonable behavior in practice
      *)
     let name = Id.of_string "ltac_gen" in
-    let (c, sigma) = Proof.refine_by_tactic ~name ~poly env sigma ty tac in
-    (EConstr.of_constr c, sigma)
+    let sigma, ty = match tycon with
+    | Some ty -> sigma, ty
+    | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
+    in
+    let (c, sigma) = Proof.refine_by_tactic ~name ~poly (GlobEnv.renamed_env env) sigma ty tac in
+    let j = { Environ.uj_val = EConstr.of_constr c; uj_type = ty } in
+    (j, sigma)
   in
   GlobEnv.register_constr_interp0 wit_tactic eval
 

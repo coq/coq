@@ -1,3 +1,5 @@
+(* coq-prog-args: ("-async-proofs" "off") *)
+
 (* Unification error tests *)
 
 Module A.
@@ -36,3 +38,13 @@ rewrite H.
 Show.
 reflexivity.
 Qed.
+
+(* Use names also when instantiating an existing evar *)
+
+Lemma L (T : Prop) (H : forall Q R S : Prop, (Q /\ R) /\ S -> T) :
+  exists P:Prop, (P -> T) /\ P.
+Proof.
+eexists ?[P]. split.
+- apply H.
+- Show.
+Abort.

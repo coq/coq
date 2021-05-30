@@ -1,7 +1,7 @@
 (library
- (name recdef_plugin)
- (public_name coq.plugins.funind)
+ (name funind_plugin)
+ (public_name coq-core.plugins.funind)
  (synopsis "Coq's functional induction plugin")
- (libraries coq.plugins.extraction))
+ (libraries coq-core.plugins.extraction))
 
 (coq.pp (modules g_indfun))

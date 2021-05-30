@@ -15,8 +15,8 @@ sig
   module UGlobal : sig
     type t
 
-    val make : Names.DirPath.t -> int -> t
-    val repr : t -> Names.DirPath.t * int
+    val make : Names.DirPath.t -> string -> int -> t
+    val repr : t -> Names.DirPath.t * string * int
     val equal : t -> t -> bool
     val hash : t -> int
     val compare : t -> t -> int
@@ -447,8 +447,6 @@ val subst_univs_level_instance : universe_level_subst -> Instance.t -> Instance.
 
 (** Level to universe substitutions. *)
 
-val empty_subst : universe_subst
-val is_empty_subst : universe_subst -> bool
 val make_subst : universe_subst -> universe_subst_fn
 
 val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t

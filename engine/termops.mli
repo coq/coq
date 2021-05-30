@@ -50,16 +50,12 @@ val it_mkLambda_or_LetIn_from_no_LetIn : Constr.constr -> Constr.rel_context -> 
 (** {6 Generic iterators on constr} *)
 
 val map_constr_with_binders_left_to_right :
-  Evd.evar_map ->
+  Environ.env -> Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) ->
     'a -> constr -> constr
 val map_constr_with_full_binders :
-  Evd.evar_map ->
-  (rel_declaration -> 'a -> 'a) ->
-  ('a -> constr -> constr) -> 'a -> constr -> constr
-val map_constr_with_full_binders_user_view :
-  Evd.evar_map ->
+  Environ.env -> Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 
@@ -73,7 +69,7 @@ val map_constr_with_full_binders_user_view :
 val fold_constr_with_binders : Evd.evar_map ->
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
-val fold_constr_with_full_binders : Evd.evar_map ->
+val fold_constr_with_full_binders : Environ.env -> Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> 'b -> constr -> 'b) ->
   'a -> 'b -> constr -> 'b
@@ -93,9 +89,9 @@ val occur_metavariable : Evd.evar_map -> metavariable -> constr -> bool
 val occur_evar : Evd.evar_map -> Evar.t -> constr -> bool
 val occur_var : env -> Evd.evar_map -> Id.t -> constr -> bool
 val occur_var_indirectly : env -> Evd.evar_map -> Id.t -> constr -> GlobRef.t option
-val occur_var_in_decl :
-  env -> Evd.evar_map ->
-  Id.t -> named_declaration -> bool
+val occur_var_in_decl : env -> Evd.evar_map -> Id.t -> named_declaration -> bool
+val occur_vars : env -> Evd.evar_map -> Id.Set.t -> constr -> bool
+val occur_vars_in_decl : env -> Evd.evar_map -> Id.Set.t -> named_declaration -> bool
 
 (** As {!occur_var} but assume the identifier not to be a section variable *)
 val local_occur_var : Evd.evar_map -> Id.t -> constr -> bool
@@ -126,16 +122,12 @@ val pop : constr -> constr
 (** Substitution of an arbitrary large term. Uses equality modulo
    reduction of let *)
 
-(** [subst_term_gen eq d c] replaces [d] by [Rel 1] in [c] using [eq]
-   as equality *)
-val subst_term_gen : Evd.evar_map ->
-  (Evd.evar_map -> constr -> constr -> bool) -> constr -> constr -> constr
-
-(** [replace_term_gen eq d e c] replaces [d] by [e] in [c] using [eq]
-   as equality *)
+(** [replace_term_gen eq arity e c] replaces matching subterms according to
+    [eq] by [e] in [c]. If [arity] is non-zero applications of larger length
+    are handled atomically. *)
 val replace_term_gen :
-  Evd.evar_map -> (Evd.evar_map -> constr -> constr -> bool) ->
-    constr -> constr -> constr -> constr
+  Evd.evar_map -> (Evd.evar_map -> int -> constr -> bool) ->
+    int -> constr -> constr -> constr
 
 (** [subst_term d c] replaces [d] by [Rel 1] in [c] *)
 val subst_term : Evd.evar_map -> constr -> constr -> constr

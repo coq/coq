@@ -21,7 +21,7 @@ cp summary.log "$SAVEDIR"/
 rm "$FAILED"
 
 # print info
-if [ -n "$APPVEYOR" ] || [ -n "$PRINT_LOGS" ]; then
+if [ -n "$CI" ] || [ -n "$PRINT_LOGS" ]; then
     find logs/ -name '*.log' -not -name 'summary.log' -print0 | while IFS= read -r -d '' file; do
         printf '%s\n' "$file"
         cat "$file"

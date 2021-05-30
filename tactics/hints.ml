@@ -46,7 +46,7 @@ let rec head_bound sigma t = match EConstr.kind sigma t with
 | Prod (_, _, b)  -> head_bound sigma b
 | LetIn (_, _, _, b) -> head_bound sigma b
 | App (c, _) -> head_bound sigma c
-| Case (_, _, _, c, _) -> head_bound sigma c
+| Case (_, _, _, _, _, c, _) -> head_bound sigma c
 | Ind (ind, _) -> GlobRef.IndRef ind
 | Const (c, _) -> GlobRef.ConstRef c
 | Construct (c, _) -> GlobRef.ConstructRef c
@@ -320,7 +320,7 @@ let strip_params env sigma c =
   | App (f, args) ->
     (match EConstr.kind sigma f with
     | Const (cst,_) ->
-      (match Recordops.find_primitive_projection cst with
+      (match Structures.PrimitiveProjections.find_opt cst with
        | Some p ->
          let p = Projection.make p false in
          let npars = Projection.npars p in
@@ -340,10 +340,8 @@ let instantiate_hint env sigma p =
   let mk_clenv (c, cty, ctx) =
     let sigma = merge_context_set_opt sigma ctx in
     let cl = mk_clenv_from_env env sigma None (c,cty) in
-    let cl = {cl with templval =
-          { cl.templval with rebus = strip_params env sigma cl.templval.rebus };
-        env = empty_env}
-    in
+    let templval = { cl.templval with rebus = strip_params env sigma cl.templval.rebus } in
+    let cl = mk_clausenv empty_env cl.evd templval cl.templtyp in
     { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; }
   in
   let code = match p.code.obj with
@@ -593,7 +591,7 @@ struct
   let head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
       | Evar (evk,_)   -> evk
-      | Case (_,_,_,c,_) -> hrec c
+      | Case (_,_,_,_,_,c,_) -> hrec c
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
       | Proj (p, c)    -> hrec c
@@ -1021,14 +1019,6 @@ let remove_hint dbname grs =
   let db' = Hint_db.remove_list env grs db in
     searchtable_add (dbname, db')
 
-type hint_action =
-  | CreateDB of bool * TransparentState.t
-  | AddTransparency of evaluable_global_reference hints_transparency_target * bool
-  | AddHints of { superglobal : bool; hints : hint_entry list }
-  | RemoveHints of GlobRef.t list
-  | AddCut of hints_path
-  | AddMode of GlobRef.t * hint_mode array
-
 let add_cut dbname path =
   let db = get_db dbname in
   let db' = Hint_db.add_cut path db in
@@ -1039,26 +1029,72 @@ let add_mode dbname l m =
   let db' = Hint_db.add_mode l m db in
     searchtable_add (dbname, db')
 
+type db_obj = {
+  db_local : bool;
+  db_name : string;
+  db_use_dn : bool;
+  db_ts : TransparentState.t;
+}
+
+let cache_db (_, {db_name=name; db_use_dn=b; db_ts=ts}) =
+  searchtable_add (name, Hint_db.empty ~name ts b)
+
+let load_db _ x = cache_db x
+
+let classify_db db = if db.db_local then Dispose else Substitute db
+
+let inDB : db_obj -> obj =
+  declare_object {(default_object "AUTOHINT_DB") with
+                  cache_function = cache_db;
+                  load_function = load_db;
+                  subst_function = (fun (_,x) -> x);
+                  classify_function = classify_db; }
+
+let create_hint_db l n ts b =
+  let hint = {db_local=l; db_name=n; db_use_dn=b; db_ts=ts} in
+  Lib.add_anonymous_leaf (inDB hint)
+
+type hint_action =
+  | AddTransparency of {
+      grefs : evaluable_global_reference hints_transparency_target;
+      state : bool;
+    }
+  | AddHints of hint_entry list
+  | RemoveHints of GlobRef.t list
+  | AddCut of hints_path
+  | AddMode of { gref : GlobRef.t; mode : hint_mode array }
+
+type hint_locality = Local | Export | SuperGlobal
+
 type hint_obj = {
-  hint_local : bool;
+  hint_local : hint_locality;
   hint_name : string;
   hint_action : hint_action;
 }
 
+let superglobal h = match h.hint_local with
+  | SuperGlobal -> true
+  | Local | Export -> false
+
 let load_autohint _ (kn, h) =
   let name = h.hint_name in
+  let superglobal = superglobal h in
   match h.hint_action with
-  | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty ~name st b)
-  | AddTransparency (grs, b) -> add_transparency name grs b
-  | AddHints { superglobal; hints } ->
+  | AddTransparency { grefs; state } ->
+    if superglobal then add_transparency name grefs state
+  | AddHints hints ->
     if superglobal then add_hint name hints
-  | RemoveHints grs -> remove_hint name grs
-  | AddCut path -> add_cut name path
-  | AddMode (l, m) -> add_mode name l m
+  | RemoveHints hints ->
+    if superglobal then remove_hint name hints
+  | AddCut paths ->
+    if superglobal then add_cut name paths
+  | AddMode { gref; mode } ->
+    if superglobal then add_mode name gref mode
 
 let open_autohint i (kn, h) =
+  let superglobal = superglobal h in
   if Int.equal i 1 then match h.hint_action with
-  | AddHints { superglobal; hints } ->
+  | AddHints hints ->
     let () =
       if not superglobal then
         (* Import-bound hints must be declared when not imported yet *)
@@ -1067,7 +1103,14 @@ let open_autohint i (kn, h) =
     in
     let add (_, hint) = statustable := KNmap.add hint.code.uid true !statustable in
     List.iter add hints
-  | _ -> ()
+  | AddCut paths ->
+    if not superglobal then add_cut h.hint_name paths
+  | AddTransparency { grefs; state } ->
+    if not superglobal then add_transparency h.hint_name grefs state
+  | RemoveHints hints ->
+    if not superglobal then remove_hint h.hint_name hints
+  | AddMode { gref; mode } ->
+    if not superglobal then add_mode h.hint_name gref mode
 
 let cache_autohint (kn, obj) =
   load_autohint 1 (kn, obj); open_autohint 1 (kn, obj)
@@ -1123,8 +1166,7 @@ let subst_autohint (subst, obj) =
     if k' == k && data' == data then hint else (k',data')
   in
   let action = match obj.hint_action with
-    | CreateDB _ -> obj.hint_action
-    | AddTransparency (target, b) ->
+    | AddTransparency { grefs = target; state = b } ->
       let target' =
         match target with
         | HintsVariables -> target
@@ -1134,26 +1176,28 @@ let subst_autohint (subst, obj) =
           if grs == grs' then target
           else HintsReferences grs'
       in
-      if target' == target then obj.hint_action else AddTransparency (target', b)
-    | AddHints { superglobal; hints } ->
+      if target' == target then obj.hint_action else AddTransparency { grefs = target'; state = b }
+    | AddHints hints ->
       let hints' = List.Smart.map subst_hint hints in
-      if hints' == hints then obj.hint_action else AddHints { superglobal; hints = hints' }
+      if hints' == hints then obj.hint_action else AddHints hints'
     | RemoveHints grs ->
       let grs' = List.Smart.map (subst_global_reference subst) grs in
       if grs == grs' then obj.hint_action else RemoveHints grs'
     | AddCut path ->
       let path' = subst_hints_path subst path in
       if path' == path then obj.hint_action else AddCut path'
-    | AddMode (l,m) ->
+    | AddMode { gref = l; mode = m } ->
       let l' = subst_global_reference subst l in
-      if l' == l then obj.hint_action else AddMode (l', m)
+      if l' == l then obj.hint_action else AddMode { gref = l'; mode = m }
   in
   if action == obj.hint_action then obj else { obj with hint_action = action }
 
 let classify_autohint obj =
   match obj.hint_action with
-  | AddHints { hints = [] } -> Dispose
-  | _ -> if obj.hint_local then Dispose else Substitute obj
+  | AddHints [] -> Dispose
+  | _ -> match obj.hint_local with
+    | Local -> Dispose
+    | Export | SuperGlobal -> Substitute obj
 
 let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
@@ -1163,17 +1207,41 @@ let inAutoHint : hint_obj -> obj =
                     subst_function = subst_autohint;
                     classify_function = classify_autohint; }
 
-let make_hint ?(local = false) name action = {
+let make_hint ~local name action = {
   hint_local = local;
   hint_name = name;
   hint_action = action;
 }
 
-let create_hint_db l n st b =
-  let hint = make_hint ~local:l n (CreateDB (b, st)) in
-  Lib.add_anonymous_leaf (inAutoHint hint)
+let warn_deprecated_hint_without_locality =
+  CWarnings.create ~name:"deprecated-hint-without-locality" ~category:"deprecated"
+    (fun () -> strbrk "The default value for hint locality is currently \
+    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
+    in a future release. For the time being, adding hints outside of sections \
+    without specifying an explicit locality is therefore deprecated. It is \
+    recommended to use \"export\" whenever possible.")
 
-let remove_hints local dbnames grs =
+let check_hint_locality = let open Goptions in function
+| OptGlobal ->
+  if Global.sections_are_opened () then
+  CErrors.user_err Pp.(str
+    "This command does not support the global attribute in sections.");
+| OptExport ->
+  if Global.sections_are_opened () then
+  CErrors.user_err Pp.(str
+    "This command does not support the export attribute in sections.");
+| OptDefault ->
+  if not @@ Global.sections_are_opened () then
+    warn_deprecated_hint_without_locality ()
+| OptLocal -> ()
+
+let interp_locality = function
+| Goptions.OptDefault | Goptions.OptGlobal -> SuperGlobal
+| Goptions.OptExport -> Export
+| Goptions.OptLocal -> Local
+
+let remove_hints ~locality dbnames grs =
+  let local = interp_locality locality in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
@@ -1185,12 +1253,7 @@ let remove_hints local dbnames grs =
 (*                     The "Hint" vernacular command                      *)
 (**************************************************************************)
 
-let check_no_export ~local ~superglobal () =
-  (* TODO: implement export for these entries *)
-  if not local && not superglobal then
-    CErrors.user_err Pp.(str "This command does not support the \"export\" attribute")
-
-let add_resolves env sigma clist ~local ~superglobal dbnames =
+let add_resolves env sigma clist ~local dbnames =
   List.iter
     (fun dbname ->
       let r =
@@ -1217,59 +1280,56 @@ let add_resolves env sigma clist ~local ~superglobal dbnames =
       | _ -> ()
       in
       let () = if not !Flags.quiet then List.iter check r in
-      let hint = make_hint ~local dbname (AddHints { superglobal; hints = r }) in
+      let hint = make_hint ~local dbname (AddHints r) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_unfolds l ~local ~superglobal dbnames =
+let add_unfolds l ~local dbnames =
   List.iter
     (fun dbname ->
-      let hint = make_hint ~local dbname (AddHints { superglobal; hints = List.map make_unfold l }) in
+      let hint = make_hint ~local dbname (AddHints (List.map make_unfold l)) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_cuts l ~local ~superglobal dbnames =
-  let () = check_no_export ~local ~superglobal () in
+let add_cuts l ~local dbnames =
   List.iter
     (fun dbname ->
       let hint = make_hint ~local dbname (AddCut l) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_mode l m ~local ~superglobal dbnames =
-  let () = check_no_export ~local ~superglobal () in
+let add_mode l m ~local dbnames =
   List.iter
     (fun dbname ->
       let m' = make_mode l m in
-      let hint = make_hint ~local dbname (AddMode (l, m')) in
+      let hint = make_hint ~local dbname (AddMode { gref = l; mode = m' }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_transparency l b ~local ~superglobal dbnames =
-  let () = check_no_export ~local ~superglobal () in
+let add_transparency l b ~local dbnames =
   List.iter
     (fun dbname ->
-      let hint = make_hint ~local dbname (AddTransparency (l, b)) in
+      let hint = make_hint ~local dbname (AddTransparency { grefs = l; state = b }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_extern info tacast ~local ~superglobal dbname =
+let add_extern info tacast ~local dbname =
   let pat = match info.hint_pattern with
   | None -> None
   | Some (_, pat) -> Some pat
   in
   let hint = make_hint ~local dbname
-                       (AddHints { superglobal; hints = [make_extern (Option.get info.hint_priority) pat tacast] }) in
+                       (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
-let add_externs info tacast ~local ~superglobal dbnames =
-  List.iter (add_extern info tacast ~local ~superglobal) dbnames
+let add_externs info tacast ~local dbnames =
+  List.iter (add_extern info tacast ~local) dbnames
 
-let add_trivials env sigma l ~local ~superglobal dbnames =
+let add_trivials env sigma l ~local dbnames =
   List.iter
     (fun dbname ->
       let l = List.map (fun (name, c) -> make_trivial env sigma ~name c) l in
-      let hint = make_hint ~local dbname (AddHints { superglobal; hints = l }) in
+      let hint = make_hint ~local dbname (AddHints l) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
@@ -1295,7 +1355,7 @@ let prepare_hint check env init (sigma,c) =
   (* We re-abstract over uninstantiated evars and universes.
      It is actually a bit stupid to generalize over evars since the first
      thing make_resolves will do is to re-instantiate the products *)
-  let sigma, _ = Evd.nf_univ_variables sigma in
+  let sigma = Evd.nf_univ_variables sigma in
   let c = Evarutil.nf_evar sigma c in
   let c = drop_extra_implicit_args sigma c in
   let vars = ref (collect_vars sigma c) in
@@ -1326,26 +1386,26 @@ let prepare_hint check env init (sigma,c) =
     (c', diff)
 
 let add_hints ~locality dbnames h =
-  let local, superglobal = match locality with
-  | Goptions.OptDefault | Goptions.OptGlobal -> false, true
-  | Goptions.OptExport -> false, false
-  | Goptions.OptLocal -> true, false
-  in
+  let local = interp_locality locality in
   if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
   assert (not (List.is_empty dbnames));
   let env = Global.env() in
   let sigma = Evd.from_env env in
   match h with
-  | HintsResolveEntry lhints -> add_resolves env sigma lhints ~local ~superglobal dbnames
-  | HintsImmediateEntry lhints -> add_trivials env sigma lhints ~local ~superglobal dbnames
-  | HintsCutEntry lhints -> add_cuts lhints ~local ~superglobal dbnames
-  | HintsModeEntry (l,m) -> add_mode l m ~local ~superglobal dbnames
-  | HintsUnfoldEntry lhints -> add_unfolds lhints ~local ~superglobal dbnames
+  | HintsResolveEntry lhints -> add_resolves env sigma lhints ~local dbnames
+  | HintsImmediateEntry lhints -> add_trivials env sigma lhints ~local dbnames
+  | HintsCutEntry lhints -> add_cuts lhints ~local dbnames
+  | HintsModeEntry (l,m) -> add_mode l m ~local dbnames
+  | HintsUnfoldEntry lhints -> add_unfolds lhints ~local dbnames
   | HintsTransparencyEntry (lhints, b) ->
-      add_transparency lhints b ~local ~superglobal dbnames
+      add_transparency lhints b ~local dbnames
   | HintsExternEntry (info, tacexp) ->
-      add_externs info tacexp ~local ~superglobal dbnames
+      add_externs info tacexp ~local dbnames
+
+let hint_globref gr = IsGlobRef gr
+
+let hint_constr (c, diff) = IsConstr (c, diff)
 
 let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
@@ -1365,8 +1425,9 @@ let constructor_hints env sigma eapply lems =
   List.map_append (fun lem ->
       make_resolves env sigma (eapply, true) empty_hint_info ~check:true lem) lems
 
-let make_resolves env sigma info ~check ?name hint =
-  make_resolves env sigma (true, false) info ~check ?name hint
+let make_resolves env sigma info hint =
+  let name = PathHints [hint] in
+  make_resolves env sigma (true, false) info ~check:false ~name (IsGlobRef hint)
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
@@ -1634,14 +1695,17 @@ let connect_hint_clenv h gl =
     let emap c = Vars.subst_univs_level_constr subst c in
     let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
-    {
-      templval = Evd.map_fl emap clenv.templval;
-      templtyp = Evd.map_fl emap clenv.templtyp;
-      evd = Evd.map_metas emap evd;
-      env = Proofview.Goal.env gl;
-    }
+    Clenv.mk_clausenv
+      (Proofview.Goal.env gl)
+      (Evd.map_metas emap evd)
+      (Evd.map_fl emap clenv.templval)
+      (Evd.map_fl emap clenv.templtyp)
   | None ->
-    { clenv with evd = evd ; env = Proofview.Goal.env gl }
+    Clenv.mk_clausenv
+      (Proofview.Goal.env gl)
+      evd
+      clenv.templval
+      clenv.templtyp
 
 let fresh_hint env sigma h =
   let { hint_term = c; hint_uctx = ctx } = h in

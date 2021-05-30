@@ -11,179 +11,209 @@
 -include config/Makefile
 
 ###########################################################################
+# The SHOW and HIDE variables control whether make will echo complete commands
+# or only abbreviated versions.
+# Quiet mode is ON by default except if VERBOSE=1 option is given to make
+
+SHOW := $(if $(VERBOSE),@true "",@echo "")
+HIDE := $(if $(VERBOSE),,@)
+
+###########################################################################
+# Basic build directories
+###########################################################################
+BCONTEXT=_build/default
+CONTEXT=_build/install/default
+CBIN=_build/install/default/bin
+CSHARE=_build/install/default/share/coq
+
+_DBUILD_DEPS:=
+
+# FLOCK
+ifeq (,$(shell command -v flock 2>/dev/null))
+FLOCK:=_build/default/tools/flock/coq_flock.exe
+_DBUILD_DEPS+=$(FLOCK)
+
+$(FLOCK): tools/flock/coq_flock.ml tools/flock/flock.c
+	$(SHOW)'DUNE      $@'
+	$(HIDE)dune build $@
+else
+FLOCK:=flock
+endif
+
+# Standard DESTDIR variable as used in Debian and coq_makefile, will
+# have make install prefixing all install targets with DESTDIR
+DESTDIR ?=
+
+###########################################################################
+# VO build directory
+###########################################################################
+
+# slash at the end allows us to define this variable as empty, be
+# careful, the slash is mandatory.
+#
+# Note, we can use this as _build/default , but unfortunately dune
+# will remove the .vos files as they are not recognized as targets
+BUILD_OUT_DIR=_build_vo/default/
+VO_OUT_DIR=$(BUILD_OUT_DIR)/lib/coq/
+
+LEGACY_BIN_DIR=bin
+
+$(BUILD_OUT_DIR) $(VO_OUT_DIR):
+	$(SHOW)'MKDIR     BUILD_OUT'
+	$(HIDE)mkdir -p $(BUILD_OUT_DIR)
+	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq
+	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(LEGACY_BIN_DIR)
+	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(BUILD_OUT_DIR)/bin
+	$(HIDE)ln -s $(shell pwd)/_build/default/plugins/ $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/default/tools/ $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/default/kernel/ $(BUILD_OUT_DIR)/lib/coq-core
+
+###########################################################################
 # Executables
 ###########################################################################
 
-TOPBINOPT:=$(addsuffix .opt$(EXE), $(addprefix bin/, coqtop coqproofworker coqtacticworker coqqueryworker))
-TOPBYTE:=$(TOPBINOPT:.opt$(EXE)=.byte$(EXE))
+ifeq ($(BEST),byte)
+  COQC:=$(CBIN)/coqc.byte$(EXE)
+  export CAML_LD_LIBRARY_PATH:=$(shell echo $(CONTEXT)/lib/stublibs:$$CAML_LD_LIBRARY_PATH)
+else
+  COQC:=$(CBIN)/coqc$(EXE)
+endif
 
-COQTOPEXE:=bin/coqtop$(EXE)
-COQTOPBYTE:=bin/coqtop.byte$(EXE)
-
-COQDEP:=bin/coqdep$(EXE)
-COQPP:=bin/coqpp$(EXE)
-DOC_GRAM:=bin/doc_grammar$(EXE)
-COQDEPBYTE:=bin/coqdep.byte$(EXE)
-COQMAKEFILE:=bin/coq_makefile$(EXE)
-COQMAKEFILEBYTE:=bin/coq_makefile.byte$(EXE)
-COQTEX:=bin/coq-tex$(EXE)
-COQTEXBYTE:=bin/coq-tex.byte$(EXE)
-COQWC:=bin/coqwc$(EXE)
-COQWCBYTE:=bin/coqwc.byte$(EXE)
-COQDOC:=bin/coqdoc$(EXE)
-COQDOCBYTE:=bin/coqdoc.byte$(EXE)
-COQC:=bin/coqc$(EXE)
-COQCOPT:=bin/coqc.opt$(EXE)
-COQCBYTE:=bin/coqc.byte$(EXE)
-COQWORKMGR:=bin/coqworkmgr$(EXE)
-COQWORKMGRBYTE:=bin/coqworkmgr.byte$(EXE)
+COQTOPEXE:=$(CBIN)/coqtop$(EXE)
+TOPBINOPT:=$(addsuffix .opt$(EXE), $(addprefix $(CBIN)/, coqproofworker coqtacticworker coqqueryworker)) $(COQTOPEXE)
+COQDEP:=$(CBIN)/coqdep$(EXE)
+DOC_GRAM:=_build/default/doc/tools/docgram/doc_grammar.exe
+COQMAKEFILE:=$(CBIN)/coq_makefile$(EXE)
+COQMAKEFILEIN:=$(BCONTEXT)/tools/CoqMakefile.in
+COQTEX:=$(CBIN)/coq-tex$(EXE)
+COQWC:=$(CBIN)/coqwc$(EXE)
+COQDOC:=$(CBIN)/coqdoc$(EXE)
+COQNATIVE:=$(CBIN)/coqnative$(EXE)
+COQDOCSTY:=$(CONTEXT)/lib/coq-core/tools/coqdoc/coqdoc.sty
+COQDOCCSS:=$(CONTEXT)/lib/coq-core/tools/coqdoc/coqdoc.css
+COQWORKMGR:=$(CBIN)/coqworkmgr$(EXE)
 COQMAKE_ONE_TIME_FILE:=tools/make-one-time-file.py
 COQTIME_FILE_MAKER:=tools/TimeFileMaker.py
 COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
 COQMAKE_BOTH_SINGLE_TIMING_FILES:=tools/make-both-single-timing-files.py
-VOTOUR:=bin/votour
-OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
-OCAMLLIBDEPBYTE:=bin/ocamllibdep.byte$(EXE)
+VOTOUR:=$(CBIN)/votour$(EXE)
+OCAMLLIBDEP:=$(CBIN)/ocamllibdep$(EXE)
+FAKEIDE:=$(CBIN)/fake_ide$(EXE)
+USERCONTRIBDIRS:=Ltac2
+CHICKEN:=$(CBIN)/coqchk$(EXE)
+TOOLS:=$(VOTOUR) $(COQDOC) $(COQDOCSTY) $(COQDOCCSS) $(COQWC) $(COQMAKEFILE) $(COQMAKEFILEIN) $(COQNATIVE)
+CSDPCERT:=$(CBIN)/csdpcert$(EXE)
 
-# these get installed!
-TOOLS:=$(COQDEP) $(COQMAKEFILE) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
-	$(COQWORKMGR) $(COQPP) $(VOTOUR) $(OCAMLLIBDEP)
-TOOLS_HELPERS:=tools/CoqMakefile.in $(COQMAKE_ONE_TIME_FILE) $(COQTIME_FILE_MAKER)\
-	$(COQMAKE_BOTH_TIME_FILES) $(COQMAKE_BOTH_SINGLE_TIMING_FILES)
-
-COQDEPBOOT:=bin/coqdep_boot$(EXE)
-COQDEPBOOTBYTE:=bin/coqdep_boot.byte$(EXE)
-FAKEIDE:=bin/fake_ide$(EXE)
-FAKEIDEBYTE:=bin/fake_ide.byte$(EXE)
-
-# These don't get signed on OSX, and don't need to be separately listed for cleaning
-PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT) $(DOC_GRAM)
-
-CSDPCERT:=plugins/micromega/csdpcert$(EXE)
-CSDPCERTBYTE:=plugins/micromega/csdpcert.byte$(EXE)
-
-###########################################################################
-# Object and Source files
-###########################################################################
-
-ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
- # static link of plugins, do not mention them in .v.d
- DYNDEP:=-dyndep no
-else
- DYNDEP:=-dyndep var
+ifeq ($(origin COQ_SRC_DIR),undefined)
+COQ_SRC_DIR=.
 endif
 
-# Which coqtop do we use to build .vo file ? The best ;-)
-# Note: $(BEST) could be overridden by the user if a byte build is desired
-# Note: coqdep -dyndep var will use $(DYNOBJ) and $(DYNLIB) extensions
-# for Declare ML Module files.
+COQ_CM_LIBS=coqpp lib clib kernel library engine pretyping gramlib interp printing parsing proofs tactics vernac stm toplevel topbin tools
+ML_SOURCE_DIRS=$(addprefix $(COQ_SRC_DIR)/,$(COQ_CM_LIBS))
+ALL_ML_SOURCE_FILES=$(shell find $(ML_SOURCE_DIRS) -name '*.ml' -or -name '*.mli' -or -name '*.c' -or -name '*.h')
 
-ifeq ($(BEST),opt)
-TOPBIN:=$(TOPBINOPT)
-COQTOPBEST:=$(COQTOPEXE)
-DYNOBJ:=.cmxs
-DYNLIB:=.cmxs
-else
-TOPBIN:=$(TOPBYTE)
-COQTOPBEST:=$(COQTOPBYTE)
-DYNOBJ:=.cmo
-DYNLIB:=.cma
-endif
+# Override for developer build [to get warn-as-error for example]
+_DDISPLAY?=quiet
+_DPROFILE?=$(CONFIGURE_DPROFILE)
+_DOPT:=--display $(_DDISPLAY) --profile=$(_DPROFILE)
+_DBUILD:=$(FLOCK) .dune.lock dune build $(_DOPT)
 
-INSTALLBIN:=install
-INSTALLLIB:=install -m 644
-INSTALLSH:=./install.sh
-MKDIR:=install -d
+# We rerun dune when any of the source files have changed
 
-CORESRCDIRS:=\
-  coqpp                                                                                 \
-  config 	clib 		lib		kernel		kernel/byterun	library \
-  engine 	pretyping	interp	proofs	gramlib/.pack 	parsing 	printing \
-  tactics 	vernac		stm		toplevel
+# touch is needed for all targets in `_build` as make won't track
+# symlink's date correctly [and dune won't update the mtime as it
+# doesn't use it as the main criteria], so if we didn't touch an
+# updated mtime in a source file may not trigger a dune rebuild it it
+# didn't change hash, thus the mtime of the target would confuse make.
 
-PLUGINDIRS:=\
-  omega		micromega \
-  ring 	extraction \
-  cc 		funind 		firstorder 	derive \
-  rtauto 	nsatz           syntax          btauto \
-  ssrmatching	ltac		ssr             ssrsearch
+$(CBIN)/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-USERCONTRIBDIRS:=\
-	Ltac2
+$(CSHARE)/%: $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-SRCDIRS:=\
-  $(CORESRCDIRS)  \
-  tools 	tools/coqdoc	\
-  $(addprefix plugins/, $(PLUGINDIRS))  \
-  $(addprefix user-contrib/, $(USERCONTRIBDIRS))
+ALL_PLUGIN_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/plugins -name '*.ml' -or -name '*.mli' -or -name '*.mlg') $(ALL_ML_SOURCE_FILES)
 
-COQRUN := coqrun
-LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
-DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN)$(DLLEXT)
+_build/default/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-BYTERUN:=$(addprefix kernel/byterun/, \
-  coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
+_build/default/plugins/%.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-# LINK ORDER:
-# respecting this order is useful for developers that want to load or link
-# the libraries directly
+# Only used for the test-suite in local mode
+_build/default/tools/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-CORECMA:=config/config.cma clib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
-        engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
-	gramlib/.pack/gramlib.cma \
-        parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
-        stm/stm.cma toplevel/toplevel.cma
+_build/install/default/lib/coq-core/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-###########################################################################
-# plugins object files
-###########################################################################
+_build/install/default/lib/stublibs/%.so: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-OMEGACMO:=plugins/omega/omega_plugin.cmo
-MICROMEGACMO:=plugins/micromega/micromega_plugin.cmo
-RINGCMO:=plugins/ring/ring_plugin.cmo
-NSATZCMO:=plugins/nsatz/nsatz_plugin.cmo
-EXTRACTIONCMO:=plugins/extraction/extraction_plugin.cmo
-FUNINDCMO:=plugins/funind/recdef_plugin.cmo
-FOCMO:=plugins/firstorder/ground_plugin.cmo
-CCCMO:=plugins/cc/cc_plugin.cmo
-BTAUTOCMO:=plugins/btauto/btauto_plugin.cmo
-RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
-SYNTAXCMO:=$(addprefix plugins/syntax/, \
-        r_syntax_plugin.cmo \
-	int63_syntax_plugin.cmo \
-	float_syntax_plugin.cmo \
-	numeral_notation_plugin.cmo \
-	string_notation_plugin.cmo)
-DERIVECMO:=plugins/derive/derive_plugin.cmo
-LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
-SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
-SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
-SSRSEARCHCMO=plugins/ssrsearch/ssrsearch_plugin.cmo
-LTAC2CMO:=user-contrib/Ltac2/ltac2_plugin.cmo
-ZIFYCMO:=plugins/micromega/zify_plugin.cmo
+_build/install/default/lib/coq/%.cmi: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(MICROMEGACMO) \
-        $(RINGCMO) \
-        $(EXTRACTIONCMO) \
-        $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \
-        $(FUNINDCMO) $(NSATZCMO) $(SYNTAXCMO) \
-	$(DERIVECMO) $(SSRMATCHINGCMO) $(SSRCMO) $(SSRSEARCHCMO) $(LTAC2CMO) $(ZIFYCMO)
+_build/install/default/lib/coq-core/tools/coqdoc/coqdoc.sty: $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
- STATICPLUGINS:=$(PLUGINSCMO)
- PLUGINS:=
-else
- STATICPLUGINS:=
- PLUGINS:=$(PLUGINSCMO)
-endif
-PLUGINSOPT:=$(PLUGINSCMO:.cmo=.cmxs)
+_build/install/default/lib/coq-core/tools/coqdoc/coqdoc.css: $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
-LINKCMO:=$(CORECMA) $(STATICPLUGINS)
-LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
+_build/default/%.install: $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
 
-ALLSTDLIB := test-suite/misc/universes/all_stdlib
+ALL_CONTRIB_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/user-contrib -name '*.ml' -or -name '*.mli' -or -name '*.mlg') $(ALL_PLUGIN_SOURCE_FILES)
+_build/default/user-contrib/%.cmxs: $(ALL_CONTRIB_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
+
+_build/default/user-contrib/%.cma: $(ALL_CONTRIB_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
+
+.PHONY: all-src
+
+ALL_SOURCE_FILES=$(ALL_CONTRIB_SOURCE_FILES) $(ALL_PLUGIN_SOURCE_FILES) $(ALL_ML_SOURCE_FILES)
+all-src: $(ALL_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      sources'
+	$(HIDE)$(_DBUILD) @all-src
+
+# For docgram
+_build/default/doc/tools/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
 PLUGINTUTO := doc/plugin_tutorial
+
+revision: $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
 
 # For emacs:
 # Local Variables:

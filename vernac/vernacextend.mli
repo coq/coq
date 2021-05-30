@@ -77,12 +77,12 @@ type typed_vernac =
   | VtModifyProof of (pstate:Declare.Proof.t -> Declare.Proof.t)
   | VtReadProofOpt of (pstate:Declare.Proof.t option -> unit)
   | VtReadProof of (pstate:Declare.Proof.t -> unit)
-  | VtReadProgram of (pm:Declare.OblState.t -> unit)
+  | VtReadProgram of (stack:Vernacstate.LemmaStack.t option -> pm:Declare.OblState.t -> unit)
   | VtModifyProgram of (pm:Declare.OblState.t -> Declare.OblState.t)
   | VtDeclareProgram of (pm:Declare.OblState.t -> Declare.Proof.t)
   | VtOpenProofProgram of (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t)
 
-type vernac_command = atts:Attributes.vernac_flags -> typed_vernac
+type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> unit -> typed_vernac
 
 type plugin_args = Genarg.raw_generic_argument list
 

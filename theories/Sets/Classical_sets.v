@@ -77,6 +77,7 @@ Section Ensembles_classical.
   Proof.
     unfold Subtract at 1; auto with sets.
   Qed.
+  #[local]
   Hint Resolve Subtract_intro : sets.
 
   Lemma Subtract_inv :
@@ -123,5 +124,6 @@ Section Ensembles_classical.
 
 End Ensembles_classical.
 
+ #[global]
  Hint Resolve Strict_super_set_contains_new_element Subtract_intro
   not_SIncl_empty: sets.

@@ -108,7 +108,7 @@ type 'a gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of evars_flag * 'dtrm intro_pattern_expr CAst.t list
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
-      ('nam * 'dtrm intro_pattern_expr CAst.t option) option
+      ('nam * 'dtrm intro_pattern_expr CAst.t option) list
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
@@ -178,8 +178,8 @@ constraint 'a = <
     't : terms, 'p : patterns, 'c : constants, 'i : inductive,
     'r : ltac refs, 'n : idents, 'l : levels *)
 
-and 'a gen_tactic_expr =
-  | TacAtom of ('a gen_atomic_tactic_expr) CAst.t
+and 'a gen_tactic_expr_r =
+  | TacAtom of 'a gen_atomic_tactic_expr
   | TacThen of
       'a gen_tactic_expr *
       'a gen_tactic_expr
@@ -234,12 +234,25 @@ and 'a gen_tactic_expr =
   | TacMatchGoal of lazy_flag * direction_flag *
       ('p,'a gen_tactic_expr) match_rule list
   | TacFun of 'a gen_tactic_fun_ast
-  | TacArg of 'a gen_tactic_arg CAst.t
+  | TacArg of 'a gen_tactic_arg
   | TacSelect of Goal_select.t * 'a gen_tactic_expr
   (* For ML extensions *)
-  | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) CAst.t
+  | TacML of ml_tactic_entry * 'a gen_tactic_arg list
   (* For syntax extensions *)
-  | TacAlias of (KerName.t * 'a gen_tactic_arg list) CAst.t
+  | TacAlias of KerName.t * 'a gen_tactic_arg list
+
+constraint 'a = <
+    term:'t;
+    dterm: 'dtrm;
+    pattern:'p;
+    constant:'c;
+    reference:'r;
+    name:'n;
+    tacexpr:'tacexpr;
+    level:'l
+>
+and 'a gen_tactic_expr =
+  'a gen_tactic_expr_r CAst.t
 
 constraint 'a = <
     term:'t;
@@ -270,7 +283,7 @@ constraint 'a = <
 
 type g_trm = Genintern.glob_constr_and_expr
 type g_pat = Genintern.glob_constr_pattern_and_expr
-type g_cst = evaluable_global_reference Genredexpr.and_short_name or_var
+type g_cst = Tacred.evaluable_global_reference Genredexpr.and_short_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam = lident
 
@@ -324,7 +337,7 @@ type raw_tactic_arg =
 
 type t_trm = EConstr.constr
 type t_pat = constr_pattern
-type t_cst = evaluable_global_reference
+type t_cst = Tacred.evaluable_global_reference
 type t_ref = ltac_constant located
 type t_nam = Id.t
 

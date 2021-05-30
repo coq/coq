@@ -59,6 +59,15 @@ Declare ML Module "ssreflect_plugin".
        Canonical foo_unlockable := #[#unlockable fun foo#]#.
      This minimizes the comparison overhead for foo, while still allowing
      rewrite unlock to expose big_foo_expression.
+
+  Additionally we provide default intro pattern ltac views:
+  - top of the stack actions:
+    => /[apply]     := => hyp {}/hyp
+    => /[swap]      := => x y; move: y x
+                      (also swap and preserves let bindings)
+    => /[dup]       := => x; have copy := x; move: copy x
+                      (also copies and preserves let bindings)
+
  More information about these definitions and their use can be found in the
  ssreflect manual, and in specific comments below.                           **)
 
@@ -101,7 +110,7 @@ Reserved Notation "'if' c 'then' vT 'else' vF" (at level 200,
 Reserved Notation "'if' c 'return' R 'then' vT 'else' vF" (at level 200,
   c, R, vT, vF at level 200).
 Reserved Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" (at level 200,
-  c, R, vT, vF at level 200, x ident).
+  c, R, vT, vF at level 200, x name).
 
 Reserved Notation "x : T" (at level 100, right associativity,
   format "'[hv' x '/ '  :  T ']'").
@@ -285,7 +294,7 @@ Notation " #[# 'the' sT 'of' v : 'Type' #]#" := (@get Type sT v _ _)
  my_type doesn't effectively inherit the struct structure from a_type. Our
  solution is to redeclare the instance as follows
    Canonical my_type_struct := Eval hnf in #[#struct of my_type#]#.
- The special notation #[#str of _ #]# must be defined for each Strucure "str"
+ The special notation #[#str of _ #]# must be defined for each Structure "str"
  with constructor "Str", typically as follows
    Definition clone_str s :=
       let: Str _ x y ... z := s return {type of Str for s} -> str in
@@ -534,8 +543,10 @@ Proof. by move=> /(_ P); apply. Qed.
 
 Require Export ssrunder.
 
+#[global]
 Hint Extern 0 (@Under_rel.Over_rel _ _ _ _) =>
   solve [ apply: Under_rel.over_rel_done ] : core.
+#[global]
 Hint Resolve Under_rel.over_rel_done : core.
 
 Register Under_rel.Under_rel as plugins.ssreflect.Under_rel.
@@ -609,7 +620,7 @@ Module NonPropType.
  and then (8a) is solved by the check instance, yielding ?test := test_Prop T,
  and completing the solution of (2a), and _committing_ to it. But now (3) is
  inconsistent with (9a), and this makes the entire problem (1) fails.
-   If on the othe hand T does not have sort Prop then (7a) fails and the
+   If on the other hand T does not have sort Prop then (7a) fails and the
  unification resorts to delta expanding (2a), which gives
   (2b) @condition (result ?S) (test ?S) =~= tt
  which is then reduced, using the test_negative instance, to
@@ -617,7 +628,7 @@ Module NonPropType.
   (8b)                          test ?S =~= test_negative
  Both are solved using the check default instance, as in the (2a) branch, giving
   (9b)                               ?S := @check false test_negative ?frame
- Then (3) and (4) are similarly soved using check, giving the final assignment
+ Then (3) and (4) are similarly solved using check, giving the final assignment
   (9)                                ?S := notProp T
  Observe that we _must_ perform the actual test unification on the arguments
  of the initial canonical instance, and not on the instance itself as we do
@@ -654,3 +665,39 @@ End Exports.
 
 End NonPropType.
 Export NonPropType.Exports.
+
+Module Export ipat.
+
+Notation "'[' 'apply' ']'" := (ltac:(let f := fresh "_top_" in move=> f {}/f))
+  (at level 0, only parsing) : ssripat_scope.
+
+(* we try to preserve the naming by matching the names from the goal *)
+(* we do move to perform a hnf before trying to match                *)
+Notation "'[' 'swap' ']'" := (ltac:(move;
+  let x := lazymatch goal with
+    | |- forall (x : _), _ => fresh x | |- let x := _ in _ => fresh x | _ => fresh "_top_"
+  end in intro x; move;
+  let y := lazymatch goal with
+    | |- forall (y : _), _ => fresh y | |- let y := _ in _ => fresh y | _ => fresh "_top_"
+  end in intro y; revert x; revert y))
+  (at level 0, only parsing) : ssripat_scope.
+
+
+(* we try to preserve the naming by matching the names from the goal *)
+(* we do move to perform a hnf before trying to match                *)
+Notation "'[' 'dup' ']'" := (ltac:(move;
+  lazymatch goal with
+  | |- forall (x : _), _ =>
+    let x := fresh x in intro x;
+    let copy := fresh x in have copy := x; revert x; revert copy
+  | |- let x := _ in _ =>
+    let x := fresh x in intro x;
+    let copy := fresh x in pose copy := x;
+    do [unfold x in (value of copy)]; revert x; revert copy
+  | |- _ =>
+    let x := fresh "_top_" in move=> x;
+    let copy := fresh "_top" in have copy := x; revert x; revert copy
+  end))
+  (at level 0, only parsing) : ssripat_scope.
+
+End ipat.

@@ -65,10 +65,7 @@ static void coq_scan_roots(scanning_action action)
   register value * i;
   /* Scan the stack */
   for (i = coq_sp; i < coq_stack_high; i++) {
-#ifdef NO_NAKED_POINTERS
-    /* The VM stack may contain C-allocated bytecode */
-    if (Is_block(*i) && !Is_in_heap_or_young(*i)) continue;
-#endif
+    if (!Is_block(*i)) continue;
     (*action) (*i, i);
   };
   /* Hook */
@@ -99,9 +96,6 @@ value init_coq_vm(value unit) /* ML */
     fprintf(stderr,"already open \n");fflush(stderr);}
   else {
     drawinstr=0;
-#ifdef THREADED_CODE
-    init_arity();
-#endif /* THREADED_CODE */
     /* Allocate the table of global and the stack */
     init_coq_stack();
     /* Initialing the interpreter */

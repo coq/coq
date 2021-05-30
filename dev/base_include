@@ -16,7 +16,6 @@
 #install_printer  (* kernel_name *) ppkn;;
 #install_printer  (* constant *) ppcon;;
 #install_printer  (* projection *) ppproj;;
-#install_printer  (* cl_index *) ppclindex;;
 #install_printer  (* recarg Rtree.t *)  ppwf_paths;;
 #install_printer  (* constr *)  print_pure_constr;;
 #install_printer  (* patch *) ppripos;;
@@ -25,7 +24,6 @@
 #install_printer  (* Cpred.t *) pp_cpred;;
 #install_printer ppzipper;;
 #install_printer ppstack;;
-#install_printer (* Reductionops.Stack.t *) pp_stack_t;;
 #install_printer ppatom;;
 #install_printer ppwhd;;
 #install_printer ppvblock;;
@@ -69,7 +67,7 @@ open Constr_matching
 open Glob_term
 open Glob_ops
 open Coercion
-open Recordops
+open Structures
 open Detyping
 open Reductionops
 open Evarconv
@@ -134,7 +132,6 @@ open ComDefinition
 open Indschemes
 open Ind_tables
 open Auto_ind_decl
-open Coqinit
 open Coqtop
 open Himsg
 open Metasyntax

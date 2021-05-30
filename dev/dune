@@ -1,11 +1,11 @@
 (library
  (name top_printers)
- (public_name coq.top_printers)
+ (public_name coq-core.top_printers)
  (synopsis "Coq's Debug Printers")
  (wrapped false)
  (modules top_printers)
  (optional)
- (libraries coq.toplevel coq.plugins.ltac))
+ (libraries coq-core.toplevel coq-core.plugins.ltac))
 
 (rule
   (targets dune-dbg)
@@ -17,26 +17,27 @@
     ; We require all the OCaml libs to be in place and searchable
     ; by OCamlfind, this is a bit of a hack but until Dune gets
     ; proper ocamldebug support we have to live with that.
-    %{lib:coq.config:config.cma}
-    %{lib:coq.clib:clib.cma}
-    %{lib:coq.lib:lib.cma}
-    %{lib:coq.kernel:kernel.cma}
-    %{lib:coq.vm:byterun.cma}
-    %{lib:coq.vm:../../stublibs/dllbyterun_stubs.so}
-    %{lib:coq.library:library.cma}
-    %{lib:coq.engine:engine.cma}
-    %{lib:coq.pretyping:pretyping.cma}
-    %{lib:coq.gramlib:gramlib.cma}
-    %{lib:coq.interp:interp.cma}
-    %{lib:coq.proofs:proofs.cma}
-    %{lib:coq.parsing:parsing.cma}
-    %{lib:coq.printing:printing.cma}
-    %{lib:coq.tactics:tactics.cma}
-    %{lib:coq.vernac:vernac.cma}
-    %{lib:coq.stm:stm.cma}
-    %{lib:coq.toplevel:toplevel.cma}
-    %{lib:coq.plugins.ltac:ltac_plugin.cma}
-    %{lib:coq.top_printers:top_printers.cmi}
-    %{lib:coq.top_printers:top_printers.cma}
-    %{lib:coq.top_printers:../META})
+    %{lib:coq-core.config:config.cma}
+    %{lib:coq-core.clib:clib.cma}
+    %{lib:coq-core.lib:lib.cma}
+    %{lib:coq-core.kernel:kernel.cma}
+    %{lib:coq-core.vm:coqrun.cma}
+    %{lib:coq-core.vm:../../stublibs/dllcoqrun_stubs.so}
+    %{lib:coq-core.library:library.cma}
+    %{lib:coq-core.engine:engine.cma}
+    %{lib:coq-core.pretyping:pretyping.cma}
+    %{lib:coq-core.gramlib:gramlib.cma}
+    %{lib:coq-core.interp:interp.cma}
+    %{lib:coq-core.proofs:proofs.cma}
+    %{lib:coq-core.parsing:parsing.cma}
+    %{lib:coq-core.printing:printing.cma}
+    %{lib:coq-core.tactics:tactics.cma}
+    %{lib:coq-core.vernac:vernac.cma}
+    %{lib:coq-core.stm:stm.cma}
+    %{lib:coq-core.sysinit:sysinit.cma}
+    %{lib:coq-core.toplevel:toplevel.cma}
+    %{lib:coq-core.plugins.ltac:ltac_plugin.cma}
+    %{lib:coq-core.top_printers:top_printers.cmi}
+    %{lib:coq-core.top_printers:top_printers.cma}
+    %{lib:coq-core.top_printers:../META})
   (action (copy dune-dbg.in dune-dbg)))

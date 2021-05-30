@@ -198,7 +198,7 @@ let type_of_apply env func funt argsv argstv =
         let argt = argstv.(i) in
         let c1 = term_of_fconstr c1 in
         begin match conv_leq false env argt c1 with
-        | () -> apply_rec (i+1) (mk_clos (Esubst.subs_cons ([| inject arg |], e)) c2)
+        | () -> apply_rec (i+1) (mk_clos (Esubst.subs_cons (inject arg) e) c2)
         | exception NotConvertible ->
           error_cant_apply_bad_type env
             (i+1,c1,argt)
@@ -548,22 +548,26 @@ let rec execute env cstr =
     | Construct c ->
       cstr, type_of_constructor env c
 
-    | Case (ci,p,iv,c,lf) ->
+    | Case (ci, u, pms, p, iv, c, lf) ->
+        (** FIXME: change type_of_case to handle the compact form *)
+        let (ci, p, iv, c, lf) = expand_case env (ci, u, pms, p, iv, c, lf) in
         let c', ct = execute env c in
         let iv' = match iv with
           | NoInvert -> NoInvert
-          | CaseInvert {univs;args} ->
-            let ct' = mkApp (mkIndU (ci.ci_ind,univs), args) in
+          | CaseInvert {indices} ->
+            let args = Array.append pms indices in
+            let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
             let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
             let () = conv_leq false env ct ct' in
             let _, args' = decompose_appvect ct' in
-            if args == args' then iv else CaseInvert {univs;args=args'}
+            if args == args' then iv
+            else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
         in
         let p', pt = execute env p in
         let lf', lft = execute_array env lf in
         let ci', t = type_of_case env ci p' pt iv' c' ct lf' lft in
         let cstr = if ci == ci' && c == c' && p == p' && iv == iv' && lf == lf' then cstr
-          else mkCase(ci',p',iv',c',lf')
+          else mkCase (Inductive.contract_case env (ci',p',iv',c',lf'))
         in
         cstr, t
 
@@ -640,12 +644,6 @@ let infer env constr =
   let constr, t = execute env constr in
   make_judge constr t
 
-let infer =
-  if Flags.profile then
-    let infer_key = CProfile.declare_profile "Fast_infer" in
-      CProfile.profile2 infer_key (fun b c -> infer b c)
-  else (fun b c -> infer b c)
-
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
 
@@ -720,11 +718,6 @@ let judge_of_inductive env indu =
 let judge_of_constructor env cu =
   make_judge (mkConstructU cu) (type_of_constructor env cu)
 
-let judge_of_case env ci pj iv cj lfj =
-  let lf, lft = dest_judgev lfj in
-  let ci, t = type_of_case env ci pj.uj_val pj.uj_type iv cj.uj_val cj.uj_type lf lft in
-  make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, iv, cj.uj_val, lft)) t
-
 (* Building type of primitive operators and type *)
 
 let type_of_prim_const env _u c =
@@ -786,15 +779,16 @@ let type_of_prim env u t =
     | PITT_type (ty,t) -> tr_prim_type (tr_type n) ty t
     | PITT_param i -> Constr.mkRel (n+i)
   in
-  let rec nary_op n = function
-    | [] -> assert false
-    | [ret_ty] -> tr_type n ret_ty
+  let rec nary_op n ret_ty = function
+    | [] -> tr_type n ret_ty
     | arg_ty :: r ->
-      Constr.mkProd(Context.nameR (Id.of_string "x"), tr_type n arg_ty, nary_op (n+1) r)
+        Constr.mkProd (Context.nameR (Id.of_string "x"),
+                       tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
-  let params, sign = types t in
+  let params, args_ty, ret_ty = types t in
   assert (AUContext.size (univs t) = Instance.length u);
-  Vars.subst_instance_constr u (Term.it_mkProd_or_LetIn (nary_op 0 sign) params)
+  Vars.subst_instance_constr u
+    (Term.it_mkProd_or_LetIn (nary_op 0 ret_ty args_ty) params)
 
 let type_of_prim_or_type env u = let open CPrimitives in
   function

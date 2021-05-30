@@ -1,6 +1,6 @@
-Require Import Omega.
+Require Import Lia ZArith.
 
 Goal forall x, Z.succ (Z.pred x) = x.
 intros x.
-omega.
+lia.
 Qed.

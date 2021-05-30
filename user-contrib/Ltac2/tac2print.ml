@@ -274,7 +274,9 @@ let pr_glbexpr_gen lvl c =
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
   | GTacExt (tag, arg) ->
     let tpe = interp_ml_object tag in
-    hov 0 (tpe.ml_print (Global.env ()) arg) (* FIXME *)
+    let env = Global.env() in
+    let sigma = Evd.from_env env in
+    hov 0 (tpe.ml_print env sigma arg) (* FIXME *)
   | GTacPrm (prm, args) ->
     let args = match args with
     | [] -> mt ()
@@ -464,7 +466,7 @@ end
 let () = register_init "pattern" begin fun env sigma c ->
   let c = to_pattern c in
   let c = try Printer.pr_lconstr_pattern_env env sigma c with _ -> str "..." in
-  str "pattern:(" ++ c ++ str ")"
+  str "pat:(" ++ c ++ str ")"
 end
 
 let () = register_init "message" begin fun _ _ pp ->
@@ -487,3 +489,51 @@ let () =
   | _ -> assert false
   in
   register_val_printer kn { val_printer }
+
+(** {5 Ltac2 primitive} *)
+
+type format =
+| FmtString
+| FmtInt
+| FmtConstr
+| FmtIdent
+| FmtLiteral of string
+| FmtAlpha
+
+let val_format = Tac2dyn.Val.create "format"
+
+exception InvalidFormat
+
+let parse_format (s : string) : format list =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  let rec parse i accu =
+    if len <= i then accu
+    else match s.[i] with
+    | '%' -> parse_argument (i + 1) accu
+    | _ ->
+      let i' = parse_literal i in
+      if Int.equal i i' then parse i' accu
+      else
+        let lit = Buffer.contents buf in
+        let () = Buffer.clear buf in
+        parse i' (FmtLiteral lit :: accu)
+  and parse_literal i =
+    if len <= i then i
+    else match s.[i] with
+    | '%' -> i
+    | c ->
+      let () = Buffer.add_char buf c in
+      parse_literal (i + 1)
+  and parse_argument i accu =
+    if len <= i then raise InvalidFormat
+    else match s.[i] with
+    | '%' -> parse (i + 1) (FmtLiteral "%" :: accu)
+    | 's' -> parse (i + 1) (FmtString :: accu)
+    | 'i' -> parse (i + 1) (FmtInt :: accu)
+    | 'I' -> parse (i + 1) (FmtIdent :: accu)
+    | 't' -> parse (i + 1) (FmtConstr :: accu)
+    | 'a' -> parse (i + 1) (FmtAlpha :: accu)
+    | _ -> raise InvalidFormat
+  in
+  parse 0 []

@@ -16,21 +16,22 @@
 (** A boolean is either [true] or [false], and this is decidable *)
 
 Definition sumbool_of_bool : forall b:bool, {b = true} + {b = false}.
-  destruct b; auto.
+  intros b; destruct b; auto.
 Defined.
 
+#[global]
 Hint Resolve sumbool_of_bool: bool.
 
 Definition bool_eq_rec :
   forall (b:bool) (P:bool -> Set),
     (b = true -> P true) -> (b = false -> P false) -> P b.
-  destruct b; auto.
+  intros b; destruct b; auto.
 Defined.
 
 Definition bool_eq_ind :
   forall (b:bool) (P:bool -> Prop),
     (b = true -> P true) -> (b = false -> P false) -> P b.
-  destruct b; auto.
+  intros b; destruct b; auto.
 Defined.
 
 
@@ -57,7 +58,9 @@ Section connectives.
 
 End connectives.
 
+#[global]
 Hint Resolve sumbool_and sumbool_or: core.
+#[global]
 Hint Immediate sumbool_not : core.
 
 (** Any decidability function in type [sumbool] can be turned into a function

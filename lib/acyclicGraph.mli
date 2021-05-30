@@ -65,18 +65,12 @@ module Make (Point:Point) : sig
 
   val choose : (Point.t -> bool) -> t -> Point.t -> Point.t option
 
-  val sort : (int -> Point.t) -> Point.t list -> t -> t
-  (** [sort mk first g] builds a totally ordered graph. The output
-     graph should imply the input graph (and the implication will be
-     strict most of the time), but is not necessarily minimal. The
-     lowest points in the result are identified with [first].
-     Moreover, it adds levels [Type.n] to identify the points (not in
-     [first]) at level n. An artificial constraint (last first < mk
-     (length first)) is added to ensure that they are not merged.
-     Note: the result is unspecified if the input graph already
-     contains [mk n] nodes. *)
+  (** {5 High-level representation} *)
 
-  val pr : (Point.t -> Pp.t) -> t -> Pp.t
+  type node =
+  | Alias of Point.t
+  | Node of bool Point.Map.t (** Nodes v s.t. u < v (true) or u <= v (false) *)
+  type repr = node Point.Map.t
+  val repr : t -> repr
 
-  val dump : (constraint_type -> Point.t -> Point.t -> unit) -> t -> unit
 end

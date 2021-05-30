@@ -51,8 +51,8 @@ Check fun A (x : prod' bool A) => match x with (@pair' _ 0) _ y 0%bool => 2 | _ 
 Notation c3 x := ((@pair') _ x).
 Check (@pair') _ 0%bool _ 0%bool 0%bool : prod' bool bool. (* @ is blocking implicit and scopes *)
 Check ((@pair') _ 0%bool) _ 0%bool 0%bool : prod' bool bool. (* parentheses and @ are blocking implicit and scopes *)
-Check c3 0 0 0 : prod' nat bool. (* First scope is blocked but not the last two scopes *)
-Check fun A (x :prod' nat A) => match x with c3 0 y 0 => 2 | _ => 1 end.
+Check c3 0 0 0 : prod' bool bool.
+Check fun A (x :prod' bool A) => match x with c3 0 y 0 => 2 | _ => 1 end.
 
 (* 4. Abbreviations do not stop implicit arguments to be inserted and scopes to be used *)
 (* unless an atomic @ is given *)
@@ -146,14 +146,17 @@ Module M16.
   Module A.
   Declare Custom Entry foo2.
   End A.
-  Fail Notation "##" := 0 (in custom foo2).
+  Notation "##" := 0 (in custom foo2).
   Import A.
-  Local Notation "##" := 0 (in custom foo2).
+  Local Notation "####" := 0 (in custom foo2).
 
   (* Test Print Grammar *)
   Print Custom Grammar foo.
   Print Custom Grammar foo2.
 End M16.
+Fail Local Notation "###" := 0 (in custom foo).
+Fail Print Custom Grammar foo.
+Notation "####" := 0 (in custom foo2).
 
 (* Example showing the need for strong evaluation of
    cases_pattern_of_glob_constr (this used to raise Not_found at some
@@ -202,3 +205,11 @@ Notation "#" := (@id nat).
 Check # = (fun a:nat => a). (* # should inherit its maximal implicit argument *)
 
 End InheritanceMaximalImplicitPureNotation.
+
+Module TreeLikeLookAhead.
+
+Notation "6 ^" := true (at level 0, format "6 ^").
+Notation "6 ?" := false (at level 0, format "6 ?").
+Check 6.
+
+End TreeLikeLookAhead.

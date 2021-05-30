@@ -16,442 +16,412 @@
 Require Import Decimal DecimalFacts DecimalPos DecimalN DecimalZ.
 Require Import Hexadecimal HexadecimalFacts HexadecimalPos HexadecimalN HexadecimalZ QArith.
 
-Lemma of_to (q:Q) : forall d, to_hexadecimal q = Some d -> of_hexadecimal d = q.
+Lemma of_IQmake_to_hexadecimal num den :
+  match IQmake_to_hexadecimal num den with
+  | None => True
+  | Some (HexadecimalExp _ _ _) => False
+  | Some (Hexadecimal i f) => of_hexadecimal (Hexadecimal i f) = IQmake (IZ_of_Z num) den
+  end.
 Proof.
-  cut (match to_hexadecimal q with None => True | Some d => of_hexadecimal d = q end).
-  { now case to_hexadecimal; [intros d <- d' Hd'; injection Hd'; intros ->|]. }
-  destruct q as (num, den).
-  unfold to_hexadecimal; simpl Qnum; simpl Qden.
-  generalize (HexadecimalPos.Unsigned.nztail_to_hex_uint den).
-  case Hexadecimal.nztail; intros u n.
-  change 16%N with (2^4)%N; rewrite <-N.pow_mul_r.
-  change 4%N with (N.of_nat 4); rewrite <-Nnat.Nat2N.inj_mul.
-  change 4%Z with (Z.of_nat 4); rewrite <-Nat2Z.inj_mul.
-  case u; clear u; try (intros; exact I); [| | |]; intro u;
-    (case u; clear u; [|intros; exact I..]).
-  - unfold Pos.of_hex_uint, Pos.of_hex_uint_acc; rewrite N.mul_1_l.
-    case n.
-    + unfold of_hexadecimal, app_int, app, Z.to_hex_int; simpl.
-      intro H; inversion H as (H1); clear H H1.
-      case num; [reflexivity|intro pnum; fold (rev (rev (Pos.to_hex_uint pnum)))..].
-      * rewrite rev_rev; simpl.
-        now unfold Z.of_hex_uint; rewrite HexadecimalPos.Unsigned.of_to.
-      * rewrite rev_rev; simpl.
-      now unfold Z.of_hex_uint; rewrite HexadecimalPos.Unsigned.of_to.
-    + clear n; intros n.
-      intro H; injection H; intros ->; clear H.
-      unfold of_hexadecimal.
-      rewrite DecimalZ.of_to.
-      simpl nb_digits; rewrite Nat2Z.inj_0, Z.mul_0_r, Z.sub_0_r.
-      now apply f_equal2; [rewrite app_int_nil_r, of_to|].
-  - unfold Pos.of_hex_uint, Pos.of_hex_uint_acc.
-    rewrite <-N.pow_succ_r', <-Nnat.Nat2N.inj_succ.
-    intro H; injection H; intros ->; clear H.
-    fold (4 * n)%nat.
-    change 1%Z with (Z.of_nat 1); rewrite <-Znat.Nat2Z.inj_add.
-    unfold of_hexadecimal.
-    rewrite DecimalZ.of_to.
-    simpl nb_digits; rewrite Nat2Z.inj_0, Z.mul_0_r, Z.sub_0_r.
-    now apply f_equal2; [rewrite app_int_nil_r, of_to|].
-  - change 2%Z with (Z.of_nat 2); rewrite <-Znat.Nat2Z.inj_add.
-    unfold Pos.of_hex_uint, Pos.of_hex_uint_acc.
-    change 4%N with (2^2)%N; rewrite <-N.pow_add_r.
-    change 2%N with (N.of_nat 2); rewrite <-Nnat.Nat2N.inj_add.
-    intro H; injection H; intros ->; clear H.
-    fold (4 * n)%nat.
-    unfold of_hexadecimal.
-    rewrite DecimalZ.of_to.
-    simpl nb_digits; rewrite Nat2Z.inj_0, Z.mul_0_r, Z.sub_0_r.
-    now apply f_equal2; [rewrite app_int_nil_r, of_to|].
-  - change 3%Z with (Z.of_nat 3); rewrite <-Znat.Nat2Z.inj_add.
-    unfold Pos.of_hex_uint, Pos.of_hex_uint_acc.
-    change 8%N with (2^3)%N; rewrite <-N.pow_add_r.
-    change 3%N with (N.of_nat 3); rewrite <-Nnat.Nat2N.inj_add.
-    intro H; injection H; intros ->; clear H.
-    fold (4 * n)%nat.
-    unfold of_hexadecimal.
-    rewrite DecimalZ.of_to.
-    simpl nb_digits; rewrite Nat2Z.inj_0, Z.mul_0_r, Z.sub_0_r.
-    now apply f_equal2; [rewrite app_int_nil_r, of_to|].
+  unfold IQmake_to_hexadecimal.
+  generalize (Unsigned.nztail_to_hex_uint den).
+  case Hexadecimal.nztail; intros den' e_den'.
+  case den'; [now simpl|now simpl| |now simpl..]; clear den'; intro den'.
+  case den'; [ |now simpl..]; clear den'.
+  case e_den' as [|e_den']; simpl; intro H; injection H; clear H; intros->.
+  { now unfold of_hexadecimal; simpl; rewrite app_int_nil_r, HexadecimalZ.of_to. }
+  replace (16 ^ _)%positive with (Nat.iter (S e_den') (Pos.mul 16) 1%positive).
+  2:{ induction e_den' as [|n IHn]; [now simpl| ].
+    now rewrite SuccNat2Pos.inj_succ, Pos.pow_succ_r, <-IHn. }
+  case Nat.ltb_spec; intro He_den'.
+  - unfold of_hexadecimal; simpl.
+    rewrite app_int_del_tail_head; [|now apply Nat.lt_le_incl].
+    rewrite HexadecimalZ.of_to.
+    now rewrite nb_digits_del_head_sub; [|now apply Nat.lt_le_incl].
+  - unfold of_hexadecimal; simpl.
+    rewrite nb_digits_iter_D0.
+    apply f_equal2.
+    + apply f_equal, HexadecimalZ.to_int_inj.
+      rewrite HexadecimalZ.to_of.
+      rewrite <-(HexadecimalZ.of_to num), HexadecimalZ.to_of.
+      case (Z.to_hex_int num); clear He_den' num; intro num; simpl.
+      * unfold app; simpl.
+        now rewrite unorm_D0, unorm_iter_D0, unorm_involutive.
+      * case (uint_eq_dec (nzhead num) Nil); [|intro Hn].
+        { intros->; simpl; unfold app; simpl.
+          now rewrite unorm_D0, unorm_iter_D0. }
+        replace (match nzhead num with Nil => _ | _ => _ end)
+          with (Neg (nzhead num)); [|now revert Hn; case nzhead].
+        simpl.
+        rewrite nzhead_iter_D0, nzhead_involutive.
+        now revert Hn; case nzhead.
+    + revert He_den'; case nb_digits as [|n]; [now simpl; rewrite Nat.add_0_r|].
+      intro Hn.
+      rewrite Nat.add_succ_r, Nat.add_comm.
+      now rewrite <-le_plus_minus; [|apply le_S_n].
 Qed.
 
-(* normalize without fractional part, for instance norme 0x1.2p-1 is 0x12e-5 *)
-Definition hnorme (d:hexadecimal) : hexadecimal :=
-  let '(i, f, e) :=
-    match d with
-    | Hexadecimal i f => (i, f, Decimal.Pos Decimal.Nil)
-    | HexadecimalExp i f e => (i, f, e)
+Lemma IZ_of_Z_IZ_to_Z z z' : IZ_to_Z z = Some z' -> IZ_of_Z z' = z.
+Proof. now case z as [| |p|p]; [|intro H; injection H; intros<-..]. Qed.
+
+Lemma of_IQmake_to_hexadecimal' num den :
+  match IQmake_to_hexadecimal' num den with
+  | None => True
+  | Some (HexadecimalExp _ _ _) => False
+  | Some (Hexadecimal i f) => of_hexadecimal (Hexadecimal i f) = IQmake num den
+  end.
+Proof.
+  unfold IQmake_to_hexadecimal'.
+  case_eq (IZ_to_Z num); [intros num' Hnum'|now simpl].
+  generalize (of_IQmake_to_hexadecimal num' den).
+  case IQmake_to_hexadecimal as [d|]; [|now simpl].
+  case d as [i f|]; [|now simpl].
+  now rewrite (IZ_of_Z_IZ_to_Z _ _ Hnum').
+Qed.
+
+Lemma of_to (q:IQ) : forall d, to_hexadecimal q = Some d -> of_hexadecimal d = q.
+Proof.
+  intro d.
+  case q as [num den|q q'|q q']; simpl.
+  - generalize (of_IQmake_to_hexadecimal' num den).
+    case IQmake_to_hexadecimal' as [d'|]; [|now simpl].
+    case d' as [i f|]; [|now simpl].
+    now intros H H'; injection H'; clear H'; intros <-.
+  - case q as [num den| |]; [|now simpl..].
+    case q' as [num' den'| |]; [|now simpl..].
+    case num' as [z p| | |]; [|now simpl..].
+    case (Z.eq_dec z 2); [intros->|].
+    2:{ case z; [now simpl| |now simpl]; intro pz'.
+      case pz'; [intros d0..| ]; [now simpl| |now simpl].
+      now case d0. }
+    case (Pos.eq_dec den' 1%positive); [intros->|now case den'].
+    generalize (of_IQmake_to_hexadecimal' num den).
+    case IQmake_to_hexadecimal' as [d'|]; [|now simpl].
+    case d' as [i f|]; [|now simpl].
+    intros <-; clear num den.
+    intros H; injection H; clear H; intros<-.
+    unfold of_hexadecimal; simpl.
+    now unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to; simpl.
+  - case q as [num den| |]; [|now simpl..].
+    case q' as [num' den'| |]; [|now simpl..].
+    case num' as [z p| | |]; [|now simpl..].
+    case (Z.eq_dec z 2); [intros->|].
+    2:{ case z; [now simpl| |now simpl]; intro pz'.
+      case pz'; [intros d0..| ]; [now simpl| |now simpl].
+      now case d0. }
+    case (Pos.eq_dec den' 1%positive); [intros->|now case den'].
+    generalize (of_IQmake_to_hexadecimal' num den).
+    case IQmake_to_hexadecimal' as [d'|]; [|now simpl].
+    case d' as [i f|]; [|now simpl].
+    intros <-; clear num den.
+    intros H; injection H; clear H; intros<-.
+    unfold of_hexadecimal; simpl.
+    now unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to; simpl.
+Qed.
+
+
+Definition dnorm (d:hexadecimal) : hexadecimal :=
+  let norm_i i f :=
+    match i with
+    | Pos i => Pos (unorm i)
+    | Neg i => match nzhead (app i f) with Nil => Pos zero | _ => Neg (unorm i) end
     end in
-  let i := norm (app_int i f) in
-  let e := (Z.of_int e - 4 * Z.of_nat (nb_digits f))%Z in
-  match e with
-  | Z0 => Hexadecimal i Nil
-  | Zpos e => Hexadecimal (Pos.iter double i e) Nil
-  | Zneg _ => HexadecimalExp i Nil (Decimal.norm (Z.to_int e))
+  match d with
+  | Hexadecimal i f => Hexadecimal (norm_i i f) f
+  | HexadecimalExp i f e =>
+    match Decimal.norm e with
+    | Decimal.Pos Decimal.zero => Hexadecimal (norm_i i f) f
+    | e => HexadecimalExp (norm_i i f) f e
+    end
   end.
 
-Lemma hnorme_spec d :
-  match hnorme d with
-  | Hexadecimal i Nil => i = norm i
-  | HexadecimalExp i Nil e =>
-    i = norm i /\ e = Decimal.norm e /\ e <> Decimal.Pos Decimal.zero
-  | _ => False
+Lemma dnorm_spec_i d :
+  let (i, f) :=
+    match d with Hexadecimal i f => (i, f) | HexadecimalExp i f _ => (i, f) end in
+  let i' := match dnorm d with Hexadecimal i _ => i | HexadecimalExp i _ _ => i end in
+  match i with
+  | Pos i => i' = Pos (unorm i)
+  | Neg i =>
+    (i' = Neg (unorm i) /\ (nzhead i <> Nil \/ nzhead f <> Nil))
+    \/ (i' = Pos zero /\ (nzhead i = Nil /\ nzhead f = Nil))
   end.
 Proof.
-  case d; clear d; intros i f; [|intro e]; unfold hnorme; simpl.
-  - case_eq (nb_digits f); [now simpl; rewrite norm_invol|]; intros nf Hnf.
-    split; [now simpl; rewrite norm_invol|].
-    unfold Z.of_nat.
-    now rewrite <-!DecimalZ.to_of, !DecimalZ.of_to.
-  - set (e' := (_ - _)%Z).
-    case_eq e'; [|intro pe'..]; intro He'.
-    + now rewrite norm_invol.
-    + rewrite Pos2Nat.inj_iter.
-      set (ne' := Pos.to_nat pe').
-      fold (Nat.iter ne' double (norm (app_int i f))).
-      induction ne'; [now simpl; rewrite norm_invol|].
-      now rewrite Unsigned.nat_iter_S, <-double_norm, IHne', norm_invol.
-    + split; [now rewrite norm_invol|].
-      split; [now rewrite DecimalFacts.norm_invol|].
-      rewrite <-DecimalZ.to_of, DecimalZ.of_to.
-      change (Decimal.Pos _) with (Z.to_int 0).
-      now intro H; generalize (DecimalZ.to_int_inj _ _ H).
+  case d as [i f|i f e]; case i as [i|i].
+  - now simpl.
+  - simpl; case (uint_eq_dec (nzhead (app i f)) Nil); intro Ha.
+    + rewrite Ha; right; split; [now simpl|split].
+      * now unfold unorm; rewrite (nzhead_app_nil_l _ _ Ha).
+      * now unfold unorm; rewrite (nzhead_app_nil_r _ _ Ha).
+    + left; split; [now revert Ha; case nzhead|].
+      case (uint_eq_dec (nzhead i) Nil).
+      * intro Hi; right; intro Hf; apply Ha.
+        now rewrite <-nzhead_app_nzhead, Hi, app_nil_l.
+      * now intro H; left.
+  - simpl; case (Decimal.norm e); clear e; intro e; [|now simpl].
+    now case e; clear e; [|intro e..]; [|case e|..].
+  - simpl.
+    set (m := match nzhead _ with Nil => _ | _ => _ end).
+    set (m' := match _ with Hexadecimal _ _ => _ | _ => _ end).
+    replace m' with m.
+    2:{ unfold m'; case (Decimal.norm e); clear m' e; intro e; [|now simpl].
+      now case e; clear e; [|intro e..]; [|case e|..]. }
+    unfold m; case (uint_eq_dec (nzhead (app i f)) Nil); intro Ha.
+    + rewrite Ha; right; split; [now simpl|split].
+      * now unfold unorm; rewrite (nzhead_app_nil_l _ _ Ha).
+      * now unfold unorm; rewrite (nzhead_app_nil_r _ _ Ha).
+    + left; split; [now revert Ha; case nzhead|].
+      case (uint_eq_dec (nzhead i) Nil).
+      * intro Hi; right; intro Hf; apply Ha.
+        now rewrite <-nzhead_app_nzhead, Hi, app_nil_l.
+      * now intro H; left.
 Qed.
 
-Lemma hnorme_invol d : hnorme (hnorme d) = hnorme d.
+Lemma dnorm_spec_f d :
+  let f := match d with Hexadecimal _ f => f | HexadecimalExp _ f _ => f end in
+  let f' := match dnorm d with Hexadecimal _ f => f | HexadecimalExp _ f _ => f end in
+  f' = f.
 Proof.
-  case d; clear d; intros i f; [|intro e]; unfold hnorme; simpl.
-  - case_eq (nb_digits f); [now simpl; rewrite app_int_nil_r, norm_invol|].
-    intros nf Hnf.
-    unfold Z.of_nat.
-    simpl.
-    set (pnf := Pos.to_uint _).
-    set (nz := Decimal.nzhead pnf).
-    assert (Hnz : nz <> Decimal.Nil).
-    { unfold nz, pnf.
-      rewrite <-DecimalFacts.unorm_0.
-      rewrite <-DecimalPos.Unsigned.to_of.
-      rewrite DecimalPos.Unsigned.of_to.
-      change Decimal.zero with (N.to_uint 0).
-      now intro H; generalize (DecimalN.Unsigned.to_uint_inj _ _ H). }
-    set (m := match nz with Decimal.Nil => _ | _ => _ end).
-    assert (Hm : m = (Decimal.Neg (Decimal.unorm pnf))).
-    { now revert Hnz; unfold m, nz, Decimal.unorm; fold nz; case nz. }
-    rewrite Hm; unfold pnf.
-    rewrite <-DecimalPos.Unsigned.to_of, DecimalPos.Unsigned.of_to.
-    simpl; unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to.
-    rewrite Z.sub_0_r; simpl.
-    fold pnf; fold nz; fold m; rewrite Hm; unfold pnf.
-    rewrite <-DecimalPos.Unsigned.to_of, DecimalPos.Unsigned.of_to.
-    now rewrite app_int_nil_r, norm_invol.
-  - set (e' := (_ - _)%Z).
-    case_eq e'; [|intro pe'..]; intro Hpe'.
-    + now simpl; rewrite app_int_nil_r, norm_invol.
-    + simpl; rewrite app_int_nil_r.
-      apply f_equal2; [|reflexivity].
-      rewrite Pos2Nat.inj_iter.
-      set (ne' := Pos.to_nat pe').
-      fold (Nat.iter ne' double (norm (app_int i f))).
-      induction ne'; [now simpl; rewrite norm_invol|].
-      now rewrite Unsigned.nat_iter_S, <-double_norm, IHne'.
-    + rewrite <-DecimalZ.to_of, !DecimalZ.of_to; simpl.
-      rewrite app_int_nil_r, norm_invol.
-      set (pnf := Pos.to_uint _).
-      set (nz := Decimal.nzhead pnf).
-      assert (Hnz : nz <> Decimal.Nil).
-      { unfold nz, pnf.
-        rewrite <-DecimalFacts.unorm_0.
-        rewrite <-DecimalPos.Unsigned.to_of.
-        rewrite DecimalPos.Unsigned.of_to.
-        change Decimal.zero with (N.to_uint 0).
-        now intro H; generalize (DecimalN.Unsigned.to_uint_inj _ _ H). }
-      set (m := match nz with Decimal.Nil => _ | _ => _ end).
-      assert (Hm : m = (Decimal.Neg (Decimal.unorm pnf))).
-      { now revert Hnz; unfold m, nz, Decimal.unorm; fold nz; case nz. }
-      rewrite Hm; unfold pnf.
-      now rewrite <-DecimalPos.Unsigned.to_of, DecimalPos.Unsigned.of_to.
+  case d as [i f|i f e]; [now simpl|].
+  simpl; case (Decimal.int_eq_dec (Decimal.norm e) (Decimal.Pos Decimal.zero)); [now intros->|intro He].
+  set (i' := match i with Pos _ => _ | _ => _ end).
+  set (m := match Decimal.norm e with Decimal.Pos _ => _ | _ => _ end).
+  replace m with (HexadecimalExp i' f (Decimal.norm e)); [now simpl|].
+  unfold m; revert He; case (Decimal.norm e); clear m e; intro e; [|now simpl].
+  now case e; clear e; [|intro e; case e|..].
 Qed.
 
-Lemma to_of (d:hexadecimal) :
-  to_hexadecimal (of_hexadecimal d) = Some (hnorme d).
+Lemma dnorm_spec_e d :
+  match d, dnorm d with
+    | Hexadecimal _ _, Hexadecimal _ _ => True
+    | HexadecimalExp _ _ e, Hexadecimal _ _ =>
+      Decimal.norm e = Decimal.Pos Decimal.zero
+    | HexadecimalExp _ _ e, HexadecimalExp _ _ e' =>
+      e' = Decimal.norm e /\ e' <> Decimal.Pos Decimal.zero
+    | Hexadecimal _ _, HexadecimalExp _ _ _ => False
+  end.
 Proof.
-  unfold to_hexadecimal.
-  pose (t10 := fun y => (y~0~0~0~0)%positive).
-  assert (H : exists h e_den,
-             Hexadecimal.nztail (Pos.to_hex_uint (Qden (of_hexadecimal d)))
-             = (h, e_den)
-             /\ (h = D1 Nil \/ h = D2 Nil \/ h = D4 Nil \/ h = D8 Nil)).
-  { assert (H : forall p,
-               Hexadecimal.nztail (Pos.to_hex_uint (Pos.iter (Pos.mul 2) 1%positive p))
-               = ((match (Pos.to_nat p) mod 4 with 0%nat => D1 | 1 => D2 | 2 => D4 | _ => D8 end)%nat Nil,
-                  (Pos.to_nat p / 4)%nat)).
-    { intro p; clear d; rewrite Pos2Nat.inj_iter.
-      fold (Nat.iter (Pos.to_nat p) (Pos.mul 2) 1%positive).
-      set (n := Pos.to_nat p).
-      fold (Nat.iter n t10 1%positive).
-      set (nm4 := (n mod 4)%nat); set (nd4 := (n / 4)%nat).
-      rewrite (Nat.div_mod n 4); [|now simpl].
-      unfold nm4, nd4; clear nm4 nd4.
-      generalize (Nat.mod_upper_bound n 4 ltac:(now simpl)).
-      generalize (n mod 4); generalize (n / 4)%nat.
-      intros d r Hr; clear p n.
-      induction d.
-      { simpl; revert Hr.
-        do 4 (case r; [now simpl|clear r; intro r]).
-        intro H; exfalso.
-        now do 4 (generalize (lt_S_n _ _ H); clear H; intro H). }
-      rewrite Nat.mul_succ_r, <-Nat.add_assoc, (Nat.add_comm 4), Nat.add_assoc.
-      rewrite (Nat.add_comm _ 4).
-      change (4 + _)%nat with (S (S (S (S (4 * d + r))))).
-      rewrite !Unsigned.nat_iter_S.
-      rewrite !Pos.mul_assoc.
-      unfold Pos.to_hex_uint.
-      change (2 * 2 *  2 * 2)%positive with 0x10%positive.
-      set (n := Nat.iter _ _ _).
-      change (Pos.to_little_hex_uint _) with (Unsigned.to_lu (16 * N.pos n)).
-      rewrite Unsigned.to_lhex_tenfold.
-      unfold Hexadecimal.nztail; rewrite rev_rev.
-      rewrite <-(rev_rev (Unsigned.to_lu _)).
-      set (m := _ (rev _)).
-      replace m with (let (r, n) := let (r, n) := m in (rev r, n) in (rev r, n)).
-      2:{ now case m; intros r' n'; rewrite rev_rev. }
-      change (let (r, n) := m in (rev r, n))
-        with (Hexadecimal.nztail (Pos.to_hex_uint n)).
-      now unfold n; rewrite IHd, rev_rev; clear n m. }
-    unfold of_hexadecimal.
-    case d; intros i f; [|intro e]; unfold of_hexadecimal; simpl.
-    - case (Z.of_nat _)%Z; [|intro p..];
-        [now exists (D1 Nil), O; split; [|left]
-        | |now exists (D1 Nil), O; split; [|left]].
-      exists (D1 Nil), (Pos.to_nat p).
-      split; [|now left]; simpl.
-      change (Pos.iter _ _ _) with (Pos.iter (Pos.mul 2) 1%positive (4 * p)).
-      rewrite H.
-      rewrite Pos2Nat.inj_mul, Nat.mul_comm, Nat.div_mul; [|now simpl].
-      now rewrite Nat.mod_mul; [|now simpl].
-    - case (_ - _)%Z; [|intros p..]; [now exists (D1 Nil), O; split; [|left]..|].
-      simpl Qden; rewrite H.
-      eexists; eexists; split; [reflexivity|].
-      case (_ mod _); [now left|intro n].
-      case n; [now right; left|clear n; intro n].
-      case n; [now right; right; left|clear n; intro n].
-      now right; right; right. }
-  generalize (HexadecimalPos.Unsigned.nztail_to_hex_uint (Qden (of_hexadecimal d))).
-  destruct H as (h, (e, (He, Hh))); rewrite He; clear He.
-  assert (Hn1 : forall p, N.pos (Pos.iter (Pos.mul 2) 1%positive p) = 1%N -> False).
-  { intro p.
-    rewrite Pos2Nat.inj_iter.
-    case_eq (Pos.to_nat p); [|now simpl].
-    intro H; exfalso; apply (lt_irrefl O).
-    rewrite <-H at 2; apply Pos2Nat.is_pos. }
-  assert (H16_2 : forall p, (16^p = 2^(4 * p))%positive).
-  { intro p.
-    apply (@f_equal _ _ (fun z => match z with Z.pos p => p | _ => 1%positive end)
-                    (Z.pos _) (Z.pos _)).
-    rewrite !Pos2Z.inj_pow_pos, !Z.pow_pos_fold, Pos2Z.inj_mul.
-    now change 16%Z with (2^4)%Z; rewrite <-Z.pow_mul_r. }
-  assert (HN16_2 : forall n, (16^n = 2^(4 * n))%N).
-  { intro n.
-    apply N2Z.inj; rewrite !N2Z.inj_pow, N2Z.inj_mul.
-    change (Z.of_N 16) with (2^4)%Z.
-    now rewrite <-Z.pow_mul_r; [| |apply N2Z.is_nonneg]. }
-  assert (Hn1' : forall p, N.pos (Pos.iter (Pos.mul 16) 1%positive p) = 1%N -> False).
-  { intro p; fold (16^p)%positive; rewrite H16_2; apply Hn1. }
-  assert (Ht10inj : forall n m, t10 n = t10 m -> n = m).
-  { intros n m H; generalize (f_equal Z.pos H); clear H.
-    change (Z.pos (t10 n)) with (Z.mul 0x10 (Z.pos n)).
-    change (Z.pos (t10 m)) with (Z.mul 0x10 (Z.pos m)).
-    rewrite Z.mul_comm, (Z.mul_comm 0x10).
-    intro H; generalize (f_equal (fun z => Z.div z 0x10) H); clear H.
-    now rewrite !Z.div_mul; [|now simpl..]; intro H; inversion H. }
-  assert (Ht2inj : forall n m, Pos.mul 2 n = Pos.mul 2 m -> n = m).
-  { intros n m H; generalize (f_equal Z.pos H); clear H.
-    change (Z.pos (Pos.mul 2 n)) with (Z.mul 2 (Z.pos n)).
-    change (Z.pos (Pos.mul 2 m)) with (Z.mul 2 (Z.pos m)).
-    rewrite Z.mul_comm, (Z.mul_comm 2).
-    intro H; generalize (f_equal (fun z => Z.div z 2) H); clear H.
-    now rewrite !Z.div_mul; [|now simpl..]; intro H; inversion H. }
-  assert (Hinj : forall n m,
-             Nat.iter n (Pos.mul 2) 1%positive = Nat.iter m (Pos.mul 2) 1%positive
-             -> n = m).
-  { induction n; [now intro m; case m|].
-    intro m; case m; [now simpl|]; clear m; intro m.
-    rewrite !Unsigned.nat_iter_S.
-    intro H; generalize (Ht2inj _ _ H); clear H; intro H.
-    now rewrite (IHn _ H). }
-  change 4%Z with (Z.of_nat 4); rewrite <-Nat2Z.inj_mul.
-  change 1%Z with (Z.of_nat 1); rewrite <-Nat2Z.inj_add.
-  change 2%Z with (Z.of_nat 2); rewrite <-Nat2Z.inj_add.
-  change 3%Z with (Z.of_nat 3); rewrite <-Nat2Z.inj_add.
-  destruct Hh as [Hh|[Hh|[Hh|Hh]]]; rewrite Hh; clear h Hh.
-  - case e; clear e; [|intro e]; simpl; unfold of_hexadecimal, hnorme.
-    + case d; clear d; intros i f; [|intro e].
-      * generalize (nb_digits_pos f).
-        case f;
-          [|now clear f; intro f; intros H1 H2; exfalso; revert H1 H2;
-            case nb_digits;
-            [intros H _; apply (lt_irrefl O), H|intros n _; apply Hn1]..].
-        now intros _ _; simpl; rewrite to_of.
-      * rewrite <-DecimalZ.to_of, DecimalZ.of_to.
-        set (emf := (_ - _)%Z).
-        case_eq emf; [|intro pemf..].
-        ++ now simpl; rewrite to_of.
-        ++ intros Hemf _; simpl.
-           apply f_equal, f_equal2; [|reflexivity].
-           rewrite !Pos2Nat.inj_iter.
-           fold (Nat.iter (Pos.to_nat pemf) (Z.mul 2) (Z.of_hex_int (app_int i f))).
-           fold (Nat.iter (Pos.to_nat pemf) double (norm (app_int i f))).
-           induction Pos.to_nat; [now simpl; rewrite HexadecimalZ.to_of|].
-           now rewrite !Unsigned.nat_iter_S, <-IHn, double_to_hex_int.
-        ++ simpl Qden; intros _ H; exfalso; revert H; apply Hn1.
-    + case d; clear d; intros i f; [|intro e'].
-      * simpl; case_eq (nb_digits f); [|intros nf' Hnf'];
-          [now simpl; intros _ H; exfalso; symmetry in H; revert H; apply Hn1'|].
-        unfold Z.of_nat, Z.opp, Qnum, Qden.
-        rewrite H16_2.
-        fold (Pos.mul 2); fold (2^(Pos.of_succ_nat nf')~0~0)%positive.
-        intro H; injection H; clear H.
-        unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-        intro H; generalize (Hinj _ _ H); clear H; intro H.
-        generalize (Pos2Nat.inj _ _ H); clear H; intro H; injection H.
-        clear H; intro H; generalize (SuccNat2Pos.inj _ _ H); clear H.
-        intros <-.
-        rewrite to_of.
-        rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-        do 4 apply f_equal.
-        apply Pos2Nat.inj.
-        rewrite SuccNat2Pos.id_succ.
-        change (_~0)%positive with (4 * Pos.of_succ_nat nf')%positive.
-        now rewrite Pos2Nat.inj_mul, SuccNat2Pos.id_succ.
-      * set (nemf := (_ - _)%Z); intro H.
-        assert (H' : exists pnemf, nemf = Z.neg pnemf); [|revert H].
-        { revert H; case nemf; [|intro pnemf..]; [..|now intros _; exists pnemf];
-            simpl Qden; intro H; exfalso; symmetry in H; revert H; apply Hn1'. }
-        destruct H' as (pnemf,Hpnemf); rewrite Hpnemf.
-        unfold Qnum, Qden.
-        rewrite H16_2.
-        intro H; injection H; clear H; unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-        intro H; generalize (Hinj _ _ H); clear H; intro H.
-        generalize (Pos2Nat.inj _ _ H); clear H.
-        intro H; revert Hpnemf; rewrite H; clear pnemf H; intro Hnemf.
-        rewrite to_of.
-        rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-        do 4 apply f_equal.
-        apply Pos2Nat.inj.
-        rewrite SuccNat2Pos.id_succ.
-        change (_~0)%positive with (4 * Pos.of_succ_nat e)%positive.
-        now rewrite Pos2Nat.inj_mul, SuccNat2Pos.id_succ.
-  - simpl Pos.of_hex_uint.
-    rewrite HN16_2.
-    rewrite <-N.pow_succ_r; [|now apply N.le_0_l].
-    rewrite <-N.succ_pos_spec.
-    case d; clear d; intros i f; [|intro e']; unfold of_hexadecimal, hnorme.
-    + set (em4f := (_ - _)%Z).
-      case_eq em4f; [|intros pem4f..]; intro Hpem4f;
-        [now simpl; intros H; exfalso; symmetry in H; revert H; apply Hn1..|].
-      unfold Qnum, Qden.
-      intro H; injection H; clear H; unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-      intro H; generalize (Hinj _ _ H); clear H; intro H.
-      generalize (Pos2Nat.inj _ _ H); clear H; intros ->.
-      rewrite to_of.
-      rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-      do 4 apply f_equal.
-      apply Pos2Nat.inj.
-      rewrite SuccNat2Pos.id_succ.
-      case e; [now simpl|intro e'']; simpl.
-      unfold Pos.to_nat; simpl.
-      now rewrite Pmult_nat_mult, SuccNat2Pos.id_succ, Nat.mul_comm.
-    + set (em4f := (_ - _)%Z).
-      case_eq em4f; [|intros pem4f..]; intro Hpem4f;
-        [now simpl; intros H; exfalso; symmetry in H; revert H; apply Hn1..|].
-      unfold Qnum, Qden.
-      intro H; injection H; clear H; unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-      intro H; generalize (Hinj _ _ H); clear H; intro H.
-      generalize (Pos2Nat.inj _ _ H); clear H; intros ->.
-      rewrite to_of.
-      rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-      do 4 apply f_equal.
-      apply Pos2Nat.inj.
-      rewrite SuccNat2Pos.id_succ.
-      case e; [now simpl|intro e'']; simpl.
-      unfold Pos.to_nat; simpl.
-      now rewrite Pmult_nat_mult, SuccNat2Pos.id_succ, Nat.mul_comm.
-  - simpl Pos.of_hex_uint.
-    rewrite HN16_2.
-    change 4%N with (2 * 2)%N at 1; rewrite <-!N.mul_assoc.
-    do 2 (rewrite <-N.pow_succ_r; [|now apply N.le_0_l]).
-    rewrite <-N.succ_pos_spec.
-    case d; clear d; intros i f; [|intro e']; unfold of_hexadecimal, hnorme.
-    + set (em4f := (_ - _)%Z).
-      case_eq em4f; [|intros pem4f..]; intro Hpem4f;
-        [now simpl; intros H; exfalso; symmetry in H; revert H; apply Hn1..|].
-      unfold Qnum, Qden.
-      intro H; injection H; clear H; unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-      intro H; generalize (Hinj _ _ H); clear H; intro H.
-      generalize (Pos2Nat.inj _ _ H); clear H; intros ->.
-      rewrite to_of.
-      rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-      do 4 apply f_equal.
-      apply Pos2Nat.inj.
-      rewrite <-SuccNat2Pos.inj_succ.
-      rewrite SuccNat2Pos.id_succ.
-      case e; [now simpl|intro e'']; simpl.
-      unfold Pos.to_nat; simpl.
-      now rewrite Pmult_nat_mult, SuccNat2Pos.id_succ, Nat.mul_comm.
-    + set (em4f := (_ - _)%Z).
-      case_eq em4f; [|intros pem4f..]; intro Hpem4f;
-        [now simpl; intros H; exfalso; symmetry in H; revert H; apply Hn1..|].
-      unfold Qnum, Qden.
-      intro H; injection H; clear H; unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-      intro H; generalize (Hinj _ _ H); clear H; intro H.
-      generalize (Pos2Nat.inj _ _ H); clear H; intros ->.
-      rewrite to_of.
-      rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-      do 4 apply f_equal.
-      apply Pos2Nat.inj.
-      rewrite <-SuccNat2Pos.inj_succ.
-      rewrite SuccNat2Pos.id_succ.
-      case e; [now simpl|intro e'']; simpl.
-      unfold Pos.to_nat; simpl.
-      now rewrite Pmult_nat_mult, SuccNat2Pos.id_succ, Nat.mul_comm.
-  - simpl Pos.of_hex_uint.
-    rewrite HN16_2.
-    change 8%N with (2 * 2 * 2)%N; rewrite <-!N.mul_assoc.
-    do 3 (rewrite <-N.pow_succ_r; [|now apply N.le_0_l]).
-    rewrite <-N.succ_pos_spec.
-    case d; clear d; intros i f; [|intro e']; unfold of_hexadecimal, hnorme.
-    + set (em4f := (_ - _)%Z).
-      case_eq em4f; [|intros pem4f..]; intro Hpem4f;
-        [now simpl; intros H; exfalso; symmetry in H; revert H; apply Hn1..|].
-      unfold Qnum, Qden.
-      intro H; injection H; clear H; unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-      intro H; generalize (Hinj _ _ H); clear H; intro H.
-      generalize (Pos2Nat.inj _ _ H); clear H; intros ->.
-      rewrite to_of.
-      rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-      do 4 apply f_equal.
-      apply Pos2Nat.inj.
-      rewrite <-!SuccNat2Pos.inj_succ.
-      rewrite SuccNat2Pos.id_succ.
-      case e; [now simpl|intro e'']; simpl.
-      unfold Pos.to_nat; simpl.
-      now rewrite Pmult_nat_mult, SuccNat2Pos.id_succ, Nat.mul_comm.
-    + set (em4f := (_ - _)%Z).
-      case_eq em4f; [|intros pem4f..]; intro Hpem4f;
-        [now simpl; intros H; exfalso; symmetry in H; revert H; apply Hn1..|].
-      unfold Qnum, Qden.
-      intro H; injection H; clear H; unfold Pos.pow; rewrite !Pos2Nat.inj_iter.
-      intro H; generalize (Hinj _ _ H); clear H; intro H.
-      generalize (Pos2Nat.inj _ _ H); clear H; intros ->.
-      rewrite to_of.
-      rewrite <-DecimalZ.to_of, DecimalZ.of_to; simpl.
-      do 4 apply f_equal.
-      apply Pos2Nat.inj.
-      rewrite <-!SuccNat2Pos.inj_succ.
-      rewrite SuccNat2Pos.id_succ.
-      case e; [now simpl|intro e'']; simpl.
-      unfold Pos.to_nat; simpl.
-      now rewrite Pmult_nat_mult, SuccNat2Pos.id_succ, Nat.mul_comm.
+  case d as [i f|i f e]; [now simpl|].
+  simpl; case (Decimal.int_eq_dec (Decimal.norm e) (Decimal.Pos Decimal.zero)); [now intros->|intro He].
+  set (i' := match i with Pos _ => _ | _ => _ end).
+  set (m := match Decimal.norm e with Decimal.Pos _ => _ | _ => _ end).
+  replace m with (HexadecimalExp i' f (Decimal.norm e)); [now simpl|].
+  unfold m; revert He; case (Decimal.norm e); clear m e; intro e; [|now simpl].
+  now case e; clear e; [|intro e; case e|..].
+Qed.
+
+Lemma dnorm_involutive d : dnorm (dnorm d) = dnorm d.
+Proof.
+  case d as [i f|i f e]; case i as [i|i].
+  - now simpl; rewrite unorm_involutive.
+  - simpl; case (uint_eq_dec (nzhead (app i f)) Nil); [now intros->|intro Ha].
+    set (m := match nzhead _ with Nil =>_ | _ => _ end).
+    replace m with (Neg (unorm i)).
+    2:{ now unfold m; revert Ha; case nzhead. }
+    case (uint_eq_dec (nzhead i) Nil); intro Hi.
+    + unfold unorm; rewrite Hi; simpl.
+      case (uint_eq_dec (nzhead f) Nil).
+      * intro Hf; exfalso; apply Ha.
+        now rewrite <-nzhead_app_nzhead, Hi, app_nil_l.
+      * now case nzhead.
+    + rewrite unorm_involutive, (unorm_nzhead _ Hi), nzhead_app_nzhead.
+      now revert Ha; case nzhead.
+  - simpl; case (Decimal.int_eq_dec (Decimal.norm e) (Decimal.Pos Decimal.zero)); intro He.
+    + now rewrite He; simpl; rewrite unorm_involutive.
+    + set (m := match Decimal.norm e with Decimal.Pos _ => _ | _ => _ end).
+      replace m with (HexadecimalExp (Pos (unorm i)) f (Decimal.norm e)).
+      2:{ unfold m; revert He; case (Decimal.norm e); clear m e; intro e; [|now simpl].
+        now case e; clear e; [|intro e; case e|..]. }
+      simpl; rewrite DecimalFacts.norm_involutive, unorm_involutive.
+      revert He; case (Decimal.norm e); clear m e; intro e; [|now simpl].
+      now case e; clear e; [|intro e; case e|..].
+  - simpl; case (Decimal.int_eq_dec (Decimal.norm e) (Decimal.Pos Decimal.zero)); intro He.
+    + rewrite He; simpl.
+      case (uint_eq_dec (nzhead (app i f)) Nil); [now intros->|intro Ha].
+      set (m := match nzhead _ with Nil =>_ | _ => _ end).
+      replace m with (Neg (unorm i)).
+      2:{ now unfold m; revert Ha; case nzhead. }
+      case (uint_eq_dec (nzhead i) Nil); intro Hi.
+      * unfold unorm; rewrite Hi; simpl.
+        case (uint_eq_dec (nzhead f) Nil).
+        -- intro Hf; exfalso; apply Ha.
+           now rewrite <-nzhead_app_nzhead, Hi, app_nil_l.
+        -- now case nzhead.
+      * rewrite unorm_involutive, (unorm_nzhead _ Hi), nzhead_app_nzhead.
+        now revert Ha; case nzhead.
+    + set (m := match Decimal.norm e with Decimal.Pos _ => _ | _ => _ end).
+      pose (i' := match nzhead (app i f) with Nil => Pos zero | _ => Neg (unorm i) end).
+      replace m with (HexadecimalExp i' f (Decimal.norm e)).
+      2:{ unfold m; revert He; case (Decimal.norm e); clear m e; intro e; [|now simpl].
+        now case e; clear e; [|intro e; case e|..]. }
+      simpl; rewrite DecimalFacts.norm_involutive.
+      set (i'' := match i' with Pos _ => _ | _ => _ end).
+      clear m; set (m := match Decimal.norm e with Decimal.Pos _ => _ | _ => _ end).
+      replace m with (HexadecimalExp i'' f (Decimal.norm e)).
+      2:{ unfold m; revert He; case (Decimal.norm e); clear m e; intro e; [|now simpl].
+        now case e; clear e; [|intro e; case e|..]. }
+      unfold i'', i'.
+      case (uint_eq_dec (nzhead (app i f)) Nil); [now intros->|intro Ha].
+      fold i'; replace i' with (Neg (unorm i)).
+      2:{ now unfold i'; revert Ha; case nzhead. }
+      case (uint_eq_dec (nzhead i) Nil); intro Hi.
+      * unfold unorm; rewrite Hi; simpl.
+        case (uint_eq_dec (nzhead f) Nil).
+        -- intro Hf; exfalso; apply Ha.
+           now rewrite <-nzhead_app_nzhead, Hi, app_nil_l.
+        -- now case nzhead.
+      * rewrite unorm_involutive, (unorm_nzhead _ Hi), nzhead_app_nzhead.
+        now revert Ha; case nzhead.
+Qed.
+
+Lemma IZ_to_Z_IZ_of_Z z : IZ_to_Z (IZ_of_Z z) = Some z.
+Proof. now case z. Qed.
+
+Lemma dnorm_i_exact i f :
+  (nb_digits f < nb_digits (unorm (app (abs i) f)))%nat ->
+  match i with
+  | Pos i => Pos (unorm i)
+  | Neg i =>
+    match nzhead (app i f) with
+    | Nil => Pos zero
+    | _ => Neg (unorm i)
+    end
+  end = norm i.
+Proof.
+  case i as [ni|ni]; [now simpl|]; simpl.
+  case (uint_eq_dec (nzhead (app ni f)) Nil); intro Ha.
+  { now rewrite Ha, (nzhead_app_nil_l _ _ Ha). }
+  rewrite (unorm_nzhead _ Ha).
+  set (m := match nzhead _ with Nil => _ | _ => _ end).
+  replace m with (Neg (unorm ni)); [|now unfold m; revert Ha; case nzhead].
+  case (uint_eq_dec (nzhead ni) Nil); intro Hni.
+  { rewrite <-nzhead_app_nzhead, Hni, app_nil_l.
+    intro H; exfalso; revert H; apply le_not_lt, nb_digits_nzhead. }
+  clear m; set (m := match nzhead ni with Nil => _ | _ => _ end).
+  replace m with (Neg (nzhead ni)); [|now unfold m; revert Hni; case nzhead].
+  now rewrite (unorm_nzhead _ Hni).
+Qed.
+
+Lemma dnorm_i_exact' i f :
+  (nb_digits (unorm (app (abs i) f)) <= nb_digits f)%nat ->
+  match i with
+  | Pos i => Pos (unorm i)
+  | Neg i =>
+    match nzhead (app i f) with
+    | Nil => Pos zero
+    | _ => Neg (unorm i)
+    end
+  end =
+  match norm (app_int i f) with
+  | Pos _ => Pos zero
+  | Neg _ => Neg zero
+  end.
+Proof.
+  case i as [ni|ni]; simpl.
+  { now intro Hnb; rewrite (unorm_app_zero _ _ Hnb). }
+  unfold unorm.
+  case (uint_eq_dec (nzhead (app ni f)) Nil); intro Hn.
+  { now rewrite Hn. }
+  set (m := match nzhead _ with Nil => _ | _ => _ end).
+  replace m with (nzhead (app ni f)).
+  2:{ now unfold m; revert Hn; case nzhead. }
+  clear m; set (m := match nzhead _ with Nil => _ | _ => _ end).
+  replace m with (Neg (unorm ni)).
+  2:{ now unfold m, unorm; revert Hn; case nzhead. }
+  clear m; set (m := match nzhead _ with Nil => _ | _ => _ end).
+  replace m with (Neg (nzhead (app ni f))).
+  2:{ now unfold m; revert Hn; case nzhead. }
+  rewrite <-(unorm_nzhead _ Hn).
+  now intro H; rewrite (unorm_app_zero _ _ H).
+Qed.
+
+Lemma to_of (d:hexadecimal) : to_hexadecimal (of_hexadecimal d) = Some (dnorm d).
+Proof.
+  case d as [i f|i f e].
+  - unfold of_hexadecimal; simpl; unfold IQmake_to_hexadecimal'.
+    rewrite IZ_to_Z_IZ_of_Z.
+    unfold IQmake_to_hexadecimal; simpl.
+    change (fun _ : positive => _) with (Pos.mul 16).
+    rewrite nztail_to_hex_uint_pow16, to_of.
+    case_eq (nb_digits f); [|intro nb]; intro Hnb.
+    + rewrite (nb_digits_0 _ Hnb), app_int_nil_r.
+      case i as [ni|ni]; [now simpl|].
+      rewrite app_nil_r; simpl; unfold unorm.
+      now case (nzhead ni).
+    + rewrite <-Hnb.
+      rewrite abs_norm, abs_app_int.
+      case Nat.ltb_spec; intro Hnb'.
+      * rewrite (del_tail_app_int_exact _ _ Hnb').
+        rewrite (del_head_app_int_exact _ _ Hnb').
+        now rewrite (dnorm_i_exact _ _ Hnb').
+      * rewrite (unorm_app_r _ _ Hnb').
+        rewrite iter_D0_unorm; [|now apply nb_digits_n0; rewrite Hnb].
+        now rewrite dnorm_i_exact'.
+  - unfold of_hexadecimal; simpl.
+    rewrite <-DecimalZ.to_of.
+    case (Z.of_int e); clear e; [|intro e..]; simpl.
+    + unfold IQmake_to_hexadecimal'.
+      rewrite IZ_to_Z_IZ_of_Z.
+      unfold IQmake_to_hexadecimal; simpl.
+      change (fun _ : positive => _) with (Pos.mul 16).
+      rewrite nztail_to_hex_uint_pow16, to_of.
+      case_eq (nb_digits f); [|intro nb]; intro Hnb.
+      * rewrite (nb_digits_0 _ Hnb), app_int_nil_r.
+        case i as [ni|ni]; [now simpl|].
+        rewrite app_nil_r; simpl; unfold unorm.
+        now case (nzhead ni).
+      * rewrite <-Hnb.
+        rewrite abs_norm, abs_app_int.
+        case Nat.ltb_spec; intro Hnb'.
+        -- rewrite (del_tail_app_int_exact _ _ Hnb').
+           rewrite (del_head_app_int_exact _ _ Hnb').
+           now rewrite (dnorm_i_exact _ _ Hnb').
+        -- rewrite (unorm_app_r _ _ Hnb').
+           rewrite iter_D0_unorm; [|now apply nb_digits_n0; rewrite Hnb].
+           now rewrite dnorm_i_exact'.
+    + unfold IQmake_to_hexadecimal'.
+      rewrite IZ_to_Z_IZ_of_Z.
+      unfold IQmake_to_hexadecimal; simpl.
+      change (fun _ : positive => _) with (Pos.mul 16).
+      rewrite nztail_to_hex_uint_pow16, to_of.
+      generalize (DecimalPos.Unsigned.to_uint_nonzero e); intro He.
+      set (dnorm_i := match i with Pos _ => _ | _ => _ end).
+      set (m := match Pos.to_uint e with Decimal.Nil => _ | _ => _ end).
+      replace m with (HexadecimalExp dnorm_i f (Decimal.Pos (Pos.to_uint e))).
+      2:{ now unfold m; revert He; case (Pos.to_uint e); [|intro u; case u|..]. }
+      clear m; unfold dnorm_i.
+      case_eq (nb_digits f); [|intro nb]; intro Hnb.
+      * rewrite (nb_digits_0 _ Hnb), app_int_nil_r.
+        case i as [ni|ni]; [now simpl|].
+        rewrite app_nil_r; simpl; unfold unorm.
+        now case (nzhead ni).
+      * rewrite <-Hnb.
+        rewrite abs_norm, abs_app_int.
+        case Nat.ltb_spec; intro Hnb'.
+        -- rewrite (del_tail_app_int_exact _ _ Hnb').
+           rewrite (del_head_app_int_exact _ _ Hnb').
+           now rewrite (dnorm_i_exact _ _ Hnb').
+        -- rewrite (unorm_app_r _ _ Hnb').
+           rewrite iter_D0_unorm; [|now apply nb_digits_n0; rewrite Hnb].
+           now rewrite dnorm_i_exact'.
+    + unfold IQmake_to_hexadecimal'.
+      rewrite IZ_to_Z_IZ_of_Z.
+      unfold IQmake_to_hexadecimal; simpl.
+      change (fun _ : positive => _) with (Pos.mul 16).
+      rewrite nztail_to_hex_uint_pow16, to_of.
+      case_eq (nb_digits f); [|intro nb]; intro Hnb.
+      * rewrite (nb_digits_0 _ Hnb), app_int_nil_r.
+        case i as [ni|ni]; [now simpl|].
+        rewrite app_nil_r; simpl; unfold unorm.
+        now case (nzhead ni).
+      * rewrite <-Hnb.
+        rewrite abs_norm, abs_app_int.
+        case Nat.ltb_spec; intro Hnb'.
+        -- rewrite (del_tail_app_int_exact _ _ Hnb').
+           rewrite (del_head_app_int_exact _ _ Hnb').
+           now rewrite (dnorm_i_exact _ _ Hnb').
+        -- rewrite (unorm_app_r _ _ Hnb').
+           rewrite iter_D0_unorm; [|now apply nb_digits_n0; rewrite Hnb].
+           now rewrite dnorm_i_exact'.
 Qed.
 
 (** Some consequences *)
@@ -466,68 +436,24 @@ Proof.
   now intros d _ H1 H2; rewrite <-(H1 d eq_refl), <-(H2 d eq_refl).
 Qed.
 
-Lemma to_hexadecimal_surj d : exists q, to_hexadecimal q = Some (hnorme d).
+Lemma to_hexadecimal_surj d : exists q, to_hexadecimal q = Some (dnorm d).
 Proof.
   exists (of_hexadecimal d). apply to_of.
 Qed.
 
-Lemma of_hexadecimal_hnorme d : of_hexadecimal (hnorme d) = of_hexadecimal d.
+Lemma of_hexadecimal_dnorm d : of_hexadecimal (dnorm d) = of_hexadecimal d.
+Proof. now apply to_hexadecimal_inj; rewrite !to_of; [|rewrite dnorm_involutive]. Qed.
+
+Lemma of_inj d d' : of_hexadecimal d = of_hexadecimal d' -> dnorm d = dnorm d'.
 Proof.
-  unfold of_hexadecimal, hnorme.
-  destruct d.
-  - simpl Z.of_int; unfold Z.of_uint, Z.of_N, Pos.of_uint.
-    rewrite Z.sub_0_l.
-    set (n4f := (- _)%Z).
-    case_eq n4f; [|intro pn4f..]; intro Hn4f.
-    + apply f_equal2; [|reflexivity].
-      rewrite app_int_nil_r.
-      now rewrite <-HexadecimalZ.to_of, HexadecimalZ.of_to.
-    + apply f_equal2; [|reflexivity].
-      rewrite app_int_nil_r.
-      generalize (app_int i f); intro i'.
-      rewrite !Pos2Nat.inj_iter.
-      generalize (Pos.to_nat pn4f); intro n.
-      fold (Nat.iter n double (norm i')).
-      fold (Nat.iter n (Z.mul 2) (Z.of_hex_int i')).
-      induction n; [now simpl; rewrite <-HexadecimalZ.to_of, HexadecimalZ.of_to|].
-      now rewrite !Unsigned.nat_iter_S, <-IHn, of_hex_int_double.
-    + unfold nb_digits, Z.of_nat.
-      rewrite Z.mul_0_r, Z.sub_0_r.
-      rewrite <-DecimalZ.to_of, !DecimalZ.of_to.
-      rewrite app_int_nil_r.
-      now rewrite <-HexadecimalZ.to_of, HexadecimalZ.of_to.
-  - set (nem4f := (_ - _)%Z).
-    case_eq nem4f; [|intro pnem4f..]; intro Hnem4f.
-    + apply f_equal2; [|reflexivity].
-      rewrite app_int_nil_r.
-      now rewrite <-HexadecimalZ.to_of, HexadecimalZ.of_to.
-    + apply f_equal2; [|reflexivity].
-      rewrite app_int_nil_r.
-      generalize (app_int i f); intro i'.
-      rewrite !Pos2Nat.inj_iter.
-      generalize (Pos.to_nat pnem4f); intro n.
-      fold (Nat.iter n double (norm i')).
-      fold (Nat.iter n (Z.mul 2) (Z.of_hex_int i')).
-      induction n; [now simpl; rewrite <-HexadecimalZ.to_of, HexadecimalZ.of_to|].
-      now rewrite !Unsigned.nat_iter_S, <-IHn, of_hex_int_double.
-    + unfold nb_digits, Z.of_nat.
-      rewrite Z.mul_0_r, Z.sub_0_r.
-      rewrite <-DecimalZ.to_of, !DecimalZ.of_to.
-      rewrite app_int_nil_r.
-      now rewrite <-HexadecimalZ.to_of, HexadecimalZ.of_to.
+  intro H.
+  apply (@f_equal _ _ (fun x => match x with Some x => x | _ => d end)
+                  (Some (dnorm d)) (Some (dnorm d'))).
+  now rewrite <- !to_of, H.
 Qed.
 
-Lemma of_inj d d' :
-  of_hexadecimal d = of_hexadecimal d' -> hnorme d = hnorme d'.
+Lemma of_iff d d' : of_hexadecimal d = of_hexadecimal d' <-> dnorm d = dnorm d'.
 Proof.
-  intros.
-  cut (Some (hnorme d) = Some (hnorme d')); [now intro H'; injection H'|].
-  rewrite <- !to_of. now f_equal.
-Qed.
-
-Lemma of_iff d d' :
-  of_hexadecimal d = of_hexadecimal d' <-> hnorme d = hnorme d'.
-Proof.
-  split. apply of_inj. intros E. rewrite <- of_hexadecimal_hnorme, E.
-  apply of_hexadecimal_hnorme.
+  split. apply of_inj. intros E. rewrite <- of_hexadecimal_dnorm, E.
+  apply of_hexadecimal_dnorm.
 Qed.

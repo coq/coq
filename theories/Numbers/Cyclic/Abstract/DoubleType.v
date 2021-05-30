@@ -13,15 +13,15 @@
 Set Implicit Arguments.
 
 Require Import BinInt.
+Require Import CarryType.
 Local Open Scope Z_scope.
 
 Definition base digits := Z.pow 2 (Zpos digits).
 Arguments base digits: simpl never.
 
-#[universes(template)]
-Variant carry (A : Type) :=
-| C0 : A -> carry A
-| C1 : A -> carry A.
+Notation carry := carry (only parsing).
+Notation C0 := C0 (only parsing).
+Notation C1 := C1 (only parsing).
 
 Definition interp_carry {A} (sign:Z)(B:Z)(interp:A -> Z) c :=
   match c with

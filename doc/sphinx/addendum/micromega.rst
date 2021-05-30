@@ -1,6 +1,6 @@
 .. _micromega:
 
-Micromega: tactics for solving arithmetic goals over ordered rings
+Micromega: solvers for arithmetic goals over ordered rings
 ==================================================================
 
 :Authors: Frédéric Besson and Evgeny Makarov
@@ -31,13 +31,15 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
 .. flag:: Simplex
 
-   This flag (set by default) instructs the decision procedures to
-   use the Simplex method for solving linear goals. If it is not set,
-   the decision procedures are using Fourier elimination.
+   .. deprecated:: 8.14
+
+   This :term:`flag` (set by default) instructs the decision procedures to
+   use the Simplex method for solving linear goals instead of the
+   deprecated Fourier elimination.
 
 .. opt:: Dump Arith
 
-   This option (unset by default) may be set to a file path where
+   This :term:`option` (unset by default) may be set to a file path where
    debug info will be written.
 
 .. cmd:: Show Lia Profile
@@ -48,15 +50,15 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
 .. flag:: Lia Cache
 
-   This flag (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`
+   This :term:`flag` (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`
 
 .. flag:: Nia Cache
 
-   This flag (set by default) instructs :tacn:`nia` to cache its results in the file `.nia.cache`
+   This :term:`flag` (set by default) instructs :tacn:`nia` to cache its results in the file `.nia.cache`
 
 .. flag:: Nra Cache
 
-   This flag (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
+   This :term:`flag` (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
 
 
 The tactics solve propositional formulas parameterized by atomic
@@ -140,7 +142,6 @@ and checked to be :math:`-1`.
 -------------------------------------------------------------------
 
 .. tacn:: lra
-   :name: lra
 
    This tactic is searching for *linear* refutations. As a result, this tactic explores a subset of the *Cone*
    defined as
@@ -154,11 +155,9 @@ and checked to be :math:`-1`.
 ---------------------------------------------
 
 .. tacn:: lia
-   :name: lia
 
    This tactic solves linear goals over :g:`Z` by searching for *linear* refutations and cutting planes.
    :tacn:`lia` provides support for :g:`Z`, :g:`nat`, :g:`positive` and :g:`N` by pre-processing via the :tacn:`zify` tactic.
-
 
 High level view of `lia`
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -220,7 +219,6 @@ a proof.
 --------------------------------------------------
 
 .. tacn:: nra
-   :name: nra
 
    This tactic is an *experimental* proof procedure for non-linear
    arithmetic. The tactic performs a limited amount of non-linear
@@ -241,7 +239,6 @@ proof by abstracting monomials by variables.
 ----------------------------------------------------------
 
 .. tacn:: nia
-   :name: nia
 
    This tactic is a proof procedure for non-linear integer arithmetic.
    It performs a pre-processing similar to :tacn:`nra`. The obtained goal is
@@ -250,17 +247,16 @@ proof by abstracting monomials by variables.
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
 
-.. tacn:: psatz @one_term {? @int_or_var }
-   :name: psatz
+.. tacn:: psatz @one_term {? @nat_or_var }
 
    This tactic explores the *Cone* by increasing degrees – hence the
-   depth parameter *n*. In theory, such a proof search is complete – if the
+   depth parameter :token:`nat_or_var`. In theory, such a proof search is complete – if the
    goal is provable the search eventually stops. Unfortunately, the
    external oracle is using numeric (approximate) optimization techniques
    that might miss a refutation.
 
    To illustrate the working of the tactic, consider we wish to prove the
-   following |Coq| goal:
+   following Coq goal:
 
 .. needs csdp
 .. coqdoc::
@@ -281,7 +277,6 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 ------------------------------------------
 
 .. tacn:: zify
-   :name: zify
 
    This tactic is internally called by :tacn:`lia` to support additional types, e.g., :g:`nat`, :g:`positive` and :g:`N`.
    Additional support is provided by the following modules:
@@ -300,7 +295,7 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
    The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
 
-.. cmd:: Add Zify @add_zify @one_term
+.. cmd:: Add Zify @add_zify @qualid
 
    .. insertprodn add_zify add_zify
 
@@ -309,6 +304,9 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
       | {| PropOp | PropBinOp | PropUOp | Saturate }
 
    Registers an instance of the specified typeclass.
+   The typeclass type (e.g. :g:`BinOp Z.mul` or :g:`BinRel (@eq Z)`) has the additional constraint that
+   the non-implicit argument (here, :g:`Z.mul` or :g:`(@eq Z)`)
+   is either a :n:`@reference` (here, :g:`Z.mul`) or the application of a :n:`@reference` (here, :g:`@eq`) to a sequence of :n:`@one_term`.
 
 .. cmd:: Show Zify @show_zify
 
@@ -320,68 +318,6 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    Prints instances for the specified typeclass.  For instance, :cmd:`Show Zify` ``InjTyp``
    prints the list of types that supported by :tacn:`zify` i.e.,
    :g:`Z`, :g:`nat`, :g:`positive` and :g:`N`.
-
-.. cmd:: Show Zify Spec
-
-   .. deprecated:: 8.13
-       Use :cmd:`Show Zify` ``UnOpSpec`` or :cmd:`Show Zify` ``BinOpSpec`` instead.
-
-.. cmd:: Add InjTyp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``InjTyp`` instead.
-
-.. cmd:: Add BinOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``BinOp`` instead.
-
-.. cmd:: Add BinOpSpec @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``BinOpSpec`` instead.
-
-.. cmd:: Add UnOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``UnOp`` instead.
-
-.. cmd:: Add UnOpSpec @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``UnOpSpec`` instead.
-
-.. cmd:: Add CstOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``CstOp`` instead.
-
-.. cmd:: Add BinRel @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``BinRel`` instead.
-
-.. cmd:: Add PropOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``PropOp`` instead.
-
-.. cmd:: Add PropBinOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``PropBinOp`` instead.
-
-.. cmd:: Add PropUOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``PropUOp`` instead.
-
-.. cmd:: Add Saturate @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``Saturate`` instead.
-
-
 
 
 .. [#csdp] Sources and binaries can be found at https://projects.coin-or.org/Csdp

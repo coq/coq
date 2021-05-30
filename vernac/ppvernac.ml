@@ -60,16 +60,24 @@ let pr_red_expr =
     keyword
 
 let pr_uconstraint (l, d, r) =
-  pr_glob_sort_name l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
-  pr_glob_sort_name r
+  pr_sort_name_expr l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
+  pr_sort_name_expr r
 
 let pr_univ_name_list = function
   | None -> mt ()
   | Some l ->
     str "@{" ++ prlist_with_sep spc pr_lname l ++ str"}"
 
+let pr_variance_lident (lid,v) =
+  let v = Option.cata Univ.Variance.pr (mt()) v in
+  v ++ pr_lident lid
+
 let pr_univdecl_instance l extensible =
   prlist_with_sep spc pr_lident l ++
+  (if extensible then str"+" else mt ())
+
+let pr_cumul_univdecl_instance l extensible =
+  prlist_with_sep spc pr_variance_lident l ++
   (if extensible then str"+" else mt ())
 
 let pr_univdecl_constraints l extensible =
@@ -85,8 +93,19 @@ let pr_universe_decl l =
     str"@{" ++ pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
     pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
 
+let pr_cumul_univ_decl l =
+  let open UState in
+  match l with
+  | None -> mt ()
+  | Some l ->
+    str"@{" ++ pr_cumul_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+
 let pr_ident_decl (lid, l) =
   pr_lident lid ++ pr_universe_decl l
+
+let pr_cumul_ident_decl (lid, l) =
+  pr_lident lid ++ pr_cumul_univ_decl l
 
 let string_of_fqid fqid =
   String.concat "." (List.map Id.to_string fqid)
@@ -168,13 +187,16 @@ let level_of_pattern_level = function None -> DefaultLevel | Some n -> NumLevel 
 
 let pr_constr_as_binder_kind = let open Notation_term in function
     | AsIdent -> spc () ++ keyword "as ident"
-    | AsIdentOrPattern -> spc () ++ keyword "as pattern"
+    | AsName -> spc () ++ keyword "as name"
+    | AsNameOrPattern -> spc () ++ keyword "as pattern"
     | AsStrictPattern -> spc () ++ keyword "as strict pattern"
 
 let pr_strict b = if b then str "strict " else mt ()
 
 let pr_set_entry_type pr = function
   | ETIdent -> str"ident"
+  | ETName false -> str"ident" (* temporary *)
+  | ETName true -> str"name"
   | ETGlobal -> str"global"
   | ETPattern (b,n) -> pr_strict b ++ str"pattern" ++ pr_at_level (level_of_pattern_level n)
   | ETConstr (s,bko,lev) -> pr_notation_entry s ++ pr lev ++ pr_opt pr_constr_as_binder_kind bko
@@ -220,7 +242,6 @@ let pr_search a gopt b pr_p =
   pr_opt (fun g -> Goal_select.pr_goal_selector g ++ str ":"++ spc()) gopt
   ++
   match a with
-  | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | Search sl ->
@@ -249,9 +270,9 @@ let pr_reference_or_constr pr_c = function
   | HintsConstr c -> pr_c c
 
 let pr_hint_mode = let open Hints in function
-    | ModeInput -> str"+"
-    | ModeNoHeadEvar -> str"!"
-    | ModeOutput -> str"-"
+  | ModeInput -> str"+"
+  | ModeNoHeadEvar -> str"!"
+  | ModeOutput -> str"-"
 
 let pr_hint_info pr_pat { Typeclasses.hint_priority = pri; hint_pattern = pat } =
   pr_opt (fun x -> str"|" ++ int x) pri ++
@@ -447,6 +468,8 @@ let pr_syntax_modifier = let open Gramlib.Gramext in function
     | SetItemLevel (l,bko,n) ->
       prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n ++
       pr_opt pr_constr_as_binder_kind bko
+    | SetItemScope (l,s) ->
+      prlist_with_sep sep_v2 str l ++ spc () ++ str"in scope" ++ str s
     | SetLevel n -> pr_at_level (NumLevel n)
     | SetCustomEntry (s,n) -> keyword "in" ++ spc() ++ keyword "custom" ++ spc() ++ str s ++ (match n with None -> mt () | Some n -> pr_at_level (NumLevel n))
     | SetAssoc LeftA -> keyword "left associativity"
@@ -462,9 +485,6 @@ let pr_syntax_modifiers = function
   | [] -> mt()
   | l -> spc() ++
          hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
-
-let pr_only_parsing_clause onlyparsing =
-  pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else [])
 
 let pr_decl_notation prc decl_ntn =
   let open Vernacexpr in
@@ -848,7 +868,7 @@ let pr_vernac_expr v =
     let pr_oneind key (((coe,iddecl),(indupar,indpar),s,lc),ntn) =
       hov 0 (
         str key ++ spc() ++
-        (if coe then str"> " else str"") ++ pr_ident_decl iddecl ++
+        (if coe then str"> " else str"") ++ pr_cumul_ident_decl iddecl ++
         pr_and_type_binders_arg indupar ++
         pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
         pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++
@@ -1077,12 +1097,12 @@ let pr_vernac_expr v =
     )
   | VernacHints (dbnames,h) ->
     return (pr_hints dbnames h pr_constr pr_constr_pattern_expr)
-  | VernacSyntacticDefinition (id,(ids,c),{onlyparsing}) ->
+  | VernacSyntacticDefinition (id,(ids,c),l) ->
     return (
       hov 2
         (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
          prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
-         pr_only_parsing_clause onlyparsing)
+         pr_syntax_modifiers l)
     )
   | VernacArguments (q, args, more_implicits, mods) ->
     return (
@@ -1312,20 +1332,10 @@ let pr_control_flag (p : control_flag) =
 
 let pr_vernac_control flags = Pp.prlist pr_control_flag flags
 
-let rec pr_vernac_flag (k, v) =
-  let k = keyword k in
-  let open Attributes in
-  match v with
-  | VernacFlagEmpty -> k
-  | VernacFlagLeaf v -> k ++ str " = " ++ qs v
-  | VernacFlagList m -> k ++ str "( " ++ pr_vernac_flags m ++ str " )"
-and pr_vernac_flags m =
-  prlist_with_sep (fun () -> str ", ") pr_vernac_flag m
-
 let pr_vernac_attributes =
   function
   | [] -> mt ()
-  | flags ->  str "#[" ++ pr_vernac_flags flags ++ str "]" ++ cut ()
+  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ cut ()
 
 let pr_vernac ({v = {control; attrs; expr}} as v) =
   tag_vernac v

@@ -22,9 +22,10 @@ Require Import ssreflect ssrfun.
                is_true b == the coercion of b : bool to Prop (:= b = true).
                             This is just input and displayed as `b''.
              reflect P b == the reflection inductive predicate, asserting
-                            that the logical proposition P : prop with the
-                            formula b : bool. Lemmas asserting reflect P b
-                            are often referred to as "views".
+                            that the logical proposition P : Prop holds iff
+                            the formula b : bool is equal to true. Lemmas
+                            asserting reflect P b are often referred to as
+                            "views".
   iffP, appP, sameP, rwP :: lemmas for direct manipulation of reflection
                             views: iffP is used to prove reflection from
                             logical equivalence, appP to compose views, and
@@ -33,7 +34,7 @@ Require Import ssreflect ssrfun.
                    elimT :: coercion reflect >-> Funclass, which allows the
                             direct application of `reflect' views to
                             boolean assertions.
-             decidable P <-> P is effectively decidable (:= {P} + {~ P}.
+             decidable P <-> P is effectively decidable (:= {P} + {~ P}).
     contra, contraL, ... :: contraposition lemmas.
            altP my_viewP :: natural alternative for reflection; given
                             lemma myviewP: reflect my_Prop my_formula,
@@ -49,7 +50,7 @@ Require Import ssreflect ssrfun.
                             altP (idP my_formula) but circumventing the
                             dependent index capture issue; destructing
                             boolP my_formula generates two subgoals with
-                            assumptions my_formula and ~~ myformula. As
+                            assumptions my_formula and ~~ my_formula. As
                             with altP, my_formula must be an application.
             \unless C, P <-> we can assume property P when a something that
                             holds under condition C (such as C itself).
@@ -107,7 +108,7 @@ Require Import ssreflect ssrfun.
                pred_sort == the predType >-> Type projection; pred_sort is
                             itself a Coercion target class. Declaring a
                             coercion to pred_sort is an alternative way of
-                            equiping a type with a predType structure, which
+                            equipping a type with a predType structure, which
                             interoperates better with coercion subtyping.
                             This is used, e.g., for finite sets, so that finite
                             groups inherit the membership operation by
@@ -185,7 +186,7 @@ Require Import ssreflect ssrfun.
      expand manually).
    Let A : applicative_pred T := #[#pred x | ... #]#.
      This cast causes inE to turn x \in A into the applicative A x form;
-     A will then have to unfolded explicitly with the /A rule. This will
+     A will then have to be unfolded explicitly with the /A rule. This will
      also apply to any definition that reduces to A (e.g., Let B := A).
    Canonical A_app_pred := ApplicativePred A.
      This declaration, given after definition of A, similarly causes inE to
@@ -287,7 +288,7 @@ Require Import ssreflect ssrfun.
    N or n -- boolean negation, as in andbN : a && (~~ a) = false.
    P -- a characteristic property, often a reflection lemma, as in
         andP : reflect (a /\ b) (a && b).
-   r -- a right-hand operation, as orb_andr : rightt_distributive orb andb.
+   r -- a right-hand operation, as orb_andr : right_distributive orb andb.
    T or t -- boolean truth, as in andbT: right_id true andb.
    U -- predicate union, as in predU.
    W -- weakening, as in in1W : (forall x, P) -> {in D, forall x, P}.        **)
@@ -296,7 +297,6 @@ Require Import ssreflect ssrfun.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set Warnings "-projection-no-head-constant".
 
 Notation reflect := Bool.reflect.
 Notation ReflectT := Bool.ReflectT.
@@ -334,19 +334,19 @@ Reserved Notation "[ 'predType' 'of' T ]" (at level 0,
 
 Reserved Notation "[ 'pred' : T | E ]" (at level 0,
   format "'[hv' [ 'pred' :  T  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x | E ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x | E ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x : T | E ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x : T | E ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  :  T  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x | E1 & E2 ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x | E1 & E2 ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  | '/ '  E1  & '/ '  E2 ] ']'").
-Reserved Notation "[ 'pred' x : T | E1 & E2 ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x : T | E1 & E2 ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  :  T  | '/ '  E1  &  E2 ] ']'").
-Reserved Notation "[ 'pred' x 'in' A ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x 'in' A ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  'in'  A ] ']'").
-Reserved Notation "[ 'pred' x 'in' A | E ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x 'in' A | E ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  'in'  A  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x 'in' A | E1 & E2 ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x 'in' A | E1 & E2 ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  'in'  A  | '/ '  E1  & '/ '  E2 ] ']'").
 
 Reserved Notation "[ 'qualify' x | P ]" (at level 0, x at level 99,
@@ -362,17 +362,17 @@ Reserved Notation "[ 'qualify' 'an' x | P ]" (at level 0, x at level 99,
 Reserved Notation "[ 'qualify' 'an' x : T | P ]" (at level 0, x at level 99,
   format "'[hv' [ 'qualify'  'an'  x  :  T  | '/ '  P ] ']'").
 
-Reserved Notation "[ 'rel' x y | E ]"  (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y | E ]"  (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y : T | E ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y : T | E ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  :  T  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A & B | E ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A & B | E ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A  &  B  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A & B ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A & B ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A  &  B ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A | E ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A | E ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A ] ']'").
 
 Reserved Notation "[ 'mem' A ]" (at level 0, format "[ 'mem'  A ]").
@@ -487,6 +487,7 @@ Ltac prop_congr := apply: prop_congr.
 Lemma is_true_true : true.               Proof. by []. Qed.
 Lemma not_false_is_true : ~ false.       Proof. by []. Qed.
 Lemma is_true_locked_true : locked true. Proof. by unlock. Qed.
+#[global]
 Hint Resolve is_true_true not_false_is_true is_true_locked_true : core.
 
 (**  Shorter names.  **)
@@ -1173,7 +1174,7 @@ Ltac bool_congr :=
  Furthermore, we ensure pA is always either A or toP .... A where toP ... is
  the expansion of @topred T pT, and toP is declared as a Coercion, so pA will
  _display_ as A in either case, and the instances of @mem T (predPredType T) pA
- appearing in the premises or right-hand side of a generic lemma parametrized
+ appearing in the premises or right-hand side of a generic lemma parameterized
  by ?P will be indistinguishable from @mem T pT A.
    Users should take care not to inadvertently "strip" (mem A) down to the
  coerced A, since this will expose the internal toP coercion: Coq could then
@@ -1225,10 +1226,12 @@ Definition clone_pred T U :=
 Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ id) : form_scope.
 
 Canonical predPredType T := PredType (@id (pred T)).
+Set Warnings "-redundant-canonical-projection".
 Canonical boolfunPredType T := PredType (@id (T -> bool)).
+Set Warnings "redundant-canonical-projection".
 
 (** The type of abstract collective predicates.
- While {pred T} is contertible to pred T, it presents the pred_sort coercion
+ While {pred T} is convertible to pred T, it presents the pred_sort coercion
  class, which crucially does _not_ coerce to Funclass. Term whose type P coerces
  to {pred T} cannot be applied to arguments, but they _can_ be used as if P
  had a canonical predType instance, as the coercion will be inserted if the
@@ -1241,8 +1244,8 @@ Canonical boolfunPredType T := PredType (@id (T -> bool)).
  main drawback of implementing predType by coercion in this way is that the
  type of the value must be known when the unification constraint is imposed:
  if we only register the constraint and then later discover later that the
- expression had type P it will be too late of insert a coercion, whereas a
- canonical instance of predType fo P would have solved the deferred constraint.
+ expression had type P it will be too late to insert a coercion, whereas a
+ canonical instance of predType for P would have solved the deferred constraint.
    Finally, definitions, lemmas and sections should use type {pred T} for
  their generic collective type parameters, as this will make it possible to
  apply such definitions and lemmas directly to values of types that implement
@@ -1283,7 +1286,7 @@ Notation "[ 'pred' x : T | E1 & E2 ]" :=
  and functors, which we do below.
    In addition we also give a predType instance for simpl_pred, which will
  be preferred to the {pred T} coercion to solve simpl_pred T =~= pred_sort ?pT
- constraints; not however that the pred_of_simpl coercion _will_ be used
+ constraints; note however that the pred_of_simpl coercion _will_ be used
  when a simpl_pred T is passed as a {pred T}, since the simplPredType T
  structure for simpl_pred T is _not_ convertible to predPredType T.  **)
 
@@ -1319,7 +1322,7 @@ Notation "{ : T }" := (T%type : predArgType) : type_scope.
 (** Boolean relations.
  Simplifying relations follow the coding pattern of 2-argument simplifying
  functions: the simplifying type constructor is applied to the _last_
- argument. This design choice will let the in_simpl componenent of inE expand
+ argument. This design choice will let the in_simpl component of inE expand
  membership in simpl_rel as well. We provide an explicit coercion to rel T
  to avoid eta-expansion during coercion; this coercion self-simplifies so it
  should be invisible.
@@ -1365,7 +1368,7 @@ Variant mem_pred T := Mem of pred T.
   be used if a mem_pred T is used as a {pred T}, which is desirable as it
   will avoid a redundant mem in a collective, e.g., passing (mem A) to a lemma
   exception a generic collective predicate p : {pred T} and premise x \in P
-  will display a subgoal x \in A rathere than x \in mem A.
+  will display a subgoal x \in A rather than x \in mem A.
     Conversely, pred_of_mem will _not_ if it is used id (mem A) is used
   applicatively or as a pred T; there the simpl_of_mem coercion defined below
   will be used, resulting in a subgoal that displays as mem A x by simplifies
@@ -1429,10 +1432,10 @@ Notation "[ 'rel' x y 'in' A ]" := [rel x y in A & A] : fun_scope.
 
 (** Aliases of pred T that let us tag instances of simpl_pred as applicative
   or collective, via bespoke coercions. This tagging will give control over
-  the simplification behaviour of inE and othe rewriting lemmas below.
+  the simplification behaviour of inE and other rewriting lemmas below.
     For this control to work it is crucial that collective_of_simpl _not_
   be convertible to either applicative_of_simpl or pred_of_simpl. Indeed
-  they differ here by a commutattive conversion (of the match and lambda).
+  they differ here by a commutative conversion (of the match and lambda).
  **)
 Definition applicative_pred T := pred T.
 Definition collective_pred T := pred T.
@@ -1942,7 +1945,121 @@ Proof.
 by move=> subD [g' fK g'K]; exists g' => x; move/subD; [apply: fK | apply: g'K].
 Qed.
 
+Lemma in_on1P : {in D1, {on D2, allQ1 f}} <->
+                {in [pred x in D1 | f x \in D2], allQ1 f}.
+Proof.
+split => allf x; have := allf x; rewrite inE => Q1f; first by case/andP.
+by move=> ? ?; apply: Q1f; apply/andP.
+Qed.
+
+Lemma in_on1lP : {in D1, {on D2, allQ1l f & h}} <->
+                {in [pred x in D1 | f x \in D2], allQ1l f h}.
+Proof.
+split => allf x; have := allf x; rewrite inE => Q1f; first by case/andP.
+by move=> ? ?; apply: Q1f; apply/andP.
+Qed.
+
+Lemma in_on2P : {in D1 &, {on D2 &, allQ2 f}} <->
+                {in [pred x in D1 | f x \in D2] &, allQ2 f}.
+Proof.
+split => allf x y; have := allf x y; rewrite !inE => Q2f.
+  by move=> /andP[? ?] /andP[? ?]; apply: Q2f.
+by move=> ? ? ? ?; apply: Q2f; apply/andP.
+Qed.
+
+Lemma on1W_in : {in D1, allQ1 f} -> {in D1, {on D2, allQ1 f}}.
+Proof. by move=> D1f ? /D1f. Qed.
+
+Lemma on1lW_in : {in D1, allQ1l f h} -> {in D1, {on D2, allQ1l f & h}}.
+Proof. by move=> D1f ? /D1f. Qed.
+
+Lemma on2W_in : {in D1 &, allQ2 f} -> {in D1 &, {on D2 &, allQ2 f}}.
+Proof. by move=> D1f ? ? ? ? ? ?; apply: D1f. Qed.
+
+Lemma in_on1W : allQ1 f -> {in D1, {on D2, allQ1 f}}.
+Proof. by move=> allf ? ? ?; apply: allf. Qed.
+
+Lemma in_on1lW : allQ1l f h -> {in D1, {on D2, allQ1l f & h}}.
+Proof. by move=> allf ? ? ?; apply: allf. Qed.
+
+Lemma in_on2W : allQ2 f -> {in D1 &, {on D2 &, allQ2 f}}.
+Proof. by move=> allf ? ? ? ? ? ?; apply: allf. Qed.
+
+Lemma on1S : (forall x, f x \in D2) -> {on D2, allQ1 f} -> allQ1 f.
+Proof. by move=> ? fD1 ?; apply: fD1. Qed.
+
+Lemma on1lS : (forall x, f x \in D2) -> {on D2, allQ1l f & h} -> allQ1l f h.
+Proof. by move=> ? fD1 ?; apply: fD1. Qed.
+
+Lemma on2S : (forall x, f x \in D2) -> {on D2 &, allQ2 f} -> allQ2 f.
+Proof. by move=> ? fD1 ? ?; apply: fD1. Qed.
+
+Lemma on1S_in : {homo f : x / x \in D1 >-> x \in D2} ->
+  {in D1, {on D2, allQ1 f}} -> {in D1, allQ1 f}.
+Proof. by move=> fD fD1 ? ?; apply/fD1/fD. Qed.
+
+Lemma on1lS_in : {homo f : x / x \in D1 >-> x \in D2} ->
+  {in D1, {on D2, allQ1l f & h}} -> {in D1, allQ1l f h}.
+Proof. by move=> fD fD1 ? ?; apply/fD1/fD. Qed.
+
+Lemma on2S_in : {homo f : x / x \in D1 >-> x \in D2} ->
+  {in D1 &, {on D2 &, allQ2 f}} -> {in D1 &, allQ2 f}.
+Proof. by move=> fD fD1 ? ? ? ?; apply: fD1 => //; apply: fD. Qed.
+
+Lemma in_on1S : (forall x, f x \in D2) -> {in T1, {on D2, allQ1 f}} -> allQ1 f.
+Proof. by move=> fD2 fD1 ?; apply: fD1. Qed.
+
+Lemma in_on1lS : (forall x, f x \in D2) ->
+  {in T1, {on D2, allQ1l f & h}} -> allQ1l f h.
+Proof. by move=> fD2 fD1 ?; apply: fD1. Qed.
+
+Lemma in_on2S : (forall x, f x \in D2) ->
+  {in T1 &, {on D2 &, allQ2 f}} -> allQ2 f.
+Proof. by move=> fD2 fD1 ? ?; apply: fD1. Qed.
+
 End LocalGlobal.
+Arguments in_on1P  {T1 T2 D1 D2 f Q1}.
+Arguments in_on1lP {T1 T2 T3 D1 D2 f h Q1l}.
+Arguments in_on2P  {T1 T2 D1 D2 f Q2}.
+Arguments on1W_in  {T1 T2 D1} D2 {f Q1}.
+Arguments on1lW_in {T1 T2 T3 D1} D2 {f h Q1l}.
+Arguments on2W_in  {T1 T2 D1} D2 {f Q2}.
+Arguments in_on1W  {T1 T2} D1 D2 {f Q1}.
+Arguments in_on1lW {T1 T2 T3} D1 D2 {f h Q1l}.
+Arguments in_on2W  {T1 T2} D1 D2 {f Q2}.
+Arguments on1S     {T1 T2} D2 {f Q1}.
+Arguments on1lS    {T1 T2 T3} D2 {f h Q1l}.
+Arguments on2S     {T1 T2} D2 {f Q2}.
+Arguments on1S_in  {T1 T2 D1} D2 {f Q1}.
+Arguments on1lS_in {T1 T2 T3 D1} D2 {f h Q1l}.
+Arguments on2S_in  {T1 T2 D1} D2 {f Q2}.
+Arguments in_on1S  {T1 T2} D2 {f Q1}.
+Arguments in_on1lS {T1 T2 T3} D2 {f h Q1l}.
+Arguments in_on2S  {T1 T2} D2 {f Q2}.
+
+Section in_sig.
+
+Variables T1 T2 T3 : Type.
+Variables (D1 : {pred T1}) (D2 : {pred T2})  (D3 : {pred T3}).
+Variable P1 : T1 -> Prop.
+Variable P2 : T1 -> T2 -> Prop.
+Variable P3 : T1 -> T2 -> T3 -> Prop.
+
+Lemma in1_sig : {in D1, {all1 P1}} -> forall x : sig D1, P1 (sval x).
+Proof. by move=> DP [x Dx]; have := DP _ Dx. Qed.
+
+Lemma in2_sig : {in D1 & D2, {all2 P2}} ->
+  forall (x : sig D1) (y : sig D2), P2 (sval x) (sval y).
+Proof. by move=> DP [x Dx] [y Dy]; have := DP _ _ Dx Dy. Qed.
+
+Lemma in3_sig : {in D1 & D2 & D3, {all3 P3}} ->
+  forall (x : sig D1) (y : sig D2) (z : sig D3), P3 (sval x) (sval y) (sval z).
+Proof. by move=> DP [x Dx] [y Dy] [z Dz]; have := DP _ _ _ Dx Dy Dz. Qed.
+
+End in_sig.
+Arguments in1_sig {T1 D1 P1}.
+Arguments in2_sig {T1 T2 D1 D2 P2}.
+Arguments in3_sig {T1 T2 T3 D1 D2 D3 P3}.
 
 Lemma sub_in2 T d d' (P : T -> T -> Prop) :
   sub_mem d d' -> forall Ph : ph {all2 P}, prop_in2 d' Ph -> prop_in2 d Ph.

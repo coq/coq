@@ -10,18 +10,17 @@ SProp (proof irrelevant propositions)
    In particular, conversion checking through bytecode or native code
    compilation currently does not understand proof irrelevance.
 
-This section describes the extension of |Coq| with definitionally
+This section describes the extension of Coq with definitionally
 proof irrelevant propositions (types in the sort :math:`\SProp`, also
 known as strict propositions) as described in
 :cite:`Gilbert:POPL2019`.
 
 Use of |SProp| may be disabled by passing ``-disallow-sprop`` to the
-|Coq| program or by turning the :flag:`Allow StrictProp` flag off.
+Coq program or by turning the :flag:`Allow StrictProp` flag off.
 
 .. flag:: Allow StrictProp
-   :name: Allow StrictProp
 
-   Enables or disables the use of |SProp|.  It is enabled by default.
+   This :term:`flag` enables or disables the use of |SProp|.  It is enabled by default.
    The command-line flag ``-disallow-sprop`` disables |SProp| at
    startup.
 
@@ -45,7 +44,7 @@ are convertible:
    exact Hx.
    Qed.
 
-Since we have definitional :ref:`eta-expansion` for
+Since we have definitional :ref:`eta-expansion-sect` for
 functions, the property of being a type of definitionally irrelevant
 values is impredicative, and so is :math:`\SProp`:
 
@@ -178,7 +177,7 @@ Definitional UIP
 
 .. flag:: Definitional UIP
 
-   This flag, off by default, allows the declaration of non-squashed
+   This :term:`flag`, off by default, allows the declaration of non-squashed
    inductive types with 1 constructor which takes no argument in
    |SProp|. Since this includes equality types, it provides
    definitional uniqueness of identity proofs.
@@ -283,9 +282,8 @@ This means that some errors will be delayed until ``Qed``:
    Abort.
 
 .. flag:: Elaboration StrictProp Cumulativity
-   :name: Elaboration StrictProp Cumulativity
 
-   Unset this flag (it is on by default) to be strict with regard to
+   Unset this :term:`flag` (it is on by default) to be strict with regard to
    :math:`\SProp` cumulativity during elaboration.
 
 The implementation of proof irrelevance uses inferred "relevance"
@@ -320,8 +318,7 @@ so correctly converts ``x`` and ``y``.
   it to find when your tactics are producing incorrect marks.
 
 .. flag:: Cumulative StrictProp
-   :name: Cumulative StrictProp
 
-   Set this flag (it is off by default) to make the kernel accept
+   Set this :term:`flag` (it is off by default) to make the kernel accept
    cumulativity between |SProp| and other universes. This makes
    typechecking incomplete.

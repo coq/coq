@@ -21,7 +21,9 @@ Require Import DecidableTypeEx FSetFacts FSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+#[global]
 Hint Unfold transpose compat_op Proper respectful : fset.
+#[global]
 Hint Extern 1 (Equivalence _) => constructor; congruence : fset.
 
 (** First, a functor for Weak Sets in functorial version. *)
@@ -269,7 +271,9 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   End BasicProperties.
 
+  #[global]
   Hint Immediate equal_sym add_remove remove_add union_sym inter_sym: set.
+  #[global]
   Hint Resolve equal_refl equal_trans subset_refl subset_equal subset_antisym
     subset_trans subset_empty subset_remove_3 subset_diff subset_add_3
     subset_add_2 in_subset empty_is_empty_1 empty_is_empty_2 add_equal
@@ -732,6 +736,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros; rewrite cardinal_Empty; auto.
   Qed.
+  #[global]
   Hint Resolve cardinal_inv_1 : fset.
 
   Lemma cardinal_inv_2 :
@@ -769,6 +774,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   exact Equal_cardinal.
   Qed.
 
+  #[global]
   Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal : fset.
 
   (** ** Cardinal and set operators *)
@@ -778,6 +784,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   rewrite cardinal_fold; apply fold_1; auto with set fset.
   Qed.
 
+  #[global]
   Hint Immediate empty_cardinal cardinal_1 : set.
 
   Lemma singleton_cardinal : forall x, cardinal (singleton x) = 1.
@@ -788,6 +795,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply cardinal_2 with x; auto with set.
   Qed.
 
+  #[global]
   Hint Resolve singleton_cardinal: set.
 
   Lemma diff_inter_cardinal :
@@ -887,6 +895,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   auto with set fset.
   Qed.
 
+  #[global]
   Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2 : fset.
 
 End WProperties_fun.
@@ -952,6 +961,7 @@ Module OrdProperties (M:S).
    red; intros x a b H; unfold leb.
    f_equal; apply gtb_compat; auto.
   Qed.
+  #[global]
   Hint Resolve gtb_compat leb_compat : fset.
 
   Lemma elements_split : forall x s,

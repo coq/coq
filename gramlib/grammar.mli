@@ -39,9 +39,11 @@ module type S = sig
     val create : string -> 'a t (* compat *)
     val parse : 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
-    val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
-    val parse_token_stream : 'a t -> te Stream.t -> 'a
+    type 'a parser_fun = { parser_fun : te LStream.t -> 'a }
+    val of_parser : string -> 'a parser_fun -> 'a t
+    val parse_token_stream : 'a t -> te LStream.t -> 'a
     val print : Format.formatter -> 'a t -> unit
+    val is_empty : 'a t -> bool
   end
 
   module rec Symbol : sig
@@ -91,9 +93,10 @@ module type S = sig
     string option * Gramext.g_assoc option * 'a Production.t list
 
   type 'a extend_statement =
-    { pos : Gramext.position option
-    ; data : 'a single_extend_statement list
-    }
+  | Reuse of string option * 'a Production.t list
+    (** Extend an existing level by its optional given name. If None, picks the topmost level. *)
+  | Fresh of Gramext.position * 'a single_extend_statement list
+    (** Create a level at the given position. *)
 
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
 

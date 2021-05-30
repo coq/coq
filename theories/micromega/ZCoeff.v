@@ -121,7 +121,7 @@ Qed.
 
 Lemma phi_pos1_pos : forall x : positive, 0 < phi_pos1 x.
 Proof.
-induction x as [x IH | x IH |]; simpl;
+intros x; induction x as [x IH | x IH |]; simpl;
 try apply (Rplus_pos_pos sor); try apply (Rtimes_pos_pos sor); try apply (Rplus_pos_pos sor);
 try apply (Rlt_0_1 sor); assumption.
 Qed.

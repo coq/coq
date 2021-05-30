@@ -12,8 +12,6 @@
 
 Require Import Coq.Init.Wf.
 Require Import Coq.Program.Utils.
-Require Import ProofIrrelevance.
-Require Import FunctionalExtensionality.
 
 Local Open Scope program_scope.
 
@@ -45,13 +43,13 @@ Section Well_founded.
     forall (x:A) (r:Acc R x),
       F_sub x (fun y:{y:A | R y x} => Fix_F_sub (`y) (Acc_inv r (proj2_sig y))) = Fix_F_sub x r.
   Proof.
-    destruct r using Acc_inv_dep; auto.
+    intros x r; destruct r using Acc_inv_dep; auto.
   Qed.
 
   Lemma Fix_F_inv : forall (x:A) (r s:Acc R x), Fix_F_sub x r = Fix_F_sub x s.
   Proof.
     intro x; induction (Rwf x); intros.
-    rewrite (proof_irrelevance (Acc R x) r s) ; auto.
+    rewrite <- 2 Fix_F_eq; intros. apply F_ext; intros []; auto.
   Qed.
 
   Lemma Fix_eq : forall x:A, Fix_sub x = F_sub x (fun y:{ y:A | R y x} => Fix_sub (proj1_sig y)).
@@ -97,12 +95,12 @@ Section Measure_well_founded.
   Proof with auto.
     unfold well_founded.
     cut (forall (a: M) (a0: T), m a0 = a -> Acc MR a0).
-    + intros.
+    + intros H a.
       apply (H (m a))...
     + apply (@well_founded_ind M R wf (fun mm => forall a, m a = mm -> Acc MR a)).
-      intros.
+      intros ? H ? H0.
       apply Acc_intro.
-      intros.
+      intros y H1.
       unfold MR in H1.
       rewrite H0 in H1.
       apply (H (m y))...
@@ -110,6 +108,7 @@ Section Measure_well_founded.
 
 End Measure_well_founded.
 
+#[global]
 Hint Resolve measure_wf : core.
 
 Section Fix_rects.
@@ -175,7 +174,7 @@ Section Fix_rects.
     revert a'.
     pattern x, (Fix_F_sub A R P f x a).
     apply Fix_F_sub_rect.
-    intros.
+    intros ? H **.
     rewrite F_unfold.
     apply equiv_lowers.
     intros.
@@ -198,11 +197,11 @@ Section Fix_rects.
     : forall x, Q _ (Fix_sub A R Rwf P f x).
   Proof with auto.
     unfold Fix_sub.
-    intros.
+    intros x.
     apply Fix_F_sub_rect.
-    intros.
-    assert (forall y: A, R y x0 -> Q y (Fix_F_sub A R P f y (Rwf y)))...
-    set (inv x0 X0 a). clearbody q.
+    intros x0 H a.
+    assert (forall y: A, R y x0 -> Q y (Fix_F_sub A R P f y (Rwf y))) as X0...
+    set (q := inv x0 X0 a). clearbody q.
     rewrite <- (equiv_lowers (fun y: {y: A | R y x0} =>
       Fix_F_sub A R P f (proj1_sig y) (Rwf (proj1_sig y)))
     (fun y: {y: A | R y x0} => Fix_F_sub A R P f (proj1_sig y) (Acc_inv a (proj2_sig y))))...
@@ -226,6 +225,7 @@ Ltac fold_sub f :=
 
 (** This module provides the fixpoint equation provided one assumes
    functional extensionality. *)
+Require Import FunctionalExtensionality.
 
 Module WfExtensionality.
 
@@ -242,9 +242,9 @@ Module WfExtensionality.
         Fix_sub A R Rwf P F_sub x =
           F_sub x (fun y:{y : A | R y x} => Fix_sub A R Rwf P F_sub (` y)).
   Proof.
-    intros ; apply Fix_eq ; auto.
-    intros.
-    assert(f = g).
+    intros A R Rwf P F_sub x; apply Fix_eq ; auto.
+    intros ? f g H.
+    assert(f = g) as H0.
     - extensionality y ; apply H.
     - rewrite H0 ; auto.
   Qed.

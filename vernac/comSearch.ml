@@ -41,8 +41,8 @@ let kind_searcher = Decls.(function
     Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Coercionops.coe_value gr &&
                                       (k' <> SubClass && k' <> IdentityCoercion || c.Coercionops.coe_is_identity)) coercions)
   | IsDefinition CanonicalStructure ->
-    let canonproj = Recordops.canonical_projections () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.equal (snd c).Recordops.o_ORIGIN gr) canonproj)
+    let canonproj = Structures.CSTable.entries () in
+    Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Structures.CSTable.solution gr) canonproj)
   | IsDefinition Scheme ->
     let schemes = DeclareScheme.all_schemes () in
     Inr (fun gr -> Indset.exists (fun c -> GlobRef.equal (GlobRef.IndRef c) gr) schemes)
@@ -53,9 +53,19 @@ let kind_searcher = Decls.(function
 let interp_search_item env sigma =
   function
   | SearchSubPattern ((where,head),pat) ->
-      let _,pat = Constrintern.intern_constr_pattern env sigma pat in
+      let expected_type = Pretyping.(if head then IsType else WithoutTypeConstraint) in
+      let pat =
+        try Constrintern.interp_constr_pattern env sigma ~expected_type pat
+        with e when CErrors.noncritical e ->
+          (* We cannot ensure (yet?) that a typable pattern will
+             actually be typed, consider e.g. (forall A, A -> A /\ A)
+             which fails, not seeing that A can be Prop; so we use an
+             untyped pattern as a fallback (i.e w/o no insertion of
+             coercions, no compilation of pattern-matching) *)
+          snd (Constrintern.intern_constr_pattern env sigma ~as_type:head pat) in
       GlobSearchSubPattern (where,head,pat)
-  | SearchString ((Anywhere,false),s,None) when Id.is_valid s ->
+  | SearchString ((Anywhere,false),s,None)
+      when Id.is_valid_ident_part s && String.equal (String.drop_simple_quotes s) s ->
       GlobSearchString s
   | SearchString ((where,head),s,sc) ->
       (try
@@ -95,12 +105,6 @@ let () =
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }
 
-let deprecated_searchhead =
-  CWarnings.create
-    ~name:"deprecated-searchhead"
-    ~category:"deprecated"
-    (fun () -> Pp.str("SearchHead is deprecated. Use the headconcl: clause of Search instead."))
-
 let interp_search env sigma s r =
   let r = interp_search_restriction r in
   let get_pattern c = snd (Constrintern.intern_constr_pattern env sigma c) in
@@ -128,9 +132,6 @@ let interp_search env sigma s r =
       (Search.search_pattern env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchRewrite c ->
       (Search.search_rewrite env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
-  | SearchHead c ->
-      deprecated_searchhead ();
-      (Search.search_by_head env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
   | Search sl ->
       (Search.search env sigma (List.map (interp_search_request env Evd.(from_env env)) sl) r |>
        Search.prioritize_search) pr_search);

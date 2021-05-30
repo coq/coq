@@ -155,17 +155,13 @@ let library_is_loaded dir =
 
 let register_loaded_library m =
   let libname = m.libsum_name in
-  let link () =
-    let dirname = Filename.dirname (library_full_filename libname) in
-    let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
-    let f = prefix ^ "cmo" in
-    let f = Dynlink.adapt_filename f in
-    Nativelib.link_library (Global.env()) ~prefix ~dirname ~basename:f
-  in
   let rec aux = function
     | [] ->
-      let () = if Flags.get_native_compiler () then link () in
-      [libname]
+        if Flags.get_native_compiler () then begin
+            let dirname = Filename.dirname (library_full_filename libname) in
+            Nativelib.enable_library dirname libname
+          end;
+        [libname]
     | m'::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
@@ -452,10 +448,10 @@ let save_library_base f sum lib univs tasks proofs =
     Sys.remove f;
     Exninfo.iraise reraise
 
-type ('document,'counters) todo_proofs =
+type 'document todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list * 'counters (* for .vio *)
+ | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list (* for .vio *)
 
 let save_library_to todo_proofs ~output_native_objects dir f otab =
   assert(
@@ -468,7 +464,7 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
   let except = match todo_proofs with
     | ProofsTodoNone -> Future.UUIDSet.empty
     | ProofsTodoSomeEmpty except -> except
-    | ProofsTodoSome (except,l,_) -> except
+    | ProofsTodoSome (except,l) -> except
     in
   let cenv, seg, ast = Declaremods.end_library ~output_native_objects ~except dir in
   let opaque_table, f2t_map = Opaqueproof.dump ~except otab in
@@ -477,13 +473,13 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
     | ProofsTodoNone -> None, None
     | ProofsTodoSomeEmpty _except ->
       None, Some (Univ.ContextSet.empty,false)
-    | ProofsTodoSome (_except, tasks, rcbackup) ->
+    | ProofsTodoSome (_except, tasks) ->
       let tasks =
         List.map Stateid.(fun (r,b) ->
             try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b
             with Not_found -> assert b; { r with uuid = -1 }, b)
           tasks in
-      Some (tasks,rcbackup),
+      Some tasks,
       Some (Univ.ContextSet.empty,false)
     in
     let sd = {
@@ -502,7 +498,7 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
   (* Writing native code files *)
   if output_native_objects then
     let fn = Filename.dirname f ^"/"^ Nativecode.mod_uid_of_dirpath dir in
-    Nativelib.compile_library dir ast fn
+    Nativelib.compile_library ast fn
 
 let save_library_raw f sum lib univs proofs =
   save_library_base f sum lib (Some univs) None proofs

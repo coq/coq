@@ -135,13 +135,21 @@ Qed.
 
 (** * Hints *)
 
+#[global]
 Hint Resolve gt_Sn_O gt_Sn_n gt_n_S : arith.
+#[global]
 Hint Immediate gt_S_n gt_pred : arith.
+#[global]
 Hint Resolve gt_irrefl gt_asym : arith.
+#[global]
 Hint Resolve le_not_gt gt_not_le : arith.
+#[global]
 Hint Immediate le_S_gt gt_S_le : arith.
+#[global]
 Hint Resolve gt_le_S le_gt_S : arith.
+#[global]
 Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith.
+#[global]
 Hint Resolve plus_gt_compat_l: arith.
 
 (* begin hide *)

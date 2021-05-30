@@ -135,8 +135,9 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
 
 
 let construct_of_constr const env sigma tag typ =
-  let t, l = app_type env typ in
-  match EConstr.kind_upto sigma t with
+  let typ = Reductionops.clos_whd_flags CClosure.all env sigma (EConstr.of_constr typ) in
+  let t, l = decompose_appvect (EConstr.Unsafe.to_constr typ) in
+  match Constr.kind t with
   | Ind (ind,u) ->
       construct_of_constr_notnative const env tag ind u l
   | _ ->
@@ -320,13 +321,13 @@ and nf_atom_type env sigma atom =
   | Acase(ans,accu,p,bs) ->
       let a,ta = nf_accu_type env sigma accu in
       let ((mind,_),u as ind),allargs = find_rectype_a env ta in
-      let iv = if Typeops.should_invert_case env ans.asw_ci then
-          CaseInvert {univs=u; args=allargs}
-        else NoInvert
-      in
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       let nparams = mib.mind_nparams in
       let params,realargs = Array.chop nparams allargs in
+      let iv = if Typeops.should_invert_case env ans.asw_ci then
+          CaseInvert {indices=realargs}
+        else NoInvert
+      in
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
         hnf_prod_applist_assum env nparamdecls
@@ -343,7 +344,8 @@ and nf_atom_type env sigma atom =
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type p realargs a in
-      mkCase(ans.asw_ci, p, iv, a, branchs), tcase
+      let ci = ans.asw_ci in
+      mkCase (Inductive.contract_case env (ci, p, iv, a, branchs)), tcase
   | Afix(tt,ft,rp,s) ->
       let tt = Array.map (fun t -> nf_type_sort env sigma t) tt in
       let tt = Array.map fst tt and rt = Array.map snd tt in
@@ -467,16 +469,24 @@ let start_profiler_linux profile_fn =
       [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int coq_pid |]
       Unix.stdin dev_null dev_null
   in
-  (* doesn't seem to be a way to test whether process creation succeeded *)
-  if !Flags.debug then
-    Feedback.msg_debug (Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
+  (* doesn't seem to be a way to test whether process creation succeeded
+     (create_process doesn't raise until OCaml 4.12.0) *)
+  debug_native_compiler (fun () ->
+    Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
   Some profiler_pid
+
+let start_profiler_linux fn =
+  try start_profiler_linux fn
+  with Unix.Unix_error _ as e ->
+    Feedback.msg_info
+      Pp.(str "Could not start native code profiler: " ++ str (Printexc.to_string e));
+    None
 
 (* kill profiler via SIGINT *)
 let stop_profiler_linux m_pid =
   match m_pid with
   | Some pid -> (
-    let _ = if !Flags.debug then Feedback.msg_debug (Pp.str "Stopping native code profiler") in
+    let _ = debug_native_compiler (fun () -> Pp.str "Stopping native code profiler") in
     try
       Unix.kill pid Sys.sigint;
       let _ = Unix.waitpid [] pid in ()
@@ -501,15 +511,9 @@ let stop_profiler m_pid =
   | _ -> ()
 
 let native_norm env sigma c ty =
+  Nativelib.link_libraries ();
   let c = EConstr.Unsafe.to_constr c in
   let ty = EConstr.Unsafe.to_constr ty in
-  if not (Flags.get_native_compiler ()) then
-    user_err Pp.(str "Native_compute reduction has been disabled.")
-  else
-  (*
-  Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
-  Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
-  *)
     let profile = get_profiling_enabled () in
     let print_timing = get_timing_enabled () in
     let ml_filename, prefix = Nativelib.get_ml_filename () in
@@ -525,16 +529,21 @@ let native_norm env sigma c ty =
     if print_timing then Feedback.msg_info (Pp.str time_info);
     let profiler_pid = if profile then start_profiler () else None in
     let t0 = Unix.gettimeofday () in
-    Nativelib.call_linker ~fatal:true env ~prefix fn (Some upd);
+    let (rt1, _) = Nativelib.execute_library ~prefix fn upd in
     let t1 = Unix.gettimeofday () in
     if profile then stop_profiler profiler_pid;
     let time_info = Format.sprintf "native_compute: Evaluation done in %.5f" (t1 -. t0) in
     if print_timing then Feedback.msg_info (Pp.str time_info);
-    let res = nf_val env sigma !Nativelib.rt1 ty in
+    let res = nf_val env sigma rt1 ty in
     let t2 = Unix.gettimeofday () in
     let time_info = Format.sprintf "native_compute: Reification done in %.5f" (t2 -. t1) in
     if print_timing then Feedback.msg_info (Pp.str time_info);
     EConstr.of_constr res
+
+let native_norm env sigma c ty =
+  if not (Flags.get_native_compiler ()) then
+    user_err Pp.(str "Native_compute reduction has been disabled.");
+  native_norm env sigma c ty
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t

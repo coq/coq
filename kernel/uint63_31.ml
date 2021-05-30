@@ -23,9 +23,10 @@ let one = Int64.one
 
     (* conversion from an int *)
 let mask63 i = Int64.logand i maxuint63
-let of_int i = Int64.of_int i
+let of_int i = mask63 (Int64.of_int i)
 let to_int2 i = (Int64.to_int (Int64.shift_right_logical i 31), Int64.to_int i)
-let of_int64 i = i
+let of_int64 = mask63
+let to_int64 i = i
 
 let to_int_min n m =
   if Int64.(compare n (of_int m)) < 0 then Int64.to_int n else m
@@ -41,13 +42,6 @@ let hash i =
     (* conversion of an uint63 to a string *)
 let to_string i = Int64.to_string i
 
-let of_string s =
-  let i64 = Int64.of_string s in
-  if Int64.compare Int64.zero i64 <= 0
-      && Int64.compare i64 maxuint63 <= 0
-  then i64
-  else raise (Failure "Int63.of_string")
-
 (* Compiles an unsigned int to OCaml code *)
 let compile i = Printf.sprintf "Uint63.of_int64 (%LiL)" i
 
@@ -58,12 +52,27 @@ let lt x y =
 let le x y =
   Int64.compare x y <= 0
 
+    (* signed comparison *)
+(* We shift the arguments by 1 to the left so that the top-most bit is interpreted as a sign *)
+(* The zero at the end doesn't change the order (it is stable by multiplication by 2) *)
+let lts x y =
+  Int64.(compare (shift_left x 1) (shift_left y 1)) < 0
+
+let les x y =
+  Int64.(compare (shift_left x 1) (shift_left y 1)) <= 0
+
     (* logical shift *)
 let l_sl x y =
   if le 0L y && lt y 63L then mask63 (Int64.shift_left x (Int64.to_int y)) else 0L
 
 let l_sr x y =
   if le 0L y && lt y 63L then Int64.shift_right x (Int64.to_int y) else 0L
+
+    (* arithmetic shift (for sint63) *)
+let a_sr x y =
+  if les 0L y && lts y 63L then
+    mask63 (Int64.shift_right (Int64.shift_left x 1) ((Int64.to_int y) + 1))
+  else 0L
 
 let l_and x y = Int64.logand x y
 let l_or x y = Int64.logor x y
@@ -72,12 +81,12 @@ let l_xor x y = Int64.logxor x y
     (* addition of int63 *)
 let add x y = mask63 (Int64.add x y)
 
-let addcarry x y = add (add x y) Int64.one
+let addcarry x y = mask63 Int64.(add (add x y) one)
 
     (* subtraction *)
 let sub x y = mask63 (Int64.sub x y)
 
-let subcarry x y = sub (sub x y) Int64.one
+let subcarry x y = mask63 Int64.(sub (sub x y) one)
 
     (* multiplication *)
 let mul x y = mask63 (Int64.mul x y)
@@ -88,9 +97,18 @@ let div x y =
 
     (* modulo *)
 let rem x y =
-  if y = 0L then 0L else Int64.rem x y
+  if y = 0L then x else Int64.rem x y
 
 let diveucl x y = (div x y, rem x y)
+
+    (* signed division *)
+let divs x y =
+  if y = 0L then 0L else mask63 Int64.(div (shift_left x 1) (shift_left y 1))
+
+    (* signed modulo *)
+let rems x y =
+  if y = 0L then x else
+    Int64.shift_right_logical (Int64.(rem (shift_left x 1) (shift_left y 1))) 1
 
 let addmuldiv p x y =
   l_or (l_sl x p) (l_sr y Int64.(sub (of_int uint_size) p))
@@ -144,6 +162,8 @@ let mulc x y =
 let equal (x : t) y = x = y
 
 let compare x y = Int64.compare x y
+
+let compares x y = Int64.(compare (shift_left x 1) (shift_left y 1))
 
 (* Number of leading zeroes *)
 let head0 x =
@@ -204,24 +224,30 @@ let () =
   Callback.register "uint63 addcarry" addcarry;
   Callback.register "uint63 addmuldiv" addmuldiv;
   Callback.register "uint63 div" div;
+  Callback.register "uint63 divs" divs;
   Callback.register "uint63 div21_ml" div21;
   Callback.register "uint63 eq" equal;
   Callback.register "uint63 eq0" (equal Int64.zero);
+  Callback.register "uint63 eqm1" (equal (sub zero one));
   Callback.register "uint63 head0" head0;
   Callback.register "uint63 land" l_and;
   Callback.register "uint63 leq" le;
+  Callback.register "uint63 les" les;
   Callback.register "uint63 lor" l_or;
   Callback.register "uint63 lsl" l_sl;
-  Callback.register "uint63 lsl1" (fun x -> l_sl x Int64.one);
   Callback.register "uint63 lsr" l_sr;
-  Callback.register "uint63 lsr1" (fun x -> l_sr x Int64.one);
+  Callback.register "uint63 asr" a_sr;
   Callback.register "uint63 lt" lt;
+  Callback.register "uint63 lts" lts;
   Callback.register "uint63 lxor" l_xor;
   Callback.register "uint63 mod" rem;
+  Callback.register "uint63 mods" rems;
   Callback.register "uint63 mul" mul;
   Callback.register "uint63 mulc_ml" mulc;
+  Callback.register "uint63 zero" zero;
   Callback.register "uint63 one" one;
   Callback.register "uint63 sub" sub;
+  Callback.register "uint63 neg" (sub zero);
   Callback.register "uint63 subcarry" subcarry;
   Callback.register "uint63 tail0" tail0;
   Callback.register "uint63 of_float" of_float;

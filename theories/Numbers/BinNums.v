@@ -29,6 +29,9 @@ Bind Scope positive_scope with positive.
 Arguments xO _%positive.
 Arguments xI _%positive.
 
+Declare Scope hex_positive_scope.
+Delimit Scope hex_positive_scope with xpositive.
+
 Register positive as num.pos.type.
 Register xI as num.pos.xI.
 Register xO as num.pos.xO.
@@ -47,6 +50,9 @@ Declare Scope N_scope.
 Delimit Scope N_scope with N.
 Bind Scope N_scope with N.
 Arguments Npos _%positive.
+
+Declare Scope hex_N_scope.
+Delimit Scope hex_N_scope with xN.
 
 Register N as num.N.type.
 Register N0 as num.N.N0.
@@ -69,6 +75,9 @@ Delimit Scope Z_scope with Z.
 Bind Scope Z_scope with Z.
 Arguments Zpos _%positive.
 Arguments Zneg _%positive.
+
+Declare Scope hex_Z_scope.
+Delimit Scope hex_Z_scope with xZ.
 
 Register Z as num.Z.type.
 Register Z0 as num.Z.Z0.

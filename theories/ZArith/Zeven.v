@@ -130,6 +130,7 @@ Proof.
  boolify_even_odd. now rewrite Z.odd_pred.
 Qed.
 
+#[global]
 Hint Unfold Zeven Zodd: zarith.
 
 Notation Zeven_bool_succ := Z.even_succ (only parsing).

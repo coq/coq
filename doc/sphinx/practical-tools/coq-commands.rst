@@ -1,13 +1,13 @@
 .. _thecoqcommands:
 
-The |Coq| commands
+The Coq commands
 ====================
 
-There are three |Coq| commands:
+There are three Coq commands:
 
-+ ``coqtop``: the |Coq| toplevel (interactive mode);
-+ ``coqc``: the |Coq| compiler (batch compilation);
-+ ``coqchk``: the |Coq| checker (validation of compiled libraries).
++ ``coqtop``: the Coq toplevel (interactive mode);
++ ``coqc``: the Coq compiler (batch compilation);
++ ``coqchk``: the Coq checker (validation of compiled libraries).
 
 
 The options are (basically) the same for the first two commands, and
@@ -19,39 +19,77 @@ roughly described below. You can also look at the ``man`` pages of
 Interactive use (coqtop)
 ------------------------
 
-In the interactive mode, also known as the |Coq| toplevel, the user can
-develop his theories and proofs step by step. The |Coq| toplevel is run
+In the interactive mode, also known as the Coq toplevel, the user can
+develop his theories and proofs step by step. The Coq toplevel is run
 by the command ``coqtop``.
 
-There are two different binary images of |Coq|: the byte-code one and the
-native-code one (if |OCaml| provides a native-code compiler for
+There are two different binary images of Coq: the byte-code one and the
+native-code one (if OCaml provides a native-code compiler for
 your platform, which is supposed in the following). By default,
 ``coqtop`` executes the native-code version; run ``coqtop.byte`` to get
 the byte-code version.
 
-The byte-code toplevel is based on an |OCaml| toplevel (to
-allow dynamic linking of tactics). You can switch to the |OCaml| toplevel
-with the command ``Drop.``, and come back to the |Coq|
+The byte-code toplevel is based on an OCaml toplevel (to
+allow dynamic linking of tactics). You can switch to the OCaml toplevel
+with the command ``Drop.``, and come back to the Coq
 toplevel with the command ``Coqloop.loop();;``.
 
 .. flag:: Coqtop Exit On Error
 
-   This flag, off by default, causes coqtop to exit with status code
+   This :term:`flag`, off by default, causes coqtop to exit with status code
    ``1`` if a command produces an error instead of recovering from it.
 
 Batch compilation (coqc)
 ------------------------
 
-The ``coqc`` command takes a name *file* as argument. Then it looks for a
-vernacular file named *file*.v, and tries to compile it into a
-*file*.vo file (See :ref:`compiled-files`).
+The ``coqc`` command compiles a Coq proof script file with a ".v" suffix
+to create a compiled file with a ".vo" suffix.  (See :ref:`compiled-files`.)
+The last component of the filename must be a valid Coq identifier as described in
+:ref:`lexical-conventions`; it should contain only letters, digits or
+underscores (_) with a ".v" suffix on the final component.
+For example ``/bar/foo/toto.v`` is valid, but ``/bar/foo/to-to.v`` is not.
 
-.. caution::
+We recommend specifying a logical directory name (which is also the module name)
+with the `-R` or the `-Q` options.
+Generally we recommend using utilities such as `make` (using `coq_makefile`
+to generate the `Makefile`) or `dune` to build Coq projects.
+See :ref:`building_coq_project`.
 
-   The name *file* should be a regular |Coq| identifier as defined in Section :ref:`lexical-conventions`.
-   It should contain only letters, digits or underscores (_). For example ``/bar/foo/toto.v`` is valid,
-   but ``/bar/foo/to-to.v`` is not.
+.. example:: Compiling and loading a single file
 
+   If `foo.v` is in Coq's current directory, you can use `coqc foo.v`
+   to compile it and then `Require foo.` in your script.  But this
+   doesn't scale well for larger projects.
+
+   Generally it's' better to define a new module:
+   To compile `foo.v` as part of a module `Mod1` that is rooted
+   at `.` (i.e. the directory containing `foo.v`), run `coqc -Q . Mod1 foo.v`.
+
+   To make the module available in `CoqIDE`, include the following line in the
+   `_CoqProject` file (see :ref:`coq_makefile`) in the directory from which you
+   start `CoqIDE`.  *<PATH>* is the pathname of the directory containing the module,
+   which can be an absolute path or relative to Coq's current directory.  For now,
+   you must close and reload a named script file for `CoqIDE` to pick up the change,
+   or restart `CoqIDE`.
+   The project file name is configurable in `Edit / Preferences / Project`.
+
+      .. coqdoc::
+         -R <PATH> Mod1
+
+   It's also possible to load a module within `coqtop` or `coqide` with
+   commands like these.  The drawback of this is that it adds
+   environment-specific information (the PATH) to your script, making
+   it non-portable, so we discourage using this approach.
+
+      .. coqdoc::
+         Add LoadPath "PATH" as Mod1.
+         Require Mod1.foo.
+
+   in which `PATH` is the pathname of the directory containing `foo.v`, which
+   can be absolute or relative to Coq's current directory.  The
+   :cmd:`Add LoadPath` is not needed if you provide the mapping from the
+   logical directory (module name) to the physical directory by including the
+   `-Q . Mod1` as command-line arguments to `coqtop` or `coqide`.
 
 Customization at launch time
 ---------------------------------
@@ -59,9 +97,9 @@ Customization at launch time
 By resource file
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-When |Coq| is launched, with either ``coqtop`` or ``coqc``, the
+When Coq is launched, with either ``coqtop`` or ``coqc``, the
 resource file ``$XDG_CONFIG_HOME/coq/coqrc.xxx``, if it exists, will
-be implicitly prepended to any document read by |Coq|, whether it is an
+be implicitly prepended to any document read by Coq, whether it is an
 interactive session or a file to compile. Here, ``$XDG_CONFIG_HOME``
 is the configuration directory of the user (by default it's ``~/.config``)
 and ``xxx`` is the version number (e.g. 8.8). If
@@ -73,7 +111,7 @@ You can also specify an arbitrary name for the resource file
 (see option ``-init-file`` below).
 
 The resource file may contain, for instance, ``Add LoadPath`` commands to add
-directories to the load path of |Coq|. It is possible to skip the
+directories to the load path of Coq. It is possible to skip the
 loading of the resource file with the option ``-q``.
 
 .. _customization-by-environment-variables:
@@ -82,10 +120,10 @@ By environment variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``$COQPATH`` can be used to specify the load path. It is a list of directories separated by
-``:`` (``;`` on Windows). |Coq| will also honor ``$XDG_DATA_HOME`` and
+``:`` (``;`` on Windows). Coq will also honor ``$XDG_DATA_HOME`` and
 ``$XDG_DATA_DIRS`` (see Section :ref:`libraries-and-filesystem`).
 
-Some |Coq| commands call other |Coq| commands. In this case, they look for
+Some Coq commands call other Coq commands. In this case, they look for
 the commands in directory specified by ``$COQBIN``. If this variable is
 not set, they look for the commands in the executable path.
 
@@ -115,7 +153,7 @@ can be used to specify certain runtime and memory usage parameters.  In most cas
 experimenting with these settings will likely not cause a significant performance difference
 and should be harmless.
 
-If the variable is not set, |Coq| uses the
+If the variable is not set, Coq uses the
 `default values <https://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#TYPEcontrol>`_,
 except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 32Mwords
 (256MB with 64-bit executables or 128MB with 32-bit executables).
@@ -133,21 +171,21 @@ The following command-line options are recognized by the commands ``coqc``
 and ``coqtop``, unless stated otherwise:
 
 :-I *directory*, -include *directory*: Add physical path *directory*
-  to the |OCaml| loadpath.
+  to the OCaml loadpath.
 
   .. seealso::
 
      :ref:`names-of-libraries` and the
      command Declare ML Module Section :ref:`compiled-files`.
 :-Q *directory* *dirpath*: Add physical path *directory* to the list of
-  directories where |Coq| looks for a file and bind it to the logical
+  directories where Coq looks for a file and bind it to the logical
   directory *dirpath*. The subdirectory structure of *directory* is
-  recursively available from |Coq| using absolute names (extending the
+  recursively available from Coq using absolute names (extending the
   :n:`@dirpath` prefix) (see Section :ref:`qualified-names`). Note that only those
   subdirectories and files which obey the lexical conventions of what is
   an :n:`@ident` are taken into account. Conversely, the
   underlying file systems or operating systems may be more restrictive
-  than |Coq|. While Linux’s ext4 file system supports any |Coq| recursive
+  than Coq. While Linux’s ext4 file system supports any Coq recursive
   layout (within the limit of 255 bytes per filename), the default on
   NTFS (Windows) or HFS+ (MacOS X) file systems is on the contrary to
   disallow two files differing only in the case in the same directory.
@@ -155,13 +193,15 @@ and ``coqtop``, unless stated otherwise:
   .. seealso:: Section :ref:`names-of-libraries`.
 :-R *directory* *dirpath*: Do as ``-Q`` *directory* *dirpath* but make the
   subdirectory structure of *directory* recursively visible so that the
-  recursive contents of physical *directory* is available from |Coq| using
+  recursive contents of physical *directory* is available from Coq using
   short or partially qualified names.
 
   .. seealso:: Section :ref:`names-of-libraries`.
-:-top *dirpath*: Set the toplevel module name to :n:`@dirpath` instead of ``Top``.
-  Not valid for `coqc` as the toplevel module name is inferred from the
-  name of the output file.
+:-top *dirpath*: Set the logical module name to :n:`@dirpath` for the
+  `coqtop` interactive session. If no module name is specified,
+  `coqtop` will default to ``Top``. `coqc` does not accept this option
+  because the logical module name is inferred from the name of
+  the input file and the corresponding `-R` / `-Q` options.
 :-exclude-dir *directory*: Exclude any subdirectory named *directory*
   while processing options such as -R and -Q. By default, only the
   conventional version control management directories named CVS
@@ -172,12 +212,12 @@ and ``coqtop``, unless stated otherwise:
   loading the default resource file from the standard configuration
   directories.
 :-q: Do not to load the default resource file.
-:-l *file*, -load-vernac-source *file*: Load and execute the |Coq|
+:-l *file*, -load-vernac-source *file*: Load and execute the Coq
   script from *file.v*.
 :-lv *file*, -load-vernac-source-verbose *file*: Load and execute the
-  |Coq| script from *file.v*. Write its contents to the standard output as
+  Coq script from *file.v*. Write its contents to the standard output as
   it is executed.
-:-load-vernac-object *qualid*: Load |Coq| compiled library :n:`@qualid`. This
+:-load-vernac-object *qualid*: Load Coq compiled library :n:`@qualid`. This
   is equivalent to running :cmd:`Require` :n:`@qualid`.
 
   .. _interleave-command-line:
@@ -191,27 +231,27 @@ and ``coqtop``, unless stated otherwise:
      :cmd:`Unset` commands will be executed in the order specified on
      the command-line.
 
-:-rfrom *dirpath* *qualid*: Load |Coq| compiled library :n:`@qualid`.
+:-rfrom *dirpath* *qualid*: Load Coq compiled library :n:`@qualid`.
   This is equivalent to running :cmd:`From <From … Require>`
   :n:`@dirpath` :cmd:`Require <From … Require>` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
-:-ri *qualid*, -require-import *qualid*: Load |Coq| compiled library :n:`@qualid` and import it.
+:-ri *qualid*, -require-import *qualid*: Load Coq compiled library :n:`@qualid` and import it.
   This is equivalent to running :cmd:`Require Import` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
-:-re *qualid*, -require-export *qualid*: Load |Coq| compiled library :n:`@qualid` and transitively import it.
+:-re *qualid*, -require-export *qualid*: Load Coq compiled library :n:`@qualid` and transitively import it.
   This is equivalent to running :cmd:`Require Export` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
 :-rifrom *dirpath* *qualid*, -require-import-from *dirpath* *qualid*:
-  Load |Coq| compiled library :n:`@qualid` and import it.  This is
+  Load Coq compiled library :n:`@qualid` and import it.  This is
   equivalent to running :cmd:`From <From … Require>` :n:`@dirpath`
   :cmd:`Require Import <From … Require>` :n:`@qualid`.  See the
   :ref:`note above <interleave-command-line>` regarding the order of
   command-line options.
 :-refrom *dirpath* *qualid*, -require-export-from *dirpath* *qualid*:
-  Load |Coq| compiled library :n:`@qualid` and transitively import it.
+  Load Coq compiled library :n:`@qualid` and transitively import it.
   This is equivalent to running :cmd:`From <From … Require>`
   :n:`@dirpath` :cmd:`Require Export <From … Require>` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the
@@ -219,11 +259,84 @@ and ``coqtop``, unless stated otherwise:
 :-batch: Exit just after argument parsing. Available for ``coqtop`` only.
 :-verbose: Output the content of the input file as it is compiled.
   This option is available for ``coqc`` only.
-:-vos: Indicate |Coq| to skip the processing of opaque proofs
+:-native-compiler (yes|no|ondemand): Enable the :tacn:`native_compute`
+  reduction machine and precompilation to ``.cmxs`` files for future use
+  by :tacn:`native_compute`.
+  Setting ``yes`` enables :tacn:`native_compute`; it also causes Coq
+  to precompile the native code for future use; all dependencies need
+  to have been precompiled beforehand. Setting ``no`` disables
+  :tacn:`native_compute` which defaults back to :tacn:`vm_compute`; no files are precompiled.
+  Setting ``ondemand`` enables :tacn:`native_compute`
+  but disables precompilation; all missing dependencies will be recompiled
+  every time :tacn:`native_compute` is called.
+
+  .. _native-compiler-options:
+
+  .. deprecated:: 8.14
+
+     This flag has been deprecated in favor of the :ref:`coqnative` binary. The
+     toolchain has been adapted to transparently rely on the latter, so if you
+     use :ref:`coq_makefile` there is nothing to do. Otherwise you should
+     substitute calls to `coqc -native-compiler yes` to calls to `coqc` followed
+     by `coqnative` on the resulting `vo` file.
+
+  .. versionchanged:: 8.13
+
+     The default value is set at configure time,
+     ``-config`` can be used to retrieve it.
+     All this can be summarized in the following table:
+
+  .. list-table::
+     :header-rows: 1
+
+     * - ``configure``
+       - ``coqc``
+       - ``native_compute``
+       - outcome
+       - requirements
+     * - yes
+       - yes (default)
+       - native_compute
+       - ``.cmxs``
+       - ``.cmxs`` of deps
+     * - yes
+       - no
+       - vm_compute
+       - none
+       - none
+     * - yes
+       - ondemand
+       - native_compute
+       - none
+       - none
+     * - no
+       - yes, no, ondemand
+       - vm_compute
+       - none
+       - none
+     * - ondemand
+       - yes
+       - native_compute
+       - ``.cmxs``
+       - ``.cmxs`` of deps
+     * - ondemand
+       - no
+       - vm_compute
+       - none
+       - none
+     * - ondemand
+       - ondemand (default)
+       - native_compute
+       - none
+       - none
+
+:-native-output-dir: Set the directory in which to put the aforementioned
+  ``.cmxs`` for :tacn:`native_compute`. Defaults to ``.coq-native``.
+:-vos: Indicate Coq to skip the processing of opaque proofs
   (i.e., proofs ending with :cmd:`Qed` or :cmd:`Admitted`), output a ``.vos`` files
   instead of a ``.vo`` file, and to load ``.vos`` files instead of ``.vo`` files
   when interpreting :cmd:`Require` commands.
-:-vok: Indicate |Coq| to check a file completely, to load ``.vos`` files instead
+:-vok: Indicate Coq to check a file completely, to load ``.vos`` files instead
   of ``.vo`` files when interpreting :cmd:`Require` commands, and to output an empty
   ``.vok`` files upon success instead of writing a ``.vo`` file.
 :-w (all|none|w₁,…,wₙ): Configure the display of warnings. This
@@ -241,7 +354,7 @@ and ``coqtop``, unless stated otherwise:
   syntax/definitions/notations.
 :-emacs, -ide-slave: Start a special toplevel to communicate with a
   specific IDE.
-:-impredicative-set: Change the logical theory of |Coq| by declaring the
+:-impredicative-set: Change the logical theory of Coq by declaring the
    sort :g:`Set` impredicative.
 
    .. warning::
@@ -249,12 +362,12 @@ and ``coqtop``, unless stated otherwise:
       This is known to be inconsistent with some
       standard axioms of classical mathematics such as the functional
       axiom of choice or the principle of description.
-:-type-in-type: Collapse the universe hierarchy of |Coq|.
+:-type-in-type: Collapse the universe hierarchy of Coq.
 
   .. warning:: This makes the logic inconsistent.
 :-mangle-names *ident*: *Experimental.* Do not depend on this option. Replace
-  |Coq|'s auto-generated name scheme with names of the form *ident0*, *ident1*,
-  etc. Within |Coq|, the :flag:`Mangle Names` flag turns this behavior on,
+  Coq's auto-generated name scheme with names of the form *ident0*, *ident1*,
+  etc. Within Coq, the :flag:`Mangle Names` flag turns this behavior on,
   and the :opt:`Mangle Names Prefix` option sets the prefix to use. This feature
   is intended to be used as a linter for developments that want to be robust to
   changes in the auto-generated name scheme. The options are provided to
@@ -264,7 +377,7 @@ and ``coqtop``, unless stated otherwise:
    type of the option. For flags :n:`@setting_name` is equivalent to
    :n:`@setting_name=true`. For instance ``-set "Universe Polymorphism"``
    will enable :flag:`Universe Polymorphism`. Note that the quotes are
-   shell syntax, |Coq| does not see them.
+   shell syntax, Coq does not see them.
    See the :ref:`note above <interleave-command-line>` regarding the order
    of command-line options.
 :-unset *string*: As ``-set`` but used to disable options and flags.
@@ -285,16 +398,16 @@ and ``coqtop``, unless stated otherwise:
 :-no-glob: Disable the dumping of references for global names.
 :-image *file*: Set the binary image to be used by ``coqc`` to be *file*
   instead of the standard one. Not of general use.
-:-bindir *directory*: Set the directory containing |Coq| binaries to be
+:-bindir *directory*: Set the directory containing Coq binaries to be
   used by ``coqc``. It is equivalent to doing export COQBIN= *directory*
   before launching ``coqc``.
-:-where: Print the location of |Coq|’s standard library and exit.
-:-config: Print the locations of |Coq|’s binaries, dependencies, and
+:-where: Print the location of Coq’s standard library and exit.
+:-config: Print the locations of Coq’s binaries, dependencies, and
   libraries, then exit.
 :-filteropts: Print the list of command line arguments that `coqtop` has
   recognized as options and exit.
-:-v: Print |Coq|’s version and exit.
-:-list-tags: Print the highlight tags known by |Coq| as well as their
+:-v: Print Coq’s version and exit.
+:-list-tags: Print the highlight tags known by Coq as well as their
   currently associated color and exit.
 :-h, --help: Print a short usage and exit.
 
@@ -304,7 +417,7 @@ and ``coqtop``, unless stated otherwise:
 Compiled interfaces (produced using ``-vos``)
 ----------------------------------------------
 
-Compiled interfaces help saving time while developing |Coq| formalizations,
+Compiled interfaces help saving time while developing Coq formalizations,
 by compiling the formal statements exported by a library independently of
 the proofs that it contains.
 
@@ -401,7 +514,7 @@ within a section.
 
 .. warn:: You should use the “Proof using [...].” syntax instead of “Proof.” to enable skipping this proof which is located inside a section. Give as argument to “Proof using” the list of section variables that are not needed to typecheck the statement but that are required by the proof.
 
-     If |Coq| is invoked using the ``-vos`` option, whenever it finds the
+     If Coq is invoked using the ``-vos`` option, whenever it finds the
      command ``Proof.`` inside a section, it will compile the proof, that is,
      refuse to skip it, and it will raise a warning. To disable the warning, one
      may pass the flag ``-w -proof-without-using-in-section``.
@@ -412,7 +525,7 @@ When compiling a file ``foo.v`` using ``coqc`` in the standard way (i.e., withou
 ``-vos`` nor ``-vok``), an empty file ``foo.vos`` and an empty file ``foo.vok``
 are created in addition to the regular output file ``foo.vo``.
 If ``coqc`` is subsequently invoked on some other file ``bar.v`` using option
-``-vos`` or ``-vok``, and that ``bar.v`` requires ``foo.v``, if |Coq| finds an
+``-vos`` or ``-vok``, and that ``bar.v`` requires ``foo.v``, if Coq finds an
 empty file ``foo.vos``, then it will load ``foo.vo`` instead of ``foo.vos``.
 
 The purpose of this feature is to allow users to benefit from the ``-vos``
@@ -434,7 +547,7 @@ wrong. In the current version, it does not modify the compiled libraries to mark
 them as successfully checked.
 
 Note that non-logical information is not checked. By logical
-information, we mean the type and optional body associated to names.
+information, we mean the type and optional :term:`body` associated with names.
 It excludes for instance anything related to the concrete syntax of
 objects (customized syntax rules, association between short and long
 names), implicit arguments, etc.
@@ -456,7 +569,7 @@ relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
 :-admit *module*: Do not check *module* and any of its dependencies,
   unless explicitly required.
 :-o: At exit, print a summary about the context. List the names of all
-  assumptions and variables (constants without body).
+  assumptions and variables (constants without a :term:`body`).
 :-silent: Do not write progress information to the standard output.
 
 Environment variable ``$COQLIB`` can be set to override the location of
@@ -473,7 +586,7 @@ set of reflexive transitive dependencies of set :math:`S`. Then:
   context without type checking. Basic integrity checks (checksums) are
   nonetheless performed.
 
-As a rule of thumb, -admit can be used to tell |Coq| that some libraries
+As a rule of thumb, -admit can be used to tell Coq that some libraries
 have already been checked. So ``coqchk A B`` can be split in ``coqchk A`` &&
 ``coqchk B -admit A`` without type checking any definition twice. Of
 course, the latter is slightly slower since it makes more disk access.

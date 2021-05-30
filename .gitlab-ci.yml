@@ -9,17 +9,18 @@ stages:
   - stage-5 # Only dependencies in stage 1, 2, 3, and 4
   - deploy
 
-# When a job has no dependencies, it goes to stage 1.  Otherwise, we
-# set both "needs" and "dependencies". "needs" is a superset of
-# "dependencies" that should include all the transitive dependencies.
-# "dependencies" only list the previous jobs whose artifact we need to
-# keep.
+# When a job has no dependencies, it goes to stage 1. Otherwise, we
+# set "needs" to contain all transitive dependencies (with "artifacts:
+# false" when we don't want the artifacts). We include the transitive
+# dependencies due to gitlab bugs sometimes starting the job even if a
+# transitive dep failed, see #10699 / 7b59d8c9d9b2104de7162ec0e40f6182a6830046.
 
 # some default values
 variables:
-  # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
-  # for reference]
-  CACHEKEY: "bionic_coq-V2020-10-12-V89"
+  # Format: $IMAGE-V$DATE-$hash
+  # The $hash is the first 10 characters of the md5 of the Dockerfile. e.g.
+  # echo $(md5sum dev/ci/docker/bionic_coq/Dockerfile | head -c 10)
+  CACHEKEY: "bionic_coq-V2021-05-22-9c7889b60a"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -59,6 +60,7 @@ before_script:
   - eval $(opam env)
   - opam list
   - opam config list
+  - dev/tools/check-cachekey.sh
 
 ################ GITLAB CACHING ######################
 # - use artifacts between jobs                       #
@@ -78,7 +80,7 @@ before_script:
       - config/Makefile
       - config/coq_config.py
       - config/coq_config.ml
-      - test-suite/misc/universes/all_stdlib.v
+      - config/dune.c_flags
       - dmesg.txt
     expire_in: 1 week
   script:
@@ -93,15 +95,11 @@ before_script:
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
-    - make -j "$NJOBS" byte
     - make -j "$NJOBS" world $EXTRA_TARGET
-    - make test-suite/misc/universes/all_stdlib.v
     - echo 'end:coq:build'
 
     - echo 'start:coq.install'
-    - make install install-byte $EXTRA_INSTALL
-    - make install-byte
-    - cp bin/fake_ide _install_ci/bin/
+    - make install $EXTRA_INSTALL
     - echo 'end:coq.install'
 
     - set +e
@@ -113,7 +111,6 @@ before_script:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies: []
   script:
     # flambda can be pretty stack hungry, specially with -O3
     # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
@@ -142,8 +139,6 @@ before_script:
   interruptible: true
   needs:
     - build:edge+flambda:dune:dev
-  dependencies:
-    - build:edge+flambda:dune:dev
   script:
     - tar xfj _build.tar.bz2
     - set -e
@@ -159,7 +154,7 @@ before_script:
     name: "$CI_JOB_NAME"
     expire_in: 2 months
 
-# every non build job must set dependencies otherwise all build
+# every non build job must set "needs" otherwise all build
 # artifacts are used together and we may get some random Coq. To that
 # purpose, we add a spurious dependency `not-a-real-job` that must be
 # overridden otherwise the CI will fail.
@@ -170,7 +165,7 @@ before_script:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
+  needs:
     - not-a-real-job
   script:
     - SPHINXENV='COQBIN="'"$PWD"'/_install_ci/bin/"'
@@ -182,14 +177,14 @@ before_script:
       - _install_ci/share/doc/coq/
     expire_in: 2 months
 
-# set dependencies when using
+# set "needs" when using
 .test-suite-template:
   stage: stage-2
   except:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
+  needs:
     - not-a-real-job
   script:
     - cd test-suite
@@ -207,14 +202,14 @@ before_script:
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
 
-# set dependencies when using
+# set "needs" when using
 .validate-template:
   stage: stage-2
   except:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
+  needs:
     - not-a-real-job
   script:
     # exit 0: workaround for https://gitlab.com/gitlab-org/gitlab/issues/202505
@@ -250,37 +245,27 @@ before_script:
     when: always
   needs:
     - build:base
-  dependencies:
-    - build:base
 
 .ci-template-flambda:
   extends: .ci-template
   needs:
     - build:edge+flambda
-  dependencies:
-    - build:edge+flambda
   variables:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
-.windows-template:
+.platform-template:
   stage: stage-1
   interruptible: true
+  variables:
+    PLATFORM: "https://github.com/coq/platform/archive/dev-ci.zip"
   artifacts:
-    name: "%CI_JOB_NAME%"
+    name: "$CI_JOB_NAME"
     paths:
       - artifacts
     when: always
     expire_in: 1 week
-  dependencies: []
-  tags:
-    - windows-inria
-  before_script: []
-  script:
-    - call dev/ci/gitlab.bat
-  only:
-    variables:
-      - $WINDOWS =~ /enabled/
+  before_script: [] # We don't want to use the shared 'before_script'
 
 .deploy-template:
   stage: deploy
@@ -357,16 +342,16 @@ build:quick:
     when: always
 
 windows64:
-  extends: .windows-template
+  extends: .platform-template
   variables:
     ARCH: "64"
-
-windows32:
-  extends: .windows-template
-  variables:
-    ARCH: "32"
-  except:
-    - /^pr-.*$/
+  script:
+    - call dev/ci/platform-windows.bat
+  tags:
+    - windows-inria
+  only:
+    variables:
+      - $WINDOWS =~ /enabled/
 
 lint:
   stage: stage-1
@@ -374,7 +359,6 @@ lint:
     variables:
       - $ONLY_WINDOWS == "true"
   script: dev/lint-repository.sh
-  dependencies: []
   variables:
     GIT_DEPTH: "" # we need an unknown amount of history for per-commit linting
     OPAM_SWITCH: "edge"
@@ -387,10 +371,10 @@ pkg:opam:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
-  dependencies: []
   script:
     - set -e
-    - opam pin add --kind=path coq.dev .
+    - opam pin add --kind=path coq-core.dev .
+    - opam pin add --kind=path coq-stdlib.dev .
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
     - set +e
@@ -411,7 +395,6 @@ pkg:opam:
     GIT_STRATEGY: none
     NIXOS_PUBLIC_KEY: cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-  dependencies: [] # We don't need to download build artifacts
   before_script: [] # We don't want to use the shared 'before_script'
   script:
     - cat /proc/{cpu,mem}info || true
@@ -455,7 +438,6 @@ pkg:nix:deploy:channel:
       - /^v.*\..*$/
     variables:
       - $CACHIX_DEPLOYMENT_KEY
-  dependencies: []
   needs:
     - pkg:nix:deploy
   script:
@@ -477,8 +459,6 @@ pkg:nix:
 
 doc:refman:
   extends: .doc-template
-  dependencies:
-    - build:base
   needs:
     - build:base
 
@@ -519,10 +499,6 @@ doc:refman:deploy:
   only:
     variables:
       - $DOCUMENTATION_DEPLOY_KEY
-  dependencies:
-    - doc:ml-api:odoc
-    - doc:refman:dune
-    - build:base
   needs:
     - doc:ml-api:odoc
     - doc:refman:dune
@@ -553,15 +529,11 @@ doc:ml-api:odoc:
 
 test-suite:base:
   extends: .test-suite-template
-  dependencies:
-    - build:base
   needs:
     - build:base
 
 test-suite:base+32bit:
   extends: .test-suite-template
-  dependencies:
-    - build:base+32bit
   needs:
     - build:base+32bit
   variables:
@@ -570,8 +542,6 @@ test-suite:base+32bit:
 
 test-suite:edge+flambda:
   extends: .test-suite-template
-  dependencies:
-    - build:edge+flambda
   needs:
     - build:edge+flambda
   variables:
@@ -585,8 +555,6 @@ test-suite:edge:dune:dev:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
-    - build:edge+flambda:dune:dev
   needs:
     - build:edge+flambda:dune:dev
   script:
@@ -609,7 +577,6 @@ test-suite:edge:dune:dev:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies: []
   script:
     - opam switch create $OCAMLVER --empty
     - eval $(opam env)
@@ -638,8 +605,6 @@ test-suite:edge:dune:dev:
 
 test-suite:base+async:
   extends: .test-suite-template
-  dependencies:
-    - build:base
   needs:
     - build:base
   variables:
@@ -652,15 +617,11 @@ test-suite:base+async:
 
 validate:base:
   extends: .validate-template
-  dependencies:
-    - build:base
   needs:
     - build:base
 
 validate:base+32bit:
   extends: .validate-template
-  dependencies:
-    - build:base+32bit
   needs:
     - build:base+32bit
   variables:
@@ -669,8 +630,6 @@ validate:base+32bit:
 
 validate:edge+flambda:
   extends: .validate-template
-  dependencies:
-    - build:edge+flambda
   needs:
     - build:edge+flambda
   variables:
@@ -680,8 +639,6 @@ validate:edge+flambda:
 
 validate:quick:
   extends: .validate-template
-  dependencies:
-    - build:quick
   needs:
     - build:quick
   only:
@@ -708,12 +665,14 @@ library:ci-color:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
-  dependencies:
-  - build:edge+flambda
-  - plugin:ci-bignums
 
 library:ci-compcert:
+  stage: stage-3
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-flocq
+  - library:ci-menhir
 
 library:ci-coq_performance_tests:
   extends: .ci-template
@@ -727,15 +686,16 @@ library:ci-coqprime:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
-  dependencies:
-  - build:edge+flambda
-  - plugin:ci-bignums
 
 library:ci-coqtail:
   extends: .ci-template
 
 library:ci-coquelicot:
-  extends: .ci-template
+  stage: stage-3
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-cross_crypto:
   extends: .ci-template
@@ -744,17 +704,16 @@ library:ci-engine_bench:
   extends: .ci-template
 
 library:ci-fcsl_pcm:
-  extends: .ci-template
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
   stage: stage-4
   needs:
-  - build:edge+flambda
-  - library:ci-coqprime
-  - plugin:ci-bignums
-  - plugin:ci-rewriter
-  dependencies:
   - build:edge+flambda
   - library:ci-coqprime
   - plugin:ci-bignums
@@ -776,15 +735,36 @@ library:ci-fiat_crypto_ocaml:
   - plugin:ci-bignums
   - plugin:ci-rewriter
   - library:ci-fiat_crypto
-  dependencies:
-  - build:edge+flambda
-  - library:ci-coqprime
-  - plugin:ci-bignums
-  - plugin:ci-rewriter
-  - library:ci-fiat_crypto
 
 library:ci-flocq:
   extends: .ci-template-flambda
+
+library:ci-menhir:
+  extends: .ci-template-flambda
+
+library:ci-interval:
+  extends: .ci-template-flambda
+  stage: stage-4
+  needs:
+  - build:edge+flambda
+  - library:ci-coquelicot
+  - library:ci-flocq
+  - library:ci-mathcomp
+  - plugin:ci-bignums
+
+library:ci-oddorder:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+
+library:ci-fourcolor:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-corn:
   extends: .ci-template-flambda
@@ -793,12 +773,20 @@ library:ci-corn:
   - build:edge+flambda
   - plugin:ci-bignums
   - library:ci-math_classes
-  dependencies:
+
+plugin:ci-gappa:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
   - build:edge+flambda
-  - library:ci-math_classes
+  - library:ci-flocq
 
 library:ci-geocoq:
   extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-hott:
   extends: .ci-template
@@ -812,12 +800,16 @@ library:ci-math_classes:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
-  dependencies:
-  - build:edge+flambda
-  - plugin:ci-bignums
 
 library:ci-mathcomp:
   extends: .ci-template-flambda
+
+library:ci-mczify:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-sf:
   extends: .ci-template
@@ -840,9 +832,13 @@ library:ci-vst:
   needs:
   - build:edge+flambda
   - library:ci-flocq
-  dependencies:
+
+library:ci-deriving:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
   - build:edge+flambda
-  - library:ci-flocq
+  - library:ci-mathcomp
 
 # Plugins are by definition the projects that depend on Coq's ML API
 
@@ -856,7 +852,7 @@ plugin:ci-coq_dpdgraph:
   extends: .ci-template
 
 plugin:ci-coqhammer:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 plugin:ci-elpi:
   extends: .ci-template
@@ -871,9 +867,6 @@ plugin:ci-metacoq:
   extends: .ci-template
   stage: stage-3
   needs:
-  - build:base
-  - plugin:ci-equations
-  dependencies:
   - build:base
   - plugin:ci-equations
 
@@ -892,13 +885,16 @@ plugin:plugin-tutorial:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies: []
   script:
     - ./configure -local -warn-error yes
     - make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:
   extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 plugin:ci-reduction_effects:
   extends: .ci-template
@@ -908,3 +904,6 @@ plugin:ci-relation_algebra:
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
+
+plugin:ci-vscoq:
+  extends: .ci-template

@@ -1,0 +1,4 @@
+- **Removed:**
+  ``IF_then_else`` definition and corresponding ``IF P then Q else R`` notation
+  (`#13871 <https://github.com/coq/coq/pull/13871>`_,
+  by Yishuai Li).

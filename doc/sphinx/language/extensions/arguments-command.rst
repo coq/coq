@@ -4,7 +4,6 @@ Setting properties of a function's arguments
 ++++++++++++++++++++++++++++++++++++++++++++
 
 .. cmd:: Arguments @reference {* @arg_specs } {* , {* @implicits_alt } } {? : {+, @args_modifier } }
-   :name: Arguments
 
    .. insertprodn argument_spec args_modifier
 
@@ -79,7 +78,7 @@ Setting properties of a function's arguments
 
       `!`
          the function will be unfolded only if all the arguments marked with `!`
-         evaulate to constructors.  See :ref:`Args_effect_on_unfolding`.
+         evaluate to constructors.  See :ref:`Args_effect_on_unfolding`.
 
       :n:`@name {? % @scope }`
          a *formal parameter* of the function :n:`@reference` (i.e.
@@ -89,11 +88,25 @@ Setting properties of a function's arguments
          The construct :n:`@name {? % @scope }` declares :n:`@name` as non-implicit if `clear implicits` is specified or at least one other name is declared implicit in the same list of :n:`@name`\s.
          :token:`scope` can be either a scope name or its delimiting key.  See :ref:`binding_to_scope`.
 
+         .. exn:: To rename arguments the 'rename' flag must be specified.
+            :undocumented:
+
+         .. exn:: Flag 'rename' expected to rename @name into @name.
+            :undocumented:
+
       `clear implicits`
          makes all implicit arguments into explicit arguments
+
+         .. exn:: The 'clear implicits' flag must be omitted if implicit annotations are given.
+            :undocumented:
+
       `default implicits`
          automatically determine the implicit arguments of the object.
          See :ref:`auto_decl_implicit_args`.
+
+         .. exn:: The 'default implicits' flag is incompatible with implicit annotations.
+            :undocumented:
+
       `rename`
          rename implicit arguments for the object.  See the example :ref:`here <renaming_implicit_arguments>`.
       `assert`
@@ -182,7 +195,7 @@ Manual declaration of implicit arguments
 Automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   The ":n:`default implicits`" :token:`args_modifier` clause tells |Coq| to automatically determine the
+   The ":n:`default implicits`" :token:`args_modifier` clause tells Coq to automatically determine the
    implicit arguments of the object.
 
    Auto-detection is governed by flags specifying whether strict,
@@ -213,10 +226,10 @@ Automatic declaration of implicit arguments
       Print Implicit nil.
 
 The computation of implicit arguments takes account of the unfolding
-of constants. For instance, the variable ``p`` below has type
+of :term:`constants <constant>`. For instance, the variable ``p`` below has type
 ``(Transitivity R)`` which is reducible to
 ``forall x,y:U, R x y -> forall z:U, R y z -> R x z``. As the variables ``x``, ``y`` and ``z``
-appear strictly in the body of the type, they are implicit.
+appear strictly in the :term:`body` of the type, they are implicit.
 
 .. coqtop:: all
 
@@ -305,7 +318,7 @@ Binding arguments to a scope
 Effects of :cmd:`Arguments` on unfolding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-+ `simpl never` indicates that a constant should never be unfolded by :tacn:`cbn`,
++ `simpl never` indicates that a :term:`constant` should never be unfolded by :tacn:`cbn`,
   :tacn:`simpl` or :tacn:`hnf`:
 
   .. example::
@@ -317,7 +330,7 @@ Effects of :cmd:`Arguments` on unfolding
   After that command an expression like :g:`(minus (S x) y)` is left
   untouched by the tactics :tacn:`cbn` and :tacn:`simpl`.
 
-+ A constant can be marked to be unfolded only if it's applied to at least
++ A :term:`constant` can be marked to be unfolded only if it's applied to at least
   the arguments appearing before the `/` in a :cmd:`Arguments` command.
 
   .. example::
@@ -330,7 +343,7 @@ Effects of :cmd:`Arguments` on unfolding
 
   After that command the expression :g:`(f \o g)` is left untouched by
   :tacn:`simpl` while :g:`((f \o g) t)` is reduced to :g:`(f (g t))`.
-  The same mechanism can be used to make a constant volatile, i.e.
+  The same mechanism can be used to make a :term:`constant` volatile, i.e.
   always unfolded.
 
   .. example::
@@ -340,7 +353,7 @@ Effects of :cmd:`Arguments` on unfolding
         Definition volatile := fun x : nat => x.
         Arguments volatile / x.
 
-+ A constant can be marked to be unfolded only if an entire set of
++ A :term:`constant` can be marked to be unfolded only if an entire set of
   arguments evaluates to a constructor. The ``!`` symbol can be used to mark
   such arguments.
 
@@ -353,7 +366,7 @@ Effects of :cmd:`Arguments` on unfolding
   After that command, the expression :g:`(minus (S x) y)` is left untouched
   by :tacn:`simpl`, while :g:`(minus (S x) (S y))` is reduced to :g:`(minus x y)`.
 
-+ `simpl nomatch` indicates that a constant should not be unfolded if it would expose
++ `simpl nomatch` indicates that a :term:`constant` should not be unfolded if it would expose
   a `match` construct in the head position.  This affects the :tacn:`cbn`,
   :tacn:`simpl` and :tacn:`hnf` tactics.
 
@@ -366,10 +379,10 @@ Effects of :cmd:`Arguments` on unfolding
   In this case, :g:`(minus (S (S x)) (S y))` is simplified to :g:`(minus (S x) y)`
   even if an extra simplification is possible.
 
-  In detail: the tactic :tacn:`simpl` first applies :math:`\beta`:math:`\iota`-reduction. Then, it
-  expands transparent constants and tries to reduce further using :math:`\beta`:math:`\iota`-reduction.
-  But, when no :math:`\iota` rule is applied after unfolding then
-  :math:`\delta`-reductions are not applied. For instance trying to use :tacn:`simpl` on
+  In detail: the tactic :tacn:`simpl` first applies βι-reduction. Then, it
+  expands transparent :term:`constants <constant>` and tries to reduce further using βι-reduction.
+  But, when no ι rule is applied after unfolding then
+  δ-reductions are not applied. For instance trying to use :tacn:`simpl` on
   :g:`(plus n O) = n` changes nothing.
 
 
@@ -378,7 +391,7 @@ Effects of :cmd:`Arguments` on unfolding
 Bidirectionality hints
 ~~~~~~~~~~~~~~~~~~~~~~
 
-When type-checking an application, |Coq| normally does not use information from
+When type-checking an application, Coq normally does not use information from
 the context to infer the types of the arguments. It only checks after the fact
 that the type inferred for the application is coherent with the expected type.
 Bidirectionality hints make it possible to specify that after type-checking the
@@ -395,7 +408,7 @@ the context to help inferring the types of the remaining arguments.
   * *type inference*, with is inferring the type of a construct by analyzing the construct.
 
   Methods that combine these approaches are known as *bidirectional typing*.
-  |Coq| normally uses only the first approach to infer the types of arguments,
+  Coq normally uses only the first approach to infer the types of arguments,
   then later verifies that the inferred type is consistent with the expected type.
   *Bidirectionality hints* specify to use both methods: after type checking the
   first arguments of an application (appearing before the `&` in :cmd:`Arguments`),
@@ -417,7 +430,7 @@ type check the remaining arguments (in :n:`@arg_specs__2`).
       Definition b2n (b : bool) := if b then 1 else 0.
       Coercion b2n : bool >-> nat.
 
-   |Coq| cannot automatically coerce existential statements over ``bool`` to
+   Coq cannot automatically coerce existential statements over ``bool`` to
    statements over ``nat``, because the need for inserting a coercion is known
    only from the expected type of a subterm:
 
@@ -432,7 +445,7 @@ type check the remaining arguments (in :n:`@arg_specs__2`).
       Arguments ex_intro _ _ & _ _.
       Check (ex_intro _ true _ : exists n : nat, n > 0).
 
-|Coq| will attempt to produce a term which uses the arguments you
+Coq will attempt to produce a term which uses the arguments you
 provided, but in some cases involving Program mode the arguments after
 the bidirectionality starts may be replaced by convertible but
 syntactically different terms.

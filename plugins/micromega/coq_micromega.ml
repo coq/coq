@@ -12,7 +12,7 @@
 (*                                                                      *)
 (* ** Toplevel definition of tactics **                                 *)
 (*                                                                      *)
-(* - Modules M, Mc, Env, Cache, CacheZ                                  *)
+(* - Modules Mc, Env, Cache, CacheZ                                  *)
 (*                                                                      *)
 (*  Frédéric Besson (Irisa/Inria) 2006-2019                             *)
 (*                                                                      *)
@@ -38,14 +38,14 @@ let max_depth = max_int
 
 (* Search limit for provers over Q R *)
 let lra_proof_depth =
-  declare_int_option_and_ref ~depr:false ~key:["Lra"; "Depth"] ~value:max_depth
+  declare_int_option_and_ref ~depr:true ~key:["Lra"; "Depth"] ~value:max_depth
 
 (* Search limit for provers over Z *)
 let lia_enum =
-  declare_bool_option_and_ref ~depr:false ~key:["Lia"; "Enum"] ~value:true
+  declare_bool_option_and_ref ~depr:true ~key:["Lia"; "Enum"] ~value:true
 
 let lia_proof_depth =
-  declare_int_option_and_ref ~depr:false ~key:["Lia"; "Depth"] ~value:max_depth
+  declare_int_option_and_ref ~depr:true ~key:["Lia"; "Depth"] ~value:max_depth
 
 let get_lia_option () =
   (Certificate.use_simplex (), lia_enum (), lia_proof_depth ())
@@ -197,6 +197,7 @@ let coq_proofTerm = lazy (constr_of_ref "micromega.ZArithProof.type")
 let coq_doneProof = lazy (constr_of_ref "micromega.ZArithProof.DoneProof")
 let coq_ratProof = lazy (constr_of_ref "micromega.ZArithProof.RatProof")
 let coq_cutProof = lazy (constr_of_ref "micromega.ZArithProof.CutProof")
+let coq_splitProof = lazy (constr_of_ref "micromega.ZArithProof.SplitProof")
 let coq_enumProof = lazy (constr_of_ref "micromega.ZArithProof.EnumProof")
 let coq_ExProof = lazy (constr_of_ref "micromega.ZArithProof.ExProof")
 let coq_IsProp = lazy (constr_of_ref "micromega.kind.isProp")
@@ -929,7 +930,8 @@ let is_prop env sigma term =
   Sorts.is_prop sort
 
 type formula_op =
-  { op_and : EConstr.t
+  { op_impl : EConstr.t option (* only for booleans *)
+  ; op_and : EConstr.t
   ; op_or : EConstr.t
   ; op_iff : EConstr.t
   ; op_not : EConstr.t
@@ -938,7 +940,8 @@ type formula_op =
 
 let prop_op =
   lazy
-    { op_and = Lazy.force coq_and
+    { op_impl = None (* implication is Prod *)
+    ; op_and = Lazy.force coq_and
     ; op_or = Lazy.force coq_or
     ; op_iff = Lazy.force coq_iff
     ; op_not = Lazy.force coq_not
@@ -947,12 +950,16 @@ let prop_op =
 
 let bool_op =
   lazy
-    { op_and = Lazy.force coq_andb
+    { op_impl = Some (Lazy.force coq_implb)
+    ; op_and = Lazy.force coq_andb
     ; op_or = Lazy.force coq_orb
     ; op_iff = Lazy.force coq_eqb
     ; op_not = Lazy.force coq_negb
     ; op_tt = Lazy.force coq_true
     ; op_ff = Lazy.force coq_false }
+
+let is_implb sigma l o =
+  match o with None -> false | Some c -> EConstr.eq_constr sigma l c
 
 let parse_formula (genv, sigma) parse_atom env tg term =
   let parse_atom b env tg t =
@@ -969,6 +976,10 @@ let parse_formula (genv, sigma) parse_atom env tg term =
     match EConstr.kind sigma term with
     | App (l, rst) -> (
       match rst with
+      | [|a; b|] when is_implb sigma l op.op_impl ->
+        let f, env, tg = xparse_formula op k env tg a in
+        let g, env, tg = xparse_formula op k env tg b in
+        (mkformula_binary k (mkIMPL k) term f g, env, tg)
       | [|a; b|] when EConstr.eq_constr sigma l op.op_and ->
         let f, env, tg = xparse_formula op k env tg a in
         let g, env, tg = xparse_formula op k env tg b in
@@ -1341,6 +1352,12 @@ let rec dump_proof_term = function
     EConstr.mkApp
       ( Lazy.force coq_cutProof
       , [|dump_psatz coq_Z dump_z cone; dump_proof_term prf|] )
+  | Micromega.SplitProof (p, prf1, prf2) ->
+    EConstr.mkApp
+      ( Lazy.force coq_splitProof
+      , [| dump_pol (Lazy.force coq_Z) dump_z p
+         ; dump_proof_term prf1
+         ; dump_proof_term prf2 |] )
   | Micromega.EnumProof (c1, c2, prfs) ->
     EConstr.mkApp
       ( Lazy.force coq_enumProof
@@ -1364,6 +1381,7 @@ let rec size_of_pf = function
   | Micromega.DoneProof -> 1
   | Micromega.RatProof (p, a) -> size_of_pf a + size_of_psatz p
   | Micromega.CutProof (p, a) -> size_of_pf a + size_of_psatz p
+  | Micromega.SplitProof (_, p1, p2) -> size_of_pf p1 + size_of_pf p2
   | Micromega.EnumProof (p1, p2, l) ->
     size_of_psatz p1 + size_of_psatz p2
     + List.fold_left (fun acc p -> size_of_pf p + acc) 0 l
@@ -1382,6 +1400,9 @@ let rec pp_proof_term o = function
     Printf.fprintf o "R[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
   | Micromega.CutProof (cone, rst) ->
     Printf.fprintf o "C[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
+  | Micromega.SplitProof (p, p1, p2) ->
+    Printf.fprintf o "S[%a,%a,%a]" (pp_pol pp_z) p pp_proof_term p1
+      pp_proof_term p2
   | Micromega.EnumProof (c1, c2, rst) ->
     Printf.fprintf o "EP[%a,%a,%a]" (pp_psatz pp_z) c1 (pp_psatz pp_z) c2
       (pp_list "[" "]" pp_proof_term)
@@ -2064,8 +2085,11 @@ module MakeCache (T : sig
   val hash_coeff : int -> coeff -> int
   val eq_prover_option : prover_option -> prover_option -> bool
   val eq_coeff : coeff -> coeff -> bool
-end) =
-struct
+end) : sig
+  type key = T.prover_option * (T.coeff Mc.pol * Mc.op1) list
+
+  val memo_opt : (unit -> bool) -> string -> (key -> 'a) -> key -> 'a
+end = struct
   module E = struct
     type t = T.prover_option * (T.coeff Mc.pol * Mc.op1) list
 
@@ -2196,6 +2220,7 @@ let hyps_of_pt pt =
     | Mc.DoneProof -> acc
     | Mc.RatProof (c, pt) -> xhyps (base + 1) pt (xhyps_of_cone base acc c)
     | Mc.CutProof (c, pt) -> xhyps (base + 1) pt (xhyps_of_cone base acc c)
+    | Mc.SplitProof (p, p1, p2) -> xhyps (base + 1) p1 (xhyps (base + 1) p2 acc)
     | Mc.EnumProof (c1, c2, l) ->
       let s = xhyps_of_cone base (xhyps_of_cone base acc c2) c1 in
       List.fold_left (fun s x -> xhyps (base + 1) x s) s l
@@ -2212,6 +2237,8 @@ let compact_pt pt f =
       Mc.RatProof (compact_cone c (translate ofset), compact_pt (ofset + 1) pt)
     | Mc.CutProof (c, pt) ->
       Mc.CutProof (compact_cone c (translate ofset), compact_pt (ofset + 1) pt)
+    | Mc.SplitProof (p, p1, p2) ->
+      Mc.SplitProof (p, compact_pt (ofset + 1) p1, compact_pt (ofset + 1) p2)
     | Mc.EnumProof (c1, c2, l) ->
       Mc.EnumProof
         ( compact_cone c1 (translate ofset)

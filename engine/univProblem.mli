@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Constr
 open Univ
 
 (** {6 Constraints for type inference}
@@ -32,8 +31,6 @@ module Set : sig
   include Set.S with type elt = t
 
   val pr : t -> Pp.t
-
-  val subst_univs : universe_subst_fn -> t -> t
 end
 
 type 'a accumulator = Set.t -> 'a -> 'a option
@@ -45,11 +42,3 @@ val enforce_eq_instances_univs : bool -> Instance.t constraint_function
 (** With [force_weak] UWeak constraints are turned into equalities,
    otherwise they're forgotten. *)
 val to_constraints : force_weak:bool -> UGraph.t -> Set.t -> Constraint.t
-
-(** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
-    {!eq_constr_univs_infer} taking kind-of-term functions, to expose
-    subterms of [m] and [n], arguments. *)
-val eq_constr_univs_infer_with :
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  UGraph.t -> 'a accumulator -> constr -> constr -> 'a -> 'a option

@@ -102,6 +102,7 @@ Proof.
   apply H; assumption.
 Qed.
 
+#[global]
 Hint Resolve pow_O pow_1 pow_add pow_nonzero: real.
 
 Lemma pow_RN_plus :
@@ -117,6 +118,7 @@ Proof.
   intros x n; elim n; simpl; auto with real.
   intros n0 H' H'0; replace 0 with (x * 0); auto with real.
 Qed.
+#[global]
 Hint Resolve pow_lt: real.
 
 Lemma Rlt_pow_R1 : forall (x:R) (n:nat), 1 < x -> (0 < n)%nat -> 1 < x ^ n.
@@ -132,6 +134,7 @@ Proof.
   apply Rlt_trans with (r2 := 1); auto with real.
   apply H'; auto with arith.
 Qed.
+#[global]
 Hint Resolve Rlt_pow_R1: real.
 
 Lemma Rlt_pow : forall (x:R) (n m:nat), 1 < x -> (n < m)%nat -> x ^ n < x ^ m.
@@ -153,6 +156,7 @@ Proof.
   rewrite le_plus_minus_r; auto with arith; rewrite <- plus_n_O; auto.
   rewrite plus_comm; auto with arith.
 Qed.
+#[global]
 Hint Resolve Rlt_pow: real.
 
 (*********)
@@ -628,6 +632,7 @@ Proof.
     rewrite pow_add; auto with real.
     apply Rinv_mult_distr; apply pow_nonzero; auto.
 Qed.
+#[local]
 Hint Resolve powerRZ_O powerRZ_1 powerRZ_NOR powerRZ_add: real.
 
 Lemma Zpower_nat_powerRZ :
@@ -661,12 +666,14 @@ Lemma powerRZ_lt : forall (x:R) (z:Z), 0 < x -> 0 < x ^Z z.
 Proof.
   intros x z; case z; simpl; auto with real.
 Qed.
+#[local]
 Hint Resolve powerRZ_lt: real.
 
 Lemma powerRZ_le : forall (x:R) (z:Z), 0 < x -> 0 <= x ^Z z.
 Proof.
   intros x z H'; apply Rlt_le; auto with real.
 Qed.
+#[local]
 Hint Resolve powerRZ_le: real.
 
 Lemma Zpower_nat_powerRZ_absolu :

@@ -42,7 +42,7 @@ Lemma Zpower_nat_is_exp :
   forall (n m:nat) (z:Z),
     Zpower_nat z (n + m) = Zpower_nat z n * Zpower_nat z m.
 Proof.
- induction n.
+ intros n; induction n as [|n IHn].
  - intros. now rewrite Zpower_nat_0_r, Z.mul_1_l.
  - intros. simpl. now rewrite IHn, Z.mul_assoc.
 Qed.
@@ -79,7 +79,9 @@ Proof.
  now apply (Z.pow_add_r z (Zpos n) (Zpos m)).
 Qed.
 
+#[global]
 Hint Immediate Zpower_nat_is_exp Zpower_pos_is_exp : zarith.
+#[global]
 Hint Unfold Z.pow_pos Zpower_nat: zarith.
 
 Theorem Zpower_exp x n m :
@@ -133,7 +135,7 @@ Section Powers_of_2.
 
   Lemma two_power_nat_equiv n : two_power_nat n = 2 ^ (Z.of_nat n).
   Proof.
-   induction n.
+   induction n as [|n IHn].
    - trivial.
    - now rewrite Nat2Z.inj_succ, Z.pow_succ_r, <- IHn by apply Nat2Z.is_nonneg.
   Qed.
@@ -162,7 +164,7 @@ Section Powers_of_2.
   Theorem shift_nat_correct n x :
     Zpos (shift_nat n x) = Zpower_nat 2 n * Zpos x.
   Proof.
-   induction n.
+   induction n as [|n IHn].
    - trivial.
    - now rewrite Zpower_nat_succ_r, <- Z.mul_assoc, <- IHn.
   Qed.
@@ -226,7 +228,9 @@ Section Powers_of_2.
 
 End Powers_of_2.
 
+#[global]
 Hint Resolve two_p_gt_ZERO: zarith.
+#[global]
 Hint Immediate two_p_pred two_p_S: zarith.
 
 Section power_div_with_rest.
@@ -291,7 +295,7 @@ Section power_div_with_rest.
      rewrite Z.mul_sub_distr_r, Z.mul_shuffle3, Z.mul_assoc.
      repeat split; auto.
      rewrite !Z.mul_1_l, H, Z.add_assoc.
-     apply f_equal2 with (f := Z.add); auto.
+     apply (f_equal2 Z.add); auto.
      rewrite <- Z.sub_sub_distr, <- !Z.add_diag, Z.add_simpl_r.
      now rewrite Z.mul_1_l.
    - rewrite Pos2Z.neg_xO in H.
@@ -299,7 +303,7 @@ Section power_div_with_rest.
      repeat split; auto.
    - repeat split; auto.
      rewrite H, (Z.mul_opp_l 1), Z.mul_1_l, Z.add_assoc.
-     apply f_equal2 with (f := Z.add); auto.
+     apply (f_equal2 Z.add); auto.
      rewrite Z.add_comm, <- Z.add_diag.
      rewrite Z.mul_add_distr_l.
      replace (-1 * d) with (-d).

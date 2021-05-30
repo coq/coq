@@ -22,7 +22,6 @@ open Reductionops
 open Inductive
 open Termops
 open Inductiveops
-open Recordops
 open Namegen
 open Miniml
 open Table
@@ -428,6 +427,7 @@ and extract_really_ind env kn mib =
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
     let mip0 = mib.mind_packets.(0) in
+    let ndecls = List.length mib.mind_params_ctxt in
     let npar = mib.mind_nparams in
     let epar = push_rel_context mib.mind_params_ctxt env in
     let sg = Evd.from_env env in
@@ -463,17 +463,17 @@ and extract_really_ind env kn mib =
       if not p.ip_logical then
         let types = arities_of_constructors env ((kn,i),u) in
         for j = 0 to Array.length types - 1 do
-          let t = snd (decompose_prod_n npar types.(j)) in
+          let t = snd (decompose_prod_n_assum ndecls types.(j)) in
           let prods,head = dest_prod epar t in
           let nprods = List.length prods in
           let args = match Constr.kind head with
             | App (f,args) -> args (* [Constr.kind f = Ind ip] *)
             | _ -> [||]
           in
-          let dbmap = parse_ind_args p.ip_sign args (nprods + npar) in
-          let db = db_from_ind dbmap npar in
+          let dbmap = parse_ind_args p.ip_sign args (nprods + ndecls) in
+          let db = db_from_ind dbmap ndecls in
           p.ip_types.(j) <-
-            extract_type_cons epar sg db dbmap (EConstr.of_constr t) (npar+1)
+            extract_type_cons epar sg db dbmap (EConstr.of_constr t) (ndecls+1)
         done
     done;
     (* Third pass: we determine special cases. *)
@@ -531,7 +531,7 @@ and extract_really_ind env kn mib =
           let n = nb_default_params env sg (EConstr.of_constr ty) in
           let check_proj kn = if Cset.mem kn !projs then add_projection n kn ip
           in
-          List.iter (Option.iter check_proj) (lookup_projections ip)
+          List.iter (Option.iter check_proj) (Structures.Structure.find_projections ip)
         with Not_found -> ()
         end;
         Record field_glob
@@ -672,9 +672,11 @@ let rec extract_term env sg mle mlt c args =
         (* we unify it with an fresh copy of the stored type of [Rel n]. *)
         let extract_rel mlt = put_magic (mlt, Mlenv.get mle n) (MLrel n)
         in extract_app env sg mle mlt extract_rel args
-    | Case ({ci_ind=ip},_,iv,c0,br) ->
-      (* If invert_case then this is a match that will get erased later, but right now we don't care. *)
-      extract_app env sg mle mlt (extract_case env sg mle (ip,c0,br)) args
+    | Case (ci, u, pms, r, iv, c0, br) ->
+        (* If invert_case then this is a match that will get erased later, but right now we don't care. *)
+        let (ip, r, iv, c0, br) = EConstr.expand_case env sg (ci, u, pms, r, iv, c0, br) in
+        let ip = ci.ci_ind in
+        extract_app env sg mle mlt (extract_case env sg mle (ip,c0,br)) args
     | Fix ((_,i),recd) ->
         extract_app env sg mle mlt (extract_fix env sg mle i recd) args
     | CoFix (i,recd) ->
@@ -1078,9 +1080,13 @@ let fake_match_projection env p =
         let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
         fold (arg+1) (j+1) (mkProj (Projection.make kn false, mkRel 1)::subst) rem
       else
-        let p = mkLambda (x, lift 1 indty, liftn 1 2 ty) in
-        let branch = lift 1 (it_mkLambda_or_LetIn (mkRel (List.length ctx - (j-1))) ctx) in
-        let body = mkCase (ci, p, NoInvert, mkRel 1, [|branch|]) in
+        let p = ([|x|], liftn 1 2 ty) in
+        let branch =
+          let nas = Array.of_list (List.rev_map Context.Rel.Declaration.get_annot ctx) in
+          (nas, mkRel (List.length ctx - (j - 1)))
+        in
+        let params = Context.Rel.to_extended_vect mkRel 1 paramslet in
+        let body = mkCase (ci, u, params, p, NoInvert, mkRel 1, [|branch|]) in
         it_mkLambda_or_LetIn (mkLambda (x,indty,body)) mib.mind_params_ctxt
     | LocalDef (_,c,t) :: rem ->
       let c = liftn 1 j c in
@@ -1117,13 +1123,15 @@ let extract_constant env kn cb =
   in
   try
     match flag_of_type env sg typ with
-    | (Logic,TypeScheme) -> warn_log (); Dtype (r, [], Tdummy Ktype)
+    | (Logic,TypeScheme) -> warn_log ();
+        let s,vl = type_sign_vl env sg typ in
+        Dtype (r, vl, Tdummy Ktype)
     | (Logic,Default) -> warn_log (); Dterm (r, MLdummy Kprop, Tdummy Kprop)
     | (Info,TypeScheme) ->
         (match cb.const_body with
           | Primitive _ | Undef _ -> warn_info (); mk_typ_ax ()
           | Def c ->
-             (match Recordops.find_primitive_projection kn with
+             (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_typ (get_body c)
               | Some p ->
                 let body = fake_match_projection env p in
@@ -1136,7 +1144,7 @@ let extract_constant env kn cb =
         (match cb.const_body with
           | Primitive _ | Undef _ -> warn_info (); mk_ax ()
           | Def c ->
-             (match Recordops.find_primitive_projection kn with
+             (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_def (get_body c)
               | Some p ->
                 let body = fake_match_projection env p in
@@ -1154,7 +1162,9 @@ let extract_constant_spec env kn cb =
   let typ = EConstr.of_constr cb.const_type in
   try
     match flag_of_type env sg typ with
-    | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
+    | (Logic, TypeScheme) ->
+        let s,vl = type_sign_vl env sg typ in
+        Stype (r, vl, Some (Tdummy Ktype))
     | (Logic, Default) -> Sval (r, Tdummy Kprop)
     | (Info, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
@@ -1219,7 +1229,7 @@ let extract_inductive env kn =
 
 let logical_decl = function
   | Dterm (_,MLdummy _,Tdummy _) -> true
-  | Dtype (_,[],Tdummy _) -> true
+  | Dtype (_,_,Tdummy _) -> true
   | Dfix (_,av,tv) ->
       (Array.for_all isMLdummy av) &&
       (Array.for_all isTdummy tv)
@@ -1229,7 +1239,7 @@ let logical_decl = function
 (*s Is a [ml_spec] logical ? *)
 
 let logical_spec = function
-  | Stype (_, [], Some (Tdummy _)) -> true
+  | Stype (_, _, Some (Tdummy _)) -> true
   | Sval (_,Tdummy _) -> true
   | Sind (_,i) -> Array.for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false

@@ -48,19 +48,17 @@ let path_of_string s =
 
 let ( / ) = Filename.concat
 
-let get_version_date () =
+let get_version () =
   try
     let ch = open_in (Envars.coqlib () / "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
     let () = close_in ch in
-    (ver,rev)
-  with _ -> (Coq_config.version,Coq_config.date)
+    Printf.sprintf "%s (%s)" ver rev
+  with _ -> Coq_config.version
 
 let print_header () =
-  let (ver,rev) = (get_version_date ()) in
-  Printf.printf "Welcome to Chicken %s (%s)\n" ver rev;
-  flush stdout
+  Printf.printf "Welcome to Chicken %s\n%!" (get_version ())
 
 (* Adding files to Coq loadpath *)
 
@@ -109,7 +107,15 @@ let init_load_path () =
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs in
   let coqpath = Envars.coqpath in
-  let plugins = coqlib/"plugins" in
+  let plugins =
+    CPath.choose_existing
+      [ CPath.make [ coqlib ; "plugins" ]
+      ; CPath.make [ coqlib ; ".."; "coq-core"; "plugins" ]
+      ] |> function
+    | None ->
+      CErrors.user_err (Pp.str "Cannot find plugins directory")
+    | Some f -> (f :> string)
+  in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
   add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.DirPath.make[coq_root]);
@@ -131,8 +137,6 @@ let init_load_path () =
     (List.rev !includes);
   includes := []
 
-
-let set_debug () = Flags.debug := true
 
 let impredicative_set = ref Declarations.PredicativeSet
 let set_impredicative_set () = impredicative_set := Declarations.ImpredicativeSet
@@ -170,9 +174,7 @@ let compile_files senv =
     ~check:(List.rev !compile_list)
 
 let version () =
-  Printf.printf "The Coq Proof Checker, version %s (%s)\n"
-    Coq_config.version Coq_config.date;
-  Printf.printf "compiled on %s\n" Coq_config.compile_date;
+  Printf.printf "The Coq Proof Checker, version %s\n" Coq_config.version;
   exit 0
 
 (* print the usage of coqtop (or coqc) on channel co *)
@@ -222,7 +224,7 @@ let guill s = str "\"" ++ str s ++ str "\""
 let where = function
 | None -> mt ()
 | Some s ->
-  if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
+  if CDebug.(get_flag misc) then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
 let explain_exn = function
   | Stream.Failure ->
@@ -251,7 +253,7 @@ let explain_exn = function
     hov 0 (fnl () ++ str "User interrupt.")
   | Univ.UniverseInconsistency i ->
     let msg =
-      if !Flags.debug then
+      if CDebug.(get_flag misc) then
         str "." ++ spc() ++
           Univ.explain_universe_inconsistency Univ.Level.pr i
       else
@@ -289,7 +291,7 @@ let explain_exn = function
                              Constr.debug_print a ++ fnl ());
         Feedback.msg_notice (str"====== universes ====" ++ fnl () ++
                              (UGraph.pr_universes Univ.Level.pr
-                                (ctx.Environ.env_stratification.Environ.env_universes)));
+                                (UGraph.repr (ctx.Environ.env_stratification.Environ.env_universes))));
         str "CantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
@@ -298,7 +300,9 @@ let explain_exn = function
       | DisallowedSProp -> str"DisallowedSProp"
       | BadRelevance -> str"BadRelevance"
       | BadInvert -> str"BadInvert"
-      | UndeclaredUniverse _ -> str"UndeclaredUniverse"))
+      | UndeclaredUniverse _ -> str"UndeclaredUniverse"
+      | BadVariance _ -> str "BadVariance"
+      ))
 
   | InductiveError e ->
       hov 0 (str "Error related to inductive types")
@@ -337,7 +341,7 @@ let parse_args argv =
     | ("-Q"|"-R") :: d :: p :: rem -> set_include d p;parse rem
     | ("-Q"|"-R") :: ([] | [_]) -> usage ()
 
-    | "-debug" :: rem -> set_debug (); parse rem
+    | "-debug" :: rem -> CDebug.set_debug_all true; parse rem
 
     | "-where" :: _ ->
       Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
@@ -375,7 +379,7 @@ let init_with_argv argv =
   try
     parse_args argv;
     CWarnings.set_flags ("+"^Typeops.warn_bad_relevance_name);
-    if !Flags.debug then Printexc.record_backtrace true;
+    if CDebug.(get_flag misc) then Printexc.record_backtrace true;
     Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
     Flags.if_verbose print_header ();
     init_load_path ();
@@ -390,7 +394,7 @@ let run senv =
     let senv = compile_files senv in
     flush_all(); senv
   with e ->
-    if !Flags.debug then Printexc.print_backtrace stderr;
+    if CDebug.(get_flag misc) then Printexc.print_backtrace stderr;
     fatal_error (explain_exn e) (is_anomaly e)
 
 let start () =

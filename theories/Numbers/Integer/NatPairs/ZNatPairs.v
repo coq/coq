@@ -95,6 +95,7 @@ Local Open Scope ZScope.
 Lemma sub_add_opp : forall n m, Z.sub n m = Z.add n (Z.opp m).
 Proof. reflexivity. Qed.
 
+#[global]
 Instance eq_equiv : Equivalence Z.eq.
 Proof.
 split.
@@ -106,35 +107,41 @@ rewrite add_shuffle2, H1, add_shuffle1, H2.
 now rewrite add_shuffle1, (add_comm m1).
 Qed.
 
+#[global]
 Instance pair_wd : Proper (N.eq==>N.eq==>Z.eq) (@pair N.t N.t).
 Proof.
 intros n1 n2 H1 m1 m2 H2; unfold Z.eq; simpl; now rewrite H1, H2.
 Qed.
 
+#[global]
 Instance succ_wd : Proper (Z.eq ==> Z.eq) Z.succ.
 Proof.
 unfold Z.succ, Z.eq; intros n m H; simpl.
 do 2 rewrite add_succ_l; now rewrite H.
 Qed.
 
+#[global]
 Instance pred_wd : Proper (Z.eq ==> Z.eq) Z.pred.
 Proof.
 unfold Z.pred, Z.eq; intros n m H; simpl.
 do 2 rewrite add_succ_r; now rewrite H.
 Qed.
 
+#[global]
 Instance add_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.add.
 Proof.
 unfold Z.eq, Z.add; intros n1 m1 H1 n2 m2 H2; simpl.
 now rewrite add_shuffle1, H1, H2, add_shuffle1.
 Qed.
 
+#[global]
 Instance opp_wd : Proper (Z.eq ==> Z.eq) Z.opp.
 Proof.
 unfold Z.eq, Z.opp; intros (n1,n2) (m1,m2) H; simpl in *.
 now rewrite (add_comm n2), (add_comm m2).
 Qed.
 
+#[global]
 Instance sub_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.sub.
 Proof.
 intros n1 m1 H1 n2 m2 H2. rewrite 2 sub_add_opp. now do 2 f_equiv.
@@ -147,6 +154,7 @@ rewrite (add_comm (m1*n2)%N).
 do 2 f_equiv; apply mul_comm.
 Qed.
 
+#[global]
 Instance mul_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.mul.
 Proof.
 assert (forall n, Proper (Z.eq ==> Z.eq) (Z.mul n)).
@@ -302,6 +310,7 @@ Proof.
 intros. apply lt_nge.
 Qed.
 
+#[global]
 Instance lt_wd : Proper (Z.eq ==> Z.eq ==> iff) Z.lt.
 Proof.
 assert (forall n, Proper (Z.eq==>iff) (Z.lt n)).

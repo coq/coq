@@ -99,7 +99,9 @@ type conversion_check = unify_flags -> unification_kind ->
     Preconditions:
     - [ev] does not occur in [c].
     - [c] does not contain any Meta(_)
- *)
+
+    If [ev] and [c] have non inferably convertible types, an exception
+    [IllTypedInstance] is raised *)
 
 val instantiate_evar : unifier -> unify_flags -> env -> evar_map ->
   Evar.t -> constr -> evar_map
@@ -107,7 +109,9 @@ val instantiate_evar : unifier -> unify_flags -> env -> evar_map ->
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
    some problems that cannot be solved in a unique way (except if choose is
-   true); fails if the instance is not valid for the given [ev] *)
+   true); fails if the instance is not valid for the given [ev];
+   If [ev] and [c] have non inferably convertible types, an exception
+   [IllTypedInstance] is raised *)
 
 val evar_define : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool ->
   env -> evar_map -> bool option -> existential -> constr -> evar_map
@@ -129,6 +133,26 @@ val solve_evar_evar : ?force:bool ->
   (env -> evar_map -> bool option -> existential -> constr -> evar_map) ->
   unifier -> unify_flags ->
   env ->  evar_map -> bool option -> existential -> existential -> evar_map
+  (** The two evars are expected to be in inferably convertible types;
+      if not, an exception IllTypedInstance is raised *)
+
+(* [solve_simple_eqn unifier flags env evd (direction,?ev[inst],t)]
+   makes progresses on problems of the form [?ev[inst] := t] (or
+   [?ev[inst] :<= t], or [?ev[inst] :>= t]). It uses imitation and a
+   limited form of projection. At the time of writing this comment,
+   only rels/vars (possibly indirectly via a chain of evars) and
+   constructors are used for projection. For instance
+   [?e[x,S 0] := x + S 0] will be solved by imitating [+] and
+   projecting [x] and [S 0] (so that [?e[a,b]:=a+b]) but in
+   [?e[0+0] := 0+0], the possible imitation will not be seen.
+
+   [choose] tells to make an irreversible choice when two valid
+   projections are competing. It is to be used when no more reversible
+   progress can be done. It is [false] by default.
+
+   [imitate_defs] tells to expand local definitions if they cannot be
+   projected. It is [true] by default.
+*)
 
 val solve_simple_eqn : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool -> env ->  evar_map ->
   bool option * existential * constr -> unification_result
@@ -147,9 +171,9 @@ val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 
 exception IllTypedInstance of env * types * types
 
-(* May raise IllTypedInstance if types are not convertible *)
 val check_evar_instance : unifier -> unify_flags ->
   env -> evar_map -> Evar.t -> constr -> evar_map
+  (** May raise IllTypedInstance if types are not convertible *)
 
 val remove_instance_local_defs :
   evar_map -> Evar.t -> 'a list -> 'a list

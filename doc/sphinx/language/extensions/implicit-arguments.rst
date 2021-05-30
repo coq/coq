@@ -66,7 +66,7 @@ would be a solution of the inference problem.
 **Contextual Implicit Arguments**
 
 An implicit argument can be *contextual* or not. An implicit argument
-is said *contextual* if it can be inferred only from the knowledge of
+is said to be *contextual* if it can be inferred only from the knowledge of
 the type of the context of the current expression. For instance, the
 only argument of::
 
@@ -115,7 +115,7 @@ application will include that argument.  Otherwise, the argument is
 *non-maximally inserted* and the partial application will not include that argument.
 
 Each implicit argument can be declared to be inserted maximally or non
-maximally. In |Coq|, maximally inserted implicit arguments are written between curly braces
+maximally. In Coq, maximally inserted implicit arguments are written between curly braces
 "{ }" and non-maximally inserted implicit arguments are written in square brackets "[ ]".
 
 .. seealso:: :flag:`Maximal Implicit Insertion`
@@ -146,7 +146,7 @@ by replacing it with `_`.
 .. exn:: Cannot infer a term for this placeholder.
    :name: Cannot infer a term for this placeholder. (Casual use of implicit arguments)
 
-   |Coq| was not able to deduce an instantiation of a “_”.
+   Coq was not able to deduce an instantiation of a “_”.
 
 .. _declare-implicit-args:
 
@@ -238,7 +238,7 @@ Here is an example:
 
    This is triggered when setting an argument implicit in an
    expression which does not correspond to the type of an assumption
-   or to the body of a definition. Here is an example:
+   or to the :term:`body` of a definition. Here is an example:
 
    .. coqtop:: all warn
 
@@ -259,7 +259,7 @@ Mode for automatic declaration of implicit arguments
 
 .. flag:: Implicit Arguments
 
-   This flag (off by default) allows to systematically declare implicit
+   This :term:`flag` (off by default) allows to systematically declare implicit
    the arguments detectable as such. Auto-detection of implicit arguments is
    governed by flags controlling whether strict and contextual implicit
    arguments have to be considered or not.
@@ -276,11 +276,11 @@ Controlling strict implicit arguments
    arguments plus, for historical reasons, a small subset of the non-strict
    implicit arguments. To relax this constraint and to set
    implicit all non strict implicit arguments by default, you can turn this
-   flag off.
+   :term:`flag` off.
 
 .. flag:: Strongly Strict Implicit
 
-   Use this flag (off by default) to capture exactly the strict implicit
+   Use this :term:`flag` (off by default) to capture exactly the strict implicit
    arguments and no more than the strict implicit arguments.
 
 .. _controlling-contextual-implicit-args:
@@ -290,8 +290,8 @@ Controlling contextual implicit arguments
 
 .. flag:: Contextual Implicit
 
-   By default, |Coq| does not automatically set implicit the contextual
-   implicit arguments. You can turn this flag on to tell |Coq| to also
+   By default, Coq does not automatically set implicit the contextual
+   implicit arguments. You can turn this :term:`flag` on to tell Coq to also
    infer contextual implicit argument.
 
 .. _controlling-rev-pattern-implicit-args:
@@ -301,8 +301,8 @@ Controlling reversible-pattern implicit arguments
 
 .. flag:: Reversible Pattern Implicit
 
-   By default, |Coq| does not automatically set implicit the reversible-pattern
-   implicit arguments. You can turn this flag on to tell |Coq| to also infer
+   By default, Coq does not automatically set implicit the reversible-pattern
+   implicit arguments. You can turn this :term:`flag` on to tell Coq to also infer
    reversible-pattern implicit argument.
 
 .. _controlling-insertion-implicit-args:
@@ -312,7 +312,7 @@ Controlling the insertion of implicit arguments not followed by explicit argumen
 
 .. flag:: Maximal Implicit Insertion
 
-   Assuming the implicit argument mode is on, this flag (off by default)
+   Assuming the implicit argument mode is on, this :term:`flag` (off by default)
    declares implicit arguments to be automatically inserted when a
    function is partially applied and the next argument of the function is
    an implicit one.
@@ -384,8 +384,8 @@ Displaying implicit arguments when pretty-printing
 
 .. flag:: Printing Implicit
 
-   By default, the basic pretty-printing rules hide the inferrable implicit
-   arguments of an application. Turn this flag on to force printing all
+   By default, the basic pretty-printing rules hide the inferable implicit
+   arguments of an application. Turn this :term:`flag` on to force printing all
    implicit arguments.
 
 .. flag:: Printing Implicit Defensive
@@ -393,7 +393,7 @@ Displaying implicit arguments when pretty-printing
    By default, the basic pretty-printing rules display implicit
    arguments that are not detected as strict implicit arguments. This
    “defensive” mode can quickly make the display cumbersome so this can
-   be deactivated by turning this flag off.
+   be deactivated by turning this :term:`flag` off.
 
 .. seealso:: :flag:`Printing All`.
 
@@ -446,9 +446,9 @@ function.
 
 .. flag:: Parsing Explicit
 
-   Turning this flag on (it is off by default) deactivates the use of implicit arguments.
+   Turning this :term:`flag` on (it is off by default) deactivates the use of implicit arguments.
 
-   In this case, all arguments of constants, inductive types,
+   In this case, all arguments of :term:`constants <constant>`, inductive types,
    constructors, etc, including the arguments declared as implicit, have
    to be given as if no arguments were implicit. By symmetry, this also
    affects printing.
@@ -506,9 +506,9 @@ or :g:`m` to the type :g:`nat` of natural numbers).
 .. flag:: Printing Use Implicit Types
 
   By default, the type of bound variables is not printed when
-  the variable name is associated to an implicit type which matches the
+  the variable name is associated with an implicit type which matches the
   actual type of the variable. This feature can be deactivated by
-  turning this flag off.
+  turning this :term:`flag` off.
 
 .. _implicit-generalization:
 
@@ -576,6 +576,10 @@ generalized unless provided. This produces a fully general statement.
 this behaviour may be disabled by prefixing the type with a ``!`` or
 by forcing the typeclass name to be an explicit application using
 ``@`` (however the later ignores implicit argument information).
+
+.. coqtop:: none
+
+   Set Warnings "-deprecated-instance-without-locality".
 
 .. coqtop:: all
 

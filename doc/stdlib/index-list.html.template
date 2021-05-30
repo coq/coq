@@ -22,7 +22,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Nat.v
     theories/Init/Decimal.v
     theories/Init/Hexadecimal.v
-    theories/Init/Numeral.v
+    theories/Init/Number.v
     theories/Init/Peano.v
     theories/Init/Specif.v
     theories/Init/Tactics.v
@@ -135,6 +135,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Arith/Bool_nat.v
     theories/Arith/Factorial.v
     theories/Arith/Wf_nat.v
+    theories/Arith/Cantor.v
   </dd>
 
   <dt> <b>PArith</b>:
@@ -238,6 +239,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/DecimalN.v
     theories/Numbers/DecimalZ.v
     theories/Numbers/DecimalQ.v
+    theories/Numbers/DecimalR.v
     theories/Numbers/DecimalString.v
     theories/Numbers/HexadecimalFacts.v
     theories/Numbers/HexadecimalNat.v
@@ -245,6 +247,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/HexadecimalN.v
     theories/Numbers/HexadecimalZ.v
     theories/Numbers/HexadecimalQ.v
+    theories/Numbers/HexadecimalR.v
     theories/Numbers/HexadecimalString.v
     </dd>
 
@@ -276,12 +279,15 @@ through the <tt>Require Import</tt> command.</p>
     <dd>
     theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
     theories/Numbers/Cyclic/Abstract/NZCyclic.v
+    theories/Numbers/Cyclic/Abstract/CarryType.v
     theories/Numbers/Cyclic/Abstract/DoubleType.v
     theories/Numbers/Cyclic/Int31/Cyclic31.v
     theories/Numbers/Cyclic/Int31/Ring31.v
     theories/Numbers/Cyclic/Int31/Int31.v
     theories/Numbers/Cyclic/Int63/Cyclic63.v
+    theories/Numbers/Cyclic/Int63/PrimInt63.v
     theories/Numbers/Cyclic/Int63/Int63.v
+    theories/Numbers/Cyclic/Int63/Sint63.v
     theories/Numbers/Cyclic/Int63/Ring63.v
     theories/Numbers/Cyclic/ZModulo/ZModulo.v
     </dd>
@@ -680,6 +686,7 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Fresh.v
     user-contrib/Ltac2/Ident.v
     user-contrib/Ltac2/Init.v
+    user-contrib/Ltac2/Ind.v
     user-contrib/Ltac2/Int.v
     user-contrib/Ltac2/List.v
     user-contrib/Ltac2/Ltac1.v
@@ -687,6 +694,7 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Notations.v
     user-contrib/Ltac2/Option.v
     user-contrib/Ltac2/Pattern.v
+    user-contrib/Ltac2/Printf.v
     user-contrib/Ltac2/Std.v
     user-contrib/Ltac2/String.v
   </dd>
@@ -704,10 +712,10 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/Compat/AdmitAxiom.v
-    theories/Compat/Coq810.v
     theories/Compat/Coq811.v
     theories/Compat/Coq812.v
     theories/Compat/Coq813.v
+    theories/Compat/Coq814.v
   </dd>
 
   <dt> <b>Array</b>:

@@ -44,6 +44,7 @@ Module Type Eq' := Eq <+ EqNotation.
 (** * Specification of the equality via the [Equivalence] type class *)
 
 Module Type IsEq (Import E:Eq).
+#[global]
   Declare Instance eq_equiv : Equivalence eq.
 End IsEq.
 
@@ -53,7 +54,9 @@ Module Type IsEqOrig (Import E:Eq').
   Axiom eq_refl : forall x : t, x==x.
   Axiom eq_sym : forall x y : t, x==y -> y==x.
   Axiom eq_trans : forall x y z : t, x==y -> y==z -> x==z.
+  #[global]
   Hint Immediate eq_sym : core.
+  #[global]
   Hint Resolve eq_refl eq_trans : core.
 End IsEqOrig.
 
@@ -134,6 +137,7 @@ Module BackportEq (E:Eq)(F:IsEq E) <: IsEqOrig E.
 End BackportEq.
 
 Module UpdateEq (E:Eq)(F:IsEqOrig E) <: IsEq E.
+#[global]
  Instance eq_equiv : Equivalence E.eq.
  Proof. exact (Build_Equivalence _ F.eq_refl F.eq_sym F.eq_trans). Qed.
 End UpdateEq.
@@ -188,6 +192,7 @@ Module BoolEqualityFacts (Import E : BooleanEqualityType').
 
 (** [eqb] is compatible with [eq] *)
 
+#[global]
 Instance eqb_compat : Proper (E.eq ==> E.eq ==> Logic.eq) eqb.
 Proof.
 intros x x' Exx' y y' Eyy'.

@@ -35,6 +35,7 @@ open Environ
 open EConstr
 open Vars
 open Reductionops
+open Structures
 open Type_errors
 open Typing
 open Evarutil
@@ -130,59 +131,32 @@ let is_strict_universe_declarations =
 
 (** Miscellaneous interpretation functions *)
 
-let interp_known_universe_level_name evd qid =
-  try
-    let open Libnames in
-    if qualid_is_ident qid then Evd.universe_of_name evd @@ qualid_basename qid
-    else raise Not_found
+let universe_level_name evd ({CAst.v=id} as lid) =
+  try evd, Evd.universe_of_name evd id
   with Not_found ->
-    let qid = Nametab.locate_universe qid in
-    Univ.Level.make qid
+    if not (is_strict_universe_declarations ()) then
+      new_univ_level_variable ?loc:lid.CAst.loc ~name:id univ_rigid evd
+    else user_err ?loc:lid.CAst.loc ~hdr:"universe_level_name"
+        (Pp.(str "Undeclared universe: " ++ Id.print id))
 
-let interp_universe_level_name ~anon_rigidity evd qid =
-  try evd, interp_known_universe_level_name evd qid
-  with Not_found ->
-    if Libnames.qualid_is_ident qid then (* Undeclared *)
-      let id = Libnames.qualid_basename qid in
-      if not (is_strict_universe_declarations ()) then
-        new_univ_level_variable ?loc:qid.CAst.loc ~name:id univ_rigid evd
-      else user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
-          (Pp.(str "Undeclared universe: " ++ Id.print id))
-    else
-      let dp, i = Libnames.repr_qualid qid in
-      let num =
-        try int_of_string (Id.to_string i)
-        with Failure _ ->
-          user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
-            (Pp.(str "Undeclared global universe: " ++ Libnames.pr_qualid qid))
-      in
-      let level = Univ.Level.(make (UGlobal.make dp num)) in
-      let evd =
-        try Evd.add_global_univ evd level
-        with UGraph.AlreadyDeclared -> evd
-      in evd, level
-
-let interp_universe_name ?loc evd l =
-  (* [univ_flexible_alg] can produce algebraic universes in terms *)
-  let anon_rigidity = univ_flexible in
-  let evd', l = interp_universe_level_name ~anon_rigidity evd l in
-  evd', l
-
-let interp_sort_name ?loc sigma = function
+let sort_name sigma = function
   | GSProp -> sigma, Univ.Level.sprop
   | GProp -> sigma, Univ.Level.prop
   | GSet -> sigma, Univ.Level.set
-  | GType l -> interp_universe_name ?loc sigma l
+  | GUniv u -> sigma, u
+  | GRawUniv u ->
+    (try Evd.add_global_univ sigma u with UGraph.AlreadyDeclared -> sigma), u
+  | GLocalUniv l -> universe_level_name sigma l
 
-let interp_sort_info ?loc evd l =
+let sort_info ?loc evd l =
     List.fold_left (fun (evd, u) (l,n) ->
-      let evd', u' = interp_sort_name ?loc evd l in
+      let evd', u' = sort_name evd l in
       let u' = Univ.Universe.make u' in
       let u' = match n with
       | 0 -> u'
       | 1 -> Univ.Universe.super u'
       | n ->
-        user_err ?loc ~hdr:"interp_universe"
+        user_err ?loc ~hdr:"sort_info"
           (Pp.(str "Cannot interpret universe increment +" ++ int n))
       in (evd', Univ.sup u u'))
     (evd, Univ.Universe.type0m) l
@@ -399,24 +373,33 @@ let pretype_id pretype loc env sigma id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let interp_known_glob_level ?loc evd = function
+let known_universe_level_name evd lid =
+  try Evd.universe_of_name evd lid.CAst.v
+  with Not_found ->
+    let u = Nametab.locate_universe (Libnames.qualid_of_lident lid) in
+    Univ.Level.make u
+
+let known_glob_level evd = function
   | GSProp -> Univ.Level.sprop
   | GProp -> Univ.Level.prop
   | GSet -> Univ.Level.set
-  | GType qid ->
-    try interp_known_universe_level_name evd qid
+  | GUniv u -> u
+  | GRawUniv u -> anomaly Pp.(str "Raw universe in known_glob_level.")
+  | GLocalUniv lid ->
+    try known_universe_level_name evd lid
     with Not_found ->
-      user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Libnames.pr_qualid qid)
+      user_err ?loc:lid.CAst.loc ~hdr:"known_level_info"
+        (str "Undeclared universe " ++ Id.print lid.CAst.v)
 
-let interp_glob_level ?loc evd : glob_level -> _ = function
+let glob_level ?loc evd : glob_level -> _ = function
   | UAnonymous {rigid} -> new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd
-  | UNamed s -> interp_sort_name ?loc evd s
+  | UNamed s -> sort_name evd s
 
-let interp_instance ?loc evd l =
+let instance ?loc evd l =
   let evd, l' =
     List.fold_left
       (fun (evd, univs) l ->
-         let evd, l = interp_glob_level ?loc evd l in
+         let evd, l = glob_level ?loc evd l in
          (evd, l :: univs)) (evd, [])
       l
   in
@@ -430,7 +413,7 @@ let pretype_global ?loc rigid env evd gr us =
   let evd, instance =
     match us with
     | None -> evd, None
-    | Some l -> interp_instance ?loc evd l
+    | Some l -> instance ?loc evd l
   in
   Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr
 
@@ -457,11 +440,11 @@ let pretype_ref ?loc sigma env ref us =
     let sigma, ty = type_of !!env sigma c in
     sigma, make_judge c ty
 
-let interp_sort ?loc evd : glob_sort -> _ = function
+let sort ?loc evd : glob_sort -> _ = function
   | UAnonymous {rigid} ->
     let evd, l = new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd in
     evd, Univ.Universe.make l
-  | UNamed l -> interp_sort_info ?loc evd l
+  | UNamed l -> sort_info ?loc evd l
 
 let judge_of_sort ?loc evd s =
   let judge =
@@ -475,11 +458,22 @@ let pretype_sort ?loc sigma s =
   | UNamed [GProp,0] -> sigma, judge_of_prop
   | UNamed [GSet,0] -> sigma, judge_of_set
   | _ ->
-  let sigma, s = interp_sort ?loc sigma s in
+  let sigma, s = sort ?loc sigma s in
   judge_of_sort ?loc sigma s
 
-let new_type_evar env sigma loc =
-  new_type_evar env sigma ~src:(Loc.tag ?loc Evar_kinds.InternalHole)
+let new_typed_evar env sigma ?naming ~src tycon =
+  match tycon with
+  | Some ty ->
+    let sigma, c = new_evar env sigma ~src ?naming ty in
+    sigma, c, ty
+  | None ->
+    let sigma, ty = new_type_evar env sigma ~src in
+    let sigma, c = new_evar env sigma ~src ?naming ty in
+    let evk = fst (destEvar sigma c) in
+    let ido = Evd.evar_ident evk sigma in
+    let src = (fst src,Evar_kinds.EvarType (ido,evk)) in
+    let sigma = update_source sigma (fst (destEvar sigma ty)) src in
+    sigma, c, ty
 
 let mark_obligation_evar sigma k evc =
   match k with
@@ -642,13 +636,9 @@ struct
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
 
   let pretype_patvar self kind ?loc ~program_mode ~poly resolve_tc tycon env sigma =
-    let sigma, ty =
-      match tycon with
-      | Some ty -> sigma, ty
-      | None -> new_type_evar env sigma loc in
     let k = Evar_kinds.MatchingVar kind in
-    let sigma, uj_val = new_evar env sigma ~src:(loc,k) ty in
-    sigma, { uj_val; uj_type = ty }
+    let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) tycon in
+    sigma, { uj_val; uj_type }
 
   let pretype_hole self (k, naming, ext) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -659,21 +649,13 @@ struct
         | IntroIdentifier id -> IntroIdentifier (interp_ltac_id env id)
         | IntroAnonymous -> IntroAnonymous
         | IntroFresh id -> IntroFresh (interp_ltac_id env id) in
-      let sigma, ty =
-        match tycon with
-        | Some ty -> sigma, ty
-        | None -> new_type_evar env sigma loc in
-      let sigma, uj_val = new_evar env sigma ~src:(loc,k) ~naming ty in
+      let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) ~naming tycon in
       let sigma = if program_mode then mark_obligation_evar sigma k uj_val else sigma in
-      sigma, { uj_val; uj_type = ty }
+      sigma, { uj_val; uj_type }
 
     | Some arg ->
-      let sigma, ty =
-        match tycon with
-        | Some ty -> sigma, ty
-        | None -> new_type_evar env sigma loc in
-      let c, sigma = GlobEnv.interp_glob_genarg env poly sigma ty arg in
-      sigma, { uj_val = c; uj_type = ty }
+      let j, sigma = GlobEnv.interp_glob_genarg ?loc ~poly env sigma tycon arg in
+      sigma, j
 
   let pretype_rec self (fixkind, names, bl, lar, vdef) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -820,8 +802,8 @@ struct
     in
     let app_f =
       match EConstr.kind sigma fj.uj_val with
-      | Const (p, u) when Recordops.is_primitive_projection p ->
-        let p = Option.get @@ Recordops.find_primitive_projection p in
+      | Const (p, u) when PrimitiveProjections.mem p ->
+        let p = Option.get @@ PrimitiveProjections.find_opt p in
         let p = Projection.make p false in
         let npars = Projection.npars p in
         fun n ->
@@ -1058,7 +1040,7 @@ struct
       if not record then
         let f = it_mkLambda_or_LetIn f fsign in
         let ci = make_case_info !!env (ind_of_ind_type indt) rci LetStyle in
-          mkCase (ci, p, make_case_invert !!env indt ci, cj.uj_val,[|f|])
+          mkCase (EConstr.contract_case !!env sigma (ci, p, make_case_invert !!env indt ci, cj.uj_val,[|f|]))
       else it_mkLambda_or_LetIn f fsign
     in
     (* Make dependencies from arity signature impossible *)
@@ -1150,7 +1132,7 @@ struct
         | None ->
           let sigma, p = match tycon with
             | Some ty -> sigma, ty
-            | None -> new_type_evar env sigma loc
+            | None -> new_type_evar env sigma ~src:(loc,Evar_kinds.CasesType false)
           in
           sigma, it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let pred = nf_evar sigma pred in
@@ -1174,7 +1156,7 @@ struct
         let pred = nf_evar sigma pred in
         let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val pred in
         let ci = make_case_info !!env (fst ind) rci IfStyle in
-          mkCase (ci, pred, make_case_invert !!env indty ci, cj.uj_val, [|b1;b2|])
+        mkCase (EConstr.contract_case !!env sigma (ci, pred, make_case_invert !!env indty ci, cj.uj_val, [|b1;b2|]))
       in
       let cj = { uj_val = v; uj_type = p } in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
@@ -1184,9 +1166,6 @@ struct
     let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
     let sigma, cj =
       match k with
-      | CastCoerce ->
-        let sigma, cj = pretype empty_tycon env sigma c in
-        Coercion.inh_coerce_to_base ?loc ~program_mode !!env sigma cj
       | CastConv t | CastVM t | CastNative t ->
         let k = (match k with CastVM _ -> VMcast | CastNative _ -> NATIVEcast | _ -> DEFAULTcast) in
         let sigma, tj = eval_type_pretyper self ~program_mode ~poly resolve_tc empty_valcon env sigma t in
@@ -1413,7 +1392,7 @@ let understand_ltac flags env sigma lvar kind c =
   let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
 
-let path_convertible env sigma i p q =
+let path_convertible env sigma cl p q =
   let open Coercionops in
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
   let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
@@ -1438,7 +1417,7 @@ let path_convertible env sigma i p q =
           p'
     | [] ->
       (* identity function for the class [i]. *)
-      let cl,params = class_info_from_index i in
+      let params = class_nparams cl in
       let clty =
         match cl with
         | CL_SORT -> mkGSort (Glob_term.UAnonymous {rigid=false})
@@ -1449,8 +1428,7 @@ let path_convertible env sigma i p q =
         | CL_PROJ p -> mkGRef (GlobRef.ConstRef (Projection.Repr.constant p))
       in
       let names =
-        List.init params.cl_param
-          (fun n -> Id.of_string ("x" ^ string_of_int n))
+        List.init params (fun n -> Id.of_string ("x" ^ string_of_int n))
       in
       List.fold_right
         (fun id t -> mkGLambda (Name id, mkGHole (), t)) names @@

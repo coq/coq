@@ -69,9 +69,10 @@ let protect_pattern_in_binder bl c ctypopt =
         | LetIn (x,b,t,c) ->
           let evd,c = aux (push_rel (LocalDef (x,b,t)) env) evd c in
           evd, mkLetIn (x,t,b,c)
-        | Case (ci,p,iv,a,bl) ->
+        | Case (ci,u,pms,p,iv,a,bl) ->
+          let (ci, p, iv, a, bl) = EConstr.expand_case env evd (ci, u, pms, p, iv, a, bl) in
           let evd,bl = Array.fold_left_map (aux env) evd bl in
-          evd, mkCase (ci,p,iv,a,bl)
+          evd, mkCase (EConstr.contract_case env evd (ci, p, iv, a, bl))
         | Cast (c,_,_)    -> f env evd c  (* we remove the cast we had set *)
         (* This last case may happen when reaching the proof of an
            impossible case, as when pattern-matching on a vector of length 1 *)
@@ -110,42 +111,40 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
   evd, (c, tyopt), imps
 
-let do_definition ?hook ~name ~scope ~poly ~kind ?using udecl bl red_option c ctypopt =
+let definition_using env evd ~body ~types ~using =
+  let terms = Option.List.cons types [body] in
+  Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using
+
+let do_definition ?hook ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
+  let env = Environ.update_typing_flags ?typing_flags env in
   (* Explicitly bound universes and constraints *)
-  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+  let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
-  let using = using |> Option.map (fun expr ->
-    let terms = body :: match types with Some x -> [x] | None -> [] in
-    let l = Proof_using.process_expr (Global.env()) evd expr terms in
-    Names.Id.Set.(List.fold_right add l empty))
-  in
+  let using = definition_using env evd ~body ~types ~using in
   let kind = Decls.IsDefinition kind in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
-  let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly () in
+  let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly ?typing_flags () in
   let _ : Names.GlobRef.t =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()
 
-let do_definition_program ?hook ~pm ~name ~scope ~poly ~kind ?using udecl bl red_option c ctypopt =
+let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
   let program_mode = true in
   let env = Global.env() in
+  let env = Environ.update_typing_flags ?typing_flags env in
   (* Explicitly bound universes and constraints *)
-  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+  let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
-  let using = using |> Option.map (fun expr ->
-    let terms = body :: match types with Some x -> [x] | None -> [] in
-    let l = Proof_using.process_expr (Global.env()) evd expr terms in
-    Names.Id.Set.(List.fold_right add l empty))
-  in
+  let using = definition_using env evd ~body ~types ~using in
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
-    let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook () in
+    let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook ?typing_flags () in
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
   in pm

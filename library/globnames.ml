@@ -31,10 +31,6 @@ let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destConstructRef"
 
-let subst_constructor subst (ind,j as ref) =
-  let ind' = subst_ind subst ind in
-  if ind==ind' then ref
-  else (ind',j)
 
 let subst_global_reference subst ref = match ref with
   | VarRef var -> ref

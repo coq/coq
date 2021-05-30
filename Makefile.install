@@ -16,154 +16,79 @@
 # by dependencies between rules, so do *not* try overly clever things like
 # 'make world install' in one unique command
 
-ifeq ($(LOCAL),true)
+ifeq ($(COQPREFIX),local)
 install:
-	@echo "Nothing to install in a local build!"
+	@echo "Prefix not set in configure, nothing to install."
 else
-install: install-coq install-coqide install-doc-$(WITHDOC) install-meta
+install: install-coq install-coqide install-doc-$(WITHDOC)
 endif
 
 # NOTA: for install-coqide, see Makefile.ide
 
 install-doc-all: install-doc
 install-doc-no:
+install-byte:
 
-.PHONY: install install-doc-all install-doc-no
+.PHONY: install install-byte install-coqide install-doc-all install-doc-no
 
-#These variables are intended to be set by the caller to make
-#COQINSTALLPREFIX=
-#OLDROOT=
+INSTALLLIB:=install -m 644
 
-  # Can be changed for a local installation (to make packages).
-  # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
+.PHONY: install-coq install-dune install-library
 
-ifdef COQINSTALLPREFIX
-FULLBINDIR=$(BINDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLCOQLIB=$(COQLIBINSTALL:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLCONFIGDIR=$(CONFIGDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLDATADIR=$(DATADIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLDOCDIR=$(DOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+# Due to Windows paths not starting with / we can't just set the
+# default to / and always use --destdir
+ifeq ($(DESTDIR),)
+DESTDIRARG=
 else
-FULLBINDIR=$(BINDIR)
-FULLCOQLIB=$(COQLIBINSTALL)
-FULLCONFIGDIR=$(CONFIGDIR)
-FULLDATADIR=$(DATADIR)
-FULLMANDIR=$(MANDIR)
-FULLCOQDOCDIR=$(COQDOCDIR)
-FULLDOCDIR=$(DOCDIR)
+DESTDIRARG=--destdir="$(DESTDIR)"
 endif
 
-.PHONY: install-coq install-binaries install-byte install-opt
-.PHONY: install-tools install-library install-devfiles install-merlin
-.PHONY: install-coq-info install-coq-manpages install-latex
-.PHONY: install-meta
+# --display quiet should not produce output, dune bug:
+# https://github.com/ocaml/dune/issues/4573
 
-install-coq: install-binaries install-library install-coq-info install-devfiles
+# Note that dune install paths are setup at dune's build time, thus
+# for example a Debian-built dune will install stuff following
+# Debian's FHS, an opam-built dune will differ and follow OPAM's layout.
+#
+# We ought to improve this, as of today the case of an opam-built dune
+# installing to a global prefix such as /usr/local/ may not follow the FHS
+install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
+	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coq-core
+	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide-server
 
-ifeq ($(BEST),byte)
-install-coq: install-byte
+install-coq: install-dune install-library
+
+# This used to be overriden to fix very old bugs with install
+INSTALLSH=./install.sh
+
+ifeq ($(DESTDIR),)
+COQLIBINSTALLDEST=$(COQLIBINSTALL)
+else
+COQLIBINSTALLDEST=$(DESTDIR)/$(COQLIBINSTALL)
 endif
 
-install-binaries: install-tools
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(CHICKEN) $(COQTOPEXE) $(TOPBIN) $(FULLBINDIR)
-
-install-byte: install-coqide-byte
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(TOPBYTE) $(FULLBINDIR)
-	$(INSTALLSH) $(FULLCOQLIB) $(LINKCMO) $(PLUGINS)
-ifndef CUSTOM
-	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
-endif
-
-install-tools:
-	$(MKDIR) $(FULLBINDIR)
-	# copy style files for coqide
-	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
-	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
-	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
-
-# The list of .cmi to install, including in particular
-# - the ones obtained from .mli without .ml
-# - the ones of modules in core cma's
-# - the ones corresponding to packed plugins
-
-INSTALLCMI = $(sort \
-	$(filter-out checker/% ide/coqide/% tools/%, $(MLIFILES:.mli=.cmi)) \
-	$(GRAMMLIFILES:.mli=.cmi) gramlib/.pack/gramlib.cmi \
-	$(foreach lib,$(CORECMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES))))) \
-	$(PLUGINS:.cmo=.cmi)
-
-INSTALLCMX = $(sort $(filter-out checker/% ide/coqide/% tools/% dev/% \
-	configure.cmx toplevel/coqtop_byte_bin.cmx plugins/extraction/big.cmx, \
-	$(GRAMMLFILES:.ml=.cmx) $(MLFILES:.ml=.cmx)))
-
-install-devfiles:
-	$(MKDIR) $(FULLBINDIR)
-	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)           # Regular CMI files
-	$(INSTALLSH)  $(FULLCOQLIB) $(TOOLS_HELPERS)
-ifeq ($(BEST),opt)
-	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMX)           # To avoid warning 58 "-opaque"
-	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.cmx) # For static linking of plugins
-	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.o)   # For static linking of plugins
-	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
-endif
-
-install-merlin:
-	$(INSTALLSH) $(FULLCOQLIB) $(wildcard $(INSTALLCMX:.cmx=.cmt) $(INSTALLCMI:.cmi=.cmti) $(MLIFILES) $(MLFILES) $(MERLINFILES))
-
-#NB: some files don't produce native files (eg Ltac2 files) as they
-#don't have any Coq definitions. Makefile can't predict that so we use || true
-#vos build is bugged in -quick mode, see #11195
+# NB: some files don't produce native files (eg Ltac2 files) as they
+# don't have any Coq definitions. Makefile can't predict that so we
+# use || true vos build is bugged in -quick mode, see #11195
 install-library:
-	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(ALLVO:.$(VO)=.vo)
-	$(INSTALLSH) $(FULLCOQLIB) $(ALLVO:.$(VO)=.vos) || true
+	$(SHOW)'INSTALL   VOFILES'
+	$(HIDE)$(MKDIR) $(COQLIBINSTALLDEST)
+	$(HIDE)$(INSTALLSH) $(VO_OUT_DIR) $(COQLIBINSTALLDEST) $(ALLVO:.$(VO)=.vo)
+	$(HIDE)$(INSTALLSH) $(VO_OUT_DIR) $(COQLIBINSTALLDEST) $(ALLVO:.$(VO)=.vos) || true
 ifneq ($(NATIVECOMPUTE),)
-	$(INSTALLSH) $(FULLCOQLIB) $(NATIVEFILES) || true
+	$(HIDE)$(INSTALLSH) $(VO_OUT_DIR) $(COQLIBINSTALLDEST) $(NATIVEFILES) || true
 endif
-	$(INSTALLSH) $(FULLCOQLIB) $(VFILES)
-	$(INSTALLSH) $(FULLCOQLIB) $(GLOBFILES)
-	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	$(MKDIR) $(FULLCOQLIB)/kernel/byterun
-ifndef CUSTOM
-	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)/kernel/byterun
+	$(HIDE)$(INSTALLSH) $(VO_OUT_DIR) $(COQLIBINSTALLDEST) $(VFILES)
+	$(HIDE)$(INSTALLSH) $(VO_OUT_DIR) $(COQLIBINSTALLDEST) $(GLOBFILES)
+	$(HIDE)$(MKDIR) $(COQLIBINSTALLDEST)/user-contrib
+
+# TODO
+ifeq ($(HASCOQIDE),no)
+install-coqide:
+else
+install-coqide: $(BCONTEXT)/coqide.install
+	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide
 endif
-ifeq ($(BEST),opt)
-	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)/kernel/byterun
-	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
-endif
-# csdpcert is not meant to be directly called by the user; we install
-# it with libraries
-	-$(MKDIR) $(FULLCOQLIB)/plugins/micromega
-	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/plugins/micromega
-	rm -f $(FULLCOQLIB)/revision
-	-$(INSTALLLIB) revision $(FULLCOQLIB)
-
-install-coq-info: install-coq-manpages install-latex
-
-MANPAGES:=man/coq-tex.1 man/coqdep.1 \
-	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
-	man/coqwc.1 man/coqdoc.1 man/coqide.1 \
-	man/coq_makefile.1 man/coqchk.1
-
-install-coq-manpages:
-	$(MKDIR) $(FULLMANDIR)/man1
-	$(INSTALLLIB) $(MANPAGES) $(FULLMANDIR)/man1
-
-# command to update TeX' kpathsea database
-#UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
-
-install-latex:
-	$(MKDIR) $(FULLCOQDOCDIR)
-	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)
-#	-$(UPDATETEX)
-
-install-meta: META.coq
-	$(INSTALLLIB) META.coq $(FULLCOQLIB)/META
 
 # For emacs:
 # Local Variables:

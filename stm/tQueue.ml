@@ -27,21 +27,23 @@ end = struct
   let create () = ref ([],sort_timestamp)
   let is_empty t = fst !t = []
   let exists p t = List.exists (fun (_,x) -> p x) (fst !t)
-  let pop ?(picky=(fun _ -> true)) ({ contents = (l, rel) } as t) =
+  let pop ?(picky=(fun _ -> true)) t =
+    let (l, rel) = !t in
     let rec aux acc = function
       | [] -> raise Queue.Empty
       | (_,x) :: xs when picky x -> t := (List.rev acc @ xs, rel); x
       | (_,x) as hd :: xs -> aux (hd :: acc) xs in
     aux [] l
-  let push ({ contents = (xs, rel) } as t) x =
+  let push t x =
+    let (xs, rel) = !t in
     incr age;
     (* re-roting the whole list is not the most efficient way... *)
     t := (List.sort rel (xs @ [!age,x]), rel)
-  let clear ({ contents = (l, rel) } as t) = t := ([], rel)
-  let set_rel rel ({ contents = (xs, _) } as t) =
+  let clear t = t := ([], snd !t)
+  let set_rel rel t =
     let rel (_,x) (_,y) = rel x y in
-    t := (List.sort rel xs, rel)
-  let length ({ contents = (l, _) }) = List.length l
+    t := (List.sort rel (fst !t), rel)
+  let length t = List.length (fst !t)
 end
 
 type 'a t = {
@@ -64,92 +66,85 @@ let create () = {
   release = false;
 }
 
-let pop ?(picky=(fun _ -> true)) ?(destroy=ref false)
-  ({ queue = q; lock = m; cond = c; cond_waiting = cn } as tq)
-=
-  Mutex.lock m;
-  if tq.release then (Mutex.unlock m; raise BeingDestroyed);
-  while not (PriorityQueue.exists picky q || !destroy) do
-    tq.nwaiting <- tq.nwaiting + 1;
-    Condition.broadcast cn;
-    Condition.wait c m;
-    tq.nwaiting <- tq.nwaiting - 1;
-    if tq.release || !destroy then (Mutex.unlock m; raise BeingDestroyed)
-  done;
-  if !destroy then (Mutex.unlock m; raise BeingDestroyed);
-  let x = PriorityQueue.pop ~picky q in
-  Condition.signal c;
-  Condition.signal cn;
-  Mutex.unlock m;
-  x
+let pop ?(picky=(fun _ -> true)) ?(destroy=ref false) tq =
+  let { queue = q; lock = m; cond = c; cond_waiting = cn } = tq in
+  CThread.with_lock m ~scope:(fun () ->
+      if tq.release then raise BeingDestroyed;
+      while not (PriorityQueue.exists picky q || !destroy) do
+        tq.nwaiting <- tq.nwaiting + 1;
+        Condition.broadcast cn;
+        Condition.wait c m;
+        tq.nwaiting <- tq.nwaiting - 1;
+        if tq.release || !destroy then raise BeingDestroyed
+      done;
+      if !destroy then raise BeingDestroyed;
+      let x = PriorityQueue.pop ~picky q in
+      Condition.signal c;
+      Condition.signal cn;
+      x)
 
-let broadcast { lock = m; cond = c } =
-  Mutex.lock m;
-  Condition.broadcast c;
-  Mutex.unlock m
+let broadcast tq =
+  let { lock = m; cond = c } = tq in
+  CThread.with_lock m ~scope:(fun () ->
+      Condition.broadcast c)
 
-let push { queue = q; lock = m; cond = c; release } x =
+let push tq x =
+  let { queue = q; lock = m; cond = c; release } = tq in
   if release then CErrors.anomaly(Pp.str
     "TQueue.push while being destroyed! Only 1 producer/destroyer allowed.");
-  Mutex.lock m;
-  PriorityQueue.push q x;
-  Condition.broadcast c;
-  Mutex.unlock m
+  CThread.with_lock m ~scope:(fun () ->
+      PriorityQueue.push q x;
+      Condition.broadcast c)
 
-let length { queue = q; lock = m } =
-  Mutex.lock m;
-  let n = PriorityQueue.length q in
-  Mutex.unlock m;
-  n
+let length tq =
+  let { queue = q; lock = m } = tq in
+  CThread.with_lock m ~scope:(fun () ->
+      PriorityQueue.length q)
 
-let clear { queue = q; lock = m; cond = c } =
-  Mutex.lock m;
-  PriorityQueue.clear q;
-  Mutex.unlock m
+let clear tq =
+  let { queue = q; lock = m; cond = c } = tq in
+  CThread.with_lock m ~scope:(fun () ->
+      PriorityQueue.clear q)
 
-let clear_saving { queue = q; lock = m; cond = c } f =
-  Mutex.lock m;
+let clear_saving tq f =
+  let { queue = q; lock = m; cond = c } = tq in
   let saved = ref [] in
-  while not (PriorityQueue.is_empty q) do
-    let elem = PriorityQueue.pop q in
-    match f elem with
-    | Some x -> saved := x :: !saved
-    | None -> ()
-  done;
-  Mutex.unlock m;
+  CThread.with_lock m ~scope:(fun () ->
+      while not (PriorityQueue.is_empty q) do
+        let elem = PriorityQueue.pop q in
+        match f elem with
+        | Some x -> saved := x :: !saved
+        | None -> ()
+      done);
   List.rev !saved
 
-let is_empty { queue = q } = PriorityQueue.is_empty q
+let is_empty tq = PriorityQueue.is_empty tq.queue
 
 let destroy tq =
   tq.release <- true;
   while tq.nwaiting > 0 do
-    Mutex.lock tq.lock;
-    Condition.broadcast tq.cond;
-    Mutex.unlock tq.lock;
+    CThread.with_lock tq.lock ~scope:(fun () ->
+        Condition.broadcast tq.cond)
   done;
   tq.release <- false
 
 let wait_until_n_are_waiting_and_queue_empty j tq =
-  Mutex.lock tq.lock;
-  while not (PriorityQueue.is_empty tq.queue) || tq.nwaiting < j do
-    Condition.wait tq.cond_waiting tq.lock
-  done;
-  Mutex.unlock tq.lock
+  CThread.with_lock tq.lock ~scope:(fun () ->
+      while not (PriorityQueue.is_empty tq.queue) || tq.nwaiting < j do
+        Condition.wait tq.cond_waiting tq.lock
+      done)
 
 let wait_until_n_are_waiting_then_snapshot j tq =
   let l = ref [] in
-  Mutex.lock tq.lock;
-  while not (PriorityQueue.is_empty tq.queue) do
-    l := PriorityQueue.pop tq.queue :: !l
-  done;
-  while tq.nwaiting < j do Condition.wait tq.cond_waiting tq.lock done;
-  List.iter (PriorityQueue.push tq.queue) (List.rev !l);
-  if !l <> [] then Condition.broadcast tq.cond;
-  Mutex.unlock tq.lock;
+  CThread.with_lock tq.lock ~scope:(fun () ->
+      while not (PriorityQueue.is_empty tq.queue) do
+        l := PriorityQueue.pop tq.queue :: !l
+      done;
+      while tq.nwaiting < j do Condition.wait tq.cond_waiting tq.lock done;
+      List.iter (PriorityQueue.push tq.queue) (List.rev !l);
+      if !l <> [] then Condition.broadcast tq.cond);
   List.rev !l
 
 let set_order tq rel =
-  Mutex.lock tq.lock;
-  PriorityQueue.set_rel rel tq.queue;
-  Mutex.unlock tq.lock
+  CThread.with_lock tq.lock ~scope:(fun () ->
+      PriorityQueue.set_rel rel tq.queue)

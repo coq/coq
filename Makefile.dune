@@ -3,7 +3,7 @@
 
 .PHONY: help help-install states world watch check    # Main developer targets
 .PHONY: refman-html refman-pdf stdlib-html apidoc     # Documentation targets
-.PHONY: test-suite
+.PHONY: test-suite dev-targets
 .PHONY: fmt ocheck ireport clean                      # Maintenance targets
 .PHONY: voboot release install                        # Added just not to break old scripts
 
@@ -18,7 +18,7 @@ help:
 	@echo "  - world:  build all public binaries and libraries"
 	@echo "  - watch:  build all public binaries and libraries [continuous build]"
 	@echo "  - check:  build all ML files as fast as possible"
-	@echo "  - test-suite: run Coq's test suite"
+	@echo "  - test-suite: run Coq's test suite [env NJOBS=N to set job parallelism]"
 	@echo ""
 	@echo "  Note: running ./configure is not recommended,"
 	@echo "        see dev/doc/build-system.dune.md for more info"
@@ -46,32 +46,40 @@ help:
 	@echo "  - help:    show this message"
 	@echo ""
 	@echo " Type 'make help-install' for installation instructions"
+	@echo " Type 'make dev-targets' for more developer targets"
+
+dev-targets:
+	@echo ""
+	@echo "In order to get a functional Coq install layout, the world target is required."
+	@echo "However, This is often inconvenient for developers, due to the large amount of"
+	@echo "files that world will build. We provide some useful subtargets here:"
+	@echo ""
+	@echo "  - world-prelude: build Coq's prelude and setup a functional layout on _build/install"
 
 help-install:
 	@echo ""
 	@echo "The Dune-based Coq build is split in packages; see Dune and dev/doc"
 	@echo "documentation for more details. A quick install of Coq alone can done with"
 	@echo ""
-	@echo " ./configure -prefix <install_prefix> && dune build -p coq && dune install -p coq"
+	@echo " $ ./configure -prefix <install_prefix>"
+	@echo " $ dune build -p coq-core,coq-stdlib && dune install coq-core coq-stdlib"
 	@echo ""
 	@echo " Provided opam/dune packages are:"
 	@echo ""
-	@echo "  - coq: base Coq package, toplevel compilers, tools, stdlib, no GTK"
+	@echo "  - coq-core: base Coq package, toplevel compilers, plugins, tools, no stdlib, no GTK"
+	@echo "  - coq-stdlib: Coq's standard library"
 	@echo "  - coqide-server: XML protocol language server"
 	@echo "  - coqide: CoqIDE gtk application"
+	@echo "  - coq: meta package depending on coq-core coq-stdlib"
 	@echo ""
 	@echo " To build a package, you can use:"
 	@echo ""
 	@echo "  - 'dune build package.install' : build package in developer mode"
 	@echo "  - 'dune build -p package' : build package in release mode"
 	@echo ""
-	@echo " Packages _must_ be installed using release mode, to install a package use: "
+	@echo " Packages _must_ be installed only if built using release mode, to install a package use: "
 	@echo ""
-	@echo "  - 'dune install -p package'"
-	@echo ""
-	@echo " Example: "
-	@echo ""
-	@echo "  - 'dune build -p coq,coqide-server,coqide && dune install -p coq coqide-server coqide'"
+	@echo "  - 'dune install $install_opts package'"
 	@echo ""
 	@echo " Note that building a package in release mode ignores other packages present in"
 	@echo " the worktree. See Dune documentation for more information."
@@ -82,7 +90,7 @@ voboot:
 states:
 	dune build $(DUNEOPT) dev/shim/coqtop-prelude
 
-NONDOC_INSTALL_TARGETS:=coq.install coqide-server.install coqide.install
+NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coqide.install
 
 world:
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
@@ -97,10 +105,10 @@ test-suite:
 	dune runtest --no-buffer $(DUNEOPT)
 
 refman-html:
-	dune build @refman-html
+	dune build --no-buffer @refman-html
 
 refman-pdf:
-	dune build @refman-pdf
+	dune build --no-buffer @refman-pdf
 
 stdlib-html:
 	dune build @stdlib-html
@@ -114,8 +122,8 @@ release:
 
 # We define this target as to override Make's built-in one
 install:
-	@echo "To install Coq using dune, use 'dune install -p PACKAGE' where"
-	@echo "PACKAGE is any of the packages defined by opam files in the root dira"
+	@echo "To install Coq using dune, use 'dune build -p P && dune install P'"
+	@echo "where P is any of the packages defined by opam files in the root dir"
 
 fmt:
 	dune build @fmt --auto-promote
@@ -129,6 +137,46 @@ ireport:
 
 clean:
 	dune clean
+
+# ci-* targets
+
+CI_PURE_DUNE:=1
+export CI_PURE_DUNE
+include Makefile.ci
+
+# Custom targets to create subsets of the world target but with less
+# compiled files. This is desired when we want to have our Coq Dune
+# build with Coq developments that are not dunerized and thus still
+# expect an install layout with a working Coq setup, but smaller than
+# world.
+#
+# Unfortunately, Dune still lacks the capability to refer to install
+# targets in rules, see https://github.com/ocaml/dune/issues/3192 ;
+# thus we can't simply yet use `%{pkg:coq:theories/Arith/Arith.vo` to
+# have the rule install the target, we thus imitate such behavior
+# using make as a helper.
+
+.PHONY: world-prelude
+
+# We could use more refined rules like below, however it is not really
+# worth it as in general ci-packages want everything in coq-core
+CORE_TOOLS=coq-core.install
+
+# Exe suffix, likely needed on windows
+# EXE=
+# CORE_TOOLS=coqdep coqc coq_makefile coqdoc
+# CORE_TOOLS_PATH=$(addsuffix, $(EXE), $(addprefix _build/install/default/bin/, $(CORE_TOOLS)))
+# CORE_FILES=_build/install/default/lib/coq-core/tools/CoqMakefile.in
+
+# Would be nice to determine a pattern for this, but it is tricky.
+# PLUGIN_FILES=$(shell ls plugins/*/*.mllib)
+# PLUGIN_FILES_PATH=$(addprefix _build/install/default/lib/coq-core/, $(PLUGIN_FILES:.mllib=.cmxs))
+
+PRELUDE_FILES=$(wildcard theories/Init/*.v)
+PRELUDE_FILES_PATH=$(addprefix _build/install/default/lib/coq/, $(PRELUDE_FILES:.v=.vo))
+
+world-prelude:
+	@dune build $(CORE_TOOLS) $(PRELUDE_FILES_PATH)
 
 # Other common dev targets:
 #

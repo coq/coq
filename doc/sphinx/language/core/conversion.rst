@@ -1,11 +1,83 @@
 .. _Conversion-rules:
 
 Conversion rules
---------------------
+----------------
 
-In |Cic|, there is an internal reduction mechanism. In particular, it
-can decide if two programs are *intentionally* equal (one says
-:term:`convertible`). Convertibility is described in this section.
+Coq has conversion rules that can be used to determine if two
+terms are equal by definition in |CiC|, or :term:`convertible`.
+Conversion rules consist of reduction rules and expansion rules.
+Equality is determined by
+converting both terms to a normal form, then verifying they are syntactically
+equal (ignoring differences in the names of bound variables by
+:term:`alpha-conversion <alpha-convertible>`).
+
+.. seealso:: :ref:`applyingconversionrules`, which describes tactics that apply these conversion rules.
+
+:gdef:`Reductions <reduction>` convert terms to something that is incrementally
+closer to its normal form.  For example, :term:`zeta-reduction` removes
+:n:`let @ident := @term__1 in @term__2` constructs from a term by replacing
+:n:`@ident` with :n:`@term__1` wherever :n:`@ident` appears in :n:`@term__2`.
+The resulting term may be longer or shorter than the original.
+
+.. coqtop:: all
+
+   Eval cbv zeta in let i := 1 in i + i.
+
+:gdef:`Expansions <expansion>` are reductions applied in the opposite direction,
+for example expanding `2 + 2` to `let i := 2 in i + i`.  While applying
+reductions gives a unique result, the associated
+expansion may not be unique.  For example, `2 + 2` could also be
+expanded to `let i := 2 in i + 2`.  Reductions that have a unique inverse
+expansion are also referred to as :gdef:`contractions <contraction>`.
+
+The normal form is defined as the result of applying a particular
+set of conversion rules (beta-, delta-, iota- and zeta-reduction and eta-expansion)
+repeatedly until it's no longer possible to apply any of them.
+
+Sometimes the result of a reduction tactic will be a simple value, for example reducing
+`2*3+4` with `cbv beta delta iota` to `10`, which requires applying several
+reduction rules repeatedly.  In other cases, it may yield an expression containing
+variables, axioms or opaque contants that can't be reduced.
+
+The useful conversion rules are shown below.  All of them except for eta-expansion
+can be applied with conversion tactics such as :tacn:`cbv`:
+
+   .. list-table::
+      :header-rows: 1
+
+      * - Conversion name
+        - Description
+
+      * - beta-reduction
+        - eliminates `fun`
+
+      * - delta-reduction
+        - replaces a defined variable or constant with its definition
+
+      * - zeta-reduction
+        - eliminates `let`
+
+      * - eta-expansion
+        - replaces a term `f` of type `forall a : A, B` with `fun x : A => f x`
+
+      * - match-reduction
+        - eliminates `match`
+
+      * - fix-reduction
+        - replaces a `fix` with a :term:`beta-redex`;
+          recursive calls to the symbol are replaced with the `fix` term
+
+      * - cofix-reduction
+        - replaces a `cofix` with a :term:`beta-redex`;
+          recursive calls to the symbol are replaced with the `cofix` term
+
+      * - iota-reduction
+        - match-, fix- and cofix-reduction together
+
+:ref:`applyingconversionrules`
+describes tactics that only apply conversion rules.
+(Other tactics may use conversion rules in addition
+to other changes to the proof state.)
 
 α-conversion
 ~~~~~~~~~~~~
@@ -14,56 +86,44 @@ Two terms are :gdef:`α-convertible <alpha-convertible>` if they are syntactical
 equal ignoring differences in the names of variables bound within the expression.
 For example `forall x, x + 0 = x` is α-convertible with `forall y, y + 0 = y`.
 
-.. _beta-reduction:
-
 β-reduction
 ~~~~~~~~~~~
 
-We want to be able to identify some terms as we can identify the
-application of a function to a given argument with its result. For
-instance the identity function over a given type :math:`T` can be written
-:math:`λx:T.~x`. In any global environment :math:`E` and local context
-:math:`Γ`, we want to identify any object :math:`a` (of type
-:math:`T`) with the application :math:`((λ x:T.~x)~a)`.  We define for
-this a *reduction* (or a *conversion*) rule we call :math:`β`:
+:gdef:`β-reduction <beta-reduction>` reduces a :gdef:`beta-redex`, which is
+a term in the form `(fun x => t) u`.  (Beta-redex
+is short for "beta-reducible expression", a term from lambda calculus.
+See `Beta reduction <https://en.wikipedia.org/wiki/Beta_normal_form#Beta_reduction>`_
+for more background.)
 
-.. math::
+Formally, in any :term:`global environment` :math:`E` and :term:`local context`
+:math:`Γ`, the beta-reduction rule is:
 
-        E[Γ] ⊢ ((λx:T.~t)~u)~\triangleright_β~\subst{t}{x}{u}
+.. inference:: Beta
+
+   --------------
+   E[Γ] ⊢ ((λx:T.~t)~u)~\triangleright_β~\subst{t}{x}{u}
 
 We say that :math:`\subst{t}{x}{u}` is the *β-contraction* of
 :math:`((λx:T.~t)~u)` and, conversely, that :math:`((λ x:T.~t)~u)` is the
 *β-expansion* of :math:`\subst{t}{x}{u}`.
 
-According to β-reduction, terms of the *Calculus of Inductive
-Constructions* enjoy some fundamental properties such as confluence,
+.. todo: :term:`Calculus of Inductive Constructions` fails to build in CI for some reason :-()
+
+Terms of the *Calculus of Inductive Constructions*
+enjoy some fundamental properties such as confluence,
 strong normalization, subject reduction. These results are
 theoretically of great importance but we will not detail them here and
 refer the interested reader to :cite:`Coq85`.
 
-
-.. _iota-reduction:
-
-ι-reduction
-~~~~~~~~~~~
-
-A specific conversion rule is associated to the inductive objects in
-the global environment. We shall give later on (see Section
-:ref:`Well-formed-inductive-definitions`) the precise rules but it
-just says that a destructor applied to an object built from a
-constructor behaves as expected. This reduction is called ι-reduction
-and is more precisely studied in :cite:`Moh93,Wer94`.
-
-
-.. _delta-reduction:
+.. _delta-reduction-sect:
 
 δ-reduction
 ~~~~~~~~~~~
 
-We may have variables defined in local contexts or constants defined
-in the global environment. It is legal to identify such a reference
-with its value, that is to expand (or unfold) it into its value. This
-reduction is called δ-reduction and shows as follows.
+:gdef:`δ-reduction <delta-reduction>` replaces variables defined in
+:term:`local contexts <local context>`
+or :term:`constants <constant>` defined in the :term:`global environment` with their values.
+:gdef:`Unfolding <unfold>` means to replace a constant by its definition. Formally, this is:
 
 .. inference:: Delta-Local
 
@@ -79,16 +139,29 @@ reduction is called δ-reduction and shows as follows.
    --------------
    E[Γ] ⊢ c~\triangleright_δ~t
 
+:term:`Delta-reduction <delta-reduction>` only unfolds :term:`constants <constant>` that are
+marked :gdef:`transparent`.  :gdef:`Opaque <opaque>` is the opposite of
+transparent; :term:`delta-reduction` doesn't unfold opaque constants.
 
-.. _zeta-reduction:
+ι-reduction
+~~~~~~~~~~~
+
+A specific conversion rule is associated with the inductive objects in
+the global environment. We shall give later on (see Section
+:ref:`Well-formed-inductive-definitions`) the precise rules but it
+just says that a destructor applied to an object built from a
+constructor behaves as expected. This reduction is called
+:gdef:`ι-reduction <iota-reduction>`
+and is more precisely studied in :cite:`Moh93,Wer94`.
 
 ζ-reduction
 ~~~~~~~~~~~
 
-|Coq| allows also to remove local definitions occurring in terms by
-replacing the defined variable by its value. The declaration being
-destroyed, this reduction differs from δ-reduction. It is called
-ζ-reduction and shows as follows.
+:gdef:`ζ-reduction <zeta-reduction>` removes :ref:`let-in definitions <let-in>`
+in terms by
+replacing the defined variable by its value. One way this reduction differs from
+δ-reduction is that the declaration is removed from the term entirely.
+Formally, this is:
 
 .. inference:: Zeta
 
@@ -99,12 +172,12 @@ destroyed, this reduction differs from δ-reduction. It is called
    E[Γ] ⊢ \letin{x}{u:U}{t}~\triangleright_ζ~\subst{t}{x}{u}
 
 
-.. _eta-expansion:
+.. _eta-expansion-sect:
 
 η-expansion
 ~~~~~~~~~~~
 
-Another important concept is η-expansion. It is legal to identify any
+Another important concept is :gdef:`η-expansion <eta-expansion>`. It is legal to identify any
 term :math:`t` of functional type :math:`∀ x:T,~U` with its so-called η-expansion
 
 .. math::
@@ -120,7 +193,7 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
    .. math::
       λ x:T.~(t~x)~\not\triangleright_η~t
 
-   This is because, in general, the type of :math:`t` need not to be convertible
+   This is because, in general, the type of :math:`t` need not be convertible
    to the type of :math:`λ x:T.~(t~x)`. E.g., if we take :math:`f` such that:
 
    .. math::
@@ -138,6 +211,30 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
 
    because the type of the reduced term :math:`∀ x:\Type(2),~\Type(1)` would not be
    convertible to the type of the original term :math:`∀ x:\Type(1),~\Type(1)`.
+
+Examples
+~~~~~~~~
+
+   .. example:: Simple delta, fix, beta and match reductions
+
+      ``+`` is a :ref:`notation <Notations>` for ``Nat.add``, which is defined
+      with a :cmd:`Fixpoint`.
+
+      .. coqtop:: all abort
+
+         Print Nat.add.
+         Goal 1 + 1 = 2.
+         cbv delta.
+         cbv fix.
+         cbv beta.
+         cbv match.
+
+      The term can be fully reduced with `cbv`:
+
+      .. coqtop:: all abort
+
+         Goal 1 + 1 = 2.
+         cbv.
 
 .. _proof-irrelevance:
 
@@ -159,7 +256,8 @@ relation :math:`t` reduces to :math:`u` in the global environment
 reductions β, δ, ι or ζ.
 
 We say that two terms :math:`t_1` and :math:`t_2` are
-*βδιζη-convertible*, or simply :gdef:`convertible`, or *equivalent*, in the
+*βδιζη-convertible*, or simply :gdef:`convertible`, or
+:term:`definitionally equal <definitional equality>`, in the
 global environment :math:`E` and local context :math:`Γ` iff there
 exist terms :math:`u_1` and :math:`u_2` such that :math:`E[Γ] ⊢ t_1 \triangleright
 … \triangleright u_1` and :math:`E[Γ] ⊢ t_2 \triangleright … \triangleright u_2` and either :math:`u_1` and

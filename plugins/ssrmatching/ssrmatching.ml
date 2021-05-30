@@ -22,7 +22,6 @@ open Vars
 open Libnames
 open Tactics
 open Termops
-open Recordops
 open Tacmach
 open Glob_term
 open Util
@@ -36,6 +35,8 @@ open Namegen
 open Evar_kinds
 open Constrexpr
 open Constrexpr_ops
+
+type ssrtermkind = | InParens | WithAt | NoFlag | Cpattern
 
 let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
 let loc_error loc msg = CErrors.user_err ?loc ~hdr:msg (str msg)
@@ -78,18 +79,22 @@ let skip_wschars s =
   let rec loop i = match s.[i] with '\n'..' ' -> loop (i + 1) | _ -> i in loop
 (* We also guard characters that might interfere with the ssreflect   *)
 (* tactic syntax.                                                     *)
-let guard_term ch1 s i = match s.[i] with
+let guard_term kind s i = match s.[i] with
   | '(' -> false
   | '{' | '/' | '=' -> true
-  | _ -> ch1 = '('
+  | _ -> kind = InParens
 (* The call 'guard s i' should return true if the contents of s *)
 (* starting at i need bracketing to avoid ambiguities.          *)
 let pr_guarded guard prc c =
   let s = Pp.string_of_ppcmds (prc c) ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 (* More sensible names for constr printers *)
-let prl_glob_constr c = pr_lglob_constr_env (Global.env ()) c
-let pr_glob_constr c = pr_glob_constr_env (Global.env ()) c
+let with_global_env_evm f x =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  f env sigma x
+let prl_glob_constr = with_global_env_evm pr_lglob_constr_env
+let pr_glob_constr = with_global_env_evm pr_glob_constr_env
 let prl_constr_expr = pr_lconstr_expr
 let pr_constr_expr = pr_constr_expr
 let prl_glob_constr_and_expr env sigma = function
@@ -98,14 +103,6 @@ let prl_glob_constr_and_expr env sigma = function
 let pr_glob_constr_and_expr env sigma = function
   | _, Some c -> pr_constr_expr env sigma c
   | c, None -> pr_glob_constr c
-let pr_term (k, c, _) =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  pr_guarded (guard_term k) (pr_glob_constr_and_expr env sigma) c
-let prl_term (k, c, _) =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  pr_guarded (guard_term k) (prl_glob_constr_and_expr env sigma) c
 
 (** Adding a new uninterpreted generic argument type *)
 let add_genarg tag pr =
@@ -148,28 +145,6 @@ let mkRHole = DAst.make @@ GHole (InternalHole, IntroAnonymous, None)
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, dC rt)
 let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
-
-(* ssrterm conbinators *)
-let combineCG t1 t2 f g =
- let mk_ist i1 i2 = match i1, i2 with
- | None, Some i -> Some i
- | Some i, None -> Some i
- | None, None -> None
- | Some i, Some j when i == j -> Some i
- | _ -> CErrors.anomaly (Pp.str "combineCG: different ist") in
- match t1, t2 with
- | (x, (t1, None), i1), (_, (t2, None), i2) ->
-      x, (g t1 t2, None), mk_ist i1 i2
- | (x, (_, Some t1), i1), (_, (_, Some t2), i2) ->
-      x, (mkRHole, Some (f t1 t2)), mk_ist i1 i2
- | _, (_, (_, None), _) -> CErrors.anomaly (str"have: mixed C-G constr.")
- | _ -> CErrors.anomaly (str"have: mixed G-C constr.")
-let loc_ofCG = function
- | (_, (s, None), _) -> Glob_ops.loc_of_glob_constr s
- | (_, (_, Some s), _) -> Constrexpr_ops.constr_loc s
-
-let mk_term k c ist = k, (mkRHole, Some c), ist
-let mk_lterm = mk_term ' '
 
 let nf_evar sigma c =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr c))
@@ -309,7 +284,8 @@ let iter_constr_LR f c = match kind c with
   | Prod (_, t, b) | Lambda (_, t, b)  -> f t; f b
   | LetIn (_, v, t, b) -> f v; f t; f b
   | App (cf, a) -> f cf; Array.iter f a
-  | Case (_, p, iv, v, b) -> f v; iter_invert f iv; f p; Array.iter f b
+  | Case (_, _, pms, (_, p), iv, v, b) ->
+    f v; Array.iter f pms; f p; iter_invert f iv; Array.iter (fun (_, c) -> f c) b
   | Fix (_, (_, t, b)) | CoFix (_, (_, t, b)) ->
     for i = 0 to Array.length t - 1 do f t.(i); f b.(i) done
   | Proj(_,a) -> f a
@@ -356,7 +332,8 @@ type tpattern = {
 let all_ok _ _ = true
 
 let proj_nparams c =
-  try 1 + Recordops.find_projection_nparams (GlobRef.ConstRef c) with _ -> 0
+  try 1 + Structures.Structure.projection_nparams c
+  with Not_found -> 0
 
 let isRigid c = match kind c with
   | Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _ -> true
@@ -452,9 +429,13 @@ let ungen_upat lhs (sigma, uc, t) u =
   | _ -> KpatRigid in
   sigma, uc, {u with up_k = k; up_FO = lhs; up_f = f; up_a = a; up_t = t}
 
-let nb_cs_proj_args pc f u =
+let nb_cs_proj_args ise pc f u =
+  let open Structures in
+  let open ValuePattern in
   let na k =
-    List.length (snd (lookup_canonical_conversion (GlobRef.ConstRef pc, k))).o_TCOMPS in
+    let open CanonicalSolution in
+    let _, { cvalue_arguments } = find (Global.env()) ise (GlobRef.ConstRef pc, k) in
+    List.length cvalue_arguments in
   let nargs_of_proj t = match kind t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
@@ -464,7 +445,7 @@ let nb_cs_proj_args pc f u =
   | Prod _ -> na Prod_cs
   | Sort s -> na (Sort_cs (Sorts.family s))
   | Const (c',_) when Constant.CanOrd.equal c' pc -> nargs_of_proj u.up_f
-  | Proj (c',_) when Constant.CanOrd.equal (Projection.constant c') pc -> nargs_of_proj u.up_f
+  | Proj (c',_) when Constant.CanOrd.equal (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef f))
   | _ -> -1
   with Not_found -> -1
@@ -490,7 +471,7 @@ let splay_app ise =
   | Cast _ | Evar _ -> loop c [| |]
   | _ -> c, [| |]
 
-let filter_upat i0 f n u fpats =
+let filter_upat ise i0 f n u fpats =
   let na = Array.length u.up_a in
   if n < na then fpats else
   let np = match u.up_k with
@@ -502,7 +483,7 @@ let filter_upat i0 f n u fpats =
   | KpatRigid when isRigid f -> na
   | KpatFlex -> na
   | KpatProj pc ->
-    let np = na + nb_cs_proj_args pc f u in if n < np then -1 else np
+    let np = na + nb_cs_proj_args ise pc f u in if n < np then -1 else np
   | _ -> -1 in
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
@@ -591,7 +572,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
  let failed_because_of_TC = ref false in
  let rec aux upats env sigma0 ise c =
   let f, a = splay_app ise c in let i0 = ref (-1) in
-  let fpats = List.fold_right (filter_upat i0 f (Array.length a)) upats [] in
+  let fpats = List.fold_right (filter_upat ise i0 f (Array.length a)) upats [] in
   while !i0 >= 0 do
     let i = !i0 in i0 := -1;
     let one_match (u, np) =
@@ -773,7 +754,7 @@ let rec uniquize = function
         EConstr.push_rel ctx_item env, h' + 1 in
       let self acc c = EConstr.of_constr (subst_loop acc (EConstr.Unsafe.to_constr c)) in
       let f = EConstr.of_constr f in
-      let f' = map_constr_with_binders_left_to_right sigma inc_h self acc f in
+      let f' = map_constr_with_binders_left_to_right env sigma inc_h self acc f in
       let f' = EConstr.Unsafe.to_constr f' in
       mkApp (f', Array.map_left (subst_loop acc) a) in
   subst_loop (env,h) c) : find_P),
@@ -799,25 +780,15 @@ type ('ident, 'term) ssrpattern =
   | E_In_X_In_T of 'term * 'ident * 'term
   | E_As_X_In_T of 'term * 'ident * 'term
 
-let pr_pattern = function
-  | T t -> prl_term t
-  | In_T t -> str "in " ++ prl_term t
-  | X_In_T (x,t) -> prl_term x ++ str " in " ++ prl_term t
-  | In_X_In_T (x,t) -> str "in " ++ prl_term x ++ str " in " ++ prl_term t
+let pr_pattern pr_ident pr_term = function
+  | T t -> pr_term t
+  | In_T t -> str "in " ++ pr_term t
+  | X_In_T (x,t) -> pr_ident x ++ str " in " ++ pr_term t
+  | In_X_In_T (x,t) -> str "in " ++ pr_ident x ++ str " in " ++ pr_term t
   | E_In_X_In_T (e,x,t) ->
-      prl_term e ++ str " in " ++ prl_term x ++ str " in " ++ prl_term t
+      pr_term e ++ str " in " ++ pr_ident x ++ str " in " ++ pr_term t
   | E_As_X_In_T (e,x,t) ->
-      prl_term e ++ str " as " ++ prl_term x ++ str " in " ++ prl_term t
-
-let pr_pattern_w_ids = function
-  | T t -> prl_term t
-  | In_T t -> str "in " ++ prl_term t
-  | X_In_T (x,t) -> pr_id x ++ str " in " ++ prl_term t
-  | In_X_In_T (x,t) -> str "in " ++ pr_id x ++ str " in " ++ prl_term t
-  | E_In_X_In_T (e,x,t) ->
-      prl_term e ++ str " in " ++ pr_id x ++ str " in " ++ prl_term t
-  | E_As_X_In_T (e,x,t) ->
-      prl_term e ++ str " as " ++ pr_id x ++ str " in " ++ prl_term t
+      pr_term e ++ str " as " ++ pr_ident x ++ str " in " ++ pr_term t
 
 let pr_pattern_aux pr_constr = function
   | T t -> pr_constr t
@@ -830,15 +801,52 @@ let pr_pattern_aux pr_constr = function
       pr_constr e ++ str " as " ++ pr_constr x ++ str " in " ++ pr_constr t
 let pp_pattern env (sigma, p) =
   pr_pattern_aux (fun t -> pr_econstr_pat env sigma (pi3 (nf_open_term sigma sigma (EConstr.of_constr t)))) p
+
+type cpattern =
+  { kind : ssrtermkind
+  ; pattern : Genintern.glob_constr_and_expr
+  ; interpretation : Geninterp.interp_sign option }
+
+let pr_term {kind; pattern; _} =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  pr_guarded (guard_term kind) (pr_glob_constr_and_expr env sigma) pattern
+let prl_term {kind; pattern; _} =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  pr_guarded (guard_term kind) (prl_glob_constr_and_expr env sigma) pattern
+
 let pr_cpattern = pr_term
 
-let wit_rpatternty = add_genarg "rpatternty" (fun env sigma -> pr_pattern)
+let pr_pattern_w_ids = pr_pattern pr_id prl_term
+
+let mk_term k c ist = {kind=k; pattern=(mkRHole, Some c); interpretation=ist}
+let mk_lterm = mk_term NoFlag
 
 let glob_ssrterm gs = function
-  | k, (_, Some c), None ->
-      let x = Tacintern.intern_constr gs c in
-      k, (fst x, Some c), None
+  | {kind; pattern=(_, Some c); interpretation=None} ->
+    let x = Tacintern.intern_constr gs c in
+    {kind; pattern=(fst x, Some c); interpretation=None}
   | ct -> ct
+
+(* ssrterm conbinators *)
+let combineCG t1 t2 f g =
+  let mk_ist i1 i2 = match i1, i2 with
+    | None, Some i -> Some i
+    | Some i, None -> Some i
+    | None, None -> None
+    | Some i, Some j when i == j -> Some i
+    | _ -> CErrors.anomaly (Pp.str "combineCG: different ist") in
+  match t1, t2 with
+  | {kind=x; pattern=(t1, None); interpretation=i1}, {pattern=(t2, None); interpretation=i2} ->
+    {kind=x; pattern=(g t1 t2, None); interpretation = mk_ist i1 i2}
+  | {kind=x; pattern=(_, Some t1); interpretation=i1}, {pattern=(_, Some t2); interpretation=i2} ->
+    {kind=x; pattern=(mkRHole, Some (f t1 t2)); interpretation = mk_ist i1 i2}
+  | _, {pattern=(_, None); _} -> CErrors.anomaly (str"have: mixed C-G constr.")
+  | _ -> CErrors.anomaly (str"have: mixed G-C constr.")
+let loc_ofCG = function
+  | {pattern = (s, None); _} -> Glob_ops.loc_of_glob_constr s
+  | {pattern = (_, Some s); _} -> Constrexpr_ops.constr_loc s
 
 (* This piece of code asserts the following notations are reserved *)
 (* Reserved Notation "( a 'in' b )"        (at level 0).           *)
@@ -847,19 +855,19 @@ let glob_ssrterm gs = function
 (* Reserved Notation "( a 'as' b 'in' c )" (at level 0).           *)
 let glob_cpattern gs p =
   pp(lazy(str"globbing pattern: " ++ pr_term p));
-  let glob x = pi2 (glob_ssrterm gs (mk_lterm x None)) in
+  let glob x = (glob_ssrterm gs (mk_lterm x None)).pattern in
   let encode k s l =
     let name = Name (Id.of_string ("_ssrpat_" ^ s)) in
-    k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None), None in
+    {kind=k; pattern=(mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None); interpretation=None} in
   let bind_in t1 t2 =
     let mkCHole = mkCHole ~loc:None in let n = Name (destCVar t1) in
     fst (glob (mkCCast mkCHole (mkCLambda n mkCHole t2))) in
   let check_var t2 = if not (isCVar t2) then
     loc_error (constr_loc t2) "Only identifiers are allowed here" in
   match p with
-  | _, (_, None), _ as x -> x
-  | k, (v, Some t), _ as orig ->
-     if k = 'x' then glob_ssrterm gs ('(', (v, Some t), None) else
+  | {pattern = (_, None); _} as x -> x
+  | {kind=k; pattern=(v, Some t); _} as orig ->
+     if k = Cpattern then glob_ssrterm gs {kind=InParens; pattern=(v, Some t); interpretation=None} else
      match t.CAst.v with
      | CNotation(_,(InConstrEntry,"( _ in _ )"), ([t1; t2], [], [], [])) ->
          (try match glob t1, glob t2 with
@@ -887,8 +895,8 @@ let glob_rpattern s p =
   | E_In_X_In_T(e,x,t) -> E_In_X_In_T (glob_ssrterm s e,x,glob_ssrterm s t)
   | E_As_X_In_T(e,x,t) -> E_As_X_In_T (glob_ssrterm s e,x,glob_ssrterm s t)
 
-let subst_ssrterm s (k, c, ist) =
-  k, Tacsubst.subst_glob_constr_and_expr s c, ist
+let subst_ssrterm s {kind; pattern; interpretation} =
+  {kind; pattern=Tacsubst.subst_glob_constr_and_expr s pattern; interpretation}
 
 let subst_rpattern s = function
   | T t -> T (subst_ssrterm s t)
@@ -898,7 +906,7 @@ let subst_rpattern s = function
   | E_In_X_In_T(e,x,t) -> E_In_X_In_T (subst_ssrterm s e,x,subst_ssrterm s t)
   | E_As_X_In_T(e,x,t) -> E_As_X_In_T (subst_ssrterm s e,x,subst_ssrterm s t)
 
-let interp_ssrterm ist (k,t,_) = k, t, Some ist
+let interp_ssrterm ist {kind; pattern; _} = {kind; pattern; interpretation = Some ist}
 
 let interp_rpattern s = function
   | T t -> T (interp_ssrterm s t)
@@ -906,23 +914,24 @@ let interp_rpattern s = function
   | X_In_T(x,t) -> X_In_T (interp_ssrterm s x,interp_ssrterm s t)
   | In_X_In_T(x,t) -> In_X_In_T (interp_ssrterm s x,interp_ssrterm s t)
   | E_In_X_In_T(e,x,t) ->
-      E_In_X_In_T (interp_ssrterm s e,interp_ssrterm s x,interp_ssrterm s t)
+    E_In_X_In_T (interp_ssrterm s e,interp_ssrterm s x,interp_ssrterm s t)
   | E_As_X_In_T(e,x,t) ->
-      E_As_X_In_T (interp_ssrterm s e,interp_ssrterm s x,interp_ssrterm s t)
+    E_As_X_In_T (interp_ssrterm s e,interp_ssrterm s x,interp_ssrterm s t)
 
 let interp_rpattern0 ist gl t = Tacmach.project gl, interp_rpattern ist t
 
-type cpattern = char * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
-let tag_of_cpattern = pi1
+let tag_of_cpattern p = p.kind
 let loc_of_cpattern = loc_ofCG
-let cpattern_of_term (c, t) ist = c, t, Some ist
 type occ = (bool * int list) option
 
 type rpattern = (cpattern, cpattern) ssrpattern
+let pr_rpattern = pr_pattern pr_cpattern pr_cpattern
+
+let wit_rpatternty = add_genarg "rpatternty" (fun env sigma -> pr_pattern pr_cpattern pr_cpattern)
 
 type pattern = Evd.evar_map * (constr, constr) ssrpattern
 
-let id_of_cpattern (_, (c1, c2), _) =
+let id_of_cpattern {pattern = (c1, c2); _} =
   let open CAst in
   match DAst.get c1, c2 with
   | _, Some { v = CRef (qid, _) } when qualid_is_ident qid ->
@@ -937,12 +946,12 @@ let id_of_Cterm t = match id_of_cpattern t with
 
 let interp_open_constr ist env sigma gc =
   Tacinterp.interp_open_constr ist env sigma gc
-let pf_intern_term env sigma (_, c, ist) = glob_constr ist env sigma c
+let pf_intern_term env sigma {pattern = c; interpretation = ist; _} = glob_constr ist env sigma c
 
 let interp_ssrterm ist gl t = Tacmach.project gl, interp_ssrterm ist t
 
 let interp_term env sigma = function
-  | (_, c, Some ist) ->
+  | {pattern = c; interpretation = Some ist; _} ->
       on_snd EConstr.Unsafe.to_constr (interp_open_constr ist env sigma c)
   | _ -> errorstrm (str"interpreting a term with no ist")
 
@@ -970,17 +979,17 @@ let pr_ist { lfun= lfun } =
 *)
 
 let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
-  pp(lazy(str"interpreting: " ++ pr_pattern red));
+  pp(lazy(str"interpreting: " ++ pr_rpattern red));
   let xInT x y = X_In_T(x,y) and inXInT x y = In_X_In_T(x,y) in
   let inT x = In_T x and eInXInT e x t = E_In_X_In_T(e,x,t) in
   let eAsXInT e x t = E_As_X_In_T(e,x,t) in
-  let mkG ?(k=' ') x ist = k,(x,None), ist in
-  let ist_of (_,_,ist) = ist in
-  let decode (_,_,ist as t) ?reccall f g =
+  let mkG ?(k=NoFlag) x ist = {kind = k; pattern = (x,None); interpretation = ist } in
+  let ist_of x = x.interpretation in
+  let decode ({interpretation=ist; _} as t) ?reccall f g =
     try match DAst.get (pf_intern_term env sigma0 t) with
     | GCast(t,CastConv c) when isGHole t && isGLambda c->
       let (x, c) = destGLambda c in
-      f x (' ',(c,None),ist)
+      f x {kind = NoFlag; pattern = (c,None); interpretation = ist}
     | GVar id
       when Option.has_some ist && let ist = Option.get ist in
            Id.Map.mem id ist.lfun &&
@@ -1023,7 +1032,7 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
       sigma new_evars in
     sigma in
   let red = let rec decode_red = function
-    | T(k,(t,None),ist) ->
+    | T {kind=k; pattern=(t,None); interpretation=ist} ->
       begin match DAst.get t with
       | GCast (c,CastConv t)
         when isGHole c &&
@@ -1054,7 +1063,7 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   let red =
     match redty with
     | None -> red
-    | Some (ty, ist) -> let ty = ' ', ty, Some ist in
+    | Some (ty, ist) -> let ty = {kind=NoFlag; pattern=ty; interpretation = Some ist} in
   match red with
   | T t -> T (combineCG t ty (mkCCast ?loc:(loc_ofCG t)) mkRCast)
   | X_In_T (x,t) ->
@@ -1068,9 +1077,12 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
       E_As_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | red -> red in
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
-  let mkXLetIn ?loc x (a,(g,c),ist) = match c with
-  | Some b -> a,(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b)), ist
-  | None -> a,(DAst.make ?loc @@ GLetIn (x, DAst.make ?loc @@ GHole (BinderType x, IntroAnonymous, None), None, g), None), ist in
+  let mkXLetIn ?loc x {kind; pattern=(g,c); interpretation} = match c with
+  | Some b -> {kind; pattern=(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b)); interpretation}
+  | None -> { kind
+            ; pattern = DAst.make ?loc @@ GLetIn
+                  (x, DAst.make ?loc @@ GHole (BinderType x, IntroAnonymous, None), None, g), None
+            ; interpretation} in
   match red with
   | T t -> let sigma, t = interp_term env sigma0 t in sigma, T t
   | In_T t -> let sigma, t = interp_term env sigma0 t in sigma, In_T t
@@ -1251,15 +1263,15 @@ let pf_fill_occ_term gl occ t =
   cl, t
 
 let cpattern_of_id id =
-  ' ', (DAst.make @@ GRef (GlobRef.VarRef  id, None), None), Some Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })
+  { kind= NoFlag
+  ; pattern = DAst.make @@ GRef (GlobRef.VarRef  id, None), None
+  ; interpretation = Some Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })}
 
-let is_wildcard ((_, (l, r), _) : cpattern) : bool = match DAst.get l, r with
+let is_wildcard ({pattern = (l, r); _} : cpattern) : bool = match DAst.get l, r with
   | _, Some { CAst.v = CHole _ } | GHole _, None -> true
   | _ -> false
 
 (* "ssrpattern" *)
-
-let pr_rpattern = pr_pattern
 
 let pf_merge_uc uc gl =
   re_sig (sig_it gl) (Evd.merge_universe_context (project gl) uc)
@@ -1300,8 +1312,8 @@ let () =
   let name = { mltac_plugin = "ssrmatching_plugin"; mltac_tactic = "ssrpattern"; } in
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
-    TacFun ([Name (Id.of_string "pattern")],
-      TacML (CAst.make ({ mltac_name = name; mltac_index = 0 }, []))) in
+    CAst.make (TacFun ([Name (Id.of_string "pattern")],
+      CAst.make (TacML ({ mltac_name = name; mltac_index = 0 }, [])))) in
   let obj () =
     Tacenv.register_ltac true false (Id.of_string "ssrpattern") tac in
   Mltop.declare_cache_obj obj "ssrmatching_plugin"

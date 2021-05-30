@@ -8,15 +8,20 @@ Primitive Integers
 
 The language of terms features 63-bit machine integers as values. The type of
 such a value is *axiomatized*; it is declared through the following sentence
-(excerpt from the :g:`Int63` module):
+(excerpt from the :g:`PrimInt63` module):
 
 .. coqdoc::
 
    Primitive int := #int63_type.
 
-This type is equipped with a few operators, that must be similarly declared.
-For instance, equality of two primitive integers can be decided using the :g:`Int63.eqb` function,
-declared and specified as follows:
+This type can be understood as representing either unsigned or signed integers,
+depending on which module is imported or, more generally, which scope is open.
+:g:`Int63` and :g:`int63_scope` refer to the unsigned version, while :g:`Sint63`
+and :g:`sint63_scope` refer to the signed one.
+
+The :g:`PrimInt63` module declares the available operators for this type.
+For instance, equality of two unsigned primitive integers can be determined using
+the :g:`Int63.eqb` function, declared and specified as follows:
 
 .. coqdoc::
 
@@ -25,7 +30,9 @@ declared and specified as follows:
 
    Axiom eqb_correct : forall i j, (i == j)%int63 = true -> i = j.
 
-The complete set of such operators can be obtained looking at the :g:`Int63` module.
+The complete set of such operators can be found in the :g:`PrimInt63` module.
+The specifications and notations are in the :g:`Int63` and :g:`Sint63`
+modules.
 
 These primitive declarations are regular axioms. As such, they must be trusted and are listed by the
 :g:`Print Assumptions` command, as in the following example.
@@ -45,13 +52,13 @@ applications of these primitive operations.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlInt63`
-module can be used when extracting to |OCaml|: it maps the |Coq| primitives to types
-and functions of a :g:`Uint63` module. That |OCaml| module is not produced by
+module can be used when extracting to OCaml: it maps the Coq primitives to types
+and functions of a :g:`Uint63` module. That OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of |Coq|.
+can be taken from the kernel of Coq.
 
-Literal values (at type :g:`Int63.int`) are extracted to literal |OCaml| values
+Literal values (at type :g:`Int63.int`) are extracted to literal OCaml values
 wrapped into the :g:`Uint63.of_int` (resp. :g:`Uint63.of_int64`) constructor on
 64-bit (resp. 32-bit) platforms. Currently, this cannot be customized (see the
 function :g:`Uint63.compile` from the kernel).
@@ -94,13 +101,13 @@ to comply with the IEEE 754 standard for floating-point arithmetic.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlFloats`
-module can be used when extracting to |OCaml|: it maps the |Coq| primitives to types
-and functions of a :g:`Float64` module. Said |OCaml| module is not produced by
+module can be used when extracting to OCaml: it maps the Coq primitives to types
+and functions of a :g:`Float64` module. Said OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of |Coq|.
+can be taken from the kernel of Coq.
 
-Literal values (of type :g:`Float64.t`) are extracted to literal |OCaml|
+Literal values (of type :g:`Float64.t`) are extracted to literal OCaml
 values (of type :g:`float`) written in hexadecimal notation and
 wrapped into the :g:`Float64.of_float` constructor, e.g.:
 :g:`Float64.of_float (0x1p+0)`.
@@ -144,19 +151,19 @@ operations.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlPArray`
-module can be used when extracting to |OCaml|: it maps the |Coq| primitives to types
-and functions of a :g:`Parray` module. Said |OCaml| module is not produced by
+module can be used when extracting to OCaml: it maps the Coq primitives to types
+and functions of a :g:`Parray` module. Said OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of |Coq| (see ``kernel/parray.ml``).
+can be taken from the kernel of Coq (see ``kernel/parray.ml``).
 
-|Coq|'s primitive arrays are persistent data structures. Semantically, a set operation
+Coq's primitive arrays are persistent data structures. Semantically, a set operation
 ``t.[i <- a]`` represents a new array that has the same values as ``t``, except
 at position ``i`` where its value is ``a``. The array ``t`` still exists, can
 still be used and its values were not modified. Operationally, the implementation
-of |Coq|'s primitive arrays is optimized so that the new array ``t.[i <- a]`` does not
+of Coq's primitive arrays is optimized so that the new array ``t.[i <- a]`` does not
 copy all of ``t``. The details are in section 2.3 of :cite:`ConchonFilliatre07wml`.
-In short, the implementation keeps one version of ``t`` as an |OCaml| native array and
+In short, the implementation keeps one version of ``t`` as an OCaml native array and
 other versions as lists of modifications to ``t``. Accesses to the native array
 version are constant time operations. However, accesses to versions where all the cells of
 the array are modified have O(n) access time, the same as a list. The version that is kept as the native array

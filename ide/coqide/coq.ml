@@ -13,13 +13,9 @@ open Preferences
 
 let ideslave_coqtop_flags = ref None
 
-(** * Version and date *)
+(** * Version *)
 
-let get_version_date () =
-  let date =
-    if Glib.Utf8.validate Coq_config.date
-    then Coq_config.date
-    else "<date not printable>" in
+let get_version () =
   try
     (* the following makes sense only when running with local layout *)
     let coqroot = Filename.concat
@@ -29,21 +25,20 @@ let get_version_date () =
     let ch = open_in (Filename.concat coqroot "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
-    (ver,rev)
-  with _ -> (Coq_config.version,date)
+    close_in ch;
+    Printf.sprintf "%s (%s)" ver rev
+  with _ -> Coq_config.version
 
 let short_version () =
-  let (ver,date) = get_version_date () in
-  Printf.sprintf "The Coq Proof Assistant, version %s (%s)\n" ver date
+  Printf.sprintf "The Coq Proof Assistant, version %s\n" (get_version ())
 
 let version () =
-  let (ver,date) = get_version_date () in
     Printf.sprintf
-      "The Coq Proof Assistant, version %s (%s)\
+      "The Coq Proof Assistant, version %s\
        \nArchitecture %s running %s operating system\
        \nGtk version is %s\
        \nThis is %s \n"
-      ver date
+      (get_version ())
       Coq_config.arch Sys.os_type
       (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
       (Filename.basename Sys.executable_name)
@@ -205,7 +200,8 @@ type handle = {
   proc : CoqTop.process;
   xml_oc : Xml_printer.t;
   mutable alive : bool;
-  mutable waiting_for : ccb option; (* last call + callback *)
+  mutable waiting_for : ccb option; (* last non-debug call + callback *)
+  mutable db_waiting_for : ccb option; (* last debug call + callback *)
 }
 
 (** Coqtop process status :
@@ -213,11 +209,12 @@ type handle = {
              It will reject tasks given via [try_grab].
   - Ready  : no current task, accepts new tasks via [try_grab].
   - Busy   : has accepted a task via [init_coqtop] or [try_grab],
-             It will reject other tasks for the moment
+             Non-debug tasks will be rejected for the moment
+  - DbBusy : is processing a debug task
   - Closed : the coqide buffer has been closed, we discard any further task.
 *)
 
-type status = New | Ready | Busy | Closed
+type status = New | Ready | Busy | DbBusy | Closed
 
 type 'a task = handle -> ('a -> void) -> void
 
@@ -230,6 +227,8 @@ type coqtop = {
   mutable reset_handler : unit task;
   (* called whenever coqtop sends a feedback message *)
   mutable feedback_handler : Feedback.feedback -> unit;
+  (* called when the Ltac debugger sends an input prompt message *)
+  mutable debug_prompt_handler : tag:string -> Pp.t -> unit;
   (* actual coqtop process and its status *)
   mutable handle : handle;
   mutable status : status;
@@ -294,12 +293,16 @@ let handle_feedback feedback_processor xml =
   let feedback = Xmlprotocol.to_feedback xml in
   feedback_processor feedback
 
+let handle_ltac_debug ltac_debug_processor xml =
+  let tag, msg = Xmlprotocol.to_ltac_debug_answer xml in
+  ltac_debug_processor ~tag msg
+
 let handle_final_answer handle xml =
   let () = Minilib.log "Handling coqtop answer" in
-  let ccb = match handle.waiting_for with
-    | None -> raise (AnswerWithoutRequest (Xml_printer.to_string_fmt xml))
-    | Some c -> c in
-  let () = handle.waiting_for <- None in
+  let ccb = match handle.db_waiting_for, handle.waiting_for with
+  | None, None -> raise (AnswerWithoutRequest (Xml_printer.to_string_fmt xml))
+  | Some c, _ -> handle.db_waiting_for <- None; c
+  | None, Some c -> handle.waiting_for <- None; c in
   with_ccb ccb { bind_ccb = fun (c, f) -> f (Xmlprotocol.to_answer c xml) }
 
 type input_state = {
@@ -307,7 +310,7 @@ type input_state = {
   mutable lexerror : int option;
 }
 
-let unsafe_handle_input handle feedback_processor state conds ~read_all =
+let unsafe_handle_input handle (feedback_processor, ltac_debug_processor) state conds ~read_all =
   check_errors conds;
   let s = read_all () in
   if String.length s = 0 then raise (TubeError "EMPTY");
@@ -320,13 +323,17 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
-    if Xmlprotocol.is_feedback xml then begin
+    match Xmlprotocol.msg_kind xml with
+    | Xmlprotocol.Feedback ->
       handle_feedback feedback_processor xml;
       loop ()
-    end else
-      begin
-        ignore (handle_final_answer handle xml)
-      end
+    | Xmlprotocol.LtacDebugInfo ->
+      handle_ltac_debug ltac_debug_processor xml;
+      loop ()
+    | Xmlprotocol.Other ->
+      ignore (handle_final_answer handle xml);
+      if handle.waiting_for <> None then (* i.e., just finished a db request *)
+        loop ()
   in
   try loop ()
   with Xml_parser.Error _ as e ->
@@ -345,13 +352,13 @@ let print_exception = function
         ^ Xml_printer.to_string actual
   | e -> Printexc.to_string e
 
-let input_watch handle respawner feedback_processor =
+let input_watch handle respawner processors =
   let state = { fragment = ""; lexerror = None; } in
   (fun conds ~read_all ->
     let h = handle () in
     if not h.alive then false
     else
-      try unsafe_handle_input h feedback_processor state conds ~read_all; true
+      try unsafe_handle_input h processors state conds ~read_all; true
       with e ->
         Minilib.log ("Coqtop reader failed, resetting: "^print_exception e);
         respawner ();
@@ -364,7 +371,7 @@ let bind_self_as f =
   Option.get !me
 
 (** This launches a fresh handle from its command line arguments. *)
-let spawn_handle args respawner feedback_processor =
+let spawn_handle args respawner processors =
   let prog = coqtop_path () in
   let async_default =
     (* disable async processing by default in Windows *)
@@ -390,12 +397,13 @@ let spawn_handle args respawner feedback_processor =
       with Not_found -> None end in
   bind_self_as (fun handle ->
   let proc, oc =
-    CoqTop.spawn ?env prog args (input_watch handle respawner feedback_processor) in
+    CoqTop.spawn ?env prog args (input_watch handle respawner processors) in
   {
     proc;
     xml_oc = Xml_printer.make (Xml_printer.TChannel oc);
     alive = true;
     waiting_for = None;
+    db_waiting_for = None;
   })
 
 (** This clears any potentially remaining open garbage. *)
@@ -408,7 +416,7 @@ let clear_handle h =
   end
 
 let mkready coqtop =
-  fun () -> coqtop.status <- Ready; Void
+  fun () -> coqtop.status <- if coqtop.status = DbBusy then Busy else Ready; Void
 
 let save_all = ref (fun () -> assert false)
 
@@ -425,11 +433,12 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
   in
   clear_handle coqtop.handle;
   ignore_error (fun () ->
+     let processors = (coqtop.feedback_handler, coqtop.debug_prompt_handler) in
      coqtop.handle <-
        spawn_handle
          coqtop.sup_args
          (fun () -> respawn_coqtop coqtop)
-         coqtop.feedback_handler) ();
+         processors) ();
   (* Normally, the handle is now a fresh one.
      If not, there isn't much we can do ... *)
   assert (coqtop.handle.alive = true);
@@ -437,19 +446,26 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
   ignore (coqtop.reset_handler coqtop.handle (mkready coqtop))
 
 let spawn_coqtop sup_args =
-  bind_self_as (fun this -> {
+  bind_self_as (fun this ->
+      let processors =
+        (fun msg -> (this ()).feedback_handler msg)
+      , (fun ~tag msg -> (this ()).debug_prompt_handler ~tag msg)
+      in
+  {
     handle = spawn_handle sup_args
                (fun () -> respawn_coqtop (this ()))
-               (fun msg -> (this ()).feedback_handler msg);
+               processors;
     sup_args = sup_args;
     reset_handler = (fun _ k -> k ());
     feedback_handler = (fun _ -> ());
+    debug_prompt_handler = (fun ~tag:_ _ -> ());
     status = New;
   })
 
 let set_reset_handler coqtop hook = coqtop.reset_handler <- hook
 
 let set_feedback_handler coqtop hook = coqtop.feedback_handler <- hook
+let set_debug_prompt_handler coqtop hook = coqtop.debug_prompt_handler <- hook
 
 let is_computing coqtop = (coqtop.status = Busy)
 
@@ -470,19 +486,20 @@ let set_arguments coqtop args =
   coqtop.sup_args <- args;
   reset_coqtop coqtop
 
-let process_task coqtop task =
-  assert (coqtop.status = Ready || coqtop.status = New);
-  coqtop.status <- Busy;
+let process_task ?(db=false) coqtop task =
+  assert (coqtop.status = Ready || coqtop.status = New || (db && coqtop.status = Busy));
+  coqtop.status <- if db then DbBusy else Busy;
   try ignore (task coqtop.handle (mkready coqtop))
   with e ->
     Minilib.log ("Coqtop writer failed, resetting: " ^ Printexc.to_string e);
     if coqtop.status <> Closed then respawn_coqtop coqtop
 
-let try_grab coqtop task abort =
+let try_grab ?(db=false) coqtop task abort =
   match coqtop.status with
-    |Closed -> ()
-    |Busy|New -> abort ()
-    |Ready -> process_task coqtop task
+    | Closed -> ()
+    | Busy when db -> process_task ~db coqtop task
+    | Busy | DbBusy | New -> abort ()
+    | Ready -> process_task coqtop task
 
 let init_coqtop coqtop task =
   assert (coqtop.status = New);
@@ -494,13 +511,19 @@ let init_coqtop coqtop task =
 
 type 'a query = 'a Interface.value task
 
-let eval_call call handle k =
+let eval_call ?(db=false) call handle k =
   (* Send messages to coqtop and prepare the decoding of the answer *)
-  Minilib.log ("Start eval_call " ^ Xmlprotocol.pr_call call);
-  assert (handle.alive && handle.waiting_for = None);
-  handle.waiting_for <- Some (mk_ccb (call,k));
+  let in_db = if db then "db " else "" in
+  Minilib.log ("Start " ^ in_db ^ "eval_call " ^ Xmlprotocol.pr_call call);
+  if db then begin
+    assert (handle.alive && handle.db_waiting_for = None);
+    handle.db_waiting_for <- Some (mk_ccb (call,k))
+  end else begin
+    assert (handle.alive && handle.waiting_for = None);
+    handle.waiting_for <- Some (mk_ccb (call,k))
+  end;
   Xml_printer.print handle.xml_oc (Xmlprotocol.of_call call);
-  Minilib.log "End eval_call";
+  Minilib.log ("End " ^ in_db ^ "eval_call");
   Void
 
 let add x = eval_call (Xmlprotocol.add x)
@@ -513,6 +536,7 @@ let search flags = eval_call (Xmlprotocol.search flags)
 let init x = eval_call (Xmlprotocol.init x)
 let stop_worker x = eval_call (Xmlprotocol.stop_worker x)
 let proof_diff x = eval_call (Xmlprotocol.proof_diff x)
+let db_cmd x = eval_call ~db:true (Xmlprotocol.db_cmd x)
 
 let break_coqtop coqtop workers =
   if coqtop.status = Busy then
@@ -543,7 +567,7 @@ struct
 
   let implicit = BoolOpt ["Printing"; "Implicit"]
   let coercions = BoolOpt ["Printing"; "Coercions"]
-  let raw_matching = BoolOpt ["Printing"; "Matching"]
+  let nested_matching = BoolOpt ["Printing"; "Matching"]
   let notations = BoolOpt ["Printing"; "Notations"]
   let parentheses = BoolOpt ["Printing"; "Parentheses"]
   let all_basic = BoolOpt ["Printing"; "All"]
@@ -558,8 +582,8 @@ struct
   let bool_items = [
     { opts = [implicit]; init = false; label = "Display _implicit arguments" };
     { opts = [coercions]; init = false; label = "Display _coercions" };
-    { opts = [raw_matching]; init = true;
-      label = "Display raw _matching expressions" };
+    { opts = [nested_matching]; init = true;
+      label = "Display nested _matching expressions" };
     { opts = [notations]; init = true; label = "Display _notations" };
     { opts = [parentheses]; init = false; label = "Display _parentheses" };
     { opts = [all_basic]; init = false;

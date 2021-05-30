@@ -21,6 +21,10 @@ to OCaml code. *)
 type mllambda
 type global
 
+val debug_native_compiler : CDebug.t
+
+val keep_debug_files : unit -> bool
+
 val pp_global : Format.formatter -> global -> unit
 
 val mk_open : string -> global
@@ -50,7 +54,6 @@ val get_proj : symbols -> int -> inductive * int
 
 val get_symbols : unit -> symbols
 
-type code_location_update
 type code_location_updates
 type linkable_code = global list * code_location_updates
 
@@ -60,7 +63,9 @@ val empty_updates : code_location_updates
 
 val register_native_file : string -> unit
 
-val compile_constant_field : env -> string -> Constant.t ->
+val is_loaded_native_file : string -> bool
+
+val compile_constant_field : env -> Constant.t ->
   global list -> 'a constant_body -> global list
 
 val compile_mind_field : ModPath.t -> Label.t ->
@@ -69,7 +74,7 @@ val compile_mind_field : ModPath.t -> Label.t ->
 val mk_conv_code : env -> evars -> string -> constr -> constr -> linkable_code
 val mk_norm_code : env -> evars -> string -> constr -> linkable_code
 
-val mk_library_header : DirPath.t -> global list
+val mk_library_header : Nativevalues.symbols -> global list
 
 val mod_uid_of_dirpath : DirPath.t -> string
 

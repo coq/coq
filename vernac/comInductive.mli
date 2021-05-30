@@ -22,10 +22,11 @@ type uniform_inductive_flag =
 
 val do_mutual_inductive
   :  template:bool option
-  -> universe_decl_expr option
+  -> cumul_univ_decl_expr option
   -> (one_inductive_expr * decl_notation list) list
   -> cumulative:bool
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> private_ind:bool
   -> uniform:uniform_inductive_flag
   -> Declarations.recursivity_kind
@@ -45,6 +46,7 @@ val interp_mutual_inductive_constr
   : sigma:Evd.evar_map
   -> template:bool option
   -> udecl:UState.universe_decl
+  -> variances:Entries.variance_entry
   -> ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list
   -> indnames:Names.Id.t list
   -> arities:EConstr.t list
@@ -86,3 +88,13 @@ val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:
 (** [nparams] is the number of parameters which aren't treated as
     uniform, ie the length of params (including letins) where the env
     is [uniform params, inductives, params, binders]. *)
+
+val variance_of_entry
+  : cumulative:bool
+  -> variances:Entries.variance_entry
+  -> Entries.universes_entry
+  -> Entries.variance_entry option
+(** Will return None if non-cumulative, and resize if there are more
+    universes than originally specified.
+    If monomorphic, [cumulative] is treated as [false].
+*)

@@ -271,9 +271,8 @@ let inductive_levels env evd arities inds =
     if Sorts.is_prop a || Sorts.is_sprop a then None
     else Some (univ_of_sort a)) destarities
   in
-  let cstrs_levels, min_levels, sizes =
-    CList.split3
-      (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
+  let cstrs_levels, sizes =
+    CList.split (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
         let len = List.length tys in
         let minlev = Sorts.univ_of_sort du in
         let minlev =
@@ -283,13 +282,15 @@ let inductive_levels env evd arities inds =
         in
         let minlev =
           (* Indices contribute. *)
-          if indices_matter env && List.length ctx > 0 then (
+          if indices_matter env then begin
             let ilev = sign_level env evd ctx in
-              Univ.sup ilev minlev)
+            Univ.sup ilev minlev
+          end
           else minlev
         in
         let clev = extract_level env evd minlev tys in
-          (clev, minlev, len)) inds destarities)
+        (clev, len))
+        inds destarities)
   in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
@@ -326,8 +327,13 @@ let inductive_levels env evd arities inds =
         let duu = Sorts.univ_of_sort du in
         let template_prop, evd =
           if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
-            if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
-              true, Evd.set_eq_sort env evd Sorts.prop du
+            if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu)
+            then if Term.isArity arity
+            (* If not a syntactic arity, the universe may be used in a
+               polymorphic instance and so cannot be lowered to Prop.
+               See #13300. *)
+              then true, Evd.set_eq_sort env evd Sorts.prop du
+              else false, Evd.set_eq_sort env evd Sorts.set du
             else false, evd
           else false, Evd.set_eq_sort env evd (sort_of_univ cu) du
         in
@@ -367,7 +373,26 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let check_trivial_variances variances =
+  Array.iter (function
+      | None | Some Univ.Variance.Invariant -> ()
+      | Some _ ->
+        CErrors.user_err
+          Pp.(strbrk "Universe variance was specified but this inductive will not be cumulative."))
+    variances
+
+let variance_of_entry ~cumulative ~variances uctx =
+  match uctx with
+  | Monomorphic_entry _ -> check_trivial_variances variances; None
+  | Polymorphic_entry (nas,_) ->
+    if not cumulative then begin check_trivial_variances variances; None end
+    else
+      let lvs = Array.length variances in
+      let lus = Array.length nas in
+      assert (lvs <= lus);
+      Some (Array.append variances (Array.make (lus - lvs) None))
+
+let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
@@ -429,13 +454,13 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
       mind_entry_private = if private_ind then Some false else None;
       mind_entry_universes = uctx;
       mind_entry_template = is_template;
-      mind_entry_cumulative = poly && cumulative;
+      mind_entry_variance = variance_of_entry ~cumulative ~variances uctx;
     }
   in
   mind_ent, Evd.universe_binders sigma
 
 let interp_params env udecl uparamsl paramsl =
-  let sigma, udecl = interp_univ_decl_opt env udecl in
+  let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
   let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
     interp_context_evars ~program_mode:false env sigma uparamsl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
@@ -443,7 +468,7 @@ let interp_params env udecl uparamsl paramsl =
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   sigma, env_params, (ctx_params, env_uparams, ctx_uparams,
-  userimpls, useruimpls, impls, udecl)
+  userimpls, useruimpls, impls, udecl, variances)
 
 (* When a hole remains for a param, pretend the param is uniform and
    do the unification.
@@ -467,7 +492,7 @@ let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams ~binders:k c =
           end)
         sigma args
     | _ -> Termops.fold_constr_with_full_binders
-             sigma
+             env sigma
              (fun d (env,k) -> EConstr.push_rel d env, k+1)
              aux envk sigma c
   in
@@ -485,7 +510,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   (* In case of template polymorphism, we need to compute more constraints *)
   let env0 = if poly then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
 
-  let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl) =
+  let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl, variances) =
     interp_params env0 udecl uparamsl paramsl
   in
 
@@ -563,7 +588,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
             userimpls @ impls) cimpls)
       indimpls cimpls
   in
-  let mie, pl = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  let mie, pl = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
   (mie, pl, impls)
 
 
@@ -606,7 +631,7 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uniform finite =
+let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
   let indl = match params with
@@ -615,9 +640,11 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uni
       | UniformParameters -> (params, [], indl)
       | NonUniformParameters -> ([], params, indl)
   in
-  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
+  let env = Global.env () in
+  let env = Environ.update_typing_flags ?typing_flags env in
+  let mie,pl,impls = interp_mutual_inductive_gen env ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (DeclareInd.declare_mutual_inductive_with_eliminations mie pl impls);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie pl impls);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)

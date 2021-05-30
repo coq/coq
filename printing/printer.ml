@@ -97,10 +97,10 @@ let pr_ltype_env ?lax ?goal_concl_style env sigma ?impargs c =
 let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
 
-let pr_lglob_constr_env env c =
-  pr_lconstr_expr env (Evd.from_env env) (extern_glob_constr (Termops.vars_of_env env) c)
-let pr_glob_constr_env env c =
-  pr_constr_expr env (Evd.from_env env) (extern_glob_constr (Termops.vars_of_env env) c)
+let pr_lglob_constr_env env sigma c =
+  pr_lconstr_expr env sigma (extern_glob_constr (extern_env env sigma) c)
+let pr_glob_constr_env env sigma c =
+  pr_constr_expr env sigma (extern_glob_constr (extern_env env sigma) c)
 
 let pr_closed_glob_n_env ?lax ?goal_concl_style ?inctx ?scope env sigma n c =
   pr_constr_expr_n env sigma n (extern_closed_glob ?lax ?goal_concl_style ?inctx ?scope env sigma c)
@@ -115,7 +115,7 @@ let pr_constr_pattern_env env sigma c =
 let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Names.Id.Set.empty t)
 
-let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
+let pr_sort sigma s = pr_sort_expr (extern_sort sigma s)
 
 let () = Termops.Internal.set_print_constr
   (fun env sigma t -> pr_lconstr_expr env sigma (extern_constr ~lax:true env sigma t))
@@ -442,7 +442,13 @@ let pr_predicate pr_elt (b, elts) =
     else
       if List.is_empty elts then str"none" else pr_elts
 
-let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
+let pr_cpred p =
+  let safe_pr_constant env kn =
+    try pr_constant env kn
+    with Not_found when !Flags.in_debugger || !Flags.in_toplevel ->
+      Names.Constant.print kn in
+  pr_predicate (safe_pr_constant (Global.env())) (Cpred.elements p)
+
 let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
 let pr_transparent_state ts =
@@ -480,7 +486,7 @@ let pr_goal_name sigma g =
 
 let pr_goal_header nme sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
-  str "subgoal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
+  str "goal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
   ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())
 
 (* display the conclusion of a goal *)
@@ -753,10 +759,10 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
   | [] ->
     let exl = Evd.undefined_map sigma in
     if Evar.Map.is_empty exl then
-      v 0 (str "No more subgoals." ++ pr_evar_info None sigma seeds)
+      v 0 (str "No more goals." ++ pr_evar_info None sigma seeds)
     else
       let pei = pr_evars_int sigma ~shelf ~given_up:[] 1 exl in
-      v 0 ((str "No more subgoals,"
+      v 0 ((str "No more goals,"
           ++ str " but there are non-instantiated existential variables:"
           ++ cut () ++ (hov 0 pei)
           ++ pr_evar_info None sigma seeds
@@ -765,9 +771,9 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
       let goals = print_multiple_goals g1 rest in
       let ngoals = List.length rest+1 in
       v 0 (
-        int ngoals ++ focused_if_needed ++ str(String.plural ngoals "subgoal")
+        int ngoals ++ focused_if_needed ++ str(String.plural ngoals "goal")
         ++ print_extra
-        ++ str (if pr_first && (should_gname()) && ngoals > 1 then ", subgoal 1" else "")
+        ++ str (if pr_first && (should_gname()) && ngoals > 1 then ", goal 1" else "")
         ++ (if pr_first && should_tag() then pr_goal_tag g1 else str"")
         ++ (if pr_first then pr_goal_name sigma g1 else mt()) ++ cut () ++ goals
         ++ (if unfocused=[] then str ""
@@ -792,7 +798,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
           begin match bgoals,shelf,given_up with
           | [] , [] , g when Evar.Set.is_empty g -> pr_subgoals None sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
-             Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
+             Feedback.msg_info (str "No more goals, but there are some goals you gave up:");
              fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
             ++ fnl () ++ str "You need to go back and solve them."

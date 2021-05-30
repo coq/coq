@@ -36,8 +36,9 @@ ifeq ($(findstring CYGWIN,$(OSNAME)),CYGWIN)
 WIN_CURDIR:=$(shell cygpath -w $(CURDIR))
 SPHINXENV:=COQBIN="$(CURDIR)/bin/" COQLIB="$(WIN_CURDIR)"
 else
-SPHINXENV:=COQBIN="$(CURDIR)/bin/" COQLIB="$(CURDIR)"
+SPHINXENV:=COQBIN="$(CURDIR)/$(CBIN)" COQLIB="$(CURDIR)/$(VO_OUT_DIR)"
 endif
+
 SPHINXWARNERROR ?= 1
 ifeq ($(SPHINXWARNERROR),1)
 SPHINXOPTS= -W
@@ -47,28 +48,46 @@ endif
 SPHINXBUILD= sphinx-build
 SPHINXBUILDDIR= doc/sphinx/_build
 
+DOCGRAMWARN ?= 0
+ifeq ($(DOCGRAMWARN),0)
+DOCGRAMWARN=-no-warn
+else
+DOCGRAMWARN=
+endif
+
 # Internal variables.
 ALLSPHINXOPTS= -d $(SPHINXBUILDDIR)/doctrees $(SPHINXOPTS)
 
-DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
+# Output directory setup
+ifdef INSIDE_DUNE
+ROOT_DOC_BUILD_DIR=_build
+else
+ROOT_DOC_BUILD_DIR=_build_vo
+endif
+
+DOC_BUILD_DIR=$(ROOT_DOC_BUILD_DIR)/default/doc
+DOC_STDLIB_DIR=$(DOC_BUILD_DIR)/stdlib/
+DOC_STDLIB_HTML_DIR=$(DOC_BUILD_DIR)/stdlib/html/
+DOC_COMMON_DIR=$(DOC_BUILD_DIR)/common
 
 ######################################################################
 ### General rules
 ######################################################################
 
 .PHONY: doc doc-html doc-pdf doc-ps
-.PHONY: doc-stdlib full-stdlib sphinx
+.PHONY: doc-stdlib doc-stdlib-html full-stdlib sphinx
 
 doc: refman doc-stdlib
 
 SPHINX_DEPS ?=
 ifndef QUICK
-SPHINX_DEPS := coq
+SPHINX_DEPS := coq $(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.cmxs
 endif
 
 # refman-html and refman-latex
-refman-%: $(SPHINX_DEPS) doc/unreleased.rst
+refman-%: $(SPHINX_DEPS) $(DOC_BUILD_DIR)/unreleased.rst
 	$(SHOW)'SPHINXBUILD doc/sphinx ($*)'
+	$(HIDE)cp -a $(DOC_BUILD_DIR)/unreleased.rst doc # to fix when we move the sphinx build out-of-tree
 	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b $* \
 		$(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/$*
 
@@ -85,27 +104,38 @@ refman: $(SPHINX_DEPS)
 # compatibility alias
 sphinx: refman-html
 
+DOCCOMMON:=$(DOC_COMMON_DIR)/version.tex $(DOC_COMMON_DIR)/title.tex $(DOC_COMMON_DIR)/macros.tex
+
+$(DOC_COMMON_DIR)/%.tex: doc/common/%.tex
+	$(HIDE)mkdir -p $(DOC_COMMON_DIR)
+	$(HIDE)cp -a $< $@
+
 doc-html:\
-  doc/stdlib/html/index.html refman-html
+  $(DOC_STDLIB_HTML_DIR)/index.html refman-html
 
 doc-pdf:\
-  doc/stdlib/Library.pdf refman-pdf
+  $(DOC_STDLIB_DIR)/Library.pdf refman-pdf
 
 doc-ps:\
-  doc/stdlib/Library.ps
+  $(DOC_STDLIB_DIR)/Library.ps
+
+doc-stdlib-html: $(DOC_STDLIB_HTML_DIR)/index.html
 
 doc-stdlib: \
-  doc/stdlib/html/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
+  $(DOC_STDLIB_HTML_DIR)/index.html $(DOC_STDLIB_DIR)/Library.ps $(DOC_STDLIB_DIR)/Library.pdf
 
 full-stdlib: \
-  doc/stdlib/html/index.html doc/stdlib/FullLibrary.ps doc/stdlib/FullLibrary.pdf
+  $(DOC_STDLIB_HTML_DIR)/index.html $(DOC_STDLIB_DIR)/FullLibrary.ps $(DOC_STDLIB_DIR)/FullLibrary.pdf
 
 sphinx-clean:
-	rm -rf $(SPHINXBUILDDIR)
+	rm -rf $(SPHINXBUILDDIR) doc/sphinx/index.rst doc/sphinx/zebibliography.rst
 
+# We now require a install layout to be available.
 .PHONY: plugin-tutorial
-plugin-tutorial: states tools
-	+$(MAKE) COQBIN=$(PWD)/bin/ -C $(PLUGINTUTO)
+plugin-tutorial: states $(BCONTEXT)/coq-core.install | $(VO_OUT_DIR)
+	mkdir -p $(VO_OUT_DIR)/tools/
+	cp tools/CoqMakefile.in $(VO_OUT_DIR)/tools/
+	+$(MAKE) COQBIN=$(shell pwd)/$(CBIN)/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/$(VO_OUT_DIR) -C $(PLUGINTUTO)
 
 ######################################################################
 ### Implicit rules
@@ -125,84 +155,94 @@ doc/common/version.tex: config/Makefile
 
 ### Changelog
 
-doc/unreleased.rst: $(wildcard doc/changelog/00-title.rst doc/changelog/*/*.rst)
+$(DOC_BUILD_DIR)/unreleased.rst: $(wildcard doc/changelog/00-title.rst doc/changelog/*/*.rst)
 	$(SHOW)'AGGREGATE $@'
+	$(HIDE)mkdir -p $(DOC_BUILD_DIR)
 	$(HIDE)cat doc/changelog/00-title.rst doc/changelog/*/*.rst > $@
 
 ######################################################################
 # Standard library
 ######################################################################
 
-DOCLIBS=-R theories Coq -Q user-contrib/Ltac2 Ltac2
+DOCLIBS=-R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib/Ltac2 Ltac2
 
 ### Standard library (browsable html format)
 
 ifdef QUICK
-doc/stdlib/html/genindex.html:
+$(DOC_STDLIB_HTML_DIR)/genindex.html:
 else
-doc/stdlib/html/genindex.html: | $(COQDOC) $(ALLVO)
+$(DOC_STDLIB_HTML_DIR)/genindex.html: | $(COQDOC) $(COQDOCCSS) $(ALLVO)
 endif
-	- rm -rf doc/stdlib/html
-	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -d doc/stdlib/html --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
-	  $(DOCLIBS) $(VFILES)
-	mv doc/stdlib/html/index.html doc/stdlib/html/genindex.html
+	- rm -rf $(DOC_STDLIB_HTML_DIR)
+	$(MKDIR) -p $(DOC_STDLIB_HTML_DIR)
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -d $(DOC_STDLIB_HTML_DIR) --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
+	  $(DOCLIBS) $(BUILD_VFILES)
+	mv $(DOC_STDLIB_HTML_DIR)/index.html $(DOC_STDLIB_HTML_DIR)/genindex.html
 
-doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
-	./doc/stdlib/make-library-index doc/stdlib/index-list.html doc/stdlib/hidden-files
+$(DOC_STDLIB_DIR)/index-list.html.template: doc/stdlib/index-list.html.template
+	$(HIDE)mkdir -p $(DOC_STDLIB_DIR)
+	$(HIDE)cp -a $< $@
 
-doc/stdlib/html/index.html: doc/stdlib/html/genindex.html doc/stdlib/index-list.html
-	cat doc/common/styles/html/$(HTMLSTYLE)/header.html doc/stdlib/index-list.html > $@
+$(DOC_STDLIB_DIR)/index-list.html: $(DOC_STDLIB_DIR)/index-list.html.template doc/stdlib/make-library-index
+	./doc/stdlib/make-library-index $(DOC_STDLIB_DIR)/index-list.html doc/stdlib/hidden-files
+
+$(DOC_STDLIB_HTML_DIR)/index.html: $(DOC_STDLIB_HTML_DIR)/genindex.html $(DOC_STDLIB_DIR)/index-list.html
+	$(MKDIR) -p $(DOC_STDLIB_HTML_DIR)
+	cat doc/common/styles/html/$(HTMLSTYLE)/header.html $(DOC_STDLIB_DIR)/index-list.html > $@
 	cat doc/common/styles/html/$(HTMLSTYLE)/footer.html >> $@
 
 ### Standard library (light version, full version is definitely too big)
 
 ifdef QUICK
-doc/stdlib/Library.coqdoc.tex:
+$(DOC_STDLIB_DIR)/Library.coqdoc.tex:
 else
-doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
+$(DOC_STDLIB_DIR)/Library.coqdoc.tex: | $(COQDOC) $(COQDOCSTY) $(THEORIESLIGHTVO)
 endif
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
-            -R theories Coq $(THEORIESLIGHTVO:.$(VO)=.v) >> $@
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout \
+            -R $(VO_OUT_DIR)theories Coq $(THEORIESLIGHTVO:.$(VO)=.v) >> $@
 
-doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
-	(cd doc/stdlib;\
+SHOW_LATEX_MESSAGES:=$(shell pwd)/doc/tools/show_latex_messages
+
+$(DOC_STDLIB_DIR)/Library.dvi: $(DOCCOMMON) $(DOC_STDLIB_DIR)/Library.coqdoc.tex $(DOC_STDLIB_DIR)/Library.tex
+	(cd $(DOC_STDLIB_DIR);\
 	$(LATEX) -interaction=batchmode Library;\
 	$(LATEX) -interaction=batchmode Library > /dev/null;\
-	../tools/show_latex_messages -no-overfull Library.log)
+	$(SHOW_LATEX_MESSAGES) -no-overfull Library.log)
 
-doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.dvi
-	(cd doc/stdlib;\
+$(DOC_STDLIB_DIR)/Library.pdf: $(DOCCOMMON) $(DOC_STDLIB_DIR)/Library.coqdoc.tex $(DOC_STDLIB_DIR)/Library.dvi
+	(cd $(DOC_STDLIB_DIR);\
 	$(PDFLATEX) -interaction=batchmode Library;\
-	../tools/show_latex_messages -no-overfull Library.log)
+	$(SHOW_LATEX_MESSAGES) -no-overfull Library.log)
+
+$(DOC_STDLIB_DIR)/Library.tex: doc/stdlib/Library.tex
+	$(HIDE)cp -a $< $@
 
 ### Standard library (full version if you're crazy enough to try)
-
-doc/stdlib/FullLibrary.tex: doc/stdlib/Library.tex
+$(DOC_STDLIB_DIR)/FullLibrary.tex: $(DOC_STDLIB_DIR)/Library.tex
 	sed -e 's/Library.coqdoc/FullLibrary.coqdoc/g;s/\\begin{document}/\\newcommand{\\textlambda}{\\ensuremath{\\lambda}}\\newcommand{\\textPi}{\\ensuremath{\\Pi}}\\begin{document}/' $< > $@
 
 ifdef QUICK
-doc/stdlib/FullLibrary.coqdoc.tex:
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            $(DOCLIBS) $(VFILES) > $@
+$(DOC_STDLIB_DIR)/FullLibrary.coqdoc.tex:
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+            $(DOCLIBS) $(BUILD_VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 else
-doc/stdlib/FullLibrary.coqdoc.tex: $(COQDOC) $(ALLVO)
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            $(DOCLIBS) $(VFILES) > $@
+$(DOC_STDLIB_DIR)/FullLibrary.coqdoc.tex: $(COQDOC) $(COQDOCSTY) $(ALLVO)
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+            $(DOCLIBS) $(BUILD_VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 endif
 
-doc/stdlib/FullLibrary.dvi: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/stdlib/FullLibrary.tex
-	(cd doc/stdlib;\
+$(DOC_STDLIB_DIR)/FullLibrary.dvi: $(DOCCOMMON) $(DOC_STDLIB_DIR)/FullLibrary.coqdoc.tex $(DOC_STDLIB_DIR)/FullLibrary.tex
+	(cd $(DOC_STDLIB_DIR);\
 	$(LATEX) -interaction=batchmode FullLibrary;\
 	$(LATEX) -interaction=batchmode FullLibrary > /dev/null;\
-	../tools/show_latex_messages -no-overfull FullLibrary.log)
+	$(SHOW_LATEX_MESSAGES) -no-overfull FullLibrary.log)
 
-doc/stdlib/FullLibrary.pdf: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/stdlib/FullLibrary.dvi
-	(cd doc/stdlib;\
+$(DOC_STDLIB_DIR)/FullLibrary.pdf: $(DOCCOMMON) $(DOC_STDLIB_DIR)/FullLibrary.coqdoc.tex $(DOC_STDLIB_DIR)/FullLibrary.dvi
+	(cd $(DOC_STDLIB_DIR);\
 	$(PDFLATEX) -interaction=batchmode FullLibrary;\
-	../tools/show_latex_messages -no-overfull FullLibrary.log)
+	$(SHOW_LATEX_MESSAGES) -no-overfull FullLibrary.log)
 
 ######################################################################
 # Install all documentation files
@@ -211,45 +251,46 @@ doc/stdlib/FullLibrary.pdf: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/s
 .PHONY: install-doc install-doc-meta install-doc-html install-doc-printable \
 	install-doc-sphinx install-doc-stdlib-html
 
+# Due to Windows paths not starting with / we can't just set the
+# default to / and always use --destdir
+ifeq ($(DESTDIR),)
+DOCDIRDEST=$(DOCDIR)
+else
+DOCDIRDEST=$(DESTDIR)/$(DOCDIR)
+endif
+
 install-doc: install-doc-meta install-doc-html install-doc-printable
 
 install-doc-meta:
-	$(MKDIR) $(FULLDOCDIR)
-	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
+	$(MKDIR) $(DOCDIRDEST)
+	$(INSTALLLIB) doc/LICENSE $(DOCDIRDEST)/LICENSE.doc
 
 install-doc-html: install-doc-stdlib-html install-doc-sphinx
 
 install-doc-stdlib-html:
-	$(MKDIR) $(FULLDOCDIR)/html/stdlib
-	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
+	$(MKDIR) $(DOCDIRDEST)/html/stdlib
+	$(INSTALLLIB) $(DOC_STDLIB_HTML_DIR)/* $(DOCDIRDEST)/html/stdlib
 
 install-doc-printable:
-	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) doc/stdlib/Library.ps $(FULLDOCDIR)/ps
+	$(MKDIR) $(DOCDIRDEST)/ps $(DOCDIRDEST)/pdf
+	$(INSTALLLIB) $(DOC_STDLIB_DIR)/Library.pdf $(DOCDIRDEST)/pdf
+	$(INSTALLLIB) $(DOC_STDLIB_DIR)/Library.ps $(DOCDIRDEST)/ps
 
 install-doc-sphinx:
-	$(MKDIR) $(FULLDOCDIR)/sphinx
+	$(MKDIR) $(DOCDIRDEST)/sphinx
 	(for d in html latex; do \
 	for f in `cd doc/sphinx/_build/$$d && find . -type f`; do \
-		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$d/$$f);\
-		$(INSTALLLIB) doc/sphinx/_build/$$d/$$f $(FULLDOCDIR)/sphinx/$$d/$$f;\
+		$(MKDIR) $$(dirname $(DOCDIRDEST)/sphinx/$$d/$$f);\
+		$(INSTALLLIB) doc/sphinx/_build/$$d/$$f $(DOCDIRDEST)/sphinx/$$d/$$f;\
 	done; done)
 
 ######################################################################
 # doc_grammar tool
 ######################################################################
 
-DOC_GRAMCMO := $(addsuffix .cmo, $(addprefix coqpp/, coqpp_parse coqpp_lex))
-
-$(DOC_GRAM): $(DOC_GRAMCMO) coqpp/coqpp_parser.mli coqpp/coqpp_parser.ml doc/tools/docgram/doc_grammar.ml
-	$(SHOW)'OCAMLC -a $@'
-	$(HIDE)$(OCAMLC) -I coqpp $^ -package str -linkall -linkpkg -o $@
-
 # user-contrib/*/*.mlg omitted for now (e.g. ltac2)
 PLUGIN_MLGS := $(wildcard plugins/*/*.mlg)
-OMITTED_PLUGIN_MLGS := plugins/ssr/ssrparser.mlg plugins/ssr/ssrvernac.mlg plugins/ssrmatching/g_ssrmatching.mlg \
-	plugins/ssrsearch/g_search.mlg
+OMITTED_PLUGIN_MLGS :=
 DOC_MLGS := $(wildcard */*.mlg) $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS))) \
 	user-contrib/Ltac2/g_ltac2.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
@@ -262,7 +303,7 @@ doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
 #todo: add a dependency of sphinx on updated_rsts when we're ready
 doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: doc/tools/docgram/fullGrammar $(DOC_GRAM) $(DOC_EDIT_MLGS)
 	$(SHOW)'DOC_GRAM_RSTS'
-	$(HIDE)$(DOC_GRAM) -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
+	$(HIDE)$(DOC_GRAM) $(DOCGRAMWARN) -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
 
 doc/tools/docgram/updated_rsts: doc/tools/docgram/orderedGrammar
 
@@ -270,9 +311,9 @@ doc/tools/docgram/updated_rsts: doc/tools/docgram/orderedGrammar
 
 doc_gram: doc/tools/docgram/fullGrammar
 
-doc_gram_verify: doc/tools/docgram/fullGrammar
+doc_gram_verify: $(DOC_GRAM) $(DOC_MLGS)
 	$(SHOW)'DOC_GRAM_VERIFY'
-	$(HIDE)$(DOC_GRAM) -short -no-warn -verify $(DOC_MLGS) $(DOC_RSTS)
+	$(HIDE)$(DOC_GRAM) -no-warn -verify $(DOC_MLGS) $(DOC_RSTS)
 
 doc_gram_rsts: doc/tools/docgram/updated_rsts
 

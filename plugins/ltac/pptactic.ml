@@ -191,8 +191,8 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_and_short_name pr (c,_) = pr c
 
   let pr_evaluable_reference = function
-    | EvalVarRef id -> pr_id id
-    | EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
+    | Tacred.EvalVarRef id -> pr_id id
+    | Tacred.EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
 
   let pr_quantified_hypothesis = function
     | AnonHyp n -> int n
@@ -293,7 +293,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       let pr _ = str "_" in
       KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
-  let pr_farg prtac arg = prtac LevelSome (TacArg (CAst.make arg))
+  let pr_farg prtac arg = prtac LevelSome (CAst.make (TacArg  arg))
 
   let is_genarg tag wit =
     let ArgT.Any tag = tag in
@@ -349,9 +349,9 @@ let string_of_genarg_arg (ArgumentType arg) =
     pr_extend_gen (pr_farg prtac)
 
   let pr_raw_alias prtac lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (CAst.make a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (CAst.make @@ TacArg a))) lev key args
   let pr_glob_alias prtac lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (CAst.make a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (CAst.make @@ TacArg a))) lev key args
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
@@ -381,8 +381,8 @@ let string_of_genarg_arg (ArgumentType arg) =
         str "<" ++ KerName.print kn ++ str ">"
 
   let pr_evaluable_reference_env env = function
-    | EvalVarRef id -> pr_id id
-    | EvalConstRef sp ->
+    | Tacred.EvalVarRef id -> pr_id id
+    | Tacred.EvalConstRef sp ->
       Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
 
   let pr_as_disjunctive_ipat prc ipatl =
@@ -458,8 +458,8 @@ let string_of_genarg_arg (ArgumentType arg) =
     | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
 
   let pr_in_hyp_as prc pr_id = function
-    | None -> mt ()
-    | Some (id,ipat) -> pr_in (spc () ++ pr_id id) ++ pr_as_ipat prc ipat
+    | [] -> mt ()
+    | l -> pr_in (spc () ++ prlist_with_sep pr_comma (fun (id,ipat) -> pr_id id ++ pr_as_ipat prc ipat) l)
 
   let pr_in_clause pr_id = function
     | { onhyps=None; concl_occs=NoOccurrences } ->
@@ -578,7 +578,7 @@ let pr_goal_selector ~toplevel s =
            pr_gen  arg
          else
            str name ++ str ":" ++ surround (pr_gen arg)
-      | _ -> pr_arg (TacArg (CAst.make t)) in
+      | _ -> pr_arg (CAst.make (TacArg t)) in
     hov 0 (keyword k ++ spc () ++ pr_lname na ++ prlist pr_funvar bl ++
              str " :=" ++ brk (1,1) ++ pr t)
 
@@ -600,7 +600,7 @@ let pr_goal_selector ~toplevel s =
             str " ]")
 
   let pr_opt_tactic pr = function
-    | TacId [] -> mt ()
+    | {CAst.v=(TacId [])} -> mt ()
     | t -> pr t
 
   let pr_tac_extend_gen pr tf tm tl =
@@ -883,12 +883,12 @@ let pr_goal_selector ~toplevel s =
       pr_atom1
 
     let make_pr_tac env sigma pr strip_prod_binders tag_atom tag =
-
         let extract_binders = function
-          | Tacexp (TacFun (lvar,body)) -> (lvar,Tacexp body)
+          | Tacexp { CAst.loc; v=(TacFun (lvar,body))} -> (lvar,Tacexp body)
           | body -> ([],body) in
         let rec pr_tac inherited tac =
           let return (doc, l) = (tag tac doc, l) in
+          let (loc, tac) = CAst.(tac.loc, tac.v) in
           let (strm, prec) = return (match tac with
             | TacAbstract (t,None) ->
               keyword "abstract " ++ pr_tac (LevelLt labstract) t, labstract
@@ -1039,31 +1039,31 @@ let pr_goal_selector ~toplevel s =
             | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, latom
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
-            | TacAtom { CAst.loc; v=t } ->
+            | TacAtom t ->
               pr_with_comments ?loc (hov 1 (pr_atom env sigma pr strip_prod_binders tag_atom t)), ltatom
-            | TacArg { CAst.v=Tacexp e } ->
+            | TacArg (Tacexp e) ->
               pr_tac inherited e, latom
-            | TacArg { CAst.v=ConstrMayEval (ConstrTerm c) } ->
+            | TacArg (ConstrMayEval (ConstrTerm c)) ->
               keyword "constr:" ++ pr.pr_constr env sigma c, latom
-            | TacArg { CAst.v=ConstrMayEval c } ->
+            | TacArg (ConstrMayEval c) ->
               pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
-            | TacArg { CAst.v=TacFreshId l } ->
+            | TacArg (TacFreshId l) ->
               primitive "fresh" ++ pr_fresh_ids l, latom
-            | TacArg { CAst.v=TacGeneric (isquot,arg) } ->
+            | TacArg (TacGeneric (isquot,arg)) ->
               let p = pr.pr_generic env sigma arg in
               (match isquot with Some name -> str name ++ str ":(" ++ p ++ str ")" | None -> p), latom
-            | TacArg { CAst.v=TacCall {CAst.v=(f,[])} } ->
+            | TacArg (TacCall {CAst.v=(f,[])}) ->
               pr.pr_reference f, latom
-            | TacArg { CAst.v=TacCall {CAst.loc; v=(f,l)} } ->
+            | TacArg (TacCall {CAst.loc; v=(f,l)}) ->
               pr_with_comments ?loc (hov 1 (
                 pr.pr_reference f ++ spc ()
                 ++ prlist_with_sep spc pr_tacarg l)),
               lcall
-            | TacArg { CAst.v=a } ->
+            | TacArg a ->
               pr_tacarg a, latom
-            | TacML { CAst.loc; v=(s,l) } ->
+            | TacML (s,l) ->
               pr_with_comments ?loc (pr.pr_extend 1 s l), lcall
-            | TacAlias { CAst.loc; v=(kn,l) } ->
+            | TacAlias (kn,l) ->
               pr_with_comments ?loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in
@@ -1082,7 +1082,7 @@ let pr_goal_selector ~toplevel s =
           | TacNumgoals ->
             keyword "numgoals"
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
-            hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (TacArg (CAst.make a))))
+            hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (CAst.make (TacArg a))))
 
         in pr_tac
 
@@ -1131,12 +1131,12 @@ let pr_goal_selector ~toplevel s =
     let rec prtac n (t:glob_tactic_expr) =
       let pr = {
         pr_tactic = prtac;
-        pr_constr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env));
-        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env));
-        pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env));
-        pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env));
-        pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env));
+        pr_constr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
+        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
+        pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma));
+        pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env sigma));
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
+        pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env sigma));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
         pr_generic = Pputils.pr_glb_generic;
@@ -1167,7 +1167,7 @@ let pr_goal_selector ~toplevel s =
       let pr = {
         pr_tactic = (fun _ _ -> str "<tactic>");
         pr_constr = pr_econstr_env;
-        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env));
+        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_lconstr = pr_leconstr_env;
         pr_pattern = pr_constr_pattern_env;
         pr_lpattern = pr_lconstr_pattern_env;
@@ -1190,7 +1190,7 @@ let pr_goal_selector ~toplevel s =
 
   let pr_raw_extend env sigma = pr_raw_extend_rec @@ pr_raw_tactic_level env sigma
 
-  let pr_glob_extend env sigma = pr_glob_extend_rec (pr_glob_tactic_level env)
+  let pr_glob_extend env = pr_glob_extend_rec (pr_glob_tactic_level env)
 
   let pr_alias pr lev key args =
     pr_alias_gen (fun _ arg -> pr arg) lev key args
@@ -1213,8 +1213,8 @@ let declare_extra_genarg_pprule wit
         f env sigma pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x) in
   let g x =
     Genprint.PrinterBasic (fun env sigma ->
-    g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env))
-      (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env))
+    g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma))
+      (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma))
       (fun env sigma -> pr_glob_tactic_level env) x)
   in
   let h x =
@@ -1243,8 +1243,8 @@ let declare_extra_genarg_pprule_with_level wit
         default_already_surrounded = default_surrounded;
         default_ensure_surrounded = default_non_surrounded;
         printer = (fun env sigma n ->
-          g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env))
-            (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env))
+          g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma))
+            (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma))
             (fun env sigma -> pr_glob_tactic_level env) n x) }
   in
   let h x =
@@ -1302,10 +1302,10 @@ let register_basic_print0 wit f g h =
   Genprint.register_print0 wit (lift f) (lift g) (lift_top h)
 
 let pr_glob_constr_pptac env sigma c =
-  pr_glob_constr_env env c
+  pr_glob_constr_env env sigma c
 
 let pr_lglob_constr_pptac env sigma c =
-  pr_lglob_constr_env env c
+  pr_lglob_constr_env env sigma c
 
 let pr_raw_intro_pattern =
   lift_env (fun env sigma -> Miscprint.pr_intro_pattern @@ pr_constr_expr env sigma)
@@ -1318,6 +1318,7 @@ let () =
   let pr_unit _ = str "()" in
   let open Genprint in
   register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int;
+  register_basic_print0 wit_nat_or_var (pr_or_var int) (pr_or_var int) int;
   register_basic_print0 wit_ref
     pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
   register_basic_print0 wit_smart_global

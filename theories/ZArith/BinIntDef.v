@@ -311,10 +311,10 @@ Definition of_uint (d:Decimal.uint) := of_N (Pos.of_uint d).
 
 Definition of_hex_uint (d:Hexadecimal.uint) := of_N (Pos.of_hex_uint d).
 
-Definition of_num_uint (d:Numeral.uint) :=
+Definition of_num_uint (d:Number.uint) :=
   match d with
-  | Numeral.UIntDec d => of_uint d
-  | Numeral.UIntHex d => of_hex_uint d
+  | Number.UIntDecimal d => of_uint d
+  | Number.UIntHexadecimal d => of_hex_uint d
   end.
 
 Definition of_int (d:Decimal.int) :=
@@ -329,10 +329,10 @@ Definition of_hex_int (d:Hexadecimal.int) :=
   | Hexadecimal.Neg d => opp (of_hex_uint d)
   end.
 
-Definition of_num_int (d:Numeral.int) :=
+Definition of_num_int (d:Number.int) :=
   match d with
-  | Numeral.IntDec d => of_int d
-  | Numeral.IntHex d => of_hex_int d
+  | Number.IntDecimal d => of_int d
+  | Number.IntHexadecimal d => of_hex_int d
   end.
 
 Definition to_int n :=
@@ -349,7 +349,9 @@ Definition to_hex_int n :=
   | neg p => Hexadecimal.Neg (Pos.to_hex_uint p)
   end.
 
-Definition to_num_int n := Numeral.IntDec (to_int n).
+Definition to_num_int n := Number.IntDecimal (to_int n).
+
+Definition to_num_hex_int n := Number.IntHexadecimal (to_hex_int n).
 
 (** ** Iteration of a function
 
@@ -388,11 +390,13 @@ Definition iter (n:Z) {A} (f:A -> A) (x:A) :=
       fraction [a/b].
     - there is no easy sign rule.
 
-  In addition, note that we arbitrary take [a/0 = 0] and [a mod 0 = 0].
+  In addition, note that we take [a/0 = 0] and [a mod 0 = a].
+  This choice is motivated by the div-mod equation
+    [a = (a / b) * b + (a mod b)] for [b = 0].
 *)
 
 (** First, a division for positive numbers. Even if the second
-   argument is a Z, the answer is arbitrary is it isn't a Zpos. *)
+   argument is a Z, the answer is arbitrary if it isn't a Zpos. *)
 
 Fixpoint pos_div_eucl (a:positive) (b:Z) : Z * Z :=
   match a with
@@ -412,7 +416,7 @@ Fixpoint pos_div_eucl (a:positive) (b:Z) : Z * Z :=
 Definition div_eucl (a b:Z) : Z * Z :=
   match a, b with
     | 0, _ => (0, 0)
-    | _, 0 => (0, 0)
+    | _, 0 => (0, a)
     | pos a', pos _ => pos_div_eucl a' b
     | neg a', pos _ =>
       let (q, r) := pos_div_eucl a' b in
@@ -450,7 +454,9 @@ Infix "mod" := modulo (at level 40, no associativity) : Z_scope.
    - sign rule for division: [quot (-a) b = quot a (-b) = -(quot a b)]
    - and for modulo: [a rem (-b) = a rem b] and [(-a) rem b = -(a rem b)]
 
- Note that we arbitrary take here [quot a 0 = 0] and [a rem 0 = a].
+  Note that we take here [quot a 0 = 0] and [a rem 0 = a].
+  This choice is motivated by the quot-rem equation
+    [a = (quot a b) * b + (a rem b)] for [b = 0].
 *)
 
 Definition quotrem (a b:Z) : Z * Z :=
@@ -668,9 +674,11 @@ Definition lxor a b :=
    | neg a, neg b => of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
  end.
 
+Number Notation Z of_num_int to_num_hex_int : hex_Z_scope.
 Number Notation Z of_num_int to_num_int : Z_scope.
 
 End Z.
 
 (** Re-export the notation for those who just [Import BinIntDef] *)
+Number Notation Z Z.of_num_int Z.to_num_hex_int : hex_Z_scope.
 Number Notation Z Z.of_num_int Z.to_num_int : Z_scope.

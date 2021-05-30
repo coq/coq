@@ -38,7 +38,7 @@ let ( / ) = Filename.concat
 let my_temp_dir = lazy (CUnix.mktemp_dir "Coq_native" "")
 
 let () = at_exit (fun () ->
-    if not !Flags.debug && Lazy.is_val my_temp_dir then
+    if not (keep_debug_files ()) && Lazy.is_val my_temp_dir then
       try
         let d = Lazy.force my_temp_dir in
         Array.iter (fun f -> Sys.remove (Filename.concat d f)) (Sys.readdir d);
@@ -56,7 +56,10 @@ let include_dirs = ref []
 let get_include_dirs () =
   let base = match !include_dirs with
   | [] ->
-    [Envars.coqlib () / "kernel"; Envars.coqlib () / "library"]
+    let coqcorelib = Envars.coqcorelib () in
+    [ coqcorelib / "kernel" ; coqcorelib / "kernel/.kernel.objs/byte/"
+    ; coqcorelib / "library"; coqcorelib / "library/.library.objs/byte/"
+    ]
   | _::_ as l -> l
   in
   if Lazy.is_val my_temp_dir
@@ -129,7 +132,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
        ::"-w"::"a"
        ::include_dirs) @
       ["-impl"; ml_filename] in
-  if !Flags.debug then Feedback.msg_debug (Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
+  debug_native_compiler (fun () -> Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
   try
     let res = CUnix.sys_command (Envars.ocamlfind ()) args in
     match res with
@@ -142,11 +145,13 @@ let call_compiler ?profile:(profile=false) ml_filename =
 let compile fn code ~profile:profile =
   write_ml_code fn code;
   let r = call_compiler ~profile fn in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
+  if (not (keep_debug_files ())) && Sys.file_exists fn then Sys.remove fn;
   r
 
-let compile_library dir code fn =
-  let header = mk_library_header dir in
+type native_library = Nativecode.global list * Nativevalues.symbols
+
+let compile_library (code, symb) fn =
+  let header = mk_library_header symb in
   let fn = fn ^ source_ext in
   let basename = Filename.basename fn in
   let dirname = Filename.dirname fn in
@@ -158,44 +163,43 @@ let compile_library dir code fn =
   let fn = dirname / basename in
   write_ml_code fn ~header code;
   let _ = call_compiler fn in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn
+  if (not (keep_debug_files ())) && Sys.file_exists fn then Sys.remove fn
 
-let native_symbols = ref Names.DPmap.empty
-
-let get_library_native_symbols dir =
-  try Names.DPmap.find dir !native_symbols
-  with Not_found ->
-    CErrors.user_err ~hdr:"get_library_native_symbols"
-      Pp.((str "Linker error in the native compiler. Are you using Require inside a nested Module declaration?") ++ fnl () ++
-          (str "This use case is not supported, but disabling the native compiler may help."))
-
-(* call_linker links dynamically the code for constants in environment or a  *)
-(* conversion test. *)
-let call_linker ?(fatal=true) env ~prefix f upds =
-  native_symbols := env.Environ.native_symbols;
+let execute_library ~prefix f upds =
   rt1 := dummy_value ();
   rt2 := dummy_value ();
   if not (Sys.file_exists f) then
-    begin
-      let msg = "Cannot find native compiler file " ^ f in
-      if fatal then CErrors.user_err Pp.(str msg)
-      else if !Flags.debug then Feedback.msg_debug (Pp.str msg)
-    end
-  else
-  (try
-    if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
-    register_native_file prefix
-   with Dynlink.Error _ as exn ->
-     let exn = Exninfo.capture exn in
-     if fatal then Exninfo.iraise exn
-     else if !Flags.debug then Feedback.msg_debug CErrors.(iprint exn));
-  match upds with Some upds -> update_locations upds | _ -> ()
+    CErrors.user_err Pp.(str "Cannot find native compiler file " ++ str f);
+  if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
+  register_native_file prefix;
+  update_locations upds;
+  (!rt1, !rt2)
 
-let link_library env ~prefix ~dirname ~basename =
+let link_library dirname prefix =
+  let basename = Dynlink.adapt_filename (prefix ^ "cmo") in
   (* We try both [output_dir] and [.coq-native], unfortunately from
      [Require] we don't know if we are loading a library in the build
      dir or in the installed layout *)
   let install_location = dirname / dft_output_dir / basename in
   let build_location = dirname / !output_dir / basename in
   let f = if Sys.file_exists build_location then build_location else install_location in
-  call_linker env ~fatal:false ~prefix f None
+  try
+    if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
+    register_native_file prefix
+  with
+  | Dynlink.Error _ as exn ->
+      debug_native_compiler (fun () -> CErrors.iprint (Exninfo.capture exn))
+
+let delayed_link = ref []
+
+let link_libraries () =
+  let delayed = List.rev !delayed_link in
+  delayed_link := [];
+  List.iter (fun (dirname, libname) ->
+      let prefix = mod_uid_of_dirpath libname ^ "." in
+      if not (Nativecode.is_loaded_native_file prefix) then
+        link_library dirname prefix
+    ) delayed
+
+let enable_library dirname libname =
+  delayed_link := (dirname, libname) :: !delayed_link

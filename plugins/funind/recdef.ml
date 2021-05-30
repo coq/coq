@@ -301,10 +301,11 @@ let check_not_nested env sigma forbidden e =
     | Const _ -> ()
     | Ind _ -> ()
     | Construct _ -> ()
-    | Case (_, t, _, e, a) ->
+    | Case (_, _, pms, (_, t), _, e, a) ->
+      Array.iter check_not_nested pms;
       check_not_nested t;
       check_not_nested e;
-      Array.iter check_not_nested a
+      Array.iter (fun (_, c) -> check_not_nested c) a
     | Fix _ -> user_err Pp.(str "check_not_nested : Fix")
     | CoFix _ -> user_err Pp.(str "check_not_nested : Fix")
   in
@@ -367,7 +368,7 @@ type journey_info =
           -> unit Proofview.tactic)
       -> ( case_info
            * constr
-           * (constr, EInstance.t) case_invert
+           * case_invert
            * constr
            * constr array
          , constr )
@@ -472,7 +473,8 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
             ++ Printer.pr_leconstr_env env sigma expr_info.info
             ++ str " can not contain a recursive call to "
             ++ Id.print expr_info.f_id ) )
-      | Case (ci, t, iv, a, l) ->
+      | Case (ci, u, pms, t, iv, a, l) ->
+        let (ci, t, iv, a, l) = EConstr.expand_case env sigma (ci, u, pms, t, iv, a, l) in
         let continuation_tac_a =
           jinfo.casE (travel jinfo) (ci, t, iv, a, l) expr_info continuation_tac
         in
@@ -776,7 +778,7 @@ let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
       let a' = infos.info in
       let new_info =
         { infos with
-          info = mkCase (ci, t, iv, a', l)
+          info = mkCase (EConstr.contract_case env sigma (ci, a, iv, a', l))
         ; is_main_branch = expr_info.is_main_branch
         ; is_final = expr_info.is_final }
       in

@@ -48,8 +48,10 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
   | GSProp, GSProp
   | GProp, GProp
   | GSet, GSet -> true
-  | GType u1, GType u2 -> Libnames.qualid_eq u1 u2
-  | (GSProp|GProp|GSet|GType _), _ -> false
+  | GUniv u1, GUniv u2 -> Univ.Level.equal u1 u2
+  | GLocalUniv u1, GLocalUniv u2 -> lident_eq u1 u2
+  | GRawUniv u1, GRawUniv u2 -> Univ.Level.equal u1 u2
+  | (GSProp|GProp|GSet|GUniv _|GLocalUniv _|GRawUniv _), _ -> false
 
 exception ComplexSort
 
@@ -60,19 +62,23 @@ let glob_sort_family = let open Sorts in function
   | UNamed [GSet,0] -> InSet
   | _ -> raise ComplexSort
 
-let glob_sort_expr_eq f u1 u2 =
+let map_glob_sort_gen f = function
+  | UNamed l -> UNamed (f l)
+  | UAnonymous _ as x -> x
+
+let glob_sort_gen_eq f u1 u2 =
  match u1, u2 with
   | UAnonymous {rigid=r1}, UAnonymous {rigid=r2} -> r1 = r2
   | UNamed l1, UNamed l2 -> f l1 l2
   | (UNamed _ | UAnonymous _), _ -> false
 
 let glob_sort_eq u1 u2 =
-  glob_sort_expr_eq
+  glob_sort_gen_eq
     (List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n))
     u1 u2
 
 let glob_level_eq u1 u2 =
-  glob_sort_expr_eq glob_sort_name_eq u1 u2
+  glob_sort_gen_eq glob_sort_name_eq u1 u2
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Explicit, Explicit -> true
@@ -98,9 +104,8 @@ let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
 let cast_type_eq eq t1 t2 = match t1, t2 with
   | CastConv t1, CastConv t2 -> eq t1 t2
   | CastVM t1, CastVM t2 -> eq t1 t2
-  | CastCoerce, CastCoerce -> true
   | CastNative t1, CastNative t2 -> eq t1 t2
-  | (CastConv _ | CastVM _ | CastCoerce | CastNative _), _ -> false
+  | (CastConv _ | CastVM _ | CastNative _), _ -> false
 
 let matching_var_kind_eq k1 k2 = match k1, k2 with
 | FirstOrderPatVar ido1, FirstOrderPatVar ido2 -> Id.equal ido1 ido2
@@ -182,14 +187,12 @@ let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
 let map_cast_type f = function
   | CastConv a -> CastConv (f a)
   | CastVM a -> CastVM (f a)
-  | CastCoerce -> CastCoerce
   | CastNative a -> CastNative (f a)
 
 let smartmap_cast_type f c =
   match c with
     | CastConv a -> let a' = f a in if a' == a then c else CastConv a'
     | CastVM a -> let a' = f a in if a' == a then c else CastVM a'
-    | CastCoerce -> CastCoerce
     | CastNative a -> let a' = f a in if a' == a then c else CastNative a'
 
 let map_glob_constr_left_to_right f = DAst.map (function
@@ -269,7 +272,7 @@ let fold_glob_constr f acc = DAst.with_val (function
     Array.fold_left f (Array.fold_left f acc tyl) bv
   | GCast (c,k) ->
     let acc = match k with
-      | CastConv t | CastVM t | CastNative t -> f acc t | CastCoerce -> acc in
+      | CastConv t | CastVM t | CastNative t -> f acc t in
     f acc c
   | GArray (_u,t,def,ty) -> f (f (Array.fold_left f acc t) def) ty
   | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc
@@ -312,7 +315,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
     Array.fold_left_i f' acc idl
   | GCast (c,k) ->
     let acc = match k with
-      | CastConv t | CastVM t | CastNative t -> f v acc t | CastCoerce -> acc in
+      | CastConv t | CastVM t | CastNative t -> f v acc t in
     f v acc c
   | GArray (_u, t, def, ty) -> f v (f v (Array.fold_left (f v) acc t) def) ty
   | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc))
@@ -523,6 +526,7 @@ let rec cases_pattern_of_glob_constr env na c =
     | Anonymous -> PatVar (Name id)
     end
   | GHole (_,_,_) -> PatVar na
+  | GRef (GlobRef.VarRef id,_) -> PatVar (Name id)
   | GRef (GlobRef.ConstructRef cstr,_) -> PatCstr (cstr,[],na)
   | GApp (c, l) ->
     begin match DAst.get c with

@@ -1,0 +1,6 @@
+- **Added:**
+  The Ltac2 grammar can now be printed using the
+  Print Grammar ltac2 command
+  (`#14093 <https://github.com/coq/coq/pull/14093>`_,
+  fixes `#14092 <https://github.com/coq/coq/issues/14092>`_,
+  by Pierre-Marie Pédrot).

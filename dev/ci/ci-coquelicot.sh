@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 
+set -e
+
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-install_ssreflect
-
 git_download coquelicot
 
-( cd "${CI_BUILD_DIR}/coquelicot" && autoreconf -i -s && ./configure && ./remake "-j${NJOBS}" )
+( cd "${CI_BUILD_DIR}/coquelicot"
+  if ! [ -x ./configure ]; then
+      autoreconf -i -s
+      ./configure
+  fi
+  ./remake "-j${NJOBS}"
+  ./remake install
+)

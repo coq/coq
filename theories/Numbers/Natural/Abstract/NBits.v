@@ -23,7 +23,7 @@ Module Type NBitsProp
 Include BoolEqualityFacts A.
 
 Ltac order_nz := try apply pow_nonzero; order'.
-Hint Rewrite div_0_l mod_0_l div_1_r mod_1_r : nz.
+Global Hint Rewrite div_0_l mod_0_l div_1_r mod_1_r : nz.
 
 (** Some properties of power and division *)
 
@@ -50,6 +50,7 @@ Qed.
 Definition b2n (b:bool) := if b then 1 else 0.
 Local Coercion b2n : bool >-> t.
 
+#[global]
 Instance b2n_proper : Proper (Logic.eq ==> eq) b2n.
 Proof. solve_proper. Qed.
 
@@ -324,6 +325,7 @@ Qed.
 
 Definition eqf (f g:t -> bool) := forall n:t, f n = g n.
 
+#[global]
 Instance eqf_equiv : Equivalence eqf.
 Proof.
  split; congruence.
@@ -331,6 +333,7 @@ Qed.
 
 Local Infix "===" := eqf (at level 70, no associativity).
 
+#[global]
 Instance testbit_eqf : Proper (eq==>eqf) testbit.
 Proof.
  intros a a' Ha n. now rewrite Ha.
@@ -368,7 +371,7 @@ Proof.
  split. apply bits_inj. intros EQ; now rewrite EQ.
 Qed.
 
-Hint Rewrite lxor_spec lor_spec land_spec ldiff_spec bits_0 : bitwise.
+Global Hint Rewrite lxor_spec lor_spec land_spec ldiff_spec bits_0 : bitwise.
 
 Tactic Notation "bitwise" "as" simple_intropattern(m)
   := apply bits_inj; intros m; autorewrite with bitwise.
@@ -432,11 +435,13 @@ Proof.
  intros. now rewrite shiftl_mul_pow2, mul_pow2_bits_add.
 Qed.
 
+#[global]
 Instance shiftr_wd : Proper (eq==>eq==>eq) shiftr.
 Proof.
  intros a a' Ha b b' Hb. now rewrite 2 shiftr_div_pow2, Ha, Hb.
 Qed.
 
+#[global]
 Instance shiftl_wd : Proper (eq==>eq==>eq) shiftl.
 Proof.
  intros a a' Ha b b' Hb. now rewrite 2 shiftl_mul_pow2, Ha, Hb.
@@ -534,6 +539,7 @@ Proof.
  intros. rewrite div2_spec, shiftr_div_pow2. now nzsimpl.
 Qed.
 
+#[global]
 Instance div2_wd : Proper (eq==>eq) div2.
 Proof.
  intros a a' Ha. now rewrite 2 div2_div, Ha.
@@ -548,21 +554,25 @@ Qed.
 (** Properties of [lxor] and others, directly deduced
     from properties of [xorb] and others. *)
 
+#[global]
 Instance lxor_wd : Proper (eq ==> eq ==> eq) lxor.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
 Qed.
 
+#[global]
 Instance land_wd : Proper (eq ==> eq ==> eq) land.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
 Qed.
 
+#[global]
 Instance lor_wd : Proper (eq ==> eq ==> eq) lor.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
 Qed.
 
+#[global]
 Instance ldiff_wd : Proper (eq ==> eq ==> eq) ldiff.
 Proof.
  intros a a' Ha b b' Hb. bitwise. now rewrite Ha, Hb.
@@ -746,9 +756,11 @@ Proof.
  intros. unfold clearbit. now rewrite shiftl_1_l.
 Qed.
 
+#[global]
 Instance setbit_wd : Proper (eq==>eq==>eq) setbit.
 Proof. unfold setbit. solve_proper. Qed.
 
+#[global]
 Instance clearbit_wd : Proper (eq==>eq==>eq) clearbit.
 Proof. unfold clearbit. solve_proper. Qed.
 
@@ -898,9 +910,11 @@ Definition ones n := P (1 << n).
 
 Definition lnot a n := lxor a (ones n).
 
+#[global]
 Instance ones_wd : Proper (eq==>eq) ones.
 Proof. unfold ones. solve_proper. Qed.
 
+#[global]
 Instance lnot_wd : Proper (eq==>eq==>eq) lnot.
 Proof. unfold lnot. solve_proper. Qed.
 

@@ -320,7 +320,6 @@ Proof.
   - contradiction.
   - exact Hxltz.
 Qed.
-(* Todo: this was Defined. Why *)
 
 Lemma CReal_lt_le_trans : forall x y z : CReal,
     x < y -> y <= z -> x < z.
@@ -330,7 +329,6 @@ Proof.
   - exact Hxltz.
   - contradiction.
 Qed.
-(* Todo: this was Defined. Why *)
 
 Lemma CReal_le_trans : forall x y z : CReal,
     x <= y -> y <= z -> x <= z.
@@ -347,7 +345,6 @@ Proof.
   apply (CReal_lt_le_trans _ y _ Hxlty).
   apply CRealLt_asym; exact Hyltz.
 Qed.
-(* Todo: this was Defined. Why *)
 
 Lemma CRealEq_trans : forall x y z : CReal,
     CRealEq x y -> CRealEq y z -> CRealEq x z.
@@ -366,6 +363,7 @@ Add Parametric Relation : CReal CRealEq
     transitivity proved by CRealEq_trans
       as CRealEq_rel.
 
+#[global]
 Instance CRealEq_relT : CRelationClasses.Equivalence CRealEq.
 Proof.
   split.
@@ -374,6 +372,7 @@ Proof.
   - exact CRealEq_trans.
 Qed.
 
+#[global]
 Instance CRealLt_morph
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealLt.
@@ -394,6 +393,7 @@ Proof.
         assumption. assumption. contradiction.
 Qed.
 
+#[global]
 Instance CRealGt_morph
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealGt.
@@ -401,6 +401,7 @@ Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0. apply CRealLt_morph; assumption.
 Qed.
 
+#[global]
 Instance CReal_appart_morph
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CReal_appart.
@@ -559,6 +560,7 @@ Proof.
   all: assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
 Qed.
 
+#[global]
 Instance inject_Q_morph_T
   : CMorphisms.Proper
       (CMorphisms.respectful Qeq CRealEq) inject_Q.
@@ -844,6 +846,7 @@ Proof.
   - apply CReal_plus_proper_r. apply H.
 Qed.
 
+#[global]
 Instance CReal_plus_morph_T
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRealEq)) CReal_plus.

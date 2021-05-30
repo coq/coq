@@ -15,8 +15,6 @@ open Util
 open Pp
 open Names
 open Nameops
-open Libobject
-open Lib
 open Notation_term
 open Notation_ops
 open Globnames
@@ -71,20 +69,16 @@ let reserve_table = Summary.ref Id.Map.empty ~name:"reserved-type"
 let reserve_revtable = Summary.ref KeyMap.empty ~name:"reserved-type-rev"
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
-  | NList (_,_,NApp (NRef ref,args),_,_)
-  | NBinderList (_,_,NApp (NRef ref,args),_,_) -> RefKey (canonical_gr ref), Some (List.length args)
-  | NRef ref -> RefKey(canonical_gr ref), None
+  | NApp (NRef (ref,_),args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | NList (_,_,NApp (NRef (ref,_),args),_,_)
+  | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) -> RefKey (canonical_gr ref), Some (List.length args)
+  | NRef (ref,_) -> RefKey(canonical_gr ref), None
   | _ -> Oth, None
 
-let cache_reserved_type (_,(id,t)) =
+let add_reserved_type (id,t) =
   let key = fst (notation_constr_key t) in
   reserve_table := Id.Map.add id t !reserve_table;
   reserve_revtable := keymap_add key (id, t) !reserve_revtable
-
-let in_reserved : Id.t * notation_constr -> obj =
-  declare_object {(default_object "RESERVED-TYPE") with
-    cache_function = cache_reserved_type }
 
 let declare_reserved_type_binding {CAst.loc;v=id} t =
   if not (Id.equal id (root_of_id id)) then
@@ -96,7 +90,7 @@ let declare_reserved_type_binding {CAst.loc;v=id} t =
     user_err ?loc ~hdr:"declare_reserved_type"
     ((Id.print id++str" is already bound to a type"))
   with Not_found -> () end;
-  add_anonymous_leaf (in_reserved (id,t))
+  add_reserved_type (id,t)
 
 let declare_reserved_type idl t =
   List.iter (fun id -> declare_reserved_type_binding id t) (List.rev idl)
@@ -119,7 +113,7 @@ let revert_reserved_type t =
         then I've introduced a bug... *)
     let filter _ pat =
       try
-        let _ = match_notation_constr false t ([], pat) in
+        let _ = match_notation_constr ~print_univ:false t ~vars:Id.Set.empty ([], pat) in
         true
       with No_match -> false
     in

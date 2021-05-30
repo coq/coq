@@ -31,6 +31,10 @@ let set_help_tip wev = function
   | None -> ()
   | Some help -> GtkBase.Widget.Tooltip.set_text wev#as_widget help
 
+let select_arch m m_osx =
+  if Coq_config.arch = "Darwin" then m_osx else m
+
+(* How the modifiers are named in the preference box *)
 let modifiers_to_string m =
   let rec iter m s =
     match m with
@@ -41,6 +45,7 @@ let modifiers_to_string m =
                         `CONTROL -> "<ctrl>"
                       | `SHIFT -> "<shft>"
                       | `LOCK -> "<lock>"
+                      | `META -> select_arch "<meta>" "<cmd>"
                       | `MOD1 -> "<alt>"
                       | `MOD2 -> "<mod2>"
                       | `MOD3 -> "<mod3>"
@@ -773,7 +778,7 @@ let modifiers
   ?(editable=true)
   ?(expand=true)
   ?help
-  ?(allow=[`CONTROL;`SHIFT;`LOCK;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5])
+  ?(allow=[`CONTROL;`SHIFT;`LOCK;`META;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5])
   ?(f=(fun _ -> ())) label v =
   Modifiers_param
     {

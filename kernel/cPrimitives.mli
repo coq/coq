@@ -16,8 +16,11 @@ type t =
   | Int63mul
   | Int63div
   | Int63mod
+  | Int63divs
+  | Int63mods
   | Int63lsr
   | Int63lsl
+  | Int63asr
   | Int63land
   | Int63lor
   | Int63lxor
@@ -32,7 +35,10 @@ type t =
   | Int63eq
   | Int63lt
   | Int63le
+  | Int63lts
+  | Int63les
   | Int63compare
+  | Int63compares
   | Float64opp
   | Float64abs
   | Float64eq
@@ -134,8 +140,8 @@ val parse_op_or_type : ?loc:Loc.t -> string -> op_or_type
 
 val univs : t -> Univ.AUContext.t
 
-val types : t -> Constr.rel_context * ind_or_type list
-(** Parameters * Reduction relevant arguments and output type
+val types : t -> Constr.rel_context * ind_or_type list * ind_or_type
+(** Parameters * Reduction relevant arguments * output type
 
   XXX we could reify universes in ind_or_type (currently polymorphic types
   like array are assumed to use universe 0). *)

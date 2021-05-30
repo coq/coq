@@ -41,20 +41,24 @@ Definition Singleton (a:A) :=
        end).
 
 Definition In (s:uniset) (a:A) : Prop := charac s a = true.
+#[local]
 Hint Unfold In : core.
 
 (** uniset inclusion *)
 Definition incl (s1 s2:uniset) := forall a:A, Bool.le (charac s1 a) (charac s2 a).
+#[local]
 Hint Unfold incl : core.
 
 (** uniset equality *)
 Definition seq (s1 s2:uniset) := forall a:A, charac s1 a = charac s2 a.
+#[local]
 Hint Unfold seq : core.
 
 Lemma le_refl : forall b, Bool.le b b.
 Proof.
 destruct b; simpl; auto.
 Qed.
+#[local]
 Hint Resolve le_refl : core.
 
 Lemma incl_left : forall s1 s2:uniset, seq s1 s2 -> incl s1 s2.
@@ -71,6 +75,7 @@ Lemma seq_refl : forall x:uniset, seq x x.
 Proof.
 destruct x; unfold seq; auto.
 Qed.
+#[local]
 Hint Resolve seq_refl : core.
 
 Lemma seq_trans : forall x y z:uniset, seq x y -> seq y z -> seq x z.
@@ -94,6 +99,7 @@ Lemma union_empty_left : forall x:uniset, seq x (union Emptyset x).
 Proof.
 unfold seq; unfold union; simpl; auto.
 Qed.
+#[local]
 Hint Resolve union_empty_left : core.
 
 Lemma union_empty_right : forall x:uniset, seq x (union x Emptyset).
@@ -101,6 +107,7 @@ Proof.
 unfold seq; unfold union; simpl.
 intros x a; rewrite (orb_b_false (charac x a)); auto.
 Qed.
+#[local]
 Hint Resolve union_empty_right : core.
 
 Lemma union_comm : forall x y:uniset, seq (union x y) (union y x).
@@ -108,6 +115,7 @@ Proof.
 unfold seq; unfold charac; unfold union.
 destruct x; destruct y; auto with bool.
 Qed.
+#[local]
 Hint Resolve union_comm : core.
 
 Lemma union_ass :
@@ -116,6 +124,7 @@ Proof.
 unfold seq; unfold union; unfold charac.
 destruct x; destruct y; destruct z; auto with bool.
 Qed.
+#[local]
 Hint Resolve union_ass : core.
 
 Lemma seq_left : forall x y z:uniset, seq x y -> seq (union x z) (union y z).
@@ -124,6 +133,7 @@ unfold seq; unfold union; unfold charac.
 destruct x; destruct y; destruct z.
 intros; elim H; auto.
 Qed.
+#[local]
 Hint Resolve seq_left : core.
 
 Lemma seq_right : forall x y z:uniset, seq x y -> seq (union z x) (union z y).
@@ -132,6 +142,7 @@ unfold seq; unfold union; unfold charac.
 destruct x; destruct y; destruct z.
 intros; elim H; auto.
 Qed.
+#[local]
 Hint Resolve seq_right : core.
 
 

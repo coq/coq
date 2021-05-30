@@ -195,35 +195,48 @@ Section Defs.
 End Defs.
 
 (** Default rewrite crelations handled by [setoid_rewrite]. *)
+#[global]
 Instance: RewriteRelation impl.
 Defined.
 
+#[global]
 Instance: RewriteRelation iff.
 Defined.
 
 (** Hints to drive the typeclass resolution avoiding loops
  due to the use of full unification. *)
+#[global]
 Hint Extern 1 (Reflexive (complement _)) => class_apply @irreflexivity : typeclass_instances.
+#[global]
 Hint Extern 3 (Symmetric (complement _)) => class_apply complement_Symmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Irreflexive (complement _)) => class_apply complement_Irreflexive : typeclass_instances.
 
+#[global]
 Hint Extern 3 (Reflexive (flip _)) => apply flip_Reflexive : typeclass_instances.
+#[global]
 Hint Extern 3 (Irreflexive (flip _)) => class_apply flip_Irreflexive : typeclass_instances.
+#[global]
 Hint Extern 3 (Symmetric (flip _)) => class_apply flip_Symmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Asymmetric (flip _)) => class_apply flip_Asymmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Antisymmetric (flip _)) => class_apply flip_Antisymmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Transitive (flip _)) => class_apply flip_Transitive : typeclass_instances.
+#[global]
 Hint Extern 3 (StrictOrder (flip _)) => class_apply flip_StrictOrder : typeclass_instances.
+#[global]
 Hint Extern 3 (PreOrder (flip _)) => class_apply flip_PreOrder : typeclass_instances.
 
+#[global]
 Hint Extern 4 (subrelation (flip _) _) => 
   class_apply @subrelation_symmetric : typeclass_instances.
 
+#[global]
 Hint Resolve irreflexivity : ord.
 
 Unset Implicit Arguments.
-
-(** A HintDb for crelations. *)
 
 Ltac solve_crelation :=
   match goal with
@@ -231,6 +244,7 @@ Ltac solve_crelation :=
   | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
   end.
 
+#[global]
 Hint Extern 4 => solve_crelation : crelations.
 
 (** We can already dualize all these properties. *)
@@ -265,25 +279,36 @@ Local Obligation Tactic := simpl_crelation.
 
 (** Logical implication. *)
 
+#[global]
 Program Instance impl_Reflexive : Reflexive impl.
+#[global]
 Program Instance impl_Transitive : Transitive impl.
 
 (** Logical equivalence. *)
 
+#[global]
 Instance iff_Reflexive : Reflexive iff := iff_refl.
+#[global]
 Instance iff_Symmetric : Symmetric iff := iff_sym.
+#[global]
 Instance iff_Transitive : Transitive iff := iff_trans.
 
 (** Logical equivalence [iff] is an equivalence crelation. *)
 
+#[global]
 Program Instance iff_equivalence : Equivalence iff. 
+#[global]
 Program Instance arrow_Reflexive : Reflexive arrow.
+#[global]
 Program Instance arrow_Transitive : Transitive arrow.
 
+#[global]
 Instance iffT_Reflexive : Reflexive iffT. 
 Proof. firstorder. Defined.
+#[global]
 Instance iffT_Symmetric : Symmetric iffT. 
 Proof. firstorder. Defined. 
+#[global]
 Instance iffT_Transitive : Transitive iffT.
 Proof. firstorder. Defined.
 
@@ -340,17 +365,16 @@ Section Binary.
   Global Instance partial_order_antisym `(PartialOrder eqA R) : Antisymmetric eqA R.
   Proof with auto.
     reduce_goal.
-    apply H. firstorder.
+    firstorder.
   Qed.
 
   Lemma PartialOrder_inverse `(PartialOrder eqA R) : PartialOrder eqA (flip R).
   Proof.
-    unfold flip; constructor; unfold flip.
-    - intros X. apply H. apply symmetry. apply X.
-    - unfold relation_conjunction. intros [H1 H2]. apply H. constructor; assumption.
+    firstorder.
   Qed.
 End Binary.
 
+#[global]
 Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : typeclass_instances.
 
 (** The partial order defined by subrelation and crelation equivalence. *)

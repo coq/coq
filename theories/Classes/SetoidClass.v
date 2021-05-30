@@ -47,8 +47,11 @@ Proof. typeclasses eauto. Qed.
 Definition setoid_trans `(sa : Setoid A) : Transitive equiv.
 Proof. typeclasses eauto. Qed.
 
+#[global]
 Existing Instance setoid_refl.
+#[global]
 Existing Instance setoid_sym.
+#[global]
 Existing Instance setoid_trans.
 
 (** Standard setoids. *)
@@ -56,6 +59,7 @@ Existing Instance setoid_trans.
 (* Program Instance eq_setoid : Setoid A := *)
 (*   equiv := eq ; setoid_equiv := eq_equivalence. *)
 
+#[global]
 Program Instance iff_setoid : Setoid Prop :=
   { equiv := iff ; setoid_equiv := iff_equivalence }.
 
@@ -87,7 +91,7 @@ Tactic Notation "clsubst" "*" := clsubst_nofail.
 
 Lemma nequiv_equiv_trans : forall `{Setoid A} (x y z : A), x =/= y -> y == z -> x =/= z.
 Proof with auto.
-  intros; intro.
+  intros A ? x y z H H0 H1.
   assert(z == y) by (symmetry ; auto).
   assert(x == y) by (transitivity z ; eauto).
   contradiction.
@@ -95,7 +99,7 @@ Qed.
 
 Lemma equiv_nequiv_trans : forall `{Setoid A} (x y z : A), x == y -> y =/= z -> x =/= z.
 Proof.
-  intros; intro.
+  intros A ? x y z **; intro.
   assert(y == x) by (symmetry ; auto).
   assert(y == z) by (transitivity x ; eauto).
   contradiction.
@@ -120,9 +124,11 @@ Ltac setoidify := repeat setoidify_tac.
 
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
+#[global]
 Program Instance setoid_morphism `(sa : Setoid A) : Proper (equiv ++> equiv ++> iff) equiv :=
   proper_prf.
 
+#[global]
 Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (equiv ++> iff) (equiv x) :=
   proper_prf.
 

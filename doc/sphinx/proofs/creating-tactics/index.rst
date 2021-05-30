@@ -18,13 +18,13 @@ new tactics:
 
 - `Mtac2 <https://github.com/Mtac2/Mtac2>`_ is an external plugin
   which provides another typed tactic language.  While Ltac2 belongs
-  to the ML language family, Mtac2 reuses the language of |Coq| itself
-  as the language to build |Coq| tactics.
+  to the ML language family, Mtac2 reuses the language of Coq itself
+  as the language to build Coq tactics.
 
 - The most traditional way of building new complex tactics is to write
-  a |Coq| plugin in |OCaml|.  Beware that this also requires much more
-  effort and commitment.  A tutorial for writing |Coq| plugins is
-  available in the |Coq| repository in `doc/plugin_tutorial
+  a Coq plugin in OCaml.  Beware that this also requires much more
+  effort and commitment.  A tutorial for writing Coq plugins is
+  available in the Coq repository in `doc/plugin_tutorial
   <https://github.com/coq/coq/tree/master/doc/plugin_tutorial>`_.
 
 .. toctree::

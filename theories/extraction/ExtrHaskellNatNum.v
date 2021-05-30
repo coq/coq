@@ -32,6 +32,6 @@ Extract Constant Init.Nat.pred => "(\n -> Prelude.max 0 (Prelude.pred n))".
 Extract Constant Init.Nat.sub => "(\n m -> Prelude.max 0 (n Prelude.- m))".
 
 Extract Constant Nat.div => "(\n m -> if m Prelude.== 0 then 0 else Prelude.div n m)".
-Extract Constant Nat.modulo => "(\n m -> if m Prelude.== 0 then 0 else Prelude.mod n m)".
+Extract Constant Nat.modulo => "(\n m -> if m Prelude.== 0 then n else Prelude.mod n m)".
 Extract Constant Init.Nat.div => "(\n m -> if m Prelude.== 0 then 0 else Prelude.div n m)".
-Extract Constant Init.Nat.modulo => "(\n m -> if m Prelude.== 0 then 0 else Prelude.mod n m)".
+Extract Constant Init.Nat.modulo => "(\n m -> if m Prelude.== 0 then n else Prelude.mod n m)".

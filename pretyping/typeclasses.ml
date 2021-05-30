@@ -75,9 +75,6 @@ type typeclasses = typeclass GlobRef.Map.t
 type instance = {
   is_class: GlobRef.t;
   is_info: hint_info;
-  (* Sections where the instance should be redeclared,
-     None for discard, Some 0 for none. *)
-  is_global: int option;
   is_impl: GlobRef.t;
 }
 
@@ -241,10 +238,6 @@ let get_solve_all_instances, solve_all_instances_hook = Hook.make ()
 
 let solve_all_instances env evd filter unique split fail =
   Hook.get get_solve_all_instances env evd filter unique split fail
-
-(** Profiling resolution of typeclasses *)
-(* let solve_classeskey = CProfile.declare_profile "solve_typeclasses" *)
-(* let solve_problem = CProfile.profile5 solve_classeskey solve_problem *)
 
 let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =

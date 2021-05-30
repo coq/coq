@@ -109,7 +109,7 @@ module Tag = struct
 
 end
 
-let msgnl_with ?pre_hdr fmt strm =
+let msgnl_with fmt strm =
   pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
 
@@ -168,6 +168,7 @@ let default_tag_map () = let open Terminal in [
     "message.error"    , make ~bold:true ~fg_color:`WHITE ~bg_color:`RED ()
   ; "message.warning"  , make ~bold:true ~fg_color:`WHITE ~bg_color:`YELLOW ()
   ; "message.debug"    , make ~bold:true ~fg_color:`WHITE ~bg_color:`MAGENTA ()
+  ; "message.prompt"   , make ~fg_color:`GREEN ()
   (* Coming from the printer *)
   ; "constr.evar"      , make            ~fg_color:`LIGHT_BLUE ()
   ; "constr.keyword"   , make ~bold:true ()

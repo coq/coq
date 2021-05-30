@@ -56,7 +56,7 @@ let compare_stack_shape stk1 stk2 =
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj _p1::s1, Zproj _p2::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | (ZcaseT(_c1,_,_,_)::s1, ZcaseT(_c2,_,_,_)::s2) ->
+    | (ZcaseT(_c1,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -74,7 +74,7 @@ type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
   | Zlproj of Projection.Repr.t * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
-  | Zlcase of case_info * lift * constr * constr array * fconstr subs
+  | Zlcase of case_info * lift * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
   | Zlprimitive of
      CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
 and lft_constr_stack = lft_constr_stack_elt list
@@ -109,8 +109,8 @@ let pure_stack lfts stk =
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
-            | (ZcaseT(ci,p,br,e),(l,pstk)) ->
-                (l,Zlcase(ci,l,p,br,e)::pstk)
+            | (ZcaseT(ci,u,pms,p,br,e),(l,pstk)) ->
+                (l,Zlcase(ci,l,u,pms,p,br,e)::pstk)
             | (Zprimitive(op,c,rargs,kargs),(l,pstk)) ->
                 (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
                             List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk))
@@ -233,6 +233,9 @@ let convert_instances ~flex u u' (s, check) =
 
 exception MustExpand
 
+let convert_instances_cumul pb var u u' (s, check) =
+  (check.compare_cumul_instances pb var u u' s, check)
+
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
@@ -280,11 +283,12 @@ let convert_constructors ctor nargs u1 u2 (s, check) =
   convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
     ctor nargs u1 u2 s, check
 
-let conv_table_key infos k1 k2 cuniv =
+let conv_table_key infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when Constant.CanOrd.equal cst cst' ->
     if Univ.Instance.equal u u' then cuniv
+    else if Int.equal nargs 1 && is_array_type (info_env infos) cst then cuniv
     else
       let flex = evaluable_constant cst (info_env infos)
         && RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
@@ -292,8 +296,6 @@ let conv_table_key infos k1 k2 cuniv =
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
-
-exception IrregularPatternShape
 
 let unfold_ref_with_args infos tab fl v =
   match unfold_reference infos tab fl with
@@ -303,6 +305,11 @@ let unfold_ref_with_args infos tab fl v =
     let rargs, a, nargs, v = get_native_args1 op c v in
     Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
   | Undef _ | OpaqueDef _ | Primitive _ -> None
+
+let same_args_size sk1 sk2 =
+  let n = CClosure.stack_args_size sk1 in
+  if Int.equal n (CClosure.stack_args_size sk2) then n
+  else raise NotConvertible
 
 type conv_tab = {
   cnv_inf : clos_infos;
@@ -320,17 +327,6 @@ let push_relevance infos r =
 
 let push_relevances infos nas =
   { infos with cnv_inf = CClosure.push_relevances infos.cnv_inf nas }
-
-let rec skip_pattern infos relevances n c1 c2 =
-  if Int.equal n 0 then {infos with cnv_inf = CClosure.set_info_relevances infos.cnv_inf relevances}, c1, c2
-  else match kind c1, kind c2 with
-    | Lambda (x, _, c1), Lambda (_, _, c2) ->
-      skip_pattern infos (Range.cons x.Context.binder_relevance relevances) (pred n) c1 c2
-    | _ -> raise IrregularPatternShape
-
-let skip_pattern infos n c1 c2 =
-  if Int.equal n 0 then infos, c1, c2
-  else skip_pattern infos (info_relevances infos.cnv_inf) n c1 c2
 
 let is_irrelevant infos lft c =
   let env = info_env infos.cnv_inf in
@@ -357,6 +353,39 @@ let eta_expand_constructor env ((ind,ctor),u as pctor) =
   let c = mkApp (mkConstructU pctor, args) in
   let c = Term.it_mkLambda_or_LetIn c ctx in
   inject c
+
+let inductive_subst (mind, _) mib u pms =
+  let open Context.Rel.Declaration in
+  let ntypes = mib.mind_ntypes in
+  let rec self i accu =
+    if Int.equal i ntypes then accu
+    else self (i + 1) (subs_cons (inject (mkIndU ((mind, i), u))) accu)
+  in
+  let accu = self 0 (subs_id 0) in
+  let rec mk_pms pms ctx = match ctx, pms with
+  | [], [] -> accu
+  | LocalAssum _ :: ctx, c :: pms ->
+    let subs = mk_pms pms ctx in
+    subs_cons c subs
+  | LocalDef (_, c, _) :: ctx, pms ->
+    let c = Vars.subst_instance_constr u c in
+    let subs = mk_pms pms ctx in
+    subs_cons (mk_clos subs c) subs
+  | LocalAssum _ :: _, [] | [], _ :: _ -> assert false
+  in
+  mk_pms (List.rev pms) mib.mind_params_ctxt
+
+let esubst_of_rel_context_instance ctx u args e =
+  let open Context.Rel.Declaration in
+  let rec aux lft e args ctx = match ctx with
+  | [] -> lft, e
+  | LocalAssum _ :: ctx -> aux (lft + 1) (subs_lift e) (subs_lift args) ctx
+  | LocalDef (_, c, _) :: ctx ->
+    let c = Vars.subst_instance_constr u c in
+    let c = mk_clos args c in
+    aux lft (subs_cons c e) (subs_cons c args) ctx
+  in
+  aux 0 e args (List.rev ctx)
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
@@ -408,7 +437,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
       (try
-         let cuniv = conv_table_key infos.cnv_inf fl1 fl2 cuniv in
+         let nargs = same_args_size v1 v2 in
+         let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | Univ.UniverseInconsistency _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
@@ -577,17 +607,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
-          let nargs = CClosure.stack_args_size v1 in
-          if not (Int.equal nargs (CClosure.stack_args_size v2))
-          then raise NotConvertible
-          else
-            match convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
-            | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-            | exception MustExpand ->
-              let env = info_env infos.cnv_inf in
-              let hd1 = eta_expand_ind env pind1 in
-              let hd2 = eta_expand_ind env pind2 in
-              eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
+          let nargs = same_args_size v1 v2 in
+          match convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
+          | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+          | exception MustExpand ->
+            let env = info_env infos.cnv_inf in
+            let hd1 = eta_expand_ind env pind1 in
+            let hd2 = eta_expand_ind env pind2 in
+            eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1 as pctor1), FConstruct ((ind2,j2),u2 as pctor2)) ->
@@ -597,17 +624,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
-          let nargs = CClosure.stack_args_size v1 in
-          if not (Int.equal nargs (CClosure.stack_args_size v2))
-          then raise NotConvertible
-          else
-            match convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv with
-            | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-            | exception MustExpand ->
-              let env = info_env infos.cnv_inf in
-              let hd1 = eta_expand_constructor env pctor1 in
-              let hd2 = eta_expand_constructor env pctor2 in
-              eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
+          let nargs = same_args_size v1 v2 in
+          match convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv with
+          | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+          | exception MustExpand ->
+            let env = info_env infos.cnv_inf in
+            let hd1 = eta_expand_constructor env pctor1 in
+            let hd2 = eta_expand_constructor env pctor2 in
+            eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
       else raise NotConvertible
 
     (* Eta expansion of records *)
@@ -671,13 +695,23 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if Float64.equal f1 f2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
-    | FCaseInvert (ci1,p1,_,_,br1,e1), FCaseInvert (ci2,p2,_,_,br2,e2) ->
+    | FCaseInvert (ci1,u1,pms1,p1,_,_,br1,e1), FCaseInvert (ci2,u2,pms2,p2,_,_,br2,e2) ->
       (if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
       let el1 = el_stack lft1 v1 and el2 = el_stack lft2 v2 in
-      let ccnv = ccnv CONV l2r infos el1 el2 in
-      let cuniv = ccnv (mk_clos e1 p1) (mk_clos e2 p2) cuniv in
-      Array.fold_right2 (fun b1 b2 cuniv -> ccnv (mk_clos e1 b1) (mk_clos e2 b2) cuniv)
-        br1 br2 cuniv
+      let fold c1 c2 cuniv = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
+      (** FIXME: cache the presence of let-bindings in the case_info *)
+      let mind = Environ.lookup_mind (fst ci1.ci_ind) (info_env infos.cnv_inf) in
+      let mip = mind.Declarations.mind_packets.(snd ci1.ci_ind) in
+      let cuniv =
+        let ind = (mind,snd ci1.ci_ind) in
+        let nargs = inductive_cumulativity_arguments ind in
+        convert_inductives CONV ind nargs u1 u2 cuniv
+      in
+      let pms1 = Array.map_to_list (fun c -> mk_clos e1 c) pms1 in
+      let pms2 = Array.map_to_list (fun c -> mk_clos e2 c) pms2 in
+      let cuniv = List.fold_right2 fold pms1 pms2 cuniv in
+      let cuniv = convert_return_clause ci1.ci_ind mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in
+      convert_branches ci1.ci_ind mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 br1 br2 cuniv
 
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
       let len = Parray.length_int t1 in
@@ -713,11 +747,27 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 let cu2 = f fx1 fx2 cu1 in
                 cmp_rec a1 a2 cu2
-            | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
+            | (Zlcase(ci1,l1,u1,pms1,p1,br1,e1),Zlcase(ci2,l2,u2,pms2,p2,br2,e2)) ->
                 if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then
                   raise NotConvertible;
-                let cu2 = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cu1 in
-                convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cu2
+                let cu = cu1 in
+                (** FIXME: cache the presence of let-bindings in the case_info *)
+                let mind = Environ.lookup_mind (fst ci1.ci_ind) (info_env infos.cnv_inf) in
+                let mip = mind.Declarations.mind_packets.(snd ci1.ci_ind) in
+                let cu =
+                  if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+                    convert_instances ~flex:false u1 u2 cu
+                  else
+                    match mind.Declarations.mind_variance with
+                    | None -> convert_instances ~flex:false u1 u2 cu
+                    | Some variances -> convert_instances_cumul CONV variances u1 u2 cu
+                in
+                let pms1 = Array.map_to_list (fun c -> mk_clos e1 c) pms1 in
+                let pms2 = Array.map_to_list (fun c -> mk_clos e2 c) pms2 in
+                let fold_params c1 c2 accu = f (l1, c1) (l2, c2) accu in
+                let cu = List.fold_right2 fold_params pms1 pms2 cu in
+                let cu = convert_return_clause ci1.ci_ind mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu in
+                convert_branches ci1.ci_ind mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 br1 br2 cu
             | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
               if not (CPrimitives.equal op1 op2) then raise NotConvertible else
                 let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
@@ -742,21 +792,55 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
     fold 0 cuniv
   else raise NotConvertible
 
-and convert_branches l2r infos ci e1 e2 lft1 lft2 br1 br2 cuniv =
-  (** Skip comparison of the pattern types. We know that the two terms are
-      living in a common type, thus this check is useless. *)
-  let fold n c1 c2 cuniv = match skip_pattern infos n c1 c2 with
-  | (infos, c1, c2) ->
-    let lft1 = el_liftn n lft1 in
-    let lft2 = el_liftn n lft2 in
+and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu =
+  let n = Array.length nas1 in
+  let () = assert (Int.equal n (Array.length nas2)) in
+  let n, e1, e2 = match ctx with
+  | None -> (* nolet *)
     let e1 = subs_liftn n e1 in
     let e2 = subs_liftn n e2 in
-    ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv
-  | exception IrregularPatternShape ->
-    (** Might happen due to a shape invariant that is not enforced *)
-    ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv
+    (n, e1, e2)
+  | Some (ctx, u1, u2, args1, args2) ->
+    let n1, e1 = esubst_of_rel_context_instance ctx u1 args1 e1 in
+    let n2, e2 = esubst_of_rel_context_instance ctx u2 args2 e2 in
+    let () = assert (Int.equal n1 n2) in
+    n1, e1, e2
   in
-  Array.fold_right3 fold ci.ci_cstr_nargs br1 br2 cuniv
+  let lft1 = el_liftn n lft1 in
+  let lft2 = el_liftn n lft2 in
+  let infos = push_relevances infos nas1 in
+  ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cu
+
+and convert_return_clause ind mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu =
+  let ctx =
+    if Int.equal mip.mind_nrealargs mip.mind_nrealdecls then None
+    else
+      let ctx, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+      let pms1 = inductive_subst ind mib u1 pms1 in
+      let pms2 = inductive_subst ind mib u1 pms2 in
+      let open Context.Rel.Declaration in
+      (* Add the inductive binder *)
+      let dummy = mkProp in
+      let ctx = LocalAssum (Context.anonR, dummy) :: ctx in
+      Some (ctx, u1, u2, pms1, pms2)
+  in
+  convert_under_context l2r infos e1 e2 l1 l2 ctx p1 p2 cu
+
+and convert_branches ind mib mip l2r infos e1 e2 lft1 lft2 u1 u2 pms1 pms2 br1 br2 cuniv =
+  let fold i (ctx, _) cuniv =
+    let ctx =
+      if Int.equal mip.mind_consnrealdecls.(i) mip.mind_consnrealargs.(i) then None
+      else
+        let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
+        let pms1 = inductive_subst ind mib u1 pms1 in
+        let pms2 = inductive_subst ind mib u2 pms2 in
+        Some (ctx, u1, u2, pms1, pms2)
+    in
+    let c1 = br1.(i) in
+    let c2 = br2.(i) in
+    convert_under_context l2r infos e1 e2 lft1 lft2 ctx c1 c2 cuniv
+  in
+  Array.fold_right_i fold mip.mind_nf_lc cuniv
 
 and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 | [], [] -> cuniv
@@ -880,7 +964,8 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
     compare_instances = infer_convert_instances;
     compare_cumul_instances = infer_inductive_instances; }
 
-let gen_conv cv_pb l2r reds env evars univs t1 t2 =
+let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _ -> None)) t1 t2 =
+  let univs = Environ.universes env in
   let b =
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2
     else eq_constr_univs univs t1 t2
@@ -890,16 +975,7 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
       let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
         ()
 
-(* Profiling *)
-let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None)) =
-  let univs = Environ.universes env in
-  if Flags.profile then
-    let fconv_universes_key = CProfile.declare_profile "trans_fconv_universes" in
-      CProfile.profile8 fconv_universes_key gen_conv cv_pb l2r reds env evars univs
-  else gen_conv cv_pb l2r reds env evars univs
-
 let conv = gen_conv CONV
-
 let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
@@ -908,7 +984,7 @@ let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
     clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2
   in s
 
-let infer_conv_universes cv_pb l2r evars reds env t1 t2 =
+let infer_conv_universes cv_pb ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full) env t1 t2 =
   let univs = Environ.universes env in
   let b, cstrs =
     if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2
@@ -917,37 +993,16 @@ let infer_conv_universes cv_pb l2r evars reds env t1 t2 =
     if b then cstrs
     else
       let state = ((univs, Univ.Constraint.empty), inferred_universes) in
-      let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs state t1 t2 in
+      let ((_,cstrs), _) = clos_gen_conv ts cv_pb l2r evars env univs state t1 t2 in
         cstrs
 
-(* Profiling *)
-let infer_conv_universes =
-  if Flags.profile then
-    let infer_conv_universes_key = CProfile.declare_profile "infer_conv_universes" in
-      CProfile.profile7 infer_conv_universes_key infer_conv_universes
-  else infer_conv_universes
-
-let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
-    env t1 t2 =
-  infer_conv_universes CONV l2r evars ts env t1 t2
-
-let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
-    env t1 t2 =
-  infer_conv_universes CUMUL l2r evars ts env t1 t2
+let infer_conv = infer_conv_universes CONV
+let infer_conv_leq = infer_conv_universes CUMUL
 
 let default_conv cv_pb ?l2r:_ env t1 t2 =
     gen_conv cv_pb env t1 t2
 
 let default_conv_leq = default_conv CUMUL
-(*
-let convleqkey = CProfile.declare_profile "Kernel_reduction.conv_leq";;
-let conv_leq env t1 t2 =
-  CProfile.profile4 convleqkey conv_leq env t1 t2;;
-
-let convkey = CProfile.declare_profile "Kernel_reduction.conv";;
-let conv env t1 t2 =
-  CProfile.profile4 convleqkey conv env t1 t2;;
-*)
 
 (* Application with on-the-fly reduction *)
 

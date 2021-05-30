@@ -1,0 +1,3 @@
+in1W
+     : forall (T1 : predArgType) (D1 : {pred T1}) (P1 : T1 -> Prop),
+       (forall x : T1, P1 x) -> {in D1, forall x : T1, P1 x}

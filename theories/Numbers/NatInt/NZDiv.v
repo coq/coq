@@ -26,7 +26,9 @@ End DivModNotation.
 Module Type DivMod' (A : Typ) := DivMod A <+ DivModNotation A.
 
 Module Type NZDivSpec (Import A : NZOrdAxiomsSig')(Import B : DivMod' A).
+#[global]
  Declare Instance div_wd : Proper (eq==>eq==>eq) div.
+#[global]
  Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
  Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
  Axiom mod_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.

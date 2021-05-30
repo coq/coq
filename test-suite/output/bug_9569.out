@@ -1,0 +1,16 @@
+1 goal
+  
+  ============================
+  exists I : True, I = Logic.I
+1 goal
+  
+  ============================
+  f True False True False (Logic.True /\ Logic.False)
+1 goal
+  
+  ============================
+  [I | I = Logic.I; I = Logic.I] = [I | I = Logic.I; I = Logic.I]
+1 goal
+  
+  ============================
+  [I & I = Logic.I | I = Logic.I; Logic.I = I]

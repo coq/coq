@@ -26,6 +26,7 @@ Proof.
   destruct x ; simpl; compute; intuition congruence.
 Qed.
 
+#[global]
 Instance Inj_comparison_Z : InjTyp comparison Z :=
   { inj := Z_of_comparison ; pred :=(fun x => -1 <= x <= 1) ; cstr := Z_of_comparison_bound}.
 Add Zify InjTyp Inj_comparison_Z.
@@ -33,22 +34,27 @@ Add Zify InjTyp Inj_comparison_Z.
 Definition ZcompareZ (x y : Z) :=
   Z_of_comparison (Z.compare x y).
 
+#[global]
 Program Instance BinOp_Zcompare : BinOp Z.compare :=
   { TBOp := ZcompareZ }.
 Add Zify BinOp BinOp_Zcompare.
 
+#[global]
 Instance Op_eq_comparison : BinRel (@eq comparison) :=
   {TR := @eq Z ; TRInj := ltac:(destruct n,m; simpl ; intuition congruence) }.
 Add Zify BinRel Op_eq_comparison.
 
+#[global]
 Instance Op_Eq : CstOp Eq :=
   { TCst := 0 ; TCstInj := eq_refl }.
 Add Zify CstOp Op_Eq.
 
+#[global]
 Instance Op_Lt : CstOp Lt :=
   { TCst := -1 ; TCstInj := eq_refl }.
 Add Zify CstOp Op_Lt.
 
+#[global]
 Instance Op_Gt : CstOp Gt :=
   { TCst := 1 ; TCstInj := eq_refl }.
 Add Zify CstOp Op_Gt.
@@ -72,6 +78,7 @@ Proof.
     lia.
 Qed.
 
+#[global]
 Instance ZcompareSpec : BinOpSpec ZcompareZ :=
   {| BPred := fun x y r => (x = y -> r = 0)
                            /\

@@ -29,8 +29,6 @@
 #install_printer  (* id set *) ppidmapgen;;
 #install_printer  (* int set *) ppintmapgen;;
 
-#install_printer  (* Reductionops machine stack *) pp_stack_t;;
-
 (*#install_printer  (* hint_db *)  print_hint_db;;*)
 (*#install_printer  (* hints_path *)  pphintspath;;*)
 #install_printer  (* goal *)  ppgoal;;
@@ -53,5 +51,7 @@
 #install_printer  (* generic_argument *) pp_generic_argument;;
 
 #install_printer  (* fconstr *) ppfconstr;;
+
+#install_printer  (* fsubst *) ppfsubst;;
 
 #install_printer (* Future.computation *) ppfuture;;

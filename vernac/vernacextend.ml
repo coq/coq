@@ -59,12 +59,12 @@ type typed_vernac =
   | VtModifyProof of (pstate:Declare.Proof.t -> Declare.Proof.t)
   | VtReadProofOpt of (pstate:Declare.Proof.t option -> unit)
   | VtReadProof of (pstate:Declare.Proof.t -> unit)
-  | VtReadProgram of (pm:Declare.OblState.t -> unit)
+  | VtReadProgram of (stack:Vernacstate.LemmaStack.t option -> pm:Declare.OblState.t -> unit)
   | VtModifyProgram of (pm:Declare.OblState.t -> Declare.OblState.t)
   | VtDeclareProgram of (pm:Declare.OblState.t -> Declare.Proof.t)
   | VtOpenProofProgram of (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t)
 
-type vernac_command = atts:Attributes.vernac_flags -> typed_vernac
+type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> unit -> typed_vernac
 
 type plugin_args = Genarg.raw_generic_argument list
 
@@ -94,7 +94,7 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let type_vernac opn converted_args ~atts =
+let type_vernac opn converted_args ?loc ~atts () =
   let depr, callback = vinterp_map opn in
   let () = if depr then
       let rules = Egramml.get_extend_vernac_rule opn in
@@ -106,7 +106,7 @@ let type_vernac opn converted_args ~atts =
       warn_deprecated_command pr;
   in
   let hunk = callback converted_args in
-  hunk ~atts
+  hunk ?loc ~atts ()
 
 (** VERNAC EXTEND registering *)
 
@@ -247,7 +247,7 @@ let vernac_argument_extend ~name arg =
     e
   | Arg_rules rules ->
     let e = Pcoq.create_generic_entry2 name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e {Pcoq.pos=None; data=[(None, None, rules)]} in
+    let () = Pcoq.grammar_extend e (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
     e
   in
   let pr = arg.arg_printer in

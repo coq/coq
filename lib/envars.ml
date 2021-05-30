@@ -12,7 +12,37 @@ open Util
 
 (** {1 Helper functions} *)
 
-let getenv_else s dft = try Sys.getenv s with Not_found -> dft ()
+let parse_env_line l =
+  try Scanf.sscanf l "%[^=]=%S" (fun name value -> Some(name,value))
+  with _ -> None
+
+let with_ic file f =
+  let ic = open_in file in
+  try
+    let rc = f ic in
+    close_in ic;
+    rc
+  with e -> close_in ic; raise e
+
+let getenv_from_file name =
+  let base = Filename.dirname Sys.executable_name in
+  try
+    with_ic (base ^ "/coq_environment.txt") (fun ic ->
+      let rec find () =
+        let l = input_line ic in
+        match parse_env_line l with
+        | Some(n,v) when n = name -> v
+        | _ -> find ()
+      in
+        find ())
+  with
+  | Sys_error s -> raise Not_found
+  | End_of_file -> raise Not_found
+
+let system_getenv name =
+  try Sys.getenv name with Not_found -> getenv_from_file name
+
+let getenv_else s dft = try system_getenv s with Not_found -> dft ()
 
 let safe_getenv warning n =
   getenv_else n (fun () ->
@@ -99,25 +129,29 @@ let guess_coqlib fail =
   let prelude = "theories/Init/Prelude.vo" in
   check_file_else ~dir:Coq_config.coqlibsuffix ~file:prelude
     (fun () ->
-      if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / prelude)
+      if Sys.file_exists (Coq_config.coqlib / prelude)
       then Coq_config.coqlib
       else
-        fail "cannot guess a path for Coq libraries; please use -coqlib option")
+        fail "cannot guess a path for Coq libraries; please use -coqlib option \
+              or ensure you have installed the package contaning Coq's stdlib (coq-stdlib in OPAM) \
+              If you intend to use Coq without a standard library, the -boot -noinit options must be used.")
   )
 
-let coqlib : string option ref = ref None
-let set_user_coqlib path = coqlib := Some path
+let coqlib_ref : string option ref = ref None
+let set_user_coqlib path = coqlib_ref := Some path
 
 (** coqlib is now computed once during coqtop initialization *)
 
 let set_coqlib ~fail =
-  match !coqlib with
+  match !coqlib_ref with
   | Some _ -> ()
   | None ->
     let lib = guess_coqlib fail in
-    coqlib := Some lib
+    coqlib_ref := Some lib
 
-let coqlib () = Option.default "" !coqlib
+let coqlib () = Option.default "" !coqlib_ref
+let coqcorelib () =
+  getenv_else "COQCORELIB" (fun () -> Option.cata (fun c -> Filename.concat c "../coq-core/") "" !coqlib_ref)
 
 let docdir () =
   (* This assumes implicitly that the suffix is non-trivial *)
@@ -145,7 +179,7 @@ let coqpath =
 
 (** {2 Caml paths} *)
 
-let ocamlfind () = Coq_config.ocamlfind
+let ocamlfind () = getenv_else "OCAMLFIND" (fun () -> Coq_config.ocamlfind)
 
 (** {1 XDG utilities} *)
 
@@ -173,13 +207,17 @@ let xdg_dirs ~warn =
 
 let print_config ?(prefix_var_name="") f coq_src_subdirs =
   let open Printf in
-  fprintf f "%sLOCAL=%s\n" prefix_var_name (if Coq_config.local then "1" else "0");
   fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
+  fprintf f "%sCOQCORELIB=%s/\n" prefix_var_name (coqlib () / "../coq-core/");
   fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
   fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
   fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
   fprintf f "%sWARN=%s\n" prefix_var_name "-warn-error +a-3";
   fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
     (if Coq_config.has_natdynlink then "true" else "false");
-  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " coq_src_subdirs)
-
+  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " coq_src_subdirs);
+  fprintf f "%sCOQ_NATIVE_COMPILER_DEFAULT=%s\n" prefix_var_name
+    (match Coq_config.native_compiler with
+     | Coq_config.NativeOn {ondemand=false} -> "yes"
+     | Coq_config.NativeOff -> "no"
+     | Coq_config.NativeOn {ondemand=true} -> "ondemand")

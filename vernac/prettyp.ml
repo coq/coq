@@ -24,7 +24,6 @@ open Impargs
 open Libobject
 open Libnames
 open Globnames
-open Recordops
 open Printer
 open Printmod
 open Context.Rel.Declaration
@@ -206,7 +205,7 @@ let print_if_is_coercion ref =
 
 let pr_template_variables = function
   | [] -> mt ()
-  | vars -> str "on " ++ prlist_with_sep spc UnivNames.pr_with_global_universes vars
+  | vars -> str "on " ++ prlist_with_sep spc UnivNames.(pr_with_global_universes empty_binders) vars
 
 let print_polymorphism ref =
   let poly = Global.is_polymorphic ref in
@@ -631,11 +630,11 @@ let print_constant with_values sep sp udecl =
         assert(ContextSet.is_empty body_uctxs);
         Polymorphic ctx
   in
-  let ctx =
+  let uctx =
     UState.of_binders
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
   in
-  let env = Global.env () and sigma = Evd.from_ctx ctx in
+  let env = Global.env () and sigma = Evd.from_ctx uctx in
   let pr_ltype = pr_ltype_env env sigma in
   hov 0 (
     match val_0 with
@@ -668,7 +667,7 @@ let gallina_print_syntactic_def env kn =
         spc () ++ str ":=") ++
      spc () ++
      Constrextern.without_specific_symbols
-       [Notation.SynDefRule kn] (pr_glob_constr_env env) c)
+       [Notation.SynDefRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
 
 module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t option end)
 
@@ -947,7 +946,7 @@ let print_about_any ?loc env sigma k udecl =
   [hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
     let () = match Syntax_def.search_syntactic_definition kn with
-    | [],Notation_term.NRef ref -> Dumpglob.add_glob ?loc ref
+    | [],Notation_term.NRef (ref,_) -> Dumpglob.add_glob ?loc ref
     | _ -> () in
       v 0 (
       print_syntactic_def env kn ++ fnl () ++
@@ -976,15 +975,11 @@ open Coercionops
 
 let print_coercion_value v = Printer.pr_global v.coe_value
 
-let print_class i =
-  let cl,_ = class_info_from_index i in
-  pr_class cl
-
 let print_path ((i,j),p) =
   hov 2 (
     str"[" ++ hov 0 (prlist_with_sep pr_semicolon print_coercion_value p) ++
     str"] : ") ++
-  print_class i ++ str" >-> " ++ print_class j
+  pr_class i ++ str" >-> " ++ pr_class j
 
 let _ = Coercionops.install_path_printer print_path
 
@@ -997,43 +992,36 @@ let print_classes () =
 let print_coercions () =
   pr_sequence print_coercion_value (coercions())
 
-let index_of_class cl =
-  try
-    fst (class_info cl)
-  with Not_found ->
-    user_err ~hdr:"index_of_class"
-      (pr_class cl ++ spc() ++ str "not a defined class.")
-
 let print_path_between cls clt =
-  let i = index_of_class cls in
-  let j = index_of_class clt in
   let p =
     try
-      lookup_path_between_class (i,j)
+      lookup_path_between_class (cls, clt)
     with Not_found ->
       user_err ~hdr:"index_cl_of_id"
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
          ++ str ".")
   in
-  print_path ((i,j),p)
+  print_path ((cls, clt), p)
 
 let print_canonical_projections env sigma grefs =
-  let match_proj_gref ((x,y),c) gr =
-    GlobRef.equal x gr ||
-    begin match y with
-      | Const_cs y -> GlobRef.equal y gr
+  let open Structures in
+  let match_proj_gref { CSTable.projection; value; solution } gr =
+    GlobRef.equal projection gr ||
+    begin match value with
+      | ValuePattern.Const_cs y -> GlobRef.equal y gr
       | _ -> false
     end ||
-    GlobRef.equal c.o_ORIGIN gr
+    GlobRef.equal solution gr
   in
   let projs =
     List.filter (fun p -> List.for_all (match_proj_gref p) grefs)
-      (canonical_projections ())
+      (CSTable.entries ())
   in
   prlist_with_sep fnl
-    (fun ((r1,r2),o) -> pr_cs_pattern r2 ++
+    (fun { CSTable.projection; value; solution } ->
+    ValuePattern.print value ++
     str " <- " ++
-    pr_global r1 ++ str " ( " ++ pr_lconstr_env env sigma o.o_DEF ++ str " )")
+    pr_global projection ++ str " ( " ++ pr_global solution ++ str " )")
     projs
 
 (*************************************************************************)

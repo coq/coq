@@ -109,13 +109,13 @@ let telescope env sigma l =
 let nf_evar_context sigma ctx =
   List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
 
-let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?using r measure notation =
+let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r measure notation =
   let open EConstr in
   let open Vars in
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
-  let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
+  let sigma, udecl = interp_univ_decl_opt env pl in
   let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
@@ -259,14 +259,13 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?using r measure notat
   let evars, _, evars_def, evars_typ =
     RetrieveObl.retrieve_obligations env recname sigma 0 def typ
   in
-  let using = using |> Option.map (fun expr ->
+  let using =
     let terms = List.map EConstr.of_constr [evars_def; evars_typ] in
-    let l = Proof_using.process_expr env sigma expr terms in
-    Names.Id.Set.(List.fold_right add l empty))
+    Option.map (fun using -> Proof_using.definition_using env sigma ~using ~terms) using
   in
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
-  let info = Declare.Info.make ~udecl ~poly ~hook () in
+  let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
   pm
@@ -280,10 +279,12 @@ let collect_evars_of_term evd c ty =
   Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 
-let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
+let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
   let cofix = fixkind = Declare.Obls.IsCoFixpoint in
   let (env, rec_sign, udecl, evd), fix, info =
-    interp_recursive ~cofix ~program_mode:true fixl
+    let env = Global.env () in
+    let env = Environ.update_typing_flags ?typing_flags env in
+    interp_recursive env ~cofix ~program_mode:true fixl
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instantiated *)
@@ -292,11 +293,8 @@ let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
   let evd = nf_evar_map_undefined evd in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
-    let using = using |> Option.map (fun expr ->
-      let terms = [def; typ] in
-      let l = Proof_using.process_expr env evd expr terms in
-      Names.Id.Set.(List.fold_right add l empty))
-    in
+    let terms = [def; typ] in
+    let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
     let def = nf_evar evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign) in
     let typ = nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign) in
     let evm = collect_evars_of_term evd def typ in
@@ -320,10 +318,13 @@ let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
         Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
       let indexes =
-        Pretyping.search_guard (Global.env ()) possible_indexes fixdecls in
+        let env = Global.env () in
+        let env = Environ.update_typing_flags ?typing_flags env in
+        Pretyping.search_guard env possible_indexes fixdecls in
+      let env = Environ.update_typing_flags ?typing_flags env in
       List.iteri (fun i _ ->
           Inductive.check_fix env
-                              ((indexes,i),fixdecls))
+            ((indexes,i),fixdecls))
         fixl
   end in
   let uctx = Evd.evar_universe_context evd in
@@ -332,16 +333,16 @@ let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
   | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
-  let info = Declare.Info.make ~poly ~scope ~kind ~udecl () in
+  let info = Declare.Info.make ~poly ~scope ~kind ~udecl ?typing_flags () in
   Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx ~ntns fixkind
 
-let do_fixpoint ~pm ~scope ~poly ?using l =
+let do_fixpoint ~pm ~scope ~poly ?typing_flags ?using l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
     | [Some { CAst.v = CWfRec (n,r) }],
       [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?using r recarg notations
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?using r recarg notations
 
     | [Some { CAst.v = CMeasureRec (n, m, r) }],
       [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
@@ -354,7 +355,7 @@ let do_fixpoint ~pm ~scope ~poly ?using l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?using
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?using
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
@@ -362,7 +363,7 @@ let do_fixpoint ~pm ~scope ~poly ?using l =
           Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
       let fixkind = Declare.Obls.IsFixpoint annots in
       let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
-      do_program_recursive ~pm ~scope ~poly ?using fixkind l
+      do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind l
     | _, _ ->
       CErrors.user_err ~hdr:"do_fixpoint"
         (str "Well-founded fixpoints not allowed in mutually recursive blocks")

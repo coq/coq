@@ -10,6 +10,9 @@
 
 (** Global control of Coq. *)
 
+(** Used to convert signals to exceptions *)
+exception Timeout
+
 (** Will periodically call [Thread.delay] if set to true *)
 val enable_thread_delay : bool ref
 
@@ -21,13 +24,13 @@ val check_for_interrupt : unit -> unit
 (** Use this function as a potential yield function. If {!interrupt} has been
     set, il will raise [Sys.Break]. *)
 
-val timeout : int -> ('a -> 'b) -> 'a -> exn -> 'b
-(** [timeout n f x e] tries to compute [f x], and if it fails to do so
-    before [n] seconds, it raises [e] instead. *)
+val timeout : float -> ('a -> 'b) -> 'a -> 'b option
+(** [timeout n f x] tries to compute [Some (f x)], and if it fails to do so
+    before [n] seconds, returns [None] instead. *)
 
 (** Set a particular timeout function; warning, this is an internal
    API and it is scheduled to go away. *)
-type timeout = { timeout : 'a 'b. int -> ('a -> 'b) -> 'a -> exn -> 'b }
+type timeout = { timeout : 'a 'b. float -> ('a -> 'b) -> 'a -> 'b option }
 val set_timeout : timeout -> unit
 
 (** [protect_sigalrm f x] computes [f x], but if SIGALRM is received during that

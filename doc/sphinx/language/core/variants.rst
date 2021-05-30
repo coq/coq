@@ -17,10 +17,8 @@ Variants
    this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
-   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)` and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
+   :attr:`private(matching)` attributes.
 
    .. exn:: The @natural th argument of @ident must be @ident in @type.
       :undocumented:
@@ -31,7 +29,7 @@ Private (matching) inductive types
 .. attr:: private(matching)
    :name: private(matching); Private
 
-   This attribute can be used to forbid the use of the :g:`match`
+   This :term:`attribute` can be used to forbid the use of the :g:`match`
    construct on objects of this inductive type outside of the module
    where it is defined.  There is also a legacy syntax using the
    ``Private`` prefix (cf. :n:`@legacy_attr`).

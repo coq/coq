@@ -18,6 +18,7 @@ rewrite !Z.mul_opp_l.
 apply Z.opp_lt_mono.
 Qed.
 
+#[global]
 Hint Resolve Qopp_lt_compat : qarith.
 
 (************)
@@ -54,6 +55,7 @@ rewrite Z.mul_comm.
 now apply Z.mul_div_le.
 Qed.
 
+#[global]
 Hint Resolve Qfloor_le : qarith.
 
 Lemma Qle_ceiling : forall x, x <= Qceiling x.
@@ -66,6 +68,7 @@ change (Qceiling x:Q) with (-(Qfloor(-x))).
 auto with *.
 Qed.
 
+#[global]
 Hint Resolve Qle_ceiling : qarith.
 
 Lemma Qle_floor_ceiling : forall x, Qfloor x <= Qceiling x.
@@ -88,6 +91,7 @@ rewrite <- Z.lt_add_lt_sub_r.
 destruct (Z_mod_lt n (Zpos d)); auto with *.
 Qed.
 
+#[global]
 Hint Resolve Qlt_floor : qarith.
 
 Lemma Qceiling_lt : forall x, (Qceiling x-1)%Z < x.
@@ -101,6 +105,7 @@ rewrite Qopp_involutive.
 auto with *.
 Qed.
 
+#[global]
 Hint Resolve Qceiling_lt : qarith.
 
 Lemma Qfloor_resp_le : forall x y, x <= y -> (Qfloor x <= Qfloor y)%Z.
@@ -114,6 +119,7 @@ rewrite (Z.mul_comm (Zpos yd) (Zpos xd)).
 apply Z_div_le; auto with *.
 Qed.
 
+#[global]
 Hint Resolve Qfloor_resp_le : qarith.
 
 Lemma Qceiling_resp_le : forall x y, x <= y -> (Qceiling x <= Qceiling y)%Z.
@@ -123,6 +129,7 @@ unfold Qceiling.
 rewrite <- Z.opp_le_mono; auto with qarith.
 Qed.
 
+#[global]
 Hint Resolve Qceiling_resp_le : qarith.
 
 Add Morphism Qfloor with signature Qeq ==> eq as Qfloor_comp.

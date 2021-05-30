@@ -32,15 +32,25 @@ Set Inline Level 50.
 
 Definition eq_equiv : Equivalence (@eq nat) := eq_equivalence.
 Local Obligation Tactic := simpl_relation.
+#[global]
 Program Instance succ_wd : Proper (eq==>eq) S.
+#[global]
 Program Instance pred_wd : Proper (eq==>eq) pred.
+#[global]
 Program Instance add_wd : Proper (eq==>eq==>eq) plus.
+#[global]
 Program Instance sub_wd : Proper (eq==>eq==>eq) minus.
+#[global]
 Program Instance mul_wd : Proper (eq==>eq==>eq) mult.
+#[global]
 Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
+#[global]
 Program Instance div_wd : Proper (eq==>eq==>eq) div.
+#[global]
 Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
+#[global]
 Program Instance lt_wd : Proper (eq==>eq==>iff) lt.
+#[global]
 Program Instance testbit_wd : Proper (eq==>eq==>eq) testbit.
 
 (** Bi-directional induction. *)
@@ -57,6 +67,7 @@ Qed.
 Definition recursion {A} : A -> (nat -> A -> A) -> nat -> A :=
   nat_rect (fun _ => A).
 
+#[global]
 Instance recursion_wd {A} (Aeq : relation A) :
  Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) recursion.
 Proof.
@@ -765,7 +776,9 @@ Infix "?=" := Nat.compare (at level 70) : nat_scope.
 Infix "/" := Nat.div : nat_scope.
 Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
 
+#[global]
 Hint Unfold Nat.le : core.
+#[global]
 Hint Unfold Nat.lt : core.
 
 Register Nat.le_trans as num.nat.le_trans.

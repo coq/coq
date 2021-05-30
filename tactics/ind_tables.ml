@@ -25,16 +25,12 @@ open Pp
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
-(** flag for internal message display *)
-type internal_flag =
-  | UserAutomaticRequest (* kernel action, a message is displayed *)
-  | InternalTacticRequest  (* kernel action, no message is displayed *)
-  | UserIndividualRequest   (* user action, a message is displayed *)
+type inline_flag = InlineDeps | KeepDeps
 
 type mutual_scheme_object_function =
-  internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
+  inline_flag -> MutInd.t -> constr array Evd.in_evar_universe_context
 type individual_scheme_object_function =
-  internal_flag -> inductive -> constr Evd.in_evar_universe_context
+  inductive -> constr Evd.in_evar_universe_context
 
 type 'a scheme_kind = string
 
@@ -100,20 +96,20 @@ let check_scheme kind ind = Option.has_some (lookup_scheme kind ind)
 
 let define internal role id c poly univs =
   let id = compute_name internal id in
-  let ctx = UState.minimize univs in
-  let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
-  let univs = UState.univ_entry ~poly ctx in
+  let uctx = UState.minimize univs in
+  let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst uctx) c in
+  let univs = UState.univ_entry ~poly uctx in
   !declare_definition_scheme ~internal ~univs ~role ~name:id c
 
 (* Assumes that dependencies are already defined *)
 let rec define_individual_scheme_base kind suff f mode idopt (mind,i as ind) eff =
-  let (c, ctx) = f mode ind in
+  let (c, ctx) = f ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let role = Evd.Schema (ind, kind) in
-  let internal = mode == InternalTacticRequest in
+  let internal = mode == InlineDeps in
   let const, neff = define internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
   let eff = Evd.concat_side_effects neff eff in
   DeclareScheme.declare_scheme kind [|ind,const|];
@@ -136,7 +132,7 @@ and define_mutual_scheme_base kind suff f mode names mind eff =
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
-    let internal = mode == InternalTacticRequest in
+    let internal = mode == InlineDeps in
     let cst, neff = define internal role id cl (Declareops.inductive_is_polymorphic mib) ctx in
     (Evd.concat_side_effects neff effs, cst)
   in
@@ -165,7 +161,7 @@ and declare_scheme_dependence mode eff = function
     let _, eff' = define_mutual_scheme kind mode [] mind in
     Evd.concat_side_effects eff' eff
 
-let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
+let find_scheme kind (mind,i as ind) =
   let open Proofview.Notations in
   match lookup_scheme kind ind with
   | Some s ->
@@ -174,6 +170,7 @@ let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
     Proofview.tclEFFECTS Evd.empty_side_effects <*>
     Proofview.tclUNIT s
   | None ->
+  let mode = InlineDeps in
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps ind in
@@ -186,8 +183,8 @@ let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
     let ca, eff = define_mutual_scheme_base kind s f mode [] mind eff in
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
 
-let define_individual_scheme kind mode names ind =
-  ignore (define_individual_scheme kind mode names ind)
+let define_individual_scheme kind names ind =
+  ignore (define_individual_scheme kind KeepDeps names ind)
 
-let define_mutual_scheme kind mode names mind =
-  ignore (define_mutual_scheme kind mode names mind)
+let define_mutual_scheme kind names mind =
+  ignore (define_mutual_scheme kind KeepDeps names mind)

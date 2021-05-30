@@ -115,6 +115,7 @@ type t =
   (** the name of the theorem whose proof is being constructed *)
   ; poly : bool
   (** polymorphism *)
+  ; typing_flags : Declarations.typing_flags option
   }
 
 (*** General proof functions ***)
@@ -278,7 +279,7 @@ let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind
 
-let start ~name ~poly sigma goals =
+let start ~name ~poly ?typing_flags sigma goals =
   let entry, proofview = Proofview.init sigma goals in
   let pr =
     { proofview
@@ -286,10 +287,11 @@ let start ~name ~poly sigma goals =
     ; focus_stack = []
     ; name
     ; poly
+    ; typing_flags
   } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
 
-let dependent_start ~name ~poly goals =
+let dependent_start ~name ~poly ?typing_flags goals =
   let entry, proofview = Proofview.dependent_init goals in
   let pr =
     { proofview
@@ -297,6 +299,7 @@ let dependent_start ~name ~poly goals =
     ; focus_stack = []
     ; name
     ; poly
+    ; typing_flags
   } in
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
@@ -409,14 +412,28 @@ module V82 = struct
   let top_evars p =
     Proofview.V82.top_evars p.entry p.proofview
 
+  let warn_deprecated_grab_existentials =
+    CWarnings.create ~name:"deprecated-grab-existentials" ~category:"deprecated"
+       Pp.(fun () -> str "The Grab Existential Variables command is " ++
+         str"deprecated. Please use the Unshelve command or the unshelve tactical " ++
+         str"instead.")
+
   let grab_evars p =
+    warn_deprecated_grab_existentials ();
     if not (is_done p) then
       raise (OpenProof(None, UnfinishedProof))
     else
       { p with proofview = Proofview.V82.grab p.proofview }
 
+  let warn_deprecated_existential =
+    CWarnings.create ~name:"deprecated-existential" ~category:"deprecated"
+       Pp.(fun () -> str "The Existential command is " ++
+         str"deprecated. Please use the Unshelve command or the unshelve " ++
+         str"tactical, and the instantiate tactic instead.")
+
   (* Main component of vernac command Existential *)
   let instantiate_evar env n intern pr =
+    warn_deprecated_existential ();
     let tac =
       Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
       let (evk, evi) =
@@ -521,31 +538,14 @@ let solve ?with_end_tac gi info_lvl tac pr =
       let info = Exninfo.reify () in
       Proofview.tclZERO ~info (SuggestNoSuchGoals (1,pr))
     in
-    let tac = let open Goal_select in match gi with
-      | SelectAlreadyFocused ->
-        let open Proofview.Notations in
-        Proofview.numgoals >>= fun n ->
-        if n == 1 then tac
-        else
-          let e = CErrors.UserError
-              (None,
-               Pp.(str "Expected a single focused goal but " ++
-                   int n ++ str " goals are focused."))
-          in
-          let info = Exninfo.reify () in
-          Proofview.tclZERO ~info e
-
-      | SelectNth i -> Proofview.tclFOCUS ~nosuchgoal i i tac
-      | SelectList l -> Proofview.tclFOCUSLIST ~nosuchgoal l tac
-      | SelectId id -> Proofview.tclFOCUSID ~nosuchgoal id tac
-      | SelectAll -> tac
-    in
+    let tac = Goal_select.tclSELECT ~nosuchgoal gi tac in
     let tac =
       if use_unification_heuristics () then
         Proofview.tclTHEN tac Refine.solve_constraints
       else tac
     in
     let env = Global.env () in
+    let env = Environ.update_typing_flags ?typing_flags:pr.typing_flags env in
     let (p,(status,info),()) = run_tactic env tac pr in
     let env = Global.env () in
     let sigma = Evd.from_env env in

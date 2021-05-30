@@ -11,7 +11,6 @@
 open Pp
 open Util
 open Tok
-open Gramlib
 
 (* Dictionaries: trees annotated with string options, each node being a map
    from chars to dictionaries (the subtrees). A trie, in other words. *)
@@ -115,7 +114,7 @@ let bad_token str = raise (Error.E (Bad_token str))
 
 (* Update a loc without allocating an intermediate pair *)
 let set_loc_pos loc bp ep =
-  Ploc.sub loc (bp - loc.Loc.bp) (ep - bp)
+  Loc.sub loc (bp - loc.Loc.bp) (ep - bp)
 
 (* Increase line number by 1 and update position of beginning of line *)
 let bump_loc_line loc bol_pos =
@@ -216,7 +215,9 @@ let lookup_utf8 loc cs =
     | Some ('\x80'..'\xFF' as c) -> lookup_utf8_tail loc c cs
     | None -> EmptyStream
 
-let unlocated f x = f x
+let unlocated f x =
+  let dummy_loc = Loc.(initial ToplevelInput) in
+  f dummy_loc x
   (** FIXME: should we still unloc the exception? *)
 (*   try f x with Loc.Exc_located (_, exc) -> raise exc *)
 
@@ -226,7 +227,7 @@ let check_keyword str =
         Stream.junk s;
         bad_token str
     | _ ->
-        match unlocated lookup_utf8 Ploc.dummy s with
+        match unlocated lookup_utf8 s with
         | Utf8Token (_,n) -> njunk n s; loop_symb s
         | AsciiChar -> Stream.junk s; loop_symb s
         | EmptyStream -> ()
@@ -242,7 +243,7 @@ let check_ident str =
         Stream.junk s;
         loop_id true s
     | _ ->
-        match unlocated lookup_utf8 Ploc.dummy s with
+        match unlocated lookup_utf8 s with
         | Utf8Token (st, n) when not intail && Unicode.is_valid_ident_initial st -> njunk n s; loop_id true s
         | Utf8Token (st, n) when intail && Unicode.is_valid_ident_trailing st ->
           njunk n s;
@@ -391,6 +392,7 @@ let comm_loc bp = match !comment_begin with
 let comments = ref []
 let current_comment = Buffer.create 8192
 let between_commands = ref true
+let loc_offset = ref 0
 
 let real_push_char c = Buffer.add_char current_comment c
 
@@ -787,25 +789,12 @@ let rec next_token ~diff_mode loc s =
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 
-(* (* Debug: uncomment this for tracing tokens seen by coq...*)
 let next_token ~diff_mode loc s =
   let (t,loc as r) = next_token ~diff_mode loc s in
-  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" (Ploc.line_nb loc) (Ploc.first_pos loc) (Ploc.last_pos loc) (Tok.to_string t);
-  r *)
-
-(* Location table system for creating tables associating a token count
-   to its location in a char stream (the source) *)
-
-let locerr i =
-  let m = "Lexer: location function called on token "^string_of_int i in
-  invalid_arg m
-
-let loct_create () = Hashtbl.create 207
-
-let loct_func loct i =
-  try Hashtbl.find loct i with Not_found -> locerr i
-
-let loct_add loct i loc = Hashtbl.add loct i loc
+  let open Loc in
+ (* Debug: uncomment this for tracing tokens seen by coq...*)
+(*  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" loc.line_nb loc.bp loc.ep (Tok.extract_string diff_mode t);*)
+  (t, {loc with bp = loc.bp + !loc_offset; ep = loc.ep + !loc_offset})
 
 (** {6 The lexer of Coq} *)
 
@@ -823,7 +812,7 @@ let token_text : type c. c Tok.p -> string = function
   | PKEYWORD t -> "'" ^ t ^ "'"
   | PIDENT None -> "identifier"
   | PIDENT (Some t) -> "'" ^ t ^ "'"
-  | PNUMBER None -> "numeral"
+  | PNUMBER None -> "number"
   | PNUMBER (Some n) -> "'" ^ NumTok.Unsigned.sprint n ^ "'"
   | PSTRING None -> "string"
   | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
@@ -837,17 +826,13 @@ let token_text : type c. c Tok.p -> string = function
   | PBULLET (Some s) -> "BULLET \"" ^ s ^ "\""
   | PQUOTATION lbl -> "QUOTATION \"" ^ lbl ^ "\""
 
-let func next_token ?loc cs =
-  let loct = loct_create () in
-  let cur_loc = ref (Option.default Loc.(initial ToplevelInput) loc) in
-  let ts =
-    Stream.from
-      (fun i ->
-         let (tok, loc) = next_token !cur_loc cs in
-         cur_loc := after loc;
-         loct_add loct i loc; Some tok)
-  in
-  (ts, loct_func loct)
+let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
+  let cur_loc = ref loc in
+  LStream.from ~loc
+    (fun i ->
+      let (tok, loc) = next_token !cur_loc cs in
+      cur_loc := after loc;
+      Some (tok,loc))
 
 module MakeLexer (Diff : sig val mode : bool end) = struct
   type te = Tok.t
@@ -878,6 +863,7 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
       (!comment_begin, Buffer.contents current_comment, !between_commands, !comments)
     let drop () = set (init ())
     let get_comments (_,_,_,c) = c
+    let set_loc_offset off = loc_offset := off
 
   end
 end
@@ -916,7 +902,7 @@ let terminal s =
   if is_ident_not_keyword s then PIDENT (Some s)
   else PKEYWORD s
 
-(* Precondition: the input is a numeral (c.f. [NumTok.t]) *)
-let terminal_numeral s = match NumTok.Unsigned.parse_string s with
+(* Precondition: the input is a number (c.f. [NumTok.t]) *)
+let terminal_number s = match NumTok.Unsigned.parse_string s with
   | Some n -> PNUMBER (Some n)
-  | None -> failwith "numeral token expected."
+  | None -> failwith "number token expected."

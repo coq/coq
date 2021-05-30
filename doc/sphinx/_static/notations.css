@@ -266,3 +266,18 @@ code span.error {
 .rst-content tt.literal, .rst-content tt.literal, .rst-content code.literal {
     color: inherit !important;
 }
+
+
+.coqdoc-comment {
+    color: #808080 !important
+}
+
+/* make the error message index readable */
+.indextable code {
+    white-space: inherit;  /* break long lines */
+}
+
+.indextable tr td + td {
+    padding-left: 2em; /* indent 2nd & subsequent lines */
+    text-indent: -2em;
+}

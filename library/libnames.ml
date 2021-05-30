@@ -145,6 +145,8 @@ let qualid_of_dirpath ?loc dir =
   let (l,a) = split_dirpath dir in
   make_qualid ?loc l a
 
+let qualid_of_lident lid = qualid_of_ident ?loc:lid.CAst.loc lid.CAst.v
+
 let qualid_is_ident qid =
   DirPath.is_empty qid.CAst.v.dirpath
 

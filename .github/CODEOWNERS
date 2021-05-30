@@ -14,13 +14,12 @@
 
 /configure*        @coq/legacy-build-maintainers @coq/build-maintainers
 
-/META.coq.in       @coq/legacy-build-maintainers
-
-/dev/build/windows @coq/windows-build-maintainers
+/META.coq-core.in       @coq/legacy-build-maintainers
 
 ########## CI infrastructure ##########
 
 /dev/ci/             @coq/ci-maintainers
+/dev/lint-*.sh       @coq/ci-maintainers
 /.travis.yml         @coq/ci-maintainers
 /.gitlab-ci.yml      @coq/ci-maintainers
 /.github/workflows   @coq/ci-maintainers
@@ -230,6 +229,7 @@
 
 /toplevel/   @coq/toplevel-maintainers
 /topbin/     @coq/toplevel-maintainers
+/sysinit/    @coq/toplevel-maintainers
 
 ########## Vernacular ##########
 

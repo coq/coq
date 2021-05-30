@@ -24,6 +24,11 @@ open Environ
 compiler. mllambda represents a fragment of ML, and can easily be printed
 to OCaml code. *)
 
+let debug_native_flag, debug_native_compiler = CDebug.create_full ~name:"native-compiler" ()
+
+let keep_debug_files () =
+  CDebug.get_flag debug_native_flag
+
 (** Local names **)
 
 (* The first component is there for debugging purposes only *)
@@ -989,9 +994,8 @@ let extract_prim ml_of l =
   let decl = ref [] in
   let cond = ref [] in
   let type_args p =
-    let rec aux = function [] | [_] -> [] | h :: t -> h :: aux t in
-    let params, sign = CPrimitives.types p in
-    List.length params, Array.of_list (aux sign) in
+    let params, args_ty, _ = CPrimitives.types p in
+    List.length params, Array.of_list args_ty in
   let rec aux l =
     match l with
     | Lprim(prefix,kn,p,args) ->
@@ -1933,19 +1937,15 @@ and compile_named env sigma univ auxdefs id =
   | LocalAssum _ ->
       Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
 
-let compile_constant env sigma prefix ~interactive con cb =
+let compile_constant env sigma con cb =
     let no_univs = 0 = Univ.AUContext.size (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
       let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
-      if !Flags.debug then Feedback.msg_debug (Pp.str "Generated lambda code");
+      debug_native_compiler (fun () -> Pp.str "Generated lambda code");
       let is_lazy = is_lazy t in
       let code = if is_lazy then mk_lazy code else code in
-      let name =
-        if interactive then LinkedInteractive prefix
-        else Linked prefix
-      in
       let l = Constant.label con in
       let auxdefs,code =
         if no_univs then compile_with_fv env sigma None [] (Some l) code
@@ -1954,12 +1954,12 @@ let compile_constant env sigma prefix ~interactive con cb =
           let (auxdefs,code) = compile_with_fv env sigma (Some univ) [] (Some l) code in
           (auxdefs,mkMLlam [|univ|] code)
       in
-      if !Flags.debug then Feedback.msg_debug (Pp.str "Generated mllambda code");
+      debug_native_compiler (fun () -> Pp.str "Generated mllambda code");
       let code =
         optimize_stk (Glet(Gconstant ("", con),code)::auxdefs)
       in
-      if !Flags.debug then Feedback.msg_debug (Pp.str "Optimized mllambda code");
-      code, name
+      debug_native_compiler (fun () -> Pp.str "Optimized mllambda code");
+      code
     | _ ->
         let i = push_symbol (SymbConst con) in
         let args =
@@ -1969,9 +1969,7 @@ let compile_constant env sigma prefix ~interactive con cb =
         (*
         let t = mkMLlam [|univ|] (mkMLapp (MLprimitive Mk_const)
          *)
-        [Glet(Gconstant ("", con), mkMLapp (MLprimitive Mk_const) args)],
-          if interactive then LinkedInteractive prefix
-          else Linked prefix
+        [Glet(Gconstant ("", con), mkMLapp (MLprimitive Mk_const) args)]
     end
 
 module StringOrd = struct type t = string let compare = String.compare end
@@ -1984,12 +1982,9 @@ let is_loaded_native_file s = StringSet.mem s !loaded_native_files
 let register_native_file s =
   loaded_native_files := StringSet.add s !loaded_native_files
 
-let is_code_loaded ~interactive name =
+let is_code_loaded name =
   match !name with
   | NotLinked -> false
-  | LinkedInteractive s ->
-      if (interactive && is_loaded_native_file s) then true
-      else (name := NotLinked; false)
   | Linked s ->
       if is_loaded_native_file s then true
       else (name := NotLinked; false)
@@ -2049,8 +2044,11 @@ let compile_mind mb mind stack =
   in
   Array.fold_left_i f stack mb.mind_packets
 
-type code_location_update =
-    link_info ref * link_info
+type code_location_update = {
+  upd_info : link_info ref;
+  upd_prefix : string;
+}
+
 type code_location_updates =
   code_location_update Mindmap_env.t * code_location_update Cmap_env.t
 
@@ -2058,35 +2056,34 @@ type linkable_code = global list * code_location_updates
 
 let empty_updates = Mindmap_env.empty, Cmap_env.empty
 
-let compile_mind_deps env prefix ~interactive
+let compile_mind_deps env prefix
     (comp_stack, (mind_updates, const_updates) as init) mind =
   let mib,nameref = lookup_mind_key mind env in
-  if is_code_loaded ~interactive nameref
+  if is_code_loaded nameref
     || Mindmap_env.mem mind mind_updates
   then init
   else
     let comp_stack =
       compile_mind mib mind comp_stack
     in
-    let name =
-      if interactive then LinkedInteractive prefix
-      else Linked prefix
-    in
-    let upd = (nameref, name) in
+    let upd = {
+      upd_info = nameref;
+      upd_prefix = prefix;
+    } in
     let mind_updates = Mindmap_env.add mind upd mind_updates in
     (comp_stack, (mind_updates, const_updates))
 
 (* This function compiles all necessary dependencies of t, and generates code in
    reverse order, as well as linking information updates *)
-let compile_deps env sigma prefix ~interactive init t =
+let compile_deps env sigma prefix init t =
   let rec aux env lvl init t =
   match kind t with
-  | Ind ((mind,_),_u) -> compile_mind_deps env prefix ~interactive init mind
+  | Ind ((mind,_),_u) -> compile_mind_deps env prefix init mind
   | Const c ->
     let c,_u = get_alias env c in
     let cb,(nameref,_) = lookup_constant_key c env in
     let (_, (_, const_updates)) = init in
-    if is_code_loaded ~interactive nameref
+    if is_code_loaded nameref
     || (Cmap_env.mem c const_updates)
     then init
     else
@@ -2096,19 +2093,21 @@ let compile_deps env sigma prefix ~interactive init t =
            aux env lvl init (Mod_subst.force_constr t)
         | _ -> init
       in
-      let code, name =
-        compile_constant env sigma prefix ~interactive c cb
-      in
+      let code = compile_constant env sigma c cb in
+      let upd = {
+        upd_info = nameref;
+        upd_prefix = prefix;
+      } in
       let comp_stack = code@comp_stack in
-      let const_updates = Cmap_env.add c (nameref, name) const_updates in
+      let const_updates = Cmap_env.add c upd const_updates in
       comp_stack, (mind_updates, const_updates)
-  | Construct (((mind,_),_),_u) -> compile_mind_deps env prefix ~interactive init mind
+  | Construct (((mind,_),_),_u) -> compile_mind_deps env prefix init mind
   | Proj (p,c) ->
-    let init = compile_mind_deps env prefix ~interactive init (Projection.mind p) in
+    let init = compile_mind_deps env prefix init (Projection.mind p) in
     aux env lvl init c
-  | Case (ci, _p, _iv, _c, _ac) ->
+  | Case (ci, _u, _pms, _p, _iv, _c, _ac) ->
       let mind = fst ci.ci_ind in
-      let init = compile_mind_deps env prefix ~interactive init mind in
+      let init = compile_mind_deps env prefix init mind in
       fold_constr_with_binders succ (aux env) lvl init t
   | Var id ->
     let open Context.Named.Declaration in
@@ -2130,11 +2129,8 @@ let compile_deps env sigma prefix ~interactive init t =
   in
   aux env 0 init t
 
-let compile_constant_field env prefix con acc cb =
-    let (gl, _) =
-      compile_constant ~interactive:false env empty_evars prefix
-        con cb
-    in
+let compile_constant_field env con acc cb =
+    let gl = compile_constant env empty_evars con cb in
     gl@acc
 
 let compile_mind_field mp l acc mb =
@@ -2152,11 +2148,11 @@ let mk_conv_code env sigma prefix t1 t2 =
   clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
-    compile_deps env sigma prefix ~interactive:true init t1
+    compile_deps env sigma prefix init t1
   in
   let gl, (mind_updates, const_updates) =
     let init = (gl, (mind_updates, const_updates)) in
-    compile_deps env sigma prefix ~interactive:true init t2
+    compile_deps env sigma prefix init t2
   in
   let code1 = lambda_of_constr env sigma t1 in
   let code2 = lambda_of_constr env sigma t2 in
@@ -2179,7 +2175,7 @@ let mk_norm_code env sigma prefix t =
   clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
-    compile_deps env sigma prefix ~interactive:true init t
+    compile_deps env sigma prefix init t
   in
   let code = lambda_of_constr env sigma t in
   let (gl,code) = compile_with_fv env sigma None gl None code in
@@ -2192,13 +2188,12 @@ let mk_norm_code env sigma prefix t =
       [|MLglobal (Ginternal "()")|])) in
   header::gl, (mind_updates, const_updates)
 
-let mk_library_header dir =
-  let libname = Format.sprintf "(str_decode \"%s\")" (str_encode dir) in
-  [Glet(Ginternal "symbols_tbl",
-    MLapp (MLglobal (Ginternal "get_library_native_symbols"),
-    [|MLglobal (Ginternal libname)|]))]
+let mk_library_header (symbols : Nativevalues.symbols) =
+  let symbols = Format.sprintf "(str_decode \"%s\")" (str_encode symbols) in
+  [Glet(Ginternal "symbols_tbl", MLglobal (Ginternal symbols))]
 
-let update_location (r,v) = r := v
+let update_location r =
+  r.upd_info := Linked r.upd_prefix
 
 let update_locations (ind_updates,const_updates) =
   Mindmap_env.iter (fun _ -> update_location) ind_updates;

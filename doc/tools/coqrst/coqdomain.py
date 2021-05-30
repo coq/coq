@@ -99,6 +99,11 @@ def make_math_node(latex, docname, nowrap):
     node['number'] = None
     return node
 
+# To support any character in tacn, ... names.
+# see https://github.com/coq/coq/pull/13564
+def make_id(tag):
+    return tag.replace(" ", "-")
+
 class CoqObject(ObjectDescription):
     """A generic Coq object for Sphinx; all Coq objects are subclasses of this.
 
@@ -200,7 +205,7 @@ class CoqObject(ObjectDescription):
         names_in_subdomain[name] = (self.env.docname, self.objtype, target_id)
 
     def _target_id(self, name):
-        return make_target(self.objtype, nodes.make_id(name))
+        return make_target(self.objtype, make_id(name))
 
     def _add_target(self, signode, name):
         """Register a link target ‘name’, pointing to signode."""
@@ -210,6 +215,13 @@ class CoqObject(ObjectDescription):
             signode['names'].append(name)
             signode['first'] = (not self.names)
             self._record_name(name, targetid, signode)
+        else:
+            # todo: make the following a real error or warning
+            # todo: then maybe the above "if" is not needed
+            names_in_subdomain = self.subdomain_data()
+            if name in names_in_subdomain:
+                print("Duplicate", self.subdomain, "name: ", name)
+            # self._warn_if_duplicate_name(names_in_subdomain, name, signode)
         return targetid
 
     def _add_index_entry(self, name, target):
@@ -322,7 +334,7 @@ class VernacObject(NotationObject):
     annotation = "Command"
 
     def _name_from_signature(self, signature):
-        m = re.match(r"[a-zA-Z ]+", signature)
+        m = re.match(r"[a-zA-Z0-9_ ]+", signature)
         return m.group(0).strip() if m else None
 
 class VernacVariantObject(VernacObject):
@@ -333,7 +345,7 @@ class VernacVariantObject(VernacObject):
        .. cmd:: Axiom @ident : @term.
 
           This command links :token:`term` to the name :token:`term` as its specification in
-          the global context. The fact asserted by :token:`term` is thus assumed as a
+          the global environment. The fact asserted by :token:`term` is thus assumed as a
           postulate.
 
           .. cmdv:: Parameter @ident : @term.
@@ -505,7 +517,7 @@ class ProductionObject(CoqObject):
         pass
 
     def _target_id(self, name):
-        return 'grammar-token-{}'.format(nodes.make_id(name[1]))
+        return make_id('grammar-token-{}'.format(name[1]))
 
     def _record_name(self, name, targetid, signode):
         env = self.state.document.settings.env
@@ -517,12 +529,12 @@ class ProductionObject(CoqObject):
         self.signatures = []
         indexnode = super().run()[0]  # makes calls to handle_signature
 
-        table = nodes.container(classes=['prodn-table'])
-        tgroup = nodes.container(classes=['prodn-column-group'])
+        table = nodes.inline(classes=['prodn-table'])
+        tgroup = nodes.inline(classes=['prodn-column-group'])
         for _ in range(4):
-            tgroup += nodes.container(classes=['prodn-column'])
+            tgroup += nodes.inline(classes=['prodn-column'])
         table += tgroup
-        tbody = nodes.container(classes=['prodn-row-group'])
+        tbody = nodes.inline(classes=['prodn-row-group'])
         table += tbody
 
         # create rows
@@ -530,10 +542,10 @@ class ProductionObject(CoqObject):
             lhs, op, rhs, tag = signature
             position = self.state_machine.get_source_and_line(self.lineno)
 
-            row = nodes.container(classes=['prodn-row'])
-            entry = nodes.container(classes=['prodn-cell-nonterminal'])
+            row = nodes.inline(classes=['prodn-row'])
+            entry = nodes.inline(classes=['prodn-cell-nonterminal'])
             if lhs != "":
-                target_name = 'grammar-token-' + nodes.make_id(lhs)
+                target_name = make_id('grammar-token-' + lhs)
                 target = nodes.target('', '', ids=[target_name], names=[target_name])
                 # putting prodn-target on the target node won't appear in the tex file
                 inline = nodes.inline(classes=['prodn-target'])
@@ -541,19 +553,19 @@ class ProductionObject(CoqObject):
                 entry += inline
                 entry += notation_to_sphinx('@'+lhs, *position)
             else:
-                entry += nodes.Text('')
+                entry += nodes.literal('', '')
             row += entry
 
-            entry = nodes.container(classes=['prodn-cell-op'])
-            entry += nodes.Text(op)
+            entry = nodes.inline(classes=['prodn-cell-op'])
+            entry += nodes.literal(op, op)
             row += entry
 
-            entry = nodes.container(classes=['prodn-cell-production'])
+            entry = nodes.inline(classes=['prodn-cell-production'])
             entry += notation_to_sphinx(rhs, *position)
             row += entry
 
-            entry = nodes.container(classes=['prodn-cell-tag'])
-            entry += nodes.Text(tag)
+            entry = nodes.inline(classes=['prodn-cell-tag'])
+            entry += nodes.literal(tag, tag)
             row += entry
 
             tbody += row
@@ -862,7 +874,7 @@ class InferenceDirective(Directive):
         docname = self.state.document.settings.env.docname
         math_node = make_math_node(latex, docname, nowrap=False)
 
-        tid = nodes.make_id(title)
+        tid = make_id(title)
         target = nodes.target('', '', ids=['inference-' + tid])
         self.state.document.note_explicit_target(target)
 
@@ -926,10 +938,11 @@ class CoqtopBlocksTransform(Transform):
 
     @staticmethod
     def split_lines(source):
-        r"""Split Coq input in chunks
+        r"""Split Coq input into chunks, which may include single- or
+        multi-line comments.  Nested comments are not supported.
 
         A chunk is a minimal sequence of consecutive lines of the input that
-        ends with a '.'
+        ends with a '.' or '*)'
 
         >>> split_lines('A.\nB.''')
         ['A.', 'B.']
@@ -950,8 +963,14 @@ class CoqtopBlocksTransform(Transform):
 
         >>> split_lines('SearchHead le.\nSearchHead (@eq bool).')
         ['SearchHead le.', 'SearchHead (@eq bool).']
+
+        >>> split_lines("(* *) x. (* *)\ny.\n")
+        ['(* *) x. (* *)', 'y.']
+
+        >>> split_lines("(* *) x (* \n *)\ny.\n")
+        ['(* *) x (* \n *)', 'y.']
         """
-        return re.split(r"(?<=(?<!\.)\.)\n", source.strip())
+        return re.split(r"(?:(?<=(?<!\.)\.)|(?<=\*\)))\n", source.strip())
 
     @staticmethod
     def parse_options(node):
@@ -1027,7 +1046,11 @@ class CoqtopBlocksTransform(Transform):
         if options['warn']:
             repl.sendone('Set Warnings "default".')
         for sentence in self.split_lines(node.rawsource):
-            pairs.append((sentence, repl.sendone(sentence)))
+            comment = re.compile(r"\s*\(\*.*?\*\)\s*", re.DOTALL)
+            wo_comments = re.sub(comment, "", sentence)
+            has_tac = wo_comments != "" and not wo_comments.isspace()
+            output = repl.sendone(sentence) if has_tac else ""
+            pairs.append((sentence, output))
         if options['abort']:
             repl.sendone('Abort All.')
         if options['fail']:
@@ -1040,9 +1063,10 @@ class CoqtopBlocksTransform(Transform):
             # Use Coqdoc to highlight input
             in_chunks = highlight_using_coqdoc(sentence)
             dli += nodes.term(sentence, '', *in_chunks, classes=self.block_classes(options['input']))
-            # Parse ANSI sequences to highlight output
-            out_chunks = AnsiColorsParser().colorize_str(output)
-            dli += nodes.definition(output, *out_chunks, classes=self.block_classes(options['output'], output))
+            if output:
+                # Parse ANSI sequences to highlight output
+                out_chunks = AnsiColorsParser().colorize_str(output)
+                dli += nodes.definition(output, *out_chunks, classes=self.block_classes(options['output'], output))
         node.clear()
         node.rawsource = self.make_rawsource(pairs, options['input'], options['output'])
         node['classes'].extend(self.block_classes(options['input'] or options['output']))
@@ -1159,14 +1183,16 @@ class StdGlossaryIndex(Index):
     name, localname, shortname = "glossindex", "Glossary", "terms"
 
     def generate(self, docnames=None):
-        content = defaultdict(list)
+        def ci_sort(entry):
+            ((type, itemname), (docname, anchor)) = entry
+            return itemname.lower()
 
-        for ((type, itemname), (docname, anchor)) in self.domain.data['objects'].items():
+        content = defaultdict(list)
+        for ((type, itemname), (docname, anchor)) in sorted(self.domain.data['objects'].items(), key=ci_sort):
             if type == 'term':
                 entries = content[itemname[0].lower()]
                 entries.append([itemname, 0, docname, anchor, '', '', ''])
-        content = sorted(content.items())
-        return content, False
+        return content.items(), False
 
 def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """A grammar production not included in a ``prodn`` directive.
@@ -1182,7 +1208,7 @@ def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, conte
     """
     #pylint: disable=dangerous-default-value, unused-argument
     env = inliner.document.settings.env
-    targetid = nodes.make_id('grammar-token-{}'.format(text))
+    targetid = make_id('grammar-token-{}'.format(text))
     target = nodes.target('', '', ids=[targetid])
     inliner.document.note_explicit_target(target)
     code = nodes.literal(rawtext, text, role=typ.lower())
@@ -1221,7 +1247,7 @@ def GlossaryDefRole(typ, rawtext, text, lineno, inliner, options={}, content=[])
         msg = MSG.format(term, env.doc2path(std[key][0]))
         inliner.document.reporter.warning(msg, line=lineno)
 
-    targetid = nodes.make_id('term-{}'.format(term))
+    targetid = make_id('term-{}'.format(term))
     std[key] = (env.docname, targetid)
     target = nodes.target('', '', ids=[targetid], names=[term])
     inliner.document.note_explicit_target(target)

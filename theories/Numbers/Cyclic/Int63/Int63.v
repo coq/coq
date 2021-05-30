@@ -17,55 +17,25 @@ Require Import Zpow_facts.
 Require Import Zgcd_alt.
 Require ZArith.
 Import Znumtheory.
-
-Register bool as kernel.ind_bool.
-Register prod as kernel.ind_pair.
-Register carry as kernel.ind_carry.
-Register comparison as kernel.ind_cmp.
+Require Export PrimInt63.
 
 Definition size := 63%nat.
 
-Primitive int := #int63_type.
-Register int as num.int63.type.
-Declare Scope int63_scope.
-Definition id_int : int -> int := fun x => x.
-Declare ML Module "int63_syntax_plugin".
-
-Module Import Int63NotationsInternalA.
-Delimit Scope int63_scope with int63.
-Bind Scope int63_scope with int.
-End Int63NotationsInternalA.
-
-(* Logical operations *)
-Primitive lsl := #int63_lsl.
-
-Primitive lsr := #int63_lsr.
-
-Primitive land := #int63_land.
-
-Primitive lor := #int63_lor.
-
-Primitive lxor := #int63_lxor.
-
-(* Arithmetic modulo operations *)
-Primitive add := #int63_add.
-
-Primitive sub := #int63_sub.
-
-Primitive mul := #int63_mul.
-
-Primitive mulc := #int63_mulc.
-
-Primitive div := #int63_div.
-
-Primitive mod := #int63_mod.
-
-(* Comparisons *)
-Primitive eqb := #int63_eq.
-
-Primitive ltb := #int63_lt.
-
-Primitive leb := #int63_le.
+Notation int := int (only parsing).
+Notation lsl := lsl (only parsing).
+Notation lsr := lsr (only parsing).
+Notation land := land (only parsing).
+Notation lor := lor (only parsing).
+Notation lxor := lxor (only parsing).
+Notation add := add (only parsing).
+Notation sub := sub (only parsing).
+Notation mul := mul (only parsing).
+Notation mulc := mulc (only parsing).
+Notation div := div (only parsing).
+Notation mod := mod (only parsing).
+Notation eqb := eqb (only parsing).
+Notation ltb := ltb (only parsing).
+Notation leb := leb (only parsing).
 
 Local Open Scope int63_scope.
 
@@ -139,34 +109,29 @@ Register Inline subcarry.
 Definition addc_def x y :=
   let r := x + y in
   if r <? x then C1 r else C0 r.
-(* the same but direct implementation for efficiency *)
-Primitive addc := #int63_addc.
+Notation addc := addc (only parsing).
 
 Definition addcarryc_def x y :=
   let r := addcarry x y in
   if r <=? x then C1 r else C0 r.
-(* the same but direct implementation for efficiency *)
-Primitive addcarryc := #int63_addcarryc.
+Notation addcarryc := addcarryc (only parsing).
 
 Definition subc_def x y :=
   if y <=? x then C0 (x - y) else C1 (x - y).
-(* the same but direct implementation for efficiency *)
-Primitive subc := #int63_subc.
+Notation subc := subc (only parsing).
 
 Definition subcarryc_def x y :=
   if y <? x then C0 (x - y - 1) else C1 (x - y - 1).
-(* the same but direct implementation for efficiency *)
-Primitive subcarryc := #int63_subcarryc.
+Notation subcarryc := subcarryc (only parsing).
 
 Definition diveucl_def x y := (x/y, x mod y).
-(* the same but direct implementation for efficiency *)
-Primitive diveucl := #int63_diveucl.
+Notation diveucl := diveucl (only parsing).
 
-Primitive diveucl_21 := #int63_div21.
+Notation diveucl_21 := diveucl_21 (only parsing).
 
 Definition addmuldiv_def p x y :=
   (x << p) lor (y >> (digits - p)).
-Primitive addmuldiv := #int63_addmuldiv.
+Notation addmuldiv := addmuldiv (only parsing).
 
 Module Import Int63NotationsInternalC.
 Notation "- x" := (opp x) : int63_scope.
@@ -188,7 +153,7 @@ Definition compare_def x y :=
   if x <? y then Lt
   else if (x =? y) then Eq else Gt.
 
-Primitive compare := #int63_compare.
+Notation compare := compare (only parsing).
 
 Import Bool ZArith.
 (** Translation to Z *)
@@ -240,6 +205,7 @@ Qed.
 Corollary to_Z_bounded : forall x, (0 <= φ  x  < wB)%Z.
 Proof. apply to_Z_rec_bounded. Qed.
 
+
 (* =================================================== *)
 Local Open Scope Z_scope.
 (* General arithmetic results *)
@@ -261,7 +227,7 @@ Proof.
   apply Z.lt_le_trans with (1:= H5); auto with zarith.
   apply Zpower_le_monotone; auto with zarith.
   rewrite Zplus_mod; auto with zarith.
-  rewrite -> Zmod_small with (a := t); auto with zarith.
+  rewrite -> (Zmod_small t); auto with zarith.
   apply Zmod_small; auto with zarith.
   split; auto with zarith.
   assert (0 <= 2 ^a * r); auto with zarith.
@@ -290,6 +256,7 @@ Proof. intros h; apply Z.lt_gt, Zpower_gt_0; lia. Qed.
 Lemma pow2_nz n : 0 <= n → 2 ^ n ≠ 0.
 Proof. intros h; generalize (pow2_pos _ h); lia. Qed.
 
+#[global]
 Hint Resolve pow2_pos pow2_nz : zarith.
 
 (* =================================================== *)
@@ -370,8 +337,8 @@ Axiom leb_spec : forall x y, (x <=? y)%int63 = true <-> φ x <= φ y.
 (** Exotic operations *)
 
 (** I should add the definition (like for compare) *)
-Primitive head0 := #int63_head0.
-Primitive tail0 := #int63_tail0.
+Notation head0 := head0 (only parsing).
+Notation tail0 := tail0 (only parsing).
 
 (** Axioms on operations which are just short cut *)
 
@@ -523,15 +490,15 @@ Definition cast i j :=
 
 Lemma cast_refl : forall i, cast i i = Some (fun P H => H).
 Proof.
- unfold cast;intros.
+ unfold cast;intros i.
  generalize (eqb_correct i i).
- rewrite eqb_refl;intros.
+ rewrite eqb_refl;intros e.
  rewrite (Eqdep_dec.eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
 Qed.
 
 Lemma cast_diff : forall i j, i =? j = false -> cast i j = None.
 Proof.
- intros;unfold cast;intros; generalize (eqb_correct i j).
+ intros i j H;unfold cast;intros; generalize (eqb_correct i j).
  rewrite H;trivial.
 Qed.
 
@@ -543,15 +510,15 @@ Definition eqo i j :=
 
 Lemma eqo_refl : forall i, eqo i i = Some (eq_refl i).
 Proof.
- unfold eqo;intros.
+ unfold eqo;intros i.
  generalize (eqb_correct i i).
- rewrite eqb_refl;intros.
+ rewrite eqb_refl;intros e.
  rewrite (Eqdep_dec.eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
 Qed.
 
 Lemma eqo_diff : forall i j, i =? j = false -> eqo i j = None.
 Proof.
- unfold eqo;intros; generalize (eqb_correct i j).
+ unfold eqo;intros i j H; generalize (eqb_correct i j).
  rewrite H;trivial.
 Qed.
 
@@ -685,7 +652,7 @@ Proof.
  apply Zgcdn_is_gcd.
  unfold Zgcd_bound.
  generalize (to_Z_bounded b).
- destruct φ b.
+ destruct φ b as [|p|p].
  unfold size; auto with zarith.
  intros (_,H).
  cut (Psize p <= size)%nat; [ lia | rewrite <- Zpower2_Psize; auto].
@@ -761,7 +728,7 @@ Proof.
      replace ((φ m + φ n) mod wB)%Z with ((((φ m + φ n) - wB) + wB) mod wB)%Z.
      rewrite -> Zplus_mod, Z_mod_same_full, Zplus_0_r, !Zmod_small; auto with zarith.
      rewrite !Zmod_small; auto with zarith.
-     apply f_equal2 with (f := Zmod); auto with zarith.
+     apply (f_equal2 Zmod); auto with zarith.
    case_eq (n <=? m + n)%int63; auto.
    rewrite leb_spec, H1; auto with zarith.
  assert (H1: (φ (m + n)  = φ m + φ n)%Z).
@@ -839,7 +806,7 @@ Lemma lsl_add_distr x y n: (x + y) << n = ((x << n) + (y << n))%int63.
 Proof.
  apply to_Z_inj; rewrite -> !lsl_spec, !add_spec, Zmult_mod_idemp_l.
  rewrite -> !lsl_spec, <-Zplus_mod.
- apply f_equal2 with (f := Zmod); auto with zarith.
+ apply (f_equal2 Zmod); auto with zarith.
 Qed.
 
 Lemma lsr_M_r x i (H: (digits <=? i = true)%int63) : x >> i = 0%int63.
@@ -988,6 +955,7 @@ Proof.
    intros _ HH; generalize (HH H1); discriminate.
  clear H.
  generalize (ltb_spec j i); case Int63.ltb; intros H2; unfold bit; simpl.
+   change 62%int63 with (digits - 1)%int63.
    assert (F2: (φ j < φ i)%Z) by (case H2; auto); clear H2.
    replace (is_zero (((x << i) >> j) << (digits - 1))) with true; auto.
    case (to_Z_bounded j); intros  H1j H2j.
@@ -1007,14 +975,14 @@ Proof.
  case H2; intros _ H3; case (Zle_or_lt φ i φ j); intros F2.
    2: generalize (H3 F2); discriminate.
  clear H2 H3.
- apply f_equal with (f := negb).
- apply f_equal with (f := is_zero).
+ apply (f_equal negb).
+ apply (f_equal is_zero).
  apply to_Z_inj.
  rewrite -> !lsl_spec, !lsr_spec, !lsl_spec.
  pattern wB at 2 3; replace wB with (2^(1+ φ (digits - 1))); auto.
  rewrite -> Zpower_exp, Z.pow_1_r; auto with zarith.
  rewrite !Zmult_mod_distr_r.
- apply f_equal2 with (f := Zmult); auto.
+ apply (f_equal2 Zmult); auto.
  replace wB with (2^ d); auto with zarith.
  replace d with ((d - φ i) + φ i)%Z by ring.
  case (to_Z_bounded i); intros  H1i H2i.
@@ -1112,8 +1080,8 @@ Proof.
  2: generalize (Hn 0%int63); do 2 case bit; auto; intros [ ]; auto.
  rewrite lsl_add_distr.
  rewrite (bit_split x) at 1; rewrite (bit_split y) at 1.
- rewrite <-!add_assoc; apply f_equal2 with (f := add); auto.
- rewrite add_comm, <-!add_assoc; apply f_equal2 with (f := add); auto.
+ rewrite <-!add_assoc; apply (f_equal2 add); auto.
+ rewrite add_comm, <-!add_assoc; apply (f_equal2 add); auto.
  rewrite add_comm; auto.
  intros Heq.
  generalize (add_le_r x y); rewrite Heq, lor_le; intro Hb.
@@ -1394,7 +1362,7 @@ Lemma sqrt2_step_def rec ih il j:
     else j
    else j.
 Proof.
- unfold sqrt2_step; case diveucl_21; intros;simpl.
+ unfold sqrt2_step; case diveucl_21; intros i j';simpl.
  case (j +c i);trivial.
 Qed.
 
@@ -1424,7 +1392,7 @@ Proof.
  assert (W1:= to_Z_bounded a1).
  assert (W2:= to_Z_bounded a2).
  assert (Wb:= to_Z_bounded b).
- assert (φ b>0) by (auto with zarith).
+ assert (φ b>0) as H by (auto with zarith).
  generalize (Z_div_mod (φ a1*wB+φ a2) φ b H).
  revert W.
  destruct (diveucl_21 a1 a2 b); destruct (Z.div_eucl (φ a1*wB+φ a2) φ b).
@@ -1460,7 +1428,7 @@ Proof.
  assert (Hp3: (0 < Φ (WW ih il))).
  {simpl zn2z_to_Z;apply Z.lt_le_trans with (φ ih * wB)%Z; auto with zarith.
   apply Zmult_lt_0_compat; auto with zarith.
-  refine (Z.lt_le_trans _ _ _ _ Hih); auto with zarith. }
+ }
  cbv zeta.
  case_eq (ih <? j)%int63;intros Heq.
  rewrite -> ltb_spec in Heq.
@@ -1497,7 +1465,6 @@ Proof.
  apply Hrec; rewrite H; clear u H.
  assert (Hf1: 0 <= Φ (WW ih il) / φ j) by (apply Z_div_pos; auto with zarith).
  case (Zle_lt_or_eq 1 (φ j)); auto with zarith; intros Hf2.
- 2: contradict Heq0; apply Zle_not_lt; rewrite <- Hf2, Zdiv_1_r; auto with zarith.
  split.
  replace (φ j + Φ (WW ih il) / φ j)%Z with
         (1 * 2 + ((φ j - 2) + Φ (WW ih il) / φ j)) by lia.
@@ -1937,6 +1904,22 @@ Qed.
 Lemma lxor0_r i : i lxor 0 = i.
 Proof. rewrite lxorC; exact (lxor0 i). Qed.
 
+Lemma opp_to_Z_opp (x : int) :
+    φ x mod wB <> 0 ->
+  (- φ (- x)) mod wB = (φ x) mod wB.
+Proof.
+  intros neqx0.
+  rewrite opp_spec.
+  rewrite (Z_mod_nz_opp_full (φ x%int63)) by assumption.
+  rewrite (Z.mod_small (φ x%int63)) by apply to_Z_bounded.
+  rewrite <- Z.add_opp_l.
+  rewrite Z.opp_add_distr, Z.opp_involutive.
+  replace (- wB) with (-1 * wB) by easy.
+  rewrite Z_mod_plus by easy.
+  now rewrite Z.mod_small by apply to_Z_bounded.
+Qed.
+
+
 Module Export Int63Notations.
   Local Open Scope int63_scope.
   #[deprecated(since="8.13",note="use infix mod instead")]
@@ -1949,7 +1932,6 @@ Module Export Int63Notations.
    Notation "m <= n" := (m <=? n) : int63_scope.
   #[deprecated(since="8.13",note="use infix ≤? instead")]
    Notation "m ≤ n" := (m <=? n) (at level 70, no associativity) : int63_scope.
-  Export Int63NotationsInternalA.
   Export Int63NotationsInternalB.
   Export Int63NotationsInternalC.
   Export Int63NotationsInternalD.

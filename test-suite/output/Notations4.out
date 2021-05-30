@@ -31,12 +31,6 @@ end
      : Expr -> Expr
 [(1 + 1)]
      : Expr
-Let "x" e1 e2
-     : expr
-Let "x" e1 e2
-     : expr
-Let "x" e1 e2 : list string
-     : list string
 myAnd1 True True
      : Prop
 r 2 3
@@ -65,8 +59,6 @@ where
       |- Type] (pat, p0, p cannot be used)
 fun '{| |} => true
      : R -> bool
-b = a
-     : Prop
 The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
 The command has indeed failed with message:
@@ -77,7 +69,9 @@ The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
 Entry custom:expr is
 [ "201" RIGHTA
-  [ "{"; term LEVEL "200"; "}" ] ]
+  [ "{"; term LEVEL "200"; "}" ]
+| "1" RIGHTA
+  [  ] ]
 
 fun x : nat => [ x ]
      : nat -> nat
@@ -85,18 +79,18 @@ fun x : nat => [x]
      : nat -> nat
 ∀ x : nat, x = x
      : Prop
-File "stdin", line 226, characters 0-160:
+File "stdin", line 185, characters 0-160:
 Warning: Notation "∀ _ .. _ , _" was already defined with a different format
 in scope type_scope. [notation-incompatible-format,parsing]
 ∀x : nat,x = x
      : Prop
-File "stdin", line 239, characters 0-60:
+File "stdin", line 198, characters 0-60:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "stdin", line 243, characters 0-64:
+File "stdin", line 202, characters 0-64:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "stdin", line 248, characters 0-62:
+File "stdin", line 207, characters 0-62:
 Warning: Lonely notation "_ %%%% _" was already defined with a different
 format. [notation-incompatible-format,parsing]
 3  %%  4
@@ -105,10 +99,10 @@ format. [notation-incompatible-format,parsing]
      : nat
 3   %%   4
      : nat
-File "stdin", line 276, characters 0-61:
+File "stdin", line 235, characters 0-61:
 Warning: The format modifier is irrelevant for only parsing rules.
 [irrelevant-format-only-parsing,parsing]
-File "stdin", line 280, characters 0-63:
+File "stdin", line 239, characters 0-63:
 Warning: The only parsing modifier has no effect in Reserved Notation.
 [irrelevant-reserved-notation-only-parsing,parsing]
 fun x : nat => U (S x)
@@ -119,9 +113,93 @@ fun x : nat => V x
      : forall x : nat, nat * (?T -> ?T)
 where
 ?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)
-File "stdin", line 297, characters 0-30:
+File "stdin", line 256, characters 0-30:
 Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
 0 :=: 0
      : Prop
 fun x : nat => <{ x; (S x) }>
      : nat -> nat
+exists p : nat, ▢_p (p >= 1)
+     : Prop
+▢_n (n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a variable name was expected.
+The command has indeed failed with message:
+Found a constructor while a variable name was expected.
+The command has indeed failed with message:
+Found a constant while a variable name was expected.
+exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
+     : Prop
+▢_n (n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+▢_tt (tt = tt)
+     : Prop
+The command has indeed failed with message:
+Found a constant while a pattern was expected.
+exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
+     : Prop
+pseudo_force n (fun n : nat => n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+▢_tt (tt = tt)
+     : Prop
+The command has indeed failed with message:
+Found a constant while a pattern was expected.
+exists x y : nat, myforce (x, y) (x >= 1 /\ y >= 2)
+     : Prop
+myforce n (n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+myforce tt (tt = tt)
+     : Prop
+The command has indeed failed with message:
+Found a constant while a pattern was expected.
+id nat
+     : Set
+fun a : bool => id a
+     : bool -> bool
+fun nat : bool => id nat
+     : bool -> bool
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+!! nat, nat = true
+     : Prop
+!!! nat, nat = true
+     : Prop
+!!!! (nat, id), nat = true /\ id = false
+     : Prop
+∀ x : nat, x = 0
+     : Prop
+∀₁ x, x = 0
+     : Prop
+∀₁ x, x = 0
+     : Prop
+∀₂ x y, x + y = 0
+     : Prop
+((1, 2))
+     : nat * nat
+%% [x == 1]
+     : Prop
+%%% [1]
+     : Prop
+[[2]]
+     : nat * nat
+%%%
+     : Type
+## (x, _) (x = 0)
+     : Prop
+The command has indeed failed with message:
+Unexpected type constraint in notation already providing a type constraint.
+## '(x, y) (x + y = 0)
+     : Prop
+## x (x = 0)
+     : Prop
+## '(x, y) (x = 0)
+     : Prop
+fun f : ## a (a = 0) => f 1 eq_refl
+     : ## a (a = 0) -> 1 = 0

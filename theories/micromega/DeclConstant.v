@@ -39,14 +39,17 @@ Register DeclaredConstant as micromega.DeclaredConstant.type.
 
 Class GT {T : Type} (F : T).
 
+#[global]
 Instance GT_O {T : Type} (F : T) {DC : DeclaredConstant F} : GT F.
 Defined.
 
+#[global]
 Instance GT_APP1 {T1 T2 : Type} (F : T1 -> T2) (A : T1) :
   DeclaredConstant F ->
   GT A -> GT (F A).
 Defined.
 
+#[global]
 Instance GT_APP2 {T1 T2 T3: Type} (F : T1 -> T2 -> T3)
          {A1 : T1} {A2 : T2} {DC:DeclaredConstant F} :
          GT A1 -> GT A2 -> GT (F A1 A2).
@@ -54,15 +57,26 @@ Defined.
 
 Require Import QArith_base.
 
+#[global]
 Instance DO : DeclaredConstant O := {}.
+#[global]
 Instance DS : DeclaredConstant S := {}.
+#[global]
 Instance DxH: DeclaredConstant xH := {}.
+#[global]
 Instance DxI: DeclaredConstant xI := {}.
+#[global]
 Instance DxO: DeclaredConstant xO := {}.
+#[global]
 Instance DZO: DeclaredConstant Z0 := {}.
+#[global]
 Instance DZpos: DeclaredConstant Zpos := {}.
+#[global]
 Instance DZneg: DeclaredConstant Zneg := {}.
+#[global]
 Instance DZpow_pos : DeclaredConstant Z.pow_pos := {}.
+#[global]
 Instance DZpow     : DeclaredConstant Z.pow     := {}.
 
+#[global]
 Instance DQ : DeclaredConstant Qmake := {}.

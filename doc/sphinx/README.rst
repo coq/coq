@@ -107,7 +107,7 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
        .. cmd:: Axiom @ident : @term.
 
           This command links :token:`term` to the name :token:`term` as its specification in
-          the global context. The fact asserted by :token:`term` is thus assumed as a
+          the global environment. The fact asserted by :token:`term` is thus assumed as a
           postulate.
 
           .. cmdv:: Parameter @ident : @term.
@@ -551,7 +551,7 @@ Add either ``abort`` to the first block or ``reset`` to the second block to avoi
 Abbreviations and macros
 ------------------------
 
-Substitutions for specially-formatted names (like ``|Cic|``, ``|Coq|``, ``|CoqIDE|``, ``|Ltac|``, and ``|Gallina|``), along with some useful LaTeX macros, are defined in a `separate file </doc/sphinx/refman-preamble.rst>`_.  This file is automatically included in all manual pages.
+Substitutions for specially-formatted names (like ``|Cic|``, ``|Ltac|`` and ``|Latex|``), along with some useful LaTeX macros, are defined in a `separate file </doc/sphinx/refman-preamble.rst>`_.  This file is automatically included in all manual pages.
 
 Emacs
 -----

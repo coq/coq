@@ -7,15 +7,15 @@ orb: bool -> bool -> bool
 implb: bool -> bool -> bool
 Nat.odd: nat -> bool
 Nat.even: nat -> bool
-Numeral.uint_beq: Numeral.uint -> Numeral.uint -> bool
+Number.uint_beq: Number.uint -> Number.uint -> bool
 Nat.testbit: nat -> nat -> bool
 Nat.eqb: nat -> nat -> bool
 Hexadecimal.hexadecimal_beq:
   Hexadecimal.hexadecimal -> Hexadecimal.hexadecimal -> bool
 Nat.ltb: nat -> nat -> bool
 Nat.leb: nat -> nat -> bool
-Numeral.numeral_beq: Numeral.numeral -> Numeral.numeral -> bool
-Numeral.int_beq: Numeral.int -> Numeral.int -> bool
+Number.number_beq: Number.number -> Number.number -> bool
+Number.int_beq: Number.int -> Number.int -> bool
 Hexadecimal.int_beq: Hexadecimal.int -> Hexadecimal.int -> bool
 Hexadecimal.uint_beq: Hexadecimal.uint -> Hexadecimal.uint -> bool
 Decimal.decimal_beq: Decimal.decimal -> Decimal.decimal -> bool
@@ -50,7 +50,7 @@ Nat.lor: nat -> nat -> nat
 Nat.gcd: nat -> nat -> nat
 Hexadecimal.nb_digits: Hexadecimal.uint -> nat
 Nat.of_hex_uint: Hexadecimal.uint -> nat
-Nat.of_num_uint: Numeral.uint -> nat
+Nat.of_num_uint: Number.uint -> nat
 Nat.of_uint: Decimal.uint -> nat
 Decimal.nb_digits: Decimal.uint -> nat
 Nat.tail_addmul: nat -> nat -> nat -> nat

@@ -417,8 +417,9 @@ end
 val tclCHECKINTERRUPT : unit tactic
 
 (** [tclTIMEOUT n t] can have only one success.
-    In case of timeout if fails with [tclZERO Timeout]. *)
-val tclTIMEOUT : int -> 'a tactic -> 'a tactic
+    In case of timeout it fails with [tclZERO Tac_Timeout]. *)
+val tclTIMEOUTF : float -> 'a tactic -> 'a tactic
+val tclTIMEOUT  : int   -> 'a tactic -> 'a tactic
 
 (** [tclTIME s t] displays time for each atomic call to t, using s as an
     identifying annotation if present *)

@@ -107,9 +107,9 @@ val pr_closed_glob_env     : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool 
 
 val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> Pp.t * Pp.t
 
-val pr_lglob_constr_env      : env -> 'a glob_constr_g -> Pp.t
+val pr_lglob_constr_env    : env -> evar_map -> 'a glob_constr_g -> Pp.t
 
-val pr_glob_constr_env       : env -> 'a glob_constr_g -> Pp.t
+val pr_glob_constr_env     : env -> evar_map -> 'a glob_constr_g -> Pp.t
 
 val pr_lconstr_pattern_env : env -> evar_map -> constr_pattern -> Pp.t
 
@@ -154,7 +154,7 @@ val pr_existential_key     : evar_map -> Evar.t -> Pp.t
 val pr_existential         : env -> evar_map -> existential -> Pp.t
 val pr_constructor         : env -> constructor -> Pp.t
 val pr_inductive           : env -> inductive -> Pp.t
-val pr_evaluable_reference : evaluable_global_reference -> Pp.t
+val pr_evaluable_reference : Tacred.evaluable_global_reference -> Pp.t
 
 val pr_pconstant : env -> evar_map -> pconstant -> Pp.t
 val pr_pinductive : env -> evar_map -> pinductive -> Pp.t

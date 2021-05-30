@@ -60,9 +60,6 @@ type typeclass = {
 type instance = {
   is_class: GlobRef.t;
   is_info: hint_info;
-  (* Sections where the instance should be redeclared,
-     None for discard, Some 0 for none. *)
-  is_global: int option;
   is_impl: GlobRef.t;
 }
 

@@ -8,6 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** Weak-head cbn reduction. Despite the name, the cbn reduction is a complex
+    reduction distinct from call-by-name or call-by-need. *)
 val whd_cbn :
+  CClosure.RedFlags.reds ->
+  Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr
+
+(** Strong variant of cbn reduction. *)
+val norm_cbn :
   CClosure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr

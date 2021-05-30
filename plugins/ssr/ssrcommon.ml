@@ -252,7 +252,7 @@ let interp_refine ist gl rc =
   in
   let sigma, c = Pretyping.understand_ltac flags (pf_env gl) (project gl) vars kind rc in
 (*   ppdebug(lazy(str"sigma@interp_refine=" ++ pr_evar_map None sigma)); *)
-  ppdebug(lazy(str"c@interp_refine=" ++ Printer.pr_econstr_env (pf_env gl) sigma c));
+  debug_ssr (fun () -> str"c@interp_refine=" ++ Printer.pr_econstr_env (pf_env gl) sigma c);
   (sigma, (sigma, c))
 
 
@@ -290,7 +290,7 @@ let interp_hyps ist gl ghyps =
 
 (* Old terms *)
 let mk_term k c = k, (mkRHole, Some c)
-let mk_lterm c = mk_term xNoFlag c
+let mk_lterm c = mk_term NoFlag c
 
 (* New terms *)
 
@@ -318,9 +318,9 @@ let interp_ast_closure_term (ist : Geninterp.interp_sign) (gl : 'goal Evd.sigma)
 
 let ssrterm_of_ast_closure_term { body; annotation } =
   let c = match annotation with
-    | `Parens -> xInParens
-    | `At -> xWithAt
-    | _ -> xNoFlag in
+    | `Parens -> InParens
+    | `At -> WithAt
+    | _ -> NoFlag in
   mk_term c body
 
 let ssrdgens_of_parsed_dgens = function
@@ -885,8 +885,8 @@ let ssr_n_tac seed n =
     with Not_found ->
       if n = -1 then fail "The ssreflect library was not loaded"
       else fail ("The tactic "^name^" was not found") in
-  let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
-  Tacinterp.eval_tactic (Tacexpr.TacArg tacexpr)
+  let tacexpr = Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
+  Tacinterp.eval_tactic @@ CAst.make (Tacexpr.TacArg tacexpr)
   end
 
 let donetac n = ssr_n_tac "done" n
@@ -895,7 +895,7 @@ open Constrexpr
 open Util
 
 (** Constructors for constr_expr *)
-let mkCProp loc = CAst.make ?loc @@ CSort (UNamed [GProp,0])
+let mkCProp loc = CAst.make ?loc @@ CSort (UNamed [CProp,0])
 let mkCType loc = CAst.make ?loc @@ CSort (UAnonymous {rigid=true})
 let mkCVar ?loc id = CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)
 let rec mkCHoles ?loc n =
@@ -926,7 +926,7 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
        CProdN (abs, force_type t)
      | CLetIn (n, v, oty, t) -> incr n_binders; CLetIn (n, v, oty, force_type t)
      | _ -> (mkCCast ty (mkCType None)).v)) ty in
-     mk_term ' ' (force_type ty) in
+     mk_term NoFlag (force_type ty) in
    let strip_cast (sigma, t) =
      let open EConstr in
      let rec aux t = match kind_of_type sigma t with
@@ -1099,7 +1099,7 @@ let hyp_of_var sigma v = SsrHyp (Loc.tag @@ EConstr.destVar sigma v)
 
 let interp_clr sigma = function
 | Some clr, (k, c)
-  when (k = xNoFlag  || k = xWithAt) && is_pf_var sigma c ->
+  when (k = NoFlag  || k = WithAt) && is_pf_var sigma c ->
    hyp_of_var sigma c :: clr
 | Some clr, _ -> clr
 | None, _ -> []
@@ -1167,7 +1167,7 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
   let cl = EConstr.of_constr cl in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
   if not(occur_existential sigma c) then
-    if tag_of_cpattern t = xWithAt then
+    if tag_of_cpattern t = WithAt then
       if not (EConstr.isVar sigma c) then
         errorstrm (str "@ can be used with variables only")
       else match Tacmach.pf_get_hyp gl (EConstr.destVar sigma c) with
@@ -1207,7 +1207,7 @@ let gentac gen =
   Proofview.V82.tactic begin fun gl ->
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
   let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
-  ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c));
+  debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c);
   let gl = pf_merge_uc ucst gl in
   if conv
   then tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl

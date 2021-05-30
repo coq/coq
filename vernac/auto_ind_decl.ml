@@ -169,7 +169,7 @@ let build_beq_scheme_deps kn =
   in
   Array.fold_left_i (fun i accu _ -> make_one_eq accu i) [] mib.mind_packets
 
-let build_beq_scheme mode kn =
+let build_beq_scheme _ kn =
   check_bool_is_defined ();
   (* fetching global env *)
   let env = Global.env() in
@@ -193,48 +193,48 @@ let build_beq_scheme mode kn =
   let create_input c =
     let myArrow u v = mkArrow u Sorts.Relevant (lift 1 v)
     and eqName = function
-        | Name s -> Id.of_string ("eq_"^(Id.to_string s))
-        | Anonymous -> Id.of_string "eq_A"
+      | Name s -> Id.of_string ("eq_"^(Id.to_string s))
+      | Anonymous -> Id.of_string "eq_A"
     in
     let ext_rel_list = Context.Rel.to_extended_list mkRel 0 lnamesparrec in
-      let lift_cnt = ref 0 in
-      let eqs_typ = List.map (fun aa ->
-                                let a = lift !lift_cnt aa in
-                                  incr lift_cnt;
-                                  myArrow a (myArrow a (bb ()))
-                             ) ext_rel_list in
+    let lift_cnt = ref 0 in
+    let eqs_typ = List.map (fun aa ->
+                      let a = lift !lift_cnt aa in
+                      incr lift_cnt;
+                      myArrow a (myArrow a (bb ()))
+                    ) ext_rel_list in
 
-        let eq_input = List.fold_left2
-          ( fun a b decl -> (* mkLambda(n,b,a) ) *)
-                (* here I leave the Naming thingy so that the type of
+    let eq_input = List.fold_left2
+                     ( fun a b decl -> (* mkLambda(n,b,a) ) *)
+                       (* here I leave the Naming thingy so that the type of
                   the function is more readable for the user *)
-                mkNamedLambda (map_annot eqName (RelDecl.get_annot decl)) b a )
-                c (List.rev eqs_typ) lnamesparrec
-       in
-        List.fold_left (fun a decl ->(* mkLambda(n,t,a)) eq_input rel_list *)
-           (* Same here , hoping the auto renaming will do something good ;)  *)
-           let x = map_annot
-               (function Name s -> s | Anonymous -> Id.of_string "A")
-               (RelDecl.get_annot decl)
-           in
-          mkNamedLambda x (RelDecl.get_type decl)  a) eq_input lnamesparrec
- in
- let make_one_eq cur =
-  let u = Univ.Instance.empty in
-  let ind = (kn,cur),u (* FIXME *) in
-  (* current inductive we are working on *)
-  let cur_packet = mib.mind_packets.(snd (fst ind)) in
-  (* Inductive toto : [rettyp] := *)
-  let rettyp = Inductive.type_of_inductive ((mib,cur_packet),u) in
-  (* split rettyp in a list without the non rec params and the last ->
+                       mkNamedLambda (map_annot eqName (RelDecl.get_annot decl)) b a )
+                     c (List.rev eqs_typ) lnamesparrec
+    in
+    List.fold_left (fun a decl ->(* mkLambda(n,t,a)) eq_input rel_list *)
+        (* Same here , hoping the auto renaming will do something good ;)  *)
+        let x = map_annot
+                  (function Name s -> s | Anonymous -> Id.of_string "A")
+                  (RelDecl.get_annot decl)
+        in
+        mkNamedLambda x (RelDecl.get_type decl)  a) eq_input lnamesparrec
+  in
+  let make_one_eq cur =
+    let u = Univ.Instance.empty in
+    let ind = (kn,cur),u (* FIXME *) in
+    (* current inductive we are working on *)
+    let cur_packet = mib.mind_packets.(snd (fst ind)) in
+    (* Inductive toto : [rettyp] := *)
+    let rettyp = Inductive.type_of_inductive ((mib,cur_packet),u) in
+    (* split rettyp in a list without the non rec params and the last ->
   e.g. Inductive vec (A:Set) : nat -> Set := ... will do [nat] *)
-  let rettyp_l = quick_chop nparrec (deconstruct_type rettyp) in
+    let rettyp_l = quick_chop nparrec (deconstruct_type rettyp) in
     (* give a type A, this function tries to find the equality on A declared
        previously *)
     (*  nlist = the number of args (A , B , ... )
         eqA   = the de Bruijn index of the first eq param
         ndx   = how much to translate due to the 2nd Case
-    *)
+     *)
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
       let rec aux c =
@@ -243,47 +243,47 @@ let build_beq_scheme mode kn =
         match Constr.kind c with
         | Rel x -> mkRel (x-nlist+ndx)
         | Var x ->
-          (* Support for working in a context with "eq_x : x -> x -> bool" *)
-          let eid = Id.of_string ("eq_"^(Id.to_string x)) in
-          let () =
-            try ignore (Environ.lookup_named eid env)
-            with Not_found -> raise (ParameterWithoutEquality (GlobRef.VarRef x))
-          in
-          mkVar eid
+           (* Support for working in a context with "eq_x : x -> x -> bool" *)
+           let eid = Id.of_string ("eq_"^(Id.to_string x)) in
+           let () =
+             try ignore (Environ.lookup_named eid env)
+             with Not_found -> raise (ParameterWithoutEquality (GlobRef.VarRef x))
+           in
+           mkVar eid
         | Cast (x,_,_) -> aux (Term.applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) ->
-            if Environ.QMutInd.equal env kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
-            else begin
-              try
-                let eq = match lookup_scheme (!beq_scheme_kind_aux()) ind' with
-                | Some c -> mkConst c
-                | None -> assert false
-                in
-                let eqa = Array.of_list @@ List.map aux a in
-                let args =
-                  Array.append
-                    (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
-                if Int.equal (Array.length args) 0 then eq
-                else mkApp (eq, args)
-              with Not_found -> raise(EqNotFound (ind', fst ind))
-            end
+           if Environ.QMutInd.equal env kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
+           else begin
+               try
+                 let eq = match lookup_scheme (!beq_scheme_kind_aux()) ind' with
+                   | Some c -> mkConst c
+                   | None -> assert false
+                 in
+                 let eqa = Array.of_list @@ List.map aux a in
+                 let args =
+                   Array.append
+                     (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
+                 if Int.equal (Array.length args) 0 then eq
+                 else mkApp (eq, args)
+               with Not_found -> raise(EqNotFound (ind', fst ind))
+             end
         | Sort _  -> raise InductiveWithSort
         | Prod _ -> raise InductiveWithProduct
         | Lambda _-> raise (EqUnknown "abstraction")
         | LetIn _ -> raise (EqUnknown "let-in")
         | Const (kn, u) ->
-             (match Environ.constant_opt_value_in env (kn, u) with
-              | Some c -> aux (Term.applist (c,a))
-              | None ->
-                 (* Support for working in a context with "eq_x : x -> x -> bool" *)
-                 (* Needs Hints, see test suite *)
-                 let eq_lbl = Label.make ("eq_" ^ Label.to_string (Constant.label kn)) in
-                 let kneq = Constant.change_label kn eq_lbl in
-                 if Environ.mem_constant kneq env then
-                   let _ = Environ.constant_opt_value_in env (kneq, u) in
-                   Term.applist (mkConst kneq,a)
-                 else raise (ParameterWithoutEquality (GlobRef.ConstRef kn)))
+           (match Environ.constant_opt_value_in env (kn, u) with
+            | Some c -> aux (Term.applist (c,a))
+            | None ->
+               (* Support for working in a context with "eq_x : x -> x -> bool" *)
+               (* Needs Hints, see test suite *)
+               let eq_lbl = Label.make ("eq_" ^ Label.to_string (Constant.label kn)) in
+               let kneq = Constant.change_label kn eq_lbl in
+               if Environ.mem_constant kneq env then
+                 let _ = Environ.constant_opt_value_in env (kneq, u) in
+                 Term.applist (mkConst kneq,a)
+               else raise (ParameterWithoutEquality (GlobRef.ConstRef kn)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
         | Case _ -> raise (EqUnknown "match")
@@ -293,100 +293,112 @@ let build_beq_scheme mode kn =
         | Evar _  -> raise (EqUnknown "existential variable")
         | Int _ -> raise (EqUnknown "int")
         | Float _ -> raise (EqUnknown "float")
-              | Array _ -> raise (EqUnknown "array")
-    in
+        | Array _ -> raise (EqUnknown "array")
+      in
       aux t
-  in
-  (* construct the predicate for the Case part*)
-  let do_predicate rel_list n =
-     List.fold_left (fun a b -> mkLambda(make_annot Anonymous Sorts.Relevant,b,a))
-      (mkLambda (make_annot Anonymous Sorts.Relevant,
-                 mkFullInd ind (n+3+(List.length rettyp_l)+nb_ind-1),
-                 (bb ())))
-      (List.rev rettyp_l) in
-  (* make_one_eq *)
-  (* do the [| C1 ... =>  match Y with ... end
+    in
+    (* construct the predicate for the Case part*)
+    let do_predicate rel_list n =
+      List.fold_left (fun a b -> mkLambda(make_annot Anonymous Sorts.Relevant,b,a))
+        (mkLambda (make_annot Anonymous Sorts.Relevant,
+                   mkFullInd ind (n+3+(List.length rettyp_l)+nb_ind-1),
+                   (bb ())))
+        (List.rev rettyp_l) in
+    (* make_one_eq *)
+    (* do the [| C1 ... =>  match Y with ... end
                ...
                Cn => match Y with ... end |]  part *)
     let rci = Sorts.Relevant in (* TODO relevance *)
     let ci = make_case_info env (fst ind) rci MatchStyle in
-    let constrs n = get_constructors env (make_ind_family (ind,
-      Context.Rel.to_extended_list mkRel (n+nb_ind-1) mib.mind_params_ctxt)) in
+    let constrs n =
+      let params = Context.Rel.to_extended_list mkRel (n+nb_ind-1) mib.mind_params_ctxt in
+      get_constructors env (make_ind_family (ind, params))
+    in
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
-    let ar = Array.make n (ff ()) in
-        for i=0 to n-1 do
-          let nb_cstr_args = List.length constrsi.(i).cs_args in
-          let ar2 = Array.make n (ff ()) in
-          let constrsj = constrs (3+nparrec+nb_cstr_args) in
-            for j=0 to n-1 do
-              if Int.equal i j then
-                ar2.(j) <- let cc = (match nb_cstr_args with
-                    | 0 -> tt ()
-                    | _ -> let eqs = Array.make nb_cstr_args (tt ()) in
-                      for ndx = 0 to nb_cstr_args-1 do
-                        let cc = RelDecl.get_type (List.nth constrsi.(i).cs_args ndx) in
-                          let eqA = compute_A_equality rel_list
-                                          nparrec
-                                          (nparrec+3+2*nb_cstr_args)
-                                          (nb_cstr_args+ndx+1)
-                                          cc
-                          in
-                          Array.set eqs ndx
-                              (mkApp (eqA,
-                                [|mkRel (ndx+1+nb_cstr_args);mkRel (ndx+1)|]
-                              ))
-                      done;
-                      Array.fold_left
-                          (fun a b -> mkApp (andb(),[|b;a|]))
-                          (eqs.(0))
-                          (Array.sub eqs 1 (nb_cstr_args - 1))
-                  )
-                  in
-                    (List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a)) cc
-                    (constrsj.(j).cs_args)
-                )
-              else ar2.(j) <- (List.fold_left (fun a decl ->
-                        mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a)) (ff ())  (constrsj.(j).cs_args) )
-            done;
+    let ar = Array.init n (fun i ->
+      let nb_cstr_args = List.length constrsi.(i).cs_args in
+      let constrsj = constrs (3+nparrec+nb_cstr_args) in
+      let ar2 = Array.init n (fun j ->
+        if Int.equal i j then
+          let cc = match nb_cstr_args with
+            | 0 -> tt ()
+            | _ ->
+               let eqs = Array.init nb_cstr_args (fun ndx ->
+                 let cc = RelDecl.get_type (List.nth constrsi.(i).cs_args ndx) in
+                 let eqA = compute_A_equality rel_list
+                             nparrec
+                             (nparrec+3+2*nb_cstr_args)
+                             (nb_cstr_args+ndx+1)
+                             cc
+                 in
+                 mkApp (eqA, [|mkRel (ndx+1+nb_cstr_args);mkRel (ndx+1)|]))
+               in
+               Array.fold_left
+                 (fun a b -> mkApp (andb(),[|b;a|]))
+                 eqs.(0)
+                 (Array.sub eqs 1 (nb_cstr_args - 1))
+          in
+          List.fold_left (fun a decl ->
+              mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
+            cc
+            constrsj.(j).cs_args
+        else
+          List.fold_left (fun a decl ->
+              mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
+            (ff ())
+            (constrsj.(j).cs_args))
+      in
+      let pred = EConstr.of_constr (do_predicate rel_list nb_cstr_args) in
+      let case =
+        simple_make_case_or_project env (Evd.from_env env)
+          ci pred NoInvert (EConstr.mkVar (Id.of_string "Y"))
+          (EConstr.of_constr_array ar2)
+      in
+      List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
+        (EConstr.Unsafe.to_constr case)
+        (constrsi.(i).cs_args))
+    in
+    let pred = EConstr.of_constr (do_predicate rel_list 0) in
+    let case =
+      simple_make_case_or_project env (Evd.from_env env)
+        ci pred NoInvert (EConstr.mkVar (Id.of_string "X"))
+        (EConstr.of_constr_array ar)
+    in
+    mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd ind (nb_ind-1+1))  (
+        mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd ind (nb_ind-1+2))  (
+            (EConstr.Unsafe.to_constr case)))
+  in (* build_beq_scheme *)
 
-          ar.(i) <- (List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
-                        (mkCase (ci,do_predicate rel_list nb_cstr_args,NoInvert,
-                                  mkVar (Id.of_string "Y") ,ar2))
-                         (constrsi.(i).cs_args))
-        done;
-        mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd ind (nb_ind-1+1))  (
-          mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd ind (nb_ind-1+2))  (
-            mkCase (ci, do_predicate rel_list 0,NoInvert,mkVar (Id.of_string "X"),ar)))
-    in (* build_beq_scheme *)
-    let names = Array.make nb_ind (make_annot Anonymous Sorts.Relevant) and
-        types = Array.make nb_ind mkSet and
-        cores = Array.make nb_ind mkSet in
-    let u = Univ.Instance.empty in
-    for i=0 to (nb_ind-1) do
-        names.(i) <- make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant;
-        types.(i) <- mkArrow (mkFullInd ((kn,i),u) 0) Sorts.Relevant
-                     (mkArrow (mkFullInd ((kn,i),u) 1) Sorts.Relevant (bb ()));
-        let c = make_one_eq i in
-        cores.(i) <- c;
-    done;
-      (Array.init nb_ind (fun i ->
-      let kelim = Inductive.elim_sort (mib,mib.mind_packets.(i)) in
-        if not (Sorts.family_leq InSet kelim) then
-          raise (NonSingletonProp (kn,i));
-        let fix = match mib.mind_finite with
-        | CoFinite ->
-          raise NoDecidabilityCoInductive;
-        | Finite ->
-          mkFix (((Array.make nb_ind 0),i),(names,types,cores))
-        | BiFinite ->
-          (* If the inductive type is not recursive, the fixpoint is
+  let names = Array.make nb_ind (make_annot Anonymous Sorts.Relevant) and
+      types = Array.make nb_ind mkSet and
+      cores = Array.make nb_ind mkSet in
+  let u = Univ.Instance.empty in
+  for i=0 to (nb_ind-1) do
+    names.(i) <- make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant;
+    types.(i) <- mkArrow (mkFullInd ((kn,i),u) 0) Sorts.Relevant
+                  (mkArrow (mkFullInd ((kn,i),u) 1) Sorts.Relevant (bb ()));
+    let c = make_one_eq i in
+    cores.(i) <- c;
+  done;
+  let res = Array.init nb_ind (fun i ->
+    let kelim = Inductive.elim_sort (mib,mib.mind_packets.(i)) in
+    if not (Sorts.family_leq InSet kelim) then
+      raise (NonSingletonProp (kn,i));
+    let fix = match mib.mind_finite with
+      | CoFinite ->
+         raise NoDecidabilityCoInductive;
+      | Finite ->
+         mkFix (((Array.make nb_ind 0),i),(names,types,cores))
+      | BiFinite ->
+         (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)
-          let subst = List.init nb_ind (fun _ -> mkProp) in
-          Vars.substl subst cores.(i)
-        in
-        create_input fix),
-       UState.from_env (Global.env ()))
+         let subst = List.init nb_ind (fun _ -> mkProp) in
+         Vars.substl subst cores.(i)
+    in
+    create_input fix)
+  in
+  res, UState.from_env (Global.env ())
 
 let beq_scheme_kind =
   declare_mutual_scheme_object "_beq"
@@ -412,7 +424,7 @@ let destruct_ind env sigma c =
 so from Ai we can find the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
-let do_replace_lb mode lb_scheme_key aavoid narg p q =
+let do_replace_lb lb_scheme_key aavoid narg p q =
   let open EConstr in
   let avoid = Array.of_list aavoid in
   let do_arg env sigma hd v offset =
@@ -443,7 +455,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
     let u,v = destruct_ind env sigma type_of_pq in
-    find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) >>= fun c ->
+    find_scheme lb_scheme_key (fst u) (*FIXME*) >>= fun c ->
     let lb_type_of_p = mkConst c in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
@@ -624,7 +636,7 @@ let compute_bl_goal ind lnamesparrec nparrec =
               (mkApp(eq (),[|mkFullInd (ind,u) (nparrec+3);mkVar x;mkVar y|]))
         )))
 
-let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
+let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let first_intros =
     ( List.map (fun (s,_,_,_) -> s ) list_id )
@@ -686,9 +698,8 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let side_effect_of_mode = function
-  | UserAutomaticRequest -> false
-  | InternalTacticRequest -> true
-  | UserIndividualRequest -> false
+| InlineDeps -> true
+| KeepDeps -> false
 
 let make_bl_scheme mode mind =
   let mib = Global.lookup_mind mind in
@@ -705,7 +716,7 @@ let make_bl_scheme mode mind =
   let side_eff = side_effect_of_mode mode in
   let bl_goal = EConstr.of_constr bl_goal in
   let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:bl_goal
-    (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
+    (compute_bl_tact (!bl_scheme_kind_aux()) (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 
@@ -763,7 +774,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar x;mkVar y|]);tt|]))
         )))
 
-let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
+let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let first_intros =
     ( List.map (fun (s,_,_,_) -> s ) list_id )
@@ -795,7 +806,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                 | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
                                 | App(c',ca') ->
                                    let n = Array.length ca' in
-                                   do_replace_lb mode lb_scheme_key
+                                   do_replace_lb lb_scheme_key
                                      (List.rev fresh_first_intros)
                                      nparrec
                                      ca'.(n-2) ca'.(n-1)
@@ -827,7 +838,7 @@ let make_lb_scheme mode mind =
   let side_eff = side_effect_of_mode mode in
   let lb_goal = EConstr.of_constr lb_goal in
   let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:lb_goal
-    (compute_lb_tact mode (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
+    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 

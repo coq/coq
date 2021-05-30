@@ -15,6 +15,7 @@ Require Import NZAxioms NZBase Decidable OrdersTac.
 Module Type NZOrderProp
  (Import NZ : NZOrdSig')(Import NZBase : NZBaseProp NZ).
 
+#[global]
 Instance le_wd : Proper (eq==>eq==>iff) le.
 Proof.
 intros n n' Hn m m' Hm. now rewrite <- !lt_succ_r, Hn, Hm.
@@ -131,12 +132,15 @@ Qed.
 
 (** Some type classes about order *)
 
+#[global]
 Instance lt_strorder : StrictOrder lt.
 Proof. split. - exact lt_irrefl. - exact lt_trans. Qed.
 
+#[global]
 Instance le_preorder : PreOrder le.
 Proof. split. - exact le_refl. - exact le_trans. Qed.
 
+#[global]
 Instance le_partialorder : PartialOrder _ le.
 Proof.
 intros x y. compute. split.

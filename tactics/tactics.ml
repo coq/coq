@@ -85,24 +85,6 @@ let () =
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
       optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
 
-(* The following boolean governs what "intros []" do on examples such
-   as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
-   if false, it behaves as "intro H; case H; clear H" for fresh H.
-   Kept as false for compatibility.
- *)
-
-let bracketing_last_or_and_intro_pattern = ref true
-
-let use_bracketing_last_or_and_intro_pattern () =
-  !bracketing_last_or_and_intro_pattern
-
-let () =
-  declare_bool_option
-    { optdepr  = true;
-      optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
-      optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
-      optwrite = (fun b -> bracketing_last_or_and_intro_pattern := b) }
-
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -174,9 +156,6 @@ let convert_hyp ~check ~reorder d =
     end
   end
 
-let convert_concl_no_check = convert_concl ~check:false
-let convert_hyp_no_check = convert_hyp ~check:false ~reorder:false
-
 let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
     match Tacmach.New.pf_apply (Reductionops.infer_conv ~pb) gl x y with
@@ -198,22 +177,24 @@ let clear_in_global_msg = function
   | Some ref -> str " implicitly in " ++ Printer.pr_global ref
 
 let clear_dependency_msg env sigma id err inglobal =
+  let ppidupper = function Some id -> Id.print id | None -> str "This variable" in
+  let ppid = function Some id -> Id.print id | None -> str "this variable" in
   let pp = clear_in_global_msg inglobal in
   match err with
   | Evarutil.OccurHypInSimpleClause None ->
-      Id.print id ++ str " is used" ++ pp ++ str " in conclusion."
+      ppidupper id ++ str " is used" ++ pp ++ str " in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
-      Id.print id ++ strbrk " is used" ++ pp ++ str " in hypothesis " ++ Id.print id' ++ str"."
+      ppidupper id ++ strbrk " is used" ++ pp ++ str " in hypothesis " ++ Id.print id' ++ str"."
   | Evarutil.EvarTypingBreak ev ->
-      str "Cannot remove " ++ Id.print id ++
+      str "Cannot remove " ++ ppid id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
-      str "Cannot remove " ++ Id.print id ++ str " as it would leave the existential " ++
+      str "Cannot remove " ++ ppid id ++ str " as it would leave the existential " ++
       Printer.pr_existential_key sigma ev ++ str" without candidates."
 
 let error_clear_dependency env sigma id err inglobal =
-  user_err (clear_dependency_msg env sigma id err inglobal)
+  user_err (clear_dependency_msg env sigma (Some id) err inglobal)
 
 let replacing_dependency_msg env sigma id err inglobal =
   let pp = clear_in_global_msg inglobal in
@@ -632,69 +613,9 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where env sigma dec
       in
       (sigma, LocalDef (id,b',ty'))
 
-(* Possibly equip a reduction with the occurrences mentioned in an
-   occurrence clause *)
-
-let error_illegal_clause () =
-  error "\"at\" clause not supported in presence of an occurrence clause."
-
-let error_illegal_non_atomic_clause () =
-  error "\"at\" clause not supported in presence of a non atomic \"in\" clause."
-
-let error_occurrences_not_unsupported () =
-  error "Occurrences not supported for this reduction tactic."
-
 let bind_change_occurrences occs = function
   | None -> None
   | Some c -> Some (Redexpr.out_with_occurrences (occs,c))
-
-let bind_red_expr_occurrences occs nbcl redexp =
-  let has_at_clause = function
-    | Unfold l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
-    | Pattern l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
-    | Simpl (_,Some (occl,_)) -> occl != AllOccurrences
-    | _ -> false in
-  if occs == AllOccurrences then
-    if nbcl > 1 && has_at_clause redexp then
-      error_illegal_non_atomic_clause ()
-    else
-      redexp
-  else
-    match redexp with
-    | Unfold (_::_::_) ->
-        error_illegal_clause ()
-    | Unfold [(occl,c)] ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          Unfold [(occs,c)]
-    | Pattern (_::_::_) ->
-        error_illegal_clause ()
-    | Pattern [(occl,c)] ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          Pattern [(occs,c)]
-    | Simpl (f,Some (occl,c)) ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          Simpl (f,Some (occs,c))
-    | CbvVm (Some (occl,c)) ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          CbvVm (Some (occs,c))
-    | CbvNative (Some (occl,c)) ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          CbvNative (Some (occs,c))
-    | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
-    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
-        error_occurrences_not_unsupported ()
-    | Unfold [] | Pattern [] ->
-        assert false
 
 (* The following two tactics apply an arbitrary
    reduction function either to the conclusion or to a
@@ -957,17 +878,16 @@ let reduce redexp cl =
   | Red _ | Hnf | CbvVm _ | CbvNative _ -> StableHypConv
   | ExtraRedExpr _ -> StableHypConv (* Should we be that lenient ?*)
   in
+  let redexp = Redexpr.eval_red_expr env redexp in
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
-    let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let redfun = Redexpr.reduction_of_red_expr env redexp in
+    let redfun = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     e_change_in_concl ~check (revert_cast redfun)
   end
   <*>
   let f (id, occs, where) =
-    let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let (redfun, _) = Redexpr.reduction_of_red_expr env redexp in
+    let (redfun, _) = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     let redfun _ env sigma c = redfun env sigma c in
     let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
     (id, redfun)
@@ -1081,10 +1001,10 @@ let intros_using_then l tac = intros_using_then_helper tac [] l
 
 let intros = Tacticals.New.tclREPEAT intro
 
-let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
+let intro_forthcoming_then_gen name_flag move_flag dep_flag bound n tac =
   let rec aux n ids =
     (* Note: we always use the bound when there is one for "*" and "**" *)
-    if (match bound with None -> true | Some (_,p) -> n < p) then
+    if (match bound with None -> true | Some p -> n < p) then
     Proofview.tclORELSE
       begin
       intro_then_gen name_flag move_flag false dep_flag
@@ -1321,8 +1241,6 @@ let force_destruction_arg with_evars env sigma c =
 (* tactic "cut" (actually modus ponens) *)
 (****************************************)
 
-let normalize_cut = false
-
 let cut c =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1337,8 +1255,6 @@ let cut c =
     | sigma, s ->
       let r = Sorts.relevance_of_sort s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
-      (* Backward compat: normalize [c]. *)
-      let c = if normalize_cut then strong whd_betaiota env sigma c else c in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun h ->
             let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r (Vars.lift 1 concl)) in
@@ -1376,24 +1292,21 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
+let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
-  let clenv =
-      { clenv with evd = Typeclasses.resolve_typeclasses
-          ~fail:(not with_evars) clenv.env clenv.evd }
-  in
+  let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd in
+  let clenv = Clenv.update_clenv_evd clenv evd in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
-  if not with_evars && occur_meta clenv.evd new_hyp_typ then
+  if not with_evars && occur_meta evd new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
-  let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARS (clear_metas clenv.evd))
+    (Proofview.Unsafe.tclEVARS (clear_metas evd))
     (Tacticals.New.tclTHENLAST
-      (assert_after_then_gen ?err with_clear naming new_hyp_typ tac) exact_tac)
+      (assert_after_then_gen ?err replace naming new_hyp_typ tac) exact_tac)
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -1444,7 +1357,7 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     user_err ~hdr:"general_rewrite_in"
       (str "Nothing to rewrite in " ++ Id.print id ++ str".");
-  clenv_refine_in with_evars id id sigma elimclause''
+  clenv_refine_in with_evars id true sigma elimclause''
     (fun id -> Proofview.tclUNIT ())
 
 (*
@@ -1642,7 +1555,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       | Some proj ->
           let args = Context.Rel.to_extended_vect mkRel 0 sign in
           let proj =
-            match Recordops.find_primitive_projection proj with
+            match Structures.PrimitiveProjections.find_opt proj with
             | Some proj ->
               mkProj (Projection.make proj false, mkApp (c, args))
             | None ->
@@ -1672,7 +1585,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
         let params = List.map EConstr.of_constr params in
         let cstr = (get_constructors env indf).(0) in
         let elim =
-          try DefinedRecord (Recordops.lookup_projections ind)
+          try DefinedRecord (Structures.Structure.find_projections ind)
           with Not_found ->
             let u = EInstance.kind sigma u in
             let (_, elim) = build_case_analysis_scheme env sigma (ind,u) false sort in
@@ -1893,6 +1806,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
+  let replace = Id.equal id targetid in
   let rec aux ?err idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1905,7 +1819,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
-      clenv_refine_in ?err with_evars targetid id sigma clause
+      clenv_refine_in ?err with_evars targetid replace sigma clause
         (fun id ->
           replace_error_option err (
             apply_clear_request clear_flag false c <*>
@@ -1971,12 +1885,6 @@ let cut_and_apply c =
 (********************************************************************)
 (*               Exact tactics                                      *)
 (********************************************************************)
-
-(* let convert_leqkey = CProfile.declare_profile "convert_leq";; *)
-(* let convert_leq = CProfile.profile3 convert_leqkey convert_leq *)
-
-(* let refine_no_checkkey = CProfile.declare_profile "refine_no_check";; *)
-(* let refine_no_check = CProfile.profile2 refine_no_checkkey refine_no_check *)
 
 let exact_no_check c =
   Refine.refine ~typecheck:false (fun h -> (h,c))
@@ -2130,7 +2038,9 @@ let clear_body ids =
   end
 
 let clear_wildcards ids =
-  Tacticals.New.tclMAP (fun {CAst.loc;v=id} -> clear [id]) ids
+  let clear_wildcards_msg ?loc env sigma _id err inglobal =
+    user_err ?loc (clear_dependency_msg env sigma None err inglobal) in
+  Tacticals.New.tclMAP (fun {CAst.loc;v=id} -> clear_gen (clear_wildcards_msg ?loc) [id]) ids
 
 (*   Takes a list of booleans, and introduces all the variables
  *  quantified in the goal which are associated with a value
@@ -2278,10 +2188,9 @@ let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
 let right_with_bindings with_evars = constructor_tac with_evars (Some 2) 2
 let split_with_bindings with_evars l =
   Tacticals.New.tclMAP (constructor_tac with_evars (Some 1) 1) l
-let split_with_delayed_bindings with_evars =
-  Tacticals.New.tclMAP (fun bl ->
-    Tacticals.New.tclDELAYEDWITHHOLES with_evars bl
-    (constructor_tac with_evars (Some 1) 1))
+let split_with_delayed_bindings with_evars bl =
+  Tacticals.New.tclMAPDELAYEDWITHHOLES with_evars bl
+    (constructor_tac with_evars (Some 1) 1)
 
 let left           = left_with_bindings false
 let simplest_left  = left NoBindings
@@ -2303,7 +2212,7 @@ let (forward_general_rewrite_clause, general_rewrite_clause) = Hook.make ()
 let (forward_subst_one, subst_one) = Hook.make ()
 
 let error_unexpected_extra_pattern loc bound pat =
-  let _,nb = Option.get bound in
+  let nb = Option.get bound in
   let s1,s2,s3 = match pat with
   | IntroNaming (IntroIdentifier _) ->
       "name", (String.plural nb " introduction pattern"), "no"
@@ -2336,14 +2245,14 @@ let intro_decomp_eq ?loc l thin tac id =
   match my_find_eq_data_decompose env sigma t with
   | Some (eq,u,eq_args) ->
     !intro_decomp_eq_function
-      (fun n -> tac ((CAst.make id)::thin) (Some (true,n)) l)
+      (fun n -> tac ((CAst.make id)::thin) (Some n) l)
       (eq,t,eq_args) (c, t)
   | None ->
     let info = Exninfo.reify () in
     Tacticals.New.tclZEROMSG ~info (str "Not a primitive equality here.")
   end
 
-let intro_or_and_pattern ?loc with_evars bracketed ll thin tac id =
+let intro_or_and_pattern ?loc with_evars ll thin tac id =
   Proofview.Goal.enter begin fun gl ->
   let c = mkVar id in
   let env = Proofview.Goal.env gl in
@@ -2357,11 +2266,11 @@ let intro_or_and_pattern ?loc with_evars bracketed ll thin tac id =
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Tacticals.New.tclTHENLASTn
        (Tacticals.New.tclTHEN (simplest_ecase c) (clear [id]))
-       (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
+       (Array.map2 (fun n l -> tac thin (Some n) l)
           nv_with_let ll))
   end
 
-let rewrite_hyp_then assert_style with_evars thin l2r id tac =
+let rewrite_hyp_then with_evars thin l2r id tac =
   let rew_on l2r =
     Hook.get forward_general_rewrite_clause l2r with_evars (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
@@ -2402,26 +2311,31 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
     tclEVARSTHEN sigma (Tacticals.New.tclTHENFIRST eqtac (tac thin))
   end
 
-let prepare_naming ?loc = function
-  | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
-  | IntroAnonymous -> NamingAvoid Id.Set.empty
-  | IntroFresh id -> NamingBasedOn (id, Id.Set.empty)
-
-let rec explicit_intro_names = let open CAst in function
-| {v=IntroForthcoming _} :: l -> explicit_intro_names l
-| {v=IntroNaming (IntroIdentifier id)} :: l -> Id.Set.add id (explicit_intro_names l)
+let rec collect_intro_names = let open CAst in function
+| {v=IntroForthcoming _} :: l -> collect_intro_names l
+| {v=IntroNaming (IntroIdentifier id)} :: l ->
+  let ids1, ids2 = collect_intro_names l in Id.Set.add id ids1, ids2
 | {v=IntroAction (IntroOrAndPattern l)} :: l' ->
     let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
-    let fold accu l = Id.Set.union accu (explicit_intro_names (l@l')) in
-    List.fold_left fold Id.Set.empty ll
+    let fold (ids1',ids2') l =
+      let ids1, ids2 = collect_intro_names (l@l') in
+      Id.Set.union ids1 ids1', Id.Set.union ids2 ids2' in
+    List.fold_left fold (Id.Set.empty,Id.Set.empty) ll
 | {v=IntroAction (IntroInjection l)} :: l' ->
-    explicit_intro_names (l@l')
+    collect_intro_names (l@l')
 | {v=IntroAction (IntroApplyOn (c,pat))} :: l' ->
-    explicit_intro_names (pat::l')
-| {v=(IntroNaming (IntroAnonymous | IntroFresh _)
+    collect_intro_names (pat::l')
+| {v=IntroNaming (IntroFresh id)} :: l ->
+    let ids1, ids2 = collect_intro_names l in ids1, Id.Set.add id ids2
+| {v=(IntroNaming IntroAnonymous
      | IntroAction (IntroWildcard | IntroRewrite _))} :: l ->
-     explicit_intro_names l
-| [] -> Id.Set.empty
+     collect_intro_names l
+| [] -> Id.Set.empty, Id.Set.empty
+
+let explicit_intro_names l = fst (collect_intro_names l)
+
+let explicit_all_intro_names l =
+  let ids1,ids2 = collect_intro_names l in Id.Set.union ids1 ids2
 
 let rec check_name_unicity env ok seen = let open CAst in function
 | {v=IntroForthcoming _} :: l -> check_name_unicity env ok seen l
@@ -2446,38 +2360,41 @@ let rec check_name_unicity env ok seen = let open CAst in function
      check_name_unicity env ok seen l
 | [] -> ()
 
-let wild_id = Id.of_string "_tmp"
+let fresh_wild ids =
+  let rec aux s =
+    if Id.Set.exists (fun id -> String.is_prefix s (Id.to_string id)) ids
+    then aux (s ^ "'")
+    else Id.of_string s in
+  aux "_H"
 
-let rec list_mem_assoc_right id = function
-  | [] -> false
-  | {CAst.v=id'}::l -> Id.equal id id' || list_mem_assoc_right id l
+let make_naming ?loc avoid l = function
+  | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
+  | IntroAnonymous -> NamingAvoid (Id.Set.union avoid (explicit_intro_names l))
+  | IntroFresh id -> NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l))
 
-let check_thin_clash_then id thin avoid tac =
-  if list_mem_assoc_right id thin then
-    let newid = next_ident_away (add_suffix id "'") avoid in
-    let thin =
-      List.map CAst.(map (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
-  else
-    tac thin
-
-let make_tmp_naming avoid l = function
+let rec make_naming_action avoid l = function
   (* In theory, we could use a tmp id like "wild_id" for all actions
      but we prefer to avoid it to avoid this kind of "ugly" names *)
-  (* Alternatively, we could have called check_thin_clash_then on
-     IntroAnonymous, but at the cost of a "renaming"; Note that in the
-     case of IntroFresh, we should use check_thin_clash_then anyway to
-     prevent the case of an IntroFresh precisely using the wild_id *)
-  | IntroWildcard -> NamingBasedOn (wild_id, Id.Set.union avoid (explicit_intro_names l))
-  | pat -> NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
+  | IntroWildcard ->
+    NamingBasedOn (fresh_wild (Id.Set.union avoid (explicit_all_intro_names l)), Id.Set.empty)
+  | IntroApplyOn (_,{CAst.v=pat;loc}) -> make_naming_pattern avoid ?loc l pat
+  | (IntroOrAndPattern _ | IntroInjection _ | IntroRewrite _) as pat ->
+    NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
+
+and make_naming_pattern ?loc avoid l = function
+  | IntroNaming pat -> make_naming ?loc avoid l pat
+  | IntroAction pat -> make_naming_action avoid l pat
+  | IntroForthcoming _ -> NamingAvoid (Id.Set.union avoid (explicit_intro_names l))
+
+let prepare_naming ?loc pat = make_naming ?loc Id.Set.empty [] pat
 
 let fit_bound n = function
   | None -> true
-  | Some (use_bound,n') -> not use_bound || n = n'
+  | Some n' -> n = n'
 
 let exceed_bound n = function
   | None -> false
-  | Some (use_bound,n') -> use_bound && n >= n'
+  | Some n' -> n >= n'
 
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
@@ -2498,102 +2415,74 @@ let exceed_bound n = function
      [patl]: introduction patterns to interpret
   *)
 
-let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
+let rec intro_patterns_core with_evars avoid ids thin destopt bound n tac =
   function
   | [] when fit_bound n bound ->
       tac ids thin
   | [] ->
       (* Behave as IntroAnonymous *)
-      intro_patterns_core with_evars b avoid ids thin destopt bound n tac
+      intro_patterns_core with_evars avoid ids thin destopt bound n tac
         [CAst.make @@ IntroNaming IntroAnonymous]
   | {CAst.loc;v=pat} :: l ->
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
+  let naming = make_naming_pattern avoid l pat in
   match pat with
   | IntroForthcoming onlydeps ->
-      intro_forthcoming_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
-          destopt onlydeps n bound
-        (fun ids -> intro_patterns_core with_evars b avoid ids thin destopt bound
+      intro_forthcoming_then_gen naming destopt onlydeps bound n
+        (fun ids -> intro_patterns_core with_evars avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
-      intro_then_gen (make_tmp_naming avoid l pat)
-        destopt true false
-        (intro_pattern_action ?loc with_evars (b || not (List.is_empty l)) false
-          pat thin destopt
-          (fun thin bound' -> intro_patterns_core with_evars b avoid ids thin destopt bound' 0
+      intro_then_gen naming destopt true false
+        (intro_pattern_action ?loc with_evars pat thin destopt
+          (fun thin bound' -> intro_patterns_core with_evars avoid ids thin destopt bound' 0
             (fun ids thin ->
-              intro_patterns_core with_evars b avoid ids thin destopt bound (n+1) tac l)))
+              intro_patterns_core with_evars avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
-      intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound (n+1) tac l
+      intro_then_gen naming destopt true false
+        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound (n+1) tac l)
 
-  (* Pi-introduction rule, used backwards *)
-and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac l =
-  match pat with
-  | IntroIdentifier id ->
-      check_thin_clash_then id thin avoid (fun thin ->
-        intro_then_gen (NamingMustBe CAst.(make ?loc id)) destopt true false
-          (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l))
-  | IntroAnonymous ->
-      intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
-        destopt true false
-        (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
-  | IntroFresh id ->
-      (* todo: avoid thinned names to interfere with generation of fresh name *)
-      intro_then_gen (NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l)))
-        destopt true false
-        (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
-
-and intro_pattern_action ?loc with_evars b style pat thin destopt tac id =
+and intro_pattern_action ?loc with_evars pat thin destopt tac id =
   match pat with
   | IntroWildcard ->
       tac (CAst.(make ?loc id)::thin) None []
   | IntroOrAndPattern ll ->
-      intro_or_and_pattern ?loc with_evars b ll thin tac id
+      intro_or_and_pattern ?loc with_evars ll thin tac id
   | IntroInjection l' ->
       intro_decomp_eq ?loc l' thin tac id
   | IntroRewrite l2r ->
-      rewrite_hyp_then style with_evars thin l2r id (fun thin -> tac thin None [])
+      rewrite_hyp_then with_evars thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn ({CAst.loc=loc';v=f},{CAst.loc;v=pat}) ->
-      let naming,tac_ipat =
-        prepare_intros ?loc with_evars (IntroIdentifier id) destopt pat in
-      let doclear =
-        if naming = NamingMustBe (CAst.make ?loc id) then
-          Proofview.tclUNIT () (* apply_in_once do a replacement *)
-        else
-          clear [id] in
-      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings))
-      in
+      let naming = NamingMustBe (CAst.make ?loc id) in
+      let tac_ipat = prepare_action ?loc with_evars destopt pat in
+      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings)) in
       apply_in_delayed_once true true with_evars naming id (None,CAst.make ?loc:loc' f)
-        (fun id -> Tacticals.New.tclTHENLIST [doclear; tac_ipat id; tac thin None []])
+        (fun id -> Tacticals.New.tclTHENLIST [tac_ipat id; tac thin None []])
 
-and prepare_intros ?loc with_evars dft destopt = function
+and prepare_action ?loc with_evars destopt = function
   | IntroNaming ipat ->
-      prepare_naming ?loc ipat,
-      (fun id -> move_hyp id destopt)
+      (fun _ -> Proofview.tclUNIT ())
   | IntroAction ipat ->
-      prepare_naming ?loc dft,
       (let tac thin bound =
-        intro_patterns_core with_evars true Id.Set.empty [] thin destopt bound 0
+        intro_patterns_core with_evars Id.Set.empty [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
       fun id ->
-        intro_pattern_action ?loc with_evars true true ipat [] destopt tac id)
+        intro_pattern_action ?loc with_evars ipat [] destopt tac id)
   | IntroForthcoming _ -> user_err ?loc
       (str "Introduction pattern for one hypothesis expected.")
 
-let intro_patterns_head_core with_evars b destopt bound pat =
+let intro_patterns_head_core with_evars destopt bound pat =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     check_name_unicity env [] [] pat;
-    intro_patterns_core with_evars b Id.Set.empty [] [] destopt
+    intro_patterns_core with_evars Id.Set.empty [] [] destopt
       bound 0 (fun _ l -> clear_wildcards l) pat
   end
 
 let intro_patterns_bound_to with_evars n destopt =
-  intro_patterns_head_core with_evars true destopt
-    (Some (true,n))
+  intro_patterns_head_core with_evars destopt (Some n)
 
 let intro_patterns_to with_evars destopt =
-  intro_patterns_head_core with_evars (use_bracketing_last_or_and_intro_pattern ())
-    destopt None
+  intro_patterns_head_core with_evars destopt None
 
 let intro_pattern_to with_evars destopt pat =
   intro_patterns_to with_evars destopt [CAst.make pat]
@@ -2609,9 +2498,19 @@ let intros_patterns with_evars = function
 (*   Forward reasoning    *)
 (**************************)
 
-let prepare_intros_opt with_evars dft destopt = function
-  | None -> prepare_naming dft, (fun _id -> Proofview.tclUNIT ())
-  | Some {CAst.loc;v=ipat} -> prepare_intros ?loc with_evars dft destopt ipat
+let prepare_intros_opt with_evars dft destopt ipat =
+  let naming, loc, ipat = match ipat with
+  | None ->
+    let pat = IntroNaming dft in make_naming_pattern Id.Set.empty [] pat, None, pat
+  | Some {CAst.loc;v=(IntroNaming pat as ipat)} ->
+    (* "apply ... in H as id" needs to use id and H is kept iff id<>H *)
+    prepare_naming ?loc pat, loc, ipat
+  | Some {CAst.loc;v=(IntroAction pat as ipat)} ->
+    (* "apply ... in H as pat" reuses H so that old H is always cleared *)
+    (match dft with IntroIdentifier _ -> prepare_naming ?loc dft | _ -> make_naming_action Id.Set.empty [] pat),
+    loc, ipat
+  | Some {CAst.loc;v=(IntroForthcoming _)} -> assert false in
+  naming, prepare_action ?loc with_evars destopt ipat
 
 let ipat_of_name = function
   | Anonymous -> None
@@ -2631,7 +2530,7 @@ let assert_as first hd ipat t =
 (* apply in as *)
 
 let general_apply_in ?(respect_opaque=false) with_delta
-    with_destruct with_evars id lemmas ipat =
+    with_destruct with_evars id lemmas ipat then_tac =
   let tac (naming,lemma) tac id =
     apply_in_delayed_once ~respect_opaque with_delta
       with_destruct with_evars naming id lemma tac in
@@ -2649,7 +2548,8 @@ let general_apply_in ?(respect_opaque=false) with_delta
     List.map (fun lem -> (NamingMustBe (CAst.make id),lem)) first, (naming,last)
   in
   (* We chain apply_in_once, ending with an intro pattern *)
-  List.fold_right tac lemmas_target (tac last_lemma_target ipat_tac) id
+  List.fold_right tac lemmas_target
+    (tac last_lemma_target (fun id -> Tacticals.New.tclTHEN (ipat_tac id) then_tac)) id
   end
 
 (*
@@ -2662,10 +2562,10 @@ let general_apply_in ?(respect_opaque=false) with_delta
 
 let apply_in simple with_evars id lemmas ipat =
   let lemmas = List.map (fun (k,{CAst.loc;v=l}) -> k, CAst.make ?loc (fun _ sigma -> (sigma,l))) lemmas in
-  general_apply_in simple simple with_evars id lemmas ipat
+  general_apply_in simple simple with_evars id lemmas ipat Tacticals.New.tclIDTAC
 
-let apply_delayed_in simple with_evars id lemmas ipat =
-  general_apply_in ~respect_opaque:true simple simple with_evars id lemmas ipat
+let apply_delayed_in simple with_evars id lemmas ipat then_tac =
+  general_apply_in ~respect_opaque:true simple simple with_evars id lemmas ipat then_tac
 
 (*****************************)
 (* Tactics abstracting terms *)
@@ -2890,7 +2790,24 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let open Context.Rel.Declaration in
   let decls,cl = decompose_prod_n_assum sigma i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
-  let newdecls,_ = decompose_prod_n_assum sigma i (subst_term_gen sigma EConstr.eq_constr_nounivs c dummy_prod) in
+  let newdecls,_ =
+    let c = Termops.collapse_appl sigma c in
+    let arity = Array.length (snd (Termops.decompose_app_vect sigma c)) in
+    let cache = ref Int.Map.empty in
+    let eq sigma k t =
+      let c =
+        try Int.Map.find k !cache
+        with Not_found ->
+          let c = EConstr.Vars.lift k c in
+          let () = cache := Int.Map.add k c !cache in
+          c
+      in
+      (* We use a nounivs equality because generalize morally takes a pattern as
+         argument, so we have to ignore freshly generated sorts. *)
+      EConstr.eq_constr_nounivs sigma c t
+    in
+    decompose_prod_n_assum sigma i (replace_term_gen sigma eq arity (mkRel 1) dummy_prod)
+  in
   let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name env sigma c t ids cl' na in
   let r = Retyping.relevance_of_type env sigma t in
@@ -3125,8 +3042,7 @@ let specialize (c,lbind) ipat =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
-      let naming,tac =
-        prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
+      let naming,tac = prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
       let repl = do_replace (Some id) naming in
       Tacticals.New.tclTHENFIRST
         (assert_before_then_gen repl naming typ tac)
@@ -3139,10 +3055,10 @@ let specialize (c,lbind) ipat =
         (* TODO: add intro to be more homogeneous. It will break
            scripts but will be easy to fix *)
          (Tacticals.New.tclTHENLAST (cut typ) (exact_no_check term))
-      | Some {CAst.loc;v=ipat} ->
+      | Some _ as ipat ->
         (* Like pose proof with extra support for "with" bindings *)
         (* even though the "with" bindings forces full application *)
-        let naming,tac = prepare_intros ?loc false IntroAnonymous MoveLast ipat in
+        let naming, tac = prepare_intros_opt false IntroAnonymous MoveLast ipat in
         Tacticals.New.tclTHENFIRST
           (assert_before_then_gen false naming typ tac)
           (exact_no_check term)
@@ -3267,7 +3183,7 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
     (intros_move newlstatus)
 
 let dest_intro_patterns with_evars avoid thin dest pat tac =
-  intro_patterns_core with_evars true avoid [] thin dest None 0 tac pat
+  intro_patterns_core with_evars avoid [] thin dest None 0 tac pat
 
 let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
   Proofview.tclORELSE
@@ -3373,7 +3289,7 @@ let expand_projections env sigma c =
   let rec aux env c =
     match EConstr.kind sigma c with
     | Proj (p, c) -> Retyping.expand_projection env sigma p (aux env c) []
-    | _ -> map_constr_with_full_binders sigma push_rel aux env c
+    | _ -> map_constr_with_full_binders env sigma push_rel aux env c
   in
   aux env c
 
@@ -4517,7 +4433,9 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       if must_be_closed && occur_meta indclause.evd (clenv_value indclause) then
         error "Need a fully applied argument.";
       (* We lose the possibility of coercions in with-bindings *)
-      pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
+      let sigma, term = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
+      let sigma, typ = pose_all_metas_as_evars env sigma (clenv_type indclause) in
+      sigma, term, typ
     with e when noncritical e ->
     try find_clause (try_red_product env sigma typ)
     with Redelimination -> raise e in
@@ -4570,7 +4488,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let env = Proofview.Goal.env gl in
   let ccl = Proofview.Goal.concl gl in
   let check = check_enough_applied env sigma elim in
-  let (sigma', c) = use_bindings env sigma elim false (c0,lbind) t0 in
+  let sigma', c, _ = use_bindings env sigma elim false (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
@@ -4592,8 +4510,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       (Tacticals.New.tclTHENLIST [
         Refine.refine ~typecheck:false begin fun sigma ->
           let b = not with_evars && with_eq != None in
-          let (sigma, c) = use_bindings env sigma elim b (c0,lbind) t0 in
-          let t = Retyping.get_type_of env sigma c in
+          let sigma, c, t = use_bindings env sigma elim b (c0,lbind) t0 in
           mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
         end;
         if with_evars then Proofview.shelve_unifiable else guard_no_unifiable;

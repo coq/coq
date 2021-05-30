@@ -23,17 +23,21 @@ open Evardefine
 type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
-  | WrongNumargConstructor of constructor * int
-  | WrongNumargInductive of inductive * int
+  | WrongNumargConstructor of
+      {cstr:constructor; expanded:bool; nargs:int; expected_nassums:int; expected_ndecls:int}
+  | WrongNumargInductive of
+      {ind:inductive; expanded:bool; nargs:int; expected_nassums:int; expected_ndecls:int}
   | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
 
 exception PatternMatchingError of env * evar_map * pattern_matching_error
 
-val error_wrong_numarg_constructor : ?loc:Loc.t -> env -> constructor -> int -> 'a
+val error_wrong_numarg_constructor :
+  ?loc:Loc.t -> env -> cstr:constructor -> expanded:bool -> nargs:int -> expected_nassums:int -> expected_ndecls:int -> 'a
 
-val error_wrong_numarg_inductive   : ?loc:Loc.t -> env -> inductive -> int -> 'a
+val error_wrong_numarg_inductive :
+  ?loc:Loc.t -> env -> ind:inductive -> expanded:bool -> nargs:int -> expected_nassums:int -> expected_ndecls:int -> 'a
 
 val irrefutable : env -> cases_pattern -> bool
 
@@ -68,8 +72,8 @@ type 'a equation =
       rhs          : 'a rhs;
       alias_stack  : Name.t list;
       eqn_loc      : Loc.t option;
-      used         : int ref;
-      catch_all_vars : Id.t CAst.t list ref }
+      orig         : int option;
+      catch_all_vars : Id.t CAst.t list }
 
 type 'a matrix = 'a equation list
 
@@ -112,7 +116,8 @@ type 'a pattern_matching_problem =
       casestyle : case_style;
       typing_function: type_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
 
-val compile : program_mode:bool -> evar_map -> 'a pattern_matching_problem -> evar_map * unsafe_judgment
+val compile : program_mode:bool -> evar_map -> 'a pattern_matching_problem ->
+  (int option * Names.Id.t CAst.t list) list * evar_map * unsafe_judgment
 
 val prepare_predicate : ?loc:Loc.t -> program_mode:bool ->
            (type_constraint ->

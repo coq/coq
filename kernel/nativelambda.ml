@@ -102,7 +102,7 @@ let decompose_Llam_Llet lam =
 let subst_id = subs_id 0
 let lift = subs_lift
 let liftn = subs_liftn
-let cons v subst = subs_cons([|v|], subst)
+let cons v subst = subs_cons v subst
 let shift subst = subs_shft (1, subst)
 
 (* Linked code location utilities *)
@@ -111,14 +111,12 @@ let get_mind_prefix env mind =
    match !name with
    | NotLinked -> ""
    | Linked s -> s
-   | LinkedInteractive s -> s
 
 let get_const_prefix env c =
    let _,(nameref,_) = lookup_constant_key c env in
    match !nameref with
    | NotLinked -> ""
    | Linked s -> s
-   | LinkedInteractive s -> s
 
 (* A generic map function *)
 
@@ -383,10 +381,7 @@ let makeblock env ind tag nparams arity args =
     Lmakeblock(prefix, ind, tag, args)
 
 let makearray args def =
-  try
-    let p = Array.map get_value args in
-    Lval (Nativevalues.parray_of_array p (get_value def))
-  with Not_found -> Lparray (args, def)
+  Lparray (args, def)
 
 (* Translation of constants *)
 
@@ -537,7 +532,8 @@ let rec lambda_of_constr cache env sigma c =
     let prefix = get_mind_prefix env (fst ind) in
     mkLapp (Lproj (prefix, ind, Projection.arg p)) [|lambda_of_constr cache env sigma c|]
 
-  | Case(ci,t,_iv,a,branches) -> (* XXX handle iv *)
+  | Case (ci, u, pms, t, iv, a, br) -> (* XXX handle iv *)
+    let (ci, t, _iv, a, branches) = Inductive.expand_case env (ci, u, pms, t, iv, a, br) in
     let (mind,i as ind) = ci.ci_ind in
     let mib = lookup_mind mind env in
     let oib = mib.mind_packets.(i) in

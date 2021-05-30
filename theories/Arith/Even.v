@@ -31,7 +31,9 @@ Inductive even : nat -> Prop :=
 with odd : nat -> Prop :=
     odd_S : forall n, even n -> odd (S n).
 
+#[global]
 Hint Constructors even: arith.
+#[global]
 Hint Constructors odd: arith.
 
 (** * Equivalence with predicates [Nat.Even] and [Nat.odd] *)
@@ -39,28 +41,28 @@ Hint Constructors odd: arith.
 Lemma even_equiv : forall n, even n <-> Nat.Even n.
 Proof.
  fix even_equiv 1.
- destruct n as [|[|n]]; simpl.
+ intros n; destruct n as [|[|n]]; simpl.
  - split; [now exists 0 | constructor].
  - split.
-   + inversion_clear 1. inversion_clear H0.
+   + inversion_clear 1 as [|? H0]. inversion_clear H0.
    + now rewrite <- Nat.even_spec.
  - rewrite Nat.Even_succ_succ, <- even_equiv.
    split.
-   + inversion_clear 1. now inversion_clear H0.
+   + inversion_clear 1 as [|? H0]. now inversion_clear H0.
    + now do 2 constructor.
 Qed.
 
 Lemma odd_equiv : forall n, odd n <-> Nat.Odd n.
 Proof.
  fix odd_equiv 1.
- destruct n as [|[|n]]; simpl.
+ intros n; destruct n as [|[|n]]; simpl.
  - split.
    + inversion_clear 1.
    + now rewrite <- Nat.odd_spec.
  - split; [ now exists 0 | do 2 constructor ].
  - rewrite Nat.Odd_succ_succ, <- odd_equiv.
    split.
-   + inversion_clear 1. now inversion_clear H0.
+   + inversion_clear 1 as [? H0]. now inversion_clear H0.
    + now do 2 constructor.
 Qed.
 
@@ -68,14 +70,14 @@ Qed.
 
 Lemma even_or_odd n : even n \/ odd n.
 Proof.
-  induction n.
+  induction n as [|n IHn].
   - auto with arith.
   - elim IHn; auto with arith.
 Qed.
 
 Lemma even_odd_dec n : {even n} + {odd n}.
 Proof.
-  induction n.
+  induction n as [|n IHn].
   - auto with arith.
   - elim IHn; auto with arith.
 Defined.
@@ -178,6 +180,7 @@ Proof. parity_binop. Qed.
 Lemma odd_mult_inv_r n m : odd (n * m) -> odd m.
 Proof. parity_binop. Qed.
 
+#[global]
 Hint Resolve
  even_even_plus odd_even_plus odd_plus_l odd_plus_r
  even_mult_l even_mult_r even_mult_l even_mult_r odd_mult : arith.

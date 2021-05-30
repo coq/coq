@@ -77,9 +77,11 @@ intros var f; induction f; simpl poly_of_formula; simpl formula_eval; auto.
   end.
 Qed.
 
+#[local]
 Hint Extern 5 => change 0 with (min 0 0) : core.
 Local Hint Resolve poly_add_valid_compat poly_mul_valid_compat : core.
 Local Hint Constructors valid : core.
+#[local]
 Hint Extern 5 => lia : core.
 
 (* Compatibility with validity *)

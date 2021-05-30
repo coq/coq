@@ -104,9 +104,11 @@ sig
     | Cst_const of pconstant
     | Cst_proj of Projection.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array * Cst_stack.t
+  | Case of 'a case_stk * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -121,7 +123,7 @@ sig
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
   val equal : ('a -> 'a -> bool) -> (('a, 'a) pfixpoint -> ('a, 'a) pfixpoint -> bool)
-    -> 'a t -> 'a t -> bool
+    -> ('a case_stk -> 'a case_stk -> bool) -> 'a t -> 'a t -> bool
   val strip_app : 'a t -> 'a t * 'a t
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
   val will_expose_iota : 'a t -> bool
@@ -156,9 +158,11 @@ struct
     | Cst_const of pconstant
     | Cst_proj of Projection.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array * Cst_stack.t
+  | Case of 'a case_stk * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -172,9 +176,9 @@ struct
     let pr_c x = hov 1 (pr_c x) in
     match member with
     | App app -> str "ZApp" ++ pr_app_node pr_c app
-    | Case (_,_,_,br,cst) ->
+    | Case ((_,_,_,_,_,br),cst) ->
        str "ZCase(" ++
-         prvect_with_sep (pr_bar) pr_c br
+         prvect_with_sep (pr_bar) (fun (_, b) -> pr_c b) br
        ++ str ")"
     | Proj (p,cst) ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
@@ -221,7 +225,7 @@ struct
     if i < j then (l.(j), App (i,l,pred j) :: sk)
     else (l.(j), sk)
 
-  let equal f f_fix sk1 sk2 =
+  let equal f f_fix f_case sk1 sk2 =
     let equal_cst_member x y =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
@@ -236,8 +240,8 @@ struct
         let t1,s1' = decomp_node_last a1 s1 in
         let t2,s2' = decomp_node_last a2 s2 in
         (f t1 t2) && (equal_rec s1' s2')
-      | Case (_,t1,_,a1,_) :: s1, Case (_,t2,_,a2,_) :: s2 ->
-        f t1 t2 && CArray.equal (fun x y -> f x y) a1 a2 && equal_rec s1 s2
+      | Case ((ci1,pms1,p1,t1,iv1,a1),_) :: s1, Case ((ci2,pms2,p2,iv2,t2,a2),_) :: s2 ->
+        f_case (ci1,pms1,p1,t1,iv1,a1) (ci2,pms2,p2,iv2,t2,a2) && equal_rec s1 s2
       | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
         Projection.Repr.CanOrd.equal (Projection.repr p) (Projection.repr p2)
         && equal_rec s1 s2
@@ -284,7 +288,7 @@ struct
 
   let will_expose_iota args =
     List.exists
-      (function (Fix (_,_,l) | Case (_,_,_,_,l) |
+      (function (Fix (_,_,l) | Case (_,l) |
                  Proj (_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
       args
 
@@ -346,9 +350,9 @@ struct
                 then a
                 else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
-    | f, (Case (ci,rt,iv,br,cst_l)::s) when refold ->
-      zip (best_state sigma (mkCase (ci,rt,iv,f,br), s) cst_l)
-    | f, (Case (ci,rt,iv,br,_)::s) -> zip (mkCase (ci,rt,iv,f,br), s)
+    | f, (Case ((ci,u,pms,rt,iv,br),cst_l)::s) when refold ->
+      zip (best_state sigma (mkCase (ci,u,pms,rt,iv,f,br), s) cst_l)
+    | f, (Case ((ci,u,pms,rt,iv,br),_)::s) -> zip (mkCase (ci,u,pms,rt,iv,f,br), s)
     | f, (Fix (fix,st,cst_l)::s) when refold ->
       zip (best_state sigma (mkFix fix, st @ (append_app [|f|] s)) cst_l)
   | f, (Fix (fix,st,_)::s) -> zip
@@ -398,11 +402,11 @@ let safe_meta_value sigma ev =
 
 (* Beta Reduction tools *)
 
-let apply_subst recfun env sigma refold cst_l t stack =
+let apply_subst recfun env sigma cst_l t stack =
   let rec aux env cst_l t stack =
     match (Stack.decomp stack, EConstr.kind sigma t) with
     | Some (h,stacktl), Lambda (_,_,c) ->
-       let cst_l' = if refold then Cst_stack.add_param h cst_l else cst_l in
+       let cst_l' = Cst_stack.add_param h cst_l in
        aux (h::env) cst_l' c stacktl
     | _ -> recfun sigma cst_l (substl env t, stack)
   in aux env cst_l t stack
@@ -449,50 +453,42 @@ let magically_constant_of_fixbody env sigma reference bd = function
           | None -> bd
         end
 
-let contract_cofix ?env sigma ?reference (bodynum,(names,types,bodies as typedbodies)) =
+let contract_cofix env sigma ?reference (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
     if Int.equal bodynum ind then mkCoFix (ind,typedbodies)
     else
       let bd = mkCoFix (ind,typedbodies) in
-      match env with
+      match reference with
       | None -> bd
-      | Some e ->
-        match reference with
-        | None -> bd
-        | Some r -> magically_constant_of_fixbody e sigma r bd names.(ind).binder_name in
+      | Some r -> magically_constant_of_fixbody env sigma r bd names.(ind).binder_name in
   let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
 
 (** Similar to the "fix" case below *)
-let reduce_and_refold_cofix recfun env sigma refold cst_l cofix sk =
+let reduce_and_refold_cofix recfun env sigma cst_l cofix sk =
   let raw_answer =
-    let env = if refold then Some env else None in
-    contract_cofix ?env sigma ?reference:(Cst_stack.reference sigma cst_l) cofix in
+    contract_cofix env sigma ?reference:(Cst_stack.reference sigma cst_l) cofix in
   apply_subst
     (fun sigma x (t,sk') ->
-      let t' =
-        if refold then Cst_stack.best_replace sigma (mkCoFix cofix) cst_l t else t in
+      let t' = Cst_stack.best_replace sigma (mkCoFix cofix) cst_l t in
       recfun x (t',sk'))
-    [] sigma refold Cst_stack.empty raw_answer sk
+    [] sigma Cst_stack.empty raw_answer sk
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
-let contract_fix ?env sigma ?reference ((recindices,bodynum),(names,types,bodies as typedbodies)) =
+let contract_fix env sigma ?reference ((recindices,bodynum),(names,types,bodies as typedbodies)) =
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
       if Int.equal bodynum ind then mkFix ((recindices,ind),typedbodies)
       else
         let bd = mkFix ((recindices,ind),typedbodies) in
-        match env with
+        match reference with
         | None -> bd
-        | Some e ->
-          match reference with
-          | None -> bd
-          | Some r -> magically_constant_of_fixbody e sigma r bd names.(ind).binder_name in
+        | Some r -> magically_constant_of_fixbody env sigma r bd names.(ind).binder_name in
     let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
 
@@ -500,18 +496,14 @@ let contract_fix ?env sigma ?reference ((recindices,bodynum),(names,types,bodies
     replace the fixpoint by the best constant from [cst_l]
     Other rels are directly substituted by constants "magically found from the
     context" in contract_fix *)
-let reduce_and_refold_fix recfun env sigma refold cst_l fix sk =
+let reduce_and_refold_fix recfun env sigma cst_l fix sk =
   let raw_answer =
-    let env = if refold then Some env else None in
-    contract_fix ?env sigma ?reference:(Cst_stack.reference sigma cst_l) fix in
+    contract_fix env sigma ?reference:(Cst_stack.reference sigma cst_l) fix in
   apply_subst
     (fun sigma x (t,sk') ->
-      let t' =
-        if refold then
-          Cst_stack.best_replace sigma (mkFix fix) cst_l t
-        else t
-      in recfun x (t',sk'))
-    [] sigma refold Cst_stack.empty raw_answer sk
+      let t' = Cst_stack.best_replace sigma (mkFix fix) cst_l t in
+      recfun x (t',sk'))
+    [] sigma Cst_stack.empty raw_answer sk
 
 module CredNative = Reductionops.CredNative
 
@@ -520,7 +512,7 @@ module CredNative = Reductionops.CredNative
     Here is where unfolded constant are stored in order to be
     eventually refolded.
 
-    If tactic_mode is true, it uses ReductionBehaviour, prefers
+    It uses ReductionBehaviour, prefers
     refold constant instead of value and tries to infer constants
     fix and cofix came from.
 
@@ -533,25 +525,43 @@ let debug_RAKAM = Reductionops.debug_RAKAM
 let equal_stacks sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in
   let eq_fix a b = f_equal (mkFix a) (mkFix b) in
-  Stack.equal f_equal eq_fix l l' && f_equal x y
+  let eq_case (ci1, u1, pms1, p1, _, br1) (ci2, u2, pms2, p2, _, br2) =
+    Array.equal f_equal pms1 pms2 &&
+    f_equal (snd p1) (snd p2) &&
+    Array.equal (fun (_, c1) (_, c2) -> f_equal c1 c2) br1 br2
+  in
+  Stack.equal f_equal eq_fix eq_case l l' && f_equal x y
 
-let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
+let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
+  let args = Stack.tail ci.ci_npar args in
+  let args = Option.get (Stack.list_of_app_stack args) in
+  let br = lf.(i - 1) in
+  let subst =
+    if Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1) then
+      (* No let-bindings *)
+      List.rev args
+    else
+      let ctx = expand_branch env sigma u pms (ind, i) br in
+      subst_of_rel_context_instance ctx args
+  in
+  Vars.substl subst (snd br)
+
+let rec whd_state_gen ?csts flags env sigma =
   let open Context.Named.Declaration in
   let open ReductionBehaviour in
   let rec whrec cst_l (x, stack) =
-    let () = if debug_RAKAM () then
+    let () = debug_RAKAM (fun () ->
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
-        Feedback.msg_debug
                (h (str "<<" ++ pr x ++
                    str "|" ++ cut () ++ Cst_stack.pr env sigma cst_l ++
                    str "|" ++ cut () ++ Stack.pr pr stack ++
-                   str ">>"))
+                   str ">>")))
     in
     let c0 = EConstr.kind sigma x in
     let fold () =
-      let () = if debug_RAKAM () then
-          let open Pp in Feedback.msg_debug (str "<><><><><>") in
+      let () = debug_RAKAM (fun () ->
+          Pp.(str "<><><><><>")) in
       ((EConstr.of_kind c0, stack),cst_l)
     in
     match c0 with
@@ -562,7 +572,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) ->
-        whrec (if refold then Cst_stack.add_cst (mkVar id) cst_l else cst_l) (body, stack)
+        whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
       | _ -> fold ())
     | Evar ev -> fold ()
     | Meta ev ->
@@ -578,10 +588,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
        | body ->
          begin
           let body = EConstr.of_constr body in
-          if not tactic_mode
-          then whrec (if refold then Cst_stack.add_cst (mkConstU const) cst_l else cst_l)
-              (body, stack)
-          else (* Looks for ReductionBehaviour *)
+          (* Looks for ReductionBehaviour *)
             match ReductionBehaviour.get (GlobRef.ConstRef c) with
             | None -> whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, stack)
             | Some behavior ->
@@ -630,10 +637,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       else fold ()
     | Proj (p, c) when CClosure.RedFlags.red_projection flags p ->
       (let npars = Projection.npars p in
-       if not tactic_mode then
-         let stack' = (c, Stack.Proj (p, Cst_stack.empty (*cst_l*)) :: stack) in
-         whrec Cst_stack.empty stack'
-       else match ReductionBehaviour.get (GlobRef.ConstRef (Projection.constant p)) with
+       match ReductionBehaviour.get (GlobRef.ConstRef (Projection.constant p)) with
          | None ->
            let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
            let stack'', csts = whrec Cst_stack.empty stack' in
@@ -671,24 +675,24 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
            end)
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
-      apply_subst (fun _ -> whrec) [b] sigma refold cst_l c stack
+      apply_subst (fun _ -> whrec) [b] sigma cst_l c stack
     | Cast (c,_,_) -> whrec cst_l (c, stack)
     | App (f,cl)  ->
       whrec
-        (if refold then Cst_stack.add_args cl cst_l else cst_l)
+        (Cst_stack.add_args cl cst_l)
         (f, Stack.append_app cl stack)
     | Lambda (na,t,c) ->
       (match Stack.decomp stack with
       | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
-        apply_subst (fun _ -> whrec) [] sigma refold cst_l x stack
+        apply_subst (fun _ -> whrec) [] sigma cst_l x stack
       | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
         let env' = push_rel (LocalAssum (na, t)) env in
-        let whrec' = whd_state_gen ~refold ~tactic_mode flags env' sigma in
-        (match EConstr.kind sigma (Stack.zip ~refold sigma (fst (whrec' (c, Stack.empty)))) with
+        let whrec' = whd_state_gen flags env' sigma in
+        (match EConstr.kind sigma (Stack.zip ~refold:true sigma (whrec' (c, Stack.empty))) with
         | App (f,cl) ->
           let napp = Array.length cl in
           if napp > 0 then
-            let (x', l'),_ = whrec' (Array.last cl, Stack.empty) in
+            let (x', l') = whrec' (Array.last cl, Stack.empty) in
             match EConstr.kind sigma x', l' with
             | Rel 1, [] ->
               let lc = Array.sub cl 0 (napp-1) in
@@ -699,8 +703,8 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
         | _ -> fold ())
       | _ -> fold ())
 
-    | Case (ci,p,iv,d,lf) ->
-      whrec Cst_stack.empty (d, Stack.Case (ci,p,iv,lf,cst_l) :: stack)
+    | Case (ci,u,pms,p,iv,d,lf) ->
+      whrec Cst_stack.empty (d, Stack.Case ((ci,u,pms,p,iv,lf),cst_l) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -708,19 +712,20 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       |Some (bef,arg,s') ->
         whrec Cst_stack.empty (arg, Stack.Fix(f,bef,cst_l)::s'))
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr ,u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, _, lf,_)::s') when use_match ->
-          whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case(case,_)::s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
+          whrec Cst_stack.empty (r, s')
         |args, (Stack.Proj (p,_)::s') when use_match ->
           whrec Cst_stack.empty (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
           let x' = Stack.zip sigma (x, args) in
           let out_sk = s' @ (Stack.append_app [|x'|] s'') in
-          reduce_and_refold_fix whrec env sigma refold cst_l f out_sk
+          reduce_and_refold_fix whrec env sigma cst_l f out_sk
         |args, (Stack.Cst (const,curr,remains,s',cst_l) :: s'') ->
           let x' = Stack.zip sigma (x, args) in
           begin match remains with
@@ -732,7 +737,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
               | Some body ->
                 let const = (fst const, EInstance.make (snd const)) in
                 let body = EConstr.of_constr body in
-                whrec (if refold then Cst_stack.add_cst (mkConstU const) cst_l else cst_l)
+                whrec (Cst_stack.add_cst (mkConstU const) cst_l)
                   (body, s' @ (Stack.append_app [|x'|] s'')))
             | Stack.Cst_proj p ->
               let stack = s' @ (Stack.append_app [|x'|] s'') in
@@ -755,7 +760,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
         match Stack.strip_app stack with
         |args, ((Stack.Case _ |Stack.Proj _)::s') ->
-          reduce_and_refold_cofix whrec env sigma refold cst_l cofix stack
+          reduce_and_refold_cofix whrec env sigma cst_l cofix stack
         |_ -> fold ()
       else fold ()
 
@@ -789,10 +794,20 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   in
   fun xs ->
   let (s,cst_l as res) = whrec (Option.default Cst_stack.empty csts) xs in
-  if tactic_mode then (Stack.best_state sigma s cst_l,Cst_stack.empty) else res
+  (Stack.best_state sigma s cst_l)
 
 let whd_cbn flags env sigma t =
-  let (state,_) =
-    (whd_state_gen ~refold:true ~tactic_mode:true flags env sigma (t, Stack.empty))
-  in
+  let state = whd_state_gen flags env sigma (t, Stack.empty) in
   Stack.zip ~refold:true sigma state
+
+let norm_cbn flags env sigma t =
+  let push_rel_check_zeta d env =
+    let open CClosure.RedFlags in
+    let d = match d with
+      | LocalDef (na,c,t) when not (red_set flags fZETA) -> LocalAssum (na,t)
+      | d -> d in
+    push_rel d env in
+  let rec strongrec env t =
+    map_constr_with_full_binders env sigma
+      push_rel_check_zeta strongrec env (whd_cbn flags env sigma t) in
+  strongrec env t

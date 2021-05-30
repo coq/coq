@@ -23,6 +23,7 @@ type global_data = {
   gdata_expr : glb_tacexpr;
   gdata_type : type_scheme;
   gdata_mutable : bool;
+  gdata_deprecation : Deprecation.t option;
 }
 
 val define_global : ltac_constant -> global_data -> unit
@@ -72,8 +73,13 @@ val interp_projection : ltac_projection -> projection_data
 
 (** {5 Toplevel definition of aliases} *)
 
-val define_alias : ltac_constant -> raw_tacexpr -> unit
-val interp_alias : ltac_constant -> raw_tacexpr
+type alias_data = {
+  alias_body : raw_tacexpr;
+  alias_depr : Deprecation.t option;
+}
+
+val define_alias : ?deprecation:Deprecation.t -> ltac_constant -> raw_tacexpr -> unit
+val interp_alias : ltac_constant -> alias_data
 
 (** {5 Name management} *)
 
@@ -83,7 +89,6 @@ val locate_extended_all_ltac : qualid -> tacref list
 val shortest_qualid_of_ltac : tacref -> qualid
 
 val push_constructor : visibility -> full_path -> ltac_constructor -> unit
-val mem_constructor : qualid -> bool
 val locate_constructor : qualid -> ltac_constructor
 val locate_extended_all_constructor : qualid -> ltac_constructor list
 val shortest_qualid_of_constructor : ltac_constructor -> qualid
@@ -122,7 +127,7 @@ type ('a, 'b) ml_object = {
   ml_intern : 'r. (raw_tacexpr, glb_tacexpr, 'r) intern_fun -> ('a, 'b or_glb_tacexpr, 'r) intern_fun;
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
-  ml_print : Environ.env -> 'b -> Pp.t;
+  ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;
 }
 
 val define_ml_object : ('a, 'b) Tac2dyn.Arg.tag -> ('a, 'b) ml_object -> unit
@@ -143,6 +148,10 @@ val ltac1_prefix : ModPath.t
 
 val wit_ltac2 : (Id.t CAst.t list * raw_tacexpr, Id.t list * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Ltac1 code *)
+
+val wit_ltac2_val : (Util.Empty.t, unit, Util.Empty.t) genarg_type
+(** Embedding Ltac2 closures of type [Ltac1.t -> Ltac1.t] inside Ltac1. There is
+    no relevant data because arguments are passed by conventional names. *)
 
 val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Gallina terms *)

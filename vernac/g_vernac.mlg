@@ -52,7 +52,6 @@ let of_type = Entry.create "of_type"
 let section_subset_expr = Entry.create "section_subset_expr"
 let scope_delimiter = Entry.create "scope_delimiter"
 let syntax_modifiers = Entry.create "syntax_modifiers"
-let only_parsing = Entry.create "only_parsing"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -114,11 +113,13 @@ GRAMMAR EXTEND Gram
   ;
   attribute:
     [ [ k = ident ; v = attr_value -> { Names.Id.to_string k, v }
-      | "using" ; v = attr_value -> { "using", v } ]
+      (* Required because "ident" is declared a keyword when loading Ltac. *)
+      | IDENT "using" ; v = attr_value -> { "using", v } ]
     ]
   ;
   attr_value:
-    [ [ "=" ; v = string -> { VernacFlagLeaf v }
+    [ [ "=" ; v = string -> { VernacFlagLeaf (FlagString v) }
+      | "=" ; v = IDENT -> { VernacFlagLeaf (FlagIdent v) }
       | "(" ; a = attribute_list ; ")" -> { VernacFlagList a }
       | -> { VernacFlagEmpty } ]
     ]
@@ -135,7 +136,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Cumulative" ->
         { ("universes", VernacFlagList ["cumulative", VernacFlagEmpty]) }
       | IDENT "NonCumulative" ->
-        { ("universes", VernacFlagList ["noncumulative", VernacFlagEmpty]) }
+        { ("universes", VernacFlagList ["cumulative", VernacFlagLeaf (FlagIdent "no")]) }
       | IDENT "Private" ->
         { ("private", VernacFlagList ["matching", VernacFlagEmpty]) }
       | IDENT "Program" ->
@@ -193,12 +194,18 @@ let lname_of_lident : lident -> lname =
 let name_of_ident_decl : ident_decl -> name_decl =
   on_fst lname_of_lident
 
+let test_variance_ident =
+  let open Pcoq.Lookahead in
+  to_entry "test_variance_ident" begin
+    lk_kws ["=";"+";"*"] >> lk_ident
+  end
+
 }
 
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type
-    record_field decl_notations fix_definition ident_decl univ_decl;
+    record_field decl_notations fix_definition ident_decl univ_decl inductive_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -282,8 +289,34 @@ GRAMMAR EXTEND Gram
     [ [ l = universe_name; ord = [ "<" -> { Univ.Lt } | "=" -> { Univ.Eq } | "<=" -> { Univ.Le } ];
         r = universe_name -> { (l, ord, r) } ] ]
   ;
-  univ_decl :
+  univ_decl:
     [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+         cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
+                ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
+              | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ]
+         ->
+         { let open UState in
+         { univdecl_instance = l;
+           univdecl_extensible_instance = ext;
+           univdecl_constraints = fst cs;
+           univdecl_extensible_constraints = snd cs } }
+    ] ]
+  ;
+  variance:
+    [ [ "+" -> { Univ.Variance.Covariant }
+      | "=" -> { Univ.Variance.Invariant }
+      | "*" -> { Univ.Variance.Irrelevant }
+    ] ]
+  ;
+  variance_identref:
+    [ [ id = identref -> { (id, None) }
+      | test_variance_ident; v = variance; id = identref -> { (id, Some v) }
+        (* We need this test to help the parser avoid the conflict
+           between "+" before ident (covariance) and trailing "+" (extra univs allowed) *)
+    ] ]
+  ;
+  cumul_univ_decl:
+    [ [  "@{" ; l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
          cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
                 ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
               | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ]
@@ -297,6 +330,10 @@ GRAMMAR EXTEND Gram
   ;
   ident_decl:
     [ [ i = identref; l = OPT univ_decl -> { (i, l) }
+  ] ]
+  ;
+  cumul_ident_decl:
+    [ [ i = identref; l = OPT cumul_univ_decl -> { (i, l) }
   ] ]
   ;
   finite_token:
@@ -344,7 +381,7 @@ GRAMMAR EXTEND Gram
       | -> { RecordDecl (None, []) } ] ]
   ;
   inductive_definition:
-    [ [ oc = opt_coercion; id = ident_decl; indpar = binders;
+    [ [ oc = opt_coercion; id = cumul_ident_decl; indpar = binders;
         extrapar = OPT [ "|"; p = binders -> { p } ];
         c = OPT [ ":"; c = lconstr -> { c } ];
         lc=opt_constructors_or_fields; ntn = decl_notations ->
@@ -492,6 +529,10 @@ let starredidentreflist_to_expr l =
 let warn_deprecated_include_type =
   CWarnings.create ~name:"deprecated-include-type" ~category:"deprecated"
          (fun () -> strbrk "Include Type is deprecated; use Include instead")
+
+let warn_deprecated_as_ident_kind =
+  CWarnings.create ~name:"deprecated-as-ident-kind" ~category:"deprecated"
+         (fun () -> strbrk "grammar kind \"as ident\" no longer accepts \"_\"; use \"as name\" instead to accept \"_\", too, or silence the warning if you actually intended to accept only identifiers.")
 
 }
 
@@ -650,7 +691,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: gallina_ext hint_info scope_delimiter;
 
-  gallina_ext:
+  gallina_ext: TOP
     [ [ (* Transparent and Opaque *)
         IDENT "Transparent"; l = LIST1 smart_global ->
           { VernacSetOpacity (Conv_oracle.transparent, l) }
@@ -826,7 +867,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: command query_command class_rawexpr gallina_ext search_query search_queries;
 
-  gallina_ext:
+  gallina_ext: TOP
     [ [ IDENT "Export"; "Set"; table = setting_name; v = option_setting ->
         { VernacSetOption (true, table, v) }
       | IDENT "Export"; IDENT "Unset"; table = setting_name ->
@@ -923,8 +964,6 @@ GRAMMAR EXTEND Gram
       (* Searching the environment *)
       | IDENT "About"; qid = smart_global; l = OPT univ_name_list; "." ->
          { fun g -> VernacPrint (PrintAbout (qid,l,g)) }
-      | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules; "." ->
-          { fun g -> VernacSearch (SearchHead c,g, l) }
       | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules; "." ->
           { fun g -> VernacSearch (SearchPattern c,g, l) }
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules; "." ->
@@ -1082,7 +1121,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: command;
 
-  command:
+  command: TOP
     [ [
 (* State management *)
         IDENT "Write"; IDENT "State"; s = IDENT -> { VernacWriteState s }
@@ -1120,7 +1159,7 @@ GRAMMAR EXTEND Gram
 (* Grammar extensions *)
 
 GRAMMAR EXTEND Gram
-  GLOBAL: syntax only_parsing syntax_modifiers;
+  GLOBAL: syntax syntax_modifiers;
 
   syntax:
    [ [ IDENT "Open"; IDENT "Scope"; sc = IDENT ->
@@ -1141,10 +1180,9 @@ GRAMMAR EXTEND Gram
          modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
          { VernacInfix ((op,modl),p,sc) }
-     | IDENT "Notation"; id = identref;
-         idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
-           { VernacSyntacticDefinition
-             (id,(idl,c),{ onlyparsing = b }) }
+     | IDENT "Notation"; id = identref; idl = LIST0 ident;
+         ":="; c = constr; modl = syntax_modifiers ->
+           { VernacSyntacticDefinition (id,(idl,c), modl) }
      | IDENT "Notation"; s = lstring; ":=";
          c = constr;
          modl = syntax_modifiers;
@@ -1167,10 +1205,6 @@ GRAMMAR EXTEND Gram
         to factorize with other "Print"-based or "Declare"-based vernac entries *)
   ] ]
   ;
-  only_parsing:
-    [ [ "("; IDENT "only"; IDENT "parsing"; ")" -> { true }
-      | -> { false } ] ]
-  ;
   level:
     [ [ IDENT "level"; n = natural -> { NumLevel n }
       | IDENT "next"; IDENT "level" -> { NextLevel } ] ]
@@ -1190,10 +1224,12 @@ GRAMMAR EXTEND Gram
           { begin match s1, s2 with
           | { CAst.v = k }, Some s -> SetFormat(k,s)
           | s, None -> SetFormat ("text",s) end }
-      | x = IDENT; ","; l = LIST1 [id = IDENT -> { id } ] SEP ","; "at";
-        lev = level -> { SetItemLevel (x::l,None,lev) }
+      | x = IDENT; ","; l = LIST1 IDENT SEP ","; v =
+          [ "at"; lev = level -> { fun x l -> SetItemLevel (x::l,None,lev) }
+          | "in"; IDENT "scope"; k = IDENT -> { fun x l -> SetItemScope(x::l,k) } ] -> { v x l }
       | x = IDENT; "at"; lev = level; b = OPT binder_interp ->
         { SetItemLevel ([x],b,lev) }
+      | x = IDENT; "in"; IDENT "scope"; k = IDENT -> { SetItemScope([x],k) }
       | x = IDENT; b = binder_interp -> { SetItemLevel ([x],Some b,DefaultLevel) }
       | x = IDENT; typ = explicit_subentry -> { SetEntryType (x,typ) }
     ] ]
@@ -1204,7 +1240,13 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   explicit_subentry:
-    [ [ IDENT "ident" -> { ETIdent } | IDENT "global" -> { ETGlobal }
+    [ [ (* Warning to be turn into an error at the end of deprecation phase (for 8.14) *)
+        IDENT "ident" -> { ETName false }
+        (* To be activated at the end of transitory phase (for 8.15)
+      | IDENT "ident" -> { ETIdent }
+        *)
+      | IDENT "name" -> { ETName true } (* Boolean to remove at the end of transitory phase *)
+      | IDENT "global" -> { ETGlobal }
       | IDENT "bigint" -> { ETBigint }
       | IDENT "binder" -> { ETBinder true }
       | IDENT "constr" -> { ETConstr (InConstrEntry,None,DefaultLevel) }
@@ -1223,8 +1265,9 @@ GRAMMAR EXTEND Gram
       | -> { DefaultLevel } ] ]
   ;
   binder_interp:
-    [ [ "as"; IDENT "ident" -> { Notation_term.AsIdent }
-      | "as"; IDENT "pattern" -> { Notation_term.AsIdentOrPattern }
+    [ [ "as"; IDENT "ident" -> { warn_deprecated_as_ident_kind (); Notation_term.AsIdent }
+      | "as"; IDENT "name" -> { Notation_term.AsName }
+      | "as"; IDENT "pattern" -> { Notation_term.AsNameOrPattern }
       | "as"; IDENT "strict"; IDENT "pattern" -> { Notation_term.AsStrictPattern } ] ]
   ;
 END

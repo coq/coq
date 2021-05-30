@@ -13,13 +13,13 @@ Build Requirements
 To compile Coq yourself, you need:
 
 - [OCaml](https://ocaml.org/) (version >= 4.05.0)
-  (This version of Coq has been tested up to OCaml 4.11.1)
+  (This version of Coq has been tested up to OCaml 4.12.0)
+
+- The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 2.5.1
 
 - The [ZArith library](https://github.com/ocaml/Zarith) >= 1.10
 
 - The [findlib](http://projects.camlcity.org/projects/findlib.html) library (version >= 1.8.0)
-
-- GNU Make (version >= 3.81)
 
 - a C compiler
 
@@ -31,6 +31,8 @@ To compile Coq yourself, you need:
   [lablgtk3-sourceview3](https://github.com/garrigue/lablgtk) library
   (version >= 3.1.0), and the corresponding GTK 3.x libraries, as
   of today (gtk+3 >= 3.18 and gtksourceview3 >= 3.18)
+
+- [optional] GNU Make (version >= 3.81)
 
 Primitive floating-point numbers require IEEE-754 compliance
 (`Require Import Floats`). Common sources of incompatibility
@@ -50,9 +52,9 @@ CoqIDE with:
 Opam (https://opam.ocaml.org/) is recommended to install OCaml and
 the corresponding packages.
 
-    $ opam switch create coq 4.11.1+flambda
+    $ opam switch create coq --packages="ocaml-variants.4.12.0+options,ocaml-option-flambda"
     $ eval $(opam env)
-    $ opam install ocamlfind zarith lablgtk3-sourceview3
+    $ opam install dune ocamlfind zarith lablgtk3-sourceview3
 
 should get you a reasonable OCaml environment to compile Coq. See the
 OPAM documentation for more help.
@@ -74,9 +76,10 @@ for more details.
 Build and Installation Procedure
 --------------------------------
 
-Coq offers the choice of two build systems, an experimental one based
-on [Dune](https://github.com/ocaml/dune), and the standard
-makefile-based one.
+Coq will build all the OCaml parts using Dune; for `.vo` files, Coq
+offers the choice of two build systems: an experimental one based on
+[Dune](https://github.com/ocaml/dune), and a makefile-based one
+[similar to `coq_makefile`].
 
 Please see [INSTALL.make.md](dev/doc/INSTALL.make.md) for build and
 installation instructions using `make`. If you wish to experiment with
@@ -99,3 +102,13 @@ dependencies...) as Coq.  Distribution of pre-compiled plugins and
 Coq version compiled with the same OCaml toolchain.  An OCaml setup
 mismatch is the most probable cause for an `Error while loading ...:
 implementation mismatch on ...`.
+
+coq_environment.txt
+-------------------
+Coq binaries which honor environment variables, such as `COQLIB`, can
+be seeded values for these variables by placing a text file named
+`coq_environment.txt` next to them. The file can contain assignments
+like `COQLIB="some path"`, that is a variable name followed by `=` and
+a string that follows OCaml's escaping conventions. This feature can be
+used by installers of binary package to make Coq aware of its installation
+path.

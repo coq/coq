@@ -107,3 +107,22 @@ let mask_sigalrm f x =
 
 let create f x =
   Thread.create (mask_sigalrm f) x
+
+(*
+  Atomic mutex lock taken from https://gitlab.com/gadmm/memprof-limits/-/blob/master/src/thread_map.ml#L23-34
+  Critical sections :
+   - Mutex.lock does not poll on leaving the blocking section
+     since 4.12.
+   - Never inline, to avoid theoretically-possible reorderings with
+     flambda.
+     (workaround to the lack of masking)
+*)
+
+(* We inline the call to Mutex.unlock to avoid polling in bytecode mode *)
+external unlock: Mutex.t -> unit = "caml_mutex_unlock"
+
+let[@inline never] with_lock m ~scope =
+  let () = Mutex.lock m (* BEGIN ATOMIC *) in
+  match (* END ATOMIC *) scope () with
+  | (* BEGIN ATOMIC *) x -> unlock m ; (* END ATOMIC *) x
+  | (* BEGIN ATOMIC *) exception e -> unlock m ; (* END ATOMIC *) raise e

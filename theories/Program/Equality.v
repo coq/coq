@@ -21,6 +21,7 @@ Ltac is_ground_goal :=
 
 (** Try to find a contradiction. *)
 
+#[global]
 Hint Extern 10 => is_ground_goal ; progress exfalso : exfalso.
 
 (** We will use the [block] definition to separate the goal from the 
@@ -161,7 +162,7 @@ Ltac pi_eq_proofs := repeat pi_eq_proof.
 Ltac clear_eq_proofs :=
   abstract_eq_proofs ; pi_eq_proofs.
 
-Hint Rewrite <- eq_rect_eq : refl_id.
+Global Hint Rewrite <- eq_rect_eq : refl_id.
 
 (** The [refl_id] database should be populated with lemmas of the form
    [coerce_* t eq_refl = t]. *)
@@ -177,7 +178,7 @@ Lemma inj_pairT2_refl A (x : A) (P : A -> Type) (p : P x) :
   Eqdep.EqdepTheory.inj_pairT2 A P x p p eq_refl = eq_refl.
 Proof. apply UIP_refl. Qed.
 
-Hint Rewrite @JMeq_eq_refl @UIP_refl_refl @inj_pairT2_refl : refl_id.
+Global Hint Rewrite @JMeq_eq_refl @UIP_refl_refl @inj_pairT2_refl : refl_id.
 
 Ltac rewrite_refl_id := autorewrite with refl_id.
 
@@ -308,6 +309,7 @@ Proof. intros. rewrite (UIP_refl A). assumption. Defined.
 (** This hint database and the following tactic can be used with [autounfold] to 
    unfold everything to [eq_rect]s. *)
 
+#[global]
 Hint Unfold solution_left solution_right deletion simplification_heq
   simplification_existT1 simplification_existT2 simplification_K
   eq_rect_r eq_rec eq_ind : dep_elim.

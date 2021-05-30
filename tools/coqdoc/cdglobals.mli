@@ -1,3 +1,13 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
 type target_language = LaTeX | HTML | TeXmacs | Raw
 val target_language : target_language ref
 type output_t = StdOut | MultFiles | File of string
@@ -8,8 +18,6 @@ val ( / ) : string -> string -> string
 val coqdoc_out : string -> string
 val open_out_file : string -> unit
 val close_out_file : unit -> unit
-type glob_source_t = NoGlob | DotGlob | GlobFile of string
-val glob_source : glob_source_t ref
 val normalize_path : string -> string
 val normalize_filename : string -> string * string
 val guess_coqlib : unit -> string

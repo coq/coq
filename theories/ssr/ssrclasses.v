@@ -28,5 +28,7 @@ End Defs.
 Register Reflexive as plugins.ssreflect.reflexive_type.
 Register reflexivity as plugins.ssreflect.reflexive_proof.
 
+#[global]
 Instance eq_Reflexive {A : Type} : Reflexive (@eq A) := @eq_refl A.
+#[global]
 Instance iff_Reflexive : Reflexive iff := iff_refl.

@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Nativelib
 open Reduction
 open Util
 open Nativevalues
@@ -151,22 +150,25 @@ let warn_no_native_compiler =
                       strbrk " falling back to VM conversion test.")
 
 let native_conv_gen pb sigma env univs t1 t2 =
+  Nativelib.link_libraries ();
+  let ml_filename, prefix = Nativelib.get_ml_filename () in
+  let code, upds = mk_conv_code env sigma prefix t1 t2 in
+  let fn = Nativelib.compile ml_filename code ~profile:false in
+  debug_native_compiler (fun () -> Pp.str "Running test...");
+  let t0 = Sys.time () in
+  let (rt1, rt2) = Nativelib.execute_library ~prefix fn upds in
+  let t1 = Sys.time () in
+  let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
+  debug_native_compiler (fun () -> Pp.str time_info);
+  (* TODO change 0 when we can have de Bruijn *)
+  fst (conv_val env pb 0 rt1 rt2 univs)
+
+let native_conv_gen pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_native_compiler then begin
     warn_no_native_compiler ();
     Vconv.vm_conv_gen pb env univs t1 t2
   end
-  else
-  let ml_filename, prefix = get_ml_filename () in
-  let code, upds = mk_conv_code env sigma prefix t1 t2 in
-  let fn = compile ml_filename code ~profile:false in
-  if !Flags.debug then Feedback.msg_debug (Pp.str "Running test...");
-  let t0 = Sys.time () in
-  call_linker env ~fatal:true ~prefix fn (Some upds);
-  let t1 = Sys.time () in
-  let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
-  if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
-  (* TODO change 0 when we can have de Bruijn *)
-  fst (conv_val env pb 0 !rt1 !rt2 univs)
+  else native_conv_gen pb sigma env univs t1 t2
 
 (* Wrapper for [native_conv] above *)
 let native_conv cv_pb sigma env t1 t2 =

@@ -230,7 +230,7 @@ Proof.
   simpl_of_lu;
   rewrite ?Nat.add_succ_l, Nat.add_0_l, ?to_lu_succ, to_of_lu_sixteenfold
    by assumption;
-  unfold lnorm; simpl; now destruct nztail.
+  unfold lnorm; cbn; now destruct nztail.
 Qed.
 
 (** Second bijection result *)
@@ -289,7 +289,7 @@ Proof.
   destruct (norm d) eqn:Hd; intros [= <-].
   unfold Nat.to_hex_int. rewrite Unsigned.to_of. f_equal.
   revert Hd; destruct d; simpl.
-  - intros [= <-]. apply unorm_invol.
+  - intros [= <-]. apply unorm_involutive.
   - destruct (nzhead d); now intros [= <-].
 Qed.
 
@@ -308,7 +308,7 @@ Qed.
 
 Lemma of_int_norm d : Nat.of_hex_int (norm d) = Nat.of_hex_int d.
 Proof.
-  unfold Nat.of_hex_int. now rewrite norm_invol.
+  unfold Nat.of_hex_int. now rewrite norm_involutive.
 Qed.
 
 Lemma of_inj_pos d d' :

@@ -13,10 +13,26 @@ open Libnames
 
 (** {6 Concrete syntax for terms } *)
 
-(** [constr_expr] is the abstract syntax tree produced by the parser *)
-type universe_decl_expr = (lident list, Glob_term.glob_constraint list) UState.gen_universe_decl
+(** Universes *)
+type sort_name_expr =
+  | CSProp | CProp | CSet
+  | CType of qualid
+  | CRawType of Univ.Level.t (** Universes like "foo.1" have no qualid form *)
+
+type univ_level_expr  = sort_name_expr Glob_term.glob_sort_gen
+type sort_expr = (sort_name_expr * int) list Glob_term.glob_sort_gen
+
+type instance_expr = univ_level_expr list
+
+(** Constraints don't have anonymous universes *)
+type univ_constraint_expr = sort_name_expr * Univ.constraint_type * sort_name_expr
+
+type universe_decl_expr = (lident list, univ_constraint_expr list) UState.gen_universe_decl
+type cumul_univ_decl_expr =
+  ((lident * Univ.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
+type cumul_ident_decl = lident * cumul_univ_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
 type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
@@ -58,11 +74,10 @@ type abstraction_kind = AbsLambda | AbsPi
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
 type prim_token =
-  | Numeral of NumTok.Signed.t
+  | Number of NumTok.Signed.t
   | String of string
 
-type instance_expr = Glob_term.glob_level list
-
+(** [constr_expr] is the abstract syntax tree produced by the parser *)
 type cases_pattern_expr_r =
   | CPatAlias of cases_pattern_expr * lname
   | CPatCstr  of qualid
@@ -79,6 +94,8 @@ type cases_pattern_expr_r =
   | CPatDelimiters of string * cases_pattern_expr
   | CPatCast   of cases_pattern_expr * constr_expr
 and cases_pattern_expr = cases_pattern_expr_r CAst.t
+
+and kinded_cases_pattern_expr = cases_pattern_expr * Glob_term.binding_kind
 
 and cases_pattern_notation_substitution =
     cases_pattern_expr list *     (* for constr subterms *)
@@ -109,7 +126,7 @@ and constr_expr_r =
   | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr * Genarg.raw_generic_argument option
   | CPatVar of Pattern.patvar
   | CEvar   of Glob_term.existential_name CAst.t * (lident * constr_expr) list
-  | CSort   of Glob_term.glob_sort
+  | CSort   of sort_expr
   | CCast   of constr_expr * constr_expr Glob_term.cast_type
   | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution
   | CGeneralization of Glob_term.binding_kind * abstraction_kind option * constr_expr
@@ -142,12 +159,12 @@ and recursion_order_expr = recursion_order_expr_r CAst.t
 and local_binder_expr =
   | CLocalAssum   of lname list * binder_kind * constr_expr
   | CLocalDef     of lname * constr_expr * constr_expr option
-  | CLocalPattern of (cases_pattern_expr * constr_expr option) CAst.t
+  | CLocalPattern of cases_pattern_expr
 
 and constr_notation_substitution =
     constr_expr list *      (* for constr subterms *)
     constr_expr list list * (* for recursive notations *)
-    cases_pattern_expr list *   (* for binders *)
+    kinded_cases_pattern_expr list *   (* for binders *)
     local_binder_expr list list (* for binder lists (recursive notations) *)
 
 type constr_pattern_expr = constr_expr

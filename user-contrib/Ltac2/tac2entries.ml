@@ -50,6 +50,12 @@ let q_pose = Pcoq.Entry.create "q_pose"
 let q_assert = Pcoq.Entry.create "q_assert"
 end
 
+let () =
+  let entries = [
+    Pcoq.AnyEntry Pltac.ltac2_expr;
+  ] in
+  Pcoq.register_grammars_by_name "ltac2" entries
+
 (** Tactic definition *)
 
 type tacdef = {
@@ -57,6 +63,7 @@ type tacdef = {
   tacdef_mutable : bool;
   tacdef_expr : glb_tacexpr;
   tacdef_type : type_scheme;
+  tacdef_deprecation : Deprecation.t option;
 }
 
 let perform_tacdef visibility ((sp, kn), def) =
@@ -65,6 +72,7 @@ let perform_tacdef visibility ((sp, kn), def) =
     Tac2env.gdata_expr = def.tacdef_expr;
     gdata_type = def.tacdef_type;
     gdata_mutable = def.tacdef_mutable;
+    gdata_deprecation = def.tacdef_deprecation;
   } in
   Tac2env.define_global kn data
 
@@ -77,6 +85,7 @@ let cache_tacdef ((sp, kn), def) =
     Tac2env.gdata_expr = def.tacdef_expr;
     gdata_type = def.tacdef_type;
     gdata_mutable = def.tacdef_mutable;
+    gdata_deprecation = def.tacdef_deprecation;
   } in
   Tac2env.define_global kn data
 
@@ -322,7 +331,7 @@ let check_lowercase {loc;v=id} =
   if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
     user_err ?loc (str "The identifier " ++ Id.print id ++ str " must be lowercase")
 
-let register_ltac ?(local = false) ?(mut = false) isrec tactics =
+let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
   let map ({loc;v=na}, e) =
     let id = match na with
     | Anonymous ->
@@ -359,6 +368,7 @@ let register_ltac ?(local = false) ?(mut = false) isrec tactics =
       tacdef_mutable = mut;
       tacdef_expr = e;
       tacdef_type = t;
+      tacdef_deprecation = deprecation;
     } in
     ignore (Lib.add_leaf id (inTacDef def))
   in
@@ -377,9 +387,9 @@ let register_typedef ?(local = false) isrec types =
   in
   let () =
     let check_existing_type ({v=id},_) =
-      let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
-      try let _ = Tac2env.locate_type qid in
-        user_err (str "Multiple definition of the type name " ++ pr_qualid qid)
+      let (_, kn) = Lib.make_foname id in
+      try let _ = Tac2env.interp_type kn in
+        user_err (str "Multiple definition of the type name " ++ Id.print id)
       with Not_found -> ()
     in
     List.iter check_existing_type types
@@ -413,9 +423,10 @@ let register_typedef ?(local = false) isrec types =
       in
       let () =
         let check_existing_ctor (id, _) =
-          let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
-          if Tac2env.mem_constructor qid
-          then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+          let (_, kn) = Lib.make_foname id in
+          try let _ = Tac2env.interp_constructor kn in
+            user_err (str "Constructor already defined in this module " ++ Id.print id)
+          with Not_found -> ()
         in
         List.iter check_existing_ctor cs
       in
@@ -453,7 +464,7 @@ let register_typedef ?(local = false) isrec types =
   let iter (id, def) = ignore (Lib.add_leaf id (inTypDef def)) in
   List.iter iter types
 
-let register_primitive ?(local = false) {loc;v=id} t ml =
+let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
   let t = intern_open_type t in
   let rec count_arrow = function
   | GTypArrow (_, t) -> 1 + count_arrow t
@@ -477,6 +488,7 @@ let register_primitive ?(local = false) {loc;v=id} t ml =
     tacdef_mutable = false;
     tacdef_expr = e;
     tacdef_type = t;
+    tacdef_deprecation = deprecation;
   } in
   ignore (Lib.add_leaf id (inTacDef def))
 
@@ -507,9 +519,10 @@ let register_open ?(local = false) qid (params, def) =
           user_err (str "Multiple definitions of the constructor " ++ Id.print id)
       in
       let check_existing_ctor (id, _) =
-        let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
-        if Tac2env.mem_constructor qid
-        then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+          let (_, kn) = Lib.make_foname id in
+          try let _ = Tac2env.interp_constructor kn in
+            user_err (str "Constructor already defined in this module " ++ Id.print id)
+          with Not_found -> ()
       in
       let () = List.iter check_existing_ctor def in
       ()
@@ -599,6 +612,18 @@ let parse_token = function
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
 
+let rec print_scope = function
+| SexprStr s -> str s.CAst.v
+| SexprInt i -> int i.CAst.v
+| SexprRec (_, {v=na}, []) -> Option.cata Id.print (str "_") na
+| SexprRec (_, {v=na}, e) ->
+  Option.cata Id.print (str "_") na ++ str "(" ++ pr_sequence print_scope e ++ str ")"
+
+let print_token = function
+| SexprStr {v=s} -> quote (str s)
+| SexprRec (_, {v=na}, [tok]) -> print_scope tok
+| _ -> assert false
+
 end
 
 let parse_scope = ParseToken.parse_scope
@@ -606,8 +631,9 @@ let parse_scope = ParseToken.parse_scope
 type synext = {
   synext_tok : sexpr list;
   synext_exp : raw_tacexpr;
-  synext_lev : int option;
+  synext_lev : int;
   synext_loc : bool;
+  synext_depr : Deprecation.t option;
 }
 
 type krule =
@@ -628,10 +654,28 @@ let rec get_rule (tok : scope_rule token list) : krule = match tok with
   let act k _ = act k in
   KRule (rule, act)
 
+let deprecated_ltac2_notation =
+  Deprecation.create_warning
+    ~object_name:"Ltac2 notation"
+    ~warning_name:"deprecated-ltac2-notation"
+    (fun (toks : sexpr list) -> pr_sequence ParseToken.print_token toks)
+
+(* This is a hack to preserve the level 4 entry which is initially empty. The
+   grammar engine has the great idea to silently delete empty levels on rule
+   removal, so we have to work around this using the Pcoq API.
+   FIXME: we should really keep those levels around instead. *)
+let get_reinit = function
+| 4 -> Some (Gramlib.Gramext.LeftA, Gramlib.Gramext.After "5")
+| _ -> None
+
 let perform_notation syn st =
   let tok = List.rev_map ParseToken.parse_token syn.synext_tok in
   let KRule (rule, act) = get_rule tok in
   let mk loc args =
+    let () = match syn.synext_depr with
+    | None -> ()
+    | Some depr -> deprecated_ltac2_notation ~loc (syn.synext_tok, depr)
+    in
     let map (na, e) =
       ((CAst.make ?loc:e.loc @@ CPatVar na), e)
     in
@@ -639,12 +683,13 @@ let perform_notation syn st =
     CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
   let rule = Pcoq.Production.make rule (act mk) in
-  let lev = match syn.synext_lev with
-  | None -> None
-  | Some lev -> Some (string_of_int lev)
-  in
-  let rule = (lev, None, [rule]) in
-  ([Pcoq.ExtendRule (Pltac.ltac2_expr, {Pcoq.pos=None; data=[rule]})], st)
+  let pos = Some (string_of_int syn.synext_lev) in
+  let rule = Pcoq.Reuse (pos, [rule]) in
+  match get_reinit syn.synext_lev with
+  | None ->
+    ([Pcoq.ExtendRule (Pltac.ltac2_expr, rule)], st)
+  | Some reinit ->
+    ([Pcoq.ExtendRuleReinit (Pltac.ltac2_expr, reinit, rule)], st)
 
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation
@@ -671,23 +716,24 @@ let inTac2Notation : synext -> obj =
 
 type abbreviation = {
   abbr_body : raw_tacexpr;
+  abbr_depr : Deprecation.t option;
 }
 
 let perform_abbreviation visibility ((sp, kn), abbr) =
   let () = Tac2env.push_ltac visibility sp (TacAlias kn) in
-  Tac2env.define_alias kn abbr.abbr_body
+  Tac2env.define_alias ?deprecation:abbr.abbr_depr kn abbr.abbr_body
 
 let load_abbreviation i obj = perform_abbreviation (Until i) obj
 let open_abbreviation i obj = perform_abbreviation (Exactly i) obj
 
 let cache_abbreviation ((sp, kn), abbr) =
   let () = Tac2env.push_ltac (Until 1) sp (TacAlias kn) in
-  Tac2env.define_alias kn abbr.abbr_body
+  Tac2env.define_alias ?deprecation:abbr.abbr_depr kn abbr.abbr_body
 
 let subst_abbreviation (subst, abbr) =
   let body' = subst_rawexpr subst abbr.abbr_body in
   if body' == abbr.abbr_body then abbr
-  else { abbr_body = body' }
+  else { abbr_body = body'; abbr_depr = abbr.abbr_depr }
 
 let classify_abbreviation o = Substitute o
 
@@ -699,12 +745,12 @@ let inTac2Abbreviation : abbreviation -> obj =
      subst_function = subst_abbreviation;
      classify_function = classify_abbreviation}
 
-let register_notation ?(local = false) tkn lev body = match tkn, lev with
+let register_notation ?deprecation ?(local = false) tkn lev body = match tkn, lev with
 | [SexprRec (_, {loc;v=Some id}, [])], None ->
   (* Tactic abbreviation *)
   let () = check_lowercase CAst.(make ?loc id) in
   let body = Tac2intern.globalize Id.Set.empty body in
-  let abbr = { abbr_body = body } in
+  let abbr = { abbr_body = body; abbr_depr = deprecation } in
   ignore (Lib.add_leaf id (inTac2Abbreviation abbr))
 | _ ->
   (* Check that the tokens make sense *)
@@ -717,12 +763,21 @@ let register_notation ?(local = false) tkn lev body = match tkn, lev with
   let ids = List.fold_left fold Id.Set.empty entries in
   (* Globalize so that names are absolute *)
   let body = Tac2intern.globalize ids body in
-  let lev = match lev with Some _ -> lev | None -> Some 5 in
+  let lev = match lev with
+  | Some n ->
+    let () =
+      if n < 0 || n > 6 then
+        user_err (str "Notation levels must range between 0 and 6")
+    in
+    n
+  | None -> 5
+  in
   let ext = {
     synext_tok = tkn;
     synext_exp = body;
     synext_lev = lev;
     synext_loc = local;
+    synext_depr = deprecation;
   } in
   Lib.add_anonymous_leaf (inTac2Notation ext)
 
@@ -811,13 +866,11 @@ let perform_eval ~pstate e =
       Goal_select.get_default_goal_selector (),
       Declare.Proof.get pstate
   in
-  let v = match selector with
-  | Goal_select.SelectNth i -> Proofview.tclFOCUS i i v
-  | Goal_select.SelectList l -> Proofview.tclFOCUSLIST l v
-  | Goal_select.SelectId id -> Proofview.tclFOCUSID id v
-  | Goal_select.SelectAll -> v
-  | Goal_select.SelectAlreadyFocused -> assert false (* TODO **)
+  let nosuchgoal =
+    let info = Exninfo.reify () in
+    Proofview.tclZERO ~info (Proof.SuggestNoSuchGoals (1,proof))
   in
+  let v = Goal_select.tclSELECT ~nosuchgoal selector v in
   let (proof, _, ans) = Proof.run_tactic (Global.env ()) v proof in
   let { Proof.sigma } = Proof.data proof in
   let name = int_name () in
@@ -827,12 +880,21 @@ let perform_eval ~pstate e =
 
 (** Toplevel entries *)
 
-let register_struct ?local str = match str with
-| StrVal (mut, isrec, e) -> register_ltac ?local ~mut isrec e
-| StrTyp (isrec, t) -> register_type ?local isrec t
-| StrPrm (id, t, ml) -> register_primitive ?local id t ml
-| StrSyn (tok, lev, e) -> register_notation ?local tok lev e
-| StrMut (qid, old, e) -> register_redefinition ?local qid old e
+let unsupported_deprecation = function
+| None -> ()
+| Some _ ->
+  Attributes.unsupported_attributes ["deprecated", Attributes.VernacFlagEmpty]
+
+let register_struct ?deprecation ?local str = match str with
+| StrVal (mut, isrec, e) -> register_ltac ?deprecation ?local ~mut isrec e
+| StrTyp (isrec, t) ->
+  let () = unsupported_deprecation deprecation in (* TODO *)
+  register_type ?local isrec t
+| StrPrm (id, t, ml) -> register_primitive ?deprecation ?local id t ml
+| StrSyn (tok, lev, e) -> register_notation ?deprecation ?local tok lev e
+| StrMut (qid, old, e) ->
+  let () = unsupported_deprecation deprecation in (* TODO: what does that mean? *)
+  register_redefinition ?local qid old e
 
 (** Toplevel exception *)
 
@@ -853,8 +915,10 @@ let pr_frame = function
   str "Prim <" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
 | FrExtn (tag, arg) ->
   let obj = Tac2env.interp_ml_object tag in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   str "Extn " ++ str (Tac2dyn.Arg.repr tag) ++ str ":" ++ spc () ++
-    obj.Tac2env.ml_print (Global.env ()) arg
+    obj.Tac2env.ml_print env sigma arg
 
 let () = register_handler begin function
 | Tac2interp.LtacError (kn, args) ->

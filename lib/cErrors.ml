@@ -30,6 +30,7 @@ let anomaly ?loc ?info ?label pp =
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (Anomaly (label, pp), info)
 
+(* TODO remove the option *)
 exception UserError of string option * Pp.t (* User errors *)
 
 let user_err ?loc ?info ?hdr strm =
@@ -37,7 +38,7 @@ let user_err ?loc ?info ?hdr strm =
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (UserError (hdr, strm), info)
 
-exception Timeout
+exception Timeout = Control.Timeout
 
 (** Only anomalies should reach the bottom of the handler stack.
     In usual situation, the [handle_stack] is treated as it if was always
@@ -46,7 +47,7 @@ exception Timeout
 let where = function
 | None -> mt ()
 | Some s ->
-  if !Flags.debug then str "in " ++ str s ++ str ":" ++ spc () else mt ()
+  str "in " ++ str s ++ str ":" ++ spc ()
 
 let raw_anomaly e = match e with
   | Anomaly (s, pps) ->
@@ -133,9 +134,9 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 
 let _ = register_handler begin function
   | UserError(s, pps) ->
-    Some (where s ++ pps)
+    Some pps
   | _ -> None
-end
+  end
 
 (** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled
@@ -145,7 +146,7 @@ end
 let noncritical = function
   | Sys.Break | Out_of_memory | Stack_overflow
   | Assert_failure _ | Match_failure _ | Anomaly _
-  | Timeout -> false
+  | Control.Timeout -> false
   | Invalid_argument "equal: functional value" -> false
   | _ -> true
 [@@@ocaml.warning "+52"]

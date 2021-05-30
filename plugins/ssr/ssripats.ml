@@ -324,7 +324,7 @@ end
 `tac`, where k is the size of `seeds` *)
 let tclSEED_SUBGOALS seeds tac =
   tclTHENin tac (fun i n ->
-          Ssrprinters.ppdebug (lazy Pp.(str"seeding"));
+          Ssrprinters.debug_ssr (fun () -> Pp.(str"seeding"));
       (* eg [case: (H _ : nat)] generates 3 goals:
          - 1 for _
          - 2 for the nat constructors *)
@@ -416,11 +416,11 @@ let tclMK_ABSTRACT_VARS ids =
 (* Debugging *)
 let tclLOG p t =
   tclUNIT () >>= begin fun () ->
-    Ssrprinters.ppdebug (lazy Pp.(str "exec: " ++ pr_ipatop p));
+    Ssrprinters.debug_ssr (fun () -> Pp.(str "exec: " ++ pr_ipatop p));
     tclUNIT ()
   end <*>
   Goal.enter begin fun g ->
-    Ssrprinters.ppdebug (lazy Pp.(str" on state:" ++ spc () ++
+    Ssrprinters.debug_ssr (fun () -> Pp.(str" on state:" ++ spc () ++
       isPRINT g ++
       str" goal:" ++ spc () ++ Printer.pr_goal (Goal.print g)));
     tclUNIT ()
@@ -429,7 +429,7 @@ let tclLOG p t =
     t p
   >>= fun ret ->
   Goal.enter begin fun g ->
-    Ssrprinters.ppdebug (lazy Pp.(str "done: " ++ isPRINT g));
+    Ssrprinters.debug_ssr (fun () -> Pp.(str "done: " ++ isPRINT g));
     tclUNIT ()
   end
   >>= fun () -> tclUNIT ret
@@ -454,7 +454,7 @@ let rec ipat_tac1 ipat : bool tactic =
             let inter = CList.intersect Id.equal clr extra_clear in
             List.iter duplicate_clear inter;
             let cl = CList.union Id.equal clr extra_clear in
-            intro_clear cl)
+            intro_clear cl) ()
 
   | IOpDispatchBranches ipatss ->
       tclDISPATCH (List.map ipat_tac ipatss) <*> notTAC
@@ -579,10 +579,10 @@ let tclCompileIPats l =
   elab l
 ;;
 let tclCompileIPats l =
-  Ssrprinters.ppdebug (lazy Pp.(str "tclCompileIPats input: " ++
+  Ssrprinters.debug_ssr (fun () -> Pp.(str "tclCompileIPats input: " ++
                                   prlist_with_sep spc Ssrprinters.pr_ipat l));
   let ops = tclCompileIPats l in
-  Ssrprinters.ppdebug (lazy Pp.(str "tclCompileIPats output: " ++
+  Ssrprinters.debug_ssr (fun () -> Pp.(str "tclCompileIPats output: " ++
                                   prlist_with_sep spc pr_ipatop ops));
   ops
 
@@ -597,11 +597,11 @@ let main ?eqtac ~first_case_is_dispatch iops =
 end (* }}} *)
 
 let tclIPAT_EQ eqtac ip =
-  Ssrprinters.ppdebug (lazy Pp.(str "ipat@run: " ++ Ssrprinters.pr_ipats ip));
+  Ssrprinters.debug_ssr (fun () -> Pp.(str "ipat@run: " ++ Ssrprinters.pr_ipats ip));
   IpatMachine.(main ~eqtac ~first_case_is_dispatch:true (tclCompileIPats ip))
 
 let tclIPATssr ip =
-  Ssrprinters.ppdebug (lazy Pp.(str "ipat@run: " ++ Ssrprinters.pr_ipats ip));
+  Ssrprinters.debug_ssr (fun () -> Pp.(str "ipat@run: " ++ Ssrprinters.pr_ipats ip));
   IpatMachine.(main ~first_case_is_dispatch:true (tclCompileIPats ip))
 
 let tclCompileIPats = IpatMachine.tclCompileIPats
@@ -741,7 +741,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
      [A.. -> Ind] and opens new goals for [A..] as well as for the branches
      of [Ind], see the [~to_ind] argument *)
   if not(Termops.occur_existential sigma c) then
-    if Ssrmatching.tag_of_cpattern t = Ssrprinters.xWithAt then
+    if Ssrmatching.tag_of_cpattern t = Ssrmatching.WithAt then
       if not (EConstr.isVar sigma c) then
         Ssrcommon.errorstrm Pp.(str "@ can be used with variables only")
       else match Context.Named.lookup (EConstr.destVar sigma c) hyps with

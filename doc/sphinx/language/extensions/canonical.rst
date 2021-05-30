@@ -34,19 +34,61 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    The first form of this command declares an existing :n:`@reference` as a
    canonical instance of a structure (a record).
 
-   The second form defines a new constant as if the :cmd:`Definition` command
+   The second form defines a new :term:`constant` as if the :cmd:`Definition` command
    had been used, then declares it as a canonical instance as if the first
    form had been used on the defined object.
 
    This command supports the :attr:`local` attribute.  When used, the
    structure is canonical only within the :cmd:`Section` containing it.
 
-   Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
-   structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
-   Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
+   :token:`qualid` (in :token:`reference`) denotes an object :n:`(Build_struct c__1 … c__n)` in the
+   structure :g:`struct` for which the fields are :n:`x__1, …, x__n`.
+   Then, each time an equation of the form :n:`(x__i _)` |eq_beta_delta_iota_zeta| :n:`c__i` has to be
    solved during the type checking process, :token:`qualid` is used as a solution.
-   Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
-   into a complete structure built on |c_i|.
+   Otherwise said, :token:`qualid` is canonically used to extend the field :n:`x__i`
+   into a complete structure built on :n:`c__i` when :n:`c__i` unifies with :n:`(x__i _)`.
+
+   The following kinds of terms are supported for the fields :n:`c__i` of :token:`qualid`:
+
+   * :term:`Constants <constant>` and section variables of an active section,
+     applied to zero or more arguments.
+   * :token:`sort`\s.
+   * Literal functions:  `fun … => …`.
+   * Literal, non-dependent function types, i.e. implications: `… -> …`.
+   * Variables bound in :token:`qualid`.
+
+   Only the head symbol of an existing instance's field :n:`c__i`
+   is considered when searching for a canonical extension.
+   We call this head symbol the *key* and we say ":token:`qualid` *keys* the field :n:`x__i` to :n:`k`" when :n:`c__i`'s
+   head symbol is :n:`k`.
+   Keys are the only piece of information that is used for canonical extension.
+   The keys corresponding to the kinds of terms listed above are:
+
+   * For constants and section variables, potentially applied to arguments:
+     the constant or variable itself, disregarding any arguments.
+   * For sorts: the sort itself.
+   * For literal functions: skip the abstractions and use the key of the body.
+   * For literal functions types: a disembodied implication key denoted `_ -> _`, disregarding both its
+     domain and codomain.
+   * For variables bound in :token:`qualid`: a catch-all key denoted `_`.
+
+   This means that, for example, `(some_constant x1)` and `(some_constant (other_constant y1 y2) x2)`
+   are not distinct keys.
+
+   Variables bound in :token:`qualid` match any term for the purpose of canonical extension.
+   This has two major consequences for a field :n:`c__i` keyed to a variable of :token:`qualid`:
+
+   1. Unless another key—and, thus, instance—matches :n:`c__i`, the instance will always be considered by
+      unification.
+   2. :n:`c__i` will be considered overlapping not distinct from any other canonical instance
+      that keys :n:`x__i` to one of its own variables.
+
+   A record field :n:`x__i` can only be keyed once to each key.
+   Coq prints a warning when :token:`qualid` keys :n:`x__i` to a term
+   whose head symbol is already keyed by an existing canonical instance.
+   In this case, Coq will not register that :token:`qualid` as a canonical
+   extension.
+   (The remaining fields of the instance can still be used for canonical extension.)
 
    Canonical structures are particularly useful when mixed with coercions
    and strict implicit arguments.
@@ -87,35 +129,33 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
-   .. attr:: canonical(false)
+.. attr:: canonical{? = {| yes | no } }
+   :name: canonical
 
-      To prevent a field from being involved in the inference of
-      canonical instances, its declaration can be annotated with the
-      :attr:`canonical(false)` attribute (cf. the syntax of
-      :n:`@record_field`).
+   This :term:`boolean attribute` can decorate a :cmd:`Definition` or
+   :cmd:`Let` command.  It is equivalent to having a :cmd:`Canonical
+   Structure` declaration just after the command.
 
-      .. example::
+   To prevent a field from being involved in the inference of
+   canonical instances, its declaration can be annotated with
+   ``canonical=no`` (cf. the syntax of :n:`@record_field`).
 
-         For instance, when declaring the :g:`Setoid` structure above, the
-         :g:`Prf_equiv` field declaration could be written as follows.
+   .. example::
 
-         .. coqdoc::
+      For instance, when declaring the :g:`Setoid` structure above, the
+      :g:`Prf_equiv` field declaration could be written as follows.
 
-            #[canonical(false)] Prf_equiv : equivalence Carrier Equal
+      .. coqdoc::
 
-      See :ref:`canonicalstructures` for a more realistic example.
+         #[canonical=no] Prf_equiv : equivalence Carrier Equal
 
-.. attr:: canonical
-
-   This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
-   It is equivalent to having a :cmd:`Canonical Structure` declaration just
-   after the command.
+   See :ref:`hierarchy_of_structures` for a more realistic example.
 
 .. cmd:: Print Canonical Projections {* @reference }
 
    This displays the list of global names that are components of some
    canonical structure. For each of them, the canonical structure of
-   which it is a projection is indicated. If constants are given as
+   which it is a projection is indicated. If :term:`constants <constant>` are given as
    its arguments, only the unification rules that involve or are
    synthesized from simultaneously all given constants will be shown.
 
@@ -159,7 +199,7 @@ of the terms that are compared.
     End theory.
   End EQ.
 
-We use |Coq| modules as namespaces. This allows us to follow the same
+We use Coq modules as namespaces. This allows us to follow the same
 pattern and naming convention for the rest of the chapter. The base
 namespace contains the definitions of the algebraic structure. To
 keep the example small, the algebraic structure ``EQ.type`` we are
@@ -196,13 +236,13 @@ We amend that by equipping ``nat`` with a comparison relation.
    Check 3 == 3.
    Eval compute in 3 == 4.
 
-This last test shows that |Coq| is now not only able to type check ``3 == 3``,
+This last test shows that Coq is now not only able to type check ``3 == 3``,
 but also that the infix relation was bound to the ``nat_eq`` relation.
 This relation is selected whenever ``==`` is used on terms of type nat.
 This can be read in the line declaring the canonical structure
 ``nat_EQty``, where the first argument to ``Pack`` is the key and its second
-argument a group of canonical values associated to the key. In this
-case we associate to nat only one canonical value (since its class,
+argument a group of canonical values associated with the key. In this
+case we associate with nat only one canonical value (since its class,
 ``nat_EQcl`` has just one member). The use of the projection ``op`` requires
 its argument to be in the class ``EQ``, and uses such a member (function)
 to actually compare its arguments.
@@ -223,8 +263,8 @@ example work:
 
   Fail Check forall (e : EQ.type) (a b : EQ.obj e), (a, b) == (a, b).
 
-The error message is telling that |Coq| has no idea on how to compare
-pairs of objects. The following construction is telling |Coq| exactly
+The error message is telling that Coq has no idea on how to compare
+pairs of objects. The following construction is telling Coq exactly
 how to do that.
 
 .. coqtop:: all
@@ -241,12 +281,14 @@ how to do that.
 
   Check forall n m : nat, (3, 4) == (n, m).
 
-Thanks to the ``pair_EQty`` declaration, |Coq| is able to build a comparison
+Thanks to the ``pair_EQty`` declaration, Coq is able to build a comparison
 relation for pairs whenever it is able to build a comparison relation
 for each component of the pair. The declaration associates to the key ``*``
 (the type constructor of pairs) the canonical comparison
 relation ``pair_eq`` whenever the type constructor ``*`` is applied to two
 types being themselves in the ``EQ`` class.
+
+.. _hierarchy_of_structures:
 
 Hierarchy of structures
 ----------------------------
@@ -290,7 +332,7 @@ As before we register a canonical ``LE`` class for ``nat``.
 
   Canonical Structure nat_LEty : LE.type := LE.Pack nat nat_LEcl.
 
-And we enable |Coq| to relate pair of terms with ``<=``.
+And we enable Coq to relate pair of terms with ``<=``.
 
 .. coqtop:: all
 
@@ -331,7 +373,7 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
                         LE_class : LE.class T;
                         extra : mixin (EQ.Pack T EQ_class) (LE.cmp T LE_class) }.
 
-    Structure type := _Pack { obj : Type; #[canonical(false)] class_of : class obj }.
+    Structure type := _Pack { obj : Type; #[canonical=no] class_of : class obj }.
 
     Arguments Mixin {e le} _.
 
@@ -355,10 +397,10 @@ theory of this new class.
 
 
 The problem is that the two classes ``LE`` and ``LEQ`` are not yet related by
-a subclass relation. In other words |Coq| does not see that an object of
+a subclass relation. In other words Coq does not see that an object of
 the ``LEQ`` class is also an object of the ``LE`` class.
 
-The following two constructions tell |Coq| how to canonically build the
+The following two constructions tell Coq how to canonically build the
 ``LE.type`` and ``EQ.type`` structure given an ``LEQ.type`` structure on the same
 type.
 
@@ -413,7 +455,7 @@ setting to any concrete instate of the algebraic structure.
 
   Abort.
 
-Again one has to tell |Coq| that the type ``nat`` is in the ``LEQ`` class, and
+Again one has to tell Coq that the type ``nat`` is in the ``LEQ`` class, and
 how the type constructor ``*`` interacts with the ``LEQ`` class. In the
 following proofs are omitted for brevity.
 
@@ -468,7 +510,7 @@ Note that no direct proof of ``n <= m -> m <= n -> n == m`` is provided by
 the user for ``n`` and m of type ``nat * nat``. What the user provides is a
 proof of this statement for ``n`` and ``m`` of type ``nat`` and a proof that the
 pair constructor preserves this property. The combination of these two
-facts is a simple form of proof search that |Coq| performs automatically
+facts is a simple form of proof search that Coq performs automatically
 while inferring canonical structures.
 
 Compact declaration of Canonical Structures
@@ -490,10 +532,10 @@ We need some infrastructure for that.
     Definition id {T} {t : T} (x : phantom t) := x.
 
     Notation "[find v | t1 ~ t2 ] p" := (fun v (_ : unify t1 t2 None) => p)
-      (at level 50, v ident, only parsing).
+      (at level 50, v name, only parsing).
 
     Notation "[find v | t1 ~ t2 | s ] p" := (fun v (_ : unify t1 t2 (Some s)) => p)
-      (at level 50, v ident, only parsing).
+      (at level 50, v name, only parsing).
 
     Notation "'Error : t : s" := (unify _ t (Some s))
       (at level 50, format "''Error' : t : s").
@@ -507,7 +549,7 @@ instances: ``[find e | EQ.obj e ~ T | "is not an EQ.type" ]``. It should be
 read as: “find a class e such that its objects have type T or fail
 with message "T is not an EQ.type"”.
 
-The other utilities are used to ask |Coq| to solve a specific unification
+The other utilities are used to ask Coq to solve a specific unification
 problem, that will in turn require the inference of some canonical structures.
 They are explained in more details in :cite:`CSwcu`.
 
@@ -530,9 +572,9 @@ instances of the ``LEQ`` class.
 
 The object ``Pack`` takes a type ``T`` (the key) and a mixin ``m``. It infers all
 the other pieces of the class ``LEQ`` and declares them as canonical
-values associated to the ``T`` key. All in all, the only new piece of
+values associated with the ``T`` key. All in all, the only new piece of
 information we add in the ``LEQ`` class is the mixin, all the rest is
-already canonical for ``T`` and hence can be inferred by |Coq|.
+already canonical for ``T`` and hence can be inferred by Coq.
 
 ``Pack`` is a notation, hence it is not type checked at the time of its
 declaration. It will be type checked when it is used, an in that case ``T`` is

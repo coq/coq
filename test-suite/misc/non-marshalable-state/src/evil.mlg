@@ -1,0 +1,15 @@
+DECLARE PLUGIN "evil_plugin"
+
+{
+
+let state = Summary.ref
+  ~name:"elpi-compiler-cache"
+  None
+
+}
+
+VERNAC COMMAND EXTEND magic CLASSIFIED AS SIDEFF
+| [ "magic" ] -> {
+    state := Some (fun () -> ())
+}
+END

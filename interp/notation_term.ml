@@ -21,14 +21,14 @@ open Glob_term
 
 type notation_constr =
   (* Part common to [glob_constr] and [cases_pattern] *)
-  | NRef of GlobRef.t
+  | NRef of GlobRef.t * glob_level list option
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
   | NHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option
   | NList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool
   (* Part only in [glob_constr] *)
-  | NLambda of Name.t * notation_constr * notation_constr
-  | NProd of Name.t * notation_constr * notation_constr
+  | NLambda of Name.t * notation_constr option * notation_constr
+  | NProd of Name.t * notation_constr option * notation_constr
   | NBinderList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool
   | NLetIn of Name.t * notation_constr * notation_constr option * notation_constr
   | NCases of Constr.case_style * notation_constr option *
@@ -67,7 +67,8 @@ type extended_subscopes = Constrexpr.notation_entry_level * subscopes
 
 type constr_as_binder_kind =
   | AsIdent
-  | AsIdentOrPattern
+  | AsName
+  | AsNameOrPattern
   | AsStrictPattern
 
 type notation_binder_source =
@@ -76,8 +77,12 @@ type notation_binder_source =
   | NtnParsedAsPattern of bool
   (* This accepts only ident *)
   | NtnParsedAsIdent
+  (* This accepts only name *)
+  | NtnParsedAsName
   (* This accepts ident, or pattern, or both *)
   | NtnBinderParsedAsConstr of constr_as_binder_kind
+  (* This accepts ident, _, and quoted pattern *)
+  | NtnParsedAsBinder
 
 type notation_var_instance_type =
   | NtnTypeConstr | NtnTypeBinder of notation_binder_source | NtnTypeConstrList | NtnTypeBinderList
@@ -86,7 +91,8 @@ type notation_var_instance_type =
     in a recursive pattern x..y, both x and y carry the individual type
     of each element of the list x..y *)
 type notation_var_internalization_type =
-  | NtnInternTypeAny | NtnInternTypeOnlyBinder
+  | NtnInternTypeAny of scope_name option
+  | NtnInternTypeOnlyBinder
 
 (** This characterizes to what a notation is interpreted to *)
 type interpretation =

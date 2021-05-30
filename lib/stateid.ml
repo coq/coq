@@ -45,3 +45,6 @@ type ('a,'b) request = {
   name     : string
 }
 
+let is_valid_ref = ref (fun ~doc:_ (_ : t) -> true)
+let is_valid ~doc id = !is_valid_ref ~doc id
+let set_is_valid f = is_valid_ref := f

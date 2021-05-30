@@ -217,13 +217,13 @@ module Mlenv = struct
 
   (* Adding a type with no [Tvar], hence no generalization needed. *)
 
-  let push_type {env=e;free=f} t =
-    { env = (0,t) :: e; free = find_free f t}
+  let push_type mle t =
+    { env = (0,t) :: mle.env; free = find_free mle.free t}
 
   (* Adding a type with no [Tvar] nor [Tmeta]. *)
 
-  let push_std_type {env=e;free=f} t =
-    { env = (0,t) :: e; free = f}
+  let push_std_type mle t =
+    { env = (0,t) :: mle.env; free = mle.free}
 
 end
 
@@ -399,7 +399,11 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLmagic t1, MLmagic t2 -> eq_ml_ast t1 t2
 | MLuint i1, MLuint i2 -> Uint63.equal i1 i2
 | MLfloat f1, MLfloat f2 -> Float64.equal f1 f2
-| _, _ -> false
+| MLparray (t1,def1), MLparray (t2, def2) -> Array.equal eq_ml_ast t1 t2 && eq_ml_ast def1 def2
+| (MLrel _|MLapp _|MLlam _|MLletin _|MLglob _|MLcons _
+  |MLtuple _|MLcase _|MLfix _|MLexn _|MLdummy _|MLaxiom
+  | MLmagic _| MLuint _| MLfloat _|MLparray _), _
+  -> false
 
 and eq_ml_pattern p1 p2 = match p1, p2 with
 | Pcons (gr1, p1), Pcons (gr2, p2) ->
@@ -1521,8 +1525,7 @@ let inline_test r t =
   else
     let c = match r with GlobRef.ConstRef c -> c | _ -> assert false in
     let has_body =
-      try constant_has_body (Global.lookup_constant c)
-      with Not_found -> false
+      Environ.mem_constant c (Global.env()) && constant_has_body (Global.lookup_constant c)
     in
     has_body &&
       (let t1 = eta_red t in

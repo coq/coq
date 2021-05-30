@@ -1,3 +1,52 @@
+## Changes between Coq 8.13 and Coq 8.14
+
+### Build system and library infrastructure
+
+- ocamlfind library names `coq.*` have been renamed to `coq-core.*`.
+
+- Dune is now used to build the OCaml parts of Coq, thus:
+
+  + ML object files live now in `_build`, as standard in Dune world
+  + you can build object files using `make
+    _build/install/default/bin/coqc`, thanks to our implementation of
+    a make-Dune bridge
+  + .vo files live now in `_build_vo/`
+  + `_build_vo` follows a standard "Coq install layout", that is to say:
+    * `_build_vo/default/bin`: coq-core binaries
+    * `_build_vo/default/lib/coq-core`: coq-core libraries
+    * `_build_vo/default/lib/coq`: coq libraries, such as stdlib
+    This greatly simplifies layout as tooling can assume that
+    `_build_vo/default` has the structure of an installed Coq, thus
+    making the `-local` flag obsolete.
+  + Some developer targets have changed or have been removed in favor
+    of Dune's counterparts, for example `byte` and `install-byte` are
+    no longer needed.
+
+  For the large majority of developers, we recommend using the full
+  dune build, which is accessible by `make -f Makefile.dune` or by
+  setting the `COQ_USE_DUNE` environment variable.
+
+- As a consequence of the above, the packing of plugins has changed.
+  Plugins are now packed using modules aliases which is in general safer
+  w.r.t. scoping, as the container module is just a regular OCaml module.
+
+### Gramlib
+
+- A few functions change their interfaces to take benefit of a new
+  abstraction level `LStream` for streams with location function.
+
+- Grammar extensions now require specifying whether they create a level or they
+  reuse an existing one. In addition to the Gramlib API changes, GRAMMAR EXTEND
+  stanzas may need a few tweaks. Their grammar was changed so that level and
+  associativity arguments that would have been ignored are now forbidden.
+  Furthermore, extensions without an explicit position now expect the entry to
+  be empty. If it is not the case, the extension will fail at runtime with an
+  assertion failure located near the offending entry. To recover the old
+  behaviour, one needs to explicitly add the new TOP position to the extension.
+  This position expects the entry to be non-empty and populates the topmost
+  defined level with the provided rules. Note that this differs from FIRST,
+  which creates a new level and prepends it to the list of levels of the entry.
+
 ## Changes between Coq 8.12 and Coq 8.13
 
 ### Code formatting
@@ -29,6 +78,18 @@ Grammar entries:
 Generic arguments:
 
 - Generic arguments: `wit_var` is deprecated, use `wit_hyp`.
+
+Dumpglob:
+
+- The function `Dumpglob.pause` and `Dumpglob.continue` are replaced
+  by `Dumpglob.push_output` and `Dumpglob.pop_output`. This allows
+  plugins to temporarily change/pause the output of Dumpglob, and then
+  restore it to the original setting.
+
+Glob_term:
+
+- Removing useless `binding_kind` argument of `GLocalDef` in
+  `extended_glob_local_binder`.
 
 ## Changes between Coq 8.11 and Coq 8.12
 

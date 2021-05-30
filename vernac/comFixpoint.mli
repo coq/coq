@@ -15,11 +15,20 @@ open Vernacexpr
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
-val do_fixpoint_interactive :
-  scope:Locality.locality -> poly:bool -> fixpoint_expr list -> Declare.Proof.t
+val do_fixpoint_interactive
+  : scope:Locality.locality
+  -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
+  -> fixpoint_expr list
+  -> Declare.Proof.t
 
-val do_fixpoint :
-  scope:Locality.locality -> poly:bool -> ?using:Vernacexpr.section_subset_expr -> fixpoint_expr list -> unit
+val do_fixpoint
+   : scope:Locality.locality
+  -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
+  -> ?using:Vernacexpr.section_subset_expr
+  -> fixpoint_expr list
+  -> unit
 
 val do_cofixpoint_interactive :
   scope:Locality.locality -> poly:bool -> cofixpoint_expr list -> Declare.Proof.t
@@ -44,6 +53,7 @@ type ('constr, 'types) recursive_preentry = Id.t list * Sorts.relevance list * '
 
 (** Exported for Program *)
 val interp_recursive :
+  Environ.env ->
   (* Misc arguments *)
   program_mode:bool -> cofix:bool ->
   (* Notations of the fixpoint / should that be folded in the previous argument? *)
@@ -58,8 +68,9 @@ val interp_recursive :
 (** Exported for Funind *)
 
 val interp_fixpoint
-  :  ?check_recursivity:bool ->
-     cofix:bool
+  :  ?check_recursivity:bool
+  -> ?typing_flags:Declarations.typing_flags
+  -> cofix:bool
   -> lident option fix_expr_gen list
   -> (Constr.t, Constr.types) recursive_preentry *
      UState.universe_decl * UState.t *

@@ -333,6 +333,22 @@ let rem accu x y =
   if is_int x && is_int y then no_check_rem x y
   else accu x y
 
+let no_check_divs x y =
+  mk_uint (Uint63.divs (to_uint x) (to_uint y))
+[@@ocaml.inline always]
+
+let divs accu x y =
+  if is_int x && is_int y then no_check_divs x y
+  else accu x y
+
+let no_check_rems x y =
+  mk_uint (Uint63.rems (to_uint x) (to_uint y))
+[@@ocaml.inline always]
+
+let rems accu x y =
+  if is_int x && is_int y then no_check_rems x y
+  else accu x y
+
 let no_check_l_sr x y =
   mk_uint (Uint63.l_sr (to_uint x) (to_uint y))
 [@@ocaml.inline always]
@@ -347,6 +363,14 @@ let no_check_l_sl x y =
 
 let l_sl accu x y =
   if is_int x && is_int y then no_check_l_sl x y
+  else accu x y
+
+let no_check_a_sr x y =
+  mk_uint (Uint63.a_sr (to_uint x) (to_uint y))
+[@@ocaml.inline always]
+
+let a_sr accu x y =
+  if is_int x && is_int y then no_check_a_sr x y
   else accu x y
 
 let no_check_l_and x y =
@@ -502,6 +526,22 @@ let le accu x y =
   if is_int x && is_int y then no_check_le x y
   else accu x y
 
+let no_check_lts x y =
+  mk_bool (Uint63.lts (to_uint x) (to_uint y))
+[@@ocaml.inline always]
+
+let lts accu x y =
+  if is_int x && is_int y then no_check_lts x y
+  else accu x y
+
+let no_check_les x y =
+  mk_bool (Uint63.les (to_uint x) (to_uint y))
+[@@ocaml.inline always]
+
+let les accu x y =
+  if is_int x && is_int y then no_check_les x y
+  else accu x y
+
 let no_check_compare x y =
   match Uint63.compare (to_uint x) (to_uint y) with
   | x when x < 0 -> (Obj.magic CmpLt:t)
@@ -510,6 +550,16 @@ let no_check_compare x y =
 
 let compare accu x y =
   if is_int x && is_int y then no_check_compare x y
+  else accu x y
+
+let no_check_compares x y =
+  match Uint63.compares (to_uint x) (to_uint y) with
+  | x when x < 0 -> (Obj.magic CmpLt:t)
+  | 0 -> (Obj.magic CmpEq:t)
+  | _ -> (Obj.magic CmpGt:t)
+
+let compares accu x y =
+  if is_int x && is_int y then no_check_compares x y
   else accu x y
 
 let print x =

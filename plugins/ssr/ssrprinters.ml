@@ -15,7 +15,6 @@ open Names
 open Printer
 open Tacmach
 
-open Ssrmatching_plugin
 open Ssrast
 
 let pr_spc () = str " "
@@ -28,16 +27,6 @@ let pp_concat hd ?(sep=str", ") = function [] -> hd | x :: xs ->
 let pp_term gl t =
   let t = Reductionops.nf_evar (project gl) t in pr_econstr_env (pf_env gl) (project gl) t
 
-(* FIXME *)
-(* terms are pre constr, the kind is parsing/printing flag to distinguish
- * between x, @x and (x). It affects automatic clear and let-in preservation.
- * Cpattern is a temporary flag that becomes InParens ASAP. *)
-(* type ssrtermkind = InParens | WithAt | NoFlag | Cpattern *)
-let xInParens = '('
-let xWithAt = '@'
-let xNoFlag = ' '
-let xCpattern = 'x'
-
 (* Term printing utilities functions for deciding bracketing.  *)
 let pr_paren prx x = hov 1 (str "(" ++ prx x ++ str ")")
 (* String lexing utilities *)
@@ -45,10 +34,10 @@ let skip_wschars s =
   let rec loop i = match s.[i] with '\n'..' ' -> loop (i + 1) | _ -> i in loop
 (* We also guard characters that might interfere with the ssreflect   *)
 (* tactic syntax.                                                     *)
-let guard_term ch1 s i = match s.[i] with
+let guard_term kind s i = match s.[i] with
   | '(' -> false
   | '{' | '/' | '=' -> true
-  | _ -> ch1 = xInParens
+  | _ -> kind = Ssrmatching_plugin.Ssrmatching.InParens
 
 (* We also guard characters that might interfere with the ssreflect   *)
 (* tactic syntax.                                                     *)
@@ -57,17 +46,16 @@ let pr_guarded guard prc c =
   let s = Format.flush_str_formatter () ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 
-let prl_constr_expr =
+let with_global_env_evm f x =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Ppconstr.pr_lconstr_expr env sigma
-let pr_glob_constr c = Printer.pr_glob_constr_env (Global.env ()) c
-let prl_glob_constr c = Printer.pr_lglob_constr_env (Global.env ()) c
+  f env sigma x
+
+let prl_constr_expr = with_global_env_evm Ppconstr.pr_lconstr_expr
+let pr_glob_constr = with_global_env_evm Printer.pr_glob_constr_env
+let prl_glob_constr = with_global_env_evm Printer.pr_lglob_constr_env
 let pr_glob_constr_and_expr = function
-  | _, Some c ->
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    Ppconstr.pr_constr_expr env sigma c
+  | _, Some c -> with_global_env_evm Ppconstr.pr_constr_expr c
   | c, None -> pr_glob_constr c
 let pr_term (k, c) = pr_guarded (guard_term k) pr_glob_constr_and_expr c
 
@@ -132,15 +120,4 @@ and pr_block = function (Prefix id) -> str"^" ++ Id.print id
                       | (SuffixId id) -> str"^~" ++ Id.print id
                       | (SuffixNum n) -> str"^~" ++ int n
 
-(* 0 cost pp function. Active only if Debug Ssreflect is Set *)
-let ppdebug_ref = ref (fun _ -> ())
-let ssr_pp s = Feedback.msg_debug (str"SSR: "++Lazy.force s)
-let () =
-  Goptions.(declare_bool_option
-    { optkey   = ["Debug";"Ssreflect"];
-      optdepr  = false;
-      optread  = (fun _ -> !ppdebug_ref == ssr_pp);
-      optwrite = (fun b ->
-        Ssrmatching.debug b;
-        if b then ppdebug_ref := ssr_pp else ppdebug_ref := fun _ -> ()) })
-let ppdebug s = !ppdebug_ref s
+let debug_ssr = CDebug.create ~name:"ssreflect" ()

@@ -87,7 +87,7 @@ let v_cons = v_tuple "constructor" [|v_ind;Int|]
 
 
 (** kernel/univ *)
-let v_level_global = v_tuple "Level.Global.t" [|v_dp;Int|]
+let v_level_global = v_tuple "Level.Global.t" [|v_dp;String;Int|]
 let v_raw_level = v_sum "raw_level" 3 (* SProp, Prop, Set *)
   [|(*Level*)[|v_level_global|]; (*Var*)[|Int|]|]
 let v_level = v_tuple "level" [|Int;v_raw_level|]
@@ -147,7 +147,7 @@ let rec v_constr =
     [|v_puniverses v_cst|]; (* Const *)
     [|v_puniverses v_ind|]; (* Ind *)
     [|v_puniverses v_cons|]; (* Construct *)
-    [|v_caseinfo;v_constr;v_case_invert;v_constr;Array v_constr|]; (* Case *)
+    [|v_caseinfo;v_instance; Array v_constr; v_case_return; v_case_invert; v_constr; Array v_case_branch|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_constr|]; (* Proj *)
@@ -160,7 +160,11 @@ and v_prec = Tuple ("prec_declaration",
                     [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
-and v_case_invert = Sum ("case_inversion", 1, [|[|v_instance;Array v_constr|]|])
+and v_case_invert = Sum ("case_inversion", 1, [|[|Array v_constr|]|])
+
+and v_case_branch = Tuple ("case_branch", [|Array (v_binder_annot v_name); v_constr|])
+
+and v_case_return = Tuple ("case_return", [|Array (v_binder_annot v_name); v_constr|])
 
 let v_rdecl = v_sum "rel_declaration" 0
     [| [|v_binder_annot v_name; v_constr|];               (* LocalAssum *)
@@ -236,7 +240,7 @@ let v_template_universes =
   v_tuple "template_universes" [|List(Opt v_level);v_context_set|]
 
 let v_primitive =
-  v_enum "primitive" 50 (* Number of "Primitive" in Int63.v and PrimFloat.v *)
+  v_enum "primitive" 54 (* Number of constructors of the CPrimitives.t type *)
 
 let v_cst_def =
   v_sum "constant_def" 0
@@ -374,7 +378,7 @@ and v_modtype =
 let v_vodigest = Sum ("module_impl",0, [| [|String|]; [|String;String|] |])
 let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
 let v_compiled_lib =
-  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps;v_engagement;Any|]
+  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps;v_engagement|]
 
 (** Library objects *)
 

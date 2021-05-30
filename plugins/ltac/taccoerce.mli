@@ -39,6 +39,8 @@ sig
   val to_uconstr : t -> Ltac_pretype.closed_glob_constr option
   val of_int : int -> t
   val to_int : t -> int option
+  val of_ident : Id.t -> t
+  val to_ident : t -> Id.t option
   val to_list : t -> t list option
   val to_option : t -> t option option
   val to_pair : t -> (t * t) option
@@ -69,7 +71,7 @@ val coerce_to_uconstr : Value.t -> Ltac_pretype.closed_glob_constr
 val coerce_to_closed_constr : Environ.env -> Value.t -> constr
 
 val coerce_to_evaluable_ref :
-  Environ.env -> Evd.evar_map -> Value.t -> evaluable_global_reference
+  Environ.env -> Evd.evar_map -> Value.t -> Tacred.evaluable_global_reference
 
 val coerce_to_constr_list : Environ.env -> Value.t -> constr list
 

@@ -78,11 +78,17 @@ val check_problems_are_solved : env -> evar_map -> unit
 
 val check_conv_record : env -> evar_map ->
   state -> state ->
-  Univ.ContextSet.t * (constr * constr)
-  * constr * constr list * (constr Stack.t * constr Stack.t) *
-    (constr Stack.t * constr Stack.t) *
-    (constr Stack.t * constr Stack.t) * constr *
+  evar_map * (constr * constr)
+  * constr * constr list * (EConstr.t list * EConstr.t list) *
+    (EConstr.t list * EConstr.t list) *
+    (Stack.t * Stack.t) * constr *
     (int option * constr)
+
+(** Compares two constants/inductives/constructors unifying their universes.
+   It required the number of arguments applied to the c/i/c in order to decided
+   the kind of check it must perform. *)
+val compare_heads : env -> evar_map ->
+  nargs:int -> EConstr.t -> EConstr.t -> Evarsolve.unification_result
 
 (** Try to solve problems of the form ?x[args] = c by second-order
     matching, using typing to select occurrences *)

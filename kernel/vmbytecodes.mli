@@ -30,6 +30,7 @@ type instruction =
   | Kpush                               (** sp = accu :: sp *)
   | Kpop of int                         (** sp = skipn n sp *)
   | Kpush_retaddr of Label.t            (** sp = pc :: coq_env :: coq_extra_args :: sp ; coq_extra_args = 0 *)
+  | Kshort_apply of int                 (** number of arguments (arguments on top of stack) *)
   | Kapply of int                       (** number of arguments (arguments on top of stack) *)
   | Kappterm of int * int               (** number of arguments, slot size *)
   | Kreturn of int                      (** slot size *)
@@ -47,21 +48,19 @@ type instruction =
   | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block. Index 0
                                          ** is accu, all others are popped from
                                          ** the top of the stack  *)
-  | Kmakeprod
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
   | Kswitch of Label.t array * Label.t array (** consts,blocks *)
   | Kpushfields of int
   | Kfield of int                       (** accu = accu[n] *)
   | Ksetfield of int                    (** accu[n] = sp[0] ; sp = pop sp *)
   | Kstop
-  | Ksequence of bytecodes * bytecodes
+  | Ksequence of bytecodes
   | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
 
   | Kbranch of Label.t                  (** jump to label, is it needed ? *)
-  | Kprim of CPrimitives.t * pconstant option
+  | Kprim of CPrimitives.t * pconstant
   | Kcamlprim of CPrimitives.t * Label.t
-  | Kareint of int
 
 and bytecodes = instruction list
 

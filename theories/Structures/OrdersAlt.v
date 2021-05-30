@@ -48,6 +48,7 @@ Module Update_OT (O:OrderedTypeOrig) <: OrderedType.
 
  Definition lt := O.lt.
 
+#[global]
  Instance lt_strorder : StrictOrder lt.
  Proof.
   split.
@@ -55,6 +56,7 @@ Module Update_OT (O:OrderedTypeOrig) <: OrderedType.
   exact O.lt_trans.
  Qed.
 
+#[global]
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
  Proof.
   apply proper_sym_impl_iff_2; auto with *.
@@ -117,6 +119,7 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
  Definition eq x y := (x?=y) = Eq.
  Definition lt x y := (x?=y) = Lt.
 
+#[global]
  Instance eq_equiv : Equivalence eq.
  Proof.
   split; red.
@@ -131,6 +134,7 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
   apply compare_trans.
  Qed.
 
+#[global]
  Instance lt_strorder : StrictOrder lt.
  Proof.
   split; repeat red; unfold lt; try apply compare_trans.
@@ -159,6 +163,7 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
   rewrite (compare_trans Hxz Hyz) in Hxy; discriminate.
  Qed.
 
+#[global]
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
  Proof.
   apply proper_sym_impl_iff_2; auto with *.

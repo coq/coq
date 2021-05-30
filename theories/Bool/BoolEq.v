@@ -46,7 +46,7 @@ Section Bool_eq_dec.
 
   Definition exists_beq_eq : forall x y:A, {b : bool | b = beq x y}.
   Proof.
-    intros.
+    intros x y.
     exists (beq x y).
     constructor.
   Defined.

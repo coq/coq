@@ -326,7 +326,9 @@ End ZnZ.
 
 Module Type CyclicType.
  Parameter t : Set.
+#[global]
  Declare Instance ops : ZnZ.Ops t.
+#[global]
  Declare Instance specs : ZnZ.Specs ops.
 End CyclicType.
 
@@ -348,7 +350,7 @@ Local Notation "- x" := (ZnZ.opp x).
 Local Infix "*" := ZnZ.mul.
 Local Notation wB := (base ZnZ.digits).
 
-Hint Rewrite ZnZ.spec_0 ZnZ.spec_1 ZnZ.spec_add ZnZ.spec_mul
+Global Hint Rewrite ZnZ.spec_0 ZnZ.spec_1 ZnZ.spec_add ZnZ.spec_mul
  ZnZ.spec_opp ZnZ.spec_sub
  : cyclic.
 

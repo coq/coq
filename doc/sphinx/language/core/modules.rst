@@ -17,7 +17,7 @@ and :math:`id` an identifier, then :math:`p′.id` is an access path.
 
 
 **Structure element.** A structure element is denoted by :math:`e` and
-is either a definition of a constant, an assumption, a definition of
+is either a definition of a :term:`constant`, an assumption, a definition of
 an inductive, a definition of a module, an alias of a module or a module
 type abbreviation.
 
@@ -134,7 +134,7 @@ is also used to terminate :ref:`Sections<section-mechanism>`.
 :n:`End @ident` closes the interactive module or module type :token:`ident`.
 If the module type was given, the command verifies that the content of the module
 matches the module type.  If the module is not a
-functor, its components (constants, inductive types, submodules etc.)
+functor, its components (:term:`constants <constant>`, inductive types, submodules etc.)
 are now available through the dot notation.
 
 .. exn:: No such label @ident.
@@ -155,7 +155,8 @@ are now available through the dot notation.
   #. Interactive modules and module types can be nested.
   #. Interactive modules and module types can't be defined inside of :ref:`sections<section-mechanism>`.
      Sections can be defined inside of interactive modules and module types.
-  #. Hints and notations (:cmd:`Hint` and :cmd:`Notation` commands) can also appear inside interactive
+  #. Hints and notations (the :ref:`Hint <creating_hints>` and :cmd:`Notation`
+     commands) can also appear inside interactive
      modules and module types. Note that with module definitions like:
 
      :n:`Module @ident__1 : @module_type := @ident__2.`
@@ -169,7 +170,7 @@ are now available through the dot notation.
      hints and the like valid for :n:`@ident__1` are the ones defined in :n:`@module_type`
      rather then those defined in :n:`@ident__2` (or the module body).
   #. Within an interactive module type definition, the :cmd:`Parameter` command declares a
-     constant instead of definining a new axiom (which it does when not in a module type definition).
+     :term:`constant` instead of definining a new axiom (which it does when not in a module type definition).
   #. Assumptions such as :cmd:`Axiom` that include the :n:`Inline` clause will be automatically
      expanded when the functor is applied, except when the function application is prefixed by ``!``.
 
@@ -249,14 +250,14 @@ are now available through the dot notation.
    make only those names available with short names, not other names
    defined in the module nor will it activate other features.
 
-   The names to import may be constants, inductive types and
+   The names to import may be :term:`constants <constant>`, inductive types and
    constructors, and notation aliases (for instance, Ltac definitions
    cannot be selectively imported). If they are from an inner module
    to the one being imported, they must be prefixed by the inner path.
 
    The name of an inductive type may also be followed by ``(..)`` to
    import it, its constructors and its eliminators if they exist. For
-   this purpose "eliminator" means a constant in the same module whose
+   this purpose "eliminator" means a :term:`constant` in the same module whose
    name is the inductive type's name suffixed by one of ``_sind``,
    ``_ind``, ``_rec`` or ``_rect``.
 
@@ -282,7 +283,6 @@ are now available through the dot notation.
          Check A.B.U.
 
 .. cmd:: Export {+ @filtered_import }
-   :name: Export
 
    Similar to :cmd:`Import`, except that when the module containing this command
    is imported, the :n:`{+ @qualid }` are imported as well.
@@ -305,7 +305,7 @@ are now available through the dot notation.
 
 .. flag:: Short Module Printing
 
-   This flag (off by default) disables the printing of the types of fields,
+   This :term:`flag` (off by default) disables the printing of the types of fields,
    leaving only their names, for the commands :cmd:`Print Module` and
    :cmd:`Print Module Type`.
 
@@ -332,7 +332,7 @@ Examples
        Defined.
        End M.
 
-Inside a module one can define constants, prove theorems and do anything
+Inside a module one can define :term:`constants <constant>`, prove theorems and do anything
 else that can be done in the toplevel. Components of a closed
 module can be accessed using the dot notation:
 
@@ -455,16 +455,16 @@ Typing Modules
 
 In order to introduce the typing system we first slightly extend the syntactic
 class of terms and environments given in section :ref:`The-terms`. The
-environments, apart from definitions of constants and inductive types now also
-hold any other structure elements. Terms, apart from variables, constants and
-complex terms, include also access paths.
+environments, apart from definitions of :term:`constants <constant>` and inductive types now also
+hold any other structure elements. Terms, apart from variables, :term:`constants <constant>` and
+complex terms, also include access paths.
 
 We also need additional typing judgments:
 
 
 + :math:`\WFT{E}{S}`, denoting that a structure :math:`S` is well-formed,
 + :math:`\WTM{E}{p}{S}`, denoting that the module pointed by :math:`p` has type :math:`S` in
-  environment :math:`E`.
+  the global environment :math:`E`.
 + :math:`\WEV{E}{S}{\ovl{S}}`, denoting that a structure :math:`S` is evaluated to a
   structure :math:`S` in weak head normal form.
 + :math:`\WS{E}{S_1}{S_2}` , denoting that a structure :math:`S_1` is a subtype of a
@@ -864,23 +864,23 @@ Libraries and qualified names
 Names of libraries
 ~~~~~~~~~~~~~~~~~~
 
-The theories developed in |Coq| are stored in *library files* which are
+The theories developed in Coq are stored in *library files* which are
 hierarchically classified into *libraries* and *sublibraries*. To
 express this hierarchy, library names are represented by qualified
 identifiers qualid, i.e. as list of identifiers separated by dots (see
 :ref:`qualified-names`). For instance, the library file ``Mult`` of the standard
-|Coq| library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
+Coq library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
 the name of a library is called a *library root*. All library files of
-the standard library of |Coq| have the reserved root |Coq| but library
-filenames based on other roots can be obtained by using |Coq| commands
+the standard library of Coq have the reserved root Coq but library
+filenames based on other roots can be obtained by using Coq commands
 (coqc, coqtop, coqdep, …) options ``-Q`` or ``-R`` (see :ref:`command-line-options`).
-Also, when an interactive |Coq| session starts, a library of root ``Top`` is
+Also, when an interactive Coq session starts, a library of root ``Top`` is
 started, unless option ``-top`` or ``-notop`` is set (see :ref:`command-line-options`).
 
 .. _qualified-names:
 
 Qualified identifiers
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 .. insertprodn qualid field_ident
 
@@ -897,7 +897,7 @@ followed by the sequence of submodules names encapsulating the
 construction and ended by the proper name of the construction.
 Typically, the absolute name ``Coq.Init.Logic.eq`` denotes Leibniz’
 equality defined in the module Logic in the sublibrary ``Init`` of the
-standard library of |Coq|.
+standard library of Coq.
 
 The proper name that ends the name of a construction is the short name
 (or sometimes base name) of the construction (for instance, the short
@@ -906,7 +906,7 @@ name is a *partially qualified name* (e.g. ``Logic.eq`` is a partially
 qualified name for ``Coq.Init.Logic.eq``). Especially, the short name of a
 construction is its shortest partially qualified name.
 
-|Coq| does not accept two constructions (definition, theorem, …) with
+Coq does not accept two constructions (definition, theorem, …) with
 the same absolute name but different constructions can have the same
 short name (or even same partially qualified names as soon as the full
 names are different).
@@ -916,14 +916,14 @@ names also applies to library filenames.
 
 **Visibility**
 
-|Coq| maintains a table called the name table which maps partially qualified
+Coq maintains a table called the name table which maps partially qualified
 names of constructions to absolute names. This table is updated by the
 commands :cmd:`Require`, :cmd:`Import` and :cmd:`Export` and
 also each time a new declaration is added to the context. An absolute
 name is called visible from a given short or partially qualified name
 when this latter name is enough to denote it. This means that the
 short or partially qualified name is mapped to the absolute name in
-|Coq| name table. Definitions with the :attr:`local` attribute are only accessible with
+Coq name table. Definitions with the :attr:`local` attribute are only accessible with
 their fully qualified name (see :ref:`gallina-definitions`).
 
 It may happen that a visible name is hidden by the short name or a
@@ -953,47 +953,50 @@ accessible, absolute names can never be hidden.
 Libraries and filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: The questions described here have been subject to redesign in |Coq| 8.5.
-   Former versions of |Coq| use the same terminology to describe slightly different things.
+.. note:: The questions described here have been subject to redesign in Coq 8.5.
+   Former versions of Coq use the same terminology to describe slightly different things.
 
 Compiled files (``.vo`` and ``.vio``) store sub-libraries. In order to refer
-to them inside |Coq|, a translation from file-system names to |Coq| names
+to them inside Coq, a translation from file-system names to Coq names
 is needed. In this translation, names in the file system are called
-*physical* paths while |Coq| names are contrastingly called *logical*
+*physical* paths while Coq names are contrastingly called *logical*
 names.
 
 A logical prefix Lib can be associated with a physical path using
 the command line option ``-Q`` `path` ``Lib``. All subfolders of path are
-recursively associated to the logical path ``Lib`` extended with the
+recursively associated with the logical path ``Lib`` extended with the
 corresponding suffix coming from the physical path. For instance, the
-folder ``path/fOO/Bar`` maps to ``Lib.fOO.Bar``. Subdirectories corresponding
-to invalid |Coq| identifiers are skipped, and, by convention,
+folder ``path/foo/Bar`` maps to ``Lib.foo.Bar``. Subdirectories corresponding
+to invalid Coq identifiers are skipped, and, by convention,
 subdirectories named ``CVS`` or ``_darcs`` are skipped too.
 
 Thanks to this mechanism, ``.vo`` files are made available through the
 logical name of the folder they are in, extended with their own
-basename. For example, the name associated to the file
-``path/fOO/Bar/File.vo`` is ``Lib.fOO.Bar.File``. The same caveat applies for
+basename. For example, the name associated with the file
+``path/foo/Bar/File.vo`` is ``Lib.foo.Bar.File``. The same caveat applies for
 invalid identifiers. When compiling a source file, the ``.vo`` file stores
 its logical name, so that an error is issued if it is loaded with the
 wrong loadpath afterwards.
 
 Some folders have a special status and are automatically put in the
-path. |Coq| commands associate automatically a logical path to files in
-the repository trees rooted at the directory from where the command is
+path. Coq commands automatically associate a logical path to files in
+the repository tree rooted at the directory from where the command is
 launched, ``coqlib/user-contrib/``, the directories listed in the
 ``$COQPATH``, ``${XDG_DATA_HOME}/coq/`` and ``${XDG_DATA_DIRS}/coq/``
 environment variables (see `XDG base directory specification
 <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_)
 with the same physical-to-logical translation and with an empty logical prefix.
 
+.. todo: Needs a more better explanation of COQPATH and XDG* with example(s)
+   and suggest best practices for their use
+
 The command line option ``-R`` is a variant of ``-Q`` which has the strictly
 same behavior regarding loadpaths, but which also makes the
 corresponding ``.vo`` files available through their short names in a way
 similar to the :cmd:`Import` command. For instance, ``-R path Lib``
-associates to the file ``/path/fOO/Bar/File.vo`` the logical name
-``Lib.fOO.Bar.File``, but allows this file to be accessed through the
-short names ``fOO.Bar.File,Bar.File`` and ``File``. If several files with
+associates the file ``/path/foo/Bar/File.vo`` with the logical name
+``Lib.foo.Bar.File`` but allows this file to be accessed through the
+short names ``foo.Bar.File``, ``Bar.File`` and ``File``. If several files with
 identical base name are present in different subdirectories of a
 recursive loadpath, which of these files is found first may be system-
 dependent and explicit qualification is recommended. The ``From`` argument
@@ -1001,12 +1004,82 @@ of the ``Require`` command can be used to bypass the implicit shortening
 by providing an absolute root to the required file (see :ref:`compiled-files`).
 
 There also exists another independent loadpath mechanism attached to
-|OCaml| object files (``.cmo`` or ``.cmxs``) rather than |Coq| object
-files as described above. The |OCaml| loadpath is managed using
-the option ``-I`` `path` (in the |OCaml| world, there is neither a
+OCaml object files (``.cmo`` or ``.cmxs``) rather than Coq object
+files as described above. The OCaml loadpath is managed using
+the option ``-I`` `path` (in the OCaml world, there is neither a
 notion of logical name prefix nor a way to access files in
 subdirectories of path). See the command :cmd:`Declare ML Module` in
-:ref:`compiled-files` to understand the need of the |OCaml| loadpath.
+:ref:`compiled-files` to understand the need of the OCaml loadpath.
 
-See :ref:`command-line-options` for a more general view over the |Coq| command
+See :ref:`command-line-options` for a more general view over the Coq command
 line options.
+
+.. _controlling-locality-of-commands:
+
+Controlling the scope of commands with locality attributes
+----------------------------------------------------------
+
+Many commands have effects that apply only within a specific scope,
+typically the section or the module in which the command was
+called. Locality :term:`attributes <attribute>` can alter the scope of
+the effect. Below, we give the semantics of each locality attribute
+while noting a few exceptional commands for which :attr:`local` and
+:attr:`global` attributes are interpreted differently.
+
+.. attr:: local
+
+   This :term:`attribute` limits the effect of the command to the
+   current scope (section or module).
+
+   The ``Local`` prefix is an alternative syntax for the :attr:`local`
+   attribute (see :n:`@legacy_attr`).
+
+   .. note::
+
+      - For some commands, this is the only locality supported within
+        sections (e.g., for :cmd:`Notation`, :cmd:`Ltac` and
+        :ref:`Hint <creating_hints>` commands).
+
+      - For some commands, this is the default locality within
+        sections even though other locality attributes are supported
+        as well (e.g., for the :cmd:`Arguments` command).
+
+   .. warning::
+
+      **Exception:** when :attr:`local` is applied to
+      :cmd:`Definition`, :cmd:`Theorem` or their variants, its
+      semantics are different: it makes the defined objects available
+      only through their fully-qualified names rather than their
+      unqualified names after an :cmd:`Import`.
+
+.. attr:: export
+
+   This :term:`attribute` makes the effect of the command
+   persist when the section is closed and applies the effect when the
+   module containing the command is imported.
+
+   Commands supporting this attribute include :cmd:`Set`, :cmd:`Unset`
+   and the :ref:`Hint <creating_hints>` commands, although the latter
+   don't support it within sections.
+
+.. attr:: global
+
+   This :term:`attribute` makes the effect of the command
+   persist even when the current section or module is closed.  Loading
+   the file containing the command (possibly transitively) applies the
+   effect of the command.
+
+   The ``Global`` prefix is an alternative syntax for the
+   :attr:`global` attribute (see :n:`@legacy_attr`).
+
+   .. warning::
+
+      **Exception:** for a few commands (like :cmd:`Notation` and
+      :cmd:`Ltac`), this attribute behaves like :attr:`export`.
+
+   .. warning::
+
+      We strongly discourage using the :attr:`global` locality
+      attribute because the transitive nature of file loading gives
+      the user little control. We recommend using the :attr:`export`
+      locality attribute where it is supported.

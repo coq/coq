@@ -20,7 +20,7 @@
 
 # define DECLARE_NULLOP(name) \
 value uint63_##name() { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam0(); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(*cb); \
@@ -28,7 +28,7 @@ value uint63_##name() { \
 
 # define DECLARE_UNOP(name) \
 value uint63_##name##_ml(value x) { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam1(x); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(caml_callback(*cb, x)); \
@@ -53,7 +53,7 @@ value uint63_##name##_ml(value x) { \
 
 # define DECLARE_BINOP(name) \
 value uint63_##name##_ml(value x, value y) { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam2(x, y); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(caml_callback2(*cb, x, y)); \
@@ -79,7 +79,7 @@ value uint63_##name##_ml(value x, value y) { \
 
 # define DECLARE_TEROP(name) \
 value uint63_##name##_ml(value x, value y, value z) { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam3(x, y, z); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(caml_callback3(*cb, x, y, z)); \
@@ -96,7 +96,10 @@ value uint63_##name##_ml(value x, value y, value z) { \
     accu = uint63_return_value__; \
   }while(0)
 
+DECLARE_NULLOP(zero)
 DECLARE_NULLOP(one)
+DECLARE_UNOP(neg)
+#define Uint63_neg(x) CALL_UNOP(neg, x)
 DECLARE_BINOP(add)
 #define Uint63_add(x, y) CALL_BINOP(add, x, y)
 DECLARE_BINOP(addcarry)
@@ -105,32 +108,40 @@ DECLARE_TEROP(addmuldiv)
 #define Uint63_addmuldiv(x, y, z) CALL_TEROP(addmuldiv, x, y, z)
 DECLARE_BINOP(div)
 #define Uint63_div(x, y) CALL_BINOP(div, x, y)
+DECLARE_BINOP(divs)
+#define Uint63_divs(x, y) CALL_BINOP(divs, x, y)
 DECLARE_BINOP(eq)
 #define Uint63_eq(r, x, y) CALL_RELATION(r, eq, x, y)
 DECLARE_UNOP(eq0)
 #define Uint63_eq0(r, x) CALL_PREDICATE(r, eq0, x)
+DECLARE_UNOP(eqm1)
+#define Uint63_eqm1(r, x) CALL_PREDICATE(r, eqm1, x)
 DECLARE_UNOP(head0)
 #define Uint63_head0(x) CALL_UNOP(head0, x)
 DECLARE_BINOP(land)
 #define Uint63_land(x, y) CALL_BINOP(land, x, y)
 DECLARE_BINOP(leq)
 #define Uint63_leq(r, x, y) CALL_RELATION(r, leq, x, y)
+DECLARE_BINOP(les)
+#define Uint63_les(r, x, y) CALL_RELATION(r, les, x, y)
 DECLARE_BINOP(lor)
 #define Uint63_lor(x, y) CALL_BINOP(lor, x, y)
 DECLARE_BINOP(lsl)
 #define Uint63_lsl(x, y) CALL_BINOP(lsl, x, y)
-DECLARE_UNOP(lsl1)
-#define Uint63_lsl1(x) CALL_UNOP(lsl1, x)
 DECLARE_BINOP(lsr)
 #define Uint63_lsr(x, y) CALL_BINOP(lsr, x, y)
-DECLARE_UNOP(lsr1)
-#define Uint63_lsr1(x) CALL_UNOP(lsr1, x)
+DECLARE_BINOP(asr)
+#define Uint63_asr(x, y) CALL_BINOP(asr, x, y)
 DECLARE_BINOP(lt)
 #define Uint63_lt(r, x, y) CALL_RELATION(r, lt, x, y)
+DECLARE_BINOP(lts)
+#define Uint63_lts(r, x, y) CALL_RELATION(r, lts, x, y)
 DECLARE_BINOP(lxor)
 #define Uint63_lxor(x, y) CALL_BINOP(lxor, x, y)
 DECLARE_BINOP(mod)
 #define Uint63_mod(x, y) CALL_BINOP(mod, x, y)
+DECLARE_BINOP(mods)
+#define Uint63_mods(x, y) CALL_BINOP(mods, x, y)
 DECLARE_BINOP(mul)
 #define Uint63_mul(x, y) CALL_BINOP(mul, x, y)
 DECLARE_BINOP(sub)

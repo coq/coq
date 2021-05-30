@@ -13,20 +13,25 @@ Let-in definitions
 .. prodn::
    term_let ::= let @name {? : @type } := @term in @term
    | let @name {+ @binder } {? : @type } := @term in @term
-   | let ( {*, @name } ) {? {? as @name } return @term100 } := @term in @term
-   | let ' @pattern := @term {? return @term100 } in @term
-   | let ' @pattern in @pattern := @term return @term100 in @term
+   | @destructuring_let
 
-:n:`let @ident := @term in @term’`
-denotes the local binding of :n:`@term` to the variable
-:n:`@ident` in :n:`@term`’. There is a syntactic sugar for let-in
-definition of functions: :n:`let @ident {+ @binder} := @term in @term’`
-stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
+:n:`let @ident := @term__1 in @term__2` represents the local binding of
+the variable :n:`@ident` to the value :n:`@term__1` in :n:`@term__2`.
+
+:n:`let @ident {+ @binder} := @term__1 in @term__2` is an abbreviation
+for :n:`let @ident := fun {+ @binder} => @term__1 in @term__2`.
+
+.. seealso::
+
+   Extensions of the `let ... in ...` syntax are described in
+   :ref:`irrefutable-patterns`.
 
 .. index::
    single: ... : ... (type cast)
    single: ... <: ...
    single: ... <<: ...
+
+.. _type-cast:
 
 Type cast
 ---------
@@ -34,37 +39,36 @@ Type cast
 .. insertprodn term_cast term_cast
 
 .. prodn::
-   term_cast ::= @term10 <: @type
+   term_cast ::= @term10 : @type
+   | @term10 <: @type
    | @term10 <<: @type
-   | @term10 : @type
-   | @term10 :>
 
 The expression :n:`@term10 : @type` is a type cast expression. It enforces
 the type of :n:`@term10` to be :n:`@type`.
 
-:n:`@term10 <: @type` locally sets up the virtual machine for checking that
-:n:`@term10` has type :n:`@type`.
+:n:`@term10 <: @type` specifies that the virtual machine will be used
+to type check that :n:`@term10` has type :n:`@type` (see :tacn:`vm_compute`).
 
-:n:`@term10 <<: @type` uses native compilation for checking that :n:`@term10`
-has type :n:`@type`.
+:n:`@term10 <<: @type` specifies that compilation to OCaml will be used
+to type check that :n:`@term10` has type :n:`@type` (see :tacn:`native_compute`).
 
 .. _gallina-definitions:
 
 Top-level definitions
 ---------------------
 
-Definitions extend the environment with associations of names to terms.
+Definitions extend the global environment by associating names to terms.
 A definition can be seen as a way to give a meaning to a name or as a
 way to abbreviate a term. In any case, the name can later be replaced at
 any time by its definition.
 
 The operation of unfolding a name into its definition is called
-:math:`\delta`-conversion (see Section :ref:`delta-reduction`). A
-definition is accepted by the system if and only if the defined term is
+:term:`delta-reduction`.
+A definition is accepted by the system if and only if the defined term is
 well-typed in the current context of the definition and if the name is
 not already used. The name defined by the definition is called a
-*constant* and the term it refers to is its *body*. A definition has a
-type which is the type of its body.
+:gdef:`constant` and the term it refers to is its :gdef:`body`. A definition has
+a type, which is the type of its :term:`body`.
 
 A formal presentation of constants and environments is given in
 Section :ref:`typing-rules`.
@@ -79,7 +83,7 @@ Section :ref:`typing-rules`.
       | {* @binder } : @type
       reduce ::= Eval @red_expr in
 
-   These commands bind :n:`@term` to the name :n:`@ident` in the environment,
+   These commands bind :n:`@term` to the name :n:`@ident` in the global environment,
    provided that :n:`@term` is well-typed.  They can take the :attr:`local` :term:`attribute`,
    which makes the defined :n:`@ident` accessible by :cmd:`Import` and its variants
    only through their fully qualified names.
@@ -87,12 +91,13 @@ Section :ref:`typing-rules`.
    computation on :n:`@term`.
 
    These commands also support the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`program` (see :ref:`program_definition`),
-   :attr:`canonical` and :attr:`using` attributes.
+   :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, and
+   :attr:`using` attributes.
 
-   If :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
+   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
    The form :n:`Definition @ident : @type := @term` checks that the type of :n:`@term`
@@ -105,7 +110,7 @@ Section :ref:`typing-rules`.
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
    .. exn:: @ident already exists.
-      :name: @ident already exists. (Definition)
+      :name: ‘ident’ already exists. (Definition)
       :undocumented:
 
    .. exn:: The term @term has type @type while it is expected to have type @type'.
@@ -116,10 +121,11 @@ Section :ref:`typing-rules`.
 Assertions and proofs
 ---------------------
 
-An assertion states a proposition (or a type) of which the proof (or an
-inhabitant of the type) is interactively built using tactics. The interactive
-proof mode is described in Chapter :ref:`proofhandling` and the tactics in
-Chapter :ref:`Tactics`. The basic assertion command is:
+An assertion states a proposition (or a type) for which the proof (or an
+inhabitant of the type) is interactively built using :term:`tactics <tactic>`.
+Assertions cause Coq to enter :term:`proof mode` (see :ref:`proofhandling`).
+Common tactics are described in the :ref:`writing-proofs` chapter.
+The basic assertion command is:
 
 .. cmd:: @thm_token @ident_decl {* @binder } : @type {* with @ident_decl {* @binder } : @type }
    :name: Theorem; Lemma; Fact; Remark; Corollary; Proposition; Property
@@ -135,10 +141,10 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       | Proposition
       | Property
 
-   After the statement is asserted, |Coq| needs a proof. Once a proof of
+   After the statement is asserted, Coq needs a proof. Once a proof of
    :n:`@type` under the assumptions represented by :n:`@binder`\s is given and
    validated, the proof is generalized into a proof of :n:`forall {* @binder }, @type` and
-   the theorem is bound to the name :n:`@ident` in the environment.
+   the theorem is bound to the name :n:`@ident` in the global environment.
 
    These commands accept the :attr:`program` attribute.  See :ref:`program_lemma`.
 
@@ -146,7 +152,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    over a mutually inductive assumption, or that assert mutually dependent
    statements in some mutual co-inductive type. It is equivalent to
    :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
-   the statements (or the body of the specification, depending on the point of
+   the statements (or the :term:`body` of the specification, depending on the point of
    view). The inductive or co-inductive types on which the induction or
    coinduction has to be done is assumed to be non ambiguous and is guessed by
    the system.
@@ -155,54 +161,55 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    have to be used on *structurally smaller* arguments (for a :cmd:`Fixpoint`) or
    be *guarded by a constructor* (for a :cmd:`CoFixpoint`). The verification that
    recursive proof arguments are correct is done only at the time of registering
-   the lemma in the environment. To know if the use of induction hypotheses is
+   the lemma in the global environment. To know if the use of induction hypotheses is
    correct at some time of the interactive development of a proof, use the
    command :cmd:`Guarded`.
 
-   This command accepts the :attr:`using` attribute.
+   This command accepts the :attr:`bypass_check(universes)`,
+   :attr:`bypass_check(guard)`, and :attr:`using` attributes.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
       :undocumented:
 
    .. exn:: @ident already exists.
-      :name: @ident already exists. (Theorem)
+      :name: ‘ident’ already exists. (Theorem)
 
       The name you provided is already defined. You have then to choose
       another name.
 
-   .. exn:: Nested proofs are not allowed unless you turn the Nested Proofs Allowed flag on.
+   .. exn:: Nested proofs are discouraged and not allowed by default. This error probably means that you forgot to close the last "Proof." with "Qed." or "Defined.". \
+            If you really intended to use nested proofs, you can do so by turning the "Nested Proofs Allowed" flag on.
 
-      You are asserting a new statement while already being in proof editing mode.
+      You are asserting a new statement when you're already in proof mode.
       This feature, called nested proofs, is disabled by default.
       To activate it, turn the :flag:`Nested Proofs Allowed` flag on.
 
-Proofs start with the keyword :cmd:`Proof`. Then |Coq| enters the proof editing mode
-until the proof is completed. In proof editing mode, the user primarily enters
-tactics, which are described in chapter :ref:`Tactics`. The user may also enter
-commands to manage the proof editing mode. They are described in Chapter
-:ref:`proofhandling`.
+Proofs start with the keyword :cmd:`Proof`. Then Coq enters the proof mode
+until the proof is completed. In proof mode, the user primarily enters
+tactics (see :ref:`writing-proofs`). The user may also enter
+commands to manage the proof mode (see :ref:`proofhandling`).
 
 When the proof is complete, use the :cmd:`Qed` command so the kernel verifies
-the proof and adds it to the environment.
+the proof and adds it to the global environment.
 
 .. note::
 
    #. Several statements can be simultaneously asserted provided the
       :flag:`Nested Proofs Allowed` flag was turned on.
 
-   #. Not only other assertions but any vernacular command can be given
+   #. Not only other assertions but any command can be given
       while in the process of proving a given assertion. In this case, the
       command is understood as if it would have been given before the
       statements still to be proved. Nonetheless, this practice is discouraged
       and may stop working in future versions.
 
-   #. Proofs ended by :cmd:`Qed` are declared opaque. Their content cannot be
-      unfolded (see :ref:`performingcomputations`), thus
-      realizing some form of *proof-irrelevance*. To be able to unfold a
-      proof, the proof should be ended by :cmd:`Defined`.
+   #. Proofs ended by :cmd:`Qed` are declared :term:`opaque`. Their content cannot be
+      unfolded (see :ref:`applyingconversionrules`), thus
+      realizing some form of *proof-irrelevance*.
+      Proofs that end with :cmd:`Defined` can be unfolded.
 
    #. :cmd:`Proof` is recommended but can currently be omitted. On the opposite
       side, :cmd:`Qed` (or :cmd:`Defined`) is mandatory to validate a proof.
 
    #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
-      current asserted statement into an axiom and exit the proof editing mode.
+      current asserted statement into an axiom and exit proof mode.

@@ -1,4 +1,4 @@
-Require Import Coq.ZArith.BinInt Coq.omega.Omega Coq.micromega.Lia.
+Require Import Coq.ZArith.BinInt Coq.micromega.Lia.
 
 Set Primitive Projections.
 Record params := { width : Z }.
@@ -10,7 +10,6 @@ Set Printing All.
 Lemma foo : width p = 0%Z -> width p = 0%Z.
   intros.
 
-  assert_succeeds (enough True; [omega|]).
   assert_succeeds (enough True; [lia|]).
 
 (*   H : @eq Z (width p) Z0 *)
@@ -26,12 +25,6 @@ Lemma foo : width p = 0%Z -> width p = 0%Z.
 (*   @eq Z (width p) Z0 *)
 
   assert_succeeds (enough True; [lia|]).
-  (* Tactic failure: <tactic closure> fails. *)
-  (* assert_succeeds (enough True; [omega|]). *)
-  (* Tactic failure: <tactic closure> fails. *)
-
-  (* omega. *)
-  (* Error: Omega can't solve this system *)
 
   lia.
   (* Tactic failure:  Cannot find witness. *)

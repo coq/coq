@@ -15,7 +15,6 @@ val interp : ?verbosely:bool -> st:Vernacstate.t -> Vernacexpr.vernac_control ->
    proof and won't be forced *)
 val interp_qed_delayed_proof
   :  proof:Declare.Proof.proof_object
-  -> pinfo:Declare.Proof.Proof_info.t
   -> st:Vernacstate.t
   -> control:Vernacexpr.control_flag list
   -> Vernacexpr.proof_end CAst.t

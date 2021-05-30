@@ -36,7 +36,7 @@ type 'a hint_ast =
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
-  | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
+  | Unfold_nth of Tacred.evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument       (* Hint Extern *)
 
 type hint = private {
@@ -167,22 +167,22 @@ type hint_db = Hint_db.t
 
 type hnf = bool
 
-type hint_term =
-  | IsGlobRef of GlobRef.t
-  | IsConstr of constr * Univ.ContextSet.t option [@ocaml.deprecated "Declare a hint constant instead"]
+type hint_term
 
 type hints_entry =
   | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
   | HintsImmediateEntry of (hints_path_atom * hint_term) list
   | HintsCutEntry of hints_path
-  | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
+  | HintsUnfoldEntry of Tacred.evaluable_global_reference list
+  | HintsTransparencyEntry of Tacred.evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
 val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
+
+val check_hint_locality : Goptions.option_locality -> unit
 
 (** [create_hint_db local name st use_dn].
    [st] is a transparency state for unification using this db
@@ -191,7 +191,7 @@ val searchtable_add : (hint_db_name * hint_db) -> unit
 
 val create_hint_db : bool -> hint_db_name -> TransparentState.t -> bool -> unit
 
-val remove_hints : bool -> hint_db_name list -> GlobRef.t list -> unit
+val remove_hints : locality:Goptions.option_locality -> hint_db_name list -> GlobRef.t list -> unit
 
 val current_db_names : unit -> String.Set.t
 
@@ -199,8 +199,10 @@ val current_pure_db : unit -> hint_db list
 
 val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_entry -> unit
 
-val prepare_hint : bool (* Check no remaining evars *) ->
-  env -> evar_map -> evar_map * constr -> (constr * Univ.ContextSet.t)
+val hint_globref : GlobRef.t -> hint_term
+
+val hint_constr : constr * Univ.ContextSet.t option -> hint_term
+[@ocaml.deprecated "Declare a hint constant instead"]
 
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product
@@ -210,8 +212,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> hint_info -> check:bool -> ?name:hints_path_atom ->
-  hint_term -> hint_entry list
+  env -> evar_map -> hint_info -> GlobRef.t -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;

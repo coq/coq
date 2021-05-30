@@ -60,127 +60,223 @@ let rec is_lift_id = function
 (*  Substitutions    *)
 (*********************)
 
-(* (bounded) explicit substitutions of type 'a *)
-type 'a subs =
-  | ESID of int            (* ESID(n)    = %n END   bounded identity *)
-  | CONS of 'a array * 'a subs
-                           (* CONS([|t1..tn|],S)  =
-                              (S.t1...tn)    parallel substitution
-                              beware of the order *)
-  | SHIFT of int * 'a subs (* SHIFT(n,S) = (^n o S) terms in S are relocated *)
-                           (*                        with n vars *)
-  | LIFT of int * 'a subs  (* LIFT(n,S) = (%n S) stands for ((^n o S).n...1) *)
+(* Variant of skewed lists enriched w.r.t. a monoid. See the Range module.
 
-(* operations of subs: collapses constructors when possible.
- * Needn't be recursive if we always use these functions
- *)
+  In addition to the indexed data, every node contains a monoid element, in our
+  case, integers. It corresponds to the number of partial shifts to apply when
+  reaching this subtree. The total shift is obtained by summing all the partial
+  shifts encountered in the tree traversal. For efficiency, we also cache the
+  sum of partial shifts of the whole subtree as the last argument of the [Node]
+  constructor.
 
-let subs_id i = ESID i
+  A more intuitive but inefficient representation of this data structure would
+  be a list of terms interspeded with shifts, as in
 
-let subs_cons(x,s) = if Int.equal (Array.length x) 0 then s else CONS(x,s)
+  type 'a subst = NIL | CONS of 'a or_var * 'a subst | SHIFT of 'a subst
 
-let subs_liftn n = function
-  | ESID p        -> ESID (p+n) (* bounded identity lifted extends by p *)
-  | LIFT (p,lenv) -> LIFT (p+n, lenv)
-  | lenv          -> LIFT (n,lenv)
+  On this inefficient representation, the typing rules would be:
 
-let subs_lift a = subs_liftn 1 a
-let subs_liftn n a = if Int.equal n 0 then a else subs_liftn n a
+  · ⊢ NIL : ·
+  Γ ⊢ σ : Δ and Γ ⊢ t : A{σ} implies Γ ⊢ CONS (t, σ) : Δ, A
+  Γ ⊢ σ : Δ implies Γ, A ⊢ SHIFT σ : Δ
 
-let subs_shft = function
-  | (0, s)            -> s
-  | (n, SHIFT (k,s1)) -> SHIFT (k+n, s1)
-  | (n, s)            -> SHIFT (n,s)
-let subs_shft s = if Int.equal (fst s) 0 then snd s else subs_shft s
+  The efficient representation is isomorphic to this naive variant, except that
+  shifts are grouped together, and we use skewed lists instead of lists.
 
-let subs_shift_cons = function
-  (0, s, t)           -> CONS(t,s)
-| (k, SHIFT(n,s1), t) -> CONS(t,SHIFT(k+n, s1))
-| (k, s, t)           -> CONS(t,SHIFT(k, s));;
+*)
 
-(* Tests whether a substitution is equal to the identity *)
-let rec is_subs_id = function
-    ESID _     -> true
-  | LIFT(_,s)  -> is_subs_id s
-  | SHIFT(0,s) -> is_subs_id s
-  | CONS(x,s)  -> Int.equal (Array.length x) 0 && is_subs_id s
-  | _          -> false
+type shf = int
+let cmp n m = n + m
+let idn = 0
 
-(* Expands de Bruijn k in the explicit substitution subs
- * lams accumulates de shifts to perform when retrieving the i-th value
- * the rules used are the following:
- *
- *    [id]k       --> k
- *    [S.t]1      --> t
- *    [S.t]k      --> [S](k-1)  if k > 1
- *    [^n o S] k  --> [^n]([S]k)
- *    [(%n S)] k  --> k         if k <= n
- *    [(%n S)] k  --> [^n]([S](k-n))
- *
- * the result is (Inr (k+lams,p)) when the variable is just relocated
- * where p is None if the variable points inside subs and Some(k) if the
- * variable points k bindings beyond subs.
- *)
-let rec exp_rel lams k subs =
-  match subs with
-    | CONS (def,_) when k <= Array.length def
-                           -> Inl(lams,def.(Array.length def - k))
-    | CONS (v,l)           -> exp_rel lams (k - Array.length v) l
-    | LIFT (n,_) when k<=n -> Inr(lams+k,None)
-    | LIFT (n,l)           -> exp_rel (n+lams) (k-n) l
-    | SHIFT (n,s)          -> exp_rel (n+lams) k s
-    | ESID n when k<=n     -> Inr(lams+k,None)
-    | ESID n               -> Inr(lams+k,Some (k-n))
+type 'a or_var = Arg of 'a | Var of int
 
-let expand_rel k subs = exp_rel 0 k subs
+type 'a tree =
+| Leaf of shf * 'a or_var
+| Node of shf * 'a or_var * 'a tree * 'a tree * shf
+(*
+  Invariants:
+  - All trees are complete.
+  - Define get_shift inductively as [get_shift (Leaf (w, _)) := w] and
+    [get_shift (Node (w, _, t1, t2, _)) := w + t1 + t2] then for every tree
+    of the form Node (_, _, t1, t2, sub), we must have
+    sub = get_shift t1 + get_shift t2.
 
-let rec subs_map f = function
-| ESID _ as s -> s
-| CONS (x, s) -> CONS (Array.map f x, subs_map f s)
-| SHIFT (n, s) -> SHIFT (n, subs_map f s)
-| LIFT (n, s) -> LIFT (n, subs_map f s)
+  In the naive semantics:
 
-let rec lift_subst mk_cl s1 s2 = match s1 with
-| ELID -> subs_map (fun c -> mk_cl ELID c) s2
-| ELSHFT(s, k) -> subs_shft(k, lift_subst mk_cl s s2)
-| ELLFT (k, s) ->
-  match s2 with
-  | CONS(x,s') ->
-      CONS(CArray.Fun1.map mk_cl s1 x, lift_subst mk_cl s1 s')
-  | ESID n -> lift_subst mk_cl s (ESID (n + k))
-  | SHIFT(k',s') ->
-      if k<k'
-      then subs_shft(k, lift_subst mk_cl s (subs_shft(k'-k, s')))
-      else subs_shft(k', lift_subst mk_cl (el_liftn (k-k') s) s')
-  | LIFT(k',s') ->
-      if k<k'
-      then subs_liftn k (lift_subst mk_cl s (subs_liftn (k'-k) s'))
-      else subs_liftn k' (lift_subst mk_cl (el_liftn (k-k') s) s')
+  Leaf (w, x) := SHIFT^w (CONS (x, NIL))
+  Node (w, x, t1, t2, _) := SHIFT^w (CONS (x, t1 @ t2))
 
-let rec comp mk_cl s1 s2 =
-  match (s1, s2) with
-    | _, ESID _ -> s1
-    | ESID _, _ -> s2
-    | SHIFT(k,s), _ -> subs_shft(k, comp mk_cl s s2)
-    | _, CONS(x,s') ->
-        CONS(Array.Fun1.map (fun s t -> mk_cl(s,t)) s1 x, comp mk_cl s1 s')
-    | CONS(x,s), SHIFT(k,s') ->
-        let lg = Array.length x in
-        if k == lg then comp mk_cl s s'
-        else if k > lg then comp mk_cl s (SHIFT(k-lg, s'))
-        else comp mk_cl (CONS(Array.sub x 0 (lg-k), s)) s'
-    | CONS(x,s), LIFT(k,s') ->
-        let lg = Array.length x in
-        if k == lg then CONS(x, comp mk_cl s s')
-        else if k > lg then CONS(x, comp mk_cl s (LIFT(k-lg, s')))
-        else
-          CONS(Array.sub x (lg-k) k,
-               comp mk_cl (CONS(Array.sub x 0 (lg-k),s)) s')
-    | LIFT(k,s), SHIFT(k',s') ->
-        if k<k'
-        then subs_shft(k, comp mk_cl s (subs_shft(k'-k, s')))
-        else subs_shft(k', comp mk_cl (subs_liftn (k-k') s) s')
-    | LIFT(k,s), LIFT(k',s') ->
-        if k<k'
-        then subs_liftn k (comp mk_cl s (subs_liftn (k'-k) s'))
-        else subs_liftn k' (comp mk_cl (subs_liftn (k-k') s) s')
+*)
+
+type 'a subs = Nil of shf * int | Cons of int * 'a tree * 'a subs
+(*
+  In the naive semantics mentioned above, we have the following.
+
+  Nil (w, n) stands for SHIFT^w (ID n) where ID n is a compact form of identity
+  substitution, defined inductively as
+
+  ID 0 := NIL
+  ID (S n) := CONS (Var 1, SHIFT (ID n))
+
+  Cons (h, t, s) stands for (t @ s) and h is the total number of values in the
+  tree t. In particular, it is always of the form 2^n - 1 for some n.
+*)
+
+(* Returns the number of shifts contained in the whole tree. *)
+let eval = function
+| Leaf (w, _) -> w
+| Node (w1, _, _, _, w2) -> cmp w1 w2
+
+let leaf x = Leaf (idn, x)
+let node x t1 t2 = Node (idn, x, t1, t2, cmp (eval t1) (eval t2))
+
+let rec tree_get h w t i = match t with
+| Leaf (w', x) ->
+  let w = cmp w w' in
+  if i = 0 then w, Inl x else assert false
+| Node (w', x, t1, t2, _) ->
+  let w = cmp w w' in
+  if i = 0 then w, Inl x
+  else
+    let h = h / 2 in
+    if i <= h then tree_get h w t1 (i - 1)
+    else tree_get h (cmp w (eval t1)) t2 (i - h - 1)
+
+let rec get w l i = match l with
+| Nil (w', n) ->
+  let w = cmp w w' in
+  if i < n then w, Inl (Var (i + 1))
+  else n + w, Inr (i - n) (* FIXME: double check *)
+| Cons (h, t, rem) ->
+  if i < h then tree_get h w t i else get (cmp (eval t) w) rem (i - h)
+
+let get l i = get idn l i
+
+let tree_write w = function
+| Leaf (w', x) -> Leaf (cmp w w', x)
+| Node (w', x, t1, t2, wt) -> Node (cmp w w', x, t1, t2, wt)
+
+let write w l = match l with
+| Nil (w', n) -> Nil (cmp w w', n)
+| Cons (h, t, rem) -> Cons (h, tree_write w t, rem)
+
+let cons x l = match l with
+| Cons (h1, t1, Cons (h2, t2, rem)) ->
+  if Int.equal h1 h2 then Cons (1 + h1 + h2, node x t1 t2, rem)
+  else Cons (1, leaf x, l)
+| _ -> Cons (1, leaf x, l)
+
+let expand_rel n s =
+  let k, v = get s (n - 1) in
+  match v with
+  | Inl (Arg v) -> Inl (k, v)
+  | Inl (Var i) -> Inr (k + i, None)
+  | Inr i -> Inr (k + i + 1, Some (i + 1))
+
+let is_subs_id = function
+| Nil (w, _) -> Int.equal w 0
+| Cons (_, _, _) -> false
+
+let subs_cons v s = cons (Arg v) s
+
+let rec push_vars i s =
+  if Int.equal i 0 then s
+  else push_vars (pred i) (cons (Var i) s)
+
+let subs_liftn n s =
+  if Int.equal n 0 then s
+  else match s with
+  | Nil (0, m) -> Nil (0, m + n) (* Preserve identity substitutions *)
+  | Nil _ | Cons _ ->
+    let s = write n s in
+    push_vars n s
+
+let subs_lift s = match s with
+| Nil (0, m) -> Nil (0, m + 1) (* Preserve identity substitutions *)
+| Nil _ | Cons _ ->
+  cons (Var 1) (write 1 s)
+
+let subs_id n = Nil (0, n)
+
+let subs_shft (n, s) = write n s
+
+(* pop is the n-ary tailrec variant of a function whose typing rules would be
+   given as follows. Assume Γ ⊢ e : Δ, A, then
+   - Γ := Ξ, A, Ω for some Ξ and Ω with |Ω| := fst (pop e)
+   - Ξ ⊢ snd (pop e) : Δ
+*)
+let rec pop n i e =
+  if Int.equal n 0 then i, e
+  else match e with
+  | ELID -> i, e
+  | ELLFT (k, e) ->
+    if k <= n then pop (n - k) i e
+    else i, ELLFT (k - n, e)
+  | ELSHFT (e, k) -> pop n (i + k) e
+
+let apply mk e = function
+| Var i -> Var (reloc_rel i e)
+| Arg v -> Arg (mk e v)
+
+let rec tree_map mk e = function
+| Leaf (w, x) ->
+  let (n, e) = pop w 0 e in
+  Leaf (w + n, apply mk e x), e
+| Node (w, x, t1, t2, _) ->
+  let (n, e) = pop w 0 e in
+  let x = apply mk e x in
+  let t1, e = tree_map mk e t1 in
+  let t2, e = tree_map mk e t2 in
+  Node (w + n, x, t1, t2, cmp (eval t1) (eval t2)), e
+
+let rec lift_id e n = match e with
+| ELID -> Nil (0, n)
+| ELSHFT (e, k) -> write k (lift_id e n)
+| ELLFT (k, e) ->
+  if k <= n then subs_liftn k (lift_id e (n - k))
+  else assert false
+
+let rec lift_subst mk e s = match s with
+| Nil (w, m) ->
+  let (n, e) = pop w 0 e in
+  write (w + n) (lift_id e m)
+| Cons (h, t, rem) ->
+  let t, e = tree_map mk e t in
+  let rem = lift_subst mk e rem in
+  Cons (h, t, rem)
+
+module Internal =
+struct
+
+type 'a or_rel = REL of int | VAL of int * 'a
+
+let to_rel shift = function
+| Var i -> REL (i + shift)
+| Arg v -> VAL (shift, v)
+
+let rec get_tree_subst shift accu = function
+| Leaf (w, x) ->
+  to_rel (shift + w) x :: accu
+| Node (w, x, l, r, _) ->
+  let accu = get_tree_subst (shift + w + eval l) accu r in
+  let accu = get_tree_subst (shift + w) accu l in
+  to_rel (shift + w) x :: accu
+
+let rec get_subst shift accu = function
+| Nil (w, n) ->
+  List.init n (fun i -> REL (w + i + shift + 1))
+| Cons (_, t, s) ->
+  let accu = get_subst (shift + eval t) accu s in
+  get_tree_subst shift accu t
+
+let rec get_shift accu = function
+| Nil (w, n) -> accu + w + n
+| Cons (_, t, s) -> get_shift (eval t + accu) s
+
+let repr (s : 'a subs) =
+  let shift = get_shift 0 s in
+  let subs = get_subst 0 [] s in
+  subs, shift
+
+end

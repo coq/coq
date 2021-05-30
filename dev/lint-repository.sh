@@ -9,10 +9,10 @@
 
 CODE=0
 
-if [[ $(git log -n 1 --pretty='format:%s') == "Bot merge"* ]]; then
-    # The FIRST parent of bot merges is from the PR, the second is
+if [[ $(git log -n 1 --pretty='format:%s') == "[CI merge]"* ]]; then
+    # The second parent of bot merges is from the PR, the first is
     # current master
-    head=$(git rev-parse HEAD~)
+    head=$(git rev-parse HEAD^2)
 else
     head=$(git rev-parse HEAD)
 fi
@@ -31,5 +31,8 @@ find . "(" -path ./.git -prune ")" -o -type f -print0 |
 
 echo Checking overlays
 dev/tools/check-overlays.sh || CODE=1
+
+echo Checking CACHEKEY
+dev/tools/check-cachekey.sh || CODE=1
 
 exit $CODE

@@ -9,10 +9,11 @@
 (************************************************************************)
 
 (** Protocol version of this file. This is the date of the last modification. *)
+let protocol_version = "20210409"
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20200911"
+(** See xml-protocol.md for a description of the protocol. *)
 
 type msg_format = Richpp of int | Ppcmds
 let msg_format = ref (Richpp 72)
@@ -550,6 +551,7 @@ let stop_worker_sty_t : stop_worker_sty val_t = string_t
 let print_ast_sty_t : print_ast_sty val_t = state_id_t
 let annotate_sty_t : annotate_sty val_t = string_t
 let proof_diff_sty_t : proof_diff_sty val_t = pair_t string_t state_id_t
+let db_cmd_sty_t : db_cmd_sty val_t = string_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)
@@ -576,6 +578,7 @@ let stop_worker_rty_t : stop_worker_rty val_t = unit_t
 let print_ast_rty_t : print_ast_rty val_t = xml_t
 let annotate_rty_t : annotate_rty val_t = xml_t
 let proof_diff_rty_t : proof_diff_rty val_t = pp_t
+let db_cmd_rty_t : db_cmd_rty val_t = unit_t
 
 let ($) x = erase x
 let calls = [|
@@ -599,6 +602,7 @@ let calls = [|
   "PrintAst",   ($)print_ast_sty_t,   ($)print_ast_rty_t;
   "Annotate",   ($)annotate_sty_t,    ($)annotate_rty_t;
   "PDiff",      ($)proof_diff_sty_t,  ($)proof_diff_rty_t;
+  "Db_cmd",     ($)db_cmd_sty_t,      ($)db_cmd_rty_t;
 |]
 
 type 'a call =
@@ -624,6 +628,7 @@ type 'a call =
   | PrintAst   : print_ast_sty -> print_ast_rty call
   | Annotate   : annotate_sty -> annotate_rty call
   | PDiff      : proof_diff_sty -> proof_diff_rty call
+  | Db_cmd     : db_cmd_sty -> db_cmd_rty call
 
 (* the order of the entries must match the order in "calls" above *)
 let id_of_call : type a. a call -> int = function
@@ -646,7 +651,8 @@ let id_of_call : type a. a call -> int = function
   | StopWorker _ -> 16
   | PrintAst _   -> 17
   | Annotate _   -> 18
-  | PDiff _     -> 19
+  | PDiff _      -> 19
+  | Db_cmd _     -> 20
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -672,6 +678,7 @@ let stop_worker x : stop_worker_rty call = StopWorker x
 let print_ast x   : print_ast_rty call   = PrintAst x
 let annotate x    : annotate_rty call    = Annotate x
 let proof_diff x  : proof_diff_rty call  = PDiff x
+let db_cmd x      : db_cmd_rty call      = Db_cmd x
 
 let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
   let mkGood : type a. a -> a value = fun x -> Good x in
@@ -697,6 +704,7 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | PrintAst x   -> mkGood (handler.print_ast x)
     | Annotate x   -> mkGood (handler.annotate x)
     | PDiff x      -> mkGood (handler.proof_diff x)
+    | Db_cmd x     -> mkGood (handler.db_cmd x)
   with any ->
     let any = Exninfo.capture any in
     Fail (handler.handle_exn any)
@@ -723,6 +731,7 @@ let of_answer : type a. a call -> a value -> xml = function
   | PrintAst _   -> of_value (of_value_type print_ast_rty_t  )
   | Annotate _   -> of_value (of_value_type annotate_rty_t   )
   | PDiff _      -> of_value (of_value_type proof_diff_rty_t )
+  | Db_cmd _     -> of_value (of_value_type db_cmd_rty_t     )
 
 let of_answer msg_fmt =
   msg_format := msg_fmt; of_answer
@@ -748,6 +757,7 @@ let to_answer : type a. a call -> xml -> a value = function
   | PrintAst _   -> to_value (to_value_type print_ast_rty_t  )
   | Annotate _   -> to_value (to_value_type annotate_rty_t   )
   | PDiff _      -> to_value (to_value_type proof_diff_rty_t )
+  | Db_cmd _     -> to_value (to_value_type db_cmd_rty_t     )
 
 let of_call : type a. a call -> xml = fun q ->
   let mkCall x = constructor "call" (str_of_call q) [x] in
@@ -772,6 +782,7 @@ let of_call : type a. a call -> xml = fun q ->
   | PrintAst x   -> mkCall (of_value_type print_ast_sty_t   x)
   | Annotate x   -> mkCall (of_value_type annotate_sty_t    x)
   | PDiff x      -> mkCall (of_value_type proof_diff_sty_t  x)
+  | Db_cmd x     -> mkCall (of_value_type db_cmd_sty_t      x)
 
 let to_call : xml -> unknown_call =
   do_match "call" (fun s a ->
@@ -797,6 +808,7 @@ let to_call : xml -> unknown_call =
     | "PrintAst"   -> Unknown (PrintAst   (mkCallArg print_ast_sty_t   a))
     | "Annotate"   -> Unknown (Annotate   (mkCallArg annotate_sty_t    a))
     | "PDiff"      -> Unknown (PDiff      (mkCallArg proof_diff_sty_t  a))
+    | "Db_cmd"     -> Unknown (Db_cmd     (mkCallArg db_cmd_sty_t      a))
     | x -> raise (Marshal_error("call",PCData x)))
 
 (** Debug printing *)
@@ -829,6 +841,7 @@ let pr_full_value : type a. a call -> a value -> string = fun call value -> matc
   | PrintAst _   -> pr_value_gen (print print_ast_rty_t  ) value
   | Annotate _   -> pr_value_gen (print annotate_rty_t   ) value
   | PDiff _      -> pr_value_gen (print proof_diff_rty_t ) value
+  | Db_cmd _     -> pr_value_gen (print db_cmd_rty_t     ) value
 let pr_call : type a. a call -> string = fun call ->
   let return what x = str_of_call call ^ " " ^ print what x in
   match call with
@@ -852,6 +865,7 @@ let pr_call : type a. a call -> string = fun call ->
     | PrintAst x   -> return print_ast_sty_t x
     | Annotate x   -> return annotate_sty_t x
     | PDiff x      -> return proof_diff_sty_t x
+    | Db_cmd x     -> return db_cmd_sty_t x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";
@@ -979,9 +993,23 @@ let to_feedback xml = match xml with
       contents = to_feedback_content content }
   | x -> raise (Marshal_error("feedback",x))
 
-let is_feedback = function
-  | Element ("feedback", _, _) -> true
-  | _ -> false
+let of_ltac_debug_answer ~tag msg =
+  let wrap s = Element ("ltac_debug", [], s) in
+  wrap [PCData tag; of_pp msg]
+
+let to_ltac_debug_answer xml =
+  match xml with
+  | Element ("ltac_debug", [], [PCData tag; pp]) ->
+    let msg = to_pp pp in
+    tag, msg
+  | x -> raise (Marshal_error("ltac_debug_answer",x))
+
+type msg_type = Feedback | LtacDebugInfo | Other
+
+let msg_kind = function
+  | Element ("feedback", _, _) -> Feedback
+  | Element ("ltac_debug", _, _) -> LtacDebugInfo
+  | _ -> Other
 
 (* vim: set foldmethod=marker: *)
 

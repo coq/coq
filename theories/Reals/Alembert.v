@@ -112,7 +112,7 @@ Proof.
       pattern (sum_f_R0 An n) at 1; rewrite <- Rplus_0_r;
 	apply Rplus_le_compat_l; left; apply H
       | apply H1 ].
-Defined.
+Qed.
 
 Lemma Alembert_C2 :
   forall An:nat -> R,
@@ -330,7 +330,7 @@ Proof.
   rewrite <- Rabs_Ropp; apply RRle_abs.
   rewrite double; pattern (Rabs (An n)) at 1; rewrite <- Rplus_0_r;
     apply Rplus_lt_compat_l; apply Rabs_pos_lt; apply H.
-Defined.
+Qed.
 
 Lemma AlembertC3_step1 :
   forall (An:nat -> R) (x:R),
@@ -374,7 +374,7 @@ Proof.
     [ assumption | apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption ].
   intro; unfold Bn; apply prod_neq_R0;
     [ apply H0 | apply pow_nonzero; assumption ].
-Defined.
+Qed.
 
 Lemma AlembertC3_step2 :
   forall (An:nat -> R) (x:R), x = 0 -> { l:R | Pser An x l }.
@@ -405,7 +405,7 @@ Proof.
   cut (x <> 0).
   intro; apply AlembertC3_step1; assumption.
   red; intro; rewrite H1 in Hgt; elim (Rlt_irrefl _ Hgt).
-Defined.
+Qed.
 
 Lemma Alembert_C4 :
   forall (An:nat -> R) (k:R),

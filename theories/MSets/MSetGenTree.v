@@ -30,6 +30,7 @@
 *)
 
 Require Import FunInd Orders OrdersFacts MSetInterface PeanoNat.
+Require Arith. (* contains deprecated dependencies *)
 Local Open Scope list_scope.
 Local Open Scope lazy_bool_scope.
 
@@ -46,6 +47,7 @@ End InfoTyp.
 Module Type Ops (X:OrderedType)(Info:InfoTyp).
 
 Definition elt := X.t.
+#[global]
 Hint Transparent elt : core.
 
 Inductive tree  : Type :=
@@ -304,6 +306,7 @@ Definition IsOk := bst.
 
 Class Ok (s:tree) : Prop := ok : bst s.
 
+#[global]
 Instance bst_Ok s (Hs : bst s) : Ok s := { ok := Hs }.
 
 Fixpoint ltb_tree x s :=
@@ -422,6 +425,7 @@ Proof.
  intuition_in.
 Qed.
 
+#[global]
 Instance isok_Ok s : isok s = true -> Ok s | 10.
 Proof. intros; apply <- isok_iff; auto. Qed.
 
@@ -434,6 +438,7 @@ Proof.
 Qed.
 Local Hint Immediate In_1 : core.
 
+#[global]
 Instance In_compat : Proper (X.eq==>eq==>iff) InT.
 Proof.
 apply proper_sym_impl_iff_2; auto with *.
@@ -504,12 +509,14 @@ Proof.
  eauto.
 Qed.
 
+#[global]
 Instance lt_tree_compat : Proper (X.eq ==> Logic.eq ==> iff) lt_tree.
 Proof.
  apply proper_sym_impl_iff_2; auto.
  intros x x' Hx s s' Hs H y Hy. subst. setoid_rewrite <- Hx; auto.
 Qed.
 
+#[global]
 Instance gt_tree_compat : Proper (X.eq ==> Logic.eq ==> iff) gt_tree.
 Proof.
  apply proper_sym_impl_iff_2; auto.
@@ -540,6 +547,7 @@ Proof.
  intros x H. inversion H.
 Qed.
 
+#[global]
 Instance empty_ok : Ok empty.
 Proof.
  auto.
@@ -958,6 +966,7 @@ Qed.
 Module L := MSetInterface.MakeListOrdering X.
 
 Definition eq := Equal.
+#[global]
 Instance eq_equiv : Equivalence eq.
 Proof. firstorder. Qed.
 
@@ -974,6 +983,7 @@ Definition lt (s1 s2 : tree) : Prop :=
 
 Declare Equivalent Keys L.eq equivlistA.
 
+#[global]
 Instance lt_strorder : StrictOrder lt.
 Proof.
  split.
@@ -993,6 +1003,7 @@ Proof.
  rewrite H; auto.
 Qed.
 
+#[global]
 Instance lt_compat : Proper (eq==>eq==>iff) lt.
 Proof.
  intros s1 s2 E12 s3 s4 E34. split.

@@ -277,8 +277,8 @@ let hintmap_of env sigma secvars hdc concl =
      else Hint_db.map_auto env sigma ~secvars hdc concl
 
 let exists_evaluable_reference env = function
-  | EvalConstRef _ -> true
-  | EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
+  | Tacred.EvalConstRef _ -> true
+  | Tacred.EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
 
 let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
 let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
@@ -499,12 +499,6 @@ let delta_auto debug mod_delta n lems dbnames =
   tclTRY_dbg d
     (search d n mod_delta db_list hints)
   end
-
-let delta_auto =
-  if Flags.profile then
-    let key = CProfile.declare_profile "delta_auto" in
-      CProfile.profile5 key delta_auto
-  else delta_auto
 
 let auto ?(debug=Off) n = delta_auto debug false n
 

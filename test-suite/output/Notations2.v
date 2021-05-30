@@ -12,6 +12,7 @@ Check (2 3).
 Record Binop := { binop :> nat -> nat -> nat }.
 Class Plusop := { plusop : Binop; zero : nat }.
 Infix "[+]" := plusop (at level 40).
+#[global]
 Instance Plus : Plusop := {| plusop := {| binop := plus |} ; zero := 0 |}.
 Check 2[+]3.
 
@@ -62,7 +63,7 @@ Check `(∀ n p : A, n=p).
 
 Notation "'let'' f x .. y  :=  t 'in' u":=
   (let f := fun x => .. (fun y => t) .. in u)
-  (f ident, x closed binder, y closed binder, at level 200,
+  (f name, x closed binder, y closed binder, at level 200,
    right associativity).
 
 Check let' f x y (a:=0) z (b:bool) := x+y+z+1 in f 0 1 2.
@@ -93,7 +94,7 @@ End A.
 
 Notation "'mylet' f [ x ; .. ; y ]  :=  t 'in' u":=
   (let f := fun x => .. (fun y => t) .. in u)
-  (f ident, x closed binder, y closed binder, at level 200,
+  (f name, x closed binder, y closed binder, at level 200,
    right associativity).
 
 Check mylet f [x;y;z;(a:bool)] := x+y+z+1 in f 0 1 2.
@@ -104,7 +105,7 @@ Check mylet f [x;y;z;(a:bool)] := x+y+z+1 in f 0 1 2.
 (* Old request mentioned again on coq-club 20/1/2012 *)
 
 Notation "#  x : T => t" := (fun x : T => t)
-  (at level 0, t at level 200, x ident).
+  (at level 0, t at level 200, x name).
 
 Check # x : nat => x.
 Check # _ : nat => 2.
@@ -116,7 +117,7 @@ Parameters (A : Set) (x y : A) (Q : A -> A -> Prop) (conj : Q x y).
 Check (exist (Q x) y conj).
 
 (* Check bug #4854 *)
-Notation "% i" := (fun i : nat => i) (at level 0, i ident).
+Notation "% i" := (fun i : nat => i) (at level 0, i name).
 Check %i.
 Check %j.
 

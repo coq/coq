@@ -89,7 +89,7 @@ let subst_global_reference subst =
   Locusops.or_var_map (subst_located (subst_global_reference subst))
 
 let subst_evaluable subst =
-  let subst_eval_ref = subst_evaluable_reference subst in
+  let subst_eval_ref = Tacred.subst_evaluable_reference subst in
     Locusops.or_var_map (subst_and_short_name subst_eval_ref)
 
 let subst_constr_with_occurrences subst (l,c) = (l,subst_glob_constr subst c)
@@ -128,7 +128,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Basic tactics *)
   | TacIntroPattern (ev,l) -> TacIntroPattern (ev,List.map (subst_intro_pattern subst) l)
   | TacApply (a,ev,cb,cl) ->
-      TacApply (a,ev,List.map (subst_glob_with_bindings_arg subst) cb,cl)
+      TacApply (a,ev,List.map (subst_glob_with_bindings_arg subst) cb,
+                List.map (on_snd (Option.map (subst_intro_pattern subst))) cl)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,subst_glob_with_bindings_arg subst cb,
                Option.map (subst_glob_with_bindings subst) cbo)
@@ -170,14 +171,14 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacInversion (InversionUsing (c,cl),hyp) ->
       TacInversion (InversionUsing (subst_glob_constr subst c,cl),hyp)
 
-and subst_tactic subst (t:glob_tactic_expr) = match t with
-  | TacAtom { CAst.v=t } -> TacAtom (CAst.make @@ subst_atomic subst t)
+and subst_tactic subst = CAst.map (function
+  | TacAtom t -> TacAtom (subst_atomic subst t)
   | TacFun tacfun -> TacFun (subst_tactic_fun subst tacfun)
   | TacLetIn (r,l,u) ->
       let l = List.map (fun (n,b) -> (n,subst_tacarg subst b)) l in
       TacLetIn (r,l,subst_tactic subst u)
   | TacMatchGoal (lz,lr,lmr) ->
-      TacMatchGoal(lz,lr, subst_match_rule subst lmr)
+      TacMatchGoal (lz,lr, subst_match_rule subst lmr)
   | TacMatch (lz,c,lmr) ->
       TacMatch (lz,subst_tactic subst c,subst_match_rule subst lmr)
   | TacId _ | TacFail _ as x -> x
@@ -217,14 +218,15 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacFirst l -> TacFirst (List.map (subst_tactic subst) l)
   | TacSolve l -> TacSolve (List.map (subst_tactic subst) l)
   | TacComplete tac -> TacComplete (subst_tactic subst tac)
-  | TacArg { CAst.v=a } -> TacArg (CAst.make @@ subst_tacarg subst a)
+  | TacArg a -> TacArg (subst_tacarg subst a)
   | TacSelect (s, tac) -> TacSelect (s, subst_tactic subst tac)
 
   (* For extensions *)
-  | TacAlias { CAst.v=(s,l) } ->
+  | TacAlias (s,l) ->
       let s = subst_kn subst s in
-      TacAlias (CAst.make (s,List.map (subst_tacarg subst) l))
-  | TacML { CAst.loc; v=(opn,l)} -> TacML CAst.(make ?loc (opn,List.map (subst_tacarg subst) l))
+      TacAlias (s,List.map (subst_tacarg subst) l)
+  | TacML (opn,l) -> TacML (opn,List.map (subst_tacarg subst) l)
+  )
 
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 
@@ -278,6 +280,7 @@ and subst_genarg subst (GenArg (Glbwit wit, x)) =
 
 let () =
   Genintern.register_subst0 wit_int_or_var (fun _ v -> v);
+  Genintern.register_subst0 wit_nat_or_var (fun _ v -> v);
   Genintern.register_subst0 wit_ref subst_global_reference;
   Genintern.register_subst0 wit_smart_global subst_global_reference;
   Genintern.register_subst0 wit_pre_ident (fun _ v -> v);

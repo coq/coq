@@ -1,7 +1,7 @@
 # Coq
 
-[![GitLab][gitlab-badge]][gitlab-link]
-[![Azure Pipelines][azure-badge]][azure-link]
+[![GitLab CI][gitlab-badge]][gitlab-link]
+[![GitHub CI][action-badge]][action-link]
 [![Zulip][zulip-badge]][zulip-link]
 [![Discourse][discourse-badge]][discourse-link]
 [![DOI][doi-badge]][doi-link]
@@ -9,8 +9,8 @@
 [gitlab-badge]: https://gitlab.com/coq/coq/badges/master/pipeline.svg
 [gitlab-link]: https://gitlab.com/coq/coq/commits/master
 
-[azure-badge]: https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master
-[azure-link]: https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master
+[action-badge]: https://github.com/coq/coq/workflows/GitHub%20CI/badge.svg?branch=master
+[action-link]: https://github.com/coq/coq/actions?query=workflow:"GitHub%20CI"
 
 [discourse-badge]: https://img.shields.io/badge/Discourse-forum-informational.svg
 [discourse-link]: https://coq.discourse.group/
@@ -65,12 +65,9 @@ environment for semi-interactive development of machine-checked proofs.
 [coqorg-badge]: https://images.microbadger.com/badges/version/coqorg/coq.svg
 [coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
 
-Download the pre-built packages of the [latest release][] for Windows and macOS;
-read the [help page][opam-using] on how to install Coq with OPAM;
-or refer to the [`INSTALL.md`](INSTALL.md) file for the procedure to install from source.
-
-[latest release]: https://github.com/coq/coq/releases/latest
-[opam-using]: https://coq.inria.fr/opam/www/using.html
+Please see https://coq.inria.fr/download.
+Information on how to build and install from sources can be found in
+[`INSTALL.md`](INSTALL.md).
 
 ## Documentation
 

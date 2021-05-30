@@ -91,7 +91,7 @@ let tokenize_string s =
   But I don't understand how it's used--it looks like things get appended to it but
   it never gets cleared. *)
   let rec stream_tok acc str =
-    let e = Stream.next str in
+    let e = LStream.next str in
     if Tok.(equal e EOI) then
       List.rev acc
     else
@@ -101,7 +101,7 @@ let tokenize_string s =
   try
     let istr = Stream.of_string s in
     let lex = CLexer.LexerDiff.tok_func istr in
-    let toks = stream_tok [] (fst lex) in
+    let toks = stream_tok [] lex in
     CLexer.Lexer.State.set st;
     toks
   with exn ->
@@ -433,7 +433,8 @@ let match_goals ot nt =
         constr_expr ogname c c2;
         constr_expr_opt ogname t t2
       | CLocalPattern p, CLocalPattern p2 ->
-        let (p,ty), (p2,ty2) = p.v,p2.v in
+        let ty = match p.v with CPatCast (_,ty) -> Some ty | _ -> None in
+        let ty2 = match p2.v with CPatCast (_,ty) -> Some ty | _ -> None in
         constr_expr_opt ogname ty ty2
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (2)")
     in
@@ -528,7 +529,6 @@ let match_goals ot nt =
       | CastVM a, CastVM a2
       | CastNative a, CastNative a2 ->
         constr_expr ogname a a2
-      | CastCoerce, CastCoerce -> ()
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (4)"))
     | CNotation (_,ntn,args), CNotation (_,ntn2,args2) ->
       constr_notation_substitution ogname args args2

@@ -71,6 +71,7 @@ Section defs.
       (forall a l, Sorted l -> P l -> HdRel a l -> P (a :: l)) ->
       forall l:list A, Sorted l -> P l.
   Proof.
+    intros P ? ? l.
     induction l. firstorder using Sorted_inv. firstorder using Sorted_inv.
   Qed.
 
@@ -78,7 +79,8 @@ Section defs.
   Proof.
     split; [induction 1 as [|a l [|]]| induction 1];
       auto using Sorted, LocallySorted, HdRel.
-    inversion H1; subst; auto using LocallySorted.
+    match goal with H1 : HdRel a (_ :: _) |- _ => inversion H1 end.
+    subst; auto using LocallySorted.
   Qed.
 
   (** Strongly sorted: elements of the list are pairwise ordered *)
@@ -90,7 +92,7 @@ Section defs.
   Lemma StronglySorted_inv : forall a l, StronglySorted (a :: l) ->
     StronglySorted l /\ Forall (R a) l.
   Proof.
-    intros; inversion H; auto.
+    intros a l H; inversion H; auto.
   Defined.
 
   Lemma StronglySorted_rect :
@@ -99,7 +101,7 @@ Section defs.
       (forall a l, StronglySorted l -> P l -> Forall (R a) l -> P (a :: l)) ->
       forall l, StronglySorted l -> P l.
   Proof.
-    induction l; firstorder using StronglySorted_inv.
+    intros P ? ? l; induction l; firstorder using StronglySorted_inv.
   Defined.
 
   Lemma StronglySorted_rec :
@@ -120,7 +122,8 @@ Section defs.
   Lemma Sorted_extends :
     Transitive R -> forall a l, Sorted (a::l) -> Forall (R a) l.
   Proof.
-    intros. change match a :: l with [] => True | a :: l => Forall (R a) l end.
+    intros H a l H0.
+    change match a :: l with [] => True | a :: l => Forall (R a) l end.
     induction H0 as [|? ? ? ? H1]; [trivial|].
     destruct H1; constructor; trivial.
     eapply Forall_impl; [|eassumption].
@@ -137,7 +140,9 @@ Section defs.
 
 End defs.
 
+#[global]
 Hint Constructors HdRel : core.
+#[global]
 Hint Constructors Sorted : core.
 
 (* begin hide *)

@@ -98,6 +98,12 @@ Ltac2 assert_bounds (msg : string) (test : bool) :=
   | false => throw_out_of_bounds msg
   end.
 
+Ltac2 assert_true b :=
+  if b then () else throw Assertion_failure.
+
+Ltac2 assert_false b :=
+  if b then throw Assertion_failure else ().
+
 (** Short form backtracks *)
 
 Ltac2 backtrack_tactic_failure (msg : string) :=

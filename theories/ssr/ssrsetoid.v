@@ -31,6 +31,7 @@ Require Import Relation_Definitions.
 (** Reconcile [Coq.Classes.RelationClasses.Reflexive] with
     [Coq.ssr.ssrclasses.Reflexive] *)
 
+#[global]
 Instance compat_Reflexive :
   forall {A} {R : relation A},
     RelationClasses.Reflexive R ->

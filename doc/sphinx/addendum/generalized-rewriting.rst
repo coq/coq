@@ -35,7 +35,7 @@ the previous implementation in several ways:
   the new implementation, if one provides the proper morphisms. Again,
   most of the work is handled in the tactics.
 + First-class morphisms and signatures. Signatures and morphisms are
-  ordinary |Coq| terms, hence they can be manipulated inside |Coq|, put
+  ordinary Coq terms, hence they can be manipulated inside Coq, put
   inside structures and lemmas about them can be proved inside the
   system. Higher-order morphisms are also allowed.
 + Performance. The implementation is based on a depth-first search for
@@ -101,9 +101,9 @@ morphisms, that are required to be simultaneously monotone on every
 argument.
 
 Morphisms can also be contravariant in one or more of their arguments.
-A morphism is contravariant on an argument associated to the relation
+A morphism is contravariant on an argument associated with the relation
 instance :math:`R` if it is covariant on the same argument when the inverse
-relation :math:`R^{−1}` (``inverse R`` in |Coq|) is considered. The special arrow ``-->``
+relation :math:`R^{−1}` (``inverse R`` in Coq) is considered. The special arrow ``-->``
 is used in signatures for contravariant morphisms.
 
 Functions having arguments related by symmetric relations instances
@@ -144,7 +144,7 @@ always the intended equality for a given structure.
 
 In the next section we will describe the commands to register terms as
 parametric relations and morphisms. Several tactics that deal with
-equality in |Coq| can also work with the registered relations. The exact
+equality in Coq can also work with the registered relations. The exact
 list of tactics will be given :ref:`in this section <tactics-enabled-on-user-provided-relations>`.
 For instance, the tactic reflexivity can be used to solve a goal ``R n n`` whenever ``R``
 is an instance of a registered reflexive relation. However, the
@@ -336,7 +336,7 @@ respective relation instances.
    in the previous example). Applying ``union_compat`` by hand we are left with the
    goal ``eq_set (union S S) (union S S)``.
 
-When the relations associated to some arguments are not reflexive, the
+When the relations associated with some arguments are not reflexive, the
 tactic cannot automatically prove the reflexivity goals, that are left
 to the user.
 
@@ -477,8 +477,8 @@ documentation on :ref:`typeclasses` and the theories files in Classes
 for further explanations.
 
 One can inform the rewrite tactic about morphisms and relations just
-by using the typeclass mechanism to declare them using Instance and
-Context vernacular commands. Any object of type Proper (the type of
+by using the typeclass mechanism to declare them using the :cmd:`Instance` and
+:cmd:`Context` commands. Any object of type Proper (the type of
 morphism declarations) in the local context will also be automatically
 used by the rewriting tactic to solve constraints.
 
@@ -535,17 +535,25 @@ pass additional arguments such as ``using relation``.
 .. tacn:: setoid_reflexivity
           setoid_symmetry {? in @ident }
           setoid_transitivity @one_term
-          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } {? at @occurrences } {? in @ident }
-          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } in @ident at @occurrences
+          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } {? at @rewrite_occs } {? in @ident }
+          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } in @ident at @rewrite_occs
           setoid_replace @one_term with @one_term {? using relation @one_term } {? in @ident } {? at {+ @int_or_var } } {? by @ltac_expr3 }
    :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_rewrite; _; setoid_replace
+
+   .. todo: move rewrite_occs to rewrite chapter when that chapter is revised
+
+   .. insertprodn rewrite_occs rewrite_occs
+
+   .. prodn::
+      rewrite_occs ::= {+ @integer }
+      | @ident
 
    The ``using relation`` arguments cannot be passed to the unprefixed form.
    The latter argument tells the tactic what parametric relation should
    be used to replace the first tactic argument with the second one. If
    omitted, it defaults to the ``DefaultRelation`` instance on the type of
    the objects. By default, it means the most recent ``Equivalence`` instance
-   in the environment, but it can be customized by declaring
+   in the global environment, but it can be customized by declaring
    new ``DefaultRelation`` instances. As Leibniz equality is a declared
    equivalence, it will fall back to it if no other relation is declared
    on a given type.
@@ -600,7 +608,6 @@ Deprecated syntax and backward incompatibilities
    an old development to the new semantics is usually quite simple.
 
 .. cmd:: Declare Morphism @one_term : @ident
-   :name: Declare Morphism
 
    Declares a parameter in a module type that is a morphism.
 
@@ -678,7 +685,7 @@ Note that when one does rewriting with a lemma under a binder using
 variable, as the semantics are different from rewrite where the lemma
 is first matched on the whole term. With the new :tacn:`setoid_rewrite`,
 matching is done on each subterm separately and in its local
-environment, and all matches are rewritten *simultaneously* by
+context, and all matches are rewritten *simultaneously* by
 default. The semantics of the previous :tacn:`setoid_rewrite` implementation
 can almost be recovered using the ``at 1`` modifier.
 
@@ -692,7 +699,7 @@ other. If a signature mentions a relation ``R`` on the left of an
 arrow ``==>``, then the signature also applies for any relation ``S`` that is
 smaller than ``R``, and the inverse applies on the right of an arrow. One
 can then declare only a few morphisms instances that generate the
-complete set of signatures for a particular constant. By default, the
+complete set of signatures for a particular :term:`constant`. By default, the
 only declared subrelation is ``iff``, which is a subrelation of ``impl`` and
 ``inverse impl`` (the dual of implication). That’s why we can declare only
 two morphisms for conjunction: ``Proper (impl ==> impl ==> impl) and`` and
@@ -707,15 +714,41 @@ example of a mostly user-space extension of the algorithm.
 Constant unfolding
 ~~~~~~~~~~~~~~~~~~
 
-The resolution tactic is based on typeclasses and hence regards user-
-defined constants as transparent by default. This may slow down the
+The resolution tactic is based on typeclasses and hence regards user-defined
+:term:`constants <constant>` as transparent by default. This may slow down the
 resolution due to a lot of unifications (all the declared ``Proper``
 instances are tried at each node of the search tree). To speed it up,
 declare your constant as rigid for proof search using the command
 :cmd:`Typeclasses Opaque`.
 
+.. _strategies4rewriting:
+
 Strategies for rewriting
 ------------------------
+
+Usage
+~~~~~
+
+.. tacn:: rewrite_strat @rewstrategy {? in @ident }
+   :name: rewrite_strat
+
+   Rewrite using :n:`@rewstrategy` in the conclusion or in the hypothesis :n:`@ident`.
+
+   .. exn:: Nothing to rewrite.
+
+      The strategy didn't find any matches.
+
+   .. exn:: No progress made.
+
+      If the strategy succeeded but made no progress.
+
+   .. exn:: Unable to satisfy the rewriting constraints.
+
+      If the strategy succeeded and made progress but the
+      corresponding rewriting constraints are not satisfied.
+
+   :tacn:`setoid_rewrite` :n:`@one_term` is basically equivalent to
+   :n:`rewrite_strat outermost @one_term`.
 
 Definitions
 ~~~~~~~~~~~
@@ -764,7 +797,7 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    failure
 
 :n:`id`
-  identity
+   identity
 
 :n:`refl`
    reflexivity
@@ -794,10 +827,16 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    all subterms
 
 :n:`innermost @rewstrategy`
-   innermost first
+   Innermost first.
+   When there are multiple nested matches in a subterm, the innermost subterm
+   is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
+   rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`(b + a) + c`.
 
 :n:`outermost @rewstrategy`
-   outermost first
+   Outermost first.
+   When there are multiple nested matches in a subterm, the outermost subterm
+   is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
+   rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`c + (a + b)`.
 
 :n:`bottomup @rewstrategy`
    bottom-up
@@ -824,8 +863,8 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    to be documented
 
 
-A few of these are defined in terms of the others using a
-primitive fixpoint operator:
+Conceptually, a few of these are defined in terms of the others using a
+primitive fixpoint operator `fix`, which the tactic doesn't currently support:
 
 - :n:`try @rewstrategy := choice @rewstrategy id`
 - :n:`any @rewstrategy := fix @ident. try (@rewstrategy ; @ident)`
@@ -862,35 +901,35 @@ Hint databases created for :tacn:`autorewrite` can also be used
 by :tacn:`rewrite_strat` using the ``hints`` strategy that applies any of the
 lemmas at the current subterm. The ``terms`` strategy takes the lemma
 names directly as arguments. The ``eval`` strategy expects a reduction
-expression (see :ref:`performingcomputations`) and succeeds
+expression (see :ref:`applyingconversionrules`) and succeeds
 if it reduces the subterm under consideration. The ``fold`` strategy takes
 a :token:`term` and tries to *unify* it to the current subterm, converting it to :token:`term`
 on success. It is stronger than the tactic ``fold``.
 
+.. _rewrite_strat_innermost_outermost:
 
-Usage
-~~~~~
+.. example:: :n:`innermost` and :n:`outermost`
 
+   The type of `Nat.add_comm` is `forall n m : nat, n + m = m + n`.
 
-.. tacn:: rewrite_strat @rewstrategy {? in @ident }
-   :name: rewrite_strat
+   .. coqtop:: all
 
-   Rewrite using the strategy s in hypothesis ident or the conclusion.
+      Require Import Coq.Arith.Arith.
+      Set Printing Parentheses.
+      Goal forall a b c: nat, a + b + c = 0.
+      rewrite_strat innermost Nat.add_comm.
 
-   .. exn:: Nothing to rewrite.
+   .. coqtop:: none
 
-      If the strategy failed.
+      Abort.
+      Goal forall a b c: nat, a + b + c = 0.
 
-   .. exn:: No progress made.
+   Using :n:`outermost` instead gives this result:
 
-      If the strategy succeeded but made no progress.
+   .. coqtop:: all
 
-   .. exn:: Unable to satisfy the rewriting constraints.
+      rewrite_strat outermost Nat.add_comm.
 
-      If the strategy succeeded and made progress but the
-      corresponding rewriting constraints are not satisfied.
+   .. coqtop:: none
 
-
-   The ``setoid_rewrite c`` tactic is basically equivalent to
-   ``rewrite_strat (outermost c)``.
-
+      Abort.

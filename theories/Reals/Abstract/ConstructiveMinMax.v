@@ -65,6 +65,7 @@ Proof.
   rewrite H, H0. reflexivity.
 Qed.
 
+#[global]
 Instance CRmin_morphT
   : forall {R : ConstructiveReals},
     CMorphisms.Proper
@@ -356,6 +357,7 @@ Proof.
   rewrite H, H0. reflexivity.
 Qed.
 
+#[global]
 Instance CRmax_morphT
   : forall {R : ConstructiveReals},
     CMorphisms.Proper

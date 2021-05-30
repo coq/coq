@@ -598,12 +598,12 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
         let sigma = Proofview.Goal.sigma g in
         (*      observe (str "proving on " ++ Printer.pr_lconstr_env (pf_env g) term);*)
         match EConstr.kind sigma dyn_infos.info with
-        | Case (ci, ct, iv, t, cb) ->
+        | Case (ci, u, pms, ct, iv, t, cb) ->
           let do_finalize_t dyn_info' =
             Proofview.Goal.enter (fun g ->
                 let t = dyn_info'.info in
                 let dyn_infos =
-                  {dyn_info' with info = mkCase (ci, ct, iv, t, cb)}
+                  {dyn_info' with info = mkCase (ci, u, pms, ct, iv, t, cb)}
                 in
                 let g_nb_prod =
                   nb_prod (Proofview.Goal.sigma g) (Proofview.Goal.concl g)
@@ -930,8 +930,8 @@ let do_replace (evd : Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num
           (* let res = Constrintern.construct_reference (pf_hyps g) equation_lemma_id in *)
           let evd', res =
             Evd.fresh_global (Global.env ()) !evd
-              (Constrintern.locate_reference
-                 (qualid_of_ident equation_lemma_id))
+              (Option.get (Constrintern.locate_reference
+                 (qualid_of_ident equation_lemma_id)))
           in
           evd := evd';
           let sigma, _ =
@@ -1260,7 +1260,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
                       tclTHENLIST
                         [ unfold_in_concl
                             [ ( Locus.AllOccurrences
-                              , Names.EvalConstRef (fst fname) ) ]
+                              , Tacred.EvalConstRef (fst fname) ) ]
                         ; (let do_prove =
                              build_proof interactive_proof
                                (Array.to_list fnames)

@@ -22,16 +22,20 @@ Module KeyDecidableType(D:DecidableType).
  Definition eqk {elt} : relation (key*elt) := D.eq @@1.
  Definition eqke {elt} : relation (key*elt) := D.eq * Logic.eq.
 
+ #[global]
  Hint Unfold eqk eqke : core.
 
  (** eqk, eqke are equalities *)
 
+#[global]
  Instance eqk_equiv {elt} : Equivalence (@eqk elt) := _.
 
+#[global]
  Instance eqke_equiv {elt} : Equivalence (@eqke elt) := _.
 
  (** eqke is stricter than eqk *)
 
+#[global]
  Instance eqke_eqk {elt} : subrelation (@eqke elt) (@eqk elt).
  Proof. firstorder. Qed.
 
@@ -60,6 +64,7 @@ Module KeyDecidableType(D:DecidableType).
  Lemma eqk_1 {elt} k k' (e e':elt) : eqk (k,e) (k',e') -> D.eq k k'.
  Proof. trivial. Qed.
 
+ #[global]
  Hint Resolve eqke_1 eqke_2 eqk_1 : core.
 
  (* Additional facts *)
@@ -69,6 +74,7 @@ Module KeyDecidableType(D:DecidableType).
  Proof.
   induction 1; firstorder.
  Qed.
+ #[global]
  Hint Resolve InA_eqke_eqk : core.
 
  Lemma InA_eqk_eqke {elt} p (m:list (key*elt)) :
@@ -86,6 +92,7 @@ Module KeyDecidableType(D:DecidableType).
  Definition MapsTo {elt} (k:key)(e:elt):= InA eqke (k,e).
  Definition In {elt} k m := exists e:elt, MapsTo k e m.
 
+ #[global]
  Hint Unfold MapsTo In : core.
 
  (* Alternative formulations for [In k l] *)
@@ -126,6 +133,7 @@ Module KeyDecidableType(D:DecidableType).
   rewrite !In_alt2, Exists_cons; intuition.
  Qed.
 
+#[global]
  Instance MapsTo_compat {elt} :
    Proper (D.eq==>Logic.eq==>equivlistA eqke==>iff) (@MapsTo elt).
  Proof.
@@ -133,6 +141,7 @@ Module KeyDecidableType(D:DecidableType).
   rewrite Hx, He, Hl; intuition.
  Qed.
 
+#[global]
  Instance In_compat {elt} : Proper (D.eq==>equivlistA eqk==>iff) (@In elt).
  Proof.
   intros x x' Hx l l' Hl. rewrite !In_alt.
@@ -167,8 +176,11 @@ Module KeyDecidableType(D:DecidableType).
   eauto with *.
  Qed.
 
+ #[global]
  Hint Extern 2 (eqke ?a ?b) => split : core.
+ #[global]
  Hint Resolve InA_eqke_eqk : core.
+ #[global]
  Hint Resolve In_inv_2 In_inv_3 : core.
 
 End KeyDecidableType.
@@ -185,6 +197,7 @@ Module PairDecidableType(D1 D2:DecidableType) <: DecidableType.
 
  Definition eq := (D1.eq * D2.eq)%signature.
 
+#[global]
  Instance eq_equiv : Equivalence eq := _.
 
  Definition eq_dec : forall x y, { eq x y }+{ ~eq x y }.
@@ -201,6 +214,7 @@ End PairDecidableType.
 Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  Definition t := (D1.t * D2.t)%type.
  Definition eq := @eq t.
+#[global]
  Instance eq_equiv : Equivalence eq := _.
  Definition eq_dec : forall x y, { eq x y }+{ ~eq x y }.
  Proof.

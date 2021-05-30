@@ -16,7 +16,7 @@
 Lemma equal_f : forall {A B : Type} {f g : A -> B},
   f = g -> forall x, f x = g x.
 Proof.
-  intros.
+  intros A B f g H x.
   rewrite H.
   auto.
 Qed.
@@ -118,7 +118,7 @@ Definition f_equal__functional_extensionality_dep_good
            {A B f g} H a
   : f_equal (fun h => h a) (@functional_extensionality_dep_good A B f g H) = H a.
 Proof.
-  apply forall_eq_rect with (H := H); clear H g.
+  apply (fun P k => forall_eq_rect _ P k _ H); clear H g.
   change (eq_refl (f a)) with (f_equal (fun h => h a) (eq_refl f)).
   apply f_equal, functional_extensionality_dep_good_refl.
 Defined.
