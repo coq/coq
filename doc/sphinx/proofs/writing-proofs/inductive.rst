@@ -1403,7 +1403,7 @@ Generation of inversion principles with ``Derive`` ``Inversion``
 
 .. _dependent-induction:
 
-Appendix: examples with dependent destruction / dependent induction
+Examples of dependent destruction / dependent induction
 -------------------------------------------------------------------
 
 The tactics ``dependent induction`` and ``dependent destruction`` are another
