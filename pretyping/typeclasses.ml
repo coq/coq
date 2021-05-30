@@ -107,14 +107,22 @@ let global_class_of_constr env sigma c =
     GlobRef.Map.find gr !classes, u
   with DestKO | Not_found -> not_a_class env sigma c
 
+let decompose_class_app env sigma c =
+  let hd, args = EConstr.decompose_app sigma c in
+  match EConstr.kind sigma hd with
+  | Proj (p, c) ->
+    let expp = Retyping.expand_projection env sigma p c args in
+    EConstr.decompose_app sigma expp
+  | _ -> hd, args
+
 let dest_class_app env sigma c =
-  let cl, args = EConstr.decompose_app sigma c in
+  let cl, args = decompose_class_app env sigma c in
     global_class_of_constr env sigma cl, (List.map EConstr.Unsafe.to_constr args)
 
 let dest_class_arity env sigma c =
   let open EConstr in
   let rels, c = decompose_prod_assum sigma c in
-    rels, dest_class_app env sigma c
+    rels, dest_class_app (push_rel_context rels env) sigma c
 
 let class_of_constr env sigma c =
   try Some (dest_class_arity env sigma c)
@@ -130,15 +138,11 @@ let rec is_class_type evd c =
     match EConstr.kind evd c with
     | Prod (_, _, t) -> is_class_type evd t
     | Cast (t, _, _) -> is_class_type evd t
+    | Proj (p, c) -> GlobRef.(Map.mem (ConstRef (Projection.constant p))) !classes
     | _ -> is_class_constr evd c
 
 let is_class_evar evd evi =
   is_class_type evd evi.Evd.evar_concl
-
-let is_class_constr sigma c =
-  try let gr, u = EConstr.destRef sigma c in
-    GlobRef.Map.mem gr !classes
-  with DestKO | Not_found -> false
 
 let rec is_maybe_class_type evd c =
   let c, _ = Termops.decompose_app_vect evd c in
@@ -146,6 +150,7 @@ let rec is_maybe_class_type evd c =
     | Prod (_, _, t) -> is_maybe_class_type evd t
     | Cast (t, _, _) -> is_maybe_class_type evd t
     | Evar _ -> true
+    | Proj (p, c) -> GlobRef.(Map.mem (ConstRef (Projection.constant p))) !classes
     | _ -> is_class_constr evd c
 
 let () = Hook.set Evd.is_maybe_typeclass_hook (fun evd c -> is_maybe_class_type evd (EConstr.of_constr c))
