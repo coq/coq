@@ -95,17 +95,16 @@ let name_context env hyps =
 
 let my_it_mkLambda_or_LetIn s c = it_mkLambda_or_LetIn c s
 let my_it_mkProd_or_LetIn s c = Term.it_mkProd_or_LetIn c s
-let my_it_mkLambda_or_LetIn_name s c =
-  let env = Global.env () in
+let my_it_mkLambda_or_LetIn_name env s c =
   let mkLambda_or_LetIn_name d b = mkLambda_or_LetIn (name_assumption env d) b in
   List.fold_left (fun c d -> mkLambda_or_LetIn_name d c) c s
 
-let get_coq_eq ctx =
+let get_coq_eq env ctx =
   try
     let eq = Globnames.destIndRef (Coqlib.lib_ref "core.eq.type") in
     (* Do not force the lazy if they are not defined *)
     let eq, ctx = with_context_set ctx
-      (UnivGen.fresh_inductive_instance (Global.env ()) eq) in
+      (UnivGen.fresh_inductive_instance env eq) in
       mkIndU eq, mkConstructUi (eq,1), ctx
   with Not_found ->
     user_err Pp.(str "eq not found.")
@@ -199,7 +198,7 @@ let get_non_sym_eq_data env (ind,u) =
 (*                                                                    *)
 (**********************************************************************)
 
-let build_sym_scheme env ind =
+let build_sym_scheme env _handle ind =
   let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
@@ -212,12 +211,12 @@ let build_sym_scheme env ind =
   let realsign_ind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info (Global.env()) ind rci RegularStyle in
+  let ci = make_case_info env ind rci RegularStyle in
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
-  (my_it_mkLambda_or_LetIn_name realsign_ind
+  (my_it_mkLambda_or_LetIn_name env realsign_ind
   (mkCase (Inductive.contract_case env (ci,
-     my_it_mkLambda_or_LetIn_name
+     my_it_mkLambda_or_LetIn_name env
        (lift_rel_context (nrealargs+1) realsign_ind)
        (mkApp (mkIndU indu,Array.concat
           [Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
@@ -230,9 +229,7 @@ let build_sym_scheme env ind =
 
 let sym_scheme_kind =
   declare_individual_scheme_object "_sym_internal"
-  (fun ind ->
-    let c, ctx = build_sym_scheme (Global.env() (* side-effect! *)) ind in
-      (c, ctx))
+  build_sym_scheme
 
 (**********************************************************************)
 (* Build the involutivity of symmetry for an inductive type           *)
@@ -250,18 +247,18 @@ let sym_scheme_kind =
 (*                                                                    *)
 (**********************************************************************)
 
-let const_of_scheme kind env ind ctx =
-  let sym_scheme = match lookup_scheme kind ind with Some cst -> cst | None -> assert false in
+let const_of_scheme kind env handle ind ctx =
+  let sym_scheme = match local_lookup_scheme handle kind ind with Some cst -> cst | None -> assert false in
   let sym, ctx = with_context_set ctx
-    (UnivGen.fresh_constant_instance (Global.env()) sym_scheme) in
+    (UnivGen.fresh_constant_instance env sym_scheme) in
     mkConstU sym, ctx
 
-let build_sym_involutive_scheme env ind =
+let build_sym_involutive_scheme env handle ind =
   let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
-  let eq,eqrefl,ctx = get_coq_eq ctx in
-  let sym, ctx = const_of_scheme sym_scheme_kind env ind ctx in
+  let eq,eqrefl,ctx = get_coq_eq env ctx in
+  let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
   let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.to_extended_vect mkRel n paramsctxt) in
   let inds = snd (mind_arity mip) in
   let indr = Sorts.relevance_of_sort_family inds in
@@ -275,12 +272,12 @@ let build_sym_involutive_scheme env ind =
   let realsign_ind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info (Global.env()) ind rci RegularStyle in
+  let ci = make_case_info env ind rci RegularStyle in
   let c =
     (my_it_mkLambda_or_LetIn paramsctxt
-     (my_it_mkLambda_or_LetIn_name realsign_ind
+     (my_it_mkLambda_or_LetIn_name env realsign_ind
       (mkCase (Inductive.contract_case env (ci,
-                my_it_mkLambda_or_LetIn_name
+                my_it_mkLambda_or_LetIn_name env
                 (lift_rel_context (nrealargs+1) realsign_ind)
                 (mkApp (eq,[|
                 mkApp
@@ -305,9 +302,8 @@ let build_sym_involutive_scheme env ind =
 
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "_sym_involutive"
-  ~deps:(fun ind -> [SchemeIndividualDep (ind, sym_scheme_kind)])
-  (fun ind ->
-    build_sym_involutive_scheme (Global.env() (* side-effect! *)) ind)
+  ~deps:(fun _ ind -> [SchemeIndividualDep (ind, sym_scheme_kind)])
+  build_sym_involutive_scheme
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for conclusion associated  *)
@@ -369,13 +365,13 @@ let sym_involutive_scheme_kind =
 (*                                                                    *)
 (**********************************************************************)
 
-let build_l2r_rew_scheme dep env ind kind =
+let build_l2r_rew_scheme dep env handle ind kind =
   let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
-  let sym, ctx = const_of_scheme sym_scheme_kind env ind ctx in
-  let sym_involutive, ctx = const_of_scheme sym_involutive_scheme_kind env ind ctx in
-  let eq,eqrefl,ctx = get_coq_eq ctx in
+  let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
+  let sym_involutive, ctx = const_of_scheme sym_involutive_scheme_kind env handle ind ctx in
+  let eq,eqrefl,ctx = get_coq_eq env ctx in
   let cstr n p =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.to_extended_vect mkRel n paramsctxt1;
@@ -415,8 +411,8 @@ let build_l2r_rew_scheme dep env ind kind =
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info (Global.env()) ind rci RegularStyle in
-  let cieq = make_case_info (Global.env()) (fst (destInd eq)) rci RegularStyle in
+  let ci = make_case_info env ind rci RegularStyle in
+  let cieq = make_case_info env (fst (destInd eq)) rci RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append (Context.Rel.to_extended_vect mkRel 1 realsign)
            (if dep then [|cstr (2*nrealargs+1) 1|] else [||])) in
@@ -438,14 +434,14 @@ let build_l2r_rew_scheme dep env ind kind =
                [|mkRel 2|]])|]]) in
   let main_body =
     mkCase (Inductive.contract_case env (ci,
-            my_it_mkLambda_or_LetIn_name realsign_ind_G applied_PG,
+            my_it_mkLambda_or_LetIn_name env realsign_ind_G applied_PG,
             NoInvert,
             applied_sym_C 3,
             [|mkVar varHC|]))
   in
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
-  (my_it_mkLambda_or_LetIn_name realsign
+  (my_it_mkLambda_or_LetIn_name env realsign
   (mkNamedLambda (make_annot varP indr)
     (my_it_mkProd_or_LetIn (if dep then realsign_ind_P else realsign_P) s)
   (mkNamedLambda (make_annot varHC indr) applied_PC
@@ -523,7 +519,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in
-  let ci = make_case_info (Global.env()) ind rci RegularStyle in
+  let ci = make_case_info env ind rci RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append
            (rel_vect (nrealargs*2+3) nrealargs)
@@ -538,10 +534,10 @@ let build_l2r_forward_rew_scheme dep env ind kind =
            (if dep then [|cstr (3*nrealargs+4) 3|] else [||])) in
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
-  (my_it_mkLambda_or_LetIn_name realsign
+  (my_it_mkLambda_or_LetIn_name env realsign
   (mkNamedLambda (make_annot varH indr) applied_ind
   (mkCase (Inductive.contract_case env (ci,
-     my_it_mkLambda_or_LetIn_name
+     my_it_mkLambda_or_LetIn_name env
        (lift_rel_context (nrealargs+1) realsign_ind)
        (mkNamedProd (make_annot varP indr)
          (my_it_mkProd_or_LetIn
@@ -605,7 +601,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info (Global.env()) ind rci RegularStyle in
+  let ci = make_case_info env ind rci RegularStyle in
   let applied_PC =
     applist (mkVar varP,if dep then constrargs_cstr else constrargs) in
   let applied_PG =
@@ -614,14 +610,14 @@ let build_r2l_forward_rew_scheme dep env ind kind =
            else Context.Rel.to_extended_vect mkRel 1 realsign) in
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
-  (my_it_mkLambda_or_LetIn_name realsign_ind
+  (my_it_mkLambda_or_LetIn_name env realsign_ind
   (mkNamedLambda (make_annot varP indr)
     (my_it_mkProd_or_LetIn (lift_rel_context (nrealargs+1)
                              (if dep then realsign_ind else realsign)) s)
   (mkNamedLambda (make_annot varHC indr) (lift 1 applied_PG)
   (mkApp
     (mkCase (Inductive.contract_case env (ci,
-       my_it_mkLambda_or_LetIn_name
+       my_it_mkLambda_or_LetIn_name env
          (lift_rel_context (nrealargs+3) realsign_ind)
          (mkArrow applied_PG indr (lift (2*nrealargs+5) applied_PC)),
        NoInvert,
@@ -649,8 +645,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 (*                                                                    *)
 (**********************************************************************)
 
-let fix_r2l_forward_rew_scheme (c, ctx') =
-  let env = Global.env () in
+let fix_r2l_forward_rew_scheme env (c, ctx') =
   let sigma = Evd.from_env env in
   let t = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let t = EConstr.Unsafe.to_constr t in
@@ -707,11 +702,11 @@ let build_r2l_rew_scheme dep env ind k =
 (**********************************************************************)
 let rew_l2r_dep_scheme_kind =
   declare_individual_scheme_object "_rew_r_dep"
-  ~deps:(fun ind -> [
+  ~deps:(fun _ ind -> [
     SchemeIndividualDep (ind, sym_scheme_kind);
     SchemeIndividualDep (ind, sym_involutive_scheme_kind);
   ])
-  (fun ind -> build_l2r_rew_scheme true (Global.env()) ind InType)
+  (fun env handle ind -> build_l2r_rew_scheme true env handle ind InType)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in conclusion                 *)
@@ -721,7 +716,7 @@ let rew_l2r_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_dep_scheme_kind =
   declare_individual_scheme_object "_rew_dep"
-  (fun ind -> build_r2l_rew_scheme true (Global.env()) ind InType)
+  (fun env _ ind -> build_r2l_rew_scheme true env ind InType)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in hypotheses                 *)
@@ -731,7 +726,7 @@ let rew_r2l_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_forward_dep_scheme_kind =
   declare_individual_scheme_object "_rew_fwd_dep"
-  (fun ind -> build_r2l_forward_rew_scheme true (Global.env()) ind InType)
+  (fun env _ ind -> build_r2l_forward_rew_scheme true env ind InType)
 
 (**********************************************************************)
 (* Dependent rewrite from left-to-right in hypotheses                 *)
@@ -741,7 +736,7 @@ let rew_r2l_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_forward_dep_scheme_kind =
   declare_individual_scheme_object "_rew_fwd_r_dep"
-  (fun ind -> build_l2r_forward_rew_scheme true (Global.env()) ind InType)
+  (fun env _ ind -> build_l2r_forward_rew_scheme true env ind InType)
 
 (**********************************************************************)
 (* Non-dependent rewrite from either left-to-right in conclusion or   *)
@@ -754,8 +749,8 @@ let rew_l2r_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "_rew_r"
-  (fun ind -> fix_r2l_forward_rew_scheme
-     (build_r2l_forward_rew_scheme false (Global.env()) ind InType))
+  (fun env _ ind -> fix_r2l_forward_rew_scheme env
+     (build_r2l_forward_rew_scheme false env ind InType))
 
 (**********************************************************************)
 (* Non-dependent rewrite from either right-to-left in conclusion or   *)
@@ -765,7 +760,7 @@ let rew_l2r_scheme_kind =
 (**********************************************************************)
 let rew_r2l_scheme_kind =
   declare_individual_scheme_object "_rew"
-  (fun ind -> build_r2l_rew_scheme false (Global.env()) ind InType)
+  (fun env _ ind -> build_r2l_rew_scheme false env ind InType)
 
 (* End of rewriting schemes *)
 
@@ -812,21 +807,21 @@ let build_congr env (eq,refl,ctx) ind =
   let varH,avoid = fresh env (Id.of_string "H") avoid in
   let varf,avoid = fresh env (Id.of_string "f") avoid in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info (Global.env()) ind rci RegularStyle in
+  let ci = make_case_info env ind rci RegularStyle in
   let uni, ctx = Univ.extend_in_context_set (UnivGen.new_global_univ ()) ctx in
   let ctx = (fst ctx, Univ.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
   let c =
   my_it_mkLambda_or_LetIn paramsctxt
      (mkNamedLambda (make_annot varB Sorts.Relevant) (mkType uni)
      (mkNamedLambda (make_annot varf Sorts.Relevant) (mkArrow (lift 1 ty) tyr (mkVar varB))
-     (my_it_mkLambda_or_LetIn_name (lift_rel_context 2 realsign)
+     (my_it_mkLambda_or_LetIn_name env (lift_rel_context 2 realsign)
      (mkNamedLambda (make_annot varH Sorts.Relevant)
         (applist
            (mkIndU indu,
             Context.Rel.to_extended_list mkRel (mip.mind_nrealargs+2) paramsctxt @
             Context.Rel.to_extended_list mkRel 0 realsign))
      (mkCase (Inductive.contract_case env (ci,
-       my_it_mkLambda_or_LetIn_name
+       my_it_mkLambda_or_LetIn_name env
          (lift_rel_context (mip.mind_nrealargs+3) realsign)
          (mkLambda
            (make_annot Anonymous Sorts.Relevant,
@@ -847,6 +842,6 @@ let build_congr env (eq,refl,ctx) ind =
   in c, UState.of_context_set ctx
 
 let congr_scheme_kind = declare_individual_scheme_object "_congr"
-  (fun ind ->
+  (fun env _ ind ->
      (* May fail if equality is not defined *)
-   build_congr (Global.env()) (get_coq_eq Univ.ContextSet.empty) ind)
+   build_congr env (get_coq_eq env Univ.ContextSet.empty) ind)
