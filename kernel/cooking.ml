@@ -201,23 +201,22 @@ let lift_univs subst auctx0 = function
     let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
     subst, (Polymorphic auctx)
 
-let cook_constr { modlist ; abstract } (c, priv) =
+let cook_constr { modlist; abstract = {abstr_ctx; abstr_subst; abstr_uctx;}; } (c, priv) =
   let cache = RefTable.create 13 in
-  let abstract, usubst, abs_ctx = abstract in
-  let usubst, priv = match priv with
+  let abstr_subst, priv = match priv with
   | Opaqueproof.PrivateMonomorphic () ->
-    let () = assert (AUContext.is_empty abs_ctx) in
-    let () = assert (Instance.is_empty usubst) in
-    usubst, priv
+    let () = assert (AUContext.is_empty abstr_uctx) in
+    let () = assert (Instance.is_empty abstr_subst) in
+    abstr_subst, priv
   | Opaqueproof.PrivatePolymorphic (univs, ctx) ->
     let ainst = Instance.of_array (Array.init univs Level.var) in
-    let usubst = Instance.append usubst ainst in
-    let ctx = on_snd (Univ.subst_univs_level_constraints (Univ.make_instance_subst usubst)) ctx in
-    let univs = univs + AUContext.size abs_ctx in
-    usubst, Opaqueproof.PrivatePolymorphic (univs, ctx)
+    let abstr_subst = Instance.append abstr_subst ainst in
+    let ctx = on_snd (Univ.subst_univs_level_constraints (Univ.make_instance_subst abstr_subst)) ctx in
+    let univs = univs + AUContext.size abstr_uctx in
+    abstr_subst, Opaqueproof.PrivatePolymorphic (univs, ctx)
   in
-  let expmod = expmod_constr_subst cache modlist usubst in
-  let hyps = Context.Named.map expmod abstract in
+  let expmod = expmod_constr_subst cache modlist abstr_subst in
+  let hyps = Context.Named.map expmod abstr_ctx in
   let hyps = abstract_context hyps in
   let c = abstract_as_body (expmod c) hyps in
   (c, priv)
@@ -227,12 +226,11 @@ let cook_constr infos c =
   List.fold_right fold infos c
 
 let cook_constant { from = cb; info } =
-  let { modlist; abstract } = info in
+  let { modlist; abstract={abstr_ctx; abstr_subst; abstr_uctx;}; } = info in
   let cache = RefTable.create 13 in
-  let abstract, usubst, abs_ctx = abstract in
-  let usubst, univs = lift_univs usubst abs_ctx cb.const_universes in
-  let expmod = expmod_constr_subst cache modlist usubst in
-  let hyps0 = Context.Named.map expmod abstract in
+  let abstr_subst, univs = lift_univs abstr_subst abstr_uctx cb.const_universes in
+  let expmod = expmod_constr_subst cache modlist abstr_subst in
+  let hyps0 = Context.Named.map expmod abstr_ctx in
   let hyps = abstract_context hyps0 in
   let map c = abstract_as_body (expmod c) hyps in
   let body = match cb.const_body with
@@ -335,15 +333,14 @@ let cook_one_ind ~ntypes
     mind_reloc_tbl = mip.mind_reloc_tbl;
   }
 
-let cook_inductive { modlist; abstract } mib =
-  let (section_decls, subst, abs_uctx) = abstract in
-  let subst, mind_universes = lift_univs subst abs_uctx mib.mind_universes in
+let cook_inductive { modlist; abstract={abstr_ctx; abstr_subst; abstr_uctx;}; } mib =
+  let abstr_subst, mind_universes = lift_univs abstr_subst abstr_uctx mib.mind_universes in
   let cache = RefTable.create 13 in
-  let expmod = expmod_constr_subst cache modlist subst in
-  let section_decls = Context.Named.map expmod section_decls in
-  let removed_vars = Context.Named.to_vars section_decls in
-  let section_decls, _ as hyps = abstract_context section_decls in
-  let nnewparams = Context.Rel.nhyps section_decls in
+  let expmod = expmod_constr_subst cache modlist abstr_subst in
+  let abstr_ctx = Context.Named.map expmod abstr_ctx in
+  let removed_vars = Context.Named.to_vars abstr_ctx in
+  let abstr_ctx, _ as hyps = abstract_context abstr_ctx in
+  let nnewparams = Context.Rel.nhyps abstr_ctx in
   let mind_params_ctxt =
     let ctx = Context.Rel.map expmod mib.mind_params_ctxt in
     abstract_rel_ctx hyps ctx
@@ -374,7 +371,7 @@ let cook_inductive { modlist; abstract } mib =
     | None, Some _ | Some _, None -> assert false
     | Some variance, Some sec_variance ->
       let sec_variance, newvariance =
-        Array.chop (Array.length sec_variance - AUContext.size abs_uctx)
+        Array.chop (Array.length sec_variance - AUContext.size abstr_uctx)
           sec_variance
       in
       Some (Array.append newvariance variance), Some sec_variance
@@ -385,7 +382,7 @@ let cook_inductive { modlist; abstract } mib =
       let sec_levels = CList.map_filter (fun d ->
           if RelDecl.is_local_assum d then Some None
           else None)
-          section_decls
+          abstr_ctx
       in
       let levels = List.rev_append sec_levels levels in
       Some {template_param_levels=levels; template_context}

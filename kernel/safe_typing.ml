@@ -1385,11 +1385,7 @@ let close_section senv =
   (* Third phase: replay the discharged section contents *)
   let senv = push_context_set ~strict:true cstrs senv in
   let modlist = Section.replacement_context env0 sections0 in
-  let cooking_info seg =
-    let { abstr_ctx; abstr_subst; abstr_uctx } = seg in
-    let abstract = (abstr_ctx, abstr_subst, abstr_uctx) in
-    { modlist; abstract }
-  in
+  let cooking_info abstract = { Declarations.modlist; abstract; } in
   let fold senv = function
   | `Definition (kn, cb) ->
     let info = cooking_info (Section.segment_of_constant env0 kn sections0) in

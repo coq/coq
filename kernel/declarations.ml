@@ -103,9 +103,19 @@ type typing_flags = {
 type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
   (Univ.Instance.t * Id.t array) Mindmap.t
 
+(** Data needed to abstract over the section variable and universe hypotheses *)
+type abstr_info = {
+  abstr_ctx : Constr.named_context;
+  (** Section variables of this prefix *)
+  abstr_subst : Univ.Instance.t;
+  (** Actual names of the abstracted variables *)
+  abstr_uctx : Univ.AUContext.t;
+  (** Universe quantification, same length as the substitution *)
+}
+
 type cooking_info = {
   modlist : work_list;
-  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t;
+  abstract : abstr_info;
 }
 
 (* some contraints are in constant_constraints, some other may be in

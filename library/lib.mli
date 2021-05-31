@@ -161,9 +161,9 @@ val drop_objects : frozen -> frozen
 val init : unit -> unit
 
 (** {6 Section management for discharge } *)
-val section_segment_of_constant : Constant.t -> Section.abstr_info
-val section_segment_of_mutual_inductive: MutInd.t -> Section.abstr_info
-val section_segment_of_reference : GlobRef.t -> Section.abstr_info
+val section_segment_of_constant : Constant.t -> Declarations.abstr_info
+val section_segment_of_mutual_inductive: MutInd.t -> Declarations.abstr_info
+val section_segment_of_reference : GlobRef.t -> Declarations.abstr_info
 
 val variable_section_segment_of_reference : GlobRef.t -> Constr.named_context
 
@@ -178,4 +178,4 @@ val replacement_context : unit -> Declarations.work_list
 
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 val discharge_abstract_universe_context :
-  Section.abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t
+  Declarations.abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t

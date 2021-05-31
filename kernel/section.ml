@@ -11,6 +11,7 @@
 open Util
 open Names
 open Univ
+open Declarations
 
 module NamedDecl = Context.Named.Declaration
 
@@ -116,12 +117,6 @@ let push_global ~poly e sec =
 let push_constant ~poly con s = push_global ~poly (SecDefinition con) s
 
 let push_inductive ~poly ind s = push_global ~poly (SecInductive ind) s
-
-type abstr_info = {
-  abstr_ctx : Constr.named_context;
-  abstr_subst : Instance.t;
-  abstr_uctx : AUContext.t;
-}
 
 let empty_segment = {
   abstr_ctx = [];
