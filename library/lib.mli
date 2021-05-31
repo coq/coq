@@ -170,7 +170,7 @@ val variable_section_segment_of_reference : GlobRef.t -> Constr.named_context
 val section_instance : GlobRef.t -> Univ.Instance.t * Id.t array
 val is_in_section : GlobRef.t -> bool
 
-val replacement_context : unit -> Opaqueproof.work_list
+val replacement_context : unit -> Declarations.work_list
 
 (** {6 Discharge: decrease the section level if in the current section } *)
 

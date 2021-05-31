@@ -9,16 +9,8 @@
 (************************************************************************)
 
 open Names
-open Univ
 open Constr
 open Mod_subst
-
-type work_list = (Instance.t * Id.t array) Cmap.t *
-  (Instance.t * Id.t array) Mindmap.t
-
-type cooking_info = {
-  modlist : work_list;
-  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
 
 type 'a delayed_universes =
 | PrivateMonomorphic of 'a
@@ -26,9 +18,9 @@ type 'a delayed_universes =
 
 type opaque_proofterm = Constr.t * unit delayed_universes
 
-type indirect_accessor = {
+type 'cooking_info indirect_accessor = {
   access_proof : DirPath.t -> int -> opaque_proofterm option;
-  access_discharge : cooking_info list -> opaque_proofterm -> opaque_proofterm;
+  access_discharge : 'cooking_info list -> opaque_proofterm -> opaque_proofterm;
 }
 
 let drop_mono = function
@@ -37,8 +29,8 @@ let drop_mono = function
 
 type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 
-type opaque =
-| Indirect of substitution list * cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)
+type 'cooking_info opaque =
+| Indirect of substitution list * 'cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)
 
 type opaquetab = {
   opaque_val : proofterm Int.Map.t;

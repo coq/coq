@@ -152,7 +152,7 @@ let abstract_as_body c (hyps, subst) =
   let c = Vars.subst_vars subst c in
   it_mkLambda_or_LetIn c hyps
 
-type recipe = { from : Opaqueproof.opaque constant_body; info : Opaqueproof.cooking_info }
+type recipe = { from : constant_body; info : cooking_info }
 type inline = bool
 
 type 'opaque result = {
@@ -201,7 +201,7 @@ let lift_univs subst auctx0 = function
     let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
     subst, (Polymorphic auctx)
 
-let cook_constr { Opaqueproof.modlist ; abstract } (c, priv) =
+let cook_constr { modlist ; abstract } (c, priv) =
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
   let usubst, priv = match priv with
@@ -227,7 +227,7 @@ let cook_constr infos c =
   List.fold_right fold infos c
 
 let cook_constant { from = cb; info } =
-  let { Opaqueproof.modlist; abstract } = info in
+  let { modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
   let usubst, univs = lift_univs usubst abs_ctx cb.const_universes in
@@ -335,7 +335,7 @@ let cook_one_ind ~ntypes
     mind_reloc_tbl = mip.mind_reloc_tbl;
   }
 
-let cook_inductive { Opaqueproof.modlist; abstract } mib =
+let cook_inductive { modlist; abstract } mib =
   let (section_decls, subst, abs_uctx) = abstract in
   let subst, mind_universes = lift_univs subst abs_uctx mib.mind_universes in
   let cache = RefTable.create 13 in

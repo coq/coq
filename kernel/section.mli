@@ -88,7 +88,7 @@ val segment_of_constant : Environ.env -> Constant.t -> 'a t -> abstr_info
 val segment_of_inductive : Environ.env -> MutInd.t -> 'a t -> abstr_info
 (** Section segment at the time of the inductive declaration *)
 
-val replacement_context : Environ.env -> 'a t -> Opaqueproof.work_list
+val replacement_context : Environ.env -> 'a t -> Declarations.work_list
 (** Section segments of all declarations from this section. *)
 
 val is_in_section : Environ.env -> GlobRef.t -> 'a t -> bool

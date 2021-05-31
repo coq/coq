@@ -13,7 +13,7 @@ open Declarations
 
 (** {6 Cooking the constants. } *)
 
-type recipe = { from : Opaqueproof.opaque constant_body; info : Opaqueproof.cooking_info }
+type recipe = { from : constant_body; info : cooking_info }
 
 type inline = bool
 
@@ -27,14 +27,13 @@ type 'opaque result = {
   cook_flags : typing_flags;
 }
 
-val cook_constant : recipe -> Opaqueproof.opaque result
-val cook_constr : Opaqueproof.cooking_info list ->
+val cook_constant : recipe -> cooking_info Opaqueproof.opaque result
+val cook_constr : cooking_info list ->
   (constr * unit Opaqueproof.delayed_universes) -> (constr * unit Opaqueproof.delayed_universes)
 
 val cook_inductive :
-  Opaqueproof.cooking_info -> mutual_inductive_body -> mutual_inductive_body
+  cooking_info -> mutual_inductive_body -> mutual_inductive_body
 
 (** {6 Utility functions used in module [Discharge]. } *)
 
-val expmod_constr : Opaqueproof.work_list -> constr -> constr
-
+val expmod_constr : work_list -> constr -> constr

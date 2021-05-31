@@ -100,9 +100,17 @@ type typing_flags = {
 
 }
 
+type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
+  (Univ.Instance.t * Id.t array) Mindmap.t
+
+type cooking_info = {
+  modlist : work_list;
+  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t;
+}
+
 (* some contraints are in constant_constraints, some other may be in
  * the OpaqueDef *)
-type 'opaque constant_body = {
+type 'opaque pconstant_body = {
     const_hyps : Constr.named_context; (** New: younger hyp at top *)
     const_body : (Constr.t, 'opaque) constant_def;
     const_type : types;
@@ -114,6 +122,8 @@ type 'opaque constant_body = {
                                            were used for
                                            type-checking. *)
 }
+
+type constant_body = cooking_info Opaqueproof.opaque pconstant_body
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 type nested_type =
@@ -270,7 +280,7 @@ type module_alg_expr =
 (** A component of a module structure *)
 
 type structure_field_body =
-  | SFBconst of Opaqueproof.opaque constant_body
+  | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
   | SFBmodtype of module_type_body

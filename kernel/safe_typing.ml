@@ -322,7 +322,7 @@ end
 type side_effect = {
   seff_certif : Certificate.t CEphemeron.key;
   seff_constant : Constant.t;
-  seff_body : Constr.t Declarations.constant_body;
+  seff_body : Constr.t Declarations.pconstant_body;
 }
 (* Invariant: For any senv, if [Certificate.check senv seff_certif] then
   senv where univs := Certificate.universes seff_certif] +
@@ -1388,7 +1388,7 @@ let close_section senv =
   let cooking_info seg =
     let { abstr_ctx; abstr_subst; abstr_uctx } = seg in
     let abstract = (abstr_ctx, abstr_subst, abstr_uctx) in
-    { Opaqueproof.modlist; abstract }
+    { modlist; abstract }
   in
   let fold senv = function
   | `Definition (kn, cb) ->
