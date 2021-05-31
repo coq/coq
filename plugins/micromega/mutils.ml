@@ -111,7 +111,7 @@ let find_some pred l = try Some (find_option pred l) with Not_found -> None
 let extract_all pred l =
   List.fold_left
     (fun (s1, s2) e ->
-      match pred e with None -> (s1, e :: s2) | Some v -> ((v, e) :: s1, s2))
+      match pred e with None -> (s1, e :: s2) | Some v -> (v :: s1, s2))
     ([], []) l
 
 let simplify f sys =

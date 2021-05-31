@@ -438,8 +438,6 @@ module LinPoly = struct
         else acc)
       [] l
 
-  let get_bound p = Vect.Bound.of_vect p
-
   let min_list (l : int list) =
     match l with [] -> None | e :: l -> Some (List.fold_left min e l)
 
@@ -1217,30 +1215,52 @@ module WithProof = struct
               (ProofFormat.mul_cst_proof cv1 prf1)
               (ProofFormat.mul_cst_proof cv2 prf2) )
 
-  open Vect.Bound
+end
 
-  let mul_bound w1 w2 =
-    let (p1, o1), prf1 = w1 in
-    let (p2, o2), prf2 = w2 in
-    match (LinPoly.get_bound p1, LinPoly.get_bound p2) with
+module BoundWithProof =
+struct
+
+type t = Vect.Bound.t * WithProof.t
+
+let compare (_, w1) (_, w2) = WithProof.compare w1 w2
+
+let make (((p, o), prf) as v) = match Vect.Bound.of_vect p with
+| None -> None
+| Some b -> Some (b, v)
+
+let mul_bound (b1, w1) (b2, w2) =
+  let open Vect.Bound in
+  let open WithProof in
+  let (p1, o1), prf1 = w1 in
+  let (p2, o2), prf2 = w2 in
+  match (Vect.Bound.of_vect p1, Vect.Bound.of_vect p2) with
+  | None, _ | _, None -> None
+  | ( Some {cst = c1; var = v1; coeff = c1'}
+    , Some {cst = c2; var = v2; coeff = c2'} ) ->
+    let good_coeff b o =
+      match o with
+      | Eq -> Some (Q.neg b)
+      | _ -> if b <=/ Q.zero then Some (Q.neg b) else None
+    in
+    match (good_coeff c1 o2, good_coeff c2 o1) with
     | None, _ | _, None -> None
-    | ( Some {cst = c1; var = v1; coeff = c1'}
-      , Some {cst = c2; var = v2; coeff = c2'} ) -> (
-      let good_coeff b o =
-        match o with
-        | Eq -> Some (Q.neg b)
-        | _ -> if b <=/ Q.zero then Some (Q.neg b) else None
+    | Some c1, Some c2 ->
+      let ext_mult c w =
+        if c =/ Q.zero then zero else mult (LinPoly.constant c) w
       in
-      match (good_coeff c1 o2, good_coeff c2 o1) with
-      | None, _ | _, None -> None
-      | Some c1, Some c2 ->
-        let ext_mult c w =
-          if c =/ Q.zero then zero else mult (LinPoly.constant c) w
-        in
-        Some
-          (addition
-             (addition (product w1 w2) (ext_mult c1 w2))
-             (ext_mult c2 w1)) )
+      let ans =
+        addition
+            (addition (product w1 w2) (ext_mult c1 w2))
+            (ext_mult c2 w1)
+      in
+      match Vect.Bound.of_vect (fst @@ fst ans) with
+      | None -> None
+      | Some b -> Some (b, ans)
+
+let bound (b, _) = b
+
+let proof (_, w) = w
+
 end
 
 (* Local Variables: *)

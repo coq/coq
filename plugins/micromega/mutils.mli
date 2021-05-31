@@ -101,7 +101,7 @@ val all_pairs : ('a -> 'a -> 'b) -> 'a list -> 'b list
 val try_any : (('a -> 'b option) * 'c) list -> 'a -> 'b option
 val is_sublist : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val extract : ('a -> 'b option) -> 'a list -> ('b * 'a) option * 'a list
-val extract_all : ('a -> 'b option) -> 'a list -> ('b * 'a) list * 'a list
+val extract_all : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
 val extract_best :
      ('a -> 'b option)
