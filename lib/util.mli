@@ -36,6 +36,10 @@ val pi1 : 'a * 'b * 'c -> 'a
 val pi2 : 'a * 'b * 'c -> 'b
 val pi3 : 'a * 'b * 'c -> 'c
 
+(** {6 Pair equality combinator } *)
+
+val pair_eq : ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> 'a * 'b -> 'a * 'b -> bool
+
 (** {6 Chars. } *)
 
 val is_letter : char -> bool

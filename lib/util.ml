@@ -33,6 +33,10 @@ let pi1 (a,_,_) = a
 let pi2 (_,a,_) = a
 let pi3 (_,_,a) = a
 
+(* Pair equality combinator *)
+
+let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
+
 (* Characters *)
 
 let is_letter c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
