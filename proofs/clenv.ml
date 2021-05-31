@@ -319,17 +319,13 @@ let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
 let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
   update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
 
-let clenv_unique_resolver_gen ?(flags=default_unify_flags ()) clenv concl =
+let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv concl =
   if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.env clenv.evd clenv.templtyp.rebus))) then
     clenv_unify CUMUL ~flags (clenv_type clenv) concl
       (clenv_unify_meta_types ~flags clenv)
   else
     clenv_unify CUMUL ~flags
       (meta_reducible_instance clenv.env clenv.evd clenv.templtyp) concl clenv
-
-let clenv_unique_resolver ?flags clenv gl =
-  let concl = Proofview.Goal.concl gl in
-  clenv_unique_resolver_gen ?flags clenv concl
 
 let adjust_meta_source evd mv = function
   | loc,Evar_kinds.VarInstance id ->
@@ -646,34 +642,30 @@ let clenv_pose_dependent_evars ?(with_evars=false) clenv =
       (RefinerError (env, sigma, UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
   clenv_pose_metas_as_evars clenv dep_mvs
 
-let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
-  Proofview.Goal.enter begin fun gl ->
-  let clenv = clenv_pose_dependent_evars ~with_evars clenv in
-  let evd' =
-    if with_classes then
-      let evd' =
-        Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-          ~fail:(not with_evars) clenv.env clenv.evd
-      in
-      (* After an apply, all the subgoals including those dependent shelved ones are in
-         the hands of the user and resolution won't be called implicitely on them. *)
-      Typeclasses.make_unresolvables (fun x -> true) evd'
-    else clenv.evd
-  in
-  let clenv = update_clenv_evd clenv evd' in
-  Proofview.tclTHEN
-    (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-    (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
-  end
-
 open Unification
 
 let dft = default_unify_flags
 
-let res_pf ?with_evars ?(with_classes=true) ?(flags=dft ()) clenv =
+let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
-    let clenv = clenv_unique_resolver ~flags clenv gl in
-    clenv_refine ?with_evars ~with_classes clenv
+    let concl = Proofview.Goal.concl gl in
+    let clenv = clenv_unique_resolver ~flags clenv concl in
+    let clenv = clenv_pose_dependent_evars ~with_evars clenv in
+    let evd' =
+      if with_classes then
+        let evd' =
+          Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
+            ~fail:(not with_evars) clenv.env clenv.evd
+        in
+        (* After an apply, all the subgoals including those dependent shelved ones are in
+          the hands of the user and resolution won't be called implicitely on them. *)
+        Typeclasses.make_unresolvables (fun x -> true) evd'
+      else clenv.evd
+    in
+    let clenv = update_clenv_evd clenv evd' in
+    Proofview.tclTHEN
+      (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
+      (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
