@@ -815,7 +815,7 @@ let print_full_pure_context env sigma =
               | Def c ->
                 str "Definition " ++ print_basename con ++ cut () ++
                 str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++
-                pr_lconstr_env env sigma (Mod_subst.force_constr c)
+                pr_lconstr_env env sigma c
               | Primitive _ ->
                  str "Primitive " ++
                    print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ)

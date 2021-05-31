@@ -465,34 +465,10 @@ type body_code =
   | BCalias of Names.Constant.t
   | BCconstant
 
-type to_patch_substituted =
-| PBCdefined of to_patch substituted
-| PBCalias of Names.Constant.t substituted
-| PBCconstant
-
-let from_val = function
-| BCdefined tp -> PBCdefined (from_val tp)
-| BCalias cu -> PBCalias (from_val cu)
-| BCconstant -> PBCconstant
-
-let force = function
-| PBCdefined tp -> BCdefined (force subst_to_patch tp)
-| PBCalias cu -> BCalias (force subst_constant cu)
-| PBCconstant -> BCconstant
-
-let subst_to_patch_subst s = function
-| PBCdefined tp -> PBCdefined (subst_substituted s tp)
-| PBCalias cu -> PBCalias (subst_substituted s cu)
-| PBCconstant -> PBCconstant
-
-let repr_body_code = function
-| PBCdefined tp ->
-  let (s, tp) = repr_substituted tp in
-  (s, BCdefined tp)
-| PBCalias cu ->
-  let (s, cu) = repr_substituted cu in
-  (s, BCalias cu)
-| PBCconstant -> (None, BCconstant)
+let subst_body_code s = function
+| BCdefined tp -> BCdefined (subst_to_patch s tp)
+| BCalias cu -> BCalias (subst_constant s cu)
+| BCconstant -> BCconstant
 
 let to_memory (init_code, fun_code, fv) =
   let env = {

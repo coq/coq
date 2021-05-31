@@ -82,8 +82,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               let typ = cb.const_type in
               let cst' = Reduction.infer_conv_leq env' j.uj_type typ in
               j.uj_val, cst'
-            | Def cs ->
-              let c' = Mod_subst.force_constr cs in
+            | Def c' ->
               c, Reduction.infer_conv env' c c'
             | Primitive _ ->
               error_incorrect_with_constraint lab
@@ -104,8 +103,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               let typ = cb.const_type in
               let cst' = Reduction.infer_conv_leq env' j.uj_type typ in
               cst'
-            | Def cs ->
-              let c' = Mod_subst.force_constr cs in
+            | Def c' ->
               let cst' = Reduction.infer_conv env' c c' in
               cst'
             | Primitive _ ->
@@ -116,13 +114,13 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
           c, Polymorphic ctx, Univ.Constraint.empty
         | _ -> error_incorrect_with_constraint lab
       in
-      let def = Def (Mod_subst.from_val c') in
+      let def = Def c' in
       (*      let ctx' = Univ.UContext.make (newus, cst) in *)
       let cb' =
         { cb with
           const_body = def;
           const_universes = univs ;
-          const_body_code = Option.map Vmemitcodes.from_val
+          const_body_code =
               (Vmbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'

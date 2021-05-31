@@ -110,7 +110,8 @@ let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
           | None -> not_here ()
           | Some (c, u) -> access.access_discharge d (c, u)
       in
-      let c = force_constr (List.fold_right subst_substituted l (from_val c)) in
+      let l = List.fold_left Mod_subst.join Mod_subst.empty_subst (List.rev l) in
+      let c = subst_mps l c in
       (c, u)
 
 let get_mono (_, u) = match u with

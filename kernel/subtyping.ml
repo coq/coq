@@ -246,14 +246,12 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
       *)
       (match cb2.const_body with
         | Primitive _ | Undef _ | OpaqueDef _ -> cst
-        | Def lc2 ->
+        | Def c2 ->
           (match cb1.const_body with
             | Primitive _ | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
-            | Def lc1 ->
+            | Def c1 ->
               (* NB: cb1 might have been strengthened and appear as transparent.
                  Anyway [check_conv] will handle that afterwards. *)
-              let c1 = Mod_subst.force_constr lc1 in
-              let c2 = Mod_subst.force_constr lc2 in
               check_conv NotConvertibleBodyField cst poly (infer_conv ?l2r:None ?evars:None ?ts:None) env c1 c2))
 
 

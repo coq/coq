@@ -197,7 +197,7 @@ let get_constant_body kn =
   let otab = Environ.opaque_tables env in
   match cb.const_body with
   | Undef _ | Primitive _ -> None
-  | Def c -> Some (Mod_subst.force_constr c)
+  | Def c -> Some c
   | OpaqueDef o ->
     match Opaqueproof.force_proof access otab o with
     | c, _ -> Some c

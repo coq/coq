@@ -4,7 +4,6 @@
 #install_printer  (* open constr *) ppopenconstr;;
 #install_printer  (* constr *) ppconstr;;
 #install_printer  (* econstr *) ppeconstr;;
-#install_printer  (* constr_substituted *) ppsconstr;;
 #install_printer  (* constraints *)  ppconstraints;;
 #install_printer  (* univ constraints *)  ppuniverseconstraints;;
 #install_printer  (* universe *)  ppuni;;
