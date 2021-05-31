@@ -181,4 +181,5 @@ module Bound : sig
   type t = {cst : Q.t; var : var; coeff : Q.t}
 
   val of_vect : vector -> t option
+  val to_vect : t -> vector
 end
