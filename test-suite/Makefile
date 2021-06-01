@@ -434,7 +434,6 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    | grep -a -v "\[Loading ML file" \
 	    | grep -a -v "Skipping rcfile loading" \
 	    | grep -a -v "^<W>" \
-	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$output; \
 	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
@@ -458,7 +457,6 @@ $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
-	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$output; \
 	  diff -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
@@ -494,9 +492,7 @@ $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	  output=$*.out.real; \
 	  export LC_CTYPE=C; \
 	  export LANG=C; \
-	  $(coqchk) -o -silent $(call get_set_impredicativity,$<) $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) 2>&1 \
-	    | sed 's/File "[^"]*"/File "stdin"/' \
-	    > $$output; \
+	  $(coqchk) -o -silent $(call get_set_impredicativity,$<) $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) > $$output 2>&1 ; \
 	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \

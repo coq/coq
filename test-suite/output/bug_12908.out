@@ -1,6 +1,6 @@
 forall m n : nat, m * n = (2 * m * n)%nat
      : Prop
-File "stdin", line 11, characters 0-31:
+File "./output/bug_12908.v", line 11, characters 0-31:
 Warning: Notation "_ * _" was already used in scope nat_scope.
 [notation-overridden,parsing]
 forall m n : nat, m * n = Nat.mul (Nat.mul 2 m) n

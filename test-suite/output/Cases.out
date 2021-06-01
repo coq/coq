@@ -181,7 +181,7 @@ match N with
 | _ => Node
 end
      : Tree -> Tree
-File "stdin", line 253, characters 4-5:
+File "./output/Cases.v", line 253, characters 4-5:
 Warning: Unused variable B catches more than one case.
 [unused-pattern-matching-variable,pattern-matching]
 The command has indeed failed with message:
@@ -232,12 +232,12 @@ match x with
 | @D' _ _ _ _ n _ p _ => (n, p)
 end
      : J' bool (true, true) -> nat * nat
-File "stdin", line 313, characters 3-4:
+File "./output/Cases.v", line 313, characters 3-4:
 Warning: Unused variable x catches more than one case.
 [unused-pattern-matching-variable,pattern-matching]
-File "stdin", line 314, characters 6-7:
+File "./output/Cases.v", line 314, characters 6-7:
 Warning: Unused variable y catches more than one case.
 [unused-pattern-matching-variable,pattern-matching]
-File "stdin", line 314, characters 3-4:
+File "./output/Cases.v", line 314, characters 3-4:
 Warning: Unused variable x catches more than one case.
 [unused-pattern-matching-variable,pattern-matching]

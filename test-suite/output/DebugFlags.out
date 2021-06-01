@@ -1,4 +1,4 @@
-File "stdin", line 1, characters 0-16:
+File "./output/DebugFlags.v", line 1, characters 0-16:
 Warning: There is no debug flag "cbn". [unknown-debug-flag,option]
 Debug: [RAKAM] <<forall A : Type, A -> A -> Prop|>>
 Debug: [RAKAM] <><><><><>
