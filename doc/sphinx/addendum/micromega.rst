@@ -283,7 +283,8 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
    + For boolean operators (e.g., :g:`Nat.leb`), require the module :g:`ZifyBool`.
    + For comparison operators (e.g., :g:`Z.compare`), require the module :g:`ZifyComparison`.
-   + For native 63 bit integers, require the module :g:`ZifyInt63`.
+   + For native unsigned 63 bit integers, require the module :g:`ZifyInt63`.
+   + For native signed 63 bit integers, require the module :g:`ZifySint63`.
    + For operators :g:`Nat.div`, :g:`Nat.mod`, and :g:`Nat.pow`, require the module :g:`ZifyNat`.
    + For operators :g:`N.div`, :g:`N.mod`, and :g:`N.pow`, require the module :g:`ZifyN`.
 
