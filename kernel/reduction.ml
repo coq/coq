@@ -207,8 +207,6 @@ type conv_pb =
   | CONV
   | CUMUL
 
-let is_cumul = function CUMUL -> true | CONV -> false
-
 type 'a universe_compare = {
   (* Might raise NotConvertible *)
   compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
@@ -866,26 +864,15 @@ let check_eq univs u u' =
 let check_leq univs u u' =
   if not (UGraph.check_leq univs u u') then raise NotConvertible
 
-let check_sort_cmp_universes env pb s0 s1 univs =
-  let open Sorts in
-  if not (type_in_type env) then
-    let check_pb u0 u1 =
-      match pb with
-      | CUMUL -> check_leq univs u0 u1
-      | CONV -> check_eq univs u0 u1
-    in
-    match (s0,s1) with
-    | SProp, SProp | Prop, Prop | Set, Set -> ()
-    | SProp, _ | _, SProp -> raise NotConvertible
-    | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible
-    | Set, Prop -> raise NotConvertible
-    | Set, Type u -> check_pb Univ.type0_univ u
-    | Type _u, Prop -> raise NotConvertible
-    | Type u, Set -> check_pb u Univ.type0_univ
-    | Type u0, Type u1 -> check_pb u0 u1
+let check_sort_cmp_universes pb s0 s1 univs =
+  let u0 = Sorts.univ_of_sort s0
+  and u1 = Sorts.univ_of_sort s1 in
+  match pb with
+  | CUMUL -> check_leq univs u0 u1
+  | CONV -> check_eq univs u0 u1
 
-let checked_sort_cmp_universes env pb s0 s1 univs =
-  check_sort_cmp_universes env pb s0 s1 univs; univs
+let checked_sort_cmp_universes _env pb s0 s1 univs =
+  check_sort_cmp_universes pb s0 s1 univs; univs
 
 let check_convert_instances ~flex:_ u u' univs =
   if UGraph.check_eq_instances univs u u' then univs
@@ -927,25 +914,12 @@ let infer_leq (univs, cstrs as cuniv) u u' =
     let cstrs', _ = UGraph.enforce_leq_alg u u' univs in
       univs, Univ.Constraint.union cstrs cstrs'
 
-let infer_cmp_universes env pb s0 s1 univs =
-  if type_in_type env
-  then univs
-  else
-    let open Sorts in
-    let infer_pb u0 u1 =
-      match pb with
-      | CUMUL -> infer_leq univs u0 u1
-      | CONV -> infer_eq univs u0 u1
-    in
-    match (s0,s1) with
-    | SProp, SProp | Prop, Prop | Set, Set -> univs
-    | SProp, _ | _, SProp -> raise NotConvertible
-    | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible else univs
-    | Set, Prop -> raise NotConvertible
-    | Set, Type u -> infer_pb Univ.type0_univ u
-    | Type u, Prop -> infer_pb u Univ.type0m_univ
-    | Type u, Set -> infer_pb u Univ.type0_univ
-    | Type u0, Type u1 -> infer_pb u0 u1
+let infer_cmp_universes _env pb s0 s1 univs =
+  let u0 = Sorts.univ_of_sort s0
+  and u1 = Sorts.univ_of_sort s1 in
+  match pb with
+  | CUMUL -> infer_leq univs u0 u1
+  | CONV -> infer_eq univs u0 u1
 
 let infer_convert_instances ~flex u u' (univs,cstrs) =
   let cstrs' =
