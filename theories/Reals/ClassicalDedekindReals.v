@@ -38,7 +38,7 @@ Proof.
   intros n; induction n.
   - reflexivity.
   - change (PosPow2_nat (S n)) with (2*(PosPow2_nat n))%positive.
-    rewrite Q_factorDenom.
+    rewrite <- Qmult_frac_l.
     rewrite Nat2Z.inj_succ, Z.opp_succ, <- Z.sub_1_r.
     rewrite Qpower_minus_pos.
     change ((1 # 2) ^ 1)%Q with (1 # 2)%Q.
@@ -56,7 +56,7 @@ Proof.
     3: apply Nat.pow_nonzero; intros contra; inversion contra.
     2: intros contra; inversion contra.
     change (Pos.of_nat 2)%nat with 2%positive.
-    rewrite Q_factorDenom.
+    rewrite Qmult_frac_l.
     rewrite Nat2Z.inj_succ, Z.opp_succ, <- Z.sub_1_r.
     rewrite Qpower_minus_pos.
     change ((1 # 2) ^ 1)%Q with (1 # 2)%Q.
@@ -70,7 +70,7 @@ Proof.
   intros n; destruct n.
   - intros contra; inversion contra.
   - (* ToDo: find out why this works - somehow 1#(...) seems to be coereced to 1 *)
-    apply (Qpower_le_1_increasing 2 p ltac:(lra)).
+    apply (Qpower_1_le_pos 2 p ltac:(lra)).
   - rewrite <- Qpower_2_neg_eq_natpow_inv.
     rewrite Z2Nat.id by lia.
     rewrite Z.opp_involutive.
@@ -365,13 +365,13 @@ Proof.
       apply (UpperAboveLower f).
         exact Hflc. apply Hq. apply Hr.
     + apply (Qle_trans _ _ _ (Qpower_2_invneg_le_pow _)).
-      apply Qpower_le_compat; [lia|lra].
+      apply Qpower_le_compat_l; [lia|lra].
   - intros. apply (Qlt_le_trans _ (1 # Pos.of_nat (2 ^ Z.to_nat (-k)))).
     + apply (Qplus_lt_l _ _ q); ring_simplify.
       apply (UpperAboveLower f).
         exact Hflc. apply Hr. apply Hq.
     + apply (Qle_trans _ _ _ (Qpower_2_invneg_le_pow _)).
-      apply Qpower_le_compat; [lia|lra].
+      apply Qpower_le_compat_l; [lia|lra].
 Qed.
 
 Lemma CReal_of_DReal_seq_max_prec_1 : forall (x : DReal) (n : Z),
@@ -517,7 +517,7 @@ Proof.
      This limits the distance between s and r. *)
   pose proof UpperAboveLower f _ _ low rmaj smaj as Hrltse; clear rmaj smaj.
   pose proof Qpower_2_invneg_le_pow p as Hpowcut.
-  pose proof Qpower_pos_lt 2 p ltac:(lra) as Hpowpos.
+  pose proof Qpower_0_lt 2 p ltac:(lra) as Hpowpos.
   lra.
 Qed.
 
@@ -536,7 +536,7 @@ Proof.
 
   (* Use the fact that q is above the cut and r is below the cut. *)
   pose proof UpperAboveLower f _ _ low rmaj H as Hrltse.
-  pose proof Qpower_pos_lt 2 p ltac:(lra) as Hpowpos.
+  pose proof Qpower_0_lt 2 p ltac:(lra) as Hpowpos.
   lra.
 Qed.
 
@@ -577,11 +577,11 @@ Proof.
   - destruct (Z_le_gt_dec n 0) as [Hdec|Hdec].
     + specialize (H' (Z.to_nat (-n) )).
       rewrite (Z2Nat.id (-n)%Z ltac:(lia)), Z.opp_involutive in H'.
-      pose proof Qpower_pos_lt 2 n; lra.
+      pose proof Qpower_0_lt 2 n; lra.
     + specialize (H' (Z.to_nat (0) )). cbn in H'.
       pose proof cauchy x n%Z 0%Z n ltac:(lia) ltac:(lia) as Hxbnd.
       apply Qabs_Qlt_condition in Hxbnd.
-      pose proof Qpower_le_1_increasing' 2 n ltac:(lra) ltac:(lia).
+      pose proof Qpower_1_le 2 n ltac:(lra) ltac:(lia).
       lra.
 Qed.
 
@@ -596,7 +596,7 @@ Proof.
   - destruct (Z_le_gt_dec n 0) as [Hdec|Hdec].
     + specialize (H' (Z.to_nat (-n) )).
       rewrite (Z2Nat.id (-n)%Z ltac:(lia)), Z.opp_involutive in H'.
-      pose proof Qpower_pos_lt 2 n; lra.
+      pose proof Qpower_0_lt 2 n; lra.
     + specialize (H' (Z.to_nat (0) )). cbn in H'.
       pose proof cauchy x n%Z 0%Z n ltac:(lia) ltac:(lia) as Hxbnd.
       apply Qabs_Qlt_condition in Hxbnd.
@@ -629,7 +629,7 @@ Proof.
       pose proof (DRealAbstrFalse'' x _ p%nat Hqr) as Hq; clear Hql Hqr.
       rewrite <- Qpower_2_neg_eq_natpow_inv in Hq.
       change (- Z.of_nat 0)%Z with 0%Z in Hq.
-      pose proof (Qpower_le_compat 2 1 p ltac:(lia) ltac:(lra)) as Hpowle.
+      pose proof (Qpower_le_compat_l 2 1 p ltac:(lia) ltac:(lra)) as Hpowle.
       change (2^1)%Q with 2%Q in Hpowle.
       lra.
   - intros [p pmaj].
@@ -651,10 +651,10 @@ Proof.
     destruct (Z_le_gt_dec p (- Z.of_nat n)).
     + apply (Qlt_trans _ (2 ^ (- Z.of_nat n))). apply (cauchy x).
         1, 2: lia.
-      pose proof Qpower_pos_lt 2 p; lra.
+      pose proof Qpower_0_lt 2 p; lra.
     + apply (Qlt_trans _ (2^p)). apply (cauchy x).
         1, 2: lia.
-      pose proof Qpower_pos_lt 2 (- Z.of_nat n).
-      pose proof Qpower_pos_lt 2 p.
+      pose proof Qpower_0_lt 2 (- Z.of_nat n).
+      pose proof Qpower_0_lt 2 p.
       lra.
 Qed.

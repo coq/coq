@@ -11,16 +11,6 @@
 Require Import QArith.
 Import Zdiv.
 
-Lemma Qopp_lt_compat: forall p q : Q, p < q -> - q < - p.
-Proof.
-intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
-rewrite !Z.mul_opp_l.
-apply Z.opp_lt_mono.
-Qed.
-
-#[global]
-Hint Resolve Qopp_lt_compat : qarith.
-
 (************)
 
 Local Coercion inject_Z : Z >-> Q.

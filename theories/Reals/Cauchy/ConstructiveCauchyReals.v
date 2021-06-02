@@ -196,7 +196,7 @@ Proof.
   destruct (QarchimedeanExp2_Z (/((seq y) n - (seq x) n - (2*2^n)%Q))) as [k kmaj].
   intros p Hp.
   apply Qinv_lt_contravar in kmaj.
-    3: apply Qpower_pos_lt; lra.
+    3: apply Qpower_0_lt; lra.
     2: apply Qinv_lt_0_compat; lra.
   rewrite Qinv_involutive, <- Qpower_opp in kmaj; clear maj.
   pose proof ((cauchy x) n n p ltac:(lia) ltac:(lia)) as HCSx.
@@ -219,7 +219,7 @@ Proof.
   destruct (QarchimedeanExp2_Z (/ (seq y n - seq x n - (2 * 2 ^ n))))
     as [k kmaj].
   intros p Hp; specialize (H p Hp).
-  pose proof Qpower_le_compat 2 (Z.min (- k -1) n) (- k-1) (Z.le_min_l _ _) ltac:(lra) as H1.
+  pose proof Qpower_le_compat_l 2 (Z.min (- k -1) n) (- k-1) (Z.le_min_l _ _) ltac:(lra) as H1.
   rewrite Qpower_minus_pos in H1.
   apply (Qmult_le_compat_r _ _ 2) in H1.
   2: lra.
@@ -264,7 +264,7 @@ Proof.
   apply H0. apply Z.le_min_l.
   apply Qlt_le_weak. apply (Qplus_lt_l _ _ (-seq x (Z.min n p))).
   rewrite Qplus_opp_r. apply (Qlt_trans _ (2*2^p)).
-  - pose proof Qpower_pos_lt 2 p ltac:(lra). lra.
+  - pose proof Qpower_0_lt 2 p ltac:(lra). lra.
   - apply H. lia.
   (* ToDo: use lra *)
 Qed.
@@ -296,7 +296,7 @@ Proof.
   intros x y z [n inf].
   destruct (QarchimedeanExp2_Z (/((seq y) n - (seq x) n - (2 * 2 ^ n)))) as [k kmaj].
   rewrite Qinv_lt_contravar, Qinv_involutive, <- Qpower_opp in kmaj.
-    3: apply Qpower_pos_lt; lra.
+    3: apply Qpower_0_lt; lra.
     2: apply Qinv_lt_0_compat; lra.
 
   destruct (Qlt_le_dec ((1#2) * ((seq y) n + (seq x) n)) ((seq z) (Z.min n (- k - 2))))
@@ -306,7 +306,7 @@ Proof.
   all: specialize (HCS n n (Z.min n (-k-2))%Z ltac:(lia) ltac:(lia)).
   all: rewrite Qabs_Qlt_condition in HCS.
   all: assert (2 ^ Z.min n (- k - 2) <= 2 ^ (- k - 2))%Q as Hpowmin
-         by (apply Qpower_le_compat; [lia|lra]).
+         by (apply Qpower_le_compat_l; [lia|lra]).
   all: rewrite Qpower_minus_pos in Hpowmin; lra.
 Qed.
 
@@ -496,7 +496,7 @@ Lemma inject_Q_cauchy : forall q : Q, QCauchySeq (fun _ => q).
 Proof.
   intros q k p r Hp Hr.
   apply Qabs_Qlt_condition.
-  pose proof Qpower_pos_lt 2 k; lra.
+  pose proof Qpower_0_lt 2 k; lra.
 Qed.
 
 Definition inject_Q (q : Q) : CReal :=
@@ -527,7 +527,7 @@ Proof.
   apply (Qmult_lt_compat_r _ _ q) in Hk.
     2: assumption.
   apply (Qmult_lt_compat_r _ _ (2^(-k))) in Hk.
-    2: apply Qpower_pos_lt; lra.
+    2: apply Qpower_0_lt; lra.
   field_simplify in Hk.
     2: lra.
   (* ToDo: field_simplify should collect powers - the next 3 lines ... *)
@@ -542,8 +542,8 @@ Lemma inject_Q_compare : forall (x : CReal) (p : Z),
 Proof.
   intros x p [n nmaj].
   cbn in nmaj.
-  assert(2^n>0)%Q by (apply Qpower_pos_lt; lra).
-  assert(2^p>0)%Q by (apply Qpower_pos_lt; lra).
+  assert(2^n>0)%Q by (apply Qpower_0_lt; lra).
+  assert(2^p>0)%Q by (apply Qpower_0_lt; lra).
   pose proof x.(cauchy) as xcau.
   destruct (Z.min_dec p n);
     [ specialize (xcau n n p ltac:(lia) ltac:(lia)) |
@@ -557,7 +557,7 @@ Add Parametric Morphism : inject_Q
 Proof.
   intros x y Heq; split.
   all: intros [n Hapart]; cbn in Hapart; rewrite Heq in Hapart.
-  all: assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
+  all: assert(2^n>0)%Q by (apply Qpower_0_lt; lra); lra.
 Qed.
 
 #[global]
@@ -567,7 +567,7 @@ Instance inject_Q_morph_T
 Proof.
   intros x y Heq; split.
   all: intros [n Hapart]; cbn in Hapart; rewrite Heq in Hapart.
-  all: assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
+  all: assert(2^n>0)%Q by (apply Qpower_0_lt; lra); lra.
 Qed.
 
 
@@ -602,8 +602,8 @@ Proof.
   pose proof (bound x (k-1)%Z) as Hxbnd.
   pose proof (bound y (k-1)%Z) as Hybnd.
   rewrite Qpower_plus by lra.
-  pose proof Qpower_le_compat 2 (scale x) (Z.max (scale x) (scale y)) ltac:(lia) ltac:(lra) as Hxmax.
-  pose proof Qpower_le_compat 2 (scale y) (Z.max (scale x) (scale y)) ltac:(lia) ltac:(lra) as Hymax.
+  pose proof Qpower_le_compat_l 2 (scale x) (Z.max (scale x) (scale y)) ltac:(lia) ltac:(lra) as Hxmax.
+  pose proof Qpower_le_compat_l 2 (scale y) (Z.max (scale x) (scale y)) ltac:(lia) ltac:(lra) as Hymax.
   rewrite Qabs_Qlt_condition in Hxbnd, Hybnd |- *.
   rewrite Qred_correct.
   lra.
@@ -740,7 +740,7 @@ Proof.
   setoid_replace (seq z (n - 1)%Z - seq y (n - 1)%Z)%Q
     with (seq (CReal_plus x z) n - seq (CReal_plus x y) n)%Q.
   - rewrite Qpower_minus_pos.
-    assert (2 ^ n > 0)%Q by (apply Qpower_pos_lt; lra); lra.
+    assert (2 ^ n > 0)%Q by (apply Qpower_0_lt; lra); lra.
   - unfold CReal_plus, CReal_plus_seq in maj |- *.
     do 2 rewrite CReal_red_seq in maj |- *.
     do 2 rewrite Qred_correct; ring.
@@ -912,14 +912,14 @@ Proof.
   all: intros [n nmaj]; unfold CReal_plus, CReal_plus_seq, inject_Q in nmaj.
   all: do 4 rewrite CReal_red_seq in nmaj.
   all: rewrite Qred_correct in nmaj.
-  all: assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
+  all: assert(2^n>0)%Q by (apply Qpower_0_lt; lra); lra.
 Qed.
 
 Lemma inject_Q_one : inject_Q 1 == 1.
 Proof.
   split.
   all: intros [n nmaj]; cbn in nmaj.
-  all: assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
+  all: assert(2^n>0)%Q by (apply Qpower_0_lt; lra); lra.
 Qed.
 
 Lemma inject_Q_lt : forall q r : Q,
@@ -931,7 +931,7 @@ Proof.
   - exists (-n-1)%Z; cbn.
     rewrite Qpower_minus_pos; lra.
   - apply Qlt_shift_inv_l; lra.
-  - apply Qpower_pos_lt; lra.
+  - apply Qpower_0_lt; lra.
 Qed.
 
 Lemma opp_inject_Q : forall q : Q,
@@ -942,7 +942,7 @@ Proof.
   all: intros [n maj]; cbn in maj.
   all: unfold CReal_opp_seq, inject_Q in maj.
   all: rewrite CReal_red_seq in maj.
-  all: assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
+  all: assert(2^n>0)%Q by (apply Qpower_0_lt; lra); lra.
 Qed.
 
 Lemma lt_inject_Q : forall q r : Q,
@@ -950,7 +950,7 @@ Lemma lt_inject_Q : forall q r : Q,
 Proof.
   intros q r [n Hn]; cbn in Hn.
   apply Qlt_minus_iff.
-  assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
+  assert(2^n>0)%Q by (apply Qpower_0_lt; lra); lra.
 Qed.
 
 Lemma le_inject_Q : forall q r : Q,
@@ -967,7 +967,7 @@ Lemma inject_Q_le : forall q r : Q,
     (q <= r)%Q -> inject_Q q <= inject_Q r.
 Proof.
   intros q r Hle [n maj]; cbn in maj.
-  assert(2^n>0)%Q by (apply Qpower_pos_lt; lra); lra.
+  assert(2^n>0)%Q by (apply Qpower_0_lt; lra); lra.
 Qed.
 
 Lemma inject_Z_plus : forall q r : Z,

@@ -67,7 +67,7 @@ Local Lemma Weaken_Qle_QpowerAddExp: forall (q : Q) (n m : Z),
  -> (q <= 2^(n+m))%Q.
 Proof.
   intros q n m Hmpos Hle.
-  pose proof Qpower_le_compat 2 n (n+m) ltac:(lia) ltac:(lra).
+  pose proof Qpower_le_compat_l 2 n (n+m) ltac:(lia) ltac:(lra).
   lra.
 Qed.
 
@@ -77,7 +77,7 @@ Local Lemma Weaken_Qle_QpowerRemSubExp: forall (q : Q) (n m : Z),
  -> (q <= 2^n)%Q.
 Proof.
   intros q n m Hmpos Hle.
-  pose proof Qpower_le_compat 2 (n-m) n ltac:(lia) ltac:(lra).
+  pose proof Qpower_le_compat_l 2 (n-m) n ltac:(lia) ltac:(lra).
   lra.
 Qed.
 
@@ -115,7 +115,7 @@ Proof.
         2: apply Qabs_nonneg.
       apply Qlt_le_weak. apply (cauchy x); lia.
     + apply (Qmult_lt_l _ _ (2 ^ -(n - scale y - 1))%Q).
-        apply Qpower_pos_lt; lra.
+        apply Qpower_0_lt; lra.
       rewrite Qmult_assoc, <- Qpower_plus by lra.
       rewrite <- Qpower_plus by lra.
       simplify_Qpower_exponent; rewrite Qpower_0_r, Qmult_1_l.
@@ -127,7 +127,7 @@ Proof.
         2: apply Qabs_nonneg.
       apply Qlt_le_weak; apply (cauchy y); lia.
     + apply (Qmult_lt_l _ _ (2 ^ -(n - scale x - 1))%Q).
-        apply Qpower_pos_lt; lra.
+        apply Qpower_0_lt; lra.
       rewrite Qmult_assoc, <- Qpower_plus by lra.
       rewrite <- Qpower_plus by lra.
       simplify_Qpower_exponent; rewrite Qpower_0_r, Qmult_1_l.
@@ -164,7 +164,7 @@ Proof.
   { intros x y [n nmaj]. apply (Qlt_not_le _ _ nmaj). clear nmaj.
     unfold CReal_mult, CReal_mult_seq; do 2 rewrite CReal_red_seq.
     ring_simplify.
-    pose proof Qpower_pos_lt 2 n ltac:(lra); lra. }
+    pose proof Qpower_0_lt 2 n ltac:(lra); lra. }
   split; apply H.
 Qed.
 
@@ -223,7 +223,7 @@ Proof.
   replace n with ((n+1)-1)%Z in Hxbnd by lia.
   rewrite Qpower_minus_pos in Hxbnd by lra.
   simplify_Qlt_in Hxbnd.
-  apply (Qpower_lt_compat_inv) in Hxbnd.
+  apply (Qpower_lt_compat_l_inv) in Hxbnd.
   - lia.
   - lra.
 Qed.
@@ -247,13 +247,13 @@ Proof.
   do 2 simplify_seq_idx.
   apply Qmult_lt_compat_nonneg.
   - split.
-    + pose proof Qpower_pos_lt 2 nx; lra.
+    + pose proof Qpower_0_lt 2 nx; lra.
     + pose proof CReal_scale_sep0_limit y ny Hy as Hlimy.
       pose proof cauchy x nx nx (nx + ny - scale y - 2)%Z ltac:(lia) ltac:(lia) as Hbndx.
       apply Qabs_Qlt_condition in Hbndx.
       lra.
   - split.
-    + pose proof Qpower_pos_lt 2 ny; lra.
+    + pose proof Qpower_0_lt 2 ny; lra.
     + pose proof CReal_scale_sep0_limit x nx Hx as Hlimx.
       pose proof cauchy y ny ny (nx + ny - scale x - 2)%Z ltac:(lia) ltac:(lia) as Hbndy.
       apply Qabs_Qlt_condition in Hbndy.
@@ -636,7 +636,7 @@ Proof.
   pose proof bound r (CRealLowerBound r Hrpos) as Hup; unfold QBound in Hup.
   apply Qabs_Qlt_condition in Hup. destruct Hup as [_ Hup].
   pose proof Qlt_trans _ _ _ Hlow Hup as Hpow.
-  apply Qpower_lt_compat_inv in Hpow.
+  apply Qpower_lt_compat_l_inv in Hpow.
     2: lra.
   exact Hpow.
 Qed.
@@ -683,7 +683,7 @@ Proof.
   {
     intros m.
     pose proof AuxAppart m as H1.
-    pose proof Qpower_pos_lt 2 k as H2.
+    pose proof Qpower_0_lt 2 k as H2.
     lra.
   }
 
@@ -699,9 +699,9 @@ Proof.
   as H by (intros r; field; apply Qpower_not_0; lra); rewrite H; clear H.
   apply Qmult_lt_compat_nonneg.
   - split.
-    + do 2 (apply Qle_shift_div_l; [ apply Qpower_pos_lt; lra | rewrite Qmult_0_l ]).
+    + do 2 (apply Qle_shift_div_l; [ apply Qpower_0_lt; lra | rewrite Qmult_0_l ]).
       apply Qabs_nonneg.
-    + do 2 (apply Qlt_shift_div_r; [apply Qpower_pos_lt; lra|]).
+    + do 2 (apply Qlt_shift_div_r; [apply Qpower_0_lt; lra|]).
       do 2 rewrite <- Qpower_plus by lra.
       apply (cauchy x (n+k+k)%Z); lia.
   - split.
@@ -724,8 +724,8 @@ Proof.
     2: apply Qinv_le_0_compat; pose proof Qpower_pos 2 k; lra.
   rewrite Qpower_opp; apply -> Qinv_lt_contravar.
   - exact Hlb.
-  - pose proof Qpower_pos_lt 2 k; lra.
-  - apply Qpower_pos_lt; lra.
+  - pose proof Qpower_0_lt 2 k; lra.
+  - apply Qpower_0_lt; lra.
 Qed.
 
 Definition CReal_inv_pos (x : CReal) (Hxpos : 0 < x) : CReal :=
@@ -770,11 +770,11 @@ Proof.
     + setoid_rewrite Qabs_Qlt_condition in Hrbnd.
       specialize (Hrbnd (CReal_inv_pos_cm r c (- scale r - 1))%Z).
       lra.
-    + apply Qpower_pos_lt; lra.
+    + apply Qpower_0_lt; lra.
     + unfold CReal_inv_pos_cm.
       pose proof CRealLowerBoundSpec r c
         ((Z.min (CRealLowerBound r c) (- scale r - 1 + 2 * CRealLowerBound r c)))%Z ltac:(lia) as Hlowbnd.
-      pose proof Qpower_pos_lt 2 (CRealLowerBound r c) as Hpow.
+      pose proof Qpower_0_lt 2 (CRealLowerBound r c) as Hpow.
       lra.
 Qed.
 
@@ -792,7 +792,7 @@ Proof.
   (* This is needed several times below *)
   remember (Z.min (CRealLowerBound r Hrpos) (n - scale r - 1 + 2 * CRealLowerBound r Hrpos))%Z as k.
   assert (0 < seq r k)%Q as Hrseqpos.
-  { pose proof Qpower_pos_lt 2 (CRealLowerBound r Hrpos)%Z ltac:(lra) as Hpow.
+  { pose proof Qpower_0_lt 2 (CRealLowerBound r Hrpos)%Z ltac:(lra) as Hpow.
     pose proof CRealLowerBoundSpec r Hrpos k ltac:(lia) as Hlowbnd.
     lra.
   }
@@ -818,7 +818,7 @@ Proof.
   split.
   - apply Qpower_pos; lra.
   - rewrite Qabs_pos; [lra|].
-    pose proof Qpower_pos_lt 2 (CRealLowerBound r Hrpos)%Z ltac:(lra) as Hpow.
+    pose proof Qpower_0_lt 2 (CRealLowerBound r Hrpos)%Z ltac:(lra) as Hpow.
     lra.
 Qed.
 
@@ -916,16 +916,16 @@ Proof.
     pose proof bound y (n - scale x - 1)%Z as Hybnd.
     apply Qabs_Qlt_condition, proj2 in Hybnd.
     apply Qinv_lt_contravar in Hybnd.
-      3: apply Qpower_pos_lt; lra.
+      3: apply Qpower_0_lt; lra.
       2: exact H0lty.
     apply (Qmult_lt_l _ _ (2 * (2 ^ n))) in Hybnd.
-      2: pose proof Qpower_pos_lt 2 n; lra.
+      2: pose proof Qpower_0_lt 2 n; lra.
     apply (Qlt_trans _ _ _ Hybnd) in nmaj; clear Hybnd.
     rewrite <- Qpower_opp, <- Qmult_assoc, <- Qpower_plus in nmaj by lra.
     apply (CReal_abs_appart_zero x (n - scale y - 1)%Z), Qabs_gt.
     rewrite Qpower_minus_pos.
     ring_simplify. ring_simplify (n + - scale y)%Z in nmaj.
-    pose proof Qpower_pos_lt 2 (n - scale y)%Z; lra.
+    pose proof Qpower_0_lt 2 (n - scale y)%Z; lra.
   - (* This proof is the same as above, except that we swap the signs of x and y *)
     (* ToDo: maybe assert teh goal for arbitrary y>0 and then apply twice *)
     assert (forall a b : Q, ((-a)*(-b)==a*b)%Q) by (intros; ring).
@@ -940,19 +940,19 @@ Proof.
     apply Qabs_Qlt_condition, proj1 in Hybnd.
     apply Qopp_lt_compat in Hybnd; rewrite Qopp_involutive in Hybnd.
     apply Qinv_lt_contravar in Hybnd.
-      3: apply Qpower_pos_lt; lra.
+      3: apply Qpower_0_lt; lra.
       2: lra.
     apply (Qmult_lt_l _ _ (2 * (2 ^ n))) in Hybnd.
-      2: pose proof Qpower_pos_lt 2 n; lra.
+      2: pose proof Qpower_0_lt 2 n; lra.
     apply (Qlt_trans _ _ _ Hybnd) in nmaj; clear Hybnd.
     rewrite <- Qpower_opp, <- Qmult_assoc, <- Qpower_plus in nmaj by lra.
     apply (CReal_abs_appart_zero x (n - scale y - 1)%Z).
-    pose proof Qpower_pos_lt 2 (n + - scale y)%Z ltac:(lra) as Hpowpos.
+    pose proof Qpower_0_lt 2 (n + - scale y)%Z ltac:(lra) as Hpowpos.
     rewrite Qabs_neg by lra.
     rewrite Qpower_minus_pos.
     ring_simplify. ring_simplify (n + - scale y)%Z in nmaj.
-    pose proof Qpower_pos_lt 2 (n - scale y)%Z; lra.
-  - pose proof Qpower_pos_lt 2 n ltac:(lra).
+    pose proof Qpower_0_lt 2 (n - scale y)%Z; lra.
+  - pose proof Qpower_0_lt 2 n ltac:(lra).
     rewrite <- Hyeq0 in nmaj. lra.
 Qed.
 
@@ -980,7 +980,7 @@ Proof.
   - rewrite CReal_mult_comm, CReal_inv_l.
     apply CRealEq_diff. intro n. simpl.
     do 2 rewrite Pos.mul_1_r. rewrite Z.pos_sub_diag.
-    pose proof Qpower_pos 2 n ltac:(lra). rewrite Z.abs_0, Qzero_eq. lra.
+    pose proof Qpower_pos 2 n ltac:(lra). rewrite Z.abs_0, Qreduce_zero. lra.
 Qed.
 
 Definition CRealQ_dense (a b : CReal)
@@ -1011,10 +1011,10 @@ Proof.
   split.
   - intros [n maj]; cbn in maj.
     unfold CReal_mult_seq in maj; cbn in maj.
-    pose proof Qpower_pos_lt 2 n; lra.
+    pose proof Qpower_0_lt 2 n; lra.
   - intros [n maj]; cbn in maj.
     unfold CReal_mult_seq in maj; cbn in maj.
-    pose proof Qpower_pos_lt 2 n; lra.
+    pose proof Qpower_0_lt 2 n; lra.
 Qed.
 
 Definition Rup_nat (x : CReal)

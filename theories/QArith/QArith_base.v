@@ -54,6 +54,9 @@ Infix "<=" := Qle : Q_scope.
 Notation "x > y" := (Qlt y x)(only parsing) : Q_scope.
 Notation "x >= y" := (Qle y x)(only parsing) : Q_scope.
 Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
+Notation "x <= y < z" := (x<=y/\y<z) : Q_scope.
+Notation "x < y <= z" := (x<y/\y<=z) : Q_scope.
+Notation "x < y < z" := (x<y/\y<z) : Q_scope.
 
 Register Qeq as rat.Q.Qeq.
 Register Qle as rat.Q.Qle.
@@ -756,6 +759,20 @@ Proof.
     destruct y1; simpl; auto.
 Qed.
 
+Lemma Qinv_pos: forall (a b : positive),
+  / (Z.pos b # a) == Z.pos a # b.
+Proof.
+  intros a b.
+  reflexivity.
+Qed.
+
+Lemma Qinv_neg: forall (a b : positive),
+  / (Z.neg b # a) == Z.neg a # b.
+Proof.
+  intros a b.
+  reflexivity.
+Qed.
+
 Theorem Qdiv_mult_l : forall x y, ~ y == 0 -> (x*y)/y == x.
 Proof.
   intros x y H; unfold Qdiv.
@@ -802,10 +819,9 @@ Proof.
  apply Qmult_inj_r.
 Qed.
 
-(**
-  Reduction of Q.
-  Removal/introduction of common factor in both numerator and denominator.
-*)
+(** * Reduction and construction of Q *)
+
+(** ** Removal/introduction of common factor in both numerator and denominator. *)
 
 Lemma Qreduce_l : forall (a : Z) (b z : positive),
   (Zpos z)*a # z*b == a#b.
@@ -825,10 +841,66 @@ Proof.
   ring.
 Qed.
 
-(**
-  Construction of a new rational by multiplication with an integer
-  (or to be more precise multiplication with a rational of the form z/1).
-*)
+Lemma Qreduce_num_l : forall (a b : positive),
+  Z.pos a # a * b == (1 # b).
+Proof.
+  intros a b.
+  unfold Qeq, Qnum, Qden.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
+Lemma Qreduce_num_r : forall (a b : positive),
+  Z.pos b # a * b == (1 # a).
+Proof.
+  intros a b.
+  unfold Qeq, Qnum, Qden.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
+Lemma Qreduce_den_l : forall (a : positive) (b : Z),
+  Z.pos a * b # a == (b # 1).
+Proof.
+  intros a b.
+  unfold Qeq, Qnum, Qden.
+  ring.
+Qed.
+
+Lemma Qreduce_den_r : forall (a : Z) (b : positive),
+  a * Z.pos b # b == (a # 1).
+Proof.
+  intros a b.
+  unfold Qeq, Qnum, Qden.
+  ring.
+Qed.
+
+Lemma Qreduce_den_inject_Z_l : forall (a : positive) (b : Z),
+  (Z.pos a * b # a == inject_Z b)%Q.
+Proof.
+  intros a b.
+  unfold Qeq, Qnum, Qden, inject_Z.
+  ring.
+Qed.
+
+Lemma Qreduce_den_inject_Z_r : forall (a : Z) (b : positive),
+  a * Z.pos b # b == inject_Z a.
+Proof.
+  intros a b.
+  unfold Qeq, Qnum, Qden, inject_Z.
+  ring.
+Qed.
+
+Lemma Qreduce_zero: forall (d : positive),
+  (0#d == 0)%Q.
+Proof.
+  intros d.
+  unfold Qeq, Qnum, Qden; reflexivity.
+Qed.
+
+(** ** Construction of a new rational by multiplication with an integer or pure fraction *)
+
+(** (or to be more precise multiplication with a rational of the form z/1 or 1/p) *)
 
 Lemma Qmult_inject_Z_l : forall (a : Z) (b : positive) (z : Z),
   (inject_Z z) * (a#b) == z*a#b.
@@ -842,6 +914,21 @@ Lemma Qmult_inject_Z_r : forall (a : Z) (b : positive) (z : Z),
 Proof.
   intros a b z.
   unfold Qeq. cbn.
+  rewrite Pos2Z.inj_mul.
+  ring.
+Qed.
+
+Lemma Qmult_frac_l : forall (a:Z) (b c:positive), (a # (b * c)) == (1#b) * (a#c).
+Proof.
+  intros a b c.
+  unfold Qeq, Qnum, Qden; cbn.
+  destruct a; reflexivity.
+Qed.
+
+Lemma Qmult_frac_r : forall (a:Z) (b c:positive), (a # (b * c)) == (a#b) * (1#c).
+Proof.
+  intros a b c.
+  unfold Qeq, Qnum, Qden; cbn.
   rewrite Pos2Z.inj_mul.
   ring.
 Qed.
@@ -896,8 +983,39 @@ Proof.
  destruct (x ?= y); intuition; discriminate.
 Qed.
 
+Lemma Qlt_leneq: forall p q : Q, p < q <-> p <= q /\ ~ (p == q).
+Proof.
+  intros p q; split; intros H.
+  - rewrite Qlt_alt in H; rewrite Qle_alt, Qeq_alt.
+    rewrite H; split; intros H1; inversion H1.
+  - rewrite Qlt_alt; rewrite Qle_alt, Qeq_alt in H.
+    destruct (p ?= q); tauto.
+Qed.
+
 Lemma Qlt_le_weak x y : x<y -> x<=y.
 Proof. apply Z.lt_le_incl. Qed.
+
+(** Qgt and Qge are just a notations, but one might not know this and search for these lemmas *)
+
+Lemma Qgt_lt: forall p q : Q, p > q -> q < p.
+Proof.
+  intros p q H; assumption.
+Qed.
+
+Lemma Qlt_gt: forall p q : Q, p < q -> q > p.
+Proof.
+  intros p q H; assumption.
+Qed.
+
+Lemma Qge_le: forall p q : Q, p >= q -> q <= p.
+Proof.
+  intros p q H; assumption.
+Qed.
+
+Lemma Qle_ge: forall p q : Q, p <= q -> q >= p.
+Proof.
+  intros p q H; assumption.
+Qed.
 
 Lemma Qle_lt_trans : forall x y z, x<=y -> y<z -> x<z.
 Proof.
@@ -953,7 +1071,7 @@ Qed.
 Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
  Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qarith.
 
-(** Some decidability results about orders. *)
+(** ** Some decidability results about orders. *)
 
 Lemma Q_dec : forall x y, {x<y} + {y<x} + {x==y}.
 Proof.
@@ -982,7 +1100,7 @@ Proof.
   - exists xH. reflexivity.
 Defined.
 
-(** Compatibility of operations with respect to order. *)
+(** ** Compatibility of addition with order *)
 
 Lemma Qopp_le_compat : forall p q, p<=q -> -q <= -p.
 Proof.
@@ -990,9 +1108,14 @@ Proof.
   now rewrite !Z.mul_opp_l, <- Z.opp_le_mono.
 Qed.
 
+Lemma Qopp_lt_compat: forall p q : Q, p < q -> - q < - p.
+Proof.
+  intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
+  now rewrite !Z.mul_opp_l, <- Z.opp_lt_mono.
+Qed.
 
 #[global]
-Hint Resolve Qopp_le_compat : qarith.
+Hint Resolve Qopp_le_compat Qopp_lt_compat : qarith.
 
 Lemma Qle_minus_iff : forall p q, p <= q <-> 0 <= q+-p.
 Proof.
@@ -1072,6 +1195,17 @@ Proof.
  apply Qplus_lt_l.
 Qed.
 
+Lemma Qplus_lt_compat : forall x y z t : Q,
+  x < y -> z < t -> x + z < y + t.
+Proof.
+  intros x y z t H1 H2.
+  apply Qplus_lt_le_compat.
+  - assumption.
+  - apply Qle_lteq; left; assumption.
+Qed.
+
+(** ** Compatibility of multiplication with order. *)
+
 Lemma Qmult_le_compat_r : forall x y z, x <= y -> 0 <= z -> x*z <= y*z.
 Proof.
   intros (a1,a2) (b1,b2) (c1,c2); unfold Qle, Qlt; simpl.
@@ -1149,6 +1283,81 @@ simpl in *.
 rewrite Z.mul_1_r in *.
 auto with *.
 Qed.
+
+Lemma Qmult_lt_0_compat : forall a b : Q, 0 < a -> 0 < b -> 0 < a * b.
+Proof.
+  intros a b Ha Hb.
+  destruct a,b. unfold Qlt, Qmult, QArith_base.Qnum, QArith_base.Qden in *.
+  rewrite Pos2Z.inj_mul.
+  rewrite Z.mul_0_l, Z.mul_1_r in *.
+  apply Z.mul_pos_pos; assumption.
+Qed.
+
+Lemma Qmult_le_1_compat: forall a b : Q, 1 <= a -> 1 <= b -> 1 <= a * b.
+Proof.
+  intros a b Ha Hb.
+  destruct a,b. unfold Qle, Qmult, QArith_base.Qnum, QArith_base.Qden in *.
+  rewrite Pos2Z.inj_mul.
+  rewrite Z.mul_1_l, Z.mul_1_r in *.
+  apply Z.mul_le_mono_nonneg.
+  2,4: assumption.
+  1,2: apply Pos2Z.is_nonneg.
+Qed.
+
+Lemma Qmult_lt_1_compat: forall a b : Q, 1 < a -> 1 < b -> 1 < a * b.
+Proof.
+  intros a b Ha Hb.
+  destruct a,b. unfold Qlt, Qmult, QArith_base.Qnum, QArith_base.Qden in *.
+  rewrite Pos2Z.inj_mul.
+  rewrite Z.mul_1_l, Z.mul_1_r in *.
+  apply Z.mul_lt_mono_nonneg.
+  2,4: assumption.
+  1,2: apply Pos2Z.is_nonneg.
+Qed.
+
+Lemma Qmult_lt_compat_nonneg: forall x y z t : Q, 0 <= x < y -> 0 <= z < t -> x * z < y * t.
+Proof.
+  intros [xn xd] [yn yd] [zn zd] [tn td] [H0lex Hxlty] [H0lez Hzltt].
+  unfold Qmult, Qlt, Qle, Qnum, Qden in *.
+  rewrite Z.mul_0_l,Z.mul_1_r in H0lex, H0lez.
+  do 2 rewrite Pos2Z.inj_mul.
+  setoid_replace (xn * zn * (Z.pos yd * Z.pos td))%Z with ((xn * Z.pos yd) * (zn * Z.pos td))%Z by ring.
+  setoid_replace (yn * tn * (Z.pos xd * Z.pos zd))%Z with ((yn * Z.pos xd) * (tn * Z.pos zd))%Z by ring.
+  apply Z.mul_lt_mono_nonneg.
+  2,4 : assumption.
+  1,2 : rewrite <- (Z.mul_0_l 0); apply Z.mul_le_mono_nonneg;
+          [reflexivity|assumption|reflexivity|apply Pos2Z.is_nonneg].
+Qed.
+
+Lemma Qmult_le_lt_compat_pos: forall x y z t : Q, 0 < x <= y -> 0 < z < t -> x * z < y * t.
+Proof.
+  intros [xn xd] [yn yd] [zn zd] [tn td] [H0ltx Hxlty] [H0ltz Hzltt].
+  unfold Qmult, Qlt, Qle, Qnum, Qden in *.
+  rewrite Z.mul_0_l,Z.mul_1_r in H0ltx, H0ltz.
+  do 2 rewrite Pos2Z.inj_mul.
+  setoid_replace (xn * zn * (Z.pos yd * Z.pos td))%Z with ((xn * Z.pos yd) * (zn * Z.pos td))%Z by ring.
+  setoid_replace (yn * tn * (Z.pos xd * Z.pos zd))%Z with ((yn * Z.pos xd) * (tn * Z.pos zd))%Z by ring.
+  apply Zmult_lt_compat2; split.
+  2,4 : assumption.
+  1,2 : rewrite <- (Z.mul_0_l 0); apply Z.mul_lt_mono_nonneg;
+          [reflexivity|assumption|reflexivity|apply Pos2Z.is_pos].
+Qed.
+
+Lemma Qmult_le_compat_nonneg: forall x y z t : Q, 0 <= x <= y -> 0 <= z <= t -> x * z <= y * t.
+Proof.
+  intros [xn xd] [yn yd] [zn zd] [tn td] [H0lex Hxlty] [H0lez Hzltt].
+  unfold Qmult, Qlt, Qle, Qnum, Qden in *.
+  rewrite Z.mul_0_l,Z.mul_1_r in H0lex, H0lez.
+  do 2 rewrite Pos2Z.inj_mul.
+  setoid_replace (xn * zn * (Z.pos yd * Z.pos td))%Z with ((xn * Z.pos yd) * (zn * Z.pos td))%Z by ring.
+  setoid_replace (yn * tn * (Z.pos xd * Z.pos zd))%Z with ((yn * Z.pos xd) * (tn * Z.pos zd))%Z by ring.
+  apply Z.mul_le_mono_nonneg.
+  2,4 : assumption.
+  1,2 : rewrite <- (Z.mul_0_l 0); apply Z.mul_le_mono_nonneg;
+          [reflexivity|assumption|reflexivity|apply Pos2Z.is_nonneg].
+Qed.
+
+(** ** Compatibility of inversion and division with order *)
 
 Lemma Qinv_le_0_compat : forall a, 0 <= a -> 0 <= /a.
 Proof.

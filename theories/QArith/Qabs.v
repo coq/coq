@@ -109,7 +109,7 @@ Proof.
   unfold Qinv.
   case_eq n; intros; simpl in *; apply Qeq_refl.
 Qed.
-  
+
 Lemma Qabs_Qminus x y: Qabs (x - y) = Qabs (y - x).
 Proof.
  unfold Qminus, Qopp. simpl.
@@ -155,6 +155,22 @@ Proof.
  intros. rewrite <- (Qopp_opp y). now apply Qopp_le_compat.
 Qed.
 
+Lemma Qabs_Qlt_condition: forall x y : Q,
+  Qabs x < y <-> -y < x < y.
+Proof.
+ split.
+  split.
+   rewrite <- (Qopp_opp x).
+   apply Qopp_lt_compat.
+   apply Qle_lt_trans with (Qabs (-x)).
+   apply Qle_Qabs.
+   now rewrite Qabs_opp.
+  apply Qle_lt_trans with (Qabs x); auto using Qle_Qabs.
+ intros (H,H').
+ apply Qabs_case; trivial.
+ intros. rewrite <- (Qopp_opp y). now apply Qopp_lt_compat.
+Qed.
+
 Lemma Qabs_diff_Qle_condition x y r: Qabs (x - y) <= r <-> x - r <= y <= x + r.
 Proof.
  intros. unfold Qminus.
@@ -166,4 +182,37 @@ Proof.
  setoid_replace (x + - y + (y + r)) with (x + r) by ring.
  setoid_replace (x + - y + (y - r)) with (x - r) by ring.
  intuition.
+Qed.
+
+Lemma Qabs_diff_Qlt_condition x y r: Qabs (x - y) < r <-> x - r < y < x + r.
+Proof.
+ intros. unfold Qminus.
+ rewrite Qabs_Qlt_condition.
+ rewrite <- (Qplus_lt_l (-r) (x+-y) (y+r)).
+ rewrite <- (Qplus_lt_l (x+-y) r (y-r)).
+ setoid_replace (-r + (y + r)) with y by ring.
+ setoid_replace (r + (y - r)) with y by ring.
+ setoid_replace (x + - y + (y + r)) with (x + r) by ring.
+ setoid_replace (x + - y + (y - r)) with (x - r) by ring.
+ intuition.
+Qed.
+
+Lemma Qabs_ge: forall r s : Q, r <= s -> r <= Qabs s.
+Proof.
+  intros r s Hrles.
+  apply Qabs_case; intros Hs.
+  - exact Hrles.
+  - pose proof Qle_trans _ _ _ Hrles Hs as Hr.
+    apply Qopp_le_compat in Hs.
+    exact (Qle_trans _ _ _ Hr Hs).
+Qed.
+
+Lemma Qabs_gt: forall r s : Q, r < s -> r < Qabs s.
+Proof.
+  intros r s Hrlts.
+  apply Qabs_case; intros Hs.
+  - exact Hrlts.
+  - pose proof Qlt_le_trans _ _ _ Hrlts Hs as Hr.
+    apply Qopp_le_compat in Hs.
+    exact (Qlt_le_trans _ _ _ Hr Hs).
 Qed.

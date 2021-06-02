@@ -156,13 +156,13 @@ Proof.
   do 4 rewrite CReal_red_seq; rewrite Qred_correct.
   ring_simplify (Z.neg n - 1 - 1)%Z.
   pose proof cauchy x (Z.neg n) (Z.neg n - 2)%Z (Z.neg n) ltac:(lia) ltac:(lia) as Hxbnd.
-  apply Qround.Qopp_lt_compat in Hxbnd.
+  apply Qopp_lt_compat in Hxbnd.
   apply (Qplus_lt_r _ _ (1#n)) in Hxbnd.
   apply (Qlt_trans_swap_hyp _ _ _ Hxbnd); clear Hxbnd x.
   rewrite Qpower_minus_pos.
   apply (Qplus_lt_r _ _ (2 ^ Z.neg n)%Q); ring_simplify.
   pose proof Qpower_2powneg_le_inv n as Hpowinv.
-  pose proof Qpower_pos_lt 2 (Z.neg n) ltac:(lra) as Hpowpos.
+  pose proof Qpower_0_lt 2 (Z.neg n) ltac:(lra) as Hpowpos.
   lra.
 Qed.
 
@@ -185,10 +185,10 @@ Proof.
   - rewrite <- Qplus_0_l; apply Qplus_le_compat.
     + apply Qpower_pos; lra.
     + rewrite Qpower_minus_pos.
-      pose proof (Qpower_pos_lt 2 k)%Q; lra.
+      pose proof (Qpower_0_lt 2 k)%Q; lra.
   - rewrite <- Qplus_0_r; apply Qplus_le_compat.
     + lra.
-    + pose proof (Qpower_pos_lt 2 k)%Q; lra.
+    + pose proof (Qpower_0_lt 2 k)%Q; lra.
 Qed.
 
 Definition QCauchySeqLin (un : positive -> Q)
@@ -324,7 +324,7 @@ Proof.
       + lra.
       + { split.
           - apply Qpower_pos; lra.
-          - apply Qpower_le_compat.
+          - apply Qpower_le_compat_l.
             + subst; unfold CReal_from_cauchy_cm; destruct p; lia.
             + lra. }
   }
@@ -336,15 +336,15 @@ Proof.
   apply CReal_plus_le_lt_compat.
   {
     apply (CReal_le_trans _ _ _ H). apply inject_Q_le.
-    rewrite Q_factorDenom.
+    rewrite Qmult_frac_l.
     rewrite <- (Z.pow_1_l (Z.pos n')) at 2 by lia.
-    rewrite <- (Qpower_decomp').
+    rewrite <- (Qpower_decomp_pos).
     change (1#2)%Q with (/2)%Q; rewrite Qinv_power, <- Qpower_opp.
     apply Qmult_le_compat_nonneg.
     - lra.
     - { split.
         - apply Qpower_pos; lra.
-        - apply Qpower_le_compat.
+        - apply Qpower_le_compat_l.
           + subst; unfold CReal_from_cauchy_cm; destruct n; lia.
           + lra. }
   }
@@ -356,10 +356,10 @@ Proof.
   }
   apply inject_Q_lt.
   setoid_rewrite Qmult_comm at 1 2.
-  apply Qmult_lt_le_compat_nonneg.
+  apply Qmult_le_lt_compat_pos.
   + { split.
-      - apply Qpower_pos_lt; lra.
-      - apply Qpower_le_compat.
+      - apply Qpower_0_lt; lra.
+      - apply Qpower_le_compat_l.
         + subst; unfold CReal_from_cauchy_cm. destruct q; lia.
         + lra. }
   + lra.
@@ -398,12 +398,12 @@ Lemma CRealLt_QR_from_single_dist : forall (q : Q) (r : CReal) (n :Z),
  -> inject_Q q < r .
 Proof.
   intros q r n Hapart.
-  pose proof Qpower_pos_lt 2 n ltac:(lra) as H2npos.
+  pose proof Qpower_0_lt 2 n ltac:(lra) as H2npos.
   destruct (QarchimedeanLowExp2_Z (seq r n - q - 2^n) ltac:(lra)) as [k Hk].
   unfold CRealLt; exists (Z.min n (k-1))%Z.
   unfold inject_Q; rewrite CReal_red_seq.
   pose proof cauchy r n n (Z.min n (k-1))%Z ltac:(lia) ltac:(lia) as Hrbnd.
-  pose proof Qpower_le_compat 2 (Z.min n (k - 1))%Z (k-1)%Z ltac:(lia) ltac:(lra).
+  pose proof Qpower_le_compat_l 2 (Z.min n (k - 1))%Z (k-1)%Z ltac:(lia) ltac:(lra).
   apply (Qmult_le_l _ _ 2 ltac:(lra)) in H.
   apply (Qle_lt_trans _ _ _ H); clear H.
   rewrite Qpower_minus_pos.
@@ -478,22 +478,6 @@ Lemma Pos2Z_pos_is_pos : forall (p : positive),
 Proof.
   intros p.
   lia.
-Qed.
-
-Lemma Pos_log2floor_plus1_spec_Qpower : forall (p : positive),
-    (2 ^ Z.pos (Pos_log2floor_plus1 p) <= 2 * (Z.pos p#1) < 2 * 2 ^ Z.pos (Pos_log2floor_plus1 p))%Q.
-Proof.
-  intros p; split.
-  -  rewrite Qpower_decomp', Pos_pow_1_r.
-     unfold Qle, Qmult, Qnum, Qden.
-     rewrite Pos.mul_1_r; ring_simplify.
-     pose proof Pos_log2floor_plus1_spec p as Hpos.
-     lia.
-  -  rewrite Qpower_decomp', Pos_pow_1_r.
-     unfold Qlt, Qmult, Qnum, Qden.
-     rewrite Pos.mul_1_r; ring_simplify.
-     pose proof Pos_log2floor_plus1_spec p as Hpos.
-     lia.
 Qed.
 
 Lemma Qabs_Qgt_condition: forall x y : Q,
@@ -613,7 +597,7 @@ Proof.
          by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
        rewrite Qmult_comm; apply Qmult_le_l; [lra|].
        pose proof Qpower_2powneg_le_inv p.
-       pose proof Qpower_pos_lt 2 (Z.neg p)%Z; lra. }
+       pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra. }
 
   (* Use imaj to relate xn i and xn j *)
   specialize (imaj j i (le_trans _ _ _ (Nat.le_max_r _ _) H0) (le_refl _)).
@@ -646,7 +630,7 @@ Proof.
     assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%Q as Aux
       by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
     pose proof Qpower_2powneg_le_inv p.
-    pose proof Qpower_pos_lt 2 (Z.neg p)%Z; lra.
+    pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra.
 
   (* Solve remaining aux goals *)
   rewrite <- inject_Q_plus. rewrite (inject_Q_morph _ (1#2*p)).
