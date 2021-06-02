@@ -112,6 +112,7 @@ endif
 COQ_CM_LIBS=coqpp lib clib kernel library engine pretyping gramlib interp printing parsing proofs tactics vernac stm toplevel topbin tools
 ML_SOURCE_DIRS=$(addprefix $(COQ_SRC_DIR)/,$(COQ_CM_LIBS))
 ALL_ML_SOURCE_FILES=$(shell find $(ML_SOURCE_DIRS) -name '*.ml' -or -name '*.mli' -or -name '*.c' -or -name '*.h')
+DOCGRAM_SOURCE_FILES=$(shell find $(addprefix $(COQ_SRC_DIR)/, doc/tools/docgram) -name '*.ml' -or -name '*.mlg')
 
 # Override for developer build [to get warn-as-error for example]
 _DDISPLAY?=quiet
@@ -203,7 +204,7 @@ all-src: $(ALL_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(HIDE)$(_DBUILD) @all-src
 
 # For docgram
-_build/default/doc/tools/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
+_build/default/doc/tools/%: $(ALL_ML_SOURCE_FILES) $(DOCGRAM_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
