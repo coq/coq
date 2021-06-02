@@ -507,21 +507,21 @@ $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISI
 
 .PHONY: approve-output
 approve-output: output output-coqtop output-coqchk
-	$(HIDE)for f in $(wildcard $(addsuffix /*.out.real,$^)); do \
+	$(HIDE)for f in $(addsuffix /*.out.real,$^); do if [ -f "$$f" ]; then \
 	  mv "$$f" "$${f%.real}"; \
 	  echo "Updated $${f%.real}!"; \
-	done
+	fi; done
 
 approve-coqdoc: coqdoc
 	$(HIDE)(cd coqdoc; \
-	for f in *.html.out; do \
+	for f in *.html.out; do if [ -f "$$f" ]; then \
 	  cp "Coqdoc.$${f%.out}" "$$f"; \
 	  echo "Updated $$f!"; \
-	done; \
-	for f in *.tex.out; do \
+	fi; done; \
+	for f in *.tex.out; do if [ -f "$$f" ]; then \
 	  cat "Coqdoc.$${f%.out}" | grep -v "^%%" > "$$f"; \
 	  echo "Updated $$f!"; \
-	done)
+	fi; done)
 
 # the expected output for the MExtraction test is
 # /plugins/micromega/micromega.ml except with additional newline
