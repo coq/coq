@@ -34,11 +34,10 @@ else
 coqide: $(COQIDE) $(IDETOP) $(TOPBINOPT) $(IDEBINDINGS) $(VO_OUT_DIR)theories/Init/Prelude.$(VO) $(BCONTEXT)/coqide.install
 endif
 
-# EJGA: Why are these still here? Check (install ...) stanzas for
-# coqide, also check DESTDIR and DESTDOCDIR if we need to resurrect this
+# EJGA: Once the Boot.Env PR is done, we can easily relocate these files,
+# see the TODO in the dune file.
 #
 # $(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(DATADIR)
-# $(INSTALLLIB) ide/FAQ $(DOCDIR)/FAQ-CoqIde
 
 ###########################################################################
 # CoqIde for Windows special targets
