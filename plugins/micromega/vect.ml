@@ -313,4 +313,9 @@ module Bound = struct
     | [{var = 0; coe = v}; {var = x; coe = v'}] ->
       Some {cst = v; var = x; coeff = v'}
     | _ -> None
+
+  let to_vect { cst = k; var = v; coeff = c } =
+    let () = assert (not (c =/ Q.zero)) in
+    if k =/ Q.zero then [{var = v; coe = c}]
+    else [{var = 0; coe = k}; {var = v; coe = c}]
 end

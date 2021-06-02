@@ -411,11 +411,12 @@ let saturate_by_linear_equalities sys =
 let bound_monomials (sys : WithProof.t list) =
   let l =
     extract_all
-      (fun ((p, o), _) ->
-        match LinPoly.get_bound p with
+      (fun p ->
+        match BoundWithProof.make p with
         | None -> None
-        | Some Vect.Bound.{cst; var; coeff} ->
-          Some (Monomial.degree (LinPoly.MonT.retrieve var)))
+        | Some b ->
+          let Vect.Bound.{cst; var; coeff} = BoundWithProof.bound b in
+          Some (Monomial.degree (LinPoly.MonT.retrieve var), b))
       sys
   in
   let deg =
@@ -427,27 +428,26 @@ let bound_monomials (sys : WithProof.t list) =
       ISet.empty sys
   in
   let module SetWP = Set.Make (struct
-    type t = int * WithProof.t
+    type t = int * BoundWithProof.t
 
-    let compare (_, x) (_, y) = WithProof.compare x y
+    let compare (_, x) (_, y) = BoundWithProof.compare x y
   end) in
   let bounds =
     saturate_bin
-      (module SetWP : Set.S with type elt = int * WithProof.t)
+      (module SetWP : Set.S with type elt = int * BoundWithProof.t)
       (fun (i1, w1) (i2, w2) ->
         if i1 + i2 > deg then None
         else
-          match WithProof.mul_bound w1 w2 with
+          match BoundWithProof.mul_bound w1 w2 with
           | None -> None
           | Some b -> Some (i1 + i2, b))
       (fst l)
   in
-  let has_mon (_, ((p, o), _)) =
-    match LinPoly.get_bound p with
-    | None -> false
-    | Some Vect.Bound.{cst; var; coeff} -> ISet.mem var vars
+  let has_mon (_, b) =
+    let Vect.Bound.{cst; var; coeff} = BoundWithProof.bound b in
+    if ISet.mem var vars then Some (BoundWithProof.proof b) else None
   in
-  List.map snd (List.filter has_mon bounds) @ snd l
+  CList.map_filter has_mon bounds @ snd l
 
 let bound_monomials = tr_sys "bound_monomials" bound_monomials
 

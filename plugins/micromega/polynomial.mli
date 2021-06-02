@@ -189,8 +189,6 @@ module LinPoly : sig
       a is a constant such that [pred a] *)
   val search_all_linear : (Q.t -> bool) -> t -> var list
 
-  val get_bound : t -> Vect.Bound.t option
-
   (** [product p q]
      @return the product of the polynomial [p*q] *)
   val product : t -> t -> t
@@ -362,5 +360,14 @@ module WithProof : sig
 
   val saturate_subst : bool -> t list -> t list
   val is_substitution : bool -> t -> var option
+end
+
+module BoundWithProof :
+sig
+  type t
+  val compare : t -> t -> int
+  val make : WithProof.t -> t option
   val mul_bound : t -> t -> t option
+  val bound : t -> Vect.Bound.t
+  val proof : t -> WithProof.t
 end

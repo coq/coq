@@ -438,8 +438,6 @@ module LinPoly = struct
         else acc)
       [] l
 
-  let get_bound p = Vect.Bound.of_vect p
-
   let min_list (l : int list) =
     match l with [] -> None | e :: l -> Some (List.fold_left min e l)
 
@@ -1217,30 +1215,67 @@ module WithProof = struct
               (ProofFormat.mul_cst_proof cv1 prf1)
               (ProofFormat.mul_cst_proof cv2 prf2) )
 
-  open Vect.Bound
+end
 
-  let mul_bound w1 w2 =
-    let (p1, o1), prf1 = w1 in
-    let (p2, o2), prf2 = w2 in
-    match (LinPoly.get_bound p1, LinPoly.get_bound p2) with
+module BoundWithProof =
+struct
+
+type t = Vect.Bound.t * op * ProofFormat.prf_rule
+
+let bound_compare b1 b2 =
+  let open Vect.Bound in
+  let {cst = k1; var = v1; coeff = c1} = b1 in
+  let {cst = k2; var = v2; coeff = c2} = b2 in
+  let c = Int.compare v1 v2 in
+  if c <> 0 then c
+  else
+    let c = Q.compare k1 k2 in
+    if c <> 0 then c
+    else Q.compare c1 c2
+
+let compare (p1, o1, _) (p2, o2, _) =
+  let c = bound_compare p1 p2 in
+  if c = 0 then compare_op o1 o2 else c
+
+let make ((p, o), prf) = match Vect.Bound.of_vect p with
+| None -> None
+| Some b -> Some (b, o, prf)
+
+let padd (o1, prf1) (o2, prf2) = (opAdd o1 o2, ProofFormat.add_proof prf1 prf2)
+let pmul (o1, prf1) (o2, prf2) = (opMult o1 o2, ProofFormat.mul_proof prf1 prf2)
+let pext c (o, prf) =
+  if c =/ Q.zero then (Eq, ProofFormat.Zero)
+  else (o, ProofFormat.mul_cst_proof c prf)
+
+let mul_bound (b1, o1, prf1) (b2, o2, prf2) =
+  let open Vect.Bound in
+  match (b1, b2) with
+  | {cst = c1; var = v1; coeff = c1'},
+    {cst = c2; var = v2; coeff = c2'} ->
+    let good_coeff b o =
+      match o with
+      | Eq -> Some (Q.neg b)
+      | _ -> if b <=/ Q.zero then Some (Q.neg b) else None
+    in
+    match (good_coeff c1 o2, good_coeff c2 o1) with
     | None, _ | _, None -> None
-    | ( Some {cst = c1; var = v1; coeff = c1'}
-      , Some {cst = c2; var = v2; coeff = c2'} ) -> (
-      let good_coeff b o =
-        match o with
-        | Eq -> Some (Q.neg b)
-        | _ -> if b <=/ Q.zero then Some (Q.neg b) else None
-      in
-      match (good_coeff c1 o2, good_coeff c2 o1) with
-      | None, _ | _, None -> None
-      | Some c1, Some c2 ->
-        let ext_mult c w =
-          if c =/ Q.zero then zero else mult (LinPoly.constant c) w
-        in
-        Some
-          (addition
-             (addition (product w1 w2) (ext_mult c1 w2))
-             (ext_mult c2 w1)) )
+    | Some c1, Some c2 ->
+      let w1 = (o1, prf1) in
+      let w2 = (o2, prf2) in
+      let (o, prf) = padd (padd (pmul w1 w2) (pext c1 w2)) (pext c2 w1) in
+      let b = {
+        cst = Q.neg (c1 */ c2);
+        var = LinPoly.MonT.register (Monomial.prod (LinPoly.MonT.retrieve v1) (LinPoly.MonT.retrieve v2));
+        coeff = c1' */ c2';
+      } in
+      Some (b, o, prf)
+
+let bound (b, _, _) = b
+
+let proof (b, o, w) =
+  let p = Vect.Bound.to_vect b in
+  ((p, o), w)
+
 end
 
 (* Local Variables: *)
