@@ -7,7 +7,7 @@
 
 ; File needs to be here too.
 (install
- (section share)
+ (section share_root)
  (package coq-core)
  (files
   (coqdoc.sty as texmf/tex/latex/misc/coqdoc.sty)))
