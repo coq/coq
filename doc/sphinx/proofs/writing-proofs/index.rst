@@ -25,5 +25,5 @@ Additional tactics are documented in the next chapter
    proof-mode
    ../../proof-engine/tactics
    equality
-   inductive
+   reasoning-inductives
    ../../proof-engine/ssreflect-proof-language
