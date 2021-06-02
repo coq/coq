@@ -27,7 +27,7 @@ let v := 0%upp in v : unit
      : unit
 let v := 0%ppps in v : punit
      : punit
-File "stdin", line 91, characters 2-46:
+File "./output/NumberNotations.v", line 91, characters 2-46:
 Warning: To avoid stack overflow, large numbers in punit are interpreted as
 applications of pto_punits. [abstract-large-number,numbers]
 The command has indeed failed with message:
@@ -75,7 +75,7 @@ The command has indeed failed with message:
 In environment
 v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "wuint".
-File "stdin", line 203, characters 2-71:
+File "./output/NumberNotations.v", line 203, characters 2-71:
 Warning: The 'abstract after' directive has no effect when the parsing
 function (of_uint) targets an option type.
 [abstract-large-number-no-op,numbers]
@@ -260,28 +260,28 @@ The command has indeed failed with message:
 add is not a constructor of an inductive type.
 The command has indeed failed with message:
 Missing mapping for constructor Iempty.
-File "stdin", line 580, characters 56-61:
+File "./output/NumberNotations.v", line 580, characters 56-61:
 Warning: Type of I'sum seems incompatible with the type of sum.
 Expected type is: (I' -> I' -> I') instead of (I -> I' -> I').
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
-File "stdin", line 585, characters 32-33:
+File "./output/NumberNotations.v", line 585, characters 32-33:
 Warning: I was already mapped to Set, mapping it also to
 nat might yield ill typed terms when using the notation.
 [via-type-remapping,numbers]
-File "stdin", line 585, characters 37-42:
+File "./output/NumberNotations.v", line 585, characters 37-42:
 Warning: Type of Iunit seems incompatible with the type of O.
 Expected type is: I instead of I.
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
 The command has indeed failed with message:
 'via' and 'abstract' cannot be used together.
-File "stdin", line 665, characters 21-23:
+File "./output/NumberNotations.v", line 665, characters 21-23:
 Warning: Type of I1 seems incompatible with the type of Fin.F1.
 Expected type is: (nat -> I) instead of I.
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
-File "stdin", line 665, characters 35-37:
+File "./output/NumberNotations.v", line 665, characters 35-37:
 Warning: Type of IS seems incompatible with the type of Fin.FS.
 Expected type is: (nat -> I -> I) instead of (I -> I).
 This might yield ill typed terms when using the notation.

@@ -15,6 +15,6 @@ The command has indeed failed with message:
 Illegal application (Non-functional construction): 
 The expression "I" of type "True" cannot be applied to the term
  "I" : "True"
-File "stdin", line 21, characters 0-50:
+File "./output/notation_principal_scope.v", line 21, characters 0-50:
 Warning: This notation will not be used for printing as it is bound to a
 single variable. [notation-bound-to-variable,parsing]
