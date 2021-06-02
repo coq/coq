@@ -680,6 +680,15 @@ and an explanation of the underlying technique.
       behavior for objects that are proofs of a statement in :g:`Prop`. This :term:`flag`
       controls this behavior.
 
+   .. table:: Keep Equalities @qualid
+
+      This :term:`table` specifies a set of inductive types for which proof
+      equalities are always kept by :tacn:`injection`. This overrides the
+      :flag:`Keep Proof Equalities` flag for those inductive types.
+      :attr:`Template polymorphic <universes(template)>` inductive types are
+      implicitly added to this table when defined.
+      Use the :cmd:`Add` and :cmd:`Remove` commands to update this set manually.
+
 .. tacn:: inversion @ident
    :name: inversion
 
