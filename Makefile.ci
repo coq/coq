@@ -40,7 +40,6 @@ CI_TARGETS= \
     ci-geocoq \
     ci-coqhammer \
     ci-hott \
-    ci-interval \
     ci-iris \
     ci-math_classes \
     ci-mathcomp \
@@ -87,7 +86,6 @@ ci-mtac2: ci-unicoq
 ci-fiat_crypto: ci-coqprime ci-rewriter
 ci-fiat_crypto_ocaml: ci-fiat_crypto
 
-ci-interval: ci-mathcomp ci-flocq ci-coquelicot ci-bignums
 ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp

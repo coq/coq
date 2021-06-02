@@ -119,13 +119,6 @@ project coq_tools "https://github.com/JasonGross/coq-tools" "master"
 project coquelicot "https://gitlab.inria.fr/coquelicot/coquelicot" "master"
 
 ########################################################################
-# Coq-interval
-########################################################################
-# To revert when upstream maintainer comes back online
-# project interval "https://gitlab.inria.fr/coqinterval/interval" "master"
-project interval "https://gitlab.inria.fr/egallego/interval" "ocaml+4.12"
-
-########################################################################
 # Gappa stand alone tool
 ########################################################################
 project gappa_tool "https://gitlab.inria.fr/gappa/gappa" "master"
