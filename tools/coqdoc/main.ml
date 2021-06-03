@@ -134,6 +134,17 @@ let compile_targets = ref []
 type glob_source_t = NoGlob | DotGlob | GlobFile of string
 let glob_source = ref DotGlob
 
+let warn_on_option_renaming_for_url d =
+  try
+    let https_prefix = String.sub d 0 4 in
+    if String.equal https_prefix "http"
+    then
+      Format.eprintf
+        "warning: use --coqlib_url to specify stdlib's URL starting with Coq 8.14@\n%!"
+    else ()
+  with Invalid_argument _ ->
+    ()
+
 let parse () =
   let files = ref [] in
   let add_file f = files := f :: !files in
@@ -300,6 +311,7 @@ let parse () =
         (* XXX: This is useless it seems *)
         parse_rec rem
     | ("--coqlib" | "-coqlib") :: d :: rem ->
+        warn_on_option_renaming_for_url d;
         Boot.Env.set_coqlib d; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
         usage ()

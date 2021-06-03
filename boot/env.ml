@@ -27,7 +27,7 @@ type t =
 (* fatal error *)
 let fail_msg =
   "cannot guess a path for Coq libraries; please use -coqlib option \
-   or ensure you have installed the package contaning Coq's stdlib (coq-stdlib in OPAM) \
+   or ensure you have installed the package containing Coq's stdlib (coq-stdlib in OPAM) \
    If you intend to use Coq without a standard library, the -boot -noinit options must be used."
 
 let fail s = Format.eprintf "%s@\n%!" fail_msg; exit 1
