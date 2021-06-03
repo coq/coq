@@ -346,59 +346,52 @@ let print_rewrite_hintdb bas =
 
 type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) CAst.t
 
+let tclMAP_rev f args =
+  List.fold_left (fun accu arg -> Tacticals.tclTHEN accu (f arg)) (Proofview.tclUNIT ()) args
+
 (* Applies all the rules of one base *)
-let one_base general_rewrite_maybe_in tac_main bas =
+let one_base where conds tac_main bas =
   let lrul = find_rewrites bas in
-  let try_rewrite dir ctx c tc =
+  let rewrite dir c tac =
+    let c = (EConstr.of_constr c, Tactypes.NoBindings) in
+    general_rewrite ~where ~l2r:dir AllOccurrences ~freeze:true ~dep:false ~with_evars:false ~tac:(tac, conds) c
+  in
+  let try_rewrite h tc =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let subst, ctx' = UnivGen.fresh_universe_context_set_instance ctx in
-    let c' = Vars.subst_univs_level_constr subst c in
+    let subst, ctx' = UnivGen.fresh_universe_context_set_instance h.rew_ctx in
+    let c' = Vars.subst_univs_level_constr subst h.rew_lemma in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (general_rewrite_maybe_in dir c' tc)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (rewrite h.rew_l2r c' tc)
   end in
   let open Proofview.Notations in
   Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
-  let lrul = List.map (fun h ->
-  let tac = match h.rew_tac with
-  | None -> Proofview.tclUNIT ()
-  | Some (Genarg.GenArg (Genarg.Glbwit wit, tac)) ->
-    let ist = { Geninterp.lfun = Id.Map.empty
-              ; poly
-              ; extra = Geninterp.TacStore.empty } in
-    Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
+  let eval h =
+    let tac = match h.rew_tac with
+    | None -> Proofview.tclUNIT ()
+    | Some (Genarg.GenArg (Genarg.Glbwit wit, tac)) ->
+      let ist = { Geninterp.lfun = Id.Map.empty
+                ; poly
+                ; extra = Geninterp.TacStore.empty } in
+      Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
+    in
+    Tacticals.tclREPEAT_MAIN (Tacticals.tclTHENFIRST (try_rewrite h tac) tac_main)
   in
-    (h.rew_ctx,h.rew_lemma,h.rew_l2r,tac)) lrul in
-    Tacticals.tclREPEAT_MAIN (Proofview.tclPROGRESS (List.fold_left (fun tac (ctx,csr,dir,tc) ->
-      Tacticals.tclTHEN tac
-        (Tacticals.tclREPEAT_MAIN
-            (Tacticals.tclTHENFIRST (try_rewrite dir ctx csr tc) tac_main)))
-      (Proofview.tclUNIT()) lrul))
+  let lrul = tclMAP_rev eval lrul in
+  Tacticals.tclREPEAT_MAIN (Proofview.tclPROGRESS lrul)
 
 (* The AutoRewrite tactic *)
 let autorewrite ?(conds=Naive) tac_main lbas =
   Tacticals.tclREPEAT_MAIN (Proofview.tclPROGRESS
-    (List.fold_left (fun tac bas ->
-       Tacticals.tclTHEN tac
-        (one_base (fun dir c tac ->
-          let tac = (tac, conds) in
-            general_rewrite ~where:None ~l2r:dir AllOccurrences ~freeze:true ~dep:false ~with_evars:false ~tac (EConstr.of_constr c, Tactypes.NoBindings))
-          tac_main bas))
-      (Proofview.tclUNIT()) lbas))
+    (tclMAP_rev (fun bas -> (one_base None conds tac_main bas)) lbas))
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
   Proofview.Goal.enter begin fun gl ->
  (* let's check at once if id exists (to raise the appropriate error) *)
   let _ = List.map (fun id -> Tacmach.pf_get_hyp id gl) idl in
-  let general_rewrite_in id dir cstr tac =
-    let cstr = EConstr.of_constr cstr in
-    general_rewrite ~where:(Some id) ~l2r:dir AllOccurrences ~freeze:true ~dep:false ~with_evars:false ~tac:(tac, conds) (cstr, Tactypes.NoBindings)
-  in
  Tacticals.tclMAP (fun id ->
   Tacticals.tclREPEAT_MAIN (Proofview.tclPROGRESS
-    (List.fold_left (fun tac bas ->
-       Tacticals.tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) (Proofview.tclUNIT()) lbas)))
+    (tclMAP_rev (fun bas -> (one_base (Some id) conds tac_main bas)) lbas)))
    idl
  end
 
@@ -408,28 +401,25 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
   let try_do_hyps treat_id l =
     autorewrite_multi_in ~conds (List.map treat_id l) tac_main lbas
   in
+  let concl_tac = (if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else Proofview.tclUNIT ()) in
   if not (Locusops.is_all_occurrences cl.concl_occs) &&
      cl.concl_occs != NoOccurrences
   then
     let info = Exninfo.reify () in
     Tacticals.tclZEROMSG ~info (str"The \"at\" syntax isn't available yet for the autorewrite tactic.")
   else
-    let compose_tac t1 t2 =
-      match cl.onhyps with
-        | Some [] -> t1
-        | _ ->      Tacticals.tclTHENFIRST t1 t2
-    in
-    compose_tac
-        (if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else Proofview.tclUNIT ())
-        (match cl.onhyps with
-           | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
-           | None ->
-                 (* try to rewrite in all hypothesis
-                    (except maybe the rewritten one) *)
-               Proofview.Goal.enter begin fun gl ->
-                 let ids = Tacmach.pf_ids_of_hyps gl in
-                 try_do_hyps (fun id -> id)  ids
-               end)
+    match cl.onhyps with
+    | Some [] -> concl_tac
+    | Some l -> Tacticals.tclTHENFIRST concl_tac (try_do_hyps (fun ((_,id),_) -> id) l)
+    | None ->
+      let hyp_tac =
+        (* try to rewrite in all hypothesis (except maybe the rewritten one) *)
+        Proofview.Goal.enter begin fun gl ->
+          let ids = Tacmach.pf_ids_of_hyps gl in
+          try_do_hyps (fun id -> id)  ids
+        end
+      in
+      Tacticals.tclTHENFIRST concl_tac hyp_tac
 
 let auto_multi_rewrite ?(conds=Naive) lems cl =
   Proofview.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds (Proofview.tclUNIT()) lems cl)
