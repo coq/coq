@@ -982,12 +982,12 @@ let compute_dec_tact handle ind lnamesparrec nparrec =
                                  apply (EConstr.of_constr (mkApp(lbI,Array.map mkVar xargs)));
                                  Auto.default_auto
                             ]);
-                          Equality.general_rewrite_ebindings_clause (Some freshH3) true
-                            Locus.AllOccurrences true false
+                          Equality.general_rewrite ~where:(Some freshH3) ~l2r:true
+                            Locus.AllOccurrences ~freeze:true ~dep:false ~with_evars:true
                             ((EConstr.mkVar freshH2),
                              NoBindings
                             )
-                            true;
+                            ;
                           my_discr_tac
                         ]
                       end

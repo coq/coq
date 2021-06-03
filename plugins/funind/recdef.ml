@@ -975,13 +975,13 @@ let rec make_rewrite_list expr_info max = function
                    ( Nameops.Name.get_id k_na.binder_name
                    , Nameops.Name.get_id def_na.binder_name )
                  in
-                 general_rewrite_ebindings_clause None false Locus.AllOccurrences true
-                   (* dep proofs also: *) true
+                 general_rewrite ~where:None ~l2r:false Locus.AllOccurrences ~freeze:true
+                   (* dep proofs also: *) ~dep:true ~with_evars:false
                    ( mkVar hp
                    , ExplicitBindings
                        [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
                        ; CAst.make @@ (NamedHyp k, f_S max) ] )
-                   false)))
+                   )))
          [ make_rewrite_list expr_info max l
          ; New.observe_tclTHENLIST
              (fun _ _ -> str "make_rewrite_list")
@@ -1010,13 +1010,13 @@ let make_rewrite expr_info l hp max =
                in
                New.observe_tac
                  (fun _ _ -> str "general_rewrite_bindings")
-                 (general_rewrite_ebindings_clause None false Locus.AllOccurrences true
-                    (* dep proofs also: *) true
+                 (general_rewrite ~where:None ~l2r:false Locus.AllOccurrences ~freeze:true
+                    (* dep proofs also: *) ~dep:true ~with_evars:false
                     ( mkVar hp
                     , ExplicitBindings
                         [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
                         ; CAst.make @@ (NamedHyp k, f_S (f_S max)) ] )
-                    false)))
+                    )))
           [ New.observe_tac
               (fun _ _ -> str "make_rewrite finalize")
               ((* tclORELSE( h_reflexivity) *)
