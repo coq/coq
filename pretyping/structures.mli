@@ -87,6 +87,7 @@ type t =
   | Default_cs
 
 val equal : Environ.env -> t -> t -> bool
+val compare : t -> t -> int
 val print : t -> Pp.t
 
 (** Return the form of the component of a canonical structure *)

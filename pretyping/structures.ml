@@ -155,6 +155,14 @@ let equal env p1 p2 = match p1, p2 with
   | Default_cs, Default_cs -> true
   | _ -> false
 
+let compare p1 p2 = match p1, p2 with
+  | Const_cs gr1, Const_cs gr2 -> GlobRef.CanOrd.compare gr1 gr2
+  | Proj_cs p1, Proj_cs p2 -> Projection.Repr.CanOrd.compare p1 p2
+  | Prod_cs, Prod_cs -> 0
+  | Sort_cs s1, Sort_cs s2 -> Sorts.family_compare s1 s2
+  | Default_cs, Default_cs -> 0
+  | _ -> pervasives_compare p1 p2
+
 let rec of_constr env t =
   match kind t with
   | App (f,vargs) ->
@@ -176,12 +184,10 @@ let print = function
 
 end
 
-let rec assoc_pat env a = function
-  | ((pat, t), e) :: xs -> if ValuePattern.equal env pat a then (t, e) else assoc_pat env a xs
-  | [] -> raise Not_found
+module PatMap = Map.Make(ValuePattern)
 
 let object_table =
-  Summary.ref (GlobRef.Map.empty : ((ValuePattern.t * constr) * obj_typ) list GlobRef.Map.t)
+  Summary.ref (GlobRef.Map.empty : (constr * obj_typ) PatMap.t GlobRef.Map.t)
     ~name:"record-canonical-structs"
 
 let keep_true_projections projs =
@@ -306,11 +312,11 @@ let make env sigma ref =
 
 let register ~warn env sigma o =
     compute_canonical_projections env ~warn o |>
-    List.iter (fun ((proj, (cs_pat, _ as pat)), s) ->
-      let l = try GlobRef.Map.find proj !object_table with Not_found -> [] in
-      match assoc_pat env cs_pat l with
+    List.iter (fun ((proj, (cs_pat, t)), s) ->
+      let l = try GlobRef.Map.find proj !object_table with Not_found -> PatMap.empty in
+      match PatMap.find cs_pat l with
       | exception Not_found ->
-          object_table := GlobRef.Map.add proj ((pat, s) :: l) !object_table
+          object_table := GlobRef.Map.add proj (PatMap.add cs_pat (t, s) l) !object_table
       | _, cs ->
         if warn
         then
@@ -345,7 +351,7 @@ type t = {
 
 let find env sigma (proj,pat) =
   let t', { o_DEF = c; o_CTX = ctx; o_INJ=n; o_TABS = bs;
-        o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = assoc_pat env pat (GlobRef.Map.find proj !object_table) in
+        o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = PatMap.find pat (GlobRef.Map.find proj !object_table) in
   let us = List.map EConstr.of_constr us in
   let params = List.map EConstr.of_constr params in
   let u, ctx' = UnivGen.fresh_instance_from ctx None in
@@ -404,18 +410,19 @@ type entry = {
   solution : Names.GlobRef.t;
 }
 
-let canonical_entry_of_object projection ((value,_), { o_ORIGIN = solution }) =
+let canonical_entry_of_object projection value (_, { o_ORIGIN = solution }) =
   { projection; value; solution }
 
 let entries () =
   GlobRef.Map.fold (fun p ol acc ->
-    List.fold_right (fun o acc -> canonical_entry_of_object p o :: acc) ol acc)
+    PatMap.fold (fun pat o acc -> canonical_entry_of_object p pat o :: acc) ol acc)
     !object_table []
 
 let entries_for ~projection:p =
   try
     GlobRef.Map.find p !object_table |>
-    List.map (canonical_entry_of_object p)
+    PatMap.bindings |>
+    List.map (fun (pat, o) -> canonical_entry_of_object p pat o)
   with Not_found -> []
 
 end
