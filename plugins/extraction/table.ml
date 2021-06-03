@@ -300,7 +300,7 @@ let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 
 (*S Warning and Error messages. *)
 
-let err s = user_err ~hdr:"Extraction" s
+let err ?loc s = user_err ?loc ~hdr:"Extraction" s
 
 let warn_extraction_axiom_to_realize =
   CWarnings.create ~name:"extraction-axiom-to-realize" ~category:"extraction"
@@ -361,8 +361,8 @@ let warning_ambiguous_name =
                        strbrk "First choice is assumed, for the second one please use " ++
                        strbrk "fully qualified name." ++ fnl ())
 
-let error_axiom_scheme r i =
-  err (str "The type scheme axiom " ++ spc () ++
+let error_axiom_scheme ?loc r i =
+  err ?loc (str "The type scheme axiom " ++ spc () ++
        safe_pr_global r ++ spc () ++ str "needs " ++ int i ++
        str " type variable(s).")
 
@@ -391,11 +391,11 @@ let warn_extraction_reserved_identifier =
 
 let warning_id s = warn_extraction_reserved_identifier s
 
-let error_constant r =
-  err (safe_pr_global r ++ str " is not a constant.")
+let error_constant ?loc r =
+  err ?loc (safe_pr_global r ++ str " is not a constant.")
 
-let error_inductive r =
-  err (safe_pr_global r ++ spc () ++ str "is not an inductive type.")
+let error_inductive ?loc r =
+  err ?loc (safe_pr_global r ++ spc () ++ str "is not an inductive type.")
 
 let error_nb_cons () =
   err (str "Not the right number of constructors.")
@@ -426,8 +426,8 @@ let error_singleton_become_prop id og =
        str "Instead, use a sort-monomorphic type such as (True /\\ True)\n" ++
        str "or extract to Haskell.")
 
-let error_unknown_module m =
-  err (str "Module" ++ spc () ++ pr_qualid m ++ spc () ++ str "not found.")
+let error_unknown_module ?loc m =
+  err ?loc (str "Module" ++ spc () ++ pr_qualid m ++ spc () ++ str "not found.")
 
 let error_scheme () =
   err (str "No Scheme modular extraction available yet.")
@@ -840,11 +840,11 @@ let extract_constant_inline inline r ids s =
         if Reduction.is_arity env typ
           then begin
             let nargs = Hook.get use_type_scheme_nb_args env typ in
-            if not (Int.equal (List.length ids) nargs) then error_axiom_scheme g nargs
+            if not (Int.equal (List.length ids) nargs) then error_axiom_scheme ?loc:r.CAst.loc g nargs
           end;
         Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
         Lib.add_anonymous_leaf (in_customs (g,ids,s))
-    | _ -> error_constant g
+    | _ -> error_constant ?loc:r.CAst.loc g
 
 
 let extract_inductive r s l optstr =
@@ -865,7 +865,7 @@ let extract_inductive r s l optstr =
              let g = GlobRef.ConstructRef (ip,succ j) in
              Lib.add_anonymous_leaf (inline_extraction (true,[g]));
              Lib.add_anonymous_leaf (in_customs (g,[],s))) l
-    | _ -> error_inductive g
+    | _ -> error_inductive ?loc:r.CAst.loc g
 
 
 
