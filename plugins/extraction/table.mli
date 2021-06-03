@@ -24,14 +24,14 @@ val warning_axioms : unit -> unit
 val warning_opaques : bool -> unit
 val warning_ambiguous_name : ?loc:Loc.t -> qualid * ModPath.t * GlobRef.t -> unit
 val warning_id : string -> unit
-val error_axiom_scheme : GlobRef.t -> int -> 'a
-val error_constant : GlobRef.t -> 'a
-val error_inductive : GlobRef.t -> 'a
+val error_axiom_scheme : ?loc:Loc.t -> GlobRef.t -> int -> 'a
+val error_constant : ?loc:Loc.t -> GlobRef.t -> 'a
+val error_inductive : ?loc:Loc.t -> GlobRef.t -> 'a
 val error_nb_cons : unit -> 'a
 val error_module_clash : ModPath.t -> ModPath.t -> 'a
 val error_no_module_expr : ModPath.t -> 'a
 val error_singleton_become_prop : Id.t -> GlobRef.t option -> 'a
-val error_unknown_module : qualid -> 'a
+val error_unknown_module : ?loc:Loc.t -> qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : GlobRef.t -> 'a
 val error_MPfile_as_mod : ModPath.t -> bool -> 'a
