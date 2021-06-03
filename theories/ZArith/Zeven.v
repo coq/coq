@@ -17,7 +17,7 @@
 
 Require Import BinInt.
 
-Open Scope Z_scope.
+Local Open Scope Z_scope.
 
 (** Historical formulation of even and odd predicates, based on
     case analysis. We now rather recommend using [Z.Even] and
@@ -286,6 +286,3 @@ Theorem Zodd_mult_Zodd a b : Zodd a -> Zodd b -> Zodd (a * b).
 Proof.
  boolify_even_odd. intros Ha Hb. now rewrite Z.odd_mul, Ha, Hb.
 Qed.
-
-(* for compatibility *)
-Close Scope Z_scope.
