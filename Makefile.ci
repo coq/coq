@@ -46,6 +46,7 @@ CI_TARGETS= \
     ci-mczify \
     ci-menhir \
     ci-metacoq \
+    ci-metacoq2 \
     ci-mtac2 \
     ci-oddorder \
     ci-paramcoq \
@@ -97,6 +98,8 @@ ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
 
 ci-metacoq: ci-equations
+
+ci-metacoq2: ci-metacoq
 
 ci-vst: ci-flocq
 

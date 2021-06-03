@@ -298,6 +298,11 @@ project perennial "https://github.com/mit-pdos/perennial" "coq/tested"
 project metacoq "https://github.com/MetaCoq/metacoq" "master"
 
 ########################################################################
+# metacoq2
+########################################################################
+project metacoq2 "https://github.com/MetaCoq/metacoq" "master"
+
+########################################################################
 # SF suite
 ########################################################################
 project sf "https://github.com/DeepSpec/sf" "master"
