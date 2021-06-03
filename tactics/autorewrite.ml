@@ -126,7 +126,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
        Tacticals.New.tclTHEN tac
         (one_base (fun dir c tac ->
           let tac = (tac, conds) in
-            general_rewrite dir AllOccurrences true false ~tac (EConstr.of_constr c))
+            general_rewrite_ebindings_clause None dir AllOccurrences true false ~tac (EConstr.of_constr c, Tactypes.NoBindings) false)
           tac_main bas))
       (Proofview.tclUNIT()) lbas))
 
@@ -136,7 +136,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
   let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) idl in
   let general_rewrite_in id dir cstr tac =
     let cstr = EConstr.of_constr cstr in
-    general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false id cstr false
+    general_rewrite_ebindings_clause (Some id) dir AllOccurrences true ~tac:(tac, conds) false (cstr, Tactypes.NoBindings) false
   in
  Tacticals.New.tclMAP (fun id ->
   Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS

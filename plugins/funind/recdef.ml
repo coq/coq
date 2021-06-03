@@ -975,7 +975,7 @@ let rec make_rewrite_list expr_info max = function
                    ( Nameops.Name.get_id k_na.binder_name
                    , Nameops.Name.get_id def_na.binder_name )
                  in
-                 general_rewrite_bindings false Locus.AllOccurrences true
+                 general_rewrite_ebindings_clause None false Locus.AllOccurrences true
                    (* dep proofs also: *) true
                    ( mkVar hp
                    , ExplicitBindings
@@ -1010,7 +1010,7 @@ let make_rewrite expr_info l hp max =
                in
                New.observe_tac
                  (fun _ _ -> str "general_rewrite_bindings")
-                 (general_rewrite_bindings false Locus.AllOccurrences true
+                 (general_rewrite_ebindings_clause None false Locus.AllOccurrences true
                     (* dep proofs also: *) true
                     ( mkVar hp
                     , ExplicitBindings

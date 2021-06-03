@@ -854,7 +854,7 @@ let rewritetac ?(under=false) dir c =
   (* Due to the new optional arg ?tac, application shouldn't be too partial *)
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun _ ->
-      Equality.general_rewrite (dir = L2R) AllOccurrences true false c <*>
+      Equality.general_rewrite_ebindings_clause None (dir = L2R) AllOccurrences true false (c, Tactypes.NoBindings) false <*>
         if under then Proofview.cycle 1 else Proofview.tclUNIT ()
   end
 

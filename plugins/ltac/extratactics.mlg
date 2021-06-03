@@ -722,7 +722,7 @@ let rewrite_except h =
   Proofview.Goal.enter begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else
-      Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
+      Tacticals.New.tclTRY (Equality.general_rewrite_ebindings_clause (Some id) true Locus.AllOccurrences true true (mkVar h, NoBindings) false))
     hyps
   end
 
