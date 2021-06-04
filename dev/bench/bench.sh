@@ -372,8 +372,9 @@ new_coq_commit_long="$COQ_HASH_LONG"
 create_opam "OLD" "$old_ocaml_switch" "$old_coq_commit" "$old_coq_opam_archive_dir"
 old_coq_commit_long="$COQ_HASH_LONG"
 
-# The following variable will be set in the following cycle:
-installable_coq_opam_packages="coq-core coq-stdlib coq"
+# Packages which appear in the rendered table
+# Deliberately don't include the dummy "coq" package
+installable_coq_opam_packages="coq-core coq-stdlib"
 
 echo "DEBUG: $program_path/render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
