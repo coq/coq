@@ -1611,7 +1611,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
                   (assert_before_gen false (NamingAvoid avoid) pt)
                   (fun _ -> Proofview.tclZERO ~info err))
                 [Proofview.tclORELSE
-                   (refiner ~check:true EConstr.Unsafe.(to_constr p))
+                  (Refine.refine ~typecheck:false (fun h -> (h, p)))
                    (fun _ -> Proofview.tclZERO ~info err);
                  (* Might be ill-typed due to forbidden elimination. *)
                  Tacticals.New.onLastHypId (tac (err, info) (not isrec))]
