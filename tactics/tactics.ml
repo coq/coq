@@ -1345,11 +1345,8 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
     id hypmv elimclause =
   let hyp = mkVar id in
   let hyp_typ = Retyping.get_type_of env sigma hyp in
-  let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
   let elimclause'' =
-    (* The evarmap of elimclause is assumed to be an extension of hypclause, so
-      we do not need to merge the universes coming from hypclause. *)
-    try clenv_fchain ~with_univs:false ~flags hypmv elimclause hypclause
+    try clenv_instantiate ~flags hypmv elimclause (hyp, hyp_typ)
     with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
       (* Set the hypothesis name in the message *)
       raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
@@ -4244,16 +4241,12 @@ let recolle_clenv i params args elimclause gl =
   let clauses_params = List.mapi (fun i id -> id, lindmv.(i)) params in
   let clauses_args = List.mapi (fun i id -> id, lindmv.(k+i)) args in
   let clauses = clauses_params@clauses_args in
-  (* iteration of clenv_fchain with all infos we have. *)
+  (* iteration of clenv_instantiate with all infos we have. *)
   List.fold_right
     (fun e acc ->
       let x, i = e in
       let y = pf_get_hyp_typ x gl in
-      (* from_n (Some 0) means that x should be taken "as is" without
-         trying to unify (which would lead to trying to apply it to
-         evars if y is a product). *)
-      let indclause  = mk_clenv_from_n gl (Some 0) (mkVar x, y) in
-      let elimclause' = clenv_fchain ~with_univs:false i acc indclause in
+      let elimclause' = clenv_instantiate i acc (mkVar x, y) in
       elimclause')
     (List.rev clauses)
     elimclause

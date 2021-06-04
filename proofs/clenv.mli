@@ -51,6 +51,8 @@ val mk_clenv_from_env : env -> evar_map -> int option -> EConstr.constr * EConst
 
 (** {6 linking of clenvs } *)
 
+val clenv_instantiate : ?flags:unify_flags -> metavariable -> clausenv -> (constr * types) -> clausenv
+
 val clenv_fchain :
   ?with_univs:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 

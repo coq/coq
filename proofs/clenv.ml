@@ -424,6 +424,11 @@ let fchain_flags () =
   { (default_unify_flags ()) with
     allow_K_in_toplevel_higher_order_unification = true }
 
+let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
+  (* unify the type of the template of [nextclenv] with the type of [mv] *)
+  let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
+  clenv_assign mv c clenv
+
 let clenv_fchain ?with_univs ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let evd = meta_merge ?with_univs nextclenv.evd clenv.evd in
