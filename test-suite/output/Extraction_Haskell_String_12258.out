@@ -11,6 +11,9 @@ import qualified Prelude
 
 #ifdef __GLASGOW_HASKELL__
 import qualified GHC.Base
+#if __GLASGOW_HASKELL__ >= 900
+import qualified GHC.Exts
+#endif
 #else
 -- HUGS
 import qualified IOExts
@@ -18,7 +21,11 @@ import qualified IOExts
 
 #ifdef __GLASGOW_HASKELL__
 unsafeCoerce :: a -> b
+#if __GLASGOW_HASKELL__ >= 900
+unsafeCoerce = GHC.Exts.unsafeCoerce#
+#else
 unsafeCoerce = GHC.Base.unsafeCoerce#
+#endif
 #else
 -- HUGS
 unsafeCoerce :: a -> b
