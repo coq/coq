@@ -822,9 +822,13 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
      let os_map = match oproof with
        | Some op when diffs ->
-         let Proof.{sigma=osigma} = Proof.data op in
-         let diff_goal_map = Proof_diffs.make_goal_map oproof proof in
-         Some (osigma, diff_goal_map)
+         (try
+           let Proof.{sigma=osigma} = Proof.data op in
+           let diff_goal_map = Proof_diffs.make_goal_map oproof proof in
+           Some (osigma, diff_goal_map)
+         with Pp_diff.Diff_Failure msg ->
+           Proof_diffs.notify_proof_diff_failure msg;
+           None)
        | _ -> None
      in
      pr_subgoals ~pr_first:true ~diffs ?os_map None bsigma ~seeds ~shelf ~stack:[]

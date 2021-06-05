@@ -244,7 +244,7 @@ let add_diff_tags which pp diffs  =
       Buffer.add_char buf c
     else begin
       cprintf "mismatch: expected '%c' but got '%c'\n" !diff_str.[!diff_ind] c;
-      raise (Diff_Failure "string mismatch, shouldn't happen")
+      raise (Diff_Failure "string mismatch, should be impossible")
     end
   in
 

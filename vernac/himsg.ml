@@ -160,11 +160,7 @@ let with_diffs pm pn =
   with Pp_diff.Diff_Failure msg ->
     begin
       try ignore(Sys.getenv("HIDEDIFFFAILUREMSG"))
-      with Not_found ->
-        Feedback.msg_warning Pp.(
-            hov 0 (str ("Diff failure: " ^ msg) ++ spc () ++
-            hov 0 (str "Showing message without diff highlighting" ++ spc () ++
-            hov 0 (str "Please report at " ++ str Coq_config.wwwbugtracker ++ str "."))))
+      with Not_found -> Proof_diffs.notify_proof_diff_failure msg
     end;
     pm, pn
 

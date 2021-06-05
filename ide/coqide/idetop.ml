@@ -212,8 +212,12 @@ let goals () =
     let newp = Vernacstate.Declare.give_me_the_proof () in
     if Proof_diffs.show_diffs () then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
-      Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
+      (try
+        let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
+        Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
+       with Pp_diff.Diff_Failure msg ->
+         Proof_diffs.notify_proof_diff_failure msg;
+         Some (export_pre_goals Proof.(data newp) process_goal))
     end else
       Some (export_pre_goals Proof.(data newp) process_goal)
   with Vernacstate.Declare.NoCurrentProof -> None
