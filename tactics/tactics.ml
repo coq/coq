@@ -1759,7 +1759,8 @@ let apply_list = function
 
 exception UnableToApply
 
-let progress_with_clause flags innerclause clause =
+let progress_with_clause flags (id, t) clause =
+  let innerclause = mk_clenv_from_env clause.env clause.evd (Some 0) (mkVar id, t) in
   let ordered_metas = List.rev (clenv_independent clause) in
   if List.is_empty ordered_metas then raise UnableToApply;
   let f mv =
@@ -1775,24 +1776,24 @@ let progress_with_clause flags innerclause clause =
   try List.find_map f ordered_metas
   with Not_found -> raise UnableToApply
 
-let explain_unable_to_apply_lemma ?loc env sigma thm innerclause =
+let explain_unable_to_apply_lemma ?loc env sigma thm t =
   user_err ?loc (hov 0
     (Pp.str "Unable to apply lemma of type" ++ brk(1,1) ++
      Pp.quote (Printer.pr_leconstr_env env sigma thm) ++ spc() ++
      str "on hypothesis of type" ++ brk(1,1) ++
-     Pp.quote (Printer.pr_leconstr_env innerclause.env innerclause.evd (clenv_type innerclause)) ++
+     Pp.quote (Printer.pr_leconstr_env env sigma t) ++
      str "."))
 
-let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
+let apply_in_once_main flags (id, t) env sigma (loc,d,lbind) =
   let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause =
-    try progress_with_clause flags innerclause clause
+    try progress_with_clause flags (id, t) clause
     with e when CErrors.noncritical e ->
     let e' = Exninfo.capture e in
     try aux (clenv_push_prod clause)
     with NotExtensibleClause ->
       match e with
-      | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm innerclause
+      | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm t
       | _ -> Exninfo.iraise e'
   in
   aux (make_clenv_binding env sigma (d,thm) lbind)
@@ -1801,10 +1802,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{ CAst.loc; v= d,lbind}) tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
-  let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
   let replace = Id.equal id targetid in
   let rec aux ?err idstoclear with_destruct c =
@@ -1818,7 +1816,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
-      let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
+      let clause = apply_in_once_main flags (id, t') env sigma (loc,c,lbind) in
       clenv_refine_in ?err with_evars targetid replace sigma clause
         (fun id ->
           replace_error_option err (
