@@ -1757,22 +1757,20 @@ let apply_list = function
    unifiable with [t'] with unifier [rho]
 *)
 
-let find_matching_clause unifier clause =
-  let rec find clause =
-    try unifier clause
-    with e when noncritical e ->
-    try find (clenv_push_prod clause)
-    with NotExtensibleClause -> failwith "Cannot apply"
-  in find clause
-
 exception UnableToApply
 
 let progress_with_clause flags innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
   if List.is_empty ordered_metas then raise UnableToApply;
   let f mv =
-    try Some (find_matching_clause (clenv_fchain ~with_univs:false mv ~flags clause) innerclause)
-    with Failure _ -> None
+    let rec find innerclause =
+      try Some (clenv_fchain ~with_univs:false mv ~flags clause innerclause)
+      with e when noncritical e ->
+      match clenv_push_prod innerclause with
+      | innerclause -> find innerclause
+      | exception NotExtensibleClause -> None
+    in
+    find innerclause
   in
   try List.find_map f ordered_metas
   with Not_found -> raise UnableToApply
