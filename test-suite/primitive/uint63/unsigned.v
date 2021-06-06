@@ -1,7 +1,7 @@
 (* This file checks that operations over int63 are unsigned. *)
-Require Import Int63.
+Require Import Uint63.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 (* (0-1) must be the maximum integer value and not negative 1 *)
 

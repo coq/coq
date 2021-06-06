@@ -1,5 +1,5 @@
-From Coq Require Import Int63.
-Open Scope int63_scope.
+From Coq Require Import Uint63.
+Open Scope uint63_scope.
 
 Lemma foo :
   let n := opp 0 in add n 0 = n.

@@ -690,7 +690,7 @@ let fsqrt accu x =
   else accu x
 
 let no_check_float_of_int x =
-  mk_float (Float64.of_int63 (to_uint x))
+  mk_float (Float64.of_uint63 (to_uint x))
 [@@ocaml.inline always]
 
 let float_of_int accu x =

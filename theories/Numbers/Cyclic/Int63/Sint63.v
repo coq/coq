@@ -10,20 +10,21 @@
 
 Require Import ZArith.
 Import Znumtheory.
-Require Export Int63.
+Require Export Uint63.
+Require Int63.
 Require Import Lia.
 
 Declare Scope sint63_scope.
 Definition printer (x : int_wrapper) : pos_neg_int63 :=
-  if (int_wrap x <? 4611686018427387904)%int63 then (* 2^62 *)
+  if (int_wrap x <? 4611686018427387904)%uint63 then (* 2^62 *)
     Pos (int_wrap x)
   else
-    Neg ((int_wrap x) lxor max_int + 1)%int63.
+    Neg ((int_wrap x) lxor max_int + 1)%uint63.
 Definition parser (x : pos_neg_int63) : option int :=
   match x with
-  | Pos p => if (p <? 4611686018427387904)%int63 then Some p else None
-  | Neg n => if (n <=? 4611686018427387904)%int63
-             then Some ((n - 1) lxor max_int)%int63 else None
+  | Pos p => if (p <? 4611686018427387904)%uint63 then Some p else None
+  | Neg n => if (n <=? 4611686018427387904)%uint63
+             then Some ((n - 1) lxor max_int)%uint63 else None
   end.
 Number Notation int parser printer : sint63_scope.
 
@@ -59,10 +60,10 @@ Definition max_int := Eval vm_compute in (min_int - 1)%sint63.
 
 (** Translation to and from Z *)
 Definition to_Z (i:int) :=
-  if (i <? min_int)%int63 then
-    φ i%int63
+  if (i <? min_int)%uint63 then
+    φ i%uint63
   else
-    (- φ (- i)%int63)%Z.
+    (- φ (- i)%uint63)%Z.
 
 Lemma to_Z_0 : to_Z 0 = 0.
 Proof. easy. Qed.
@@ -80,26 +81,26 @@ Proof.
   case (ltbP max_int); [> intros _ | now intros H; exfalso; apply H].
   rewrite opp_spec.
   rewrite Z_mod_nz_opp_full by easy.
-  rewrite Z.mod_small by apply Int63.to_Z_bounded.
+  rewrite Z.mod_small by apply Uint63.to_Z_bounded.
   case ltbP.
   - intros ltxmin; split.
-    + now transitivity 0%Z; [>| now apply Int63.to_Z_bounded].
-    + replace (φ min_int%int63) with (φ max_int%int63 + 1)%Z in ltxmin.
+    + now transitivity 0%Z; [>| now apply Uint63.to_Z_bounded].
+    + replace (φ min_int%uint63) with (φ max_int%uint63 + 1)%Z in ltxmin.
       * lia.
       * now compute.
   - rewrite Z.nlt_ge; intros leminx.
     rewrite opp_spec.
     rewrite Z_mod_nz_opp_full.
-    + rewrite Z.mod_small by apply Int63.to_Z_bounded.
+    + rewrite Z.mod_small by apply Uint63.to_Z_bounded.
       split.
       * rewrite <- Z.opp_le_mono.
         now rewrite <- Z.sub_le_mono_l.
-      * transitivity 0%Z; [>| now apply Int63.to_Z_bounded].
+      * transitivity 0%Z; [>| now apply Uint63.to_Z_bounded].
         rewrite Z.opp_nonpos_nonneg.
         apply Zle_minus_le_0.
         apply Z.lt_le_incl.
-        now apply Int63.to_Z_bounded.
-    + rewrite Z.mod_small by apply Int63.to_Z_bounded.
+        now apply Uint63.to_Z_bounded.
+    + rewrite Z.mod_small by apply Uint63.to_Z_bounded.
       now intros eqx0; rewrite eqx0 in leminx.
 Qed.
 
@@ -107,30 +108,30 @@ Lemma of_to_Z : forall x, of_Z (to_Z x) = x.
 Proof.
   unfold to_Z, of_Z.
   intros x.
-  generalize (Int63.to_Z_bounded x).
+  generalize (Uint63.to_Z_bounded x).
   case ltbP.
   - intros ltxmin [leq0x _].
-    generalize (Int63.of_to_Z x).
-    destruct (φ x%int63).
+    generalize (Uint63.of_to_Z x).
+    destruct (φ x%uint63).
     + now intros <-.
-    + now intros <-; unfold Int63.of_Z.
+    + now intros <-; unfold Uint63.of_Z.
     + now intros _.
   - intros nltxmin leq0xltwB.
     rewrite (opp_spec x).
     rewrite Z_mod_nz_opp_full.
     + rewrite Zmod_small by easy.
-      destruct (wB - φ x%int63) eqn: iswbmx.
+      destruct (wB - φ x%uint63) eqn: iswbmx.
       * lia.
       * simpl.
         apply to_Z_inj.
         rewrite opp_spec.
         generalize (of_Z_spec (Z.pos p)).
-        simpl Int63.of_Z; intros ->.
+        simpl Uint63.of_Z; intros ->.
         rewrite <- iswbmx.
         rewrite <- Z.sub_0_l.
         rewrite <- (Zmod_0_l wB).
         rewrite <- Zminus_mod.
-        replace (0 - _) with (φ x%int63 - wB) by ring.
+        replace (0 - _) with (φ x%uint63 - wB) by ring.
         rewrite <- Zminus_mod_idemp_r.
         rewrite Z_mod_same_full.
         rewrite Z.sub_0_r.
@@ -144,12 +145,12 @@ Qed.
 Lemma to_Z_inj (x y : int) : to_Z x = to_Z y -> x = y.
 Proof. exact (fun e => can_inj of_to_Z e). Qed.
 
-Lemma to_Z_mod_Int63to_Z (x : int) : to_Z x mod wB = φ x%int63.
+Lemma to_Z_mod_Uint63to_Z (x : int) : to_Z x mod wB = φ x%uint63.
 Proof.
   unfold to_Z.
-  case ltbP; [> now rewrite Z.mod_small by now apply Int63.to_Z_bounded |].
+  case ltbP; [> now rewrite Z.mod_small by now apply Uint63.to_Z_bounded |].
   rewrite Z.nlt_ge; intros gexmin.
-  rewrite opp_to_Z_opp; rewrite Z.mod_small by now apply Int63.to_Z_bounded.
+  rewrite opp_to_Z_opp; rewrite Z.mod_small by now apply Uint63.to_Z_bounded.
   - easy.
   - now intros neqx0; rewrite neqx0 in gexmin.
 Qed.
@@ -178,19 +179,19 @@ Proof.
 Qed.
 
 Lemma to_Z_cmodwB (x : int) :
-  to_Z x = cmod (φ x%int63) wB.
+  to_Z x = cmod (φ x%uint63) wB.
 Proof.
   unfold to_Z, cmod.
-  case ltbP; change φ (min_int)%int63 with (wB / 2).
+  case ltbP; change φ (min_int)%uint63 with (wB / 2).
   - intros ltxmin.
     rewrite Z.mod_small; [> lia |].
     split.
-    + now apply Z.add_nonneg_nonneg; try apply Int63.to_Z_bounded.
+    + now apply Z.add_nonneg_nonneg; try apply Uint63.to_Z_bounded.
     + change wB with (wB / 2 + wB / 2) at 2; lia.
   - rewrite Z.nlt_ge; intros gexmin.
-    rewrite Int63.opp_spec.
+    rewrite Uint63.opp_spec.
     rewrite Z_mod_nz_opp_full.
-    + rewrite Z.mod_small by apply Int63.to_Z_bounded.
+    + rewrite Z.mod_small by apply Uint63.to_Z_bounded.
       rewrite <- (Z_mod_plus_full _ (-1)).
       change (-1 * wB) with (- (wB / 2) - wB / 2).
       rewrite <- Z.add_assoc, Zplus_minus.
@@ -199,13 +200,13 @@ Proof.
       * split; [> lia |].
         apply Z.lt_sub_lt_add_r.
         transitivity wB; [>| easy].
-        now apply Int63.to_Z_bounded.
-    + rewrite Z.mod_small by now apply Int63.to_Z_bounded.
+        now apply Uint63.to_Z_bounded.
+    + rewrite Z.mod_small by now apply Uint63.to_Z_bounded.
       now intros not0; rewrite not0 in gexmin.
 Qed.
 
 Lemma of_Z_spec (z : Z) : to_Z (of_Z z) = cmod z wB.
-Proof. now rewrite to_Z_cmodwB, Int63.of_Z_spec, cmod_mod. Qed.
+Proof. now rewrite to_Z_cmodwB, Uint63.of_Z_spec, cmod_mod. Qed.
 
 Lemma of_Z_cmod (z : Z) : of_Z (cmod z wB) = of_Z z.
 Proof. now rewrite <- of_Z_spec, of_to_Z. Qed.
@@ -239,24 +240,24 @@ Axiom compare_spec : forall x y, (x ?= y)%sint63 = (to_Z x ?= to_Z y).
 Lemma add_spec (x y : int) :
   to_Z (x + y)%sint63 = cmod (to_Z x + to_Z y) wB.
 Proof.
-  rewrite to_Z_cmodwB, Int63.add_spec.
-  rewrite <- 2!to_Z_mod_Int63to_Z, <- Z.add_mod by easy.
+  rewrite to_Z_cmodwB, Uint63.add_spec.
+  rewrite <- 2!to_Z_mod_Uint63to_Z, <- Z.add_mod by easy.
   now rewrite cmod_mod.
 Qed.
 
 Lemma sub_spec (x y : int) :
   to_Z (x - y)%sint63 = cmod (to_Z x - to_Z y) wB.
 Proof.
-  rewrite to_Z_cmodwB, Int63.sub_spec.
-  rewrite <- 2!to_Z_mod_Int63to_Z, <- Zminus_mod by easy.
+  rewrite to_Z_cmodwB, Uint63.sub_spec.
+  rewrite <- 2!to_Z_mod_Uint63to_Z, <- Zminus_mod by easy.
   now rewrite cmod_mod.
 Qed.
 
 Lemma mul_spec (x y : int) :
   to_Z (x * y)%sint63 = cmod (to_Z x * to_Z y) wB.
 Proof.
-  rewrite to_Z_cmodwB, Int63.mul_spec.
-  rewrite <- 2!to_Z_mod_Int63to_Z, <- Zmult_mod by easy.
+  rewrite to_Z_cmodwB, Uint63.mul_spec.
+  rewrite <- 2!to_Z_mod_Uint63to_Z, <- Zmult_mod by easy.
   now rewrite cmod_mod.
 Qed.
 
@@ -271,8 +272,8 @@ Proof. now unfold pred; rewrite sub_spec. Qed.
 Lemma opp_spec (x : int) :
   to_Z (- x)%sint63 = cmod (- to_Z x) wB.
 Proof.
-  rewrite to_Z_cmodwB, Int63.opp_spec.
-  rewrite <- Z.sub_0_l, <- to_Z_mod_Int63to_Z, Zminus_mod_idemp_r.
+  rewrite to_Z_cmodwB, Uint63.opp_spec.
+  rewrite <- Z.sub_0_l, <- to_Z_mod_Uint63to_Z, Zminus_mod_idemp_r.
   now rewrite cmod_mod.
 Qed.
 
@@ -357,7 +358,7 @@ Import Bool.
 
 Lemma eqbP x y : reflect (to_Z x = to_Z y) (x =? y)%sint63.
 Proof.
-  apply iff_reflect; rewrite Int63.eqb_spec.
+  apply iff_reflect; rewrite Uint63.eqb_spec.
   now split; [> apply to_Z_inj | apply f_equal].
 Qed.
 

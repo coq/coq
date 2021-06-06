@@ -1,11 +1,11 @@
 (* This file tests the check that arithmetic operations use to know if their
 arguments are ground. The various test cases correspond to possible
 optimizations of these tests made by the compiler. *)
-Require Import Int63.
+Require Import Uint63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Section test.
 

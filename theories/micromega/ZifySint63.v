@@ -65,7 +65,7 @@ Instance Op_leb : BinOp leb :=
 Add Zify BinOp Op_leb.
 
 Lemma eqb_eq : forall n m,
-  (n =? m)%int63 = (to_Z n =? to_Z m)%Z.
+  (n =? m)%sint63 = (to_Z n =? to_Z m)%Z.
 Proof.
   intros; apply Bool.eq_true_iff_eq.
   rewrite eqb_spec, Z.eqb_eq.
@@ -105,7 +105,7 @@ Instance Op_sub : BinOp sub :=
 Add Zify BinOp Op_sub.
 
 #[global]
-Instance Op_opp : UnOp Int63.opp :=
+Instance Op_opp : UnOp Uint63.opp :=
   {| TUOp := fun x => cmodwB (- x); TUOpInj := (sub_spec 0) |}%Z.
 Add Zify UnOp Op_opp.
 
@@ -115,7 +115,7 @@ Instance Op_succ : UnOp succ :=
 Add Zify UnOp Op_succ.
 
 #[global]
-Instance Op_pred : UnOp Int63.pred :=
+Instance Op_pred : UnOp Uint63.pred :=
   {| TUOp := fun x => cmodwB (x - 1); TUOpInj := pred_spec |}%Z.
 Add Zify UnOp Op_pred.
 

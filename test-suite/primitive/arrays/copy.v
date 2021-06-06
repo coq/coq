@@ -1,4 +1,4 @@
-From Coq Require Import Int63 PArray.
+From Coq Require Import Uint63 PArray.
 
 Open Scope array_scope.
 

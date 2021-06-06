@@ -1,4 +1,4 @@
-Require Import Int63.
+Require Import Uint63.
 
 Set Universe Polymorphism.
 
@@ -33,7 +33,7 @@ Notation "t .[ i <- a ]" := (set t i a)
 
 End PArrayNotations.
 
-Local Open Scope int63_scope.
+Local Open Scope uint63_scope.
 Local Open Scope array_scope.
 
 Primitive max_length := #array_max_length.
@@ -69,7 +69,7 @@ Axiom array_ext : forall A (t1 t2:array A),
 Lemma default_copy A (t:array A) : default (copy t) = default t.
 Proof.
   assert (irr_lt : length t <? length t = false).
-    destruct (Int63.ltbP (length t) (length t)); try reflexivity.
+    destruct (Uint63.ltbP (length t) (length t)); try reflexivity.
     exfalso; eapply BinInt.Z.lt_irrefl; eassumption.
   assert (get_copy := get_copy A t (length t)).
   rewrite !get_out_of_bounds in get_copy; try assumption.
@@ -79,7 +79,7 @@ Qed.
 Lemma default_make A (a : A) size : default (make size a) = a.
 Proof.
   assert (irr_lt : length (make size a) <? length (make size a) = false).
-    destruct (Int63.ltbP (length (make size a)) (length (make size a))); try reflexivity.
+    destruct (Uint63.ltbP (length (make size a)) (length (make size a))); try reflexivity.
     exfalso; eapply BinInt.Z.lt_irrefl; eassumption.
   assert (get_make := get_make A a size (length (make size a))).
   rewrite !get_out_of_bounds in get_make; assumption.

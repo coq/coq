@@ -62,7 +62,7 @@ val classify : t -> float_class
 [@@ocaml.inline always]
 
 (** Link with integers *)
-val of_int63 : Uint63.t -> t
+val of_uint63 : Uint63.t -> t
 [@@ocaml.inline always]
 
 val normfr_mantissa : t -> Uint63.t

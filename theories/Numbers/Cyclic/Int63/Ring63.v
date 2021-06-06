@@ -8,34 +8,34 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Int63 numbers defines Z/(2^63)Z, and can hence be equipped
+(** * Uint63 numbers defines Z/(2^63)Z, and can hence be equipped
       with a ring structure and a ring tactic *)
 
 Require Import Cyclic63 CyclicAxioms.
 
-Local Open Scope int63_scope.
+Local Open Scope uint63_scope.
 
 (** Detection of constants *)
 
-Ltac isInt63cst t :=
-  match eval lazy delta [add] in (t + 1)%int63 with
+Ltac isUint63cst t :=
+  match eval lazy delta [add] in (t + 1)%uint63 with
   | add _ _ => constr:(false)
   | _ => constr:(true)
   end.
 
-Ltac Int63cst t :=
-  match eval lazy delta [add] in (t + 1)%int63 with
+Ltac Uint63cst t :=
+  match eval lazy delta [add] in (t + 1)%uint63 with
   | add _ _ => constr:(NotConstant)
   | _ => constr:(t)
   end.
 
 (** The generic ring structure inferred from the Cyclic structure *)
 
-Module Int63ring := CyclicRing Int63Cyclic.
+Module Uint63ring := CyclicRing Uint63Cyclic.
 
 (** Unlike in the generic [CyclicRing], we can use Leibniz here. *)
 
-Lemma Int63_canonic : forall x y, to_Z x = to_Z y -> x = y.
+Lemma Uint63_canonic : forall x y, to_Z x = to_Z y -> x = y.
 Proof to_Z_inj.
 
 Lemma ring_theory_switch_eq :
@@ -48,20 +48,32 @@ intros A R R' zero one add mul sub opp Impl Ring.
 constructor; intros; apply Impl; apply Ring.
 Qed.
 
-Lemma Int63Ring : ring_theory 0 1 add mul sub opp Logic.eq.
+Lemma Uint63Ring : ring_theory 0 1 add mul sub opp Logic.eq.
 Proof.
-exact (ring_theory_switch_eq _ _ _ _ _ _ _ _ _ Int63_canonic Int63ring.CyclicRing).
+exact (ring_theory_switch_eq _ _ _ _ _ _ _ _ _ Uint63_canonic Uint63ring.CyclicRing).
 Qed.
 
 Lemma eq31_correct : forall x y, eqb x y = true -> x=y.
 Proof. now apply eqb_spec. Qed.
 
-Add Ring Int63Ring : Int63Ring
+Add Ring Uint63Ring : Uint63Ring
  (decidable eq31_correct,
-  constants [Int63cst]).
+  constants [Uint63cst]).
 
 Section TestRing.
 Let test : forall x y, 1 + x*y + x*x + 1 = 1*1 + 1 + y*x + 1*x*x.
 intros. ring.
 Qed.
 End TestRing.
+
+#[deprecated(since="8.14",note="Use isUint63cst instead")]
+Ltac isInt63cst := isUint63cst.
+
+#[deprecated(since="8.14",note="Use Uint63cst instead")]
+Ltac Int63cst := Uint63cst.
+
+#[deprecated(since="8.14",note="Use Uint63_canonic instead")]
+Notation Int63_canonic := Uint63_canonic (only parsing).
+
+#[deprecated(since="8.14",note="Use Uint63Ring instead")]
+Notation Int63Ring := Uint63Ring (only parsing).

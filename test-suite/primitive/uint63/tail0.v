@@ -2,7 +2,7 @@ Require Import PrimInt63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : tail0 2305843009213693952 = 61).
 Check (eq_refl 61 <: tail0 2305843009213693952 = 61).

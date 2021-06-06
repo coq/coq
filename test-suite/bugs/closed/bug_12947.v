@@ -1,4 +1,4 @@
-Require Import BinPos Int63 PArray.
+Require Import BinPos Uint63 PArray.
 
 Definition foo (n : positive) :=
   let a := make 2 0 in

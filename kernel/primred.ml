@@ -344,8 +344,8 @@ struct
       let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.div f1 f2)
     | Float64sqrt ->
       let f = get_float1 evd args in E.mkFloat env (Float64.sqrt f)
-    | Float64ofInt63 ->
-      let i = get_int1 evd args in E.mkFloat env (Float64.of_int63 i)
+    | Float64ofUint63 ->
+      let i = get_int1 evd args in E.mkFloat env (Float64.of_uint63 i)
     | Float64normfr_mantissa ->
       let f = get_float1 evd args in E.mkInt env (Float64.normfr_mantissa f)
     | Float64frshiftexp ->

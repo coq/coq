@@ -2,7 +2,7 @@ Require Import Cyclic63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : 2 *c 3 = WW 0 6).
 Check (eq_refl (WW 0 6) <: 2 *c 3 = WW 0 6).

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith Int63 SpecFloat PrimFloat.
+Require Import ZArith Uint63 SpecFloat PrimFloat.
 
 (** * Derived operations and mapping between primitive [float]s and [spec_float]s *)
 
@@ -20,7 +20,7 @@ Definition shift := 2101%Z. (** [= 2*emax + prec] *)
 
 Definition frexp f :=
   let (m, se) := frshiftexp f in
-  (m, (φ se - shift)%Z%int63).
+  (m, (φ se - shift)%Z%uint63).
 
 Definition ldexp f e :=
   let e' := Z.max (Z.min e (emax - emin)) (emin - emax - 1) in
@@ -38,7 +38,7 @@ Definition Prim2SF f :=
             else
               let (r, exp) := frexp f in
               let e := (exp - prec)%Z in
-              let (shr, e') := shr_fexp prec emax (φ (normfr_mantissa r))%int63 e loc_Exact in
+              let (shr, e') := shr_fexp prec emax (φ (normfr_mantissa r))%uint63 e loc_Exact in
               match shr_m shr with
               | Zpos p => S754_finite (get_sign f) p e'
               | Zneg _ | Z0 => S754_zero false (* must never occur *)
@@ -52,7 +52,7 @@ Definition SF2Prim ef :=
   | S754_infinity false => infinity
   | S754_infinity true => neg_infinity
   | S754_finite s m e =>
-    let pm := of_int63 (of_Z (Zpos m)) in
+    let pm := of_uint63 (of_Z (Zpos m)) in
     let f := ldexp pm e in
     if s then (-f)%float else f
   end.

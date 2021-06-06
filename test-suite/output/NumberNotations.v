@@ -320,9 +320,9 @@ Module Test16.
   Fail Check let v := 0%test16 in v : Foo.
 End Test16.
 
-Require Import Coq.Numbers.Cyclic.Int63.Int63.
+Require Import Coq.Numbers.Cyclic.Int63.Uint63.
 Module Test17.
-  (** Test int63 *)
+  (** Test uint63 *)
   Declare Scope test17_scope.
   Declare Scope test17_scope.
   Delimit Scope test17_scope with test17.

@@ -2,7 +2,7 @@ Require Import PrimInt63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : addmuldiv 32 3 5629499534213120 = 12887523328).
 Check (eq_refl 12887523328 <: addmuldiv 32 3 5629499534213120 = 12887523328).

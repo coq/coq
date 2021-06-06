@@ -1,5 +1,5 @@
 From Coq
-Require Import Int63.
+Require Import Uint63.
 Import ZArith.
 
 Declare Scope uint_scope.
