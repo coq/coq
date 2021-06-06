@@ -126,12 +126,8 @@ let mk_clenv_from_env env sigma n (c,cty) =
     env = env;
     cache = create_meta_instance_subst evd }
 
-let mk_clenv_from_n gls n (c,cty) =
-  let env = Proofview.Goal.env gls in
-  let sigma = Tacmach.New.project gls in
-  mk_clenv_from_env env sigma n (c, cty)
-
-let mk_clenv_from gls = mk_clenv_from_n gls None
+let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
+let mk_clenv_from_n env sigma n c = mk_clenv_from_env env sigma (Some n) c
 
 (******************************************************************)
 

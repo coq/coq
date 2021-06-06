@@ -1379,7 +1379,7 @@ let general_elim_clause with_evars flags where indclause elim =
     let elimt = Retyping.get_type_of env sigma elimc in
     let i = index_of_ind_arg sigma elimt in
     let elimc = contract_letin_in_lam_header sigma elimc in
-    let elimclause = mk_clenv_from_env env sigma None (elimc, elimt) in
+    let elimclause = mk_clenv_from env sigma (elimc, elimt) in
     elimclause, Some i
   | ElimClause (elimc, lbindelimc) ->
     let elimt = Retyping.get_type_of env sigma elimc in
@@ -1760,7 +1760,7 @@ let apply_list = function
 exception UnableToApply
 
 let progress_with_clause flags (id, t) clause =
-  let innerclause = mk_clenv_from_env clause.env clause.evd (Some 0) (mkVar id, t) in
+  let innerclause = mk_clenv_from_n clause.env clause.evd 0 (mkVar id, t) in
   let ordered_metas = List.rev (clenv_independent clause) in
   if List.is_empty ordered_metas then raise UnableToApply;
   let f mv =
@@ -4260,7 +4260,7 @@ let induction_tac with_evars params indvars (elim, elimt) =
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
     let elimc = contract_letin_in_lam_header sigma elimc in
     let elimc = mkCast (elimc, DEFAULTcast, elimt) in
-    let elimclause = Tacmach.New.pf_apply mk_clenv_from_env gl None (elimc, elimt) in
+    let elimclause = Tacmach.New.pf_apply mk_clenv_from gl (elimc, elimt) in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
     recolle_clenv (Some i) params indvars elimclause gl
   | ElimClause (elimc, lbindelimc) ->
@@ -4717,7 +4717,7 @@ let elim_scheme_type elim t =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let sigma, elimt = Typing.type_of env sigma elim in
-  let clause = mk_clenv_from_env env sigma None (elim,elimt) in
+  let clause = mk_clenv_from env sigma (elim,elimt) in
   match EConstr.kind clause.evd (last_arg clause.evd clause.templval.rebus) with
     | Meta mv ->
         let clause' =

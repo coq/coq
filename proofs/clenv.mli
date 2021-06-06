@@ -44,10 +44,8 @@ val clenv_type      : clausenv -> types
 (** type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
-val mk_clenv_from : Proofview.Goal.t -> EConstr.constr * EConstr.types -> clausenv
-val mk_clenv_from_n :
-  Proofview.Goal.t -> int option -> EConstr.constr * EConstr.types -> clausenv
-val mk_clenv_from_env : env -> evar_map -> int option -> EConstr.constr * EConstr.types -> clausenv
+val mk_clenv_from : env -> evar_map -> EConstr.constr * EConstr.types -> clausenv
+val mk_clenv_from_n : env -> evar_map -> int -> EConstr.constr * EConstr.types -> clausenv
 
 (** {6 linking of clenvs } *)
 

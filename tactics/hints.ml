@@ -339,7 +339,7 @@ let merge_context_set_opt sigma ctx = match ctx with
 let instantiate_hint env sigma p =
   let mk_clenv (c, cty, ctx) =
     let sigma = merge_context_set_opt sigma ctx in
-    let cl = mk_clenv_from_env env sigma None (c,cty) in
+    let cl = mk_clenv_from env sigma (c,cty) in
     let templval = { cl.templval with rebus = strip_params env sigma cl.templval.rebus } in
     let cl = mk_clausenv empty_env cl.evd templval cl.templtyp in
     { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; }
@@ -839,7 +839,7 @@ let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
   match EConstr.kind sigma cty with
   | Prod _ ->
     let sigma' = merge_context_set_opt sigma ctx in
-    let ce = mk_clenv_from_env env sigma' None (c,cty) in
+    let ce = mk_clenv_from env sigma' (c,cty) in
     let c' = clenv_type (* ~reduce:false *) ce in
     let hd =
       try head_bound ce.evd c'
@@ -957,7 +957,7 @@ let make_trivial env sigma ?(name=PathAny) r =
   let sigma = merge_context_set_opt sigma ctx in
   let t = hnf_constr env sigma (Retyping.get_type_of env sigma c) in
   let hd = head_constr sigma t in
-  let ce = mk_clenv_from_env env sigma None (c,t) in
+  let ce = mk_clenv_from env sigma (c,t) in
   (Some hd,
    { pri=1;
      pat = Some (Patternops.pattern_of_constr env ce.evd (EConstr.to_constr sigma (clenv_type ce)));
@@ -1263,7 +1263,7 @@ let add_resolves env sigma clist ~local dbnames =
       let check (_, hint) = match hint.code.obj with
       | ERes_pf (c, cty, ctx) ->
         let sigma' = merge_context_set_opt sigma ctx in
-        let ce = mk_clenv_from_env env sigma' None (c,cty) in
+        let ce = mk_clenv_from env sigma' (c,cty) in
         let miss = clenv_missing ce in
         let nmiss = List.length miss in
         let variables = str (CString.plural nmiss "variable") in

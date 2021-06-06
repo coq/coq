@@ -163,7 +163,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let sigma, c = Hints.fresh_hint env sigma h in
-  let clenv = mk_clenv_from_env env sigma (Some diff) (c, ty) in
+  let clenv = mk_clenv_from_n env sigma diff (c, ty) in
   Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
   end
 
@@ -1192,7 +1192,9 @@ let autoapply c i =
   let flags = auto_unif_flags
     (Hints.Hint_db.transparent_state hintdb) in
   let cty = Tacmach.New.pf_get_type_of gl c in
-  let ce = mk_clenv_from gl (c,cty) in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let ce = mk_clenv_from env sigma (c,cty) in
   Clenv.res_pf ~with_evars:true ~with_classes:false ~flags ce <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables

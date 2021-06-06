@@ -48,7 +48,7 @@ let general_elim_then_using mk_elim
       Evd.fresh_global env sigma gr
     in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from_env env sigma None (elim, Retyping.get_type_of env sigma elim) in
+    let elimclause = mk_clenv_from env sigma (elim, Retyping.get_type_of env sigma elim) in
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
