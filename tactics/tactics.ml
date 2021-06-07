@@ -1317,8 +1317,9 @@ let last_arg sigma c = match EConstr.kind sigma c with
       Array.last cl
   | _ -> anomaly (Pp.str "last_arg.")
 
-let nth_arg sigma i c =
-  if Int.equal i (-1) then last_arg sigma c else
+let nth_arg sigma i c = match i with
+| None -> last_arg sigma c
+| Some i ->
   match EConstr.kind sigma c with
   | App (f,cl) -> cl.(i)
   | _ -> anomaly (Pp.str "nth_arg.")
@@ -1368,21 +1369,27 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
  * matching I, lbindc are the expected terms for c arguments
  *)
 
-type eliminator = {
-  elimindex : int option;  (* None = find it automatically *)
-  elimbody : EConstr.constr with_bindings
-}
+type eliminator =
+| ElimTerm of EConstr.constr
+| ElimClause of EConstr.constr with_bindings
 
 let general_elim_clause with_evars flags where indclause elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
-  let (elimc,lbindelimc) = elim.elimbody in
-  let elimt = Retyping.get_type_of env sigma elimc in
-  let i =
-    match elim.elimindex with None -> index_of_ind_arg sigma elimt | Some i -> i in
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let elimclause = make_clenv_binding env sigma (elimc, elimt) lbindelimc in
+  let elimclause, i = match elim with
+  | ElimTerm elimc ->
+    let elimt = Retyping.get_type_of env sigma elimc in
+    let i = index_of_ind_arg sigma elimt in
+    let elimc = contract_letin_in_lam_header sigma elimc in
+    let elimclause = mk_clenv_from_env env sigma None (elimc, elimt) in
+    elimclause, Some i
+  | ElimClause (elimc, lbindelimc) ->
+    let elimt = Retyping.get_type_of env sigma elimc in
+    let elimc = contract_letin_in_lam_header sigma elimc in
+    let elimclause = make_clenv_binding env sigma (elimc, elimt) lbindelimc in
+    elimclause, None
+  in
   let indmv =
     (match EConstr.kind sigma (nth_arg sigma i elimclause.templval.rebus) with
        | Meta mv -> mv
@@ -1437,8 +1444,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
       build_case_analysis_scheme_default env sigma mind sort in
   let elim = EConstr.of_constr elim in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-  (general_elim with_evars clear_flag (c,lbindc)
-   {elimindex = None; elimbody = (elim,NoBindings); })
+  (general_elim with_evars clear_flag (c,lbindc) (ElimTerm elim))
   end
 
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
@@ -1472,7 +1478,7 @@ let find_eliminator c gl =
   let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
   if is_nonrec ind then raise IsNonrec;
   let sigma, c = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
-    sigma, { elimindex = None; elimbody = (c,NoBindings) }
+  sigma, ElimTerm c
 
 let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
@@ -1491,8 +1497,7 @@ let default_elim with_evars clear_flag (c,_ as cx) =
 
 let elim_in_context with_evars clear_flag c = function
   | Some elim ->
-      general_elim with_evars clear_flag c
-        { elimindex = Some (-1); elimbody = elim }
+      general_elim with_evars clear_flag c (ElimClause elim)
   | None -> default_elim with_evars clear_flag c
 
 let elim with_evars clear_flag (c,lbindc as cx) elim =
@@ -3521,7 +3526,6 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
-  elimc: constr with_bindings option;
   elimt: types;
   indref: GlobRef.t option;
   params: rel_context;      (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
@@ -3542,7 +3546,6 @@ type elim_scheme = {
 
 let empty_scheme =
   {
-    elimc = None;
     elimt = mkProp;
     indref = None;
     params = [];
@@ -4016,7 +4019,7 @@ let exchange_hd_app sigma subst_hd t =
      predicates are cited in the conclusion.
 
    - finish to fill in the elim_scheme: indarg/farg/args and finally indref. *)
-let compute_elim_sig sigma ?elimc elimt =
+let compute_elim_sig sigma elimt =
   let open Context.Rel.Declaration in
   let params_preds,branches,args_indargs,conclusion =
     decompose_paramspred_branch_args sigma elimt in
@@ -4029,7 +4032,7 @@ let compute_elim_sig sigma ?elimc elimt =
   (* A first approximation, further analysis will tweak it *)
   let res = ref { empty_scheme with
     (* This fields are ok: *)
-    elimc = elimc; elimt = elimt; concl = conclusion;
+    elimt = elimt; concl = conclusion;
     predicates = preds; npredicates = List.length preds;
     branches = branches; nbranches = List.length branches;
     farg_in_concl = isApp sigma ccl && isApp sigma (last_arg sigma ccl);
@@ -4144,17 +4147,6 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
-(* Check that the elimination scheme has a form similar to the
-   elimination schemes built by Coq. Schemes may have the standard
-   form computed from an inductive type OR (feb. 2006) a non standard
-   form. That is: with no main induction argument and with an optional
-   extra final argument of the form (f x y ...) in the conclusion. In
-   the non standard case, naming of generated hypos is slightly
-   different. *)
-let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
-  let scheme = compute_elim_sig evd ~elimc:elimc elimt in
-    evd, (compute_scheme_signature evd scheme names_info ind_type_guess, scheme)
-
 let guess_elim isrec dep s hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let (mind, u), _ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
@@ -4177,7 +4169,8 @@ let guess_elim isrec dep s hyp0 gl =
         (sigma, ind)
   in
   let sigma, elimt = Typing.type_of env sigma elimc in
-  sigma, ((elimc, NoBindings), elimt), mkIndU (mind, u)
+  let scheme = compute_elim_sig sigma elimt in
+  sigma, (elimc, elimt), mkIndU (mind, u), scheme
 
 let given_elim hyp0 (elimc,lbind as e) gl =
   let sigma = Tacmach.New.project gl in
@@ -4198,29 +4191,25 @@ let find_induction_type isrec elim hyp0 gl =
     match elim with
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
-       let sigma', (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
-       let scheme = compute_elim_sig sigma' ~elimc elimt in
+       let _, _,_, scheme = guess_elim isrec false sort hyp0 gl in
        (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
           needs no update to sigma at this point. *)
        Tacmach.New.project gl, scheme.indref, scheme.nparams, ElimOver (isrec,hyp0)
     | Some e ->
         let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
-        let scheme = compute_elim_sig sigma ~elimc elimt in
+        let scheme = compute_elim_sig sigma elimt in
         if Option.is_empty scheme.indarg then error "Cannot find induction type";
         let indsign = compute_scheme_signature sigma scheme hyp0 ind_guess in
-        let elim = ({ elimindex = Some(-1); elimbody = elimc },elimt) in
+        let elim = (ElimClause elimc, elimt) in
         sigma, scheme.indref, scheme.nparams, ElimUsing (elim,indsign)
   in
   match indref with
   | None -> error_ind_scheme ""
   | Some ref -> sigma, (ref, nparams, elim)
 
-let get_elim_signature elim hyp0 gl =
-  compute_elim_signature (given_elim hyp0 elim gl) hyp0
-
 let is_functional_induction elimc gl =
   let sigma = Tacmach.New.project gl in
-  let scheme = compute_elim_sig sigma ~elimc (Tacmach.New.pf_get_type_of gl (fst elimc)) in
+  let scheme = compute_elim_sig sigma (Tacmach.New.pf_get_type_of gl (fst elimc)) in
   (* The test is not safe: with non-functional induction on non-standard
      induction scheme, this may fail *)
   Option.is_empty scheme.indarg
@@ -4233,9 +4222,9 @@ let get_eliminator elim dep s gl =
   | ElimUsing (elim,indsign) ->
       Tacmach.New.project gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep s id gl in
-      let _, (l, s) = compute_elim_signature elims id in
-      evd, isrec, ({ elimindex = None; elimbody = elimc }, elimt), l
+      let evd, (elimc, elimt), ind_type_guess, scheme = guess_elim isrec dep s id gl in
+      let l = compute_scheme_signature evd scheme id ind_type_guess in
+      evd, isrec, (ElimTerm elimc, elimt), l
 
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
@@ -4250,23 +4239,20 @@ let recolle_clenv i params args elimclause gl =
           | _  -> user_err ~hdr:"elimination_clause"
               (str "The type of the elimination clause is not well-formed."))
       arr in
-  let k = match i with -1 -> Array.length lindmv - List.length args | _ -> i in
+  let k = match i with None -> Array.length lindmv - List.length args | Some i -> i in
   (* parameters correspond to first elts of lid. *)
-  let clauses_params =
-    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ id gl, lindmv.(i))
-      0 params in
-  let clauses_args =
-    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ id gl, lindmv.(k+i))
-      0 args in
+  let clauses_params = List.mapi (fun i id -> id, lindmv.(i)) params in
+  let clauses_args = List.mapi (fun i id -> id, lindmv.(k+i)) args in
   let clauses = clauses_params@clauses_args in
   (* iteration of clenv_fchain with all infos we have. *)
   List.fold_right
     (fun e acc ->
-      let x,y,i = e in
+      let x, i = e in
+      let y = pf_get_hyp_typ x gl in
       (* from_n (Some 0) means that x should be taken "as is" without
          trying to unify (which would lead to trying to apply it to
          evars if y is a product). *)
-      let indclause  = mk_clenv_from_n gl (Some 0) (x,y) in
+      let indclause  = mk_clenv_from_n gl (Some 0) (mkVar x, y) in
       let elimclause' = clenv_fchain ~with_univs:false i acc indclause in
       elimclause')
     (List.rev clauses)
@@ -4276,17 +4262,26 @@ let recolle_clenv i params args elimclause gl =
    (elimc ?i ?j ?k...?l). This solves partly meta variables (and may
     produce new ones). Then refine with the resulting term with holes.
 *)
-let induction_tac with_evars params indvars elim =
+let induction_tac with_evars params indvars (elim, elimt) =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Tacmach.New.project gl in
-  let ({ elimindex=i;elimbody=(elimc,lbindelimc) },elimt) = elim in
-  let i = match i with None -> index_of_ind_arg sigma elimt | Some i -> i in
-  (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let elimc = mkCast (elimc, DEFAULTcast, elimt) in
-  let elimclause = Tacmach.New.pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
-  (* elimclause' is built from elimclause by instantiating all args and params. *)
-  let elimclause' = recolle_clenv i params indvars elimclause gl in
+  let elimclause' = match elim with
+  | ElimTerm elimc ->
+    let i = index_of_ind_arg sigma elimt in
+    (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
+    let elimc = contract_letin_in_lam_header sigma elimc in
+    let elimc = mkCast (elimc, DEFAULTcast, elimt) in
+    let elimclause = Tacmach.New.pf_apply mk_clenv_from_env gl None (elimc, elimt) in
+    (* elimclause' is built from elimclause by instantiating all args and params. *)
+    recolle_clenv (Some i) params indvars elimclause gl
+  | ElimClause (elimc, lbindelimc) ->
+    (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
+    let elimc = contract_letin_in_lam_header sigma elimc in
+    let elimc = mkCast (elimc, DEFAULTcast, elimt) in
+    let elimclause = Tacmach.New.pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
+    (* elimclause' is built from elimclause by instantiating all args and params. *)
+    recolle_clenv None params indvars elimclause gl
+  in
   (* one last resolution (useless?) *)
   Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause'
   end
@@ -4356,7 +4351,17 @@ let msg_not_right_number_induction_arguments scheme =
    by hand before calling induction_tac *)
 let induction_without_atomization isrec with_evars elim names lid =
   Proofview.Goal.enter begin fun gl ->
-  let sigma, (indsign,scheme) = get_elim_signature elim (List.hd lid) gl in
+  let hyp0 = List.hd lid in
+  (* Check that the elimination scheme has a form similar to the
+    elimination schemes built by Coq. Schemes may have the standard
+    form computed from an inductive type OR (feb. 2006) a non standard
+    form. That is: with no main induction argument and with an optional
+    extra final argument of the form (f x y ...) in the conclusion. In
+    the non standard case, naming of generated hypos is slightly
+    different. *)
+  let (sigma, (elimc, elimt), ind_type_guess) = given_elim hyp0 elim gl in
+  let scheme = compute_elim_sig sigma elimt in
+  let indsign = compute_scheme_signature sigma scheme hyp0 ind_type_guess in
   let nargs_indarg_farg =
     scheme.nargs + (if scheme.farg_in_concl then 1 else 0) in
   if not (Int.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
@@ -4385,7 +4390,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
     induction_tac with_evars params realindvars elim;
   ] in
-  let elim = ElimUsing (({ elimindex = Some (-1); elimbody = Option.get scheme.elimc }, scheme.elimt), indsign) in
+  let elim = ElimUsing ((ElimClause elimc, scheme.elimt), indsign) in
   apply_induction_in_context with_evars None [] elim indvars names induct_tac
   end
 
@@ -4463,7 +4468,7 @@ let check_enough_applied env sigma elim =
       let t,_ = decompose_app sigma (whd_all env sigma u) in isInd sigma t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
-      let scheme = compute_elim_sig sigma ~elimc elimt in
+      let scheme = compute_elim_sig sigma elimt in
       match scheme.indref with
       | None ->
          (* in the absence of information, do not assume it may be
