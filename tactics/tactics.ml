@@ -1759,21 +1759,20 @@ let apply_list = function
 
 exception UnableToApply
 
-let progress_with_clause flags (id, t) clause =
+let progress_with_clause flags (id, t) clause mvs =
   let innerclause = mk_clenv_from_n clause.env clause.evd 0 (mkVar id, t) in
-  let ordered_metas = List.rev (clenv_independent clause) in
-  if List.is_empty ordered_metas then raise UnableToApply;
+  if List.is_empty mvs then raise UnableToApply;
   let f mv =
     let rec find innerclause =
       try Some (clenv_fchain ~with_univs:false mv ~flags clause innerclause)
       with e when noncritical e ->
       match clenv_push_prod innerclause with
-      | innerclause -> find innerclause
-      | exception NotExtensibleClause -> None
+      | Some (_, _, innerclause) -> find innerclause
+      | None -> None
     in
     find innerclause
   in
-  try List.find_map f ordered_metas
+  try List.find_map f mvs
   with Not_found -> raise UnableToApply
 
 let explain_unable_to_apply_lemma ?loc env sigma thm t =
@@ -1786,17 +1785,20 @@ let explain_unable_to_apply_lemma ?loc env sigma thm t =
 
 let apply_in_once_main flags (id, t) env sigma (loc,d,lbind) =
   let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
-  let rec aux clause =
-    try progress_with_clause flags (id, t) clause
+  let rec aux clause mvs =
+    try progress_with_clause flags (id, t) clause mvs
     with e when CErrors.noncritical e ->
     let e' = Exninfo.capture e in
-    try aux (clenv_push_prod clause)
-    with NotExtensibleClause ->
+    match clenv_push_prod clause with
+    | Some (mv, dep, clause) -> aux clause (if dep then [] else [mv])
+    | None ->
       match e with
       | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm t
       | _ -> Exninfo.iraise e'
   in
-  aux (make_clenv_binding env sigma (d,thm) lbind)
+  let clenv = make_clenv_binding env sigma (d,thm) lbind in
+  let mvs = List.rev (clenv_independent clenv) in
+  aux clenv mvs
 
 let apply_in_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{ CAst.loc; v= d,lbind}) tac =

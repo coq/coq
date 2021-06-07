@@ -87,8 +87,7 @@ val make_clenv_binding :
   env -> evar_map -> EConstr.constr * EConstr.constr -> constr bindings -> clausenv
 
 (** if the clause is a product, add an extra meta for this product *)
-exception NotExtensibleClause
-val clenv_push_prod : clausenv -> clausenv
+val clenv_push_prod : clausenv -> (metavariable * bool * clausenv) option
 
 (** {6 Clenv tactics} *)
 

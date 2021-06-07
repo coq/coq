@@ -64,8 +64,6 @@ let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
 let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 
-exception NotExtensibleClause
-
 let clenv_push_prod cl =
   let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
   let rec clrec typ = match EConstr.kind cl.evd typ with
@@ -77,12 +75,12 @@ let clenv_push_prod cl =
         let e' = meta_declare mv t ~name:na' cl.evd in
         let concl = if dep then subst1 (mkMeta mv) u else u in
         let def = applist (cl.templval.rebus,[mkMeta mv]) in
-        { templval = mk_freelisted def;
+        Some (mv, dep, { templval = mk_freelisted def;
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
-          cache = create_meta_instance_subst e' }
-    | _ -> raise NotExtensibleClause
+          cache = create_meta_instance_subst e' })
+    | _ -> None
   in clrec typ
 
 (* Instantiate the first [bound] products of [t] with metas (all products if
