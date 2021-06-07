@@ -2674,6 +2674,58 @@ let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) env
   let sigma, x = interp_glob_context_evars ?program_mode env sigma bl in
   sigma, (int_env, x)
 
+let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internalization_env) env sigma bl =
+  let open EConstr in
+  let lvar = (empty_ltac_sign, Id.Map.empty) in
+  let ids =
+    (* We assume all ids around are parts of the prefix of the current
+       context being interpreted *)
+     extract_ids env in
+  let int_env = {ids; unb = false;
+              local_univs = { bound = bound_univs sigma; unb_univs = true };
+              tmp_scope = None; scopes = []; impls = impl_env;
+              binder_block_names = Some (Some AbsPi,ids)} in
+  let flags = { Pretyping.all_no_fail_flags with program_mode } in
+  let (int_env, (env, sigma, bl, impls)) =
+    List.fold_left
+      (fun (int_env, acc) b ->
+        let int_env, bl = intern_local_binder_aux (my_intern_constr env lvar) Id.Map.empty (int_env,[]) b in
+        let bl = List.map glob_local_binder_of_extended bl in
+        let acc = List.fold_right (fun (na, bk, b, t) (int_env, (env,sigma,params,impls)) ->
+          let id = match na with
+          | Name id -> id
+          | Anonymous -> user_err Pp.(str "Unexpected anonymous variable.")
+          in
+          let open Context.Named.Declaration in
+          match b with
+          | None ->
+            let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in (* useful? *)
+            let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t' in
+            let (ty,imps,sc,uid) = Id.Map.find id int_env.impls in
+            let imps = List.map (function None -> CAst.make None | Some (_,_,(max,_)) -> CAst.make @@ Some (na,max)) imps in
+            let imps = compute_internalization_data env sigma id ty t imps in
+            let int_env = { int_env with impls = Id.Map.add id imps int_env.impls } in
+            let r = Retyping.relevance_of_type env sigma t in
+            let d = LocalAssum (make_annot id r,t) in
+            let impls =
+              match bk with
+              | NonMaxImplicit -> CAst.make (Some (na,false)) :: impls
+              | MaxImplicit -> CAst.make (Some (na,true)) :: impls
+              | Explicit -> CAst.make None :: impls
+            in
+            (int_env, (push_named d env, sigma, d::params, impls))
+          | Some b ->
+            assert (bk = Explicit);
+            let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t in
+            let sigma, c = understand_tcc ~flags env sigma ~expected_type:(OfType t) b in
+            let r = Retyping.relevance_of_type env sigma t in
+            let d = LocalDef (make_annot id r, c, t) in
+            (int_env, (push_named d env, sigma, d::params, impls)))
+          bl (int_env,acc) in
+        acc)
+      (int_env,(env,sigma,[],[])) bl
+  in
+  sigma, (int_env.impls, ((env, bl), List.rev impls))
 
 (** Local universe and constraint declarations. *)
 

@@ -172,6 +172,13 @@ val interp_context_evars :
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 
+(** Interpret named contexts: returns context *)
+
+val interp_named_context_evars :
+  ?program_mode:bool -> ?impl_env:internalization_env ->
+  env -> evar_map -> local_binder_expr list ->
+  evar_map * (internalization_env * ((env * named_context) * Impargs.manual_implicits))
+
 (** Locating references of constructions, possibly via a syntactic definition
    (these functions do not modify the glob file) *)
 
