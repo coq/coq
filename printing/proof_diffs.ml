@@ -405,6 +405,8 @@ the call to db_goal_map and entering the following:
   > Show Proof.
   (conj (conj ?Goal0 ?Goal1) ?Goal)             <--- goal 4 is still the rightmost goal in the proof
  *)
+(* todo: fails for issue 14425 on a "clear". Perhaps this can be fixed by computing
+   the goal map directly from the kernel evars, which is likely much simpler *)
 let match_goals ot nt =
   let nevar_to_oevar = ref CString.Map.empty in
   (* ogname is "" when there is no difference on the current path.
@@ -424,6 +426,14 @@ let match_goals ot nt =
       | Some expa, Some expb -> constr_expr ogname expa expb
       | None, None -> ()
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (1)")
+    in
+    let constr_arr ogname arr_exp arr_exp2 =
+      let len = Array.length arr_exp in
+      if len <> Array.length arr_exp2 then
+        raise (Diff_Failure "Unable to match goals between old and new proof states (6)");
+      for i = 0 to len -1 do
+        constr_expr ogname arr_exp.(i) arr_exp2.(i)
+      done
     in
     let local_binder_expr ogname exp exp2 =
       match exp, exp2 with
@@ -537,6 +547,10 @@ let match_goals ot nt =
     | CPrim p, CPrim p2 -> ()
     | CDelimiters (key,e), CDelimiters (key2,e2) ->
       constr_expr ogname e e2
+    | CArray(u,t,def,ty), CArray(u2,t2,def2,ty2) ->
+      constr_arr ogname t t2;
+      constr_expr ogname def def2;
+      constr_expr ogname ty ty2;
     | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (5)")
     end
   in
@@ -661,8 +675,10 @@ let make_goal_map_i op np =
 
 let make_goal_map op np =
   let ng_to_og = make_goal_map_i op np in
-  (*db_goal_map op np ng_to_og;*)
   ng_to_og
+
+let notify_proof_diff_failure msg =
+  Feedback.msg_notice Pp.(str "Unable to compute diffs: " ++ str msg)
 
 let diff_proofs ~diff_opt ?old proof =
   let pp_proof p =
@@ -679,6 +695,7 @@ let diff_proofs ~diff_opt ?old proof =
           | Some old -> pp_proof old in
         let show_removed = Some (diff_opt = DiffRemoved) in
         Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
-      with
-      | Pp_diff.Diff_Failure msg -> Pp.str msg
+      with Pp_diff.Diff_Failure msg ->
+        notify_proof_diff_failure msg;
+        pp_proof proof
     end
