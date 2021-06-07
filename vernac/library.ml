@@ -365,11 +365,9 @@ let in_require : require_obj -> obj =
    if [export = Some true] *)
 
 let warn_require_in_module =
-  CWarnings.create ~name:"require-in-module" ~category:"deprecated"
-                   (fun () -> strbrk "Require inside a module is" ++
-                              strbrk " deprecated and strongly discouraged. " ++
-                              strbrk "You can Require a module at toplevel " ++
-                              strbrk "and optionally Import it inside another one.")
+  CWarnings.create ~name:"require-in-module" ~category:"fragile"
+    (fun () -> strbrk "Use of “Require” inside a module is fragile." ++ spc() ++
+               strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
 let require_library_from_dirpath ~lib_resolver modrefl export =
   let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
