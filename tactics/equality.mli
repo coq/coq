@@ -31,16 +31,9 @@ type conditions =
 
 val eq_elimination_ref : orientation -> Sorts.family -> GlobRef.t option
 
-val general_rewrite_bindings :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> evars_flag -> unit Proofview.tactic
-val general_rewrite :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) -> constr -> unit Proofview.tactic
-
 (* Equivalent to [general_rewrite l2r] *)
-val rewriteLR : ?tac:(unit Proofview.tactic * conditions) -> constr -> unit Proofview.tactic
-val rewriteRL : ?tac:(unit Proofview.tactic * conditions) -> constr  -> unit Proofview.tactic
+val rewriteLR : constr -> unit Proofview.tactic
+val rewriteRL : constr  -> unit Proofview.tactic
 
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
@@ -48,20 +41,9 @@ val general_setoid_rewrite_clause :
   (Id.t option -> orientation -> occurrences -> constr with_bindings ->
    new_goals:constr list -> unit Proofview.tactic) Hook.t
 
-val general_rewrite_ebindings_clause : Id.t option ->
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> evars_flag -> unit Proofview.tactic
-
-val general_rewrite_bindings_in :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) ->
-  Id.t -> constr with_bindings -> evars_flag -> unit Proofview.tactic
-val general_rewrite_in          :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) -> Id.t -> constr -> evars_flag -> unit Proofview.tactic
-
-val general_rewrite_clause :
-  orientation -> evars_flag -> ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> clause -> unit Proofview.tactic
+val general_rewrite : where:Id.t option ->
+  l2r:orientation -> occurrences -> freeze:freeze_evars_flag -> dep:dep_proof_flag -> with_evars:evars_flag ->
+  ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> unit Proofview.tactic
 
 type multi =
   | Precisely of int

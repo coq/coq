@@ -453,8 +453,8 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 
 (* Main function for dispatching which kind of rewriting it is about *)
 
-let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
-    ((c,l) : constr with_bindings) with_evars =
+let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof_ok ~with_evars ?tac
+    ((c,l) : constr with_bindings) =
   if not (Locusops.is_all_occurrences occs) then (
     rewrite_side_tac (Hook.get forward_general_setoid_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac)
   else
@@ -489,28 +489,6 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
             end
     end
 
-let general_rewrite_ebindings =
-  general_rewrite_ebindings_clause None
-
-let general_rewrite_bindings l2r occs frzevars dep_proof_ok ?tac (c,bl) =
-  general_rewrite_ebindings_clause None l2r occs
-    frzevars dep_proof_ok ?tac (c,bl)
-
-let general_rewrite l2r occs frzevars dep_proof_ok ?tac c =
-  general_rewrite_bindings l2r occs
-    frzevars dep_proof_ok ?tac (c,NoBindings) false
-
-let general_rewrite_ebindings_in l2r occs frzevars dep_proof_ok ?tac id =
-  general_rewrite_ebindings_clause (Some id) l2r occs frzevars dep_proof_ok ?tac
-
-let general_rewrite_bindings_in l2r occs frzevars dep_proof_ok ?tac id (c,bl) =
-  general_rewrite_ebindings_clause (Some id) l2r occs
-    frzevars dep_proof_ok ?tac (c,bl)
-
-let general_rewrite_in l2r occs frzevars dep_proof_ok ?tac id c =
-  general_rewrite_ebindings_clause (Some id) l2r occs
-    frzevars dep_proof_ok ?tac (c,NoBindings)
-
 let general_rewrite_clause l2r with_evars ?tac c cl =
   let occs_of = occurrences_map (List.fold_left
     (fun acc ->
@@ -525,12 +503,12 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
           | [] -> Proofview.tclUNIT ()
           | ((occs,id),_) :: l ->
             tclTHENFIRST
-              (general_rewrite_ebindings_in l2r (occs_of occs) false true ?tac id c with_evars)
+              (general_rewrite ~where:(Some id) ~l2r (occs_of occs) ~freeze:false ~dep:true ~with_evars ?tac c)
               (do_hyps l)
         in
         if cl.concl_occs == NoOccurrences then do_hyps l else
           tclTHENFIRST
-            (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
+            (general_rewrite ~where:None ~l2r (occs_of cl.concl_occs) ~freeze:false ~dep:true ~with_evars ?tac c)
             (do_hyps l)
     | None ->
         (* Otherwise, if we are told to rewrite in all hypothesis via the
@@ -539,7 +517,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
           | [] -> tclZEROMSG (Pp.str"Nothing to rewrite.")
           | id :: l ->
             tclIFTHENFIRSTTRYELSEMUST
-             (general_rewrite_ebindings_in l2r AllOccurrences false true ?tac id c with_evars)
+             (general_rewrite ~where:(Some id) ~l2r AllOccurrences ~freeze:false ~dep:true ~with_evars ?tac c)
              (do_hyps_atleastonce l)
         in
         let do_hyps =
@@ -555,7 +533,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
         in
         if cl.concl_occs == NoOccurrences then do_hyps else
           tclIFTHENFIRSTTRYELSEMUST
-           (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
+           (general_rewrite ~where:None ~l2r (occs_of cl.concl_occs) ~freeze:false ~dep:true ~with_evars ?tac c)
            do_hyps
 
 let apply_special_clear_request clear_flag f =
@@ -601,8 +579,10 @@ let general_multi_rewrite with_evars l cl tac =
           (tclTHEN (doN l2r c m) (apply_special_clear_request clear_flag c)) (loop l)
   in loop l
 
-let rewriteLR = general_rewrite true AllOccurrences true true
-let rewriteRL = general_rewrite false AllOccurrences true true
+let rewriteLR c =
+  general_rewrite ~where:None ~l2r:true AllOccurrences ~freeze:true ~dep:true ~with_evars:false (c, NoBindings)
+let rewriteRL c =
+  general_rewrite ~where:None ~l2r:false AllOccurrences ~freeze:true ~dep:true ~with_evars:false (c, NoBindings)
 
 (* Replacing tactics *)
 
@@ -1787,7 +1767,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   tclTHENLIST
     ((if need_rewrite then
       [revert (List.map snd dephyps);
-       general_rewrite dir AtLeastOneOccurrence true dep_proof_ok (mkVar hyp);
+       general_rewrite ~where:None ~l2r:dir AtLeastOneOccurrence ~freeze:true ~dep:dep_proof_ok ~with_evars:false (mkVar hyp, NoBindings);
        (tclMAP (fun (dest,id) -> intro_move (Some id) dest) dephyps)]
       else
        [Proofview.tclUNIT ()]) @

@@ -1346,8 +1346,8 @@ let rec rewrite_eqs_in_eqs eqs =
              (Format.sprintf "rewrite %s in %s " (Id.to_string eq)
                 (Id.to_string id))
              (tclTRY
-                (Equality.general_rewrite_in true Locus.AllOccurrences true
-                   (* dep proofs also: *) true id (mkVar eq) false)))
+                (Equality.general_rewrite ~where:(Some id) ~l2r:true Locus.AllOccurrences ~freeze:true
+                   (* dep proofs also: *) ~dep:true ~with_evars:false (mkVar eq, Tactypes.NoBindings))))
          eqs)
       (rewrite_eqs_in_eqs eqs)
 

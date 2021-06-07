@@ -277,7 +277,7 @@ END
 let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
   let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
-    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
+    (fun c -> general_rewrite ~where:clause ~l2r:orient occs ?tac:tac' ~freeze:true ~dep:true ~with_evars:true (c,NoBindings))
 
 }
 
@@ -722,7 +722,7 @@ let rewrite_except h =
   Proofview.Goal.enter begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else
-      Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
+      Tacticals.New.tclTRY (Equality.general_rewrite ~where:(Some id) ~l2r:true Locus.AllOccurrences ~freeze:true ~dep:true ~with_evars:false (mkVar h, NoBindings)))
     hyps
   end
 
