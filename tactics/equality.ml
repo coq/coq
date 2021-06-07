@@ -163,8 +163,8 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
       ((if l2r then c1 else c2),concl)
   in List.map try_occ occs
 
-let instantiate_lemma gl c ty l l2r concl =
-  let sigma, ct = pf_type_of gl c in
+let instantiate_lemma gl c ct l l2r concl =
+  let sigma = Proofview.Goal.sigma gl in
   let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
   let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
   eqclause
