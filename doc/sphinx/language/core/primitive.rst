@@ -53,10 +53,11 @@ applications of these primitive operations.
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlInt63`
 module can be used when extracting to OCaml: it maps the Coq primitives to types
-and functions of a :g:`Uint63` module. That OCaml module is not produced by
-extraction. Instead, it has to be provided by the user (if they want to compile
-or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of Coq.
+and functions of a :g:`Uint63` module (including signed functions for
+:g:`Sint63` despite the name). That OCaml module is not produced by extraction.
+Instead, it has to be provided by the user (if they want to compile or execute
+the extracted code). For instance, an implementation of this module can be taken
+from the kernel of Coq.
 
 Literal values (at type :g:`Uint63.int`) are extracted to literal OCaml values
 wrapped into the :g:`Uint63.of_int` (resp. :g:`Uint63.of_int64`) constructor on

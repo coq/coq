@@ -197,4 +197,9 @@ Instance Op_is_zero : UnOp is_zero :=
   { TUOp := (Z.eqb 0) ; TUOpInj := is_zeroE }.
 Add Zify UnOp Op_is_zero.
 
+#[global]
+Instance Op_abs : UnOp abs :=
+  { TUOp := fun x => cmodwB (Z.abs x) ; TUOpInj := abs_spec }.
+Add Zify UnOp Op_abs.
+
 Ltac Zify.zify_convert_to_euclidean_division_equations_flag ::= constr:(true).

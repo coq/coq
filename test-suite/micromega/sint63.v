@@ -30,3 +30,12 @@ Proof. lia. Qed.
 
 Goal forall x y, is_zero x = true -> 3 * x + y = y.
 Proof. lia. Qed.
+
+Goal forall x, 0 <=? x = true -> abs x = x.
+Proof. lia. Qed.
+
+Goal forall x, x <? 0 = true -> abs x = - x.
+Proof. lia. Qed.
+
+Goal forall x, x <> min_int -> 0 <=? abs x = true.
+Proof. lia. Qed.
