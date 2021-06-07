@@ -52,7 +52,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
 
 let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = match goals with
   | [] -> assert false
-  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; Interface.goal_id = cur_id } :: rem_goals ->
+  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; Interface.goal_name = cur_name } :: rem_goals ->
       let on_hover sel_start sel_stop =
         proof#buffer#remove_tag
           ~start:proof#buffer#start_iter
@@ -68,10 +68,11 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       let head_str = Printf.sprintf
         "%d goal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
       in
-      let goal_str ?(shownum=false) index total id =
+      let goal_str ?(shownum=false) index total name =
         let annot =
-          if Option.has_some (int_of_string_opt id) (* some uid *) then if shownum then Printf.sprintf "(%d/%d)" index total else ""
-          else Printf.sprintf "(?%s)" id in
+          match name with
+          | Some id -> Printf.sprintf "(?%s)" id
+          | None -> if shownum then Printf.sprintf "(%d/%d)" index total else "" in
         Printf.sprintf "______________________________________%s\n" annot
       in
       (* Insert current goal and its hypotheses *)
@@ -103,13 +104,13 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
           [tag]
           else []
         in
-        proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt cur_id);
+        proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt cur_name);
         insert_xml ~tags:[Tags.Proof.goal] proof#buffer (Richpp.richpp_of_pp width cur_goal);
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
-      let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g; Interface.goal_id = id } =
-        proof#buffer#insert (goal_str ~shownum i goals_cnt id);
+      let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g; Interface.goal_name = name } =
+        proof#buffer#insert (goal_str ~shownum i goals_cnt name);
         insert_xml proof#buffer (Richpp.richpp_of_pp width g);
         proof#buffer#insert "\n"
       in

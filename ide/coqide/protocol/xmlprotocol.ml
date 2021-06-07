@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (** Protocol version of this file. This is the date of the last modification. *)
-let protocol_version = "20210409"
+let protocol_version = "20210506"
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
@@ -208,13 +208,15 @@ let of_goal g =
   let hyp = of_list of_pp g.goal_hyp in
   let ccl = of_pp g.goal_ccl in
   let id = of_string g.goal_id in
-  Element ("goal", [], [id; hyp; ccl])
+  let name = of_option of_string g.goal_name in
+  Element ("goal", [], [id; name; hyp; ccl])
 let to_goal = function
-  | Element ("goal", [], [id; hyp; ccl]) ->
+  | Element ("goal", [], [id; name; hyp; ccl]) ->
     let hyp = to_list to_pp hyp in
     let ccl = to_pp ccl         in
     let id  = to_string id      in
-    { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; }
+    let name  = to_option to_string name in
+    { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; goal_name = name; }
   | x -> raise (Marshal_error("goal",x))
 
 let of_goals g =
