@@ -10,10 +10,6 @@
 
 open Pcoq
 
-[@@@ocaml.warning "-3"]
-let uvernac = create_universe "vernac" [@@deprecated "Deprecated in 8.13"]
-[@@@ocaml.warning "+3"]
-
 type proof_mode = string
 
 (* Tactic parsing modes *)
