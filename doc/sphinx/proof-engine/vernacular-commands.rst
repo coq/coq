@@ -1042,7 +1042,7 @@ Exposing constants to OCaml libraries
    to know where the constant is defined (what file, module, library, etc.).
 
    As a special case, when the first segment of :n:`@qualid__2` is :g:`kernel`,
-   the constant is exposed to the kernel. For instance, the `Int63` module
+   the constant is exposed to the kernel. For instance, the `PrimInt63` module
    features the following declaration:
 
    .. coqdoc::
@@ -1073,14 +1073,14 @@ Registering primitive operations
    replacements.  No space is allowed after the `#`.  Invalid values give a syntax
    error.
 
-   For example, the standard library files `Int63.v` and `PrimFloat.v` use :cmd:`Primitive`
+   For example, the standard library files `PrimInt63.v` and `PrimFloat.v` use :cmd:`Primitive`
    to support, respectively, the features described in :ref:`primitive-integers` and
    :ref:`primitive-floats`.
 
    The types associated with an operator must be declared to the kernel before declaring operations
    that use the type.  Do this with :cmd:`Primitive` for primitive types and
    :cmd:`Register` with the :g:`kernel` prefix for other types.  For example,
-   in `Int63.v`, `#int63_type` must be declared before the associated operations.
+   in `PrimInt63.v`, `#int63_type` must be declared before the associated operations.
 
    .. exn:: The type @ident must be registered before this construction can be typechecked.
       :undocumented:
