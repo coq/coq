@@ -792,11 +792,25 @@ organization, because of a limitation of GitHub).
 #### Additional notes for pull request reviewers and assignees ####
 
 - NEVER USE GITHUB'S MERGE BUTTON.  Instead, you should either:
-  - run the [`dev/tools/merge-pr.sh`][merge-pr] script (requires
-    having configured gpg with git);
-  - or post a comment containing "@coqbot: merge now" (this is
-    especially convenient for developers who do not have a GPG key and
-    for when you do not have access to a console).
+
+  - post a comment containing "@coqbot: merge now";
+    This is the recommended method and more convenient than the previous
+    script based method (see next bullet) e.g. for developers who do not have
+    a GPG key and for when you do not have access to a console.
+    "coqbot" will **not** check CI status - it is expected that the merger does
+    this manually upfront, but coqbot will deny the merge with an error
+    response in the following cases:
+    - no assignee
+    - no milestone
+    - no `kind` label
+    - left-over `needs` labels
+    - you try to merge a PR which you authored (this is decided by the
+      creator of the PR - reviewers can still do minor changes and merge)
+
+  - alternatively run the [`dev/tools/merge-pr.sh`][merge-pr] script;
+    Since "coqbot" this method is deprecated with a few exceptions, like
+    merges to release branches - which only release managers do.
+    This requires having configured gpg with git.
 
 - PR authors or co-authors cannot review, self-assign, or merge the PR
   they contributed to.  However, reviewers may push small fixes to the
