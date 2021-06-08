@@ -124,6 +124,7 @@ release:
 install:
 	@echo "To install Coq using dune, use 'dune build -p P && dune install P'"
 	@echo "where P is any of the packages defined by opam files in the root dir"
+	@false
 
 fmt:
 	dune build @fmt --auto-promote
