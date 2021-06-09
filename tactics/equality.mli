@@ -103,6 +103,8 @@ val discriminable : env -> evar_map -> constr -> constr -> bool
 (* Tells if tactic "injection" is applicable *)
 val injectable : env -> evar_map -> keep_proofs:(bool option) -> constr -> constr -> bool
 
+val set_keep_equality : inductive -> bool -> unit
+
 (* Subst *)
 
 (* val unfold_body : Id.t -> tactic *)

@@ -728,15 +728,49 @@ let keep_proof_equalities = function
   | None -> !keep_proof_equalities_for_injection
   | Some flags -> flags.keep_proof_equalities
 
+module KeepEqualities =
+struct
+  type t = inductive
+  module Set = Indset_env
+  let encode _env r = Nametab.global_inductive r
+  let subst subst obj = Mod_subst.subst_ind subst obj
+  let printer ind = Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind)
+  let key = ["Keep"; "Equalities"]
+  let title = "Prop-valued inductive types for which injection keeps equality proofs"
+  let member_message ind b =
+    let b = if b then mt () else str "not " in
+    str "Equality proofs over " ++ (printer ind) ++
+      str " are " ++ b ++ str "kept by injection"
+end
+
+module KeepEqualitiesTable = Goptions.MakeRefTable(KeepEqualities)
+
+let set_keep_equality = KeepEqualitiesTable.set
+
 (* [keep_proofs] is relevant for types in Prop with elimination in Type *)
 (* In particular, it is relevant for injection but not for discriminate *)
+
+let keep_head_inductive sigma c =
+  (* Note that we do not weak-head normalize c before checking it is an
+     applied inductive, because [get_sort_family_of] did not use to either.
+     As a matter of fact, if it reduces to an applied template inductive
+     type but is not syntactically equal to it, it will fail to project. *)
+  let _, hd = EConstr.decompose_prod sigma c in
+  let hd, _ = Termops.decompose_app_vect sigma hd in
+  match EConstr.kind sigma hd with
+  | Ind (ind, _) -> KeepEqualitiesTable.active ind
+  | _ -> false
 
 let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
   let project env sorts posn t1 t2 =
     let ty1 = get_type_of env sigma t1 in
-    let s = get_sort_family_of ~truncation_style:true env sigma ty1 in
-    if List.mem_f Sorts.family_equal s sorts
-    then [(List.rev posn,t1,t2)] else []
+    let keep =
+      if keep_head_inductive sigma ty1 then true
+      else
+        let s = get_sort_family_of env sigma ty1 in
+        List.mem_f Sorts.family_equal s sorts
+    in
+    if keep then [(List.rev posn,t1,t2)] else []
   in
   let rec findrec sorts posn t1 t2 =
     let hd1,args1 = whd_all_stack env sigma t1 in

@@ -99,6 +99,7 @@ module MakeRefTable :
 sig
   val v : unit -> A.Set.t
   val active : A.t -> bool
+  val set : A.t -> bool -> unit
 end
 
 

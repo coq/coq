@@ -130,6 +130,7 @@ module MakeTable =
 
     let v () = !t
     let active x = A.Set.mem x !t
+    let set x b = if b then add_option x else remove_option x
   end
 
 let string_table = ref []
