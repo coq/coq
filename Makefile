@@ -12,5 +12,9 @@
 ifndef COQ_USE_DUNE
 include Makefile.make
 else
+ifdef OPAM_PACKAGE_NAME # installing through opam: ignore COQ_USE_DUNE
+include Makefile.make
+else
 include Makefile.dune
+endif
 endif
