@@ -9,3 +9,5 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.14 *)
+
+Require Export Coq.Compat.Coq815.
