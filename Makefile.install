@@ -56,6 +56,13 @@ install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
 	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coq-core
 	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide-server
 
+# IMPORTANT NOTE: before Dune 2.9, the --docdir and --etcdir options
+# were not supported, if you are using Dune >= 2.9, you can add
+#
+# --etcdir=$(CONFIGDIR) --docdir=$(DOCDIR) , additionally, you can also add
+# --libdir=$(COQLIBINSTALL) if required by your distribution, but we recommend
+# using the default.
+
 install-coq: install-dune install-library
 
 # This used to be overriden to fix very old bugs with install

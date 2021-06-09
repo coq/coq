@@ -203,13 +203,11 @@ type preferences = {
   output_summary : bool;
   vmbyteflags : string option;
   custom : bool option;
-  bindir : string option;
   libdir : string option;
   configdir : string option;
   datadir : string option;
   mandir : string option;
   docdir : string option;
-  coqdocdir : string option;
   ocamlfindcmd : string option;
   arch : string option;
   natdynlink : bool;
@@ -240,13 +238,11 @@ let default = {
   output_summary = true;
   vmbyteflags = None;
   custom = None;
-  bindir = None;
   libdir = None;
   configdir = None;
   datadir = None;
   mandir = None;
   docdir = None;
-  coqdocdir = None;
   ocamlfindcmd = None;
   arch = None;
   natdynlink = true;
@@ -344,6 +340,11 @@ let check_absolute = function
     else ()
 
 let local_warning () = warn "-local option is deprecated, and equivalent to -profile devel"
+let bindir_warning () = warn "-bindir option is deprecated, Coq will now unconditionally use $prefix/bin"
+let coqdocdir_warning () = warn "-coqdordir option is deprecated, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files"
+
+let docdir_warning () = warn "-docdir has no effect in configure, see dev/doc/INSTALL.make.md for more details"
+let configdir_warning () = warn "-configdir has no effect in configure, see dev/doc/INSTALL.make.md for more details"
 
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
@@ -357,20 +358,20 @@ let args_options = Arg.align [
     " Build bytecode executables with -custom (not recommended)";
   "-no-custom", arg_clear_option (fun p custom -> { p with custom }),
     " Do not build with -custom on Windows and MacOS";
-  "-bindir", arg_string_option (fun p bindir -> { p with bindir }),
-    "<dir> Where to install bin files";
+  "-bindir", arg_string_option (fun p _ -> bindir_warning (); p ),
+    "deprecated option, Coq will now unconditionally use $prefix/bin";
   "-libdir", arg_string_option (fun p libdir -> { p with libdir }),
     "<dir> Where to install lib files";
-  "-configdir", arg_string_option (fun p configdir -> { p with configdir }),
+  "-configdir", arg_string_option (fun p configdir -> configdir_warning (); { p with configdir }),
     "<dir> Where to install config files";
   "-datadir", arg_string_option (fun p datadir -> { p with datadir }),
     "<dir> Where to install data files";
   "-mandir", arg_string_option (fun p mandir -> { p with mandir }),
     "<dir> Where to install man files";
-  "-docdir", arg_string_option (fun p docdir -> { p with docdir }),
+  "-docdir", arg_string_option (fun p docdir -> docdir_warning (); { p with docdir }),
     "<dir> Where to install doc files";
-  "-coqdocdir", arg_string_option (fun p coqdocdir -> { p with coqdocdir }),
-    "<dir> Where to install Coqdoc style files";
+  "-coqdocdir", arg_string_option (fun p _ -> coqdocdir_warning (); p),
+    "deprecated option, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files";
   "-ocamlfind", arg_string_option (fun p ocamlfindcmd -> { p with ocamlfindcmd }),
     "<dir> Specifies the ocamlfind command to use";
   "-flambda-opts", arg_string_list ' ' (fun p flambda_flags -> { p with flambda_flags }),
@@ -839,8 +840,6 @@ type path_style =
   | Relative of string (* Should not start with a "/" *)
 
 let install = [
-  "BINDIR", "the Coq binaries", prefs.bindir,
-    Relative "bin", Relative "bin";
   "COQLIBINSTALL", "the Coq library", prefs.libdir,
     Relative "lib", Relative "lib/coq";
   "CONFIGDIR", "the Coqide configuration files", prefs.configdir,
@@ -851,8 +850,6 @@ let install = [
     Relative "man", Relative "share/man";
   "DOCDIR", "the Coq documentation", prefs.docdir,
     Relative "doc", Relative "share/doc/coq";
-  "COQDOCDIR", "the Coqdoc LaTeX files", prefs.coqdocdir,
-    Relative "latex", Relative "share/texmf/tex/latex/misc";
  ]
 
 let strip_trailing_slash_if_any p =

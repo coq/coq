@@ -34,9 +34,6 @@ please see the [contributing guide](../../CONTRIBUTING.md).
      Binaries, library, and man pages will be respectively
      installed in `<dir>/bin`, `<dir>/lib/coq`, and `<dir>/man`
 
-   * `-bindir <dir>`                   (default: `/usr/local/bin`)
-     Directory where the binaries will be installed
-
    * `-libdir <dir>`                   (default: `/usr/local/lib/coq`)
      Directory where the Coq standard library will be installed
 
@@ -118,6 +115,19 @@ please see the [contributing guide](../../CONTRIBUTING.md).
 7. You can now clean all the sources. (You can even erase them.)
 
         make clean
+
+Notes for packagers
+-------------------
+
+The `make install` target for Coq's OCaml parts calls `dune
+install` internally. Before Dune 2.9, `dune install` didn't support
+configuring some installation paths such as `-docdir` and
+`-configdir`, thus these configure options were ignored by default.
+
+For Dune >= 2.9, we recommend patching `Makefile.install` so these
+options are taken into account. For Dune < 2.9, you may have to
+post-process your package to fix install locations. See
+`Makefile.install` `install-dune` target for more information.
 
 Installation Procedure For Plugin Developers.
 ---------------------------------------------
