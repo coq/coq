@@ -68,27 +68,16 @@ val all_poly_univs : 'a t -> Univ.Level.t array
    constraints about monomorphic universes, which prevent declaring
    monomorphic globals. *)
 
-type abstr_info = private {
-  abstr_ctx : Constr.named_context;
-  (** Section variables of this prefix *)
-  abstr_subst : Univ.Instance.t;
-  (** Actual names of the abstracted variables *)
-  abstr_uctx : Univ.AUContext.t;
-  (** Universe quantification, same length as the substitution *)
-}
-(** Data needed to abstract over the section variable and universe hypotheses *)
-
-
-val empty_segment : abstr_info
+val empty_segment : Declarations.abstr_info
 (** Nothing to abstract *)
 
-val segment_of_constant : Environ.env -> Constant.t -> 'a t -> abstr_info
+val segment_of_constant : Environ.env -> Constant.t -> 'a t -> Declarations.abstr_info
 (** Section segment at the time of the constant declaration *)
 
-val segment_of_inductive : Environ.env -> MutInd.t -> 'a t -> abstr_info
+val segment_of_inductive : Environ.env -> MutInd.t -> 'a t -> Declarations.abstr_info
 (** Section segment at the time of the inductive declaration *)
 
-val replacement_context : Environ.env -> 'a t -> Opaqueproof.work_list
+val replacement_context : Environ.env -> 'a t -> Declarations.work_list
 (** Section segments of all declarations from this section. *)
 
 val is_in_section : Environ.env -> GlobRef.t -> 'a t -> bool

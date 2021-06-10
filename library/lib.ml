@@ -406,8 +406,8 @@ let instance_from_variable_context =
   List.rev %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
 
 let extract_worklist info =
-  let args = instance_from_variable_context info.Section.abstr_ctx in
-  info.Section.abstr_subst, args
+  let args = instance_from_variable_context info.Declarations.abstr_ctx in
+  info.Declarations.abstr_subst, args
 
 let sections () = Safe_typing.sections_of_safe_env @@ Global.safe_env ()
 
@@ -433,7 +433,7 @@ let section_segment_of_reference = let open GlobRef in function
 | VarRef _ -> empty_segment
 
 let variable_section_segment_of_reference gr =
-  (section_segment_of_reference gr).Section.abstr_ctx
+  (section_segment_of_reference gr).Declarations.abstr_ctx
 
 let is_in_section ref = match sections () with
   | None -> false
@@ -551,7 +551,7 @@ let discharge_proj_repr =
       let _, newpars = Mindmap.find mind (snd modlist) in
       mind, npars + Array.length newpars)
 
-let discharge_abstract_universe_context { Section.abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
+let discharge_abstract_universe_context { Declarations.abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
   let open Univ in
   let ainst = make_abstract_instance auctx in
   let subst = Instance.append subst ainst in

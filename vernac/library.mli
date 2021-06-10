@@ -75,4 +75,4 @@ val overwrite_library_filenames : string -> unit
 val native_name_from_filename : string -> string
 
 (** {6 Opaque accessors} *)
-val indirect_accessor : Opaqueproof.indirect_accessor
+val indirect_accessor : Declarations.cooking_info Opaqueproof.indirect_accessor

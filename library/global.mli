@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Names
+open Declarations
 
 (** This module defines the global environment of Coq. The functions
    below are exactly the same as the ones in [Safe_typing], operating on
@@ -29,13 +30,13 @@ val named_context : unit -> Constr.named_context
 (** {6 Enriching the global environment } *)
 
 (** Changing the (im)predicativity of the system *)
-val set_engagement : Declarations.engagement -> unit
+val set_engagement : engagement -> unit
 val set_indices_matter : bool -> unit
-val set_typing_flags : Declarations.typing_flags -> unit
+val set_typing_flags : typing_flags -> unit
 val set_check_guarded : bool -> unit
 val set_check_positive : bool -> unit
 val set_check_universes : bool -> unit
-val typing_flags : unit -> Declarations.typing_flags
+val typing_flags : unit -> typing_flags
 val set_cumulative_sprop : bool -> unit
 val is_cumulative_sprop : unit -> bool
 val set_allow_sprop : bool -> unit
@@ -52,12 +53,12 @@ val export_private_constants :
   Safe_typing.exported_private_constant list
 
 val add_constant :
-  ?typing_flags:Declarations.typing_flags ->
+  ?typing_flags:typing_flags ->
   Id.t -> Safe_typing.global_declaration -> Constant.t
 val add_private_constant :
   Id.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
 val add_mind :
-  ?typing_flags:Declarations.typing_flags ->
+  ?typing_flags:typing_flags ->
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
 (** Extra universe constraints *)
@@ -68,12 +69,12 @@ val push_context_set : strict:bool -> Univ.ContextSet.t -> unit
 (** Non-interactive modules and module types *)
 
 val add_module :
-  Id.t -> Entries.module_entry -> Declarations.inline ->
+  Id.t -> Entries.module_entry -> inline ->
     ModPath.t * Mod_subst.delta_resolver
 val add_modtype :
-  Id.t -> Entries.module_type_entry -> Declarations.inline -> ModPath.t
+  Id.t -> Entries.module_type_entry -> inline -> ModPath.t
 val add_include :
-  Entries.module_struct_entry -> bool -> Declarations.inline ->
+  Entries.module_struct_entry -> bool -> inline ->
     Mod_subst.delta_resolver
 
 (** Sections *)
@@ -93,26 +94,26 @@ val start_module : Id.t -> ModPath.t
 val start_modtype : Id.t -> ModPath.t
 
 val end_module : Summary.frozen -> Id.t ->
-  (Entries.module_struct_entry * Declarations.inline) option ->
+  (Entries.module_struct_entry * inline) option ->
     ModPath.t * MBId.t list * Mod_subst.delta_resolver
 
 val end_modtype : Summary.frozen -> Id.t -> ModPath.t * MBId.t list
 
 val add_module_parameter :
-  MBId.t -> Entries.module_struct_entry -> Declarations.inline ->
+  MBId.t -> Entries.module_struct_entry -> inline ->
     Mod_subst.delta_resolver
 
 (** {6 Queries in the global environment } *)
 
 val lookup_named     : variable -> Constr.named_declaration
-val lookup_constant  : Constant.t -> Opaqueproof.opaque Declarations.constant_body
+val lookup_constant  : Constant.t -> constant_body
 val lookup_inductive : inductive ->
-  Declarations.mutual_inductive_body * Declarations.one_inductive_body
+  mutual_inductive_body * one_inductive_body
 val lookup_pinductive : Constr.pinductive ->
-  Declarations.mutual_inductive_body * Declarations.one_inductive_body
-val lookup_mind      : MutInd.t -> Declarations.mutual_inductive_body
-val lookup_module    : ModPath.t -> Declarations.module_body
-val lookup_modtype   : ModPath.t -> Declarations.module_type_body
+  mutual_inductive_body * one_inductive_body
+val lookup_mind      : MutInd.t -> mutual_inductive_body
+val lookup_module    : ModPath.t -> module_body
+val lookup_modtype   : ModPath.t -> module_type_body
 val exists_objlabel  : Label.t -> bool
 
 val constant_of_delta_kn : KerName.t -> Constant.t
@@ -120,17 +121,17 @@ val mind_of_delta_kn : KerName.t -> MutInd.t
 
 val opaque_tables : unit -> Opaqueproof.opaquetab
 
-val body_of_constant : Opaqueproof.indirect_accessor -> Constant.t ->
+val body_of_constant : cooking_info Opaqueproof.indirect_accessor -> Constant.t ->
   (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AUContext.t) option
 (** Returns the body of the constant if it has any, and the polymorphic context
     it lives in. For monomorphic constant, the latter is empty, and for
     polymorphic constants, the term contains De Bruijn universe variables that
     need to be instantiated. *)
 
-val body_of_constant_body : Opaqueproof.indirect_accessor ->
-  Opaqueproof.opaque Declarations.constant_body ->
+val body_of_constant_body : cooking_info Opaqueproof.indirect_accessor ->
+  constant_body ->
     (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AUContext.t) option
-(** Same as {!body_of_constant} but on {!Declarations.constant_body}. *)
+(** Same as {!body_of_constant} but on {!constant_body}. *)
 
 (** {6 Compiled libraries } *)
 

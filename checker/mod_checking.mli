@@ -8,6 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val set_indirect_accessor : Opaqueproof.indirect_accessor -> unit
+val set_indirect_accessor : Declarations.cooking_info Opaqueproof.indirect_accessor -> unit
 
 val check_module : Environ.env -> Names.Cset.t Names.Cmap.t -> Names.ModPath.t -> Declarations.module_body -> Names.Cset.t Names.Cmap.t

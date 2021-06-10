@@ -100,9 +100,27 @@ type typing_flags = {
 
 }
 
+type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
+  (Univ.Instance.t * Id.t array) Mindmap.t
+
+(** Data needed to abstract over the section variable and universe hypotheses *)
+type abstr_info = {
+  abstr_ctx : Constr.named_context;
+  (** Section variables of this prefix *)
+  abstr_subst : Univ.Instance.t;
+  (** Actual names of the abstracted variables *)
+  abstr_uctx : Univ.AUContext.t;
+  (** Universe quantification, same length as the substitution *)
+}
+
+type cooking_info = {
+  modlist : work_list;
+  abstract : abstr_info;
+}
+
 (* some contraints are in constant_constraints, some other may be in
  * the OpaqueDef *)
-type 'opaque constant_body = {
+type 'opaque pconstant_body = {
     const_hyps : Constr.named_context; (** New: younger hyp at top *)
     const_body : (Constr.t, 'opaque) constant_def;
     const_type : types;
@@ -114,6 +132,8 @@ type 'opaque constant_body = {
                                            were used for
                                            type-checking. *)
 }
+
+type constant_body = cooking_info Opaqueproof.opaque pconstant_body
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 type nested_type =
@@ -270,7 +290,7 @@ type module_alg_expr =
 (** A component of a module structure *)
 
 type structure_field_body =
-  | SFBconst of Opaqueproof.opaque constant_body
+  | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
   | SFBmodtype of module_type_body

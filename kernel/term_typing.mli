@@ -31,13 +31,13 @@ val translate_local_assum : env -> types -> types * Sorts.relevance
 
 val translate_constant :
   env -> Constant.t -> constant_entry ->
-    'a constant_body
+    'a pconstant_body
 
 val translate_opaque :
   env -> Constant.t -> 'a opaque_entry ->
-    unit constant_body * typing_context
+    unit pconstant_body * typing_context
 
-val translate_recipe : env -> Constant.t -> Cooking.recipe -> Opaqueproof.opaque constant_body
+val translate_recipe : env -> Constant.t -> Cooking.recipe -> constant_body
 
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output -> (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes)
 
@@ -47,4 +47,4 @@ val infer_declaration : env ->
   constant_entry -> typing_context Cooking.result
 
 val build_constant_declaration :
-  env -> Opaqueproof.proofterm Cooking.result -> Opaqueproof.proofterm constant_body
+  env -> Opaqueproof.proofterm Cooking.result -> Opaqueproof.proofterm pconstant_body

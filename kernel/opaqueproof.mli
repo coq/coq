@@ -25,27 +25,20 @@ type 'a delayed_universes =
 
 type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 type opaquetab
-type opaque
+type 'cooking_info opaque
 
 val empty_opaquetab : opaquetab
 
 (** From a [proofterm] to some [opaque]. *)
-val create : DirPath.t -> proofterm -> opaquetab -> opaque * opaquetab
-
-type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
-  (Univ.Instance.t * Id.t array) Mindmap.t
-
-type cooking_info = {
-  modlist : work_list;
-  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
+val create : DirPath.t -> proofterm -> opaquetab -> 'c opaque * opaquetab
 
 type opaque_proofterm = Constr.t * unit delayed_universes
 
 type opaque_handle
 
-type indirect_accessor = {
+type 'cooking_info indirect_accessor = {
   access_proof : DirPath.t -> opaque_handle -> opaque_proofterm option;
-  access_discharge : cooking_info list -> opaque_proofterm -> opaque_proofterm;
+  access_discharge : 'cooking_info list -> opaque_proofterm -> opaque_proofterm;
 }
 (** Opaque terms are indexed by their library
     dirpath and an integer index. The two functions above activate
@@ -54,15 +47,15 @@ type indirect_accessor = {
 
 (** From a [opaque] back to a [constr]. This might use the
     indirect opaque accessor given as an argument. *)
-val force_proof : indirect_accessor -> opaquetab -> opaque -> opaque_proofterm
-val force_constraints : indirect_accessor -> opaquetab -> opaque -> Univ.ContextSet.t
+val force_proof : 'c indirect_accessor -> opaquetab -> 'c opaque -> opaque_proofterm
+val force_constraints : 'c indirect_accessor -> opaquetab -> 'c opaque -> Univ.ContextSet.t
 
-val subst_opaque : substitution -> opaque -> opaque
+val subst_opaque : substitution -> 'c opaque -> 'c opaque
 
 val discharge_opaque :
-  cooking_info -> opaque -> opaque
+  'cooking_info -> 'cooking_info opaque -> 'cooking_info opaque
 
-val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
+val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> 'c opaque -> unit
 
 (** {5 Serialization} *)
 
