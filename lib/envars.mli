@@ -75,4 +75,4 @@ val xdg_data_dirs   : (string -> unit) -> string list
 val xdg_dirs : warn : (string -> unit) -> string list
 
 (** {6 Prints the configuration information } *)
-val print_config : ?prefix_var_name:string -> out_channel -> string list -> unit
+val print_config : ?prefix_var_name:string -> out_channel -> unit
