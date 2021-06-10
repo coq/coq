@@ -59,33 +59,6 @@ let assumption_of_judgment env sigma j =
   with Type_errors.TypeError _ | PretypeError _ ->
     error_assumption env sigma j
 
-let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
-  let rec apply_rec sigma n typ = function
-  | [] ->
-      sigma, { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
-               uj_type =
-                 let ar = inductive_type_knowing_parameters env sigma ind argjv in
-                 hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) }
-  | hj::restjl ->
-       let sigma, (c1,c2) =
-         match EConstr.kind sigma (whd_all env sigma typ) with
-         | Prod (_,c1,c2) -> sigma, (c1,c2)
-         | Evar ev ->
-             let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
-             let (_,c1,c2) = destProd sigma t in
-             sigma, (c1,c2)
-         | _ ->
-             error_cant_apply_not_functional env sigma funj argjv
-       in
-       begin match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
-         | sigma ->
-           apply_rec sigma (n+1) (subst1 hj.uj_val c2) restjl
-         | exception Evarconv.UnableToUnify _ ->
-           error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv
-       end
-  in
-  apply_rec sigma 1 funj.uj_type (Array.to_list argjv)
-
 let judge_of_apply env sigma funj argjv =
   let rec apply_rec sigma n typ = function
   | [] ->
@@ -110,6 +83,12 @@ let judge_of_apply env sigma funj argjv =
        end
   in
   apply_rec sigma 1 funj.uj_type (Array.to_list argjv)
+
+let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
+  let (sigma, j) = judge_of_apply env sigma funj argjv in
+  let ar = inductive_type_knowing_parameters env sigma ind argjv in
+  let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
+  sigma, { uj_val = j.uj_val; uj_type = typ }
 
 let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
