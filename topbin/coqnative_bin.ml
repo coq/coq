@@ -75,7 +75,7 @@ let locate_absolute_library dir =
     CErrors.user_err (str "File " ++ str name ++ str " not found in loadpath")
 
 let dirpath_of_string s = match String.split_on_char '.' s with
-| [] -> default_root_prefix
+| [""] -> default_root_prefix
 | dir -> DirPath.make (List.rev_map Id.of_string dir)
 
 end
