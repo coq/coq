@@ -75,7 +75,7 @@ let locate_absolute_library dir =
     CErrors.user_err (str "File " ++ str name ++ str " not found in loadpath")
 
 let dirpath_of_string s = match String.split_on_char '.' s with
-| [] -> default_root_prefix
+| [""] -> default_root_prefix
 | dir -> DirPath.make (List.rev_map Id.of_string dir)
 
 end
@@ -322,4 +322,6 @@ let () =
     let senv = init_coq () in
     compile senv ~in_file
   with exn ->
-    Format.eprintf "Error: @[%a@]@\n%!" Pp.pp_with (CErrors.print exn)
+    Format.eprintf "Error: @[%a@]@\n%!" Pp.pp_with (CErrors.print exn);
+    let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
+    exit exit_code
