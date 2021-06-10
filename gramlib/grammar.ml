@@ -1565,8 +1565,12 @@ module Parsable = struct
     let efun = entry.estart 0 in
     let ts = p.pa_tok_strm in
     let get_loc () =
-      let loc = LStream.current_loc ts in
+      (* Build the loc spanning from just after what is consumed (count)
+         up to the further token known to have been read (max_peek).
+         Unless there were a Ctrl-C (handled explicitly), there needs
+         to be a next token that caused the parsing failure. *)
       let loc' = LStream.max_peek_loc ts in
+      let loc = LStream.get_loc (LStream.count ts) ts in
       Loc.merge loc loc'
     in
     try efun ts with
