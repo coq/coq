@@ -60,29 +60,37 @@ let assumption_of_judgment env sigma j =
     error_assumption env sigma j
 
 let judge_of_apply env sigma funj argjv =
-  let rec apply_rec sigma n typ = function
+  let rec apply_rec sigma n subs typ = function
   | [] ->
+    let typ = Vars.esubst Vars.lift subs typ in
     sigma, { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
              uj_type = typ }
   | hj::restjl ->
-       let sigma, (c1,c2) =
-         match EConstr.kind sigma (whd_all env sigma typ) with
-         | Prod (_,c1,c2) -> sigma, (c1,c2)
-         | Evar ev ->
-             let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
-             let (_,c1,c2) = destProd sigma t in
-             sigma, (c1,c2)
-         | _ ->
-            error_cant_apply_not_functional env sigma funj argjv
-       in
-       begin match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
-         | sigma ->
-           apply_rec sigma (n+1) (subst1 hj.uj_val c2) restjl
-         | exception Evarconv.UnableToUnify _ ->
-           error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv
-       end
+    let sigma, c1, subs, c2 = match EConstr.kind sigma typ with
+    | Prod (_, c1, c2) ->
+      (* Fast path *)
+      let c1 = Vars.esubst Vars.lift subs c1 in
+      let subs = Esubst.subs_cons hj.uj_val subs in
+      sigma, c1, subs, c2
+    | _ ->
+      let typ = Vars.esubst Vars.lift subs typ in
+      let subs = Esubst.subs_cons hj.uj_val (Esubst.subs_id 0) in
+      match EConstr.kind sigma (whd_all env sigma typ) with
+      | Prod (_, c1, c2) -> sigma, c1, subs, c2
+      | Evar ev ->
+        let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
+        let (_, c1, c2) = destProd sigma t in
+        sigma, c1, subs, c2
+      | _ ->
+        error_cant_apply_not_functional env sigma funj argjv
+    in
+    match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
+    | sigma ->
+      apply_rec sigma (n+1) subs c2 restjl
+    | exception Evarconv.UnableToUnify _ ->
+      error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv
   in
-  apply_rec sigma 1 funj.uj_type (Array.to_list argjv)
+  apply_rec sigma 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 
 let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
   let (sigma, j) = judge_of_apply env sigma funj argjv in
