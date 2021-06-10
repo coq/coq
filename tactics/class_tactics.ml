@@ -552,6 +552,8 @@ module Search = struct
     match fst e, fst e' with
     | ReachedLimitEx, _ -> e
     | _, ReachedLimitEx -> e'
+    | StuckClass,_ -> e
+    | _, StuckClass -> e'
     | _, _ -> e
 
   (** Determine if backtracking is needed for this goal.
