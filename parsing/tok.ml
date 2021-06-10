@@ -54,9 +54,11 @@ let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
   let streq s1 s2 = match s1, s2 with None, None -> true
     | Some s1, Some s2 -> string_equal s1 s2 | _ -> false in
   match t1, t2 with
-  | PKEYWORD s1, PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
-  | PPATTERNIDENT s1, PPATTERNIDENT s2 when streq s1 s2 -> Some Util.Refl
   | PIDENT s1, PIDENT s2 when streq s1 s2 -> Some Util.Refl
+  | PKEYWORD s1, PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
+  | PIDENT (Some s1), PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
+  | PKEYWORD s1, PIDENT (Some s2) when string_equal s1 s2 -> Some Util.Refl
+  | PPATTERNIDENT s1, PPATTERNIDENT s2 when streq s1 s2 -> Some Util.Refl
   | PFIELD s1, PFIELD s2 when streq s1 s2 -> Some Util.Refl
   | PNUMBER None, PNUMBER None -> Some Util.Refl
   | PNUMBER (Some n1), PNUMBER (Some n2) when NumTok.Unsigned.equal n1 n2 -> Some Util.Refl
@@ -80,6 +82,24 @@ let equal t1 t2 = match t1, t2 with
 | EOI, EOI -> true
 | QUOTATION(s1,t1), QUOTATION(s2,t2) -> string_equal s1 s2 && string_equal t1 t2
 | _ -> false
+
+let token_text : type c. c p -> string = function
+  | PKEYWORD t -> "'" ^ t ^ "'"
+  | PIDENT None -> "identifier"
+  | PIDENT (Some t) -> "'" ^ t ^ "'"
+  | PNUMBER None -> "number"
+  | PNUMBER (Some n) -> "'" ^ NumTok.Unsigned.sprint n ^ "'"
+  | PSTRING None -> "string"
+  | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
+  | PLEFTQMARK -> "LEFTQMARK"
+  | PEOI -> "end of input"
+  | PPATTERNIDENT None -> "PATTERNIDENT"
+  | PPATTERNIDENT (Some s) -> "PATTERNIDENT \"" ^ s ^ "\""
+  | PFIELD None -> "FIELD"
+  | PFIELD (Some s) -> "FIELD \"" ^ s ^ "\""
+  | PBULLET None -> "BULLET"
+  | PBULLET (Some s) -> "BULLET \"" ^ s ^ "\""
+  | PQUOTATION lbl -> "QUOTATION \"" ^ lbl ^ "\""
 
 let extract_string diff_mode = function
   | KEYWORD s -> s

@@ -798,34 +798,6 @@ let next_token ~diff_mode loc s =
 
 (** {6 The lexer of Coq} *)
 
-(** Note: removing a token.
-   We do nothing because [remove_token] is called only when removing a grammar
-   rule with [Grammar.delete_rule]. The latter command is called only when
-   unfreezing the state of the grammar entries (see GRAMMAR summary, file
-   env/metasyntax.ml). Therefore, instead of removing tokens one by one,
-   we unfreeze the state of the lexer. This restores the behaviour of the
-   lexer. B.B. *)
-
-(** Names of tokens, for this lexer, used in Grammar error messages *)
-
-let token_text : type c. c Tok.p -> string = function
-  | PKEYWORD t -> "'" ^ t ^ "'"
-  | PIDENT None -> "identifier"
-  | PIDENT (Some t) -> "'" ^ t ^ "'"
-  | PNUMBER None -> "number"
-  | PNUMBER (Some n) -> "'" ^ NumTok.Unsigned.sprint n ^ "'"
-  | PSTRING None -> "string"
-  | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
-  | PLEFTQMARK -> "LEFTQMARK"
-  | PEOI -> "end of input"
-  | PPATTERNIDENT None -> "PATTERNIDENT"
-  | PPATTERNIDENT (Some s) -> "PATTERNIDENT \"" ^ s ^ "\""
-  | PFIELD None -> "FIELD"
-  | PFIELD (Some s) -> "FIELD \"" ^ s ^ "\""
-  | PBULLET None -> "BULLET"
-  | PBULLET (Some s) -> "BULLET \"" ^ s ^ "\""
-  | PQUOTATION lbl -> "QUOTATION \"" ^ lbl ^ "\""
-
 let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
   let cur_loc = ref loc in
   LStream.from ~loc
@@ -844,9 +816,14 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
     | PKEYWORD s -> add_keyword ~quotation:NoQuotation s
     | PQUOTATION s -> add_keyword ~quotation:Quotation s
     | _ -> ()
-  let tok_removing = (fun _ -> ())
+  let tok_removing : type c. c pattern -> unit = function
+    (* Normally useless because backtracking relies on state freezing *)
+    (* Nevertheless consistent with tok_using *)
+    | PKEYWORD s -> remove_keyword s
+    | PQUOTATION s -> remove_keyword s
+    | _ -> ()
   let tok_match = Tok.match_pattern
-  let tok_text = token_text
+  let tok_text = Tok.token_text
 
   (* The state of the lexer visible from outside *)
   module State = struct

@@ -31,8 +31,6 @@ module type S = sig
     val comments : t -> ((int * int) * string) list
   end
 
-  val tokens : string -> (string option * int) list
-
   module Entry : sig
     type 'a t
     val make : string -> 'a t
