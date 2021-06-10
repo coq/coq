@@ -199,28 +199,6 @@ let parse_string f ?loc x =
   let strm = Stream.of_string x in
   Entry.parse f (Parsable.make ?loc strm)
 
-(* universes not used by Coq build but still used by some plugins *)
-type gram_universe = string
-
-let utables : (string, unit) Hashtbl.t =
-  Hashtbl.create 97
-
-let create_universe u =
-  let () = Hashtbl.add utables u () in
-  u
-
-let uprim   = create_universe "prim" [@@deprecated "Deprecated in 8.13"]
-let uconstr = create_universe "constr" [@@deprecated "Deprecated in 8.13"]
-let utactic = create_universe "tactic" [@@deprecated "Deprecated in 8.13"]
-
-let get_univ u =
-  if Hashtbl.mem utables u then u
-  else raise Not_found
-
-let new_entry _ s =
-  let e = Entry.make s in
-  e
-
 module GrammarObj =
 struct
   type ('r, _, _) obj = 'r Entry.t
@@ -252,11 +230,7 @@ let create_generic_entry2 (type a) s (etyp : a raw_abstract_argument_type) : a E
   let () = Grammar.register0 t e in
   e
 
-let create_generic_entry (type a) _ s (etyp : a raw_abstract_argument_type) : a Entry.t =
-  create_generic_entry2 s etyp
-
 (* Initial grammar entries *)
-
 module Prim =
   struct
 
