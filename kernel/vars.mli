@@ -102,6 +102,8 @@ val substl_decl : substl -> Constr.rel_declaration -> Constr.rel_declaration
 (** [subst1_decl a Ω] is a short-hand for [substnl_decl [a] 0 Ω] *)
 val subst1_decl : constr -> Constr.rel_declaration -> Constr.rel_declaration
 
+val esubst : (int -> 'a -> constr) -> 'a Esubst.subs -> constr -> constr
+
 (** [replace_vars k [(id₁,c₁);...;(idn,cn)] t] substitutes [Var idj] by
     [cj] in [t]. *)
 val replace_vars : (Id.t * constr) list -> constr -> constr

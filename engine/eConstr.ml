@@ -729,6 +729,10 @@ let subst_of_rel_context_instance ctx subst =
   cast_list (sym unsafe_eq)
     (Vars.subst_of_rel_context_instance (cast_rel_context unsafe_eq ctx) (cast_list unsafe_eq subst))
 
+let esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t =
+match unsafe_eq with
+| Refl -> Vars.esubst
+
 end
 
 let rec isArity sigma c =

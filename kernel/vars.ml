@@ -151,6 +151,19 @@ let substnl_decl laml k r = RelDecl.map_constr (fun c -> substnl laml k c) r
 let substl_decl laml r = RelDecl.map_constr (fun c -> substnl laml 0 c) r
 let subst1_decl lam r = RelDecl.map_constr (fun c -> subst1 lam c) r
 
+let esubst mk subst c =
+  let rec esubst subst c = match Constr.kind c with
+  | Constr.Rel i ->
+    let open Esubst in
+    begin match expand_rel i subst with
+    | Util.Inl (k, v) -> mk k v
+    | Util.Inr (m, _) -> Constr.mkRel m
+    end
+  | _ ->
+    Constr.map_with_binders Esubst.subs_lift esubst subst c
+  in
+  if Esubst.is_subs_id subst then c else esubst subst c
+
 (* Build a substitution from an instance, inserting missing let-ins *)
 
 let subst_of_rel_context_instance sign l =
