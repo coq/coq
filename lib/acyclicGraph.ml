@@ -376,6 +376,7 @@ module Make (Point:Point) = struct
     let ltle =
       let fold acc n =
         let fold u strict acc =
+          let u = (repr g u).canon in
           match PMap.find u acc with
           | true -> acc
           | false -> if strict then PMap.add u true acc else acc
@@ -385,9 +386,11 @@ module Make (Point:Point) = struct
       in
       match to_merge with
       | [] -> assert false
-      | hd :: tl -> List.fold_left fold hd.ltle tl
+      | hd :: tl ->
+        let hd, _ = clean_ltle g hd.ltle in
+        (* All keys in the result are canonical *)
+        List.fold_left fold hd tl
     in
-    let ltle, _ = clean_ltle g ltle in
     let fold accu a =
       match PMap.find a.canon ltle with
       | true ->
