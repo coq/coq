@@ -1847,7 +1847,13 @@ end = struct
     *)
     let pe, ubind =
       if i > 0 && not (CList.is_empty compute_guard)
-      then Internal.map_entry_type pe ~f:(fun _ -> Some typ), UnivNames.empty_binders
+      then
+        let typ =
+          UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None)
+            (UState.subst uctx)
+            typ
+        in
+        Internal.map_entry_type pe ~f:(fun _ -> Some typ), UnivNames.empty_binders
       else pe, UState.universe_binders uctx
     in
     (* We when compute_guard was [] in the previous step we should not
