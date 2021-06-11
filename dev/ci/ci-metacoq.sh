@@ -11,6 +11,6 @@ export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/metacoq"
   ./configure.sh local
   make .merlin
-  make ci-local
+  make ci-local-noclean
   make install
 )
