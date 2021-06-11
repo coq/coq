@@ -617,6 +617,7 @@ module Search = struct
               Printer.pr_econstr_env env evd y
             | ReachedLimitEx -> str "Proof-search reached its limit."
             | NoApplicableEx -> str "Proof-search failed."
+            | StuckClass -> str "Proof-search got stuck on a hint mode."
             | e -> CErrors.iprint ie
           in
           Feedback.msg_debug (header ++ str " failed with: " ++ msg)
