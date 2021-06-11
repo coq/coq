@@ -215,8 +215,8 @@ if [[ $ZULIP_BENCH_BOT ]]; then
     pr_num=${pr_full%%:*}
     pr_msg=${pr_full#*:}
     zulip_header="Bench at $CI_JOB_URL
-For packages $coq_opam_packages
 Testing [$pr_msg](https://github.com/coq/coq/pull/$pr_num)
+On packages $coq_opam_packages
 "
 
     # 24008 is the "github notifications" stream
