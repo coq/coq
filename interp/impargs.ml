@@ -22,7 +22,19 @@ open EConstr
 open Reductionops
 open Constrexpr
 
-let whd_all_by_need = Reductionops.clos_whd_flags CClosure.all
+let whd_prod env sigma typ =
+  let open CClosure in
+  let evars ev = safe_evar_value sigma ev in
+  let infos = create_clos_infos ~univs:(Evd.universes sigma) ~evars CClosure.all env in
+  let tab = create_tab () in
+  let typ = inject (EConstr.Unsafe.to_constr typ) in
+  let typ, stk = whd_stack infos tab typ [] in
+  match fterm_of typ with
+  | FProd (na, c1, c2, e) ->
+    let c1 = EConstr.of_constr @@ term_of_fconstr c1 in
+    let c2 = EConstr.of_constr @@ term_of_fconstr (mk_clos (Esubst.subs_lift e) c2) in
+    Some (na, c1, c2)
+  | _ -> None
 
 module NamedDecl = Context.Named.Declaration
 
@@ -200,7 +212,7 @@ let is_reversible_pattern sigma bound depth f l =
 (* Precondition: rels in env are for inductive types only *)
 let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc =
   let rec frec rig (env,depth as ed) c =
-    let hd = if strict then whd_all_by_need env sigma c else c in
+    let hd = if strict then Reductionops.clos_whd_flags CClosure.all env sigma c else c in
     let c = if strongly_strict then hd else c in
     match kind sigma hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
@@ -241,39 +253,34 @@ let rec is_rigid_head sigma t = match kind sigma t with
 
 let is_rigid env sigma t =
   let open Context.Rel.Declaration in
-  let t = whd_all_by_need env sigma t in
-  match kind sigma t with
-  | Prod (na,a,b) ->
+  match whd_prod env sigma t with
+  | Some (na,a,b) ->
      let (_,t) = splay_prod (push_rel (LocalAssum (na,a)) env) sigma b in
      is_rigid_head sigma t
   | _ -> true
 
 let compute_implicits_names env sigma t =
   let open Context.Rel.Declaration in
-  let rec aux env names t =
-    let t = whd_all_by_need env sigma t in
-    match kind sigma t with
-    | Prod (na,a,b) ->
-       aux (push_rel (LocalAssum (na,a)) env) (na.Context.binder_name::names) b
-    | _ -> List.rev names
+  let rec aux env names t = match whd_prod env sigma t with
+  | Some (na, a, b) ->
+    aux (push_rel (LocalAssum (na,a)) env) (na.Context.binder_name::names) b
+  | None -> List.rev names
   in aux env [] t
 
 let compute_implicits_explanation_gen strict strongly_strict revpat contextual env sigma t =
   let open Context.Rel.Declaration in
-  let rec aux env n t =
-    let t = whd_all_by_need env sigma t in
-    match kind sigma t with
-    | Prod (na,a,b) ->
-       add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1))
-         (aux (push_rel (LocalAssum (na,a)) env) (n+1) b)
-    | _ ->
-       let v = Array.make n None in
-       if contextual then
-         add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
-       else v
+  let rec aux env n t = match whd_prod env sigma t with
+  | Some (na, a, b) ->
+    add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1))
+      (aux (push_rel (LocalAssum (na,a)) env) (n+1) b)
+  | _ ->
+    let v = Array.make n None in
+    if contextual then
+      add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
+    else v
   in
-  match kind sigma (whd_all_by_need env sigma t) with
-  | Prod (na,a,b) ->
+  match whd_prod env sigma t with
+  | Some (na, a, b) ->
      let v = aux (push_rel (LocalAssum (na,a)) env) 1 b in
      Array.to_list v
   | _ -> []
