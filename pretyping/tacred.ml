@@ -1229,19 +1229,20 @@ let compute = cbv_betadeltaiota
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
  * the specified occurrences. *)
 
-let abstract_scheme env sigma (locc,a) (c, sigma) =
+let abstract_scheme env (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
+  let sigma, ta = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma ta in
   let na = named_hd env sigma ta Anonymous in
   let na = make_annot na Sorts.Relevant in (* TODO relevance *)
   if occur_meta sigma ta then user_err Pp.(str "Cannot find a type for the generalisation.");
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma
   else
-    let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
-      mkLambda (na,ta,c'), sigma'
+    let c', sigma = subst_closed_term_occ env sigma (AtOccs locc) a c in
+      mkLambda (na,ta,c'), sigma
 
 let pattern_occs loccs_trm = begin fun env sigma c ->
-  let abstr_trm, sigma = List.fold_right (abstract_scheme env sigma) loccs_trm (c,sigma) in
+  let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (c,sigma) in
   try
     let sigma, _ = Typing.type_of env sigma abstr_trm in
     (sigma, applist(abstr_trm, List.map snd loccs_trm))
