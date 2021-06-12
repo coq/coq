@@ -1685,12 +1685,13 @@ End Fold_Right_Recursor.
       end.
 
     Lemma split_combine : forall (l: list (A*B)),
-      let (l1,l2) := split l in combine l1 l2 = l.
+      forall l1 l2, split l = (l1, l2) -> combine l1 l2 = l.
     Proof.
       intro l; induction l as [|a l IHl].
       simpl; auto.
-      destruct a; simpl.
+      all: intuition; inversion H; auto.
       destruct (split l); simpl in *.
+      inversion H1; subst; simpl.
       f_equal; auto.
     Qed.
 
