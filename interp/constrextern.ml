@@ -97,7 +97,11 @@ let is_reserved_type na t =
 (* Turning notations and scopes on and off for printing *)
 module IRuleSet = Set.Make(struct
     type t = interp_rule
-    let compare x y = compare x y
+    let compare x y = match x, y with
+      | SynDefRule kn, SynDefRule kn' -> KerName.compare kn kn'
+      | NotationRule (scope,ntn), NotationRule (scope',ntn') -> compare x y
+      | SynDefRule _, NotationRule _ -> -1
+      | NotationRule _, SynDefRule _ -> 1
   end)
 
 let inactive_notations_table =
