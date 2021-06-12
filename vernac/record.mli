@@ -28,6 +28,7 @@ val definition_structure
   :  cumul_univ_decl_expr option
   -> inductive_kind
   -> template:bool option
+  -> namespace:Attributes.inductive_namespace
   -> cumulative:bool
   -> poly:bool
   -> primitive_proj:bool

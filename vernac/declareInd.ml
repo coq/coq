@@ -20,45 +20,50 @@ let declare_inductive_argument_scopes kn mie =
     done) mie.mind_entry_inds
 
 type inductive_obj = {
-  ind_names : (Id.t * Id.t list) list
+  namespace : Attributes.inductive_namespace;
+  ind_names : (Id.t * Id.t list) list;
   (* For each block, name of the type + name of constructors *)
 }
 
 let inductive_names sp kn obj =
-  let (dp,_) = Libnames.repr_path sp in
+  let (dp,id) = Libnames.repr_path sp in
   let kn = Global.mind_of_delta_kn kn in
   let names, _ =
     List.fold_left
       (fun (names, n) (typename, consnames) ->
          let ind_p = (kn,n) in
+         let proper_dp = Libnames.add_dirpath_suffix dp typename in
          let names, _ =
            List.fold_left
              (fun (names, p) l ->
-                let sp =
-                  Libnames.make_path dp l
+                let ref = GlobRef.ConstructRef (ind_p,p) in
+                let cnames = Attributes.(match obj.namespace with
+                  | Proper -> [1, Libnames.make_path proper_dp l, ref]
+                  | Flat -> [0, Libnames.make_path dp l, ref]
+                  | Both -> [1, Libnames.make_path proper_dp l, ref; 0, Libnames.make_path dp l, ref])
                 in
-                  ((sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
+                  (cnames @ names, p+1))
              (names, 1) consnames in
          let sp = Libnames.make_path dp typename
          in
-           ((sp, GlobRef.IndRef ind_p) :: names, n+1))
+           ((0, sp, GlobRef.IndRef ind_p) :: names, n+1))
       ([], 0) obj.ind_names
   in names
 
 let load_inductive i ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
+  List.iter (fun (k, sp, ref) -> Nametab.push (Nametab.Until (i+k)) sp ref ) names
 
 let open_inductive f i ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) ->
+  List.iter (fun (k, sp, ref) ->
       if Libobject.in_filter_ref ref f then
-        Nametab.push (Nametab.Exactly i) sp ref)
+        Nametab.push (Nametab.Exactly (i+k)) sp ref)
     names
 
 let cache_inductive ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
+  List.iter (fun (k, sp, ref) -> Nametab.push (Nametab.Until (1+k)) sp ref) names
 
 let discharge_inductive ((sp, kn), names) =
   Some names
@@ -104,7 +109,7 @@ let is_unsafe_typing_flags () =
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 (* for initial declaration *)
-let declare_mind ?typing_flags mie =
+let declare_mind ~namespace ?typing_flags mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> CErrors.anomaly (Pp.str "cannot declare an empty list of inductives.") in
@@ -114,7 +119,7 @@ let declare_mind ?typing_flags mie =
       Declare.check_exists typ;
       List.iter Declare.check_exists cons) names;
   let _kn' = Global.add_mind ?typing_flags id mie in
-  let (sp,kn as oname) = Lib.add_leaf id (inInductive { ind_names = names }) in
+  let (sp,kn as oname) = Lib.add_leaf id (inInductive { namespace; ind_names = names }) in
   if is_unsafe_typing_flags() then feedback_axiom ();
   let mind = Global.mind_of_delta_kn kn in
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
@@ -154,7 +159,7 @@ type one_inductive_impls =
   Impargs.manual_implicits (* for inds *) *
   Impargs.manual_implicits list (* for constrs *)
 
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags mie ubinders impls =
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ~namespace mie ubinders impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -166,7 +171,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind ?typing_flags mie in
+  let (_, kn), prim = declare_mind ~namespace ?typing_flags mie in
   let mind = Global.mind_of_delta_kn kn in
   let is_template = match mie.mind_entry_universes with Template_ind_entry _ -> true | _ -> false in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);

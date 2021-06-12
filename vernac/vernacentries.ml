@@ -786,7 +786,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite records =
+let vernac_record ~template ~namespace udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs) =
     let idbuild = match nameopt with
     | None -> Nameops.add_prefix "Build_" name.v
@@ -812,7 +812,7 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_p
     CErrors.user_err (Pp.str "typing flags are not yet supported for records")
   | None ->
     let _ : _ list =
-      Record.definition_structure ~template udecl k ~cumulative ~poly ~primitive_proj finite records in
+      Record.definition_structure ~template ~namespace udecl k ~cumulative ~poly ~primitive_proj finite records in
     ()
 
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
@@ -880,10 +880,10 @@ let vernac_inductive ~atts kind indl =
     if List.for_all is_record indl then primitive_proj
     else Notations.return false
   in
-  let (((template, (poly, cumulative)), private_ind), typing_flags), primitive_proj =
+  let ((((namespace, template), (poly, cumulative)), private_ind), typing_flags), primitive_proj =
     Attributes.(
       parse Notations.(
-          template
+          proper_namespace ++ template
           ++ polymorphic_cumulative ~is_defclass:(Option.has_some is_defclass)
           ++ private_ind ++ typing_flags ++ prim_proj_attr)
         atts)
@@ -909,7 +909,7 @@ let vernac_inductive ~atts kind indl =
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
-    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags ~primitive_proj
+    vernac_record ~template ~namespace udecl ~cumulative (Class true) ~poly ?typing_flags ~primitive_proj
       finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
@@ -935,7 +935,7 @@ let vernac_inductive ~atts kind indl =
     in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl
+    vernac_record ~template udecl ~namespace ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
@@ -959,7 +959,7 @@ let vernac_inductive ~atts kind indl =
     in
     let indl = List.map unpack indl in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
+    ComInductive.do_mutual_inductive ~template ~namespace udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 

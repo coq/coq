@@ -63,6 +63,9 @@ val hint_locality : default:(unit -> Hints.hint_locality) -> Hints.hint_locality
 (** With the warning for Hint (and not for Instance etc) *)
 val really_hint_locality : Hints.hint_locality attribute
 
+type inductive_namespace = Proper | Flat | Both
+val proper_namespace : inductive_namespace attribute
+
 (** Enable/Disable universe checking *)
 val typing_flags : Declarations.typing_flags option attribute
 

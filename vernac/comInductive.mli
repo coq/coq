@@ -22,6 +22,7 @@ type uniform_inductive_flag =
 
 val do_mutual_inductive
   :  template:bool option
+  -> namespace:Attributes.inductive_namespace
   -> cumul_univ_decl_expr option
   -> (one_inductive_expr * decl_notation list) list
   -> cumulative:bool

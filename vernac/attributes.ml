@@ -275,6 +275,14 @@ let template =
   qualify_attribute ukey
     (bool_attribute ~name:"template")
 
+type inductive_namespace = Proper | Flat | Both
+
+let proper_namespace =
+  let values = ["proper", Proper; "flat", Flat; "both", Both] in
+  fun attrs -> match key_value_attribute ~key:"namespace" ~default:None ~values attrs with
+  | extra, None -> extra, Both
+  | extra, Some b -> extra, b
+
 let deprecation_parser : Deprecation.t key_parser = fun orig args ->
   assert_once ~name:"deprecation" orig;
   match args with
