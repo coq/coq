@@ -1177,18 +1177,18 @@ let bindings_set_1 = [
 (* {{{ parenteses *)
  ["\\laquo"                                          ], "«", [delimiter] ;
  ["\\raquo"                                          ], "»", [delimiter] ;
- ["\\lang"; "\\langle"; "\\LeftAngleBracket"           ], "〈", [delimiter] ;
- ["\\rang"; "\\rangle"; "\\RightAngleBracket"          ], "〉", [delimiter] ;
+ ["\\lang"; "\\langle"; "\\LeftAngleBracket"           ], "⟨", [delimiter] ;
+ ["\\rang"; "\\rangle"; "\\RightAngleBracket"          ], "⟩", [delimiter] ;
  ["\\lmoust"; "\\lmoustache"                          ], "⎰", [delimiter] ;
  ["\\rmoust"; "\\rmoustache"                          ], "⎱", [delimiter] ;
- ["\\Lang"                                           ], "《", [delimiter] ;
- ["\\Rang"                                           ], "》", [delimiter] ;
- ["\\lbbrk"                                          ], "〔", [delimiter] ;
- ["\\rbbrk"                                          ], "〕", [delimiter] ;
- ["\\lopar"                                          ], "〘", [delimiter] ;
- ["\\ropar"                                          ], "〙", [delimiter] ;
- ["\\lobrk"; "\\LeftDoubleBracket"                    ], "〚", [delimiter] ;
- ["\\robrk"; "\\RightDoubleBracket"                   ], "〛", [delimiter] ;
+ ["\\Lang"                                           ], "⟪", [delimiter] ;
+ ["\\Rang"                                           ], "⟫", [delimiter] ;
+ ["\\lbbrk"                                          ], "⦗", [delimiter] ;
+ ["\\rbbrk"                                          ], "⦘", [delimiter] ;
+ ["\\lopar"                                          ], "⦅", [delimiter] ;
+ ["\\ropar"                                          ], "⦆", [delimiter] ;
+ ["\\lobrk"; "\\LeftDoubleBracket"                    ], "⟦", [delimiter] ;
+ ["\\robrk"; "\\RightDoubleBracket"                   ], "⟧", [delimiter] ;
 (* }}} *)
 
 (* {{{ Missing font *)
