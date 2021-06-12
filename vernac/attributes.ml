@@ -141,8 +141,7 @@ let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option
                     str "use one of " ++ pr_possible_values ~values)
             | value -> value
           end
-        | VernacFlagEmpty ->
-          default
+        | VernacFlagEmpty when Option.has_some default -> Option.get default (* compatibility case *)
         | err ->
           CErrors.user_err
             Pp.(str "Invalid syntax " ++ pr_vernac_flag (key, err) ++ str ", try "
@@ -153,7 +152,7 @@ let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option
 
 let bool_attribute ~name : bool option attribute =
   let values = ["yes", true; "no", false] in
-  key_value_attribute ~key:name ~default:true ~values
+  key_value_attribute ~key:name ~default:(Some true) ~values
 
 (* Variant of the [bool] attribute with only two values (bool has three). *)
 let get_bool_value ~key ~default =
