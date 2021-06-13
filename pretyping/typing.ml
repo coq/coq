@@ -62,19 +62,19 @@ let assumption_of_judgment env sigma j =
 let judge_of_apply env sigma funj argjv =
   let rec apply_rec sigma n subs typ = function
   | [] ->
-    let typ = Vars.esubst Vars.lift subs typ in
+    let typ = Vars.esubst Vars.lift_substituend subs typ in
     sigma, { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
              uj_type = typ }
   | hj::restjl ->
     let sigma, c1, subs, c2 = match EConstr.kind sigma typ with
     | Prod (_, c1, c2) ->
       (* Fast path *)
-      let c1 = Vars.esubst Vars.lift subs c1 in
-      let subs = Esubst.subs_cons hj.uj_val subs in
+      let c1 = Vars.esubst Vars.lift_substituend subs c1 in
+      let subs = Esubst.subs_cons (Vars.make_substituend hj.uj_val) subs in
       sigma, c1, subs, c2
     | _ ->
-      let typ = Vars.esubst Vars.lift subs typ in
-      let subs = Esubst.subs_cons hj.uj_val (Esubst.subs_id 0) in
+      let typ = Vars.esubst Vars.lift_substituend subs typ in
+      let subs = Esubst.subs_cons (Vars.make_substituend hj.uj_val) (Esubst.subs_id 0) in
       match EConstr.kind sigma (whd_all env sigma typ) with
       | Prod (_, c1, c2) -> sigma, c1, subs, c2
       | Evar ev ->

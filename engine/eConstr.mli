@@ -302,6 +302,10 @@ val subst_of_rel_context_instance : rel_context -> t list -> t list
 
 val esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t
 
+type substituend
+val make_substituend : t -> substituend
+val lift_substituend : int -> substituend -> t
+
 end
 
 (** {5 Environment handling} *)

@@ -94,7 +94,7 @@ let lift = Constr.lift
 (* 1st : general case *)
 
 type info = Closed | Open | Unknown
-type 'a substituend = { mutable sinfo: info; sit: 'a }
+type substituend = { mutable sinfo: info; sit: Constr.t }
 
 let lift_substituend depth s =
   match s.sinfo with

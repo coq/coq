@@ -143,3 +143,9 @@ val univ_instantiate_constr : Instance.t -> constr univ_abstracted -> constr
 (** Ignores the constraints carried by [univ_abstracted]. *)
 
 val universes_of_constr : constr -> Univ.LSet.t
+
+(** {3 Low-level cached lift type *)
+
+type substituend
+val make_substituend : constr -> substituend
+val lift_substituend : int -> substituend -> constr
