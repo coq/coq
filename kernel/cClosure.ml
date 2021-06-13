@@ -570,6 +570,11 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref =
     in
     KeyTable.add tab ref v; v
 
+type node =
+| Closed of constr
+| Open of constr
+| Delayed of lift * fconstr
+
 (* The inverse of mk_clos: move back to constr *)
 let rec to_constr lfts v =
   match v.term with
@@ -656,6 +661,7 @@ and to_constr_case lfts ci u pms p iv c ve env =
   if is_subs_id env && is_lift_id lfts then
     mkCase (ci, u, pms, p, iv, to_constr lfts c, ve)
   else
+
     let subs = comp_subs lfts env in
     let f_ctx (nas, c) =
       let c = subst_constr (Esubst.subs_liftn (Array.length nas) subs) c in
@@ -670,14 +676,27 @@ and to_constr_case lfts ci u pms p iv c ve env =
 and subst_constr subst c = match [@ocaml.warning "-4"] Constr.kind c with
 | Rel i ->
   begin match expand_rel i subst with
-  | Inl (k, lazy v) -> Vars.lift k v
+  | Inl (k, v) ->
+    begin match !v with
+    | Closed c -> c
+    | Open c -> Vars.lift k c
+    | Delayed (el, c) ->
+      let c = to_constr el c in
+      if Vars.closed0 c then
+        let () = v := Closed c in
+        c
+      else
+        let () = v := Open c in
+        Vars.lift k c
+    end
   | Inr (m, _) -> mkRel m
   end
 | _ ->
   Constr.map_with_binders Esubst.subs_lift subst_constr subst c
 
 and comp_subs el s =
-  Esubst.lift_subst (fun el c -> lazy (to_constr el c)) el s
+  let make el c = ref (Delayed (el, c)) in
+  Esubst.lift_subst make el s
 
 (* This function defines the correspondence between constr and
    fconstr. When we find a closure whose substitution is the identity,
