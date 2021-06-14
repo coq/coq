@@ -643,11 +643,11 @@ let simple_extraction r =
 (*s (Recursive) Extraction of a library. The vernacular command is
   \verb!(Recursive) Extraction Library! [M]. *)
 
-let extraction_library is_rec m =
+let extraction_library is_rec CAst.{loc;v=m} =
   init true true;
   let dir_m =
     let q = qualid_of_ident m in
-    try Nametab.full_name_module q with Not_found -> error_unknown_module q
+    try Nametab.full_name_module q with Not_found -> error_unknown_module ?loc q
   in
   Visit.add_mp_all (MPfile dir_m);
   let env = Global.env () in
