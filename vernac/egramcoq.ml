@@ -254,10 +254,10 @@ type (_, _) entry =
 | TTBigint : ('self, string) entry
 | TTBinder : bool -> ('self, kinded_cases_pattern_expr) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
-| TTConstrList : notation_entry * prod_info * string Tok.p list * 'r target -> ('r, 'r list) entry
+| TTConstrList : notation_entry * prod_info * (bool * string) list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
 | TTOpenBinderList : ('self, local_binder_expr list) entry
-| TTClosedBinderList : string Tok.p list -> ('self, local_binder_expr list list) entry
+| TTClosedBinderList : (bool * string) list -> ('self, local_binder_expr list list) entry
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
@@ -328,12 +328,11 @@ let is_binder_level custom (custom',from) e = match e with
   custom = InConstrEntry && custom' = InConstrEntry && from = 200
 | _ -> false
 
-let make_sep_rules = function
-  | [tk] ->
-    Pcoq.Symbol.token tk
-  | tkl ->
-    let r = Pcoq.mk_rule (List.rev tkl) in
-    Pcoq.Symbol.rules [r]
+let make_pattern (keyword,s) =
+   TPattern (if keyword then Tok.PKEYWORD s else Tok.PIDENT (Some s))
+
+let make_sep_rules tkl =
+  Pcoq.Symbol.tokens (List.map make_pattern tkl)
 
 type ('s, 'a) mayrec_symbol =
 | MayRecNo : ('s, Gramlib.Grammar.norec, 'a) Symbol.t -> ('s, 'a) mayrec_symbol
@@ -437,7 +436,7 @@ match e with
 | TTConstrList _ -> { subst with constrlists = v :: subst.constrlists }
 
 type (_, _) ty_symbol =
-| TyTerm : string Tok.p -> ('s, string) ty_symbol
+| TyTerm : 'a Tok.p -> ('s, 'a) ty_symbol
 | TyNonTerm : 's target * ('s, 'a) entry * ('s, 'a) mayrec_symbol * bool -> ('s, 'a) ty_symbol
 
 type ('self, _, 'r) ty_rule =
@@ -499,9 +498,10 @@ type ('self, 'r) any_ty_rule =
 let make_ty_rule assoc from forpat prods =
   let rec make_ty_rule = function
   | [] -> AnyTyRule TyStop
-  | GramConstrTerminal tok :: rem ->
+  | GramConstrTerminal (kw,s) :: rem ->
     let AnyTyRule r = make_ty_rule rem in
-    AnyTyRule (TyNext (r, TyTerm tok))
+    let TPattern tk = make_pattern (kw,s) in
+    AnyTyRule (TyNext (r, TyTerm tk))
   | GramConstrNonTerminal (e, var) :: rem ->
     let AnyTyRule r = make_ty_rule rem in
     let TTAny e = interp_entry forpat e in

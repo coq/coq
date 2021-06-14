@@ -213,3 +213,12 @@ Notation "6 ?" := false (at level 0, format "6 ?").
 Check 6.
 
 End TreeLikeLookAhead.
+
+Module FactorizationListSeparators.
+
+Notation "[ a + + .. + + c | d ]" := (cons a .. (cons c d) ..) (a at level 10).
+Notation "[ a + + .. + + c ]" := (cons a .. (cons c nil) ..) (a at level 10).
+Check [0 + + 1 | nil].
+Check [0 + + 1].
+
+End FactorizationListSeparators.

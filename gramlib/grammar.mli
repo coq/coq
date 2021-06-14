@@ -24,6 +24,7 @@ type mayrec
 module type S = sig
   type te
   type 'c pattern
+  type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
   module Parsable : sig
     type t
@@ -51,16 +52,17 @@ module type S = sig
     val nterml : 'a Entry.t -> string -> ('self, norec, 'a) t
     val list0 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
     val list0sep :
-      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
       ('self, 'trec, 'a list) t
     val list1 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
     val list1sep :
-      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
       ('self, 'trec, 'a list) t
     val opt : ('self, 'trec, 'a) t -> ('self, 'trec, 'a option) t
     val self : ('self, mayrec, 'self) t
     val next : ('self, mayrec, 'self) t
     val token : 'c pattern -> ('self, norec, 'c) t
+    val tokens : ty_pattern list -> ('self, norec, unit) t
     val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
   end and Rule : sig
@@ -97,8 +99,6 @@ module type S = sig
     (** Create a level at the given position. *)
 
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
-
-  val mk_rule : 'a pattern list -> string Rules.t
 
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option

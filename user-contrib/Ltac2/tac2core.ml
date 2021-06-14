@@ -1672,7 +1672,7 @@ let () = add_scope "list0" begin function
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr {v=str}] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let sep = Pcoq.Symbol.token (CLexer.terminal str) in
+  let sep = Pcoq.Symbol.tokens [Pcoq.TPattern (CLexer.terminal str)] in
   let scope = Pcoq.Symbol.list0sep scope sep false in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
@@ -1687,7 +1687,7 @@ let () = add_scope "list1" begin function
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr {v=str}] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let sep = Pcoq.Symbol.token (CLexer.terminal str) in
+  let sep = Pcoq.Symbol.tokens [Pcoq.TPattern (CLexer.terminal str)] in
   let scope = Pcoq.Symbol.list1sep scope sep false in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)

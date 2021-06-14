@@ -14,6 +14,7 @@ type mayrec
 module type S = sig
   type te
   type 'c pattern
+  type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
   module Parsable : sig
     type t
@@ -41,16 +42,17 @@ module type S = sig
     val nterml : 'a Entry.t -> string -> ('self, norec, 'a) t
     val list0 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
     val list0sep :
-      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
       ('self, 'trec, 'a list) t
     val list1 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
     val list1sep :
-      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
       ('self, 'trec, 'a list) t
     val opt : ('self, 'trec, 'a) t -> ('self, 'trec, 'a option) t
     val self : ('self, mayrec, 'self) t
     val next : ('self, mayrec, 'self) t
     val token : 'c pattern -> ('self, norec, 'c) t
+    val tokens : ty_pattern list -> ('self, norec, unit) t
     val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
   end and Rule : sig
@@ -86,8 +88,6 @@ module type S = sig
 
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
 
-  val mk_rule : 'a pattern list -> string Rules.t
-
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
 
@@ -112,6 +112,7 @@ module GMake (L : Plexing.S) = struct
 
 type te = L.te
 type 'c pattern = 'c L.pattern
+type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
 type 'a parser_t = L.te LStream.t -> 'a
 
@@ -153,10 +154,11 @@ and ('trecs, 'trecp, 'a) ty_rec_level = {
 
 and ('self, 'trec, 'a) ty_symbol =
 | Stoken : 'c pattern -> ('self, norec, 'c) ty_symbol
+| Stokens : ty_pattern list -> ('self, norec, unit) ty_symbol
 | Slist1 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-| Slist1sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
+| Slist1sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, unit) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
 | Slist0 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-| Slist0sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
+| Slist0sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, unit) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
 | Sopt : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a option) ty_symbol
 | Sself : ('self, mayrec, 'self) ty_symbol
 | Snext : ('self, mayrec, 'self) ty_symbol
@@ -198,6 +200,7 @@ let rec derive_eps : type s r a. (s, r, a) ty_symbol -> bool =
   | Snext -> false
   | Sself -> false
   | Stoken _ -> false
+  | Stokens _ -> false
 and tree_derive_eps : type s tr a. (s, tr, a) ty_tree -> bool =
   function
     LocAct (_, _) -> true
@@ -209,6 +212,10 @@ and tree_derive_eps : type s tr a. (s, tr, a) ty_tree -> bool =
 let eq_entry : type a1 a2. a1 ty_entry -> a2 ty_entry -> (a1, a2) eq option = fun e1 e2 ->
   if (Obj.magic e1) == (Obj.magic e2) then Some (Obj.magic Refl)
   else None
+
+let tok_pattern_eq_list pl1 pl2 =
+  let f (TPattern p1) (TPattern p2) = Option.has_some (L.tok_pattern_eq p1 p2) in
+  if List.for_all2eq f pl1 pl2 then Some Refl else None
 
 let rec eq_symbol : type s r1 r2 a1 a2. (s, r1, a1) ty_symbol -> (s, r2, a2) ty_symbol -> (a1, a2) eq option = fun s1 s2 ->
   match s1, s2 with
@@ -241,6 +248,7 @@ let rec eq_symbol : type s r1 r2 a1 a2. (s, r1, a1) ty_symbol -> (s, r2, a2) ty_
   | Sself, Sself -> Some Refl
   | Snext, Snext -> Some Refl
   | Stoken p1, Stoken p2 -> L.tok_pattern_eq p1 p2
+  | Stokens pl1, Stokens pl2 -> tok_pattern_eq_list pl1 pl2
   | _ -> None
 
 let is_before : type s1 s2 r1 r2 a1 a2. (s1, r1, a1) ty_symbol -> (s2, r2, a2) ty_symbol -> bool = fun s1 s2 ->
@@ -451,6 +459,7 @@ let srules (type self a) (rl : a ty_rules list) : (self, norec, a) ty_symbol =
   and retype_symbol : type s a. (s, norec, a) ty_symbol -> (self, norec, a) ty_symbol =
     function
     | Stoken p -> Stoken p
+    | Stokens l -> Stokens l
     | Slist1 s -> Slist1 (retype_symbol s)
     | Slist1sep (s, sep, b) -> Slist1sep (retype_symbol s, retype_symbol sep, b)
     | Slist0 s -> Slist0 (retype_symbol s)
@@ -570,6 +579,15 @@ let rec change_to_self : type s trec a r. s ty_entry -> (s, trec, a, r) ty_rule 
   let MayRecSymbol t = change_to_self0 e t in
   MayRecRule (TNext (MayRec2, r, t))
 
+let insert_token gram tok =
+  L.tok_using tok;
+  let r =
+    let tok = L.tok_pattern_strings tok in
+    try Hashtbl.find gram.gtokens tok with
+      Not_found -> let r = ref 0 in Hashtbl.add gram.gtokens tok r; r
+  in
+  incr r
+
 let insert_tokens gram symbols =
   let rec insert : type s trec a. (s, trec, a) ty_symbol -> unit =
     function
@@ -579,14 +597,9 @@ let insert_tokens gram symbols =
     | Slist1sep (s, t, _) -> insert s; insert t
     | Sopt s -> insert s
     | Stree t -> tinsert t
-    | Stoken tok ->
-        L.tok_using tok;
-        let r =
-          let tok = L.tok_pattern_strings tok in
-          try Hashtbl.find gram.gtokens tok with
-            Not_found -> let r = ref 0 in Hashtbl.add gram.gtokens tok r; r
-        in
-        incr r
+    | Stoken tok -> insert_token gram tok
+    | Stokens (TPattern tok::_) -> insert_token gram tok (* Only the first token is liable to trigger a keyword effect *)
+    | Stokens [] -> assert false
     | Snterm _ -> () | Snterml (_, _) -> ()
     | Snext -> ()
     | Sself -> ()
@@ -654,6 +667,7 @@ let logically_eq_symbols entry =
     | Sopt s1, Sopt s2 -> eq_symbols s1 s2
     | Stree t1, Stree t2 -> eq_trees t1 t2
     | Stoken p1, Stoken p2 -> L.tok_pattern_eq p1 p2 <> None
+    | Stokens pl1, Stokens pl2 -> tok_pattern_eq_list pl1 pl2 <> None
     | Sself, Sself -> true
     | Snext, Snext -> true
     | _ -> false
@@ -719,17 +733,21 @@ let delete_rule_in_tree entry =
   in
   delete_in_tree
 
+let decr_keyw_use_in_token gram tok =
+  let tok' = L.tok_pattern_strings tok in
+  let r = Hashtbl.find gram.gtokens tok' in
+  decr r;
+  if !r == 0 then
+    begin
+      Hashtbl.remove gram.gtokens tok';
+      L.tok_removing tok
+    end
+
 let rec decr_keyw_use : type s tr a. _ -> (s, tr, a) ty_symbol -> unit = fun gram ->
   function
-    Stoken tok ->
-      let tok' = L.tok_pattern_strings tok in
-      let r = Hashtbl.find gram.gtokens tok' in
-      decr r;
-      if !r == 0 then
-        begin
-          Hashtbl.remove gram.gtokens tok';
-          L.tok_removing tok
-        end
+    Stoken tok -> decr_keyw_use_in_token gram tok
+  | Stokens (TPattern tok :: _) -> decr_keyw_use_in_token gram tok
+  | Stokens [] -> assert false
   | Slist0 s -> decr_keyw_use gram s
   | Slist1 s -> decr_keyw_use gram s
   | Slist0sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
@@ -844,6 +862,20 @@ let string_escaped s =
 
 let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
 
+let print_token b ppf p =
+  match L.tok_pattern_strings p with
+  | "", Some s -> print_str ppf s
+  | con, Some prm -> if b then fprintf ppf "%s@ %a" con print_str prm else fprintf ppf "(%s@ %a)" con print_str prm
+  | con, None -> fprintf ppf "%s" con
+
+let print_tokens ppf = function
+  | [] -> assert false
+  | TPattern p :: pl ->
+    fprintf ppf "[%a%a]"
+    (print_token true) p
+    (fun ppf -> List.iter (function TPattern p -> fprintf ppf ";@ "; print_token true ppf p))
+    pl
+
 let rec print_symbol : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
   fun ppf ->
   function
@@ -856,11 +888,9 @@ let rec print_symbol : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
       fprintf ppf "LIST1 %a SEP %a%s" print_symbol1 s print_symbol1 t
         (if osep then " OPT_SEP" else "")
   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
-  | Stoken p ->
-     begin match L.tok_pattern_strings p with
-     | "", Some s -> print_str ppf s
-     | con, Some prm -> fprintf ppf "%s@ %a" con print_str prm
-     | con, None -> fprintf ppf "%s" con end
+  | Stoken p -> print_token true ppf p
+  | Stokens [TPattern p] -> print_token true ppf p
+  | Stokens pl -> print_tokens ppf pl
   | Snterml (e, l) ->
       fprintf ppf "%s%s@ LEVEL@ %a" e.ename ""
         print_str l
@@ -871,11 +901,9 @@ and print_symbol1 : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
   | Snterm e -> fprintf ppf "%s%s" e.ename ""
   | Sself -> pp_print_string ppf "SELF"
   | Snext -> pp_print_string ppf "NEXT"
-  | Stoken p ->
-     begin match L.tok_pattern_strings p with
-     | "", Some s -> print_str ppf s
-     | con, None -> pp_print_string ppf con
-     | con, Some prm -> fprintf ppf "(%s@ %a)" con print_str prm end
+  | Stoken p -> print_token false ppf p
+  | Stokens [TPattern p] -> print_token false ppf p
+  | Stokens pl -> print_tokens ppf pl
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
   | s ->
       fprintf ppf "(%a)" print_symbol s
@@ -939,6 +967,7 @@ let name_of_symbol : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> string =
   | Sself -> "[" ^ entry.ename ^ "]"
   | Snext -> "[" ^ entry.ename ^ "]"
   | Stoken tok -> L.tok_text tok
+  | Stokens tokl -> String.concat " " (List.map (function TPattern tok -> L.tok_text tok) tokl)
   | Slist0 _ -> assert false
   | Slist1sep _ -> assert false
   | Slist1 _ -> assert false
@@ -1381,6 +1410,7 @@ and parser_of_symbol : type s tr a.
   | Sself -> (fun (strm__ : _ LStream.t) -> entry.estart 0 strm__)
   | Snext -> (fun (strm__ : _ LStream.t) -> entry.estart nlevn strm__)
   | Stoken tok -> parser_of_token entry tok
+  | Stokens tokl -> parser_of_tokens entry tokl
 and parser_of_token : type s a.
   s ty_entry -> a pattern -> a parser_t =
   fun entry tok ->
@@ -1389,6 +1419,17 @@ and parser_of_token : type s a.
     match LStream.peek strm with
       Some tok -> let r = f tok in LStream.junk strm; r
     | None -> raise Stream.Failure
+and parser_of_tokens : type s.
+  s ty_entry -> ty_pattern list -> unit parser_t =
+  fun entry tokl ->
+  let rec loop n = function
+  | [] -> fun strm -> for _i = 1 to n do LStream.junk strm done; ()
+  | TPattern tok :: tokl ->
+     let tematch = token_ematch tok in
+     fun strm ->
+     ignore (tematch (LStream.peek_nth n strm)); loop (n+1) tokl strm
+  in
+  loop 0 tokl
 and parse_top_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> a parser_t =
   fun entry symb ->
   parser_of_symbol entry 0 (top_symb entry symb)
@@ -1650,16 +1691,17 @@ module rec Symbol : sig
   val nterml : 'a Entry.t -> string -> ('self, norec, 'a) t
   val list0 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
   val list0sep :
-    ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+    ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
     ('self, 'trec, 'a list) t
   val list1 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
   val list1sep :
-    ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+    ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
     ('self, 'trec, 'a list) t
   val opt : ('self, 'trec, 'a) t -> ('self, 'trec, 'a option) t
   val self : ('self, mayrec, 'self) t
   val next : ('self, mayrec, 'self) t
   val token : 'c pattern -> ('self, norec, 'c) t
+  val tokens : ty_pattern list -> ('self, norec, unit) t
   val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
 end = struct
@@ -1675,6 +1717,7 @@ end = struct
   let self = Sself
   let next = Snext
   let token tok = Stoken tok
+  let tokens tokl = Stokens tokl
   let rules (t : 'a Rules.t list) = srules t
 
 end and Rule : sig
@@ -1745,6 +1788,8 @@ let rec generalize_symbol :
   function
   | Stoken tok ->
     Stoken tok
+  | Stokens tokl ->
+    Stokens tokl
   | Slist1 e ->
     Slist1 (generalize_symbol e)
   | Slist1sep (e, sep, b) ->
@@ -1791,15 +1836,5 @@ and generalize_tree : type a tr s .
 let generalize_symbol s =
   try Some (generalize_symbol s)
   with SelfSymbol -> None
-
-let rec mk_rule tok =
-  match tok with
-  | [] ->
-    let stop_e = Rule.stop in
-    TRules (stop_e, fun _ -> (* dropped anyway: *) "")
-  | tkn :: rem ->
-    let TRules (r, f) = mk_rule rem in
-    let r = Rule.next_norec r (Symbol.token tkn) in
-    TRules (r, fun _ -> f)
 
 end

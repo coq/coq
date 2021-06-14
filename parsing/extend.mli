@@ -46,7 +46,7 @@ type simple_constr_prod_entry_key =
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 
-type binder_entry_kind = ETBinderOpen | ETBinderClosed of string Tok.p list
+type binder_entry_kind = ETBinderOpen | ETBinderClosed of (bool * string) list
 
 type binder_target = ForBinder | ForTerm
 
@@ -58,7 +58,7 @@ type constr_prod_entry_key =
   | ETProdOneBinder of bool (* Parsed as name, or name:type or 'pattern, possibly in closed form *)
   | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
   | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
-  | ETProdConstrList of Constrexpr.notation_entry * (production_level * production_position) * string Tok.p list (* Parsed as non-empty list of constr, or subentries of those *)
+  | ETProdConstrList of Constrexpr.notation_entry * (production_level * production_position) * (bool * string) list (* Parsed as non-empty list of constr, or subentries of those *)
   | ETProdBinderList of binder_entry_kind  (* Parsed as non-empty list of local binders *)
 
 (** {5 AST for user-provided entries} *)
