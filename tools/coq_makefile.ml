@@ -358,7 +358,7 @@ let check_native_compiler = function
 | Some flag ->
   match Coq_config.native_compiler, flag with
   | Coq_config.NativeOff, (NativeYes | NativeOndemand) ->
-    eprintf "Warning: native compilation is globally deactivated by the configure flag"
+    eprintf "Warning: native compilation is globally deactivated by the configure flag\n"
   | _ -> ()
 
 let chop_prefix p f =
