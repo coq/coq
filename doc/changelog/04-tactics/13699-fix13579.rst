@@ -1,6 +1,0 @@
-- **Fixed:**
-  :tacn:`simpl` and :tacn:`hnf` now reduce primitive functions
-  on primitive integers, floats and arrays
-  (`#13699 <https://github.com/coq/coq/pull/13699>`_,
-  fixes `#13579 <https://github.com/coq/coq/issues/13579>`_,
-  by Pierre Roux).
