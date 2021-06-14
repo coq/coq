@@ -44,7 +44,7 @@ Kernel
   performed. This should make Coq more responsive on some systems
   (`#13853 <https://github.com/coq/coq/pull/13853>`_, fixes `#13849
   <https://github.com/coq/coq/issues/13849>`_, by Guillaume Melquiond).
-- **Changed:** Removed the ability to change typing flags inside
+- **Removed:** The ability to change typing flags inside
   sections to prevent exploiting a weakness in :cmd:`Print
   Assumptions` (`#14395 <https://github.com/coq/coq/pull/14395>`_,
   fixes `#14317 <https://github.com/coq/coq/issues/14317>`_, by Gaëtan
@@ -106,7 +106,7 @@ Notations
   (`#13965 <https://github.com/coq/coq/pull/13965>`_,
   by Enrico Tassi).
 - **Removed:**
-  Remove decimal-only number notations which were deprecated in 8.12.
+  Decimal-only number notations which were deprecated in 8.12.
   (`#13842 <https://github.com/coq/coq/pull/13842>`_, by Pierre Roux).
 - **Added:**
   :cmd:`Number Notation` and :cmd:`String Notation` now support
@@ -170,7 +170,7 @@ Tactics
   (`#13509 <https://github.com/coq/coq/pull/13509>`_,
   by Hugo Herbelin).
 - **Removed:**
-  Removed the `omega` tactic (deprecated in 8.12) and 4 `* Omega *` flags.
+  The `omega` tactic (deprecated in 8.12) and 4 `* Omega *` flags.
   Use `lia` instead.
   (`#13741 <https://github.com/coq/coq/pull/13741>`_,
   by Jim Fehrle, who addressed the final details, building on much work by
@@ -277,7 +277,7 @@ Tactic language
   (`#14128 <https://github.com/coq/coq/pull/14128>`_,
   by Pierre-Marie Pédrot).
 - **Added:**
-  Added a ``printf`` macro to Ltac2. It can be made accessible by
+  A ``printf`` macro to Ltac2. It can be made accessible by
   importing the ``Ltac2.Printf`` module. See the documentation
   there for more information
   (`#13236 <https://github.com/coq/coq/pull/13236>`_,
@@ -301,7 +301,7 @@ Tactic language
   (`#13914 <https://github.com/coq/coq/pull/13914>`_,
   by Pierre-Marie Pédrot).
 - **Added:**
-  Added the Ltac2 API `Ltac2.Ind` for manipulating inductive types
+  The Ltac2 API `Ltac2.Ind` for manipulating inductive types
   (`#13920 <https://github.com/coq/coq/pull/13920>`_,
   fixes `#10095 <https://github.com/coq/coq/issues/10095>`_,
   by Pierre-Marie Pédrot).
@@ -311,12 +311,12 @@ Tactic language
   fixes `#12806 <https://github.com/coq/coq/issues/12806>`_,
   by Pierre-Marie Pédrot).
 - **Added:**
-  Added a FFI to convert between Ltac1 and Ltac2 identifiers
+  A FFI to convert between Ltac1 and Ltac2 identifiers
   (`#13997 <https://github.com/coq/coq/pull/13997>`_,
   fixes `#13996 <https://github.com/coq/coq/issues/13996>`_,
   by Pierre-Marie Pédrot).
 - **Added:**
-  Added to the Ltac2 `Bool.v` library lazy evaluating boolean operators ``lazy_and``, ``lazy_or``, ``lazy_impl`` and infix notations ``&&`` and ``||``.
+  Lazy evaluating boolean operators ``lazy_and``, ``lazy_or``, ``lazy_impl`` and infix notations ``&&`` and ``||`` to the Ltac2 `Bool.v` library l.
   (`#14081 <https://github.com/coq/coq/pull/14081>`_,
   fixes `#13964 <https://github.com/coq/coq/issues/13964>`_,
   by Michael Soegtrop).
@@ -330,7 +330,7 @@ SSReflect
 ^^^^^^^^^
 
 - **Added:**
-  Adding a test that the notations `{in _, _}` and `{pred _}` from `ssrbool.v` are displayed correctly.
+  A test that the notations `{in _, _}` and `{pred _}` from `ssrbool.v` are displayed correctly.
   (`#13473 <https://github.com/coq/coq/pull/13473>`_,
   by Cyril Cohen).
 - **Added:**
@@ -348,7 +348,7 @@ Commands and options
   fixes `#13724 <https://github.com/coq/coq/issues/13724>`_,
   by Gaëtan Gilbert).
 - **Changed:**
-  In `Record`, alpha-rename the variable associated with the record to avoid
+  In :cmd:`Record`, alpha-rename the variable associated with the record to avoid
   alpha-renaming parameters of projections
   (`#13852 <https://github.com/coq/coq/pull/13852>`_,
   fixes `#13727 <https://github.com/coq/coq/issues/13727>`_,
@@ -612,7 +612,7 @@ Standard library
   (`#14087 <https://github.com/coq/coq/pull/14087>`_,
   by Karolin Varner).
 - **Added:**
-  Added ``Coq.Structures.OrdersEx.String_as_OT`` and
+  ``Coq.Structures.OrdersEx.String_as_OT`` and
   ``Coq.Structures.OrdersEx.Ascii_as_OT`` to make strings and ascii ordered
   types (using lexical order).  (`#14096
   <https://github.com/coq/coq/pull/14096>`_, by Jason Gross).
