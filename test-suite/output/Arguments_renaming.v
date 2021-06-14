@@ -52,3 +52,9 @@ Fail Arguments eq {A} x [_] : rename.
 Fail Arguments eq {A} x [z] : rename.
 Fail Arguments eq {F} x z y.
 Fail Arguments eq {R} s t.
+
+Section RenameVar.
+  Variable someVar : forall P, P.
+  Arguments someVar Q : rename.
+  Check someVar.
+End RenameVar.

@@ -103,3 +103,5 @@ The command has indeed failed with message:
 Extra arguments: y.
 The command has indeed failed with message:
 Flag "rename" expected to rename A into R.
+someVar
+     : forall Q : Type, Q

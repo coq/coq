@@ -250,10 +250,11 @@ let judge_of_relative env v =
   Environ.on_judgment EConstr.of_constr (judge_of_relative env v)
 
 let type_of_variable env id =
-  EConstr.of_constr (type_of_variable env id)
+  EConstr.of_constr (rename_type_of_variable env id)
 
 let judge_of_variable env id =
-  Environ.on_judgment EConstr.of_constr (judge_of_variable env id)
+  Environ.on_judgment EConstr.of_constr
+    (rename_typing env (Constr.mkVar id))
 
 let judge_of_projection env sigma p cj =
   let pty = lookup_projection p env in

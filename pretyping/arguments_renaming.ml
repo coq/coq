@@ -100,6 +100,10 @@ let rename_type_of_constructor env cstruct =
   let ty = Inductiveops.type_of_constructor env cstruct in
   rename_type ty (GlobRef.ConstructRef (fst cstruct))
 
+let rename_type_of_variable env id =
+  let ty = Typeops.type_of_variable env id in
+  rename_type ty (GlobRef.VarRef id)
+
 let rename_typing env c =
   let j = Typeops.infer env c in
   let j' =
@@ -107,6 +111,7 @@ let rename_typing env c =
     | Const (c,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstRef c) }
     | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.IndRef i) }
     | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstructRef k) }
+    | Var id -> { j with uj_type = rename_type j.uj_type (GlobRef.VarRef id) }
     | _ -> j
   in j'
 
