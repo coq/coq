@@ -65,7 +65,7 @@ let print_query opts = let open Coqargs in function
   | PrintHelp h -> Usage.print_usage stderr h
   | PrintConfig ->
     let () = init_coqlib opts in
-    Envars.print_config stdout Coq_config.all_src_dirs
+    Envars.print_config stdout
 
 let parse_arguments ~parse_extra ~usage ?(initial_args=Coqargs.default) () =
   let opts, extras =

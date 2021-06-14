@@ -205,7 +205,7 @@ let xdg_dirs ~warn =
 
 (* Print the configuration information *)
 
-let print_config ?(prefix_var_name="") f coq_src_subdirs =
+let print_config ?(prefix_var_name="") f =
   let open Printf in
   fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
   fprintf f "%sCOQCORELIB=%s/\n" prefix_var_name (coqlib () / "../coq-core/");
@@ -215,7 +215,7 @@ let print_config ?(prefix_var_name="") f coq_src_subdirs =
   fprintf f "%sWARN=%s\n" prefix_var_name "-warn-error +a-3";
   fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
     (if Coq_config.has_natdynlink then "true" else "false");
-  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " coq_src_subdirs);
+  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " Coq_config.all_src_dirs);
   fprintf f "%sCOQ_NATIVE_COMPILER_DEFAULT=%s\n" prefix_var_name
     (match Coq_config.native_compiler with
      | Coq_config.NativeOn {ondemand=false} -> "yes"
