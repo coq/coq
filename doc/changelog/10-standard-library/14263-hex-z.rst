@@ -1,5 +1,0 @@
-- **Added:**
-  ``Z``, ``positive`` and ``N`` constants can now be printed in hexadecimal by
-  opening ``hex_Z_scope``, ``hex_positive_scope``, and ``hex_N_scope``
-  respectively (`#14263 <https://github.com/coq/coq/pull/14263>`_, by Jason
-  Gross).
