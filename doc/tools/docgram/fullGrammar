@@ -569,21 +569,21 @@ command: [
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
 | "Declare" "Custom" "Entry" IDENT
-| "Derive" ident "SuchThat" constr "As" ident      (* derive plugin *)
+| "Derive" identref "SuchThat" constr "As" identref      (* derive plugin *)
 | "Extraction" global      (* extraction plugin *)
 | "Recursive" "Extraction" LIST1 global      (* extraction plugin *)
 | "Extraction" string LIST1 global      (* extraction plugin *)
 | "Extraction" "TestCompile" LIST1 global      (* extraction plugin *)
 | "Separate" "Extraction" LIST1 global      (* extraction plugin *)
-| "Extraction" "Library" ident      (* extraction plugin *)
-| "Recursive" "Extraction" "Library" ident      (* extraction plugin *)
+| "Extraction" "Library" identref      (* extraction plugin *)
+| "Recursive" "Extraction" "Library" identref      (* extraction plugin *)
 | "Extraction" "Language" language      (* extraction plugin *)
 | "Extraction" "Inline" LIST1 global      (* extraction plugin *)
 | "Extraction" "NoInline" LIST1 global      (* extraction plugin *)
 | "Print" "Extraction" "Inline"      (* extraction plugin *)
 | "Reset" "Extraction" "Inline"      (* extraction plugin *)
 | "Extraction" "Implicit" global "[" LIST0 int_or_id "]"      (* extraction plugin *)
-| "Extraction" "Blacklist" LIST1 ident      (* extraction plugin *)
+| "Extraction" "Blacklist" LIST1 preident      (* extraction plugin *)
 | "Print" "Extraction" "Blacklist"      (* extraction plugin *)
 | "Reset" "Extraction" "Blacklist"      (* extraction plugin *)
 | "Extract" "Constant" global LIST0 string "=>" mlname      (* extraction plugin *)
@@ -625,50 +625,50 @@ command: [
 | "Locate" "Ltac" reference
 | "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | "Print" "Ltac" "Signatures"
-| "Obligation" natural "of" ident ":" lglob withtac
-| "Obligation" natural "of" ident withtac
+| "Obligation" natural "of" identref ":" lglob withtac
+| "Obligation" natural "of" identref withtac
 | "Obligation" natural ":" lglob withtac
 | "Obligation" natural withtac
-| "Next" "Obligation" "of" ident withtac
+| "Next" "Obligation" "of" identref withtac
 | "Next" "Obligation" withtac
-| "Solve" "Obligation" natural "of" ident "with" tactic
+| "Solve" "Obligation" natural "of" identref "with" tactic
 | "Solve" "Obligation" natural "with" tactic
-| "Solve" "Obligations" "of" ident "with" tactic
-| "Solve" "Obligations" "of" ident
+| "Solve" "Obligations" "of" identref "with" tactic
+| "Solve" "Obligations" "of" identref
 | "Solve" "Obligations" "with" tactic
 | "Solve" "Obligations"
 | "Solve" "All" "Obligations" "with" tactic
 | "Solve" "All" "Obligations"
-| "Admit" "Obligations" "of" ident
+| "Admit" "Obligations" "of" identref
 | "Admit" "Obligations"
 | "Obligation" "Tactic" ":=" tactic
 | "Show" "Obligation" "Tactic"
-| "Obligations" "of" ident
+| "Obligations" "of" identref
 | "Obligations"
-| "Preterm" "of" ident
+| "Preterm" "of" identref
 | "Preterm"
-| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
-| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "as" ident
-| "Add" "Relation" constr constr "as" ident
-| "Add" "Relation" constr constr "symmetry" "proved" "by" constr "as" ident
-| "Add" "Relation" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Relation" constr constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Setoid" constr constr constr "as" ident
-| "Add" "Parametric" "Setoid" binders ":" constr constr constr "as" ident
-| "Add" "Morphism" constr ":" ident
-| "Declare" "Morphism" constr ":" ident
-| "Add" "Morphism" constr "with" "signature" lconstr "as" ident
-| "Add" "Parametric" "Morphism" binders ":" constr "with" "signature" lconstr "as" ident
+| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" identref
+| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "as" identref
+| "Add" "Relation" constr constr "as" identref
+| "Add" "Relation" constr constr "symmetry" "proved" "by" constr "as" identref
+| "Add" "Relation" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Relation" constr constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Setoid" constr constr constr "as" identref
+| "Add" "Parametric" "Setoid" binders ":" constr constr constr "as" identref
+| "Add" "Morphism" constr ":" identref
+| "Declare" "Morphism" constr ":" identref
+| "Add" "Morphism" constr "with" "signature" lconstr "as" identref
+| "Add" "Parametric" "Morphism" binders ":" constr "with" "signature" lconstr "as" identref
 | "Print" "Rewrite" "HintDb" preident
 | "Reset" "Ltac" "Profile"
 | "Show" "Ltac" "Profile"
@@ -693,17 +693,17 @@ command: [
 | "Show" "Zify" "BinRel"      (* micromega plugin *)
 | "Show" "Zify" "UnOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
-| "Add" "Ring" ident ":" constr OPT ring_mods      (* ring plugin *)
+| "Add" "Ring" identref ":" constr OPT ring_mods      (* ring plugin *)
 | "Print" "Rings"      (* ring plugin *)
-| "Add" "Field" ident ":" constr OPT field_mods      (* ring plugin *)
+| "Add" "Field" identref ":" constr OPT field_mods      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
 | "Prenex" "Implicits" LIST1 global      (* SSR plugin *)
 | "Print" "Hint" "View" ssrviewpos      (* SSR plugin *)
 | "Hint" "View" ssrviewposspc LIST1 ssrhintref      (* SSR plugin *)
 | "Search" ssr_search_arg ssr_modlocs      (* SSR plugin *)
-| "Number" "Notation" reference reference reference OPT number_options ":" ident
-| "Numeral" "Notation" reference reference reference ":" ident deprecated_number_modifier
-| "String" "Notation" reference reference reference OPT string_option ":" ident
+| "Number" "Notation" reference reference reference OPT number_options ":" preident
+| "Numeral" "Notation" reference reference reference ":" preident deprecated_number_modifier
+| "String" "Notation" reference reference reference OPT string_option ":" preident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr6      (* Ltac2 plugin *)
 | "Print" "Ltac2" reference      (* Ltac2 plugin *)
@@ -1872,7 +1872,7 @@ function_fix_definition: [
 ]
 
 fun_scheme_arg: [
-| ident ":=" "Induction" "for" reference "Sort" sort_family      (* funind plugin *)
+| identref ":=" "Induction" "for" reference "Sort" sort_family      (* funind plugin *)
 ]
 
 orient: [
