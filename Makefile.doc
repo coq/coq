@@ -50,9 +50,9 @@ SPHINXBUILDDIR= doc/sphinx/_build
 
 DOCGRAMWARN ?= 0
 ifeq ($(DOCGRAMWARN),0)
-DOCGRAMWARN=-no-warn
+DOCGRAMWARNFLAG=-no-warn
 else
-DOCGRAMWARN=
+DOCGRAMWARNFLAG=
 endif
 
 # Internal variables.
@@ -304,7 +304,7 @@ doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
 #todo: add a dependency of sphinx on updated_rsts when we're ready
 doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: doc/tools/docgram/fullGrammar $(DOC_GRAM) $(DOC_EDIT_MLGS)
 	$(SHOW)'DOC_GRAM_RSTS'
-	$(HIDE)$(DOC_GRAM) $(DOCGRAMWARN) -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
+	$(HIDE)$(DOC_GRAM) $(DOCGRAMWARNFLAG) -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
 
 .PRECIOUS: doc/tools/docgram/orderedGrammar
 
