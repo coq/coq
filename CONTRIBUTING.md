@@ -523,7 +523,7 @@ conflict and this merge cannot be performed automatically, the bot
 will put a `needs: rebase` label, and the tests won't run.
 
 Otherwise, a large suite of tests will be run on GitLab, plus some
-additional tests on Azure for Windows and macOS compatibility.
+additional tests on GitHub Actions for Windows and macOS compatibility.
 
 If a test fails on GitLab, you will see in the GitHub PR interface,
 both the failure of the whole pipeline, and of the specific failed
@@ -569,12 +569,19 @@ We have a linter that checks a few different things:
   your branch with `git rebase --whitespace=fix`.
 - **All files should end with a single newline**.  See the section
   [Style guide](#style-guide) for additional style recommendations.
-- **Code is properly formatted**: for some parts of the codebase,
-  formatting will be enforced using the
-  [`ocamlformat`](https://github.com/ocaml-ppx/ocamlformat) tool.
-  Formatting issues will also be fixed automatically by the pre-commit
-  hook mentioned above (you may also use `dune build @fmt
-  --auto-promote` to fix this kind of errors).
+- **Documented syntax is up-to-date**.  If you update the grammar, you
+  should run `make -f Makefile.make doc_gram_rsts` to update the
+  documented syntax.  You should then update the text describing the
+  syntax in the documentation and commit the changes.  In some cases,
+  the documented syntax is edited to make the documentation more
+  readable.  In this case, you may have to edit
+  `doc/tools/docgram/common.edit_mlg` to make `doc_gram_rsts` pass.
+  See [doc_grammar's README][doc_gram] for details.
+
+  Note that in the case where you added new commands or tactics, you
+  will have to manually insert them in the documentation, the tool
+  won't do that for you, only check that what you documented is
+  consistent with the parser.
 
 You may run the linter yourself with `dev/lint-repository.sh`.
 
@@ -1268,6 +1275,7 @@ can be found [on the wiki][wiki-CUDW].
 [dev-tools-create_overlays.sh]: dev/tools/create_overlays.sh
 [Discourse]: https://coq.discourse.group/
 [Discourse-development-category]: https://coq.discourse.group/c/coq-development
+[doc_gram]: doc/tools/docgram/README.md
 [doc-README]: doc/README.md
 [documentation-github-project]: https://github.com/coq/coq/projects/3
 [dune-doc]: https://dune.readthedocs.io/en/latest/
