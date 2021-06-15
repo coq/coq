@@ -126,9 +126,7 @@ project gappa_tool "https://gitlab.inria.fr/gappa/gappa" "master"
 ########################################################################
 # Gappa plugin
 ########################################################################
-# To revert when upstream maintainer comes back online
-# project gappa "https://gitlab.inria.fr/gappa/coq" "master"
-project gappa "https://gitlab.inria.fr/egallego/gappa-coq" "make+use_dune_for_ocaml"
+project gappa "https://gitlab.inria.fr/gappa/coq" "master"
 
 ########################################################################
 # CompCert
