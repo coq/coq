@@ -1,0 +1,42 @@
+Module Mono.
+  Module Transparent.
+    Fixpoint F (n : nat) (A : Type) {struct n} : nat
+    with G (n : nat) (A:Type@{_})  {struct n} : nat.
+    Proof.
+      1: pose (G n A).
+      all: exact 0.
+    Defined.
+  End Transparent.
+
+  Module Opaque.
+    Fixpoint F (n : nat) (A : Type) {struct n} : nat
+    with G (n : nat) (A:Type@{_})  {struct n} : nat.
+    Proof.
+      1: pose (G n A).
+      all: exact 0.
+    Qed.
+  End Opaque.
+End Mono.
+
+Module Poly.
+  Set Universe Polymorphism.
+  Module Transparent.
+    Fixpoint F (n : nat) (A : Type) {struct n} : nat
+    with G (n : nat) (A:Type@{_})  {struct n} : nat.
+    Proof.
+      1: pose (G n A).
+      all: exact 0.
+    Defined.
+    Check F@{_}. Check G@{_}.
+  End Transparent.
+
+  Module Opaque.
+    Fixpoint F (n : nat) (A : Type) {struct n} : nat
+    with G (n : nat) (A:Type@{_})  {struct n} : nat.
+    Proof.
+      1: pose (G n A).
+      all: exact 0.
+    Qed.
+    Check F@{_}. Check G@{_}.
+  End Opaque.
+End Poly.
