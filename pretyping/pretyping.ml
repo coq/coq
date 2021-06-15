@@ -849,8 +849,8 @@ struct
             | [] -> sigma, [], j_val hj
             | arg :: args ->
               begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
-                | exception Evarconv.UnableToUnify _ ->
-                  sigma, [], j_val hj
+                | exception Evarconv.UnableToUnify (sigma,e) ->
+                  raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
                 | sigma ->
                   sigma, args, nf_evar sigma (j_val hj)
               end
