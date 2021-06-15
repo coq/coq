@@ -1247,26 +1247,26 @@ command: [
 | REPLACE "Add" IDENT IDENT LIST1 table_value
 | WITH "Add" setting_name LIST1 table_value
 | DELETE "Add" IDENT LIST1 table_value
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "as" ident
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "transitivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr OPT ( "reflexivity" "proved" "by" constr ) OPT ( "symmetry" "proved" "by" constr ) OPT ("transitivity" "proved" "by" constr ) "as" ident
-| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
-| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Relation" constr constr "as" ident
-| DELETE "Add" "Relation" constr constr "symmetry" "proved" "by" constr "as" ident
-| DELETE "Add" "Relation" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| DELETE "Add" "Relation" constr constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Relation" constr constr OPT ( "reflexivity" "proved" "by" constr ) OPT ( "symmetry" "proved" "by" constr ) OPT ( "transitivity" "proved" "by" constr ) "as" ident
-| REPLACE "Admit" "Obligations" "of" ident
-| WITH "Admit" "Obligations" OPT ( "of" ident )
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" identref
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "as" identref
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "transitivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Parametric" "Relation" binders ":" constr constr "as" identref
+| "Add" "Parametric" "Relation" binders ":" constr constr OPT ( "reflexivity" "proved" "by" constr ) OPT ( "symmetry" "proved" "by" constr ) OPT ("transitivity" "proved" "by" constr ) "as" identref
+| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" identref
+| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Relation" constr constr "as" identref
+| DELETE "Add" "Relation" constr constr "symmetry" "proved" "by" constr "as" identref
+| DELETE "Add" "Relation" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" identref
+| DELETE "Add" "Relation" constr constr "transitivity" "proved" "by" constr "as" identref
+| "Add" "Relation" constr constr OPT ( "reflexivity" "proved" "by" constr ) OPT ( "symmetry" "proved" "by" constr ) OPT ( "transitivity" "proved" "by" constr ) "as" identref
+| REPLACE "Admit" "Obligations" "of" identref
+| WITH "Admit" "Obligations" OPT ( "of" identref )
 | DELETE "Admit" "Obligations"
 | REPLACE "Create" "HintDb" IDENT; [ "discriminated" | ]
 | WITH "Create" "HintDb" IDENT; OPT "discriminated"
@@ -1286,19 +1286,19 @@ command: [
 | WITH "Hint" "Rewrite" orient LIST1 constr OPT ( "using" tactic ) OPT ( ":" LIST0 preident )
 | DELETE "Hint" "Rewrite" orient LIST1 constr
 | DELETE "Hint" "Rewrite" orient LIST1 constr "using" tactic
-| REPLACE "Next" "Obligation" "of" ident withtac
-| WITH "Next" "Obligation" OPT ( "of" ident ) withtac
+| REPLACE "Next" "Obligation" "of" identref withtac
+| WITH "Next" "Obligation" OPT ( "of" identref ) withtac
 | DELETE "Next" "Obligation" withtac
-| REPLACE "Obligation" natural "of" ident ":" lglob withtac
-| WITH "Obligation" natural OPT ( "of" ident ) OPT ( ":" type withtac )
-| DELETE "Obligation" natural "of" ident withtac
+| REPLACE "Obligation" natural "of" identref ":" lglob withtac
+| WITH "Obligation" natural OPT ( "of" identref ) OPT ( ":" type withtac )
+| DELETE "Obligation" natural "of" identref withtac
 | DELETE "Obligation" natural ":" lglob withtac
 | DELETE "Obligation" natural withtac
-| REPLACE "Obligations" "of" ident
-| WITH "Obligations" OPT ( "of" ident )
+| REPLACE "Obligations" "of" identref
+| WITH "Obligations" OPT ( "of" identref )
 | DELETE "Obligations"
-| REPLACE "Preterm" "of" ident
-| WITH "Preterm" OPT ( "of" ident )
+| REPLACE "Preterm" "of" identref
+| WITH "Preterm" OPT ( "of" identref )
 | DELETE "Preterm"
 | REPLACE "Proof" "using" section_var_expr "with" Pltac.tactic
 | WITH "Proof" "using" section_subset_expr OPT [ "with" ltac_expr5 ]
@@ -1323,13 +1323,13 @@ command: [
 | REPLACE "Solve" "All" "Obligations" "with" tactic
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
 | DELETE "Solve" "All" "Obligations"
-| DELETE "Solve" "Obligations" "of" ident "with" tactic
-| DELETE "Solve" "Obligations" "of" ident
+| DELETE "Solve" "Obligations" "of" identref "with" tactic
+| DELETE "Solve" "Obligations" "of" identref
 | DELETE "Solve" "Obligations" "with" tactic
 | DELETE "Solve" "Obligations"
-| "Solve" "Obligations" OPT ( "of" ident ) OPT ( "with" tactic )
-| REPLACE "Solve" "Obligation" natural "of" ident "with" tactic
-| WITH "Solve" "Obligation" natural OPT ( "of" ident ) "with" tactic
+| "Solve" "Obligations" OPT ( "of" identref ) OPT ( "with" tactic )
+| REPLACE "Solve" "Obligation" natural "of" identref "with" tactic
+| WITH "Solve" "Obligation" natural OPT ( "of" identref ) "with" tactic
 | DELETE "Solve" "Obligation" natural "with" tactic
 | DELETE "Undo"
 | DELETE "Undo" natural
@@ -1353,11 +1353,11 @@ command: [
 | WITH "Declare" "Scope" scope_name
 
 (* odd that these are in command while other notation-related ones are in syntax *)
-| REPLACE "Number" "Notation" reference reference reference OPT number_options ":" ident
+| REPLACE "Number" "Notation" reference reference reference OPT number_options ":" preident
 | WITH "Number" "Notation" reference reference reference OPT number_options ":" scope_name
-| REPLACE "Numeral" "Notation" reference reference reference ":" ident deprecated_number_modifier
+| REPLACE "Numeral" "Notation" reference reference reference ":" preident deprecated_number_modifier
 | WITH "Numeral" "Notation" reference reference reference ":" scope_name deprecated_number_modifier
-| REPLACE "String" "Notation" reference reference reference OPT string_option ":" ident
+| REPLACE "String" "Notation" reference reference reference OPT string_option ":" preident
 | WITH "String" "Notation" reference reference reference OPT string_option ":" scope_name
 
 | DELETE "Ltac2" ltac2_entry      (* was split up *)
