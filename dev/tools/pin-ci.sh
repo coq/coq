@@ -31,7 +31,7 @@ process_development() {
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     # use -i.bak to be compatible with MacOS; see, e.g., https://stackoverflow.com/a/7573438/377022
-    sed -i.bak -e "s/$BRANCH_VAR:=$BRANCH/$BRANCH_VAR:=$HASH/" $OVERLAYS
+    sed -i.bak -E "s?project +$DEV +.*?project $DEV \"$REPO\" \"$HASH\"?" $OVERLAYS
   fi
 }
 
