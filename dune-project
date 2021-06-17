@@ -5,6 +5,10 @@
 (formatting
  (enabled_for ocaml))
 
+; See discussion in https://github.com/coq/coq/pull/14519
+; we handle our CC flags at the low-level ourselves
+(use_standard_c_and_cxx_flags true)
+
 ; After Dune 2.8 we can use this, but let's wait for the build consolidation PR
 ; (generate_opam_files true)
 
