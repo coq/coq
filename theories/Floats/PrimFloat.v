@@ -25,6 +25,12 @@ Register float_class as kernel.ind_f_class.
 (** ** The main type *)
 (** [float]: primitive type for Binary64 floating-point numbers. *)
 Primitive float := #float64_type.
+Register float as num.float.type.
+
+Record float_wrapper := wrap_float { float_wrap : float }.
+Register wrap_float as num.float.wrap_float.
+Definition printer (x : float_wrapper) : float := float_wrap x.
+Definition parser (x : float) : float := x.
 
 (** ** Syntax support *)
 Module Import PrimFloatNotationsInternalA.
@@ -32,8 +38,7 @@ Declare Scope float_scope.
 Delimit Scope float_scope with float.
 Bind Scope float_scope with float.
 End PrimFloatNotationsInternalA.
-
-Declare ML Module "float_syntax_plugin".
+Number Notation float parser printer : float_scope.
 
 (** ** Floating-point operators *)
 Primitive classify := #float64_classify.

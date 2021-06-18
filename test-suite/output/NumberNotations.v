@@ -978,3 +978,23 @@ Fail Check 3 : Fin.t 3.
 Unset Printing All.
 
 End Test28.
+
+Require Import Floats.
+
+Module Test29.
+
+Definition printer (x : float_wrapper) : Number.uint :=
+  if get_sign (float_wrap x) then Number.UIntDecimal (Decimal.D1 Decimal.Nil)
+  else Number.UIntDecimal (Decimal.D0 Decimal.Nil).
+
+Definition parser (x : float) : float := x.
+
+Number Notation float parser printer : float_scope.
+
+Check 12%float.
+Check (-12)%float.
+Check infinity.
+Check neg_infinity.
+Check nan.
+
+End Test29.

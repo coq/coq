@@ -5,11 +5,4 @@
  (modules g_number_string string_notation number)
  (libraries coq-core.vernac))
 
-(library
- (name float_syntax_plugin)
- (public_name coq-core.plugins.float_syntax)
- (synopsis "Coq syntax plugin: float")
- (modules float_syntax)
- (libraries coq-core.vernac))
-
 (coq.pp (modules g_number_string))

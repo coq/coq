@@ -114,6 +114,11 @@ let locate_int63 () =
           mkRefC q_pos_neg_int63)
   else None
 
+let locate_float () =
+  let floatn = "num.float.type" in
+  if Coqlib.has_ref floatn then Some (mkRefC (qualid_of_ref floatn))
+  else None
+
 let has_type env sigma f ty =
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
@@ -123,13 +128,13 @@ let type_error_to f ty =
   CErrors.user_err
     (pr_qualid f ++ str " should go from Number.int to " ++
      pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
-     fnl () ++ str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or Number.number could be used (you may need to require BinNums or Number or PrimInt63 first).")
+     fnl () ++ str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
      str " to Number.int or (option Number.int)." ++ fnl () ++
-     str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or Number.number could be used (you may need to require BinNums or Number or PrimInt63 first).")
+     str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
 
 let error_params ind =
   CErrors.user_err
@@ -378,7 +383,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
 
 type target_type =
   | TargetInd of (inductive * GlobRef.t option list)
-  | TargetPrim of required_module
+  | TargetPrim of constr_expr * GlobRef.t list * required_module
 
 let locate_global_inductive_with_params allow_params qid =
   if not allow_params then raise Not_found else
@@ -398,13 +403,23 @@ let locate_global_inductive allow_params qid =
   try locate_global_inductive_with_params allow_params qid
   with Not_found -> Smartlocate.global_inductive_with_alias qid, []
 
-let locate_global_inductive_or_int63 allow_params qid =
+let locate_global_inductive_or_int63_or_float allow_params qid =
   try TargetInd (locate_global_inductive_with_params allow_params qid)
   with Not_found ->
     let int63n = "num.int63.type" in
+    let int63c = "num.int63.wrap_int" in
+    let int63w = "Coq.Numbers.Cyclic.Int63.PrimInt63.int_wrapper" in
+    let floatn = "num.float.type" in
+    let floatc = "num.float.wrap_float" in
+    let floatw = "Coq.Floats.PrimFloat.float_wrapper" in
     if allow_params && Coqlib.has_ref int63n
        && GlobRef.equal (Smartlocate.global_with_alias qid) (Coqlib.lib_ref int63n)
-    then TargetPrim (Nametab.path_of_global (Coqlib.lib_ref int63n), [])
+    then TargetPrim (mkRefC (qualid_of_string int63w), [Coqlib.lib_ref int63c],
+                     (Nametab.path_of_global (Coqlib.lib_ref int63n), []))
+    else if allow_params && Coqlib.has_ref floatn
+       && GlobRef.equal (Smartlocate.global_with_alias qid) (Coqlib.lib_ref floatn)
+    then TargetPrim (mkRefC (qualid_of_string floatw), [Coqlib.lib_ref floatc],
+                     (Nametab.path_of_global (Coqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
 
 let vernac_number_notation local ty f g opts scope =
@@ -428,10 +443,11 @@ let vernac_number_notation local ty f g opts scope =
   let num_ty = locate_number () in
   let z_pos_ty = locate_z () in
   let int63_ty = locate_int63 () in
+  let float_ty = locate_float () in
   let ty_name = ty in
   let ty, via =
     match via with None -> ty, via | Some (ty', a) -> ty', Some (ty, a) in
-  let tyc_params = locate_global_inductive_or_int63 (via = None) ty in
+  let tyc_params = locate_global_inductive_or_int63_or_float (via = None) ty in
   let to_ty = Smartlocate.global_with_alias f in
   let of_ty = Smartlocate.global_with_alias g in
   let cty = mkRefC ty in
@@ -457,12 +473,14 @@ let vernac_number_notation local ty f g opts scope =
     match int63_ty with
     | Some (pos_neg_int63_ty, cint63) when has_type env sigma f (arrow cint63 cty) -> Int63 pos_neg_int63_ty, Direct
     | Some (pos_neg_int63_ty, cint63) when has_type env sigma f (arrow cint63 (opt cty)) -> Int63 pos_neg_int63_ty, Option
+    | _ ->
+    match float_ty with
+    | Some cfloat when has_type env sigma f (arrow cfloat cty) -> Float64, Direct
+    | Some cfloat when has_type env sigma f (arrow cfloat (opt cty)) -> Float64, Option
     | _ -> type_error_to f ty
   in
   (* Check the type of g *)
-  let cty = match tyc_params with
-    | TargetPrim _ -> mkRefC (qualid_of_string "Coq.Numbers.Cyclic.Int63.PrimInt63.int_wrapper")
-    | TargetInd _ -> cty in
+  let cty = match tyc_params with TargetPrim (c, _, _) -> c | TargetInd _ -> cty in
   let of_kind =
     match num_ty with
     | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
@@ -479,10 +497,14 @@ let vernac_number_notation local ty f g opts scope =
     match int63_ty with
     | Some (pos_neg_int63_ty, cint63) when has_type env sigma g (arrow cty cint63) -> Int63 pos_neg_int63_ty, Direct
     | Some (pos_neg_int63_ty, cint63) when has_type env sigma g (arrow cty (opt cint63)) -> Int63 pos_neg_int63_ty, Option
+    | _ ->
+    match float_ty with
+    | Some cfloat when has_type env sigma g (arrow cty cfloat) -> Float64, Direct
+    | Some cfloat when has_type env sigma g (arrow cty (opt cfloat)) -> Float64, Option
     | _ -> type_error_of g ty
   in
   let to_post, pt_required, pt_refs = match tyc_params with
-    | TargetPrim path -> [||], path, [Coqlib.lib_ref "num.int63.wrap_int"]
+    | TargetPrim (_, refs, path) -> [||], path, refs
     | TargetInd (tyc, params) ->
        let to_post, pt_refs =
          match via with

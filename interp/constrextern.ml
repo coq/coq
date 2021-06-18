@@ -912,20 +912,12 @@ let q_infinity () = qualid_of_ref "num.float.infinity"
 let q_neg_infinity () = qualid_of_ref "num.float.neg_infinity"
 let q_nan () = qualid_of_ref "num.float.nan"
 
-let get_printing_float = Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Printing";"Float"]
-    ~value:true
-
 let extern_float f scopes =
   if Float64.is_nan f then CRef(q_nan (), None)
   else if Float64.is_infinity f then CRef(q_infinity (), None)
   else if Float64.is_neg_infinity f then CRef(q_neg_infinity (), None)
   else
-    let s =
-      let hex = !Flags.raw_print || not (get_printing_float ()) in
-      if hex then Float64.to_hex_string f else Float64.to_string f in
-    let n = NumTok.Signed.of_string s in
+    let n = NumTok.Signed.of_string (Float64.to_hex_string f) in
     extern_prim_token_delimiter_if_required (Number n)
       "float" "float_scope" scopes
 
@@ -980,6 +972,9 @@ let rec extern inctx ?impargs scopes vars r =
   let r' = match DAst.get r with
     | GInt i when Coqlib.has_ref "num.int63.wrap_int" ->
        let wrap = Coqlib.lib_ref "num.int63.wrap_int" in
+       DAst.make (GApp (DAst.make (GRef (wrap, None)), [r]))
+    | GFloat f when Coqlib.has_ref "num.float.wrap_float" ->
+       let wrap = Coqlib.lib_ref "num.float.wrap_float" in
        DAst.make (GApp (DAst.make (GRef (wrap, None)), [r]))
     | _ -> r in
 

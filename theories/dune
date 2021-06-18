@@ -15,7 +15,6 @@
    coq-core.plugins.firstorder
 
    coq-core.plugins.number_string_notation
-   coq-core.plugins.float_syntax
 
    coq-core.plugins.btauto
    coq-core.plugins.rtauto
