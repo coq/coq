@@ -19,12 +19,12 @@ type verbose = bool
 type goal = {
   goal_id : string;
   (** Unique goal identifier *)
-  goal_name : string option;
-  (** User-level goal name *)
   goal_hyp : Pp.t list;
   (** List of hypotheses *)
   goal_ccl : Pp.t;
   (** Goal conclusion *)
+  goal_name : string option;
+  (** User-level goal name *)
 }
 
 type evar = {
