@@ -1721,8 +1721,8 @@ Number notations
             * :n:`Number.uint -> option @qualid__type`
             * :n:`Z -> @qualid__type`
             * :n:`Z -> option @qualid__type`
-            * :n:`PrimInt63.int -> @qualid__type`
-            * :n:`PrimInt63.int -> option @qualid__type`
+            * :n:`PrimInt63.pos_neg_int63 -> @qualid__type`
+            * :n:`PrimInt63.pos_neg_int63 -> option @qualid__type`
             * :n:`Number.number -> @qualid__type`
             * :n:`Number.number -> option @qualid__type`
 
@@ -1735,8 +1735,8 @@ Number notations
             * :n:`@qualid__type -> option Number.uint`
             * :n:`@qualid__type -> Z`
             * :n:`@qualid__type -> option Z`
-            * :n:`@qualid__type -> PrimInt63.int`
-            * :n:`@qualid__type -> option PrimInt63.int`
+            * :n:`@qualid__type -> PrimInt63.pos_neg_int63`
+            * :n:`@qualid__type -> option PrimInt63.pos_neg_int63`
             * :n:`@qualid__type -> Number.number`
             * :n:`@qualid__type -> option Number.number`
 
