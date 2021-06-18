@@ -209,9 +209,9 @@ let of_goal g =
   let ccl = of_pp g.goal_ccl in
   let id = of_string g.goal_id in
   let name = of_option of_string g.goal_name in
-  Element ("goal", [], [id; name; hyp; ccl])
+  Element ("goal", [], [id; hyp; ccl; name])
 let to_goal = function
-  | Element ("goal", [], [id; name; hyp; ccl]) ->
+  | Element ("goal", [], [id; hyp; ccl; name]) ->
     let hyp = to_list to_pp hyp in
     let ccl = to_pp ccl         in
     let id  = to_string id      in
