@@ -1215,8 +1215,10 @@ let warn_deprecated_hint_without_locality =
     (fun () -> strbrk "The default value for hint locality is currently \
     \"local\" in a section and \"global\" otherwise, but is scheduled to change \
     in a future release. For the time being, adding hints outside of sections \
-    without specifying an explicit locality is therefore deprecated. It is \
-    recommended to use \"export\" whenever possible.")
+    without specifying an explicit locality attribute is therefore deprecated. It is \
+    recommended to use \"export\" whenever possible. Use the attributes \
+    #[local], #[global] and #[export] depending on your choice. For example: \
+    \"#[export] Hint Unfold foo : bar.\"")
 
 let check_hint_locality = let open Goptions in function
 | OptGlobal ->
