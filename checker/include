@@ -169,8 +169,7 @@ let read_mod s f =
   ((Obj.magic lib.library_compiled):
     dir_path *
     module_body *
-    (dir_path * Digest.t) list *
-    engagement option);;
+    (dir_path * Digest.t) list);;
 
 
 let expln f x =

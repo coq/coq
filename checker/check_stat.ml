@@ -24,13 +24,9 @@ let print_memory_stat () =
 
 let output_context = ref false
 
-let pr_engagement env =
-  begin
-    match engagement env with
-    | ImpredicativeSet -> str "Theory: Set is impredicative"
-    | PredicativeSet -> str "Theory: Set is predicative"
-  end
-
+let pr_impredicative_set env =
+  if is_impredicative_set env then str "Theory: Set is impredicative"
+  else str "Theory: Set is predicative"
 
 let pr_assumptions ass axs =
   if axs = [] then
@@ -68,7 +64,7 @@ let print_context env opac =
       (hov 0
       (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
       str"===============" ++ fnl() ++ fnl() ++
-      str "* " ++ hov 0 (pr_engagement env ++ fnl()) ++ fnl() ++
+      str "* " ++ hov 0 (pr_impredicative_set env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_axioms env opac ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_type_in_type env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_unguarded env ++ fnl()) ++ fnl() ++

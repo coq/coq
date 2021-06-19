@@ -92,7 +92,7 @@ let push_section_context c = globalize0 (Safe_typing.push_section_context c)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
 let push_context_set ~strict c = globalize0 (Safe_typing.push_context_set ~strict c)
 
-let set_engagement c = globalize0 (Safe_typing.set_engagement c)
+let set_impredicative_set c = globalize0 (Safe_typing.set_impredicative_set c)
 let set_indices_matter b = globalize0 (Safe_typing.set_indices_matter b)
 let set_typing_flags c = globalize0 (Safe_typing.set_typing_flags c)
 let set_check_guarded c = globalize0 (Safe_typing.set_check_guarded c)

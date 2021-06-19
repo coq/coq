@@ -26,6 +26,8 @@ let safe_flags oracle = {
   enable_VM = true;
   enable_native_compiler = true;
   indices_matter = true;
+  impredicative_set = false;
+  sprop_allowed = true;
   cumulative_sprop = false;
   allow_uip = false;
 }

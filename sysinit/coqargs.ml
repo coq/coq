@@ -40,7 +40,7 @@ type injection_command =
   | WarnNativeDeprecated
 
 type coqargs_logic_config = {
-  impredicative_set : Declarations.set_predicativity;
+  impredicative_set : bool;
   indices_matter    : bool;
   type_in_type      : bool;
   toplevel_name     : top;
@@ -96,7 +96,7 @@ let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
 let default_native = Coq_config.native_compiler
 
 let default_logic_config = {
-  impredicative_set = Declarations.PredicativeSet;
+  impredicative_set = false;
   indices_matter = false;
   type_in_type = false;
   toplevel_name = TopLogical default_toplevel;
@@ -391,7 +391,7 @@ let parse_args ~usage ~init arglist : t * string list =
       add_set_option oval Proof_diffs.opt_name @@ OptionSet (Some (next ()))
     |"-emacs" -> set_emacs oval
     |"-impredicative-set" ->
-      set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval
+      set_logic (fun o -> { o with impredicative_set = true }) oval
     |"-allow-sprop" ->
       add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
     |"-disallow-sprop" ->

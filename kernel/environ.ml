@@ -63,13 +63,6 @@ module Globals = struct
   let view x = x
 end
 
-type stratification = {
-  env_universes : UGraph.t;
-  env_sprop_allowed : bool;
-  env_universes_lbound : UGraph.Bound.t;
-  env_engagement : engagement
-}
-
 type val_kind =
     | VKvalue of (Vmvalues.values * Id.Set.t) CEphemeron.key
     | VKnone
@@ -99,7 +92,8 @@ type env = {
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
-  env_stratification : stratification;
+  env_universes : UGraph.t;
+  env_universes_lbound : UGraph.Bound.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
@@ -126,11 +120,8 @@ let empty_env = {
   env_named_context = empty_named_context_val;
   env_rel_context = empty_rel_context_val;
   env_nb_rel = 0;
-  env_stratification = {
-    env_universes = UGraph.initial_universes;
-    env_sprop_allowed = true;
-    env_universes_lbound = UGraph.Bound.Set;
-    env_engagement = PredicativeSet };
+  env_universes = UGraph.initial_universes;
+  env_universes_lbound = UGraph.Bound.Set;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
   indirect_pterms = Opaqueproof.empty_opaquetab;
@@ -262,13 +253,9 @@ let set_oracle env o =
   let env_typing_flags = { env.env_typing_flags with conv_oracle = o } in
   { env with env_typing_flags }
 
-let engagement env = env.env_stratification.env_engagement
 let typing_flags env = env.env_typing_flags
 
-let is_impredicative_set env =
-  match engagement env with
-  | ImpredicativeSet -> true
-  | _ -> false
+let is_impredicative_set env = env.env_typing_flags.impredicative_set
 
 let is_impredicative_sort env = function
   | Sorts.SProp | Sorts.Prop -> true
@@ -287,15 +274,13 @@ let deactivated_guard env = not (typing_flags env).check_guarded
 
 let indices_matter env = env.env_typing_flags.indices_matter
 
-let universes env = env.env_stratification.env_universes
-let universes_lbound env = env.env_stratification.env_universes_lbound
+let universes env = env.env_universes
+let universes_lbound env = env.env_universes_lbound
 
 let set_universes g env =
-  {env with env_stratification = {env.env_stratification with env_universes=g}}
+  {env with env_universes=g}
 
-let set_universes_lbound env lbound =
-  let env_stratification = { env.env_stratification with env_universes_lbound = lbound } in
-  { env with env_stratification }
+let set_universes_lbound env lbound = { env with env_universes_lbound = lbound }
 
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
@@ -400,17 +385,14 @@ let fold_named_context_reverse f ~init env =
 
 (* Universe constraints *)
 
-let map_universes f env =
-  let s = env.env_stratification in
-    { env with env_stratification =
-         { s with env_universes = f s.env_universes } }
+let map_universes f env = set_universes (f env.env_universes) env
 
 let add_constraints c env =
   if Univ.Constraint.is_empty c then env
   else map_universes (UGraph.merge_constraints c) env
 
 let check_constraints c env =
-  UGraph.check_constraints c env.env_stratification.env_universes
+  UGraph.check_constraints c env.env_universes
 
 let add_universes ~lbound ~strict ctx g =
   let g = Array.fold_left
@@ -445,10 +427,6 @@ let push_subgraph (levels,csts) env =
   in
   map_universes add_subgraph env
 
-let set_engagement c env =
-  { env with env_stratification =
-    { env.env_stratification with env_engagement = c } }
-
 (* It's convenient to use [{flags with foo = bar}] so we're smart wrt to it. *)
 let same_flags {
      check_guarded;
@@ -459,6 +437,8 @@ let same_flags {
      share_reduction;
      enable_VM;
      enable_native_compiler;
+     impredicative_set;
+     sprop_allowed;
      cumulative_sprop;
      allow_uip;
   } alt =
@@ -470,6 +450,8 @@ let same_flags {
   share_reduction == alt.share_reduction &&
   enable_VM == alt.enable_VM &&
   enable_native_compiler == alt.enable_native_compiler &&
+  impredicative_set == alt.impredicative_set &&
+  sprop_allowed == alt.sprop_allowed &&
   cumulative_sprop == alt.cumulative_sprop &&
   allow_uip == alt.allow_uip
 [@warning "+9"]
@@ -488,6 +470,9 @@ let set_typing_flags c env =
 let update_typing_flags ?typing_flags env =
   Option.cata (fun flags -> set_typing_flags flags env) env typing_flags
 
+let set_impredicative_set b env =
+  set_typing_flags {env.env_typing_flags with impredicative_set=b} env
+
 let set_cumulative_sprop b env =
   set_typing_flags {env.env_typing_flags with cumulative_sprop=b} env
 
@@ -495,10 +480,9 @@ let set_type_in_type b env =
   set_typing_flags {env.env_typing_flags with check_universes=not b} env
 
 let set_allow_sprop b env =
-  { env with env_stratification =
-    { env.env_stratification with env_sprop_allowed = b } }
+  set_typing_flags {env.env_typing_flags with sprop_allowed=b} env
 
-let sprop_allowed env = env.env_stratification.env_sprop_allowed
+let sprop_allowed env = env.env_typing_flags.sprop_allowed
 
 (* Global constants *)
 

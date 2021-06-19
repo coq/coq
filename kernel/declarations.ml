@@ -15,10 +15,6 @@ open Constr
    declarations. This includes global constants/axioms, mutual
    inductive definitions, modules and module types *)
 
-type set_predicativity = ImpredicativeSet | PredicativeSet
-
-type engagement = set_predicativity
-
 (** {6 Representation of constants (Definition/Axiom) } *)
 
 (** Non-universe polymorphic mode polymorphism (Coq 8.2+): inductives
@@ -91,6 +87,12 @@ type typing_flags = {
 
   indices_matter: bool;
   (** The universe of an inductive type must be above that of its indices. *)
+
+  impredicative_set: bool;
+  (** Predicativity of the [Set] universe. *)
+
+  sprop_allowed: bool;
+  (** If [false], error when encountering [SProp]. *)
 
   cumulative_sprop : bool;
   (** SProp <= Type *)

@@ -39,7 +39,7 @@ type injection_command =
       does not cause a warning, similarly to above. *)
 
 type coqargs_logic_config = {
-  impredicative_set : Declarations.set_predicativity;
+  impredicative_set : bool;
   indices_matter    : bool;
   type_in_type      : bool;
   toplevel_name     : top;
