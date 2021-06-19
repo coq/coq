@@ -462,7 +462,6 @@ Definition id : ID := fun A x => x.
 Definition IDProp := forall A:Prop, A -> A.
 Definition idProp : IDProp := fun A x => x.
 
-Register IDProp as core.IDProp.type.
 Register idProp as core.IDProp.idProp.
 
 (* begin hide *)

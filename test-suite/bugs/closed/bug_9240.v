@@ -1,4 +1,3 @@
-Register unit as core.IDProp.type.
 Register tt as core.IDProp.idProp.
 
 

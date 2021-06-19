@@ -54,26 +54,22 @@ let debug_ho_unification = CDebug.create ~name:"ho-unification" ()
 (*******************************************)
 (* Functions to deal with impossible cases *)
 (*******************************************)
-let impossible_default_case env =
-  let type_of_id = Coqlib.lib_ref "core.IDProp.type" in
-  let c, ctx = UnivGen.fresh_global_instance env (Coqlib.(lib_ref "core.IDProp.idProp")) in
-  let (_, u) = Constr.destRef c in
-  Some (c, Constr.mkRef (type_of_id, u), ctx)
 
-let coq_unit_judge =
-  let open Environ in
-  let make_judge c t = make_judge (EConstr.of_constr c) (EConstr.of_constr t) in
+(* In case the constants id/ID are not defined *)
+let unit_judge_fallback =
   let na1 = make_annot (Name (Id.of_string "A")) Sorts.Relevant in
   let na2 = make_annot (Name (Id.of_string "H")) Sorts.Relevant in
-  fun env ->
-    match impossible_default_case env with
-    | Some (id, type_of_id, ctx) ->
-      make_judge id type_of_id, ctx
-    | None ->
-      (* In case the constants id/ID are not defined *)
-      Environ.make_judge (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
-        (mkProd (na1,mkProp,mkArrow (mkRel 1) Sorts.Relevant (mkRel 2))),
-      Univ.ContextSet.empty
+  make_judge
+    (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
+    (mkProd (na1,mkProp,mkArrow (mkRel 1) Sorts.Relevant (mkRel 2)))
+
+let coq_unit_judge env sigma =
+  match Coqlib.lib_ref "core.IDProp.idProp" with
+  | c ->
+    let sigma, c = Evd.fresh_global env sigma c in
+    let t = Retyping.get_type_of env sigma c in
+    sigma, make_judge c t
+  | exception _ -> sigma, unit_judge_fallback
 
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
@@ -1756,8 +1752,7 @@ let solve_unconstrained_impossible_cases env evd =
   Evd.fold_undefined (fun evk ev_info evd' ->
     match ev_info.evar_source with
     | loc,Evar_kinds.ImpossibleCase ->
-      let j, ctx = coq_unit_judge env in
-      let evd' = Evd.merge_context_set Evd.univ_flexible_alg ?loc evd' ctx in
+      let evd', j = coq_unit_judge env evd' in
       let ty = j_type j in
       let flags = default_flags env in
       instantiate_evar evar_unify flags env evd' evk ty (* should we protect from raising IllTypedInstance? *)
