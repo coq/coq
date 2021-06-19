@@ -260,8 +260,10 @@ let warn_deprecated_hint_rewrite_without_locality =
     (fun () -> strbrk "The default value for rewriting hint locality is currently \
     \"local\" in a section and \"global\" otherwise, but is scheduled to change \
     in a future release. For the time being, adding rewriting hints outside of sections \
-    without specifying an explicit locality is therefore deprecated. It is \
-    recommended to use \"export\" whenever possible.")
+    without specifying an explicit locality attribute is therefore deprecated. It is \
+    recommended to use \"export\" whenever possible. Use the attributes \
+    #[local], #[global] and #[export] depending on your choice. For example: \
+    \"#[export] Hint Rewrite foo : bar.\"")
 
 (* To add rewriting rules to a base *)
 let add_rew_rules ~locality base lrul =
