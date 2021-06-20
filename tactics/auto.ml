@@ -457,7 +457,8 @@ let intro_register dbg kont db =
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
-let search d n mod_delta db_list local_db =
+let search d n db_list local_db =
+  let mod_delta = false in
   let rec search d n local_db =
     (* spiwack: the test of [n] to 0 must be done independently in
        each goal. Hence the [tclEXTEND] *)
@@ -485,7 +486,7 @@ let search d n mod_delta db_list local_db =
 
 let default_search_depth = ref 5
 
-let delta_auto debug mod_delta n lems dbnames =
+let delta_auto debug n lems dbnames =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -494,16 +495,14 @@ let delta_auto debug mod_delta n lems dbnames =
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
-    (search d n mod_delta db_list hints)
+    (search d n db_list hints)
   end
 
-let auto ?(debug=Off) n = delta_auto debug false n
-
-let new_auto ?(debug=Off) n = delta_auto debug true n
+let auto ?(debug=Off) n = delta_auto debug n
 
 let default_auto = auto !default_search_depth [] []
 
-let delta_full_auto ?(debug=Off) mod_delta n lems =
+let delta_full_auto ?(debug=Off) n lems =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -512,11 +511,10 @@ let delta_full_auto ?(debug=Off) mod_delta n lems =
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
-    (search d n mod_delta db_list hints)
+    (search d n db_list hints)
   end
 
-let full_auto ?(debug=Off) n = delta_full_auto ~debug false n
-let new_full_auto ?(debug=Off) n = delta_full_auto ~debug true n
+let full_auto ?(debug=Off) n = delta_full_auto ~debug n
 
 let default_full_auto = full_auto !default_search_depth []
 

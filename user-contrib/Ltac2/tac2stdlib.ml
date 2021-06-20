@@ -565,10 +565,6 @@ let () = define_prim4 "tac_auto" debug (option int) (list (thunk constr)) (optio
   Tac2tactics.auto dbg n lems dbs
 end
 
-let () = define_prim4 "tac_newauto" debug (option int) (list (thunk constr)) (option (list ident)) begin fun dbg n lems dbs ->
-  Tac2tactics.new_auto dbg n lems dbs
-end
-
 let () = define_prim3 "tac_typeclasses_eauto" (option strategy) (option int) (option (list ident)) begin fun str n dbs ->
   Tac2tactics.typeclasses_eauto str n dbs
 end
