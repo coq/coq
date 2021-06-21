@@ -506,25 +506,14 @@ let build_layout (sn:session) =
       ~callback:(fun () -> if sn.buffer#modified
         then img#set_stock `SAVE
         else img#set_stock `YES) in
-  (* There was an issue in the previous implementation for setting the
-     position of the handle. It was using the size_allocate event but
-     there is an issue with size_allocate. G. Melquiond analyzed that
-     at starting time, the size_allocate event is only issued in
-     Layout phase of the gtk loop so that it is actually processed
-     only in the next iteration of the event-update-layout-paint loop,
-     after the user does something and trigger an effective new event
-     (see #10578). So we preventively enforce an estimated position
-     for the handles to be used in the very first initializing
-     iteration of the loop *)
-  let () =
-    (* 14 is the estimated size for vertical borders *)
-    let estimated_vertical_handle_position = (fst !window_size - 14) / 2 in
-    (* 169 is the estimated size for menus, command line, horizontal border *)
-    let estimated_horizontal_handle_position = (snd !window_size - 169) / 2 in
-    if estimated_vertical_handle_position > 0 then
-      eval_paned#set_position estimated_vertical_handle_position;
-    if estimated_horizontal_handle_position > 0 then
-      state_paned#set_position estimated_horizontal_handle_position in
+
+  ignore @@ Glib.Idle.add (fun _ ->
+    let open Gtk in
+    let open GtkBase in
+    eval_paned #set_position ((Widget.allocation eval_paned#as_widget).width/2);
+    state_paned#set_position ((Widget.allocation state_paned#as_widget).height/2);
+    false);
+
   session_box#pack sn.finder#coerce;
   session_box#pack sn.segment#coerce;
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
