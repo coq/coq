@@ -24,7 +24,8 @@
    number    = {3},
    pages     = {519-525}
 }
->> *)
+>>
+*)
 
 Set Implicit Arguments.
 
