@@ -175,7 +175,8 @@ $(DOC_STDLIB_HTML_DIR)/genindex.html: | $(COQDOC) $(COQDOCCSS) $(ALLVO)
 endif
 	- rm -rf $(DOC_STDLIB_HTML_DIR)
 	$(MKDIR) -p $(DOC_STDLIB_HTML_DIR)
-	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -d $(DOC_STDLIB_HTML_DIR) --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
+	$(SHOW)'COQDOC VFILES'
+	$(HIDE)export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -d $(DOC_STDLIB_HTML_DIR) --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
 	  $(DOCLIBS) $(BUILD_VFILES)
 	mv $(DOC_STDLIB_HTML_DIR)/index.html $(DOC_STDLIB_HTML_DIR)/genindex.html
 
