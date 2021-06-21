@@ -25,7 +25,7 @@
   [[Carlström04]] Jesper Carlström, EM + Ext_ + AC_int is equivalent to
   AC_ext, Mathematical Logic Quaterly, vol 50(3), pp 236-240, 2004.
 
-  [[Martin-Löf05] Per Martin-Löf, 100 years of Zermelo’s axiom of
+  [[Martin-Löf05]] Per Martin-Löf, 100 years of Zermelo’s axiom of
   choice: what was the problem with it?, lecture notes for KTH/SU
   colloquium, 2005.
 
