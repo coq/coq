@@ -5,3 +5,5 @@ Proof.
 test_tactic.
 exact I.
 Qed.
+
+Definition foo := 4 + 4.

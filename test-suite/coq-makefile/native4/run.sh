@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-NONATIVECOMP=$(grep "let native_compiler = NativeOff" ../../../config/coq_config.ml)||true
-if [[ $(which ocamlopt) && ! $NONATIVECOMP ]]; then
+if ! command -v ocamlopt; then
+    echo "Skipped: no ocamlopt"
+    exit 0
+fi
 
 . ../template/init.sh
 
@@ -9,6 +11,12 @@ if [[ $(which ocamlopt) && ! $NONATIVECOMP ]]; then
 export COQEXTRAFLAGS="-native-compiler yes"
 
 coq_makefile -f _CoqProject -o Makefile
+
+if ! grep -q COQMF_COQ_NATIVE_COMPILER_DEFAULT=yes Makefile.conf; then
+    echo "Skipped: native compile disabled or ondemand"
+    exit 0
+fi
+
 cat Makefile.conf
 make
 make html mlihtml
@@ -31,6 +39,3 @@ sort > desired <<EOT
 ./test/.coq-native/Ntest_test.cmxs
 EOT
 exec diff -u desired actual
-
-fi
-exit 0 # test skipped
