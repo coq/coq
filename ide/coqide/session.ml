@@ -36,14 +36,15 @@ type breakpoint = {
 type session = {
   buffer : GText.buffer;
   script : Wg_ScriptView.script_view;
-  proof : Wg_ProofView.proof_view;
+  proof : Wg_ProofView.proof_view;   (* the proof context panel *)
   messages : Wg_RoutedMessageViews.message_views_router;
-  segment : Wg_Segment.segment;
+  segment : Wg_Segment.segment; (* color coded status bar near bottom of the screen *)
   fileops : FileOps.ops;
   coqops : CoqOps.ops;
   coqtop : Coq.coqtop;
-  command : Wg_Command.command_window;
-  finder : Wg_Find.finder;
+  command : Wg_Command.command_window; (* aka the Query Pane *)
+  finder : Wg_Find.finder; (* Find / Replace panel *)
+  debugger : Wg_Debugger.debugger;
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
@@ -413,6 +414,7 @@ let create file coqtop_args =
   let segment = new Wg_Segment.segment () in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
   finder#setup_is_script_editable (fun _ -> script#editable2);
+  let debugger = new Wg_Debugger.debugger "foo" in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =
@@ -447,6 +449,7 @@ let create file coqtop_args =
     coqtop=coqtop;
     command=command;
     finder=finder;
+    debugger=debugger;
     tab_label= tab_label;
     errpage=errpage;
     jobpage=jobpage;
@@ -468,12 +471,18 @@ let kill (sn:session) =
 let window_size = ref (window_width#get, window_height#get)
 
 let build_layout (sn:session) =
-  let session_paned = GPack.paned `VERTICAL () in
+  let debugger_paned = GPack.paned `VERTICAL () in
+  let debugger_box =
+    GPack.vbox ~packing:(debugger_paned#pack2 ~shrink:false ~resize:true) ()
+  in
+
+  let session_paned = GPack.paned `VERTICAL
+    ~packing:(debugger_paned#pack1 ~shrink:false ~resize: true) () in
   let session_box =
     GPack.vbox ~packing:(session_paned#pack1 ~shrink:false ~resize:true) ()
   in
 
-  (* Right part of the window. *)
+  (* Left part of the window. *)
 
   let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
     ~packing:(session_box#pack ~expand:true) () in
@@ -481,6 +490,9 @@ let build_layout (sn:session) =
     ~packing:(eval_paned#pack1 ~shrink:false) () in
   let script_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
+
+  (* Right part of the window *)
+
   let state_paned = GPack.paned `VERTICAL
     ~packing:(eval_paned#pack2 ~shrink:true) () in
 
@@ -538,30 +550,21 @@ let build_layout (sn:session) =
       ~callback:(fun () -> if sn.buffer#modified
         then img#set_stock `SAVE
         else img#set_stock `YES) in
-  (* There was an issue in the previous implementation for setting the
-     position of the handle. It was using the size_allocate event but
-     there is an issue with size_allocate. G. Melquiond analyzed that
-     at starting time, the size_allocate event is only issued in
-     Layout phase of the gtk loop so that it is actually processed
-     only in the next iteration of the event-update-layout-paint loop,
-     after the user does something and trigger an effective new event
-     (see #10578). So we preventively enforce an estimated position
-     for the handles to be used in the very first initializing
-     iteration of the loop *)
-  let () =
-    (* 14 is the estimated size for vertical borders *)
-    let estimated_vertical_handle_position = (fst !window_size - 14) / 2 in
-    (* 169 is the estimated size for menus, command line, horizontal border *)
-    let estimated_horizontal_handle_position = (snd !window_size - 169) / 2 in
-    if estimated_vertical_handle_position > 0 then
-      eval_paned#set_position estimated_vertical_handle_position;
-    if estimated_horizontal_handle_position > 0 then
-      state_paned#set_position estimated_horizontal_handle_position in
   session_box#pack sn.finder#coerce;
-  session_box#pack sn.segment#coerce;
+  debugger_box#add sn.debugger#coerce;
+  debugger_box#pack ~expand:false ~fill:false sn.segment#coerce;
+  debugger_paned#set_position 1000000;
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
+
+  ignore @@ Glib.Idle.add (fun _ ->
+    let open Gtk in
+    let open GtkBase in
+    eval_paned #set_position ((Widget.allocation eval_paned#as_widget).width/2);
+    state_paned#set_position ((Widget.allocation state_paned#as_widget).height/2);
+    false);
+
   let detach, _ = add_msg_page 0 sn.tab_label#text "Messages" sn.messages#default_route#coerce in
   let _, label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
   let _, _ = add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce in
@@ -586,4 +589,4 @@ let build_layout (sn:session) =
     end
   in
   let () = sn.control <- control in
-  (Some session_tab#coerce,None,session_paned#coerce)
+  (Some session_tab#coerce,None,debugger_paned#coerce)

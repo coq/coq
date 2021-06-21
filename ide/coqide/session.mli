@@ -43,6 +43,7 @@ type session = {
   coqtop : Coq.coqtop;
   command : Wg_Command.command_window;
   finder : Wg_Find.finder;
+  debugger : Wg_Debugger.debugger;
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
