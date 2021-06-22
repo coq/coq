@@ -229,7 +229,7 @@ let add_rec_path ~unix_path ~coq_root =
   else
     Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
-let init_load_path includes =
+let init_load_path_std () =
   let () = Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x)) in
   let ( / ) = Filename.concat in
   let coqlib = Envars.coqlib () in
@@ -246,13 +246,16 @@ let init_load_path includes =
   List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Loadpath.default_root_prefix)
     (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
   (* then directories in COQPATH *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Loadpath.default_root_prefix) coqpath;
-  (* then current directory *)
+  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Loadpath.default_root_prefix) coqpath
+
+let init_load_path ~boot ~vo_path =
+  if not boot then init_load_path_std ();
+  (* always add current directory *)
   add_path ~unix_path:"." ~coq_root:Loadpath.default_root_prefix;
   (* additional loadpath, given with -R/-Q options *)
   List.iter
     (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
-    (List.rev includes)
+    (List.rev vo_path)
 
 let fb_handler = function
   | Feedback.{ contents; _ } ->
@@ -283,6 +286,7 @@ let compile senv ~in_file =
   Library.save_library_to (Safe_typing.env_of_safe_env senv) dir out_vo modl
 
 type opts = {
+  boot : bool;
   vo_path : (string * DirPath.t) list;
   ml_path : string list;
 }
@@ -290,6 +294,11 @@ type opts = {
 let rec parse_args (args : string list) accu =
   match args with
   | [] -> CErrors.user_err (Pp.str "parse args error: missing argument")
+  | "-boot" :: rem ->
+    parse_args rem { accu with boot = true}
+  (* We ignore as we don't require Prelude explicitly *)
+  | "-noinit" :: rem ->
+    parse_args rem accu
   | ("-Q" | "-R") :: d :: p :: rem ->
     let p = Loadpath.dirpath_of_string p in
     let accu = { accu with vo_path = (d, p) :: accu.vo_path } in
@@ -317,9 +326,9 @@ let rec parse_args (args : string list) accu =
 let () =
   let _ = Feedback.add_feeder fb_handler in
   try
-    let opts = { vo_path = []; ml_path = [] } in
+    let opts = { boot = false; vo_path = []; ml_path = [] } in
     let opts, in_file = parse_args (List.tl @@ Array.to_list Sys.argv) opts in
-    let () = init_load_path (List.rev opts.vo_path) in
+    let () = init_load_path ~boot:opts.boot ~vo_path:(List.rev opts.vo_path) in
     let () = Nativelib.include_dirs := List.rev opts.ml_path in
     let senv = init_coq () in
     compile senv ~in_file
