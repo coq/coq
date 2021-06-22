@@ -1,5 +1,5 @@
-Set Debug "cbn".
+Set Debug "ThisFlagDoesNotExist".
 
-Set Debug "RAKAM".
+Set Debug "Cbv".
 
-Check 2 + 3 = 0.
+Eval cbv in id tt.
