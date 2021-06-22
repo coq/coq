@@ -303,7 +303,7 @@ project sf 'https://github.com/DeepSpec/sf' '41c4ddd76dbde6a7aede634d7b003a64b5b
 ########################################################################
 # Coqtail
 ########################################################################
-project coqtail 'https://github.com/whonore/Coqtail' '2f1c81a86342e333a916a1bc7db5218cf115a191'
+project coqtail 'https://github.com/whonore/Coqtail' 'aa817559be68d9e90316bc7e5d3205fe2ffcffbe'
 
 ########################################################################
 # Deriving
