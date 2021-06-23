@@ -458,8 +458,8 @@ let mu env sigma t =
       | None -> sigma, (None, v, IdCoe)
   in aux t
 
-let unify_product env sigma j =
-  let t = whd_all env sigma j.uj_type in
+let unify_product env sigma typ =
+  let t = whd_all env sigma typ in
   match EConstr.kind sigma t with
   | Prod _ -> Inl sigma
   | Evar ev ->
@@ -471,38 +471,94 @@ let unify_product env sigma j =
     let sigma, (codomain_hole, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
     let prod = mkProd (Context.anonR, domain_hole, codomain_hole) in
     (* NB: unification needs the un-reduced type to do heuristics like canonical structures *)
-    try Inl (Evarconv.unify env sigma Reduction.CUMUL j.uj_type prod)
+    try Inl (Evarconv.unify env sigma Reduction.CUMUL typ prod)
     with PretypeError _ -> Inr t (* return the reduced type to avoid double reducing *)
 
+(* Invariant: if [proj] is [Some] then [args_len < npars]
+     (and always [args_len = length rev_args]) *)
+type delayed_app_body = {
+  head : constr;
+  rev_args : constr list;
+  args_len : int;
+  proj : Projection.Repr.t option
+}
+
+let force_app_body {head;rev_args} =
+  mkApp (head, Array.rev_of_list rev_args)
+
+let push_arg {head;rev_args;args_len;proj} arg =
+  match proj with
+  | None ->
+    {
+      head;
+      rev_args=arg::rev_args;
+      args_len=args_len+1;
+      proj=None;
+    }
+  | Some p ->
+    let npars = Projection.Repr.npars p in
+    if Int.equal args_len npars then
+      {
+        head = mkProj (Projection.make p false, arg);
+        rev_args=[];
+        args_len=0;
+        proj=None;
+      }
+    else
+      {
+        head;
+        rev_args=arg::rev_args;
+        args_len=args_len+1;
+        proj;
+      }
+
+let start_app_body sigma head =
+  let proj = match EConstr.kind sigma head with
+    | Const (p,_) ->
+      Structures.PrimitiveProjections.find_opt p
+    | _ -> None
+  in
+  {head; rev_args=[]; args_len=0; proj}
+
+let reapply_coercions_body sigma trace body =
+  match trace with
+  | IdCoe -> body
+  | _ ->
+    let body = force_app_body body in
+    let body = reapply_coercions sigma trace body in
+    start_app_body sigma body
+
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
-let inh_app_fun_core ~program_mode env sigma j =
-  match unify_product env sigma j with
-  | Inl sigma -> sigma, j, IdCoe
+let inh_app_fun_core ~program_mode env sigma body typ =
+  match unify_product env sigma typ with
+  | Inl sigma -> sigma, body, typ, IdCoe
   | Inr t ->
     try
-      let t,p = lookup_path_to_fun_from env sigma j.uj_type in
-      apply_coercion env sigma p j t
+      let t,p = lookup_path_to_fun_from env sigma typ in
+      let j = {uj_val=force_app_body body; uj_type = typ} in
+      let sigma, j, trace = apply_coercion env sigma p j t in
+      sigma, start_app_body sigma j.uj_val, j.uj_type, trace
     with (Not_found | NoCoercion) as exn ->
       let _, info = Exninfo.capture exn in
       if program_mode then
         try
           let sigma, (coercef, t, trace) = mu env sigma t in
+          let j = {uj_val=force_app_body body; uj_type = typ} in
           let sigma, uj_val = app_opt env sigma coercef j.uj_val in
-          let res = { uj_val ; uj_type = t } in
-          (sigma, res, trace)
+          (sigma, start_app_body sigma uj_val, t, trace)
         with NoSubtacCoercion | NoCoercion ->
-          (sigma,j,IdCoe)
+          (sigma,body,typ,IdCoe)
       else Exninfo.iraise (NoCoercion,info)
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
-let inh_app_fun ~program_mode resolve_tc env sigma j =
-  try inh_app_fun_core ~program_mode env sigma j
+let inh_app_fun ~program_mode resolve_tc env sigma body typ =
+  try inh_app_fun_core ~program_mode env sigma body typ
   with
   | NoCoercion when not resolve_tc
-    || not (get_use_typeclasses_for_conversion ()) -> (sigma, j, IdCoe)
+    || not (get_use_typeclasses_for_conversion ()) -> (sigma, body, typ, IdCoe)
   | NoCoercion ->
-    try inh_app_fun_core ~program_mode env (saturate_evd env sigma) j
-    with NoCoercion -> (sigma, j, IdCoe)
+    try inh_app_fun_core ~program_mode env (saturate_evd env sigma) body typ
+    with NoCoercion -> (sigma, body, typ, IdCoe)
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
