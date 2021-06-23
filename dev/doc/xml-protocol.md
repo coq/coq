@@ -34,6 +34,7 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [Db_loc](#command-db_loc)
   - [Db_upd_bpts](#command-db_upd_bpts)
   - [Db_continue](#command-db_continue)
+  - [Db_stack](#command-db_stack)
 * [Feedback messages](#feedback)
   - [Added Axiom](#feedback-addedaxiom)
   - [Processing](#feedback-processing)
@@ -657,7 +658,9 @@ sent a `prompt` message.
 Returns the location where the debugger has stopped, consisting of the absolute filename
 of the .v file (or "ToplevelInput") and the beginning and ending offset therein.
 ```html
-<call val="Db_loc"><unit/></call>
+<call val="Db_loc">
+  <unit/>
+</call>
 ```
 #### *Returns*
 
@@ -736,6 +739,23 @@ stop at the breakpoint.
 
 #### *Returns*
 * Unit.
+
+
+
+### <a name="command-db_stack">**Db_stack()**</a>
+
+Returns the Ltac call stack.  Each entry has a description of what was called
+(e.g. the tactic name) plus the absolute pathname of the file and the offset of
+the call therein.  The top of stack is the TBD: FIRST/LAST entry in th elist.
+
+```html
+<call val="Db_stack">
+  </unit>
+</call>
+```
+
+#### *Returns*
+* TBA.
 
 
 

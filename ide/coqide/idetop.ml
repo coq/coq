@@ -430,6 +430,10 @@ let db_upd_bpts updates =
         DebugHook.update_bpt false bp
     ) updates
 
+let db_stack () =
+  Printf.printf "server: db_stack call\n%!";
+  [(("tacname", "filename"), [ 123 ])]
+
 let get_options () =
   let table = Goptions.get_tables () in
   let fold key state accu = (key, export_option_state state) :: accu in
@@ -523,6 +527,7 @@ let eval_call c =
     Interface.db_loc = db_loc;
     Interface.db_upd_bpts = db_upd_bpts;
     Interface.db_continue = db_continue;
+    Interface.db_stack = db_stack;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;

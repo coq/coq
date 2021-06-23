@@ -550,13 +550,6 @@ let build_layout (sn:session) =
       ~callback:(fun () -> if sn.buffer#modified
         then img#set_stock `SAVE
         else img#set_stock `YES) in
-  session_box#pack sn.finder#coerce;
-  debugger_box#add sn.debugger#coerce;
-  debugger_box#pack ~expand:false ~fill:false sn.segment#coerce;
-  debugger_paned#set_position 1000000;
-  sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
-  script_scroll#add sn.script#coerce;
-  proof_scroll#add sn.proof#coerce;
 
   ignore @@ Glib.Idle.add (fun _ ->
     let open Gtk in
@@ -565,6 +558,13 @@ let build_layout (sn:session) =
     state_paned#set_position ((Widget.allocation state_paned#as_widget).height/2);
     false);
 
+  session_box#pack sn.finder#coerce;
+  debugger_box#add sn.debugger#coerce;
+  debugger_box#pack ~expand:false ~fill:false sn.segment#coerce;
+  debugger_paned#set_position 1000000;
+  sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
+  script_scroll#add sn.script#coerce;
+  proof_scroll#add sn.proof#coerce;
   let detach, _ = add_msg_page 0 sn.tab_label#text "Messages" sn.messages#default_route#coerce in
   let _, label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
   let _, _ = add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce in

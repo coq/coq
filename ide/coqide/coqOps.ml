@@ -146,6 +146,8 @@ object
     next:(Interface.db_upd_bpts_rty Interface.value -> unit task) -> unit task
   method process_db_continue : db_continue_opt ->
     next:(Interface.db_continue_rty Interface.value -> unit task) -> unit task
+  method process_db_stack :
+    next:(Interface.db_stack_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
   method raw_coq_query :
@@ -786,6 +788,10 @@ object(self)
   method process_db_continue opt ~next : unit Coq.task =
     let db_continue = Coq.db_continue opt in
     Coq.bind db_continue next
+
+  method process_db_stack ~next : unit Coq.task =
+    let db_stack = Coq.db_stack () in
+    Coq.bind db_stack next
 
   method private process_until_iter iter =
     let until _ start stop =

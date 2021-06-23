@@ -46,6 +46,7 @@ class type message_view =
     method set_editable2 : bool -> unit
     method set_forward_send_db_cmd : (string -> unit) -> unit
     method set_forward_send_db_loc : (unit -> unit) -> unit
+    method set_forward_send_db_stack : (unit -> unit) -> unit
   end
 
 let forward_keystroke = ref ((fun x -> failwith "forward_keystroke")
@@ -106,13 +107,17 @@ let message_view () : message_view =
     lines
   in
 
-  let forward_send_db_loc = ref ((fun x -> failwith "forward_send_db_loc")
+  let forward_send_db_loc   = ref ((fun x -> failwith "forward_send_db_loc")
+    : unit -> unit) in
+  let forward_send_db_stack = ref ((fun x -> failwith "forward_send_db_stack")
     : unit -> unit) in
 
   (* Insert a prompt and make the buffer editable. *)
   let insert_ltac_debug_prompt ?(refresh=false) msg =
-    if not refresh then
+    if not refresh then begin
       !forward_send_db_loc ();
+      !forward_send_db_stack ();  (* todo: must be queued up *)
+    end;
     let tags = [] in
     let mark = `MARK mark in
     let lines = insert_xml ~mark buffer ~tags msg in
@@ -259,6 +264,7 @@ let message_view () : message_view =
     method set_editable2 v = view#set_editable v; view#set_cursor_visible v
     method set_forward_send_db_cmd f = forward_send_db_cmd := f
     method set_forward_send_db_loc f = forward_send_db_loc := f
+    method set_forward_send_db_stack f = forward_send_db_stack := f
   end
   in
   (* Is there a better way to connect the signal ? *)

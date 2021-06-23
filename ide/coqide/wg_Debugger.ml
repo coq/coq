@@ -22,13 +22,12 @@ class debugger name =
       let vb = GPack.vbox ~packing:(widget#pack ~expand:true (*~fill:true*)) () in
       let _ = GMisc.label ~text:"Call Stack" ~xalign:0.02 (* todo: use padding instead of xalign *)
         ~packing:(vb#pack ~expand:false ~fill:true ~padding:3) () in
-(*        set not editable*)
 (*      should be resizable*)
 (*      does ~expand do anything?*)
       let stack_scroll = GBin.scrolled_window (*~height:125*)
         ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(vb#pack ~expand:true) () in
 
-      let stack = GText.view () in
+      let stack = GText.view ~editable:false ~cursor_visible:false ~wrap_mode:`NONE () in
       stack_scroll#add stack#coerce;
 
       (* todo: makes widget not resizable *)

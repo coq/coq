@@ -176,7 +176,9 @@ let db_cmd sn cmd =
       (sn.coqops#process_db_cmd cmd ~next:(function | _ -> Coq.return ()))
       (fun () -> Minilib.log "Coq busy, discarding db_cmd")
 
-let forward_db_loc = ref ((fun x -> failwith "forward_db_loc")
+let forward_db_loc   = ref ((fun x -> failwith "forward_db_loc")
+                     : session -> unit -> unit)
+let forward_db_stack = ref ((fun x -> failwith "forward_db_stack")
                      : session -> unit -> unit)
 
 let create_session f =
@@ -186,6 +188,7 @@ let create_session f =
   let sn = Session.create f args in
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_loc (!forward_db_loc sn);
+  (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
   sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
   sn.coqops#set_forward_set_goals_of_dbg_session
     (fun msg ->
@@ -1018,6 +1021,22 @@ let db_loc sn _ =
     (fun () -> Minilib.log "Coq busy, discarding db_loc")
 
 let _ = forward_db_loc := db_loc
+
+(* todo: maybe combine with db_loc--don't need to call both *)
+let db_stack sn _ =
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_stack
+      ~next:(function
+          | Interface.Good frames ->
+            Printf.printf "db_stack returns %d entries\n%!" (List.length frames);
+            Coq.return ()
+          | Interface.Fail _ ->
+            Coq.return ()
+          ))
+      (fun () -> Minilib.log "Coq busy, discarding db_stack")
+  )
+
+let _ = forward_db_stack := db_stack
 
 let next_bpt = ref 0
 

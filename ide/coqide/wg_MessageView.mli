@@ -36,6 +36,7 @@ class type message_view =
     method set_editable2 : bool -> unit
     method set_forward_send_db_cmd : (string -> unit) -> unit
     method set_forward_send_db_loc : (unit -> unit) -> unit
+    method set_forward_send_db_stack : (unit -> unit) -> unit
   end
 
 val message_view : unit -> message_view
