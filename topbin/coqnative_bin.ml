@@ -114,9 +114,8 @@ let libraries_table : string DPmap.t ref = ref DPmap.empty
 let register_loaded_library senv libname file =
   let () = assert (not @@ DPmap.mem libname !libraries_table) in
   let () = libraries_table := DPmap.add libname file !libraries_table in
-  let dirname = Filename.dirname file in
-  let () = Nativelib.enable_library dirname libname in
-  let () = Nativelib.link_libraries () in
+  let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
+  let () = Nativecode.register_native_file prefix in
   senv
 
 let mk_library sd f md digests univs =
