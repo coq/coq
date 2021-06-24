@@ -103,6 +103,10 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
                         |> List.rev
                         |> prlist_with_sep pr_comma Names.Id.print)
                     ++ str ".")
+    else
+      let pstate = Vernacstate.freeze_interp_state ~marshallable:false in
+      Declare.Obls.check_solved_obligations ~pm:pstate.Vernacstate.program ~what_for:(Pp.str "file");
+      Vernacstate.unfreeze_interp_state pstate
   in
   let output_native_objects = match opts.config.native_compiler with
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
