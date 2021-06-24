@@ -199,6 +199,10 @@ Tactics
 - **Deprecated:**
   The micromega option :flag:`Simplex`, which is currently set by default
   (`#13781 <https://github.com/coq/coq/pull/13781>`_, by Frédéric Besson).
+- **Deprecated:**
+  the undocumented `new auto` tactic
+  (`#14528 <https://github.com/coq/coq/pull/14528>`_,
+  by Pierre-Marie Pédrot).
 - **Added:**
   :tacn:`lia` supports the boolean operator `Bool.implb` (`#13715 <https://github.com/coq/coq/pull/13715>`_, by Frédéric Besson).
 - **Added:**
