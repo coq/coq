@@ -475,16 +475,19 @@ let unify_product env sigma typ =
     with PretypeError _ -> Inr t (* return the reduced type to avoid double reducing *)
 
 (* Invariant: if [proj] is [Some] then [args_len < npars]
-     (and always [args_len = length rev_args]) *)
+     (and always [args_len = length rev_args + length args in head]) *)
 type delayed_app_body = {
-  head : constr;
-  rev_args : constr list;
+  mutable head : constr;
+  mutable rev_args : constr list;
   args_len : int;
   proj : Projection.Repr.t option
 }
 
-let force_app_body {head;rev_args} =
-  mkApp (head, Array.rev_of_list rev_args)
+let force_app_body ({head;rev_args} as body) =
+  let head = mkApp (head, Array.rev_of_list rev_args) in
+  body.head <- head;
+  body.rev_args <- [];
+  head
 
 let push_arg {head;rev_args;args_len;proj} arg =
   match proj with
