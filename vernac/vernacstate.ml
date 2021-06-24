@@ -156,6 +156,8 @@ let unfreeze_interp_state { system; lemmas; program; parsing } =
 module Declare_ = struct
 
   let get () = !s_lemmas
+  let get_program () = !s_program
+
   let set (pstate,pm) =
     s_lemmas := pstate;
     s_program := pm
