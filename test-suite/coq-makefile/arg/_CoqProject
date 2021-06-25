@@ -1,7 +1,8 @@
 -R theories test
 -R src test
 -I src
--arg "-w default"
+-arg -w -arg default
+-arg -set -arg "Default Goal Selector=!"
 
 src/test_plugin.mlpack
 src/test.mlg

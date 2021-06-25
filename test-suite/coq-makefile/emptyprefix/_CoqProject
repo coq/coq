@@ -1,7 +1,7 @@
 -R theories ""
 -R src ""
 -I src
--arg "-w default"
+-arg -w -arg default
 
 src/test_plugin.mlpack
 src/test.mlg
