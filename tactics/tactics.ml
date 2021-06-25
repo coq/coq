@@ -1272,7 +1272,7 @@ let error_uninstantiated_metas t clenv =
 let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
   (* Refiner.pose_all_metas_as_evars are resolved *)
-  List.iter (fun (mv,b) -> match b with
+  Metamap.iter (fun mv b -> match b with
   | Clval (_,(c,_),_) ->
     (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
     | Evar (evk,_) when Evd.is_undefined clenv.evd evk

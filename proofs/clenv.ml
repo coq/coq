@@ -350,7 +350,7 @@ let adjust_meta_source evd mv = function
           | None -> None)
         | _ -> None
       else None in
-    let id = try List.find_map f (Evd.meta_list evd) with Not_found -> id in
+    let id = try List.find_map f (Metamap.bindings (Evd.meta_list evd)) with Not_found -> id in
     loc,Evar_kinds.VarInstance id
   | src -> src
 
@@ -482,14 +482,14 @@ let check_bindings bl =
     | [] -> ()
 
 let explain_no_such_bound_variable evd id =
-  let fold l (n, clb) =
+  let fold n clb l =
     let na = match clb with
     | Cltyp (na, _) -> na
     | Clval (na, _, _) -> na
     in
     if na != Anonymous then Name.get_id na :: l else l
   in
-  let mvl = List.fold_left fold [] (Evd.meta_list evd) in
+  let mvl = List.rev @@ Metamap.fold fold (Evd.meta_list evd) [] in
   user_err ~hdr:"Evd.meta_with_name"
     (str"No such bound variable " ++ Id.print id ++
      (if mvl == [] then str " (no bound variables at all in the expression)."
@@ -500,7 +500,7 @@ let explain_no_such_bound_variable evd id =
 
 let meta_with_name evd id =
   let na = Name id in
-  let fold (l1, l2 as l) (n, clb) =
+  let fold n clb (l1, l2 as l) =
     let (na',def) = match clb with
     | Cltyp (na, _) -> (na, false)
     | Clval (na, _, _) -> (na, true)
@@ -508,7 +508,7 @@ let meta_with_name evd id =
     if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
     else l
   in
-  let (mvl, mvnodef) = List.fold_left fold ([], []) (Evd.meta_list evd) in
+  let (mvl, mvnodef) = Metamap.fold fold (Evd.meta_list evd) ([], []) in
   match mvnodef, mvl with
     | _,[]  ->
       explain_no_such_bound_variable evd id
