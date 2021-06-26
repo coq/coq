@@ -245,6 +245,7 @@ module Prim =
     let string = Entry.create "string"
     let lstring = Entry.create "lstring"
     let reference = Entry.create "reference"
+    let fields = Entry.create "fields"
     let by_notation = Entry.create "by_notation"
     let smart_global = Entry.create "smart_global"
     let strategy_level = Entry.create "strategy_level"
