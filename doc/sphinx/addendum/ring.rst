@@ -360,7 +360,7 @@ The syntax for adding a new ring is
       to the expression via the morphism, or returns
       ``InitialRing.NotConstant``. The default behavior is to map only 0 and 1
       to their counterpart in the coefficient set. This is generally not
-      desirable for non trivial computational rings.
+      desirable for nontrivial computational rings.
 
    :n:`preprocess [ @ltac_expr ]`
       specifies a tactic :n:`@ltac_expr` that is applied as a

@@ -463,7 +463,7 @@ This is compiled into:
    Set Printing Matching.
 
 In the previous examples patterns do not conflict with, but sometimes
-it is comfortable to write patterns that admit a non trivial
+it is comfortable to write patterns that admit a nontrivial
 superposition. Consider the boolean function :g:`lef` that given two
 natural numbers yields :g:`true` if the first one is less or equal than the
 second one and :g:`false` otherwise. We can write it as follows:

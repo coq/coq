@@ -5,17 +5,27 @@ Reasoning with inductive types
 Applying constructors
 ---------------------
 
-The tactics presented here specialize :tacn:`apply` (and
-:tacn:`eapply`) to the case of constructors of inductive types.
+The tactics presented here specialize :tacn:`apply` and
+:tacn:`eapply` to constructors of inductive types.
 
-.. tacn:: constructor @natural
-   :name: constructor
+.. tacn:: constructor {? @nat_or_var } {? with @bindings }
 
-   This tactic applies to a goal such that its conclusion is an inductive
-   type (say :g:`I`). The argument :token:`natural` must be less or equal to the
-   numbers of constructor(s) of :g:`I`. Let :n:`c__i` be the i-th
-   constructor of :g:`I`, then :g:`constructor i` is equivalent to
-   :n:`intros; apply c__i`.
+   First does :n:`repeat intro; hnf` on the goal.  If the result is an inductive
+   type, then apply the appropriate constructor(s), and otherwise fail.
+   If :n:`@nat_or_var` is specified and has the
+   value `i`, it uses :n:`apply c__i`, where :n:`c__i` is the i-th constructor
+   of :g:`I`.  If not specified, the tactic tries all the constructors,
+   which can result in more than one success (e.g. for `\\/`) when using
+   backtracking tactics such as `constructor; ...`.  See :tacn:`ltac-seq`.
+
+   :n:`{? with @bindings }`
+     If specified, the :n:`apply` is done as :n:`apply … with @bindings`.
+
+     .. warning::
+
+        The terms in :token:`bindings` are checked in the context
+        where constructor is executed and not in the context where :tacn:`apply`
+        is executed (the introductions are not taken into account).
 
    .. exn:: Not an inductive product.
       :undocumented:
@@ -23,212 +33,209 @@ The tactics presented here specialize :tacn:`apply` (and
    .. exn:: Not enough constructors.
       :undocumented:
 
-   .. tacv:: constructor
+   .. exn:: The type has no constructors.
+      :undocumented:
 
-      This tries :g:`constructor 1` then :g:`constructor 2`, ..., then
-      :g:`constructor n` where ``n`` is the number of constructors of the head
-      of the goal.
+.. tacn:: split {? with @bindings }
 
-   .. tacv:: constructor @natural with @bindings
+   Equivalent to :n:`constructor 1 {? with @bindings }` when the
+   conclusion is an inductive type with a single constructor.  The :n:`@bindings`
+   specify any parameters required for the constructor. It is
+   typically used to split conjunctions in the conclusion such as `A /\\ B` into
+   two new goals `A` and `B`.
 
-      Let ``c`` be the i-th constructor of :g:`I`, then
-      :n:`constructor i with @bindings` is equivalent to
-      :n:`intros; apply c with @bindings`.
+.. tacn:: exists {*, @bindings }
 
-      .. warning::
+   Equivalent to :n:`constructor 1 with @bindings__i` for each set of bindings
+   (or just :n:`constructor 1` if there are no :n:`@bindings`)
+   when the conclusion is an
+   inductive type with a single constructor.  It is typically used on
+   existential quantifications in the form `exists x, P x.`
 
-         The terms in :token:`bindings` are checked in the context
-         where constructor is executed and not in the context where :tacn:`apply`
-         is executed (the introductions are not taken into account).
+   .. exn:: Not an inductive goal with 1 constructor.
+      :undocumented:
 
-   .. tacv:: split {? with @bindings }
-      :name: split
+.. tacn:: left {? with @bindings }
+          right {? with @bindings }
 
-      This applies only if :g:`I` has a single constructor. It is then
-      equivalent to :n:`constructor 1 {? with @bindings }`. It is
-      typically used in the case of a conjunction :math:`A \wedge B`.
+   These tactics apply only if :g:`I` has two constructors, for
+   instance in the case of a disjunction `A \\/ B`.
+   Then they are respectively equivalent to
+   :n:`constructor 1 {? with @bindings }` and
+   :n:`constructor 2 {? with @bindings }`.
 
-      .. tacv:: exists @bindings
-         :name: exists
+   .. exn:: Not an inductive goal with 2 constructors.
+      :undocumented:
 
-         This applies only if :g:`I` has a single constructor. It is then equivalent
-         to :n:`intros; constructor 1 with @bindings.` It is typically used in
-         the case of an existential quantification :math:`\exists x, P(x).`
+.. tacn:: econstructor {? @nat_or_var {? with @bindings } }
+          eexists {*, @bindings }
+          esplit {? with @bindings }
+          eleft {? with @bindings }
+          eright {? with @bindings }
 
-      .. tacv:: exists {+, @bindings }
+   These tactics behave like :tacn:`constructor`,
+   :tacn:`exists`, :tacn:`split`, :tacn:`left` and :tacn:`right`,
+   but they introduce existential variables instead of failing
+   when a variable can't be instantiated
+   (cf. :tacn:`eapply` and :tacn:`apply`).
 
-         This iteratively applies :n:`exists @bindings`.
+.. example:: :tacn:`constructor`, :tacn:`left` and :tacn:`right`
 
-      .. exn:: Not an inductive goal with 1 constructor.
-         :undocumented:
+   .. coqtop:: reset all
 
-   .. tacv:: left {? with @bindings }
-             right {? with @bindings }
-      :name: left; right
+      Print or.  (* or, represented by \/, has two constructors, or_introl and or_intror *)
+      Goal  forall P1 P2 : Prop, P1 -> P1 \/ P2.
+      constructor 1.  (* equivalent to "left" *)
+      apply H.  (* success *)
 
-      These tactics apply only if :g:`I` has two constructors, for
-      instance in the case of a disjunction :math:`A \vee B`.
-      Then, they are respectively equivalent to
-      :n:`constructor 1 {? with @bindings }` and
-      :n:`constructor 2 {? with @bindings }`.
+   In contrast, we won't be able to complete the proof if we select constructor 2:
 
-      .. exn:: Not an inductive goal with 2 constructors.
-         :undocumented:
+   .. coqtop:: reset none
 
-   .. tacv:: econstructor
-             eexists
-             esplit
-             eleft
-             eright
-      :name: econstructor; eexists; esplit; eleft; eright
+      Goal  forall P1 P2 : Prop, P1 -> P1 \/ P2.
 
-      These tactics and their variants behave like :tacn:`constructor`,
-      :tacn:`exists`, :tacn:`split`, :tacn:`left`, :tacn:`right` and their
-      variants but they introduce existential variables instead of failing
-      when the instantiation of a variable cannot be found
-      (cf. :tacn:`eapply` and :tacn:`apply`).
+   .. coqtop:: all
+
+      constructor 2.  (* equivalent to "right" *)
+
+   You can also apply a constructor by name:
+
+   .. coqtop:: reset none
+
+      Goal  forall P1 P2 : Prop, P1 -> P1 \/ P2.
+
+   .. coqtop:: all
+
+      intros; apply or_introl.  (* equivalent to "left" *)
+
 
 .. _CaseAnalysisAndInduction:
 
-Case analysis and induction
--------------------------------
+Case analysis
+-------------
 
-The tactics presented in this section implement induction or case
-analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`).
+The tactics in this section implement case
+analysis on inductive or co-inductive objects (see :ref:`variants`).
 
-.. tacn:: destruct @term
-   :name: destruct
+.. tacn:: destruct {+, @induction_clause } {? @induction_principle }
 
-   This tactic applies to any goal. The argument :token:`term` must be of
-   inductive or co-inductive type and the tactic generates subgoals, one
-   for each possible form of :token:`term`, i.e. one for each constructor of the
-   inductive or co-inductive type. Unlike :tacn:`induction`, no induction
-   hypothesis is generated by :tacn:`destruct`.
+   .. insertprodn induction_clause induction_principle
 
-   .. tacv:: destruct @ident
+   .. prodn::
+      induction_clause ::= @induction_arg {? as @or_and_intropattern } {? eqn : @naming_intropattern } {? @occurrences }
+      induction_arg ::= @natural
+      | @one_term_with_bindings
+      induction_principle ::= using @one_term {? with @bindings } {? @occurrences }
 
-      If :token:`ident` denotes a quantified variable of the conclusion
-      of the goal, then :n:`destruct @ident` behaves
-      as :n:`intros until @ident; destruct @ident`. If :token:`ident` is not
-      anymore dependent in the goal after application of :tacn:`destruct`, it
-      is erased (to avoid erasure, use parentheses, as in :n:`destruct (@ident)`).
+   Performs case analysis by generating a subgoal for each constructor of the
+   inductive or co-inductive type in the :n:`@one_term` in :n:`@induction_arg`.
+   In each new subgoal, the tactic replaces :n:`@one_term` with the associated
+   constructor (applied to its arguments).   Unlike :tacn:`induction`,
+   :tacn:`destruct` generates no induction hypothesis.
 
-      If :token:`ident` is a hypothesis of the context, and :token:`ident`
-      is not anymore dependent in the goal after application
-      of :tacn:`destruct`, it is erased (to avoid erasure, use parentheses, as
-      in :n:`destruct (@ident)`).
+   The :n:`@one_term` may contain holes that are denoted by “_”. In this case,
+   the tactic selects the first subterm that matches the pattern and performs
+   case analysis using that subterm.
 
-   .. tacv:: destruct @natural
+   :n:`{+, @induction_clause }`
+     Giving multiple :n:`@induction_clause`\s is equivalent to applying :n:`destruct`
+     serially on each :n:`@induction_clause`.
 
-      :n:`destruct @natural` behaves as :n:`intros until @natural`
-      followed by destruct applied to the last introduced hypothesis.
+   :n:`@natural`
+     Equivalent to :tacn:`intros` :n:`until @natural` followed by `destruct` applied to
+     the last introduced hypothesis.
 
      .. note::
-        For destruction of a number, use syntax :n:`destruct (@natural)` (not
+        To destruct a number, use the syntax :n:`destruct (@natural)` (not
         very interesting anyway).
 
-   .. tacv:: destruct @pattern
+   :n:`@ident` (in :n:`@induction_arg`)
+     If :token:`ident` is a quantified variable in the conclusion
+     of the goal, then :n:`destruct @ident` behaves like :tacn:`intros`
+     :n:`until @ident; destruct @ident`.
+     If :token:`ident` is a hypothesis of the context and :token:`ident`
+     is no longer dependent in the goal after application
+     of :tacn:`destruct`, it is erased (to avoid erasure, use parentheses, as
+     in :n:`destruct (@ident)`).
 
-      The argument of :tacn:`destruct` can also be a pattern of which holes are
-      denoted by “_”. In this case, the tactic checks that all subterms
-      matching the pattern in the conclusion and the hypotheses are compatible
-      and performs case analysis using this subterm.
+   :n:`as @or_and_intropattern`
+      Provides names for (or apply further transformations to)
+      the variables and hypotheses introduced in each new subgoal.  The
+      :token:`or_and_intropattern` must have one :n:`{* @intropattern }`
+      for each constructor, given in the order in which the constructors are
+      defined.  If there are not enough names, Coq picks fresh names.  The
+      inner :n:`intropattern`\s can also split introduced hypotheses into
+      multiple hypotheses or subgoals.
 
-   .. tacv:: destruct {+, @term}
+   :n:`eqn : @naming_intropattern`
+      Generates a new hypothesis in each new subgoal that is an equality between
+      the term being case-analyzed and the associated constructor (applied to
+      its arguments).  The name of the new item may be specified in the
+      :n:`@naming_intropattern`.
 
-      This is a shortcut for :n:`destruct @term; ...; destruct @term`.
+   :n:`with @bindings`  (in :n:`@one_term_with_bindings`)
+      Provides explicit instances for
+      the :term:`dependent premises <dependent premise>` of the type of
+      :token:`one_term`.
 
-   .. tacv:: destruct @term as @or_and_intropattern_loc
+   :n:`@occurrences`
+     Selects specific subterms of the goal and/or hypotheses to apply
+     the tactic to.  See :ref:`Occurrence clauses <occurrenceclauses>`.
+     If it occurs in the :n:`@induction_principle`, then
+     there can only be one :n:`@induction_clause`, which can't have its
+     own :n:`@occurrences` clause.
 
-      This behaves as :n:`destruct @term` but uses the names
-      in :token:`or_and_intropattern_loc` to name the variables introduced in the
-      context. The :token:`or_and_intropattern_loc` must have the
-      form :n:`[p11 ... p1n | ... | pm1 ... pmn ]` with ``m`` being the
-      number of constructors of the type of :token:`term`. Each variable
-      introduced by :tacn:`destruct` in the context of the ``i``-th goal
-      gets its name from the list :n:`pi1 ... pin` in order. If there are not
-      enough names, :tacn:`destruct` invents names for the remaining variables
-      to introduce. More generally, the :n:`pij` can be any introduction
-      pattern (see :tacn:`intros`). This provides a concise notation for
-      chaining destruction of a hypothesis.
+   :n:`@induction_principle`
+     Makes the tactic equivalent to
+     :tacn:`induction` :n:`{+, @induction_clause } @induction_principle`.
 
-   .. tacv:: destruct @term eqn:@naming_intropattern
-      :name: destruct … eqn:
+   .. tacn:: edestruct {+, @induction_clause } {? @induction_principle }
 
-      This behaves as :n:`destruct @term` but adds an equation
-      between :token:`term` and the value that it takes in each of the
-      possible cases. The name of the equation is specified
-      by :token:`naming_intropattern` (see :tacn:`intros`),
-      in particular ``?`` can be used to let Coq generate a fresh name.
+      If the type of :n:`@one_term` (in :n:`@induction_arg`) has
+      :term:`dependent premises <dependent premise>` or dependent premises
+      whose values are not inferrable from the :n:`with @bindings` clause,
+      :n:`edestruct` turns them into existential variables to be resolved later on.
 
-   .. tacv:: destruct @term with @bindings
+.. tacn:: case {+, @induction_clause } {? @induction_principle }
 
-      This behaves like :n:`destruct @term` providing explicit instances for
-      the dependent premises of the type of :token:`term`.
+   .. todo PR: clear as mud? (below) the syntax accepts more parameters than elim
+      not sure what to say here
 
-   .. tacv:: edestruct @term
-      :name: edestruct
+   An older, more basic tactic to perform case analysis without
+   recursion.  We recommend using :tacn:`destruct` instead where possible.
+   `case` only modifies the goal; it does not modify the :term:`local context`.
 
-      This tactic behaves like :n:`destruct @term` except that it does not
-      fail if the instance of a dependent premises of the type
-      of :token:`term` is not inferable. Instead, the unresolved instances
-      are left as existential variables to be inferred later, in the same way
-      as :tacn:`eapply` does.
+   .. tacn:: ecase {+, @induction_clause } {? @induction_principle }
 
-   .. tacv:: destruct @term using @term {? with @bindings }
+      If the type of :n:`@one_term` (in :n:`@induction_arg`) has
+      :term:`dependent premises <dependent premise>` or dependent premises
+      whose values are not inferrable from the :n:`with @bindings` clause,
+      :n:`ecase` turns them into existential variables to be resolved later on.
 
-      This is synonym of :n:`induction @term using @term {? with @bindings }`.
+   .. tacn:: case_eq @one_term
 
-   .. tacv:: destruct @term in @goal_occurrences
+      A variant of the :n:`case` tactic that allows
+      performing case analysis on a term without completely forgetting its original
+      form. This is done by generating equalities between the original form of the
+      term and the outcomes of the case analysis.  We recommend using the
+      :tacn:`destruct` tactic with an `eqn:` clause instead.
 
-      This syntax is used for selecting which occurrences of :token:`term`
-      the case analysis has to be done on. The :n:`in @goal_occurrences`
-      clause is an occurrence clause whose syntax and behavior is described
-      in :ref:`occurrences sets <occurrencessets>`.
+.. tacn:: casetype @one_term
+   :undocumented:
 
-   .. tacv:: destruct @term {? with @bindings } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings } } {? in @goal_occurrences }
-             edestruct @term {? with @bindings } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings } } {? in @goal_occurrences }
+.. tacn:: simple destruct {| @ident | @natural }
 
-      These are the general forms of :tacn:`destruct` and :tacn:`edestruct`.
-      They combine the effects of the ``with``, ``as``, ``eqn:``, ``using``,
-      and ``in`` clauses.
+   Equivalent to :tacn:`intros` :n:`until {| @ident | @natural }; case @ident`
+   where :n:`@ident` is a quantified variable of the goal and otherwise fails.
 
-.. tacn:: case @term
-   :name: case
+.. tacn:: dependent destruction @ident {? generalizing {+ @ident } } {? using @one_term }
+   :undocumented:
 
-   The tactic :n:`case` is a more basic tactic to perform case analysis without
-   recursion. It behaves as :n:`elim @term` but using a case-analysis
-   elimination principle and not a recursive one.
+   There is a long example of :tacn:`dependent destruction` and an explanation
+   of the underlying technique :ref:`here <dependent-induction-examples>`.
 
-.. tacv:: case @term with @bindings
-
-   Analogous to :n:`elim @term with @bindings` above.
-
-.. tacv:: ecase @term {? with @bindings }
-   :name: ecase
-
-   In case the type of :n:`@term` has dependent premises, or dependent premises
-   whose values are not inferable from the :n:`with @bindings` clause,
-   :n:`ecase` turns them into existential variables to be resolved later on.
-
-.. tacv:: simple destruct @ident
-   :name: simple destruct
-
-   This tactic behaves as :n:`intros until @ident; case @ident` when :n:`@ident`
-   is a quantified variable of the goal.
-
-.. tacv:: simple destruct @natural
-
-   This tactic behaves as :n:`intros until @natural; case @ident` where :n:`@ident`
-   is the name given by :n:`intros until @natural` to the :n:`@natural` -th
-   non-dependent premise of the goal.
-
-.. tacv:: case_eq @term
-
-   The tactic :n:`case_eq` is a variant of the :n:`case` tactic that allows to
-   perform case analysis on a term without completely forgetting its original
-   form. This is done by generating equalities between the original form of the
-   term and the outcomes of the case analysis.
+Induction
+---------
 
 .. tacn:: induction @term
    :name: induction
@@ -284,11 +291,11 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 
    Use in this case the variant :tacn:`elim … with` below.
 
-.. tacv:: induction @term as @or_and_intropattern_loc
+.. tacv:: induction @term as @or_and_intropattern
 
    This behaves as :tacn:`induction` but uses the names in
-   :n:`@or_and_intropattern_loc` to name the variables introduced in the
-   context. The :n:`@or_and_intropattern_loc` must typically be of the form
+   :n:`@or_and_intropattern` to name the variables introduced in the
+   context. The :n:`@or_and_intropattern` must typically be of the form
    :n:`[ p` :sub:`11` :n:`... p` :sub:`1n` :n:`| ... | p`:sub:`m1` :n:`... p`:sub:`mn` :n:`]`
    with :n:`m` being the number of constructors of the type of :n:`@term`. Each
    variable introduced by induction in the context of the i-th goal gets its
@@ -336,7 +343,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    This syntax is used for selecting which occurrences of :n:`@term` the
    induction has to be carried on. The :n:`in @goal_occurrences` clause is an
    occurrence clause whose syntax and behavior is described in
-   :ref:`occurrences sets <occurrencessets>`. If variables or hypotheses not
+   :ref:`occurrences sets <occurrenceclauses>`. If variables or hypotheses not
    mentioning :n:`@term` in their type are listed in :n:`@goal_occurrences`,
    those are generalized as well in the statement to prove.
 
@@ -348,8 +355,8 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
          induction y in x |-   *.
          Show 2.
 
-.. tacv:: induction @term with @bindings as @or_and_intropattern_loc using @term with @bindings in @goal_occurrences
-          einduction @term with @bindings as @or_and_intropattern_loc using @term with @bindings in @goal_occurrences
+.. tacv:: induction @term with @bindings as @or_and_intropattern using @term with @bindings in @goal_occurrences
+          einduction @term with @bindings as @or_and_intropattern using @term with @bindings in @goal_occurrences
 
    These are the most general forms of :tacn:`induction` and :tacn:`einduction`. It combines the
    effects of the with, as, using, and in clauses.
@@ -482,7 +489,6 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    other ones need not be further generalized.
 
 .. tacv:: dependent destruction @ident
-   :name: dependent destruction
 
    This performs the generalization of the instance :n:`@ident` but uses
    ``destruct`` instead of induction on the generalized hypothesis. This gives
@@ -654,15 +660,15 @@ and an explanation of the underlying technique.
       to the number of new equalities. The original equality is erased if it
       corresponds to a hypothesis.
 
-   .. tacv:: injection @term {? with @bindings} as @injection_intropattern
-             injection @natural as @injection_intropattern
-             injection as @injection_intropattern
-             einjection @term {? with @bindings} as @injection_intropattern
-             einjection @natural as @injection_intropattern
-             einjection as @injection_intropattern
+   .. tacv:: injection @term {? with @bindings} as [= @intropattern ]
+             injection @natural as [= @intropattern ]
+             injection as [= @intropattern ]
+             einjection @term {? with @bindings} as [= @intropattern ]
+             einjection @natural as [= @intropattern ]
+             einjection as [= @intropattern ]
 
       These are equivalent to the previous variants but using instead the
-      syntax :token:`injection_intropattern` which :tacn:`intros`
+      syntax :n:`as [= @intropattern ]` which :tacn:`intros`
       uses. In particular :n:`as [= {+ @simple_intropattern}]` behaves
       the same as :n:`as {+ @simple_intropattern}`.
 
@@ -726,10 +732,10 @@ and an explanation of the underlying technique.
 
    This behaves as :n:`inversion` and then erases :n:`@ident` from the context.
 
-.. tacv:: inversion @ident as @or_and_intropattern_loc
+.. tacv:: inversion @ident as @or_and_intropattern
 
-   This generally behaves as inversion but using names in :n:`@or_and_intropattern_loc`
-   for naming hypotheses. The :n:`@or_and_intropattern_loc` must have the form
+   This generally behaves as inversion but using names in :n:`@or_and_intropattern`
+   for naming hypotheses. The :n:`@or_and_intropattern` must have the form
    :n:`[p`:sub:`11` :n:`... p`:sub:`1n` :n:`| ... | p`:sub:`m1` :n:`... p`:sub:`mn` :n:`]`
    with `m` being the number of constructors of the type of :n:`@ident`. Be
    careful that the list must be of length `m` even if ``inversion`` discards
@@ -761,12 +767,12 @@ and an explanation of the underlying technique.
          Goal forall l:list nat, contains0 (1 :: l) -> contains0 l.
          intros l H; inversion H as [ | l' p Hl' [Heqp Heql'] ].
 
-.. tacv:: inversion @natural as @or_and_intropattern_loc
+.. tacv:: inversion @natural as @or_and_intropattern
 
    This allows naming the hypotheses introduced by :n:`inversion @natural` in the
    context.
 
-.. tacv:: inversion_clear @ident as @or_and_intropattern_loc
+.. tacv:: inversion_clear @ident as @or_and_intropattern
 
    This allows naming the hypotheses introduced by ``inversion_clear`` in the
    context. Notice that hypothesis names can be provided as if ``inversion``
@@ -778,7 +784,7 @@ and an explanation of the underlying technique.
    Let :n:`{+ @ident}` be identifiers in the local context. This tactic behaves as
    generalizing :n:`{+ @ident}`, and then performing ``inversion``.
 
-.. tacv:: inversion @ident as @or_and_intropattern_loc in {+ @ident}
+.. tacv:: inversion @ident as @or_and_intropattern in {+ @ident}
 
    This allows naming the hypotheses introduced in the context by
    :n:`inversion @ident in {+ @ident}`.
@@ -788,7 +794,7 @@ and an explanation of the underlying technique.
    Let :n:`{+ @ident}` be identifiers in the local context. This tactic behaves
    as generalizing :n:`{+ @ident}`, and then performing ``inversion_clear``.
 
-.. tacv:: inversion_clear @ident as @or_and_intropattern_loc in {+ @ident}
+.. tacv:: inversion_clear @ident as @or_and_intropattern in {+ @ident}
 
    This allows naming the hypotheses introduced in the context by
    :n:`inversion_clear @ident in {+ @ident}`.
@@ -800,7 +806,7 @@ and an explanation of the underlying technique.
    ``inversion`` and then substitutes :n:`@ident` for the corresponding
    :n:`@@term` in the goal.
 
-.. tacv:: dependent inversion @ident as @or_and_intropattern_loc
+.. tacv:: dependent inversion @ident as @or_and_intropattern
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion @ident`.
@@ -810,7 +816,7 @@ and an explanation of the underlying technique.
    Like ``dependent inversion``, except that :n:`@ident` is cleared from the
    local context.
 
-.. tacv:: dependent inversion_clear @ident as @or_and_intropattern_loc
+.. tacv:: dependent inversion_clear @ident as @or_and_intropattern
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion_clear @ident`.
@@ -824,7 +830,7 @@ and an explanation of the underlying technique.
    then :n:`@term` must be of type :g:`I:forall (x:T), I x -> s'` where
    :g:`s'` is the type of the goal.
 
-.. tacv:: dependent inversion @ident as @or_and_intropattern_loc with @term
+.. tacv:: dependent inversion @ident as @or_and_intropattern with @term
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion @ident with @term`.
@@ -834,7 +840,7 @@ and an explanation of the underlying technique.
    Like :tacn:`dependent inversion … with …` with but clears :n:`@ident` from the
    local context.
 
-.. tacv:: dependent inversion_clear @ident as @or_and_intropattern_loc with @term
+.. tacv:: dependent inversion_clear @ident as @or_and_intropattern with @term
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion_clear @ident with @term`.
@@ -845,7 +851,7 @@ and an explanation of the underlying technique.
    It is a very primitive inversion tactic that derives all the necessary
    equalities but it does not simplify the constraints as ``inversion`` does.
 
-.. tacv:: simple inversion @ident as @or_and_intropattern_loc
+.. tacv:: simple inversion @ident as @or_and_intropattern
 
    This allows naming the hypotheses introduced in the context by
    ``simple inversion``.
@@ -1069,6 +1075,11 @@ and an explanation of the underlying technique.
    This starts a proof by mutual coinduction. The statements to be
    simultaneously proved are respectively :g:`forall binder ... binder, type`
    The identifiers :n:`@ident` are the names of the coinduction hypotheses.
+
+.. todo move the following label to just
+        before ":tacn:`discriminate` and :tacn:`injection`"
+
+.. _equality-inductive_types:
 
 Equality and inductive sets
 ---------------------------
@@ -1410,7 +1421,7 @@ Generation of inversion principles with ``Derive`` ``Inversion``
 
     inversion H using leminv.
 
-.. _dependent-induction:
+.. _dependent-induction-examples:
 
 Examples of dependent destruction / dependent induction
 -------------------------------------------------------------------

@@ -317,7 +317,7 @@ Character encoding for saved files
 In the Files section of the preferences, the encoding option is
 related to the way files are saved.
 
-If you have no need to exchange files with non UTF-8 aware
+If you have no need to exchange files with non-UTF-8 aware
 applications, it is better to choose the UTF-8 encoding, since it
 guarantees that your files will be read again without problems. (This
 is because when CoqIDE reads a file, it tries to automatically detect

@@ -126,7 +126,7 @@ but only the needed ones). So the extraction mechanism provides an
 automatic optimization routine that will be called each time the user
 wants to generate an OCaml program. The optimizations can be split in two
 groups: the type-preserving ones (essentially constant inlining and
-reductions) and the non type-preserving ones (some function
+reductions) and the non-type-preserving ones (some function
 abstractions of dummy types are removed when it is deemed safe in order
 to have more elegant types). Therefore some :term:`constants <constant>` may not appear in the
 resulting monolithic OCaml program. In the case of modular extraction,
@@ -149,7 +149,7 @@ and commands:
 
 .. flag:: Extraction Conservative Types
 
-   Default is off. This :term:`flag` controls the non type-preserving optimizations
+   Default is off. This :term:`flag` controls the non-type-preserving optimizations
    made on ML terms (which try to avoid function abstraction of dummy
    types). Turn this flag on to make sure that ``e:t``
    implies that ``e':t'`` where ``e'`` and ``t'`` are the extracted

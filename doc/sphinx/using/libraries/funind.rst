@@ -135,7 +135,7 @@ presence of partial application of :g:`wrong` in the body of :g:`wrong`:
    Function wrong (C:nat) : nat :=
      List.hd 0 (List.map wrong (C::nil)).
 
-For now, dependent cases are not treated for non structurally
+For now, dependent cases are not treated for non-structurally
 terminating functions.
 
 .. exn:: The recursive argument must be specified.

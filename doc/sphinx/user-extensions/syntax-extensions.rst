@@ -1157,7 +1157,7 @@ use the following form:
    Notation "x" := x (in custom expr at level 0, x ident).
 
 Similarly, to indicate that a custom entry should parse global references
-(i.e. qualified or non qualified identifiers), use the following form:
+(i.e. qualified or unqualified identifiers), use the following form:
 
 .. coqtop:: none
 
@@ -2096,7 +2096,7 @@ The following errors apply to both string and number notations:
 
 .. _example-number-notation-non-inductive:
 
-.. example:: Number Notation for a non inductive type
+.. example:: Number Notation for a non-inductive type
 
    The following example encodes the terms in the form :g:`sum unit ( ... (sum unit unit) ... )`
    as the number of units in the term. For instance :g:`sum unit (sum unit unit)`

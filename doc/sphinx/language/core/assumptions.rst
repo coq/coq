@@ -53,7 +53,7 @@ Functions (fun) and function types (forall)
 .. insertprodn term_forall_or_fun term_forall_or_fun
 
 .. prodn::
-   term_forall_or_fun ::= forall @open_binders , @term
+   term_forall_or_fun ::= forall @open_binders , @type
    | fun @open_binders => @term
 
 The expression :n:`fun @ident : @type => @term` defines the
@@ -70,23 +70,36 @@ a let-binder occurs in
 the list of binders, it is expanded to a let-in definition (see
 Section :ref:`let-in`).
 
-The expression :n:`forall @ident : @type, @term` denotes the
-*product* of the variable :n:`@ident` of type :n:`@type`, over the term :n:`@term`.
-As for abstractions, :g:`forall` is followed by a binder list, and products
-over several variables are equivalent to an iteration of one-variable
-products. Note that :n:`@term` is intended to be a type.
+The expression :n:`forall @ident : @type__1, @type__2` denotes the
+:gdef:`product type <product>` (or *product*) of the variable :n:`@ident` of
+type :n:`@type__1` over the type :n:`@type__2`.  If :n:`@ident` is used in
+:n:`@type__2`, then we say the expression is a :gdef:`dependent product`.
 
-If the variable :n:`@ident` occurs in :n:`@term`, the product is called
-*dependent product*. The intention behind a dependent product
+The intention behind a dependent product
 :g:`forall x : A, B` is twofold. It denotes either
 the universal quantification of the variable :g:`x` of type :g:`A`
 in the proposition :g:`B` or the functional dependent product from
 :g:`A` to :g:`B` (a construction usually written
 :math:`\Pi_{x:A}.B` in set theory).
 
-Non dependent product types have a special notation: :g:`A -> B` stands for
-:g:`forall _ : A, B`. The *non dependent product* is used both to denote
-the propositional implication and function types.
+Non-dependent product types have a special notation: :g:`A -> B` stands for
+:g:`forall _ : A, B`. *Non-dependent product* is used to denote both
+propositional implication and function types.
+
+These terms are also useful:
+
+* `n : nat` is a :gdef:`dependent premise` of `forall n:nat, n + 0 = n` because
+  `n` appears both in the binder of the `forall` and in the quantified statement
+  `n + 0 = n`.
+
+* `A` and `B` are :gdef:`non-dependent premises <non-dependent premise>` of `A -> B -> C`
+  because they don't appear in a `forall` binder.
+  (As noted, `A -> B` is notation for the term `forall _ : A, B`; the wildcard
+  `_` can't be referred to in the quantified statement.)
+
+As for abstractions, :g:`forall` is followed by a binder list, and products
+over several variables are equivalent to an iteration of one-variable
+products.
 
 Function application
 --------------------

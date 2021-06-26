@@ -896,7 +896,7 @@ Changes in existing tactics
 
 - "Require Prolog" is no longer needed (i.e. it is available by default) (*)(+)
 
-- Unfold now fails on a non unfoldable identifier (*)(+)
+- Unfold now fails on a non-unfoldable identifier (*)(+)
 
 - Unfold also applies on definitions of the local context
 
@@ -1173,7 +1173,7 @@ Incompatibilities
 - Extra parentheses may exceptionally be needed in tactic definitions.
 - Coq extensions written in OCaml need to be updated (see dev/changements.txt
   for a description of the main changes in the interface files of V7.2)
-- New behaviour of Intuition/Tauto may exceptionally lead to incompatibilities
+- New behavior of Intuition/Tauto may exceptionally lead to incompatibilities
 
 
 Details of changes in 7.3
@@ -1343,7 +1343,7 @@ Language
   survive section closing any longer; as a side-effect, Opaque Local's
   now appear in the local context of proofs; their body is hidden
   though (source of incompatibilities); use one of Remark/Fact/Lemma/Theorem
-  instead to simulate the old behaviour of Local (the section part of
+  instead to simulate the old behavior of Local (the section part of
   the name is not kept though)
 
 ML tactics and commands

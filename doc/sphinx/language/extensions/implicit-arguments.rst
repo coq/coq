@@ -26,7 +26,7 @@ several kinds of such implicit arguments.
 
 **Strict Implicit Arguments**
 
-An implicit argument can be either strict or non strict. An implicit
+An implicit argument can be either strict or non-strict. An implicit
 argument is said to be *strict* if, whatever the other arguments of the
 function are, it is still inferable from the type of some other
 argument. Technically, an implicit argument is strict if it
@@ -275,7 +275,7 @@ Controlling strict implicit arguments
    the default is to automatically set implicit only the strict implicit
    arguments plus, for historical reasons, a small subset of the non-strict
    implicit arguments. To relax this constraint and to set
-   implicit all non strict implicit arguments by default, you can turn this
+   implicit all non-strict implicit arguments by default, you can turn this
    :term:`flag` off.
 
 .. flag:: Strongly Strict Implicit
@@ -573,7 +573,7 @@ When generalizing a binder whose type is a typeclass, its own class
 arguments are omitted from the syntax and are generalized using
 automatic names, without instance search. Other arguments are also
 generalized unless provided. This produces a fully general statement.
-this behaviour may be disabled by prefixing the type with a ``!`` or
+this behavior may be disabled by prefixing the type with a ``!`` or
 by forcing the typeclass name to be an explicit application using
 ``@`` (however the later ignores implicit argument information).
 

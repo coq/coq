@@ -16,14 +16,15 @@ Inductive types
       | {? @ident } %{ {*; @record_field } {? ; } %}
       constructor ::= @ident {* @binder } {? @of_type }
 
-   This command defines one or more
-   inductive types and its constructors.  Coq generates destructors
+   Defines one or more
+   inductive types and its constructors.  Coq generates
+   :gdef:`induction principles <induction principle>`
    depending on the universe that the inductive type belongs to.
 
-   The destructors are named :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``,
+   The induction principles are named :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``,
    :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_sind``, which
-   respectively correspond to elimination principles on :g:`Type`, :g:`Prop`,
-   :g:`Set` and :g:`SProp`.  The type of the destructors
+   respectively correspond to
+   on :g:`Type`, :g:`Prop`, :g:`Set` and :g:`SProp`.  Their types
    expresses structural induction/recursion principles over objects of
    type :n:`@ident`.  The :term:`constant` :n:`@ident`\ ``_ind`` is always
    generated, whereas :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_rect``
@@ -36,9 +37,11 @@ Inductive types
    :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
-   The :n:`@ident`\s are simultaneously added to the global environment before the types of constructors are checked.
-   Each :n:`@ident` can be used independently thereafter.
-   See :ref:`mutually_inductive_types`.
+   The :n:`@ident`\s are simultaneously added to the global environment before
+   the types of constructors are checked.  Each :n:`@ident` can be used
+   independently thereafter.  However, the induction principles currently generated for
+   such types are not useful.  Use the :cmd:`Scheme` command to generate useful
+   induction principles.  See :ref:`mutually_inductive_types`.
 
    If the entire inductive definition is parameterized with :n:`@binder`\s, the parameters correspond
    to a local context in which the entire set of inductive declarations is interpreted.
@@ -88,7 +91,7 @@ A simple inductive type belongs to a universe that is a simple :n:`@sort`.
    the :g:`S` constructor. The names :g:`nat`, :g:`O` and :g:`S` are added to the
    global environment.
 
-   This definition generates four elimination principles:
+   This definition generates four :term:`induction principles <induction principle>`:
    :g:`nat_rect`, :g:`nat_ind`, :g:`nat_rec` and :g:`nat_sind`. The type of :g:`nat_ind` is:
 
    .. coqtop:: all
@@ -103,7 +106,7 @@ A simple inductive type belongs to a universe that is a simple :n:`@sort`.
    The types of :g:`nat_rect`, :g:`nat_rec` and :g:`nat_sind` are similar, except that they
    apply to, respectively, :g:`(P:nat->Type)`, :g:`(P:nat->Set)` and :g:`(P:nat->SProp)`. They correspond to
    primitive induction principles (allowing dependent types) respectively
-   over sorts ```Type``, ``Set`` and ``SProp``.
+   over sorts ``Type``, ``Set`` and ``SProp``.
 
 In the case where inductive types don't have annotations (the next section
 gives an example of annotations), a constructor can be defined
@@ -186,7 +189,8 @@ the same parameter values of its specification.
       Check nil.
       Check cons.
 
-   Observe that the destructors are also quantified with :g:`(A:Set)`, for example:
+   Observe that the induction principles are also quantified with :g:`(A:Set)`,
+   for example:
 
    .. coqtop:: all
 
@@ -284,6 +288,11 @@ the same parameter values of its specification.
 
 Mutually defined inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. todo: combine with the very similar tree/forest example in reasoning-inductives.rst
+
+The induction principles currently generated for mutually defined types are not
+useful.  Use the :cmd:`Scheme` command to generate a useful induction principle.
 
 .. example:: Mutually defined inductive types
 
@@ -1502,7 +1511,7 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
 .. _Typing-rule:
 
 **Typing rule.**
-Our very general destructor for inductive definition enjoys the
+Our very general destructor for inductive definitions has the
 following typing rule
 
 .. inference:: match

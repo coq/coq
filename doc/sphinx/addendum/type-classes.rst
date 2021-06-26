@@ -445,6 +445,10 @@ Summary of the commands
    + When considering local hypotheses, we use the union of all the modes
      declared in the given databases.
 
+   + The tactic may produce more than one success when used in
+     backtracking tactics such as `typeclasses eauto; ...`.
+     See :tacn:`ltac-seq`.
+
    + Use the :cmd:`Typeclasses eauto` command to customize the behavior of
      this tactic.
 

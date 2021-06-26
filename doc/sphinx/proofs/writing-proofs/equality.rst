@@ -31,6 +31,9 @@ There are multiple notions of :gdef:`equality` in Coq:
   other advantages.  ":term:`Convertible <convertible>`" is another way of saying that
   two terms are definitionally equal.
 
+Tactics for dealing with equality of inductive types such as :tacn:`injection`
+and :tacn:`inversion` are described :ref:`here <equality-inductive_types>`.
+
 Tactics for simple equalities
 -----------------------------
 

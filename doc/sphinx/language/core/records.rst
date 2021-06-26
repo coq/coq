@@ -173,13 +173,13 @@ available:
 
 .. _record_projections_grammar:
 
+Syntax of Record Projections
+
   .. insertprodn term_projection term_projection
 
   .. prodn::
      term_projection ::= @term0 .( @qualid {* @arg } )
      | @term0 .( @ @qualid {* @term1 } )
-
-  Syntax of Record projections
 
 The corresponding grammar rules are given in the preceding grammar. When :token:`qualid`
 denotes a projection, the syntax :n:`@term0.(@qualid)` is equivalent to :n:`@qualid @term0`,
