@@ -658,11 +658,17 @@ let prod_entry_type = function
 let keyword_needed need s =
   (* Ensure that IDENT articulation terminal symbols are keywords *)
   match CLexer.terminal s with
-    | Tok.PIDENT (Some k) ->
-      if need then
-        Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
-      need
-    | _ -> true
+  | Tok.PIDENT (Some k) ->
+    if need then
+      Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
+    need
+  | _ ->
+  match NumTok.Unsigned.parse_string s with
+  | Some n ->
+    if need then
+      Flags.if_verbose Feedback.msg_info (str "Number '" ++ NumTok.Unsigned.print n ++ str "' now a keyword");
+    need
+  | _ -> true
 
 let make_production (_,lev,_) etyps symbols =
   let rec aux need = function

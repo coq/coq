@@ -490,3 +490,11 @@ Notation "0+" := None.
 Check 0+.
 
 End SymbolsStartingWithNumbers.
+
+Module LeadingNumber.
+
+Notation "0 +" := None (format "0 +").
+Check 0+.
+Check 0.
+
+End LeadingNumber.
