@@ -73,7 +73,10 @@ val update_bpt : bool -> ide_breakpoint -> unit
 val refresh_bpts : unit -> unit
 
 type debugger_state = {
+  (* next code to execute, is not in stack *)
   mutable cur_loc : Loc.t option;
+  (* yields the call stack *)
+  mutable get_stack : unit -> (string * Loc.t option) list;
 }
 
 val debugger_state : debugger_state

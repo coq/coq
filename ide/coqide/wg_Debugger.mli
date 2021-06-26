@@ -8,12 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-class debugger : string ->
+type stack_t = (string * (string * int list) option) list
+
+class type debugger_view =
   object
-(*    inherit GPack.box_skel*)
     method coerce : GObj.widget
+    method set_stack : stack_t -> unit
     method hide : unit -> unit
     method show : unit -> unit
-(*    method set_stack : (string * int) list -> unit*)
-(*    method set_vars : (string * string) list -> unit*)
+    method set_forward_highlight_code : (string * int * int -> unit) -> unit
   end
+
+val debugger : unit -> debugger_view

@@ -90,6 +90,7 @@ val opposite_tabs : bool preference
 (* val background_color : string preference *)
 val processing_color : string preference
 val processed_color : string preference
+val db_stopping_point_color : string preference
 val error_color : string preference
 val error_fg_color : string preference
 val dynamic_word_wrap : bool preference

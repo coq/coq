@@ -217,7 +217,7 @@ type db_continue_rty = unit
 
 (** fetch the stack *)
 type db_stack_sty = unit
-type db_stack_rty = ((string * string) * int list) list
+type db_stack_rty = (string * (string * int list) option) list
 
 (** Retrieve the list of options of the current toplevel *)
 type get_options_sty = unit

@@ -369,10 +369,9 @@ let debug_cmd = ref DebugHook.Action.Ignore
 let db_cmd cmd =
   debug_cmd := DebugHook.Action.Command cmd
 
-let db_loc () =
+let cvt_loc loc =
   let open Loc in
-  let open DebugHook in
-  match debugger_state.cur_loc with
+  match loc with
   | Some {fname=ToplevelInput; bp; ep} ->
     Some ("ToplevelInput", [bp; ep])
   | Some {fname=InFile {dirpath=None; file}; bp; ep} ->
@@ -406,6 +405,10 @@ let db_loc () =
     end
   | _ -> None (* nothing to highlight, e.g. not in a .v file *)
 
+let db_loc () =
+  let open DebugHook in
+  cvt_loc debugger_state.cur_loc
+
 let db_continue opt =
   let open DebugHook.Action in
   debug_cmd := match opt with
@@ -431,8 +434,16 @@ let db_upd_bpts updates =
     ) updates
 
 let db_stack () =
+  let open DebugHook in
   Printf.printf "server: db_stack call\n%!";
-  [(("tacname", "filename"), [ 123 ])]
+  let s = DebugHook.debugger_state.get_stack () in
+  let rec shift s prev_loc res =
+    let ploc = cvt_loc prev_loc in
+    match s with
+    | (tacn, loc) :: tl -> shift tl loc ((tacn, ploc) :: res)
+    | [] -> ("(script)", ploc) :: res
+  in
+  List.rev (shift s debugger_state.cur_loc [])
 
 let get_options () =
   let table = Goptions.get_tables () in

@@ -44,7 +44,7 @@ type session = {
   coqtop : Coq.coqtop;
   command : Wg_Command.command_window; (* aka the Query Pane *)
   finder : Wg_Find.finder; (* Find / Replace panel *)
-  debugger : Wg_Debugger.debugger;
+  debugger : Wg_Debugger.debugger_view;
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
@@ -414,7 +414,7 @@ let create file coqtop_args =
   let segment = new Wg_Segment.segment () in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
   finder#setup_is_script_editable (fun _ -> script#editable2);
-  let debugger = new Wg_Debugger.debugger "foo" in
+  let debugger = Wg_Debugger.debugger () in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =

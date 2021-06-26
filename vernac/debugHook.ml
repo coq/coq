@@ -148,7 +148,8 @@ let refresh_bpts () =
   IBPSet.iter (update_bpt true) !ide_breakpoints
 
 type debugger_state = {
-  mutable cur_loc : Loc.t option
+  mutable cur_loc : Loc.t option;
+  mutable get_stack : unit -> (string * Loc.t option) list;
 }
 
-let debugger_state = { cur_loc=None; }
+let debugger_state = { cur_loc=None; get_stack=(fun () -> [])}

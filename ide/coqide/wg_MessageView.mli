@@ -27,9 +27,7 @@ class type message_view =
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
 
-    (** In use by the ltac debugger *)
     method debug_prompt : Pp.t -> unit
-
     method has_selection : bool
     method get_selected_text : string
     method editable2 : bool

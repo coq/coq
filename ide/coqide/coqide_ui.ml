@@ -143,7 +143,7 @@ let init () =
 \n    <menuitem action='Make makefile' />\
 \n  </menu>\
 \n  <menu action='Windows'>\
-\n    <menuitem action='Detach View' />\
+\n    <menuitem action='Detach Proof' />\
 \n  </menu>\
 \n  <menu name='Help' action='Help'>\
 \n    <menuitem action='Browse Coq Manual' />\

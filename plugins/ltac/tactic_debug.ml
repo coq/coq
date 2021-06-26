@@ -185,9 +185,8 @@ let tac_loc tac =
 (*  Printf.printf "  %s\n%!" (fst rv);*)
   rv, loc
 
-let print_loc tac =
+let print_loc desc loc =
   let open Loc in
-  let (desc, loc) = tac_loc tac in
   match loc with
   | Some loc ->
     let src = (match loc.fname with
@@ -197,15 +196,32 @@ let print_loc tac =
     Printf.sprintf "%s: %s %d %d:%d\n" desc src loc.line_nb
       (loc.bp - loc.bol_pos_last) (loc.ep - loc.bol_pos_last)
   | None -> Printf.sprintf "%s: loc is None" desc
+
+let print_loc_tac tac =
+  let (desc, loc) = tac_loc tac in
+  print_loc desc loc
 [@@@ocaml.warning "+32"]
 
-let save_loc tac =
-(*  Comm.print (print_loc tac);*)
-  DebugHook.(debugger_state.cur_loc <- CAst.(tac.loc))
+
+let get_stack stack () =
+  match stack with
+  | Some stack ->
+    List.map (fun k ->
+      let (loc, k) = k in
+      match k with
+      | LtacNameCall l -> KerName.to_string l, loc
+      | _ -> "???", None
+      ) stack
+  | None -> []
+
+let save_loc tac stack =
+(*  Comm.print (print_loc_tac tac);*)
+  DebugHook.(debugger_state.cur_loc <- CAst.(tac.loc));
+  DebugHook.(debugger_state.get_stack <- get_stack stack)
 
 (* Prints the goal and the command to be executed *)
-let goal_com tac =
-  save_loc tac;
+let goal_com tac stack =
+  save_loc tac stack;
   Proofview.tclTHEN
     db_pr_goal
     (if Comm.isTerminal () || DebugHook.(debugger_state.cur_loc) = None then
@@ -300,7 +316,7 @@ let pr_call_kind n k =
   | LtacMLCall _ -> "LtacMLCall"
   | LtacNotationCall _ -> "LtacNotationCall"
   | LtacNameCall l ->
-    let name = KerName.to_string l in
+    let name = (KerName.to_string l) ^ (print_loc "" loc) in
     Printf.printf "%s\n%!" name; Feedback.msg_notice (Pp.str name); "LtacNameCall"
   | LtacAtomCall _ -> "LtacAtomCall"
   | LtacVarCall _ -> "LtacVarCall"
@@ -332,7 +348,7 @@ let debug_prompt lev tac f stack =
 (*      dump_stack "at debug_prompt" stack;*)
       let stop_here () =
         prev_stack.contents <- stack;
-        Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))
+        Proofview.tclTHEN (goal_com tac stack) (Proofview.tclLIFT (prompt lev))
       in
       let p_stack = prev_stack.contents in
       if action.contents = DebugHook.Action.Continue && at_breakpoint tac then

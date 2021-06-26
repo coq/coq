@@ -419,6 +419,7 @@ let attach_bg (pref : string preference) (tag : GText.tag) =
 
 let attach_fg (pref : string preference) (tag : GText.tag) =
   attach_tag pref tag (fun c -> `FOREGROUND c)
+
 let tags = ref Util.String.Map.empty
 
 let list_tags () = !tags

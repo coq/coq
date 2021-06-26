@@ -180,6 +180,8 @@ let forward_db_loc   = ref ((fun x -> failwith "forward_db_loc")
                      : session -> unit -> unit)
 let forward_db_stack = ref ((fun x -> failwith "forward_db_stack")
                      : session -> unit -> unit)
+let forward_highlight_code = ref ((fun x -> failwith "forward_highlight_code")
+                     : session -> string * int * int -> unit)
 
 let create_session f =
   let project_file, args = make_coqtop_args f in
@@ -189,6 +191,7 @@ let create_session f =
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_loc (!forward_db_loc sn);
   (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
+  sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
   sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
   sn.coqops#set_forward_set_goals_of_dbg_session
     (fun msg ->
@@ -756,6 +759,7 @@ let resume_debugger opt = (* todo: assign numbers/create a type *)
     if Coq.is_stopped_in_debugger t.coqtop && db_continue opt t then begin
       Coq.set_stopped_in_debugger t.coqtop false;
       clear_db_highlight t ();
+      t.debugger#set_stack [];
       t.messages#default_route#set_editable2 false;
       t.messages#default_route#push Feedback.Notice (Pp.mt ());
       true
@@ -980,36 +984,40 @@ let show_proof_diff where sn =
 
 let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
 
+let highlight_code sn loc =
+  let (file, bp, ep) = loc in
+  let highlight () =
+    clear_db_highlight sn ();
+    notebook#current_term.script#set_debugging_highlight ep bp;
+    sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
+    (* show goal in secondary script goal panel *)
+    notebook#current_term.coqops#set_debug_goal sn.last_db_goals
+  in
+  if file = "ToplevelInput" then begin
+    notebook#goto_term sn;
+    highlight ()
+  end else if CString.is_suffix ".v" file then begin
+    try let _ = Unix.stat file in
+      FileAux.load_file file;
+      highlight ()
+    with Unix.Unix_error (Unix.ENOENT,_,_) ->
+      (* or just show in messages panel? *)
+      let title = "Warning" in
+      let icon = (warn_image ())#coerce in
+      let buttons = ["OK"] in
+      let msg = Printf.sprintf "Can't find: %s" file in
+      let _ = GToolbox.question_box ~title ~buttons ~icon msg in
+      ()
+  end
+
+let _ = forward_highlight_code := highlight_code
+
 let db_loc sn _ =
   ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_loc
     ~next:(function
         | Interface.Good Some (file, ints) ->
           Printf.printf "db_loc returns %s: %d %d\n%!" file (List.hd ints) (List.nth ints 1);
-          let loc = (file, List.hd ints, List.nth ints 1) in
-          let (file, bp, ep) = loc in
-          let highlight () =
-            clear_db_highlight sn ();
-            notebook#current_term.script#set_debugging_highlight ep bp;
-            sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
-            (* show goal in secondary script goal panel *)
-            notebook#current_term.coqops#set_debug_goal sn.last_db_goals
-          in
-          if file = "ToplevelInput" then begin
-            notebook#goto_term sn;
-            highlight ()
-          end else if CString.is_suffix ".v" file then begin
-            try let _ = Unix.stat file in
-              FileAux.load_file file;
-              highlight ()
-            with Unix.Unix_error (Unix.ENOENT,_,_) ->
-              (* or just show in messages panel? *)
-              let title = "Warning" in
-              let icon = (warn_image ())#coerce in
-              let buttons = ["OK"] in
-              let msg = Printf.sprintf "Can't find: %s" file in
-              let _ = GToolbox.question_box ~title ~buttons ~icon msg in
-              ()
-          end;
+          highlight_code sn (file, List.hd ints, List.nth ints 1);
           Coq.return ()
         | Interface.Good None ->
           Printf.printf "db_loc returns None\n%!";
@@ -1027,8 +1035,8 @@ let db_stack sn _ =
   Coq.add_do_when_ready sn.coqtop (fun _ ->
     ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_stack
       ~next:(function
-          | Interface.Good frames ->
-            Printf.printf "db_stack returns %d entries\n%!" (List.length frames);
+          | Interface.Good stack ->
+            sn.debugger#set_stack stack;
             Coq.return ()
           | Interface.Fail _ ->
             Coq.return ()
@@ -1565,7 +1573,7 @@ let build_ui () =
 
   menu windows_menu [
     item "Windows" ~label:"_Windows";
-    item "Detach View" ~label:"Detach _View" ~callback:MiscMenu.detach_view
+    item "Detach Proof" ~label:"Detach _Proof" ~callback:MiscMenu.detach_view
   ];
 
   menu help_menu [

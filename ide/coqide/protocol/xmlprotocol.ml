@@ -621,7 +621,7 @@ let db_loc_rty_t : db_loc_rty val_t = option_t (pair_t string_t (list_t int_t))
 let db_upd_bpts_rty_t : db_upd_bpts_rty val_t = unit_t
 let db_continue_rty_t : db_continue_rty val_t = unit_t
 let db_stack_rty_t : db_stack_rty val_t =
-  list_t (pair_t (pair_t string_t string_t) (list_t int_t))
+  list_t (pair_t string_t (option_t (pair_t string_t (list_t int_t))))
 
 let ($) x = erase x
 let calls = [|
