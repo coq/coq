@@ -205,3 +205,13 @@ fun f : ## a (a = 0) => f 1 eq_refl
      : ## a (a = 0) -> 1 = 0
 [MyNotation 0]
      : nat
+fun MyNone : nat => MyNone
+     : nat -> nat
+MyNone+
+     : option ?A
+where
+?A : [ |- Type]
+Some MyNone+
+     : option (option ?A)
+where
+?A : [ |- Type]
