@@ -260,7 +260,7 @@ type intern_env = {
 type pattern_intern_env = {
   pat_scopes: Notation_term.subscopes;
   (* ids = Some means accept local variables; this is useful for
-     terms as patterns parsed as pattersn in notations *)
+     terms as patterns parsed as patterns in notations *)
   pat_ids: Id.Set.t option;
 }
 
