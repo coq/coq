@@ -1605,30 +1605,27 @@ module Parsable = struct
   let parse_parsable entry p =
     let efun = entry.estart 0 in
     let ts = p.pa_tok_strm in
-    let get_loc () =
+    let get_parsing_loc () =
       (* Build the loc spanning from just after what is consumed (count)
          up to the further token known to have been read (max_peek).
-         Unless there were a Ctrl-C (handled explicitly), there needs
-         to be a next token that caused the parsing failure. *)
+         Being a parsing error, there needs
+         to be a next token that caused the failure. *)
       let loc' = LStream.max_peek_loc ts in
       let loc = LStream.get_loc (LStream.count ts) ts in
       Loc.merge loc loc'
     in
     try efun ts with
       Stream.Failure ->
-      let loc = get_loc () in
+      let loc = get_parsing_loc () in
       Loc.raise ~loc (Stream.Error ("illegal begin of " ^ entry.ename))
     | Stream.Error _ as exc ->
-      let loc = get_loc () in
+      let loc = get_parsing_loc () in
       Loc.raise ~loc exc
     | exc ->
+      (* An error produced by the evaluation of the right-hand side *)
+      (* of a rule, or a signal such as Sys.Break; we leave to the *)
+      (* error the responsibility of locating itself *)
       let exc,info = Exninfo.capture exc in
-      (* If the original exn had a loc, keep it *)
-      let info =
-        match Loc.get_loc info with
-        | Some _ -> info
-        | None -> if exc = Sys.Break then info else Loc.add_loc info (get_loc ())
-      in
       Exninfo.iraise (exc,info)
 
   let parse_parsable e p =

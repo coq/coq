@@ -446,8 +446,8 @@ GRAMMAR EXTEND Gram
       (match b with
           CLocalAssum(l,ty) -> (l,ty)
         | CLocalDef _ ->
-            Util.user_err_loc
-              (loc,"fix_param",Pp.str"defined binder not allowed here.")) ] ]
+            user_err ~loc
+              (Pp.str"defined binder not allowed here.")) ] ]
   ;
 *)
   (* ... with coercions *)
@@ -810,7 +810,7 @@ GRAMMAR EXTEND Gram
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
-         | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
+         | Some _, Some _ -> user_err ~loc Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
@@ -818,7 +818,7 @@ GRAMMAR EXTEND Gram
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
-         | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
+         | Some _, Some _ -> user_err ~loc Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
@@ -826,7 +826,7 @@ GRAMMAR EXTEND Gram
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
-         | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
+         | Some _, Some _ -> user_err ~loc Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
@@ -984,7 +984,7 @@ GRAMMAR EXTEND Gram
           { PrintCustomGrammar ent }
       | IDENT "LoadPath"; dir = OPT dirpath -> { PrintLoadPath dir }
       | IDENT "Modules" ->
-          { user_err Pp.(str "Print Modules is obsolete; use Print Libraries instead") }
+          { user_err ~loc Pp.(str "Print Modules is obsolete; use Print Libraries instead") }
       | IDENT "Libraries" -> { PrintModules }
 
       | IDENT "ML"; IDENT "Path" -> { PrintMLLoadPath }
