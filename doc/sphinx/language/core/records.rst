@@ -17,7 +17,7 @@ sense, the :cmd:`Record` construction allows defining“signatures”.
    .. insertprodn record_definition field_def
 
    .. prodn::
-      record_definition ::= {? > } @ident_decl {* @binder } {? : @sort } {? := {? @ident } %{ {*; @record_field } {? ; } %} }
+      record_definition ::= {? > } @ident_decl {* @binder } {? : @sort } {? := {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident } }
       record_field ::= {* #[ {*, @attribute } ] } @name {? @field_body } {? %| @natural } {? @decl_notations }
       field_body ::= {* @binder } @of_type
       | {* @binder } @of_type := @term
@@ -28,7 +28,9 @@ sense, the :cmd:`Record` construction allows defining“signatures”.
    Each :n:`@record_definition` defines a record named by :n:`@ident_decl`.
    The constructor name is given by :n:`@ident`.
    If the constructor name is not specified, then the default name :n:`Build_@ident` is used,
-   where :n:`@ident` is the record name.
+   where :n:`@ident` is the record name. If given, the :n:`as @ident`
+   part specifies the name to use for inhabitants of the record in the
+   type of projections (see below).
 
    If :token:`sort` is omitted, the default sort is Type.
    Notice that the type of an identifier can depend on a previously-given identifier. Thus the

@@ -559,7 +559,7 @@ eqn: [
 
 (* No constructor syntax, OPT [ "|" binders ] is not supported for Record *)
 record_definition: [
-| opt_coercion ident_decl binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" )
+| opt_coercion ident_decl binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" OPT [ "as" identref ] )
 ]
 
 (* No mutual recursion, no inductive classes, type must be a sort *)
@@ -1516,9 +1516,9 @@ constructors_or_record: [
 | REPLACE identref constructor_type "|" LIST1 constructor SEP "|"
 | WITH OPT "|" LIST1 constructor SEP "|"
 | DELETE identref constructor_type
-| REPLACE identref "{" record_fields "}"
-| WITH OPT identref "{" record_fields "}"
-| DELETE "{" record_fields "}"
+| REPLACE identref "{" record_fields "}" default_inhabitant_ident
+| WITH OPT identref "{" record_fields "}" default_inhabitant_ident
+| DELETE "{" record_fields "}" default_inhabitant_ident
 ]
 
 record_binder: [
@@ -2676,6 +2676,7 @@ SPLICE: [
 | export_token
 | reserv_tuple
 | inst
+| default_inhabitant_ident
 | opt_coercion
 | opt_constructors_or_fields
 | is_module_type

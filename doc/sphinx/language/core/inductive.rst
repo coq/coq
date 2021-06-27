@@ -13,7 +13,7 @@ Inductive types
    .. prodn::
       inductive_definition ::= {? > } @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
       constructors_or_record ::= {? %| } {+| @constructor }
-      | {? @ident } %{ {*; @record_field } {? ; } %}
+      | {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident }
       constructor ::= @ident {* @binder } {? @of_type }
 
    Defines one or more
@@ -37,7 +37,9 @@ Inductive types
    :attr:`private(matching)` attributes.
 
    When record syntax is used, this command also supports the
-   :attr:`projections(primitive)` :term:`attribute`.
+   :attr:`projections(primitive)` :term:`attribute`. Also, in the
+   record syntax, if given, the :n:`as @ident` part specifies the name
+   to use for inhabitants of the record in the type of projections.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
    The :n:`@ident`\s are simultaneously added to the global environment before

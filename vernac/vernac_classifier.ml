@@ -124,7 +124,8 @@ let classify_vernac e =
     | VernacInductive (_,l) ->
         let ids = List.map (fun (((_,({v=id},_)),_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l
-        | RecordDecl (oid,l) -> (match oid with Some {v=x} -> [x] | _ -> []) @
+        | RecordDecl (oid,l,obinder) -> (match oid with Some {v=x} -> [x] | _ -> []) @
+           (match obinder with Some {v=x} -> [x] | _ -> []) @
            CList.map_filter (function
             | AssumExpr({v=Names.Name n},_,_), _ -> Some n
             | _ -> None) l) l in

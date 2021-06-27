@@ -550,8 +550,9 @@ let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = n
   let prpri = match pri with None -> mt() | Some i -> str "| " ++ int i in
   prx ++ prpri ++ prlist (pr_decl_notation @@ pr_constr) ntn
 
-let pr_record_decl c fs =
-  pr_opt pr_lident c ++ pr_record "{" "}" pr_record_field fs
+let pr_record_decl c fs obinder =
+  pr_opt pr_lident c ++ pr_record "{" "}" pr_record_field fs ++
+  pr_opt (fun id -> str "as " ++ pr_lident id) obinder
 
 let pr_printable = function
   | PrintFullContext ->
@@ -853,8 +854,8 @@ let pr_vernac_expr v =
         pr_com_at (begin_of_inductive l) ++
         fnl() ++ str fst_sep ++
         prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l
-      | RecordDecl (c,fs) ->
-        pr_record_decl c fs
+      | RecordDecl (c,fs,obinder) ->
+        pr_record_decl c fs obinder
     in
     let pr_oneind key (((coe,iddecl),(indupar,indpar),s,lc),ntn) =
       hov 0 (

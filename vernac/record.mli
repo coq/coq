@@ -21,6 +21,7 @@ module Ast : sig
     ; cfs : (local_decl_expr * record_field_attr) list
     ; idbuild : Id.t
     ; sort : constr_expr option
+    ; default_inhabitant_id : Id.t option
     }
 end
 
