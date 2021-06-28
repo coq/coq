@@ -9,5 +9,7 @@ git_download unimath
 
 export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/unimath"
+  # DisplayedInserter consumes too much memory for the shared workers
+  sed -i.bak 's|DisplayedBicats/Examples/DisplayedInserter.v||'  UniMath/Bicategories/.package/files
   make BUILD_COQ=no
 )
