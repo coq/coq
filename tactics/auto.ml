@@ -27,7 +27,7 @@ open Hints
 (*          tactics with a trace mechanism for automatic search           *)
 (**************************************************************************)
 
-let priority l = List.filter (fun (_, hint) -> Int.equal (FullHint.priority hint) 0) l
+let priority l = List.filter (fun hint -> Int.equal (FullHint.priority hint) 0) l
 
 let compute_secvars gl =
   let hyps = Proofview.Goal.hyps gl in
@@ -68,12 +68,7 @@ let auto_unif_flags =
 (* Try unification with the precompiled clause, then use registered Apply *)
 
 let unify_resolve flags h = Hints.hint_res_pf ~flags h
-
-let unify_resolve_nodelta h = unify_resolve auto_unif_flags h
-
-let unify_resolve_gen = function
-  | None -> unify_resolve_nodelta
-  | Some flags -> unify_resolve flags
+let unify_resolve_nodelta h = Hints.hint_res_pf ~flags:auto_unif_flags h
 
 let exact h =
   Proofview.Goal.enter begin fun gl ->
@@ -260,9 +255,6 @@ let tclTRY_dbg d tac =
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
 
-let flags_of_state st =
-  auto_unif_flags_of st st
-
 let auto_flags_of_state st =
   auto_unif_flags_of TransparentState.full st
 
@@ -283,7 +275,7 @@ let exists_evaluable_reference env = function
 let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
 let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
 
-let rec trivial_fail_db dbg mod_delta db_list local_db =
+let rec trivial_fail_db dbg db_list local_db =
   let intro_tac =
     Tacticals.New.tclTHEN (dbg_intro dbg)
       ( Proofview.Goal.enter begin fun gl ->
@@ -292,7 +284,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
           let decl = Tacmach.New.pf_last_hyp gl in
           let hyp = Context.Named.Declaration.get_id decl in
           let local_db = push_resolve_hyp env sigma hyp local_db in
-          trivial_fail_db dbg mod_delta db_list local_db
+          trivial_fail_db dbg db_list local_db
       end)
   in
   Proofview.Goal.enter begin fun gl ->
@@ -303,63 +295,25 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
     Tacticals.New.tclFIRST
       ((dbg_assumption dbg)::intro_tac::
           (List.map Tacticals.New.tclCOMPLETE
-             (trivial_resolve env sigma dbg mod_delta db_list local_db secvars concl)))
+             (trivial_resolve env sigma dbg db_list local_db secvars concl)))
   end
 
-and my_find_search_nodelta env sigma db_list local_db secvars hdc concl =
-  List.map (fun hint -> (None,hint))
-    (List.map_append (hintmap_of env sigma secvars hdc concl) (local_db::db_list))
+and my_find_search env sigma db_list local_db secvars hdc concl =
+  List.map_append (hintmap_of env sigma secvars hdc concl) (local_db::db_list)
 
-and my_find_search mod_delta =
-  if mod_delta then my_find_search_delta
-  else my_find_search_nodelta
-
-and my_find_search_delta env sigma db_list local_db secvars hdc concl =
-  let f = hintmap_of env sigma secvars hdc concl in
-    if occur_existential sigma concl then
-      List.map_append
-        (fun db ->
-          if Hint_db.use_dn db then
-            let flags = flags_of_state (Hint_db.transparent_state db) in
-              List.map (fun x -> (Some flags,x)) (f db)
-          else
-            let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-              List.map (fun x -> (Some flags,x)) (f db))
-        (local_db::db_list)
-    else
-      List.map_append (fun db ->
-        if Hint_db.use_dn db then
-          let flags = flags_of_state (Hint_db.transparent_state db) in
-            List.map (fun x -> (Some flags, x)) (f db)
-        else
-          let st = Hint_db.transparent_state db in
-          let flags, l =
-            let l =
-              match hdc with
-              | None -> Hint_db.map_none ~secvars db
-              | Some hdc ->
-                  if TransparentState.is_empty st
-                  then Hint_db.map_auto env sigma ~secvars hdc concl db
-                  else match Hint_db.map_existential sigma ~secvars hdc concl db with
-                      | ModeMatch l -> l
-                      | ModeMismatch -> []
-            in auto_flags_of_state st, l
-          in List.map (fun x -> (Some flags,x)) l)
-        (local_db::db_list)
-
-and tac_of_hint dbg db_list local_db concl (flags, h) =
+and tac_of_hint dbg db_list local_db concl h =
   let tactic = function
-    | Res_pf h -> unify_resolve_gen flags h
+    | Res_pf h -> unify_resolve_nodelta h
     | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
         let info = Exninfo.reify () in
         Tacticals.New.tclZEROMSG ~info (str "eres_pf"))
     | Give_exact h  -> exact h
     | Res_pf_THEN_trivial_fail h ->
       Tacticals.New.tclTHEN
-        (unify_resolve_gen flags h)
+        (unify_resolve_nodelta h)
         (* With "(debug) trivial", we shouldn't end here, and
            with "debug auto" we don't display the details of inner trivial *)
-        (trivial_fail_db (no_dbg dbg) (not (Option.is_empty flags)) db_list local_db)
+        (trivial_fail_db (no_dbg dbg) db_list local_db)
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
        if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
@@ -380,7 +334,7 @@ and tac_of_hint dbg db_list local_db concl (flags, h) =
   in
   tclLOG dbg pr_hint (FullHint.run h tactic)
 
-and trivial_resolve env sigma dbg mod_delta db_list local_db secvars cl =
+and trivial_resolve env sigma dbg db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
@@ -389,7 +343,7 @@ and trivial_resolve env sigma dbg mod_delta db_list local_db secvars cl =
     in
       List.map (tac_of_hint dbg db_list local_db cl)
         (priority
-            (my_find_search mod_delta env sigma db_list local_db secvars head cl))
+            (my_find_search env sigma db_list local_db secvars head cl))
   with Not_found -> []
 
 (** The use of the "core" database can be de-activated by passing
@@ -404,7 +358,7 @@ let trivial ?(debug=Off) lems dbnames =
   let d = mk_trivial_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
-    (trivial_fail_db d false db_list hints)
+    (trivial_fail_db d db_list hints)
   end
 
 let full_trivial ?(debug=Off) lems =
@@ -416,7 +370,7 @@ let full_trivial ?(debug=Off) lems =
   let d = mk_trivial_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
-    (trivial_fail_db d false db_list hints)
+    (trivial_fail_db d db_list hints)
   end
 
 let gen_trivial ?(debug=Off) lems = function
@@ -429,7 +383,7 @@ let h_trivial ?(debug=Off) lems l = gen_trivial ~debug lems l
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)
 
-let possible_resolve env sigma dbg mod_delta db_list local_db secvars cl =
+let possible_resolve env sigma dbg db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
@@ -437,7 +391,7 @@ let possible_resolve env sigma dbg mod_delta db_list local_db secvars cl =
       with Bound -> None
     in
       List.map (tac_of_hint dbg db_list local_db cl)
-        (my_find_search mod_delta env sigma db_list local_db secvars head cl)
+        (my_find_search env sigma db_list local_db secvars head cl)
   with Not_found -> []
 
 (* Introduce an hypothesis, then call the continuation tactic [kont]
@@ -457,7 +411,7 @@ let intro_register dbg kont db =
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
-let search d n mod_delta db_list local_db =
+let search d n db_list local_db =
   let rec search d n local_db =
     (* spiwack: the test of [n] to 0 must be done independently in
        each goal. Hence the [tclEXTEND] *)
@@ -477,7 +431,7 @@ let search d n mod_delta db_list local_db =
                Tacticals.New.tclFIRST
                  (List.map
                     (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
-                    (possible_resolve env sigma d mod_delta db_list local_db secvars concl))
+                    (possible_resolve env sigma d db_list local_db secvars concl))
              end))
     end []
   in
@@ -485,7 +439,7 @@ let search d n mod_delta db_list local_db =
 
 let default_search_depth = ref 5
 
-let delta_auto debug mod_delta n lems dbnames =
+let delta_auto debug n lems dbnames =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -494,16 +448,14 @@ let delta_auto debug mod_delta n lems dbnames =
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
-    (search d n mod_delta db_list hints)
+    (search d n db_list hints)
   end
 
-let auto ?(debug=Off) n = delta_auto debug false n
-
-let new_auto ?(debug=Off) n = delta_auto debug true n
+let auto ?(debug=Off) n = delta_auto debug n
 
 let default_auto = auto !default_search_depth [] []
 
-let delta_full_auto ?(debug=Off) mod_delta n lems =
+let delta_full_auto ?(debug=Off) n lems =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -512,11 +464,10 @@ let delta_full_auto ?(debug=Off) mod_delta n lems =
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
-    (search d n mod_delta db_list hints)
+    (search d n db_list hints)
   end
 
-let full_auto ?(debug=Off) n = delta_full_auto ~debug false n
-let new_full_auto ?(debug=Off) n = delta_full_auto ~debug true n
+let full_auto ?(debug=Off) n = delta_full_auto ~debug n
 
 let default_full_auto = full_auto !default_search_depth []
 

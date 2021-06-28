@@ -565,21 +565,6 @@ Ltac2 Notation "auto" n(opt(tactic(0)))
 
 Ltac2 Notation auto := auto.
 
-Set Warnings "-deprecated-ltac2-definition".
-
-#[deprecated(since="8.14")]
-Ltac2 new_eauto0 n use dbs :=
-  let dbs := default_db dbs in
-  let use := default_list use in
-  Std.new_auto Std.Off n use dbs.
-
-#[deprecated(since="8.14")]
-Ltac2 Notation "new" "auto" n(opt(tactic(0)))
-  use(opt(seq("using", list1(thunk(constr), ","))))
-  dbs(opt(seq("with", hintdb))) := new_eauto0 n use dbs.
-
-Set Warnings "deprecated-ltac2-definition".
-
 Ltac2 eauto0 n p use dbs :=
   let dbs := default_db dbs in
   let use := default_list use in

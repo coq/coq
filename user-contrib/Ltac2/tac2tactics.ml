@@ -390,15 +390,6 @@ let auto debug n lems dbs =
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Auto.h_auto ~debug n lems dbs
 
-let new_auto debug n lems dbs =
-  let make_depth n = snd (Eauto.make_dimension n None) in
-  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
-  match dbs with
-  | None -> Auto.new_full_auto ~debug (make_depth n) lems
-  | Some dbs ->
-    let dbs = List.map Id.to_string dbs in
-    Auto.new_auto ~debug (make_depth n) lems dbs
-
 let eauto debug n p lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
