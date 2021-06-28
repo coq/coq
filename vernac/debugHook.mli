@@ -77,6 +77,7 @@ type debugger_state = {
   mutable cur_loc : Loc.t option;
   (* yields the call stack *)
   mutable get_stack : unit -> (string * Loc.t option) list;
+  mutable varmaps : Geninterp.Val.t Names.Id.Map.t list;
 }
 
 val debugger_state : debugger_state

@@ -16,7 +16,7 @@ open Genarg
 open Redexpr
 open Tactypes
 
-val ltac_trace_info : ltac_trace Exninfo.t
+val ltac_trace_info : ltac_stack Exninfo.t
 
 module Value :
 sig

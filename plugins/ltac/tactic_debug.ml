@@ -15,7 +15,7 @@ open Names
 open Pp
 open Tacexpr
 
-let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
+let (ltac_trace_info : ltac_stack Exninfo.t) = Exninfo.make ()
 
 let prtac x =
   let env = Global.env () in
@@ -204,24 +204,26 @@ let print_loc_tac tac =
 
 
 let get_stack stack () =
-  match stack with
-  | Some stack ->
-    List.map (fun k ->
-      let (loc, k) = k in
-      match k with
-      | LtacNameCall l -> KerName.to_string l, loc
-      | _ -> "???", None
-      ) stack
-  | None -> []
+  List.map (fun k ->
+    let (loc, k) = k in
+    match k with
+    | LtacNameCall l -> KerName.to_string l, loc
+    | _ -> "???", None
+    ) stack
 
-let save_loc tac stack =
+let save_loc tac varmap trace =
 (*  Comm.print (print_loc_tac tac);*)
+  let stack, varmaps = match trace with
+    | Some (stack, varmaps) -> stack, varmaps
+    | None -> [], []
+  in
   DebugHook.(debugger_state.cur_loc <- CAst.(tac.loc));
-  DebugHook.(debugger_state.get_stack <- get_stack stack)
+  DebugHook.(debugger_state.get_stack <- get_stack stack);
+  DebugHook.(debugger_state.varmaps <- varmap :: varmaps)
 
 (* Prints the goal and the command to be executed *)
-let goal_com tac stack =
-  save_loc tac stack;
+let goal_com tac varmap trace =
+  save_loc tac varmap trace;
   Proofview.tclTHEN
     db_pr_goal
     (if Comm.isTerminal () || DebugHook.(debugger_state.cur_loc) = None then
@@ -326,9 +328,22 @@ let pr_call_kind n k =
 let dump_stack msg stack =
   match stack with
   | Some stack ->
-    let s = Printf.sprintf "%s: stack len = %d" msg (StdList.length stack) in
-    Feedback.msg_notice (Pp.str s);
+    Printf.printf "%s: stack len = %d\n" msg (StdList.length stack);
     StdList.iteri pr_call_kind stack;
+  | None -> ()
+
+let dump_varmaps msg varmaps =
+  match varmaps with
+  | Some varmaps ->
+    List.iter (fun varmap ->
+        Printf.printf "%s: varmap len = %d\n" msg (Id.Map.cardinal varmap);
+        List.iter (fun b ->
+            let (k, b) = b in
+            Printf.printf "id = %s\n%!" (Id.to_string k);
+            ignore @@ Pptactic.pr_value Constrexpr.LevelSome b
+            (* b is Geninterp.Val.t Names.Id.Map.t *)
+          ) (Id.Map.bindings varmap)
+      ) varmaps
   | None -> ()
 [@@@ocaml.warning "+32"]
 
@@ -338,17 +353,22 @@ let dump_stack msg stack =
    be that [f] is wrapped in with "explain_logic_error". I don't think
    it serves any purpose in the current design, so we could just drop
    that. *)
-let debug_prompt lev tac f stack =
+let debug_prompt lev tac f varmap trace =
+  (* trace omits the currently-running tactic, so add separately *)
+  let stack, varmaps = match trace with
+    | Some (stack, varmaps) -> Some stack, Some (varmap :: varmaps)
+    | None -> None, Some [varmap] in
   let runprint = print_run_ctr true in
   let open Proofview.NonLogical in
   let (>=) = Proofview.tclBIND in
   (* What to print and to do next *)
   let newlevel =
     Proofview.tclLIFT !skip >= fun s ->
-(*      dump_stack "at debug_prompt" stack;*)
       let stop_here () =
+(*        dump_stack "at debug_prompt" stack;*)
+        dump_varmaps "at debug_prompt" varmaps;
         prev_stack.contents <- stack;
-        Proofview.tclTHEN (goal_com tac stack) (Proofview.tclLIFT (prompt lev))
+        Proofview.tclTHEN (goal_com tac varmap trace) (Proofview.tclLIFT (prompt lev))
       in
       let p_stack = prev_stack.contents in
       if action.contents = DebugHook.Action.Continue && at_breakpoint tac then

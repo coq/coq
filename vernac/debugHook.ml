@@ -150,6 +150,7 @@ let refresh_bpts () =
 type debugger_state = {
   mutable cur_loc : Loc.t option;
   mutable get_stack : unit -> (string * Loc.t option) list;
+  mutable varmaps : Geninterp.Val.t Names.Id.Map.t list;
 }
 
-let debugger_state = { cur_loc=None; get_stack=(fun () -> [])}
+let debugger_state = { cur_loc=None; get_stack=(fun () -> []); varmaps=[] }
