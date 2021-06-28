@@ -52,10 +52,14 @@ let unix_timeout n f x =
       let res = f x in
       restore_timeout ();
       Some res
-    with Timeout ->
+    with
+    | Timeout ->
       restore_timeout ();
       None
-
+    | e ->
+      let e = Exninfo.capture e in
+      restore_timeout ();
+      Exninfo.iraise e
 
 let windows_timeout n f x =
   let killed = ref false in
