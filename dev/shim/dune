@@ -25,9 +25,33 @@
 (rule
  (targets coqbyte-prelude)
  (deps
+  %{project_root}/theories/Init/Prelude.vo
   %{bin:coqtop.byte}
-  %{lib:coq-core.kernel:../../stublibs/dllcoqrun_stubs.so}
-  %{project_root}/theories/Init/Prelude.vo)
+  %{lib:coq-core.config:config.cma}
+  %{lib:coq-core.clib:clib.cma}
+  %{lib:coq-core.lib:lib.cma}
+  %{lib:coq-core.kernel:kernel.cma}
+  %{lib:coq-core.vm:coqrun.cma}
+  %{lib:coq-core.vm:../../stublibs/dllcoqrun_stubs.so}
+  %{lib:coq-core.library:library.cma}
+  %{lib:coq-core.engine:engine.cma}
+  %{lib:coq-core.pretyping:pretyping.cma}
+  %{lib:coq-core.gramlib:gramlib.cma}
+  %{lib:coq-core.interp:interp.cma}
+  %{lib:coq-core.proofs:proofs.cma}
+  %{lib:coq-core.parsing:parsing.cma}
+  %{lib:coq-core.printing:printing.cma}
+  %{lib:coq-core.tactics:tactics.cma}
+  %{lib:coq-core.vernac:vernac.cma}
+  %{lib:coq-core.stm:stm.cma}
+  %{lib:coq-core.sysinit:sysinit.cma}
+  %{lib:coq-core.toplevel:toplevel.cma}
+  %{lib:coq-core.plugins.number_string_notation:number_string_notation_plugin.cma}
+  %{lib:coq-core.plugins.float_syntax:float_syntax_plugin.cma}
+  %{lib:coq-core.plugins.tauto:tauto_plugin.cma}
+  %{lib:coq-core.plugins.cc:cc_plugin.cma}
+  %{lib:coq-core.plugins.firstorder:firstorder_plugin.cma}
+  %{lib:coq-core.plugins.ltac:ltac_plugin.cma})
  (action
   (with-stdout-to %{targets}
    (progn
