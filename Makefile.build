@@ -233,7 +233,7 @@ BOOTCOQC=$(TIMER) $(COQC) -coqlib $(VO_OUT_DIR) -q $(COQOPTS) $(DUNEPLUGININCLUD
 VO_TOOLS_DEP = $(COQC)
 
 ifeq ($(BEST),byte)
-  VO_TOOLS_DEP += $(CONTEXT)/lib/stublibs/dllbyterun_stubs.so
+  VO_TOOLS_DEP += $(CONTEXT)/lib/stublibs/dllcoqrun_stubs.so
 endif
 
 ifdef NATIVECOMPUTE
