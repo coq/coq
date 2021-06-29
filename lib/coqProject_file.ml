@@ -33,16 +33,6 @@ type project = {
   q_includes  : (path * logic_path) sourced list;
   extra_args : string sourced list;
   defs : (string * string) sourced list;
-
-  (* deprecated in favor of a Makefile.local using :: rules *)
-  extra_targets : extra_target sourced list;
-  subdirs : string sourced list;
-}
-and extra_target = {
-  target : string;
-  dependencies : string;
-  phony : bool;
-  command : string;
 }
 and logic_path = string
 and path = { path : string; canonical_path : string }
@@ -52,7 +42,7 @@ and native_compiler =
 | NativeOndemand
 
 (* TODO generate with PPX *)
-let mk_project project_file makefile use_ocamlopt native_compiler = {
+let mk_project project_file makefile native_compiler = {
   project_file;
   makefile;
   native_compiler;
@@ -63,8 +53,6 @@ let mk_project project_file makefile use_ocamlopt native_compiler = {
   ml_files = [];
   mllib_files = [];
   mlpack_files = [];
-  extra_targets = [];
-  subdirs = [];
   ml_includes = [];
   r_includes = [];
   q_includes = [];
@@ -130,14 +118,6 @@ let parse f =
   List.rev res
 ;;
 
-(* Copy from minisys.ml, since we don't see that file here *)
-let exists_dir dir =
-  let rec strip_trailing_slash dir =
-    let len = String.length dir in
-    if len > 0 && (dir.[len-1] = '/' || dir.[len-1] = '\\')
-    then strip_trailing_slash (String.sub dir 0 (len-1)) else dir in
-  try Sys.is_directory (strip_trailing_slash dir) with Sys_error _ -> false
-
 let parse_native ~warning_fn ~error proj flag =
   if proj.native_compiler <> None then
     (warning_fn "-native-compiler set more than once.");
@@ -163,12 +143,6 @@ let process_cmd_line ~warning_fn orig_dir proj args =
   | [] -> proj
   | "-impredicative-set" :: _ ->
     error "Use \"-arg -impredicative-set\" instead of \"-impredicative-set\""
-  | "-extra" :: target :: dependencies :: command :: r ->
-    let tgt = { target; dependencies; phony = false; command } in
-    aux { proj with extra_targets = proj.extra_targets @ [sourced tgt] } r
-  | "-extra-phony" :: target :: dependencies :: command :: r ->
-    let tgt = { target; dependencies; phony = true; command } in
-    aux { proj with extra_targets = proj.extra_targets @ [sourced tgt] } r
 
   | "-Q" :: d :: lp :: r ->
     aux { proj with q_includes = proj.q_includes @ [sourced (mk_path d,lp)] } r
@@ -210,10 +184,9 @@ let process_cmd_line ~warning_fn orig_dir proj args =
   | f :: r ->
       let f = CUnix.correct_path f orig_dir in
       let proj =
-        if exists_dir f then { proj with subdirs = proj.subdirs @ [sourced f] }
-        else match Filename.extension f with
-          | ".v" ->
-            { proj with v_files = proj.v_files @ [sourced f] }
+        match Filename.extension f with
+        | ".v" ->
+          { proj with v_files = proj.v_files @ [sourced f] }
         | ".ml" -> { proj with ml_files = proj.ml_files @ [sourced f] }
         | ".ml4" ->
           let msg = Printf.sprintf "camlp5 macro files not supported anymore, please port %s to coqpp" f in
@@ -241,11 +214,11 @@ let process_cmd_line ~warning_fn orig_dir proj args =
  (******************************* API ************************************)
 
 let cmdline_args_to_project ~warning_fn ~curdir args =
-  process_cmd_line ~warning_fn curdir (mk_project None None true None) args
+  process_cmd_line ~warning_fn curdir (mk_project None None None) args
 
 let read_project_file ~warning_fn f =
   process_cmd_line ~warning_fn (Filename.dirname f)
-    (mk_project (Some f) None true None) (parse f)
+    (mk_project (Some f) None None) (parse f)
 
 let rec find_project_file ~from ~projfile_name =
   let fname = Filename.concat from projfile_name in

@@ -35,7 +35,6 @@ let usage_coq_makefile () =
   output_string stderr "Usage summary:\
 \n\
 \ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
-\n  ... [any] ... [-extra[-phony] result dependencies command]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
 \n  ...  [-arg opt] ... [-f file] [-o file]\
@@ -48,16 +47,6 @@ let usage_coq_makefile () =
 \n[file.ml[ig]?]: Objective Caml file to be compiled\
 \n[file.ml{lib,pack}]: ocamlbuild-style file that describes a Objective Caml\
 \n  library/module\
-\n[any] : subdirectory that should be \"made\" and has a Makefile itself\
-\n  to do so. Very fragile and discouraged.\
-\n[-extra result dependencies command]: add target \"result\" with command\
-\n  \"command\" and dependencies \"dependencies\". If \"result\" is not\
-\n  generic (do not contains a %), \"result\" is built by _make all_ and\
-\n  deleted by _make clean_.\
-\n[-extra-phony result dependencies command]: add a PHONY target \"result\"\
-\n with command \"command\" and dependencies \"dependencies\". Note that\
-\n _-extra-phony foo bar \"\"_ is a regular way to add the target \"bar\" as\
-\n as a dependencies of an already defined target \"foo\".\
 \n[-I dir]: look for Objective Caml dependencies in \"dir\"\
 \n[-R physicalpath logicalpath]: look for Coq dependencies recursively\
 \n  starting from \"physicalpath\". The logical path associated to the\
@@ -148,37 +137,6 @@ let section oc s =
   fprintf oc "%s\n" spaces;
   fprintf oc "%s\n\n" sharps
 ;;
-
-let clean_tgts = ["clean"; "cleanall"; "archclean"]
-
-let generate_conf_extra_target oc sps =
-  let pr_path { target; dependencies; phony; command } =
-    let target = if target = "all" then "custom-all" else target in
-    if phony then fprintf oc ".PHONY: %s\n" target;
-    if not (is_genrule target) && not phony then begin
-      fprintf oc "post-all::\n\t$(MAKE) -f $(SELF) %s\n" target;
-      if not phony then
-        fprintf oc "clean::\n\trm -f %s\n" target;
-    end;
-    fprintf oc "%s %s %s\n\t%s\n\n"
-       target
-       (if List.mem target clean_tgts then ":: " else ": ")
-       dependencies
-       command
-  in
-    if sps <> [] then
-      section oc "Extra targets. (-extra and -extra-phony, DEPRECATED)";
-    List.iter (forget_source > pr_path) sps
-
-let generate_conf_subdirs oc sds =
-  if sds <> [] then section oc "Subdirectories. (DEPRECATED)";
-  let iter f = List.iter (forget_source > f) in
-  iter (fprintf oc ".PHONY:%s\n") sds;
-  iter (fprintf oc "post-all::\n\tcd \"%s\" && $(MAKE) all\n") sds;
-  iter (fprintf oc "clean::\n\tcd \"%s\" && $(MAKE) clean\n") sds;
-  iter (fprintf oc "archclean::\n\tcd \"%s\" && $(MAKE) archclean\n") sds;
-  iter (fprintf oc "install-extra::\n\tcd \"%s\" && $(MAKE) install\n") sds
-
 
 let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
   section oc "Path directives (-I, -R, -Q).";
@@ -287,8 +245,6 @@ let generate_conf oc project args  =
   generate_conf_native oc project.native_compiler;
   generate_conf_defs oc project;
   generate_conf_doc oc project;
-  generate_conf_extra_target oc project.extra_targets;
-  generate_conf_subdirs oc project.subdirs;
 ;;
 
 let ensure_root_dir
@@ -413,16 +369,6 @@ let _ =
   let local_file = Option.default "CoqMakefile" project.makefile ^ ".local" in
   let local_late_file = Option.default "CoqMakefile" project.makefile ^ ".local-late" in
   let dep_file = "." ^ Option.default "CoqMakefile" project.makefile ^ ".d" in
-
-  if project.extra_targets <> [] then begin
-    eprintf "Warning: -extra and -extra-phony are deprecated.\n";
-    eprintf "Warning: Write the extra targets in %s.\n\n" local_file;
-  end;
-
-  if project.subdirs <> [] then begin
-    eprintf "Warning: Subdirectories are deprecated.\n";
-    eprintf "Warning: Use double colon rules in %s.\n\n" local_file;
-  end;
 
   let project = ensure_root_dir project in
 

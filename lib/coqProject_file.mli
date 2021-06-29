@@ -31,16 +31,6 @@ type project = {
   q_includes  : (path * logic_path) sourced list;
   extra_args : string sourced list;
   defs : (string * string) sourced list;
-
-  (* deprecated in favor of a Makefile.local using :: rules *)
-  extra_targets : extra_target sourced list;
-  subdirs : string sourced list;
-}
-and extra_target = {
-  target : string;
-  dependencies : string;
-  phony : bool;
-  command : string;
 }
 and logic_path = string
 and path = { path : string; canonical_path : string }
