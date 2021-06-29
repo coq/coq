@@ -77,7 +77,7 @@ Definition Twon : int31 := Eval compute in (napply_cst _ _ D0 (size-2) I31) D1 D
    Pseudo-code is
     [ match x with (I31 d0 ... dN) => I31 b d0 ... d(N-1) end ]
 *)
-
+Arguments napply_except_last : clear bidirectionality hint.
 Definition sneakr : digits -> int31 -> int31 := Eval compute in
  fun b => int31_rect _ (napply_except_last _ _ (size-1) (I31 b)).
 
@@ -86,7 +86,7 @@ Definition sneakr : digits -> int31 -> int31 := Eval compute in
    Pseudo-code is
     [ match x with (I31 d0 ... dN) => I31 d1 ... dN b end ]
 *)
-
+Arguments napply_then_last : clear bidirectionality hint.
 Definition sneakl : digits -> int31 -> int31 := Eval compute in
  fun b => int31_rect _ (fun _ => napply_then_last _ _ b (size-1) I31).
 

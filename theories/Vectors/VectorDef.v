@@ -186,6 +186,7 @@ Fixpoint append {A}{n}{p} (v:t A n) (w:t A p):t A (n+p) :=
   | [] => w
   | a :: v' => a :: (append v' w)
   end.
+Global Arguments append : clear bidirectionality hint.
 
 Infix "++" := append.
 
