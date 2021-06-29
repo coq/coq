@@ -99,10 +99,10 @@ format. [notation-incompatible-format,parsing]
      : nat
 3   %%   4
      : nat
-File "./output/Notations4.v", line 235, characters 0-61:
-Warning: The format modifier is irrelevant for only parsing rules.
+File "./output/Notations4.v", line 235, characters 47-59:
+Warning: The format modifier is irrelevant for only-parsing rules.
 [irrelevant-format-only-parsing,parsing]
-File "./output/Notations4.v", line 239, characters 0-63:
+File "./output/Notations4.v", line 239, characters 36-48:
 Warning: The only parsing modifier has no effect in Reserved Notation.
 [irrelevant-reserved-notation-only-parsing,parsing]
 fun x : nat => U (S x)
@@ -203,3 +203,5 @@ Unexpected type constraint in notation already providing a type constraint.
      : Prop
 fun f : ## a (a = 0) => f 1 eq_refl
      : ## a (a = 0) -> 1 = 0
+[MyNotation 0]
+     : nat

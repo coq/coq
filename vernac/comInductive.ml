@@ -633,6 +633,7 @@ type uniform_inductive_flag =
 
 let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
+  let ntns = List.map Metasyntax.prepare_where_notation ntns in
   (* Interpret the types *)
   let indl = match params with
     | uparams, Some params -> (uparams, params, indl)
@@ -646,7 +647,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie pl impls);
   (* Declare the possible notations of inductive types *)
-  List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
+  List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) ntns;
   (* Declare the coercions *)
   List.iter (fun qid -> ComCoercion.try_add_new_coercion (Nametab.locate qid) ~local:false ~poly) coes
 

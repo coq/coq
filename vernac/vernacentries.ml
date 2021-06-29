@@ -504,9 +504,8 @@ let dump_global r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax_extension ~module_local infix l =
-  if infix then Metasyntax.check_infix_modifiers (snd l);
-  Metasyntax.add_syntax_extension ~local:module_local l
+let vernac_reserved_notation ~module_local ~infix l =
+  Metasyntax.add_reserved_notation ~local:module_local ~infix l
 
 let vernac_declare_scope ~module_local sc =
   Metasyntax.declare_scope module_local sc
@@ -2090,8 +2089,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     anomaly (str "Load is not supported recursively")
 
   (* Syntax *)
-  | VernacSyntaxExtension (infix, sl) ->
-    VtDefault(fun () -> with_module_locality ~atts vernac_syntax_extension infix sl)
+  | VernacReservedNotation (infix, sl) ->
+    VtDefault(fun () -> with_module_locality ~atts vernac_reserved_notation ~infix sl)
   | VernacDeclareScope sc ->
     VtDefault(fun () -> with_module_locality ~atts vernac_declare_scope sc)
   | VernacDelimiters (sc,lr) ->

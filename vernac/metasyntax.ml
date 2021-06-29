@@ -14,6 +14,7 @@ open Util
 open Names
 open Constrexpr
 open Constrexpr_ops
+open Vernacexpr
 open Notation_term
 open Notation_gram
 open Notation_ops
@@ -21,7 +22,6 @@ open Ppextend
 open Extend
 open Libobject
 open Constrintern
-open Vernacexpr
 open Libnames
 open Notation
 open Nameops
@@ -210,16 +210,25 @@ let is_numeral_in_constr entry symbs =
   | _ ->
       false
 
-let analyze_notation_tokens ~onlyprint df =
-  let (recvars,mainvars,symbols as res) = decompose_raw_notation df in
+let analyze_notation_tokens ~onlyprinting entry df =
+  let { recvars; mainvars; symbols } as res = decompose_raw_notation df in
     (* don't check for nonlinearity if printing only, see Bug 5526 *)
-  (if not onlyprint then
+  (if not onlyprinting then
     match List.duplicates Id.equal (mainvars @ List.map snd recvars) with
     | id :: _ ->
         user_err ~hdr:"Metasyntax.get_notation_vars"
           (str "Variable " ++ Id.print id ++ str " occurs more than once.")
     | _ -> ());
-  res
+  let isnumeral = is_numeral_in_constr entry symbols in
+  res, isnumeral
+
+let warn_unexpected_primitive_token_modifier =
+  CWarnings.create ~name:"primitive-token-modifier" ~category:"parsing"
+         (fun () -> str "Notations for numbers are primitive; skipping this modifier.")
+
+let check_no_syntax_modifiers_for_numeral = function
+  | [] -> ()
+  | l -> List.iter (function {CAst.loc} -> warn_unexpected_primitive_token_modifier ?loc ()) l
 
 let error_not_same_scope x y =
   user_err ~hdr:"Metasyntax.error_not_name_scope"
@@ -723,49 +732,42 @@ let warn_incompatible_format =
        head ++ spc () ++ pr_notation ntn ++
        strbrk " was already defined with a different format" ++ scope ++ str ".")
 
-type syntax_parsing_extension = {
-  synext_level : Notation.level;
-  synext_notation : notation;
+type syntax_extension = {
+  synext_level : level;
+  synext_nottyps : constr_entry_key list;
   synext_notgram : notation_grammar option;
-  synext_nottyps : Extend.constr_entry_key list;
+  synext_notprint : generic_notation_printing_rules option;
 }
 
-type syntax_printing_extension = {
-  synext_reserved : bool;
-  synext_unparsing : unparsing_rule;
-  synext_extra : (string * string) list;
-}
+type syntax_rules =
+  | PrimTokenSyntax
+  | SpecificSyntax of syntax_extension
 
-let generic_format_to_declare ntn {synext_unparsing = (rules,_); synext_extra = extra_rules } =
+let syntax_rules_iter f = function
+  | PrimTokenSyntax -> ()
+  | SpecificSyntax synext -> f synext
+
+let check_reserved_format ntn rules rules' =
   try
-    let (generic_rules,_),reserved,generic_extra_rules =
-      Ppextend.find_generic_notation_printing_rule ntn in
+    let { notation_printing_reserved = reserved; notation_printing_rules = generic_rules } = rules in
     if reserved &&
-       (not (List.for_all2eq unparsing_eq rules generic_rules)
-       || extra_rules <> generic_extra_rules)
+       (not (List.for_all2eq unparsing_eq rules'.notation_printing_unparsing generic_rules.notation_printing_unparsing)
+       || rules'.notation_printing_extra <> generic_rules.notation_printing_extra)
     then
-      (warn_incompatible_format (None,ntn); true)
-    else
-      false
-  with Not_found -> true
+      warn_incompatible_format (None,ntn)
+  with Not_found -> ()
 
-let check_reserved_format ntn = function
-  | None -> ()
-  | Some sy_pp_rules -> let _ = generic_format_to_declare ntn sy_pp_rules in ()
-
-let specific_format_to_declare (specific,ntn as specific_ntn)
-      {synext_unparsing = (rules,_); synext_extra = extra_rules } =
+let specific_format_to_declare (specific,ntn as specific_ntn) rules =
   try
-    let (specific_rules,_),specific_extra_rules =
-      Ppextend.find_specific_notation_printing_rule specific_ntn in
-    if not (List.for_all2eq unparsing_eq rules specific_rules)
-       || extra_rules <> specific_extra_rules then
+    let specific_rules = Ppextend.find_specific_notation_printing_rule specific_ntn in
+    if not (List.for_all2eq unparsing_eq rules.notation_printing_unparsing specific_rules.notation_printing_unparsing)
+       || rules.notation_printing_extra <> specific_rules.notation_printing_extra then
       (warn_incompatible_format (Some specific,ntn); true)
     else false
   with Not_found -> true
 
 type syntax_extension_obj =
-  locality_flag * (syntax_parsing_extension * syntax_printing_extension option)
+  locality_flag * (notation * syntax_extension)
 
 let check_and_extend_constr_grammar ntn rule =
   try
@@ -786,9 +788,8 @@ let check_and_extend_constr_grammar ntn rule =
   with Not_found ->
     Egramcoq.extend_constr_grammar rule
 
-let cache_one_syntax_extension (pa_se,pp_se) =
-  let ntn = pa_se.synext_notation in
-  let prec = pa_se.synext_level in
+let cache_one_syntax_extension (ntn,synext) =
+  let prec = synext.synext_level in
   (* Check and ensure that the level and the precomputed parsing rule is declared *)
   let oldparsing =
     try
@@ -799,42 +800,28 @@ let cache_one_syntax_extension (pa_se,pp_se) =
         with Not_found -> None
       in
       let oldtyps = Notgram_ops.subentries_of_notation ntn in
-      if not (Notation.level_eq prec oldprec) && (oldparsing <> None || pa_se.synext_notgram = None) then
-        error_incompatible_level ntn oldprec oldtyps prec pa_se.synext_nottyps;
+      if not (Notation.level_eq prec oldprec) && (oldparsing <> None || synext.synext_notgram = None) then
+        error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
       oldparsing
     with Not_found ->
       (* Declare the level and the precomputed parsing rule *)
       let () = Notation.declare_notation_level ntn prec in
-      let () = Notgram_ops.declare_notation_subentries ntn pa_se.synext_nottyps in
-      let () = Option.iter (Notgram_ops.declare_notation_grammar ntn) pa_se.synext_notgram in
+      let () = Notgram_ops.declare_notation_subentries ntn synext.synext_nottyps in
+      let () = Option.iter (Notgram_ops.declare_notation_grammar ntn) synext.synext_notgram in
       None in
   (* Declare the parsing rule *)
-  begin match oldparsing, pa_se.synext_notgram with
+  begin match oldparsing, synext.synext_notgram with
   | None, Some grams -> List.iter (check_and_extend_constr_grammar ntn) grams
   | _ -> (* The grammars rules are canonically derived from the string and the precedence*) ()
   end;
   (* Printing *)
-  match pp_se with
-  | None -> ()
-  | Some pp_se ->
-    (* Check compatibility of format in case of two Reserved Notation *)
-    (* and declare or redeclare printing rule *)
-    if generic_format_to_declare ntn pp_se then
-      declare_generic_notation_printing_rules ntn
-        ~extra:pp_se.synext_extra ~reserved:pp_se.synext_reserved pp_se.synext_unparsing
+  Option.iter (declare_generic_notation_printing_rules ntn) synext.synext_notprint
 
 let cache_syntax_extension (_, (_, sy)) =
   cache_one_syntax_extension sy
 
-let subst_parsing_rule subst x = x
-
-let subst_printing_rule subst x = x
-
-let subst_syntax_extension (subst, (local, (pa_sy,pp_sy))) =
-  (local, ({ pa_sy with
-    synext_notgram = Option.map (List.map (subst_parsing_rule subst)) pa_sy.synext_notgram },
-    Option.map (fun pp_sy -> {pp_sy with synext_unparsing = subst_printing_rule subst pp_sy.synext_unparsing}) pp_sy)
-  )
+let subst_syntax_extension (subst, (local, (ntn, synext))) =
+  (local, (ntn, synext))
 
 let classify_syntax_definition (local, _ as o) =
   if local then Dispose else Substitute o
@@ -856,51 +843,14 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 
 (* XXX: We could move this to the parser itself *)
 
-module SyndefMods = struct
-
-type t = {
-  only_parsing  : bool;
-  scopes : (Id.t * scope_name) list;
-}
-
-let default = {
-  only_parsing  = false;
-  scopes = [];
-}
-
-end
-
-let interp_syndef_modifiers modl = let open SyndefMods in
-  let rec interp skipped acc = function
-    | [] -> List.rev skipped, acc
-    | SetOnlyParsing :: l ->
-        interp skipped { acc with only_parsing = true; } l
-    | SetItemScope([],_) :: l ->
-        interp skipped acc l
-    | SetItemScope(s::ids,k) :: l ->
-        let scopes = acc.scopes in
-        let id = Id.of_string s in
-        if List.mem_assoc id scopes then
-          user_err (str "Notation scope for argument " ++ str s ++
-                    str " can be specified only once.");
-        interp skipped { acc with scopes = (id,k) :: scopes }
-          (SetItemScope(ids,s) :: l)
-    | x :: l ->
-        interp (x :: skipped) acc l
- in
-   interp [] default modl
-
 module NotationMods = struct
 
 type notation_modifier = {
   assoc         : Gramlib.Gramext.g_assoc option;
   level         : int option;
-  custom        : notation_entry;
   etyps         : (Id.t * simple_constr_prod_entry_key) list;
-  subtyps       : (Id.t * production_level) list;
 
   (* common to syn_data below *)
-  only_printing : bool;
   format        : lstring option;
   extra         : (string * string) list;
 }
@@ -908,10 +858,7 @@ type notation_modifier = {
 let default = {
   assoc         = None;
   level         = None;
-  custom        = InConstrEntry;
   etyps         = [];
-  subtyps       = [];
-  only_printing = false;
   format        = None;
   extra         = [];
 }
@@ -923,82 +870,61 @@ let warn_deprecated_ident_entry =
   CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated"
          (fun () -> strbrk "grammar entry \"ident\" permitted \"_\" in addition to proper identifiers; this use is deprecated and its meaning will change in the future; use \"name\" instead.")
 
-let interp_modifiers modl = let open NotationMods in
+let interp_modifiers entry modl = let open NotationMods in
   let rec interp subtyps acc = function
-    | [] -> subtyps, acc
-    | SetEntryType (s,typ) :: l ->
+  | [] -> subtyps, acc
+  | CAst.{loc;v} :: l -> match v with
+    | SetEntryType (s,typ) ->
         let id = Id.of_string s in
         if Id.List.mem_assoc id acc.etyps then
-          user_err ~hdr:"Metasyntax.interp_modifiers"
+          user_err ?loc ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
         interp subtyps { acc with etyps = (id,typ) :: acc.etyps; } l
-    | SetItemLevel ([],bko,n) :: l ->
+    | SetItemLevel ([],bko,n) ->
         interp subtyps acc l
-    | SetItemLevel (s::idl,bko,n) :: l ->
+    | SetItemLevel (s::idl,bko,n) ->
         let id = Id.of_string s in
         if Id.List.mem_assoc id acc.etyps then
-          user_err ~hdr:"Metasyntax.interp_modifiers"
+          user_err ?loc ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
-        interp ((id,bko,n)::subtyps) acc (SetItemLevel (idl,bko,n)::l)
-    | SetLevel n :: l ->
-        (match acc.custom with
+        interp ((id,bko,n)::subtyps) acc ((CAst.make ?loc @@ SetItemLevel (idl,bko,n))::l)
+    | SetLevel n ->
+        (match entry with
         | InCustomEntry s ->
           if acc.level <> None then
-            user_err (str ("isolated \"at level " ^ string_of_int n ^ "\" unexpected."))
+            user_err ?loc (str ("isolated \"at level " ^ string_of_int n ^ "\" unexpected."))
           else
-            user_err (str ("use \"in custom " ^ s ^ " at level " ^ string_of_int n ^
+            user_err ?loc (str ("use \"in custom " ^ s ^ " at level " ^ string_of_int n ^
                          "\"") ++ spc () ++ str "rather than" ++ spc () ++
                          str ("\"at level " ^ string_of_int n ^ "\"") ++
                          spc () ++ str "isolated.")
         | InConstrEntry ->
           if acc.level <> None then
-            user_err (str "A level is already assigned.");
+            user_err ?loc (str "A level is already assigned.");
           interp subtyps { acc with level = Some n; } l)
-    | SetCustomEntry (s,n) :: l ->
+    | SetCustomEntry (s,Some n) ->
+        (* Note: name of entry already registered in interp_non_syntax_modifiers *)
         if acc.level <> None then
-          (if n = None then
-            user_err (str ("use \"in custom " ^ s ^ " at level " ^
-                         string_of_int (Option.get acc.level) ^
-                         "\"") ++ spc () ++ str "rather than" ++ spc () ++
-                         str ("\"at level " ^
-                         string_of_int (Option.get acc.level) ^ "\"") ++
-                         spc () ++ str "isolated.")
-          else
-            user_err (str ("isolated \"at level " ^ string_of_int (Option.get acc.level) ^ "\" unexpected.")));
-        if acc.custom <> InConstrEntry then
-           user_err (str "Entry is already assigned to custom " ++ str s ++ (match acc.level with None -> mt () | Some lev -> str " at level " ++ int lev) ++ str ".");
-        interp subtyps { acc with custom = InCustomEntry s; level = n } l
-    | SetAssoc a :: l ->
-        if not (Option.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
+          user_err ?loc (str ("isolated \"at level " ^ string_of_int (Option.get acc.level) ^ "\" unexpected."));
+        interp subtyps { acc with level = Some n } l
+    | SetAssoc a ->
+        if not (Option.is_empty acc.assoc) then user_err ?loc Pp.(str "An associativity is given more than once.");
         interp subtyps { acc with assoc = Some a; } l
-    | SetOnlyPrinting :: l ->
-        interp subtyps { acc with only_printing = true; } l
-    | SetFormat ("text",s) :: l ->
-        if not (Option.is_empty acc.format) then user_err Pp.(str "A format is given more than once.");
-        interp subtyps { acc with format = Some s; } l
-    | SetFormat (k,s) :: l ->
-        interp subtyps { acc with extra = (k,s.CAst.v)::acc.extra; } l
-    | (SetOnlyParsing | SetItemScope _) :: _ -> assert false
+    | SetOnlyParsing | SetOnlyPrinting | SetCustomEntry (_,None) | SetFormat _ | SetItemScope _ ->
+        (* interpreted in interp_non_syntax_modifiers *)
+        assert false
   in
-  let modl, syndef_mods = interp_syndef_modifiers modl in
   let subtyps, mods = interp [] default modl in
   (* interpret item levels wrt to main entry *)
-  let extra_etyps = List.map (fun (id,bko,n) -> (id,ETConstr (mods.custom,bko,n))) subtyps in
+  let extra_etyps = List.map (fun (id,bko,n) -> (id,ETConstr (entry,bko,n))) subtyps in
   (* Temporary hack: "ETName false" (i.e. "ident" in deprecation phase) means "ETIdent" for custom entries *)
   let mods =
     { mods with etyps = List.map (function
         | (id,ETName false) ->
-           if mods.custom = InConstrEntry then (warn_deprecated_ident_entry (); (id,ETName true))
+           if entry = InConstrEntry then (warn_deprecated_ident_entry (); (id,ETName true))
            else (id,ETIdent)
         | x -> x) mods.etyps } in
-  syndef_mods, { mods with etyps = extra_etyps@mods.etyps }
-
-let check_infix_modifiers modifiers =
-  let _, mods = interp_modifiers modifiers in
-  let t = mods.NotationMods.etyps in
-  let u = mods.NotationMods.subtyps in
-  if not (List.is_empty t) || not (List.is_empty u) then
-    user_err Pp.(str "Explicit entry level or type unexpected in infix notation.")
+  { mods with etyps = extra_etyps@mods.etyps }
 
 let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
@@ -1007,14 +933,90 @@ let check_useless_entry_types recvars mainvars etyps =
                   (Id.print x ++ str " is unbound in the notation.")
   | _ -> ()
 
-let interp_non_syntax_modifiers mods =
-  let set modif (only_parsing,only_printing,entry) = match modif with
-    | SetOnlyParsing -> Some (true,only_printing,entry)
-    | SetOnlyPrinting -> Some (only_parsing,true,entry)
-    | SetCustomEntry(entry,None) -> Some (only_parsing,only_printing,InCustomEntry entry)
-    | _ -> None
+type notation_main_data = {
+  onlyparsing  : bool;
+  onlyprinting : bool;
+  deprecation  : Deprecation.t option;
+  entry        : notation_entry;
+  format       : unparsing Loc.located list option;
+  extra        : (string * string) list;
+  itemscopes  : (Id.t * scope_name) list;
+}
+
+let warn_only_parsing_reserved_notation =
+  CWarnings.create ~name:"irrelevant-reserved-notation-only-parsing" ~category:"parsing"
+    (fun () -> strbrk "The only parsing modifier has no effect in Reserved Notation.")
+
+let warn_only_parsing_discarded_format =
+  CWarnings.create ~name:"discarded-format-only-parsing" ~category:"parsing"
+    (fun () -> strbrk "The format modifier has no effect for only-parsing notations.")
+
+let error_onlyparsing_onlyprinting ?loc =
+  user_err ?loc (str "A notation cannot be both \"only printing\" and \"only parsing\".")
+
+let set_onlyparsing ?loc ~reserved main_data =
+  if reserved then
+    (warn_only_parsing_reserved_notation ?loc ();
+     main_data)
+  else
+    (if main_data.onlyparsing then user_err ?loc (str "\"only parsing\" is given more than once.");
+     if main_data.onlyprinting then error_onlyparsing_onlyprinting ?loc;
+     { main_data with onlyparsing = true })
+
+let set_onlyprinting ?loc main_data =
+  if main_data.onlyprinting then user_err ?loc (str "\"only printing\" is given more than once.");
+  if main_data.onlyparsing then error_onlyparsing_onlyprinting ?loc;
+  { main_data with onlyprinting = true }
+
+let set_custom_entry ?loc main_data entry' =
+  match main_data.entry with
+  | InConstrEntry -> { main_data with entry = InCustomEntry entry' }
+  | _ -> user_err ?loc (str "\"in custom\" is given more than once.")
+
+let warn_irrelevant_format =
+  CWarnings.create ~name:"irrelevant-format-only-parsing" ~category:"parsing"
+    (fun () -> str "The format modifier is irrelevant for only-parsing rules.")
+
+let set_format ?loc main_data format =
+  if not (Option.is_empty main_data.format) then user_err ?loc Pp.(str "A format is given more than once.");
+  let format = if main_data.onlyparsing then (warn_irrelevant_format ?loc (); None) else Some (parse_format format) in
+  { main_data with format }
+
+let set_extra_format ?loc main_data (k,s) =
+  if List.mem_assoc k main_data.extra then user_err ?loc Pp.(str "A format for " ++ str k ++ str " is given more than once.");
+  let extra = if main_data.onlyparsing then (warn_irrelevant_format ?loc (); main_data.extra) else (k,s.CAst.v)::main_data.extra in
+  { main_data with extra }
+
+let set_item_scope ?loc main_data ids sc =
+  let itemscopes = List.map (fun id -> (Id.of_string id,sc)) ids @ main_data.itemscopes in
+  match List.duplicates (fun (id1,_) (id2,_) -> Id.equal id1 id2) itemscopes  with
+  | (id,_)::_ -> user_err ?loc (str "Notation scope for argument " ++ Id.print id ++ str " can be specified only once.")
+  | [] -> { main_data with itemscopes }
+
+let interp_non_syntax_modifiers ~reserved ~infix ~syndef deprecation mods =
+  let set (main_data,rest) = CAst.with_loc_val (fun ?loc -> function
+    | SetOnlyParsing ->
+       if not (Option.is_empty main_data.format && List.is_empty main_data.extra) then
+         (warn_only_parsing_discarded_format ?loc (); (main_data, rest))
+       else
+         (set_onlyparsing ?loc ~reserved main_data,rest)
+    | SetOnlyPrinting when not syndef -> (set_onlyprinting ?loc main_data,rest)
+    | SetCustomEntry (entry,None) when not syndef -> (set_custom_entry ?loc main_data entry,rest)
+    | SetCustomEntry (entry,Some _) as x when not syndef -> (set_custom_entry main_data entry,CAst.make ?loc x :: rest)
+    | SetEntryType _ when infix -> user_err ?loc Pp.(str "Unexpected entry type in infix notation.")
+    | SetItemLevel _ when infix -> user_err ?loc Pp.(str "Unexpected entry level in infix notation.")
+    | SetFormat (TextFormat s) when not syndef -> (set_format ?loc main_data s, rest)
+    | SetFormat (ExtraFormat (k,s)) when not syndef -> (set_extra_format ?loc main_data (k,s), rest)
+    | SetItemScope (ids,sc) -> (set_item_scope ?loc main_data ids sc, rest)
+    | modif -> (main_data,(CAst.make ?loc modif)::rest))
   in
-  List.fold_left (fun st modif -> Option.bind st @@ set modif) (Some (false,false,InConstrEntry)) mods
+  let main_data =
+    {
+      onlyparsing = false; onlyprinting = false; deprecation;
+      entry = InConstrEntry; format = None; extra = []; itemscopes = []
+    }
+  in
+  List.fold_left set (main_data,[]) mods
 
 (* Check if an interpretation can be used for printing a cases printing *)
 let has_no_binders_type =
@@ -1064,11 +1066,8 @@ let internalization_type_of_entry_type = function
   | ETConstr _ | ETBigint | ETGlobal
   | ETIdent | ETName _ | ETPattern _ -> NtnInternTypeAny None
 
-let set_internalization_type typs =
-  List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
-
-let make_internalization_vars recvars mainvars typs =
-  let maintyps = List.combine mainvars typs in
+let make_internalization_vars recvars maintyps =
+  let maintyps = List.map (on_snd internalization_type_of_entry_type) maintyps in
   let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
   maintyps @ extratyps
 
@@ -1149,7 +1148,7 @@ let warn_non_reversible_notation =
 
 let is_coercion level typs =
   match level, typs with
-  | Some (custom,n,_), [e] ->
+  | Some (custom,n,_), [_,e] ->
      (match e, custom with
      | ETConstr _, _ ->
          let customkey = make_notation_entry_level custom n in
@@ -1162,16 +1161,16 @@ let is_coercion level typs =
   | Some _, _ -> assert false
   | None, _ -> None
 
-let printability level typs onlyparse reversibility = function
+let printability level typs onlyparsing reversibility = function
 | NVar _ when reversibility = APrioriReversible ->
   let coe = is_coercion level typs in
-  if not onlyparse && coe = None then
+  if not onlyparsing && coe = None then
     warn_notation_bound_to_variable ();
   true, coe
 | _ ->
-   (if not onlyparse && reversibility <> APrioriReversible then
+   (if not onlyparsing && reversibility <> APrioriReversible then
      (warn_non_reversible_notation reversibility; true)
-    else onlyparse),None
+    else onlyparsing),None
 
 let find_precedence custom lev etyps symbols onlyprint =
   let first_symbol =
@@ -1257,6 +1256,19 @@ let remove_curly_brackets l =
   | x :: l -> x :: aux false l
   in aux true l
 
+let has_implicit_format symbols =
+  List.exists (function Break _ -> true | _ -> false) symbols
+
+(* Because of the special treatment for { }, the grammar rule sent
+   to the parser may be different than what the user sees; e.g. for
+   "{ A } + { B }", it is "A + B" which is sent to the parser *)
+type syn_pa_data = {
+    ntn_for_grammar : notation;
+    prec_for_grammar : level;
+    typs_for_grammar : constr_entry_key list;
+    need_squash : bool;
+  }
+
 module SynData = struct
 
   type subentry_types = (Id.t * constr_entry_key) list
@@ -1264,33 +1276,15 @@ module SynData = struct
   (* XXX: Document *)
   type syn_data = {
 
-    (* Notation name and location *)
-    info          : notation * notation_location;
-
-    (* Fields coming from the vernac-level modifiers *)
-    only_parsing  : bool;
-    only_printing : bool;
-    deprecation   : Deprecation.t option;
-    format        : lstring option;
-    extra         : (string * string) list;
-
     (* XXX: Callback to printing, must remove *)
     msgs          : (unit -> unit) list;
 
-    (* Fields for internalization *)
-    recvars       : (Id.t * Id.t) list;
-    mainvars      : Id.List.elt list;
-    intern_typs   : notation_var_internalization_type list;
-
     (* Notation data for parsing *)
     level         : level;
-    subentries    : constr_entry_key list;
+    subentries    : subentry_types;
     pa_syntax_data : subentry_types * symbol list;
     pp_syntax_data : subentry_types * symbol list;
-    not_data      : notation *                   (* notation *)
-                    level *                      (* level, precedence *)
-                    constr_entry_key list *
-                    bool;                        (* needs_squash *)
+    not_data      : syn_pa_data;
   }
 
 end
@@ -1316,79 +1310,49 @@ let check_locality_compatibility local custom i_typs =
                     strbrk " which is local."))
       (List.uniquize allcustoms)
 
-let compute_syntax_data ~local deprecation df modifiers =
+let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let open SynData in
-  let open SyndefMods in
   let open NotationMods in
-  let syndef_mods, mods = interp_modifiers modifiers in
-  let only_printing = mods.only_printing in
-  let only_parsing = syndef_mods.only_parsing in
-  if only_printing && only_parsing then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
-  if syndef_mods.scopes <> [] then user_err (str "General notations don't support 'in scope'.");
+  if main_data.itemscopes <> [] then user_err (str "General notations don't support 'in scope'.");
+  let {recvars;mainvars;symbols} = notation_symbols in
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
-  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint:only_printing df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
 
   (* Notations for interp and grammar  *)
-  let msgs,n = find_precedence mods.custom mods.level mods.etyps symbols only_printing in
-  let ntn_for_interp = make_notation_key mods.custom symbols in
+  let msgs,n = find_precedence main_data.entry mods.level mods.etyps symbols main_data.onlyprinting in
   let symbols_for_grammar =
-    if mods.custom = InConstrEntry then remove_curly_brackets symbols else symbols in
+    if main_data.entry = InConstrEntry then remove_curly_brackets symbols else symbols in
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
-  let ntn_for_grammar = if need_squash then make_notation_key mods.custom symbols_for_grammar else ntn_for_interp in
-  if mods.custom = InConstrEntry && not only_printing then check_rule_productivity symbols_for_grammar;
+  let ntn_for_grammar = if need_squash then make_notation_key main_data.entry symbols_for_grammar else ntn in
+  if main_data.entry = InConstrEntry && not main_data.onlyprinting then check_rule_productivity symbols_for_grammar;
   (* To globalize... *)
   let etyps = join_auxiliary_recursive_types recvars mods.etyps in
   let sy_typs, prec =
-    find_subentry_types mods.custom n assoc etyps symbols in
+    find_subentry_types main_data.entry n assoc etyps symbols in
   let sy_typs_for_grammar, prec_for_grammar =
     if need_squash then
-      find_subentry_types mods.custom n assoc etyps symbols_for_grammar
+      find_subentry_types main_data.entry n assoc etyps symbols_for_grammar
     else
       sy_typs, prec in
-  let i_typs = set_internalization_type sy_typs in
-  check_locality_compatibility local mods.custom sy_typs;
+  check_locality_compatibility local main_data.entry sy_typs;
   let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
   let pp_sy_data = (sy_typs,symbols) in
-  let sy_fulldata = (ntn_for_grammar,(mods.custom,n,prec_for_grammar),List.map snd sy_typs_for_grammar,need_squash) in
-  let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
-  let i_data = ntn_for_interp, df' in
+  let sy_fulldata = {
+      ntn_for_grammar;
+      prec_for_grammar = (main_data.entry,n,prec_for_grammar);
+      typs_for_grammar = List.map snd sy_typs_for_grammar;
+      need_squash
+    } in
 
   (* Return relevant data for interpretation and for parsing/printing *)
-  { info = i_data;
-
-    only_parsing;
-    only_printing;
-    deprecation;
-    format        = mods.format;
-    extra         = mods.extra;
-
+  {
     msgs;
-
-    recvars;
-    mainvars;
-    intern_typs = i_typs;
-
-    level  = (mods.custom,n,prec);
-    subentries = List.map snd sy_typs;
+    level  = (main_data.entry,n,prec);
+    subentries = sy_typs;
     pa_syntax_data = pa_sy_data;
     pp_syntax_data = pp_sy_data;
     not_data    = sy_fulldata;
   }
-
-let warn_only_parsing_reserved_notation =
-  CWarnings.create ~name:"irrelevant-reserved-notation-only-parsing" ~category:"parsing"
-    (fun () -> strbrk "The only parsing modifier has no effect in Reserved Notation.")
-
-let compute_pure_syntax_data ~local df mods =
-  let open SynData in
-  let sd = compute_syntax_data ~local None df mods in
-  if sd.only_parsing
-  then
-    let msgs = (fun () -> warn_only_parsing_reserved_notation ?loc:None ())::sd.msgs in
-    { sd with msgs; only_parsing = false }
-  else
-    sd
 
 (**********************************************************************)
 (* Registration of notations interpretation                            *)
@@ -1401,7 +1365,7 @@ type notation_obj = {
   notobj_use : notation_use option;
   notobj_deprecation : Deprecation.t option;
   notobj_notation : notation * notation_location;
-  notobj_specific_pp_rules : syntax_printing_extension option;
+  notobj_specific_pp_rules : notation_printing_rules option;
   notobj_also_in_cases_pattern : bool;
 }
 
@@ -1434,8 +1398,7 @@ let open_notation i (_, nobj) =
     (match nobj.notobj_specific_pp_rules with
     | Some pp_sy ->
       if specific_format_to_declare (scope,ntn) pp_sy then
-        Ppextend.declare_specific_notation_printing_rules
-          (scope,ntn) ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
+        Ppextend.declare_specific_notation_printing_rules (scope,ntn) pp_sy
     | None -> ())
   end
 
@@ -1478,31 +1441,22 @@ let with_syntax_protection f x =
 exception NoSyntaxRule
 
 let recover_notation_syntax ntn =
-  let pa =
-    try
-      let prec = Notation.level_of_notation ntn in
-      let pa_typs = Notgram_ops.subentries_of_notation ntn in
-      let pa_rule = try Some (Notgram_ops.grammar_of_notation ntn) with Not_found -> None in
-      { synext_level = prec;
-        synext_notation = ntn;
-        synext_notgram = pa_rule;
-        synext_nottyps = pa_typs;
-      }
-    with Not_found ->
-      raise NoSyntaxRule in
-  let pp =
-    try
-      let pp_rule,reserved,pp_extra_rules = find_generic_notation_printing_rule ntn in
-      Some {
-        synext_reserved = reserved;
-        synext_unparsing = pp_rule;
-        synext_extra = pp_extra_rules;
-      }
-    with Not_found -> None in
-  pa,pp
+  try
+    let prec = Notation.level_of_notation ntn in
+    let pa_typs = Notgram_ops.subentries_of_notation ntn in
+    let pa_rule = try Some (Notgram_ops.grammar_of_notation ntn) with Not_found -> None in
+    let pp_rule = try Some (find_generic_notation_printing_rule ntn) with Not_found -> None in
+    {
+      synext_level = prec;
+      synext_nottyps = pa_typs;
+      synext_notgram = pa_rule;
+      synext_notprint = pp_rule;
+    }
+  with Not_found ->
+    raise NoSyntaxRule
 
 let recover_squash_syntax sy =
-  let sq,_ = recover_notation_syntax (InConstrEntry,"{ _ }") in
+  let sq = recover_notation_syntax (InConstrEntry,"{ _ }") in
   match sq.synext_notgram with
   | Some gram -> sy :: gram
   | None -> raise NoSyntaxRule
@@ -1510,15 +1464,16 @@ let recover_squash_syntax sy =
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
 
-let make_pa_rule level entries (typs,symbols) ntn need_squash =
+let make_pa_rule (typs,symbols) parsing_data =
+  let { ntn_for_grammar; prec_for_grammar; typs_for_grammar; need_squash } = parsing_data in
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
   let sy = {
-    notgram_level = level;
+    notgram_level = prec_for_grammar;
     notgram_assoc = assoc;
-    notgram_notation = ntn;
+    notgram_notation = ntn_for_grammar;
     notgram_prods = prod;
-    notgram_typs = entries;
+    notgram_typs = typs_for_grammar;
   } in
   (* By construction, the rule for "{ _ }" is declared, but we need to
      redeclare it because the file where it is declared needs not be open
@@ -1535,36 +1490,76 @@ let make_pp_rule level (typs,symbols) fmt =
        (* Optimization to work around what seems an ocaml Format bug (see Mantis #7804/#7807) *)
        List.map snd hunks (* drop locations which are dummy *)
   | Some fmt ->
-     hunks_of_format (level, List.split typs) (symbols, parse_format fmt)
+     hunks_of_format (level, List.split typs) (symbols, fmt)
 
-let make_parsing_rules (sd : SynData.syn_data) = let open SynData in
-  let ntn_for_grammar, prec_for_grammar, typs_for_grammar, need_squash = sd.not_data in
-  let pa_rule =
-    if sd.only_printing then None
-    else Some (make_pa_rule prec_for_grammar typs_for_grammar sd.pa_syntax_data ntn_for_grammar need_squash)
-  in {
-    synext_level    = sd.level;
-    synext_notation = fst sd.info;
-    synext_notgram  = pa_rule;
-    synext_nottyps = typs_for_grammar;
-  }
+let make_parsing_rules main_data (sd : SynData.syn_data) =
+  let open SynData in
+  if main_data.onlyprinting then None
+  else Some (make_pa_rule sd.pa_syntax_data sd.not_data)
 
-let warn_irrelevant_format =
-  CWarnings.create ~name:"irrelevant-format-only-parsing" ~category:"parsing"
-    (fun () -> str "The format modifier is irrelevant for only parsing rules.")
-
-let make_printing_rules reserved (sd : SynData.syn_data) = let open SynData in
+let make_generic_printing_rules reserved main_data ntn sd =
+  let open SynData in
   let custom,level,_ = sd.level in
-  let format =
-    if sd.only_parsing && sd.format <> None then (warn_irrelevant_format (); None)
-    else sd.format in
-  let pp_rule = make_pp_rule level sd.pp_syntax_data format in
-  (* We produce a generic rule even if this precise notation is only parsing *)
-  Some {
-    synext_reserved = reserved;
-    synext_unparsing = (pp_rule,level);
-    synext_extra  = sd.extra;
+  let make_rule rule =
+    {
+      notation_printing_reserved = reserved;
+      notation_printing_rules =
+        {
+          notation_printing_unparsing = rule;
+          notation_printing_level = level;
+          notation_printing_extra  = main_data.extra;
+        }
+    }
+  in
+  try
+    let rules = (Ppextend.find_generic_notation_printing_rule ntn) in
+    match main_data.format with
+    | None when not (has_implicit_format (snd sd.pp_syntax_data)) ->
+      (* No intent to define a format, we reuse the existing generic rules *)
+      Some rules
+    | _ ->
+      let rules' = make_rule (make_pp_rule level sd.pp_syntax_data main_data.format) in
+      check_reserved_format ntn rules rules'.notation_printing_rules;
+      Some rules'
+  with Not_found ->
+    Some (make_rule (make_pp_rule level sd.pp_syntax_data main_data.format))
+
+let make_syntax_rules reserved main_data ntn sd =
+  let open SynData in
+  (* Prepare the parsing and printing rules *)
+  let pa_rules = make_parsing_rules main_data sd in
+  let pp_rules = make_generic_printing_rules reserved main_data ntn sd in
+  {
+    synext_level    = sd.level;
+    synext_nottyps = List.map snd sd.subentries;
+    synext_notgram  = pa_rules;
+    synext_notprint = pp_rules;
   }
+
+(**********************************************************************)
+(* Main entry point for building specific printing rules              *)
+
+let merge_extra extra1 extra2 =
+  List.fold_left (fun extras (k,s) -> (k,s) :: List.remove_assoc k extras)
+    extra1 extra2
+
+let make_specific_printing_rules etyps symbols level pp_rule (format,new_extra) =
+  match level with
+  | None -> None
+  | Some (_,level,_) ->
+  let old_extra = match pp_rule with Some { notation_printing_rules = { notation_printing_extra } } -> notation_printing_extra | None -> [] in
+  match format, new_extra, pp_rule with
+    | None, [], Some _ when not (has_implicit_format symbols) -> None
+    | _ ->
+       Some
+         {
+           notation_printing_unparsing = make_pp_rule level (etyps,symbols) format;
+           notation_printing_level = level;
+           notation_printing_extra = merge_extra old_extra new_extra;
+         }
+
+(**********************************************************************)
+(* Miscellaneous                                                      *)
 
 let warn_unused_interpretation =
   CWarnings.create ~name:"unused-notation" ~category:"parsing"
@@ -1587,154 +1582,142 @@ let to_map l =
   let fold accu (x, v) = Id.Map.add x v accu in
   List.fold_left fold Id.Map.empty l
 
-let add_notation_in_scope ~local deprecation df env c mods scope =
-  let open SynData in
-  let sd = compute_syntax_data ~local deprecation df mods in
-  (* Prepare the parsing and printing rules *)
-  let sy_pa_rules = make_parsing_rules sd in
-  let sy_pp_rules, gen_sy_pp_rules =
-    match sd.only_parsing, Ppextend.has_generic_notation_printing_rule (fst sd.info) with
-    | true, true -> None, None
-    | onlyparse, has_generic ->
-      let rules = make_printing_rules false sd in
-      let _ = check_reserved_format (fst sd.info) rules in
-      (if onlyparse then None else rules),
-      (if has_generic then None else (* We use the format of this notation as the default *) rules) in
-  (* Prepare the interpretation *)
-  let i_vars = make_internalization_vars sd.recvars sd.mainvars sd.intern_typs in
-  let nenv = {
-    ninterp_var_type = to_map i_vars;
-    ninterp_rec_vars = to_map sd.recvars;
-  } in
-  let (acvars, ac, reversibility) = interp_notation_constr env nenv c in
-  let interp = make_interpretation_vars sd.recvars (pi2 sd.level) acvars (fst sd.pa_syntax_data) in
-  let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
-  let also_in_cases_pattern = has_no_binders_type vars in
-  let onlyparse,coe = printability (Some sd.level) sd.subentries sd.only_parsing reversibility ac in
-  let notation, location = sd.info in
-  let use = make_use true onlyparse sd.only_printing in
-  let notation = {
-    notobj_local = local;
-    notobj_scope = scope;
-    notobj_use = use;
-    notobj_interp = (vars, ac);
-    notobj_coercion = coe;
-    notobj_deprecation = sd.deprecation;
-    notobj_notation = (notation, location);
-    notobj_specific_pp_rules = sy_pp_rules;
-    notobj_also_in_cases_pattern = also_in_cases_pattern;
-  } in
-  (* Ready to change the global state *)
-  List.iter (fun f -> f ()) sd.msgs;
-  Lib.add_anonymous_leaf (inSyntaxExtension (local, (sy_pa_rules,gen_sy_pp_rules)));
-  Lib.add_anonymous_leaf (inNotation notation);
-  sd.info
-
-let add_notation_interpretation_core ~local df env ?(impls=empty_internalization_env) entry c scope onlyparse onlyprint deprecation =
-  let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint df in
+let make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env ?(impls=empty_internalization_env) c scope =
+  let {recvars;mainvars;symbols} = notation_symbols in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
-  let notation_key = make_notation_key entry symbs in
-  let level, i_typs, onlyprint, pp_sy = if not (is_numeral_in_constr entry symbs) then begin
-    let (pa_sy,pp_sy as sy) = recover_notation_syntax notation_key in
-    let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy)) in
+  let level, i_typs, main_data, sy_pp_rules =
+    match syntax_rules with
+    | PrimTokenSyntax -> None, [], main_data, None
+    | SpecificSyntax sy ->
     (* If the only printing flag has been explicitly requested, put it back *)
-    let onlyprint = onlyprint || pa_sy.synext_notgram = None in
-    let typs = pa_sy.synext_nottyps in
-    Some pa_sy.synext_level, typs, onlyprint, pp_sy
-  end else None, [], false, None in
+    let main_data = { main_data with onlyprinting = main_data.onlyprinting || sy.synext_notgram = None } in
+    Some sy.synext_level, List.combine mainvars sy.synext_nottyps, main_data, sy.synext_notprint
+  in
   (* Declare interpretation *)
+  let sy_pp_rules = make_specific_printing_rules i_typs symbols level sy_pp_rules (main_data.format, main_data.extra) in
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
-  let df'  = notation_key, (path,df) in
-  let i_vars = make_internalization_vars recvars mainvars (List.map internalization_type_of_entry_type i_typs) in
+  let df' = ntn, (path,df) in
+  let i_vars = make_internalization_vars recvars i_typs in
   let nenv = {
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
   let plevel = match level with Some (from,level,l) -> level | None (* numeral: irrelevant )*) -> 0 in
-  let interp = make_interpretation_vars recvars plevel acvars (List.combine mainvars i_typs) in
+  let interp = make_interpretation_vars recvars plevel acvars i_typs in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
   let also_in_cases_pattern = has_no_binders_type vars in
-  let onlyparse,coe = printability level i_typs onlyparse reversibility ac in
-  let use = make_use false onlyparse onlyprint in
-  let notation = {
+  let onlyparsing,coe = printability level i_typs main_data.onlyparsing reversibility ac in
+  let main_data = { main_data with onlyparsing } in
+  let use = make_use false onlyparsing main_data.onlyprinting in
+  {
     notobj_local = local;
     notobj_scope = scope;
     notobj_use = use;
     notobj_interp = (vars, ac);
     notobj_coercion = coe;
-    notobj_deprecation = deprecation;
+    notobj_deprecation = main_data.deprecation;
     notobj_notation = df';
-    notobj_specific_pp_rules = pp_sy;
+    notobj_specific_pp_rules = sy_pp_rules;
     notobj_also_in_cases_pattern = also_in_cases_pattern;
-  } in
-  Lib.add_anonymous_leaf (inNotation notation);
-  df'
+  }
 
 (* Notations without interpretation (Reserved Notation) *)
 
-let add_syntax_extension ~local ({CAst.loc;v=df},mods) = let open SynData in
-  let psd = {(compute_pure_syntax_data ~local df mods) with deprecation = None} in
-  let pa_rules = make_parsing_rules psd in
-  let pp_rules = make_printing_rules true psd in
-  List.iter (fun f -> f ()) psd.msgs;
-  Lib.add_anonymous_leaf (inSyntaxExtension(local,(pa_rules,pp_rules)))
+let add_reserved_notation ~local ~infix ({CAst.loc;v=df},mods) =
+  let open SynData in
+  let (main_data,mods) = interp_non_syntax_modifiers ~reserved:true ~infix ~syndef:false None mods in
+  let mods = interp_modifiers main_data.entry mods in
+  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting main_data.entry df in
+  let ntn = make_notation_key main_data.entry notation_symbols.symbols in
+  if isnumeral then user_err ?loc (str "Notations for numbers are primitive and need not be reserved.");
+  let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
+  let synext = make_syntax_rules true main_data ntn sd in
+  List.iter (fun f -> f ()) sd.msgs;
+  Lib.add_anonymous_leaf (inSyntaxExtension(local,(ntn,synext)))
 
-(* Notations with only interpretation *)
+(* Notations associated to a where clause *)
 
-let add_notation_interpretation env decl_ntn =
+type where_decl_notation =
+  decl_notation * notation_main_data * notation_symbols * notation * syntax_rules
+
+let prepare_where_notation decl_ntn =
   let
     { decl_ntn_string = { CAst.loc ; v = df };
       decl_ntn_interp = c;
       decl_ntn_modifiers = modifiers;
       decl_ntn_scope = sc;
     } = decl_ntn in
-  match interp_non_syntax_modifiers modifiers with
-  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
-  | Some (only_parsing,only_printing,entry) ->
-    let df' = add_notation_interpretation_core ~local:false df env entry c sc only_parsing false None in
-    Dumpglob.dump_notation (loc,df') sc true
+  let (main_data,mods) = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:false None modifiers in
+  match mods with
+  | _::_ -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
+  | [] ->
+    let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting main_data.entry df in
+    let ntn = make_notation_key main_data.entry notation_symbols.symbols in
+    let syntax_rules =
+      if isnumeral then PrimTokenSyntax else
+      try SpecificSyntax (recover_notation_syntax ntn)
+      with NoSyntaxRule ->
+        user_err Pp.(str "Parsing rule for this notation has to be previously declared.") in
+    (decl_ntn, main_data, notation_symbols, ntn, syntax_rules)
 
-let set_notation_for_interpretation env impls decl_ntn =
-  let
-    { decl_ntn_string = { CAst.v = df };
-      decl_ntn_interp = c;
-      decl_ntn_modifiers = modifiers;
-      decl_ntn_scope = sc;
-    } = decl_ntn in
-  match interp_non_syntax_modifiers modifiers with
-  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here")
-  | Some (only_parsing,only_printing,entry) ->
-    (try ignore
-      (Flags.silently (fun () -> add_notation_interpretation_core ~local:false df env ~impls entry c sc only_parsing false None) ());
-    with NoSyntaxRule ->
-      user_err Pp.(str "Parsing rule for this notation has to be previously declared."));
-    Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
+let add_notation_interpretation ~local env (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
+  let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
+  let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
+  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
+  Lib.add_anonymous_leaf (inNotation notation);
+  Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
 
-(* Main entry point *)
+(* interpreting a where clause *)
+let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
+  let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
+  let notation = make_notation_interpretation ~local:true main_data notation_symbols ntn syntax_rules df env ~impls c sc in
+  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (true,(ntn,sy)))) syntax_rules;
+  Lib.add_anonymous_leaf (inNotation notation);
+  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
+
+(* Main entry point for command Notation *)
 
 let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
-  let df' =
-   match interp_non_syntax_modifiers modifiers with
-   | Some (only_parsing,only_printing,entry) ->
-    (* No syntax data: try to rely on a previously declared rule *)
-    begin try add_notation_interpretation_core ~local df env entry c sc only_parsing only_printing deprecation
-    with NoSyntaxRule ->
-      (* Try to determine a default syntax rule *)
-      add_notation_in_scope ~local deprecation df env c modifiers sc
-    end
-   | None ->
-    (* Declare both syntax and interpretation *)
-    add_notation_in_scope ~local deprecation df env c modifiers sc
+  (* Extract the modifiers not affecting the parsing rule *)
+  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:false deprecation modifiers in
+  (* Extract the modifiers not affecting the parsing rule *)
+  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting main_data.entry df in
+  (* Build the canonical identifier of the syntactic part of the notation *)
+  let ntn = make_notation_key main_data.entry notation_symbols.symbols in
+  (* Build or rebuild the syntax rules *)
+  let syntax_rules =
+    if isnumeral then (check_no_syntax_modifiers_for_numeral syntax_modifiers; PrimTokenSyntax) else
+    match syntax_modifiers with
+    | [] ->
+      (* No syntax data: try to rely on a previously declared rule *)
+      (try SpecificSyntax (recover_notation_syntax ntn)
+      with NoSyntaxRule ->
+        (* Try to determine a default syntax rule *)
+        let sd = compute_syntax_data ~local main_data notation_symbols ntn NotationMods.default in
+        SpecificSyntax (make_syntax_rules false main_data ntn sd))
+
+    | _ ->
+      let mods = interp_modifiers main_data.entry syntax_modifiers in
+      let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
+      SpecificSyntax (make_syntax_rules false main_data ntn sd)
   in
-  Dumpglob.dump_notation (loc,df') sc true
+  (* Build the interpretation *)
+  let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
+  (* Declare both syntax and interpretation *)
+  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
+  Lib.add_anonymous_leaf (inNotation notation);
+  (* Dump the location of the notation for coqdoc *)
+  Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
+
+(* Main entry point for Format Notation *)
 
 let add_notation_extra_printing_rule df k v =
   let notk =
-    let _,_, symbs = analyze_notation_tokens ~onlyprint:true df in
-    make_notation_key InConstrEntry symbs in
+    let { symbols }, isnumeral = analyze_notation_tokens ~onlyprinting:true InConstrEntry df in
+    if isnumeral then user_err (str "Notations for numbers are primitive.");
+    make_notation_key InConstrEntry symbols in
   add_notation_extra_printing_rule notk k v
 
 (* Infix notations *)
@@ -1742,7 +1725,6 @@ let add_notation_extra_printing_rule df k v =
 let inject_var x = CAst.make @@ CRef (qualid_of_ident x,None)
 
 let add_infix ~local deprecation env ({CAst.loc;v=inf},modifiers) pr sc =
-  check_infix_modifiers modifiers;
   (* check the precedence *)
   let vars = names_of_constr_expr pr in
   let x = Namegen.next_ident_away (Id.of_string "x") vars in
@@ -1821,15 +1803,21 @@ let remove_delimiters local scope =
 let add_class_scope local scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
-let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
-  let open SyndefMods in
-  let skipped, { only_parsing; scopes } = interp_syndef_modifiers modl in
+let interp_syndef_modifiers deprecation modl =
+  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:true deprecation modl in
   if skipped <> [] then
-    user_err (str "Simple notations don't support " ++ Ppvernac.pr_syntax_modifier (List.hd skipped));
+    (let modifier = List.hd skipped in
+    user_err ?loc:modifier.CAst.loc (str "Abbreviations don't support " ++ Ppvernac.pr_syntax_modifier modifier));
+  (mods.onlyparsing, mods.itemscopes)
+
+let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
+  let (only_parsing, scopes) = interp_syndef_modifiers deprecation modl in
   let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
     match vars, intern_name_alias c with
     | [], Some(r,u) ->
+      (* Check if abbreviation to a name and avoid early insertion of
+         maximal implicit arguments *)
       Id.Map.empty, NRef(r, u), APrioriReversible
     | _ ->
       let fold accu (id,scope) = Id.Map.add id (NtnInternTypeAny scope) accu in

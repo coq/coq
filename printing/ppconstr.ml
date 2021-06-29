@@ -129,7 +129,7 @@ let tag_var = tag Tag.variable
     aux unps
 
   let pr_notation pr pr_patt pr_binders which s env =
-    let unpl, level = find_notation_printing_rule which s in
+    let { notation_printing_unparsing = unpl; notation_printing_level = level } = find_notation_printing_rule which s in
     print_hunks level pr pr_patt pr_binders env unpl, level
 
   let pr_delimiters key strm =

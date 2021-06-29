@@ -4,7 +4,7 @@ used in the empty scope stack. Scope function_scope will be used at parsing
 time unless you override it by annotating the argument with an explicit scope
 of choice. [inconsistent-scopes,syntax]
 The command has indeed failed with message:
-Simple notations don't support only printing
+Abbreviations don't support only printing
 The command has indeed failed with message:
 The reference nonexisting was not found in the current environment.
 The command has indeed failed with message:

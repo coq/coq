@@ -46,7 +46,7 @@ val dump_notation_location : (int * int) list -> Constrexpr.notation ->
   (Notation.notation_location * Notation_term.scope_name option) -> unit
 val dump_binding : ?loc:Loc.t -> string -> unit
 val dump_notation :
-  (Constrexpr.notation * Notation.notation_location) Loc.located ->
+  Constrexpr.notation CAst.t ->
   Notation_term.scope_name option -> bool -> unit
 
 val dump_constraint : Names.lname -> bool -> string -> unit

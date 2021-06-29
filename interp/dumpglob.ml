@@ -273,7 +273,7 @@ let dump_moddef ?loc mp ty =
   let mp = Names.DirPath.to_string (Names.DirPath.make l) in
   dump_def ?loc ty "<>" mp
 
-let dump_notation (loc,(df,_)) sc sec = Option.iter (fun loc ->
+let dump_notation {CAst.loc;v=df} sc sec = Option.iter (fun loc ->
   (* We dump the location of the opening '"' *)
   let i = fst (Loc.unloc loc) in
   let location = (Loc.make_loc (i, i+1)) in

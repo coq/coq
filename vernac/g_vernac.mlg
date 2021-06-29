@@ -1194,12 +1194,12 @@ GRAMMAR EXTEND Gram
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
          l = syntax_modifiers ->
            { let s = CAst.map (fun s -> "x '"^s^"' y") s in
-           VernacSyntaxExtension (true,(s,l)) }
+           VernacReservedNotation (true,(s,l)) }
 
      | IDENT "Reserved"; IDENT "Notation";
          s = ne_lstring;
          l = syntax_modifiers
-         -> { VernacSyntaxExtension (false, (s,l)) }
+         -> { VernacReservedNotation (false, (s,l)) }
 
      (* "Print" "Grammar" and "Declare" "Scope" should be here but are in "command" entry in order
         to factorize with other "Print"-based or "Declare"-based vernac entries *)
@@ -1222,8 +1222,8 @@ GRAMMAR EXTEND Gram
       | IDENT "format"; s1 = [s = STRING -> { CAst.make ~loc s } ];
                         s2 = OPT [s = STRING -> { CAst.make ~loc s } ] ->
           { begin match s1, s2 with
-          | { CAst.v = k }, Some s -> SetFormat(k,s)
-          | s, None -> SetFormat ("text",s) end }
+          | { CAst.v = k }, Some s -> SetFormat (ExtraFormat (k,s))
+          | s, None -> SetFormat (TextFormat s) end }
       | x = IDENT; ","; l = LIST1 IDENT SEP ","; v =
           [ "at"; lev = level -> { fun x l -> SetItemLevel (x::l,None,lev) }
           | "in"; IDENT "scope"; k = IDENT -> { fun x l -> SetItemScope(x::l,k) } ] -> { v x l }
@@ -1235,7 +1235,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   syntax_modifiers:
-    [ [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l }
+    [ [ "("; l = LIST1 [ s = syntax_modifier -> { CAst.make ~loc s } ] SEP ","; ")" -> { l }
       | -> { [] }
     ] ]
   ;

@@ -19,11 +19,11 @@ val add_token_obj : string -> unit
 
 (** Adding a (constr) notation in the environment*)
 
-val add_infix : local:bool -> Deprecation.t option -> env -> (lstring * syntax_modifier list) ->
+val add_infix : local:bool -> Deprecation.t option -> env -> (lstring * syntax_modifier CAst.t list) ->
   constr_expr -> scope_name option -> unit
 
 val add_notation : local:bool -> Deprecation.t option -> env -> constr_expr ->
-  (lstring * syntax_modifier list) -> scope_name option -> unit
+  (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
 
 val add_notation_extra_printing_rule : string -> string -> string -> unit
 
@@ -34,32 +34,36 @@ val add_delimiters : locality_flag -> scope_name -> string -> unit
 val remove_delimiters : locality_flag -> scope_name -> unit
 val add_class_scope : locality_flag -> scope_name -> scope_class list -> unit
 
-(** Add only the interpretation of a notation that already has pa/pp rules *)
+(** Add a notation interpretation associated to a "where" clause (already has pa/pp rules) *)
+
+type where_decl_notation
+
+val prepare_where_notation :
+  decl_notation -> where_decl_notation
+  (** Interpret the modifiers of a where-notation *)
 
 val add_notation_interpretation :
-  env -> decl_notation -> unit
-
-(** Add a notation interpretation for supporting the "where" clause *)
+  local:bool -> env -> where_decl_notation -> unit
+  (** Declare the interpretation of the where-notation *)
 
 val set_notation_for_interpretation :
-  env -> Constrintern.internalization_env -> decl_notation -> unit
+  env -> Constrintern.internalization_env -> where_decl_notation -> unit
+  (** Set the interpretation of the where-notation for interpreting a mutual block *)
 
 (** Add only the parsing/printing rule of a notation *)
 
-val add_syntax_extension :
-  local:bool -> (lstring * syntax_modifier list) -> unit
+val add_reserved_notation :
+  local:bool -> infix:bool -> (lstring * syntax_modifier CAst.t list) -> unit
 
 (** Add a syntactic definition (as in "Notation f := ...") *)
 
 val add_syntactic_definition : local:bool -> Deprecation.t option -> env ->
-  Id.t -> Id.t list * constr_expr -> syntax_modifier list -> unit
+  Id.t -> Id.t list * constr_expr -> syntax_modifier CAst.t list -> unit
 
 (** Print the Camlp5 state of a grammar *)
 
 val pr_grammar : string -> Pp.t
 val pr_custom_grammar : string -> Pp.t
-
-val check_infix_modifiers : syntax_modifier list -> unit
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
 

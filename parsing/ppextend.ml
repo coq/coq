@@ -47,7 +47,7 @@ type unparsing =
   | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
 
-type unparsing_rule = unparsing list * entry_level
+type unparsing_rule = unparsing list
 type extra_unparsing_rules = (string * string) list
 
 let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
@@ -63,19 +63,31 @@ let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
 
 (* Register generic and specific printing rules *)
 
+type notation_printing_rules = {
+  notation_printing_unparsing : unparsing_rule;
+  notation_printing_level : entry_level;
+  notation_printing_extra : extra_unparsing_rules;
+}
+
+type generic_notation_printing_rules = {
+  notation_printing_reserved : bool;
+  notation_printing_rules : notation_printing_rules;
+}
+
 let generic_notation_printing_rules =
-  Summary.ref ~name:"generic-notation-printing-rules" (NotationMap.empty : (unparsing_rule * bool * extra_unparsing_rules) NotationMap.t)
+  Summary.ref ~name:"generic-notation-printing-rules" (NotationMap.empty : generic_notation_printing_rules NotationMap.t)
 
 let specific_notation_printing_rules =
-  Summary.ref ~name:"specific-notation-printing-rules" (SpecificNotationMap.empty : (unparsing_rule * extra_unparsing_rules) SpecificNotationMap.t)
+  Summary.ref ~name:"specific-notation-printing-rules" (SpecificNotationMap.empty : notation_printing_rules SpecificNotationMap.t)
 
-let declare_generic_notation_printing_rules ntn ~reserved ~extra unpl =
-  generic_notation_printing_rules := NotationMap.add ntn (unpl,reserved,extra) !generic_notation_printing_rules
-let declare_specific_notation_printing_rules specific_ntn ~extra unpl =
-  specific_notation_printing_rules := SpecificNotationMap.add specific_ntn (unpl,extra) !specific_notation_printing_rules
+let declare_generic_notation_printing_rules ntn rules =
+  generic_notation_printing_rules := NotationMap.add ntn rules !generic_notation_printing_rules
+let declare_specific_notation_printing_rules specific_ntn rules =
+  specific_notation_printing_rules := SpecificNotationMap.add specific_ntn rules !specific_notation_printing_rules
 
 let has_generic_notation_printing_rule ntn =
-  NotationMap.mem ntn !generic_notation_printing_rules
+  try (NotationMap.find ntn !generic_notation_printing_rules).notation_printing_reserved
+  with Not_found -> false
 
 let find_generic_notation_printing_rule ntn =
   NotationMap.find ntn !generic_notation_printing_rules
@@ -86,20 +98,27 @@ let find_specific_notation_printing_rule specific_ntn =
 let find_notation_printing_rule which ntn =
   try match which with
   | None -> raise Not_found (* Normally not the case *)
-  | Some which -> fst (find_specific_notation_printing_rule (which,ntn))
-  with Not_found -> pi1 (find_generic_notation_printing_rule ntn)
+  | Some which -> (find_specific_notation_printing_rule (which,ntn))
+  with Not_found -> (find_generic_notation_printing_rule ntn).notation_printing_rules
 
 let find_notation_extra_printing_rules which ntn =
   try match which with
   | None -> raise Not_found
-  | Some which -> snd (find_specific_notation_printing_rule (which,ntn))
-  with Not_found -> pi3 (find_generic_notation_printing_rule ntn)
+  | Some which -> (find_specific_notation_printing_rule (which,ntn)).notation_printing_extra
+  with Not_found -> (find_generic_notation_printing_rule ntn).notation_printing_rules.notation_printing_extra
 
 let add_notation_extra_printing_rule ntn k v =
   try
     generic_notation_printing_rules :=
-      let p, b, pp = NotationMap.find ntn !generic_notation_printing_rules in
-      NotationMap.add ntn (p, b, (k,v) :: pp) !generic_notation_printing_rules
+      let { notation_printing_reserved; notation_printing_rules } = NotationMap.find ntn !generic_notation_printing_rules in
+      let rules = {
+          notation_printing_reserved;
+          notation_printing_rules = {
+              notation_printing_rules with
+              notation_printing_extra = (k,v) :: notation_printing_rules.notation_printing_extra
+            }
+        } in
+      NotationMap.add ntn rules !generic_notation_printing_rules
   with Not_found ->
     user_err ~hdr:"add_notation_extra_printing_rule"
       (str "No such Notation.")

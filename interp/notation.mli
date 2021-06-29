@@ -334,10 +334,16 @@ val symbol_eq : symbol -> symbol -> bool
 val make_notation_key : notation_entry -> symbol list -> notation
 val decompose_notation_key : notation -> notation_entry * symbol list
 
+type notation_symbols = {
+  recvars : (Id.t * Id.t) list; (* pairs (x,y) as in [ x ; .. ; y ] *)
+  mainvars : Id.t list; (* variables non involved in a recursive pattern *)
+  symbols : symbol list; (* the decomposition of the notation into terminals and nonterminals *)
+}
+
 (** Decompose a notation of the form "a 'U' b" together with the lists
     of pairs of recursive variables and the list of all variables
     binding in the notation *)
-val decompose_raw_notation : string -> (Id.t * Id.t) list * Id.t list * symbol list
+val decompose_raw_notation : string -> notation_symbols
 
 (** Prints scopes (expects a pure aconstr printer) *)
 val pr_scope_class : scope_class -> Pp.t
