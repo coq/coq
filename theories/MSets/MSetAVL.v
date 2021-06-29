@@ -529,7 +529,7 @@ Proof.
  intros y Hy.
  apply H1; auto.
  rewrite remove_min_spec, e1; simpl; auto.
- change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
+ change (gt_tree (s2',m)#2 (s2',m)#1); unfold t,elt in e1 |- *; rewrite <-e1; eauto.
 Qed.
 
 
@@ -583,11 +583,11 @@ Proof.
  functional induction (concat s1 s2); intros; auto;
   try factornode s1.
  apply join_ok; auto.
- change (Ok (s2',m)#1); rewrite <-e1; eauto with *.
+ change (Ok (s2',m)#1); unfold t, elt in e1 |- *; rewrite <-e1; eauto with *.
  intros y Hy.
  apply H1; auto.
  rewrite remove_min_spec, e1; simpl; auto.
- change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
+ change (gt_tree (s2',m)#2 (s2',m)#1); unfold t, elt in e1 |- *; rewrite <-e1; eauto.
 Qed.
 
 

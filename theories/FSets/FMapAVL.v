@@ -1275,7 +1275,7 @@ Proof.
  intros y Hy.
  apply H1; auto.
  rewrite remove_min_in, e1; simpl; auto with ordered_type.
- change (gt_tree (m2',xd)#2#1 (m2',xd)#1). rewrite <-e1; eauto.
+ change (gt_tree (m2',xd)#2#1 (m2',xd)#1). unfold key in e1 |- * ;rewrite <-e1; eauto.
 Qed.
 #[local]
 Hint Resolve concat_bst : core.
