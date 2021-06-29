@@ -19,8 +19,6 @@ type 'a sourced = { thing : 'a; source : arg_source }
 type project = {
   project_file  : string option;
   makefile : string option;
-  install_kind  : install option;
-  use_ocamlopt : bool;
   native_compiler : native_compiler option;
 
   v_files : string sourced list;
@@ -48,21 +46,15 @@ and extra_target = {
 }
 and logic_path = string
 and path = { path : string; canonical_path : string }
-and install =
-  | NoInstall
-  | TraditionalInstall
-  | UserInstall
 and native_compiler =
 | NativeYes
 | NativeNo
 | NativeOndemand
 
 (* TODO generate with PPX *)
-let mk_project project_file makefile install_kind use_ocamlopt native_compiler = {
+let mk_project project_file makefile use_ocamlopt native_compiler = {
   project_file;
   makefile;
-  install_kind;
-  use_ocamlopt;
   native_compiler;
 
   v_files = [];
@@ -171,22 +163,6 @@ let process_cmd_line ~warning_fn orig_dir proj args =
   | [] -> proj
   | "-impredicative-set" :: _ ->
     error "Use \"-arg -impredicative-set\" instead of \"-impredicative-set\""
-  | "-no-install" :: _ ->
-    error "Use \"-install none\" instead of \"-no-install\""
-  | "-custom" :: _ ->
-    error "Use \"-extra[-phony] target deps command\" instead of \"-custom command deps target\""
-
-  | ("-no-opt"|"-byte") :: r -> aux { proj with use_ocamlopt =  false } r
-  | ("-full"|"-opt") :: r -> aux { proj with use_ocamlopt =  true } r
-  | "-install" :: d :: r ->
-    if proj.install_kind <> None then
-      (warning_fn "-install set more than once.");
-    let install = match d with
-      | "user" -> UserInstall
-      | "none" -> NoInstall
-      | "global" -> TraditionalInstall
-      | _ -> error ("invalid option \""^d^"\" passed to -install") in
-    aux { proj with install_kind = Some install } r
   | "-extra" :: target :: dependencies :: command :: r ->
     let tgt = { target; dependencies; phony = false; command } in
     aux { proj with extra_targets = proj.extra_targets @ [sourced tgt] } r
@@ -265,11 +241,11 @@ let process_cmd_line ~warning_fn orig_dir proj args =
  (******************************* API ************************************)
 
 let cmdline_args_to_project ~warning_fn ~curdir args =
-  process_cmd_line ~warning_fn curdir (mk_project None None None true None) args
+  process_cmd_line ~warning_fn curdir (mk_project None None true None) args
 
 let read_project_file ~warning_fn f =
   process_cmd_line ~warning_fn (Filename.dirname f)
-    (mk_project (Some f) None (Some NoInstall) true None) (parse f)
+    (mk_project (Some f) None true None) (parse f)
 
 let rec find_project_file ~from ~projfile_name =
   let fname = Filename.concat from projfile_name in

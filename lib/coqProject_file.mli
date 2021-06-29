@@ -17,8 +17,6 @@ type 'a sourced = { thing : 'a; source : arg_source }
 type project = {
   project_file  : string option;
   makefile : string option;
-  install_kind  : install option;
-  use_ocamlopt : bool;
   native_compiler : native_compiler option;
 
   v_files : string sourced list;
@@ -46,10 +44,6 @@ and extra_target = {
 }
 and logic_path = string
 and path = { path : string; canonical_path : string }
-and install =
-  | NoInstall
-  | TraditionalInstall
-  | UserInstall
 and native_compiler =
 | NativeYes
 | NativeNo

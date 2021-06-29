@@ -38,7 +38,7 @@ let usage_coq_makefile () =
 \n  ... [any] ... [-extra[-phony] result dependencies command]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
-\n  ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]\
+\n  ...  [-arg opt] ... [-f file] [-o file]\
 \n  [-h] [--help]\
 \n";
   output_string stderr "\
@@ -66,12 +66,7 @@ let usage_coq_makefile () =
 \n  \"physicalpath\". The logical path associated to the physical path\
 \n  is \"logicalpath\".\
 \n[VARIABLE = value]: Add the variable definition \"VARIABLE=value\"\
-\n[-byte]: compile with byte-code version of coq\
-\n[-opt]: compile with native-code version of coq\
 \n[-arg opt]: send option \"opt\" to coqc\
-\n[-install opt]: where opt is \"user\" to force install into user directory,\
-\n  \"none\" to build a makefile with no install target or\
-\n  \"global\" to force install in $COQLIB directory\
 \n[-f file]: take the contents of file as arguments\
 \n[-o file]: output should go in file file (recommended)\
 \n	Output file outside the current directory is forbidden.\
@@ -320,24 +315,6 @@ let ensure_root_dir
         r_includes = source (here_path, "Top") :: r_includes }
 ;;
 
-let warn_install_at_root_directory
-  ({ q_includes; r_includes; } as project)
-=
-  let open CList in
-  let inc_top_p =
-    map_filter
-      (fun {thing=({ path } ,ldir)} -> if ldir = "" then Some path else None)
-      (r_includes @ q_includes) in
-  let files = all_files project in
-  let bad = filter (fun f -> mem (Filename.dirname f.thing) inc_top_p) files in
-  if bad <> [] then begin
-    eprintf "Warning: No file should be installed at the root of Coq's library.\n";
-    eprintf "Warning: No logical path (-R, -Q) applies to these files:\n";
-    List.iter (fun x -> eprintf "Warning:  %s\n" x.thing) bad;
-    eprintf "\n";
-  end
-;;
-
 let check_overlapping_include { q_includes; r_includes } =
   let pwd = Sys.getcwd () in
   let aux = function
@@ -448,10 +425,6 @@ let _ =
   end;
 
   let project = ensure_root_dir project in
-
-  if project.install_kind <> (Some CoqProject_file.NoInstall) then begin
-    warn_install_at_root_directory project;
-  end;
 
   check_overlapping_include project;
 
