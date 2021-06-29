@@ -1844,6 +1844,11 @@ let unify_leq_delay ?flags env evd t1 t2 =
   | Success evd' -> evd'
   | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
 
+let unify_pb_delay ?flags env evd pb t1 t2 =
+  match pb with
+  | CONV -> unify_delay ?flags env evd t1 t2
+  | CUMUL -> unify_leq_delay ?flags env evd t1 t2
+
 let unify ?flags ?(with_ho=true) env evd cv_pb ty1 ty2 =
   let flags =
     match flags with

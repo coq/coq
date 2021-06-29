@@ -45,6 +45,7 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
 
 val unify_delay : ?flags:unify_flags -> env -> evar_map -> constr -> constr -> evar_map
 val unify_leq_delay : ?flags:unify_flags -> env -> evar_map -> constr -> constr -> evar_map
+val unify_pb_delay : ?flags:unify_flags -> env -> evar_map -> Reduction.conv_pb -> constr -> constr -> evar_map
 
 (** This function also calls [solve_unif_constraints_with_heuristics] to resolve any remaining
     constraints. In case of success the two terms are unified without condition.
