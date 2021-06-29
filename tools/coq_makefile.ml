@@ -37,7 +37,7 @@ let usage_coq_makefile () =
 \ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
-\n  ...  [-arg opt] ... [-f file] [-o file]\
+\n  ...  [-arg opt] ... [-docroot path] [-f file] [-o file]\
 \n  [-h] [--help]\
 \n";
   output_string stderr "\
@@ -56,6 +56,8 @@ let usage_coq_makefile () =
 \n  is \"logicalpath\".\
 \n[VARIABLE = value]: Add the variable definition \"VARIABLE=value\"\
 \n[-arg opt]: send option \"opt\" to coqc\
+\n[-docroot path]: Install the documentation in this folder, relative to\
+\n  \"user-contrib\".\
 \n[-f file]: take the contents of file as arguments\
 \n[-o file]: output should go in file file (recommended)\
 \n	Output file outside the current directory is forbidden.\
@@ -219,21 +221,22 @@ let rec logic_gcd acc = function
       then logic_gcd (acc @ [hd]) (tl :: List.map List.tl rest)
       else acc
 
-let generate_conf_doc oc { defs; q_includes; r_includes } =
+let generate_conf_doc oc { docroot; q_includes; r_includes } =
   let includes = List.map (forget_source > snd) (q_includes @ r_includes) in
   let logpaths = List.map (String.split_on_char '.') includes in
   let gcd = logic_gcd [] logpaths in
   let root =
-    if gcd = [] then
-      if not (List.exists (fun x -> fst x.thing = "INSTALLDEFAULTROOT") defs) then begin
+    match docroot with
+    | None ->
+      if gcd = [] then
          let destination = "orphan_" ^ (String.concat "_" includes) in
-         eprintf "Warning: no common logical root\n";
-         eprintf "Warning: in such case INSTALLDEFAULTROOT must be defined\n";
-         eprintf "Warning: the install-doc target is going to install files\n";
+         eprintf "Warning: No common logical root.\n";
+         eprintf "Warning: In this case the -docroot option should be given.\n";
+         eprintf "Warning: Otherwise the install-doc target is going to install files\n";
          eprintf "Warning: in %s\n" destination;
          destination
-      end else "$(INSTALLDEFAULTROOT)"
-    else String.concat Filename.dir_sep gcd in
+      else String.concat Filename.dir_sep gcd
+    | Some p -> p in
   Printf.fprintf oc "COQMF_INSTALLCOQDOCROOT = %s\n" (quote root)
 
 let generate_conf_native oc native_compiler =

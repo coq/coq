@@ -18,6 +18,9 @@ type project = {
   project_file  : string option;
   makefile : string option;
   native_compiler : native_compiler option;
+  (* the path into which to install documentation of the project (relative to
+   * the user-contrib folder) *)
+  docroot : string option;
 
   v_files : string sourced list;
   mli_files : string sourced list;

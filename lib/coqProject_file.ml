@@ -20,6 +20,7 @@ type project = {
   project_file  : string option;
   makefile : string option;
   native_compiler : native_compiler option;
+  docroot : string option;
 
   v_files : string sourced list;
   mli_files : string sourced list;
@@ -46,6 +47,7 @@ let mk_project project_file makefile native_compiler = {
   project_file;
   makefile;
   native_compiler;
+  docroot = None;
 
   v_files = [];
   mli_files = [];
@@ -226,6 +228,11 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     if proj.makefile <> None then
       error "Option -o given more than once";
     aux { proj with makefile = Some file } r
+
+  | "-docroot" :: p :: r ->
+    if proj.docroot <> None then
+      error "Option -docroot given more than once";
+    aux { proj with docroot = Some p } r
 
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
