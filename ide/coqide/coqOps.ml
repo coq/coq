@@ -258,9 +258,6 @@ object(self)
   val mutable processed = 0
   val mutable slaves_status = CString.Map.empty
 
-  val feedbacks : queue_msg Queue.t = Queue.create ()
-  val feedback_timer = Ideutils.mktimer ()
-
   val mutable forward_clear_db_highlight = ((fun x -> failwith "forward_clear_db_highlight")
                   : unit -> unit)
 
@@ -268,12 +265,11 @@ object(self)
                   : Pp.t -> unit)
   initializer
     Coq.set_feedback_handler _ct
-        (fun msg -> self#enqueue_feedback (MsgFeedback msg));
+        (fun msg -> self#process_feedback (MsgFeedback msg));
     Coq.set_debug_prompt_handler _ct
-        (fun ~tag msg -> self#enqueue_feedback (MsgDebug (tag, msg)));
+        (fun ~tag msg -> self#process_feedback (MsgDebug (tag, msg)));
     script#misc#set_has_tooltip true;
     ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
-    feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback;
     let md = segment_model document in
     segment#set_model md;
     let on_click id =
@@ -321,8 +317,7 @@ object(self)
     end;
     false
 
-  method destroy () =
-    feedback_timer.Ideutils.kill ()
+  method destroy () = ()
 
   method scroll_to_start_of_input () =
     let start = buffer#get_iter_at_mark (`NAME "start_of_input") in
@@ -458,10 +453,6 @@ object(self)
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
     add_tooltip sentence pre post markup
 
-  method private enqueue_feedback msg =
-    (* Minilib.log ("Feedback received: " ^ Xml_printer.to_string_fmt Xmlprotocol.(of_feedback Ppcmds msg)); *)
-    Queue.add msg feedbacks
-
   method private debug_prompt ~tag msg =
     match tag with
     | "prompt" ->
@@ -474,20 +465,9 @@ object(self)
   method set_debug_goal msg =
     proof#set_debug_goal msg
 
-  (* todo: is it necessary to have a queue and to call this routine on a timer? *)
-  method private process_feedback () =
-    try
-    let rec eat_feedback n =
-      (* todo: why not just check if feedbacks is empty? *)
-      if n = 0 then true else
-      let msg = Queue.pop feedbacks in
-      match msg with
-      | MsgFeedback msg2 -> pr_feedback n msg2
-      | MsgDebug (tag, msg2) ->
-        if tag = "prompt" then
-          Coq.set_stopped_in_debugger _ct true;
-        self#debug_prompt ~tag msg2; eat_feedback (n-1)
-    and pr_feedback n msg =
+  method private process_feedback msg =
+    (* Minilib.log ("Feedback received: " ^ Xml_printer.to_string_fmt Xmlprotocol.(of_feedback Ppcmds msg)); *)
+    let pr_feedback msg =
       let id = msg.span_id in
       let sentence =
         let finder _ state_id s =
@@ -496,9 +476,15 @@ object(self)
           | _ -> None in
         try Some (Doc.find_map document finder)
         with Not_found -> None in
-      let log_pp ?id s=
+      let log_pp ?id s =
         Minilib.log_pp Pp.(seq
                 [str "Feedback "; s; pr_opt (fun id -> str " on " ++ str (Stateid.to_string id)) id])
+      in
+      let no_sent_msg mtype =
+        Minilib.log (mtype ^ " feedback message without a sentence") in
+      let unsupp_msg mtype =
+        if sentence <> None then
+          Minilib.log ("Unsupported feedback message " ^ mtype ^ " with a sentence")
       in
       let log ?id s = log_pp ?id (Pp.str s) in
       begin match msg.contents, sentence with
@@ -508,27 +494,33 @@ object(self)
           remove_flag sentence `ERROR;
           add_flag sentence `UNSAFE;
           self#mark_as_needed sentence
+      | AddedAxiom, None ->  no_sent_msg "AddedAxiom"
       | Processed, Some (id,sentence) ->
           log ?id "Processed" ;
           remove_flag sentence `PROCESSING;
           self#mark_as_needed sentence;
           forward_clear_db_highlight ()
+      | Processed, None ->  no_sent_msg "Processed"
       | ProcessingIn _,  Some (id,sentence) ->
           log ?id "ProcessingIn";
           add_flag sentence `PROCESSING;
           self#mark_as_needed sentence
+      | ProcessingIn _, None ->  no_sent_msg "ProcessingIn"
       | Incomplete, Some (id, sentence) ->
           log ?id "Incomplete";
           add_flag sentence `INCOMPLETE;
           self#mark_as_needed sentence
+      | Incomplete, None ->  no_sent_msg "Incomplete"
       | Complete, Some (id, sentence) ->
           log ?id "Complete";
           remove_flag sentence `INCOMPLETE;
           self#mark_as_needed sentence
+      | Complete, None ->  no_sent_msg "Complete"
       | GlobRef(loc, filepath, modpath, ident, ty), Some (id,sentence) ->
           log ?id "GlobRef";
           self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
+      | GlobRef (_, _, _, _, _), None -> no_sent_msg "GlobRef"
       | Message(Error, loc, msg), Some (id,sentence) ->
           log_pp ?id Pp.(str "ErrorMsg " ++ msg);
           remove_flag sentence `PROCESSING;
@@ -559,19 +551,19 @@ object(self)
       | WorkerStatus(id,status), _ ->
           log "WorkerStatus";
           slaves_status <- CString.Map.add id status slaves_status
-      | _ ->
-          if sentence <> None then Minilib.log "Unsupported feedback message"
-          else if Doc.is_empty document then ()
-          else
-            try
-              match id, Doc.tip document with
-              | id1, id2 when Stateid.newer_than id2 id1 -> ()
-              | _ -> Queue.add (MsgFeedback msg) feedbacks
-            with Doc.Empty | Invalid_argument _ -> Queue.add (MsgFeedback msg) feedbacks
-      end;
-      eat_feedback (n-1)
+      (* log unused feedback messages with a sentence *)
+      | GlobDef (_, _, _, _), _ -> unsupp_msg "GlobDef"
+      | FileDependency (_, _), _ -> unsupp_msg "FileDependency"
+      | FileLoaded (_, _), _ -> unsupp_msg "FileLoaded"
+      | Custom (_, _, _), _  -> unsupp_msg "Custom"
+      end
     in
-    eat_feedback (Queue.length feedbacks)
+    try match msg with
+      | MsgFeedback msg2 -> pr_feedback msg2
+      | MsgDebug (tag, msg2) ->
+        if tag = "prompt" then
+          Coq.set_stopped_in_debugger _ct true;
+        self#debug_prompt ~tag msg2
     with e -> (Printf.printf "Exception: %s\n%!" (Printexc.to_string e);
         Printexc.print_backtrace stdout;
         flush stdout;
@@ -880,7 +872,6 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
     messages#default_route#push Feedback.Error msg;
-    ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else
       Coq.seq
