@@ -89,7 +89,7 @@ Local Hint Resolve Permutation_sym Permutation_trans : core.
    on morphims to come *)
 
 #[global]
-Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {
+Instance Permutation_Equivalence A : Equivalence (@Permutation A) := {
   Equivalence_Reflexive := @Permutation_refl A ;
   Equivalence_Symmetric := @Permutation_sym A ;
   Equivalence_Transitive := @Permutation_trans A }.
@@ -108,7 +108,7 @@ Qed.
 
 #[global]
 Instance Permutation_cons A :
- Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A) | 10.
+ Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A).
 Proof.
   repeat intro; subst; auto using perm_skip.
 Qed.
@@ -130,7 +130,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_in' :
- Proper (Logic.eq ==> @Permutation A ==> iff) (@In A) | 10.
+ Proper (Logic.eq ==> @Permutation A ==> iff) (@In A).
 Proof.
   repeat red; intros; subst; eauto using Permutation_in.
 Qed.
@@ -162,7 +162,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_app' :
- Proper (@Permutation A ==> @Permutation A ==> @Permutation A) (@app A) | 10.
+ Proper (@Permutation A ==> @Permutation A ==> @Permutation A) (@app A).
 Proof.
   repeat intro; now apply Permutation_app.
 Qed.
@@ -259,7 +259,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_rev' :
- Proper (@Permutation A ==> @Permutation A) (@rev A) | 10.
+ Proper (@Permutation A ==> @Permutation A) (@rev A).
 Proof.
   repeat intro; now rewrite <- 2 Permutation_rev.
 Qed.
@@ -277,7 +277,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_Forall (P : A -> Prop) :
- Proper ((@Permutation A) ==> Basics.impl) (Forall P) | 10.
+ Proper ((@Permutation A) ==> Basics.impl) (Forall P).
 Proof.
   intros l1 l2 HP.
   induction HP; intro HF; auto.
@@ -287,7 +287,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_Exists (P : A -> Prop) :
- Proper ((@Permutation A) ==> Basics.impl) (Exists P) | 10.
+ Proper ((@Permutation A) ==> Basics.impl) (Exists P).
 Proof.
   intros l1 l2 HP.
   induction HP; intro HF; auto.
@@ -520,7 +520,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_NoDup' :
- Proper (@Permutation A ==> iff) (@NoDup A) | 10.
+ Proper (@Permutation A ==> iff) (@NoDup A).
 Proof.
   repeat red; eauto using Permutation_NoDup.
 Qed.
@@ -577,7 +577,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_map' :
-  Proper (@Permutation A ==> @Permutation B) (map f) | 10.
+  Proper (@Permutation A ==> @Permutation B) (map f).
 Proof.
   exact Permutation_map.
 Qed.
@@ -623,7 +623,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_flat_map (g : A -> list B) :
- Proper ((@Permutation A) ==> (@Permutation B)) (flat_map g) | 10.
+ Proper ((@Permutation A) ==> (@Permutation B)) (flat_map g).
 Proof.
   intros l1; induction l1; intros l2 HP.
   - now apply Permutation_nil in HP; subst.
