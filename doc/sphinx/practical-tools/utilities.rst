@@ -480,7 +480,6 @@ line timing data:
           Chars 163 - 208 [Definition~foo1~:=~Eval~comp~i...] 0.239 secs (0.236u,0.s)
 
 + ``print-pretty-single-time-diff``
-
     ::
 
        print-pretty-single-time-diff AFTER=path/to/file.v.after-timing BEFORE=path/to/file.v.before-timing
@@ -565,7 +564,7 @@ To build, say, two targets foo.vo and bar.vo in parallel one can use
 
 .. note::
 
-  For users of coq_makefile with version < 8.7
+  For users of ``coq_makefile`` with version < 8.7
 
   + Support for "subdirectory" is deprecated. To perform actions before
     or after the build (like invoking ``make`` on a subdirectory) one can hook
@@ -583,19 +582,15 @@ Precompiling for ``native_compute``
 +++++++++++++++++++++++++++++++++++
 
 To compile files for ``native_compute``, one can use the
-``-native-compiler yes`` option of Coq, for instance by putting the
-following in a :ref:`coqmakefilelocal` file:
+``-native-compiler yes`` option of Coq, by putting it in the ``_CoqProject``
+file.
 
-::
-
-    COQEXTRAFLAGS += -native-compiler yes
-
-The generated ``CoqMakefile`` installation target will then take care
-of installing the extra ``.coq-native`` directories.
+The generated installation target of ``CoqMakefile`` will then take care of
+installing the extra ``.coq-native`` directories.
 
 .. note::
 
-   As an alternative to modifying any file, one can set the
+   As an alternative to modifying ``_CoqProject``, one can set an
    environment variable when calling ``make``:
 
    ::
