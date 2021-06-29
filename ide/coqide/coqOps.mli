@@ -26,6 +26,8 @@ object
     next:(Interface.db_continue_rty Interface.value -> unit task) -> unit task
   method process_db_stack :
     next:(Interface.db_stack_rty Interface.value -> unit task) -> unit task
+  method process_db_vars : int ->
+    next:(Interface.db_vars_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
   method raw_coq_query :

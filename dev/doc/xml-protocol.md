@@ -35,6 +35,7 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [Db_upd_bpts](#command-db_upd_bpts)
   - [Db_continue](#command-db_continue)
   - [Db_stack](#command-db_stack)
+  - [Db_vars](#command-db_vars)
 * [Feedback messages](#feedback)
   - [Added Axiom](#feedback-addedaxiom)
   - [Processing](#feedback-processing)
@@ -746,7 +747,7 @@ stop at the breakpoint.
 
 Returns the Ltac call stack.  Each entry has a description of what was called
 (e.g. the tactic name) plus the absolute pathname of the file and the offset of
-the call therein.  The top of stack is the TBD: FIRST/LAST entry in th elist.
+the call therein.  The top of stack is the first entry in the list.
 
 ```html
 <call val="Db_stack">
@@ -755,8 +756,52 @@ the call therein.  The top of stack is the TBD: FIRST/LAST entry in th elist.
 ```
 
 #### *Returns*
-* TBA.
+```html
+<value val="good">
+  <list>
+    <pair>
+      <string>vars2.z</string>
+      <option val="some">
+        <pair>
+          <string>ToplevelInput</string>
+          <list>
+            <int>51</int>
+            <int>58</int>
+          </list>
+        </pair>
+      </option>
+    </pair>
+      :
+  </list>
+</value>
+```
 
+
+### <a name="command-db_vars">**Db_vars()**</a>
+
+Returns a list of the names and values of the local variables defined in the
+specified frame of the Ltac call stack.  (0 = top of stack, 1, 2, ...).
+
+```html
+<call val="Db_vars">
+  <int>0</int>
+</call>
+```
+
+#### *Returns*
+```html
+<value val="good">
+  <list>
+    <pair>
+      <string>w</string>
+      <ppdoc val="string">
+        <string>0</string>
+      </ppdoc>
+    </pair>
+      :
+  </list>
+</value>
+```
 
 
 -------------------------------

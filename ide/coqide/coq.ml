@@ -599,6 +599,7 @@ let db_loc x = eval_call ~db:true (Xmlprotocol.db_loc x)
 let db_upd_bpts x = eval_call ~db:true (Xmlprotocol.db_upd_bpts x)
 let db_continue x = eval_call ~db:true (Xmlprotocol.db_continue x)
 let db_stack x = eval_call ~db:true (Xmlprotocol.db_stack x)
+let db_vars x = eval_call ~db:true (Xmlprotocol.db_vars x)
 
 let interrupt_coqtop coqtop workers =
   if coqtop.status = Busy then

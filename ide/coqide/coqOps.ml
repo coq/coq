@@ -148,6 +148,8 @@ object
     next:(Interface.db_continue_rty Interface.value -> unit task) -> unit task
   method process_db_stack :
     next:(Interface.db_stack_rty Interface.value -> unit task) -> unit task
+  method process_db_vars : int ->
+    next:(Interface.db_vars_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
   method raw_coq_query :
@@ -784,6 +786,10 @@ object(self)
   method process_db_stack ~next : unit Coq.task =
     let db_stack = Coq.db_stack () in
     Coq.bind db_stack next
+
+  method process_db_vars framenum ~next : unit Coq.task =
+    let db_vars = Coq.db_vars framenum in
+    Coq.bind db_vars next
 
   method private process_until_iter iter =
     let until _ start stop =

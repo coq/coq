@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (** Protocol version of this file. This is the date of the last modification. *)
-let protocol_version = "20210622"
+let protocol_version = "20210628"
 
 (** See xml-protocol.md for a description of the protocol. *)
 (** UPDATE xml-protocol.md WHEN YOU UPDATE THE PROTOCOL *)
@@ -590,6 +590,7 @@ let db_upd_bpts_sty_t : db_upd_bpts_sty val_t =
   list_t (pair_t (pair_t string_t int_t) bool_t)
 let db_continue_sty_t : db_continue_sty val_t = db_cont_opt_t
 let db_stack_sty_t : db_stack_sty val_t = unit_t
+let db_vars_sty_t : db_vars_sty val_t = int_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (union_t unit_t state_id_t)
@@ -622,6 +623,8 @@ let db_upd_bpts_rty_t : db_upd_bpts_rty val_t = unit_t
 let db_continue_rty_t : db_continue_rty val_t = unit_t
 let db_stack_rty_t : db_stack_rty val_t =
   list_t (pair_t string_t (option_t (pair_t string_t (list_t int_t))))
+let db_vars_rty_t : db_vars_rty val_t =
+  list_t (pair_t string_t pp_t)
 
 let ($) x = erase x
 let calls = [|
@@ -650,6 +653,7 @@ let calls = [|
   "Db_upd_bpts",($)db_upd_bpts_sty_t, ($)db_upd_bpts_rty_t;
   "Db_continue",($)db_continue_sty_t, ($)db_continue_rty_t;
   "Db_stack",   ($)db_stack_sty_t,    ($)db_stack_rty_t;
+  "Db_vars",    ($)db_vars_sty_t,     ($)db_vars_rty_t;
 |]
 
 type 'a call =
@@ -679,7 +683,8 @@ type 'a call =
   | Db_loc     : db_loc_sty -> db_loc_rty call
   | Db_upd_bpts: db_upd_bpts_sty -> db_upd_bpts_rty call
   | Db_continue: db_continue_sty -> db_continue_rty call
-  | Db_stack:    db_stack_sty -> db_stack_rty call
+  | Db_stack   : db_stack_sty -> db_stack_rty call
+  | Db_vars    : db_vars_sty -> db_vars_rty call
 
 (* the order of the entries must match the order in "calls" above *)
 let id_of_call : type a. a call -> int = function
@@ -708,6 +713,7 @@ let id_of_call : type a. a call -> int = function
   | Db_upd_bpts _-> 22
   | Db_continue _-> 23
   | Db_stack _   -> 24
+  | Db_vars _    -> 25
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -738,6 +744,7 @@ let db_loc x      : db_loc_rty call      = Db_loc x
 let db_upd_bpts x : db_upd_bpts_rty call = Db_upd_bpts x
 let db_continue x : db_continue_rty call = Db_continue x
 let db_stack x    : db_stack_rty call    = Db_stack x
+let db_vars x     : db_vars_rty call     = Db_vars x
 
 let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
   let mkGood : type a. a -> a value = fun x -> Good x in
@@ -768,6 +775,7 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | Db_upd_bpts x-> mkGood (handler.db_upd_bpts x)
     | Db_continue x-> mkGood (handler.db_continue x)
     | Db_stack x   -> mkGood (handler.db_stack x)
+    | Db_vars x    -> mkGood (handler.db_vars x)
   with any ->
     let any = Exninfo.capture any in
     Fail (handler.handle_exn any)
@@ -799,6 +807,7 @@ let of_answer : type a. a call -> a value -> xml = function
   | Db_upd_bpts _-> of_value (of_value_type db_upd_bpts_rty_t)
   | Db_continue _-> of_value (of_value_type db_continue_rty_t)
   | Db_stack _   -> of_value (of_value_type db_stack_rty_t   )
+  | Db_vars _    -> of_value (of_value_type db_vars_rty_t    )
 
 let of_answer msg_fmt =
   msg_format := msg_fmt; of_answer
@@ -829,6 +838,7 @@ let to_answer : type a. a call -> xml -> a value = function
   | Db_upd_bpts _-> to_value (to_value_type db_upd_bpts_rty_t)
   | Db_continue _-> to_value (to_value_type db_continue_rty_t)
   | Db_stack _   -> to_value (to_value_type db_stack_rty_t   )
+  | Db_vars _    -> to_value (to_value_type db_vars_rty_t    )
 
 let of_call : type a. a call -> xml = fun q ->
   let mkCall x = constructor "call" (str_of_call q) [x] in
@@ -858,6 +868,7 @@ let of_call : type a. a call -> xml = fun q ->
   | Db_upd_bpts x-> mkCall (of_value_type db_upd_bpts_sty_t x)
   | Db_continue x-> mkCall (of_value_type db_continue_sty_t x)
   | Db_stack x   -> mkCall (of_value_type db_stack_sty_t    x)
+  | Db_vars x    -> mkCall (of_value_type db_vars_sty_t     x)
 
 let to_call : xml -> unknown_call =
   do_match "call" (fun s a ->
@@ -888,6 +899,7 @@ let to_call : xml -> unknown_call =
     | "Db_upd_bpts"-> Unknown (Db_upd_bpts(mkCallArg db_upd_bpts_sty_t a))
     | "Db_continue"-> Unknown (Db_continue(mkCallArg db_continue_sty_t a))
     | "Db_stack"   -> Unknown (Db_stack   (mkCallArg db_stack_sty_t    a))
+    | "Db_vars"    -> Unknown (Db_vars    (mkCallArg db_vars_sty_t     a))
     | x -> raise (Marshal_error("call",PCData x)))
 
 (** Debug printing *)
@@ -925,6 +937,7 @@ let pr_full_value : type a. a call -> a value -> string = fun call value -> matc
   | Db_upd_bpts _-> pr_value_gen (print db_upd_bpts_rty_t) value
   | Db_continue _-> pr_value_gen (print db_continue_rty_t) value
   | Db_stack _   -> pr_value_gen (print db_stack_rty_t   ) value
+  | Db_vars _    -> pr_value_gen (print db_vars_rty_t    ) value
 let pr_call : type a. a call -> string = fun call ->
   let return what x = str_of_call call ^ " " ^ print what x in
   match call with
@@ -953,6 +966,7 @@ let pr_call : type a. a call -> string = fun call ->
     | Db_upd_bpts x-> return db_upd_bpts_sty_t x
     | Db_continue x-> return db_continue_sty_t x
     | Db_stack x   -> return db_stack_sty_t x
+    | Db_vars x    -> return db_vars_sty_t x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";

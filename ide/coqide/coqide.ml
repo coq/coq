@@ -180,6 +180,8 @@ let forward_db_loc   = ref ((fun x -> failwith "forward_db_loc")
                      : session -> unit -> unit)
 let forward_db_stack = ref ((fun x -> failwith "forward_db_stack")
                      : session -> unit -> unit)
+let forward_db_vars = ref ((fun x -> failwith "forward_db_vars")
+                     : session -> int -> unit)
 let forward_highlight_code = ref ((fun x -> failwith "forward_highlight_code")
                      : session -> string * int * int -> unit)
 
@@ -191,7 +193,9 @@ let create_session f =
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_loc (!forward_db_loc sn);
   (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
+  (* todo: support one debugger per session *)
   sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
+  sn.debugger#set_forward_db_vars (!forward_db_vars sn);
   sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
   sn.coqops#set_forward_set_goals_of_dbg_session
     (fun msg ->
@@ -760,6 +764,7 @@ let resume_debugger opt = (* todo: assign numbers/create a type *)
       Coq.set_stopped_in_debugger t.coqtop false;
       clear_db_highlight t ();
       t.debugger#set_stack [];
+      (* todo: clear variables, too *)
       t.messages#default_route#set_editable2 false;
       t.messages#default_route#push Feedback.Notice (Pp.mt ());
       true
@@ -1045,6 +1050,21 @@ let db_stack sn _ =
   )
 
 let _ = forward_db_stack := db_stack
+
+let db_vars sn line =
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_vars line
+      ~next:(function
+          | Interface.Good vars ->
+            sn.debugger#set_vars vars;
+            Coq.return ()
+          | Interface.Fail _ ->
+            Coq.return ()
+          ))
+      (fun () -> Minilib.log "Coq busy, discarding db_vars")
+  )
+
+let _ = forward_db_vars := db_vars
 
 let next_bpt = ref 0
 

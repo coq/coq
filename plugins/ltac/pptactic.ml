@@ -163,6 +163,7 @@ let string_of_genarg_arg (ArgumentType arg) =
           end
         | _ -> default
 
+  let _ = DebugHook.forward_pr_value := pr_value Constrexpr.LevelSome
   let pr_with_occurrences pr c = Ppred.pr_with_occurrences pr keyword c
   let pr_red_expr env sigma pr c = Ppred.pr_red_expr_env env sigma pr keyword c
 

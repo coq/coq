@@ -219,11 +219,15 @@ type db_continue_rty = unit
 type db_stack_sty = unit
 type db_stack_rty = (string * (string * int list) option) list
 
+(** fetch variable names and values for a stack frame *)
+type db_vars_sty = int
+type db_vars_rty = (string * Pp.t) list
+
 (** Retrieve the list of options of the current toplevel *)
 type get_options_sty = unit
 type get_options_rty = (option_name * option_state) list
 
-(** Set the option`s to the given value. Warning: this is not atomic, so whenever
+(** Set the options to the given values. Warning: this is not atomic, so whenever
     the call fails, the option state can be messed up... This is the caller duty
     to check that everything is correct. *)
 type set_options_sty = (option_name * option_value) list
@@ -290,6 +294,7 @@ type handler = {
   db_upd_bpts : db_upd_bpts_sty -> db_upd_bpts_rty;
   db_continue : db_continue_sty -> db_continue_rty;
   db_stack    : db_stack_sty    -> db_stack_rty;
+  db_vars     : db_vars_sty     -> db_vars_rty;
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;

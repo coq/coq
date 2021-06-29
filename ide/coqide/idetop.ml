@@ -436,7 +436,7 @@ let db_upd_bpts updates =
 let db_stack () =
   let open DebugHook in
   Printf.printf "server: db_stack call\n%!";
-  let s = DebugHook.debugger_state.get_stack () in
+  let s = debugger_state.get_stack () in
   let rec shift s prev_loc res =
     let ploc = cvt_loc prev_loc in
     match s with
@@ -444,6 +444,16 @@ let db_stack () =
     | [] -> ("(script)", ploc) :: res
   in
   List.rev (shift s debugger_state.cur_loc [])
+
+let db_vars framenum =
+  let open DebugHook in
+  let open Names in
+  Printf.printf "server: db_vars call\n%!";
+  let vars = List.nth debugger_state.varmaps framenum in
+  List.map (fun b ->
+      let (id, v) = b in
+      (Id.to_string id, !forward_pr_value v)
+    ) (Id.Map.bindings vars)
 
 let get_options () =
   let table = Goptions.get_tables () in
@@ -539,6 +549,7 @@ let eval_call c =
     Interface.db_upd_bpts = db_upd_bpts;
     Interface.db_continue = db_continue;
     Interface.db_stack = db_stack;
+    Interface.db_vars = db_vars;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;

@@ -81,3 +81,5 @@ type debugger_state = {
 }
 
 val debugger_state : debugger_state
+
+val forward_pr_value : (Geninterp.Val.t  -> Pp.t) ref

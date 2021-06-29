@@ -154,3 +154,6 @@ type debugger_state = {
 }
 
 let debugger_state = { cur_loc=None; get_stack=(fun () -> []); varmaps=[] }
+
+let forward_pr_value = ref ((fun x -> failwith "forward_pr_value")
+                       : Geninterp.Val.t  -> Pp.t)

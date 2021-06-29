@@ -9,20 +9,24 @@
 (************************************************************************)
 
 type stack_t = (string * (string * int list) option) list
+type vars_t = (string * Pp.t) list
 
 class type debugger_view =
   object
     method coerce : GObj.widget
     method set_stack : stack_t -> unit
+    method set_vars : vars_t -> unit
     method hide : unit -> unit
     method show : unit -> unit
     method set_forward_highlight_code : (string * int * int -> unit) -> unit
+    method set_forward_db_vars : (int -> unit) -> unit
   end
 
 let debugger () =
   let stack_widget = GText.view ~editable:false ~cursor_visible:false ~wrap_mode:`NONE () in
   let stack_buffer = stack_widget#buffer in
   let stack = ref [] in
+  let vars = ref [] in
 
   let debugger_detachable = Wg_Detachable.detachable ~title:"Debugger" () in
   let vb = GPack.vbox ~packing:(debugger_detachable#pack ~expand:true (*~fill:true*)) () in
@@ -59,6 +63,8 @@ let debugger () =
   let highlighted_line = ref None in
   let forward_highlight_code = ref ((fun x -> failwith "forward_highlight_code")
     : (string * int * int) -> unit) in
+  let forward_db_vars = ref ((fun x -> failwith "forward_db_vars")
+    : int -> unit) in
 
   (* todo: better to share with Tags.Script.debugging, but it isn't set for GText *)
   let debugging_tag = stack_buffer#create_tag
@@ -79,6 +85,7 @@ let debugger () =
       stack_buffer#apply_tag debugging_tag ~start ~stop;
       highlighted_line := Some line;
       let (_, loc) = List.nth !stack line in
+      !forward_db_vars line;
       match loc with
       | Some (file, bp :: ep :: _) ->
         !forward_highlight_code (file, bp, ep)
@@ -136,9 +143,15 @@ let debugger () =
       if stack_v <> [] then
         highlight 0
 
+    method set_vars (vars_v : vars_t) =
+      vars := vars_v;
+      (* todo *)
+      ()
+
     method hide () = debugger_detachable#hide  (* todo: give up focus *)
     method show () = debugger_detachable#show  (* todo: take focus? *)
     method set_forward_highlight_code f = forward_highlight_code := f
+    method set_forward_db_vars f = forward_db_vars := f
   end
   in
   debugger

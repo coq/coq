@@ -43,6 +43,7 @@ val db_loc      : db_loc_sty      -> db_loc_rty call
 val db_upd_bpts : db_upd_bpts_sty -> db_upd_bpts_rty call
 val db_continue : db_continue_sty -> db_continue_rty call
 val db_stack    : db_stack_sty    -> db_stack_rty call
+val db_vars     : db_vars_sty     -> db_vars_rty call
 
 val abstract_eval_call : handler -> 'a call -> 'a value
 

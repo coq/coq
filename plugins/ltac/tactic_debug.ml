@@ -340,7 +340,7 @@ let dump_varmaps msg varmaps =
         List.iter (fun b ->
             let (k, b) = b in
             Printf.printf "id = %s\n%!" (Id.to_string k);
-            ignore @@ Pptactic.pr_value Constrexpr.LevelSome b
+            ignore @@ Pptactic.pr_value Constrexpr.LevelSome b (* todo: LevelSome?? *)
             (* b is Geninterp.Val.t Names.Id.Map.t *)
           ) (Id.Map.bindings varmap)
       ) varmaps
