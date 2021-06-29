@@ -257,7 +257,7 @@ Context {A B : Type} {R : nat -> B -> B -> Prop}
 Variables (F : (A -> A -> B) -> B).
 Hypothesis ex_gen : forall (n : nat) (P1 P2 : A -> A -> B),
   (forall x y : A, R n (P1 x y) (P2 x y)) -> (R n (F P1) (F P2)).
-Arguments ex_gen [n P1] P2 relP12.
+Arguments ex_gen [n P1] P2 _.
 Lemma test_ex_gen (P1 P2 : A -> A -> B) (n : nat) :
   (forall x y : A, P2 x y = P2 y x) ->
   R n (F P1) (F P2) /\ True -> True.
@@ -300,7 +300,7 @@ Hypothesis rel2_gen :
     Rel c1 c2 ->
     (forall a b : A, Rel (P1 a b) (P2 a b)) ->
     Rel (F c1 P1) (F c2 P2).
-Arguments rel2_gen [c1] c2 [P1] P2 relc12 relP12.
+Arguments rel2_gen [c1] c2 [P1] P2 _ _.
 Lemma test_rel2_gen (c : C) (P : A -> A -> B)
   (toy_hyp : forall a b, P a b = P b a) :
   Rel (F c P) (F c (fun a b => P b a)).
