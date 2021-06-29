@@ -18,6 +18,10 @@
 ;
 ; (_ (flags :standard -rectypes)))
 
+(alias
+ (name default)
+ (deps coq-core.install coq-stdlib.install coqide-server.install coqide.install))
+
 (install
  (section lib)
  (package coq-core)
