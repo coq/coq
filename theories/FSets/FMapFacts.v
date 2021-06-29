@@ -1844,6 +1844,7 @@ Module OrdProperties (M:S).
    destruct (E.compare x y); intuition; try discriminate; ME.order.
   Qed.
 
+  Unset Automatic Bidirectionality. (* the first [auto] doesn't work without this *)
   Lemma gtb_compat : forall p, Proper (eqke==>eq) (gtb p).
   Proof.
    red; intros (x,e) (a,e') (b,e'') H; red in H; simpl in *; destruct H.
@@ -1858,6 +1859,7 @@ Module OrdProperties (M:S).
      apply ME.eq_lt with b; auto.
      rewrite <- H2; auto.
   Qed.
+  Set Automatic Bidirectionality.
 
   Lemma leb_compat : forall p, Proper (eqke==>eq) (leb p).
   Proof.

@@ -1011,7 +1011,7 @@ Section ex.
     : rew [fun a => exists p : P a, Q a p] H in u
       = ex_intro
           (Q y)
-          (rew H in ex_proj1 u)
+          (rew [P] H in ex_proj1 u)
           (rew dependent H in ex_proj2 u).
   Proof.
     destruct H, u; reflexivity.
@@ -1188,7 +1188,7 @@ Section ex2.
       = ex_intro2
           (Q y)
           (R y)
-          (rew H in ex_proj1 u)
+          (rew [P] H in ex_proj1 u)
           (rew dependent H in ex_proj2 u)
           (rew dependent H in ex_proj3 u).
   Proof.

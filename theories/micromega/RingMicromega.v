@@ -811,7 +811,7 @@ Proof.
   unfold cnf_of_list.
   intros T env l tg.
   set (F := (fun (x : NFormula) (acc : list (list (NFormula * T))) =>
-        if check_inconsistent x then acc else ((x, tg) :: nil) :: acc)).
+        if check_inconsistent x  then acc else ((x, tg) :: nil) :: acc)).
   set (G := ((fun x : NFormula => eval_nformula env x -> False))).
   induction l as [|a l IHl].
   - compute.
