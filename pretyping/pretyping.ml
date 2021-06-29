@@ -808,10 +808,11 @@ struct
             try
               let IndType (indf, args) = find_rectype !!env sigma ty in
               let ((ind',u'),pars) = dest_ind_family indf in
-              if Ind.CanOrd.equal ind ind' then List.map EConstr.of_constr pars
+              if Ind.CanOrd.equal ind ind'
+              then List.map (fun par -> Some (Reduction.CONV, EConstr.of_constr par)) pars
               else (* Let the usual code throw an error *) []
             with Not_found -> []
-      else []
+      else Option.cata (AutoBidi.auto_bidi !!env sigma fj ~nargs:length) [] tycon
     in
     let refresh_template env sigma resj =
       (* Special case for inductive type applications that must be
@@ -868,8 +869,9 @@ struct
         let sigma, candargs, ujval =
           match candargs with
           | [] -> sigma, [], j_val hj
-          | arg :: args ->
-            begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
+          | None :: args -> sigma, args, j_val hj
+          | Some (pb, arg) :: args ->
+            begin match Evarconv.unify_pb_delay !!env sigma pb (j_val hj) arg with
               | exception Evarconv.UnableToUnify (sigma,e) ->
                 raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
               | sigma ->
