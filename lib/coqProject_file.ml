@@ -129,6 +129,26 @@ let parse_native ~warning_fn ~error proj flag =
   in
   { proj with native_compiler = Some native }
 
+let escape_char c =
+  match c with
+  | '\'' -> "\'"
+  | '\n' -> "\\n"
+  | '\t' -> "\\t"
+  | c -> String.make 1 c
+
+let check_filename f =
+  let a = ref None in
+  let check_char c =
+    match c with
+    | '\n' | '\t' | '\\' | '\'' | '"' | ' ' | '#' | '$' | '%' -> a := Some c
+    | _ -> ()
+  in
+  String.iter check_char f;
+  match !a with
+  | Some c -> raise (Parsing_error ("Unsupported filename, contains '"
+                      ^ (escape_char c) ^ "' : \"" ^ String.escaped f ^ "\""))
+  | None -> ()
+
 let process_cmd_line ~warning_fn orig_dir proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
   let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
@@ -186,15 +206,26 @@ let process_cmd_line ~warning_fn orig_dir proj args =
       let proj =
         match Filename.extension f with
         | ".v" ->
+          check_filename f;
           { proj with v_files = proj.v_files @ [sourced f] }
-        | ".ml" -> { proj with ml_files = proj.ml_files @ [sourced f] }
+        | ".ml" ->
+          check_filename f;
+          { proj with ml_files = proj.ml_files @ [sourced f] }
         | ".ml4" ->
           let msg = Printf.sprintf "camlp5 macro files not supported anymore, please port %s to coqpp" f in
           raise (Parsing_error msg)
-        | ".mlg" -> { proj with mlg_files = proj.mlg_files @ [sourced f] }
-        | ".mli" -> { proj with mli_files = proj.mli_files @ [sourced f] }
-        | ".mllib" -> { proj with mllib_files = proj.mllib_files @ [sourced f] }
-        | ".mlpack" -> { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
+        | ".mlg" ->
+          check_filename f;
+          { proj with mlg_files = proj.mlg_files @ [sourced f] }
+        | ".mli" ->
+          check_filename f;
+          { proj with mli_files = proj.mli_files @ [sourced f] }
+        | ".mllib" ->
+          check_filename f;
+          { proj with mllib_files = proj.mllib_files @ [sourced f] }
+        | ".mlpack" ->
+          check_filename f;
+          { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
         | _ -> raise (Parsing_error ("Unknown option "^f)) in
       aux proj r
  in
