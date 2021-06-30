@@ -33,12 +33,18 @@ let rigid_heads env sigma c1 c2 =
   | (c1,_), (c2,_) -> rigid_heads env c1 c2
 
 (* NB: we don't use the rel_context *)
-let rec match_rigidly env sigma candargs pb k ty tycon =
+(* If [coercible] the type constraint may be satisfied by a coercion
+   instead of unification, so don't use bidi.
+   Typically [fun x : sigT (fun _ : supertype => _) => projT1 x : subtype].
+ *)
+let rec match_rigidly env sigma candargs ~coercible pb k ty tycon =
   match kind_nocast_gen (kind sigma) ty, kind_nocast_gen (kind sigma) tycon with
   | Cast _, _ | _, Cast _ -> assert false
   | Rel n1, _ ->
-    if n1 > k && n1 - k <= Array.length candargs && EConstr.Vars.noccur_between sigma 1 k tycon then
-      candargs.(n1 - k - 1) <- Some (pb, EConstr.Vars.lift (-k) tycon)
+    if not coercible
+    && n1 > k && n1 - k <= Array.length candargs
+    && EConstr.Vars.noccur_between sigma 1 k tycon
+    then candargs.(n1 - k - 1) <- Some (pb, EConstr.Vars.lift (-k) tycon)
     else ()
 
   | Meta _, Meta _
@@ -48,19 +54,19 @@ let rec match_rigidly env sigma candargs pb k ty tycon =
   | Sort _, Sort _ -> ()
 
   | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
-    match_rigidly env sigma candargs CONV k t1 t2;
-    match_rigidly env sigma candargs CONV (k+1) c1 c2
+    match_rigidly env sigma candargs ~coercible:false CONV k t1 t2;
+    match_rigidly env sigma candargs ~coercible:false CONV (k+1) c1 c2
 
   | Prod (_,t1,c1), Prod (_,t2,c2) ->
-    match_rigidly env sigma candargs CONV k t1 t2;
-    match_rigidly env sigma candargs pb (k+1) c1 c2
+    match_rigidly env sigma candargs ~coercible CONV k t1 t2;
+    match_rigidly env sigma candargs ~coercible pb (k+1) c1 c2
 
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> ()
 
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
     if rigid_heads env sigma c1 c2 && Int.equal len (Array.length l2) then begin
-      Array.iter2 (match_rigidly env sigma candargs CONV k) l1 l2
+      Array.iter2 (match_rigidly env sigma candargs ~coercible:false CONV k) l1 l2
     end
 
   | Proj (p1,c1), Proj (p2,c2) -> ()
@@ -80,9 +86,9 @@ let rec match_rigidly env sigma candargs pb k ty tycon =
 
   | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
     if Array.length t1 = Array.length t2 then begin
-      match_rigidly env sigma candargs CONV k ty1 ty2;
-      Array.iter2 (match_rigidly env sigma candargs CONV k) t1 t2;
-      match_rigidly env sigma candargs CONV k def1 def2
+      match_rigidly env sigma candargs ~coercible:false CONV k ty1 ty2;
+      Array.iter2 (match_rigidly env sigma candargs ~coercible:false CONV k) t1 t2;
+      match_rigidly env sigma candargs ~coercible:false CONV k def1 def2
     end
 
   | (Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
@@ -98,7 +104,7 @@ let auto_bidi env sigma hj ~nargs tycon =
     if List.exists Context.Rel.Declaration.is_local_def ctx then []
     else
       let candargs = Array.make nargs None in
-      match_rigidly env sigma candargs CUMUL 0 ty tycon;
+      match_rigidly env sigma candargs ~coercible:true CUMUL 0 ty tycon;
       let candargs = CArray.rev_to_list candargs in
       candargs
 
