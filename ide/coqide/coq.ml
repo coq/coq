@@ -329,7 +329,7 @@ let unsafe_handle_input handle (feedback_processor, ltac_debug_processor) state 
       handle_ltac_debug ltac_debug_processor xml;
       loop ()
     | Xmlprotocol.Other ->
-      ignore (handle_final_answer handle xml);
+      ignore (handle_final_answer handle xml);  (* request completed *)
       if handle.waiting_for <> None then (* i.e., just finished a db request *)
         loop ()
   in
@@ -413,13 +413,11 @@ let clear_handle h =
     h.alive <- false;
   end
 
-(*
 let pstatus = function
     | Closed -> "Closed"
     | Busy -> "Busy"
     | Ready -> "Ready"
     | New -> "New"
-*)
 
 let can_send_db_msg coqtop =
   match coqtop.status with
@@ -439,7 +437,7 @@ let mkready coqtop db =
       coqtop.status <- Ready;
       coqtop.set_script_editable true
     end;
-    if coqtop.status = Ready then begin
+    if coqtop.status = Ready || (db && can_send_db_msg coqtop) then begin
       let q = coqtop.do_when_ready in
       if not (Queue.is_empty q) then
         let f = Queue.pop q in f ()
@@ -454,7 +452,7 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
     let title = "Warning" in
     let icon = (warn_image ())#coerce in
     let buttons = ["Reset"; "Save all and quit"; "Quit without saving"] in
-    let ans = GToolbox.question_box ~title ~buttons ~icon "coqidetop died badly." in
+    let ans = GToolbox.question_box ~title ~buttons ~icon "coqidetop died." in
     if ans = 2 then (!save_all (); GtkMain.Main.quit ())
     else if ans = 3 then GtkMain.Main.quit ()
   | Planned -> ()
@@ -529,6 +527,8 @@ let set_arguments coqtop args =
 
 let process_task ?(db=false) coqtop task =
   (* todo: queuing is probably better than assert. *)
+  if not (coqtop.status = Ready || coqtop.status = New || (db && coqtop.status = Busy)) then
+    Printf.printf "Assert failure in process_task coqtop.status = %s db = %b\n" (pstatus coqtop.status) db;
   assert (coqtop.status = Ready || coqtop.status = New || (db && coqtop.status = Busy));
   if not db then begin
     coqtop.status <- Busy;
@@ -574,9 +574,15 @@ let eval_call ?(db=false) call handle k =
   let in_db = if db then "db " else "" in
   Minilib.log ("Start " ^ in_db ^ "eval_call " ^ Xmlprotocol.pr_call call);
   if db then begin
+    if not (handle.alive && handle.db_waiting_for = None) then
+      Printf.printf "assert fail: handle.alive = %b db_waiting_for is None = %b\n%!"
+        handle.alive (handle.db_waiting_for = None);
     assert (handle.alive && handle.db_waiting_for = None);
     handle.db_waiting_for <- Some (mk_ccb (call,k))
   end else begin
+    if not (handle.alive && handle.waiting_for = None) then
+      Printf.printf "assert fail: handle.alive = %b waiting_for is None = %b\n%!"
+        handle.alive (handle.waiting_for = None);
     assert (handle.alive && handle.waiting_for = None);
     handle.waiting_for <- Some (mk_ccb (call,k))
   end;

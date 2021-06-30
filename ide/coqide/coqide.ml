@@ -764,7 +764,7 @@ let resume_debugger opt = (* todo: assign numbers/create a type *)
       Coq.set_stopped_in_debugger t.coqtop false;
       clear_db_highlight t ();
       t.debugger#set_stack [];
-      (* todo: clear variables, too *)
+      t.debugger#set_vars [];
       t.messages#default_route#set_editable2 false;
       t.messages#default_route#push Feedback.Notice (Pp.mt ());
       true
@@ -819,12 +819,12 @@ module Nav = struct
   let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
 end
 
-let (f9 , _) = GtkData.AccelGroup.parse "F9"
-let (f10, _) = GtkData.AccelGroup.parse "F10"
-let (f11, _) = GtkData.AccelGroup.parse "F11"
-let (shft_f10, _) = GtkData.AccelGroup.parse "<Shift>F10"
-let (ctl_up  , _) = GtkData.AccelGroup.parse "<Ctrl>Up"
-let (ctl_down, _) = GtkData.AccelGroup.parse "<Ctrl>Down"
+let f9       = GtkData.AccelGroup.parse "F9"
+let f10      = GtkData.AccelGroup.parse "F10"
+let f11      = GtkData.AccelGroup.parse "F11"
+let shft_f10 = GtkData.AccelGroup.parse "<Shift>F10"
+let ctl_up   = GtkData.AccelGroup.parse "<Ctrl>Up"
+let ctl_down = GtkData.AccelGroup.parse "<Ctrl>Down"
 
 (* handle certain function keys from detached Messages panel
    functions are directed to the current session, not the Messages session
@@ -839,6 +839,7 @@ let forward_keystroke key =
   else false
 
 let _ = Wg_MessageView.forward_keystroke := forward_keystroke
+let _ = Wg_Debugger.forward_keystroke := forward_keystroke
 
 let printopts_callback opts v =
   let b = v#get_active in
@@ -1018,20 +1019,22 @@ let highlight_code sn loc =
 let _ = forward_highlight_code := highlight_code
 
 let db_loc sn _ =
-  ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_loc
-    ~next:(function
-        | Interface.Good Some (file, ints) ->
-          Printf.printf "db_loc returns %s: %d %d\n%!" file (List.hd ints) (List.nth ints 1);
-          highlight_code sn (file, List.hd ints, List.nth ints 1);
-          Coq.return ()
-        | Interface.Good None ->
-          Printf.printf "db_loc returns None\n%!";
-          clear_db_highlight sn ();
-          Coq.return ()
-        | Interface.Fail _ ->
-          Coq.return ()
-        ))
-    (fun () -> Minilib.log "Coq busy, discarding db_loc")
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_loc
+      ~next:(function
+          | Interface.Good Some (file, ints) ->
+            Printf.printf "db_loc returns %s: %d %d\n%!" file (List.hd ints) (List.nth ints 1);
+            highlight_code sn (file, List.hd ints, List.nth ints 1);
+            Coq.return ()
+          | Interface.Good None ->
+            Printf.printf "db_loc returns None\n%!";
+            clear_db_highlight sn ();
+            Coq.return ()
+          | Interface.Fail _ ->
+            Coq.return ()
+          ))
+      (fun () -> Minilib.log "Coq busy, discarding db_loc")
+  )
 
 let _ = forward_db_loc := db_loc
 

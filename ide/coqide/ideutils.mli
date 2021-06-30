@@ -118,3 +118,7 @@ val encode_string_list : string list -> string
     quote or another backslash. *)
 
 val decode_string_list : string -> string list
+
+(** filter key event to keep only the interesting modifiers *)
+
+val filter_key : GdkEvent.Key.t -> Gdk.keysym * Gdk.Tags.modifier list

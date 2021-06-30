@@ -208,7 +208,13 @@ let get_stack stack () =
     let (loc, k) = k in
     match k with
     | LtacNameCall l -> KerName.to_string l, loc
-    | _ -> "???", None
+    | LtacMLCall _ -> "??? LtacMLCall ", loc
+      (* loc is currently None below *)
+    | LtacNotationCall l -> "??? LtacNotationCall " ^ (KerName.to_string l), loc
+    | LtacAtomCall _ -> "??? LtacAtomCall ", loc
+      (* todo: show the "e" below somehow? *)
+    | LtacVarCall (id, e) -> "Call tactic in variable " ^ Id.to_string id, loc
+    | LtacConstrInterp _ -> "??? LtacConstrInterp ", loc
     ) stack
 
 let save_loc tac varmap trace =
@@ -366,7 +372,7 @@ let debug_prompt lev tac f varmap trace =
     Proofview.tclLIFT !skip >= fun s ->
       let stop_here () =
 (*        dump_stack "at debug_prompt" stack;*)
-        dump_varmaps "at debug_prompt" varmaps;
+(*        dump_varmaps "at debug_prompt" varmaps;*)
         prev_stack.contents <- stack;
         Proofview.tclTHEN (goal_com tac varmap trace) (Proofview.tclLIFT (prompt lev))
       in

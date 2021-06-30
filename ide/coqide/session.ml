@@ -414,7 +414,7 @@ let create file coqtop_args =
   let segment = new Wg_Segment.segment () in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
   finder#setup_is_script_editable (fun _ -> script#editable2);
-  let debugger = Wg_Debugger.debugger () in
+  let debugger = Wg_Debugger.debugger (Printf.sprintf "Debugger (%s)" basename) in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =
@@ -477,7 +477,7 @@ let build_layout (sn:session) =
   in
 
   let session_paned = GPack.paned `VERTICAL
-    ~packing:(debugger_paned#pack1 ~shrink:false ~resize: true) () in
+    ~packing:(debugger_paned#pack1 ~shrink:false ~resize:true) () in
   let session_box =
     GPack.vbox ~packing:(session_paned#pack1 ~shrink:false ~resize:true) ()
   in
@@ -560,6 +560,10 @@ let build_layout (sn:session) =
 
   session_box#pack sn.finder#coerce;
   debugger_box#add sn.debugger#coerce;
+  sn.debugger#hide ();
+  (sn.messages#route 0)#set_forward_show_debugger sn.debugger#show;
+  sn.debugger#set_forward_paned_pos (fun pos -> debugger_paned#set_position pos);
+  (* segment should not be in the debugger box *)
   debugger_box#pack ~expand:false ~fill:false sn.segment#coerce;
   debugger_paned#set_position 1000000;
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);

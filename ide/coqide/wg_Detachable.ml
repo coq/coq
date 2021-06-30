@@ -24,6 +24,7 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
     inherit GPack.box_skel (obj :> Gtk.box Gobject.obj) as super
 
     val but = GButton.button ()
+    val close_but = GButton.button ()
     val win = GWindow.window ~type_hint:`DIALOG ()
     val frame = GBin.frame ~shadow_type:`NONE ()
     val mutable detached = false
@@ -59,6 +60,8 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
 
     method button = but
 
+    method close_button = close_but
+
     method attach () =
       win#misc#hide ();
       frame#misc#reparent self#coerce;
@@ -73,8 +76,13 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
       detached_cb self#child
 
     initializer
+      let vb = GPack.vbox ~packing:(super#pack ~expand:false ~fill:false) () in
+      close_but#add (Ideutils.stock_to_widget ~size:(`CUSTOM(12,12)) `CLOSE);
+      close_but#misc#hide ();
+      ignore(close_but#connect#clicked ~callback:(fun _ -> self#misc#hide (); win#misc#hide ()));
       self#set_homogeneous false;
-      super#pack ~expand:false but#coerce;
+      vb#pack ~expand:false close_but#coerce;
+      vb#pack ~expand:false but#coerce;
       super#pack ~expand:true ~fill:true frame#coerce;
       win#misc#hide ();
       but#add (GMisc.label

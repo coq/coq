@@ -435,7 +435,7 @@ let db_upd_bpts updates =
 
 let db_stack () =
   let open DebugHook in
-  Printf.printf "server: db_stack call\n%!";
+(*  Printf.printf "server: db_stack call\n%!";*)
   let s = debugger_state.get_stack () in
   let rec shift s prev_loc res =
     let ploc = cvt_loc prev_loc in
@@ -448,7 +448,7 @@ let db_stack () =
 let db_vars framenum =
   let open DebugHook in
   let open Names in
-  Printf.printf "server: db_vars call\n%!";
+(*  Printf.printf "server: db_vars call\n%!";*)
   let vars = List.nth debugger_state.varmaps framenum in
   List.map (fun b ->
       let (id, v) = b in

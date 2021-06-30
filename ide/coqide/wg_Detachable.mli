@@ -27,6 +27,7 @@ class detachable : ([> Gtk.box] as 'a) Gobject.obj ->
     method title : string
     method set_title : string -> unit
     method button : GButton.button
+    method close_button : GButton.button
     method frame : GBin.frame
     method detach : unit -> unit
     method attach : unit -> unit

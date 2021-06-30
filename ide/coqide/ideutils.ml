@@ -605,3 +605,7 @@ let encode_string s =
   Buffer.contents b
 
 let encode_string_list l = String.concat " " (List.map encode_string l)
+
+let filter_key ev =
+  let filter mods = List.filter (fun m -> List.mem m [`SHIFT; `CONTROL; `MOD1 (* Alt *)]) mods in
+  GdkEvent.Key.(keyval ev, (filter (state ev)))

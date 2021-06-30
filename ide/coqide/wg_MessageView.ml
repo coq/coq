@@ -47,10 +47,11 @@ class type message_view =
     method set_forward_send_db_cmd : (string -> unit) -> unit
     method set_forward_send_db_loc : (unit -> unit) -> unit
     method set_forward_send_db_stack : (unit -> unit) -> unit
+    method set_forward_show_debugger : (unit -> unit) -> unit
   end
 
-let forward_keystroke = ref ((fun x -> failwith "forward_keystroke")
-    : int -> bool)
+let forward_keystroke = ref ((fun x -> failwith "forward_keystroke (mv)")
+    : Gdk.keysym * Gdk.Tags.modifier list -> bool)
 
 (* The buffer can contain prompt or feedback messages *)
 type message_entry_kind =
@@ -111,12 +112,15 @@ let message_view () : message_view =
     : unit -> unit) in
   let forward_send_db_stack = ref ((fun x -> failwith "forward_send_db_stack")
     : unit -> unit) in
+  let forward_show_debugger = ref ((fun x -> failwith "forward_show_debugger")
+    : unit -> unit) in
 
   (* Insert a prompt and make the buffer editable. *)
   let insert_ltac_debug_prompt ?(refresh=false) msg =
     if not refresh then begin
       !forward_send_db_loc ();
-      !forward_send_db_stack ();  (* todo: must be queued up *)
+      !forward_send_db_stack ();
+      !forward_show_debugger ();
     end;
     let tags = [] in
     let mark = `MARK mark in
@@ -176,38 +180,39 @@ let message_view () : message_view =
     end
   in
 
-  let (return, _) = GtkData.AccelGroup.parse "Return" in
-  let (backspace, _) = GtkData.AccelGroup.parse "BackSpace" in
-  let (delete, _) = GtkData.AccelGroup.parse "Delete" in
+  let return    = GtkData.AccelGroup.parse "Return" in
+  let backspace = GtkData.AccelGroup.parse "BackSpace" in
+  let delete    = GtkData.AccelGroup.parse "Delete" in
 
   let forward_send_db_cmd = ref ((fun x -> failwith "forward_send_db_cmd")
     : string -> unit) in
 
   (* Keypress handler *)
   let keypress_cb ev =
-    let ev_key = GdkEvent.Key.keyval ev in
+    let key_ev = Ideutils.filter_key ev in
     let state = GdkEvent.Key.state ev in
     let ins = buffer#get_iter_at_mark `INSERT in
     let eoo = buffer#get_iter_at_mark (`NAME "end_of_output") in
     let delta = ins#offset - eoo#offset in
-    if !forward_keystroke ev_key then
+    if !forward_keystroke key_ev then
       true (* support some function keys when Messages is detached *)
     else if not view#editable || List.mem `CONTROL state || List.mem `MOD1 state then
       false
-    else if ev_key = delete && delta < 0 then
+    else if key_ev = delete && delta < 0 then
       true (* ignore DELETE before end of output *)
-    else if ev_key = backspace && delta <= 0 then
+    else if key_ev = backspace && delta <= 0 then
       true (* ignore BACKSPACE before eoo *)
     else begin
       if delta < 0 then
         buffer#move_mark `INSERT ~where:buffer#end_iter;
-      if (ev_key >= Char.code ' ' && ev_key <= Char.code '~') then begin
-        buffer#insert (String.make 1 (Char.chr ev_key));
+      let key_code = GdkEvent.Key.keyval ev in
+      if (key_code >= Char.code ' ' && key_code <= Char.code '~') then begin
+        buffer#insert (String.make 1 (Char.chr key_code));
         view#scroll_to_mark `INSERT; (* scroll to insertion point *)
         let ins = buffer#get_iter_at_mark `INSERT in
         buffer#select_range ins ins;  (* avoid highlighting *)
         true (* consume the event *)
-      end else if ev_key = return then begin
+      end else if key_ev = return then begin
         let ins = buffer#get_iter_at_mark `INSERT in
         let cmd = buffer#get_text ~start:eoo ~stop:ins () in
         add_msg (Fb (Feedback.Notice, Pp.str cmd));
@@ -265,6 +270,7 @@ let message_view () : message_view =
     method set_forward_send_db_cmd f = forward_send_db_cmd := f
     method set_forward_send_db_loc f = forward_send_db_loc := f
     method set_forward_send_db_stack f = forward_send_db_stack := f
+    method set_forward_show_debugger f = forward_show_debugger := f
   end
   in
   (* Is there a better way to connect the signal ? *)
