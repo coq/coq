@@ -118,8 +118,12 @@ let introduction id =
     in
     let open Context.Named.Declaration in
     match EConstr.kind sigma concl with
-    | Prod (id0, t, b) -> unsafe_intro env (LocalAssum ({id0 with binder_name=id}, t)) b
-    | LetIn (id0, c, t, b) -> unsafe_intro env (LocalDef ({id0 with binder_name=id}, c, t)) b
+    | Prod (id0, t, b) ->
+      let id0 = {binder_name=id; binder_relevance=Retyping.relevance_of_type env sigma t} in
+      unsafe_intro env (LocalAssum ({id0 with binder_name=id}, t)) b
+    | LetIn (id0, c, t, b) ->
+      let id0 = {binder_name=id; binder_relevance=Retyping.relevance_of_type env sigma t} in
+      unsafe_intro env (LocalDef ({id0 with binder_name=id}, c, t)) b
     | _ -> raise (RefinerError (env, sigma, IntroNeedsProduct))
   end
 
