@@ -149,6 +149,33 @@ let check_filename f =
                       ^ (escape_char c) ^ "' : \"" ^ String.escaped f ^ "\""))
   | None -> ()
 
+(* single quotes keep whitespace together and keep it literal. But only
+ * unquoted spaces split arguments apart. i.e the string "a'b c'd"
+ * produces the list ["ab cd"] *)
+let process_extra_args arg =
+  let buf = Buffer.create 64 in
+  let out_list = ref [] in
+  let inside_quotes = ref false in
+  let has_leftovers = ref false in
+  let process_char c =
+    match c with
+    | '\'' ->
+        inside_quotes := not !inside_quotes;
+        has_leftovers := true;
+    | ' ' ->
+      if !inside_quotes then
+        (has_leftovers := true; Buffer.add_char buf ' ')
+      else
+        if !has_leftovers then
+          (has_leftovers := false;
+           out_list := buffer buf :: !out_list)
+    | c -> has_leftovers := true; Buffer.add_char buf c
+  in
+  String.iter process_char arg;
+  if !has_leftovers then
+    out_list := buffer buf :: !out_list;
+  List.rev !out_list
+
 let process_cmd_line ~warning_fn orig_dir proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
   let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
@@ -200,7 +227,7 @@ let process_cmd_line ~warning_fn orig_dir proj args =
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
-    aux { proj with extra_args = proj.extra_args @ [sourced a] } r
+    aux { proj with extra_args = proj.extra_args @ List.map sourced (process_extra_args a) } r
   | f :: r ->
       let f = CUnix.correct_path f orig_dir in
       let proj =
