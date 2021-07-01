@@ -79,6 +79,9 @@ let buffer buf =
 
 let rec parse_string buf s = match Stream.next s with
 | ' ' | '\n' | '\t' -> buffer buf
+| '#' ->
+  parse_skip_comment s;
+  buffer buf
 | c ->
   let () = Buffer.add_char buf c in
   parse_string buf s
