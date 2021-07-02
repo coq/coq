@@ -92,18 +92,21 @@ let create_empty_file filename =
   let f = open_out filename in
   close_out f
 
+let check_pending_proofs filename =
+  let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
+  if not (CList.is_empty pfs) then
+    fatal_error (str "There are pending proofs: "
+                 ++ (pfs
+                     |> List.rev
+                     |> prlist_with_sep pr_comma Names.Id.print)
+                 ++ str ".");
+  let pm = Vernacstate.Declare.get_program () [@ocaml.warning "-3"] in
+  let what_for = Pp.str ("file " ^ filename) in
+  Declare.Obls.check_solved_obligations ~what_for ~pm
+
 (* Compile a vernac file *)
 let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   let open Vernac.State in
-  let check_pending_proofs () =
-    let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
-    if not (CList.is_empty pfs) then
-      fatal_error (str "There are pending proofs: "
-                    ++ (pfs
-                        |> List.rev
-                        |> prlist_with_sep pr_comma Names.Id.print)
-                    ++ str ".")
-  in
   let output_native_objects = match opts.config.native_compiler with
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
   in
@@ -143,7 +146,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state long_f_dot_in in
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
-      check_pending_proofs ();
+      check_pending_proofs long_f_dot_in;
       (* In .vo production, dump a complete .vo file.
          In .vok production, only dump an empty .vok file. *)
       if mode = BuildVo
@@ -184,7 +187,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_in in
       let doc = Stm.finish ~doc:state.doc in
-      check_pending_proofs ();
+      check_pending_proofs long_f_dot_in;
       let create_vos = (mode = BuildVos) in
       (* In .vos production, the output .vos file contains compiled statements.
          In .vio production, the output .vio file contains compiled statements and suspended proofs. *)

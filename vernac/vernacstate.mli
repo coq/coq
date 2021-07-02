@@ -125,6 +125,7 @@ module Declare : sig
 
   (* Low-level stuff *)
   val get : unit -> LemmaStack.t option
+  val get_program : unit -> Declare.OblState.t
   val set : LemmaStack.t option * Declare.OblState.t -> unit
 
   val get_pstate : unit -> Declare.Proof.t option
