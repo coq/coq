@@ -338,9 +338,9 @@ type implicit_proper_status = implicit_origin * maximal_insertion * force_infere
 type implicit_status = argument_status * implicit_proper_status option
   (** [None] = Not implicit; let-in skipped *)
 
-type implicit_side_condition = DefaultImpArgs | LessArgsThan of int
+type implicit_length_condition = DefaultImpArgs | LessArgsThan of int
 
-type implicits_list = implicit_side_condition * implicit_status list
+type implicits_list = implicit_length_condition * implicit_status list
 
 let default_dependency_explanation = NonDependent
 

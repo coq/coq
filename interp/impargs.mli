@@ -44,8 +44,8 @@ type implicit_proper_status
 type implicit_status = argument_status * implicit_proper_status option
   (** [None] = Not implicit; let-in skipped *)
 
-type implicit_side_condition
-type implicits_list = implicit_side_condition * implicit_status list
+type implicit_length_condition
+type implicits_list = implicit_length_condition * implicit_status list
 
 (** {6 Implicit arguments lists. } *)
 
