@@ -88,7 +88,7 @@ Definition first_in_holed_interval (u : nat -> R) (v : R -> nat) (a b h : R)
     -> { n : nat | in_holed_interval a b h u n
                 /\ forall k : nat, k < n -> ~in_holed_interval a b h u k }.
 Proof.
-  intros. apply epsilon_smallest. apply (in_holed_interval_dec a b h u).
+  intros. apply epsilon_smallest_compat. apply (in_holed_interval_dec a b h u).
   exists (v (point_in_holed_interval a b h)).
   destruct H. unfold in_holed_interval. rewrite -> H.
   apply point_in_holed_interval_works. assumption.
