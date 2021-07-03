@@ -112,6 +112,7 @@ Function application
    term_application ::= @term1 {+ @arg }
    | @ @qualid_annotated {+ @term1 }
    arg ::= ( @ident := @term )
+   | ( @natural := @term )
    | @term1
 
 :n:`@term__fun @term` denotes applying the function :n:`@term__fun` to :token:`term`.

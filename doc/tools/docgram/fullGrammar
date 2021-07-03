@@ -164,6 +164,7 @@ binder_constr: [
 
 arg: [
 | test_lpar_id_coloneq "(" identref ":=" lconstr ")"
+| test_lpar_nat_coloneq "(" natural ":=" lconstr ")"
 | term9
 ]
 

@@ -347,9 +347,18 @@ Explicit applications
 In presence of non-strict or contextual arguments, or in presence of
 partial applications, the synthesis of implicit arguments may fail, so
 one may have to explicitly give certain implicit arguments of an
-application. Use the :n:`(@ident := @term)` form of :token:`arg` to do so,
+application.
+
+To instantiate a dependent implicit arguments, use the :n:`(@ident := @term)` form of :token:`arg`,
 where :token:`ident` is the name of the implicit argument and :token:`term`
-is its corresponding explicit term. Alternatively, one can deactivate
+is its corresponding explicit term.
+
+To instantiate a non-dependent implicit arguments, use the :n:`(@natural := @term)` form of :token:`arg`,
+where :token:`num` is the index of the implicit argument among all
+non-dependent arguments of the function (implicit or not, and starting
+from 1) and :token:`term` is its corresponding explicit term.
+
+Alternatively, one can deactivate
 the hiding of implicit arguments for a single function application using the
 :n:`@@qualid_annotated {+ @term1 }` form of :token:`term_application`.
 
@@ -367,6 +376,24 @@ the hiding of implicit arguments for a single function application using the
        Check (p r1 (z:=c)).
 
        Check (p (x:=a) (y:=b) r1 (z:=c) r2).
+
+.. exn:: Wrong argument name
+   :undocumented:
+
+.. exn:: Wrong argument position
+   :undocumented:
+
+.. exn:: Argument at position :n:`@natural` is mentioned more than once
+   :undocumented:
+
+.. exn:: Arguments given by name or position not supported in explicit mode
+   :undocumented:
+
+.. exn:: Not enough non implicit arguments to accept the argument bound to :n:`@ident`
+   :undocumented:
+
+.. exn:: Not enough non implicit arguments to accept the argument bound to :n:`@natural`
+   :undocumented:
 
 .. _displaying-implicit-args:
 
