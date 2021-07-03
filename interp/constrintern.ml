@@ -345,7 +345,7 @@ let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
 
 let warn_shadowed_implicit_name =
   CWarnings.create ~name:"shadowed-implicit-name" ~category:CWarnings.CoreCategories.syntax
-    Pp.(fun na -> str "Making shadowed name of implicit argument accessible by position.")
+    Pp.(fun (na,id) -> str "Renaming shadowed implicit argument name to " ++ Id.print id ++ str ".")
 
 let exists_name na l =
   match na with
@@ -355,7 +355,10 @@ let exists_name na l =
 let build_impls ?loc n bk na acc =
   let impl_status max =
     let na =
-      if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
+      if exists_name na acc then
+        let avoid = Id.Set.of_list (List.map_filter (function Some { impl_pos = (Name id,_,_) } -> Some id | _ -> None) acc) in
+        let id = next_name_away na avoid in
+        begin warn_shadowed_implicit_name ?loc (na,id); Name id end
       else na in
     Some {
       impl_pos = (na, n, (*TODO, enhancement: compute dependency*) None);
@@ -2087,7 +2090,7 @@ let set_hole_implicit i b c =
   Loc.tag ?loc (GImplicitArg (r,i,b))
 
 let exists_implicit_name id =
-  List.exists (fun imp -> is_status_implicit imp && match name_of_implicit imp with Evar_kinds.ExplByName id' -> Id.equal id id' | ExplByPos k -> Id.equal (name_of_pos k) id)
+  List.exists (fun imp -> is_status_implicit imp && match_implicit imp (ExplByName id))
 
 let print_allowed_named_implicit imps =
   let l = List.map_filter (function Some { impl_pos = (Name id, _, _) } -> Some id | _ -> None) imps in
@@ -2596,7 +2599,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       match (impl,rargs) with
       | (imp::impl', rargs) when is_status_implicit imp ->
           begin try
-            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_implicit imp pos) eargs in
+            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_implicit ~warn:false imp pos) eargs in
             intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs' rargs
           with Not_found ->
           if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then

@@ -330,6 +330,12 @@ type implicit_side_condition = DefaultImpArgs | LessArgsThan of int
 
 type implicits_list = implicit_side_condition * implicit_status list
 
+let warn_arg_by_pos =
+  let open CWarnings in
+  create ~name:"deprecated-arg_n-implicit" ~category:CWarnings.CoreCategories.deprecated
+    (fun (id,p) -> strbrk "Deprecated explicitation of argument by position, use \"(" ++
+                   int p ++ strbrk ":=term)\" instead of \"(" ++ Id.print id ++ str ":=term)\".")
+
 let is_status_implicit = function
   | None -> false
   | _ -> true
@@ -347,11 +353,14 @@ let name_of_implicit = function
   | Some { impl_pos = (Anonymous, _, Some n) } -> ExplByPos n
   | Some _ -> assert false
 
-let match_implicit imp pos = match imp, pos with
+let match_implicit ?(warn=true) imp pos = match imp, pos with
   | None, _ -> anomaly (Pp.str "Not an implicit argument.")
-  | Some { impl_pos = (Name id, _, _) }, ExplByName id' -> Id.equal id id'
+  | Some { impl_pos = (Name id, _, None) }, ExplByName id' -> Id.equal id id'
   | Some { impl_pos = (_, _, Some n) }, ExplByPos n' -> Int.equal n n'
-  | Some { impl_pos = (_, n, _) }, ExplByName id -> Id.equal id (name_of_pos n)
+  | Some { impl_pos = (Name id, n, Some p) }, ExplByName id' ->
+    let b = Id.equal id' (name_of_pos n) in
+    if b then warn_arg_by_pos (id,p);
+    b || Id.equal id' id
   | _ -> false
 
 let maximal_insertion_of = function
