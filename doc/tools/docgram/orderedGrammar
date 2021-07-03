@@ -1735,7 +1735,6 @@ simple_tactic: [
 | "info_auto" OPT nat_or_var OPT auto_using OPT hintbases
 | "debug" "auto" OPT nat_or_var OPT auto_using OPT hintbases
 | "eauto" OPT nat_or_var OPT auto_using OPT hintbases
-| "new" "auto" OPT nat_or_var OPT auto_using OPT hintbases
 | "debug" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "info_eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "dfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
