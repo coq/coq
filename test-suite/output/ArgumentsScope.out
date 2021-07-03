@@ -11,19 +11,19 @@ Expands to: Variable b
 negb'' : bool -> bool
 
 negb'' is not universe polymorphic
-Arguments negb'' _%bool_scope
+Arguments negb'' b%bool_scope
 negb'' is transparent
 Expands to: Constant ArgumentsScope.A.B.negb''
 negb' : bool -> bool
 
 negb' is not universe polymorphic
-Arguments negb' _%bool_scope
+Arguments negb' b%bool_scope
 negb' is transparent
 Expands to: Constant ArgumentsScope.A.negb'
 negb : bool -> bool
 
 negb is not universe polymorphic
-Arguments negb _%bool_scope
+Arguments negb b%bool_scope
 negb is transparent
 Expands to: Constant Coq.Init.Datatypes.negb
 a : bool -> bool
@@ -37,16 +37,19 @@ Expands to: Variable b
 negb : bool -> bool
 
 negb is not universe polymorphic
+Arguments negb b
 negb is transparent
 Expands to: Constant Coq.Init.Datatypes.negb
 negb' : bool -> bool
 
 negb' is not universe polymorphic
+Arguments negb' b
 negb' is transparent
 Expands to: Constant ArgumentsScope.A.negb'
 negb'' : bool -> bool
 
 negb'' is not universe polymorphic
+Arguments negb'' b
 negb'' is transparent
 Expands to: Constant ArgumentsScope.A.B.negb''
 a : bool -> bool
@@ -56,15 +59,18 @@ Expands to: Variable a
 negb : bool -> bool
 
 negb is not universe polymorphic
+Arguments negb b
 negb is transparent
 Expands to: Constant Coq.Init.Datatypes.negb
 negb' : bool -> bool
 
 negb' is not universe polymorphic
+Arguments negb' b
 negb' is transparent
 Expands to: Constant ArgumentsScope.negb'
 negb'' : bool -> bool
 
 negb'' is not universe polymorphic
+Arguments negb'' b
 negb'' is transparent
 Expands to: Constant ArgumentsScope.negb''

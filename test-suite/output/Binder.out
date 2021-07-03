@@ -1,8 +1,12 @@
 foo = fun '(x, y) => x + y
      : nat * nat -> nat
+
+Arguments foo pat
 forall '(a, b), a /\ b
      : Prop
 foo = λ '(x, y), x + y
      : nat * nat → nat
+
+Arguments foo pat
 ∀ '(a, b), a ∧ b
      : Prop

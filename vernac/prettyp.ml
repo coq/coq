@@ -323,7 +323,12 @@ let print_arguments ref =
     | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
     | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
   in
-  let renames = try Arguments_renaming.arguments_names ref with Not_found -> [] in
+  let names, not_renamed =
+    try Arguments_renaming.arguments_names ref, false
+    with Not_found ->
+      let env = Global.env () in
+      let ty, _ = Typeops.type_of_global_in_context env ref in
+      Impargs.compute_implicits_names env (Evd.from_env env) (EConstr.of_constr ty), true in
   let scopes = Notation.find_arguments_scope ref in
   let flags = if needs_extra_scopes ref scopes then `ExtraScopes::flags else flags in
   let impls = Impargs.extract_impargs_data (Impargs.implicits_of_global ref) in
@@ -331,7 +336,7 @@ let print_arguments ref =
     | (_, impls) :: rest -> impls, rest
     | [] -> assert false
   in
-  let impls = main_implicits 0 renames recargs scopes impls in
+  let impls = main_implicits 0 names recargs scopes impls in
   let moreimpls = List.map (fun (_,i) -> List.map extra_implicit_kind_of_status i) moreimpls in
   let bidi = Pretyping.get_bidirectionality_hint ref in
   let impls = insert_fake_args nargs_for_red bidi impls in
@@ -341,7 +346,7 @@ let print_arguments ref =
     let open Vernacexpr in
     [Ppvernac.pr_vernac_expr
        (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags)) ++
-     (if renames = [] then mt () else
+     (if not_renamed then mt () else
       fnl () ++ str "  (where some original arguments have been renamed)")]
 
 let print_name_infos ref =
