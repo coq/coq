@@ -345,7 +345,7 @@ let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
 
 let warn_shadowed_implicit_name =
   CWarnings.create ~name:"shadowed-implicit-name" ~category:"syntax"
-    Pp.(fun na -> str "Making shadowed name of implicit argument accessible by position.")
+    Pp.(fun id -> str "Multiple occurrences of " ++ Id.print id ++ str ".")
 
 let exists_name na l =
   match na with
@@ -355,7 +355,7 @@ let exists_name na l =
 let build_impls ?loc n bk na acc =
   let impl_status maximal =
     let na =
-      if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
+      if exists_name na acc then begin warn_shadowed_implicit_name ?loc (Nameops.Name.get_id na); Anonymous end
       else na in
     ((na,n,(*TODO, enhancement: compute dependency*)None),Some (default_implicit ~maximal ~force:true))
   in
@@ -364,28 +364,30 @@ let build_impls ?loc n bk na acc =
   | MaxImplicit -> impl_status true :: acc
   | Explicit -> ((na,n,None),None) :: acc
 
-let impls_binder_list =
+let impls_binder_list n bl =
   let rec aux acc n = function
-    | (na,bk,None,_) :: binders -> aux (build_impls n bk na acc) (n+1) binders
+    | (na,bk,None,_) :: binders -> aux (build_impls ?loc:bl.CAst.loc n bk na acc) (n+1) binders
     | (na,bk,Some _,_) :: binders -> aux acc n binders
     | [] -> (n,acc)
-  in aux []
+  in aux [] n bl.CAst.v
 
-let impls_type_list n ?(args = []) =
+let impls_type_list n ?(args = []) c =
+  let loc = c.CAst.loc in
   let rec aux acc n c = match DAst.get c with
-    | GProd (na,bk,_,c) -> aux (build_impls n bk na acc) (n+1) c
+    | GProd (na,bk,_,c) -> aux (build_impls ?loc n bk na acc) (n+1) c
     | _ -> List.rev acc
-  in aux args n
+  in aux args n c
 
-let impls_term_list n ?(args = []) =
+let impls_term_list n ?(args = []) c =
+  let loc = c.CAst.loc in
   let rec aux acc n c = match DAst.get c with
-    | GLambda (na,bk,_,c) -> aux (build_impls n bk na acc) (n+1) c
+    | GLambda (na,bk,_,c) -> aux (build_impls ?loc n bk na acc) (n+1) c
     | GRec (fix_kind, nas, args, tys, bds) ->
        let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
-       let n,acc' = List.fold_left (fun (n,acc) (na, bk, _, _) -> (n+1,build_impls n bk na acc)) (n,acc) args.(nb) in
+       let n,acc' = List.fold_left (fun (n,acc) (na, bk, _, _) -> (n+1,build_impls ?loc n bk na acc)) (n,acc) args.(nb) in
        aux acc' n bds.(nb)
     |_ -> List.rev acc
-  in aux args n
+  in aux args n c
 
 (* Check if in binder "(x1 x2 .. xn : t)", none of x1 .. xn-1 occurs in t *)
 let rec check_capture ty = let open CAst in function
@@ -2035,6 +2037,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                  | _ -> user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")) recarg
                in
                let before, after = split_at_annot bl recarg in
+               let loc = local_binders_loc bl in
                let (env',rbefore) = List.fold_left intern_local_binder (env,[]) before in
                let n = Option.map (fun _ -> List.count (fun c -> match DAst.get c with
                    | GLocalAssum _ -> true
@@ -2043,7 +2046,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                let (env',rbl) = List.fold_left intern_local_binder (env',rbefore) after in
                let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
                let bl_impls = remember_binders_impargs env' bl in
-               (n, bl, intern_type env' ty, bl_impls)) dl in
+               (n, CAst.make ?loc bl, intern_type env' ty, bl_impls)) dl in
         (* We add the recursive functions to the environment *)
         let env_rec = List.fold_left_i (fun i en name ->
            let (_,bli,tyi,_) = idl_temp.(i) in
@@ -2058,7 +2061,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         GRec (GFix
                 (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
-              Array.map (fun (_,bl,_,_) -> bl) idl,
+              Array.map (fun (_,bl,_,_) -> bl.CAst.v) idl,
               Array.map (fun (_,_,ty,_) -> ty) idl,
               Array.map (fun (_,_,_,bd) -> bd) idl)
 
@@ -2074,11 +2077,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         in
         let env = restart_lambda_binders env in
         let idl_tmp = Array.map
-          (fun ({ CAst.loc; v = id },bl,ty,_) ->
+          (fun ({ CAst.v = id },bl,ty,_) ->
+            let loc = local_binders_loc bl in
             let (env',rbl) = List.fold_left intern_local_binder (env,[]) bl in
             let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
             let bl_impls = remember_binders_impargs env' bl in
-            (bl,intern_type env' ty,bl_impls)) dl in
+            (CAst.make ?loc bl,intern_type env' ty,bl_impls)) dl in
         let env_rec = List.fold_left_i (fun i en name ->
           let (bli,tyi,_) = idl_tmp.(i) in
           let binder_index,cofix_args = impls_binder_list 1 bli in
@@ -2091,7 +2095,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         DAst.make ?loc @@
         GRec (GCoFix n,
               Array.of_list lf,
-              Array.map (fun (bl,_,_) -> bl) idl,
+              Array.map (fun (bl,_,_) -> bl.CAst.v) idl,
               Array.map (fun (_,ty,_) -> ty) idl,
               Array.map (fun (_,_,bd) -> bd) idl)
     | CProdN ([],c2) -> anomaly (Pp.str "The AST is malformed, found prod without binders.")
