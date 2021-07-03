@@ -20,6 +20,7 @@ open Context
 open Libnames
 open Globnames
 open Impargs
+open Evar_kinds
 open Glob_term
 open Glob_ops
 open Patternops
@@ -2086,7 +2087,7 @@ let set_hole_implicit i b c =
   Loc.tag ?loc (GImplicitArg (r,i,b))
 
 let exists_implicit_name id =
-  List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
+  List.exists (fun imp -> is_status_implicit imp && match name_of_implicit imp with Evar_kinds.ExplByName id' -> Id.equal id id' | ExplByPos k -> Id.equal (name_of_pos k) id)
 
 let print_allowed_named_implicit imps =
   let l = List.map_filter (function Some { impl_pos = (Name id, _, _) } -> Some id | _ -> None) imps in
@@ -2611,8 +2612,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs rargs'
       | (imp::impl', []) ->
           if not (List.is_empty eargs) then
-            (let pr_position = function ExplByName id -> Id.print id | ExplByPos n -> str "position " ++ int n in
-            let (pos,(loc,_)) = List.hd eargs in
+            (let (pos,(loc,_)) = List.hd eargs in
                user_err ?loc (str "Not enough non implicit \
             arguments to accept the argument bound to " ++
                  pr_position pos ++ str"."));

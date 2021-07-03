@@ -84,17 +84,20 @@ type implicit_side_condition
 
 type implicits_list = implicit_side_condition * implicit_status list
 
+val name_of_pos : int -> Id.t
 val is_status_implicit : implicit_status -> bool
 val binding_kind_of_status : implicit_status -> Glob_term.binding_kind
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
-val name_of_implicit : implicit_status -> Id.t
-val match_implicit : implicit_status -> Constrexpr.explicitation -> bool
+val name_of_implicit : implicit_status -> Evar_kinds.explicitation
+val match_implicit : implicit_status -> Evar_kinds.explicitation -> bool
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool
 val is_nondep_implicit : int -> implicit_status list -> bool
-val explicitation : implicit_status -> Constrexpr.explicitation
+val explicitation : implicit_status -> Evar_kinds.explicitation
 
 val positions_of_implicits : implicits_list -> int list
+
+val pr_position : Evar_kinds.explicitation -> Pp.t
 
 type manual_implicits = (Name.t * bool) option CAst.t list
 

@@ -19,7 +19,7 @@ open Declarations
 open Libobject
 open EConstr
 open Reductionops
-open Constrexpr
+open Evar_kinds
 
 let whd_prod env sigma typ =
   let open CClosure in
@@ -343,8 +343,9 @@ let binding_kind_of_status = function
 
 let name_of_implicit = function
   | None -> anomaly (Pp.str "Not an implicit argument.")
-  | Some { impl_pos = (Name id, _, _) } -> id
-  | Some { impl_pos = (Anonymous, k, _) } -> name_of_pos k
+  | Some { impl_pos = (Name id, _, _) } -> ExplByName id (* Note: may have a name even if non-dependent *)
+  | Some { impl_pos = (Anonymous, _, Some n) } -> ExplByPos n
+  | Some _ -> assert false
 
 let match_implicit imp pos = match imp, pos with
   | None, _ -> anomaly (Pp.str "Not an implicit argument.")
@@ -390,6 +391,10 @@ let positions_of_implicits (_,impls) =
     | Some _ :: l -> n :: aux (n+1) l
     | None :: l -> aux (n+1) l
   in aux 1 impls
+
+let pr_position = function
+  | ExplByName id -> Id.print id
+  | ExplByPos n -> str "at non-dependent position " ++ int n
 
 (* Manage user-given implicit arguments *)
 

@@ -21,6 +21,7 @@ open Pp
 open Libobject
 open Nameops
 open Context.Rel.Declaration
+open Evar_kinds
 
 module RelDecl = Context.Rel.Declaration
 (*i*)

@@ -21,6 +21,10 @@ type matching_var_kind = FirstOrderPatVar of Id.t | SecondOrderPatVar of Id.t
 
 type subevar_kind = Domain | Codomain | Body
 
+type explicitation =
+  | ExplByName of Id.t
+  | ExplByPos of int (* a reference to the n-th non-dependent implicit starting from left *)
+
 (* maybe this should be a Projection.t *)
 type record_field = { fieldname : Constant.t; recordname : Names.inductive }
 
@@ -37,7 +41,7 @@ let default_question_mark = {
 }
 
 type t =
-  | ImplicitArg of GlobRef.t * (int * Id.t option)
+  | ImplicitArg of GlobRef.t * (int * explicitation option)
      * bool (** Force inference *)
   | BinderType of Name.t
   | EvarType of Id.t option * Evar.t (* type of an optionally named evar *)
@@ -53,7 +57,7 @@ type t =
   | SubEvar of subevar_kind option * Evar.t
 
 type glob_evar_kind =
-  | GImplicitArg of GlobRef.t * (int * Id.t option) * bool (** Force inference *)
+  | GImplicitArg of GlobRef.t * (int * explicitation option) * bool (** Force inference *)
   | GBinderType of Name.t
   | GNamedHole of bool (* fresh? *) * Id.t (* coming from some ?[id] syntax *)
   | GQuestionMark of question_mark

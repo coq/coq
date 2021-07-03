@@ -16,6 +16,7 @@ open Libnames
 open Glob_term
 open Notationextern
 open Constrexpr
+open Evar_kinds
 
 (***********)
 (* Universes *)

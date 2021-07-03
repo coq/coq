@@ -20,7 +20,7 @@ val sort_name_expr_eq : sort_name_expr -> sort_name_expr -> bool
 val univ_level_expr_eq : univ_level_expr -> univ_level_expr -> bool
 val sort_expr_eq : sort_expr -> sort_expr -> bool
 
-val explicitation_eq : explicitation -> explicitation -> bool
+val explicitation_eq : Evar_kinds.explicitation -> Evar_kinds.explicitation -> bool
 (** Equality on [explicitation]. *)
 
 val constr_expr_eq_gen : (constr_expr -> constr_expr -> bool) -> constr_expr -> constr_expr -> bool

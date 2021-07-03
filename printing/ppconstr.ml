@@ -19,6 +19,7 @@ open Pputils
 open Ppextend
 open Glob_term
 open Constrexpr
+open Evar_kinds
 open Constrexpr_ops
 (*i*)
 

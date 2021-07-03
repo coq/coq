@@ -619,8 +619,10 @@ let rec explain_evar_kind env sigma evk ty =
           with (* defined *) Not_found -> strbrk "an internal placeholder" in
       strbrk "the type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
-      let id = Option.get ido in
-      strbrk "the implicit parameter " ++ Id.print id ++ spc () ++ str "of" ++
+      let pos = match ido with
+        | Some pos -> str "the implicit parameter " ++ Impargs.pr_position pos
+        | None -> str "some implicit parameter" in
+      pos ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Id.Set.empty c ++
       strbrk " whose type is " ++ ty
   | Evar_kinds.InternalHole -> strbrk "an internal placeholder of type " ++ ty

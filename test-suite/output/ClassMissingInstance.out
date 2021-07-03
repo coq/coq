@@ -2,7 +2,7 @@ File "./output/ClassMissingInstance.v", line 7, characters 0-28:
 The command has indeed failed with message:
 Unable to satisfy the following constraints:
 
-?arg_2 : "Foo 1"
+?f : "Foo 1"
 
-?arg_20 : "Foo 2"
+?f0 : "Foo 2"
 

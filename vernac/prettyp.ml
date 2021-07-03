@@ -85,7 +85,7 @@ let print_ref reduce ref udecl =
 (********************************)
 (** Printing implicit arguments *)
 
-let pr_impl_name imp = Id.print (name_of_implicit imp)
+let pr_impl_name imp = pr_position (name_of_implicit imp)
 
 let print_impargs_by_name max = function
   | []  -> []
