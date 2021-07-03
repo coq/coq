@@ -233,7 +233,8 @@ GRAMMAR EXTEND Gram
         { let ty,c1 = match ty, c1 with
           | (_,None), { CAst.v = CCast(c, DEFAULTcast, t) } -> (Loc.tag ?loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
           | _, _ -> ty, c1 in
-          CAst.make ~loc @@ CLetIn(id,mkLambdaCN ?loc:(constr_loc c1) bl c1,
+          let body_loc = Loc.merge_opt (constr_loc c1) (local_binders_loc bl) in
+          CAst.make ~loc @@ CLetIn(id,mkLambdaCN ?loc:body_loc bl c1,
                  Option.map (mkProdCN ?loc:(fst ty) bl) (snd ty), c2) }
       | "let"; "fix"; fx = fix_decl; "in"; c = term LEVEL "200" ->
         { let {CAst.loc=locf;CAst.v=({CAst.loc=li;CAst.v=id} as lid,_,_,_,_ as dcl)} = fx in
