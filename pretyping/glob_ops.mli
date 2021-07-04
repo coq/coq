@@ -50,6 +50,7 @@ val cases_predicate_names : 'a tomatch_tuples_g -> Name.t list
 
 (** Apply a list of arguments to a glob_constr *)
 val mkGApp : ?loc:Loc.t -> 'a glob_constr_g -> 'a glob_constr_g list -> 'a glob_constr_g
+val mkGAppR : 'a glob_constr_g -> 'a glob_constr_g list -> 'a glob_constr_r
 
 val map_glob_constr :
   (glob_constr -> glob_constr) -> glob_constr -> glob_constr

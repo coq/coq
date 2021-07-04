@@ -796,13 +796,7 @@ and detype_r d flags avoid env sigma t =
     | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma (LocalAssum (na,ty)) c
     | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma (LocalDef (na,b,ty)) c
     | App (f,args) ->
-      let mkapp f' args' =
-        match DAst.get f' with
-        | GApp (f',args'') ->
-          GApp (f',args''@args')
-        | _ -> GApp (f',args')
-      in
-      mkapp (detype d flags avoid env sigma f)
+      Glob_ops.mkGAppR (detype d flags avoid env sigma f)
         (Array.map_to_list (detype d flags avoid env sigma) args)
     | Const (sp,u) -> GRef (GlobRef.ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
