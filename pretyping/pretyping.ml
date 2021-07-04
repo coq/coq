@@ -762,11 +762,9 @@ struct
     let sigma, j = pretype_sort ?loc sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
 
-  let pretype_app self (f, args) =
+  let pretype_app_and_proj self floc app_f fj args =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
-    let sigma, fj = pretype empty_tycon env sigma f in
-    let floc = loc_of_glob_constr f in
     let length = List.length args in
     let nargs_before_bidi =
       if Option.is_empty tycon then length
@@ -802,17 +800,6 @@ struct
               else (* Let the usual code throw an error *) []
             with Not_found -> []
       else []
-    in
-    let app_f =
-      match EConstr.kind sigma fj.uj_val with
-      | Const (p, u) when PrimitiveProjections.mem p ->
-        let p = Option.get @@ PrimitiveProjections.find_opt p in
-        let p = Projection.make p false in
-        let npars = Projection.npars p in
-        fun n ->
-          if Int.equal n npars then fun _ v -> mkProj (p, v)
-          else fun f v -> applist (f, [v])
-      | _ -> fun _ f v -> applist (f, [v])
     in
     let refresh_template env sigma resj =
       (* Special case for inductive type applications that must be
@@ -877,7 +864,7 @@ struct
           in
           let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
           let subs = Esubst.subs_cons (Vars.make_substituend ujval) subs in
-          let jval = app_f n jval ujval in
+          let jval = app_f jval ujval in
           let val_before_bidi = if bidi then val_before_bidi else jval in
           apply_rec env sigma (n+1) jval (subs, c2) val_before_bidi candargs bidiargs rest
     in
@@ -893,7 +880,7 @@ struct
       (* Unify the (possibly refined) existential variable with the
       (typechecked) original value *)
       let sigma = Evarconv.unify_delay !!env sigma newarg (j_val j) in
-      sigma, app_f n (Coercion.reapply_coercions sigma trace t) (j_val j)
+      sigma, app_f (Coercion.reapply_coercions sigma trace t) (j_val j)
     in
     (* We now refine any arguments whose typing was delayed for
        bidirectionality *)
@@ -912,9 +899,28 @@ struct
     in
     (sigma, resj)
 
-  let pretype_proj self ((f,us), args, c) =
+  let pretype_app self (f, args) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
-    pretype_app self (DAst.make ?loc (GRef (GlobRef.ConstRef f,us)), args @ [c])
+    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    let sigma, fj = pretype empty_tycon env sigma f in
+    let floc = loc_of_glob_constr f in
+    let app_f f v = applist (f, [v]) in
+    pretype_app_and_proj self floc app_f fj args
+      ?loc ~program_mode ~poly resolve_tc tycon env sigma
+
+  let pretype_proj self ((p,us), args, c) =
+    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    let sigma, f = pretype_global ?loc univ_flexible env sigma (GlobRef.ConstRef p) us in
+    let sigma, ty = type_of !!env sigma f in
+    let fj = make_judge f ty in
+    let app_f =
+      if PrimitiveProjections.mem p then
+        let p = Option.get @@ PrimitiveProjections.find_opt p in
+        let p = Projection.make p false in
+        fun _ v -> mkProj (p, v)
+      else
+        fun f v -> applist (f, [v]) in
+    pretype_app_and_proj self None app_f fj (args @ [c])
       ?loc ~program_mode ~poly resolve_tc tycon env sigma
 
   let pretype_lambda self (name, bk, c1, c2) =

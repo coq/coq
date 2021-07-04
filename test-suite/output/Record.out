@@ -76,3 +76,20 @@ fun x : R => 0
      : R -> nat
 The command has indeed failed with message:
 Projection f expected 1 explicit parameter.
+b =
+fun (A : Type) (c : A) (f : Foo A c) => f.(b)
+     : forall (A : Type) (c : A) (f : Foo A c), f.(a) = c
+
+Arguments b {A}%type_scope {c} _
+fun x : Foo nat 0 => b nat 0 x
+     : forall x : Foo nat 0, x.(a _ _) = 0
+fun x : Foo nat 0 => x.(b _ _)
+     : forall x : Foo nat 0, x.(a _ _) = 0
+fun x : Foo nat 0 => b nat 0 x
+     : forall x : Foo nat 0, a nat 0 x = 0
+fun x : Foo nat 0 => b nat 0 x
+     : forall x : Foo nat 0, a nat 0 x = 0
+fun x : Foo nat 0 => x.(b nat 0)
+     : forall x : Foo nat 0, x.(a nat 0) = 0
+fun x : Foo nat 0 => x.(b nat 0)
+     : forall x : Foo nat 0, x.(a nat 0) = 0

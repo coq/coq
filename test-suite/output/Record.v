@@ -85,3 +85,29 @@ Record R A := { f : A -> A }.
 Fail Check fun x => x.(f).
 
 End RecordImplicitParameters.
+
+Module PrimProj.
+
+Set Primitive Projections.
+
+Record Foo A c := { a : A; b : a = c }.
+
+(* Two different paths for primitive projections *)
+Check fun x => b nat 0 x.
+Check fun x => x.(b nat 0).
+
+End PrimProj.
+
+Module NonPrimProj.
+
+Record Foo A c := { a : A; b : a = c }.
+
+(* Same paths for primitive projections *)
+Check fun x => b nat 0 x.
+Check fun x => x.(b nat 0).
+
+Set Printing Projections.
+Check fun x => b nat 0 x.
+Check fun x => x.(b nat 0).
+
+End NonPrimProj.

@@ -804,8 +804,8 @@ and detype_r d flags avoid env sigma t =
         let pars = Projection.npars p in
         let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous,None) in
         let args = List.make pars hole in
-        GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
-              (args @ [detype d flags avoid env sigma c]))
+        let c = detype d flags avoid env sigma c in
+        GProj ((Projection.constant p, None), args, c)
       in
       if flags.flg_lax || !Flags.in_debugger || !Flags.in_toplevel then
         try noparams ()

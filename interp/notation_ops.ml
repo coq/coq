@@ -1393,7 +1393,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GApp (f1,l1), NProj ((cst2,u2),l2,a2) ->
      (match DAst.get f1 with
      | GRef (r1,u1) when GlobRef.equal r1 (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 &&
-         List.length l1 = List.length l2 + 1 ->
+         List.length l1 = List.length l2 + 1 && not (Structures.PrimitiveProjections.mem cst2) ->
         List.fold_left2 (match_in u alp metas) sigma l1 (l2@[a2])
      | _ -> raise No_match)
   | GLambda (na1,bk1,t1,b1), NLambda (na2,t2,b2) ->
