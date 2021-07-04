@@ -21,6 +21,9 @@ type _ delay =
 | Now : 'a delay
 | Later : [ `thunk ] delay
 
+(** This governs printing of non-primitive projections using the dot notation symbols *)
+val print_projections : bool ref
+
 (** Should we keep details of universes during detyping ? *)
 val print_universes : bool ref
 

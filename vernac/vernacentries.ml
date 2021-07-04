@@ -1574,8 +1574,8 @@ let () =
   declare_bool_option
     { optdepr  = false;
       optkey   = ["Printing";"Projections"];
-      optread  = (fun () -> !Constrextern.print_projections);
-      optwrite = (fun b ->  Constrextern.print_projections := b) }
+      optread  = (fun () -> !Detyping.print_projections);
+      optwrite = (fun b ->  Detyping.print_projections := b) }
 
 let () =
   declare_bool_option

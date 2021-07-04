@@ -193,6 +193,9 @@ type _ delay =
 | Now : 'a delay
 | Later : [ `thunk ] delay
 
+(** This governs printing of projections using the dot notation symbols *)
+let print_projections = ref true
+
 (** Should we keep details of universes during detyping ? *)
 let print_universes = ref false
 
@@ -796,8 +799,24 @@ and detype_r d flags avoid env sigma t =
     | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma (LocalAssum (na,ty)) c
     | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma (LocalDef (na,b,ty)) c
     | App (f,args) ->
-      Glob_ops.mkGAppR (detype d flags avoid env sigma f)
-        (Array.map_to_list (detype d flags avoid env sigma) args)
+      let is_applied_projection () =
+        !print_projections &&
+        match EConstr.kind sigma f with
+        | Const (cst,_) -> (try Array.length args > Structures.Structure.projection_nparams cst with Not_found -> false)
+        | _ -> false in
+      let args = Array.map_to_list (detype d flags avoid env sigma) args in
+      if flags.flg_lax || !Flags.in_debugger || !Flags.in_toplevel || not (is_applied_projection ()) then
+        Glob_ops.mkGAppR (detype d flags avoid env sigma f) args
+      else
+        (* Non primitive projection *)
+        let cst,u = destConst sigma f in
+        let n = Structures.Structure.projection_nparams cst in
+        let args1,args2 = List.chop n args in
+        let arg = List.hd args2 in
+        let args2 = List.tl args2 in
+        let us = detype_instance sigma u in
+        let c = GProj ((cst,us),args1,arg) in
+        if args2 = [] then c else GApp (DAst.make c,args2)
     | Const (sp,u) -> GRef (GlobRef.ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
       let noparams () =

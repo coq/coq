@@ -212,9 +212,6 @@ let toggle_notation_printing ?scope ~notation ~activate () =
   else
     deactivate_notation (NotationRule (inscope, notation))
 
-(* This governs printing of projections using the dot notation symbols *)
-let print_projections = ref false
-
 let print_meta_as_hole = ref false
 
 let with_universes f = Flags.with_option print_universes f

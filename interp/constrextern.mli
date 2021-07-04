@@ -59,7 +59,6 @@ val print_coercions : bool ref
 val print_parentheses : bool ref
 val print_universes : bool ref
 val print_no_symbol : bool ref
-val print_projections : bool ref
 val print_raw_literal : bool ref
 
 (** Customization of the global_reference printer *)
