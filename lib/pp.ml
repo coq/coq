@@ -272,6 +272,8 @@ let pr_sequence pr l = prlist_sep_lastsep true spc spc pr l
    [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c] *)
 let pr_enum pr l = prlist_sep_lastsep true pr_comma (fun () -> str " and" ++ spc ()) pr l
 
+let pr_choice pr l = prlist_sep_lastsep true pr_comma (fun () -> str " or" ++ spc ()) pr l
+
 let pr_vertical_list pr = function
   | [] -> str "none" ++ fnl ()
   | l -> fnl () ++ str "  " ++ hov 0 (prlist_with_sep fnl pr l) ++ fnl ()
