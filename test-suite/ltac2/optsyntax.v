@@ -72,12 +72,12 @@ Ltac2 tceauto (attrs : Attributes.t) (cstrs : constr list) (depth : int option) 
   Std.typeclasses_eauto (of_bfs_flag bfs) depth dbs.
 
 (* Probably ill-advised to use a constr list without delimiters but it works *)
-Ltac2 Notation "tc" "eauto" attrs(attributes) cstrs(list0(constr, ",")) n(opt(tactic(0)))
+Ltac2 Notation attrs(attributes) "tc" "eauto" cstrs(list0(constr, ",")) n(opt(tactic(0)))
   dbs(opt(seq("with", list1(ident)))) :=
   tceauto attrs cstrs n dbs.
 
 (* A clearer alternative, but we still can't move "depth" to any position *)
-Ltac2 Notation "tceauto'" attrs(attributes)
+Ltac2 Notation attrs(attributes) "tceauto'"
   cstrs(seq("[", list0(constr, ","), "]"))
   n(opt(seq("depth", "(", tactic(0), ")")))
   dbs(opt(seq("with", list1(ident)))) :=
@@ -93,7 +93,7 @@ Ltac2 tceauto_attrs (attrs : Attributes.t) (cstrs : constr list) (dbs : ident li
   Std.typeclasses_eauto (of_bfs_flag bfs) depth dbs.
 
 (* Use attributes for depth as well *)
-Ltac2 Notation "tceauto_attrs" attrs(attributes)
+Ltac2 Notation attrs(attributes) "tceauto_attrs"
   cstrs(seq("[", list0(constr, ","), "]"))
   dbs(opt(seq("with", list1(ident)))) :=
   tceauto_attrs attrs cstrs dbs.
@@ -101,7 +101,8 @@ Ltac2 Notation "tceauto_attrs" attrs(attributes)
 Goal A 0.
 Proof.
   (** Note the quite terrible I, 0 5*)
-  tc eauto @[best_effort, strategy="dfs"] I, 0 5 with typeclass_instances.
+  (* #[best_effort, strategy="dfs"]
+  tc eauto I, 0 5. with typeclass_instances. *)
   (* Parses and prints out as expected:
     cstrs: I :: 0 :: []
     bfs: false
@@ -110,7 +111,7 @@ Proof.
     depth: 5
   *)
   Undo 1.
-  tceauto' @[best_effort, strategy="dfs"] [I, 0] depth(5) with typeclass_instances.
+  (#[best_effort, strategy="dfs"] tceauto' [I, 0] depth(5) with typeclass_instances).
   (* Parses and prints out as expected:
     cstrs: I :: 0 :: []
     bfs: false
@@ -119,8 +120,8 @@ Proof.
     depth: 5
   *)
   Undo 1.
-  Fail tceauto_attrs @[best_effort, depth="0", strategy="dfs"] [I, 0] with typeclass_instances.
+  Fail (#[best_effort, depth="0", strategy="dfs"] tceauto_attrs [I, 0] with typeclass_instances).
   (* Invalid argument dept="0" *)
-  Fail tceauto_attrs @[best_effort, dept="0", strategy="dfs"] [I, 0] with typeclass_instances.
-  tceauto_attrs @[best_effort, strategy="dfs", depth="1"] [I, 0] with typeclass_instances.
+  Fail (#[best_effort, dept="0", strategy="dfs"] tceauto_attrs [I, 0] with typeclass_instances).
+  (#[best_effort, strategy="dfs", depth="1"] tceauto_attrs [I, 0] with typeclass_instances).
 Qed.

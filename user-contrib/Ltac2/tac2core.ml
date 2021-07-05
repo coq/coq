@@ -1939,7 +1939,7 @@ end
 let () = add_scope "attributes" begin fun toks ->
   match toks with
   | [] ->
-    let scope = G_vernac.tactic_attributes in
+    let scope = G_vernac.quoted_attributes in
     let act attrs = Tac2quote.of_attributes (CAst.make attrs) in
     Tac2entries.ScopeRule (Pcoq.Symbol.nterm scope, act)
   | arg -> scope_fail "attributes" arg

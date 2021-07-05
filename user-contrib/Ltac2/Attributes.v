@@ -53,15 +53,13 @@ Ltac2 @ external of_list : (string * Attribute.attribute_value) list -> t := "lt
 Ltac2 check_empty_attributes tac attrs :=
   if Attributes.is_empty attrs then ()
   else Control.throw (Invalid_argument (Some
-    (Message.concat (Message.of_string "Tactic ") (Message.concat (Message.of_string tac)
-      (Message.concat (Message.of_string " does not support attribute(s): ")
-      (Attributes.to_message attrs)))))).
+    (fprintf "Tactic %s does not support attribute(s): %a" tac
+      (fun () => to_message) attrs))).
 
 Ltac2 unsupported_attribute_value tac key value :=
   Control.throw (Invalid_argument (Some
-  (Message.concat (Message.of_string "Tactic ") (Message.concat (Message.of_string tac)
-    (Message.concat (Message.of_string " does not support attribute: ")
-    (Attributes.Attribute.to_message key value)))))).
+    (fprintf "Tactic %s does not support attribute: %a" tac
+      (fun () => Attributes.Attribute.to_message key) value))).
 
 (** [parse_option attrs k cont] parses an option [k] in attributes [attrs]:
     - if present it ensures that there is no duplicate attribute declaration,
