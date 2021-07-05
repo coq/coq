@@ -55,8 +55,8 @@ term_ltac: [
 ]
 
 term_projection: [
-| term0 ".(" qualid LIST0 arg ")"
-| term0 ".(" "@" qualid LIST0 ( term1 ) ")"
+| term0 ".(" qualid OPT univ_annot LIST0 arg ")"
+| term0 ".(" "@" qualid OPT univ_annot LIST0 ( term1 ) ")"
 ]
 
 term_scope: [

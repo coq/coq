@@ -1757,11 +1757,11 @@ let rec strategy_of_ast ist = function
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
-let mkappc s l = CAst.make @@ CAppExpl ((None,qualid_of_ident (Id.of_string s),None),l)
+let mkappc s l = CAst.make @@ CAppExpl ((qualid_of_ident (Id.of_string s),None),l)
 
 let declare_an_instance n s args =
   (((CAst.make @@ Name n),None),
-   CAst.make @@ CAppExpl ((None, qualid_of_string s,None), args))
+   CAst.make @@ CAppExpl ((qualid_of_string s,None), args))
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
@@ -1978,7 +1978,7 @@ let add_morphism atts binders m s n =
   let instance_name = (CAst.make @@ Name instance_id),None in
   let instance_t =
     CAst.make @@ CAppExpl
-      ((None, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper",None),
+      ((Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper",None),
        [cHole; s; m])
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in

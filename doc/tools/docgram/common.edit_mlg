@@ -401,13 +401,13 @@ term9: [
 ]
 
 term1: [
-| REPLACE term0 ".(" global LIST0 arg ")"
-| WITH    term0 ".(" global LIST0 arg ")" (* huh? *)
+| REPLACE term0 ".(" global univ_annot LIST0 arg ")"
+| WITH    term0 ".(" global univ_annot LIST0 arg ")" (* huh? *)
 | REPLACE term0 "%" IDENT
 | WITH term0 "%" scope_key
 | MOVETO term_scope term0 "%" scope_key
-| MOVETO term_projection term0 ".(" global LIST0 arg ")"
-| MOVETO term_projection term0 ".(" "@" global LIST0 ( term9 ) ")"
+| MOVETO term_projection term0 ".(" global univ_annot LIST0 arg ")"
+| MOVETO term_projection term0 ".(" "@" global univ_annot LIST0 ( term9 ) ")"
 ]
 
 term0: [

@@ -432,6 +432,13 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       PApp (pat_of_raw metas vars c,
             Array.of_list (List.map (pat_of_raw metas vars) cl))
     end
+  | GProj ((p,_), cl, c) ->
+    if Structures.PrimitiveProjections.mem p then
+      let p = Option.get @@ Structures.PrimitiveProjections.find_opt p in
+      let p = Projection.make p false in
+      PProj (p, pat_of_raw metas vars c)
+    else
+      PApp (PRef (GlobRef.ConstRef p), Array.map_of_list (pat_of_raw metas vars) (cl @ [c]))
   | GLambda (na,bk,c1,c2) ->
       Name.iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,

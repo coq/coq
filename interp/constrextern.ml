@@ -688,16 +688,17 @@ let adjust_implicit_arguments inctx n args impl =
     | [], _ -> []
   in exprec (args,impl)
 
-let extern_projection inctx f i args impl =
-  let (args1,args2) = List.chop i args in
-  let nexpectedparams = i - 1 in
+let extern_projection inctx f nexpectedparams args impl =
+  let (args1,args2) = List.chop (nexpectedparams + 1) args in
   let nextraargs = List.length args2 in
   let (impl1,impl2) = impargs_for_proj ~nexpectedparams ~nextraargs impl in
   let n = nexpectedparams + 1 + nextraargs in
   let args1 = adjust_implicit_arguments inctx n args1 impl1 in
   let args2 = adjust_implicit_arguments inctx n args2 impl2 in
-  let ip = Some (List.length args1) in
-  CApp ((ip,f),args1@args2)
+  let (c1,expl), args1 = List.sep_last args1 in
+  assert (expl = None);
+  let c = CProj (false,f,args1,c1) in
+  if args2 = [] then c else CApp (CAst.make c, args2)
 
 let is_start_implicit = function
   | imp :: _ -> is_status_implicit imp && maximal_insertion_of imp
@@ -746,14 +747,13 @@ let extern_record ref args =
 let extern_global impl f us =
   if not !Constrintern.parsing_explicit && is_start_implicit impl
   then
-    CAppExpl ((None, f, us), [])
+    CAppExpl ((f, us), [])
   else
     CRef (f,us)
 
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
 let extern_applied_ref inctx impl (cf,f) us args =
-  let isproj = is_projection (List.length args) cf in
   try
     if not !Constrintern.parsing_explicit &&
        ((!Flags.raw_print ||
@@ -763,30 +763,37 @@ let extern_applied_ref inctx impl (cf,f) us args =
     let impl = if !Constrintern.parsing_explicit then [] else impl in
     let n = List.length args in
     let ref = CRef (f,us) in
-    let f = CAst.make ref in
+    let r = CAst.make ref in
     let ip = is_projection n cf in
     match ip with
     | Some i ->
       (* [t.(f args1) args2] projection-style notation *)
-      extern_projection inctx f i args impl
+      extern_projection inctx (f,us) (i-1) args impl
     | None ->
       let args = adjust_implicit_arguments inctx n args impl in
-      if args = [] then ref else CApp ((None, f), args)
+      if args = [] then ref else CApp (r, args)
   with Expl ->
   (* A [@f args] node *)
     let args = List.map Lazy.force args in
-    let isproj = if !print_projections then isproj else None in
-    CAppExpl ((isproj,f,us), args)
+    match is_projection (List.length args) cf with
+    | Some n when !print_projections ->
+       let args = List.map (fun c -> (c,None)) args in
+       let args1, args2 = List.chop n args in
+       let (c1,_), args1 = List.sep_last args1 in
+       let c = CProj (true, (f,us), args1, c1) in
+       if args2 = [] then c else CApp (CAst.make c, args2)
+    | _ ->
+       CAppExpl ((f,us), args)
 
 let extern_applied_syntactic_definition inctx n extraimpl (cf,f) syndefargs extraargs =
   try
     let syndefargs = List.map (fun a -> (a,None)) syndefargs in
     let extraargs = adjust_implicit_arguments inctx n extraargs extraimpl in
     let args = syndefargs @ extraargs in
-    if args = [] then cf else CApp ((None, CAst.make cf), args)
+    if args = [] then cf else CApp (CAst.make cf, args)
   with Expl ->
     let args = syndefargs @ List.map Lazy.force extraargs in
-    CAppExpl ((None,f,None), args)
+    CAppExpl ((f,None), args)
 
 let mkFlattenedCApp (head,args) =
   match head.CAst.v with
@@ -795,7 +802,7 @@ let mkFlattenedCApp (head,args) =
     (* or after removal of a coercion to funclass *)
     CApp (g,args'@args)
   | _ ->
-    CApp ((None, head), args)
+    CApp (head, args)
 
 let extern_applied_notation inctx n impl f args =
   if List.is_empty args then
@@ -1039,10 +1046,15 @@ let rec extern inctx ?impargs scopes vars r =
                extern_applied_ref inctx
                  (select_stronger_impargs (implicits_of_global ref))
                  (ref,extern_reference ?loc (fst vars) ref) (extern_instance (snd vars) us) args)
+         | GProj (f,params,c) ->
+             extern_applied_proj inctx scopes vars f params c args
          | _ ->
              let args = List.map (fun c -> (sub_extern true scopes vars c,None)) args in
              let head = sub_extern false scopes vars f in
              mkFlattenedCApp (head,args))
+
+  | GProj (f,params,c) ->
+      extern_applied_proj inctx scopes vars f params c []
 
   | GLetIn (na,b,t,c) ->
       CLetIn (make ?loc na,sub_extern (Option.has_some t) scopes vars b,
@@ -1390,6 +1402,18 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
              | Some coercion -> insert_entry_coercion coercion c
       with
           No_match -> extern_notation inctx allscopes vars t rules
+
+and extern_applied_proj inctx scopes vars (cst,us) params c extraargs =
+  let ref = GlobRef.ConstRef cst in
+  let subscopes = find_arguments_scope ref in
+  let nparams = List.length params in
+  let args = params @ c :: extraargs in
+  let args = fill_arg_scopes args subscopes scopes in
+  let args = extern_args (extern true) vars args in
+  let imps = select_stronger_impargs (implicits_of_global ref) in
+  let f = extern_reference (fst vars) ref in
+  let us = extern_instance (snd vars) us in
+  extern_projection inctx (f,us) nparams args imps
 
 let extern_glob_constr vars c =
   extern false (InConstrEntrySomeLevel,(None,[])) vars c

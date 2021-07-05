@@ -178,7 +178,7 @@ let destClassAppExpl cl =
   let open CAst in
   let loc = cl.loc in
   match cl.v with
-    | CApp ((None, { v = CRef (ref, inst) } ), l) -> CAst.make ?loc (ref, l, inst)
+    | CApp ({ v = CRef (ref, inst) }, l) -> CAst.make ?loc (ref, l, inst)
     | CRef (ref, inst) -> CAst.make ?loc:cl.loc (ref, [], inst)
     | _ -> raise Not_found
 
@@ -200,7 +200,7 @@ let implicit_application env ty =
     let sigma = Evd.from_env env in
     let c = class_info env sigma gr in
     let args, avoid = combine_params avoid par (List.rev c.cl_context) in
-    CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
+    CAst.make ?loc @@ CAppExpl ((id, inst), args), avoid
 
 let warn_ignoring_implicit_status =
   CWarnings.create ~name:"ignoring_implicit_status" ~category:"implicits"

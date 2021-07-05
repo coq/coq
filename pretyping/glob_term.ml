@@ -95,6 +95,7 @@ type 'a glob_constr_r =
   | GSort of glob_sort
   | GHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option
   | GCast of 'a glob_constr_g * 'a glob_constr_g cast_type
+  | GProj of (Constant.t * glob_level list option) * 'a glob_constr_g list * 'a glob_constr_g
   | GInt of Uint63.t
   | GFloat of Float64.t
   | GArray of glob_level list option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g

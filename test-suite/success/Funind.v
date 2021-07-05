@@ -504,10 +504,22 @@ reflexivity.
 simpl;rewrite IHn0;reflexivity.
 Qed.
 
+(* An example with projections *)
 
+Require Import FunInd.
+Require Import List.
 
+Record foo (X:Type):= {a:nat; b:X}.
 
+Inductive ind X: Type :=
+| C: foo X -> ind X
+| D: ind X -> ind X.
 
-
-
-
+Function f X (deflt:X) (x:ind X) {struct x} :=
+  match x with
+    @C _ fo => match fo.(a X) with
+             O => fo.(b X)
+           | S n => deflt
+           end
+  | D _ d => f _ deflt d
+  end.

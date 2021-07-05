@@ -24,6 +24,7 @@ type notation_constr =
   | NRef of GlobRef.t * glob_level list option
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
+  | NProj of (Constant.t * glob_level list option) * notation_constr list * notation_constr
   | NHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option
   | NList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool
   (* Part only in [glob_constr] *)

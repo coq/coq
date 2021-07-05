@@ -71,7 +71,7 @@ type binder_kind =
 
 type abstraction_kind = AbsLambda | AbsPi
 
-type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
+type explicit_flag = bool (** true = with "@" *)
 
 type prim_token =
   | Number of NumTok.Signed.t
@@ -108,9 +108,10 @@ and constr_expr_r =
   | CProdN   of local_binder_expr list * constr_expr
   | CLambdaN of local_binder_expr list * constr_expr
   | CLetIn   of lname * constr_expr * constr_expr option * constr_expr
-  | CAppExpl of (proj_flag * qualid * instance_expr option) * constr_expr list
-  | CApp     of (proj_flag * constr_expr) *
-                (constr_expr * explicitation CAst.t option) list
+  | CAppExpl of (qualid * instance_expr option) * constr_expr list
+  | CApp     of constr_expr * (constr_expr * explicitation CAst.t option) list
+  | CProj    of explicit_flag * (qualid * instance_expr option)
+              * (constr_expr * explicitation CAst.t option) list * constr_expr
   | CRecord  of (qualid * constr_expr) list
 
   (* representation of the "let" and "match" constructs *)
