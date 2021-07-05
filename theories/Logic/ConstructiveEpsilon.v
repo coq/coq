@@ -76,123 +76,95 @@ Definition inv_before_witness :
       | next _ b => b
     end.
 
-(** Relational version of linear search
-    (output-input order so that [found] is a parameter) *)
-Inductive Rls (found : nat) : nat -> Prop :=
-| Rstop : P found -> Rls found found
-| Rnext : forall start, ~(P start) -> Rls found (S start) -> Rls found start.
-
-(* A VIRER
-Fixpoint linear_search m (b : before_witness m) : {n : nat | P n} :=
-  match P_dec m with
-    | left yes => exist (fun n => P n) m yes
-    | right no => linear_search (S m) (inv_before_witness m b no)
-  end.
- *)
-
-(** Program *)
+(** Basic program *)
 Fixpoint linear_search start (b : before_witness start) : nat :=
   match P_dec start with
     | left yes => start
     | right no => linear_search (S start) (inv_before_witness start b no)
   end.
 
-(** Linear_search satisfies Rls *)
-Fixpoint ls_spec start b : Rls (linear_search start b) start.
-Proof.
-  refine (match b with stop _ p => _ | next _ b => _  end);
-  refine (match P_dec start as x return Rls (if x then _ else _) start with
-          | left yes => Rstop start yes
-          | right no => _
-          end); fold linear_search.
-  - case (no p).
-  - apply (Rnext _ _ no), ls_spec.
-Qed.
+(** Though proving the properties of linear_search is feasible, it is
+    more convenient to work on an enriched version using the Braga method *)
+(** Relational version of linear search *)
+Inductive Rls : nat -> nat -> Prop :=
+| Rstop : forall {found}, P found -> Rls found found
+| Rnext : forall {start found}, ~(P start) -> Rls (S start) found -> Rls start found.
+
+(** Packed With Conformity *)
+Definition linear_search_pwc start (b : before_witness start) : {n : nat | Rls start n}.
+  revert start b.
+  refine (fix loop start b :=
+     match P_dec start with
+      | left yes => exist _ start _
+      | right no =>
+        let (n, r) := loop (S start) (inv_before_witness start b no) in
+        exist _ n _
+     end).
+  - apply (Rstop yes).
+  - apply (Rnext no r).
+Defined.
+
+(** A variant in some sense closer to linear_search
+    (no deconstruction/reconstruction of the result),
+    using a suitable abstraction of the postcondition *)
+Definition linear_search_pwc' start (b : before_witness start) : {n : nat | Rls start n}.
+  refine ((fun Q: nat -> Prop => _ : (forall y, Rls start y -> Q y) -> {n | Q n})
+            (Rls start) (fun y r => r)).
+  revert start b.
+  refine (fix loop start b :=
+    fun rq =>
+      match P_dec start with
+      | left yes => exist _ start _
+      | right no => loop (S start) (inv_before_witness start b no) _
+      end).
+  - apply rq, (Rstop yes).
+  - intros y r. apply rq, (Rnext no r).
+Defined.
 
 (** Rls entails P on the output *)
-Theorem Rls_P : forall start {found}, Rls found start -> P found.
+Theorem Rls_post : forall {start found}, Rls start found -> P found.
 Proof.
-  intros * rls. induction rls as [p | n b rls IHrls].
+  intros * rls. induction rls as [x p | x y b rls IHrls].
   - exact p.
   - exact IHrls.
 Qed.
 
-(* A VIRER
-Definition constructive_indefinite_ground_description_nat :
-  (exists n, P n) -> {n:nat | P n} :=
-  fun e => linear_search O (let (n, p) := e in O_witness n (stop n p)).
- *)
-
-Definition constructive_indefinite_ground_description_nat :
-  (exists n, P n) -> {n:nat | P n} :=
-  fun e =>
-    let b := let (n, p) := e in O_witness n (stop n p) in
-    let found := linear_search 0 b in
-    let g : Rls found 0 := ls_spec 0 b in
-    exist P found (Rls_P 0 g).
-
-(* A VIRER
-Fixpoint linear_search_smallest (start : nat) (pr : before_witness start) :
-  forall k : nat, start <= k < proj1_sig (linear_search start pr) -> ~P k.
-Proof.
-  (* Recursion on pr, which is the distance between start and linear_search *)
-  intros. destruct (P_dec start) eqn:Pstart.
-  - (* P start, k cannot exist *)
-    intros. assert (proj1_sig (linear_search start pr) = start).
-    { unfold linear_search. destruct pr; rewrite -> Pstart; reflexivity. }
-    rewrite -> H0 in H. destruct H. apply (le_lt_trans start k) in H1.
-    apply lt_irrefl in H1. contradiction. assumption.
-  - (* ~P start, step once in the search and use induction hypothesis *)
-    destruct pr. contradiction. destruct H. apply le_lt_or_eq in H. destruct H.
-    apply (linear_search_smallest (S start) pr). split. assumption.
-    simpl in H0. rewrite -> Pstart in H0. assumption. subst. assumption.
-Defined.
-
-Definition epsilon_smallest :
-  (exists n : nat, P n)
-  -> { n : nat | P n /\ forall k : nat, k < n -> ~P k }.
-Proof.
-  intros. pose (wit := (let (n, p) := H in O_witness n (stop n p))).
-  destruct (linear_search 0 wit) as [n pr] eqn:ls. exists n. split. assumption. intros.
-  apply (linear_search_smallest 0 wit). split. apply le_0_n.
-  rewrite -> ls. assumption.
-Qed.
-*)
-
 (** Rls entails minimality of the output *)
 Lemma Rls_lower_bound {found start} :
-  Rls found start -> forall {k}, P k -> start <= k -> found <= k.
+  Rls start found -> forall {k}, P k -> start <= k -> found <= k.
 Proof.
-  induction 1 as [p | start no _ IH]; intros k pk greater.
+  induction 1 as [x p | x y no _ IH]; intros k pk greater.
   - exact greater.
   - destruct greater as [ | k greater].
     + case (no pk).
     + apply (IH _ pk), le_n_S, greater.
 Qed.
 
-Definition epsilon_smallest :
-  (exists n : nat, P n)
-  -> { n : nat | P n /\ forall k, P k -> n <= k }.
-Proof.
-  refine (
-  fun e =>
+(** Start at 0 *)
+Definition linear_search_from_0 (e : exists n, P n) : {n:nat | Rls 0 n} :=
     let b := let (n, p) := e in O_witness n (stop n p) in
-    let found := linear_search 0 b in
-    let g : Rls found 0 := ls_spec 0 b in
-    exist _ found _).
-  split.
-  - apply (Rls_P 0 g).
-  - intros k pk. apply (Rls_lower_bound g pk), le_0_n.
+    linear_search_pwc 0 b.
+
+(** Main definitions *)
+Definition constructive_indefinite_ground_description_nat :
+  (exists n, P n) -> {n:nat | P n}.
+Proof.
+  intro e; destruct (linear_search_from_0 e) as [found r]; exists found.
+  apply (Rls_post r).
 Defined.
 
-Definition epsilon_smallest_compat :
-  (exists n : nat, P n)
-  -> { n : nat | P n /\ forall k : nat, k < n -> ~P k }.
+Definition epsilon_smallest :
+  (exists n : nat, P n) -> { n : nat | P n /\ forall k, P k -> n <= k }.
 Proof.
-  intro e; destruct (epsilon_smallest e) as [n [p nk]]; exists n; split.
-  - exact p.
-  - intros k kn pk. apply (le_not_lt n k (nk k pk) kn).
-Qed.
+  intro e; destruct (linear_search_from_0 e) as [found r]; exists found.
+  split.
+  - apply (Rls_post r).
+  - intros k pk. apply (Rls_lower_bound r pk), le_0_n.
+Defined.
+
+(** NB. The previous version used a negative formulation:
+    [forall k, k < n -> ~P k]
+    Lemmas [le_not_lt] and [lt_not_le] can help if needed. *)
 
 End ConstructiveIndefiniteGroundDescription_Direct.
 
