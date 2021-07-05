@@ -64,6 +64,7 @@ let print_usage_common co command =
 \n\
 \n  -quiet                 unset display of extra information (implies -w \"-all\")\
 \n  -w (w1,..,wn)          configure display of warnings\
+\n  -d (d1,..,dn)          configure display of debug messages\
 \n  -color (yes|no|auto)   configure color output\
 \n  -emacs                 tells Coq it is executed under Emacs\
 \n\
