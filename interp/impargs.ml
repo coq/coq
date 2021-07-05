@@ -745,3 +745,34 @@ let rec select_impargs_size n = function
 let select_stronger_impargs = function
   | [] -> [] (* Tolerance for (DefaultImpArgs,[]) *)
   | (_,impls)::_ -> impls
+
+let select_impargs_size_for_proj ~nexpectedparams ~ngivenparams ~nextraargs impls =
+  let split_implicit_params imps =
+    if List.is_empty imps then (nexpectedparams, [], []) else
+    let imps1, imps2 = List.chop nexpectedparams imps in
+    let imp, imps2 = match imps2 with imp :: imps2 -> [imp],imps2 | _ -> [], [] in
+    let nimps1 = nexpectedparams - List.count is_status_implicit imps1 in
+    (* Force the main argument to be explicit *)
+    (nimps1, imps1 @ [None], imps2)
+  in
+  let nallgivenargs = ngivenparams + nextraargs in
+  let little_enough_all_implicit = function
+  | (DefaultImpArgs, impls) -> Some (split_implicit_params impls)
+  | (LessArgsThan r, impls) when nallgivenargs <= r -> Some (split_implicit_params impls)
+  | _ -> None in
+  (* Compute the implicit signatures with little enough implicit to
+     match the number of arguments *)
+  let impls = List.map_filter little_enough_all_implicit impls in
+  (* Compute those which matches the number of parameters given *)
+  let impls' = List.filter (fun (nimps1,_,_) -> Int.equal nimps1 ngivenparams) impls in
+  match impls' with
+  | (_, imps1, imps2) :: _ -> Inl (imps1, imps2)
+  | [] ->
+    if Int.equal ngivenparams nexpectedparams then Inl ([], [])
+    else Inr (lazy (List.sort Int.compare (List.uniquize (List.map pi1 impls))))
+
+let impargs_for_proj ~nexpectedparams ~nextraargs imps =
+  let imps1, imps2 = try List.chop nexpectedparams imps with Failure _ -> imps, [] in
+  let imp, imps2 = match imps2 with imp :: imps2 -> imp, imps2 | _ -> None, [] in
+  let imps2 = try List.firstn nextraargs imps2 with Failure _ -> [] in
+  imps1@[None], imps2

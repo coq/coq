@@ -671,23 +671,16 @@ let adjust_implicit_arguments inctx n args impl =
     | [], _ -> []
   in exprec (args,impl)
 
-let extern_projection (cf,f) args impl =
-  let ip = is_projection (List.length args) cf in
-  match ip with
-    | Some i ->
-      (* Careful: It is possible to have declared implicits ending
-         before the principal argument *)
-      let is_impl =
-        try is_status_implicit (List.nth impl (i-1))
-        with Failure _ -> false
-      in
-      if is_impl
-      then None
-      else
-        let (args1,args2) = List.chop i args in
-        let (impl1,impl2) = try List.chop i impl with Failure _ -> impl, [] in
-        Some (i,(args1,impl1),(args2,impl2))
-    | None -> None
+let extern_projection inctx f i args impl =
+  let (args1,args2) = List.chop i args in
+  let nexpectedparams = i - 1 in
+  let nextraargs = List.length args2 in
+  let (impl1,impl2) = impargs_for_proj ~nexpectedparams ~nextraargs impl in
+  let n = nexpectedparams + 1 + nextraargs in
+  let args1 = adjust_implicit_arguments inctx n args1 impl1 in
+  let args2 = adjust_implicit_arguments inctx n args2 impl2 in
+  let ip = Some (List.length args1) in
+  CApp ((ip,f),args1@args2)
 
 let is_start_implicit = function
   | imp :: _ -> is_status_implicit imp && maximal_insertion_of imp
@@ -754,15 +747,11 @@ let extern_applied_ref inctx impl (cf,f) us args =
     let n = List.length args in
     let ref = CRef (f,us) in
     let f = CAst.make ref in
-    match extern_projection (cf,f) args impl with
-    (* Try a [t.(f args1) args2] projection-style notation *)
-    | Some (i,(args1,impl1),(args2,impl2)) ->
-      let args1 = adjust_implicit_arguments inctx n args1 impl1 in
-      let args2 = adjust_implicit_arguments inctx n args2 impl2 in
-      let ip = Some (List.length args1) in
-      CApp ((ip,f),args1@args2)
-      (* A normal application node with each individual implicit
-         arguments either dropped or made explicit *)
+    let ip = is_projection n cf in
+    match ip with
+    | Some i ->
+      (* [t.(f args1) args2] projection-style notation *)
+      extern_projection inctx f i args impl
     | None ->
       let args = adjust_implicit_arguments inctx n args impl in
       if args = [] then ref else CApp ((None, f), args)

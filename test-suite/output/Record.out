@@ -74,3 +74,5 @@ fun x : R => 0
              +++
              x.(field) 0
      : R -> nat
+The command has indeed failed with message:
+Projection f expected 1 explicit parameter.

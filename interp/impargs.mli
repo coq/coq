@@ -134,3 +134,11 @@ val projection_implicits : env -> Projection.t -> implicit_status list ->
 val select_impargs_size : int -> implicits_list list -> implicit_status list
 
 val select_stronger_impargs : implicits_list list -> implicit_status list
+
+val select_impargs_size_for_proj :
+  nexpectedparams:int -> ngivenparams:int -> nextraargs:int ->
+  implicits_list list -> (implicit_status list * implicit_status list, int list Lazy.t) Util.union
+
+val impargs_for_proj :
+  nexpectedparams:int -> nextraargs:int ->
+  implicit_status list -> implicit_status list * implicit_status list

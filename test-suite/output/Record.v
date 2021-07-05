@@ -74,3 +74,14 @@ Set Printing Projections.
 Check fun x => 0 +++ x.(field) 0.
 
 End ProjectionPrinting.
+
+Module RecordImplicitParameters.
+
+(* Check that implicit parameters are treated independently of extra
+   implicit arguments (at some time they did not and it was failing at
+   typing time) *)
+
+Record R A := { f : A -> A }.
+Fail Check fun x => x.(f).
+
+End RecordImplicitParameters.
