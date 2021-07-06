@@ -142,6 +142,8 @@ Fixpoint Zeval_expr (env : PolEnv Z) (e: PExpr Z) : Z :=
     | PEopp e   => Z.opp (Zeval_expr env e)
   end.
 
+Strategy expand [ Zeval_expr ].
+
 Definition eval_expr := eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 
 Fixpoint Zeval_const  (e: PExpr Z) : option Z :=
