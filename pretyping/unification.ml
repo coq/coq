@@ -1653,7 +1653,12 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     match c1, c2 with
     | Some (evd,c1,x), Some (_,c2,_) ->
       begin match infer_conv ~pb:CONV env evd c1 c2 with
-      | Some evd -> Some (evd, c1, x)
+      | Some evd ->
+       (let t1 = get_type_of env evd c1 in
+        let t2 = get_type_of env evd c2 in
+        match infer_conv ~pb:CONV env evd t1 t2 with
+        | Some evd -> Some (evd, c1, x)
+        | None -> raise (NotUnifiable None))
       | None -> raise (NotUnifiable None)
       end
     | Some _, None -> c1
