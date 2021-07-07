@@ -99,7 +99,6 @@ COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
 COQMAKE_BOTH_SINGLE_TIMING_FILES:=tools/make-both-single-timing-files.py
 VOTOUR:=$(CBIN)/votour$(EXE)
 OCAMLLIBDEP:=$(CBIN)/ocamllibdep$(EXE)
-FAKEIDE:=$(CBIN)/fake_ide$(EXE)
 USERCONTRIBDIRS:=Ltac2
 CHICKEN:=$(CBIN)/coqchk$(EXE)
 TOOLS:=$(VOTOUR) $(COQDOC) $(COQDOCSTY) $(COQDOCCSS) $(COQWC) $(COQMAKEFILE) $(COQMAKEFILEIN) $(COQNATIVE)

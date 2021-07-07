@@ -98,7 +98,7 @@ states: $(VO_OUT_DIR)theories/Init/Prelude.$(VO)
 
 .PHONY: coqbinaries tools
 
-coqbinaries: $(TOPBINOPT) $(COQC) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE) $(COQNATIVE)
+coqbinaries: $(TOPBINOPT) $(COQC) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(COQNATIVE)
 tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEP) $(DOC_GRAM)
 
 ###########################################################################

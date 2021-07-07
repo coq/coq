@@ -74,6 +74,12 @@ coqdoc := $(BIN)coqdoc
 coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte -q
 
+ifeq ($(BEST),opt)
+coqidetop := $(BIN)coqidetop.opt
+else
+coqidetop := $(BIN)coqidetop.byte
+endif
+
 coqc_interactive := $(coqc) -test-mode -async-proofs-cache force
 coqdep := $(BIN)coqdep
 
@@ -686,11 +692,15 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 
 ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 
-%.fake.log : %.fake
+ide/fake_ide.exe : ide/fake_ide.ml
+	$(SHOW) 'OCAMLC  $<'
+	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coqide-server.protocol -package coqide-server.core $< -o $@
+
+%.fake.log : %.fake ide/fake_ide.exe
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide "$<" "-q -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
+	  ide/fake_ide.exe $(coqidetop) "$<" "-q -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
