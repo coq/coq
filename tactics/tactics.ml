@@ -1345,11 +1345,8 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
     id hypmv elimclause =
   let hyp = mkVar id in
   let hyp_typ = Retyping.get_type_of env sigma hyp in
-  let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
   let elimclause'' =
-    (* The evarmap of elimclause is assumed to be an extension of hypclause, so
-      we do not need to merge the universes coming from hypclause. *)
-    try clenv_fchain ~with_univs:false ~flags hypmv elimclause hypclause
+    try clenv_instantiate ~flags hypmv elimclause (hyp, hyp_typ)
     with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
       (* Set the hypothesis name in the message *)
       raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
@@ -1382,7 +1379,7 @@ let general_elim_clause with_evars flags where indclause elim =
     let elimt = Retyping.get_type_of env sigma elimc in
     let i = index_of_ind_arg sigma elimt in
     let elimc = contract_letin_in_lam_header sigma elimc in
-    let elimclause = mk_clenv_from_env env sigma None (elimc, elimt) in
+    let elimclause = mk_clenv_from env sigma (elimc, elimt) in
     elimclause, Some i
   | ElimClause (elimc, lbindelimc) ->
     let elimt = Retyping.get_type_of env sigma elimc in
@@ -1760,56 +1757,54 @@ let apply_list = function
    unifiable with [t'] with unifier [rho]
 *)
 
-let find_matching_clause unifier clause =
-  let rec find clause =
-    try unifier clause
-    with e when noncritical e ->
-    try find (clenv_push_prod clause)
-    with NotExtensibleClause -> failwith "Cannot apply"
-  in find clause
-
 exception UnableToApply
 
-let progress_with_clause flags innerclause clause =
-  let ordered_metas = List.rev (clenv_independent clause) in
-  if List.is_empty ordered_metas then raise UnableToApply;
+let progress_with_clause flags (id, t) clause mvs =
+  let innerclause = mk_clenv_from_n clause.env clause.evd 0 (mkVar id, t) in
+  if List.is_empty mvs then raise UnableToApply;
   let f mv =
-    try Some (find_matching_clause (clenv_fchain ~with_univs:false mv ~flags clause) innerclause)
-    with Failure _ -> None
+    let rec find innerclause =
+      try Some (clenv_fchain ~with_univs:false mv ~flags clause innerclause)
+      with e when noncritical e ->
+      match clenv_push_prod innerclause with
+      | Some (_, _, innerclause) -> find innerclause
+      | None -> None
+    in
+    find innerclause
   in
-  try List.find_map f ordered_metas
+  try List.find_map f mvs
   with Not_found -> raise UnableToApply
 
-let explain_unable_to_apply_lemma ?loc env sigma thm innerclause =
+let explain_unable_to_apply_lemma ?loc env sigma thm t =
   user_err ?loc (hov 0
     (Pp.str "Unable to apply lemma of type" ++ brk(1,1) ++
      Pp.quote (Printer.pr_leconstr_env env sigma thm) ++ spc() ++
      str "on hypothesis of type" ++ brk(1,1) ++
-     Pp.quote (Printer.pr_leconstr_env innerclause.env innerclause.evd (clenv_type innerclause)) ++
+     Pp.quote (Printer.pr_leconstr_env env sigma t) ++
      str "."))
 
-let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
+let apply_in_once_main flags (id, t) env sigma (loc,d,lbind) =
   let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
-  let rec aux clause =
-    try progress_with_clause flags innerclause clause
+  let rec aux clause mvs =
+    try progress_with_clause flags (id, t) clause mvs
     with e when CErrors.noncritical e ->
     let e' = Exninfo.capture e in
-    try aux (clenv_push_prod clause)
-    with NotExtensibleClause ->
+    match clenv_push_prod clause with
+    | Some (mv, dep, clause) -> aux clause (if dep then [] else [mv])
+    | None ->
       match e with
-      | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm innerclause
+      | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm t
       | _ -> Exninfo.iraise e'
   in
-  aux (make_clenv_binding env sigma (d,thm) lbind)
+  let clenv = make_clenv_binding env sigma (d,thm) lbind in
+  let mvs = List.rev (clenv_independent clenv) in
+  aux clenv mvs
 
 let apply_in_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{ CAst.loc; v= d,lbind}) tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
-  let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
   let replace = Id.equal id targetid in
   let rec aux ?err idstoclear with_destruct c =
@@ -1823,7 +1818,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
-      let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
+      let clause = apply_in_once_main flags (id, t') env sigma (loc,c,lbind) in
       clenv_refine_in ?err with_evars targetid replace sigma clause
         (fun id ->
           replace_error_option err (
@@ -4244,16 +4239,12 @@ let recolle_clenv i params args elimclause gl =
   let clauses_params = List.mapi (fun i id -> id, lindmv.(i)) params in
   let clauses_args = List.mapi (fun i id -> id, lindmv.(k+i)) args in
   let clauses = clauses_params@clauses_args in
-  (* iteration of clenv_fchain with all infos we have. *)
+  (* iteration of clenv_instantiate with all infos we have. *)
   List.fold_right
     (fun e acc ->
       let x, i = e in
       let y = pf_get_hyp_typ x gl in
-      (* from_n (Some 0) means that x should be taken "as is" without
-         trying to unify (which would lead to trying to apply it to
-         evars if y is a product). *)
-      let indclause  = mk_clenv_from_n gl (Some 0) (mkVar x, y) in
-      let elimclause' = clenv_fchain ~with_univs:false i acc indclause in
+      let elimclause' = clenv_instantiate i acc (mkVar x, y) in
       elimclause')
     (List.rev clauses)
     elimclause
@@ -4271,7 +4262,7 @@ let induction_tac with_evars params indvars (elim, elimt) =
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
     let elimc = contract_letin_in_lam_header sigma elimc in
     let elimc = mkCast (elimc, DEFAULTcast, elimt) in
-    let elimclause = Tacmach.New.pf_apply mk_clenv_from_env gl None (elimc, elimt) in
+    let elimclause = Tacmach.New.pf_apply mk_clenv_from gl (elimc, elimt) in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
     recolle_clenv (Some i) params indvars elimclause gl
   | ElimClause (elimc, lbindelimc) ->
@@ -4728,7 +4719,7 @@ let elim_scheme_type elim t =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let sigma, elimt = Typing.type_of env sigma elim in
-  let clause = mk_clenv_from_env env sigma None (elim,elimt) in
+  let clause = mk_clenv_from env sigma (elim,elimt) in
   match EConstr.kind clause.evd (last_arg clause.evd clause.templval.rebus) with
     | Meta mv ->
         let clause' =

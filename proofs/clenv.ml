@@ -64,8 +64,6 @@ let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
 let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 
-exception NotExtensibleClause
-
 let clenv_push_prod cl =
   let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
   let rec clrec typ = match EConstr.kind cl.evd typ with
@@ -77,12 +75,12 @@ let clenv_push_prod cl =
         let e' = meta_declare mv t ~name:na' cl.evd in
         let concl = if dep then subst1 (mkMeta mv) u else u in
         let def = applist (cl.templval.rebus,[mkMeta mv]) in
-        { templval = mk_freelisted def;
+        Some (mv, dep, { templval = mk_freelisted def;
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
-          cache = create_meta_instance_subst e' }
-    | _ -> raise NotExtensibleClause
+          cache = create_meta_instance_subst e' })
+    | _ -> None
   in clrec typ
 
 (* Instantiate the first [bound] products of [t] with metas (all products if
@@ -126,12 +124,8 @@ let mk_clenv_from_env env sigma n (c,cty) =
     env = env;
     cache = create_meta_instance_subst evd }
 
-let mk_clenv_from_n gls n (c,cty) =
-  let env = Proofview.Goal.env gls in
-  let sigma = Tacmach.New.project gls in
-  mk_clenv_from_env env sigma n (c, cty)
-
-let mk_clenv_from gls = mk_clenv_from_n gls None
+let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
+let mk_clenv_from_n env sigma n c = mk_clenv_from_env env sigma (Some n) c
 
 (******************************************************************)
 
@@ -319,17 +313,13 @@ let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
 let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
   update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
 
-let clenv_unique_resolver_gen ?(flags=default_unify_flags ()) clenv concl =
+let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv concl =
   if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.env clenv.evd clenv.templtyp.rebus))) then
     clenv_unify CUMUL ~flags (clenv_type clenv) concl
       (clenv_unify_meta_types ~flags clenv)
   else
     clenv_unify CUMUL ~flags
       (meta_reducible_instance clenv.env clenv.evd clenv.templtyp) concl clenv
-
-let clenv_unique_resolver ?flags clenv gl =
-  let concl = Proofview.Goal.concl gl in
-  clenv_unique_resolver_gen ?flags clenv concl
 
 let adjust_meta_source evd mv = function
   | loc,Evar_kinds.VarInstance id ->
@@ -427,6 +417,11 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
 let fchain_flags () =
   { (default_unify_flags ()) with
     allow_K_in_toplevel_higher_order_unification = true }
+
+let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
+  (* unify the type of the template of [nextclenv] with the type of [mv] *)
+  let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
+  clenv_assign mv c clenv
 
 let clenv_fchain ?with_univs ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
@@ -646,34 +641,30 @@ let clenv_pose_dependent_evars ?(with_evars=false) clenv =
       (RefinerError (env, sigma, UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
   clenv_pose_metas_as_evars clenv dep_mvs
 
-let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
-  Proofview.Goal.enter begin fun gl ->
-  let clenv = clenv_pose_dependent_evars ~with_evars clenv in
-  let evd' =
-    if with_classes then
-      let evd' =
-        Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-          ~fail:(not with_evars) clenv.env clenv.evd
-      in
-      (* After an apply, all the subgoals including those dependent shelved ones are in
-         the hands of the user and resolution won't be called implicitely on them. *)
-      Typeclasses.make_unresolvables (fun x -> true) evd'
-    else clenv.evd
-  in
-  let clenv = update_clenv_evd clenv evd' in
-  Proofview.tclTHEN
-    (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-    (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
-  end
-
 open Unification
 
 let dft = default_unify_flags
 
-let res_pf ?with_evars ?(with_classes=true) ?(flags=dft ()) clenv =
+let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
-    let clenv = clenv_unique_resolver ~flags clenv gl in
-    clenv_refine ?with_evars ~with_classes clenv
+    let concl = Proofview.Goal.concl gl in
+    let clenv = clenv_unique_resolver ~flags clenv concl in
+    let clenv = clenv_pose_dependent_evars ~with_evars clenv in
+    let evd' =
+      if with_classes then
+        let evd' =
+          Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
+            ~fail:(not with_evars) clenv.env clenv.evd
+        in
+        (* After an apply, all the subgoals including those dependent shelved ones are in
+          the hands of the user and resolution won't be called implicitely on them. *)
+        Typeclasses.make_unresolvables (fun x -> true) evd'
+      else clenv.evd
+    in
+    let clenv = update_clenv_evd clenv evd' in
+    Proofview.tclTHEN
+      (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
+      (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en

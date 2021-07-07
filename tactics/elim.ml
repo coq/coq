@@ -47,9 +47,8 @@ let general_elim_then_using mk_elim
       let gr = Indrec.lookup_eliminator env ind sort in
       Evd.fresh_global env sigma gr
     in
-    let indclause = mk_clenv_from_env env sigma None (mkVar id, mkApp (mkIndU (ind, u), args)) in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from_env env sigma None (elim, Retyping.get_type_of env sigma elim) in
+    let elimclause = mk_clenv_from env sigma (elim, Retyping.get_type_of env sigma elim) in
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
@@ -68,7 +67,7 @@ let general_elim_then_using mk_elim
           CErrors.user_err ~hdr:"Tacticals.general_elim_then_using"
             (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
-    let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
+    let elimclause' = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
     let branchsigns = Tacticals.compute_constructor_signatures ~rec_flag (ind, u) in
     let brnames = Tacticals.compute_induction_names false branchsigns allnames in
     let flags = Unification.elim_flags () in

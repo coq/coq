@@ -44,12 +44,12 @@ val clenv_type      : clausenv -> types
 (** type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
-val mk_clenv_from : Proofview.Goal.t -> EConstr.constr * EConstr.types -> clausenv
-val mk_clenv_from_n :
-  Proofview.Goal.t -> int option -> EConstr.constr * EConstr.types -> clausenv
-val mk_clenv_from_env : env -> evar_map -> int option -> EConstr.constr * EConstr.types -> clausenv
+val mk_clenv_from : env -> evar_map -> EConstr.constr * EConstr.types -> clausenv
+val mk_clenv_from_n : env -> evar_map -> int -> EConstr.constr * EConstr.types -> clausenv
 
 (** {6 linking of clenvs } *)
+
+val clenv_instantiate : ?flags:unify_flags -> metavariable -> clausenv -> (constr * types) -> clausenv
 
 val clenv_fchain :
   ?with_univs:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
@@ -87,8 +87,7 @@ val make_clenv_binding :
   env -> evar_map -> EConstr.constr * EConstr.constr -> constr bindings -> clausenv
 
 (** if the clause is a product, add an extra meta for this product *)
-exception NotExtensibleClause
-val clenv_push_prod : clausenv -> clausenv
+val clenv_push_prod : clausenv -> (metavariable * bool * clausenv) option
 
 (** {6 Clenv tactics} *)
 
