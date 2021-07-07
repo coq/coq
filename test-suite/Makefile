@@ -77,6 +77,9 @@ coqtopbyte := $(BIN)coqtop.byte -q
 coqc_interactive := $(coqc) -test-mode -async-proofs-cache force
 coqdep := $(BIN)coqdep
 
+# Until we install it in libexec
+fake_ide := $(ROOT)/_build/default/ide/coqide/fake_ide.exe
+
 # This is the convention for coq_makefile
 OPT=-$(BEST)
 export OPT
@@ -690,7 +693,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide "$<" "-q -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
+	  $(fake_ide) "$<" "-q -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

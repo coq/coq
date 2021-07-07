@@ -37,8 +37,10 @@
    (source_tree doc/changelog)
    (package coq-core)
    (package coq-stdlib)
-   ; For fake_ide
+   ; For idetop
    (package coqide-server)
+   ; fake_ide
+   ../ide/coqide/fake_ide.exe
    (source_tree .))
    ; Finer-grained dependencies would look like this and be generated
    ; by coqdep; that would allow tests to be run incrementally.

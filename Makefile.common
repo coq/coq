@@ -99,7 +99,7 @@ COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
 COQMAKE_BOTH_SINGLE_TIMING_FILES:=tools/make-both-single-timing-files.py
 VOTOUR:=$(CBIN)/votour$(EXE)
 OCAMLLIBDEP:=$(CBIN)/ocamllibdep$(EXE)
-FAKEIDE:=$(CBIN)/fake_ide$(EXE)
+FAKEIDE:=$(BCONTEXT)/ide/coqide/fake_ide.exe
 USERCONTRIBDIRS:=Ltac2
 CHICKEN:=$(CBIN)/coqchk$(EXE)
 TOOLS:=$(VOTOUR) $(COQDOC) $(COQDOCSTY) $(COQDOCCSS) $(COQWC) $(COQMAKEFILE) $(COQMAKEFILEIN) $(COQNATIVE)
@@ -152,6 +152,12 @@ _build/default/plugins/%.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 
 # Only used for the test-suite in local mode
 _build/default/tools/%: $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
+	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
+	$(HIDE)touch $@
+
+# Fake ide special rule...
+$(FAKEIDE): $(ALL_ML_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 	$(HIDE)touch $@
