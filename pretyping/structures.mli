@@ -129,6 +129,10 @@ val find :
 val is_open_canonical_projection :
   Environ.env -> Evd.evar_map -> EConstr.t -> bool
 
+
+val decompose_reduced_canonical_projection :
+  Evd.evar_map -> EConstr.t -> Names.Constant.t * EConstr.EInstance.t * EConstr.t * EConstr.t array
+
 end
 
 (** Low level access to the Canonical Structure database *)

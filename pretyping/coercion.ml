@@ -456,7 +456,54 @@ let inh_app_fun_core ~program_mode env sigma j =
     | Evar ev ->
         let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
           (sigma,{ uj_val = j.uj_val; uj_type = t },IdCoe)
+    | Proj (proj, arg) when isEvar sigma arg ->
+      begin
+        try
+          (* Quick check to see if this can succeed at all, avoiding a costly unification call if possible. *)
+          let _ = Structures.CanonicalSolution.find env sigma (Names.GlobRef.ConstRef (Projection.constant proj), Structures.ValuePattern.Prod_cs) in
+          let sigma, (domain_hole, _) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
+          let sigma, (codomain_hole, _) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
+          let cs_type = mkProd (Context.anonR, domain_hole, codomain_hole) in
+
+          let sigma = Evarconv.unify
+              env
+              sigma
+              Reduction.CUMUL
+              t
+              cs_type
+          in
+          (sigma, { uj_val = j.uj_val; uj_type = cs_type }, IdCoe)
+
+        with
+        | Not_found | PretypeError _ -> (sigma,j,IdCoe)
+      end
     | _ ->
+      try
+        (* We could still be looking at a reduced non-primitive projection *)
+        let (proj, inst, evar, params) = Structures.CanonicalSolution.decompose_reduced_canonical_projection sigma t in
+
+        (* Quick check to see if this can succeed at all, avoiding a costly unification call if possible. *)
+        let _ = Structures.CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proj, Structures.ValuePattern.Prod_cs) in
+
+        let sigma, (domain_hole, _) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
+        let sigma, (codomain_hole, _) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
+        let cs_type = mkProd (Context.anonR, domain_hole, codomain_hole) in
+
+        (* We can't use [t] here since it's the reduced projection.
+           So we'll reconstruct the unreduced projection. *)
+        let args = params in
+        let args = Array.append args [|evar|] in
+
+        let sigma = Evarconv.unify
+            env
+            sigma
+            Reduction.CUMUL
+            (mkApp (mkConstU (proj, inst), args))
+            cs_type
+        in
+        (sigma, { uj_val = j.uj_val; uj_type = cs_type }, IdCoe)
+      with
+      | Not_found | PretypeError _ ->
         try let t,p =
           lookup_path_to_fun_from env sigma j.uj_type in
             apply_coercion env sigma p j t

@@ -116,3 +116,19 @@ Section DepProd.
       let h := _ in fun f : hello_key h => (f : forall x : list _, _ = _) (@nil nat).
   End VariableTypes.
 End DepProd.
+
+Section NoCasts.
+  Section A.
+    Structure bla (useless_param: bool) := { #[canonical(false)]bla_pre : unit; bla_key : Type; #[canonical(false)]bla_post: nat; }.
+    Canonical Structure bla_func b : bla b := {| bla_pre:= tt; bla_key := nat -> nat; bla_post:= 0|}.
+    Example ex_bla1 p := let b := _ in fun f : @bla_key p b => f 1.
+    Example ex_bla2 p := let b := _ in (fun x => x) : @bla_key p b.
+  End A.
+  Section B.
+    Local Set Primitive Projections.
+    Structure pbla (useless_param: bool) := { #[canonical(false)]pbla_pre : unit; pbla_key : Type; #[canonical(false)]pbla_post: nat; }.
+    Canonical Structure pbla_func b : pbla b := {| pbla_pre:= tt; pbla_key := nat -> nat; pbla_post:= 0|}.
+    Example ex_pbla1 p := let b := _ in fun f : @pbla_key p b => f 1.
+    Example ex_pbla2 p := let b := _ in (fun x => x) : @pbla_key p b.
+  End B.
+End NoCasts.

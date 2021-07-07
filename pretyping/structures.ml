@@ -400,6 +400,34 @@ let is_open_canonical_projection env sigma c =
     with Failure _ -> false
   with Not_found -> false
 
+
+let decompose_reduced_canonical_projection sigma c =
+  match EConstr.kind sigma c with
+  | Case (ci, inst, params, ret_ty, _invert, evar, branches)
+    when
+      Array.length branches == 1
+    ->
+    begin
+      (* is the head of the actual branch body a projection? *)
+      let n_args = Array.get ci.ci_cstr_nargs 0 in
+      let i =
+        try
+          let i = EConstr.destRel sigma (snd (Array.get branches 0)) in
+          if i <= n_args then
+            Array.get ci.ci_cstr_nargs 0 - i
+          else
+            raise Not_found
+        with | DestKO -> raise Not_found
+      in
+      let projs = Structure.find_projections ci.ci_ind in
+      let proj = List.nth projs i in
+      let proj = Option.get proj in
+      let _ = GlobRef.Map.find (GlobRef.ConstRef proj) !object_table in
+
+        (proj, inst, evar, params)
+    end
+  | _ -> raise Not_found
+
 end
 
 module CSTable = struct

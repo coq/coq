@@ -927,7 +927,61 @@ struct
             sigma, na.binder_name, Some dom, Some rng
           else
             sigma, Anonymous, None, None
+        | Proj (proj, arg) when isEvar sigma arg ->
+          begin
+            try
+              (* Quick check to see if this can succeed at all, avoiding a costly unification call if possible. *)
+              let _ =
+                try CanonicalSolution.find (GlobEnv.env env) sigma (Names.GlobRef.ConstRef (Projection.constant proj), ValuePattern.Prod_cs)
+                with Not_found ->
+                  CanonicalSolution.find (GlobEnv.env env) sigma (Names.GlobRef.ConstRef (Projection.constant proj), ValuePattern.Default_cs)
+              in
+              let sigma, (domain_hole, _) = Evarutil.new_type_evar (GlobEnv.env env) sigma Evd.univ_flexible in
+              let sigma, (codomain_hole, _) = Evarutil.new_type_evar (GlobEnv.env env) sigma Evd.univ_flexible in
+              let binder = Context.anonR in
+              let cs_type = mkProd (binder, domain_hole, codomain_hole) in
+
+              let sigma = Evarconv.unify
+                  (GlobEnv.env env)
+                  sigma
+                  Reduction.CUMUL
+                  ty
+                  cs_type
+              in
+              sigma, Context.binder_name binder, Some domain_hole, Some codomain_hole
+            with
+            | Not_found | PretypeError _ -> error_not_product ?loc (GlobEnv.env env) sigma ty
+            end
         | _ ->
+          try
+            let (proj, inst, evar, params) = CanonicalSolution.decompose_reduced_canonical_projection sigma ty in
+
+            (* Quick check to see if this can succeed at all, avoiding a costly unification call if possible. *)
+            let _ =
+              try CanonicalSolution.find (GlobEnv.env env) sigma (Names.GlobRef.ConstRef proj, ValuePattern.Prod_cs)
+              with Not_found -> CanonicalSolution.find (GlobEnv.env env) sigma (Names.GlobRef.ConstRef proj, ValuePattern.Default_cs)
+            in
+
+            let sigma, (domain_hole, _) = Evarutil.new_type_evar (GlobEnv.env env) sigma Evd.univ_flexible in
+            let sigma, (codomain_hole, _) = Evarutil.new_type_evar (GlobEnv.env env) sigma Evd.univ_flexible in
+            let binder = Context.anonR in
+            let cs_type = mkProd (binder, domain_hole, codomain_hole) in
+
+            (* We can't use [t] here since it's the reduced projection.
+               So we'll reconstruct the unreduced projection. *)
+            let args = params in
+            let args = Array.append args [|evar|] in
+
+            let sigma = Evarconv.unify
+                (GlobEnv.env env)
+                sigma
+                Reduction.CUMUL
+                (mkApp (mkConstU (proj, inst), args))
+                cs_type
+            in
+            sigma,Context.binder_name binder, Some domain_hole, Some codomain_hole
+          with
+          | _ ->
           (* XXX no error to allow later coercion? Not sure if possible with funclass *)
           error_not_product ?loc !!env sigma ty
     in
