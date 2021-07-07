@@ -34,6 +34,71 @@ certificate: a direct one, based on an ad-hoc predicate called
 [before_witness], and another one based on the predicate [Acc].
 For the first one we provide explicit and short proof terms. *)
 
+(** The method based on [before_witness] (2009) can be seen as an ancestor
+of the first ingredient of the Braga method, by Dominique Larchey-Wendling
+and Jean-François Monin (Types'18, then in more details in [1]).
+In this approach, the termination certificate is usually combined
+with an inductive relational presentation of the recursive function
+of interest. This became especially useful here since the introduction
+of [epsilon_smallest], stating that the output of the linear search
+algorithm is minimal, whereas in the 2009 version, the only
+postcondition considered stated that the output satisfies [P].
+In this file, the linear search program is named [prog_linear_search]
+because [linear_search] happens to be the name of a similar but
+different program in the 2009 version: both programs take as input a
+natural number [start] and a termination certificate, and
+the output of [prog_linear_search] is a natural number [n]
+whereas the output of [linear_search] is [n] packed with a proof
+of [(P n)]. The inductive relation for linear search is named [rel_ls].
+
+The Braga method usually consists in defining a function [f_conform]
+intended to be extracted as (the OCaml translation of) a n-ary
+function [f], with inputs [x...] and output type [{y | R x... y}]
+where [R] is an inductive n+1-ary relational presentation of [f].
+An additional input of [f_conform] is a termination certificate
+whose type can be derived from [R]. Partial correctness properties
+are proved on [R], then transported on [f_conform] (an alternative,
+not considered for linear search, is to simulate an inductive-recursive
+scheme for [f_conform]).
+In the present case, the Coq name of [f] is then [prog_linear_search],
+[R] is [rel_ls] and the type of the termination certificate is named
+[before_witness].
+In simple situations such as linear search, one can as well
+directly define the type of the termination certificate and
+the n+1-ary Coq version of [f].
+Several variants of the proofs are offered for the record:
+- a version that follows the steps in [1], named linear_search_conform];
+- a variant of the latter, named [linear_search_conform'],
+  where the recursive call is no longer encapsulated in a
+  pattern-matching (avoiding packing-unpacking steps which
+  are for instance removed at extraction at the price of
+  an additional optimization step).
+- a version where [prog_linear_search] is directly programmed
+  and its conformity to [rel_ls] (by dependent induction on
+  the termination certificate, and then the properties of
+  its output are separately proven.
+It is interesting to see that in the last version, the conformity
+proof slightly deviates from the definition of [prog_linear_search],
+resulting in an unplasant duplication of proof obligations, because
+the first pattern-matching is performed on [P_dec start] in the
+function and on the termination certificate in the conformity proof.
+This deviation seems to be unavoidable because crucial proof steps
+require the guard argument of the fixpoint to start with a constructor.
+
+The three programs [prog_linear_search], [linear_search_conform]
+and [linear_search_conform'] are purposely presented in a
+very similar manner, using [refine] and postponing proof obligations
+related to conformity to [rel_ls].
+
+ [1] Dominique Larchey-Wendling and Jean-François Monin.
+     The Braga Method: Extracting Certified Algorithms from
+     Complex Recursive Schemes in Coq, chapter 8, pages 305--386.
+     In K. Mainzer, P. Schuster, and H. Schwichtenberg, editors.
+     Proof and Computation II: From Proof Theory and Univalent
+     Mathematics to Program Extraction and Verification.
+     World Scientific, September 2021.
+*)
+
 (** Based on ideas from Benjamin Werner and Jean-François Monin *)
 
 (** Contributed by Yevgeniy Makarov and Jean-François Monin *)
@@ -77,21 +142,19 @@ Definition inv_before_witness :
     end.
 
 (** Basic program *)
-Fixpoint linear_search start (b : before_witness start) : nat :=
+Fixpoint prog_linear_search start (b : before_witness start) : nat :=
   match P_dec start with
     | left yes => start
-    | right no => linear_search (S start) (inv_before_witness start b no)
+    | right no => prog_linear_search (S start) (inv_before_witness start b no)
   end.
 
-(** Though proving the properties of linear_search is feasible, it is
-    more convenient to work on an enriched version using the Braga method *)
-(** Relational version of linear search *)
-Inductive Rls : nat -> nat -> Prop :=
-| Rstop : forall {found}, P found -> Rls found found
-| Rnext : forall {start found}, ~(P start) -> Rls (S start) found -> Rls start found.
+(** rel_ls = relational version of linear search *)
+Inductive rel_ls : nat -> nat -> Prop :=
+| Rstop : forall {found}, P found -> rel_ls found found
+| Rnext : forall {start found}, ~(P start) -> rel_ls (S start) found -> rel_ls start found.
 
-(** Packed With Conformity *)
-Definition linear_search_pwc start (b : before_witness start) : {n : nat | Rls start n}.
+(** Following the Braga method, the output is packed with a proof of its conformity wrt rel_ls *)
+Definition linear_search_conform start (b : before_witness start) : {n : nat | rel_ls start n}.
   revert start b.
   refine (fix loop start b :=
      match P_dec start with
@@ -104,12 +167,16 @@ Definition linear_search_pwc start (b : before_witness start) : {n : nat | Rls s
   - apply (Rnext no r).
 Defined.
 
-(** A variant in some sense closer to linear_search
-    (no deconstruction/reconstruction of the result),
-    using a suitable abstraction of the postcondition *)
-Definition linear_search_pwc' start (b : before_witness start) : {n : nat | Rls start n}.
-  refine ((fun Q: nat -> Prop => _ : (forall y, Rls start y -> Q y) -> {n | Q n})
-            (Rls start) (fun y r => r)).
+(** A variant where the computational contents is closer to [prog_linear_search]
+    (no deconstruction/reconstruction of the result), using a suitable
+    abstraction of the postcondition.
+    The predicate [rel_ls start] is abstracted into [Q], with an additional
+    implication [rq] they are equivalent (but only one direction is needed);
+    and as linear search is tail recursive, [Q] can be fixed (but [rq] varies,
+    behaving like a logical continuation). *)
+Definition linear_search_conform' start (b : before_witness start) : {n : nat | rel_ls start n}.
+  refine ((fun Q: nat -> Prop => _ : (forall y, rel_ls start y -> Q y) -> {n | Q n})
+            (rel_ls start) (fun y r => r)).
   revert start b.
   refine (fix loop start b :=
     fun rq =>
@@ -121,17 +188,24 @@ Definition linear_search_pwc' start (b : before_witness start) : {n : nat | Rls 
   - intros y r. apply rq, (Rnext no r).
 Defined.
 
-(** Rls entails P on the output *)
-Theorem Rls_post : forall {start found}, Rls start found -> P found.
+(** Start at 0 *)
+Definition linear_search_from_0_conform (e : exists n, P n) : {n:nat | rel_ls 0 n} :=
+    let b := let (n, p) := e in O_witness n (stop n p) in
+    linear_search_conform 0 b.
+
+(** Partial correctness properties *)
+
+(** rel_ls entails P on the output *)
+Theorem rel_ls_post : forall {start found}, rel_ls start found -> P found.
 Proof.
   intros * rls. induction rls as [x p | x y b rls IHrls].
   - exact p.
   - exact IHrls.
 Qed.
 
-(** Rls entails minimality of the output *)
-Lemma Rls_lower_bound {found start} :
-  Rls start found -> forall {k}, P k -> start <= k -> found <= k.
+(** rel_ls entails minimality of the output *)
+Lemma rel_ls_lower_bound {found start} :
+  rel_ls start found -> forall {k}, P k -> start <= k -> found <= k.
 Proof.
   induction 1 as [x p | x y no _ IH]; intros k pk greater.
   - exact greater.
@@ -140,31 +214,76 @@ Proof.
     + apply (IH _ pk), le_n_S, greater.
 Qed.
 
-(** Start at 0 *)
-Definition linear_search_from_0 (e : exists n, P n) : {n:nat | Rls 0 n} :=
-    let b := let (n, p) := e in O_witness n (stop n p) in
-    linear_search_pwc 0 b.
-
 (** Main definitions *)
 Definition constructive_indefinite_ground_description_nat :
   (exists n, P n) -> {n:nat | P n}.
 Proof.
-  intro e; destruct (linear_search_from_0 e) as [found r]; exists found.
-  apply (Rls_post r).
+  intro e; destruct (linear_search_from_0_conform e) as [found r]; exists found.
+  apply (rel_ls_post r).
 Defined.
 
 Definition epsilon_smallest :
   (exists n : nat, P n) -> { n : nat | P n /\ forall k, P k -> n <= k }.
 Proof.
-  intro e; destruct (linear_search_from_0 e) as [found r]; exists found.
+  intro e; destruct (linear_search_from_0_conform e) as [found r]; exists found.
   split.
-  - apply (Rls_post r).
-  - intros k pk. apply (Rls_lower_bound r pk), le_0_n.
+  - apply (rel_ls_post r).
+  - intros k pk. apply (rel_ls_lower_bound r pk), le_0_n.
 Defined.
 
 (** NB. The previous version used a negative formulation:
     [forall k, k < n -> ~P k]
     Lemmas [le_not_lt] and [lt_not_le] can help if needed. *)
+
+(************************************************************************)
+
+(** In simple situations like here, a direct proof that [prog_linear_search]
+    satisfies [rel_ls] can be provided.
+    On the computational side of the proof, the fixpoint (coming from
+    [before_witness_dep_ind]) has to come first, before the pattern matching
+    on [P_dec], so we get a slight mismatch between the program
+    [prog_linear_search] and the proof; in particular, there is a duplication
+    for [Rstop].
+ *)
+
+Scheme before_witness_dep_ind := Induction for before_witness Sort Prop.
+
+Lemma linear_search_rel : forall start b, rel_ls start (prog_linear_search start b).
+Proof.
+  intros start b.
+  induction b as [n p | n b IHb] using before_witness_dep_ind;
+  unfold prog_linear_search; destruct (P_dec n) as [yes | no]; fold prog_linear_search.
+  - apply Rstop, yes.
+  - case (no p).
+  - apply Rstop, yes.
+  - apply (Rnext no), IHb.
+Qed.
+
+(** Start at 0 *)
+Definition linear_search_from_0 (e : exists n, P n) : nat :=
+    let b := let (n, p) := e in O_witness n (stop n p) in
+    prog_linear_search 0 b.
+
+Lemma linear_search_from_0_rel (e : exists n, P n) :
+  rel_ls 0 (linear_search_from_0 e).
+Proof. apply linear_search_rel. Qed.
+
+(** Main definitions *)
+Definition constructive_indefinite_ground_description_nat_direct :
+  (exists n, P n) -> {n:nat | P n}.
+Proof.
+  intro e. exists (linear_search_from_0 e).
+  apply (rel_ls_post (linear_search_from_0_rel e)).
+Defined.
+
+Definition epsilon_smallest_direct :
+  (exists n : nat, P n) -> { n : nat | P n /\ forall k, P k -> n <= k }.
+Proof.
+  intro e. exists (linear_search_from_0 e). split.
+  - apply (rel_ls_post (linear_search_from_0_rel e)).
+  - intros k pk.
+    apply (@rel_ls_lower_bound _ 0 (linear_search_from_0_rel e) k pk), le_0_n.
+Defined.
 
 End ConstructiveIndefiniteGroundDescription_Direct.
 
