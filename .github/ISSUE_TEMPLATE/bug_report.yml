@@ -1,0 +1,36 @@
+name: Bug report
+description: Report an unexpected behavior.
+labels: ["kind: bug", "needs: triage"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thank you for your contribution.
+
+      It is helpful to explain how to reproduce the bug and what the problem is.
+      If you have a small reproducible example, you can use the second field to provide it.
+      Otherwise, please provide a link to a repository, a gist (https://gist.github.com) or drag-and-drop a `.zip` archive in the first field.
+- type: textarea
+  attributes:
+    label: Description of the problem
+    placeholder: What happens and what you would have expected instead.
+- type: textarea
+  attributes:
+    label: Small Coq file to reproduce the bug
+    placeholder: |
+      Goal True.
+        ok tactic.
+        buggy tactic.
+        (* the last line raises an error or an anomaly *)
+    render: coq
+- type: input
+  attributes:
+    label: Version of Coq where this bug occurs
+    description: |
+      You can get this information by running `coqtop -v`.
+      Feel free to provide a comma-separated list or a range of versions if you can reproduce the bug on several versions of Coq.
+    placeholder: 8.X.Y
+- type: input
+  attributes:
+    label: Last version of Coq where the bug did not occur
+    description: You can fill this optional field if the bug is a regression compared to a previous version of Coq.

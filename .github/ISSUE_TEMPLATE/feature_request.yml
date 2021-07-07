@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an idea of improvement.
+labels: ["kind: wish", "needs: triage"]
+body:
+- type: textarea
+  attributes:
+    label: Is your feature request related to a problem?
+    placeholder: A clear and concise description of what the problem is. E.g., I'm frustrated when [...]
+
+- type: textarea
+  attributes:
+    label: Proposed solution
+    placeholder: Describe your ideal solution.
+
+- type: textarea
+  attributes:
+    label: Alternative solutions
+    placeholder: List any alternative solutions or features you've considered.
+
+- type: textarea
+  attributes:
+    label: Additional context
+    placeholder: Add any other context or screenshots about the feature request here.
