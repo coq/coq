@@ -237,6 +237,7 @@ On packages $coq_opam_packages
 fi
 
 zulip_edit() {
+    if ! [[ $zulip_post ]]; then return; fi
     ending=$1
     if [[ $rendered_results ]]; then
         msg="$zulip_header
