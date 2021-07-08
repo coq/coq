@@ -56,34 +56,29 @@ let decomp sigma t =
   in
     decrec [] t
 
-let evaluable_constant c env =
+let evaluable_constant c env ts =
   (* This is a hack to work around a broken Print Module implementation, see
      bug #2668. *)
-  if Environ.mem_constant c env then Environ.evaluable_constant c env
-  else true
+  (if Environ.mem_constant c env then Environ.evaluable_constant c env else true) &&
+  (match ts with None -> true | Some ts -> TransparentState.is_transparent_constant ts c)
+
+let evaluable_named id env ts = match ts with
+| None -> false
+| Some ts ->
+  Environ.evaluable_named id env && TransparentState.is_transparent_variable ts id
 
 let constr_val_discr env sigma ts t =
   let c, l = decomp sigma t in
   let open GlobRef in
     match EConstr.kind sigma c with
     | Const (c,u) ->
-      begin match ts with
-      | None ->
-        if evaluable_constant c env then Everything
-        else Label(GRLabel (ConstRef c),l)
-      | Some ts ->
-        if evaluable_constant c env && TransparentState.is_transparent_constant ts c then Everything
-        else Label(GRLabel (ConstRef c),l)
-      end
+      if evaluable_constant c env ts then Everything
+      else Label(GRLabel (ConstRef c),l)
     | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
     | Var id ->
-      begin match ts with
-      | None -> Label(GRLabel (VarRef id),l)
-      | Some ts ->
-        if Environ.evaluable_named id env && TransparentState.is_transparent_variable ts id then Everything
-        else Label(GRLabel (VarRef id),l)
-      end
+      if evaluable_named id env ts then Everything
+      else Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) ->
       if Option.is_empty ts then Nothing else Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
@@ -105,25 +100,16 @@ let constr_pat_discr env ts t =
   | PRef ((IndRef _) as ref), args
   | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
   | PRef ((VarRef v) as ref), args ->
-    begin match ts with
-    | None -> Some(GRLabel ref,args)
-    | Some ts ->
-      if Environ.evaluable_named v env && (TransparentState.is_transparent_variable ts v) then None
-      else Some(GRLabel ref,args)
-    end
+    if evaluable_named v env ts then None
+    else Some(GRLabel ref,args)
   | PRef ((ConstRef c) as ref), args ->
-    begin match ts with
-    | None ->
-      if evaluable_constant c env then None
-      else Some (GRLabel ref, args)
-    | Some ts ->
-      if evaluable_constant c env && TransparentState.is_transparent_constant ts c then None
-      else Some (GRLabel ref, args)
-    end
+    if evaluable_constant c env ts then None
+    else Some (GRLabel ref, args)
   | PVar v, args ->
     begin match ts with
     | None -> None
     | Some ts ->
+      (* FIXME: we should check for evaluability *)
       if TransparentState.is_transparent_variable ts v then None
       else Some(GRLabel (VarRef v),args)
     end
