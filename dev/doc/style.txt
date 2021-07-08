@@ -24,7 +24,7 @@ OCaml Style:
   - from about 8.2, the tendency is to use the following format which
     limit excessive indentation while providing an interesting "block" aspect
     type t =
-    | A 
+    | A
     | B of machin
 
     let f expr = match expr with
@@ -34,16 +34,16 @@ OCaml Style:
     let f expr = function
     | A -> ...
     | B x -> ...
-  - add spaces around = and == (make the code "breaths")
+  - add spaces around = and == (make the code "breathe")
   - the common usage is to write "let x,y = ... in ..." rather than
     "let (x,y) = ... in ..."
   - parenthesizing with either "(" and ")" or with "begin" and "end" is
     common practice
   - preferred layout for conditionals:
     if condition then
-      premier-cas
+      first-case
     else
-      deuxieme-cas
+      second-case
   - in case of effects in branches, use "begin ... end" rather than
     parentheses
     if condition then begin
@@ -72,7 +72,7 @@ OCaml Style:
     Out_of_memory, Stack_overflow, etc.
     at least, use "try with e when Errors.noncritical e -> ..."
     (to be detailed, Pierre L. ?)
-  - do not abuse of fancy combinators: sometimes what a "let rec" loop
+  - do not abuse fancy combinators: sometimes what a "let rec" loop
     does is more readable and simpler to grasp than what a "fold" does
   - do not break abstractions: if an internal property is hidden
     behind an interface, do no rely on it in code which uses this
@@ -90,13 +90,13 @@ OCaml Style:
     with the right complexity)
   - any new general-purpose enough combinator on list should be put in
     cList.ml, on type option in cOpt.ml, etc.
-  - unless of a good reason not to so, follow the style of the
+  - unless for a good reason not to do so, follow the style of the
     surrounding code in the same file as much as possible,
-    the general guidelines are otherwise "let spacing breaths" (we
+    the general guidelines are otherwise "let spacing breathe" (we
     have large screen nowadays), "make your code easy to read and
     to understand"
   - document what is tricky, but do not overdocument, sometimes the
-    choice of names and the structuration of the code is a better
+    choice of names and the structure of the code are better
     documentation than a long discourse; use of unicode in comments is
     welcome if it can make comments more readable (then
     "toggle-enable-multibyte-characters" can help when using the
