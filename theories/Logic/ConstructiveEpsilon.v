@@ -214,6 +214,10 @@ Proof.
     + apply (IH _ pk), le_n_S, greater.
 Qed.
 
+(** For compatibility with previous version *)
+Definition linear_search start (b : before_witness start) : {n : nat | P n} :=
+  let (n, p) := linear_search_conform start b in exist _ n (rel_ls_post p).
+
 (** Main definitions *)
 Definition constructive_indefinite_ground_description_nat :
   (exists n, P n) -> {n:nat | P n}.
