@@ -36,12 +36,20 @@ let make_loc (bp, ep) = {
   bp = bp; ep = ep;
 }
 
+let is_dummy = function
+| { fname = ToplevelInput; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0; bp = 0; ep = 0 } -> true
+| _ -> false
+
 let mergeable loc1 loc2 =
   loc1.fname = loc2.fname
 
 let merge loc1 loc2 =
+  if is_dummy loc1 then loc2 else
+  if is_dummy loc2 then loc1 else
   if not (mergeable loc1 loc2) then
-    failwith "Trying to merge unmergeable locations.";
+    let f = function InFile s -> "file " ^ s | ToplevelInput -> "toplevel" in
+    failwith ("Trying to merge unmergeable locations, one from " ^ f loc1.fname ^
+              " and the other from " ^ f loc2.fname ^ ".") else
   if loc1.bp < loc2.bp then
     if loc1.ep < loc2.ep then {
       fname = loc1.fname;
