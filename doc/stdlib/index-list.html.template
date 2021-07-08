@@ -72,6 +72,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/FinFun.v
     theories/Logic/PropFacts.v
     theories/Logic/HLevels.v
+    theories/Logic/Adjointification.v
   </dd>
 
   <dt> <b>Structures</b>:
