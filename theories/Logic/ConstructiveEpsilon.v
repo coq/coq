@@ -36,7 +36,7 @@ For the first one we provide explicit and short proof terms. *)
 
 (** The method based on [before_witness] (2009) can be seen as an ancestor
 of the first ingredient of the Braga method, by Dominique Larchey-Wendling
-and Jean-François Monin (Types'18, then in more details in [1]).
+and Jean-François Monin (Types'18, then in more details in [[1]]).
 In this approach, the termination certificate is usually combined
 with an inductive relational presentation of the recursive function
 of interest. This became especially useful here since the introduction
@@ -67,7 +67,7 @@ In simple situations such as linear search, one can as well
 directly define the type of the termination certificate and
 the n+1-ary Coq version of [f].
 Several variants of the proofs are offered for the record:
-- a version that follows the steps in [1], named linear_search_conform];
+- a version that follows the steps in [[1]], named [linear_search_conform];
 - a variant of the latter, named [linear_search_conform'],
   where the recursive call is no longer encapsulated in a
   pattern-matching (avoiding packing-unpacking steps which
@@ -90,7 +90,7 @@ and [linear_search_conform'] are purposely presented in a
 very similar manner, using [refine] and postponing proof obligations
 related to conformity to [rel_ls].
 
- [1] Dominique Larchey-Wendling and Jean-François Monin.
+ [[1]] Dominique Larchey-Wendling and Jean-François Monin.
      The Braga Method: Extracting Certified Algorithms from
      Complex Recursive Schemes in Coq, chapter 8, pages 305--386.
      In K. Mainzer, P. Schuster, and H. Schwichtenberg, editors.
