@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* This needs to go trou feedback as it is invoked from IDEs, but
+(* This needs to go through feedback as it is invoked from IDEs, but
    ideally we would like to make this independent so it can be
    bootstrapped. *)
 
