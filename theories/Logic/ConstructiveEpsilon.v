@@ -79,7 +79,7 @@ Several variants of the proofs are offered for the record:
   its output are separately proven.
 It is interesting to see that in the last version, the conformity
 proof slightly deviates from the definition of [prog_linear_search],
-resulting in an unplasant duplication of proof obligations, because
+resulting in an unpleasant duplication of proof obligations, because
 the first pattern-matching is performed on [P_dec start] in the
 function and on the termination certificate in the conformity proof.
 This deviation seems to be unavoidable because crucial proof steps
