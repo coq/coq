@@ -1,0 +1,11 @@
+Module
+FooBar
+:= Struct Definition foo : forall A : Type@{u}, A -> A.
+            (* u |=  *) End
+
+FooBar.foo@{u} = 
+fun (A : Type@{u}) (a : A) => a
+     : forall A : Type@{u}, A -> A
+(* u |=  *)
+
+Arguments FooBar.foo _%type_scope _
