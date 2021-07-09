@@ -475,9 +475,45 @@ let cc_tactic depth additionnal_terms =
           convert_to_hyp_tac ida ta idb tb p
   end
 
+(* proof of  (t -> not t) -> not t *)
+let mk_negation_proof sigma coq_not t not_t =
+  mkLambda (make_annot Anonymous Sorts.Relevant, mkArrowR t not_t,
+    mkLambda (make_annot Anonymous Sorts.Relevant, t, mkApp (mkRel 2, [|mkRel 1; mkRel 1|])))
+
+(* in order to prove (not t) it suffices to prove (t |- not t) *)
+let try_not_arg_intro =
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let concl = Proofview.Goal.concl gl in
+    match kind sigma concl with
+    (* inspect whether current goal is (not t) *)
+    | App (_, [|t|]) ->
+      if (Hipattern.is_matching_not env sigma concl)
+      then
+        Tacticals.New.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun coqnot ->
+        let c = mk_negation_proof sigma coqnot t concl in
+        Tacticals.New.tclTHEN (
+          Refine.refine ~typecheck:true begin fun sigma ->
+            let sigma, new_goal = Evarutil.new_evar env sigma (mkArrowR t concl) in sigma, mkApp (c, [|new_goal|])
+          end) intro
+      else Tacticals.New.tclIDTAC
+    | _ -> Tacticals.New.tclIDTAC
+  end
+
+(* if the conclusion is convertible to forall s1..sn, t1 = t2 then introduce hypotheses s1..sn *)
+let try_intros_until_eq =
+  Tacticals.New.tclTRY (
+    Tacticals.New.tclTHENLIST [Tacticals.New.tclREPEAT (Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT intro) Tactics.hnf_in_concl);
+      Proofview.Goal.enter begin fun gl ->
+        let sigma = Proofview.Goal.sigma gl in
+        let env = Proofview.Goal.env gl in
+        let concl = Proofview.Goal.concl gl in
+        if Hipattern.is_equality_type env sigma concl then Tacticals.New.tclIDTAC else Tacticals.New.tclFAIL 0 (str "Not an equality type")
+      end])
 
 let congruence_tac depth l =
-  Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l)
+  Tacticals.New.tclTHENLIST [Tacticals.New.tclREPEAT intro; try_not_arg_intro; try_intros_until_eq; cc_tactic depth l]
 
 (* Beware: reflexivity = constructor 1 = apply refl_equal
    might be slow now, let's rather do something equivalent
