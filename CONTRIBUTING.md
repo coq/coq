@@ -740,6 +740,17 @@ comments at the same time.  If they are opposed to the change, they
 should clearly say so from the beginning to avoid the contributor
 spending time in vain.
 
+Furthermore, when reviewing a first contribution (GitHub highlights
+first-time contributors), be extra careful to be welcoming, whatever
+the decision on the PR is. When approving a PR, consider thanking the
+newcomer for their contribution, even if it is a very small one (in
+cases where, if the PR had come from a regular contributor, it would
+have felt OK to just merge it without comment). When rejecting a PR,
+take some extra steps to explain the reasons, so that it doesn't feel
+hurtful. Don't hesitate to still thank the contributor and possibly
+redirect them to smaller tasks that might be more appropriate for a
+newcomer.
+
 #### Collaborating on a pull request ####
 
 Beyond making suggestions to a PR author during the review process,
