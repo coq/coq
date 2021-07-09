@@ -2,7 +2,7 @@
 
 ## Getting dependencies
 
-See the first section of [`INSTALL`](../../INSTALL).  Developers are
+See the first section of [`INSTALL.md`](../../INSTALL.md).  Developers are
 recommended to use a recent OCaml version, which they can get through
 opam or Nix, in particular.
 
