@@ -369,6 +369,9 @@ let debug_cmd = ref DebugHook.Action.Ignore
 let db_cmd cmd =
   debug_cmd := DebugHook.Action.Command cmd
 
+module CSet = CSet.Make (Names.DirPath)
+let bad_dirpaths = ref CSet.empty
+
 let cvt_loc loc =
   let open Loc in
   match loc with
@@ -389,18 +392,24 @@ let cvt_loc loc =
     let filtered = List.filter (fun p -> Sys.file_exists p) vs_files in
     begin match filtered with
     | [] -> (* todo: maybe tweak this later to allow showing a popup dialog in the GUI *)
-      let msg = Pp.(fnl () ++ str "Unable to locate source code for module " ++
-                      str (Names.DirPath.to_string dirpath)) in
-      let msg = if vs_files = [] then msg else
-        (List.fold_left (fun msg f -> msg ++ fnl() ++ str f) (msg ++ str " in:") vs_files) in
-      Feedback.msg_warning msg;
+      if not (CSet.mem dirpath !bad_dirpaths) then begin
+        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
+        let msg = Pp.(fnl () ++ str "Unable to locate source code for module " ++
+                        str (Names.DirPath.to_string dirpath)) in
+        let msg = if vs_files = [] then msg else
+          (List.fold_left (fun msg f -> msg ++ fnl() ++ str f) (msg ++ str " in:") vs_files) in
+        Feedback.msg_warning msg
+      end;
       None
     | [f] -> Some (f, [bp; ep])
     | f :: tl ->
-      let msg = Pp.(fnl () ++ str "Multiple files found matching module " ++
-          str (Names.DirPath.to_string dirpath) ++ str ":") in
-      let msg = List.fold_left (fun msg f -> msg ++ fnl() ++ str f) msg vs_files in
-      Feedback.msg_warning msg;
+      if not (CSet.mem dirpath !bad_dirpaths) then begin
+        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
+        let msg = Pp.(fnl () ++ str "Multiple files found matching module " ++
+            str (Names.DirPath.to_string dirpath) ++ str ":") in
+        let msg = List.fold_left (fun msg f -> msg ++ fnl() ++ str f) msg vs_files in
+        Feedback.msg_warning msg
+      end;
       Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
     end
   | _ -> None (* nothing to highlight, e.g. not in a .v file *)

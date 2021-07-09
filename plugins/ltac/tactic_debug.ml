@@ -202,7 +202,6 @@ let print_loc_tac tac =
   print_loc desc loc
 [@@@ocaml.warning "+32"]
 
-
 let get_stack stack () =
   List.map (fun k ->
     let (loc, k) = k in
@@ -217,6 +216,11 @@ let get_stack stack () =
     | LtacConstrInterp _ -> "??? LtacConstrInterp ", loc
     ) stack
 
+(* Each list entry contains multiple trace frames. *)
+let prev_trace : ltac_trace list ref = ref [([], [])]
+let push_cur_trace trace = prev_trace := trace :: !prev_trace
+let pop_cur_trace trace = prev_trace := List.tl !prev_trace
+
 let save_loc tac varmap trace =
 (*  Comm.print (print_loc_tac tac);*)
   let stack, varmaps = match trace with
@@ -224,8 +228,10 @@ let save_loc tac varmap trace =
     | None -> [], []
   in
   DebugHook.(debugger_state.cur_loc <- CAst.(tac.loc));
-  DebugHook.(debugger_state.get_stack <- get_stack stack);
-  DebugHook.(debugger_state.varmaps <- varmap :: varmaps)
+  let (pstack, pvars) = List.fold_right (fun (s,v) (os, ov) -> (s @ os), (v @ ov))
+    !prev_trace ([],[]) in
+  DebugHook.(debugger_state.get_stack <- get_stack (stack @ pstack));
+  DebugHook.(debugger_state.varmaps <- varmap :: (varmaps @ pvars))
 
 (* Prints the goal and the command to be executed *)
 let goal_com tac varmap trace =
@@ -258,6 +264,8 @@ let () =
 
 (* (Re-)initialize debugger. is_tac controls whether to set the action *)
 let db_initialize is_tac =
+  if is_tac then
+    prev_trace := [[],[]];
   let open Proofview.NonLogical in
   let x = (skip:=0) >> (skipped:=0) >> (idtac_breakpt:=None) in
   if is_tac then make Comm.init >> x else x

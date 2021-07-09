@@ -84,3 +84,9 @@ val extract_ltac_trace :
 
 (** Prints a message only if debugger stops at the next step *)
 val defer_output : (unit -> Pp.t) -> unit Proofview.NonLogical.t
+
+(** Push the trace (multiple frames) onto the stack *)
+val push_cur_trace : ltac_trace -> unit
+
+(** Pop a trace (multiple frames) from the stack *)
+val pop_cur_trace : unit -> unit

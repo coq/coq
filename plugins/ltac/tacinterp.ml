@@ -585,7 +585,11 @@ let interp_gen kind ist pattern_mode flags env sigma c =
     ltac_genargs = ist.lfun;
   } in
   let loc = loc_of_glob_constr term in
-  let (stack, _) = push_trace (loc,LtacConstrInterp (term,vars)) ist in
+  let trace = push_trace (loc,LtacConstrInterp (term,vars)) ist in
+  let (stack, _) = trace in
+  (* save and restore the current trace info because the called routine later starts
+     with an empty trace *)
+  Tactic_debug.push_cur_trace trace;
   let (evd,c) =
     catch_error_with_trace_loc loc true stack (understand_ltac flags env sigma vars kind) term
   in
@@ -593,6 +597,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
      function already use effect, I call [run] hoping it doesn't mess
      up with any assumption. *)
   Proofview.NonLogical.run (db_constr (curr_debug ist) env evd c);
+  Tactic_debug.pop_cur_trace ();
   (evd,c)
 
 let constr_flags () = {

@@ -162,9 +162,10 @@ let debugger title =
     let open GdkEvent.Button in
     let y = y ev in
     let button = button ev in
+    let scroll_pos = stack_scroll#vadjustment#value in
     let metrics = stack_view#coerce#misc#pango_context#get_metrics () in
     let line_height = GPango.to_pixels (metrics#ascent+metrics#descent) in
-    let line = (truncate y)/line_height in
+    let line = (truncate (y +. scroll_pos))/line_height in
     if button = 1 && line < List.length !stack then
       (clear_highlight (); highlight line);
     false (* let the panel get the focus *)
