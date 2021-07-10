@@ -26,6 +26,44 @@ class type debugger_view =
 let forward_keystroke = ref ((fun x -> failwith "forward_keystroke (db)")
     : Gdk.keysym * Gdk.Tags.modifier list -> bool)
 
+let make_table_widget cd cb =
+  let frame = GBin.scrolled_window ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
+  let columns, store =
+    let cols = new GTree.column_list in
+    let columns = List.map (function
+      | (`Int,n,_)    -> n, `IntC (cols#add Gobject.Data.int)
+      | (`String,n,_) -> n, `StringC (cols#add Gobject.Data.string))
+    cd in
+    columns, GTree.tree_store cols in
+  let data = GTree.view  (* todo: call "view" *)
+      ~vadjustment:frame#vadjustment ~hadjustment:frame#hadjustment
+      ~rules_hint:true ~headers_visible:false
+      ~model:store ~packing:frame#add () in
+
+(* FIXME: handle this using CSS *)
+(*   let refresh clr = data#misc#modify_bg [`NORMAL, `NAME clr] in *)
+(*   let _ = background_color#connect#changed ~callback:refresh in *)
+(*   let _ = data#misc#connect#realize ~callback:(fun () -> refresh background_color#get) in *)
+  let mk_rend c = GTree.cell_renderer_text [], ["text",c] in
+  let cols =
+    List.map2 (fun (_,c) (_,n,v) ->
+      let c = match c with
+        | `IntC c -> GTree.view_column ~renderer:(mk_rend c) ()
+        | `StringC c -> GTree.view_column ~renderer:(mk_rend c) () in
+      c#set_title n;
+      c#set_visible v;
+      c#set_sizing `AUTOSIZE;
+      c)
+    columns cd in
+  List.iter (fun c -> ignore(data#append_column c)) cols;
+  ignore @@ data#connect#row_activated ~callback:(fun tp vc -> cb columns store tp vc);
+  let cb view ft = view#misc#modify_font (GPango.font_description_from_string ft) in
+  Preferences.(stick text_font data (cb data));
+  frame, (fun f -> f columns store), store
+
+let find_string_col s l =
+  match List.assoc s l with `StringC c -> c | _ -> assert false
+
 let debugger title =
   let forward_set_paned_pos = ref ((fun x -> failwith "forward_set_paned_pos")
     : int -> unit) in
@@ -48,20 +86,25 @@ let debugger title =
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(vb_stack#pack ~expand:true) () in
   stack_scroll#add stack_view#coerce;
 
+  let tree, access, store =
+    make_table_widget
+      [`String, "Var", true]
+      (fun columns store tp vc ->
+        let row = store#get_iter tp in
+        let _ = store#get ~row ~column:(find_string_col "Var" columns) in ()) in
+
   let vars_view = GText.view ~editable:false ~cursor_visible:false ~wrap_mode:`NONE () in
   let cb view ft = view#misc#modify_font (GPango.font_description_from_string ft) in
   Preferences.(stick text_font vars_view (cb vars_view));
   Preferences.(stick text_font stack_view (cb stack_view));
 
-  let vars_buffer = vars_view#buffer in
+  let vars_buffer = vars_view#buffer in  (* todo: get a standalone buffer? *)
   let vars = ref [] in
 
   let vb_vars = GPack.vbox ~packing:(paned#pack2 ~shrink:false ~resize:true) () in
   let _ = GMisc.label ~text:"Variables" ~xalign:0.02 (* todo: use padding instead of xalign *)
     ~packing:(vb_vars#pack ~expand:false ~fill:true ~padding:3) () in
-  let vars_scroll = GBin.scrolled_window
-    ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(vb_vars#pack ~expand:true) () in
-  vars_scroll#add vars_view#coerce;
+  let () = vb_vars#pack ~expand:true tree#coerce in
 
 (* doesn't help, not getting the correct widths
   ignore @@ Glib.Idle.add (fun _ ->
@@ -150,10 +193,8 @@ let debugger title =
       (move (-1); true)
     else if key_ev = down then
       (move 1; true)
-    else if !forward_keystroke key_ev then
-      true (* support some function keys when Debugger is detached *)
     else
-      false
+      !forward_keystroke key_ev (* support some function keys when Debugger is detached *)
   in
   let _ = stack_view#event#connect#key_press ~callback:keypress_cb in
 
@@ -185,7 +226,6 @@ let debugger title =
 
     method set_vars (vars_v : vars_t) =
       vars := vars_v;
-      vars_buffer#set_text "";
       let cwidth () =
         let open Gtk in
         let open GtkBase in
@@ -193,16 +233,25 @@ let debugger title =
         let pixel_width = (Widget.allocation debugger_detachable#as_widget).width - paned#position in
         let metrics = vars_view#misc#pango_context#get_metrics ()  in
         let char_width = GPango.to_pixels metrics#approx_char_width in
-        pixel_width / char_width
+        (pixel_width - 100) / char_width
       in
       let width = cwidth () in
-      let insert_xml msg =
-        Ideutils.insert_xml vars_buffer (Richpp.richpp_of_pp width msg);
-      in
+      store#clear ();
       List.iter (fun (n, value) ->
-          insert_xml Pp.(str n ++ str " =" ++ (spc()) ++ value ++ (fnl()))
-        ) vars_v;
-      ()
+          vars_buffer#set_text "";
+          Ideutils.insert_xml vars_buffer (Richpp.richpp_of_pp width value);
+          let value = vars_buffer#get_text () in
+          access (fun columns store ->
+              let line = store#append () in
+              if String.length value < width then
+                store#set ~row:line ~column:(find_string_col "Var" columns) (n ^ " = " ^ value)
+              else begin
+                store#set ~row:line ~column:(find_string_col "Var" columns) (n ^ " = ");
+                let line2 = store#append ~parent:line () in
+                store#set ~row:line2 ~column:(find_string_col "Var" columns) value
+              end
+            )
+        ) vars_v
 
     method hide () = debugger_detachable#hide  (* todo: give up focus *)
     method show () = debugger_detachable#show  (* todo: take focus? *)
