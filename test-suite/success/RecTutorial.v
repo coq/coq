@@ -787,7 +787,7 @@ with   Odd_induction  := Minimality for odd  Sort Prop.
 Theorem even_plus_four : forall n:nat, even n -> even (4+n).
 Proof.
  intros n H.
- elim H using Even_induction with (P0 := fun n => odd (4+n));
+ elim H using Even_induction with (P := fun n => odd (4+n));
  simpl;repeat constructor;assumption.
 Qed.
 

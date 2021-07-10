@@ -719,7 +719,9 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
       let clause = mk_clenv_from_env env sigma n (c,t) in
       clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
-      let t = rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
+      let t = match EConstr.kind sigma (fst (decompose_app sigma c)) with
+        | (Const _ | Ind _ | Construct _) -> t
+        | _ -> rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
       let clause = mk_clenv_from_env env sigma n
         (c, t)
       in clenv_match_args lbind clause
