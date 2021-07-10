@@ -20,7 +20,7 @@ Definition shift := 2101%Z. (** [= 2*emax + prec] *)
 
 Definition frexp f :=
   let (m, se) := frshiftexp f in
-  (m, (φ se - shift)%Z%uint63).
+  (m, (φ se - shift)%Z%%uint63).
 
 Definition ldexp f e :=
   let e' := Z.max (Z.min e (emax - emin)) (emin - emax - 1) in

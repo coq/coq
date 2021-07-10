@@ -36,7 +36,7 @@ Definition ascii_to_digit (ch : ascii) : option N
       else if ascii_dec ch "d" || ascii_dec ch "D" then Some 13
       else if ascii_dec ch "e" || ascii_dec ch "E" then Some 14
       else if ascii_dec ch "f" || ascii_dec ch "F" then Some 15
-      else None)%N.
+      else None)%%N.
 
 Fixpoint pos_hex_app (p q:positive) : positive :=
   match q with

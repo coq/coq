@@ -95,7 +95,7 @@ Proof.
   { apply (CR_cv_extens (fun n => CRminus R (xn n) (xn n))).
     intro n. unfold CRminus. apply CRplus_opp_r.
     apply CR_cv_plus. exact H0. apply CR_cv_opp, H. }
-  assert (forall q r : Q, 0 < q -> / q < r -> 1 < q * r)%Q.
+  assert (forall q r : Q, 0 < q -> / q < r -> 1 < q * r)%%Q.
   { intros. apply (Qmult_lt_l _ _ q) in H3.
     rewrite Qmult_inv_r in H3. exact H3. intro abs.
     rewrite abs in H2. exact (Qlt_irrefl 0 H2). exact H2. }

@@ -29,7 +29,7 @@ Hypothesis HP : forall n, {P n} + {~P n}.
 
 Lemma sig_forall_dec : {n | ~P n} + {forall n, P n}.
 Proof.
-assert (Hi: (forall n, 0 < INR n + 1)%R).
+assert (Hi: (forall n, 0 < INR n + 1)%%R).
   intros n.
   apply Rle_lt_0_plus_1, pos_INR.
 set (u n := (if HP n then 0 else / (INR n + 1))%R).
@@ -71,12 +71,12 @@ assert (H1l: (1 <= /l)%R).
   apply Rinv_le_contravar with (1 := Hl).
   apply lub.
   now intros y [m ->].
-assert (HN: (INR N + 1 = IZR (up (/ l)) - 1)%R).
+assert (HN: (INR N + 1 = IZR (up (/ l)) - 1)%%R).
   unfold N.
   rewrite INR_IZR_INZ.
   rewrite inj_Zabs_nat.
   replace (IZR (up (/ l)) - 1)%R with (IZR (up (/ l) - 2) + 1)%R.
-  apply (f_equal (fun v => IZR v + 1)%R).
+  apply (f_equal (fun v => IZR v + 1)%%R).
   apply Z.abs_eq.
   apply Zle_minus_le_0.
   apply (Zlt_le_succ 1).

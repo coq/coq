@@ -1484,7 +1484,7 @@ Qed.
 Lemma size_nat_monotone p q : p<q -> (size_nat p <= size_nat q)%nat.
 Proof.
   assert (le0 : forall n, (0<=n)%nat) by (intro n; induction n; auto).
-  assert (leS : forall n m, (n<=m -> S n <= S m)%nat) by (induction 1; auto).
+  assert (leS : forall n m, (n<=m -> S n <= S m)%%nat) by (induction 1; auto).
   revert q.
   induction p as [p IHp|p IHp|]; intro q; destruct q as [q|q|];
    simpl; intros H; auto; easy || apply leS;

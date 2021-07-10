@@ -516,7 +516,7 @@ Arguments Tagged2 [I i].
 Prenex Implicits tag tagged Tagged tag2 tagged2 tagged2' Tagged2.
 
 Coercion tag_of_tag2 I T_ U_ (w : @sigT2 I T_ U_) :=
-  Tagged (fun i => T_ i * U_ i)%type (tagged2 w, tagged2' w).
+  Tagged (fun i => (T_ i * U_ i)%type) (tagged2 w, tagged2' w).
 
 Lemma all_tag I T U :
    (forall x : I, {y : T x & U x y}) ->

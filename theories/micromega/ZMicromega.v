@@ -979,7 +979,7 @@ Section MaxVar.
   Lemma max_var_nformulae_mono_aux :
     forall l v acc,
       (v <= acc ->
-       v <= fold_left F l acc)%positive.
+       v <= fold_left F l acc)%%positive.
   Proof.
     intros l; induction l as [|a l IHl] ; simpl ; [easy|].
     intros.
@@ -992,7 +992,7 @@ Section MaxVar.
   Lemma max_var_nformulae_mono_aux' :
     forall l acc acc',
       (acc <= acc' ->
-       fold_left F l acc <= fold_left F l acc')%positive.
+       fold_left F l acc <= fold_left F l acc')%%positive.
   Proof.
     intros l; induction l as [|a l IHl]; simpl ; [easy|].
     intros.
@@ -1005,7 +1005,7 @@ Section MaxVar.
 
 
   Lemma max_var_nformulae_correct_aux : forall l p o v,
-      In (p,o) l -> In v (vars xH p) -> Pos.le v (fold_left F l 1)%positive.
+      In (p,o) l -> In v (vars xH p) -> Pos.le v (fold_left F l 1)%%positive.
   Proof.
   intros l p o v H H0.
   generalize 1%positive as acc.
@@ -1395,7 +1395,7 @@ Qed.
 
 
 Lemma max_var_acc : forall p i j,
-    (max_var (i + j) p = max_var i p + j)%positive.
+    (max_var (i + j) p = max_var i p + j)%%positive.
 Proof.
   intros p; induction p as [|? ? IHp|? IHp1 ? ? IHp2]; simpl.
   - reflexivity.

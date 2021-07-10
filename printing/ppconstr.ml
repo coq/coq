@@ -133,7 +133,7 @@ let tag_var = tag Tag.variable
     print_hunks level pr pr_patt pr_binders env unpl, level
 
   let pr_delimiters depth key strm =
-    let d = match depth with DelimOnlyTmpScope -> "%%" | DelimUnboundedScope -> "%" in
+    let d = match depth with DelimOnlyTmpScope -> "%" | DelimUnboundedScope -> "%%" in
     strm ++ str (d^key)
 
   let pr_generalization bk ak c =

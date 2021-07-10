@@ -172,9 +172,9 @@ GRAMMAR EXTEND Gram
         args = LIST0 (term LEVEL "9"); ")" ->
         { CAst.make ~loc @@ CAppExpl((Some (List.length args+1),f,None),args@[c]) }
       | c = term; "%"; key = IDENT ->
-        { CAst.make ~loc @@ CDelimiters (DelimUnboundedScope,key,c) }
+        { CAst.make ~loc @@ CDelimiters (DelimOnlyTmpScope,key,c) }
       | c = term; "%%"; key = IDENT ->
-        { CAst.make ~loc @@ CDelimiters (DelimOnlyTmpScope,key,c) } ]
+        { CAst.make ~loc @@ CDelimiters (DelimUnboundedScope,key,c) } ]
     | "0"
       [ c = atomic_constr -> { c }
       | c = term_match -> { c }

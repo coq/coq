@@ -75,7 +75,7 @@ Fixpoint pos_sub (x y:positive) {struct y} : Z :=
     | 1, q~1 => neg q~0
     | 1, q~0 => neg (Pos.pred_double q)
     | 1, 1 => Z0
-  end%positive.
+  end%%positive.
 
 (** ** Addition *)
 

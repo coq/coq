@@ -398,7 +398,7 @@ Qed.
 Lemma CV_shift : 
   forall f k l, Un_cv (fun n => f (n + k)%nat) l -> Un_cv f l.
 intros f' k l cvfk eps ep; destruct (cvfk eps ep) as [N Pn].
-exists (N + k)%nat; intros n nN; assert (tmp: (n = (n - k) + k)%nat).
+exists (N + k)%nat; intros n nN; assert (tmp: (n = (n - k) + k)%%nat).
  rewrite Nat.sub_add;[ | apply le_trans with (N + k)%nat]; auto with arith.
 rewrite tmp; apply Pn; apply Nat.le_add_le_sub_r; assumption.
 Qed.

@@ -154,7 +154,7 @@ Theorem Zbounded_induction :
   (forall Q : Z -> Prop, forall b : Z,
     Q 0 ->
     (forall n, 0 <= n -> n < b - 1 -> Q n -> Q (n + 1)) ->
-      forall n, 0 <= n -> n < b -> Q n)%Z.
+      forall n, 0 <= n -> n < b -> Q n)%%Z.
 Proof.
 intros Q b Q0 QS.
 set (Q' := fun n => (n < b /\ Q n) \/ (b <= n)).

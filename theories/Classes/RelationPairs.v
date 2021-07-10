@@ -50,8 +50,8 @@ Typeclasses Opaque RelCompFun.
 
 Infix "@@" := RelCompFun (at level 30, right associativity) : signature_scope.
 
-Notation "R @@1" := (R @@ Fst)%signature (at level 30) : signature_scope.
-Notation "R @@2" := (R @@ Snd)%signature (at level 30) : signature_scope.
+Notation "R @@1" := (R @@ Fst)%%signature (at level 30) : signature_scope.
+Notation "R @@2" := (R @@ Snd)%%signature (at level 30) : signature_scope.
 
 (** We declare measures to the system using the [Measure] class.
    Otherwise the instances would easily introduce loops,

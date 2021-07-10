@@ -9,7 +9,7 @@ Proof. now apply to_Z_bounded. Qed.
 
 #[global]
 Instance Inj_int_Z : InjTyp int Z :=
-  mkinj _ _ to_Z (fun x => -4611686018427387904 <= x <= 4611686018427387903)%Z
+  mkinj _ _ to_Z (fun x => -4611686018427387904 <= x <= 4611686018427387903)%%Z
     to_Z_bounded.
 Add Zify InjTyp Inj_int_Z.
 
@@ -131,7 +131,7 @@ Add Zify BinOp Op_mod.
 
 #[global]
 Instance Op_asr : BinOp asr :=
-  {| TBOp := fun x y => x / 2^ y ; TBOpInj := asr_spec |}%Z.
+  {| TBOp := fun x y => x / 2^ y ; TBOpInj := asr_spec |}%%Z.
 Add Zify BinOp Op_asr.
 
 Definition quots (x d : Z) : Z :=
@@ -159,7 +159,7 @@ Add Zify BinOp Op_div.
 
 Lemma quots_spec (x y : Z) :
   ((x = -4611686018427387904 /\ y = -1 /\ quots x y = -4611686018427387904)
-  \/ ((x <> -4611686018427387904 \/ y <> -1) /\ quots x y = Z.quot x y))%Z.
+  \/ ((x <> -4611686018427387904 \/ y <> -1) /\ quots x y = Z.quot x y))%%Z.
 Proof.
   unfold quots; case andb eqn: eq_min_m1.
   - now left; rewrite Bool.andb_true_iff, !Z.eqb_eq in eq_min_m1.
@@ -170,7 +170,7 @@ Qed.
 Instance quotsSpec : BinOpSpec quots :=
   {| BPred := fun x d r : Z =>
        ((x = -4611686018427387904 /\ d = -1 /\ r = -4611686018427387904)
-       \/ ((x <> -4611686018427387904 \/ d <> -1) /\ r = Z.quot x d))%Z;
+       \/ ((x <> -4611686018427387904 \/ d <> -1) /\ r = Z.quot x d))%%Z;
      BSpec := quots_spec |}.
 Add Zify BinOpSpec quotsSpec.
 

@@ -481,7 +481,7 @@ Proof.
 Qed.
 
 Lemma Qabs_Qgt_condition: forall x y : Q,
-  (x < Qabs y)%Q <-> (x < y \/ x < -y)%Q.
+  (x < Qabs y)%Q <-> (x < y \/ x < -y)%%Q.
 Proof.
  intros x y.
  apply Qabs_case; lra.
@@ -593,7 +593,7 @@ Proof.
   apply CReal_plus_le_compat.
   2: { apply (CReal_le_trans _ _ _ H). apply inject_Q_le.
        rewrite Qpower_minus_pos.
-       assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%Q as Aux
+       assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%%Q as Aux
          by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
        rewrite Qmult_comm; apply Qmult_le_l; [lra|].
        pose proof Qpower_2powneg_le_inv p.
@@ -627,7 +627,7 @@ Proof.
     change (Z.neg (p + 1))%Z with (Z.neg p - 1)%Z.
     ring_simplify (Z.neg p - 1 - 2)%Z.
     rewrite Qpower_minus_pos.
-    assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%Q as Aux
+    assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%%Q as Aux
       by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
     pose proof Qpower_2powneg_le_inv p.
     pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra.
@@ -696,7 +696,7 @@ Lemma CRealLtDisjunctEpsilon : forall a b c d : CReal,
 Proof.
   intros.
   (* Combine both existentials into one *)
-  assert (exists n : Z, 2*2^n < seq b n - seq a n \/ 2*2^n < seq d n - seq c n)%Q.
+  assert (exists n : Z, 2*2^n < seq b n - seq a n \/ 2*2^n < seq d n - seq c n)%%Q.
   { destruct H.
     - destruct H as [n maj]. exists n. left. apply maj.
     - destruct H as [n maj]. exists n. right. apply maj. }

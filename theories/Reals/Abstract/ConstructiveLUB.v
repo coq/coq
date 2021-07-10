@@ -167,7 +167,7 @@ Qed.
 Record DedekindDecCut : Type :=
   {
     DDupcut : Q -> Prop;
-    DDproper : forall q r : Q, (q == r -> DDupcut q -> DDupcut r)%Q;
+    DDproper : forall q r : Q, (q == r -> DDupcut q -> DDupcut r)%%Q;
     DDlow : Q;
     DDhigh : Q;
     DDdec : forall q:Q, { DDupcut q } + { ~DDupcut q };

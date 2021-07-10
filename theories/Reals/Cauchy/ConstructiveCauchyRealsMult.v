@@ -98,7 +98,7 @@ Proof.
   intros x y n p q Hp Hq.
   unfold CReal_mult_seq.
 
-  assert(forall xp xq yp yq : Q, xp * yp - xq * yq == (xp - xq) * yp + xq * (yp - yq))%Q
+  assert(forall xp xq yp yq : Q, xp * yp - xq * yq == (xp - xq) * yp + xq * (yp - yq))%%Q
     as H by (intros; ring).
   rewrite H; clear H.
 
@@ -282,10 +282,10 @@ Proof.
     Qabs (
       seq x (n - Z.max (scale y') (scale z') - 2) * seq y' (n - scale x - 2)
     - seq x (n - scale y' - 2) * seq y' (n - scale x - 2))
-  <= 2 ^ n )%Q as Hdiffbnd.
+  <= 2 ^ n )%%Q as Hdiffbnd.
   {
     intros y' z'.
-    assert (forall a b c : Q, a*c-b*c==(a-b)*c)%Q as H by (intros; ring).
+    assert (forall a b c : Q, a*c-b*c==(a-b)*c)%%Q as H by (intros; ring).
     rewrite H; clear H.
     pose proof cauchy x (n - (scale y') - 2)%Z (n - Z.max (scale y') (scale z') - 2)%Z (n - scale y' - 2)%Z
       ltac:(lia) ltac:(lia) as Hxbnd.
@@ -356,7 +356,7 @@ Proof.
 
   (* Rearrange the goal such that it used only scale and cauchy bounds *)
   (* Todo: it is also a bug in ring_simplify that the seq terms are not sorted by the first variable *)
-  assert (forall a1 a2 b c1 c2 : Q, a1*b*c1+(-1)*b*a2*c2==(a1*c1-a2*c2)*b)%Q as H by (intros; ring).
+  assert (forall a1 a2 b c1 c2 : Q, a1*b*c1+(-1)*b*a2*c2==(a1*c1-a2*c2)*b)%%Q as H by (intros; ring).
   rewrite H; clear H.
   remember (seq x (n - scale y - scale z - 1) - seq x (n - scale y - scale z - 2))%Q as dx eqn:Heqdx.
   remember (seq z (n - scale x - scale y - 1) - seq z (n - scale x - scale y - 2))%Q as dz eqn:Heqdz.
@@ -672,14 +672,14 @@ Proof.
   unfold CReal_inv_pos_cm; remember (CRealLowerBound x Hxpos) as k.
 
   (* These auxilliary lemmas are required a few times below *)
-  assert (forall m:Z, (2^k < seq x (Z.min k (m + 2 * k))))%Q as AuxAppart.
+  assert (forall m:Z, (2^k < seq x (Z.min k (m + 2 * k))))%%Q as AuxAppart.
   {
     intros m.
     pose proof CRealLowerBoundSpec x Hxpos (Z.min k (m + 2 * k))%Z ltac:(lia) as H1.
     rewrite Heqk at 1.
     lra.
   }
-  assert (forall m:Z, (0 < seq x (Z.min k (m + 2 * k))))%Q as AuxPos.
+  assert (forall m:Z, (0 < seq x (Z.min k (m + 2 * k))))%%Q as AuxPos.
   {
     intros m.
     pose proof AuxAppart m as H1.

@@ -321,21 +321,21 @@ Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 
 (* Rule order is important to give printing priority to fully typed exists *)
 
-Notation "'exists' x .. y , P" := (ex (fun x => .. (ex (fun y => P%%type)) ..))
+Notation "'exists' x .. y , P" := (ex (fun x => .. (ex (fun y => P%type)) ..))
   (at level 200, x binder, right associativity,
    format "'[' 'exists'  '/  ' x  ..  y ,  '/  ' P ']'")
   : type_scope.
 
-Notation "'exists2' x , P & Q" := (ex2 (fun x => P%%type) (fun x => Q%%type))
+Notation "'exists2' x , P & Q" := (ex2 (fun x => P%type) (fun x => Q%type))
   (at level 200, x name, P at level 200, right associativity) : type_scope.
-Notation "'exists2' x : A , P & Q" := (ex2 (A:=A) (fun x => P%%type) (fun x => Q%%type))
+Notation "'exists2' x : A , P & Q" := (ex2 (A:=A) (fun x => P%type) (fun x => Q%type))
   (at level 200, x name, A at level 200, P at level 200, right associativity,
     format "'[' 'exists2'  '/  ' x  :  A ,  '/  ' '[' P  &  '/' Q ']' ']'")
   : type_scope.
 
-Notation "'exists2' ' x , P & Q" := (ex2 (fun x => P%%type) (fun x => Q%%type))
+Notation "'exists2' ' x , P & Q" := (ex2 (fun x => P%type) (fun x => Q%type))
   (at level 200, x strict pattern, P at level 200, right associativity) : type_scope.
-Notation "'exists2' ' x : A , P & Q" := (ex2 (A:=A) (fun x => P%%type) (fun x => Q%%type))
+Notation "'exists2' ' x : A , P & Q" := (ex2 (A:=A) (fun x => P%type) (fun x => Q%type))
   (at level 200, x strict pattern, A at level 200, P at level 200, right associativity,
     format "'[' 'exists2'  '/  ' ' x  :  A ,  '/  ' '[' P  &  '/' Q ']' ']'")
   : type_scope.
@@ -774,7 +774,7 @@ Definition uniqueness (A:Type) (P:A->Prop) := forall x y, P x -> P y -> x = y.
 (** Unique existence *)
 
 Notation "'exists' ! x .. y , P" :=
-  (ex (unique (fun x => .. (ex (unique (fun y => P%%type))) ..)))
+  (ex (unique (fun x => .. (ex (unique (fun y => P%type))) ..)))
   (at level 200, x binder, right associativity,
    format "'[' 'exists'  !  '/  ' x  ..  y ,  '/  ' P ']'")
   : type_scope.

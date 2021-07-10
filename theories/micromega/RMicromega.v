@@ -313,7 +313,7 @@ Proof.
     destruct DEF ; auto with arith.
 Qed.
 
-Lemma Qpower0 : forall z, (z <> 0)%Z -> (0 ^ z == 0)%Q.
+Lemma Qpower0 : forall z, (z <> 0)%%Z -> (0 ^ z == 0)%Q.
 Proof.
   unfold Qpower.
   destruct z;intros.

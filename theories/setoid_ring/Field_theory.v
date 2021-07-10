@@ -568,7 +568,7 @@ Fixpoint PExpr_eq (e e' : PExpr C) {struct e} : bool :=
   | - e, - e' => PExpr_eq e e'
   | e ^ n, e' ^ n' => N.eqb n n' &&& PExpr_eq e e'
   | _, _ => false
- end%poly.
+ end%%poly.
 
 Lemma if_true (a b : bool) : a &&& b = true -> a = true /\ b = true.
 Proof.
@@ -681,7 +681,7 @@ Fixpoint NPEmul (x y : PExpr C) {struct x} : PExpr C :=
   | _, PEc c => if (c =? 1)%coef then x else if (c =? 0)%coef then 0 else x * y
   | e1 ^ n1, e2 ^ n2 => if (n1 =? n2)%N then (NPEmul e1 e2)^^n1 else x * y
   | _, _ => x * y
-  end%poly.
+  end%%poly.
 Infix "**" := NPEmul (at level 40, left associativity).
 
 Theorem NPEmul_ok e1 e2 : (e1 ** e2 === e1 * e2)%poly.
@@ -707,7 +707,7 @@ Fixpoint PEsimp (e : PExpr C) : PExpr C :=
   | - e1 => NPEopp (PEsimp e1)
   | e1 ^ n1 => (PEsimp e1) ^^ n1
   | _ => e
- end%poly.
+ end%%poly.
 
 Theorem PEsimp_ok e : (PEsimp e === e)%poly.
 Proof.
@@ -854,7 +854,7 @@ Fixpoint isIn e1 p1 e2 p2 {struct e2}: option (N * PExpr C) :=
   | e3 ^ N0 => None
   | e3 ^ Npos p3 => isIn e1 p1 e3 (Pos.mul p3 p2)
   | _ => default_isIn e1 p1 e2 p2
-   end%poly.
+   end%%poly.
 
  Definition ZtoN z := match z with Zpos p => Npos p | _ => N0 end.
  Definition NtoZ n := match n with Npos p => Zpos p | _ => Z0 end.
@@ -972,7 +972,7 @@ Fixpoint split_aux e1 p e2 {struct e1}: rsplit :=
        | Some (Npos q, e3) => mk_rsplit (e1 ^^ Npos q) (e1 ^^ Npos (p - q)) e3
        | None => mk_rsplit (e1 ^^ Npos p) 1 e2
        end
-  end%poly.
+  end%%poly.
 
 Lemma split_aux_ok1 e1 p e2 :
   (let res := match isIn e1 p e2 1 with
@@ -982,7 +982,7 @@ Lemma split_aux_ok1 e1 p e2 :
        end
   in
   e1 ^ Npos p === left res * common res
-  /\ e2 === right res * common res)%poly.
+  /\ e2 === right res * common res)%%poly.
 Proof.
  Opaque NPEpow NPEmul.
  intros res. unfold res;clear res; generalize (isIn_ok e1 p e2 xH).
@@ -1000,7 +1000,7 @@ Qed.
 
 Theorem split_aux_ok: forall e1 p e2,
   (e1 ^ Npos p === left (split_aux e1 p e2) * common (split_aux e1 p e2)
-  /\ e2 === right (split_aux e1 p e2) * common (split_aux e1 p e2))%poly.
+  /\ e2 === right (split_aux e1 p e2) * common (split_aux e1 p e2))%%poly.
 Proof.
 intro e1;induction e1 as [| |?|?|? IHe1_1 ? IHe1_2|? IHe1_1 ? IHe1_2|e1_1 IHe1_1 ? IHe1_2|? IHe1|? IHe1 n];
  intros k e2; try refine (split_aux_ok1 _ k e2);simpl.
@@ -1018,13 +1018,13 @@ Qed.
 Definition split e1 e2 := split_aux e1 xH e2.
 
 Theorem split_ok_l e1 e2 :
-  (e1 === left (split e1 e2) * common (split e1 e2))%poly.
+  (e1 === left (split e1 e2) * common (split e1 e2))%%poly.
 Proof.
 destruct (split_aux_ok e1 xH e2) as (H,_). now rewrite <- H, PEpow_1_r.
 Qed.
 
 Theorem split_ok_r e1 e2 :
-  (e2 === right (split e1 e2) * common (split e1 e2))%poly.
+  (e2 === right (split e1 e2) * common (split e1 e2))%%poly.
 Proof.
 destruct (split_aux_ok e1 xH e2) as (_,H). trivial.
 Qed.

@@ -722,7 +722,7 @@ Proof.
     now rewrite <- Pos2Z.opp_pos, <- positive_nat_Z.
 Qed.
 
-Lemma powerRZ_inv x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
+Lemma powerRZ_inv x alpha : (x <> 0)%%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
 Proof.
   intros; destruct (intP alpha).
   - now simpl; rewrite Rinv_1.
@@ -744,8 +744,8 @@ Proof.
 Qed.
 
 Lemma powerRZ_mult_distr :
-  forall m x y, ((0 <= m)%Z \/ (x * y <> 0)%R) ->
-           (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
+  forall m x y, ((0 <= m)%Z \/ (x * y <> 0)%%R) ->
+           (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%%R.
 Proof.
   intros m x0 y0 Hmxy.
   destruct (intP m) as [ | | n Hm ].
@@ -755,8 +755,8 @@ Proof.
     + assert(m = 0) as -> by
       (destruct n; [assumption| subst; simpl in H; lia_contr]).
       now rewrite <- Hm, Rmult_1_l.
-    + assert(x0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_l.
-      assert(y0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_r.
+    + assert(x0 <> 0)%%R by now intros ->; apply H; rewrite Rmult_0_l.
+      assert(y0 <> 0)%%R by now intros ->; apply H; rewrite Rmult_0_r.
       rewrite !powerRZ_neg by assumption.
       rewrite Rinv_mult_distr by assumption.
       now rewrite <- !pow_powerRZ, Rpow_mult_distr.

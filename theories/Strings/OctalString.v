@@ -26,7 +26,7 @@ Definition ascii_to_digit (ch : ascii) : option N
       else if ascii_dec ch "5" then Some 5
       else if ascii_dec ch "6" then Some 6
       else if ascii_dec ch "7" then Some 7
-      else None)%N.
+      else None)%%N.
 
 Fixpoint pos_oct_app (p q:positive) : positive :=
   match q with

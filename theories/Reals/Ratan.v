@@ -134,7 +134,7 @@ intros [ | N] Npos n decr to0 cv nN.
    unfold tg_alt at 2; rewrite pow_1_odd; lra.
  rewrite Nodd; destruct (alternated_series_ineq _ _ p decr to0 cv) as [B _].
  destruct (alternated_series_ineq _ _ (S p) decr to0 cv) as [_ C].
- assert (keep : (2 * S p = S (S ( 2 * p)))%nat) by ring.
+ assert (keep : (2 * S p = S (S ( 2 * p)))%%nat) by ring.
  case (even_odd_cor n) as [p' [neven | nodd]].
    rewrite neven;
    destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].

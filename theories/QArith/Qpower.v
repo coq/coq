@@ -126,7 +126,7 @@ Notation Qpower_decomp := Qpower_decomp_positive (only parsing).
 
 (** ** Values of Qpower for specific arguments *)
 
-Lemma Qpower_0 : forall n, (n<>0)%Z -> 0^n == 0.
+Lemma Qpower_0 : forall n, (n<>0)%%Z -> 0^n == 0.
 Proof.
   intros [|n|n] Hn; try (elim Hn; reflexivity); simpl;
   rewrite Qpower_positive_0; reflexivity.
@@ -256,7 +256,7 @@ case Pos.compare_spec; intros H0; simpl; subst;
  assumption.
 Qed.
 
-Lemma Qpower_plus' : forall a n m, (n+m <> 0)%Z -> a^(n+m) == a^n*a^m.
+Lemma Qpower_plus' : forall a n m, (n+m <> 0)%%Z -> a^(n+m) == a^n*a^m.
 Proof.
 intros a n m H.
 destruct (Qeq_dec a 0)as [X|X].

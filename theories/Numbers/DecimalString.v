@@ -40,7 +40,7 @@ Definition uint_of_char (a:ascii)(d:option uint) :=
     | "9" => Some (D9 d)
     | _ => None
     end
-  end%char.
+  end%%char.
 
 Lemma uint_of_char_spec c d d' :
   uint_of_char c (Some d) = Some d' ->
@@ -53,7 +53,7 @@ Lemma uint_of_char_spec c d d' :
   c = "6" /\ d' = D6 d \/
   c = "7" /\ d' = D7 d \/
   c = "8" /\ d' = D8 d \/
-  c = "9" /\ d' = D9 d)%char.
+  c = "9" /\ d' = D9 d)%%char.
 Proof.
   destruct c as [[|] [|] [|] [|] [|] [|] [|] [|]];
   intros [= <-]; intuition.

@@ -677,13 +677,13 @@ Proof.
 Qed.
 
 (* ADD *)
-Lemma add_assoc x y z: (x + (y + z) = (x + y) + z)%uint63.
+Lemma add_assoc x y z: (x + (y + z) = (x + y) + z)%%uint63.
 Proof.
  apply to_Z_inj; rewrite !add_spec.
  rewrite -> Zplus_mod_idemp_l, Zplus_mod_idemp_r, Zplus_assoc; auto.
 Qed.
 
-Lemma add_comm x y: (x + y = y + x)%uint63.
+Lemma add_comm x y: (x + y = y + x)%%uint63.
 Proof.
  apply to_Z_inj; rewrite -> !add_spec, Zplus_comm; auto.
 Qed.
@@ -708,7 +708,7 @@ Proof.
  apply sym_equal; rewrite leb_spec, H1; auto with zarith.
 Qed.
 
-Lemma add_cancel_l x y z : (x + y = x + z)%uint63 -> y = z.
+Lemma add_cancel_l x y z : (x + y = x + z)%%uint63 -> y = z.
 Proof.
   intros h; apply int_eqm in h; rewrite !add_spec in h; apply eqm_mod, eqm_sub in h.
   replace (_ + _ - _) with (φ(y) - φ(z)) in h by lia.
@@ -716,7 +716,7 @@ Proof.
   apply eqmI, h.
 Qed.
 
-Lemma add_cancel_r x y z : (y + x = z + x)%uint63 -> y = z.
+Lemma add_cancel_r x y z : (y + x = z + x)%%uint63 -> y = z.
 Proof.
   rewrite !(fun t => add_comm t x); intros Hl; apply (add_cancel_l x); auto.
 Qed.
@@ -730,12 +730,12 @@ Proof. apply to_Z_inj; rewrite lsr_spec; reflexivity. Qed.
 Lemma lsr_0_r i: i >> 0 = i.
 Proof. apply to_Z_inj; rewrite lsr_spec, Zdiv_1_r; exact eq_refl. Qed.
 
-Lemma lsr_1 n : 1 >> n = (n =? 0)%uint63.
+Lemma lsr_1 n : 1 >> n = (n =? 0)%%uint63.
 Proof.
   case eqbP.
     intros h; rewrite (to_Z_inj _ _ h), lsr_0_r; reflexivity.
  intros Hn.
- assert (H1n : (1 >> n = 0)%uint63); auto.
+ assert (H1n : (1 >> n = 0)%%uint63); auto.
  apply to_Z_inj; rewrite lsr_spec.
  apply Zdiv_small; rewrite to_Z_1; split; auto with zarith.
  change 1%Z with (2^0)%Z.
@@ -745,7 +745,7 @@ Proof.
  lia.
 Qed.
 
-Lemma lsr_add i m n: ((i >> m) >> n = if n <=? m + n then i >> (m + n) else 0)%uint63.
+Lemma lsr_add i m n: ((i >> m) >> n = if n <=? m + n then i >> (m + n) else 0)%%uint63.
 Proof.
  case (to_Z_bounded m); intros H1m H2m.
  case (to_Z_bounded n); intros H1n H2n.
@@ -780,7 +780,7 @@ Proof.
  apply (f_equal2 Zmod); auto with zarith.
 Qed.
 
-Lemma lsr_M_r x i (H: (digits <=? i = true)%uint63) : x >> i = 0%uint63.
+Lemma lsr_M_r x i (H: (digits <=? i = true)%%uint63) : x >> i = 0%uint63.
 Proof.
  apply to_Z_inj.
  rewrite lsr_spec, to_Z_0.
@@ -826,7 +826,7 @@ Proof.
  now case eqbP.
 Qed.
 
-Lemma bit_split i : ( i = (i >> 1 ) << 1 + bit i 0)%uint63.
+Lemma bit_split i : ( i = (i >> 1 ) << 1 + bit i 0)%%uint63.
 Proof.
  apply to_Z_inj.
  rewrite -> add_spec, lsl_spec, lsr_spec, bit_0_spec, Zplus_mod_idemp_l.
@@ -836,7 +836,7 @@ Proof.
 Qed.
 
 Lemma bit_lsr x i j :
- (bit (x >> i) j = if j <=? i + j then bit x (i + j) else false)%uint63.
+ (bit (x >> i) j = if j <=? i + j then bit x (i + j) else false)%%uint63.
 Proof.
   unfold bit; rewrite lsr_add; case (_ ≤? _); auto.
 Qed.
@@ -876,10 +876,10 @@ Proof.
   case bit; discriminate.
 Qed.
 
-Lemma bit_M i n (H: (digits <=? n = true)%uint63): bit i n = false.
+Lemma bit_M i n (H: (digits <=? n = true)%%uint63): bit i n = false.
 Proof. unfold bit; rewrite lsr_M_r; auto. Qed.
 
-Lemma bit_half i n (H: (n <? digits = true)%uint63) : bit (i>>1) n = bit i (n+1).
+Lemma bit_half i n (H: (n <? digits = true)%%uint63) : bit (i>>1) n = bit i (n+1).
 Proof.
  unfold bit.
  rewrite lsr_add.
@@ -915,7 +915,7 @@ Proof.
 Qed.
 
 Lemma bit_lsl x i j : bit (x << i) j =
-(if (j <? i) || (digits <=? j) then false else bit x (j - i))%uint63.
+(if (j <? i) || (digits <=? j) then false else bit x (j - i))%%uint63.
 Proof.
  assert (F1: 1 >= 0) by discriminate.
  case_eq (digits <=? j)%uint63; intros H.

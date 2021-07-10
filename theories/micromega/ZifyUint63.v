@@ -8,7 +8,7 @@ Proof. apply to_Z_bounded. Qed.
 
 #[global]
 Instance Inj_int_Z : InjTyp int Z :=
-  mkinj _ _ to_Z (fun x => 0 <= x < 9223372036854775808)%Z to_Z_bounded.
+  mkinj _ _ to_Z (fun x => 0 <= x < 9223372036854775808)%%Z to_Z_bounded.
 Add Zify InjTyp Inj_int_Z.
 
 #[global]
@@ -72,7 +72,7 @@ Instance Op_eqb : BinOp eqb :=
   {| TBOp := Z.eqb; TBOpInj := eqb_eq |}.
 Add Zify BinOp Op_eqb.
 
-Lemma eq_int_inj : forall  n m : int, n = m <-> (φ  n = φ m)%uint63.
+Lemma eq_int_inj : forall  n m : int, n = m <-> (φ  n = φ m)%%uint63.
 Proof.
   split; intro H.
   rewrite H ; reflexivity.
@@ -86,37 +86,37 @@ Add Zify BinRel Op_eq.
 
 #[global]
 Instance Op_add : BinOp add :=
-  {| TBOp := fun x y => (x + y) mod 9223372036854775808%Z; TBOpInj := add_spec |}%Z.
+  {| TBOp := fun x y => (x + y) mod 9223372036854775808%Z; TBOpInj := add_spec |}%%Z.
 Add Zify BinOp Op_add.
 
 #[global]
 Instance Op_sub : BinOp sub :=
-  {| TBOp := fun x y => (x - y) mod 9223372036854775808%Z; TBOpInj := sub_spec |}%Z.
+  {| TBOp := fun x y => (x - y) mod 9223372036854775808%Z; TBOpInj := sub_spec |}%%Z.
 Add Zify BinOp Op_sub.
 
 #[global]
 Instance Op_opp : UnOp Uint63.opp :=
-  {| TUOp := (fun x => (- x) mod 9223372036854775808)%Z; TUOpInj := (sub_spec 0) |}%Z.
+  {| TUOp := (fun x => (- x) mod 9223372036854775808)%Z; TUOpInj := (sub_spec 0) |}%%Z.
 Add Zify UnOp Op_opp.
 
 #[global]
 Instance Op_oppcarry : UnOp oppcarry :=
-  {| TUOp := (fun x => 2^63 -  x - 1)%Z; TUOpInj := oppcarry_spec |}%Z.
+  {| TUOp := (fun x => 2^63 -  x - 1)%Z; TUOpInj := oppcarry_spec |}%%Z.
 Add Zify UnOp Op_oppcarry.
 
 #[global]
 Instance Op_succ : UnOp succ :=
-  {| TUOp := (fun x => (x + 1) mod 2^63)%Z; TUOpInj := succ_spec |}%Z.
+  {| TUOp := (fun x => (x + 1) mod 2^63)%Z; TUOpInj := succ_spec |}%%Z.
 Add Zify UnOp Op_succ.
 
 #[global]
 Instance Op_pred : UnOp Uint63.pred :=
-  {| TUOp := (fun x => (x - 1) mod 2^63)%Z; TUOpInj := pred_spec |}%Z.
+  {| TUOp := (fun x => (x - 1) mod 2^63)%Z; TUOpInj := pred_spec |}%%Z.
 Add Zify UnOp Op_pred.
 
 #[global]
 Instance Op_mul : BinOp mul :=
-  {| TBOp := fun x y => (x * y) mod 9223372036854775808%Z; TBOpInj := mul_spec |}%Z.
+  {| TBOp := fun x y => (x * y) mod 9223372036854775808%Z; TBOpInj := mul_spec |}%%Z.
 Add Zify BinOp Op_mul.
 
 #[global]
@@ -131,22 +131,22 @@ Add Zify BinOp Op_mod.
 
 #[global]
 Instance Op_subcarry : BinOp subcarry :=
-  {| TBOp := (fun x y => (x - y - 1) mod 2^63)%Z ; TBOpInj := subcarry_spec |}.
+  {| TBOp := (fun x y => (x - y - 1) mod 2^63)%%Z ; TBOpInj := subcarry_spec |}.
 Add Zify BinOp Op_subcarry.
 
 #[global]
 Instance Op_addcarry : BinOp addcarry :=
-  {| TBOp := (fun x y => (x + y + 1) mod 2^63)%Z ; TBOpInj := addcarry_spec |}.
+  {| TBOp := (fun x y => (x + y + 1) mod 2^63)%%Z ; TBOpInj := addcarry_spec |}.
 Add Zify BinOp Op_addcarry.
 
 #[global]
 Instance Op_lsr : BinOp lsr :=
-  {| TBOp := (fun x y => x / 2^ y)%Z ; TBOpInj := lsr_spec |}.
+  {| TBOp := (fun x y => x / 2^ y)%%Z ; TBOpInj := lsr_spec |}.
 Add Zify BinOp Op_lsr.
 
 #[global]
 Instance Op_lsl : BinOp lsl :=
-  {| TBOp := (fun x y => (x  * 2^ y) mod 2^ 63)%Z ; TBOpInj := lsl_spec |}.
+  {| TBOp := (fun x y => (x  * 2^ y) mod 2^ 63)%%Z ; TBOpInj := lsl_spec |}.
 Add Zify BinOp Op_lsl.
 
 #[global]
@@ -176,7 +176,7 @@ Add Zify BinOp Op_bit.
 
 #[global]
 Instance Op_of_Z : UnOp of_Z :=
-  { TUOp := (fun x => x mod 9223372036854775808)%Z; TUOpInj := of_Z_spec }.
+  { TUOp := (fun x => x mod 9223372036854775808)%%Z; TUOpInj := of_Z_spec }.
 Add Zify UnOp Op_of_Z.
 
 #[global]

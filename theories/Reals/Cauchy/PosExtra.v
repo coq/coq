@@ -3,10 +3,10 @@ Require Import ZArith.
 Require Import Lia.
 
 Lemma Pos_pow_1_r: forall p : positive,
-  (1^p = 1)%positive.
+  (1^p = 1)%%positive.
 Proof.
   intros p.
-  assert (forall q:positive, Pos.iter id 1 q = 1)%positive as H1.
+  assert (forall q:positive, Pos.iter id 1 q = 1)%%positive as H1.
   { intros q; apply Pos.iter_invariant; tauto. }
   induction p.
   - cbn; rewrite IHp, H1; reflexivity.

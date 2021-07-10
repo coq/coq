@@ -20,7 +20,7 @@ Local Open Scope string_scope.
 Definition ascii_to_digit (ch : ascii) : option N
   := (if ascii_dec ch "0" then Some 0
       else if ascii_dec ch "1" then Some 1
-      else None)%N.
+      else None)%%N.
 
 Fixpoint pos_bin_app (p q:positive) : positive :=
   match q with

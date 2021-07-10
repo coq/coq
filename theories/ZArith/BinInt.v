@@ -140,7 +140,7 @@ Lemma pos_sub_discr p q :
   | Z0 => p = q
   | pos k => p = q + k
   | neg k => q = p + k
-  end%positive.
+  end%%positive.
 Proof.
  rewrite pos_sub_spec.
  case Pos.compare_spec; auto; intros;
@@ -230,7 +230,7 @@ Proof.
    now rewrite H, Pos.add_sub.
  - (* q < r *)
    rewrite pos_sub_spec.
-   assert (Hr : (r = (r-q)+q)%positive) by (now rewrite Pos.sub_add).
+   assert (Hr : (r = (r-q)+q)%%positive) by (now rewrite Pos.sub_add).
    rewrite Hr at 1. rewrite Pos.add_compare_mono_r.
    case Pos.compare_spec; intros E1; trivial; f_equal.
    rewrite Pos.add_comm. apply Pos.sub_add_distr.

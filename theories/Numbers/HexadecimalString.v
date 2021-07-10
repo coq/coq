@@ -49,7 +49,7 @@ Definition uint_of_char (a:ascii)(d:option uint) :=
     | "f" => Some (Df d)
     | _ => None
     end
-  end%char.
+  end%%char.
 
 Lemma uint_of_char_spec c d d' :
   uint_of_char c (Some d) = Some d' ->
@@ -68,7 +68,7 @@ Lemma uint_of_char_spec c d d' :
   c = "c" /\ d' = Dc d \/
   c = "d" /\ d' = Dd d \/
   c = "e" /\ d' = De d \/
-  c = "f" /\ d' = Df d)%char.
+  c = "f" /\ d' = Df d)%%char.
 Proof.
   destruct c as [[|] [|] [|] [|] [|] [|] [|] [|]];
   intros [= <-]; intuition.

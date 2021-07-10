@@ -715,7 +715,7 @@ Section Basics.
  Qed.
 
  Lemma EqShiftL_incrbis : forall n k x y, n<=size ->
-  (n+k=S size)%nat ->
+  (n+k=S size)%%nat ->
   EqShiftL k x y ->
   EqShiftL k (incrbis_aux n x) (incrbis_aux n y).
  Proof.
@@ -986,7 +986,7 @@ Section Basics.
     [positive_to_int31]. *)
 
  Lemma double_twice_firstl : forall x, firstl x = D0 ->
-  (Twon*x = twice x)%int31.
+  (Twon*x = twice x)%%int31.
  Proof.
  intros.
  unfold mul31.
@@ -994,7 +994,7 @@ Section Basics.
  Qed.
 
  Lemma double_twice_plus_one_firstl : forall x, firstl x = D0 ->
-  (Twon*x+In = twice_plus_one x)%int31.
+  (Twon*x+In = twice_plus_one x)%%int31.
  Proof.
  intros.
  rewrite double_twice_firstl; auto.
@@ -1987,8 +1987,8 @@ Section Int31_Specs.
 
  Lemma sqrt31_step_def rec i j:
    sqrt31_step rec i j =
-   match (fst (i/j) ?= j)%int31 with
-     Lt => rec i (fst ((j + fst(i/j))/2))%int31
+   match (fst (i/j) ?= j)%%int31 with
+     Lt => rec i (fst ((j + fst(i/j))/2))%%int31
    | _ =>  j
    end.
  Proof.
@@ -2090,7 +2090,7 @@ Section Int31_Specs.
        match (fst (div3121 ih il j) ?= j)%int31 with
          Lt => let m := match j +c fst (div3121 ih il j) with
                        C0 m1 => fst (m1/2)%int31
-                     | C1 m1 => (fst (m1/2) + v30)%int31
+                     | C1 m1 => (fst (m1/2) + v30)%%int31
                      end in rec ih il m
        | _ =>  j
        end
