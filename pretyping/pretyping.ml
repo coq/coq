@@ -1262,16 +1262,27 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
 
   let pretype_array self (u,t,def,ty) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    let sigma, u = match u with
+      | None -> sigma, None
+      | Some [u] ->
+        let sigma, u = glob_level ?loc sigma u in
+        sigma, Some u
+      | Some u -> user_err ?loc Pp.(str "Universe instance should have length 1.")
+    in
     let sigma, tycon' = split_as_array !!env sigma tycon in
     let sigma, jty = eval_type_pretyper self ~program_mode ~poly resolve_tc tycon' env sigma ty in
     (* XXX not sure if we need to be this complex, I wrote this while
        being confused by broken universe substitutions *)
     let sigma, u = match Univ.Universe.level (Sorts.univ_of_sort jty.utj_type) with
-      | Some u ->
-        let sigma = Evd.make_nonalgebraic_variable sigma u in
-        sigma, u
+      | Some v ->
+        let sigma = Evd.make_nonalgebraic_variable sigma v in
+        let sigma = Option.cata (Evd.set_leq_level sigma v) sigma u in
+        sigma, Option.default v u
       | None ->
-        let sigma, u = Evd.new_univ_level_variable UState.univ_flexible sigma in
+        let sigma, u = match u with
+          | Some u -> sigma, u
+          | None -> Evd.new_univ_level_variable UState.univ_flexible sigma
+        in
         let sigma = Evd.set_leq_sort !!env sigma jty.utj_type
             (Sorts.sort_of_univ (Univ.Universe.make u))
         in
