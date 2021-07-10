@@ -475,45 +475,38 @@ let cc_tactic depth additionnal_terms =
           convert_to_hyp_tac ida ta idb tb p
   end
 
-(* proof of  (t -> not t) -> not t *)
-let mk_negation_proof sigma coq_not t not_t =
-  mkLambda (make_annot Anonymous Sorts.Relevant, mkArrowR t not_t,
-    mkLambda (make_annot Anonymous Sorts.Relevant, t, mkApp (mkRel 2, [|mkRel 1; mkRel 1|])))
-
-(* in order to prove (not t) it suffices to prove (t |- not t) *)
-let try_not_arg_intro =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
-    let env = Proofview.Goal.env gl in
-    let concl = Proofview.Goal.concl gl in
-    match kind sigma concl with
-    (* inspect whether current goal is (not t) *)
-    | App (_, [|t|]) ->
-      if (Hipattern.is_matching_not env sigma concl)
-      then
-        Tacticals.New.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun coqnot ->
-        let c = mk_negation_proof sigma coqnot t concl in
-        Tacticals.New.tclTHEN (
-          Refine.refine ~typecheck:true begin fun sigma ->
-            let sigma, new_goal = Evarutil.new_evar env sigma (mkArrowR t concl) in sigma, mkApp (c, [|new_goal|])
-          end) intro
-      else Tacticals.New.tclIDTAC
-    | _ -> Tacticals.New.tclIDTAC
-  end
-
-(* if the conclusion is convertible to forall s1..sn, t1 = t2 then introduce hypotheses s1..sn *)
-let try_intros_until_eq =
-  Tacticals.New.tclTRY (
-    Tacticals.New.tclTHENLIST [Tacticals.New.tclREPEAT (Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT intro) Tactics.hnf_in_concl);
+(* if conclusion = forall s1..sn, t then
+   1) introduce assumptions s1..sn
+   2) try solve t by assumption (solves False -> x <> y)
+   3) if t = (t1 = t2)
+      then finish
+      else set current goal to (forall s1..sn, t) retaining s1..sn as assumptions in environment
+        (solves not (false = true); and Q -> Q where Q := True -> P) *)
+let rec massage_assumptions_rec concl f =
+  Tacticals.New.tclTHENLIST [
+    Tactics.hnf_in_concl;
+    Tacticals.New.tclFIRST [
+      Tactics.intro_then (begin fun x -> massage_assumptions_rec concl (fun e -> mkApp (f e, [|mkVar x|])) end);
+      (* solves False -> x <> y *)
+      Tactics.assumption;
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
-        let concl = Proofview.Goal.concl gl in
-        if Hipattern.is_equality_type env sigma concl then Tacticals.New.tclIDTAC else Tacticals.New.tclFAIL 0 (str "Not an equality type")
-      end])
+        if Hipattern.is_equality_type env sigma (Proofview.Goal.concl gl)
+        (* do not revert arguments in case of t1 = t2 *)
+        then Tacticals.New.tclIDTAC
+        else
+          (* reset conclusion to the former state; retain introduced assumptions *)
+          Refine.refine ~typecheck:true begin fun sigma ->
+            let sigma, e = Evarutil.new_evar env sigma concl in sigma, (f e)
+          end
+      end]]
+
+let massage_assumptions =
+  Proofview.Goal.enter begin fun gl -> massage_assumptions_rec (Proofview.Goal.concl gl) (fun e -> e) end
 
 let congruence_tac depth l =
-  Tacticals.New.tclTHENLIST [Tacticals.New.tclREPEAT intro; try_not_arg_intro; try_intros_until_eq; cc_tactic depth l]
+  Tacticals.New.tclTHENLIST [Tacticals.New.tclREPEAT intro; massage_assumptions; cc_tactic depth l]
 
 (* Beware: reflexivity = constructor 1 = apply refl_equal
    might be slow now, let's rather do something equivalent
