@@ -27,18 +27,19 @@ type t =
 
 val is_trivial : t -> bool
 
+val check : UGraph.t -> t -> bool
+
 module Set : sig
   include Set.S with type elt = t
 
   val pr : t -> Pp.t
+
+  (** Replace ULub constraints by UEq *)
+  val force : t -> t
+
+  val check : UGraph.t -> t -> bool
 end
 
-type 'a accumulator = Set.t -> 'a -> 'a option
-type 'a constrained = 'a * Set.t
 type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 
 val enforce_eq_instances_univs : bool -> Instance.t constraint_function
-
-(** With [force_weak] UWeak constraints are turned into equalities,
-   otherwise they're forgotten. *)
-val to_constraints : force_weak:bool -> UGraph.t -> Set.t -> Constraint.t
