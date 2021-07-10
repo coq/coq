@@ -148,6 +148,7 @@ module Prim :
     val string : string Entry.t
     val lstring : lstring Entry.t
     val reference : qualid Entry.t
+    val fields : (Id.t list * Id.t) Entry.t
     val qualid : qualid Entry.t
     val fullyqualid : Id.t list CAst.t Entry.t
     val by_notation : (string * string option) Entry.t

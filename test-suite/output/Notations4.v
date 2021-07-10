@@ -474,3 +474,12 @@ Notation "[ 'MyNotation' G ]" := (G+0) (at level 0, only parsing) : bool_scope.
 Notation "[ 'MyNotation' G ]" := (G*0).
 Check 0*0.
 End GenericFormatPrecedence.
+
+Module LeadingIdent.
+
+Notation "'MyNone' +" := None (format "'MyNone' +").
+Check fun MyNone : nat => MyNone.
+Check MyNone+.
+Check Some MyNone+.
+
+End LeadingIdent.

@@ -640,7 +640,7 @@ let keyword_needed need s =
       need
     | _ -> true
 
-let make_production etyps symbols =
+let make_production (_,lev,_) etyps symbols =
   let rec aux need = function
     | [] -> [[]]
     | NonTerminal m :: l ->
@@ -668,7 +668,8 @@ let make_production etyps symbols =
               [GramConstrNonTerminal (ETProdBinderList typ, Some x)] (aux false l)
         | _ ->
            user_err Pp.(str "Components of recursive patterns in notation must be terms or binders.") in
-  aux true symbols
+  let need = (* a leading ident/number factorizes iff at level 0 *) lev <> 0 in
+  aux need symbols
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
@@ -1467,7 +1468,7 @@ let recover_squash_syntax sy =
 let make_pa_rule (typs,symbols) parsing_data =
   let { ntn_for_grammar; prec_for_grammar; typs_for_grammar; need_squash } = parsing_data in
   let assoc = recompute_assoc typs in
-  let prod = make_production typs symbols in
+  let prod = make_production prec_for_grammar typs symbols in
   let sy = {
     notgram_level = prec_for_grammar;
     notgram_assoc = assoc;
