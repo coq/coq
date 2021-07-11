@@ -888,8 +888,11 @@ end
 
 (* To be turned into a fatal warning in 8.14 *)
 let warn_deprecated_ident_entry =
-  CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated"
-         (fun () -> strbrk "grammar entry \"ident\" permitted \"_\" in addition to proper identifiers; this use is deprecated and its meaning will change in the future; use \"name\" instead.")
+  CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated" ~default:CWarnings.AsError
+    (fun () ->
+       hov 0 (strbrk "grammar entry \"ident\" permitted \"_\" in addition to proper identifiers; this use is deprecated and its meaning will exclude \"_\" in a next version:") ++ cut () ++
+      hov 0 (strbrk "- either replace \"ident\" with \"name\" if you intend to include \"_\" in the parsing rule;") ++ cut () ++
+      hov 0 (strbrk "- or locally silence the warning with `Set Warnings \"-deprecated-ident-entry\"' if you intend to eventually exclude \"_\" (this will automatically become the default behavior for \"ident\" in the next version)."))
 
 let interp_modifiers entry modl = let open NotationMods in
   let rec interp subtyps acc = function
@@ -942,7 +945,11 @@ let interp_modifiers entry modl = let open NotationMods in
   let mods =
     { mods with etyps = List.map (function
         | (id,ETName false) ->
-           if entry = InConstrEntry then (warn_deprecated_ident_entry (); (id,ETName true))
+           if entry = InConstrEntry then
+             (let loc = List.hd (List.map_filter
+                (function CAst.{loc;v=SetEntryType (id',ETName false)} when Id.equal id (Id.of_string id') -> Some loc | _ -> None) modl) in
+              warn_deprecated_ident_entry ?loc ();
+              (id,ETName true))
            else (id,ETIdent)
         | x -> x) mods.etyps } in
   { mods with etyps = extra_etyps@mods.etyps }

@@ -123,7 +123,7 @@ End M13.
 (* 14. Check that a notation with a "ident" binder does not include a pattern *)
 Module M14.
 Notation "'myexists' x , p" := (ex (fun x => p))
-  (at level 200, x ident, p at level 200, right associativity) : type_scope.
+  (at level 200, x name, p at level 200, right associativity) : type_scope.
 Check myexists I, I = 0. (* Should not be seen as a constructor *)
 End M14.
 
