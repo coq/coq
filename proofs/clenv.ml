@@ -711,6 +711,31 @@ let unify ?(flags=fail_quick_unif_flags) m =
       Proofview.tclZERO ~info e
   end
 
+let warn_binding_renaming =
+  CWarnings.create ~name:"with-clause-compatibility" ~category:"tactics"
+    (fun (id,id') ->
+       str "The \"with\" clause on references now takes names as given by \"About\"; " ++
+       str "binder " ++ Id.print id' ++ str " should be renamed to " ++ Id.print id ++ str ".")
+
+let translate_bindings env sigma lbind t =
+  (* Warning: this may wrongly translate in case t and t' have similar
+     names in distinct positions *)
+  let t' = rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
+  let rec aux t t' = match EConstr.kind sigma t, EConstr.kind sigma t' with
+  | Prod ({binder_name=Name id}, _ , t), Prod ({binder_name=Name id'}, _, t') ->
+    if not (Id.equal id id') then
+      List.map (function
+          | CAst.{loc=loc';v=({v=NamedHyp id'';loc},c)} when Id.equal id' id'' ->
+             warn_binding_renaming ?loc (id,id');
+             CAst.make ?loc:loc' (CAst.make ?loc (NamedHyp id),c)
+          | x -> x) lbind
+    else
+      lbind
+  | LetIn (_, _, _, t), LetIn (_, _, _, t') -> aux t t'
+  | _ -> lbind
+  in
+  aux t t'
+
 (****************************************************************)
 (* Clausal environment for an application *)
 
@@ -719,9 +744,9 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
       let clause = mk_clenv_from_env env sigma n (c,t) in
       clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
-      let t = match EConstr.kind sigma (fst (decompose_app sigma c)) with
-        | (Const _ | Ind _ | Construct _) -> t
-        | _ -> rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
+      let lbind, t = match EConstr.kind sigma (fst (decompose_app sigma c)) with
+        | (Const _ | Ind _ | Construct _) -> translate_bindings env sigma lbind t, t
+        | _ -> lbind, rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
       let clause = mk_clenv_from_env env sigma n
         (c, t)
       in clenv_match_args lbind clause
