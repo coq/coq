@@ -908,9 +908,9 @@ let interp_declared_or_quantified_hypothesis ist env sigma = function
             (coerce_to_decl_or_quant_hyp sigma) ist (Some (env,sigma)) (make id)
       with Not_found -> NamedHyp id
 
-let interp_binding ist env sigma {loc;v=(b,c)} =
+let interp_binding ist env sigma {loc;v=({loc=loc';v=b},c)} =
   let sigma, c = interp_open_constr ist env sigma c in
-  sigma, (make ?loc (interp_binding_name ist env sigma b,c))
+  sigma, (make ?loc ((make ?loc:loc' (interp_binding_name ist env sigma b),c)))
 
 let interp_bindings ist env sigma = function
 | NoBindings ->

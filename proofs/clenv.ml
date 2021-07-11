@@ -459,24 +459,24 @@ let clenv_independent clenv =
   let deps = Metaset.union (dependent_in_type_of_metas clenv mvs) ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
-let qhyp_eq h1 h2 = match h1, h2 with
+let qhyp_eq h1 h2 = match h1.CAst.v, h2.CAst.v with
 | NamedHyp n1, NamedHyp n2 -> Id.equal n1 n2
 | AnonHyp i1, AnonHyp i2 -> Int.equal i1 i2
 | _ -> false
 
 let check_bindings bl =
-  match List.duplicates qhyp_eq (List.map (fun {CAst.v=x} -> fst x) bl) with
-    | NamedHyp s :: _ ->
-        user_err
+  match List.duplicates qhyp_eq (List.map (fun {CAst.v=(x,_)} -> x) bl) with
+    | CAst.{v=NamedHyp s; loc} :: _ ->
+        user_err ?loc
           (str "The variable " ++ Id.print s ++
            str " occurs more than once in binding list.");
-    | AnonHyp n :: _ ->
-        user_err
+    | CAst.{v=AnonHyp n; loc} :: _ ->
+        user_err ?loc
           (str "The position " ++ int n ++
            str " occurs more than once in binding list.")
     | [] -> ()
 
-let explain_no_such_bound_variable evd id =
+let explain_no_such_bound_variable ?loc evd id =
   let fold l (n, clb) =
     let na = match clb with
     | Cltyp (na, _) -> na
@@ -485,7 +485,7 @@ let explain_no_such_bound_variable evd id =
     if na != Anonymous then Name.get_id na :: l else l
   in
   let mvl = List.fold_left fold [] (Evd.meta_list evd) in
-  user_err ~hdr:"Evd.meta_with_name"
+  user_err ?loc ~hdr:"Evd.meta_with_name"
     (str"No such bound variable " ++ Id.print id ++
      (if mvl == [] then str " (no bound variables at all in the expression)."
       else
@@ -493,7 +493,7 @@ let explain_no_such_bound_variable evd id =
          str (if List.length mvl == 1 then " is: " else "s are: ") ++
          pr_enum Id.print mvl ++ str").")))
 
-let meta_with_name evd id =
+let meta_with_name ?loc evd id =
   let na = Name id in
   let fold (l1, l2 as l) (n, clb) =
     let (na',def) = match clb with
@@ -506,25 +506,27 @@ let meta_with_name evd id =
   let (mvl, mvnodef) = List.fold_left fold ([], []) (Evd.meta_list evd) in
   match mvnodef, mvl with
     | _,[]  ->
-      explain_no_such_bound_variable evd id
+      explain_no_such_bound_variable ?loc evd id
     | ([n],_|_,[n]) ->
         n
     | _  ->
+        (* This looks rather like an anomaly: all variables of the
+           lemma should be distinguishable *)
         user_err ~hdr:"Evd.meta_with_name"
           (str "Binder name \"" ++ Id.print id ++
            strbrk "\" occurs more than once in clause.")
 
-let meta_of_binder clause loc mvs = function
-  | NamedHyp s -> meta_with_name clause.evd s
+let meta_of_binder ?loc clause mvs = function
+  | NamedHyp s -> meta_with_name ?loc clause.evd s
   | AnonHyp n ->
       try List.nth mvs (n-1)
       with (Failure _|Invalid_argument _) ->
-        user_err  (str "No such binder.")
+        user_err ?loc (str "No such binder.")
 
-let error_already_defined b =
+let error_already_defined ?loc b =
   match b with
     | NamedHyp id ->
-        user_err
+        user_err ?loc
           (str "Binder name \"" ++ Id.print id ++
            str"\" already defined with incompatible value.")
     | AnonHyp n ->
@@ -560,11 +562,11 @@ let clenv_match_args bl clenv =
     let mvs = clenv_independent clenv in
     check_bindings bl;
     List.fold_left
-      (fun clenv {CAst.loc;v=(b,c)} ->
-        let k = meta_of_binder clenv loc mvs b in
+      (fun clenv CAst.{v=({loc;v=b},c)} ->
+        let k = meta_of_binder ?loc clenv mvs b in
         if meta_defined clenv.evd k then
           if EConstr.eq_constr clenv.evd (fst (meta_fvalue clenv.evd k)).rebus c then clenv
-          else error_already_defined b
+          else error_already_defined ?loc b
         else
           clenv_assign_binding clenv k c)
       clenv bl
@@ -870,7 +872,7 @@ let solve_evar_clause env sigma hyp_only clause = function
     error_not_right_number_missing_arguments len
 | ExplicitBindings lbind ->
   let () = check_bindings lbind in
-  let fold sigma {CAst.v=(binder, c)} =
+  let fold sigma CAst.{v=({v=binder}, c)} =
     let ev = evar_of_binder clause.cl_holes binder in
     define_with_type sigma env ev c
   in

@@ -34,7 +34,7 @@ and 'constr or_and_intro_pattern_expr =
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t
 
-type 'a explicit_bindings = (quantified_hypothesis * 'a) CAst.t list
+type 'a explicit_bindings = (quantified_hypothesis CAst.t * 'a) CAst.t list
 
 type 'a bindings =
   | ImplicitBindings of 'a list

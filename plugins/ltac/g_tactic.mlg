@@ -310,8 +310,8 @@ GRAMMAR EXTEND Gram
       | pat = naming_intropattern -> { CAst.make ~loc @@ IntroNaming pat } ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
-      | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
+    [ [ "("; id = identref; ":="; c = lconstr; ")" -> { CAst.make ~loc (CAst.make ?loc:id.CAst.loc (NamedHyp id.CAst.v), c) }
+      | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (CAst.make @@ AnonHyp n, c) } ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->

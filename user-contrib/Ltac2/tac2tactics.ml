@@ -42,7 +42,7 @@ let delayed_of_thunk r tac env sigma =
 let mk_bindings = function
 | ImplicitBindings l -> Tactypes.ImplicitBindings l
 | ExplicitBindings l ->
-  let l = List.map CAst.make l in
+  let l = List.map (fun (x,c) -> CAst.make (CAst.make x,c)) l in
   Tactypes.ExplicitBindings l
 | NoBindings -> Tactypes.NoBindings
 
