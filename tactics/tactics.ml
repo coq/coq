@@ -289,13 +289,12 @@ let rename_hyp repl =
     Tacticals.New.tclZEROMSG ~info (str "Not a one-to-one name mapping")
   | Some (src, dst) ->
     Proofview.Goal.enter begin fun gl ->
-      let hyps = Proofview.Goal.hyps gl in
       let concl = Proofview.Goal.concl gl in
       let env = Proofview.Goal.env gl in
+      let sign = named_context_val env in
       let sigma = Proofview.Goal.sigma gl in
       (* Check that we do not mess variables *)
-      let fold accu decl = Id.Set.add (NamedDecl.get_id decl) accu in
-      let vars = List.fold_left fold Id.Set.empty hyps in
+      let vars = ids_of_named_context_val sign in
       let () =
         if not (Id.Set.subset src vars) then
           let hyp = Id.Set.choose (Id.Set.diff src vars) in
@@ -312,11 +311,9 @@ let rename_hyp repl =
       let make_subst (src, dst) = (src, mkVar dst) in
       let subst = List.map make_subst repl in
       let subst c = Vars.replace_vars subst c in
-      let map decl =
-        decl |> NamedDecl.map_id (fun id -> try List.assoc_f Id.equal id repl with Not_found -> id)
-             |> NamedDecl.map_constr subst
-      in
-      let nhyps = List.map map hyps in
+      let replace id = try List.assoc_f Id.equal id repl with Not_found -> id in
+      let map decl = decl |> NamedDecl.map_id replace |> NamedDecl.map_constr subst in
+      let nhyps = List.map map (named_context_of_val sign) in
       let nconcl = subst concl in
       let nctx = val_of_named_context nhyps in
       let instance = EConstr.identity_subst_val (Environ.named_context_val env) in
@@ -2829,7 +2826,7 @@ let generalize_dep ?(with_let=false) c =
   let open Tacticals.New in
   Proofview.Goal.enter begin fun gl ->
   let env = pf_env gl in
-  let sign = Proofview.Goal.hyps gl in
+  let sign = named_context_val env in
   let sigma = project gl in
   let init_ids = ids_of_named_context (Global.named_context()) in
   let seek (d:named_declaration) (toquant:named_context) =
@@ -2838,13 +2835,13 @@ let generalize_dep ?(with_let=false) c =
       d::toquant
     else
       toquant in
-  let to_quantify = Context.Named.fold_outside seek sign ~init:[] in
+  let to_quantify = Context.Named.fold_outside seek (named_context_of_val sign) ~init:[] in
   let to_quantify_rev = List.rev to_quantify in
   let qhyps = List.map NamedDecl.get_id to_quantify_rev in
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match EConstr.kind sigma c with
-      | Var id when mem_named_context_val id (val_of_named_context sign) && not (Id.List.mem id init_ids)
+      | Var id when mem_named_context_val id sign && not (Id.List.mem id init_ids)
           -> id::tothin
       | _ -> tothin
   in
