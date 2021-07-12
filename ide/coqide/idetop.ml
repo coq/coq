@@ -449,7 +449,9 @@ let db_stack () =
   let rec shift s prev_loc res =
     let ploc = cvt_loc prev_loc in
     match s with
-    | (tacn, loc) :: tl -> shift tl loc ((tacn, ploc) :: res)
+    | (tacn, loc) :: tl ->
+      let tacn = if ploc = None then tacn ^ " (no location)" else tacn in
+      shift tl loc ((tacn, ploc) :: res)
     | [] -> ("(script)", ploc) :: res
   in
   List.rev (shift s debugger_state.cur_loc [])

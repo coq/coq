@@ -205,15 +205,31 @@ let print_loc_tac tac =
 let get_stack stack () =
   List.map (fun k ->
     let (loc, k) = k in
+    (* todo: compare to explain_ltac_call_trace below *)
     match k with
     | LtacNameCall l -> KerName.to_string l, loc
     | LtacMLCall _ -> "??? LtacMLCall ", loc
-      (* loc is currently None below *)
+      (* todo: need to convert LtacNotationCall with "prtac tac", so may need to
+         save tactic associated with each stack entry unless we can be sure it's
+         always the TOS?  OTOH is even necessary to show this stack frame? *)
     | LtacNotationCall l -> "??? LtacNotationCall " ^ (KerName.to_string l), loc
     | LtacAtomCall _ -> "??? LtacAtomCall ", loc
-      (* todo: show the "e" below somehow? *)
-    | LtacVarCall (id, e) -> "Call tactic in variable " ^ Id.to_string id, loc
-    | LtacConstrInterp _ -> "??? LtacConstrInterp ", loc
+    | LtacVarCall (id, e) ->
+      let open CAst in
+      let lvar = match e.v with
+      | TacFun (lvar, body) -> Pp.string_of_ppcmds (Name.print (List.hd lvar))
+      | _ -> "???"
+      in
+      Printf.sprintf "%s (from variable %s)" lvar (Id.to_string id), e.loc
+    | LtacConstrInterp (c,_) ->
+(*
+      let env = Global.env() in
+      let sigma = Evd.from_env env in
+      Printf.printf "LtacConstrInterp %s\n%!"
+        (Pp.string_of_ppcmds (Printer.pr_glob_constr_env env sigma c));
+      shows "(fun var : type (Language.Compilers.base.type base) -> Type => _)"
+*)
+      "??? LtacConstrInterp ", loc
     ) stack
 
 (* Each list entry contains multiple trace frames. *)
