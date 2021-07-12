@@ -52,7 +52,7 @@ whereas the output of [linear_search] is [n] packed with a proof
 of [(P n)]. The inductive relation for linear search is named [rel_ls].
 
 The Braga method usually consists in defining a function [f_conform]
-intended to be extracted as (the OCaml translation of) a n-ary
+intended to be extracted as (the OCaml translation of) an n-ary
 function [f], with inputs [x...] and output type [{y | R x... y}]
 where [R] is an inductive n+1-ary relational presentation of [f].
 An additional input of [f_conform] is a termination certificate
@@ -68,14 +68,14 @@ directly define the type of the termination certificate and
 the n+1-ary Coq version of [f].
 Several variants of the proofs are offered for the record:
 - a version that follows the steps in [[1]], named [linear_search_conform];
-- a variant of the latter, named [linear_search_conform'],
+- a variant of the latter, named [linear_search_conform_alt],
   where the recursive call is no longer encapsulated in a
   pattern-matching (avoiding packing-unpacking steps which
   are for instance removed at extraction at the price of
   an additional optimization step).
 - a version where [prog_linear_search] is directly programmed
   and its conformity to [rel_ls] (by dependent induction on
-  the termination certificate, and then the properties of
+  the termination certificate), and then the properties of
   its output are separately proven.
 It is interesting to see that in the last version, the conformity
 proof slightly deviates from the definition of [prog_linear_search],
@@ -86,7 +86,7 @@ This deviation seems to be unavoidable because crucial proof steps
 require the guard argument of the fixpoint to start with a constructor.
 
 The three programs [prog_linear_search], [linear_search_conform]
-and [linear_search_conform'] are purposely presented in a
+and [linear_search_conform_alt] are purposely presented in a
 very similar manner, using [refine] and postponing proof obligations
 related to conformity to [rel_ls].
 
@@ -174,7 +174,7 @@ Defined.
     implication [rq] they are equivalent (but only one direction is needed);
     and as linear search is tail recursive, [Q] can be fixed (but [rq] varies,
     behaving like a logical continuation). *)
-Definition linear_search_conform' start (b : before_witness start) : {n : nat | rel_ls start n}.
+Definition linear_search_conform_alt start (b : before_witness start) : {n : nat | rel_ls start n}.
   refine ((fun Q: nat -> Prop => _ : (forall y, rel_ls start y -> Q y) -> {n | Q n})
             (rel_ls start) (fun y r => r)).
   revert start b.
