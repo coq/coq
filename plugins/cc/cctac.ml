@@ -482,25 +482,28 @@ let cc_tactic depth additionnal_terms =
       then finish
       else set current goal to (forall s1..sn, t) retaining s1..sn as assumptions in environment
         (solves not (false = true); and Q -> Q where Q := True -> P) *)
-let rec massage_assumptions_rec concl f =
-  Tacticals.New.tclTHENLIST [
-    Tactics.hnf_in_concl;
-    Tacticals.New.tclFIRST [
-      Tactics.intro_then (begin fun x -> massage_assumptions_rec concl (fun e -> mkApp (f e, [|mkVar x|])) end);
-      (* solves False -> x <> y *)
-      Tactics.assumption;
-      Proofview.Goal.enter begin fun gl ->
-        let sigma = Proofview.Goal.sigma gl in
-        let env = Proofview.Goal.env gl in
-        if Hipattern.is_equality_type env sigma (Proofview.Goal.concl gl)
+let rec massage_assumptions_rec c f =
+  Tacticals.New.tclFIRST [
+    Tactics.intro_then (begin fun x -> massage_assumptions_rec c (fun e -> mkApp (f e, [|mkVar x|])) end);
+    ((Tacticals.New.tclPROGRESS Tactics.hnf_in_concl) >>= (fun _ -> massage_assumptions_rec c f));
+    Proofview.Goal.enter begin fun gl ->
+      let sigma = Proofview.Goal.sigma gl in
+      let env = Proofview.Goal.env gl in
+      let concl = Proofview.Goal.concl gl in
+      let hyps = Tacmach.New.pf_hyps_types gl in
+      match List.find_opt (fun (id, c) -> EConstr.eq_constr sigma c concl) hyps with
+      (* solves False -> x <> y; cheaper than assumption *)
+      | Some (id, _) -> exact_check (mkVar id)
+      | None ->
+        if Hipattern.is_equality_type env sigma concl
         (* do not revert arguments in case of t1 = t2 *)
         then Tacticals.New.tclIDTAC
         else
           (* reset conclusion to the former state; retain introduced assumptions *)
           Refine.refine ~typecheck:true begin fun sigma ->
-            let sigma, e = Evarutil.new_evar env sigma concl in sigma, (f e)
+            let sigma, e = Evarutil.new_evar env sigma c in sigma, (f e)
           end
-      end]]
+    end]
 
 let massage_assumptions =
   Proofview.Goal.enter begin fun gl -> massage_assumptions_rec (Proofview.Goal.concl gl) (fun e -> e) end
