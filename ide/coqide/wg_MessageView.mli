@@ -38,6 +38,6 @@ class type message_view =
     method set_forward_show_debugger : (unit -> unit) -> unit
   end
 
-val message_view : unit -> message_view
+val message_view : int -> message_view
 
-val forward_keystroke : (Gdk.keysym * Gdk.Tags.modifier list -> bool) ref
+val forward_keystroke : (Gdk.keysym * Gdk.Tags.modifier list -> int -> bool) ref

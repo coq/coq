@@ -24,7 +24,7 @@ class type debugger_view =
   end
 
 let forward_keystroke = ref ((fun x -> failwith "forward_keystroke (db)")
-    : Gdk.keysym * Gdk.Tags.modifier list -> bool)
+    : Gdk.keysym * Gdk.Tags.modifier list -> int -> bool)
 
 let make_table_widget cd cb =
   let frame = GBin.scrolled_window ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
@@ -64,7 +64,7 @@ let make_table_widget cd cb =
 let find_string_col s l =
   match List.assoc s l with `StringC c -> c | _ -> assert false
 
-let debugger title =
+let debugger title sid =
   let forward_set_paned_pos = ref ((fun x -> failwith "forward_set_paned_pos")
     : int -> unit) in
 
@@ -177,7 +177,7 @@ let debugger title =
   let up = GtkData.AccelGroup.parse "Up" in
   let down = GtkData.AccelGroup.parse "Down" in
 
-  (* Keypress handler *)
+  (* Keypress handlers *)
   let keypress_cb ev =
     let move dir =
       match !highlighted_line with
@@ -194,9 +194,15 @@ let debugger title =
     else if key_ev = down then
       (move 1; true)
     else
-      !forward_keystroke key_ev (* support some function keys when Debugger is detached *)
+      !forward_keystroke key_ev sid (* support some function keys when Debugger is detached *)
   in
   let _ = stack_view#event#connect#key_press ~callback:keypress_cb in
+
+  let keypress_cb2 ev =
+    let key_ev = Ideutils.filter_key ev in
+    !forward_keystroke key_ev sid (* support some function keys when Debugger is detached *)
+  in
+  let _ = paned#event#connect#key_press ~callback:keypress_cb2 in
 
   (* click handler *)
   let click_cb ev =

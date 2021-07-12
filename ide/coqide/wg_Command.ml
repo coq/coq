@@ -10,7 +10,7 @@
 
 open Preferences
 
-class command_window name coqtop coqops router =
+class command_window name coqtop coqops router sid =
   let frame = Wg_Detachable.detachable
     ~title:(Printf.sprintf "Query pane (%s)" name) () in
   let _ = frame#hide in
@@ -96,7 +96,7 @@ object(self)
         ~vpolicy:`AUTOMATIC
         ~hpolicy:`AUTOMATIC
         ~packing:(vbox#pack ~fill:true ~expand:true) () in
-    let result = Wg_MessageView.message_view () in
+    let result = Wg_MessageView.message_view sid in
     router#register_route route_id result;
     r_bin#add_with_viewport (result :> GObj.widget);
     views <- (frame#coerce, result, combo#entry) :: views;

@@ -23,6 +23,6 @@ class type debugger_view =
     method set_forward_paned_pos : (int -> unit) -> unit
   end
 
-val debugger : string -> debugger_view
+val debugger : string -> int -> debugger_view
 
-val forward_keystroke : (Gdk.keysym * Gdk.Tags.modifier list -> bool) ref
+val forward_keystroke : (Gdk.keysym * Gdk.Tags.modifier list -> int -> bool) ref

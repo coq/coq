@@ -48,12 +48,15 @@ type session = {
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
+  sid : int;
   mutable control : control;
   mutable abs_file_name : string option;
   mutable debug_stop_pt : (session * int * int) option;
   mutable breakpoints : breakpoint list;
   mutable last_db_goals : Pp.t
 }
+
+let next_sid = ref 0
 
 let create_buffer () =
   let buffer = GSourceView3.source_buffer
@@ -386,11 +389,6 @@ let create_proof () =
   in
   proof
 
-let create_messages () =
-  let messages = Wg_MessageView.message_view () in
-  let _ = messages#misc#set_can_focus true in
-  Wg_RoutedMessageViews.message_views ~route_0:messages
-
 let dummy_control : control =
   object
     method detach () = ()
@@ -410,16 +408,23 @@ let create file coqtop_args =
   let script = create_script coqtop buffer in
   Coq.setup_script_editable coqtop (fun v -> script#set_editable v;script#set_editable2 v);
   let proof = create_proof () in
+  incr next_sid;
+  let sid = !next_sid in
+  let create_messages () =
+    let messages = Wg_MessageView.message_view sid in
+    let _ = messages#misc#set_can_focus true in
+    Wg_RoutedMessageViews.message_views ~route_0:messages
+  in
   let messages = create_messages () in
   let segment = new Wg_Segment.segment () in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
   finder#setup_is_script_editable (fun _ -> script#editable2);
-  let debugger = Wg_Debugger.debugger (Printf.sprintf "Debugger (%s)" basename) in
+  let debugger = Wg_Debugger.debugger (Printf.sprintf "Debugger (%s)" basename) sid in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =
     new CoqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
-  let command = new Wg_Command.command_window basename coqtop cops messages in
+  let command = new Wg_Command.command_window basename coqtop cops messages sid in
   let errpage = create_errpage script in
   let jobpage = create_jobpage coqtop cops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
@@ -453,6 +458,7 @@ let create file coqtop_args =
     tab_label= tab_label;
     errpage=errpage;
     jobpage=jobpage;
+    sid=sid;
     control = dummy_control;
     abs_file_name = abs_file_name;
     debug_stop_pt = None;

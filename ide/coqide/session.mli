@@ -47,6 +47,7 @@ type session = {
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
+  sid : int;
   mutable control : control;
   mutable abs_file_name : string option;
   mutable debug_stop_pt : (session * int * int) option;

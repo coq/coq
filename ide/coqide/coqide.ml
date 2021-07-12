@@ -744,19 +744,22 @@ let db_continue opt sn =
     ~next:(function | _ -> Coq.return ()))
     (fun () -> Minilib.log "Coq busy, discarding db_continue")
 
-(* if the current term is the stopping point for another session, direct actions to that term *)
-let find_db_sn () =
+(* find the session identified by sid.  If not specified and the current term
+   is the stopping point for another session, direct actions to that term *)
+let find_db_sn ?sid () =
   let cur = notebook#current_term in
-  let rec find = function
-  | [] -> cur
-  | hd :: tl ->
-    (match hd.debug_stop_pt with
-    | Some (osn,_,_) -> if osn == cur then hd else find tl
-    | None -> find tl)
-  in find notebook#pages
+  let f = match sid with
+  | Some sid -> fun term -> term.sid == sid
+  | None -> fun term ->
+    match term.debug_stop_pt with
+    | Some (osn,_,_) -> osn == cur
+    | None -> false
+  in
+  let res = List.filter f notebook#pages in
+  if res = [] then cur else List.hd res
 
-let resume_debugger opt = (* todo: assign numbers/create a type *)
-  let term = try Some (find_db_sn ()) with Invalid_argument _ -> None in
+let resume_debugger ?sid opt = (* todo: assign numbers/create a type *)
+  let term = try Some (find_db_sn ?sid ()) with Invalid_argument _ -> None in
   match term with
   | None -> false
   | Some t ->
@@ -778,16 +781,17 @@ let maybe_update_breakpoints () =
   )
 
 module Nav = struct
-  let forward_one _ =
+  let forward_one_sid ?sid _ =
     maybe_update_breakpoints ();
-    if not (resume_debugger Interface.StepOver) then
+    if not (resume_debugger ?sid Interface.StepOver) then
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
-  let continue _ = maybe_update_breakpoints ();
-    ignore (resume_debugger Interface.Continue)
-  let step_in _ = maybe_update_breakpoints ();
-    ignore (resume_debugger Interface.StepIn)
-  let step_out _ = maybe_update_breakpoints ();
-    ignore (resume_debugger Interface.StepOut)
+  let forward_one x = forward_one_sid x
+  let continue ?sid _ = maybe_update_breakpoints ();
+    ignore (resume_debugger ?sid Interface.Continue)
+  let step_in ?sid _ = maybe_update_breakpoints ();
+    ignore (resume_debugger ?sid Interface.StepIn)
+  let step_out ?sid _ = maybe_update_breakpoints ();
+    ignore (resume_debugger ?sid Interface.StepOut)
   let backward_one _ = maybe_update_breakpoints ();
     send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
   let goto _ = maybe_update_breakpoints ();
@@ -810,9 +814,9 @@ module Nav = struct
       let osn = (find_db_sn ()) in
       Coq.interrupt_coqtop osn.coqtop CString.(Set.elements (Map.domain osn.jobpage#data))
     end
-  let break _ =
+  let break ?sid _ =
     if notebook#pages <> [] then begin
-      let ocoqtop = (find_db_sn ()).coqtop in
+      let ocoqtop = (find_db_sn ?sid ()).coqtop in
       if not (Coq.is_stopped_in_debugger ocoqtop) then
         Coq.send_break ocoqtop
     end
@@ -827,15 +831,15 @@ let ctl_up   = GtkData.AccelGroup.parse "<Ctrl>Up"
 let ctl_down = GtkData.AccelGroup.parse "<Ctrl>Down"
 
 (* handle certain function keys from detached Messages panel
-   functions are directed to the current session, not the Messages session
-   (debatable) *)
-let forward_keystroke key =
-  if      key = f9 then (Nav.continue (); true)
-  else if key = f10 then (Nav.step_in (); true)
-  else if key = f11 then (Nav.break (); true)
-  else if key = shft_f10 then (Nav.step_out (); true)
-  else if key = ctl_up then (Nav.backward_one (); true)
-  else if key = ctl_down then (Nav.forward_one (); true)
+   functions are directed to the specified session or the
+   current session, not the Messages session (debatable) *)
+let forward_keystroke key sid =
+  if      key = f9 then (Nav.continue ~sid (); true)
+  else if key = f10 then (Nav.step_in ~sid (); true)
+  else if key = f11 then (Nav.break ~sid (); true)
+  else if key = shft_f10 then (Nav.step_out ~sid (); true)
+  else if key = ctl_up then (Nav.backward_one (*~sid*) (); true)
+  else if key = ctl_down then (Nav.forward_one_sid ~sid (); true)
   else false
 
 let _ = Wg_MessageView.forward_keystroke := forward_keystroke

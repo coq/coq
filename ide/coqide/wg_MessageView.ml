@@ -51,14 +51,14 @@ class type message_view =
   end
 
 let forward_keystroke = ref ((fun x -> failwith "forward_keystroke (mv)")
-    : Gdk.keysym * Gdk.Tags.modifier list -> bool)
+    : Gdk.keysym * Gdk.Tags.modifier list -> int -> bool)
 
 (* The buffer can contain prompt or feedback messages *)
 type message_entry_kind =
   | Fb of Feedback.level * Pp.t
   | Prompt of Pp.t
 
-let message_view () : message_view =
+let message_view sid : message_view =
   let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Message.table
@@ -194,7 +194,7 @@ let message_view () : message_view =
     let ins = buffer#get_iter_at_mark `INSERT in
     let eoo = buffer#get_iter_at_mark (`NAME "end_of_output") in
     let delta = ins#offset - eoo#offset in
-    if !forward_keystroke key_ev then
+    if !forward_keystroke key_ev sid then
       true (* support some function keys when Messages is detached *)
     else if not view#editable || List.mem `CONTROL state || List.mem `MOD1 state then
       false
