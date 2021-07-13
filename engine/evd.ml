@@ -1524,7 +1524,16 @@ module MiniEConstr = struct
       v
     in
     let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c in
-    !saw_evar, c
+    let saw_evar = if not !saw_evar then false
+      else
+        let exception SawEvar in
+        let rec iter c = match Constr.kind c with
+          | Evar _ -> raise SawEvar
+          | _ -> Constr.iter iter c
+        in
+        try iter c; false with SawEvar -> true
+    in
+    saw_evar, c
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
     if not abort_on_undefined_evars then to_constr_nocheck sigma c
