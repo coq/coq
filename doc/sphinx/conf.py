@@ -35,6 +35,10 @@ sys.setrecursionlimit(3000)
 sys.path.append(os.path.abspath('../tools/'))
 sys.path.append(os.path.abspath('../../config/'))
 
+# Disable the correct_copyright_year misfeature from Sphinx
+# See https://github.com/coq/coq/issues/7378
+sphinx.config.correct_copyright_year = lambda *args, **kwargs: None
+
 import coq_config
 
 # -- Prolog ---------------------------------------------------------------
