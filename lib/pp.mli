@@ -96,7 +96,7 @@ val bool : bool -> t
 val qstring : string -> t
 val qs : string -> t
 val quote : t -> t
-val strbrk : string -> t
+val strbrk : ?indent:int -> string -> t
 
 (** {6 Boxing commands} *)
 

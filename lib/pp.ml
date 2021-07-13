@@ -118,12 +118,12 @@ let real  r  = str (string_of_float r)
 let bool  b  = str (string_of_bool b)
 
 (* XXX: To Remove *)
-let strbrk s =
+let strbrk ?(indent=0) s =
   let rec aux p n =
     if n < String.length s then
       if s.[n] = ' ' then
-        if p = n then spc() :: aux (n+1) (n+1)
-        else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
+        if p = n then brk (1,indent) :: aux (n+1) (n+1)
+        else str (String.sub s p (n-p)) :: brk (1,indent) :: aux (n+1) (n+1)
       else aux p (n + 1)
     else if p = n then [] else [str (String.sub s p (n-p))]
   in Ppcmd_glue (aux 0 0)
