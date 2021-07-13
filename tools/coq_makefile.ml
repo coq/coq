@@ -35,10 +35,9 @@ let usage_coq_makefile () =
   output_string stderr "Usage summary:\
 \n\
 \ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
-\n  ... [any] ... [-extra[-phony] result dependencies command]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
-\n  ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]\
+\n  ...  [-arg opt] ... [-docroot path] [-f file] [-o file]\
 \n  [-h] [--help]\
 \n";
   output_string stderr "\
@@ -48,16 +47,6 @@ let usage_coq_makefile () =
 \n[file.ml[ig]?]: Objective Caml file to be compiled\
 \n[file.ml{lib,pack}]: ocamlbuild-style file that describes a Objective Caml\
 \n  library/module\
-\n[any] : subdirectory that should be \"made\" and has a Makefile itself\
-\n  to do so. Very fragile and discouraged.\
-\n[-extra result dependencies command]: add target \"result\" with command\
-\n  \"command\" and dependencies \"dependencies\". If \"result\" is not\
-\n  generic (do not contains a %), \"result\" is built by _make all_ and\
-\n  deleted by _make clean_.\
-\n[-extra-phony result dependencies command]: add a PHONY target \"result\"\
-\n with command \"command\" and dependencies \"dependencies\". Note that\
-\n _-extra-phony foo bar \"\"_ is a regular way to add the target \"bar\" as\
-\n as a dependencies of an already defined target \"foo\".\
 \n[-I dir]: look for Objective Caml dependencies in \"dir\"\
 \n[-R physicalpath logicalpath]: look for Coq dependencies recursively\
 \n  starting from \"physicalpath\". The logical path associated to the\
@@ -66,12 +55,9 @@ let usage_coq_makefile () =
 \n  \"physicalpath\". The logical path associated to the physical path\
 \n  is \"logicalpath\".\
 \n[VARIABLE = value]: Add the variable definition \"VARIABLE=value\"\
-\n[-byte]: compile with byte-code version of coq\
-\n[-opt]: compile with native-code version of coq\
 \n[-arg opt]: send option \"opt\" to coqc\
-\n[-install opt]: where opt is \"user\" to force install into user directory,\
-\n  \"none\" to build a makefile with no install target or\
-\n  \"global\" to force install in $COQLIB directory\
+\n[-docroot path]: Install the documentation in this folder, relative to\
+\n  \"user-contrib\".\
 \n[-f file]: take the contents of file as arguments\
 \n[-o file]: output should go in file file (recommended)\
 \n	Output file outside the current directory is forbidden.\
@@ -120,6 +106,23 @@ let read_whole_file s =
     close_in ic;
     Buffer.contents b
 
+(* Use this for quoting contents of variables which never appears as target or
+ * pattern. *)
+let makefile_quote s =
+  let out = Buffer.create 16 in
+  Buffer.add_string out "'";
+  String.iter
+    (fun c ->
+      match c with
+      | '$' -> Buffer.add_string out "$$"
+      | '#' -> Buffer.add_string out "\\#"
+      | '\'' -> Buffer.add_string out "'\\''"
+      | _ -> Buffer.add_char out c
+    )
+  s;
+  Buffer.add_string out "'";
+  Buffer.contents out
+
 let quote s = if String.contains s ' ' || CString.is_empty s then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file local_late_file dep_file args project =
@@ -153,37 +156,6 @@ let section oc s =
   fprintf oc "%s\n" spaces;
   fprintf oc "%s\n\n" sharps
 ;;
-
-let clean_tgts = ["clean"; "cleanall"; "archclean"]
-
-let generate_conf_extra_target oc sps =
-  let pr_path { target; dependencies; phony; command } =
-    let target = if target = "all" then "custom-all" else target in
-    if phony then fprintf oc ".PHONY: %s\n" target;
-    if not (is_genrule target) && not phony then begin
-      fprintf oc "post-all::\n\t$(MAKE) -f $(SELF) %s\n" target;
-      if not phony then
-        fprintf oc "clean::\n\trm -f %s\n" target;
-    end;
-    fprintf oc "%s %s %s\n\t%s\n\n"
-       target
-       (if List.mem target clean_tgts then ":: " else ": ")
-       dependencies
-       command
-  in
-    if sps <> [] then
-      section oc "Extra targets. (-extra and -extra-phony, DEPRECATED)";
-    List.iter (forget_source > pr_path) sps
-
-let generate_conf_subdirs oc sds =
-  if sds <> [] then section oc "Subdirectories. (DEPRECATED)";
-  let iter f = List.iter (forget_source > f) in
-  iter (fprintf oc ".PHONY:%s\n") sds;
-  iter (fprintf oc "post-all::\n\tcd \"%s\" && $(MAKE) all\n") sds;
-  iter (fprintf oc "clean::\n\tcd \"%s\" && $(MAKE) clean\n") sds;
-  iter (fprintf oc "archclean::\n\tcd \"%s\" && $(MAKE) archclean\n") sds;
-  iter (fprintf oc "install-extra::\n\tcd \"%s\" && $(MAKE) install\n") sds
-
 
 let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
   section oc "Path directives (-I, -R, -Q).";
@@ -249,21 +221,22 @@ let rec logic_gcd acc = function
       then logic_gcd (acc @ [hd]) (tl :: List.map List.tl rest)
       else acc
 
-let generate_conf_doc oc { defs; q_includes; r_includes } =
+let generate_conf_doc oc { docroot; q_includes; r_includes } =
   let includes = List.map (forget_source > snd) (q_includes @ r_includes) in
   let logpaths = List.map (String.split_on_char '.') includes in
   let gcd = logic_gcd [] logpaths in
   let root =
-    if gcd = [] then
-      if not (List.exists (fun x -> fst x.thing = "INSTALLDEFAULTROOT") defs) then begin
+    match docroot with
+    | None ->
+      if gcd = [] then
          let destination = "orphan_" ^ (String.concat "_" includes) in
-         eprintf "Warning: no common logical root\n";
-         eprintf "Warning: in such case INSTALLDEFAULTROOT must be defined\n";
-         eprintf "Warning: the install-doc target is going to install files\n";
+         eprintf "Warning: No common logical root.\n";
+         eprintf "Warning: In this case the -docroot option should be given.\n";
+         eprintf "Warning: Otherwise the install-doc target is going to install files\n";
          eprintf "Warning: in %s\n" destination;
          destination
-      end else "$(INSTALLDEFAULTROOT)"
-    else String.concat Filename.dir_sep gcd in
+      else String.concat Filename.dir_sep gcd
+    | Some p -> p in
   Printf.fprintf oc "COQMF_INSTALLCOQDOCROOT = %s\n" (quote root)
 
 let generate_conf_native oc native_compiler =
@@ -281,7 +254,7 @@ let generate_conf_defs oc { defs; extra_args } =
   section oc "Extra variables.";
   List.iter (forget_source > (fun (k,v) -> Printf.fprintf oc "%s = %s\n" k v)) defs;
   Printf.fprintf oc "COQMF_OTHERFLAGS = %s\n"
-    (String.concat " " (List.map forget_source extra_args))
+    (String.concat " " (List.map (forget_source > makefile_quote) extra_args))
 
 let generate_conf oc project args  =
   fprintf oc "# This configuration file was generated by running:\n";
@@ -292,8 +265,6 @@ let generate_conf oc project args  =
   generate_conf_native oc project.native_compiler;
   generate_conf_defs oc project;
   generate_conf_doc oc project;
-  generate_conf_extra_target oc project.extra_targets;
-  generate_conf_subdirs oc project.subdirs;
 ;;
 
 let ensure_root_dir
@@ -318,24 +289,6 @@ let ensure_root_dir
     { project with
         ml_includes = source here_path :: ml_includes;
         r_includes = source (here_path, "Top") :: r_includes }
-;;
-
-let warn_install_at_root_directory
-  ({ q_includes; r_includes; } as project)
-=
-  let open CList in
-  let inc_top_p =
-    map_filter
-      (fun {thing=({ path } ,ldir)} -> if ldir = "" then Some path else None)
-      (r_includes @ q_includes) in
-  let files = all_files project in
-  let bad = filter (fun f -> mem (Filename.dirname f.thing) inc_top_p) files in
-  if bad <> [] then begin
-    eprintf "Warning: No file should be installed at the root of Coq's library.\n";
-    eprintf "Warning: No logical path (-R, -Q) applies to these files:\n";
-    List.iter (fun x -> eprintf "Warning:  %s\n" x.thing) bad;
-    eprintf "\n";
-  end
 ;;
 
 let check_overlapping_include { q_includes; r_includes } =
@@ -437,21 +390,7 @@ let _ =
   let local_late_file = Option.default "CoqMakefile" project.makefile ^ ".local-late" in
   let dep_file = "." ^ Option.default "CoqMakefile" project.makefile ^ ".d" in
 
-  if project.extra_targets <> [] then begin
-    eprintf "Warning: -extra and -extra-phony are deprecated.\n";
-    eprintf "Warning: Write the extra targets in %s.\n\n" local_file;
-  end;
-
-  if project.subdirs <> [] then begin
-    eprintf "Warning: Subdirectories are deprecated.\n";
-    eprintf "Warning: Use double colon rules in %s.\n\n" local_file;
-  end;
-
   let project = ensure_root_dir project in
-
-  if project.install_kind <> (Some CoqProject_file.NoInstall) then begin
-    warn_install_at_root_directory project;
-  end;
 
   check_overlapping_include project;
 

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* This needs to go trou feedback as it is invoked from IDEs, but
+(* This needs to go through feedback as it is invoked from IDEs, but
    ideally we would like to make this independent so it can be
    bootstrapped. *)
 
@@ -19,9 +19,8 @@ type 'a sourced = { thing : 'a; source : arg_source }
 type project = {
   project_file  : string option;
   makefile : string option;
-  install_kind  : install option;
-  use_ocamlopt : bool;
   native_compiler : native_compiler option;
+  docroot : string option;
 
   v_files : string sourced list;
   mli_files : string sourced list;
@@ -35,35 +34,20 @@ type project = {
   q_includes  : (path * logic_path) sourced list;
   extra_args : string sourced list;
   defs : (string * string) sourced list;
-
-  (* deprecated in favor of a Makefile.local using :: rules *)
-  extra_targets : extra_target sourced list;
-  subdirs : string sourced list;
-}
-and extra_target = {
-  target : string;
-  dependencies : string;
-  phony : bool;
-  command : string;
 }
 and logic_path = string
 and path = { path : string; canonical_path : string }
-and install =
-  | NoInstall
-  | TraditionalInstall
-  | UserInstall
 and native_compiler =
 | NativeYes
 | NativeNo
 | NativeOndemand
 
 (* TODO generate with PPX *)
-let mk_project project_file makefile install_kind use_ocamlopt native_compiler = {
+let mk_project project_file makefile native_compiler = {
   project_file;
   makefile;
-  install_kind;
-  use_ocamlopt;
   native_compiler;
+  docroot = None;
 
   v_files = [];
   mli_files = [];
@@ -71,8 +55,6 @@ let mk_project project_file makefile install_kind use_ocamlopt native_compiler =
   ml_files = [];
   mllib_files = [];
   mlpack_files = [];
-  extra_targets = [];
-  subdirs = [];
   ml_includes = [];
   r_includes = [];
   q_includes = [];
@@ -99,6 +81,9 @@ let buffer buf =
 
 let rec parse_string buf s = match Stream.next s with
 | ' ' | '\n' | '\t' -> buffer buf
+| '#' ->
+  parse_skip_comment s;
+  buffer buf
 | c ->
   let () = Buffer.add_char buf c in
   parse_string buf s
@@ -138,14 +123,6 @@ let parse f =
   List.rev res
 ;;
 
-(* Copy from minisys.ml, since we don't see that file here *)
-let exists_dir dir =
-  let rec strip_trailing_slash dir =
-    let len = String.length dir in
-    if len > 0 && (dir.[len-1] = '/' || dir.[len-1] = '\\')
-    then strip_trailing_slash (String.sub dir 0 (len-1)) else dir in
-  try Sys.is_directory (strip_trailing_slash dir) with Sys_error _ -> false
-
 let parse_native ~warning_fn ~error proj flag =
   if proj.native_compiler <> None then
     (warning_fn "-native-compiler set more than once.");
@@ -156,6 +133,53 @@ let parse_native ~warning_fn ~error proj flag =
     | _ -> error ("invalid option \""^flag^"\" passed to -native-compiler")
   in
   { proj with native_compiler = Some native }
+
+let escape_char c =
+  match c with
+  | '\'' -> "\'"
+  | '\n' -> "\\n"
+  | '\t' -> "\\t"
+  | c -> String.make 1 c
+
+let check_filename f =
+  let a = ref None in
+  let check_char c =
+    match c with
+    | '\n' | '\t' | '\\' | '\'' | '"' | ' ' | '#' | '$' | '%' -> a := Some c
+    | _ -> ()
+  in
+  String.iter check_char f;
+  match !a with
+  | Some c -> raise (Parsing_error ("Unsupported filename, contains '"
+                      ^ (escape_char c) ^ "' : \"" ^ String.escaped f ^ "\""))
+  | None -> ()
+
+(* single quotes keep whitespace together and keep it literal. But only
+ * unquoted spaces split arguments apart. i.e the string "a'b c'd"
+ * produces the list ["ab cd"] *)
+let process_extra_args arg =
+  let buf = Buffer.create 64 in
+  let out_list = ref [] in
+  let inside_quotes = ref false in
+  let has_leftovers = ref false in
+  let process_char c =
+    match c with
+    | '\'' ->
+        inside_quotes := not !inside_quotes;
+        has_leftovers := true;
+    | ' ' ->
+      if !inside_quotes then
+        (has_leftovers := true; Buffer.add_char buf ' ')
+      else
+        if !has_leftovers then
+          (has_leftovers := false;
+           out_list := buffer buf :: !out_list)
+    | c -> has_leftovers := true; Buffer.add_char buf c
+  in
+  String.iter process_char arg;
+  if !has_leftovers then
+    out_list := buffer buf :: !out_list;
+  List.rev !out_list
 
 let process_cmd_line ~warning_fn orig_dir proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
@@ -171,28 +195,6 @@ let process_cmd_line ~warning_fn orig_dir proj args =
   | [] -> proj
   | "-impredicative-set" :: _ ->
     error "Use \"-arg -impredicative-set\" instead of \"-impredicative-set\""
-  | "-no-install" :: _ ->
-    error "Use \"-install none\" instead of \"-no-install\""
-  | "-custom" :: _ ->
-    error "Use \"-extra[-phony] target deps command\" instead of \"-custom command deps target\""
-
-  | ("-no-opt"|"-byte") :: r -> aux { proj with use_ocamlopt =  false } r
-  | ("-full"|"-opt") :: r -> aux { proj with use_ocamlopt =  true } r
-  | "-install" :: d :: r ->
-    if proj.install_kind <> None then
-      (warning_fn "-install set more than once.");
-    let install = match d with
-      | "user" -> UserInstall
-      | "none" -> NoInstall
-      | "global" -> TraditionalInstall
-      | _ -> error ("invalid option \""^d^"\" passed to -install") in
-    aux { proj with install_kind = Some install } r
-  | "-extra" :: target :: dependencies :: command :: r ->
-    let tgt = { target; dependencies; phony = false; command } in
-    aux { proj with extra_targets = proj.extra_targets @ [sourced tgt] } r
-  | "-extra-phony" :: target :: dependencies :: command :: r ->
-    let tgt = { target; dependencies; phony = true; command } in
-    aux { proj with extra_targets = proj.extra_targets @ [sourced tgt] } r
 
   | "-Q" :: d :: lp :: r ->
     aux { proj with q_includes = proj.q_includes @ [sourced (mk_path d,lp)] } r
@@ -227,25 +229,40 @@ let process_cmd_line ~warning_fn orig_dir proj args =
       error "Option -o given more than once";
     aux { proj with makefile = Some file } r
 
+  | "-docroot" :: p :: r ->
+    if proj.docroot <> None then
+      error "Option -docroot given more than once";
+    aux { proj with docroot = Some p } r
+
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
-    aux { proj with extra_args = proj.extra_args @ [sourced a] } r
+    aux { proj with extra_args = proj.extra_args @ List.map sourced (process_extra_args a) } r
   | f :: r ->
       let f = CUnix.correct_path f orig_dir in
       let proj =
-        if exists_dir f then { proj with subdirs = proj.subdirs @ [sourced f] }
-        else match Filename.extension f with
-          | ".v" ->
-            { proj with v_files = proj.v_files @ [sourced f] }
-        | ".ml" -> { proj with ml_files = proj.ml_files @ [sourced f] }
+        match Filename.extension f with
+        | ".v" ->
+          check_filename f;
+          { proj with v_files = proj.v_files @ [sourced f] }
+        | ".ml" ->
+          check_filename f;
+          { proj with ml_files = proj.ml_files @ [sourced f] }
         | ".ml4" ->
           let msg = Printf.sprintf "camlp5 macro files not supported anymore, please port %s to coqpp" f in
           raise (Parsing_error msg)
-        | ".mlg" -> { proj with mlg_files = proj.mlg_files @ [sourced f] }
-        | ".mli" -> { proj with mli_files = proj.mli_files @ [sourced f] }
-        | ".mllib" -> { proj with mllib_files = proj.mllib_files @ [sourced f] }
-        | ".mlpack" -> { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
+        | ".mlg" ->
+          check_filename f;
+          { proj with mlg_files = proj.mlg_files @ [sourced f] }
+        | ".mli" ->
+          check_filename f;
+          { proj with mli_files = proj.mli_files @ [sourced f] }
+        | ".mllib" ->
+          check_filename f;
+          { proj with mllib_files = proj.mllib_files @ [sourced f] }
+        | ".mlpack" ->
+          check_filename f;
+          { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
         | _ -> raise (Parsing_error ("Unknown option "^f)) in
       aux proj r
  in
@@ -265,11 +282,11 @@ let process_cmd_line ~warning_fn orig_dir proj args =
  (******************************* API ************************************)
 
 let cmdline_args_to_project ~warning_fn ~curdir args =
-  process_cmd_line ~warning_fn curdir (mk_project None None None true None) args
+  process_cmd_line ~warning_fn curdir (mk_project None None None) args
 
 let read_project_file ~warning_fn f =
   process_cmd_line ~warning_fn (Filename.dirname f)
-    (mk_project (Some f) None (Some NoInstall) true None) (parse f)
+    (mk_project (Some f) None None) (parse f)
 
 let rec find_project_file ~from ~projfile_name =
   let fname = Filename.concat from projfile_name in

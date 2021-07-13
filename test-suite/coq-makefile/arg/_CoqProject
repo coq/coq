@@ -2,6 +2,8 @@
 -R src test
 -I src
 -arg "-w default"
+-arg -w -arg default
+-arg "-set 'Default Goal Selector=!'"
 
 src/test_plugin.mlpack
 src/test.mlg
