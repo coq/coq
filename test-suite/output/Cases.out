@@ -7,7 +7,7 @@ fix F (t : t) : P t :=
      : forall P : t -> Type,
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t
 
-Arguments t_rect (_ _)%function_scope _
+Arguments t_rect (P f)%function_scope t
      = fun d : TT => match d with
                      | {| f3 := b |} => b
                      end
@@ -26,7 +26,7 @@ match Nat.eq_dec x y with
 end
      : forall (x y : nat) (P : nat -> Type), P x -> P y -> P y
 
-Arguments proj (_ _)%nat_scope _%function_scope _ _
+Arguments proj (x y)%nat_scope P%function_scope def prf
 foo = 
 fix foo (A : Type) (l : list A) {struct l} : option A :=
   match l with
@@ -36,14 +36,14 @@ fix foo (A : Type) (l : list A) {struct l} : option A :=
   end
      : forall A : Type, list A -> option A
 
-Arguments foo _%type_scope _%list_scope
+Arguments foo A%type_scope l%list_scope
 uncast = 
 fun (A : Type) (x : I A) => match x with
                             | x0 <: _ => x0
                             end
      : forall A : Type, I A -> A
 
-Arguments uncast _%type_scope _
+Arguments uncast A%type_scope x
 foo' = if A 0 then true else false
      : bool
 f = 
@@ -81,14 +81,18 @@ expected to be applied to no arguments while it is actually applied to
 lem1 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
+
+Arguments lem1 k
 lem2 = 
 fun dd : bool => if dd as aa return (aa = aa) then eq_refl else eq_refl
      : forall k : bool, k = k
 
-Arguments lem2 _%bool_scope
+Arguments lem2 k%bool_scope
 lem3 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
+
+Arguments lem3 k
 1 goal
   
   x : nat
@@ -181,6 +185,8 @@ match N with
 | _ => Node
 end
      : Tree -> Tree
+
+Arguments stray N
 File "./output/Cases.v", line 253, characters 4-5:
 Warning: Unused variable B catches more than one case.
 [unused-pattern-matching-variable,pattern-matching]

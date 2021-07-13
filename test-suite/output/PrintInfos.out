@@ -1,19 +1,19 @@
 existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 existT is template universe polymorphic on sigT.u0 sigT.u1
-Arguments existT [A]%type_scope _%function_scope _ _
+Arguments existT [A]%type_scope P%function_scope x _
 Expands to: Constructor Coq.Init.Specif.existT
 Inductive sigT (A : Type) (P : A -> Type) : Type :=
     existT : forall x : A, P x -> {x : A & P x}.
 
-Arguments sigT [A]%type_scope _%type_scope
-Arguments existT [A]%type_scope _%function_scope _ _
+Arguments sigT [A]%type_scope P%type_scope
+Arguments existT [A]%type_scope P%function_scope x _
 existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
-Arguments eq {A}%type_scope _ _
+Arguments eq {A}%type_scope x _
 Arguments eq_refl {A}%type_scope {x}, [_] _
 eq_refl : forall {A : Type} {x : A}, x = x
 
@@ -34,11 +34,11 @@ fix add (n m : nat) {struct n} : nat :=
   end
      : nat -> nat -> nat
 
-Arguments Nat.add (_ _)%nat_scope
+Arguments Nat.add (n m)%nat_scope
 Nat.add : nat -> nat -> nat
 
 Nat.add is not universe polymorphic
-Arguments Nat.add (_ _)%nat_scope
+Arguments Nat.add (n m)%nat_scope
 Nat.add is transparent
 Expands to: Constant Coq.Init.Nat.add
 Nat.add : nat -> nat -> nat
@@ -46,14 +46,14 @@ Nat.add : nat -> nat -> nat
 plus_n_O : forall n : nat, n = n + 0
 
 plus_n_O is not universe polymorphic
-Arguments plus_n_O _%nat_scope
+Arguments plus_n_O n%nat_scope
 plus_n_O is opaque
 Expands to: Constant Coq.Init.Peano.plus_n_O
 Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m.
 
-Arguments le (_ _)%nat_scope
-Arguments le_n _%nat_scope
+Arguments le (n _)%nat_scope
+Arguments le_n n%nat_scope
 Arguments le_S {n}%nat_scope [m]%nat_scope _
 comparison : Set
 
@@ -80,7 +80,7 @@ Notation sym_eq := eq_sym
 Expands to: Notation Coq.Init.Logic.sym_eq
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
-Arguments eq {A}%type_scope _ _
+Arguments eq {A}%type_scope x _
 Arguments eq_refl {A}%type_scope {x}, {_} _
 n:nat
 

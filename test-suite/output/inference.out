@@ -4,6 +4,8 @@ fun e : option L => match e with
                     | None => None
                     end
      : option L -> option L
+
+Arguments P e
 fun n : nat => let y : T n := A n in ?t ?x : T n
      : forall n : nat, T n
 where
