@@ -3,4 +3,5 @@
  (synopsis "Coq's Tactic Engine")
  (public_name coq-core.engine)
  (wrapped false)
+ (private_modules univSubst)
  (libraries library))

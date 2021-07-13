@@ -65,7 +65,7 @@ let flush_and_check_evars sigma c =
 (** Term exploration up to instantiation. *)
 let kind_of_term_upto = EConstr.kind_upto
 
-let nf_evar0 sigma t = EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
+let nf_evars_universes sigma t = EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
 let whd_evar = EConstr.whd_evar
 let nf_evar sigma c = EConstr.of_constr (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
@@ -77,12 +77,8 @@ let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
-let nf_evars_universes evm =
-  UnivSubst.nf_evars_and_universes_opt_subst (existential_opt_value0 evm)
-    (Evd.universe_subst evm)
-
 let nf_named_context_evar sigma ctx =
-  Context.Named.map (nf_evar0 sigma) ctx
+  Context.Named.map (nf_evars_universes sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
   Context.Rel.map (nf_evar sigma) ctx

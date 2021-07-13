@@ -56,8 +56,14 @@ val context_set : t -> Univ.ContextSet.t
 (** The local context of the state, i.e. a set of bound variables together
     with their associated constraints. *)
 
+type universe_opt_subst = UnivSubst.universe_opt_subst
+(* Reexport because UnivSubst is private *)
+
 val subst : t -> UnivSubst.universe_opt_subst
 (** The local universes that are unification variables *)
+
+val nf_universes : t -> Constr.t -> Constr.t
+(** Apply the local substitution [subst] *)
 
 val ugraph : t -> UGraph.t
 (** The current graph extended with the local constraints *)
@@ -213,3 +219,5 @@ val qualid_of_level : t -> Univ.Level.t -> Libnames.qualid option
 val id_of_level : t -> Univ.Level.t -> Id.t option
 
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
+
+val pr_universe_opt_subst : universe_opt_subst -> Pp.t
