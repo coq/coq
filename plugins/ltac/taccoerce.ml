@@ -400,24 +400,6 @@ type appl =
   | GlbAppl of (Names.KerName.t * Val.t list) list
        (** For calls to global constants, some may alias other. *)
 
-(* Values for interpretation *)
-type tacvalue =
-  | VFun of
-      appl *
-      Tacexpr.ltac_trace *
-      Loc.t option * (* when executing a global Ltac function: the location where this function was called *)
-      Val.t Id.Map.t * (* closure *)
-      Name.t list * (* binders *)
-      Tacexpr.glob_tactic_expr (* body *)
-  | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
-
-let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
-  let wit = Genarg.create_arg "tacvalue" in
-  let () = register_val0 wit None in
-  let () = Genprint.register_val_print0 (base_val_typ wit)
-             (fun _ -> Genprint.TopPrinterBasic (fun () -> str "<tactic closure>")) in
-  wit
-
 let pr_argument_type arg =
   let Val.Dyn (tag, _) = arg in
   Val.pr tag
@@ -436,6 +418,29 @@ let pr_value env v =
   | TopPrinterNeedsContext pr -> pr_with_env pr
   | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
      pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
+
+(* Values for interpretation *)
+type tacvalue =
+  | VFun of
+      appl *
+      Tacexpr.ltac_trace *
+      Loc.t option * (* when executing a global Ltac function: the location where this function was called *)
+      Val.t Id.Map.t * (* closure *)
+      Name.t list * (* binders *)
+      Tacexpr.glob_tactic_expr (* body *)
+  | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
+
+let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
+  let wit = Genarg.create_arg "tacvalue" in
+  let () = register_val0 wit None in
+  let pr = function
+    | VFun (a,_,loc,ids,l,tac) ->
+      let tac = if List.is_empty l then tac else CAst.make ?loc @@ Tacexpr.TacFun (l,tac) in
+      let pr_env env sigma = if Id.Map.is_empty ids then mt () else cut () ++ str "where" ++ Id.Map.fold (fun id c pp -> cut () ++ Id.print id ++ str " := " ++ pr_value (Some (env,sigma)) c ++ pp) ids (mt ()) in
+      Genprint.TopPrinterNeedsContext (fun env sigma -> v 0 (hov 0 (Pptactic.pr_glob_tactic env tac) ++ pr_env env sigma))
+    | _ -> Genprint.TopPrinterBasic (fun _ -> str "<tactic closure>") in
+  let () = Genprint.register_val_print0 (base_val_typ wit) pr in
+  wit
 
 exception CoercionError of Id.t * (Environ.env * Evd.evar_map) option * Val.t * string
 
