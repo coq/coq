@@ -25,6 +25,12 @@ let new_global evd x =
   let (evd, c) = Evd.fresh_global (Global.env()) evd x in
   (evd, c)
 
+let create_clos_infos env sigma flags =
+  let open CClosure in
+  let evars ev = Evd.existential_opt_value0 sigma ev in
+  create_clos_infos ~univs:(Evd.universes sigma) ~evars flags env
+
+
 (****************************************************)
 (* Expanding/testing/exposing existential variables *)
 (****************************************************)

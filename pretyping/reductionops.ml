@@ -993,18 +993,16 @@ let nf_evar = Evarutil.nf_evar
    a [nf_evar] here *)
 let clos_norm_flags flgs env sigma t =
   try
-    let evars ev = existential_opt_value0 sigma ev in
     EConstr.of_constr (CClosure.norm_val
-      (CClosure.create_clos_infos ~univs:(Evd.universes sigma) ~evars flgs env)
+      (Evarutil.create_clos_infos env sigma flgs)
       (CClosure.create_tab ())
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let clos_whd_flags flgs env sigma t =
   try
-    let evars ev = existential_opt_value0 sigma ev in
     EConstr.of_constr (CClosure.whd_val
-      (CClosure.create_clos_infos ~univs:(Evd.universes sigma) ~evars flgs env)
+      (Evarutil.create_clos_infos env sigma flgs)
       (CClosure.create_tab ())
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
@@ -1351,8 +1349,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   let env' = Environ.set_typing_flags { (Environ.typing_flags env) with Declarations.share_reduction = false } env in
   let whd_opt c =
     let open CClosure in
-    let evars ev = existential_opt_value0 sigma ev in
-    let infos = create_clos_infos ~evars all' env' in
+    let infos = Evarutil.create_clos_infos env' sigma all' in
     let tab = create_tab () in
     let c = inject (EConstr.Unsafe.to_constr (Stack.zip sigma c)) in
     let (c, stk) = whd_stack infos tab c [] in

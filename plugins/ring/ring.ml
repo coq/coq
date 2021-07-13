@@ -74,10 +74,9 @@ let lookup_map map =
     CErrors.user_err ~hdr:"lookup_map" (str"Map "++qs map++str"not found")
 
 let protect_red map env sigma c0 =
-  let evars ev = Evd.existential_opt_value0 sigma ev in
   let c = EConstr.Unsafe.to_constr c0 in
   let tab = create_tab () in
-  let infos = create_clos_infos ~univs:(Evd.universes sigma) ~evars all env in
+  let infos = Evarutil.create_clos_infos env sigma all in
   let map = lookup_map map sigma c0 in
   let rec eval n c = match Constr.kind c with
   | Prod (na, t, u) -> Constr.mkProd (na, eval n t, eval (n + 1) u)

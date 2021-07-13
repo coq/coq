@@ -24,8 +24,7 @@ open Constrexpr
 
 let whd_prod env sigma typ =
   let open CClosure in
-  let evars ev = Evd.existential_opt_value0 sigma ev in
-  let infos = create_clos_infos ~univs:(Evd.universes sigma) ~evars CClosure.all env in
+  let infos = Evarutil.create_clos_infos env sigma CClosure.all in
   let tab = create_tab () in
   let typ = inject (EConstr.Unsafe.to_constr typ) in
   let typ, stk = whd_stack infos tab typ [] in
