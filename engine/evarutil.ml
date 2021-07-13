@@ -21,11 +21,6 @@ open Namegen
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let safe_evar_value sigma ev =
-  let ev = EConstr.of_existential ev in
-  try Some (EConstr.Unsafe.to_constr @@ Evd.existential_value sigma ev)
-  with NotInstantiatedEvar | Not_found -> None
-
 let new_global evd x =
   let (evd, c) = Evd.fresh_global (Global.env()) evd x in
   (evd, c)
@@ -77,7 +72,7 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let nf_evars_universes evm =
-  UnivSubst.nf_evars_and_universes_opt_subst (safe_evar_value evm)
+  UnivSubst.nf_evars_and_universes_opt_subst (existential_opt_value0 evm)
     (Evd.universe_subst evm)
 
 let nf_named_context_evar sigma ctx =

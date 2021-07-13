@@ -74,7 +74,7 @@ let lookup_map map =
     CErrors.user_err ~hdr:"lookup_map" (str"Map "++qs map++str"not found")
 
 let protect_red map env sigma c0 =
-  let evars ev = Evarutil.safe_evar_value sigma ev in
+  let evars ev = Evd.existential_opt_value0 sigma ev in
   let c = EConstr.Unsafe.to_constr c0 in
   let tab = create_tab () in
   let infos = create_clos_infos ~univs:(Evd.universes sigma) ~evars all env in

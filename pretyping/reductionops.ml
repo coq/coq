@@ -446,8 +446,6 @@ let pr_state env sigma (tm,sk) =
 (*** Reduction Functions Operators ***)
 (*************************************)
 
-let safe_evar_value = Evarutil.safe_evar_value
-
 let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
   with Not_found -> None
@@ -995,7 +993,7 @@ let nf_evar = Evarutil.nf_evar
    a [nf_evar] here *)
 let clos_norm_flags flgs env sigma t =
   try
-    let evars ev = safe_evar_value sigma ev in
+    let evars ev = existential_opt_value0 sigma ev in
     EConstr.of_constr (CClosure.norm_val
       (CClosure.create_clos_infos ~univs:(Evd.universes sigma) ~evars flgs env)
       (CClosure.create_tab ())
@@ -1004,7 +1002,7 @@ let clos_norm_flags flgs env sigma t =
 
 let clos_whd_flags flgs env sigma t =
   try
-    let evars ev = safe_evar_value sigma ev in
+    let evars ev = existential_opt_value0 sigma ev in
     EConstr.of_constr (CClosure.whd_val
       (CClosure.create_clos_infos ~univs:(Evd.universes sigma) ~evars flgs env)
       (CClosure.create_tab ())
@@ -1071,7 +1069,7 @@ let f_conv_leq ?l2r ?reds env ?evars x y =
 
 let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =
   try
-    let evars ev = safe_evar_value sigma ev in
+    let evars ev = existential_opt_value0 sigma ev in
     let env = Environ.set_universes (Evd.universes sigma) env in
     let _ = f ~reds env ~evars x y in
     true
@@ -1092,7 +1090,7 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
     | Reduction.CUMUL -> f_conv_leq
   in
     let env = Environ.set_universes (Evd.universes sigma) env in
-    try f ~reds:ts env ~evars:(safe_evar_value sigma) x y; true
+    try f ~reds:ts env ~evars:(existential_opt_value0 sigma) x y; true
     with Reduction.NotConvertible -> false
     | Univ.UniverseInconsistency _ -> false
     | e ->
@@ -1156,7 +1154,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     report_anomaly e
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
-      Reduction.generic_conv pb ~l2r (safe_evar_value sigma))
+      Reduction.generic_conv pb ~l2r (existential_opt_value0 sigma))
 
 (* This reference avoids always having to link C code with the kernel *)
 let vm_infer_conv = ref (infer_conv ~catch_incon:true ~ts:TransparentState.full)
@@ -1353,7 +1351,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   let env' = Environ.set_typing_flags { (Environ.typing_flags env) with Declarations.share_reduction = false } env in
   let whd_opt c =
     let open CClosure in
-    let evars ev = safe_evar_value sigma ev in
+    let evars ev = existential_opt_value0 sigma ev in
     let infos = create_clos_infos ~evars all' env' in
     let tab = create_tab () in
     let c = inject (EConstr.Unsafe.to_constr (Stack.zip sigma c)) in

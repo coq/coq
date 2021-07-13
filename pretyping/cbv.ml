@@ -490,7 +490,7 @@ let rec norm_head info env t stack =
         (CBN(t,env), stack) (* Should we consider a commutative cut ? *)
 
   | Evar ev ->
-      (match Reductionops.safe_evar_value info.sigma ev with
+      (match Evd.existential_opt_value0 info.sigma ev with
           Some c -> norm_head info env c stack
         | None ->
           let e, xs = ev in

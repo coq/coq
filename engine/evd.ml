@@ -1480,28 +1480,24 @@ module MiniEConstr = struct
 
   type t = econstr
 
-  let safe_evar_value sigma ev =
-    try Some (existential_value sigma ev)
-    with NotInstantiatedEvar | Not_found -> None
-
   let rec whd_evar sigma c =
     match Constr.kind c with
     | Evar ev ->
-      begin match safe_evar_value sigma ev with
+      begin match existential_opt_value sigma ev with
         | Some c -> whd_evar sigma c
         | None -> c
       end
     | App (f, args) when isEvar f ->
       (* Enforce smart constructor invariant on applications *)
       let ev = destEvar f in
-      begin match safe_evar_value sigma ev with
+      begin match existential_opt_value sigma ev with
         | None -> c
         | Some f -> whd_evar sigma (mkApp (f, args))
       end
     | Cast (c0, k, t) when isEvar c0 ->
       (* Enforce smart constructor invariant on casts. *)
       let ev = destEvar c0 in
-      begin match safe_evar_value sigma ev with
+      begin match existential_opt_value sigma ev with
         | None -> c
         | Some c -> whd_evar sigma (mkCast (c, k, t))
       end
@@ -1518,9 +1514,9 @@ module MiniEConstr = struct
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
     let evar_value =
-      if not abort_on_undefined_evars then fun ev -> safe_evar_value sigma ev
+      if not abort_on_undefined_evars then fun ev -> existential_opt_value sigma ev
       else fun ev ->
-        match safe_evar_value sigma ev with
+        match existential_opt_value sigma ev with
         | Some _ as v -> v
         | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
     in
