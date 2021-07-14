@@ -1825,6 +1825,7 @@ simple_tactic: [
 | "btauto"
 | "rtauto"
 | "congruence" OPT natural OPT ( "with" LIST1 one_term )
+| "simple" "congruence" OPT natural OPT ( "with" LIST1 one_term )
 | "f_equal"
 | "firstorder" OPT ltac_expr OPT ( "using" LIST1 qualid SEP "," ) OPT ( "with" LIST1 ident )
 | "gintuition" OPT ltac_expr

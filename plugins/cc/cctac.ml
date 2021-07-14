@@ -36,6 +36,7 @@ let _sym_eq     = lazy (Coqlib.lib_ref "core.eq.sym")
 let _trans_eq   = lazy (Coqlib.lib_ref "core.eq.trans")
 let _eq         = lazy (Coqlib.lib_ref "core.eq.type")
 let _False      = lazy (Coqlib.lib_ref "core.False.type")
+let _not        = lazy (Coqlib.lib_ref "core.not.type")
 
 let whd env sigma t =
   Reductionops.clos_whd_flags CClosure.betaiotazeta env sigma t
@@ -48,7 +49,7 @@ let whd_delta env sigma t =
 (** FIXME: evar leak *)
 let sf_of env sigma c = snd (sort_of env sigma c)
 
-let rec decompose_term env sigma t=
+let rec decompose_term env sigma t =
     match EConstr.kind sigma (whd env sigma t) with
       App (f,args)->
         let tf=decompose_term env sigma f in
@@ -91,8 +92,8 @@ let rec decompose_term env sigma t=
 
 (* decompose equality in members and type *)
 
-let atom_of_constr env sigma term =
-  let wh = whd_delta env sigma term in
+let atom_of_constr b env sigma term =
+  let wh = (if b then whd else whd_delta) env sigma term in
   let kot = EConstr.kind sigma wh in
     match kot with
       App (f,args)->
@@ -128,9 +129,9 @@ let non_trivial = function
     PVar _ -> false
   | _ -> true
 
-let patterns_of_constr env sigma nrels term=
+let patterns_of_constr b env sigma nrels term =
   let f,args=
-    try destApp sigma (whd_delta env sigma term) with DestKO -> raise Not_found in
+    try destApp sigma ((if b then whd else whd_delta) env sigma term) with DestKO -> raise Not_found in
         if isRefX sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
         then
           let patt1,rels1 = pattern_of_constr env sigma args.(1)
@@ -149,39 +150,47 @@ let patterns_of_constr env sigma nrels term=
             else raise Not_found
         else raise Not_found
 
-let rec quantified_atom_of_constr env sigma nrels term =
-  match EConstr.kind sigma (whd_delta env sigma term) with
+let rec quantified_atom_of_constr b env sigma nrels term =
+  match EConstr.kind sigma ((if b then whd else whd_delta) env sigma term) with
       Prod (id,atom,ff) ->
         if isRefX sigma (Lazy.force _False) ff then
-          let patts=patterns_of_constr env sigma nrels atom in
+          let patts=patterns_of_constr b env sigma nrels atom in
               `Nrule patts
         else
-          quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma (succ nrels) ff
+          quantified_atom_of_constr b (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma (succ nrels) ff
+    | App (f,[|atom|]) when isRefX sigma (Lazy.force _not) f ->
+        let patts=patterns_of_constr b env sigma nrels atom in
+              `Nrule patts
     | _ ->
-        let patts=patterns_of_constr env sigma nrels term in
+        let patts=patterns_of_constr b env sigma nrels term in
             `Rule patts
 
-let litteral_of_constr env sigma term=
-  match EConstr.kind sigma (whd_delta env sigma term) with
+let litteral_of_constr b env sigma term =
+  match EConstr.kind sigma ((if b then whd else whd_delta) env sigma term) with
     | Prod (id,atom,ff) ->
         if isRefX sigma (Lazy.force _False) ff then
-          match (atom_of_constr env sigma atom) with
+          match (atom_of_constr b env sigma atom) with
               `Eq(t,a,b) -> `Neq(t,a,b)
             | `Other(p) -> `Nother(p)
         else
           begin
             try
-              quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma 1 ff
+              quantified_atom_of_constr b (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma 1 ff
             with Not_found ->
               `Other (decompose_term env sigma term)
           end
+    | App (f,[|atom|]) when isRefX sigma (Lazy.force _not) f ->
+          begin match (atom_of_constr b env sigma atom) with
+              `Eq(t,a,b) -> `Neq(t,a,b)
+            | `Other(p) -> `Nother(p)
+          end
     | _ ->
-        atom_of_constr env sigma term
+        atom_of_constr b env sigma term
 
 
 (* store all equalities from the context *)
 
-let make_prb gls depth additionnal_terms =
+let make_prb gls depth additional_terms b =
   let open Tacmach.New in
   let env=pf_env gls in
   let sigma=project gls in
@@ -191,13 +200,13 @@ let make_prb gls depth additionnal_terms =
     List.iter
       (fun c ->
          let t = decompose_term env sigma c in
-           ignore (add_term state t)) additionnal_terms;
+           ignore (add_term state t)) additional_terms;
     List.iter
       (fun decl ->
          let id = NamedDecl.get_id decl in
          begin
            let cid=Constr.mkVar id in
-           match litteral_of_constr env sigma (NamedDecl.get_type decl) with
+           match litteral_of_constr b env sigma (NamedDecl.get_type decl) with
                `Eq (t,a,b) -> add_equality state cid a b
              | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b
              | `Other ph ->
@@ -216,7 +225,7 @@ let make_prb gls depth additionnal_terms =
              | `Nrule patts -> add_quant state id false patts
          end) (Proofview.Goal.hyps gls);
     begin
-      match atom_of_constr env sigma (pf_concl gls) with
+      match atom_of_constr b env sigma (pf_concl gls) with
           `Eq (t,a,b) -> add_disequality state Goal a b
         |	`Other g ->
                   List.iter
@@ -416,18 +425,18 @@ let build_term_to_complete uf pac =
   let (kn, u) = cinfo.ci_constr in
   (applist (mkConstructU (kn, EInstance.make u), real_args), pac.arity)
 
-let cc_tactic depth additionnal_terms =
+let cc_tactic depth additional_terms b =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     Coqlib.(check_required_library logic_module_name);
     let _ = debug_congruence (fun () -> Pp.str "Reading goal ...") in
-    let state = make_prb gl depth additionnal_terms in
+    let state = make_prb gl depth additional_terms b in
     let _ = debug_congruence (fun () -> Pp.str "Problem built, solving ...") in
     let sol = execute true state in
     let _ = debug_congruence (fun () -> Pp.str "Computation completed.") in
     let uf=forest state in
     match sol with
-      None -> Tacticals.New.tclFAIL 0 (str "congruence failed")
+      None -> Tacticals.New.tclFAIL 0 (str (if b then "simple congruence failed" else "congruence failed"))
     | Some reason ->
       debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
       match reason with
@@ -475,9 +484,43 @@ let cc_tactic depth additionnal_terms =
           convert_to_hyp_tac ida ta idb tb p
   end
 
+let id t = mkLambda (make_annot Anonymous Sorts.Relevant, t, mkRel 1)
+
+(* convertible to (not False) -> P -> not P *)
+let mk_neg_ty ff t nt =
+  mkArrowR (mkArrowR ff ff) (mkArrowR t nt)
+
+(* proof of ((not False) -> P -> not P) -> not P *)
+let mk_neg_tm ff t nt =
+  mkLambda (make_annot Anonymous Sorts.Relevant, mk_neg_ty ff t nt,
+    mkLambda (make_annot Anonymous Sorts.Relevant, t,
+      mkApp (mkRel 2,[|id ff; mkRel 1; mkRel 1|])))
+
+(* for [simple congruence] process conclusion (not P) *)
+let negative_concl_introf =
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let concl = Proofview.Goal.concl gl in
+    let nt = whd env sigma concl in
+    match EConstr.kind sigma nt with
+      Prod (_,_,ff) when isRefX sigma (Lazy.force _False) ff -> introf
+    | App (f,[|t|]) when isRefX sigma (Lazy.force _not) f ->
+        Tacticals.New.pf_constr_of_global (Lazy.force _False) >>= fun ff ->
+        Refine.refine ~typecheck:true begin fun sigma ->
+          let sigma, e = Evarutil.new_evar env sigma (mk_neg_ty ff t nt) in sigma, (mkApp (mk_neg_tm ff t nt, [|e|]))
+        end >>= fun _ -> intro >>= fun _ -> intro
+    | _ -> Tacticals.New.tclIDTAC
+  end
 
 let congruence_tac depth l =
-  Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l)
+  Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l false)
+
+let simple_congruence_tac depth l =
+  Tacticals.New.tclTHENLIST [
+    Tacticals.New.tclREPEAT intro;
+    negative_concl_introf;
+    cc_tactic depth l true]
 
 (* Beware: reflexivity = constructor 1 = apply refl_equal
    might be slow now, let's rather do something equivalent

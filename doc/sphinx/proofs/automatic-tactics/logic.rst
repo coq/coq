@@ -166,6 +166,10 @@ Solvers for logic and equality
    You may want to use :tacn:`assert` to add some lemmas as
    hypotheses so that :tacn:`congruence` can use them.
 
+   .. tacn:: simple congruence {? @natural } {? with {+ @one_term } }
+
+      Behaves like :tacn:`congruence`, but does not unfold definitions.
+
    .. example::
 
       .. coqtop:: reset all
