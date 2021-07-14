@@ -27,6 +27,6 @@ module UPairSet : CSet.S with type elt = (Level.t * Level.t)
 
 val normalize_context_set : lbound:UGraph.Bound.t -> UGraph.t -> ContextSet.t ->
   universe_opt_subst (* The defined and undefined variables *) ->
-  LSet.t (* univ variables that can be substituted by algebraics *) ->
+  Level.Set.t (* univ variables that can be substituted by algebraics *) ->
   UPairSet.t (* weak equality constraints *) ->
-  (universe_opt_subst * LSet.t) in_universe_context_set
+  (universe_opt_subst * Level.Set.t) in_universe_context_set

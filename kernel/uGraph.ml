@@ -12,8 +12,8 @@ open Univ
 
 module G = AcyclicGraph.Make(struct
     type t = Level.t
-    module Set = LSet
-    module Map = LMap
+    module Set = Level.Set
+    module Map = Level.Map
     module Constraints = Constraints
 
     let equal = Level.equal
@@ -189,10 +189,10 @@ let add_universe u ~lbound ~strict g =
 let add_universe_unconstrained u g = {g with graph=G.add u g.graph}
 
 exception UndeclaredLevel = G.Undeclared
-let check_declared_universes g l = G.check_declared g.graph (LSet.remove Level.sprop l)
+let check_declared_universes g l = G.check_declared g.graph (Level.Set.remove Level.sprop l)
 
 let constraints_of_universes g = G.constraints_of g.graph
-let constraints_for ~kept g = G.constraints_for ~kept:(LSet.remove Level.sprop kept) g.graph
+let constraints_for ~kept g = G.constraints_for ~kept:(Level.Set.remove Level.sprop kept) g.graph
 
 (** Subtyping of polymorphic contexts *)
 
@@ -219,7 +219,7 @@ let check_eq_instances g t1 t2 =
           (Int.equal i (Array.length t1)) || (check_eq_level g t1.(i) t2.(i) && aux (i + 1))
         in aux 0)
 
-let domain g = LSet.add Level.sprop (G.domain g.graph)
+let domain g = Level.Set.add Level.sprop (G.domain g.graph)
 let choose p g u = if Level.is_sprop u
   then if p u then Some u else None
   else G.choose p g.graph u
@@ -230,12 +230,12 @@ let check_universes_invariants g = G.check_invariants ~required_canonical:Level.
 
 let pr_pmap sep pr map =
   let cmp (u,_) (v,_) = Level.compare u v in
-  Pp.prlist_with_sep sep pr (List.sort cmp (LMap.bindings map))
+  Pp.prlist_with_sep sep pr (List.sort cmp (Level.Map.bindings map))
 
 let pr_arc prl = let open Pp in
   function
   | u, G.Node ltle ->
-    if LMap.is_empty ltle then mt ()
+    if Level.Map.is_empty ltle then mt ()
     else
       prl u ++ str " " ++
       v 0
@@ -248,7 +248,7 @@ let pr_arc prl = let open Pp in
 
 type node = G.node =
 | Alias of Level.t
-| Node of bool LMap.t
+| Node of bool Level.Map.t
 
 let repr g = G.repr g.graph
 

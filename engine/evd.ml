@@ -993,7 +993,7 @@ let is_sort_variable evd s = UState.is_sort_variable evd.universes s
 
 let is_flexible_level evd l =
   let uctx = evd.universes in
-    Univ.LMap.mem l (UState.subst uctx)
+    Univ.Level.Map.mem l (UState.subst uctx)
 
 let is_eq_sort s1 s2 =
   if Sorts.equal s1 s2 then None
@@ -1006,8 +1006,8 @@ let is_eq_sort s1 s2 =
 (* Precondition: l is not defined in the substitution *)
 let universe_rigidity evd l =
   let uctx = evd.universes in
-  if Univ.LSet.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
-    UnivFlexible (Univ.LSet.mem l (UState.algebraics uctx))
+  if Univ.Level.Set.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
+    UnivFlexible (Univ.Level.Set.mem l (UState.algebraics uctx))
   else UnivRigid
 
 let normalize_universe evd =

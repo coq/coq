@@ -242,7 +242,7 @@ let pr_evar_universe_context ctx =
     (str"UNIVERSES:"++brk(0,1)++
        h (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
-     h (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
+     h (Univ.Level.Set.pr prl (UState.algebraics ctx)) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
      h (UState.pr_universe_opt_subst (UState.subst ctx)) ++ fnl() ++
      str "WEAK CONSTRAINTS:"++brk(0,1)++

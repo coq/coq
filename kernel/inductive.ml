@@ -131,15 +131,15 @@ Remark: Set (predicative) is encoded as Type(0)
 (* to [x]. *)
 let cons_subst u su subst =
   try
-    Univ.LMap.add u (Univ.sup (Univ.LMap.find u subst) su) subst
-  with Not_found -> Univ.LMap.add u su subst
+    Univ.Level.Map.add u (Univ.sup (Univ.Level.Map.find u subst) su) subst
+  with Not_found -> Univ.Level.Map.add u su subst
 
 (* remember_subst updates the mapping [u |-> x] by [u |-> sup x u] *)
 (* if it is presents and returns the substitution unchanged if not.*)
 let remember_subst u subst =
   try
     let su = Universe.make u in
-    Univ.LMap.add u (Univ.sup (Univ.LMap.find u subst) su) subst
+    Univ.Level.Map.add u (Univ.sup (Univ.Level.Map.find u subst) su) subst
   with Not_found -> subst
 
 type param_univs = (unit -> Universe.t) list
@@ -180,7 +180,7 @@ let make_subst =
     | [], _, _ ->
         assert false
   in
-  make Univ.LMap.empty
+  make Univ.Level.Map.empty
 
 exception SingletonInductiveBecomesProp of Id.t
 

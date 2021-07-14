@@ -70,7 +70,7 @@ val should_auto_template : Id.t -> bool -> bool
    inductive under consideration. *)
 
 val template_polymorphism_candidate
-  : ctor_levels:Univ.LSet.t
+  : ctor_levels:Univ.Level.Set.t
   -> Entries.universes_entry
   -> Constr.rel_context
   -> Sorts.t option

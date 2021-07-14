@@ -360,17 +360,17 @@ let universes_of_constr c =
   let rec aux s c =
     match kind c with
     | Const (_c, u) ->
-      LSet.fold LSet.add (Instance.levels u) s
+      Level.Set.fold Level.Set.add (Instance.levels u) s
     | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
-      LSet.fold LSet.add (Instance.levels u) s
+      Level.Set.fold Level.Set.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) ->
       let u = Sorts.univ_of_sort u in
-      LSet.fold LSet.add (Universe.levels u) s
+      Level.Set.fold Level.Set.add (Universe.levels u) s
     | Array (u,_,_,_) ->
-      let s = LSet.fold LSet.add (Instance.levels u) s in
+      let s = Level.Set.fold Level.Set.add (Instance.levels u) s in
       Constr.fold aux s c
     | Case (_, u, _, _, _,_ ,_) ->
-      let s = LSet.fold LSet.add (Instance.levels u) s in
+      let s = Level.Set.fold Level.Set.add (Instance.levels u) s in
       Constr.fold aux s c
     | _ -> Constr.fold aux s c
-  in aux LSet.empty c
+  in aux Level.Set.empty c

@@ -113,16 +113,16 @@ let declare_univ_binders gr pl =
           | None -> assert false (* having Prop/Set/Var as binders is nonsense *)
           | Some univ -> (id,univ)::univs
         in
-        let named = LSet.add univ named in
+        let named = Level.Set.add univ named in
         named, univs)
-        pl (LSet.empty,[])
+        pl (Level.Set.empty,[])
     in
     (* then invent names for the rest *)
-    let _, univs = LSet.fold (fun univ (aux,univs) ->
+    let _, univs = Level.Set.fold (fun univ (aux,univs) ->
         let id, aux = invent_name aux univ in
         let univ = Option.get (Level.name univ) in
         aux, (id,univ) :: univs)
-        (LSet.diff levels named) ((pl,0),univs)
+        (Level.Set.diff levels named) ((pl,0),univs)
     in
     input_univ_names (QualifiedUniv l, univs)
 
@@ -134,8 +134,8 @@ let do_universe ~poly l =
         (Pp.str"Cannot declare polymorphic universes outside sections")
   in
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
-  let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
-      Univ.LSet.empty l, Univ.Constraints.empty
+  let ctx = List.fold_left (fun ctx (_,qid) -> Univ.Level.Set.add (Univ.Level.make qid) ctx)
+      Univ.Level.Set.empty l, Univ.Constraints.empty
   in
   let src = if poly then BoundUniv else UnqualifiedUniv in
   let () = input_univ_names (src, l) in

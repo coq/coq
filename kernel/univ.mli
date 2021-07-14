@@ -63,16 +63,40 @@ sig
   val var_index : t -> int option
 
   val name : t -> UGlobal.t option
+
+  module Set :
+    sig
+      include CSig.SetS with type elt = t
+
+      val pr : (elt -> Pp.t) -> t -> Pp.t
+      (** Pretty-printing *)
+    end
+
+  module Map :
+  sig
+    include CMap.ExtS with type key = t and module Set := Set
+
+    val lunion : 'a t -> 'a t -> 'a t
+    (** [lunion x y] favors the bindings in the first map. *)
+
+    val diff : 'a t -> 'a t -> 'a t
+    (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
+
+    val subst_union : 'a option t -> 'a option t -> 'a option t
+    (** [subst_union x y] favors the bindings of the first map that are [Some],
+        otherwise takes y's bindings. *)
+
+    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
+    (** Pretty-printing *)
+  end
+
 end
 
-(** Sets of universe levels *)
 module LSet :
 sig
-  include CSig.SetS with type elt = Level.t
-
+  include CSig.SetS with type elt = Level.t and type t = Level.Set.t
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  (** Pretty-printing *)
-end
+end [@@ocaml.deprecated "Use Univ.Level.Set"]
 
 module Universe :
 sig
@@ -113,7 +137,7 @@ sig
   (** Try to get a level out of a universe, returns [None] if it
       is an algebraic universe. *)
 
-  val levels : t -> LSet.t
+  val levels : t -> Level.Set.t
   (** Get the levels inside the universe, forgetting about increments *)
 
   val super : t -> t
@@ -225,26 +249,16 @@ exception UniverseInconsistency of univ_inconsistency
 
 (** {6 Support for universe polymorphism } *)
 
-(** Polymorphic maps from universe levels to 'a *)
 module LMap :
 sig
-  include CMap.ExtS with type key = Level.t and module Set := LSet
-
+  include CMap.ExtS with type key = Level.t and type 'a t = 'a Level.Map.t and module Set := Level.Set
   val lunion : 'a t -> 'a t -> 'a t
-  (** [lunion x y] favors the bindings in the first map. *)
-
   val diff : 'a t -> 'a t -> 'a t
-  (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
-
   val subst_union : 'a option t -> 'a option t -> 'a option t
-  (** [subst_union x y] favors the bindings of the first map that are [Some],
-      otherwise takes y's bindings. *)
-
   val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-  (** Pretty-printing *)
-end
+end [@@ocaml.deprecated "Use Univ.Level.Map"]
 
-type 'a universe_map = 'a LMap.t
+type 'a universe_map = 'a Level.Map.t
 
 (** {6 Substitution} *)
 
@@ -312,7 +326,7 @@ sig
   val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   (** Pretty-printing, no comments *)
 
-  val levels : t -> LSet.t
+  val levels : t -> Level.Set.t
   (** The set of levels in the instance *)
 
 end
@@ -403,14 +417,14 @@ val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
 
 module ContextSet :
 sig
-  type t = LSet.t constrained
+  type t = Level.Set.t constrained
 
   val empty : t
   val is_empty : t -> bool
 
   val singleton : Level.t -> t
   val of_instance : Instance.t -> t
-  val of_set : LSet.t -> t
+  val of_set : Level.Set.t -> t
 
   val equal : t -> t -> bool
   val union : t -> t -> t
@@ -433,7 +447,7 @@ sig
   val of_context : UContext.t -> t
 
   val constraints : t -> Constraints.t
-  val levels : t -> LSet.t
+  val levels : t -> Level.Set.t
 
   val size : t -> int
   (** The number of universes in the context *)
@@ -506,7 +520,7 @@ val pr_universe_subst : universe_subst -> Pp.t
 
 val hcons_univ : Universe.t -> Universe.t
 val hcons_constraints : Constraints.t -> Constraints.t
-val hcons_universe_set : LSet.t -> LSet.t
+val hcons_universe_set : Level.Set.t -> Level.Set.t
 val hcons_universe_context : UContext.t -> UContext.t
 val hcons_abstract_universe_context : AUContext.t -> AUContext.t
 val hcons_universe_context_set : ContextSet.t -> ContextSet.t

@@ -615,7 +615,7 @@ val univ_flexible_alg : rigid
 
 type 'a in_evar_universe_context = 'a * UState.t
 
-val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map
+val restrict_universe_context : evar_map -> Univ.Level.Set.t -> evar_map
 
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t

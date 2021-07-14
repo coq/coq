@@ -289,7 +289,7 @@ let is_suffix l suf = match l with
 | _ :: l -> l == suf
 
 let is_subset (s1, cst1) (s2, cst2) =
-  Univ.LSet.subset s1 s2 && Univ.Constraints.subset cst1 cst2
+  Univ.Level.Set.subset s1 s2 && Univ.Constraints.subset cst1 cst2
 
 let check ~src ~dst =
   is_suffix dst.certif_struc src.certif_struc &&
@@ -529,7 +529,7 @@ let push_section_context uctx senv =
   let ctx = Univ.ContextSet.of_context uctx in
   (* We check that the universes are fresh. FIXME: This should be done
      implicitly, but we have to work around the API. *)
-  let () = assert (Univ.LSet.for_all (fun u -> not (Univ.LSet.mem u (fst senv.univ))) (fst ctx)) in
+  let () = assert (Univ.Level.Set.for_all (fun u -> not (Univ.Level.Set.mem u (fst senv.univ))) (fst ctx)) in
   { senv with
     env = Environ.push_context_set ~strict:false ctx senv.env;
     univ = Univ.ContextSet.union ctx senv.univ }
@@ -995,7 +995,7 @@ let add_mind ?typing_flags l mie senv =
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mtb, cst = Mod_typing.translate_modtype senv.env mp inl params_mte  in
-  let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
+  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   let mtb = Declareops.hcons_module_type mtb in
   let senv = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv
@@ -1015,7 +1015,7 @@ let full_add_module_type mp mt senv =
 let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mb, cst = Mod_typing.translate_module senv.env mp inl me in
-  let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
+  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   let mb = Declareops.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
   let senv =
@@ -1059,7 +1059,7 @@ let add_module_parameter mbid mte inl senv =
   let () = check_empty_struct senv in
   let mp = MPbound mbid in
   let mtb, cst = Mod_typing.translate_modtype senv.env mp inl ([],mte) in
-  let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
+  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   let senv = full_add_module_type mp mtb senv in
   let new_variant = match senv.modvariant with
     | STRUCT (params,oldenv) -> STRUCT ((mbid,mtb) :: params, oldenv)
@@ -1141,7 +1141,7 @@ let end_module l restype senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let mb, cst = build_module_body params restype senv in
-  let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
+  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
@@ -1185,7 +1185,7 @@ let add_include me is_module inl senv =
   let sign,(),resolver,cst =
     translate_mse_incl is_module senv.env mp_sup inl me
   in
-  let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
+  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   (* Include Self support  *)
   let rec compute_sign sign mb resolver senv =
     match sign with

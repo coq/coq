@@ -71,7 +71,7 @@ val ugraph : t -> UGraph.t
 val initial_graph : t -> UGraph.t
 (** The initial graph with just the declarations of new universes. *)
 
-val algebraics : t -> Univ.LSet.t
+val algebraics : t -> Univ.Level.Set.t
 (** The subset of unification variables that can be instantiated with algebraic
     universes as they appear in inferred types only. *)
 
@@ -110,13 +110,13 @@ val universe_of_name : t -> Id.t -> Univ.Level.t
    the universes in [keep]. The constraints [csts] are adjusted so
    that transitive constraints between remaining universes (those in
    [keep] and those not in [univs]) are preserved. *)
-val restrict_universe_context : lbound:UGraph.Bound.t -> ContextSet.t -> LSet.t -> ContextSet.t
+val restrict_universe_context : lbound:UGraph.Bound.t -> ContextSet.t -> Level.Set.t -> ContextSet.t
 
 (** [restrict uctx ctx] restricts the local universes of [uctx] to
    [ctx] extended by local named universes and side effect universes
    (from [demote_seff_univs]). Transitive constraints between retained
    universes are preserved. *)
-val restrict : t -> Univ.LSet.t -> t
+val restrict : t -> Univ.Level.Set.t -> t
 
 type rigid =
   | UnivRigid
@@ -135,7 +135,7 @@ val demote_global_univs : Environ.env -> t -> t
     that are present in the universe graph in the input env (supposedly the
     global ones) *)
 
-val demote_seff_univs : Univ.LSet.t -> t -> t
+val demote_seff_univs : Univ.Level.Set.t -> t -> t
 (** Mark the universes as not local any more, because they have been
    globally declared by some side effect. You should be using
    emit_side_effects instead. *)
@@ -171,7 +171,7 @@ val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
 
 val normalize_variables : t -> t
 
-val constrain_variables : Univ.LSet.t -> t -> t
+val constrain_variables : Univ.Level.Set.t -> t -> t
 
 val abstract_undefined_variables : t -> t
 

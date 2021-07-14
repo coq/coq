@@ -17,7 +17,7 @@ val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.
 type universe_opt_subst = Universe.t option universe_map
 
 val normalize_univ_variables : universe_opt_subst ->
-  universe_opt_subst * LSet.t * universe_subst
+  universe_opt_subst * Level.Set.t * universe_subst
 
 val normalize_univ_variable_opt_subst : universe_opt_subst ->
   (Level.t -> Universe.t)

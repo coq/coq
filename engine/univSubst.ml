@@ -57,7 +57,7 @@ type universe_opt_subst = Universe.t option universe_map
 
 let normalize_univ_variable_opt_subst ectx =
   let find l =
-    match Univ.LMap.find l ectx with
+    match Univ.Level.Map.find l ectx with
     | Some b -> b
     | None -> raise Not_found
   in
@@ -69,18 +69,18 @@ let normalize_universe_opt_subst subst =
 
 let normalize_opt_subst ctx =
   let normalize = normalize_universe_opt_subst ctx in
-  Univ.LMap.mapi (fun u -> function
+  Univ.Level.Map.mapi (fun u -> function
       | None -> None
       | Some v -> Some (normalize v)) ctx
 
 let normalize_univ_variables ctx =
   let ctx = normalize_opt_subst ctx in
   let def, subst =
-    Univ.LMap.fold (fun u v (def, subst) ->
+    Univ.Level.Map.fold (fun u v (def, subst) ->
       match v with
       | None -> (def, subst)
-      | Some b -> (Univ.LSet.add u def, Univ.LMap.add u b subst))
-    ctx (Univ.LSet.empty, Univ.LMap.empty)
+      | Some b -> (Univ.Level.Set.add u def, Univ.Level.Map.add u b subst))
+    ctx (Univ.Level.Set.empty, Univ.Level.Map.empty)
   in ctx, def, subst
 
 let subst_univs_fn_puniverses f (c, u as cu) =

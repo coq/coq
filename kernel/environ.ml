@@ -405,7 +405,7 @@ let push_context ?(strict=false) ctx env =
   map_universes (add_universes ~lbound:(universes_lbound env) ~strict ctx) env
 
 let add_universes_set ~lbound ~strict ctx g =
-  let g = Univ.LSet.fold
+  let g = Univ.Level.Set.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
             (fun v g -> try UGraph.add_universe ~lbound ~strict v g with UGraph.AlreadyDeclared -> g)
             (Univ.ContextSet.levels ctx) g
@@ -417,7 +417,7 @@ let push_context_set ?(strict=false) ctx env =
 let push_subgraph (levels,csts) env =
   let lbound = universes_lbound env in
   let add_subgraph g =
-    let newg = Univ.LSet.fold (fun v g -> UGraph.add_universe ~lbound ~strict:false v g) levels g in
+    let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~lbound ~strict:false v g) levels g in
     let newg = UGraph.merge_constraints csts newg in
     (if not (Univ.Constraints.is_empty csts) then
        let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in

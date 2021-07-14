@@ -75,7 +75,7 @@ val add_universe_unconstrained : Level.t -> t -> t
     @raise UndeclaredLevel l for the first undeclared level found. *)
 exception UndeclaredLevel of Univ.Level.t
 
-val check_declared_universes : t -> Univ.LSet.t -> unit
+val check_declared_universes : t -> Univ.Level.Set.t -> unit
 
 (** The empty graph of universes *)
 val empty_universes : t
@@ -83,7 +83,7 @@ val empty_universes : t
 (** [constraints_of_universes g] returns [csts] and [partition] where
    [csts] are the non-Eq constraints and [partition] is the partition
    of the universes into equivalence classes. *)
-val constraints_of_universes : t -> Constraints.t * LSet.t list
+val constraints_of_universes : t -> Constraints.t * Level.Set.t list
 
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 (** [choose p g u] picks a universe verifying [p] and equal
@@ -93,9 +93,9 @@ val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
    universes [kept] in [g] up to transitivity.
 
     eg if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
-val constraints_for : kept:LSet.t -> t -> Constraints.t
+val constraints_for : kept:Level.Set.t -> t -> Constraints.t
 
-val domain : t -> LSet.t
+val domain : t -> Level.Set.t
 (** Known universes *)
 
 val check_subtype : lbound:Bound.t -> AUContext.t check_function
@@ -106,13 +106,13 @@ val check_subtype : lbound:Bound.t -> AUContext.t check_function
 
 type node =
 | Alias of Level.t
-| Node of bool LMap.t (** Nodes v s.t. u < v (true) or u <= v (false) *)
+| Node of bool Level.Map.t (** Nodes v s.t. u < v (true) or u <= v (false) *)
 
-val repr : t -> node LMap.t
+val repr : t -> node Level.Map.t
 
 (** {6 Pretty-printing of universes. } *)
 
-val pr_universes : (Level.t -> Pp.t) -> node LMap.t -> Pp.t
+val pr_universes : (Level.t -> Pp.t) -> node Level.Map.t -> Pp.t
 
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit

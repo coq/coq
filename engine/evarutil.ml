@@ -37,11 +37,11 @@ let create_clos_infos env sigma flags =
 
 let finalize ?abort_on_undefined_evars sigma f =
   let sigma = minimize_universes sigma in
-  let uvars = ref Univ.LSet.empty in
+  let uvars = ref Univ.Level.Set.empty in
   let v = f (fun c ->
       let varsc = EConstr.universes_of_constr sigma c in
       let c = EConstr.to_constr ?abort_on_undefined_evars sigma c in
-      uvars := Univ.LSet.union !uvars varsc;
+      uvars := Univ.Level.Set.union !uvars varsc;
       c)
   in
   let sigma = restrict_universe_context sigma !uvars in

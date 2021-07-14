@@ -445,10 +445,10 @@ let magically_constant_of_fixbody env sigma reference bd = function
                     let get u = Option.get (Universe.level u) in
                     get u, get v
                 in
-                Univ.LMap.add l r acc)
-                csts Univ.LMap.empty
+                Univ.Level.Map.add l r acc)
+                csts Univ.Level.Map.empty
             in
-            let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
+            let inst = Instance.subst_fn (fun u -> Univ.Level.Map.find u subst) u in
             mkConstU (cst, EInstance.make inst)
           | None -> bd
         end

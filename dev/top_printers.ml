@@ -224,7 +224,7 @@ let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
 
 let prlev = UnivNames.pr_with_global_universes Id.Map.empty
-let ppuniverse_set l = pp (LSet.pr prlev l)
+let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
