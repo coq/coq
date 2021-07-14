@@ -42,7 +42,7 @@ module Termhash : Hashtbl.S with type key = term
 
 type ccpattern =
     PApp of term * ccpattern list
-  | PVar of int
+  | PVar of int * ccpattern list
 
 type rule=
     Congruence
