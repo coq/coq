@@ -56,7 +56,7 @@ let inductive_paramdecls (mib,u) =
   Vars.subst_instance_context u mib.mind_params_ctxt
 
 let instantiate_inductive_constraints mib u =
-  Univ.AUContext.instantiate u (Declareops.inductive_polymorphic_context mib)
+  Univ.AbstractContext.instantiate u (Declareops.inductive_polymorphic_context mib)
 
 (************************************************************************)
 
@@ -206,7 +206,7 @@ let relevance_of_inductive env ind =
 let check_instance mib u =
   if not (match mib.mind_universes with
       | Monomorphic _ -> Instance.is_empty u
-      | Polymorphic uctx -> Instance.length u = AUContext.size uctx)
+      | Polymorphic uctx -> Instance.length u = AbstractContext.size uctx)
   then CErrors.anomaly Pp.(str "bad instance length on mutind.")
 
 let type_of_inductive_gen ?(polyprop=true) ((mib,mip),u) paramtyps =

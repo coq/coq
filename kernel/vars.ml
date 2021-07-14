@@ -348,7 +348,7 @@ let subst_instance_constr subst c =
 
 let univ_instantiate_constr u c =
   let open Univ in
-  assert (Int.equal (Instance.length u) (AUContext.size c.univ_abstracted_binder));
+  assert (Int.equal (Instance.length u) (AbstractContext.size c.univ_abstracted_binder));
   subst_instance_constr u c.univ_abstracted_value
 
 let subst_instance_context s ctx =

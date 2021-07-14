@@ -372,9 +372,17 @@ sig
 
 end
 
-module AUContext :
+module AbstractContext :
 sig
   type t
+  (** An abstract context serves to quantify over a graph of universes
+      represented using de Bruijn indices, as in:
+      u0, ..., u(n-1), Var i < Var j, .., Var k <= Var l |- term(Var 0 .. Var (n-1))
+      \-------------/  \-------------------------------/    \---------------------/
+      names for        constraints expressed on de Bruijn   judgement in abstract
+      printing         representation of the n univ vars    context expected to
+                                                            use de Bruijn indices
+  *)
 
   val make : Names.Name.t array -> Constraints.t -> t
   (** Build an abstract context. Constraints may be between universe
@@ -389,8 +397,8 @@ sig
 
   val size : t -> int
 
-  (** Keeps the order of the instances *)
   val union : t -> t -> t
+  (** The constraints are expected to be relative to the concatenated set of universes *)
 
   val instantiate : Instance.t -> t -> Constraints.t
   (** Generate the set of instantiated Constraints.t **)
@@ -400,9 +408,22 @@ sig
 
 end
 
+module AUContext :
+sig
+  type t = AbstractContext.t
+  val make : Names.Name.t array -> Constraints.t -> t
+  val repr : t -> UContext.t
+  val empty : t
+  val is_empty : t -> bool
+  val size : t -> int
+  val union : t -> t -> t
+  val instantiate : Instance.t -> t -> Constraints.t
+  val names : t -> Names.Name.t array
+end [@@ocaml.deprecated "Use Univ.AbstractContext"]
+
 type 'a univ_abstracted = {
   univ_abstracted_value : 'a;
-  univ_abstracted_binder : AUContext.t;
+  univ_abstracted_binder : AbstractContext.t;
 }
 (** A value with bound universe levels. *)
 
@@ -469,7 +490,7 @@ val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
 val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
 val subst_univs_level_constraints : universe_level_subst -> Constraints.t -> Constraints.t
 val subst_univs_level_abstract_universe_context :
-  universe_level_subst -> AUContext.t -> AUContext.t
+  universe_level_subst -> AbstractContext.t -> AbstractContext.t
 val subst_univs_level_instance : universe_level_subst -> Instance.t -> Instance.t
 
 (** Level to universe substitutions. *)
@@ -489,10 +510,10 @@ val make_instance_subst : Instance.t -> universe_level_subst
 
 val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
-val abstract_universes : UContext.t -> Instance.t * AUContext.t
+val abstract_universes : UContext.t -> Instance.t * AbstractContext.t
 (** TODO: move universe abstraction out of the kernel *)
 
-val make_abstract_instance : AUContext.t -> Instance.t
+val make_abstract_instance : AbstractContext.t -> Instance.t
 
 (** [compact_univ u] remaps local variables in [u] such that their indices become
      consecutive. It returns the new universe and the mapping.
@@ -508,7 +529,7 @@ val pr_constraints : (Level.t -> Pp.t) -> Constraints.t -> Pp.t
 val pr_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
   UContext.t -> Pp.t
 val pr_abstract_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
-  AUContext.t -> Pp.t
+  AbstractContext.t -> Pp.t
 val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
 val explain_universe_inconsistency : (Level.t -> Pp.t) ->
   univ_inconsistency -> Pp.t
@@ -522,5 +543,5 @@ val hcons_univ : Universe.t -> Universe.t
 val hcons_constraints : Constraints.t -> Constraints.t
 val hcons_universe_set : Level.Set.t -> Level.Set.t
 val hcons_universe_context : UContext.t -> UContext.t
-val hcons_abstract_universe_context : AUContext.t -> AUContext.t
+val hcons_abstract_universe_context : AbstractContext.t -> AbstractContext.t
 val hcons_universe_context_set : ContextSet.t -> ContextSet.t

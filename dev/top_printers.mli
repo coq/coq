@@ -138,7 +138,7 @@ val prlev : Univ.Level.t -> Pp.t (* with global names (does this work?) *)
 val ppuniverse_set : Univ.Level.Set.t -> unit
 val ppuniverse_instance : Univ.Instance.t -> unit
 val ppuniverse_context : Univ.UContext.t -> unit
-val ppaucontext : Univ.AUContext.t -> unit
+val ppaucontext : Univ.AbstractContext.t -> unit
 val ppuniverse_context_set : Univ.ContextSet.t -> unit
 val ppuniverse_subst : Univ.universe_subst -> unit
 val ppuniverse_opt_subst : UState.universe_opt_subst -> unit

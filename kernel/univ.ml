@@ -989,7 +989,7 @@ end
 type universe_context = UContext.t
 let hcons_universe_context = UContext.hcons
 
-module AUContext =
+module AbstractContext =
 struct
   type t = Names.Name.t array constrained
 
@@ -1019,16 +1019,18 @@ struct
 
 end
 
+module AUContext = AbstractContext (* Deprecated *)
+
 type 'a univ_abstracted = {
   univ_abstracted_value : 'a;
-  univ_abstracted_binder : AUContext.t;
+  univ_abstracted_binder : AbstractContext.t;
 }
 
 let map_univ_abstracted f {univ_abstracted_value;univ_abstracted_binder} =
   let univ_abstracted_value = f univ_abstracted_value in
   {univ_abstracted_value;univ_abstracted_binder}
 
-let hcons_abstract_universe_context = AUContext.hcons
+let hcons_abstract_universe_context = AbstractContext.hcons
 
 (** A set of universes with universe constraints.
     We linearize the set to a list after typechecking.
@@ -1209,7 +1211,7 @@ let pr_constraints prl = Constraints.pr prl
 
 let pr_universe_context = UContext.pr
 
-let pr_abstract_universe_context = AUContext.pr
+let pr_abstract_universe_context = AbstractContext.pr
 
 let pr_universe_context_set = ContextSet.pr
 

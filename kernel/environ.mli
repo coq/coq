@@ -231,7 +231,7 @@ val constant_value_and_type : env -> Constant.t puniverses ->
   constr option * types * Univ.Constraints.t
 (** The universe context associated to the constant, empty if not
     polymorphic *)
-val constant_context : env -> Constant.t -> Univ.AUContext.t
+val constant_context : env -> Constant.t -> Univ.AbstractContext.t
 
 (* These functions should be called under the invariant that [env]
    already contains the constraints corresponding to the constant
@@ -270,7 +270,7 @@ val mem_mind : MutInd.t -> env -> bool
 
 (** The universe context associated to the inductive, empty if not
     polymorphic *)
-val mind_context : env -> MutInd.t -> Univ.AUContext.t
+val mind_context : env -> MutInd.t -> Univ.AbstractContext.t
 
 (** New-style polymorphism *)
 val polymorphic_ind  : inductive -> env -> bool
@@ -354,7 +354,7 @@ val same_flags : typing_flags -> typing_flags -> bool
 (** [update_typing_flags ?typing_flags] may update env with optional typing flags *)
 val update_typing_flags : ?typing_flags:typing_flags -> env -> env
 
-val universes_of_global : env -> GlobRef.t -> AUContext.t
+val universes_of_global : env -> GlobRef.t -> AbstractContext.t
 
 (** {6 Sets of referred section variables }
    [global_vars_set env c] returns the list of [id]'s occurring either

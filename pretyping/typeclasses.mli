@@ -28,7 +28,7 @@ type class_method = {
 
 (** This module defines type-classes *)
 type typeclass = {
-  cl_univs : Univ.AUContext.t;
+  cl_univs : Univ.AbstractContext.t;
   (** The toplevel universe quantification in which the typeclass lives. In
       particular, [cl_props] and [cl_context] are quantified over it. *)
 

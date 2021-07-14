@@ -35,7 +35,7 @@ type 'a t = {
   (** Are there polymorphic universes or constraints, including in previous sections. *)
   entries : section_entry list;
   (** Definitions introduced in the section *)
-  data : (Instance.t * AUContext.t) entry_map;
+  data : (Instance.t * AbstractContext.t) entry_map;
   (** Additional data synchronized with the section *)
   custom : 'a;
 }
@@ -119,7 +119,7 @@ let push_inductive ~poly ind s = push_global ~poly (SecInductive ind) s
 let empty_segment = {
   abstr_ctx = [];
   abstr_subst = Instance.empty;
-  abstr_uctx = AUContext.empty;
+  abstr_uctx = AbstractContext.empty;
 }
 
 let extract_hyps sec vars used =

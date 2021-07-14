@@ -767,7 +767,7 @@ let constant_entry_of_side_effect eff =
     | Monomorphic uctx ->
       Monomorphic_entry uctx
     | Polymorphic auctx ->
-      Polymorphic_entry (Univ.AUContext.repr auctx)
+      Polymorphic_entry (Univ.AbstractContext.repr auctx)
   in
   let p =
     match cb.const_body with
@@ -800,7 +800,7 @@ let is_empty_private = function
 
 let empty_private univs = match univs with
 | Monomorphic _ -> Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
-| Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, Univ.ContextSet.empty)
+| Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AbstractContext.size auctx, Univ.ContextSet.empty)
 
 (* Special function to call when the body of an opaque definition is provided.
   It performs the type-checking of the body immediately. *)

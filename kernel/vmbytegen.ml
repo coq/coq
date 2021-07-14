@@ -887,7 +887,7 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
 let compile_constant_body ~fail_on_error env univs = function
   | Undef _ | OpaqueDef _ | Primitive _ -> Some BCconstant
   | Def body ->
-      let instance_size = Univ.AUContext.size (Declareops.universes_context univs) in
+      let instance_size = Univ.AbstractContext.size (Declareops.universes_context univs) in
       match kind body with
         | Const (kn',u) when is_univ_copy instance_size u ->
             (* we use the canonical name of the constant*)

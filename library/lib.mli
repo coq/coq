@@ -178,4 +178,4 @@ val replacement_context : unit -> Declarations.work_list
 
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 val discharge_abstract_universe_context :
-  Declarations.abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t
+  Declarations.abstr_info -> Univ.AbstractContext.t -> Univ.universe_level_subst * Univ.AbstractContext.t

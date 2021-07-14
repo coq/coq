@@ -184,18 +184,18 @@ let discharge_abstract_universe_context subst abs_ctx auctx =
   *)
   if (Univ.Instance.is_empty subst) then
     (** Still need to take the union for the constraints between globals *)
-    subst, (AUContext.union abs_ctx auctx)
+    subst, (AbstractContext.union abs_ctx auctx)
   else
     let open Univ in
     let ainst = make_abstract_instance auctx in
     let subst = Instance.append subst ainst in
     let substf = make_instance_subst subst in
     let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
-    subst, (AUContext.union abs_ctx auctx)
+    subst, (AbstractContext.union abs_ctx auctx)
 
 let lift_univs subst auctx0 = function
   | Monomorphic ctx ->
-    assert (AUContext.is_empty auctx0);
+    assert (AbstractContext.is_empty auctx0);
     subst, (Monomorphic ctx)
   | Polymorphic auctx ->
     let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
@@ -205,14 +205,14 @@ let cook_constr { modlist; abstract = {abstr_ctx; abstr_subst; abstr_uctx;}; } (
   let cache = RefTable.create 13 in
   let abstr_subst, priv = match priv with
   | Opaqueproof.PrivateMonomorphic () ->
-    let () = assert (AUContext.is_empty abstr_uctx) in
+    let () = assert (AbstractContext.is_empty abstr_uctx) in
     let () = assert (Instance.is_empty abstr_subst) in
     abstr_subst, priv
   | Opaqueproof.PrivatePolymorphic (univs, ctx) ->
     let ainst = Instance.of_array (Array.init univs Level.var) in
     let abstr_subst = Instance.append abstr_subst ainst in
     let ctx = on_snd (Univ.subst_univs_level_constraints (Univ.make_instance_subst abstr_subst)) ctx in
-    let univs = univs + AUContext.size abstr_uctx in
+    let univs = univs + AbstractContext.size abstr_uctx in
     abstr_subst, Opaqueproof.PrivatePolymorphic (univs, ctx)
   in
   let expmod = expmod_constr_subst cache modlist abstr_subst in
@@ -371,7 +371,7 @@ let cook_inductive { modlist; abstract={abstr_ctx; abstr_subst; abstr_uctx;}; } 
     | None, Some _ | Some _, None -> assert false
     | Some variance, Some sec_variance ->
       let sec_variance, newvariance =
-        Array.chop (Array.length sec_variance - AUContext.size abstr_uctx)
+        Array.chop (Array.length sec_variance - AbstractContext.size abstr_uctx)
           sec_variance
       in
       Some (Array.append newvariance variance), Some sec_variance

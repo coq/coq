@@ -26,21 +26,21 @@ let fresh_level () =
   Univ.Level.make (new_univ_global ())
 
 let fresh_instance auctx =
-  let inst = Array.init (AUContext.size auctx) (fun _ -> fresh_level()) in
+  let inst = Array.init (AbstractContext.size auctx) (fun _ -> fresh_level()) in
   let ctx = Array.fold_right Level.Set.add inst Level.Set.empty in
   let inst = Instance.of_array inst in
-  inst, (ctx, AUContext.instantiate inst auctx)
+  inst, (ctx, AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc auctx inst =
   let () =
     let len1 = Array.length (Instance.to_array inst)
-    and len2 = AUContext.size auctx in
+    and len2 = AbstractContext.size auctx in
       if not (len1 == len2) then
         CErrors.user_err ?loc ~hdr:"Universes"
           Pp.(str "Universe instance should have length " ++ int len2 ++ str ".")
       else ()
   in
-  inst, (Level.Set.empty, AUContext.instantiate inst auctx)
+  inst, (Level.Set.empty, AbstractContext.instantiate inst auctx)
 
 let fresh_instance_from ?loc ctx = function
   | Some inst -> existing_instance ?loc ctx inst

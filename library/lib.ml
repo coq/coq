@@ -557,4 +557,4 @@ let discharge_abstract_universe_context { Declarations.abstr_subst = subst; abst
   let subst = Instance.append subst ainst in
   let subst = make_instance_subst subst in
   let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
-  subst, AUContext.union abs_ctx auctx
+  subst, AbstractContext.union abs_ctx auctx

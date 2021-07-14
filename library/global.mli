@@ -123,7 +123,7 @@ val mind_of_delta_kn : KerName.t -> MutInd.t
 val opaque_tables : unit -> Opaqueproof.opaquetab
 
 val body_of_constant : cooking_info Opaqueproof.indirect_accessor -> Constant.t ->
-  (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AUContext.t) option
+  (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AbstractContext.t) option
 (** Returns the body of the constant if it has any, and the polymorphic context
     it lives in. For monomorphic constant, the latter is empty, and for
     polymorphic constants, the term contains De Bruijn universe variables that
@@ -131,7 +131,7 @@ val body_of_constant : cooking_info Opaqueproof.indirect_accessor -> Constant.t 
 
 val body_of_constant_body : cooking_info Opaqueproof.indirect_accessor ->
   constant_body ->
-    (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AUContext.t) option
+    (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AbstractContext.t) option
 (** Same as {!body_of_constant} but on {!constant_body}. *)
 
 (** {6 Compiled libraries } *)

@@ -131,7 +131,7 @@ end
 type obj_typ = {
   o_ORIGIN : GlobRef.t;
   o_DEF : constr;
-  o_CTX : Univ.AUContext.t;
+  o_CTX : Univ.AbstractContext.t;
   o_INJ : int option;      (* position of trivial argument if any *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)

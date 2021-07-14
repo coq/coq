@@ -49,7 +49,7 @@ type signature_mismatch_error =
   | NotEqualInductiveAliases
   | IncompatibleUniverses of Univ.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
-  | IncompatibleConstraints of { got : Univ.AUContext.t; expect : Univ.AUContext.t }
+  | IncompatibleConstraints of { got : Univ.AbstractContext.t; expect : Univ.AbstractContext.t }
   | IncompatibleVariance
 
 type module_typing_error =

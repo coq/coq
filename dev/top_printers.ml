@@ -244,14 +244,14 @@ let ppnamedcontextval e =
   pp (pr_named_context env sigma (named_context_of_val e))
 
 let ppaucontext auctx =
-  let nas = AUContext.names auctx in
+  let nas = AbstractContext.names auctx in
   let prlev l = match Level.var_index l with
     | Some n -> (match nas.(n) with
         | Anonymous -> prlev l
         | Name id -> Id.print id)
     | None -> prlev l
   in
-  pp (pr_universe_context prlev (AUContext.repr auctx))
+  pp (pr_universe_context prlev (AbstractContext.repr auctx))
 
 
 let ppenv e = pp

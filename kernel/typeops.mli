@@ -94,7 +94,7 @@ val judge_of_constructor : env -> constructor puniverses -> unsafe_judgment
 
 (** {6 Type of global references. } *)
 
-val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t
+val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AbstractContext.t
 (** Returns the type of the global reference, by creating a fresh
     instance of polymorphic references and computing their
     instantiated universe context. The type should not be used

@@ -503,7 +503,7 @@ let add_constant kn cb env =
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
   let uctx = Declareops.constant_polymorphic_context cb in
-  let csts = Univ.AUContext.instantiate u uctx in
+  let csts = Univ.AbstractContext.instantiate u uctx in
   (subst_instance_constr u cb.const_type, csts)
 
 type const_evaluation_result =
@@ -516,7 +516,7 @@ exception NotEvaluableConst of const_evaluation_result
 let constant_value_and_type env (kn, u) =
   let cb = lookup_constant kn env in
   let uctx = Declareops.constant_polymorphic_context cb in
-  let cst = Univ.AUContext.instantiate u uctx in
+  let cst = Univ.AbstractContext.instantiate u uctx in
   let b' = match cb.const_body with
     | Def l_body -> Some (subst_instance_constr u l_body)
     | OpaqueDef _ -> None
@@ -672,7 +672,7 @@ let constant_context env c =
 let universes_of_global env r =
   let open GlobRef in
     match r with
-    | VarRef _ -> Univ.AUContext.empty
+    | VarRef _ -> Univ.AbstractContext.empty
     | ConstRef c -> constant_context env c
     | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
       let mib = lookup_mind mind env in

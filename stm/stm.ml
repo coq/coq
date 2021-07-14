@@ -1692,11 +1692,11 @@ end = struct (* {{{ *)
         let uc = Univ.hcons_universe_context_set uc in
         let (pr, priv, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
         (* We only manipulate monomorphic terms here. *)
-        let () = assert (Univ.AUContext.is_empty ctx) in
+        let () = assert (Univ.AbstractContext.is_empty ctx) in
         let () = match priv with
         | Opaqueproof.PrivateMonomorphic () -> ()
         | Opaqueproof.PrivatePolymorphic (univs, uctx) ->
-          let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
+          let () = assert (Int.equal (Univ.AbstractContext.size ctx) univs) in
           assert (Univ.ContextSet.is_empty uctx)
         in
         let () = Opaqueproof.set_opaque_disk (Option.get bucket) (pr, priv) p in
