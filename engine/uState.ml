@@ -160,6 +160,9 @@ let of_binders names =
   in
   { empty with names = (names, rev_map) }
 
+let universe_of_name uctx s =
+  UNameMap.find s (fst uctx.names)
+
 let universe_binders uctx =
   let named, _ = uctx.names in
   named
@@ -385,7 +388,7 @@ let universe_context ~names ~extensible uctx =
     List.fold_right
       (fun { CAst.loc; v = id } (newinst, acc) ->
          let l =
-           try UNameMap.find id (fst uctx.names)
+           try universe_of_name uctx id
            with Not_found -> assert false
          in (l :: newinst, Level.Set.remove l acc))
       names ([], levels)
@@ -403,7 +406,7 @@ let check_universe_context_set ~names ~extensible uctx =
   else
     let left = List.fold_left (fun left { CAst.loc; v = id } ->
         let l =
-          try UNameMap.find id (fst uctx.names)
+          try universe_of_name uctx id
           with Not_found -> assert false
         in Level.Set.remove l left)
         (ContextSet.levels uctx.local) names
@@ -726,9 +729,6 @@ let minimize uctx =
         universes_lbound = lbound;
         initial_universes = uctx.initial_universes;
         weak_constraints = UPairSet.empty; (* weak constraints are consumed *) }
-
-let universe_of_name uctx s =
-  UNameMap.find s (fst uctx.names)
 
 let pr_weak prl {weak_constraints=weak} =
   let open Pp in
