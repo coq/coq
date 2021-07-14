@@ -14,7 +14,7 @@ module G = AcyclicGraph.Make(struct
     type t = Level.t
     module Set = LSet
     module Map = LMap
-    module Constraint = Constraint
+    module Constraints = Constraints
 
     let equal = Level.equal
     let compare = Level.compare
@@ -109,7 +109,7 @@ let enforce_constraint cst g =
   if not (type_in_type g) then enforce_constraint cst g
   else try enforce_constraint cst g with UniverseInconsistency _ -> g
 
-let merge_constraints csts g = Constraint.fold enforce_constraint csts g
+let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
 let check_constraint g (u,d,v) =
   match d with
@@ -124,7 +124,7 @@ let check_constraint g (u,d,v as cst) =
   | true, Le, false -> g.sprop_cumulative || type_in_type g
   | _ -> type_in_type g
 
-let check_constraints csts g = Constraint.for_all (check_constraint g) csts
+let check_constraints csts g = Constraints.for_all (check_constraint g) csts
 
 let leq_expr (u,m) (v,n) =
   let d = match m - n with
@@ -142,19 +142,19 @@ let enforce_leq_alg u v g =
       else
         (let c = leq_expr u v in
          match enforce_constraint c g with
-         | g -> Inl (Constraint.add c cstrs,g)
+         | g -> Inl (Constraints.add c cstrs,g)
          | exception (UniverseInconsistency _ as e) -> Inr e)
   in
   (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
   let c = List.map (fun u -> List.map (fun v -> (u,v)) (Universe.repr v)) (Universe.repr u) in
-  let c = List.cartesians enforce_one (Inl (Constraint.empty,g)) c in
+  let c = List.cartesians enforce_one (Inl (Constraints.empty,g)) c in
   (* We pick a best constraint: smallest number of constraints, not an error if possible. *)
   let order x y = match x, y with
     | Inr _, Inr _ -> 0
     | Inl _, Inr _ -> -1
     | Inr _, Inl _ -> 1
     | Inl (c,_), Inl (c',_) ->
-      Int.compare (Constraint.cardinal c) (Constraint.cardinal c')
+      Int.compare (Constraints.cardinal c) (Constraints.cardinal c')
   in
   match List.min order c with
   | Inl x -> x
@@ -162,10 +162,10 @@ let enforce_leq_alg u v g =
 
 let enforce_leq_alg u v g =
   match Universe.is_sprop u, Universe.is_sprop v with
-  | true, true -> Constraint.empty, g
+  | true, true -> Constraints.empty, g
   | false, false -> enforce_leq_alg u v g
   | left, _ ->
-    if left && g.sprop_cumulative then Constraint.empty, g
+    if left && g.sprop_cumulative then Constraints.empty, g
     else raise (UniverseInconsistency (Le, u, v, None))
 
 (* sanity check wrapper *)

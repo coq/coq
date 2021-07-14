@@ -246,7 +246,7 @@ let process_universe_constraints uctx cstrs =
                   else
                     if UGraph.check_leq univs l r then match Univ.Universe.level l with
                     | Some l ->
-                      Univ.Constraint.add (l, Le, r') local
+                      Univ.Constraints.add (l, Le, r') local
                     | None -> local
                     else
                     let levels = Universe.levels l in
@@ -260,7 +260,7 @@ let process_universe_constraints uctx cstrs =
               else
                 match Univ.Universe.level l with
                 | Some l ->
-                  Univ.Constraint.add (l, Le, r') local
+                  Univ.Constraints.add (l, Le, r') local
                 | None ->
                   (* We insert the constraint in the graph even if the graph
                      already contains it.  Indeed, checking the existance of the
@@ -283,13 +283,13 @@ let process_universe_constraints uctx cstrs =
     else try unify_universes cst local with UniverseInconsistency _ -> local
   in
   let local =
-    UnivProblem.Set.fold unify_universes cstrs Constraint.empty
+    UnivProblem.Set.fold unify_universes cstrs Constraints.empty
   in
     !vars, !weak, local
 
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in
-  let cstrs' = Constraint.fold (fun (l,d,r) acc ->
+  let cstrs' = Constraints.fold (fun (l,d,r) acc ->
     let l = Universe.make l and r = Universe.make r in
     let cstr' = let open UnivProblem in
       match d with
@@ -302,7 +302,7 @@ let add_constraints uctx cstrs =
   in
   let vars, weak, cstrs' = process_universe_constraints uctx cstrs' in
   { uctx with
-    local = (univs, Constraint.union old_cstrs cstrs');
+    local = (univs, Constraints.union old_cstrs cstrs');
     univ_variables = vars;
     universes = UGraph.merge_constraints cstrs' uctx.universes;
     weak_constraints = weak; }
@@ -311,7 +311,7 @@ let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
   let vars, weak, local' = process_universe_constraints uctx cstrs in
   { uctx with
-    local = (univs, Constraint.union local local');
+    local = (univs, Constraints.union local local');
     univ_variables = vars;
     universes = UGraph.merge_constraints local' uctx.universes;
     weak_constraints = weak; }
@@ -326,7 +326,7 @@ let constrain_variables diff uctx =
           | Some u ->
              (LSet.add l univs,
               LMap.remove l vars,
-              Constraint.add (l, Eq, Option.get (Universe.level u)) cstrs)
+              Constraints.add (l, Eq, Option.get (Universe.level u)) cstrs)
           | None -> (univs, vars, cstrs)
         with Not_found | Option.IsNone -> (univs, vars, cstrs))
       diff (univs, uctx.univ_variables, local)
@@ -356,12 +356,12 @@ type ('a, 'b) gen_universe_decl = {
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (lident list, Constraint.t) gen_universe_decl
+  (lident list, Constraints.t) gen_universe_decl
 
 let default_univ_decl =
   { univdecl_instance = [];
     univdecl_extensible_instance = true;
-    univdecl_constraints = Constraint.empty;
+    univdecl_constraints = Constraints.empty;
     univdecl_extensible_constraints = true }
 
 let error_unbound_universes left uctx =
@@ -455,14 +455,14 @@ let restrict_universe_context ~lbound (univs, csts) keep =
   let removed = LSet.diff univs keep in
   if LSet.is_empty removed then univs, csts
   else
-  let allunivs = Constraint.fold (fun (u,_,v) all -> LSet.add u (LSet.add v all)) csts univs in
+  let allunivs = Constraints.fold (fun (u,_,v) all -> LSet.add u (LSet.add v all)) csts univs in
   let g = UGraph.initial_universes in
   let g = LSet.fold (fun v g -> if Level.is_small v then g else
                         UGraph.add_universe v ~lbound ~strict:false g) allunivs g in
   let g = UGraph.merge_constraints csts g in
   let allkept = LSet.union (UGraph.domain UGraph.initial_universes) (LSet.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
-  let csts = Constraint.filter (fun (l,d,r) ->
+  let csts = Constraints.filter (fun (l,d,r) ->
       not ((is_bound l lbound && d == Le) || (Level.is_prop l && d == Lt && Level.is_set r))) csts in
   (LSet.inter univs keep, csts)
 
@@ -627,7 +627,7 @@ let make_flexible_variable uctx ~algebraic u =
           Option.cata (fun vu -> Universe.equal uu vu && not (LSet.mem u' avars)) false v
         in
         let has_upper_constraint () =
-          Constraint.exists
+          Constraints.exists
             (fun (l,d,r) -> d == Lt && Level.equal l u)
             (ContextSet.constraints cstrs)
         in
@@ -667,11 +667,11 @@ let translate_cstr (l,d,r as cstr) =
 
 let refresh_constraints univs (ctx, cstrs) =
   let cstrs', univs' =
-    Constraint.fold (fun c (cstrs', univs as acc) ->
+    Constraints.fold (fun c (cstrs', univs as acc) ->
       let c = translate_cstr c in
       if is_trivial_leq c then acc
-      else (Constraint.add c cstrs', UGraph.enforce_constraint c univs))
-      cstrs (Constraint.empty, univs)
+      else (Constraints.add c cstrs', UGraph.enforce_constraint c univs))
+      cstrs (Constraints.empty, univs)
   in ((ctx, cstrs'), univs')
 
 let normalize_variables uctx =

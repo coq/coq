@@ -289,7 +289,7 @@ let is_suffix l suf = match l with
 | _ :: l -> l == suf
 
 let is_subset (s1, cst1) (s2, cst2) =
-  Univ.LSet.subset s1 s2 && Univ.Constraint.subset cst1 cst2
+  Univ.LSet.subset s1 s2 && Univ.Constraints.subset cst1 cst2
 
 let check ~src ~dst =
   is_suffix dst.certif_struc src.certif_struc &&
@@ -1099,7 +1099,7 @@ let build_module_body params restype senv =
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
   let mb, cst =
     Mod_typing.finalize_module senv.env senv.modpath
-      (struc,None,senv.modresolver,Univ.Constraint.empty) restype'
+      (struc,None,senv.modresolver,Univ.Constraints.empty) restype'
   in
   let mb' = functorize_module params mb in
   { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }, cst

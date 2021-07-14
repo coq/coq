@@ -12,7 +12,7 @@ open Constr
 open Univ
 
 val level_subst_of : universe_subst_fn -> universe_level_subst_fn
-val subst_univs_constraints : universe_subst_fn -> Constraint.t -> Constraint.t
+val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.t
 
 type universe_opt_subst = Universe.t option universe_map
 

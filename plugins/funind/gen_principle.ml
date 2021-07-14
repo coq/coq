@@ -236,7 +236,7 @@ let change_property_sort evd toSort princ princName =
         Global.add_constraints
           (Univ.enforce_leq
              (Sorts.univ_of_sort toSort)
-             (Sorts.univ_of_sort s) Univ.Constraint.empty);
+             (Sorts.univ_of_sort s) Univ.Constraints.empty);
         Term.compose_prod args (Constr.mkSort toSort) )
   in
   let evd, princName_as_constr =

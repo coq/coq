@@ -2788,15 +2788,15 @@ let interp_univ_constraints env evd cstrs =
     let ul = interp_known_level evd u in
     let u'l = interp_known_level evd u' in
     let cstr = (ul,d,u'l) in
-    let cstrs' = Univ.Constraint.add cstr cstrs in
-    try let evd = Evd.add_constraints evd (Univ.Constraint.singleton cstr) in
+    let cstrs' = Univ.Constraints.add cstr cstrs in
+    try let evd = Evd.add_constraints evd (Univ.Constraints.singleton cstr) in
         evd, cstrs'
     with Univ.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
       CErrors.user_err ~hdr:"interp_constraint" ~info
         (Univ.explain_universe_inconsistency (Termops.pr_evd_level evd) e)
   in
-  List.fold_left interp (evd,Univ.Constraint.empty) cstrs
+  List.fold_left interp (evd,Univ.Constraints.empty) cstrs
 
 let interp_univ_decl env decl =
   let open UState in

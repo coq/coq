@@ -87,9 +87,9 @@ let check_conv_error error why cst poly f env a1 a2 =
   try
     let cst' = f env a1 a2 in
       if poly then
-        if Constraint.is_empty cst' then cst
+        if Constraints.is_empty cst' then cst
         else error (IncompatiblePolymorphism (env, a1, a2))
-      else Constraint.union cst cst'
+      else Constraints.union cst cst'
   with NotConvertible -> error why
      | Univ.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
@@ -305,7 +305,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
             mtb2.mod_mp list2 mtb1.mod_mp list1 subst2 subst1
             mtb2.mod_delta  mtb1.mod_delta
           in
-          Univ.Constraint.union cst1 cst2
+          Univ.Constraints.union cst1 cst2
         else
           check_signatures cst env
             mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
@@ -334,7 +334,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 
 let check_subtypes env sup super =
   let env = add_module_type sup.mod_mp sup env in
-  check_modtypes Univ.Constraint.empty env
+  check_modtypes Univ.Constraints.empty env
     (strengthen sup sup.mod_mp) super empty_subst
     (map_mp super.mod_mp sup.mod_mp sup.mod_delta) false
 

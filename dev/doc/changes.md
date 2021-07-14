@@ -5,6 +5,8 @@
 - Type `Univ.UContext` now embeds universe user names, generally
   resulting in more concise code.
 
+- Renaming `Univ.Constraint` into `Univ.Constraints`
+
 ## Changes between Coq 8.13 and Coq 8.14
 
 ### Build system and library infrastructure

@@ -274,7 +274,7 @@ and ind_or_type =
   | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
 
 let one_univ =
-  AUContext.make Names.[|Name (Id.of_string "u")|] Constraint.empty
+  AUContext.make Names.[|Name (Id.of_string "u")|] Constraints.empty
 
 let typ_univs (type a) (t : a prim_type) = match t with
   | PT_int63 -> AUContext.empty

@@ -1040,10 +1040,10 @@ let set_eq_sort env d s1 s2 =
       d
 
 let set_eq_level d u1 u2 =
-  add_constraints d (Univ.enforce_eq_level u1 u2 Univ.Constraint.empty)
+  add_constraints d (Univ.enforce_eq_level u1 u2 Univ.Constraints.empty)
 
 let set_leq_level d u1 u2 =
-  add_constraints d (Univ.enforce_leq_level u1 u2 Univ.Constraint.empty)
+  add_constraints d (Univ.enforce_leq_level u1 u2 Univ.Constraints.empty)
 
 let set_eq_instances ?(flex=false) d u1 u2 =
   add_universe_constraints d

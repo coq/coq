@@ -823,15 +823,15 @@ let subterm_source evk ?where (loc,k) =
    irrelevant positions, unify universes when flexible. *)
 let compare_cumulative_instances cv_pb variances u u' sigma =
   let open UnivProblem in
-  let cstrs = Univ.Constraint.empty in
+  let cstrs = Univ.Constraints.empty in
   let soft = Set.empty in
   let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
       let open Univ.Variance in
       match v with
       | Irrelevant -> cstrs, Set.add (UWeak (u,u')) soft
       | Covariant when cv_pb == Reduction.CUMUL ->
-        Univ.Constraint.add (u,Univ.Le,u') cstrs, soft
-      | Covariant | Invariant -> Univ.Constraint.add (u,Univ.Eq,u') cstrs, soft)
+        Univ.Constraints.add (u,Univ.Le,u') cstrs, soft
+      | Covariant | Invariant -> Univ.Constraints.add (u,Univ.Eq,u') cstrs, soft)
       (cstrs,soft) variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
   in
   match Evd.add_constraints sigma cstrs with

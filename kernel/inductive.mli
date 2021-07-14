@@ -39,7 +39,7 @@ val ind_subst : MutInd.t -> mutual_inductive_body -> Instance.t -> constr list
 val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context
 
 val instantiate_inductive_constraints :
-  mutual_inductive_body -> Instance.t -> Constraint.t
+  mutual_inductive_body -> Instance.t -> Constraints.t
 
 type param_univs = (unit -> Universe.t) list
 

@@ -659,7 +659,7 @@ let mk_funct_type env args seb0 =
     (fun (seb,cst) (arg_id,arg_t,arg_inl) ->
       let mp = MPbound arg_id in
       let arg_t, cst' = Mod_typing.translate_modtype env mp arg_inl ([],arg_t) in
-      MoreFunctor(arg_id,arg_t,seb), Univ.Constraint.union cst cst')
+      MoreFunctor(arg_id,arg_t,seb), Univ.Constraints.union cst cst')
     seb0 args
 
 (** Prepare the module type list for check of subtypes *)

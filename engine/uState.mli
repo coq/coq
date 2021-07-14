@@ -75,7 +75,7 @@ val algebraics : t -> Univ.LSet.t
 (** The subset of unification variables that can be instantiated with algebraic
     universes as they appear in inferred types only. *)
 
-val constraints : t -> Univ.Constraint.t
+val constraints : t -> Univ.Constraints.t
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
 
 val context : t -> Univ.UContext.t
@@ -89,7 +89,7 @@ val universe_binders : t -> UnivNames.universe_binders
 
 (** {5 Constraints handling} *)
 
-val add_constraints : t -> Univ.Constraint.t -> t
+val add_constraints : t -> Univ.Constraints.t -> t
 (**
   @raise UniversesDiffer when universes differ
 *)
@@ -187,7 +187,7 @@ type ('a, 'b) gen_universe_decl = {
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (lident list, Univ.Constraint.t) gen_universe_decl
+  (lident list, Univ.Constraints.t) gen_universe_decl
 
 val default_univ_decl : universe_decl
 

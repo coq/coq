@@ -16,7 +16,7 @@ module type Point = sig
   module Set : CSig.SetS with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
 
-  module Constraint : CSet.S with type elt = (t * constraint_type * t)
+  module Constraints : CSet.S with type elt = (t * constraint_type * t)
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
@@ -104,7 +104,7 @@ module Make (Point:Point) = struct
 
   module PMap = Index.Map
   module PSet = Index.Set
-  module Constraint = Point.Constraint
+  module Constraint = Point.Constraints
 
   type status = NoMark | Visited | WeakVisited | ToMerge
 

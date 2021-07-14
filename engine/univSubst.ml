@@ -27,15 +27,15 @@ let subst_univs_constraint fn (u,d,v as c) cstrs =
   let u' = subst_univs_level fn u in
   let v' = subst_univs_level fn v in
   match u', v' with
-  | None, None -> Constraint.add c cstrs
+  | None, None -> Constraints.add c cstrs
   | Some u, None -> enforce_univ_constraint (u,d,Universe.make v) cstrs
   | None, Some v -> enforce_univ_constraint (Universe.make u,d,v) cstrs
   | Some u, Some v -> enforce_univ_constraint (u,d,v) cstrs
 
 let subst_univs_constraints subst csts =
-  Constraint.fold
+  Constraints.fold
     (fun c cstrs -> subst_univs_constraint subst c cstrs)
-    csts Constraint.empty
+    csts Constraints.empty
 
 let level_subst_of f =
   fun l ->

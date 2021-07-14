@@ -243,7 +243,7 @@ val is_defined : evar_map -> Evar.t-> bool
 val is_undefined : evar_map -> Evar.t-> bool
 (** Whether an evar is not defined in an evarmap. *)
 
-val add_constraints : evar_map -> Univ.Constraint.t -> evar_map
+val add_constraints : evar_map -> Univ.Constraints.t -> evar_map
 (** Add universe constraints in an evar map. *)
 
 val undefined_map : evar_map -> evar_info Evar.Map.t
@@ -655,7 +655,7 @@ val set_eq_instances : ?flex:bool ->
 val check_eq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 
-val check_constraints : evar_map -> Univ.Constraint.t -> bool
+val check_constraints : evar_map -> Univ.Constraints.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t

@@ -219,7 +219,7 @@ type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraint.t
+type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraints.t
 
 let sort_cmp_universes env pb s0 s1 (u, check) =
   (check.compare_sorts env pb s0 s1 u, check)
@@ -237,9 +237,9 @@ let convert_instances_cumul pb var u u' (s, check) =
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
-    Univ.enforce_eq_variance_instances variance u u' Univ.Constraint.empty
+    Univ.enforce_eq_variance_instances variance u u' Univ.Constraints.empty
   | CUMUL ->
-    Univ.enforce_leq_variance_instances variance u u' Univ.Constraint.empty
+    Univ.enforce_leq_variance_instances variance u u' Univ.Constraints.empty
 
 let inductive_cumulativity_arguments (mind,ind) =
   mind.Declarations.mind_nparams +
@@ -912,7 +912,7 @@ let infer_leq (univs, cstrs as cuniv) u u' =
   if UGraph.check_leq univs u u' then cuniv
   else
     let cstrs', _ = UGraph.enforce_leq_alg u u' univs in
-      univs, Univ.Constraint.union cstrs cstrs'
+      univs, Univ.Constraints.union cstrs cstrs'
 
 let infer_cmp_universes _env pb s0 s1 univs =
   let u0 = Sorts.univ_of_sort s0
@@ -931,9 +931,9 @@ let infer_convert_instances ~flex u u' (univs,cstrs) =
 
 let infer_inductive_instances cv_pb variance u1 u2 (univs,csts') =
   let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  (univs, Univ.Constraint.union csts csts')
+  (univs, Univ.Constraints.union csts csts')
 
-let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
+let inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare =
   { compare_sorts = infer_cmp_universes;
     compare_instances = infer_convert_instances;
     compare_cumul_instances = infer_inductive_instances; }
@@ -966,7 +966,7 @@ let infer_conv_universes cv_pb ?(l2r=false) ?(evars=fun _ -> None) ?(ts=Transpar
   in
     if b then cstrs
     else
-      let state = ((univs, Univ.Constraint.empty), inferred_universes) in
+      let state = ((univs, Univ.Constraints.empty), inferred_universes) in
       let ((_,cstrs), _) = clos_gen_conv ts cv_pb l2r evars env univs state t1 t2 in
         cstrs
 

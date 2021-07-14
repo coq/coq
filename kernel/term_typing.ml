@@ -101,7 +101,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
          the instance so comparing the sizes works. No polymorphic
          primitive uses constraints currently. *)
       if not (AUContext.size auctx = UContext.size uctx
-              && Constraint.is_empty (UContext.constraints uctx))
+              && Constraints.is_empty (UContext.constraints uctx))
       then CErrors.user_err Pp.(str "Incorrect universes for primitive " ++
                                 str (op_or_type_to_string p));
       let env = push_context ~strict:false uctx env in

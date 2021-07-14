@@ -243,16 +243,16 @@ let pr_global = pr_global_env Id.Set.empty
 let pr_universe_instance_constraints evd inst csts =
   let open Univ in
   let prlev = Termops.pr_evd_level evd in
-  let pcsts = if Constraint.is_empty csts then mt()
+  let pcsts = if Constraints.is_empty csts then mt()
     else str " |= " ++
          prlist_with_sep (fun () -> str "," ++ spc())
            (fun (u,d,v) -> hov 0 (prlev u ++ pr_constraint_type d ++ prlev v))
-           (Constraint.elements csts)
+           (Constraints.elements csts)
   in
   str"@{" ++ Instance.pr prlev inst ++ pcsts ++ str"}"
 
 let pr_universe_instance evd inst =
-  pr_universe_instance_constraints evd inst Univ.Constraint.empty
+  pr_universe_instance_constraints evd inst Univ.Constraints.empty
 
 let pr_puniverses f env sigma (c,u) =
   if !Constrextern.print_universes

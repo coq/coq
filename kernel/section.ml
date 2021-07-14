@@ -76,7 +76,7 @@ let rec is_polymorphic_univ u sec =
 
 let push_constraints uctx sec =
   if sec.has_poly_univs &&
-     Constraint.exists
+     Constraints.exists
        (fun (l,_,r) -> is_polymorphic_univ l sec || is_polymorphic_univ r sec)
        (snd uctx)
   then CErrors.user_err

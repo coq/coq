@@ -130,12 +130,12 @@ let do_universe ~poly l =
   let in_section = Global.sections_are_opened () in
   let () =
     if poly && not in_section then
-      CErrors.user_err ~hdr:"Constraint"
+      CErrors.user_err ~hdr:"Constraints"
         (Pp.str"Cannot declare polymorphic universes outside sections")
   in
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
   let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
-      Univ.LSet.empty l, Univ.Constraint.empty
+      Univ.LSet.empty l, Univ.Constraints.empty
   in
   let src = if poly then BoundUniv else UnqualifiedUniv in
   let () = input_univ_names (src, l) in
@@ -147,8 +147,8 @@ let do_constraint ~poly l =
   let u_of_id x = Constrintern.interp_known_level evd x in
   let constraints = List.fold_left (fun acc (l, d, r) ->
       let lu = u_of_id l and ru = u_of_id r in
-      Constraint.add (lu, d, ru) acc)
-      Constraint.empty l
+      Constraints.add (lu, d, ru) acc)
+      Constraints.empty l
   in
   let uctx = ContextSet.add_constraints constraints ContextSet.empty in
   DeclareUctx.declare_universe_context ~poly uctx

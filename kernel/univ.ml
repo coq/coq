@@ -596,7 +596,7 @@ struct
       else Level.compare v v'
 end
 
-module Constraint =
+module Constraints =
 struct
   module S = Set.Make(UConstraintOrd)
   include S
@@ -608,11 +608,13 @@ struct
 
 end
 
-let empty_constraint = Constraint.empty
-let union_constraint = Constraint.union
-let eq_constraint = Constraint.equal
+module Constraint = Constraints
 
-type constraints = Constraint.t
+let empty_constraint = Constraints.empty
+let union_constraint = Constraints.union
+let eq_constraint = Constraints.equal
+
+type constraints = Constraints.t
 
 module Hconstraint =
   Hashcons.Make(
@@ -631,11 +633,11 @@ module Hconstraints =
       type t = constraints
       type u = univ_constraint -> univ_constraint
       let hashcons huc s =
-        Constraint.fold (fun x -> Constraint.add (huc x)) s Constraint.empty
+        Constraints.fold (fun x -> Constraints.add (huc x)) s Constraints.empty
       let eq s s' =
         List.for_all2eq (==)
-          (Constraint.elements s)
-          (Constraint.elements s')
+          (Constraints.elements s)
+          (Constraints.elements s')
       let hash = Hashtbl.hash
     end)
 
@@ -648,14 +650,14 @@ type 'a constrained = 'a * constraints
 
 let constraints_of (_, cst) = cst
 
-(** Constraint functions. *)
+(** Constraints functions. *)
 
 type 'a constraint_function = 'a -> 'a -> constraints -> constraints
 
 let enforce_eq_level u v c =
   (* We discard trivial constraints like u=u *)
   if Level.equal u v then c
-  else Constraint.add (u,Eq,v) c
+  else Constraints.add (u,Eq,v) c
 
 let enforce_eq u v c =
   match Universe.level u, Universe.level v with
@@ -676,17 +678,17 @@ let constraint_add_leq v u c =
     | (x,n), (y,m) ->
     let j = m - n in
       if j = -1 (* n = m+1, v+1 <= u <-> v < u *) then
-        Constraint.add (x,Lt,y) c
+        Constraints.add (x,Lt,y) c
       else if j <= -1 (* n = m+k, v+k <= u and k>0 *) then
         if Level.equal x y then (* u+k <= u with k>0 *)
-          Constraint.add (x,Lt,x) c
+          Constraints.add (x,Lt,x) c
         else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
       else if j = 0 then
-        Constraint.add (x,Le,y) c
+        Constraints.add (x,Le,y) c
       else (* j >= 1 *) (* m = n + k, u <= v+k *)
         if Level.equal x y then c (* u <= u+k, trivial *)
         else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
-        else Constraint.add (x,Le,y) c (* u <= v implies u <= v+k *)
+        else Constraints.add (x,Le,y) c (* u <= v implies u <= v+k *)
 
 let check_univ_leq_one u v = Universe.exists (Universe.Expr.leq u) v
 
@@ -696,8 +698,8 @@ let check_univ_leq u v =
 let enforce_leq u v c =
   match Universe.is_sprop u, Universe.is_sprop v with
   | true, true -> c
-  | true, false -> Constraint.add (Level.sprop,Le,Level.prop) c
-  | false, true -> Constraint.add (Level.prop,Le,Level.sprop) c
+  | true, false -> Constraints.add (Level.sprop,Le,Level.prop) c
+  | false, true -> Constraints.add (Level.prop,Le,Level.sprop) c
   | false, false ->
     List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq u v c) c u)) c v
 
@@ -706,7 +708,7 @@ let enforce_leq u v c =
   else enforce_leq u v c
 
 let enforce_leq_level u v c =
-  if Level.equal u v then c else Constraint.add (u,Le,v) c
+  if Level.equal u v then c else Constraints.add (u,Le,v) c
 
 (* Miscellaneous functions to remove or test local univ assumed to
    occur in a universe *)
@@ -929,9 +931,9 @@ let subst_instance_constraint s (u,d,v as c) =
     else (u',d,v')
 
 let subst_instance_constraints s csts =
-  Constraint.fold
-    (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
-    csts Constraint.empty
+  Constraints.fold
+    (fun c csts -> Constraints.add (subst_instance_constraint s c) csts)
+    csts Constraints.empty
 
 type 'a puniverses = 'a * Instance.t
 let out_punivs (x, _y) = x
@@ -951,12 +953,12 @@ struct
     (names, x)
 
   (** Universe contexts (variables as a list) *)
-  let empty = ([||], (Instance.empty, Constraint.empty))
-  let is_empty (_, (univs, cst)) = Instance.is_empty univs && Constraint.is_empty cst
+  let empty = ([||], (Instance.empty, Constraints.empty))
+  let is_empty (_, (univs, cst)) = Instance.is_empty univs && Constraints.is_empty cst
 
   let pr prl ?variance (_, (univs, cst) as ctx) =
     if is_empty ctx then mt() else
-      h (Instance.pr prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraint.pr prl cst))
+      h (Instance.pr prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl cst))
 
   let hcons (names, (univs, cst)) =
     (Array.map Names.Name.hcons names, (Instance.hcons univs, hcons_constraints cst))
@@ -966,7 +968,7 @@ struct
   let constraints (_, (_univs, cst)) = cst
 
   let union (na, (univs, cst)) (na', (univs', cst')) =
-    Array.append na na', (Instance.append univs univs', Constraint.union cst cst')
+    Array.append na na', (Instance.append univs univs', Constraints.union cst cst')
 
   let size (_,(x,_)) = Instance.length x
 
@@ -999,11 +1001,11 @@ struct
   let hcons (univs, cst) =
     (Array.map Names.Name.hcons univs, hcons_constraints cst)
 
-  let empty = ([||], Constraint.empty)
+  let empty = ([||], Constraints.empty)
 
-  let is_empty (nas, cst) = Array.is_empty nas && Constraint.is_empty cst
+  let is_empty (nas, cst) = Array.is_empty nas && Constraints.is_empty cst
 
-  let union (nas, cst) (nas', cst') = (Array.append nas nas', Constraint.union cst cst')
+  let union (nas, cst) (nas', cst') = (Array.append nas nas', Constraints.union cst cst')
 
   let size (nas, _) = Array.length nas
 
@@ -1029,33 +1031,33 @@ module ContextSet =
 struct
   type t = universe_set constrained
 
-  let empty = (LSet.empty, Constraint.empty)
-  let is_empty (univs, cst) = LSet.is_empty univs && Constraint.is_empty cst
+  let empty = (LSet.empty, Constraints.empty)
+  let is_empty (univs, cst) = LSet.is_empty univs && Constraints.is_empty cst
 
   let equal (univs, cst as x) (univs', cst' as y) =
-    x == y || (LSet.equal univs univs' && Constraint.equal cst cst')
+    x == y || (LSet.equal univs univs' && Constraints.equal cst cst')
 
-  let of_set s = (s, Constraint.empty)
+  let of_set s = (s, Constraints.empty)
   let singleton l = of_set (LSet.singleton l)
   let of_instance i = of_set (Instance.levels i)
 
   let union (univs, cst as x) (univs', cst' as y) =
     if x == y then x
-    else LSet.union univs univs', Constraint.union cst cst'
+    else LSet.union univs univs', Constraints.union cst cst'
 
   let append (univs, cst) (univs', cst') =
     let univs = LSet.fold LSet.add univs univs' in
-    let cst = Constraint.fold Constraint.add cst cst' in
+    let cst = Constraints.fold Constraints.add cst cst' in
     (univs, cst)
 
   let diff (univs, cst) (univs', cst') =
-    LSet.diff univs univs', Constraint.diff cst cst'
+    LSet.diff univs univs', Constraints.diff cst cst'
 
   let add_universe u (univs, cst) =
     LSet.add u univs, cst
 
   let add_constraints cst' (univs, cst) =
-    univs, Constraint.union cst cst'
+    univs, Constraints.union cst cst'
 
   let add_instance inst (univs, cst) =
     let v = Instance.to_array inst in
@@ -1075,7 +1077,7 @@ struct
 
   let pr prl (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      h (LSet.pr prl univs ++ str " |= ") ++ h (v 0 (Constraint.pr prl cst))
+      h (LSet.pr prl univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl cst))
 
   let constraints (_univs, cst) = cst
   let levels (univs, _cst) = univs
@@ -1122,9 +1124,9 @@ let subst_univs_level_constraint subst (u,d,v) =
     else Some (u',d,v')
 
 let subst_univs_level_constraints subst csts =
-  Constraint.fold
-    (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
-    csts Constraint.empty
+  Constraints.fold
+    (fun c -> Option.fold_right Constraints.add (subst_univs_level_constraint subst c))
+    csts Constraints.empty
 
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts
@@ -1195,7 +1197,7 @@ let compact_univ u =
 
 (** Pretty-printing *)
 
-let pr_constraints prl = Constraint.pr prl
+let pr_constraints prl = Constraints.pr prl
 
 let pr_universe_context = UContext.pr
 

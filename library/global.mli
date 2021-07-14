@@ -63,7 +63,7 @@ val add_mind :
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
 (** Extra universe constraints *)
-val add_constraints : Univ.Constraint.t -> unit
+val add_constraints : Univ.Constraints.t -> unit
 
 val push_context_set : strict:bool -> Univ.ContextSet.t -> unit
 
