@@ -140,7 +140,7 @@ automatically.
 
 ## ocamldebug
 
-You can use `ocamldebug` with Dune; after a build, do:
+You can use [ocamldebug](https://ocaml.org/learn/tutorials/debug.html#The-OCaml-debugger) with Dune; after a build, do:
 
 ```
 dune exec -- dev/dune-dbg coqc foo.v
@@ -179,6 +179,26 @@ depending on your OCaml version. This is due to several factors:
   https://github.com/coq/coq/issues/8952
 - OCaml >= 4.09 comes with `dynlink` already linked in so we need to
   modify the list of modules loaded.
+
+### Debugging hints
+
+- To debug a failure/error/anomaly, add a breakpoint in
+  `Vernacinterp.interp_gen` (in `vernac/vernacinterp.ml`) at the with
+  clause of the "try ... with ..." block, then go "back" a few steps
+  to find where the failure/error/anomaly has been raised
+
+- Alternatively, for an error or an anomaly, add breakpoints where it
+  was raised (eg in `user_err` or `anomaly` in `lib/cErrors.ml`, or
+  the functions in `pretyping/pretype_errors.ml`, or other raises
+  depending on the error)
+
+- If there is a linking error (eg from "source dune_db"), do a "dune
+  build coq-core.install" and try again.
+
+- If you build Coq with an OCaml version earlier than 4.06, and have the
+  OCAMLRUNPARAM environment variable set, Coq may hang on startup when run
+  from the debugger. If this happens, unset the variable, re-start Emacs, and
+  run the debugger again.
 
 ## Dropping from coqtop:
 
