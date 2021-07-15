@@ -93,3 +93,15 @@ fun x : Foo nat 0 => x.(b nat 0)
      : forall x : Foo nat 0, x.(a nat 0) = 0
 fun x : Foo nat 0 => x.(b nat 0)
      : forall x : Foo nat 0, x.(a nat 0) = 0
+fun x : u => x -> nat
+     : u -> Type
+fun x : u => x -> nat
+     : u -> Type
+F x y = F x y
+     : Prop
+fun x : u => x -> nat
+     : u -> Type
+fun x : u => x -> nat
+     : u -> Type
+F x y = F x y
+     : Prop

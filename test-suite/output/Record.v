@@ -111,3 +111,33 @@ Check fun x => b nat 0 x.
 Check fun x => x.(b nat 0).
 
 End NonPrimProj.
+
+Module Coercions.
+
+Record t := { a :> Type }. Record u := { b :> t }.
+Check fun x : u => x.(b).(a) -> nat.
+Check fun x : u => x -> nat.
+
+Record PreCategory := { object :> Type }.
+Record Functor (C D : PreCategory) := { object_of :> C -> D }.
+Definition functor_category (C D : PreCategory) : PreCategory := {| object := Functor C D |}.
+Context (C1 C2 D : PreCategory) (F : Functor C1 (functor_category C2 D)) (x:C1) (y:C2).
+Check F x y = F x y.
+
+End Coercions.
+
+Module PrimitiveCoercions.
+
+Set Primitive Projections.
+
+Record t := { a :> Type }. Record u := { b :> t }.
+Check fun x : u => x.(b).(a) -> nat.
+Check fun x : u => x -> nat.
+
+Record PreCategory := { object :> Type }.
+Record Functor (C D : PreCategory) := { object_of :> C -> D }.
+Definition functor_category (C D : PreCategory) : PreCategory := {| object := Functor C D |}.
+Context (C1 C2 D : PreCategory) (F : Functor C1 (functor_category C2 D)) (x:C1) (y:C2).
+Check F x y = F x y.
+
+End PrimitiveCoercions.

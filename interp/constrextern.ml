@@ -818,8 +818,10 @@ let match_coercion_app c = match DAst.get c with
   | GApp (r, args) ->
     begin match DAst.get r with
     | GRef (r,_) -> Some (c.CAst.loc, r, args)
+    | GProj ((cst,_), args', b) -> Some (c.CAst.loc, GlobRef.ConstRef cst, args' @ b :: args)
     | _ -> None
     end
+  | GProj ((cst,_), args, b) -> Some (c.CAst.loc, GlobRef.ConstRef cst, args @ [b])
   | _ -> None
 
 let remove_one_coercion inctx c =
