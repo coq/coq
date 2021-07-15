@@ -122,7 +122,8 @@ submake:
 	$(MAKE) $(MAKE_OPTS) -f Makefile.build $(MAKECMDGOALS)
 
 noconfig:
-	@echo "Please run ./configure first" >&2; exit 1
+	@echo 'Please run ./configure first to continue building with make' >&2
+	@echo 'or pass option "-f Makefile.dune" to let dune manage the build' >&2; exit 1
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
