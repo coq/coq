@@ -16,19 +16,22 @@ CI_TARGETS= \
     ci-bignums \
     ci-color \
     ci-compcert \
+    ci-coq_record_update \
     ci-coq_dpdgraph \
-    ci-coqtail \
-    ci-coquelicot \
-    ci-corn \
-    ci-cross_crypto \
     ci-coq_performance_tests \
     ci-coq_tools \
+    ci-coqhammer \
     ci-coqprime \
+    ci-coqtail \
+    ci-coquelicot \
+    ci-coqutil \
+    ci-corn \
+    ci-cross_crypto \
     ci-deriving \
     ci-elpi \
     ci-engine_bench \
-    ci-ext_lib \
     ci-equations \
+    ci-ext_lib \
     ci-fcsl_pcm \
     ci-fiat_crypto \
     ci-fiat_crypto_legacy \
@@ -38,9 +41,9 @@ CI_TARGETS= \
     ci-fourcolor \
     ci-gappa \
     ci-geocoq \
-    ci-coqhammer \
     ci-hott \
     ci-iris \
+    ci-kami \
     ci-math_classes \
     ci-mathcomp \
     ci-mczify \
@@ -54,12 +57,13 @@ CI_TARGETS= \
     ci-reduction_effects \
     ci-relation_algebra \
     ci-rewriter \
+    ci-riscv_coq \
     ci-sf \
     ci-simple_io \
     ci-stdlib2 \
     ci-tlc \
-    ci-unimath \
     ci-unicoq \
+    ci-unimath \
     ci-verdi_raft \
     ci-vscoq \
     ci-vst
@@ -102,6 +106,8 @@ ci-vst: ci-flocq
 
 ci-compcert: ci-menhir ci-flocq
 ci-gappa: ci-flocq
+
+ci-riscv_coq: ci-coqutil
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:

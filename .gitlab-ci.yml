@@ -654,10 +654,32 @@ library:ci-argosy:
 library:ci-bbv:
   extends: .ci-template
 
+library:ci-coqutil:
+  extends: .ci-template-flambda
+
+library:ci-kami:
+  extends: .ci-template-flambda
+
+library:ci-coq_record_update:
+  extends: .ci-template-flambda
+
+library:ci-riscv_coq:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-coqutil
+
 library:ci-bedrock2:
   extends: .ci-template-flambda
   variables:
     NJOBS: "1"
+  stage: stage-4
+  needs:
+  - build:edge+flambda
+  - library:ci-coq_record_update
+  - library:ci-kami
+  - library:ci-riscv_coq
 
 library:ci-color:
   extends: .ci-template-flambda

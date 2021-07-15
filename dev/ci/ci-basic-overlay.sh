@@ -314,3 +314,23 @@ project deriving "https://github.com/arthuraa/deriving" "master"
 # VsCoq
 ########################################################################
 project vscoq "https://github.com/maximedenes/vscoq" document-manager
+
+########################################################################
+# coqutil
+########################################################################
+project coqutil "https://github.com/mit-plv/coqutil" "master"
+
+########################################################################
+# kami
+########################################################################
+project kami "https://github.com/mit-plv/kami" "rv32i"
+
+########################################################################
+# riscv-coq
+########################################################################
+project riscv_coq "https://github.com/mit-plv/riscv-coq/" "master"
+
+########################################################################
+# coq-record-update
+########################################################################
+project coq_record_update "https://github.com/tchajed/coq-record-update" "master"
