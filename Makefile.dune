@@ -54,7 +54,8 @@ dev-targets:
 	@echo "However, This is often inconvenient for developers, due to the large amount of"
 	@echo "files that world will build. We provide some useful subtargets here:"
 	@echo ""
-	@echo "  - world-prelude: build Coq's prelude and setup a functional layout on _build/install"
+	@echo "  - theories-foo: for each directory theories/Foo, build the vo files for it and set them up in _build/install/default."
+	@echo "    For instance the init target builds the prelude, combined with coq-core.install it produces a fully functional layout in _build/install/default."
 
 help-install:
 	@echo ""
@@ -157,30 +158,24 @@ include Makefile.ci
 # have the rule install the target, we thus imitate such behavior
 # using make as a helper.
 
-.PHONY: world-prelude
+# $(1) is the directory (theories/Foo/)
+# $(2) is the name (foo)
+define subtarget =
+  .PHONY: theories-$(2)
 
-# We could use more refined rules like below, however it is not really
-# worth it as in general ci-packages want everything in coq-core
-CORE_TOOLS=coq-core.install
+  $(2)_FILES=$$(wildcard $(1)*.v)
+  $(2)_FILES_PATH=$$(addprefix _build/install/default/lib/coq/, $$($(2)_FILES:.v=.vo))
 
-# Exe suffix, likely needed on windows
-# EXE=
-# CORE_TOOLS=coqdep coqc coq_makefile coqdoc
-# CORE_TOOLS_PATH=$(addsuffix, $(EXE), $(addprefix _build/install/default/bin/, $(CORE_TOOLS)))
-# CORE_FILES=_build/install/default/lib/coq-core/tools/CoqMakefile.in
+  theories-$(2):
+	@echo "DUNE $(1)*.vo"
+	@dune build $$($(2)_FILES_PATH)
+endef
 
-# Would be nice to determine a pattern for this, but it is tricky.
-# PLUGIN_FILES=$(shell ls plugins/*/*.mllib)
-# PLUGIN_FILES_PATH=$(addprefix _build/install/default/lib/coq-core/, $(PLUGIN_FILES:.mllib=.cmxs))
-
-PRELUDE_FILES=$(wildcard theories/Init/*.v)
-PRELUDE_FILES_PATH=$(addprefix _build/install/default/lib/coq/, $(PRELUDE_FILES:.v=.vo))
-
-world-prelude:
-	@dune build $(CORE_TOOLS) $(PRELUDE_FILES_PATH)
+$(foreach subdir,$(wildcard theories/*/),$(eval $(call subtarget,$(subdir),$(shell echo $(subst /,,$(subst theories/,,$(subdir))) | tr A-Z a-z))))
 
 # Other common dev targets:
 #
+# dune build coq-core.install
 # dune build coq.install
 # dune build coqide.install
 #
