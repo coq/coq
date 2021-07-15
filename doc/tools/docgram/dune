@@ -45,6 +45,6 @@
   orderedGrammar)
  (action
   (progn
-   (chdir %{project_root} (run doc_grammar -check-cmds -no-update %{input}))
+   (chdir %{project_root} (run doc_grammar -no-warn -check-cmds -no-update %{input}))
    (diff? fullGrammar fullGrammar.new)
    (diff? orderedGrammar orderedGrammar.new))))

@@ -112,6 +112,8 @@ for documentation purposes:
 
 * `make doc_gram_rsts` updates the `*Grammar` and `.rst` files.
 
+* `make doc_gram_rsts DOCGRAMWARN=1` will additionally print warnings.
+
 Changes to `fullGrammar`, `orderedGrammar` and the `.rsts` should be checked in to git.
 The `prodn*` and other `*Grammar` files should not.
 

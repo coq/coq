@@ -35,4 +35,8 @@ dev/tools/check-overlays.sh || CODE=1
 echo Checking CACHEKEY
 dev/tools/check-cachekey.sh || CODE=1
 
+# Check that doc/tools/docgram/fullGrammar is up-to-date
+echo Checking grammar files
+(./configure -profile devel && make -j "$NJOBS" -f Makefile.make doc_gram_verify) || CODE=1
+
 exit $CODE

@@ -6,12 +6,31 @@
 Fixes / closes #????
 
 
-<!-- If there is a user-visible change in coqc/coqtop/coqchk/coq_makefile behavior and testing is not prohibitively expensive: -->
-<!-- (Otherwise, remove this line.) -->
-- [ ] Added / updated test-suite
+<!-- Remove anything that doesn't apply in the following checklist. -->
+
+<!-- If there is a user-visible change and testing is not prohibitively expensive: -->
+- [ ] Added / updated **test-suite**.
+
 <!-- If this is a feature pull request / breaks compatibility: -->
-<!-- (Otherwise, remove these lines.) -->
-- [ ] Corresponding documentation was added / updated (including any warning and error messages added / removed / modified).
-- [ ] Entry added in the changelog (see https://github.com/coq/coq/tree/master/doc/changelog#unreleased-changelog for details).
-- [ ] Overlay pull requests (if this breaks 3rd party developments in CI, see
-https://github.com/coq/coq/blob/master/dev/ci/user-overlays/README.md for details)
+- [ ] Added **changelog**.
+- [ ] Added / updated **documentation**.
+  <!-- Check if the following applies, otherwise remove these lines. -->
+  - [ ] Documented any new / changed **user messages**.
+  - [ ] Updated **documented syntax** by running `make -f Makefile.make doc_gram_rsts`.
+
+<!-- If this breaks external libraries or plugins in CI: -->
+- [ ] Opened **overlay** pull requests.
+
+<!-- Pointers to relevant developer documentation:
+
+Contributing guide: https://github.com/coq/coq/blob/master/CONTRIBUTING.md
+
+Test-suite: https://github.com/coq/coq/blob/master/test-suite/README.md
+
+Changelog: https://github.com/coq/coq/blob/master/doc/changelog/README.md
+
+Building the doc: https://github.com/coq/coq/blob/master/doc/README.md
+Sphinx: https://github.com/coq/coq/blob/master/doc/sphinx/README.rst
+doc_gram: https://github.com/coq/coq/blob/master/doc/tools/docgram/README.md
+
+Overlays: https://github.com/coq/coq/blob/master/dev/ci/user-overlays/README.md

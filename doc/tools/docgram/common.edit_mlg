@@ -316,8 +316,12 @@ term_let: [
 | MOVETO destructuring_let "let" "'" pattern200 "in" pattern200 ":=" term200 case_type "in" term200
 ]
 
+qualid_annotated: [
+| global univ_annot
+]
+
 atomic_constr: [
-| MOVETO qualid_annotated global univ_annot
+| qualid_annotated
 | MOVETO primitive_notations NUMBER
 | MOVETO primitive_notations string
 | MOVETO term_evar "_"
@@ -407,6 +411,8 @@ term1: [
 ]
 
 term0: [
+| DELETE ident univ_annot
+| DELETE ident Prim.fields univ_annot
 (* @Zimmi48: This rule is a hack, according to Hugo, and should not be shown in the manual. *)
 | DELETE "{" binder_constr "}"
 | REPLACE "{|" record_declaration bar_cbrace
