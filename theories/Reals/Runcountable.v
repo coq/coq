@@ -86,7 +86,7 @@ Qed.
 Definition first_in_holed_interval (u : nat -> R) (v : R -> nat) (a b h : R)
   : enumeration R u v -> Rlt a b
     -> { n : nat | in_holed_interval a b h u n
-                /\ forall k : nat, k < n -> ~in_holed_interval a b h u k }.
+                /\ forall k : nat, in_holed_interval a b h u k -> n <= k }.
 Proof.
   intros. apply epsilon_smallest. apply (in_holed_interval_dec a b h u).
   exists (v (point_in_holed_interval a b h)).
@@ -99,15 +99,13 @@ Lemma first_in_holed_interval_works (u : nat -> R) (v : R -> nat) (a b h : R)
   let (c,_) := first_in_holed_interval u v a b h pen plow in
   forall x:R, Rlt a x -> Rlt x b -> x <> h -> x <> u c -> c < v x.
 Proof.
-  destruct (first_in_holed_interval u v a b h pen plow) as [c]. intros.
-  destruct (c ?= v x) eqn:order.
-  - exfalso. apply Nat.compare_eq_iff in order. rewrite -> order in H2.
-    destruct pen. rewrite -> H3 in H2. exact (H2 eq_refl).
-  - apply Nat.compare_lt_iff in order. assumption.
-  - exfalso. apply Nat.compare_gt_iff in order.
-    destruct a0. specialize (H4 (v x) order). assert (in_holed_interval a b h u (v x)).
-    { destruct pen. split. rewrite -> H5. assumption. rewrite -> H5. split; assumption. }
-    contradiction.
+  destruct (first_in_holed_interval u v a b h pen plow) as [c [_ beyond]].
+  destruct pen as [uv _]. intros x H H0 H1 x_uc.
+  assert (ihi : in_holed_interval a b h u (v x)).
+  { split. rewrite -> uv. assumption. rewrite -> uv. split; assumption. }
+  destruct (le_lt_or_eq _ _ (beyond (v x) ihi)) as [lcvx | ecvx].
+  - exact lcvx.
+  - exfalso. apply x_uc. rewrite ecvx. rewrite -> uv. reflexivity.
 Qed.
 
 Definition first_two_in_interval (u : nat -> R) (v : R -> nat) (a b : R)
@@ -118,8 +116,7 @@ Definition first_two_in_interval (u : nat -> R) (v : R -> nat) (a b : R)
   if Rle_dec (u first_index) (u second_index) then (u first_index, u second_index)
   else (u second_index, u first_index).
 
-
-Lemma split_couple_eq : forall a b c d : R, (a,b) = (c,d) -> a = c /\ b = d.
+Lemma split_couple_eq : forall {a b c d : R}, (a,b) = (c,d) -> a = c /\ b = d.
 Proof.
   intros. injection H. intros. split. subst. reflexivity. subst. reflexivity.
 Qed.
@@ -132,25 +129,28 @@ Lemma first_two_in_interval_works (u : nat -> R) (v : R -> nat) (a b : R)
   /\ Rlt c d
   /\ (forall x:R, Rlt a x -> Rlt x b -> x <> c -> x <> d -> v c < v x).
 Proof.
-  intros. destruct (first_two_in_interval u v a b) eqn:ft.
+  intros. destruct (first_two_in_interval u v a b) as [r r0] eqn:ft.
   unfold first_two_in_interval in ft.
-  pose proof (first_in_holed_interval_works u v a b b pen plow).
+  pose proof (first_in_holed_interval_works u v a b b pen plow) as Wb.
   destruct (first_in_holed_interval u v a b b pen plow) as [first_index pr].
-  pose proof (first_in_holed_interval_works u v a b (u first_index) pen plow).
-  destruct pr. destruct H1. destruct H3.
+  pose proof (first_in_holed_interval_works u v a b (u first_index) pen plow) as Wu.
+  destruct pr as [[H1 [H3 H4]] H2].
   destruct (first_in_holed_interval u v a b (u first_index) pen plow)
     as [second_index pr2].
-  destruct pr2. destruct H5. destruct H7.
-  destruct (Rle_dec (u first_index) (u second_index)).
-  - apply split_couple_eq in ft as [ft ft0]. subst. split. assumption.
-    split. assumption. split. assumption. split. assumption. split.
-    apply Rle_lt_or_eq_dec in r1. destruct r1. assumption. exfalso.
-    rewrite -> e in H8. exact (H8 eq_refl). intros. destruct pen. rewrite -> H14.
-    apply H. assumption. assumption. apply Rlt_not_eq. assumption. assumption.
-  - apply split_couple_eq in ft as [ft ft0]. subst. split. assumption.
-    split. assumption. split. assumption. split. assumption. split.
-    apply Rnot_le_lt in n. assumption. intros. destruct pen. rewrite -> H14.
-    apply H0. assumption. assumption. assumption. assumption.
+  destruct pr2 as [[H5 [H7 diff]] H6].
+  destruct pen as [_ pen2].
+  destruct (Rle_dec (u first_index) (u second_index)) as [lfs | nlfs].
+  - destruct (split_couple_eq ft); subst;
+    repeat (split; [assumption | idtac]); split.
+    + destruct (Rle_lt_or_eq_dec _ _ lfs).
+      * assumption.
+      * exfalso. apply diff. symmetry. apply e.
+    + intros. rewrite -> pen2.
+      apply Wb; try assumption. apply Rlt_not_eq; assumption.
+  - destruct (split_couple_eq ft); subst;
+    repeat (split; [assumption | idtac]); split.
+    + apply Rnot_le_lt, nlfs.
+    + intros. rewrite -> pen2. apply Wu; assumption.
 Qed.
 
 (* If u,v is an enumeration of R, this sequence of open intervals
