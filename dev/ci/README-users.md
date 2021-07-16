@@ -71,13 +71,15 @@ as "plugins"] do have some special requirements:
 
 ### Add your project by submitting a pull request
 
-Add a new `ci-mydev.sh` script to [`dev/ci`](.); set the corresponding
-variables in [`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the
-corresponding target to [`Makefile.ci`](../../Makefile.ci) and a new job to
-[`.gitlab-ci.yml`](../../.gitlab-ci.yml) so that this new target is run.
-Have a look at [#7656](https://github.com/coq/coq/pull/7656/files) for an
-example. **Do not hesitate to submit an incomplete pull request if you need
-help to finish it.**
+Add a new `ci-mydev.sh` script to [`dev/ci`](.); make sure to mark it
+as executable `chmod +x ci-mydev.sh`; set the corresponding variables
+in [`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the corresponding
+target to [`Makefile.ci`](../../Makefile.ci) and a new job to
+[`.gitlab-ci.yml`](../../.gitlab-ci.yml) so that this new target is
+run.  Have a look at
+[#7656](https://github.com/coq/coq/pull/7656/files) for an
+example. **Do not hesitate to submit an incomplete pull request if you
+need help to finish it.**
 
 You may also be interested in having your project tested in our
 performance benchmark. Currently this is done by providing an OPAM package
