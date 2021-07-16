@@ -6,6 +6,42 @@ See the first section of [`INSTALL.md`](../../INSTALL.md).  Developers are
 recommended to use a recent OCaml version, which they can get through
 opam or Nix, in particular.
 
+## Configuring Dune caching and default verbosity
+
+There are several configuration settings that you can control globally
+by creating a Dune configuration file (see `man dune-config` to learn
+more). This file is generally located in `~/.config/dune/config` (this
+is system-dependent). It should start with the version of the Dune
+language used (by the configuration file---which can be different from
+the one used in the Coq repository), e.g.:
+
+```
+(lang dune 2.0)
+```
+
+- You will get faster rebuilds if you enable Dune caching. This is
+  true in all cases, but even more so when using the targets in
+  `Makefile.dune` (see below).
+
+  To set up Dune caching, you should append the following line to your
+  Dune configuration file:
+
+  ```
+  (cache enabled)
+  ```
+
+  Note that by default, Dune caching will use up to 10GB of disk size.
+  See the [official documentation](https://dune.readthedocs.io/en/stable/caching.html#on-disk-size)
+  to learn how to change the default.
+
+- Dune is not very verbose by default. If you want to change the
+  behavior to a more verbose one, you may append the following line to
+  your Dune configuration file:
+
+  ```
+  (display short)
+  ```
+
 ## Building `coqtop` / `coqc` binaries
 
 We recommend that you use the targets in `Makefile.dune`.  See
@@ -28,6 +64,10 @@ $ make -f Makefile.dune world
     # to build some test project
 ```
 
+When running the commands above, you may set `DUNEOPT=--display=short`
+for a more verbose build (not required if you have already set the
+default verbosity globally as described in the previous section).
+
 Alternatively, you can use the legacy build system (which is now
 a hybrid since it relies on Dune for the OCaml parts). If you haven't
 set `COQ_USE_DUNE=1`, then you don't need `-f Makefile.make`.
@@ -45,6 +85,9 @@ $ make -f Makefile.make -j $JOBS states
 $ bin/coqc <test_file_name.v>
 <goto hack until stuff works>
 ```
+
+When running the commands above, you may set `_DDISPLAY=short` for a
+more verbose build.
 
 To learn how to run the test suite, you can read
 [`test-suite/README.md`](../../test-suite/README.md).
