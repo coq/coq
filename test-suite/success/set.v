@@ -15,5 +15,14 @@ intros.
 set (f _ _).
 Abort.
 
+Module UsingSProp.
 
+Inductive STrue : SProp := I.
+Inductive SBool : SProp := T | F.
+Axiom f : forall {A B:SProp}, A -> B -> unit.
+Goal f (fun _ : nat => F) (fun _:nat => I) = f (fun _ : nat => F) (fun _:nat => I).
+set (x := fun _ => _).
+reflexivity.
+Qed. (* Was failing because all 4 "fun _ => ..." were identified *)
 
+End UsingSProp.
