@@ -488,7 +488,7 @@ and extract_really_ind env kn mib =
         if p.ip_logical then raise (I Standard);
         if not (Int.equal (Array.length p.ip_types) 1) then raise (I Standard);
         let typ = p.ip_types.(0) in
-        let l = List.filter (fun t -> not (isTdummy (expand env t))) typ in
+        let l = if conservative_types () then [] else List.filter (fun t -> not (isTdummy (expand env t))) typ in
         if not (keep_singleton ()) &&
             Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
         then raise (I Singleton);
