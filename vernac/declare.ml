@@ -404,7 +404,8 @@ let inline_private_constants ~uctx env ce =
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects proof_entry
-  | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind }
+  | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind ;
+                           univs:Entries.universes_entry * UnivNames.universe_binders }
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
@@ -420,20 +421,25 @@ let declare_variable_core ~name ~kind d =
   if Decls.variable_exists name then
     raise (DeclareUniv.AlreadyDeclared (None, name));
 
-  let impl,opaque = match d with (* Fails if not well-typed *)
-    | SectionLocalAssum {typ;impl} ->
+  let impl,opaque,univs = match d with (* Fails if not well-typed *)
+    | SectionLocalAssum {typ;impl;univs} ->
+      let poly, uctx = match fst univs with
+        | Entries.Monomorphic_entry uctx -> false, uctx
+        | Entries.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
+      in
+      let () = DeclareUctx.declare_universe_context ~poly uctx in
       let () = Global.push_named_assum (name,typ) in
-      impl, true
+      impl, true, univs
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let ((body, body_univ_entry), eff) = Future.force de.proof_entry_body in
+      let ((body, body_uctx), eff) = Future.force de.proof_entry_body in
       let () = export_side_effects eff in
-      let poly, type_univ_entry, binders = match de.proof_entry_universes with
-        | Entries.Monomorphic_entry uctx, binders -> false, uctx, binders
-        | Entries.Polymorphic_entry uctx, binders -> true, Univ.ContextSet.of_context uctx, binders
+      let poly, type_uctx = match fst de.proof_entry_universes with
+        | Entries.Monomorphic_entry uctx -> false, uctx
+        | Entries.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
       in
-      let univs = Univ.ContextSet.union body_univ_entry type_univ_entry in
+      let univs = Univ.ContextSet.union body_uctx type_uctx in
       (* We must declare the universe constraints before type-checking the
          term. *)
       let () = DeclareUctx.declare_universe_context ~poly univs in
@@ -444,7 +450,7 @@ let declare_variable_core ~name ~kind d =
         secdef_type = de.proof_entry_type;
       } in
       let () = Global.push_named_def (name, se) in
-      Glob_term.Explicit, de.proof_entry_opaque
+      Glob_term.Explicit, de.proof_entry_opaque, de.proof_entry_universes
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});
@@ -452,8 +458,8 @@ let declare_variable_core ~name ~kind d =
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 
-let declare_variable ~name ~kind ~typ ~impl =
-  declare_variable_core ~name ~kind (SectionLocalAssum { typ; impl })
+let declare_variable ~name ~kind ~typ ~impl ~univs =
+  declare_variable_core ~name ~kind (SectionLocalAssum { typ; impl; univs })
 
 (* Declaration messages *)
 

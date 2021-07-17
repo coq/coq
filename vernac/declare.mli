@@ -348,6 +348,7 @@ val declare_variable
   -> kind:Decls.logical_kind
   -> typ:Constr.types
   -> impl:Glob_term.binding_kind
+  -> univs:Entries.universes_entry * UnivNames.universe_binders
   -> unit
 
 (** Declaration of global constructions

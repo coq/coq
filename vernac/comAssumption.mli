@@ -36,6 +36,7 @@ val declare_variable
   : coercion_flag
   -> kind:Decls.assumption_object_kind
   -> Constr.types
+  -> Entries.universes_entry * UnivNames.universe_binders
   -> Impargs.manual_implicits
   -> Glob_term.binding_kind
   -> variable CAst.t
