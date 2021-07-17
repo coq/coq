@@ -614,7 +614,8 @@ let separate_extraction lr =
   let print = function
     | (MPfile dir as mp, sel) as e ->
         print_structure_to_file (module_filename mp) false [e]
-    | _ -> assert false
+    | (MPdot _ | MPbound _), _ ->
+      user_err (str "Separate Extraction from inside a module is not supported.")
   in
   List.iter print struc;
   reset ()
