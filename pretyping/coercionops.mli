@@ -37,6 +37,7 @@ type coe_typ = GlobRef.t
 (** This is the type of infos for declared coercions *)
 type coe_info_typ = {
   coe_value : GlobRef.t;
+  coe_typ : Constr.t;
   coe_local : bool;
   coe_is_identity : bool;
   coe_is_projection : Projection.Repr.t option;

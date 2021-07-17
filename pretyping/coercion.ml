@@ -23,6 +23,7 @@ open Term
 open Constr
 open Context
 open Environ
+module CVars = Vars
 open EConstr
 open Vars
 open Reductionops
@@ -392,6 +393,11 @@ let rec reapply_coercions sigma trace c = match trace with
     let c = reapply_coercions sigma body c in
     mkLambda (na, ty, c)
 
+let instance_of_global_constr sigma c =
+  match kind sigma c with
+  | Const (_,u) | Ind (_,u) | Construct (_,u) -> EInstance.kind sigma u
+  | _ -> Univ.Instance.empty
+
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
   let j,t,trace,sigma =
@@ -400,7 +406,8 @@ let apply_coercion env sigma p hj typ_cl =
          let isid = i.coe_is_identity in
          let isproj = i.coe_is_projection in
          let sigma, c = new_global sigma i.coe_value in
-         let typ = Retyping.get_type_of env sigma c in
+         let u = instance_of_global_constr sigma c in
+         let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
          let fv = make_judge c typ in
          let argl = class_args_of env sigma typ_cl in
          let trace =
