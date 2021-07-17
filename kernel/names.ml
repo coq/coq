@@ -1090,6 +1090,11 @@ module GlobRef = struct
     let hash gr = GlobRefInternal.global_hash_gen Constant.SyntacticOrd.hash Ind.SyntacticOrd.hash Construct.SyntacticOrd.hash gr
   end
 
+  let is_bound = function
+  | VarRef _ -> false
+  | ConstRef cst -> ModPath.is_bound (Constant.modpath cst)
+  | IndRef (ind,_) | ConstructRef ((ind,_),_) -> ModPath.is_bound (MutInd.modpath ind)
+
   module Map = HMap.Make(CanOrd)
   module Set = Map.Set
 
