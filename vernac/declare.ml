@@ -104,17 +104,18 @@ type 'a proof_entry = {
   (* State id on which the completion of type checking is reported *)
   proof_entry_feedback : Stateid.t option;
   proof_entry_type        : Constr.types option;
-  proof_entry_universes   : Entries.universes_entry;
+  proof_entry_universes   : Entries.universes_entry * UnivNames.universe_binders;
   proof_entry_opaque      : bool;
   proof_entry_inline_code : bool;
 }
 
 let default_univ_entry = Entries.Monomorphic_entry Univ.ContextSet.empty
+let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
 let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?feedback_id ?types
-    ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
+    ?(univs=default_named_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ((body,univsbody), eff);
     proof_entry_secctx = using;
     proof_entry_type = types;
@@ -128,8 +129,8 @@ let definition_entry =
 
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
-  | ParameterEntry of Entries.parameter_entry
-  | PrimitiveEntry of Entries.primitive_entry
+  | ParameterEntry of (Entries.parameter_entry * UnivNames.universe_binders)
+  | PrimitiveEntry of (Entries.primitive_entry * UnivNames.universe_binders)
 
 let local_csts = Summary.ref ~name:"local-csts" Cset_env.empty
 
@@ -240,7 +241,7 @@ let record_aux env s_ty s_bo =
   Aux_file.record_in_aux "context_used" v
 
 let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
-    ?(univs=default_univ_entry) body =
+    ?(univs=default_named_univ_entry) body =
   { proof_entry_body = Future.from_val ((body,Univ.ContextSet.empty), ());
     proof_entry_secctx = None;
     proof_entry_type = types;
@@ -261,9 +262,9 @@ let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
 
 let cast_proof_entry e =
   let (body, ctx), () = Future.force e.proof_entry_body in
-  let univs =
-    if Univ.ContextSet.is_empty ctx then e.proof_entry_universes
-    else match e.proof_entry_universes with
+  let univ_entry =
+    if Univ.ContextSet.is_empty ctx then fst (e.proof_entry_universes)
+    else match fst (e.proof_entry_universes) with
       | Entries.Monomorphic_entry ctx' ->
         (* This can actually happen, try compiling EqdepFacts for instance *)
         Entries.Monomorphic_entry (Univ.ContextSet.union ctx' ctx)
@@ -274,7 +275,7 @@ let cast_proof_entry e =
     const_entry_secctx = e.proof_entry_secctx;
     const_entry_feedback = e.proof_entry_feedback;
     const_entry_type = e.proof_entry_type;
-    const_entry_universes = univs;
+    const_entry_universes = univ_entry;
     const_entry_inline_code = e.proof_entry_inline_code;
   }
 
@@ -312,24 +313,24 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
     Environ.really_needed env (Id.Set.union hyp_typ hyp_def)
   | Some hyps -> hyps
   in
-  let (body, univs : b * _) = match entry with
+  let (body, univ_entry : b * _) = match entry with
   | PureEntry ->
     let (body, uctx), () = Future.force e.proof_entry_body in
-    let univs = match e.proof_entry_universes with
+    let univ_entry = match fst (e.proof_entry_universes) with
     | Entries.Monomorphic_entry uctx' ->
       Entries.Monomorphic_entry (Univ.ContextSet.union uctx uctx')
-    | Entries.Polymorphic_entry _ ->
+    | Entries.Polymorphic_entry _ as univ_entry ->
       assert (Univ.ContextSet.is_empty uctx);
-      e.proof_entry_universes
+      univ_entry
     in
-    body, univs
-  | EffectEntry -> e.proof_entry_body, e.proof_entry_universes
+    body, univ_entry
+  | EffectEntry -> e.proof_entry_body, fst (e.proof_entry_universes)
   in
   { Entries.opaque_entry_body = body;
     opaque_entry_secctx = secctx;
     opaque_entry_feedback = e.proof_entry_feedback;
     opaque_entry_type = typ;
-    opaque_entry_universes = univs;
+    opaque_entry_universes = univ_entry;
   }
 
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
@@ -341,7 +342,7 @@ let is_unsafe_typing_flags flags =
 
 let declare_constant_core ~name ~typing_flags cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let decl, unsafe = match cd with
+  let decl, unsafe, ubinders = match cd with
     | DefinitionEntry de ->
       (* We deal with side effects *)
       if not de.proof_entry_opaque then
@@ -351,19 +352,20 @@ let declare_constant_core ~name ~typing_flags cd =
         let () = export_side_effects eff in
         let de = { de with proof_entry_body = Future.from_val (body, ()) } in
         let cd = Entries.DefinitionEntry (cast_proof_entry de) in
-        ConstantEntry cd, false
+        ConstantEntry cd, false, de.proof_entry_universes
       else
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain de.proof_entry_body map in
         let de = { de with proof_entry_body = body } in
-        let de = cast_opaque_proof_entry EffectEntry de in
-        OpaqueEntry de, false
-    | ParameterEntry e ->
-      ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict())
-    | PrimitiveEntry e ->
-      ConstantEntry (Entries.PrimitiveEntry e), false
+        let cd = cast_opaque_proof_entry EffectEntry de in
+        OpaqueEntry cd, false, de.proof_entry_universes
+    | ParameterEntry (e, ubinders) ->
+      ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict()), (e.Entries.parameter_entry_universes, ubinders)
+    | PrimitiveEntry (e, ubinders) ->
+      ConstantEntry (Entries.PrimitiveEntry e), false, (default_univ_entry, ubinders)
   in
   let kn = Global.add_constant ?typing_flags name decl in
+  let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) (snd ubinders) in
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn
 
@@ -402,7 +404,7 @@ let inline_private_constants ~uctx env ce =
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects proof_entry
-  | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind; }
+  | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind }
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
@@ -425,13 +427,13 @@ let declare_variable_core ~name ~kind d =
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let ((body, body_ui), eff) = Future.force de.proof_entry_body in
+      let ((body, body_univ_entry), eff) = Future.force de.proof_entry_body in
       let () = export_side_effects eff in
-      let poly, entry_ui = match de.proof_entry_universes with
-        | Entries.Monomorphic_entry uctx -> false, uctx
-        | Entries.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
+      let poly, type_univ_entry, binders = match de.proof_entry_universes with
+        | Entries.Monomorphic_entry uctx, binders -> false, uctx, binders
+        | Entries.Polymorphic_entry uctx, binders -> true, Univ.ContextSet.of_context uctx, binders
       in
-      let univs = Univ.ContextSet.union body_ui entry_ui in
+      let univs = Univ.ContextSet.union body_univ_entry type_univ_entry in
       (* We must declare the universe constraints before type-checking the
          term. *)
       let () = DeclareUctx.declare_universe_context ~poly univs in
@@ -572,7 +574,6 @@ let declare_entry_core ~name ~scope ~kind ~typing_flags ?hook ~obls ~impargs ~uc
     && not (List.is_empty (Global.named_context()))
     && Option.is_empty entry.proof_entry_secctx
   in
-  let ubind = UState.universe_binders uctx in
   let dref = match scope with
   | Locality.Discharge ->
     let () = declare_variable_core ~name ~kind (SectionLocalDef entry) in
@@ -582,7 +583,6 @@ let declare_entry_core ~name ~scope ~kind ~typing_flags ?hook ~obls ~impargs ~uc
     let kn = declare_constant ~name ~local ~kind ~typing_flags (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
-    let () = DeclareUniv.declare_univ_binders gr ubind in
     gr
   in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
@@ -651,7 +651,6 @@ let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
   let dref = Names.GlobRef.ConstRef kn in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = assumption_message name in
-  let () = DeclareUniv.declare_univ_binders dref (UState.universe_binders uctx) in
   let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
   dref
 
@@ -717,14 +716,14 @@ let prepare_parameter ~poly ~udecl ~types sigma =
   let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let univs, ubinders = Evd.check_univ_decl ~poly sigma udecl in
   let pe = Entries.{
       parameter_entry_secctx = None;
       parameter_entry_type = typ;
       parameter_entry_universes = univs;
       parameter_entry_inline_code = None;
     } in
-  sigma, pe
+  sigma, (pe, ubinders)
 
 type progress = Remain of int | Dependent | Defined of GlobRef.t
 
@@ -932,7 +931,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
       add_hint (Locality.make_section_locality None) prg constant;
     definition_message obl.obl_name;
     let body =
-      match univs with
+      match fst univs with
       | Entries.Polymorphic_entry uctx ->
         Some (DefinedObl (constant, Univ.UContext.instance uctx))
       | Entries.Monomorphic_entry _ ->
@@ -1777,7 +1776,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
     declare_private_constant ~local:Locality.ImportNeedQualified ~name ~kind const
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
-  let inst = match const.proof_entry_universes with
+  let inst = match fst const.proof_entry_universes with
   | Entries.Monomorphic_entry _ -> EConstr.EInstance.empty
   | Entries.Polymorphic_entry ctx ->
     (* We mimic what the kernel does, that is ensuring that no additional
@@ -1821,7 +1820,7 @@ module MutualEntry : sig
     : pinfo:Proof_info.t
     -> uctx:UState.t
     -> sec_vars:Id.Set.t option
-    -> univs:Entries.universes_entry
+    -> univs:Entries.universes_entry * UnivNames.universe_binders
     -> Names.GlobRef.t list
 
   val declare_mutdef
@@ -1893,6 +1892,7 @@ end = struct
 
   let declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = pinfo.Proof_info.info in
+    let (univs, ubinders) = univs in
     List.map_i (
       fun i { CInfo.name; typ; impargs } ->
         let pe = Entries.{
@@ -1901,7 +1901,7 @@ end = struct
             parameter_entry_universes = univs;
             parameter_entry_inline_code = None;
           } in
-        declare_parameter ~name ~scope ~hook ~impargs ~uctx pe
+        declare_parameter ~name ~scope ~hook ~impargs ~uctx (pe, ubinders)
     ) 0 pinfo.Proof_info.cinfo
 
 end
@@ -2071,7 +2071,7 @@ let save_lemma_admitted_delayed ~pm ~proof =
   if List.length entries <> 1 then
     CErrors.user_err Pp.(str "Admitted does not support multiple statements");
   let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
-  let poly = match proof_entry_universes with
+  let poly = match fst (proof_entry_universes) with
     | Entries.Monomorphic_entry _ -> false
     | Entries.Polymorphic_entry _ -> true in
   let univs = UState.univ_entry ~poly uctx in

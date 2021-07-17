@@ -47,7 +47,7 @@ module Internal : sig
 
   val declare_projections
     : Names.inductive
-    -> Entries.universes_entry
+    -> Entries.universes_entry * UnivNames.universe_binders
     -> ?kind:Decls.definition_object_kind
     -> Names.Id.t
     -> projection_flags list

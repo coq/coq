@@ -182,8 +182,7 @@ type tc_result =
   bool
   * Impargs.manual_implicits
   (* Part relative to closing the definitions *)
-  * UnivNames.universe_binders
-  * Entries.universes_entry
+  * (Entries.universes_entry * UnivNames.universe_binders)
   * Entries.variance_entry
   * Constr.rel_context
   * DataR.t list
@@ -248,10 +247,9 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
       newps, ans)
   in
   let univs = Evd.check_univ_decl ~poly sigma decl in
-  let ubinders = Evd.universe_binders sigma in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
   let () = List.iter (iter_constr ce) (List.rev newps) in
-  template, imps, ubinders, univs, variances, newps, ans
+  template, imps, univs, variances, newps, ans
 
 type record_error =
   | MissingProj of Id.t * Id.t list
@@ -424,9 +422,9 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
-  let uinstance = match univs with
-    | Monomorphic_entry _ -> Univ.Instance.empty
+  let uinstance = match fst univs with
     | Polymorphic_entry uctx -> Univ.UContext.instance uctx
+    | Monomorphic_entry ctx -> Univ.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
   let r = mkIndU (indsp,uinstance) in
@@ -545,10 +543,11 @@ let data_name { Data.id; Data.rdata; _ } =
   - prepares and declares the corresponding record projections, mainly taken care of by
     [declare_projections]
 *)
-let declare_structure ~cumulative finite ~ubind ~univs ~variances ~primitive_proj
+let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
   paramimpls params template ?(kind=Decls.StructureComponent) ?name (record_data : Data.t list) =
   let nparams = List.length params in
-  let poly, ctx =
+  let (univs, ubinders) = univs in
+  let poly, projunivs =
     match univs with
     | Monomorphic_entry _ -> false, Monomorphic_entry Univ.ContextSet.empty
     | Polymorphic_entry uctx -> true, Polymorphic_entry uctx
@@ -587,13 +586,13 @@ let declare_structure ~cumulative finite ~ubind ~univs ~variances ~primitive_pro
     }
   in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
-  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubind impls
+  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
       ~primitive_expected:primitive_proj
   in
   let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let projections = declare_projections rsp ctx ~kind binder_name.(i) coers implfs fields in
+    let projections = declare_projections rsp (projunivs,ubinders) ~kind binder_name.(i) coers implfs fields in
     let build = GlobRef.ConstructRef cstr in
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly in
     let struc = Structure.make (Global.env ()) rsp projections in
@@ -615,8 +614,8 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let inst, univs = match univs with
-    | Monomorphic_entry _ -> Univ.Instance.empty, Monomorphic_entry Univ.ContextSet.empty
-    | Polymorphic_entry uctx -> Univ.UContext.instance uctx, univs
+    | Monomorphic_entry _, ubinders -> Univ.Instance.empty, (Monomorphic_entry Univ.ContextSet.empty, ubinders)
+    | Polymorphic_entry uctx, _ -> Univ.UContext.instance uctx, univs
   in
   let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu)
@@ -641,7 +640,7 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
   } in
   [cref, [m]]
 
-let build_record_constant ~rdata ~ubind ~univs ~variances ~cumulative ~template ~primitive_proj
+let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
     fields params paramimpls coers id idbuild binder_name =
   let record_data =
     { Data.id
@@ -650,7 +649,7 @@ let build_record_constant ~rdata ~ubind ~univs ~variances ~cumulative ~template 
     ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields
     ; rdata
     } in
-  let inds = declare_structure ~cumulative Declarations.BiFinite ~ubind ~univs ~variances ~primitive_proj paramimpls
+  let inds = declare_structure ~cumulative Declarations.BiFinite ~univs ~variances ~primitive_proj paramimpls
       params template ~kind:Decls.Method ~name:[|binder_name|] [record_data]
   in
   let map ind =
@@ -686,7 +685,7 @@ let build_record_constant ~rdata ~ubind ~univs ~variances ~cumulative ~template 
   2. declare the class, using the information from 1. in the form of [Classes.typeclass]
 
   *)
-let declare_class def ~cumulative ~ubind ~univs ~variances ~primitive_proj id idbuild paramimpls params
+let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild paramimpls params
     rdata template ?(kind=Decls.StructureComponent) coers =
   let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -703,11 +702,11 @@ let declare_class def ~cumulative ~ubind ~univs ~variances ~primitive_proj id id
       let binder = {binder with binder_name=Name binder_name} in
       build_class_constant ~rdata ~univs ~primitive_proj field implfs params paramimpls coers binder id proj_name
     | _ ->
-      build_record_constant ~rdata ~ubind ~univs ~variances ~cumulative ~template ~primitive_proj
+      build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
         fields params paramimpls coers id idbuild binder_name
   in
   let univs, params, fields =
-    match univs with
+    match fst univs with
     | Polymorphic_entry uctx ->
       let usubst, auctx = Univ.abstract_universes uctx in
       let usubst = Univ.make_instance_subst usubst in
@@ -845,7 +844,7 @@ let extract_record_data records =
   ps, data
 
 (* declaring structures, common data to refactor *)
-let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params ~primitive_proj def records data =
+let class_struture ~cumulative ~template ~impargs ~univs ~params ~primitive_proj def records data =
   let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
@@ -857,10 +856,10 @@ let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params ~primiti
       | Vernacexpr.NoInstance -> None)
       cfs
   in
-  declare_class def ~cumulative ~ubind ~univs ~primitive_proj name.CAst.v idbuild
+  declare_class def ~cumulative ~univs ~primitive_proj name.CAst.v idbuild
     impargs params rdata template coers
 
-let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~params ~finite ~primitive_proj
+let regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
     records data =
   let adjust_impls impls = impargs @ [CAst.make None] @ impls in
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
@@ -875,7 +874,7 @@ let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~p
     { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers }
   in
   let data = List.map2 map data records in
-  let inds = declare_structure ~cumulative finite ~ubind ~univs ~variances ~primitive_proj
+  let inds = declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
       impargs params template data
   in
   List.map (fun ind -> GlobRef.IndRef ind) inds
@@ -888,7 +887,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
-  let auto_template, impargs, ubind, univs, variances, params, data =
+  let auto_template, impargs, univs, variances, params, data =
     (* In theory we should be able to use
        [Notation.with_notation_protection], due to the call to
        Metasyntax.set_notation_for_interpretation, however something
@@ -900,10 +899,10 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   let template = template, auto_template in
   match kind with
   | Class def ->
-    class_struture ~template ~ubind ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
+    class_struture ~template ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
       def records data
   | Inductive_kw | CoInductive | Variant | Record | Structure ->
-    regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~variances ~params ~finite ~primitive_proj
+    regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
       records data
 
 module Internal = struct
