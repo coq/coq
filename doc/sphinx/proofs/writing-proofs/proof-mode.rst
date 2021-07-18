@@ -26,6 +26,10 @@ and a :gdef:`local context`, which contains named :term:`hypotheses <hypothesis>
 proving the conclusion.  The proof may also use *constants* from the :term:`global environment`
 such as definitions and proven theorems.
 
+(Note that *conclusion* is also used to refer to the last part of an implication.
+For example, in `A -> B -> C`, `A` and `B` are :term:`premises <premise>` and `C`
+is the conclusion.)
+
 The term ":gdef:`goal`" may refer to an entire goal or to the conclusion
 of a goal, depending on the context.
 

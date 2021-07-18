@@ -92,8 +92,10 @@ These terms are also useful:
   `n` appears both in the binder of the `forall` and in the quantified statement
   `n + 0 = n`.
 
-* `A` and `B` are :gdef:`non-dependent premises <non-dependent premise>` of `A -> B -> C`
-  because they don't appear in a `forall` binder.
+* `A` and `B` are :gdef:`non-dependent premises <non-dependent premise>`
+  (or, often, just ":gdef:`premises <premise>`") of `A -> B -> C` because they don't appear
+  in a `forall` binder.  `C` is the *conclusion* of the type, which is a second
+  meaning for the term :term:`conclusion`.
   (As noted, `A -> B` is notation for the term `forall _ : A, B`; the wildcard
   `_` can't be referred to in the quantified statement.)
 
