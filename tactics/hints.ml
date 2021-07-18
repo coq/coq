@@ -239,33 +239,33 @@ type stored_data = int * full_hint
 module Bounded_net :
 sig
   type t
-  val empty : t
-  val add : TransparentState.t option -> t -> Pattern.constr_pattern -> stored_data -> t
-  val lookup : Environ.env -> Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> stored_data list
+  val empty : TransparentState.t option -> t
+  val add : t -> Pattern.constr_pattern -> stored_data -> t
+  val lookup : Environ.env -> Evd.evar_map -> t -> EConstr.constr -> stored_data list
 end =
 struct
   module Data = struct type t = stored_data let compare = pri_order_int end
   module Bnet = Btermdn.Make(Data)
 
   type diff = Pattern.constr_pattern * stored_data
-  type data = Bnet of Bnet.t | Diff of diff * data ref
+  type data = Bnet of (TransparentState.t option * Bnet.t) | Diff of diff * data ref
   type t = data ref
 
-  let empty = ref (Bnet Bnet.empty)
+  let empty st = ref (Bnet (st, Bnet.empty))
 
-  let add _st net p v = ref (Diff ((p, v), net))
+  let add net p v = ref (Diff ((p, v), net))
 
-  let rec force env st net = match !net with
+  let rec force env net = match !net with
   | Bnet dn -> dn
   | Diff ((p, v), rem) ->
-    let dn = force env st rem in
+    let st, dn = force env rem in
     let p = Bnet.pattern env st p in
     let dn = Bnet.add dn p v in
-    let () = net := (Bnet dn) in
-    dn
+    let () = net := (Bnet (st, dn)) in
+    st, dn
 
-  let lookup env sigma st net p =
-    let dn = force env st net in
+  let lookup env sigma net p =
+    let st, dn = force env net in
     Bnet.lookup env sigma st dn p
 end
 
@@ -276,10 +276,10 @@ type search_entry = {
   sentry_mode : hint_mode array list;
 }
 
-let empty_se = {
+let empty_se st = {
   sentry_nopat = [];
   sentry_pat = [];
-  sentry_bnet = Bounded_net.empty;
+  sentry_bnet = Bounded_net.empty st;
   sentry_mode = [];
 }
 
@@ -290,23 +290,23 @@ let add_tac pat t se =
   | None ->
     if List.exists (eq_pri_auto_tactic t) se.sentry_nopat then se
     else { se with sentry_nopat = List.insert pri_order t se.sentry_nopat }
-  | Some (st, pat) ->
+  | Some pat ->
     if List.exists (eq_pri_auto_tactic t) se.sentry_pat then se
     else { se with
         sentry_pat = List.insert pri_order t se.sentry_pat;
-        sentry_bnet = Bounded_net.add st se.sentry_bnet pat t; }
+        sentry_bnet = Bounded_net.add se.sentry_bnet pat t; }
 
 let rebuild_dn st se =
   let dn' =
     List.fold_left
       (fun dn (id, t) ->
-        Bounded_net.add (Some st) dn (Option.get t.pat) (id, t))
-      Bounded_net.empty se.sentry_pat
+        Bounded_net.add dn (Option.get t.pat) (id, t))
+      (Bounded_net.empty st) se.sentry_pat
   in
   { se with sentry_bnet = dn' }
 
-let lookup_tacs env sigma concl st se =
-  let l'  = Bounded_net.lookup env sigma st se.sentry_bnet concl in
+let lookup_tacs env sigma concl se =
+  let l' = Bounded_net.lookup env sigma se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
@@ -577,9 +577,11 @@ struct
                           hintdb_nopat = [];
                           hintdb_name = name; }
 
+  let dn_ts db = if db.use_dn then (Some db.hintdb_state) else None
+
   let find key db =
     try GlobRef.Map.find key db.hintdb_map
-    with Not_found -> empty_se
+    with Not_found -> empty_se (dn_ts db)
 
   let realize_tac secvars (id,tac) =
     if Id.Pred.subset tac.secvars secvars then Some tac
@@ -628,8 +630,7 @@ struct
   (* Precondition: concl has no existentials *)
   let map_auto env sigma ~secvars (k,args) concl db =
     let se = find k db in
-    let st = if db.use_dn then  (Some db.hintdb_state) else None in
-    let pat = lookup_tacs env sigma concl st se in
+    let pat = lookup_tacs env sigma concl se in
     merge_entry secvars db [] pat
 
   let map_existential sigma ~secvars (k,args) concl db =
@@ -642,8 +643,7 @@ struct
   let map_eauto env sigma ~secvars (k,args) concl db =
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
-        let st = if db.use_dn then Some db.hintdb_state else None in
-        let pat = lookup_tacs env sigma concl st se in
+        let pat = lookup_tacs env sigma concl se in
         ModeMatch (merge_entry secvars db [] pat)
       else ModeMismatch
 
@@ -672,16 +672,14 @@ struct
       | Some gr ->
         let pat =
           if not db.use_dn && is_exact v.code.obj then None
-          else
-            let dnst = if db.use_dn then Some db.hintdb_state else None in
-            Option.map (fun p -> (dnst, p)) v.pat
+          else v.pat
         in
           let oval = find gr db in
             { db with hintdb_map = GlobRef.Map.add gr (add_tac pat idv oval) db.hintdb_map }
 
   let rebuild_db st' db =
     let db' =
-      { db with hintdb_map = GlobRef.Map.map (rebuild_dn st') db.hintdb_map;
+      { db with hintdb_map = GlobRef.Map.map (rebuild_dn (Some st')) db.hintdb_map;
         hintdb_state = st'; hintdb_nopat = [] }
     in
       List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
@@ -720,7 +718,7 @@ struct
   let remove_list env grs db =
     let filter (_, h) =
       match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
-    let hintmap = GlobRef.Map.map (remove_he db.hintdb_state filter) db.hintdb_map in
+    let hintmap = GlobRef.Map.map (remove_he (dn_ts db) filter) db.hintdb_map in
     let hintnopat = List.filter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
@@ -761,7 +759,7 @@ struct
     let f gr e me =
       Some { e with sentry_mode = me.sentry_mode @ e.sentry_mode }
     in
-    let mode_entries = GlobRef.Map.map (fun m -> { empty_se with sentry_mode = m }) modes in
+    let mode_entries = GlobRef.Map.map (fun m -> { (empty_se (dn_ts db)) with sentry_mode = m }) modes in
     { db with hintdb_map = GlobRef.Map.union f db.hintdb_map mode_entries }
 
   let modes db = GlobRef.Map.map (fun se -> se.sentry_mode) db.hintdb_map
