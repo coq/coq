@@ -109,6 +109,8 @@ type instance_flag  = BackInstance | NoInstance
 
 type export_flag    = bool (* true = Export;        false = Import         *)
 
+type infix_flag     = bool (* true = Infix;         false = Notation       *)
+
 type one_import_filter_name = qualid * bool (* import inductive components *)
 type import_filter_expr =
   | ImportAll
@@ -313,15 +315,13 @@ type nonrec vernac_expr =
 
   | VernacLoad of verbose_flag * string
   (* Syntax *)
-  | VernacReservedNotation of bool * (lstring * syntax_modifier CAst.t list)
+  | VernacReservedNotation of infix_flag * (lstring * syntax_modifier CAst.t list)
   | VernacOpenCloseScope of bool * scope_name
   | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacInfix of (lstring * syntax_modifier CAst.t list) *
-      constr_expr * scope_name option
   | VernacNotation of
-      constr_expr * (lstring * syntax_modifier CAst.t list) *
+      infix_flag * constr_expr * (lstring * syntax_modifier CAst.t list) *
       scope_name option
   | VernacNotationAddFormat of string * string * string
   | VernacDeclareCustomEntry of string

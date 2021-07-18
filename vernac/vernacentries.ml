@@ -521,13 +521,9 @@ let vernac_bind_scope ~module_local sc cll =
 let vernac_open_close_scope ~section_local (b,s) =
   Notation.open_close_scope (section_local,b,s)
 
-let vernac_infix ~atts =
+let vernac_notation ~atts ~infix =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
-  Metasyntax.add_infix ~local:module_local deprecation (Global.env())
-
-let vernac_notation ~atts =
-  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
-  Metasyntax.add_notation ~local:module_local deprecation (Global.env())
+  Metasyntax.add_notation ~local:module_local ~infix deprecation (Global.env())
 
 let vernac_custom_entry ~module_local s =
   Metasyntax.declare_custom_entry module_local s
@@ -2099,10 +2095,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     VtDefault(fun () -> with_module_locality ~atts vernac_bind_scope sc rl)
   | VernacOpenCloseScope (b, s) ->
     VtDefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
-  | VernacInfix (mv,qid,sc) ->
-    VtDefault(fun () -> vernac_infix ~atts mv qid sc)
-  | VernacNotation (c,infpl,sc) ->
-    VtDefault(fun () -> vernac_notation ~atts c infpl sc)
+  | VernacNotation (infix,c,infpl,sc) ->
+    VtDefault(fun () -> vernac_notation ~atts ~infix c infpl sc)
   | VernacNotationAddFormat(n,k,v) ->
     VtDefault(fun () ->
         unsupported_attributes atts;

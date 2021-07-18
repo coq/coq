@@ -19,10 +19,7 @@ val add_token_obj : string -> unit
 
 (** Adding a (constr) notation in the environment*)
 
-val add_infix : local:bool -> Deprecation.t option -> env -> (lstring * syntax_modifier CAst.t list) ->
-  constr_expr -> scope_name option -> unit
-
-val add_notation : local:bool -> Deprecation.t option -> env -> constr_expr ->
+val add_notation : local:bool -> infix:bool -> Deprecation.t option -> env -> constr_expr ->
   (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
 
 val add_notation_extra_printing_rule : string -> string -> string -> unit
