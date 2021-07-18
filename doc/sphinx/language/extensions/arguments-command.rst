@@ -94,6 +94,9 @@ Setting properties of a function's arguments
          .. exn:: Flag 'rename' expected to rename @name into @name.
             :undocumented:
 
+         .. exn:: Arguments of section variables such as @name may not be renamed.
+            :undocumented:
+
       `clear implicits`
          makes all implicit arguments into explicit arguments
 

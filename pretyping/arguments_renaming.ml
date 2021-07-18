@@ -64,6 +64,14 @@ let inRenameArgs = declare_object { (default_object "RENAME-ARGUMENTS" ) with
 }
 
 let rename_arguments local r names =
+  let () = match r with
+    | GlobRef.VarRef id ->
+      CErrors.user_err
+        Pp.(str "Arguments of section variables such as "
+            ++ Id.print id
+            ++ str" may not be renamed.")
+    | _ -> ()
+  in
   let req = if local then ReqLocal else ReqGlobal (r, names) in
   Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))
 
