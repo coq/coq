@@ -112,13 +112,24 @@ ml files in quick mode.
 Dune also provides targets for documentation, testing, and release
 builds, please see below.
 
-## Documentation and testing targets
+## Testing and documentation targets
 
-Coq's test-suite can be run with `dune runtest`; given that `dune`
-still invokes the test-suite makefile, the environment variable
-`NJOBS` will control the value of the `-j` option that is passed to
-make; common call `NJOBS=8 dune runtest`. This will be resolved in the
-future once the test suite is ported to Dune rules.
+There are two ways to run the test-suite when using Dune:
+
+- You can run the test-suite in-place, with output artifacts in the
+  tree using `make -C test-suite` (equivalent to running `make` inside
+  the `test-suite` directory), after having built Coq with `make -f
+  Makefile.dune world`. This will allow for incremental usage as
+  artifacts will be preserved.
+
+- You can also run the test-suite in an hygienic way using `make -f
+  Makefile.dune test-suite` or `dune runtest`. This is convenient for
+  full runs from scracth, for instance in CI.
+
+Given that `dune` still invokes the test-suite makefile, the
+environment variable `NJOBS` will control the value of the `-j` option
+that is passed to make; common call `NJOBS=8 dune runtest`. This will
+be resolved in the future once the test suite is ported to Dune rules.
 
 There is preliminary support to build the API documentation and
 reference manual in HTML format, use `dune build {@doc,@refman-html}`
