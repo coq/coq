@@ -129,22 +129,22 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
 
 let infer_declaration env (dcl : constant_entry) =
   match dcl with
-  | ParameterEntry (ctx,(t,uctx),nl) ->
-    let env = match uctx with
+  | ParameterEntry entry ->
+    let env = match entry.parameter_entry_universes with
       | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
       | Polymorphic_entry uctx -> push_context ~strict:false uctx env
     in
-    let j = Typeops.infer env t in
-    let usubst, univs = Declareops.abstract_universes uctx in
+    let j = Typeops.infer env entry.parameter_entry_type in
+    let usubst, univs = Declareops.abstract_universes entry.parameter_entry_universes in
     let r = Typeops.assumption_of_judgment env j in
     let t = Vars.subst_univs_level_constr usubst j.uj_val in
     {
-      Cooking.cook_body = Undef nl;
+      Cooking.cook_body = Undef entry.parameter_entry_inline_code;
       cook_type = t;
       cook_universes = univs;
       cook_relevance = r;
       cook_inline = false;
-      cook_context = ctx;
+      cook_context = entry.parameter_entry_secctx;
       cook_flags = Environ.typing_flags env;
     }
 

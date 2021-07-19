@@ -40,7 +40,8 @@ type one_inductive_entry = {
   mind_entry_typename : Id.t;
   mind_entry_arity : constr;
   mind_entry_consnames : Id.t list;
-  mind_entry_lc : constr list }
+  mind_entry_lc : constr list;
+}
 
 type mutual_inductive_entry = {
   mind_entry_record : (Id.t array option) option;
@@ -69,7 +70,8 @@ type definition_entry = {
   const_entry_feedback : Stateid.t option;
   const_entry_type : types option;
   const_entry_universes : universes_entry;
-  const_entry_inline_code : bool }
+  const_entry_inline_code : bool;
+}
 
 type section_def_entry = {
   secdef_body : constr;
@@ -90,8 +92,12 @@ type 'a opaque_entry = {
 
 type inline = int option (* inlining level, None for no inlining *)
 
-type parameter_entry =
-    Id.Set.t option * types in_universes_entry * inline
+type parameter_entry = {
+  parameter_entry_secctx : Id.Set.t option;
+  parameter_entry_type : types;
+  parameter_entry_universes : universes_entry;
+  parameter_entry_inline_code : inline;
+}
 
 type primitive_entry = {
   prim_entry_type : types in_universes_entry option;

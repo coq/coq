@@ -123,7 +123,7 @@ type cooking_info = {
 (* some contraints are in constant_constraints, some other may be in
  * the OpaqueDef *)
 type 'opaque pconstant_body = {
-    const_hyps : Constr.named_context; (** New: younger hyp at top *)
+    const_hyps : Constr.named_context; (** younger hyp at top *)
     const_body : (Constr.t, 'opaque) constant_def;
     const_type : types;
     const_relevance : Sorts.relevance;

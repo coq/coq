@@ -710,7 +710,13 @@ let prepare_parameter ~poly ~udecl ~types sigma =
       sigma (fun nf -> nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  sigma, (None(*proof using*), (typ, univs), None(*inline*))
+  let pe = Entries.{
+      parameter_entry_secctx = None;
+      parameter_entry_type = typ;
+      parameter_entry_universes = univs;
+      parameter_entry_inline_code = None;
+    } in
+  sigma, pe
 
 type progress = Remain of int | Dependent | Defined of GlobRef.t
 
@@ -1880,7 +1886,12 @@ end = struct
     let { Info.scope; hook } = pinfo.Proof_info.info in
     List.map_i (
       fun i { CInfo.name; typ; impargs } ->
-        let pe = (sec_vars, (typ, univs), None) in
+        let pe = Entries.{
+            parameter_entry_secctx = sec_vars;
+            parameter_entry_type = typ;
+            parameter_entry_universes = univs;
+            parameter_entry_inline_code = None;
+          } in
         declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 pinfo.Proof_info.cinfo
 
