@@ -301,6 +301,9 @@ let rec parse_args (args : string list) accu =
   | "-nI" :: dir :: rem ->
     let accu =  { accu with ml_path = dir :: accu.ml_path } in
     parse_args rem accu
+  |"-native-output-dir" :: dir :: rem ->
+    Nativelib.output_dir := dir;
+    parse_args rem accu
   | "-coqlib" :: s :: rem ->
     if not (Minisys.exists_dir s) then
       fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
