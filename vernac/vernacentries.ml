@@ -739,7 +739,7 @@ let is_polymorphic_inductive_cumulativity =
   declare_bool_option_and_ref ~depr:false ~value:false
     ~key:["Polymorphic";"Inductive";"Cumulativity"]
 
-let polymorphic_cumulative =
+let polymorphic_cumulative ~is_defclass =
   let error_poly_context () =
     user_err
       Pp.(str "The cumulative attribute can only be used in a polymorphic context.");
@@ -753,22 +753,25 @@ let polymorphic_cumulative =
        ~on:"polymorphic" ~off:"monomorphic"
      ++
      deprecated_bool_attribute
-       ~name:"Cumulativity"
-       ~on:"cumulative" ~off:"noncumulative")
-  >>= function
-  | Some poly, Some cum ->
+         ~name:"Cumulativity"
+         ~on:"cumulative" ~off:"noncumulative")
+  >>= fun (poly,cumul) ->
+  if is_defclass && Option.has_some cumul
+  then user_err Pp.(str "Definitional classes do not support the inductive cumulativity attribute.");
+  match poly, cumul with
+  | Some poly, Some cumul ->
      (* Case of Polymorphic|Monomorphic Cumulative|NonCumulative Inductive
         and #[ universes(polymorphic|monomorphic,cumulative|noncumulative) ] Inductive *)
-     if poly then return (true, cum)
+     if poly then return (true, cumul)
      else error_poly_context ()
   | Some poly, None ->
      (* Case of Polymorphic|Monomorphic Inductive
         and #[ universes(polymorphic|monomorphic) ] Inductive *)
      if poly then return (true, is_polymorphic_inductive_cumulativity ())
      else return (false, false)
-  | None, Some cum ->
+  | None, Some cumul ->
      (* Case of Cumulative|NonCumulative Inductive *)
-     if is_universe_polymorphism () then return (true, cum)
+     if is_universe_polymorphism () then return (true, cumul)
      else error_poly_context ()
   | None, None ->
      (* Case of Inductive *)
@@ -847,10 +850,18 @@ let private_ind =
   | None -> return false
 
 let vernac_inductive ~atts kind indl =
-  let ((template, (poly, cumulative)), private_ind), typing_flags = Attributes.(
-      parse Notations.(template ++ polymorphic_cumulative ++ private_ind ++ typing_flags) atts) in
-  let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
+  let is_defclass = match kind, indl with
+  | Class _, [ ( id , bl , c , Constructors [l]), [] ] -> Some (id, bl, c, l)
+  | _ -> None
+  in
+  let ((template, (poly, cumulative)), private_ind), typing_flags = Attributes.(
+      parse Notations.(
+          template
+          ++ polymorphic_cumulative ~is_defclass:(Option.has_some is_defclass)
+          ++ private_ind ++ typing_flags)
+        atts)
+  in
   if Dumpglob.dump () then
     List.iter (fun (((coe,lid), _, _, cstrs), _) ->
       match cstrs with
@@ -869,10 +880,6 @@ let vernac_inductive ~atts kind indl =
   let is_constructor = function
   | ((_ , _ , _ , Constructors _), _) -> true
   | _ -> false
-  in
-  let is_defclass = match kind, indl with
-  | Class _, [ ( id , bl , c , Constructors [l]), [] ] -> Some (id, bl, c, l)
-  | _ -> None
   in
   if Option.has_some is_defclass then
     (* Definitional class case *)
