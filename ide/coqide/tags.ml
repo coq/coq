@@ -35,7 +35,7 @@ struct
   let sentence = make_tag table ~name:"sentence" []
   let breakpoint = make_tag table ~name:"breakpoint" []
   let edit_zone = make_tag table ~name:"edit_zone" [`UNDERLINE `SINGLE] (* for debugging *)
-  let all = comment :: sentence :: breakpoint :: edit_zone :: ephemere
+  let all_but_bpt = comment :: sentence :: edit_zone :: ephemere (* omit breakpoint marks *)
 end
 module Proof =
 struct

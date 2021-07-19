@@ -25,7 +25,7 @@ sig
   val tooltip : GText.tag
   val edit_zone : GText.tag (* for debugging *)
   val ephemere : GText.tag list
-  val all : GText.tag list
+  val all_but_bpt : GText.tag list
 end
 
 module Proof :

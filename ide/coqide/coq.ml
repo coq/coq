@@ -229,7 +229,8 @@ type coqtop = {
   (* i.e., CoqIDE has received a prompt message *)
   mutable do_when_ready : (unit -> unit) Queue.t;
   (* for debug msgs only; functions are called when coqtop is Ready *)
-  mutable set_script_editable : bool -> unit
+  mutable set_script_editable : bool -> unit;
+  mutable restore_bpts : unit -> unit
 }
 
 let return (x : 'a) : 'a task =
@@ -411,6 +412,7 @@ let clear_handle h =
     CoqTop.kill h.proc;
     ignore(CoqTop.wait h.proc);
     h.alive <- false;
+    h.db_waiting_for <- None;
   end
 
 let pstatus = function
@@ -458,6 +460,7 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
   | Planned -> ()
   in
   clear_handle coqtop.handle;
+  Queue.clear coqtop.do_when_ready;
   ignore_error (fun () ->
      let processors = (coqtop.feedback_handler, coqtop.debug_prompt_handler) in
      coqtop.handle <-
@@ -470,7 +473,8 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
   assert (coqtop.handle.alive = true);
   coqtop.status <- New;
   coqtop.set_script_editable true;
-  ignore (coqtop.reset_handler coqtop.handle (mkready coqtop false))
+  ignore (coqtop.reset_handler coqtop.handle (mkready coqtop false));
+  coqtop.restore_bpts ()  (* queue call to restore previous breakpoints *)
 
 let spawn_coqtop sup_args =
   bind_self_as (fun this ->
@@ -489,8 +493,11 @@ let spawn_coqtop sup_args =
     status = New;
     stopped_in_debugger = false;
     do_when_ready = Queue.create ();
-    set_script_editable = (fun v -> failwith "set_script_editable");
+    set_script_editable = (fun _ -> failwith "set_script_editable");
+    restore_bpts = (fun _ -> failwith "restore_bpts")
   })
+
+let set_restore_bpts coqtop f = coqtop.restore_bpts <- f
 
 let set_reset_handler coqtop hook = coqtop.reset_handler <- hook
 
@@ -544,9 +551,10 @@ let process_task ?(db=false) coqtop task =
    routine, perhaps not even needed.  The "abort" should go away. *)
 let try_grab ?(db=false) coqtop task abort =
   match coqtop.status with
+    | _ when db && coqtop.handle.db_waiting_for <> None -> (abort (); false)
     | Closed -> abort (); false
     | Busy when db ->
-      if coqtop.stopped_in_debugger then
+      if coqtop.stopped_in_debugger && coqtop.handle.db_waiting_for = None then
         (process_task ~db coqtop task; true)
       else
         (abort (); false)

@@ -921,7 +921,7 @@ object(self)
       done;
       List.iter
         (buffer#remove_tag ~start:buffer#start_iter ~stop:buffer#end_iter)
-        Tags.Script.all;
+        Tags.Script.all_but_bpt;
       (* reset the buffer *)
       buffer#move_mark ~where:buffer#start_iter (`NAME "start_of_input");
       buffer#move_mark ~where:buffer#end_iter (`NAME "stop_of_input");

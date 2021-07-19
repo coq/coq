@@ -80,6 +80,9 @@ val set_stopped_in_debugger : coqtop -> bool -> unit
 val spawn_coqtop : string list -> coqtop
 (** Create a coqtop process with some command-line arguments. *)
 
+val set_restore_bpts : coqtop -> (unit -> unit) -> unit
+(** Register callback to restore breakpoints after a session has been reset *)
+
 val set_reset_handler : coqtop -> unit task -> unit
 (** Register a handler called when a coqtop dies (badly or on purpose) *)
 

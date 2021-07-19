@@ -176,20 +176,23 @@ let db_cmd sn cmd =
       (sn.coqops#process_db_cmd cmd ~next:(function | _ -> Coq.return ()))
       (fun () -> Minilib.log "Coq busy, discarding db_cmd")
 
-let forward_db_loc   = ref ((fun x -> failwith "forward_db_loc")
+let forward_db_loc   = ref ((fun _ -> failwith "forward_db_loc")
                      : session -> unit -> unit)
-let forward_db_stack = ref ((fun x -> failwith "forward_db_stack")
+let forward_db_stack = ref ((fun _ -> failwith "forward_db_stack")
                      : session -> unit -> unit)
-let forward_db_vars = ref ((fun x -> failwith "forward_db_vars")
+let forward_db_vars = ref ((fun _ -> failwith "forward_db_vars")
                      : session -> int -> unit)
-let forward_highlight_code = ref ((fun x -> failwith "forward_highlight_code")
+let forward_highlight_code = ref ((fun _ -> failwith "forward_highlight_code")
                      : session -> string * int * int -> unit)
+let forward_restore_bpts = ref ((fun _ -> failwith "forward_restore_bpts")
+                     : session -> unit)
 
 let create_session f =
   let project_file, args = make_coqtop_args f in
   if project_file <> "" then
     flash_info (Printf.sprintf "Reading options from %s" project_file);
   let sn = Session.create f args in
+  Coq.set_restore_bpts sn.coqtop (fun _ -> !forward_restore_bpts sn);
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_loc (!forward_db_loc sn);
   (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
@@ -260,6 +263,12 @@ let reapply_bpts sn =
 (* init breakpoints for new session or re-init after reset *)
 let init_bpts sn =
   Coq.add_do_when_ready sn.coqtop (fun _ -> reapply_bpts sn)
+
+let restore_bpts sn =
+  init_bpts sn;
+  sn.debugger#set_stack []
+
+let _ = forward_restore_bpts := restore_bpts
 
 (** Auxiliary functions for the File operations *)
 
@@ -397,7 +406,7 @@ let () = load_file_cb := (fun s -> FileAux.load_file s)
 
 let clear_all_bpts sn =
   sn.breakpoints <- [];
-  Coq.add_do_when_ready sn.coqtop (fun _ -> reapply_bpts sn)
+  init_bpts sn
 
 (** Callbacks for the File menu *)
 
