@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Fake_ide : Simulate a [coqide] talking to a [coqidetop] *)
+(** Fake_ide : Simulate a [coqide] talking to a [coqidetop]. *)
 
 let error s =
   prerr_endline ("fake_ide: error: "^s);
@@ -302,7 +302,7 @@ let grammar =
 let read_command inc = Parser.parse grammar inc
 
 let usage () =
-  prerr_endline (Printf.sprintf "Usage: %s ( file | - ) [ \"<coqtop arguments>\" ]\n\
+  prerr_endline (Printf.sprintf "Usage: %s COQIDETOP ( file | - ) [ \"<coqtop arguments>\" ]\n\
     Input syntax is:\n%s\n"
     (Filename.basename Sys.argv.(0))
     (Parser.print grammar));
@@ -314,12 +314,11 @@ let main =
   if Sys.os_type = "Unix" then Sys.set_signal Sys.sigpipe
     (Sys.Signal_handle
        (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
-  let idetop_name = System.get_toplevel_path "coqidetop" in
-  let input_file, args  = match Sys.argv with
-    | [| _; f |] -> f, []
-    | [| _; f; args |] ->
+  let idetop_name, input_file, args  = match Sys.argv with
+    | [| _; p; f |] -> p, f, []
+    | [| _; p; f; args |] ->
         let args = Str.split (Str.regexp " ") args in
-        f, args
+        p, f, args
     | _ -> usage () in
   let def_coqtop_args = ["--xml_format=Ppcmds"] in
   let coqtop_args = Array.of_list(def_coqtop_args @ args) in
