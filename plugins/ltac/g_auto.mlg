@@ -136,7 +136,7 @@ TACTIC EXTEND eauto
       Eauto.gen_eauto (Eauto.make_dimension n p) (eval_uconstrs ist lems) db }
 END
 
-TACTIC EXTEND new_eauto (* todo: name doesn't match syntax *)
+TACTIC EXTEND new_eauto (* todo: name doesn't match syntax *) DEPRECATED { Deprecation.make () }
 | [ "new" "auto" nat_or_var_opt(n) auto_using(lems)
     hintbases(db) ] ->
     { match db with
