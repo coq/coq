@@ -49,6 +49,7 @@ type session = {
   errpage : errpage;
   jobpage : jobpage;
   sid : int;
+  basename : string;
   mutable control : control;
   mutable abs_file_name : string option;
   mutable debug_stop_pt : (session * int * int) option;
@@ -402,7 +403,7 @@ let create file coqtop_args =
     | None -> ("*scratch*", None)
     | Some f -> (Glib.Convert.filename_to_utf8 (Filename.basename f), Some (to_abs_file_name f))
   in
-  let coqtop = Coq.spawn_coqtop coqtop_args in
+  let coqtop = Coq.spawn_coqtop basename coqtop_args in
   let reset () = Coq.reset_coqtop coqtop in
   let buffer = create_buffer () in
   let script = create_script coqtop buffer in
@@ -459,6 +460,7 @@ let create file coqtop_args =
     errpage=errpage;
     jobpage=jobpage;
     sid=sid;
+    basename = basename;
     control = dummy_control;
     abs_file_name = abs_file_name;
     debug_stop_pt = None;

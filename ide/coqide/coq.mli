@@ -77,7 +77,7 @@ val is_stopped_in_debugger : coqtop -> bool
 val set_stopped_in_debugger : coqtop -> bool -> unit
 (** Records whether coqtop is stopped in the debugger *)
 
-val spawn_coqtop : string list -> coqtop
+val spawn_coqtop : string -> string list -> coqtop
 (** Create a coqtop process with some command-line arguments. *)
 
 val set_restore_bpts : coqtop -> (unit -> unit) -> unit

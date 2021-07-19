@@ -48,6 +48,7 @@ type session = {
   errpage : errpage;
   jobpage : jobpage;
   sid : int;
+  basename : string;
   mutable control : control;
   mutable abs_file_name : string option;
   mutable debug_stop_pt : (session * int * int) option;

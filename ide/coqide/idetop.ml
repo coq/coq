@@ -412,7 +412,7 @@ let cvt_loc loc =
       end;
       Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
     end
-  | _ -> None (* nothing to highlight, e.g. not in a .v file *)
+  | None -> None (* nothing to highlight, e.g. not in a .v file *)
 
 let db_loc () =
   let open DebugHook in

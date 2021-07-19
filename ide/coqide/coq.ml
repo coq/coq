@@ -229,6 +229,7 @@ type coqtop = {
   (* i.e., CoqIDE has received a prompt message *)
   mutable do_when_ready : (unit -> unit) Queue.t;
   (* for debug msgs only; functions are called when coqtop is Ready *)
+  mutable basename : string;
   mutable set_script_editable : bool -> unit;
   mutable restore_bpts : unit -> unit
 }
@@ -454,7 +455,7 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
     let title = "Warning" in
     let icon = (warn_image ())#coerce in
     let buttons = ["Reset"; "Save all and quit"; "Quit without saving"] in
-    let ans = GToolbox.question_box ~title ~buttons ~icon "coqidetop died." in
+    let ans = GToolbox.question_box ~title ~buttons ~icon (coqtop.basename ^ ": coqidetop died.") in
     if ans = 2 then (!save_all (); GtkMain.Main.quit ())
     else if ans = 3 then GtkMain.Main.quit ()
   | Planned -> ()
@@ -476,7 +477,7 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
   ignore (coqtop.reset_handler coqtop.handle (mkready coqtop false));
   coqtop.restore_bpts ()  (* queue call to restore previous breakpoints *)
 
-let spawn_coqtop sup_args =
+let spawn_coqtop basename sup_args =
   bind_self_as (fun this ->
       let processors =
         (fun msg -> (this ()).feedback_handler msg)
@@ -493,7 +494,8 @@ let spawn_coqtop sup_args =
     status = New;
     stopped_in_debugger = false;
     do_when_ready = Queue.create ();
-    set_script_editable = (fun _ -> failwith "set_script_editable");
+    basename = basename;
+    set_script_editable = (fun v -> failwith "set_script_editable");
     restore_bpts = (fun _ -> failwith "restore_bpts")
   })
 

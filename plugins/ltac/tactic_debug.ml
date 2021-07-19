@@ -193,7 +193,7 @@ let print_loc desc loc =
     | InFile {file} -> file
     | ToplevelInput -> "ToplevelInput")
     in
-    Printf.sprintf "%s: %s %d %d:%d\n" desc src loc.line_nb
+    Printf.sprintf "%s: %s %d/%d %d:%d\n" desc src loc.bp loc.line_nb
       (loc.bp - loc.bol_pos_last) (loc.ep - loc.bol_pos_last)
   | None -> Printf.sprintf "%s: loc is None" desc
 
@@ -220,7 +220,7 @@ let get_stack stack () =
       | TacFun (lvar, body) -> Pp.string_of_ppcmds (Name.print (List.hd lvar))
       | _ -> "???"
       in
-      Printf.sprintf "%s (from variable %s)" lvar (Id.to_string id), e.loc
+      Printf.sprintf "%s (from variable %s)" lvar (Id.to_string id), loc
     | LtacConstrInterp (c,_) ->
 (*
       let env = Global.env() in

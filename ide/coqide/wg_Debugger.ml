@@ -98,7 +98,6 @@ let debugger title sid =
   Preferences.(stick text_font vars_view (cb vars_view));
   Preferences.(stick text_font stack_view (cb stack_view));
 
-  let vars_buffer = vars_view#buffer in  (* todo: get a standalone buffer? *)
   let vars = ref [] in
 
   let vb_vars = GPack.vbox ~packing:(paned#pack2 ~shrink:false ~resize:true) () in
@@ -241,23 +240,35 @@ let debugger title sid =
         let char_width = GPango.to_pixels metrics#approx_char_width in
         (pixel_width - 100) / char_width
       in
+      let show width =
+        store#clear ();
+        List.iter (fun (name, value) ->
+            let width = max width 30 in
+            let value = Richpp.print_pp width value in
+            access (fun columns store ->
+                let line = store#append () in
+                if String.length value < width then
+                  store#set ~row:line ~column:(find_string_col "Var" columns) (name ^ " = " ^ value)
+                else begin
+                  store#set ~row:line ~column:(find_string_col "Var" columns) (name ^ " = ");
+                  let line2 = store#append ~parent:line () in
+                  store#set ~row:line2 ~column:(find_string_col "Var" columns) value
+                end
+              )
+          ) vars_v
+      in
       let width = cwidth () in
-      store#clear ();
-      List.iter (fun (n, value) ->
-          vars_buffer#set_text "";
-          Ideutils.insert_xml vars_buffer (Richpp.richpp_of_pp width value);
-          let value = vars_buffer#get_text () in
-          access (fun columns store ->
-              let line = store#append () in
-              if String.length value < width then
-                store#set ~row:line ~column:(find_string_col "Var" columns) (n ^ " = " ^ value)
-              else begin
-                store#set ~row:line ~column:(find_string_col "Var" columns) (n ^ " = ");
-                let line2 = store#append ~parent:line () in
-                store#set ~row:line2 ~column:(find_string_col "Var" columns) value
-              end
-            )
-        ) vars_v
+      let pwidth = ref width in (* initially negative if not allocated *)
+      if paned#position > 0 then show width;
+
+      let w_cb (_ : Gtk.rectangle) =
+        let width = cwidth () in
+        if width <> !pwidth then begin
+          pwidth := width;
+          show width
+        end
+      in
+      ignore (paned#misc#connect#size_allocate ~callback:w_cb)
 
     method hide () = debugger_detachable#hide  (* todo: give up focus *)
     method show () = debugger_detachable#show  (* todo: take focus? *)

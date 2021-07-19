@@ -1007,7 +1007,7 @@ let highlight_code sn loc =
   let (file, bp, ep) = loc in
   let highlight () =
     clear_db_highlight sn ();
-    notebook#current_term.script#set_debugging_highlight ep bp;
+    notebook#current_term.script#set_debugging_highlight bp ep;
     sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
     (* show goal in secondary script goal panel *)
     notebook#current_term.coqops#set_debug_goal sn.last_db_goals
@@ -1681,7 +1681,7 @@ let build_ui () =
 
   (* Location display *)
   let l = GMisc.label
-    ~text:"Line:     1 Char:   1"
+    ~text:"Line:     1 Char:   1 Offset:     0"
     ~packing:lower_hbox#pack ()
   in
   let () = l#coerce#misc#set_name "location" in

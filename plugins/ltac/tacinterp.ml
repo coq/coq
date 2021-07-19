@@ -1149,7 +1149,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
          end
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
-      let (stack,_) = push_trace(None,call) ist in
+      let (stack,_) = push_trace(None,call) ist in (* TODO: or pass loc? *)
       Profile_ltac.do_profile "eval_tactic:TacAbstract" stack
         (catch_error_tac stack begin
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT

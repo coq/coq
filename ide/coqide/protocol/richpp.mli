@@ -51,3 +51,6 @@ type richpp = Xml_datatype.xml
 
 val richpp_of_pp : int -> Pp.t -> richpp
 (** Extract style information from formatted text *)
+
+val print_pp : int -> Pp.t -> string
+(** format a Pp.t using the same settings as for rich text *)
