@@ -39,7 +39,7 @@ Kernel
   fixes `#3166 <https://github.com/coq/coq/issues/3166>`_,
   by Pierre-Marie Pédrot).
 - **Changed:**
-  Native-code libraries used by :tacn:`native_compute` are now delayed
+  Linking of native-code libraries used by :tacn:`native_compute` is now delayed
   until an actual call to the :tacn:`native_compute` machinery is
   performed. This should make Coq more responsive on some systems
   (`#13853 <https://github.com/coq/coq/pull/13853>`_, fixes `#13849
@@ -170,7 +170,7 @@ Tactics
   (`#13509 <https://github.com/coq/coq/pull/13509>`_,
   by Hugo Herbelin).
 - **Removed:**
-  The `omega` tactic (deprecated in 8.12) and 4 `* Omega *` flags.
+  The `omega` tactic (deprecated in 8.12) and four `* Omega *` flags.
   Use `lia` instead.
   (`#13741 <https://github.com/coq/coq/pull/13741>`_,
   by Jim Fehrle, who addressed the final details, building on much work by
