@@ -173,6 +173,10 @@ val pr_enum : ('a -> t) -> 'a list -> t
 (** [pr_enum pr [a ; b ; ... ; c]] outputs
     [pr a ++ str "," ++ spc () ++ pr b ++ str "," ++ spc () ++ ... ++ str "and" ++ spc () ++ pr c]. *)
 
+val pr_choice : ('a -> t) -> 'a list -> t
+(** [pr_choice pr [a ; b ; ... ; c]] outputs
+    [pr a ++ str "," ++ spc () ++ pr b ++ str "," ++ spc () ++ ... ++ str "or" ++ spc () ++ pr c]. *)
+
 val pr_sequence : ('a -> t) -> 'a list -> t
 (** Sequence of objects separated by space (unless an element is empty). *)
 

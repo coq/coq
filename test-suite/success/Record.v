@@ -108,3 +108,11 @@ Record U (c:True) := {
  u := c;
  v := reflI : eqI u;
  }.
+
+Module MaximalImplicit.
+
+Record T := { f : forall a, a = 0 }.
+Arguments f _ {a}.
+Check fun x => x.(f) : 0 = 0.
+
+End MaximalImplicit.
