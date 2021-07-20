@@ -632,7 +632,7 @@ let warn_let_as_axiom =
     Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
                   spc () ++ strbrk "declared as an axiom.")
 
-let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
+let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
     | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
     | Locality.Global local -> local
@@ -1808,7 +1808,7 @@ let get_current_context pf =
    mutuals previously on this file. *)
 module MutualEntry : sig
 
-  val declare_toplevel_assumption
+  val declare_possibly_mutual_parameters
     : pinfo:Proof_info.t
     -> uctx:UState.t
     -> sec_vars:Id.Set.t option
@@ -1882,7 +1882,7 @@ end = struct
     in
     List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo
 
-  let declare_toplevel_assumption ~pinfo ~uctx ~sec_vars ~univs =
+  let declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = pinfo.Proof_info.info in
     List.map_i (
       fun i { CInfo.name; typ; impargs } ->
@@ -1892,7 +1892,7 @@ end = struct
             parameter_entry_universes = univs;
             parameter_entry_inline_code = None;
           } in
-        declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
+        declare_parameter ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 pinfo.Proof_info.cinfo
 
 end
@@ -1922,7 +1922,7 @@ let compute_proof_using_for_admitted proof typ pproofs =
     | _ -> None
 
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
-  let cst = MutualEntry.declare_toplevel_assumption ~pinfo ~uctx ~sec_vars ~univs in
+  let cst = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs in
   (* If the constant was an obligation we need to update the program map *)
   match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->

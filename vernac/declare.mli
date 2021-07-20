@@ -128,15 +128,6 @@ val declare_definition
   -> Evd.evar_map
   -> GlobRef.t
 
-val declare_assumption
-  :  name:Id.t
-  -> scope:Locality.locality
-  -> hook:Hook.t option
-  -> impargs:Impargs.manual_implicits
-  -> uctx:UState.t
-  -> Entries.parameter_entry
-  -> GlobRef.t
-
 type lemma_possible_guards = int list list
 
 val declare_mutually_recursive
@@ -319,7 +310,7 @@ module Proof : sig
 
 end
 
-(** {2 low-level, internla API, avoid using unless you have special needs } *)
+(** {2 low-level, internal API, avoid using unless you have special needs } *)
 
 (** Proof entries represent a proof that has been finished, but still
    not registered with the kernel.
