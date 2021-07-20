@@ -651,10 +651,8 @@ module Env = struct
   let eq_constr (env, sigma) x y =
     match EConstr.eq_constr_universes_proj env sigma x y with
     | Some csts -> (
-      let csts =
-        UnivProblem.to_constraints ~force_weak:false (Evd.universes sigma) csts
-      in
-      match Evd.add_constraints sigma csts with
+      let csts = UnivProblem.Set.force csts in
+      match Evd.add_universe_constraints sigma csts with
       | sigma -> Some (env, sigma)
       | exception Univ.UniverseInconsistency _ -> None )
     | None -> None
@@ -1749,9 +1747,9 @@ let formula_hyps_concl hyps concl =
  *)
 
 let rec fold_trace f accu = function
-| Micromega.Null -> accu
-| Micromega.Merge (t1, t2) -> fold_trace f (fold_trace f accu t1) t2
-| Micromega.Push (x, t) -> fold_trace f (f accu x) t
+  | Micromega.Null -> accu
+  | Micromega.Merge (t1, t2) -> fold_trace f (fold_trace f accu t1) t2
+  | Micromega.Push (x, t) -> fold_trace f (f accu x) t
 
 let micromega_tauto pre_process cnf spec prover env
     (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) gl =
@@ -1779,9 +1777,7 @@ let micromega_tauto pre_process cnf spec prover env
               (p.hyps prf) TagSet.empty
           in
           TagSet.union s tags)
-        (fold_trace
-           (fun s (i, _) -> TagSet.add i s)
-           TagSet.empty cnf_ff_tags)
+        (fold_trace (fun s (i, _) -> TagSet.add i s) TagSet.empty cnf_ff_tags)
         (List.combine cnf_ff res)
     in
     let ff' = abstract_formula deps ff in

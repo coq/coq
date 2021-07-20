@@ -4963,18 +4963,19 @@ let constr_eq ~strict x y =
     let evd = Tacmach.New.project gl in
       match EConstr.eq_constr_universes env evd x y with
       | Some csts ->
-        let csts = UnivProblem.to_constraints ~force_weak:false (Evd.universes evd) csts in
         if strict then
-          if Evd.check_constraints evd csts then Proofview.tclUNIT ()
+          if UnivProblem.Set.check (Evd.universes evd) csts then Proofview.tclUNIT ()
           else
             let info = Exninfo.reify () in
             fail_universes ~info
         else
-          (match Evd.add_constraints evd csts with
+        let csts = UnivProblem.Set.force csts in
+        begin match Evd.add_universe_constraints evd csts with
            | evd -> Proofview.Unsafe.tclEVARS evd
            | exception (Univ.UniverseInconsistency _ as e) ->
              let _, info = Exninfo.capture e in
-             fail_universes ~info)
+             fail_universes ~info
+        end
       | None ->
         let info = Exninfo.reify () in
         fail ~info
