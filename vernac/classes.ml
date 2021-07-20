@@ -306,8 +306,8 @@ let existing_instance glob g info =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let instance, _ = Typeops.type_of_global_in_context env c in
-  let _, r = Term.decompose_prod_assum instance in
-    match class_of_constr env sigma (EConstr.of_constr r) with
+  let ctx, r = Term.decompose_prod_assum instance in
+    match class_of_constr (Environ.push_rel_context ctx env) sigma (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance tc info glob c
       | None -> user_err ?loc:g.CAst.loc
                          ~hdr:"declare_instance"
