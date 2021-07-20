@@ -14,16 +14,16 @@ open Constr
 type rule=
     Ax of constr
   | SymAx of constr
-  | Refl of term
+  | Refl of ATerm.t
   | Trans of proof*proof
   | Congr of proof*proof
   | Inject of proof*pconstructor*int*int
 and proof =
-    private {p_lhs:term;p_rhs:term;p_rule:rule}
+    private {p_lhs:ATerm.t;p_rhs:ATerm.t;p_rule:rule}
 
 (** Proof smart constructors *)
 
-val prefl:term -> proof
+val prefl:ATerm.t -> proof
 
 val pcongr: proof -> proof -> proof
 
@@ -31,10 +31,10 @@ val ptrans: proof -> proof -> proof
 
 val psym: proof -> proof
 
-val pax : (Ccalgo.term * Ccalgo.term) Ccalgo.Constrhash.t ->
+val pax : (ATerm.t * ATerm.t) Ccalgo.Constrhash.t ->
            Ccalgo.Constrhash.key -> proof
 
-val psymax :  (Ccalgo.term * Ccalgo.term) Ccalgo.Constrhash.t ->
+val psymax :  (ATerm.t * ATerm.t) Ccalgo.Constrhash.t ->
            Ccalgo.Constrhash.key -> proof
 
 val pinject :  proof -> pconstructor -> int -> int -> proof

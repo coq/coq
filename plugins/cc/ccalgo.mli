@@ -29,19 +29,31 @@ type cinfo =
      ci_arity: int;     (* # args *)
      ci_nhyps: int}     (* # projectable args *)
 
-type term =
-    Symb of constr
-  | Product of Sorts.t * Sorts.t
-  | Eps of Id.t
-  | Appli of term*term
-  | Constructor of cinfo (* constructor arity + nhyps *)
+type 'a term
+
+module ATerm :
+sig
+  type t
+  val proj : t -> t term
+  val make : t term -> t (* computes and caches constr and hash *)
+  val mkSymb : constr -> t
+  val mkProduct : (Sorts.t * Sorts.t) -> t
+  val mkEps : Id.t -> t
+  val mkAppli : (t * t) -> t
+  val mkConstructor : cinfo -> t
+
+  val equal : t -> t -> bool (* does not depend on cached values *)
+  val constr : t -> constr
+  val hash : t -> int
+  val nth_arg : t -> int -> t
+end
 
 module Constrhash : Hashtbl.S with type key = constr
-module Termhash : Hashtbl.S with type key = term
+module Termhash : Hashtbl.S with type key = ATerm.t
 
 
 type ccpattern =
-    PApp of term * ccpattern list
+    PApp of ATerm.t * ccpattern list
   | PVar of int * ccpattern list
 
 type rule=
@@ -98,13 +110,13 @@ type node =
      mutable cpath: int;
      mutable constructors: int PacMap.t;
      vertex:vertex;
-     term:term}
+     aterm:ATerm.t}
 
 type forest=
     {mutable max_size:int;
      mutable size:int;
      mutable map: node array;
-     axioms: (term*term) Constrhash.t;
+     axioms: (ATerm.t * ATerm.t) Constrhash.t;
      mutable epsilons: pa_constructor list;
      syms: int Termhash.t}
 
@@ -117,25 +129,21 @@ type explanation =
 
 type matching_problem
 
-val term_equal : term -> term -> bool
-
-val constr_of_term : term -> constr
-
 val debug_congruence : CDebug.t
 
 val forest : state -> forest
 
-val axioms : forest -> (term * term) Constrhash.t
+val axioms : forest -> (ATerm.t * ATerm.t) Constrhash.t
 
 val epsilons : forest -> pa_constructor list
 
 val empty : int -> Goal.goal Evd.sigma -> state
 
-val add_term : state -> term -> int
+val add_aterm : state -> ATerm.t -> int
 
-val add_equality : state -> constr -> term -> term -> unit
+val add_equality : state -> constr -> ATerm.t -> ATerm.t -> unit
 
-val add_disequality : state -> from -> term -> term -> unit
+val add_disequality : state -> from -> ATerm.t -> ATerm.t -> unit
 
 val add_quant : state -> Id.t -> bool ->
   int * patt_kind * ccpattern * patt_kind * ccpattern -> unit
@@ -146,7 +154,7 @@ val find : forest -> int -> int
 
 val find_oldest_pac : forest -> int -> pa_constructor -> int
 
-val term : forest -> int -> term
+val aterm : forest -> int -> ATerm.t
 
 val get_constructor_info : forest -> int -> cinfo
 
