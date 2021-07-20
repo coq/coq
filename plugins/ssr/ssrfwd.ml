@@ -96,6 +96,13 @@ let basecuttac name t =
   Ssrcommon.tacTYPEOF t >>= fun _ty ->
   Tactics.apply t
 
+let basesufftac t =
+  let open Proofview.Notations in
+  Ssrcommon.tacMK_SSR_CONST "ssr_suff" >>= fun hd ->
+  let t = EConstr.mkApp (hd, [|t|]) in
+  Ssrcommon.tacTYPEOF t >>= fun _ty ->
+  Ssrcommon.applyn ~with_evars:true 3 t
+
 let evarcuttac name cs =
   let open Proofview.Notations in
   Ssrcommon.tacMK_SSR_CONST name >>= fun hd ->
@@ -330,7 +337,7 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   let ctac =
     Proofview.V82.tactic begin fun gl ->
     let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in let gl = pf_merge_uc uc gl in
-    Proofview.V82.of_tactic (basecuttac "ssr_suff" ty) gl
+    Proofview.V82.of_tactic (basesufftac ty) gl
   end in
   Tacticals.New.tclTHENS ctac [htac; Tacticals.New.tclTHEN (cleartac clr) (introstac (binders@simpl))]
 
