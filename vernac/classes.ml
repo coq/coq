@@ -28,11 +28,9 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 (*i*)
 
-let set_typeclass_transparency c local b =
-  (* XXX checking sections here is suspicious but matches historical (unintended?) behaviour *)
-  let locality = if local || Global.sections_are_opened () then Hints.Local else Hints.SuperGlobal in
+let set_typeclass_transparency ~locality c b =
   Hints.add_hints ~locality [typeclasses_db]
-    (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
+    (Hints.HintsTransparencyEntry (Hints.HintsReferences c, b))
 
 let classes_transparent_state () =
   try
@@ -265,7 +263,7 @@ let discharge_class (_,cl) =
 let rebuild_class cl =
   try
     let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
-      set_typeclass_transparency cst false false; cl
+      set_typeclass_transparency ~locality:Hints.Local [cst] false; cl
   with e when CErrors.noncritical e -> cl
 
 let class_input : typeclass -> obj =

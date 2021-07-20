@@ -13,6 +13,8 @@
 open Class_tactics
 open Stdarg
 open Tacarg
+open Tacred
+open Classes
 
 }
 
@@ -20,24 +22,26 @@ DECLARE PLUGIN "ltac_plugin"
 
 (** Options: depth, debug and transparency settings. *)
 
-{
-
-let set_transparency cl b =
-  List.iter (fun r ->
-    let gr = Smartlocate.global_with_alias r in
-    let ev = Tacred.evaluable_of_global_reference (Global.env ()) gr in
-      Classes.set_typeclass_transparency ev (Locality.make_section_locality None) b) cl
-
-}
-
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings CLASSIFIED AS SIDEFF
-| [ "Typeclasses" "Transparent" ne_reference_list(cl) ] -> {
-    set_transparency cl true }
+| #[ locality = Attributes.really_hint_locality ]
+  [ "Typeclasses" "Transparent" ne_reference_list(cl) ] -> {
+  let conv = List.map
+      (fun x -> evaluable_of_global_reference (Global.env ())
+          (Smartlocate.global_with_alias x))
+      cl
+  in
+  set_typeclass_transparency ~locality conv true }
 END
 
 VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings CLASSIFIED AS SIDEFF
-| [ "Typeclasses" "Opaque" ne_reference_list(cl) ] -> {
-    set_transparency cl false }
+| #[ locality = Attributes.really_hint_locality ]
+  [ "Typeclasses" "Opaque" ne_reference_list(cl) ] -> {
+  let conv = List.map
+      (fun x -> evaluable_of_global_reference (Global.env ())
+          (Smartlocate.global_with_alias x))
+      cl
+  in
+  set_typeclass_transparency ~locality conv false }
 END
 
 {
