@@ -74,8 +74,6 @@ val new_global : evar_map -> GlobRef.t -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a list -> (Id.t * 'a) list
 
-val safe_evar_value : evar_map -> Constr.existential -> Constr.constr option
-
 (** {6 Evars/Metas switching...} *)
 
 val non_instantiated : evar_map -> evar_info Evar.Map.t
@@ -141,6 +139,8 @@ val occur_evar_upto : evar_map -> Evar.t -> constr -> bool
 val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
 
 (***********************************************************)
+
+val create_clos_infos : env -> evar_map -> CClosure.RedFlags.reds -> CClosure.clos_infos
 
 (** [flush_and_check_evars] raise [Uninstantiated_evar] if an evar remains
     uninstantiated; [nf_evar] leaves uninstantiated evars as is *)

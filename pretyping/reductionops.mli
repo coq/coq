@@ -171,8 +171,6 @@ val shrink_eta : Environ.env -> constr -> constr
 
 (** Various reduction functions *)
 
-val safe_evar_value : evar_map -> Constr.existential -> Constr.constr option
-
 val beta_applist : evar_map -> constr * constr list -> constr
 
 val hnf_prod_app     : env ->  evar_map -> constr -> constr -> constr

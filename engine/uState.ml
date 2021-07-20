@@ -130,7 +130,12 @@ let univ_entry ~poly uctx =
 
 let of_context_set local = { empty with local }
 
+type universe_opt_subst = UnivSubst.universe_opt_subst
+
 let subst uctx = uctx.univ_variables
+
+let nf_universes uctx c =
+  UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (subst uctx) c
 
 let ugraph uctx = uctx.universes
 
@@ -730,3 +735,9 @@ let universe_of_name uctx s =
 let pr_weak prl {weak_constraints=weak} =
   let open Pp in
   prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
+
+let pr_universe_body = function
+  | None -> mt ()
+  | Some v -> str" := " ++ Univ.Universe.pr v
+
+let pr_universe_opt_subst = Univ.LMap.pr pr_universe_body

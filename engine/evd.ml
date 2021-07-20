@@ -1480,28 +1480,24 @@ module MiniEConstr = struct
 
   type t = econstr
 
-  let safe_evar_value sigma ev =
-    try Some (existential_value sigma ev)
-    with NotInstantiatedEvar | Not_found -> None
-
   let rec whd_evar sigma c =
     match Constr.kind c with
     | Evar ev ->
-      begin match safe_evar_value sigma ev with
+      begin match existential_opt_value sigma ev with
         | Some c -> whd_evar sigma c
         | None -> c
       end
     | App (f, args) when isEvar f ->
       (* Enforce smart constructor invariant on applications *)
       let ev = destEvar f in
-      begin match safe_evar_value sigma ev with
+      begin match existential_opt_value sigma ev with
         | None -> c
         | Some f -> whd_evar sigma (mkApp (f, args))
       end
     | Cast (c0, k, t) when isEvar c0 ->
       (* Enforce smart constructor invariant on casts. *)
       let ev = destEvar c0 in
-      begin match safe_evar_value sigma ev with
+      begin match existential_opt_value sigma ev with
         | None -> c
         | Some c -> whd_evar sigma (mkCast (c, k, t))
       end
@@ -1516,22 +1512,40 @@ module MiniEConstr = struct
   let unsafe_to_constr_array v = v
   let unsafe_eq = Refl
 
-  let to_constr ?(abort_on_undefined_evars=true) sigma c =
-    let evar_value =
-      if not abort_on_undefined_evars then fun ev -> safe_evar_value sigma ev
-      else fun ev ->
-        match safe_evar_value sigma ev with
-        | Some _ as v -> v
-        | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
-    in
+  let to_constr_nocheck sigma c =
+    let evar_value ev = existential_opt_value sigma ev in
     UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
 
+  let to_constr_gen sigma c =
+    let saw_evar = ref false in
+    let evar_value ev =
+      let v = existential_opt_value sigma ev in
+      saw_evar := !saw_evar || Option.is_empty v;
+      v
+    in
+    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c in
+    let saw_evar = if not !saw_evar then false
+      else
+        let exception SawEvar in
+        let rec iter c = match Constr.kind c with
+          | Evar _ -> raise SawEvar
+          | _ -> Constr.iter iter c
+        in
+        try iter c; false with SawEvar -> true
+    in
+    saw_evar, c
+
+  let to_constr ?(abort_on_undefined_evars=true) sigma c =
+    if not abort_on_undefined_evars then to_constr_nocheck sigma c
+    else
+      let saw_evar, c = to_constr_gen sigma c in
+      if saw_evar
+      then anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term");
+      c
+
   let to_constr_opt sigma c =
-    let evar_value ev = Some (existential_value sigma ev) in
-    try
-      Some (UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c)
-    with NotInstantiatedEvar ->
-      None
+    let saw_evar, c = to_constr_gen sigma c in
+    if saw_evar then None else Some c
 
   let of_named_decl d = d
   let unsafe_to_named_decl d = d

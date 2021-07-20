@@ -10,7 +10,6 @@
 
 open Sorts
 open Util
-open Pp
 open Constr
 open Univ
 
@@ -123,9 +122,3 @@ let nf_evars_and_universes_opt_subst f subst =
       else mkArray (u',elems',def',ty')
     | _ -> Constr.map aux c
   in aux
-
-let pr_universe_body = function
-  | None -> mt ()
-  | Some v -> str" := " ++ Univ.Universe.pr v
-
-let pr_universe_opt_subst = Univ.LMap.pr pr_universe_body
