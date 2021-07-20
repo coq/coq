@@ -1,5 +1,0 @@
-- **Fixed:**
-  Incorrect de Bruijn index handling in vernac class decleration, preventing users from marking existing instances of existing classes which are primitive projections.
-  (`#14664 <https://github.com/coq/coq/pull/14664>`_,
-  fixes `#14652 <https://github.com/coq/coq/issues/14652>`_,
-  by Ali Caglayan and Hugo Herbelin).
