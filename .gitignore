@@ -89,6 +89,7 @@ test-suite/output/*.out.real
 test-suite/oUnit-anon.cache
 test-suite/redirect_test.out
 test-suite/unit-tests/**/*.test
+test-suite/ide/fake_ide.exe
 
 # documentation
 
