@@ -29,12 +29,16 @@ val to_hex_string : t -> string
 (** Print a float as a decimal value. The printing is not exact (the
  * real value printed is not always the given floating-point value),
  * however printing is precise enough that forall float [f],
- * [of_string (to_decimal_string f) = f].  *)
+ * [of_string (to_decimal_string f) = f]. *)
 val to_string : t -> string
 
 val compile : t -> string
 
 val of_float : float -> t
+
+(** All NaNs are normalized to [Stdlib.nan].
+ * @since 8.15 *)
+val to_float : t -> float
 
 (** Return [true] for "-", [false] for "+". *)
 val sign : t -> bool

@@ -43,6 +43,8 @@ let compile f =
 
 let of_float f = f
 
+let to_float f = if is_nan f then nan else f
+
 let sign f = copysign 1. f < 0.
 
 let opp = ( ~-. )
