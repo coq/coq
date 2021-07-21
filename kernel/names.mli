@@ -702,6 +702,8 @@ module GlobRef : sig
 
   val equal : t -> t -> bool
 
+  val is_bound : t -> bool
+
   include QNameS with type t := t
 
   module Set_env : CSig.SetS with type elt = t
