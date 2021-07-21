@@ -333,7 +333,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
       else
         (* In the regular case, all universes are [> Set] *)
         push_context_set ~strict:true ctx env
-    | Polymorphic_entry (_, ctx) -> push_context ctx env
+    | Polymorphic_entry ctx -> push_context ctx env
   in
 
   (* Params *)
@@ -375,7 +375,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
       match mie.mind_entry_universes with
       | Monomorphic_entry _ ->
         CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
-      | Polymorphic_entry (_,uctx) ->
+      | Polymorphic_entry uctx ->
         let univs = Instance.to_array @@ UContext.instance uctx in
         let univs = Array.map2 (fun a b -> a,b) univs variances in
         let univs = match sec_univs with

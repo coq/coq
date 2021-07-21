@@ -198,7 +198,9 @@ let constraints_for ~kept g = G.constraints_for ~kept:(LSet.remove Level.sprop k
 
 let check_subtype ~lbound univs ctxT ctx =
   if AUContext.size ctxT == AUContext.size ctx then
-    let (inst, cst) = UContext.dest (AUContext.repr ctx) in
+    let uctx = AUContext.repr ctx in
+    let inst = UContext.instance uctx in
+    let cst = UContext.constraints uctx in
     let cstT = UContext.constraints (AUContext.repr ctxT) in
     let push accu v = add_universe v ~lbound ~strict:false accu in
     let univs = Array.fold_left push univs (Instance.to_array inst) in

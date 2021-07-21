@@ -384,11 +384,11 @@ let check_trivial_variances variances =
 let variance_of_entry ~cumulative ~variances uctx =
   match uctx with
   | Monomorphic_entry _ -> check_trivial_variances variances; None
-  | Polymorphic_entry (nas,_) ->
+  | Polymorphic_entry uctx ->
     if not cumulative then begin check_trivial_variances variances; None end
     else
       let lvs = Array.length variances in
-      let lus = Array.length nas in
+      let lus = Univ.UContext.size uctx in
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 

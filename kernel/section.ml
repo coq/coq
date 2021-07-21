@@ -27,7 +27,7 @@ type 'a t = {
   context : int;
   (** Length of the named context suffix that has been introduced locally *)
   mono_universes : ContextSet.t;
-  poly_universes : Name.t array * UContext.t;
+  poly_universes : UContext.t;
   (** Universes local to the section *)
   all_poly_univs : Univ.Level.t array;
   (** All polymorphic universes, including from previous sections. *)
@@ -59,18 +59,18 @@ let add_emap e v (cmap, imap) = match e with
 let push_local sec =
   { sec with context = sec.context + 1 }
 
-let push_context (nas, ctx) sec =
+let push_context ctx sec =
   if UContext.is_empty ctx then sec
   else
-    let (snas, sctx) = sec.poly_universes in
-    let poly_universes = (Array.append snas nas, UContext.union sctx ctx) in
+    let sctx = sec.poly_universes in
+    let poly_universes = UContext.union sctx ctx in
     let all_poly_univs =
       Array.append sec.all_poly_univs (Instance.to_array @@ UContext.instance ctx)
     in
     { sec with poly_universes; all_poly_univs; has_poly_univs = true }
 
 let rec is_polymorphic_univ u sec =
-  let (_, uctx) = sec.poly_universes in
+  let uctx = sec.poly_universes in
   let here = Array.exists (fun u' -> Level.equal u u') (Instance.to_array (UContext.instance uctx)) in
   here || Option.cata (is_polymorphic_univ u) false sec.prev
 
@@ -90,7 +90,7 @@ let open_section ~custom prev =
     prev;
     context = 0;
     mono_universes = ContextSet.empty;
-    poly_universes = ([||], UContext.empty);
+    poly_universes = UContext.empty;
     all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) [| |] prev;
     has_poly_univs = Option.cata has_poly_univs false prev;
     entries = [];
@@ -101,8 +101,6 @@ let open_section ~custom prev =
 let close_section sec =
   sec.prev, sec.entries, sec.mono_universes, sec.custom
 
-let make_decl_univs (nas,uctx) = abstract_universes nas uctx
-
 let push_global ~poly e sec =
   if has_poly_univs sec && not poly
   then CErrors.user_err
@@ -111,7 +109,7 @@ let push_global ~poly e sec =
   else
     { sec with
       entries = e :: sec.entries;
-      data = add_emap e (make_decl_univs sec.poly_universes) sec.data;
+      data = add_emap e (abstract_universes sec.poly_universes) sec.data;
     }
 
 let push_constant ~poly con s = push_global ~poly (SecDefinition con) s

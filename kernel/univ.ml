@@ -944,30 +944,35 @@ let eq_puniverses f (x, u) (y, u') =
 
 module UContext =
 struct
-  type t = Instance.t constrained
+  type t = Names.Name.t array * Instance.t constrained
 
-  let make x = x
+  let make names (univs, _ as x) =
+    assert (Array.length names = Array.length univs);
+    (names, x)
 
   (** Universe contexts (variables as a list) *)
-  let empty = (Instance.empty, Constraint.empty)
-  let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
+  let empty = ([||], (Instance.empty, Constraint.empty))
+  let is_empty (_, (univs, cst)) = Instance.is_empty univs && Constraint.is_empty cst
 
-  let pr prl ?variance (univs, cst as ctx) =
+  let pr prl ?variance (_, (univs, cst) as ctx) =
     if is_empty ctx then mt() else
       h (Instance.pr prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraint.pr prl cst))
 
-  let hcons (univs, cst) =
-    (Instance.hcons univs, hcons_constraints cst)
+  let hcons (names, (univs, cst)) =
+    (Array.map Names.Name.hcons names, (Instance.hcons univs, hcons_constraints cst))
 
-  let instance (univs, _cst) = univs
-  let constraints (_univs, cst) = cst
+  let names (names, _) = names
+  let instance (_, (univs, _cst)) = univs
+  let constraints (_, (_univs, cst)) = cst
 
-  let union (univs, cst) (univs', cst') =
-    Instance.append univs univs', Constraint.union cst cst'
+  let union (na, (univs, cst)) (na', (univs', cst')) =
+    Array.append na na', (Instance.append univs univs', Constraint.union cst cst')
 
-  let dest x = x
+  let size (_,(x,_)) = Instance.length x
 
-  let size (x,_) = Instance.length x
+  let refine_names names' (names, x) =
+    let merge_names = Array.map2 Names.(fun old refined -> match refined with Anonymous -> old | Name _ -> refined) in
+    (merge_names names names', x)
 
 end
 
@@ -981,7 +986,7 @@ struct
   let make names csts : t = names, csts
 
   let repr (inst, cst) =
-    (Array.init (Array.length inst) (fun i -> Level.var i), cst)
+    (inst, (Array.init (Array.length inst) (fun i -> Level.var i), cst))
 
   let pr f ?variance ctx = UContext.pr f ?variance (repr ctx)
 
@@ -1061,10 +1066,11 @@ struct
   let sort_levels a =
     Array.sort Level.compare a; a
 
-  let to_context (ctx, cst) =
-    (Instance.of_array (sort_levels (Array.of_list (LSet.elements ctx))), cst)
+  let to_context f (ctx, cst) =
+    let inst = Instance.of_array (sort_levels (Array.of_list (LSet.elements ctx))) in
+    (f inst, (inst, cst))
 
-  let of_context (ctx, cst) =
+  let of_context (_, (ctx, cst)) =
     (Instance.levels ctx, cst)
 
   let pr prl (univs, cst as ctx) =
@@ -1162,12 +1168,13 @@ let make_inverse_instance_subst i =
 let make_abstract_instance (ctx, _) =
   Array.init (Array.length ctx) (fun i -> Level.var i)
 
-let abstract_universes nas ctx =
-  let instance = UContext.instance ctx in
+let abstract_universes uctx =
+  let nas = UContext.names uctx in
+  let instance = UContext.instance uctx in
   let () = assert (Int.equal (Array.length nas) (Instance.length instance)) in
   let subst = make_instance_subst instance in
   let cstrs = subst_univs_level_constraints subst
-      (UContext.constraints ctx)
+      (UContext.constraints uctx)
   in
   let ctx = (nas, cstrs) in
   instance, ctx

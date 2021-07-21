@@ -421,7 +421,7 @@ let declare_variable_core ~name ~kind d =
       let () = export_side_effects eff in
       let poly, entry_ui = match de.proof_entry_universes with
         | Entries.Monomorphic_entry uctx -> false, uctx
-        | Entries.Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
+        | Entries.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
       in
       let univs = Univ.ContextSet.union body_ui entry_ui in
       (* We must declare the universe constraints before type-checking the
@@ -918,7 +918,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     definition_message obl.obl_name;
     let body =
       match univs with
-      | Entries.Polymorphic_entry (_, uctx) ->
+      | Entries.Polymorphic_entry uctx ->
         Some (DefinedObl (constant, Univ.UContext.instance uctx))
       | Entries.Monomorphic_entry _ ->
         Some
@@ -1764,7 +1764,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
   let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = match const.proof_entry_universes with
   | Entries.Monomorphic_entry _ -> EConstr.EInstance.empty
-  | Entries.Polymorphic_entry (_, ctx) ->
+  | Entries.Polymorphic_entry ctx ->
     (* We mimic what the kernel does, that is ensuring that no additional
        constraints appear in the body of polymorphic constants. Ideally this
        should be enforced statically. *)
@@ -2053,7 +2053,7 @@ let save_lemma_admitted_delayed ~pm ~proof =
   let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
   let poly = match proof_entry_universes with
     | Entries.Monomorphic_entry _ -> false
-    | Entries.Polymorphic_entry (_, _) -> true in
+    | Entries.Polymorphic_entry _ -> true in
   let univs = UState.univ_entry ~poly uctx in
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
   finish_admitted ~pm ~uctx ~pinfo ~sec_vars ~univs

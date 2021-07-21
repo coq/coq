@@ -63,8 +63,8 @@ let universes_context = function
 let abstract_universes = function
   | Entries.Monomorphic_entry ctx ->
     Univ.empty_level_subst, Monomorphic ctx
-  | Entries.Polymorphic_entry (nas, ctx) ->
-    let (inst, auctx) = Univ.abstract_universes nas ctx in
+  | Entries.Polymorphic_entry uctx ->
+    let (inst, auctx) = Univ.abstract_universes uctx in
     let inst = Univ.make_instance_subst inst in
     (inst, Polymorphic auctx)
 

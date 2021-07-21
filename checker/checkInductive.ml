@@ -38,7 +38,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       | Some ctx -> ctx.template_context
       in
       Monomorphic_entry univs
-    | Polymorphic auctx -> Polymorphic_entry (AUContext.names auctx, AUContext.repr auctx)
+    | Polymorphic auctx -> Polymorphic_entry (AUContext.repr auctx)
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity = match ind.mind_arity with

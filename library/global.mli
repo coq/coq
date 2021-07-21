@@ -47,7 +47,7 @@ val sprop_allowed : unit -> bool
 
 val push_named_assum : (Id.t * Constr.types) -> unit
 val push_named_def   : (Id.t * Entries.section_def_entry) -> unit
-val push_section_context : (Name.t array * Univ.UContext.t) -> unit
+val push_section_context : Univ.UContext.t -> unit
 
 val export_private_constants :
   Safe_typing.private_constants ->

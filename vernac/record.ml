@@ -432,8 +432,8 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let uinstance = match univs with
-    | Polymorphic_entry (_, ctx) -> Univ.UContext.instance ctx
-    | Monomorphic_entry ctx -> Univ.Instance.empty
+    | Monomorphic_entry _ -> Univ.Instance.empty
+    | Polymorphic_entry uctx -> Univ.UContext.instance uctx
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
   let r = mkIndU (indsp,uinstance) in
@@ -556,10 +556,8 @@ let declare_structure ~cumulative finite ~ubind ~univs ~variances paramimpls par
   let nparams = List.length params in
   let poly, ctx =
     match univs with
-    | Monomorphic_entry ctx ->
-      false, Monomorphic_entry Univ.ContextSet.empty
-    | Polymorphic_entry (nas, ctx) ->
-      true, Polymorphic_entry (nas, ctx)
+    | Monomorphic_entry _ -> false, Monomorphic_entry Univ.ContextSet.empty
+    | Polymorphic_entry uctx -> true, Polymorphic_entry uctx
   in
   let binder_name =
     match name with
@@ -623,8 +621,8 @@ let build_class_constant ~univs ~rdata field implfs params paramimpls coers bind
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let inst, univs = match univs with
-    | Polymorphic_entry (_, uctx) -> Univ.UContext.instance uctx, univs
     | Monomorphic_entry _ -> Univ.Instance.empty, Monomorphic_entry Univ.ContextSet.empty
+    | Polymorphic_entry uctx -> Univ.UContext.instance uctx, univs
   in
   let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu)
@@ -716,8 +714,8 @@ let declare_class def ~cumulative ~ubind ~univs ~variances id idbuild paramimpls
   in
   let univs, params, fields =
     match univs with
-    | Polymorphic_entry (nas, univs) ->
-      let usubst, auctx = Univ.abstract_universes nas univs in
+    | Polymorphic_entry uctx ->
+      let usubst, auctx = Univ.abstract_universes uctx in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in

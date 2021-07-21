@@ -34,7 +34,7 @@ let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
   ()
 
 let instance_of_univ_entry = function
-  | Polymorphic_entry (_, univs) -> Univ.UContext.instance univs
+  | Polymorphic_entry univs -> Univ.UContext.instance univs
   | Monomorphic_entry _ -> Univ.Instance.empty
 
 let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name} =
@@ -83,7 +83,7 @@ let next_univs =
   | Monomorphic_entry _, _ -> empty_univs
 
 let context_set_of_entry = function
-  | Polymorphic_entry (_,uctx) -> Univ.ContextSet.of_context uctx
+  | Polymorphic_entry uctx -> Univ.ContextSet.of_context uctx
   | Monomorphic_entry uctx -> uctx
 
 let declare_assumptions ~poly ~scope ~kind univs nl l =
@@ -198,7 +198,7 @@ let context_insection sigma ~poly ctx =
         declare_variable false ~kind t [] impl (CAst.make name)
       | name, Some b, t, impl ->
         (* We need to get poly right for check_same_poly *)
-        let univs = if poly then Polymorphic_entry ([| |], Univ.UContext.empty)
+        let univs = if poly then Polymorphic_entry Univ.UContext.empty
           else Monomorphic_entry Univ.ContextSet.empty
         in
         let entry = Declare.definition_entry ~univs ~types:t b in
