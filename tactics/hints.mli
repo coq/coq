@@ -14,7 +14,6 @@ open EConstr
 open Environ
 open Evd
 open Tactypes
-open Clenv
 open Typeclasses
 
 (** {6 General functions. } *)
@@ -39,12 +38,9 @@ type 'a hint_ast =
   | Unfold_nth of Tacred.evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument       (* Hint Extern *)
 
-type hint = private {
-  hint_term : constr;
-  hint_type : types;
-  hint_uctx : Univ.ContextSet.t option;
-  hint_clnv : clausenv;
-}
+type hint
+
+val hint_as_term : hint -> Univ.ContextSet.t option * constr
 
 type 'a hints_path_atom_gen =
   | PathHints of 'a list
