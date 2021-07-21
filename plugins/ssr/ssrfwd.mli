@@ -31,6 +31,8 @@ val havetac : ist ->
 
 val basecuttac : string -> EConstr.t -> unit Proofview.tactic
 
+val basesufftac : EConstr.t -> unit Proofview.tactic
+
 val wlogtac :
   Ltac_plugin.Tacinterp.interp_sign ->
   ((Ssrast.ssrclear option * Ssrast.ssripats) * 'a) * 'b ->
