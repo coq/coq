@@ -10,10 +10,7 @@
 
 open Vernacexpr
 
-(* XXX Should move to a common library *)
-let debug = false
-let vernac_pperr_endline pp =
-  if debug then Format.eprintf "@[%a@]@\n%!" Pp.pp_with (pp ()) else ()
+let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
 (* EJGA: We may remove this, only used twice below *)
 let vernac_require_open_lemma ~stack f =
