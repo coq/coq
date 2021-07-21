@@ -1119,11 +1119,12 @@ simple_tactic: [
 | REPLACE "subst" LIST1 hyp
 | WITH "subst" LIST0 hyp
 | DELETE "subst"
-| DELETE "congruence"
-| DELETE "congruence" natural
-| DELETE "congruence" "with" LIST1 constr
-| REPLACE "congruence" natural "with" LIST1 constr
+| DELETE "congruence" OPT natural
+| REPLACE "congruence" OPT natural "with" LIST1 constr
 | WITH "congruence" OPT natural OPT ( "with" LIST1 constr )
+| DELETE "simple" "congruence" OPT natural
+| REPLACE "simple" "congruence" OPT natural "with" LIST1 constr
+| WITH "simple" "congruence" OPT natural OPT ( "with" LIST1 constr )
 | DELETE "show" "ltac" "profile"
 | REPLACE "show" "ltac" "profile" "cutoff" integer
 | WITH "show" "ltac" "profile" OPT [ "cutoff" integer | string ]

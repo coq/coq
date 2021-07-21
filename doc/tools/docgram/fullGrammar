@@ -1465,10 +1465,10 @@ binder_interp: [
 
 simple_tactic: [
 | "btauto"
-| "congruence"
-| "congruence" natural
-| "congruence" "with" LIST1 constr
-| "congruence" natural "with" LIST1 constr
+| "congruence" OPT natural
+| "congruence" OPT natural "with" LIST1 constr
+| "simple" "congruence" OPT natural
+| "simple" "congruence" OPT natural "with" LIST1 constr
 | "f_equal"
 | "firstorder" OPT tactic firstorder_using
 | "firstorder" OPT tactic "with" LIST1 preident
