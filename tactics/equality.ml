@@ -1712,15 +1712,6 @@ user = raise user error specific to rewrite
 (**********************************************************************)
 (* Substitutions tactics (JCF) *)
 
-let regular_subst_tactic = ref true
-
-let () =
-  declare_bool_option
-    { optdepr  = true;
-      optkey   = ["Regular";"Subst";"Tactic"];
-      optread  = (fun () -> !regular_subst_tactic);
-      optwrite = (:=) regular_subst_tactic }
-
 let restrict_to_eq_and_identity eq = (* compatibility *)
   if not (Constr.isRefX (lib_ref "core.eq.type") eq) &&
     not (Constr.isRefX (lib_ref "core.identity.type") eq)
@@ -1789,8 +1780,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
       if not (Id.equal id hyp)
          && List.exists (fun y -> local_occur_var_in_decl sigma y dcl) deps
       then
-        let id_dest = if !regular_subst_tactic then dest else MoveLast in
-        (dest,id::deps,(id_dest,id)::allhyps)
+        (dest,id::deps,(dest,id)::allhyps)
       else
         (MoveBefore id,deps,allhyps))
       hyps
@@ -1860,64 +1850,36 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
       warn_deprecated_simple_subst ()
   in
 
-  if !regular_subst_tactic then
-
-    (* Find hypotheses to treat in linear time *)
-    let process hyp =
-      Proofview.Goal.enter begin fun gl ->
-      let env = Proofview.Goal.env gl in
-      let sigma = project gl in
-      let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
-      try
-        let lbeq,u,(_,x,y) = pf_apply find_eq_data_decompose gl c in
-        let u = EInstance.kind sigma u in
-        let eq = Constr.mkRef (lbeq.eq,u) in
-        if flags.only_leibniz then restrict_to_eq_and_identity eq;
-        match EConstr.kind sigma x, EConstr.kind sigma y with
-        | Var x, Var y when Id.equal x y ->
-            Proofview.tclUNIT ()
-        | Var x', _ when not (Termops.local_occur_var sigma x' y) &&
-                        not (is_evaluable env (EvalVarRef x')) &&
-                        is_non_indirectly_dependent_section_variable gl x' ->
-            subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
-        | _, Var y' when not (Termops.local_occur_var sigma y' x) &&
-                        not (is_evaluable env (EvalVarRef y')) &&
-                        is_non_indirectly_dependent_section_variable gl y' ->
-            subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
-        | _ ->
-            Proofview.tclUNIT ()
-      with Constr_matching.PatternMatchingFailure ->
-         Proofview.tclUNIT ()
-        end
-    in
+  (* Find hypotheses to treat in linear time *)
+  let process hyp =
     Proofview.Goal.enter begin fun gl ->
-      tclMAP process (List.rev (List.map NamedDecl.get_id (Proofview.Goal.hyps gl)))
-    end
-
-  else
-
-(* Old implementation, not able to manage configurations like a=b, a=t,
-   or situations like "a = S b, b = S a", or also accidentally unfolding
-   let-ins *)
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
-  let find_eq_data_decompose = pf_apply find_eq_data_decompose gl in
-  let test (_,c) =
+    let env = Proofview.Goal.env gl in
+    let sigma = project gl in
+    let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     try
-      let lbeq,u,(_,x,y) = find_eq_data_decompose c in
+      let lbeq,u,(_,x,y) = pf_apply find_eq_data_decompose gl c in
       let u = EInstance.kind sigma u in
       let eq = Constr.mkRef (lbeq.eq,u) in
       if flags.only_leibniz then restrict_to_eq_and_identity eq;
-      (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
-      if EConstr.eq_constr sigma x y then failwith "caught";
-      match EConstr.kind sigma x with Var x -> x | _ ->
-      match EConstr.kind sigma y with Var y -> y | _ -> failwith "caught"
-    with Constr_matching.PatternMatchingFailure -> failwith "caught" in
-  let test p = try Some (test p) with Failure _ -> None in
-  let hyps = pf_hyps_types gl in
-  let ids = List.map_filter test hyps in
-  let ids = List.uniquize ids in
-  subst_gen flags.rewrite_dependent_proof ids
+      match EConstr.kind sigma x, EConstr.kind sigma y with
+      | Var x, Var y when Id.equal x y ->
+          Proofview.tclUNIT ()
+      | Var x', _ when not (Termops.local_occur_var sigma x' y) &&
+                      not (is_evaluable env (EvalVarRef x')) &&
+                      is_non_indirectly_dependent_section_variable gl x' ->
+          subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
+      | _, Var y' when not (Termops.local_occur_var sigma y' x) &&
+                      not (is_evaluable env (EvalVarRef y')) &&
+                      is_non_indirectly_dependent_section_variable gl y' ->
+          subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
+      | _ ->
+          Proofview.tclUNIT ()
+    with Constr_matching.PatternMatchingFailure ->
+        Proofview.tclUNIT ()
+      end
+  in
+  Proofview.Goal.enter begin fun gl ->
+    tclMAP process (List.rev (List.map NamedDecl.get_id (Proofview.Goal.hyps gl)))
   end
 
 (* Rewrite the first assumption for which a condition holds
