@@ -84,7 +84,6 @@ VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
    }
 END
 
-(** Compatibility: typeclasses eauto has 8.5 and 8.6 modes *)
 TACTIC EXTEND typeclasses_eauto
  | [ "typeclasses" "eauto" "dfs" nat_or_var_opt(d) "with" ne_preident_list(l) ] ->
     { typeclasses_eauto ~depth:d ~strategy:Dfs l }
