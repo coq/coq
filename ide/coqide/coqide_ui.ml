@@ -29,7 +29,7 @@ let list_queries menu li =
 
 let init () =
   let theui = Printf.sprintf "<ui>\
-\n<menubar name='CoqIde MenuBar'>\
+\n<menubar name='CoqIDE MenuBar'>\
 \n  <menu action='File'>\
 \n    <menuitem action='New' />\
 \n    <menuitem action='Open' />\
@@ -149,7 +149,7 @@ let init () =
 \n    <menuitem name='Abt' action='About Coq' />\
 \n  </menu>\
 \n</menubar>\
-\n<toolbar name='CoqIde ToolBar'>\
+\n<toolbar name='CoqIDE ToolBar'>\
 \n  <toolitem action='Save' />\
 \n  <toolitem action='Close buffer' />\
 \n  <toolitem action='Forward' />\

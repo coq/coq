@@ -124,7 +124,7 @@ Section "Coq" Sec1
 
   ; Start Menu Entries
   SetOutPath "$INSTDIR"
-  CreateShortCut "$SMPROGRAMS\Coq\CoqIde.lnk" "$INSTDIR\bin\coqide.exe"
+  CreateShortCut "$SMPROGRAMS\Coq\CoqIDE.lnk" "$INSTDIR\bin\coqide.exe"
 
   ${registerExtension} "$INSTDIR\bin\coqide.exe" ".v" "Coq Script File"
 
@@ -212,7 +212,7 @@ Section "Uninstall"
 
 ;; Start Menu
   Delete "$SMPROGRAMS\Coq\Coq.lnk"
-  Delete "$SMPROGRAMS\Coq\CoqIde.lnk"
+  Delete "$SMPROGRAMS\Coq\CoqIDE.lnk"
   Delete "$SMPROGRAMS\Coq\Uninstall.lnk"
   Delete "$SMPROGRAMS\Coq\The Coq HomePage.url"
   Delete "$SMPROGRAMS\Coq\The Coq Standard Library.url"

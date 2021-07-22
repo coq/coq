@@ -1,6 +1,6 @@
-			CoqIde FAQ
+			CoqIDE FAQ
 
-Q0) What is CoqIde?
+Q0) What is CoqIDE?
 R0: A powerful graphical interface for Coq. See http://coq.inria.fr. for more informations.
 
 Q1) How to enable Emacs keybindings?
@@ -20,10 +20,10 @@ R4) Thanks to the Notation features in Coq, you just need to insert these
 Notation "∀ x : t, P" := (forall x:t, P) (at level 200, x ident).
 Notation "∃ x : t, P" := (exists x:t, P) (at level 200, x ident).
 ======================================================================
-Copy/Paste of these lines from this file will not work outside of CoqIde.
+Copy/Paste of these lines from this file will not work outside of CoqIDE.
 You need to load a file containing these lines or to enter the "∀" 
 using an input method (see Q5). To try it just use "Require utf8" from inside
-CoqIde. 
+CoqIDE. 
 To enable these notations automatically start coqide with
 	coqide -l utf8
 In the ide subdir of Coq library, you will find a sample utf8.v with some 
@@ -40,7 +40,7 @@ a module for LaTeX-like inputting.
 Q6) How to customize the shortcuts for menus?
 R6) Two solutions are offered:
   - Edit $XDG_CONFIG_HOME/coq/coqide.keys by hand or
-  - If your system allows it, from CoqIde, you may select a menu entry and press the 
+  - If your system allows it, from CoqIDE, you may select a menu entry and press the 
     desired shortcut. 
 
 Q7) What encoding should I use? What is this \x{iiii} in my file?

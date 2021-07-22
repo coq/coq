@@ -732,18 +732,18 @@ exception Ide of ide
 
 let set_ide ide msg = match ide, !prefs.coqide with
   | No, Some (Byte|Opt)
-  | Byte, Some Opt -> die (msg^":\n=> cannot build requested CoqIde")
+  | Byte, Some Opt -> die (msg^":\n=> cannot build requested CoqIDE")
   | _ ->
-    cprintf "%s:\n=> %s CoqIde will be built." msg (pr_ide ide);
+    cprintf "%s:\n=> %s CoqIDE will be built." msg (pr_ide ide);
     raise (Ide ide)
 
 let lablgtkdir = ref ""
 
-(** Which CoqIde is possible ? Which one is requested ?
+(** Which CoqIDE is possible ? Which one is requested ?
     This function also sets the lablgtkdir reference in case of success. *)
 
 let check_coqide () =
-  if !prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
+  if !prefs.coqide = Some No then set_ide No "CoqIDE manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = ""
   then set_ide No "LablGtk3 or LablGtkSourceView3 not found"
@@ -763,7 +763,7 @@ let coqide =
   try check_coqide ()
   with Ide Opt -> "opt" | Ide Byte -> "byte" | Ide No -> "no"
 
-(** System-specific CoqIde flags *)
+(** System-specific CoqIDE flags *)
 
 let idearchflags = ref ""
 let idearchfile = ref ""
@@ -1005,7 +1005,7 @@ let print_summary () =
     pr "  Lablgtk3 library in         : %s\n" (esc !lablgtkdir);
   if !idearchdef = "QUARTZ" then
     pr "  Mac OS integration is on\n";
-  pr "  CoqIde                      : %s\n" coqide;
+  pr "  CoqIDE                      : %s\n" coqide;
   pr "  Documentation               : %s\n"
     (if !prefs.withdoc then "All" else "None");
   pr "  Web browser                 : %s\n" browser;
@@ -1197,7 +1197,7 @@ let write_makefile f =
   pr "# Unix systems and no profiling: strip\n";
   pr "STRIP=%s\n\n" strip;
   pr "# LablGTK\n";
-  pr "# CoqIde (no/byte/opt)\n";
+  pr "# CoqIDE (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
   pr "IDEFLAGS=%s\n" !idearchflags;
   pr "IDEOPTCDEPS=%s\n" !idearchfile;
