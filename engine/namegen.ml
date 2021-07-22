@@ -212,7 +212,8 @@ let it_mkLambda_or_LetIn_name env sigma b hyps =
 (* Fresh names *)
 
 (* Introduce a mode where auto-generated names are mangled
-   to test dependence of scripts on auto-generated names *)
+   to test dependence of scripts on auto-generated names.
+   We also supply a version which only adds a prefix. *)
 
 let get_mangle_names =
   Goptions.declare_bool_option_and_ref
@@ -220,29 +221,48 @@ let get_mangle_names =
     ~key:["Mangle";"Names"]
     ~value:false
 
+let get_mangle_names_light =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Mangle";"Names";"Light"]
+    ~value:false
+
 let mangle_names_prefix =
   Goptions.declare_interpreted_string_option_and_ref
     ~depr:false
     ~key:["Mangle";"Names";"Prefix"]
-    ~value:(Id.of_string "_0")
+    ~value:("_")
     (fun x ->
+      Id.to_string
       (try
          Id.of_string x
        with
        | CErrors.UserError _ ->
-          CErrors.user_err Pp.(str ("Not a valid identifier: \"" ^ x ^ "\"."))
-      ) |> forget_subscript
+         CErrors.user_err Pp.(str ("Not a valid identifier: \"" ^ x ^ "\"."))
+      )
     )
-    (fun x -> Id.to_string x)
+    (fun x -> x)
 
-let mangle_id id = if get_mangle_names () then mangle_names_prefix () else id
+(** The name "foo" becomes "_0" if we get_mangle_names and "_foo" if
+    get_mangle_names_light is also set. Otherwise it is left alone. *)
+
+let mangle_id id =
+  let prfx = mangle_names_prefix () in
+  if get_mangle_names () then
+    if get_mangle_names_light () then
+      Id.of_string (prfx ^ Id.to_string id)
+    else Id.of_string (prfx ^ "0")
+  else id
 
 (* Looks for next "good" name by lifting subscript *)
 
-let next_ident_away_from id bad =
-  let id = mangle_id id in
+let next_ident_away_from_post_mangling id bad =
   let rec name_rec id = if bad id then name_rec (increment_subscript id) else id in
   name_rec id
+
+let next_ident_away_from id bad =
+  let id = mangle_id id in
+  next_ident_away_from_post_mangling id bad
 
 (* Restart subscript from x0 if name starts with xN, or x00 if name
    starts with x0N, etc *)
@@ -343,7 +363,7 @@ let next_global_ident_away id avoid =
 let next_ident_away id avoid =
   let id = mangle_id id in
   if Id.Set.mem id avoid then
-    next_ident_away_from (restart_subscript id) (fun id -> Id.Set.mem id avoid)
+    next_ident_away_from_post_mangling (restart_subscript id) (fun id -> Id.Set.mem id avoid)
   else id
 
 let next_name_away_with_default default na avoid =
