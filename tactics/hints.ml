@@ -1283,14 +1283,14 @@ let check_hint_locality = let open Goptions in function
   if Global.sections_are_opened () then
   CErrors.user_err Pp.(str
     "This command does not support the export attribute in sections.");
-| OptDefault ->
-  if not @@ Global.sections_are_opened () then
-    warn_deprecated_hint_without_locality ()
-| OptLocal -> ()
+| OptDefault | OptLocal -> ()
 
 let interp_locality = function
 | Goptions.OptDefault ->
-  if Global.sections_are_opened () then Local else SuperGlobal
+  if Global.sections_are_opened () then Local
+  else
+    let () = warn_deprecated_hint_without_locality () in
+    SuperGlobal
 | Goptions.OptGlobal -> SuperGlobal
 | Goptions.OptExport -> Export
 | Goptions.OptLocal -> Local
@@ -1441,8 +1441,30 @@ let prepare_hint check env init (sigma,c) =
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     (c', diff)
 
+let warn_non_local_section_hint =
+  CWarnings.create ~name:"non-local-section-hint" ~category:"automation"
+    (fun () -> strbrk "This hint is not local but depends on a section variable. It will disappear when the section is closed.")
+
+let is_notlocal = function
+| Goptions.OptLocal | Goptions.OptDefault -> false
+| Goptions.OptExport | Goptions.OptGlobal -> true
+
 let add_hints ~locality dbnames h =
-  let () = check_hint_locality locality in
+  let () = match h with
+  | HintsResolveEntry _ | HintsImmediateEntry _ | HintsUnfoldEntry _ | HintsExternEntry _ ->
+    check_hint_locality locality
+  | HintsTransparencyEntry ((HintsVariables | HintsConstants), _) -> ()
+  | HintsTransparencyEntry (HintsReferences grs, _) ->
+    let iter gr =
+      let gr = global_of_evaluable_reference gr in
+      if is_notlocal locality && isVarRef gr && Lib.is_in_section gr then warn_non_local_section_hint ()
+    in
+    List.iter iter grs
+  | HintsCutEntry p ->
+    if is_notlocal locality && is_section_path p then warn_non_local_section_hint ()
+  | HintsModeEntry (gr, _) ->
+    if is_notlocal locality && isVarRef gr && Lib.is_in_section gr then warn_non_local_section_hint ()
+  in
   let local = interp_locality locality in
   if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");

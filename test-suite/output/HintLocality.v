@@ -55,9 +55,9 @@ Create HintDb secdb.
 
 Section Sec.
 
-Fail #[global] Hint Cut [ _ ] : secdb.
-Fail #[global] Hint Mode S ! : secdb.
-Fail #[global] Hint Opaque id : secdb.
+#[global] Hint Cut [ _ ] : secdb.
+#[global] Hint Mode S ! : secdb.
+#[global] Hint Opaque id : secdb.
 Fail #[global] Remove Hints O : secdb.
 
 #[local] Hint Cut [ _ ] : secdb.
