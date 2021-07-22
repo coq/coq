@@ -1296,6 +1296,7 @@ let interp_locality = function
 | Goptions.OptLocal -> Local
 
 let remove_hints ~locality dbnames grs =
+  let () = check_hint_locality locality in
   let local = interp_locality locality in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
@@ -1441,6 +1442,7 @@ let prepare_hint check env init (sigma,c) =
     (c', diff)
 
 let add_hints ~locality dbnames h =
+  let () = check_hint_locality locality in
   let local = interp_locality locality in
   if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
