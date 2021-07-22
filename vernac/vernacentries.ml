@@ -791,7 +791,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags finite records =
+let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs) =
     let idbuild = match nameopt with
     | None -> Nameops.add_prefix "Build_" name.v
@@ -817,7 +817,7 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags finite recor
     CErrors.user_err (Pp.str "typing flags are not yet supported for records")
   | None ->
     let _ : _ list =
-      Record.definition_structure ~template udecl k ~cumulative ~poly finite records in
+      Record.definition_structure ~template udecl k ~cumulative ~poly ~primitive_proj finite records in
     ()
 
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
@@ -849,17 +849,48 @@ let private_ind =
   | Some () -> return true
   | None -> return false
 
+(** Flag governing use of primitive projections. Disabled by default. *)
+let primitive_flag =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Primitive";"Projections"]
+    ~value:false
+
+let primitive_proj =
+  let open Attributes in
+  let open Notations in
+  qualify_attribute "projections" (bool_attribute ~name:"primitive")
+  >>= function
+  | Some t -> return t
+  | None -> return (primitive_flag ())
+
 let vernac_inductive ~atts kind indl =
   let udecl, indl = extract_inductive_udecl indl in
   let is_defclass = match kind, indl with
   | Class _, [ ( id , bl , c , Constructors [l]), [] ] -> Some (id, bl, c, l)
   | _ -> None
   in
-  let ((template, (poly, cumulative)), private_ind), typing_flags = Attributes.(
+  let finite = finite_of_kind kind in
+  let is_record = function
+  | ((_ , _ , _ , RecordDecl _), _) -> true
+  | _ -> false
+  in
+  let is_constructor = function
+  | ((_ , _ , _ , Constructors _), _) -> true
+  | _ -> false
+  in
+  (* We only allow the #[projections(primitive)] attribute
+     for records. *)
+  let prim_proj_attr : bool Attributes.Notations.t =
+    if List.for_all is_record indl then primitive_proj
+    else Notations.return false
+  in
+  let (((template, (poly, cumulative)), private_ind), typing_flags), primitive_proj =
+    Attributes.(
       parse Notations.(
           template
           ++ polymorphic_cumulative ~is_defclass:(Option.has_some is_defclass)
-          ++ private_ind ++ typing_flags)
+          ++ private_ind ++ typing_flags ++ prim_proj_attr)
         atts)
   in
   if Dumpglob.dump () then
@@ -872,15 +903,6 @@ let vernac_inductive ~atts kind indl =
         | _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
 
-  let finite = finite_of_kind kind in
-  let is_record = function
-  | ((_ , _ , _ , RecordDecl _), _) -> true
-  | _ -> false
-  in
-  let is_constructor = function
-  | ((_ , _ , _ , Constructors _), _) -> true
-  | _ -> false
-  in
   if Option.has_some is_defclass then
     (* Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
@@ -892,7 +914,8 @@ let vernac_inductive ~atts kind indl =
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
-    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags finite [id, bl, c, None, [f]]
+    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags ~primitive_proj
+      finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
@@ -917,7 +940,7 @@ let vernac_inductive ~atts kind indl =
     in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags finite recordl
+    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
