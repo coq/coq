@@ -47,30 +47,28 @@ let add_instance_hint inst path ~locality info =
           (Hints.HintsResolveEntry
              [info, false, Hints.PathHints path, inst])) ()
 
-type instance_locality =
-| InstGlobal
-| InstExport
-| InstLocal
+(* short names without opening all Hints *)
+type locality = Hints.hint_locality = Local | Export | SuperGlobal
 
 type instance_obj = {
   inst_class : GlobRef.t;
   inst_info: hint_info;
   (* Sections where the instance should be redeclared,
      None for discard, Some 0 for none. *)
-  inst_global: instance_locality;
+  inst_global: Hints.hint_locality;
   inst_impl: GlobRef.t;
 }
 
 let add_instance_base inst =
   let locality = match inst.inst_global with
-  | InstLocal -> Goptions.OptLocal
-  | InstGlobal ->
+  | Local -> Goptions.OptLocal
+  | SuperGlobal ->
     (* i.e. in a section, declare the hint as local since discharge is managed
        by rebuild_instance which calls again add_instance_hint; don't ask hints
        to take discharge into account itself *)
     if Global.sections_are_opened () then Goptions.OptLocal
     else Goptions.OptGlobal
-  | InstExport ->
+  | Export ->
     (* Same as above for export *)
     if Global.sections_are_opened () then Goptions.OptLocal
     else Goptions.OptExport
@@ -88,14 +86,14 @@ let perform_instance i =
 let cache_instance (_, inst) = perform_instance inst
 
 let load_instance _ (_, inst) = match inst.inst_global with
-| InstLocal -> assert false
-| InstGlobal -> perform_instance inst
-| InstExport -> ()
+| Local -> assert false
+| SuperGlobal -> perform_instance inst
+| Export -> ()
 
 let open_instance i (_, inst) = match inst.inst_global with
-| InstLocal -> assert false
-| InstGlobal -> perform_instance inst
-| InstExport -> if Int.equal i 1 then perform_instance inst
+| Local -> assert false
+| SuperGlobal -> perform_instance inst
+| Export -> if Int.equal i 1 then perform_instance inst
 
 let subst_instance (subst, inst) =
   { inst with
@@ -104,8 +102,8 @@ let subst_instance (subst, inst) =
 
 let discharge_instance (_, inst) =
   match inst.inst_global with
-  | InstLocal -> None
-  | InstGlobal | InstExport ->
+  | Local -> None
+  | SuperGlobal | Export ->
     assert (not (isVarRef inst.inst_impl));
     Some inst
 
@@ -114,8 +112,8 @@ let rebuild_instance inst =
   inst
 
 let classify_instance inst = match inst.inst_global with
-| InstLocal -> Dispose
-| InstGlobal | InstExport -> Substitute inst
+| Local -> Dispose
+| SuperGlobal | Export -> Substitute inst
 
 let instance_input : instance_obj -> obj =
   declare_object
@@ -142,19 +140,19 @@ let warn_deprecated_instance_without_locality =
 let add_instance cl info glob impl =
   let global = match glob with
   | Goptions.OptDefault ->
-    if Global.sections_are_opened () then InstLocal
+    if Global.sections_are_opened () then Local
     else
       let () = warn_deprecated_instance_without_locality () in
-      InstGlobal
+      SuperGlobal
   | Goptions.OptGlobal ->
     if Global.sections_are_opened () && isVarRef impl then
       CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
-    else InstGlobal
-  | Goptions.OptLocal -> InstLocal
+    else SuperGlobal
+  | Goptions.OptLocal -> Local
   | Goptions.OptExport ->
     if Global.sections_are_opened () && isVarRef impl then
       CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
-    else InstExport
+    else Export
   in
   let i = {
     inst_class = cl.cl_impl;
