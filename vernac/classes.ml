@@ -598,8 +598,7 @@ let new_instance_common ~program_mode ?generalize env instid ctx cl =
   let env' = push_rel_context ctx env in
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
 
-let new_instance_interactive ?(locality=Goptions.OptLocal)
-    ~poly instid ctx cl
+let new_instance_interactive ~locality ~poly instid ctx cl
     ?generalize ?(tac:unit Proofview.tactic option) ?hook
     pri opt_props =
   let env = Global.env() in
@@ -608,9 +607,7 @@ let new_instance_interactive ?(locality=Goptions.OptLocal)
   id, do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly
     cty k u ctx ctx' pri decl imps subst id opt_props
 
-let new_instance_program ?(locality=Goptions.OptLocal) ~pm
-    ~poly instid ctx cl opt_props
-    ?generalize ?hook pri =
+let new_instance_program ~locality ~pm ~poly instid ctx cl opt_props ?generalize ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:true ?generalize env instid ctx cl in
@@ -619,9 +616,7 @@ let new_instance_program ?(locality=Goptions.OptLocal) ~pm
       cty k u ctx ctx' pri decl imps subst id opt_props in
   pm, id
 
-let new_instance ?(locality=Goptions.OptLocal)
-    ~poly instid ctx cl props
-    ?generalize ?hook pri =
+let new_instance ~locality ~poly instid ctx cl props ?generalize ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:false ?generalize env instid ctx cl in
@@ -629,7 +624,7 @@ let new_instance ?(locality=Goptions.OptLocal)
     cty k u ctx ctx' pri decl imps subst id props;
   id
 
-let declare_new_instance ?(locality=Goptions.OptLocal) ~program_mode ~poly instid ctx cl pri =
+let declare_new_instance ~locality ~program_mode ~poly instid ctx cl pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =

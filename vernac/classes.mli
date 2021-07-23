@@ -26,7 +26,7 @@ val existing_instance : Goptions.option_locality -> qualid -> Vernacexpr.hint_in
 (** globality, reference, optional priority and pattern information *)
 
 val new_instance_interactive
-  :  ?locality:Goptions.option_locality (** Not global by default. *)
+  : locality:Goptions.option_locality
   -> poly:bool
   -> name_decl
   -> local_binder_expr list
@@ -39,7 +39,7 @@ val new_instance_interactive
   -> Id.t * Declare.Proof.t
 
 val new_instance
-  :  ?locality:Goptions.option_locality (** Not global by default. *)
+  : locality:Goptions.option_locality
   -> poly:bool
   -> name_decl
   -> local_binder_expr list
@@ -51,7 +51,7 @@ val new_instance
   -> Id.t
 
 val new_instance_program
-  : ?locality:Goptions.option_locality (** Not global by default. *)
+  : locality:Goptions.option_locality
   -> pm:Declare.OblState.t
   -> poly:bool
   -> name_decl
@@ -64,7 +64,7 @@ val new_instance_program
   -> Declare.OblState.t * Id.t
 
 val declare_new_instance
-  : ?locality:Goptions.option_locality (** Not global by default. *)
+  : locality:Goptions.option_locality
   -> program_mode:bool
   -> poly:bool
   -> ident_decl
