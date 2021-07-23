@@ -26,7 +26,6 @@ CI_TARGETS= \
     ci-coqprime \
     ci-deriving \
     ci-elpi \
-    ci-engine_bench \
     ci-ext_lib \
     ci-equations \
     ci-fcsl_pcm \

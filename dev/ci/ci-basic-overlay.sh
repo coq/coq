@@ -212,11 +212,6 @@ project elpi "https://github.com/LPCIC/coq-elpi" "coq-master"
 project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "coq-master"
 
 ########################################################################
-# Engine-Bench
-########################################################################
-project engine_bench "https://github.com/mit-plv/engine-bench" "master"
-
-########################################################################
 # fcsl-pcm
 ########################################################################
 project fcsl_pcm "https://github.com/imdea-software/fcsl-pcm" "master"
