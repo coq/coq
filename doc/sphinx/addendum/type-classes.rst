@@ -408,7 +408,7 @@ Summary of the commands
    Shows the list of instances associated with the typeclass :token:`reference`.
 
 
-.. tacn:: typeclasses eauto {? bfs } {? @nat_or_var } {? with {+ @ident } }
+.. tacn:: typeclasses eauto {? {| bfs | dfs } } {? @nat_or_var } {? with {+ @ident } }
 
    This proof search tactic uses the resolution engine that is run
    implicitly during type checking. This tactic uses a different resolution
@@ -451,6 +451,12 @@ Summary of the commands
 
    + Use the :cmd:`Typeclasses eauto` command to customize the behavior of
      this tactic.
+
+   :n:`{| bfs | dfs }`
+     Specifies whether to use breadth-first search or depth-first search.
+     The default is depth-first search, which can be changed with the
+     :flag:`Typeclasses Iterative Deepening` flag.
+
 
    :n:`@nat_or_var`
      Specifies the maximum depth of the search.
@@ -632,10 +638,10 @@ Typeclasses eauto
      successfully applied tactics is printed. Debug mode can also
      be set with :flag:`Typeclasses Debug`.
 
-   ``dfs``, ``bfs``
-     Sets the search strategy to depth-first
-     search (the default) or breadth-first search. The search strategy
-     can also be set with :flag:`Typeclasses Iterative Deepening`.
+   :n:`{| bfs | dfs }`
+     Specifies whether to use breadth-first search or depth-first search.
+     The default is depth-first search, which can be changed with the
+     :flag:`Typeclasses Iterative Deepening` flag.
 
    :token:`natural`
      Sets the depth limit for the search. The limit can also be set with
