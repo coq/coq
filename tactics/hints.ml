@@ -1258,8 +1258,21 @@ let inAutoHint : hint_obj -> obj =
                     discharge_function = discharge_autohint;
                   }
 
-let make_hint ~local name action = {
-  hint_local = local;
+let check_locality locality =
+  let not_local what =
+    CErrors.user_err
+        Pp.(str "This command does not support the " ++
+            str what ++ str " attribute in sections.")
+  in
+  if Global.sections_are_opened () then
+    match locality with
+    | Local -> ()
+    | SuperGlobal -> not_local "global"
+    | Export -> not_local "export"
+
+let make_hint ~locality name action =
+  {
+  hint_local = locality;
   hint_name = name;
   hint_action = action;
 }
@@ -1274,34 +1287,17 @@ let warn_deprecated_hint_without_locality =
     #[local], #[global] and #[export] depending on your choice. For example: \
     \"#[export] Hint Unfold foo : bar.\"")
 
-let check_hint_locality = let open Goptions in function
-| OptGlobal ->
-  if Global.sections_are_opened () then
-  CErrors.user_err Pp.(str
-    "This command does not support the global attribute in sections.");
-| OptExport ->
-  if Global.sections_are_opened () then
-  CErrors.user_err Pp.(str
-    "This command does not support the export attribute in sections.");
-| OptDefault | OptLocal -> ()
-
-let interp_locality = function
-| Goptions.OptDefault ->
-  if Global.sections_are_opened () then Local
-  else
+let default_hint_locality () =
+  if Global.sections_are_opened () then Local else
     let () = warn_deprecated_hint_without_locality () in
     SuperGlobal
-| Goptions.OptGlobal -> SuperGlobal
-| Goptions.OptExport -> Export
-| Goptions.OptLocal -> Local
 
 let remove_hints ~locality dbnames grs =
-  let () = check_hint_locality locality in
-  let local = interp_locality locality in
+  let () = check_locality locality in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
-        let hint = make_hint ~local dbname (RemoveHints grs) in
+        let hint = make_hint ~locality dbname (RemoveHints grs) in
         Lib.add_anonymous_leaf (inAutoHint hint))
       dbnames
 
@@ -1309,7 +1305,7 @@ let remove_hints ~locality dbnames grs =
 (*                     The "Hint" vernacular command                      *)
 (**************************************************************************)
 
-let add_resolves env sigma clist ~local dbnames =
+let add_resolves env sigma clist ~locality dbnames =
   List.iter
     (fun dbname ->
       let r =
@@ -1336,56 +1332,56 @@ let add_resolves env sigma clist ~local dbnames =
       | _ -> ()
       in
       let () = if not !Flags.quiet then List.iter check r in
-      let hint = make_hint ~local dbname (AddHints r) in
+      let hint = make_hint ~locality dbname (AddHints r) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_unfolds l ~local dbnames =
+let add_unfolds l ~locality dbnames =
   List.iter
     (fun dbname ->
-      let hint = make_hint ~local dbname (AddHints (List.map make_unfold l)) in
+      let hint = make_hint ~locality dbname (AddHints (List.map make_unfold l)) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_cuts l ~local dbnames =
+let add_cuts l ~locality dbnames =
   List.iter
     (fun dbname ->
-      let hint = make_hint ~local dbname (AddCut l) in
+      let hint = make_hint ~locality dbname (AddCut l) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_mode l m ~local dbnames =
+let add_mode l m ~locality dbnames =
   List.iter
     (fun dbname ->
       let m' = make_mode l m in
-      let hint = make_hint ~local dbname (AddMode { gref = l; mode = m' }) in
+      let hint = make_hint ~locality dbname (AddMode { gref = l; mode = m' }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_transparency l b ~local dbnames =
+let add_transparency l b ~locality dbnames =
   List.iter
     (fun dbname ->
-      let hint = make_hint ~local dbname (AddTransparency { grefs = l; state = b }) in
+      let hint = make_hint ~locality dbname (AddTransparency { grefs = l; state = b }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_extern info tacast ~local dbname =
+let add_extern info tacast ~locality dbname =
   let pat = match info.hint_pattern with
   | None -> None
   | Some (_, pat) -> Some pat
   in
-  let hint = make_hint ~local dbname
+  let hint = make_hint ~locality dbname
                        (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
-let add_externs info tacast ~local dbnames =
-  List.iter (add_extern info tacast ~local) dbnames
+let add_externs info tacast ~locality dbnames =
+  List.iter (add_extern info tacast ~locality) dbnames
 
-let add_trivials env sigma l ~local dbnames =
+let add_trivials env sigma l ~locality dbnames =
   List.iter
     (fun dbname ->
       let l = List.map (fun (name, c) -> make_trivial env sigma ~name c) l in
-      let hint = make_hint ~local dbname (AddHints l) in
+      let hint = make_hint ~locality dbname (AddHints l) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
@@ -1446,13 +1442,13 @@ let warn_non_local_section_hint =
     (fun () -> strbrk "This hint is not local but depends on a section variable. It will disappear when the section is closed.")
 
 let is_notlocal = function
-| Goptions.OptLocal | Goptions.OptDefault -> false
-| Goptions.OptExport | Goptions.OptGlobal -> true
+| Local -> false
+| Export | SuperGlobal -> true
 
 let add_hints ~locality dbnames h =
   let () = match h with
   | HintsResolveEntry _ | HintsImmediateEntry _ | HintsUnfoldEntry _ | HintsExternEntry _ ->
-    check_hint_locality locality
+    check_locality locality
   | HintsTransparencyEntry ((HintsVariables | HintsConstants), _) -> ()
   | HintsTransparencyEntry (HintsReferences grs, _) ->
     let iter gr =
@@ -1465,22 +1461,21 @@ let add_hints ~locality dbnames h =
   | HintsModeEntry (gr, _) ->
     if is_notlocal locality && isVarRef gr && Lib.is_in_section gr then warn_non_local_section_hint ()
   in
-  let local = interp_locality locality in
   if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
   assert (not (List.is_empty dbnames));
   let env = Global.env() in
   let sigma = Evd.from_env env in
   match h with
-  | HintsResolveEntry lhints -> add_resolves env sigma lhints ~local dbnames
-  | HintsImmediateEntry lhints -> add_trivials env sigma lhints ~local dbnames
-  | HintsCutEntry lhints -> add_cuts lhints ~local dbnames
-  | HintsModeEntry (l,m) -> add_mode l m ~local dbnames
-  | HintsUnfoldEntry lhints -> add_unfolds lhints ~local dbnames
+  | HintsResolveEntry lhints -> add_resolves env sigma lhints ~locality dbnames
+  | HintsImmediateEntry lhints -> add_trivials env sigma lhints ~locality dbnames
+  | HintsCutEntry lhints -> add_cuts lhints ~locality dbnames
+  | HintsModeEntry (l,m) -> add_mode l m ~locality dbnames
+  | HintsUnfoldEntry lhints -> add_unfolds lhints ~locality dbnames
   | HintsTransparencyEntry (lhints, b) ->
-      add_transparency lhints b ~local dbnames
+      add_transparency lhints b ~locality dbnames
   | HintsExternEntry (info, tacexp) ->
-      add_externs info tacexp ~local dbnames
+      add_externs info tacexp ~locality dbnames
 
 let hint_globref gr = IsGlobRef gr
 

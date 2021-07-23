@@ -644,6 +644,7 @@ logical equivalence:
 .. coqtop:: none
 
    Require Import Morphisms.
+   Set Warnings "-deprecated-instance-without-locality".
 
 .. coqtop:: in
 

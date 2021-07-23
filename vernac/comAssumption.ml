@@ -29,7 +29,7 @@ let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
   let () = maybe_declare_manual_implicits true r imps in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let () = Classes.declare_instance env sigma None Goptions.OptLocal r in
+  let () = Classes.declare_instance env sigma None Hints.Local r in
   let () = if is_coe then ComCoercion.try_add_new_coercion r ~local:true ~poly:false in
   ()
 
@@ -64,7 +64,7 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name
   let () = Declare.assumption_message name in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let () = if do_instance then Classes.declare_instance env sigma None Goptions.OptGlobal gr in
+  let () = if do_instance then Classes.declare_instance env sigma None Hints.SuperGlobal gr in
   let local = match local with
     | Locality.ImportNeedQualified -> true
     | Locality.ImportDefaultBehavior -> false
@@ -256,7 +256,7 @@ let context_nosection sigma ~poly ctx =
     let () = Declare.assumption_message name in
     let env = Global.env () in
     (* why local when is_modtype? *)
-    let locality = if Lib.is_modtype () then Goptions.OptLocal else Goptions.OptGlobal in
+    let locality = if Lib.is_modtype () then Hints.Local else Hints.SuperGlobal in
     let () = if Lib.is_modtype() || Option.is_empty b then
         Classes.declare_instance env sigma None locality (GlobRef.ConstRef cst)
     in

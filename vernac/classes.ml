@@ -29,7 +29,8 @@ module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let set_typeclass_transparency c local b =
-  let locality = if local || Global.sections_are_opened () then Goptions.OptLocal else Goptions.OptGlobal in
+  (* XXX checking sections here is suspicious but matches historical (unintended?) behaviour *)
+  let locality = if local || Global.sections_are_opened () then Hints.Local else Hints.SuperGlobal in
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 
@@ -61,17 +62,17 @@ type instance_obj = {
 
 let add_instance_base inst =
   let locality = match inst.inst_global with
-  | Local -> Goptions.OptLocal
+  | Local -> Local
   | SuperGlobal ->
     (* i.e. in a section, declare the hint as local since discharge is managed
        by rebuild_instance which calls again add_instance_hint; don't ask hints
        to take discharge into account itself *)
-    if Global.sections_are_opened () then Goptions.OptLocal
-    else Goptions.OptGlobal
+    if Global.sections_are_opened () then Local
+    else SuperGlobal
   | Export ->
     (* Same as above for export *)
-    if Global.sections_are_opened () then Goptions.OptLocal
-    else Goptions.OptExport
+    if Global.sections_are_opened () then Local
+    else Export
   in
   add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
     inst.inst_info
@@ -137,22 +138,24 @@ let warn_deprecated_instance_without_locality =
     #[local], #[global] and #[export] depending on your choice. For example: \
     \"#[export] Instance Foo : Bar := baz.\"")
 
-let add_instance cl info glob impl =
-  let global = match glob with
-  | Goptions.OptDefault ->
-    if Global.sections_are_opened () then Local
-    else
-      let () = warn_deprecated_instance_without_locality () in
-      SuperGlobal
-  | Goptions.OptGlobal ->
-    if Global.sections_are_opened () && isVarRef impl then
-      CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
-    else SuperGlobal
-  | Goptions.OptLocal -> Local
-  | Goptions.OptExport ->
-    if Global.sections_are_opened () && isVarRef impl then
-      CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
-    else Export
+let default_locality () =
+  if Global.sections_are_opened () then Local
+  else
+    let () = warn_deprecated_instance_without_locality () in
+    SuperGlobal
+
+let instance_locality =
+  Attributes.hint_locality ~default:default_locality
+
+let add_instance cl info global impl =
+  let () = match global with
+    | Local -> ()
+    | SuperGlobal ->
+      if Global.sections_are_opened () && isVarRef impl then
+        CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
+    | Export ->
+      if Global.sections_are_opened () && isVarRef impl then
+        CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
   in
   let i = {
     inst_class = cl.cl_impl;
@@ -286,7 +289,7 @@ let add_class env sigma cl =
       | Some info ->
         (match m.meth_const with
          | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
-         | Some b -> declare_instance ~warn:true env sigma (Some info) Goptions.OptGlobal (GlobRef.ConstRef b))
+         | Some b -> declare_instance ~warn:true env sigma (Some info) SuperGlobal (GlobRef.ConstRef b))
       | _ -> ())
     cl.cl_projs
 
@@ -640,6 +643,6 @@ let refine_att =
 module Internal =
 struct
 let add_instance cl info glob r =
-  let glob = if glob then Goptions.OptGlobal else Goptions.OptLocal in
+  let glob = if glob then SuperGlobal else Local in
   add_instance cl info glob r
 end
