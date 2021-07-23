@@ -110,22 +110,20 @@ let context_set uctx = uctx.local
 
 let constraints uctx = snd uctx.local
 
-let context uctx = ContextSet.to_context uctx.local
-
-let compute_instance_binders inst ubinders =
+let compute_instance_binders rbinders inst =
   let map lvl =
-    try Name (Option.get (LMap.find lvl ubinders).uname)
+    try Name (Option.get (LMap.find lvl rbinders).uname)
     with Option.IsNone | Not_found -> Anonymous
   in
   Array.map map (Instance.to_array inst)
 
+let context uctx =
+  let (_, rbinders) = uctx.names in
+  ContextSet.to_context (compute_instance_binders rbinders) uctx.local
+
 let univ_entry ~poly uctx =
   let open Entries in
-  if poly then
-    let (_, rbinders) = uctx.names in
-    let uctx = context uctx in
-    let nas = compute_instance_binders (UContext.instance uctx) rbinders in
-    Polymorphic_entry (nas, uctx)
+  if poly then Polymorphic_entry (context uctx)
   else Monomorphic_entry (context_set uctx)
 
 let of_context_set local = { empty with local }
@@ -398,8 +396,7 @@ let universe_context ~names ~extensible uctx =
     let left = ContextSet.sort_levels (Array.of_list (LSet.elements left)) in
     let inst = Array.append (Array.of_list newinst) left in
     let inst = Instance.of_array inst in
-    let uctx = UContext.make (inst, ContextSet.constraints uctx.local) in
-    uctx
+    (inst, ContextSet.constraints uctx.local)
 
 let check_universe_context_set ~names ~extensible uctx =
   if extensible then ()
@@ -442,9 +439,10 @@ let check_univ_decl ~poly uctx decl =
   let extensible = decl.univdecl_extensible_instance in
   if poly then
     let (_, rbinders) = uctx.names in
-    let uctx = universe_context ~names ~extensible uctx in
-    let nas = compute_instance_binders (UContext.instance uctx) rbinders in
-    Entries.Polymorphic_entry (nas, uctx)
+    let inst, csts = universe_context ~names ~extensible uctx in
+    let nas = compute_instance_binders rbinders inst in
+    let uctx = UContext.make nas (inst, csts) in
+    Entries.Polymorphic_entry uctx
   else
     let () = check_universe_context_set ~names ~extensible uctx in
     Entries.Monomorphic_entry uctx.local

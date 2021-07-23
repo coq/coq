@@ -155,7 +155,7 @@ val push_named_def :
   Id.t * Entries.section_def_entry -> safe_transformer0
 
 (** Add local universes to a polymorphic section *)
-val push_section_context : (Name.t array * Univ.UContext.t) -> safe_transformer0
+val push_section_context : Univ.UContext.t -> safe_transformer0
 
 (** {6 Interactive module functions } *)
 

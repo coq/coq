@@ -522,11 +522,11 @@ let push_named_assum (x,t) senv =
   let env'' = safe_push_named (LocalAssum (x,t)) senv.env in
   { senv with sections=Some sections; env = env'' }
 
-let push_section_context (nas, ctx) senv =
+let push_section_context uctx senv =
   let sections = get_section senv.sections in
-  let sections = Section.push_context (nas, ctx) sections in
+  let sections = Section.push_context uctx sections in
   let senv = { senv with sections=Some sections } in
-  let ctx = Univ.ContextSet.of_context ctx in
+  let ctx = Univ.ContextSet.of_context uctx in
   (* We check that the universes are fresh. FIXME: This should be done
      implicitly, but we have to work around the API. *)
   let () = assert (Univ.LSet.for_all (fun u -> not (Univ.LSet.mem u (fst senv.univ))) (fst ctx)) in
@@ -767,7 +767,7 @@ let constant_entry_of_side_effect eff =
     | Monomorphic uctx ->
       Monomorphic_entry uctx
     | Polymorphic auctx ->
-      Polymorphic_entry (Univ.AUContext.names auctx, Univ.AUContext.repr auctx)
+      Polymorphic_entry (Univ.AUContext.repr auctx)
   in
   let p =
     match cb.const_body with

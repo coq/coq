@@ -325,13 +325,14 @@ val in_punivs : 'a -> 'a puniverses
 val eq_puniverses : ('a -> 'a -> bool) -> 'a puniverses -> 'a puniverses -> bool
 
 (** A vector of universe levels with universe Constraint.t,
-    representing local universe variables and associated Constraint.t *)
+    representing local universe variables and associated Constraint.t;
+    the names are user-facing names for printing *)
 
 module UContext :
 sig
   type t
 
-  val make : Instance.t constrained -> t
+  val make : Names.Name.t array -> Instance.t constrained -> t
 
   val empty : t
   val is_empty : t -> bool
@@ -339,13 +340,17 @@ sig
   val instance : t -> Instance.t
   val constraints : t -> Constraint.t
 
-  val dest : t -> Instance.t * Constraint.t
-
-  (** Keeps the order of the instances *)
   val union : t -> t -> t
+  (** Keeps the order of the instances *)
 
-  (** the number of universes in the context *)
   val size : t -> int
+  (** The number of universes in the context *)
+
+  val names : t -> Names.Name.t array
+  (** Return the user names of the universes *)
+
+  val refine_names : Names.Name.t array -> t -> t
+  (** Use names to name the possibly yet unnamed universes *)
 
 end
 
@@ -415,16 +420,20 @@ sig
   val add_constraints : Constraint.t -> t -> t
   val add_instance : Instance.t -> t -> t
 
-  (** Arbitrary choice of linear order of the variables *)
   val sort_levels : Level.t array -> Level.t array
-  val to_context : t -> UContext.t
+  (** Arbitrary choice of linear order of the variables *)
+
+  val to_context : (Instance.t -> Names.Name.t array) -> t -> UContext.t
+  (** Build a vector of universe levels assuming a function generating names *)
+
   val of_context : UContext.t -> t
 
   val constraints : t -> Constraint.t
   val levels : t -> LSet.t
 
-  (** the number of universes in the context *)
   val size : t -> int
+  (** The number of universes in the context *)
+
 end
 
 (** A value in a universe context (resp. context set). *)
@@ -462,7 +471,7 @@ val make_instance_subst : Instance.t -> universe_level_subst
 
 val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
-val abstract_universes : Names.Name.t array -> UContext.t -> Instance.t * AUContext.t
+val abstract_universes : UContext.t -> Instance.t * AUContext.t
 (** TODO: move universe abstraction out of the kernel *)
 
 val make_abstract_instance : AUContext.t -> Instance.t

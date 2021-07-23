@@ -27,8 +27,7 @@ let name_instance inst =
 
 let declare_universe_context ~poly ctx =
   if poly then
-    let uctx = Univ.ContextSet.to_context ctx in
-    let nas = name_instance (Univ.UContext.instance uctx) in
-    Global.push_section_context (nas, uctx)
+    let uctx = Univ.ContextSet.to_context name_instance ctx in
+    Global.push_section_context uctx
   else
     Global.push_context_set ~strict:true ctx

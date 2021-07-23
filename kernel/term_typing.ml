@@ -71,9 +71,6 @@ let check_primitive_type env op_t u t =
   with Reduction.NotConvertible ->
     Type_errors.error_incorrect_primitive env (make_judge op_t inft) t
 
-let merge_unames =
-  Array.map2 (fun base user -> match user with Anonymous -> base | Name _ -> user)
-
 let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let open CPrimitives in
   let auctx = CPrimitives.op_or_type_univs p in
@@ -98,7 +95,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
       in
       Monomorphic uctx, typ
 
-    | Some (typ,Polymorphic_entry (unames,uctx)) ->
+    | Some (typ,Polymorphic_entry uctx) ->
       assert (not (AUContext.is_empty auctx)); (* ensured by ComPrimitive *)
       (* [push_context] will check that the universes aren't repeated in
          the instance so comparing the sizes works. No polymorphic
@@ -111,8 +108,8 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
       (* Now we know that uctx matches the auctx *)
       let typ = (Typeops.infer_type env typ).utj_val in
       let () = check_primitive_type env p (UContext.instance uctx) typ in
-      let unames = merge_unames (AUContext.names auctx) unames in
-      let u, auctx = abstract_universes unames uctx in
+      let uctx = UContext.refine_names (AUContext.names auctx) uctx in
+      let u, auctx = abstract_universes uctx in
       let typ = Vars.subst_univs_level_constr (make_instance_subst u) typ in
       Polymorphic auctx, typ
   in
@@ -135,7 +132,7 @@ let infer_declaration env (dcl : constant_entry) =
   | ParameterEntry (ctx,(t,uctx),nl) ->
     let env = match uctx with
       | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
-      | Polymorphic_entry (_, uctx) -> push_context ~strict:false uctx env
+      | Polymorphic_entry uctx -> push_context ~strict:false uctx env
     in
     let j = Typeops.infer env t in
     let usubst, univs = Declareops.abstract_universes uctx in
@@ -160,11 +157,11 @@ let infer_declaration env (dcl : constant_entry) =
       | Monomorphic_entry ctx ->
         let env = push_context_set ~strict:true ctx env in
         env, empty_level_subst, Monomorphic ctx
-      | Polymorphic_entry (nas, uctx) ->
+      | Polymorphic_entry uctx ->
         (** [ctx] must contain local universes, such that it has no impact
             on the rest of the graph (up to transitivity). *)
         let env = push_context ~strict:false uctx env in
-        let sbst, auctx = abstract_universes nas uctx in
+        let sbst, auctx = abstract_universes uctx in
         let sbst = make_instance_subst sbst in
         env, sbst, Polymorphic auctx
       in
@@ -210,11 +207,11 @@ let infer_opaque env = function
       }, context
 
   | ({ opaque_entry_type = typ;
-                       opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
+                       opaque_entry_universes = Polymorphic_entry uctx; _ } as c) ->
       let { opaque_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
-      let sbst, auctx = abstract_universes nas uctx in
+      let sbst, auctx = abstract_universes uctx in
       let usubst = make_instance_subst sbst in
       let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx, feedback_id) in
       let def = OpaqueDef () in

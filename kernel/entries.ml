@@ -18,7 +18,7 @@ open Constr
 
 type universes_entry =
   | Monomorphic_entry of Univ.ContextSet.t
-  | Polymorphic_entry of Name.t array * Univ.UContext.t
+  | Polymorphic_entry of Univ.UContext.t
 
 type variance_entry = Univ.Variance.t option array
 

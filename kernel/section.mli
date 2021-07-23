@@ -44,7 +44,7 @@ val close_section : 'a t -> 'a t option * section_entry list * ContextSet.t * 'a
 val push_local : 'a t -> 'a t
 (** Extend the current section with a local definition (cf. push_named). *)
 
-val push_context : Name.t array * UContext.t -> 'a t -> 'a t
+val push_context : UContext.t -> 'a t -> 'a t
 (** Extend the current section with a local universe context. Assumes that the
     last opened section is polymorphic. *)
 

@@ -14,7 +14,7 @@ let evil name name_f =
   let tc = mkConst tc in
 
   let fe = Declare.definition_entry
-      ~univs:(Polymorphic_entry ([|Anonymous|], UContext.make (Instance.of_array [|u|],Constraint.empty)))
+      ~univs:(Polymorphic_entry (UContext.make [|Anonymous|] (Instance.of_array [|u|],Constraint.empty)))
       ~types:(Term.mkArrowR tc tu)
       (mkLambda (Context.nameR (Id.of_string "x"), tc, mkRel 1))
   in
