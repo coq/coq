@@ -44,6 +44,9 @@ let whd env sigma t =
 let whd_delta env sigma t =
   Reductionops.clos_whd_flags CClosure.all env sigma t
 
+let whd_in_concl =
+  reduct_in_concl ~check:false (Reductionops.whd_all, REVERTcast)
+
 (* decompose member of equality in an applicative format *)
 
 (** FIXME: evar leak *)
@@ -107,11 +110,17 @@ let atom_of_constr b env sigma term =
 let rec pattern_of_constr env sigma c =
   match EConstr.kind sigma (whd env sigma c) with
       App (f,args)->
-        let pf = decompose_term env sigma f in
         let pargs,lrels = List.split
           (Array.map_to_list (pattern_of_constr env sigma) args) in
+        begin match EConstr.kind sigma f with
+          Rel i ->
+            PVar (i, List.rev pargs),
+              List.fold_left Int.Set.union (Int.Set.singleton i) lrels
+        | _ ->
+          let pf = decompose_term env sigma f in
           PApp (pf,List.rev pargs),
-        List.fold_left Int.Set.union Int.Set.empty lrels
+            List.fold_left Int.Set.union Int.Set.empty lrels
+        end
     | Prod (_,a,_b) when noccurn sigma 1 _b ->
         let b = Termops.pop _b in
         let pa,sa = pattern_of_constr env sigma a in
@@ -120,14 +129,19 @@ let rec pattern_of_constr env sigma c =
         let sort_a = sf_of env sigma a in
           PApp(Product (sort_a,sort_b),
                [pa;pb]),(Int.Set.union sa sb)
-    | Rel i -> PVar i,Int.Set.singleton i
+    | Rel i -> PVar (i, []),Int.Set.singleton i
     | _ ->
         let pf = decompose_term env sigma c in
           PApp (pf,[]),Int.Set.empty
 
 let non_trivial = function
-    PVar _ -> false
+    PVar (_, []) -> false
   | _ -> true
+
+let rec has_open_head = function
+    PVar (_, _::_) -> true
+  | PApp (_, args) -> List.exists has_open_head args
+  | _ -> false
 
 let patterns_of_constr b env sigma nrels term =
   let f,args=
@@ -138,10 +152,12 @@ let patterns_of_constr b env sigma nrels term =
           and patt2,rels2 = pattern_of_constr env sigma args.(2) in
           let valid1 =
             if not (Int.equal (Int.Set.cardinal rels1) nrels) then Creates_variables
+            else if has_open_head patt1 then Creates_variables (* consider open head as variable-creating *)
             else if non_trivial patt1 then Normal
             else Trivial (EConstr.to_constr sigma args.(0))
           and valid2 =
             if not (Int.equal (Int.Set.cardinal rels2) nrels) then Creates_variables
+            else if has_open_head patt2 then Creates_variables (* consider open head as variable-creating *)
             else if non_trivial patt2 then Normal
             else Trivial (EConstr.to_constr sigma args.(0)) in
             if valid1 != Creates_variables
@@ -514,7 +530,10 @@ let negative_concl_introf =
   end
 
 let congruence_tac depth l =
-  Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l false)
+  Tacticals.New.tclTHEN
+    (Tacticals.New.tclREPEAT (Tacticals.New.tclFIRST [intro; Tacticals.New.tclTHEN whd_in_concl intro]))
+    (cc_tactic depth l false)
+
 
 let simple_congruence_tac depth l =
   Tacticals.New.tclTHENLIST [

@@ -151,7 +151,7 @@ let rec hash_term = function
 
 type ccpattern =
     PApp of term * ccpattern list (* arguments are reversed *)
-  | PVar of int
+  | PVar of int * ccpattern list (* arguments are reversed *)
 
 type rule=
     Congruence
@@ -459,8 +459,10 @@ let build_subst uf subst =
     subst
 
 let rec inst_pattern subst = function
-    PVar i ->
-      subst.(pred i)
+    PVar (i, args) ->
+      List.fold_right
+        (fun spat f -> Appli (f,inst_pattern subst spat))
+           args subst.(pred i)
   | PApp (t, args) ->
       List.fold_right
         (fun spat f -> Appli (f,inst_pattern subst spat))
@@ -847,7 +849,7 @@ let do_match state res pb_stack =
       | (patt,cl)::remains ->
           let uf=state.uf in
             match patt with
-                PVar i ->
+                PVar (i, []) ->
                   if mp.mp_subst.(pred i)<0 then
                     begin
                       mp.mp_subst.(pred i)<- cl; (* no aliasing problem here *)
@@ -857,6 +859,7 @@ let do_match state res pb_stack =
                     if Int.equal mp.mp_subst.(pred i) cl then
                       Stack.push {mp with mp_stack=remains} pb_stack
                     else (* mismatch for non-linear variable in pattern *) ()
+              | PVar _ -> () (* do not consider application with variable head *)
               | PApp (f,[]) ->
                   begin
                     try let j=Termhash.find uf.syms f in
@@ -882,7 +885,7 @@ let do_match state res pb_stack =
                   with Not_found -> ()
 
 let paf_of_patt syms = function
-    PVar _ -> invalid_arg "paf_of_patt: pattern is trivial"
+    PVar _ -> invalid_arg "paf_of_patt: pattern with variable head"
   | PApp (f,args) ->
       {fsym=Termhash.find syms f;
        fnargs=List.length args}
