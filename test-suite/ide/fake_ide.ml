@@ -240,13 +240,13 @@ let eval_print l coq =
   match l with
   | [ Tok(_,"ADD"); Top []; Tok(_,phrase) ] ->
       let eid, tip = add_sentence phrase in
-      after_add (base_eval_call (add (((phrase,eid),(tip,true)),0)) coq)
+      after_add (base_eval_call (add ((((phrase,eid),(tip,true)),0),(0,0))) coq)
   | [ Tok(_,"ADD"); Top [Tok(_,name)]; Tok(_,phrase) ] ->
       let eid, tip = add_sentence ~name phrase in
-      after_add (base_eval_call (add (((phrase,eid),(tip,true)),0)) coq)
+      after_add (base_eval_call (add ((((phrase,eid),(tip,true)),0),(0,0))) coq)
   | [ Tok(_,"FAILADD"); Tok(_,phrase) ] ->
       let eid, tip = add_sentence phrase in
-      after_fail coq (base_eval_call ~fail:false (add (((phrase,eid),(tip,true)),0)) coq)
+      after_fail coq (base_eval_call ~fail:false (add ((((phrase,eid),(tip,true)),0),(0,0))) coq)
   | [ Tok(_,"GOALS"); ] ->
       eval_call (goals ()) coq
   | [ Tok(_,"FAILGOALS"); ] ->

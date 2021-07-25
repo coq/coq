@@ -192,6 +192,7 @@ let create_session f =
   if project_file <> "" then
     flash_info (Printf.sprintf "Reading options from %s" project_file);
   let sn = Session.create f args in
+  sn.debugger#set_forward_get_basename (fun _ -> sn.basename);
   Coq.set_restore_bpts sn.coqtop (fun _ -> !forward_restore_bpts sn);
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_loc (!forward_db_loc sn);
@@ -817,13 +818,13 @@ module Nav = struct
       init_bpts sn;
       sn.coqops#scroll_to_start_of_input ()
     end
-  let interrupt _ =
+  let interrupt _ =  (* terminate computation *)
     Minilib.log "User interrupt received";
     if not (resume_debugger Interface.Interrupt) && notebook#pages <> [] then begin
       let osn = (find_db_sn ()) in
       Coq.interrupt_coqtop osn.coqtop CString.(Set.elements (Map.domain osn.jobpage#data))
     end
-  let break ?sid _ =
+  let break ?sid _ =  (* stop at the next possible stopping point *)
     if notebook#pages <> [] then begin
       let ocoqtop = (find_db_sn ?sid ()).coqtop in
       if not (Coq.is_stopped_in_debugger ocoqtop) then

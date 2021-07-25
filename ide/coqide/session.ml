@@ -401,7 +401,8 @@ let to_abs_file_name f =
 let create file coqtop_args =
   let (basename, abs_file_name) = match file with
     | None -> ("*scratch*", None)
-    | Some f -> (Glib.Convert.filename_to_utf8 (Filename.basename f), Some (to_abs_file_name f))
+    | Some f -> (Glib.Convert.filename_to_utf8 Filename.(remove_extension (basename f)),
+        Some (to_abs_file_name f))
   in
   let coqtop = Coq.spawn_coqtop basename coqtop_args in
   let reset () = Coq.reset_coqtop coqtop in

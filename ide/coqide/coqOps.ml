@@ -697,8 +697,10 @@ object(self)
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let start, _, phrase = self#get_sentence sentence in
-            let offset = start#offset in
-            let coq_query = Coq.add (((phrase,edit_id),(tip,verbose)),offset) in
+            let bp = start#offset in
+            let line_nb = start#line + 1 in
+            let bol_pos = start#line_offset in
+            let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
                   Doc.assign_tip_id document id;

@@ -474,6 +474,7 @@ object (self)
     let start = self#buffer#get_iter (`OFFSET bp) in
     let stop = self#buffer#get_iter (`OFFSET ep) in
     self#buffer#apply_tag Tags.Script.debugging ~start ~stop;
+    self#buffer#place_cursor ~where:start;
     let _ = self#buffer#create_mark ~name:"scroll_to" start in
     (* todo: review uses of scroll_to_iter.
       See https://valadoc.org/gtk+-3.0/Gtk.TextView.scroll_to_iter.html *)

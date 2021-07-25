@@ -78,10 +78,12 @@ let ide_doc = ref None
 let get_doc () = Option.get !ide_doc
 let set_doc doc = ide_doc := Some doc
 
-let add (((s,eid),(sid,verbose)),off) =
+let add ((((s,eid),(sid,verbose)),off),(line_nb,bol_pos)) =
   let doc = get_doc () in
   let open Loc in
-  let loc = { (initial ToplevelInput) with bp = off } in
+  (* note: this won't yield correct values for bol_pos_last,
+     but the debugger doesn't use that *)
+  let loc = { (initial ToplevelInput) with bp=off; line_nb } in
   let pa = Pcoq.Parsable.make ~loc (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s may not be empty *)
@@ -442,6 +444,31 @@ let db_upd_bpts updates =
         DebugHook.update_bpt false bp
     ) updates
 
+let format_frame text loc =
+  try
+    let open Loc in
+      match loc with
+      | Some { fname=InFile {dirpath=(Some dp)}; line_nb } ->
+        let dplen = String.length dp in
+        let lastdot = String.rindex dp '.' in
+        let file = String.sub dp (lastdot+1) (dplen - (lastdot + 1)) in
+        let module_name = String.sub dp 0 lastdot in
+        let routine =
+          try
+            (* try text as a kername *)
+            assert (CString.is_prefix dp text);
+            let knlen = String.length text in
+            let lastdot = String.rindex text '.' in
+            String.sub text (lastdot+1) (knlen - (lastdot + 1))
+          with _ -> text
+        in
+        Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name;
+      | Some { fname=ToplevelInput; line_nb } ->
+        let items = String.split_on_char '.' text in
+        Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items);
+      | _ -> text
+  with _ -> text
+
 let db_stack () =
   let open DebugHook in
 (*  Printf.printf "server: db_stack call\n%!";*)
@@ -450,9 +477,16 @@ let db_stack () =
     let ploc = cvt_loc prev_loc in
     match s with
     | (tacn, loc) :: tl ->
-      let tacn = if ploc = None then tacn ^ " (no location)" else tacn in
+      let tacn = if ploc = None then
+        tacn ^ " (no location)"
+      else
+        format_frame tacn prev_loc in
       shift tl loc ((tacn, ploc) :: res)
-    | [] -> ("(script)", ploc) :: res
+    | [] ->
+      match prev_loc with
+      | Some { Loc.line_nb } ->
+        (":" ^ (string_of_int line_nb), ploc) :: res
+      | None -> (": (no location)", ploc) :: res
   in
   List.rev (shift s debugger_state.cur_loc [])
 

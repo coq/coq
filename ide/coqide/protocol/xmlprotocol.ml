@@ -563,7 +563,8 @@ open ReifType
 
 (** Types reification, checked with explicit casts *)
 let add_sty_t : add_sty val_t =
-  pair_t (pair_t (pair_t string_t int_t) (pair_t state_id_t bool_t)) int_t
+  pair_t (pair_t (pair_t (pair_t string_t int_t) (pair_t state_id_t bool_t)) int_t)
+  (pair_t int_t int_t)
 let edit_at_sty_t : edit_at_sty val_t = state_id_t
 let query_sty_t : query_sty val_t = pair_t route_id_t (pair_t string_t state_id_t)
 let goals_sty_t : goals_sty val_t = unit_t

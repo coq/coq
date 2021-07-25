@@ -32,7 +32,7 @@ module type S = sig
     val get : unit -> t
     val drop : unit -> unit
     val get_comments : t -> ((int * int) * string) list
-    val set_loc_offset : int -> unit
+    val set_loc_offset : (int * int * int) -> unit
   end
 
 end

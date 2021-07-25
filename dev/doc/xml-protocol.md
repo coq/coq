@@ -92,21 +92,35 @@ The string fields are the Coq version, the protocol version, the release date, a
 The protocol version is a date in YYYYMMDD format, where "20150913" corresponds to Coq 8.6. An IDE that wishes 
 to support multiple Coq versions can use the protocol version information to know how to handle output from Coqtop.
 
-### <a name="command-add">**Add(stateId: integer, command: string, verbose: boolean)**</a>
+### <a name="command-add">**Add(command: string, editId: integer, stateId: integer, verbose: boolean, bp: integer, line_nb: integer, bol_pos: integer)**</a>
 Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state.
-`verbose` controls whether out-of-band messages will be generated for the added command (e.g. "foo is assumed" in response to adding "Axiom foo: nat.").
+`verbose` controls whether out-of-band messages will be generated for the added command
+(e.g. "foo is assumed" in response to adding "Axiom foo: nat.").  `bp`, `line_nb` and
+`bol_pos` are the `Loc.t` values relative to the IDE buffer.
+
 ```html
 <call val="Add">
-  <pair>
+  <call val="Add">
     <pair>
-      <string>${command}</string>
-      <int>${editId}</int>
+      <pair>
+        <pair>
+          <pair>
+            <string>${command}</string>
+            <int>${editId}</int>
+          </pair>
+          <pair>
+            <state_id val="${stateId}"/>
+            <bool val="${verbose}"/>
+          </pair>
+        </pair>
+        <int>${bp}</int>
+      </pair>
+      <pair>
+        <int>${line_nb}</int>
+        <int>${bol_pos}</int>
+      </pair>
     </pair>
-    <pair>
-      <state_id val="${stateId}"/>
-      <bool val="${verbose}"/>
-    </pair>
-  </pair>
+  </call>
 </call>
 ```
 
@@ -116,10 +130,9 @@ Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state
 <value val="good">
   <pair>
     <state_id val="${newStateId}"/>
-    <pair>
-      <union val="in_l"><unit/></union>
-      <string>${message}</string>
-    </pair>
+    <union val="in_l">
+      <unit/>
+    </union>
   </pair>
 </value>
 ```
@@ -167,7 +180,7 @@ Moves current tip to `${stateId}`, such that commands may be added to the new st
 </value>
 ```
 
-* New focus; focusedQedStateId is the closing Qed of the new focus; senteneces between the two should be cleared
+* New focus; focusedQedStateId is the closing Qed of the new focus; sentences between the two should be cleared
 ```html
 <value val="good">
   <union val="in_r">
@@ -715,7 +728,7 @@ or execution stops in the debugger.
 
 
 
-### <a name="command-db_continue">**Db_continue()**</a>
+### <a name="command-db_continue">**Db_continue(option: integer)**</a>
 
 Tells Coq to continue processing the proof when it is stopped in the debugger.
 The integer indicates when the debugger should stop again:
@@ -777,7 +790,7 @@ the call therein.  The top of stack is the first entry in the list.
 ```
 
 
-### <a name="command-db_vars">**Db_vars()**</a>
+### <a name="command-db_vars">**Db_vars(frame: integer)**</a>
 
 Returns a list of the names and values of the local variables defined in the
 specified frame of the Ltac call stack.  (0 = top of stack, 1, 2, ...).

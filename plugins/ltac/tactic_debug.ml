@@ -208,12 +208,12 @@ let get_stack stack () =
     (* todo: compare to explain_ltac_call_trace below *)
     match k with
     | LtacNameCall l -> KerName.to_string l, loc
-    | LtacMLCall _ -> "??? LtacMLCall ", loc
+    | LtacMLCall _ -> "??? LtacMLCall", loc
       (* todo: need to convert LtacNotationCall with "prtac tac", so may need to
          save tactic associated with each stack entry unless we can be sure it's
          always the TOS?  OTOH is even necessary to show this stack frame? *)
     | LtacNotationCall l -> "??? LtacNotationCall " ^ (KerName.to_string l), loc
-    | LtacAtomCall _ -> "??? LtacAtomCall ", loc
+    | LtacAtomCall _ -> "??? LtacAtomCall", loc
     | LtacVarCall (id, e) ->
       let open CAst in
       let lvar = match e.v with
@@ -229,7 +229,7 @@ let get_stack stack () =
         (Pp.string_of_ppcmds (Printer.pr_glob_constr_env env sigma c));
       shows "(fun var : type (Language.Compilers.base.type base) -> Type => _)"
 *)
-      "??? LtacConstrInterp ", loc
+      "??? LtacConstrInterp", loc
     ) stack
 
 (* Each list entry contains multiple trace frames. *)

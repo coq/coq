@@ -21,6 +21,7 @@ class type debugger_view =
     method set_forward_highlight_code : (string * int * int -> unit) -> unit
     method set_forward_db_vars : (int -> unit) -> unit
     method set_forward_paned_pos : (int -> unit) -> unit
+    method set_forward_get_basename : (unit -> string) -> unit
   end
 
 let forward_keystroke = ref ((fun x -> failwith "forward_keystroke (db)")
@@ -67,6 +68,9 @@ let find_string_col s l =
 let debugger title sid =
   let forward_set_paned_pos = ref ((fun x -> failwith "forward_set_paned_pos")
     : int -> unit) in
+
+  let forward_get_basename = ref ((fun x -> failwith "forward_get_basename")
+    : unit -> string) in
 
   let debugger_detachable = Wg_Detachable.detachable ~title () in
   debugger_detachable#close_button#misc#show ();
@@ -222,11 +226,22 @@ let debugger title sid =
 
     method coerce = debugger_detachable#coerce
     method set_stack (stack_v : stack_t) =
-      stack := stack_v;
+      stack := if stack_v = [] then [] else begin
+        (* adjust text in the bottom frame of the stack *)
+        let rs = List.rev stack_v in
+        let (text, loc) = List.hd rs in
+        match loc with
+          | Some (_, locs) ->
+            let basename = !forward_get_basename () in
+            let basename = if basename = "*scratch*" then "Top" else basename in
+            let s = Printf.sprintf "%s, %s" text basename in
+            List.rev ((s, loc) :: (List.tl rs))
+          | _ -> stack_v
+      end;
       stack_buffer#set_text
-        (String.concat "\n" (List.map (fun i -> let (tacn, loc) = i in tacn) stack_v));
+        (String.concat "\n" (List.map (fun i -> let (tacn, loc) = i in tacn) !stack));
       clear_highlight ();
-      if stack_v <> [] then
+      if !stack <> [] then
         highlight 0
 
     method set_vars (vars_v : vars_t) =
@@ -275,6 +290,7 @@ let debugger title sid =
     method set_forward_highlight_code f = forward_highlight_code := f
     method set_forward_db_vars f = forward_db_vars := f
     method set_forward_paned_pos f = forward_set_paned_pos := f
+    method set_forward_get_basename f = forward_get_basename := f
   end
   in
   debugger

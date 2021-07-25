@@ -1611,7 +1611,7 @@ module Parsable = struct
     let lexer_state = ref (L.State.init ()) in
     L.State.set !lexer_state;
     (match loc with
-    | Some loc -> L.State.set_loc_offset Loc.(loc.bp)
+    | Some loc -> L.State.set_loc_offset Loc.(loc.bp, loc.line_nb, loc.bol_pos)
     | None -> ());
     let ts = L.tok_func ?loc cs in
     lexer_state := L.State.get ();

@@ -392,7 +392,8 @@ let comm_loc bp = match !comment_begin with
 let comments = ref []
 let current_comment = Buffer.create 8192
 let between_commands = ref true
-let loc_offset = ref 0
+(* todo: had trouble creating a shared record type for loc_offset *)
+let loc_offset = ref (0, 0, 0)
 
 let real_push_char c = Buffer.add_char current_comment c
 
@@ -791,10 +792,13 @@ let rec next_token ~diff_mode loc s =
 
 let next_token ~diff_mode loc s =
   let (t,loc as r) = next_token ~diff_mode loc s in
+  let (bp_, line_nb_, bol_pos_) = !loc_offset in
   let open Loc in
  (* Debug: uncomment this for tracing tokens seen by coq...*)
 (*  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" loc.line_nb loc.bp loc.ep (Tok.extract_string diff_mode t);*)
-  (t, {loc with bp = loc.bp + !loc_offset; ep = loc.ep + !loc_offset})
+  (t, {loc with bol_pos = loc.bol_pos + bp_;
+                bp = loc.bp + bp_;
+                ep = loc.ep + bp_})
 
 (** {6 The lexer of Coq} *)
 
