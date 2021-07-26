@@ -626,6 +626,7 @@ let mkCPatOr ?loc = function
   | disjpat -> CAst.make ?loc @@ (CPatOr disjpat)
 
 let mkAppPattern ?loc p lp =
+  if List.is_empty lp then p else
   let open CAst in
   make ?loc @@ (match p.v with
   | CPatAtom (Some r) -> CPatCstr (r, None, lp)

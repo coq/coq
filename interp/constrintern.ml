@@ -1815,17 +1815,23 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     ntnpats_with_letin @ aux imps subscopes tags pats
   and in_not test_kind loc scopes (subst,substlist as fullsubst) args = function
     | NVar id ->
-      let () = assert (List.is_empty args) in
       begin
         (* subst remembers the delimiters stack in the interpretation *)
         (* of the notations *)
         try
           let (a,(scopt,subscopes)) = Id.Map.find id subst in
-          in_pat test_kind (scopt,subscopes@snd scopes) a
+          in_pat test_kind (scopt,subscopes@snd scopes) (mkAppPattern ?loc a args)
         with Not_found ->
-          if Id.equal id ldots_var then DAst.make ?loc @@ RCPatAtom (Some ((make ?loc id),scopes)) else
+          if Id.equal id ldots_var then
+            if List.is_empty args then
+              DAst.make ?loc @@ RCPatAtom (Some ((make ?loc id),scopes))
+            else
+              user_err (str "Recursive notations with arguments not supported in patterns.")
+          else
             anomaly (str "Unbound pattern notation variable: " ++ Id.print id ++ str ".")
       end
+    | NApp (NVar id,ntnpl) ->
+      user_err ?loc (str "Notations with an applied head variable not supported in patterns.")
     | NRef (g,_) ->
       ensure_kind test_kind ?loc g;
       DAst.make ?loc @@ RCPatCstr (g, in_patargs ?loc scopes g true false [] args)
@@ -1851,9 +1857,11 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
            (if revert then List.rev l else l) termin
        with Not_found ->
          anomaly (Pp.str "Inconsistent substitution of recursive notation."))
-    | NHole _ ->
-      let () = assert (List.is_empty args) in
+    | NHole (_,_,None) ->
+      if not (List.is_empty args) then user_err ?loc (str "Such pattern cannot have arguments.");
       DAst.make ?loc @@ RCPatAtom None
+    | NHole (_,_,Some _) ->
+      user_err ?loc (str "Quotations not supported in patterns.")
     | t -> error_invalid_pattern_notation ?loc ()
   in in_pat test_kind_top env.pat_scopes pat
 
