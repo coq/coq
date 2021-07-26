@@ -117,18 +117,58 @@ Section DepProd.
   End VariableTypes.
 End DepProd.
 
+
+(* Testing that canonical projections equipped with function type instances
+   ([forall _, _]) or default instances ([_]) can be used in places where
+   functions/function types are expected.
+   This feature triggers CS search in two typing cases:
+   1. [f x : _] when [f : proj _]
+   2. [(fun x => _) : proj _].
+ *)
 Section NoCasts.
-  Section A.
-    Structure bla (useless_param: bool) := { #[canonical=no]bla_pre : unit; bla_key : Type; #[canonical=no]bla_post: nat; }.
-    Canonical Structure bla_func b : bla b := {| bla_pre:= tt; bla_key := nat -> nat; bla_post:= 0|}.
-    Example ex_bla1 p := let b := _ in fun f : @bla_key p b => f 1.
-    Example ex_bla2 p := let b := _ in (fun x => x) : @bla_key p b.
-  End A.
-  Section B.
+  Section Basic.
+    Structure r1 (useless_param: bool) :=
+      { #[canonical=no]  r1_pre : unit
+      ; #[canonical=yes] r1_key : Type
+      ; #[canonical=no]  r1_post: nat
+      }.
+    Canonical Structure r1_func b : r1 b := {| r1_pre:= tt; r1_key := nat -> nat; r1_post:= 0|}.
+    Example ex_r1_1 p := let b := _ in fun f : @r1_key p b => f 1.
+    Example ex_r1_2 p := let b := _ in (fun x => x) : @r1_key p b.
+  End Basic.
+
+  Section Primitive.
     Local Set Primitive Projections.
-    Structure pbla (useless_param: bool) := { #[canonical=no]pbla_pre : unit; pbla_key : Type; #[canonical=no]pbla_post: nat; }.
-    Canonical Structure pbla_func b : pbla b := {| pbla_pre:= tt; pbla_key := nat -> nat; pbla_post:= 0|}.
-    Example ex_pbla1 p := let b := _ in fun f : @pbla_key p b => f 1.
-    Example ex_pbla2 p := let b := _ in (fun x => x) : @pbla_key p b.
-  End B.
+    Structure r2 (useless_param: bool) :=
+      { #[canonical=no]  r2_pre : unit
+      ; #[canonical=yes] r2_key : Type
+      ; #[canonical=no]  r2_post: nat; }.
+    Canonical Structure r2_func b : r2 b := {| r2_pre:= tt; r2_key := nat -> nat; r2_post:= 0|}.
+    Example ex_r2_1 p := let b := _ in fun f : @r2_key p b => f 1.
+    Example ex_r2_2 p := let b := _ in (fun x => x) : @r2_key p b.
+  End Primitive.
+
+  Section UsedParameters.
+    Structure r3 (useless_param: bool) (T : Type) :=
+      { #[canonical=no]  r3_pre : unit
+      ; #[canonical=yes] r3_key : Type
+      ; #[canonical=no]  r3_post: T
+      }.
+    Canonical Structure r3_func b : r3 b nat := {| r3_pre:= tt; r3_key := nat -> nat; r3_post:= 0|}.
+    Example ex_r3_1 p := let b := _ in fun f : @r3_key p _ b => f 1.
+    Example ex_r3_2 p := let b := _ in (fun x => x) : @r3_key p _ b.
+  End UsedParameters.
+
+  Section LetBoundProjections.
+    Structure r4 (useless_param: bool) :=
+      { #[canonical=no]  r4_pre : unit
+      ; #[canonical=no]  r4_let := true
+      ; #[canonical=yes] r4_key : Type
+      ; #[canonical=no]  r4_post: nat;
+      }.
+    Canonical Structure r4_func b : r4 b := {| r4_pre:= tt; r4_key := nat -> nat; r4_post:= 0|}.
+    Example ex_r4_1 p := let b := _ in fun f : @r4_key p b => f 1.
+    Example ex_r4_2 p := let b := _ in (fun x => x) : @r4_key p b.
+  End LetBoundProjections.
+
 End NoCasts.
