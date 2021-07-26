@@ -121,6 +121,8 @@ let context uctx =
   let (_, rbinders) = uctx.names in
   ContextSet.to_context (compute_instance_binders rbinders) uctx.local
 
+type named_universes_entry = Entries.universes_entry * UnivNames.universe_binders
+
 let univ_entry ~poly uctx =
   let open Entries in
   let (binders, _) = uctx.names in

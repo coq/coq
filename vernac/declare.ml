@@ -104,7 +104,7 @@ type 'a proof_entry = {
   (* State id on which the completion of type checking is reported *)
   proof_entry_feedback : Stateid.t option;
   proof_entry_type        : Constr.types option;
-  proof_entry_universes   : Entries.universes_entry * UnivNames.universe_binders;
+  proof_entry_universes   : UState.named_universes_entry;
   proof_entry_opaque      : bool;
   proof_entry_inline_code : bool;
 }
@@ -405,7 +405,7 @@ let inline_private_constants ~uctx env ce =
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects proof_entry
   | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind ;
-                           univs:Entries.universes_entry * UnivNames.universe_binders }
+                           univs:UState.named_universes_entry }
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
@@ -1826,7 +1826,7 @@ module MutualEntry : sig
     : pinfo:Proof_info.t
     -> uctx:UState.t
     -> sec_vars:Id.Set.t option
-    -> univs:Entries.universes_entry * UnivNames.universe_binders
+    -> univs:UState.named_universes_entry
     -> Names.GlobRef.t list
 
   val declare_mutdef

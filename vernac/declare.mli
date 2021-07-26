@@ -325,7 +325,7 @@ val definition_entry
   -> ?using:Names.Id.Set.t
   -> ?inline:bool
   -> ?types:Constr.types
-  -> ?univs:Entries.universes_entry * UnivNames.universe_binders
+  -> ?univs:UState.named_universes_entry
   -> Constr.constr
   -> Evd.side_effects proof_entry
 
@@ -348,7 +348,7 @@ val declare_variable
   -> kind:Decls.logical_kind
   -> typ:Constr.types
   -> impl:Glob_term.binding_kind
-  -> univs:Entries.universes_entry * UnivNames.universe_binders
+  -> univs:UState.named_universes_entry
   -> unit
 
 (** Declaration of global constructions
@@ -401,7 +401,7 @@ val build_by_tactic
   -> poly:bool
   -> typ:EConstr.types
   -> unit Proofview.tactic
-  -> Constr.constr * Constr.types option * (Entries.universes_entry * UnivNames.universe_binders) * bool * UState.t
+  -> Constr.constr * Constr.types option * (UState.named_universes_entry) * bool * UState.t
 
 (** {2 Program mode API} *)
 

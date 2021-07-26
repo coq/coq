@@ -36,7 +36,7 @@ val declare_variable
   : coercion_flag
   -> kind:Decls.assumption_object_kind
   -> Constr.types
-  -> Entries.universes_entry * UnivNames.universe_binders
+  -> UState.named_universes_entry
   -> Impargs.manual_implicits
   -> Glob_term.binding_kind
   -> variable CAst.t
@@ -48,7 +48,7 @@ val declare_axiom
   -> local:Locality.import_status
   -> kind:Decls.assumption_object_kind
   -> Constr.types
-  -> Entries.universes_entry * UnivNames.universe_binders
+  -> UState.named_universes_entry
   -> Impargs.manual_implicits
   -> Declaremods.inline
   -> variable CAst.t

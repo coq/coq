@@ -182,7 +182,7 @@ type tc_result =
   bool
   * Impargs.manual_implicits
   (* Part relative to closing the definitions *)
-  * (Entries.universes_entry * UnivNames.universe_binders)
+  * UState.named_universes_entry
   * Entries.variance_entry
   * Constr.rel_context
   * DataR.t list
