@@ -9,7 +9,6 @@
 (************************************************************************)
 
 (*i*)
-module CVars = Vars
 open Names
 open EConstr
 open CErrors
@@ -25,7 +24,6 @@ open Class_tactics
 open Libobject
 
 module RelDecl = Context.Rel.Declaration
-module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let set_typeclass_transparency ~locality c b =
@@ -237,38 +235,11 @@ let subst_class (subst,cl) =
     cl_unique = cl.cl_unique }
 
 let discharge_class cl =
-  let open CVars in
-  let repl = Lib.replacement_context () in
-  let rel_of_variable_context ctx = List.fold_right
-    ( fun decl (ctx', subst) ->
-        let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
-        (decl' :: ctx', NamedDecl.get_id decl :: subst)
-    ) ctx ([], []) in
-  let discharge_rel_context (subst, usubst) n rel =
-    let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
-    let fold decl (ctx, k) =
-      let map c = subst_univs_level_constr usubst (substn_vars k subst c) in
-      RelDecl.map_constr map decl :: ctx, succ k
-    in
-    let ctx, _ = List.fold_right fold rel ([], n) in
-    ctx
-  in
-  let abs_context cl =
-    let open GlobRef in
-    match cl.cl_impl with
-      | VarRef _ | ConstructRef _ -> assert false
-      | ConstRef cst -> Lib.section_segment_of_constant cst
-      | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind in
-  let discharge_context ctx' subst ctx =
-    discharge_rel_context subst 1 ctx @ ctx'
-  in
   try
-    let info = abs_context cl in
-    let ctx = info.Declarations.abstr_ctx in
-    let ctx, subst = rel_of_variable_context ctx in
-    let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
-    let context = discharge_context ctx (subst, usubst) cl.cl_context in
-    let props = discharge_rel_context (subst, usubst) (succ (List.length cl.cl_context)) cl.cl_props in
+    let info = Lib.section_segment_of_reference cl.cl_impl in
+    let info, cl_univs' = Cooking.lift_poly_univs info cl.cl_univs in
+    let nprops = List.length cl.cl_props in
+    let props, context = List.chop nprops (Cooking.abstract_rel_context info (cl.cl_props @ cl.cl_context)) in
     let discharge_proj x = x in
     { cl_univs = cl_univs';
       cl_impl = cl.cl_impl;

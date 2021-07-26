@@ -108,7 +108,7 @@ let indirect_accessor o =
   | None ->  CErrors.user_err Pp.(str "Cannot access opaque delayed proof.")
   | Some c -> c
   in
-  let (c, prv) = Cooking.cook_constr ci c in
+  let (c, prv) = Cooking.cook_opaque_proofterm ci c in
   let c = Mod_subst.(List.fold_right subst_mps sub c) in
   (c, prv)
 

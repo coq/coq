@@ -242,7 +242,7 @@ let discharge_coercion c =
     let n =
       try
         let ins = Lib.section_instance c.coe_value in
-        Array.length (snd ins)
+        Array.length ins.Declarations.abstr_inst
       with Not_found -> 0
     in
     let nc = { c with

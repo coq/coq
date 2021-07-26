@@ -506,23 +506,23 @@ let safe_push_named d env =
 
 let push_named_def (id,de) senv =
   let sections = get_section senv.sections in
-  let sections = Section.push_local sections in
   let c, r, typ = Term_typing.translate_local_def senv.env id de in
-  let x = Context.make_annot id r in
-  let env'' = safe_push_named (LocalDef (x, c, typ)) senv.env in
+  let d = LocalDef (Context.make_annot id r, c, typ) in
+  let env'' = safe_push_named d senv.env in
+  let sections = Section.push_local d sections in
   { senv with sections=Some sections; env = env'' }
 
 let push_named_assum (x,t) senv =
   let sections = get_section senv.sections in
-  let sections = Section.push_local sections in
   let t, r = Term_typing.translate_local_assum senv.env t in
-  let x = Context.make_annot x r in
-  let env'' = safe_push_named (LocalAssum (x,t)) senv.env in
+  let d = LocalAssum (Context.make_annot x r, t) in
+  let sections = Section.push_local d sections in
+  let env'' = safe_push_named d senv.env in
   { senv with sections=Some sections; env = env'' }
 
 let push_section_context uctx senv =
   let sections = get_section senv.sections in
-  let sections = Section.push_context uctx sections in
+  let sections = Section.push_local_universe_context uctx sections in
   let senv = { senv with sections=Some sections } in
   let ctx = Univ.ContextSet.of_context uctx in
   (* We check that the universes are fresh. FIXME: This should be done
@@ -584,10 +584,10 @@ let add_field ((l,sfb) as field) gn senv =
       match sfb, gn with
       | SFBconst cb, C con ->
         let poly = Declareops.constant_is_polymorphic cb in
-        Some Section.(push_global ~poly (SecDefinition (con, cb)) sections)
+        Some Section.(push_global ~poly env' (SecDefinition con) sections)
       | SFBmind mib, I mind ->
         let poly = Declareops.inductive_is_polymorphic mib in
-        Some Section.(push_global ~poly (SecInductive (mind, mib)) sections)
+        Some Section.(push_global ~poly env' (SecInductive mind) sections)
       | _, (M | MT) -> Some sections
       | _ -> assert false
   in
@@ -1372,18 +1372,18 @@ let close_section senv =
   in
   (* Third phase: replay the discharged section contents *)
   let senv = push_context_set ~strict:true cstrs senv in
-  let modlist = Section.replacement_context env0 sections0 in
-  let cooking_info abstract = { Declarations.modlist; abstract; } in
   let fold entry senv =
     match entry with
-  | SecDefinition (kn, cb) ->
-    let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
+  | SecDefinition kn ->
+    let cb = Environ.lookup_constant kn env0 in
+    let info = Section.segment_of_constant kn sections0 in
     let r = { Cooking.from = cb; info } in
     let cb = Term_typing.translate_recipe senv.env kn r in
     (* Delayed constants are already in the global environment *)
     add_constant_aux senv (kn, cb)
-  | SecInductive (ind, mib) ->
-    let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
+  | SecInductive ind ->
+    let mib = Environ.lookup_mind ind env0 in
+    let info = Section.segment_of_inductive ind sections0 in
     let mib = Cooking.cook_inductive info mib in
     add_checked_mind ind mib senv
   in

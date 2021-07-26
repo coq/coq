@@ -541,15 +541,14 @@ let subst_implicits (subst,(req,l)) =
 let sec_implicits =
   Summary.ref Id.Map.empty ~name:"section-implicits"
 
-let impls_of_context ctx =
-  let map n decl =
-    let id = NamedDecl.get_id decl in
+let impls_of_context vars =
+  let map n id =
     match Id.Map.get id !sec_implicits with
     | NonMaxImplicit -> Some ((Name id,n,None), Manual, (false, true))
     | MaxImplicit -> Some ((Name id,n,None), Manual, (true, true))
     | Explicit -> None
   in
-  List.map_i map 1 (List.rev (List.filter (NamedDecl.is_local_assum) ctx))
+  List.map_i map 1 vars
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)
@@ -578,7 +577,7 @@ let discharge_implicits (req,l) =
      let l' =
        try
          List.map (fun (gr, l) ->
-             let vars = Lib.variable_section_segment_of_reference gr in
+             let vars = Array.map_to_list Constr.destVar (Lib.section_instance gr).abstr_inst in
              let extra_impls = impls_of_context vars in
              let newimpls = List.map (add_section_impls vars extra_impls) l in
              (gr, newimpls)) l

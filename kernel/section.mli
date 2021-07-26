@@ -25,8 +25,8 @@ val map_custom : ('a -> 'a) -> 'a t -> 'a t
 (** {6 Manipulating sections} *)
 
 type section_entry =
-| SecDefinition of Constant.t * Declarations.constant_body
-| SecInductive of MutInd.t * Declarations.mutual_inductive_body
+| SecDefinition of Constant.t
+| SecInductive of MutInd.t
 
 val open_section : custom:'a -> 'a t option -> 'a t
 (** Open a new section with the provided universe polymorphic status. Sections
@@ -41,10 +41,10 @@ val close_section : 'a t -> 'a t option * section_entry list * ContextSet.t * 'a
 
 (** {6 Extending sections} *)
 
-val push_local : 'a t -> 'a t
+val push_local : Constr.named_declaration -> 'a t -> 'a t
 (** Extend the current section with a local definition (cf. push_named). *)
 
-val push_context : UContext.t -> 'a t -> 'a t
+val push_local_universe_context : UContext.t -> 'a t -> 'a t
 (** Extend the current section with a local universe context. Assumes that the
     last opened section is polymorphic. *)
 
@@ -52,7 +52,7 @@ val push_constraints : ContextSet.t -> 'a t -> 'a t
 (** Extend the current section with a global universe context.
     Assumes that the last opened section is monomorphic. *)
 
-val push_global : poly:bool -> section_entry -> 'a t -> 'a t
+val push_global : Environ.env -> poly:bool -> section_entry -> 'a t -> 'a t
 (** Push a global entry in this section. *)
 
 (** {6 Retrieving section data} *)
@@ -65,16 +65,13 @@ val all_poly_univs : 'a t -> Univ.Level.t array
    constraints about monomorphic universes, which prevent declaring
    monomorphic globals. *)
 
-val empty_segment : Declarations.abstr_info
+val empty_segment : Declarations.cooking_info
 (** Nothing to abstract *)
 
-val segment_of_constant : Environ.env -> Constant.t -> 'a t -> Declarations.abstr_info
+val segment_of_constant : Constant.t -> 'a t -> Declarations.cooking_info
 (** Section segment at the time of the constant declaration *)
 
-val segment_of_inductive : Environ.env -> MutInd.t -> 'a t -> Declarations.abstr_info
+val segment_of_inductive : MutInd.t -> 'a t -> Declarations.cooking_info
 (** Section segment at the time of the inductive declaration *)
-
-val replacement_context : Environ.env -> 'a t -> Declarations.work_list
-(** Section segments of all declarations from this section. *)
 
 val is_in_section : Environ.env -> GlobRef.t -> 'a t -> bool

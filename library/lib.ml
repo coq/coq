@@ -14,9 +14,6 @@ open Util
 open Names
 open Libnames
 open Libobject
-open Context.Named.Declaration
-
-module NamedDecl = Context.Named.Declaration
 
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
@@ -340,54 +337,33 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-let instance_from_variable_context =
-  List.rev %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
-
-let extract_worklist info =
-  let args = instance_from_variable_context info.Declarations.abstr_ctx in
-  info.Declarations.abstr_subst, args
-
 let sections () = Safe_typing.sections_of_safe_env @@ Global.safe_env ()
 
 let force_sections () = match Safe_typing.sections_of_safe_env (Global.safe_env()) with
   | Some s -> s
   | None -> CErrors.user_err Pp.(str "No open section.")
 
-let replacement_context () =
-  Section.replacement_context (Global.env ()) (force_sections ())
-
 let section_segment_of_constant con =
-  Section.segment_of_constant (Global.env ()) con (force_sections ())
+  Section.segment_of_constant con (force_sections ())
 
-let section_segment_of_mutual_inductive kn =
-  Section.segment_of_inductive (Global.env ()) kn (force_sections ())
+let section_segment_of_inductive kn =
+  Section.segment_of_inductive kn (force_sections ())
 
 let empty_segment = Section.empty_segment
 
 let section_segment_of_reference = let open GlobRef in function
 | ConstRef c -> section_segment_of_constant c
 | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-  section_segment_of_mutual_inductive kn
+  section_segment_of_inductive kn
 | VarRef _ -> empty_segment
-
-let variable_section_segment_of_reference gr =
-  (section_segment_of_reference gr).Declarations.abstr_ctx
 
 let is_in_section ref = match sections () with
   | None -> false
   | Some sec ->
     Section.is_in_section (Global.env ()) ref sec
 
-let section_instance = let open GlobRef in function
-  | VarRef id ->
-    if is_in_section (VarRef id) then (Univ.Instance.empty, [||])
-    else raise Not_found
-  | ConstRef con ->
-    let data = section_segment_of_constant con in
-    extract_worklist data
-  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-    let data = section_segment_of_mutual_inductive kn in
-    extract_worklist data
+let section_instance ref =
+  (section_segment_of_reference ref).Declarations.abstr_inst_info
 
 (*************)
 (* Sections. *)
@@ -473,16 +449,5 @@ let library_part = function
 
 let discharge_proj_repr p =
   let ind = Projection.Repr.inductive p in
-  if not (is_in_section (GlobRef.IndRef ind)) then p
-  else
-    let modlist = replacement_context () in
-    let _, newpars = Mindmap.find (Projection.Repr.mind p) (snd modlist) in
-    Projection.Repr.map_npars (fun npars -> npars + Array.length newpars) p
-
-let discharge_abstract_universe_context { Declarations.abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
-  let open Univ in
-  let ainst = make_abstract_instance auctx in
-  let subst = Instance.append subst ainst in
-  let subst = make_instance_subst subst in
-  let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
-  subst, AbstractContext.union abs_ctx auctx
+  let sec = section_instance (GlobRef.IndRef ind) in
+  Cooking.discharge_proj_repr sec p

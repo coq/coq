@@ -107,8 +107,8 @@ module ReductionBehaviour = struct
     | false, (gr, b) ->
       let b =
         if Lib.is_in_section gr then
-          let vars = Lib.variable_section_segment_of_reference gr in
-          let extra = List.length vars in
+          let vars = (Lib.section_instance gr).Declarations.abstr_inst in
+          let extra = Array.length vars in
           more_args extra b
         else b
       in
