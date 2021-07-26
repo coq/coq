@@ -408,12 +408,12 @@ let decompose_reduced_canonical_projection sigma c =
   match EConstr.kind sigma c with
   | Case (ci, inst, params, _, _, head, [|branch|]) ->
     begin
+      let bound_args = ci.ci_cstr_ndecls.(0) in
       (* is the head of the actual branch body a projection? *)
-      let n_args = ci.ci_cstr_nargs.(0) in
       let i =
         try
           let i = EConstr.destRel sigma (snd branch) in
-          if i <= n_args then n_args - i
+          if i <= bound_args then bound_args - i
           else raise Not_found
         with DestKO -> raise Not_found
       in
