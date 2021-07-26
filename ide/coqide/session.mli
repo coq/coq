@@ -29,7 +29,8 @@ type jobpage = string CString.Map.t page
 
 type breakpoint = {
   mark_id : string;
-  mutable prev_offset : int;
+  mutable prev_byte_offset : int; (* UTF-8 byte offset for Coq *)
+  mutable prev_uni_offset : int;  (* unicode offset for GTK *)
 }
 
 type session = {

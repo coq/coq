@@ -30,7 +30,9 @@ type errpage = (int * string) list page
 type jobpage = string CString.Map.t page
 type breakpoint = {
   mark_id : string;
-  mutable prev_offset : int; (* may differ from mark#offset as the script is edited *)
+  mutable prev_byte_offset : int; (* UTF-8 byte offset for Coq *)
+  (* prev_uni_offset may differ from mark#offset as the script is edited *)
+  mutable prev_uni_offset : int;  (* unicode offset for GTK *)
 }
 
 type session = {

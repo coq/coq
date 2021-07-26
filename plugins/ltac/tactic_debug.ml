@@ -425,7 +425,8 @@ let debug_prompt lev tac f varmap trace =
               | StepOver -> (* todo: cache list lengths for performance? *)
                             let st, st_prev = (Option.default [] stack), (Option.default [] p_stack) in
                             let l_cur, l_prev = StdList.length st, StdList.length st_prev in
-                            if l_cur < l_prev || l_cur = 0 || l_prev = 0 then true (* stepped out *)
+                            if l_cur < l_prev || l_cur = 0 then true (* stepped out *)
+                            else if l_prev = 0 && l_cur > 0 then false
                             else
                               let peq = StdList.nth st (l_cur - l_prev) == (StdList.hd st_prev) in
                               (l_cur > l_prev && (not peq)) ||  (* stepped out *)

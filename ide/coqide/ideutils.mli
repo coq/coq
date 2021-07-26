@@ -122,3 +122,7 @@ val decode_string_list : string -> string list
 (** filter key event to keep only the interesting modifiers *)
 
 val filter_key : GdkEvent.Key.t -> Gdk.keysym * Gdk.Tags.modifier list
+
+val uni_off_to_byte_off : GText.buffer -> int -> int
+
+val byte_off_to_uni_off : GText.buffer -> int -> int

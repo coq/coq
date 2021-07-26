@@ -223,15 +223,17 @@ let calculate_bpt_updates sn =
     | bp :: tl ->
       let iter = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
       let has_tag = iter#has_tag Tags.Script.breakpoint in
-(*      Printf.printf "prev_offset = %d %d  %b\n" iter#offset bp.prev_offset has_tag;*)
-      let prev_offset = bp.prev_offset in
+(*      Printf.printf "prev_uni_offset = %d %d  %b\n" iter#offset bp.prev_uni_offset has_tag;*)
+      let prev_byte_offset = bp.prev_byte_offset in
       if not has_tag then begin
         sn.buffer#delete_mark (`NAME bp.mark_id); (* remove *)
-        update_bpts (((fn, prev_offset), false) :: upd) bpts_res tl
-      end else if iter#offset <> bp.prev_offset then begin
-        bp.prev_offset <- iter#offset;            (* move *)
-        update_bpts (((fn, iter#offset), true)
-            :: ((fn, prev_offset), false) :: upd)
+        update_bpts (((fn, prev_byte_offset), false) :: upd) bpts_res tl
+      end else if iter#offset <> bp.prev_uni_offset then begin
+        bp.prev_uni_offset <- iter#offset;        (* move *)
+        let byte_offset = Ideutils.uni_off_to_byte_off sn.buffer iter#offset in
+        bp.prev_byte_offset <- byte_offset;
+        update_bpts (((fn, byte_offset), true)
+            :: ((fn, prev_byte_offset), false) :: upd)
           (bp :: bpts_res) tl (* move *)
       end else
         update_bpts upd (bp :: bpts_res) tl       (* keep *)
@@ -247,7 +249,7 @@ let reapply_bpts sn =
       let start = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
       let stop = start#forward_char in
       sn.buffer#apply_tag Tags.Script.breakpoint ~start ~stop;
-      (("ToplevelInput", bp.prev_offset), true)
+      (("ToplevelInput", bp.prev_byte_offset), true)
     ) sn.breakpoints
   in
   (* plus breakpoints in other files *)
@@ -256,7 +258,7 @@ let reapply_bpts sn =
       | _ when osn == sn -> upds
       | None -> upds
       | Some file ->
-        (List.map (fun bp -> ((file, bp.prev_offset), true)) osn.breakpoints) @ upds
+        (List.map (fun bp -> ((file, bp.prev_byte_offset), true)) osn.breakpoints) @ upds
     ) upds notebook#pages
   in
   db_upd_bpts upds sn
@@ -267,7 +269,8 @@ let init_bpts sn =
 
 let restore_bpts sn =
   init_bpts sn;
-  sn.debugger#set_stack []
+  sn.debugger#set_stack [];
+  sn.debugger#set_vars []
 
 let _ = forward_restore_bpts := restore_bpts
 
@@ -472,7 +475,7 @@ let close_buffer ?parent sn =
         List.iter (fun osn ->
             if sn != osn then begin
               let upds = List.fold_left (fun upds bp ->
-                  ((file, bp.prev_offset), false) :: upds)
+                  ((file, bp.prev_byte_offset), false) :: upds)
                 [] sn.breakpoints in
               Coq.add_do_when_ready osn.coqtop (fun _ -> db_upd_bpts upds osn)
             end
@@ -1089,14 +1092,15 @@ let compute_toggle sn =
   let start = sn.buffer#get_iter_at_mark `INSERT in
   let stop = start#forward_char in
   let file = "ToplevelInput" in
-  let prev_offset = start#offset in
+  let prev_uni_offset = start#offset in
+  let prev_byte_offset = Ideutils.uni_off_to_byte_off sn.buffer prev_uni_offset in
   let rec update_bpts = function
     | bp :: tl ->
       let iter = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
-      if iter#offset = start#offset then begin
+      if iter#offset = prev_uni_offset then begin
         sn.buffer#remove_tag Tags.Script.breakpoint ~start ~stop;
         sn.buffer#delete_mark (`NAME bp.mark_id);
-        [((file, prev_offset), false)],
+        [((file, prev_byte_offset), false)],
         List.filter (fun x ->
             x.mark_id <> bp.mark_id
           ) sn.breakpoints
@@ -1107,7 +1111,7 @@ let compute_toggle sn =
       incr next_bpt;
       let mark_id = "bp" ^ (string_of_int !next_bpt) in
       let _ = sn.buffer#create_mark ~name:mark_id start in
-      ([((file, prev_offset), true)], ({ mark_id; prev_offset }
+      ([((file, prev_byte_offset), true)], ({ mark_id; prev_byte_offset; prev_uni_offset }
           :: sn.breakpoints))
   in
   let upd, bpts_res = update_bpts sn.breakpoints in

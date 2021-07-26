@@ -670,7 +670,8 @@ sent a `prompt` message.
 
 ### <a name="command-db_loc">**Db_loc()**</a>
 Returns the location where the debugger has stopped, consisting of the absolute filename
-of the .v file (or "ToplevelInput") and the beginning and ending offset therein.
+of the .v file (or "ToplevelInput") and the beginning and ending offset therein.  Offsets
+are in bytes, not counts of unicode characters.
 ```html
 <call val="Db_loc">
   <unit/>
@@ -699,11 +700,11 @@ of the .v file (or "ToplevelInput") and the beginning and ending offset therein.
 
 ### <a name="command-db_upd_bpts">**Db_upd_bpts(...)**</a>
 The call passes a list of breakpoints to set or clear.  The string is the
-absolute pathname of the .v file (or "ToplevelInput"), the int is the offset within the file
-and the boolean is true to set a breakpoint and false to clear it.  Breakpoints can
-be updated when Coq is not busy or when Coq is stopped in the debugger.  If this
-message is sent in other states, it will be received and processed when Coq is no longer busy
-or execution stops in the debugger.
+absolute pathname of the .v file (or "ToplevelInput"), the int is the byte offset
+within the file and the boolean is true to set a breakpoint and false to clear it.
+Breakpoints can be updated when Coq is not busy or when Coq is stopped in the
+debugger.  If this message is sent in other states, it will be received and
+processed when Coq is no longer busy or execution stops in the debugger.
 
 ```html
 <call val="Db_upd_bpts">
@@ -760,7 +761,8 @@ stop at the breakpoint.
 
 Returns the Ltac call stack.  Each entry has a description of what was called
 (e.g. the tactic name) plus the absolute pathname of the file and the offset of
-the call therein.  The top of stack is the first entry in the list.
+the call therein.  The top of stack is the first entry in the list.  Offsets
+are in bytes, not counts of unicode characters.
 
 ```html
 <call val="Db_stack">

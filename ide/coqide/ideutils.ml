@@ -139,7 +139,7 @@ let set_location = ref  (function s -> failwith "not ready")
 let display_location ins =
   let line = ins#line + 1 in
   let off = ins#line_offset + 1 in
-  let msg = Printf.sprintf "Line: %5d Char: %3d" line off in
+  let msg = Printf.sprintf "Line: %5d Char: %3d Offset: %5d" line off (ins#offset) in
   !set_location msg
 
 (** A utf8 char is either a single byte (ascii char, 0xxxxxxx)
@@ -609,3 +609,29 @@ let encode_string_list l = String.concat " " (List.map encode_string l)
 let filter_key ev =
   let filter mods = List.filter (fun m -> List.mem m [`SHIFT; `CONTROL; `MOD1 (* Alt *)]) mods in
   GdkEvent.Key.(keyval ev, (filter (state ev)))
+
+let ulen uni_ch =
+  if uni_ch < 0x80 then 1
+  else if uni_ch < 0x800 then 2
+  else if uni_ch < 0x10000 then 3
+  else 4
+
+(** convert unicode offset (used by GTK buffer) to UTF-8 byte offset (used by Coq) *)
+let uni_off_to_byte_off (buffer : GText.buffer) off =
+  let rec cvt iter rv =
+    if iter#offset <= 0 then
+      rv
+    else
+      cvt iter#backward_char (rv + (ulen iter#char))
+  in
+  cvt (buffer#get_iter (`OFFSET off)) 0
+
+(** convert UTF-8 byte offset (used by Coq) to unicode offset (used by GTK buffer) *)
+let byte_off_to_uni_off buffer off =
+  let rec cvt iter cnt =
+    if cnt <= 0 then
+      iter#offset
+    else
+      cvt iter#forward_char (cnt - (ulen iter#char))
+  in
+  cvt (buffer#get_iter `START) off

@@ -164,8 +164,8 @@ let debugger title sid =
 
   let highlight line =
     if line < List.length !stack then begin
-      let start = stack_buffer#get_iter_at_char ~line 0 in
-      let stop = stack_buffer#get_iter_at_char ~line:(line+1) 0 in
+      let start = stack_buffer#get_iter (`LINE line) in
+      let stop = stack_buffer#get_iter (`LINE (line+1)) in
       stack_buffer#apply_tag debugging_tag ~start ~stop;
       highlighted_line := Some line;
       let (_, loc) = List.nth !stack line in
