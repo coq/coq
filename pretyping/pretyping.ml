@@ -942,7 +942,7 @@ struct
               let cs_type = mkProd (binder, domain_hole, codomain_hole) in
 
               let sigma = Evarconv.unify
-                  (GlobEnv.env env)
+                  !!env
                   sigma
                   Reduction.CUMUL
                   ty
@@ -954,7 +954,7 @@ struct
             end
         | _ ->
           try
-            let (proj, inst, evar, params) = CanonicalSolution.decompose_reduced_canonical_projection sigma ty in
+            let (proj, app) = CanonicalSolution.decompose_reduced_canonical_projection sigma ty in
 
             (* Quick check to see if this can succeed at all, avoiding a costly unification call if possible. *)
             let _ =
@@ -967,16 +967,11 @@ struct
             let binder = Context.anonR in
             let cs_type = mkProd (binder, domain_hole, codomain_hole) in
 
-            (* We can't use [t] here since it's the reduced projection.
-               So we'll reconstruct the unreduced projection. *)
-            let args = params in
-            let args = Array.append args [|evar|] in
-
             let sigma = Evarconv.unify
-                (GlobEnv.env env)
+                !!env
                 sigma
                 Reduction.CUMUL
-                (mkApp (mkConstU (proj, inst), args))
+                app
                 cs_type
             in
             sigma,Context.binder_name binder, Some domain_hole, Some codomain_hole

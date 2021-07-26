@@ -190,6 +190,8 @@ let object_table =
   Summary.ref (GlobRef.Map.empty : (constr * obj_typ) PatMap.t GlobRef.Map.t)
     ~name:"record-canonical-structs"
 
+let is_projection c = GlobRef.Map.mem c !object_table
+
 let keep_true_projections projs =
   let filter { Structure.proj_true ; proj_canonical; proj_body } = if proj_true then Some (proj_body, proj_canonical) else None in
   List.map_filter filter projs
@@ -382,11 +384,12 @@ let rec decompose_projection sigma c args =
   | Const (c, u) ->
      let n = Structure.projection_nparams c in
      (* Check if there is some canonical projection attached to this structure *)
-     let _ = GlobRef.Map.find (GlobRef.ConstRef c) !object_table in
+     let () = if not (is_projection (GlobRef.ConstRef c)) then raise Not_found in
      get_nth n args
   | Proj (p, c) ->
-     let _ = GlobRef.Map.find (GlobRef.ConstRef (Names.Projection.constant p)) !object_table in
-     c
+    (* XXX when does this ever raise? *)
+    let () = if not (is_projection (GlobRef.ConstRef (Names.Projection.constant p))) then raise Not_found in
+    c
   | _ -> raise Not_found
 
 let is_open_canonical_projection env sigma c =
@@ -403,28 +406,23 @@ let is_open_canonical_projection env sigma c =
 
 let decompose_reduced_canonical_projection sigma c =
   match EConstr.kind sigma c with
-  | Case (ci, inst, params, ret_ty, _invert, evar, branches)
-    when
-      Array.length branches == 1
-    ->
+  | Case (ci, inst, params, _, _, head, [|branch|]) ->
     begin
       (* is the head of the actual branch body a projection? *)
-      let n_args = Array.get ci.ci_cstr_nargs 0 in
+      let n_args = ci.ci_cstr_nargs.(0) in
       let i =
         try
-          let i = EConstr.destRel sigma (snd (Array.get branches 0)) in
-          if i <= n_args then
-            Array.get ci.ci_cstr_nargs 0 - i
-          else
-            raise Not_found
-        with | DestKO -> raise Not_found
+          let i = EConstr.destRel sigma (snd branch) in
+          if i <= n_args then n_args - i
+          else raise Not_found
+        with DestKO -> raise Not_found
       in
       let projs = Structure.find_projections ci.ci_ind in
       let proj = List.nth projs i in
       let proj = Option.get proj in
-      let _ = GlobRef.Map.find (GlobRef.ConstRef proj) !object_table in
-
-        (proj, inst, evar, params)
+      let () = if not (is_projection (GlobRef.ConstRef proj)) then raise Not_found in
+      let app = EConstr.(mkApp (mkConstU (proj, inst), Array.append params [|head|])) in
+      (proj, app)
     end
   | _ -> raise Not_found
 

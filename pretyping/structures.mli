@@ -131,7 +131,7 @@ val is_open_canonical_projection :
 
 
 val decompose_reduced_canonical_projection :
-  Evd.evar_map -> EConstr.t -> Names.Constant.t * EConstr.EInstance.t * EConstr.t * EConstr.t array
+  Evd.evar_map -> EConstr.t -> Names.Constant.t * EConstr.t
 
 end
 
