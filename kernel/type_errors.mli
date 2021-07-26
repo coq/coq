@@ -65,7 +65,7 @@ type ('constr, 'types) ptype_error =
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
-  | UnsatisfiedConstraints of Constraint.t
+  | UnsatisfiedConstraints of Constraints.t
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
   | BadRelevance
@@ -137,7 +137,7 @@ val error_ill_typed_rec_body  :
 
 val error_elim_explain : Sorts.family -> Sorts.family -> arity_error
 
-val error_unsatisfied_constraints : env -> Constraint.t -> 'a
+val error_unsatisfied_constraints : env -> Constraints.t -> 'a
 
 val error_undeclared_universe : env -> Level.t -> 'a
 

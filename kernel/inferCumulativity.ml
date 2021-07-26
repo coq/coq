@@ -39,7 +39,7 @@ end = struct
   *)
   type variances = {
     orig_array : (Level.t * Variance.t option) array;
-    univs : (mode * inferred) LMap.t;
+    univs : (mode * inferred) Level.Map.t;
   }
 
   let to_variance = function
@@ -49,20 +49,20 @@ end = struct
   let to_variance_opt o = Option.cata to_variance Invariant o
 
   let infer_level_eq u variances =
-    match LMap.find_opt u variances.univs with
+    match Level.Map.find_opt u variances.univs with
     | None -> variances
     | Some (Check, expected) ->
       let expected = to_variance expected in
       raise (BadVariance (u, expected, Invariant))
     | Some (Infer, _) ->
-      let univs = LMap.remove u variances.univs in
-      if LMap.is_empty univs then raise TrivialVariance;
+      let univs = Level.Map.remove u variances.univs in
+      if Level.Map.is_empty univs then raise TrivialVariance;
       {variances with univs}
 
   let infer_level_leq u variances =
     (* can only set Irrelevant -> Covariant so no TrivialVariance *)
     let univs =
-      LMap.update u (function
+      Level.Map.update u (function
           | None -> None
           | Some (_,CovariantI) as x -> x
           | Some (Infer,IrrelevantI) -> Some (Infer,CovariantI)
@@ -75,18 +75,18 @@ end = struct
   let start us =
     let univs = Array.fold_left (fun univs (u,variance) ->
         match variance with
-        | None -> LMap.add u (Infer,IrrelevantI) univs
+        | None -> Level.Map.add u (Infer,IrrelevantI) univs
         | Some Invariant -> univs
-        | Some Covariant -> LMap.add u (Check,CovariantI) univs
-        | Some Irrelevant -> LMap.add u (Check,IrrelevantI) univs)
-        LMap.empty us
+        | Some Covariant -> Level.Map.add u (Check,CovariantI) univs
+        | Some Irrelevant -> Level.Map.add u (Check,IrrelevantI) univs)
+        Level.Map.empty us
     in
-    if LMap.is_empty univs then raise TrivialVariance;
+    if Level.Map.is_empty univs then raise TrivialVariance;
     {univs; orig_array=us}
 
   let finish variances =
     Array.map
-      (fun (u,_check) -> to_variance_opt (Option.map snd (LMap.find_opt u variances.univs)))
+      (fun (u,_check) -> to_variance_opt (Option.map snd (Level.Map.find_opt u variances.univs)))
       variances.orig_array
 
 end
@@ -125,9 +125,9 @@ let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
 let infer_sort cv_pb variances s =
   match cv_pb with
   | CONV ->
-    LSet.fold infer_level_eq (Universe.levels (Sorts.univ_of_sort s)) variances
+    Level.Set.fold infer_level_eq (Universe.levels (Sorts.univ_of_sort s)) variances
   | CUMUL ->
-    LSet.fold infer_level_leq (Universe.levels (Sorts.univ_of_sort s)) variances
+    Level.Set.fold infer_level_leq (Universe.levels (Sorts.univ_of_sort s)) variances
 
 let infer_table_key variances c =
   let open Names in

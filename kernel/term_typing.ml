@@ -63,7 +63,7 @@ let feedback_completion_typecheck =
 
 type typing_context =
 | MonoTyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * Stateid.t option
-| PolyTyCtx of Environ.env * unsafe_type_judgment * universe_level_subst * AUContext.t * Id.Set.t * Stateid.t option
+| PolyTyCtx of Environ.env * unsafe_type_judgment * universe_level_subst * AbstractContext.t * Id.Set.t * Stateid.t option
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
@@ -77,15 +77,15 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let univs, typ =
     match utyp with
     | None ->
-      let u = UContext.instance (AUContext.repr auctx) in
+      let u = UContext.instance (AbstractContext.repr auctx) in
       let typ = Typeops.type_of_prim_or_type env u p in
-      let univs = if AUContext.is_empty auctx then Monomorphic ContextSet.empty
+      let univs = if AbstractContext.is_empty auctx then Monomorphic ContextSet.empty
         else Polymorphic auctx
       in
       univs, typ
 
     | Some (typ,Monomorphic_entry uctx) ->
-      assert (AUContext.is_empty auctx); (* ensured by ComPrimitive *)
+      assert (AbstractContext.is_empty auctx); (* ensured by ComPrimitive *)
       let env = push_context_set ~strict:true uctx env in
       let u = Instance.empty in
       let typ =
@@ -96,19 +96,19 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
       Monomorphic uctx, typ
 
     | Some (typ,Polymorphic_entry uctx) ->
-      assert (not (AUContext.is_empty auctx)); (* ensured by ComPrimitive *)
+      assert (not (AbstractContext.is_empty auctx)); (* ensured by ComPrimitive *)
       (* [push_context] will check that the universes aren't repeated in
          the instance so comparing the sizes works. No polymorphic
          primitive uses constraints currently. *)
-      if not (AUContext.size auctx = UContext.size uctx
-              && Constraint.is_empty (UContext.constraints uctx))
+      if not (AbstractContext.size auctx = UContext.size uctx
+              && Constraints.is_empty (UContext.constraints uctx))
       then CErrors.user_err Pp.(str "Incorrect universes for primitive " ++
                                 str (op_or_type_to_string p));
       let env = push_context ~strict:false uctx env in
       (* Now we know that uctx matches the auctx *)
       let typ = (Typeops.infer_type env typ).utj_val in
       let () = check_primitive_type env p (UContext.instance uctx) typ in
-      let uctx = UContext.refine_names (AUContext.names auctx) uctx in
+      let uctx = UContext.refine_names (AbstractContext.names auctx) uctx in
       let u, auctx = abstract_universes uctx in
       let typ = Vars.subst_univs_level_constr (make_instance_subst u) typ in
       Polymorphic auctx, typ
@@ -319,7 +319,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let () = check_section_variables env declared tj.utj_val body in
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
   let () = feedback_completion_typecheck feedback_id in
-  def, Opaqueproof.PrivatePolymorphic (AUContext.size auctx, private_univs)
+  def, Opaqueproof.PrivatePolymorphic (AbstractContext.size auctx, private_univs)
 
 (*s Global and local constant declaration. *)
 

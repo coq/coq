@@ -64,7 +64,7 @@ type ('constr, 'types) ptype_error =
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
-  | UnsatisfiedConstraints of Constraint.t
+  | UnsatisfiedConstraints of Constraints.t
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
   | BadRelevance

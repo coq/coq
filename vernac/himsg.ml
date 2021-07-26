@@ -979,14 +979,14 @@ let explain_not_match_error = function
           (UState.of_binders
              (Printer.universe_binders_with_opt_names auctx None))
       in
-      let uctx = AUContext.repr auctx in
+      let uctx = AbstractContext.repr auctx in
       Printer.pr_universe_instance_constraints sigma
         (UContext.instance uctx)
         (UContext.constraints uctx)
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h (pr_auctx got) ++ spc() ++
     str "but expected" ++ spc() ++ h (pr_auctx expect) ++
-    (if not (Int.equal (AUContext.size got) (AUContext.size expect)) then mt() else
+    (if not (Int.equal (AbstractContext.size got) (AbstractContext.size expect)) then mt() else
        fnl() ++ str "(incompatible constraints)")
   | IncompatibleVariance ->
     str "incompatible variance information"

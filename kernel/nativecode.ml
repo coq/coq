@@ -1938,7 +1938,7 @@ and compile_named env sigma univ auxdefs id =
       Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
 
 let compile_constant env sigma con cb =
-    let no_univs = 0 = Univ.AUContext.size (Declareops.constant_polymorphic_context cb) in
+    let no_univs = 0 = Univ.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
       let code = lambda_of_constr env sigma t in
@@ -2001,7 +2001,7 @@ let compile_mind mb mind stack =
     let name = Gind ("", ind) in
     let accu =
       let args =
-        if Int.equal (Univ.AUContext.size u) 0 then
+        if Int.equal (Univ.AbstractContext.size u) 0 then
           [|get_ind_code j; MLarray [||]|]
         else [|get_ind_code j|]
       in

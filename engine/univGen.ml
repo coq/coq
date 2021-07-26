@@ -26,21 +26,21 @@ let fresh_level () =
   Univ.Level.make (new_univ_global ())
 
 let fresh_instance auctx =
-  let inst = Array.init (AUContext.size auctx) (fun _ -> fresh_level()) in
-  let ctx = Array.fold_right LSet.add inst LSet.empty in
+  let inst = Array.init (AbstractContext.size auctx) (fun _ -> fresh_level()) in
+  let ctx = Array.fold_right Level.Set.add inst Level.Set.empty in
   let inst = Instance.of_array inst in
-  inst, (ctx, AUContext.instantiate inst auctx)
+  inst, (ctx, AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc auctx inst =
   let () =
     let len1 = Array.length (Instance.to_array inst)
-    and len2 = AUContext.size auctx in
+    and len2 = AbstractContext.size auctx in
       if not (len1 == len2) then
         CErrors.user_err ?loc ~hdr:"Universes"
           Pp.(str "Universe instance should have length " ++ int len2 ++ str ".")
       else ()
   in
-  inst, (LSet.empty, AUContext.instantiate inst auctx)
+  inst, (Level.Set.empty, AbstractContext.instantiate inst auctx)
 
 let fresh_instance_from ?loc ctx = function
   | Some inst -> existing_instance ?loc ctx inst
@@ -94,14 +94,14 @@ let new_global_univ () =
   (Univ.Universe.make u, ContextSet.singleton u)
 
 let fresh_universe_context_set_instance ctx =
-  if ContextSet.is_empty ctx then LMap.empty, ctx
+  if ContextSet.is_empty ctx then Level.Map.empty, ctx
   else
     let (univs, cst) = ContextSet.levels ctx, ContextSet.constraints ctx in
-    let univs',subst = LSet.fold
+    let univs',subst = Level.Set.fold
       (fun u (univs',subst) ->
         let u' = fresh_level () in
-          (LSet.add u' univs', LMap.add u u' subst))
-      univs (LSet.empty, LMap.empty)
+          (Level.Set.add u' univs', Level.Map.add u u' subst))
+      univs (Level.Set.empty, Level.Map.empty)
     in
     let cst' = subst_univs_level_constraints subst cst in
       subst, (univs', cst')

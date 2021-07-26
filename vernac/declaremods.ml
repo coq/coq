@@ -659,7 +659,7 @@ let mk_funct_type env args seb0 =
     (fun (seb,cst) (arg_id,arg_t,arg_inl) ->
       let mp = MPbound arg_id in
       let arg_t, cst' = Mod_typing.translate_modtype env mp arg_inl ([],arg_t) in
-      MoreFunctor(arg_id,arg_t,seb), Univ.Constraint.union cst cst')
+      MoreFunctor(arg_id,arg_t,seb), Univ.Constraints.union cst cst')
     seb0 args
 
 (** Prepare the module type list for check of subtypes *)
@@ -881,7 +881,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
   let _, _, _, mte_cst = Mod_typing.translate_mse env None inl mte in
-  let () = Global.push_context_set ~strict:true (Univ.LSet.empty,mte_cst) in
+  let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let env = Global.env () in
   let entry = params, mte in
   let sub_mty_l, sub_mty_ctx = build_subtypes env mp arg_entries_r mtys in
@@ -898,7 +898,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   (* We enrich the global environment *)
   let () = Global.push_context_set ~strict:true arg_ctx in
   let () = Global.push_context_set ~strict:true mte_ctx in
-  let () = Global.push_context_set ~strict:true (Univ.LSet.empty,mte_cst) in
+  let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let () = Global.push_context_set ~strict:true sub_mty_ctx in
   let mp_env = Global.add_modtype id entry inl in
 

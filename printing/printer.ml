@@ -177,7 +177,7 @@ let safe_pr_constr_env = safe_gen pr_constr_env
 let u_ident = Id.of_string "u"
 
 let universe_binders_with_opt_names orig names =
-  let orig = Univ.AUContext.names orig in
+  let orig = Univ.AbstractContext.names orig in
   let orig = Array.to_list orig in
   let udecl = match names with
   | None -> orig
@@ -222,7 +222,7 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
   let open Univ in
   let priv = Option.default Univ.ContextSet.empty priv in
   let has_priv = not (ContextSet.is_empty priv) in
-  if !Detyping.print_universes && (not (Univ.AUContext.is_empty c) || has_priv) then
+  if !Detyping.print_universes && (not (Univ.AbstractContext.is_empty c) || has_priv) then
     let prlev u = Termops.pr_evd_level sigma u in
     let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (Univ.pr_abstract_universe_context prlev ?variance c) in
     let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv) else mt() in
@@ -243,16 +243,16 @@ let pr_global = pr_global_env Id.Set.empty
 let pr_universe_instance_constraints evd inst csts =
   let open Univ in
   let prlev = Termops.pr_evd_level evd in
-  let pcsts = if Constraint.is_empty csts then mt()
+  let pcsts = if Constraints.is_empty csts then mt()
     else str " |= " ++
          prlist_with_sep (fun () -> str "," ++ spc())
            (fun (u,d,v) -> hov 0 (prlev u ++ pr_constraint_type d ++ prlev v))
-           (Constraint.elements csts)
+           (Constraints.elements csts)
   in
   str"@{" ++ Instance.pr prlev inst ++ pcsts ++ str"}"
 
 let pr_universe_instance evd inst =
-  pr_universe_instance_constraints evd inst Univ.Constraint.empty
+  pr_universe_instance_constraints evd inst Univ.Constraints.empty
 
 let pr_puniverses f env sigma (c,u) =
   if !Constrextern.print_universes

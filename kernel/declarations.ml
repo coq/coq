@@ -55,7 +55,7 @@ type ('a, 'opaque) constant_def =
 
 type universes =
   | Monomorphic of Univ.ContextSet.t
-  | Polymorphic of Univ.AUContext.t
+  | Polymorphic of Univ.AbstractContext.t
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -111,7 +111,7 @@ type abstr_info = {
   (** Section variables of this prefix *)
   abstr_subst : Univ.Instance.t;
   (** Actual names of the abstracted variables *)
-  abstr_uctx : Univ.AUContext.t;
+  abstr_uctx : Univ.AbstractContext.t;
   (** Universe quantification, same length as the substitution *)
 }
 
@@ -282,7 +282,7 @@ type ('ty,'a) functorize =
 
 type with_declaration =
   | WithMod of Id.t list * ModPath.t
-  | WithDef of Id.t list * (constr * Univ.AUContext.t option)
+  | WithDef of Id.t list * (constr * Univ.AbstractContext.t option)
 
 type module_alg_expr =
   | MEident of ModPath.t

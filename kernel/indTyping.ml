@@ -193,7 +193,7 @@ let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_;ind_has_relevant_arg=_;m
    can be used as an instance of l. All bounds from above, i.e.
    l <=/< r will be valid for any l' <= l. *)
 let unbounded_from_below u cstrs =
-  Univ.Constraint.for_all (fun (l, d, r) ->
+  Univ.Constraints.for_all (fun (l, d, r) ->
       match d with
       | Eq -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
       | Lt | Le -> not (Univ.Level.equal r u))
@@ -206,27 +206,27 @@ let unbounded_from_below u cstrs =
    is u_k and is contributing. *)
 let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
   let check_level l =
-    Univ.LSet.mem l (Univ.ContextSet.levels uctx) &&
+    Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
     (let () = assert (not @@ Univ.Level.is_small l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
-    not (Univ.LSet.mem l ctor_levels)
+    not (Univ.Level.Set.mem l ctor_levels)
   in
   let univs = Univ.Universe.levels concl in
-  let univs = Univ.LSet.filter (fun l -> check_level l) univs in
+  let univs = Univ.Level.Set.filter (fun l -> check_level l) univs in
   let fold acc = function
     | (LocalAssum (_, p)) ->
       (let c = Term.strip_prod_assum p in
       match kind c with
         | Sort (Type u) ->
             (match Univ.Universe.level u with
-             | Some l -> if Univ.LSet.mem l univs then Some l else None
+             | Some l -> if Univ.Level.Set.mem l univs then Some l else None
              | None -> None)
         | _ -> None) :: acc
     | LocalDef _ -> acc
   in
   let params = List.fold_left fold [] paramsctxt in
   if Universe.is_type0m concl then Some (univs, params)
-  else if not @@ Univ.LSet.is_empty univs then Some (univs, params)
+  else if not @@ Univ.Level.Set.is_empty univs then Some (univs, params)
   else None
 
 let get_param_levels ctx params arity splayed_lc =
@@ -237,12 +237,12 @@ let get_param_levels ctx params arity splayed_lc =
   | TemplateArity ar -> ar.template_level
   in
   let ctor_levels =
-    let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+    let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
     let param_levels =
       List.fold_left (fun levels d -> match d with
           | LocalAssum _ -> levels
           | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-        Univ.LSet.empty params
+        Univ.Level.Set.empty params
     in
     Array.fold_left
       (fun levels (d,c) ->

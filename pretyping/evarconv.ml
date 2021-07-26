@@ -459,7 +459,7 @@ let compare_cumulative_instances evd variances u u' =
 
 let compare_heads env evd ~nargs term term' =
     let check_strict evd u u' =
-      let cstrs = Univ.enforce_eq_instances u u' Univ.Constraint.empty in
+      let cstrs = Univ.enforce_eq_instances u u' Univ.Constraints.empty in
       try Success (Evd.add_constraints evd cstrs)
       with Univ.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
     in

@@ -170,9 +170,9 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   let nf_evar c = EConstr.to_constr sigma c in
   let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
       let t = nf_evar t in
-      let uvars = Univ.LSet.union uvars (Vars.universes_of_constr t) in
+      let uvars = Univ.Level.Set.union uvars (Vars.universes_of_constr t) in
       uvars, (coe,t,imps))
-      Univ.LSet.empty l
+      Univ.Level.Set.empty l
   in
   (* XXX: Using `Declare.prepare_parameter` here directly is not
      possible as we indeed declare several parameters; however,

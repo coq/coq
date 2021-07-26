@@ -18,7 +18,7 @@ module type Point = sig
   module Set : CSig.SetS with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
 
-  module Constraint : CSet.S with type elt = (t * constraint_type * t)
+  module Constraints : CSet.S with type elt = (t * constraint_type * t)
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
@@ -57,9 +57,9 @@ module Make (Point:Point) : sig
   val enforce_leq : Point.t -> Point.t -> t -> t
   val enforce_lt : Point.t -> Point.t -> t -> t
 
-  val constraints_of : t -> Point.Constraint.t * Point.Set.t list
+  val constraints_of : t -> Point.Constraints.t * Point.Set.t list
 
-  val constraints_for : kept:Point.Set.t -> t -> Point.Constraint.t
+  val constraints_for : kept:Point.Set.t -> t -> Point.Constraints.t
 
   val domain : t -> Point.Set.t
 

@@ -23,9 +23,9 @@ val new_global_univ : unit -> Universe.t in_universe_context_set
 (** Build a fresh instance for a given context, its associated substitution and
     the instantiated constraints. *)
 
-val fresh_instance : AUContext.t -> Instance.t in_universe_context_set
+val fresh_instance : AbstractContext.t -> Instance.t in_universe_context_set
 
-val fresh_instance_from : ?loc:Loc.t -> AUContext.t -> Instance.t option ->
+val fresh_instance_from : ?loc:Loc.t -> AbstractContext.t -> Instance.t option ->
   Instance.t in_universe_context_set
 
 val fresh_sort_in_family : Sorts.family ->

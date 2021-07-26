@@ -122,7 +122,7 @@ val push_context_set :
   strict:bool -> Univ.ContextSet.t -> safe_transformer0
 
 val add_constraints :
-  Univ.Constraint.t -> safe_transformer0
+  Univ.Constraints.t -> safe_transformer0
 
 (* (\** Generator of universes *\) *)
 (* val next_universe : int safe_transformer *)

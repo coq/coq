@@ -1564,7 +1564,7 @@ let prepare_proof ~unsafe_typ { proof } =
 
 let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
     (used_univs_typ, typ) (used_univs_body, body) =
-  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
   let utyp = UState.univ_entry ~poly initial_euctx in
   let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
   (* For vi2vo compilation proofs are computed now but we need to
@@ -1575,7 +1575,7 @@ let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
   utyp, ubody
 
 let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
-  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
   let uctx = UState.restrict uctx used_univs in
   let uctx' = UState.restrict uctx used_univs_typ in
   let utyp = UState.check_univ_decl ~poly uctx' udecl in
@@ -1586,7 +1586,7 @@ let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs
   utyp, ubody
 
 let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
-  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
   (* Since the proof is computed now, we can simply have 1 set of
      constraints in which we merge the ones for the body and the ones
      for the typ. We recheck the declaration after restricting with
@@ -1656,7 +1656,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
              this will prevent the body from adding universes and constraints. *)
         let uctx = Future.force uctx in
         let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
-        let used_univs = Univ.LSet.union
+        let used_univs = Univ.Level.Set.union
             (Vars.universes_of_constr types)
             (Vars.universes_of_constr pt)
         in

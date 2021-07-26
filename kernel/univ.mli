@@ -63,16 +63,40 @@ sig
   val var_index : t -> int option
 
   val name : t -> UGlobal.t option
+
+  module Set :
+    sig
+      include CSig.SetS with type elt = t
+
+      val pr : (elt -> Pp.t) -> t -> Pp.t
+      (** Pretty-printing *)
+    end
+
+  module Map :
+  sig
+    include CMap.ExtS with type key = t and module Set := Set
+
+    val lunion : 'a t -> 'a t -> 'a t
+    (** [lunion x y] favors the bindings in the first map. *)
+
+    val diff : 'a t -> 'a t -> 'a t
+    (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
+
+    val subst_union : 'a option t -> 'a option t -> 'a option t
+    (** [subst_union x y] favors the bindings of the first map that are [Some],
+        otherwise takes y's bindings. *)
+
+    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
+    (** Pretty-printing *)
+  end
+
 end
 
-(** Sets of universe levels *)
 module LSet :
 sig
-  include CSig.SetS with type elt = Level.t
-
+  include CSig.SetS with type elt = Level.t and type t = Level.Set.t
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  (** Pretty-printing *)
-end
+end [@@ocaml.deprecated "Use Univ.Level.Set"]
 
 module Universe :
 sig
@@ -113,7 +137,7 @@ sig
   (** Try to get a level out of a universe, returns [None] if it
       is an algebraic universe. *)
 
-  val levels : t -> LSet.t
+  val levels : t -> Level.Set.t
   (** Get the levels inside the universe, forgetting about increments *)
 
   val super : t -> t
@@ -180,22 +204,26 @@ val univ_level_rem : Level.t -> Universe.t -> Universe.t -> Universe.t
 type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 type univ_constraint = Level.t * constraint_type * Level.t
 
-module Constraint : sig
+module Constraints : sig
  include Set.S with type elt = univ_constraint
 end
 
-val empty_constraint : Constraint.t
-val union_constraint : Constraint.t -> Constraint.t -> Constraint.t
-val eq_constraint : Constraint.t -> Constraint.t -> bool
+module Constraint : sig
+ include Set.S with type elt = univ_constraint and type t = Constraints.t
+end [@@ocaml.deprecated "Use Univ.Constraints"]
 
-(** A value with universe Constraint.t. *)
-type 'a constrained = 'a * Constraint.t
+val empty_constraint : Constraints.t
+val union_constraint : Constraints.t -> Constraints.t -> Constraints.t
+val eq_constraint : Constraints.t -> Constraints.t -> bool
+
+(** A value with universe Constraints.t. *)
+type 'a constrained = 'a * Constraints.t
 
 (** Constrained *)
-val constraints_of : 'a constrained -> Constraint.t
+val constraints_of : 'a constrained -> Constraints.t
 
-(** Enforcing Constraint.t. *)
-type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
+(** Enforcing Constraints.t. *)
+type 'a constraint_function = 'a -> 'a -> Constraints.t -> Constraints.t
 
 val enforce_eq : Universe.t constraint_function
 val enforce_leq : Universe.t constraint_function
@@ -212,7 +240,7 @@ val enforce_leq_level : Level.t constraint_function
   universes in the path are canonical. Note that each step does not
   necessarily correspond to an actual constraint, but reflect how the
   system stores the graph and may result from combination of several
-  Constraint.t...
+  Constraints.t...
 *)
 type explanation = (constraint_type * Level.t) list
 type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation Lazy.t option
@@ -221,26 +249,16 @@ exception UniverseInconsistency of univ_inconsistency
 
 (** {6 Support for universe polymorphism } *)
 
-(** Polymorphic maps from universe levels to 'a *)
 module LMap :
 sig
-  include CMap.ExtS with type key = Level.t and module Set := LSet
-
+  include CMap.ExtS with type key = Level.t and type 'a t = 'a Level.Map.t and module Set := Level.Set
   val lunion : 'a t -> 'a t -> 'a t
-  (** [lunion x y] favors the bindings in the first map. *)
-
   val diff : 'a t -> 'a t -> 'a t
-  (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
-
   val subst_union : 'a option t -> 'a option t -> 'a option t
-  (** [subst_union x y] favors the bindings of the first map that are [Some],
-      otherwise takes y's bindings. *)
-
   val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-  (** Pretty-printing *)
-end
+end [@@ocaml.deprecated "Use Univ.Level.Map"]
 
-type 'a universe_map = 'a LMap.t
+type 'a universe_map = 'a Level.Map.t
 
 (** {6 Substitution} *)
 
@@ -308,7 +326,7 @@ sig
   val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   (** Pretty-printing, no comments *)
 
-  val levels : t -> LSet.t
+  val levels : t -> Level.Set.t
   (** The set of levels in the instance *)
 
 end
@@ -324,8 +342,8 @@ val in_punivs : 'a -> 'a puniverses
 
 val eq_puniverses : ('a -> 'a -> bool) -> 'a puniverses -> 'a puniverses -> bool
 
-(** A vector of universe levels with universe Constraint.t,
-    representing local universe variables and associated Constraint.t;
+(** A vector of universe levels with universe Constraints.t,
+    representing local universe variables and associated Constraints.t;
     the names are user-facing names for printing *)
 
 module UContext :
@@ -338,7 +356,7 @@ sig
   val is_empty : t -> bool
 
   val instance : t -> Instance.t
-  val constraints : t -> Constraint.t
+  val constraints : t -> Constraints.t
 
   val union : t -> t -> t
   (** Keeps the order of the instances *)
@@ -354,37 +372,58 @@ sig
 
 end
 
-module AUContext :
+module AbstractContext :
 sig
   type t
+  (** An abstract context serves to quantify over a graph of universes
+      represented using de Bruijn indices, as in:
+      u0, ..., u(n-1), Var i < Var j, .., Var k <= Var l |- term(Var 0 .. Var (n-1))
+      \-------------/  \-------------------------------/    \---------------------/
+      names for        constraints expressed on de Bruijn   judgement in abstract
+      printing         representation of the n univ vars    context expected to
+                                                            use de Bruijn indices
+  *)
 
-  val make : Names.Name.t array -> Constraint.t -> t
+  val make : Names.Name.t array -> Constraints.t -> t
   (** Build an abstract context. Constraints may be between universe
      variables. *)
 
   val repr : t -> UContext.t
   (** [repr ctx] is [(Var(0), ... Var(n-1) |= cstr] where [n] is the length of
-      the context and [cstr] the abstracted Constraint.t. *)
+      the context and [cstr] the abstracted Constraints.t. *)
 
   val empty : t
   val is_empty : t -> bool
 
   val size : t -> int
 
-  (** Keeps the order of the instances *)
   val union : t -> t -> t
+  (** The constraints are expected to be relative to the concatenated set of universes *)
 
-  val instantiate : Instance.t -> t -> Constraint.t
-  (** Generate the set of instantiated Constraint.t **)
+  val instantiate : Instance.t -> t -> Constraints.t
+  (** Generate the set of instantiated Constraints.t **)
 
   val names : t -> Names.Name.t array
   (** Return the names of the bound universe variables *)
 
 end
 
+module AUContext :
+sig
+  type t = AbstractContext.t
+  val make : Names.Name.t array -> Constraints.t -> t
+  val repr : t -> UContext.t
+  val empty : t
+  val is_empty : t -> bool
+  val size : t -> int
+  val union : t -> t -> t
+  val instantiate : Instance.t -> t -> Constraints.t
+  val names : t -> Names.Name.t array
+end [@@ocaml.deprecated "Use Univ.AbstractContext"]
+
 type 'a univ_abstracted = {
   univ_abstracted_value : 'a;
-  univ_abstracted_binder : AUContext.t;
+  univ_abstracted_binder : AbstractContext.t;
 }
 (** A value with bound universe levels. *)
 
@@ -392,21 +431,21 @@ val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
 
 (** Universe contexts (as sets) *)
 
-(** A set of universes with universe Constraint.t.
+(** A set of universes with universe Constraints.t.
     We linearize the set to a list after typechecking.
     Beware, representation could change.
 *)
 
 module ContextSet :
 sig
-  type t = LSet.t constrained
+  type t = Level.Set.t constrained
 
   val empty : t
   val is_empty : t -> bool
 
   val singleton : Level.t -> t
   val of_instance : Instance.t -> t
-  val of_set : LSet.t -> t
+  val of_set : Level.Set.t -> t
 
   val equal : t -> t -> bool
   val union : t -> t -> t
@@ -417,7 +456,7 @@ sig
 
   val diff : t -> t -> t
   val add_universe : Level.t -> t -> t
-  val add_constraints : Constraint.t -> t -> t
+  val add_constraints : Constraints.t -> t -> t
   val add_instance : Instance.t -> t -> t
 
   val sort_levels : Level.t array -> Level.t array
@@ -428,8 +467,8 @@ sig
 
   val of_context : UContext.t -> t
 
-  val constraints : t -> Constraint.t
-  val levels : t -> LSet.t
+  val constraints : t -> Constraints.t
+  val levels : t -> Level.Set.t
 
   val size : t -> int
   (** The number of universes in the context *)
@@ -449,9 +488,9 @@ val is_empty_level_subst : universe_level_subst -> bool
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
 val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
-val subst_univs_level_constraints : universe_level_subst -> Constraint.t -> Constraint.t
+val subst_univs_level_constraints : universe_level_subst -> Constraints.t -> Constraints.t
 val subst_univs_level_abstract_universe_context :
-  universe_level_subst -> AUContext.t -> AUContext.t
+  universe_level_subst -> AbstractContext.t -> AbstractContext.t
 val subst_univs_level_instance : universe_level_subst -> Instance.t -> Instance.t
 
 (** Level to universe substitutions. *)
@@ -471,10 +510,10 @@ val make_instance_subst : Instance.t -> universe_level_subst
 
 val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
-val abstract_universes : UContext.t -> Instance.t * AUContext.t
+val abstract_universes : UContext.t -> Instance.t * AbstractContext.t
 (** TODO: move universe abstraction out of the kernel *)
 
-val make_abstract_instance : AUContext.t -> Instance.t
+val make_abstract_instance : AbstractContext.t -> Instance.t
 
 (** [compact_univ u] remaps local variables in [u] such that their indices become
      consecutive. It returns the new universe and the mapping.
@@ -486,11 +525,11 @@ val compact_univ : Universe.t -> Universe.t * int list
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.t
-val pr_constraints : (Level.t -> Pp.t) -> Constraint.t -> Pp.t
+val pr_constraints : (Level.t -> Pp.t) -> Constraints.t -> Pp.t
 val pr_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
   UContext.t -> Pp.t
 val pr_abstract_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
-  AUContext.t -> Pp.t
+  AbstractContext.t -> Pp.t
 val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
 val explain_universe_inconsistency : (Level.t -> Pp.t) ->
   univ_inconsistency -> Pp.t
@@ -501,8 +540,8 @@ val pr_universe_subst : universe_subst -> Pp.t
 (** {6 Hash-consing } *)
 
 val hcons_univ : Universe.t -> Universe.t
-val hcons_constraints : Constraint.t -> Constraint.t
-val hcons_universe_set : LSet.t -> LSet.t
+val hcons_constraints : Constraints.t -> Constraints.t
+val hcons_universe_set : Level.Set.t -> Level.Set.t
 val hcons_universe_context : UContext.t -> UContext.t
-val hcons_abstract_universe_context : AUContext.t -> AUContext.t
+val hcons_abstract_universe_context : AbstractContext.t -> AbstractContext.t
 val hcons_universe_context_set : ContextSet.t -> ContextSet.t

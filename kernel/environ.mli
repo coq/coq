@@ -228,10 +228,10 @@ exception NotEvaluableConst of const_evaluation_result
 val constant_type : env -> Constant.t puniverses -> types constrained
 
 val constant_value_and_type : env -> Constant.t puniverses ->
-  constr option * types * Univ.Constraint.t
+  constr option * types * Univ.Constraints.t
 (** The universe context associated to the constant, empty if not
     polymorphic *)
-val constant_context : env -> Constant.t -> Univ.AUContext.t
+val constant_context : env -> Constant.t -> Univ.AbstractContext.t
 
 (* These functions should be called under the invariant that [env]
    already contains the constraints corresponding to the constant
@@ -270,7 +270,7 @@ val mem_mind : MutInd.t -> env -> bool
 
 (** The universe context associated to the inductive, empty if not
     polymorphic *)
-val mind_context : env -> MutInd.t -> Univ.AUContext.t
+val mind_context : env -> MutInd.t -> Univ.AbstractContext.t
 
 (** New-style polymorphism *)
 val polymorphic_ind  : inductive -> env -> bool
@@ -320,11 +320,11 @@ val lookup_modtype : ModPath.t -> env -> module_type_body
 
 (** {5 Universe constraints } *)
 
-val add_constraints : Univ.Constraint.t -> env -> env
+val add_constraints : Univ.Constraints.t -> env -> env
 (** Add universe constraints to the environment.
     @raise UniverseInconsistency. *)
 
-val check_constraints : Univ.Constraint.t -> env -> bool
+val check_constraints : Univ.Constraints.t -> env -> bool
 (** Check constraints are satifiable in the environment. *)
 
 val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
@@ -354,7 +354,7 @@ val same_flags : typing_flags -> typing_flags -> bool
 (** [update_typing_flags ?typing_flags] may update env with optional typing flags *)
 val update_typing_flags : ?typing_flags:typing_flags -> env -> env
 
-val universes_of_global : env -> GlobRef.t -> AUContext.t
+val universes_of_global : env -> GlobRef.t -> AbstractContext.t
 
 (** {6 Sets of referred section variables }
    [global_vars_set env c] returns the list of [id]'s occurring either

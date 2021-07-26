@@ -224,7 +224,7 @@ let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
 
 let prlev = UnivNames.pr_with_global_universes Id.Map.empty
-let ppuniverse_set l = pp (LSet.pr prlev l)
+let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
@@ -244,14 +244,14 @@ let ppnamedcontextval e =
   pp (pr_named_context env sigma (named_context_of_val e))
 
 let ppaucontext auctx =
-  let nas = AUContext.names auctx in
+  let nas = AbstractContext.names auctx in
   let prlev l = match Level.var_index l with
     | Some n -> (match nas.(n) with
         | Anonymous -> prlev l
         | Name id -> Id.print id)
     | None -> prlev l
   in
-  pp (pr_universe_context prlev (AUContext.repr auctx))
+  pp (pr_universe_context prlev (AbstractContext.repr auctx))
 
 
 let ppenv e = pp

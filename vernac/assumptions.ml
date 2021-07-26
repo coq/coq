@@ -280,7 +280,7 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
          let open Univ in
          Instance.of_array
            (Array.init
-              (AUContext.size
+              (AbstractContext.size
                  (Declareops.inductive_polymorphic_context mib))
               Level.var)
        in

@@ -41,8 +41,8 @@ val typecheck_inductive : env -> sec_univs:Univ.Level.t array option
 (* Utility function to compute the actual universe parameters
    of a template polymorphic inductive *)
 val template_polymorphic_univs :
-  ctor_levels:Univ.LSet.t ->
+  ctor_levels:Univ.Level.Set.t ->
   Univ.ContextSet.t ->
   Constr.rel_context ->
   Univ.Universe.t ->
-  (Univ.LSet.t * Univ.Level.t option list) option
+  (Univ.Level.Set.t * Univ.Level.t option list) option

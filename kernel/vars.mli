@@ -142,7 +142,7 @@ val subst_instance_context : Instance.t -> Constr.rel_context -> Constr.rel_cont
 val univ_instantiate_constr : Instance.t -> constr univ_abstracted -> constr
 (** Ignores the constraints carried by [univ_abstracted]. *)
 
-val universes_of_constr : constr -> Univ.LSet.t
+val universes_of_constr : constr -> Univ.Level.Set.t
 
 (** {3 Low-level cached lift type *)
 

@@ -96,7 +96,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
   | Aind ((mi,_i) as ind1) , Aind ind2 ->
     if Ind.CanOrd.equal ind1 ind2 && compare_stack stk1 stk2 then
-      let ulen = Univ.AUContext.size (Environ.mind_context env mi) in
+      let ulen = Univ.AbstractContext.size (Environ.mind_context env mi) in
       if ulen = 0 then
         conv_stack env k stk1 stk2 cu
       else

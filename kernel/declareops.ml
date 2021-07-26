@@ -57,7 +57,7 @@ let hcons_template_universe ar =
     template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
-  | Monomorphic _ -> Univ.AUContext.empty
+  | Monomorphic _ -> Univ.AbstractContext.empty
   | Polymorphic ctx -> ctx
 
 let abstract_universes = function

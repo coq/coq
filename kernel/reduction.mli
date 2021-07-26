@@ -48,10 +48,10 @@ type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraint.t
+type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraints.t
 
 val get_cumulativity_constraints : conv_pb -> Univ.Variance.t array ->
-  Univ.Instance.t -> Univ.Instance.t -> Univ.Constraint.t
+  Univ.Instance.t -> Univ.Instance.t -> Univ.Constraints.t
 
 val inductive_cumulativity_arguments : (Declarations.mutual_inductive_body * int) -> int
 val constructor_cumulativity_arguments : (Declarations.mutual_inductive_body * int * int) -> int
@@ -67,7 +67,7 @@ val convert_instances : flex:bool -> Univ.Instance.t -> Univ.Instance.t ->
 (** These two never raise UnivInconsistency, inferred_universes
     just gathers the constraints. *)
 val checked_universes : UGraph.t universe_compare
-val inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare
+val inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare
 
 (** These two functions can only raise NotConvertible *)
 val conv : constr extended_conversion_function

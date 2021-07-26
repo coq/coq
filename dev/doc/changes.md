@@ -5,6 +5,10 @@
 - Type `Univ.UContext` now embeds universe user names, generally
   resulting in more concise code.
 
+- Renaming `Univ.Constraint` into `Univ.Constraints`
+
+- Renaming `LSet` into `Level.Set` and `LMap` into `Level.Map`
+
 ## Changes between Coq 8.13 and Coq 8.14
 
 ### Build system and library infrastructure

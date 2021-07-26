@@ -621,26 +621,26 @@ let universes_of_constr sigma c =
   let rec aux s c =
     match kind sigma c with
     | Const (c, u) ->
-      LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
+      Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s
     | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
-      LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
+      Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s
     | Sort u ->
       let sort = ESorts.kind sigma u in
       if Sorts.is_small sort then s
       else
         let u = Sorts.univ_of_sort sort in
-        LSet.fold LSet.add (Universe.levels u) s
+        Level.Set.fold Level.Set.add (Universe.levels u) s
     | Evar (k, args) ->
       let concl = Evd.evar_concl (Evd.find sigma k) in
       fold sigma aux (aux s concl) c
     | Array (u,_,_,_) ->
-      let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s in
+      let s = Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s in
       fold sigma aux s c
     | Case (_,u,_,_,_,_,_) ->
-      let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s in
+      let s = Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s in
       fold sigma aux s c
     | _ -> fold sigma aux s c
-  in aux LSet.empty c
+  in aux Level.Set.empty c
 
 open Context
 open Environ

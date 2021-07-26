@@ -461,12 +461,12 @@ let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min
     (* we use some dummy values for the arities in the rel_context
        as univs_of_constr doesn't care about localassums and
        getting the real values is too annoying *)
-    let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+    let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
     let param_levels =
       List.fold_left (fun levels d -> match d with
           | LocalAssum _ -> levels
           | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-        Univ.LSet.empty params
+        Univ.Level.Set.empty params
     in
     let ctor_levels = List.fold_left
         (fun univs d ->
@@ -722,7 +722,7 @@ let declare_class def ~cumulative ~ubind ~univs ~variances id idbuild paramimpls
       let params = Context.Rel.map map params in
       auctx, params, fields
     | Monomorphic_entry _ ->
-      Univ.AUContext.empty, params, fields
+      Univ.AbstractContext.empty, params, fields
   in
   let map (impl, projs) =
     let k =

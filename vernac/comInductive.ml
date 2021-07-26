@@ -366,8 +366,8 @@ let check_param = function
 
 let restrict_inductive_universes sigma ctx_params arities constructors =
   let merge_universes_of_constr c =
-    Univ.LSet.union (EConstr.universes_of_constr sigma (EConstr.of_constr c)) in
-  let uvars = Univ.LSet.empty in
+    Univ.Level.Set.union (EConstr.universes_of_constr sigma (EConstr.of_constr c)) in
+  let uvars = Univ.Level.Set.empty in
   let uvars = Context.Rel.(fold_outside (Declaration.fold_constr merge_universes_of_constr) ctx_params ~init:uvars) in
   let uvars = List.fold_right merge_universes_of_constr arities uvars in
   let uvars = List.fold_right (fun (_,ctypes) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
@@ -422,12 +422,12 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       let template_candidate () =
         templatearity ||
         let ctor_levels =
-          let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+          let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
           let param_levels =
             List.fold_left (fun levels d -> match d with
                 | LocalAssum _ -> levels
                 | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-              Univ.LSet.empty ctx_params
+              Univ.Level.Set.empty ctx_params
           in
           List.fold_left (fun levels c -> add_levels c levels)
             param_levels ctypes

@@ -12,4 +12,4 @@ open Univ
 open Declarations
 open Environ
 
-val check_subtypes : env -> module_type_body -> module_type_body -> Constraint.t
+val check_subtypes : env -> module_type_body -> module_type_body -> Constraints.t

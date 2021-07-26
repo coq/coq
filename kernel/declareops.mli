@@ -15,7 +15,7 @@ open Univ
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
-val universes_context : universes -> AUContext.t
+val universes_context : universes -> AbstractContext.t
 
 val abstract_universes : Entries.universes_entry -> Univ.universe_level_subst * universes
 
@@ -32,7 +32,7 @@ val subst_const_body : substitution -> constant_body -> constant_body
 
 val constant_has_body : 'a pconstant_body -> bool
 
-val constant_polymorphic_context : 'a pconstant_body -> AUContext.t
+val constant_polymorphic_context : 'a pconstant_body -> AbstractContext.t
 
 (** Is the constant polymorphic? *)
 val constant_is_polymorphic : 'a pconstant_body -> bool
@@ -61,7 +61,7 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
 
-val inductive_polymorphic_context : mutual_inductive_body -> AUContext.t
+val inductive_polymorphic_context : mutual_inductive_body -> AbstractContext.t
 
 (** Is the inductive polymorphic? *)
 val inductive_is_polymorphic : mutual_inductive_body -> bool

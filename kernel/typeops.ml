@@ -436,7 +436,7 @@ let check_fixpoint env lna lar vdef vdeft =
 let type_of_global_in_context env r =
   let open Names.GlobRef in
   match r with
-  | VarRef id -> Environ.named_type id env, Univ.AUContext.empty
+  | VarRef id -> Environ.named_type id env, Univ.AbstractContext.empty
   | ConstRef c ->
     let cb = Environ.lookup_constant c env in
     let univs = Declareops.constant_polymorphic_context cb in
@@ -786,7 +786,7 @@ let type_of_prim env u t =
                        tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
   let params, args_ty, ret_ty = types t in
-  assert (AUContext.size (univs t) = Instance.length u);
+  assert (AbstractContext.size (univs t) = Instance.length u);
   Vars.subst_instance_constr u
     (Term.it_mkProd_or_LetIn (nary_op 0 ret_ty args_ty) params)
 
