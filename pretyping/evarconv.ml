@@ -71,12 +71,6 @@ let coq_unit_judge env sigma =
     sigma, make_judge c t
   | exception _ -> sigma, unit_judge_fallback
 
-let unfold_projection env evd ts p c =
-  let cst = Projection.constant p in
-    if TransparentState.is_transparent_constant ts cst then
-      Some (mkProj (Projection.unfold p, c))
-    else None
-
 let eval_flexible_term ts env evd c =
   match EConstr.kind evd c with
   | Const (c, u) ->
@@ -96,9 +90,6 @@ let eval_flexible_term ts env evd c =
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
-  | Proj (p, c) ->
-    if Projection.unfolded p then assert false
-    else unfold_projection env evd ts p c
   | _ -> assert false
 
 type flex_kind_of_term =
@@ -110,7 +101,7 @@ let has_arg s = Option.has_some (Stack.strip_n_app 0 s)
 
 let flex_kind_of_term flags env evd c sk =
   match EConstr.kind evd c with
-    | LetIn _ | Rel _ | Const _ | Var _ | Proj _ ->
+    | LetIn _ | Rel _ | Const _ | Var _ ->
       Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term flags.open_ts env evd c)
     | Lambda _ when has_arg sk ->
        if flags.modulo_betaiota then MaybeFlexible c
@@ -121,7 +112,7 @@ let flex_kind_of_term flags env evd c sk =
     | Construct _ | CoFix _ (* Incorrect: should check only app in sk *) -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied (should check it?) *)
-    | Cast _ | App _ | Case _ -> assert false
+    | Cast _ | App _ | Case _ | Proj _ -> assert false
 
 let apprec_nohdbeta flags env evd c =
   let (t,sk as appr) = Reductionops.whd_nored_state env evd (c, []) in
@@ -958,7 +949,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              (whd_betaiota_deltazeta_for_iota_state
                       flags.open_ts env i (subst1 b c, args))
             | Fix _ -> true (* Partially applied fix can be the result of a whd call *)
-            | Proj (p, _) -> Projection.unfolded p || Stack.not_purely_applicative args
+            | Proj (p, _) -> Stack.not_purely_applicative args (* ?? *)
             | Case _ | App _| Cast _ -> assert false in
           let rhs_is_stuck_and_unnamed () =
             let applicative_stack = fst (Stack.strip_app sk2) in

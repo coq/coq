@@ -518,8 +518,7 @@ let key_of env sigma b flags f =
   | Var id when is_transparent env (VarKey id) &&
       TransparentState.is_transparent_variable flags.modulo_delta id ->
     Some (IsKey (VarKey id))
-  | Proj (p, c) when Names.Projection.unfolded p
-    || (is_transparent env (ConstKey (Projection.constant p)) &&
+  | Proj (p, c) when (is_transparent env (ConstKey (Projection.constant p)) &&
        (TransparentState.is_transparent_constant flags.modulo_delta (Projection.constant p))) ->
     Some (IsProj (p, c))
   | _ -> None
@@ -547,10 +546,10 @@ let oracle_order env cf1 cf2 =
         match k1, k2 with
         | IsProj (p, _), IsKey (ConstKey (p',_))
           when Environ.QConstant.equal env (Projection.constant p) p' ->
-          Some (not (Projection.unfolded p))
+          Some false
         | IsKey (ConstKey (p,_)), IsProj (p', _)
           when Environ.QConstant.equal env p (Projection.constant p') ->
-          Some (Projection.unfolded p')
+          Some true
         | _ ->
           Some (Conv_oracle.oracle_order (fun x -> x)
                   (Environ.oracle env) false (translate_key k1) (translate_key k2))
@@ -942,7 +941,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       in
       let expand_proj c c' l =
         match EConstr.kind sigma c with
-        | Proj (p, t) when not (Projection.unfolded p) && needs_expansion p c' ->
+        | Proj (p, t) when needs_expansion p c' ->
           (try destApp sigma (Retyping.expand_projection curenv sigma p t (Array.to_list l))
            with RetypeError _ -> (* Unification can be called on ill-typed terms, due
                                      to FO and eta in particular, fail gracefully in that case *)

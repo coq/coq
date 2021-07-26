@@ -584,10 +584,6 @@ let match_eval_ref_value env sigma constr stack =
       Some (EConstr.of_constr (constant_value_in env (sp, u)))
     else
       None
-  | Proj (p, c) when not (Projection.unfolded p) ->
-     if is_evaluable env (EvalConstRef (Projection.constant p)) then
-       Some (mkProj (Projection.unfold p, c))
-     else None
   | Var id when is_evaluable env (EvalVarRef id) ->
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
@@ -774,12 +770,11 @@ and whd_simpl_stack env sigma =
 
       | Proj (p, c) ->
         (try
-           let unf = Projection.unfolded p in
-           if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
+           if is_evaluable env (EvalConstRef (Projection.constant p)) then
              let npars = Projection.npars p in
-             (match unf, get (GlobRef.ConstRef (Projection.constant p)) with
-              | false, Some NeverUnfold -> s'
-              | false, Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
+             (match get (GlobRef.ConstRef (Projection.constant p)) with
+              | Some NeverUnfold -> s'
+              | Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
                 when not (List.is_empty recargs) ->
                 let l' = List.map_filter (fun i ->
                     let idx = (i - (npars + 1)) in
@@ -791,11 +786,13 @@ and whd_simpl_stack env sigma =
                  | Reduced s' -> redrec s'
                  | NotReducible -> s')
               | _ ->
-                match reduce_projection env sigma p ~npars (whd_construct_stack env sigma c) stack with
-                | Reduced s' -> redrec s'
-                            | NotReducible -> s')
-                 else s'
-               with Redelimination -> s')
+                (match reduce_projection env sigma p ~npars
+                         (whd_construct_stack env sigma c) stack
+                 with
+                 | Reduced s' -> redrec s'
+                 | NotReducible -> s'))
+           else s'
+         with Redelimination -> s')
 
       | Const (cst, _) when is_primitive env cst ->
          (try
