@@ -161,7 +161,7 @@ Module NoCasts.
     Example ex_r3_2 p := let b := _ in (fun x => x) : @r3_key p _ b.
   End UsedParameters.
 
-  Module LetBoundProjections.
+  Module LetBoundFieldBefore.
     Structure r4 (useless_param: bool) :=
       { #[canonical=no]  r4_pre : unit
       ; #[canonical=no]  r4_let := true
@@ -171,6 +171,18 @@ Module NoCasts.
     Canonical Structure r4_func b : r4 b := {| r4_pre:= tt; r4_key := nat -> nat; r4_post:= 0|}.
     Example ex_r4_1 p := let b := _ in fun f : @r4_key p b => f 1.
     Example ex_r4_2 p := let b := _ in (fun x => x) : @r4_key p b.
-  End LetBoundProjections.
+  End LetBoundFieldBefore.
+
+  Module LetBoundFieldAfter.
+    Structure r4 (useless_param: bool) :=
+      { #[canonical=no]  r4_pre : unit
+      ; #[canonical=yes] r4_key : Type
+      ; #[canonical=no]  r4_let := true
+      ; #[canonical=no]  r4_post: nat;
+      }.
+    Canonical Structure r4_func b : r4 b := {| r4_pre:= tt; r4_key := nat -> nat; r4_post:= 0|}.
+    Example ex_r4_1 p := let b := _ in fun f : @r4_key p b => f 1.
+    Example ex_r4_2 p := let b := _ in (fun x => x) : @r4_key p b.
+  End LetBoundFieldAfter.
 
 End NoCasts.
