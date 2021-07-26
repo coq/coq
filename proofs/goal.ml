@@ -30,9 +30,8 @@ module V82 = struct
 
   (* Old style env primitive *)
   let env evars gl =
-    let env = Global.env () in
     let evi = Evd.find evars gl in
-    Evd.evar_filtered_env env evi
+    Evd.evar_filtered_env evi
 
   (* Old style hyps primitive *)
   let hyps evars gl =
@@ -51,15 +50,15 @@ module V82 = struct
     evi.Evd.evar_concl
 
   (* Old style mk_goal primitive *)
-  let mk_goal evars hyps concl =
+  let mk_goal evars env concl =
     (* A goal created that way will not be used by refine and will not
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
        created. *)
     let evars = Evd.push_future_goals evars in
-    let inst = EConstr.identity_subst_val hyps in
+    let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
     let (evars,evk) =
-      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity:inst hyps evars concl
+      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity:inst env evars concl
     in
     let _, evars = Evd.pop_future_goals evars in
     let ev = EConstr.mkEvar (evk,inst) in

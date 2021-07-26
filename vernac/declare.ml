@@ -2115,7 +2115,7 @@ end
 
 let default_tactic = ref (Proofview.tclUNIT ())
 
-let evar_of_obligation o = Evd.make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
+let evar_of_obligation o = Evd.make_evar (Global.env ()) (EConstr.of_constr o.obl_type)
 
 let subst_deps expand obls deps t =
   let osubst = Obls_.obl_substitution expand obls deps in

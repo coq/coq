@@ -700,7 +700,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       let open Context.Named.Declaration in
       let nenv = EConstr.push_named (LocalAssum (Context.make_annot id Sorts.Relevant, t)) env in
       let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
-      let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma evt in
+      let (sigma, evk) = Evarutil.new_pure_evar nenv sigma evt in
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
       Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state evk] >>= fun () ->
       thaw c >>= fun _ ->

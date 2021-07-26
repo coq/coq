@@ -1398,9 +1398,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   try
   let evi = Evd.find_undefined evd evk in
   let evi = nf_evar_info evd evi in
-  let env_evar_unf = evar_env env_rhs evi in
-  let env_evar = evar_filtered_env env_rhs evi in
-  let sign = named_context_val env_evar in
+  let env_evar_unf = evar_env evi in
+  let env_evar = evar_filtered_env evi in
   let ctxt = evar_filtered_context evi in
   debug_ho_unification (fun () ->
      Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs ++ fnl () ++
@@ -1469,7 +1468,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
               refresh_universes ~status:Evd.univ_flexible (Some true)
                 env_evar_unf evd evty
             else evd, evty in
-          let (evd, evk) = new_pure_evar sign evd evty ~filter in
+          let (evd, evk) = new_pure_evar (evar_env evi) evd evty ~filter in
           let fixed = Evar.Set.add evk fixed in
           evsref := (evk,evty,inst,prefer_abstraction)::!evsref;
           evd, fixed, mkEvar (evk, instance)
@@ -1541,7 +1540,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
          else
            ((debug_ho_unification (fun () ->
                let evi = Evd.find evd evk in
-               let env = Evd.evar_env env_rhs evi in
+               let env = Evd.evar_env evi in
                Pp.(str"evar is defined: " ++
                  int (Evar.repr evk) ++ spc () ++
                  prc env evd (match evar_body evi with Evar_defined c -> c
@@ -1557,7 +1556,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        (debug_ho_unification (fun () ->
           begin
             let evi = Evd.find evd evk in
-            let evenv = evar_env env_rhs evi in
+            let evenv = evar_env evi in
             let body = match evar_body evi with Evar_empty -> assert false | Evar_defined c -> c in
             Pp.(str"evar was defined already as: " ++ prc evenv evd body)
           end);
@@ -1565,7 +1564,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      else
        try
          let evi = Evd.find_undefined evd evk in
-         let evenv = evar_env env_rhs evi in
+         let evenv = evar_env evi in
          let rhs' = nf_evar evd rhs' in
            debug_ho_unification (fun () ->
              Pp.(str"abstracted type before second solve_evars: " ++

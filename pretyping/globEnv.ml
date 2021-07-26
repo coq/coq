@@ -106,7 +106,7 @@ let new_evar env sigma ?src ?naming typ =
   let instance = rel_list (nb_rel env.renamed_env) inst_vars in
   let (subst, _, sign) = Lazy.force env.extra in
   let typ' = csubst_subst subst typ in
-  let (sigma, evk) = new_pure_evar sign sigma typ' ?src ?naming in
+  let (sigma, evk) = new_pure_evar (reset_with_named_context sign env.renamed_env) sigma typ' ?src ?naming in
   (sigma, mkEvar (evk, instance))
 
 let new_type_evar env sigma ~src =

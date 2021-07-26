@@ -29,7 +29,7 @@ let instantiate_evar evk (ist,rawc) =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let evi = Evd.find sigma evk in
-  let filtered = Evd.evar_filtered_env env evi in
+  let filtered = Evd.evar_filtered_env evi in
   let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
   let lvar = {
     ltac_constrs = constrvars;
@@ -37,7 +37,7 @@ let instantiate_evar evk (ist,rawc) =
     ltac_idents = Names.Id.Map.empty;
     ltac_genargs = ist.Geninterp.lfun;
   } in
-  let sigma' = w_refine (evk,evi) (lvar ,rawc) env sigma in
+  let sigma' = w_refine (evk,evi) (lvar,rawc) env sigma in
   Proofview.Unsafe.tclEVARS sigma'
   end
 

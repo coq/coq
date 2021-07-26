@@ -55,7 +55,7 @@ val new_pure_evar :
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->
   ?principal:bool ->
-  named_context_val -> evar_map -> types -> evar_map * Evar.t
+  env -> evar_map -> types -> evar_map * Evar.t
 
 (** Create a new Type existential variable, as we keep track of
     them during type-checking and unification. *)
@@ -263,7 +263,7 @@ val push_rel_decl_to_named_context : ?hypnaming:naming_mode ->
 
 val push_rel_context_to_named_context : ?hypnaming:naming_mode ->
   Environ.env -> evar_map -> types ->
-  named_context_val * types * constr list * csubst
+  env * types * constr list * csubst
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 

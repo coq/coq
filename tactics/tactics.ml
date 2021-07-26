@@ -97,12 +97,11 @@ let () =
     does not check anything. *)
 let unsafe_intro env decl b =
   Refine.refine ~typecheck:false begin fun sigma ->
-    let ctx = named_context_val env in
-    let nctx = push_named_context_val decl ctx in
+    let nenv = push_named decl env in
     let inst = identity_subst_val (named_context_val env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let (sigma, ev) = new_pure_evar nctx sigma nb ~principal:true in
+    let (sigma, ev) = new_pure_evar nenv sigma nb ~principal:true in
     (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) (mkEvar (ev, ninst)))
   end
 
@@ -318,10 +317,10 @@ let rename_hyp repl =
       in
       let nhyps = List.map map hyps in
       let nconcl = subst concl in
-      let nctx = val_of_named_context nhyps in
+      let nenv = reset_with_named_context (val_of_named_context nhyps) env in
       let instance = EConstr.identity_subst_val (Environ.named_context_val env) in
       Refine.refine ~typecheck:false begin fun sigma ->
-        let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl ~principal:true in
+        let sigma, ev = Evarutil.new_pure_evar nenv sigma nconcl ~principal:true in
         sigma, mkEvar (ev, instance)
       end
     end
@@ -2695,8 +2694,8 @@ let pose_tac na c =
     Refine.refine ~typecheck:false begin fun sigma ->
       (* TODO relevance *)
       let id = make_annot id Sorts.Relevant in
-      let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
-      let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
+      let nenv = EConstr.push_named (NamedDecl.LocalDef (id, c, t)) env in
+      let (sigma, ev) = Evarutil.new_pure_evar nenv sigma concl in
       let inst = EConstr.identity_subst_val hyps in
       let body = mkEvar (ev, mkRel 1 :: inst) in
       (sigma, mkLetIn (map_annot Name.mk_name id, c, t, body))

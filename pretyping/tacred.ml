@@ -388,7 +388,7 @@ let dummy = mkProp
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by
    vfx (expanded fixpoint) or vfun (named function). *)
-let substl_with_function subst sigma constr =
+let substl_with_function subst env sigma constr =
   let evd = ref sigma in
   let minargs = ref Evar.Map.empty in
   let v = Array.of_list subst in
@@ -398,7 +398,7 @@ let substl_with_function subst sigma constr =
       match v.(i-k-1) with
       | (fx, Some (min, ref)) ->
         let sigma = !evd in
-        let (sigma, evk) = Evarutil.new_pure_evar empty_named_context_val sigma dummy in
+        let (sigma, evk) = Evarutil.new_pure_evar (reset_context env) sigma dummy in
         evd := sigma;
         minargs := Evar.Map.add evk (min, fx, ref) !minargs;
         mkEvar (evk, [])
@@ -442,7 +442,7 @@ let solve_arity_problem env sigma fxminargs c =
 
 let substl_checking_arity env subst sigma c =
   (* we initialize the problem: *)
-  let body,sigma,minargs = substl_with_function subst sigma c in
+  let body,sigma,minargs = substl_with_function subst env sigma c in
   (* we collect arity constraints *)
   let ans = solve_arity_problem env sigma minargs body in
   (* we propagate the constraints: solved problems are substituted;

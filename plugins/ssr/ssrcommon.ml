@@ -1350,12 +1350,11 @@ let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
 let unsafe_intro env decl b =
   let open Context.Named.Declaration in
   Refine.refine ~typecheck:false begin fun sigma ->
-    let ctx = Environ.named_context_val env in
-    let nctx = EConstr.push_named_context_val decl ctx in
+    let nenv = EConstr.push_named decl env in
     let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
     let ninst = EConstr.mkRel 1 :: inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
-    let sigma, ev = Evarutil.new_pure_evar ~principal:true nctx sigma nb in
+    let sigma, ev = Evarutil.new_pure_evar ~principal:true nenv sigma nb in
     sigma, EConstr.mkNamedLambda_or_LetIn decl (EConstr.mkEvar (ev, ninst))
   end
 

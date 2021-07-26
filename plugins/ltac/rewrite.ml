@@ -630,7 +630,7 @@ let solve_remaining_by env sigma holes by =
       | None -> sigma
         (* Evar should not be defined, but just in case *)
       | Some evi ->
-        let env = Environ.reset_with_named_context evi.evar_hyps env in
+        let env = evar_env evi in
         let ty = evi.evar_concl in
         let name, poly = Id.of_string "rewrite", false in
         let c, sigma = Proof.refine_by_tactic ~name ~poly env sigma ty solve_tac in

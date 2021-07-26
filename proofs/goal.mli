@@ -43,7 +43,7 @@ module V82 : sig
        hypotheses and conclusion, together with a term which is precisely
        the evar corresponding to the goal, and an updated evar_map. *)
   val mk_goal : Evd.evar_map ->
-                         Environ.named_context_val ->
+                         Environ.env ->
                          EConstr.constr ->
                          goal * EConstr.constr * Evd.evar_map
 

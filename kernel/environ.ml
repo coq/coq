@@ -201,6 +201,9 @@ let map_named_val f ctxt =
   if map == ctxt.env_named_map then ctxt
   else { env_named_ctx = ctx; env_named_map = map; env_named_var = ctxt.env_named_var }
 
+let map_with_named_val f env =
+  {env with env_named_context = map_named_val f env.env_named_context}
+
 let push_named d env =
   {env with env_named_context = push_named_context_val d env.env_named_context}
 

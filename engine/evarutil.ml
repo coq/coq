@@ -385,17 +385,17 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
   let open EConstr in
   let inst_vars = EConstr.identity_subst_val (named_context_val env) in
   if List.is_empty (Environ.rel_context env) then
-    (named_context_val env, typ, inst_vars, empty_csubst)
+    (env, typ, inst_vars, empty_csubst)
   else
     let avoid = Environ.ids_of_named_context_val (named_context_val env) in
     let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
-    let (subst, _, env) =
+    let (subst, _, sign) =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ?hypnaming sigma d acc)
         (rel_context env) ~init:(empty_csubst, avoid, named_context_val env) in
-    (env, csubst_subst subst typ, inst_rels@inst_vars, subst)
+    (reset_with_named_context sign env, csubst_subst subst typ, inst_rels@inst_vars, subst)
 
 (*------------------------------------*
  * Entry points to define new evars   *
@@ -405,7 +405,7 @@ let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
 let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
   ?(abstract_arguments = Abstraction.identity) ?candidates
-  ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
+  ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) env evd typ =
   let name = match naming with
   | IntroAnonymous -> None
   | IntroIdentifier id -> Some id
@@ -419,7 +419,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
   | Some inst -> Identity.make inst
   in
   let evi = {
-    evar_hyps = sign;
+    evar_env = env;
     evar_concl = typ;
     evar_body = Evar_empty;
     evar_filter = filter;
@@ -483,7 +483,7 @@ let add_unification_pb ?(tail=false) pb evd =
 let generalize_evar_over_rels sigma (ev,args) =
   let open EConstr in
   let evi = Evd.find sigma ev in
-  let sign = named_context_of_val evi.evar_hyps in
+  let sign = evar_context evi in
   List.fold_left2
     (fun (c,inst as x) a d ->
       if isRel sigma a then (mkNamedProd_or_LetIn d c,a::inst) else x)
@@ -649,7 +649,7 @@ let process_dependent_evar q acc evm is_dependent e =
     match decl with
     | LocalAssum _ -> ()
     | LocalDef (_,b,_) -> queue_term q true b
-  end (EConstr.named_context_of_val evi.evar_hyps);
+  end (evar_context evi);
   match evi.evar_body with
   | Evar_empty ->
       if is_dependent then Evar.Map.add e None acc else acc
@@ -740,7 +740,7 @@ let undefined_evars_of_evar_info evd evi =
          | Evar_empty -> Evar.Set.empty
          | Evar_defined b -> undefined_evars_of_term evd b)
        (undefined_evars_of_named_context evd
-          (named_context_of_val evi.evar_hyps)))
+          (evar_context_constr evi)))
 
 type undefined_evars_cache = {
   mutable cache : (EConstr.named_declaration * Evar.Set.t) ref Id.Map.t;

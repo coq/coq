@@ -172,7 +172,7 @@ val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 exception IllTypedInstance of env * types * types
 
 val check_evar_instance : unifier -> unify_flags ->
-  env -> evar_map -> Evar.t -> constr -> evar_map
+  evar_map -> Evar.t -> constr -> evar_map
   (** May raise IllTypedInstance if types are not convertible *)
 
 val remove_instance_local_defs :

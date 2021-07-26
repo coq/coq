@@ -150,6 +150,8 @@ val ids_of_named_context_val : named_context_val -> Id.Set.t
    *** /!\ ***   [f t] should be convertible with t, and preserve the name *)
 val map_named_val :
    (named_declaration -> named_declaration) -> named_context_val -> named_context_val
+val map_with_named_val :
+   (named_declaration -> named_declaration) -> env -> env
 
 val push_named : Constr.named_declaration -> env -> env
 val push_named_context : Constr.named_context -> env -> env

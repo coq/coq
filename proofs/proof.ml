@@ -446,7 +446,7 @@ module V82 = struct
         else
           CList.nth evl (n-1)
       in
-      let env = Evd.evar_filtered_env env evi in
+      let env = Evd.evar_filtered_env evi in
       let rawc = intern env sigma in
       let ltac_vars = Glob_ops.empty_lvar in
       let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) env sigma in

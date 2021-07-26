@@ -162,8 +162,7 @@ let ltac_call tac (args:glob_tactic_arg list) =
   CAst.make @@ TacArg (TacCall (CAst.make (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
 let dummy_goal env sigma =
-  let (gl,_,sigma) =
-    Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp in
+  let (gl,_,sigma) = Goal.V82.mk_goal sigma env EConstr.mkProp in
   {Evd.it = gl; Evd.sigma = sigma}
 
 let constr_of sigma v = match Value.to_constr v with

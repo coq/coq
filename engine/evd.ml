@@ -176,7 +176,7 @@ type evar_body =
 
 type evar_info = {
   evar_concl : constr;
-  evar_hyps : named_context_val;
+  evar_env : env;
   evar_body : evar_body;
   evar_filter : Filter.t;
   evar_abstract_arguments : Abstraction.t;
@@ -185,9 +185,9 @@ type evar_info = {
   evar_identity : Identity.t;
 }
 
-let make_evar hyps ccl = {
+let make_evar env ccl = {
   evar_concl = ccl;
-  evar_hyps = hyps;
+  evar_env = env;
   evar_body = Evar_empty;
   evar_filter = Filter.identity;
   evar_abstract_arguments = Abstraction.identity;
@@ -205,14 +205,15 @@ let evar_filter evi = evi.evar_filter
 
 let evar_body evi = evi.evar_body
 
-let evar_context evi = named_context_of_val evi.evar_hyps
+let evar_context evi = named_context evi.evar_env
+let evar_context_constr evi = named_context evi.evar_env
 
 let evar_filtered_context evi =
   Filter.filter_list (evar_filter evi) (evar_context evi)
 
 let evar_candidates evi = evi.evar_candidates
 
-let evar_hyps evi = evi.evar_hyps
+let evar_hyps evi = named_context_val evi.evar_env
 
 let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
 | None -> evar_hyps evi
@@ -227,14 +228,13 @@ let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
   in
   make_hyps filter (evar_context evi)
 
-let evar_env env evi =
-  Environ.reset_with_named_context evi.evar_hyps env
+let evar_env evi = evi.evar_env
 
-let evar_filtered_env env evi = match Filter.repr (evar_filter evi) with
-| None -> evar_env env evi
+let evar_filtered_env evi = match Filter.repr (evar_filter evi) with
+| None -> evar_env evi
 | Some filter ->
   let rec make_env filter ctxt = match filter, ctxt with
-  | [], [] -> reset_context env
+  | [], [] -> reset_context (evar_env evi)
   | false :: filter, _ :: ctxt -> make_env filter ctxt
   | true :: filter, decl :: ctxt ->
     let env = make_env filter ctxt in
@@ -244,7 +244,9 @@ let evar_filtered_env env evi = match Filter.repr (evar_filter evi) with
   make_env filter (evar_context evi)
 
 let evar_identity_subst evi =
-  Identity.repr evi.evar_hyps evi.evar_filter evi.evar_identity
+  Identity.repr (evar_hyps evi) evi.evar_filter evi.evar_identity
+
+let evar_ids evi = Environ.ids_of_named_context_val (evar_hyps evi)
 
 let map_evar_body f = function
   | Evar_empty -> Evar_empty
@@ -253,7 +255,7 @@ let map_evar_body f = function
 let map_evar_info f evi =
   {evi with
     evar_body = map_evar_body f evi.evar_body;
-    evar_hyps = map_named_val (fun d -> NamedDecl.map_constr f d) evi.evar_hyps;
+    evar_env = reset_with_named_context (map_named_val (fun d -> NamedDecl.map_constr f d) (evar_hyps evi)) evi.evar_env;
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
@@ -1210,7 +1212,7 @@ let define_with_evar evk body evd =
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
   let evar_info = EvMap.find evk evd.undf_evars in
-  let id_inst = Filter.filter_list filter evar_info.evar_hyps.env_named_var in
+  let id_inst = Filter.filter_list filter (evar_hyps evar_info).env_named_var in
   let evar_info' =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;

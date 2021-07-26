@@ -46,7 +46,7 @@ let compact el ({ solution } as pv) =
   let apply_subst_einfo _ ei =
     Evd.({ ei with
        evar_concl =  nf ei.evar_concl;
-       evar_hyps = Environ.map_named_val (fun d -> map_constr nf0 d) ei.evar_hyps;
+       evar_env = Environ.map_with_named_val (fun d -> map_constr nf0 d) ei.evar_env;
        evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
@@ -886,7 +886,7 @@ module Progress = struct
   let eq_evar_info sigma1 sigma2 ei1 ei2 =
     let open Evd in
     eq_constr sigma1 sigma2 ei1.evar_concl ei2.evar_concl &&
-    eq_named_context_val sigma1 sigma2 (ei1.evar_hyps) (ei2.evar_hyps) &&
+    eq_named_context_val sigma1 sigma2 (evar_hyps ei1) (evar_hyps ei2) &&
     eq_evar_body sigma1 sigma2 ei1.evar_body ei2.evar_body
 
   (** Equality function on goals *)
@@ -1048,9 +1048,9 @@ let (>>=) = tclBIND
 
 (** {6 Goal-dependent tactics} *)
 
-let goal_env env evars gl =
+let goal_env evars gl =
   let evi = Evd.find evars gl in
-  Evd.evar_filtered_env env evi
+  Evd.evar_filtered_env evi
 
 let goal_nf_evar sigma gl =
   let evi = Evd.find sigma gl in
@@ -1265,10 +1265,9 @@ module V82 = struct
 
   let of_tactic t gls =
     try
-      let env = Global.env () in
       let init = { solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
       let name, poly = Names.Id.of_string "legacy_pe", false in
-      let (_,final,_,_) = apply ~name ~poly (goal_env env gls.Evd.sigma gls.Evd.it) t init in
+      let (_,final,_,_) = apply ~name ~poly (goal_env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = CList.map drop_state final.comb }
     with Logic_monad.TacticFailure e as src ->
       let (_, info) = Exninfo.capture src in

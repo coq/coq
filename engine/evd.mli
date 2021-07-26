@@ -107,8 +107,8 @@ type evar_body =
 type evar_info = {
   evar_concl : econstr;
   (** Type of the evar. *)
-  evar_hyps : named_context_val; (* TODO econstr? *)
-  (** Context of the evar. *)
+  evar_env : env;
+  (** Environment of the evar. *)
   evar_body : evar_body;
   (** Optional content of the evar. *)
   evar_filter : Filter.t;
@@ -128,8 +128,9 @@ type evar_info = {
       filtered environment. *)
 }
 
-val make_evar : named_context_val -> etypes -> evar_info
+val make_evar : env -> etypes -> evar_info
 val evar_concl : evar_info -> econstr
+val evar_context_constr : evar_info -> (constr, types) Context.Named.pt
 val evar_context : evar_info -> (econstr, etypes) Context.Named.pt
 val evar_filtered_context : evar_info -> (econstr, etypes) Context.Named.pt
 val evar_hyps : evar_info -> named_context_val
@@ -137,9 +138,10 @@ val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
 val evar_candidates : evar_info -> constr list option
 val evar_filter : evar_info -> Filter.t
-val evar_env : env -> evar_info -> env
-val evar_filtered_env : env -> evar_info -> env
+val evar_env : evar_info -> env
+val evar_filtered_env : evar_info -> env
 val evar_identity_subst : evar_info -> econstr list
+val evar_ids : evar_info -> Id.Set.t
 
 val map_evar_body : (econstr -> econstr) -> evar_body -> evar_body
 val map_evar_info : (econstr -> econstr) -> evar_info -> evar_info
