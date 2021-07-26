@@ -1133,8 +1133,8 @@ let pr_vernac_expr v =
                       notation_scope = s;
                       implicit_status = imp } :: tl ->
             let extra, tl = get_arguments_like s imp tl in
-            spc() ++ pr_br imp (extra<>[]) (prlist_with_sep spc pr_one_arg ((id,k)::extra)) ++
-            pr_s s ++ print_arguments tl
+            spc() ++ hov 1 (pr_br imp (extra<>[]) (prlist_with_sep spc pr_one_arg ((id,k)::extra)) ++
+            pr_s s) ++ print_arguments tl
         in
         let rec print_implicits = function
           | [] -> mt ()

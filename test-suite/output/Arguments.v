@@ -64,3 +64,11 @@ Definition volatilematch (n : nat) :=
 Arguments volatilematch / n : simpl nomatch.
 About volatilematch.
 Eval simpl in fun n => volatilematch n.
+
+Module Formatting.
+
+Parameter A : Type.
+Parameter f : forall (xxxxxxxxxxxxxx : A) (xxxxxxxxxxxxxx' : nat) (xxxxxxxxxxxxxx'' : nat) (xxxxxxxxxxxxxx''' : nat), xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx'' = 0.
+Print f.
+
+End Formatting.
