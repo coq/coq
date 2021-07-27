@@ -121,3 +121,10 @@ volatilematch is transparent
 Expands to: Constant Arguments.volatilematch
      = fun n : nat => volatilematch n
      : nat -> nat
+*** [ f : 
+A ->
+forall xxxxxxxxxxxxxx' xxxxxxxxxxxxxx'' : nat,
+nat -> xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx'' = 0 ]
+
+Arguments f xxxxxxxxxxxxxx
+  (xxxxxxxxxxxxxx' xxxxxxxxxxxxxx'' xxxxxxxxxxxxxx''')%nat_scope
