@@ -95,7 +95,7 @@ intros [ | N] Npos n decr to0 cv nN.
   rewrite <- (sum_eq (tg_alt (fun i => (-1) ^ S N * f(S N + i)%nat))).
    tauto.
    intros i _; unfold tg_alt.
-   rewrite <- Rmult_assoc, <- pow_add, !(plus_comm i); reflexivity.
+   rewrite <- Rmult_assoc, <- pow_add, !(Nat.add_comm i); reflexivity.
   lia.
   assert (cv'' : Un_cv (sum_f_R0 (tg_alt (fun i => f (S N + i)%nat)))
                    ((-1) ^ S N * (l - sum_f_R0 (tg_alt f) N))).
@@ -104,7 +104,7 @@ intros [ | N] Npos n decr to0 cv nN.
    intros n0; rewrite scal_sum; apply sum_eq; intros i _.
    unfold tg_alt; ring_simplify; replace (((-1) ^ S N) ^ 2) with 1.
     ring.
-   rewrite <- pow_mult, mult_comm, pow_mult; replace ((-1) ^2) with 1 by ring.
+   rewrite <- pow_mult, Nat.mul_comm, pow_mult; replace ((-1) ^2) with 1 by ring.
    rewrite pow1; reflexivity.
   apply CV_mult.
    solve[intros eps ep; exists 0%nat; intros; rewrite R_dist_eq; auto].
@@ -988,7 +988,7 @@ unfold ps_atan.
  apply (UL_sequence _ _ _ P).
   apply (Un_cv_ext (fun n => 0)).
   symmetry;apply sum_eq_R0.
-  intros i _; unfold tg_alt, Ratan_seq; rewrite plus_comm; simpl.
+  intros i _; unfold tg_alt, Ratan_seq; rewrite Nat.add_comm; simpl.
   unfold Rdiv; rewrite !Rmult_0_l, Rmult_0_r; reflexivity.
  intros eps ep; exists 0%nat; intros n _; unfold R_dist.
  rewrite Rminus_0_r, Rabs_pos_eq; auto with real.
@@ -1410,7 +1410,7 @@ case (Rtotal_order 0 x) as [xgt0 | [x0 | x0]].
  rewrite <- (sum_eq (fun _ => 0)), sum_cte, Rmult_0_l, Rminus_0_r, Rabs_pos_eq.
    assumption.
   apply Rle_refl.
- intros i _; unfold tg_alt, Ratan_seq, Rdiv; rewrite plus_comm; simpl.
+ intros i _; unfold tg_alt, Ratan_seq, Rdiv; rewrite Nat.add_comm; simpl.
  solve[rewrite !Rmult_0_l, Rmult_0_r; auto].
 replace (ps_atan x - sum_f_R0 (tg_alt (Ratan_seq x)) n) with
   (-(ps_atan (-x) - sum_f_R0 (tg_alt (Ratan_seq (-x))) n)).

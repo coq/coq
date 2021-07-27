@@ -14,9 +14,6 @@ Require Import SeqSeries.
 Require Import Rtrigo1.
 Require Import Ranalysis1.
 Require Import PSeries_reg.
-Require Import Div2.
-Require Import Even.
-Require Import Max.
 Require Import Lia.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
@@ -65,10 +62,10 @@ Qed.
 Definition maj_Reste_E (x y:R) (N:nat) : R :=
   4 *
   (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (2 * N) /
-    Rsqr (INR (fact (div2 (pred N))))).
+    Rsqr (INR (fact (Nat.div2 (pred N))))).
 
 (**********)
-Lemma div2_double : forall N:nat, div2 (2 * N) = N.
+Lemma div2_double : forall N:nat, Nat.div2 (2 * N) = N.
 Proof.
   intro; induction  N as [| N HrecN].
   reflexivity.
@@ -77,7 +74,7 @@ Proof.
   ring.
 Qed.
 
-Lemma div2_S_double : forall N:nat, div2 (S (2 * N)) = N.
+Lemma div2_S_double : forall N:nat, Nat.div2 (S (2 * N)) = N.
 Proof.
   intro; induction  N as [| N HrecN].
   reflexivity.
@@ -86,19 +83,17 @@ Proof.
   ring.
 Qed.
 
-Lemma div2_not_R0 : forall N:nat, (1 < N)%nat -> (0 < div2 N)%nat.
+Lemma div2_not_R0 : forall N:nat, (1 < N)%nat -> (0 < Nat.div2 N)%nat.
 Proof.
   intros; induction N as [| N HrecN].
-  - elim (lt_n_O _ H).
+  - elim (Nat.nlt_0_r _ H).
   - cut ((1 < N)%nat \/ N = 1%nat).
     { intro; elim H0; intro.
-      + destruct (even_odd_dec N) as [Heq|Heq].
-        * rewrite <- (even_div2 _ Heq); apply HrecN; assumption.
-        * rewrite <- (odd_div2 _ Heq); apply lt_O_Sn.
-      + rewrite H1; simpl; apply lt_O_Sn. }
+      + destruct N; cbn; [ auto |  apply Nat.lt_0_succ ].
+      + subst N; simpl; apply Nat.lt_0_succ. }
     inversion H.
     right; reflexivity.
-    left; apply lt_le_trans with 2%nat; [ apply lt_n_Sn | apply H1 ].
+    left; apply Nat.lt_le_trans with 2%nat; [ apply Nat.lt_succ_diag_r | assumption ].
 Qed.
 
 Lemma Reste_E_maj :
@@ -110,7 +105,7 @@ Proof.
     (M ^ (2 * N) *
       sum_f_R0
       (fun k:nat =>
-        sum_f_R0 (fun l:nat => / Rsqr (INR (fact (div2 (S N)))))
+        sum_f_R0 (fun l:nat => / Rsqr (INR (fact (Nat.div2 (S N)))))
         (pred (N - k))) (pred N)).
   unfold Reste_E.
   apply Rle_trans with
@@ -178,7 +173,7 @@ Proof.
   apply Rinv_le_contravar.
   apply INR_fact_lt_0.
   apply le_INR; apply fact_le; apply le_n_S.
-  apply le_plus_l.
+  apply Nat.le_add_r.
   rewrite (Rmult_comm (M ^ (2 * N))); rewrite Rmult_assoc;
     apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
@@ -205,36 +200,37 @@ Proof.
   apply Rle_pow.
   unfold M; apply RmaxLess1.
   replace (2 * N)%nat with (N + N)%nat; [ idtac | ring ].
-  apply plus_le_compat_l.
+  apply Nat.add_le_mono_l.
   replace N with (S (pred N)).
   apply le_n_S; apply H0.
-  symmetry ; apply S_pred with 0%nat; apply H.
+  apply Nat.lt_succ_pred with 0%nat; apply H.
   apply INR_eq; do 2 rewrite plus_INR; do 2 rewrite S_INR; rewrite plus_INR;
     rewrite minus_INR.
   ring.
-  apply le_trans with (pred (N - n)).
+  apply Nat.le_trans with (pred (N - n)).
   apply H1.
-  apply le_S_n.
+  apply Nat.succ_le_mono.
   replace (S (pred (N - n))) with (N - n)%nat.
-  apply le_trans with N.
-  apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-  rewrite <- le_plus_minus.
-  apply le_plus_r.
-  apply le_trans with (pred N).
+  apply Nat.le_trans with N.
+  apply (fun p n m:nat => Nat.add_le_mono_l n m p) with n.
+  rewrite Nat.add_comm, Nat.sub_add.
+  rewrite Nat.add_comm; apply Nat.le_add_r.
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
-  apply le_n_Sn.
-  apply S_pred with 0%nat.
-  apply plus_lt_reg_l with n.
-  rewrite <- le_plus_minus.
+  apply Nat.le_pred_l.
+  apply Nat.le_succ_diag_r.
+  symmetry; apply Nat.lt_succ_pred with 0%nat.
+  apply Nat.add_lt_mono_l with n.
+  rewrite (Nat.add_comm _ (N - n)), Nat.sub_add.
   replace (n + 0)%nat with n; [ idtac | ring ].
-  apply le_lt_trans with (pred N).
+  apply Nat.le_lt_trans with (pred N).
   apply H0.
-  apply lt_pred_n_n.
+  apply Nat.lt_pred_l.
+  apply Nat.neq_0_lt_0.
   apply H.
-  apply le_trans with (pred N).
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
+  apply Nat.le_pred_l.
   apply Rle_ge; left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply Rle_ge; left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   rewrite scal_sum.
@@ -242,7 +238,7 @@ Proof.
   rewrite <- Rmult_comm.
   rewrite scal_sum.
   apply sum_Rle; intros.
-  rewrite (Rmult_comm (/ Rsqr (INR (fact (div2 (S N)))))).
+  rewrite (Rmult_comm (/ Rsqr (INR (fact (Nat.div2 (S N)))))).
   rewrite Rmult_assoc; apply Rmult_le_compat_l.
   apply pow_le.
   apply Rle_trans with 1.
@@ -259,7 +255,7 @@ Proof.
   apply INR_fact_lt_0.
   apply le_INR.
   apply fact_le.
-  apply le_n_Sn.
+  apply Nat.le_succ_diag_r.
   replace (/ INR (fact n0) * / INR (fact (N - n0))) with
   (C N n0 / INR (fact N)).
   pattern N at 1; rewrite H4.
@@ -269,29 +265,30 @@ Proof.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   rewrite H4.
   apply C_maj.
-  rewrite <- H4; apply le_trans with (pred (N - n)).
+  rewrite <- H4; apply Nat.le_trans with (pred (N - n)).
   apply H1.
-  apply le_S_n.
+  apply Nat.succ_le_mono.
   replace (S (pred (N - n))) with (N - n)%nat.
-  apply le_trans with N.
-  apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-  rewrite <- le_plus_minus.
-  apply le_plus_r.
-  apply le_trans with (pred N).
+  apply Nat.le_trans with N.
+  apply (fun p n m:nat => Nat.add_le_mono_l n m p) with n.
+  rewrite (Nat.add_comm _ (N - n)), Nat.sub_add.
+  rewrite Nat.add_comm; apply Nat.le_add_r.
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
-  apply le_n_Sn.
-  apply S_pred with 0%nat.
-  apply plus_lt_reg_l with n.
-  rewrite <- le_plus_minus.
+  apply Nat.le_pred_l.
+  apply Nat.le_succ_diag_r.
+  symmetry; apply Nat.lt_succ_pred with 0%nat.
+  apply Nat.add_lt_mono_l with n.
+  rewrite (Nat.add_comm _ (N - n)), Nat.sub_add.
   replace (n + 0)%nat with n; [ idtac | ring ].
-  apply le_lt_trans with (pred N).
+  apply Nat.le_lt_trans with (pred N).
   apply H0.
-  apply lt_pred_n_n.
+  apply Nat.lt_pred_l.
+  apply Nat.neq_0_lt_0.
   apply H.
-  apply le_trans with (pred N).
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
+  apply Nat.le_pred_l.
   replace (C N N0 / INR (fact N)) with (/ Rsqr (INR (fact N0))).
   rewrite H4; rewrite div2_S_double; right; reflexivity.
   unfold Rsqr, C, Rdiv.
@@ -302,7 +299,7 @@ Proof.
   rewrite Rmult_1_r; replace (N - N0)%nat with N0.
   ring.
   replace N with (N0 + N0)%nat.
-  symmetry ; apply minus_plus.
+  symmetry; apply Nat.add_sub.
   rewrite H4.
   ring.
   apply INR_fact_neq_0.
@@ -328,29 +325,30 @@ Proof.
   cut (S N = (2 * S N0)%nat).
   intro; rewrite H5; apply C_maj.
   rewrite <- H5; apply le_n_S.
-  apply le_trans with (pred (N - n)).
+  apply Nat.le_trans with (pred (N - n)).
   apply H1.
-  apply le_S_n.
+  apply Nat.succ_le_mono.
   replace (S (pred (N - n))) with (N - n)%nat.
-  apply le_trans with N.
-  apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-  rewrite <- le_plus_minus.
-  apply le_plus_r.
-  apply le_trans with (pred N).
+  apply Nat.le_trans with N.
+  apply (fun p n m:nat => Nat.add_le_mono_l n m p) with n.
+  rewrite (Nat.add_comm _ (N - n)), Nat.sub_add.
+  rewrite Nat.add_comm; apply Nat.le_add_r.
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
-  apply le_n_Sn.
-  apply S_pred with 0%nat.
-  apply plus_lt_reg_l with n.
-  rewrite <- le_plus_minus.
+  apply Nat.le_pred_l.
+  apply Nat.le_succ_diag_r.
+  symmetry; apply Nat.lt_succ_pred with 0%nat.
+  apply Nat.add_lt_mono_l with n.
+  rewrite (Nat.add_comm _ (N - n)), Nat.sub_add.
   replace (n + 0)%nat with n; [ idtac | ring ].
-  apply le_lt_trans with (pred N).
+  apply Nat.le_lt_trans with (pred N).
   apply H0.
-  apply lt_pred_n_n.
+  apply Nat.lt_pred_l.
+  apply Nat.neq_0_lt_0.
   apply H.
-  apply le_trans with (pred N).
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
+  apply Nat.le_pred_l.
   rewrite H4; ring.
   cut (S N = (2 * S N0)%nat).
   intro.
@@ -366,7 +364,7 @@ Proof.
   rewrite Rmult_1_r; reflexivity.
   apply INR_fact_neq_0.
   replace (S N) with (S N0 + S N0)%nat.
-  symmetry ; apply minus_plus.
+  symmetry; apply Nat.add_sub.
   rewrite H5; ring.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
@@ -390,54 +388,55 @@ Proof.
   left; apply Rlt_0_1.
   apply RmaxLess1.
   apply Rle_trans with
-    (sum_f_R0 (fun k:nat => INR (N - k) * / Rsqr (INR (fact (div2 (S N)))))
+    (sum_f_R0 (fun k:nat => INR (N - k) * / Rsqr (INR (fact (Nat.div2 (S N)))))
       (pred N)).
   apply sum_Rle; intros.
   rewrite sum_cte.
   replace (S (pred (N - n))) with (N - n)%nat.
   right; apply Rmult_comm.
-  apply S_pred with 0%nat.
-  apply plus_lt_reg_l with n.
-  rewrite <- le_plus_minus.
+  symmetry; apply Nat.lt_succ_pred with 0%nat.
+  apply Nat.add_lt_mono_l with n.
+  rewrite (Nat.add_comm _ (N - n)), Nat.sub_add.
   replace (n + 0)%nat with n; [ idtac | ring ].
-  apply le_lt_trans with (pred N).
+  apply Nat.le_lt_trans with (pred N).
   apply H0.
-  apply lt_pred_n_n.
+  apply Nat.lt_pred_l.
+  apply Nat.neq_0_lt_0.
   apply H.
-  apply le_trans with (pred N).
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
+  apply Nat.le_pred_l.
   apply Rle_trans with
-    (sum_f_R0 (fun k:nat => INR N * / Rsqr (INR (fact (div2 (S N))))) (pred N)).
+    (sum_f_R0 (fun k:nat => INR N * / Rsqr (INR (fact (Nat.div2 (S N))))) (pred N)).
   apply sum_Rle; intros.
-  do 2 rewrite <- (Rmult_comm (/ Rsqr (INR (fact (div2 (S N)))))).
+  do 2 rewrite <- (Rmult_comm (/ Rsqr (INR (fact (Nat.div2 (S N)))))).
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply Rsqr_pos_lt.
   apply INR_fact_neq_0.
   apply le_INR.
-  apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-  rewrite <- le_plus_minus.
-  apply le_plus_r.
-  apply le_trans with (pred N).
+  apply (fun p n m:nat => Nat.add_le_mono_l n m p) with n.
+  rewrite (Nat.add_comm _ (N - n)), Nat.sub_add.
+  rewrite Nat.add_comm; apply Nat.le_add_r.
+  apply Nat.le_trans with (pred N).
   apply H0.
-  apply le_pred_n.
+  apply Nat.le_pred_l.
   rewrite sum_cte; replace (S (pred N)) with N.
-  cut (div2 (S N) = S (div2 (pred N))).
+  cut (Nat.div2 (S N) = S (Nat.div2 (pred N))).
   intro; rewrite H0.
-  rewrite fact_simpl; rewrite mult_comm; rewrite mult_INR; rewrite Rsqr_mult.
+  rewrite fact_simpl; rewrite Nat.mul_comm; rewrite mult_INR; rewrite Rsqr_mult.
   rewrite Rinv_mult_distr.
   rewrite (Rmult_comm (INR N)); repeat rewrite Rmult_assoc;
     apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply Rsqr_pos_lt; apply INR_fact_neq_0.
   rewrite <- H0.
-  cut (INR N <= INR (2 * div2 (S N))).
-  intro; apply Rmult_le_reg_l with (Rsqr (INR (div2 (S N)))).
+  cut (INR N <= INR (2 * Nat.div2 (S N))).
+  intro; apply Rmult_le_reg_l with (Rsqr (INR (Nat.div2 (S N)))).
   apply Rsqr_pos_lt.
   apply not_O_INR; red; intro.
   cut (1 < S N)%nat.
   intro; assert (H4 := div2_not_R0 _ H3).
-  rewrite H2 in H4; elim (lt_n_O _ H4).
-  apply lt_n_S; apply H.
+  rewrite H2 in H4; elim (Nat.nlt_0_r _ H4).
+  apply -> Nat.succ_lt_mono; apply H.
   repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l.
@@ -449,13 +448,13 @@ Proof.
   left; apply lt_INR_0; apply H.
   left; apply Rmult_lt_0_compat.
   apply lt_INR_0; apply div2_not_R0.
-  apply lt_n_S; apply H.
+  apply -> Nat.succ_lt_mono; apply H.
   now apply IZR_lt.
   cut (1 < S N)%nat.
   intro; unfold Rsqr; apply prod_neq_R0; apply not_O_INR; intro;
     assert (H4 := div2_not_R0 _ H2); rewrite H3 in H4;
-      elim (lt_n_O _ H4).
-  apply lt_n_S; apply H.
+      elim (Nat.nlt_0_r _ H4).
+  apply -> Nat.succ_lt_mono; apply H.
   assert (H1 := even_odd_cor N).
   elim H1; intros N0 H2.
   elim H2; intro.
@@ -486,7 +485,7 @@ Proof.
   replace (2 * N0)%nat with (S (S (2 * pred N0))).
   replace (pred (S (S (2 * pred N0)))) with (S (2 * pred N0)).
   rewrite div2_S_double.
-  apply S_pred with 0%nat; apply H3.
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply H3.
   reflexivity.
   lia.
   lia.
@@ -496,7 +495,7 @@ Proof.
   do 2 rewrite div2_double.
   reflexivity.
   ring.
-  apply S_pred with 0%nat; apply H.
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply H.
 Qed.
 
 Lemma maj_Reste_cv_R0 : forall x y:R, Un_cv (maj_Reste_E x y) 0.
@@ -514,14 +513,14 @@ Proof.
   rewrite Rabs_right.
   apply Rle_lt_trans with
     (4 *
-      (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (div2 (pred n))) /
-        INR (fact (div2 (pred n))))).
+      (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (Nat.div2 (pred n))) /
+        INR (fact (Nat.div2 (pred n))))).
   apply Rmult_le_compat_l.
   left; prove_sup0.
   unfold Rdiv, Rsqr; rewrite Rinv_mult_distr.
   rewrite (Rmult_comm (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (2 * n)));
     rewrite
-      (Rmult_comm (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (div2 (pred n)))))
+      (Rmult_comm (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (Nat.div2 (pred n)))))
       ; rewrite Rmult_assoc; apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply Rle_trans with (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (2 * n)).
@@ -531,11 +530,11 @@ Proof.
   apply pow_le; apply Rle_trans with 1.
   left; apply Rlt_0_1.
   apply RmaxLess1.
-  apply Rmult_le_reg_l with (INR (fact (div2 (pred n)))).
+  apply Rmult_le_reg_l with (INR (fact (Nat.div2 (pred n)))).
   apply INR_fact_lt_0.
   rewrite Rmult_1_r; rewrite <- Rinv_r_sym.
   apply (le_INR 1).
-  apply lt_le_S.
+  apply Nat.le_succ_l.
   apply INR_lt.
   apply INR_fact_lt_0.
   apply INR_fact_neq_0.
@@ -552,19 +551,19 @@ Proof.
   lia.
   lia.
   assert (0 < n)%nat.
-  apply lt_le_trans with 2%nat.
-  apply lt_O_Sn.
-  apply le_trans with (max (2 * S N0) 2).
-  apply le_max_r.
+  apply Nat.lt_le_trans with 2%nat.
+  apply Nat.lt_0_succ.
+  apply Nat.le_trans with (max (2 * S N0) 2).
+  apply Nat.le_max_r.
   apply H3.
   lia.
   rewrite H6.
   replace (pred (S (2 * N1))) with (2 * N1)%nat.
   rewrite div2_double.
   replace (4 * S N1)%nat with (2 * (2 * S N1))%nat.
-  apply (fun m n p:nat => mult_le_compat_l p n m).
+  apply (fun m n p:nat => Nat.mul_le_mono_nonneg_l p n m). apply Nat.le_0_l.
   replace (2 * S N1)%nat with (S (S (2 * N1))).
-  apply le_n_Sn.
+  apply Nat.le_succ_diag_r.
   ring.
   ring.
   reflexivity.
@@ -575,18 +574,18 @@ Proof.
   rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l; rewrite Rmult_comm.
   replace
-  (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (div2 (pred n))) /
-    INR (fact (div2 (pred n)))) with
+  (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (Nat.div2 (pred n))) /
+    INR (fact (Nat.div2 (pred n)))) with
   (Rabs
-    (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (div2 (pred n))) /
-      INR (fact (div2 (pred n))) - 0)).
+    (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (Nat.div2 (pred n))) /
+      INR (fact (Nat.div2 (pred n))) - 0)).
   apply H2; unfold ge.
   cut (2 * S N0 <= n)%nat.
   intro; apply le_S_n.
   apply INR_le; apply Rmult_le_reg_l with (INR 2).
   simpl; prove_sup0.
   do 2 rewrite <- mult_INR; apply le_INR.
-  apply le_trans with n.
+  apply Nat.le_trans with n.
   apply H4.
   assert (H5 := even_odd_cor n).
   elim H5; intros N1 H6.
@@ -594,37 +593,37 @@ Proof.
   cut (0 < N1)%nat.
   intro.
   rewrite H7.
-  apply (fun m n p:nat => mult_le_compat_l p n m).
+  apply (fun m n p:nat => Nat.mul_le_mono_nonneg_l p n m). apply Nat.le_0_l.
   replace (pred (2 * N1)) with (S (2 * pred N1)).
   rewrite div2_S_double.
   replace (S (pred N1)) with N1.
   apply le_n.
-  apply S_pred with 0%nat; apply H8.
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply H8.
   replace (2 * N1)%nat with (S (S (2 * pred N1))).
   reflexivity.
   pattern N1 at 2; replace N1 with (S (pred N1)).
   ring.
-  symmetry ; apply S_pred with 0%nat; apply H8.
+  apply Nat.lt_succ_pred with 0%nat; apply H8.
   apply INR_lt.
   apply Rmult_lt_reg_l with (INR 2).
   simpl; prove_sup0.
   rewrite Rmult_0_r; rewrite <- mult_INR.
   apply lt_INR_0.
   rewrite <- H7.
-  apply lt_le_trans with 2%nat.
-  apply lt_O_Sn.
-  apply le_trans with (max (2 * S N0) 2).
-  apply le_max_r.
+  apply Nat.lt_le_trans with 2%nat.
+  apply Nat.lt_0_succ.
+  apply Nat.le_trans with (max (2 * S N0) 2).
+  apply Nat.le_max_r.
   apply H3.
   rewrite H7.
   replace (pred (S (2 * N1))) with (2 * N1)%nat.
   rewrite div2_double.
   replace (2 * S N1)%nat with (S (S (2 * N1))).
-  apply le_n_Sn.
+  apply Nat.le_succ_diag_r.
   ring.
   reflexivity.
-  apply le_trans with (max (2 * S N0) 2).
-  apply le_max_l.
+  apply Nat.le_trans with (max (2 * S N0) 2).
+  apply Nat.le_max_l.
   apply H3.
   rewrite Rminus_0_r; apply Rabs_right.
   apply Rle_ge.
@@ -655,24 +654,24 @@ Proof.
   unfold R_dist; rewrite Rminus_0_r.
   apply Rle_lt_trans with (maj_Reste_E x y n).
   apply Reste_E_maj.
-  apply lt_le_trans with 1%nat.
-  apply lt_O_Sn.
-  apply le_trans with (max x0 1).
-  apply le_max_r.
+  apply Nat.lt_le_trans with 1%nat.
+  apply Nat.lt_0_succ.
+  apply Nat.le_trans with (max x0 1).
+  apply Nat.le_max_r.
   apply H2.
   replace (maj_Reste_E x y n) with (R_dist (maj_Reste_E x y n) 0).
   apply H1.
-  unfold ge; apply le_trans with (max x0 1).
-  apply le_max_l.
+  unfold ge; apply Nat.le_trans with (max x0 1).
+  apply Nat.le_max_l.
   apply H2.
   unfold R_dist; rewrite Rminus_0_r; apply Rabs_right.
   apply Rle_ge; apply Rle_trans with (Rabs (Reste_E x y n)).
   apply Rabs_pos.
   apply Reste_E_maj.
-  apply lt_le_trans with 1%nat.
-  apply lt_O_Sn.
-  apply le_trans with (max x0 1).
-  apply le_max_r.
+  apply Nat.lt_le_trans with 1%nat.
+  apply Nat.lt_0_succ.
+  apply Nat.le_trans with (max x0 1).
+  apply Nat.le_max_r.
   apply H2.
 Qed.
 
@@ -692,11 +691,11 @@ Proof.
   rewrite <- (exp_form x y n).
   rewrite Rminus_0_r in H5.
   apply H5.
-  unfold ge; apply le_trans with (S x0).
-  apply le_n_Sn.
+  unfold ge; apply Nat.le_trans with (S x0).
+  apply Nat.le_succ_diag_r.
   apply H6.
-  apply lt_le_trans with (S x0).
-  apply lt_O_Sn.
+  apply Nat.lt_le_trans with (S x0).
+  apply Nat.lt_0_succ.
   apply H6.
 Qed.
 
@@ -786,7 +785,7 @@ Proof.
   unfold Rdiv; do 2 rewrite Rmult_0_l; reflexivity.
   unfold fn; simpl.
   unfold Rdiv; rewrite Rinv_1; rewrite Rmult_1_r; reflexivity.
-  apply lt_le_trans with 1%nat; [ apply lt_n_Sn | apply H9 ].
+  apply Nat.lt_le_trans with 1%nat; [ apply Nat.lt_succ_diag_r | apply H9 ].
   unfold SFL, exp.
   case (cv h) as (x0,Hu); case (exist_exp h) as (x,Hexp); simpl.
   eapply UL_sequence.
@@ -808,9 +807,9 @@ Proof.
   rewrite (Rmult_comm (Rabs h)).
   apply H10.
   unfold ge.
-  apply le_trans with (S N0).
-  apply le_n_Sn.
-  apply le_n_S; apply H11.
+  apply Nat.le_trans with (S N0).
+  apply Nat.le_succ_diag_r.
+  apply -> Nat.succ_le_mono; apply H11.
   rewrite decomp_sum.
   replace (/ INR (fact 0) * h ^ 0) with 1.
   unfold Rminus.
@@ -828,7 +827,7 @@ Proof.
   unfold Rdiv; ring.
   simpl; ring.
   simpl; rewrite Rinv_1; rewrite Rmult_1_r; reflexivity.
-  apply lt_O_Sn.
+  apply Nat.lt_0_succ.
   unfold Rdiv.
   rewrite <- Rmult_assoc.
   symmetry ; apply Rinv_r_simpl_m.
@@ -932,9 +931,9 @@ Proof.
   apply Rinv_neq_0_compat; apply Rabs_no_R0; apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
-  unfold ge; apply le_trans with n.
+  unfold ge; apply Nat.le_trans with n.
   apply H5.
-  apply le_n_Sn.
+  apply Nat.le_succ_diag_r.
   assert (H1 := cond_pos r); red; intro; rewrite H2 in H1;
     elim (Rlt_irrefl _ H1).
 Qed.
@@ -968,3 +967,6 @@ Proof.
     rewrite Rmult_minus_distr_l.
   rewrite Rmult_1_r; rewrite exp_plus; reflexivity.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Div2 Even Max.

@@ -209,11 +209,11 @@ Proof.
   (xcau (4 * q)%positive) as [j jmaj].
   assert (CReal_abs (xn i - xn j) <= inject_Q (1 # 4 * n)).
   { destruct (le_lt_dec i j).
-    apply (CReal_le_trans _ _ _ (imaj i j (le_refl _) l)).
+    apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
     apply inject_Q_le. unfold Qle, Qnum, Qden.
     rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
     apply Pos.mul_le_mono_l, Hp. apply le_S, le_S_n in l.
-    apply (CReal_le_trans _ _ _ (jmaj i j l (le_refl _))).
+    apply (CReal_le_trans _ _ _ (jmaj i j l (Nat.le_refl _))).
     apply inject_Q_le. unfold Qle, Qnum, Qden.
     rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
     apply Pos.mul_le_mono_l, Hq. }
@@ -287,12 +287,12 @@ Proof.
   assert (CReal_abs (xn i - xn j) <= inject_Q (1 # 4 * 2^n')).
   {
     destruct (le_lt_dec i j).
-    apply (CReal_le_trans _ _ _ (imaj i j (le_refl _) l)).
+    apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
     apply inject_Q_le. unfold Qle, Qnum, Qden.
     rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
     subst; apply Pos.mul_le_mono_l, Pos_pow_le_mono_r, CReal_from_cauchy_cm_mono, Hp.
     apply le_S, le_S_n in l.
-    apply (CReal_le_trans _ _ _ (jmaj i j l (le_refl _))).
+    apply (CReal_le_trans _ _ _ (jmaj i j l (Nat.le_refl _))).
     apply inject_Q_le. unfold Qle, Qnum, Qden.
     rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
     subst; apply Pos.mul_le_mono_l, Pos_pow_le_mono_r, CReal_from_cauchy_cm_mono, Hq.
@@ -499,11 +499,11 @@ Proof.
   assert (CReal_abs (xn i' - xn j') <= inject_Q (1#4)) as Hxij.
     {
     destruct (le_lt_dec i' j').
-    - apply (CReal_le_trans _ _ _ (imaj i' j' (le_refl _) l)).
+    - apply (CReal_le_trans _ _ _ (imaj i' j' (Nat.le_refl _) l)).
       apply inject_Q_le; unfold Qle, Qnum, Qden; ring_simplify.
       apply Pos2Z_pos_is_pos.
     - apply le_S, le_S_n in l.
-      apply (CReal_le_trans _ _ _ (jmaj i' j' l (le_refl _))).
+      apply (CReal_le_trans _ _ _ (jmaj i' j' l (Nat.le_refl _))).
       apply inject_Q_le; unfold Qle, Qnum, Qden; ring_simplify.
       apply Pos2Z_pos_is_pos.
     }
@@ -600,7 +600,7 @@ Proof.
        pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra. }
 
   (* Use imaj to relate xn i and xn j *)
-  specialize (imaj j i (le_trans _ _ _ (Nat.le_max_r _ _) H0) (le_refl _)).
+  specialize (imaj j i (Nat.le_trans _ _ _ (Nat.le_max_r _ _) H0) (Nat.le_refl _)).
     apply (CReal_le_trans _ (inject_Q (1 # 4 * p) + inject_Q (1 # 4 * p))).
     setoid_replace (xn j - inject_Q (seq (xn i) (Z.neg i' - 2)))
     with (xn j - xn i + (xn i - inject_Q (seq (xn i) (Z.neg i' - 2)))).

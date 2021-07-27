@@ -11,7 +11,6 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
-Require Import Max.
 Require Import Lia.
 Local Open Scope R_scope.
 
@@ -535,7 +534,7 @@ Proof.
   rewrite <- VUI.
   rewrite Rabs_minus_sym.
   apply Hn.
-  apply le_refl.
+  apply Nat.le_refl.
 
   apply Rle_antisym.
   apply Hl.
@@ -600,8 +599,8 @@ Proof.
   [ apply Rabs_triang | ring ].
   rewrite (double_var eps); apply Rplus_lt_compat.
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H3;
-    unfold ge, N; apply le_max_l.
-  apply H4; unfold ge, N; apply le_max_r.
+    unfold ge, N; apply Nat.le_max_l.
+  apply H4; unfold ge, N; apply Nat.le_max_r.
 Qed.
 
 (**********)
@@ -623,10 +622,10 @@ Proof.
   apply Rle_lt_trans with (Rabs (An n - l1) + Rabs (Bn n - l2)).
   apply Rabs_triang.
   rewrite (double_var eps); apply Rplus_lt_compat.
-  apply H3; unfold ge; apply le_trans with N;
-    [ unfold N; apply le_max_l | assumption ].
-  apply H4; unfold ge; apply le_trans with N;
-    [ unfold N; apply le_max_r | assumption ].
+  apply H3; unfold ge; apply Nat.le_trans with N;
+    [ unfold N; apply Nat.le_max_l | assumption ].
+  apply H4; unfold ge; apply Nat.le_trans with N;
+    [ unfold N; apply Nat.le_max_r | assumption ].
 Qed.
 
 (**********)
@@ -781,8 +780,8 @@ Proof.
   rewrite Rmult_1_l; rewrite (Rmult_comm (/ M)).
   apply Rlt_le_trans with (eps / (2 * M)).
   apply H10.
-  unfold ge; apply le_trans with N.
-  unfold N; apply le_max_r.
+  unfold ge; apply Nat.le_trans with N.
+  unfold N; apply Nat.le_max_r.
   assumption.
   unfold Rdiv; rewrite Rinv_mult_distr.
   right; ring.
@@ -794,8 +793,8 @@ Proof.
   rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l; apply Rlt_le_trans with (eps / (2 * Rabs l2)).
   apply H9.
-  unfold ge; apply le_trans with N.
-  unfold N; apply le_max_l.
+  unfold ge; apply Nat.le_trans with N.
+  unfold N; apply Nat.le_max_l.
   assumption.
   unfold Rdiv; right; rewrite Rinv_mult_distr.
   ring.
@@ -825,7 +824,7 @@ Proof.
   induction  n as [| n Hrecn].
   induction  m as [| m Hrecm].
   right; reflexivity.
-  elim (le_Sn_O _ H0).
+  elim (Nat.nle_succ_0 _ H0).
   cut ((m <= n)%nat \/ m = S n).
   intro; elim H1; intro.
   apply Rle_trans with (Un n).
@@ -900,12 +899,12 @@ Proof.
   apply Rle_lt_trans with (Rabs (Un N - l)).
   apply RRle_abs.
   apply H2.
-  unfold ge, N; apply le_max_r.
+  unfold ge, N; apply Nat.le_max_r.
   unfold Rminus; do 2 rewrite <- (Rplus_comm (- l));
     apply Rplus_le_compat_l.
   apply tech9.
   assumption.
-  unfold N; apply le_max_l.
+  unfold N; apply Nat.le_max_l.
   apply Rplus_lt_reg_l with l.
   rewrite Rplus_0_r.
   replace (l + (Un n - l)) with (Un n); [ assumption | ring ].
@@ -987,7 +986,7 @@ Proof.
   induction  n as [| n Hrecn].
   induction  m as [| m Hrecm].
   right; reflexivity.
-  elim (le_Sn_O _ H0).
+  elim (Nat.nle_succ_0 _ H0).
   cut ((m <= n)%nat \/ m = S n).
   intro; elim H1; intro.
   apply Rle_trans with (Un n).
@@ -1012,7 +1011,7 @@ Proof.
   rewrite H1; unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r;
     rewrite Rabs_R0; rewrite pow_ne_zero;
       [ unfold Rdiv; rewrite Rmult_0_l; rewrite Rabs_R0; assumption
-        | red; intro; rewrite H3 in H2; elim (le_Sn_n _ H2) ].
+        | red; intro; rewrite H3 in H2; elim (Nat.nle_succ_diag_l _ H2) ].
   assert (H2 := Rabs_pos_lt x H1); set (M := up (Rabs x)); cut (0 <= M)%Z.
   intro; elim (IZN M H3); intros M_nat H4.
   set (Un := fun n:nat => Rabs x ^ (M_nat + n) / INR (fact (M_nat + n))).
@@ -1024,14 +1023,14 @@ Proof.
   elim H9; intros; rewrite H11; unfold Un in H6; apply H6; assumption.
   exists (n - M_nat)%nat.
   split.
-  unfold ge; apply (fun p n m:nat => plus_le_reg_l n m p) with M_nat;
-    rewrite <- le_plus_minus.
+  unfold ge; apply (fun p n m:nat => Nat.add_le_mono_l n m p) with M_nat;
+    rewrite (Nat.add_comm _ (n - M_nat)), Nat.sub_add.
   assumption.
-  apply le_trans with (M_nat + N)%nat.
-  apply le_plus_l.
+  apply Nat.le_trans with (M_nat + N)%nat.
+  apply Nat.le_add_r.
   assumption.
-  apply le_plus_minus; apply le_trans with (M_nat + N)%nat;
-    [ apply le_plus_l | assumption ].
+  rewrite Nat.add_comm, Nat.sub_add; [reflexivity | ];
+    apply Nat.le_trans with (M_nat + N)%nat; [ apply Nat.le_add_r | assumption ].
   set (Vn := fun n:nat => Rabs x * (Un 0%nat / INR (S n))).
   cut (1 <= M_nat)%nat.
   intro; cut (forall n:nat, 0 < Un n).
@@ -1095,8 +1094,8 @@ Proof.
   unfold cv_infty; intro;
     destruct (total_order_T M0 0) as [[Hlt|Heq]|Hgt].
   exists 0%nat; intros.
-  apply Rlt_trans with 0; [ assumption | apply lt_INR_0; apply lt_O_Sn ].
-  exists 0%nat; intros; rewrite Heq; apply lt_INR_0; apply lt_O_Sn.
+  apply Rlt_trans with 0; [ assumption | apply lt_INR_0; apply Nat.lt_0_succ ].
+  exists 0%nat; intros; rewrite Heq; apply lt_INR_0; apply Nat.lt_0_succ.
   set (M0_z := up M0).
   assert (H10 := archimed M0).
   cut (0 <= M0_z)%Z.
@@ -1105,7 +1104,7 @@ Proof.
   apply Rlt_le_trans with (IZR M0_z).
   elim H10; intros; assumption.
   rewrite H12; rewrite <- INR_IZR_INZ; apply le_INR.
-  apply le_trans with n; [ assumption | apply le_n_Sn ].
+  apply Nat.le_trans with n; [ assumption | apply Nat.le_succ_diag_r ].
   apply le_IZR; left; simpl; unfold M0_z;
     apply Rlt_trans with M0; [ assumption | elim H10; intros; assumption ].
   intro; apply Rle_trans with (Rabs x * Un n * / INR (S n)).
@@ -1117,17 +1116,17 @@ Proof.
   apply Rabs_pos.
   left; apply pow_lt; assumption.
   replace (M_nat + n + 1)%nat with (S (M_nat + n)).
-  rewrite fact_simpl; rewrite mult_comm; rewrite mult_INR;
+  rewrite fact_simpl; rewrite Nat.mul_comm; rewrite mult_INR;
     rewrite Rinv_mult_distr.
   apply Rmult_le_compat_l.
-  left; apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt; red;
-    intro; assert (H10 := eq_sym H9); elim (fact_neq_0 _ H10).
+  left; apply Rinv_0_lt_compat; apply lt_INR_0; apply -> Nat.neq_0_lt_0; red;
+    intro; elim (fact_neq_0 _ H9).
   left; apply Rinv_lt_contravar.
-  apply Rmult_lt_0_compat; apply lt_INR_0; apply lt_O_Sn.
-  apply lt_INR; apply lt_n_S.
+  apply Rmult_lt_0_compat; apply lt_INR_0; apply Nat.lt_0_succ.
+  apply lt_INR; apply -> Nat.succ_lt_mono.
   pattern n at 1; replace n with (0 + n)%nat; [ idtac | reflexivity ].
-  apply plus_lt_compat_r.
-  apply lt_le_trans with 1%nat; [ apply lt_O_Sn | assumption ].
+  apply Nat.add_lt_mono_r.
+  apply Nat.lt_le_trans with 1%nat; [ apply Nat.lt_0_succ | assumption ].
   apply INR_fact_neq_0.
   apply not_O_INR; discriminate.
   ring.
@@ -1136,8 +1135,8 @@ Proof.
     rewrite (Rmult_comm (Un 0%nat)); rewrite (Rmult_comm (Un n)).
   repeat apply Rmult_le_compat_l.
   apply Rabs_pos.
-  left; apply Rinv_0_lt_compat; apply lt_INR_0; apply lt_O_Sn.
-  apply decreasing_prop; [ assumption | apply le_O_n ].
+  left; apply Rinv_0_lt_compat; apply lt_INR_0; apply Nat.lt_0_succ.
+  apply decreasing_prop; [ assumption | apply Nat.le_0_l ].
   unfold Un_decreasing; intro; unfold Un.
   replace (M_nat + S n)%nat with (M_nat + n + 1)%nat.
   rewrite pow_add; unfold Rdiv; rewrite Rmult_assoc;
@@ -1146,8 +1145,8 @@ Proof.
   replace (Rabs x ^ 1) with (Rabs x); [ idtac | simpl; ring ].
   replace (M_nat + n + 1)%nat with (S (M_nat + n)).
   apply Rmult_le_reg_l with (INR (fact (S (M_nat + n)))).
-  apply lt_INR_0; apply neq_O_lt; red; intro; assert (H9 := eq_sym H8);
-    elim (fact_neq_0 _ H9).
+  apply lt_INR_0; apply Nat.neq_0_lt_0; red; intro;
+    elim (fact_neq_0 _ H8).
   rewrite (Rmult_comm (Rabs x)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l.
   rewrite fact_simpl; rewrite mult_INR; rewrite Rmult_assoc;
@@ -1162,15 +1161,14 @@ Proof.
   ring.
   intro; unfold Un; unfold Rdiv; apply Rmult_lt_0_compat.
   apply pow_lt; assumption.
-  apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt; red; intro;
-    assert (H8 := eq_sym H7); elim (fact_neq_0 _ H8).
+  apply Rinv_0_lt_compat; apply lt_INR_0; apply Nat.neq_0_lt_0; red; intro;
+    elim (fact_neq_0 _ H7).
   clear Un Vn; apply INR_le; simpl.
   induction  M_nat as [| M_nat HrecM_nat].
   assert (H6 := archimed (Rabs x)); fold M in H6; elim H6; intros.
   rewrite H4 in H7; rewrite <- INR_IZR_INZ in H7.
   simpl in H7; elim (Rlt_irrefl _ (Rlt_trans _ _ _ H2 H7)).
-  apply (le_INR 1); apply le_n_S;
-    apply le_O_n.
+  apply (le_INR 1); apply le_n_S; apply Nat.le_0_l.
   apply le_IZR; simpl; left; apply Rlt_trans with (Rabs x).
   assumption.
   elim (archimed (Rabs x)); intros; assumption.
@@ -1181,8 +1179,8 @@ Proof.
     rewrite (Rabs_right (Rabs x ^ n / INR (fact n))).
   unfold Rdiv; rewrite Rabs_mult; rewrite (Rabs_right (/ INR (fact n))).
   rewrite RPow_abs; right; reflexivity.
-  apply Rle_ge; left; apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt;
-    red; intro; assert (H4 := eq_sym H3); elim (fact_neq_0 _ H4).
+  apply Rle_ge; left; apply Rinv_0_lt_compat; apply lt_INR_0; apply Nat.neq_0_lt_0;
+    red; intro; elim (fact_neq_0 _ H3).
   apply Rle_ge; unfold Rdiv; apply Rmult_le_pos.
   case (Req_dec x 0); intro.
   rewrite H3; rewrite Rabs_R0.
@@ -1190,7 +1188,10 @@ Proof.
     [ simpl; left; apply Rlt_0_1
       | simpl; rewrite Rmult_0_l; right; reflexivity ].
   left; apply pow_lt; apply Rabs_pos_lt; assumption.
-  left; apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt; red;
-    intro; assert (H4 := eq_sym H3); elim (fact_neq_0 _ H4).
+  left; apply Rinv_0_lt_compat; apply lt_INR_0; apply Nat.neq_0_lt_0; red;
+    intro; elim (fact_neq_0 _ H3).
   apply H1; assumption.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

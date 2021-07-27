@@ -213,7 +213,6 @@ Qed.
 
 
 (*i theory of minter to do similarly
-Require Min.
 (* uniset intersection *)
 Definition minter := [m1,m2:uniset]
     (Charac [a:A](andb (charac m1 a)(charac m2 a))).

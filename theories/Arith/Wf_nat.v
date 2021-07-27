@@ -10,7 +10,7 @@
 
 (** Well-founded relations and natural numbers *)
 
-Require Import PeanoNat Lt.
+Require Import PeanoNat.
 
 Local Open Scope nat_scope.
 
@@ -28,10 +28,10 @@ Theorem well_founded_ltof : well_founded ltof.
 Proof.
   assert (H : forall n (a:A), f a < n -> Acc ltof a).
   { intro n; induction n as [|n IHn].
-    - intros a Ha; absurd (f a < 0); auto with arith.
+    - intros a Ha; absurd (f a < 0); auto. apply Nat.nlt_0_r.
     - intros a Ha. apply Acc_intro. unfold ltof at 1. intros b Hb.
-      apply IHn. apply Nat.lt_le_trans with (f a); auto with arith. }
-  intros a. apply (H (S (f a))). auto with arith.
+      apply IHn. apply Nat.lt_le_trans with (f a); auto. now apply Nat.succ_le_mono. }
+  intros a. apply (H (S (f a))). apply Nat.lt_succ_diag_r.
 Defined.
 
 Register well_founded_ltof as num.nat.well_founded_ltof.
@@ -70,10 +70,10 @@ Proof.
   intros P F.
   assert (H : forall n (a:A), f a < n -> P a).
   { intro n; induction n as [|n IHn].
-    - intros a Ha; absurd (f a < 0); auto with arith.
+    - intros a Ha; absurd (f a < 0); auto. apply Nat.nlt_0_r.
     - intros a Ha. apply F. unfold ltof. intros b Hb.
-      apply IHn. apply Nat.lt_le_trans with (f a); auto with arith. }
-  intros a. apply (H (S (f a))). auto with arith.
+      apply IHn. apply Nat.lt_le_trans with (f a); auto. now apply Nat.succ_le_mono. }
+  intros a. apply (H (S (f a))). apply Nat.lt_succ_diag_r.
 Defined.
 
 Theorem induction_gtof1 :
@@ -108,10 +108,10 @@ Theorem well_founded_lt_compat : well_founded R.
 Proof.
   assert (H : forall n (a:A), f a < n -> Acc R a).
   { intro n; induction n as [|n IHn].
-    - intros a Ha; absurd (f a < 0); auto with arith.
+    - intros a Ha; absurd (f a < 0); auto. apply Nat.nlt_0_r.
     - intros a Ha. apply Acc_intro. intros b Hb.
-      apply IHn. apply Nat.lt_le_trans with (f a); auto with arith. }
-  intros a. apply (H (S (f a))). auto with arith.
+      apply IHn. apply Nat.lt_le_trans with (f a); auto. now apply Nat.succ_le_mono. }
+  intros a. apply (H (S (f a))). apply Nat.lt_succ_diag_r.
 Defined.
 
 End Well_founded_Nat.
@@ -148,7 +148,7 @@ Defined.
 Lemma lt_wf_ind :
   forall n (P:nat -> Prop), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
 Proof.
-  intro p; intros; elim (lt_wf p); auto with arith.
+  intro p; intros; elim (lt_wf p); auto.
 Qed.
 
 Lemma gt_wf_rect :
@@ -174,7 +174,7 @@ Lemma lt_wf_double_rect :
      (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
 Proof.
   intros P Hrec p; pattern p; apply lt_wf_rect.
-  intros n H q; pattern q; apply lt_wf_rect; auto with arith.
+  intros n H q; pattern q; apply lt_wf_rect; auto.
 Defined.
 
 Lemma lt_wf_double_rec :
@@ -184,7 +184,7 @@ Lemma lt_wf_double_rec :
      (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
 Proof.
   intros P Hrec p; pattern p; apply lt_wf_rec.
-  intros n H q; pattern q; apply lt_wf_rec; auto with arith.
+  intros n H q; pattern q; apply lt_wf_rec; auto.
 Defined.
 
 Lemma lt_wf_double_ind :
@@ -194,7 +194,7 @@ Lemma lt_wf_double_ind :
       (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
 Proof.
   intros P Hrec p; pattern p; apply lt_wf_ind.
-  intros n H q; pattern q; apply lt_wf_ind; auto with arith.
+  intros n H q; pattern q; apply lt_wf_ind; auto.
 Qed.
 
 #[global]
@@ -241,7 +241,6 @@ Qed.
 
 Set Implicit Arguments.
 
-Require Import Le.
 Require Import Compare_dec.
 Require Import Decidable.
 
@@ -259,9 +258,9 @@ Proof.
   { intro n; induction n as [|n IHn].
     - right. intros. apply Nat.le_0_l.
     - destruct IHn as [(n' & IH1 & IH2)|IH].
-      + left. exists n'; auto with arith.
+      + left. exists n'; auto.
       + destruct (Pdec n) as [HP|HP].
-        * left. exists n; auto with arith.
+        * left. exists n; auto.
         * right. intros n' Hn'.
           apply Nat.le_neq; split; auto. intros <-. auto. }
   destruct (H n0) as [(n & H1 & H2 & H3)|H0]; [exists n | exists n0];
@@ -272,3 +271,6 @@ Qed.
 Unset Implicit Arguments.
 
 Notation iter_nat n A f x := (nat_rect (fun _ => A) x (fun _ => f) n) (only parsing).
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Le Lt.

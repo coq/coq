@@ -586,7 +586,7 @@ Defined.
               | _ => discriminate
               | [ H : forall x, (_ * _)%type -> _ |- _ ] => specialize (fun x y z => H x (y, z))
               | _ => solve [ eauto with nocore ]
-              | _ => solve [ apply Min.min_case_strong; lia ]
+              | _ => solve [ apply Nat.min_case_strong; lia ]
               | _ => lia
               | [ H : production_valid (_::_) |- _ ]
                 => let H' := fresh in
@@ -627,7 +627,7 @@ Defined.
                   => parse_production'_helper
                        _
                        (let parse_item := (fun n pf => parse_item' (parse_nonterminal (take n str) (len := min n len) (eq_trans take_length (f_equal (min _) Hlen)) pf) it) in
-                        let parse_item := (fun n => parse_item n (Min.min_case_strong n len (fun k => k <= len0) (fun Hlen => (Nat.le_trans _ _ _ Hlen pf)) (fun Hlen => pf))) in
+                        let parse_item := (fun n => parse_item n (Nat.min_case_strong n len (fun k => k <= len0) (fun Hlen => (Nat.le_trans _ _ _ Hlen pf)) (fun Hlen => pf))) in
                         let parse_production := (fun n => parse_production' (pf_helper it its Hreachable) (drop n str) (len - n) (eq_trans (drop_length _ _) (f_equal (fun x => x - _) Hlen)) (Nat.le_trans _ _ _ (Nat.le_sub_l _ _) pf)) in
                         match dec_In
                                 (fun n => dec_prod (parse_item n) (parse_production n))

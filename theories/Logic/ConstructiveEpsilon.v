@@ -232,7 +232,7 @@ Proof.
   intro e; destruct (linear_search_from_0_conform e) as [found r]; exists found.
   split.
   - apply (rel_ls_post r).
-  - intros k pk. apply (rel_ls_lower_bound r pk), le_0_n.
+  - intros k pk. apply (rel_ls_lower_bound r pk), Nat.le_0_l.
 Defined.
 
 (** NB. The previous version used a negative formulation:
@@ -286,7 +286,7 @@ Proof.
   intro e. exists (linear_search_from_0 e). split.
   - apply (rel_ls_post (linear_search_from_0_rel e)).
   - intros k pk.
-    apply (@rel_ls_lower_bound _ 0 (linear_search_from_0_rel e) k pk), le_0_n.
+    apply (@rel_ls_lower_bound _ 0 (linear_search_from_0_rel e) k pk), Nat.le_0_l.
 Defined.
 
 End ConstructiveIndefiniteGroundDescription_Direct.

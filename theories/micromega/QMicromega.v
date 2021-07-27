@@ -272,7 +272,3 @@ Proof.
     eapply QWeakChecker_sound; eauto.
     tauto.
 Qed.
-
-(* Local Variables: *)
-(* coding: utf-8 *)
-(* End: *)

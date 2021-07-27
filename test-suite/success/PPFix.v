@@ -1,9 +1,8 @@
 
 (* To test PP of fixpoints *)
-Require Import Arith.
+Require Import PeanoNat.
 Check fix a(n: nat): n<5 -> nat :=
   match n return n<5 -> nat with
     | 0 => fun _ => 0
-    | S n => fun h => S (a n (lt_S_n _ _ (lt_S _ _ h)))
+    | S n => fun h => S (a n (proj2 (Nat.succ_lt_mono _ _) (Nat.lt_lt_succ_r _ _ h)))
   end.
-

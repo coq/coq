@@ -1056,5 +1056,5 @@ Notation Zabs_N_mult := Zabs2N.inj_mul (only parsing).
 
 Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z.of_nat (n - m) = 0.
 Proof.
- intros. rewrite not_le_minus_0; auto with arith.
+ intros n m ->%Nat.lt_le_incl%Nat.sub_0_le; auto.
 Qed.

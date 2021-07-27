@@ -264,32 +264,32 @@ Qed.
 
 Require Import Arith.
 
-Check mult_1_l.
+Check Nat.mul_1_l.
 (*
-mult_1_l
+Nat.mul_1_l
      : forall n : nat, 1 * n = n
 *)
 
-Check mult_plus_distr_r.
+Check Nat.mul_add_distr_r.
 (*
-mult_plus_distr_r
+Nat.mul_add_distr_r
      : forall n m p : nat, (n + m) * p = n * p + m * p
 
 *)
 
-Lemma mult_distr_S : forall n p : nat, n * p + p = (S n)* p.
- simpl;auto with arith.
+Lemma mul_distr_S : forall n p : nat, n * p + p = (S n)* p.
+ simpl; auto with arith.
 Qed.
 
 Lemma four_n : forall n:nat, n+n+n+n = 4*n.
- intro n;rewrite <- (mult_1_l n).
+ intro n;rewrite <- (Nat.mul_1_l n).
 
  Undo.
  intro n; pattern n at 1.
 
 
- rewrite <- mult_1_l.
- repeat rewrite   mult_distr_S.
+ rewrite <- Nat.mul_1_l.
+ repeat rewrite mul_distr_S.
  trivial.
 Qed.
 
@@ -313,9 +313,9 @@ End Le_case_analysis.
 
 Lemma predecessor_of_positive : forall n, 1 <= n ->  exists p:nat, n = S p.
 Proof.
- intros n  H; case H.
+ intros n H; case H.
  exists 0; trivial.
- intros m Hm; exists m;trivial.
+ intros m Hm; exists m; trivial.
 Qed.
 
 Definition Vtail_total

@@ -13,7 +13,6 @@ Require Import Rfunctions.
 Require Import Rseries.
 Require Import SeqProp.
 Require Import PartSum.
-Require Import Max.
 Local Open Scope R_scope.
 
 (**********)
@@ -144,7 +143,7 @@ Proof.
   apply Rplus_le_compat_l.
   apply CV_ALT_step3; assumption.
   unfold tg_alt; simpl; ring.
-  apply lt_O_Sn.
+  apply Nat.lt_0_succ.
 Qed.
 
 (** This lemma gives an interesting result about alternated series *)
@@ -185,9 +184,9 @@ Proof.
     rewrite pow_1_abs; rewrite Rmult_1_l; unfold Rminus in H6;
       rewrite Ropp_0 in H6; rewrite <- (Rplus_0_r (Un (S n)));
 	apply H6.
-  unfold ge; apply le_trans with n.
-  apply le_trans with N; [ unfold N; apply le_max_r | assumption ].
-  apply le_n_Sn.
+  unfold ge; apply Nat.le_trans with n.
+  apply Nat.le_trans with N; [ unfold N; apply Nat.le_max_r | assumption ].
+  apply Nat.le_succ_diag_r.
   rewrite tech5; ring.
   rewrite H12; apply Rlt_trans with (eps / 2).
   apply H7; assumption.
@@ -199,16 +198,16 @@ Proof.
   pattern eps at 1; rewrite <- (Rplus_0_r eps); apply Rplus_lt_compat_l;
     assumption.
   elim H10; intro; apply le_double.
-  rewrite <- H11; apply le_trans with N.
-  unfold N; apply le_trans with (S (2 * N1));
-    [ apply le_n_Sn | apply le_max_l ].
+  rewrite <- H11; apply Nat.le_trans with N.
+  unfold N; apply Nat.le_trans with (S (2 * N1));
+    [ apply Nat.le_succ_diag_r | apply Nat.le_max_l ].
   assumption.
-  apply lt_n_Sm_le.
+  apply Nat.lt_succ_r.
   rewrite <- H11.
-  apply lt_le_trans with N.
-  unfold N; apply lt_le_trans with (S (2 * N1)).
-  apply lt_n_Sn.
-  apply le_max_l.
+  apply Nat.lt_le_trans with N.
+  unfold N; apply Nat.lt_le_trans with (S (2 * N1)).
+  apply Nat.lt_succ_diag_r.
+  apply Nat.le_max_l.
   assumption.
 Qed.
 
@@ -249,27 +248,16 @@ Proof.
   elim (H1 eps H2); intros.
   exists x; intros.
   apply H3.
-  unfold ge; apply le_trans with (2 * n)%nat.
-  apply le_trans with n.
-  assumption.
-  assert (H5 := mult_O_le n 2).
-  elim H5; intro.
-  cut (0%nat <> 2%nat);
-    [ intro; elim H7; symmetry ; assumption | discriminate ].
-  assumption.
-  apply le_n_Sn.
+  apply Nat.le_trans with n; [ assumption | ].
+  apply Nat.le_le_succ_r.
+  rewrite <- Nat.double_twice; apply Nat.le_add_r.
   unfold Un_cv; unfold R_dist; unfold Un_cv in H1;
     unfold R_dist in H1; intros.
   elim (H1 eps H2); intros.
   exists x; intros.
   apply H3.
-  unfold ge; apply le_trans with n.
-  assumption.
-  assert (H5 := mult_O_le n 2).
-  elim H5; intro.
-  cut (0%nat <> 2%nat);
-    [ intro; elim H7; symmetry ; assumption | discriminate ].
-  assumption.
+  apply Nat.le_trans with n; [ assumption | ].
+  rewrite <- Nat.double_twice; apply Nat.le_add_r.
 Qed.
 
 (***************************************)
@@ -281,7 +269,7 @@ Definition PI_tg (n:nat) := / INR (2 * n + 1).
 Lemma PI_tg_pos : forall n:nat, 0 <= PI_tg n.
 Proof.
   intro; unfold PI_tg; left; apply Rinv_0_lt_compat; apply lt_INR_0;
-    replace (2 * n + 1)%nat with (S (2 * n)); [ apply lt_O_Sn | ring ].
+    replace (2 * n + 1)%nat with (S (2 * n)); [ apply Nat.lt_0_succ | ring ].
 Qed.
 
 Lemma PI_tg_decreasing : Un_decreasing PI_tg.
@@ -289,16 +277,16 @@ Proof.
   unfold PI_tg, Un_decreasing; intro.
   apply Rmult_le_reg_l with (INR (2 * n + 1)).
   apply lt_INR_0.
-  replace (2 * n + 1)%nat with (S (2 * n)); [ apply lt_O_Sn | ring ].
+  replace (2 * n + 1)%nat with (S (2 * n)); [ apply Nat.lt_0_succ | ring ].
   rewrite <- Rinv_r_sym.
   apply Rmult_le_reg_l with (INR (2 * S n + 1)).
   apply lt_INR_0.
-  replace (2 * S n + 1)%nat with (S (2 * S n)); [ apply lt_O_Sn | ring ].
+  replace (2 * S n + 1)%nat with (S (2 * S n)); [ apply Nat.lt_0_succ | ring ].
   rewrite (Rmult_comm (INR (2 * S n + 1))); rewrite Rmult_assoc;
     rewrite <- Rinv_l_sym.
   do 2 rewrite Rmult_1_r; apply le_INR.
   replace (2 * S n + 1)%nat with (S (S (2 * n + 1))).
-  apply le_trans with (S (2 * n + 1)); apply le_n_Sn.
+  apply Nat.le_trans with (S (2 * n + 1)); apply Nat.le_succ_diag_r.
   ring.
   apply not_O_INR; discriminate.
   apply not_O_INR; replace (2 * n + 1)%nat with (S (2 * n));
@@ -323,29 +311,29 @@ Proof.
   apply Rmult_lt_reg_l with (INR (2 * n)).
   apply lt_INR_0.
   replace (2 * n)%nat with (n + n)%nat; [ idtac | ring ].
-  apply lt_le_trans with n.
+  apply Nat.lt_le_trans with n.
   assumption.
-  apply le_plus_l.
+  apply Nat.le_add_r.
   rewrite <- Rinv_r_sym.
   apply Rmult_lt_reg_l with (INR (2 * n + 1)).
   apply lt_INR_0.
-  replace (2 * n + 1)%nat with (S (2 * n)); [ apply lt_O_Sn | ring ].
+  replace (2 * n + 1)%nat with (S (2 * n)); [ apply Nat.lt_0_succ | ring ].
   rewrite (Rmult_comm (INR (2 * n + 1))).
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   do 2 rewrite Rmult_1_r; apply lt_INR.
-  replace (2 * n + 1)%nat with (S (2 * n)); [ apply lt_n_Sn | ring ].
+  replace (2 * n + 1)%nat with (S (2 * n)); [ apply Nat.lt_succ_diag_r | ring ].
   apply not_O_INR; replace (2 * n + 1)%nat with (S (2 * n));
     [ discriminate | ring ].
   replace n with (S (pred n)).
   apply not_O_INR; discriminate.
-  symmetry ; apply S_pred with 0%nat.
+  apply Nat.lt_succ_pred with 0%nat.
   assumption.
   apply Rle_lt_trans with (/ INR (2 * N)).
   apply Rinv_le_contravar.
   rewrite mult_INR; apply Rmult_lt_0_compat;
     [ simpl; prove_sup0 | apply lt_INR_0; assumption ].
   apply le_INR.
-  now apply mult_le_compat_l.
+  now apply Nat.mul_le_mono_nonneg_l; [ apply Nat.le_0_l | ].
   rewrite mult_INR.
   apply Rmult_lt_reg_l with (INR N / eps).
   apply Rdiv_lt_0_compat with (2 := H).
@@ -360,7 +348,7 @@ Proof.
   now apply Rgt_not_eq, (lt_INR 0).
   now apply Rgt_not_eq.
   apply Rle_ge; apply PI_tg_pos.
-  apply lt_le_trans with N; assumption.
+  apply Nat.lt_le_trans with N; assumption.
   elim H1; intros H5 _.
   destruct (lt_eq_lt_dec 0 N) as [[| <- ]|H6].
   assumption.
@@ -368,7 +356,7 @@ Proof.
   simpl in H5.
   cut (0 < / (2 * eps)); [ intro | apply Rinv_0_lt_compat; assumption ].
   elim (Rlt_irrefl _ (Rlt_trans _ _ _ H6 H5)).
-  elim (lt_n_O _ H6).
+  elim (Nat.nlt_0_r _ H6).
   apply le_IZR.
   left; apply Rlt_trans with (/ (2 * eps)).
   apply Rinv_0_lt_compat; assumption.
@@ -422,3 +410,6 @@ Proof.
     apply Rplus_lt_compat_l; prove_sup0.
   assumption.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

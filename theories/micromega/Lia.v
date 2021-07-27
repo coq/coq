@@ -29,9 +29,5 @@ Ltac zchecker :=
                                 (@find Z Z0 __varmap)).
 
 Ltac lia := Zify.zify; xlia zchecker.
-               
-Ltac nia := Zify.zify; xnlia zchecker.
 
-(* Local Variables: *)
-(* coding: utf-8 *)
-(* End: *)
+Ltac nia := Zify.zify; xnlia zchecker.

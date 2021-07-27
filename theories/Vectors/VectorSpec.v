@@ -57,7 +57,7 @@ intros n; induction n; intros k v H HS.
 - inversion H.
 - rewrite (eta v).
   unfold nth_order; simpl.
-  now rewrite (Fin.of_nat_ext H (Lt.lt_S_n _ _ HS)).
+  now rewrite (Fin.of_nat_ext H (proj2 (Nat.succ_lt_mono _ _) HS)).
 Qed.
 
 Lemma nth_order_last A: forall n (v: t A (S n)) (H: n < S n),
@@ -436,7 +436,7 @@ Lemma to_list_nth_order A n (v : t A n) p (H : p < n) d:
 Proof.
 revert n v H; induction p as [ | p IHp ]; intros n v H;
   (destruct n; [ inversion H | rewrite (eta v) ]); trivial.
-now rewrite <- nth_order_tl with (H:=Lt.lt_S_n _ _ H), IHp.
+now rewrite <- nth_order_tl with (H:=proj2 (Nat.succ_lt_mono _ _) H), IHp.
 Qed.
 
 Lemma to_list_tl A n (v : t A (S n)):
@@ -456,7 +456,7 @@ Proof. now revert m v2; induction v1 as [ | ? ? ? IHv1 ]; intros; [ | simpl; rew
 
 Lemma to_list_rev_append A n m (v1 : t A n) (v2 : t A m):
   to_list (rev_append v1 v2) = List.rev_append (to_list v1) (to_list v2).
-Proof. unfold rev_append; rewrite (Plus.plus_tail_plus n m); apply to_list_rev_append_tail. Qed.
+Proof. unfold rev_append; rewrite <- (Nat.tail_add_spec n m); apply to_list_rev_append_tail. Qed.
 
 Lemma to_list_rev A n (v : t A n):
   to_list (rev v) = List.rev (to_list v).

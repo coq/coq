@@ -650,7 +650,8 @@ Proof.
  * now rewrite map_length.
  * intros x. rewrite in_map_iff. intros (y & <- & Hy').
    rewrite in_seq in *. simpl in *.
-   destruct Hy' as (_,Hy'). auto with arith.
+   destruct Hy' as (_,Hy').
+   split; [ apply Nat.le_0_l | auto ].
 Qed.
 
 Section Permutation_alt.
@@ -669,18 +670,18 @@ Proof.
  unfold adapt. intros Hf x y EQ.
  destruct le_lt_dec as [LE|LT]; destruct le_lt_dec as [LE'|LT'].
  - now apply eq_add_S, Hf.
- - apply Lt.le_lt_or_eq in LE.
+ - apply Nat.lt_eq_cases in LE.
    destruct LE as [LT|EQ']; [|now apply Hf in EQ'].
    unfold lt in LT. rewrite EQ in LT.
-   rewrite <- (Lt.S_pred _ _ LT') in LT.
-   elim (Lt.lt_not_le _ _ LT' LT).
- - apply Lt.le_lt_or_eq in LE'.
+   rewrite (Nat.lt_succ_pred _ _ LT') in LT.
+   elim (proj1 (Nat.lt_nge _ _) LT' LT).
+ - apply Nat.lt_eq_cases in LE'.
    destruct LE' as [LT'|EQ']; [|now apply Hf in EQ'].
    unfold lt in LT'. rewrite <- EQ in LT'.
-   rewrite <- (Lt.S_pred _ _ LT) in LT'.
-   elim (Lt.lt_not_le _ _ LT LT').
+   rewrite (Nat.lt_succ_pred _ _ LT) in LT'.
+   elim (proj1 (Nat.lt_nge _ _) LT LT').
  - apply eq_add_S, Hf.
-   now rewrite (Lt.S_pred _ _ LT), (Lt.S_pred _ _ LT'), EQ.
+   now rewrite <- (Nat.lt_succ_pred _ _ LT), <- (Nat.lt_succ_pred _ _ LT'), EQ.
 Qed.
 
 Let adapt_ok a l1 l2 f : Injective f -> length l1 = f 0 ->
@@ -688,14 +689,17 @@ Let adapt_ok a l1 l2 f : Injective f -> length l1 = f 0 ->
 Proof.
  unfold adapt. intros Hf E n.
  destruct le_lt_dec as [LE|LT].
- - apply Lt.le_lt_or_eq in LE.
+ - apply Nat.lt_eq_cases in LE.
    destruct LE as [LT|EQ]; [|now apply Hf in EQ].
    rewrite <- E in LT.
    rewrite 2 nth_error_app1; auto.
- - rewrite (Lt.S_pred _ _ LT) at 1.
-   rewrite <- E, (Lt.S_pred _ _ LT) in LT.
-   rewrite 2 nth_error_app2; auto with arith.
-   rewrite <- Minus.minus_Sn_m; auto with arith.
+ - rewrite <- (Nat.lt_succ_pred _ _ LT) at 1.
+   rewrite <- E, <- (Nat.lt_succ_pred _ _ LT) in LT.
+   rewrite 2 nth_error_app2.
+   + rewrite Nat.sub_succ_l; [ reflexivity | ].
+     apply Nat.lt_succ_r; assumption.
+   + apply Nat.lt_succ_r; assumption.
+   + apply Nat.lt_le_incl; assumption.
 Qed.
 
 Lemma Permutation_nth_error l l' :
@@ -752,21 +756,21 @@ Proof.
  - intros (E & f & Hf & Hf').
    exists f. do 2 (split; trivial).
    intros n Hn.
-   destruct (Lt.le_or_lt (length l) (f n)) as [LE|LT]; trivial.
+   destruct (Nat.le_gt_cases (length l) (f n)) as [LE|LT]; trivial.
    rewrite <- nth_error_None, <- Hf', nth_error_None, <- E in LE.
-   elim (Lt.lt_not_le _ _ Hn LE).
+   elim (proj1 (Nat.lt_nge _ _) Hn LE).
  - intros (f & Hf & Hf2 & Hf3); split; [|exists f; auto].
-   assert (H : length l' <= length l') by auto with arith.
+   assert (H : length l' <= length l') by auto.
    rewrite <- nth_error_None, Hf3, nth_error_None in H.
-   destruct (Lt.le_or_lt (length l) (length l')) as [LE|LT];
-    [|apply Hf2 in LT; elim (Lt.lt_not_le _ _ LT H)].
-   apply Lt.le_lt_or_eq in LE. destruct LE as [LT|EQ]; trivial.
+   destruct (Nat.le_gt_cases (length l) (length l')) as [LE|LT];
+    [|apply Hf2 in LT; elim (proj1 (Nat.lt_nge _ _) LT H)].
+   apply Nat.lt_eq_cases in LE. destruct LE as [LT|EQ]; trivial.
    rewrite <- nth_error_Some, Hf3, nth_error_Some in LT.
    assert (Hf' : bInjective (length l) f).
    { intros x y _ _ E. now apply Hf. }
    rewrite (bInjective_bSurjective Hf2) in Hf'.
    destruct (Hf' _ LT) as (y & Hy & Hy').
-   apply Hf in Hy'. subst y. elim (Lt.lt_irrefl _ Hy).
+   apply Hf in Hy'. subst y. elim (Nat.lt_irrefl _ Hy).
 Qed.
 
 Lemma Permutation_nth l l' d :
@@ -797,9 +801,9 @@ Proof.
      destruct le_lt_dec as [LE|LT];
       destruct le_lt_dec as [LE'|LT']; auto.
      + apply Hf1 in LT'. intros ->.
-       elim (Lt.lt_irrefl (f y)). eapply Lt.lt_le_trans; eauto.
+       elim (Nat.lt_irrefl (f y)). eapply Nat.lt_le_trans; eauto.
      + apply Hf1 in LT. intros <-.
-       elim (Lt.lt_irrefl (f x)). eapply Lt.lt_le_trans; eauto.
+       elim (Nat.lt_irrefl (f x)). eapply Nat.lt_le_trans; eauto.
    * intros n.
      destruct le_lt_dec as [LE|LT].
      + assert (LE' : length l' <= n) by (now rewrite E).

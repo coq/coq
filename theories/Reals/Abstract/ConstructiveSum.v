@@ -36,10 +36,10 @@ Lemma CRsum_eq :
     CRsum An N == CRsum Bn N.
 Proof.
   induction N.
-  - intros. exact (H O (le_refl _)).
+  - intros. exact (H O (Nat.le_refl _)).
   - intros. simpl. apply CRplus_morph. apply IHN.
-    intros. apply H. apply (le_trans _ N _ H0), le_S, le_refl.
-    apply H, le_refl.
+    intros. apply H. apply (Nat.le_trans _ N _ H0), le_S, Nat.le_refl.
+    apply H, Nat.le_refl.
 Qed.
 
 Lemma sum_eq_R0 : forall {R : ConstructiveReals} (un : nat -> CRcarrier R) (n : nat),
@@ -94,10 +94,10 @@ Lemma sum_Rle : forall {R : ConstructiveReals} (un vn : nat -> CRcarrier R) (n :
     -> CRsum un n <= CRsum vn n.
 Proof.
   induction n.
-  - intros. apply H. apply le_refl.
+  - intros. apply H. apply Nat.le_refl.
   - intros. simpl. apply CRplus_le_compat. apply IHn.
-    intros. apply H. apply (le_trans _ n _ H0). apply le_S, le_refl.
-    apply H. apply le_refl.
+    intros. apply H. apply (Nat.le_trans _ n _ H0). apply le_S, Nat.le_refl.
+    apply H. apply Nat.le_refl.
 Qed.
 
 Lemma Abs_sum_maj : forall {R : ConstructiveReals} (un vn : nat -> CRcarrier R),
@@ -127,7 +127,7 @@ Proof.
     unfold CRminus. rewrite CRopp_plus_distr, CRopp_involutive, CRplus_comm.
     reflexivity. assumption. assumption.
   - destruct (Nat.le_exists_sub p n) as [k [maj _]]. unfold lt in l.
-    apply (le_trans p (S p)). apply le_S. apply le_refl. assumption.
+    apply (Nat.le_trans p (S p)). apply le_S. apply Nat.le_refl. assumption.
     subst n. rewrite max_l. rewrite min_r.
     destruct k. simpl. unfold CRminus. rewrite CRplus_opp_r.
     rewrite CRplus_opp_r. rewrite CRabs_right. apply CRle_refl.
@@ -142,8 +142,8 @@ Proof.
     apply (CRle_trans _ (CRsum (fun k0 : nat => CRabs R (un (S p + k0)%nat)) k)).
     apply multiTriangleIneg. apply sum_Rle. intros.
     apply H. rewrite Nat.add_comm, Nat.add_succ_r. reflexivity.
-    apply (le_trans p (S p)). apply le_S. apply le_refl. assumption.
-    apply (le_trans p (S p)). apply le_S. apply le_refl. assumption.
+    apply (Nat.le_trans p (S p)). apply le_S. apply Nat.le_refl. assumption.
+    apply (Nat.le_trans p (S p)). apply le_S. apply Nat.le_refl. assumption.
 Qed.
 
 Lemma cond_pos_sum : forall {R : ConstructiveReals} (un : nat -> CRcarrier R) (n : nat),
@@ -162,8 +162,8 @@ Lemma pos_sum_more : forall {R : ConstructiveReals} (u : nat -> CRcarrier R)
     -> le n p -> CRsum u n <= CRsum u p.
 Proof.
   intros. destruct (Nat.le_exists_sub n p H0). destruct H1. subst p.
-  rewrite plus_comm.
-  destruct x. rewrite plus_0_r. apply CRle_refl. rewrite Nat.add_succ_r.
+  rewrite Nat.add_comm.
+  destruct x. rewrite Nat.add_0_r. apply CRle_refl. rewrite Nat.add_succ_r.
   replace (S (n + x)) with (S n + x)%nat. rewrite sum_assoc.
   rewrite <- CRplus_0_r, CRplus_assoc.
   apply CRplus_le_compat_l. rewrite CRplus_0_l.
@@ -209,7 +209,7 @@ Proof.
   - intros _. destruct N. simpl. reflexivity. simpl.
     rewrite IHN. rewrite CRplus_assoc.
     apply CRplus_morph. reflexivity. reflexivity.
-    apply le_n_S, le_0_n.
+    apply le_n_S, Nat.le_0_l.
 Qed.
 
 Lemma reverse_sum : forall {R : ConstructiveReals} (u : nat -> CRcarrier R) (n : nat),
@@ -219,7 +219,7 @@ Proof.
   - intros. reflexivity.
   - rewrite (decomp_sum (fun k : nat => u (S n - k)%nat)). simpl.
     rewrite CRplus_comm. apply CRplus_morph. reflexivity. assumption.
-    unfold lt. apply le_n_S. apply le_0_n.
+    unfold lt. apply -> Nat.succ_le_mono; apply Nat.le_0_l.
 Qed.
 
 Lemma Rplus_le_pos : forall {R : ConstructiveReals} (a b : CRcarrier R),
@@ -290,9 +290,9 @@ Proof.
     setoid_replace (1#n)%Q with ((1#2*n) + (1#2*n))%Q.
     rewrite CR_of_Q_plus.
     apply CRplus_le_compat.
-    apply maj. apply (le_trans _ i). assumption. apply Nat.le_max_l.
+    apply maj. apply (Nat.le_trans _ i). assumption. apply Nat.le_max_l.
     rewrite CRabs_opp. apply maj.
-    apply Nat.min_case. apply (le_trans _ i). assumption. apply le_refl.
+    apply Nat.min_case. apply (Nat.le_trans _ i). assumption. apply Nat.le_refl.
     assumption. rewrite Qinv_plus_distr. reflexivity.
     unfold CRminus. rewrite CRplus_assoc. apply CRplus_morph.
     reflexivity. rewrite CRopp_plus_distr, CRopp_involutive.
@@ -302,7 +302,7 @@ Proof.
     rewrite <- (CRplus_opp_r (CRsum vn (Init.Nat.min i j))).
     apply CRplus_le_compat. apply pos_sum_more.
     intros. apply (CRle_trans _ (CRabs R (un k))). apply CRabs_pos.
-    apply H. apply (le_trans _ i). apply Nat.le_min_l. apply Nat.le_max_l.
+    apply H. apply (Nat.le_trans _ i). apply Nat.le_min_l. apply Nat.le_max_l.
     apply CRle_refl.
   - exists x. split. assumption.
     (* x <= s *)
@@ -465,7 +465,7 @@ Proof.
   apply (CR_cv_le (fun N => CRabs R (CRsum u n - (CRsum u (n + N))))
                    (fun N => CRsum (fun n : nat => CRabs R (u n)) (n + N)
                           - CRsum (fun n : nat => CRabs R (u n)) n)).
-  - intro N. destruct N. rewrite plus_0_r. unfold CRminus.
+  - intro N. destruct N. rewrite Nat.add_0_r. unfold CRminus.
     rewrite CRplus_opp_r. rewrite CRplus_opp_r.
     rewrite CRabs_right. apply CRle_refl. apply CRle_refl.
     rewrite Nat.add_succ_r.
@@ -477,14 +477,14 @@ Proof.
     rewrite CRplus_0_l. apply multiTriangleIneg.
   - apply CR_cv_dist_cont. intros eps.
     specialize (H eps) as [N lim].
-    exists N. intros. rewrite plus_comm. apply lim. apply (le_trans N i).
-    assumption. rewrite <- (plus_0_r i). rewrite <- plus_assoc.
-    apply Nat.add_le_mono_l. apply le_0_n.
+    exists N. intros. rewrite Nat.add_comm. apply lim. apply (Nat.le_trans N i).
+    assumption. rewrite <- (Nat.add_0_r i), <- Nat.add_assoc.
+    apply Nat.add_le_mono_l, Nat.le_0_l.
   - apply CR_cv_plus. 2: apply CR_cv_const. intros eps.
     specialize (H0 eps) as [N lim].
-    exists N. intros. rewrite plus_comm. apply lim. apply (le_trans N i).
-    assumption. rewrite <- (plus_0_r i). rewrite <- plus_assoc.
-    apply Nat.add_le_mono_l. apply le_0_n.
+    exists N. intros. rewrite Nat.add_comm. apply lim. apply (Nat.le_trans N i).
+    assumption. rewrite <- (Nat.add_0_r i), <- Nat.add_assoc.
+    apply Nat.add_le_mono_l, Nat.le_0_l.
 Qed.
 
 Lemma series_cv_triangle : forall {R : ConstructiveReals}
@@ -506,8 +506,8 @@ Lemma series_cv_shift :
 Proof.
   intros. intro p. specialize (H p) as [n nmaj].
   exists (S k+n)%nat. intros. destruct (Nat.le_exists_sub (S k) i).
-  apply (le_trans _ (S k + 0)). rewrite Nat.add_0_r. apply le_refl.
-  apply (le_trans _ (S k + n)). apply Nat.add_le_mono_l, le_0_n.
+  apply (Nat.le_trans _ (S k + 0)). rewrite Nat.add_0_r. apply Nat.le_refl.
+  apply (Nat.le_trans _ (S k + n)). apply Nat.add_le_mono_l, Nat.le_0_l.
   exact H. destruct H0. subst i.
   rewrite Nat.add_comm in H. rewrite <- Nat.add_le_mono_r in H.
   specialize (nmaj x H). unfold CRminus.
@@ -532,12 +532,12 @@ Proof.
   intros. destruct shift as [|p].
   - unfold CRminus. rewrite CRopp_0. rewrite CRplus_0_r.
     apply (series_cv_eq un). intros.
-    rewrite plus_0_r. reflexivity. apply H.
+    rewrite Nat.add_0_r. reflexivity. apply H.
   - apply (CR_cv_eq _ (fun n => CRsum un (n + S p) - CRsum un p)).
-    intros. rewrite plus_comm. unfold CRminus.
+    intros. rewrite Nat.add_comm. unfold CRminus.
     rewrite sum_assoc. simpl. rewrite CRplus_comm, <- CRplus_assoc.
     rewrite CRplus_opp_l, CRplus_0_l.
-    apply CRsum_eq. intros. rewrite (plus_comm i). reflexivity.
+    apply CRsum_eq. intros. rewrite (Nat.add_comm i). reflexivity.
     apply CR_cv_plus. apply (CR_cv_shift' _ (S p) _ H).
     intros n. exists (Pos.to_nat n). intros.
     unfold CRminus. simpl.

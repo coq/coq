@@ -12,7 +12,7 @@
    Each instance is registered using a Add 'class' 'name_of_instance'.
  *)
 
-Require Import Arith Max Min BinInt BinNat Znat Nnat.
+Require Import Arith BinInt BinNat Znat Nnat.
 Require Import ZifyClasses.
 Declare ML Module "zify_plugin".
 Local Open Scope Z_scope.
@@ -635,3 +635,6 @@ Instance SatPowNonneg : Saturate Z.pow :=
     PRes r := 0 <= r;
     SatOk a b Ha _ := @Z.pow_nonneg a b Ha }.
 Add Zify Saturate SatPowNonneg.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max Min.

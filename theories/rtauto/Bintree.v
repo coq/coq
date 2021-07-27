@@ -10,7 +10,6 @@
 
 Require Export List.
 Require Export BinPos.
-Require Arith.EqNat.
 
 Open Scope positive_scope.
 
@@ -62,7 +61,7 @@ simpl;auto.
 Qed.
 
 Lemma Lget_app : forall (A:Set) (a:A) l i,
-Lget i (l ++ a :: nil) = if Arith.EqNat.beq_nat i (length l) then Some a else Lget i l.
+Lget i (l ++ a :: nil) = if Nat.eqb i (length l) then Some a else Lget i l.
 Proof.
 induction l;simpl Lget;simpl length.
 intros [ | i];simpl;reflexivity.
@@ -383,3 +382,6 @@ Arguments map [A B] f S.
 Arguments Full_map [A B f] S _.
 
 Notation "hyps \ A" := (push A hyps) (at level 72,left associativity).
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Arith.EqNat.

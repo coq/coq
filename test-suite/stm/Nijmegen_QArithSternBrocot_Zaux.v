@@ -1255,13 +1255,13 @@ Proof.
  apply Zle_lt_succ.
  change (Z_of_nat 0 <= Z_of_nat n)%Z in |- *.
  apply Znat.inj_le.
- apply le_O_n.
+ apply Nat.le_0_l.
  apply Z.lt_gt.
  change (0 < Z.succ (Z_of_nat m))%Z in |- *.
  apply Zle_lt_succ.
  change (Z_of_nat 0 <= Z_of_nat m)%Z in |- *.
  apply Znat.inj_le.
- apply le_O_n.
+ apply Nat.le_0_l.
 Qed.
 
 
@@ -1432,7 +1432,7 @@ Proof.
  rewrite S_predn.
  symmetry  in |- *; apply ZL9.
  clear Hp;
-  apply sym_not_equal; apply lt_O_neq; apply lt_O_nat_of_P.
+  apply Nat.neq_0_lt_0, lt_O_nat_of_P.
 Qed.
 
 
@@ -1442,7 +1442,7 @@ Lemma le_absolu :
  (0 <= x)%Z -> (0 <= y)%Z -> (x <= y)%Z -> Z.abs_nat x <= Z.abs_nat y.
 Proof.
  intros [| x| x] [| y| y] Hx Hy Hxy;
-  apply le_O_n ||
+  apply Nat.le_0_l ||
     (try
       match goal with
       | id1:(0 <= Zneg _)%Z |- _ =>
@@ -1522,7 +1522,7 @@ Qed.
 Let pred_nat_unfolded_subproof px :
   Pos.to_nat px <> 0.
 Proof.
-apply sym_not_equal; apply lt_O_neq; apply lt_O_nat_of_P.
+apply Nat.neq_0_lt_0, lt_O_nat_of_P.
 Qed.
 
 Lemma pred_nat_unfolded :
@@ -2430,7 +2430,7 @@ Proof.
  replace (- p + p)%Z with (Z_of_nat 0).
  ring_simplify (- p + (p + Z_of_nat k))%Z.
  apply Znat.inj_le.
- apply le_O_n.
+ apply Nat.le_0_l.
  ring_simplify; auto with arith.
  assumption.
  rewrite (Znat.inj_S k).
@@ -2487,7 +2487,7 @@ Proof.
  replace (- p + p)%Z with (Z_of_nat 0).
  replace (- p + (p + Z_of_nat k))%Z with (Z_of_nat k).
  apply Znat.inj_le.
- apply le_O_n.
+ apply Nat.le_0_l.
  rewrite Zplus_assoc; rewrite Zplus_opp_l; reflexivity.
  rewrite Zplus_opp_l; reflexivity.
  assumption.
@@ -2551,7 +2551,7 @@ Proof.
  apply Z.ge_le.
  apply Zge_opp.
  apply Znat.inj_le.
- apply le_O_n.
+ apply Nat.le_0_l.
  unfold Zminus in |- *; rewrite Zplus_assoc; rewrite Zplus_opp_l; reflexivity.
  rewrite Zplus_opp_l; reflexivity.
  assumption.
@@ -2621,7 +2621,7 @@ Proof.
  apply Z.ge_le.
  apply Zge_opp.
  apply Znat.inj_le.
- apply le_O_n.
+ apply Nat.le_0_l.
  ring.
  ring_simplify; auto with arith.
  assumption.

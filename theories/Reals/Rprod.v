@@ -54,9 +54,9 @@ Proof.
   intros; induction  N as [| N HrecN].
   simpl; apply H; trivial.
   simpl; apply Rmult_le_pos.
-  apply HrecN; intros; apply H; apply le_trans with N;
-    [ assumption | apply le_n_Sn ].
-  apply H; apply le_n.
+  apply HrecN; intros; apply H; apply Nat.le_trans with N;
+    [ assumption | apply Nat.le_succ_diag_r ].
+  apply H; apply Nat.le_refl.
 Qed.
 
 (**********)
@@ -69,13 +69,13 @@ Proof.
   elim  H with O; trivial.
   simpl; apply Rle_trans with (prod_f_R0 An N * Bn (S N)).
   apply Rmult_le_compat_l.
-  apply prod_SO_pos; intros; elim (H n (le_trans _ _ _ H0 (le_n_Sn N))); intros;
+  apply prod_SO_pos; intros; elim (H n (Nat.le_trans _ _ _ H0 (Nat.le_succ_diag_r N))); intros;
     assumption.
   elim (H (S N) (le_n (S N))); intros; assumption.
   do 2 rewrite <- (Rmult_comm (Bn (S N))); apply Rmult_le_compat_l.
   elim (H (S N) (le_n (S N))); intros.
   apply Rle_trans with (An (S N)); assumption.
-  apply HrecN; intros; elim (H n (le_trans _ _ _ H0 (le_n_Sn N))); intros;
+  apply HrecN; intros; elim (H n (Nat.le_trans _ _ _ H0 (Nat.le_succ_diag_r N))); intros;
     split; assumption.
 Qed.
 
@@ -167,8 +167,8 @@ Qed.
 (**********)
 Lemma INR_fact_lt_0 : forall n:nat, 0 < INR (fact n).
 Proof.
-  intro; apply lt_INR_0; apply neq_O_lt; red; intro;
-    elim (fact_neq_0 n); symmetry ; assumption.
+  intro; apply lt_INR_0; apply Nat.neq_0_lt_0; red; intro;
+    elim (fact_neq_0 n); assumption.
 Qed.
 
 (** We have the following inequality : (C 2N k) <= (C 2N N) forall k in [|O;2N|] *)

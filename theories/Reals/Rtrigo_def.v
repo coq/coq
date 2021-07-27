@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Rbase Rfunctions SeqSeries Rtrigo_fun Max.
+Require Import Rbase Rfunctions SeqSeries Rtrigo_fun.
 Local Open Scope R_scope.
 
 (********************************)
@@ -38,7 +38,7 @@ Definition exp (x:R) : R := proj1_sig (exist_exp x).
 Lemma pow_i : forall i:nat, (0 < i)%nat -> 0 ^ i = 0.
 Proof.
   intros; apply pow_ne_zero.
-  red; intro; rewrite H0 in H; elim (lt_irrefl _ H).
+  red; intro; rewrite H0 in H; elim (Nat.lt_irrefl _ H).
 Qed.
 
 (* Value of [exp 0] *)
@@ -59,7 +59,7 @@ Proof.
   rewrite <- Hrecn.
   simpl.
   ring.
-  unfold ge; apply le_O_n.
+  unfold ge; apply Nat.le_0_l.
 Qed.
 
 (*****************************************)
@@ -133,15 +133,15 @@ Proof.
   apply Rmult_le_reg_l with (IZR (Z.of_nat (max x 1))).
   apply Rlt_le_trans with (IZR (Z.of_nat x)).
   assumption.
-  repeat rewrite <- INR_IZR_INZ; apply le_INR; apply le_max_l.
+  repeat rewrite <- INR_IZR_INZ; apply le_INR; apply Nat.le_max_l.
   rewrite Rmult_1_r; rewrite (Rmult_comm (IZR (Z.of_nat (max x 1))));
     rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; repeat rewrite <- INR_IZR_INZ; apply le_INR;
-    apply le_max_l.
+    apply Nat.le_max_l.
   rewrite <- INR_IZR_INZ; apply not_O_INR.
-  red; intro; assert (H6 := le_max_r x 1); cut (0 < 1)%nat;
-    [ intro | apply lt_O_Sn ]; assert (H8 := lt_le_trans _ _ _ H7 H6);
-      rewrite H5 in H8; elim (lt_irrefl _ H8).
+  red; intro; assert (H6 := Nat.le_max_r x 1); cut (0 < 1)%nat;
+    [ intro | apply Nat.lt_0_succ ]; assert (H8 := Nat.lt_le_trans _ _ _ H7 H6);
+      rewrite H5 in H8; elim (Nat.lt_irrefl _ H8).
   pattern eps at 1; rewrite <- Rinv_involutive.
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat; [ apply Rinv_0_lt_compat; assumption | assumption ].
@@ -150,7 +150,7 @@ Proof.
   apply Rlt_trans with (/ eps).
   apply Rinv_0_lt_compat; assumption.
   rewrite H3 in H0; assumption.
-  apply lt_le_trans with 1%nat; [ apply lt_O_Sn | apply le_max_r ].
+  apply Nat.lt_le_trans with 1%nat; [ apply Nat.lt_0_succ | apply Nat.le_max_r ].
   apply le_IZR; left;
     apply Rlt_trans with (/ eps);
       [ apply Rinv_0_lt_compat; assumption | assumption ].
@@ -173,7 +173,7 @@ Proof.
   apply Rmult_gt_0_lt_compat; try assumption.
   change (0 < / INR (2 * n + 1)); apply Rinv_0_lt_compat;
     apply lt_INR_0.
-  replace (2 * n + 1)%nat with (S (2 * n)); [ apply lt_O_Sn | ring ].
+  replace (2 * n + 1)%nat with (S (2 * n)); [ apply Nat.lt_0_succ | ring ].
   apply Rlt_0_1.
   cut (x < 2 * n + 1)%nat.
   intro; assert (H5 := lt_INR _ _ H4).
@@ -183,23 +183,23 @@ Proof.
   apply lt_INR_0.
   elim H1; intros; assumption.
   apply lt_INR_0; replace (2 * n + 1)%nat with (S (2 * n));
-    [ apply lt_O_Sn | ring ].
+    [ apply Nat.lt_0_succ | ring ].
   assumption.
   elim H1; intros; assumption.
-  apply lt_le_trans with (S n).
-  unfold ge in H2; apply le_lt_n_Sm; assumption.
+  apply Nat.lt_le_trans with (S n).
+  unfold ge in H2; apply Nat.lt_succ_r; assumption.
   replace (2 * n + 1)%nat with (S (2 * n)) by ring.
   apply le_n_S; apply le_n_2n.
   apply Rmult_lt_reg_l with (INR (2 * S n)).
   apply lt_INR_0; replace (2 * S n)%nat with (S (S (2 * n))).
-  apply lt_O_Sn.
+  apply Nat.lt_0_succ.
   replace (S n) with (n + 1)%nat by ring.
   ring.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r.
   apply (lt_INR 1).
   replace (2 * S n)%nat with (S (S (2 * n))).
-  apply lt_n_S; apply lt_O_Sn.
+  apply -> Nat.succ_lt_mono; apply Nat.lt_0_succ.
   ring.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
@@ -208,7 +208,7 @@ Proof.
   apply Rle_ge; left; apply Rinv_0_lt_compat.
   apply lt_INR_0.
   replace (2 * S n * (2 * n + 1))%nat with (2 + (4 * (n * n) + 6 * n))%nat by ring.
-  apply lt_O_Sn.
+  apply Nat.lt_0_succ.
 Qed.
 
 Lemma cosn_no_R0 : forall n:nat, cos_n n <> 0.
@@ -265,7 +265,7 @@ Proof.
   replace (n + 1)%nat with (S n); [ apply not_O_INR; discriminate | ring ].
   apply not_O_INR; discriminate.
   replace (n + 1)%nat with (S n); [ apply not_O_INR; discriminate | ring ].
-  rewrite mult_plus_distr_l; cut (forall n:nat, S n = (n + 1)%nat).
+  rewrite Nat.mul_add_distr_l; cut (forall n:nat, S n = (n + 1)%nat).
   intros; rewrite (H (2 * n + 1)%nat).
   ring.
   intros; ring.
@@ -296,7 +296,7 @@ Proof.
     apply Rmult_gt_0_lt_compat; try assumption.
   change (0 < / INR (2 * S n + 1)); apply Rinv_0_lt_compat;
     apply lt_INR_0; replace (2 * S n + 1)%nat with (S (2 * S n));
-      [ apply lt_O_Sn | ring ].
+      [ apply Nat.lt_0_succ | ring ].
   apply Rlt_0_1.
   cut (x < 2 * S n + 1)%nat.
   intro; assert (H5 := lt_INR _ _ H4); apply Rlt_trans with (/ INR x).
@@ -304,21 +304,21 @@ Proof.
   apply Rmult_lt_0_compat.
   apply lt_INR_0; elim H1; intros; assumption.
   apply lt_INR_0; replace (2 * S n + 1)%nat with (S (2 * S n));
-    [ apply lt_O_Sn | ring ].
+    [ apply Nat.lt_0_succ | ring ].
   assumption.
   elim H1; intros; assumption.
-  apply lt_le_trans with (S n).
-  unfold ge in H2; apply le_lt_n_Sm; assumption.
+  apply Nat.lt_le_trans with (S n).
+  unfold ge in H2; apply Nat.lt_succ_r; assumption.
   replace (2 * S n + 1)%nat with (S (2 * S n)) by ring.
   apply le_S; apply le_n_2n.
   apply Rmult_lt_reg_l with (INR (2 * S n)).
   apply lt_INR_0; replace (2 * S n)%nat with (S (S (2 * n)));
-    [ apply lt_O_Sn | ring ].
+    [ apply Nat.lt_0_succ | ring ].
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r.
   apply (lt_INR 1).
   replace (2 * S n)%nat with (S (S (2 * n))).
-  apply lt_n_S; apply lt_O_Sn.
+  apply -> Nat.succ_lt_mono; apply Nat.lt_0_succ.
   ring.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
@@ -327,7 +327,7 @@ Proof.
   apply lt_INR_0.
   replace ((2 * S n + 1) * (2 * S n))%nat with
   (6 + (4 * (n * n) + 10 * n))%nat by ring.
-  apply lt_O_Sn.
+  apply Nat.lt_0_succ.
 Qed.
 
 Lemma sin_no_R0 : forall n:nat, sin_n n <> 0.
@@ -395,6 +395,9 @@ Proof.
   rewrite tech5.
   replace (cos_n (S n) * 0 ^ S n) with 0.
   rewrite Rplus_0_r.
-  apply Hrecn; unfold ge; apply le_O_n.
+  apply Hrecn; unfold ge; apply Nat.le_0_l.
   simpl; ring.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

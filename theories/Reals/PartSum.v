@@ -12,7 +12,6 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import Rcomplete.
-Require Import Max.
 Local Open Scope R_scope.
 
 Lemma tech1 :
@@ -34,7 +33,7 @@ Lemma tech2 :
     sum_f_R0 An m + sum_f_R0 (fun i:nat => An (S m + i)%nat) (n - S m).
 Proof.
   intros; induction  n as [| n Hrecn].
-  elim (lt_n_O _ H).
+  elim (Nat.nlt_0_r _ H).
   cut ((m < n)%nat \/ m = n).
   intro; elim H0; intro.
   replace (sum_f_R0 An (S n)) with (sum_f_R0 An n + An (S n));
@@ -49,16 +48,16 @@ Proof.
   apply INR_eq; rewrite S_INR; rewrite plus_INR; do 2 rewrite S_INR;
     rewrite minus_INR.
   rewrite S_INR; ring.
-  apply lt_le_S; assumption.
+  apply Nat.le_succ_l; assumption.
   apply INR_eq; rewrite S_INR; repeat rewrite minus_INR.
   repeat rewrite S_INR; ring.
-  apply le_n_S; apply lt_le_weak; assumption.
-  apply lt_le_S; assumption.
-  rewrite H1; rewrite <- minus_n_n; simpl.
+  apply le_n_S; apply Nat.lt_le_incl; assumption.
+  apply Nat.le_succ_l; assumption.
+  rewrite H1; rewrite Nat.sub_diag; simpl.
   replace (n + 0)%nat with n; [ reflexivity | ring ].
   inversion H.
   right; reflexivity.
-  left; apply lt_le_trans with (S m); [ apply lt_n_Sn | assumption ].
+  left; apply Nat.lt_le_trans with (S m); [ apply Nat.lt_succ_diag_r | assumption ].
 Qed.
 
 (* Sum of geometric sequences *)
@@ -173,7 +172,7 @@ Lemma decomp_sum :
     sum_f_R0 An N = An 0%nat + sum_f_R0 (fun i:nat => An (S i)) (pred N).
 Proof.
   intros; induction  N as [| N HrecN].
-  elim (lt_irrefl _ H).
+  elim (Nat.lt_irrefl _ H).
   cut ((0 < N)%nat \/ N = 0%nat).
   intro; elim H0; intro.
   cut (S (pred N) = pred (S N)).
@@ -184,11 +183,11 @@ Proof.
   rewrite H2; simpl; reflexivity.
   destruct (O_or_S N) as [(m,<-)|<-].
   simpl; reflexivity.
-  elim (lt_irrefl _ H1).
+  elim (Nat.lt_irrefl _ H1).
   rewrite H1; simpl; reflexivity.
   inversion H.
   right; reflexivity.
-  left; apply lt_le_trans with 1%nat; [ apply lt_O_Sn | assumption ].
+  left; apply Nat.lt_le_trans with 1%nat; [ apply Nat.lt_0_succ | assumption ].
 Qed.
 
 Lemma plus_sum :
@@ -209,7 +208,7 @@ Proof.
   simpl; apply H; apply le_n.
   do 2 rewrite tech5; rewrite HrecN.
   rewrite (H (S N)); [ reflexivity | apply le_n ].
-  intros; apply H; apply le_trans with N; [ assumption | apply le_n_Sn ].
+  intros; apply H; apply Nat.le_trans with N; [ assumption | apply Nat.le_succ_diag_r ].
 Qed.
 
 (* Unicity of the limit defined by convergent series *)
@@ -236,7 +235,7 @@ Proof.
   elim (Rlt_irrefl _ H11).
   apply Rabs_right; left; change (0 < / 2); apply Rinv_0_lt_compat;
     cut (0%nat <> 2%nat);
-      [ intro H20; generalize (lt_INR_0 2 (neq_O_lt 2 H20)); unfold INR;
+      [ intro H20; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H20))); unfold INR;
         intro; assumption
         | discriminate ].
   unfold R_dist; rewrite <- (Rabs_Ropp (sum_f_R0 An N - l1));
@@ -244,8 +243,8 @@ Proof.
   replace (l1 - l2) with (l1 - sum_f_R0 An N + (sum_f_R0 An N - l2));
   [ idtac | ring ].
   apply Rabs_triang.
-  unfold ge; unfold N; apply le_max_r.
-  unfold ge; unfold N; apply le_max_l.
+  unfold ge; unfold N; apply Nat.le_max_r.
+  unfold ge; unfold N; apply Nat.le_max_l.
   unfold Rdiv; apply prod_neq_R0.
   apply Rminus_eq_contra; assumption.
   apply Rinv_neq_0_compat; discrR.
@@ -296,7 +295,7 @@ Proof.
   apply Rplus_le_compat_l.
   apply HrecN.
   intros; apply H.
-  apply le_trans with N; [ assumption | apply le_n_Sn ].
+  apply Nat.le_trans with N; [ assumption | apply Nat.le_succ_diag_r ].
 Qed.
 
 Lemma Rsum_abs :
@@ -491,7 +490,7 @@ Proof.
   simpl; apply H; apply le_n.
   rewrite tech5; rewrite HrecN;
     [ rewrite Rplus_0_l; apply H; apply le_n
-      | intros; apply H; apply le_trans with N; [ assumption | apply le_n_Sn ] ].
+      | intros; apply H; apply Nat.le_trans with N; [ assumption | apply Nat.le_succ_diag_r ] ].
 Qed.
 
 Definition SP (fn:nat -> R -> R) (N:nat) (x:R) : R :=
@@ -527,8 +526,8 @@ Proof.
   unfold l1; apply Rge_le;
     apply (growing_prop (fun k:nat => sum_f_R0 An k)).
   apply H1.
-  unfold ge, N0; apply le_max_r.
-  unfold ge, N0; apply le_max_l.
+  unfold ge, N0; apply Nat.le_max_r.
+  unfold ge, N0; apply Nat.le_max_l.
   apply Rplus_lt_reg_l with l; rewrite Rplus_0_r;
     replace (l + (l1 - l)) with l1; [ apply Hgt | ring ].
   unfold Un_growing; intro; simpl;
@@ -600,8 +599,8 @@ Proof.
           unfold Rdiv; ring.
   apply Rle_lt_trans with (Rabs (SP fn N x - l1)).
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr'; apply Rabs_triang_inv2.
-  apply H4; unfold ge, N; apply le_max_l.
-  apply H5; unfold ge, N; apply le_max_r.
+  apply H4; unfold ge, N; apply Nat.le_max_l.
+  apply H5; unfold ge, N; apply Nat.le_max_r.
   unfold Rdiv; apply Rmult_lt_0_compat.
   apply Rplus_lt_reg_l with l2.
   rewrite Rplus_0_r; replace (l2 + (Rabs l1 - l2)) with (Rabs l1);
@@ -618,3 +617,6 @@ Proof.
   apply Rplus_le_compat_l; apply Hrecn0.
   apply Rplus_le_compat_l; apply H1.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

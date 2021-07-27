@@ -8,183 +8,115 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Strict order on natural numbers.
+(** Strict order on natural numbers. *)
 
- This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+(** * This file is OBSOLETE, see [Arith_base] instead. *)
 
- [lt] is defined in library [Init/Peano.v] as:
-<<
-Definition lt (n m:nat) := S n <= m.
-Infix "<" := lt : nat_scope.
->>
-*)
+Require Export Arith_prebase.
 
-Require Import PeanoNat.
-
-Local Open Scope nat_scope.
 
 (** * Irreflexivity *)
 
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_irrefl instead.")]
 Notation lt_irrefl := Nat.lt_irrefl (only parsing). (* ~ x < x *)
-
-#[global]
-Hint Resolve lt_irrefl: arith.
 
 (** * Relationship between [le] and [lt] *)
 
-Theorem lt_le_S n m : n < m -> S n <= m.
-Proof.
- apply Nat.le_succ_l.
-Qed.
-
-Theorem lt_n_Sm_le n m : n < S m -> n <= m.
-Proof.
- apply Nat.lt_succ_r.
-Qed.
-
-Register lt_n_Sm_le as num.nat.lt_n_Sm_le.
-
-Theorem le_lt_n_Sm n m : n <= m -> n < S m.
-Proof.
- apply Nat.lt_succ_r.
-Qed.
-
-Register le_lt_n_Sm as num.nat.le_lt_n_Sm.
-
-#[global]
-Hint Immediate lt_le_S: arith.
-#[global]
-Hint Immediate lt_n_Sm_le: arith.
-#[global]
-Hint Immediate le_lt_n_Sm: arith.
-
-Theorem le_not_lt n m : n <= m -> ~ m < n.
-Proof.
- apply Nat.le_ngt.
-Qed.
-
-Theorem lt_not_le n m : n < m -> ~ m <= n.
-Proof.
- apply Nat.lt_nge.
-Qed.
-
-#[global]
-Hint Immediate le_not_lt lt_not_le: arith.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.le_succ_l instead.")]
+Notation lt_le_S := Arith_prebase.lt_le_S_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_succ_r instead.")]
+Notation lt_n_Sm_le := Arith_prebase.lt_n_Sm_le_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_succ_r instead.")]
+Notation le_lt_n_Sm := Arith_prebase.le_lt_n_Sm_stt (only parsing).
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.le_ngt instead.")]
+Notation le_not_lt := Arith_prebase.le_not_lt_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_nge instead.")]
+Notation lt_not_le := Arith_prebase.lt_not_le_stt.
 
 (** * Asymmetry *)
 
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_asymm instead.")]
 Notation lt_asym := Nat.lt_asymm (only parsing). (* n<m -> ~m<n *)
 
 (** * Order and 0 *)
 
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_0_succ instead.")]
 Notation lt_0_Sn := Nat.lt_0_succ (only parsing). (* 0 < S n *)
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.nlt_0_r instead.")]
 Notation lt_n_0 := Nat.nlt_0_r (only parsing). (* ~ n < 0 *)
-
-Theorem neq_0_lt n : 0 <> n -> 0 < n.
-Proof.
- intros. now apply Nat.neq_0_lt_0, Nat.neq_sym.
-Qed.
-
-Theorem lt_0_neq n : 0 < n -> 0 <> n.
-Proof.
- intros. now apply Nat.neq_sym, Nat.neq_0_lt_0.
-Qed.
-
-#[global]
-Hint Resolve lt_0_Sn lt_n_0 : arith.
-#[global]
-Hint Immediate neq_0_lt lt_0_neq: arith.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.neq_0_lt_0 instead.")]
+Notation neq_0_lt := Arith_prebase.neq_0_lt_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.neq_0_lt_0 instead.")]
+Notation lt_0_neq := Arith_prebase.lt_0_neq_stt.
 
 (** * Order and successor *)
 
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_succ_diag_r instead.")]
 Notation lt_n_Sn := Nat.lt_succ_diag_r (only parsing). (* n < S n *)
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_lt_succ_r instead.")]
 Notation lt_S := Nat.lt_lt_succ_r (only parsing). (* n < m -> n < S m *)
-
-Theorem lt_n_S n m : n < m -> S n < S m.
-Proof.
- apply Nat.succ_lt_mono.
-Qed.
-
-Theorem lt_S_n n m : S n < S m -> n < m.
-Proof.
- apply Nat.succ_lt_mono.
-Qed.
-
-Register lt_S_n as num.nat.lt_S_n.
-
-#[global]
-Hint Resolve lt_n_Sn lt_S lt_n_S : arith.
-#[global]
-Hint Immediate lt_S_n : arith.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.succ_lt_mono instead.")]
+Notation lt_n_S := Arith_prebase.lt_n_S_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.succ_lt_mono instead.")]
+Notation lt_S_n := Arith_prebase.lt_S_n_stt.
 
 (** * Predecessor *)
 
-Lemma S_pred n m : m < n -> n = S (pred n).
-Proof.
- intros. symmetry. now apply Nat.lt_succ_pred with m.
-Qed.
-
-Lemma S_pred_pos n: O < n -> n = S (pred n).
-Proof.
- apply S_pred.
-Qed.
-
-Lemma lt_pred n m : S n < m -> n < pred m.
-Proof.
- apply Nat.lt_succ_lt_pred.
-Qed.
-
-Lemma lt_pred_n_n n : 0 < n -> pred n < n.
-Proof.
- intros. now apply Nat.lt_pred_l, Nat.neq_0_lt_0.
-Qed.
-
-#[global]
-Hint Immediate lt_pred: arith.
-#[global]
-Hint Resolve lt_pred_n_n: arith.
+#[local]
+Definition S_pred_stt := fun n m Hlt => eq_sym (Nat.lt_succ_pred m n Hlt).
+Opaque S_pred_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_succ_pred instead.")]
+Notation S_pred := S_pred_stt.
+#[local]
+Definition S_pred_pos_stt := fun n Hlt => eq_sym (Nat.lt_succ_pred 0 n Hlt).
+Opaque S_pred_pos_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_succ_pred instead.")]
+Notation S_pred_pos := S_pred_pos_stt (only parsing).
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_succ_lt_pred instead.")]
+Notation lt_pred := Arith_prebase.lt_pred_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_pred_l instead.")]
+Notation lt_pred_n_n := Arith_prebase.lt_pred_n_n_stt.
 
 (** * Transitivity properties *)
 
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_trans instead.")]
 Notation lt_trans := Nat.lt_trans (only parsing).
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_le_trans instead.")]
 Notation lt_le_trans := Nat.lt_le_trans (only parsing).
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.le_lt_trans instead.")]
 Notation le_lt_trans := Nat.le_lt_trans (only parsing).
-
-Register le_lt_trans as num.nat.le_lt_trans.
-
-#[global]
-Hint Resolve lt_trans lt_le_trans le_lt_trans: arith.
 
 (** * Large = strict or equal *)
 
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_eq_cases instead.")]
 Notation le_lt_or_eq_iff := Nat.lt_eq_cases (only parsing).
-
-Theorem le_lt_or_eq n m : n <= m -> n < m \/ n = m.
-Proof.
- apply Nat.lt_eq_cases.
-Qed.
-
+#[local]
+Definition le_lt_or_eq_stt := fun n m => proj1 (Nat.lt_eq_cases n m).
+Opaque le_lt_or_eq_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_eq_cases instead.")]
+Notation le_lt_or_eq := le_lt_or_eq_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_le_incl instead.")]
 Notation lt_le_weak := Nat.lt_le_incl (only parsing).
-
-#[global]
-Hint Immediate lt_le_weak: arith.
 
 (** * Dichotomy *)
 
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.le_gt_cases instead.")]
 Notation le_or_lt := Nat.le_gt_cases (only parsing). (* n <= m \/ m < n *)
-
-Theorem nat_total_order n m : n <> m -> n < m \/ m < n.
-Proof.
- apply Nat.lt_gt_cases.
-Qed.
+#[local]
+Definition nat_total_order_stt := fun n m => proj1 (Nat.lt_gt_cases n m).
+Opaque nat_total_order_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_gt_cases instead.")]
+Notation nat_total_order := nat_total_order_stt.
 
 (* begin hide *)
-Notation lt_O_Sn := lt_0_Sn (only parsing).
-Notation neq_O_lt := neq_0_lt (only parsing).
-Notation lt_O_neq := lt_0_neq (only parsing).
-Notation lt_n_O := lt_n_0 (only parsing).
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.lt_0_succ instead.")]
+Notation lt_O_Sn := Nat.lt_0_succ (only parsing).
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.neq_0_lt_0 instead.")]
+Notation neq_O_lt := Arith_prebase.neq_0_lt_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.neq_0_lt_0 instead.")]
+Notation lt_O_neq := Arith_prebase.lt_0_neq_stt.
+#[deprecated(since="8.16",note="The Arith.Lt file is obsolete. Use Nat.nlt_0_r instead.")]
+Notation lt_n_O := Nat.nlt_0_r (only parsing).
 (* end hide *)
-
-(** For compatibility, we "Require" the same files as before *)
 
 Require Import Le.

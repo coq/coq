@@ -105,8 +105,8 @@ Lemma Nshiftr_nat_spec : forall a n m,
   N.testbit_nat (N.shiftr_nat a n) m = N.testbit_nat a (m+n).
 Proof.
  intros a n; induction n as [|n IHn]; intros m.
- now rewrite <- plus_n_O.
- simpl. rewrite <- plus_n_Sm, <- plus_Sn_m, <- IHn.
+ now rewrite Nat.add_0_r.
+ simpl. rewrite Nat.add_succ_r, <- Nat.add_succ_l, <- IHn.
  destruct (N.shiftr_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
@@ -129,7 +129,7 @@ Proof.
  rewrite Nshiftl_nat_S.
  destruct m as [|m].
  - destruct (N.shiftl_nat a n); trivial.
- - apply Lt.lt_S_n in H.
+ - apply Nat.succ_lt_mono in H.
    specialize (IHn m H).
    destruct (N.shiftl_nat a n); trivial.
 Qed.
@@ -582,8 +582,8 @@ Lemma Bv2N_Nsize_1 : forall n (bv:Bvector (S n)),
 Proof.
 apply Vector.rectS ; intros a ; simpl.
 destruct a ; compute ; split ; intros x ; now inversion x.
- intros n v IH; destruct a, (Bv2N (S n) v) ;
-  simpl ;intuition ; try discriminate.
+intros n v IH; destruct a, (Bv2N (S n) v) ;
+  simpl ; intuition ; try discriminate.
 Qed.
 
 Lemma Bv2N_upper_bound (n : nat) (bv : Bvector n) :
@@ -674,8 +674,8 @@ Proof.
 intros n bv; induction bv as [|h n bv IHbv]; intros p H.
 inversion H.
 destruct p as [|p]; simpl.
-  destruct (Bv2N n bv); destruct h; simpl in *; auto.
-  specialize IHbv with p (Lt.lt_S_n _ _ H).
+  + destruct (Bv2N n bv); destruct h; simpl in *; auto.
+  + specialize IHbv with p (proj2 (Nat.succ_lt_mono _ _) H).
     simpl in * ; destruct (Bv2N n bv); destruct h; simpl in *; auto.
 Qed.
 
@@ -692,9 +692,9 @@ Lemma Nbit_Bth: forall n p (H:p < N.size_nat n),
   N.testbit_nat n p = Bnth (N2Bv n) H.
 Proof.
 intro n; destruct n as [|n].
-intros p H; inversion H.
-induction n ; intro p; destruct p ; unfold Vector.nth_order in *; simpl in * ; auto.
-intros H ; destruct (Lt.lt_n_O _ (Lt.lt_S_n _ _ H)).
+- intros p H; inversion H.
+- induction n ; destruct p ; unfold Vector.nth_order in *; simpl in * ; auto.
+  intros H ; destruct (Nat.nlt_0_r _ (proj2 (Nat.succ_lt_mono _ _) H)).
 Qed.
 
 (** Binary bitwise operations are the same in the two worlds. *)

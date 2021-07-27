@@ -208,7 +208,7 @@ Section sequence.
     exists N.
     apply Rnot_le_lt.
     intros H5.
-    apply Rlt_not_le with (1 := H4 _ (le_refl _)).
+    apply Rlt_not_le with (1 := H4 _ (Nat.le_refl _)).
     rewrite Rabs_pos_eq. 2: now apply Rlt_le.
     apply Hm2.
     intros x (n, H6).
@@ -223,15 +223,16 @@ Section sequence.
     apply Rle_trans with (2 := H5).
     apply Rge_le.
     apply growing_prop ; try easy.
-    apply le_n_Sn.
+    apply Nat.le_succ_diag_r.
     rewrite (IHN H6), Rplus_0_l.
     unfold test.
     destruct Rle_lt_dec as [Hle|Hlt].
     apply eq_refl.
     now elim Rlt_not_le with (1 := Hlt).
 
-    destruct (le_or_lt N n) as [Hn|Hn].
-    rewrite le_plus_minus with (1 := Hn).
+    destruct (Nat.le_gt_cases N n) as [Hn|Hn].
+
+    rewrite <- (Nat.sub_add _ _ Hn), Nat.add_comm.
     apply Rle_trans with (1 := proj2 (Hsum' N (n - N)%nat)).
     rewrite Hs, Rplus_0_l.
     set (k := (N + (n - N))%nat).
@@ -239,8 +240,8 @@ Section sequence.
     apply Rplus_lt_reg_l with ((/2)^k - (/2)^N).
     now ring_simplify.
     apply Rle_trans with (sum N).
-    rewrite le_plus_minus with (1 := Hn).
-    rewrite plus_Snm_nSm.
+    rewrite <- (Nat.sub_add _ _ Hn), Nat.add_comm.
+    simpl Nat.add; rewrite <- Nat.add_succ_r.
     exact (proj1 (Hsum' _ _)).
     rewrite Hs.
     now apply Rlt_le.
@@ -260,8 +261,8 @@ Section sequence.
     forall N:nat,  exists M : R, (forall n:nat, (n <= N)%nat -> Un n <= M).
   Proof.
     intro; induction  N as [| N HrecN].
-    split with (Un 0); intros; rewrite (le_n_O_eq n H);
-      apply (Req_le (Un n) (Un n) (eq_refl (Un n))).
+    split with (Un 0); intros. rewrite (proj1 (Nat.le_0_r n) H);
+      apply (Req_le (Un 0) (Un 0) (eq_refl (Un 0))).
     elim HrecN; clear HrecN; intros; split with (Rmax (Un (S N)) x); intros;
       elim (Rmax_Rle (Un (S N)) x (Un n)); intros; clear H1;
         inversion H0.
@@ -399,7 +400,7 @@ Lemma CV_shift :
   forall f k l, Un_cv (fun n => f (n + k)%nat) l -> Un_cv f l.
 intros f' k l cvfk eps ep; destruct (cvfk eps ep) as [N Pn].
 exists (N + k)%nat; intros n nN; assert (tmp: (n = (n - k) + k)%nat).
- rewrite Nat.sub_add;[ | apply le_trans with (N + k)%nat]; auto with arith.
+ rewrite Nat.sub_add;[ | apply Nat.le_trans with (N + k)%nat]; auto with arith.
 rewrite tmp; apply Pn; apply Nat.le_add_le_sub_r; assumption.
 Qed.
 

@@ -49,7 +49,7 @@ Proof.
         rewrite (let (H1, H2) := Rmult_ne eps in H2); unfold Rgt in H;
           assumption.
     unfold Rgt in H1; apply Rlt_le; assumption.
-    unfold Rgt; apply Rinv_0_lt_compat; apply lt_INR_0; apply lt_O_Sn.
+    unfold Rgt; apply Rinv_0_lt_compat; apply lt_INR_0; apply Nat.lt_0_succ.
   - cut (0 <= up (/ eps - 1))%Z.
     intro; elim (IZN (up (/ eps - 1)) H0); intros; split with x; intros;
       rewrite (simpl_fact n); unfold R_dist;
@@ -81,7 +81,7 @@ Proof.
     elim (archimed (/ eps - 1)); intros; clear H6; unfold Rgt in H5;
       rewrite H4 in H5; rewrite INR_IZR_INZ; assumption.
     unfold Rgt in H1; apply Rlt_le; assumption.
-    unfold Rgt; apply Rinv_0_lt_compat; apply lt_INR_0; apply lt_O_Sn.
+    unfold Rgt; apply Rinv_0_lt_compat; apply lt_INR_0; apply Nat.lt_0_succ.
     apply (le_O_IZR (up (/ eps - 1)));
       apply (Rle_trans 0 (/ eps - 1) (IZR (up (/ eps - 1)))).
     generalize (Rnot_gt_le eps 1 Hnotgt); clear Hnotgt; unfold Rle; intro; elim H0;

@@ -22,7 +22,7 @@ Extract Inlined Constant Init.Nat.min => "Prelude.min".
 Extract Inlined Constant Compare_dec.lt_dec => "(Prelude.<)".
 Extract Inlined Constant Compare_dec.leb => "(Prelude.<=)".
 Extract Inlined Constant Compare_dec.le_lt_dec => "(Prelude.<=)".
-Extract Inlined Constant EqNat.beq_nat => "(Prelude.==)".
+Extract Inlined Constant Nat.eqb => "(Prelude.==)".
 Extract Inlined Constant EqNat.eq_nat_decide => "(Prelude.==)".
 Extract Inlined Constant Peano_dec.eq_nat_dec => "(Prelude.==)".
 

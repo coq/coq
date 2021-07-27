@@ -89,7 +89,7 @@ Proof.
                     sqrt (Rsqr (x2 - x1) + Rsqr (y2 - y1))));
                 [ apply Rmult_le_compat_l;
                   [ left; cut (0%nat <> 2%nat);
-                    [ intros; generalize (lt_INR_0 2 (neq_O_lt 2 H));
+                    [ intros; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H)));
                       intro H0; assumption
                       | discriminate ]
                     | apply sqrt_cauchy ]

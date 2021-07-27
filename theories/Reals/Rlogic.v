@@ -40,7 +40,7 @@ assert (Bu: forall n, (u n <= 1)%R).
   apply Rle_0_1.
   rewrite <- S_INR, <- Rinv_1.
   apply Rinv_le_contravar with (1 := Rlt_0_1).
-  apply (le_INR 1), le_n_S, le_0_n.
+  apply (le_INR 1); apply -> Nat.succ_le_mono; apply Nat.le_0_l.
 set (E y := exists n, y = u n).
 destruct (completeness E) as [l [ub lub]].
   exists R1.
@@ -106,16 +106,16 @@ apply Rinv_le_contravar.
 apply Hi.
 apply Rplus_le_compat_r.
 apply le_INR.
-destruct (le_or_lt n N) as [Hn|Hn].
-  2: now apply lt_le_S.
+destruct (Nat.le_gt_cases n N) as [Hn|Hn].
+  2: now apply Nat.le_succ_l.
 exfalso.
-destruct (le_lt_or_eq _ _ Hn) as [Hn'| ->].
+destruct (proj1 (Nat.lt_eq_cases _ _) Hn) as [Hn'| ->].
 2: now apply Hp.
 apply Rlt_not_le with (2 := Hnp _ Hp).
 rewrite <- (Rinv_involutive l) by now apply Rgt_not_eq.
 apply Rinv_1_lt_contravar.
 rewrite <- S_INR.
-apply (le_INR 1), le_n_S, le_0_n.
+apply (le_INR 1); apply -> Nat.succ_le_mono; apply Nat.le_0_l.
 apply Rlt_le_trans with (INR N + 1)%R.
 apply Rplus_lt_compat_r.
 now apply lt_INR.

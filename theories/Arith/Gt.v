@@ -8,150 +8,94 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Theorems about [gt] in [nat].
+(** Theorems about [gt] in [nat]. *)
 
- This file is DEPRECATED now, see module [PeanoNat.Nat] instead,
- which favor [lt] over [gt].
+(** * This file is OBSOLETE, see [Arith_base] instead. *)
 
- [gt] is defined in [Init/Peano.v] as:
-<<
-Definition gt (n m:nat) := m < n.
->>
-*)
+Require Export Arith_prebase.
 
-Require Import PeanoNat Le Lt Plus.
+
 Local Open Scope nat_scope.
 
 (** * Order and successor *)
 
-Theorem gt_Sn_O n : S n > 0.
-Proof Nat.lt_0_succ _.
-
-Theorem gt_Sn_n n : S n > n.
-Proof Nat.lt_succ_diag_r _.
-
-Theorem gt_n_S n m : n > m -> S n > S m.
-Proof.
- apply Nat.succ_lt_mono.
-Qed.
-
-Lemma gt_S_n n m : S m > S n -> m > n.
-Proof.
- apply Nat.succ_lt_mono.
-Qed.
-
-Theorem gt_S n m : S n > m -> n > m \/ m = n.
-Proof.
- intro. now apply Nat.lt_eq_cases, Nat.succ_le_mono.
-Qed.
-
-Lemma gt_pred n m : m > S n -> pred m > n.
-Proof.
- apply Nat.lt_succ_lt_pred.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_0_succ instead.")]
+Notation gt_Sn_O := Arith_prebase.gt_Sn_O_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_succ_diag_r instead.")]
+Notation gt_Sn_n := Arith_prebase.gt_Sn_n_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.succ_lt_mono instead.")]
+Notation gt_n_S := Arith_prebase.gt_n_S_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.succ_lt_mono instead.")]
+Notation gt_S_n := Arith_prebase.gt_S_n_stt.
+#[local]
+Definition gt_S_stt : forall n m, S n > m -> n > m \/ m = n := fun n m Hgt => proj1 (Nat.lt_eq_cases m n) (proj2 (Nat.succ_le_mono m n) Hgt).
+Opaque gt_S_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_eq_cases instead.")]
+Notation gt_S := gt_S_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_succ_lt_pred instead.")]
+Notation gt_pred := Arith_prebase.gt_pred_stt.
 
 (** * Irreflexivity *)
 
-Lemma gt_irrefl n : ~ n > n.
-Proof Nat.lt_irrefl _.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_irrefl instead.")]
+Notation gt_irrefl := Arith_prebase.gt_irrefl_stt.
 
 (** * Asymmetry *)
 
-Lemma gt_asym n m : n > m -> ~ m > n.
-Proof Nat.lt_asymm _ _.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_asymm instead.")]
+Notation gt_asym := Arith_prebase.gt_asym_stt.
 
 (** * Relating strict and large orders *)
 
-Lemma le_not_gt n m : n <= m -> ~ n > m.
-Proof.
- apply Nat.le_ngt.
-Qed.
-
-Lemma gt_not_le n m : n > m -> ~ n <= m.
-Proof.
- apply Nat.lt_nge.
-Qed.
-
-Theorem le_S_gt n m : S n <= m -> m > n.
-Proof.
- apply Nat.le_succ_l.
-Qed.
-
-Lemma gt_S_le n m : S m > n -> n <= m.
-Proof.
- apply Nat.succ_le_mono.
-Qed.
-
-Lemma gt_le_S n m : m > n -> S n <= m.
-Proof.
- apply Nat.le_succ_l.
-Qed.
-
-Lemma le_gt_S n m : n <= m -> S m > n.
-Proof.
- apply Nat.succ_le_mono.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.le_ngt instead.")]
+Notation le_not_gt := Arith_prebase.le_not_gt_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_nge instead.")]
+Notation gt_not_le := Arith_prebase.gt_not_le_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.le_succ_l instead.")]
+Notation le_S_gt := Arith_prebase.le_S_gt_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.succ_le_mono instead.")]
+Notation gt_S_le := Arith_prebase.gt_S_le_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.le_succ_l instead.")]
+Notation gt_le_S := Arith_prebase.gt_le_S_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.succ_le_mono instead.")]
+Notation le_gt_S := Arith_prebase.le_gt_S_stt.
 
 (** * Transitivity *)
 
-Theorem le_gt_trans n m p : m <= n -> m > p -> n > p.
-Proof.
- intros. now apply Nat.lt_le_trans with m.
-Qed.
-
-Theorem gt_le_trans n m p : n > m -> p <= m -> n > p.
-Proof.
- intros. now apply Nat.le_lt_trans with m.
-Qed.
-
-Lemma gt_trans n m p : n > m -> m > p -> n > p.
-Proof.
- intros. now apply Nat.lt_trans with m.
-Qed.
-
-Theorem gt_trans_S n m p : S n > m -> m > p -> n > p.
-Proof.
- intros. apply Nat.lt_le_trans with m; trivial. now apply Nat.succ_le_mono.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_le_trans instead.")]
+Notation le_gt_trans := Arith_prebase.le_gt_trans_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_le_trans instead.")]
+Notation gt_le_trans := Arith_prebase.gt_le_trans_stt.
+#[local]
+Definition gt_trans_stt : forall n m p, n > m -> m > p -> n > p := fun n m p Hgt1 Hgt2 => Nat.lt_trans p m n Hgt2 Hgt1.
+Opaque gt_trans_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_trans instead.")]
+Notation gt_trans := gt_trans_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.lt_trans instead.")]
+Notation gt_trans_S := Arith_prebase.gt_trans_S_stt.
 
 (** * Comparison to 0 *)
 
-Theorem gt_0_eq n : n > 0 \/ 0 = n.
+#[local]
+Definition gt_0_eq_stt n : n > 0 \/ 0 = n.
 Proof.
  destruct n; [now right | left; apply Nat.lt_0_succ].
 Qed.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete.")]
+Notation gt_0_eq := gt_0_eq_stt.
+(* begin hide *)
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete.")]
+Notation gt_O_eq := gt_0_eq_stt (only parsing).
+(* end hide *)
 
 (** * Simplification and compatibility *)
 
-Lemma plus_gt_reg_l n m p : p + n > p + m -> n > m.
-Proof.
- apply Nat.add_lt_mono_l.
-Qed.
+#[local]
+Definition plus_gt_reg_l_stt : forall n m p, p + n > p + m -> n > m := fun n m p Hgt => proj2 (Nat.add_lt_mono_l m n p) Hgt.
+Opaque plus_gt_reg_l_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.add_lt_mono_l instead.")]
+Notation plus_gt_reg_l := plus_gt_reg_l_stt.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.add_lt_mono_l instead.")]
+Notation plus_gt_compat_l := Arith_prebase.plus_gt_compat_l_stt.
 
-Lemma plus_gt_compat_l n m p : n > m -> p + n > p + m.
-Proof.
- apply Nat.add_lt_mono_l.
-Qed.
-
-(** * Hints *)
-
-#[global]
-Hint Resolve gt_Sn_O gt_Sn_n gt_n_S : arith.
-#[global]
-Hint Immediate gt_S_n gt_pred : arith.
-#[global]
-Hint Resolve gt_irrefl gt_asym : arith.
-#[global]
-Hint Resolve le_not_gt gt_not_le : arith.
-#[global]
-Hint Immediate le_S_gt gt_S_le : arith.
-#[global]
-Hint Resolve gt_le_S le_gt_S : arith.
-#[global]
-Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith.
-#[global]
-Hint Resolve plus_gt_compat_l: arith.
-
-(* begin hide *)
-Notation gt_O_eq := gt_0_eq (only parsing).
-(* end hide *)
+Require Import Le Lt Plus.

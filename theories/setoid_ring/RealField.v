@@ -126,8 +126,8 @@ Lemma R_power_theory : power_theory 1%R Rmult (@eq R) N.to_nat pow.
 Proof.
  constructor. destruct n. reflexivity.
  simpl. induction p.
- - rewrite Pos2Nat.inj_xI. simpl. now rewrite plus_0_r, Rdef_pow_add, IHp.
- - rewrite Pos2Nat.inj_xO. simpl. now rewrite plus_0_r, Rdef_pow_add, IHp.
+ - rewrite Pos2Nat.inj_xI. simpl. now rewrite Nat.add_0_r, Rdef_pow_add, IHp.
+ - rewrite Pos2Nat.inj_xO. simpl. now rewrite Nat.add_0_r, Rdef_pow_add, IHp.
  - simpl. rewrite Rmult_comm;apply Rmult_1_l.
 Qed.
 

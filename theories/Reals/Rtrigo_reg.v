@@ -211,7 +211,7 @@ Proof.
       apply Rplus_eq_compat_l.
   symmetry ; apply sum_eq_R0; intros.
   rewrite Rmult_0_l; rewrite Rmult_0_r; reflexivity.
-  unfold ge in H10; apply lt_le_trans with 1%nat; [ apply lt_n_Sn | apply H10 ].
+  unfold ge in H10; apply Nat.lt_le_trans with 1%nat; [ apply Nat.lt_succ_diag_r | apply H10 ].
   apply H5.
   split.
   unfold D_x, no_cond; split.

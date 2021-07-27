@@ -15,7 +15,7 @@ Require Import Arith.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite plus_comm, plus_comm.
+rewrite Nat.add_comm, Nat.add_comm.
 split.
 Abort.
 
@@ -24,13 +24,13 @@ Import ssreflect.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite 2![_ + _]plus_comm.
+rewrite 2![_ + _]Nat.add_comm.
 split.
 Abort.
 End Foo.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite plus_comm, plus_comm.
+rewrite Nat.add_comm, Nat.add_comm.
 split.
 Abort.

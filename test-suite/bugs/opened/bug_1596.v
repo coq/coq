@@ -154,7 +154,7 @@ Module MessageSpi.
       unfold eq;unfold lt.
       induction x;destruct y;simpl;try tauto;intro;red;intro;try (discriminate
 H0);injection H0;intros.
-      elim (lt_irrefl n); lia.
+      elim (Nat.lt_irrefl n); lia.
     Qed.
 
     Definition compare : forall (x y:t),(Compare lt eq x y).

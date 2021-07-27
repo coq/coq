@@ -479,4 +479,3 @@ Proof.
   reflexivity.
   reflexivity.
 Qed.
-

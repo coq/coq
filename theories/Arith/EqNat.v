@@ -27,8 +27,6 @@ Theorem eq_nat_refl n : eq_nat n n.
 Proof.
   induction n; simpl; auto.
 Qed.
-#[global]
-Hint Resolve eq_nat_refl: arith.
 
 (** [eq] restricted to [nat] and [eq_nat] are equivalent *)
 
@@ -49,13 +47,10 @@ Proof.
  apply eq_nat_is_eq.
 Qed.
 
-#[global]
-Hint Immediate eq_eq_nat eq_nat_eq: arith.
-
 Theorem eq_nat_elim :
   forall n (P:nat -> Prop), P n -> forall m, eq_nat n m -> P m.
 Proof.
-  intros n P ? m ?; replace m with n; auto with arith.
+  intros n P ? m ?; replace m with n; [ | apply eq_nat_eq ]; assumption.
 Qed.
 
 Theorem eq_nat_decide : forall n m, {eq_nat n m} + {~ eq_nat n m}.
@@ -73,34 +68,35 @@ Defined.
    We reuse the one already defined in module [Nat].
    In scope [nat_scope], the notation "=?" can be used. *)
 
+#[deprecated(since="8.16",note="Use Nat.eqb instead.")]
 Notation beq_nat := Nat.eqb (only parsing).
 
+#[deprecated(since="8.16",note="Use Nat.eqb_eq instead.")]
 Notation beq_nat_true_iff := Nat.eqb_eq (only parsing).
+#[deprecated(since="8.16",note="Use Nat.eqb_neq instead.")]
 Notation beq_nat_false_iff := Nat.eqb_neq (only parsing).
 
-Lemma beq_nat_refl n : true = (n =? n).
-Proof.
- symmetry. apply Nat.eqb_refl.
-Qed.
+#[local]
+Definition beq_nat_refl_stt := fun n => eq_sym (Nat.eqb_refl n).
+Opaque beq_nat_refl_stt.
+#[deprecated(since="8.16",note="Use Nat.eqb_refl instead.")]
+Notation beq_nat_refl := beq_nat_refl_stt.
 
-Lemma beq_nat_true n m : (n =? m) = true -> n=m.
-Proof.
- apply Nat.eqb_eq.
-Qed.
+#[local]
+Definition beq_nat_true_stt := fun n m => proj1 (Nat.eqb_eq n m).
+Opaque beq_nat_true_stt.
+#[deprecated(since="8.16",note="Use Nat.eqb_eq instead.")]
+Notation beq_nat_true := beq_nat_true_stt.
 
-Lemma beq_nat_false n m : (n =? m) = false -> n<>m.
-Proof.
- apply Nat.eqb_neq.
-Qed.
+#[local]
+Definition beq_nat_false_stt := fun n m => proj1 (Nat.eqb_neq n m).
+Opaque beq_nat_false_stt.
+#[deprecated(since="8.16",note="Use Nat.eqb_neq instead.")]
+Notation beq_nat_false := beq_nat_false_stt.
 
-(** TODO: is it really useful here to have a Defined ?
-    Otherwise we could use Nat.eqb_eq *)
-
-Definition beq_nat_eq : forall n m, true = (n =? m) -> n = m.
-Proof.
-  intro n; induction n as [|n IHn]; intro m; destruct m; simpl.
-  - reflexivity.
-  - discriminate.
-  - discriminate.
-  - intros H. case (IHn _ H). reflexivity.
-Defined.
+(* previously was given as transparent *)
+#[local]
+Definition beq_nat_eq_stt := fun n m Heq => proj1 (Nat.eqb_eq n m) (eq_sym Heq).
+Opaque beq_nat_eq_stt.
+#[deprecated(since="8.16",note="Use Nat.eqb_eq instead.")]
+Notation beq_nat_eq := beq_nat_eq_stt.

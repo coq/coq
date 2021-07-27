@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Export NumPrelude NZAxioms.
-Require Import NZBase NZOrder NZAddOrder Plus Minus.
+Require Import NZBase NZOrder NZAddOrder PeanoNat.
 
 (** In this file, we investigate the shape of domains satisfying
     the [NZDomainSig] interface. In particular, we define a
@@ -292,20 +292,21 @@ Proof.
 induction n as [|n IH]; destruct m; repeat rewrite ofnat_zero; split.
 intro H; elim (lt_irrefl _ H).
 inversion 1.
-auto with arith.
+intros _; apply Nat.lt_0_succ.
 intros; apply ofnat_S_gt_0.
 intro H; elim (lt_asymm _ _ H); apply ofnat_S_gt_0.
 inversion 1.
-rewrite !ofnat_succ, <- succ_lt_mono, IH; auto with arith.
-rewrite !ofnat_succ, <- succ_lt_mono, IH; auto with arith.
+rewrite !ofnat_succ, <- succ_lt_mono, IH; apply Nat.succ_lt_mono.
+rewrite !ofnat_succ, <- succ_lt_mono, IH; apply Nat.succ_lt_mono.
 Qed.
 
 Lemma ofnat_le : forall n m : nat, [n]<=[m] <-> (n<=m)%nat.
 Proof.
 intros. rewrite lt_eq_cases, ofnat_lt, ofnat_eq.
 split.
-destruct 1; subst; auto with arith.
-apply Lt.le_lt_or_eq.
+destruct 1; subst; auto.
+apply Nat.lt_le_incl; assumption.
+apply Nat.lt_eq_cases.
 Qed.
 
 End NZOfNatOrd.
@@ -336,7 +337,7 @@ Lemma ofnat_mul : forall n m, [n*m] == [n]*[m].
 Proof.
  induction n; simpl; intros.
  symmetry. apply mul_0_l.
- rewrite plus_comm.
+ rewrite Nat.add_comm.
  rewrite ofnat_add, mul_succ_l.
  now f_equiv.
 Qed.
@@ -352,14 +353,17 @@ Lemma ofnat_sub : forall n m, m<=n -> [n-m] == [n]-[m].
 Proof.
  intros n m H. rewrite ofnat_sub_r.
  revert n H. induction m. intros.
- rewrite <- minus_n_O. now simpl.
+ rewrite Nat.sub_0_r. now simpl.
  intros.
  destruct n.
  inversion H.
  rewrite nat_rect_succ_r.
  simpl.
- etransitivity. apply IHm. auto with arith.
+ etransitivity. apply IHm; apply <- Nat.succ_le_mono; assumption.
     eapply nat_rect_wd; [symmetry;apply pred_succ|apply pred_wd].
 Qed.
 
 End NZOfNatOps.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Plus Minus.

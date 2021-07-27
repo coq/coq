@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Arith Max Min BinInt BinNat Znat Nnat.
+Require Import Arith BinInt BinNat Znat Nnat.
 
 Local Open Scope Z_scope.
 
@@ -128,9 +128,12 @@ Module Z.
   Ltac to_euclidean_division_equations := div_mod_to_equations'; quot_rem_to_equations'; euclidean_division_equations_cleanup.
 End Z.
 
-Require  Import ZifyClasses ZifyInst.
-Require  Zify.
+Require Import ZifyClasses ZifyInst.
+Require Zify.
 
 Ltac Zify.zify_internal_to_euclidean_division_equations ::= Z.to_euclidean_division_equations.
 
 Ltac zify := Zify.zify.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max Min.

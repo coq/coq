@@ -206,7 +206,7 @@ Lemma derivable_pt_lim_fs :
     (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred N)).
 Proof.
   intros; induction  N as [| N HrecN].
-  elim (lt_irrefl _ H).
+  elim (Nat.lt_irrefl _ H).
   cut (N = 0%nat \/ (0 < N)%nat).
   intro; elim H0; intro.
   rewrite H1.
@@ -248,12 +248,12 @@ Proof.
   replace (pred (S N)) with N; [ idtac | reflexivity ].
   ring.
   simpl.
-  apply S_pred with 0%nat; assumption.
+  symmetry; apply Nat.lt_succ_pred with 0%nat; assumption.
   unfold plus_fct.
   simpl; reflexivity.
   inversion H.
   left; reflexivity.
-  right; apply lt_le_trans with 1%nat; [ apply lt_O_Sn | assumption ].
+  right; apply Nat.lt_le_trans with 1%nat; [ apply Nat.lt_0_succ | assumption ].
 Qed.
 
 Lemma derivable_pt_lim_finite_sum :
@@ -270,7 +270,7 @@ Proof.
   rewrite Rmult_1_r.
   replace (fun _:R => An 0%nat) with (fct_cte (An 0%nat));
   [ apply derivable_pt_lim_const | reflexivity ].
-  apply derivable_pt_lim_fs; apply lt_O_Sn.
+  apply derivable_pt_lim_fs; apply Nat.lt_0_succ.
 Qed.
 
 Lemma derivable_pt_finite_sum :
@@ -404,4 +404,3 @@ unfold Rminus at 1 in Pc; rewrite Pc; apply Rmult_lt_0_compat;[ | ].
  now apply Rplus_lt_0_compat; apply exp_pos.
 now apply Rlt_Rminus; assumption.
 Qed.
-

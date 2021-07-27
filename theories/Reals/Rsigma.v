@@ -31,11 +31,11 @@ Section Sigma.
   Proof.
     intros; induction  k as [| k Hreck].
     cut (low = 0%nat).
-    intro; rewrite H1; unfold sigma; rewrite <- minus_n_n;
-      rewrite <- minus_n_O; simpl; replace (high - 1)%nat with (pred high).
+    intro; rewrite H1; unfold sigma; rewrite Nat.sub_diag, Nat.sub_0_r;
+      simpl; replace (high - 1)%nat with (pred high).
     apply (decomp_sum (fun k:nat => f k)).
     assumption.
-    apply pred_of_minus.
+    symmetry; apply Nat.sub_1_r.
     inversion H; reflexivity.
     cut ((low <= k)%nat \/ low = S k).
     intro; elim H1; intro.
@@ -44,7 +44,7 @@ Section Sigma.
       replace (f (S k) + sigma (S (S k)) high) with (sigma (S k) high).
     apply Hreck.
     assumption.
-    apply lt_trans with (S k); [ apply lt_n_Sn | assumption ].
+    apply Nat.lt_trans with (S k); [ apply Nat.lt_succ_diag_r | assumption ].
     unfold sigma; replace (high - S (S k))%nat with (pred (high - S k)).
     pattern (S k) at 3; replace (S k) with (S k + 0)%nat;
       [ idtac | ring ].
@@ -56,20 +56,20 @@ Section Sigma.
     reflexivity.
     ring.
     replace (high - S (S k))%nat with (high - S k - 1)%nat.
-    apply pred_of_minus.
+    symmetry; apply Nat.sub_1_r.
     lia.
     unfold sigma; replace (S k - low)%nat with (S (k - low)).
     pattern (S k) at 1; replace (S k) with (low + S (k - low))%nat.
     symmetry ; apply (tech5 (fun i:nat => f (low + i))).
     lia.
     lia.
-    rewrite <- H2; unfold sigma; rewrite <- minus_n_n; simpl;
+    rewrite <- H2; unfold sigma; rewrite Nat.sub_diag; simpl;
       replace (high - S low)%nat with (pred (high - low)).
     replace (sum_f_R0 (fun k0:nat => f (S (low + k0))) (pred (high - low))) with
     (sum_f_R0 (fun k0:nat => f (low + S k0)) (pred (high - low))).
     apply (decomp_sum (fun k0:nat => f (low + k0))).
     apply lt_minus_O_lt.
-    apply le_lt_trans with (S k); [ rewrite H2; apply le_n | assumption ].
+    apply Nat.le_lt_trans with (S k); [ rewrite H2; apply Nat.le_refl | assumption ].
     apply sum_eq; intros; replace (S (low + i)) with (low + S i)%nat.
     reflexivity.
     ring.
@@ -97,13 +97,13 @@ Section Sigma.
     forall low high:nat,
       (low < high)%nat -> sigma low high = f low + sigma (S low) high.
   Proof.
-    intros low high H1; generalize (lt_le_S low high H1); intro H2;
-      generalize (lt_le_weak low high H1); intro H3;
+    intros low high H1; generalize (proj2 (Nat.le_succ_l low high) H1); intro H2;
+      generalize (Nat.lt_le_incl low high H1); intro H3;
         replace (f low) with (sigma low low).
     apply sigma_split.
     apply le_n.
     assumption.
-    unfold sigma; rewrite <- minus_n_n.
+    unfold sigma; rewrite Nat.sub_diag.
     simpl.
     replace (low + 0)%nat with low; [ reflexivity | ring ].
   Qed.
@@ -112,23 +112,23 @@ Section Sigma.
     forall low high:nat,
       (low < high)%nat -> sigma low high = f high + sigma low (pred high).
   Proof.
-    intros low high H1; generalize (lt_le_S low high H1); intro H2;
-      generalize (lt_le_weak low high H1); intro H3;
+    intros low high H1; generalize (proj2 (Nat.le_succ_l low high) H1); intro H2;
+      generalize (Nat.lt_le_incl low high H1); intro H3;
         replace (f high) with (sigma high high).
     rewrite Rplus_comm; cut (high = S (pred high)).
     intro; pattern high at 3; rewrite H.
     apply sigma_split.
-    apply le_S_n; rewrite <- H; apply lt_le_S; assumption.
-    apply lt_pred_n_n; apply le_lt_trans with low; [ apply le_O_n | assumption ].
-    apply S_pred with 0%nat; apply le_lt_trans with low;
-      [ apply le_O_n | assumption ].
-    unfold sigma; rewrite <- minus_n_n; simpl;
+    apply le_S_n; rewrite <- H; apply Nat.le_succ_l; assumption.
+    apply Nat.lt_pred_l, Nat.neq_0_lt_0; apply Nat.le_lt_trans with low; [ apply Nat.le_0_l | assumption ].
+    symmetry; apply Nat.lt_succ_pred with 0%nat; apply Nat.le_lt_trans with low;
+      [ apply Nat.le_0_l | assumption ].
+    unfold sigma; rewrite Nat.sub_diag; simpl;
       replace (high + 0)%nat with high; [ reflexivity | ring ].
   Qed.
 
   Theorem sigma_eq_arg : forall low:nat, sigma low low = f low.
   Proof.
-    intro; unfold sigma; rewrite <- minus_n_n.
+    intro; unfold sigma; rewrite Nat.sub_diag.
     simpl; replace (low + 0)%nat with low; [ reflexivity | ring ].
   Qed.
 

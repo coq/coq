@@ -142,7 +142,7 @@ Qed.
 Lemma del_head_spec_large n d : length (to_list d) < n -> del_head n d = zero.
 Proof.
   revert d; induction n; intro d; [now case d|].
-  now case d; [|intro d'; simpl; intro H; rewrite (IHn _ (lt_S_n _ _ H))..].
+  now case d; [|intro d'; simpl; intro H; rewrite (IHn _ (proj2 (Nat.succ_lt_mono _ _) H))..].
 Qed.
 
 Lemma nb_digits_0 d : nb_digits d = 0 -> d = Nil.
@@ -222,7 +222,7 @@ Proof.
   { unfold unorm; rewrite Hn; simpl; intro H.
     revert H Hn; induction d; [now simpl|intros _|now intros _..].
     case (uint_eq_dec d Nil); simpl; intros H Hn; [now rewrite H|].
-    rewrite Nat.sub_0_r, (le_plus_minus 1 (nb_digits d)).
+    rewrite Nat.sub_0_r, <- (Nat.sub_add 1 (nb_digits d)), Nat.add_comm.
     { now simpl; rewrite IHd. }
     revert H; case d; [now simpl|intros u _; apply le_n_S, Nat.le_0_l..]. }
   intros _; rewrite (unorm_nzhead _ Hn); apply iter_D0_nzhead.
@@ -235,7 +235,7 @@ Proof.
   intro Hl; apply to_list_inj; revert Hl.
   rewrite !nb_digits_spec, app_spec, !nzhead_spec, app_spec.
   induction (to_list d) as [|h t IHl].
-  { now simpl; intro H; exfalso; revert H; apply le_not_lt, length_lnzhead. }
+  { now simpl; intro H; exfalso; revert H; apply Nat.le_ngt, length_lnzhead. }
   rewrite <-List.app_comm_cons.
   now case h; [simpl; intro Hl; apply IHl|..].
 Qed.
@@ -249,7 +249,7 @@ Proof.
   induction (to_list d) as [|h t IHl]; [now simpl|].
   rewrite <-List.app_comm_cons.
   now case h; [| simpl; rewrite List.app_length; intro Hl; exfalso; revert Hl;
-    apply le_not_lt, le_plus_r..].
+    apply Nat.le_ngt; rewrite Nat.add_comm; apply Nat.le_add_r..].
 Qed.
 
 Lemma nzhead_app_nil_r d d' : nzhead (app d d') = Nil -> nzhead d' = Nil.
@@ -264,8 +264,8 @@ Proof.
   rewrite !nb_digits_spec, !nzhead_spec, app_spec.
   induction (to_list d) as [|h t IHl]; [now simpl|].
   now case h; [now simpl|..];
-    simpl;intro H; exfalso; revert H; apply le_not_lt;
-    rewrite List.app_length; apply le_plus_r.
+    simpl;intro H; exfalso; revert H; apply Nat.le_ngt;
+    rewrite List.app_length, Nat.add_comm; apply Nat.le_add_r.
 Qed.
 
 Lemma nzhead_app_nil_l d d' : nzhead (app d d') = Nil -> nzhead d = Nil.
@@ -301,7 +301,7 @@ Lemma unorm_app_l d d' :
 Proof.
   case (uint_eq_dec d' Nil); [now intros->; rewrite !app_nil_r|intro Hd'].
   case (uint_eq_dec (nzhead (app d d')) Nil).
-  { unfold unorm; intros->; simpl; intro H; exfalso; revert H; apply le_not_lt.
+  { unfold unorm; intros->; simpl; intro H; exfalso; revert H; apply Nat.le_ngt.
     now revert Hd'; case d'; [|intros d'' _; apply le_n_S, Peano.le_0_n..]. }
   intro Ha; rewrite (unorm_nzhead _ Ha).
   intro Hn; generalize Hn; rewrite (nzhead_app_l _ _ Hn).
@@ -331,15 +331,15 @@ Proof.
   case d as [d|d]; [now simpl; intro H; apply f_equal, unorm_app_l|].
   simpl; unfold unorm.
   case (uint_eq_dec (nzhead (app d d')) Nil).
-  { intros->; simpl; intro H; exfalso; revert H; apply le_not_lt.
-    now revert Hd'; case d'; [|intros d'' _; apply le_n_S, Peano.le_0_n..]. }
+  { intros->; simpl; intro H; exfalso; revert H; apply Nat.le_ngt.
+    now revert Hd'; case d'; [|intros d'' _; apply le_n_S, Nat.le_0_l..]. }
   set (m := match nzhead _ with Nil => _ | _ => _ end).
   intro Ha.
   replace m with (nzhead (app d d')).
   2:{ now unfold m; revert Ha; case nzhead. }
   intro Hn; generalize Hn; rewrite (nzhead_app_l _ _ Hn).
   case (uint_eq_dec (app (nzhead d) d') Nil).
-  { intros->; simpl; intro H; exfalso; revert H; apply le_not_lt, Nat.le_0_l. }
+  { intros->; simpl; intro H; exfalso; revert H; apply Nat.le_ngt, Nat.le_0_l. }
   clear m; set (m := match app _ _ with Nil => _ | _ => _ end).
   intro Ha'.
   replace m with (Neg (app (nzhead d) d')); [|now unfold m; revert Ha'; case app].
@@ -366,7 +366,7 @@ Proof.
   rewrite nb_digits_spec; intro Hn.
   apply to_list_inj.
   rewrite del_head_spec_small.
-  2:{ now rewrite app_spec, List.app_length; apply le_plus_trans. }
+  2:{ now rewrite app_spec, List.app_length, <- Nat.le_add_r. }
   rewrite !app_spec, (del_head_spec_small _ _ Hn).
   rewrite List.skipn_app.
   now rewrite (proj2 (Nat.sub_0_le _ _) Hn).
@@ -399,7 +399,8 @@ Proof.
   rewrite rev_spec.
   set (n' := _ - n).
   assert (Hn' : n = length (to_list d) - n').
-  { now apply plus_minus; rewrite  Nat.add_comm; symmetry; apply le_plus_minus_r. }
+  { now rewrite <- (Nat.add_sub (length (to_list d)) n), Nat.add_comm,
+                <- 2 Nat.add_sub_assoc, Nat.sub_diag; trivial. }
   now rewrite Hn', <-List.firstn_skipn_rev, List.firstn_skipn, of_list_to_list.
 Qed.
 
@@ -416,7 +417,7 @@ Proof.
   replace (_ - _) with (nb_digits (unorm (abs i))).
   - now rewrite del_head_app; [rewrite del_head_nb_digits|].
   - rewrite !nb_digits_spec, app_spec, List.app_length.
-    now rewrite Nat.add_comm, minus_plus.
+    symmetry; apply Nat.add_sub.
 Qed.
 
 Lemma del_tail_app_int_exact i f :
@@ -538,7 +539,7 @@ Lemma del_head_nonnil n u :
   n < nb_digits u -> del_head n u <> Nil.
 Proof.
   now revert n; induction u; intro n;
-    [|case n; [|intro n'; simpl; intro H; apply IHu, lt_S_n]..].
+    [|case n; [|intro n'; simpl; intro H; apply IHu, Nat.succ_lt_mono]..].
 Qed.
 
 Lemma del_tail_nonnil n u :
@@ -599,7 +600,7 @@ Proof.
   rewrite List.skipn_rev, List.rev_involutive.
   generalize (f_equal to_list Hu) Hn; rewrite nzhead_spec; intro Hu'.
   case (to_list u) as [|h t].
-  { simpl; intro H; exfalso; revert H; apply le_not_lt, Peano.le_0_n. }
+  { simpl; intro H; exfalso; revert H; apply Nat.le_ngt, Nat.le_0_l. }
   intro Hn'; generalize (Nat.sub_gt _ _ Hn'); rewrite List.rev_length.
   case (_ - _); [now simpl|]; intros n' _.
   rewrite List.firstn_cons, lnzhead_head_nd0; [now simpl|].
@@ -617,7 +618,7 @@ Lemma unorm_del_tail_unorm n u :
 Proof.
   case (uint_eq_dec (nzhead u) Nil).
   - unfold unorm; intros->; case n; [now simpl|]; intro n'.
-    now simpl; intro H; exfalso; generalize (lt_S_n _ _ H).
+    now simpl; intro H; exfalso; generalize (proj2 (Nat.succ_lt_mono _ _) H).
   - unfold unorm.
     set (m := match nzhead u with Nil => zero | _ => _ end).
     intros H.
@@ -635,7 +636,7 @@ Proof.
   case d; clear d; intros u; simpl.
   - now intro H; simpl; rewrite unorm_del_tail_unorm.
   - case (uint_eq_dec (nzhead u) Nil); intro Hu.
-    + now rewrite Hu; case n; [|intros n' Hn'; generalize (lt_S_n _ _ Hn')].
+    + now rewrite Hu; case n; [|intros n' Hn'; generalize (proj2 (Nat.succ_lt_mono _ _) Hn')].
     + set (m := match nzhead u with Nil => Pos zero | _ => _ end).
       replace m with (Neg (nzhead u)); [|now unfold m; revert Hu; case nzhead].
       unfold del_tail_int.

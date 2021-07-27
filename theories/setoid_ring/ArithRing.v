@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Mult.
+Require Import PeanoNat.
 Require Import BinNat.
 Require Import Nnat.
 Require Export Ring.
@@ -16,9 +16,9 @@ Set Implicit Arguments.
 
 Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
  Proof.
-  constructor. exact plus_0_l. exact plus_comm. exact plus_assoc.
-  exact mult_1_l. exact mult_0_l. exact mult_comm. exact mult_assoc.
-  exact mult_plus_distr_r.
+  constructor. exact Nat.add_0_l. exact Nat.add_comm. exact Nat.add_assoc.
+  exact Nat.mul_1_l. exact Nat.mul_0_l. exact Nat.mul_comm. exact Nat.mul_assoc.
+  exact Nat.mul_add_distr_r.
  Qed.
 
 Lemma nat_morph_N :
@@ -73,3 +73,6 @@ Add Ring natr : natSRth
   (morphism nat_morph_N, constants [natcst],
    preprocess [natprering], postprocess [natpostring]).
 
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Mult.

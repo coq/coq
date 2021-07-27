@@ -33,8 +33,7 @@ Require Export Classical_sets.
 Require Export Powerset.
 Require Export Powerset_facts.
 Require Export Powerset_Classical_facts.
-Require Export Gt.
-Require Export Lt.
+Require Export PeanoNat.
 
 Section Finite_sets_facts.
   Variable U : Type.
@@ -110,11 +109,8 @@ Section Finite_sets_facts.
   Proof.
     induction 1 as [x H'].
     intros n H'0.
-    elim (gt_O_eq n); auto with sets.
-    intro H'1; generalize H'; generalize H'0.
-    rewrite <- H'1; intro H'2.
-    rewrite (cardinalO_empty X); auto with sets.
-    intro H'3; elim H'3.
+    destruct n; [ exfalso | apply Nat.lt_0_succ ].
+    rewrite (cardinalO_empty X) in H'; [ elim H' | assumption ].
   Qed.
 
   Lemma card_soustr_1 :
@@ -139,9 +135,8 @@ Section Finite_sets_facts.
     red; intro H'6; elim H'6.
     intros H'7 H'8; try assumption.
     elim H'1; auto with sets.
-    unfold pred at 2; symmetry .
-    apply S_pred with (m := 0).
-    change (n > 0).
+    unfold pred at 2.
+    apply (Nat.lt_succ_pred 0).
     apply inh_card_gt_O with (X := X); auto with sets.
     apply Inhabited_intro with (x := x0); auto with sets.
     red; intro H'3.
@@ -237,47 +232,47 @@ Section Finite_sets_facts.
 	cardinal U Y c2 -> Strict_Included U X Y -> c2 > c1.
   Proof.
     intros X c1 H'; elim H'.
-    intros Y c2 H'0; elim H'0; auto with sets arith.
+    intros Y c2 H'0; elim H'0; [ | intros; apply Nat.lt_0_succ ].
     intro H'1.
-    elim (Strict_Included_strict U (Empty_set U)); auto with sets arith.
+    elim (Strict_Included_strict U (Empty_set U)); auto.
     clear H' c1 X.
     intros X n H' H'0 x H'1 Y c2 H'2.
     elim H'2.
-    intro H'3; elim (not_SIncl_empty U (Add U X x)); auto with sets arith.
+    intro H'3; elim (not_SIncl_empty U (Add U X x)); assumption.
     clear H'2 c2 Y.
     intros X0 c2 H'2 H'3 x0 H'4 H'5; elim (classic (In U X0 x)).
-    intro H'6; apply gt_n_S.
+    intro H'6; apply -> Nat.succ_lt_mono.
     apply H'0 with (Y := Subtract U (Add U X0 x0) x).
-    elimtype (pred (S c2) = c2); auto with sets arith.
-    apply card_soustr_1; auto with sets arith.
-    apply incl_st_add_soustr; auto with sets arith.
+    elimtype (pred (S c2) = c2); [ | reflexivity ].
+    apply card_soustr_1; auto with sets.
+    apply incl_st_add_soustr; assumption.
     elim (classic (x = x0)).
-    intros H'6 H'7; apply gt_n_S.
-    apply H'0 with (Y := X0); auto with sets arith.
+    intros H'6 H'7; apply -> Nat.succ_lt_mono.
+    apply H'0 with (Y := X0); [ assumption | ].
     apply sincl_add_x with (x := x0).
-    rewrite <- H'6; auto with sets arith.
-    pattern x0 at 1; rewrite <- H'6; trivial with sets arith.
+    rewrite <- H'6; assumption.
+    pattern x0 at 1; rewrite <- H'6; trivial.
     intros H'6 H'7; red in H'5.
     elim H'5; intros H'8 H'9; try exact H'8; clear H'5.
     red in H'8.
     generalize (H'8 x).
-    intro H'5; lapply H'5; auto with sets arith.
-    intro H; elim Add_inv with U X0 x0 x; auto with sets arith.
-    intro; absurd (In U X0 x); auto with sets arith.
-    intro; absurd (x = x0); auto with sets arith.
+    intro H'5; lapply H'5; auto with sets.
+    intro H; elim Add_inv with U X0 x0 x; [ | | assumption ].
+    intro; absurd (In U X0 x); assumption.
+    intro; absurd (x = x0); [ assumption | subst x0; reflexivity ].
   Qed.
 
   Lemma incl_card_le :
     forall (X Y:Ensemble U) (n m:nat),
       cardinal U X n -> cardinal U Y m -> Included U X Y -> n <= m.
   Proof.
-    intros; elim Included_Strict_Included with U X Y; auto with sets arith; intro.
-    cut (m > n); auto with sets arith.
-    apply incl_st_card_lt with (X := X) (Y := Y); auto with sets arith.
+    intros; elim Included_Strict_Included with U X Y; [ | | assumption ]; intro.
+    cut (m > n); [ apply Nat.lt_le_incl | ].
+    apply incl_st_card_lt with (X := X) (Y := Y); assumption.
     generalize H0; rewrite <- H2; intro.
     cut (n = m).
-    intro E; rewrite E; auto with sets arith.
-    apply cardinal_unicity with X; auto with sets arith.
+    intro E; rewrite E; auto with sets.
+    apply cardinal_unicity with X; assumption.
   Qed.
 
   Lemma G_aux :
@@ -342,3 +337,6 @@ Section Finite_sets_facts.
   Qed.
 
 End Finite_sets_facts.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Export Gt Lt.

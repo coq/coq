@@ -10,8 +10,6 @@
 
 Require Import Rdefinitions Raxioms RIneq.
 Require Import Rbasic_fun.
-Require Import Even.
-Require Import Div2.
 Require Import ArithRing.
 
 Local Open Scope Z_scope.
@@ -19,63 +17,35 @@ Local Open Scope R_scope.
 
 Lemma minus_neq_O : forall n i:nat, (i < n)%nat -> (n - i)%nat <> 0%nat.
 Proof.
-  intros; red; intro.
-  cut (forall n m:nat, (m <= n)%nat -> (n - m)%nat = 0%nat -> n = m).
-  intro; assert (H2 := H1 _ _ (lt_le_weak _ _ H) H0); rewrite H2 in H;
-    elim (lt_irrefl _ H).
-  set (R := fun n m:nat => (m <= n)%nat -> (n - m)%nat = 0%nat -> n = m).
-  cut
-    ((forall n m:nat, R n m) ->
-      forall n0 m:nat, (m <= n0)%nat -> (n0 - m)%nat = 0%nat -> n0 = m).
-  intro; apply H1.
-  apply nat_double_ind.
-  unfold R; intros; inversion H2; reflexivity.
-  unfold R; intros; simpl in H3; assumption.
-  unfold R; intros; simpl in H4; assert (H5 := le_S_n _ _ H3);
-    assert (H6 := H2 H5 H4); rewrite H6; reflexivity.
-  unfold R; intros; apply H1; assumption.
+  intros n i Hlt.
+  apply Nat.neq_0_lt_0, Nat.lt_add_lt_sub_r; assumption.
 Qed.
 
 Lemma le_minusni_n : forall n i:nat, (i <= n)%nat -> (n - i <= n)%nat.
 Proof.
-  set (R := fun m n:nat => (n <= m)%nat -> (m - n <= m)%nat).
-  cut
-    ((forall m n:nat, R m n) -> forall n i:nat, (i <= n)%nat -> (n - i <= n)%nat).
-  intro; apply H.
-  apply nat_double_ind.
-  unfold R; intros; simpl; apply le_n.
-  unfold R; intros; simpl; apply le_n.
-  unfold R; intros; simpl; apply le_trans with n.
-  apply H0; apply le_S_n; assumption.
-  apply le_n_Sn.
-  unfold R; intros; apply H; assumption.
+  intros n i _.
+  induction i as [ | i IHi ].
+  - rewrite Nat.sub_0_r; reflexivity.
+  - etransitivity; [ | apply IHi ].
+    rewrite Nat.sub_succ_r.
+    apply Nat.le_pred_l.
 Qed.
 
 Lemma lt_minus_O_lt : forall m n:nat, (m < n)%nat -> (0 < n - m)%nat.
 Proof.
-  intros n m; pattern n, m; apply nat_double_ind;
-    [ intros; rewrite <- minus_n_O; assumption
-      | intros; elim (lt_n_O _ H)
-      | intros; simpl; apply H; apply lt_S_n; assumption ].
+  intros n i Hlt.
+  apply Nat.lt_add_lt_sub_r; assumption.
 Qed.
 
 Lemma even_odd_cor :
-  forall n:nat,  exists p : nat, n = (2 * p)%nat \/ n = S (2 * p).
+  forall n:nat, exists p : nat, n = (2 * p)%nat \/ n = S (2 * p).
 Proof.
-  intro.
-  assert (H := even_or_odd n).
-  exists (div2 n).
-  assert (H0 := even_odd_double n).
-  elim H0; intros.
-  elim H1; intros H3 _.
-  elim H2; intros H4 _.
-  replace (2 * div2 n)%nat with (double (div2 n)).
-  elim H; intro.
-  left.
-  apply H3; assumption.
-  right.
-  apply H4; assumption.
-  unfold double;ring.
+  intros n; exists (Nat.div2 n).
+  case_eq (Nat.odd n); intros H; [right|left].
+  - assert (Nat.b2n (Nat.odd n) = 1%nat) as Hb by now rewrite H.
+    rewrite Nat.div2_odd at 1; rewrite Hb, Nat.add_1_r; reflexivity.
+  - assert (Nat.b2n (Nat.odd n) = 0%nat) as Hb by now rewrite H.
+    rewrite Nat.div2_odd at 1; rewrite Hb, Nat.add_0_r; reflexivity.
 Qed.
 
   (* 2m <= 2n => m<=n *)
@@ -179,8 +149,11 @@ Qed.
 Lemma tech8 : forall n i:nat, (n <= S n + i)%nat.
 Proof.
   intros; induction  i as [| i Hreci].
-  replace (S n + 0)%nat with (S n); [ apply le_n_Sn | ring ].
+  replace (S n + 0)%nat with (S n); [ apply Nat.le_succ_diag_r | ring ].
   replace (S n + S i)%nat with (S (S n + i)).
   apply le_S; assumption.
   apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR; ring.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Even Div2.

@@ -10,8 +10,7 @@
 
 (* G. Huet 1-9-95 *)
 
-Require Import Permut Setoid.
-Require Plus. (* comm. and ass. of plus *)
+Require Import PeanoNat Permut Setoid.
 
 Set Implicit Arguments.
 
@@ -73,14 +72,14 @@ Section multiset_defs.
   Lemma munion_comm : forall x y:multiset, meq (munion x y) (munion y x).
   Proof.
     unfold meq; unfold multiplicity; unfold munion.
-    destruct x; destruct y; auto with arith.
+    destruct x; destruct y; intros; apply Nat.add_comm.
   Qed.
 
   Lemma munion_ass :
     forall x y z:multiset, meq (munion (munion x y) z) (munion x (munion y z)).
   Proof.
     unfold meq; unfold munion; unfold multiplicity.
-    destruct x; destruct y; destruct z; auto with arith.
+    destruct x; destruct y; destruct z; intros; symmetry; apply Nat.add_assoc.
   Qed.
 
   Lemma meq_left :
@@ -88,7 +87,7 @@ Section multiset_defs.
   Proof.
     unfold meq; unfold munion; unfold multiplicity.
     destruct x; destruct y; destruct z.
-    intros; elim H; auto with arith.
+    intros; elim H; reflexivity.
   Qed.
 
   Lemma meq_right :
@@ -177,7 +176,6 @@ Section multiset_defs.
   Qed.
 
 (*i theory of minter to do similarly
-Require Min.
 (* multiset intersection *)
 Definition minter := [m1,m2:multiset]
     (Bag [a:A](min (multiplicity m1 a)(multiplicity m2 a))).
@@ -194,3 +192,6 @@ Hint Resolve munion_empty_right munion_comm munion_ass meq_left meq_right
   munion_empty_left: datatypes.
 #[global]
 Hint Immediate meq_sym: datatypes.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Plus.

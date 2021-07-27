@@ -17,7 +17,6 @@ Author: Arnaud Spiwack (+ Pierre Letouzey)
 *)
 
 Require Import List.
-Require Import Min.
 Require Export Int31.
 Require Import Znumtheory.
 Require Import Zgcd_alt.
@@ -254,7 +253,7 @@ Section Basics.
  f_equal.
  change (shiftr (nshiftr x (size - S n))) with (nshiftr x (S (size - S n))).
  replace (S (size - S n))%nat with (size - n)%nat by lia.
- apply IHn; auto with arith.
+ apply IHn; auto with zarith.
  Qed.
 
  Lemma recr_eqn : forall x, iszero x = false ->
@@ -264,7 +263,7 @@ Section Basics.
  intros.
  unfold recr.
  change x with (nshiftr x (size - size)).
- rewrite (recr_aux_converges size (S size)); auto with arith.
+ rewrite (recr_aux_converges size (S size)); auto.
  rewrite recr_aux_eqn; auto.
  Qed.
 
@@ -551,8 +550,7 @@ Section Basics.
  rewrite 2 firstr_firstl.
  f_equal.
  apply EqShiftL_le with k; auto.
- unfold size.
- auto with arith.
+ apply Nat.lt_succ_r; assumption.
  Qed.
 
  Lemma EqShiftL_twice : forall k x y,
@@ -618,7 +616,7 @@ Section Basics.
  induction n.
  intros.
  assert (firstn (size-0) (i2l x) = i2l x).
-  rewrite <- minus_n_O, <- (i2l_length x).
+  rewrite Nat.sub_0_r, <- (i2l_length x).
   induction (i2l x); simpl; f_equal; auto.
  rewrite H0; clear H0.
  reflexivity.
@@ -1563,7 +1561,7 @@ Section Int31_Specs.
  simpl; auto.
  intros.
  simpl addmuldiv31_alt.
- replace (S n) with (n+1)%nat by (rewrite plus_comm; auto).
+ replace (S n) with (n+1)%nat by (rewrite Nat.add_comm; auto).
  rewrite nat_rect_plus; simpl; auto.
  Qed.
 
@@ -1731,7 +1729,7 @@ Section Int31_Specs.
  change On with (phi_inv (Z.of_nat (31-size))).
  replace (head031_alt size x) with
    (head031_alt size x + (31 - size))%nat by auto.
- assert (size <= 31)%nat by auto with arith.
+ assert (size <= 31)%nat by reflexivity.
 
  revert x H; induction size; intros.
  simpl; auto.
@@ -1839,7 +1837,7 @@ Section Int31_Specs.
  change On with (phi_inv (Z.of_nat (31-size))).
  replace (tail031_alt size x) with
    (tail031_alt size x + (31 - size))%nat by auto.
- assert (size <= 31)%nat by auto with arith.
+ assert (size <= 31)%nat by reflexivity.
 
  revert x H; induction size; intros.
  simpl; auto.
@@ -2532,3 +2530,6 @@ Module Int31Cyclic <: CyclicType.
   Definition ops := int31_ops.
   Definition specs := int31_specs.
 End Int31Cyclic.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Min.

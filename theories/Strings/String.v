@@ -203,7 +203,7 @@ intros s1; elim s1; simpl; auto.
 intros s2 n H; inversion H.
 intros a s1' Rec s2 n; case n; simpl; auto.
 intros n0 H; apply Rec; auto.
-apply lt_S_n; auto.
+apply Nat.succ_lt_mono; auto.
 Qed.
 
 (** The last elements of [s1 ++ s2] are the ones of [s2] *)
@@ -213,10 +213,11 @@ Theorem append_correct2 :
  get n s2 = get (n + length s1) (s1 ++ s2).
 Proof.
 intros s1; elim s1; simpl; auto.
-intros s2 n; rewrite plus_comm; simpl; auto.
+intros s2 n; rewrite Nat.add_comm; simpl; auto.
 intros a s1' Rec s2 n; case n; simpl; auto.
 generalize (Rec s2 O); simpl; auto. intros.
-rewrite <- Plus.plus_Snm_nSm; auto.
+(replace (n0 + S (length s1'))
+    with (S n0 + length s1') by now rewrite Nat.add_succ_r); auto.
 Qed.
 
 (** *** Substrings *)
@@ -248,8 +249,8 @@ intros m; case m; simpl; auto.
 intros p H; inversion H.
 intros m' p; case p; simpl; auto.
 intros n0 H; apply Rec; simpl; auto.
-apply Lt.lt_S_n; auto.
-intros n' m p H; rewrite <- Plus.plus_Snm_nSm; simpl; auto.
+apply <- Nat.succ_lt_mono; auto.
+intros n' m p H; rewrite Nat.add_succ_r; auto.
 Qed.
 
 (** The substring has at most [m] elements *)
@@ -265,7 +266,7 @@ intros m; case m; simpl; auto.
 intros m' p; case p; simpl; auto.
 intros H; inversion H.
 intros n0 H; apply Rec; simpl; auto.
-apply Le.le_S_n; auto.
+apply <- Nat.succ_le_mono; auto.
 Qed.
 
 (** *** Concatenating lists of strings *)
@@ -406,8 +407,8 @@ intros H2 H3; red; intros H4; case H0.
 intros H5 H6; absurd (false = true); auto with bool.
 intros n0 H2 H3; apply H; auto.
 injection H1; auto.
-apply Le.le_O_n.
-apply Lt.lt_S_n; auto.
+apply Nat.le_0_l.
+apply <- Nat.succ_lt_mono; auto.
 intros; discriminate.
 intros n'; case m; simpl; auto.
 case (index n' s1 s2'); intros; discriminate.
@@ -416,8 +417,8 @@ intros x H H0 p; case p; simpl; auto.
 intros H1; inversion H1; auto.
 intros n0 H1 H2; apply H; auto.
 injection H0; auto.
-apply Le.le_S_n; auto.
-apply Lt.lt_S_n; auto.
+apply <- Nat.succ_le_mono; auto.
+apply <- Nat.succ_lt_mono; auto.
 intros; discriminate.
 Qed.
 
@@ -451,13 +452,13 @@ intros a s n0 H H0 H1 H2;
  apply (Rec O); auto.
 generalize H0; case (index 0 (String a s) s2'); simpl; auto; intros;
  discriminate.
-apply Le.le_O_n.
+apply Nat.le_0_l.
 intros n'; case m; simpl; auto.
 intros H H0 H1; inversion H1.
 intros n0 H H0 H1; apply (Rec n'); auto.
 generalize H; case (index n' s1 s2'); simpl; auto; intros;
  discriminate.
-apply Le.le_S_n; auto.
+apply Nat.succ_le_mono; auto.
 Qed.
 
 (* Back to normal for prefix *)
@@ -473,13 +474,13 @@ Proof.
 intros n s; generalize n; clear n; elim s; simpl; auto.
 intros n; case n; simpl; auto.
 intros; discriminate.
-intros; apply Lt.lt_O_Sn.
+intros; apply Nat.lt_0_succ.
 intros a s' H n; case n; simpl; auto.
 intros; discriminate.
 intros n'; generalize (H n'); case (index n' EmptyString s'); simpl;
  auto.
 intros; discriminate.
-intros H0 H1; apply Lt.lt_n_S; auto.
+intros H0 H1. apply -> Nat.succ_lt_mono; auto.
 Qed.
 
 (** Same as [index] but with no optional type, we return [0] when it

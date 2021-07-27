@@ -68,7 +68,7 @@ Proof.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r; rewrite Rmult_comm; rewrite Rmult_assoc;
     rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; apply le_INR; apply fact_le; apply le_n_Sn.
+  rewrite Rmult_1_r; apply le_INR; apply fact_le; apply Nat.le_succ_diag_r.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   assert (H0 := cv_speed_pow_fact 1); unfold Un_cv; unfold Un_cv in H0;

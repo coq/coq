@@ -115,24 +115,14 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/Arith/PeanoNat.v
-    theories/Arith/Le.v
-    theories/Arith/Lt.v
-    theories/Arith/Plus.v
-    theories/Arith/Minus.v
-    theories/Arith/Mult.v
-    theories/Arith/Gt.v
     theories/Arith/Between.v
     theories/Arith/Peano_dec.v
     theories/Arith/Compare_dec.v
     (theories/Arith/Arith_base.v)
     (theories/Arith/Arith.v)
-    theories/Arith/Min.v
-    theories/Arith/Max.v
     theories/Arith/Compare.v
-    theories/Arith/Div2.v
     theories/Arith/EqNat.v
     theories/Arith/Euclid.v
-    theories/Arith/Even.v
     theories/Arith/Bool_nat.v
     theories/Arith/Factorial.v
     theories/Arith/Wf_nat.v
@@ -319,7 +309,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NBits.v
     theories/Numbers/Natural/Abstract/NProperties.v
     theories/Numbers/Natural/Binary/NBinary.v
-    theories/Numbers/Natural/Peano/NPeano.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Integer</b>:

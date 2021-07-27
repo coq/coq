@@ -1696,10 +1696,10 @@ Hint Resolve plus_INR: real.
 (**********)
 Lemma minus_INR : forall n m:nat, (m <= n)%nat -> INR (n - m) = INR n - INR m.
 Proof.
-  intros n m le; pattern m, n; apply le_elim_rel; auto with real.
-  intros; rewrite <- minus_n_O; auto with real.
-  intros; repeat rewrite S_INR; simpl.
-  rewrite H0; ring.
+intros n m le; induction le.
+- now rewrite Nat.sub_diag, Rminus_eq_0.
+- rewrite Nat.sub_succ_l; [ | assumption ].
+  rewrite ? S_INR, IHle; ring.
 Qed.
 #[global]
 Hint Resolve minus_INR: real.
@@ -1772,7 +1772,7 @@ Proof.
     apply pos_INR.
   - destruct n as [|n].
     apply Nat.lt_0_succ.
-    apply lt_n_S, IHm.
+    apply -> Nat.succ_lt_mono; apply IHm.
     rewrite 2!S_INR in H.
     apply Rplus_lt_reg_r with (1 := H).
 Qed.
@@ -1812,8 +1812,8 @@ Hint Resolve not_0_INR: real.
 
 Lemma not_INR : forall n m:nat, n <> m -> INR n <> INR m.
 Proof.
-  intros n m H; case (le_or_lt n m); intros H1.
-  case (le_lt_or_eq _ _ H1); intros H2.
+  intros n m H; case (Nat.le_gt_cases n m); intros H1.
+  case (proj1 (Nat.lt_eq_cases _ _) H1); intros H2.
   apply Rlt_dichotomy_converse; auto with real.
   exfalso; auto.
   apply not_eq_sym; apply Rlt_dichotomy_converse; auto with real.
@@ -1910,10 +1910,10 @@ Proof.
   case Pos.compare_spec; intros H; unfold IZR.
   subst. ring.
   rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
-  rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
+  rewrite minus_INR by (now apply Nat.lt_le_incl, Pos2Nat.inj_lt).
   ring.
   rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
-  rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
+  rewrite minus_INR by (now apply Nat.lt_le_incl, Pos2Nat.inj_lt).
   ring.
 Qed.
 
