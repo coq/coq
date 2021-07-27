@@ -458,29 +458,41 @@ let mu env sigma t =
       | None -> sigma, (None, v, IdCoe)
   in aux t
 
+let unify_product env sigma j =
+  let t = whd_all env sigma j.uj_type in
+  match EConstr.kind sigma t with
+  | Prod _ -> Inl sigma
+  | Evar ev ->
+    let sigma, _ = Evardefine.define_evar_as_product env sigma ev in
+    Inl sigma
+  | _ ->
+    let sigma, (domain_hole, _) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
+    let env' = push_rel Context.(Rel.Declaration.LocalAssum (anonR, domain_hole)) env in
+    let sigma, (codomain_hole, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
+    let prod = mkProd (Context.anonR, domain_hole, codomain_hole) in
+    (* NB: unification needs the un-reduced type to do heuristics like canonical structures *)
+    try Inl (Evarconv.unify env sigma Reduction.CUMUL j.uj_type prod)
+    with PretypeError _ -> Inr t (* return the reduced type to avoid double reducing *)
+
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core ~program_mode env sigma j =
-  let t = whd_all env sigma j.uj_type in
-    match EConstr.kind sigma t with
-    | Prod _ -> (sigma,j,IdCoe)
-    | Evar ev ->
-        let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
-          (sigma,{ uj_val = j.uj_val; uj_type = t },IdCoe)
-    | _ ->
-        try let t,p =
-          lookup_path_to_fun_from env sigma j.uj_type in
-            apply_coercion env sigma p j t
-       with (Not_found | NoCoercion) as exn ->
-         let _, info = Exninfo.capture exn in
-         if program_mode then
-           try
-             let sigma, (coercef, t, trace) = mu env sigma t in
-             let sigma, uj_val = app_opt env sigma coercef j.uj_val in
-             let res = { uj_val ; uj_type = t } in
-             (sigma, res, trace)
-           with NoSubtacCoercion | NoCoercion ->
-             (sigma,j,IdCoe)
-         else Exninfo.iraise (NoCoercion,info)
+  match unify_product env sigma j with
+  | Inl sigma -> sigma, j, IdCoe
+  | Inr t ->
+    try
+      let t,p = lookup_path_to_fun_from env sigma j.uj_type in
+      apply_coercion env sigma p j t
+    with (Not_found | NoCoercion) as exn ->
+      let _, info = Exninfo.capture exn in
+      if program_mode then
+        try
+          let sigma, (coercef, t, trace) = mu env sigma t in
+          let sigma, uj_val = app_opt env sigma coercef j.uj_val in
+          let res = { uj_val ; uj_type = t } in
+          (sigma, res, trace)
+        with NoSubtacCoercion | NoCoercion ->
+          (sigma,j,IdCoe)
+      else Exninfo.iraise (NoCoercion,info)
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
 let inh_app_fun ~program_mode resolve_tc env sigma j =
