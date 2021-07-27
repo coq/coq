@@ -947,8 +947,11 @@ struct
           else
             sigma, Anonymous, None, None
         | _ ->
-          (* XXX no error to allow later coercion? Not sure if possible with funclass *)
-          error_not_product ?loc !!env sigma ty
+          if Reductionops.is_head_evar !!env sigma ty then sigma, Anonymous, None, None
+          else
+            (* No chance of unifying with a product.
+               NB: Funclass cannot be a source class so no coercions. *)
+            error_not_product ?loc !!env sigma ty
     in
     let dom_valcon = valcon_of_tycon dom in
     let sigma, j = eval_type_pretyper self ~program_mode ~poly resolve_tc dom_valcon env sigma c1 in
