@@ -25,8 +25,8 @@ val map_custom : ('a -> 'a) -> 'a t -> 'a t
 (** {6 Manipulating sections} *)
 
 type section_entry =
-| SecDefinition of Constant.t
-| SecInductive of MutInd.t
+| SecDefinition of Constant.t * Declarations.constant_body
+| SecInductive of MutInd.t * Declarations.mutual_inductive_body
 
 val open_section : custom:'a -> 'a t option -> 'a t
 (** Open a new section with the provided universe polymorphic status. Sections
@@ -52,11 +52,8 @@ val push_constraints : ContextSet.t -> 'a t -> 'a t
 (** Extend the current section with a global universe context.
     Assumes that the last opened section is monomorphic. *)
 
-val push_constant : poly:bool -> Constant.t -> 'a t -> 'a t
-(** Make the constant as having been defined in this section. *)
-
-val push_inductive : poly:bool -> MutInd.t -> 'a t -> 'a t
-(** Make the inductive block as having been defined in this section. *)
+val push_global : poly:bool -> section_entry -> 'a t -> 'a t
+(** Push a global entry in this section. *)
 
 (** {6 Retrieving section data} *)
 

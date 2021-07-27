@@ -15,11 +15,11 @@ open Declarations
 
 module NamedDecl = Context.Named.Declaration
 
-type section_entry =
-| SecDefinition of Constant.t
-| SecInductive of MutInd.t
 
 type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
+type section_entry =
+| SecDefinition of Constant.t * constant_body
+| SecInductive of MutInd.t * mutual_inductive_body
 
 type 'a t = {
   prev : 'a t option;
@@ -49,12 +49,12 @@ let all_poly_univs sec = sec.all_poly_univs
 let map_custom f sec = {sec with custom = f sec.custom}
 
 let find_emap e (cmap, imap) = match e with
-| SecDefinition con -> Cmap.find con cmap
-| SecInductive ind -> Mindmap.find ind imap
+| SecDefinition (con,_) -> Cmap.find con cmap
+| SecInductive (ind,_) -> Mindmap.find ind imap
 
 let add_emap e v (cmap, imap) = match e with
-| SecDefinition con -> (Cmap.add con v cmap, imap)
-| SecInductive ind -> (cmap, Mindmap.add ind v imap)
+| SecDefinition (con,_) -> (Cmap.add con v cmap, imap)
+| SecInductive (ind,_) -> (cmap, Mindmap.add ind v imap)
 
 let push_local sec =
   { sec with context = sec.context + 1 }
@@ -112,10 +112,6 @@ let push_global ~poly e sec =
       data = add_emap e (abstract_universes sec.poly_universes) sec.data;
     }
 
-let push_constant ~poly con s = push_global ~poly (SecDefinition con) s
-
-let push_inductive ~poly ind s = push_global ~poly (SecInductive ind) s
-
 let empty_segment = {
   abstr_ctx = [];
   abstr_subst = Instance.empty;
@@ -143,13 +139,13 @@ let segment_of_constant env con s =
   let body = Environ.lookup_constant con env in
   let vars = Environ.named_context env in
   let used = Context.Named.to_vars body.Declarations.const_hyps in
-  section_segment_of_entry vars (SecDefinition con) used s
+  section_segment_of_entry vars (SecDefinition (con,body)) used s
 
 let segment_of_inductive env mind s =
   let mib = Environ.lookup_mind mind env in
   let vars = Environ.named_context env in
   let used = Context.Named.to_vars mib.Declarations.mind_hyps in
-  section_segment_of_entry vars (SecInductive mind) used s
+  section_segment_of_entry vars (SecInductive (mind,mib)) used s
 
 let instance_from_variable_context =
   List.rev %> List.filter NamedDecl.is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
