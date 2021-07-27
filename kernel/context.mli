@@ -296,11 +296,20 @@ sig
   (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
   val drop_bodies : ('c, 't) pt -> ('c, 't) pt
 
-  (** [to_instance Ω] builds an instance [args] such
+  (** [to_instance Ω] builds an instance [args] in reverse order such
       that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the local
       definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
       gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
   val to_instance : (Id.t -> 'r) -> ('c, 't) pt -> 'r list
+    [@@ocaml.deprecated "[to_instance] was missing a [List.rev] to comply to its specification; rely on [instance] for the correct specification or use [List.rev (instance ...)] for strict compatibility"]
+
+  (** [instance Ω] builds an instance [args] such
+      that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the
+      local definitions of [Ω] skipped. Example: for the context
+      [id1:T,id2:=c,id3:U] (which is internally represented by a list
+      with [id3] at the head), it gives [Var id1, Var id3]. All [idj]
+      are supposed distinct. *)
+  val instance : (Id.t -> 'r) -> ('c, 't) pt -> 'r array
 end
 
 module Compacted :

@@ -2097,11 +2097,12 @@ let apply_type ~typecheck newcl args =
 let bring_hyps hyps =
   if List.is_empty hyps then Tacticals.New.tclIDTAC
   else
+    let hyps = List.rev hyps in
     Proofview.Goal.enter begin fun gl ->
       let env = Proofview.Goal.env gl in
       let concl = Tacmach.New.pf_concl gl in
-      let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
-      let args = Array.of_list (Context.Named.to_instance mkVar hyps) in
+      let newcl = it_mkNamedProd_or_LetIn concl hyps in
+      let args = Context.Named.instance mkVar hyps in
       Refine.refine ~typecheck:false begin fun sigma ->
         let (sigma, ev) =
           Evarutil.new_evar env sigma ~principal:true newcl in
@@ -2836,13 +2837,12 @@ let generalize_dep ?(with_let=false) c =
     else
       toquant in
   let to_quantify = Context.Named.fold_outside seek (named_context_of_val sign) ~init:[] in
-  let to_quantify_rev = List.rev to_quantify in
-  let qhyps = List.map NamedDecl.get_id to_quantify_rev in
+  let qhyps = List.map NamedDecl.get_id to_quantify in
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match EConstr.kind sigma c with
       | Var id when mem_named_context_val id sign && not (Id.List.mem id init_ids)
-          -> id::tothin
+          -> tothin@[id]
       | _ -> tothin
   in
   let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
@@ -2861,11 +2861,11 @@ let generalize_dep ?(with_let=false) c =
     if is_var then evd
     else fst (Typing.type_of env evd cl'')
   in
-  let args = Context.Named.to_instance mkVar to_quantify_rev in
+  let args = Array.to_list (Context.Named.instance mkVar to_quantify) in
   tclTHENLIST
     [ Proofview.Unsafe.tclEVARS evd;
       apply_type ~typecheck:false cl'' (if Option.is_empty body then c::args else args);
-      clear (List.rev tothin')]
+      clear tothin']
   end
 
 (**  *)

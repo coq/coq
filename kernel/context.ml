@@ -456,7 +456,7 @@ struct
 
   let drop_bodies l = List.Smart.map Declaration.drop_body l
 
-  (** [instance_from_named_context Ω] builds an instance [args] such
+  (** [to_instance Ω] builds an instance [args] in reverse order such
       that [Ω ⊢ args:Ω] where [Ω] is a named context and with the local
       definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
       gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
@@ -466,6 +466,17 @@ struct
       | _ -> None
     in
     List.map_filter filter l
+
+  (** [instance Ω] builds an instance [args] such
+      that [Ω ⊢ args:Ω] where [Ω] is a named context and with the local
+      definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
+      gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
+  let instance mk l =
+    let filter = function
+      | Declaration.LocalAssum (id, _) -> Some (mk id.binder_name)
+      | _ -> None
+    in
+    Array.rev_of_list (List.map_filter filter l)
 end
 
 module Compacted =
