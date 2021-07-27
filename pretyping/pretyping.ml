@@ -920,12 +920,9 @@ struct
   let pretype_lambda self (name, bk, c1, c2) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
-    let sigma, tycon' =
-      match tycon with
-      | None -> sigma, tycon
-      | Some ty ->
-        let sigma, ty' = Coercion.inh_coerce_to_prod ?loc ~program_mode !!env sigma ty in
-        sigma, Some ty'
+    let tycon' = if program_mode
+      then Option.map (Coercion.remove_subset !!env sigma) tycon
+      else tycon
     in
     let sigma,name',dom,rng =
       match tycon' with

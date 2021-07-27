@@ -430,6 +430,16 @@ let apply_coercion env sigma p hj typ_cl =
       (hj,typ_cl,IdCoe,sigma) p
   in sigma, j, trace
 
+let remove_subset env sigma t =
+  let rec aux v =
+    let v' = hnf env sigma v in
+    match disc_subset sigma v' with
+    | Some (u, p) ->
+      aux u
+    | None -> v
+  in
+  aux t
+
 let mu env sigma t =
   let rec aux v =
     let v' = hnf env sigma v in
@@ -513,12 +523,6 @@ let inh_coerce_to_base ?loc ~program_mode env sigma j =
     let res = { uj_val; uj_type = typ' } in
     sigma, res
   else (sigma, j)
-
-let inh_coerce_to_prod ?loc ~program_mode env sigma t =
-  if program_mode then
-    let sigma, (_, typ', _trace) = mu env sigma t in
-    sigma, typ'
-  else (sigma, t)
 
 let inh_coerce_to_fail flags env sigma rigidonly v t c1 =
   if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr c1) && Heads.is_rigid env (EConstr.Unsafe.to_constr t))
