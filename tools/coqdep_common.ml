@@ -171,9 +171,14 @@ let error_cannot_open s msg =
   Printf.eprintf "File \"%s\", line 1: %s\n" s msg;
   exit 1
 
-let warning_module_notfound f s =
-  coqdep_warning "in file %s, library %s is required and has not been found in the loadpath!"
-    f (String.concat "." s)
+let warning_module_notfound from f s =
+  match from with
+  | None ->
+      coqdep_warning "in file %s, library %s is required and has not been found in the loadpath!"
+        f (String.concat "." s)
+  | Some pth ->
+      coqdep_warning "in file %s, library %s is required from root %s and has not been found in the loadpath!"
+        f (String.concat "." s) (String.concat "." pth)
 
 let warning_declare f s =
   coqdep_warning "in file %s, declared ML module %s has not been found!" f s
@@ -329,12 +334,7 @@ let rec find_dependencies basename =
                 add_dep (DepRequire (canonize file_str))
               with Not_found ->
                   if verbose && not (is_in_coqlib ?from str) then
-                    let str =
-                      match from with
-                      | None -> str
-                      | Some pth -> pth @ str
-                      in
-                  warning_module_notfound f str
+                  warning_module_notfound from f str
               end) strl
         | Declare sl ->
             let declare suff dir s =
