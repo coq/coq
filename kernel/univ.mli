@@ -485,6 +485,12 @@ val extend_in_context_set : 'a in_universe_context_set -> ContextSet.t ->
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
 
+val lift_level_subst : int -> universe_level_subst -> universe_level_subst
+(** Lift de Bruijn universe variables (Var) in the substitution *)
+
+val merge_level_subst : universe_level_subst -> universe_level_subst -> universe_level_subst
+(** Merge two substitutions assumed to have disjoint domains *)
+
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
 val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
