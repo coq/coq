@@ -1,11 +1,16 @@
 Installing From Sources
 =======================
 
-This document presents instructions to install this branch of Coq.
-For more general installation instructions and information about known
-build system issues, please consult the wiki page: 
+To install and use Coq, we recommend relying on [the Coq
+platform](https://github.com/coq/platform/) or on a package manager
+(e.g. opam or Nix).
 
-  https://github.com/coq/coq/wiki#coq-installation
+See https://coq.inria.fr/download and
+https://github.com/coq/coq/wiki#coq-installation to learn more.
+
+If you need to build Coq from sources manually (e.g. to
+contribute to Coq or to write a Coq package), the remainder of this
+file explains how to do so.
 
 Build Requirements
 ------------------
@@ -73,18 +78,33 @@ reports that Flambda is available, some further optimization options
 can be used; see the entry about `-flambda-opts` in the build guide
 for more details.
 
-Build and Installation Procedure
---------------------------------
+Choice of Build and Installation Procedure
+------------------------------------------
 
-Coq will build all the OCaml parts using Dune; for `.vo` files, Coq
-offers the choice of two build systems: an experimental one based on
-[Dune](https://github.com/ocaml/dune), and a makefile-based one
-[similar to `coq_makefile`].
+There are two partially overlapping infrastructures available to build
+Coq. They are available through `Makefile.make` (legacy / hybrid
+build) and `Makefile.dune` (full Dune build).
 
-Please see [INSTALL.make.md](dev/doc/INSTALL.make.md) for build and
-installation instructions using `make`. If you wish to experiment with
-the Dune-based system see the [dune guide for
-developers](dev/doc/build-system.dune.md).
+You can use the `COQ_USE_DUNE` environment variable to change the one
+to use by default. This is useful for Coq development, where we
+recommend to rely mainly on `Makefile.dune`. Note that mixing the two
+systems is not perfectly supported and may lead to confusing behavior.
+
+In both cases, the OCaml parts are built using
+[Dune](https://github.com/ocaml/dune). The main difference between the
+two systems is how the `.vo` files are built.
+
+In the case of `Makefile.make`, `.vo` files are built with a legacy
+Makefile, similar to what `coq_makefile` would do. In the case of
+`Makefile.dune`, `.vo` files are built with Dune, thanks to its
+recently-added, and still experimental, Coq mode.
+
+See the documentation for the two infrastructures:
+
+- [Legacy build](dev/doc/INSTALL.make.md)
+- [Full Dune build](dev/doc/build-system.dune.md)
+
+See also [`dev/doc/README.md`](dev/doc/README.md).
 
 Run-time dependencies of native compilation
 -------------------------------------------
