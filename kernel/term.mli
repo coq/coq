@@ -78,6 +78,7 @@ val to_lambda : int -> constr -> constr
 val to_prod : int -> constr -> constr
 
 val it_mkLambda_or_LetIn : constr -> Constr.rel_context -> constr
+val it_mkProd_wo_LetIn : types -> Constr.rel_context -> types
 val it_mkProd_or_LetIn : types -> Constr.rel_context -> types
 
 (** In [lambda_applist c args], [c] is supposed to have the form
