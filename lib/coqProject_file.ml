@@ -115,13 +115,14 @@ and parse_args buf accu s = match Stream.next s with
   parse_args buf (str :: accu) s
 | exception Stream.Failure -> accu
 
+exception UnableToOpenProjectFile of string
+
 let parse f =
-  let c = open_in f in
+  let c = try open_in f with Sys_error msg -> raise (UnableToOpenProjectFile msg) in
   let buf = Buffer.create 64 in
   let res = parse_args buf [] (Stream.of_channel c) in
   close_in c;
   List.rev res
-;;
 
 let parse_native ~warning_fn ~error proj flag =
   if proj.native_compiler <> None then
@@ -216,7 +217,8 @@ let process_cmd_line ~warning_fn orig_dir proj args =
       | Some _ -> warning_fn "Multiple project files are deprecated."
     in
     parsing_project_file := true;
-    let proj = aux { proj with project_file = Some file } (parse file) in
+    let r' = try parse file with UnableToOpenProjectFile msg -> error msg in
+    let proj = aux { proj with project_file = Some file } r' in
     parsing_project_file := false;
     aux proj r
 
