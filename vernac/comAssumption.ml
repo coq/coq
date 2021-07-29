@@ -260,7 +260,7 @@ let context ~poly l =
   (* Note, we must use the normalized evar from now on! *)
   let ce t = Pretyping.check_evars env sigma t in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) ctx in
-  let sigma, ctx = Evarutil.finalize ~abort_on_undefined_evars:false
+  let sigma, ctx = Evarutil.finalize
       sigma (fun nf -> List.map (RelDecl.map_constr_het nf) ctx) in
   (* reorder, evar-normalize and add implicit status *)
   let ctx = List.rev_map (fun d ->
