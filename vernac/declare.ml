@@ -331,7 +331,7 @@ let is_unsafe_typing_flags flags =
   let open Declarations in
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
-let define_constant ~name ~typing_flags cd =
+let declare_constant_core ~name ~typing_flags cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let decl, unsafe = match cd with
     | DefinitionEntry de ->
@@ -361,7 +361,7 @@ let define_constant ~name ~typing_flags cd =
 
 let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags cd =
   let () = check_exists name in
-  let kn = define_constant ~typing_flags ~name cd in
+  let kn = declare_constant_core ~typing_flags ~name cd in
   (* Register the libobjects attached to the constants *)
   let () = register_constant kn kind local in
   kn
@@ -632,7 +632,7 @@ let warn_let_as_axiom =
     Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
                   spc () ++ strbrk "declared as an axiom.")
 
-let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
+let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
     | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
     | Locality.Global local -> local
@@ -710,7 +710,13 @@ let prepare_parameter ~poly ~udecl ~types sigma =
       sigma (fun nf -> nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  sigma, (None(*proof using*), (typ, univs), None(*inline*))
+  let pe = Entries.{
+      parameter_entry_secctx = None;
+      parameter_entry_type = typ;
+      parameter_entry_universes = univs;
+      parameter_entry_inline_code = None;
+    } in
+  sigma, pe
 
 type progress = Remain of int | Dependent | Defined of GlobRef.t
 
@@ -1802,7 +1808,7 @@ let get_current_context pf =
    mutuals previously on this file. *)
 module MutualEntry : sig
 
-  val declare_variable
+  val declare_possibly_mutual_parameters
     : pinfo:Proof_info.t
     -> uctx:UState.t
     -> sec_vars:Id.Set.t option
@@ -1876,12 +1882,17 @@ end = struct
     in
     List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo
 
-  let declare_variable ~pinfo ~uctx ~sec_vars ~univs =
+  let declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = pinfo.Proof_info.info in
     List.map_i (
       fun i { CInfo.name; typ; impargs } ->
-        let pe = (sec_vars, (typ, univs), None) in
-        declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
+        let pe = Entries.{
+            parameter_entry_secctx = sec_vars;
+            parameter_entry_type = typ;
+            parameter_entry_universes = univs;
+            parameter_entry_inline_code = None;
+          } in
+        declare_parameter ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 pinfo.Proof_info.cinfo
 
 end
@@ -1911,7 +1922,7 @@ let compute_proof_using_for_admitted proof typ pproofs =
     | _ -> None
 
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
-  let cst = MutualEntry.declare_variable ~pinfo ~uctx ~sec_vars ~univs in
+  let cst = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs in
   (* If the constant was an obligation we need to update the program map *)
   match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
