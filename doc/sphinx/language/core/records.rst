@@ -3,12 +3,11 @@
 Record types
 ----------------
 
-The :cmd:`Record` construction is a macro allowing the definition of
-records as is done in many programming languages. Its syntax is
-described in the grammar below. In fact, the :cmd:`Record` macro is more general
-than the usual record types, since it allows also for “manifest”
-expressions. In this sense, the :cmd:`Record` construction allows defining
-“signatures”.
+The :cmd:`Record` construction is a :term:`command` allowing the definition of
+records as is done in many programming languages. Its syntax is described in the
+grammar below. In fact, the :cmd:`Record` :term:`command` is more general than
+the usual record types, since it allows also for “manifest”expressions. In this
+sense, the :cmd:`Record` construction allows defining“signatures”.
 
 .. _record_grammar:
 
@@ -53,8 +52,8 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
    :cmd:`Record` and :cmd:`Structure` are synonyms.
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
-   :attr:`private(matching)` attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`,
+   :attr:`private(matching)` and :attr:`projections(primitive)` attributes.
 
 More generally, a record may have explicitly defined (a.k.a. manifest)
 fields. For instance, we might have:
@@ -79,7 +78,7 @@ in which case the correctness of :n:`@type__3` may rely on the instance :n:`@ter
    Note here that the fields ``Rat_bottom_cond`` depends on the field ``bottom``
    and ``Rat_irred_cond`` depends on both ``top`` and ``bottom``.
 
-Let us now see the work done by the ``Record`` macro. First the macro
+Let us now see the work done by the :cmd:`Record` command. First the command
 generates a variant type definition with just one constructor:
 :n:`Variant @ident {* @binder } : @sort := @ident__0 {* @binder }`.
 
@@ -139,7 +138,7 @@ This syntax can also be used for pattern matching.
      | _ => 0
      end).
 
-The macro generates also, when it is possible, the projection
+The :term:`command` generates also, when it is possible, the projection
 functions for destructuring an object of type :token:`ident`. These
 projection functions are given the names of the corresponding
 fields. If a field is named `_` then no projection is built
@@ -189,16 +188,16 @@ In each case, :token:`term0` is the object projected and the
 other arguments are the parameters of the inductive type.
 
 
-.. note:: Records defined with the ``Record`` keyword are not allowed to be
+.. note:: Records defined with the :cmd:`Record` command are not allowed to be
    recursive (references to the record's name in the type of its field
-   raises an  error). To define recursive records, one can use the ``Inductive``
-   and ``CoInductive`` keywords, resulting in an inductive or co-inductive record.
+   raises an  error). To define recursive records, one can use the
+   :cmd:`Inductive` and :cmd:`CoInductive` commands, resulting in an inductive or co-inductive record.
    Definition of mutually inductive or co-inductive records are also allowed, as long
    as all of the types in the block are records.
 
 .. note:: Induction schemes are automatically generated for inductive records.
    Automatic generation of induction schemes for non-recursive records
-   defined with the ``Record`` keyword can be activated with the
+   defined with the :cmd:`Record` command can be activated with the
    :flag:`Nonrecursive Elimination Schemes` flag (see :ref:`proofschemes-induction-principles`).
 
 .. warn:: @ident cannot be defined.
@@ -216,7 +215,8 @@ other arguments are the parameters of the inductive type.
 .. exn:: Records declared with the keyword Record or Structure cannot be recursive.
 
    The record name :token:`ident` appears in the type of its fields, but uses
-   the keyword ``Record``. Use  the keyword ``Inductive`` or ``CoInductive`` instead.
+   the :cmd:`Record` command. Use  the :cmd:`Inductive` or
+   :cmd:`CoInductive` command instead.
 
 .. exn:: Cannot handle mutually (co)inductive records.
 
@@ -235,20 +235,53 @@ the errors of inductive definitions, as described in Section
 Primitive Projections
 ~~~~~~~~~~~~~~~~~~~~~
 
+When the :flag:`Primitive Projections` flag is on or the
+:attr:`projections(primitive)` attribute is supplied for a :n:`Record` definition, its
+:g:`match` construct is disabled. To eliminate the record type, one must
+use its defined primitive projections.
+
+For compatibility, the parameters still appear when printing terms
+even though they are absent in the actual AST manipulated by the kernel. This
+can be changed by unsetting the :flag:`Printing Primitive Projection Parameters`
+flag.
+
+There are currently two ways to introduce primitive records types:
+
+#. Through the :cmd:`Record` command, in which case the type has to be
+   non-recursive. The defined type enjoys eta-conversion definitionally,
+   that is the generalized form of surjective pairing for records:
+   `r` ``= Build_``\ `R` ``(``\ `r`\ ``.(``\ |p_1|\ ``) …`` `r`\ ``.(``\ |p_n|\ ``))``.
+   Eta-conversion allows to define dependent elimination for these types as well.
+#. Through the :cmd:`Inductive` and :cmd:`CoInductive` commands, when
+   the :term:`body` of the definition is a record declaration of the form
+   ``Build_``\ `R` ``{`` |p_1| ``:`` |t_1|\ ``; … ;`` |p_n| ``:`` |t_n| ``}``.
+   In this case the types can be recursive and eta-conversion is disallowed.
+   Dependent elimination is not available for such types;
+   you must use non-dependent case analysis for these.
+
+For both cases the :flag:`Primitive Projections` :term:`flag` must be set or
+the :attr:`projections(primitive)` :term:`attribute`  must be supplied.
+
 .. flag:: Primitive Projections
 
-   This :term:`flag` turns on the use of primitive
-   projections when defining subsequent records (even through the ``Inductive``
-   and ``CoInductive`` commands). Primitive projections
-   extended the Calculus of Inductive Constructions with a new binary
-   term constructor `r.(p)` representing a primitive projection `p` applied
-   to a record object `r` (i.e., primitive projections are always applied).
-   Even if the record type has parameters, these do not appear
-   in the internal representation of
-   applications of the projection, considerably reducing the sizes of
-   terms when manipulating parameterized records and type checking time.
-   On the user level, primitive projections can be used as a replacement
-   for the usual defined ones, although there are a few notable differences.
+   This :term:`flag` turns on the use of primitive projections when defining
+   subsequent records (even through the :cmd:`Inductive` and :cmd:`CoInductive`
+   commands). Primitive projections extend the Calculus of Inductive
+   Constructions with a new binary term constructor `r.(p)` representing a
+   primitive projection `p` applied to a record object `r` (i.e., primitive
+   projections are always applied). Even if the record type has parameters,
+   these do not appear in the internal representation of applications of the
+   projection, considerably reducing the sizes of terms when manipulating
+   parameterized records and type checking time. On the user level, primitive
+   projections can be used as a replacement for the usual defined ones, although
+   there are a few notable differences.
+
+.. attr:: projections(primitive{? = {| yes | no } })
+   :name: projections(primitive)
+
+   This :term:`boolean attribute` can be used to override the value of the
+   :flag:`Primitive Projections` :term:`flag` for the record type being
+   defined.
 
 .. flag:: Printing Primitive Projection Parameters
 
@@ -256,47 +289,17 @@ Primitive Projections
    printing time (even though they are absent in the actual AST manipulated
    by the kernel).
 
-Primitive Record Types
-++++++++++++++++++++++
-
-When the :flag:`Primitive Projections` flag is on, definitions of
-record types change meaning. When a type is declared with primitive
-projections, its :g:`match` construct is disabled (see :ref:`primitive_projections` though).
-To eliminate the (co-)inductive type, one must use its defined primitive projections.
-
-.. The following paragraph is quite redundant with what is above
-
-For compatibility, the parameters still appear to the user when
-printing terms even though they are absent in the actual AST
-manipulated by the kernel. This can be changed by unsetting the
-:flag:`Printing Primitive Projection Parameters` flag.
-
-There are currently two ways to introduce primitive records types:
-
-#. Through the ``Record`` command, in which case the type has to be
-   non-recursive. The defined type enjoys eta-conversion definitionally,
-   that is the generalized form of surjective pairing for records:
-   `r` ``= Build_``\ `R` ``(``\ `r`\ ``.(``\ |p_1|\ ``) …`` `r`\ ``.(``\ |p_n|\ ``))``.
-   Eta-conversion allows to define dependent elimination for these types as well.
-#. Through the ``Inductive`` and ``CoInductive`` commands, when
-   the :term:`body` of the definition is a record declaration of the form
-   ``Build_``\ `R` ``{`` |p_1| ``:`` |t_1|\ ``; … ;`` |p_n| ``:`` |t_n| ``}``.
-   In this case the types can be recursive and eta-conversion is disallowed. These kind of record types
-   differ from their traditional versions in the sense that dependent
-   elimination is not available for them and only non-dependent case analysis
-   can be defined.
-
 Reduction
 +++++++++
 
 The basic reduction rule of a primitive projection is
 |p_i| ``(Build_``\ `R` |t_1| … |t_n|\ ``)`` :math:`{\rightarrow_{\iota}}` |t_i|.
-However, to take the δ flag into
-account, projections can be in two states: folded or unfolded. An
-unfolded primitive projection application obeys the rule above, while
-the folded version delta-reduces to the unfolded version. This allows to
-precisely mimic the usual unfolding rules of :term:`constants <constant>`. Projections
-obey the usual ``simpl`` flags of the ``Arguments`` command in particular.
+However, to take the δ flag into account, projections can be in two states:
+folded or unfolded. An unfolded primitive projection application obeys the rule
+above, while the folded version delta-reduces to the unfolded version. This
+allows to precisely mimic the usual unfolding rules of :term:`constants <constant>`.
+Projections obey the usual ``simpl`` flags of the :cmd:`Arguments`
+command in particular.
 There is currently no way to input unfolded primitive projections at the
 user-level, and there is no way to display unfolded projections differently
 from folded ones.
@@ -305,17 +308,16 @@ from folded ones.
 Compatibility Projections and :g:`match`
 ++++++++++++++++++++++++++++++++++++++++
 
-To ease compatibility with ordinary record types, each primitive
-projection is also defined as an ordinary :term:`constant` taking parameters and
-an object of the record type as arguments, and whose :term:`body` is an
-application of the unfolded primitive projection of the same name. These
-constants are used when elaborating partial applications of the
-projection. One can distinguish them from applications of the primitive
-projection if the :flag:`Printing Primitive Projection Parameters` flag
-is off: For a primitive projection application, parameters are printed
-as underscores while for the compatibility projections they are printed
-as usual.
+To ease compatibility with ordinary record types, each primitive projection is
+also defined as an ordinary :term:`constant` taking parameters and an object of
+the record type as arguments, and whose :term:`body` is an application of the
+unfolded primitive projection of the same name. These constants are used when
+elaborating partial applications of the projection. One can distinguish them
+from applications of the primitive projection if the :flag:`Printing Primitive
+Projection Parameters` flag is off: For a primitive projection application,
+parameters are printed as underscores while for the compatibility projections
+they are printed as usual.
 
-Additionally, user-written :g:`match` constructs on primitive records
-are desugared into substitution of the projections, they cannot be
-printed back as :g:`match` constructs.
+Additionally, user-written :g:`match` constructs on primitive records are
+desugared into substitution of the projections, they cannot be printed back as
+:g:`match` constructs.

@@ -33,8 +33,11 @@ Inductive types
 
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`,
-   :attr:`bypass_check(positivity)`, :attr:`bypass_check(universes)`, and
+   :attr:`bypass_check(positivity)`, :attr:`bypass_check(universes)` and
    :attr:`private(matching)` attributes.
+
+   When record syntax is used, this command also supports the
+   :attr:`projections(primitive)` :term:`attribute`.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
    The :n:`@ident`\s are simultaneously added to the global environment before
