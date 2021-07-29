@@ -67,5 +67,5 @@ let () =
     GMain.main ();
     failwith "Gtk loop ended"
   with e ->
-    Minilib.log ("CoqIde unexpected error:" ^ Printexc.to_string e);
+    Minilib.log ("CoqIDE unexpected error:" ^ Printexc.to_string e);
     Coqide.crash_save 127

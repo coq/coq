@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Applicative part of the interface of CoqIde calls to Coq *)
+(** * Applicative part of the interface of CoqIDE calls to Coq *)
 
 open Interface
 open Xml_datatype

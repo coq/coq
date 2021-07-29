@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Declarative part of the interface of CoqIde calls to Coq *)
+(** * Declarative part of the interface of CoqIDE calls to Coq *)
 
 (** * Generic structures *)
 
@@ -131,7 +131,7 @@ type 'a value =
 
 type ('a, 'b) union = ('a, 'b) Util.union
 
-(* Request/Reply message protocol between Coq and CoqIde *)
+(* Request/Reply message protocol between Coq and CoqIDE *)
 
 (**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
      on top of the current edit position (that is asserted to be [sid])

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * The CoqIde main module *)
+(** * The CoqIDE main module *)
 
 (** The arguments that will be passed to coqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)

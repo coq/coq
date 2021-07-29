@@ -18,7 +18,7 @@ let protocol_version = "20210506"
 type msg_format = Richpp of int | Ppcmds
 let msg_format = ref (Richpp 72)
 
-(** * Interface of calls to Coq by CoqIde *)
+(** * Interface of calls to Coq by CoqIDE *)
 
 open Util
 open Interface

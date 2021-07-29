@@ -9,7 +9,7 @@
 ##########################################################################
 
 ###########################################################################
-# CoqIde special targets
+# CoqIDE special targets
 ###########################################################################
 
 COQIDE:=$(CBIN)/coqide$(EXE)
@@ -40,7 +40,7 @@ endif
 # $(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(DATADIR)
 
 ###########################################################################
-# CoqIde for Windows special targets
+# CoqIDE for Windows special targets
 ###########################################################################
 
 # This is either x86_64-w64-mingw32 or i686-w64-mingw32
