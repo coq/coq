@@ -230,7 +230,7 @@ let occur_rigidly flags env evd (evk,_) t =
 let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let open ValuePattern in
   let (proji, u), arg = Termops.global_app_of_constr sigma t1 in
-  let t2, sk2' = decompose_app_vect sigma (shrink_eta env sigma t2) in
+  let t2, sk2' = decompose_app_vect sigma (shrink_eta sigma t2) in
   let sk2 = Stack.append_app sk2' sk2 in
   let (sigma, solution), sk2_effective =
     let t2 =
