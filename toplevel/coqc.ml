@@ -69,13 +69,14 @@ let coqc_main ((copts,_),stm_opts) injections ~opts =
   CProfile.print_profile ()
 
 let coqc_run copts ~opts injections =
+  let err_suf = Option.map Pp.str (fst (fst copts)).Coqcargs.error_suffix in
   let _feeder = Feedback.add_feeder Coqloop.coqloop_feed in
   try
     coqc_main ~opts copts injections;
     exit 0
   with exn ->
     flush_all();
-    Topfmt.print_err_exn exn;
+    Topfmt.print_err_exn ?err_suf exn;
     flush_all();
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
     exit exit_code

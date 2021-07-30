@@ -41,6 +41,8 @@ type t =
   ; glob_out    : Dumpglob.glob_output
 
   ; output_context : bool
+
+  ; error_suffix : string option (* custom linebreak between error messages *)
   }
 
 val default : t

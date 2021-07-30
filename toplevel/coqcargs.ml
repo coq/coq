@@ -27,6 +27,8 @@ type t =
   ; glob_out    : Dumpglob.glob_output
 
   ; output_context : bool
+
+  ; error_suffix : string option (* custom linebreak between error messages *)
   }
 
 let default =
@@ -46,6 +48,8 @@ let default =
   ; glob_out = Dumpglob.MultFiles
 
   ; output_context = false
+
+  ; error_suffix = None
   }
 
 let depr opt =
@@ -177,6 +181,12 @@ let parse arglist : t =
         | "-verbose" ->
           echo := true;
           oval
+
+        (* Custom break between error messages *)
+        | "-errorsuffix" ->
+          let suf = next () in
+          { oval with error_suffix = Some suf }
+
         (* Output filename *)
         | "-o" ->
           { oval with compilation_output_name = Some (next ()) }
@@ -185,10 +195,10 @@ let parse arglist : t =
           set_compilation_mode oval BuildVio
         | "-vio" ->
           set_compilation_mode oval BuildVio
-        |"-vos" ->
+        | "-vos" ->
           Flags.load_vos_libraries := true;
           { oval with compilation_mode = BuildVos }
-        |"-vok" ->
+        | "-vok" ->
           Flags.load_vos_libraries := true;
           { oval with compilation_mode = BuildVok }
 

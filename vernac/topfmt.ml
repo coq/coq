@@ -394,11 +394,11 @@ let pr_phase ?loc () =
      (* Note: interactive messages such as "foo is defined" are not located *)
      None
 
-let print_err_exn any =
+let print_err_exn ?(err_suf = fnl ()) any =
   let (e, info) = Exninfo.capture any in
   let loc = Loc.get_loc info in
   let pre_hdr = pr_phase ?loc () in
-  let msg = CErrors.iprint (e, info) ++ fnl () in
+  let msg = CErrors.iprint (e, info) ++ err_suf in
   std_logger ?pre_hdr Feedback.Error msg
 
 let with_output_to_file fname func input =
