@@ -426,6 +426,16 @@ let sort_of_rel env evm rel =
 
 let is_applied_rewrite_relation = PropGlobal.is_applied_rewrite_relation
 
+let do_subrelation_id = Id.of_string "do_subrelation"
+let do_subrelation_decl env evars prop =
+  let dosub, appsub =
+    if prop then PropGlobal.do_subrelation, PropGlobal.apply_subrelation
+    else TypeGlobal.do_subrelation, TypeGlobal.apply_subrelation in
+  (* in both cases, apply_subrelation is in Prop: universes can be thrown away *)
+  let body = snd (app_poly_sort prop env evars dosub [||]) in
+  let typ = snd (app_poly_nocheck env evars appsub [||]) in
+  (body,typ)
+
 (* let _ = *)
 (*   Hook.set Equality.is_applied_rewrite_relation is_applied_rewrite_relation *)
 
@@ -797,14 +807,9 @@ let resolve_morphism env m args args' (b,cstr) evars =
     let evars, app = app_poly_sort b env evars (if b then PropGlobal.proper_type env else TypeGlobal.proper_type env)
       cl_args in
     let env' =
-      let dosub, appsub =
-        if b then PropGlobal.do_subrelation, PropGlobal.apply_subrelation
-        else TypeGlobal.do_subrelation, TypeGlobal.apply_subrelation
-      in
+      let body, typ = do_subrelation_decl env evars b in
         EConstr.push_named
-          (LocalDef (make_annot (Id.of_string "do_subrelation") Sorts.Relevant,
-                     snd (app_poly_sort b env evars dosub [||]),
-                     snd (app_poly_nocheck env evars appsub [||])))
+          (LocalDef (make_annot do_subrelation_id Sorts.Relevant, body, typ))
           env
     in
     let evars, morph = new_cstr_evar evars env' app in
@@ -1447,12 +1452,13 @@ type result = (evar_map * constr option * types) option option
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let sigma, sort = Typing.sort_of env sigma concl in
+  let prop = Sorts.is_prop sort in
   let evdref = ref sigma in
   let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
-    let prop, (evars, arrow) =
-      if Sorts.is_prop sort then true, app_poly_sort true env evars impl [||]
-      else false, app_poly_sort false env evars TypeGlobal.arrow [||]
+    let (evars, arrow) =
+      if prop then app_poly_sort true env evars impl [||]
+      else app_poly_sort false env evars TypeGlobal.arrow [||]
     in
     match is_hyp with
     | None ->
@@ -1476,7 +1482,8 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
                 Termops.pr_evar_info env evars (Evd.find evars ev)))
         cstrs
     in
-    let newt = res.rew_to in
+    let subst = [do_subrelation_id, fst (do_subrelation_decl env res.rew_evars prop)] in
+    let newt = replace_vars subst res.rew_to in
     let res = match res.rew_prf with
       | RewCast c -> None
       | RewPrf (rel, p) ->
@@ -1491,7 +1498,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
           | None -> term
           | Some id -> mkApp (term, [| mkVar id |])
         in
-        Some proof
+        Some (replace_vars subst proof)
     in
     Some (Some (evars, res, newt))
 
