@@ -57,12 +57,12 @@ let rec decompose_term env sigma t =
       App (f,args)->
         let tf=decompose_term env sigma f in
         let targs=Array.map (decompose_term env sigma) args in
-          Array.fold_left (fun s t->Appli (s,t)) tf targs
+          Array.fold_left (fun s t-> ATerm.mkAppli (s,t)) tf targs
     | Prod (_,a,_b) when noccurn sigma 1 _b ->
         let b = Termops.pop _b in
         let sort_b = sf_of env sigma b in
         let sort_a = sf_of env sigma a in
-        Appli(Appli(Product (sort_a,sort_b) ,
+        ATerm.mkAppli (ATerm.mkAppli (ATerm.mkProduct (sort_a,sort_b),
                     decompose_term env sigma a),
               decompose_term env sigma b)
     | Construct c ->
@@ -72,18 +72,18 @@ let rec decompose_term env sigma t =
         let canon_ind = canon_mind,i_ind in
         let (oib,_)=Global.lookup_inductive (canon_ind) in
         let nargs=constructor_nallargs env (canon_ind,i_con) in
-          Constructor {ci_constr= ((canon_ind,i_con),u);
+          ATerm.mkConstructor {ci_constr= ((canon_ind,i_con),u);
                        ci_arity=nargs;
                        ci_nhyps=nargs-oib.mind_nparams}
     | Ind c ->
         let (mind,i_ind),u = c in
         let u = EInstance.kind sigma u in
         let canon_mind = MutInd.make1 (MutInd.canonical mind) in
-        let canon_ind = canon_mind,i_ind in  (Symb (Constr.mkIndU (canon_ind,u)))
+        let canon_ind = canon_mind,i_ind in ATerm.mkSymb (Constr.mkIndU (canon_ind,u))
     | Const (c,u) ->
         let u = EInstance.kind sigma u in
         let canon_const = Constant.make1 (Constant.canonical c) in
-          (Symb (Constr.mkConstU (canon_const,u)))
+          ATerm.mkSymb (Constr.mkConstU (canon_const,u))
     | Proj (p, c) ->
         let canon_mind kn = MutInd.make1 (MutInd.canonical kn) in
         let p' = Projection.map canon_mind p in
@@ -91,7 +91,7 @@ let rec decompose_term env sigma t =
         decompose_term env sigma c
     | _ ->
        let t = Termops.strip_outer_cast sigma t in
-       if closed0 sigma t then Symb (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) else raise Not_found
+       if closed0 sigma t then ATerm.mkSymb (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) else raise Not_found
 
 (* decompose equality in members and type *)
 
@@ -127,7 +127,7 @@ let rec pattern_of_constr env sigma c =
         let pb,sb = pattern_of_constr env sigma b in
         let sort_b = sf_of env sigma b in
         let sort_a = sf_of env sigma a in
-          PApp(Product (sort_a,sort_b),
+          PApp(ATerm.mkProduct (sort_a,sort_b),
                [pa;pb]),(Int.Set.union sa sb)
     | Rel i -> PVar (i, []),Int.Set.singleton i
     | _ ->
@@ -216,7 +216,7 @@ let make_prb gls depth additional_terms b =
     List.iter
       (fun c ->
          let t = decompose_term env sigma c in
-           ignore (add_term state t)) additional_terms;
+           ignore (add_aterm state t)) additional_terms;
     List.iter
       (fun decl ->
          let id = NamedDecl.get_id decl in
@@ -311,7 +311,7 @@ let type_and_refresh c k =
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k ty)
   end
 
-let constr_of_term c = EConstr.of_constr (constr_of_term c)
+let constr_of_term c = EConstr.of_constr (ATerm.constr c)
 
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
@@ -437,7 +437,7 @@ let discriminate_tac cstru p =
 
 let build_term_to_complete uf pac =
   let cinfo = get_constructor_info uf pac.cnode in
-  let real_args = List.rev_map (fun i -> constr_of_term (term uf i)) pac.args in
+  let real_args = List.rev_map (fun i -> constr_of_term (aterm uf i)) pac.args in
   let (kn, u) = cinfo.ci_constr in
   (applist (mkConstructU (kn, EInstance.make u), real_args), pac.arity)
 
@@ -487,7 +487,7 @@ let cc_tactic depth additional_terms b =
       | Contradiction dis ->
         let env = Proofview.Goal.env gl in
         let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in
-        let ta=term uf dis.lhs and tb=term uf dis.rhs in
+        let ta=aterm uf dis.lhs and tb=aterm uf dis.rhs in
         match dis.rule with
           Goal -> proof_tac p
         | Hyp id -> refute_tac (EConstr.of_constr id) ta tb p

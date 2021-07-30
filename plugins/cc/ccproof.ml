@@ -19,21 +19,21 @@ open Pp
 type rule=
     Ax of constr
   | SymAx of constr
-  | Refl of term
+  | Refl of ATerm.t
   | Trans of proof*proof
   | Congr of proof*proof
   | Inject of proof*pconstructor*int*int
 and proof =
-    {p_lhs:term;p_rhs:term;p_rule:rule}
+    {p_lhs:ATerm.t;p_rhs:ATerm.t;p_rule:rule}
 
 let prefl t = {p_lhs=t;p_rhs=t;p_rule=Refl t}
 
 let pcongr p1 p2 =
   match p1.p_rule,p2.p_rule with
-    Refl t1, Refl t2 -> prefl (Appli (t1,t2))
+    Refl t1, Refl t2 -> prefl (ATerm.mkAppli (t1, t2))
   | _, _ ->
-      {p_lhs=Appli (p1.p_lhs,p2.p_lhs);
-       p_rhs=Appli (p1.p_rhs,p2.p_rhs);
+      {p_lhs=ATerm.mkAppli (p1.p_lhs, p2.p_lhs);
+       p_rhs=ATerm.mkAppli (p1.p_rhs, p2.p_rhs);
        p_rule=Congr (p1,p2)}
 
 let rec ptrans p1 p3=
@@ -45,7 +45,7 @@ let rec ptrans p1 p3=
     | Congr(p1,p2), Trans({p_rule=Congr(p3,p4)},p5) ->
         ptrans (pcongr (ptrans p1 p3) (ptrans p2 p4)) p5
   | _, _ ->
-      if term_equal p1.p_rhs p3.p_lhs then
+      if ATerm.equal p1.p_rhs p3.p_lhs then
         {p_lhs=p1.p_lhs;
          p_rhs=p3.p_rhs;
          p_rule=Trans (p1,p3)}
@@ -81,22 +81,14 @@ let psymax axioms s =
      p_rhs=l;
      p_rule=SymAx s}
 
-let rec nth_arg t n=
-  match t with
-      Appli (t1,t2)->
-        if n>0 then
-          nth_arg t1 (n-1)
-        else t2
-    | _ -> anomaly ~label:"nth_arg" (Pp.str "not enough args.")
-
 let pinject p c n a =
-  {p_lhs=nth_arg p.p_lhs (n-a);
-   p_rhs=nth_arg p.p_rhs (n-a);
+  {p_lhs=ATerm.nth_arg p.p_lhs (n-a);
+   p_rhs=ATerm.nth_arg p.p_rhs (n-a);
    p_rule=Inject(p,c,n,a)}
 
 let rec equal_proof env sigma uf i j=
   debug_congruence (fun () -> str "equal_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
-  if i=j then prefl (term uf i) else
+  if i=j then prefl (aterm uf i) else
     let (li,lj)=join_path uf i j in
     ptrans (path_proof env sigma uf i li) (psym (path_proof env sigma uf j lj))
 
@@ -125,7 +117,7 @@ and constr_proof env sigma uf i ipac=
   else
     let fipac=tail_pac ipac in
     let (fi,arg)=subterms uf t in
-    let targ=term uf arg in
+    let targ=aterm uf arg in
     let p=constr_proof env sigma uf fi fipac in
     ptrans eq_it (pcongr p (prefl targ))
 
@@ -133,7 +125,7 @@ and path_proof env sigma uf i l=
   debug_congruence (fun () -> str "path_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ str "{" ++
            (prlist_with_sep (fun () -> str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
   match l with
-  | [] -> prefl (term uf i)
+  | [] -> prefl (aterm uf i)
   | x::q->ptrans (path_proof env sigma uf (snd (fst x)) q) (edge_proof env sigma uf x)
 
 and congr_proof env sigma uf i j=

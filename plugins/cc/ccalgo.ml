@@ -21,6 +21,7 @@ open Context
 open Vars
 open Tacmach
 open Util
+open Lazy
 
 let init_size=5
 
@@ -122,35 +123,112 @@ let family_eq f1 f2 = match f1, f2 with
   | Type _, Type _ -> true
   | _ -> false
 
-type term=
+
+type 'a term =
     Symb of constr
   | Product of Sorts.t * Sorts.t
   | Eps of Id.t
-  | Appli of term*term
+  | Appli of 'a * 'a
   | Constructor of cinfo (* constructor arity + nhyps *)
 
-let rec term_equal t1 t2 =
-  match t1, t2 with
-    | Symb c1, Symb c2 -> eq_constr_nounivs c1 c2
-    | Product (s1, t1), Product (s2, t2) -> family_eq s1 s2 && family_eq t1 t2
-    | Eps i1, Eps i2 -> Id.equal i1 i2
-    | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
-    | Constructor {ci_constr=(c1,u1); ci_arity=i1; ci_nhyps=j1},
-      Constructor {ci_constr=(c2,u2); ci_arity=i2; ci_nhyps=j2} ->
-      Int.equal i1 i2 && Int.equal j1 j2 && Construct.CanOrd.equal c1 c2 (* FIXME check eq? *)
-    | _ -> false
+(* terms with eagerly cached constr and hash *)
+module ATerm :
+sig
+  type t
+  val proj : t -> t term
+  val make : t term -> t
+  val mkSymb : constr -> t
+  val mkProduct : (Sorts.t * Sorts.t) -> t
+  val mkEps : Id.t -> t
+  val mkAppli : (t * t) -> t
+  val mkConstructor : cinfo -> t
 
-open Hashset.Combine
+  val equal : t -> t -> bool
+  val constr : t -> constr
+  val hash : t -> int
+  val nth_arg : t -> int -> t
+end =
+struct
+  type t = {
+    term : t term;
+    constr : constr lazy_t;
+    hash : int }
 
-let rec hash_term = function
-  | Symb c -> combine 1 (Constr.hash c)
-  | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
-  | Eps i -> combine 3 (Id.hash i)
-  | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
-  | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (Construct.CanOrd.hash c) i j
+  let proj t = t.term
+
+  let rec term_equal t1 t2 =
+    match t1, t2 with
+      | Symb c1, Symb c2 -> eq_constr_nounivs c1 c2
+      | Product (s1, t1), Product (s2, t2) -> family_eq s1 s2 && family_eq t1 t2
+      | Eps i1, Eps i2 -> Id.equal i1 i2
+      | Appli (t1', u1'), Appli (t2', u2') -> term_equal t1'.term t2'.term && term_equal u1'.term u2'.term
+      | Constructor {ci_constr=(c1,u1); ci_arity=i1; ci_nhyps=j1},
+        Constructor {ci_constr=(c2,u2); ci_arity=i2; ci_nhyps=j2} ->
+          Int.equal i1 i2 && Int.equal j1 j2 && Construct.CanOrd.equal c1 c2 (* FIXME check eq? *)
+      | _ -> false
+
+  let equal t1 t2 = term_equal t1.term t2.term
+
+  open Hashset.Combine
+
+  let hash_term t =
+    match t with
+    | Symb c -> combine 1 (Constr.hash c)
+    | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
+    | Eps i -> combine 3 (Id.hash i)
+    | Appli (t1', t2') -> combine3 4 (t1'.hash) (t2'.hash)
+    | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (Construct.CanOrd.hash c) i j
+
+  let hash t = t.hash
+
+  (* rebuild a constr from an applicative term *)
+
+  let _A_ = Name (Id.of_string "A")
+  let _B_ = Name (Id.of_string "A")
+  let _body_ =  mkProd(make_annot Anonymous Sorts.Relevant,mkRel 2,mkRel 2)
+
+  let cc_product s1 s2 =
+    mkLambda(make_annot _A_ Sorts.Relevant,mkSort(s1),
+             mkLambda(make_annot _B_ Sorts.Relevant,mkSort(s2),_body_))
+
+  let rec constr_of_term = function
+      Symb s -> s
+    | Product(s1,s2) -> cc_product s1 s2
+    | Eps id -> mkVar id
+    | Constructor cinfo -> mkConstructU cinfo.ci_constr
+    | Appli (s1',s2') -> make_app [force s2'.constr] s1'
+  and make_app l t' =
+    match t'.term with
+      Appli (s1',s2')->make_app ((force s2'.constr)::l) s1'
+    | _ -> Term.applist (force t'.constr, l)
+
+  let constr t = force t.constr
+
+  let make t = {
+    term = t;
+    constr = lazy (constr_of_term t);
+    hash = hash_term t }
+
+  let mkSymb s = make (Symb s)
+
+  let mkProduct (s1, s2) = make (Product (s1, s2))
+
+  let mkEps id = make (Eps id)
+
+  let mkAppli (t1', t2') = make (Appli (t1', t2'))
+
+  let mkConstructor info = make (Constructor info)
+
+  let rec nth_arg t n =
+    match t.term with
+      Appli (t1',t2')->
+        if n>0 then nth_arg t1' (n-1)
+        else t2'
+    | _ -> anomaly ~label:"nth_arg" (Pp.str "not enough args.")
+end
 
 type ccpattern =
-    PApp of term * ccpattern list (* arguments are reversed *)
+    PApp of ATerm.t * ccpattern list (* arguments are reversed *)
   | PVar of int * ccpattern list (* arguments are reversed *)
 
 type rule=
@@ -216,7 +294,7 @@ type node =
      mutable cpath: int;
      mutable constructors: int PacMap.t;
      vertex:vertex;
-     term:term}
+     aterm:ATerm.t}
 
 module Constrhash = Hashtbl.Make
   (struct type t = constr
@@ -226,9 +304,9 @@ module Constrhash = Hashtbl.Make
 module Typehash = Constrhash
 
 module Termhash = Hashtbl.Make
-  (struct type t = term
-          let equal = term_equal
-          let hash = hash_term
+  (struct type t = ATerm.t
+          let equal = ATerm.equal
+          let hash = ATerm.hash
    end)
 
 module Identhash = Hashtbl.Make
@@ -241,7 +319,7 @@ type forest=
     {mutable max_size:int;
      mutable size:int;
      mutable map: node array;
-     axioms: (term*term) Constrhash.t;
+     axioms: (ATerm.t * ATerm.t) Constrhash.t;
      mutable epsilons: pa_constructor list;
      syms: int Termhash.t}
 
@@ -267,7 +345,7 @@ let dummy_node =
     cpath=min_int;
     constructors=PacMap.empty;
     vertex=Leaf;
-    term=Symb (mkRel min_int)
+    aterm= ATerm.mkSymb (mkRel min_int)
   }
 
 let empty_forest() =
@@ -325,7 +403,7 @@ let rec find_oldest_pac uf i pac=
 
 
 let get_constructor_info uf i=
-  match uf.map.(i).term with
+  match ATerm.proj uf.map.(i).aterm with
       Constructor cinfo->cinfo
     | _ -> anomaly ~label:"get_constructor" (Pp.str "not a constructor.")
 
@@ -367,7 +445,7 @@ let add_paf rep paf t =
     try PafMap.find paf rep.functions with Not_found -> Int.Set.empty in
     rep.functions<- PafMap.add paf (Int.Set.add t already) rep.functions
 
-let term uf i=uf.map.(i).term
+let aterm uf i=uf.map.(i).aterm
 
 let subterms uf i=
   match uf.map.(i).vertex with
@@ -400,30 +478,10 @@ let new_representative typ =
    class_type=typ;
    functions=PafMap.empty}
 
-(* rebuild a constr from an applicative term *)
 
-let _A_ = Name (Id.of_string "A")
-let _B_ = Name (Id.of_string "A")
-let _body_ =  mkProd(make_annot Anonymous Sorts.Relevant,mkRel 2,mkRel 2)
-
-let cc_product s1 s2 =
-  mkLambda(make_annot _A_ Sorts.Relevant,mkSort(s1),
-           mkLambda(make_annot _B_ Sorts.Relevant,mkSort(s2),_body_))
-
-let rec constr_of_term = function
-    Symb s-> s
-  | Product(s1,s2) -> cc_product s1 s2
-  | Eps id -> mkVar id
-  | Constructor cinfo -> mkConstructU cinfo.ci_constr
-  | Appli (s1,s2)->
-      make_app [(constr_of_term s2)] s1
-and make_app l=function
-    Appli (s1,s2)->make_app ((constr_of_term s2)::l) s1
-  | other -> Term.applist (constr_of_term other,l)
-
-let rec canonize_name sigma c =
+let rec canonize_name c =
   let c = EConstr.Unsafe.to_constr c in
-  let func c = canonize_name sigma (EConstr.of_constr c) in
+  let func c = canonize_name (EConstr.of_constr c) in
     match Constr.kind c with
       | Const (kn,u) ->
           let canon_const = Constant.make1 (Constant.canonical kn) in
@@ -453,7 +511,7 @@ let rec canonize_name sigma c =
 let build_subst uf subst =
   Array.map
     (fun i ->
-      try term uf i
+      try aterm uf i
       with e when CErrors.noncritical e ->
         anomaly (Pp.str "incomplete matching."))
     subst
@@ -461,29 +519,29 @@ let build_subst uf subst =
 let rec inst_pattern subst = function
     PVar (i, args) ->
       List.fold_right
-        (fun spat f -> Appli (f,inst_pattern subst spat))
+        (fun spat f -> ATerm.mkAppli (f,inst_pattern subst spat))
            args subst.(pred i)
-  | PApp (t, args) ->
+  | PApp (t', args) ->
       List.fold_right
-        (fun spat f -> Appli (f,inst_pattern subst spat))
-           args t
+        (fun spat f -> ATerm.mkAppli (f,inst_pattern subst spat))
+           args t'
 
 let pr_idx_term env sigma uf i = str "[" ++ int i ++ str ":=" ++
-  Printer.pr_econstr_env env sigma (EConstr.of_constr (constr_of_term (term uf i))) ++ str "]"
+  Printer.pr_econstr_env env sigma (EConstr.of_constr (ATerm.constr (aterm uf i))) ++ str "]"
 
-let pr_term env sigma t = str "[" ++
-  Printer.pr_econstr_env env sigma (EConstr.of_constr (constr_of_term t)) ++ str "]"
+let pr_term env sigma t' = str "[" ++
+  Printer.pr_econstr_env env sigma (EConstr.of_constr (ATerm.constr t')) ++ str "]"
 
-let rec add_term state t=
+let rec add_aterm state t' =
   let uf=state.uf in
-    try Termhash.find uf.syms t with
+    try Termhash.find uf.syms t' with
         Not_found ->
           let b=next uf in
-          let trm = constr_of_term t in
+          let trm = ATerm.constr t' in
           let typ = Retyping.get_type_of state.env state.sigma (EConstr.of_constr trm) in
-          let typ = canonize_name state.sigma typ in
+          let typ = canonize_name typ in
           let new_node=
-            match t with
+            match ATerm.proj t' with
                 Symb _ | Product (_,_) ->
                   let paf =
                     {fsym=b;
@@ -493,15 +551,15 @@ let rec add_term state t=
                      cpath= -1;
                      constructors=PacMap.empty;
                      vertex= Leaf;
-                     term= t}
+                     aterm= t'}
               | Eps id ->
                   {clas= Rep (new_representative typ);
                    cpath= -1;
                    constructors=PacMap.empty;
                    vertex= Leaf;
-                   term= t}
-              | Appli (t1,t2) ->
-                  let i1=add_term state t1 and i2=add_term state t2 in
+                   aterm= t'}
+              | Appli (t1',t2') ->
+                  let i1=add_aterm state t1' and i2=add_aterm state t2' in
                     add_lfather uf (find uf i1) b;
                     add_rfather uf (find uf i2) b;
                     state.terms<-Int.Set.add b state.terms;
@@ -509,7 +567,7 @@ let rec add_term state t=
                      cpath= -1;
                      constructors=PacMap.empty;
                      vertex= Node(i1,i2);
-                     term= t}
+                     aterm= t'}
               | Constructor cinfo ->
                   let paf =
                     {fsym=b;
@@ -524,25 +582,25 @@ let rec add_term state t=
                      cpath= -1;
                      constructors=PacMap.empty;
                      vertex=Leaf;
-                     term=t}
+                     aterm=t'}
           in
             uf.map.(b)<-new_node;
-            Termhash.add uf.syms t b;
+            Termhash.add uf.syms t' b;
             Typehash.replace state.by_type typ
               (Int.Set.add b
                  (try Typehash.find state.by_type typ with
                       Not_found -> Int.Set.empty));
             b
 
-let add_equality state c s t=
-  let i = add_term state s in
-  let j = add_term state t in
+let add_equality state c s' t' =
+  let i = add_aterm state s' in
+  let j = add_aterm state t' in
     Queue.add {lhs=i;rhs=j;rule=Axiom(c,false)} state.combine;
-    Constrhash.add state.uf.axioms c (s,t)
+    Constrhash.add state.uf.axioms c (s',t')
 
-let add_disequality state from s t =
-  let i = add_term state s in
-  let j = add_term state t in
+let add_disequality state from s' t' =
+  let i = add_aterm state s' in
+  let j = add_aterm state t' in
     state.diseq<-{lhs=i;rhs=j;rule=from}::state.diseq
 
 let add_quant state id pol (nvars,valid1,patt1,valid2,patt2) =
@@ -576,7 +634,7 @@ let add_inst state (inst,int_subst) =
       Identhash.add state.q_history inst.qe_hyp_id int_subst;
       let subst = build_subst (forest state) int_subst in
       let prfhead= mkVar inst.qe_hyp_id in
-      let args = Array.map constr_of_term subst in
+      let args = Array.map ATerm.constr subst in
       let _ = Array.rev args in (* highest deBruijn index first *)
       let prf= mkApp(prfhead,args) in
           let s = inst_pattern subst inst.qe_lhs
@@ -798,21 +856,21 @@ let new_state_var typ state =
 let complete_one_class state i=
   match (get_representative state.uf i).inductive_status with
   | Partial pac ->
-    let rec app t typ n =
-      if n<=0 then t else
+    let rec app t' typ n =
+      if n<=0 then t' else
         let _,etyp,rest= destProd typ in
         let id = new_state_var (EConstr.of_constr etyp) state in
-        app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
+        app (ATerm.mkAppli (t',ATerm.mkEps id)) (substl [mkVar id] rest) (n-1) in
     let c = Retyping.get_type_of state.env state.sigma
-        (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
+        (EConstr.of_constr (ATerm.constr (aterm state.uf pac.cnode))) in
     let c = EConstr.Unsafe.to_constr c in
     let args =
-      List.map (fun i -> constr_of_term (term state.uf  i))
+      List.map (fun i -> ATerm.constr (aterm state.uf i))
         pac.args in
     let typ = Term.prod_applist c (List.rev args) in
-    let ct = app (term state.uf i) typ pac.arity in
+    let ct = app (aterm state.uf i) typ pac.arity in
     state.uf.epsilons <- pac :: state.uf.epsilons;
-    ignore (add_term state ct)
+    ignore (add_aterm state ct)
   | _ -> anomaly (Pp.str "wrong incomplete class.")
 
 let complete state =
@@ -1002,5 +1060,3 @@ let rec execute first_run state =
       if first_run then Discrimination (s,spac,t,tpac)
       else Incomplete
     end
-
-
