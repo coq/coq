@@ -400,6 +400,13 @@ let handle_exn (e, info) =
       | Some (valid, _) -> valid, loc_of info, mk_msg ()
       | None -> dummy, loc_of info, mk_msg ()
 
+let set_cwd () =
+  if Coq_config.arch = "Darwin" && Sys.getcwd () = "/" then
+    (* Suspectingly opened with launchd, i.e. double-click or open *)
+    (* We rebind "/" which would is not writable - see #14721 *)
+    (let home = Envars.home ~warn:(fun x -> Feedback.msg_warning (str x)) in
+     try Sys.chdir home with e when CErrors.noncritical e -> ())
+
 let init =
   let initialized = ref false in
   fun file ->
@@ -407,6 +414,7 @@ let init =
    else begin
      let init_sid = Stm.get_current_state ~doc:(get_doc ()) in
      initialized := true;
+     set_cwd ();
      match file with
      | None -> init_sid
      | Some file ->
