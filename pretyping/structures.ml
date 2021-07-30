@@ -229,7 +229,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
   let lpj = keep_true_projections lpj in
   let nenv = Termops.push_rels_assum sign env in
   List.fold_left2 (fun acc (spopt, canonical) t ->
-      let t = EConstr.Unsafe.to_constr (shrink_eta env (EConstr.of_constr t)) in
+      let t = EConstr.Unsafe.to_constr (shrink_eta env (Evd.from_env env) (EConstr.of_constr t)) in
       if canonical
       then
         Option.cata (fun proji_sp ->

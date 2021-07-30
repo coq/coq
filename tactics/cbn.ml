@@ -546,7 +546,7 @@ let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
   in
   Vars.substl subst (snd br)
 
-let rec whd_state_gen ?csts flags env sigma =
+let whd_state_gen ?csts flags env sigma =
   let open Context.Named.Declaration in
   let open ReductionBehaviour in
   let rec whrec cst_l (x, stack) =
@@ -685,22 +685,6 @@ let rec whd_state_gen ?csts flags env sigma =
       (match Stack.decomp stack with
       | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
         apply_subst (fun _ -> whrec) [] sigma cst_l x stack
-      | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
-        let env' = push_rel (LocalAssum (na, t)) env in
-        let whrec' = whd_state_gen flags env' sigma in
-        (match EConstr.kind sigma (Stack.zip ~refold:true sigma (whrec' (c, Stack.empty))) with
-        | App (f,cl) ->
-          let napp = Array.length cl in
-          if napp > 0 then
-            let (x', l') = whrec' (Array.last cl, Stack.empty) in
-            match EConstr.kind sigma x', l' with
-            | Rel 1, [] ->
-              let lc = Array.sub cl 0 (napp-1) in
-              let u = if Int.equal napp 1 then f else mkApp (f,lc) in
-              if noccurn sigma 1 u then (pop u,Stack.empty),Cst_stack.empty else fold ()
-            | _ -> fold ()
-          else fold ()
-        | _ -> fold ())
       | _ -> fold ())
 
     | Case (ci,u,pms,p,iv,d,lf) ->
