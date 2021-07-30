@@ -417,10 +417,11 @@ pkg:nix:deploy:
   script:
     - nix-build https://coq.inria.fr/nix/toolbox --argstr job coq --arg override "{coq = coq:$CI_COMMIT_SHA;}" -K | cachix push coq
   only:
-    - master
-    - /^v.*\..*$/
-  # In the future, add a condition to also have $CACHIX_AUTH_TOKEN set.
-  # At the time of writing, we still rely on $CACHIX_SIGNING_KEY for Coq's Cachix.
+    refs:
+      - master
+      - /^v.*\..*$/
+    variables:
+      - $CACHIX_AUTH_TOKEN
 
 pkg:nix:deploy:channel:
   extends: .deploy-template
@@ -432,7 +433,8 @@ pkg:nix:deploy:channel:
       - master
       - /^v.*\..*$/
     variables:
-      - $CACHIX_DEPLOYMENT_KEY
+      - $CACHIX_AUTH_TOKEN && $CACHIX_DEPLOYMENT_KEY
+       # if the $CACHIX_AUTH_TOKEN variable isn't set, the job it depends on doesn't exist
   needs:
     - pkg:nix:deploy
   script:
