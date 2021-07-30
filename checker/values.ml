@@ -427,7 +427,7 @@ let v_lib =
   Tuple ("library",[|v_compiled_lib;v_libraryobjs|])
 
 let v_delayed_universes =
-  Sum ("delayed_universes", 0, [| [| v_unit |]; [| Int; v_context_set |] |])
+  Sum ("delayed_universes", 0, [| [| v_unit |]; [| v_context_set |] |])
 
 let v_opaquetable = Array (Opt (v_pair v_constr v_delayed_universes))
 let v_univopaques =

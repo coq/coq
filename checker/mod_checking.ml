@@ -55,7 +55,7 @@ let check_constant_declaration env opac kn cb opacify =
       let c, u = !indirect_accessor o in
       let env = match u, cb.const_universes with
         | Opaqueproof.PrivateMonomorphic (), Monomorphic -> env
-        | Opaqueproof.PrivatePolymorphic (_, local), Polymorphic _ ->
+        | Opaqueproof.PrivatePolymorphic local, Polymorphic _ ->
           push_subgraph local env
         | _ -> assert false
       in

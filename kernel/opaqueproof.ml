@@ -13,7 +13,7 @@ open Mod_subst
 
 type 'a delayed_universes =
 | PrivateMonomorphic of 'a
-| PrivatePolymorphic of int * Univ.ContextSet.t
+| PrivatePolymorphic of Univ.ContextSet.t
 
 type opaque_proofterm = Constr.t * unit delayed_universes
 

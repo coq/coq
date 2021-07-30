@@ -269,10 +269,9 @@ let subst_private_univs info = function
     let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in
     let () = assert (is_empty_level_subst info.abstr_info.abstr_ausubst) in
     priv
-  | Opaqueproof.PrivatePolymorphic (univs, (inst, cstrs)) ->
+  | Opaqueproof.PrivatePolymorphic (inst, cstrs) ->
     let cstrs = Univ.subst_univs_level_constraints info.abstr_info.abstr_ausubst cstrs in
-    let univs = univs + AbstractContext.size info.abstr_info.abstr_auctx in
-    Opaqueproof.PrivatePolymorphic (univs, (inst, cstrs))
+    Opaqueproof.PrivatePolymorphic (inst, cstrs)
 
 (********************************)
 (* Discharging opaque proof terms *)

@@ -59,7 +59,7 @@ let rec unzip ctx j =
 
 type typing_context =
 | MonoTyCtx of Environ.env * unsafe_type_judgment * Id.Set.t
-| PolyTyCtx of Environ.env * unsafe_type_judgment * universe_level_subst * AbstractContext.t * Id.Set.t
+| PolyTyCtx of Environ.env * unsafe_type_judgment * universe_level_subst * Id.Set.t
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
@@ -203,7 +203,7 @@ let infer_opaque env = function
       let tj = Typeops.infer_type env typ in
       let sbst, auctx = abstract_universes uctx in
       let usubst = make_instance_subst sbst in
-      let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx) in
+      let context = PolyTyCtx (env, tj, usubst, c.opaque_entry_secctx) in
       let def = OpaqueDef () in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
       {
@@ -295,7 +295,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let c = j.uj_val in
   let () = check_section_variables env declared tyj.utj_val body in
   c, Opaqueproof.PrivateMonomorphic uctx
-| PolyTyCtx (env, tj, usubst, auctx, declared) ->
+| PolyTyCtx (env, tj, usubst, declared) ->
   let ((body, ctx), side_eff) = body in
   let body, ctx', _ = handle env body side_eff in
   let ctx = ContextSet.union ctx ctx' in
@@ -307,7 +307,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
   let () = check_section_variables env declared tj.utj_val body in
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
-  def, Opaqueproof.PrivatePolymorphic (AbstractContext.size auctx, private_univs)
+  def, Opaqueproof.PrivatePolymorphic private_univs
 
 (*s Global and local constant declaration. *)
 

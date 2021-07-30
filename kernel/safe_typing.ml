@@ -49,8 +49,8 @@
      E[Delta,Gamma] |-_G
      ------------------------
      E,c:T[Delta,Gamma] |-_G'
-
    add_mind(Ind(Ind[Gamma_p](Gamma_I:=Gamma_C))):
+
 
      E[Delta,Gamma] |-_G
      ------------------------
@@ -618,7 +618,7 @@ type exported_private_constant = Constant.t * exported_opaque option
 let repr_exported_opaque o =
   let priv = match o .exp_univs with
   | None -> Opaqueproof.PrivateMonomorphic ()
-  | Some n -> Opaqueproof.PrivatePolymorphic (n, Univ.ContextSet.empty)
+  | Some _ -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
   in
   (o.exp_handle, (o.exp_body, priv))
 
@@ -769,7 +769,7 @@ let export_eff eff =
 
 let is_empty_private = function
 | Opaqueproof.PrivateMonomorphic ctx -> Univ.ContextSet.is_empty ctx
-| Opaqueproof.PrivatePolymorphic (_, ctx) -> Univ.ContextSet.is_empty ctx
+| Opaqueproof.PrivatePolymorphic ctx -> Univ.ContextSet.is_empty ctx
 
 (* Special function to call when the body of an opaque definition is provided.
   It performs the type-checking of the body immediately. *)
@@ -909,8 +909,8 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
   let ctx = match ctx with
   | Opaqueproof.PrivateMonomorphic u ->
     Opaqueproof.PrivateMonomorphic (Univ.hcons_universe_context_set u)
-  | Opaqueproof.PrivatePolymorphic (n, u) ->
-    Opaqueproof.PrivatePolymorphic (n, Univ.hcons_universe_context_set u)
+  | Opaqueproof.PrivatePolymorphic u ->
+    Opaqueproof.PrivatePolymorphic (Univ.hcons_universe_context_set u)
   in
   { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 
