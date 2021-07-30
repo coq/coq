@@ -112,11 +112,13 @@ let expmod_constr cache modlist c =
             | Not_found -> Constr.map substrec c)
 
       | Proj (p, c') ->
-        let map cst npars =
-          let _, newpars = Mindmap.find cst (snd modlist) in
-          (cst, npars + Array.length newpars)
-        in
-        let p' = try Projection.map_npars map p with Not_found -> p in
+        let ind = Projection.inductive p in
+        let p' =
+          try
+            let _, newpars = share cache (IndRef ind) modlist in
+            let map npars = npars + Array.length newpars in
+            Projection.map_npars map p
+          with Not_found -> p in
         let c'' = substrec c' in
         if p == p' && c' == c'' then c else mkProj (p', c'')
 

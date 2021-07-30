@@ -633,7 +633,7 @@ module Projection : sig
     val compare : t -> t -> int [@@ocaml.deprecated "Use QProjection.compare"]
 
     val map : (MutInd.t -> MutInd.t) -> t -> t
-    val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
+    val map_npars : (int -> int) -> t -> t
 
     val to_string : t -> string
     (** Encode as a string (not to be used for user-facing messages). *)
@@ -673,7 +673,7 @@ module Projection : sig
   [@@ocaml.deprecated "Use QProjection.compare"]
 
   val map : (MutInd.t -> MutInd.t) -> t -> t
-  val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
+  val map_npars : (int -> int) -> t -> t
 
   val to_string : t -> string
   (** Encode as a string (not to be used for user-facing messages). *)

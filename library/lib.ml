@@ -471,12 +471,13 @@ let library_part = function
   | GlobRef.VarRef id -> library_dp ()
   | ref -> dp_of_mp (mp_of_global ref)
 
-let discharge_proj_repr =
-  Projection.Repr.map_npars (fun mind npars ->
-      if not (is_in_section (GlobRef.IndRef (mind,0))) then mind, npars
-      else let modlist = replacement_context () in
-      let _, newpars = Mindmap.find mind (snd modlist) in
-      mind, npars + Array.length newpars)
+let discharge_proj_repr p =
+  let ind = Projection.Repr.inductive p in
+  if not (is_in_section (GlobRef.IndRef ind)) then p
+  else
+    let modlist = replacement_context () in
+    let _, newpars = Mindmap.find (Projection.Repr.mind p) (snd modlist) in
+    Projection.Repr.map_npars (fun npars -> npars + Array.length newpars) p
 
 let discharge_abstract_universe_context { Declarations.abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
   let open Univ in
