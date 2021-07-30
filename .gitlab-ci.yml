@@ -415,7 +415,7 @@ pkg:nix:deploy:
     name: cachix
     url: https://coq.cachix.org
   script:
-    - nix-build https://coq.inria.fr/nix/toolbox --arg override "{coq = coq:$CI_COMMIT_SHA;}" -K | cachix push coq
+    - nix-build https://coq.inria.fr/nix/toolbox --argstr job coq --arg override "{coq = coq:$CI_COMMIT_SHA;}" -K | cachix push coq
   only:
     - master
     - /^v.*\..*$/
