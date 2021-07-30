@@ -1366,18 +1366,13 @@ let vernac_declare_ml_module ~local l =
   let local = Option.default false local in
   Mltop.declare_ml_modules local (List.map expand l)
 
-let vernac_chdir = function
-  | None -> Feedback.msg_notice (str (Sys.getcwd()))
-  | Some path ->
-      begin
-        try Sys.chdir (expand path)
-        with Sys_error err ->
-          (* Cd is typically used to control the output directory of
-          extraction. A failed Cd could lead to overwriting .ml files
-          so we make it an error. *)
-          user_err Pp.(str ("Cd failed: " ^ err))
-      end;
-      Flags.if_verbose Feedback.msg_info (str (Sys.getcwd()))
+let set_pwd path =
+  try Sys.chdir (expand path)
+  with Sys_error err ->
+    (* Cd is typically used to control the output directory of
+       extraction. A failed Cd could lead to overwriting .ml files
+       so we make it an error. *)
+    user_err Pp.(str ("Cannot change directory: " ^ err))
 
 (********************)
 (* State management *)
@@ -1656,6 +1651,15 @@ let () =
       optread  = CDebug.get_flags;
       optwrite = CDebug.set_flags }
 
+let pwd_key = ["Pwd"]
+
+let () =
+  declare_string_option
+    { optdepr  = false;
+      optkey   = pwd_key;
+      optread  = Sys.getcwd;
+      optwrite = set_pwd }
+
 let () =
   declare_bool_option
     { optdepr  = false;
@@ -1685,6 +1689,13 @@ let () =
       optwrite = (fun b -> Global.set_typing_flags
                      {(Global.typing_flags ()) with Declarations.allow_uip = b})
     }
+
+let vernac_chdir dir =
+  match dir with
+  | None -> print_option_value pwd_key
+  | Some path ->
+      set_string_option_value_gen pwd_key path;
+      Flags.if_verbose print_option_value pwd_key
 
 let vernac_set_strategy ~local l =
   let open Tacred in
