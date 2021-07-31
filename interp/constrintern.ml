@@ -2428,7 +2428,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             user_err ?loc:qid.CAst.loc (str "Projection " ++ pr_qualid qid ++ str " expected " ++ pr_choice int l ++
                            str (String.plural n " explicit parameter") ++ str ".")
       in
-      let subscopes1, subscopes2 = List.chop (List.length args1 + 1) subscopes in
+      let subscopes1, subscopes2 = List.chop (nexpectedparams + 1) subscopes in
       let c,args1 = List.sep_last (intern_impargs f env imps1 subscopes1 (args1@[c])) in
       let p = DAst.make ?loc:qid.CAst.loc (GRef (GlobRef.ConstRef p,us)) in
       let args2 = intern_impargs p env imps2 subscopes2 args2 in

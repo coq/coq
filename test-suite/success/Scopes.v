@@ -38,3 +38,14 @@ Check (@f 0) 0.
 Record R := { p : bool -> nat }.
 Check fun r => r.(@p) 0.
 End PropagateIndirect.
+
+Module ScopeProjNotation.
+
+Declare Scope foo_scope.
+Delimit Scope foo_scope with foo.
+Record prod A B := pair { fst : A ; snd : B }.
+Notation "[[ t , u ]]" := (pair _ _ t u) : foo_scope.
+Arguments fst {A B} p%foo.
+Check [[2,3]].(fst).
+
+End ScopeProjNotation.
