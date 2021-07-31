@@ -939,43 +939,28 @@ let whd_allnolet = red_of_state_red whd_allnolet_state
 (* 4. Ad-hoc eta reduction *)
 
 let shrink_eta sigma c =
-  let rec whrec n x = match EConstr.kind sigma x with
-    | Cast (c, _, _) -> whrec n c
-    | App (f, cl)  ->
-      let ncl = Array.length cl in
-      let f = whrec (n + ncl) f in
-      let hd, args = decompose_app_vect sigma f in
-      begin match EConstr.kind sigma hd with
-      | Fix ((ri, i), _) when ri.(i) < Array.length args + ncl ->
-        let args = Array.append args cl in
-        let () = args.(ri.(i)) <- whrec 0 args.(ri.(i)) in
-        mkApp (hd, args)
-      | _ -> mkApp (f, cl)
-      end
+  let rec whrec x = match EConstr.kind sigma x with
+    | Cast (c, _, _) -> whrec c
     | Lambda (_, _, c) ->
-      if 0 < n then x
-      else
-        let (f, cl) = decompose_app_vect sigma (whrec 0 c) in
-        let napp = Array.length cl in
-        if napp > 0 then
-          let x' = whrec 0 (Array.last cl) in
-          match EConstr.kind sigma x' with
-          | Rel 1 ->
-            let lc = Array.sub cl 0 (napp-1) in
-            let u = if Int.equal napp 1 then f else mkApp (f,lc) in
-            if noccurn sigma 1 u then pop u else x
-          | _ -> x
-        else x
-    | Case (ci,u,pms,p,iv,d,lf) ->
-      mkCase (ci, u, pms, p, iv, whrec 0 d, lf)
+      let (f, cl) = decompose_app_vect sigma (whrec c) in
+      let napp = Array.length cl in
+      if napp > 0 then
+        let x' = whrec (Array.last cl) in
+        match EConstr.kind sigma x' with
+        | Rel 1 ->
+          let lc = Array.sub cl 0 (napp-1) in
+          let u = mkApp (f, lc) in
+          if noccurn sigma 1 u then pop u else x
+        | _ -> x
+      else x
     | Meta ev ->
       (match safe_meta_value sigma ev with
-        Some c -> whrec n c
+        Some c -> whrec c
       | None -> x)
-    | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
+    | App _ | Case _ | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
     | LetIn _ | Const _  | Ind _ | Proj _ | Int _ | Float _ | Array _ -> x
   in
-  whrec 0 c
+  whrec c
 
 (* 5. Zeta Reduction Functions *)
 
