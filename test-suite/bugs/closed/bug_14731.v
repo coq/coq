@@ -58,3 +58,24 @@ Declare Instance myInst {X : Type} (x : X) : Contr {y : X & @paths X x y}.
 Definition foo {X : Type} (x : X) : Contr {y' : X & @paths X x y'} := _.
 
 End RelCapture.
+
+Module Collapse.
+
+Class Test {A : Type} (R : A -> Prop) : Prop := {}.
+
+Axiom t : Type -> Type.
+Axiom map2 : forall [elt : Type], (elt -> Prop) -> t elt -> Prop.
+
+Definition lift_relation {A} (R : A -> Prop) (defaultA : A) (m1 : t A) : Prop :=
+  map2 (fun x1 => R defaultA) m1.
+
+Definition Q : Prop -> Prop := fun H => H.
+
+#[local]
+Declare Instance lift0 : forall (A : Type) (default : A) (R : A -> Prop),
+   Test (fun x : A => Q (R x)) ->
+   Test (fun x : t A => Q (lift_relation R default x)).
+
+Definition foo {A R} {HR : @Test A R} {default} : Test (@lift_relation A R default) := _.
+
+End Collapse.

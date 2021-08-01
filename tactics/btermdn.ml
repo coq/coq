@@ -23,7 +23,6 @@ let dnet_depth = ref 8
 type term_label =
 | GRLabel of GlobRef.t
 | ProdLabel
-| LambdaLabel
 | SortLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
@@ -107,7 +106,6 @@ let constr_val_discr env sigma ts t =
       Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
       if Option.is_empty ts then Nothing
-      else if List.is_empty l then Label(LambdaLabel, [d; c])
       else Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> if Option.is_empty ts then Nothing else Everything
@@ -139,8 +137,7 @@ let constr_pat_discr env ts t =
     end
   | PProd (_, d, c), [] ->
     Some (ProdLabel, [d ; c])
-  | PLambda (_, d, c), [] ->
-    if Option.is_empty ts then None else Some (LambdaLabel, [d ; c])
+  | PLambda (_, d, c), [] -> None
   | PSort s, [] ->
     Some (SortLabel, [])
   | _ -> None
