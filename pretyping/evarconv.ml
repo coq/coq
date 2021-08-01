@@ -348,15 +348,16 @@ let rec ise_inst2 evd f l1 l2 = match l1, l2 with
 
 (* Applicative node of stack are read from the outermost to the innermost
    but are unified the other way. *)
-let rec ise_app_rev_stack2 env f evd revsk1 revsk2 =
+let rec ise_app_rev_stack2 env f g evd revsk1 revsk2 =
   match Stack.decomp_rev revsk1, Stack.decomp_rev revsk2 with
   | Some (t1,revsk1), Some (t2,revsk2) ->
      begin
-       match ise_app_rev_stack2 env f evd revsk1 revsk2 with
+       match ise_app_rev_stack2 env f g evd revsk1 revsk2 with
        | (_, UnifFailure _) as x -> x
        | x, Success i' -> x, f env i' CONV t1 t2
      end
-  | _, _ -> (revsk1,revsk2), Success evd
+  | _, _ ->
+     (revsk1,revsk2), g evd revsk1 revsk2
 
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
@@ -436,7 +437,7 @@ let compare_heads env evd ~nargs term term' =
      E1[] = E1'[E1''[]] and E2[] = E2'[E2''[]] s.t.  E1' = E2' and
      E1'' cannot be unified with E2''
    - UnifFailure if no such non-empty E1' = E2' exists *)
-let rec ise_stack2 no_app env evd f sk1 sk2 =
+let rec ise_stack2 no_app env evd f g sk1 sk2 =
   let rec ise_rev_stack2 deep i revsk1 revsk2 =
     let fail x = if deep then Some (List.rev revsk1, List.rev revsk2), Success i
       else None, x in
@@ -469,13 +470,13 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
         match ise_and i [
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
           (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
-          (fun i -> snd (ise_stack2 no_app env i f a1 a2))] with
+          (fun i -> snd (ise_stack2 no_app env i f g a1 a2))] with
         | Success i' -> ise_rev_stack2 true i' q1 q2
         | UnifFailure _ as x -> fail x
       else fail (UnifFailure (i,NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
        if no_app && deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else
-         begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
+         begin match ise_app_rev_stack2 env f g i revsk1 revsk2 with
                |_,(UnifFailure _ as x) -> fail x
                |(l1, l2), Success i' -> ise_rev_stack2 true i' l1 l2
          end
@@ -516,7 +517,7 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
        then ise_rev_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
-         begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
+         begin match ise_app_rev_stack2 env f (fun evd _ _ -> Success evd) i revsk1 revsk2 with
                |_,(UnifFailure _ as x) -> x
                |(l1, l2), Success i' -> ise_rev_stack2 i' l1 l2
          end
@@ -620,6 +621,22 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
           | _ -> default ()
         end
 
+and compatible_types flags env evd c1 c2 revsk1 revsk2 =
+  let sk1 = List.rev revsk1 in
+  let sk2 = List.rev revsk2 in
+  let c1 = Stack.zip evd (c1,sk1) in
+  let c2 = Stack.zip evd (c2,sk2) in
+  let t1 = Retyping.get_type_of env evd c1 in
+  let t2 = Retyping.get_type_of env evd c2 in
+  match evar_conv_x flags env evd CUMUL t2 t1 with
+  (* To compensate the failures of Type(?u) <= Prop, we discard universes error;
+     It should ideally be removed when universe subtyping is better *)
+  | UnifFailure (_, UnifUnivInconsistency _) -> Success evd
+  (* To minimize incremental chances, we also preventively discard the
+     result of the unification, but maybe will it be worth to keep it *)
+  | UnifFailure _ as x -> x
+  | Success _ -> Success evd
+
 and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     (term1, sk1 as appr1) (term2, sk2 as appr2) =
   let quick_fail i = (* not costly, loses info *)
@@ -637,7 +654,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   let consume_stack l2r (termF,skF) (termO,skO) evd =
     let switch f a b = if l2r then f a b else f b a in
     let not_only_app = Stack.not_purely_applicative skO in
-    match switch (ise_stack2 not_only_app env evd (evar_conv_x flags)) skF skO with
+    let test evd = switch (compatible_types flags env evd termF termO) in
+    match switch (ise_stack2 not_only_app env evd (evar_conv_x flags) test) skF skO with
     | Some (l,r), Success i' when l2r && (not_only_app || List.is_empty l) ->
         (* E[?n]=E'[redex] reduces to either l[?n]=r[redex] with
            case/fix/proj in E' (why?) or ?n=r[redex] *)
@@ -778,8 +796,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             ev lF tR evd
   in
   let first_order env i t1 t2 sk1 sk2 =
+    let test evd = compatible_types flags env evd t1 t2 in
     (* Try first-order unification *)
-    match ise_stack2 false env i (evar_conv_x flags) sk1 sk2 with
+    match ise_stack2 false env i (evar_conv_x flags) test sk1 sk2 with
     | None, Success i' ->
        (* We do have sk1[] = sk2[]: we now unify ?ev1 and ?ev2 *)
        (* Note that ?ev1 and ?ev2, may have been instantiated in the meantime *)
@@ -1142,7 +1161,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             else UnifFailure (evd,NotSameHead)
 
         | (Meta _, _) | (_, Meta _) ->
-          begin match ise_stack2 true env evd (evar_conv_x flags) sk1 sk2 with
+          begin match ise_stack2 true env evd (evar_conv_x flags) (fun evd _ _ -> Success evd) sk1 sk2 with
           |_, (UnifFailure _ as x) -> x
           |None, Success i' -> evar_conv_x flags env i' CONV term1 term2
           |Some (sk1',sk2'), Success i' -> evar_conv_x flags env i' CONV (Stack.zip i' (term1,sk1')) (Stack.zip i' (term2,sk2'))
@@ -1252,19 +1271,23 @@ let set_evar_conv f = evar_conv_hook := f
 
 (* We assume here |l1| <= |l2| *)
 
-let first_order_unification flags env evd (ev1,l1) (term2,l2) =
+let first_order_unification flags env evd ((evk1,_ as evargs1),l1) (term2,l2) =
   let (deb2,rest2) = Array.chop (Array.length l2-Array.length l1) l2 in
+  let ev1 = mkEvar evargs1 in
+  let t2 = mkApp (term2,deb2) in
+  match compatible_types flags env evd ev1 t2 Stack.empty Stack.empty with
+  | UnifFailure _ as x -> x
+  | Success evd ->
   ise_and evd
     (* First compare extra args for better failure message *)
     [(fun i -> ise_array2 i (fun i -> evar_conv_x flags env i CONV) rest2 l1);
     (fun i ->
       (* Then instantiate evar unless already done by unifying args *)
-      let t2 = mkApp(term2,deb2) in
-      if is_defined i (fst ev1) then
-        evar_conv_x flags env i CONV t2 (mkEvar ev1)
+      if is_defined i evk1 then
+        evar_conv_x flags env i CONV t2 ev1
       else
         solve_simple_eqn ~choose:true ~imitate_defs:false
-          evar_unify flags env i (None,ev1,t2))]
+          evar_unify flags env i (None,evargs1,t2))]
 
 let choose_less_dependent_instance evd term (evk, args) =
   let evi = Evd.find_undefined evd evk in
