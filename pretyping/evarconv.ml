@@ -482,7 +482,9 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
     |_, _ -> fail (UnifFailure (i,(* Maybe improve: *) NotSameHead))
   in ise_rev_stack2 false evd (List.rev sk1) (List.rev sk2)
 
-(* Make sure that the matching suffix is the all stack *)
+(* Make sure that the matching suffix is the all stack
+   Note: recursion on ise_rev_stack2 first is known to improve
+   complexity on some examples see f54a20232b *)
 let rec exact_ise_stack2 env evd f sk1 sk2 =
   let rec ise_rev_stack2 i revsk1 revsk2 =
     match revsk1, revsk2 with
@@ -861,8 +863,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         let f1 i = first_order env i term1 term2 sk1 sk2
         and f2 i =
           if Evar.equal sp1 sp2 then
-            match ise_stack2 false env i (evar_conv_x flags) sk1 sk2 with
-            |None, Success i' ->
+            match exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2 with
+            | Success i' ->
               Success (solve_refl (fun flags p env i pbty a1 a2 ->
                 let flags =
                   match p with
@@ -871,8 +873,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                 in
                 is_success (evar_conv_x flags env i pbty a1 a2)) flags
                 env i' (position_problem true pbty) sp1 al1 al2)
-            |_, (UnifFailure _ as x) -> x
-            |Some _, _ -> UnifFailure (i,NotSameArgSize)
+            | UnifFailure _ as x -> x
           else UnifFailure (i,NotSameHead)
         and f3 i = miller true (sp1,al1) appr1 appr2 i
         and f4 i = miller false (sp2,al2) appr2 appr1 i
@@ -1106,13 +1107,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
         | Evar (sp1,al1), Evar (sp2,al2) -> (* Frozen evars *)
           if Evar.equal sp1 sp2 then
-            match ise_stack2 false env evd (evar_conv_x flags) sk1 sk2 with
-            |None, Success i' ->
+            match exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2 with
+            | Success i' ->
               let al1 = Evd.expand_existential i' (sp1, al1) in
               let al2 = Evd.expand_existential i' (sp2, al2) in
               ise_inst2 i' (fun i' -> evar_conv_x flags env i' CONV) al1 al2
-            |_, (UnifFailure _ as x) -> x
-            |Some _, _ -> UnifFailure (evd,NotSameArgSize)
+            | UnifFailure _ as x -> x
           else UnifFailure (evd,NotSameHead)
 
         | Construct u, _ ->
