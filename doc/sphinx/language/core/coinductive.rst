@@ -28,7 +28,10 @@ More information on co-inductive definitions can be found in
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`,
    :attr:`private(matching)`, :attr:`bypass_check(universes)`,
-   :attr:`bypass_check(positivity)`, and :attr:`using` attributes.
+   :attr:`bypass_check(positivity)` and :attr:`using` attributes.
+
+   When record syntax is used, this command also supports the
+   :attr:`projections(primitive)` :term:`attribute`.
 
 .. example::
 

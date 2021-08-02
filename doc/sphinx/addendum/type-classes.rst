@@ -325,8 +325,10 @@ Summary of the commands
 
    Like any command declaring a record, this command supports the
    :attr:`universes(polymorphic)`, :attr:`universes(template)`,
-   :attr:`universes(cumulative)`, and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(cumulative)` and :attr:`private(matching)` attributes.
+
+   When record syntax is used, this command also supports the
+   :attr:`projections(primitive)` :term:`attribute`.
 
    .. cmd:: Existing Class @qualid
 
