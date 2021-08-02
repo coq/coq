@@ -147,23 +147,23 @@ let try_declare_scheme what f internal names kn =
         alarm what internal
           (strbrk "Required constant " ++ str s ++ str " undefined.")
     | DeclareUniv.AlreadyDeclared (kind, id) as exn ->
-      let msg = CErrors.print exn in
-      alarm what internal msg
+        let msg = CErrors.print exn in
+        alarm what internal msg
     | DecidabilityMutualNotSupported ->
         alarm what internal
           (str "Decidability lemma for mutual inductive types not supported.")
     | EqUnknown s ->
-         alarm what internal
-           (str "Found unsupported " ++ str s ++ str " while building Boolean equality.")
+        alarm what internal
+          (str "Found unsupported " ++ str s ++ str " while building Boolean equality.")
     | NoDecidabilityCoInductive ->
-         alarm what internal
-           (str "Scheme Equality is only for inductive types.")
+        alarm what internal
+          (str "Scheme Equality is only for inductive types.")
     | DecidabilityIndicesNotSupported ->
-         alarm what internal
-           (str "Inductive types with annotations not supported.")
+        alarm what internal
+          (str "Inductive types with annotations not supported.")
     | ConstructorWithNonParametricInductiveType ind ->
-         alarm what internal
-           (strbrk "Unsupported constructor with an argument whose type is a non-parametric inductive type." ++
+        alarm what internal
+          (strbrk "Unsupported constructor with an argument whose type is a non-parametric inductive type." ++
             strbrk " Type " ++ quote (Printer.pr_inductive (Global.env()) ind) ++
             str " is applied to an argument which is not a variable.")
     | e when CErrors.noncritical e ->
@@ -433,6 +433,8 @@ tried to declare different schemes at once *)
       if not (List.is_empty ischeme) then do_mutual_induction_scheme ischeme
       else
         let mind,l = get_common_underlying_mutual_inductive env escheme in
+        if l <> [] then  (* we don't yet support naming here *)
+          user_err Pp.(str "Naming of identifiers for Scheme Equality not supported.");
         declare_beq_scheme_with l mind;
         declare_eq_decidability_scheme_with l mind
     )
