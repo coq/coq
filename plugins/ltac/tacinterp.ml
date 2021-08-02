@@ -589,16 +589,21 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let (stack, _) = trace in
   (* save and restore the current trace info because the called routine later starts
      with an empty trace *)
-  Tactic_debug.push_cur_trace trace;
-  let (evd,c) =
-    catch_error_with_trace_loc loc true stack (understand_ltac flags env sigma vars kind) term
-  in
-  (* spiwack: to avoid unnecessary modifications of tacinterp, as this
-     function already use effect, I call [run] hoping it doesn't mess
-     up with any assumption. *)
-  Proofview.NonLogical.run (db_constr (curr_debug ist) env evd c);
-  Tactic_debug.pop_cur_trace ();
-  (evd,c)
+  Tactic_debug.push_trace trace;
+  try
+    let (evd,c) =
+      catch_error_with_trace_loc loc true stack (understand_ltac flags env sigma vars kind) term
+    in
+    (* spiwack: to avoid unnecessary modifications of tacinterp, as this
+       function already use effect, I call [run] hoping it doesn't mess
+       up with any assumption. *)
+    Proofview.NonLogical.run (db_constr (curr_debug ist) env evd c);
+    Tactic_debug.pop_trace ();
+    (evd,c)
+  with reraise ->
+    let reraise = Exninfo.capture reraise in
+    Tactic_debug.pop_trace ();
+    Exninfo.iraise reraise
 
 let constr_flags () = {
   use_typeclasses = UseTC;

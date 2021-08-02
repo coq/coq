@@ -233,9 +233,12 @@ let get_stack stack () =
     ) stack
 
 (* Each list entry contains multiple trace frames. *)
-let prev_trace : ltac_trace list ref = ref [([], [])]
-let push_cur_trace trace = prev_trace := trace :: !prev_trace
-let pop_cur_trace trace = prev_trace := List.tl !prev_trace
+let trace_chunks : ltac_trace list ref = ref [([], [])]
+let push_trace trace = trace_chunks := trace :: !trace_chunks
+let pop_trace trace = trace_chunks := List.tl !trace_chunks
+
+let prev_stack = ref (Some [])  (* previous stopping point in debugger *)
+let prev_trace_chunks : ltac_trace list ref = ref [([], [])]
 
 let save_loc tac varmap trace =
 (*  Comm.print (print_loc_tac tac);*)
@@ -245,7 +248,7 @@ let save_loc tac varmap trace =
   in
   DebugHook.(debugger_state.cur_loc <- CAst.(tac.loc));
   let (pstack, pvars) = List.fold_right (fun (s,v) (os, ov) -> (s @ os), (v @ ov))
-    !prev_trace ([],[]) in
+    !trace_chunks ([],[]) in
   DebugHook.(debugger_state.get_stack <- get_stack (stack @ pstack));
   DebugHook.(debugger_state.varmaps <- varmap :: (varmaps @ pvars))
 
@@ -267,7 +270,6 @@ let skip = Proofview.NonLogical.run (Proofview.NonLogical.ref 0)
 let idtac_breakpt = Proofview.NonLogical.run (Proofview.NonLogical.ref None)
 
 let batch = ref false
-let prev_stack = ref (Some [])  (* previous stopping point in debugger *)
 
 open Goptions
 
@@ -280,8 +282,6 @@ let () =
 
 (* (Re-)initialize debugger. is_tac controls whether to set the action *)
 let db_initialize is_tac =
-  if is_tac then
-    prev_trace := [[],[]];
   let open Proofview.NonLogical in
   let x = (skip:=0) >> (skipped:=0) >> (idtac_breakpt:=None) in
   if is_tac then make Comm.init >> x else x
@@ -398,7 +398,17 @@ let debug_prompt lev tac f varmap trace =
 (*        dump_stack "at debug_prompt" stack;*)
 (*        dump_varmaps "at debug_prompt" varmaps;*)
         prev_stack.contents <- stack;
+        prev_trace_chunks.contents <- trace_chunks.contents;
         Proofview.tclTHEN (goal_com tac varmap trace) (Proofview.tclLIFT (prompt lev))
+      in
+      let stacks_info stack p_stack =
+        (* performance impact? *)
+        let st_chunks =  StdList.map (fun (s, _) -> s) trace_chunks.contents in
+        let st =      StdList.concat ((Option.default [] stack) :: st_chunks) in
+        let prev_st_chunks = StdList.map (fun (s, _) -> s) prev_trace_chunks.contents in
+        let st_prev = StdList.concat ((Option.default [] p_stack) :: prev_st_chunks) in
+        let l_cur, l_prev = StdList.length st, StdList.length st_prev in
+        st, st_prev, l_cur, l_prev
       in
       let p_stack = prev_stack.contents in
       if action.contents = DebugHook.Action.Continue && at_breakpoint tac then
@@ -422,20 +432,18 @@ let debug_prompt lev tac f varmap trace =
             let stop = match action.contents with
               | Continue -> false
               | StepIn   -> true
-              | StepOver -> (* todo: cache list lengths for performance? *)
-                            let st, st_prev = (Option.default [] stack), (Option.default [] p_stack) in
-                            let l_cur, l_prev = StdList.length st, StdList.length st_prev in
-                            if l_cur < l_prev || l_cur = 0 then true (* stepped out *)
-                            else if l_prev = 0 && l_cur > 0 then false
+              | StepOver -> let st, st_prev, l_cur, l_prev = stacks_info stack p_stack in
+                            if l_cur = 0 || l_cur < l_prev then true (* stepped out *)
+                            else if l_prev = 0 (*&& l_cur > 0*) then false
                             else
                               let peq = StdList.nth st (l_cur - l_prev) == (StdList.hd st_prev) in
                               (l_cur > l_prev && (not peq)) ||  (* stepped out *)
                               (l_cur = l_prev && peq)  (* stepped over *)
-              | StepOut  -> let st, st_prev = (Option.default [] stack), (Option.default [] p_stack) in
-                              let l_cur, l_prev = StdList.length st, StdList.length st_prev in
-                              if l_cur < l_prev then true
-                              else
-                                StdList.nth st (l_cur - l_prev) != (StdList.hd st_prev)
+              | StepOut  -> let st, st_prev, l_cur, l_prev = stacks_info stack p_stack in
+                            if l_cur < l_prev then true
+                            else if l_prev = 0 then false
+                            else
+                              StdList.nth st (l_cur - l_prev) != (StdList.hd st_prev)
               | _ -> failwith "action op"
             in
             if stop then begin
