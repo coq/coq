@@ -24,7 +24,6 @@ open Declarations
 open Term
 open Constr
 open Inductive
-open Indrec
 open Declare
 open Libnames
 open Goptions
@@ -37,6 +36,9 @@ open Auto_ind_decl
 open Eqschemes
 open Elimschemes
 open Context.Rel.Declaration
+
+(** Data of an inductive scheme with name resolved *)
+type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Sorts.family
 
 (** flag for internal message display *)
 type internal_flag =
@@ -321,86 +323,82 @@ let declare_sym_scheme ind =
 
 (* Scheme command *)
 
-let smart_global_inductive y = smart_global_inductive y
-let rec split_scheme env l =
- match l with
-  | [] -> [],[]
-  | (Some id,t)::q -> let l1,l2 = split_scheme env q in
-    ( match t with
-      | InductionScheme (x,y,z) -> ((id,x,smart_global_inductive y,z)::l1),l2
-      | CaseScheme (x,y,z) -> ((id,x,smart_global_inductive y,z)::l1),l2
-      | EqualityScheme  x -> l1,((Some id,smart_global_inductive x)::l2)
-    )
-(*
- if no name has been provided, we build one from the types of the ind
-requested
-*)
-  | (None,t)::q ->
-      let l1,l2 = split_scheme env q in
-      let names inds recs isdep y z =
-        let ind = smart_global_inductive y in
-        let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
-        let suffix = (
-          match sort_of_ind with
-          | InProp ->
-              if isdep then (match z with
-              | InSProp -> inds ^ "s_dep"
-              | InProp -> inds ^ "_dep"
-              | InSet  -> recs ^ "_dep"
-              | InType -> recs ^ "t_dep")
-              else ( match z with
-              | InSProp -> inds ^ "s"
-              | InProp -> inds
-              | InSet -> recs
-              | InType -> recs ^ "t" )
-          | _ ->
-              if isdep then (match z with
-              | InSProp -> inds ^ "s"
-              | InProp -> inds
-              | InSet -> recs
-              | InType -> recs ^ "t" )
-              else (match z with
-              | InSProp -> inds ^ "s_nodep"
-              | InProp -> inds ^ "_nodep"
-              | InSet -> recs ^ "_nodep"
-              | InType -> recs ^ "t_nodep")
-        ) in
-        let newid = add_suffix (Nametab.basename_of_global (GlobRef.IndRef ind)) suffix in
-        let newref = CAst.make newid in
-          ((newref,isdep,ind,z)::l1),l2
-      in
-        match t with
-        | CaseScheme (x,y,z) -> names "_case" "_case" x y z
-        | InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
-        | EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
+(* Boolean on scheme_type cheking if it considered dependent *)
+let sch_isdep = function
+| SchemeInduction  | SchemeElimination -> true
+| SchemeMinimality | SchemeCase        -> false
 
-let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
-  let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) lnamedepindsort
-  and env0 = Global.env() in
+(* Generate suffix for scheme given a target sort *)
+let scheme_suffix_gen {sch_type; sch_qualid; sch_sort} sort =
+  (* We check if we are working with recursion vs case schemes *)
+  let sch_isrec = match sch_type with
+    | SchemeInduction   | SchemeMinimality  -> true
+    | SchemeElimination | SchemeCase        -> false in
+  (* The _ind/_rec_/case suffix *)
+  let ind_suffix = match sch_isrec , sch_sort with
+    | true  , InSProp
+    | true  , InProp  -> "_ind"
+    | true  , _       -> "_rec"
+    | false , _       -> "_case" in
+  (* SProp and Type have an auxillary ending to the _ind suffix *)
+  let aux_suffix = match sch_sort with
+    | InSProp -> "s"
+    | InType  -> "t"
+    | _       -> "" in
+  (* Some schemes are deliminated with _dep or no_dep *)
+  let dep_suffix = match sch_isdep sch_type , sort with
+    | true  , InProp  -> "_dep"
+    | false , InSet
+    | false , InType
+    | false , InSProp -> "_nodep"
+    | _ , _           -> "" in
+  ind_suffix ^ aux_suffix ^ dep_suffix
+
+(* Resolve the names of a list of schemes using an enviornment and extract some
+important data such as the inductive type involved, whether it is a dependent
+eliminator and its sort. *)
+let rec name_and_process_schemes env l =
+ match l with
+  | [] -> []
+  | (Some id, {sch_type; sch_qualid; sch_sort}) :: q
+  -> ((id, sch_isdep sch_type, smart_global_inductive sch_qualid, sch_sort)
+    :: name_and_process_schemes env q)
+(* If no name has been provided, we build one from the types of the ind requested *)
+  | (None, {sch_type; sch_qualid; sch_sort}) :: q
+   -> let ind = smart_global_inductive sch_qualid in
+      let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
+      let suffix = scheme_suffix_gen {sch_type; sch_qualid; sch_sort} sort_of_ind in
+      let newid = add_suffix (Nametab.basename_of_global (GlobRef.IndRef ind)) suffix in
+      let newref = CAst.make newid in
+      (newref, sch_isdep sch_type, ind, sch_sort) :: name_and_process_schemes env q
+
+let do_mutual_induction_scheme ?(force_mutual=false) env l =
+  let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) l in
+
   let sigma, lrecspec, _ =
     List.fold_right
       (fun (_,dep,ind,sort) (evd, l, inst) ->
        let evd, indu, inst =
          match inst with
          | None ->
-            let _, ctx = Typeops.type_of_global_in_context env0 (GlobRef.IndRef ind) in
+            let _, ctx = Typeops.type_of_global_in_context env (GlobRef.IndRef ind) in
             let u, ctx = UnivGen.fresh_instance_from ctx None in
             let evd = Evd.from_ctx (UState.of_context_set ctx) in
               evd, (ind,u), Some u
          | Some ui -> evd, (ind, ui), inst
        in
           (evd, (indu,dep,sort) :: l, inst))
-    lnamedepindsort (Evd.from_env env0,[],None)
+    l (Evd.from_env env,[],None)
   in
-  let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma ~force_mutual lrecspec in
+  let sigma, listdecl = Indrec.build_mutual_induction_scheme env sigma ~force_mutual lrecspec in
   let poly =
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
-    let _,_,ind,_ = List.hd lnamedepindsort in
+    let _,_,ind,_ = List.hd l in
     Global.is_polymorphic (GlobRef.IndRef ind)
   in
   let declare decl fi lrecref =
-    let decltype = Retyping.get_type_of env0 sigma (EConstr.of_constr decl) in
+    let decltype = Retyping.get_type_of env sigma (EConstr.of_constr decl) in
     let decltype = EConstr.to_constr sigma decltype in
     let cst = define ~poly fi sigma decl (Some decltype) in
     GlobRef.ConstRef cst :: lrecref
@@ -408,34 +406,14 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
   let _ = List.fold_right2 declare listdecl lrecnames [] in
   fixpoint_message None lrecnames
 
-let get_common_underlying_mutual_inductive env = function
-  | [] -> assert false
-  | (id,(mind,i as ind))::l as all ->
-      match List.filter (fun (_,(mind',_)) -> not (Environ.QMutInd.equal env mind mind')) l with
-      | (_,ind')::_ ->
-          raise (RecursionSchemeError (env, NotMutualInScheme (ind,ind')))
-      | [] ->
-          if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
-          then user_err Pp.(str "A type occurs twice");
-          mind,
-          List.map_filter
-            (function (Some id,(_,i)) -> Some (i,id.CAst.v) | (None,_) -> None) all
+let do_scheme env l =
+  let lnamedepindsort = name_and_process_schemes env l in
+  do_mutual_induction_scheme env lnamedepindsort
 
-let do_scheme l =
-  let env = Global.env() in
-  let ischeme,escheme = split_scheme env l in
-(* we want 1 kind of scheme at a time so we check if the user
-tried to declare different schemes at once *)
-    if not (List.is_empty ischeme) && not (List.is_empty escheme)
-    then
-      user_err Pp.(str "Do not declare equality and induction scheme at the same time.")
-    else (
-      if not (List.is_empty ischeme) then do_mutual_induction_scheme ischeme
-      else
-        let mind,l = get_common_underlying_mutual_inductive env escheme in
-        declare_beq_scheme_with l mind;
-        declare_eq_decidability_scheme_with l mind
-    )
+let do_scheme_equality id =
+  let mind,_ = smart_global_inductive id in
+  declare_beq_scheme mind;
+  declare_eq_decidability mind
 
 (**********************************************************************)
 (* Combined scheme *)

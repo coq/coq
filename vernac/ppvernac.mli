@@ -18,6 +18,9 @@ val pr_syntax_modifier : Vernacexpr.syntax_modifier CAst.t -> Pp.t
 (** Prints a fixpoint body *)
 val pr_rec_definition : Vernacexpr.fixpoint_expr -> Pp.t
 
+(** Prints a scheme *)
+val pr_onescheme : Names.lident option * Vernacexpr.scheme -> Pp.t
+
 (** Prints a vernac expression without dot *)
 val pr_vernac_expr : Vernacexpr.vernac_expr -> Pp.t
 

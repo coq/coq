@@ -242,6 +242,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Let"; "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
           { VernacCoFixpoint (DoDischarge, corecs) }
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> { VernacScheme l }
+      | IDENT "Scheme"; IDENT "Equality"; IDENT "for" ; id = smart_global -> { VernacSchemeEquality id }
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
               l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
       | IDENT "Register"; g = global; "as"; quid = qualid ->
@@ -440,15 +441,16 @@ GRAMMAR EXTEND Gram
       | id = identref; ":="; kind = scheme_kind -> { (Some id,kind) } ] ]
   ;
   scheme_kind:
-    [ [ IDENT "Induction"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort_family-> { InductionScheme(true,ind,s) }
-      | IDENT "Minimality"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort_family-> { InductionScheme(false,ind,s) }
-      | IDENT "Elimination"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort_family-> { CaseScheme(true,ind,s) }
-      | IDENT "Case"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort_family-> { CaseScheme(false,ind,s) }
-      | IDENT "Equality"; "for" ; ind = smart_global -> { EqualityScheme(ind) } ] ]
+    [ [sch_type = scheme_type; "for"; sch_qualid = smart_global; IDENT "Sort"; sch_sort = sort_family
+      -> { {sch_type; sch_qualid; sch_sort} }
+    ] ]
+  ;
+  scheme_type:
+    [ [ IDENT "Induction" -> { SchemeInduction }
+      | IDENT "Minimality" -> { SchemeMinimality }
+      | IDENT "Elimination" -> { SchemeElimination }
+      | IDENT "Case" -> { SchemeCase }
+    ] ]
   ;
   (* Various Binders *)
 (*

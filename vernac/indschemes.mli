@@ -13,7 +13,14 @@ open Constr
 open Environ
 open Vernacexpr
 
+type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Sorts.family
+
 (** See also Auto_ind_decl, Indrec, Eqscheme, Ind_tables, ... *)
+
+(** Resolve the names of a list of inductive schemes with respect to an environment *)
+val name_and_process_schemes : Environ.env
+  -> (lident option * scheme) list
+  -> resolved_scheme list
 
 (** Build and register the boolean equalities associated to an inductive type *)
 
@@ -35,12 +42,16 @@ val declare_rewriting_schemes : inductive -> unit
     By default it is [false] and some of the eliminators are defined as simple case analysis.
  *)
 
-val do_mutual_induction_scheme : ?force_mutual:bool ->
-  (lident * bool * inductive * Sorts.family) list -> unit
+val do_mutual_induction_scheme : ?force_mutual:bool
+  -> Environ.env -> resolved_scheme list -> unit
 
 (** Main calls to interpret the Scheme command *)
 
-val do_scheme : (lident option * scheme) list -> unit
+val do_scheme : Environ.env -> (Names.Id.t CAst.t option * Vernacexpr.scheme) list -> unit
+
+(** Main call to Scheme Equality command *)
+
+val do_scheme_equality : Libnames.qualid Constrexpr.or_by_notation -> unit
 
 (** Combine a list of schemes into a conjunction of them *)
 
