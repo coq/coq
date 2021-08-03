@@ -241,19 +241,7 @@ END
 
 VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
 | #[ locality = Attributes.option_locality; ] [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> {
-  let open Goptions in
   let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
-  let () = match locality with
-  | OptGlobal ->
-    if Global.sections_are_opened () then
-    CErrors.user_err Pp.(str
-      "This command does not support the global attribute in sections.");
-  | OptExport ->
-    if Global.sections_are_opened () then
-    CErrors.user_err Pp.(str
-      "This command does not support the export attribute in sections.");
-  | OptDefault | OptLocal -> ()
-  in
   Hints.add_hints ~locality
     (match dbnames with None -> ["core"] | Some l -> l) entry;
  }

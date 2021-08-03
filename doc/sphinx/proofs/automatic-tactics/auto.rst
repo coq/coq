@@ -348,8 +348,12 @@ Creating Hints
    are given, the hint is added to the `core` database.)
 
    Outside of sections, these commands support the :attr:`local`, :attr:`export`
-   and :attr:`global` attributes. :attr:`global` is the default.  Inside sections,
-   only the :attr:`local` attribute is supported because hints are local to sections.
+   and :attr:`global` attributes. :attr:`global` is the default.
+
+   Inside sections, some commands only support the :attr:`local` attribute. These are
+   :cmd:`Hint Immediate`, :cmd:`Hint Resolve`, :cmd:`Hint Constructors`,
+   :cmd:`Hint Unfold`, :cmd:`Hint Extern` and :cmd:`Hint Rewrite`.
+   :attr:`local` is the default for all hint commands inside sections.
 
    + :attr:`local` hints are never visible from other modules, even if they
      :cmd:`Import` or :cmd:`Require` the current module.
@@ -584,6 +588,12 @@ Creating Hints
         :cmd:`Hint Cut`, or :cmd:`Hint Mode`, for typeclass
         resolution, do not forget to put them in the
         ``typeclass_instances`` hint database.
+
+   .. warn:: This hint is not local but depends on a section variable. It will disappear when the section is closed.
+
+      A hint with a non-local attribute was added inside a section, but it
+      refers to a local variable that will go out of scope when closing the
+      section. As a result the hint will not survive either.
 
 .. cmd:: Hint Rewrite {? {| -> | <- } } {+ @one_term } {? using @ltac_expr } {? : {* @ident } }
 

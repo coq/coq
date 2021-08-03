@@ -1069,6 +1069,25 @@ type hint_obj = {
   hint_action : hint_action;
 }
 
+let is_trivial_action = function
+| AddTransparency { grefs } ->
+  begin match grefs with
+  | HintsVariables | HintsConstants -> false
+  | HintsReferences l -> List.is_empty l
+  end
+| AddHints l -> List.is_empty l
+| RemoveHints l -> List.is_empty l
+| AddCut _ | AddMode _ -> false
+
+let rec is_section_path = function
+| PathAtom PathAny -> false
+| PathAtom (PathHints grs) ->
+  let check c = isVarRef c && Lib.is_in_section c in
+  List.exists check grs
+| PathStar p -> is_section_path p
+| PathSeq (p, q) | PathOr (p, q) -> is_section_path p || is_section_path q
+| PathEmpty | PathEpsilon -> false
+
 let superglobal h = match h.hint_local with
   | SuperGlobal -> true
   | Local | Export -> false
@@ -1189,12 +1208,45 @@ let subst_autohint (subst, obj) =
   in
   if action == obj.hint_action then obj else { obj with hint_action = action }
 
+let is_hint_local = function Local -> true | Export | SuperGlobal -> false
+
 let classify_autohint obj =
-  match obj.hint_action with
-  | AddHints [] -> Dispose
-  | _ -> match obj.hint_local with
-    | Local -> Dispose
-    | Export | SuperGlobal -> Substitute obj
+  if is_hint_local obj.hint_local || is_trivial_action obj.hint_action then Dispose
+  else Substitute obj
+
+let discharge_autohint (_, obj) =
+  if is_hint_local obj.hint_local then None
+  else
+    let action = match obj.hint_action with
+    | AddTransparency { grefs; state } ->
+      let grefs = match grefs with
+      | HintsVariables | HintsConstants -> grefs
+      | HintsReferences grs ->
+        let filter = function
+        | EvalConstRef c -> true
+        | EvalVarRef id -> not @@ Lib.is_in_section (GlobRef.VarRef id)
+        in
+        let grs = List.filter filter grs in
+        HintsReferences grs
+      in
+      AddTransparency { grefs; state }
+    | AddHints _ | RemoveHints _ ->
+      (* not supported yet *)
+      assert false
+    | AddCut path ->
+      if is_section_path path then AddHints [] (* dummy *) else obj.hint_action
+    | AddMode { gref; mode } ->
+      if Lib.is_in_section gref then
+        if isVarRef gref then AddHints [] (* dummy *)
+        else
+          let (_, params) = Lib.section_instance gref in
+          (* Default mode for discharged parameters is output *)
+          let mode = Array.append (Array.make (Array.length params) ModeOutput) mode in
+          AddMode { gref; mode }
+      else obj.hint_action
+    in
+    if is_trivial_action action then None
+    else Some { obj with hint_action = action }
 
 let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
@@ -1202,7 +1254,9 @@ let inAutoHint : hint_obj -> obj =
                     load_function = load_autohint;
                     open_function = simple_open open_autohint;
                     subst_function = subst_autohint;
-                    classify_function = classify_autohint; }
+                    classify_function = classify_autohint;
+                    discharge_function = discharge_autohint;
+                  }
 
 let make_hint ~local name action = {
   hint_local = local;
@@ -1229,17 +1283,20 @@ let check_hint_locality = let open Goptions in function
   if Global.sections_are_opened () then
   CErrors.user_err Pp.(str
     "This command does not support the export attribute in sections.");
-| OptDefault ->
-  if not @@ Global.sections_are_opened () then
-    warn_deprecated_hint_without_locality ()
-| OptLocal -> ()
+| OptDefault | OptLocal -> ()
 
 let interp_locality = function
-| Goptions.OptDefault | Goptions.OptGlobal -> SuperGlobal
+| Goptions.OptDefault ->
+  if Global.sections_are_opened () then Local
+  else
+    let () = warn_deprecated_hint_without_locality () in
+    SuperGlobal
+| Goptions.OptGlobal -> SuperGlobal
 | Goptions.OptExport -> Export
 | Goptions.OptLocal -> Local
 
 let remove_hints ~locality dbnames grs =
+  let () = check_hint_locality locality in
   let local = interp_locality locality in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
@@ -1384,7 +1441,30 @@ let prepare_hint check env init (sigma,c) =
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     (c', diff)
 
+let warn_non_local_section_hint =
+  CWarnings.create ~name:"non-local-section-hint" ~category:"automation"
+    (fun () -> strbrk "This hint is not local but depends on a section variable. It will disappear when the section is closed.")
+
+let is_notlocal = function
+| Goptions.OptLocal | Goptions.OptDefault -> false
+| Goptions.OptExport | Goptions.OptGlobal -> true
+
 let add_hints ~locality dbnames h =
+  let () = match h with
+  | HintsResolveEntry _ | HintsImmediateEntry _ | HintsUnfoldEntry _ | HintsExternEntry _ ->
+    check_hint_locality locality
+  | HintsTransparencyEntry ((HintsVariables | HintsConstants), _) -> ()
+  | HintsTransparencyEntry (HintsReferences grs, _) ->
+    let iter gr =
+      let gr = global_of_evaluable_reference gr in
+      if is_notlocal locality && isVarRef gr && Lib.is_in_section gr then warn_non_local_section_hint ()
+    in
+    List.iter iter grs
+  | HintsCutEntry p ->
+    if is_notlocal locality && is_section_path p then warn_non_local_section_hint ()
+  | HintsModeEntry (gr, _) ->
+    if is_notlocal locality && isVarRef gr && Lib.is_in_section gr then warn_non_local_section_hint ()
+  in
   let local = interp_locality locality in
   if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");

@@ -29,7 +29,7 @@ module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let set_typeclass_transparency c local b =
-  let locality = if local then Goptions.OptLocal else Goptions.OptGlobal in
+  let locality = if local || Global.sections_are_opened () then Goptions.OptLocal else Goptions.OptGlobal in
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 

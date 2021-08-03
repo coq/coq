@@ -1426,7 +1426,6 @@ let warn_implicit_core_hint_db =
 
 let vernac_remove_hints ~atts dbnames ids =
   let locality = Attributes.(parse option_locality atts) in
-  let () = Hints.check_hint_locality locality in
   let dbnames =
     if List.is_empty dbnames then
       (warn_implicit_core_hint_db (); ["core"])
@@ -1441,7 +1440,6 @@ let vernac_hints ~atts dbnames h =
     else dbnames
   in
   let locality, poly = Attributes.(parse Notations.(option_locality ++ polymorphic) atts) in
-  let () = Hints.check_hint_locality locality in
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =

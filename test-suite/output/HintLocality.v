@@ -55,9 +55,9 @@ Create HintDb secdb.
 
 Section Sec.
 
-Fail #[global] Hint Cut [ _ ] : secdb.
-Fail #[global] Hint Mode S ! : secdb.
-Fail #[global] Hint Opaque id : secdb.
+#[global] Hint Cut [ _ ] : secdb.
+#[global] Hint Mode S ! : secdb.
+#[global] Hint Opaque id : secdb.
 Fail #[global] Remove Hints O : secdb.
 
 #[local] Hint Cut [ _ ] : secdb.
@@ -70,3 +70,33 @@ Print HintDb secdb.
 End Sec.
 
 Print HintDb secdb.
+
+(** Variant of the above test
+    - modes are correctly generalized at section closure
+    - non-local section-specific hints trigger a warning
+*)
+
+Create HintDb seclocaldb.
+
+Set Warnings "non-local-section-hint".
+
+Section SecLocal.
+
+Variable A : Type.
+
+Definition refl (n : A) : n = n := eq_refl.
+
+Variable prf : forall n : nat, n = 0.
+
+#[export] Hint Mode refl ! : seclocaldb.
+#[export] Hint Mode prf ! : seclocaldb.
+
+#[export] Hint Cut [ prf ] : seclocaldb.
+
+#[export] Hint Variables Transparent : seclocaldb.
+#[export] Hint Constants Transparent : seclocaldb.
+#[export] Hint Opaque prf : seclocaldb.
+
+End SecLocal.
+
+Print HintDb seclocaldb.
