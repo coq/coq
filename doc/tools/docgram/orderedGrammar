@@ -725,14 +725,20 @@ cofix_definition: [
 ]
 
 scheme_kind: [
-| "Equality" "for" reference
-| [ "Induction" | "Minimality" | "Elimination" | "Case" ] "for" reference "Sort" sort_family
+| scheme_type "for" reference "Sort" sort_family
+]
+
+scheme_type: [
+| "Induction"
+| "Minimality"
+| "Elimination"
+| "Case"
 ]
 
 sort_family: [
-| "Set"
 | "Prop"
 | "SProp"
+| "Set"
 | "Type"
 ]
 
@@ -1045,6 +1051,7 @@ command: [
 | "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | "Scheme" OPT ( ident ":=" ) scheme_kind LIST0 ( "with" OPT ( ident ":=" ) scheme_kind )
+| "Scheme" "Equality" "for" reference
 | "Combined" "Scheme" ident "from" LIST1 ident SEP ","
 | "Register" qualid "as" qualid
 | "Register" "Inline" qualid
