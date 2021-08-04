@@ -1,0 +1,386 @@
+The command has indeed failed with message:
+Induction on sort Prop is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooSProp.
+fooSProp_inds :
+forall P : fooSProp -> SProp, P aSP -> P bSP -> forall f1 : fooSProp, P f1
+
+fooSProp_inds is not universe polymorphic
+Arguments fooSProp_inds P%function_scope f f f
+fooSProp_inds is transparent
+Expands to: Constant SchemeNames.fooSProp_inds
+The command has indeed failed with message:
+Induction on sort Prop is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooSProp.
+fooSProp_inds_nodep : forall P : SProp, P -> P -> fooSProp -> P
+
+fooSProp_inds_nodep is not universe polymorphic
+Arguments fooSProp_inds_nodep P%type_scope f f f
+fooSProp_inds_nodep is transparent
+Expands to: Constant SchemeNames.fooSProp_inds_nodep
+The command has indeed failed with message:
+Induction on sort Prop is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooSProp.
+fooSProp_cases :
+forall P : fooSProp -> SProp, P aSP -> P bSP -> forall f1 : fooSProp, P f1
+
+fooSProp_cases is not universe polymorphic
+Arguments fooSProp_cases P%function_scope f f f
+fooSProp_cases is transparent
+Expands to: Constant SchemeNames.fooSProp_cases
+The command has indeed failed with message:
+Induction on sort Prop is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooSProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooSProp.
+fooSProp_cases_nodep : forall P : SProp, P -> P -> fooSProp -> P
+
+fooSProp_cases_nodep is not universe polymorphic
+Arguments fooSProp_cases_nodep P%type_scope f f f
+fooSProp_cases_nodep is transparent
+Expands to: Constant SchemeNames.fooSProp_cases_nodep
+The command has indeed failed with message:
+Cannot extract computational content from proposition 
+"fooSProp".
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooProp.
+fooProp_inds_dep :
+forall P : fooProp -> SProp, P aP -> P bP -> forall f1 : fooProp, P f1
+
+fooProp_inds_dep is not universe polymorphic
+Arguments fooProp_inds_dep P%function_scope f f f
+fooProp_inds_dep is transparent
+Expands to: Constant SchemeNames.fooProp_inds_dep
+fooProp_ind_dep :
+forall P : fooProp -> Prop, P aP -> P bP -> forall f1 : fooProp, P f1
+
+fooProp_ind_dep is not universe polymorphic
+Arguments fooProp_ind_dep P%function_scope f f f
+fooProp_ind_dep is transparent
+Expands to: Constant SchemeNames.fooProp_ind_dep
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooProp.
+fooProp_inds : forall P : SProp, P -> P -> fooProp -> P
+
+fooProp_inds is not universe polymorphic
+Arguments fooProp_inds P%type_scope f f f
+fooProp_inds is transparent
+Expands to: Constant SchemeNames.fooProp_inds
+fooProp_ind : forall P : Prop, P -> P -> fooProp -> P
+
+fooProp_ind is not universe polymorphic
+Arguments fooProp_ind P%type_scope f f f
+fooProp_ind is transparent
+Expands to: Constant SchemeNames.fooProp_ind
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooProp.
+fooProp_cases_dep :
+forall P : fooProp -> SProp, P aP -> P bP -> forall f1 : fooProp, P f1
+
+fooProp_cases_dep is not universe polymorphic
+Arguments fooProp_cases_dep P%function_scope f f f
+fooProp_cases_dep is transparent
+Expands to: Constant SchemeNames.fooProp_cases_dep
+fooProp_case_dep :
+forall P : fooProp -> Prop, P aP -> P bP -> forall f1 : fooProp, P f1
+
+fooProp_case_dep is not universe polymorphic
+Arguments fooProp_case_dep P%function_scope f f f
+fooProp_case_dep is transparent
+Expands to: Constant SchemeNames.fooProp_case_dep
+The command has indeed failed with message:
+Induction on sort Set is not allowed for inductive definition fooProp.
+The command has indeed failed with message:
+Induction on sort Type is not allowed for inductive definition fooProp.
+fooProp_cases : forall P : SProp, P -> P -> fooProp -> P
+
+fooProp_cases is not universe polymorphic
+Arguments fooProp_cases P%type_scope f f f
+fooProp_cases is transparent
+Expands to: Constant SchemeNames.fooProp_cases
+fooProp_case : forall P : Prop, P -> P -> fooProp -> P
+
+fooProp_case is not universe polymorphic
+Arguments fooProp_case P%type_scope f f f
+fooProp_case is transparent
+Expands to: Constant SchemeNames.fooProp_case
+The command has indeed failed with message:
+Cannot extract computational content from proposition 
+"fooProp".
+fooSet_inds :
+forall P : fooSet -> SProp, P aS -> P bS -> forall f1 : fooSet, P f1
+
+fooSet_inds is not universe polymorphic
+Arguments fooSet_inds P%function_scope f f f
+fooSet_inds is transparent
+Expands to: Constant SchemeNames.fooSet_inds
+fooSet_ind :
+forall P : fooSet -> Prop, P aS -> P bS -> forall f1 : fooSet, P f1
+
+fooSet_ind is not universe polymorphic
+Arguments fooSet_ind P%function_scope f f f
+fooSet_ind is transparent
+Expands to: Constant SchemeNames.fooSet_ind
+fooSet_rec :
+forall P : fooSet -> Set, P aS -> P bS -> forall f1 : fooSet, P f1
+
+fooSet_rec is not universe polymorphic
+Arguments fooSet_rec P%function_scope f f f
+fooSet_rec is transparent
+Expands to: Constant SchemeNames.fooSet_rec
+fooSet_rect :
+forall P : fooSet -> Type, P aS -> P bS -> forall f1 : fooSet, P f1
+
+fooSet_rect is not universe polymorphic
+Arguments fooSet_rect P%function_scope f f f
+fooSet_rect is transparent
+Expands to: Constant SchemeNames.fooSet_rect
+fooSet_inds_nodep : forall P : SProp, P -> P -> fooSet -> P
+
+fooSet_inds_nodep is not universe polymorphic
+Arguments fooSet_inds_nodep P%type_scope f f f
+fooSet_inds_nodep is transparent
+Expands to: Constant SchemeNames.fooSet_inds_nodep
+fooSet_ind_nodep : forall P : Prop, P -> P -> fooSet -> P
+
+fooSet_ind_nodep is not universe polymorphic
+Arguments fooSet_ind_nodep P%type_scope f f f
+fooSet_ind_nodep is transparent
+Expands to: Constant SchemeNames.fooSet_ind_nodep
+fooSet_rec_nodep : forall P : Set, P -> P -> fooSet -> P
+
+fooSet_rec_nodep is not universe polymorphic
+Arguments fooSet_rec_nodep P%type_scope f f f
+fooSet_rec_nodep is transparent
+Expands to: Constant SchemeNames.fooSet_rec_nodep
+fooSet_rect_nodep : forall P : Type, P -> P -> fooSet -> P
+
+fooSet_rect_nodep is not universe polymorphic
+Arguments fooSet_rect_nodep P%type_scope f f f
+fooSet_rect_nodep is transparent
+Expands to: Constant SchemeNames.fooSet_rect_nodep
+fooSet_cases :
+forall P : fooSet -> SProp, P aS -> P bS -> forall f1 : fooSet, P f1
+
+fooSet_cases is not universe polymorphic
+Arguments fooSet_cases P%function_scope f f f
+fooSet_cases is transparent
+Expands to: Constant SchemeNames.fooSet_cases
+fooSet_case :
+forall P : fooSet -> Prop, P aS -> P bS -> forall f1 : fooSet, P f1
+
+fooSet_case is not universe polymorphic
+Arguments fooSet_case P%function_scope f f f
+fooSet_case is transparent
+Expands to: Constant SchemeNames.fooSet_case
+fooSet'_case :
+forall P : fooSet' -> Set, P aS' -> P bS' -> forall f1 : fooSet', P f1
+
+fooSet'_case is not universe polymorphic
+Arguments fooSet'_case P%function_scope f f f
+fooSet'_case is transparent
+Expands to: Constant SchemeNames.fooSet'_case
+fooSet'_caset :
+forall P : fooSet' -> Type, P aS' -> P bS' -> forall f1 : fooSet', P f1
+
+fooSet'_caset is not universe polymorphic
+Arguments fooSet'_caset P%function_scope f f f
+fooSet'_caset is transparent
+Expands to: Constant SchemeNames.fooSet'_caset
+fooSet_cases_nodep : forall P : SProp, P -> P -> fooSet -> P
+
+fooSet_cases_nodep is not universe polymorphic
+Arguments fooSet_cases_nodep P%type_scope f f f
+fooSet_cases_nodep is transparent
+Expands to: Constant SchemeNames.fooSet_cases_nodep
+fooSet_case_nodep : forall P : Prop, P -> P -> fooSet -> P
+
+fooSet_case_nodep is not universe polymorphic
+Arguments fooSet_case_nodep P%type_scope f f f
+fooSet_case_nodep is transparent
+Expands to: Constant SchemeNames.fooSet_case_nodep
+fooSet'_case_nodep : forall P : Set, P -> P -> fooSet' -> P
+
+fooSet'_case_nodep is not universe polymorphic
+Arguments fooSet'_case_nodep P%type_scope f f f
+fooSet'_case_nodep is transparent
+Expands to: Constant SchemeNames.fooSet'_case_nodep
+fooSet'_caset_nodep : forall P : Type, P -> P -> fooSet' -> P
+
+fooSet'_caset_nodep is not universe polymorphic
+Arguments fooSet'_caset_nodep P%type_scope f f f
+fooSet'_caset_nodep is transparent
+Expands to: Constant SchemeNames.fooSet'_caset_nodep
+fooSet_beq : fooSet -> fooSet -> bool
+
+fooSet_beq is not universe polymorphic
+fooSet_beq is transparent
+Expands to: Constant SchemeNames.fooSet_beq
+fooSet_eq_dec : forall x y : fooSet, {x = y} + {x <> y}
+
+fooSet_eq_dec is not universe polymorphic
+Arguments fooSet_eq_dec x y
+fooSet_eq_dec is transparent
+Expands to: Constant SchemeNames.fooSet_eq_dec
+internal_fooSet_dec_bl :
+forall x : fooSet,
+(fun x0 : fooSet => forall y : fooSet, fooSet_beq x0 y = true -> x0 = y) x
+
+internal_fooSet_dec_bl is not universe polymorphic
+Arguments internal_fooSet_dec_bl x y _
+internal_fooSet_dec_bl is transparent
+Expands to: Constant SchemeNames.internal_fooSet_dec_bl
+internal_fooSet_dec_lb :
+forall x : fooSet,
+(fun x0 : fooSet => forall y : fooSet, x0 = y -> fooSet_beq x0 y = true) x
+
+internal_fooSet_dec_lb is not universe polymorphic
+Arguments internal_fooSet_dec_lb x y _
+internal_fooSet_dec_lb is transparent
+Expands to: Constant SchemeNames.internal_fooSet_dec_lb
+fooType_inds :
+forall P : fooType -> SProp, P aT -> P bT -> forall f1 : fooType, P f1
+
+fooType_inds is not universe polymorphic
+Arguments fooType_inds P%function_scope f f f
+fooType_inds is transparent
+Expands to: Constant SchemeNames.fooType_inds
+fooType_ind :
+forall P : fooType -> Prop, P aT -> P bT -> forall f1 : fooType, P f1
+
+fooType_ind is not universe polymorphic
+Arguments fooType_ind P%function_scope f f f
+fooType_ind is transparent
+Expands to: Constant SchemeNames.fooType_ind
+fooType_rec :
+forall P : fooType -> Set, P aT -> P bT -> forall f1 : fooType, P f1
+
+fooType_rec is not universe polymorphic
+Arguments fooType_rec P%function_scope f f f
+fooType_rec is transparent
+Expands to: Constant SchemeNames.fooType_rec
+fooType_rect :
+forall P : fooType -> Type, P aT -> P bT -> forall f1 : fooType, P f1
+
+fooType_rect is not universe polymorphic
+Arguments fooType_rect P%function_scope f f f
+fooType_rect is transparent
+Expands to: Constant SchemeNames.fooType_rect
+fooType_inds_nodep : forall P : SProp, P -> P -> fooType -> P
+
+fooType_inds_nodep is not universe polymorphic
+Arguments fooType_inds_nodep P%type_scope f f f
+fooType_inds_nodep is transparent
+Expands to: Constant SchemeNames.fooType_inds_nodep
+fooType_ind_nodep : forall P : Prop, P -> P -> fooType -> P
+
+fooType_ind_nodep is not universe polymorphic
+Arguments fooType_ind_nodep P%type_scope f f f
+fooType_ind_nodep is transparent
+Expands to: Constant SchemeNames.fooType_ind_nodep
+fooType_rec_nodep : forall P : Set, P -> P -> fooType -> P
+
+fooType_rec_nodep is not universe polymorphic
+Arguments fooType_rec_nodep P%type_scope f f f
+fooType_rec_nodep is transparent
+Expands to: Constant SchemeNames.fooType_rec_nodep
+fooType_rect_nodep : forall P : Type, P -> P -> fooType -> P
+
+fooType_rect_nodep is not universe polymorphic
+Arguments fooType_rect_nodep P%type_scope f f f
+fooType_rect_nodep is transparent
+Expands to: Constant SchemeNames.fooType_rect_nodep
+fooType_cases :
+forall P : fooType -> SProp, P aT -> P bT -> forall f1 : fooType, P f1
+
+fooType_cases is not universe polymorphic
+Arguments fooType_cases P%function_scope f f f
+fooType_cases is transparent
+Expands to: Constant SchemeNames.fooType_cases
+fooType_case :
+forall P : fooType -> Prop, P aT -> P bT -> forall f1 : fooType, P f1
+
+fooType_case is not universe polymorphic
+Arguments fooType_case P%function_scope f f f
+fooType_case is transparent
+Expands to: Constant SchemeNames.fooType_case
+fooType'_case :
+forall P : fooType' -> Set, P aT' -> P bT' -> forall f1 : fooType', P f1
+
+fooType'_case is not universe polymorphic
+Arguments fooType'_case P%function_scope f f f
+fooType'_case is transparent
+Expands to: Constant SchemeNames.fooType'_case
+fooType'_caset :
+forall P : fooType' -> Type, P aT' -> P bT' -> forall f1 : fooType', P f1
+
+fooType'_caset is not universe polymorphic
+Arguments fooType'_caset P%function_scope f f f
+fooType'_caset is transparent
+Expands to: Constant SchemeNames.fooType'_caset
+fooType_cases_nodep : forall P : SProp, P -> P -> fooType -> P
+
+fooType_cases_nodep is not universe polymorphic
+Arguments fooType_cases_nodep P%type_scope f f f
+fooType_cases_nodep is transparent
+Expands to: Constant SchemeNames.fooType_cases_nodep
+fooType_case_nodep : forall P : Prop, P -> P -> fooType -> P
+
+fooType_case_nodep is not universe polymorphic
+Arguments fooType_case_nodep P%type_scope f f f
+fooType_case_nodep is transparent
+Expands to: Constant SchemeNames.fooType_case_nodep
+fooType'_case_nodep : forall P : Set, P -> P -> fooType' -> P
+
+fooType'_case_nodep is not universe polymorphic
+Arguments fooType'_case_nodep P%type_scope f f f
+fooType'_case_nodep is transparent
+Expands to: Constant SchemeNames.fooType'_case_nodep
+fooType'_caset_nodep : forall P : Type, P -> P -> fooType' -> P
+
+fooType'_caset_nodep is not universe polymorphic
+Arguments fooType'_caset_nodep P%type_scope f f f
+fooType'_caset_nodep is transparent
+Expands to: Constant SchemeNames.fooType'_caset_nodep
+fooType_beq : fooType -> fooType -> bool
+
+fooType_beq is not universe polymorphic
+fooType_beq is transparent
+Expands to: Constant SchemeNames.fooType_beq
+fooType_eq_dec : forall x y : fooType, {x = y} + {x <> y}
+
+fooType_eq_dec is not universe polymorphic
+Arguments fooType_eq_dec x y
+fooType_eq_dec is transparent
+Expands to: Constant SchemeNames.fooType_eq_dec
+internal_fooType_dec_bl :
+forall x : fooType,
+(fun x0 : fooType => forall y : fooType, fooType_beq x0 y = true -> x0 = y) x
+
+internal_fooType_dec_bl is not universe polymorphic
+Arguments internal_fooType_dec_bl x y _
+internal_fooType_dec_bl is transparent
+Expands to: Constant SchemeNames.internal_fooType_dec_bl
+internal_fooType_dec_lb :
+forall x : fooType,
+(fun x0 : fooType => forall y : fooType, x0 = y -> fooType_beq x0 y = true) x
+
+internal_fooType_dec_lb is not universe polymorphic
+Arguments internal_fooType_dec_lb x y _
+internal_fooType_dec_lb is transparent
+Expands to: Constant SchemeNames.internal_fooType_dec_lb
