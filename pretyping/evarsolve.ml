@@ -686,7 +686,7 @@ let solve_pattern_eqn env sigma l c =
     l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
      is not in normal form *)
-  shrink_eta env c'
+  shrink_eta sigma c'
 
 (*****************************************)
 (* Refining/solving unification problems *)
