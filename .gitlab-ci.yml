@@ -650,6 +650,13 @@ library:ci-bedrock2:
   variables:
     NJOBS: "1"
 
+library:ci-category_theory:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - plugin:ci-equations
+
 library:ci-color:
   extends: .ci-template-flambda
   stage: stage-3
