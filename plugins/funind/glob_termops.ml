@@ -64,6 +64,8 @@ let change_vars =
           GVar new_id | GEvar _ as x -> x | GPatVar _ as x -> x
         | GApp (rt', rtl) ->
           GApp (change_vars mapping rt', List.map (change_vars mapping) rtl)
+        | GProj (f, rtl, rt) ->
+          GProj (f, List.map (change_vars mapping) rtl, change_vars mapping rt)
         | GLambda (name, k, t, b) ->
           GLambda
             ( name
@@ -288,6 +290,8 @@ let rec alpha_rt excluded rt =
       GCast (alpha_rt excluded b, Glob_ops.map_cast_type (alpha_rt excluded) c)
     | GApp (f, args) ->
       GApp (alpha_rt excluded f, List.map (alpha_rt excluded) args)
+    | GProj (f, args, c) ->
+      GProj (f, List.map (alpha_rt excluded) args, alpha_rt excluded c)
     | GArray (u, t, def, ty) ->
       GArray
         ( u
@@ -313,7 +317,7 @@ let is_free_in id =
     DAst.with_loc_val
       (fun ?loc -> function GRef _ -> false | GVar id' -> Id.compare id' id == 0
         | GEvar _ -> false | GPatVar _ -> false
-        | GApp (rt, rtl) -> List.exists is_free_in (rt :: rtl)
+        | GApp (rt, rtl) | GProj (_, rtl, rt) -> List.exists is_free_in (rt :: rtl)
         | GLambda (n, _, t, b) | GProd (n, _, t, b) ->
           let check_in_b =
             match n with Name id' -> not (Id.equal id' id) | _ -> true
@@ -378,6 +382,8 @@ let replace_var_by_term x_id term =
         | (GRef _ | GVar _ | GEvar _ | GPatVar _) as rt -> rt
         | GApp (rt', rtl) ->
           GApp (replace_var_by_pattern rt', List.map replace_var_by_pattern rtl)
+        | GProj (f, rtl, rt) ->
+          GProj (f, List.map replace_var_by_pattern rtl, replace_var_by_pattern rt)
         | GLambda (Name id, _, _, _) as rt when Id.compare id x_id == 0 -> rt
         | GLambda (name, k, t, b) ->
           GLambda (name, k, replace_var_by_pattern t, replace_var_by_pattern b)
@@ -506,6 +512,7 @@ let expand_as =
       | GVar id as rt -> (
         try DAst.get (Id.Map.find id map) with Not_found -> rt )
       | GApp (f, args) -> GApp (expand_as map f, List.map (expand_as map) args)
+      | GProj (f, args, c) -> GProj (f, List.map (expand_as map) args, expand_as map c)
       | GLambda (na, k, t, b) ->
         GLambda (na, k, expand_as map t, expand_as map b)
       | GProd (na, k, t, b) -> GProd (na, k, expand_as map t, expand_as map b)

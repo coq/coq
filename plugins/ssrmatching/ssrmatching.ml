@@ -940,7 +940,7 @@ let id_of_cpattern {pattern = (c1, c2); _} =
   match DAst.get c1, c2 with
   | _, Some { v = CRef (qid, _) } when qualid_is_ident qid ->
     Some (qualid_basename qid)
-  | _, Some { v = CAppExpl ((_, qid, _), []) } when qualid_is_ident qid ->
+  | _, Some { v = CAppExpl ((qid, _), []) } when qualid_is_ident qid ->
     Some (qualid_basename qid)
   | GRef (GlobRef.VarRef x, _), None -> Some x
   | _ -> None

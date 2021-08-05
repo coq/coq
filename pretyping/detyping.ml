@@ -1072,6 +1072,15 @@ let rec subst_glob_constr env subst = DAst.map (function
         if r' == r && rl' == rl then raw else
           GApp(r',rl')
 
+  | GProj ((cst,u),rl,r) as raw ->
+      let rl' = List.Smart.map (subst_glob_constr env subst) rl
+      and r' = subst_glob_constr env subst r in
+      let ref = GlobRef.ConstRef cst in
+      let ref',t = subst_global subst ref in
+      assert (t = None); (* projection *)
+        if ref' == ref && rl' == rl && r' == r then raw else
+          GProj((destConstRef ref',u),rl',r')
+
   | GLambda (n,bk,r1,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 and r2' = subst_glob_constr env subst r2 in
         if r1' == r1 && r2' == r2 then raw else

@@ -140,7 +140,7 @@ GRAMMAR EXTEND Gram
   ;
   constr:
     [ [ c = term LEVEL "8" -> { c }
-      | "@"; f=global; i = univ_annot -> { CAst.make ~loc @@ CAppExpl((None,f,i),[]) } ] ]
+      | "@"; f=global; i = univ_annot -> { CAst.make ~loc @@ CAppExpl((f,i),[]) } ] ]
   ;
   term:
     [ "200" RIGHTA
@@ -155,22 +155,22 @@ GRAMMAR EXTEND Gram
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
-      [ f = term; args = LIST1 arg -> { CAst.make ~loc @@ CApp((None,f),args) }
-      | "@"; f = global; i = univ_annot; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((None,f,i),args) }
+      [ f = term; args = LIST1 arg -> { CAst.make ~loc @@ CApp(f,args) }
+      | "@"; f = global; i = univ_annot; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((f,i),args) }
       | "@"; lid = pattern_ident; args = LIST1 identref ->
         { let { CAst.loc = locid; v = id } = lid in
           let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
-          CAst.make ~loc @@ CApp((None, CAst.make ?loc:locid @@ CPatVar id),args) } ]
+          CAst.make ~loc @@ CApp(CAst.make ?loc:locid @@ CPatVar id,args) } ]
     | "9"
       [ ".."; c = term LEVEL "0"; ".." ->
-        { CAst.make ~loc @@ CAppExpl ((None, (qualid_of_ident ~loc ldots_var), None),[c]) } ]
+        { CAst.make ~loc @@ CAppExpl ((qualid_of_ident ~loc ldots_var, None),[c]) } ]
     | "8" [ ]
     | "1" LEFTA
-      [ c = term; ".("; f = global; args = LIST0 arg; ")" ->
-        { CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None]) }
-      | c = term; ".("; "@"; f = global;
+      [ c = term; ".("; f = global; i = univ_annot; args = LIST0 arg; ")" ->
+        { CAst.make ~loc @@ CProj(false, (f,i), args, c) }
+      | c = term; ".("; "@"; f = global; i = univ_annot;
         args = LIST0 (term LEVEL "9"); ")" ->
-        { CAst.make ~loc @@ CAppExpl((Some (List.length args+1),f,None),args@[c]) }
+        { CAst.make ~loc @@ CProj(true, (f,i), List.map (fun a -> (a,None)) args, c) }
       | c = term; "%"; key = IDENT -> { CAst.make ~loc @@ CDelimiters (key,c) } ]
     | "0"
       [ c = atomic_constr -> { c }

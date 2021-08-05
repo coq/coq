@@ -141,15 +141,19 @@ let rec constr_expr_eq e1 e2 =
       constr_expr_eq a1 a2 &&
       Option.equal constr_expr_eq t1 t2 &&
       constr_expr_eq b1 b2
-    | CAppExpl((proj1,r1,u1),al1), CAppExpl((proj2,r2,u2),al2) ->
-      Option.equal Int.equal proj1 proj2 &&
+    | CAppExpl((r1,u1),al1), CAppExpl((r2,u2),al2) ->
       qualid_eq r1 r2 &&
       eq_universes u1 u2 &&
       List.equal constr_expr_eq al1 al2
-    | CApp((proj1,e1),al1), CApp((proj2,e2),al2) ->
-      Option.equal Int.equal proj1 proj2 &&
+    | CApp(e1,al1), CApp(e2,al2) ->
       constr_expr_eq e1 e2 &&
       List.equal args_eq al1 al2
+    | CProj(e1,(p1,u1),al1,c1), CProj(e2,(p2,u2),al2,c2) ->
+      e1 = (e2:bool) &&
+      qualid_eq p1 p2 &&
+      eq_universes u1 u2 &&
+      List.equal args_eq al1 al2 &&
+      constr_expr_eq c1 c2
     | CRecord l1, CRecord l2 ->
       let field_eq (r1, e1) (r2, e2) =
         qualid_eq r1 r2 && constr_expr_eq e1 e2
@@ -199,7 +203,7 @@ let rec constr_expr_eq e1 e2 =
       constr_expr_eq def1 def2 && constr_expr_eq ty1 ty2 &&
       eq_universes u1 u2
   | (CRef _ | CFix _ | CCoFix _ | CProdN _ | CLambdaN _ | CLetIn _ | CAppExpl _
-     | CApp _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _
+     | CApp _ | CProj _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _
      | CPatVar _ | CEvar _ | CSort _ | CCast _ | CNotation _ | CPrim _
      | CGeneralization _ | CDelimiters _ | CArray _), _ -> false
 
@@ -338,8 +342,9 @@ let rec fold_local_binders g f n acc b = let open CAst in function
     f n acc b
 
 let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
-    | CAppExpl ((_,_,_),l) -> List.fold_left (f n) acc l
-    | CApp ((_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
+    | CAppExpl ((_,_),l) -> List.fold_left (f n) acc l
+    | CApp (t,l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
+    | CProj (e,_,l,t) -> f n (List.fold_left (f n) acc (List.map fst l)) t
     | CProdN (l,b) | CLambdaN (l,b) -> fold_local_binders g f n acc b l
     | CLetIn (na,a,t,b) ->
       f (Name.fold_right g (na.CAst.v) n) (Option.fold_left (f n) (f n acc a) t) b
@@ -447,8 +452,10 @@ let fold_map_local_binders f g e bl =
 
 let map_constr_expr_with_binders g f e = CAst.map (function
     | CAppExpl (r,l) -> CAppExpl (r,List.map (f e) l)
-    | CApp ((p,a),l) ->
-      CApp ((p,f e a),List.map (fun (a,i) -> (f e a,i)) l)
+    | CApp (a,l) ->
+      CApp (f e a,List.map (fun (a,i) -> (f e a,i)) l)
+    | CProj (expl,p,l,a) ->
+      CProj (expl,p,List.map (fun (a,i) -> (f e a,i)) l,f e a)
     | CProdN (bl,b) ->
       let (e,bl) = fold_map_local_binders f g e bl in CProdN (bl,f e b)
     | CLambdaN (bl,b) ->
@@ -585,7 +592,7 @@ let mkAppC (f,l) =
   let l = List.map (fun x -> (x,None)) l in
   match CAst.(f.v) with
   | CApp (g,l') -> CAst.make @@ CApp (g, l' @ l)
-  | _           -> CAst.make @@ CApp ((None, f), l)
+  | _           -> CAst.make @@ CApp (f, l)
 
 let mkProdCN ?loc bll c =
   if bll = [] then c else
@@ -647,9 +654,9 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef (qid,None) })
       when qualid_is_ident qid && Id.equal id (qualid_basename qid) ->
       CPatAlias (coerce_to_cases_pattern_expr b, CAst.(make ?loc @@ Name id))
-  | CApp ((None,p),args) when List.for_all (fun (_,e) -> e=None) args ->
+  | CApp (p,args) when List.for_all (fun (_,e) -> e=None) args ->
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v
-  | CAppExpl ((None,r,i),args) ->
+  | CAppExpl ((r,i),args) ->
      CPatCstr (r,Some (List.map coerce_to_cases_pattern_expr args),[])
   | CNotation (inscope,ntn,(c,cl,[],[])) ->
      CPatNotation (inscope,ntn,(List.map coerce_to_cases_pattern_expr c,

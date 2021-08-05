@@ -500,12 +500,16 @@ let match_goals ot nt =
       constr_expr ogname c1 c12;
       constr_expr_opt ogname t t2;
       constr_expr ogname c2 c22
-    | CAppExpl ((isproj,ref,us),args), CAppExpl ((isproj2,ref2,us2),args2) ->
+    | CAppExpl ((ref,us),args), CAppExpl ((ref2,us2),args2) ->
       iter2 (constr_expr ogname) args args2
-    | CApp ((isproj,f),args), CApp ((isproj2,f2),args2) ->
+    | CApp (f,args), CApp (f2,args2) ->
       constr_expr ogname f f2;
       iter2 (fun a a2 -> let (c, _) = a and (c2, _) = a2 in
           constr_expr ogname c c2) args args2
+    | CProj (expl,f,args,c), CProj (expl2,f2,args2,c2) ->
+      iter2 (fun a a2 -> let (c, _) = a and (c2, _) = a2 in
+          constr_expr ogname c c2) args args2;
+      constr_expr ogname c c2;
     | CRecord fs, CRecord fs2 ->
       iter2 (fun a a2 -> let (_, c) = a and (_, c2) = a2 in
           constr_expr ogname c c2) fs fs2

@@ -380,6 +380,7 @@ let glob_prim_constr_key c = match DAst.get c with
     | GRef (ref, _) -> Some (canonical_gr ref)
     | _ -> None
     end
+  | GProj ((cst,_), _, _) -> Some (canonical_gr (GlobRef.ConstRef cst))
   | _ -> None
 
 let glob_constr_keys c = match DAst.get c with
@@ -388,6 +389,7 @@ let glob_constr_keys c = match DAst.get c with
     | GRef (ref, _) -> [RefKey (canonical_gr ref); Oth]
     | _ -> [Oth]
     end
+  | GProj ((cst,_), _, _) -> [RefKey (canonical_gr (GlobRef.ConstRef cst))]
   | GRef (ref,_) -> [RefKey (canonical_gr ref)]
   | _ -> [Oth]
 
@@ -397,6 +399,7 @@ let cases_pattern_key c = match DAst.get c with
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
   | NApp (NRef (ref,_),args) -> RefKey(canonical_gr ref), AppBoundedNotation (List.length args)
+  | NProj ((cst,_),args,_) -> RefKey(canonical_gr (GlobRef.ConstRef cst)), AppBoundedNotation (List.length args + 1)
   | NList (_,_,NApp (NRef (ref,_),args),_,_)
   | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) ->
       RefKey (canonical_gr ref), AppBoundedNotation (List.length args)

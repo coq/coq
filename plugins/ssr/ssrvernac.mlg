@@ -193,10 +193,10 @@ END
 {
 
 let pr_raw_ssrhintref env sigma prc _ _ = let open CAst in function
-  | { v = CAppExpl ((None, r,x), args) } when isCHoles args ->
+  | { v = CAppExpl ((r,x), args) } when isCHoles args ->
     prc env sigma (CAst.make @@ CRef (r,x)) ++ str "|" ++ int (List.length args)
-  | { v = CApp ((_, { v = CRef _ }), _) } as c -> prc env sigma c
-  | { v = CApp ((_, c), args) } when isCxHoles args ->
+  | { v = CApp ({ v = CRef _ }, _) } as c -> prc env sigma c
+  | { v = CApp (c, args) } when isCxHoles args ->
     prc env sigma c ++ str "|" ++ int (List.length args)
   | c -> prc env sigma c
 
@@ -211,7 +211,7 @@ let pr_glob_ssrhintref env sigma _ _ _ (c, _) = pr_rawhintref env sigma c
 let pr_ssrhintref env sigma prc _ _ = prc env sigma
 
 let mkhintref ?loc c n = match c.CAst.v with
-  | CRef (r,x) -> CAst.make ?loc @@ CAppExpl ((None, r, x), mkCHoles ?loc n)
+  | CRef (r,x) -> CAst.make ?loc @@ CAppExpl ((r, x), mkCHoles ?loc n)
   | _ -> mkAppC (c, mkCHoles ?loc n)
 
 }

@@ -571,36 +571,21 @@ let tag_var = tag Tag.variable
               pr spc ltop b),
           lletin
         )
-      | CAppExpl ((Some i,f,us),l) ->
-        let l1,l2 = List.chop i l in
-        let c,l1 = List.sep_last l1 in
-        let p = pr_proj (pr mt) pr_appexpl c (f,us) l1 in
-        if not (List.is_empty l2) then
-          return (hov 0 (p ++ prlist (pr spc (LevelLt lapp)) l2), lapp)
-        else
-          return (p, lproj)
-      | CAppExpl ((None,qid,us),[t])
-      | CApp ((_, {v = CRef(qid,us)}),[t,None])
+      | CProj (true,(f,us),l,c) ->
+        let l = List.map (function (c,None) -> c | _ -> assert false) l in
+        return (pr_proj (pr mt) pr_appexpl c (f,us) l, lproj)
+      | CProj (false,(f,us),l,c) ->
+        return (pr_proj (pr mt) pr_app c (CAst.make (CRef (f,us))) l, lproj)
+      | CAppExpl ((qid,us),[t])
+      | CApp ({v = CRef(qid,us)},[t,None])
           when qualid_is_ident qid && Id.equal (qualid_basename qid) Notation_ops.ldots_var ->
         return (
           hov 0 (str ".." ++ pr spc (LevelLe latom) t ++ spc () ++ str ".."),
           larg
         )
-      | CAppExpl ((None,f,us),l) ->
+      | CAppExpl ((f,us),l) ->
         return (pr_appexpl (pr mt) (f,us) l, lapp)
-      | CApp ((Some i,f),l) ->
-        let l1,l2 = List.chop i l in
-        let c,l1 = List.sep_last l1 in
-        assert (Option.is_empty (snd c));
-        let p = pr_proj (pr mt) pr_app (fst c) f l1 in
-        if not (List.is_empty l2) then
-          return (
-            hov 0 (p ++ prlist (fun a -> spc () ++ pr_expl_args (pr mt) a) l2),
-            lapp
-          )
-        else
-          return (p, lproj)
-      | CApp ((None,a),l) ->
+      | CApp (a,l) ->
         return (pr_app (pr mt) a l, lapp)
       | CRecord l ->
         return (pr_record_body "{|" "|}" (pr spc ltop) l, latom)
@@ -712,7 +697,7 @@ let tag_var = tag Tag.variable
        that we cannot use [pr] correctly anymore in a recursive loop
        if the current expr is followed by other exprs which would be
        interpreted as arguments *)
-    | { CAst.v = CAppExpl ((None,f,us),[]) } -> str "@" ++ pr_cref f us
+    | { CAst.v = CAppExpl ((f,us),[]) } -> str "@" ++ pr_cref f us
     | c -> pr prec c
 
   let transf env sigma c =

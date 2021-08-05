@@ -150,6 +150,9 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
     (* it had to be a single iteration of iter1 *)
     aux vars renaming tail1 t2
   | NApp (t1, a1), NApp (t2, a2) -> aux vars renaming t1 t2; List.iter2 (aux vars renaming) a1 a2
+  | NProj ((cst1,u1), l1, a1), NProj ((cst2,u2), l2, a2)
+    when GlobRef.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances lt strictly_lt u1 u2 ->
+    List.iter2 (aux vars renaming) l1 l2; aux vars renaming a1 a2
   | NLambda (na1, t1, u1), NLambda (na2, t2, u2)
   | NProd (na1, t1, u1), NProd (na2, t2, u2) ->
     (match t1, t2 with
@@ -211,7 +214,7 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
     Array.iter2 (aux vars renaming) t1 t2;
     aux vars renaming def1 def2;
     aux vars renaming ty1 ty2
-  | (NRef _ | NVar _ | NApp _ | NHole _ | NList _ | NLambda _ | NProd _
+  | (NRef _ | NVar _ | NApp _ | NProj _ | NHole _ | NList _ | NLambda _ | NProd _
     | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
     | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NArray _), _ -> raise Exit in
   try
@@ -327,6 +330,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
   let lt x = DAst.make ?loc x in lt @@ match nc with
   | NVar id -> GVar id
   | NApp (a,args) -> let e = h.no e in DAst.get (mkGApp (f e a) (List.map (f e) args))
+  | NProj (p,args,c) -> let e = h.no e in GProj (p, List.map (f e) args, f e c)
   | NList (x,y,iter,tail,swap) ->
       let t = f e tail in let it = f e iter in
       let innerl = (ldots_var,t)::(if swap then [y, lt @@ GVar x] else []) in
@@ -600,6 +604,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GApp (g,args) ->
      (* Treat applicative notes as binary nodes *)
      let a,args = List.sep_last args in mkNApp1 (aux (DAst.make (GApp (g, args))), aux a)
+  | GProj (p,args,c) -> NProj (p, List.map aux args, aux c)
   | GLambda (na,bk,ty,c) -> add_name found na; NLambda (na,aux_type ty,aux c)
   | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux_type ty,aux c)
   | GLetIn (na,b,t,c) -> add_name found na; NLetIn (na,aux b,Option.map aux t, aux c)
@@ -741,6 +746,15 @@ let rec subst_notation_constr subst bound raw =
       and rl' = List.Smart.map (subst_notation_constr subst bound) rl in
         if r' == r && rl' == rl then raw else
           NApp(r',rl')
+
+  | NProj ((cst,u),rl,r) ->
+      let ref = GlobRef.ConstRef cst in
+      let ref',t = subst_global subst ref in
+      assert (t = None);
+      let rl' = List.Smart.map (subst_notation_constr subst bound) rl
+      and r' = subst_notation_constr subst bound r in
+        if ref' == ref && rl' == rl && r' == r then raw else
+          NProj ((destConstRef ref',u),rl',r')
 
   | NList (id1,id2,r1,r2,b) ->
       let r1' = subst_notation_constr subst bound r1
@@ -1374,6 +1388,14 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_hd u alp metas sigma f1 f2) l1 l2
+  | GProj ((cst1,u1),l1,a1), NProj ((cst2,u2),l2,a2) when GlobRef.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 ->
+     match_in u alp metas (List.fold_left2 (match_in u alp metas) sigma l1 l2) a1 a2
+  | GApp (f1,l1), NProj ((cst2,u2),l2,a2) ->
+     (match DAst.get f1 with
+     | GRef (r1,u1) when GlobRef.equal r1 (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 &&
+         List.length l1 = List.length l2 + 1 ->
+        List.fold_left2 (match_in u alp metas) sigma l1 (l2@[a2])
+     | _ -> raise No_match)
   | GLambda (na1,bk1,t1,b1), NLambda (na2,t2,b2) ->
      match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
   | GProd (na1,bk1,t1,b1), NProd (na2,t2,b2) ->
@@ -1469,7 +1491,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       Array.fold_left2 (match_in u alp metas) sigma t nt
     else raise No_match
 
-  | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _
+  | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GProj _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _
      | GCast _ | GInt _ | GFloat _ | GArray _), _ -> raise No_match
 

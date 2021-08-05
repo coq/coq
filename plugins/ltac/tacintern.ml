@@ -406,7 +406,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
           Inr (bound_names,(c,None),dummy_pat) in
   (l, match p with
   | Inl r -> interp_ref r
-  | Inr { v = CAppExpl((None,r,None),[]) } ->
+  | Inr { v = CAppExpl((r,None),[]) } ->
       (* We interpret similarly @ref and ref *)
       interp_ref (make @@ AN r)
   | Inr c ->

@@ -103,8 +103,8 @@ term8: [
 ]
 
 term1: [
-| term0 ".(" global LIST0 arg ")"
-| term0 ".(" "@" global LIST0 ( term9 ) ")"
+| term0 ".(" global univ_annot LIST0 arg ")"
+| term0 ".(" "@" global univ_annot LIST0 ( term9 ) ")"
 | term0 "%" IDENT
 | term0
 ]

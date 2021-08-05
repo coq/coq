@@ -9,6 +9,14 @@
 
 - Renaming `LSet` into `Level.Set` and `LMap` into `Level.Map`
 
+### Concrete syntax
+
+- Explicit nodes `CProj` and `GProj` have been added for the syntax of
+  projections `t.(f)` in `constr_expr` and `glob_constr`, while they
+  were previously encoded in the `CApp` and `GApp` nodes. There may be
+  a need for adding a new case in pattern-matching. The types of `CApp`
+  and `CAppExpl` have been simplified accordingly.
+
 ## Changes between Coq 8.13 and Coq 8.14
 
 ### Build system and library infrastructure

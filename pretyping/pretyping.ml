@@ -490,6 +490,7 @@ type pretyper = {
   pretype_evar : pretyper -> existential_name CAst.t * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
   pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
+  pretype_proj : pretyper -> (Constant.t * glob_level list option) * glob_constr list * glob_constr -> unsafe_judgment pretype_fun;
   pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_prod : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_letin : pretyper -> Name.t * glob_constr * glob_constr option * glob_constr -> unsafe_judgment pretype_fun;
@@ -520,6 +521,8 @@ let eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma t =
     self.pretype_patvar self knd ?loc ~program_mode ~poly resolve_tc tycon env sigma
   | GApp (c, args) ->
     self.pretype_app self (c, args) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+  | GProj (hd, args, c) ->
+    self.pretype_proj self (hd, args, c) ?loc ~program_mode ~poly resolve_tc tycon env sigma
   | GLambda (na, bk, t, c) ->
     self.pretype_lambda self (na, bk, t, c) ?loc ~program_mode ~poly resolve_tc tycon env sigma
   | GProd (na, bk, t, c) ->
@@ -908,6 +911,11 @@ struct
         { resj with uj_val = Coercion.reapply_coercions sigma trace t }
     in
     (sigma, resj)
+
+  let pretype_proj self ((f,us), args, c) =
+    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    pretype_app self (DAst.make ?loc (GRef (GlobRef.ConstRef f,us)), args @ [c])
+      ?loc ~program_mode ~poly resolve_tc tycon env sigma
 
   let pretype_lambda self (name, bk, c1, c2) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -1327,6 +1335,7 @@ let default_pretyper =
     pretype_evar = pretype_evar;
     pretype_patvar = pretype_patvar;
     pretype_app = pretype_app;
+    pretype_proj = pretype_proj;
     pretype_lambda = pretype_lambda;
     pretype_prod = pretype_prod;
     pretype_letin = pretype_letin;

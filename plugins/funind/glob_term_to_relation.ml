@@ -553,7 +553,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
       in
       build_entry_lc env sigma funnames avoid
         (mkGLetIn (new_n, v, t, mkGApp (new_b, args)))
-    | GCases _ | GIf _ | GLetTuple _ ->
+    | GCases _ | GIf _ | GLetTuple _ | GProj _ ->
       (* we have [(match e1, ...., en with ..... end) t1 tn]
          we first compute the result from the case and
          then combine each of them with each of args one
@@ -573,6 +573,23 @@ let rec build_entry_lc env sigma funnames avoid rt :
     | GFloat _ -> user_err Pp.(str "Cannot apply a float")
     | GArray _ -> user_err Pp.(str "Cannot apply an array")
     (* end of the application treatement *) )
+  | GProj (f, params, c) ->
+    let args_res : glob_constr list build_entry_return =
+      List.fold_right
+        (* create the arguments lists of constructors and combine them *)
+          (fun arg ctxt_argsl ->
+          let arg_res =
+            build_entry_lc env sigma funnames ctxt_argsl.to_avoid arg
+          in
+          combine_results combine_args arg_res ctxt_argsl)
+        (params@[c]) (mk_result [] [] avoid) in
+      { args_res with
+        result =
+          List.map
+            (fun args_res ->
+              let c, params = List.sep_last args_res.value in
+              {args_res with value = DAst.make (GProj (f, params, c))})
+            args_res.result }
   | GLambda (n, _, t, b) ->
     (* we first compute the list of constructor
        corresponding to the body of the function,
@@ -1182,6 +1199,8 @@ let rec compute_cst_params relnames params gt =
         | GVar relname' when Id.Set.mem relname' relnames ->
           compute_cst_params_from_app [] (params, args)
         | _ -> List.fold_left (compute_cst_params relnames) params (f :: args) )
+      | GProj (f, args, c) ->
+        List.fold_left (compute_cst_params relnames) params (args @ [c])
       | GLambda (_, _, t, b) | GProd (_, _, t, b) | GLetTuple (_, _, t, b) ->
         let t_params = compute_cst_params relnames params t in
         compute_cst_params relnames t_params b

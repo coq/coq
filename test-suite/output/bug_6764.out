@@ -1,0 +1,8 @@
+forall f : foo, ■ f = ■ f
+     : Prop
+forall f : foo, ■ f = ■ f
+     : Prop
+fun x : T => %% x
+     : T -> nat
+fun x : T => %% x
+     : T -> nat
