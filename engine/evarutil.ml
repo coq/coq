@@ -582,7 +582,6 @@ let rec check_and_clear_in_constr env evdref err ids global c =
               let filter = Evd.Filter.apply_subfilter origfilter filter in
               let evd = !evdref in
               let candidates = Evd.evar_candidates evi in
-              let candidates = Option.map (List.map EConstr.of_constr) candidates in
               let (evd,_) = restrict_evar evd evk filter candidates in
               evdref := evd;
               Evd.existential_value0 !evdref ev

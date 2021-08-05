@@ -1380,7 +1380,7 @@ let thin_evars env sigma sign c =
        let evi = Evd.find_undefined !sigma ev in
        let filter = List.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
        let filter = Filter.make filter in
-       let candidates = Option.map (List.map EConstr.of_constr) (evar_candidates evi) in
+       let candidates = evar_candidates evi in
        let evd, ev = restrict_evar !sigma ev filter candidates in
        sigma := evd; whd_evar !sigma t
     | Var id ->
@@ -1529,11 +1529,11 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
              let evi = Evd.find evd ev in
                (match evar_candidates evi with
                | Some [t] ->
-                 if not (noccur_evar env_rhs evd ev (EConstr.of_constr t)) then
+                 if not (noccur_evar env_rhs evd ev t) then
                    raise (TypingFailed evd);
-                 instantiate_evar evar_unify flags env_rhs evd ev (EConstr.of_constr t)
+                 instantiate_evar evar_unify flags env_rhs evd ev t
                | Some l when abstract = Abstraction.Abstract &&
-                          List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
+                          List.exists (fun c -> isVarId evd id c) l ->
                  instantiate_evar evar_unify flags env_rhs evd ev vid
                | _ -> evd)
            with IllTypedInstance _ (* from instantiate_evar *) | TypingFailed _ ->

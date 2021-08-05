@@ -135,7 +135,7 @@ val evar_filtered_context : evar_info -> (econstr, etypes) Context.Named.pt
 val evar_hyps : evar_info -> named_context_val
 val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
-val evar_candidates : evar_info -> constr list option
+val evar_candidates : evar_info -> econstr list option
 val evar_filter : evar_info -> Filter.t
 val evar_env : env -> evar_info -> env
 val evar_filtered_env : env -> evar_info -> env
