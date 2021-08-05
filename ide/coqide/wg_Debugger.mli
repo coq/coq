@@ -19,6 +19,7 @@ class type debugger_view =
     method hide : unit -> unit
     method show : unit -> unit
     method set_forward_highlight_code : (string * int * int -> unit) -> unit
+    method set_forward_clear_db_highlight : (unit -> unit) -> unit
     method set_forward_db_vars : (int -> unit) -> unit
     method set_forward_paned_pos : (int -> unit) -> unit
     method set_forward_get_basename : (unit -> string) -> unit

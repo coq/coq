@@ -197,8 +197,8 @@ let create_session f =
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_loc (!forward_db_loc sn);
   (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
-  (* todo: support one debugger per session *)
   sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
+  sn.debugger#set_forward_clear_db_highlight (clear_db_highlight sn);
   sn.debugger#set_forward_db_vars (!forward_db_vars sn);
   sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
   sn.coqops#set_forward_set_goals_of_dbg_session
@@ -783,6 +783,7 @@ let resume_debugger ?sid opt = (* todo: assign numbers/create a type *)
       t.debugger#set_vars [];
       t.messages#default_route#set_editable2 false;
       t.messages#default_route#push Feedback.Notice (Pp.mt ());
+      (* Ideutils.push_info "Coq is computing";  todo: needs to be per-session *)
       true
     end else false
 
@@ -1013,7 +1014,7 @@ let highlight_code sn loc =
     clear_db_highlight sn ();
     notebook#current_term.script#set_debugging_highlight bp ep;
     sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
-    (* show goal in secondary script goal panel *)
+    (* also show goal in secondary script goal panel *)
     notebook#current_term.coqops#set_debug_goal sn.last_db_goals
   in
   if file = "ToplevelInput" then begin
@@ -1696,10 +1697,12 @@ let build_ui () =
   (* Progress Bar *)
   let pbar = GRange.progress_bar ~pulse_step:0.1 () in
   let () = lower_hbox#pack pbar#coerce in
-  let ready () = pbar#set_fraction 0.0; pbar#set_text "Coq is ready" in
+  let ready () = pbar#set_fraction 0.0 in
   let pulse sn =
-    if Coq.is_computing sn.coqtop then
-      (pbar#set_text "Coq is computing"; pbar#pulse ())
+    if Coq.is_stopped_in_debugger sn.coqtop then
+      (pbar#set_pulse_step 0.0; pbar#pulse ())  (* stops slider at left end, not ideal *)
+    else if Coq.is_computing sn.coqtop then
+      (pbar#set_pulse_step 0.1; pbar#pulse ())
     else ready () in
   let callback () = on_current_term pulse; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in

@@ -575,7 +575,7 @@ object (self)
     (* todo: gray out cut, paste, undo, replace, [un]comment, Templates in the
       menu when script is not editable *)
     let nonmod_keys = List.map (fun k -> let (key, _) = GtkData.AccelGroup.parse k in key)
-      [ "Left"; "Right"; "Up"; "Down"; "Home"; "End" ] in
+      [ "Left"; "Right"; "Up"; "Down"; "Home"; "End"; "<Ctrl>A"] in
 
     (* keypress_cb and buttonpress_cb are a workaround to allow making the script panel not editable *)
     let keypress_cb ev =

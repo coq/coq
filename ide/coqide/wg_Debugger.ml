@@ -19,6 +19,7 @@ class type debugger_view =
     method hide : unit -> unit
     method show : unit -> unit
     method set_forward_highlight_code : (string * int * int -> unit) -> unit
+    method set_forward_clear_db_highlight : (unit -> unit) -> unit
     method set_forward_db_vars : (int -> unit) -> unit
     method set_forward_paned_pos : (int -> unit) -> unit
     method set_forward_get_basename : (unit -> string) -> unit
@@ -26,6 +27,9 @@ class type debugger_view =
 
 let forward_keystroke = ref ((fun x -> failwith "forward_keystroke (db)")
     : Gdk.keysym * Gdk.Tags.modifier list -> int -> bool)
+
+let find_string_col s l =
+  match List.assoc s l with `StringC c -> c | _ -> assert false
 
 let make_table_widget cd cb =
   let frame = GBin.scrolled_window ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
@@ -40,6 +44,38 @@ let make_table_widget cd cb =
       ~vadjustment:frame#vadjustment ~hadjustment:frame#hadjustment
       ~rules_hint:true ~headers_visible:false
       ~model:store ~packing:frame#add () in
+
+  let selection = data#selection in
+  selection#set_mode `MULTIPLE;
+  let copy = GtkData.AccelGroup.parse "<Ctrl>C" in
+
+  let keypress_cb ev =
+    let key_ev = Ideutils.filter_key ev in
+    if key_ev = copy then begin
+      let rows = selection#get_selected_rows in
+      let get_value iter = store#get ~row:iter ~column:(find_string_col "Var" columns) in
+      let buf = Buffer.create 100 in
+      List.iter (fun row ->
+          let iter = store#get_iter row in
+          let depth = store#iter_depth iter in
+          let top_iter = Option.default iter (store#iter_parent iter) in
+          if depth = 0 || not (selection#iter_is_selected top_iter) then begin
+            let value =
+              if store#iter_has_child top_iter then
+                (get_value top_iter) ^ "\n" ^
+                (get_value (store#iter_children (Some top_iter)))
+              else
+                get_value top_iter
+            in
+            Buffer.add_string buf (value ^ "\n\n");
+          end
+        ) rows;
+      (GData.clipboard Gdk.Atom.clipboard)#set_text (Buffer.contents buf);
+      true
+    end else
+      false
+  in
+  let _ = data#event#connect#key_press ~callback:keypress_cb in
 
 (* FIXME: handle this using CSS *)
 (*   let refresh clr = data#misc#modify_bg [`NORMAL, `NAME clr] in *)
@@ -61,9 +97,6 @@ let make_table_widget cd cb =
   let cb view ft = view#misc#modify_font (GPango.font_description_from_string ft) in
   Preferences.(stick text_font data (cb data));
   frame, (fun f -> f columns store), store
-
-let find_string_col s l =
-  match List.assoc s l with `StringC c -> c | _ -> assert false
 
 let debugger title sid =
   let forward_set_paned_pos = ref ((fun x -> failwith "forward_set_paned_pos")
@@ -123,6 +156,8 @@ let debugger title sid =
   let highlighted_line = ref None in
   let forward_highlight_code = ref ((fun x -> failwith "forward_highlight_code")
     : (string * int * int) -> unit) in
+  let forward_clear_db_highlight = ref ((fun x -> failwith "forward_clear_db_highlight")
+    : unit -> unit) in
   let forward_db_vars = ref ((fun x -> failwith "forward_db_vars")
     : int -> unit) in
 
@@ -173,7 +208,7 @@ let debugger title sid =
       match loc with
       | Some (file, bp :: ep :: _) ->
         !forward_highlight_code (file, bp, ep)
-      | _ -> ()  (* e.g. for simple tactic call *)
+      | _ -> !forward_clear_db_highlight ()  (* e.g. for simple tactic call *)
     end
   in
 
@@ -249,17 +284,28 @@ let debugger title sid =
       let cwidth () =
         let open Gtk in
         let open GtkBase in
-        (* window width less paned position *)
-        let pixel_width = (Widget.allocation debugger_detachable#as_widget).width - paned#position in
+        let pixel_width = (Widget.allocation tree#as_widget).width in
         let metrics = vars_view#misc#pango_context#get_metrics ()  in
         let char_width = GPango.to_pixels metrics#approx_char_width in
         (pixel_width - 100) / char_width
+      in
+      let print_pp width pp =
+        let pp_buffer = Buffer.create 180 in
+        let open Format in
+        let ft = formatter_of_buffer pp_buffer in
+        pp_set_margin ft width;
+        pp_set_max_indent ft width;
+      (*  pp_set_max_boxes ft 50 ;*)
+      (*  pp_set_ellipsis_text ft "..."*)
+        Pp.pp_with ft pp;
+        pp_print_flush ft ();
+        Buffer.contents pp_buffer
       in
       let show width =
         store#clear ();
         List.iter (fun (name, value) ->
             let width = max width 30 in
-            let value = Richpp.print_pp width value in
+            let value = print_pp width value in
             access (fun columns store ->
                 let line = store#append () in
                 if String.length value < width then
@@ -288,6 +334,7 @@ let debugger title sid =
     method hide () = debugger_detachable#hide  (* todo: give up focus *)
     method show () = debugger_detachable#show  (* todo: take focus? *)
     method set_forward_highlight_code f = forward_highlight_code := f
+    method set_forward_clear_db_highlight f = forward_clear_db_highlight := f
     method set_forward_db_vars f = forward_db_vars := f
     method set_forward_paned_pos f = forward_set_paned_pos := f
     method set_forward_get_basename f = forward_get_basename := f

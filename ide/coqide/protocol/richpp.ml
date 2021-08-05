@@ -28,15 +28,6 @@ type 'a context = {
   (** Quantity of characters printed so far *)
 }
 
-let set_formatter ft width =
-  (* Setting the formatter *)
-  let open Format in
-  pp_set_margin ft width;
-  let m = max (64 * width / 100) (width-30) in
-  pp_set_max_indent ft m;
-  pp_set_max_boxes ft 50 ;
-  pp_set_ellipsis_text ft "..."
-
 (** We use Format to introduce tags inside the pretty-printed document.
     Each inserted tag is a fresh index that we keep in sync with the contents
     of annotations.
@@ -106,7 +97,12 @@ let rich_pp width ppcmds =
   pp_set_formatter_tag_functions ft tag_functions [@warning "-3"];
   pp_set_mark_tags ft true;
 
-  set_formatter ft width;
+  (* Setting the formatter *)
+  pp_set_margin ft width;
+  let m = max (64 * width / 100) (width-30) in
+  pp_set_max_indent ft m;
+  pp_set_max_boxes ft 50 ;
+  pp_set_ellipsis_text ft "...";
 
   (* The whole output must be a valid document. To that
      end, we nest the document inside <pp> tags. *)
@@ -173,12 +169,3 @@ let richpp_of_pp width pp =
   in
   let xml = rich_pp width pp in
   Element ("_", [], drop xml)
-
-let print_pp width pp =
-  let pp_buffer = Buffer.create 180 in
-  let open Format in
-  let ft = formatter_of_buffer pp_buffer in
-  set_formatter ft width;
-  Pp.pp_with ft pp;
-  pp_print_flush ft ();
-  Buffer.contents pp_buffer

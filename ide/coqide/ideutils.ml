@@ -27,6 +27,10 @@ let cb = GData.clipboard Gdk.Atom.primary
 
 let status = GMisc.statusbar ()
 
+(* These functions seem confused:
+1. They should be per-session rather than global (e.g. for "Coq is computing")
+2. I don't see how pushing and popping is particularly useful
+   and there's no explanation of when to push/pop *)
 let push_info,pop_info,clear_info =
   let status_context = status#new_context ~name:"Messages" in
   let size = ref 0 in
@@ -617,21 +621,21 @@ let ulen uni_ch =
   else 4
 
 (** convert unicode offset (used by GTK buffer) to UTF-8 byte offset (used by Coq) *)
-let uni_off_to_byte_off (buffer : GText.buffer) off =
+let uni_off_to_byte_off (buffer : GText.buffer) uni_off =
   let rec cvt iter rv =
     if iter#offset <= 0 then
       rv
     else
       cvt iter#backward_char (rv + (ulen iter#char))
   in
-  cvt (buffer#get_iter (`OFFSET off)) 0
+  cvt (buffer#get_iter (`OFFSET uni_off)) 0
 
 (** convert UTF-8 byte offset (used by Coq) to unicode offset (used by GTK buffer) *)
-let byte_off_to_uni_off buffer off =
+let byte_off_to_uni_off buffer byte_off =
   let rec cvt iter cnt =
     if cnt <= 0 then
       iter#offset
     else
       cvt iter#forward_char (cnt - (ulen iter#char))
   in
-  cvt (buffer#get_iter `START) off
+  cvt (buffer#get_iter `START) byte_off
