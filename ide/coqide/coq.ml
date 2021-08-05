@@ -423,6 +423,7 @@ let pstatus = function
     | New -> "New"
 
 let can_send_db_msg coqtop =
+  coqtop.handle.db_waiting_for = None &&
   match coqtop.status with
   | Busy -> coqtop.stopped_in_debugger
   | Ready -> true
@@ -510,9 +511,10 @@ let setup_script_editable coqtop f = coqtop.set_script_editable <- f
 
 let is_computing coqtop = (coqtop.status = Busy)
 
-let is_ready coqtop = (coqtop.status = Ready)
-
 let is_stopped_in_debugger coqtop = coqtop.stopped_in_debugger
+
+let is_ready_or_stopped_in_debugger coqtop =
+  coqtop.status = Ready || (is_stopped_in_debugger coqtop)
 
 let set_stopped_in_debugger coqtop v =
   coqtop.stopped_in_debugger <- v

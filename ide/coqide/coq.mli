@@ -68,11 +68,11 @@ type reset_kind = Planned | Unexpected
 val is_computing : coqtop -> bool
 (** Check if coqtop is computing, i.e. already has a current task *)
 
-val is_ready : coqtop -> bool
-(** Check if coqtop is Ready *)
-
 val is_stopped_in_debugger : coqtop -> bool
 (** Returns true if coqtop is stopped in the debugger *)
+
+val is_ready_or_stopped_in_debugger : coqtop -> bool
+(** Check if coqtop is Ready or stopped in the debugger *)
 
 val set_stopped_in_debugger : coqtop -> bool -> unit
 (** Records whether coqtop is stopped in the debugger *)
