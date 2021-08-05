@@ -246,6 +246,22 @@ let inductive_alltags env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   Context.Rel.to_tags mip.mind_arity_ctxt
 
+let constructor_nparams env (ind,_) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mib.mind_nparams
+
+(* Length of arity (with local defs) *)
+
+let constructor_nparamdecls env (ind,_) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  Context.Rel.length mib.mind_params_ctxt
+
+(* Others *)
+
+let constructor_paramdecls env ((ind,_),u) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+    Inductive.inductive_paramdecls (mib,u)
+
 let constructor_alltags env (ind,j) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   Context.Rel.to_tags (fst mip.mind_nf_lc.(j-1))

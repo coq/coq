@@ -118,6 +118,15 @@ val inductive_alldecls_env : env -> pinductive -> Constr.rel_context
 
 (** {7 Extract information from a constructor name} *)
 
+(** @return nb of params without local defs *)
+val constructor_nparams : env -> constructor -> int
+
+(** @return nb of params with local defs *)
+val constructor_nparamdecls : env -> constructor -> int
+
+(** @return params context *)
+val constructor_paramdecls : env -> pconstructor -> Constr.rel_context
+
 (** @return param + args without letin *)
 val constructor_nallargs : env -> constructor -> int
 val constructor_nallargs_env : env -> constructor -> int
