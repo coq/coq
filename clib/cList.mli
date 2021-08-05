@@ -171,6 +171,9 @@ sig
   val fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
   (** Like [List.fold_left] but with an index *)
 
+  val fold_left2_i :  (int -> 'a -> 'b -> 'c -> 'a) -> int -> 'a -> 'b list -> 'c list -> 'a
+  (** Like [List.fold_left2] but with an index *)
+
   val fold_right_and_left : ('b -> 'a -> 'a list -> 'b) -> 'a list -> 'b -> 'b
   (** [fold_right_and_left f [a1;...;an] hd] is
       [f (f (... (f (f hd an [an-1;...;a1]) an-1 [an-2;...;a1]) ...) a2 [a1]) a1 []] *)
@@ -188,13 +191,20 @@ sig
 
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   (** [fold_left_map f e_0 [a1;...;an]] is [e_n,[k_1...k_n]]
-      where [(e_i,k_i)] is [f e_{i-1} ai] for each i<=n *)
+      where [(e_i,k_i)] is [f e_{i-1} ai] for each 1<=i<=n *)
+
+  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> int -> 'a -> 'b list -> 'a * 'c list
+  (** [fold_left_map_i f m e_0 [a1;...;an]] is [e_n,[k_1...k_n]]
+      where [(e_i,k_i)] is [f (m+i-1) e_{i-1} ai] for each 1<=i<=n *)
 
   val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   (** Same, folding on the right *)
 
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
   (** Same with two lists, folding on the left *)
+
+  val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> int -> 'a -> 'b list -> 'c list -> 'a * 'd list
+  (** Same with a counter *)
 
   val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
   (** Same with two lists, folding on the right *)

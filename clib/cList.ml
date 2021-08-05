@@ -62,13 +62,16 @@ sig
   val fold_left_until : ('c -> 'a -> 'c CSig.until) -> 'c -> 'a list -> 'c
   val fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
   val fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
+  val fold_left2_i :  (int -> 'a -> 'b -> 'c -> 'a) -> int -> 'a -> 'b list -> 'c list -> 'a
   val fold_right_and_left :
       ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
   val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
   val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'b list -> 'c list -> 'a) -> 'a -> 'b list -> 'c list -> 'a
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> int -> 'a -> 'b list -> 'a * 'c list
   val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
+  val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> int -> 'a -> 'b list -> 'c list -> 'a * 'd list
   val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
   val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c list -> 'd list -> 'a * 'e list
   val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
@@ -562,6 +565,12 @@ let fold_left_i f =
   in
   it_list_f
 
+let rec fold_left2_i f i accu l1 l2 =
+  match (l1, l2) with
+  | ([], []) -> accu
+  | (a1 :: l1, a2 :: l2) -> fold_left2_i f (i+1) (f i accu a1 a2) l1 l2
+  | (_, _) -> invalid_arg "List.fold_left2_i"
+
 let rec fold_left3 f accu l1 l2 l3 =
   match (l1, l2, l3) with
   | ([], [], []) -> accu
@@ -624,6 +633,13 @@ let fold_left_map f e l =
     (e',List.rev lrev)
 *)
 
+let rec fold_left_map_i f i e = function
+  | []  -> (e,[])
+  | h :: t ->
+    let e',h' = f i e h in
+    let e'',t' = fold_left_map_i f (i+1) e' t in
+    e'',h' :: t'
+
 (* The same, based on fold_right, with the effect accumulated on the right *)
 let fold_right_map f l e =
   List.fold_right (fun x (l,e) -> let (y,e) = f x e in (y::l,e)) l ([],e)
@@ -636,6 +652,15 @@ let fold_left2_map f e l l' =
       let (e,y) = f e x x' in
       (e, y::l)
     ) (e, []) l l'
+
+let rec fold_left2_map_i f i e l l' =
+  match (l, l') with
+  | [], []  -> (e,[])
+  | h :: t, h' :: t' ->
+    let e',h' = f i e h h' in
+    let e'',t'' = fold_left2_map_i f (i+1) e' t t' in
+    e'',h' :: t''
+  | _ -> invalid_arg "List.fold_left2_map_i"
 
 let fold_right2_map f l l' e =
   List.fold_right2 (fun x x' (l,e) -> let (y,e) = f x x' e in (y::l,e)) l l' ([],e)
