@@ -14,7 +14,7 @@ Module NonPrim.
     intros A B H_f H_g C h b a c H3 H'.
     exact (@transport hProp (fun x => x) _ _ H' H3).
     Undo.
-    Set Debug Unification.
+    Set Debug "unification".
     exact (H' # H3).
   Defined.
 End NonPrim.
@@ -29,7 +29,7 @@ Module Prim.
     intros A B H_f H_g C h b a c H3 H'.
     exact (@transport hProp (fun x => x) _ _ H' H3).
     Undo.
-    Set Debug Unification.
+    Set Debug "unification".
     exact (H' # H3).
     (* Toplevel input, characters 7-14:
 Error:

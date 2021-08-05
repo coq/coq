@@ -56,7 +56,7 @@ Definition path_path_sigma_uncurried {A : Type} (P : A -> Type) (u v : sigT P)
 : p = q.
 admit.
 Defined.
-Set Debug Unification.
+Set Debug "unification".
 Definition path_path_sigma {A : Type} (P : A -> Type) (u v : sigT P)
            (p q : u = v)
            (r : p..1 = q..1)

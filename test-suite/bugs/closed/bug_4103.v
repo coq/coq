@@ -8,6 +8,6 @@ Lemma expand : exists n : nat, (ticks n) = (ticks n).(tl _).
 Proof.
   eexists.
   (* Set Debug Tactic Unification. *)
-  (* Set Debug RAKAM. *)
+  (* Set Debug "RAKAM". *)
   reflexivity.
 Abort.

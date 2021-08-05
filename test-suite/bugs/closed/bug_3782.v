@@ -43,7 +43,7 @@ Module Prim.
                 (Build_TruncType 0 mc))
              e') as i || fail "too early"); clear i.
     Set Printing Existential Instances.
-    Set Debug Unification.
+    Set Debug "unification".
     pose (@isiso_isequiv'
             _ _ _
             e'). (* Toplevel input, characters 48-50:

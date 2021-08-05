@@ -12,7 +12,7 @@ Goal forall (z : hSet) (T0 : Type -> Type),
        (forall (A : Type) (P : T0 A -> Type) (aa : T0 A), P aa) ->
        forall x0 : setT z, Set.
   clear; intros z T H.
-  Set Debug Unification.
+  Set Debug "unification".
   Fail refine (H _ _). (* Timeout! *)
 Abort.
 End withdefault.
@@ -27,7 +27,7 @@ Goal forall (z : hSet) (T0 : Type -> Type),
        (forall (A : Type) (P : T0 A -> Type) (aa : T0 A), P aa) ->
        forall x0 : setT z, Set.
   clear; intros z T H.
-  Set Debug Unification.
+  Set Debug "unification".
   Fail refine (H _ _). (* Timeout! *)
 Abort.
 End withnondefault.

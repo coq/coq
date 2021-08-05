@@ -21,7 +21,7 @@ Goal forall C D : PreCategory,
   exact (path_forall (fun F : Functor C^op D^op => (F^op)^op) _ (@oppositeF_involutive _ _)).
   Undo.
   Unset Printing Notations.
-  Set Debug Unification.
+  Set Debug "unification".
 (*   Check (eq_refl : Build_PreCategory (opposite D).(object) *)
 (*                  (fun s d : (opposite D).(object) =>  *)
 (*                     (opposite D).(morphism) d s) =  *)
