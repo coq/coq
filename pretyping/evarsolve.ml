@@ -603,8 +603,8 @@ let get_actual_deps env evd aliases l t =
       | RelAlias n -> Int.Set.mem n fv_rels
     ) l
 
-open Context.Named.Declaration
 let remove_instance_local_defs evd evk args =
+  let open Context.Named.Declaration in
   let evi = Evd.find evd evk in
   let rec aux sign args = match sign, args with
   | [], [] -> []
@@ -704,6 +704,7 @@ let solve_pattern_eqn env sigma l c =
 *)
 
 let make_projectable_subst aliases sigma evi args =
+  let open Context.Named.Declaration in
   let sign = evar_filtered_context evi in
   let evar_aliases = compute_var_aliases sign sigma in
   let (_,full_subst,cstr_subst,_) =
@@ -1092,6 +1093,7 @@ let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
  *)
 
 let set_of_evctx l =
+  let open Context.Named.Declaration in
   List.fold_left (fun s decl -> Id.Set.add (get_id decl) s) Id.Set.empty l
 
 let filter_effective_candidates evd evi filter candidates =
@@ -1122,6 +1124,7 @@ let filter_candidates evd evk filter candidates_update =
 let closure_of_filter ~can_drop evd evk = function
   | None -> None
   | Some filter ->
+  let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let vars = collect_vars evd (evar_concl evi) in
   let test b decl = b || Id.Set.mem (get_id decl) vars ||
@@ -1517,6 +1520,148 @@ let instantiate_evar unify flags env evd evk body =
   let evd' = check_evar_instance unify flags env evd evk body in
   Evd.define evk body evd'
 
+(** **************************)
+(** Accept degenerate cycles *)
+(** **************************)
+
+(** An apparently cyclic instantiation ?x@{a1..an} :=
+   C[..?x@{a:=instj}..] is only artificically cyclic
+   when C[..C[..?x@{a:=instj}][a:=instj]..] is
+   convertible to C[..?x@{a:=instj}..]. This may happen
+   when C is a form of eta-expansion such as:
+   - C[] = []
+   - C[] = λx.([]x)
+   - C[] = S (pred [])
+   - C[] = {fst := fst []; snd := 0}
+   or combinations of those.
+   The function [define_idempotent_cycle] supports such situations: it
+   destructs lambdas and constructors in C then expects to find a
+   corresponding bunch of applications and projections. Then, any
+   subterm containing the original evar must be this evar up to
+   convertibility of the instance of the evar. If the evar occurs in
+   at least two subterms, we duplicate it and expect the corresponding
+   equations *)
+
+type eta_zipper =
+  | EtaEmpty
+  | EtaLambda of int * eta_zipper
+  | EtaTuple of constructor * int * eta_zipper
+
+let add_lambda_expand = function
+  | EtaLambda (n, z) -> EtaLambda (n+1, z)
+  | z -> EtaLambda (1, z)
+
+let is_rel_vect evd k n argsv =
+  Int.equal (Array.length argsv) n &&
+  Array.for_all_i (fun i a -> isRelN evd (n+k-i) a) 0 argsv
+
+let is_nth_proj env evd ci (ind, i) j (_, c) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let _, ctx = List.chop (List.length mib.Declarations.mind_params_ctxt) (fst mip.Declarations.mind_nf_lc.(i-1)) in
+  let inst = Context.Rel.instance mkRel 0 ctx in
+  Ind.CanOrd.equal ind ci.ci_ind &&
+  EConstr.eq_constr evd inst.(j) c
+
+let define_idempotent_cycle flags unify env evd pbty (evk, inst) rhs =
+  let evi = Evd.find evd evk in
+  let rec reduce env evd name sign inst k zip rhs typ =
+    let c = whd_all env evd rhs in
+    match EConstr.kind evd c, zip with
+    | App (c, argsv), EtaLambda (n, zip)
+         when is_rel_vect evd k n argsv ->
+      reduce env evd name sign inst (k + n) zip c typ
+    | Case (ci, u, pms, p, iv, b, bl), EtaTuple ((_, i as cstr), j, zip) when is_nth_proj env evd ci cstr j bl.(i-1) ->
+      reduce env evd name sign inst k zip b typ
+    | Proj (p, c), EtaTuple ((ind, i), j, zip)
+         when Int.equal (Projection.arg p) j && Ind.CanOrd.equal ind (Projection.inductive p) ->
+      assert (Int.equal i 1);
+      reduce env evd name sign inst k zip c typ
+    | Evar (evk', inst'), EtaEmpty when Evar.equal evk evk' ->
+      (* if the original evars is instantiated with an n-ary
+         constructor, we need fresh evars, otherwise we cam optimize and
+         reuse the same evar *)
+      let init = (empty_csubst, Id.Set.empty, evar_hyps evi) in
+      let csubst, _, sign = List.fold_right (push_rel_decl_to_named_context evd) sign init in
+      let typ = csubst_subst csubst typ in
+      let filter = Filter.extend k (evar_filter evi) in
+      let naming = match name with Anonymous -> IntroAnonymous | Name id -> IntroFresh id in
+      let evd, evk' = Evarutil.new_pure_evar ~naming ~filter sign evd typ in
+      let rels = List.rev (rel_list 0 k) in (* Only assumptions, and, moreover, defs are anyway in evar instances *)
+      let inst = rels @ inst in
+      let inst' = rels @ inst' in
+      let evd =
+        (* This is the equation obtained in this branch after evk is
+           instantiated and beta-iota reduces to evk' *)
+        solve_refl
+          (fun flags _b env sigma pb c c' -> is_fconv pb env sigma c c') flags
+          env evd pbty evk' inst inst'
+      in
+      let self_inst = rels @ List.map (fun d -> mkVar (Context.Named.Declaration.get_id d)) (evar_filtered_context evi) in
+      evd, mkEvar (evk', self_inst)
+    | _ ->
+     (* Not clear which variant of occur check to use... *)
+     if occur_evar_upto_types evd evk c then raise Exit;
+     evd, c
+  in
+  let rec expand env evd name sign inst zip rhs typ =
+    let rhs = whd_all env evd rhs in
+    (* We add eta so that [(fun x => ?e x) t] behaves as the
+       application [?e t] rather than as [(fun x => ?e[x:=x]) t] hence the
+       non applicative [?e[x:=t]] in first-order unification *)
+    let rhs = shrink_eta_all env evd rhs in
+    let typ = whd_all env evd typ in
+    let c, args = decompose_app evd rhs in
+    let typ, argstyp = decompose_app evd typ in
+    match kind evd c, kind evd typ with
+    (* Note: is it possible that [typ] is an evar which we could refine? *)
+    | Lambda (na, _, c), Prod (_, t, u) ->
+      assert (List.is_empty args && List.is_empty argstyp);
+      let decl = LocalAssum (na, instantiate_evar_array evi t inst) in
+      let evd, c = expand (push_rel decl env) evd name (decl :: sign) (List.map (lift 1) inst) (add_lambda_expand zip) c u in
+      evd, mkLambda (na, t, c)
+    | Construct (cstr, _), Ind (ind, u) ->
+      if not (Ind.CanOrd.equal ind (inductive_of_constructor cstr)) then
+        (* Check needed because 1st-order unif can lead to ill-typed problems *)
+        raise Exit;
+      let nparams = Inductiveops.constructor_nparams env cstr in
+      let _, args2 = List.chop nparams args in
+      let args1, _ = List.chop nparams argstyp in
+      let (mib,mip) = Inductive.lookup_mind_specif env ind in
+      let i = index_of_constructor cstr in
+      let cstrtyp = Inductiveops.E.nf_constructor_type_no_params ((ind, EInstance.kind evd u), mib, mip, args1) i in
+      let names =
+        match Declareops.inductive_make_projections ind mib with
+        | Some v -> Array.map_to_list (fun p -> Name (Label.to_id (Projection.Repr.label p))) v
+        | None ->
+          let ctx, _ = decompose_prod_assum evd cstrtyp in
+          let nal = List.map_filter (fun d -> if is_local_assum d then Some (get_name d) else None) ctx in
+          List.rev nal
+      in
+      let (evd, _), args2 =
+        List.fold_left2_map_i (fun j (evd, cstrtyp) name arg ->
+            let _, argtyp, cstrtyp = destProd evd cstrtyp in
+            let evd, arg = expand env evd name sign inst (EtaTuple (cstr, j, zip)) arg argtyp in
+            (evd, whd_all env evd (subst1 arg cstrtyp)), arg)
+          0 (evd, cstrtyp) names args2 in
+      evd, applist (c, args1 @ args2)
+    | _ -> reduce env evd name sign inst 0 zip rhs typ
+  in
+  try
+    let c = whd_all env evd rhs in
+    Some (match kind evd c with
+    | Evar (evk', inst') when Evar.equal evk evk' ->
+      (* An [?ev@{inst} = ?ev@{inst'}] equation. No need for an
+         instantiation of [?ev]; in particular, we preserve the typeclass
+         and obligation flags of the evar *)
+        solve_refl
+          (fun flags _b env sigma pb c c' -> is_fconv pb env sigma c c') flags
+          env evd pbty evk' inst inst'
+    | _ ->
+      let evd, body = expand env evd Anonymous [] inst EtaEmpty c (evar_concl evi) in
+      (* If f.o. unification were typed, an Evd.define may be enough below *)
+      instantiate_evar unify flags env evd evk body)
+  with Exit -> None
+
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
  * (i.e. we tackle a generalization of Miller-Pfenning patterns unification)
@@ -1548,6 +1693,7 @@ exception MetaOccurInBodyInternal
 
 let rec invert_definition unify flags choose imitate_defs
                           env evd pbty (evk,argsv as ev) rhs =
+  let open Context.Named.Declaration in
   let aliases = make_alias_map env evd in
   let evdref = ref evd in
   let progress = ref false in
@@ -1758,14 +1904,10 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
     | NotInvertibleUsingOurAlgorithm _ | MetaOccurInBodyInternal as e ->
         raise e
     | OccurCheckIn (evd,rhs) ->
-        (* last chance: rhs actually reduces to ev *)
-        let c = whd_all env evd rhs in
-        match EConstr.kind evd c with
-        | Evar (evk',argsv2) when Evar.equal evk evk' ->
-            solve_refl (fun flags _b env sigma pb c c' -> is_fconv pb env sigma c c') flags
-                       env evd pbty evk argsv argsv2
-        | _ ->
-            raise (OccurCheckIn (evd,rhs))
+        (* last chance: rhs is actually a degenerate or idempotent instance of ev *)
+        match define_idempotent_cycle flags unify env evd pbty ev rhs with
+        | Some evd -> evd
+        | None -> raise (OccurCheckIn (evd,rhs))
 
 (* This code (i.e. solve_pb, etc.) takes a unification
  * problem, and tries to solve it. If it solves it, then it removes
@@ -1835,4 +1977,3 @@ let solve_simple_eqn unify flags ?(choose=false) ?(imitate_defs=true)
         UnifFailure (evd,InstanceNotFunctionalType (evk1,env,f,u))
     | IncompatibleCandidates t ->
         UnifFailure (evd,IncompatibleInstances (env,ev1,t,t2))
-
