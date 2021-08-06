@@ -299,6 +299,7 @@ val closed0 : Evd.evar_map -> t -> bool
 
 val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
 val subst_of_rel_context_instance : rel_context -> t list -> t list
+val subst_instance_context : Univ.Instance.t -> rel_context -> rel_context
 
 val esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t
 
@@ -366,6 +367,9 @@ val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t,
 val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, types) Context.Rel.Declaration.pt
 
 val to_rel_decl : Evd.evar_map -> (t, types) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
+
+val of_named_context : Constr.named_context -> named_context
+val of_rel_context : Constr.rel_context -> rel_context
 
 val of_case_invert : Constr.case_invert -> case_invert
 

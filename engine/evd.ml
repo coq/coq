@@ -1553,6 +1553,9 @@ module MiniEConstr = struct
   let unsafe_to_rel_decl d = d
   let to_rel_decl sigma d = Context.Rel.Declaration.map_constr (to_constr sigma) d
 
+  let of_named_context d = d
+  let of_rel_context d = d
+
   let unsafe_to_case_invert x = x
   let of_case_invert x = x
 
