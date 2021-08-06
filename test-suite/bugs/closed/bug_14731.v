@@ -79,3 +79,21 @@ Declare Instance lift0 : forall (A : Type) (default : A) (R : A -> Prop),
 Definition foo {A R} {HR : @Test A R} {default} : Test (@lift_relation A R default) := _.
 
 End Collapse.
+
+From Coq Require List.
+
+Module FMap.
+
+Import List. Import ListNotations.
+
+Monomorphic Universe i o.
+Class FMap (M : Type@{i} -> Type@{o}) :=
+  fmap : forall {A:Type@{i}} {B:Type@{o}}, (A -> B) -> M A -> M B.
+Global Arguments fmap {_ _ _ _} _ !_ / : assert.
+#[local]
+Monomorphic Instance fmap_list@{a b} : FMap (fun T => list T) :=
+  fun (A : Type@{a}) (B : Type@{b}) f => @map A B f.
+Fail Fail Monomorphic Constraint i < list.u0.
+Fail Fail Example instance_found := fmap (id) [1;2;3].
+
+End FMap.
