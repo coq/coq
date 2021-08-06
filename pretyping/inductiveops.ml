@@ -748,6 +748,24 @@ let type_of_projection_knowing_arg env sigma p c ty =
   let (_,u), pars = dest_ind_family pars in
   substl (c :: List.rev pars) (type_of_projection_constant env (p,u))
 
+module E =
+struct
+
+let instantiate_params t params sign =
+  let _,t = decompose_prod_n_assum (Context.Rel.length sign) t in
+  let open EConstr in
+  let subst = Vars.subst_of_rel_context_instance_list sign params in
+  Vars.substl subst (of_constr t)
+
+let nf_constructor_type_no_params ((ind,u as indu),mib,mip,params) j =
+  assert (j <= Array.length mip.mind_consnames);
+  let typi = mis_nf_constructor_type (indu,mib,mip) j in
+  let open EConstr in
+  let ctx = EConstr.Vars.subst_instance_context u (of_rel_context mib.mind_params_ctxt) in
+  instantiate_params typi params ctx
+
+end
+
 (***********************************************)
 (* Guard condition *)
 

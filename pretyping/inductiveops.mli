@@ -57,7 +57,7 @@ val mis_is_recursive_subset : int list -> wf_paths -> bool
 val mis_is_recursive :
   inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :
-  pinductive * mutual_inductive_body * one_inductive_body -> int -> constr
+  pinductive * mutual_inductive_body * one_inductive_body -> int -> types
 
 (** {6 Extract information from an inductive name} *)
 
@@ -229,6 +229,13 @@ val simple_make_case_or_project :
 
 val make_case_invert : env -> inductive_type -> case_info
   -> EConstr.case_invert
+
+module E :
+sig
+val nf_constructor_type_no_params :
+  (inductive * Univ.Instance.t) * mutual_inductive_body * one_inductive_body * EConstr.Vars.instance_list -> int -> EConstr.types
+
+end
 
 (*i Compatibility
 val make_default_case_info : env -> case_style -> inductive -> case_info
