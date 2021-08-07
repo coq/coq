@@ -143,21 +143,12 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
-  let try_occ evd' =
-    let clenv = Clenv.update_clenv_evd eqclause evd' in
-    Clenv.clenv_pose_dependent_evars ~with_evars:true clenv
-  in
   let flags = make_flags frzevars (Tacmach.project gl) rewrite_unif_flags eqclause in
   let occs =
     w_unify_to_subterm_all ~flags env eqclause.evd
       ((if l2r then c1 else c2),concl)
-  in List.map try_occ occs
-
-let instantiate_lemma gl c ct l l2r concl =
-  let sigma = Proofview.Goal.sigma gl in
-  let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
-  let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
-  eqclause
+  in
+  eqclause, occs
 
 let rewrite_conv_closed_core_unif_flags = {
   modulo_conv_on_closed_terms = Some TransparentState.full;
@@ -284,28 +275,33 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     | Some (tac, FirstSolved) -> FirstSolved, Some (tclCOMPLETE tac)
     | Some (tac, AllMatches) -> AllMatches, Some (tclCOMPLETE tac)
   in
-  let try_clause c =
-    side_tac
-      (tclTHEN
-         (Proofview.Unsafe.tclEVARS c.evd)
-         (general_elim_clause with_evars frzevars cls c elim))
-      tac
-  in
   Proofview.Goal.enter begin fun gl ->
     let typ = match cls with
     | None -> pf_concl gl
     | Some id -> pf_get_hyp_typ id gl
     in
+    let try_clause eqclause evd' =
+      let clenv = Clenv.update_clenv_evd eqclause evd' in
+      let clenv = Clenv.clenv_pose_dependent_evars ~with_evars:true clenv in
+      side_tac
+        (tclTHEN
+          (Proofview.Unsafe.tclEVARS clenv.evd)
+          (general_elim_clause with_evars frzevars cls clenv elim))
+        tac
+    in
     match strat with
     | Naive ->
-      let cs = instantiate_lemma gl c t l l2r typ in
-      try_clause cs
+      let sigma = Proofview.Goal.sigma gl in
+      let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma t) with UserError _ -> t in
+      let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
+      Proofview.Unsafe.tclEVARS eqclause.evd <*>
+      side_tac (general_elim_clause with_evars frzevars cls eqclause elim) tac
     | FirstSolved ->
-      let cs = instantiate_lemma_all frzevars gl c t l l2r typ in
-      tclFIRST (List.map try_clause cs)
+      let eqclause, cs = instantiate_lemma_all frzevars gl c t l l2r typ in
+      tclFIRST (List.map (fun cl -> try_clause eqclause cl) cs)
     | AllMatches ->
-      let cs = instantiate_lemma_all frzevars gl c t l l2r typ in
-      tclMAP try_clause cs
+      let eqclause, cs = instantiate_lemma_all frzevars gl c t l l2r typ in
+      tclMAP (fun cl -> try_clause eqclause cl) cs
   end
 
 (* The next function decides in particular whether to try a regular
