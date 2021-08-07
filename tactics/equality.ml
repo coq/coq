@@ -143,7 +143,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
-  let try_occ (evd', c') =
+  let try_occ evd' =
     let clenv = Clenv.update_clenv_evd eqclause evd' in
     Clenv.clenv_pose_dependent_evars ~with_evars:true clenv
   in

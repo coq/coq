@@ -58,7 +58,7 @@ val w_unify_to_subterm :
   env -> evar_map -> ?flags:unify_flags -> constr * constr -> evar_map * constr
 
 val w_unify_to_subterm_all :
-  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (evar_map * constr) list
+  env -> evar_map -> ?flags:unify_flags -> constr * constr -> evar_map list
 
 val w_unify_meta_types : env -> ?flags:unify_flags -> evar_map -> evar_map
 

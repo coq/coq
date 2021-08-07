@@ -2083,7 +2083,8 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   match res with
   | [] ->
     raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
-  | _ -> res
+  | _ ->
+    List.map fst res
 
 let w_unify_to_subterm_list env evd flags hdmeta oplist t =
   List.fold_right
