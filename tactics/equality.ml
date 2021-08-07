@@ -110,11 +110,7 @@ let rewrite_unif_flags = {
   resolve_evars = true
 }
 
-let freeze_initial_evars sigma flags clause =
-  (* We take evars of the type: this may include old evars! For excluding *)
-  (* all old evars, including the ones occurring in the rewriting lemma, *)
-  (* we would have to take the clenv_value *)
-  let newevars = lazy (Evarutil.undefined_evars_of_term sigma (clenv_type clause)) in
+let freeze_initial_evars sigma flags newevars =
   let initial = Evd.undefined_map sigma in
   let allowed evk =
     if Evar.Map.mem evk initial then false
@@ -126,8 +122,8 @@ let freeze_initial_evars sigma flags clause =
     merge_unify_flags = {flags.merge_unify_flags with allowed_evars};
     subterm_unify_flags = {flags.subterm_unify_flags with allowed_evars}}
 
-let make_flags frzevars sigma flags clause =
-  if frzevars then freeze_initial_evars sigma flags clause else flags
+let make_flags frzevars sigma flags newevars =
+  if frzevars then freeze_initial_evars sigma flags newevars else flags
 
 let side_tac tac sidetac =
   match sidetac with
@@ -143,7 +139,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
-  let flags = make_flags frzevars (Tacmach.project gl) rewrite_unif_flags eqclause in
+  let flags = make_flags frzevars (Tacmach.project gl) rewrite_unif_flags (lazy Evar.Set.empty) in
   let occs =
     w_unify_to_subterm_all ~flags env eqclause.evd
       ((if l2r then c1 else c2),concl)
@@ -247,7 +243,11 @@ let general_elim_clause with_evars frzevars cls rew elim =
     let sigma = Proofview.Goal.sigma gl in
     let flags = if Unification.is_keyed_unification ()
                 then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
-    let flags = make_flags frzevars sigma flags rew in
+    (* We take evars of the type: this may include old evars! For excluding *)
+    (* all old evars, including the ones occurring in the rewriting lemma, *)
+    (* we would have to take the clenv_value *)
+    let newevars = lazy (Evarutil.undefined_evars_of_term sigma (clenv_type rew)) in
+    let flags = make_flags frzevars sigma flags newevars in
     general_elim_clause with_evars flags cls rew elim
     end
   in
