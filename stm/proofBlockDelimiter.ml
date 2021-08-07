@@ -78,7 +78,7 @@ include Util
 
 let static_bullet ({ entry_point; prev_node } as view) =
   let open Vernacexpr in
-  assert (not (Vernacprop.has_Fail entry_point.ast));
+  assert (not (Vernacprop.has_query_control entry_point.ast));
   match entry_point.ast.CAst.v.expr with
   | VernacBullet b ->
       let base = entry_point.indentation in
@@ -86,7 +86,7 @@ let static_bullet ({ entry_point; prev_node } as view) =
       crawl view ~init:last_tac (fun prev node ->
         if node.indentation < base then `Stop else
         if node.indentation > base then `Cont node else
-        if Vernacprop.has_Fail node.ast then `Stop
+        if Vernacprop.has_query_control node.ast then `Stop
         else match node.ast.CAst.v.expr with
         | VernacBullet b' when b = b' ->
           `Found { block_stop = entry_point.id; block_start = prev.id;
@@ -113,7 +113,7 @@ let static_curly_brace ({ entry_point; prev_node } as view) =
   let open Vernacexpr in
   assert(entry_point.ast.CAst.v.expr = VernacEndSubproof);
   crawl view (fun (nesting,prev) node ->
-    if Vernacprop.has_Fail node.ast then `Cont (nesting,node)
+    if Vernacprop.has_query_control node.ast then `Cont (nesting,node)
     else match node.ast.CAst.v.expr with
     | VernacSubproof _ when nesting = 0 ->
       `Found { block_stop = entry_point.id; block_start = prev.id;

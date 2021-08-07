@@ -111,6 +111,13 @@ let with_fail ~st f =
     if not !Flags.quiet || !test_mode
     then Feedback.msg_notice Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
+let with_succeed ~st f =
+  let () = ignore (f ()) in
+  Vernacstate.invalidate_cache ();
+  Vernacstate.unfreeze_interp_state st;
+  if not !Flags.quiet
+  then Feedback.msg_notice Pp.(str "The command has succeeded and its effects have been reverted.")
+
 let locate_if_not_already ?loc (e, info) =
   match Loc.get_loc info with
   | None   -> (e, Option.cata (Loc.add_loc info) info loc)
@@ -135,6 +142,9 @@ let interp_control_flag ~time_header (f : control_flag) ~st
   match f with
   | ControlFail ->
     with_fail ~st (fun () -> fn ~st);
+    st.Vernacstate.lemmas, st.Vernacstate.program
+  | ControlSucceed ->
+    with_succeed ~st (fun () -> fn ~st);
     st.Vernacstate.lemmas, st.Vernacstate.program
   | ControlTimeout timeout ->
     vernac_timeout ~timeout (fun () -> fn ~st) ()

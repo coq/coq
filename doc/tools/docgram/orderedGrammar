@@ -1128,6 +1128,7 @@ command: [
 | "Redirect" string sentence
 | "Timeout" natural sentence
 | "Fail" sentence
+| "Succeed" sentence
 | "Drop"
 | "Quit"
 | "BackTo" natural

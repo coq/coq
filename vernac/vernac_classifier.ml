@@ -202,7 +202,7 @@ let classify_vernac e =
   let static_control_classifier ({ CAst.v ; _ } as cmd) =
     (* Fail Qed or Fail Lemma must not join/fork the DAG *)
     (* XXX why is Fail not always Query? *)
-    if Vernacprop.has_Fail cmd then
+    if Vernacprop.has_query_control cmd then
       (match static_classifier ~atts:v.attrs v.expr with
          | VtQuery | VtProofStep _ | VtSideff _
          | VtMeta as x -> x

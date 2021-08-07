@@ -1584,6 +1584,8 @@ vernac_control: [
 | WITH "Timeout" natural sentence
 | REPLACE "Fail" vernac_control
 | WITH "Fail" sentence
+| REPLACE "Succeed" vernac_control
+| WITH "Succeed" sentence
 | DELETE decorated_vernac
 ]
 

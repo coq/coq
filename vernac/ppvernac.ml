@@ -1319,7 +1319,9 @@ let pr_control_flag (p : control_flag) =
     | ControlTime _ -> keyword "Time"
     | ControlRedirect s -> keyword "Redirect" ++ spc() ++ qs s
     | ControlTimeout n -> keyword "Timeout " ++ int n
-    | ControlFail -> keyword "Fail" in
+    | ControlFail -> keyword "Fail"
+    | ControlSucceed -> keyword "Succeed"
+  in
   w ++ spc ()
 
 let pr_vernac_control flags = Pp.prlist pr_control_flag flags
