@@ -219,14 +219,6 @@ let rewrite_keyed_unif_flags = {
   resolve_evars = false
 }
 
-let rewrite_elim with_evars frzevars cls c e =
-  Proofview.Goal.enter begin fun gl ->
-  let flags = if Unification.is_keyed_unification ()
-              then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
-  let flags = make_flags frzevars (Tacmach.project gl) flags c in
-  general_elim_clause with_evars flags cls c e
-  end
-
 let tclNOTSAMEGOAL tac =
   let goal gl = Proofview.Goal.goal gl in
   Proofview.Goal.enter begin fun gl ->
@@ -250,6 +242,15 @@ let tclNOTSAMEGOAL tac =
 
 (* Ad hoc asymmetric general_elim_clause *)
 let general_elim_clause with_evars frzevars cls rew elim =
+  let rewrite_elim =
+    Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let flags = if Unification.is_keyed_unification ()
+                then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
+    let flags = make_flags frzevars sigma flags rew in
+    general_elim_clause with_evars flags cls rew elim
+    end
+  in
   let open Pretype_errors in
   Proofview.tclORELSE
     begin match cls with
@@ -257,8 +258,8 @@ let general_elim_clause with_evars frzevars cls rew elim =
       (* was tclWEAK_PROGRESS which only fails for tactics generating one
           subgoal and did not fail for useless conditional rewritings generating
           an extra condition *)
-      tclNOTSAMEGOAL (rewrite_elim with_evars frzevars cls rew elim)
-    | Some _ -> rewrite_elim with_evars frzevars cls rew elim
+      tclNOTSAMEGOAL rewrite_elim
+    | Some _ -> rewrite_elim
     end
     begin function (e, info) -> match e with
     | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
