@@ -229,21 +229,7 @@ let tclNOTSAMEGOAL tac =
       Proofview.tclUNIT ()
   end
 
-(* Ad hoc asymmetric general_elim_clause *)
-let general_elim_clause with_evars frzevars cls rew elim =
-  let rewrite_elim =
-    Proofview.Goal.enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
-    let flags = if Unification.is_keyed_unification ()
-                then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
-    (* We take evars of the type: this may include old evars! For excluding *)
-    (* all old evars, including the ones occurring in the rewriting lemma, *)
-    (* we would have to take the clenv_value *)
-    let newevars = lazy (Evarutil.undefined_evars_of_term sigma (clenv_type rew)) in
-    let flags = make_flags frzevars sigma flags newevars in
-    general_elim_clause with_evars flags cls rew elim
-    end
-  in
+let elim_wrapper cls rwtac =
   let open Pretype_errors in
   Proofview.tclORELSE
     begin match cls with
@@ -251,8 +237,8 @@ let general_elim_clause with_evars frzevars cls rew elim =
       (* was tclWEAK_PROGRESS which only fails for tactics generating one
           subgoal and did not fail for useless conditional rewritings generating
           an extra condition *)
-      tclNOTSAMEGOAL rewrite_elim
-    | Some _ -> rewrite_elim
+      tclNOTSAMEGOAL rwtac
+    | Some _ -> rwtac
     end
     begin function (e, info) -> match e with
     | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
@@ -262,6 +248,23 @@ let general_elim_clause with_evars frzevars cls rew elim =
     end
 
 let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
+  (* Ad hoc asymmetric general_elim_clause *)
+  let general_elim_clause0 rew =
+    let rewrite_elim =
+      Proofview.Goal.enter begin fun gl ->
+      let sigma = Proofview.Goal.sigma gl in
+      let flags = if Unification.is_keyed_unification ()
+                  then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
+      (* We take evars of the type: this may include old evars! For excluding *)
+      (* all old evars, including the ones occurring in the rewriting lemma, *)
+      (* we would have to take the clenv_value *)
+      let newevars = lazy (Evarutil.undefined_evars_of_term sigma (clenv_type rew)) in
+      let flags = make_flags frzevars sigma flags newevars in
+      general_elim_clause with_evars flags cls rew elim
+      end
+    in
+    elim_wrapper cls rewrite_elim
+  in
   let strat, tac =
     match tac with
     | None -> Naive, None
@@ -287,13 +290,13 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
       side_tac
         (tclTHEN
           (Proofview.Unsafe.tclEVARS clenv.evd)
-          (general_elim_clause with_evars frzevars cls clenv elim))
+          (general_elim_clause0 clenv))
         tac
     in
     match strat with
     | Naive ->
       Proofview.Unsafe.tclEVARS eqclause.evd <*>
-      side_tac (general_elim_clause with_evars frzevars cls eqclause elim) tac
+      side_tac (general_elim_clause0 eqclause) tac
     | FirstSolved ->
       let flags = make_flags frzevars sigma rewrite_unif_flags (lazy Evar.Set.empty) in
       let cs = instantiate_lemma_all env flags eqclause l2r typ in
