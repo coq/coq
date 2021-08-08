@@ -203,3 +203,51 @@ Check
 (* An example involving SProp *)
 
 Check fun (A:SProp) (f g:A->A) (P:A->Type) a (x : P (f a)) => x : P (g _).
+
+Unset Implicit Arguments.
+
+Module FirstOrderHeuristicAndEta.
+(* An example involving first-order heuristic and eta-expansion *)
+
+Definition P 'tt := nat.
+Axiom Q : (unit -> Type) -> Type.
+
+(* Variant with named variables *)
+Axiom f : unit->Type.
+Axiom z1 : forall f x, f = (fun y => f y) -> Q f -> f x.
+Axiom z2 : forall f x, f = (fun y => f y) -> f x -> Q f.
+Check z1 ?[f] ?[x] eq_refl : Q (fun y => P y) -> P tt.
+Check z2 ?[f] ?[x] eq_refl : P tt -> Q (fun y => P y).
+Check z1 ?[f] ?[x] eq_refl : Q P -> P tt.
+Check z2 ?[f] ?[x] eq_refl : P tt -> Q P.
+
+Axiom z3 : forall f x, Q f -> f = (fun y => f y) -> f x.
+Axiom z4 : forall f x, f x -> f = (fun y => f y) -> Q f.
+Check fun a : Q (fun y => P y) => z3 ?[f] ?[x] a eq_refl : P tt.
+Check fun a : P tt => z4 ?[f] ?[x] a eq_refl : Q (fun y => P y).
+
+(* Variant with de Bruijn indices *)
+Check fun (f:unit->Type) (z:forall f x, f = (fun y => f y) -> Q f -> f x) => z ?[f] ?[x] eq_refl : Q (fun y => P y) -> P tt.
+Check fun (f:unit->Type) (z:forall f x, f = (fun y => f y) -> f x -> Q f) => z ?[f] ?[x] eq_refl : P tt -> Q (fun y => P y).
+Check fun (f:unit->Type) (z:forall f x, f = (fun y => f y) -> Q f -> f x) => z ?[f] ?[x] eq_refl : Q P -> P tt.
+Check fun (f:unit->Type) (z:forall f x, f = (fun y => f y) -> f x -> Q f) => z ?[f] ?[x] eq_refl : P tt -> Q P.
+
+(* Variants with an inner reduction *)
+Axiom z5 : forall f x, f = (fun y => id (f y)) -> f x -> Q f.
+Check z5 ?[f] ?[x] eq_refl : P tt -> Q P.
+Check z5 ?[f] ?[x] eq_refl : P tt -> Q (fun y => id (P y)).
+Check z5 ?[f] ?[x] eq_refl : P tt -> Q (fun y => id P y).
+
+Axiom z6 : forall f x, f = (fun y => id (f y)) -> Q f -> f x.
+Check z6 ?[f] ?[x] eq_refl : Q P -> P tt.
+(* Two following tests fail because conversion [id P ?x == P tt]
+   tries to reduce on the wrong side first *)
+Fail Check z6 ?[f] ?[x] eq_refl : Q (fun y => id (P y)) -> P tt.
+Fail Check z6 ?[f] ?[x] eq_refl : Q (fun y => id P y) -> P tt.
+
+(* Note: the following fail already, without involving eta *)
+Axiom z7 : forall x, id P x.
+Fail Check z7 ?[x] : P tt.
+Fail Check z7 ?[x] : P tt.
+
+End FirstOrderHeuristicAndEta.
