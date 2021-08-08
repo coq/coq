@@ -44,17 +44,8 @@ module ClTyp = struct
   let compare = cl_typ_ord
 end
 
-module ClPairOrd =
-struct
-  type t = cl_typ * cl_typ
-  let compare (i1, j1) (i2, j2) =
-    let c = cl_typ_ord i1 i2 in
-    if Int.equal c 0 then cl_typ_ord j1 j2 else c
-end
-
 module ClTypSet = Set.Make(ClTyp)
 module ClTypMap = Map.Make(ClTyp)
-module ClPairMap = Map.Make(ClPairOrd)
 
 type cl_info_typ = {
   (* The number of parameters of the coercion class. *)
@@ -101,8 +92,39 @@ let class_tab =
 let coercion_tab =
   Summary.ref ~name:"coercion_tab" (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
 
+module ClGraph :
+sig
+  type t
+  val empty : t
+  val add : cl_typ -> cl_typ -> inheritance_path -> t -> t
+  val find : cl_typ -> cl_typ -> t -> inheritance_path
+  val src : cl_typ -> t -> inheritance_path ClTypMap.t
+  val dst : cl_typ -> t -> inheritance_path ClTypMap.t
+  val bindings : t -> ((cl_typ * cl_typ) * inheritance_path) list
+end =
+struct
+  type map = inheritance_path ClTypMap.t ClTypMap.t
+  type t = map * map
+  (* Doubly-indexed map in both directions *)
+  let empty = ClTypMap.empty, ClTypMap.empty
+  let add0 x y p m =
+    let n = try ClTypMap.find x m with Not_found -> ClTypMap.empty in
+    ClTypMap.add x (ClTypMap.add y p n) m
+  let add x y p (ml, mr) = (add0 x y p ml, add0 y x p mr)
+  let find x y (m, _) = ClTypMap.find y (ClTypMap.find x m)
+  let src x (m, _) = try ClTypMap.find x m with Not_found -> ClTypMap.empty
+  let dst x (_, m) = try ClTypMap.find x m with Not_found -> ClTypMap.empty
+
+  let bindings (m, _) =
+    let fold s n accu =
+      let fold t p accu = ((s, t), p) :: accu in
+      ClTypMap.fold fold n accu
+    in
+    List.rev (ClTypMap.fold fold m [])
+end
+
 let inheritance_graph =
-  Summary.ref ~name:"inheritance_graph" (ClPairMap.empty : inheritance_path ClPairMap.t)
+  Summary.ref ~name:"inheritance_graph" ClGraph.empty
 
 (* ajout de nouveaux "objets" *)
 
@@ -112,8 +134,8 @@ let add_new_class cl s =
 let add_new_coercion coe s =
   coercion_tab := CoeTypMap.add coe s !coercion_tab
 
-let add_new_path x y =
-  inheritance_graph := ClPairMap.add x y !inheritance_graph
+let add_new_path (x, y) p =
+  inheritance_graph := ClGraph.add x y p !inheritance_graph
 
 (* class_info : cl_typ -> int * cl_info_typ *)
 
@@ -200,7 +222,7 @@ let pr_class x = str (string_of_class x)
 (* lookup paths *)
 
 let lookup_path_between_class (s,t) =
-  ClPairMap.find (s,t) !inheritance_graph
+  ClGraph.find s t !inheritance_graph
 
 let lookup_path_to_fun_from_class s =
   lookup_path_between_class (s, CL_FUN)
@@ -253,7 +275,7 @@ let get_coercion_constructor env coe =
 
 let lookup_pattern_path_between env (s,t) =
   List.map (get_coercion_constructor env)
-    (ClPairMap.find (CL_IND s, CL_IND t) !inheritance_graph)
+    (ClGraph.find (CL_IND s) (CL_IND t) !inheritance_graph)
 
 (* rajouter une coercion dans le graphe *)
 
@@ -327,24 +349,24 @@ let add_coercion_in_graph env sigma ic =
     else
       false
   in
-  let try_add_new_path1 ij p =
-    let _ = try_add_new_path ij p in ()
-  in
   if try_add_new_path (source, target) [ic] then begin
-    ClPairMap.iter
-      (fun (s,t) p ->
-         if not (cl_typ_eq s t) then begin
-           if cl_typ_eq t source then begin
-             try_add_new_path1 (s, target) (p@[ic]);
-             ClPairMap.iter
-               (fun (u,v) q ->
-                  if not (cl_typ_eq u v) && cl_typ_eq u target then
-                    try_add_new_path1 (s,v) (p@[ic]@q))
-               old_inheritance_graph
-           end;
-           if cl_typ_eq s target then try_add_new_path1 (source, t) (ic::p)
-         end)
-      old_inheritance_graph
+    let rev = ClGraph.dst source old_inheritance_graph in
+    let dir = ClGraph.src target old_inheritance_graph in
+    let iter s p =
+      if not (cl_typ_eq s source) then
+        let _ = try_add_new_path (s, target) (p@[ic]) in
+        let iter v q =
+          if not (cl_typ_eq target v) then
+            ignore (try_add_new_path (s,v) (p@[ic]@q))
+        in
+        ClTypMap.iter iter dir
+    in
+    let () = ClTypMap.iter iter rev in
+    let iter t p =
+      if not (cl_typ_eq t target) then
+        ignore (try_add_new_path (source, t) (ic::p))
+    in
+    ClTypMap.iter iter dir
   end;
   class_tab := ClTypMap.mapi (fun k k_info ->
       let reachable_k_source = ClTypSet.mem k source_info.cl_reachable_to in
@@ -423,7 +445,7 @@ let coercions () =
   List.rev (CoeTypMap.fold (fun _ y acc -> y::acc) !coercion_tab [])
 
 let inheritance_graph () =
-  ClPairMap.bindings !inheritance_graph
+  ClGraph.bindings !inheritance_graph
 
 let coercion_of_reference r =
   let ref = Nametab.global r in
