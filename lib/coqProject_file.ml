@@ -231,8 +231,8 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
     aux { proj with extra_args = proj.extra_args @ [sourced a] } r
-  | f :: r ->
-      let f = CUnix.correct_path f orig_dir in
+  | f' :: r ->
+      let f = CUnix.correct_path f' orig_dir in
       let proj =
         if exists_dir f then { proj with subdirs = proj.subdirs @ [sourced f] }
         else match Filename.extension f with
@@ -246,7 +246,7 @@ let process_cmd_line ~warning_fn orig_dir proj args =
         | ".mli" -> { proj with mli_files = proj.mli_files @ [sourced f] }
         | ".mllib" -> { proj with mllib_files = proj.mllib_files @ [sourced f] }
         | ".mlpack" -> { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
-        | _ -> raise (Parsing_error ("Unknown option "^f)) in
+        | _ -> raise (Parsing_error ("Unknown option "^f')) in
       aux proj r
  in
   let proj = aux proj args in
