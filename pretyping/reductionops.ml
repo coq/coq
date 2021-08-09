@@ -936,6 +936,10 @@ let whd_allnolet_state = raw_whd_state_gen CClosure.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
 let whd_allnolet = red_of_state_red whd_allnolet_state
 
+let is_head_evar env sigma c =
+  let head, _ = whd_all_state env sigma (c,Stack.empty) in
+  EConstr.isEvar sigma head
+
 (* 4. Ad-hoc eta reduction *)
 
 let shrink_eta sigma c =

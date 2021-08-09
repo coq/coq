@@ -260,6 +260,8 @@ val whd_nored_state : state_reduction_function
 val whd_betaiota_deltazeta_for_iota_state :
   TransparentState.t -> state_reduction_function
 
+val is_head_evar : env -> evar_map -> constr -> bool
+
 (** {6 Meta-related reduction functions } *)
 type meta_instance_subst
 

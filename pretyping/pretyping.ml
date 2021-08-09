@@ -920,12 +920,9 @@ struct
   let pretype_lambda self (name, bk, c1, c2) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
-    let sigma, tycon' =
-      match tycon with
-      | None -> sigma, tycon
-      | Some ty ->
-        let sigma, ty' = Coercion.inh_coerce_to_prod ?loc ~program_mode !!env sigma ty in
-        sigma, Some ty'
+    let tycon' = if program_mode
+      then Option.map (Coercion.remove_subset !!env sigma) tycon
+      else tycon
     in
     let sigma,name',dom,rng =
       match tycon' with
@@ -950,8 +947,11 @@ struct
           else
             sigma, Anonymous, None, None
         | _ ->
-          (* XXX no error to allow later coercion? Not sure if possible with funclass *)
-          error_not_product ?loc !!env sigma ty
+          if Reductionops.is_head_evar !!env sigma ty then sigma, Anonymous, None, None
+          else
+            (* No chance of unifying with a product.
+               NB: Funclass cannot be a source class so no coercions. *)
+            error_not_product ?loc !!env sigma ty
     in
     let dom_valcon = valcon_of_tycon dom in
     let sigma, j = eval_type_pretyper self ~program_mode ~poly resolve_tc dom_valcon env sigma c1 in

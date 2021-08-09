@@ -42,9 +42,9 @@ val inh_coerce_to_sort : ?loc:Loc.t ->
 val inh_coerce_to_base : ?loc:Loc.t -> program_mode:bool ->
   env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
 
-(** [inh_coerce_to_prod env isevars t] coerces [t] to a product type *)
-val inh_coerce_to_prod : ?loc:Loc.t -> program_mode:bool ->
-  env -> evar_map -> types -> evar_map * types
+(** [remove_subset env sigma t] applies program mode transformations
+   to [t], recursively transforming [{x : A | P}] into [A] *)
+val remove_subset : env -> evar_map -> types -> types
 
 (** [inh_conv_coerce_to resolve_tc Loc.t env isevars j t] coerces [j] to an
     object of type [t]; i.e. it inserts a coercion into [j], if needed, in such
