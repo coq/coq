@@ -39,15 +39,20 @@ Register not as core.not.type.
 
 (** Create the "core" hint database, and set its transparent state for
   variables and constants explicitly. *)
-
 Create HintDb core.
-#[global]
-Hint Variables Opaque : core.
-#[global]
-Hint Constants Opaque : core.
+#[global] Hint Variables Opaque : core.
+#[global] Hint Constants Opaque : core.
+
+(** Set "core" as the default hint database. *)
+#[global] Set Default HintDb "core".
+
+(** Create the "nocore" hint database. This hint database has a special status
+    in that trying to add hints will result in an error. It can be used in order
+    to not specify a hint database when using [auto], [eauto], etc.*)
+Create HintDb nocore.
 
 #[global]
-Hint Unfold not: core.
+Hint Unfold not : core.
 
   (** [and A B], written [A /\ B], is the conjunction of [A] and [B]
 
