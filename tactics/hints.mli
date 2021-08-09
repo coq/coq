@@ -192,6 +192,15 @@ val current_db_names : unit -> String.Set.t
 
 val current_pure_db : unit -> hint_db list
 
+val get_default_hint_db_name : unit -> hint_db_name option
+(** Get the set default hint database name. *)
+
+val default_hint_db_name : unit -> hint_db_name
+(** Get the set default hint database name, but raise an exception if no default is set. *)
+
+val process_hint_db_names : hint_db_name list -> hint_db_name list
+(** If the list is empty, returns a singleton containing the default name. Otherwise returns the same list. *)
+
 val add_hints : locality:hint_locality -> hint_db_name list -> hints_entry -> unit
 
 val hint_globref : GlobRef.t -> hint_term

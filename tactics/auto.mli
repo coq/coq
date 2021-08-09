@@ -34,15 +34,12 @@ val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argume
 
 (** The Auto tactic *)
 
-(** The use of the "core" database can be de-activated by passing
-    "nocore" amongst the databases. *)
-
 val auto : ?debug:debug ->
   int -> delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
 
 (** Auto with more delta. *)
 
-(** auto with default search depth and with the hint database "core" *)
+(** auto with default search depth *)
 val default_auto : unit Proofview.tactic
 
 (** auto with all hint databases *)

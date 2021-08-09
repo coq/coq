@@ -170,9 +170,9 @@ END
 
 TACTIC EXTEND autounfold_one
 | [ "autounfold_one" hintbases(db) "in" hyp(id) ] ->
-    { Eauto.autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, Locus.InHyp)) }
+    { Eauto.autounfold_one (Option.default [] db) (Some (id, Locus.InHyp)) }
 | [ "autounfold_one" hintbases(db) ] ->
-    { Eauto.autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None }
+    { Eauto.autounfold_one (Option.default [] db) None }
       END
 
 TACTIC EXTEND unify
@@ -242,7 +242,6 @@ END
 VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
 | #[ locality = Attributes.really_hint_locality; ] [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> {
   let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
-  Hints.add_hints ~locality
-    (match dbnames with None -> ["core"] | Some l -> l) entry;
+  Hints.add_hints ~locality (Option.default [] dbnames) entry;
  }
 END

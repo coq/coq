@@ -979,6 +979,33 @@ let get_db dbname =
   try searchtable_map dbname
   with Not_found -> Hint_db.empty ~name:dbname TransparentState.empty false
 
+let get_default_hint_db_name =
+  let open Goptions in
+  let r_opt = ref None in
+  let optwrite v = r_opt := v in
+  let optread () = !r_opt in
+  (* Check that the database exists. *)
+  let preprocess = Option.map (fun x ->
+    ignore (try searchtable_map x with
+      | Not_found -> error_no_such_hint_database x);
+    x) in
+  let _ = declare_stringopt_option ~preprocess {
+      optdepr = false;
+      optkey = ["Default";"HintDb"];
+      optread;
+      optwrite ;
+    } in
+  optread
+
+let default_hint_db_name () =
+  match get_default_hint_db_name () with
+  | None -> user_err (str "No default hint database set. Set one with the option Default HintDb.")
+  | Some hint_db_name -> hint_db_name
+
+let process_hint_db_names hint_db_names =
+  if List.is_empty hint_db_names then [ default_hint_db_name () ]
+  else hint_db_names
+
 let add_hint dbname hintlist =
   let check (_, h) =
     let () = if KNmap.mem h.code.uid !statustable then
@@ -1294,7 +1321,7 @@ let default_hint_locality () =
 
 let remove_hints ~locality dbnames grs =
   let () = check_locality locality in
-  let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
+  let dbnames = process_hint_db_names dbnames in
     List.iter
       (fun dbname ->
         let hint = make_hint ~locality dbname (RemoveHints grs) in
@@ -1446,6 +1473,7 @@ let is_notlocal = function
 | Export | SuperGlobal -> true
 
 let add_hints ~locality dbnames h =
+  let dbnames = process_hint_db_names dbnames in
   let () = match h with
   | HintsResolveEntry _ | HintsImmediateEntry _ | HintsUnfoldEntry _ | HintsExternEntry _ ->
     check_locality locality
@@ -1504,7 +1532,7 @@ let make_local_hint_db env sigma ts eapply lems =
   let lems = List.map map lems in
   let sign = EConstr.named_context env in
   let ts = match ts with
-    | None -> Hint_db.transparent_state (searchtable_map "core")
+    | None -> Hint_db.transparent_state (searchtable_map (default_hint_db_name ()))
     | Some ts -> ts
   in
   let hintlist = List.map_append (fun decl -> make_resolve_hyp env sigma (Named.Declaration.get_id decl)) sign in
@@ -1516,12 +1544,11 @@ let make_local_hint_db env sigma ?ts eapply lems =
   make_local_hint_db env sigma ts eapply lems
 
 let make_db_list dbnames =
-  let use_core = not (List.mem "nocore" dbnames) in
-  let dbnames = List.remove String.equal "nocore" dbnames in
-  let dbnames = if use_core then "core"::dbnames else dbnames in
-  let lookup db =
-    try searchtable_map db with Not_found -> error_no_such_hint_database db
-  in
+  let dbnames = match get_default_hint_db_name () with
+    | None -> dbnames
+    | Some def -> def :: dbnames in
+  let lookup db = try searchtable_map db with
+    | Not_found -> error_no_such_hint_database db in
   List.map lookup dbnames
 
 let push_resolves env sigma hint db =

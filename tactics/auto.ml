@@ -346,9 +346,6 @@ and trivial_resolve env sigma dbg db_list local_db secvars cl =
             (my_find_search env sigma db_list local_db secvars head cl))
   with Not_found -> []
 
-(** The use of the "core" database can be de-activated by passing
-    "nocore" amongst the databases. *)
-
 let trivial ?(debug=Off) lems dbnames =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->

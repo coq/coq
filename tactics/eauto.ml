@@ -422,9 +422,7 @@ let autounfold_tac db cls =
   Proofview.tclUNIT () >>= fun () ->
   let dbs = match db with
   | None -> String.Set.elements (current_db_names ())
-  | Some [] -> ["core"]
-  | Some l -> l
-  in
+  | Some l -> process_hint_db_names l in
   autounfold dbs cls
 
 let unfold_head env sigma (ids, csts) c =
@@ -461,6 +459,7 @@ let unfold_head env sigma (ids, csts) c =
   in aux c
 
 let autounfold_one db cl =
+  let db = process_hint_db_names db in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in

@@ -1419,26 +1419,11 @@ let vernac_restore_state file =
 let vernac_create_hintdb ~module_local id b =
   Hints.create_hint_db module_local id TransparentState.full b
 
-let warn_implicit_core_hint_db =
-  CWarnings.create ~name:"implicit-core-hint-db" ~category:"deprecated"
-         (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
-             ++ strbrk"Please specify a hint database.")
-
 let vernac_remove_hints ~atts dbnames ids =
   let locality = Attributes.(parse really_hint_locality atts) in
-  let dbnames =
-    if List.is_empty dbnames then
-      (warn_implicit_core_hint_db (); ["core"])
-    else dbnames
-  in
   Hints.remove_hints ~locality dbnames (List.map Smartlocate.global_with_alias ids)
 
 let vernac_hints ~atts dbnames h =
-  let dbnames =
-    if List.is_empty dbnames then
-      (warn_implicit_core_hint_db (); ["core"])
-    else dbnames
-  in
   let locality, poly = Attributes.(parse Notations.(really_hint_locality ++ polymorphic) atts) in
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 

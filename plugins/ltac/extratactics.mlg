@@ -316,6 +316,7 @@ let add_rewrite_hint ~locality ~poly bases ort t lcsr =
       CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules ~locality base eqs in
+  let bases = Hints.process_hint_db_names bases in
   List.iter add_hints bases
 
 let classify_hint _ = VtSideff ([], VtLater)
@@ -331,9 +332,9 @@ VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
     ":" preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o (Some t) l }
 | #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
-  { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o None l }
+  { add_rewrite_hint ~locality ~poly:polymorphic [] o None l }
 | #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
-  { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o (Some t) l }
+  { add_rewrite_hint ~locality ~poly:polymorphic [] o (Some t) l }
 END
 
 (**********************************************************************)
