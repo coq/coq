@@ -1360,6 +1360,16 @@ let emit_to_focus window sgn =
 (** {2 Creation of the main coqide window } *)
 
 let build_ui () =
+  (* issue 12779 *)
+  GtkData.StyleContext.add_provider_for_screen
+    (Gdk.Screen.default ())
+    begin
+      let provider = GObj.css_provider () in
+      provider#load_from_data "button { box-shadow: none }";
+      provider#as_css_provider
+    end
+    GtkData.StyleContext.ProviderPriority.application;
+
   let w = GWindow.window
     ~wmclass:("CoqIDE","CoqIDE")
     ~width:window_width#get ~height:window_height#get
