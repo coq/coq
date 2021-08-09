@@ -114,6 +114,13 @@ let canonize_constr sigma c =
   in
   canonize_binders c
 
+let rec display_expr_eq c1 c2 =
+  let open Constrexpr in
+  match CAst.(c1.v, c2.v) with
+  | (CHole _ | CEvar _), _ | _, (CEvar _ | CHole _) -> true
+  | _ ->
+    Constrexpr_ops.constr_expr_eq_gen display_expr_eq c1 c2
+
 (** Tries to realize when the two terms, albeit different are printed the same. *)
 let display_eq ~flags env sigma t1 t2 =
   (* terms are canonized, then their externalisation is compared syntactically *)
@@ -122,7 +129,7 @@ let display_eq ~flags env sigma t1 t2 =
   let t2 = canonize_constr sigma t2 in
   let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) () in
   let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) () in
-  Constrexpr_ops.constr_expr_eq ct1 ct2
+  display_expr_eq ct1 ct2
 
 (** This function adds some explicit printing flags if the two arguments are
     printed alike. *)

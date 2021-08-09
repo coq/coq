@@ -23,6 +23,8 @@ val sort_expr_eq : sort_expr -> sort_expr -> bool
 val explicitation_eq : explicitation -> explicitation -> bool
 (** Equality on [explicitation]. *)
 
+val constr_expr_eq_gen : (constr_expr -> constr_expr -> bool) -> constr_expr -> constr_expr -> bool
+
 val constr_expr_eq : constr_expr -> constr_expr -> bool
 (** Equality on [constr_expr]. This is a syntactical one, which is oblivious to
     some parsing details, including locations. *)
