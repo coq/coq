@@ -1307,7 +1307,7 @@ let vernac_identity_coercion ~atts id qids qidt =
 let vernac_instance_program ~atts ~pm name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(option_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(Classes.instance_locality ++ polymorphic))) atts
   in
   let pm, _id = Classes.new_instance_program ~pm ~locality ~poly name bl t props info in
   pm
@@ -1315,7 +1315,7 @@ let vernac_instance_program ~atts ~pm name bl t props info =
 let vernac_instance_interactive ~atts name bl t info props =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(option_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(Classes.instance_locality ++ polymorphic))) atts
   in
   let _id, pstate =
     Classes.new_instance_interactive ~locality ~poly name bl t info props in
@@ -1324,7 +1324,7 @@ let vernac_instance_interactive ~atts name bl t info props =
 let vernac_instance ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(option_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(Classes.instance_locality ++ polymorphic))) atts
   in
   let _id : Id.t =
     Classes.new_instance ~locality ~poly name bl t props info in
@@ -1333,12 +1333,12 @@ let vernac_instance ~atts name bl t props info =
 let vernac_declare_instance ~atts id bl inst pri =
   Dumpglob.dump_definition (fst id) false "inst";
   let (program, locality), poly =
-    Attributes.(parse (Notations.(program ++ option_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(program ++ Classes.instance_locality ++ polymorphic))) atts
   in
   Classes.declare_new_instance ~program_mode:program ~locality ~poly id bl inst pri
 
 let vernac_existing_instance ~atts insts =
-  let locality = Attributes.(parse option_locality) atts in
+  let locality = Attributes.parse Classes.instance_locality atts in
   List.iter (fun (id, info) -> Classes.existing_instance locality id (Some info)) insts
 
 let vernac_existing_class id =
@@ -1425,7 +1425,7 @@ let warn_implicit_core_hint_db =
              ++ strbrk"Please specify a hint database.")
 
 let vernac_remove_hints ~atts dbnames ids =
-  let locality = Attributes.(parse option_locality atts) in
+  let locality = Attributes.(parse really_hint_locality atts) in
   let dbnames =
     if List.is_empty dbnames then
       (warn_implicit_core_hint_db (); ["core"])
@@ -1439,7 +1439,7 @@ let vernac_hints ~atts dbnames h =
       (warn_implicit_core_hint_db (); ["core"])
     else dbnames
   in
-  let locality, poly = Attributes.(parse Notations.(option_locality ++ polymorphic) atts) in
+  let locality, poly = Attributes.(parse Notations.(really_hint_locality ++ polymorphic) atts) in
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =

@@ -1765,7 +1765,7 @@ let declare_an_instance n s args =
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
-let get_locality b = if b then Goptions.OptGlobal else Goptions.OptLocal
+let get_locality b = if b then Hints.SuperGlobal else Hints.Local
 
 let anew_instance atts binders (name,t) fields =
   let locality = get_locality atts.global in

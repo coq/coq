@@ -17,7 +17,7 @@ open Equality
 type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) CAst.t
 
 (** To add rewriting rules to a base *)
-val add_rew_rules : locality:Goptions.option_locality -> string -> raw_rew_rule list -> unit
+val add_rew_rules : locality:Hints.hint_locality -> string -> raw_rew_rule list -> unit
 
 (** The AutoRewrite tactic.
    The optional conditions tell rewrite how to handle matching and side-condition solving.
@@ -43,3 +43,5 @@ val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> uni
 val auto_multi_rewrite_with : ?conds:conditions -> unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
 
 val print_rewrite_hintdb : string -> Pp.t
+
+val default_hint_rewrite_locality : unit -> Hints.hint_locality

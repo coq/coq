@@ -29,7 +29,8 @@ module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let set_typeclass_transparency c local b =
-  let locality = if local || Global.sections_are_opened () then Goptions.OptLocal else Goptions.OptGlobal in
+  (* XXX checking sections here is suspicious but matches historical (unintended?) behaviour *)
+  let locality = if local || Global.sections_are_opened () then Hints.Local else Hints.SuperGlobal in
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 
@@ -47,33 +48,31 @@ let add_instance_hint inst path ~locality info =
           (Hints.HintsResolveEntry
              [info, false, Hints.PathHints path, inst])) ()
 
-type instance_locality =
-| InstGlobal
-| InstExport
-| InstLocal
+(* short names without opening all Hints *)
+type locality = Hints.hint_locality = Local | Export | SuperGlobal
 
 type instance_obj = {
   inst_class : GlobRef.t;
   inst_info: hint_info;
   (* Sections where the instance should be redeclared,
      None for discard, Some 0 for none. *)
-  inst_global: instance_locality;
+  inst_global: Hints.hint_locality;
   inst_impl: GlobRef.t;
 }
 
 let add_instance_base inst =
   let locality = match inst.inst_global with
-  | InstLocal -> Goptions.OptLocal
-  | InstGlobal ->
+  | Local -> Local
+  | SuperGlobal ->
     (* i.e. in a section, declare the hint as local since discharge is managed
        by rebuild_instance which calls again add_instance_hint; don't ask hints
        to take discharge into account itself *)
-    if Global.sections_are_opened () then Goptions.OptLocal
-    else Goptions.OptGlobal
-  | InstExport ->
+    if Global.sections_are_opened () then Local
+    else SuperGlobal
+  | Export ->
     (* Same as above for export *)
-    if Global.sections_are_opened () then Goptions.OptLocal
-    else Goptions.OptExport
+    if Global.sections_are_opened () then Local
+    else Export
   in
   add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
     inst.inst_info
@@ -88,14 +87,14 @@ let perform_instance i =
 let cache_instance (_, inst) = perform_instance inst
 
 let load_instance _ (_, inst) = match inst.inst_global with
-| InstLocal -> assert false
-| InstGlobal -> perform_instance inst
-| InstExport -> ()
+| Local -> assert false
+| SuperGlobal -> perform_instance inst
+| Export -> ()
 
 let open_instance i (_, inst) = match inst.inst_global with
-| InstLocal -> assert false
-| InstGlobal -> perform_instance inst
-| InstExport -> if Int.equal i 1 then perform_instance inst
+| Local -> assert false
+| SuperGlobal -> perform_instance inst
+| Export -> if Int.equal i 1 then perform_instance inst
 
 let subst_instance (subst, inst) =
   { inst with
@@ -104,8 +103,8 @@ let subst_instance (subst, inst) =
 
 let discharge_instance (_, inst) =
   match inst.inst_global with
-  | InstLocal -> None
-  | InstGlobal | InstExport ->
+  | Local -> None
+  | SuperGlobal | Export ->
     assert (not (isVarRef inst.inst_impl));
     Some inst
 
@@ -114,8 +113,8 @@ let rebuild_instance inst =
   inst
 
 let classify_instance inst = match inst.inst_global with
-| InstLocal -> Dispose
-| InstGlobal | InstExport -> Substitute inst
+| Local -> Dispose
+| SuperGlobal | Export -> Substitute inst
 
 let instance_input : instance_obj -> obj =
   declare_object
@@ -139,22 +138,24 @@ let warn_deprecated_instance_without_locality =
     #[local], #[global] and #[export] depending on your choice. For example: \
     \"#[export] Instance Foo : Bar := baz.\"")
 
-let add_instance cl info glob impl =
-  let global = match glob with
-  | Goptions.OptDefault ->
-    if Global.sections_are_opened () then InstLocal
-    else
-      let () = warn_deprecated_instance_without_locality () in
-      InstGlobal
-  | Goptions.OptGlobal ->
-    if Global.sections_are_opened () && isVarRef impl then
-      CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
-    else InstGlobal
-  | Goptions.OptLocal -> InstLocal
-  | Goptions.OptExport ->
-    if Global.sections_are_opened () && isVarRef impl then
-      CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
-    else InstExport
+let default_locality () =
+  if Global.sections_are_opened () then Local
+  else
+    let () = warn_deprecated_instance_without_locality () in
+    SuperGlobal
+
+let instance_locality =
+  Attributes.hint_locality ~default:default_locality
+
+let add_instance cl info global impl =
+  let () = match global with
+    | Local -> ()
+    | SuperGlobal ->
+      if Global.sections_are_opened () && isVarRef impl then
+        CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
+    | Export ->
+      if Global.sections_are_opened () && isVarRef impl then
+        CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
   in
   let i = {
     inst_class = cl.cl_impl;
@@ -288,7 +289,7 @@ let add_class env sigma cl =
       | Some info ->
         (match m.meth_const with
          | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
-         | Some b -> declare_instance ~warn:true env sigma (Some info) Goptions.OptGlobal (GlobRef.ConstRef b))
+         | Some b -> declare_instance ~warn:true env sigma (Some info) SuperGlobal (GlobRef.ConstRef b))
       | _ -> ())
     cl.cl_projs
 
@@ -598,8 +599,7 @@ let new_instance_common ~program_mode ?generalize env instid ctx cl =
   let env' = push_rel_context ctx env in
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
 
-let new_instance_interactive ?(locality=Goptions.OptLocal)
-    ~poly instid ctx cl
+let new_instance_interactive ~locality ~poly instid ctx cl
     ?generalize ?(tac:unit Proofview.tactic option) ?hook
     pri opt_props =
   let env = Global.env() in
@@ -608,9 +608,7 @@ let new_instance_interactive ?(locality=Goptions.OptLocal)
   id, do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly
     cty k u ctx ctx' pri decl imps subst id opt_props
 
-let new_instance_program ?(locality=Goptions.OptLocal) ~pm
-    ~poly instid ctx cl opt_props
-    ?generalize ?hook pri =
+let new_instance_program ~locality ~pm ~poly instid ctx cl opt_props ?generalize ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:true ?generalize env instid ctx cl in
@@ -619,9 +617,7 @@ let new_instance_program ?(locality=Goptions.OptLocal) ~pm
       cty k u ctx ctx' pri decl imps subst id opt_props in
   pm, id
 
-let new_instance ?(locality=Goptions.OptLocal)
-    ~poly instid ctx cl props
-    ?generalize ?hook pri =
+let new_instance ~locality ~poly instid ctx cl props ?generalize ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:false ?generalize env instid ctx cl in
@@ -629,7 +625,7 @@ let new_instance ?(locality=Goptions.OptLocal)
     cty k u ctx ctx' pri decl imps subst id props;
   id
 
-let declare_new_instance ?(locality=Goptions.OptLocal) ~program_mode ~poly instid ctx cl pri =
+let declare_new_instance ~locality ~program_mode ~poly instid ctx cl pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
@@ -647,6 +643,6 @@ let refine_att =
 module Internal =
 struct
 let add_instance cl info glob r =
-  let glob = if glob then Goptions.OptGlobal else Goptions.OptLocal in
+  let glob = if glob then SuperGlobal else Local in
   add_instance cl info glob r
 end

@@ -258,6 +258,19 @@ let option_locality =
   | None -> return Goptions.OptDefault
   | Some l -> return l
 
+let hint_locality ~default =
+  let open Hints in
+  let name = "Locality" in
+  attribute_of_list [
+    ("local", single_key_parser ~name ~key:"local" Local)
+  ; ("global", single_key_parser ~name ~key:"global" SuperGlobal)
+  ; ("export", single_key_parser ~name ~key:"export" Export)
+  ] >>= function
+  | Some v -> return v
+  | None -> let v = default () in return v
+
+let really_hint_locality = hint_locality ~default:Hints.default_hint_locality
+
 (* locality is supposed to be true when local, false when global *)
 let locality =
   let locality_to_bool =

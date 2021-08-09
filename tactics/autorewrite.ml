@@ -265,6 +265,12 @@ let warn_deprecated_hint_rewrite_without_locality =
     #[local], #[global] and #[export] depending on your choice. For example: \
     \"#[export] Hint Rewrite foo : bar.\"")
 
+let default_hint_rewrite_locality () =
+  if Global.sections_are_opened () then Hints.Local
+  else
+    let () = warn_deprecated_hint_rewrite_without_locality () in
+    Hints.SuperGlobal
+
 (* To add rewriting rules to a base *)
 let add_rew_rules ~locality base lrul =
   let counter = ref 0 in
@@ -284,23 +290,17 @@ let add_rew_rules ~locality base lrul =
         in incr counter;
           HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in
-  let open Goptions in
+  let open Hints in
   match locality with
-  | OptLocal -> cache_hintrewrite ((),(base,lrul))
-  | OptDefault ->
-    let () =
-      if not @@ Global.sections_are_opened () then
-        warn_deprecated_hint_rewrite_without_locality ()
-    in
-    Lib.add_anonymous_leaf (inGlobalHintRewrite (base,lrul))
-  | OptGlobal ->
+  | Local -> cache_hintrewrite ((),(base,lrul))
+  | SuperGlobal ->
     let () =
       if Global.sections_are_opened () then
       CErrors.user_err Pp.(str
         "This command does not support the global attribute in sections.");
     in
     Lib.add_anonymous_leaf (inGlobalHintRewrite (base,lrul))
-  | OptExport ->
+  | Export ->
     let () =
       if Global.sections_are_opened () then
         CErrors.user_err Pp.(str

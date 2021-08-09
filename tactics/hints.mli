@@ -174,6 +174,11 @@ val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
 
+type hint_locality = Local | Export | SuperGlobal
+
+val default_hint_locality : unit -> hint_locality
+(** Warns *)
+
 (** [create_hint_db local name st use_dn].
    [st] is a transparency state for unification using this db
    [use_dn] switches the use of the discrimination net for all hints
@@ -181,13 +186,13 @@ val searchtable_add : (hint_db_name * hint_db) -> unit
 
 val create_hint_db : bool -> hint_db_name -> TransparentState.t -> bool -> unit
 
-val remove_hints : locality:Goptions.option_locality -> hint_db_name list -> GlobRef.t list -> unit
+val remove_hints : locality:hint_locality -> hint_db_name list -> GlobRef.t list -> unit
 
 val current_db_names : unit -> String.Set.t
 
 val current_pure_db : unit -> hint_db list
 
-val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_entry -> unit
+val add_hints : locality:hint_locality -> hint_db_name list -> hints_entry -> unit
 
 val hint_globref : GlobRef.t -> hint_term
 

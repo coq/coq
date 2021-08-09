@@ -58,6 +58,10 @@ val deprecation : Deprecation.t option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute
 val using : string option attribute
+val hint_locality : default:(unit -> Hints.hint_locality) -> Hints.hint_locality attribute
+
+(** With the warning for Hint (and not for Instance etc) *)
+val really_hint_locality : Hints.hint_locality attribute
 
 (** Enable/Disable universe checking *)
 val typing_flags : Declarations.typing_flags option attribute
