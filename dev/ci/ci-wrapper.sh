@@ -14,6 +14,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "${DIR}/../.."
 
 export TIMED=1
-"${DIR}/${CI_SCRIPT}" 2>&1 | tee time-of-build.log
+bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee time-of-build.log
 echo 'Aggregating timing log...'
 python ./tools/make-one-time-file.py time-of-build.log
