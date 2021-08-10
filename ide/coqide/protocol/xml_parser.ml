@@ -109,12 +109,12 @@ let pop s =
 let push t s =
   Stack.push t s.stack
 
-let canonicalize l =
+let canonicalize_elts l =
   let has_elt = List.exists (function Element _ -> true | _ -> false) l in
   if has_elt then List.filter (function PCData s -> not (is_blank s) | _ -> true) l
   else l
 
-let rec read_xml do_not_canonicalize s =
+let rec read_xml canonicalize s =
   let rec read_node s =
     match pop s with
       | Xml_lexer.PCData s -> PCData s
@@ -122,7 +122,7 @@ let rec read_xml do_not_canonicalize s =
       | Xml_lexer.Tag (tag, attr, false) ->
         let elements = read_elems tag s in
         let elements =
-          if do_not_canonicalize then elements else canonicalize elements
+          if canonicalize then canonicalize_elts elements else elements
         in
         Element (tag, attr, elements)
       | t ->
@@ -151,7 +151,7 @@ let rec read_xml do_not_canonicalize s =
       node
     | PCData c ->
       if is_blank c then
-        read_xml do_not_canonicalize s
+        read_xml canonicalize s
       else
         raise (Xml_lexer.Error Xml_lexer.ENodeExpected)
 
@@ -174,10 +174,10 @@ let error_of_exn xparser = function
     (*let e = Errors.push e in: We do not record backtrace here. *)
     raise e
 
-let do_parse do_not_canonicalize xparser =
+let do_parse canonicalize xparser =
   try
     Xml_lexer.init xparser.source;
-    let x = read_xml do_not_canonicalize xparser in
+    let x = read_xml canonicalize xparser in
     if xparser.check_eof && pop xparser <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
     Xml_lexer.close ();
     x
@@ -185,8 +185,8 @@ let do_parse do_not_canonicalize xparser =
     Xml_lexer.close ();
     raise (!xml_error (error_of_exn xparser any) xparser.source)
 
-let parse ?(do_not_canonicalize=false) p =
-  do_parse do_not_canonicalize p
+let parse ?(canonicalize=true) p =
+  do_parse canonicalize p
 
 let error_msg = function
   | UnterminatedComment -> "Unterminated comment"

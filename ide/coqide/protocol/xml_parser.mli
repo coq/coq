@@ -101,6 +101,5 @@ val check_eof : t -> bool -> unit
 (** Once the parser is configured, you can run the parser on a any kind
     of xml document source to parse its contents into an Xml data structure.
 
-    When [do_not_canonicalize] is set, the XML document is given as
-    is, without trying to remove blank PCDATA elements. *)
-val parse : ?do_not_canonicalize:bool -> t -> xml
+    When [canonicalize] is set, the parser tries to remove blank PCDATA elements. *)
+val parse : ?canonicalize:bool -> t -> xml
