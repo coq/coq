@@ -131,6 +131,10 @@ type 'a constant_entry =
   | ParameterEntry of Entries.parameter_entry
   | PrimitiveEntry of Entries.primitive_entry
 
+let local_csts = Summary.ref ~name:"local-csts" Cset_env.empty
+
+let is_local_constant c = Cset_env.mem c !local_csts
+
 type constant_obj = {
   cst_kind : Decls.logical_kind;
   cst_locl : Locality.import_status;
@@ -141,7 +145,11 @@ let load_constant i ((sp,kn), obj) =
     raise (DeclareUniv.AlreadyDeclared (None, Libnames.basename sp));
   let con = Global.constant_of_delta_kn kn in
   Nametab.push (Nametab.Until i) sp (GlobRef.ConstRef con);
-  Dumpglob.add_constant_kind con obj.cst_kind
+  Dumpglob.add_constant_kind con obj.cst_kind;
+  begin match obj.cst_locl with
+    | Locality.ImportNeedQualified -> local_csts := Cset_env.add con !local_csts
+    | Locality.ImportDefaultBehavior -> ()
+  end
 
 (* Opening means making the name without its module qualification available *)
 let open_constant f i ((sp,kn), obj) =

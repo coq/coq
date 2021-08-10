@@ -56,3 +56,50 @@ Module WithExport.
   Fail Check b.
 
 End WithExport.
+
+Module IgnoreLocals.
+  Module X.
+    Local Definition x := 0.
+    Definition y := 1.
+  End X.
+
+  Set Warnings "+not-importable".
+  Fail Import X(x,y).
+  Set Warnings "-not-importable".
+  Import X(x,y).
+  Check y.
+  Fail Check x.
+  Check X.x.
+End IgnoreLocals.
+
+Module FancyFunctor.
+  (* A fancy behaviour with functors, not sure if we want to keep it
+     but at least the test will ensure changes are deliberate. *)
+
+  Module Type T.
+    Parameter x : nat.
+  End T.
+  Module X.
+    Definition x := 0.
+    Definition y := 1.
+  End X.
+
+  Module Y.
+    Local Definition x := 2.
+  End Y.
+
+  Module F(A:T).
+    Export A(x).
+  End F.
+  Module Import M := F X.
+  Check x.
+  Fail Check y.
+
+  Module N := F Y.
+  Set Warnings "+not-importable".
+  Fail Import N.
+  Set Warnings "-not-importable".
+  Import N.
+  Check eq_refl : x = 0.
+
+End FancyFunctor.

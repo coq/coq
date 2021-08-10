@@ -282,6 +282,11 @@ are now available through the dot notation.
          Fail Check B.U.
          Check A.B.U.
 
+   .. warn:: Cannot import local constant, it will be ignored.
+
+      This warning is printed when a name in the list of names to
+      import was declared as a local constant, and the name is not imported.
+
 .. cmd:: Export {+ @filtered_import }
 
    Similar to :cmd:`Import`, except that when the module containing this command

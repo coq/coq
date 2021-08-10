@@ -84,13 +84,6 @@ let sobjs_no_functor (mbids,_) = List.is_empty mbids
 let subst_filtered sub (f,mp) =
   let f = match f with
     | Unfiltered -> Unfiltered
-    | Names ns ->
-      let module NSet = Globnames.ExtRefSet in
-      let ns =
-        NSet.fold (fun n ns -> NSet.add (Globnames.subst_extended_reference sub n) ns)
-          ns NSet.empty
-      in
-      Names ns
   in
   f, subst_mp sub mp
 
@@ -375,7 +368,7 @@ and open_module f i obj_dir obj_mp sobjs =
   consistency_checks true obj_dir dirinfo;
   (match f with
    | Unfiltered -> Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo
-   | Names _ -> ());
+  );
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let modobjs = ModObjs.get obj_mp in
