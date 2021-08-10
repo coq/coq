@@ -23,7 +23,6 @@ let dnet_depth = ref 8
 type term_label =
 | GRLabel of GlobRef.t
 | ProdLabel
-| LambdaLabel
 | SortLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
@@ -31,6 +30,30 @@ let compare_term_label t1 t2 = match t1, t2 with
 | _ -> pervasives_compare t1 t2 (** OK *)
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
+
+let eta_reduce = Reductionops.shrink_eta
+
+(* TODO: instead of doing that on patterns we should try to perform it on terms
+   before translating them into patterns in Hints. *)
+let rec eta_reduce_pat p = match p with
+| PLambda (_, _, q) ->
+  let f, cl = match eta_reduce_pat q with
+  | PApp (f, cl) -> f, cl
+  | q -> q, [||]
+  in
+  let napp = Array.length cl in
+  if napp > 0 then
+    let r = eta_reduce_pat (Array.last cl) in
+    match r with
+    | PRel 1 ->
+      let lc = Array.sub cl 0 (napp - 1) in
+      let u = if Array.is_empty lc then f else PApp (f, lc) in
+      if Patternops.noccurn_pattern 1 u then Patternops.lift_pattern (-1) u else p
+    | _ -> p
+  else p
+| PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _ | PProj _ | PProd _
+| PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _ | PInt _
+| PFloat _ | PArray _ -> p
 
 let decomp_pat p =
   let rec decrec acc = function
@@ -41,7 +64,7 @@ let decomp_pat p =
       (PRef (GlobRef.ConstRef (Projection.constant p)), params @ c :: acc)
     | c -> (c,acc)
   in
-  decrec [] p
+  decrec [] (eta_reduce_pat p)
 
 let decomp sigma t =
   let rec decrec acc c = match EConstr.kind sigma c with
@@ -54,7 +77,7 @@ let decomp sigma t =
     | Cast (c1,_,_) -> decrec acc c1
     | _ -> (c,acc)
   in
-    decrec [] t
+    decrec [] (eta_reduce sigma t)
 
 let evaluable_constant c env ts =
   (* This is a hack to work around a broken Print Module implementation, see
@@ -83,7 +106,6 @@ let constr_val_discr env sigma ts t =
       Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
       if Option.is_empty ts then Nothing
-      else if List.is_empty l then Label(LambdaLabel, [d; c])
       else Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> if Option.is_empty ts then Nothing else Everything
@@ -115,8 +137,7 @@ let constr_pat_discr env ts t =
     end
   | PProd (_, d, c), [] ->
     Some (ProdLabel, [d ; c])
-  | PLambda (_, d, c), [] ->
-    if Option.is_empty ts then None else Some (LambdaLabel, [d ; c])
+  | PLambda (_, d, c), [] -> None
   | PSort s, [] ->
     Some (SortLabel, [])
   | _ -> None
