@@ -29,6 +29,8 @@ module NamedDecl = Context.Named.Declaration
 (* Calcul de la forme normal d'un terme    *)
 (*******************************************)
 
+let e_whd_all = Reductionops.clos_whd_flags CClosure.all
+
 let crazy_type =  mkSet
 
 let decompose_prod env t =
@@ -56,8 +58,12 @@ let invert_tag cst tag reloc_tbl =
   with Find_at j -> (j+1)
              (* Argggg, ces constructeurs de ... qui commencent a 1*)
 
-let find_rectype_a env c =
-  let (t, l) = decompose_appvect (whd_all env c) in
+let app_type env sigma c =
+  let t = e_whd_all env sigma c in
+  decompose_appvect (EConstr.Unsafe.to_constr t)
+
+let find_rectype_a env sigma c =
+  let (t, l) = app_type env sigma c in
   match kind t with
   | Ind ind -> (ind, l)
   | _ -> raise Not_found
@@ -79,8 +85,7 @@ let type_constructor mind mib u (ctx, typ) params =
 
 
 let construct_of_constr const env sigma tag typ =
-  let typ = Reductionops.clos_whd_flags CClosure.all env sigma (EConstr.of_constr typ) in
-  let t, allargs = decompose_appvect (EConstr.Unsafe.to_constr typ) in
+  let t, allargs = app_type env sigma (EConstr.of_constr typ) in
   match Constr.kind t with
   | Ind ((mind,_ as ind), u as indu) ->
     let mib,mip = lookup_mind_specif env ind in
@@ -109,9 +114,8 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params p =
     let typi = type_constructor mind mib u cty params in
     let decl,indapp = Reductionops.splay_prod env sigma (EConstr.of_constr typi) in
     let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
-    let indapp = EConstr.Unsafe.to_constr indapp in
     let decl_with_letin,_ = decompose_prod_assum typi in
-    let ((ind,u),cargs) = find_rectype_a env indapp in
+    let ((ind,u),cargs) = find_rectype_a env sigma indapp in
     let nparams = Array.length params in
     let carity = snd (rtbl.(i)) in
     let crealargs = Array.sub cargs nparams (Array.length cargs - nparams) in
@@ -264,7 +268,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       nf_stk env sigma (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
       assert (from = 0) ;
-      let ((mind,_ as ind), u), allargs = find_rectype_a env t in
+      let ((mind,_ as ind), u), allargs = find_rectype_a env sigma (EConstr.of_constr t) in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
       let params,realargs = Util.Array.chop nparams allargs in
@@ -404,7 +408,7 @@ and nf_cofix env sigma cf =
   mkCoFix (init,(names,cft,cfb))
 
 and nf_array env sigma t typ =
-  let ty, allargs = decompose_appvect (whd_all env typ) in
+  let ty, allargs = app_type env sigma (EConstr.of_constr typ) in
   let typ_elem = allargs.(0) in
   let t, vdef = Parray.to_array t in
   let t = Array.map (fun v -> nf_val env sigma v typ_elem) t in
