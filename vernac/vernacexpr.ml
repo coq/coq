@@ -465,6 +465,7 @@ type control_flag =
   | ControlRedirect of string
   | ControlTimeout of int
   | ControlFail
+  | ControlSucceed
 
 type vernac_control_r =
   { control : control_flag list

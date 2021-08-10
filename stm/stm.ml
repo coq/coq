@@ -1088,7 +1088,7 @@ end = struct (* {{{ *)
           match VCS.visit id with
           | { step = `Fork ((_,_,_,l),_) } -> l, false,0
           | { step = `Cmd { cids = l; ctac } } -> l, ctac,0
-          | { step = `Alias (_,{ expr }) } when not (Vernacprop.has_Fail expr) ->
+          | { step = `Alias (_,{ expr }) } when not (Vernacprop.has_query_control expr) ->
           begin match expr.CAst.v.expr with
                 | VernacUndo n -> [], false, n
                 | _ -> [],false,0
@@ -1897,7 +1897,7 @@ let collect_proof keep cur hd brkind id =
    | _ -> false in
  let is_defined = function
    | _, { expr = e } -> is_defined_expr e.CAst.v.expr
-                        && (not (Vernacprop.has_Fail e)) in
+                        && (not (Vernacprop.has_query_control e)) in
  let has_default_proof_using = Option.has_some (Proof_using.get_default_proof_using ()) in
  let proof_using_ast = function
    | VernacProof(_,Some _) -> true
@@ -1906,7 +1906,7 @@ let collect_proof keep cur hd brkind id =
  in
  let proof_using_ast = function
    | Some (_, v) when proof_using_ast v.expr.CAst.v.expr
-                      && (not (Vernacprop.has_Fail v.expr)) -> Some v
+                      && (not (Vernacprop.has_query_control v.expr)) -> Some v
    | _ -> None in
  let has_proof_using x = proof_using_ast x <> None in
  let proof_no_using = function
@@ -1922,7 +1922,7 @@ let collect_proof keep cur hd brkind id =
  in
  let has_proof_no_using = function
    | Some (_, v) -> has_proof_no_using v.expr.CAst.v.expr
-                    && (not (Vernacprop.has_Fail v.expr))
+                    && (not (Vernacprop.has_query_control v.expr))
    | _ -> false in
  let too_complex_to_delegate = function
    | VernacDeclareModule _
@@ -1983,7 +1983,7 @@ let collect_proof keep cur hd brkind id =
  in
  match cur, (VCS.visit id).step, brkind with
  | (parent, x), `Fork _, _ when is_vernac_exact x.expr.CAst.v.expr
-                                && (not (Vernacprop.has_Fail x.expr)) ->
+                                && (not (Vernacprop.has_query_control x.expr)) ->
      `Sync (no_name,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> check_policy (collect (Some cur) [] id)
  | _ ->

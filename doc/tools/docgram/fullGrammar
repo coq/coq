@@ -746,6 +746,7 @@ vernac_control: [
 | "Redirect" ne_string vernac_control
 | "Timeout" natural vernac_control
 | "Fail" vernac_control
+| "Succeed" vernac_control
 | decorated_vernac
 ]
 

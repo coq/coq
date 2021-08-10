@@ -13,7 +13,7 @@
 
 open Vernacexpr
 
-val has_Fail : vernac_control -> bool
+val has_query_control : vernac_control -> bool
 val is_navigation_vernac : vernac_expr -> bool
 val is_reset : vernac_expr -> bool
 val is_debug : vernac_expr -> bool

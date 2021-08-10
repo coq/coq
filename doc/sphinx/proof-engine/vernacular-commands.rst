@@ -826,9 +826,17 @@ Quitting and debugging
       If the given :n:`@command` succeeds, then :n:`Fail @sentence`
       fails with this error message.
 
+.. cmd:: Succeed @sentence
+
+   If :n:`@sentence` succeeds, then :n:`Succeed @sentence` succeeds without changing the
+   proof state.  If :n:`@sentence` fails, then :n:`Succeed @sentence` fails showing the error
+   message for :n:`@sentence`.
+   In interactive mode, the system prints the message :n:`The command has succeeded and its effects have been reverted.` confirming the success.
+   This command can be useful for writing tests.
+
 .. note::
 
-   :cmd:`Time`, :cmd:`Redirect`, :cmd:`Timeout` and :cmd:`Fail` are
+   :cmd:`Time`, :cmd:`Redirect`, :cmd:`Timeout`, :cmd:`Fail` and :cmd:`Succeed` are
    :production:`control_command`\s. For these commands, attributes and goal
    selectors, when specified, are part of the :n:`@sentence` argument, and thus come after
    the control command prefix and before the inner command or tactic. For
