@@ -30,9 +30,8 @@ Warning: Not a fully mutually defined fixpoint
 Well-foundedness check may fail unexpectedly.
  [non-full-mutual,fixpoints]
 File "./output/Fixpoint.v", line 72, characters 0-25:
-Warning: Not a truly recursive fixpoint. [non-recursive,fixpoints]
+Warning: Not a truly recursive cofixpoint. [non-recursive,fixpoints]
 File "./output/Fixpoint.v", line 75, characters 0-48:
-Warning: Not a fully mutually defined fixpoint
+Warning: Not a fully mutually defined cofixpoint
 (a2 and a1 are not mutually dependent).
-Well-foundedness check may fail unexpectedly.
  [non-full-mutual,fixpoints]
