@@ -498,7 +498,7 @@ let nothing_to_inject =
              str "Did you write an extra [] in the intro pattern?"))
 
 let equality_inj l b id c = Proofview.Goal.enter begin fun gl ->
-  Proofview.tclORELSE (Equality.inj None l b None c)
+  Proofview.tclORELSE (Equality.inj None ~injection_in_context:false l b None c)
     (function
     | (Equality.NothingToInject,_) ->
         let open Proofview.Notations in
