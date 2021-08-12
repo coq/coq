@@ -43,7 +43,7 @@ type notation_constr =
       (Name.t * notation_constr option * notation_constr) list array *
       notation_constr array * notation_constr array
   | NSort of glob_sort
-  | NCast of notation_constr * notation_constr cast_type
+  | NCast of notation_constr * cast_type * notation_constr
   | NInt of Uint63.t
   | NFloat of Float64.t
   | NArray of notation_constr array * notation_constr * notation_constr

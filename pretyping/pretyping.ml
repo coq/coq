@@ -500,7 +500,7 @@ type pretyper = {
   pretype_rec : pretyper -> glob_fix_kind * Id.t array * glob_decl list array * glob_constr array * glob_constr array -> unsafe_judgment pretype_fun;
   pretype_sort : pretyper -> glob_sort -> unsafe_judgment pretype_fun;
   pretype_hole : pretyper -> Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option -> unsafe_judgment pretype_fun;
-  pretype_cast : pretyper -> glob_constr * glob_constr cast_type -> unsafe_judgment pretype_fun;
+  pretype_cast : pretyper -> glob_constr * cast_type * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_level list option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
@@ -541,8 +541,8 @@ let eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma t =
     self.pretype_sort self s ?loc ~program_mode ~poly resolve_tc tycon env sigma
   | GHole (knd, nam, arg) ->
     self.pretype_hole self (knd, nam, arg) ?loc ~program_mode ~poly resolve_tc tycon env sigma
-  | GCast (c, t) ->
-    self.pretype_cast self (c, t) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+  | GCast (c, k, t) ->
+    self.pretype_cast self (c, k, t) ?loc ~program_mode ~poly resolve_tc tycon env sigma
   | GInt n ->
     self.pretype_int self n ?loc ~program_mode ~poly resolve_tc tycon env sigma
   | GFloat f ->
@@ -1183,44 +1183,42 @@ struct
       let cj = { uj_val = v; uj_type = p } in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
 
-  let pretype_cast self (c, k) =
+  let pretype_cast self (c, k, t) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
     let sigma, cj =
-      match k with
-      | CastConv t | CastVM t | CastNative t ->
-        let k = (match k with CastVM _ -> VMcast | CastNative _ -> NATIVEcast | _ -> DEFAULTcast) in
-        let sigma, tj = eval_type_pretyper self ~program_mode ~poly resolve_tc empty_valcon env sigma t in
-        let sigma, tval = Evarsolve.refresh_universes
-            ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma tj.utj_val in
-        let tval = nf_evar sigma tval in
-        let (sigma, cj), tval = match k with
-          | VMcast ->
-            let sigma, cj = pretype empty_tycon env sigma c in
-            let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
-              if not (occur_existential sigma cty || occur_existential sigma tval) then
-                match Reductionops.vm_infer_conv !!env sigma cty tval with
-                | Some sigma -> (sigma, cj), tval
-                | None ->
-                  error_actual_type ?loc !!env sigma cj tval
-                      (ConversionFailed (!!env,cty,tval))
-              else user_err ?loc  (str "Cannot check cast with vm: " ++
-                str "unresolved arguments remain.")
-          | NATIVEcast ->
-            let sigma, cj = pretype empty_tycon env sigma c in
-            let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
-            begin
-              match Nativenorm.native_infer_conv !!env sigma cty tval with
-              | Some sigma -> (sigma, cj), tval
-              | None ->
-                error_actual_type ?loc !!env sigma cj tval
-                  (ConversionFailed (!!env,cty,tval))
-            end
-          | _ ->
-            pretype (mk_tycon tval) env sigma c, tval
-        in
-        let v = mkCast (cj.uj_val, k, tval) in
-        sigma, { uj_val = v; uj_type = tval }
+      let k = (match k with CastVM -> VMcast | CastNative -> NATIVEcast | CastConv -> DEFAULTcast) in
+      let sigma, tj = eval_type_pretyper self ~program_mode ~poly resolve_tc empty_valcon env sigma t in
+      let sigma, tval = Evarsolve.refresh_universes
+          ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma tj.utj_val in
+      let tval = nf_evar sigma tval in
+      let (sigma, cj), tval = match k with
+        | VMcast ->
+          let sigma, cj = pretype empty_tycon env sigma c in
+          let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
+          if not (occur_existential sigma cty || occur_existential sigma tval) then
+            match Reductionops.vm_infer_conv !!env sigma cty tval with
+            | Some sigma -> (sigma, cj), tval
+            | None ->
+              error_actual_type ?loc !!env sigma cj tval
+                (ConversionFailed (!!env,cty,tval))
+          else user_err ?loc  (str "Cannot check cast with vm: " ++
+                               str "unresolved arguments remain.")
+        | NATIVEcast ->
+          let sigma, cj = pretype empty_tycon env sigma c in
+          let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
+          begin
+            match Nativenorm.native_infer_conv !!env sigma cty tval with
+            | Some sigma -> (sigma, cj), tval
+            | None ->
+              error_actual_type ?loc !!env sigma cj tval
+                (ConversionFailed (!!env,cty,tval))
+          end
+        | _ ->
+          pretype (mk_tycon tval) env sigma c, tval
+      in
+      let v = mkCast (cj.uj_val, k, tval) in
+      sigma, { uj_val = v; uj_type = tval }
     in discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
 
 (* [pretype_type valcon env sigma c] coerces [c] into a type *)

@@ -128,7 +128,7 @@ and constr_expr_r =
   | CPatVar of Pattern.patvar
   | CEvar   of Glob_term.existential_name CAst.t * (lident * constr_expr) list
   | CSort   of sort_expr
-  | CCast   of constr_expr * constr_expr Glob_term.cast_type
+  | CCast   of constr_expr * Glob_term.cast_type * constr_expr
   | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution
   | CGeneralization of Glob_term.binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token

@@ -101,11 +101,11 @@ let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
       Name.equal na1 na2
   | (PatVar _ | PatCstr _), _ -> false
 
-let cast_type_eq eq t1 t2 = match t1, t2 with
-  | CastConv t1, CastConv t2 -> eq t1 t2
-  | CastVM t1, CastVM t2 -> eq t1 t2
-  | CastNative t1, CastNative t2 -> eq t1 t2
-  | (CastConv _ | CastVM _ | CastNative _), _ -> false
+let cast_type_eq t1 t2 = match t1, t2 with
+  | CastConv, CastConv
+  | CastVM, CastVM
+  | CastNative, CastNative -> true
+  | (CastConv | CastVM | CastNative), _ -> false
 
 let matching_var_kind_eq k1 k2 = match k1, k2 with
 | FirstOrderPatVar ido1, FirstOrderPatVar ido2 -> Id.equal ido1 ido2
@@ -169,8 +169,8 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
     Option.equal (==) gn1 gn2 (* Only thing sensible *) &&
     Namegen.intro_pattern_naming_eq nam1 nam2
-  | GCast (c1, t1), GCast (c2, t2) ->
-    f c1 c2 && cast_type_eq f t1 t2
+  | GCast (c1, k1, t1), GCast (c2, k2, t2) ->
+    f c1 c2 && cast_type_eq k1 k2 && f t1 t2
   | GProj ((cst1, u1), args1, c1), GProj ((cst2, u2), args2, c2) ->
     GlobRef.(equal (ConstRef cst1) (ConstRef cst2)) &&
     Option.equal (List.equal glob_level_eq) u1 u2 &&
@@ -185,19 +185,6 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
      GInt _ | GFloat _ | GArray _), _ -> false
 
 let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
-
-(** Mapping [cast_type] *)
-
-let map_cast_type f = function
-  | CastConv a -> CastConv (f a)
-  | CastVM a -> CastVM (f a)
-  | CastNative a -> CastNative (f a)
-
-let smartmap_cast_type f c =
-  match c with
-    | CastConv a -> let a' = f a in if a' == a then c else CastConv a'
-    | CastVM a -> let a' = f a in if a' == a then c else CastVM a'
-    | CastNative a -> let a' = f a in if a' == a then c else CastNative a'
 
 let map_glob_constr_left_to_right f = DAst.map (function
   | GApp (g,args) ->
@@ -237,10 +224,10 @@ let map_glob_constr_left_to_right f = DAst.map (function
       let comp2 = Array.map f tyl in
       let comp3 = Array.map f bv in
       GRec (fk,idl,comp1,comp2,comp3)
-  | GCast (c,k) ->
-      let comp1 = f c in
-      let comp2 = map_cast_type f k in
-      GCast (comp1,comp2)
+  | GCast (c,k,t) ->
+      let c = f c in
+      let t = f t in
+      GCast (c,k,t)
   | GProj (p,args,c) ->
       let comp1 = Util.List.map_left f args in
       let comp2 = f c in
@@ -278,9 +265,8 @@ let fold_glob_constr f acc = DAst.with_val (function
       (List.fold_left (fun acc (na,k,bbd,bty) ->
         f (Option.fold_left f acc bbd) bty)) acc bl in
     Array.fold_left f (Array.fold_left f acc tyl) bv
-  | GCast (c,k) ->
-    let acc = match k with
-      | CastConv t | CastVM t | CastNative t -> f acc t in
+  | GCast (c,k,t) ->
+    let acc = f acc t in
     f acc c
   | GProj (p,args,c) ->
     f (List.fold_left f acc args) c
@@ -323,9 +309,8 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
           bll.(i) in
       f v' (f v acc tyl.(i)) (bv.(i)) in
     Array.fold_left_i f' acc idl
-  | GCast (c,k) ->
-    let acc = match k with
-      | CastConv t | CastVM t | CastNative t -> f v acc t in
+  | GCast (c,k,t) ->
+    let acc = f v acc t in
     f v acc c
   | GProj (p,args,c) ->
     f v (List.fold_left (f v) acc args) c

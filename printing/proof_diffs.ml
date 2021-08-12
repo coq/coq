@@ -357,7 +357,6 @@ let diff_goal ?og_s ng ns =
 (*** Code to determine which calls to compare between the old and new proofs ***)
 
 open Constrexpr
-open Glob_term
 open Names
 open CAst
 
@@ -536,14 +535,11 @@ let match_goals ot nt =
       (* pass down the old goal evar name *)
       match_goals_r (Id.to_string n.CAst.v) nt' nt'
     | CSort s, CSort s2 -> ()
-    | CCast (c,c'), CCast (c2,c'2) ->
+    | CCast (c,k,t), CCast (c2,k2,t2) ->
       constr_expr ogname c c2;
-      (match c', c'2 with
-      | CastConv a, CastConv a2
-      | CastVM a, CastVM a2
-      | CastNative a, CastNative a2 ->
-        constr_expr ogname a a2
-      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (4)"))
+      if not (Glob_ops.cast_type_eq k k2)
+      then raise (Diff_Failure "Unable to match goals between old and new proof states (4)");
+      constr_expr ogname t t2
     | CNotation (_,ntn,args), CNotation (_,ntn2,args2) ->
       constr_notation_substitution ogname args args2
     | CGeneralization (b,a,c), CGeneralization (b2,a2,c2) ->

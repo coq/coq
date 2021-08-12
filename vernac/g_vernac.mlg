@@ -350,7 +350,7 @@ GRAMMAR EXTEND Gram
   def_body:
     [ [ bl = binders; ":="; red = reduce; c = lconstr ->
         { match c.CAst.v with
-          | CCast(c, Glob_term.CastConv t) -> DefineBody (bl, red, c, Some t)
+          | CCast(c, Glob_term.CastConv, t) -> DefineBody (bl, red, c, Some t)
           | _ -> DefineBody (bl, red, c, None) }
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
         { DefineBody (bl, red, c, Some t) }
@@ -474,8 +474,9 @@ GRAMMAR EXTEND Gram
          t = lconstr; ":="; b = lconstr -> { fun id ->
            (oc,DefExpr (id,l,b,Some t)) }
       | l = binders; ":="; b = lconstr -> { fun id ->
+        (* Why are we dropping cast info here? *)
          match b.CAst.v with
-         | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
+         | CCast(b', _, t) ->
              (NoInstance,DefExpr(id,l,b',Some t))
          | _ ->
              (NoInstance,DefExpr(id,l,b,None)) } ] ]

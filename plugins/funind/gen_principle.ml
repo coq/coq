@@ -85,7 +85,7 @@ let is_rec names =
     | GVar id -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GInt _ | GFloat _ ->
       false
-    | GCast (b, _) -> lookup names b
+    | GCast (b, _, _) -> lookup names b
     | GRec _ -> CErrors.user_err (Pp.str "GRec not handled")
     | GIf (b, _, lhs, rhs) ->
       lookup names b || lookup names lhs || lookup names rhs
@@ -2024,10 +2024,8 @@ let rec add_args id new_args =
         , add_args id new_args b2
         , add_args id new_args b3 )
     | (CHole _ | CPatVar _ | CEvar _ | CPrim _ | CSort _) as b -> b
-    | CCast (b1, b2) ->
-      CCast
-        ( add_args id new_args b1
-        , Glob_ops.map_cast_type (add_args id new_args) b2 )
+    | CCast (b1, k, b2) ->
+      CCast (add_args id new_args b1, k, add_args id new_args b2)
     | CRecord pars ->
       CRecord (List.map (fun (e, o) -> (e, add_args id new_args o)) pars)
     | CNotation _ -> CErrors.anomaly ~label:"add_args " (Pp.str "CNotation.")

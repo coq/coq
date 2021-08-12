@@ -839,7 +839,7 @@ let rec adjust_env env = function
   | NLambda (_,_,c) -> adjust_env (switch_lambda_binders env) c
   | NLetIn (_,_,_,c) -> adjust_env env c
   | NVar id when Id.equal id ldots_var -> env
-  | NCast (c,_) -> adjust_env env c
+  | NCast (c,_,_) -> adjust_env env c
   | NApp _ -> restart_no_binders env
   | NVar _ | NRef _ | NHole _ | NCases _ | NLetTuple _ | NIf _
   | NRec _ | NSort _ | NProj _ | NInt _ | NFloat _ | NArray _
@@ -2305,9 +2305,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CSort s ->
         DAst.make ?loc @@
         GSort (intern_sort ~local_univs:env.local_univs s)
-    | CCast (c1, c2) ->
+    | CCast (c1, k, c2) ->
         DAst.make ?loc @@
-        GCast (intern env c1, map_cast_type (intern_type (slide_binders env)) c2)
+        GCast (intern env c1, k, intern_type (slide_binders env) c2)
     | CArray(u,t,def,ty) ->
       DAst.make ?loc @@ GArray(intern_instance ~local_univs:env.local_univs u, Array.map (intern env) t, intern env def, intern env ty)
     )

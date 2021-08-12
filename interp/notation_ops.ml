@@ -32,12 +32,6 @@ let rec alpha_var id1 id2 = function
   | _::idl -> alpha_var id1 id2 idl
   | [] -> Id.equal id1 id2
 
-let cast_type_iter2 f t1 t2 = match t1, t2 with
-  | CastConv t1, CastConv t2 -> f t1 t2
-  | CastVM t1, CastVM t2 -> f t1 t2
-  | CastNative t1, CastNative t2 -> f t1 t2
-  | (CastConv _ | CastVM _ | CastNative _), _ -> raise Exit
-
 (* used to update the notation variable with the local variables used
    in NList and NBinderList, since the iterator has its own variable *)
 let replace_var i j var = j :: List.remove Id.equal i var
@@ -205,9 +199,10 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
     Array.iter3 (aux vars) renamings us1 us2;
     Array.iter3 (aux vars) (Array.map ((@) renaming) renamings) rs1 rs2
   | NSort s1, NSort s2 when glob_sort_eq s1 s2 -> ()
-  | NCast (t1, c1), NCast (t2, c2) ->
-    aux vars renaming t1 t2;
-    cast_type_iter2 (aux vars renaming) c1 c2
+  | NCast (c1, k1, t1), NCast (c2, k2, t2) ->
+    aux vars renaming c1 c2;
+    if not (cast_type_eq k1 k2) then raise Exit;
+    aux vars renaming t1 t2
   | NInt i1, NInt i2 when Uint63.equal i1 i2 -> ()
   | NFloat f1, NFloat f2 when Float64.equal f1 f2 -> ()
   | NArray(t1,def1,ty1), NArray(t2,def2,ty2) ->
@@ -399,7 +394,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
           (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
       let e',idl = Array.fold_left_map (to_id (protect g)) e idl in
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
-  | NCast (c,k) -> GCast (f e c,map_cast_type (f (h.slide e)) k)
+  | NCast (c,k,t) -> GCast (f e c, k, f (h.slide e) t)
   | NSort x -> GSort x
   | NHole (x, naming, arg)  -> GHole (x, naming, arg)
   | NRef (x,u) -> GRef (x,u)
@@ -631,7 +626,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
            user_err Pp.(str "Binders marked as implicit not allowed in notations.");
          add_name found na; (na,Option.map aux oc,aux b))) dll in
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
-  | GCast (c,k) -> NCast (aux c,map_cast_type aux k)
+  | GCast (c,k,t) -> NCast (aux c, k, aux t)
   | GSort s -> NSort s
   | GInt i -> NInt i
   | GFloat f -> NFloat f
@@ -850,10 +845,10 @@ let rec subst_notation_constr subst bound raw =
     if nsolve == solve && nknd == knd then raw
     else NHole (nknd, naming, nsolve)
 
-  | NCast (r1,k) ->
+  | NCast (r1,k,t) ->
       let r1' = subst_notation_constr subst bound r1 in
-      let k' = smartmap_cast_type (subst_notation_constr subst bound) k in
-      if r1' == r1 && k' == k then raw else NCast(r1',k')
+      let t' = subst_notation_constr subst bound t in
+      if r1' == r1 && t' == t then raw else NCast(r1',k,t')
 
   | NArray (t,def,ty) ->
       let def' = subst_notation_constr subst bound def
@@ -1326,16 +1321,6 @@ let match_termlist match_fun alp metas sigma rest x y iter termin revert =
   else
     bind_termlist_env alp sigma x l
 
-let match_cast match_fun sigma c1 c2 =
-  match c1, c2 with
-  | CastConv t1, CastConv t2
-  | CastVM t1, CastVM t2
-  | CastNative t1, CastNative t2 ->
-    match_fun sigma t1 t2
-  | CastConv _, _
-  | CastVM _, _
-  | CastNative _, _ -> raise No_match
-
 let does_not_come_from_already_eta_expanded_var glob =
   (* This is hack to avoid looping on a rule with rhs of the form *)
   (* "?f (fun ?x => ?g)" since otherwise, matching "F H" expands in *)
@@ -1449,8 +1434,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let alp,sigma = Array.fold_right2 (fun id1 id2 alsig ->
         match_names metas alsig (Name id1) (Name id2)) idl1 idl2 (alp,sigma) in
       Array.fold_left2 (match_in u alp metas) sigma bl1 bl2
-  | GCast(t1, c1), NCast(t2, c2) ->
-    match_cast (match_in u alp metas) (match_in u alp metas sigma t1 t2) c1 c2
+  | GCast(c1, k1, t1), NCast(c2, k2, t2) ->
+    let sigma = match_in u alp metas sigma c1 c2 in
+    if not (cast_type_eq k1 k2) then raise No_match;
+    match_in u alp metas sigma t1 t2
 
   (* Next pair of lines useful only if not coming from detyping *)
   | GSort (UNamed [(GProp|GSet),0]), NSort (UAnonymous _) -> raise No_match

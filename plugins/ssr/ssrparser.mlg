@@ -1229,7 +1229,7 @@ let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
   | BFdef :: h, { v = CLetIn({CAst.v=x}, v, oty, c) } ->
     let bs, c' = format_constr_expr h c in
     Bdef (x, oty, v) :: bs, c'
-  | [BFcast], { v = CCast (c, Glob_term.CastConv t) } ->
+  | [BFcast], { v = CCast (c, Glob_term.CastConv, t) } ->
     [Bcast t], c
   | BFrec (has_str, has_cast) :: h,
     { v = CFix ( _, [_, Some {CAst.v = CStructRec locn}, bl, t, c]) } ->
@@ -1258,7 +1258,6 @@ let wit_ssrfwdfmt = add_genarg "ssrfwdfmt" (fun env sigma -> pr_fwdfmt)
 
 let mkFwdVal fk c = ((fk, []), c)
 let mkssrFwdVal fk c = ((fk, []), (c,None))
-let dC t = Glob_term.CastConv t
 
 let same_ist { interp_env = x } { interp_env = y } =
   match x,y with
@@ -1272,7 +1271,7 @@ let mkFwdCast fk ?loc ?c t =
     | Some c -> assert (same_ist t c); c.body in
   ((fk, [BFcast]),
    { t with annotation = `None;
-            body = (CAst.make ?loc @@ CCast (c, dC t.body)) })
+            body = (CAst.make ?loc @@ CCast (c, Glob_term.CastConv, t.body)) })
 
 let mkssrFwdCast fk loc t c = ((fk, [BFcast]), (c, Some t))
 
@@ -1387,8 +1386,8 @@ let push_binders c2 bs =
   | [] -> c
   | _ -> anomaly "binder not a lambda nor a let in" in
   match c2 with
-  | { loc; v = CCast (ct, Glob_term.CastConv cty) } ->
-      CAst.make ?loc @@ (CCast (loop false ct bs, Glob_term.CastConv (loop true cty bs)))
+  | { loc; v = CCast (ct, Glob_term.CastConv, cty) } ->
+      CAst.make ?loc @@ (CCast (loop false ct bs, Glob_term.CastConv, (loop true cty bs)))
   | ct -> loop false ct bs
 
 let rec fix_binders = let open CAst in function
