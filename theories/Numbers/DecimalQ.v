@@ -27,7 +27,7 @@ Proof.
   case Decimal.nztail; intros den' e_den'.
   case den'; [now simpl|now simpl| |now simpl..]; clear den'; intro den'.
   case den'; [ |now simpl..]; clear den'.
-  case e_den' as [|e_den']; simpl; intro H; injection H; clear H; intros->.
+  case e_den' as [|e_den']; simpl; injection 1 as ->.
   { now unfold of_decimal; simpl; rewrite app_int_nil_r, DecimalZ.of_to. }
   replace (10 ^ _)%positive with (Nat.iter (S e_den') (Pos.mul 10) 1%positive).
   2:{ induction e_den' as [|n IHn]; [now simpl| ].
@@ -61,7 +61,7 @@ Proof.
 Qed.
 
 Lemma IZ_of_Z_IZ_to_Z z z' : IZ_to_Z z = Some z' -> IZ_of_Z z' = z.
-Proof. now case z as [| |p|p]; [|intro H; injection H; intros<-..]. Qed.
+Proof. now case z as [| |p|p]; [| injection 1 as <- ..]. Qed.
 
 Lemma of_IQmake_to_decimal' num den :
   match IQmake_to_decimal' num den with
@@ -85,7 +85,7 @@ Proof.
   - generalize (of_IQmake_to_decimal' num den).
     case IQmake_to_decimal' as [d'|]; [|now simpl].
     case d' as [i f|]; [|now simpl].
-    now intros H H'; injection H'; clear H'; intros <-.
+    now intros H; injection 1 as <-.
   - case q as [num den| |]; [|now simpl..].
     case q' as [num' den'| |]; [|now simpl..].
     case num' as [z p| | |]; [|now simpl..].
@@ -100,7 +100,7 @@ Proof.
     case IQmake_to_decimal' as [d'|]; [|now simpl].
     case d' as [i f|]; [|now simpl].
     intros <-; clear num den.
-    intros H; injection H; clear H; intros<-.
+    injection 1 as <-.
     unfold of_decimal; simpl.
     now unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to; simpl.
   - case q as [num den| |]; [|now simpl..].
@@ -117,7 +117,7 @@ Proof.
     case IQmake_to_decimal' as [d'|]; [|now simpl].
     case d' as [i f|]; [|now simpl].
     intros <-; clear num den.
-    intros H; injection H; clear H; intros<-.
+    injection 1 as <-.
     unfold of_decimal; simpl.
     now unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to; simpl.
 Qed.
