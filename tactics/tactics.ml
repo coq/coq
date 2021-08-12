@@ -1678,12 +1678,14 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
         let tac =
           if with_destruct then
-            descend_in_conjunctions Id.Set.empty
-              (fun _ b id ->
-                Tacticals.New.tclTHEN
-                  (try_main_apply b (mkVar id))
-                  (clear [id]))
-              (exn0, info) c
+            Proofview.tclORELSE
+              (descend_in_conjunctions Id.Set.empty
+                (fun _ b id ->
+                  Tacticals.New.tclTHEN
+                    (try_main_apply b (mkVar id))
+                    (clear [id]))
+                (exn0, info) c)
+              (fun _ -> Proofview.tclZERO ~info exn0)
           else
             Proofview.tclZERO ~info exn0 in
         if not (Int.equal concl_nprod 0) then
