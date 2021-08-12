@@ -1148,7 +1148,9 @@ let write_makefile f =
   List.iter (fun (v,msg,_,_) -> pr "# %s: path for %s\n" v msg) install_dirs;
   List.iter (fun (v,_,dir,_) -> pr "%s=%S\n" v dir) install_dirs;
   pr "\n# Coq version\n";
-  pr "COQPREFIX=%s\n" ((function None -> "local" | Some v -> v) !prefs.prefix);
+  pr "COQPREFIX=%s\n" ((function
+    | None -> if unix then "/usr/local" else "C:/coq"
+    | Some v -> v) !prefs.prefix);
   pr "VERSION=%s\n" coq_version;
   pr "# Objective-Caml compile command\n";
   pr "OCAML=%S\n" camlexec.top;
