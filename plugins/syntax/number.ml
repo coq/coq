@@ -120,7 +120,7 @@ let locate_float () =
   else None
 
 let has_type env sigma f ty =
-  let c = mkCastC (mkRefC f, Glob_term.CastConv, ty) in
+  let c = mkCastC (mkRefC f, Constr.DEFAULTcast, ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 

@@ -101,11 +101,11 @@ let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
       Name.equal na1 na2
   | (PatVar _ | PatCstr _), _ -> false
 
-let cast_type_eq t1 t2 = match t1, t2 with
-  | CastConv, CastConv
-  | CastVM, CastVM
-  | CastNative, CastNative -> true
-  | (CastConv | CastVM | CastNative), _ -> false
+let cast_kind_eq t1 t2 = let open Constr in match t1, t2 with
+  | DEFAULTcast, DEFAULTcast
+  | VMcast, VMcast
+  | NATIVEcast, NATIVEcast -> true
+  | (DEFAULTcast | VMcast | NATIVEcast), _ -> false
 
 let matching_var_kind_eq k1 k2 = match k1, k2 with
 | FirstOrderPatVar ido1, FirstOrderPatVar ido2 -> Id.equal ido1 ido2
@@ -170,7 +170,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Option.equal (==) gn1 gn2 (* Only thing sensible *) &&
     Namegen.intro_pattern_naming_eq nam1 nam2
   | GCast (c1, k1, t1), GCast (c2, k2, t2) ->
-    f c1 c2 && cast_type_eq k1 k2 && f t1 t2
+    f c1 c2 && cast_kind_eq k1 k2 && f t1 t2
   | GProj ((cst1, u1), args1, c1), GProj ((cst2, u2), args2, c2) ->
     GlobRef.(equal (ConstRef cst1) (ConstRef cst2)) &&
     Option.equal (List.equal glob_level_eq) u1 u2 &&

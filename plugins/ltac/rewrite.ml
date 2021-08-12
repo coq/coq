@@ -1536,7 +1536,9 @@ let newfail n s =
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
   (* For compatibility *)
-  let beta = Tactics.reduct_in_concl ~check:false (Reductionops.nf_betaiota, DEFAULTcast) in
+  let beta = Tactics.reduct_in_concl ~cast:false ~check:false
+      (Reductionops.nf_betaiota, DEFAULTcast)
+  in
   let beta_hyp id = Tactics.reduct_in_hyp ~check:false ~reorder:false Reductionops.nf_betaiota (id, InHyp) in
   let treat sigma res state =
     match res with
@@ -1574,7 +1576,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             end
         | None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_concl ~check:false newt DEFAULTcast
+            convert_concl ~cast:false ~check:false newt DEFAULTcast
   in
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in

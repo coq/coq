@@ -296,8 +296,6 @@ let check_cast env c ct k expected_type =
       Vconv.vm_conv CUMUL env ct expected_type
     | DEFAULTcast ->
       default_conv ~l2r:false CUMUL env ct expected_type
-    | REVERTcast ->
-      default_conv ~l2r:true CUMUL env ct expected_type
     | NATIVEcast ->
       let sigma = Nativelambda.empty_evars in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
@@ -708,7 +706,7 @@ let judge_of_apply env funj argjv =
 
 let judge_of_cast env cj k tj =
   let () = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
-  let c = match k with | REVERTcast -> cj.uj_val | _ -> mkCast (cj.uj_val, k, tj.utj_val) in
+  let c = mkCast (cj.uj_val, k, tj.utj_val) in
   make_judge c tj.utj_val
 
 let judge_of_inductive env indu =

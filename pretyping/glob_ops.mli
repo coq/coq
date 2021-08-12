@@ -32,7 +32,7 @@ val alias_of_pat : 'a cases_pattern_g -> Name.t
 
 val set_pat_alias : Id.t -> 'a cases_pattern_g -> 'a cases_pattern_g
 
-val cast_type_eq : cast_type ->  cast_type -> bool
+val cast_kind_eq : Constr.cast_kind ->  Constr.cast_kind -> bool
 
 val glob_constr_eq : 'a glob_constr_g -> 'a glob_constr_g -> bool
 

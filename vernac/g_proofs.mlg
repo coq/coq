@@ -10,10 +10,11 @@
 
 {
 
-open Glob_term
 open Constrexpr
 open Vernacexpr
 open Hints
+
+module C = Constr
 
 open Pcoq
 open Pcoq.Prim
@@ -128,7 +129,7 @@ GRAMMAR EXTEND Gram
     ;
   constr_body:
     [ [ ":="; c = lconstr -> { c }
-      | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,CastConv, t) } ] ]
+      | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,C.DEFAULTcast, t) } ] ]
   ;
   mode:
     [ [ l = LIST1 [ "+" -> { ModeInput }

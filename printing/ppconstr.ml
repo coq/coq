@@ -518,10 +518,10 @@ let tag_var = tag Tag.variable
       | _ ->
         pr sep inherited a
 
-  let pr_cast = function
-    | CastConv -> str ":"
-    | CastVM -> str "<:"
-    | CastNative -> str "<<:"
+  let pr_cast = let open Constr in function
+    | DEFAULTcast -> str ":"
+    | VMcast-> str "<:"
+    | NATIVEcast -> str "<<:"
 
   let pr pr sep inherited a =
     let return (cmds, prec) = (tag_constr_expr a cmds, prec) in

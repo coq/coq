@@ -157,13 +157,13 @@ let havetac ist
     let a,b,_,u = pf_interp_ty ~resolve_typeclasses:rtc (pf_env gl) (project gl) ist t in a,b,u in
   let open CAst in
   let ct, cty, hole, loc = match Ssrcommon.ssrterm_of_ast_closure_term t with
-    | _, (_, Some { loc; v = CCast (ct, CastConv, cty)}) ->
+    | _, (_, Some { loc; v = CCast (ct, DEFAULTcast, cty)}) ->
       mkt ct, mkt cty, mkt (mkCHole None), loc
     | _, (_, Some ct) ->
       mkt ct, mkt (mkCHole None), mkt (mkCHole None), None
     | _, (t, None) ->
       begin match DAst.get t with
-      | GCast (ct, CastConv, cty) ->
+      | GCast (ct, DEFAULTcast, cty) ->
         mkl ct, mkl cty, mkl mkRHole, t.CAst.loc
       | _ -> mkl t, mkl mkRHole, mkl mkRHole, None
       end
@@ -238,12 +238,12 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
   let ct = match Ssrcommon.ssrterm_of_ast_closure_term ct with
   | (a, (b, Some ct)) ->
     begin match ct.CAst.v with
-    | CCast (_, CastConv, cty) -> a, (b, Some cty)
+    | CCast (_, DEFAULTcast, cty) -> a, (b, Some cty)
     | _ -> anomaly "wlog: ssr cast hole deleted by typecheck"
     end
   | (a, (t, None)) ->
     begin match DAst.get t with
-    | GCast (_, CastConv, cty) -> a, (cty, None)
+    | GCast (_, DEFAULTcast, cty) -> a, (cty, None)
     | _ -> anomaly "wlog: ssr cast hole deleted by typecheck"
     end
   in
@@ -325,12 +325,12 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   let c = match Ssrcommon.ssrterm_of_ast_closure_term c with
   | (a, (b, Some ct)) ->
     begin match ct.CAst.v with
-    | CCast (_, CastConv, cty) -> a, (b, Some cty)
+    | CCast (_, DEFAULTcast, cty) -> a, (b, Some cty)
     | _ -> anomaly "suff: ssr cast hole deleted by typecheck"
     end
   | (a, (t, None)) ->
     begin match DAst.get t with
-    | GCast (_, CastConv, cty) -> a, (cty, None)
+    | GCast (_, DEFAULTcast, cty) -> a, (cty, None)
     | _ -> anomaly "suff: ssr cast hole deleted by typecheck"
     end
   in
@@ -499,7 +499,9 @@ let undertac ?(pad_intro = false) ist ipats ((dir,_),_ as rule) hint =
     if hint = nohint then
       Proofview.tclUNIT ()
     else
-      let betaiota = Tactics.reduct_in_concl ~check:false (Reductionops.nf_betaiota, DEFAULTcast) in
+      let betaiota = Tactics.reduct_in_concl ~cast:false ~check:false
+          (Reductionops.nf_betaiota, DEFAULTcast)
+      in
       (* Usefulness of check_numgoals: tclDISPATCH would be enough,
          except for the error message w.r.t. the number of
          provided/expected tactics, as the last one is implied *)

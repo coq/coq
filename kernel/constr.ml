@@ -34,9 +34,7 @@ type existential_key = Evar.t
 type metavariable = int
 
 (* This defines the strategy to use for verifiying a Cast *)
-(* Warning: REVERTcast is not exported to vo-files; as of r14492, it has to *)
-(* come after the vo-exported cast_kind so as to be compatible with coqchk *)
-type cast_kind = VMcast | NATIVEcast | DEFAULTcast | REVERTcast
+type cast_kind = VMcast | NATIVEcast | DEFAULTcast
 
 (* This defines Cases annotations *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
@@ -1256,7 +1254,6 @@ let hash_cast_kind = function
 | VMcast -> 0
 | NATIVEcast -> 1
 | DEFAULTcast -> 2
-| REVERTcast -> 3
 
 let sh_instance = Univ.Instance.share
 
