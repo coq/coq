@@ -16,6 +16,7 @@ Require Import Arith.
 Require Import Ascii.
 Require Import Bool.
 Require Import Coq.Strings.Byte.
+Import IfNotations.
 
 (** *** Definition of strings *)
 
@@ -74,6 +75,68 @@ Lemma eqb_eq n m : (n =? m)%string = true <-> n = m. Proof. t_eqb. Qed.
 Lemma eqb_neq x y : (x =? y)%string = false <-> x <> y. Proof. t_eqb. Qed.
 Lemma eqb_compat: Morphisms.Proper (Morphisms.respectful eq (Morphisms.respectful eq eq)) eqb.
 Proof. t_eqb. Qed.
+
+(** *** Compare strings lexicographically *)
+
+Fixpoint compare (s1 s2 : string) : comparison :=
+  match s1, s2 with
+  | EmptyString, EmptyString => Eq
+  | EmptyString, String _ _  => Lt
+  | String _ _ , EmptyString => Gt
+  | String c1 s1', String c2 s2' =>
+    match Ascii.compare c1 c2 with
+    | Eq => compare s1' s2'
+    | ne => ne
+    end
+  end.
+
+Lemma compare_antisym : forall s1 s2 : string,
+    compare s1 s2 = CompOpp (compare s2 s1).
+Proof.
+  induction s1, s2; intuition.
+  simpl.
+  rewrite Ascii.compare_antisym.
+  destruct (Ascii.compare a0 a); simpl; intuition.
+Qed.
+
+Lemma compare_eq_iff : forall s1 s2 : string,
+    compare s1 s2 = Eq -> s1 = s2.
+Proof.
+  induction s1, s2; intuition; inversion H.
+  destruct (Ascii.compare a a0) eqn:Heq; try discriminate H1.
+  apply Ascii.compare_eq_iff in Heq.
+  apply IHs1 in H1.
+  subst.
+  reflexivity.
+Qed.
+
+Definition ltb (s1 s2 : string) : bool :=
+  if compare s1 s2 is Lt then true else false.
+
+Definition leb (s1 s2 : string) : bool :=
+  if compare s1 s2 is Gt then false else true.
+
+Lemma leb_antisym (s1 s2 : string) :
+  leb s1 s2 = true -> leb s2 s1 = true -> s1 = s2.
+Proof.
+  unfold leb.
+  rewrite compare_antisym.
+  destruct (compare s2 s1) eqn:Hcmp; simpl in *; intuition.
+  - apply compare_eq_iff in Hcmp. intuition.
+  - discriminate H.
+  - discriminate H0.
+Qed.
+
+Lemma leb_total (s1 s2 : string) : leb s1 s2 = true \/ leb s2 s1 = true.
+Proof.
+  unfold leb.
+  rewrite compare_antisym.
+  destruct (compare s2 s1); intuition.
+Qed.
+
+Infix "?="  := compare : string_scope.
+Infix "<?"  := ltb     : string_scope.
+Infix "<=?" := leb     : string_scope.
 
 (** *** Concatenation of strings *)
 

@@ -13,6 +13,7 @@
     Adapted to Coq V8 by the Coq Development Team *)
 
 Require Import Bool BinPos BinNat PeanoNat Nnat Coq.Strings.Byte.
+Import IfNotations.
 
 (** * Definition of ascii characters *)
 
@@ -173,12 +174,49 @@ Proof.
   apply N_ascii_bounded.
 Qed.
 
+Definition compare (a b : ascii) : comparison :=
+  N.compare (N_of_ascii a) (N_of_ascii b).
+
+Lemma compare_antisym (a b : ascii) :
+    compare a b = CompOpp (compare b a).
+Proof. apply N.compare_antisym. Qed.
+
+Lemma compare_eq_iff (a b : ascii) : compare a b = Eq -> a = b.
+Proof.
+  unfold compare.
+  intros H.
+  apply N.compare_eq_iff in H.
+  rewrite <- ascii_N_embedding.
+  rewrite <- H.
+  rewrite ascii_N_embedding.
+  reflexivity.
+Qed.
+
 Definition ltb (a b : ascii) : bool :=
-  (N_of_ascii a <?  N_of_ascii b)%N.
+  if compare a b is Lt then true else false.
 
 Definition leb (a b : ascii) : bool :=
-  (N_of_ascii a <=? N_of_ascii b)%N.
+  if compare a b is Gt then false else true.
 
+Lemma leb_antisym (a b : ascii) :
+  leb a b = true -> leb b a = true -> a = b.
+Proof.
+  unfold leb.
+  rewrite compare_antisym.
+  destruct (compare b a) eqn:Hcmp; simpl in *; intuition.
+  - apply compare_eq_iff in Hcmp. intuition.
+  - discriminate H.
+  - discriminate H0.
+Qed.
+
+Lemma leb_total (a b : ascii) : leb a b = true \/ leb b a = true.
+Proof.
+  unfold leb.
+  rewrite compare_antisym.
+  destruct (compare b a); intuition.
+Qed.
+
+Infix "?="  := compare : char_scope.
 Infix "<?"  := ltb : char_scope.
 Infix "<=?" := leb : char_scope.
 
