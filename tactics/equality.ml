@@ -63,18 +63,13 @@ let use_injection_pattern_l2r_order = function
   | None -> true
   | Some flags -> flags.injection_pattern_l2r_order
 
-let injection_in_context = ref false
+let injection_in_context =
+  declare_bool_option_and_ref
+    ~depr:false ~key:["Structural";"Injection"] ~value:false
 
 let use_injection_in_context = function
-  | None -> !injection_in_context
+  | None -> injection_in_context ()
   | Some flags -> flags.injection_in_context
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Structural";"Injection"];
-      optread  = (fun () -> !injection_in_context) ;
-      optwrite = (fun b -> injection_in_context := b) }
 
 (* Rewriting tactics *)
 
