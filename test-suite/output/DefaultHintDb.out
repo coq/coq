@@ -1,0 +1,11 @@
+Current value of Default HintDb is "core"
+The command has indeed failed with message:
+No such Hint database: foo.
+Current value of Default HintDb is "foo"
+The command has indeed failed with message:
+Failed to progress.
+Current value of Default HintDb is "core"
+The command has indeed failed with message:
+No default hint database set. Set one with the option Default HintDb.
+The command has indeed failed with message:
+No default hint database set. Set one with the option Default HintDb.

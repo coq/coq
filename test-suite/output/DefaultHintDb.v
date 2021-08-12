@@ -34,10 +34,10 @@ Abort.
 
 Set Default HintDb "core".
 
-Lemma foo : nat := 5.
+Definition foo : nat := 5.
 
-Succeed Hint Resolve foo.
+Succeed #[local] Hint Resolve foo.
 
 Unset Default HintDb.
 
-Fail Hint Resolve foo.
+Fail #[local] Hint Resolve foo.
