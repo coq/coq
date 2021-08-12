@@ -92,7 +92,6 @@ let destruct_on_as c l =
 
 let inj_flags = Some {
     Equality.keep_proof_equalities = true; (* necessary *)
-    injection_in_context = true; (* does not matter here *)
     Equality.injection_pattern_l2r_order = true; (* does not matter here *)
   }
 

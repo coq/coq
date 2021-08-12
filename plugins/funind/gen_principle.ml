@@ -1018,11 +1018,8 @@ let rec reflexivity_with_destruct_cases () =
       let my_inj_flags =
         Some
           { Equality.keep_proof_equalities = false
-          ; injection_in_context = false
-          ; (* for compatibility, necessary *)
-            injection_pattern_l2r_order =
-              false
-              (* probably does not matter; except maybe with dependent hyps *)
+          ; injection_pattern_l2r_order = false
+            (* probably does not matter; except maybe with dependent hyps *)
           }
       in
       let discr_inject =
@@ -1045,7 +1042,7 @@ let rec reflexivity_with_destruct_cases () =
                         (Proofview.Goal.sigma g) ~keep_proofs:None t1 t2
                     then
                       tclTHENLIST
-                        [ Equality.injHyp my_inj_flags None id
+                        [ Equality.injHyp my_inj_flags ~injection_in_context:false None id
                         ; thin [id]
                         ; intros_with_rewrite () ]
                     else Proofview.tclUNIT ()
