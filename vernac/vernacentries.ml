@@ -2418,6 +2418,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     VtDefault(fun () -> unsupported_attributes atts)
 
   | VernacEndProof pe ->
+    unsupported_attributes atts;
     VtCloseProof (vernac_end_proof pe)
 
   (* Extensions *)
