@@ -12,48 +12,21 @@ open Vernacexpr
 
 let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
-(* EJGA: We may remove this, only used twice below *)
-let vernac_require_open_lemma ~stack f =
-  match stack with
-  | Some stack -> f stack
-  | None ->
-    CErrors.user_err (Pp.str "Command not supported (No proof-editing in progress)")
-
-let interp_typed_vernac c ~pm ~stack =
+let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; outproof; run })
+    ~(pm:Declare.OblState.t) ~stack =
   let open Vernacextend in
-  match c with
-  | VtDefault f -> f (); stack, pm
-  | VtNoProof f ->
-    if Option.has_some stack then
-      CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");
-    let () = f () in
-    stack, pm
-  | VtCloseProof f ->
-    vernac_require_open_lemma ~stack (fun stack ->
-        let lemma, stack = Vernacstate.LemmaStack.pop stack in
-        let pm = f ~lemma ~pm in
-        stack, pm)
-  | VtOpenProof f ->
-    Some (Vernacstate.LemmaStack.push stack (f ())), pm
-  | VtModifyProof f ->
-    Option.map (Vernacstate.LemmaStack.map_top ~f:(fun pstate -> f ~pstate)) stack, pm
-  | VtReadProofOpt f ->
-    let pstate = Option.map (Vernacstate.LemmaStack.with_top ~f:(fun x -> x)) stack in
-    f ~pstate;
-    stack, pm
-  | VtReadProof f ->
-    vernac_require_open_lemma ~stack
-      (Vernacstate.LemmaStack.with_top ~f:(fun pstate -> f ~pstate));
-    stack, pm
-  | VtReadProgram f -> f ~stack ~pm; stack, pm
-  | VtModifyProgram f ->
-    let pm = f ~pm in stack, pm
-  | VtDeclareProgram f ->
-    let lemma = f ~pm in
-    Some (Vernacstate.LemmaStack.push stack lemma), pm
-  | VtOpenProofProgram f ->
-    let pm, lemma = f ~pm in
-    Some (Vernacstate.LemmaStack.push stack lemma), pm
+  let module LStack = Vernacstate.LemmaStack in
+  let proof = Option.map LStack.get_top stack in
+  let pm', proof' = run ~pm:(InProg.cast pm inprog) ~proof:(InProof.cast proof inproof) in
+  let pm = Option.default pm (OutProg.cast pm' outprog) in
+  let stack = let open OutProof in match stack, OutProof.cast proof' outproof with
+    | stack, Ignored -> stack
+    | Some stack, Closed -> snd (LStack.pop stack)
+    | None, Closed -> assert false
+    | Some stack, Open proof -> Some (LStack.map_top ~f:(fun _ -> proof) stack)
+    | None, Open proof -> Some (LStack.push None proof)
+  in
+  stack, pm
 
 (* Default proof mode, to be set at the beginning of proofs for
    programs that cannot be statically classified. *)
@@ -159,8 +132,6 @@ let interp_control_flag ~time_header (f : control_flag) ~st
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let rec interp_expr ?loc ~atts ~st c =
-  let stack = st.Vernacstate.lemmas in
-  let program = st.Vernacstate.program in
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
@@ -182,6 +153,8 @@ let rec interp_expr ?loc ~atts ~st c =
     vernac_load ~verbosely fname
   | v ->
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
+    let stack = st.Vernacstate.lemmas in
+    let program = st.Vernacstate.program in
     interp_typed_vernac ~pm:program ~stack fv
 
 and vernac_load ~verbosely fname =

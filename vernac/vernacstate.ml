@@ -88,6 +88,7 @@ module LemmaStack = struct
     | pp :: p -> ps, Some (pp, p)
 
   let with_top (p, _) ~f = f p
+  let get_top (p, _) = p
 
   let push ontop a =
     match ontop with

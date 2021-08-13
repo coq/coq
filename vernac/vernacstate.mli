@@ -43,6 +43,7 @@ module LemmaStack : sig
   val map : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
   val map_top : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
   val with_top : t -> f:(Declare.Proof.t -> 'a ) -> 'a
+  val get_top : t -> Declare.Proof.t
 
 end
 
