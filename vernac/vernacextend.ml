@@ -66,11 +66,15 @@ module OutProg = struct
   type _ t =
     | No : unit t
     | Yes : Declare.OblState.t t
+    | Push
+    | Pop
 
-  let cast (type a) (x:a) (ty:a t) : Declare.OblState.t option =
+  let cast (type a) (x:a) (ty:a t) (orig:Declare.OblState.t NeList.t) : Declare.OblState.t NeList.t  =
     match ty with
-    | No -> None
-    | Yes -> Some x
+    | No -> orig
+    | Yes -> NeList.map_head (fun _ -> x) orig
+    | Push -> NeList.push Declare.OblState.empty (Some orig)
+    | Pop -> (match NeList.tail orig with Some tl -> tl | None -> assert false)
 end
 
 module InProof = struct

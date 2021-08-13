@@ -1255,9 +1255,20 @@ let vernac_end_segment ~pm ~proof ({v=id} as lid) =
 
 let vernac_end_segment lid =
   Vernacextend.TypedVernac {
-    inprog = Use; outprog = No; inproof = UseOpt; outproof = No;
+    inprog = Use; outprog = Pop; inproof = UseOpt; outproof = No;
     run = (fun ~pm ~proof ->
         let () = vernac_end_segment ~pm ~proof lid in
+        (), ())
+  }
+[@@ocaml.warning "-40"]
+
+let vernac_begin_segment ~interactive f =
+  let inproof = Vernacextend.InProof.(if interactive then Reject else Ignore) in
+  let outprog = Vernacextend.OutProg.(if interactive then Push else No) in
+  Vernacextend.TypedVernac {
+    inprog = Ignore; outprog; inproof; outproof = No;
+    run = (fun ~pm ~proof ->
+        let () = f () in
         (), ())
   }
 [@@ocaml.warning "-40"]
@@ -2166,10 +2177,10 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
       vernac_define_module export lid bl mtys mexprl in
     (* XXX: We should investigate if eventually this should be made
        VtNoProof in all cases. *)
-    if List.is_empty mexprl then vtnoproof i else vtdefault i
+    vernac_begin_segment ~interactive:(List.is_empty mexprl) i
 
   | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
-    vtnoproof(fun () ->
+    vernac_begin_segment ~interactive:(List.is_empty mtyo) (fun () ->
         unsupported_attributes atts;
         vernac_declare_module_type lid bl mtys mtyo)
   | VernacAssumption ((discharge,kind),nl,l) ->
@@ -2215,7 +2226,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
         vernac_include in_asts)
   (* Gallina extensions *)
   | VernacBeginSection lid ->
-    vtnoproof(fun () ->
+    vernac_begin_segment ~interactive:true (fun () ->
         vernac_begin_section ~poly:(only_polymorphism atts) lid)
   | VernacEndSegment lid ->
     unsupported_attributes atts;

@@ -18,6 +18,10 @@ let tail (_,tl) = match tl with
 
 let singleton x = x,[]
 
+let iter f (x,tl) =
+  f x;
+  List.iter f tl
+
 let map f (x,tl) =
   let x = f x in
   let tl = List.map f tl in

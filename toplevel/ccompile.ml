@@ -102,7 +102,7 @@ let check_pending_proofs filename =
                  ++ str ".");
   let pm = Vernacstate.Declare.get_program () [@ocaml.warning "-3"] in
   let what_for = Pp.str ("file " ^ filename) in
-  Declare.Obls.check_solved_obligations ~what_for ~pm
+  NeList.iter (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm) pm
 
 (* Compile a vernac file *)
 let compile opts stm_options injections copts ~echo ~f_in ~f_out =

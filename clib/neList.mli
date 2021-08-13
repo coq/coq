@@ -17,6 +17,8 @@ val tail : 'a t -> 'a t option
 
 val singleton : 'a -> 'a t
 
+val iter : ('a -> unit) -> 'a t -> unit
+
 val map : ('a -> 'b) -> 'a t -> 'b t
 
 val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t

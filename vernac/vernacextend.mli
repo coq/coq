@@ -81,8 +81,10 @@ module OutProg : sig
   type _ t =
     | No : unit t
     | Yes : Declare.OblState.t t
+    | Push
+    | Pop
 
-  val cast : 'a -> 'a t -> Declare.OblState.t option
+  val cast : 'a -> 'a t -> Declare.OblState.t NeList.t -> Declare.OblState.t NeList.t
 end
 
 module InProof : sig

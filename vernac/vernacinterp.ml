@@ -13,12 +13,15 @@ open Vernacexpr
 let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
 let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; outproof; run })
-    ~(pm:Declare.OblState.t) ~stack =
+    ~pm ~stack =
   let open Vernacextend in
   let module LStack = Vernacstate.LemmaStack in
   let proof = Option.map LStack.get_top stack in
-  let pm', proof' = run ~pm:(InProg.cast pm inprog) ~proof:(InProof.cast proof inproof) in
-  let pm = Option.default pm (OutProg.cast pm' outprog) in
+  let pm', proof' = run
+      ~pm:(InProg.cast (NeList.head pm) inprog)
+      ~proof:(InProof.cast proof inproof)
+  in
+  let pm = OutProg.cast pm' outprog pm in
   let stack = let open OutProof in match stack, OutProof.cast proof' outproof with
     | stack, Ignored -> stack
     | Some stack, Closed -> snd (LStack.pop stack)
@@ -111,7 +114,7 @@ let mk_time_header =
   fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
 
 let interp_control_flag ~time_header (f : control_flag) ~st
-    (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t) =
+    (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t NeList.t) =
   match f with
   | ControlFail ->
     with_fail ~st (fun () -> fn ~st);
@@ -209,15 +212,16 @@ and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
 *)
 
 (* Interpreting a possibly delayed proof *)
-let interp_qed_delayed ~proof ~st pe : Vernacstate.LemmaStack.t option * Declare.OblState.t =
+let interp_qed_delayed ~proof ~st pe =
   let stack = st.Vernacstate.lemmas in
   let pm = st.Vernacstate.program in
   let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
-  let pm = match pe with
-    | Admitted ->
-      Declare.Proof.save_lemma_admitted_delayed ~pm ~proof
-    | Proved (_,idopt) ->
-      let pm, _ = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~idopt in
+  let pm = NeList.map_head (fun pm -> match pe with
+      | Admitted ->
+        Declare.Proof.save_lemma_admitted_delayed ~pm ~proof
+      | Proved (_,idopt) ->
+        let pm, _ = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~idopt in
+        pm)
       pm
   in
   stack, pm
