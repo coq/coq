@@ -88,7 +88,7 @@ let warn_non_recursive =
           let k = if isfix then "fixpoint" else "cofixpoint" in
           strbrk "Not a truly recursive " ++ str k ++ str ".")
 
-let check_true_recursivity env evd isfix fixl =
+let check_true_recursivity env evd ~isfix fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) ->
@@ -227,10 +227,10 @@ let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen
   (* Build the fix declaration block *)
   (env,rec_sign,decl,sigma), (fixnames,fixrs,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
 
-let check_recursive isfix env evd (fixnames,_,fixdefs,_) =
+let check_recursive ~isfix env evd (fixnames,_,fixdefs,_) =
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
-    check_true_recursivity env evd isfix (List.combine fixnames fixdefs)
+    check_true_recursivity env evd ~isfix (List.combine fixnames fixdefs)
   end
 
 let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
@@ -247,7 +247,7 @@ let interp_fixpoint ?(check_recursivity=true) ?typing_flags ~cofix l :
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
   let (env,_,pl,evd),fix,info = interp_recursive env ~program_mode:false ~cofix l in
-  if check_recursivity then check_recursive true env evd fix;
+  if check_recursivity then check_recursive ~isfix:(not cofix) env evd fix;
   let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
