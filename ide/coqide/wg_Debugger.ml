@@ -49,7 +49,7 @@ let make_table_widget cd cb =
   selection#set_mode `MULTIPLE;
   let copy = GtkData.AccelGroup.parse "<Ctrl>C" in
 
-  let keypress_cb ev =
+  let vars_keypress_cb ev =
     let key_ev = Ideutils.filter_key ev in
     if key_ev = copy then begin
       let rows = selection#get_selected_rows in
@@ -75,7 +75,7 @@ let make_table_widget cd cb =
     end else
       false
   in
-  let _ = data#event#connect#key_press ~callback:keypress_cb in
+  let _ = data#event#connect#key_press ~callback:vars_keypress_cb in
 
 (* FIXME: handle this using CSS *)
 (*   let refresh clr = data#misc#modify_bg [`NORMAL, `NAME clr] in *)
@@ -215,8 +215,7 @@ let debugger title sid =
   let up = GtkData.AccelGroup.parse "Up" in
   let down = GtkData.AccelGroup.parse "Down" in
 
-  (* Keypress handlers *)
-  let keypress_cb ev =
+  let stack_keypress_cb ev =
     let move dir =
       match !highlighted_line with
       | Some l ->
@@ -234,7 +233,7 @@ let debugger title sid =
     else
       !forward_keystroke key_ev sid (* support some function keys when Debugger is detached *)
   in
-  let _ = stack_view#event#connect#key_press ~callback:keypress_cb in
+  let _ = stack_view#event#connect#key_press ~callback:stack_keypress_cb in
 
   let keypress_cb2 ev =
     let key_ev = Ideutils.filter_key ev in
@@ -281,6 +280,7 @@ let debugger title sid =
 
     method set_vars (vars_v : vars_t) =
       vars := vars_v;
+      store#clear ();
       let cwidth () =
         let open Gtk in
         let open GtkBase in
@@ -302,18 +302,26 @@ let debugger title sid =
         Buffer.contents pp_buffer
       in
       let show width =
-        store#clear ();
+        let insert = store#get_iter_first = None in
+        let path = GtkTree.TreePath.from_string "0" in
         List.iter (fun (name, value) ->
             let width = max width 30 in
             let value = print_pp width value in
             access (fun columns store ->
-                let line = store#append () in
-                if String.length value < width then
-                  store#set ~row:line ~column:(find_string_col "Var" columns) (name ^ " = " ^ value)
-                else begin
-                  store#set ~row:line ~column:(find_string_col "Var" columns) (name ^ " = ");
-                  let line2 = store#append ~parent:line () in
-                  store#set ~row:line2 ~column:(find_string_col "Var" columns) value
+                let column = (find_string_col "Var" columns) in
+                let row = if insert then store#append () else store#get_iter path in
+                GtkTree.TreePath.next path;
+                if String.length value < width then begin
+                  store#set ~row ~column (name ^ " = " ^ value);
+                  if store#iter_has_child row then
+                    ignore @@ store#remove (store#iter_children (Some row));
+                end else begin
+                  store#set ~row ~column (name ^ " = ");
+                  let row2 = if insert || (not (store#iter_has_child row)) then
+                    store#append ~parent:row ()
+                  else
+                    store#iter_children (Some row) in
+                  store#set ~row:row2 ~column:(find_string_col "Var" columns) value
                 end
               )
           ) vars_v

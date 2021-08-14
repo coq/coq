@@ -322,8 +322,7 @@ let extend_values_with_bindings (ln,lm) lfun =
 let is_variable env id =
   Id.List.mem id (ids_of_named_context (Environ.named_context env))
 
-(* todo in review: these messages should go through Tactic_debug.defer_output *)
-let debugging_step ist pp = (*Tactic_debug.defer_output (fun () ->*)
+let debugging_step ist pp =
   match curr_debug ist with
   | DebugOn lev -> Tactic_debug.defer_output
       (fun _ -> (str "Level " ++ int lev ++ str": " ++ pp () ++ fnl()))
