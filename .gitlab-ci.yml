@@ -82,7 +82,7 @@ before_script:
       - config/coq_config.ml
       - config/dune.c_flags
       - dmesg.txt
-    expire_in: 1 week
+    expire_in: 1 month
   script:
     - set -e
 
@@ -129,7 +129,7 @@ before_script:
     paths:
       - _build/log
       - _build.tar.bz2
-    expire_in: 1 week
+    expire_in: 1 month
 
 .dune-ci-template:
   stage: stage-2
@@ -264,7 +264,7 @@ before_script:
     paths:
       - artifacts
     when: always
-    expire_in: 1 week
+    expire_in: 1 month
   before_script: [] # We don't want to use the shared 'before_script'
 
 .deploy-template:
