@@ -2711,19 +2711,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
 
-let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predopt, tomatchl, eqns) =
-  if predopt == None && program_mode && Program.is_program_cases () then
-    compile_program_cases ?loc style (typing_fun, sigma)
-      tycon env (predopt, tomatchl, eqns)
-  else
-
-  (* We build the matrix of patterns and right-hand side *)
-  let matx = matx_of_eqns env eqns in
-
-  (* We build the vector of terms to match consistently with the *)
-  (* constructors found in patterns *)
-  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl in
-
+let compile_core ?loc ~program_mode typing_fun env predenv sigma style tycon predopt tomatchs tomatchl matx =
   (* If an elimination predicate is provided, we check it is compatible
      with the type of arguments to match; if none is provided, we
      build alternative possible predicates *)
@@ -2789,3 +2777,49 @@ let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predop
   check_unused_pattern !!env used matx;
 
   sigma, j
+
+let compile_lettuple ?loc ~program_mode typing_fun env sigma tycon (nal, (na, po), c, d) =
+  let tomatchl = [c,(na,None)] in
+  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode typing_fun env sigma [] tomatchl in
+
+  let pat = match tomatchs with
+    | [_,IsInd (_,ind,_)] ->
+      let ind = ind_of_ind_type ind in
+      let _, mip = Inductive.lookup_mind_specif !!env ind in
+      if not (Int.equal (Array.length mip.mind_user_lc) 1) then
+        user_err ?loc Pp.(str "Destructing let is only for inductive types with one constructor.");
+      let cnargs = mip.mind_consnrealargs.(0) in
+      let cndecls = mip.mind_consnrealdecls.(0) in
+      let nargs = List.length nal in
+      if not (Int.equal cnargs nargs || Int.equal cndecls nargs) then
+        error_wrong_numarg_constructor ?loc !!env ~cstr:(ind,1) ~expanded:false
+          ~nargs ~expected_nassums:cnargs ~expected_ndecls:cndecls;
+      (* XXX loc? *)
+      let subpats = List.map (fun na -> DAst.make (PatVar na)) nal in
+      [DAst.make (PatCstr ((ind,1),subpats,Anonymous))]
+
+    | [cval,NotInd (_,t)] -> error_case_not_inductive ?loc:c.CAst.loc !!env sigma (make_judge cval t)
+    | _ -> assert false
+  in
+  (* XXX loc? *)
+  let eqns = [CAst.make (List.map_filter Name.to_option nal, pat, d)] in
+  let matx = matx_of_eqns env eqns in
+
+  compile_core ?loc ~program_mode typing_fun env predenv sigma
+    LetStyle tycon po tomatchs tomatchl matx
+
+let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predopt, tomatchl, eqns) =
+  if predopt == None && program_mode && Program.is_program_cases () then
+    compile_program_cases ?loc style (typing_fun, sigma)
+      tycon env (predopt, tomatchl, eqns)
+  else
+
+  (* We build the matrix of patterns and right-hand side *)
+  let matx = matx_of_eqns env eqns in
+
+  (* We build the vector of terms to match consistently with the *)
+  (* constructors found in patterns *)
+  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl in
+
+  compile_core ?loc ~program_mode typing_fun env predenv sigma
+    style tycon predopt tomatchs tomatchl matx

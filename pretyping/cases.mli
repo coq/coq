@@ -50,6 +50,13 @@ val compile_cases :
   GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
   evar_map * unsafe_judgment
 
+val compile_lettuple :
+  ?loc:Loc.t -> program_mode:bool ->
+  (type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment) ->
+  GlobEnv.t -> evar_map -> type_constraint ->
+  (Name.t list * (Name.t * glob_constr option) * glob_constr * glob_constr) ->
+  evar_map * unsafe_judgment
+
 val constr_of_pat :
            Environ.env ->
            Evd.evar_map ->
