@@ -2780,7 +2780,7 @@ let compile_core ?loc ~program_mode typing_fun env predenv sigma style tycon pre
 
 let compile_lettuple ?loc ~program_mode typing_fun env sigma tycon (nal, (na, po), c, d) =
   let tomatchl = [c,(na,None)] in
-  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode typing_fun env sigma [] tomatchl in
+  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode:false typing_fun env sigma [] tomatchl in
 
   let pat = match tomatchs with
     | [_,IsInd (_,ind,_)] ->
