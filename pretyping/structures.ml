@@ -197,7 +197,7 @@ let keep_true_projections projs =
 let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
          (fun (sign,env,t,ref,proji_sp) ->
-          let env = Termops.push_rels_assum sign env in
+          let env = Environ.push_rel_context sign env in
           let con_pp = Nametab.pr_global_env Id.Set.empty ref in
           let proji_sp_pp = Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef proji_sp) in
           let term_pp = Termops.Internal.print_constr_env env (Evd.from_env env) (EConstr.of_constr t) in
@@ -217,17 +217,15 @@ let compute_canonical_projections env ~warn (gref,ind) =
         mkVar id, Option.get (Environ.named_body id env)
     | GlobRef.ConstructRef _ | GlobRef.IndRef _ -> assert false
   in
-  let sign,t = Reductionops.splay_lam env (Evd.from_env env) (EConstr.of_constr c) in
-  let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
-  let t = EConstr.Unsafe.to_constr t in
-  let o_TABS = List.rev_map snd sign in
+  let sign,t = Reduction.dest_lam env c in
+  let o_TABS = List.rev_map Context.Rel.Declaration.get_type sign in
   let args = snd (decompose_app t) in
   let { Structure.nparams = p; projections = lpj } =
     Structure.find ind in
   let o_TPARAMS, projs = List.chop p args in
   let o_NPARAMS = List.length o_TPARAMS in
   let lpj = keep_true_projections lpj in
-  let nenv = Termops.push_rels_assum sign env in
+  let nenv = Environ.push_rel_context sign env in
   List.fold_left2 (fun acc (spopt, canonical) t ->
       let t = EConstr.Unsafe.to_constr (shrink_eta (Evd.from_env env) (EConstr.of_constr t)) in
       if canonical
