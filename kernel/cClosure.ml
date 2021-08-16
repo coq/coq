@@ -239,10 +239,6 @@ module KeyTable = Hashtbl.Make(IdKeyHash)
 
 open Context.Named.Declaration
 
-let assoc_defined id env = match Environ.lookup_named id env with
-| LocalDef (_, c, _) -> c
-| LocalAssum _ -> raise Not_found
-
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
 
@@ -530,6 +526,15 @@ let mk_clos_vect env v = match v with
 | [|v0; v1; v2; v3|] ->
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
+
+let transparent_ref flags = function
+| RelKey _ -> red_set flags fDELTA
+| ConstKey (c, _) -> red_set flags (fCONST c)
+| VarKey id -> red_set flags (fVAR id)
+
+let assoc_defined id env = match Environ.lookup_named id env with
+| LocalDef (_, c, _) -> c
+| LocalAssum _ -> raise Not_found
 
 let ref_value_cache ({ i_cache = cache; _ }) tab ref =
   try
@@ -1386,27 +1391,18 @@ let rec knr info tab m stk =
       (match get_args n tys f e stk with
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
-  | FFlex(ConstKey (kn,_u as c)) when red_set info.i_flags (fCONST kn) ->
-      (match ref_value_cache info tab (ConstKey c) with
+  | FFlex fl when transparent_ref info.i_flags fl ->
+      (match ref_value_cache info tab fl with
         | Def v -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
+            let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
             let rargs, a, nargs, stk = get_native_args1 op c stk in
             kni info tab a (Zprimitive(op,c,rargs,nargs)::stk)
           else
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             (m, stk)
         | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
-  | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
-      (match ref_value_cache info tab (VarKey id) with
-        | Def v -> kni info tab v stk
-        | Primitive _ -> assert false
-        | OpaqueDef _ | Undef _ -> (set_ntrl m; (m,stk)))
-  | FFlex(RelKey k) when red_set info.i_flags fDELTA ->
-      (match ref_value_cache info tab (RelKey k) with
-        | Def v -> kni info tab v stk
-        | Primitive _ -> assert false
-        | OpaqueDef _ | Undef _ -> (set_ntrl m; (m,stk)))
   | FConstruct(c,_u) ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
