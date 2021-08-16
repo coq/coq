@@ -53,7 +53,6 @@ module NamedDecl = Context.Named.Declaration
 
 type inj_flags = {
     keep_proof_equalities : bool;
-    injection_in_context : bool;
     injection_pattern_l2r_order : bool;
   }
 
@@ -63,18 +62,9 @@ let use_injection_pattern_l2r_order = function
   | None -> true
   | Some flags -> flags.injection_pattern_l2r_order
 
-let injection_in_context = ref false
-
-let use_injection_in_context = function
-  | None -> !injection_in_context
-  | Some flags -> flags.injection_in_context
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Structural";"Injection"];
-      optread  = (fun () -> !injection_in_context) ;
-      optwrite = (fun b -> injection_in_context := b) }
+let injection_in_context_flag =
+  declare_bool_option_and_ref
+    ~depr:false ~key:["Structural";"Injection"] ~value:false
 
 (* Rewriting tactics *)
 
@@ -1471,11 +1461,10 @@ let get_previous_hyp_position id gl =
   in
   aux MoveLast (Proofview.Goal.hyps gl)
 
-let injEq flags ?(old=false) with_evars clear_flag ipats =
+let injEq flags ?(injection_in_context = injection_in_context_flag ()) with_evars clear_flag ipats =
   (* Decide which compatibility mode to use *)
   let ipats_style, l2r, dft_clear_flag, bounded_intro = match ipats with
-    | None when not old && use_injection_in_context flags ->
-      Some [], true, true, true
+    | None when injection_in_context -> Some [], true, true, true
     | None -> None, false, false, false
     | _ -> let b = use_injection_pattern_l2r_order flags in ipats, b, b, b in
   (* Built the post tactic depending on compatibility mode *)
@@ -1499,18 +1488,19 @@ let injEq flags ?(old=false) with_evars clear_flag ipats =
     | None -> tclIDTAC in
   injEqThen (keep_proof_equalities flags) post_tac l2r
 
-let inj flags ipats with_evars clear_flag = onEquality with_evars (injEq flags with_evars clear_flag ipats)
+let inj flags ?injection_in_context ipats with_evars clear_flag =
+  onEquality with_evars (injEq flags ?injection_in_context with_evars clear_flag ipats)
 
-let injClause flags ipats with_evars = function
-  | None -> onNegatedEquality with_evars (injEq flags with_evars None ipats)
-  | Some c -> onInductionArg (inj flags ipats with_evars) c
+let injClause flags ?injection_in_context ipats with_evars = function
+  | None -> onNegatedEquality with_evars (injEq flags ?injection_in_context with_evars None ipats)
+  | Some c -> onInductionArg (inj flags ?injection_in_context ipats with_evars) c
 
 let simpleInjClause flags with_evars = function
-  | None -> onNegatedEquality with_evars (injEq flags ~old:true with_evars None None)
-  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (injEq flags ~old:true with_evars clear_flag None)) c
+  | None -> onNegatedEquality with_evars (injEq flags ~injection_in_context:false with_evars None None)
+  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (injEq flags ~injection_in_context:false with_evars clear_flag None)) c
 
-let injConcl flags = injClause flags None false None
-let injHyp flags clear_flag id = injClause flags None false (Some (clear_flag,ElimOnIdent CAst.(make id)))
+let injConcl flags ?injection_in_context () = injClause flags ?injection_in_context None false None
+let injHyp flags ?injection_in_context clear_flag id = injClause flags ?injection_in_context None false (Some (clear_flag,ElimOnIdent CAst.(make id)))
 
 let decompEqThen keep_proofs ntac eq =
   let { eq_data = (_, (_,t1,t2) as u); eq_clenv = clause } = eq in

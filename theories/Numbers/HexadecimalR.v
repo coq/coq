@@ -50,9 +50,9 @@ Proof.
   case QArith_base.IQmake_to_hexadecimal as [d'|]; [|now simpl].
   case d' as [i f|]; [|now simpl].
   unfold of_hexadecimal; simpl.
-  intro H; injection H; clear H; intros <-.
-  intro H; generalize (f_equal QArith_base.IZ_to_Z H); clear H.
-  rewrite !IZ_to_Z_IZ_of_Z; intro H; injection H; clear H; intros<-.
+  injection 1 as H <-.
+  generalize (f_equal QArith_base.IZ_to_Z H); clear H.
+  rewrite !IZ_to_Z_IZ_of_Z; injection 1 as <-.
   now revert Hf; case f.
 Qed.
 
@@ -62,23 +62,23 @@ Proof.
   case q as [z|q|r r'|r r']; simpl.
   - case z as [z p| |p|p].
     + now simpl.
-    + now simpl; intro H; injection H; clear H; intros<-.
-    + simpl; intro H; injection H; clear H; intros<-.
+    + now simpl; injection 1 as <-.
+    + simpl; injection 1 as <-.
       now unfold of_hexadecimal; simpl; unfold Z.of_hex_uint; rewrite Unsigned.of_to.
-    + simpl; intro H; injection H; clear H; intros<-.
+    + simpl; injection 1 as <-.
       now unfold of_hexadecimal; simpl; unfold Z.of_hex_uint; rewrite Unsigned.of_to.
   - case q as [num den].
     generalize (of_IQmake_to_hexadecimal num den).
     case IQmake_to_hexadecimal as [d'|]; [|now simpl].
     case d' as [i f|]; [|now simpl].
-    now intros H H'; injection H'; intros<-.
+    now intros H; injection 1 as <-.
   - case r as [z|q| |]; [|case q as[num den]|now simpl..];
       (case r' as [z'| | |]; [|now simpl..]);
       (case z' as [p e| | |]; [|now simpl..]).
     + case (Z.eq_dec p 2); [intros->|intro Hp].
       2:{ now revert Hp; case p;
           [|intro d0; case d0; [intro d1..|]; [|case d1|]..]. }
-      case z as [| |p|p]; [now simpl|..]; intro H; injection H; intros<-.
+      case z as [| |p|p]; [now simpl|..]; injection 1 as <-.
       * now unfold of_hexadecimal; simpl; unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to.
       * unfold of_hexadecimal; simpl; unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to; simpl.
         now unfold Z.of_hex_uint; rewrite Unsigned.of_to.
@@ -90,7 +90,7 @@ Proof.
       generalize (of_IQmake_to_hexadecimal num den).
       case IQmake_to_hexadecimal as [d'|]; [|now simpl].
       case d' as [i f|]; [|now simpl].
-      intros H H'; injection H'; clear H'; intros<-.
+      intros H; injection 1 as <-.
       unfold of_hexadecimal; simpl.
       change (match f with Nil => _ | _ => _ end) with (of_hexadecimal (Hexadecimal i f)).
       rewrite H; clear H.
@@ -101,7 +101,7 @@ Proof.
     + case (Z.eq_dec p 2); [intros->|intro Hp].
       2:{ now revert Hp; case p;
           [|intro d0; case d0; [intro d1..|]; [|case d1|]..]. }
-      case z as [| |p|p]; [now simpl|..]; intro H; injection H; intros<-.
+      case z as [| |p|p]; [now simpl|..]; injection 1 as <-.
       * now unfold of_hexadecimal; simpl; unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to.
       * unfold of_hexadecimal; simpl; unfold Z.of_uint; rewrite DecimalPos.Unsigned.of_to; simpl.
         now unfold Z.of_hex_uint; rewrite Unsigned.of_to.
@@ -113,7 +113,7 @@ Proof.
       generalize (of_IQmake_to_hexadecimal num den).
       case IQmake_to_hexadecimal as [d'|]; [|now simpl].
       case d' as [i f|]; [|now simpl].
-      intros H H'; injection H'; clear H'; intros<-.
+      intros H; injection 1 as <-.
       unfold of_hexadecimal; simpl.
       change (match f with Nil => _ | _ => _ end) with (of_hexadecimal (Hexadecimal i f)).
       rewrite H; clear H.

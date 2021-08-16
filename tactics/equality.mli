@@ -61,7 +61,6 @@ val replace_by : constr -> constr -> unit Proofview.tactic -> unit Proofview.tac
 
 type inj_flags = {
     keep_proof_equalities : bool; (* One may want it or not *)
-    injection_in_context : bool;  (* For regularity; one may want it from ML code but not interactively *)
     injection_pattern_l2r_order : bool; (* Compatibility option: no reason not to want it *)
   }
 
@@ -74,12 +73,12 @@ val discr_tac    : evars_flag ->
 
 (* Below, if flag is [None], it takes the value from the dynamic value of the option *)
 exception NothingToInject
-val inj          : inj_flags option -> intro_patterns option -> evars_flag ->
+val inj          : inj_flags option -> ?injection_in_context:bool -> intro_patterns option -> evars_flag ->
   clear_flag -> constr with_bindings -> unit Proofview.tactic
-val injClause    : inj_flags option -> intro_patterns option -> evars_flag ->
+val injClause    : inj_flags option -> ?injection_in_context:bool -> intro_patterns option -> evars_flag ->
   constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
-val injHyp       : inj_flags option -> clear_flag -> Id.t -> unit Proofview.tactic
-val injConcl     : inj_flags option -> unit Proofview.tactic
+val injHyp       : inj_flags option -> ?injection_in_context:bool -> clear_flag -> Id.t -> unit Proofview.tactic
+val injConcl     : inj_flags option -> ?injection_in_context:bool -> unit -> unit Proofview.tactic
 val simpleInjClause : inj_flags option -> evars_flag ->
   constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 

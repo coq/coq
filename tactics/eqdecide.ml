@@ -93,7 +93,6 @@ let mkBranches (eqonleft,mk,c1,c2,typ) =
 
 let inj_flags = Some {
     Equality.keep_proof_equalities = true; (* necessary *)
-    Equality.injection_in_context = true; (* does not matter here *)
     Equality.injection_pattern_l2r_order = true; (* does not matter here *)
   }
 
