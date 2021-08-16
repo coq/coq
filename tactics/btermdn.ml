@@ -86,9 +86,10 @@ let evaluable_constant c env ts =
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_constant ts c)
 
 let evaluable_named id env ts = match ts with
-| None -> false
+| None -> false (* FIXME: make the undiscriminated behaviour symmetrical in terms and patterns *)
 | Some ts ->
-  Environ.evaluable_named id env && TransparentState.is_transparent_variable ts id
+  (try Environ.evaluable_named id env with Not_found -> true) &&
+  TransparentState.is_transparent_variable ts id
 
 let constr_val_discr env sigma ts t =
   let c, l = decomp sigma t in
@@ -130,9 +131,8 @@ let constr_pat_discr env ts t =
   | PVar v, args ->
     begin match ts with
     | None -> None
-    | Some ts ->
-      (* FIXME: we should check for evaluability *)
-      if TransparentState.is_transparent_variable ts v then None
+    | Some _ ->
+      if evaluable_named v env ts then None
       else Some(GRLabel (VarRef v),args)
     end
   | PProd (_, d, c), [] ->
