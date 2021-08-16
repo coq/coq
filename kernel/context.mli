@@ -156,8 +156,10 @@ sig
       Outermost declarations are processed first. *)
   val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
 
-  (** Map a given rel-context to a list where each {e local assumption} is mapped to [true]
-      and each {e local definition} is mapped to [false]. *)
+  (** Map a given rel-context to a list where each {e local
+      assumption} is mapped to [true] and each {e local definition} is
+      mapped to [false]. The resulting list is in reverse order
+      compared to the order of declarations in the context. *)
   val to_tags : ('c, 't) pt -> bool list
 
   (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
