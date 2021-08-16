@@ -76,7 +76,7 @@ let return_clause env sigma ind u params (nas, p) =
     let paramsubst = subst_of_rel_context_instance paramdecl (Array.to_list params) in
     let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
     let self =
-      let args = Context.Rel.to_extended_vect mkRel 0 mip.mind_arity_ctxt in
+      let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
       let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
       mkApp (mkIndU (ind, inst), args)
     in

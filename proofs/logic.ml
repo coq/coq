@@ -505,7 +505,7 @@ and treat_case ~check env sigma ci lbrty lf acc' =
            form [Meta] *)
         let head = strip_outer_cast head in
         if isMeta head then begin
-          assert (args = Context.Rel.to_extended_vect mkRel 0 ctx);
+          assert (args = Context.Rel.instance mkRel 0 ctx);
           let (r,_,s,head'') = mk_refgoals ~check env sigma lacc ty head in
           let fi' = it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
           (r,s,fi'::bacc)

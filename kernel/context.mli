@@ -163,14 +163,20 @@ sig
   (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
   val drop_bodies : ('c, 't) pt -> ('c, 't) pt
 
-  (** [extended_list mk n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
+  (** [instance mk n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the {e local definitions} of [Γ] skipped in
       [args] where [mk] is used to build the corresponding variables.
       Example: for [x:T, y:=c, z:U] and [n]=2, it gives [mk 5, mk 3]. *)
-  val to_extended_list : (int -> 'r) -> int -> ('c, 't) pt -> 'r list
+  val instance : (int -> 'r) -> int -> ('c, 't) pt -> 'r array
 
-  (** [extended_vect n Γ] does the same, returning instead an array. *)
+  (** [instance_list] is like [instance] but returning a list. *)
+  val instance_list : (int -> 'r) -> int -> ('c, 't) pt -> 'r list
+
   val to_extended_vect : (int -> 'r) -> int -> ('c, 't) pt -> 'r array
+    [@@ocaml.deprecated "Use synonymous [Context.Rel.instance]"]
+
+  val to_extended_list : (int -> 'r) -> int -> ('c, 't) pt -> 'r list
+    [@@ocaml.deprecated "Use synonymous [Context.Rel.instance_list]"]
 end
 
 (** This module represents contexts that can capture non-anonymous variables.
@@ -310,6 +316,9 @@ sig
       with [id3] at the head), it gives [Var id1, Var id3]. All [idj]
       are supposed distinct. *)
   val instance : (Id.t -> 'r) -> ('c, 't) pt -> 'r array
+
+  (** [instance_list] is like [instance] but returning a list. *)
+  val instance_list : (Id.t -> 'r) -> ('c, 't) pt -> 'r list
 end
 
 module Compacted :

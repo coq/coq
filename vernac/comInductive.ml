@@ -134,7 +134,7 @@ let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
    n is how many arguments there are in the constructor. *)
 let model_conclusion env sigma ind_rel params n arity_indices =
   let model_head = EConstr.mkRel (n + Context.Rel.length params + ind_rel) in
-  let model_params = Context.Rel.to_extended_vect EConstr.mkRel n params in
+  let model_params = Context.Rel.instance EConstr.mkRel n params in
   let sigma,model_indices =
     List.fold_right
       (fun (_,t) (sigma, subst) ->
@@ -564,7 +564,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
 
   (* generalize over the uniform parameters *)
   let nuparams = Context.Rel.length ctx_uparams in
-  let uargs = Context.Rel.to_extended_vect EConstr.mkRel 0 ctx_uparams in
+  let uargs = Context.Rel.instance EConstr.mkRel 0 ctx_uparams in
   let uparam_subst =
     List.init ninds EConstr.(fun i -> mkApp (mkRel (i + 1 + nuparams), uargs))
     @ List.init nuparams EConstr.(fun i -> mkRel (i + 1)) in

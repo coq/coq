@@ -35,7 +35,7 @@ let project_hint ~poly pri l2r r =
   let sigma, p = Evd.fresh_global env sigma p in
   let c =
     Reductionops.whd_beta env sigma
-      (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign))
+      (mkApp (c, Context.Rel.instance mkRel 0 sign))
   in
   let c =
     it_mkLambda_or_LetIn

@@ -331,7 +331,7 @@ let is_irrelevant infos lft c =
   try Relevanceops.relevance_of_fterm env (info_relevances infos.cnv_inf) lft c == Sorts.Irrelevant with _ -> false
 
 let identity_of_ctx (ctx:Constr.rel_context) =
-  Context.Rel.to_extended_vect mkRel 0 ctx
+  Context.Rel.instance mkRel 0 ctx
 
 (* ind -> fun args => ind args *)
 let eta_expand_ind env (ind,u as pind) =

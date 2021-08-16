@@ -428,14 +428,14 @@ let build_dependent_constructor cs =
   applist
     (mkConstructU cs.cs_cstr,
      (List.map (lift cs.cs_nargs) cs.cs_params)
-      @(Context.Rel.to_extended_list mkRel 0 cs.cs_args))
+      @(Context.Rel.instance_list mkRel 0 cs.cs_args))
 
 let build_dependent_inductive env ((ind, params) as indf) =
   let arsign,_ = get_arity env indf in
   let nrealargs = List.length arsign in
   applist
     (mkIndU ind,
-     (List.map (lift nrealargs) params)@(Context.Rel.to_extended_list mkRel 0 arsign))
+     (List.map (lift nrealargs) params)@(Context.Rel.instance_list mkRel 0 arsign))
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
@@ -495,7 +495,7 @@ let compute_projections env (kn, i as ind) =
      matching with a parameter context. *)
   let indty =
     (* [ty] = [Ind inst] is typed in context [params] *)
-    let inst = Context.Rel.to_extended_vect mkRel 0 paramslet in
+    let inst = Context.Rel.instance mkRel 0 paramslet in
     let indu = mkIndU (ind, u) in
     let ty = mkApp (indu, inst) in
     (* [Ind inst] is typed in context [params-wo-let] *)

@@ -1070,7 +1070,7 @@ let fake_match_projection env p =
       let x, _, _, _ = info.(snd ind) in
       make_annot (Name x) mip.mind_relevance
   in
-  let indty = mkApp (indu, Context.Rel.to_extended_vect mkRel 0 paramslet) in
+  let indty = mkApp (indu, Context.Rel.instance mkRel 0 paramslet) in
   let rec fold arg j subst = function
     | [] -> assert false
     | LocalAssum (na,ty) :: rem ->
@@ -1085,7 +1085,7 @@ let fake_match_projection env p =
           let nas = Array.of_list (List.rev_map Context.Rel.Declaration.get_annot ctx) in
           (nas, mkRel (List.length ctx - (j - 1)))
         in
-        let params = Context.Rel.to_extended_vect mkRel 1 paramslet in
+        let params = Context.Rel.instance mkRel 1 paramslet in
         let body = mkCase (ci, u, params, p, NoInvert, mkRel 1, [|branch|]) in
         it_mkLambda_or_LetIn (mkLambda (x,indty,body)) mib.mind_params_ctxt
     | LocalDef (_,c,t) :: rem ->

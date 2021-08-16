@@ -108,7 +108,7 @@ let mkFullInd env (ind,u) n =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   if nparrec > 0
     then mkApp (mkIndU (ind,u),
-      Array.of_list(Context.Rel.to_extended_list mkRel (nparrec+n) lnamesparrec))
+      Array.of_list(Context.Rel.instance_list mkRel (nparrec+n) lnamesparrec))
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
@@ -159,7 +159,7 @@ let get_inductive_deps env kn =
     in
     let u = Univ.Instance.empty in
     let constrs n = get_constructors env (make_ind_family (((kn, i), u),
-      Context.Rel.to_extended_list mkRel (n+nb_ind-1) mib.mind_params_ctxt)) in
+      Context.Rel.instance_list mkRel (n+nb_ind-1) mib.mind_params_ctxt)) in
     let constrsi = constrs (3+nparrec) in
     let fold i accu arg =
       let fold accu c = aux accu (RelDecl.get_type c) in
@@ -198,7 +198,7 @@ let build_beq_scheme env handle kn =
       | Name s -> Id.of_string ("eq_"^(Id.to_string s))
       | Anonymous -> Id.of_string "eq_A"
     in
-    let ext_rel_list = Context.Rel.to_extended_list mkRel 0 lnamesparrec in
+    let ext_rel_list = Context.Rel.instance_list mkRel 0 lnamesparrec in
     let lift_cnt = ref 0 in
     let eqs_typ = List.map (fun aa ->
                       let a = lift !lift_cnt aa in
@@ -311,7 +311,7 @@ let build_beq_scheme env handle kn =
     let rci = Sorts.Relevant in (* TODO relevance *)
     let ci = make_case_info env (fst ind) rci MatchStyle in
     let constrs n =
-      let params = Context.Rel.to_extended_list mkRel (n+nb_ind-1) mib.mind_params_ctxt in
+      let params = Context.Rel.instance_list mkRel (n+nb_ind-1) mib.mind_params_ctxt in
       get_constructors env (make_ind_family (ind, params))
     in
     let constrsi = constrs (3+nparrec) in

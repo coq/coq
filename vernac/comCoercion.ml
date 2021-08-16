@@ -86,7 +86,7 @@ let check_target clt = function
 
 let uniform_cond sigma ctx lt =
   List.for_all2eq (EConstr.eq_constr sigma)
-    lt (Context.Rel.to_extended_list EConstr.mkRel 0 ctx)
+    lt (Context.Rel.instance_list EConstr.mkRel 0 ctx)
 
 let class_of_global = function
   | GlobRef.ConstRef sp ->
@@ -188,13 +188,13 @@ let build_id_coercion idf_opt source poly =
   let val_f =
     it_mkLambda_or_LetIn
       (mkLambda (make_annot (Name Namegen.default_dependent_ident) Sorts.Relevant,
-                 applistc vs (Context.Rel.to_extended_list mkRel 0 lams),
+                 applistc vs (Context.Rel.instance_list mkRel 0 lams),
                  mkRel 1))
        lams
   in
   let typ_f =
     List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d)
-      (mkProd (make_annot Anonymous Sorts.Relevant, applistc vs (Context.Rel.to_extended_list mkRel 0 lams), lift 1 t))
+      (mkProd (make_annot Anonymous Sorts.Relevant, applistc vs (Context.Rel.instance_list mkRel 0 lams), lift 1 t))
       lams
   in
   (* juste pour verification *)

@@ -1543,7 +1543,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       then
         let t = lift (i+1-n) t in
         let abselim = beta_applist sigma (elim, params@[t;branch]) in
-        let args = Context.Rel.to_extended_vect mkRel 0 sign in
+        let args = Context.Rel.instance mkRel 0 sign in
         let c = beta_applist sigma (abselim, [mkApp (c, args)]) in
           Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
       else
@@ -1552,7 +1552,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       (* goes from left to right when i increases! *)
       match List.nth l i with
       | Some proj ->
-          let args = Context.Rel.to_extended_vect mkRel 0 sign in
+          let args = Context.Rel.instance mkRel 0 sign in
           let proj =
             match Structures.PrimitiveProjections.find_opt proj with
             | Some proj ->
@@ -4098,7 +4098,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
             let ind_is_ok =
               List.equal (fun c1 c2 -> EConstr.eq_constr evd c1 c2)
                 (List.lastn scheme.nargs indargs)
-                (Context.Rel.to_extended_list mkRel 0 scheme.args) in
+                (Context.Rel.instance_list mkRel 0 scheme.args) in
             if not (ccl_arg_ok && ind_is_ok) then
               error_ind_scheme "the conclusion of"
           in (cond, check_concl)
