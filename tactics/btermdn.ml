@@ -121,11 +121,7 @@ let constr_val_discr env sigma ts t =
 
 let constr_pat_discr env ts t =
   let open GlobRef in
-  if Option.is_empty ts && not (Patternops.occur_meta_pattern t) then
-    (* Extremely fishy, and breaks very quickly when fiddled with. Why should
-       **ground** terms match **everything** when non-discriminated??? *)
-    None
-  else match decomp_pat t with
+  match decomp_pat t with
   | PRef ((IndRef _) as ref), args
   | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
   | PRef ((VarRef v) as ref), args ->
