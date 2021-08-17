@@ -85,11 +85,9 @@ let evaluable_constant c env ts =
   (if Environ.mem_constant c env then Environ.evaluable_constant c env else true) &&
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_constant ts c)
 
-let evaluable_named id env ts = match ts with
-| None -> false (* FIXME: make the undiscriminated behaviour symmetrical in terms and patterns *)
-| Some ts ->
+let evaluable_named id env ts =
   (try Environ.evaluable_named id env with Not_found -> true) &&
-  TransparentState.is_transparent_variable ts id
+  (match ts with None -> true | Some ts -> TransparentState.is_transparent_variable ts id)
 
 let constr_val_discr env sigma ts t =
   let c, l = decomp sigma t in
@@ -129,12 +127,8 @@ let constr_pat_discr env ts t =
     if evaluable_constant c env ts then None
     else Some (GRLabel ref, args)
   | PVar v, args ->
-    begin match ts with
-    | None -> None
-    | Some _ ->
-      if evaluable_named v env ts then None
-      else Some(GRLabel (VarRef v),args)
-    end
+    if evaluable_named v env ts then None
+    else Some(GRLabel (VarRef v),args)
   | PProd (_, d, c), [] ->
     Some (ProdLabel, [d ; c])
   | PLambda (_, d, c), [] -> None
