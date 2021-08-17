@@ -52,7 +52,6 @@ let reset_caml_top c o = c.top <- o
 let reset_caml_find c o = c.find <- o
 
 let coq_debug_flag prefs = if prefs.debug then "-g" else ""
-let coq_profile_flag prefs = if prefs.profile then "-p" else ""
 let coq_annot_flag prefs = if prefs.annot then "-annot" else ""
 let coq_bin_annot_flag prefs = if prefs.bin_annot then "-bin-annot" else ""
 
@@ -741,7 +740,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
 
 (** * Build the config/Makefile file *)
 
-let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coq_profile_flag coqide strip arch exe dll dune_29 f =
+let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide strip arch exe dll dune_29 f =
   let { CamlConf.camllib } = camlenv in
   safe_remove f;
   let o = open_out f in
@@ -791,7 +790,6 @@ let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_
   pr "CAMLDEBUG=%s\n" coq_debug_flag;
   pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag;
   pr "# Compilation profile flag\n";
-  pr "CAMLTIMEPROF=%s\n\n" coq_profile_flag;
   pr "# Your architecture\n";
   pr "# Can be obtain by UNIX command arch\n";
   pr "ARCH=%s\n" arch;
@@ -854,7 +852,6 @@ let main () =
   let coq_annot_flag = coq_annot_flag prefs in
   let coq_bin_annot_flag = coq_bin_annot_flag prefs in
   let coq_debug_flag = coq_debug_flag prefs in
-  let coq_profile_flag = coq_profile_flag prefs in
   let arch = arch prefs in
   let arch_is_win32 = arch_is_win32 arch in
   let exe, dll = resolve_binary_suffixes arch in
@@ -890,7 +887,7 @@ let main () =
     print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink browser;
   write_dbg_wrapper camlenv "dev/ocamldebug-coq";
   write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs "config/coq_config.ml";
-  write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coq_profile_flag coqide strip arch exe dll dune_29 "config/Makefile";
+  write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide strip arch exe dll dune_29 "config/Makefile";
   write_dune_c_flags cflags "config/dune.c_flags";
   write_configpy "config/coq_config.py";
   ()
