@@ -154,7 +154,7 @@
 ########################################################################
 # VST
 ########################################################################
-: "${vst_CI_REF:=ebcd978765a8211d545c8efd2114dec75a991720}"
+: "${vst_CI_REF:=master}"
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
 
