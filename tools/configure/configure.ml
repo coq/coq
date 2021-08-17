@@ -13,6 +13,8 @@
 (**********************************)
 open Printf
 open Conf.Util
+open Conf.CmdArgs
+open Conf.CmdArgs.Prefs
 
 let (/) = Filename.concat
 
@@ -20,247 +22,13 @@ let coq_version = "8.15+alpha"
 let vo_magic = 81491
 let state_magic = 581491
 let is_a_released_version = false
-let verbose = ref false (* for debugging this script *)
-
-(** * Command-line parsing *)
-
-type ide = Opt | Byte | No
-
-type nativecompiler = NativeYes | NativeNo | NativeOndemand
-
-type preferences = {
-  prefix : string option;
-  interactive : bool;
-  output_summary : bool;
-  vmbyteflags : string option;
-  custom : bool option;
-  libdir : string option;
-  configdir : string option;
-  datadir : string option;
-  mandir : string option;
-  docdir : string option;
-  ocamlfindcmd : string option;
-  arch : string option;
-  natdynlink : bool;
-  coqide : ide option;
-  macintegration : bool;
-  browser : string option;
-  withdoc : bool;
-  byteonly : bool;
-  flambda_flags : string list;
-  debug : bool;
-  profile : bool;
-  bin_annot : bool;
-  annot : bool;
-  bytecodecompiler : bool;
-  nativecompiler : nativecompiler;
-  coqwebsite : string;
-  force_caml_version : bool;
-  force_findlib_version : bool;
-  warn_error : bool;
-  dune_profile : string;
-  install_enabled : bool;
-}
-
-module Profiles = struct
-
-let default = {
-  prefix = None;
-  interactive = true;
-  output_summary = true;
-  vmbyteflags = None;
-  custom = None;
-  libdir = None;
-  configdir = None;
-  datadir = None;
-  mandir = None;
-  docdir = None;
-  ocamlfindcmd = None;
-  arch = None;
-  natdynlink = true;
-  coqide = None;
-  macintegration = true;
-  browser = None;
-  withdoc = false;
-  byteonly = false;
-  flambda_flags = [];
-  debug = true;
-  profile = false;
-  bin_annot = false;
-  annot = false;
-  bytecodecompiler = true;
-  nativecompiler =
-    if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
-  coqwebsite = "http://coq.inria.fr/";
-  force_caml_version = false;
-  force_findlib_version = false;
-  warn_error = false;
-  dune_profile = "release";
-  install_enabled = true;
-}
-
-let devel state = { state with
-  bin_annot = true;
-  annot = true;
-  warn_error = true;
-  dune_profile = "dev";
-  interactive = false;
-  output_summary = true;
-  prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
-  install_enabled = false;
-}
-
-let devel_doc = "-annot -bin-annot -warn-error yes"
-
-let get = function
-  | "devel" -> devel
-  | s -> raise (Arg.Bad ("profile name expected instead of "^s))
-
-let doc =
-  "<profile> Sets a bunch of flags. Supported profiles:
-     devel = " ^ devel_doc
-
-end
-
-let prefs = ref Profiles.default
+let _verbose = ref false (* for debugging this script *)
 
 (* Support don't ask *)
-let cprintf x =
-  if !prefs.interactive
+let cprintf prefs x =
+  if prefs.interactive
   then cprintf x
   else Printf.ifprintf stdout x
-
-let get_bool = function
-  | "true" | "yes" | "y" | "all" -> true
-  | "false" | "no" | "n" -> false
-  | s -> raise (Arg.Bad ("boolean argument expected instead of "^s))
-
-let get_ide = function
-  | "opt" -> Opt
-  | "byte" -> Byte
-  | "no" -> No
-  | s -> raise (Arg.Bad ("(opt|byte|no) argument expected instead of "^s))
-
-let get_native = function
-  | "yes" -> NativeYes
-  | "no" -> NativeNo
-  | "ondemand" -> NativeOndemand
-  | s -> raise (Arg.Bad ("(yes|no|ondemand) argument expected instead of "^s))
-
-let arg_bool f = Arg.String (fun s -> prefs := f !prefs (get_bool s))
-
-let arg_string f = Arg.String (fun s -> prefs := f !prefs s)
-let arg_string_option f = Arg.String (fun s -> prefs := f !prefs (Some s))
-let arg_string_list c f = Arg.String (fun s -> prefs := f !prefs (string_split c s))
-
-let arg_set f = Arg.Unit (fun () -> prefs := f !prefs)
-
-let arg_set_option f = Arg.Unit (fun () -> prefs := f !prefs (Some true))
-let arg_clear_option f = Arg.Unit (fun () -> prefs := f !prefs (Some false))
-
-let arg_ide f = Arg.String (fun s -> prefs := f !prefs (Some (get_ide s)))
-
-let arg_native f = Arg.String (fun s -> prefs := f !prefs (get_native s))
-
-let arg_profile = Arg.String (fun s -> prefs := Profiles.get s !prefs)
-
-(* TODO : earlier any option -foo was also available as --foo *)
-
-let check_absolute = function
-  | None -> ()
-  | Some path ->
-    if Filename.is_relative path then
-      die "argument to -prefix must be an absolute path"
-    else ()
-
-let local_warning () = warn "-local option is deprecated, and equivalent to -profile devel"
-let bindir_warning () = warn "-bindir option is deprecated, Coq will now unconditionally use $prefix/bin"
-let coqdocdir_warning () = warn "-coqdordir option is deprecated, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files"
-
-let args_options = Arg.align [
-  "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
-    "<dir> Set installation directory to <dir> (absolute path required)";
-  "-local", arg_set (fun p -> local_warning (); Profiles.get "devel" p), "Deprecated option, equivalent to -profile devel";
-  "-no-ask", arg_set (fun p -> { p with interactive = false; output_summary = false }),
-    " Don't ask questions / print variables during configure [questions will be filled with defaults]";
-  "-vmbyteflags", arg_string_option (fun p vmbyteflags -> { p with vmbyteflags }),
-    "<flags> Comma-separated link flags for the VM of coqtop.byte";
-  "-custom", arg_set_option (fun p custom -> { p with custom }),
-    " Build bytecode executables with -custom (not recommended)";
-  "-no-custom", arg_clear_option (fun p custom -> { p with custom }),
-    " Do not build with -custom on Windows and MacOS";
-  "-bindir", arg_string_option (fun p _ -> bindir_warning (); p ),
-    "deprecated option, Coq will now unconditionally use $prefix/bin";
-  "-libdir", arg_string_option (fun p libdir -> { p with libdir }),
-    "<dir> Where to install lib files";
-  "-configdir", arg_string_option (fun p configdir -> { p with configdir }),
-    "<dir> Where to install config files";
-  "-datadir", arg_string_option (fun p datadir -> { p with datadir }),
-    "<dir> Where to install data files";
-  "-mandir", arg_string_option (fun p mandir -> { p with mandir }),
-    "<dir> Where to install man files";
-  "-docdir", arg_string_option (fun p docdir -> { p with docdir }),
-    "<dir> Where to install doc files";
-  "-coqdocdir", arg_string_option (fun p _ -> coqdocdir_warning (); p),
-    "deprecated option, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files";
-  "-ocamlfind", arg_string_option (fun p ocamlfindcmd -> { p with ocamlfindcmd }),
-    "<dir> Specifies the ocamlfind command to use";
-  "-flambda-opts", arg_string_list ' ' (fun p flambda_flags -> { p with flambda_flags }),
-    "<flags> Specifies additional flags to be passed to the flambda optimizing compiler";
-  "-arch", arg_string_option (fun p arch -> { p with arch }),
-    "<arch> Specifies the architecture";
-  "-natdynlink", arg_bool (fun p natdynlink -> { p with natdynlink }),
-    "(yes|no) Use dynamic loading of native code or not";
-  "-coqide", arg_ide (fun p coqide -> { p with coqide }),
-    "(opt|byte|no) Specifies whether or not to compile CoqIDE";
-  "-nomacintegration", arg_set (fun p -> { p with macintegration = false}),
-    " Do not try to build CoqIDE MacOS integration";
-  "-browser", arg_string_option (fun p browser -> { p with browser }),
-    "<command> Use <command> to open URL %s";
-  "-with-doc", arg_bool (fun p withdoc -> { p with withdoc }),
-    "(yes|no) Compile the documentation or not";
-  "-byte-only", arg_set (fun p -> { p with byteonly = true }),
-    " Compiles only bytecode version of Coq";
-  "-nodebug", arg_set (fun p -> { p with debug = true }),
-    " Do not add debugging information in the Coq executables";
-  "-profiling", arg_set (fun p -> { p with profile = true }),
-    " Add profiling information in the Coq executables";
-  "-annotate", Arg.Unit (fun () -> die "-annotate has been removed. Please use -annot or -bin-annot instead."),
-    " Removed option. Please use -annot or -bin-annot instead";
-  "-annot", arg_set (fun p -> { p with annot = true }),
-    " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
-  "-bin-annot", arg_set (fun p -> { p with bin_annot = true }),
-    " Dumps ml binary annotation files while compiling Coq (e.g. for Merlin)";
-  "-bytecode-compiler", arg_bool (fun p bytecodecompiler -> { p with bytecodecompiler }),
-    "(yes|no) Enable Coq's bytecode reduction machine (VM)";
-  "-native-compiler", arg_native (fun p nativecompiler -> { p with nativecompiler }),
-    "(yes|no|ondemand) Compilation to native code for conversion and normalization
-     yes: -native-compiler option of coqc will default to 'yes', stdlib will be precompiled
-     no: no native compilation available at all
-     ondemand (default): -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
-  "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
-    " URL of the coq website";
-  "-force-caml-version", arg_set (fun p -> { p with force_caml_version = true}),
-    " Force OCaml version";
-  "-force-findlib-version", arg_set (fun p -> { p with force_findlib_version = true}),
-    " Force findlib version";
-  "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
-    "(yes|no) Make OCaml warnings into errors (default no)";
-  "-camldir", Arg.String (fun _ -> ()),
-    "<dir> Specifies path to 'ocaml' for running configure script";
-  "-profile", arg_profile,
-    Profiles.doc
-]
-
-let parse_args () =
-  Arg.parse
-    args_options
-    (fun s -> raise (Arg.Bad ("Unknown option: "^s)))
-    "Available options for configure are:"
-
-let () = parse_args ()
-
-let prefs = !prefs
 
 (** Default OCaml binaries *)
 
@@ -283,10 +51,10 @@ let reset_caml_yacc c o = c.yacc <- o
 let reset_caml_top c o = c.top <- o
 let reset_caml_find c o = c.find <- o
 
-let coq_debug_flag = if prefs.debug then "-g" else ""
-let coq_profile_flag = if prefs.profile then "-p" else ""
-let coq_annot_flag = if prefs.annot then "-annot" else ""
-let coq_bin_annot_flag = if prefs.bin_annot then "-bin-annot" else ""
+let coq_debug_flag prefs = if prefs.debug then "-g" else ""
+let coq_profile_flag prefs = if prefs.profile then "-p" else ""
+let coq_annot_flag prefs = if prefs.annot then "-annot" else ""
+let coq_bin_annot_flag prefs = if prefs.bin_annot then "-bin-annot" else ""
 
 (* This variable can be overridden only for debug purposes, use with
    care. *)
@@ -294,20 +62,21 @@ let coq_safe_string = "-safe-string"
 let coq_strict_sequence = "-strict-sequence"
 
 (* Query for the arch *)
-let arch = arch prefs.arch
+let arch prefs = arch prefs.arch
 
 (** NB: [arch_is_win32] is broader than [os_type_win32], cf. cygwin *)
 
-let arch_is_win32 = (arch = "win32")
+let arch_is_win32 arch = arch = "win32"
 
-let () = exe := if arch_is_win32 then ".exe" else ""
-let dll = if os_type_win32 then ".dll" else ".so"
+let resolve_binary_suffixes arch =
+  (if arch_is_win32 arch then ".exe" else ""),
+  (if os_type_win32 then ".dll" else ".so")
 
 (** * Git Precommit Hook *)
-let _ =
+let install_precommit_hook prefs =
   let f = ".git/hooks/pre-commit" in
   if dir_exists ".git/hooks" && not (Sys.file_exists f) then begin
-    cprintf "Creating pre-commit hook in %s" f;
+    cprintf prefs "Creating pre-commit hook in %s" f;
     let o = open_out f in
     let pr s = fprintf o s in
     pr "#!/bin/sh\n";
@@ -321,16 +90,24 @@ let _ =
 
 (** * Browser command *)
 
-let browser =
+let browser prefs arch =
   match prefs.browser with
   | Some b -> b
-  | None when arch_is_win32 -> "start %s"
+  | None when arch_is_win32 arch -> "start %s"
   | None when arch = "Darwin" -> "open %s"
   | _ -> "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"
 
 (** * OCaml programs *)
+module CamlConf = struct
+  type t =
+    { camlbin : string
+    ; caml_version : string
+    ; camllib : string
+    ; findlib_version : string
+    }
+end
 
-let camlbin, caml_version, camllib, findlib_version =
+let resolve_caml prefs =
   let () = match prefs.ocamlfindcmd with
     | Some cmd -> reset_caml_find camlexec cmd
     | None ->
@@ -356,15 +133,16 @@ let camlbin, caml_version, camllib, findlib_version =
     let () =
       if is_executable (camlbin / "ocaml")
       then reset_caml_top camlexec (camlbin / "ocaml") in
-    camlbin, caml_version, camllib, findlib_version
+    { CamlConf.camlbin; caml_version; camllib; findlib_version }
 
 (** Caml version as a list of string, e.g. ["4";"00";"1"] *)
 
-let caml_version_list = numeric_prefix_list caml_version
+let caml_version_list { CamlConf.caml_version } =
+  numeric_prefix_list caml_version
 
 (** Same, with integers in the version list *)
 
-let caml_version_nums =
+let caml_version_nums caml_version_list =
   try
     if List.length caml_version_list < 2 then failwith "bad version";
     List.map int_of_string caml_version_list
@@ -372,21 +150,20 @@ let caml_version_nums =
     die ("I found the OCaml compiler but cannot read its version number!\n" ^
          "Is it installed properly?")
 
-let check_caml_version () =
+let check_caml_version prefs caml_version caml_version_nums =
   if caml_version_nums >= [4;5;0] then
-    cprintf "You have OCaml %s. Good!" caml_version
+    cprintf prefs "You have OCaml %s. Good!" caml_version
   else
-    let () = cprintf "Your version of OCaml is %s." caml_version in
+    let () = cprintf prefs "Your version of OCaml is %s." caml_version in
     if prefs.force_caml_version then
       warn "Your version of OCaml is outdated."
     else
       die "You need OCaml 4.05.0 or later."
 
-let _ = check_caml_version ()
+let findlib_version_list { CamlConf.findlib_version } =
+  numeric_prefix_list findlib_version
 
-let findlib_version_list = numeric_prefix_list findlib_version
-
-let findlib_version_nums =
+let findlib_version_nums findlib_version_list =
   try
     if List.length findlib_version_list < 2 then failwith "bad version";
     List.map int_of_string findlib_version_list
@@ -394,19 +171,18 @@ let findlib_version_nums =
     die ("I found ocamlfind but cannot read its version number!\n" ^
          "Is it installed properly?")
 
-let check_findlib_version () =
+let check_findlib_version prefs findlib_version findlib_version_nums =
   if findlib_version_nums >= [1;4;1] then
-    cprintf "You have OCamlfind %s. Good!" findlib_version
+    cprintf prefs "You have OCamlfind %s. Good!" findlib_version
   else
-    let () = cprintf "Your version of OCamlfind is %s." findlib_version in
+    let () = cprintf prefs "Your version of OCamlfind is %s." findlib_version in
     if prefs.force_findlib_version then
       warn "Your version of OCamlfind is outdated."
     else
       die "You need OCamlfind 1.4.1 or later."
 
-let _ = check_findlib_version ()
-
-let camltag = match caml_version_list with
+let camltag caml_version_list =
+  match caml_version_list with
   | x::y::_ -> "OCAML"^x^y
   | _ -> assert false
 
@@ -423,21 +199,23 @@ let camltag = match caml_version_list with
     67: "unused functor parameter" seems totally bogus
     68: "This pattern depends on mutable state" no idea what it means, dune builds don't display it
 *)
+
 let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58-67-68"
-let coq_warn_error =
+let coq_warn_error prefs =
     if prefs.warn_error
     then "-warn-error +a"
     else ""
 
 (* Flags used to compile Coq and plugins (via coq_makefile) *)
-let caml_flags =
+let caml_flags coq_annot_flag coq_bin_annot_flag =
   Printf.sprintf "-thread -rectypes %s %s %s %s %s" coq_warnings coq_annot_flag coq_bin_annot_flag coq_safe_string coq_strict_sequence
 
 (* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
 let coq_caml_flags =
   coq_warn_error
 
-let shorten_camllib s =
+let shorten_camllib camlenv s =
+  let { CamlConf.camllib } = camlenv in
   if starts_with s (camllib^"/") then
     let l = String.length camllib + 1 in
     "+" ^ String.sub s l (String.length s - l)
@@ -451,37 +229,38 @@ let msg_byteonly =
 let msg_no_ocamlopt () =
   warn "Cannot find the OCaml native-code compiler.\n%s" msg_byteonly
 
-let msg_no_dynlink_cmxa () =
+let msg_no_dynlink_cmxa prefs =
   warn "Cannot find native-code dynlink library.\n%s" msg_byteonly;
-  cprintf "For building a native-code Coq, you may try to first";
-  cprintf "compile and install a dummy dynlink.cmxa (see dev/dynlink.ml)";
-  cprintf "and then run ./configure -natdynlink no"
+  cprintf prefs "For building a native-code Coq, you may try to first";
+  cprintf prefs "compile and install a dummy dynlink.cmxa (see dev/dynlink.ml)";
+  cprintf prefs "and then run ./configure -natdynlink no"
 
-let check_native () =
+let check_native prefs camlenv =
   let () = if prefs.byteonly then raise Not_found in
   let version, _ = tryrun camlexec.find ["opt";"-version"] in
   if version = "" then let () = msg_no_ocamlopt () in raise Not_found
   else if fst (tryrun camlexec.find ["query";"dynlink"]) = ""
-  then let () = msg_no_dynlink_cmxa () in raise Not_found
+  then let () = msg_no_dynlink_cmxa prefs in raise Not_found
   else
     let () =
+      let { CamlConf.caml_version } = camlenv in
       if version <> caml_version then
         warn "Native and bytecode compilers do not have the same version!"
-    in cprintf "You have native-code compilation. Good!"
+    in cprintf prefs "You have native-code compilation. Good!"
 
-let best_compiler =
-  try check_native (); "opt" with Not_found -> "byte"
+let best_compiler prefs camlenv =
+  try check_native prefs camlenv; "opt" with Not_found -> "byte"
 
 (** * Native dynlink *)
 
-let hasnatdynlink = prefs.natdynlink && best_compiler = "opt"
+let hasnatdynlink prefs best_compiler = prefs.natdynlink && best_compiler = "opt"
 
-let natdynlinkflag =
+let natdynlinkflag hasnatdynlink =
   if hasnatdynlink then "true" else "false"
 
 (** * OS dependent libraries *)
 
-let operating_system =
+let operating_system arch =
   if starts_with arch "sun4" then
     let os, _ = run "uname" ["-r"] in
     if starts_with os "5" then
@@ -496,25 +275,23 @@ let operating_system =
 let dune_install_warning () =
   warn "You are using Dune < 2.9, the install procedure will not respect the -docdir and -configdir configure directives; please see dev/doc/INSTALL.make.md for more information"
 
-(* prefs are static now, so we use a global variable :S *)
-let dune_29 = ref true
-
-let check_for_dune () =
+(* returns true if dune >= 2.9 *)
+let check_for_dune_29 () =
   let dune_version, _  = tryrun "dune" ["--version"] in
   let dune_version = List.map int_of_string (numeric_prefix_list dune_version) in
   match dune_version with
   (* Development version, consider it >= 2.9 *)
-  | [] -> ()
+  | [] -> true
   | _ ->
     if dune_version < [2;9;0] then
-      (dune_install_warning (); dune_29 := false);
-    ()
-
-let _ = check_for_dune ()
+      (dune_install_warning ();
+       false)
+    else
+      true
 
 (** Zarith library *)
 
-let check_for_zarith () =
+let check_for_zarith prefs =
   let zarith,_ = tryrun camlexec.find ["query";"zarith"] in
   let zarith_cmai base = Sys.file_exists (base / "z.cmi") && Sys.file_exists (base / "zarith.cma") in
   let zarith_version, _ = run camlexec.find ["query"; "zarith"; "-format"; "%v"] in
@@ -526,11 +303,9 @@ let check_for_zarith () =
   | _   ->
     let zarith_version_int = List.map int_of_string (numeric_prefix_list zarith_version) in
     if zarith_version_int >= [1;10;0] then
-      cprintf "You have the Zarith library %s installed. Good!" zarith_version
+      cprintf prefs "You have the Zarith library %s installed. Good!" zarith_version
     else
       die ("Zarith version 1.10 is required, you have " ^ zarith_version)
-
-let numlib = check_for_zarith ()
 
 (** * lablgtk3 and CoqIDE *)
 
@@ -558,47 +333,50 @@ exception Ide of ide
 
 (** If the user asks an impossible coqide, we abort the configuration *)
 
-let set_ide ide msg = match ide, prefs.coqide with
+let set_ide prefs ide msg = match ide, prefs.coqide with
   | No, Some (Byte|Opt)
   | Byte, Some Opt -> die (msg^":\n=> cannot build requested CoqIDE")
   | _ ->
-    cprintf "%s:\n=> %s CoqIDE will be built." msg (pr_ide ide);
+    cprintf prefs "%s:\n=> %s CoqIDE will be built." msg (pr_ide ide);
     raise (Ide ide)
 
+(* XXX *)
 let lablgtkdir = ref ""
 
 (** Which CoqIDE is possible ? Which one is requested ?
     This function also sets the lablgtkdir reference in case of success. *)
 
-let check_coqide () =
-  if prefs.coqide = Some No then set_ide No "CoqIDE manually disabled";
+let check_coqide prefs best_compiler camlenv =
+  if prefs.coqide = Some No then set_ide prefs No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = ""
-  then set_ide No "LablGtk3 or LablGtkSourceView3 not found"
+  then set_ide prefs No "LablGtk3 or LablGtkSourceView3 not found"
   else
     let (ok, version) = check_lablgtk_version () in
     let found = sprintf "LablGtk3 and LablGtkSourceView3 found (%s)" version in
-    if not ok then set_ide No (found^", but too old (required >= 3.1.0, found " ^ version ^ ")");
+    if not ok then set_ide prefs No (found^", but too old (required >= 3.1.0, found " ^ version ^ ")");
     (* We're now sure to produce at least one kind of coqide *)
-    lablgtkdir := shorten_camllib dir;
-    if prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
-    if best_compiler <> "opt" then set_ide Byte (found^", but no native compiler");
+    lablgtkdir := shorten_camllib camlenv dir;
+    if prefs.coqide = Some Byte then set_ide prefs Byte (found^", bytecode requested");
+    if best_compiler <> "opt" then set_ide prefs Byte (found^", but no native compiler");
+    let { CamlConf.camllib } = camlenv in
     if not (Sys.file_exists (camllib/"threads"/"threads.cmxa")) then
-      set_ide Byte (found^", but no native threads");
-    set_ide Opt (found^", with native threads")
+      set_ide prefs Byte (found^", but no native threads");
+    set_ide prefs Opt (found^", with native threads")
 
-let coqide =
-  try check_coqide ()
+let coqide prefs best_compiler camlenv =
+  try check_coqide prefs best_compiler camlenv
   with Ide Opt -> "opt" | Ide Byte -> "byte" | Ide No -> "no"
 
 (** System-specific CoqIDE flags *)
 
+(* XXX *)
 let idearchflags = ref ""
 let idearchfile = ref ""
 let idecdepsflags = ref ""
 let idearchdef = ref "X11"
 
-let coqide_flags () =
+let coqide_flags prefs coqide arch =
   match coqide, arch with
     | "opt", "Darwin" when prefs.macintegration ->
       let osxdir,_ = tryrun camlexec.find ["query";"lablgtkosx"] in
@@ -616,12 +394,9 @@ let coqide_flags () =
       idearchdef := "WIN32"
     | _ -> ()
 
-let _ = coqide_flags ()
-
-
 (** * strip command *)
 
-let strip =
+let strip prefs arch hasnatdynlink =
   if arch = "Darwin" then
     if hasnatdynlink then "true" else "strip"
   else
@@ -650,13 +425,11 @@ let check_doc () =
   if not (program_in_path "sphinx-build") then err "sphinx-build";
   check_sphinx_deps ()
 
-let _ = if prefs.withdoc then check_doc ()
-
 (** * Installation directories : bindir, libdir, mandir, docdir, etc *)
 
 let coqtop = Sys.getcwd ()
 
-let unix = os_type_cygwin || not arch_is_win32
+let unix arch = os_type_cygwin || not (arch_is_win32 arch)
 
 (** Variable name, description, ref in prefs, default dir, prefix-relative *)
 
@@ -664,7 +437,7 @@ type path_style =
   | Absolute of string (* Should start with a "/" *)
   | Relative of string (* Should not start with a "/" *)
 
-let install = [
+let install prefs = [
   "COQPREFIX", "Coq", prefs.prefix,
     Relative "", Relative "";
   "COQLIBINSTALL", "the Coq library", prefs.libdir,
@@ -703,27 +476,26 @@ let find_suffix prefix path = match prefix with
      else
        Absolute path
 
-let env_prefix =
-  match prefs.prefix with
-  | None ->
-    begin
-      try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
-      with
-      | Not_found when prefs.interactive -> None
-      | Not_found -> Some Sys.(getcwd () ^ "/../install/default")
-    end
-  | p -> p
-
-let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
+let do_one_instdir prefs arch (var,msg,uservalue,selfcontainedlayout,unixlayout) =
   let dir,suffix =
-    match uservalue, env_prefix with
-    | Some d, _ -> d,find_suffix env_prefix d
-    | None, Some p ->
-      let suffix = if arch_is_win32 then selfcontainedlayout else relativize unixlayout in
+    let env_prefix =
+      match prefs.prefix with
+      | None ->
+        begin
+          try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
+          with
+          | Not_found when prefs.interactive -> None
+          | Not_found -> Some Sys.(getcwd () ^ "/../install/default")
+        end
+      | p -> p
+    in match uservalue, env_prefix with
+    | Some d, p -> d,find_suffix p d
+    | _, Some p ->
+      let suffix = if (arch_is_win32 arch) then selfcontainedlayout else relativize unixlayout in
       use_suffix p suffix, suffix
-    | None, None ->
-      let suffix = if unix then unixlayout else selfcontainedlayout in
-      let base = if unix then "/usr/local" else "C:/coq" in
+    | _, p ->
+      let suffix = if (unix arch) then unixlayout else selfcontainedlayout in
+      let base = if (unix arch) then "/usr/local" else "C:/coq" in
       let dflt = use_suffix base suffix in
       let () = printf "Where should I install %s [%s]? " msg dflt in
       let line = read_line () in
@@ -731,17 +503,32 @@ let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
   in
   (var,msg,dir,suffix)
 
-let install_dirs = List.map do_one_instdir install
+let install_dirs prefs arch = List.map (do_one_instdir prefs arch) (install prefs)
 
-let select var = List.find (fun (v,_,_,_) -> v=var) install_dirs
+let select var install_dirs = List.find (fun (v,_,_,_) -> v=var) install_dirs
 
-let coqlib,coqlibsuffix = let (_,_,d,s) = select "COQLIBINSTALL" in d,s
+module CoqEnv = struct
+  type t =
+    { coqlib : string
+    ; coqlibsuffix : path_style
+    ; docdir : string
+    ; docdirsuffix : path_style
+    ; configdir : string
+    ; configdirsuffix : path_style
+    ; datadir : string
+    ; datadirsuffix : path_style }
+end
 
-let docdir,docdirsuffix = let (_,_,d,s) = select "DOCDIR" in d,s
-
-let configdir,configdirsuffix = let (_,_,d,s) = select "CONFIGDIR" in d,s
-
-let datadir,datadirsuffix = let (_,_,d,s) = select "DATADIR" in d,s
+let resolve_coqenv install_dirs =
+  let coqlib,coqlibsuffix =
+    let (_,_,d,s) = select "COQLIBINSTALL" install_dirs in d,s in
+  let docdir,docdirsuffix =
+    let (_,_,d,s) = select "DOCDIR" install_dirs in d,s in
+  let configdir,configdirsuffix =
+    let (_,_,d,s) = select "CONFIGDIR" install_dirs in d,s in
+  let datadir,datadirsuffix =
+    let (_,_,d,s) = select "DATADIR" install_dirs in d,s in
+  { CoqEnv.coqlib; coqlibsuffix; docdir; docdirsuffix; configdir; configdirsuffix; datadir; datadirsuffix }
 
 (** * CC runtime flags *)
 
@@ -753,7 +540,8 @@ let cflags_dflt = "-Wall -Wno-unused -g -O2"
 
 let cflags_sse2 = "-msse2 -mfpmath=sse"
 
-let cflags, sse2_math =
+(* cflags, sse2_math = *)
+let compute_cflags () =
   let _, slurp =
     (* Test SSE2_MATH support <https://stackoverflow.com/a/45667927> *)
     tryrun camlexec.find
@@ -772,7 +560,7 @@ let cflags, sse2_math =
 
     If this test fails and SSE2_MATH is not available, abort.
  *)
-let () =
+let check_fmath sse2_math =
   let add = (+.) in
   let b = ldexp 1. 53 in
   let s = add 1. (ldexp 1. (-52)) in
@@ -785,27 +573,29 @@ let () =
 
 (** Do we use -custom (yes by default on Windows and MacOS) *)
 
-let custom_os = arch_is_win32 || arch = "Darwin"
+let custom_os arch = arch_is_win32 arch || arch = "Darwin"
 
-let use_custom = match prefs.custom with
+let use_custom prefs arch = match prefs.custom with
   | Some b -> b
-  | None -> custom_os
+  | None -> custom_os arch
 
-let custom_flag = if use_custom then "-custom" else ""
+let custom_flag prefs arch = if use_custom prefs arch then "-custom" else ""
 
+(* XXX *)
 let build_loadpath =
   ref "# you might want to set CAML_LD_LIBRARY_PATH by hand!"
 
-let config_runtime () =
+let config_runtime prefs arch coqenv =
+  let { CoqEnv.coqlib } = coqenv in
   match prefs.vmbyteflags with
   | Some flags -> string_split ',' flags
-  | _ when use_custom -> [custom_flag]
+  | _ when use_custom prefs arch -> [custom_flag prefs arch]
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
     build_loadpath := sprintf "export %s:=%s/kernel/byterun:$(%s)" ld coqtop ld;
     ["-dllib";"-lcoqrun";"-dllpath";coqlib/"kernel/byterun"]
 
-let vmbyteflags = config_runtime ()
+let vmbyteflags prefs arch coqenv = config_runtime prefs arch coqenv
 
 let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 
@@ -814,7 +604,8 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary () =
+let print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink browser =
+  let { CamlConf.caml_version; camlbin; camllib } = camlenv in
   let pr s = printf s in
   pr "\n";
   pr "  Architecture                : %s\n" arch;
@@ -849,12 +640,10 @@ let print_summary () =
   pr "*Warning* To compile the system for a new architecture\n";
   pr "          don't forget to do a 'make clean' before './configure'.\n"
 
-let _ =
-  if prefs.output_summary then print_summary ()
-
 (** * Build the dev/ocamldebug-coq file *)
 
-let write_dbg_wrapper f =
+let write_dbg_wrapper camlenv f =
+  let { CamlConf.camlbin } = camlenv in
   safe_remove f;
   let o = open_out_bin f in  (* _bin to avoid adding \r on Cygwin/Windows *)
   let pr s = fprintf o s in
@@ -867,11 +656,11 @@ let write_dbg_wrapper f =
   close_out o;
   Unix.chmod f 0o555
 
-let _ = write_dbg_wrapper "dev/ocamldebug-coq"
-
 (** * Build the config/coq_config.ml file *)
 
-let write_configml f =
+let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs f =
+  let { CoqEnv.coqlib; coqlibsuffix; configdir; configdirsuffix; docdir; docdirsuffix; datadir; datadirsuffix } = coqenv in
+  let { CamlConf.caml_version } = camlenv in
   safe_remove f;
   let o = open_out f in
   let pr s = fprintf o s in
@@ -950,11 +739,10 @@ let write_configml f =
   close_out o;
   Unix.chmod f 0o444
 
-let _ = write_configml "config/coq_config.ml"
-
 (** * Build the config/Makefile file *)
 
-let write_makefile f =
+let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coq_profile_flag coqide strip arch exe dll dune_29 f =
+  let { CamlConf.camllib } = camlenv in
   safe_remove f;
   let o = open_out f in
   let pr s = fprintf o s in
@@ -1015,7 +803,7 @@ let write_makefile f =
   pr "# executable files extension, currently:\n";
   pr "#  Unix systems:\n";
   pr "#  Win32 systems : .exe\n";
-  pr "EXE=%s\n" !exe;
+  pr "EXE=%s\n" exe;
   pr "DLLEXT=%s\n\n" dll;
   pr "# the command MKDIR (try to use mkdirhier if you have problems)\n";
   pr "MKDIR=mkdir -p\n\n";
@@ -1039,21 +827,17 @@ let write_makefile f =
   pr "COQWARNERROR=%s\n" (if prefs.warn_error then "-w +default" else "");
   pr "CONFIGURE_DPROFILE=%s\n" prefs.dune_profile;
   pr "COQ_INSTALL_ENABLED=%b\n" prefs.install_enabled;
-  if !dune_29 then pr "DUNE_29_PLUS=yes\n";
+  if dune_29 then pr "DUNE_29_PLUS=yes\n";
   close_out o;
   Unix.chmod f 0o444
 
-let _ = write_makefile "config/Makefile"
-
-let write_dune_c_flags f =
+let write_dune_c_flags cflags f =
   safe_remove f;
   let o = open_out f in
   let pr s = fprintf o s in
   pr "(%s)\n" cflags;
   close_out o;
   Unix.chmod f 0o444
-
-let _ = write_dune_c_flags "config/dune.c_flags"
 
 let write_configpy f =
   safe_remove f;
@@ -1063,4 +847,53 @@ let write_configpy f =
   pr "version = '%s'\n" coq_version;
   pr "is_a_released_version = %s\n" (if is_a_released_version then "True" else "False")
 
-let _ = write_configpy "config/coq_config.py"
+(* Main configure routine *)
+let main () =
+  let prefs = Conf.CmdArgs.parse_args () in
+  let dune_29 = check_for_dune_29 () in
+  let coq_annot_flag = coq_annot_flag prefs in
+  let coq_bin_annot_flag = coq_bin_annot_flag prefs in
+  let coq_debug_flag = coq_debug_flag prefs in
+  let coq_profile_flag = coq_profile_flag prefs in
+  let arch = arch prefs in
+  let arch_is_win32 = arch_is_win32 arch in
+  let exe, dll = resolve_binary_suffixes arch in
+  Conf.Util.exe := exe;
+  install_precommit_hook prefs;
+  let browser = browser prefs arch in
+  let camlenv = resolve_caml prefs in
+  let caml_version_list = caml_version_list camlenv in
+  let caml_version_nums = caml_version_nums caml_version_list in
+  check_caml_version prefs camlenv.CamlConf.caml_version caml_version_nums;
+  let findlib_version_list = findlib_version_list camlenv in
+  let findlib_version_nums = findlib_version_nums findlib_version_list in
+  check_findlib_version prefs camlenv.CamlConf.findlib_version findlib_version_nums;
+  let camltag = camltag caml_version_list in
+  let best_compiler = best_compiler prefs camlenv in
+  let caml_flags = caml_flags coq_annot_flag coq_bin_annot_flag in
+  let coq_caml_flags = coq_caml_flags prefs in
+  let hasnatdynlink = hasnatdynlink prefs best_compiler in
+  let natdynlinkflag = natdynlinkflag hasnatdynlink in
+  let operating_system = operating_system arch in
+  check_for_zarith prefs;
+  let coqide = coqide prefs best_compiler camlenv in
+  let _coqide_flags : unit = coqide_flags prefs coqide arch in
+  let strip = strip prefs arch hasnatdynlink in
+  (if prefs.withdoc then check_doc ());
+  let install_dirs = install_dirs prefs arch in
+  let coqenv = resolve_coqenv install_dirs in
+  let cflags, sse2_math = compute_cflags () in
+  check_fmath sse2_math;
+  let custom_flag = custom_flag prefs arch in
+  let vmbyteflags = vmbyteflags prefs arch coqenv in
+  if prefs.interactive then
+    print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink browser;
+  write_dbg_wrapper camlenv "dev/ocamldebug-coq";
+  write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs "config/coq_config.ml";
+  write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coq_profile_flag coqide strip arch exe dll dune_29 "config/Makefile";
+  write_dune_c_flags cflags "config/dune.c_flags";
+  write_configpy "config/coq_config.py";
+  ()
+
+let _ =
+  main ()

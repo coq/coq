@@ -1,6 +1,5 @@
 (library
  (name conf)
- (public_name coq.configure)
  (modules :standard \ configure))
 
 (executable
