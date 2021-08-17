@@ -311,7 +311,7 @@ let debugger title sid =
                 let column = (find_string_col "Var" columns) in
                 let row = if insert then store#append () else store#get_iter path in
                 GtkTree.TreePath.next path;
-                if String.length value < width then begin
+                if String.length value < width && (not (String.contains value '\n')) then begin
                   store#set ~row ~column (name ^ " = " ^ value);
                   if store#iter_has_child row then
                     ignore @@ store#remove (store#iter_children (Some row));

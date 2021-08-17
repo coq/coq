@@ -239,7 +239,8 @@ let string_of_call ck =
     (match ck with
        | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
        | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
-       | Tacexpr.LtacVarCall (id, t) -> Names.Id.print id
+       (* todo: don't want the KerName instead? *)
+       | Tacexpr.LtacVarCall (_, id, t) -> Names.Id.print id
        | Tacexpr.LtacAtomCall te ->
          Pptactic.pr_glob_tactic (Global.env ())
             (CAst.make (Tacexpr.TacAtom te))

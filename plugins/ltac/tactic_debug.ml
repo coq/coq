@@ -209,27 +209,18 @@ let get_stack stack () =
     match k with
     | LtacNameCall l -> KerName.to_string l, loc
     | LtacMLCall _ -> "??? LtacMLCall", loc
-      (* todo: need to convert LtacNotationCall with "prtac tac", so may need to
-         save tactic associated with each stack entry unless we can be sure it's
-         always the TOS?  OTOH is even necessary to show this stack frame? *)
-    | LtacNotationCall l -> "??? LtacNotationCall " ^ (KerName.to_string l), loc
-    | LtacAtomCall _ -> "??? LtacAtomCall", loc
-    | LtacVarCall (id, e) ->
-      let open CAst in
-      let lvar = match e.v with
-      | TacFun (lvar, body) -> Pp.string_of_ppcmds (Name.print (List.hd lvar))
-      | _ -> "???"
+      (* LtacMLCall should not even show the stack frame, but profiling may need it *)
+    | LtacNotationCall l -> "??? LtacNotationCall", loc
+      (* LtacNotationCall should not even show the stack frame, but profiling may need it *)
+    | LtacAtomCall _ -> "??? LtacAtomCall", loc (* not found in stack *)
+    | LtacVarCall (kn, id, e) ->
+      let fn_name =
+        match kn with
+        | Some kn -> KerName.to_string kn
+        | None -> "" (* anonymous function *)
       in
-      Printf.sprintf "%s (from variable %s)" lvar (Id.to_string id), loc
-    | LtacConstrInterp (c,_) ->
-(*
-      let env = Global.env() in
-      let sigma = Evd.from_env env in
-      Printf.printf "LtacConstrInterp %s\n%!"
-        (Pp.string_of_ppcmds (Printer.pr_glob_constr_env env sigma c));
-      shows "(fun var : type (Language.Compilers.base.type base) -> Type => _)"
-*)
-      "??? LtacConstrInterp", loc
+      fn_name, loc
+    | LtacConstrInterp (c,_) -> "", loc
     ) stack
 
 (* Each list entry contains multiple trace frames. *)
@@ -411,6 +402,25 @@ let debug_prompt lev tac f varmap trace =
         st, st_prev, l_cur, l_prev
       in
       let p_stack = prev_stack.contents in
+(*
+      let check = try
+        (match stack with
+        | Some ((_, kind) :: _) ->
+          (match kind with
+          | LtacMLCall _ -> true (* todo: just hide *)
+          | LtacNotationCall _ -> true (* todo: just hide *)
+          | LtacNameCall l -> false
+          | LtacAtomCall _ -> true (* not found in the stack *)
+          | LtacVarCall _ -> false
+          | LtacConstrInterp _ -> true (* not found in stack *)
+          )
+        | _ -> false)
+        with _ -> Printf.printf "exception\n%!"; false
+      in
+      if check then
+        stop_here ()
+      else
+*)
       if action.contents = DebugHook.Action.Continue && at_breakpoint tac then
         (* todo: skip := 0 *)
         stop_here ()
@@ -606,7 +616,7 @@ let explain_ltac_call_trace last trace loc =
   | Tacexpr.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
   | Tacexpr.LtacMLCall t ->
       quote (prtac t)
-  | Tacexpr.LtacVarCall (id,t) ->
+  | Tacexpr.LtacVarCall (_,id,t) ->
       quote (Id.print id) ++ strbrk " (bound to " ++
         prtac t ++ str ")"
   | Tacexpr.LtacAtomCall te ->

@@ -270,8 +270,13 @@ let propagate_trace ist loc id v =
     let tacv = to_tacvalue v in
     match tacv with
     | VFun (appl,_,_,lfun,it,b) ->
+        let kn =
+          match appl with
+          | GlbAppl ((kn, _) :: _) -> Some kn
+          | _ -> None
+        in
         let t = if List.is_empty it then b else CAst.make (TacFun (it,b)) in
-        let trace = push_trace(loc,LtacVarCall (id,t)) ist in
+        let trace = push_trace(loc,LtacVarCall (kn,id,t)) ist in
         let ans = VFun (appl,trace,loc,lfun,it,b) in
         Proofview.tclUNIT (of_tacvalue ans)
     | _ ->  Proofview.tclUNIT v
