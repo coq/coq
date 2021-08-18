@@ -942,14 +942,15 @@ let is_head_evar env sigma c =
 
 (* 4. Ad-hoc eta reduction *)
 
-let shrink_eta sigma c =
-  let rec whrec x = match EConstr.kind sigma x with
-    | Cast (c, _, _) -> whrec c
-    | Lambda (_, _, c) ->
-      let (f, cl) = decompose_app_vect sigma (whrec c) in
+let shrink_eta_gen whd push env sigma c =
+  let rec whrec env x = match EConstr.kind sigma x with
+    | Cast (c, _, _) -> whrec env c
+    | Lambda (na, t, c) ->
+      let env = push (LocalAssum (na, t)) env in
+      let (f, cl) = decompose_app_vect sigma (whrec env (whd env sigma c)) in
       let napp = Array.length cl in
       if napp > 0 then
-        let x' = whrec (Array.last cl) in
+        let x' = whrec env (Array.last cl) in
         match EConstr.kind sigma x' with
         | Rel 1 ->
           let lc = Array.sub cl 0 (napp-1) in
@@ -959,12 +960,18 @@ let shrink_eta sigma c =
       else x
     | Meta ev ->
       (match safe_meta_value sigma ev with
-        Some c -> whrec c
+        Some c -> whrec env c
       | None -> x)
     | App _ | Case _ | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
     | LetIn _ | Const _  | Ind _ | Proj _ | Int _ | Float _ | Array _ -> x
   in
-  whrec c
+  whrec env c
+
+let shrink_eta_all env sigma c =
+  shrink_eta_gen whd_all push_rel env sigma c
+
+let shrink_eta sigma c =
+  shrink_eta_gen (fun () _ c -> c) (fun _ () -> ()) () sigma c
 
 (* 5. Zeta Reduction Functions *)
 

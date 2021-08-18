@@ -167,6 +167,7 @@ val whd_betadeltazeta :  reduction_function
 val whd_zeta_stack : stack_reduction_function
 val whd_zeta : reduction_function
 
+val shrink_eta_all : env -> evar_map -> constr -> constr
 val shrink_eta : evar_map -> constr -> constr
 
 (** Various reduction functions *)
