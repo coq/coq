@@ -430,8 +430,8 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
   let r = mkIndU (indsp,uinstance) in
-  let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
-  let paramargs = Context.Rel.to_extended_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
+  let rp = applist (r, Context.Rel.instance_list mkRel 0 paramdecls) in
+  let paramargs = Context.Rel.instance_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
   let x = make_annot (Name binder_name) mip.mind_relevance in
   let fields = instantiate_possibly_recursive_type (fst indsp) uinstance mib.mind_ntypes paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
@@ -561,7 +561,7 @@ let declare_structure ~cumulative finite ~ubind ~univs ~variances ~primitive_pro
   let ntypes = List.length record_data in
   let mk_block i { Data.id; idbuild; rdata = { DataR.min_univ; arity; fields; _ }; _ } =
     let nfields = List.length fields in
-    let args = Context.Rel.to_extended_list mkRel nfields params in
+    let args = Context.Rel.instance_list mkRel nfields params in
     let ind = applist (mkRel (ntypes - i + nparams + nfields), args) in
     let type_constructor = it_mkProd_or_LetIn ind fields in
     { mind_entry_typename = id;
@@ -738,7 +738,7 @@ let add_constant_class env sigma cst =
   let ty, univs = Typeops.type_of_global_in_context env (GlobRef.ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, _ = decompose_prod_assum ty in
-  let args = Context.Rel.to_extended_vect Constr.mkRel 0 ctx in
+  let args = Context.Rel.instance Constr.mkRel 0 ctx in
   let t = mkApp (mkConstU (cst, Univ.make_abstract_instance univs), args) in
   let tc =
     { cl_univs = univs;

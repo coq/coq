@@ -319,7 +319,7 @@ let build_dependent_inductive ind (_,mip) params =
   Term.applist
     (mkIndU ind,
        List.map (lift mip.mind_nrealdecls) params
-       @ Context.Rel.to_extended_list mkRel 0 realargs)
+       @ Context.Rel.instance_list mkRel 0 realargs)
 
 (* This exception is local *)
 exception LocalArity of (Sorts.family * Sorts.family * Sorts.family * arity_error) option
@@ -406,7 +406,7 @@ let expand_case_specif mib (ci, u, params, p, iv, c, br) =
     let (nas, p) = p in
     let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
     let self =
-      let args = Context.Rel.to_extended_vect mkRel 0 mip.mind_arity_ctxt in
+      let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
       let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
       mkApp (mkIndU (ci.ci_ind, inst), args)
     in
@@ -472,7 +472,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
     let (lparams,vargs) = List.chop (inductive_params specif) allargs in
     let cargs =
       let cstr = ith_constructor_of_inductive ind (i+1) in
-      let dep_cstr = Term.applist (mkConstructU (cstr,u),lparams@(Context.Rel.to_extended_list mkRel 0 cstrsign)) in
+      let dep_cstr = Term.applist (mkConstructU (cstr,u),lparams@(Context.Rel.instance_list mkRel 0 cstrsign)) in
       vargs @ [dep_cstr] in
     let base = Term.lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     Term.it_mkProd_or_LetIn base cstrsign in

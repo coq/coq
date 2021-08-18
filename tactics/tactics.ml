@@ -289,13 +289,12 @@ let rename_hyp repl =
     Tacticals.New.tclZEROMSG ~info (str "Not a one-to-one name mapping")
   | Some (src, dst) ->
     Proofview.Goal.enter begin fun gl ->
-      let hyps = Proofview.Goal.hyps gl in
       let concl = Proofview.Goal.concl gl in
       let env = Proofview.Goal.env gl in
+      let sign = named_context_val env in
       let sigma = Proofview.Goal.sigma gl in
       (* Check that we do not mess variables *)
-      let fold accu decl = Id.Set.add (NamedDecl.get_id decl) accu in
-      let vars = List.fold_left fold Id.Set.empty hyps in
+      let vars = ids_of_named_context_val sign in
       let () =
         if not (Id.Set.subset src vars) then
           let hyp = Id.Set.choose (Id.Set.diff src vars) in
@@ -312,11 +311,9 @@ let rename_hyp repl =
       let make_subst (src, dst) = (src, mkVar dst) in
       let subst = List.map make_subst repl in
       let subst c = Vars.replace_vars subst c in
-      let map decl =
-        decl |> NamedDecl.map_id (fun id -> try List.assoc_f Id.equal id repl with Not_found -> id)
-             |> NamedDecl.map_constr subst
-      in
-      let nhyps = List.map map hyps in
+      let replace id = try List.assoc_f Id.equal id repl with Not_found -> id in
+      let map decl = decl |> NamedDecl.map_id replace |> NamedDecl.map_constr subst in
+      let nhyps = List.map map (named_context_of_val sign) in
       let nconcl = subst concl in
       let nctx = val_of_named_context nhyps in
       let instance = EConstr.identity_subst_val (Environ.named_context_val env) in
@@ -1546,7 +1543,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       then
         let t = lift (i+1-n) t in
         let abselim = beta_applist sigma (elim, params@[t;branch]) in
-        let args = Context.Rel.to_extended_vect mkRel 0 sign in
+        let args = Context.Rel.instance mkRel 0 sign in
         let c = beta_applist sigma (abselim, [mkApp (c, args)]) in
           Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
       else
@@ -1555,7 +1552,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       (* goes from left to right when i increases! *)
       match List.nth l i with
       | Some proj ->
-          let args = Context.Rel.to_extended_vect mkRel 0 sign in
+          let args = Context.Rel.instance mkRel 0 sign in
           let proj =
             match Structures.PrimitiveProjections.find_opt proj with
             | Some proj ->
@@ -2100,11 +2097,12 @@ let apply_type ~typecheck newcl args =
 let bring_hyps hyps =
   if List.is_empty hyps then Tacticals.New.tclIDTAC
   else
+    let hyps = List.rev hyps in
     Proofview.Goal.enter begin fun gl ->
       let env = Proofview.Goal.env gl in
       let concl = Tacmach.New.pf_concl gl in
-      let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
-      let args = Array.of_list (Context.Named.to_instance mkVar hyps) in
+      let newcl = it_mkNamedProd_or_LetIn concl hyps in
+      let args = Context.Named.instance mkVar hyps in
       Refine.refine ~typecheck:false begin fun sigma ->
         let (sigma, ev) =
           Evarutil.new_evar env sigma ~principal:true newcl in
@@ -2829,7 +2827,7 @@ let generalize_dep ?(with_let=false) c =
   let open Tacticals.New in
   Proofview.Goal.enter begin fun gl ->
   let env = pf_env gl in
-  let sign = Proofview.Goal.hyps gl in
+  let sign = named_context_val env in
   let sigma = project gl in
   let init_ids = ids_of_named_context (Global.named_context()) in
   let seek (d:named_declaration) (toquant:named_context) =
@@ -2838,14 +2836,13 @@ let generalize_dep ?(with_let=false) c =
       d::toquant
     else
       toquant in
-  let to_quantify = Context.Named.fold_outside seek sign ~init:[] in
-  let to_quantify_rev = List.rev to_quantify in
-  let qhyps = List.map NamedDecl.get_id to_quantify_rev in
+  let to_quantify = Context.Named.fold_outside seek (named_context_of_val sign) ~init:[] in
+  let qhyps = List.map NamedDecl.get_id to_quantify in
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match EConstr.kind sigma c with
-      | Var id when mem_named_context_val id (val_of_named_context sign) && not (Id.List.mem id init_ids)
-          -> id::tothin
+      | Var id when mem_named_context_val id sign && not (Id.List.mem id init_ids)
+          -> tothin@[id]
       | _ -> tothin
   in
   let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
@@ -2864,11 +2861,11 @@ let generalize_dep ?(with_let=false) c =
     if is_var then evd
     else fst (Typing.type_of env evd cl'')
   in
-  let args = Context.Named.to_instance mkVar to_quantify_rev in
+  let args = Array.to_list (Context.Named.instance mkVar to_quantify) in
   tclTHENLIST
     [ Proofview.Unsafe.tclEVARS evd;
       apply_type ~typecheck:false cl'' (if Option.is_empty body then c::args else args);
-      clear (List.rev tothin')]
+      clear tothin']
   end
 
 (**  *)
@@ -4101,7 +4098,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
             let ind_is_ok =
               List.equal (fun c1 c2 -> EConstr.eq_constr evd c1 c2)
                 (List.lastn scheme.nargs indargs)
-                (Context.Rel.to_extended_list mkRel 0 scheme.args) in
+                (Context.Rel.instance_list mkRel 0 scheme.args) in
             if not (ccl_arg_ok && ind_is_ok) then
               error_ind_scheme "the conclusion of"
           in (cond, check_concl)

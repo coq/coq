@@ -156,21 +156,29 @@ sig
       Outermost declarations are processed first. *)
   val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
 
-  (** Map a given rel-context to a list where each {e local assumption} is mapped to [true]
-      and each {e local definition} is mapped to [false]. *)
+  (** Map a given rel-context to a list where each {e local
+      assumption} is mapped to [true] and each {e local definition} is
+      mapped to [false]. The resulting list is in reverse order
+      compared to the order of declarations in the context. *)
   val to_tags : ('c, 't) pt -> bool list
 
   (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
   val drop_bodies : ('c, 't) pt -> ('c, 't) pt
 
-  (** [extended_list mk n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
+  (** [instance mk n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the {e local definitions} of [Γ] skipped in
       [args] where [mk] is used to build the corresponding variables.
       Example: for [x:T, y:=c, z:U] and [n]=2, it gives [mk 5, mk 3]. *)
-  val to_extended_list : (int -> 'r) -> int -> ('c, 't) pt -> 'r list
+  val instance : (int -> 'r) -> int -> ('c, 't) pt -> 'r array
 
-  (** [extended_vect n Γ] does the same, returning instead an array. *)
+  (** [instance_list] is like [instance] but returning a list. *)
+  val instance_list : (int -> 'r) -> int -> ('c, 't) pt -> 'r list
+
   val to_extended_vect : (int -> 'r) -> int -> ('c, 't) pt -> 'r array
+    [@@ocaml.deprecated "Use synonymous [Context.Rel.instance]"]
+
+  val to_extended_list : (int -> 'r) -> int -> ('c, 't) pt -> 'r list
+    [@@ocaml.deprecated "Use synonymous [Context.Rel.instance_list]"]
 end
 
 (** This module represents contexts that can capture non-anonymous variables.
@@ -296,11 +304,23 @@ sig
   (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
   val drop_bodies : ('c, 't) pt -> ('c, 't) pt
 
-  (** [to_instance Ω] builds an instance [args] such
+  (** [to_instance Ω] builds an instance [args] in reverse order such
       that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the local
       definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
       gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
   val to_instance : (Id.t -> 'r) -> ('c, 't) pt -> 'r list
+    [@@ocaml.deprecated "[to_instance] was missing a [List.rev] to comply to its specification; rely on [instance] for the correct specification or use [List.rev (instance ...)] for strict compatibility"]
+
+  (** [instance Ω] builds an instance [args] such
+      that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the
+      local definitions of [Ω] skipped. Example: for the context
+      [id1:T,id2:=c,id3:U] (which is internally represented by a list
+      with [id3] at the head), it gives [Var id1, Var id3]. All [idj]
+      are supposed distinct. *)
+  val instance : (Id.t -> 'r) -> ('c, 't) pt -> 'r array
+
+  (** [instance_list] is like [instance] but returning a list. *)
+  val instance_list : (Id.t -> 'r) -> ('c, 't) pt -> 'r list
 end
 
 module Compacted :
