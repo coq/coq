@@ -217,31 +217,29 @@ let db_upd_bpts updates sn =
       (fun () -> Minilib.log "Coq busy, discarding db_upd_bpts")
 
 (* figure out which breakpoint locations have changed because the script was edited *)
-let calculate_bpt_updates sn =
+let calculate_bpt_updates () =
   let fn = "ToplevelInput" in
-  let rec update_bpts upd bpts_res = function
+  let rec update_bpts sn upd bpts_res = function
     | bp :: tl ->
       let iter = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
       let has_tag = iter#has_tag Tags.Script.breakpoint in
-(*      Printf.printf "prev_uni_offset = %d %d  %b\n" iter#offset bp.prev_uni_offset has_tag;*)
       let prev_byte_offset = bp.prev_byte_offset in
       if not has_tag then begin
         sn.buffer#delete_mark (`NAME bp.mark_id); (* remove *)
-        update_bpts (((fn, prev_byte_offset), false) :: upd) bpts_res tl
+        update_bpts sn (((fn, prev_byte_offset), false) :: upd) bpts_res tl
       end else if iter#offset <> bp.prev_uni_offset then begin
         bp.prev_uni_offset <- iter#offset;        (* move *)
         let byte_offset = Ideutils.uni_off_to_byte_off sn.buffer iter#offset in
         bp.prev_byte_offset <- byte_offset;
-        update_bpts (((fn, byte_offset), true)
+        update_bpts sn (((fn, byte_offset), true)
             :: ((fn, prev_byte_offset), false) :: upd)
           (bp :: bpts_res) tl (* move *)
       end else
-        update_bpts upd (bp :: bpts_res) tl       (* keep *)
+        update_bpts sn upd (bp :: bpts_res) tl       (* no change, keep *)
     | [] -> (List.rev upd, List.rev bpts_res)  (* order matters *)
   in
-  let upd, bpts = update_bpts [] [] sn.breakpoints in
-  sn.breakpoints <- bpts;
-  upd
+  let upds = List.mapi (fun i sn -> update_bpts sn [] [] sn.breakpoints) notebook#pages in
+  upds
 
 let reapply_bpts sn =
   (* breakpoints in this file *)
@@ -771,7 +769,7 @@ let find_db_sn ?sid () =
   let res = List.filter f notebook#pages in
   if res = [] then cur else List.hd res
 
-let resume_debugger ?sid opt = (* todo: assign numbers/create a type *)
+let resume_debugger ?sid opt =
   let term = try Some (find_db_sn ?sid ()) with Invalid_argument _ -> None in
   match term with
   | None -> false
@@ -788,11 +786,21 @@ let resume_debugger ?sid opt = (* todo: assign numbers/create a type *)
     end else false
 
 let maybe_update_breakpoints () =
-  on_current_term (fun sn ->
-    match calculate_bpt_updates sn with
-    | [] -> ()
-    | upd -> Coq.add_do_when_ready sn.coqtop (fun _ -> db_upd_bpts upd sn)
-  )
+  let upds = calculate_bpt_updates () in
+  List.iter2 (fun sn (_, bpts) ->
+      sn.breakpoints <- bpts;
+      let sn_upds = List.concat (List.mapi (fun n sn2 ->
+        let (upd, _) = List.nth upds n in
+        match sn2.abs_file_name with
+          | _ when sn == sn2 -> upd (* as TopLevelInput *)
+          | Some fn ->
+            List.map (fun ((_, off), set) -> ((fn, off), set)) upd
+          | None -> []
+        ) notebook#pages) in
+      match sn_upds with
+      | [] -> ()
+      | upd -> Coq.add_do_when_ready sn.coqtop (fun _ -> db_upd_bpts upd sn)
+    ) notebook#pages upds
 
 module Nav = struct
   let forward_one_sid ?sid _ =
@@ -816,10 +824,10 @@ module Nav = struct
   let next_occ = cb_on_current_term (find_next_occurrence ~backward:false)
   let restart _ =
     Minilib.log "Reset Initial";
+    maybe_update_breakpoints ();
     if notebook#pages <> [] then begin
       let sn = notebook#current_term in
-      Coq.reset_coqtop sn.coqtop;
-      init_bpts sn;
+      Coq.reset_coqtop sn.coqtop; (* calls init_bpts *)
       sn.coqops#scroll_to_start_of_input ()
     end
   let interrupt _ =  (* terminate computation *)
@@ -1547,7 +1555,7 @@ let build_ui () =
     ("Forward", "_Forward", `GO_DOWN, Nav.forward_one, "Forward one command", "Down");
     ("Backward", "_Backward", `GO_UP, Nav.backward_one, "Backward one command", "Up");
     ("Go to", "_Go to", `JUMP_TO, Nav.goto, "Go to cursor", "Right");
-    ("Start", "_Start", `GOTO_TOP, Nav.restart, "Restart coq", "Home");
+    ("Restart", "_Restart", `GOTO_TOP, Nav.restart, "Restart Coq", "Home");
     ("End", "_End", `GOTO_BOTTOM, Nav.goto_end, "Go to end", "End");
     ("Interrupt", "_Interrupt", `STOP, Nav.interrupt, "Interrupt computations", "Break");
     (* wait for this available in GtkSourceView !

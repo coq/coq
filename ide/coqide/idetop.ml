@@ -431,18 +431,22 @@ let db_continue opt =
 
 let db_upd_bpts updates =
   let open DebugHook in
+(*  Printf.printf "before pid = %d # bpts set after = %d\n\n%!" (Unix.getpid ()) (IBPSet.cardinal !ide_breakpoints);*)
   List.iter (fun op ->
       let ((file, offset), opt) = op in
-      Printf.printf "server:db_upd_bpts '%s': %d %b\n%!" file offset opt;
       let bp = { file; offset } in
       match opt with
       | true ->
-        ide_breakpoints := IBPSet.add bp !ide_breakpoints;
+        ide_breakpoints := IBPSet.add bp !ide_breakpoints;  (* todo: error if already set? *)
         DebugHook.update_bpt true bp
       | false ->
-        ide_breakpoints := IBPSet.remove bp !ide_breakpoints;
+        ide_breakpoints := IBPSet.remove bp !ide_breakpoints; (* todo: error if not found? *)
         DebugHook.update_bpt false bp
     ) updates
+(*    IBPSet.iter (fun e -> Printf.printf "pid = %d file = %s offset = %d\n%!" (Unix.getpid ())*)
+(*        e.file e.offset) !ide_breakpoints;*)
+(*    Printf.printf "after pid = %d # bpts set after = %d\n\n%!"  (Unix.getpid ()) (IBPSet.cardinal !ide_breakpoints)*)
+
 
 let format_frame text loc =
   try

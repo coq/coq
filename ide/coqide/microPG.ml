@@ -271,7 +271,7 @@ let pg = insert emacs "Proof General" [mC,_c,"c"] [
   mkE _n "n" "Advance 1 sentence" (Action("Navigation", "Forward"));
   mkE _u "u" "Retract 1 sentence" (Action("Navigation", "Backward"));
   mkE _b "b" "Advance" (Action("Navigation", "End"));
-  mkE _r "r" "Restart" (Action("Navigation", "Start"));
+  mkE _r "r" "Restart" (Action("Navigation", "Restart"));
   mkE _c "c" "Stop"    (Action("Navigation", "Interrupt"));
   ]
 
