@@ -521,21 +521,26 @@ let find_coinductive env sigma c =
     build an expansion function.
     The term built is expecting to be substituted first by
     a substitution of the form [params, x : ind params] *)
-let compute_projections env (kn, i as ind) =
+let compute_all_projections env ((kn, i as ind), u) =
   let open Term in
-  let mib = Environ.lookup_mind kn env in
+  let mib, mip = Inductive.lookup_mind_specif env ind in
   let u = make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
-  let x = match mib.mind_record with
-  | NotRecord | FakeRecord ->
-    anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
-  | PrimRecord info ->
-    let id, _, _, _ = info.(i) in
-    make_annot (Name id) mib.mind_packets.(i).mind_relevance
+  let primitive, id = match mib.mind_record with
+  | NotRecord  ->
+    if mip.mind_kelim = InType && Int.equal mip.mind_nrealdecls 0 && Int.equal (Array.length mip.mind_nf_lc) 1 then
+      false, Id.of_string "x"
+    else
+      anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
+  | FakeRecord -> false, Id.of_string "x"
+  | PrimRecord info -> let id, _, _, _ = info.(i) in true, id
   in
+  let x = make_annot (Name id) mib.mind_packets.(i).mind_relevance in
   let pkt = mib.mind_packets.(i) in
   let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
   let ctx, _ = pkt.mind_nf_lc.(0) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) ctx in
+  let lifted_fields = Vars.lift_rel_context 1 ctx in
+  let nfields = List.length lifted_fields in
   (* We build a substitution smashing the lets in the record parameters so
      that typechecking projections requires just a substitution and not
      matching with a parameter context. *)
@@ -547,46 +552,86 @@ let compute_projections env (kn, i as ind) =
     (* [Ind inst] is typed in context [params-wo-let] *)
     ty
   in
-  let projections decl (proj_arg, j, pbs, subst) =
+  let projections decl (proj_arg, j, pbs, subst, typs) =
     match decl with
     | LocalDef (na,c,t) ->
         (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)] *)
         let c = liftn 1 j c in
+        let t = liftn 1 j t in
         (* From [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)]
            to [params, x:I |- c(params,proj1 x,..,projj x)] *)
-        let c1 = substl subst c in
+        let c = substl subst c in
+        let t = substl subst t in
         (* From [params, x:I |- subst:field1,..,fieldj]
            to [params, x:I |- subst:field1,..,fieldj+1] where [subst]
            is represented with instance of field1 last *)
-        let subst = c1 :: subst in
-        (proj_arg, j+1, pbs, subst)
+        let subst = c :: subst in
+        let typs = t :: typs in
+        (proj_arg, j+1, pbs, c :: subst, typs)
     | LocalAssum (na,t) ->
-      match na.binder_name with
-      | Name id ->
-        let lab = Label.of_id id in
-        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
         let t = liftn 1 j t in
         (* from [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params-wo-let, x:I |- t(params,proj1 x,..,projj x)] *)
-        (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
-           to [params, x:I |- t(proj1 x,..,projj x)] *)
-        let ty = substl subst t in
-        let term = mkProj (Projection.make kn true, mkRel 1) in
-        let fterm = mkProj (Projection.make kn false, mkRel 1) in
+        let t = substl subst t in
+        let term, fterm =
+          match mib.mind_record with
+          | PrimRecord _ ->
+            let fid =
+              match na.binder_name with
+              | Name id -> id
+              | Anonymous ->
+                 anomaly Pp.(str "Unnamed field of primitive record.")
+            in
+            let p = Projection.Repr.make ind
+                      ~proj_npars:mib.mind_nparams ~proj_arg (Label.of_id fid) in
+            mkProj (Projection.make p true, mkRel 1),
+            mkProj (Projection.make p false, mkRel 1)
+          | FakeRecord ->
+            let inst = Context.Rel.instance mkRel 0 (LocalAssum (x, indty) :: paramslet) in
+            let proj =
+              match List.nth (Structures.Structure.find_projections ind) (j-1) with
+              | Some cst -> mkApp (mkConstU (cst, u), inst)
+              | None -> failwith ""
+            in
+            proj, proj
+          | NotRecord ->
+            let t = liftn 1 2 t in
+            let p = mkLambda (x, lift 1 indty, t) in
+            let branch = it_mkLambda_or_LetIn (mkRel (nfields+1-j)) lifted_fields in
+            let rci = na.binder_relevance in
+            let ci = make_case_info env ind rci LetStyle in
+            (* Record projections are always NoInvert because they're at
+               constant relevance *)
+            let body = mkCase (Inductive.contract_case env (ci, p, NoInvert, mkRel 1, [|branch|])) in
+            body, body
+        in
         let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
-        let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in
+        let etat = it_mkProd_or_LetIn (mkProd (x, indty, t)) params in
         let body = (etab, etat) in
-        (proj_arg + 1, j + 1, body :: pbs, fterm :: subst)
-      | Anonymous ->
-        anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
+        (proj_arg + 1, j + 1, body :: pbs, fterm :: subst, t :: typs)
   in
-  let (_, _, pbs, subst) =
-    List.fold_right projections ctx (0, 1, [], [])
+  let (_, _, pbs, subst, typs) =
+    List.fold_right projections ctx (0, 1, [], [], [])
   in
-  Array.rev_of_list pbs
+  Array.rev_of_list pbs, List.rev (List.combine subst typs)
+
+let compute_applied_projection env sigma i (c,t) =
+  let open EConstr.Vars in
+  let (ind,u), params = find_mrectype env sigma t in
+  let projs = snd (compute_all_projections env (ind,u)) in
+  let subst1, rest = List.chop i projs in
+  let subst1 = List.map (fun x -> EConstr.of_constr (fst x)) subst1 in
+  let params = List.map (substl subst1) params in
+  let b, t = List.hd rest in
+  let subst = c :: List.rev params in
+  EConstr.Vars.substl subst (EConstr.of_constr b),
+  EConstr.Vars.substl subst (EConstr.of_constr t)
+
+let compute_projections env ind =
+  fst (compute_all_projections env (ind,Univ.Instance.empty))
 
 (***********************************************)
 (* find appropriate names for pattern variables. Useful in the Case

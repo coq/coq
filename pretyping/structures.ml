@@ -53,7 +53,8 @@ type t = {
 }
 
 let make env name projections =
-  let nparams = Inductiveops.inductive_nparams env name in
+  let (mib,mip) = Inductive.lookup_mind_specif env name in
+  let nparams = mib.Declarations.mind_nparams in
   { name; projections; nparams }
 
 let structure_table =

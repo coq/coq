@@ -226,8 +226,12 @@ val make_default_case_info : env -> case_style -> inductive -> case_info
 i*)
 
 val compute_projections : Environ.env -> inductive -> (constr * types) array
-(** Given a primitive record type, for every field computes the eta-expanded
+(** Given a record type, for every field computes the eta-expanded
     projection and its type. *)
+
+val compute_applied_projection : Environ.env -> evar_map -> int -> econstr * etypes -> econstr * etypes
+(** Given a record type and a term in this type, computes the i-th
+    projection of this term. *)
 
 (********************)
 
