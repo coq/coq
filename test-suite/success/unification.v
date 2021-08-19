@@ -203,3 +203,13 @@ Check
 (* An example involving SProp *)
 
 Check fun (A:SProp) (f g:A->A) (P:A->Type) a (x : P (f a)) => x : P (g _).
+
+(* An example succeeding thanks to the inversion of constructors in
+   evar instances *)
+
+Module ConstructorInversion.
+
+Inductive T := C : forall {A}, A -> T.
+Check fun x => match x return ?[X] with C a => a end.
+
+End ConstructorInversion.

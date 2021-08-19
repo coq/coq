@@ -25,6 +25,8 @@ open Reductionops
 open Evarutil
 open Pretype_errors
 
+module RelDecl = Context.Rel.Declaration
+
 module AllowedEvars = struct
 
   type t =
@@ -569,6 +571,53 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
   (!fv_rels,!fv_ids,!let_rels,!let_ids)
 
 (********************************)
+(* Inverting constructors       *)
+(********************************)
+
+type evar_instance_position = int list * Id.t * env * types
+
+let invertible_constructor (mib, mip) cstr =
+  let open Declarations in
+  match mib.mind_record with
+  | NotRecord  -> mip.mind_kelim = InType && Int.equal mip.mind_nrealdecls 0 && Int.equal (Array.length mip.mind_nf_lc) 1
+  | FakeRecord -> mip.mind_kelim = InType && Int.equal mip.mind_nrealdecls 0
+  | PrimRecord _ -> true
+
+let invertible_subterms env sigma evar_env id idtyp a =
+  let rec aux path typ a =
+    let key = (path, id, evar_env, idtyp) in
+    let c, args = decompose_app_vect sigma a in
+    match EConstr.kind sigma c with
+    | Construct (cstr, u) ->
+      let ind = inductive_of_constructor cstr in
+      let mib, mip = Inductive.lookup_mind_specif env ind in
+      if invertible_constructor (mib, mip) cstr then
+        try
+          (* Compute the typs of the arguments of the constructors in the context of the evar *)
+          let typs =
+            let ind, indargs = Inductiveops.find_mrectype evar_env sigma typ in
+            let j = index_of_constructor cstr in
+            let params, _ = List.chop mib.Declarations.mind_nparams indargs in (* In evar's context *)
+            let ctx, _ = mip.Declarations.mind_nf_lc.(j-1) in
+            let cstrctx, paramsctx = List.chop mip.Declarations.mind_consnrealdecls.(j-1) (EConstr.of_rel_context ctx) in
+            let subst = subst_of_rel_context_instance_list paramsctx params in
+            let cstrctx = substl_rel_context subst cstrctx in
+            List.rev (List.map RelDecl.get_type (smash_rel_context cstrctx))
+          in
+          let _, realargs = List.chop mib.Declarations.mind_nparams (Array.to_list args) in
+          let noncstrs, cstrs = List.split (List.map2_i (fun i c typ -> aux (i::path) typ c) 0 realargs typs) in
+          let noncstrs = List.flatten noncstrs in
+          let cstrs = List.flatten cstrs in
+          (a, key) :: noncstrs, (cstr, args, key) :: cstrs
+        with Not_found (* find_mrectype *) -> [a, key], [cstr, args, key]
+      else
+        [a, key], [cstr, args, key]
+    | _ ->
+      [a, key], []
+  in
+  aux [] idtyp a
+
+(********************************)
 (* Managing pattern-unification *)
 (********************************)
 
@@ -703,39 +752,49 @@ let solve_pattern_eqn env sigma l c =
  * useful to ensure the uniqueness of a projection.
 *)
 
-let make_projectable_subst aliases sigma evi args =
+let add_constructor (cstr, args, id) cstrs =
+  let l = try Constrmap.find cstr cstrs with Not_found -> [] in
+  Constrmap.add cstr ((args, id)::l) cstrs
+
+let make_projection sigma (path, id, env, typ) =
+  let rec aux = function
+  | [] -> (mkVar id, typ)
+  | i :: path -> Inductiveops.compute_applied_projection env sigma i (aux path)
+  in
+  fst (aux path)
+
+let make_projectable_subst aliases env sigma evi args =
   let sign = evar_filtered_context evi in
   let evar_aliases = compute_var_aliases sign sigma in
   let (_,full_subst,cstr_subst,_) =
     List.fold_right_i
       (fun i decl (args,all,cstrs,revmap) ->
         match decl,args with
-        | LocalAssum ({binder_name=id},c), a::rest ->
+        | LocalAssum ({binder_name=id},t), a::rest ->
             let revmap = Id.Map.add id i revmap in
-            let cstrs =
-              let a',args = decompose_app_vect sigma a in
-              match EConstr.kind sigma a' with
-              | Construct cstr ->
-                  let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
-                  Constrmap.add (fst cstr) ((args,id)::l) cstrs
-              | _ -> cstrs in
-            let all = Int.Map.add i [a, id] all in
+            let subterms, cstrl = invertible_subterms env sigma (evar_env env evi) id t a in
+            let cstrs = List.fold_right add_constructor cstrl cstrs in
+            let all = Int.Map.add i subterms all in
             (rest,all,cstrs,revmap)
-        | LocalDef ({binder_name=id},c,_), a::rest ->
+        | LocalDef ({binder_name=id},c,t), a::rest ->
             let revmap = Id.Map.add id i revmap in
+            let subterms, _ = invertible_subterms env sigma (evar_env env evi) id t a in
             (match EConstr.kind sigma c with
             | Var id' ->
                 let idc = normalize_alias_var sigma evar_aliases id' in
                 let ic, sub =
                   try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
                   with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
-                if List.exists (fun (c, _) -> EConstr.eq_constr sigma a c) sub then
-                  (rest,all,cstrs,revmap)
-                else
-                  let all = Int.Map.add ic ((a, id)::sub) all in
-                  (rest,all,cstrs,revmap)
+                let all =
+                  List.fold_left (fun all (c, _ as b) ->
+                    if List.exists (fun (c', _) -> EConstr.eq_constr sigma c c') sub then
+                      all
+                    else
+                      Int.Map.add ic (b::sub) all) all subterms
+                in
+                (rest,all,cstrs,revmap)
             | _ ->
-                let all = Int.Map.add i [a, id] all in
+                let all = Int.Map.add i subterms all in
                 (rest,all,cstrs,revmap))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
       sign (List.rev args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
@@ -854,12 +913,13 @@ let find_projectable_constructor env evd cstr k args cstr_subst =
   try
     let l = Constrmap.find cstr cstr_subst in
     let args = Array.map (lift (-k)) args in
-    let l =
-      List.filter (fun (args',id) ->
+    List.map_filter (fun (args', id) ->
         (* is_conv is maybe too strong (and source of useless computation) *)
         (* (at least expansion of aliases is needed) *)
-        Array.for_all2 (fun c1 c2 -> is_conv env evd c1 c2) args args') l in
-    List.map snd l
+        if (Array.for_all2 (fun c1 c2 -> is_conv env evd c1 c2) args args') then
+          Some (make_projection evd id)
+        else
+          None) l
   with Not_found ->
     []
 
@@ -897,10 +957,10 @@ let find_projectable_constructor env evd cstr k args cstr_subst =
 
 type evar_projection =
 | ProjectVar
-| ProjectEvar of EConstr.existential * evar_info * Id.t * evar_projection
+| ProjectEvar of EConstr.existential * evar_info * evar_instance_position * evar_projection
 
 exception NotUnique
-exception NotUniqueInType of (Id.t * evar_projection) list
+exception NotUniqueInType of (evar_instance_position * evar_projection) list
 
 let rec assoc_up_to_alias sigma aliases y = function
   | [] -> raise Not_found
@@ -918,7 +978,7 @@ let rec assoc_up_to_alias sigma aliases y = function
           let yc = normalize_alias sigma aliases y in
           if eq_alias cc yc then id else raise Not_found
 
-let rec find_projectable_vars aliases sigma y subst =
+let rec find_projectable_vars aliases env sigma y subst =
   let is_projectable _ idcl (subst1,subst2 as subst') =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
@@ -934,8 +994,8 @@ let rec find_projectable_vars aliases sigma y subst =
         begin
           let (evk,argsv as t) = destEvar sigma c in
           let evi = Evd.find sigma evk in
-          let subst,_ = make_projectable_subst aliases sigma evi argsv in
-          let l = find_projectable_vars aliases sigma y subst in
+          let subst, _ = make_projectable_subst aliases env sigma evi argsv in
+          let l = find_projectable_vars aliases env sigma y subst in
           match l with
           | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
           | _ -> subst'
@@ -955,7 +1015,7 @@ let rec find_projectable_vars aliases sigma y subst =
 let filter_solution = function
   | [] -> raise Not_found
   | _ :: _ :: _ -> raise NotUnique
-  | [id] -> mkVar id
+  | [id] -> id
 
 let project_with_effects aliases sigma t subst =
   let is_projectable _ idcl accu =
@@ -977,8 +1037,9 @@ let project_with_effects aliases sigma t subst =
 let rec do_projection_effects unify flags define_fun env ty evd = function
   | ProjectVar -> evd
   | ProjectEvar ((evk,argsv),evi,id,p) ->
-      let evd = check_evar_instance unify flags env evd evk (mkVar id) in
-      let evd = Evd.define evk (EConstr.mkVar id) evd in
+      let c = make_projection evd id in
+      let evd = check_evar_instance unify flags env evd evk c in
+      let evd = Evd.define evk c evd in
       (* TODO: simplify constraints involving evk *)
       let evd = do_projection_effects unify flags define_fun env ty evd p in
       let ty = whd_all env evd (Lazy.force ty) in
@@ -1021,14 +1082,14 @@ type projectibility_status =
   | CannotInvert
   | Invertible of projectibility_kind
 
-let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
+let invert_arg_from_subst env evd aliases k0 subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
   let rec aux k t =
     match EConstr.kind evd t with
     | Rel i when i>k0+k -> aux' k (RelAlias (i-k))
     | Var id -> aux' k (VarAlias id)
     | _ -> map_with_binders evd succ aux k t
   and aux' k t =
-    try project_with_effects aliases evd t subst_in_env_extended_with_k_binders
+    try make_projection evd (project_with_effects aliases evd t subst_in_env_extended_with_k_binders)
     with Not_found ->
       match expand_alias_once evd aliases t with
       | None -> raise Not_found
@@ -1041,7 +1102,7 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
     | NotUnique -> Invertible NoUniqueProjection
 
 let invert_arg fullenv evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
-  let res = invert_arg_from_subst evd aliases k subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders in
+  let res = invert_arg_from_subst fullenv evd aliases k subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders in
   match res with
   | Invertible (UniqueProjection c) when not (noccur_evar fullenv evd evk c)
       ->
@@ -1062,16 +1123,16 @@ let extract_unique_projection = function
     (* of the evar to project *)
   raise NotEnoughInformationToInvert
 
-let extract_candidates sols =
+let extract_candidates evd sols =
   try
     UpdateWith
-      (List.map (function (id,ProjectVar) -> mkVar id | _ -> raise Exit) sols)
+      (List.map (function (id,ProjectVar) -> make_projection evd id | _ -> raise Exit) sols)
   with Exit ->
     NoUpdate
 
 let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
-  let subst,_ = make_projectable_subst aliases evd evi argsv in
+  let subst,_ = make_projectable_subst aliases fullenv evd evi argsv in
   let invert arg =
     let p = invert_arg fullenv evd aliases k evk subst arg in
     extract_unique_projection p
@@ -1172,10 +1233,10 @@ let do_restrict_hyps evd (evk,args as ev) filter candidates =
 let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
   let rhs = expand_vars_in_term env evd rhs in
   let filter a = match EConstr.kind evd a with
-  | Rel n -> not (noccurn evd  n rhs)
+  | Rel n -> not (noccurn evd n rhs)
   | Var id ->
     local_occur_var evd id rhs
-      || List.exists (fun (id', _) -> Id.equal id id') sols
+      || List.exists (fun ((path,id',_,_), _) -> List.is_empty path && Id.equal id id') sols
   | _ -> true
   in
   let filter = restrict_upon_filter evd evk filter argsv in
@@ -1187,7 +1248,7 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
       (* expands only rels and vars aliases, not rels or vars bound to an *)
       (* arbitrary complex term *)
   let filter = closure_of_filter evd evk filter in
-  let candidates = extract_candidates sols in
+  let candidates = extract_candidates evd sols in
   match candidates with
   | NoUpdate ->
     (* We made an approximation by not expanding a local definition *)
@@ -1540,8 +1601,8 @@ let instantiate_evar unify flags env evd evk body =
  *                Σ; Γ, y1..yk |- φ(u1..un) = c /\ x1..xn |- φ(x1..xn)
  *)
 
-exception NotInvertibleUsingOurAlgorithm of EConstr.constr
-exception NotEnoughInformationToProgress of (Id.t * evar_projection) list
+exception NotInvertibleUsingOurAlgorithm of (constr * evar_instance_position) list Int.Map.t * EConstr.constr
+exception NotEnoughInformationToProgress of (evar_instance_position * evar_projection) list
 exception NotEnoughInformationEvarEvar of EConstr.constr
 exception OccurCheckIn of evar_map * EConstr.constr
 exception MetaOccurInBodyInternal
@@ -1552,25 +1613,25 @@ let rec invert_definition unify flags choose imitate_defs
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find evd evk in
-  let subst,cstr_subst = make_projectable_subst aliases evd evi argsv in
+  let subst,cstr_subst = make_projectable_subst aliases env evd evi argsv in
 
   (* Projection *)
   let project_variable t =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try
-      let sols = find_projectable_vars aliases !evdref t subst in
+      let sols = find_projectable_vars aliases env !evdref t subst in
       let c, p = match sols with
         | [] -> raise Not_found
-        | [id,p] -> (mkVar id, p)
+        | [id,p] -> (make_projection evd id, p)
         | (id,p)::_ ->
-            if choose then (mkVar id, p) else raise (NotUniqueInType sols)
+            if choose then (make_projection evd id, p) else raise (NotUniqueInType sols)
       in
       let ty = lazy (Retyping.get_type_of env !evdref (of_alias t)) in
       let evd = do_projection_effects unify flags (evar_define unify flags ~choose) env ty !evdref p in
       evdref := evd;
       c
     with
-      | Not_found -> raise (NotInvertibleUsingOurAlgorithm (of_alias t))
+      | Not_found -> raise (NotInvertibleUsingOurAlgorithm (subst, of_alias t))
       | NotUniqueInType sols ->
           if not !progress then
             raise (NotEnoughInformationToProgress sols);
@@ -1584,7 +1645,7 @@ let rec invert_definition unify flags choose imitate_defs
           let test c = isEvar evd c || List.exists (is_alias evd c) ts in
           let filter = restrict_upon_filter evd evk test argsv' in
           let filter = closure_of_filter evd evk' filter in
-          let candidates = extract_candidates sols in
+          let candidates = extract_candidates evd sols in
           let evd = match candidates with
           | NoUpdate ->
             let evd, ev'' = restrict_applied_evar evd ev' filter NoUpdate in
@@ -1667,7 +1728,7 @@ let rec invert_definition unify flags choose imitate_defs
             (*  possible inversions; we do not treat overlap with a possible *)
             (*  alternative inversion of the subterms of the constructor, etc)*)
             (match find_projectable_constructor env evd cstr k args cstr_subst with
-             | _::_ as l -> Some (List.map mkVar l)
+             | _::_ as l -> Some l
              | _ -> None)
           | _ -> None
         with
@@ -1823,8 +1884,9 @@ let solve_simple_eqn unify flags ?(choose=false) ?(imitate_defs=true)
     let evd = evar_define unify flags ~choose ~imitate_defs env evd pbty ev1 t2 in
       reconsider_unif_constraints unify flags evd
   with
-    | NotInvertibleUsingOurAlgorithm t ->
-        UnifFailure (evd,NotClean (ev1,env,t))
+    | NotInvertibleUsingOurAlgorithm (subst,t) ->
+        let subst = Int.Map.fold_left (fun _ l subst -> List.map fst l @ subst) subst [] in
+        UnifFailure (evd,NotClean (evk1,subst,env,t))
     | OccurCheckIn (evd,rhs) ->
         UnifFailure (evd,OccurCheck (evk1,rhs))
     | MetaOccurInBodyInternal ->

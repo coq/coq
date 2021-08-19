@@ -15,7 +15,7 @@ open Type_errors
 
 type unification_error =
   | OccurCheck of Evar.t * constr
-  | NotClean of existential * env * constr (* Constr is a variable not in scope *)
+  | NotClean of Evar.t * constr list * env * constr (* Constr is a variable not in scope *)
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure

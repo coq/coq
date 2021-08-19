@@ -65,9 +65,9 @@ let contract1 env sigma a v =
 let rec contract3' env sigma a b c = function
   | OccurCheck (evk,d) ->
     let x,d = contract4 env sigma a b c d in x,OccurCheck(evk, d)
-  | NotClean ((evk,args),env',d) ->
-      let env',d,args = contract1 env' sigma d args in
-      contract3 env sigma a b c,NotClean((evk,args),env',d)
+  | NotClean (evk,subst,env',d) ->
+      let env',d,subst = contract1 env' sigma d subst in
+      contract3 env sigma a b c,NotClean(evk,subst,env',d)
   | ConversionFailed (env',t1,t2) ->
       let (env',t1,t2) = contract2 env' sigma t1 t2 in
       contract3 env sigma a b c, ConversionFailed (env',t1,t2)
@@ -300,14 +300,14 @@ let explain_unification_error env sigma p1 p2 = function
         [str "cannot define " ++ quote (pr_existential_key sigma evk) ++
         strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
-     | NotClean ((evk,args),env,c) ->
+     | NotClean (evk,subst,env,c) ->
         let env = make_all_name_different env sigma in
         [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
         ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
         strbrk " is not in its scope" ++
-        (if List.is_empty args then mt() else
+        (if List.is_empty subst then mt() else
          strbrk ": available arguments are " ++
-         pr_sequence (pr_leconstr_env env sigma) (List.rev args))]
+         pr_sequence (pr_leconstr_env env sigma) (List.rev subst))]
      | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) []
      | ConversionFailed (env,t1,t2) ->

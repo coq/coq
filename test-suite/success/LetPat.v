@@ -53,3 +53,26 @@ Definition functor_composition (a b c : category) : functor a b -> functor b c -
   let 'C :& homB :& CB := c in
     fun f g =>
       fun x => g (f x).
+
+Module Inference.
+
+Check fun '(x,y) => (eq_refl x,eq_refl y).
+Check fun '((x,y):nat*bool) => (eq_refl x,eq_refl y).
+Check fun '(existT _ x y) => (eq_refl x,eq_refl y).
+
+Check fun '((x,y),(z,w)) => (eq_refl x,eq_refl y,eq_refl z,eq_refl w).
+Check fun '(existT _ x (existT _ z w)) => (eq_refl x,eq_refl z,eq_refl w).
+Check fun '(existT _ (existT _ x y) w) => (eq_refl x,eq_refl y,eq_refl w).
+
+(* Unfortunately this still fails due to limits in solving *)
+Fail Check fun '(existT _ (existT _ x y) (existT _ z w)) => (eq_refl x,eq_refl y,eq_refl z,eq_refl w).
+
+Record sigT (A : Type) (P : A -> Type) : Type := { projT1 : A ; projT2 : P projT1 }.
+Check fun '{| projT1 := x; projT2 := y |} => (eq_refl x,eq_refl y).
+
+Set Primitive Projections.
+
+Record sigT' (A : Type) (P : A -> Type) : Type := { projT1' : A ; projT2' : P projT1' }.
+Check fun '{| projT1' := x; projT2' := y |} => (eq_refl x,eq_refl y).
+
+End Inference.
