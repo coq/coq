@@ -391,7 +391,7 @@ let expand_branch env _sigma u pms (ind, i) (nas, _br) =
   let pms = unsafe_to_constr_array pms in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let paramsubst = Vars.subst_of_rel_context_instance paramdecl (Array.to_list pms) in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl pms in
   let subst = paramsubst @ Inductive.ind_subst (fst ind) mib u in
   let (ctx, _) = mip.mind_nf_lc.(i - 1) in
   let (ctx, _) = List.chop mip.mind_consnrealdecls.(i - 1) ctx in
@@ -651,6 +651,9 @@ let cast_list : type a b. (a,b) eq -> a list -> b list =
 let cast_list_snd : type a b. (a,b) eq -> ('c * a) list -> ('c * b) list =
   fun Refl x -> x
 
+let cast_vect : type a b. (a,b) eq -> a array -> b array =
+  fun Refl x -> x
+
 let cast_rel_decl :
   type a b. (a,b) eq -> (a, a) Rel.Declaration.pt -> (b, b) Rel.Declaration.pt =
   fun Refl x -> x
@@ -678,6 +681,8 @@ exception LocalOccur
 let to_constr = unsafe_to_constr
 let to_rel_decl = unsafe_to_rel_decl
 
+type instance = t array
+type instance_list = t list
 type substl = t list
 
 (** Operations that commute with evar-normalization *)
@@ -730,7 +735,10 @@ let closed0 sigma c = closedn sigma 0 c
 
 let subst_of_rel_context_instance ctx subst =
   cast_list (sym unsafe_eq)
-    (Vars.subst_of_rel_context_instance (cast_rel_context unsafe_eq ctx) (cast_list unsafe_eq subst))
+    (Vars.subst_of_rel_context_instance (cast_rel_context unsafe_eq ctx) (cast_vect unsafe_eq subst))
+let subst_of_rel_context_instance_list ctx subst =
+  cast_list (sym unsafe_eq)
+    (Vars.subst_of_rel_context_instance_list (cast_rel_context unsafe_eq ctx) (cast_list unsafe_eq subst))
 
 let liftn_rel_context n k ctx =
   cast_rel_context (sym unsafe_eq)

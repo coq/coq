@@ -373,7 +373,7 @@ let inductive_subst (mind, _) mib u pms =
   in
   mk_pms (List.rev pms) mib.mind_params_ctxt
 
-let esubst_of_rel_context_instance ctx u args e =
+let esubst_of_rel_context_instance_list ctx u args e =
   let open Context.Rel.Declaration in
   let rec aux lft e args ctx = match ctx with
   | [] -> lft, e
@@ -799,8 +799,8 @@ and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu
     let e2 = subs_liftn n e2 in
     (n, e1, e2)
   | Some (ctx, u1, u2, args1, args2) ->
-    let n1, e1 = esubst_of_rel_context_instance ctx u1 args1 e1 in
-    let n2, e2 = esubst_of_rel_context_instance ctx u2 args2 e2 in
+    let n1, e1 = esubst_of_rel_context_instance_list ctx u1 args1 e1 in
+    let n2, e2 = esubst_of_rel_context_instance_list ctx u2 args2 e2 in
     let () = assert (Int.equal n1 n2) in
     n1, e1, e2
   in

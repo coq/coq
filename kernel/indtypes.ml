@@ -413,7 +413,6 @@ let used_section_variables env params inds =
   keep_hyps env ids
 
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
-let rel_list n m = Array.to_list (rel_vect n m)
 
 (** From a rel context describing the constructor arguments,
     build an expansion function.
@@ -432,7 +431,7 @@ let compute_projections (kn, i as ind) mib =
       matching with a parameter context. *)
   let paramsletsubst =
     (* [Ind inst] is typed in context [params-wo-let] *)
-    let inst' = rel_list 0 mib.mind_nparams in
+    let inst' = rel_vect 0 mib.mind_nparams in
     (* {params-wo-let |- subst:params] *)
     let subst = subst_of_rel_context_instance paramslet inst' in
     (* {params-wo-let, x:Ind inst' |- subst':(params,x:Ind inst)] *)

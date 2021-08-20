@@ -176,9 +176,14 @@ let esubst mk subst c =
   in
   if Esubst.is_subs_id subst then c else esubst subst c
 
+(* Instance of contexts *)
+
+type instance = Constr.t array
+type instance_list = Constr.t list
+
 (* Build a substitution from an instance, inserting missing let-ins *)
 
-let subst_of_rel_context_instance sign l =
+let subst_of_rel_context_instance_list sign l =
   let rec aux subst sign l =
     let open RelDecl in
     match sign, l with
@@ -188,6 +193,9 @@ let subst_of_rel_context_instance sign l =
     | [], [] -> subst
     | _ -> CErrors.anomaly (Pp.str "Instance and signature do not match.")
   in aux [] (List.rev sign) l
+
+let subst_of_rel_context_instance sign v =
+  subst_of_rel_context_instance_list sign (Array.to_list v)
 
 let adjust_rel_to_rel_context sign n =
   let rec aux sign =

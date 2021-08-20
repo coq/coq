@@ -318,7 +318,7 @@ let instantiate_params t params sign =
   (* Adjust the signature if recursively non-uniform parameters are not here *)
   let _,sign = context_chop nnonrecpar sign in
   let _,t = decompose_prod_n_assum (Context.Rel.length sign) t in
-  let subst = subst_of_rel_context_instance sign params in
+  let subst = subst_of_rel_context_instance_list sign params in
   substl subst t
 
 let get_constructor ((ind,u as indu),mib,mip,params) j =
@@ -419,7 +419,7 @@ let get_arity env ((ind,u),params) =
   let parsign = Vars.subst_instance_context u parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
-  let subst = subst_of_rel_context_instance parsign params in
+  let subst = subst_of_rel_context_instance_list parsign params in
   let arsign = Vars.subst_instance_context u arsign in
   (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 

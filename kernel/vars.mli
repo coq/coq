@@ -63,10 +63,37 @@ val lift_rel_context : int -> rel_context -> rel_context
 
 type substl = constr list
 
+(** The type [instance] is the type of instances [u₁..un] of a
+    well-typed context Δ (relatively to some environment Γ). Typing of
+    instances is defined by:
+    - Γ ⊢ ∅ : ∅,
+    - Γ ⊢ u₁..u{_n} : Δ and Γ ⊢ u{_n+1} : A{_n+1}\[ϕ(Δ,u₁..u{_n})\] implies
+      Γ ⊢ u₁..u{_n+1} : Δ,x{_n+1}:A{_n+1}
+    - Γ ⊢ u₁..u{_n} : Δ implies
+      Γ ⊢ u₁..u{_n} : Δ,x{_n+1}:=c{_n+1}:A{_n+1}
+    where [ϕ(Δ,u₁..u{_n})] is the substitution obtained by adding lets
+    of Δ to the instance so as to get a substitution (see
+    [subst_of_rel_context_instance] below).
+
+    Note that [u₁..un] is represented as an array with [u1] at the
+    head of the array, i.e. as [[u₁;...;un]]. In particular, it can
+    directly be used with [mkApp] to build an applicative term
+    [f u₁..un] whenever [f] is of some type [forall Δ, T].
+
+    An [instance] differs from a [substl] in that it does not include
+    the terms bound by lets while the latter does. Also, their
+    internal representations are in opposite order.
+
+    An [instance_list] is the same as an [instance] but using a list
+    instead of an array. *)
+
+type instance = constr array
+type instance_list = constr list
+
 (** Let [Γ] be a context interleaving declarations [x₁:T₁..xn:Tn]
    and definitions [y₁:=c₁..yp:=cp] in some context [Γ₀]. Let
    [u₁..un] be an {e instance} of [Γ], i.e. an instance in [Γ₀]
-   of the [xi]. Then, [subst_of_rel_context_instance Γ u₁..un]
+   of the [xi]. Then, [subst_of_rel_context_instance_list Γ u₁..un]
    returns the corresponding {e substitution} of [Γ], i.e. the
    appropriate interleaving [σ] of the [u₁..un] with the [c₁..cp],
    all of them in [Γ₀], so that a derivation [Γ₀, Γ, Γ₁|- t:T]
@@ -76,7 +103,8 @@ type substl = constr list
    as if usable in [applist] while the substitution is
    represented the other way round, i.e. ending with either [u₁] or
    [c₁], as if usable for [substl]. *)
-val subst_of_rel_context_instance : Constr.rel_context -> constr list -> substl
+val subst_of_rel_context_instance : Constr.rel_context -> instance -> substl
+val subst_of_rel_context_instance_list : Constr.rel_context -> instance_list -> substl
 
 (** Take an index in an instance of a context and returns its index wrt to
     the full context (e.g. 2 in [x:A;y:=b;z:C] is 3, i.e. a reference to z) *)
