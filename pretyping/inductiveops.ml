@@ -466,6 +466,57 @@ let build_branch_type env sigma dep p cs =
 
 (**************************************************)
 
+let extract_mrectype sigma t =
+  let open EConstr in
+  let (t, l) = decompose_app sigma t in
+  match EConstr.kind sigma t with
+    | Ind ind -> (ind, l)
+    | _ -> raise Not_found
+
+let find_mrectype_vect env sigma c =
+  let (t, l) = Termops.decompose_app_vect sigma (whd_all env sigma c) in
+  match EConstr.kind sigma t with
+    | Ind ind -> (ind, l)
+    | _ -> raise Not_found
+
+let find_mrectype env sigma c =
+  let (ind, v) = find_mrectype_vect env sigma c in (ind, Array.to_list v)
+
+let find_rectype env sigma c =
+  let open EConstr in
+  let (t, l) = decompose_app sigma (whd_all env sigma c) in
+  match EConstr.kind sigma t with
+    | Ind (ind,u) ->
+        let (mib,mip) = Inductive.lookup_mind_specif env ind in
+        if mib.mind_nparams > List.length l then raise Not_found;
+        let l = List.map EConstr.Unsafe.to_constr l in
+        let (par,rargs) = List.chop mib.mind_nparams l in
+        let indu = (ind, EInstance.kind sigma u) in
+        IndType((indu, par),List.map EConstr.of_constr rargs)
+    | _ -> raise Not_found
+
+let find_inductive env sigma c =
+  let open EConstr in
+  let (t, l) = decompose_app sigma (whd_all env sigma c) in
+  match EConstr.kind sigma t with
+    | Ind ind
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> CoFinite ->
+        let l = List.map EConstr.Unsafe.to_constr l in
+        (ind, l)
+    | _ -> raise Not_found
+
+let find_coinductive env sigma c =
+  let open EConstr in
+  let (t, l) = decompose_app sigma (whd_all env sigma c) in
+  match EConstr.kind sigma t with
+    | Ind ind
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == CoFinite ->
+        let l = List.map EConstr.Unsafe.to_constr l in
+        (ind, l)
+    | _ -> raise Not_found
+
+(**************************************************)
+
 (** From a rel context describing the constructor arguments,
     build an expansion function.
     The term built is expecting to be substituted first by
@@ -536,58 +587,6 @@ let compute_projections env (kn, i as ind) =
     List.fold_right projections ctx (0, 1, [], [])
   in
   Array.rev_of_list pbs
-
-(**************************************************)
-
-let extract_mrectype sigma t =
-  let open EConstr in
-  let (t, l) = decompose_app sigma t in
-  match EConstr.kind sigma t with
-    | Ind ind -> (ind, l)
-    | _ -> raise Not_found
-
-let find_mrectype_vect env sigma c =
-  let (t, l) = Termops.decompose_app_vect sigma (whd_all env sigma c) in
-  match EConstr.kind sigma t with
-    | Ind ind -> (ind, l)
-    | _ -> raise Not_found
-
-let find_mrectype env sigma c =
-  let (ind, v) = find_mrectype_vect env sigma c in (ind, Array.to_list v)
-
-let find_rectype env sigma c =
-  let open EConstr in
-  let (t, l) = decompose_app sigma (whd_all env sigma c) in
-  match EConstr.kind sigma t with
-    | Ind (ind,u) ->
-        let (mib,mip) = Inductive.lookup_mind_specif env ind in
-        if mib.mind_nparams > List.length l then raise Not_found;
-        let l = List.map EConstr.Unsafe.to_constr l in
-        let (par,rargs) = List.chop mib.mind_nparams l in
-        let indu = (ind, EInstance.kind sigma u) in
-        IndType((indu, par),List.map EConstr.of_constr rargs)
-    | _ -> raise Not_found
-
-let find_inductive env sigma c =
-  let open EConstr in
-  let (t, l) = decompose_app sigma (whd_all env sigma c) in
-  match EConstr.kind sigma t with
-    | Ind ind
-        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> CoFinite ->
-        let l = List.map EConstr.Unsafe.to_constr l in
-        (ind, l)
-    | _ -> raise Not_found
-
-let find_coinductive env sigma c =
-  let open EConstr in
-  let (t, l) = decompose_app sigma (whd_all env sigma c) in
-  match EConstr.kind sigma t with
-    | Ind ind
-        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == CoFinite ->
-        let l = List.map EConstr.Unsafe.to_constr l in
-        (ind, l)
-    | _ -> raise Not_found
-
 
 (***********************************************)
 (* find appropriate names for pattern variables. Useful in the Case
