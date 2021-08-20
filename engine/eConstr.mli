@@ -301,6 +301,12 @@ val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
 val subst_of_rel_context_instance : rel_context -> t list -> t list
 val subst_instance_context : Univ.Instance.t -> rel_context -> rel_context
 
+val liftn_rel_context : int -> int -> rel_context -> rel_context
+val lift_rel_context : int -> rel_context -> rel_context
+val substnl_rel_context : substl -> int -> rel_context -> rel_context
+val substl_rel_context : substl -> rel_context -> rel_context
+val smash_rel_context : rel_context -> rel_context
+
 val esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t
 
 type substituend

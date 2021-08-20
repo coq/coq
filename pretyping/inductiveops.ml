@@ -308,7 +308,7 @@ let lift_constructor n cs = {
   cs_cstr = cs.cs_cstr;
   cs_params = List.map (lift n) cs.cs_params;
   cs_nargs = cs.cs_nargs;
-  cs_args = lift_rel_context n cs.cs_args;
+  cs_args = Vars.lift_rel_context n cs.cs_args;
   cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
 }
 

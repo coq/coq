@@ -732,6 +732,26 @@ let subst_of_rel_context_instance ctx subst =
   cast_list (sym unsafe_eq)
     (Vars.subst_of_rel_context_instance (cast_rel_context unsafe_eq ctx) (cast_list unsafe_eq subst))
 
+let liftn_rel_context n k ctx =
+  cast_rel_context (sym unsafe_eq)
+    (Vars.liftn_rel_context n k (cast_rel_context unsafe_eq ctx))
+
+let lift_rel_context n ctx =
+  cast_rel_context (sym unsafe_eq)
+    (Vars.lift_rel_context n (cast_rel_context unsafe_eq ctx))
+
+let substnl_rel_context subst n ctx =
+  cast_rel_context (sym unsafe_eq)
+    (Vars.substnl_rel_context (cast_list unsafe_eq subst) n (cast_rel_context unsafe_eq ctx))
+
+let substl_rel_context subst ctx =
+  cast_rel_context (sym unsafe_eq)
+    (Vars.substl_rel_context (cast_list unsafe_eq subst) (cast_rel_context unsafe_eq ctx))
+
+let smash_rel_context ctx =
+  cast_rel_context (sym unsafe_eq)
+      (Vars.smash_rel_context (cast_rel_context unsafe_eq ctx))
+
 let esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t =
 match unsafe_eq with
 | Refl -> Vars.esubst

@@ -2322,9 +2322,6 @@ let rec is_included x y =
         if Int.equal i i' then List.for_all2 is_included args args'
         else false
 
-let lift_rel_context n l =
-  Context.Rel.map_with_binders (liftn n) l
-
 (* liftsign is the current pattern's complete signature length.
    Hence pats is already typed in its
    full signature. However prevpatterns are in the original one signature per pattern form.

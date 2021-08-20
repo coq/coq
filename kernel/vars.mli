@@ -43,6 +43,12 @@ val liftn : int -> int -> constr -> constr
 (** [lift n c] lifts by [n] the positive indexes in [c] *)
 val lift : int -> constr -> constr
 
+(** Same as [liftn] for a context *)
+val liftn_rel_context : int -> int -> rel_context -> rel_context
+
+(** Same as [lift] for a context *)
+val lift_rel_context : int -> rel_context -> rel_context
+
 (** The type [substl] is the type of substitutions [u₁..un] of type
     some context Δ and defined in some environment Γ. Typing of
     substitutions is defined by:
@@ -102,6 +108,19 @@ val substl_decl : substl -> Constr.rel_declaration -> Constr.rel_declaration
 (** [subst1_decl a Ω] is a short-hand for [substnl_decl [a] 0 Ω] *)
 val subst1_decl : constr -> Constr.rel_declaration -> Constr.rel_declaration
 
+(** [substnl_rel_context [a₁;...;an] k Ω] substitutes in parallel [a₁], ..., [an]
+    for respectively [Rel(k+1)], ..., [Rel(k+n)] in a context [Ω]; it relocates
+    accordingly indexes in [a₁],...,[an] and [c]. In terms of typing, if
+    Γ ⊢ a{_n}..a₁ : Δ and Γ, Δ, Γ', Ω ⊢ with |Γ'|=[k], then
+    Γ, Γ', [substnl_rel_context [a₁;...;an]] k Ω ⊢. *)
+val substnl_rel_context : substl -> int -> Constr.rel_context -> Constr.rel_context
+
+(** [substl_rel_context σ Ω] is a short-hand for [substnl_rel_context σ 0 Ω] *)
+val substl_rel_context : substl -> Constr.rel_context -> Constr.rel_context
+
+(** [subst1_rel_context a Ω] is a short-hand for [substnl_rel_context [a] 0 Ω] *)
+val subst1_rel_context : constr -> Constr.rel_context -> Constr.rel_context
+
 val esubst : (int -> 'a -> constr) -> 'a Esubst.subs -> constr -> constr
 
 (** [replace_vars k [(id₁,c₁);...;(idn,cn)] t] substitutes [Var idj] by
@@ -125,6 +144,9 @@ val subst_vars : Id.t list -> constr -> constr
 (** [subst_var id t] is a short-hand for [substn_vars [id] 1 t]: it
     substitutes [Var id] by [Rel 1] in [t]. *)
 val subst_var : Id.t -> constr -> constr
+
+(** Expand lets in context *)
+val smash_rel_context : rel_context -> rel_context
 
 (** {3 Substitution of universes} *)
 

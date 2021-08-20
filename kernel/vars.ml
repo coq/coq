@@ -83,6 +83,12 @@ let exliftn = Constr.exliftn
 let liftn = Constr.liftn
 let lift = Constr.lift
 
+let liftn_rel_context n k =
+  Context.Rel.map_with_binders (fun i -> liftn n (i+k-1))
+
+let lift_rel_context n =
+  Context.Rel.map_with_binders (liftn n)
+
 (*********************)
 (*   Substituting    *)
 (*********************)
@@ -150,6 +156,12 @@ let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 let substnl_decl laml k r = RelDecl.map_constr (fun c -> substnl laml k c) r
 let substl_decl laml r = RelDecl.map_constr (fun c -> substnl laml 0 c) r
 let subst1_decl lam r = RelDecl.map_constr (fun c -> subst1 lam c) r
+
+let substnl_rel_context laml k r =
+  Context.Rel.map_with_binders (fun i -> substnl laml (i+k-1)) r
+
+let substl_rel_context laml r = substnl_rel_context laml 0 r
+let subst1_rel_context lam r = substnl_rel_context [lam] 0 r
 
 let esubst mk subst c =
   let rec esubst subst c = match Constr.kind c with
@@ -227,6 +239,16 @@ let substn_vars p vars c =
   in replace_vars (List.rev subst) c
 
 let subst_vars subst c = substn_vars 1 subst c
+
+let smash_rel_context sign =
+  let open Context.Rel.Declaration in
+  let open Esubst in
+  snd (List.fold_right
+    (fun decl (subst, sign) ->
+       match get_value decl with
+       | Some b -> (subs_cons (make_substituend (esubst lift_substituend subst b)) subst, sign)
+       | None -> (subs_lift subst, map_constr (esubst lift_substituend subst) decl :: sign))
+    sign (subs_id 0, []))
 
 (** Universe substitutions *)
 open Constr

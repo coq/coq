@@ -52,11 +52,11 @@ open Names
 open Term
 open Constr
 open Context
-open Vars
 open Declarations
 open Environ
 open Inductive
 open Termops
+open Vars
 open Namegen
 open Inductiveops
 open Ind_tables
