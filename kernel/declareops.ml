@@ -271,6 +271,7 @@ let subst_mind_body sub mib =
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);
     mind_nparams = mib.mind_nparams;
+    mind_nparamdecls = mib.mind_nparamdecls;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
       Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;

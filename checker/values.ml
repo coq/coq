@@ -306,6 +306,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_section_ctxt;
     Int;
     Int;
+    Int;
     v_rctxt;
     v_univs; (* universes *)
     Opt v_template_universes;

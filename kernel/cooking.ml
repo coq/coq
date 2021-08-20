@@ -394,6 +394,7 @@ let cook_inductive { modlist; abstract={abstr_ctx; abstr_subst; abstr_uctx;}; } 
     mind_ntypes = mib.mind_ntypes;
     mind_hyps;
     mind_nparams = mib.mind_nparams + nnewparams;
+    mind_nparamdecls = List.length mind_params_ctxt;
     mind_nparams_rec = mib.mind_nparams_rec + nnewparams;
     mind_params_ctxt;
     mind_universes;

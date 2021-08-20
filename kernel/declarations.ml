@@ -271,6 +271,8 @@ type mutual_inductive_body = {
 
     mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 
+    mind_nparamdecls : int;  (** Length of parameter context, with let-in, and including non-uniform parameters *)
+
     mind_nparams_rec : int;  (** Number of recursively uniform (i.e. ordinary) parameters *)
 
     mind_params_ctxt : Constr.rel_context;  (** The context of parameters (includes let-in declaration) *)

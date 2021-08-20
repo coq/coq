@@ -166,7 +166,7 @@ let check_same_record r1 r2 = match r1, r2 with
 let check_inductive env mind mb =
   let entry = to_entry mind mb in
   let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps;
-        mind_nparams; mind_nparams_rec; mind_params_ctxt;
+        mind_nparams; mind_nparamdecls; mind_nparams_rec; mind_params_ctxt;
         mind_universes; mind_template; mind_variance; mind_sec_variance;
         mind_private; mind_typing_flags; }
     =
@@ -182,6 +182,7 @@ let check_inductive env mind mb =
   check "mind_ntypes" Int.(equal mb.mind_ntypes mind_ntypes);
   check "mind_hyps" (Context.Named.equal Constr.equal mb.mind_hyps mind_hyps);
   check "mind_nparams" Int.(equal mb.mind_nparams mind_nparams);
+  check "mind_nparamdecls" Int.(equal mb.mind_nparamdecls mind_nparamdecls);
 
   check "mind_nparams_rec" (mb.mind_nparams_rec <= mind_nparams_rec);
   (* module substitution can increase the real number of recursively

@@ -547,6 +547,7 @@ let build_inductive env ~sec_univs names prv univs template variance
       mind_finite = isfinite;
       mind_hyps = hyps;
       mind_nparams = nparamargs;
+      mind_nparamdecls = List.length paramsctxt;
       mind_nparams_rec = nmr;
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
