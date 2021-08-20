@@ -34,10 +34,12 @@ val noccur_with_meta : int -> int -> constr -> bool
 
 (** {6 Relocation and substitution } *)
 
-(** [exliftn el c] lifts [c] with lifting [el] *)
+(** [exliftn el c] lifts [c] with arbitrary complex lifting [el] *)
 val exliftn : Esubst.lift -> constr -> constr
 
-(** [liftn n k c] lifts by [n] indexes above or equal to [k] in [c] *)
+(** [liftn n k c] lifts by [n] indexes above or equal to [k] in [c]
+   Note that with respect to substitution calculi's terminology, [n]
+   is the _shift_ and [k] is the _lift_. *)
 val liftn : int -> int -> constr -> constr
 
 (** [lift n c] lifts by [n] the positive indexes in [c] *)
@@ -50,8 +52,8 @@ val liftn_rel_context : int -> int -> rel_context -> rel_context
 val lift_rel_context : int -> rel_context -> rel_context
 
 (** The type [substl] is the type of substitutions [u₁..un] of type
-    some context Δ and defined in some environment Γ. Typing of
-    substitutions is defined by:
+    some well-typed context Δ and defined in some environment Γ.
+    Typing of substitutions is defined by:
     - Γ ⊢ ∅ : ∅,
     - Γ ⊢ u₁..u{_n-1} : Δ and Γ ⊢ u{_n} : An\[u₁..u{_n-1}\] implies
       Γ ⊢ u₁..u{_n} : Δ,x{_n}:A{_n}
@@ -59,7 +61,11 @@ val lift_rel_context : int -> rel_context -> rel_context
       Γ ⊢ u₁..u{_n} : Δ,x{_n}:=c{_n}:A{_n} when Γ ⊢ u{_n} ≡ c{_n}\[u₁..u{_n-1}\]
 
     Note that [u₁..un] is represented as a list with [un] at the head of
-    the list, i.e. as [[un;...;u₁]]. *)
+    the list, i.e. as [[un;...;u₁]].
+
+    A [substl] differs from an [instance] in that it includes the
+    terms bound by lets while the latter does not. Also, their
+    internal representations are in opposite order. *)
 
 type substl = constr list
 
@@ -123,8 +129,8 @@ val substl : substl -> constr -> constr
 (** [substl a c] is a short-hand for [substnl [a] 0 c] *)
 val subst1 : constr -> constr -> constr
 
-(** [substnl_decl [a₁;...;an] k Ω] substitutes in parallel [a₁], ..., [an]
-    for respectively [Rel(k+1)], ..., [Rel(k+n)] in [Ω]; it relocates
+(** [substnl_decl [a₁;...;an] k Ω] substitutes in parallel [a₁], ..., [an] for
+    respectively [Rel(k+1)], ..., [Rel(k+n)] in a declaration [Ω]; it relocates
     accordingly indexes in [a₁],...,[an] and [c]. In terms of typing, if
     Γ ⊢ a{_n}..a₁ : Δ and Γ, Δ, Γ', Ω ⊢ with |Γ'|=[k], then
     Γ, Γ', [substnl_decl [a₁;...;an]] k Ω ⊢. *)
@@ -149,6 +155,8 @@ val substl_rel_context : substl -> Constr.rel_context -> Constr.rel_context
 (** [subst1_rel_context a Ω] is a short-hand for [substnl_rel_context [a] 0 Ω] *)
 val subst1_rel_context : constr -> Constr.rel_context -> Constr.rel_context
 
+(** [esubst lift σ c] substitutes [c] with arbitrary complex substitution [σ],
+    using [lift] to lift subterms where necessary. *)
 val esubst : (int -> 'a -> constr) -> 'a Esubst.subs -> constr -> constr
 
 (** [replace_vars k [(id₁,c₁);...;(idn,cn)] t] substitutes [Var idj] by

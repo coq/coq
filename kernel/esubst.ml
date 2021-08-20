@@ -21,6 +21,12 @@ open Util
 (* Explicit lifts and basic operations *)
 (* Invariant to preserve in this module: no lift contains two consecutive
     [ELSHFT] nor two consecutive [ELLFT]. *)
+
+(* Terminology comes from substitution calculi (see e.g. Hardin et al.).
+   That is, what is called a lift in Coq is made of what is called in
+   substitution calculi a shift (the shift to add) and of what is
+   called a lift (the thresold above which to apply the shift), which
+   can be iterated as represented in the type [lift] *)
 type lift =
   | ELID
   | ELSHFT of lift * int (* ELSHFT(l,n) == lift of n, then apply lift l *)
