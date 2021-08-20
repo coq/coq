@@ -466,15 +466,15 @@ object (self)
   method proposal : string option = None (* FIXME *)
 
   method clear_debugging_highlight bp ep =
-    let gtk_bp = Ideutils.byte_off_to_uni_off self#buffer bp in
-    let gtk_ep = Ideutils.byte_off_to_uni_off self#buffer ep in
+    let gtk_bp = Ideutils.byte_off_to_buffer_off self#buffer bp in
+    let gtk_ep = Ideutils.byte_off_to_buffer_off self#buffer ep in
     let start = self#buffer#get_iter (`OFFSET gtk_bp) in
     let stop = self#buffer#get_iter (`OFFSET gtk_ep) in
     self#buffer#remove_tag Tags.Script.debugging ~start ~stop;
 
   method set_debugging_highlight bp ep =
-    let gtk_bp = Ideutils.byte_off_to_uni_off self#buffer bp in
-    let gtk_ep = Ideutils.byte_off_to_uni_off self#buffer ep in
+    let gtk_bp = Ideutils.byte_off_to_buffer_off self#buffer bp in
+    let gtk_ep = Ideutils.byte_off_to_buffer_off self#buffer ep in
     let start = self#buffer#get_iter (`OFFSET gtk_bp) in
     let stop = self#buffer#get_iter (`OFFSET gtk_ep) in
     self#buffer#apply_tag Tags.Script.debugging ~start ~stop;

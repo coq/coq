@@ -585,8 +585,8 @@ object(self)
     | Some loc ->
       let start, stop = Loc.unloc loc in
       buffer#apply_tag tag
-        ~start:(iter_start#forward_chars (b2c phrase start))
-        ~stop:(iter_start#forward_chars (b2c phrase stop))
+        ~start:(buffer#get_iter (`OFFSET (b2c phrase start)))
+        ~stop:(buffer#get_iter (`OFFSET (b2c phrase stop)))
 
   method private position_tag_at_sentence ?loc tag sentence =
     let start, stop, phrase = self#get_sentence sentence in

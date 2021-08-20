@@ -229,7 +229,7 @@ let calculate_bpt_updates () =
         update_bpts sn (((fn, prev_byte_offset), false) :: upd) bpts_res tl
       end else if iter#offset <> bp.prev_uni_offset then begin
         bp.prev_uni_offset <- iter#offset;        (* move *)
-        let byte_offset = Ideutils.uni_off_to_byte_off sn.buffer iter#offset in
+        let byte_offset = Ideutils.buffer_off_to_byte_off sn.buffer iter#offset in
         bp.prev_byte_offset <- byte_offset;
         update_bpts sn (((fn, byte_offset), true)
             :: ((fn, prev_byte_offset), false) :: upd)
@@ -1102,7 +1102,7 @@ let compute_toggle sn =
   let stop = start#forward_char in
   let file = "ToplevelInput" in
   let prev_uni_offset = start#offset in
-  let prev_byte_offset = Ideutils.uni_off_to_byte_off sn.buffer prev_uni_offset in
+  let prev_byte_offset = Ideutils.buffer_off_to_byte_off sn.buffer prev_uni_offset in
   let rec update_bpts = function
     | bp :: tl ->
       let iter = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
