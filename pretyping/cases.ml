@@ -2323,7 +2323,7 @@ let rec is_included x y =
         else false
 
 let lift_rel_context n l =
-  map_rel_context_with_binders (liftn n) l
+  Context.Rel.map_with_binders (liftn n) l
 
 (* liftsign is the current pattern's complete signature length.
    Hence pats is already typed in its

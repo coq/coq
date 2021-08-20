@@ -1305,12 +1305,7 @@ let map_rel_context_in_env f env sign =
   in
   aux env [] (List.rev sign)
 
-let map_rel_context_with_binders f sign =
-  let rec aux k = function
-    | d::sign -> RelDecl.map_constr (f k) d :: aux (k-1) sign
-    | [] -> []
-  in
-  aux (Context.Rel.length sign) sign
+let map_rel_context_with_binders = Context.Rel.map_with_binders
 
 let substl_rel_context l =
   map_rel_context_with_binders (fun k -> substnl l (k-1))

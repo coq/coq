@@ -230,10 +230,12 @@ val lift_rel_context : int -> Constr.rel_context -> Constr.rel_context
 val substl_rel_context : Constr.constr list -> Constr.rel_context -> Constr.rel_context
 val smash_rel_context : Constr.rel_context -> Constr.rel_context (** expand lets in context *)
 
-val map_rel_context_in_env :
-  (env -> Constr.constr -> Constr.constr) -> env -> Constr.rel_context -> Constr.rel_context
 val map_rel_context_with_binders :
   (int -> 'c -> 'c) -> ('c, 'c) Context.Rel.pt -> ('c, 'c) Context.Rel.pt
+  [@@ocaml.deprecated "Use synonymous [Context.Rel.map_with_binders]."]
+
+val map_rel_context_in_env :
+  (env -> Constr.constr -> Constr.constr) -> env -> Constr.rel_context -> Constr.rel_context
 val fold_named_context_both_sides :
   ('a -> Constr.named_declaration -> Constr.named_declaration list -> 'a) ->
     Constr.named_context -> init:'a -> 'a

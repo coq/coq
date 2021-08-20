@@ -145,6 +145,10 @@ sig
   (** Map all terms in a given rel-context. *)
   val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
 
+  (** Map all terms in a given rel-context taking into account the
+      position of the binder in the context starting at 1. *)
+  val map_with_binders : (int -> 'c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
   (** Perform a given action on every declaration in a given rel-context. *)
   val iter : ('c -> unit) -> ('c, 'c) pt -> unit
 
