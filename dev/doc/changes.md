@@ -17,6 +17,11 @@
   a need for adding a new case in pattern-matching. The types of `CApp`
   and `CAppExpl` have been simplified accordingly.
 
+### Functions manipulating contexts
+
+A few functions in Vars, Context, Termops, EConstr have moved. The
+deprecation warning tells what to do.
+
 ## Changes between Coq 8.13 and Coq 8.14
 
 ### Build system and library infrastructure
