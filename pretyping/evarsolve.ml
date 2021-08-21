@@ -211,7 +211,8 @@ let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
 
 (* We retype applications to ensure the universe constraints are collected *)
 
-exception IllTypedInstance of env * EConstr.types * EConstr.types
+exception IllTypedInstance of env * evar_map * EConstr.types * EConstr.types
+exception IllTypedInstanceFun of env * evar_map * EConstr.constr * EConstr.types
 
 let recheck_applications unify flags env evdref t =
   let rec aux env t =
@@ -227,8 +228,8 @@ let recheck_applications unify flags env evdref t =
             (match unify flags TypeUnification env !evdref Reduction.CUMUL argsty.(i) dom with
              | Success evd -> evdref := evd;
                              aux (succ i) (subst1 args.(i) codom)
-             | UnifFailure (evd, reason) -> raise (IllTypedInstance (env, ty, argsty.(i))))
-         | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
+             | UnifFailure (evd, reason) -> raise (IllTypedInstance (env, evd, argsty.(i), dom)))
+         | _ -> raise (IllTypedInstanceFun (env, !evdref, f, ty))
        else ()
      in aux 0 fty
     | _ ->
@@ -842,7 +843,7 @@ let check_evar_instance unify flags env evd evk1 body =
   in
   match unify flags TypeUnification evenv evd Reduction.CUMUL ty evi.evar_concl with
   | Success evd -> evd
-  | UnifFailure _ -> raise (IllTypedInstance (evenv,ty,evi.evar_concl))
+  | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,ty,evi.evar_concl))
 
 (***************)
 (* Unification *)
@@ -1828,8 +1829,10 @@ let solve_simple_eqn unify flags ?(choose=false) ?(imitate_defs=true)
         UnifFailure (evd,OccurCheck (evk1,rhs))
     | MetaOccurInBodyInternal ->
         UnifFailure (evd,MetaOccurInBody evk1)
-    | IllTypedInstance (env,t,u) ->
+    | IllTypedInstance (env,evd,t,u) ->
         UnifFailure (evd,InstanceNotSameType (evk1,env,t,u))
+    | IllTypedInstanceFun (env,evd,f,u) ->
+        UnifFailure (evd,InstanceNotFunctionalType (evk1,env,f,u))
     | IncompatibleCandidates t ->
         UnifFailure (evd,IncompatibleInstances (env,ev1,t,t2))
 

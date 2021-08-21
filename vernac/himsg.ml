@@ -74,8 +74,8 @@ let rec contract3' env sigma a b c = function
   | IncompatibleInstances (env',ev,t1,t2) ->
       let (env',ev,t1,t2) = contract3 env' sigma (EConstr.mkEvar ev) t1 t2 in
       contract3 env sigma a b c, IncompatibleInstances (env',EConstr.destEvar sigma ev,t1,t2)
-  | NotSameArgSize | NotSameHead | NoCanonicalStructure
-  | MetaOccurInBody _ | InstanceNotSameType _ | ProblemBeyondCapabilities
+  | NotSameArgSize | NotSameHead | NoCanonicalStructure | MetaOccurInBody _
+  | InstanceNotSameType _ | InstanceNotFunctionalType _ | ProblemBeyondCapabilities
   | UnifUnivInconsistency _ as x -> contract3 env sigma a b c, x
   | CannotSolveConstraint ((pb,env',t,u),x) ->
       let env',t,u = contract2 env' sigma t u in
@@ -336,6 +336,14 @@ let explain_unification_error env sigma p1 p2 = function
         quote (pr_existential_key sigma evk) ++
         strbrk ": cannot ensure that " ++
         t ++ strbrk " is a subtype of " ++ u]
+     | InstanceNotFunctionalType (evk,env,f,u) ->
+        let env = make_all_name_different env sigma in
+        let f = pr_leconstr_env env sigma f in
+        let u = pr_leconstr_env env sigma u in
+        [str "unable to find a well-typed instantiation for " ++
+        quote (pr_existential_key sigma evk) ++
+        strbrk ": " ++ f ++
+        strbrk " is expected to have a functional type but it has type " ++ u]
      | UnifUnivInconsistency p ->
        [str "universe inconsistency: " ++
         Univ.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
