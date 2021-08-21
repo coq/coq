@@ -76,3 +76,20 @@ Record sigT' (A : Type) (P : A -> Type) : Type := { projT1' : A ; projT2' : P pr
 Check fun '{| projT1' := x; projT2' := y |} => (eq_refl x,eq_refl y).
 
 End Inference.
+
+Module PatternUnificationPrimitiveConstructors.
+
+Set Primitive Projections.
+
+Record prod A B := pair { fst : A ; snd : B }.
+
+Definition Let_In {A P} (x : A) (f : forall a : A, P a) : P x := let y := x in f y.
+
+Context {Z F:Type}.
+
+Check fun (xy:prod F F) =>
+      Let_In true (fun b =>
+      let 'pair _ _ x y := xy in
+      (pair _ _ x y)).
+
+End PatternUnificationPrimitiveConstructors.

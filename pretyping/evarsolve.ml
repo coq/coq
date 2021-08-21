@@ -576,14 +576,14 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
 
 type evar_instance_position = int list * Id.t * env * types
 
-let invertible_constructor (mib, mip) cstr =
+let invertible_constructor strict (mib, mip) cstr =
   let open Declarations in
   match mib.mind_record with
-  | NotRecord  -> mip.mind_kelim = InType && Int.equal mip.mind_nrealdecls 0 && Int.equal (Array.length mip.mind_nf_lc) 1
-  | FakeRecord -> mip.mind_kelim = InType && Int.equal mip.mind_nrealdecls 0
+  | NotRecord  -> not strict && mip.mind_kelim = InType && Int.equal mip.mind_nrealdecls 0 && Int.equal (Array.length mip.mind_nf_lc) 1
+  | FakeRecord -> not strict && mip.mind_kelim = InType && Int.equal mip.mind_nrealdecls 0
   | PrimRecord _ -> true
 
-let invertible_subterms env sigma evar_env id idtyp a =
+let invertible_subterms env sigma strict_inversion evar_env id idtyp a =
   let rec aux path typ a =
     let key = (path, id, evar_env, idtyp) in
     let c, args = decompose_app_vect sigma a in
@@ -591,7 +591,7 @@ let invertible_subterms env sigma evar_env id idtyp a =
     | Construct (cstr, u) ->
       let ind = inductive_of_constructor cstr in
       let mib, mip = Inductive.lookup_mind_specif env ind in
-      if invertible_constructor (mib, mip) cstr then
+      if invertible_constructor strict_inversion (mib, mip) cstr then
         try
           (* Compute the typs of the arguments of the constructors in the context of the evar *)
           let typs =
@@ -608,7 +608,10 @@ let invertible_subterms env sigma evar_env id idtyp a =
           let noncstrs, cstrs = List.split (List.map2_i (fun i c typ -> aux (i::path) typ c) 0 realargs typs) in
           let noncstrs = List.flatten noncstrs in
           let cstrs = List.flatten cstrs in
-          (a, key) :: noncstrs, (cstr, args, key) :: cstrs
+          if strict_inversion then
+            noncstrs, cstrs
+          else
+            (a, key) :: noncstrs, (cstr, args, key) :: cstrs
         with Not_found (* find_mrectype *) -> [a, key], [cstr, args, key]
       else
         [a, key], [cstr, args, key]
@@ -616,6 +619,10 @@ let invertible_subterms env sigma evar_env id idtyp a =
       [a, key], []
   in
   aux [] idtyp a
+
+let expand_invertible_constructor env sigma evar_env (id, c, typ) =
+ let subterms, _ = invertible_subterms env sigma true evar_env id typ c in
+ List.map fst subterms
 
 (********************************)
 (* Managing pattern-unification *)
@@ -653,15 +660,18 @@ let get_actual_deps env evd aliases l t =
     ) l
 
 open Context.Named.Declaration
-let remove_instance_local_defs evd evk args =
+let keep_instance_assumptions evd evk args =
   let evi = Evd.find evd evk in
   let rec aux sign args = match sign, args with
   | [], [] -> []
-  | LocalAssum _ :: sign, c :: args -> c :: aux sign args
+  | LocalAssum (id, t) :: sign, c :: args -> (id, c, t) :: aux sign args
   | LocalDef _ :: sign, _ :: args -> aux sign args
   | _ -> assert false
   in
   aux (evar_filtered_context evi) args
+
+let remove_instance_local_defs evd evk args =
+  List.map pi2 (keep_instance_assumptions evd evk args)
 
 (* Check if an applied evar "?X[args] l" is a Miller's pattern *)
 
@@ -688,9 +698,12 @@ let is_unification_pattern_meta env evd nb m l t =
     None
 
 let is_unification_pattern_evar env evd (evk,args) l t =
+  let evi = Evd.find evd evk in
+  let evar_env = evar_env env evi in
   match Option.List.map (fun c -> to_alias evd c) l with
   | Some l when noccur_evar env evd evk t ->
-    let args = remove_instance_local_defs evd evk args in
+    let args = keep_instance_assumptions evd evk args in
+    let args = List.flatten (List.map (expand_invertible_constructor env evd evar_env) args) in
     let args = Option.List.map (fun c -> to_alias evd c) args in
     begin match args with
     | None -> None
@@ -772,13 +785,13 @@ let make_projectable_subst aliases env sigma evi args =
         match decl,args with
         | LocalAssum ({binder_name=id},t), a::rest ->
             let revmap = Id.Map.add id i revmap in
-            let subterms, cstrl = invertible_subterms env sigma (evar_env env evi) id t a in
+            let subterms, cstrl = invertible_subterms env sigma false (evar_env env evi) id t a in
             let cstrs = List.fold_right add_constructor cstrl cstrs in
             let all = Int.Map.add i subterms all in
             (rest,all,cstrs,revmap)
         | LocalDef ({binder_name=id},c,t), a::rest ->
             let revmap = Id.Map.add id i revmap in
-            let subterms, _ = invertible_subterms env sigma (evar_env env evi) id t a in
+            let subterms, _ = invertible_subterms env sigma false (evar_env env evi) id t a in
             (match EConstr.kind sigma c with
             | Var id' ->
                 let idc = normalize_alias_var sigma evar_aliases id' in
