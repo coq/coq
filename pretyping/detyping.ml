@@ -564,7 +564,7 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
       let t = mkApp (mkIndU (ci.ci_ind,univs), Array.append params indices) in
       DAst.make @@ GCast (tomatch, CastConv (detype t))
   in
-  let alias, aliastyp, pred=
+  let alias, aliastyp, pred =
     if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
     then
       Anonymous, None, None
