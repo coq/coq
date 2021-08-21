@@ -1034,6 +1034,10 @@ module FNativeEntries =
     type evd = unit
     type uinstance = Univ.Instance.t
 
+    let mk_construct c =
+      (* All constructors used in primitive functions are relevant *)
+      { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c) }
+
     let get = Array.get
 
     let get_int () e =
@@ -1082,8 +1086,8 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_bool with
       | Some (ct,cf) ->
         defined_bool := true;
-        ftrue := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs ct) };
-        ffalse := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cf) }
+        ftrue := mk_construct ct;
+        ffalse := mk_construct cf;
       | None -> defined_bool :=false
 
     let defined_carry = ref false
@@ -1094,8 +1098,8 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_carry with
       | Some(c0,c1) ->
         defined_carry := true;
-        fC0 := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c0) };
-        fC1 := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c1) }
+        fC0 := mk_construct c0;
+        fC1 := mk_construct c1;
       | None -> defined_carry := false
 
     let defined_pair = ref false
@@ -1105,7 +1109,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_pair with
       | Some c ->
         defined_pair := true;
-        fPair := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c) }
+        fPair := mk_construct c;
       | None -> defined_pair := false
 
     let defined_cmp = ref false
@@ -1118,9 +1122,9 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_cmp with
       | Some (cEq, cLt, cGt) ->
         defined_cmp := true;
-        fEq := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cEq) };
-        fLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cLt) };
-        fGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cGt) };
+        fEq := mk_construct cEq;
+        fLt := mk_construct cLt;
+        fGt := mk_construct cGt;
         let (icmp, _) = cEq in
         fcmp := { mark = mark Ntrl KnownR; term = FInd (Univ.in_punivs icmp) }
       | None -> defined_cmp := false
@@ -1135,11 +1139,10 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_f_cmp with
       | Some (cFEq, cFLt, cFGt, cFNotComparable) ->
         defined_f_cmp := true;
-        fFEq := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFEq) };
-        fFLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFLt) };
-        fFGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFGt) };
-        fFNotComparable :=
-          { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFNotComparable) };
+        fFEq := mk_construct cFEq;
+        fFLt := mk_construct cFLt;
+        fFGt := mk_construct cFGt;
+        fFNotComparable := mk_construct cFNotComparable;
       | None -> defined_f_cmp := false
 
     let defined_f_class = ref false
@@ -1158,15 +1161,15 @@ module FNativeEntries =
       | Some (cPNormal, cNNormal, cPSubn, cNSubn, cPZero, cNZero,
               cPInf, cNInf, cNaN) ->
         defined_f_class := true;
-        fPNormal := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPNormal) };
-        fNNormal := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNNormal) };
-        fPSubn := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPSubn) };
-        fNSubn := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNSubn) };
-        fPZero := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPZero) };
-        fNZero := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNZero) };
-        fPInf := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPInf) };
-        fNInf := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNInf) };
-        fNaN := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNaN) };
+        fPNormal := mk_construct cPNormal;
+        fNNormal := mk_construct cNNormal;
+        fPSubn := mk_construct cPSubn;
+        fNSubn := mk_construct cNSubn;
+        fPZero := mk_construct cPZero;
+        fNZero := mk_construct cNZero;
+        fPInf := mk_construct cPInf;
+        fNInf := mk_construct cNInf;
+        fNaN := mk_construct cNaN;
       | None -> defined_f_class := false
 
     let defined_array = ref false
