@@ -504,54 +504,6 @@ let db_vars framenum =
       (Id.to_string id, !forward_pr_value v)
     ) (Id.Map.bindings vars)
 
-let db_loc () =
-  let open Loc in
-  let open DebugHook in
-  match debugger_state.cur_loc with
-  | Some {fname=ToplevelInput; bp; ep} ->
-    Some ("ToplevelInput", [bp; ep])
-  | Some {fname=InFile(None, f); bp; ep} ->
-    Some (f, [bp; ep])  (* for Load command *)
-  | Some {fname=InFile(Some dirpath,_); bp; ep} ->
-    (* todo: check what's in Loc.t on Windows *)
-    let open Names in
-    let dirpath = DirPath.of_string dirpath in
-    let pfx = DirPath.make (List.tl (DirPath.repr dirpath)) in
-    let paths = Loadpath.find_with_logical_path pfx in
-    let basename = match DirPath.repr dirpath with
-    | hd :: tl -> (Id.to_string hd) ^ ".v"
-    | [] -> ""
-    in
-    let vs_files = List.map (fun p -> (Filename.concat (Loadpath.physical p) basename)) paths in
-    let filtered = List.filter (fun p -> Sys.file_exists p) vs_files in
-    begin match filtered with
-    | [] -> Feedback.msg_warning Pp.(fnl () ++ str "Unable to locate source code for module " ++
-                      str (Names.DirPath.to_string dirpath)); None
-    | [f] -> Some (f, [bp; ep])
-    | f :: tl ->
-      let msg = Pp.(fnl () ++ str "Multiple files found matching module " ++
-          str (Names.DirPath.to_string dirpath) ++ str ":") in
-      let msg = List.fold_left (fun msg f -> cut () ++ msg ++ str f) msg vs_files in
-      Feedback.msg_warning msg;
-      Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
-    end
-  | _ -> None
-
-let db_upd_bpts updates =
-  let open DebugHook in
-  List.iter (fun op ->
-      let ((file, offset), opt) = op in
-      Printf.printf "server:db_upd_bpts '%s': %d %b\n%!" file offset opt;
-      let bp = { file; offset } in
-      match opt with
-      | true ->
-        ide_breakpoints := IBPSet.add bp !ide_breakpoints;
-        DebugHook.update_bpt true bp
-      | false ->
-        ide_breakpoints := IBPSet.remove bp !ide_breakpoints;
-        DebugHook.update_bpt false bp
-    ) updates
-
 let get_options () =
   let table = Goptions.get_tables () in
   let fold key state accu = (key, export_option_state state) :: accu in
