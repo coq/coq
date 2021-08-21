@@ -1,0 +1,7 @@
+fun pat : ?T * ?T0 => let '(x, y) as x0 := pat return (x0 = x0) in eq_refl
+     : forall pat : ?T * ?T0, pat = pat
+where
+?T : [pat : ?T * ?T0  p0 : ?T * ?T0  p := p0 : ?T * ?T0 |- Type] (pat, p0,
+     p cannot be used)
+?T0 : [pat : ?T * ?T0  p0 : ?T * ?T0  p := p0 : ?T * ?T0 |- Type] (pat, p0,
+      p cannot be used)

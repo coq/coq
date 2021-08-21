@@ -1519,7 +1519,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      | [{CAst.v=(ids,disj_of_patl,b1)}] ->
      let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
      let disjpat = if occur_glob_constr p b1 then List.map (set_pat_alias p) disjpat else disjpat in
-     let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((disjpat,ids),p,bk,t)] in
+     let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((disjpat,ids),(p,Anonymous),bk,t)] in
      match_in u alp metas sigma b1 b2
      | _ -> assert false)
   | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id

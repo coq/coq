@@ -37,7 +37,8 @@ exists '(x, y) '(z, w), swap (x, y) = (z, w)
 ∀ '(x, y), swap (x, y) = (y, x)
      : Prop
 both_z = 
-fun pat : nat * nat => let '(n, p) as x := pat return (F x) in (Z n, Z p)
+fun pat : nat * nat =>
+let '(n, p) as pat0 := pat return (F pat0) in (Z n, Z p)
      : forall pat : nat * nat, F pat
 
 Arguments both_z pat

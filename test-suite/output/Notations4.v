@@ -371,6 +371,15 @@ Module P.
   Notation "!!!! x , P" := (forall x, P) (at level 200, x strict pattern).
   Check !!!! (nat,id), nat = true /\ id = false.
 
+  Notation "!!!!! x , P" := (forall 'x, P) (at level 200, x strict pattern).
+  Check !!!!! (x,y), x+y = 0.
+
+  Notation "!!!!!! y , P" := (forall 'y, P) (at level 200, y strict pattern).
+  Check !!!!!! (x,y), x+y = 0.
+
+  Notation "!!!!!!! pat , P" := (forall 'pat, P) (at level 200, pat strict pattern).
+  Check !!!!!!! (x,y), x+y = 0.
+
   End NotationBinderNotMixedWithTerms.
 
 End P.
