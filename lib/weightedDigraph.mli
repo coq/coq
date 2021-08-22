@@ -16,6 +16,7 @@ module Make : functor(V: COMPARABLE) -> sig
   type edge = E.t
 
   val nb_vertex : t -> int
+  val nb_edges : t -> int
   val mem_vertex : t -> vertex -> bool
   val mem_edge_e : t -> edge -> bool
   val create : ?size:int -> unit -> t

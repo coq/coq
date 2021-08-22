@@ -52,6 +52,7 @@ let in_debugger = ref false
 let in_toplevel = ref false
 
 let profile = false
+let profiling = ref false
 
 let raw_print = ref false
 

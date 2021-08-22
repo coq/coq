@@ -2,7 +2,38 @@ open Hashset.Combine
 open Util
 
 (** Helpers *)
+
 let (<<) f g x = f @@ g x
+
+module Time =
+struct
+  open Hashtbl
+
+  let table = create 16
+
+  let get name = Option.default 0. @@ find_opt table name
+
+  let elapse name ?(without = []) f =
+    let without_time_start = List.fold_left (fun t name -> t +. get name) 0. without in
+    let start = Sys.time () in
+    let result = f () in
+    let fin = Sys.time () in
+    let without_time_fin = List.fold_left (fun t name -> t +. get name) 0. without in
+    replace table name (get name +. (fin -. start) -. (without_time_fin -. without_time_start));
+    result
+
+  let write_results ?(filename = "stats.csv") () =
+    let open Pp in
+    let oc = open_out_gen [Open_append; Open_creat] 0o666 filename in
+    let fmt = Format.formatter_of_out_channel oc in
+    let writer name time =
+      pp_with fmt @@ seq [str name; str ","; real (time *. 100.); fnl ()];
+      Format.pp_print_flush fmt () in
+    iter writer table;
+    close_out oc
+
+  let clear () = clear table
+end
 
 (** Size variables *)
 
@@ -366,7 +397,7 @@ end
 (** RecCheck functions and internal graph representation of constraints *)
 
 module RecCheck =
-  struct
+struct
   open SVars
 
   module S = Constraints.S

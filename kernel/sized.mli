@@ -46,6 +46,14 @@
     e.g. List^υ1 Nat ≤ List^υ2 ⟹ υ1 ⊑ υ2
 *)
 
+(* This is for profiling only *)
+module Time :
+sig
+  val elapse : string -> ?without:(string list) -> (unit -> 'a) -> 'a
+  val write_results : ?filename:string -> unit -> unit
+  val clear : unit -> unit
+end
+
 module SVar :
 sig
   type t = int (* Need to expose type for testing *)

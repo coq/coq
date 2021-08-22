@@ -571,10 +571,12 @@ let rec execute env stg cstrnt cstr =
     | Var (id, _) ->
       let check_sized = (Environ.typing_flags env).check_sized in
       let numvars = size_vars_in_variable env id in
-      let annots, stg = next_annots check_sized numvars stg in
-      let smap = smap_of_variable env annots id in
-      let cstrnt = union cstrnt (Constraints.map smap cstrnt) in
-      stg, cstrnt, mkVarA id annots, subst_smap smap (type_of_variable env id)
+      let t = type_of_variable env id in
+      let annotsv, stgv = next_annots check_sized numvars stg in
+      let annotst, stgt = next_annots check_sized (Some (count_annots t)) stgv in
+      let smapv = smap_of_variable env annotsv id in
+      let smapt = add_smap annotst smapv t in
+      stgt, cstrnt, mkVarA id annotsv, subst_smap smapt (type_of_variable env id)
 
     | Const (c, _) ->
       let check_sized = (Environ.typing_flags env).check_sized in

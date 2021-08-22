@@ -193,7 +193,18 @@ Fail Definition innerSucc :=
     | S n' => f (succ n')
     end.
 
-(** Large definitions of inductive types requiring delta reduction in fixpoint types *)
+(* Used to fail when Var was treated like Rel instead of like Const. *)
+Section Vars.
+
+Variable h : nat -> nat.
+
+Set Warnings "-non-recursive".
+Fixpoint f (n: nat) := h n.
+Set Warnings "+non-recursive".
+
+End Vars.
+
+(** Large definitions of inductive types requiring delta reduction in fixpoint types. *)
 (** We ensure that:
   * Each usage of [N] instantiates a different stage annotation;
   * Usages of [N] actually are given stage annotations; and

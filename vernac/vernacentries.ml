@@ -1560,6 +1560,13 @@ let () =
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_universes);
       optwrite = (fun b -> Global.set_check_universes b) }
 
+let () =
+  declare_bool_option
+    { optdepr  = false;
+      optkey   = ["Profiling"];
+      optread  = (fun () -> !Flags.profiling);
+      optwrite = (fun b -> Flags.profiling := b) }
+
 let vernac_set_strategy ~local l =
   let local = Option.default false local in
   let glob_ref r =
