@@ -30,8 +30,9 @@ let catch_break = ref false
 let init_signal_handler () =
   let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
   Sys.set_signal Sys.sigint (Sys.Signal_handle f);
-  Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
-    (fun _ -> Control.break := true))
+  if Sys.os_type = "Unix" then
+    Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
+      (fun _ -> Control.break := true))
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
