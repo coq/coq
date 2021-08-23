@@ -41,6 +41,8 @@ module type S = sig
   val clear : t -> unit
   (** Clear the contents of a hashset. *)
 
+  val mem : int -> elt -> t -> bool
+
   val repr : int -> elt -> t -> elt
   (** [repr key constr set] uses [key] to look for [constr]
       in the hashet [set]. If [constr] is in [set], returns the
