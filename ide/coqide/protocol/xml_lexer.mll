@@ -94,7 +94,11 @@ let entitychar = ['A'-'Z' 'a'-'z']
 let pcchar = [^ '\r' '\n' '<' '>' '&']
 
 rule token = parse
-        | newline | (newline break) | break
+        | break
+                {
+                        PCData "\r"
+                }
+        | newline
                 {
                         newline lexbuf;
                         PCData "\n"
@@ -153,7 +157,11 @@ rule token = parse
                 { error lexbuf ENodeExpected }
 
 and ignore_spaces = parse
-        | newline | (newline break) | break
+        | break
+                {
+                        ignore_spaces lexbuf
+                }
+        | newline
                 {
                         newline lexbuf;
                         ignore_spaces lexbuf
@@ -164,7 +172,11 @@ and ignore_spaces = parse
                 { () }
 
 and comment = parse
-        | newline | (newline break) | break
+        | break
+                {
+                        comment lexbuf
+                }
+        | newline
                 {
                         newline lexbuf;
                         comment lexbuf
@@ -177,7 +189,11 @@ and comment = parse
                 { comment lexbuf }
 
 and header = parse
-        | newline | (newline break) | break
+        | break
+                {
+                        header lexbuf
+                }
+        | newline
                 {
                         newline lexbuf;
                         header lexbuf
@@ -190,7 +206,12 @@ and header = parse
                 { header lexbuf }
 
 and pcdata = parse
-        | newline | (newline break) | break
+        | break
+                {
+                        Buffer.add_char tmp '\r';
+                        pcdata lexbuf
+                }
+        | newline
                 {
                         Buffer.add_char tmp '\n';
                         newline lexbuf;
