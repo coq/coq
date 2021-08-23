@@ -127,13 +127,15 @@ module Make (E : EqType) =
     end;
     t.rover <- (t.rover + 1) mod (Array.length t.table)
 
+  external weak_set : 'a Weak.t -> int -> 'a -> unit = "caml_ephe_set_key"
+
   type _ setter =
   | SetterA : (E.t Weak.t * int) setter
   | SetterB : E.t setter
 
   let apply_setter (type a) (s : a setter) (bk : E.t Weak.t) sz (d : a) = match s with
   | SetterA -> let (ob, oi) = d in Weak.blit ob oi bk sz 1
-  | SetterB -> Weak.set bk sz (Some d)
+  | SetterB -> weak_set bk sz d
 
   let rec resize t =
     let oldlen = Array.length t.table in
