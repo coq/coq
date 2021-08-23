@@ -470,7 +470,7 @@ let pr_goal ?(diffs=false) ?og_s g_s =
     else
       pr_context_of env sigma ++ cut () ++
         str "============================" ++ cut ()  ++
-        pr_letype_env ~goal_concl_style:true env sigma concl
+        hov 0 (pr_letype_env ~goal_concl_style:true env sigma concl)
   in
   str "  " ++ v 0 goal
 

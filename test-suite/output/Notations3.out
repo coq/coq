@@ -249,3 +249,15 @@ myfoo01 tt
      : nat
 1 ⪯ 2 ⪯ 3 ⪯ 4
      : Prop
+1 goal
+  
+  x : nat
+  ============================
+  |-_0 x
+1 goal
+  
+  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx : nat
+  ============================
+  |-_0
+   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx *
+   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

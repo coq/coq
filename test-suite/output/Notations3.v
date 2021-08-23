@@ -420,3 +420,20 @@ Notation "x  ⪯ y  ⪯ ..  ⪯ z  ⪯ t" :=
 Check 1 ⪯ 2 ⪯ 3 ⪯ 4.
 
 End RecursiveNotationPartialApp.
+
+Module GoalConclBox.
+
+(* The conclusion was sometimes printed vertically (see
+https://coq.zulipchat.com/#narrow/stream/237977-Coq-users/topic/Strange.20newline.20in.20printing)
+*)
+
+Notation "|-_0 x" := (x = 0) (at level 70, format "|-_0 '/'  x").
+Lemma test x : |-_0 x.
+Show.
+Abort.
+
+Lemma test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx : |-_0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx * xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.
+Show.
+Abort.
+
+End GoalConclBox.
