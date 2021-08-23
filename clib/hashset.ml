@@ -191,14 +191,14 @@ module Make (E : EqType) =
   let repr h d t =
     let table = t.table in
     let index = get_index table h in
-    let bucket = table.(index) in
-    let hashes = t.hashes.(index) in
+    let bucket = Array.unsafe_get table index in
+    let hashes = Array.unsafe_get t.hashes index in
     let sz = Weak.length bucket in
     let pos = ref 0 in
     let ans = ref None in
     while !pos < sz && !ans == None do
       let i = !pos in
-      if Int.equal h hashes.(i) then begin
+      if Int.equal h (Array.unsafe_get hashes i) then begin
         match Weak.get bucket i with
         | Some v as res when E.eq v d -> ans := res
         | _ -> incr pos
