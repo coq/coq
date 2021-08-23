@@ -66,8 +66,9 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
 
     let hcons (tab, u) x =
       let h = X.hash x in
-      if Htbl.mem h x tab then x
-      else
+      match Htbl.mem h x tab with
+      | Some v -> v
+      | None ->
         let y = X.hashcons u x in
         Htbl.repr h y tab
 
@@ -128,13 +129,24 @@ module Hlist (D:HashedType) =
     end)
 
 (* string *)
-module Hstring = Make(
+module Hstring =
   struct
     type t = string
     type u = unit
-    let hashcons () s =(* incr accesstr;*) s
 
-    let eq = String.equal
+    module Self =
+    struct
+      type t = string
+      let eq = String.equal
+    end
+
+    module Htbl = Hashset.Make(Self)
+
+    type table = (Htbl.t * u)
+
+    let generate u =
+      let tab = Htbl.create 97 in
+      (tab, u)
 
     (** Copy from CString *)
     let rec hash len s i accu =
@@ -146,4 +158,11 @@ module Hstring = Make(
     let hash s =
       let len = String.length s in
       hash len s 0 0
-  end)
+
+    let hcons (tab, u) x =
+      let h = hash x in
+      Htbl.repr h x tab
+
+    let stats (tab, _) = Htbl.stats tab
+
+  end

@@ -33,7 +33,7 @@ module type S = sig
   type t
   val create : int -> t
   val clear : t -> unit
-  val mem : int -> elt -> t -> bool
+  val mem : int -> elt -> t -> elt option
   val repr : int -> elt -> t -> elt
   val stats : t -> statistics
 end
@@ -196,12 +196,12 @@ module Make (E : EqType) =
     let hashes = Array.unsafe_get t.hashes index in
     let sz = Weak.length bucket in
     let pos = ref 0 in
-    let ans = ref false in
-    while !pos < sz && !ans == false do
+    let ans = ref None in
+    while !pos < sz && !ans == None do
       let i = !pos in
       if Int.equal h (Array.unsafe_get hashes i) then begin
         match Weak.get bucket i with
-        | Some v when v == d -> ans := true
+        | Some v when E.eq v d -> ans := Some v
         | _ -> incr pos
       end else incr pos
     done;
