@@ -127,15 +127,22 @@ module Make (E : EqType) =
     end;
     t.rover <- (t.rover + 1) mod (Array.length t.table)
 
+  type _ setter =
+  | SetterA : (E.t Weak.t * int) setter
+  | SetterB : E.t setter
+
+  let apply_setter (type a) (s : a setter) (bk : E.t Weak.t) sz (d : a) = match s with
+  | SetterA -> let (ob, oi) = d in Weak.blit ob oi bk sz 1
+  | SetterB -> Weak.set bk sz (Some d)
+
   let rec resize t =
     let oldlen = Array.length t.table in
     let newlen = next_sz oldlen in
     if newlen > oldlen then begin
       let newt = create newlen in
       let add_weak ob oh oi =
-        let setter nb ni _ = Weak.blit ob oi nb ni 1 in
         let h = oh.(oi) in
-        add_aux newt setter None h (get_index newt.table h);
+        add_aux newt SetterA (ob, oi) h (get_index newt.table h);
       in
       iter_weak add_weak t;
       t.table <- newt.table;
@@ -148,7 +155,8 @@ module Make (E : EqType) =
       t.oversize <- 0;
     end
 
-  and add_aux t setter d h index =
+  and add_aux : type a. _ -> a setter -> a -> _ -> _ -> _ =
+    fun t setter d h index ->
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = Weak.length bucket in
@@ -160,7 +168,7 @@ module Make (E : EqType) =
         let newhashes = Array.make newsz 0 in
         Weak.blit bucket 0 newbucket 0 sz;
         Array.blit hashes 0 newhashes 0 sz;
-        setter newbucket sz d;
+        apply_setter setter newbucket sz d;
         newhashes.(sz) <- h;
         t.table.(index) <- newbucket;
         t.hashes.(index) <- newhashes;
@@ -172,7 +180,7 @@ module Make (E : EqType) =
       end else if Weak.check bucket i then begin
         loop (i + 1)
       end else begin
-        setter bucket i d;
+        apply_setter setter bucket i d;
         hashes.(i) <- h
       end
     in
@@ -195,7 +203,7 @@ module Make (E : EqType) =
       end else incr pos
     done;
     if !pos >= sz then
-      let () = add_aux t Weak.set (Some d) h index in
+      let () = add_aux t SetterB d h index in
       d
     else match !ans with
     | None -> assert false
