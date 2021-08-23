@@ -6,7 +6,7 @@ open Environ
 
 type variance =
   | Variant   (* co-/contra-/bivariant for Ind/CoInd/Record *)
-  | Bivariant (* always bivariant (add constraints in both directions *)
+  | Bivariant (* always bivariant (add constraints in both directions) *)
 
 let add_constraint_from_ind env variance cstrnts (ind, _) a1 a2 =
   let check_sized = (Environ.typing_flags env).check_sized in

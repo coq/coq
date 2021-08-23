@@ -932,18 +932,26 @@ let rec foldmap_annots
 
 (** foldmap-type functions on size annotations of constrs *)
 
+(* See comment above [count_annots] about Empty/Bare *)
 let annotate_fresh sizes cstr =
   let f _ sizes a =
     match a with
+    | Size Infty -> sizes, a
     | Size sof ->
       let sby = Array.hd sizes in
       Array.tl sizes, Size (Size.subst sof sby)
+    | Empty ->
+      let s = Array.hd sizes in
+      Array.tl sizes, Size s
     | _ -> sizes, a in
   let g sizes ans =
     match ans with
     | Sized sizes' ->
       let sizes_hd, sizes_tl = Array.chop (Array.length sizes') sizes in
       sizes_tl, Sized (Array.map2 Size.subst sizes' sizes_hd)
+    | Bare n ->
+      let sizes_hd, sizes_tl = Array.chop n sizes in
+      sizes_tl, Sized sizes_hd
     | _ -> sizes, ans in
   snd @@ foldmap_annots f g sizes cstr
 
@@ -957,9 +965,23 @@ let fold_annots
   let g acc ans = g ans acc, ans in
   fst @@ foldmap_annots f g acc cstr
 
+(* We need to count Empty and Bare;
+  see https://github.com/ionathanch/coq/issues/3 for details.
+  Notably, we do *not* count Infty or Limit,
+  since those don't need size variables substituted in,
+  but we can't make the same assumption for annotations that don't exist yet,
+  i.e. Empty/Bare. *)
 let count_annots =
-  let f _ _ acc = succ acc in
-  let g ans acc = acc + Annots.length ans in
+  let f _ a acc =
+    match a with
+    | Size (SizeVar _) -> succ acc
+    | Empty -> succ acc
+    | _ -> acc in
+  let g ans acc =
+    match ans with
+    | Sized _ -> acc + Annots.length ans
+    | Bare _ -> acc + Annots.length ans
+    | _ -> acc in
   fold_annots f g 0
 
 let collect_annots =

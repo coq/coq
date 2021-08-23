@@ -199,7 +199,7 @@ Section Vars.
 Variable h : nat -> nat.
 
 Set Warnings "-non-recursive".
-Fixpoint f (n: nat) := h n.
+Fixpoint hh (n: nat) := h n.
 Set Warnings "+non-recursive".
 
 End Vars.
