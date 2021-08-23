@@ -426,7 +426,9 @@ let parse_args () =
     (fun s -> raise (Arg.Bad ("Unknown option: "^s)))
     "Available options for configure are:"
 
-let _ = parse_args ()
+let () = parse_args ()
+
+let prefs = !prefs
 
 (** Default OCaml binaries *)
 
@@ -449,10 +451,10 @@ let reset_caml_yacc c o = c.yacc <- o
 let reset_caml_top c o = c.top <- o
 let reset_caml_find c o = c.find <- o
 
-let coq_debug_flag = if !prefs.debug then "-g" else ""
-let coq_profile_flag = if !prefs.profile then "-p" else ""
-let coq_annot_flag = if !prefs.annot then "-annot" else ""
-let coq_bin_annot_flag = if !prefs.bin_annot then "-bin-annot" else ""
+let coq_debug_flag = if prefs.debug then "-g" else ""
+let coq_profile_flag = if prefs.profile then "-p" else ""
+let coq_annot_flag = if prefs.annot then "-annot" else ""
+let coq_bin_annot_flag = if prefs.bin_annot then "-bin-annot" else ""
 
 (* This variable can be overridden only for debug purposes, use with
    care. *)
@@ -480,7 +482,7 @@ let rec try_archs = function
   | _ :: rest -> try_archs rest
   | [] -> query_arch ()
 
-let arch = match !prefs.arch with
+let arch = match prefs.arch with
   | Some a -> a
   | None ->
     let arch,_ = tryrun "uname" ["-s"] in
@@ -515,7 +517,7 @@ let _ =
 (** * Browser command *)
 
 let browser =
-  match !prefs.browser with
+  match prefs.browser with
   | Some b -> b
   | None when arch_is_win32 -> "start %s"
   | None when arch = "Darwin" -> "open %s"
@@ -524,7 +526,7 @@ let browser =
 (** * OCaml programs *)
 
 let camlbin, caml_version, camllib, findlib_version =
-  let () = match !prefs.ocamlfindcmd with
+  let () = match prefs.ocamlfindcmd with
     | Some cmd -> reset_caml_find camlexec cmd
     | None ->
        try reset_caml_find camlexec (which camlexec.find)
@@ -570,7 +572,7 @@ let check_caml_version () =
     cprintf "You have OCaml %s. Good!" caml_version
   else
     let () = cprintf "Your version of OCaml is %s." caml_version in
-    if !prefs.force_caml_version then
+    if prefs.force_caml_version then
       warn "Your version of OCaml is outdated."
     else
       die "You need OCaml 4.05.0 or later."
@@ -592,7 +594,7 @@ let check_findlib_version () =
     cprintf "You have OCamlfind %s. Good!" findlib_version
   else
     let () = cprintf "Your version of OCamlfind is %s." findlib_version in
-    if !prefs.force_findlib_version then
+    if prefs.force_findlib_version then
       warn "Your version of OCamlfind is outdated."
     else
       die "You need OCamlfind 1.4.1 or later."
@@ -618,7 +620,7 @@ let camltag = match caml_version_list with
 *)
 let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58-67-68"
 let coq_warn_error =
-    if !prefs.warn_error
+    if prefs.warn_error
     then "-warn-error +a"
     else ""
 
@@ -651,7 +653,7 @@ let msg_no_dynlink_cmxa () =
   cprintf "and then run ./configure -natdynlink no"
 
 let check_native () =
-  let () = if !prefs.byteonly then raise Not_found in
+  let () = if prefs.byteonly then raise Not_found in
   let version, _ = tryrun camlexec.find ["opt";"-version"] in
   if version = "" then let () = msg_no_ocamlopt () in raise Not_found
   else if fst (tryrun camlexec.find ["query";"dynlink"]) = ""
@@ -667,7 +669,7 @@ let best_compiler =
 
 (** * Native dynlink *)
 
-let hasnatdynlink = !prefs.natdynlink && best_compiler = "opt"
+let hasnatdynlink = prefs.natdynlink && best_compiler = "opt"
 
 let natdynlinkflag =
   if hasnatdynlink then "true" else "false"
@@ -730,7 +732,7 @@ exception Ide of ide
 
 (** If the user asks an impossible coqide, we abort the configuration *)
 
-let set_ide ide msg = match ide, !prefs.coqide with
+let set_ide ide msg = match ide, prefs.coqide with
   | No, Some (Byte|Opt)
   | Byte, Some Opt -> die (msg^":\n=> cannot build requested CoqIDE")
   | _ ->
@@ -743,7 +745,7 @@ let lablgtkdir = ref ""
     This function also sets the lablgtkdir reference in case of success. *)
 
 let check_coqide () =
-  if !prefs.coqide = Some No then set_ide No "CoqIDE manually disabled";
+  if prefs.coqide = Some No then set_ide No "CoqIDE manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = ""
   then set_ide No "LablGtk3 or LablGtkSourceView3 not found"
@@ -753,7 +755,7 @@ let check_coqide () =
     if not ok then set_ide No (found^", but too old (required >= 3.1.0, found " ^ version ^ ")");
     (* We're now sure to produce at least one kind of coqide *)
     lablgtkdir := shorten_camllib dir;
-    if !prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
+    if prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
     if best_compiler <> "opt" then set_ide Byte (found^", but no native compiler");
     if not (Sys.file_exists (camllib/"threads"/"threads.cmxa")) then
       set_ide Byte (found^", but no native threads");
@@ -772,7 +774,7 @@ let idearchdef = ref "X11"
 
 let coqide_flags () =
   match coqide, arch with
-    | "opt", "Darwin" when !prefs.macintegration ->
+    | "opt", "Darwin" when prefs.macintegration ->
       let osxdir,_ = tryrun camlexec.find ["query";"lablgtkosx"] in
       if osxdir <> "" then begin
         idearchflags := "lablgtkosx.cma";
@@ -797,7 +799,7 @@ let strip =
   if arch = "Darwin" then
     if hasnatdynlink then "true" else "strip"
   else
-    if !prefs.profile || !prefs.debug then "true" else begin
+    if prefs.profile || prefs.debug then "true" else begin
     let _, all = run camlexec.find ["ocamlc";"-config"] in
     let strip = String.concat "" (List.map (fun l ->
         match string_split ' ' l with
@@ -822,7 +824,7 @@ let check_doc () =
   if not (program_in_path "sphinx-build") then err "sphinx-build";
   check_sphinx_deps ()
 
-let _ = if !prefs.withdoc then check_doc ()
+let _ = if prefs.withdoc then check_doc ()
 
 (** * Installation directories : bindir, libdir, mandir, docdir, etc *)
 
@@ -837,19 +839,19 @@ type path_style =
   | Relative of string (* Should not start with a "/" *)
 
 let install = [
-  "BINDIR", "the Coq binaries", !prefs.bindir,
+  "BINDIR", "the Coq binaries", prefs.bindir,
     Relative "bin", Relative "bin";
-  "COQLIBINSTALL", "the Coq library", !prefs.libdir,
+  "COQLIBINSTALL", "the Coq library", prefs.libdir,
     Relative "lib", Relative "lib/coq";
-  "CONFIGDIR", "the Coqide configuration files", !prefs.configdir,
+  "CONFIGDIR", "the Coqide configuration files", prefs.configdir,
     Relative "config", Absolute "/etc/xdg/coq";
-  "DATADIR", "the Coqide data files", !prefs.datadir,
+  "DATADIR", "the Coqide data files", prefs.datadir,
     Relative "share", Relative "share/coq";
-  "MANDIR", "the Coq man pages", !prefs.mandir,
+  "MANDIR", "the Coq man pages", prefs.mandir,
     Relative "man", Relative "share/man";
-  "DOCDIR", "the Coq documentation", !prefs.docdir,
+  "DOCDIR", "the Coq documentation", prefs.docdir,
     Relative "doc", Relative "share/doc/coq";
-  "COQDOCDIR", "the Coqdoc LaTeX files", !prefs.coqdocdir,
+  "COQDOCDIR", "the Coqdoc LaTeX files", prefs.coqdocdir,
     Relative "latex", Relative "share/texmf/tex/latex/misc";
  ]
 
@@ -877,31 +879,33 @@ let find_suffix prefix path = match prefix with
      else
        Absolute path
 
+let env_prefix =
+  match prefs.prefix with
+  | None ->
+    begin
+      try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
+      with
+      | Not_found when prefs.interactive -> None
+      | Not_found -> Some Sys.(getcwd () ^ "/../install/default")
+    end
+  | p -> p
+
 let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
   let dir,suffix =
-    let env_prefix =
-      match !prefs.prefix with
-      | None ->
-        begin
-          try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
-          with
-          | Not_found when !prefs.interactive -> None
-          | Not_found -> Some Sys.(getcwd () ^ "/../install/default")
-        end
-      | p -> p
-    in match uservalue, env_prefix with
-    | Some d, p -> d,find_suffix p d
-    | _, Some p ->
+    match uservalue, env_prefix with
+    | Some d, _ -> d,find_suffix env_prefix d
+    | None, Some p ->
       let suffix = if arch_is_win32 then selfcontainedlayout else relativize unixlayout in
       use_suffix p suffix, suffix
-    | _, p ->
+    | None, None ->
       let suffix = if unix then unixlayout else selfcontainedlayout in
       let base = if unix then "/usr/local" else "C:/coq" in
       let dflt = use_suffix base suffix in
       let () = printf "Where should I install %s [%s]? " msg dflt in
       let line = read_line () in
-      if line = "" then (dflt,suffix) else (line,find_suffix p line)
-  in (var,msg,dir,suffix)
+      if line = "" then (dflt,suffix) else (line,find_suffix None line)
+  in
+  (var,msg,dir,suffix)
 
 let install_dirs = List.map do_one_instdir install
 
@@ -959,7 +963,7 @@ let () =
 
 let custom_os = arch_is_win32 || arch = "Darwin"
 
-let use_custom = match !prefs.custom with
+let use_custom = match prefs.custom with
   | Some b -> b
   | None -> custom_os
 
@@ -969,7 +973,7 @@ let build_loadpath =
   ref "# you might want to set CAML_LD_LIBRARY_PATH by hand!"
 
 let config_runtime () =
-  match !prefs.vmbyteflags with
+  match prefs.vmbyteflags with
   | Some flags -> string_split ',' flags
   | _ when use_custom -> [custom_flag]
   | _ ->
@@ -998,7 +1002,7 @@ let print_summary () =
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
-  pr "  OCaml flambda flags         : %s\n" (String.concat " " !prefs.flambda_flags);
+  pr "  OCaml flambda flags         : %s\n" (String.concat " " prefs.flambda_flags);
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
@@ -1007,11 +1011,11 @@ let print_summary () =
     pr "  Mac OS integration is on\n";
   pr "  CoqIDE                      : %s\n" coqide;
   pr "  Documentation               : %s\n"
-    (if !prefs.withdoc then "All" else "None");
+    (if prefs.withdoc then "All" else "None");
   pr "  Web browser                 : %s\n" browser;
-  pr "  Coq web site                : %s\n" !prefs.coqwebsite;
-  pr "  Bytecode VM enabled         : %B\n" !prefs.bytecodecompiler;
-  pr "  Native Compiler enabled     : %s\n\n" (pr_native !prefs.nativecompiler);
+  pr "  Coq web site                : %s\n" prefs.coqwebsite;
+  pr "  Bytecode VM enabled         : %B\n" prefs.bytecodecompiler;
+  pr "  Native Compiler enabled     : %s\n\n" (pr_native prefs.nativecompiler);
   (pr "  Paths for true installation:\n";
    List.iter
      (fun (_,msg,dir,_) -> pr "  - %s will be copied in %s\n" msg (esc dir))
@@ -1022,7 +1026,7 @@ let print_summary () =
   pr "          don't forget to do a 'make clean' before './configure'.\n"
 
 let _ =
-  if !prefs.output_summary then print_summary ()
+  if prefs.output_summary then print_summary ()
 
 (** * Build the dev/ocamldebug-coq file *)
 
@@ -1078,15 +1082,15 @@ let write_configml f =
   pr_i32 "vo_version" vo_magic;
   pr_i "state_magic_number" state_magic;
   pr_s "browser" browser;
-  pr_s "wwwcoq" !prefs.coqwebsite;
-  pr_s "wwwbugtracker" (!prefs.coqwebsite ^ "bugs/");
-  pr_s "wwwrefman" (!prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/refman/");
-  pr_s "wwwstdlib" (!prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/stdlib/");
+  pr_s "wwwcoq" prefs.coqwebsite;
+  pr_s "wwwbugtracker" (prefs.coqwebsite ^ "bugs/");
+  pr_s "wwwrefman" (prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/refman/");
+  pr_s "wwwstdlib" (prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/stdlib/");
   pr_s "localwwwrefman"  ("file:/" ^ docdir ^ "/html/refman");
-  pr_b "bytecode_compiler" !prefs.bytecodecompiler;
+  pr_b "bytecode_compiler" prefs.bytecodecompiler;
   pr "type native_compiler = NativeOff | NativeOn of { ondemand : bool }\n";
   pr "let native_compiler = %s\n"
-    (match !prefs.nativecompiler with
+    (match prefs.nativecompiler with
      | NativeYes -> "NativeOn {ondemand=false}" | NativeNo -> "NativeOff"
      | NativeOndemand -> "NativeOn {ondemand=true}");
 
@@ -1148,7 +1152,7 @@ let write_makefile f =
   List.iter (fun (v,msg,_,_) -> pr "# %s: path for %s\n" v msg) install_dirs;
   List.iter (fun (v,_,dir,_) -> pr "%s=%S\n" v dir) install_dirs;
   pr "\n# Coq version\n";
-  pr "COQPREFIX=%s\n" ((function None -> "local" | Some v -> v) !prefs.prefix);
+  pr "COQPREFIX=%s\n" ((function None -> "local" | Some v -> v) prefs.prefix);
   pr "VERSION=%s\n" coq_version;
   pr "# Objective-Caml compile command\n";
   pr "OCAML=%S\n" camlexec.top;
@@ -1169,7 +1173,7 @@ let write_makefile f =
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   (* XXX make this configurable *)
-  pr "FLAMBDA_FLAGS=%s\n" (String.concat " " !prefs.flambda_flags);
+  pr "FLAMBDA_FLAGS=%s\n" (String.concat " " prefs.flambda_flags);
   pr "# Flags for GCC\n";
   pr "CFLAGS=%s\n\n" cflags;
   pr "# Compilation debug flags\n";
@@ -1206,11 +1210,11 @@ let write_makefile f =
   pr "IDEINT=%s\n\n" !idearchdef;
   pr "# Defining REVISION\n";
   pr "# Option to control compilation and installation of the documentation\n";
-  pr "WITHDOC=%s\n\n" (if !prefs.withdoc then "all" else "no");
+  pr "WITHDOC=%s\n\n" (if prefs.withdoc then "all" else "no");
   pr "# Option to produce precompiled files for native_compute\n";
-  pr "NATIVECOMPUTE=%s\n" (if !prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
-  pr "COQWARNERROR=%s\n" (if !prefs.warn_error then "-w +default" else "");
-  pr "CONFIGURE_DPROFILE=%s\n" !prefs.dune_profile;
+  pr "NATIVECOMPUTE=%s\n" (if prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
+  pr "COQWARNERROR=%s\n" (if prefs.warn_error then "-w +default" else "");
+  pr "CONFIGURE_DPROFILE=%s\n" prefs.dune_profile;
   close_out o;
   Unix.chmod f 0o444
 
