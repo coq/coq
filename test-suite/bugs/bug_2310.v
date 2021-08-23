@@ -14,7 +14,8 @@ Definition replace a (y:Nest (prod a a)) : a = a -> Nest a.
    (P:=\a.Nest (prod a a) and P:=\_.Nest (prod a a)) and refine should either
    leave P as subgoal or choose itself one solution *)
 
-  intros. Fail refine (Cons (cast H _ y)).
+  intros. refine (Cons (cast H _ y)).
+  Undo.
   Unset Solve Unification Constraints. (* Keep the unification constraint around *)
   refine (Cons (cast H _ y)).
   intros.

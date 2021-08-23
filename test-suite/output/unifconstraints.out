@@ -65,6 +65,6 @@ In environment
 P : nat -> Type
 x : nat
 h : P x
-Unable to unify "P x" with "?P x"
+Unable to unify "P x" with "(fun x0 : nat => ?P) x"
 (unable to find a well-typed instantiation for "?P": cannot ensure that
-"nat -> Type" is a subtype of "nat -> Prop").
+"Type" is a subtype of "Prop").

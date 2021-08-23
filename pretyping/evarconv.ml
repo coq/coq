@@ -1615,8 +1615,13 @@ let second_order_matching_with_args flags env evd with_ho pbty ev l t =
     else
       UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
   else
-    let pb = (pbty,env,mkApp(mkEvar ev,l),t) in
-    UnifFailure (evd, CannotSolveConstraint (pb,ProblemBeyondCapabilities))
+    if
+      Array.for_all (fun c -> isRel evd c || isVar evd c) l then
+      let evd,ev = evar_absorb_arguments env evd ev (Array.to_list l) in
+      solve_simple_eqn ~choose:false ~imitate_defs:false
+        evar_unify flags env evd (None,ev,t)
+    else
+      UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
 
 let is_beyond_capabilities = function
   | CannotSolveConstraint (pb,ProblemBeyondCapabilities) -> true
