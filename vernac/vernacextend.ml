@@ -51,18 +51,158 @@ and anon_abstracting_tac = bool (** abstracting anonymously its result *)
 
 and proof_block_name = string (** open type of delimiters *)
 
+module InProg = struct
+  type _ t =
+    | Ignore : unit t
+    | Use : Declare.OblState.t t
+
+  let cast (type a) (x:Declare.OblState.t) (ty:a t) : a =
+    match ty with
+    | Ignore -> ()
+    | Use -> x
+end
+
+module OutProg = struct
+  type _ t =
+    | No : unit t
+    | Yes : Declare.OblState.t t
+
+  let cast (type a) (x:a) (ty:a t) : Declare.OblState.t option =
+    match ty with
+    | No -> None
+    | Yes -> Some x
+end
+
+module InProof = struct
+  type _ t =
+    | Ignore : unit t
+    | Reject : unit t
+    | Use : Declare.Proof.t t
+    | UseOpt : Declare.Proof.t option t
+
+  let cast (type a) (x:Declare.Proof.t option) (ty:a t) : a =
+    match x, ty with
+    | _, Ignore -> ()
+    | None, Reject -> ()
+    | Some _, Reject -> CErrors.user_err (Pp.str "Command not supported (Open proofs remain)")
+    | Some x, Use -> x
+    | None, Use -> CErrors.user_err (Pp.str "Command not supported (No proof-editing in progress)")
+    | _, UseOpt -> x
+end
+
+module OutProof = struct
+  type _ t =
+    | No : unit t
+    | Close : unit t
+    | Yes : Declare.Proof.t t
+
+  type result =
+    | Ignored
+    | Closed
+    | Open of Declare.Proof.t
+
+  let cast (type a) (x:a) (ty:a t) : result =
+    match ty with
+    | No -> Ignored
+    | Close -> Closed
+    | Yes -> Open x
+end
+
+type ('inprog,'outprog,'inproof,'outproof) vernac_type = {
+  inprog : 'inprog InProg.t;
+  outprog : 'outprog InProg.t;
+  inproof : 'inproof InProof.t;
+  outproof : 'outproof OutProof.t;
+}
+
 type typed_vernac =
-  | VtDefault of (unit -> unit)
-  | VtNoProof of (unit -> unit)
-  | VtCloseProof of (lemma:Declare.Proof.t -> pm:Declare.OblState.t -> Declare.OblState.t)
-  | VtOpenProof of (unit -> Declare.Proof.t)
-  | VtModifyProof of (pstate:Declare.Proof.t -> Declare.Proof.t)
-  | VtReadProofOpt of (pstate:Declare.Proof.t option -> unit)
-  | VtReadProof of (pstate:Declare.Proof.t -> unit)
-  | VtReadProgram of (stack:Vernacstate.LemmaStack.t option -> pm:Declare.OblState.t -> unit)
-  | VtModifyProgram of (pm:Declare.OblState.t -> Declare.OblState.t)
-  | VtDeclareProgram of (pm:Declare.OblState.t -> Declare.Proof.t)
-  | VtOpenProofProgram of (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t)
+    TypedVernac : {
+      inprog : 'inprog InProg.t;
+      outprog : 'outprog OutProg.t;
+      inproof : 'inproof InProof.t;
+      outproof : 'outproof OutProof.t;
+      run : pm:'inprog -> proof:'inproof -> 'outprog * 'outproof;
+    } -> typed_vernac
+
+[@@@ocaml.warning "-40"]
+
+let vtdefault f =
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = No;
+                run = (fun ~pm:() ~proof:() ->
+                    let () = f () in
+                    (), ()) }
+
+let vtnoproof f =
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = No;
+                run = (fun ~pm:() ~proof:() ->
+                    let () = f () in
+                    (), ())
+              }
+
+let vtcloseproof f =
+  TypedVernac { inprog = Use; outprog = Yes; inproof = Use; outproof = Close;
+                run = (fun ~pm ~proof ->
+                    let pm = f ~lemma:proof ~pm in
+                    pm, ())
+              }
+
+let vtopenproof f =
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = Yes;
+                run = (fun ~pm:() ~proof:() ->
+                    let proof = f () in
+                    (), proof)
+              }
+
+let vtmodifyproof f =
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Use; outproof = Yes;
+                run = (fun ~pm:() ~proof ->
+                    let proof = f ~pstate:proof in
+                    (), proof)
+              }
+
+let vtreadproofopt f =
+  TypedVernac { inprog = Ignore; outprog = No; inproof = UseOpt; outproof = No;
+                run = (fun ~pm:() ~proof ->
+                    let () = f ~pstate:proof in
+                    (), ())
+              }
+
+let vtreadproof f =
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Use; outproof = No;
+                run = (fun ~pm:() ~proof ->
+                    let () = f ~pstate:proof in
+                    (), ())
+              }
+
+let vtreadprogram f =
+  TypedVernac { inprog = Use; outprog = No; inproof = Ignore; outproof = No;
+                run = (fun ~pm ~proof:() ->
+                    let () = f ~pm in
+                    (), ())
+              }
+
+let vtmodifyprogram f =
+  TypedVernac { inprog = Use; outprog = Yes; inproof = Ignore; outproof = No;
+                run = (fun ~pm ~proof:() ->
+                    let pm = f ~pm in
+                    pm, ())
+              }
+
+let vtdeclareprogram f =
+  TypedVernac { inprog = Use; outprog = No; inproof = Ignore; outproof = Yes;
+                run = (fun ~pm ~proof:() ->
+                    let proof = f ~pm in
+                    (), proof)
+              }
+
+let vtopenproofprogram f =
+  TypedVernac { inprog = Use; outprog = Yes; inproof = Ignore; outproof = Yes;
+                run = (fun ~pm ~proof:() ->
+                    let pm, proof = f ~pm in
+                    pm, proof)
+              }
+
+[@@@ocaml.warning "+40"]
 
 type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> unit -> typed_vernac
 

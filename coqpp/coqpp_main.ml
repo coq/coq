@@ -349,21 +349,21 @@ let print_atts_right fmt = function
     fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
 
 let understand_state = function
-  | "close_proof" -> "VtCloseProof", false
-  | "open_proof" -> "VtOpenProof", true
-  | "proof" -> "VtModifyProof", false
-  | "proof_opt_query" -> "VtReadProofOpt", false
-  | "proof_query" -> "VtReadProof", false
-  | "read_program" -> "VtReadProgram", false
-  | "program" -> "VtModifyProgram", false
-  | "declare_program" -> "VtDeclareProgram", false
-  | "program_interactive" -> "VtOpenProofProgram", false
+  | "close_proof" -> "vtcloseproof", false
+  | "open_proof" -> "vtopenproof", true
+  | "proof" -> "vtmodifyproof", false
+  | "proof_opt_query" -> "vtreadproofopt", false
+  | "proof_query" -> "vtreadproof", false
+  | "read_program" -> "vtreadprogram", false
+  | "program" -> "vtmodifyprogram", false
+  | "declare_program" -> "vtdeclareprogram", false
+  | "program_interactive" -> "vtopenproofprogram", false
   | s -> fatal ("unsupported state specifier: " ^ s)
 
 let print_body_state state fmt r =
   let state = match r.vernac_state with Some _ as s -> s | None -> state in
   match state with
-  | None -> fprintf fmt "Vernacextend.VtDefault (fun () -> %a)" print_code r.vernac_body
+  | None -> fprintf fmt "Vernacextend.vtdefault (fun () -> %a)" print_code r.vernac_body
   | Some "CUSTOM" -> print_code fmt r.vernac_body
   | Some state ->
     let state, unit_wrap = understand_state state in
