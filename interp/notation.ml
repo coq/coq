@@ -555,6 +555,7 @@ type target_kind =
   | UInt of int_ty (* Coq.Init.Number.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 of pos_neg_int63_ty (* Coq.Numbers.Cyclic.Int63.PrimInt63.pos_neg_int63 *)
+  | Float64 (* Coq.Floats.PrimFloat.float *)
   | Number of number_ty (* Coq.Init.Number.number + uint + int *)
 
 type string_target_kind =
@@ -1023,6 +1024,58 @@ let interp_int63 ?loc ind n =
   then coqpos_neg_int63_of_bigint ?loc ind (sign,an)
   else error_overflow ?loc n
 
+let warn_inexact_float =
+  CWarnings.create ~name:"inexact-float" ~category:"parsing"
+    (fun (sn, f) ->
+      Pp.strbrk
+        (Printf.sprintf
+           "The constant %s is not a binary64 floating-point value. \
+            A closest value %s will be used and unambiguously printed %s."
+           sn (Float64.to_hex_string f) (Float64.to_string f)))
+
+let interp_float64 ?loc n =
+  let sn = NumTok.Signed.to_string n in
+  let f = Float64.of_string sn in
+  (* return true when f is not exactly equal to n,
+     this is only used to decide whether or not to display a warning
+     and does not play any actual role in the parsing *)
+  let inexact () = match Float64.classify f with
+    | Float64.(PInf | NInf | NaN) -> true
+    | Float64.(PZero | NZero) -> not (NumTok.Signed.is_zero n)
+    | Float64.(PNormal | NNormal | PSubn | NSubn) ->
+       let m, e =
+         let (_, i), f, e = NumTok.Signed.to_int_frac_and_exponent n in
+         let i = NumTok.UnsignedNat.to_string i in
+         let f = match f with
+           | None -> "" | Some f -> NumTok.UnsignedNat.to_string f in
+         let e = match e with
+           | None -> "0" | Some e -> NumTok.SignedNat.to_string e in
+         Z.of_string (i ^ f),
+         (try int_of_string e with Failure _ -> 0) - String.length f in
+       let m', e' =
+         let m', e' = Float64.frshiftexp f in
+         let m' = Float64.normfr_mantissa m' in
+         let e' = Uint63.to_int_min e' 4096 - Float64.eshift - 53 in
+         Z.of_string (Uint63.to_string m'),
+         e' in
+       let c2, c5 = Z.(of_int 2, of_int 5) in
+       (* check m*5^e <> m'*2^e' *)
+       let check m e m' e' =
+         not (Z.(equal (mul m (pow c5 e)) (mul m' (pow c2 e')))) in
+       (* check m*5^e*2^e' <> m' *)
+       let check' m e e' m' =
+         not (Z.(equal (mul (mul m (pow c5 e)) (pow c2 e')) m')) in
+       (* we now have to check m*10^e <> m'*2^e' *)
+       if e >= 0 then
+         if e <= e' then check m e m' (e' - e)
+         else check' m e (e - e') m'
+       else  (* e < 0 *)
+         if e' <= e then check m' (-e) m (e - e')
+         else check' m' (-e) (e' - e) m in
+  if NumTok.(Signed.classify n = CDec) && inexact () then
+    warn_inexact_float ?loc (sn, f);
+  mkFloat f
+
 let bigint_of_int63 c =
   match Constr.kind c with
   | Int i -> Z.of_int64 (Uint63.to_int64 i)
@@ -1035,6 +1088,18 @@ let bigint_of_coqpos_neg_int63 c =
       | Construct ((_,1), _) (* Pos *) -> bigint_of_int63 c'
       | Construct ((_,2), _) (* Neg *) -> Z.neg (bigint_of_int63 c')
       | _ -> raise NotAValidPrimToken)
+  | _ -> raise NotAValidPrimToken
+
+let get_printing_float = Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Float"]
+    ~value:true
+
+let uninterp_float64 c =
+  match Constr.kind c with
+  | Float f when not (Float64.is_infinity f || Float64.is_neg_infinity f
+                      || Float64.is_nan f) && get_printing_float () ->
+     NumTok.Signed.of_string (Float64.to_string f)
   | _ -> raise NotAValidPrimToken
 
 let interp o ?loc n =
@@ -1054,6 +1119,7 @@ let interp o ?loc n =
        interp_int63 ?loc pos_neg_int63_ty.pos_neg_int63_ty (NumTok.SignedNat.to_bigint n)
     | (Int _ | UInt _ | Z _ | Int63 _), _ ->
        no_such_prim_token "number" ?loc o.ty_name
+    | Float64, _ -> interp_float64 ?loc n
     | Number number_ty, _ -> coqnumber_of_rawnum number_ty n
   in
   let env = Global.env () in
@@ -1078,6 +1144,7 @@ let uninterp o n =
       | (UInt _, c) -> NumTok.Signed.of_nat (rawnum_of_coquint c)
       | (Z _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_z c)
       | (Int63 _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_coqpos_neg_int63 c)
+      | (Float64, c) -> uninterp_float64 c
       | (Number _, c) -> rawnum_of_coqnumber c
     end o n
 end

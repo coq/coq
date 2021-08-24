@@ -1721,8 +1721,10 @@ Number notations
             * :n:`Number.uint -> option @qualid__type`
             * :n:`Z -> @qualid__type`
             * :n:`Z -> option @qualid__type`
-            * :n:`PrimInt63.int -> @qualid__type`
-            * :n:`PrimInt63.int -> option @qualid__type`
+            * :n:`PrimInt63.pos_neg_int63 -> @qualid__type`
+            * :n:`PrimInt63.pos_neg_int63 -> option @qualid__type`
+            * :n:`PrimFloat.float -> @qualid__type`
+            * :n:`PrimFloat.float -> option @qualid__type`
             * :n:`Number.number -> @qualid__type`
             * :n:`Number.number -> option @qualid__type`
 
@@ -1735,8 +1737,10 @@ Number notations
             * :n:`@qualid__type -> option Number.uint`
             * :n:`@qualid__type -> Z`
             * :n:`@qualid__type -> option Z`
-            * :n:`@qualid__type -> PrimInt63.int`
-            * :n:`@qualid__type -> option PrimInt63.int`
+            * :n:`@qualid__type -> PrimInt63.pos_neg_int63`
+            * :n:`@qualid__type -> option PrimInt63.pos_neg_int63`
+            * :n:`@qualid__type -> PrimFloat.float`
+            * :n:`@qualid__type -> option PrimFloat.float`
             * :n:`@qualid__type -> Number.number`
             * :n:`@qualid__type -> option Number.number`
 
@@ -1750,10 +1754,20 @@ Number notations
          constants for primitive types) will be considered for printing.
 
          .. note::
-            For example, :n:`@qualid__type` can be :n:`PrimInt63.int`,
-            in which case :n:`@qualid__print` takes :n:`PrimInt63.int_wrapper` as input
-            instead of :n:`PrimInt63.int`. See below for an
+            Instead of an inductive type, :n:`@qualid__type` can be :n:`PrimInt63.int`
+            or :n:`PrimFloat.float`,
+            in which case :n:`@qualid__print` takes :n:`PrimInt63.int_wrapper`
+            or :n:`PrimFloat.float_wrapper` as input
+            instead of :n:`PrimInt63.int` or :n:`PrimFloat.float`. See below for an
             :ref:`example <example-number-notation-primitive-int>`.
+
+         .. note::
+            When :n:`PrimFloat.float` is used as input type of
+            :n:`@qualid__parse`, only numerical values will be parsed
+            this way, (no infinities nor NaN). Similarly, printers
+            :n:`@qualid__print` with output type :n:`PrimFloat.float`
+            or :n:`option PrimFloat.float` are ignored when they return
+            non numerical values.
 
       .. _number-string-via:
 
@@ -1846,7 +1860,7 @@ Number notations
 
       The constant's absolute value is too big to fit into a 63-bit integer :n:`PrimInt63.int`.
 
-   .. exn:: @qualid__parse should go from Number.int to @type or (option @type). Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or Number.number could be used (you may need to require BinNums or Number or PrimInt63 first).
+   .. exn:: @qualid__parse should go from Number.int to @type or (option @type). Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).
 
      The parsing function given to the :cmd:`Number Notation`
      command is not of the right type.

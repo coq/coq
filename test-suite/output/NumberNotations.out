@@ -513,3 +513,13 @@ The term
  "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
 has type "Fin.t (S (S (S (S ?n))))" while it is expected to have type
  "Fin.t (S (S (S O)))".
+0%float
+     : float
+1%float
+     : float
+infinity
+     : float
+neg_infinity
+     : float
+nan
+     : float
