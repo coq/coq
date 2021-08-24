@@ -11,7 +11,8 @@
 (* Locations management *)
 
 type source =
-  | InFile of string
+  (* OCaml won't allow using DirPath.t in InFile *)
+  | InFile of { dirpath : string option; file : string }
   | ToplevelInput
 
 type t = {
