@@ -1354,7 +1354,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
               let ist =
                 { lfun = newlfun
                 ; poly
-                ; extra = TacStore.set ist.extra f_trace trace
+                ; extra = TacStore.set ist.extra f_trace []
                 } in
               Profile_ltac.do_profile "interp_app" trace ~count_call:false
                 (catch_error_tac_loc loc false trace (val_interp (ensure_loc loc ist) body)) >>= fun v ->
@@ -1403,7 +1403,7 @@ and tactic_of_value ist vle =
       let ist = {
         lfun = lfun;
         poly;
-        extra = TacStore.set ist.extra f_trace trace; } in
+        extra = TacStore.set ist.extra f_trace []; } in
       let tac = name_if_glob appl (eval_tactic_ist ist t) in
       Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac_loc loc false trace tac)
   | VFun (appl,_,loc,vmap,vars,_) ->
