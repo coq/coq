@@ -8,7 +8,7 @@ want to profile time or memory consumption. AFAIK, this only works for Linux.
 In Coq source folder:
 
 opam switch 4.05.0+trunk+fp
-./configure -local -debug
+./configure -profile devel -debug
 make
 perf record -g bin/coqc file.v
 perf report -g fractal,callee --no-children
@@ -85,7 +85,7 @@ git rebase master
 Then:
 
 opam switch 4.00.1+alloc-profiling
-./configure -local -debug
+./configure -profile devel -debug
 make
 
 Note that linking the coqtop binary takes quite an amount of time with this

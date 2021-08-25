@@ -45,10 +45,6 @@ please see the [contributing guide](../../CONTRIBUTING.md).
      compiling Coq on two different architectures for which the
      result of "arch" is the same, e.g. Sun OS and Solaris)
 
-   * `-local`
-     Compile Coq to run in its source directory. The installation (step 6)
-     is not necessary in that case.
-
    * `-browser <command>`
      Use <command> to open an URL in a browser. %s must appear in <command>,
      and will be replaced by the URL.

@@ -831,7 +831,7 @@ plugin:plugin-tutorial:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
-    - ./configure -local -warn-error yes
+    - ./configure -profile devel -warn-error yes
     - make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:
