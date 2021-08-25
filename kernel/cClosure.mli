@@ -220,7 +220,8 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 (** Conversion auxiliary functions to do step by step normalisation *)
 
 (** [unfold_reference] unfolds references in a [fconstr] *)
-val unfold_reference : clos_infos -> clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
+val unfold_reference : Environ.env -> TransparentState.t ->
+  clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
 
 (** Hook for Reduction *)
 val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit
