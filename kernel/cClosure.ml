@@ -1394,7 +1394,7 @@ let rec knr info tab m stk =
       (match get_args n tys f e stk with
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
-  | FFlex fl when transparent_ref info.i_flags fl ->
+  | FFlex fl when red_set info.i_flags fDELTA && transparent_ref info.i_flags fl ->
       (match ref_value_cache info.i_cache.i_env tab fl with
         | Def v -> kni info tab v stk
         | Primitive op ->

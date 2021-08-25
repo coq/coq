@@ -1166,10 +1166,11 @@ let string_of_evaluable_ref env = function
 let unfold_side_flags = RedFlags.[fBETA;fMATCH;fFIX;fCOFIX;fZETA]
 let unfold_side_red = RedFlags.(mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA])
 let unfold_red kn =
+  (* FIXME: fDELTA should not set everybody transparent *)
   let flag = match kn with
     | EvalVarRef id -> RedFlags.fVAR id
     | EvalConstRef kn -> RedFlags.fCONST kn in
-  RedFlags.mkflags (flag::unfold_side_flags)
+  RedFlags.red_add (RedFlags.red_add_transparent (RedFlags.mkflags (RedFlags.fDELTA::unfold_side_flags)) TransparentState.empty) flag
 
 let unfold env sigma name c =
   if is_evaluable env name then
