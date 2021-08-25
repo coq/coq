@@ -209,18 +209,6 @@ In this case, you need either:
   directory where dllcoqrun.so is; this is suitable when you want to run
   the command a limited number of times in a controlled environment (e.g.
   during compilation of binary packages);
-- install dllcoqrun.so in a location listed in the file ld.conf that is in
-  the directory of the standard library of OCaml;
-- recompile your bytecode executables after reconfiguring the location
-  of the shared library:
 
-        ./configure -vmbyteflags "-dllib,-lcoqrun,-dllpath,<path>" ...
-
-  where `<path>` is the directory where the dllcoqrun.so is installed;
-- (not recommended) compile bytecode executables with a custom OCaml
-  runtime by using:
-
-        ./configure -custom ...
-
-  be aware that stripping executables generated this way, or performing
-  other executable-specific operations, will make them useless.
+- install `dllcoqrun.so` in a location listed in the file `ld.conf` that is in
+  the directory of the standard library of OCaml
