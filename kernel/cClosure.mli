@@ -26,7 +26,7 @@ val with_stats: 'a Lazy.t -> 'a
   a LetIn expression is Letin reduction *)
 
 (** Sets of reduction kinds. *)
-module type RedFlagsSig = sig
+module RedFlags : sig
   type reds
   type red_kind
 
@@ -67,7 +67,6 @@ module type RedFlagsSig = sig
   val red_projection : reds -> Projection.t -> bool
 end
 
-module RedFlags : RedFlagsSig
 open RedFlags
 
 (* These flags do not contain eta *)

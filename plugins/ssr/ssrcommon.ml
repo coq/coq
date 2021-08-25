@@ -1311,7 +1311,6 @@ let reduct_in_concl ~check t = Tactics.reduct_in_concl ~check (t, DEFAULTcast)
 let unfold cl =
   let module R = Reductionops in let module F = CClosure.RedFlags in
   let flags = F.mkflags [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX; F.fDELTA] in
-  let flags = F.red_add_transparent flags TransparentState.empty in
   let fold accu c = F.red_add accu (F.fCONST (fst (destConst (EConstr.Unsafe.to_constr c)))) in
   let flags = List.fold_left fold flags cl in
   reduct_in_concl ~check:false (R.clos_norm_flags flags)

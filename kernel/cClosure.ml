@@ -76,7 +76,6 @@ let with_stats c =
     Lazy.force c
 
 let all_opaque = TransparentState.empty
-let all_transparent = TransparentState.full
 
 module type RedFlagsSig = sig
   type reds
@@ -95,6 +94,7 @@ module type RedFlagsSig = sig
   val red_add_transparent : reds -> TransparentState.t -> reds
   val red_transparent : reds -> TransparentState.t
   val mkflags : red_kind list -> reds
+  val mkfullflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
   val red_projection : reds -> Projection.t -> bool
 end
@@ -138,7 +138,7 @@ module RedFlags : RedFlagsSig = struct
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
-    | DELTA -> { red with r_delta = true; r_const = all_transparent }
+    | DELTA -> { red with r_delta = true }
     | CONST kn ->
       let r = red.r_const in
       { red with r_const = { r with tr_cst = Cpred.add kn r.tr_cst } }
@@ -171,6 +171,8 @@ module RedFlags : RedFlagsSig = struct
 
   let mkflags = List.fold_left red_add no_red
 
+  let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }
+
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
     | CONST kn ->
@@ -194,14 +196,14 @@ end
 
 open RedFlags
 
-let all = mkflags [fBETA;fDELTA;fZETA;fMATCH;fFIX;fCOFIX]
-let allnolet = mkflags [fBETA;fDELTA;fMATCH;fFIX;fCOFIX]
+let all = mkfullflags [fBETA;fDELTA;fZETA;fMATCH;fFIX;fCOFIX]
+let allnolet = mkfullflags [fBETA;fDELTA;fMATCH;fFIX;fCOFIX]
 let beta = mkflags [fBETA]
-let betadeltazeta = mkflags [fBETA;fDELTA;fZETA]
+let betadeltazeta = mkfullflags [fBETA;fDELTA;fZETA]
 let betaiota = mkflags [fBETA;fMATCH;fFIX;fCOFIX]
 let betaiotazeta = mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
 let betazeta = mkflags [fBETA;fZETA]
-let delta = mkflags [fDELTA]
+let delta = mkfullflags [fDELTA]
 let zeta = mkflags [fZETA]
 let nored = no_red
 
