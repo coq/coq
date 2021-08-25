@@ -208,7 +208,7 @@ struct
     { iolist = fun s nil cons -> m.iolist s nil (fun _ s next -> cons () s next) }
 
   let lift m =
-    { iolist = fun s nil cons -> NonLogical.(m >>= fun x -> cons x s nil) }
+    { iolist = fun s nil cons -> cons (m ()) s nil }
 
   (** State related *)
 
@@ -245,23 +245,22 @@ struct
 
   let rec reflect (m : ('a * 'o, 'e) reified) =
     { iolist = fun s0 nil cons ->
-      let next = function
-      | Nil e -> nil e
-      | Cons ((x, s), l) -> cons x s (fun e -> (reflect (l e)).iolist s0 nil cons)
-      in
-      NonLogical.(m >>= next)
+      (); fun () ->
+      match m () with
+      | Nil e -> nil e ()
+      | Cons ((x, s), l) -> cons x s (fun e -> (reflect (l e)).iolist s0 nil cons) ()
     }
 
   let split m : ((_, _, _) list_view, _, _, _) t =
     let rnil e = NonLogical.return (Nil e) in
     let rcons p s l = NonLogical.return (Cons ((p, s), l)) in
     { iolist = fun s nil cons ->
-      let open NonLogical in
-      m.iolist s rnil rcons >>= begin function
-      | Nil e -> cons (Nil e) s nil
+      (); fun () ->
+      begin match m.iolist s rnil rcons () with
+      | Nil e -> cons (Nil e) s nil ()
       | Cons ((x, s), l) ->
         let l e = reflect (l e) in
-        cons (Cons (x, l)) s nil
+        cons (Cons (x, l)) s nil ()
       end }
 
   let run m s =
