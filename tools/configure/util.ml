@@ -210,3 +210,12 @@ let arch = function
     else if starts_with arch "MINGW32" then "win32"
     else if arch <> "" then arch
     else try_archs arch_progs
+
+let write_config_file ~file ?(bin=false) action =
+  safe_remove file;
+  let o = if bin then open_out_bin file else open_out file in
+  try
+    action o;
+    close_out o;
+    Unix.chmod file 0o444
+  with _ -> close_out o; safe_remove file

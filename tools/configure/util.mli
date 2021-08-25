@@ -22,7 +22,6 @@ val die : string -> 'a
 
 val is_executable : string -> bool
 val dir_exists : string -> bool
-val safe_remove : string -> unit
 
 val which : string -> string
 val program_in_path : string -> bool
@@ -40,3 +39,6 @@ val tryrun : string -> string list -> string * string list
 val read_lines_and_close : in_channel -> string * string list
 
 val arch : string option -> string
+
+(* bin is used to avoid adding \r on Cygwin/Windows *)
+val write_config_file : file:string -> ?bin:bool -> (out_channel -> unit) -> unit
