@@ -47,9 +47,7 @@ let arch prefs = arch prefs.arch
 
 let arch_is_win32 arch = arch = "win32"
 
-let resolve_binary_suffixes arch =
-  (if arch_is_win32 arch then ".exe" else ""),
-  (if os_type_win32 then ".dll" else ".so")
+let resolve_binary_suffix arch = if arch_is_win32 arch then ".exe" else ""
 
 (** * Git Precommit Hook *)
 let install_precommit_hook prefs =
@@ -607,7 +605,7 @@ let main () =
   let coq_bin_annot_flag = coq_bin_annot_flag prefs in
   let arch = arch prefs in
   let arch_is_win32 = arch_is_win32 arch in
-  let exe, dll = resolve_binary_suffixes arch in
+  let exe = resolve_binary_suffix arch in
   Util.exe := exe;
   install_precommit_hook prefs;
   let browser = browser prefs arch in
