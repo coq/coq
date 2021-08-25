@@ -31,9 +31,6 @@ COQ_SRC_DIR:=..
 
 ifneq ($(wildcard ../_build/default/config/Makefile),)
 include ../_build/default/config/Makefile
-ifeq ($(COQPREFIX),local)
-COQPREFIX:=$(shell cd ../_build/install/default/ ;pwd)
-endif
 endif
 
 #######################################################################
@@ -51,13 +48,6 @@ ifeq ($(ARCH),win32)
   export FINDLIB_SEP=;
 else
   export FINDLIB_SEP=:
-endif
-
-# Be careful to use COQPREFIX when prefix is not set
-# this assumes we're running inside dune, ie pwd=_build/default/test-suite
-# is this assumption correct?
-ifeq ($(COQPREFIX),local)
-	COQPREFIX:=$(shell cd ../..;pwd)/install/default/
 endif
 
 # The $(shell echo) trick is necessary due to configure quoting
