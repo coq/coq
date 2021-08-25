@@ -346,29 +346,16 @@ let coqide prefs best_compiler camlenv =
 
 (** System-specific CoqIDE flags *)
 
-(* XXX *)
-let idearchflags = ref ""
-let idearchfile = ref ""
-let idecdepsflags = ref ""
-let idearchdef = ref "X11"
-
-let coqide_flags prefs coqide arch =
+let idearchdef prefs coqide arch =
   match coqide, arch with
     | "opt", "Darwin" when prefs.macintegration ->
       let osxdir,_ = tryrun camlexec.find ["query";"lablgtkosx"] in
-      if osxdir <> "" then begin
-        idearchflags := "lablgtkosx.cma";
-        idearchdef := "QUARTZ"
-      end
+      if osxdir <> "" then "QUARTZ" else "X11"
     | "opt", "win32" ->
-      idearchfile := "ide/coqide/ide_win32_stubs.o ide/coqide/coq_icon.o";
-      idecdepsflags := "-custom";
-      idearchflags := "-ccopt '-subsystem windows'";
-      idearchdef := "WIN32"
+      "WIN32"
     | _, "win32" ->
-      idearchflags := "-ccopt '-subsystem windows'";
-      idearchdef := "WIN32"
-    | _ -> ()
+      "WIN32"
+    | _ -> "X11"
 
 (** * Documentation : do we have latex, hevea, ... *)
 
@@ -562,7 +549,7 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink browser =
+let print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink idearchdef browser =
   let { CamlConf.caml_version; camlbin; camllib } = camlenv in
   let pr s = printf s in
   pr "\n";
@@ -580,7 +567,7 @@ let print_summary prefs arch operating_system camlenv vmbyteflags custom_flag be
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
     pr "  Lablgtk3 library in         : %s\n" (esc !lablgtkdir);
-  if !idearchdef = "QUARTZ" then
+  if idearchdef = "QUARTZ" then
     pr "  Mac OS integration is on\n";
   pr "  CoqIDE                      : %s\n" coqide;
   pr "  Documentation               : %s\n"
@@ -616,7 +603,7 @@ let write_dbg_wrapper camlenv f =
 
 (** * Build the config/coq_config.ml file *)
 
-let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs f =
+let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs f =
   let { CoqEnv.coqlib; coqlibsuffix; configdir; configdirsuffix; docdir; docdirsuffix; datadir; datadirsuffix } = coqenv in
   let { CamlConf.caml_version } = camlenv in
   safe_remove f;
@@ -648,7 +635,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   pr_s "arch" arch;
   pr_b "arch_is_win32" arch_is_win32;
   pr_s "exec_extension" !exe;
-  pr "let gtk_platform = `%s\n" !idearchdef;
+  pr "let gtk_platform = `%s\n" idearchdef;
   pr_b "has_natdynlink" hasnatdynlink;
   pr_i32 "vo_version" vo_magic;
   pr_i "state_magic_number" state_magic;
@@ -764,11 +751,6 @@ let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_
   pr "# LablGTK\n";
   pr "# CoqIDE (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
-  pr "IDEFLAGS=%s\n" !idearchflags;
-  pr "IDEOPTCDEPS=%s\n" !idearchfile;
-  pr "IDECDEPS=%s\n" !idearchfile;
-  pr "IDECDEPSFLAGS=%s\n" !idecdepsflags;
-  pr "IDEINT=%s\n\n" !idearchdef;
   pr "# Defining REVISION\n";
   pr "# Option to control compilation and installation of the documentation\n";
   pr "WITHDOC=%s\n\n" (if prefs.withdoc then "all" else "no");
@@ -826,7 +808,7 @@ let main () =
   let operating_system = operating_system arch in
   check_for_zarith prefs;
   let coqide = coqide prefs best_compiler camlenv in
-  let _coqide_flags : unit = coqide_flags prefs coqide arch in
+  let idearchdef = idearchdef prefs coqide arch in
   (if prefs.withdoc then check_doc ());
   let install_dirs = install_dirs prefs arch in
   let coqenv = resolve_coqenv install_dirs in
@@ -835,9 +817,9 @@ let main () =
   let custom_flag = custom_flag prefs arch in
   let vmbyteflags = vmbyteflags prefs arch coqenv in
   if prefs.interactive then
-    print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink browser;
+    print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink idearchdef browser;
   write_dbg_wrapper camlenv "dev/ocamldebug-coq";
-  write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs "config/coq_config.ml";
+  write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs "config/coq_config.ml";
   write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29 "config/Makefile";
   write_dune_c_flags cflags "config/dune.c_flags";
   write_configpy "config/coq_config.py";
