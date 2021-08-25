@@ -93,13 +93,11 @@ module CamlConf = struct
 end
 
 let resolve_caml prefs =
-  let () = match prefs.ocamlfindcmd with
-    | Some cmd -> reset_caml_find camlexec cmd
-    | None ->
-       try reset_caml_find camlexec (which camlexec.find)
-       with Not_found ->
-         die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.find ^
-                "Please adjust your path or use the -ocamlfind option of ./configure")
+  let () =
+    try reset_caml_find camlexec (which camlexec.find)
+    with Not_found ->
+      die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.find ^
+           "Please adjust your path or use the -ocamlfind option of ./configure")
   in
   if not (is_executable camlexec.find)
   then die ("Error: cannot find the executable '"^camlexec.find^"'.")
@@ -522,34 +520,6 @@ let check_fmath sse2_math =
     die "Detected non IEEE-754 compliant architecture (or wrong \
          rounding mode). Use of Float is thus unsafe."
 
-(** * OCaml runtime flags *)
-
-(** Do we use -custom (yes by default on Windows and MacOS) *)
-
-let custom_os arch = arch_is_win32 arch || arch = "Darwin"
-
-let use_custom prefs arch = match prefs.custom with
-  | Some b -> b
-  | None -> custom_os arch
-
-let custom_flag prefs arch = if use_custom prefs arch then "-custom" else ""
-
-(* XXX *)
-let build_loadpath =
-  ref "# you might want to set CAML_LD_LIBRARY_PATH by hand!"
-
-let config_runtime prefs arch coqenv =
-  let { CoqEnv.coqlib } = coqenv in
-  match prefs.vmbyteflags with
-  | Some flags -> string_split ',' flags
-  | _ when use_custom prefs arch -> [custom_flag prefs arch]
-  | _ ->
-    let ld="CAML_LD_LIBRARY_PATH" in
-    build_loadpath := sprintf "export %s:=%s/kernel/byterun:$(%s)" ld coqtop ld;
-    ["-dllib";"-lcoqrun";"-dllpath";coqlib/"kernel/byterun"]
-
-let vmbyteflags prefs arch coqenv = config_runtime prefs arch coqenv
-
 let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 
 (** * Summary of the configuration *)
@@ -557,7 +527,7 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink idearchdef browser =
+let print_summary prefs arch operating_system camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser =
   let { CamlConf.caml_version; camlbin; camllib } = camlenv in
   let pr s = printf s in
   pr "\n";
@@ -565,8 +535,6 @@ let print_summary prefs arch operating_system camlenv vmbyteflags custom_flag be
   if operating_system <> "" then
     pr "  Operating system            : %s\n" operating_system;
   pr "  Sys.os_type                 : %s\n" Sys.os_type;
-  pr "  Coq VM bytecode link flags  : %s\n" (String.concat " " vmbyteflags);
-  pr "  Other bytecode link flags   : %s\n" custom_flag;
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
@@ -684,7 +652,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
 
 (** * Build the config/Makefile file *)
 
-let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29 o =
+let write_makefile prefs camlenv natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29 o =
   let { CamlConf.camllib } = camlenv in
   let pr s = fprintf o s in
   pr "###### config/Makefile : Configuration file for Coq ##############\n";
@@ -697,10 +665,6 @@ let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_
   pr "##################################################################\n\n";
   pr "#Variable used to detect whether ./configure has run successfully.\n";
   pr "COQ_CONFIGURED=yes\n\n";
-  pr "# Bytecode link flags : should we use -custom or not ?\n";
-  pr "CUSTOM=%s\n" custom_flag;
-  pr "VMBYTEFLAGS=%s\n" (String.concat " " vmbyteflags);
-  pr "%s\n\n" !build_loadpath;
   pr "# Paths for true installation\n";
   List.iter (fun ((v,msg),_) -> pr "# %s: path for %s\n" v msg) install_dirs;
   List.iter (fun ((v,_),(dir,_)) -> pr "%s=%S\n" v dir) install_dirs;
@@ -803,15 +767,13 @@ let main () =
   let coqenv = resolve_coqenv install_dirs in
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
-  let custom_flag = custom_flag prefs arch in
-  let vmbyteflags = vmbyteflags prefs arch coqenv in
   if prefs.interactive then
-    print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink idearchdef browser;
+    print_summary prefs arch operating_system camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser;
   write_config_file ~file:"dev/ocamldebug-coq" ~bin:true (write_dbg_wrapper camlenv);
   write_config_file ~file:"config/coq_config.ml"
     (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);
   write_config_file ~file:"config/Makefile"
-    (write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29);
+    (write_makefile prefs camlenv natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29);
   write_config_file ~file:"config/dune.c_flags" (write_dune_c_flags cflags);
   write_config_file ~file:"config/coq_config.py" write_configpy;
   ()

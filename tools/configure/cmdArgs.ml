@@ -21,14 +21,11 @@ module Prefs = struct
 type t = {
   prefix : string option;
   interactive : bool;
-  vmbyteflags : string option;
-  custom : bool option;
   libdir : string option;
   configdir : string option;
   datadir : string option;
   mandir : string option;
   docdir : string option;
-  ocamlfindcmd : string option;
   arch : string option;
   natdynlink : bool;
   coqide : ide option;
@@ -58,14 +55,11 @@ module Profiles = struct
 let default = {
   prefix = None;
   interactive = true;
-  vmbyteflags = None;
-  custom = None;
   libdir = None;
   configdir = None;
   datadir = None;
   mandir = None;
   docdir = None;
-  ocamlfindcmd = None;
   arch = None;
   natdynlink = true;
   coqide = None;
@@ -136,9 +130,6 @@ let arg_string_list c f = Arg.String (fun s -> prefs := f !prefs (string_split c
 
 let arg_set f = Arg.Unit (fun () -> prefs := f !prefs)
 
-let arg_set_option f = Arg.Unit (fun () -> prefs := f !prefs (Some true))
-let arg_clear_option f = Arg.Unit (fun () -> prefs := f !prefs (Some false))
-
 let arg_ide f = Arg.String (fun s -> prefs := f !prefs (Some (get_ide s)))
 
 let arg_native f = Arg.String (fun s -> prefs := f !prefs (get_native s))
@@ -164,12 +155,6 @@ let args_options = Arg.align [
   "-local", arg_set (fun p -> local_warning (); Profiles.get "devel" p), "Deprecated option, equivalent to -profile devel";
   "-no-ask", arg_set (fun p -> { p with interactive = false }),
     " Don't ask questions / print variables during configure [questions will be filled with defaults]";
-  "-vmbyteflags", arg_string_option (fun p vmbyteflags -> { p with vmbyteflags }),
-    "<flags> Comma-separated link flags for the VM of coqtop.byte";
-  "-custom", arg_set_option (fun p custom -> { p with custom }),
-    " Build bytecode executables with -custom (not recommended)";
-  "-no-custom", arg_clear_option (fun p custom -> { p with custom }),
-    " Do not build with -custom on Windows and MacOS";
   "-bindir", arg_string_option (fun p _ -> bindir_warning (); p ),
     "<dir> Where to install bin files";
   "-libdir", arg_string_option (fun p libdir -> { p with libdir }),
@@ -184,8 +169,6 @@ let args_options = Arg.align [
     "<dir> Where to install doc files";
   "-coqdocdir", arg_string_option (fun p _ -> coqdocdir_warning (); p),
     "<dir> Where to install Coqdoc style files";
-  "-ocamlfind", arg_string_option (fun p ocamlfindcmd -> { p with ocamlfindcmd }),
-    "<dir> Specifies the ocamlfind command to use";
   "-flambda-opts", arg_string_list ' ' (fun p flambda_flags -> { p with flambda_flags }),
     "<flags> Specifies additional flags to be passed to the flambda optimizing compiler";
   "-arch", arg_string_option (fun p arch -> { p with arch }),

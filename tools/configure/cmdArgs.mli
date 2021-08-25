@@ -18,14 +18,11 @@ module Prefs : sig
 type t = {
   prefix : string option;
   interactive : bool;
-  vmbyteflags : string option;
-  custom : bool option;
   libdir : string option;
   configdir : string option;
   datadir : string option;
   mandir : string option;
   docdir : string option;
-  ocamlfindcmd : string option;
   arch : string option;
   natdynlink : bool;
   coqide : ide option;
