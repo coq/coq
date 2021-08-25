@@ -34,7 +34,6 @@ type t = {
   withdoc : bool;
   byteonly : bool;
   flambda_flags : string list;
-  debug : bool;
   profile : bool;
   bin_annot : bool;
   annot : bool;
@@ -68,7 +67,6 @@ let default = {
   withdoc = false;
   byteonly = false;
   flambda_flags = [];
-  debug = true;
   profile = false;
   bin_annot = false;
   annot = false;
@@ -185,8 +183,6 @@ let args_options = Arg.align [
     "(yes|no) Compile the documentation or not";
   "-byte-only", arg_set (fun p -> { p with byteonly = true }),
     " Compiles only bytecode version of Coq";
-  "-nodebug", arg_set (fun p -> { p with debug = true }),
-    " Do not add debugging information in the Coq executables";
   "-profiling", arg_set (fun p -> { p with profile = true }),
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Unit (fun () -> die "-annotate has been removed. Please use -annot or -bin-annot instead."),

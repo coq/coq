@@ -31,7 +31,6 @@ type t = {
   withdoc : bool;
   byteonly : bool;
   flambda_flags : string list;
-  debug : bool;
   profile : bool;
   bin_annot : bool;
   annot : bool;

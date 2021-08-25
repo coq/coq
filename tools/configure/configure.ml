@@ -37,7 +37,6 @@ let camlexec = { find = "ocamlfind" }
 
 let reset_caml_find c o = c.find <- o
 
-let coq_debug_flag prefs = if prefs.debug then "-g" else ""
 let coq_annot_flag prefs = if prefs.annot then "-annot" else ""
 let coq_bin_annot_flag prefs = if prefs.bin_annot then "-bin-annot" else ""
 
@@ -149,11 +148,6 @@ let check_findlib_version prefs findlib_version findlib_version_nums =
     let () = cprintf prefs "Your version of OCamlfind is %s." findlib_version in
     die "You need OCamlfind 1.8.0 or later."
 
-let camltag caml_version_list =
-  match caml_version_list with
-  | x::y::_ -> "OCAML"^x^y
-  | _ -> assert false
-
 (** Explanation of disabled warnings:
     4: fragile pattern matching: too common in the code and too annoying to avoid in general
     9: missing fields in a record pattern: too common in the code and not worth the bother
@@ -222,9 +216,6 @@ let best_compiler prefs camlenv =
 (** * Native dynlink *)
 
 let hasnatdynlink prefs best_compiler = prefs.natdynlink && best_compiler = "opt"
-
-let natdynlinkflag hasnatdynlink =
-  if hasnatdynlink then "true" else "false"
 
 (** * OS dependent libraries *)
 
@@ -652,8 +643,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
 
 (** * Build the config/Makefile file *)
 
-let write_makefile prefs camlenv natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29 o =
-  let { CamlConf.camllib } = camlenv in
+let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags coqide arch exe dune_29 o =
   let pr s = fprintf o s in
   pr "###### config/Makefile : Configuration file for Coq ##############\n";
   pr "#                                                                #\n";
@@ -670,45 +660,24 @@ let write_makefile prefs camlenv natdynlinkflag install_dirs best_compiler camlt
   List.iter (fun ((v,_),(dir,_)) -> pr "%s=%S\n" v dir) install_dirs;
   pr "\n# Coq version\n";
   pr "VERSION=%s\n" coq_version;
-  pr "# Objective-Caml compile command\n";
-  pr "OCAMLFIND=%S\n" camlexec.find;
   pr "# The best compiler: native (=opt) or bytecode (=byte)\n";
   pr "BEST=%s\n\n" best_compiler;
-  pr "# Ocaml version number\n";
-  pr "CAMLVERSION=%s\n\n" camltag;
-  pr "# Ocaml libraries\n";
-  pr "CAMLLIB=%S\n\n" camllib;
-  pr "# Ocaml .h directory\n";
-  pr "CAMLHLIB=%S\n\n" camllib;
-  pr "# Caml link command and Caml make top command\n";
+  (* Only used in the test suite: OCAMLFIND CAMLFLAGS *)
+  pr "# Findlib command\n";
+  pr "OCAMLFIND=%S\n" camlexec.find;
   pr "# Caml flags\n";
   pr "CAMLFLAGS=%s %s\n" caml_flags coq_caml_flags;
-  pr "# User compilation flag\n";
-  pr "USERFLAGS=\n\n";
-  (* XXX make this configurable *)
+  (* make this configurable? *)
   pr "FLAMBDA_FLAGS=%s\n" (String.concat " " prefs.flambda_flags);
-  pr "# Flags for GCC\n";
-  pr "CFLAGS=%s\n\n" cflags;
-  pr "# Compilation debug flags\n";
-  pr "CAMLDEBUG=%s\n" coq_debug_flag;
-  pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag;
-  pr "# Compilation profile flag\n";
   pr "# Your architecture\n";
   pr "# Can be obtain by UNIX command arch\n";
   pr "ARCH=%s\n" arch;
-  pr "OCAML_INT_SIZE:=%d\n" Sys.int_size;
-  pr "HASNATDYNLINK=%s\n\n" natdynlinkflag;
-  pr "# Supplementary libs for some systems, currently:\n";
-  pr "#  . Sun Solaris: -cclib -lunix -cclib -lnsl -cclib -lsocket\n";
-  pr "#  . others     : -cclib -lunix\n";
   pr "# executable files extension, currently:\n";
   pr "#  Unix systems:\n";
   pr "#  Win32 systems : .exe\n";
   pr "EXE=%s\n" exe;
-  pr "DLLEXT=%s\n\n" dll;
   pr "# the command MKDIR (try to use mkdirhier if you have problems)\n";
   pr "MKDIR=mkdir -p\n\n";
-  pr "# LablGTK\n";
   pr "# CoqIDE (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
   pr "# Defining REVISION\n";
@@ -738,7 +707,6 @@ let main () =
   let dune_29 = check_for_dune_29 () in
   let coq_annot_flag = coq_annot_flag prefs in
   let coq_bin_annot_flag = coq_bin_annot_flag prefs in
-  let coq_debug_flag = coq_debug_flag prefs in
   let arch = arch prefs in
   let arch_is_win32 = arch_is_win32 arch in
   let exe, dll = resolve_binary_suffixes arch in
@@ -752,12 +720,10 @@ let main () =
   let findlib_version_list = findlib_version_list camlenv in
   let findlib_version_nums = findlib_version_nums findlib_version_list in
   check_findlib_version prefs camlenv.CamlConf.findlib_version findlib_version_nums;
-  let camltag = camltag caml_version_list in
   let best_compiler = best_compiler prefs camlenv in
   let caml_flags = caml_flags coq_annot_flag coq_bin_annot_flag in
   let coq_caml_flags = coq_caml_flags prefs in
   let hasnatdynlink = hasnatdynlink prefs best_compiler in
-  let natdynlinkflag = natdynlinkflag hasnatdynlink in
   let operating_system = operating_system arch in
   check_for_zarith prefs;
   let coqide = coqide prefs best_compiler camlenv in
@@ -773,7 +739,7 @@ let main () =
   write_config_file ~file:"config/coq_config.ml"
     (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);
   write_config_file ~file:"config/Makefile"
-    (write_makefile prefs camlenv natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29);
+    (write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags coqide arch exe dune_29);
   write_config_file ~file:"config/dune.c_flags" (write_dune_c_flags cflags);
   write_config_file ~file:"config/coq_config.py" write_configpy;
   ()
