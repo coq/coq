@@ -12,9 +12,10 @@
 (**  Configuration script for Coq *)
 (**********************************)
 open Printf
-open Conf.Util
-open Conf.CmdArgs
-open Conf.CmdArgs.Prefs
+open Conf
+open Util
+open CmdArgs
+open CmdArgs.Prefs
 
 let (/) = Filename.concat
 
@@ -23,12 +24,6 @@ let vo_magic = 81491
 let state_magic = 581491
 let is_a_released_version = false
 let _verbose = ref false (* for debugging this script *)
-
-(* Support don't ask *)
-let cprintf prefs x =
-  if prefs.interactive
-  then cprintf x
-  else Printf.ifprintf stdout x
 
 (** Default OCaml binaries *)
 
@@ -248,80 +243,6 @@ let check_for_zarith prefs =
     else
       die ("Zarith version 1.10 is required, you have " ^ zarith_version)
 
-(** * lablgtk3 and CoqIDE *)
-
-(** Detect and/or verify the Lablgtk3 location *)
-
-let get_lablgtkdir () =
-  tryrun camlexec.find ["query";"lablgtk3-sourceview3"]
-
-(** Detect and/or verify the Lablgtk2 version *)
-
-let check_lablgtk_version () =
-  let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk3"] in
-  try
-    let vl = numeric_prefix_list v in
-    let vn = List.map int_of_string vl in
-    if vn < [3; 1; 0] then
-      (false, v)
-    else
-      (true, v)
-  with _ -> (false, v)
-
-let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
-
-exception Ide of ide
-
-(** If the user asks an impossible coqide, we abort the configuration *)
-
-let set_ide prefs ide msg = match ide, prefs.coqide with
-  | No, Some (Byte|Opt)
-  | Byte, Some Opt -> die (msg^":\n=> cannot build requested CoqIDE")
-  | _ ->
-    cprintf prefs "%s:\n=> %s CoqIDE will be built." msg (pr_ide ide);
-    raise (Ide ide)
-
-(* XXX *)
-let lablgtkdir = ref ""
-
-(** Which CoqIDE is possible ? Which one is requested ?
-    This function also sets the lablgtkdir reference in case of success. *)
-
-let check_coqide prefs best_compiler camlenv =
-  if prefs.coqide = Some No then set_ide prefs No "CoqIde manually disabled";
-  let dir, via = get_lablgtkdir () in
-  if dir = ""
-  then set_ide prefs No "LablGtk3 or LablGtkSourceView3 not found"
-  else
-    let (ok, version) = check_lablgtk_version () in
-    let found = sprintf "LablGtk3 and LablGtkSourceView3 found (%s)" version in
-    if not ok then set_ide prefs No (found^", but too old (required >= 3.1.0, found " ^ version ^ ")");
-    (* We're now sure to produce at least one kind of coqide *)
-    lablgtkdir := dir;
-    if prefs.coqide = Some Byte then set_ide prefs Byte (found^", bytecode requested");
-    if best_compiler <> "opt" then set_ide prefs Byte (found^", but no native compiler");
-    let { CamlConf.camllib } = camlenv in
-    if not (Sys.file_exists (camllib/"threads"/"threads.cmxa")) then
-      set_ide prefs Byte (found^", but no native threads");
-    set_ide prefs Opt (found^", with native threads")
-
-let coqide prefs best_compiler camlenv =
-  try check_coqide prefs best_compiler camlenv
-  with Ide Opt -> "opt" | Ide Byte -> "byte" | Ide No -> "no"
-
-(** System-specific CoqIDE flags *)
-
-let idearchdef prefs coqide arch =
-  match coqide, arch with
-    | "opt", "Darwin" when prefs.macintegration ->
-      let osxdir,_ = tryrun camlexec.find ["query";"lablgtkosx"] in
-      if osxdir <> "" then "QUARTZ" else "X11"
-    | "opt", "win32" ->
-      "WIN32"
-    | _, "win32" ->
-      "WIN32"
-    | _ -> "X11"
-
 (** * Documentation : do we have latex, hevea, ... *)
 
 let check_sphinx_deps () =
@@ -500,7 +421,7 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary prefs arch camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser =
+let print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdir hasnatdynlink idearchdef browser =
   let { CamlConf.caml_version; camlbin; camllib } = camlenv in
   let pr s = printf s in
   pr "\n";
@@ -512,7 +433,7 @@ let print_summary prefs arch camlenv best_compiler install_dirs coqide hasnatdyn
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
-    pr "  Lablgtk3 library in         : %s\n" (esc !lablgtkdir);
+    pr "  Lablgtk3 library in         : %s\n" (esc lablgtkdir);
   if idearchdef = "QUARTZ" then
     pr "  Mac OS integration is on\n";
   pr "  CoqIDE                      : %s\n" coqide;
@@ -680,14 +601,14 @@ let write_configpy o =
 
 (* Main configure routine *)
 let main () =
-  let prefs = Conf.CmdArgs.parse_args () in
+  let prefs = CmdArgs.parse_args () in
   let dune_29 = check_for_dune_29 () in
   let coq_annot_flag = coq_annot_flag prefs in
   let coq_bin_annot_flag = coq_bin_annot_flag prefs in
   let arch = arch prefs in
   let arch_is_win32 = arch_is_win32 arch in
   let exe, dll = resolve_binary_suffixes arch in
-  Conf.Util.exe := exe;
+  Util.exe := exe;
   install_precommit_hook prefs;
   let browser = browser prefs arch in
   let camlenv = resolve_caml prefs in
@@ -702,15 +623,15 @@ let main () =
   let coq_caml_flags = coq_caml_flags prefs in
   let hasnatdynlink = hasnatdynlink prefs best_compiler in
   check_for_zarith prefs;
-  let coqide = coqide prefs best_compiler camlenv in
-  let idearchdef = idearchdef prefs coqide arch in
+  let coqide, lablgtkdir = Coqide.coqide camlexec.find prefs best_compiler camlenv.CamlConf.camllib in
+  let idearchdef = Coqide.idearchdef camlexec.find prefs coqide arch in
   (if prefs.withdoc then check_doc ());
   let install_dirs = install_dirs prefs arch in
   let coqenv = resolve_coqenv install_dirs in
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
   if prefs.interactive then
-    print_summary prefs arch camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser;
+    print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdir hasnatdynlink idearchdef browser;
   write_config_file ~file:"dev/ocamldebug-coq" ~bin:true (write_dbg_wrapper camlenv);
   write_config_file ~file:"config/coq_config.ml"
     (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);

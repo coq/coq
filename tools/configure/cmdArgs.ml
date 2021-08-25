@@ -208,3 +208,9 @@ let parse_args () =
     (fun s -> raise (Arg.Bad ("Unknown option: "^s)))
     "Available options for configure are:";
   !prefs
+
+(* Support don't ask *)
+let cprintf prefs x =
+  if prefs.interactive
+  then cprintf x
+  else Printf.ifprintf stdout x

@@ -44,3 +44,5 @@ type t = {
 end
 
 val parse_args : unit -> Prefs.t
+
+val cprintf : Prefs.t -> ('a, out_channel, unit, unit) format4 -> 'a
