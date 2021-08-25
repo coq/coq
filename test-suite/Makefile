@@ -60,8 +60,10 @@ ifeq ($(COQPREFIX),local)
 	COQPREFIX:=$(shell cd ../..;pwd)/install/default/
 endif
 
+# The $(shell echo) trick is necessary due to configure quoting
+# filenames, still, this issue is tricky when paths contain spaces
 export OCAMLPATH := $(shell echo $(COQPREFIX)/lib$(FINDLIB_SEP)$$OCAMLPATH)
-export CAML_LD_LIBRARY_PATH:=$(COQPREFIX)/lib/stublibs:$(CAML_LD_LIBRARY_PATH)
+export CAML_LD_LIBRARY_PATH:=$(shell echo $(COQPREFIX)/lib/stublibs):$(CAML_LD_LIBRARY_PATH)
 
 # COQLIB is an env variable so no quotes
 COQLIB?=
