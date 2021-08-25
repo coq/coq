@@ -173,15 +173,7 @@ let caml_flags coq_annot_flag coq_bin_annot_flag =
   Printf.sprintf "-thread -rectypes %s %s %s %s %s" coq_warnings coq_annot_flag coq_bin_annot_flag coq_safe_string coq_strict_sequence
 
 (* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
-let coq_caml_flags =
-  coq_warn_error
-
-let shorten_camllib camlenv s =
-  let { CamlConf.camllib } = camlenv in
-  if starts_with s (camllib^"/") then
-    let l = String.length camllib + 1 in
-    "+" ^ String.sub s l (String.length s - l)
-  else s
+let coq_caml_flags = coq_warn_error
 
 (** * Native compiler *)
 
@@ -305,7 +297,7 @@ let check_coqide prefs best_compiler camlenv =
     let found = sprintf "LablGtk3 and LablGtkSourceView3 found (%s)" version in
     if not ok then set_ide prefs No (found^", but too old (required >= 3.1.0, found " ^ version ^ ")");
     (* We're now sure to produce at least one kind of coqide *)
-    lablgtkdir := shorten_camllib camlenv dir;
+    lablgtkdir := dir;
     if prefs.coqide = Some Byte then set_ide prefs Byte (found^", bytecode requested");
     if best_compiler <> "opt" then set_ide prefs Byte (found^", but no native compiler");
     let { CamlConf.camllib } = camlenv in
