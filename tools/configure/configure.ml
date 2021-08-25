@@ -228,6 +228,7 @@ type preferences = {
   force_findlib_version : bool;
   warn_error : bool;
   dune_profile : string;
+  install_enabled : bool;
 }
 
 module Profiles = struct
@@ -264,6 +265,7 @@ let default = {
   force_findlib_version = false;
   warn_error = false;
   dune_profile = "release";
+  install_enabled = true;
 }
 
 let devel state = { state with
@@ -274,7 +276,9 @@ let devel state = { state with
   interactive = false;
   output_summary = true;
   prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
+  install_enabled = false;
 }
+
 let devel_doc = "-annot -bin-annot -warn-error yes"
 
 let get = function
@@ -1213,6 +1217,7 @@ let write_makefile f =
   pr "NATIVECOMPUTE=%s\n" (if prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
   pr "COQWARNERROR=%s\n" (if prefs.warn_error then "-w +default" else "");
   pr "CONFIGURE_DPROFILE=%s\n" prefs.dune_profile;
+  pr "COQ_INSTALL_ENABLED=%b\n" prefs.install_enabled;
   close_out o;
   Unix.chmod f 0o444
 
