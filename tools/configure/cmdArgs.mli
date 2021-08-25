@@ -18,7 +18,6 @@ module Prefs : sig
 type t = {
   prefix : string option;
   interactive : bool;
-  output_summary : bool;
   vmbyteflags : string option;
   custom : bool option;
   libdir : string option;

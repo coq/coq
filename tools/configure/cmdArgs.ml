@@ -21,7 +21,6 @@ module Prefs = struct
 type t = {
   prefix : string option;
   interactive : bool;
-  output_summary : bool;
   vmbyteflags : string option;
   custom : bool option;
   libdir : string option;
@@ -61,7 +60,6 @@ module Profiles = struct
 let default = {
   prefix = None;
   interactive = true;
-  output_summary = true;
   vmbyteflags = None;
   custom = None;
   libdir = None;
@@ -98,8 +96,7 @@ let devel state = { state with
   annot = true;
   warn_error = true;
   dune_profile = "dev";
-  interactive = false;
-  output_summary = true;
+  interactive = true;
   prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
   install_enabled = false;
 }
@@ -169,7 +166,7 @@ let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
     "<dir> Set installation directory to <dir> (absolute path required)";
   "-local", arg_set (fun p -> local_warning (); Profiles.get "devel" p), "Deprecated option, equivalent to -profile devel";
-  "-no-ask", arg_set (fun p -> { p with interactive = false; output_summary = false }),
+  "-no-ask", arg_set (fun p -> { p with interactive = false }),
     " Don't ask questions / print variables during configure [questions will be filled with defaults]";
   "-vmbyteflags", arg_string_option (fun p vmbyteflags -> { p with vmbyteflags }),
     "<flags> Comma-separated link flags for the VM of coqtop.byte";
