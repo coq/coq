@@ -169,7 +169,7 @@ val solve_pattern_eqn : env -> evar_map -> alias list -> constr -> constr
 
 val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 
-exception IllTypedInstance of env * types * types
+exception IllTypedInstance of env * evar_map * types * types
 
 val check_evar_instance : unifier -> unify_flags ->
   env -> evar_map -> Evar.t -> constr -> evar_map

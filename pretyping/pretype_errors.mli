@@ -26,6 +26,7 @@ type unification_error =
   | IncompatibleInstances of env * existential * constr * constr
   | MetaOccurInBody of Evar.t
   | InstanceNotSameType of Evar.t * env * types * types
+  | InstanceNotFunctionalType of Evar.t * env * constr * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities
