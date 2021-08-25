@@ -124,9 +124,9 @@ install` internally. Before Dune 2.9, `dune install` didn't support
 configuring some installation paths such as `-docdir` and
 `-configdir`, thus these configure options were ignored by default.
 
-For Dune >= 2.9, we recommend patching `Makefile.install` so these
-options are taken into account. For Dune < 2.9, you may have to
-post-process your package to fix install locations. See
+For Dune >= 2.9, we defining the `DUNE_29_PLUS` variable so these
+options are taken into account by Coq's Makefile. For Dune < 2.9, you
+may have to post-process your package to fix install locations. See
 `Makefile.install` `install-dune` target for more information.
 
 Installation Procedure For Plugin Developers.

@@ -51,17 +51,25 @@ endif
 # Debian's FHS, an opam-built dune will differ and follow OPAM's layout.
 #
 # We ought to improve this, as of today the case of an opam-built dune
-# installing to a global prefix such as /usr/local/ may not follow the FHS
+# installing to a global prefix such as /usr/local/ may not follow the FHS.
+# For now, we respect the values given at configure's time.
+ifdef DUNE_29_PLUS
+install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
+	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coq-core
+	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide-server
+else
 install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
 	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coq-core
 	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide-server
+endif
 
 # IMPORTANT NOTE: before Dune 2.9, the --docdir and --etcdir options
-# were not supported, if you are using Dune >= 2.9, you can add
+# were not supported, if you are using Dune >= 2.9, you can use `make
+# DUNE_29_PLUS=1 install` to use the call with the right options.
 #
-# --etcdir=$(CONFIGDIR) --docdir=$(DOCDIR) , additionally, you can also add
-# --libdir=$(COQLIBINSTALL) if required by your distribution, but we recommend
-# using the default.
+# Additionally, you can also add --libdir=$(COQLIBINSTALL) if required
+# by your distribution, but we recommend using the default configured
+# with Dune.
 
 install-coq: install-dune install-library
 

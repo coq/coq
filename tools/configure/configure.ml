@@ -343,8 +343,8 @@ let local_warning () = warn "-local option is deprecated, and equivalent to -pro
 let bindir_warning () = warn "-bindir option is deprecated, Coq will now unconditionally use $prefix/bin"
 let coqdocdir_warning () = warn "-coqdordir option is deprecated, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files"
 
-let docdir_warning () = warn "-docdir has no effect in configure, see dev/doc/INSTALL.make.md for more details"
-let configdir_warning () = warn "-configdir has no effect in configure, see dev/doc/INSTALL.make.md for more details"
+let docdir_warning () = warn "-docdir will only have effect if using Dune >= 2.9 and setting the DUNE_29_PLUS variable, see dev/doc/INSTALL.make.md for more details"
+let configdir_warning () = warn "-configdir will only have effect if using Dune >= 2.9 and setting the DUNE_29_PLUS variable, see dev/doc/INSTALL.make.md for more details"
 
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
