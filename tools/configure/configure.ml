@@ -219,16 +219,6 @@ let hasnatdynlink prefs best_compiler = prefs.natdynlink && best_compiler = "opt
 
 (** * OS dependent libraries *)
 
-let operating_system arch =
-  if starts_with arch "sun4" then
-    let os, _ = run "uname" ["-r"] in
-    if starts_with os "5" then
-      "Sun Solaris "^os
-    else
-      "Sun OS "^os
-  else
-    (try Sys.getenv "OS" with Not_found -> "")
-
 (** Check for dune *)
 
 let dune_install_warning () =
@@ -518,13 +508,11 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary prefs arch operating_system camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser =
+let print_summary prefs arch camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser =
   let { CamlConf.caml_version; camlbin; camllib } = camlenv in
   let pr s = printf s in
   pr "\n";
   pr "  Architecture                : %s\n" arch;
-  if operating_system <> "" then
-    pr "  Operating system            : %s\n" operating_system;
   pr "  Sys.os_type                 : %s\n" Sys.os_type;
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
@@ -724,7 +712,6 @@ let main () =
   let caml_flags = caml_flags coq_annot_flag coq_bin_annot_flag in
   let coq_caml_flags = coq_caml_flags prefs in
   let hasnatdynlink = hasnatdynlink prefs best_compiler in
-  let operating_system = operating_system arch in
   check_for_zarith prefs;
   let coqide = coqide prefs best_compiler camlenv in
   let idearchdef = idearchdef prefs coqide arch in
@@ -734,7 +721,7 @@ let main () =
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
   if prefs.interactive then
-    print_summary prefs arch operating_system camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser;
+    print_summary prefs arch camlenv best_compiler install_dirs coqide hasnatdynlink idearchdef browser;
   write_config_file ~file:"dev/ocamldebug-coq" ~bin:true (write_dbg_wrapper camlenv);
   write_config_file ~file:"config/coq_config.ml"
     (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);
