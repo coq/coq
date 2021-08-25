@@ -517,7 +517,6 @@ let print_summary prefs arch camlenv best_compiler install_dirs coqide hasnatdyn
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
-  pr "  OCaml flambda flags         : %s\n" (String.concat " " prefs.flambda_flags);
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
@@ -655,8 +654,6 @@ let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags co
   pr "OCAMLFIND=%S\n" camlexec.find;
   pr "# Caml flags\n";
   pr "CAMLFLAGS=%s %s\n" caml_flags coq_caml_flags;
-  (* make this configurable? *)
-  pr "FLAMBDA_FLAGS=%s\n" (String.concat " " prefs.flambda_flags);
   pr "# Your architecture\n";
   pr "# Can be obtain by UNIX command arch\n";
   pr "ARCH=%s\n" arch;

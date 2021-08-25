@@ -75,7 +75,7 @@ the Flambda optimizer enabled must be installed. For OPAM users,
 this amounts to installing a compiler switch ending in `+flambda`,
 such as `4.07.1+flambda`. For other users, YMMV. Once `ocamlopt -config`
 reports that Flambda is available, some further optimization options
-can be used; see the entry about `-flambda-opts` in the build guide
+can be used; see the entry about `flambda options` in the build guide
 for more details.
 
 Choice of Build and Installation Procedure

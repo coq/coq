@@ -53,27 +53,6 @@ please see the [contributing guide](../../CONTRIBUTING.md).
      Use <command> to open an URL in a browser. %s must appear in <command>,
      and will be replaced by the URL.
 
-   * `-flambda-opts <flags>`
-     This experimental option will pass specific user flags to the
-     OCaml optimizing compiler. In most cases, this option is used
-     to tweak the flambda backend; for maximum performance we
-     recommend using:
-
-         -flambda-opts `-O3 -unbox-closures`
-
-     but of course you are free to try with a different combination
-     of flags. You can read more at
-     https://caml.inria.fr/pub/docs/manual-ocaml/flambda.html
-
-     There is a known problem with certain OCaml versions and
-     `native_compute`, that will make compilation to require
-     a large amount of RAM (>= 10GiB) in some particular files.
-
-     We recommend disabling native compilation (`-native-compiler no`)
-     with flambda unless you use OCaml >= 4.07.0.
-
-     c.f. https://caml.inria.fr/mantis/view.php?id=7630
-
    If you want your build to be reproducible, ensure that the
    `SOURCE_DATE_EPOCH` environment variable is set as documented in
    https://reproducible-builds.org/specs/source-date-epoch/
@@ -197,6 +176,26 @@ You can then indicate the location of the Coq's standard library using
 the option `-coqlib`:
 
     coqtop -coqlib <new directory>
+
+# FLambda Options
+
+You can tweak optimizations flags sent to the OCaml optimizing
+compiler. Coq's default is:
+
+    -flambda-opts `-O3 -unbox-closures`
+
+set in Coq's toplevel `dune` file. Feel free to try with a different
+combination of flags. You can read more at
+https://caml.inria.fr/pub/docs/manual-ocaml/flambda.html
+
+There is a known problem with certain OCaml versions and
+`native_compute`, that will make compilation to require
+a large amount of RAM (>= 10GiB) in some particular files.
+
+We recommend disabling native compilation (`-native-compiler no`)
+with flambda unless you use OCaml >= 4.07.0.
+
+c.f. https://caml.inria.fr/mantis/view.php?id=7630
 
 Dynamically Loaded Libraries For Bytecode Executables.
 ------------------------------------------------------

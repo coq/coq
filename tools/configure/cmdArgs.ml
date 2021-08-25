@@ -33,7 +33,6 @@ type t = {
   browser : string option;
   withdoc : bool;
   byteonly : bool;
-  flambda_flags : string list;
   profile : bool;
   bin_annot : bool;
   annot : bool;
@@ -66,7 +65,6 @@ let default = {
   browser = None;
   withdoc = false;
   byteonly = false;
-  flambda_flags = [];
   profile = false;
   bin_annot = false;
   annot = false;
@@ -124,7 +122,6 @@ let arg_bool f = Arg.String (fun s -> prefs := f !prefs (get_bool s))
 
 let arg_string f = Arg.String (fun s -> prefs := f !prefs s)
 let arg_string_option f = Arg.String (fun s -> prefs := f !prefs (Some s))
-let arg_string_list c f = Arg.String (fun s -> prefs := f !prefs (string_split c s))
 
 let arg_set f = Arg.Unit (fun () -> prefs := f !prefs)
 
@@ -167,8 +164,6 @@ let args_options = Arg.align [
     "<dir> Where to install doc files";
   "-coqdocdir", arg_string_option (fun p _ -> coqdocdir_warning (); p),
     "<dir> Where to install Coqdoc style files";
-  "-flambda-opts", arg_string_list ' ' (fun p flambda_flags -> { p with flambda_flags }),
-    "<flags> Specifies additional flags to be passed to the flambda optimizing compiler";
   "-arch", arg_string_option (fun p arch -> { p with arch }),
     "<arch> Specifies the architecture";
   "-natdynlink", arg_bool (fun p natdynlink -> { p with natdynlink }),

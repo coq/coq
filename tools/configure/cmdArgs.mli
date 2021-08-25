@@ -30,7 +30,6 @@ type t = {
   browser : string option;
   withdoc : bool;
   byteonly : bool;
-  flambda_flags : string list;
   profile : bool;
   bin_annot : bool;
   annot : bool;
