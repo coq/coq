@@ -370,24 +370,6 @@ let coqide_flags prefs coqide arch =
       idearchdef := "WIN32"
     | _ -> ()
 
-(** * strip command *)
-
-let strip prefs arch hasnatdynlink =
-  if arch = "Darwin" then
-    if hasnatdynlink then "true" else "strip"
-  else
-    if prefs.profile || prefs.debug then "true" else begin
-    let _, all = run camlexec.find ["ocamlc";"-config"] in
-    let strip = String.concat "" (List.map (fun l ->
-        match string_split ' ' l with
-        | "ranlib:" :: cc :: _ -> (* on windows, we greb the right strip *)
-             Str.replace_first (Str.regexp "ranlib") "strip" cc
-        | _ -> ""
-      ) all) in
-    if strip = "" then "strip" else strip
-    end
-
-
 (** * Documentation : do we have latex, hevea, ... *)
 
 let check_sphinx_deps () =
@@ -717,7 +699,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
 
 (** * Build the config/Makefile file *)
 
-let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide strip arch exe dll dune_29 f =
+let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29 f =
   let { CamlConf.camllib } = camlenv in
   safe_remove f;
   let o = open_out f in
@@ -779,10 +761,6 @@ let write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_
   pr "DLLEXT=%s\n\n" dll;
   pr "# the command MKDIR (try to use mkdirhier if you have problems)\n";
   pr "MKDIR=mkdir -p\n\n";
-  pr "#the command STRIP\n";
-  pr "# Unix systems and profiling: true\n";
-  pr "# Unix systems and no profiling: strip\n";
-  pr "STRIP=%s\n\n" strip;
   pr "# LablGTK\n";
   pr "# CoqIDE (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
@@ -849,7 +827,6 @@ let main () =
   check_for_zarith prefs;
   let coqide = coqide prefs best_compiler camlenv in
   let _coqide_flags : unit = coqide_flags prefs coqide arch in
-  let strip = strip prefs arch hasnatdynlink in
   (if prefs.withdoc then check_doc ());
   let install_dirs = install_dirs prefs arch in
   let coqenv = resolve_coqenv install_dirs in
@@ -861,7 +838,7 @@ let main () =
     print_summary prefs arch operating_system camlenv vmbyteflags custom_flag best_compiler install_dirs coqide hasnatdynlink browser;
   write_dbg_wrapper camlenv "dev/ocamldebug-coq";
   write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs "config/coq_config.ml";
-  write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide strip arch exe dll dune_29 "config/Makefile";
+  write_makefile prefs camlenv custom_flag vmbyteflags natdynlinkflag install_dirs best_compiler camltag cflags caml_flags coq_caml_flags coq_debug_flag coqide arch exe dll dune_29 "config/Makefile";
   write_dune_c_flags cflags "config/dune.c_flags";
   write_configpy "config/coq_config.py";
   ()
