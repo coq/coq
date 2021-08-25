@@ -103,18 +103,19 @@ let resolve_caml prefs =
 
 (** Caml version as a list of string, e.g. ["4";"00";"1"] *)
 
-let caml_version_list { CamlConf.caml_version } =
-  numeric_prefix_list caml_version
-
 (** Same, with integers in the version list *)
 
-let caml_version_nums caml_version_list =
+let generic_version_nums ~name version_string =
+  let version_list = numeric_prefix_list version_string in
   try
-    if List.length caml_version_list < 2 then failwith "bad version";
-    List.map int_of_string caml_version_list
+    if List.length version_list < 2 then failwith "bad version";
+    List.map int_of_string version_list
   with _ ->
-    die ("I found the OCaml compiler but cannot read its version number!\n" ^
-         "Is it installed properly?")
+    "I found " ^ name ^ " but cannot read its version number!\n" ^
+    "Is it installed properly?" |> die
+
+let caml_version_nums { CamlConf.caml_version } =
+  generic_version_nums ~name:"the OCaml compiler" caml_version
 
 let check_caml_version prefs caml_version caml_version_nums =
   if caml_version_nums >= [4;5;0] then
@@ -123,18 +124,8 @@ let check_caml_version prefs caml_version caml_version_nums =
     let () = cprintf prefs "Your version of OCaml is %s." caml_version in
     die "You need OCaml 4.05.0 or later."
 
-let findlib_version_list { CamlConf.findlib_version } =
-  numeric_prefix_list findlib_version
-
-let findlib_version_nums findlib_version_list =
-  try
-    if List.length findlib_version_list < 2 then failwith "bad version";
-    List.map int_of_string findlib_version_list
-  with _ ->
-    die ("I found ocamlfind but cannot read its version number!\n" ^
-         "Is it installed properly?")
-
-let check_findlib_version prefs findlib_version findlib_version_nums =
+let check_findlib_version prefs { CamlConf.findlib_version } =
+  let findlib_version_nums = generic_version_nums ~name:"findlib" findlib_version in
   if findlib_version_nums >= [1;8;0] then
     cprintf prefs "You have OCamlfind %s. Good!" findlib_version
   else
@@ -610,12 +601,9 @@ let main () =
   install_precommit_hook prefs;
   let browser = browser prefs arch in
   let camlenv = resolve_caml prefs in
-  let caml_version_list = caml_version_list camlenv in
-  let caml_version_nums = caml_version_nums caml_version_list in
+  let caml_version_nums = caml_version_nums camlenv in
   check_caml_version prefs camlenv.CamlConf.caml_version caml_version_nums;
-  let findlib_version_list = findlib_version_list camlenv in
-  let findlib_version_nums = findlib_version_nums findlib_version_list in
-  check_findlib_version prefs camlenv.CamlConf.findlib_version findlib_version_nums;
+  check_findlib_version prefs camlenv;
   let best_compiler = best_compiler prefs camlenv in
   let caml_flags = caml_flags coq_annot_flag coq_bin_annot_flag in
   let coq_caml_flags = coq_caml_flags prefs in
