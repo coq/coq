@@ -41,8 +41,6 @@ type t = {
   bytecodecompiler : bool;
   nativecompiler : nativecompiler;
   coqwebsite : string;
-  force_caml_version : bool;
-  force_findlib_version : bool;
   warn_error : bool;
   dune_profile : string;
   install_enabled : bool;

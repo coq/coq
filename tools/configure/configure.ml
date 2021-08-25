@@ -131,10 +131,7 @@ let check_caml_version prefs caml_version caml_version_nums =
     cprintf prefs "You have OCaml %s. Good!" caml_version
   else
     let () = cprintf prefs "Your version of OCaml is %s." caml_version in
-    if prefs.force_caml_version then
-      warn "Your version of OCaml is outdated."
-    else
-      die "You need OCaml 4.05.0 or later."
+    die "You need OCaml 4.05.0 or later."
 
 let findlib_version_list { CamlConf.findlib_version } =
   numeric_prefix_list findlib_version
@@ -148,14 +145,11 @@ let findlib_version_nums findlib_version_list =
          "Is it installed properly?")
 
 let check_findlib_version prefs findlib_version findlib_version_nums =
-  if findlib_version_nums >= [1;4;1] then
+  if findlib_version_nums >= [1;8;0] then
     cprintf prefs "You have OCamlfind %s. Good!" findlib_version
   else
     let () = cprintf prefs "Your version of OCamlfind is %s." findlib_version in
-    if prefs.force_findlib_version then
-      warn "Your version of OCamlfind is outdated."
-    else
-      die "You need OCamlfind 1.4.1 or later."
+    die "You need OCamlfind 1.8.0 or later."
 
 let camltag caml_version_list =
   match caml_version_list with

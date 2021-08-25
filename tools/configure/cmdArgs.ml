@@ -44,8 +44,6 @@ type t = {
   bytecodecompiler : bool;
   nativecompiler : nativecompiler;
   coqwebsite : string;
-  force_caml_version : bool;
-  force_findlib_version : bool;
   warn_error : bool;
   dune_profile : string;
   install_enabled : bool;
@@ -84,8 +82,6 @@ let default = {
   nativecompiler =
     if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
   coqwebsite = "http://coq.inria.fr/";
-  force_caml_version = false;
-  force_findlib_version = false;
   warn_error = false;
   dune_profile = "release";
   install_enabled = true;
@@ -225,16 +221,11 @@ let args_options = Arg.align [
      ondemand (default): -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
     " URL of the coq website";
-  "-force-caml-version", arg_set (fun p -> { p with force_caml_version = true}),
-    " Force OCaml version";
-  "-force-findlib-version", arg_set (fun p -> { p with force_findlib_version = true}),
-    " Force findlib version";
   "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
     "(yes|no) Make OCaml warnings into errors (default no)";
   "-camldir", Arg.String (fun _ -> ()),
     "<dir> Specifies path to 'ocaml' for running configure script";
-  "-profile", arg_profile,
-    Profiles.doc
+  "-profile", arg_profile, Profiles.doc
 ]
 
 let parse_args () =
