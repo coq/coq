@@ -2,7 +2,11 @@ How to write plugins in Coq
 ===========================
   # Working environment
 
-  In addition to installing OCaml and Coq, it can help to install several tools for development.
+  In addition to installing OCaml and Coq, you need to make sure that you also have the development
+  headers for Coq, because you will need them to compile extensions. How you want to install them
+  may depend on how you installed Coq. If you installed Coq from a package manager, they may be a seperate package
+  which contains the development headers (for example, in Ubuntu they are contained in the package
+  `libcoq-ocaml-dev`). It can help to install several tools for development.
 
   ## Tuareg and Merlin
 
@@ -20,6 +24,11 @@ opam user-setup install           # automatically configures editors for merlin
 (add-to-list 'auto-mode-alist '("\\.mlg$"      . tuareg-mode) t)
 ```
 
+  If you are using [vscoq](https://github.com/coq-community/vscoq),
+  you will need to ensure that vscoq loads the `_CoqProject` file for the extension
+  you are working on. You can do this by opening Visual Studio Code with the `_CoqProject`
+  file in the project root directory, or by editing the `coqtop.coqProjectRoot` setting for vscoq.
+
   ## This tutorial
 
 ```shell
@@ -27,9 +36,7 @@ cd plugin_tutorials/tuto0
 make .merlin                # run before opening .ml files in your editor
 make                        # build
 ```
-  
-  
-  
+
   # tuto0 : basics of project organization
   package an mlg file in a plugin, organize a `Makefile`, `_CoqProject`
   - Example of syntax to add a new toplevel command
@@ -65,14 +72,14 @@ make                        # build
   - A command that defines a new tactic
 
   Compilation and loading must be performed as for `tuto0`.
-  
+
   # tuto2 : OCaml to Coq communication
   A more step by step introduction to writing commands
   - Explanation of the syntax of entries
   - Adding a new type to and parsing to the available choices
   - Handling commands that store information in user-chosen registers and tables
 
-  Compilation and loading must be performed as for `tuto1`.
+  Compilation and loading must be performed as for `tuto0`.
 
   # tuto3 : manipulating terms of the calculus of constructions
   Manipulating terms, inside commands and tactics.
