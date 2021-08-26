@@ -101,19 +101,7 @@ let resolve_caml prefs =
       Filename.dirname (Filename.dirname camllib) / "bin/" in
     { CamlConf.camlbin; caml_version; camllib; findlib_version }
 
-(** Caml version as a list of string, e.g. ["4";"00";"1"] *)
-
-(** Same, with integers in the version list *)
-
-let generic_version_nums ~name version_string =
-  let version_list = numeric_prefix_list version_string in
-  try
-    if List.length version_list < 2 then failwith "bad version";
-    List.map int_of_string version_list
-  with _ ->
-    "I found " ^ name ^ " but cannot read its version number!\n" ^
-    "Is it installed properly?" |> die
-
+(** Caml version as a list of ints [4;0;1] *)
 let caml_version_nums { CamlConf.caml_version } =
   generic_version_nums ~name:"the OCaml compiler" caml_version
 
@@ -203,7 +191,7 @@ let dune_install_warning () =
 (* returns true if dune >= 2.9 *)
 let check_for_dune_29 () =
   let dune_version, _  = tryrun "dune" ["--version"] in
-  let dune_version = List.map int_of_string (numeric_prefix_list dune_version) in
+  let dune_version = generic_version_nums ~name:"dune" dune_version in
   match dune_version with
   (* Development version, consider it >= 2.9 *)
   | [] -> true
@@ -226,7 +214,7 @@ let check_for_zarith prefs =
   | _ when not (zarith_cmai zarith) ->
     die "Zarith library installed but no development files found (try installing the -dev package)"
   | _   ->
-    let zarith_version_int = List.map int_of_string (numeric_prefix_list zarith_version) in
+    let zarith_version_int = generic_version_nums ~name:"Zarith" zarith_version in
     if zarith_version_int >= [1;10;0] then
       cprintf prefs "You have the Zarith library %s installed. Good!" zarith_version
     else

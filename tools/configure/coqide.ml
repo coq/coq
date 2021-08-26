@@ -26,8 +26,7 @@ let get_lablgtkdir ocamlfind =
 let check_lablgtk_version ocamlfind =
   let v, _ = tryrun ocamlfind ["query"; "-format"; "%v"; "lablgtk3"] in
   try
-    let vl = numeric_prefix_list v in
-    let vn = List.map int_of_string vl in
+    let vn = generic_version_nums ~name:"lablgtk3" v in
     if vn < [3; 1; 0] then
       (false, v)
     else

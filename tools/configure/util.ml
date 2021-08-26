@@ -144,6 +144,15 @@ let numeric_prefix_list s =
   | [v1;v2;""] -> [v1;v2;"0"] (* e.g. because it ends with ".beta" *)
   | v -> v
 
+let generic_version_nums ~name version_string =
+  let version_list = numeric_prefix_list version_string in
+  try
+    if List.length version_list < 2 then failwith "bad version";
+    List.map int_of_string version_list
+  with _ ->
+    "I found " ^ name ^ " but cannot read its version number!\n" ^
+    "Is it installed properly?" |> die
+
 (** Combined existence and directory tests *)
 
 let dir_exists f = Sys.file_exists f && Sys.is_directory f

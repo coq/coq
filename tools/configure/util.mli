@@ -15,7 +15,7 @@ val cprintf : ('a, out_channel, unit, unit) format4 -> 'a
 
 val string_split : char -> string -> string list
 val starts_with : string -> string -> bool
-val numeric_prefix_list : string -> string list
+val generic_version_nums : name:string -> string -> int list
 
 val warn : ('a, out_channel, unit, unit, unit, unit) format6 -> 'a
 val die : string -> 'a
