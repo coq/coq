@@ -1100,6 +1100,7 @@ let vernac_import export refl =
     let loc = qid.loc in
     let m = try
         let m = Nametab.locate_module qid in
+        let () = Dumpglob.dump_modref ?loc m "mod" in
         let () = if Modops.is_functor (Global.lookup_module m).Declarations.mod_type
           then CErrors.user_err ?loc Pp.(str "Cannot import functor " ++ pr_qualid qid ++ str".")
         in
@@ -1286,7 +1287,7 @@ let vernac_require from import qidl =
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
-    List.iter2 (fun {CAst.loc} dp -> Dumpglob.dump_libref ?loc dp "lib") qidl (List.map fst modrefl);
+    List.iter2 (fun {CAst.loc} (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   let lib_resolver = Loadpath.try_locate_absolute_library in
   Library.require_library_from_dirpath ~lib_resolver modrefl import
 
