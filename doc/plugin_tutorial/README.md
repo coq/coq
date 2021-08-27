@@ -3,8 +3,9 @@ How to write plugins in Coq
   # Working environment
 
   In addition to installing OCaml and Coq, you need to make sure that you also have the development
-  headers for Coq, because you will need them to compile extensions. How you want to install them
-  may depend on how you installed Coq. If you installed Coq from a package manager, there may be a separate package
+  headers for Coq, because you will need them to compile extensions. If you installed Coq from source or
+  from [OPAM](http://opam.ocaml.org/doc/Install.html), you already have the required headers. If you
+  installed them from your system package manager, there may be a separate package
   which contains the development headers (for example, in Ubuntu they are contained in the package
   `libcoq-ocaml-dev`). It can help to install several tools for development.
 
