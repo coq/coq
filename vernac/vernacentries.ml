@@ -1589,6 +1589,13 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
+      optkey   = ["Implicit";"Arguments";"Coercion";"Inheritance"];
+      optread  = (fun () -> !Pretyping.implicit_arguments_coercion_inheritance);
+      optwrite = (fun b ->  Pretyping.implicit_arguments_coercion_inheritance := b) }
+
+let () =
+  declare_bool_option
+    { optdepr  = false;
       optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
       optwrite = (fun b ->  Constrextern.print_coercions := b) }

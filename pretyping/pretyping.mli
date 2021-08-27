@@ -21,6 +21,8 @@ open EConstr
 open Glob_term
 open Ltac_pretype
 
+val implicit_arguments_coercion_inheritance : bool ref
+
 val add_bidirectionality_hint : GlobRef.t -> int -> unit
 (** A bidirectionality hint `n` for a global `g` tells the pretyper to use
     typing information from the context after typing the `n` for arguments of an

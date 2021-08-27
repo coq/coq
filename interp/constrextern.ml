@@ -1012,12 +1012,15 @@ and extern_remove_coercions inctx ?impargs scopes vars head allargs =
         | Inl r -> Inl r
         | Inr head'' ->
         let subscopes, impls =
-          let subscopes = find_arguments_scope ref in
-          let subscopes = try List.skipn nargs subscopes with Failure _ -> [] in
-          let impls =
-            select_stronger_impargs
-              (List.map (drop_first_implicits nargs) (implicits_of_global ref)) in
-          subscopes, impls
+          if !Pretyping.implicit_arguments_coercion_inheritance then
+            let subscopes = find_arguments_scope ref in
+            let subscopes = try List.skipn nargs subscopes with Failure _ -> [] in
+            let impls =
+              select_stronger_impargs
+                (List.map (drop_first_implicits nargs) (implicits_of_global ref)) in
+            subscopes, impls
+          else
+            [], []
         in
         let args = fill_arg_scopes args subscopes scopes in
         let args = extern_args (extern true) vars args in

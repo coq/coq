@@ -122,7 +122,10 @@ let esearch_guard ?loc env sigma indexes fix =
 
 (* Implicit arguments *)
 
+let implicit_arguments_coercion_inheritance = ref true
+
 let insert_impargs ?loc coeimpls c args =
+  if not !implicit_arguments_coercion_inheritance then None else
   match coeimpls with
   | None -> None
   | Some (coe,allimpls) ->
