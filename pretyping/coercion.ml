@@ -40,25 +40,46 @@ let get_use_typeclasses_for_conversion =
     ~key:["Typeclass"; "Resolution"; "For"; "Conversion"]
     ~value:true
 
+(* Abstracting head of coercion *)
+
+type coercion_head =
+  | IsPrimProj of Projection.Repr.t
+  | IsConstrHead of EConstr.t
+
+let mkAppCoercionHead = function
+  | (IsPrimProj proj, args) ->
+    let args = List.skipn (Projection.Repr.npars proj) args in
+    let c, args = List.sep_first args in
+    applist (mkProj (Projection.make proj false, c), args)
+  | (IsConstrHead head, args) ->
+    applist (head, args)
+
+let instance_of_global_constr sigma c =
+  match EConstr.kind sigma c with
+  | Const (_,u) | Ind (_,u) | Construct (_,u) -> EConstr.EInstance.kind sigma u
+  | _ -> Univ.Instance.empty
+
+let new_global_coe env sigma coe =
+  let sigma, c = Evd.fresh_global env sigma coe.coe_value in
+  let u = instance_of_global_constr sigma c in
+  let typ = EConstr.of_constr (CVars.subst_instance_constr u coe.coe_typ) in
+  let head =
+    match coe.coe_is_projection with
+    | None -> IsConstrHead c
+    | Some proj -> IsPrimProj proj
+  in
+  sigma, head, typ
+
 (* Typing operations dealing with coercions *)
 exception NoCoercion
 exception NoCoercionNoUnifier of evar_map * unification_error
 
 (* Here, funj is a coercion therefore already typed in global context *)
-let apply_coercion_args env sigma check isproj argl funj =
+let apply_coercion_args env sigma check argl head typ =
   let rec apply_rec sigma acc typ = function
     | [] ->
-      (match isproj with
-       | Some p ->
-         let npars = Projection.Repr.npars p in
-         let p = Projection.make p false in
-         let args = List.skipn npars argl in
-         let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-         sigma, { uj_val = applist (mkProj (p, hd), tl);
+         sigma, { uj_val = mkAppCoercionHead (head,argl);
                   uj_type = typ }
-       | None ->
-         sigma, { uj_val = applist (j_val funj,argl);
-                  uj_type = typ })
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
       match EConstr.kind sigma (whd_all env sigma typ) with
       | Prod (_,c1,c2) ->
@@ -73,7 +94,7 @@ let apply_coercion_args env sigma check isproj argl funj =
         apply_rec sigma (h::acc) (subst1 h c2) restl
       | _ -> anomaly (Pp.str "apply_coercion_args.")
   in
-  apply_rec sigma [] funj.uj_type argl
+  apply_rec sigma [] typ argl
 
 (* appliquer le chemin de coercions de patterns p *)
 let apply_pattern_coercion ?loc pat p =
@@ -361,13 +382,8 @@ let saturate_evd env sigma =
 
 type coercion_trace =
   | IdCoe
-  | PrimProjCoe of {
-      proj : Projection.Repr.t;
-      args : econstr list;
-      previous : coercion_trace;
-    }
   | Coe of {
-      head : econstr;
+      head : coercion_head;
       args : econstr list;
       previous : coercion_trace;
     }
@@ -379,15 +395,10 @@ let empty_coercion_trace = IdCoe
 (* similar to iterated apply_coercion_args *)
 let rec reapply_coercions sigma trace c = match trace with
   | IdCoe -> c
-  | PrimProjCoe { proj; args; previous } ->
-    let c = reapply_coercions sigma previous c in
-    let args = args@[c] in
-    let head, args = match args with [] -> assert false | hd :: tl -> hd, tl in
-    applist (mkProj (Projection.make proj false, head), args)
   | Coe {head; args; previous} ->
     let c = reapply_coercions sigma previous c in
     let args = args@[c] in
-    applist (head, args)
+    mkAppCoercionHead (head, args)
   | ProdCoe { na; ty; dom; body } ->
     let x = reapply_coercions sigma dom (mkRel 1) in
     let c = beta_applist sigma (lift 1 c, [x]) in
@@ -397,33 +408,17 @@ let rec reapply_coercions sigma trace c = match trace with
     let c = reapply_coercions sigma previous c in
     mkApp (c, [|arg|])
 
-let instance_of_global_constr sigma c =
-  match kind sigma c with
-  | Const (_,u) | Ind (_,u) | Construct (_,u) -> EInstance.kind sigma u
-  | _ -> Univ.Instance.empty
-
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
   let j,t,trace,sigma =
     List.fold_left
-      (fun (ja,typ_cl,trace,sigma) i ->
-         let isid = i.coe_is_identity in
-         let isproj = i.coe_is_projection in
-         let sigma, c = Evd.fresh_global env sigma i.coe_value in
-         let u = instance_of_global_constr sigma c in
-         let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
-         let fv = make_judge c typ in
-         let argl = class_args_of env sigma typ_cl in
-         let trace =
-           if isid then trace
-           else match isproj with
-           | None -> Coe {head=fv.uj_val;args=argl;previous=trace}
-           | Some proj ->
-             let args = List.skipn (Projection.Repr.npars proj) argl in
-             PrimProjCoe {proj; args; previous=trace }
-         in
-         let argl = argl@[ja.uj_val] in
-         let sigma, jres = apply_coercion_args env sigma true isproj argl fv in
+      (fun (ja,typ_cl,trace,sigma) coe ->
+         let isid = coe.coe_is_identity in
+         let sigma, head, typ = new_global_coe env sigma coe in
+         let args = class_args_of env sigma typ_cl in
+         let trace = if isid then trace else Coe {head; args; previous=trace} in
+         let args = args@[ja.uj_val] in
+         let sigma, jres = apply_coercion_args env sigma true args head typ in
          let jres =
          if isid then
             { uj_val = ja.uj_val; uj_type = jres.uj_type }
@@ -458,7 +453,7 @@ let mu env sigma t =
                    app_opt env sigma
                      f (mkApp (p1, [| u; p; x |]))),
            ct,
-           Coe {head=p1; args=[u;p]; previous=trace})
+           Coe {head=IsConstrHead p1; args=[u;p]; previous=trace})
       | None -> sigma, (None, v, IdCoe)
   in aux t
 
