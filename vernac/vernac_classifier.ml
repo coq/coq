@@ -66,7 +66,7 @@ let classify_vernac e =
     | VernacExactProof _ -> VtQed (VtKeep VtKeepOpaque)
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
-    | VernacCheckMayEval _ -> VtQuery
+    | VernacGlobalCheck _ | VernacCheckMayEval _ -> VtQuery
     (* ProofStep *)
     | VernacProof _
     | VernacFocus _ | VernacUnfocus
@@ -148,7 +148,6 @@ let classify_vernac e =
     | VernacSetOption _
     | VernacAddOption _ | VernacRemoveOption _
     | VernacMemOption _ | VernacPrintOption _
-    | VernacGlobalCheck _
     | VernacDeclareReduction _
     | VernacExistingClass _ | VernacExistingInstance _
     | VernacRegister _
