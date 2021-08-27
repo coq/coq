@@ -18,6 +18,9 @@ Require Import Transitive_Closure.
      L. Paulson  JSC (1986) 2, 325-355 *)
 
 Section WfLexicographic_Product.
+
+  Import SigTNotations.
+
   Variable A : Type.
   Variable B : A -> Type.
   Variable leA : A -> A -> Prop.
@@ -29,7 +32,7 @@ Section WfLexicographic_Product.
     forall x:A,
       Acc leA x ->
       (forall x0:A, clos_trans A leA x0 x -> well_founded (leB x0)) ->
-      forall y:B x, Acc (leB x) y -> Acc LexProd (existT B x y).
+      forall y:B x, Acc (leB x) y -> Acc LexProd (x; y).
   Proof.
     induction 1 as [x _ IHAcc]; intros H2 y.
     induction 1 as [x0 H IHAcc0]; intros.

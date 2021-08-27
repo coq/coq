@@ -176,9 +176,13 @@ Section Projections.
 
 End Projections.
 
-Local Notation "( x ; y )" := (existT _ x y) (at level 0, format "( x ;  '/  ' y )").
-Local Notation "x .1" := (projT1 x) (at level 1, left associativity, format "x .1").
-Local Notation "x .2" := (projT2 x) (at level 1, left associativity, format "x .2").
+Module SigTNotations.
+  Notation "( x ; y )" := (existT _ x y) (at level 0, format "( x ;  '/  ' y )").
+  Notation "x .1" := (projT1 x) (at level 1, left associativity, format "x .1").
+  Notation "x .2" := (projT2 x) (at level 1, left associativity, format "x .2").
+End SigTNotations.
+
+Import SigTNotations.
 
 (** [sigT2] of a predicate can be projected to a [sigT].
 
@@ -277,6 +281,23 @@ Lemma inhabited_sig_to_exists {A P} : inhabited {x : A | P x} -> exists x : A, P
 Proof.
   intros [[x y]];exists x;exact y.
 Qed.
+
+(** Subtyping for prod *)
+
+Section ProdSigT.
+
+  Variable A B : Type.
+
+  Definition sigT_of_prod (p : A * B) := (fst p; snd p).
+  Definition prod_of_sigT (s : { _ : A & B }) := (s.1, s.2).
+
+  Lemma sigT_prod_sigT p : sigT_of_prod (prod_of_sigT p) = p.
+  Proof. destruct p; reflexivity. Qed.
+
+  Lemma prod_sigT_prod s : prod_of_sigT (sigT_of_prod s) = s.
+  Proof. destruct s; reflexivity. Qed.
+
+End ProdSigT.
 
 (** Equality of sigma types *)
 
