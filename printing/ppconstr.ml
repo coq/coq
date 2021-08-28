@@ -461,7 +461,8 @@ let tag_var = tag Tag.variable
   let pr_recursive kw pr_decl id = function
     | [] -> anomaly (Pp.str "(co)fixpoint with no definition.")
     | [d1] -> pr_decl kw false d1
-    | dl ->
+    | d1::dl ->
+      pr_decl kw true d1 ++ fnl() ++
       prlist_with_sep (fun () -> fnl())
         (pr_decl "with" true) dl ++
         fnl() ++ keyword "for" ++ spc () ++ pr_id id
