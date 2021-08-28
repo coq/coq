@@ -1,0 +1,16 @@
+f = 
+fix f (n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S n0 => g n0
+  end
+with g (n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S n0 => f n0
+  end
+for
+f
+     : nat -> nat
+
+Arguments f n%nat_scope
