@@ -78,7 +78,7 @@ let is_freevar ids env x =
 
 let ungeneralizable loc id =
   user_err ?loc ~hdr:"Generalization"
-               (str "Unbound and ungeneralizable variable " ++ Id.print id)
+               (str "Unbound and ungeneralizable variable " ++ Id.print id ++ str ".")
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let found loc id bdvars l =
