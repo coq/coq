@@ -39,6 +39,6 @@ val cook_inductive :
 
 val lift_poly_univs : cooking_info -> Univ.AbstractContext.t -> cooking_info * Univ.AbstractContext.t
 
-val abstract_rel_context : cooking_info -> rel_context -> rel_context
+val cook_rel_context : cooking_info -> rel_context -> rel_context
 
 val discharge_proj_repr : abstr_inst_info -> Names.Projection.Repr.t -> Names.Projection.Repr.t

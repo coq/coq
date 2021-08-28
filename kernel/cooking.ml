@@ -314,7 +314,7 @@ let cook_constant env info cb =
 (********************************)
 (* Discharging mutual inductive *)
 
-let abstract_rel_context cache info ctx =
+let cook_rel_context cache info ctx =
   (* Dealing with substitutions between contexts is too annoying, so
      we reify [ctx] into a big [forall] term and work on that. *)
   let t = it_mkProd_or_LetIn mkProp ctx in
@@ -323,7 +323,7 @@ let abstract_rel_context cache info ctx =
   assert (Constr.equal t mkProp);
   ctx
 
-let abstract_lc cache ~ntypes info t =
+let cook_lc cache ~ntypes info t =
   (* Expand the recursive call to the inductive types *)
   let diff = List.length info.abstr_info.abstr_ctx in
   let subs = List.init ntypes (fun k -> mkApp (mkRel (k+diff+1), info.abstr_inst_info.abstr_inst)) in
@@ -331,7 +331,7 @@ let abstract_lc cache ~ntypes info t =
   (* Apply the abstraction *)
   abstract_as_type cache info t
 
-let abstract_projection cache ~params info t =
+let cook_projection cache ~params info t =
   let t = mkArrowR mkProp t in (* dummy type standing in for the inductive *)
   let t = it_mkProd_or_LetIn t params in
   let t = abstract_as_type cache info t in
@@ -347,11 +347,11 @@ let cook_one_ind cache ~ntypes info mip =
     | TemplateArity {template_level} ->
       TemplateArity {template_level}
   in
-  let mind_arity_ctxt = abstract_rel_context cache info mip.mind_arity_ctxt in
-  let mind_user_lc = Array.map (abstract_lc cache ~ntypes info) mip.mind_user_lc in
+  let mind_arity_ctxt = cook_rel_context cache info mip.mind_arity_ctxt in
+  let mind_user_lc = Array.map (cook_lc cache ~ntypes info) mip.mind_user_lc in
   let mind_nf_lc = Array.map (fun (ctx,t) ->
       let lc = it_mkProd_or_LetIn t ctx in
-      let lc = abstract_lc cache ~ntypes info lc in
+      let lc = cook_lc cache ~ntypes info lc in
       decompose_prod_assum lc)
       mip.mind_nf_lc
   in
@@ -377,7 +377,7 @@ let cook_inductive info mib =
   let info, mind_universes = lift_univs info mib.mind_universes in
   let cache = RefTable.create 13 in
   let nnewparams = Context.Rel.nhyps info.abstr_info.abstr_ctx in
-  let mind_params_ctxt = abstract_rel_context cache info mib.mind_params_ctxt in
+  let mind_params_ctxt = cook_rel_context cache info mib.mind_params_ctxt in
   let ntypes = mib.mind_ntypes in
   let mind_packets = Array.map (cook_one_ind cache ~ntypes info) mib.mind_packets in
   let mind_record = match mib.mind_record with
@@ -385,7 +385,7 @@ let cook_inductive info mib =
     | FakeRecord -> FakeRecord
     | PrimRecord data ->
       let data = Array.map (fun (id,projs,relevances,tys) ->
-          let tys = Array.map (abstract_projection cache ~params:mib.mind_params_ctxt info) tys in
+          let tys = Array.map (cook_projection cache ~params:mib.mind_params_ctxt info) tys in
           (id,projs,relevances,tys))
           data
       in
@@ -434,5 +434,5 @@ let cook_inductive info mib =
     mind_typing_flags = mib.mind_typing_flags;
   }
 
-let abstract_rel_context info ctx =
-  abstract_rel_context (RefTable.create 13) info ctx
+let cook_rel_context info ctx =
+  cook_rel_context (RefTable.create 13) info ctx
