@@ -13,8 +13,6 @@ open Declarations
 
 (** {6 Cooking the constants. } *)
 
-type recipe = { from : constant_body; info : cooking_info }
-
 type inline = bool
 
 type 'opaque result = {
@@ -34,7 +32,7 @@ val cook_opaque_proofterm : cooking_info list ->
   Opaqueproof.opaque_proofterm -> Opaqueproof.opaque_proofterm
 
 val cook_constant :
-  recipe -> cooking_info Opaqueproof.opaque result
+  Environ.env -> cooking_info -> constant_body -> constant_body
 
 val cook_inductive :
   cooking_info -> mutual_inductive_body -> mutual_inductive_body

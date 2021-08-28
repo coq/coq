@@ -201,8 +201,6 @@ let make_cooking_info expand_info hyps uctx =
   let names_info = Context.Named.to_vars hyps in
   { expand_info; abstr_info; abstr_inst_info; names_info }
 
-type recipe = { from : constant_body; info : cooking_info }
-
 type inline = bool
 
 type 'opaque result = {
@@ -287,7 +285,7 @@ let cook_opaque_proofterm info c =
 (********************************)
 (* Discharging constant         *)
 
-let cook_constant { from = cb; info } =
+let cook_constant env info cb =
   let cache = RefTable.create 13 in
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
   let info, univs = lift_univs info cb.const_universes in
@@ -299,16 +297,18 @@ let cook_constant { from = cb; info } =
     OpaqueDef (Opaqueproof.discharge_opaque info o)
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   in
-  let const_hyps = Id.Set.diff (Context.Named.to_vars cb.const_hyps) info.names_info in
+  let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs body in
   let typ = abstract_as_type cache info cb.const_type in
+  let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) info.names_info)) cb.const_hyps in
   {
-    cook_body = body;
-    cook_type = typ;
-    cook_universes = univs;
-    cook_relevance = cb.const_relevance;
-    cook_inline = cb.const_inline_code;
-    cook_context = Some const_hyps;
-    cook_flags = cb.const_typing_flags;
+    const_hyps = hyps;
+    const_body = body;
+    const_type = typ;
+    const_body_code = tps;
+    const_universes = univs;
+    const_relevance = cb.const_relevance;
+    const_inline_code = cb.const_inline_code;
+    const_typing_flags = cb.const_typing_flags;
   }
 
 (********************************)

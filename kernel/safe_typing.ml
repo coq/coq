@@ -1377,8 +1377,7 @@ let close_section senv =
   | SecDefinition kn ->
     let cb = Environ.lookup_constant kn env0 in
     let info = Section.segment_of_constant kn sections0 in
-    let r = { Cooking.from = cb; info } in
-    let cb = Term_typing.translate_recipe senv.env kn r in
+    let cb = Cooking.cook_constant senv.env info cb in
     (* Delayed constants are already in the global environment *)
     add_constant_aux senv (kn, cb)
   | SecInductive ind ->

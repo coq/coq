@@ -37,8 +37,6 @@ val translate_opaque :
   env -> Constant.t -> 'a opaque_entry ->
     unit pconstant_body * typing_context
 
-val translate_recipe : env -> Constant.t -> Cooking.recipe -> constant_body
-
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output -> (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes)
 
 (** Internal functions, mentioned here for debug purpose only *)
