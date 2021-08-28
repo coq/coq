@@ -469,8 +469,8 @@ We also need additional typing judgments:
   structure :math:`S` in weak head normal form.
 + :math:`\WS{E}{S_1}{S_2}` , denoting that a structure :math:`S_1` is a subtype of a
   structure :math:`S_2`.
-+ :math:`\WS{E}{e_1}{e_2}` , denoting that a structure element e_1 is more
-  precise than a structure element e_2.
++ :math:`\WS{E}{e_1}{e_2}` , denoting that a structure element :math:`e_1` is more
+  precise than a structure element :math:`e_2`.
 
 The rules for forming structures are the following:
 
@@ -534,12 +534,12 @@ reduced term :math:`t_i` in :math:`p`.
 
    \begin{array}{c}
    \WEV{E}{S}{\Struct~e_1 ;…;e_i ;\Assum{}{c}{T_1};e_{i+2} ;… ;e_n ~\End} \\
-   \WS{E;e_1 ;…;e_i }{Def()(c:=t:T)}{\Assum{}{c}{T_1}}
+   \WS{E;e_1 ;…;e_i }{\Def{}{c}{t}{T})}{\Assum{}{c}{T_1}}
    \end{array}
    --------------------------
    \begin{array}{c}
    \WEV{E}{S~\with~c := t:T}{} \\
-   \Struct~e_1 ;…;e_i ;Def()(c:=t:T);e_{i+2} ;… ;e_n ~\End
+   \Struct~e_1 ;…;e_i ;\Def{}{c}{t}{T};e_{i+2} ;… ;e_n ~\End
    \end{array}
 
 .. inference:: WEVAL-WITH-DEF-REC
