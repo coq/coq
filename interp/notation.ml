@@ -580,7 +580,7 @@ type 'target conversion_kind = 'target * option_kind
    [ToPostCheck r] behaves as [ToPostCopy] except in the reverse
    translation which fails if the copied term is not [r].
    When [n] is null, no translation is performed. *)
-type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of GlobRef.t
+type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of Constr.t
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;
@@ -645,6 +645,38 @@ let constr_of_globref allow_constant env sigma = function
      sigma,mkConstU c
   | _ -> raise NotAValidPrimToken
 
+(** [check_glob g c] checks that glob [g] is equal to constr [c]
+    and returns [g] as a constr (with fresh universe instances)
+    or raises [NotAValidPrimToken]. *)
+let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
+  | Glob_term.GRef (GlobRef.ConstructRef c as g, _), Constr.Construct (c', _)
+       when Construct.CanOrd.equal c c' -> constr_of_globref true env sigma g
+  | Glob_term.GRef (GlobRef.IndRef c as g, _), Constr.Ind (c', _)
+       when Ind.CanOrd.equal c c' -> constr_of_globref true env sigma g
+  | Glob_term.GRef (GlobRef.ConstRef c as g, _), Constr.Const (c', _)
+       when Constant.CanOrd.equal c c' -> constr_of_globref true env sigma g
+  | Glob_term.GApp (gc, gcl), Constr.App (gc', gc'a) ->
+     let sigma,c = check_glob env sigma gc gc' in
+     let sigma,cl =
+       try List.fold_left2_map (check_glob env) sigma gcl (Array.to_list gc'a)
+       with Invalid_argument _ -> raise NotAValidPrimToken in
+     sigma, mkApp (c, Array.of_list cl)
+  | Glob_term.GInt i, Constr.Int i' when Uint63.equal i i' -> sigma, mkInt i
+  | Glob_term.GFloat f, Constr.Float f' when Float64.equal f f' -> sigma, mkFloat f
+  | Glob_term.GArray (_,t,def,ty), Constr.Array (_,t',def',ty') ->
+     let sigma,u = Evd.fresh_array_instance env sigma in
+     let sigma,def = check_glob env sigma def def' in
+     let sigma,t =
+       try Array.fold_left2_map (check_glob env) sigma t t'
+       with Invalid_argument _ -> raise NotAValidPrimToken in
+     let sigma,ty = check_glob env sigma ty ty' in
+     sigma, mkArray (u,t,def,ty)
+  | Glob_term.GSort s, Constr.Sort s' ->
+     let sigma,s = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family s) in
+     if not (Sorts.equal s s') then raise NotAValidPrimToken;
+     sigma,mkSort s
+  | _ -> raise NotAValidPrimToken
+
 let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get g with
   | Glob_term.GRef (r, _) ->
       let o = List.find_opt (fun (_,r',_) -> GlobRef.equal r r') post in
@@ -675,10 +707,7 @@ let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get 
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
            | ToPostCheck r :: a, gc :: gcl ->
-              let () = match DAst.get gc with
-                | Glob_term.GRef (r', _) when GlobRef.equal r r' -> ()
-                | _ -> raise NotAValidPrimToken in
-              let sigma,c = constr_of_glob true [||] [] env sigma gc in
+              let sigma,c = check_glob env sigma gc r in
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
            | ToPostAs i :: a, gc :: gcl ->

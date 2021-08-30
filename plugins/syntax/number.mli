@@ -26,6 +26,6 @@ val vernac_number_notation : locality_flag ->
                              Notation_term.scope_name -> unit
 
 (** These are also used in string notations *)
-val locate_global_inductive : bool -> Libnames.qualid -> Names.inductive * Names.GlobRef.t option list
-val elaborate_to_post_params : Environ.env -> Evd.evar_map -> Names.inductive -> Names.GlobRef.t option list -> (Names.GlobRef.t * Names.GlobRef.t * Notation.to_post_arg list) list array * Names.GlobRef.t list
+val locate_global_inductive : bool -> Libnames.qualid -> Names.inductive * Constr.t option list
+val elaborate_to_post_params : Environ.env -> Evd.evar_map -> Names.inductive -> Constr.t option list -> (Names.GlobRef.t * Names.GlobRef.t * Notation.to_post_arg list) list array * Names.GlobRef.t list
 val elaborate_to_post_via : Environ.env -> Evd.evar_map -> Libnames.qualid -> Names.inductive -> (bool * Libnames.qualid * Libnames.qualid) list -> (Names.GlobRef.t * Names.GlobRef.t * Notation.to_post_arg list) list array * Names.GlobRef.t list

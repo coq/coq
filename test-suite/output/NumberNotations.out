@@ -523,3 +523,13 @@ neg_infinity
      : float
 nan
      : float
+2
+     : nunit2
+2
+     : nunit2
+NUnit 3
+     : nunit 3
+NUnit 0
+     : nunit 0
+NUnit (1 + 1)
+     : nunit (1 + 1)
