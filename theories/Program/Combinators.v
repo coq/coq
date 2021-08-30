@@ -51,18 +51,23 @@ Proof.
   reflexivity.
 Qed.
 
-(** [prod_curry] and [prod_uncurry] are each others inverses. *)
+(** [uncurry] and [curry] are each others inverses. *)
 
-Lemma prod_uncurry_curry : forall A B C, @prod_uncurry A B C ∘ prod_curry = id.
+Lemma curry_uncurry : forall A B C, @curry A B C ∘ uncurry = id.
 Proof.
   intros.
   reflexivity.
 Qed.
 
-Lemma prod_curry_uncurry : forall A B C, @prod_curry A B C ∘ prod_uncurry = id.
+Lemma uncurry_curry : forall A B C, @uncurry A B C ∘ curry = id.
 Proof.
   simpl ; intros.
-  unfold prod_uncurry, prod_curry, compose.
+  unfold curry, uncurry, compose.
   extensionality x ; extensionality p.
   destruct p ; simpl ; reflexivity.
 Qed.
+
+#[deprecated(since = "8.15", note = "Use curry_uncurry instead.")]
+Notation prod_uncurry_curry := curry_uncurry.
+#[deprecated(since = "8.15", note = "Use uncurry_curry instead.")]
+Notation prod_curry_uncurry := uncurry_curry.
