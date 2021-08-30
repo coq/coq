@@ -384,7 +384,7 @@ let set_manual_implicits silent flags enriching autoimps l =
        end :: imps'
     | [], [] -> []
     | [], _ -> assert false
-    (* possibly more automatic than manual implicit arguments n
+    (* possibly more automatic than manual implicit arguments
        when the conclusion is an unfoldable constant *)
     | autoimps, [] -> merge k autoimps [CAst.make None]
   in merge 1 autoimps l

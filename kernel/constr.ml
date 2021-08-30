@@ -1585,7 +1585,7 @@ let rec debug_print c =
   | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
-  | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ debug_print c ++ str")"
+  | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ str"," ++ debug_print c ++ str")"
   | Case (_ci,_u,pms,p,iv,c,bl) ->
     let pr_ctx (nas, c) =
       prvect_with_sep spc (fun na -> Name.print na.binder_name) nas ++ spc () ++ str "|-" ++ spc () ++
