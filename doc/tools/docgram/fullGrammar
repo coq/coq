@@ -703,7 +703,6 @@ command: [
 | "Hint" "View" ssrviewposspc LIST1 ssrhintref      (* SSR plugin *)
 | "Search" ssr_search_arg ssr_modlocs      (* SSR plugin *)
 | "Number" "Notation" reference reference reference OPT number_options ":" preident
-| "Numeral" "Notation" reference reference reference ":" preident deprecated_number_modifier
 | "String" "Notation" reference reference reference OPT string_option ":" preident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr6      (* Ltac2 plugin *)
