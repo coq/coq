@@ -139,12 +139,6 @@ Definition get_sign f :=
 
 Module Export PrimFloatNotations.
   Local Open Scope float_scope.
-  #[deprecated(since="8.13",note="use infix <? instead")]
-   Notation "x < y" := (x <? y) (at level 70, no associativity) : float_scope.
-  #[deprecated(since="8.13",note="use infix <=? instead")]
-   Notation "x <= y" := (x <=? y) (at level 70, no associativity) : float_scope.
-  #[deprecated(since="8.13",note="use infix =? instead")]
-   Notation "x == y" := (x =? y) (at level 70, no associativity) : float_scope.
   Export PrimFloatNotationsInternalA.
   Export PrimFloatNotationsInternalB.
 End PrimFloatNotations.
