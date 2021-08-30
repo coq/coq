@@ -1825,7 +1825,9 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
           else
             Proofview.tclZERO ~info exn0 in
         if not (Int.equal concl_nprod 0) then
-          Tacticals.New.tclORELSE0 (try_apply thm_ty 0) tac
+          Proofview.tclORELSE
+            (try_apply thm_ty 0)
+            (fun _ -> tac)
         else
           tac
     in
