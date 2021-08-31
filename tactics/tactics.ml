@@ -1790,11 +1790,17 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     let thm_ty0 = nf_betaiota env sigma (Retyping.get_type_of env sigma c) in
+    let thm_ty0 = match lbind with
+    | NoBindings | ImplicitBindings _ -> thm_ty0
+    | ExplicitBindings _ ->
+      rename_bound_vars_as_displayed sigma Id.Set.empty [] thm_ty0
+    in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
         if n<0 then error NotEnoughPremises;
-        let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
+        let clause = mk_clenv_from_n env sigma n (c,thm_ty) in
+        let clause = resolve_binding clause lbind in
         Clenv.res_pf clause ~with_evars ~flags
       with exn when noncritical exn ->
         let exn, info = Exninfo.capture exn in

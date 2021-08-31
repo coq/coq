@@ -86,7 +86,10 @@ val make_clenv_binding_apply :
 val make_clenv_binding :
   env -> evar_map -> EConstr.constr * EConstr.constr -> constr bindings -> clausenv
 
+val resolve_binding : clausenv -> constr bindings -> clausenv
+
 (** if the clause is a product, add an extra meta for this product *)
+val clenv_push_prod0 : clausenv -> (metavariable * bool * clausenv) option
 val clenv_push_prod : clausenv -> (metavariable * bool * clausenv) option
 
 (** {6 Clenv tactics} *)

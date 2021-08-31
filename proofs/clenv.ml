@@ -64,8 +64,7 @@ let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
 let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 
-let clenv_push_prod cl =
-  let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
+let clenv_push_prod0 cl =
   let rec clrec typ = match EConstr.kind cl.evd typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
@@ -81,7 +80,12 @@ let clenv_push_prod cl =
           env = cl.env;
           cache = create_meta_instance_subst e' })
     | _ -> None
-  in clrec typ
+  in clrec cl.templtyp.rebus
+
+let clenv_push_prod cl =
+  let typ = whd_all cl.env cl.evd (clenv_type cl) in
+  let cl = mk_clausenv cl.env cl.evd cl.templval { cl.templtyp with rebus = typ } in
+  clenv_push_prod0 cl
 
 (* Instantiate the first [bound] products of [t] with metas (all products if
    [bound] is [None]; unfold local defs *)
@@ -723,6 +727,11 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
       in clenv_match_args lbind clause
   | NoBindings ->
       mk_clenv_from_env env sigma n (c,t)
+
+let resolve_binding clause = function
+| ImplicitBindings largs -> clenv_constrain_dep_args true largs clause
+| ExplicitBindings lbind -> clenv_match_args lbind clause
+| NoBindings -> clause
 
 let make_clenv_binding_apply env sigma n = make_clenv_binding_gen true n env sigma
 let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
