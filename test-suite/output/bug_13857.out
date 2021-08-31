@@ -1,0 +1,6 @@
+The command has indeed failed with message:
+Unable to find an instance for the variable x.
+The command has indeed failed with message:
+Unable to unify "foo2" with "foo".
+The command has indeed failed with message:
+Unable to unify "foo3" with "foo".
