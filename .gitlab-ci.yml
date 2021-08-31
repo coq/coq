@@ -341,17 +341,18 @@ build:quick:
   artifacts:
     when: always
 
-windows64:
-  extends: .platform-template
-  variables:
-    ARCH: "64"
-  script:
-    - call dev/ci/platform-windows.bat
-  tags:
-    - windows-inria
-  only:
-    variables:
-      - $WINDOWS =~ /enabled/
+# Disabled until the platform gets fixed
+# windows64:
+#   extends: .platform-template
+#   variables:
+#     ARCH: "64"
+#   script:
+#     - call dev/ci/platform-windows.bat
+#   tags:
+#     - windows-inria
+#   only:
+#     variables:
+#       - $WINDOWS =~ /enabled/
 
 lint:
   stage: stage-1
