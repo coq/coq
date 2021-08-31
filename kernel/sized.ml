@@ -469,23 +469,20 @@ struct
   let rec_check tau vstar vneq cstrnts =
     let cstrnts' = to_graph cstrnts in
 
-    (** Step 1: Add V* ⊑ τ *)
-    let () = iter (fun v -> insert cstrnts' v 0 tau) vstar in
-
-    (** Step 2: Vi = ⊓V*; add τ ⊑ Vi *)
+    (** Step 1: Vi = ⊓V*; add τ ⊑ Vi *)
     let vi = downward cstrnts' vstar in
     let () = insert_from_set tau cstrnts' vi in
 
-    (** Step 3, 4: Find, remove negative cycles *)
+    (** Step 2, 3: Find, remove negative cycles *)
     let () = ignore @@ remove_neg cstrnts' in
 
-    (** Step 5: Add ∞ ⊑ ⊔V≠ ∩ ⊔Vi *)
+    (** Step 4: Add ∞ ⊑ ⊔V≠ ∩ ⊔Vi *)
     let vi_up = upward cstrnts' vi in
     let vneq_up = upward cstrnts' vneq in
     let vinter = inter vneq_up vi_up in
     let () = insert_from_set SVar.infty cstrnts' vinter in
 
-    (** Step 6: Check ⊔{∞} ∩ Vi = ∅ *)
+    (** Step 5: Check ⊔{∞} ∩ Vi = ∅ *)
     let vinf = upward cstrnts' (singleton SVar.infty) in
     let vnull = inter vinf vi in
     if is_empty vnull then of_graph cstrnts'
