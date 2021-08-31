@@ -173,3 +173,11 @@ Proof.
   exact I.
   exact I.
 Qed.
+
+Module IllTypeWithClause.
+
+Axiom L : forall A (f : A -> A) (x:A), f x = x.
+Goal S 0 = 0.
+Fail rewrite L with (f:=0). (* should not be an anomaly *)
+
+End IllTypedWithClause.
