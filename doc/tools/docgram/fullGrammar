@@ -114,6 +114,7 @@ term0: [
 | term_match
 | ident Prim.fields univ_annot
 | ident univ_annot
+| NUMBER
 | "(" term200 ")"
 | "{|" record_declaration bar_cbrace
 | "{" binder_constr "}"
@@ -168,7 +169,6 @@ arg: [
 
 atomic_constr: [
 | sort
-| NUMBER
 | string
 | "_"
 | "?" "[" identref "]"

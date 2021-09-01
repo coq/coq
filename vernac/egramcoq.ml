@@ -329,7 +329,10 @@ let is_binder_level custom (custom',from) e = match e with
 | _ -> false
 
 let make_pattern (keyword,s) =
-   TPattern (if keyword then Tok.PKEYWORD s else Tok.PIDENT (Some s))
+   if keyword then TPattern (Tok.PKEYWORD s) else
+     match NumTok.Unsigned.parse_string s with
+     | Some n -> TPattern (Tok.PNUMBER (Some n))
+     | None -> TPattern (Tok.PIDENT (Some s))
 
 let make_sep_rules tkl =
   Pcoq.Symbol.tokens (List.map make_pattern tkl)

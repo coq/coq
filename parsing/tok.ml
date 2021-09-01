@@ -70,18 +70,18 @@ let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
   | _ -> None
 
 let equal t1 t2 = match t1, t2 with
-| IDENT s1, KEYWORD s2 -> string_equal s1 s2
-| KEYWORD s1, KEYWORD s2 -> string_equal s1 s2
-| PATTERNIDENT s1, PATTERNIDENT s2 -> string_equal s1 s2
-| IDENT s1, IDENT s2 -> string_equal s1 s2
-| FIELD s1, FIELD s2 -> string_equal s1 s2
-| NUMBER n1, NUMBER n2 -> NumTok.Unsigned.equal n1 n2
-| STRING s1, STRING s2 -> string_equal s1 s2
-| LEFTQMARK, LEFTQMARK -> true
-| BULLET s1, BULLET s2 -> string_equal s1 s2
-| EOI, EOI -> true
-| QUOTATION(s1,t1), QUOTATION(s2,t2) -> string_equal s1 s2 && string_equal t1 t2
-| _ -> false
+  | IDENT s1, KEYWORD s2 -> string_equal s1 s2
+  | KEYWORD s1, KEYWORD s2 -> string_equal s1 s2
+  | PATTERNIDENT s1, PATTERNIDENT s2 -> string_equal s1 s2
+  | IDENT s1, IDENT s2 -> string_equal s1 s2
+  | FIELD s1, FIELD s2 -> string_equal s1 s2
+  | NUMBER n1, NUMBER n2 -> NumTok.Unsigned.equal n1 n2
+  | STRING s1, STRING s2 -> string_equal s1 s2
+  | LEFTQMARK, LEFTQMARK -> true
+  | BULLET s1, BULLET s2 -> string_equal s1 s2
+  | EOI, EOI -> true
+  | QUOTATION(s1,t1), QUOTATION(s2,t2) -> string_equal s1 s2 && string_equal t1 t2
+  | _ -> false
 
 let token_text : type c. c p -> string = function
   | PKEYWORD t -> "'" ^ t ^ "'"
