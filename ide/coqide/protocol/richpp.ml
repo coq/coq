@@ -36,7 +36,7 @@ type 'a context = {
     marking functions. As those functions are called when actually writing to
     the device, the resulting tree is correct.
 *)
-let rich_pp width ppcmds =
+let rich_pp ~width ?depth ppcmds =
 
   let context = {
     stack = Leaf;
@@ -99,6 +99,7 @@ let rich_pp width ppcmds =
 
   (* Setting the formatter *)
   pp_set_margin ft width;
+  Option.iter (pp_set_max_boxes ft) depth;
   let m = max (64 * width / 100) (width-30) in
   pp_set_max_indent ft m;
   pp_set_max_boxes ft 50 ;
@@ -158,7 +159,7 @@ let xml_of_rich_pp tag_of_annotation attributes_of_annotation xml =
 
 type richpp = xml
 
-let richpp_of_pp width pp =
+let richpp_of_pp ~width ?depth pp =
   let rec drop = function
   | PCData s -> [PCData s]
   | Element (_, annotation, cs) ->
@@ -167,5 +168,5 @@ let richpp_of_pp width pp =
     | None -> cs
     | Some s -> [Element (s, [], cs)]
   in
-  let xml = rich_pp width pp in
+  let xml = rich_pp ~width ?depth pp in
   Element ("_", [], drop xml)

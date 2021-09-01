@@ -91,7 +91,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
           let () = hook_tag_cb tag hint sel_cb on_hover in
           [tag], hints
         in
-        let () = insert_xml ~tags proof#buffer (Richpp.richpp_of_pp width hyp) in
+        let () = insert_xml ~tags proof#buffer (Richpp.richpp_of_pp ~width hyp) in
         proof#buffer#insert "\n";
         insert_hyp rem_hints hs
       in
@@ -105,13 +105,13 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
           else []
         in
         proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt cur_name);
-        insert_xml ~tags:[Tags.Proof.goal] proof#buffer (Richpp.richpp_of_pp width cur_goal);
+        insert_xml ~tags:[Tags.Proof.goal] proof#buffer (Richpp.richpp_of_pp ~width cur_goal);
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
       let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g; Interface.goal_name = name } =
         proof#buffer#insert (goal_str ~shownum i goals_cnt name);
-        insert_xml proof#buffer (Richpp.richpp_of_pp width g);
+        insert_xml proof#buffer (Richpp.richpp_of_pp ~width g);
         proof#buffer#insert "\n"
       in
       let () = Util.List.fold_left_i (fold_goal ~shownum:true) 2 () rem_goals in
@@ -163,7 +163,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* The proof is finished, with the exception of given up goals. *)
       view#buffer#insert "No more goals, but there are some goals you gave up:\n\n";
       let iter goal =
-        insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
+        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iter iter given_up_goals;
@@ -172,7 +172,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* All the goals have been resolved but those on the shelf. *)
       view#buffer#insert "All the remaining goals are on the shelf:\n\n";
       let iter goal =
-        insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
+        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iter iter shelved_goals
@@ -189,7 +189,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       view#buffer#insert "This subproof is complete, but there are some unfocused goals:\n\n";
       let iter i goal =
         let () = view#buffer#insert (goal_str (succ i) goal.Interface.goal_id) in
-        insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
+        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iteri iter bg
