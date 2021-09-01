@@ -1795,11 +1795,8 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
     | ExplicitBindings _ ->
       rename_bound_vars_as_displayed sigma Id.Set.empty [] thm_ty0
     in
-    let try_apply thm_ty nprod =
+    let try_apply clause =
       try
-        let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
-        if n<0 then error NotEnoughPremises;
-        let clause = mk_clenv_from_n env sigma n (c,thm_ty) in
         let clause = resolve_binding clause lbind in
         Clenv.res_pf clause ~with_evars ~flags
       with exn when noncritical exn ->
@@ -1807,13 +1804,17 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         Proofview.tclZERO ~info exn
     in
     let rec try_red_apply thm_ty (exn0, info) =
-      try
+      match try_red_product env sigma thm_ty with
+      | red_thm ->
         (* Try to head-reduce the conclusion of the theorem *)
-        let red_thm = try_red_product env sigma thm_ty in
-        Proofview.tclORELSE
-          (try_apply red_thm concl_nprod)
-          (fun _ -> try_red_apply red_thm (exn0, info))
-      with Redelimination as exn ->
+        let n = nb_prod_modulo_zeta sigma red_thm - concl_nprod in
+        if n < 0 then try_red_apply red_thm (exn0, info)
+        else
+          let clause = mk_clenv_from_n env sigma n (c, red_thm) in
+          Proofview.tclORELSE
+            (try_apply clause)
+            (fun _ -> try_red_apply red_thm (exn0, info))
+      | exception (Redelimination as exn) ->
         (* Last chance: if the head is a variable, apply may try
             second order unification *)
         let exn, info = Exninfo.capture exn in
@@ -1831,15 +1832,21 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
           else
             Proofview.tclZERO ~info exn0 in
         if not (Int.equal concl_nprod 0) then
+          let clause = mk_clenv_from env sigma (c, thm_ty) in
           Proofview.tclORELSE
-            (try_apply thm_ty 0)
+            (try_apply clause)
             (fun _ -> tac)
         else
           tac
     in
-    Proofview.tclORELSE
-      (try_apply thm_ty0 concl_nprod)
-      (try_red_apply thm_ty0)
+    let n = nb_prod_modulo_zeta sigma thm_ty0 - concl_nprod in
+    if n < 0 then
+      try_red_apply thm_ty0 (NotEnoughPremises, Exninfo.null)
+    else
+      let clause = mk_clenv_from_n env sigma n (c, thm_ty0) in
+      Proofview.tclORELSE
+        (try_apply clause)
+        (try_red_apply thm_ty0)
     end
   in
     Tacticals.New.tclTHEN
