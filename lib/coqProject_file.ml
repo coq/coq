@@ -238,8 +238,8 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
     aux { proj with extra_args = proj.extra_args @ List.map sourced (process_extra_args a) } r
-  | f :: r ->
-      let f = CUnix.correct_path f orig_dir in
+  | f' :: r ->
+      let f = CUnix.correct_path f' orig_dir in
       let proj =
         match Filename.extension f with
         | ".v" ->
@@ -263,7 +263,7 @@ let process_cmd_line ~warning_fn orig_dir proj args =
         | ".mlpack" ->
           check_filename f;
           { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
-        | _ -> raise (Parsing_error ("Unknown option "^f)) in
+        | _ -> raise (Parsing_error ("Unknown option "^f')) in
       aux proj r
  in
   let proj = aux proj args in
