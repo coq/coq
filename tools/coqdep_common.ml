@@ -159,6 +159,14 @@ let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
   exit 1
 
+let error_cannot_open_project_file msg =
+  Printf.eprintf "%s\n" msg;
+  exit 1
+
+let error_cannot_parse_project_file file msg =
+  Printf.eprintf "Project file \"%s\": Syntax error: %s\n" file msg;
+  exit 1
+
 let error_cannot_stat s unix_error =
   (* Print an arbitrary line number, such that the message matches
      common error message pattern. *)
@@ -565,7 +573,12 @@ let treat_coqproject f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
   let warning_fn x = coqdep_warning "%s" x in
-  let project = read_project_file ~warning_fn f in
+  let project =
+    try read_project_file ~warning_fn f
+    with
+    | Parsing_error msg -> error_cannot_parse_project_file f msg
+    | UnableToOpenProjectFile msg -> error_cannot_open_project_file msg
+  in
   iter_sourced (fun { path } -> add_caml_dir path) project.ml_includes;
   iter_sourced (fun ({ path }, l) -> add_q_include path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> add_r_include path l) project.r_includes;
