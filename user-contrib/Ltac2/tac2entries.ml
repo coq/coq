@@ -25,7 +25,6 @@ open Tac2intern
 module Pltac =
 struct
 let ltac2_expr = Pcoq.Entry.create "ltac2_expr"
-let tac2expr = ltac2_expr
 let tac2expr_in_env = Pcoq.Entry.create "tac2expr_in_env"
 
 let q_ident = Pcoq.Entry.create "q_ident"
