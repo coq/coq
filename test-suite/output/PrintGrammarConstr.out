@@ -45,8 +45,8 @@ and term is
 | "8" LEFTA
   [  ]
 | "1" LEFTA
-  [ SELF; ".("; "@"; global; LIST0 (term LEVEL "9"); ")"
-  | SELF; ".("; global; LIST0 arg; ")"
+  [ SELF; ".("; "@"; global; univ_annot; LIST0 (term LEVEL "9"); ")"
+  | SELF; ".("; global; univ_annot; LIST0 arg; ")"
   | SELF; "%"; IDENT ]
 | "0" LEFTA
   [ "["; term LEVEL "10"; "+"; "+"; "*"; LIST1 (term LEVEL "10") SEP ["+";
