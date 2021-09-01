@@ -41,7 +41,6 @@ module Vernac_ =
     let vernac_control = Entry.create "Vernac.vernac_control"
     let inductive_definition = Entry.create "Vernac.inductive_definition"
     let fix_definition = Entry.create "Vernac.fix_definition"
-    let rec_definition = fix_definition
     let red_expr = Entry.create "red_expr"
     let hint_info = Entry.create "hint_info"
     (* Main vernac entry *)
