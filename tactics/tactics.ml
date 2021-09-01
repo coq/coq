@@ -1770,6 +1770,23 @@ let descend_in_conjunctions avoid tac (err, info) c =
 (*            Resolution tactics                    *)
 (****************************************************)
 
+let clenv_try_red_product clenv =
+  try
+    let typ = try_red_product clenv.env clenv.evd (clenv_type clenv) in
+    Some (Clenv.mk_clausenv clenv.env clenv.evd clenv.templval { clenv.templtyp with rebus = typ })
+  with Redelimination -> None
+
+let rec clenv_push_all_prods clenv = match clenv_push_prod0 clenv with
+| None -> clenv
+| Some (_, _, clenv) -> clenv_push_all_prods clenv
+
+let rec expose_n_products env sigma n typ =
+  let m = nb_prod_modulo_zeta sigma typ in
+  if n <= m then Some (m - n), typ
+  else match try_red_product env sigma typ with
+  | typ -> expose_n_products env sigma n typ
+  | exception Redelimination -> None, typ
+
 let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
     clear_flag {CAst.loc;v=(c,lbind : EConstr.constr with_bindings)} =
   Proofview.Goal.enter begin fun gl ->
@@ -1803,50 +1820,51 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         let exn, info = Exninfo.capture exn in
         Proofview.tclZERO ~info exn
     in
-    let rec try_red_apply thm_ty (exn0, info) =
-      match try_red_product env sigma thm_ty with
-      | red_thm ->
-        (* Try to head-reduce the conclusion of the theorem *)
-        let n = nb_prod_modulo_zeta sigma red_thm - concl_nprod in
-        if n < 0 then try_red_apply red_thm (exn0, info)
-        else
-          let clause = mk_clenv_from_n env sigma n (c, red_thm) in
+    let last_chance clause exn0 =
+      (* Last chance: if the head is a variable, apply may try
+          second order unification *)
+      let info = Option.cata (fun loc -> Loc.add_loc Exninfo.null loc) Exninfo.null loc in
+      let tac =
+        if with_destruct then
           Proofview.tclORELSE
-            (try_apply clause)
-            (fun _ -> try_red_apply red_thm (exn0, info))
-      | exception (Redelimination as exn) ->
-        (* Last chance: if the head is a variable, apply may try
-            second order unification *)
-        let exn, info = Exninfo.capture exn in
-        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
-        let tac =
-          if with_destruct then
-            Proofview.tclORELSE
-              (descend_in_conjunctions Id.Set.empty
-                (fun _ b id ->
-                  Tacticals.New.tclTHEN
-                    (try_main_apply b (mkVar id))
-                    (clear [id]))
-                (exn0, info) c)
-              (fun _ -> Proofview.tclZERO ~info exn0)
-          else
-            Proofview.tclZERO ~info exn0 in
-        if not (Int.equal concl_nprod 0) then
-          let clause = mk_clenv_from env sigma (c, thm_ty) in
-          Proofview.tclORELSE
-            (try_apply clause)
-            (fun _ -> tac)
+            (descend_in_conjunctions Id.Set.empty
+              (fun _ b id ->
+                Tacticals.New.tclTHEN
+                  (try_main_apply b (mkVar id))
+                  (clear [id]))
+              (exn0, info) c)
+            (fun _ -> Proofview.tclZERO ~info exn0)
         else
-          tac
+          Proofview.tclZERO ~info exn0 in
+        Proofview.tclORELSE (try_apply clause) (fun _ -> tac)
     in
-    let n = nb_prod_modulo_zeta sigma thm_ty0 - concl_nprod in
-    if n < 0 then
-      try_red_apply thm_ty0 (NotEnoughPremises, Exninfo.null)
-    else
-      let clause = mk_clenv_from_n env sigma n (c, thm_ty0) in
-      Proofview.tclORELSE
-        (try_apply clause)
-        (try_red_apply thm_ty0)
+    (* Invariant: the type of clause starts with exactly [concl_nprod] products *)
+    let rec try_red_apply clause (exn0, info) = match clenv_try_red_product clause with
+    | Some clause ->
+      (* Try to head-reduce the conclusion of the theorem *)
+      let n = nb_prod_modulo_zeta clause.evd clause.templtyp.rebus in
+      if Int.equal n concl_nprod then try_red_apply clause (exn0, info)
+      else
+        let rec push n clause =
+          if Int.equal n 0 then clause
+          else match clenv_push_prod0 clause with
+          | None -> assert false
+          | Some (_, _, clause) -> push (n - 1) clause
+        in
+        let clause = push (n - concl_nprod) clause in
+        Proofview.tclORELSE (try_apply clause) (fun _ -> try_red_apply clause (exn0, info))
+    | None ->
+      let clause = clenv_push_all_prods clause in
+      last_chance clause exn0
+    in
+    let success, thm_ty0 = expose_n_products env sigma concl_nprod thm_ty0 in
+    match success with
+    | None ->
+      let clause = mk_clenv_from env sigma (c, thm_ty0) in
+      last_chance clause NotEnoughPremises
+    | Some m ->
+      let clause = mk_clenv_from_n env sigma m (c, thm_ty0) in
+      Proofview.tclORELSE (try_apply clause) (try_red_apply clause)
     end
   in
     Tacticals.New.tclTHEN
