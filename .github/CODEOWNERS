@@ -206,6 +206,33 @@
 /tactics/class_tactics.* @coq/typeclasses-maintainers
 /test-suite/typeclasses/ @coq/typeclasses-maintainers
 
+########## Number ##########
+
+/interp/numTok.*                     @coq/number-maintainers
+/kernel/float64*                     @coq/number-maintainers
+/kernel/uint63*                      @coq/number-maintainers
+/plugins/syntax/g_number_string.mlg  @coq/number-maintainers
+/plugins/syntax/int63_syntax_plugin.mllib  @coq/number-maintainers
+/plugins/syntax/number.ml            @coq/number-maintainers
+/plugins/syntax/number_string_notation_plugin.mllib  @coq/number-maintainers
+/user-contrib/Ltac2/Int.v            @coq/number-maintainers
+/test-suite/output/FloatExtraction*  @coq/number-maintainers
+/test-suite/output/*Number*          @coq/number-maintainers
+/test-suite/primitive/float/         @coq/number-maintainers
+/test-suite/primitive/sint63/        @coq/number-maintainers
+/test-suite/primitive/uint63/        @coq/number-maintainers
+/theories/Init/Decimal.v             @coq/number-maintainers
+/theories/Init/Hexadecimal.v         @coq/number-maintainers
+/theories/Init/Nat.v                 @coq/number-maintainers
+/theories/Init/Number.v              @coq/number-maintainers
+/theories/*Arith/                    @coq/number-maintainers
+/theories/Numbers/                   @coq/number-maintainers
+/theories/Floats/                    @coq/number-maintainers
+/theories/extraction/Extr*Nat*       @coq/number-maintainers
+/theories/extraction/Extr*Z*         @coq/number-maintainers
+/theories/extraction/ExtrOCamlFloats.v  @coq/number-maintainers
+/theories/extraction/ExtrOCamlInt*   @coq/number-maintainers
+
 ########## Tools ##########
 
 /tools/coqdoc/            @coq/coqdoc-maintainers
