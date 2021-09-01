@@ -1804,9 +1804,9 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
       try
         (* Try to head-reduce the conclusion of the theorem *)
         let red_thm = try_red_product env sigma thm_ty in
-        Tacticals.New.tclORELSE0
+        Proofview.tclORELSE
           (try_apply red_thm concl_nprod)
-          (try_red_apply red_thm (exn0, info))
+          (fun _ -> try_red_apply red_thm (exn0, info))
       with Redelimination as exn ->
         (* Last chance: if the head is a variable, apply may try
             second order unification *)
