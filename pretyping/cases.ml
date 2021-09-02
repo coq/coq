@@ -941,7 +941,7 @@ let specialize_predicate_var (cur,typ,dep) env tms ccl =
     | IsInd (_, IndType (indf, realargs), names) ->
        let arsign,_ = get_arity env indf in
        let arsign = List.map EConstr.of_rel_decl arsign in
-       subst_of_rel_context_instance arsign realargs
+       subst_of_rel_context_instance_list arsign realargs
     | NotInd _ -> [] in
   subst_predicate (l,c) ccl tms
 
@@ -1110,7 +1110,7 @@ let specialize_predicate env newtomatchs (names,depna) arsign cs tms ccl =
   (* We prepare the substitution of X and x:I(X) *)
   let realargsi =
     if not (Int.equal nrealargs 0) then
-      CVars.subst_of_rel_context_instance arsign (Array.to_list cs.cs_concl_realargs)
+      CVars.subst_of_rel_context_instance arsign cs.cs_concl_realargs
     else
       [] in
   let realargsi = List.map EConstr.of_constr realargsi in
@@ -2321,9 +2321,6 @@ let rec is_included x y =
     | PatCstr ((_, i), args, alias), PatCstr ((_, i'), args', alias')  ->
         if Int.equal i i' then List.for_all2 is_included args args'
         else false
-
-let lift_rel_context n l =
-  map_rel_context_with_binders (liftn n) l
 
 (* liftsign is the current pattern's complete signature length.
    Hence pats is already typed in its

@@ -112,7 +112,6 @@ let nf_evar_context sigma ctx =
 let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r measure notation =
   let open EConstr in
   let open Vars in
-  let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
   let sigma, udecl = interp_univ_decl_opt env pl in

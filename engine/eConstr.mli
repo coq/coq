@@ -274,6 +274,8 @@ sig
 
 (** See vars.mli for the documentation of the functions below *)
 
+type instance = t array
+type instance_list = t list
 type substl = t list
 
 val lift : int -> t -> t
@@ -298,7 +300,16 @@ val closedn : Evd.evar_map -> int -> t -> bool
 val closed0 : Evd.evar_map -> t -> bool
 
 val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
-val subst_of_rel_context_instance : rel_context -> t list -> t list
+val subst_instance_context : Univ.Instance.t -> rel_context -> rel_context
+
+val subst_of_rel_context_instance : rel_context -> instance -> substl
+val subst_of_rel_context_instance_list : rel_context -> instance_list -> substl
+
+val liftn_rel_context : int -> int -> rel_context -> rel_context
+val lift_rel_context : int -> rel_context -> rel_context
+val substnl_rel_context : substl -> int -> rel_context -> rel_context
+val substl_rel_context : substl -> rel_context -> rel_context
+val smash_rel_context : rel_context -> rel_context
 
 val esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t
 
@@ -366,6 +377,9 @@ val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t,
 val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, types) Context.Rel.Declaration.pt
 
 val to_rel_decl : Evd.evar_map -> (t, types) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
+
+val of_named_context : Constr.named_context -> named_context
+val of_rel_context : Constr.rel_context -> rel_context
 
 val of_case_invert : Constr.case_invert -> case_invert
 

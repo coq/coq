@@ -542,7 +542,7 @@ let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
       List.rev args
     else
       let ctx = expand_branch env sigma u pms (ind, i) br in
-      subst_of_rel_context_instance ctx args
+      subst_of_rel_context_instance_list ctx args
   in
   Vars.substl subst (snd br)
 

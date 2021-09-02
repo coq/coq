@@ -330,7 +330,7 @@ let subst_projection fid l c =
 let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
   let subst = List.map_i (fun i _ -> mkRel i) 1 paramdecls in
   let subst' = List.init ntypes (fun i -> mkIndU ((ind, ntypes - i - 1), u)) in
-  Termops.substl_rel_context (subst @ subst') fields
+  Vars.substl_rel_context (subst @ subst') fields
 
 (* We build projections *)
 
@@ -434,7 +434,7 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
   let paramargs = Context.Rel.instance_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
   let x = make_annot (Name binder_name) mip.mind_relevance in
   let fields = instantiate_possibly_recursive_type (fst indsp) uinstance mib.mind_ntypes paramdecls fields in
-  let lifted_fields = Termops.lift_rel_context 1 fields in
+  let lifted_fields = Vars.lift_rel_context 1 fields in
   let primitive =
     match mib.mind_record with
     | PrimRecord _ -> true

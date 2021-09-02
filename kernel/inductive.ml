@@ -400,7 +400,7 @@ let expand_case_specif mib (ci, u, params, p, iv, c, br) =
   (* Γ, indices, self : I@{u} params indices ⊢ p : Type *)
   let mip = mib.mind_packets.(snd ci.ci_ind) in
   let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let paramsubst = Vars.subst_of_rel_context_instance paramdecl (Array.to_list params) in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl params in
   (* Expand the return clause *)
   let ep =
     let (nas, p) = p in

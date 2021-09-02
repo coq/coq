@@ -412,13 +412,13 @@ let expand_branch env u pms (ind, i) br =
   let nas, _br = br.(i - 1) in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let paramsubst = Vars.subst_of_rel_context_instance paramdecl (Array.to_list pms) in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl pms in
   let subst = paramsubst @ Inductive.ind_subst (fst ind) mib u in
   let (ctx, _) = mip.mind_nf_lc.(i - 1) in
   let (ctx, _) = List.chop mip.mind_consnrealdecls.(i - 1) ctx in
   Inductive.instantiate_context u subst nas ctx
 
-let cbv_subst_of_rel_context_instance mkclos sign args env =
+let cbv_subst_of_rel_context_instance_list mkclos sign args env =
   let rec aux subst sign l =
     let open Context.Rel.Declaration in
     match sign, l with
@@ -587,7 +587,7 @@ and cbv_stack_value info env = function
           else
             let mkclos env c = cbv_stack_term info TOP env c in
             let ctx = expand_branch info.env u pms (sp, n) br in
-            cbv_subst_of_rel_context_instance mkclos ctx cargs env
+            cbv_subst_of_rel_context_instance_list mkclos ctx cargs env
         in
         cbv_stack_term info stk env (snd br.(n-1))
 
@@ -600,7 +600,7 @@ and cbv_stack_value info env = function
           else
             let mkclos env c = cbv_stack_term info TOP env c in
             let ctx = expand_branch info.env u pms (sp, n) br in
-            cbv_subst_of_rel_context_instance mkclos ctx [||] env
+            cbv_subst_of_rel_context_instance_list mkclos ctx [||] env
         in
         cbv_stack_term info stk env (snd br.(n-1))
 

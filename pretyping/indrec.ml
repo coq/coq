@@ -427,7 +427,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               in
               let obj = EConstr.to_constr !evdref obj in
                 it_mkLambda_or_LetIn_name env obj
-                  (Termops.lift_rel_context nrec deparsign)
+                  (lift_rel_context nrec deparsign)
             in
 
             (* type of i-th component of the mutual fixpoint *)

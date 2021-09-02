@@ -308,7 +308,7 @@ let lift_constructor n cs = {
   cs_cstr = cs.cs_cstr;
   cs_params = List.map (lift n) cs.cs_params;
   cs_nargs = cs.cs_nargs;
-  cs_args = lift_rel_context n cs.cs_args;
+  cs_args = Vars.lift_rel_context n cs.cs_args;
   cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
 }
 
@@ -318,7 +318,7 @@ let instantiate_params t params sign =
   (* Adjust the signature if recursively non-uniform parameters are not here *)
   let _,sign = context_chop nnonrecpar sign in
   let _,t = decompose_prod_n_assum (Context.Rel.length sign) t in
-  let subst = subst_of_rel_context_instance sign params in
+  let subst = subst_of_rel_context_instance_list sign params in
   substl subst t
 
 let get_constructor ((ind,u as indu),mib,mip,params) j =
@@ -419,7 +419,7 @@ let get_arity env ((ind,u),params) =
   let parsign = Vars.subst_instance_context u parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
-  let subst = subst_of_rel_context_instance parsign params in
+  let subst = subst_of_rel_context_instance_list parsign params in
   let arsign = Vars.subst_instance_context u arsign in
   (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 

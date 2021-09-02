@@ -223,6 +223,17 @@ struct
   (** Map all terms in a given rel-context. *)
   let map f = List.Smart.map (Declaration.map_constr f)
 
+  (** Map all terms in a given rel-context. *)
+  let map_with_binders f ctx =
+    let rec aux k = function
+      | decl :: ctx as l ->
+        let decl' = Declaration.map_constr (f k) decl in
+        let ctx' = aux (k-1) ctx in
+        if decl == decl' && ctx == ctx' then l else decl' :: ctx'
+      | [] -> []
+    in
+    aux (length ctx) ctx
+
   (** Perform a given action on every declaration in a given rel-context. *)
   let iter f = List.iter (Declaration.iter_constr f)
 
