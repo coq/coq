@@ -236,8 +236,7 @@ let type_of_int env =
 let type_of_float env =
   match env.retroknowledge.Retroknowledge.retro_float64 with
   | Some c -> mkConst c
-  | None -> raise
-        (Invalid_argument "Typeops.type_of_float: float64 not_defined")
+  | None -> CErrors.user_err Pp.(str"The type float must be registered before this construction can be typechecked.")
 
 let type_of_array env u =
   assert (Univ.Instance.length u = 1);
