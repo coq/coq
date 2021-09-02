@@ -7,5 +7,5 @@ Goal foo.
   Unshelve.
   all:[ > | ].
   shelve.
-  Fail Grab Existential Variables.
+  Unshelve.
 Abort.

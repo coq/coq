@@ -609,7 +609,6 @@ command: [
 | "Derive" "Dependent" "Inversion_clear" ident "with" constr "Sort" sort_family
 | "Declare" "Left" "Step" constr
 | "Declare" "Right" "Step" constr
-| "Grab" "Existential" "Variables"
 | "Unshelve"
 | "Declare" "Equivalent" "Keys" constr constr
 | "Print" "Equivalent" "Keys"

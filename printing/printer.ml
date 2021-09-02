@@ -766,7 +766,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
           ++ str " but there are non-instantiated existential variables:"
           ++ cut () ++ (hov 0 pei)
           ++ pr_evar_info None sigma seeds
-          ++ cut () ++ str "You can use Grab Existential Variables."))
+          ++ cut () ++ str "You can use Unshelve."))
   | g1::rest ->
       let goals = print_multiple_goals g1 rest in
       let ngoals = List.length rest+1 in

@@ -991,7 +991,6 @@ command: [
 | "Declare" "Morphism" one_term ":" ident
 | "Add" "Morphism" one_term "with" "signature" term "as" ident
 | "Add" "Parametric" "Morphism" LIST0 binder ":" one_term "with" "signature" term "as" ident
-| "Grab" "Existential" "Variables"
 | "Unshelve"
 | "Declare" "Equivalent" "Keys" one_term one_term
 | "Print" "Equivalent" "Keys"

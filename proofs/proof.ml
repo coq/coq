@@ -412,19 +412,6 @@ module V82 = struct
   let top_evars p =
     Proofview.V82.top_evars p.entry p.proofview
 
-  let warn_deprecated_grab_existentials =
-    CWarnings.create ~name:"deprecated-grab-existentials" ~category:"deprecated"
-       Pp.(fun () -> str "The Grab Existential Variables command is " ++
-         str"deprecated. Please use the Unshelve command or the unshelve tactical " ++
-         str"instead.")
-
-  let grab_evars p =
-    warn_deprecated_grab_existentials ();
-    if not (is_done p) then
-      raise (OpenProof(None, UnfinishedProof))
-    else
-      { p with proofview = Proofview.V82.grab p.proofview }
-
   let warn_deprecated_existential =
     CWarnings.create ~name:"deprecated-existential" ~category:"deprecated"
        Pp.(fun () -> str "The Existential command is " ++

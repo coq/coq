@@ -555,7 +555,7 @@ Lemma bar (X: nat -> nat -> Prop) (foo:forall x, X x x) (a: unit) (H: tt = a):
 Proof.
 intros; eexists; eexists ?[y]; case H.
 apply (foo ?y).
-Grab Existential Variables.
+Unshelve.
 exact 0.
 Qed.
 
