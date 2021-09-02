@@ -89,7 +89,7 @@ let evaluable_named id env ts =
   (try Environ.evaluable_named id env with Not_found -> true) &&
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_variable ts id)
 
-let constr_val_discr env sigma ts t =
+let constr_val_discr env sigma ~allowed_evars ts t =
   let c, l = decomp sigma t in
   let open GlobRef in
     match EConstr.kind sigma c with
@@ -107,7 +107,7 @@ let constr_val_discr env sigma ts t =
       if Option.is_empty ts then Nothing
       else Everything
     | Sort _ -> Label(SortLabel, [])
-    | Evar _ -> if Option.is_empty ts then Nothing else Everything
+    | Evar (e, _) -> if Option.is_empty ts || not (Evarsolve.AllowedEvars.mem allowed_evars e) then Nothing else Everything
     | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Case _ | Fix _ | CoFix _
     | Proj _ | Int _ | Float _ | Array _ -> Nothing
 
@@ -142,10 +142,10 @@ let bounded_constr_pat_discr env st (t,depth) =
   | None -> None
   | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
-let bounded_constr_val_discr env st sigma (t,depth) =
+let bounded_constr_val_discr env ~allowed_evars st sigma (t,depth) =
   if Int.equal depth 0 then
     Nothing
-  else match constr_val_discr env sigma st t with
+  else match constr_val_discr env sigma ~allowed_evars st t with
   | Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
   | Nothing -> Nothing
   | Everything -> Everything
@@ -172,7 +172,7 @@ struct
   let add = Dn.add
   let rmv = Dn.rmv
 
-  let lookup env sigma st dn t =
-    Dn.lookup dn (bounded_constr_val_discr env st sigma) (t,!dnet_depth)
+  let lookup env sigma ?(allowed_evars = Evarsolve.AllowedEvars.all) st dn t =
+    Dn.lookup dn (bounded_constr_val_discr env ~allowed_evars st sigma) (t,!dnet_depth)
 
 end

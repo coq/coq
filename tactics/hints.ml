@@ -243,7 +243,7 @@ sig
   type t
   val empty : TransparentState.t option -> t
   val add : t -> Pattern.constr_pattern -> stored_data -> t
-  val lookup : Environ.env -> Evd.evar_map -> t -> EConstr.constr -> stored_data list
+  val lookup : Environ.env -> Evd.evar_map -> ?allowed_evars:Evarsolve.AllowedEvars.t -> t -> EConstr.constr -> stored_data list
 end =
 struct
   module Data = struct type t = stored_data let compare = pri_order_int end
@@ -266,9 +266,9 @@ struct
     let () = net := (Bnet (st, dn)) in
     st, dn
 
-  let lookup env sigma net p =
+  let lookup env sigma ?allowed_evars net p =
     let st, dn = force env net in
-    Bnet.lookup env sigma st dn p
+    Bnet.lookup env sigma ?allowed_evars st dn p
 end
 
 type search_entry = {
@@ -307,8 +307,8 @@ let rebuild_dn st se =
   in
   { se with sentry_bnet = dn' }
 
-let lookup_tacs env sigma concl se =
-  let l' = Bounded_net.lookup env sigma se.sentry_bnet concl in
+let lookup_tacs env sigma ?allowed_evars concl se =
+  let l' = Bounded_net.lookup env sigma ?allowed_evars se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
@@ -532,7 +532,7 @@ val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 val map_existential : evar_map -> secvars:Id.Pred.t ->
                       (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
 val map_eauto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
-                (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
+                (GlobRef.t * constr array) -> ?allowed_evars:Evarsolve.AllowedEvars.t -> constr -> t -> full_hint list with_mode
 val map_auto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val add_list : env -> evar_map -> hint_entry list -> t -> t
@@ -642,10 +642,10 @@ struct
       else ModeMismatch
 
   (* [c] contains an existential *)
-  let map_eauto env sigma ~secvars (k,args) concl db =
+  let map_eauto env sigma ~secvars (k,args) ?allowed_evars concl db =
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
-        let pat = lookup_tacs env sigma concl se in
+        let pat = lookup_tacs env sigma ?allowed_evars concl se in
         ModeMatch (merge_entry secvars db [] pat)
       else ModeMismatch
 

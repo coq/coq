@@ -127,7 +127,8 @@ module Hint_db :
     (** All hints associated to the reference, respecting modes if evars appear in the
         arguments and using the discrimination net.
         Returns a [ModeMismatch] if there are declared modes and none matches. *)
-    val map_eauto : env -> evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> FullHint.t list with_mode
+    val map_eauto : env -> evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) ->
+      ?allowed_evars:Evarsolve.AllowedEvars.t -> constr -> t -> FullHint.t list with_mode
 
     (** All hints associated to the reference.
         Precondition: no evars should appear in the arguments, so no modes
