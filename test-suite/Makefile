@@ -31,9 +31,6 @@ COQ_SRC_DIR:=..
 
 ifneq ($(wildcard ../_build/default/config/Makefile),)
 include ../_build/default/config/Makefile
-ifeq ($(COQPREFIX),local)
-COQPREFIX:=$(shell cd ../_build/install/default/ ;pwd)
-endif
 endif
 
 #######################################################################
@@ -53,15 +50,10 @@ else
   export FINDLIB_SEP=:
 endif
 
-# Be careful to use COQPREFIX when prefix is not set
-# this assumes we're running inside dune, ie pwd=_build/default/test-suite
-# is this assumption correct?
-ifeq ($(COQPREFIX),local)
-	COQPREFIX:=$(shell cd ../..;pwd)/install/default/
-endif
-
+# The $(shell echo) trick is necessary due to configure quoting
+# filenames, still, this issue is tricky when paths contain spaces
 export OCAMLPATH := $(shell echo $(COQPREFIX)/lib$(FINDLIB_SEP)$$OCAMLPATH)
-export CAML_LD_LIBRARY_PATH:=$(COQPREFIX)/lib/stublibs:$(CAML_LD_LIBRARY_PATH)
+export CAML_LD_LIBRARY_PATH:=$(shell echo $(COQPREFIX)/lib/stublibs):$(CAML_LD_LIBRARY_PATH)
 
 # COQLIB is an env variable so no quotes
 COQLIB?=
