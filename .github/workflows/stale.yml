@@ -1,0 +1,12 @@
+name: Stale PRs
+
+on:
+  schedule:
+    # Every workday at 2am
+    - cron: '0 2 * * 1-5'
+
+jobs:
+  stale_prs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -d "coq:coq" https://coqbot.herokuapp.com/check-stale-pr
