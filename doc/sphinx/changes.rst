@@ -1232,7 +1232,7 @@ Commands and options
   (`#13384 <https://github.com/coq/coq/pull/13384>`_,
   by Pierre-Marie Pédrot).
 - **Deprecated:**
-  ``Grab Existential Variables`` and :cmd:`Existential` commands
+  ``Grab Existential Variables`` and ``Existential`` commands
   (`#12516 <https://github.com/coq/coq/pull/12516>`_,
   by Maxime Dénès).
 - **Added:**

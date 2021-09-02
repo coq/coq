@@ -501,7 +501,6 @@ command: [
 | "Abort"
 | "Abort" "All"
 | "Abort" identref
-| "Existential" natural constr_body
 | "Admitted"
 | "Qed"
 | "Save" identref

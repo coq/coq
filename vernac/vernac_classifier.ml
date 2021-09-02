@@ -73,8 +73,6 @@ let classify_vernac e =
     | VernacSubproof _
     | VernacCheckGuard
     | VernacUnfocused
-    | VernacSolveExistential _ ->
-        VtProofStep { proof_block_detection = None }
     | VernacBullet _ ->
         VtProofStep { proof_block_detection = Some "bullet" }
     | VernacEndSubproof ->

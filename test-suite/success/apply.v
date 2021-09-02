@@ -396,7 +396,8 @@ Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
 intros; eexists; intros.
 simple eapply (@f_equal nat).
 assumption.
-Existential 1 := fun x => x.
+Unshelve.
+exact (fun x => x).
 Qed.
 
 (* The following worked in 8.2 but was not accepted from r12229 to
@@ -407,7 +408,8 @@ Qed.
 Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
 intros; eexists; intros.
 eauto.
-Existential 1 := fun x => x.
+Unshelve.
+exact (fun x => x).
 Qed.
 
 (* The following was accepted before r12612 but is still not accepted in r12658

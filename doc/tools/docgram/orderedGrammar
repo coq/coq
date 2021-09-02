@@ -949,7 +949,6 @@ command: [
 | "Proof" "Mode" string
 | "Proof" term
 | "Abort" OPT [ "All" | ident ]
-| "Existential" natural OPT ( ":" type ) ":=" term
 | "Admitted"
 | "Qed"
 | "Save" ident
