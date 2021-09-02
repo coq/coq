@@ -865,8 +865,8 @@ Specification language, type inference
   If the value is missing, the default is :n:`yes`.  The old syntax is still
   supported, but produces the ``deprecated-attribute-syntax`` warning.
 
-  Deprecated attributes are :attr:`universes(monomorphic)`,
-  :attr:`universes(notemplate)` and :attr:`universes(noncumulative)`, which are
+  Deprecated attributes are ``universes(monomorphic)``,
+  ``universes(notemplate)`` and ``universes(noncumulative)``, which are
   respectively replaced by :attr:`universes(polymorphic=no) <universes(polymorphic)>`,
   :attr:`universes(template=no) <universes(template)>`
   and :attr:`universes(cumulative=no) <universes(cumulative)>`.

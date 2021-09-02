@@ -99,16 +99,6 @@ val attribute_of_list : (string * 'a key_parser) list -> 'a option attribute
    attribute may only be set once for a command. *)
 val bool_attribute : name:string -> bool option attribute
 
-val deprecated_bool_attribute
-  : name:string
-  -> on:string
-  -> off:string
-  -> bool option attribute
-(** Define boolean attribute [name] with will be set when [on] is
-   provided and unset when [off] is provided. The attribute may only
-   be set once for a command; this attribute both accepts the old [on]
-   [off] syntax and new attribute syntax [on=yes] [on=no] *)
-
 val qualify_attribute : string -> 'a attribute -> 'a attribute
 (** [qualified_attribute qual att] treats [#[qual(atts)]] like [att]
    treats [atts]. *)

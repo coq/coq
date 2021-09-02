@@ -1106,12 +1106,6 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    inductive type to be template polymorphic, even if the :flag:`Auto
    Template Polymorphism` flag is on.
 
-.. attr:: universes(notemplate)
-
-   .. deprecated:: 8.13
-
-      Use :attr:`universes(template=no) <universes(template)>` instead.
-
 In practice, the rule **Ind-Family** is used by Coq only when all the
 inductive types of the inductive definition are declared with an arity
 whose sort is in the Type hierarchy. Then, the polymorphism is over

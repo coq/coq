@@ -748,13 +748,8 @@ let polymorphic_cumulative ~is_defclass =
   let open Notations in
   (* EJGA: this seems redudant with code in attributes.ml *)
   qualify_attribute "universes"
-    (deprecated_bool_attribute
-       ~name:"Polymorphism"
-       ~on:"polymorphic" ~off:"monomorphic"
-     ++
-     deprecated_bool_attribute
-         ~name:"Cumulativity"
-         ~on:"cumulative" ~off:"noncumulative")
+    (bool_attribute ~name:"polymorphic"
+     ++ bool_attribute ~name:"cumulative")
   >>= fun (poly,cumul) ->
   if is_defclass && Option.has_some cumul
   then user_err Pp.(str "Definitional classes do not support the inductive cumulativity attribute.");
