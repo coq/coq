@@ -37,8 +37,6 @@ let option_noglob = ref false
 let option_dynlink = ref Both
 let option_boot = ref false
 
-let norec_dirs = ref StrSet.empty
-
 type dir = string option
 
 (** [get_extension f l] checks whether [f] has one of the extensions
@@ -231,8 +229,8 @@ let absolute_file_name basename odir =
     if it has been given one. Raise [Not_found] otherwise. In
     particular we can check if "." has been attributed a logical path
     after processing all options and silently give the default one if
-    it hasn't. We may also use this to warn if ap hysical path is met
-    twice.*)
+    it hasn't. We may also use this to warn if a physical path is met
+    twice. *)
 let register_dir_logpath,find_dir_logpath =
   let tbl: (string, string list) Hashtbl.t = Hashtbl.create 19 in
   let reg physdir logpath = Hashtbl.add tbl (absolute_dir physdir) logpath in
@@ -452,16 +450,13 @@ let add_known recur phys_dir log_dir f =
 
 (* Visits all the directories under [dir], including [dir] *)
 
-let is_not_seen_directory phys_f =
-  not (StrSet.mem phys_f !norec_dirs)
-
 let rec add_directory recur add_file phys_dir log_dir =
   if exists_dir phys_dir then
     begin
       register_dir_logpath phys_dir log_dir;
       let f = function
         | FileDir (phys_f,f) ->
-            if is_not_seen_directory phys_f && recur then
+            if recur then
               add_directory true add_file phys_f (log_dir @ [f])
         | FileRegular f ->
             add_file phys_dir log_dir f
