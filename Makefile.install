@@ -64,8 +64,8 @@ install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
 endif
 
 # IMPORTANT NOTE: before Dune 2.9, the --docdir and --etcdir options
-# were not supported, if you are using Dune >= 2.9, you can use `make
-# DUNE_29_PLUS=1 install` to use the call with the right options.
+# were not supported, if using Dune >= 2.9, Coq's configure will set
+# the DUNE_29_PLUS=yes` variable to use the call with the right options.
 #
 # Additionally, you can also add --libdir=$(COQLIBINSTALL) if required
 # by your distribution, but we recommend using the default configured
@@ -101,9 +101,15 @@ endif
 ifeq ($(HASCOQIDE),no)
 install-coqide:
 else
+ifdef DUNE_29_PLUS
 install-coqide: $(BCONTEXT)/coqide.install
+	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide
+else
 	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide
 endif
+endif
+
+
 
 # For emacs:
 # Local Variables:

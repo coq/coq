@@ -347,9 +347,6 @@ let local_warning () = warn "-local option is deprecated, and equivalent to -pro
 let bindir_warning () = warn "-bindir option is deprecated, Coq will now unconditionally use $prefix/bin"
 let coqdocdir_warning () = warn "-coqdordir option is deprecated, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files"
 
-let docdir_warning () = warn "-docdir will only have effect if using Dune >= 2.9 and setting the DUNE_29_PLUS variable, see dev/doc/INSTALL.make.md for more details"
-let configdir_warning () = warn "-configdir will only have effect if using Dune >= 2.9 and setting the DUNE_29_PLUS variable, see dev/doc/INSTALL.make.md for more details"
-
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
     "<dir> Set installation directory to <dir> (absolute path required)";
@@ -366,13 +363,13 @@ let args_options = Arg.align [
     "deprecated option, Coq will now unconditionally use $prefix/bin";
   "-libdir", arg_string_option (fun p libdir -> { p with libdir }),
     "<dir> Where to install lib files";
-  "-configdir", arg_string_option (fun p configdir -> configdir_warning (); { p with configdir }),
+  "-configdir", arg_string_option (fun p configdir -> { p with configdir }),
     "<dir> Where to install config files";
   "-datadir", arg_string_option (fun p datadir -> { p with datadir }),
     "<dir> Where to install data files";
   "-mandir", arg_string_option (fun p mandir -> { p with mandir }),
     "<dir> Where to install man files";
-  "-docdir", arg_string_option (fun p docdir -> docdir_warning (); { p with docdir }),
+  "-docdir", arg_string_option (fun p docdir -> { p with docdir }),
     "<dir> Where to install doc files";
   "-coqdocdir", arg_string_option (fun p _ -> coqdocdir_warning (); p),
     "deprecated option, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files";
@@ -691,6 +688,27 @@ let operating_system =
   else
     (try Sys.getenv "OS" with Not_found -> "")
 
+(** Check for dune *)
+
+let dune_install_warning () =
+  warn "You are using Dune < 2.9, the install procedure will not respect the -docdir and -configdir configure directives; please see dev/doc/INSTALL.make.md for more information"
+
+(* prefs are static now, so we use a global variable :S *)
+let dune_29 = ref true
+
+let check_for_dune () =
+  let dune_version, _  = tryrun "dune" ["--version"] in
+  let dune_version = List.map int_of_string (numeric_prefix_list dune_version) in
+  match dune_version with
+  (* Development version, consider it >= 2.9 *)
+  | [] -> ()
+  | _ ->
+    if dune_version < [2;9;0] then
+      (dune_install_warning (); dune_29 := false);
+    ()
+
+let _ = check_for_dune ()
+
 (** Zarith library *)
 
 let check_for_zarith () =
@@ -854,8 +872,8 @@ let install = [
     Relative "share", Relative "share/coq";
   "MANDIR", "the Coq man pages", prefs.mandir,
     Relative "man", Relative "share/man";
-  "DOCDIR", "the Coq documentation", prefs.docdir,
-    Relative "doc", Relative "share/doc/coq";
+  "DOCDIR", "documentation prefix path for all Coq packages", prefs.docdir,
+    Relative "doc", Relative "share/doc";
  ]
 
 let strip_trailing_slash_if_any p =
@@ -1218,6 +1236,7 @@ let write_makefile f =
   pr "COQWARNERROR=%s\n" (if prefs.warn_error then "-w +default" else "");
   pr "CONFIGURE_DPROFILE=%s\n" prefs.dune_profile;
   pr "COQ_INSTALL_ENABLED=%b\n" prefs.install_enabled;
+  if !dune_29 then pr "DUNE_29_PLUS=yes\n";
   close_out o;
   Unix.chmod f 0o444
 
