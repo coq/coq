@@ -485,7 +485,7 @@ let err_notfound_library ?from qid =
 
 let print_located_library qid =
   let open Loadpath in
-  match locate_qualified_library ~warn:false qid with
+  match locate_qualified_library qid with
   | Ok lib -> msg_found_library lib
   | Error LibUnmappedDir -> err_unmapped_library qid
   | Error LibNotFound -> err_notfound_library qid
@@ -1327,8 +1327,7 @@ let vernac_require from import qidl =
   in
   let locate qid =
     let open Loadpath in
-    let warn = not !Flags.quiet in
-    match locate_qualified_library ?root ~warn qid with
+    match locate_qualified_library ?root qid with
     | Ok (_,dir,f) -> dir, f
     | Error LibUnmappedDir -> err_unmapped_library ?from:root qid
     | Error LibNotFound -> err_notfound_library ?from:root qid

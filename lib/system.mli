@@ -62,10 +62,10 @@ val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 
 (** [all_in_path loadpath filename] returns the list of the directory
-    name and full name of all physical occurrences of [filename] in the
-    given [loadpath] *)
+    name and full name of all physical occurrences of [filename] in a
+    [loadpath] binding physical paths to some arbitrary key *)
 val all_in_path :
-  CUnix.load_path -> string -> (CUnix.physical_path * string) list
+  (CUnix.physical_path * 'a) list -> string -> ('a * string) list
 
 val trust_file_cache : bool ref
 (** [trust_file_cache] indicates whether we trust the underlying

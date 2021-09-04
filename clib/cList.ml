@@ -113,6 +113,7 @@ sig
   val distinct : 'a list -> bool
   val distinct_f : 'a cmp -> 'a list -> bool
   val duplicates : 'a eq -> 'a list -> 'a list
+  val uniquize_key : ('a -> 'b) -> 'a list -> 'a list
   val uniquize : 'a list -> 'a list
   val sort_uniquize : 'a cmp -> 'a list -> 'a list
   val min : 'a cmp -> 'a list -> 'a
@@ -947,17 +948,21 @@ let distinct_f cmp l =
 
 (* FIXME: again, generic hash function *)
 
-let uniquize l =
+let uniquize_key f l =
   let visited = Hashtbl.create 23 in
   let rec aux acc changed = function
-    | h :: t -> if Hashtbl.mem visited h then aux acc true t else
+    | h :: t ->
+        let x = f h in
+        if Hashtbl.mem visited x then aux acc true t else
           begin
-            Hashtbl.add visited h h;
+            Hashtbl.add visited x x;
             aux (h :: acc) changed t
           end
     | [] -> if changed then List.rev acc else l
   in
   aux [] false l
+
+let uniquize l = uniquize_key (fun x -> x) l
 
 (** [sort_uniquize] might be an alternative to the hashtbl-based
     [uniquize], when the order of the elements is irrelevant *)
