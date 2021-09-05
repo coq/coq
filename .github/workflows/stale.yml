@@ -4,11 +4,11 @@ on:
   schedule:
     # Every workday at 2am
     - cron: '0 2 * * 1-5'
-    # Do not run on forks (we want this request to happen only once every night)
-    - if: github.repository_owner == 'coq'
 
 jobs:
   stale_prs:
+    # Do not run on forks (we want this request to happen only once every night)
+    if: github.repository_owner == 'coq'
     runs-on: ubuntu-latest
     steps:
       - run: curl -d "coq:coq:$DAILY_SCHEDULE_SECRET" https://coqbot.herokuapp.com/check-stale-pr
