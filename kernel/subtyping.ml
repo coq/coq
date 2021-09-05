@@ -156,14 +156,14 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
         cst
   in
   let mind = MutInd.make1 kn1 in
-  let check_cons_types _i cst p1 p2 =
+  let check_cons_types i cst p1 p2 =
     Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst
         (inductive_is_polymorphic mib1) (infer_conv ?l2r:None ?evars:None ?ts:None) env t1 t2)
       cst
       p2.mind_consnames
-      (arities_of_specif (mind, inst) (mib1, p1))
-      (arities_of_specif (mind, inst) (mib2, p2))
+      (arities_of_constructors ((mind,i), inst) (mib1, p1))
+      (arities_of_constructors ((mind,i), inst) (mib2, p2))
   in
   let check f test why = if not (test (f mib1) (f mib2)) then error (why (f mib2)) in
   check (fun mib -> mib.mind_finite<>CoFinite) (==) (fun x -> FiniteInductiveFieldExpected x);

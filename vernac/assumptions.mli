@@ -18,6 +18,8 @@ open Printer
     WARNING: some terms may not make sense in the environment, because they are
     sealed inside opaque modules. Do not try to do anything fancy with those
     terms apart from printing them, otherwise demons may fly out of your nose.
+
+    NOTE: this function is used in the plugin paramcoq.
 *)
 val traverse :
   Label.t -> constr ->
