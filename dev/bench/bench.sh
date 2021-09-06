@@ -39,7 +39,7 @@ echo $PWD
 #check_variable "BUILD_URL"
 #check_variable "JOB_NAME"
 #check_variable "JENKINS_URL"
-check_variable "CI_JOB_URL"
+#check_variable "CI_JOB_URL"
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
@@ -72,6 +72,7 @@ working_dir="$PWD/${bench_dirname}"
 
 log_dir=$working_dir/logs
 mkdir "$log_dir"
+export COQ_LOG_DIR=$log_dir
 
 echo "DEBUG: ocaml -version = $(ocaml -version)"
 echo "DEBUG: working_dir = $working_dir"
@@ -302,6 +303,7 @@ create_opam() {
     local OPAM_COQ_DIR="$4"
 
     export OPAMROOT="$OPAM_DIR"
+    export COQ_RUNNER="$RUNNER"
 
     opam init --disable-sandboxing -qn -j$number_of_processors --bare
     # Allow beta compiler switches
@@ -331,18 +333,20 @@ create_opam() {
     cd "$coq_dir"
     echo "$1_coq_commit = $COQ_HASH"
 
+    echo "wrap-build-commands: [\"$program_path/wrapper.sh\"]" >> "$OPAM_DIR/config"
+
     git checkout -q $COQ_HASH
     COQ_HASH_LONG=$(git log --pretty=%H | head -n 1)
 
     echo "$1_coq_commit_long = $COQ_HASH_LONG"
 
     for package in coq-core coq-stdlib coq; do
+        export COQ_OPAM_PACKAGE=$package
+        export COQ_ITERATION=1
         _RES=0
-        /usr/bin/time -o "$log_dir/$package.$RUNNER.1.time" --format="%U %M %F" \
-                      perf stat -e instructions:u,cycles:u -o "$log_dir/$package.$RUNNER.1.perf" \
-                      opam pin add -y -b -j "$number_of_processors" --kind=path $package.dev . \
-                      3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
-                      4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
+        opam pin add -y -b -j "$number_of_processors" --kind=path $package.dev . \
+             3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
+             4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
         if [ $_RES = 0 ]; then
             echo "$package ($RUNNER) installed successfully"
@@ -391,6 +395,7 @@ export TIMING=1
 
 for coq_opam_package in $sorted_coq_opam_packages; do
 
+    export COQ_OPAM_PACKAGE=$coq_opam_package
     if [ ! -z "$BENCH_DEBUG" ]; then
         opam list
         opam show $coq_opam_package || continue 2
@@ -401,6 +406,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     echo "coq_opam_package = $coq_opam_package"
 
     for RUNNER in NEW OLD; do
+
+        export COQ_RUNNER=$RUNNER
 
         # perform measurements for the NEW/OLD commit (provided by the user)
         if [ $RUNNER = "NEW" ]; then
@@ -431,12 +438,11 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         if [ ! -z "$BENCH_DEBUG" ]; then ls -l $working_dir; fi
 
         for iteration in $(seq $num_of_iterations); do
+            export COQ_ITERATION=$iteration
             _RES=0
-            /usr/bin/time -o "$log_dir/$coq_opam_package.$RUNNER.$iteration.time" --format="%U %M %F" \
-                 perf stat -e instructions:u,cycles:u -o "$log_dir/$coq_opam_package.$RUNNER.$iteration.perf" \
-                    opam install -v -b -j1 $coq_opam_package \
-                     3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
-                     4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
+            opam install -v -b -j1 $coq_opam_package \
+                 3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
+                 4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
                 _RES=$?
             if [ $_RES = 0 ];
             then
@@ -462,8 +468,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     installable_coq_opam_packages="$installable_coq_opam_packages $coq_opam_package"
 
     # --------------------------------------------------------------
-    cat $log_dir/$coq_opam_package.$RUNNER.1.time || true
-    cat $log_dir/$coq_opam_package.$RUNNER.1.perf || true
+    cat $log_dir/$coq_opam_package.$RUNNER.1.*.time || true
+    cat $log_dir/$coq_opam_package.$RUNNER.1.*.perf || true
 
     # Print the intermediate results after we finish benchmarking each OPAM package
     if [ "$coq_opam_package" = "$(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | tail -n 1)" ]; then

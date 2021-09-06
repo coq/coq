@@ -278,25 +278,40 @@ end
 (* END Copied from batteries, to remove *)
 (******************************************************************************)
 
+let add_timings a b =
+  { user_time = a.user_time +. b.user_time;
+    num_instr = a.num_instr + b.num_instr;
+    num_cycles = a.num_cycles + b.num_cycles;
+    num_mem = a.num_mem + b.num_mem;
+    num_faults = a.num_faults + b.num_faults;
+  }
+
 let mk_pkg_timings work_dir pkg_name suffix iteration =
   let command_prefix = "cat " ^ work_dir ^ "/" ^ pkg_name ^ suffix ^ string_of_int iteration in
-  let time_command_output = command_prefix ^ ".time" |> run |> String.rchop ~n:1 |> String.split_on_char ' ' in
+  let ncoms = command_prefix ^ ".ncoms" |> run |> String.rchop ~n:1 |> int_of_string in
+  let timings = List.init ncoms (fun ncom ->
+      let command_prefix = command_prefix ^ "." ^ string_of_int (ncom+1) in
+      let time_command_output = command_prefix ^ ".time" |> run |> String.rchop ~n:1 |> String.split_on_char ' ' in
 
-  let nth x i = List.nth i x in
+      let nth x i = List.nth i x in
 
-  { user_time = time_command_output |> nth 0 |> float_of_string
-  (* Perf can indeed be not supported in some systems, so we must fail gracefully *)
-  ; num_instr =
-      (try command_prefix ^ ".perf | grep instructions:u | awk '{print $1}' | sed 's/,//g'" |>
-           run |> String.rchop ~n:1 |> int_of_string
-       with Failure _ -> 0)
-  ; num_cycles =
-      (try command_prefix ^ ".perf | grep cycles:u | awk '{print $1}' | sed 's/,//g'" |>
-           run |> String.rchop ~n:1 |> int_of_string
-       with Failure _ -> 0)
-  ; num_mem = time_command_output |> nth 1 |> int_of_string
-  ; num_faults = time_command_output |> nth 2 |> int_of_string
-  }
+      { user_time = time_command_output |> nth 0 |> float_of_string
+      (* Perf can indeed be not supported in some systems, so we must fail gracefully *)
+      ; num_instr =
+          (try command_prefix ^ ".perf | grep instructions:u | awk '{print $1}' | sed 's/,//g'" |>
+               run |> String.rchop ~n:1 |> int_of_string
+           with Failure _ -> 0)
+      ; num_cycles =
+          (try command_prefix ^ ".perf | grep cycles:u | awk '{print $1}' | sed 's/,//g'" |>
+               run |> String.rchop ~n:1 |> int_of_string
+           with Failure _ -> 0)
+      ; num_mem = time_command_output |> nth 1 |> int_of_string
+      ; num_faults = time_command_output |> nth 2 |> int_of_string
+      })
+  in
+  match timings with
+  | [] -> assert false
+  | timing :: rest -> List.fold_left add_timings timing rest
 ;;
 
 (* process command line paramters *)
