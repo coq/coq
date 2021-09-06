@@ -263,7 +263,7 @@ let hintmap_of env sigma secvars hdc concl =
   | None -> Hint_db.map_none ~secvars
   | Some hdc ->
      if occur_existential sigma concl then
-       (fun db -> match Hint_db.map_existential sigma ~secvars hdc concl db with
+       (fun db -> match Hint_db.map_eauto env sigma ~secvars hdc concl db with
                   | ModeMatch l -> l
                   | ModeMismatch -> [])
      else Hint_db.map_auto env sigma ~secvars hdc concl
