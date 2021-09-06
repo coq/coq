@@ -392,7 +392,7 @@ let autounfolds ids csts gl cls =
   let flags =
     List.fold_left (fun flags cst -> CClosure.RedFlags.(red_add flags (fCONST cst)))
       (List.fold_left (fun flags id -> CClosure.RedFlags.(red_add flags (fVAR id)))
-         CClosure.betaiotazeta ids) csts
+         (CClosure.RedFlags.red_add_transparent CClosure.all TransparentState.empty) ids) csts
   in reduct_option ~check:false (Reductionops.clos_norm_flags flags, DEFAULTcast) cls
 
 let cons a l = a :: l

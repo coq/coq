@@ -76,7 +76,6 @@ let with_stats c =
     Lazy.force c
 
 let all_opaque = TransparentState.empty
-let all_transparent = TransparentState.full
 
 module type RedFlagsSig = sig
   type reds
@@ -95,6 +94,7 @@ module type RedFlagsSig = sig
   val red_add_transparent : reds -> TransparentState.t -> reds
   val red_transparent : reds -> TransparentState.t
   val mkflags : red_kind list -> reds
+  val mkfullflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
   val red_projection : reds -> Projection.t -> bool
 end
@@ -138,7 +138,7 @@ module RedFlags : RedFlagsSig = struct
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
-    | DELTA -> { red with r_delta = true; r_const = all_transparent }
+    | DELTA -> { red with r_delta = true }
     | CONST kn ->
       let r = red.r_const in
       { red with r_const = { r with tr_cst = Cpred.add kn r.tr_cst } }
@@ -171,6 +171,8 @@ module RedFlags : RedFlagsSig = struct
 
   let mkflags = List.fold_left red_add no_red
 
+  let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }
+
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
     | CONST kn ->
@@ -194,14 +196,14 @@ end
 
 open RedFlags
 
-let all = mkflags [fBETA;fDELTA;fZETA;fMATCH;fFIX;fCOFIX]
-let allnolet = mkflags [fBETA;fDELTA;fMATCH;fFIX;fCOFIX]
+let all = mkfullflags [fBETA;fDELTA;fZETA;fMATCH;fFIX;fCOFIX]
+let allnolet = mkfullflags [fBETA;fDELTA;fMATCH;fFIX;fCOFIX]
 let beta = mkflags [fBETA]
-let betadeltazeta = mkflags [fBETA;fDELTA;fZETA]
+let betadeltazeta = mkfullflags [fBETA;fDELTA;fZETA]
 let betaiota = mkflags [fBETA;fMATCH;fFIX;fCOFIX]
 let betaiotazeta = mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
 let betazeta = mkflags [fBETA;fZETA]
-let delta = mkflags [fDELTA]
+let delta = mkfullflags [fDELTA]
 let zeta = mkflags [fZETA]
 let nored = no_red
 
@@ -238,10 +240,6 @@ end
 module KeyTable = Hashtbl.Make(IdKeyHash)
 
 open Context.Named.Declaration
-
-let assoc_defined id env = match Environ.lookup_named id env with
-| LocalDef (_, c, _) -> c
-| LocalAssum _ -> raise Not_found
 
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
@@ -531,7 +529,16 @@ let mk_clos_vect env v = match v with
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
 
-let ref_value_cache ({ i_cache = cache; _ }) tab ref =
+let transparent_ref flags = function
+| RelKey _ -> red_set flags fDELTA
+| ConstKey (c, _) -> red_set flags (fCONST c)
+| VarKey id -> red_set flags (fVAR id)
+
+let assoc_defined id env = match Environ.lookup_named id env with
+| LocalDef (_, c, _) -> c
+| LocalAssum _ -> raise Not_found
+
+let ref_value_cache env tab ref =
   try
     KeyTable.find tab ref
   with Not_found ->
@@ -543,15 +550,15 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref =
             let open! Context.Rel.Declaration in
             let i = n - 1 in
             let (d, _) =
-              try Range.get cache.i_env.env_rel_context.env_rel_map i
+              try Range.get env.env_rel_context.env_rel_map i
               with Invalid_argument _ -> raise Not_found
             in
             begin match d with
               | LocalAssum _ -> raise Not_found
               | LocalDef (_, t, _) -> lift n t
             end
-          | VarKey id -> assoc_defined id cache.i_env
-          | ConstKey cst -> constant_value_in cache.i_env cst
+          | VarKey id -> assoc_defined id env
+          | ConstKey cst -> constant_value_in env cst
         in
         Def (inject body)
       with
@@ -1029,6 +1036,10 @@ module FNativeEntries =
     type evd = unit
     type uinstance = Univ.Instance.t
 
+    let mk_construct c =
+      (* All constructors used in primitive functions are relevant *)
+      { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c) }
+
     let get = Array.get
 
     let get_int () e =
@@ -1077,8 +1088,8 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_bool with
       | Some (ct,cf) ->
         defined_bool := true;
-        ftrue := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs ct) };
-        ffalse := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cf) }
+        ftrue := mk_construct ct;
+        ffalse := mk_construct cf;
       | None -> defined_bool :=false
 
     let defined_carry = ref false
@@ -1089,8 +1100,8 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_carry with
       | Some(c0,c1) ->
         defined_carry := true;
-        fC0 := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c0) };
-        fC1 := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c1) }
+        fC0 := mk_construct c0;
+        fC1 := mk_construct c1;
       | None -> defined_carry := false
 
     let defined_pair = ref false
@@ -1100,7 +1111,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_pair with
       | Some c ->
         defined_pair := true;
-        fPair := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs c) }
+        fPair := mk_construct c;
       | None -> defined_pair := false
 
     let defined_cmp = ref false
@@ -1113,9 +1124,9 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_cmp with
       | Some (cEq, cLt, cGt) ->
         defined_cmp := true;
-        fEq := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cEq) };
-        fLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cLt) };
-        fGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cGt) };
+        fEq := mk_construct cEq;
+        fLt := mk_construct cLt;
+        fGt := mk_construct cGt;
         let (icmp, _) = cEq in
         fcmp := { mark = mark Ntrl KnownR; term = FInd (Univ.in_punivs icmp) }
       | None -> defined_cmp := false
@@ -1130,11 +1141,10 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_f_cmp with
       | Some (cFEq, cFLt, cFGt, cFNotComparable) ->
         defined_f_cmp := true;
-        fFEq := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFEq) };
-        fFLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFLt) };
-        fFGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFGt) };
-        fFNotComparable :=
-          { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFNotComparable) };
+        fFEq := mk_construct cFEq;
+        fFLt := mk_construct cFLt;
+        fFGt := mk_construct cFGt;
+        fFNotComparable := mk_construct cFNotComparable;
       | None -> defined_f_cmp := false
 
     let defined_f_class = ref false
@@ -1153,15 +1163,15 @@ module FNativeEntries =
       | Some (cPNormal, cNNormal, cPSubn, cNSubn, cPZero, cNZero,
               cPInf, cNInf, cNaN) ->
         defined_f_class := true;
-        fPNormal := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPNormal) };
-        fNNormal := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNNormal) };
-        fPSubn := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPSubn) };
-        fNSubn := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNSubn) };
-        fPZero := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPZero) };
-        fNZero := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNZero) };
-        fPInf := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPInf) };
-        fNInf := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNInf) };
-        fNaN := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNaN) };
+        fPNormal := mk_construct cPNormal;
+        fNNormal := mk_construct cNNormal;
+        fPSubn := mk_construct cPSubn;
+        fNSubn := mk_construct cNSubn;
+        fPZero := mk_construct cPZero;
+        fNZero := mk_construct cNZero;
+        fPInf := mk_construct cPInf;
+        fNInf := mk_construct cNInf;
+        fNaN := mk_construct cNaN;
       | None -> defined_f_class := false
 
     let defined_array = ref false
@@ -1386,27 +1396,18 @@ let rec knr info tab m stk =
       (match get_args n tys f e stk with
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
-  | FFlex(ConstKey (kn,_u as c)) when red_set info.i_flags (fCONST kn) ->
-      (match ref_value_cache info tab (ConstKey c) with
+  | FFlex fl when red_set info.i_flags fDELTA && transparent_ref info.i_flags fl ->
+      (match ref_value_cache info.i_cache.i_env tab fl with
         | Def v -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
+            let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
             let rargs, a, nargs, stk = get_native_args1 op c stk in
             kni info tab a (Zprimitive(op,c,rargs,nargs)::stk)
           else
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             (m, stk)
         | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
-  | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
-      (match ref_value_cache info tab (VarKey id) with
-        | Def v -> kni info tab v stk
-        | Primitive _ -> assert false
-        | OpaqueDef _ | Undef _ -> (set_ntrl m; (m,stk)))
-  | FFlex(RelKey k) when red_set info.i_flags fDELTA ->
-      (match ref_value_cache info tab (RelKey k) with
-        | Def v -> kni info tab v stk
-        | Primitive _ -> assert false
-        | OpaqueDef _ | Undef _ -> (set_ntrl m; (m,stk)))
   | FConstruct(c,_u) ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
@@ -1639,17 +1640,17 @@ let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
-let unfold_reference info tab key =
+let unfold_reference env flags tab key =
   match key with
   | ConstKey (kn,_) ->
-    if red_set info.i_flags (fCONST kn) then
-      ref_value_cache info tab key
+    if TransparentState.is_transparent_constant flags kn then
+      ref_value_cache env tab key
     else Undef None
   | VarKey i ->
-    if red_set info.i_flags (fVAR i) then
-      ref_value_cache info tab key
+    if TransparentState.is_transparent_variable flags i then
+      ref_value_cache env tab key
     else Undef None
-  | RelKey _ -> ref_value_cache info tab key
+  | RelKey _ -> ref_value_cache env tab key
 
 let relevance_of f = Mark.relevance f.mark
 let set_relevance r f = f.mark <- Mark.mark (Mark.red_state f.mark) (opt_of_rel r)

@@ -149,7 +149,7 @@ let make_flag env f =
           (fun v red -> red_sub red (make_flag_constant v))
           f.rConst red
     else (* Only rConst *)
-        let red = red_add_transparent (red_add red fDELTA) TransparentState.empty in
+        let red = red_add red fDELTA in
         List.fold_right
           (fun v red -> red_add red (make_flag_constant v))
           f.rConst red

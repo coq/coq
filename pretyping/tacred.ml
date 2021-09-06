@@ -1169,7 +1169,7 @@ let unfold_red kn =
   let flag = match kn with
     | EvalVarRef id -> RedFlags.fVAR id
     | EvalConstRef kn -> RedFlags.fCONST kn in
-  RedFlags.mkflags (flag::unfold_side_flags)
+  RedFlags.mkflags (flag::RedFlags.fDELTA::unfold_side_flags)
 
 let unfold env sigma name c =
   if is_evaluable env name then

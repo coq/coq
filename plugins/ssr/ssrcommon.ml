@@ -1310,9 +1310,10 @@ let clr_of_wgen gen clrs = match gen with
 let reduct_in_concl ~check t = Tactics.reduct_in_concl ~check (t, DEFAULTcast)
 let unfold cl =
   let module R = Reductionops in let module F = CClosure.RedFlags in
-  reduct_in_concl ~check:false (R.clos_norm_flags (F.mkflags
-    (List.map (fun c -> F.fCONST (fst (destConst (EConstr.Unsafe.to_constr c)))) cl @
-       [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX])))
+  let flags = F.mkflags [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX; F.fDELTA] in
+  let fold accu c = F.red_add accu (F.fCONST (fst (destConst (EConstr.Unsafe.to_constr c)))) in
+  let flags = List.fold_left fold flags cl in
+  reduct_in_concl ~check:false (R.clos_norm_flags flags)
 
 open Proofview
 open Notations
@@ -1524,16 +1525,13 @@ let tacDEST_CONST c =
  * to change that behaviour in the standard unfold code *)
 let unprotecttac =
   tacMK_SSR_CONST "protect_term" >>= tacDEST_CONST >>= fun prot ->
+  let open CClosure.RedFlags in
+  let flags = red_add_transparent CClosure.allnolet TransparentState.empty in
+  let flags = red_add flags (fCONST prot) in
   Tacticals.New.onClause (fun idopt ->
     let hyploc = Option.map (fun id -> id, InHyp) idopt in
     Tactics.reduct_option ~check:false
-      (Reductionops.clos_norm_flags
-        (CClosure.RedFlags.mkflags
-          [CClosure.RedFlags.fBETA;
-           CClosure.RedFlags.fCONST prot;
-           CClosure.RedFlags.fMATCH;
-           CClosure.RedFlags.fFIX;
-           CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc)
+      (Reductionops.clos_norm_flags flags, DEFAULTcast) hyploc)
     allHypsAndConcl
 
 

@@ -25,7 +25,7 @@ let update_flags ()=
   let flags = List.fold_left f TransparentState.full (Coercionops.coercions ()) in
     red_flags:=
     CClosure.RedFlags.red_add_transparent
-      CClosure.betaiotazeta
+      CClosure.all
       flags
 
 let ground_tac solver startseq =

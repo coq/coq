@@ -296,7 +296,9 @@ let conv_table_key infos ~nargs k1 k2 cuniv =
   | _ -> raise NotConvertible
 
 let unfold_ref_with_args infos tab fl v =
-  match unfold_reference infos tab fl with
+  let env = info_env infos in
+  let flags = RedFlags.red_transparent (info_flags infos) in
+  match unfold_reference env flags tab fl with
   | Def def -> Some (def, v)
   | Primitive op when check_native_args op v ->
     let c = match fl with ConstKey c -> c | _ -> assert false in
