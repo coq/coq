@@ -112,7 +112,7 @@ let constr_val_discr env sigma ts t =
       if Option.is_empty ts && List.is_empty l then Nothing
       else Everything
     | Sort _ -> Label(SortLabel, [])
-    | Evar _ -> if Option.is_empty ts then Nothing else Everything
+    | Evar _ -> Everything
     | Case (_, _, _, _, _, c, _) ->
       (* Overapproximate wildly. TODO: be less brutal. *)
       Everything
