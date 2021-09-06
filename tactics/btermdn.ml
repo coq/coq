@@ -89,7 +89,12 @@ let evaluable_named id env ts =
   (try Environ.evaluable_named id env with Not_found -> true) &&
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_variable ts id)
 
+(* The pattern view functions below try to overapproximate βι-neutral terms up
+   to η-conversion. Some historical design choices are still incorrect w.r.t. to
+   this specification. TODO: try to make them follow the spec. *)
+
 let constr_val_discr env sigma ts t =
+  (* Should we perform weak βι here? *)
   let c, l = decomp sigma t in
   let open GlobRef in
     match EConstr.kind sigma c with
@@ -104,20 +109,19 @@ let constr_val_discr env sigma ts t =
     | Prod (n, d, c) ->
       Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
-      if Option.is_empty ts then Nothing
+      if Option.is_empty ts && List.is_empty l then Nothing
       else Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> if Option.is_empty ts then Nothing else Everything
-    | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Case _ | Fix _ | CoFix _
+    | Case (_, _, _, _, _, c, _) ->
+      (* Overapproximate wildly. TODO: be less brutal. *)
+      Everything
+    | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Fix _ | CoFix _
     | Proj _ | Int _ | Float _ | Array _ -> Nothing
 
 let constr_pat_discr env ts t =
   let open GlobRef in
-  if Option.is_empty ts && not (Patternops.occur_meta_pattern t) then
-    (* Extremely fishy, and breaks very quickly when fiddled with. Why should
-       **ground** terms match **everything** when non-discriminated??? *)
-    None
-  else match decomp_pat t with
+  match decomp_pat t with
   | PRef ((IndRef _) as ref), args
   | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
   | PRef ((VarRef v) as ref), args ->
