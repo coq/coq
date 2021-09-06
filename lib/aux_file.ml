@@ -30,12 +30,14 @@ let mk_absolute vfile =
 
 let start_aux_file ~aux_file:output_file ~v_file =
   let vfile = mk_absolute v_file in
-  oc := Some (open_out output_file);
-  Printf.fprintf (Option.get !oc) "COQAUX%d %s %s\n"
-    version (Digest.to_hex (Digest.file vfile)) vfile
+  try
+    oc := Some (open_out output_file);
+    Printf.fprintf (Option.get !oc) "COQAUX%d %s %s\n"
+      version (Digest.to_hex (Digest.file vfile)) vfile
+  with Sys_error _ -> ()
 
 let stop_aux_file () =
-  close_out (Option.get !oc);
+  Option.iter close_out !oc;
   oc := None
 
 let recording () = not (Option.is_empty !oc)
