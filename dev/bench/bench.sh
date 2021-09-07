@@ -416,7 +416,7 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         # If a given OPAM-package was already installed (as a
         # dependency of some OPAM-package that we have benchmarked
         # before), remove it.
-        opam uninstall -q $coq_opam_package
+        opam uninstall -q $coq_opam_package >/dev/null 2>&1
 
         # OPAM 2.0 likes to ignore the -j when it feels like :S so we
         # workaround that here.
