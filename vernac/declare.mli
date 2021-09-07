@@ -542,6 +542,8 @@ val check_program_libraries : unit -> unit
 
 end
 
+val is_local_constant : Constant.t -> bool
+
 (** {6 For internal support, do not use}  *)
 
 module Internal : sig

@@ -20,3 +20,5 @@ val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> interpretation
 
 val search_filtered_syntactic_definition : ?loc:Loc.t ->
   (interpretation -> 'a option) -> KerName.t -> 'a option
+
+val import_syntax_constant : int -> Libnames.full_path -> KerName.t -> unit

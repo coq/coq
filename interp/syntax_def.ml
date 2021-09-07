@@ -56,6 +56,10 @@ let open_syntax_constant i ((sp,kn),(_local,syndef)) =
       Notation.declare_uninterpretation ~also_in_cases_pattern:syndef.syndef_also_in_cases_pattern (Notation.SynDefRule kn) pat
   end
 
+let import_syntax_constant i sp kn =
+  let syndef = KNmap.get kn !syntax_table in
+  open_syntax_constant i ((sp,kn),(false,syndef))
+
 let cache_syntax_constant d =
   load_syntax_constant 1 d;
   open_syntax_constant 1 d
@@ -70,7 +74,6 @@ let classify_syntax_constant (local,_ as o) =
 let filtered_open_syntax_constant f i ((_,kn),_ as o) =
   let in_f = match f with
     | Unfiltered -> true
-    | Names ns -> Globnames.(ExtRefSet.mem (SynDef kn) ns)
   in
   if in_f then open_syntax_constant i o
 

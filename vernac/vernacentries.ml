@@ -1048,13 +1048,27 @@ let vernac_constraint ~poly l =
 (**********************)
 (* Modules            *)
 
-let add_subnames_of ns full_n n =
+let warn_not_importable = CWarnings.create ~name:"not-importable" ~category:"modules"
+    Pp.(fun c -> str "Cannot import local constant "
+                 ++ Printer.pr_constant (Global.env()) c
+                 ++ str ", it will be ignored.")
+
+let importable_extended_global_of_path ?loc path =
+  match Nametab.extended_global_of_path path with
+  | Globnames.TrueGlobal (GlobRef.ConstRef c) as ref ->
+    if Declare.is_local_constant c then begin
+      warn_not_importable ?loc c;
+      None
+    end
+    else Some ref
+  | ref -> Some ref
+
+let add_subnames_of ?loc len n ns full_n ref =
   let open GlobRef in
-  let module NSet = Globnames.ExtRefSet in
-  let add1 r ns = NSet.add (Globnames.TrueGlobal r) ns in
-  match n with
+  let add1 r ns = (len, Globnames.TrueGlobal r) :: ns in
+  match ref with
   | Globnames.SynDef _ | Globnames.TrueGlobal (ConstRef _ | ConstructRef _ | VarRef _) ->
-    CErrors.user_err Pp.(str "Only inductive types can be used with Import (...).")
+    CErrors.user_err ?loc Pp.(str "Only inductive types can be used with Import (...).")
   | Globnames.TrueGlobal (IndRef (mind,i)) ->
     let open Declarations in
     let dp = Libnames.dirpath full_n in
@@ -1067,33 +1081,61 @@ let add_subnames_of ns full_n n =
     List.fold_left (fun ns f ->
         let s = Indrec.elimination_suffix f in
         let n_elim = Id.of_string (Id.to_string mip.mind_typename ^ s) in
-        match Nametab.extended_global_of_path (Libnames.make_path dp n_elim) with
+        match importable_extended_global_of_path ?loc (Libnames.make_path dp n_elim) with
         | exception Not_found -> ns
-        | n_elim -> NSet.add n_elim ns)
+        | None -> ns
+        | Some ref -> (len, ref) :: ns)
       ns Sorts.all_families
 
-let interp_filter_in m = function
-  | ImportAll ->  Libobject.Unfiltered
-  | ImportNames ns ->
-    let module NSet = Globnames.ExtRefSet in
-    let dp_m = Nametab.dirpath_of_module m in
-    let ns =
-      List.fold_left (fun ns (n,etc) ->
-          let full_n =
-            let dp_n,n = repr_qualid n in
-            make_path (append_dirpath dp_m dp_n) n
-          in
-          let n = try Nametab.extended_global_of_path full_n
-            with Not_found ->
-              CErrors.user_err
-                Pp.(str "Cannot find name " ++ pr_qualid n ++ spc() ++
-                    str "in module " ++ pr_qualid (Nametab.shortest_qualid_of_module m))
-          in
-          let ns = NSet.add n ns in
-          if etc then add_subnames_of ns full_n n else ns)
-        NSet.empty ns
-    in
-    Libobject.Names ns
+let interp_names m ns =
+  let dp_m = Nametab.dirpath_of_module m in
+  let ns =
+    List.fold_left (fun ns (n,etc) ->
+        let len, full_n =
+          let dp_n,n = repr_qualid n in
+          List.length (DirPath.repr dp_n), make_path (append_dirpath dp_m dp_n) n
+        in
+        let ref = try importable_extended_global_of_path ?loc:n.loc full_n
+          with Not_found ->
+            CErrors.user_err ?loc:n.loc
+              Pp.(str "Cannot find name " ++ pr_qualid n ++ spc() ++
+                  str "in module " ++ pr_qualid (Nametab.shortest_qualid_of_module m))
+        in
+        (* TODO dumpglob? *)
+        match ref with
+        | Some ref ->
+          let ns = (len,ref) :: ns in
+          if etc then add_subnames_of ?loc:n.loc len n ns full_n ref else ns
+        | None -> ns)
+      [] ns
+  in
+  ns
+
+let cache_name (len,n) =
+  let open Globnames in
+  let open GlobRef in
+  match n with
+  | SynDef kn -> Syntax_def.import_syntax_constant (len+1) (Nametab.path_of_syndef kn) kn
+  | TrueGlobal (VarRef _) -> assert false
+  | TrueGlobal (ConstRef c) when Declare.is_local_constant c ->
+    (* Can happen through functor application *)
+    warn_not_importable c
+  | TrueGlobal gr ->
+    Nametab.(push (Exactly (len+1)) (path_of_global gr) gr)
+
+let cache_names (_,ns) = List.iter cache_name ns
+
+let subst_names (subst,ns) = List.Smart.map (on_snd (Globnames.subst_extended_reference subst)) ns
+
+let inExportNames = Libobject.declare_object
+    (Libobject.global_object "EXPORTNAMES"
+       ~cache:cache_names ~subst:(Some subst_names)
+       ~discharge:(fun (_,x) -> Some x))
+
+let import_names ~export m ns =
+  let ns = interp_names m ns in
+  if export then Lib.add_anonymous_leaf (inExportNames ns)
+  else cache_names ((),ns)
 
 let vernac_import export refl =
   let import_mod (qid,f) =
@@ -1108,8 +1150,9 @@ let vernac_import export refl =
       with Not_found ->
         CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid)
     in
-    let f = interp_filter_in m f in
-    Declaremods.import_module f ~export m
+    match f with
+    | ImportAll -> Declaremods.import_module Libobject.Unfiltered ~export m
+    | ImportNames ns -> import_names ~export m ns
   in
   List.iter import_mod refl
 

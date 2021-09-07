@@ -72,7 +72,7 @@ type 'a substitutivity =
 
 type object_name = full_path * Names.KerName.t
 
-type open_filter = Unfiltered | Names of Globnames.ExtRefSet.t
+type open_filter = Unfiltered
 
 type 'a object_declaration = {
   object_name : string;
