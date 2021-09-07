@@ -11,4 +11,4 @@ jobs:
     if: github.repository_owner == 'coq'
     runs-on: ubuntu-latest
     steps:
-      - run: curl -d "coq:coq:$DAILY_SCHEDULE_SECRET" https://coqbot.herokuapp.com/check-stale-pr
+      - run: curl -d "coq:coq:${{ secrets.DAILY_SCHEDULE_SECRET }}" https://coqbot.herokuapp.com/check-stale-pr
