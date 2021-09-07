@@ -58,8 +58,9 @@ module V82 = struct
        created. *)
     let evars = Evd.push_future_goals evars in
     let inst = EConstr.identity_subst_val hyps in
+    let identity = Evd.Identity.make inst in
     let (evars,evk) =
-      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity:inst hyps evars concl
+      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity hyps evars concl
     in
     let _, evars = Evd.pop_future_goals evars in
     let ev = EConstr.mkEvar (evk,inst) in

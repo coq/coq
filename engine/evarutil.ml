@@ -416,7 +416,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
   in
   let identity = match identity with
   | None -> Identity.none ()
-  | Some inst -> Identity.make inst
+  | Some inst -> inst
   in
   let evi = {
     evar_hyps = sign;
@@ -448,7 +448,7 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  let identity = if Int.equal (Environ.nb_rel env) 0 then Some instance else None in
+  let identity = if Int.equal (Environ.nb_rel env) 0 then Some (Identity.make instance) else None in
   let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?identity ?abstract_arguments ?candidates ?naming
     ?typeclass_candidate ?principal in
   (evd, EConstr.mkEvar (evk, instance))
