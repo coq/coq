@@ -528,8 +528,8 @@ let rec edit_SELF nt cur_level next_level right_assoc inner prod =
 
 
 let autoloaded_mlgs = [ (* productions from other mlgs are marked with TAGs *)
- "parsing/g_constr.mlg";
- "parsing/g_prim.mlg";
+ "core/parsing/g_constr.mlg";
+ "core/parsing/g_prim.mlg";
  "plugins/btauto/g_btauto.mlg";
  "plugins/cc/g_congruence.mlg";
  "plugins/firstorder/g_ground.mlg";
@@ -546,9 +546,9 @@ let autoloaded_mlgs = [ (* productions from other mlgs are marked with TAGs *)
  "plugins/ltac/profile_ltac_tactics.mlg";
  "plugins/rtauto/g_rtauto.mlg";
  "plugins/syntax/g_number_string.mlg";
- "toplevel/g_toplevel.mlg";
- "vernac/g_proofs.mlg";
- "vernac/g_vernac.mlg";
+ "core/toplevel/g_toplevel.mlg";
+ "core/vernac/g_proofs.mlg";
+ "core/vernac/g_vernac.mlg";
 ]
 
 
