@@ -99,8 +99,8 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
       | _, Some x ->
           let ids = List.map (fun x -> x.CAst.v) (List.flatten (List.map (fun (nal,_,_) -> nal) bl)) in
           (try List.index Names.Name.equal x.CAst.v ids
-          with Not_found -> user_err Pp.(str "No such fix variable."))
-      | _ -> user_err Pp.(str "Cannot guess decreasing argument of fix.") in
+          with Not_found -> user_err ~loc Pp.(str "No such fix variable."))
+      | _ -> user_err ~loc Pp.(str "Cannot guess decreasing argument of fix.") in
   let bl = List.map (fun (nal,bk,t) -> CLocalAssum (nal,bk,t)) bl in
   (id,n, CAst.make ~loc @@ CProdN(bl,ty))
 
@@ -163,7 +163,7 @@ let merge_occurrences loc cl = function
   | None ->
       if Locusops.clause_with_generic_occurrences cl then (None, cl)
       else
-        user_err ~loc  (str "Found an \"at\" clause without \"with\" clause.")
+        user_err ~loc (str "Found an \"at\" clause without \"with\" clause.")
   | Some (occs, p) ->
     let ans = match occs with
     | AllOccurrences -> cl
@@ -458,8 +458,8 @@ GRAMMAR EXTEND Gram
     [ [ "as"; ipat = or_and_intropattern_loc -> { Some ipat }
       | "as"; ipat = equality_intropattern ->
         { match ipat with
-          | IntroRewrite _ -> user_err Pp.(str "Disjunctive/conjunctive pattern expected.")
-          | IntroInjection _ -> user_err Pp.(strbrk "Found an injection pattern while a disjunctive/conjunctive pattern was expected; use " ++ str "\"injection as pattern\"" ++ strbrk " instead.")
+          | IntroRewrite _ -> user_err ~loc Pp.(str "Disjunctive/conjunctive pattern expected.")
+          | IntroInjection _ -> user_err ~loc Pp.(strbrk "Found an injection pattern while a disjunctive/conjunctive pattern was expected; use " ++ str "\"injection as pattern\"" ++ strbrk " instead.")
           | _ -> assert false }
       | -> { None } ] ]
   ;
