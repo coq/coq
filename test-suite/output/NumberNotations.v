@@ -998,3 +998,27 @@ Check neg_infinity.
 Check nan.
 
 End Test29.
+
+Module Test30.
+
+Inductive nunit : nat -> Type := NUnit n : nunit n.
+
+Definition printer2 (x : nunit 2) : Number.uint :=
+  Number.UIntDecimal (Decimal.D2 Decimal.Nil).
+
+Definition parser2 (_ : Number.uint) : nunit 2 := NUnit 2.
+
+Notation nunit2 := (nunit 2).
+Number Notation nunit2 parser2 printer2 : nat_scope.
+
+Check 2.
+Check NUnit (S (S O)).
+Check NUnit (S (S (S O))).
+Check NUnit O.
+
+Check NUnit (S O + S O).
+(* doesn't print as 2, because (S O + S O) is not syntactically equal
+   to (S (S O)), we could want to use a convertibility test rather
+   than a syntactic equality, but this could be more costly *)
+
+End Test30.

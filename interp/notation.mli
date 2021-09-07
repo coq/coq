@@ -170,7 +170,7 @@ type 'target conversion_kind = 'target * option_kind
    [ToPostCheck r] behaves as [ToPostCopy] except in the reverse
    translation which fails if the copied term is not [r].
    When [n] is null, no translation is performed. *)
-type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of GlobRef.t
+type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of Constr.t
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;

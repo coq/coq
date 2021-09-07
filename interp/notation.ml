@@ -580,7 +580,7 @@ type 'target conversion_kind = 'target * option_kind
    [ToPostCheck r] behaves as [ToPostCopy] except in the reverse
    translation which fails if the copied term is not [r].
    When [n] is null, no translation is performed. *)
-type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of GlobRef.t
+type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of Constr.t
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;
@@ -633,7 +633,7 @@ exception NotAValidPrimToken
     what it means for a term to be ground / to be able to be
     considered for parsing. *)
 
-let constr_of_globref allow_constant env sigma = function
+let constr_of_globref ?(allow_constant=true) env sigma = function
   | GlobRef.ConstructRef c ->
      let sigma,c = Evd.fresh_constructor_instance env sigma c in
      sigma,mkConstructU c
@@ -645,17 +645,49 @@ let constr_of_globref allow_constant env sigma = function
      sigma,mkConstU c
   | _ -> raise NotAValidPrimToken
 
-let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get g with
+(** [check_glob g c] checks that glob [g] is equal to constr [c]
+    and returns [g] as a constr (with fresh universe instances)
+    or raises [NotAValidPrimToken]. *)
+let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
+  | Glob_term.GRef (GlobRef.ConstructRef c as g, _), Constr.Construct (c', _)
+       when Construct.CanOrd.equal c c' -> constr_of_globref env sigma g
+  | Glob_term.GRef (GlobRef.IndRef c as g, _), Constr.Ind (c', _)
+       when Ind.CanOrd.equal c c' -> constr_of_globref env sigma g
+  | Glob_term.GRef (GlobRef.ConstRef c as g, _), Constr.Const (c', _)
+       when Constant.CanOrd.equal c c' -> constr_of_globref env sigma g
+  | Glob_term.GApp (gc, gcl), Constr.App (gc', gc'a) ->
+     let sigma,c = check_glob env sigma gc gc' in
+     let sigma,cl =
+       try List.fold_left2_map (check_glob env) sigma gcl (Array.to_list gc'a)
+       with Invalid_argument _ -> raise NotAValidPrimToken in
+     sigma, mkApp (c, Array.of_list cl)
+  | Glob_term.GInt i, Constr.Int i' when Uint63.equal i i' -> sigma, mkInt i
+  | Glob_term.GFloat f, Constr.Float f' when Float64.equal f f' -> sigma, mkFloat f
+  | Glob_term.GArray (_,t,def,ty), Constr.Array (_,t',def',ty') ->
+     let sigma,u = Evd.fresh_array_instance env sigma in
+     let sigma,def = check_glob env sigma def def' in
+     let sigma,t =
+       try Array.fold_left2_map (check_glob env) sigma t t'
+       with Invalid_argument _ -> raise NotAValidPrimToken in
+     let sigma,ty = check_glob env sigma ty ty' in
+     sigma, mkArray (u,t,def,ty)
+  | Glob_term.GSort s, Constr.Sort s' ->
+     let sigma,s = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family s) in
+     if not (Sorts.equal s s') then raise NotAValidPrimToken;
+     sigma,mkSort s
+  | _ -> raise NotAValidPrimToken
+
+let rec constr_of_glob to_post post env sigma g = match DAst.get g with
   | Glob_term.GRef (r, _) ->
       let o = List.find_opt (fun (_,r',_) -> GlobRef.equal r r') post in
       begin match o with
-      | None -> constr_of_globref allow_constant env sigma r
+      | None -> constr_of_globref ~allow_constant:false env sigma r
       | Some (r, _, a) ->
          (* [g] is not a GApp so check that [post]
             does not expect any actual argument
             (i.e., [a] contains only ToPostHole since they mean "ignore arg") *)
          if List.exists ((<>) ToPostHole) a then raise NotAValidPrimToken;
-         constr_of_globref true env sigma r
+         constr_of_globref env sigma r
       end
   | Glob_term.GApp (gc, gcl) ->
       let o = match DAst.get gc with
@@ -663,26 +695,23 @@ let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get 
         | _ -> None in
       begin match o with
       | None ->
-         let sigma,c = constr_of_glob allow_constant to_post post env sigma gc in
-         let sigma,cl = List.fold_left_map (constr_of_glob allow_constant to_post post env) sigma gcl in
+         let sigma,c = constr_of_glob to_post post env sigma gc in
+         let sigma,cl = List.fold_left_map (constr_of_glob to_post post env) sigma gcl in
          sigma,mkApp (c, Array.of_list cl)
       | Some (r, _, a) ->
-         let sigma,c = constr_of_globref true env sigma r in
+         let sigma,c = constr_of_globref env sigma r in
          let rec aux sigma a gcl = match a, gcl with
            | [], [] -> sigma,[]
            | ToPostCopy :: a, gc :: gcl ->
-              let sigma,c = constr_of_glob allow_constant [||] [] env sigma gc in
+              let sigma,c = constr_of_glob [||] [] env sigma gc in
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
            | ToPostCheck r :: a, gc :: gcl ->
-              let () = match DAst.get gc with
-                | Glob_term.GRef (r', _) when GlobRef.equal r r' -> ()
-                | _ -> raise NotAValidPrimToken in
-              let sigma,c = constr_of_glob true [||] [] env sigma gc in
+              let sigma,c = check_glob env sigma gc r in
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
            | ToPostAs i :: a, gc :: gcl ->
-              let sigma,c = constr_of_glob allow_constant to_post to_post.(i) env sigma gc in
+              let sigma,c = constr_of_glob to_post to_post.(i) env sigma gc in
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
            | ToPostHole :: post, _ :: gcl -> aux sigma post gcl
@@ -695,9 +724,9 @@ let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get 
   | Glob_term.GFloat f -> sigma, mkFloat f
   | Glob_term.GArray (_,t,def,ty) ->
       let sigma, u' = Evd.fresh_array_instance env sigma in
-      let sigma, def' = constr_of_glob allow_constant to_post post env sigma def in
-      let sigma, t' = Array.fold_left_map (constr_of_glob allow_constant to_post post env) sigma t in
-      let sigma, ty' = constr_of_glob allow_constant to_post post env sigma ty in
+      let sigma, def' = constr_of_glob to_post post env sigma def in
+      let sigma, t' = Array.fold_left_map (constr_of_glob to_post post env) sigma t in
+      let sigma, ty' = constr_of_glob to_post post env sigma ty in
        sigma, mkArray (u',t',def',ty')
   | Glob_term.GSort gs ->
       let sigma,c = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family gs) in
@@ -707,7 +736,7 @@ let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get 
 
 let constr_of_glob to_post env sigma (Glob_term.AnyGlobConstr g) =
   let post = match to_post with [||] -> [] | _ -> to_post.(0) in
-  constr_of_glob false to_post post env sigma g
+  constr_of_glob to_post post env sigma g
 
 let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | App (c, ca) ->

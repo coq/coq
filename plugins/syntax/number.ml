@@ -382,7 +382,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
   to_post, pt_refs
 
 type target_type =
-  | TargetInd of (inductive * GlobRef.t option list)
+  | TargetInd of (inductive * Constr.t option list)
   | TargetPrim of constr_expr * GlobRef.t list * required_module
 
 let locate_global_inductive_with_params allow_params qid =
@@ -394,9 +394,14 @@ let locate_global_inductive_with_params allow_params qid =
     | [], Notation_term.(NApp (NRef (GlobRef.IndRef i,None), l)) ->
        i,
        List.map (function
-           | Notation_term.NRef (r,None) -> Some r
            | Notation_term.NHole _ -> None
-           | _ -> raise Not_found) l
+           | n ->
+              let g = Notation_ops.glob_constr_of_notation_constr n in
+              let c, _ =
+                let env = Global.env () in
+                let sigma = Evd.from_env env in
+                Pretyping.understand env sigma g in
+              Some (EConstr.Unsafe.to_constr c)) l
     | _ -> raise Not_found
 
 let locate_global_inductive allow_params qid =
