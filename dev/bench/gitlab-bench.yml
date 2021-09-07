@@ -1,6 +1,7 @@
 
 bench:
-  stage: stage-1
+  stage: build
+  needs: []
   when: manual
   before_script:
     - printenv -0 | sort -z | tr '\0' '\n'
