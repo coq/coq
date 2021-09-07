@@ -136,5 +136,7 @@ To install all produced documents, do:
     make install-doc
 
 This will install the documentation in `/usr/share/doc/coq` unless you
-specify another value through the `-docdir` option of `./configure` or the
-`DOCDIR` environment variable.
+specify another value through the `-docdir` option of `./configure` or
+the `DOCDIR` environment variable. Note that `DOCDIR` controls the
+root of the documentation, that is to say, in the example above, the
+root is `/usr/share/doc`.

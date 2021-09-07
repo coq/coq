@@ -169,7 +169,7 @@ destination_path = $(if $(DESTDIR),$(DESTDIR)/$(call windrive_path,$(1)),$(1))
 
 # Installation paths of libraries and documentation.
 COQLIBINSTALL ?= $(call destination_path,$(COQLIB)/user-contrib)
-COQDOCINSTALL ?= $(call destination_path,$(DOCDIR)/user-contrib)
+COQDOCINSTALL ?= $(call destination_path,$(DOCDIR)/coq/user-contrib)
 COQTOPINSTALL ?= $(call destination_path,$(COQLIB)/toploop) # FIXME: Unused variable?
 
 ########## End of parameters ##################################################

@@ -119,15 +119,19 @@ please see the [contributing guide](../../CONTRIBUTING.md).
 Notes for packagers
 -------------------
 
-The `make install` target for Coq's OCaml parts calls `dune
-install` internally. Before Dune 2.9, `dune install` didn't support
-configuring some installation paths such as `-docdir` and
-`-configdir`, thus these configure options were ignored by default.
+The `make install` target for Coq's OCaml parts calls `dune install`
+internally. Before Dune 2.9, `dune install` didn't support configuring
+the `-docdir` and `-configdir` installation paths, thus these
+configure options were ignored for the `coq-core` package.
 
-For Dune >= 2.9, we defining the `DUNE_29_PLUS` variable so these
-options are taken into account by Coq's Makefile. For Dune < 2.9, you
-may have to post-process your package to fix install locations. See
-`Makefile.install` `install-dune` target for more information.
+Coq will try to detect if Dune >= 2.9 is being used, and perform the
+right call to Dune in that case. If Dune < 2.9 is being used, Coq's
+configure will emit a warning. As a packager/user, you have two
+options: a) manually correct the install locations of `doc` and `etc`
+for `coq-core`, or to use a tool such as `opam-install` which already
+supports these options correctly. `dune build -p coq-core &&
+opam-installer $OPTS _build/default/coq-core.install` should do the
+trick.
 
 Installation Procedure For Plugin Developers.
 ---------------------------------------------
