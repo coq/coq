@@ -22,6 +22,19 @@
 A few functions in Vars, Context, Termops, EConstr have moved. The
 deprecation warning tells what to do.
 
+### Build system and infrastructure
+
+- The Windows installer CI build has been moved from the custom
+  workers based on Inria cloud to a standard Github Action, see
+  https://github.com/coq/coq/pull/12425 .
+
+  Fixes https://github.com/coq/coq/issues/6807
+  https://github.com/coq/coq/issues/7428
+  https://github.com/coq/coq/issues/8046
+  https://github.com/coq/coq/issues/8622
+  https://github.com/coq/coq/issues/9401
+  https://github.com/coq/coq/issues/11073 .
+
 ## Changes between Coq 8.13 and Coq 8.14
 
 ### Build system and library infrastructure

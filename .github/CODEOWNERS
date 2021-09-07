@@ -23,6 +23,7 @@
 /.travis.yml         @coq/ci-maintainers
 /.gitlab-ci.yml      @coq/ci-maintainers
 /.github/workflows   @coq/ci-maintainers
+/dev/ci/platform/    @coq/windows-build-maintainers
 /Makefile.ci         @coq/ci-maintainers
 
 /dev/ci/nix          @coq/nix-maintainers
