@@ -321,7 +321,7 @@ GRAMMAR EXTEND Gram
     [ [ "return"; ty = term LEVEL "100" -> { ty } ] ]
   ;
   as_return_type:
-    [ [ a = OPT [ na = OPT["as"; na = name -> { na } ];
+    [ [ a = OPT [ na = OPT ["as"; na = name -> { na } ];
                   ty = case_type -> { (na,ty) } ] ->
         { match a with
           | None -> None, None
