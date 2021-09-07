@@ -6,7 +6,7 @@
 
 set -e
 
-BENCH_DEBUG=1
+BENCH_DEBUG=
 
 r='\033[0m'          # reset (all attributes off)
 b='\033[1m'          # bold
@@ -73,25 +73,22 @@ working_dir="$PWD/${bench_dirname}"
 log_dir=$working_dir/logs
 mkdir "$log_dir"
 
-if [ ! -z "$BENCH_DEBUG" ]
-then
-   echo "DEBUG: ocaml -version = $(ocaml -version)"
-   echo "DEBUG: working_dir = $working_dir"
-   echo "DEBUG: new_ocaml_switch = $new_ocaml_switch"
-   echo "DEBUG: new_coq_repository = $new_coq_repository"
-   echo "DEBUG: new_coq_commit = $new_coq_commit"
-   echo "DEBUG: new_coq_opam_archive_git_uri = $new_coq_opam_archive_git_uri"
-   echo "DEBUG: new_coq_opam_archive_git_branch = $new_coq_opam_archive_git_branch"
-   echo "DEBUG: old_ocaml_switch = $old_ocaml_switch"
-   echo "DEBUG: old_coq_repository = $old_coq_repository"
-   echo "DEBUG: old_coq_commit = $old_coq_commit"
-   echo "DEBUG: old_coq_opam_archive_git_uri = $old_coq_opam_archive_git_uri"
-   echo "DEBUG: old_coq_opam_archive_git_branch = $old_coq_opam_archive_git_branch"
-   echo "DEBUG: num_of_iterations = $num_of_iterations"
-   echo "DEBUG: coq_opam_packages = $coq_opam_packages"
-   echo "DEBUG: coq_pr_number = $coq_pr_number"
-   echo "DEBUG: coq_pr_comment_id = $coq_pr_comment_id"
-fi
+echo "DEBUG: ocaml -version = $(ocaml -version)"
+echo "DEBUG: working_dir = $working_dir"
+echo "DEBUG: new_ocaml_switch = $new_ocaml_switch"
+echo "DEBUG: new_coq_repository = $new_coq_repository"
+echo "DEBUG: new_coq_commit = $new_coq_commit"
+echo "DEBUG: new_coq_opam_archive_git_uri = $new_coq_opam_archive_git_uri"
+echo "DEBUG: new_coq_opam_archive_git_branch = $new_coq_opam_archive_git_branch"
+echo "DEBUG: old_ocaml_switch = $old_ocaml_switch"
+echo "DEBUG: old_coq_repository = $old_coq_repository"
+echo "DEBUG: old_coq_commit = $old_coq_commit"
+echo "DEBUG: old_coq_opam_archive_git_uri = $old_coq_opam_archive_git_uri"
+echo "DEBUG: old_coq_opam_archive_git_branch = $old_coq_opam_archive_git_branch"
+echo "DEBUG: num_of_iterations = $num_of_iterations"
+echo "DEBUG: coq_opam_packages = $coq_opam_packages"
+echo "DEBUG: coq_pr_number = $coq_pr_number"
+echo "DEBUG: coq_pr_comment_id = $coq_pr_comment_id"
 
 # --------------------------------------------------------------------------------
 
@@ -332,7 +329,7 @@ create_opam() {
     if [ ! -z "$BENCH_DEBUG" ]; then opam repo list; fi
 
     cd "$coq_dir"
-    if [ ! -z "$BENCH_DEBUG" ]; then echo "DEBUG: $1_coq_commit = $COQ_HASH"; fi
+    echo "$1_coq_commit = $COQ_HASH"
 
     git checkout -q $COQ_HASH
     COQ_HASH_LONG=$(git log --pretty=%H | head -n 1)
@@ -387,10 +384,7 @@ zulip_edit "Benching continues..."
 
 # Sort the opam packages
 sorted_coq_opam_packages=$("${program_path}/sort-by-deps.sh" ${coq_opam_packages})
-if [ ! -z "$BENCH_DEBUG" ]
-then
-   echo "DEBUG: sorted_coq_opam_packages = ${sorted_coq_opam_packages}"
-fi
+echo "sorted_coq_opam_packages = ${sorted_coq_opam_packages}"
 
 # Generate per line timing info in devs that use coq_makefile
 export TIMING=1
@@ -399,12 +393,12 @@ for coq_opam_package in $sorted_coq_opam_packages; do
 
     if [ ! -z "$BENCH_DEBUG" ]; then
         opam list
-        echo "DEBUG: coq_opam_package = $coq_opam_package"
         opam show $coq_opam_package || continue 2
     else
         # cause to skip with error if unknown package
         opam show $coq_opam_package >/dev/null || continue 2
     fi
+    echo "coq_opam_package = $coq_opam_package"
 
     for RUNNER in NEW OLD; do
 
@@ -468,6 +462,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     installable_coq_opam_packages="$installable_coq_opam_packages $coq_opam_package"
 
     # --------------------------------------------------------------
+    cat $log_dir/$coq_opam_package.$RUNNER.1.time || true
+    cat $log_dir/$coq_opam_package.$RUNNER.1.perf || true
 
     # Print the intermediate results after we finish benchmarking each OPAM package
     if [ "$coq_opam_package" = "$(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | tail -n 1)" ]; then
@@ -480,10 +476,6 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     else
 
         echo "DEBUG: $program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
-        if [ ! -z "$BENCH_DEBUG" ]; then
-            cat $log_dir/$coq_opam_package.$RUNNER.1.time || true
-            cat $log_dir/$coq_opam_package.$RUNNER.1.perf || true
-        fi
         rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
         echo "${rendered_results}"
         # update the comment
