@@ -44,13 +44,25 @@ let guess_coqlib () =
       then Coq_config.coqlib
       else fail ()))
 
+(* Build layout uses coqlib = coqcorelib *)
+let guess_coqcorelib lib =
+  if Sys.file_exists (Path.relative lib "plugins")
+  then lib
+  else Path.relative lib "../coq-core"
+
 (* Should we fail on double initialization? That seems a way to avoid
    mis-use for example when we pass command line arguments *)
 let init () =
   let lib = guess_coqlib () in
   let core = Util.getenv_else "COQCORELIB"
-      (fun () -> Path.relative lib "../coq-core") in
+      (fun () -> guess_coqcorelib lib) in
   { core ; lib }
+
+let init () =
+  let { core; lib } = init () in
+  (* debug *)
+  if false then Format.eprintf "core = %s@\n lib = %s@\n%!" core lib;
+  { core; lib }
 
 let env_ref = ref None
 
@@ -62,7 +74,7 @@ let init () =
   | Some env -> env
 
 let set_coqlib lib =
-  let env = { lib; core = Path.relative lib "../coq-core" } in
+  let env = { lib; core = guess_coqcorelib lib } in
   env_ref := Some env
 
 let coqlib { lib; _ } = lib

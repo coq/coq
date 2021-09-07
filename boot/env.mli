@@ -35,7 +35,9 @@ but we may do so in the future. Rules for "coqlib" are:
 - if none of the above succeeds, the initialization will fail
 
 - The [COQCORELIB] env variable is also used if set, if not, the location
-  of the coq-core files will be assumed to be [COQLIB/../coq-core]
+  of the coq-core files will be assumed to be [COQLIB/../coq-core], except
+  if [COQLIB/plugins] exists [as in some developers layouts], in which case
+  we will set [COQCORELIB:=COQLIB].
 
 Note that [set_coqlib] is used by some commands to process the [-coqlib] option,
 as of now this sets both [coqlib] and [coqcorelib]; this part of the initialization
