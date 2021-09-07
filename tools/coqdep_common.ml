@@ -454,16 +454,18 @@ let is_not_seen_directory phys_f =
   not (StrSet.mem phys_f !norec_dirs)
 
 let rec add_directory recur add_file phys_dir log_dir =
-  register_dir_logpath phys_dir log_dir;
-  let f = function
-    | FileDir (phys_f,f) ->
-        if is_not_seen_directory phys_f && recur then
-          add_directory true add_file phys_f (log_dir @ [f])
-    | FileRegular f ->
-        add_file phys_dir log_dir f
-  in
   if exists_dir phys_dir then
-    process_directory f phys_dir
+    begin
+      register_dir_logpath phys_dir log_dir;
+      let f = function
+        | FileDir (phys_f,f) ->
+            if is_not_seen_directory phys_f && recur then
+              add_directory true add_file phys_f (log_dir @ [f])
+        | FileRegular f ->
+            add_file phys_dir log_dir f
+      in
+      process_directory f phys_dir
+    end
   else
     warning_cannot_open_dir phys_dir
 
