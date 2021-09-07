@@ -529,16 +529,11 @@ let mk_clos_vect env v = match v with
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
 
-let transparent_ref flags = function
-| RelKey _ -> red_set flags fDELTA
-| ConstKey (c, _) -> red_set flags (fCONST c)
-| VarKey id -> red_set flags (fVAR id)
-
 let assoc_defined id env = match Environ.lookup_named id env with
 | LocalDef (_, c, _) -> c
 | LocalAssum _ -> raise Not_found
 
-let ref_value_cache env tab ref =
+let ref_value_cache env flags tab ref =
   try
     KeyTable.find tab ref
   with Not_found ->
@@ -557,8 +552,12 @@ let ref_value_cache env tab ref =
               | LocalAssum _ -> raise Not_found
               | LocalDef (_, t, _) -> lift n t
             end
-          | VarKey id -> assoc_defined id env
-          | ConstKey cst -> constant_value_in env cst
+          | VarKey id ->
+            if TransparentState.is_transparent_variable flags id then assoc_defined id env
+            else raise Not_found
+          | ConstKey cst ->
+            if TransparentState.is_transparent_constant flags (fst cst) then constant_value_in env cst
+            else raise Not_found
         in
         Def (inject body)
       with
@@ -1396,8 +1395,8 @@ let rec knr info tab m stk =
       (match get_args n tys f e stk with
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
-  | FFlex fl when red_set info.i_flags fDELTA && transparent_ref info.i_flags fl ->
-      (match ref_value_cache info.i_cache.i_env tab fl with
+  | FFlex fl when red_set info.i_flags fDELTA ->
+      (match ref_value_cache info.i_cache.i_env (RedFlags.red_transparent info.i_flags) tab fl with
         | Def v -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
@@ -1640,17 +1639,7 @@ let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
-let unfold_reference env flags tab key =
-  match key with
-  | ConstKey (kn,_) ->
-    if TransparentState.is_transparent_constant flags kn then
-      ref_value_cache env tab key
-    else Undef None
-  | VarKey i ->
-    if TransparentState.is_transparent_variable flags i then
-      ref_value_cache env tab key
-    else Undef None
-  | RelKey _ -> ref_value_cache env tab key
+let unfold_reference = ref_value_cache
 
 let relevance_of f = Mark.relevance f.mark
 let set_relevance r f = f.mark <- Mark.mark (Mark.red_state f.mark) (opt_of_rel r)
