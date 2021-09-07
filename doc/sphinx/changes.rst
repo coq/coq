@@ -271,6 +271,13 @@ Tactics
   fixes `#11504 <https://github.com/coq/coq/issues/11504>`_
   and `#14090 <https://github.com/coq/coq/issues/14090>`_,
   by Lasse Blaauwbroek and Hugo Herbelin).
+- **Fixed:**
+  Correct convertibility of multiple terms selected by patterns in
+  tactics such as :tacn:`set` when these terms have subterms in
+  `SProp`
+  (`#14610 <https://github.com/coq/coq/pull/14610>`_,
+  fixes `#14609 <https://github.com/coq/coq/issues/14609>`_,
+  by Hugo Herbelin).
 
 Tactic language
 ^^^^^^^^^^^^^^^
@@ -429,6 +436,13 @@ Commands and options
   (`#14382 <https://github.com/coq/coq/pull/14382>`_,
   fixes `#13589 <https://github.com/coq/coq/issues/13589>`_,
   by Pierre-Marie Pédrot).
+- **Fixed:**
+  Incorrect de Bruijn index handling in vernac class declaration,
+  preventing users from marking existing instances of existing classes
+  which are primitive projections
+  (`#14664 <https://github.com/coq/coq/pull/14664>`_,
+  fixes `#14652 <https://github.com/coq/coq/issues/14652>`_,
+  by Ali Caglayan and Hugo Herbelin).
 
 Command-line tools
 ^^^^^^^^^^^^^^^^^^
