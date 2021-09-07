@@ -2,11 +2,7 @@ image: "$IMAGE"
 
 stages:
   - docker
-  - stage-1 # No dependencies
-  - stage-2 # Only dependencies in stage 1
-  - stage-3 # Only dependencies in stage 1 and 2
-  - stage-4 # Only dependencies in stage 1, 2 and 3
-  - stage-5 # Only dependencies in stage 1, 2, 3, and 4
+  - build
   - deploy
 
 # When a job has no dependencies, it goes to stage 1. Otherwise, we
@@ -68,7 +64,7 @@ before_script:
 
 # TODO figure out how to build doc for installed Coq
 .build-template:
-  stage: stage-1
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -106,7 +102,7 @@ before_script:
 
 # Template for building Coq + stdlib, typical use: overload the switch
 .dune-template:
-  stage: stage-1
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -132,7 +128,7 @@ before_script:
     expire_in: 1 month
 
 .dune-ci-template:
-  stage: stage-2
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -160,7 +156,7 @@ before_script:
 # overridden otherwise the CI will fail.
 
 .doc-template:
-  stage: stage-2
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -179,7 +175,7 @@ before_script:
 
 # set "needs" when using
 .test-suite-template:
-  stage: stage-2
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -204,7 +200,7 @@ before_script:
 
 # set "needs" when using
 .validate-template:
-  stage: stage-2
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -227,7 +223,7 @@ before_script:
     expire_in: 2 months
 
 .ci-template:
-  stage: stage-2
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -255,7 +251,7 @@ before_script:
     OPAM_VARIANT: "+flambda"
 
 .platform-template:
-  stage: stage-1
+  stage: build
   interruptible: true
   variables:
     PLATFORM: "https://github.com/coq/platform/archive/dev-ci.zip"
@@ -312,7 +308,6 @@ build:edge+flambda:dune:dev:
 
 build:base+async:
   extends: .build-template
-  stage: stage-1
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
@@ -354,7 +349,7 @@ windows64:
       - $WINDOWS =~ /enabled/
 
 lint:
-  stage: stage-1
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -365,7 +360,7 @@ lint:
     OPAM_VARIANT: "+flambda"
 
 pkg:opam:
-  stage: stage-1
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -384,7 +379,7 @@ pkg:opam:
   only: *full-ci
 
 .nix-template:
-  stage: stage-1
+  stage: build
   needs: []
   except:
     variables:
@@ -541,7 +536,7 @@ test-suite:edge+flambda:
   only: *full-ci
 
 test-suite:edge:dune:dev:
-  stage: stage-2
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -563,7 +558,7 @@ test-suite:edge:dune:dev:
     # expire_in: never
 
 .test-suite:ocaml+beta+dune-template:
-  stage: stage-1
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -652,20 +647,17 @@ library:ci-bedrock2:
 
 library:ci-category_theory:
   extends: .ci-template
-  stage: stage-3
   needs:
   - build:base
   - plugin:ci-equations
 
 library:ci-color:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
 
 library:ci-compcert:
-  stage: stage-3
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
@@ -679,7 +671,6 @@ library:ci-coq_tools:
   extends: .ci-template
 
 library:ci-coqprime:
-  stage: stage-3
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
@@ -689,7 +680,6 @@ library:ci-coqtail:
   extends: .ci-template
 
 library:ci-coquelicot:
-  stage: stage-3
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
@@ -703,14 +693,12 @@ library:ci-engine_bench:
 
 library:ci-fcsl_pcm:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
 
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
-  stage: stage-4
   needs:
   - build:edge+flambda
   - library:ci-coqprime
@@ -726,7 +714,6 @@ library:ci-fiat_crypto_legacy:
 # https://github.com/coq/coq/pull/11916#issuecomment-609977375
 library:ci-fiat_crypto_ocaml:
   extends: .ci-template
-  stage: stage-5
   needs:
   - build:edge+flambda
   - library:ci-coqprime
@@ -742,21 +729,18 @@ library:ci-menhir:
 
 library:ci-oddorder:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
 
 library:ci-fourcolor:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
 
 library:ci-corn:
   extends: .ci-template-flambda
-  stage: stage-4
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
@@ -764,14 +748,12 @@ library:ci-corn:
 
 plugin:ci-gappa:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-flocq
 
 library:ci-geocoq:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
@@ -784,7 +766,6 @@ library:ci-iris:
 
 library:ci-math_classes:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
@@ -794,7 +775,6 @@ library:ci-mathcomp:
 
 library:ci-mczify:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
@@ -816,14 +796,12 @@ library:ci-verdi_raft:
 
 library:ci-vst:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-flocq
 
 library:ci-deriving:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
@@ -853,7 +831,6 @@ plugin:ci-fiat_parsers:
 
 plugin:ci-metacoq:
   extends: .ci-template
-  stage: stage-3
   needs:
   - build:base
   - plugin:ci-equations
@@ -868,7 +845,7 @@ plugin:ci-perennial:
   extends: .ci-template-flambda
 
 plugin:plugin-tutorial:
-  stage: stage-1
+  stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
@@ -879,7 +856,6 @@ plugin:plugin-tutorial:
 
 plugin:ci-quickchick:
   extends: .ci-template-flambda
-  stage: stage-3
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
