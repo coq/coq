@@ -46,6 +46,13 @@ jobs:
         run: |
           .\dev\ci\platform\coq-pf-04-installer.bat
 
+      - name: Upload Installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-installer
+          path: artifacts
+          if-no-files-found: error
+
   macOS:
     runs-on: macOS-10.15
 
