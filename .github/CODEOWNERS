@@ -77,16 +77,16 @@
 
 ########## Coq lib ##########
 
-/clib/                       @coq/lib-maintainers
+/core/clib/                       @coq/lib-maintainers
 /test-suite/unit-tests/clib/ @coq/lib-maintainers
-/lib/                        @coq/lib-maintainers
+/core/lib/                        @coq/lib-maintainers
 
 ########## Proof engine ##########
 
-/engine/          @coq/engine-maintainers
+/core/engine/          @coq/engine-maintainers
 
-/engine/univ*     @coq/universes-maintainers
-/engine/uState.*  @coq/universes-maintainers
+/core/engine/univ*     @coq/universes-maintainers
+/core/engine/uState.*  @coq/universes-maintainers
 
 ########## CoqIDE ##########
 
@@ -96,31 +96,31 @@
 
 ########## Desugaring ##########
 
-/interp/          @coq/extensible-syntax-maintainers
+/core/interp/          @coq/extensible-syntax-maintainers
 
 ########## Kernel ##########
 
-/kernel/          @coq/kernel-maintainers
+/core/kernel/          @coq/kernel-maintainers
 
-/kernel/byterun/  @coq/vm-native-maintainers
-/kernel/native*   @coq/vm-native-maintainers
-/kernel/vm*       @coq/vm-native-maintainers
-/kernel/vconv.*   @coq/vm-native-maintainers
-/kernel/genOpcodefiles.* @coq/vm-native-maintainers
+/core/kernel/byterun/  @coq/vm-native-maintainers
+/core/kernel/native*   @coq/vm-native-maintainers
+/core/kernel/vm*       @coq/vm-native-maintainers
+/core/kernel/vconv.*   @coq/vm-native-maintainers
+/core/kernel/genOpcodefiles.* @coq/vm-native-maintainers
 
-/kernel/sorts.*   @coq/universes-maintainers
-/kernel/uGraph.*  @coq/universes-maintainers
-/kernel/univ.*    @coq/universes-maintainers
+/core/kernel/sorts.*   @coq/universes-maintainers
+/core/kernel/uGraph.*  @coq/universes-maintainers
+/core/kernel/univ.*    @coq/universes-maintainers
 
 ########## Library ##########
 
-/library/         @coq/library-maintainers
+/core/library/         @coq/library-maintainers
 
 ########## Parser ##########
 
 /coqpp/           @coq/parsing-maintainers
-/gramlib/         @coq/parsing-maintainers
-/parsing/         @coq/parsing-maintainers
+/core/gramlib/         @coq/parsing-maintainers
+/core/parsing/         @coq/parsing-maintainers
 
 ########## Standard library and plugins ##########
 
@@ -180,31 +180,31 @@
 
 ########## Pretyper ##########
 
-/pretyping/             @coq/pretyper-maintainers
+/core/pretyping/             @coq/pretyper-maintainers
 
-/pretyping/vnorm.*      @coq/vm-native-maintainers
-/pretyping/nativenorm.* @coq/vm-native-maintainers
+/core/pretyping/vnorm.*      @coq/vm-native-maintainers
+/core/pretyping/nativenorm.* @coq/vm-native-maintainers
 
 ########## Pretty printer ##########
 
-/printing/        @coq/extensible-syntax-maintainers
+/core/printing/        @coq/extensible-syntax-maintainers
 
 ########## Proof infrastructure ##########
 
-/proofs/          @coq/engine-maintainers
+/core/proofs/          @coq/engine-maintainers
 
 ########## STM ##########
 
-/stm/                    @coq/stm-maintainers
+/core/stm/                    @coq/stm-maintainers
 /test-suite/interactive/ @coq/stm-maintainers
 /test-suite/stm/         @coq/stm-maintainers
 /test-suite/vio/         @coq/stm-maintainers
 
 ########## Tactics ##########
 
-/tactics/         @coq/tactics-maintainers
+/core/tactics/         @coq/tactics-maintainers
 
-/tactics/class_tactics.* @coq/typeclasses-maintainers
+/core/tactics/class_tactics.* @coq/typeclasses-maintainers
 /test-suite/typeclasses/ @coq/typeclasses-maintainers
 
 ########## Number ##########
@@ -255,17 +255,17 @@
 
 ########## Toplevel ##########
 
-/toplevel/   @coq/toplevel-maintainers
+/core/toplevel/   @coq/toplevel-maintainers
+/core/sysinit/    @coq/toplevel-maintainers
 /topbin/     @coq/toplevel-maintainers
-/sysinit/    @coq/toplevel-maintainers
 
 ########## Vernacular ##########
 
-/vernac/              @coq/vernac-maintainers
+/core/vernac/              @coq/vernac-maintainers
 
-/vernac/metasyntax.*  @coq/parsing-maintainers
+/core/vernac/metasyntax.*  @coq/parsing-maintainers
 
-/vernac/classes.*     @coq/typeclasses-maintainers
+/core/vernac/classes.*     @coq/typeclasses-maintainers
 
 ########## Test suite ##########
 

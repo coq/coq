@@ -215,7 +215,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 
 PLUGININCLUDES=$(addprefix -I _build/default/, $(wildcard plugins/*))
 DUNEPLUGININCLUDES=$(addprefix -I _build/default/, $(wildcard plugins/*))
-NATIVEINCLUDES=$(addprefix -nI _build/default/, kernel/.kernel.objs/byte)
+NATIVEINCLUDES=$(addprefix -nI _build/default/core/, kernel/.kernel.objs/byte)
 USERCONTRIBINCLUDES=$(addprefix -I _build/default/user-contrib/,$(USERCONTRIBDIRS))
 
 ifdef NATIVECOMPUTE

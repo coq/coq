@@ -67,7 +67,7 @@ $(BUILD_OUT_DIR) $(VO_OUT_DIR):
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(BUILD_OUT_DIR)/bin
 	$(HIDE)ln -s $(shell pwd)/_build/default/plugins/ $(BUILD_OUT_DIR)/lib/coq-core
 	$(HIDE)ln -s $(shell pwd)/_build/default/tools/ $(BUILD_OUT_DIR)/lib/coq-core
-	$(HIDE)ln -s $(shell pwd)/_build/default/kernel/ $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/default/core/kernel/ $(BUILD_OUT_DIR)/lib/coq-core
 
 ###########################################################################
 # Executables
@@ -108,7 +108,7 @@ ifeq ($(origin COQ_SRC_DIR),undefined)
 COQ_SRC_DIR=.
 endif
 
-COQ_CM_LIBS=coqpp lib clib kernel library engine pretyping gramlib interp printing parsing proofs tactics vernac stm toplevel topbin tools
+COQ_CM_LIBS=coqpp core/lib core/clib core/kernel core/library core/engine core/pretyping core/gramlib core/interp core/printing core/parsing core/proofs core/tactics core/vernac core/stm core/toplevel topbin tools
 ML_SOURCE_DIRS=$(addprefix $(COQ_SRC_DIR)/,$(COQ_CM_LIBS))
 ALL_ML_SOURCE_FILES=$(shell find $(ML_SOURCE_DIRS) -name '*.ml' -or -name '*.mli' -or -name '*.c' -or -name '*.h')
 DOCGRAM_SOURCE_FILES=$(shell find $(addprefix $(COQ_SRC_DIR)/, doc/tools/docgram) -name '*.ml' -or -name '*.mlg')
