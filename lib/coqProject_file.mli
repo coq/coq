@@ -56,7 +56,16 @@ and native_compiler =
 | NativeOndemand
 
 val cmdline_args_to_project : warning_fn:(string -> unit) -> curdir:string -> string list -> project
+
+exception UnableToOpenProjectFile of string
+
 val read_project_file : warning_fn:(string -> unit) -> string -> project
+(** [read_project_file warning_fn file] parses [file] as a Coq project;
+    use [warning_fn] for deprecate options;
+    raise [Parsing_error] on illegal options or arguments;
+    raise [UnableToOpenProjectFile msg] if the file could not be opened;
+    fails on some illegal non-project-file options *)
+
 val coqtop_args_from_project : project -> string list
 val find_project_file : from:string -> projfile_name:string -> string option
 
