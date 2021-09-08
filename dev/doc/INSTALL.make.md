@@ -175,7 +175,7 @@ the option `-coqlib`:
 
 # FLambda Options
 
-You can tweak optimizations flags sent to the OCaml optimizing
+You can tweak optimization flags passed to the OCaml optimizing
 compiler. Coq's default is:
 
     -flambda-opts `-O3 -unbox-closures`
@@ -189,7 +189,7 @@ There is a known problem with certain OCaml versions and
 a large amount of RAM (>= 10GiB) in some particular files.
 
 We recommend disabling native compilation (`-native-compiler no`)
-with flambda unless you use OCaml >= 4.07.0.
+with flambda if you use OCaml < 4.07.0.
 
 c.f. https://caml.inria.fr/mantis/view.php?id=7630
 
