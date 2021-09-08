@@ -1,0 +1,6 @@
+- **Added:**
+  The notations ``(x; y)``, ``x.1``, ``x.2`` for sigT are now exported and available  after ``Import SigTNotations.``.
+  (`#14813 <https://github.com/coq/coq/pull/14813>`_, by Laurent Théry).
+- **Added:**
+  The function ``sigT_of_prod`` turns a pair ``A * B`` into ``{_ : A & B}``. Its inverse function is ``prod_of_sigT``. This is shown by theorems ``sigT_prod_sigT`` and ``prod_sigT_prod``.
+  (`#14813 <https://github.com/coq/coq/pull/14813>`_, by Laurent Théry).

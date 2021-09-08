@@ -160,6 +160,8 @@ End Disjoint_Union.
 
 Section Lexicographic_Product.
 
+  Import SigTNotations.
+
   Variable A : Type.
   Variable B : A -> Type.
   Variable leA : A -> A -> Prop.
@@ -167,11 +169,11 @@ Section Lexicographic_Product.
 
   Inductive lexprod : sigT B -> sigT B -> Prop :=
     | left_lex :
-      forall (x x':A) (y:B x) (y':B x'),
-        leA x x' -> lexprod (existT B x y) (existT B x' y')
+      forall (x x' : A) (y : B x) (y' : B x'),
+        leA x x' -> lexprod (x; y) (x'; y')
     | right_lex :
-      forall (x:A) (y y':B x),
-        leB x y y' -> lexprod (existT B x y) (existT B x y').
+      forall (x : A) (y y' : B x),
+        leB x y y' -> lexprod (x; y) (x; y').
 
 End Lexicographic_Product.
 
