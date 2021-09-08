@@ -30,7 +30,6 @@ type t = {
   browser : string option;
   withdoc : bool;
   byteonly : bool;
-  profile : bool;
   bin_annot : bool;
   annot : bool;
   bytecodecompiler : bool;

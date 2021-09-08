@@ -33,7 +33,6 @@ type t = {
   browser : string option;
   withdoc : bool;
   byteonly : bool;
-  profile : bool;
   bin_annot : bool;
   annot : bool;
   bytecodecompiler : bool;
@@ -65,7 +64,6 @@ let default = {
   browser = None;
   withdoc = false;
   byteonly = false;
-  profile = false;
   bin_annot = false;
   annot = false;
   bytecodecompiler = true;
@@ -140,18 +138,11 @@ let check_absolute = function
       die "argument to -prefix must be an absolute path"
     else ()
 
-let local_warning () = warn "-local option is deprecated, and equivalent to -profile devel"
-let bindir_warning () = warn "-bindir option is deprecated, Coq will now unconditionally use $prefix/bin"
-let coqdocdir_warning () = warn "-coqdordir option is deprecated, Coq will now unconditionally use $datadir/texmf/tex/latex/misc/ to install coqdoc sty files"
-
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
     "<dir> Set installation directory to <dir> (absolute path required)";
-  "-local", arg_set (fun p -> local_warning (); Profiles.get "devel" p), "Deprecated option, equivalent to -profile devel";
   "-no-ask", arg_set (fun p -> { p with interactive = false }),
     " Don't ask questions / print variables during configure [questions will be filled with defaults]";
-  "-bindir", arg_string_option (fun p _ -> bindir_warning (); p ),
-    "<dir> Where to install bin files";
   "-libdir", arg_string_option (fun p libdir -> { p with libdir }),
     "<dir> Where to install lib files";
   "-configdir", arg_string_option (fun p configdir -> { p with configdir }),
@@ -162,8 +153,6 @@ let args_options = Arg.align [
     "<dir> Where to install man files";
   "-docdir", arg_string_option (fun p docdir -> { p with docdir }),
     "<dir> Where to install doc files";
-  "-coqdocdir", arg_string_option (fun p _ -> coqdocdir_warning (); p),
-    "<dir> Where to install Coqdoc style files";
   "-arch", arg_string_option (fun p arch -> { p with arch }),
     "<arch> Specifies the architecture";
   "-natdynlink", arg_bool (fun p natdynlink -> { p with natdynlink }),
@@ -178,10 +167,6 @@ let args_options = Arg.align [
     "(yes|no) Compile the documentation or not";
   "-byte-only", arg_set (fun p -> { p with byteonly = true }),
     " Compiles only bytecode version of Coq";
-  "-profiling", arg_set (fun p -> { p with profile = true }),
-    " Add profiling information in the Coq executables";
-  "-annotate", Arg.Unit (fun () -> die "-annotate has been removed. Please use -annot or -bin-annot instead."),
-    " Removed option. Please use -annot or -bin-annot instead";
   "-annot", arg_set (fun p -> { p with annot = true }),
     " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
   "-bin-annot", arg_set (fun p -> { p with bin_annot = true }),
@@ -197,8 +182,6 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
     "(yes|no) Make OCaml warnings into errors (default no)";
-  "-camldir", Arg.String (fun _ -> ()),
-    "<dir> Specifies path to 'ocaml' for running configure script";
   "-profile", arg_profile, Profiles.doc
 ]
 
