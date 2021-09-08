@@ -9,18 +9,7 @@
 ##########################################################################
 
 # Extra targets for developers :
-# debug printers, revision, partial targets ...
-
-#########################
-# Debug printers in dev/
-#########################
-
-.PHONY: devel printers
-
-DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo
-
-devel: printers
-printers: $(CORECMA) $(DEBUGPRINTERS)
+# partial targets ...
 
 ###################
 # Partial builds
@@ -37,46 +26,39 @@ printers: $(CORECMA) $(DEBUGPRINTERS)
 
 coqlight: theories-light tools coqbinaries
 
-miniopt: $(COQTOPEXE) pluginsopt
-minibyte: $(COQTOPBYTE) pluginsbyte
-
-pluginsopt: $(PLUGINSOPT)
-pluginsbyte: $(PLUGINS)
-
-# This should build all the ocaml code but not (most of) the .v files
-coqocaml: tools coqbinaries $(PLUGINSCMO:.cmo=$(DYNOBJ)) coqide printers bin/votour
-
-.PHONY: coqlight states miniopt minibyte pluginsopt pluginsbyte coqocaml
+.PHONY: coqlight
 
 ######################
 ### 3) theories files
 ######################
 
-init: $(filter theories/Init/%, $(THEORIESVO))
-logic: $(filter theories/Logic/%, $(THEORIESVO))
-arith: $(filter theories/Arith/%, $(THEORIESVO))
-bool: $(filter theories/Bool/%, $(THEORIESVO))
-parith: $(filter theories/PArith/%, $(THEORIESVO))
-narith: $(filter theories/NArith/%, $(THEORIESVO))
-zarith: $(filter theories/ZArith/%, $(THEORIESVO))
-qarith: $(filter theories/QArith/%, $(THEORIESVO))
-lists: $(filter theories/Lists/%, $(THEORIESVO))
-strings: $(filter theories/Strings/%, $(THEORIESVO))
-sets: $(filter theories/Sets/%, $(THEORIESVO))
-fsets: $(filter theories/FSets/%, $(THEORIESVO))
-relations: $(filter theories/Relations/%, $(THEORIESVO))
-wellfounded: $(filter theories/Wellfounded/%, $(THEORIESVO))
-reals: $(filter theories/Reals/%, $(THEORIESVO))
-setoids: $(filter theories/Setoids/%, $(THEORIESVO))
-sorting: $(filter theories/Sorting/%, $(THEORIESVO))
-numbers: $(filter theories/Numbers/%, $(THEORIESVO))
-unicode: $(filter theories/Unicode/%, $(THEORIESVO))
-classes: $(filter theories/Classes/%, $(THEORIESVO))
-program: $(filter theories/Program/%, $(THEORIESVO))
-structures: $(filter theories/Structures/%, $(THEORIESVO))
-vectors: $(filter theories/Vectors/%, $(THEORIESVO))
-msets: $(filter theories/MSets/%, $(THEORIESVO))
-compat: $(filter theories/Compat/%, $(THEORIESVO))
+theories:=$(VO_OUT_DIR)theories
+
+arith: $(filter $(theories)/Arith/%, $(THEORIESVO))
+bool: $(filter $(theories)/Bool/%, $(THEORIESVO))
+classes: $(filter $(theories)/Classes/%, $(THEORIESVO))
+compat: $(filter $(theories)/Compat/%, $(THEORIESVO))
+fsets: $(filter $(theories)/FSets/%, $(THEORIESVO))
+init: $(filter $(theories)/Init/%, $(THEORIESVO))
+lists: $(filter $(theories)/Lists/%, $(THEORIESVO))
+logic: $(filter $(theories)/Logic/%, $(THEORIESVO))
+msets: $(filter $(theories)/MSets/%, $(THEORIESVO))
+narith: $(filter $(theories)/NArith/%, $(THEORIESVO))
+numbers: $(filter $(theories)/Numbers/%, $(THEORIESVO))
+parith: $(filter $(theories)/PArith/%, $(THEORIESVO))
+program: $(filter $(theories)/Program/%, $(THEORIESVO))
+qarith: $(filter $(theories)/QArith/%, $(THEORIESVO))
+reals: $(filter $(theories)/Reals/%, $(THEORIESVO))
+relations: $(filter $(theories)/Relations/%, $(THEORIESVO))
+setoids: $(filter $(theories)/Setoids/%, $(THEORIESVO))
+sets: $(filter $(theories)/Sets/%, $(THEORIESVO))
+sorting: $(filter $(theories)/Sorting/%, $(THEORIESVO))
+strings: $(filter $(theories)/Strings/%, $(THEORIESVO))
+structures: $(filter $(theories)/Structures/%, $(THEORIESVO))
+unicode: $(filter $(theories)/Unicode/%, $(THEORIESVO))
+vectors: $(filter $(theories)/Vectors/%, $(THEORIESVO))
+wellfounded: $(filter $(theories)/Wellfounded/%, $(THEORIESVO))
+zarith: $(filter $(theories)/ZArith/%, $(THEORIESVO))
 
 theories-light: $(THEORIESLIGHTVO)
 
