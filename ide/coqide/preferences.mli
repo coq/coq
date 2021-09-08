@@ -80,6 +80,7 @@ val text_font : string preference
 val show_toolbar : bool preference
 val window_width : int preference
 val window_height : int preference
+val unicode_binding : bool preference
 val auto_complete : bool preference
 val auto_complete_delay : int preference
 val stop_before : bool preference

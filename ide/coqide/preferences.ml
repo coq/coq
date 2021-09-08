@@ -385,6 +385,9 @@ let window_width =
 let window_height =
   new preference ~name:["window_height"] ~init:600 ~repr:Repr.(int)
 
+let unicode_binding =
+  new preference ~name:["unicode_binding"] ~init:true ~repr:Repr.(bool)
+
 let auto_complete =
   new preference ~name:["auto_complete"] ~init:false ~repr:Repr.(bool)
 
@@ -853,6 +856,7 @@ let configure ?(apply=(fun () -> ())) parent =
     let () = button "Dynamic word wrap" dynamic_word_wrap in
     let () = button "Show line number" show_line_number in
     let () = button "Auto indentation" auto_indent in
+    let () = button "Unicode binding completion" unicode_binding in
     let () = button "Auto completion" auto_complete in
     let () = spin "Auto completion delay" ~min:0 ~max:5000 auto_complete_delay in
     let () = button "Show spaces" show_spaces in

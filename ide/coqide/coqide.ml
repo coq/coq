@@ -1252,6 +1252,12 @@ let build_ui () =
   if Coq_config.gtk_platform <> `QUARTZ
   then vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIDE MenuBar");
 
+  (* Connect some specific actions *)
+  let unicode = Coqide_ui.ui_m#get_action "ui/CoqIDE MenuBar/Tools/LaTeX-to-unicode" in
+  let callback b = unicode#set_sensitive b in
+  let () = callback unicode_binding#get in
+  let _ = unicode_binding#connect#changed ~callback in
+
   (* Toolbar *)
   let tbar = GtkButton.Toolbar.cast
       ((Coqide_ui.ui_m#get_widget "/CoqIDE ToolBar")#as_widget)
