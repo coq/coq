@@ -1371,8 +1371,6 @@ command: [
 (* odd that these are in command while other notation-related ones are in syntax *)
 | REPLACE "Number" "Notation" reference reference reference OPT number_options ":" preident
 | WITH "Number" "Notation" reference reference reference OPT number_options ":" scope_name
-| REPLACE "Numeral" "Notation" reference reference reference ":" preident deprecated_number_modifier
-| WITH "Numeral" "Notation" reference reference reference ":" scope_name deprecated_number_modifier
 | REPLACE "String" "Notation" reference reference reference OPT string_option ":" preident
 | WITH "String" "Notation" reference reference reference OPT string_option ":" scope_name
 

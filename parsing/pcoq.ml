@@ -280,7 +280,6 @@ module Constr =
     (* Entries that can be referred via the string -> Entry.t table *)
     let constr = Entry.create "constr"
     let term = Entry.create "term"
-    let operconstr = term
     let constr_eoi = eoi_entry constr
     let lconstr = Entry.create "lconstr"
     let binder_constr = Entry.create "binder_constr"
@@ -293,7 +292,6 @@ module Constr =
     let pattern = Entry.create "pattern"
     let constr_pattern = Entry.create "constr_pattern"
     let cpattern = Entry.create "cpattern"
-    let lconstr_pattern = cpattern
     let closed_binder = Entry.create "closed_binder"
     let binder = Entry.create "binder"
     let binders = Entry.create "binders"
@@ -304,7 +302,6 @@ module Constr =
     let typeclass_constraint = Entry.create "typeclass_constraint"
     let record_declaration = Entry.create "record_declaration"
     let arg = Entry.create "arg"
-    let appl_arg = arg
     let type_cstr = Entry.create "type_cstr"
   end
 

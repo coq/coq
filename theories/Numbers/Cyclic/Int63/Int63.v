@@ -625,17 +625,6 @@ Notation opp_to_Z_opp := opp_to_Z_opp (only parsing).
 
 Module Export Int63Notations.
   Local Open Scope uint63_scope.
-  (* TODO leave 8.13 or update to 8.14? *)
-  #[deprecated(since="8.13",note="use infix mod in the uint63_scope instead")]
-   Notation "a \% m" := (a mod m) (at level 40, left associativity) : int63_scope.
-  #[deprecated(since="8.13",note="use infix =? in the uint63_scope instead")]
-   Notation "m '==' n" := (m =? n) (at level 70, no associativity) : int63_scope.
-  #[deprecated(since="8.13",note="use infix <? in the uint63_scope instead")]
-   Notation "m < n" := (m <? n) : int63_scope.
-  #[deprecated(since="8.13",note="use infix <=? in the uint63_scope instead")]
-   Notation "m <= n" := (m <=? n) : int63_scope.
-  #[deprecated(since="8.13",note="use infix ≤? in the uint63_scope instead")]
-   Notation "m ≤ n" := (m <=? n) (at level 70, no associativity) : int63_scope.
   Export Int63NotationsInternalB.
   Export Int63NotationsInternalC.
   Export Int63NotationsInternalD.

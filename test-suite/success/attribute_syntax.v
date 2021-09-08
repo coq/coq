@@ -52,10 +52,10 @@ Fail #[ export ] Export Foo.
 (* Tests for deprecated attribute syntax *)
 Set Warnings "-deprecated-attribute-syntax".
 
-#[program(true)]
+#[program=yes]
 Fixpoint f (n: nat) {wf lt n} : nat := _.
 Reset f.
 
-#[universes(monomorphic)]
+#[universes(polymorphic=no)]
 Definition ιιι T (x: T) := x.
 Fail Check ιιι _ ιιι.

@@ -158,7 +158,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
         view#buffer#insert msg
       in
       List.iter iter evars;
-      view#buffer#insert "\nYou can use Grab Existential Variables."
+      view#buffer#insert "\nYou can use Unshelve."
     | [], [], _, _ ->
       (* The proof is finished, with the exception of given up goals. *)
       view#buffer#insert "No more goals, but there are some goals you gave up:\n\n";

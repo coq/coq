@@ -1890,16 +1890,6 @@ Qed.
 
 Module Export Uint63Notations.
   Local Open Scope uint63_scope.
-  #[deprecated(since="8.13",note="use infix mod instead")]
-   Notation "a \% m" := (a mod m) (at level 40, left associativity) : uint63_scope.
-  #[deprecated(since="8.13",note="use infix =? instead")]
-   Notation "m '==' n" := (m =? n) (at level 70, no associativity) : uint63_scope.
-  #[deprecated(since="8.13",note="use infix <? instead")]
-   Notation "m < n" := (m <? n) : uint63_scope.
-  #[deprecated(since="8.13",note="use infix <=? instead")]
-   Notation "m <= n" := (m <=? n) : uint63_scope.
-  #[deprecated(since="8.13",note="use infix ≤? instead")]
-   Notation "m ≤ n" := (m <=? n) (at level 70, no associativity) : uint63_scope.
   Export Uint63NotationsInternalB.
   Export Uint63NotationsInternalC.
   Export Uint63NotationsInternalD.

@@ -136,13 +136,6 @@ Polymorphic, Monomorphic
    on. There is also a legacy syntax using the ``Monomorphic`` prefix
    (see :n:`@legacy_attr`).
 
-.. attr:: universes(monomorphic)
-
-   .. deprecated:: 8.13
-
-      Use :attr:`universes(polymorphic=no) <universes(polymorphic)>`
-      instead.
-
 .. flag:: Universe Polymorphism
 
    This :term:`flag` is off by default.  When it is on, new declarations are
@@ -206,12 +199,6 @@ Cumulative, NonCumulative
 
       :n:`#[ universes(polymorphic{? = yes }), universes(cumulative{? = {| yes | no } }) ]` can be
       abbreviated into :n:`#[ universes(polymorphic{? = yes }, cumulative{? = {| yes | no } }) ]`.
-
-.. attr:: universes(noncumulative)
-
-   .. deprecated:: 8.13
-
-      Use :attr:`universes(cumulative=no) <universes(cumulative)>` instead.
 
 .. flag:: Polymorphic Inductive Cumulativity
 

@@ -949,7 +949,6 @@ command: [
 | "Proof" "Mode" string
 | "Proof" term
 | "Abort" OPT [ "All" | ident ]
-| "Existential" natural OPT ( ":" type ) ":=" term
 | "Admitted"
 | "Qed"
 | "Save" ident
@@ -991,7 +990,6 @@ command: [
 | "Declare" "Morphism" one_term ":" ident
 | "Add" "Morphism" one_term "with" "signature" term "as" ident
 | "Add" "Parametric" "Morphism" LIST0 binder ":" one_term "with" "signature" term "as" ident
-| "Grab" "Existential" "Variables"
 | "Unshelve"
 | "Declare" "Equivalent" "Keys" one_term one_term
 | "Print" "Equivalent" "Keys"
@@ -1033,7 +1031,6 @@ command: [
 | "Declare" "Left" "Step" one_term
 | "Declare" "Right" "Step" one_term
 | "Number" "Notation" qualid qualid qualid OPT ( "(" LIST1 number_modifier SEP "," ")" ) ":" scope_name
-| "Numeral" "Notation" qualid qualid qualid ":" scope_name OPT deprecated_number_modifier
 | "String" "Notation" qualid qualid qualid OPT ( "(" number_string_via ")" ) ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]

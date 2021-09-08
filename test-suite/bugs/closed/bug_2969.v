@@ -10,7 +10,7 @@ apply (H n).
 unfold n. clear n.
 eexists.
 reflexivity.
-Grab Existential Variables.
+Unshelve.
 admit.
 Admitted.
 
@@ -23,6 +23,6 @@ evar nat.
 assert (H := eq_refl : n0 = n).
 clearbody n n0.
 exact I.
-Grab Existential Variables.
+Unshelve.
 admit.
 Admitted.

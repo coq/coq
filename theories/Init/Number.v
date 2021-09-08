@@ -13,22 +13,10 @@
 Require Import Decimal Hexadecimal.
 
 Variant uint := UIntDecimal (u:Decimal.uint) | UIntHexadecimal (u:Hexadecimal.uint).
-#[deprecated(since="8.13",note="Use UintDecimal instead.")]
-Notation UIntDec := UIntDecimal (only parsing).
-#[deprecated(since="8.13",note="Use UintHexadecimal instead.")]
-Notation UIntHex := UIntHexadecimal (only parsing).
 
 Variant int := IntDecimal (i:Decimal.int) | IntHexadecimal (i:Hexadecimal.int).
-#[deprecated(since="8.13",note="Use IntDecimal instead.")]
-Notation IntDec := IntDecimal (only parsing).
-#[deprecated(since="8.13",note="Use IntHexadecimal instead.")]
-Notation IntHex := IntHexadecimal (only parsing).
 
 Variant number := Decimal (d:Decimal.decimal) | Hexadecimal (h:Hexadecimal.hexadecimal).
-#[deprecated(since="8.13",note="Use Decimal instead.")]
-Notation Dec := Decimal (only parsing).
-#[deprecated(since="8.13",note="Use Hexadecimal instead.")]
-Notation Hex := Hexadecimal (only parsing).
 
 Scheme Equality for uint.
 Scheme Equality for int.

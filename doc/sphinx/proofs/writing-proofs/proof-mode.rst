@@ -382,30 +382,6 @@ Name a set of section hypotheses for ``Proof using``
 
          Collection Many := Fewer - (x y)
 
-
-
-.. cmd:: Existential @natural {? : @type } := @term
-
-   This command instantiates an existential variable. :token:`natural` is an index in
-   the list of uninstantiated existential variables displayed by :cmd:`Show Existentials`.
-
-   This command is intended to be used to instantiate existential
-   variables when the proof is completed but some uninstantiated
-   existential variables remain. To instantiate existential variables
-   during proof edition, you should use the tactic :tacn:`instantiate`.
-
-   .. deprecated:: 8.13
-
-.. cmd:: Grab Existential Variables
-
-   This command can be run when a proof has no more goal to be solved but
-   has remaining uninstantiated existential variables. It takes every
-   uninstantiated existential variable and turns it into a goal.
-
-   .. deprecated:: 8.13
-
-      Use :cmd:`Unshelve` instead.
-
 Proof modes
 -----------
 

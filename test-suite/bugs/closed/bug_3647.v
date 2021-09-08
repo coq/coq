@@ -648,7 +648,7 @@ Goal    forall (ptest : program) (cond : Condition) (value : bool)
                                       match xs with | nil => default_PointedOPred empOP | _ => Obody initial (nth x xs 0) end);
     simpl projT1; simpl projT2; simpl fst; simpl snd; clear; let H := fresh in assert (H : False) by (clear; admit); destruct H.
 
-  Grab Existential Variables.
+  Unshelve.
   subst_body; simpl.
   Fail refine (all_behead (projT2 _)).
   Unset Solve Unification Constraints. refine (all_behead (projT2 _)).

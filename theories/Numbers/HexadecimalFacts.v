@@ -576,16 +576,12 @@ Lemma nzhead_involutive d : nzhead (nzhead d) = nzhead d.
 Proof.
   now induction d.
 Qed.
-#[deprecated(since="8.13",note="Use nzhead_involutive instead.")]
-Notation nzhead_invol := nzhead_involutive (only parsing).
 
 Lemma nztail_involutive d : nztail (nztail d) = nztail d.
 Proof.
   rewrite <-(rev_rev (nztail _)), <-(rev_rev (nztail d)), <-(rev_rev d).
   now rewrite !rev_nztail_rev, nzhead_involutive.
 Qed.
-#[deprecated(since="8.13",note="Use nztail_involutive instead.")]
-Notation nztail_invol := nztail_involutive (only parsing).
 
 Lemma unorm_involutive d : unorm (unorm d) = unorm d.
 Proof.
@@ -593,8 +589,6 @@ Proof.
   destruct (nzhead d) eqn:E; trivial.
   destruct (nzhead_nonzero _ _ E).
 Qed.
-#[deprecated(since="8.13",note="Use unorm_involutive instead.")]
-Notation unorm_invol := unorm_involutive (only parsing).
 
 Lemma norm_involutive d : norm (norm d) = norm d.
 Proof.
@@ -604,8 +598,6 @@ Proof.
   - destruct (nzhead d) eqn:E; auto.
     destruct (nzhead_nonzero _ _ E).
 Qed.
-#[deprecated(since="8.13",note="Use norm_involutive instead.")]
-Notation norm_invol := norm_involutive (only parsing).
 
 Lemma lnzhead_neq_d0_head l l' : ~(lnzhead l = cons d0 l').
 Proof. now induction l as [|h t Il]; [|case h]. Qed.

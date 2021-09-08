@@ -46,7 +46,7 @@ Goal forall b, (exists e1 e2 e3,
  eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.
  eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.
  assert (H : False) by (clear; admit); destruct H.
- Grab Existential Variables.
+ Unshelve.
  admit.
  admit.
  admit.

@@ -748,13 +748,8 @@ let polymorphic_cumulative ~is_defclass =
   let open Notations in
   (* EJGA: this seems redudant with code in attributes.ml *)
   qualify_attribute "universes"
-    (deprecated_bool_attribute
-       ~name:"Polymorphism"
-       ~on:"polymorphic" ~off:"monomorphic"
-     ++
-     deprecated_bool_attribute
-         ~name:"Cumulativity"
-         ~on:"cumulative" ~off:"noncumulative")
+    (bool_attribute ~name:"polymorphic"
+     ++ bool_attribute ~name:"cumulative")
   >>= fun (poly,cumul) ->
   if is_defclass && Option.has_some cumul
   then user_err Pp.(str "Definitional classes do not support the inductive cumulativity attribute.");
@@ -1413,17 +1408,6 @@ let vernac_existing_class id =
 
 let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
-
-  (* A command which should be a tactic. It has been
-     added by Christine to patch an error in the design of the proof
-     machine, and enables to instantiate existential variables when
-     there are no more goals to solve. It cannot be a tactic since
-     all tactics fail if there are no further goals to prove. *)
-
-let vernac_solve_existential ~pstate n com =
-  Declare.Proof.map ~f:(fun p ->
-      let intern env sigma = Constrintern.intern_constr env sigma com in
-      Proof.V82.instantiate_evar (Global.env ()) n intern p) pstate
 
 let vernac_set_end_tac ~pstate tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in
@@ -2324,11 +2308,6 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
         unsupported_attributes atts;
         vernac_existing_class id)
 
-  (* Solving *)
-  | VernacSolveExistential (n,c) ->
-    vtmodifyproof(fun ~pstate ->
-        unsupported_attributes atts;
-        vernac_solve_existential ~pstate n c)
   (* Auxiliary file and library management *)
   | VernacAddLoadPath { implicit; physical_path; logical_path } ->
     vtdefault(fun () ->

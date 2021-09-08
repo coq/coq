@@ -412,55 +412,6 @@ module V82 = struct
   let top_evars p =
     Proofview.V82.top_evars p.entry p.proofview
 
-  let warn_deprecated_grab_existentials =
-    CWarnings.create ~name:"deprecated-grab-existentials" ~category:"deprecated"
-       Pp.(fun () -> str "The Grab Existential Variables command is " ++
-         str"deprecated. Please use the Unshelve command or the unshelve tactical " ++
-         str"instead.")
-
-  let grab_evars p =
-    warn_deprecated_grab_existentials ();
-    if not (is_done p) then
-      raise (OpenProof(None, UnfinishedProof))
-    else
-      { p with proofview = Proofview.V82.grab p.proofview }
-
-  let warn_deprecated_existential =
-    CWarnings.create ~name:"deprecated-existential" ~category:"deprecated"
-       Pp.(fun () -> str "The Existential command is " ++
-         str"deprecated. Please use the Unshelve command or the unshelve " ++
-         str"tactical, and the instantiate tactic instead.")
-
-  (* Main component of vernac command Existential *)
-  let instantiate_evar env n intern pr =
-    warn_deprecated_existential ();
-    let tac =
-      Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
-      let (evk, evi) =
-        let evl = Evarutil.non_instantiated sigma in
-        let evl = Evar.Map.bindings evl in
-        if (n <= 0) then
-          CErrors.user_err Pp.(str "incorrect existential variable index")
-        else if CList.length evl < n then
-          CErrors.user_err Pp.(str "not so many uninstantiated existential variables")
-        else
-          CList.nth evl (n-1)
-      in
-      let env = Evd.evar_filtered_env env evi in
-      let rawc = intern env sigma in
-      let ltac_vars = Glob_ops.empty_lvar in
-      let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) env sigma in
-      Proofview.Unsafe.tclEVARS sigma
-    end in
-    let { name; poly } = pr in
-    let ((), proofview, _, _) = Proofview.apply ~name ~poly env tac pr.proofview in
-    let proofview = Proofview.filter_shelf
-      begin fun g ->
-        Evd.is_undefined (Proofview.return proofview) g
-      end proofview
-    in
-    { pr with proofview }
-
 end
 
 let all_goals p =

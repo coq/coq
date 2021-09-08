@@ -58,5 +58,5 @@ Definition apply {A B} (f : A -> B) (x : A) := f x.
 
 (** Curryfication of [prod] is defined in [Logic.Datatypes]. *)
 
-Arguments prod_curry   {A B C} f p.
-Arguments prod_uncurry {A B C} f x y.
+Arguments prod_curry_subdef   {A B C} f p.
+Arguments prod_uncurry_subdef {A B C} f x y.
