@@ -13,7 +13,7 @@
 This module provides functions for manipulation of Coq's runtime
 enviroment, including the standard directories and support files.
 
-This API is similar in spirit to finlib's or dune-sites API,
+This API is similar in spirit to findlib's or dune-sites API,
 see their documentation for more information:
 
 - http://projects.camlcity.org/projects/dl/findlib-1.9.1/doc/ref-html/lib/index.html
