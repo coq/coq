@@ -3408,8 +3408,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
-  let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
-  let typ0 = reduce_to_quantified_ref indref tmptyp0 in
+  let typ0 = reduce_to_quantified_ref env sigma (GlobRef.IndRef indref) tmptyp0 in
   let prods, indtyp = decompose_prod_assum sigma typ0 in
   let hd,argl = decompose_app sigma indtyp in
   let env' = push_rel_context prods env in
@@ -3629,7 +3628,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
   elimt: types;
-  indref: GlobRef.t option;
+  indref: inductive option;
   params: rel_context;      (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;               (* number of parameters *)
   predicates: rel_context;  (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
@@ -3682,7 +3681,7 @@ let make_up_names n ind_opt cname =
     if is_hyp then
       match ind_opt with
         | None -> Id.of_string ind_prefix
-        | Some ind_id -> add_prefix ind_prefix (Nametab.basename_of_global ind_id)
+        | Some ind_id -> add_prefix ind_prefix (Nametab.basename_of_global (GlobRef.IndRef ind_id))
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
   let avoid =
@@ -4182,7 +4181,7 @@ let compute_elim_sig sigma elimt =
       | Some (LocalDef _) -> error_ind_scheme ""
       | Some (LocalAssum (_,ind)) ->
           let indhd,indargs = decompose_app sigma ind in
-          try {!res with indref = Some (fst (destRef sigma indhd)) }
+          try {!res with indref = Some (fst (destInd sigma indhd)) }
           with DestKO ->
             error CannotFindInductiveArgument
 

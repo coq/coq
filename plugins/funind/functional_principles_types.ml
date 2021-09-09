@@ -79,8 +79,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let rel_as_kn =
     fst
       ( match princ_type_info.indref with
-      | Some (GlobRef.IndRef ind) -> ind
-      | _ -> user_err Pp.(str "Not a valid predicate") )
+      | Some ind -> ind
+      | None -> user_err Pp.(str "Not a valid predicate") )
   in
   let ptes_vars = List.map Context.Named.Declaration.get_id new_predicates in
   let is_pte =

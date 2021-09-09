@@ -255,7 +255,7 @@ val apply_delayed_in :
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
   elimt: types;
-  indref: GlobRef.t option;
+  indref: inductive option;
   params: rel_context;      (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;               (** number of parameters *)
   predicates: rel_context;  (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
