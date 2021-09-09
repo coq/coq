@@ -40,6 +40,7 @@ let reroute_stdout_stderr () =
 (* We also provide a specific interrupt function. *)
 
 external win32_interrupt : int -> unit = "win32_interrupt"
+
 let () =
   Coq.gio_channel_of_descr_socket := Glib.Io.channel_of_descr_socket;
   set_win32_path ();
