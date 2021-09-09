@@ -266,7 +266,7 @@ module Level = struct
     include Map.Set
 
     let pr prl s =
-      str"{" ++ prlist_with_sep spc prl (elements s) ++ str"}"
+      hov 1 (str"{" ++ prlist_with_sep spc prl (elements s) ++ str"}")
 
     let of_array l =
       Array.fold_left (fun acc x -> add x acc) empty l
@@ -1087,7 +1087,7 @@ struct
 
   let pr prl (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      h (Level.Set.pr prl univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl cst))
+      hov 0 (h (Level.Set.pr prl univs ++ str " |=") ++ brk(1,2) ++ h (Constraints.pr prl cst))
 
   let constraints (_univs, cst) = cst
   let levels (univs, _cst) = univs
