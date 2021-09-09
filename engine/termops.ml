@@ -239,7 +239,7 @@ let pr_evar_universe_context ctx =
   let prl = pr_uctx_level ctx in
   if UState.is_empty ctx then mt ()
   else
-    (str"UNIVERSES:"++brk(0,1)++
+    v 0 (str"UNIVERSES:"++brk(0,1)++
        h (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
      h (Univ.Level.Set.pr prl (UState.algebraics ctx)) ++ fnl() ++
