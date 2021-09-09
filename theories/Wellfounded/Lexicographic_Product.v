@@ -13,6 +13,8 @@
 Require Import Eqdep.
 Require Import Relation_Operators.
 Require Import Transitive_Closure.
+Require Import Inclusion.
+Require Import Inverse_Image.
 
 (**  From : Constructing Recursion Operators in Type Theory
      L. Paulson  JSC (1986) 2, 325-355 *)
@@ -24,15 +26,15 @@ Section WfLexicographic_Product.
   Variable A : Type.
   Variable B : A -> Type.
   Variable leA : A -> A -> Prop.
-  Variable leB : forall x:A, B x -> B x -> Prop.
+  Variable leB : forall x : A, B x -> B x -> Prop.
 
   Notation LexProd := (lexprod A B leA leB).
 
   Lemma acc_A_B_lexprod :
-    forall x:A,
+    forall x : A,
       Acc leA x ->
-      (forall x0:A, clos_trans A leA x0 x -> well_founded (leB x0)) ->
-      forall y:B x, Acc (leB x) y -> Acc LexProd (x; y).
+      (forall x0 : A, clos_trans A leA x0 x -> well_founded (leB x0)) ->
+      forall y : B x, Acc (leB x) y -> Acc LexProd (x; y).
   Proof.
     induction 1 as [x _ IHAcc]; intros H2 y.
     induction 1 as [x0 H IHAcc0]; intros.
@@ -60,7 +62,7 @@ Section WfLexicographic_Product.
 
   Theorem wf_lexprod :
     well_founded leA ->
-    (forall x:A, well_founded (leB x)) -> well_founded LexProd.
+    (forall x : A, well_founded (leB x)) -> well_founded LexProd.
   Proof.
     intros wfA wfB; unfold well_founded.
     destruct a.
@@ -72,6 +74,24 @@ Section WfLexicographic_Product.
 
 End WfLexicographic_Product.
 
+Section WfSimple_Lexicographic_Product.
+
+  Variable A : Type.
+  Variable B : Type.
+  Variable leA : A -> A -> Prop.
+  Variable leB : B -> B -> Prop.
+
+  Notation LexProd := (slexprod A B leA leB).
+
+  Theorem wf_slexprod :
+    well_founded leA -> well_founded leB -> well_founded LexProd.
+  Proof.
+    intros; eapply wf_incl.
+    - intros x y; apply slexprod_lexprod.
+    - now apply wf_inverse_image, wf_lexprod.
+  Qed.
+
+End WfSimple_Lexicographic_Product.
 
 Section Wf_Symmetric_Product.
   Variable A : Type.

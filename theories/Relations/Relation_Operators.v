@@ -177,6 +177,34 @@ Section Lexicographic_Product.
 
 End Lexicographic_Product.
 
+
+(** ** Lexicographic order on pairs *)
+
+Section Simple_Lexicographic_Product.
+
+  Variable A : Type.
+  Variable B : Type.
+  Variable leA : A -> A -> Prop.
+  Variable leB : B -> B -> Prop.
+
+  Inductive slexprod : A * B -> A * B -> Prop :=
+    | left_slex :
+      forall (x x' : A) (y : B) (y' : B),
+        leA x x' -> slexprod (x, y) (x', y')
+    | right_slex :
+      forall (x : A) (y y' : B),
+        leB y y' -> slexprod (x, y) (x, y').
+
+  Lemma slexprod_lexprod p1 p2 :
+    slexprod p1 p2 <->
+    lexprod _ _ leA (fun _ => leB) (sigT_of_prod p1) (sigT_of_prod p2).
+  Proof.
+    now split; intros HP; destruct p1, p2; inversion HP; constructor.
+  Qed.
+
+End Simple_Lexicographic_Product.
+
+
 (** ** Product of relations *)
 
 Section Symmetric_Product.
