@@ -637,6 +637,9 @@ validate:quick:
 library:ci-argosy:
   extends: .ci-template
 
+library:ci-autosubst:
+  extends: .ci-template-flambda
+
 library:ci-bbv:
   extends: .ci-template
 
@@ -763,6 +766,9 @@ library:ci-hott:
 
 library:ci-iris:
   extends: .ci-template-flambda
+  needs:
+    - build:edge+flambda
+    - library:ci-autosubst
 
 library:ci-math_classes:
   extends: .ci-template-flambda

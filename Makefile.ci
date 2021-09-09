@@ -11,6 +11,7 @@
 CI_TARGETS= \
     ci-aac_tactics \
     ci-argosy \
+    ci-autosubst \
     ci-bbv \
     ci-bedrock2 \
     ci-bignums \
@@ -93,6 +94,8 @@ ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp
 ci-mczify: ci-mathcomp
+
+ci-iris: ci-autosubst
 
 ci-geocoq: ci-mathcomp
 
