@@ -708,6 +708,9 @@ let subst_univs_level_constr subst c =
 let subst_instance_context subst ctx =
   cast_rel_context (sym unsafe_eq) (Vars.subst_instance_context subst (cast_rel_context unsafe_eq ctx))
 
+let subst_instance_constr subst c =
+  of_constr (Vars.subst_instance_constr subst (to_constr c))
+
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =
   let rec occur_rec n c = match kind sigma c with

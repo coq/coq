@@ -301,6 +301,7 @@ val closed0 : Evd.evar_map -> t -> bool
 
 val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
 val subst_instance_context : Univ.Instance.t -> rel_context -> rel_context
+val subst_instance_constr : Univ.Instance.t -> t -> t
 
 val subst_of_rel_context_instance : rel_context -> instance -> substl
 val subst_of_rel_context_instance_list : rel_context -> instance_list -> substl
