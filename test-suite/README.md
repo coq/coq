@@ -1,10 +1,10 @@
 # Coq Test Suite
 
 The test suite can be run from the Coq root directory by `make test-suite`.
-However, for incremental test-suite builds, we recommend running `make` directly
+However, for incremental test suite builds, we recommend running `make`
 from the test-suite directory (or with `make -C test-suite`).
-This Makefile is compatible with both a full Dune build
-or a legacy hybrid build.
+This Makefile is compatible with both Dune
+and legacy hybrid builds.
 
 You can also run `make aaa/bbb/ccc.v.log` to build the log for one test,
 or `make ddd` where `ddd` is on of the sub-directories of `test-suite`

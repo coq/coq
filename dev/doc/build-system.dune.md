@@ -114,22 +114,22 @@ builds, please see below.
 
 ## Testing and documentation targets
 
-There are two ways to run the test-suite when using Dune:
+There are two ways to run the test suite using Dune:
 
-- You can run the test-suite in-place, with output artifacts in the
-  tree using `make -C test-suite` (equivalent to running `make` inside
-  the `test-suite` directory), after having built Coq with `make -f
-  Makefile.dune world`. This will allow for incremental usage as
-  artifacts will be preserved.
+- After building Coq with `make -f Makefile.dune world`, you can run the test-suite
+  in place, generating output files in the source tree
+  by running `make -C test-suite` from the top directory of the source tree
+  (equivalent to running `make test-suite` from the `test-suite` directory).
+  This permits incremental usage since output files will be preserved.
 
-- You can also run the test-suite in an hygienic way using `make -f
+- You can also run the test suite in a hygienic way using `make -f
   Makefile.dune test-suite` or `dune runtest`. This is convenient for
-  full runs from scracth, for instance in CI.
+  full runs from scratch, for instance in CI.
 
-Given that `dune` still invokes the test-suite makefile, the
-environment variable `NJOBS` will control the value of the `-j` option
-that is passed to make; common call `NJOBS=8 dune runtest`. This will
-be resolved in the future once the test suite is ported to Dune rules.
+Since `dune` still invokes the test-suite makefile, the
+environment variable `NJOBS` is used to set the `-j` option
+that is passed to make (for example, with the command `NJOBS=8 dune runtest`). This use of `NJOBS`
+will be removed when the test suite is fully ported to Dune.
 
 There is preliminary support to build the API documentation and
 reference manual in HTML format, use `dune build {@doc,@refman-html}`
