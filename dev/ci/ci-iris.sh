@@ -5,8 +5,6 @@ set -e
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-# Download iris_examples and separate dependencies first
-git_download autosubst
 git_download iris_examples
 
 # Extract required version of Iris (avoiding "+" which does not work on MacOS :( *)
@@ -33,11 +31,6 @@ git_download stdpp
 ( cd "${CI_BUILD_DIR}/iris"
   make
   make validate
-  make install
-)
-
-( cd "${CI_BUILD_DIR}/autosubst"
-  make
   make install
 )
 
