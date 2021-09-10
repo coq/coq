@@ -1131,7 +1131,19 @@ let import_names ~export m ns =
   if export then Lib.add_anonymous_leaf (inExportNames ns)
   else cache_names ((),ns)
 
-let vernac_import export refl =
+let vernac_import export cats refl =
+  if Option.has_some cats then
+    List.iter (function
+        | _, ImportAll -> ()
+        | q, ImportNames _ ->
+          CErrors.user_err ?loc:q.loc
+            Pp.(str "Cannot combine importing by categories and importing by names."))
+      refl;
+  let cats = Option.cata
+      (fun cats -> Libobject.make_filter ~finite:(not cats.negative) cats.import_cats)
+      Libobject.unfiltered
+      cats
+  in
   let import_mod (qid,f) =
     let loc = qid.loc in
     let m = try
@@ -1145,7 +1157,7 @@ let vernac_import export refl =
         CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid)
     in
     match f with
-    | ImportAll -> Declaremods.import_module Libobject.Unfiltered ~export m
+    | ImportAll -> Declaremods.import_module cats ~export m
     | ImportNames ns -> import_names ~export m ns
   in
   List.iter import_mod refl
@@ -1163,7 +1175,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   let mp = Declaremods.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
+  Option.iter (fun export -> vernac_import export None [qualid_of_ident id, ImportAll]) export
 
 let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -1184,7 +1196,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
+             (fun export -> vernac_import export None [qualid_of_ident id, ImportAll]) export
          ) argsexport
     | _::_ ->
        let binders_ast = List.map
@@ -1199,14 +1211,14 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
          (str "Module " ++ Id.print id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll])
+       Option.iter (fun export -> vernac_import export None [qualid_of_ident id, ImportAll])
          export
 
 let vernac_end_module export {loc;v=id} =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
-  Option.iter (fun export -> vernac_import export [qualid_of_ident ?loc id, ImportAll]) export
+  Option.iter (fun export -> vernac_import export None [qualid_of_ident ?loc id, ImportAll]) export
 
 let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Global.sections_are_opened () then
@@ -1227,7 +1239,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [qualid_of_ident ?loc id, ImportAll]) export
+             (fun export -> vernac_import export None [qualid_of_ident ?loc id, ImportAll]) export
          ) argsexport
 
     | _ :: _ ->
@@ -2253,10 +2265,10 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_require from export qidl)
-  | VernacImport (export,qidl) ->
+  | VernacImport (export,cats,qidl) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
-        vernac_import export qidl)
+        vernac_import export cats qidl)
   | VernacCanonical qid ->
     vtdefault(fun () ->
         vernac_canonical ~local:(only_locality atts) qid)

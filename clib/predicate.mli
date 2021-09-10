@@ -78,6 +78,11 @@ module type S =
         (** Gives a finite representation of the predicate: if the
            boolean is false, then the predicate is given in extension.
            if it is true, then the complement is given *)
+
+    val is_finite : t -> bool
+    (** [true] if the predicate can be given as a finite set (if [elt]
+       is a finite type, we can have [is_finite x = false] yet [x] is
+       finite, but we don't know how to list its elements) *)
   end
 
 (** The [Make] functor constructs an implementation for any [OrderedType]. *)

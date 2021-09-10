@@ -239,7 +239,8 @@ let nametab_register_body mp dir (l,body) =
             mip.mind_consnames)
         mib.mind_packets
 
-let import_module = Declaremods.import_module Libobject.Unfiltered
+(* TODO only import printing-relevant objects (or find a way to print without importing) *)
+let import_module = Declaremods.import_module Libobject.unfiltered
 let process_module_binding = Declaremods.process_module_binding
 
 let nametab_register_module_body mp struc =

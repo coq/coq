@@ -1029,8 +1029,8 @@ gallina_ext: [
 | "Collection" identref ":=" section_subset_expr
 | "Require" export_token LIST1 global
 | "From" global "Require" export_token LIST1 global
-| "Import" LIST1 filtered_import
-| "Export" LIST1 filtered_import
+| "Import" OPT import_categories LIST1 filtered_import
+| "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ext_module_expr
 | "Include" "Type" module_type_inl LIST0 ext_module_type
 | "Transparent" LIST1 smart_global
@@ -1054,6 +1054,10 @@ gallina_ext: [
 | "Export" "Set" setting_name option_setting
 | "Export" "Unset" setting_name
 | "Import" "Prenex" "Implicits"      (* SSR plugin *)
+]
+
+import_categories: [
+| OPT "-" "(" LIST1 identref SEP "," ")"
 ]
 
 filtered_import: [

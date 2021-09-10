@@ -198,11 +198,12 @@ are now available through the dot notation.
    If :n:`@module_binder`\s are specified, declares a functor with parameters given by the list of
    :token:`module_binder`\s.
 
-.. cmd:: Import {+ @filtered_import }
+.. cmd:: Import {? @import_categories } {+ @filtered_import }
 
-   .. insertprodn filtered_import filtered_import
+   .. insertprodn import_categories filtered_import
 
    .. prodn::
+      import_categories ::= {? - } ( {+, @ident } )
       filtered_import ::= @qualid {? ( {+, @qualid {? ( .. ) } } ) }
 
    If :token:`qualid` denotes a valid basic module (i.e. its module type is a
@@ -287,7 +288,7 @@ are now available through the dot notation.
       This warning is printed when a name in the list of names to
       import was declared as a local constant, and the name is not imported.
 
-.. cmd:: Export {+ @filtered_import }
+.. cmd:: Export {? @import_categories } {+ @filtered_import }
 
    Similar to :cmd:`Import`, except that when the module containing this command
    is imported, the :n:`{+ @qualid }` are imported as well.

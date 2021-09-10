@@ -179,14 +179,13 @@ let load_constant i ((sp,kn), obj) =
   end
 
 (* Opening means making the name without its module qualification available *)
-let open_constant f i ((sp,kn), obj) =
+let open_constant i ((sp,kn), obj) =
   (* Never open a local definition *)
   match obj.cst_locl with
   | Locality.ImportNeedQualified -> ()
   | Locality.ImportDefaultBehavior ->
     let con = Global.constant_of_delta_kn kn in
-    if Libobject.in_filter_ref (GlobRef.ConstRef con) f then
-      Nametab.push (Nametab.Exactly i) sp (GlobRef.ConstRef con)
+    Nametab.push (Nametab.Exactly i) sp (GlobRef.ConstRef con)
 
 let exists_name id =
   Decls.variable_exists id || Global.exists_objlabel (Label.of_id id)
@@ -216,7 +215,7 @@ let (objConstant : constant_obj Libobject.Dyn.tag) =
   declare_object_full { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
-    open_function = open_constant;
+    open_function = simple_open open_constant;
     classify_function = classify_constant;
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
