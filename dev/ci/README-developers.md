@@ -16,9 +16,9 @@ We are currently running tests on the following platforms:
   `./configure`. It should allow complying with this discipline
   without pain.
 
-- Azure Pipelines is used to test the compilation of Coq and run the
-  test-suite on Windows and on macOS. It is expected to be used to build
-  macOS and Windows packages eventually.
+- Github Actions are used to test the compilation of Coq on Windows
+  and macOS. For Windows, the Coq platform script is used, producing
+  an installer that can be used to test Coq.
 
 You can anticipate the results of most of these tests prior to submitting your
 PR by running GitLab CI on your private branches. To do so follow these steps:
@@ -148,20 +148,6 @@ Currently available artifacts are:
     <https://coq.github.io/doc/master/stdlib/>
   + Coq's ML API Documentation [master branch]:
     <https://coq.github.io/doc/master/api/>
-
-### GitLab and Windows
-
-If your repository has access to runners tagged `windows`, setting the
-secret variable `WINDOWS` to `enabled` will add jobs building Windows
-versions of Coq (32bit and 64bit).
-
-If the secret variable `WINDOWS` is set to `enabled_all_addons`,
-an extended set of addons will be added to the Windows installer.
-This leads to a considerable runtime in CI so this is not enabled
-by default for pipelines for pull requests.
-
-The Windows jobs are enabled on Coq's repository, where pipelines for
-pull requests run.
 
 ### GitLab and Docker
 
