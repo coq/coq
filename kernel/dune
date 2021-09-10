@@ -4,7 +4,7 @@
  (public_name coq-core.kernel)
  (wrapped false)
  (modules (:standard \ genOpcodeFiles uint63_31 uint63_63 float64_31 float64_63))
- (libraries lib coqrun dynlink))
+ (libraries boot lib coqrun dynlink))
 
 (executable
   (name genOpcodeFiles)

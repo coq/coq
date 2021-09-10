@@ -1115,7 +1115,7 @@ let write_configml f =
      | NativeYes -> "NativeOn {ondemand=false}" | NativeNo -> "NativeOff"
      | NativeOndemand -> "NativeOn {ondemand=true}");
 
-  let core_src_dirs = [ "config"; "lib"; "clib"; "kernel"; "library";
+  let core_src_dirs = [ "boot"; "config"; "lib"; "clib"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "gramlib"; "parsing"; "proofs";
                         "tactics"; "toplevel"; "printing"; "ide"; "stm"; "vernac" ] in
   let core_src_dirs = List.fold_left (fun acc core_src_subdir -> acc ^ "  \"" ^ core_src_subdir ^ "\";\n")

@@ -7,7 +7,7 @@
  (synopsis "Coq's Standalone Proof Checker")
  (modules :standard \ coqchk votour)
  (wrapped true)
- (libraries coq-core.kernel))
+ (libraries coq-core.boot coq-core.kernel))
 
 (executable
  (name coqchk)

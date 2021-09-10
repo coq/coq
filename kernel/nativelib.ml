@@ -53,12 +53,13 @@ let () = at_exit (fun () ->
    us avoid forcing [my_temp_dir] if we don't need it (eg stdlib file
    without native compute or native conv uses). *)
 let include_dirs = ref []
+
 let get_include_dirs () =
+  let env = Boot.Env.init () in
   let base = match !include_dirs with
   | [] ->
-    let coqcorelib = Envars.coqcorelib () in
-    [ coqcorelib / "kernel" ; coqcorelib / "kernel/.kernel.objs/byte/"
-    ; coqcorelib / "library"; coqcorelib / "library/.library.objs/byte/"
+    [ Boot.Env.(Path.to_string (native_cmi env "kernel"))
+    ; Boot.Env.(Path.to_string (native_cmi env "library"))
     ]
   | _::_ as l -> l
   in

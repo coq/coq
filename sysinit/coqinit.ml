@@ -50,18 +50,17 @@ let init_ocaml () =
   Sys.catch_break false (* Ctrl-C is fatal during the initialisation *)
 
 let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
-  | None when opts.Coqargs.pre.Coqargs.boot -> ()
-  | None ->
-    Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
+  | None -> ()
   | Some s ->
-    Envars.set_user_coqlib s
+    Boot.Env.set_coqlib s
 
 let print_query opts = let open Coqargs in function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
   | PrintWhere ->
-    let () = init_coqlib opts in
-    print_endline (Envars.coqlib ())
+    let env = Boot.Env.init () in
+    let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
+    print_endline coqlib
   | PrintHelp h -> Usage.print_usage stderr h
   | PrintConfig ->
     let () = init_coqlib opts in

@@ -67,6 +67,10 @@ deprecation warning tells what to do.
   Plugins are now packed using modules aliases which is in general safer
   w.r.t. scoping, as the container module is just a regular OCaml module.
 
+- Location of Coq's runtime environment and files is now handled by a
+  new library, `coq-core.boot`, which provides a more uniform and
+  centralized API to locate files.
+
 ### Gramlib
 
 - A few functions change their interfaces to take benefit of a new

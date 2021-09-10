@@ -26,12 +26,6 @@ val expand_path_macros : warn:(string -> unit) -> string -> string
     USERPROFILE). If all of them fail, [warn] is called. *)
 val home : warn:(string -> unit) -> string
 
-(** [coqlib] is the path to the Coq library. *)
-val coqlib : unit -> string
-
-(** [coqcorelib] is the path to the Coq ML libraries, to be replaced by ocamlfind *)
-val coqcorelib : unit -> string
-
 (** [docdir] is the path to the installed documentation. *)
 val docdir : unit -> string
 
@@ -40,12 +34,6 @@ val datadir : unit -> string
 
 (** [configdir] is the path to the installed config directory. *)
 val configdir : unit -> string
-
-(** [set_coqlib] must be run once before any access to [coqlib] *)
-val set_coqlib : fail:(string -> string) -> unit
-
-(** [set_user_coqlib path] sets the coqlib directory explicitedly. *)
-val set_user_coqlib : string -> unit
 
 (** [coqbin] is the name of the current executable. *)
 val coqbin : string
