@@ -126,10 +126,11 @@ There are two ways to run the test suite using Dune:
   Makefile.dune test-suite` or `dune runtest`. This is convenient for
   full runs from scratch, for instance in CI.
 
-Since `dune` still invokes the test-suite makefile, the
-environment variable `NJOBS` is used to set the `-j` option
-that is passed to make (for example, with the command `NJOBS=8 dune runtest`). This use of `NJOBS`
-will be removed when the test suite is fully ported to Dune.
+  Since `dune` still invokes the test-suite makefile, the
+  environment variable `NJOBS` is used to set the `-j` option
+  that is passed to make (for example, with the command
+  `NJOBS=8 dune runtest`). This use of `NJOBS` will be
+  removed when the test suite is fully ported to Dune.
 
 There is preliminary support to build the API documentation and
 reference manual in HTML format, use `dune build {@doc,@refman-html}`
