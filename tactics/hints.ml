@@ -616,29 +616,51 @@ struct
     if List.is_empty modes then true
     else List.exists (matches_mode sigma args) modes
 
-  let merge_entry secvars db nopat pat =
-    let h = List.sort pri_order_int (List.map snd db.hintdb_nopat) in
+  let merge_entry secvars any nopat pat =
+    let h = List.sort pri_order_int any in
     let h = List.merge pri_order_int h nopat in
     let h = List.merge pri_order_int h pat in
     List.map_filter (realize_tac secvars) h
 
+  let occur_constant sigma cst c =
+    let rec aux c = match EConstr.kind sigma c with
+    | Const (cst', _) -> if Constant.CanOrd.equal cst cst' then raise Exit
+    | _ -> EConstr.iter sigma aux c
+    in
+    try let _ = aux c in false with Exit -> true
+
+  let any_none db = List.map snd db.hintdb_nopat
+
+  let any_concl sigma concl db =
+    let filter (_, (_, v as data)) = match v.code.obj with
+    | Extern _ -> Some data
+    | Unfold_nth (EvalConstRef cst) ->
+      if occur_constant sigma cst concl then Some data else None
+    | Unfold_nth (EvalVarRef id) ->
+      if local_occur_var sigma id concl then Some data else None
+    | _ -> assert false
+    in
+    List.map_filter filter db.hintdb_nopat
+
   let map_none ~secvars db =
-    merge_entry secvars db [] []
+    merge_entry secvars (any_none db) [] []
 
   let map_all ~secvars k db =
     let se = find k db in
-    merge_entry secvars db se.sentry_nopat se.sentry_pat
+    merge_entry secvars (any_none db) se.sentry_nopat se.sentry_pat
 
   (* Precondition: concl has no existentials *)
   let map_auto env sigma ~secvars (k,args) concl db =
     let se = find k db in
     let pat = lookup_tacs env sigma concl se in
-    merge_entry secvars db [] pat
+    let any = any_concl sigma concl db in
+    merge_entry secvars any [] pat
 
   let map_existential sigma ~secvars (k,args) concl db =
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
-        ModeMatch (merge_entry secvars db se.sentry_nopat se.sentry_pat)
+        let any = any_concl sigma concl db in
+        ModeMatch (merge_entry secvars any se.sentry_nopat se.sentry_pat)
       else ModeMismatch
 
   (* [c] contains an existential *)
@@ -646,7 +668,8 @@ struct
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
         let pat = lookup_tacs env sigma concl se in
-        ModeMatch (merge_entry secvars db [] pat)
+        let any = any_concl sigma concl db in
+        ModeMatch (merge_entry secvars any [] pat)
       else ModeMismatch
 
   let is_exact = function
