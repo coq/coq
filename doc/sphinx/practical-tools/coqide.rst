@@ -252,6 +252,9 @@ https://github.com/coq/coq/blob/master/ide/coqide/default_bindings_src.ml
 
 Custom bindings may be added, as explained further on.
 
+The mechanism is active by default, but can be turned off in the Editor section
+of the preferences.
+
 .. note::
 
     It remains possible to input non-ASCII symbols using system-wide
