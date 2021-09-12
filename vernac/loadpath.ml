@@ -277,6 +277,8 @@ let add_vo_path lp =
         ()
     in
     let add (path, dir) = add_load_path path ~implicit dir in
+    (* deeper dirs registered first and thus be found last *)
+    let dirs = List.rev dirs in
     let () = List.iter add dirs in
     add_load_path unix_path ~implicit lp.coq_path
   else

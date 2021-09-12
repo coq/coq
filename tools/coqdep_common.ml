@@ -468,11 +468,11 @@ let add_known recur phys_dir log_dir f =
     │   │       └── E.v
     │   │   └── G.v
     │   └── G.v
-    it goes in this order:
-    B.C1.E, B.C1.F, B.C1.G,
-    B.C1.D1.E, B.C1.D2.E,
-    B.C2.E, B.C2.F, B.C2.G
+    it goes in this (reverse) order:
     B.C2.D1.E, B.C2.D2.E,
+    B.C2.E, B.C2.F, B.C2.G
+    B.C1.D1.E, B.C1.D2.E,
+    B.C1.E, B.C1.F, B.C1.G,
     B.E, B.F, B.G,
     (see discussion at PR #14718)
 *)
@@ -492,7 +492,7 @@ let add_directory recur add_file phys_dir log_dir =
                 curdirfiles := []; subdirfiles := [];
                 aux phys_f (log_dir @ [f]);
                 let curdirfiles', subdirfiles' = List.hd !stack in
-                subdirfiles := subdirfiles' @ !curdirfiles @ !subdirfiles;
+                subdirfiles := subdirfiles' @ !subdirfiles @ !curdirfiles;
                 curdirfiles := curdirfiles'; stack := List.tl !stack
               end
           | FileRegular f ->
