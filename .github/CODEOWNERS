@@ -16,6 +16,8 @@
 
 /META.coq-core.in       @coq/legacy-build-maintainers
 
+/boot/               @coq/build-maintainers
+
 ########## CI infrastructure ##########
 
 /dev/ci/             @coq/ci-maintainers
