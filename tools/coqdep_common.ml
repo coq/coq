@@ -168,15 +168,17 @@ let error_cannot_parse_project_file file msg =
   exit 1
 
 let error_cannot_stat s unix_error =
-  (* Print an arbitrary line number, such that the message matches
-     common error message pattern. *)
-  Printf.eprintf "File \"%s\", line 1: %s\n" s (error_message unix_error);
+  Printf.eprintf "%s: %s\n" s (error_message unix_error);
+  exit 1
+
+let error_cannot_stat_in f s unix_error =
+  Printf.eprintf "In file \"%s\": %s: %s\n" f s (error_message unix_error);
   exit 1
 
 let error_cannot_open s msg =
   (* Print an arbitrary line number, such that the message matches
      common error message pattern. *)
-  Printf.eprintf "File \"%s\", line 1: %s\n" s msg;
+  Printf.eprintf "%s: %s\n" s msg;
   exit 1
 
 let warning_module_notfound from f s =
@@ -486,6 +488,8 @@ let add_rec_dir_import add_file phys_dir log_dir =
 let add_caml_dir phys_dir =
   add_directory false add_caml_known phys_dir []
 
+exception Cannot_stat_file of string * Unix.error
+
 let rec treat_file old_dirname old_name =
   let name = Filename.basename old_name
   and new_dirname = Filename.dirname old_name in
@@ -498,7 +502,7 @@ let rec treat_file old_dirname old_name =
   let complete_name = file_name name dirname in
   let stat_res =
     try stat complete_name
-    with Unix_error(error, _, _) -> error_cannot_stat complete_name error
+    with Unix_error(error, _, _) -> raise (Cannot_stat_file (complete_name, error))
   in
   match stat_res.st_kind
   with
@@ -518,6 +522,16 @@ let rec treat_file old_dirname old_name =
          addQueue vAccu (name, absname)
        | _ -> ())
     | _ -> ()
+
+let treat_file_command_line old_name =
+  try treat_file None old_name
+  with Cannot_stat_file (f, msg) ->
+    error_cannot_stat f msg
+
+let treat_file_coq_project where old_name =
+  try treat_file None old_name
+  with Cannot_stat_file (f, msg) ->
+    error_cannot_stat_in where f msg
 
 (* "[sort]" outputs `.v` files required by others *)
 let sort () =
@@ -584,7 +598,7 @@ let treat_coqproject f =
   iter_sourced (fun { path } -> add_caml_dir path) project.ml_includes;
   iter_sourced (fun ({ path }, l) -> add_q_include path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> add_r_include path l) project.r_includes;
-  iter_sourced (fun f -> treat_file None f) (all_files project)
+  iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
 let rec parse = function
   | "-boot" :: ll -> option_boot := true; parse ll
@@ -611,7 +625,7 @@ let rec parse = function
   | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
     coqdep_warning "unknown option %s" opt;
     parse ll
-  | f :: ll -> treat_file None f; parse ll
+  | f :: ll -> treat_file_command_line f; parse ll
   | [] -> ()
 
 let init () =
