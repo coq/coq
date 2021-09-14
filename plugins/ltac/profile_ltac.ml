@@ -359,7 +359,6 @@ let do_profile s call_trace ?(count_call=true) tac =
   | true ->
     tclWRAPFINALLY
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-           if !is_profiling then
              match call_trace, Local.(!stack) with
              | (_, c) :: _, parent :: rest ->
                let name = string_of_call c in
@@ -368,7 +367,7 @@ let do_profile s call_trace ?(count_call=true) tac =
                Some (time ())
              | _ :: _, [] -> assert false
              | _ -> None
-           else None)))
+           )))
       tac
       (function
         | Some start_time ->

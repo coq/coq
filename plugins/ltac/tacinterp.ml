@@ -176,6 +176,7 @@ let catching_error call_trace fail (e, info) =
   if List.is_empty call_trace && List.is_empty inner_trace then fail (e, info)
   else begin
     assert (CErrors.noncritical e); (* preserved invariant *)
+    let inner_trace = List.filter (fun i -> not (List.memq i call_trace)) inner_trace in
     let new_trace = inner_trace @ call_trace in
     let located_exc = (e, Exninfo.add info ltac_trace_info new_trace) in
     fail located_exc
@@ -285,10 +286,7 @@ let propagate_trace ist loc id v =
 let append_trace trace v =
   if has_type v (topwit wit_tacvalue) then
     match to_tacvalue v with
-    | VFun (appl,trace',loc,lfun,it,b) ->
-      let (stack, varmaps) = trace in
-      let (stack', varmaps') = trace' in
-      of_tacvalue (VFun (appl,(stack'@stack,varmaps'@varmaps),loc,lfun,it,b))
+    | VFun (appl,trace',loc,lfun,it,b) -> of_tacvalue (VFun (appl,trace',loc,lfun,it,b))
     | _ -> v
   else v
 
@@ -593,7 +591,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let (stack, _) = trace in
   (* save and restore the current trace info because the called routine later starts
      with an empty trace *)
-  Tactic_debug.push_trace trace;
+  Tactic_debug.push_chunk trace;
   try
     let (evd,c) =
       catch_error_with_trace_loc loc true stack (understand_ltac flags env sigma vars kind) term
@@ -602,11 +600,11 @@ let interp_gen kind ist pattern_mode flags env sigma c =
        function already use effect, I call [run] hoping it doesn't mess
        up with any assumption. *)
     Proofview.NonLogical.run (db_constr (curr_debug ist) env evd c);
-    Tactic_debug.pop_trace ();
+    Tactic_debug.pop_chunk ();
     (evd,c)
   with reraise ->
     let reraise = Exninfo.capture reraise in
-    Tactic_debug.pop_trace ();
+    Tactic_debug.pop_chunk ();
     Exninfo.iraise reraise
 
 let constr_flags () = {
@@ -1406,7 +1404,10 @@ and tactic_of_value ist vle =
       let ist = {
         lfun = lfun;
         poly;
-        extra = TacStore.set ist.extra f_trace trace; } in
+        (* todo: debug stack needs "trace" but that gives incorrect results for profiling
+           Couldn't figure out how to make them play together.  Currently no way they both
+           be enabled. Perhaps profiling should be redesigned as suggested in profile_ltac.mli *)
+        extra = TacStore.set ist.extra f_trace (if !Flags.profile_ltac then ([],[]) else trace); } in
       let tac = name_if_glob appl (eval_tactic_ist ist t) in
       let (stack, _) = trace in
       Profile_ltac.do_profile "tactic_of_value" stack (catch_error_tac_loc loc false stack tac)

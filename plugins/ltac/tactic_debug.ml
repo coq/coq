@@ -225,8 +225,8 @@ let get_stack stack () =
 
 (* Each list entry contains multiple trace frames. *)
 let trace_chunks : ltac_trace list ref = ref [([], [])]
-let push_trace trace = trace_chunks := trace :: !trace_chunks
-let pop_trace trace = trace_chunks := List.tl !trace_chunks
+let push_chunk trace = trace_chunks := trace :: !trace_chunks
+let pop_chunk trace = trace_chunks := List.tl !trace_chunks
 
 let prev_stack = ref (Some [])  (* previous stopping point in debugger *)
 let prev_trace_chunks : ltac_trace list ref = ref [([], [])]

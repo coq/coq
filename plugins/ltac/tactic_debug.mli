@@ -86,7 +86,7 @@ val extract_ltac_trace :
 val defer_output : (unit -> Pp.t) -> unit Proofview.NonLogical.t
 
 (** Push a trace chunk (multiple frames) onto the trace chunk stack *)
-val push_trace : ltac_trace -> unit
+val push_chunk : ltac_trace -> unit
 
 (** Pop a trace chunk (multiple frames) from the trace chunk stack *)
-val pop_trace : unit -> unit
+val pop_chunk : unit -> unit
