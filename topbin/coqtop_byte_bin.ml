@@ -16,19 +16,30 @@ let _ = CErrors.register_handler (function
       None
   )
 
+(* XXX: Remove this for Toploop.get_directive once we bump the OCaml
+   version, unfortunately 4.05 still doesn't have it, and 4.13
+   deprecated directive_table *)
+let _get_directive name =
+  let dt = Toploop.directive_table [@ocaml.warning "-3"] in
+  Hashtbl.find_opt dt name
+
+(* XXX: 4.13 deprecated Topdirs.load_file in favor of
+   Toopload.load_file, however that last function was introduced in
+   4.12 so it seems... *)
+let _load_file = Topdirs.load_file [@ocaml.warning "-3"]
+
 let drop_setup () =
-  begin try
+  begin
     (* Enable rectypes in the toplevel if it has the directive #rectypes *)
-    begin match Hashtbl.find Toploop.directive_table "rectypes" with
-      | Toploop.Directive_none f -> f ()
-      | _ -> ()
-    end
-    with
-    | Not_found -> ()
+    match _get_directive "rectypes" with
+    | None -> ()
+    | Some (Toploop.Directive_none f) -> f ()
+    | Some _ ->
+      Format.eprintf "Warning: rectypes directive has changed!!@\n%!"
   end;
   let ppf = Format.std_formatter in
   Mltop.(set_top
-           { load_obj = (fun f -> if not (Topdirs.load_file ppf f)
+           { load_obj = (fun f -> if not (_load_file ppf f)
                           then CErrors.user_err Pp.(str ("Could not load plugin "^f))
                         );
              add_dir  = Topdirs.dir_directory;
