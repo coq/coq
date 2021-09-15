@@ -99,16 +99,30 @@ type dir = string option
 
 let add_directory add_file phys_dir =
   let open Unix in
+  let files = Sys.readdir phys_dir in
   Array.iter (fun f ->
     (* we avoid all files starting by '.' *)
     if f.[0] <> '.' then
       let phys_f = if phys_dir = "." then f else phys_dir//f in
       match try (stat phys_f).st_kind with _ -> S_BLK with
       | S_REG -> add_file phys_dir f
-      | _ -> ()) (Sys.readdir phys_dir)
+      | _ -> ()) files
 
 let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
+  exit 1
+
+let error_unknown_extension name =
+  Printf.eprintf "Don't know what to do with \"%s\"\n" name;
+  Printf.eprintf "Usage: ocamllibdep [-I dir] [-c] [file.mllib] [file.mlpack]\n";
+  exit 1
+
+let error_cannot_open msg =
+  Format.eprintf "Error: @[%s@].@\n%!" msg;
+  exit 1
+
+let error_cannot_stat err name =
+  Format.eprintf "Error: @[cannot stat %s (%s)@].@\n%!" name (Unix.error_message err);
   exit 1
 
 let same_path_opt s s' =
@@ -152,9 +166,12 @@ let add_caml_known phys_dir f =
     | _ -> ()
 
 let add_caml_dir phys_dir =
-  Unix.handle_unix_error (add_directory add_caml_known) phys_dir
+  try add_directory add_caml_known phys_dir
+  with
+  | Sys_error msg -> error_cannot_open msg
+  | Unix.Unix_error (e, "stat", a) -> error_cannot_stat e a
 
-let traite_fichier_modules md ext =
+let treat_file_modules md ext =
   try
     let chan = open_in (md ^ ext) in
     let list = mllib_list (Lexing.from_channel chan) in
@@ -178,13 +195,13 @@ let treat_file old_name =
   match get_extension name [".mllib";".mlpack"] with
   | (base,".mllib") -> addQueue mllibAccu (base,dirname)
   | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
-  | _ -> ()
+  | _ -> error_unknown_extension old_name
 
 let mllib_dependencies () =
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
-       let deps = traite_fichier_modules fullname ".mllib" in
+       let deps = treat_file_modules fullname ".mllib" in
        let sdeps = String.concat " " deps in
        let efullname = escape fullname in
        printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname sdeps;
@@ -208,7 +225,7 @@ let mlpack_dependencies () =
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let modname = String.capitalize_ascii name in
-       let deps = traite_fichier_modules fullname ".mlpack" in
+       let deps = treat_file_modules fullname ".mlpack" in
        let sdeps = String.concat " " deps in
        let efullname = escape fullname in
        printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname sdeps;
