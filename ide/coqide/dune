@@ -26,14 +26,29 @@
 (library
  (name coqide_gui)
  (wrapped false)
- (modules (:standard \ document idetop coqide_main default_bindings_src))
+ (modules (:standard \ document idetop coqide_main default_bindings_src gen_gtk_platform))
+ (foreign_stubs
+  (language c)
+  (names coqide_os_stubs))
  (optional)
  (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3))
 
+(executable
+ (name gen_gtk_platform)
+ (modules gen_gtk_platform)
+ (libraries coq-core.config))
+
+(rule
+ (targets gtk_platform.conf)
+ (action (with-stdout-to %{targets} (run ./gen_gtk_platform.exe))))
+
 (rule
  (targets coqide_os_specific.ml)
- (deps (:in-file coqide_X11.ml.in)) ; TODO support others
- (action (copy# %{in-file} %{targets})))
+ (action (copy# coqide_%{read:gtk_platform.conf}.ml.in %{targets})))
+
+(rule
+ (targets coqide_os_stubs.c)
+ (action (copy coqide_%{read:gtk_platform.conf}.c.in %{targets})))
 
 (executable
  (name coqide_main)
