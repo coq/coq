@@ -23,7 +23,6 @@ let coq_version = "8.15+alpha"
 let vo_magic = 81491
 let state_magic = 581491
 let is_a_released_version = false
-let _verbose = ref false (* for debugging this script *)
 
 (** Default OCaml binaries *)
 
@@ -40,7 +39,7 @@ let coq_bin_annot_flag prefs = if prefs.bin_annot then "-bin-annot" else ""
 let coq_safe_string = "-safe-string"
 let coq_strict_sequence = "-strict-sequence"
 
-(* Query for the arch *)
+(* Query for the architecture *)
 let arch prefs = arch prefs.arch
 
 (** NB: [arch_is_win32] is broader than [os_type_win32], cf. cygwin *)
@@ -334,6 +333,7 @@ let install_dirs prefs arch =
 let select var install_dirs = List.find (fun ((v,_),_) -> v=var) install_dirs |> snd
 
 module CoqEnv = struct
+  (** Coq core paths, for libraries, documentation, configuration, and data *)
   type t =
     { coqlib : string
     ; coqlibsuffix : path_style

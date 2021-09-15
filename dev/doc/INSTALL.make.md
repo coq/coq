@@ -175,18 +175,18 @@ the option `-coqlib`:
 
 # FLambda Options
 
-You can tweak optimization flags passed to the OCaml optimizing
+You can tweak the optimization flags passed to the OCaml optimizing
 compiler. Coq's default is:
 
     -flambda-opts `-O3 -unbox-closures`
 
-set in Coq's toplevel `dune` file. Feel free to try with a different
-combination of flags. You can read more at
+which is set in Coq's toplevel `dune` file. Feel free to try a
+different combination of flags. You can read more at
 https://caml.inria.fr/pub/docs/manual-ocaml/flambda.html
 
 There is a known problem with certain OCaml versions and
-`native_compute`, that will make compilation to require
-a large amount of RAM (>= 10GiB) in some particular files.
+`native_compute`, that will make compilation require a large amount of
+RAM (>= 10GiB) for some particular files.
 
 We recommend disabling native compilation (`-native-compiler no`)
 with flambda if you use OCaml < 4.07.0.

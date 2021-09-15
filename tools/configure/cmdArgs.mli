@@ -15,30 +15,52 @@ type nativecompiler = NativeYes | NativeNo | NativeOndemand
 
 module Prefs : sig
 
-type t = {
-  prefix : string option;
-  interactive : bool;
-  libdir : string option;
-  configdir : string option;
-  datadir : string option;
-  mandir : string option;
-  docdir : string option;
-  arch : string option;
-  natdynlink : bool;
-  coqide : ide option;
-  macintegration : bool;
-  browser : string option;
-  withdoc : bool;
-  byteonly : bool;
-  bin_annot : bool;
-  annot : bool;
-  bytecodecompiler : bool;
-  nativecompiler : nativecompiler;
-  coqwebsite : string;
-  warn_error : bool;
-  dune_profile : string;
-  install_enabled : bool;
-}
+(** User-setable options from command line [configure] arugments *)
+type t =
+  { prefix : string option
+  (** root prefix for installation  *)
+  ; interactive : bool
+  (** whether to display a summary *)
+  ; libdir : string option
+  (** override $prefix/lib/coq *)
+  ; configdir : string option
+  (** override /etc/xdg/coq *)
+  ; datadir : string option
+  (** override $prefix/share/coq *)
+  ; mandir : string option
+  (** override $prefix/man *)
+  ; docdir : string option
+  (** override $prefix/doc *)
+  ; arch : string option
+  (** override arch auto-detection *)
+  ; natdynlink : bool
+  (** native dynlink enabled [only relevant to coq_makefile] *)
+  ; coqide : ide option
+  (** coqide build [yes/no/byte] *)
+  ; macintegration : bool
+  (** whether to integrate CoqIDE with OSX  *)
+  ; browser : string option
+  (** override default browser command [for CoqIDE] *)
+  ; withdoc : bool
+  (** Build documentation [controls makefile variable]  *)
+  ; byteonly : bool
+  (** Whether to build a byte-only version of Coq *)
+  ; bin_annot : bool
+  ; annot : bool
+  (** OCaml annot options [only relevant to coq_makefile] *)
+  ; bytecodecompiler : bool
+  (** Enable/disable Coq's VM *)
+  ; nativecompiler : nativecompiler
+  (** Enable/disable Coq's native compiler *)
+  ; coqwebsite : string
+  (** Override Coq's website, used by distributions  *)
+  ; warn_error : bool
+  (** Enable/disable warn-error in makefile build *)
+  ; dune_profile : string
+  (** Dune profile to use {dev/release}  *)
+  ; install_enabled : bool
+  (** Enable install [set to no when in -profile devel] *)
+  }
 
 end
 
