@@ -10,6 +10,8 @@
 
 open Printf
 
+let debug = ref false
+
 let red, yellow, reset =
   if Unix.isatty Unix.stdout && Unix.isatty Unix.stderr && Sys.os_type = "Unix"
   then "\027[31m", "\027[33m", "\027[0m"
@@ -146,7 +148,12 @@ let numeric_prefix_list s =
 
 let generic_version_nums ~name version_string =
   let version_list = numeric_prefix_list version_string in
-  Format.(eprintf "@[%s / %a@]@\n%!" version_string (pp_print_list pp_print_string) version_list);
+  if !debug then
+    begin
+      let pp_sep = Format.pp_print_space in
+      Format.(eprintf "Parsing version info for %s: @[raw: %s / split: %a@]@\n%!"
+                name version_string (pp_print_list ~pp_sep pp_print_string) version_list)
+    end;
   try List.map int_of_string version_list
   with _ ->
     "I found " ^ name ^ " but cannot read its version number!\n" ^

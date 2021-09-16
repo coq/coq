@@ -42,3 +42,6 @@ val arch : string option -> string
 
 (* bin is used to avoid adding \r on Cygwin/Windows *)
 val write_config_file : file:string -> ?bin:bool -> (out_channel -> unit) -> unit
+
+(* enable debug mode *)
+val debug : bool ref
