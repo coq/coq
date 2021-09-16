@@ -45,34 +45,9 @@ please see the [contributing guide](../../CONTRIBUTING.md).
      compiling Coq on two different architectures for which the
      result of "arch" is the same, e.g. Sun OS and Solaris)
 
-   * `-local`
-     Compile Coq to run in its source directory. The installation (step 6)
-     is not necessary in that case.
-
    * `-browser <command>`
      Use <command> to open an URL in a browser. %s must appear in <command>,
      and will be replaced by the URL.
-
-   * `-flambda-opts <flags>`
-     This experimental option will pass specific user flags to the
-     OCaml optimizing compiler. In most cases, this option is used
-     to tweak the flambda backend; for maximum performance we
-     recommend using:
-
-         -flambda-opts `-O3 -unbox-closures`
-
-     but of course you are free to try with a different combination
-     of flags. You can read more at
-     https://caml.inria.fr/pub/docs/manual-ocaml/flambda.html
-
-     There is a known problem with certain OCaml versions and
-     `native_compute`, that will make compilation to require
-     a large amount of RAM (>= 10GiB) in some particular files.
-
-     We recommend disabling native compilation (`-native-compiler no`)
-     with flambda unless you use OCaml >= 4.07.0.
-
-     c.f. https://caml.inria.fr/mantis/view.php?id=7630
 
    If you want your build to be reproducible, ensure that the
    `SOURCE_DATE_EPOCH` environment variable is set as documented in
@@ -198,6 +173,26 @@ the option `-coqlib`:
 
     coqtop -coqlib <new directory>
 
+# FLambda Options
+
+You can tweak the optimization flags passed to the OCaml optimizing
+compiler. Coq's default is:
+
+    -flambda-opts `-O3 -unbox-closures`
+
+which is set in Coq's toplevel `dune` file. Feel free to try a
+different combination of flags. You can read more at
+https://caml.inria.fr/pub/docs/manual-ocaml/flambda.html
+
+There is a known problem with certain OCaml versions and
+`native_compute`, that will make compilation require a large amount of
+RAM (>= 10GiB) for some particular files.
+
+We recommend disabling native compilation (`-native-compiler no`)
+with flambda if you use OCaml < 4.07.0.
+
+c.f. https://caml.inria.fr/mantis/view.php?id=7630
+
 Dynamically Loaded Libraries For Bytecode Executables.
 ------------------------------------------------------
 
@@ -214,18 +209,6 @@ In this case, you need either:
   directory where dllcoqrun.so is; this is suitable when you want to run
   the command a limited number of times in a controlled environment (e.g.
   during compilation of binary packages);
-- install dllcoqrun.so in a location listed in the file ld.conf that is in
-  the directory of the standard library of OCaml;
-- recompile your bytecode executables after reconfiguring the location
-  of the shared library:
 
-        ./configure -vmbyteflags "-dllib,-lcoqrun,-dllpath,<path>" ...
-
-  where `<path>` is the directory where the dllcoqrun.so is installed;
-- (not recommended) compile bytecode executables with a custom OCaml
-  runtime by using:
-
-        ./configure -custom ...
-
-  be aware that stripping executables generated this way, or performing
-  other executable-specific operations, will make them useless.
+- install `dllcoqrun.so` in a location listed in the file `ld.conf` that is in
+  the directory of the standard library of OCaml

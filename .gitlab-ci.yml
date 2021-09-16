@@ -87,7 +87,7 @@ before_script:
     - echo 'end:coq.clean'
 
     - echo 'start:coq.config'
-    - ./configure -warn-error yes -prefix "$(pwd)/_install_ci" ${COQ_EXTRA_CONF}"$COQ_EXTRA_CONF_QUOTE"
+    - ./configure -warn-error yes -prefix "$(pwd)/_install_ci" $COQ_EXTRA_CONF
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
@@ -287,8 +287,7 @@ build:edge+flambda:
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
-    COQ_EXTRA_CONF: "-native-compiler yes -coqide opt -flambda-opts "
-    COQ_EXTRA_CONF_QUOTE: "-O3 -unbox-closures"
+    COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
 
 build:edge+flambda:dune:dev:
   extends: .dune-template
@@ -832,7 +831,7 @@ plugin:plugin-tutorial:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
-    - ./configure -local -warn-error yes
+    - ./configure -profile devel -warn-error yes
     - make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:

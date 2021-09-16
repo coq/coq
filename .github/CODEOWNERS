@@ -12,9 +12,8 @@
 /Makefile*                      @coq/legacy-build-maintainers
 /dev/tools/make_git_revision.sh @coq/legacy-build-maintainers
 
-/configure*        @coq/legacy-build-maintainers @coq/build-maintainers
-
-/META.coq-core.in       @coq/legacy-build-maintainers
+/configure              @coq/legacy-build-maintainers @coq/build-maintainers
+/tools/configure/*      @coq/legacy-build-maintainers @coq/build-maintainers
 
 /boot/               @coq/build-maintainers
 
