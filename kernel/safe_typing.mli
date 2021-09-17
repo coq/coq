@@ -98,7 +98,7 @@ val add_constant :
 
 (** Similar to add_constant but also returns a certificate *)
 val add_private_constant :
-  Label.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer
+  Label.t -> Univ.ContextSet.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer
 
 (** Adding an inductive type *)
 

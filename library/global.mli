@@ -57,7 +57,7 @@ val add_constant :
   ?typing_flags:typing_flags ->
   Id.t -> Safe_typing.global_declaration -> Constant.t
 val add_private_constant :
-  Id.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
+  Id.t -> Univ.ContextSet.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
 val add_mind :
   ?typing_flags:typing_flags ->
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t

@@ -40,7 +40,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
         the graph at that point, but we need to emulate a broken bound variable
         mechanism for template inductive types. *)
       begin match mb.mind_template with
-      | None -> Monomorphic_ind_entry ContextSet.empty
+      | None -> Monomorphic_ind_entry
       | Some ctx -> Template_ind_entry ctx.template_context
       end
     | Polymorphic auctx -> Polymorphic_ind_entry (AbstractContext.repr auctx)

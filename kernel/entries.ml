@@ -17,11 +17,11 @@ open Constr
    types *)
 
 type universes_entry =
-  | Monomorphic_entry of Univ.ContextSet.t
+  | Monomorphic_entry
   | Polymorphic_entry of Univ.UContext.t
 
 type inductive_universes_entry =
-  | Monomorphic_ind_entry of Univ.ContextSet.t
+  | Monomorphic_ind_entry
   | Polymorphic_ind_entry of Univ.UContext.t
   | Template_ind_entry of Univ.ContextSet.t
 

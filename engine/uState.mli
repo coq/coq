@@ -15,6 +15,10 @@
 open Names
 open Univ
 
+type universes_entry =
+| Monomorphic_entry of Univ.ContextSet.t
+| Polymorphic_entry of Univ.UContext.t
+
 exception UniversesDiffer
 
 type t
@@ -81,7 +85,7 @@ val constraints : t -> Univ.Constraints.t
 val context : t -> Univ.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
-type named_universes_entry = Entries.universes_entry * UnivNames.universe_binders
+type named_universes_entry = universes_entry * UnivNames.universe_binders
 
 val univ_entry : poly:bool -> t -> named_universes_entry
 (** Pick from {!context} or {!context_set} based on [poly]. *)
@@ -198,7 +202,7 @@ val default_univ_decl : universe_decl
    If non extensible in [decl], check that the local universes (resp.
    universe constraints) in [ctx] are implied by [decl].
 
-   Return a [Entries.constant_universes_entry] containing the local
+   Return a [universes_entry] containing the local
    universes of [ctx] and their constraints.
 
    When polymorphic, the universes corresponding to

@@ -303,6 +303,7 @@ type side_effect = {
   seff_certif : Certificate.t CEphemeron.key;
   seff_constant : Constant.t;
   seff_body : Constr.t Declarations.pconstant_body;
+  seff_univs : Univ.ContextSet.t;
 }
 (* Invariant: For any senv, if [Certificate.check senv seff_certif] then
   senv where univs := Certificate.universes seff_certif] +
@@ -367,11 +368,7 @@ let is_empty_private_constants c = SideEffects.is_empty c
 let concat_private = SideEffects.concat
 
 let universes_of_private eff =
-  let fold acc eff =
-    match eff.seff_body.const_universes with
-    | Monomorphic ctx -> Univ.ContextSet.union ctx acc
-    | Polymorphic _ -> acc
-  in
+  let fold acc eff = Univ.ContextSet.union eff.seff_univs acc in
   List.fold_left fold Univ.ContextSet.empty (side_effects_of_private_constants eff)
 
 let env_of_safe_env senv = senv.env
@@ -662,7 +659,7 @@ let inline_side_effects env body side_eff =
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
   let filter e =
-    let cb = (e.seff_constant, e.seff_body) in
+    let cb = (e.seff_constant, e.seff_body, e.seff_univs) in
     if Environ.mem_constant e.seff_constant env then None
     else Some (cb, e.seff_certif)
   in
@@ -676,20 +673,21 @@ let inline_side_effects env body side_eff =
   else
     (** Second step: compute the lifts and substitutions to apply *)
     let cname c r = Context.make_annot (Name (Label.to_id (Constant.label c))) r in
-    let fold (subst, var, ctx, args) (c, cb) =
+    let fold (subst, var, ctx, args) (c, cb, univs) =
       let (b, opaque) = match cb.const_body with
       | Def b -> (b, false)
       | OpaqueDef b -> (b, true)
       | _ -> assert false
       in
       match cb.const_universes with
-      | Monomorphic univs ->
+      | Monomorphic _ ->
         (** Abstract over the term at the top of the proof *)
         let ty = cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c cb.const_relevance, b, ty, opaque) :: args)
       | Polymorphic _ ->
+        let () = assert (Univ.ContextSet.is_empty univs) in
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
@@ -764,8 +762,8 @@ let constant_entry_of_side_effect eff =
   let open Entries in
   let univs =
     match cb.const_universes with
-    | Monomorphic uctx ->
-      Monomorphic_entry uctx
+    | Monomorphic _ ->
+      Monomorphic_entry
     | Polymorphic auctx ->
       Polymorphic_entry (Univ.AbstractContext.repr auctx)
   in
@@ -833,9 +831,12 @@ let export_side_effects senv eff =
     | Some univs ->
       univs, List.map export_eff seff
     | None ->
-      let rec recheck_seff seff acc env = match seff with
-      | [] -> List.rev acc
+      let rec recheck_seff seff univs acc env = match seff with
+      | [] -> univs, List.rev acc
       | eff :: rest ->
+        let uctx = eff.seff_univs in
+        let env = Environ.push_context_set ~strict:true uctx env in
+        let univs = Univ.ContextSet.union uctx univs in
         let env, cb =
           let kn = eff.seff_constant in
           let ce = constant_entry_of_side_effect eff in
@@ -849,9 +850,9 @@ let export_side_effects senv eff =
             let eff = { eff with seff_body = cb } in
             (push_seff env eff, export_eff eff)
         in
-        recheck_seff rest (cb :: acc) env
+        recheck_seff rest univs (cb :: acc) env
       in
-      Univ.ContextSet.empty, recheck_seff seff [] env
+      recheck_seff seff Univ.ContextSet.empty [] env
 
 let push_opaque_proof pf senv =
   let o, otab = Opaqueproof.create (library_dp_of_senv senv) pf (Environ.opaque_tables senv.env) in
@@ -932,13 +933,20 @@ let add_constant l decl senv =
 let add_constant ?typing_flags l decl senv =
   with_typing_flags ?typing_flags senv ~f:(add_constant l decl)
 
-let add_private_constant l decl senv : (Constant.t * private_constants) * safe_environment =
+let check_constraints uctx = function
+| Entries.Polymorphic_entry _ -> Univ.ContextSet.is_empty uctx
+| Entries.Monomorphic_entry -> true
+
+let add_private_constant l uctx decl senv : (Constant.t * private_constants) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
+  let senv = push_context_set ~strict:true uctx senv in
     let cb =
       match decl with
       | OpaqueEff ce ->
+        let () = assert (check_constraints uctx ce.Entries.opaque_entry_universes) in
         translate_direct_opaque senv.env kn ce
       | DefinitionEff ce ->
+        let () = assert (check_constraints uctx ce.Entries.const_entry_universes) in
         Term_typing.translate_constant senv.env kn (Entries.DefinitionEntry ce)
     in
   let dcb = match cb.const_body with
@@ -958,6 +966,7 @@ let add_private_constant l decl senv : (Constant.t * private_constants) * safe_e
       seff_certif = from_env;
       seff_constant = kn;
       seff_body = cb;
+      seff_univs = uctx;
     } in
     SideEffects.add eff empty_private_constants
   in

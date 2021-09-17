@@ -27,7 +27,6 @@ open Tacinterp
 open Libobject
 open Printer
 open Declare
-open Entries
 open Ring_ast
 open Proofview.Notations
 
@@ -148,7 +147,7 @@ let decl_constant name univs c =
   let univs = UState.restrict_universe_context ~lbound:(Global.universes_lbound ()) univs vars in
   let () = DeclareUctx.declare_universe_context ~poly:false univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
-  let univs = Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
+  let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
   mkConst(declare_constant ~name
             ~kind:Decls.(IsProof Lemma)
             (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))

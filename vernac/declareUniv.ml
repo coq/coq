@@ -96,8 +96,8 @@ let label_of = let open GlobRef in function
 let declare_univ_binders gr (univs, pl) =
   let l = label_of gr in
   match univs with
-  | Entries.Polymorphic_entry _ -> ()
-  | Entries.Monomorphic_entry (levels, _) ->
+  | UState.Polymorphic_entry _ -> ()
+  | UState.Monomorphic_entry (levels, _) ->
     (* First the explicitly named universes *)
     let named, univs = Id.Map.fold (fun id univ (named,univs) ->
         let univs = match Univ.Level.name univ with
