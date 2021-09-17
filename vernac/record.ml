@@ -574,6 +574,12 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
     primitive_proj  &&
     List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) record_data
   in
+  let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
+  let univs = match univs with
+  | Monomorphic_entry ctx ->
+    if template then Template_ind_entry ctx else Monomorphic_ind_entry ctx
+  | Polymorphic_entry ctx -> Polymorphic_ind_entry ctx
+  in
   let mie =
     { mind_entry_params = params;
       mind_entry_record = Some (if primitive then Some binder_name else None);
@@ -581,8 +587,7 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
-      mind_entry_template = template;
-      mind_entry_variance = ComInductive.variance_of_entry ~cumulative ~variances univs;
+      mind_entry_variance = variance;
     }
   in
   let impls = List.map (fun _ -> paramimpls, []) record_data in

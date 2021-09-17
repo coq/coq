@@ -445,6 +445,12 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       indnames arities arityconcl constructors
   in
   let is_template = List.for_all (fun t -> t) template in
+  let variance = variance_of_entry ~cumulative ~variances univ_entry in
+  let uctx = match univ_entry with
+  | Monomorphic_entry ctx ->
+    if is_template then Template_ind_entry ctx else Monomorphic_ind_entry ctx
+  | Polymorphic_entry ctx -> Polymorphic_ind_entry ctx
+  in
   (* Build the mutual inductive entry *)
   let mind_ent =
     { mind_entry_params = ctx_params;
@@ -452,9 +458,8 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       mind_entry_finite = finite;
       mind_entry_inds = entries;
       mind_entry_private = if private_ind then Some false else None;
-      mind_entry_universes = univ_entry;
-      mind_entry_template = is_template;
-      mind_entry_variance = variance_of_entry ~cumulative ~variances univ_entry;
+      mind_entry_universes = uctx;
+      mind_entry_variance = variance;
     }
   in
   mind_ent, binders

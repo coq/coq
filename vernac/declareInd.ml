@@ -168,6 +168,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_, kn), prim = declare_mind ?typing_flags mie in
   let mind = Global.mind_of_delta_kn kn in
+  let is_template = match mie.mind_entry_universes with Template_ind_entry _ -> true | _ -> false in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
   DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) binders;
   List.iteri (fun i (indimpls, constrimpls) ->
@@ -181,7 +182,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
         constrimpls)
     impls;
   Flags.if_verbose Feedback.msg_info (minductive_message names);
-  if mie.mind_entry_template then
+  if is_template then
     List.iteri (fun i _ -> Equality.set_keep_equality (mind, i) true) mie.mind_entry_inds;
   if mie.mind_entry_private == None
   then Indschemes.declare_default_schemes mind;
