@@ -13,10 +13,10 @@
 (**********************************)
 open Printf
 
-let coq_version = "8.14+alpha"
+let coq_version = "8.14+rc1"
 let vo_magic = 81391
 let state_magic = 581391
-let is_a_released_version = false
+let is_a_released_version = true
 let verbose = ref false (* for debugging this script *)
 
 let red, yellow, reset =
