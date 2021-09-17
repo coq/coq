@@ -683,7 +683,8 @@ Infrastructure and dependencies
   optimizations. Note that, in particular, the configure option
   ``-datadir`` is not customizable anymore, and ``-bindir`` has been
   removed in favor of ``$prefix/bin``. Moreover, the install procedure
-  will ignore ``-docdir`` and ``-etcdir`` for Dune < 2.9.
+  will ignore ``-docdir`` and ``-etcdir``, unless you patch the makefile
+  and use Dune >= 2.9.
   We usually recommended using a recent Dune version, if possible.
   For developers and plugin authors, see the entry in
   `dev/doc/changes.md`. For packagers and users, see `dev/doc/INSTALL.make.md`.
@@ -697,12 +698,6 @@ Infrastructure and dependencies
   install`` does support the more standard ``DESTDIR`` variable, akin
   to what ``coq_makefile`` does.
   (`#14258 <https://github.com/coq/coq/pull/14258>`_,
-  by Emilio Jesus Gallego Arias).
-- **Changed:**
-  The ``-docdir`` configure option now refers to root path for documentation.
-  If you would like to install Coq documentation in ``foo/coq``, use
-  ``-docdir foo``.
-  (`#14844 <https://github.com/coq/coq/pull/14844>`_,
   by Emilio Jesus Gallego Arias).
 - **Added:**
   Support OCaml 4.12
