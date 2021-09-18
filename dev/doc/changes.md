@@ -35,6 +35,10 @@ deprecation warning tells what to do.
   https://github.com/coq/coq/issues/9401
   https://github.com/coq/coq/issues/11073 .
 
+- Location of Coq's runtime environment and files is now handled by a
+  new library, `coq-core.boot`, which provides a more uniform and
+  centralized API to locate files.
+
 ## Changes between Coq 8.13 and Coq 8.14
 
 ### Build system and library infrastructure
@@ -66,10 +70,6 @@ deprecation warning tells what to do.
 - As a consequence of the above, the packing of plugins has changed.
   Plugins are now packed using modules aliases which is in general safer
   w.r.t. scoping, as the container module is just a regular OCaml module.
-
-- Location of Coq's runtime environment and files is now handled by a
-  new library, `coq-core.boot`, which provides a more uniform and
-  centralized API to locate files.
 
 ### Gramlib
 
