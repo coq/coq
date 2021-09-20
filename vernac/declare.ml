@@ -375,14 +375,17 @@ let declare_constant_core ~name ~typing_flags cd =
            and registers their libobjects. *)
         let () = export_side_effects eff in
         let de = { de with proof_entry_body = Future.from_val (body, ()) } in
-        let cd = Entries.DefinitionEntry (cast_proof_entry de) in
-        ConstantEntry cd, false, de.proof_entry_universes
+        let e = cast_proof_entry de in
+        let ubinders = e.Entries.const_entry_universes, snd de.proof_entry_universes in
+        let cd = Entries.DefinitionEntry e in
+        ConstantEntry cd, false, ubinders
       else
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain de.proof_entry_body map in
         let de = { de with proof_entry_body = body } in
         let cd = cast_opaque_proof_entry EffectEntry de in
-        OpaqueEntry cd, false, de.proof_entry_universes
+        let ubinders = cd.Entries.opaque_entry_universes, snd de.proof_entry_universes in
+        OpaqueEntry cd, false, ubinders
     | ParameterEntry e ->
       let ubinders = snd e.parameter_entry_universes in
       let e = {
@@ -404,7 +407,7 @@ let declare_constant_core ~name ~typing_flags cd =
       ConstantEntry (Entries.PrimitiveEntry e), false, (default_univ_entry, ubinders)
   in
   let kn = Global.add_constant ?typing_flags name decl in
-  let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) (snd ubinders) in
+  let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn
 

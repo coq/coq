@@ -575,10 +575,14 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
     List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) record_data
   in
   let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
-  let univs = match univs with
+  let globnames, univs = match univs with
   | Monomorphic_entry ctx ->
-    if template then Template_ind_entry ctx else Monomorphic_ind_entry ctx
-  | Polymorphic_entry ctx -> Polymorphic_ind_entry ctx
+    if template then
+      (univs, ubinders), Template_ind_entry ctx
+    else
+      (univs, ubinders), Monomorphic_ind_entry ctx
+  | Polymorphic_entry ctx ->
+    (univs, UnivNames.empty_binders), Polymorphic_ind_entry ctx
   in
   let mie =
     { mind_entry_params = params;
@@ -591,7 +595,7 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
     }
   in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
-  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
+  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
   in
   let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =

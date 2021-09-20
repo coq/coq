@@ -154,7 +154,7 @@ type one_inductive_impls =
   Impargs.manual_implicits (* for inds *) *
   Impargs.manual_implicits list (* for constrs *)
 
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags mie binders impls =
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags mie ubinders impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -170,7 +170,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
   let mind = Global.mind_of_delta_kn kn in
   let is_template = match mie.mind_entry_universes with Template_ind_entry _ -> true | _ -> false in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
-  DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) binders;
+  DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) ubinders;
   List.iteri (fun i (indimpls, constrimpls) ->
       let ind = (mind,i) in
       let gr = GlobRef.IndRef ind in

@@ -16,7 +16,7 @@ exception AlreadyDeclared of (string option * Id.t)
 
 (** Internally used to declare names of universes from monomorphic
    constants/inductives. Noop on polymorphic references. *)
-val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
+val declare_univ_binders : GlobRef.t -> UState.named_universes_entry -> unit
 
 (** Command [Universes]. *)
 val do_universe : poly:bool -> lident list -> unit

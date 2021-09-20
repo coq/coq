@@ -649,6 +649,11 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
   let mie,binders,impls = interp_mutual_inductive_gen env ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
+  (* Slightly hackish global universe declaration due to template types. *)
+  let binders = match mie.mind_entry_universes with
+  | Monomorphic_ind_entry ctx | Template_ind_entry ctx -> (Entries.Monomorphic_entry ctx, binders)
+  | Polymorphic_ind_entry uctx -> (Entries.Polymorphic_entry uctx, UnivNames.empty_binders)
+  in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie binders impls);
   (* Declare the possible notations of inductive types *)
