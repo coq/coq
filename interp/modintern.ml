@@ -109,7 +109,7 @@ let transl_with_decl env base kind = function
     let sigma, udecl = interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
     let poly = lookup_polymorphism env base kind fqid in
-    begin match UState.check_univ_decl ~poly ectx udecl with
+    begin match fst (UState.check_univ_decl ~poly ectx udecl) with
       | Entries.Polymorphic_entry ctx ->
         let inst, ctx = Univ.abstract_universes ctx in
         let c = EConstr.Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in

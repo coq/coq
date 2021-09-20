@@ -67,7 +67,7 @@ val pr_scheme_kind : 'a scheme_kind -> Pp.t
 
 val declare_definition_scheme :
   (internal : bool
-   -> univs:Entries.universes_entry
+   -> univs:UState.named_universes_entry
    -> role:Evd.side_effect_role
    -> name:Id.t
    -> Constr.t
