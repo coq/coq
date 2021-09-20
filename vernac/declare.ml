@@ -109,6 +109,18 @@ type 'a proof_entry = {
   proof_entry_inline_code : bool;
 }
 
+type parameter_entry = {
+  parameter_entry_secctx : Id.Set.t option;
+  parameter_entry_type : Constr.types;
+  parameter_entry_universes : UState.named_universes_entry;
+  parameter_entry_inline_code : Entries.inline;
+}
+
+type primitive_entry = {
+  prim_entry_type : (Constr.types * UState.named_universes_entry) option;
+  prim_entry_content : CPrimitives.op_or_type;
+}
+
 let default_univ_entry = Entries.Monomorphic_entry Univ.ContextSet.empty
 let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
@@ -127,10 +139,22 @@ let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?feedback_id ?t
 let definition_entry =
   definition_entry_core ?eff:None ?univsbody:None ?feedback_id:None
 
+let parameter_entry ?inline ?(univs=default_named_univ_entry) typ = {
+  parameter_entry_secctx = None;
+  parameter_entry_type = typ;
+  parameter_entry_universes = univs;
+  parameter_entry_inline_code = inline;
+}
+
+let primitive_entry ?types c = {
+  prim_entry_type = types;
+  prim_entry_content = c;
+}
+
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
-  | ParameterEntry of (Entries.parameter_entry * UnivNames.universe_binders)
-  | PrimitiveEntry of (Entries.primitive_entry * UnivNames.universe_binders)
+  | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
 
 let local_csts = Summary.ref ~name:"local-csts" Cset_env.empty
 
@@ -359,9 +383,24 @@ let declare_constant_core ~name ~typing_flags cd =
         let de = { de with proof_entry_body = body } in
         let cd = cast_opaque_proof_entry EffectEntry de in
         OpaqueEntry cd, false, de.proof_entry_universes
-    | ParameterEntry (e, ubinders) ->
+    | ParameterEntry e ->
+      let ubinders = snd e.parameter_entry_universes in
+      let e = {
+        Entries.parameter_entry_secctx = e.parameter_entry_secctx;
+        Entries.parameter_entry_type = e.parameter_entry_type;
+        Entries.parameter_entry_universes = fst e.parameter_entry_universes;
+        Entries.parameter_entry_inline_code = e.parameter_entry_inline_code;
+      } in
       ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict()), (e.Entries.parameter_entry_universes, ubinders)
-    | PrimitiveEntry (e, ubinders) ->
+    | PrimitiveEntry e ->
+      let typ, ubinders = match e.prim_entry_type with
+      | None -> None, UnivNames.empty_binders
+      | Some (typ, (univs, ubinders)) -> Some (typ, univs), ubinders
+      in
+      let e = {
+        Entries.prim_entry_type = typ;
+        Entries.prim_entry_content = e.prim_entry_content;
+      } in
       ConstantEntry (Entries.PrimitiveEntry e), false, (default_univ_entry, ubinders)
   in
   let kn = Global.add_constant ?typing_flags name decl in
@@ -722,14 +761,14 @@ let prepare_parameter ~poly ~udecl ~types sigma =
   let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in
-  let univs, ubinders = Evd.check_univ_decl ~poly sigma udecl in
-  let pe = Entries.{
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let pe = {
       parameter_entry_secctx = None;
       parameter_entry_type = typ;
       parameter_entry_universes = univs;
       parameter_entry_inline_code = None;
     } in
-  sigma, (pe, ubinders)
+  sigma, pe
 
 type progress = Remain of int | Dependent | Defined of GlobRef.t
 
@@ -1898,16 +1937,15 @@ end = struct
 
   let declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = pinfo.Proof_info.info in
-    let (univs, ubinders) = univs in
     List.map_i (
       fun i { CInfo.name; typ; impargs } ->
-        let pe = Entries.{
+        let pe = {
             parameter_entry_secctx = sec_vars;
             parameter_entry_type = typ;
             parameter_entry_universes = univs;
             parameter_entry_inline_code = None;
           } in
-        declare_parameter ~name ~scope ~hook ~impargs ~uctx (pe, ubinders)
+        declare_parameter ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 pinfo.Proof_info.cinfo
 
 end

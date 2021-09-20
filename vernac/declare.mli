@@ -319,6 +319,8 @@ end
    for removal from the public API, use higher-level declare APIs
    instead *)
 type 'a proof_entry
+type parameter_entry
+type primitive_entry
 
 val definition_entry
   :  ?opaque:bool
@@ -328,6 +330,17 @@ val definition_entry
   -> ?univs:UState.named_universes_entry
   -> Constr.constr
   -> Evd.side_effects proof_entry
+
+val parameter_entry
+  :  ?inline:int
+  -> ?univs:UState.named_universes_entry
+  -> Constr.constr
+  -> parameter_entry
+
+val primitive_entry
+  :  ?types:(Constr.types * UState.named_universes_entry)
+  -> CPrimitives.op_or_type
+  -> primitive_entry
 
 (** XXX: This is an internal, low-level API and could become scheduled
     for removal from the public API, use higher-level declare APIs
@@ -359,15 +372,15 @@ val declare_variable
    instead *)
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
-  | ParameterEntry of (Entries.parameter_entry * UnivNames.universe_binders)
-  | PrimitiveEntry of (Entries.primitive_entry * UnivNames.universe_binders)
+  | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
 
 val prepare_parameter
   : poly:bool
   -> udecl:UState.universe_decl
   -> types:EConstr.types
   -> Evd.evar_map
-  -> Evd.evar_map * (Entries.parameter_entry * UnivNames.universe_binders)
+  -> Evd.evar_map * parameter_entry
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns

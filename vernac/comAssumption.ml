@@ -50,13 +50,8 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.
     | InlineAt i -> Some i
   in
   let kind = Decls.IsAssumption kind in
-  let entry = {
-      parameter_entry_secctx = None;
-      parameter_entry_type = typ;
-      parameter_entry_universes = univs;
-      parameter_entry_inline_code = inl;
-    } in
-  let decl = Declare.ParameterEntry (entry, ubinders) in
+  let entry = Declare.parameter_entry ~univs:(univs, ubinders) ?inline:inl typ in
+  let decl = Declare.ParameterEntry entry in
   let kn = Declare.declare_constant ~name ~local ~kind decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -225,13 +220,8 @@ let context_nosection sigma ~poly ctx =
     let univs = if i = 0 then univs else clear_univs (Locality.Global local) univs in
     let decl = match b with
       | None ->
-        let entry = {
-            parameter_entry_secctx = None;
-            parameter_entry_type = t;
-            parameter_entry_universes = univ_entry;
-            parameter_entry_inline_code = None;
-          } in
-        Declare.ParameterEntry (entry, ubinders)
+        let entry = Declare.parameter_entry ~univs:(univ_entry, ubinders) t in
+        Declare.ParameterEntry entry
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         Declare.DefinitionEntry entry
