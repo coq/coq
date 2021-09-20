@@ -240,9 +240,7 @@ let discharge_coercion c =
   if c.coe_local then None
   else
     let n =
-      try
-        let ins = Lib.section_instance c.coe_value in
-        Array.length ins.Declarations.abstr_inst
+      try Array.length (Lib.section_instance c.coe_value)
       with Not_found -> 0
     in
     let nc = { c with

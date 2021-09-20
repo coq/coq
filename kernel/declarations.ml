@@ -102,73 +102,6 @@ type typing_flags = {
 
 }
 
-(** {6 Data needed to abstract over the section variables and section universes } *)
-
-(** The generalization to be done on a specific judgment:
-    [a:T,b:U,c:V(a) ⊢ w(a,c):W(a,c)
-     ~~>
-     ⊢ λxz.w(a,c)[a,c:=x,z]:(Πx:T.z:T(a).W(a,c))[a,c:=x,z]]
-    so, an abstr_info is both the context x:T,z:V(x) to generalize
-    (skipping y which does not occur), and the substitution [a↦x,c↦z]
-    where in practice, x and z are canonical (hence implicit) de
-    Bruijn indices, that is, only the instantiation [a,c] is kept *)
-
-type abstr_info = {
-  abstr_ctx : Constr.rel_context;
-  (** Context over which to generalize (e.g. x:T,z:V(x)) *)
-  abstr_auctx : Univ.AbstractContext.t;
-  (** Universe context over which to generalize *)
-  abstr_subst : Id.t list;
-  (** Canonical renaming represented by its domain made of the
-      actual names of the abstracted term variables (e.g. [a,c]);
-      the codomain made of de Bruijn indices is implicit *)
-  abstr_ausubst : Univ.universe_level_subst;
-  (** Universe substitution *)
-}
-
-(** The instantiation to apply to generalized declarations so that
-    they behave as if not generalized: this is the a1..an instance to
-    apply to a declaration c in the following transformation:
-    [a1:T1..an:Tn, C:U(a1..an) ⊢ v(a1..an,C):V(a1..an,C)
-     ~~>
-     C:Πx1..xn.U(x1..xn), a1:T1..an:Tn ⊢ v(a1..an,Ca1..an):V(a1..an,Ca1..an)]
-    note that the data looks close to the one for substitution above
-    (because the substitution are represented by their domain) but
-    here, local definitions of the context have been dropped *)
-
-type abstr_inst_info = {
-  abstr_inst : Constr.t array;
-  (** The variables to reapply (excluding "let"s of the context) *)
-  abstr_uinst : Univ.Instance.t;
-  (** Abstracted universe variables to reapply *)
-}
-
-(** The collection of instantiations to apply to generalized
-    declarations so that they behave as if not generalized.
-    This accounts for the permutation (lambda-lifting) of global and
-    local declarations.
-    Using the notations above, a expand_info is a map [c ↦ a1..an]
-    over all generalized global declarations of the section *)
-
-type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
-type expand_info = abstr_inst_info entry_map
-
-(** The collection of instantiations to be done on generalized
-    declarations + the generalization to be done on a specific
-    judgment:
-    [a1:T1,a2:T2,C:U(a1) ⊢ v(a1,a2,C):V(a1,a2,C)
-     ~~>
-     c:Πx.U(x) ⊢ λx1x2.(v(a1,a2,cx1)[a1,a2:=x1,x2]):Πx1x2.(V(a1,a2,ca1)[a1,a2:=x1,x2])]
-    so, a cooking_info is the map [c ↦ x1..xn],
-    the context x:T,y:U to generalize, and the substitution [x,y] *)
-
-type cooking_info = {
-  expand_info : expand_info;
-  abstr_info : abstr_info;
-  abstr_inst_info : abstr_inst_info; (* relevant for recursive types *)
-  names_info : Id.Set.t; (* set of generalized names *)
-}
-
 (** {6 Representation of definitions/assumptions in the kernel } *)
 
 (* some contraints are in constant_constraints, some other may be in
@@ -186,7 +119,7 @@ type 'opaque pconstant_body = {
                                            type-checking. *)
 }
 
-type constant_body = cooking_info Opaqueproof.opaque pconstant_body
+type constant_body = Opaqueproof.opaque pconstant_body
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 type nested_type =

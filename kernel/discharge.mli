@@ -8,6 +8,29 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val set_indirect_accessor : (Opaqueproof.opaque -> Constr.t * unit Opaqueproof.delayed_universes) -> unit
+open Declarations
+open Cooking
+open Constr
 
-val check_module : Environ.env -> Names.Cset.t Names.Cmap.t -> Names.ModPath.t -> Declarations.module_body -> Names.Cset.t Names.Cmap.t
+type inline = bool
+
+type 'opaque result = {
+  cook_body : (constr, 'opaque) constant_def;
+  cook_type : types;
+  cook_universes : universes;
+  cook_relevance : Sorts.relevance;
+  cook_inline : inline;
+  cook_context : Names.Id.Set.t option;
+  cook_flags : typing_flags;
+}
+
+val cook_opaque_proofterm : cooking_info list ->
+  Opaqueproof.opaque_proofterm -> Opaqueproof.opaque_proofterm
+
+val cook_constant :
+  Environ.env -> cooking_info -> constant_body -> constant_body
+
+val cook_inductive :
+  cooking_info -> mutual_inductive_body -> mutual_inductive_body
+
+val cook_rel_context : cooking_info -> rel_context -> rel_context

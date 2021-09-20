@@ -10,6 +10,7 @@
 
 open Names
 open Univ
+open Cooking
 
 (** Kernel implementation of sections. *)
 
@@ -65,13 +66,10 @@ val all_poly_univs : 'a t -> Univ.Level.t array
    constraints about monomorphic universes, which prevent declaring
    monomorphic globals. *)
 
-val empty_segment : Declarations.cooking_info
-(** Nothing to abstract *)
-
-val segment_of_constant : Constant.t -> 'a t -> Declarations.cooking_info
+val segment_of_constant : Constant.t -> 'a t -> cooking_info
 (** Section segment at the time of the constant declaration *)
 
-val segment_of_inductive : MutInd.t -> 'a t -> Declarations.cooking_info
+val segment_of_inductive : MutInd.t -> 'a t -> cooking_info
 (** Section segment at the time of the inductive declaration *)
 
 val is_in_section : Environ.env -> GlobRef.t -> 'a t -> bool

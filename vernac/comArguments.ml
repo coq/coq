@@ -33,7 +33,7 @@ let subst_bidi_hints (subst, (gr, ohint as orig)) =
 let discharge_bidi_hints (gr, ohint) =
   if Globnames.isVarRef gr && Lib.is_in_section gr then None
   else
-    let vars = (Lib.section_instance gr).Declarations.abstr_inst in
+    let vars = Lib.section_instance gr in
     let n = Array.length vars in
     Some (gr, Option.map ((+) n) ohint)
 

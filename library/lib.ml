@@ -349,13 +349,11 @@ let section_segment_of_constant con =
 let section_segment_of_inductive kn =
   Section.segment_of_inductive kn (force_sections ())
 
-let empty_segment = Section.empty_segment
-
 let section_segment_of_reference = let open GlobRef in function
 | ConstRef c -> section_segment_of_constant c
 | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
   section_segment_of_inductive kn
-| VarRef _ -> empty_segment
+| VarRef _ -> Cooking.empty_cooking_info
 
 let is_in_section ref = match sections () with
   | None -> false
@@ -363,7 +361,7 @@ let is_in_section ref = match sections () with
     Section.is_in_section (Global.env ()) ref sec
 
 let section_instance ref =
-  (section_segment_of_reference ref).Declarations.abstr_inst_info
+  Cooking.instance_of_cooking_info (section_segment_of_reference ref)
 
 (*************)
 (* Sections. *)
@@ -449,5 +447,5 @@ let library_part = function
 
 let discharge_proj_repr p =
   let ind = Projection.Repr.inductive p in
-  let sec = section_instance (GlobRef.IndRef ind) in
+  let sec = section_segment_of_reference (GlobRef.IndRef ind) in
   Cooking.discharge_proj_repr sec p

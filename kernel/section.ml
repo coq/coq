@@ -11,7 +11,7 @@
 open Util
 open Names
 open Univ
-open Declarations
+open Cooking
 
 module NamedDecl = Context.Named.Declaration
 
@@ -134,21 +134,6 @@ let push_global env ~poly e sec =
 
 let segment_of_constant con sec = Cmap.find con (fst sec.cooking_info_map)
 let segment_of_inductive con sec = Mindmap.find con (snd sec.cooking_info_map)
-
-let empty_segment = {
-  expand_info = (Cmap.empty, Mindmap.empty);
-  abstr_info = {
-      abstr_ctx = [];
-      abstr_subst = [];
-      abstr_auctx = AbstractContext.empty;
-      abstr_ausubst = Level.Map.empty;
-    };
-  abstr_inst_info = {
-      abstr_inst = [||];
-      abstr_uinst = Univ.Instance.empty;
-    };
-  names_info = Id.Set.empty;
-}
 
 let is_in_section _env gr sec =
   let open GlobRef in

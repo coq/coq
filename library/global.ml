@@ -135,7 +135,7 @@ let lookup_modtype kn = lookup_modtype kn (env())
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 type indirect_accessor = {
-  access_proof : Declarations.cooking_info Opaqueproof.opaque -> (Constr.t * unit Opaqueproof.delayed_universes) option;
+  access_proof : Opaqueproof.opaque -> (Constr.t * unit Opaqueproof.delayed_universes) option;
 }
 
 let force_proof access o = match access.access_proof o with

@@ -2046,7 +2046,7 @@ let discharge_arguments_scope (req,r,n,l,_) =
   else
     let n =
       try
-        Array.length (Lib.section_instance r).Declarations.abstr_inst
+        Array.length (Lib.section_instance r)
       with
         Not_found (* Not a ref defined in this section *) -> 0 in
     Some (req,r,n,l,[])

@@ -10,6 +10,7 @@
 
 open Names
 open Mod_subst
+open Cooking
 
 type 'a delayed_universes =
 | PrivateMonomorphic of 'a
@@ -17,8 +18,8 @@ type 'a delayed_universes =
 
 type opaque_proofterm = Constr.t * unit delayed_universes
 
-type 'cooking_info opaque =
-| Indirect of substitution list * 'cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)
+type opaque =
+| Indirect of substitution list * cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)
 
 type opaquetab = {
   opaque_len : int;

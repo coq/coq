@@ -19,12 +19,93 @@ open Util
 open Names
 open Term
 open Constr
-open Declarations
 open Univ
 open Context
 
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
+
+(** {6 Data needed to abstract over the section variables and section universes } *)
+
+(** The generalization to be done on a specific judgment:
+    [a:T,b:U,c:V(a) ⊢ w(a,c):W(a,c)
+     ~~>
+     ⊢ λxz.w(a,c)[a,c:=x,z]:(Πx:T.z:T(a).W(a,c))[a,c:=x,z]]
+    so, an abstr_info is both the context x:T,z:V(x) to generalize
+    (skipping y which does not occur), and the substitution [a↦x,c↦z]
+    where in practice, x and z are canonical (hence implicit) de
+    Bruijn indices, that is, only the instantiation [a,c] is kept *)
+
+type abstr_info = {
+  abstr_ctx : Constr.rel_context;
+  (** Context over which to generalize (e.g. x:T,z:V(x)) *)
+  abstr_auctx : Univ.AbstractContext.t;
+  (** Universe context over which to generalize *)
+  abstr_subst : Id.t list;
+  (** Canonical renaming represented by its domain made of the
+      actual names of the abstracted term variables (e.g. [a,c]);
+      the codomain made of de Bruijn indices is implicit *)
+  abstr_ausubst : Univ.universe_level_subst;
+  (** Universe substitution *)
+}
+
+(** The instantiation to apply to generalized declarations so that
+    they behave as if not generalized: this is the a1..an instance to
+    apply to a declaration c in the following transformation:
+    [a1:T1..an:Tn, C:U(a1..an) ⊢ v(a1..an,C):V(a1..an,C)
+     ~~>
+     C:Πx1..xn.U(x1..xn), a1:T1..an:Tn ⊢ v(a1..an,Ca1..an):V(a1..an,Ca1..an)]
+    note that the data looks close to the one for substitution above
+    (because the substitution are represented by their domain) but
+    here, local definitions of the context have been dropped *)
+
+type abstr_inst_info = {
+  abstr_inst : Constr.t array;
+  (** The variables to reapply (excluding "let"s of the context) *)
+  abstr_uinst : Univ.Instance.t;
+  (** Abstracted universe variables to reapply *)
+}
+
+(** The collection of instantiations to apply to generalized
+    declarations so that they behave as if not generalized.
+    This accounts for the permutation (lambda-lifting) of global and
+    local declarations.
+    Using the notations above, a expand_info is a map [c ↦ a1..an]
+    over all generalized global declarations of the section *)
+
+type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
+type expand_info = abstr_inst_info entry_map
+
+(** The collection of instantiations to be done on generalized
+    declarations + the generalization to be done on a specific
+    judgment:
+    [a1:T1,a2:T2,C:U(a1) ⊢ v(a1,a2,C):V(a1,a2,C)
+     ~~>
+     c:Πx.U(x) ⊢ λx1x2.(v(a1,a2,cx1)[a1,a2:=x1,x2]):Πx1x2.(V(a1,a2,ca1)[a1,a2:=x1,x2])]
+    so, a cooking_info is the map [c ↦ x1..xn],
+    the context x:T,y:U to generalize, and the substitution [x,y] *)
+
+type cooking_info = {
+  expand_info : expand_info;
+  abstr_info : abstr_info;
+  abstr_inst_info : abstr_inst_info; (* relevant for recursive types *)
+  names_info : Id.Set.t; (* set of generalized names *)
+}
+
+let empty_cooking_info = {
+  expand_info = (Cmap.empty, Mindmap.empty);
+  abstr_info = {
+      abstr_ctx = [];
+      abstr_subst = [];
+      abstr_auctx = AbstractContext.empty;
+      abstr_ausubst = Level.Map.empty;
+    };
+  abstr_inst_info = {
+      abstr_inst = [||];
+      abstr_uinst = Univ.Instance.empty;
+    };
+  names_info = Id.Set.empty;
+}
 
 (*s Cooking the constants. *)
 
@@ -75,7 +156,7 @@ let share_univs cache r u l =
     mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), abstr_inst)
 
 let discharge_proj_repr r p = (* To merge with discharge_proj *)
-  let newpars = r.abstr_inst in
+  let newpars = r.abstr_inst_info.abstr_inst in
   let map npars = npars + Array.length newpars in
   Projection.Repr.map_npars map p
 
@@ -159,6 +240,10 @@ let abstract_as_type cache { expand_info; abstr_info; _ } t =
 let abstract_as_body cache { expand_info; abstr_info; _ } c =
   it_mkLambda_or_LetIn (expand_subst cache expand_info abstr_info c) abstr_info.abstr_ctx
 
+(** Adding the final abstraction step, sort case (for universes) *)
+let abstract_as_sort cache { expand_info; abstr_info; _ } s =
+  destSort (expand_subst cache expand_info abstr_info (mkSort s))
+
 (** Absorb a named context in the transformation which turns a
     judgment [G, Δ ⊢ ΠΩ.J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])], that is,
     produces the context [Δ(Ω[σ][τ])] and substitutions [σ'] and [τ]
@@ -201,17 +286,14 @@ let make_cooking_info expand_info hyps uctx =
   let names_info = Context.Named.to_vars hyps in
   { expand_info; abstr_info; abstr_inst_info; names_info }
 
-type inline = bool
+let rel_context_of_cooking_info info =
+  info.abstr_info.abstr_ctx
 
-type 'opaque result = {
-  cook_body : (constr, 'opaque) constant_def;
-  cook_type : types;
-  cook_universes : universes;
-  cook_relevance : Sorts.relevance;
-  cook_inline : inline;
-  cook_context : Id.Set.t option;
-  cook_flags : typing_flags;
-}
+let universe_context_of_cooking_info info =
+  info.abstr_info.abstr_auctx
+
+let instance_of_cooking_info info =
+  info.abstr_inst_info.abstr_inst
 
 let discharge_abstract_universe_context abstr auctx =
   (** Given a substitution [abstr.abstr_ausubst := u₀ ... uₙ₋₁] together with an abstract
@@ -239,6 +321,10 @@ let discharge_abstract_universe_context abstr auctx =
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
     { abstr with abstr_ausubst = substf }, auctx'
 
+let lift_mono_univs info ctx =
+  assert (AbstractContext.is_empty info.abstr_info.abstr_auctx); (* No monorphic constants in a polymorphic section *)
+  info, ctx
+
 let lift_poly_univs info auctx =
   (** The constant under consideration is quantified over a
       universe context [auctx]; it has to be quantified further over
@@ -254,185 +340,11 @@ let lift_poly_univs info auctx =
   let abstr_info, auctx = discharge_abstract_universe_context info.abstr_info auctx in
   { info with abstr_info }, auctx
 
-let lift_univs info = function
-  | Monomorphic ->
-    assert (AbstractContext.is_empty info.abstr_info.abstr_auctx); (* No monorphic constants in a polymorphic section *)
-    info, Monomorphic
-  | Polymorphic auctx ->
-    let info, auctx = lift_poly_univs info auctx in
-    info, Polymorphic auctx
+let lift_private_mono_univs info a =
+  let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in
+  let () = assert (is_empty_level_subst info.abstr_info.abstr_ausubst) in
+  a
 
-let subst_private_univs info = function
-  | Opaqueproof.PrivateMonomorphic () as priv ->
-    let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in
-    let () = assert (is_empty_level_subst info.abstr_info.abstr_ausubst) in
-    priv
-  | Opaqueproof.PrivatePolymorphic (inst, cstrs) ->
-    let cstrs = Univ.subst_univs_level_constraints info.abstr_info.abstr_ausubst cstrs in
-    Opaqueproof.PrivatePolymorphic (inst, cstrs)
-
-(********************************)
-(* Discharging opaque proof terms *)
-
-let cook_opaque_proofterm info c =
-  let fold info (c, priv) =
-    let priv = subst_private_univs info priv in
-    let c = abstract_as_body (RefTable.create 13) info c in
-    (c, priv)
-  in
-  List.fold_right fold info c
-
-(********************************)
-(* Discharging constant         *)
-
-let cook_constant env info cb =
-  let cache = RefTable.create 13 in
-  (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
-  let info, univs = lift_univs info cb.const_universes in
-  let map c = abstract_as_body cache info c in
-  let body = match cb.const_body with
-  | Undef _ as x -> x
-  | Def cs -> Def (map cs)
-  | OpaqueDef o ->
-    OpaqueDef (Opaqueproof.discharge_opaque info o)
-  | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
-  in
-  let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs body in
-  let typ = abstract_as_type cache info cb.const_type in
-  let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) info.names_info)) cb.const_hyps in
-  {
-    const_hyps = hyps;
-    const_body = body;
-    const_type = typ;
-    const_body_code = tps;
-    const_universes = univs;
-    const_relevance = cb.const_relevance;
-    const_inline_code = cb.const_inline_code;
-    const_typing_flags = cb.const_typing_flags;
-  }
-
-(********************************)
-(* Discharging mutual inductive *)
-
-let cook_rel_context cache info ctx =
-  (* Dealing with substitutions between contexts is too annoying, so
-     we reify [ctx] into a big [forall] term and work on that. *)
-  let t = it_mkProd_or_LetIn mkProp ctx in
-  let t = abstract_as_type cache info t in
-  let ctx, t = decompose_prod_assum t in
-  assert (Constr.equal t mkProp);
-  ctx
-
-let cook_lc cache ~ntypes info t =
-  (* Expand the recursive call to the inductive types *)
-  let diff = List.length info.abstr_info.abstr_ctx in
-  let subs = List.init ntypes (fun k -> mkApp (mkRel (k+diff+1), info.abstr_inst_info.abstr_inst)) in
-  let t = Vars.substl subs t in
-  (* Apply the abstraction *)
-  abstract_as_type cache info t
-
-let cook_projection cache ~params info t =
-  let t = mkArrowR mkProp t in (* dummy type standing in for the inductive *)
-  let t = it_mkProd_or_LetIn t params in
-  let t = abstract_as_type cache info t in
-  let _, t = decompose_prod_n_assum (List.length params + 1 + Context.Rel.nhyps info.abstr_info.abstr_ctx) t in
-  t
-
-let cook_one_ind cache ~ntypes info mip =
-  let mind_arity = match mip.mind_arity with
-    | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
-      let arity = abstract_as_type cache info arity in
-      let sort = destSort (expand_subst cache info.expand_info info.abstr_info (mkSort sort)) in
-      RegularArity {mind_user_arity=arity; mind_sort=sort}
-    | TemplateArity {template_level} ->
-      TemplateArity {template_level}
-  in
-  let mind_arity_ctxt = cook_rel_context cache info mip.mind_arity_ctxt in
-  let mind_user_lc = Array.map (cook_lc cache ~ntypes info) mip.mind_user_lc in
-  let mind_nf_lc = Array.map (fun (ctx,t) ->
-      let lc = it_mkProd_or_LetIn t ctx in
-      let lc = cook_lc cache ~ntypes info lc in
-      decompose_prod_assum lc)
-      mip.mind_nf_lc
-  in
-  { mind_typename = mip.mind_typename;
-    mind_arity_ctxt;
-    mind_arity;
-    mind_consnames = mip.mind_consnames;
-    mind_user_lc;
-    mind_nrealargs = mip.mind_nrealargs;
-    mind_nrealdecls = mip.mind_nrealdecls;
-    mind_kelim = mip.mind_kelim;
-    mind_nf_lc;
-    mind_consnrealargs = mip.mind_consnrealargs;
-    mind_consnrealdecls = mip.mind_consnrealdecls;
-    mind_recargs = mip.mind_recargs;
-    mind_relevance = mip.mind_relevance;
-    mind_nb_constant = mip.mind_nb_constant;
-    mind_nb_args = mip.mind_nb_args;
-    mind_reloc_tbl = mip.mind_reloc_tbl;
-  }
-
-let cook_inductive info mib =
-  let info, mind_universes = lift_univs info mib.mind_universes in
-  let cache = RefTable.create 13 in
-  let nnewparams = Context.Rel.nhyps info.abstr_info.abstr_ctx in
-  let mind_params_ctxt = cook_rel_context cache info mib.mind_params_ctxt in
-  let ntypes = mib.mind_ntypes in
-  let mind_packets = Array.map (cook_one_ind cache ~ntypes info) mib.mind_packets in
-  let mind_record = match mib.mind_record with
-    | NotRecord -> NotRecord
-    | FakeRecord -> FakeRecord
-    | PrimRecord data ->
-      let data = Array.map (fun (id,projs,relevances,tys) ->
-          let tys = Array.map (cook_projection cache ~params:mib.mind_params_ctxt info) tys in
-          (id,projs,relevances,tys))
-          data
-      in
-      PrimRecord data
-  in
-  let mind_hyps =
-    List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) info.names_info))
-      mib.mind_hyps
-  in
-  let mind_variance, mind_sec_variance =
-    match mib.mind_variance, mib.mind_sec_variance with
-    | None, None -> None, None
-    | None, Some _ | Some _, None -> assert false
-    | Some variance, Some sec_variance ->
-      let sec_variance, newvariance =
-        Array.chop (Array.length sec_variance - AbstractContext.size info.abstr_info.abstr_auctx)
-          sec_variance
-      in
-      Some (Array.append newvariance variance), Some sec_variance
-  in
-  let mind_template = match mib.mind_template with
-  | None -> None
-  | Some {template_param_levels=levels; template_context} ->
-      let sec_levels = CList.map_filter (fun d ->
-          if RelDecl.is_local_assum d then Some None
-          else None)
-          info.abstr_info.abstr_ctx
-      in
-      let levels = List.rev_append sec_levels levels in
-      Some {template_param_levels=levels; template_context}
-  in
-  {
-    mind_packets;
-    mind_record;
-    mind_finite = mib.mind_finite;
-    mind_ntypes = mib.mind_ntypes;
-    mind_hyps;
-    mind_nparams = mib.mind_nparams + nnewparams;
-    mind_nparams_rec = mib.mind_nparams_rec + nnewparams;
-    mind_params_ctxt;
-    mind_universes;
-    mind_template;
-    mind_variance;
-    mind_sec_variance;
-    mind_private = mib.mind_private;
-    mind_typing_flags = mib.mind_typing_flags;
-  }
-
-let cook_rel_context info ctx =
-  cook_rel_context (RefTable.create 13) info ctx
+let lift_private_poly_univs info (inst, cstrs) =
+  let cstrs = Univ.subst_univs_level_constraints info.abstr_info.abstr_ausubst cstrs in
+  (inst, cstrs)

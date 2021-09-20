@@ -113,7 +113,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     | OT_type _ -> Undef None
     | OT_const c -> Def (CPrimitives.body_of_prim_const c)
   in
-  { Cooking.cook_body = body;
+  { Discharge.cook_body = body;
     cook_type = typ;
     cook_universes = univs;
     cook_inline = false;
@@ -134,7 +134,7 @@ let infer_declaration env (dcl : constant_entry) =
     let r = Typeops.assumption_of_judgment env j in
     let t = Vars.subst_univs_level_constr usubst j.uj_val in
     {
-      Cooking.cook_body = Undef entry.parameter_entry_inline_code;
+      Discharge.cook_body = Undef entry.parameter_entry_inline_code;
       cook_type = t;
       cook_universes = univs;
       cook_relevance = r;
@@ -171,7 +171,7 @@ let infer_declaration env (dcl : constant_entry) =
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
       let def = Def def in
       {
-        Cooking.cook_body = def;
+        Discharge.cook_body = def;
         cook_type = typ;
         cook_universes = univs;
         cook_relevance = Relevanceops.relevance_of_term env j.uj_val;
@@ -188,7 +188,7 @@ let infer_opaque env = function
       let context = MonoTyCtx (env, tyj, c.opaque_entry_secctx) in
       let def = OpaqueDef () in
       {
-        Cooking.cook_body = def;
+        Discharge.cook_body = def;
         cook_type = tyj.utj_val;
         cook_universes = Monomorphic;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
@@ -207,7 +207,7 @@ let infer_opaque env = function
       let def = OpaqueDef () in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
       {
-        Cooking.cook_body = def;
+        Discharge.cook_body = def;
         cook_type = typ;
         cook_universes = Polymorphic auctx;
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
@@ -237,7 +237,7 @@ let check_section_variables env declared_set typ body =
         str "Proof using " ++ inferred_vars)
 
 let build_constant_declaration env result =
-  let open Cooking in
+  let open Discharge in
   let typ = result.cook_type in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
@@ -325,7 +325,7 @@ let translate_local_assum env t =
     j.uj_val, t
 
 let translate_local_def env _id centry =
-  let open Cooking in
+  let open Discharge in
   let centry = {
     const_entry_body = centry.secdef_body;
     const_entry_secctx = centry.secdef_secctx;

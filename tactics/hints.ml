@@ -1235,7 +1235,7 @@ let discharge_autohint obj =
       if Lib.is_in_section gref then
         if isVarRef gref then AddHints [] (* dummy *)
         else
-          let inst = (Lib.section_instance gref).Declarations.abstr_inst in
+          let inst = Lib.section_instance gref in
           (* Default mode for discharged parameters is output *)
           let mode = Array.append (Array.make (Array.length inst) ModeOutput) mode in
           AddMode { gref; mode }
