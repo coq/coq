@@ -75,7 +75,7 @@ val type_of_constructors : pinductive -> mind_specif -> types array
 (** Turns a constructor type recursively referring to inductive types
     into the same constructor type referring instead to a context made
     from the abstract declaration of the inductive types (e.g. turns
-    [nat->nat] into [Rel 1 -> Rel 1]); takes as arguments the number
+    [nat->nat] into [mkArrowR (Rel 1) (Rel 2)]); takes as arguments the number
     of inductive types in the block and the name of the block *)
 val abstract_constructor_type_relatively_to_inductive_types_context :
   int -> MutInd.t -> types -> types
