@@ -1849,11 +1849,11 @@ let vernac_check_may_eval ~pstate redexp glopt rc =
       (* OK to call kernel which does not support evars *)
       Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
   in
+  let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
   let pp = match redexp with
     | None ->
         let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
-        let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
         Prettyp.print_judgment env sigma j ++
         pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
     | Some r ->
