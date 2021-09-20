@@ -38,7 +38,7 @@ let check_constant_declaration env opac kn cb opacify =
   let env = CheckFlags.set_local_flags cb.const_typing_flags env in
   let poly, env =
     match cb.const_universes with
-    | Monomorphic ctx ->
+    | Monomorphic ->
       (* Monomorphic universes are stored at the library level, the
          ones in const_universes should not be needed *)
       false, env
@@ -57,7 +57,7 @@ let check_constant_declaration env opac kn cb opacify =
     | OpaqueDef o ->
       let c, u = Opaqueproof.force_proof !indirect_accessor otab o in
       let env = match u, cb.const_universes with
-        | Opaqueproof.PrivateMonomorphic (), Monomorphic _ -> env
+        | Opaqueproof.PrivateMonomorphic (), Monomorphic -> env
         | Opaqueproof.PrivatePolymorphic (_, local), Polymorphic _ ->
           push_subgraph local env
         | _ -> assert false

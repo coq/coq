@@ -264,8 +264,11 @@ let get_param_levels ctx params arity splayed_lc =
 
 let get_template univs params data =
   let ctx = match univs with
-      | Monomorphic ctx -> ctx
-      | Polymorphic _ ->
+      | Template_ind_entry ctx -> ctx
+      | Monomorphic_ind_entry ->
+        CErrors.anomaly ~label:"polymorphic_template_ind"
+          Pp.(strbrk "Template inductive type generated from a monomorphic one.")
+      | Polymorphic_ind_entry _ ->
         CErrors.anomaly ~label:"polymorphic_template_ind"
           Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.") in
   (* For each type in the block, compute potential template parameters *)
@@ -390,10 +393,8 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
 
   (* Abstract universes *)
   let usubst, univs = match mie.mind_entry_universes with
-  | Monomorphic_ind_entry ->
-    Univ.empty_level_subst, Monomorphic Univ.ContextSet.empty
-  | Template_ind_entry ctx ->
-    Univ.empty_level_subst, Monomorphic ctx
+  | Monomorphic_ind_entry | Template_ind_entry _ ->
+    Univ.empty_level_subst, Monomorphic
   | Polymorphic_ind_entry uctx ->
     let (inst, auctx) = Univ.abstract_universes uctx in
     let inst = Univ.make_instance_subst inst in
@@ -406,7 +407,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     | TemplateArity _ -> true
     | RegularArity _ -> false
     in
-    if List.exists check data then Some (get_template univs params data) else None
+    if List.exists check data then Some (get_template mie.mind_entry_universes params data) else None
   in
 
   let env_ar_par =

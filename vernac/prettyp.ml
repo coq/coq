@@ -621,10 +621,7 @@ let print_constant with_values sep sp udecl =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body Library.indirect_accessor cb in
   let typ = cb.const_type in
-  let univs = match cb.const_universes with
-  | Polymorphic _ -> cb.const_universes
-  | Monomorphic _ -> Monomorphic Univ.ContextSet.empty
-  in
+  let univs = cb.const_universes in
   let uctx =
     UState.of_binders
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)

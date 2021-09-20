@@ -79,7 +79,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     | None ->
       let u = UContext.instance (AbstractContext.repr auctx) in
       let typ = Typeops.type_of_prim_or_type env u p in
-      let univs = if AbstractContext.is_empty auctx then Monomorphic ContextSet.empty
+      let univs = if AbstractContext.is_empty auctx then Monomorphic
         else Polymorphic auctx
       in
       univs, typ
@@ -92,7 +92,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
         check_primitive_type env p u typ.utj_val;
         typ.utj_val
       in
-      Monomorphic ContextSet.empty, typ
+      Monomorphic, typ
 
     | Some (typ,Polymorphic_entry uctx) ->
       assert (not (AbstractContext.is_empty auctx)); (* ensured by ComPrimitive *)
@@ -154,7 +154,7 @@ let infer_declaration env (dcl : constant_entry) =
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_entry ->
-        env, empty_level_subst, Monomorphic ContextSet.empty
+        env, empty_level_subst, Monomorphic
       | Polymorphic_entry uctx ->
         (** [ctx] must contain local universes, such that it has no impact
             on the rest of the graph (up to transitivity). *)
@@ -196,7 +196,7 @@ let infer_opaque env = function
       {
         Cooking.cook_body = def;
         cook_type = tyj.utj_val;
-        cook_universes = Monomorphic ContextSet.empty;
+        cook_universes = Monomorphic;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = false;
         cook_context = Some c.opaque_entry_secctx;
@@ -364,7 +364,7 @@ let translate_local_def env _id centry =
   let decl = infer_declaration env (DefinitionEntry centry) in
   let typ = decl.cook_type in
   let () = match decl.cook_universes with
-  | Monomorphic ctx -> assert (ContextSet.is_empty ctx)
+  | Monomorphic -> ()
   | Polymorphic _ -> assert false
   in
   let c = match decl.cook_body with

@@ -54,7 +54,7 @@ type ('a, 'opaque) constant_def =
   | Primitive of CPrimitives.t (** or a primitive operation *)
 
 type universes =
-  | Monomorphic of Univ.ContextSet.t
+  | Monomorphic
   | Polymorphic of Univ.AbstractContext.t
 
 (** The [typing_flags] are instructions to the type-checker which

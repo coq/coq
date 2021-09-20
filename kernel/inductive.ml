@@ -205,7 +205,7 @@ let relevance_of_inductive env ind =
 
 let check_instance mib u =
   if not (match mib.mind_universes with
-      | Monomorphic _ -> Instance.is_empty u
+      | Monomorphic -> Instance.is_empty u
       | Polymorphic uctx -> Instance.length u = AbstractContext.size uctx)
   then CErrors.anomaly Pp.(str "bad instance length on mutind.")
 

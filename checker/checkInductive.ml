@@ -34,7 +34,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let mind_entry_template = Array.exists check_template mb.mind_packets in
   let () = if mind_entry_template then assert (Array.for_all check_template mb.mind_packets) in
   let mind_entry_universes = match mb.mind_universes with
-    | Monomorphic _ ->
+    | Monomorphic ->
       (* We only need to rebuild the set of constraints for template polymorphic
         inductive types. The set of monomorphic constraints is already part of
         the graph at that point, but we need to emulate a broken bound variable
