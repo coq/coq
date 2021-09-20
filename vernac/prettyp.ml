@@ -621,19 +621,9 @@ let print_constant with_values sep sp udecl =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body Library.indirect_accessor cb in
   let typ = cb.const_type in
-  let univs =
-    let open Univ in
-    let otab = Global.opaque_tables () in
-    match cb.const_body with
-    | Undef _ | Def _ | Primitive _ -> cb.const_universes
-    | OpaqueDef o ->
-      let body_uctxs = Opaqueproof.force_constraints Library.indirect_accessor otab o in
-      match cb.const_universes with
-      | Monomorphic ctx ->
-        Monomorphic (ContextSet.union body_uctxs ctx)
-      | Polymorphic ctx ->
-        assert(ContextSet.is_empty body_uctxs);
-        Polymorphic ctx
+  let univs = match cb.const_universes with
+  | Polymorphic _ -> cb.const_universes
+  | Monomorphic _ -> Monomorphic Univ.ContextSet.empty
   in
   let uctx =
     UState.of_binders

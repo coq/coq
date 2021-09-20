@@ -51,7 +51,6 @@ Type@{i} -> Type@{j}
 (* {j i} |=  *)
 mono = Type@{mono.uu}
      : Type@{mono.uu+1}
-(* {mono.uu} |=  *)
 mono
      : Type@{mono.uu+1}
 Type@{mono.uu}
@@ -167,10 +166,8 @@ foo@{i} = Type@{M.i} -> Type@{i}
 Type@{u0} -> Type@{UnivBinders.64}
      : Type@{max(u0+1,UnivBinders.64+1)}
 (* {UnivBinders.64} |=  *)
-bind_univs.mono = 
-Type@{bind_univs.mono.u}
+bind_univs.mono = Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
-(* {bind_univs.mono.u} |=  *)
 bind_univs.poly@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
