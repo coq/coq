@@ -32,7 +32,7 @@ type printable =
   | PrintGrammar of string
   | PrintCustomGrammar of string
   | PrintLoadPath of DirPath.t option
-  | PrintModules
+  | PrintLibraries
   | PrintModule of qualid
   | PrintModuleType of qualid
   | PrintNamespace of DirPath.t

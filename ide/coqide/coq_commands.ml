@@ -186,7 +186,7 @@ let state_preserving = [
   "Print ML Path";
   "Print Module";
   "Print Module Type";
-  "Print Modules";
+  "Print Libraries";
   "Print Proof";
   "Print Rewrite HintDb";
   "Print Setoids";

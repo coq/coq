@@ -876,7 +876,6 @@ command: [
 | "Print" "Grammar" ident
 | "Print" "Custom" "Grammar" ident
 | "Print" "LoadPath" OPT dirpath
-| "Print" "Modules"
 | "Print" "Libraries"
 | "Print" "ML" "Path"
 | "Print" "ML" "Modules"

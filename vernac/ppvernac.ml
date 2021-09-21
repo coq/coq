@@ -559,8 +559,8 @@ let pr_printable = function
     keyword "Print Custom Grammar" ++ spc() ++ str ent
   | PrintLoadPath dir ->
     keyword "Print LoadPath" ++ pr_opt DirPath.print dir
-  | PrintModules ->
-    keyword "Print Modules"
+  | PrintLibraries ->
+    keyword "Print Libraries"
   | PrintMLLoadPath ->
     keyword "Print ML Path"
   | PrintMLModules ->
