@@ -13,3 +13,9 @@ Inductive myprod A B :=
   where "A ** B" := (myprod A B) (only parsing).
 
 Check unit ** bool.
+
+(* "option is template" *)
+About option.
+Set Printing Universes.
+About option.
+(* "option is template on xxx" *)

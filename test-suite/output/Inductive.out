@@ -11,3 +11,13 @@ Arguments foo A%type_scope x
 Arguments Foo A%type_scope x
 myprod unit bool
      : Set
+option : Type -> Type
+
+option is template universe polymorphic
+Arguments option A%type_scope
+Expands to: Inductive Coq.Init.Datatypes.option
+option : Type@{option.u0} -> Type@{max(Set,option.u0)}
+
+option is template universe polymorphic on option.u0
+Arguments option A%type_scope
+Expands to: Inductive Coq.Init.Datatypes.option
