@@ -96,10 +96,9 @@ let branch env sigma (ind, i) u params (nas, br) =
     let mip = mib.mind_packets.(snd ind) in
     let paramdecl = subst_instance_context u mib.mind_params_ctxt in
     let paramsubst = subst_of_rel_context_instance paramdecl params in
-    let subst = paramsubst @ Inductive.ind_subst (fst ind) mib u in
     let (ctx, _) = mip.mind_nf_lc.(i - 1) in
     let ctx, _ = List.chop mip.mind_consnrealdecls.(i - 1) ctx in
-    let ctx = instantiate_context u subst nas ctx in
+    let ctx = instantiate_context u paramsubst nas ctx in
     List.map EConstr.of_rel_decl ctx, br
   with e when CErrors.noncritical e ->
     let dummy na = LocalAssum (na, EConstr.mkProp) in

@@ -34,8 +34,6 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 val lookup_mind_specif : env -> inductive -> mind_specif
 
 (** {6 Functions to build standard types related to inductive } *)
-val ind_subst : MutInd.t -> mutual_inductive_body -> Instance.t -> constr list
-
 val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context
 
 val instantiate_inductive_constraints :
@@ -74,8 +72,13 @@ val arities_of_constructors : pinductive -> mind_specif -> types array
 (** Return constructor types in user form *)
 val type_of_constructors : pinductive -> mind_specif -> types array
 
-(** Transforms inductive specification into types (in nf) *)
-val arities_of_specif : MutInd.t puniverses -> mind_specif -> types array
+(** Turns a constructor type recursively referring to inductive types
+    into the same constructor type referring instead to a context made
+    from the abstract declaration of the inductive types (e.g. turns
+    [nat->nat] into [mkArrowR (Rel 1) (Rel 2)]); takes as arguments the number
+    of inductive types in the block and the name of the block *)
+val abstract_constructor_type_relatively_to_inductive_types_context :
+  int -> MutInd.t -> types -> types
 
 val inductive_params : mind_specif -> int
 
@@ -166,6 +169,4 @@ type stack_element = |SClosure of guard_env*constr |SArg of subterm_spec Lazy.t
 
 val subterm_specif : guard_env -> stack_element list -> constr -> subterm_spec
 
-val lambda_implicit_lift : int -> constr -> constr
-
-val abstract_mind_lc : int -> Int.t -> (rel_context * constr) array -> constr array
+val abstract_mind_lc : int -> int -> MutInd.t -> (rel_context * constr) array -> constr array

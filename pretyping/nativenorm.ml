@@ -118,8 +118,7 @@ let find_rectype_a env sigma c =
 
 let type_constructor mind mib u (ctx, typ) params =
   let typ = it_mkProd_or_LetIn typ ctx in
-  let s = ind_subst mind mib u in
-  let ctyp = substl s typ in
+  let ctyp = subst_instance_constr u typ in
   let nparams = Array.length params in
   if Int.equal nparams 0 then ctyp
   else

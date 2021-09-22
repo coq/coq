@@ -21,7 +21,6 @@ open CErrors
 open Util
 open Names
 open Constr
-open Context
 open Declarations
 open Mod_subst
 open Printer
@@ -265,33 +264,19 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
    (* Invariant : I_0 \in data iff I_i \in data iff c_ij \in data
       where I_0, I_1, ... are in the same mutual definition and c_ij
       are all their constructors. *)
-   if GlobRef.Map_env.mem firstind_ref data then data, ax2ty else
+   if
+     (* recursive call: *) GlobRef.Set_env.mem firstind_ref curr ||
+     (* already in: *) GlobRef.Map_env.mem firstind_ref data
+   then data, ax2ty
+   else
+     (* Take into account potential recursivity of ind in itself *)
+     let curr = GlobRef.Set_env.add firstind_ref GlobRef.Set_env.empty in
+     let accu = (curr, data, ax2ty) in
      let mib = lookup_mind mind in
      (* Collects references of parameters *)
      let param_ctx = mib.mind_params_ctxt in
      let nparam = List.length param_ctx in
-     let accu =
-       traverse_context label Context.Rel.empty
-                        (GlobRef.Set_env.empty, data, ax2ty) param_ctx
-     in
-     (* Build the context of all arities *)
-     let arities_ctx =
-       let instance =
-         let open Univ in
-         Instance.of_array
-           (Array.init
-              (AbstractContext.size
-                 (Declareops.inductive_polymorphic_context mib))
-              Level.var)
-       in
-       Array.fold_left (fun accu oib ->
-          let pspecif = ((mib, oib), instance) in
-          let ind_type = Inductive.type_of_inductive pspecif in
-          let indr = oib.mind_relevance in
-          let ind_name = Name oib.mind_typename in
-          Context.Rel.add (Context.Rel.Declaration.LocalAssum (make_annot ind_name indr, ind_type)) accu)
-          Context.Rel.empty mib.mind_packets
-     in
+     let accu = traverse_context label Context.Rel.empty accu param_ctx in
      (* For each inductive, collects references in their arity and in the type
         of constructors*)
      let (contents, data, ax2ty) = Array.fold_left (fun accu oib ->
@@ -304,20 +289,21 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
          in
          Array.fold_left (fun accu cst_typ ->
             let param_ctx, cst_typ_wo_param = Term.decompose_prod_n_assum nparam cst_typ in
-            let ctx = Context.(Rel.fold_outside Context.Rel.add ~init:arities_ctx param_ctx) in
-            traverse label ctx accu cst_typ_wo_param)
+            traverse label param_ctx accu cst_typ_wo_param)
           accu oib.mind_user_lc)
        accu mib.mind_packets
      in
      (* Maps all these dependencies to inductives and constructors*)
-     let data = Array.fold_left_i (fun n data oib ->
+     let data =
+       let contents = GlobRef.Set_env.remove firstind_ref contents in
+       Array.fold_left_i (fun n data oib ->
        let ind = (mind, n) in
        let data = GlobRef.Map_env.add (GlobRef.IndRef ind) contents data in
        Array.fold_left_i (fun k data _ ->
          GlobRef.Map_env.add (GlobRef.ConstructRef (ind, k+1)) contents data
        ) data oib.mind_consnames) data mib.mind_packets
      in
-     data, ax2ty
+     (data, ax2ty)
   in
   (GlobRef.Set_env.add obj curr, data, ax2ty)
 

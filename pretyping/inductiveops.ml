@@ -104,13 +104,10 @@ let mis_is_recursive (ind,mib,mip) =
     mip.mind_recargs
 
 let mis_nf_constructor_type ((ind,u),mib,mip) j =
-  let specif = mip.mind_nf_lc
-  and ntypes = mib.mind_ntypes
-  and nconstr = Array.length mip.mind_consnames in
-  let make_Ik k = mkIndU (((fst ind),ntypes-k-1),u) in
+  let nconstr = Array.length mip.mind_consnames in
   if j > nconstr then user_err Pp.(str "Not enough constructors in the type.");
-  let (ctx, cty) = specif.(j - 1) in
-  substl (List.init ntypes make_Ik) (subst_instance_constr u (Term.it_mkProd_or_LetIn cty ctx))
+  let (ctx, cty) = mip.mind_nf_lc.(j - 1) in
+  subst_instance_constr u (Term.it_mkProd_or_LetIn cty ctx)
 
 (* Number of constructors *)
 
@@ -486,10 +483,8 @@ let compute_projections env (kn, i as ind) =
   in
   let pkt = mib.mind_packets.(i) in
   let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
-  let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
-  let ctx, cty = pkt.mind_nf_lc.(0) in
-  let rctx, _ = decompose_prod_assum (substl subst (Term.it_mkProd_or_LetIn cty ctx)) in
-  let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
+  let ctx, _ = pkt.mind_nf_lc.(0) in
+  let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) ctx in
   (* We build a substitution smashing the lets in the record parameters so
      that typechecking projections requires just a substitution and not
      matching with a parameter context. *)

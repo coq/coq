@@ -72,9 +72,7 @@ let find_rectype_a env sigma c =
 
 let type_constructor mind mib u (ctx, typ) params =
   let typ = it_mkProd_or_LetIn typ ctx in
-  let s = ind_subst mind mib u in
-  let ctyp = substl s typ in
-  let ctyp = subst_instance_constr u ctyp in
+  let ctyp = subst_instance_constr u typ in
   let ndecls = Context.Rel.length mib.mind_params_ctxt in
   if Int.equal ndecls 0 then ctyp
   else

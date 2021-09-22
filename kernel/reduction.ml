@@ -354,16 +354,10 @@ let eta_expand_constructor env ((ind,ctor),u as pctor) =
   let c = Term.it_mkLambda_or_LetIn c ctx in
   inject c
 
-let inductive_subst (mind, _) mib u pms =
+let inductive_subst mib u pms =
   let open Context.Rel.Declaration in
-  let ntypes = mib.mind_ntypes in
-  let rec self i accu =
-    if Int.equal i ntypes then accu
-    else self (i + 1) (subs_cons (inject (mkIndU ((mind, i), u))) accu)
-  in
-  let accu = self 0 (subs_id 0) in
   let rec mk_pms pms ctx = match ctx, pms with
-  | [], [] -> accu
+  | [], [] -> subs_id 0
   | LocalAssum _ :: ctx, c :: pms ->
     let subs = mk_pms pms ctx in
     subs_cons c subs
@@ -710,8 +704,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       let pms1 = Array.map_to_list (fun c -> mk_clos e1 c) pms1 in
       let pms2 = Array.map_to_list (fun c -> mk_clos e2 c) pms2 in
       let cuniv = List.fold_right2 fold pms1 pms2 cuniv in
-      let cuniv = convert_return_clause ci1.ci_ind mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in
-      convert_branches ci1.ci_ind mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 br1 br2 cuniv
+      let cuniv = convert_return_clause mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in
+      convert_branches mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 br1 br2 cuniv
 
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
       let len = Parray.length_int t1 in
@@ -766,8 +760,8 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                 let pms2 = Array.map_to_list (fun c -> mk_clos e2 c) pms2 in
                 let fold_params c1 c2 accu = f (l1, c1) (l2, c2) accu in
                 let cu = List.fold_right2 fold_params pms1 pms2 cu in
-                let cu = convert_return_clause ci1.ci_ind mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu in
-                convert_branches ci1.ci_ind mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 br1 br2 cu
+                let cu = convert_return_clause mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu in
+                convert_branches mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 br1 br2 cu
             | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
               if not (CPrimitives.equal op1 op2) then raise NotConvertible else
                 let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
@@ -811,13 +805,13 @@ and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu
   let infos = push_relevances infos nas1 in
   ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cu
 
-and convert_return_clause ind mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu =
+and convert_return_clause mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu =
   let ctx =
     if Int.equal mip.mind_nrealargs mip.mind_nrealdecls then None
     else
       let ctx, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
-      let pms1 = inductive_subst ind mib u1 pms1 in
-      let pms2 = inductive_subst ind mib u1 pms2 in
+      let pms1 = inductive_subst mib u1 pms1 in
+      let pms2 = inductive_subst mib u1 pms2 in
       let open Context.Rel.Declaration in
       (* Add the inductive binder *)
       let dummy = mkProp in
@@ -826,14 +820,14 @@ and convert_return_clause ind mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p
   in
   convert_under_context l2r infos e1 e2 l1 l2 ctx p1 p2 cu
 
-and convert_branches ind mib mip l2r infos e1 e2 lft1 lft2 u1 u2 pms1 pms2 br1 br2 cuniv =
+and convert_branches mib mip l2r infos e1 e2 lft1 lft2 u1 u2 pms1 pms2 br1 br2 cuniv =
   let fold i (ctx, _) cuniv =
     let ctx =
       if Int.equal mip.mind_consnrealdecls.(i) mip.mind_consnrealargs.(i) then None
       else
         let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
-        let pms1 = inductive_subst ind mib u1 pms1 in
-        let pms2 = inductive_subst ind mib u2 pms2 in
+        let pms1 = inductive_subst mib u1 pms1 in
+        let pms2 = inductive_subst mib u2 pms2 in
         Some (ctx, u1, u2, pms1, pms2)
     in
     let c1 = br1.(i) in

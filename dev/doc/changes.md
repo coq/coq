@@ -1,5 +1,21 @@
 ## Changes between Coq 8.14 and Coq 8.15
 
+### Internal representation of the type of constructors
+
+The type of constructors in fields `mind_user_lc` and `mind_nf_lc` of
+an inductive packet (see `declarations.ml`) now directly refer to the
+inductive type rather than to a `Rel` poimting in a context made of the
+declaration of the inductive types of the block. Thus, instead of `Rel
+n`, one finds `Ind((mind,ntypes-n),u)` where `ntypes` is the number of
+types in the block and `u` is the canonical instance of polymoprhic
+universes (i.e. `Level.Var 0` ... `Level.Var (nbuniv-1)`).
+
+In general, code can be adapted by:
+- either removing a substitution `Rel`->`Ind` if such substitution was applied
+- or inserting a call to
+  `Inductive.abstract_constructor_type_relatively_to_inductive_types_context`
+  to restore `Rel`s in place of `Ind`s if `Rel`s were expected.
+
 ### Universes
 
 - Type `Univ.UContext` now embeds universe user names, generally

@@ -1418,7 +1418,7 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
     check_if (Constr.equal t ob.mind_user_lc.(pos))
       Pp.(str"the " ++ int (pos + 1) ++ str
        "th constructor does not have the expected type") in
-  let check_type_cte pos = check_type pos (Constr.mkRel 1) in
+  let check_type_cte pos = check_type pos (Constr.mkInd ind) in
   match r with
   | CPrimitives.PIT_bool ->
     check_nparams 0;
@@ -1439,7 +1439,7 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
       check_if (Constr.is_Type d) s;
       check_if
         (Constr.equal
-                (mkProd (Context.anonR,mkRel 1, mkApp (mkRel 3,[|mkRel 2|])))
+                (mkProd (Context.anonR,mkRel 1, mkApp (mkInd ind,[|mkRel 2|])))
                 cd)
         s in
     check_name 0 "C0";
@@ -1458,7 +1458,7 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
         check_if (is_Type _B) s;
         check_if (Constr.equal a (mkRel 2)) s;
         check_if (Constr.equal b (mkRel 2)) s;
-        check_if (Constr.equal codom (mkApp (mkRel 5,[|mkRel 4; mkRel 3|]))) s
+        check_if (Constr.equal codom (mkApp (mkInd ind,[|mkRel 4; mkRel 3|]))) s
       | _ -> check_if false s
     end
   | CPrimitives.PIT_cmp ->

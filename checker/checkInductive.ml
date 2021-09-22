@@ -20,7 +20,7 @@ exception InductiveMismatch of MutInd.t * string
 
 let check mind field b = if not b then raise (InductiveMismatch (mind,field))
 
-let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
+let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let open Entries in
   let nparams = List.length mb.mind_params_ctxt in (* include letins *)
   let mind_entry_record = match mb.mind_record with
@@ -40,6 +40,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       Monomorphic_entry univs
     | Polymorphic auctx -> Polymorphic_entry (AbstractContext.repr auctx)
   in
+  let ntyps = Array.length mb.mind_packets in
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity = match ind.mind_arity with
         | RegularArity ar ->
@@ -56,6 +57,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
         mind_entry_arity;
         mind_entry_consnames = Array.to_list ind.mind_consnames;
         mind_entry_lc = Array.map_to_list (fun c ->
+            let c = Inductive.abstract_constructor_type_relatively_to_inductive_types_context ntyps mind c in
             let ctx, c = Term.decompose_prod_n_assum nparams c in
             ignore ctx; (* we will check that the produced user_lc is equal to the input *)
             c
@@ -164,7 +166,7 @@ let check_same_record r1 r2 = match r1, r2 with
   | (NotRecord | FakeRecord | PrimRecord _), _ -> false
 
 let check_inductive env mind mb =
-  let entry = to_entry mb in
+  let entry = to_entry mind mb in
   let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps;
         mind_nparams; mind_nparams_rec; mind_params_ctxt;
         mind_universes; mind_template; mind_variance; mind_sec_variance;

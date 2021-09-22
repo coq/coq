@@ -261,8 +261,8 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       defined types, not one of the types of the mutually inductive
       block being defined). *)
   (* accesses to the environment are not factorised, but is it worth? *)
-  and check_positive_nested (env,n,ntypes,_ra_env as ienv) nmr ((mi,u), largs) =
-    let (mib,mip) = lookup_mind_specif env mi in
+  and check_positive_nested (env,n,ntypes,_ra_env as ienv) nmr (((mind,_ as ind),u), largs) =
+    let (mib,mip) = lookup_mind_specif env ind in
     let auxnrecpar = mib.mind_nparams_rec in
     let auxnnonrecpar = mib.mind_nparams - auxnrecpar in
     let (auxrecparams,auxnonrecargs) =
@@ -278,10 +278,10 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       let auxntyp = mib.mind_ntypes in
         if not (Int.equal auxntyp 1) then raise (IllFormedInd (LocalNonPos n));
         (* The nested inductive type with parameters removed *)
-        let auxlcvect = abstract_mind_lc auxntyp auxnrecpar mip.mind_nf_lc in
+        let auxlcvect = abstract_mind_lc auxntyp auxnrecpar mind mip.mind_nf_lc in
           (* Extends the environment with a variable corresponding to
              the inductive def *)
-        let (env',_,_,_ as ienv') = ienv_push_inductive ienv ((mi,u),auxrecparams) in
+        let (env',_,_,_ as ienv') = ienv_push_inductive ienv ((ind,u),auxrecparams) in
           (* Parameters expressed in env' *)
         let auxrecparams' = List.map (lift auxntyp) auxrecparams in
         let irecargs_nmr =
@@ -301,7 +301,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
         let irecargs = Array.map snd irecargs_nmr
         and nmr' = array_min nmr irecargs_nmr
         in
-          (nmr',(Rtree.mk_rec [|mk_paths (Nested (NestedInd mi)) irecargs|]).(0))
+          (nmr',(Rtree.mk_rec [|mk_paths (Nested (NestedInd ind)) irecargs|]).(0))
 
   and check_positive_nested_primitive (env,n,ntypes,ra_env) nmr (c, largs) =
     (* We model the primitive type c X1 ... Xn as if it had one constructor
@@ -418,14 +418,10 @@ let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
     build an expansion function.
     The term built is expecting to be substituted first by
     a substitution of the form [params, x : ind params] *)
-let compute_projections (kn, i as ind) mib =
+let compute_projections (_, i as ind) mib =
   let pkt = mib.mind_packets.(i) in
-  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
-  let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
-  let (ctx, cty) = pkt.mind_nf_lc.(0) in
-  let cty = it_mkProd_or_LetIn cty ctx in
-  let rctx, _ = decompose_prod_assum (substl subst cty) in
-  let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
+  let (ctx, _) = pkt.mind_nf_lc.(0) in
+  let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) ctx in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)
@@ -483,10 +479,16 @@ let build_inductive env ~sec_univs names prv univs template variance
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env paramsctxt inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
+  let u = Univ.make_abstract_instance (universes_context univs) in
+  let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
   let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
+    let lc = Array.map (substl subst) lc in
     (* Type of constructors in normal form *)
-    let nf_lc = Array.map (fun (d, b) -> (d@paramsctxt, b)) splayed_lc in
+    let nf_lc =
+      Array.map (fun (d, b) ->
+        decompose_prod_assum (substl subst (it_mkProd_or_LetIn b (d@paramsctxt))))
+        splayed_lc in
     let consnrealdecls =
       Array.map (fun (d,_) -> Context.Rel.length d)
         splayed_lc in
