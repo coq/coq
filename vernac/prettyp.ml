@@ -205,7 +205,7 @@ let print_if_is_coercion ref =
 
 let pr_template_variables = function
   | [] -> mt ()
-  | vars -> str "on " ++ prlist_with_sep spc UnivNames.(pr_with_global_universes empty_binders) vars
+  | vars -> str " on " ++ prlist_with_sep spc UnivNames.(pr_with_global_universes empty_binders) vars
 
 let print_polymorphism ref =
   let poly = Global.is_polymorphic ref in
@@ -214,8 +214,8 @@ let print_polymorphism ref =
   [ pr_global ref ++ str " is " ++
       (if poly then str "universe polymorphic"
        else if template_poly then
-         str "template universe polymorphic "
-         ++ h (pr_template_variables template_variables)
+         str "template universe polymorphic"
+         ++ if !Detyping.print_universes then h (pr_template_variables template_variables) else mt()
        else str "not universe polymorphic") ]
 
 let print_type_in_type ref =
