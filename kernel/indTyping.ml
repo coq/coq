@@ -232,7 +232,7 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
 let get_param_levels ctx params arity splayed_lc =
   let min_univ = match arity with
   | RegularArity _ ->
-    CErrors.user_err
+    CErrors.anomaly
       Pp.(strbrk "Ill-formed template mutual inductive declaration: all types must be template.")
   | TemplateArity ar -> ar.template_level
   in
@@ -263,33 +263,28 @@ let get_param_levels ctx params arity splayed_lc =
     param_levels
 
 let get_template univs params data =
-  let ctx = match univs with
-      | Template_ind_entry ctx -> ctx
-      | Monomorphic_ind_entry ->
-        CErrors.anomaly ~label:"polymorphic_template_ind"
-          Pp.(strbrk "Template inductive type generated from a monomorphic one.")
-      | Polymorphic_ind_entry _ ->
-        CErrors.anomaly ~label:"polymorphic_template_ind"
-          Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.") in
-  (* For each type in the block, compute potential template parameters *)
-  let params = List.map (fun ((arity, _), (_, splayed_lc), _) -> get_param_levels ctx params arity splayed_lc) data in
-  (* Pick the lower bound of template parameters. Note that in particular, if
-     one of the the inductive types from the block is Prop-valued, then no
-     parameters are template. *)
-  let fold min params =
-    let map u v = match u, v with
-    | (None, _) | (_, None) -> None
-    | Some u, Some v ->
-      let () = assert (Univ.Level.equal u v) in
-      Some u
+  match univs with
+  | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
+  | Template_ind_entry ctx ->
+    (* For each type in the block, compute potential template parameters *)
+    let params = List.map (fun ((arity, _), (_, splayed_lc), _) -> get_param_levels ctx params arity splayed_lc) data in
+    (* Pick the lower bound of template parameters. Note that in particular, if
+       one of the the inductive types from the block is Prop-valued, then no
+       parameters are template. *)
+    let fold min params =
+      let map u v = match u, v with
+        | (None, _) | (_, None) -> None
+        | Some u, Some v ->
+          let () = assert (Univ.Level.equal u v) in
+          Some u
+      in
+      List.map2 map min params
     in
-    List.map2 map min params
-  in
-  let params = match params with
-  | [] -> assert false
-  | hd :: rem -> List.fold_left fold hd rem
-  in
-  { template_param_levels = params; template_context = ctx }
+    let params = match params with
+      | [] -> assert false
+      | hd :: rem -> List.fold_left fold hd rem
+    in
+    Some { template_param_levels = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (Universe.Set.is_empty univ_info.missing)
@@ -402,13 +397,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   in
   let params = Vars.subst_univs_level_context usubst params in
   let data = List.map (abstract_packets usubst) data in
-  let template =
-    let check ((arity, _), _, _) = match arity with
-    | TemplateArity _ -> true
-    | RegularArity _ -> false
-    in
-    if List.exists check data then Some (get_template mie.mind_entry_universes params data) else None
-  in
+  let template = get_template mie.mind_entry_universes params data in
 
   let env_ar_par =
     let ctx = Environ.rel_context env_ar_par in
