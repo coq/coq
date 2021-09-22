@@ -71,7 +71,7 @@ let default = {
     if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
   coqwebsite = "http://coq.inria.fr/";
   warn_error = false;
-  dune_profile = "release";
+  dune_profile = "--release";
   install_enabled = true;
 }
 
@@ -79,7 +79,7 @@ let devel state = { state with
   bin_annot = true;
   annot = true;
   warn_error = true;
-  dune_profile = "dev";
+  dune_profile = "--profile=dev";
   interactive = true;
   prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
   install_enabled = false;
