@@ -11,4 +11,4 @@ then
     exit 1
 fi
 
-dune exec -- $configure "$@"
+dune exec --root . -- $configure "$@"

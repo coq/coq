@@ -267,14 +267,14 @@ let default = {
   force_caml_version = false;
   force_findlib_version = false;
   warn_error = false;
-  dune_profile = "release";
+  dune_profile = "--release";
 }
 
 let devel state = { state with
   bin_annot = true;
   annot = true;
   warn_error = true;
-  dune_profile = "dev";
+  dune_profile = "--profile=dev";
   interactive = false;
   output_summary = true;
   prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
