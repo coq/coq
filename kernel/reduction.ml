@@ -354,21 +354,6 @@ let eta_expand_constructor env ((ind,ctor),u as pctor) =
   let c = Term.it_mkLambda_or_LetIn c ctx in
   inject c
 
-let inductive_subst mib u pms =
-  let open Context.Rel.Declaration in
-  let rec mk_pms pms ctx = match ctx, pms with
-  | [], [] -> subs_id 0
-  | LocalAssum _ :: ctx, c :: pms ->
-    let subs = mk_pms pms ctx in
-    subs_cons c subs
-  | LocalDef (_, c, _) :: ctx, pms ->
-    let c = Vars.subst_instance_constr u c in
-    let subs = mk_pms pms ctx in
-    subs_cons (mk_clos subs c) subs
-  | LocalAssum _ :: _, [] | [], _ :: _ -> assert false
-  in
-  mk_pms (List.rev pms) mib.mind_params_ctxt
-
 let esubst_of_rel_context_instance_list ctx u args e =
   let open Context.Rel.Declaration in
   let rec aux lft e args ctx = match ctx with
@@ -701,9 +686,9 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let nargs = inductive_cumulativity_arguments ind in
         convert_inductives CONV ind nargs u1 u2 cuniv
       in
-      let pms1 = Array.map_to_list (fun c -> mk_clos e1 c) pms1 in
-      let pms2 = Array.map_to_list (fun c -> mk_clos e2 c) pms2 in
-      let cuniv = List.fold_right2 fold pms1 pms2 cuniv in
+      let pms1 = mk_clos_vect e1 pms1 in
+      let pms2 = mk_clos_vect e2 pms2 in
+      let cuniv = Array.fold_right2 fold pms1 pms2 cuniv in
       let cuniv = convert_return_clause mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in
       convert_branches mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 br1 br2 cuniv
 
@@ -756,10 +741,10 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                     | None -> convert_instances ~flex:false u1 u2 cu
                     | Some variances -> convert_instances_cumul CONV variances u1 u2 cu
                 in
-                let pms1 = Array.map_to_list (fun c -> mk_clos e1 c) pms1 in
-                let pms2 = Array.map_to_list (fun c -> mk_clos e2 c) pms2 in
+                let pms1 = mk_clos_vect e1 pms1 in
+                let pms2 = mk_clos_vect e2 pms2 in
                 let fold_params c1 c2 accu = f (l1, c1) (l2, c2) accu in
-                let cu = List.fold_right2 fold_params pms1 pms2 cu in
+                let cu = Array.fold_right2 fold_params pms1 pms2 cu in
                 let cu = convert_return_clause mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu in
                 convert_branches mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 br1 br2 cu
             | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
