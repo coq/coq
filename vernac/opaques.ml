@@ -12,33 +12,43 @@
 (** {6 Tables of opaque proof terms} *)
 
 (** We now store opaque proof terms apart from the rest of the environment.
-    See the [Indirect] constructor in [Lazyconstr.lazy_constr]. This way,
-    we can quickly load a first half of a .vo file without these opaque
+    This way, we can quickly load a first half of a .vo file without these opaque
     terms, and access them only when a specific command (e.g. Print or
     Print Assumptions) needs it. *)
 
 type 'a const_entry_body = 'a Entries.proof_output Future.computation
-type proofterm = (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes) Future.computation
+
+type opaque_result =
+| OpaqueCertif of Safe_typing.opaque_certificate Future.computation
+| OpaqueValue of Opaqueproof.opaque_proofterm
 
 (** Current table of opaque terms *)
 
 module Summary =
 struct
-  type t = proofterm Opaqueproof.HandleMap.t
+  type t = opaque_result Opaqueproof.HandleMap.t
   let state : t ref = ref Opaqueproof.HandleMap.empty
   let init () = state := Opaqueproof.HandleMap.empty
   let freeze ~marshallable =
     if marshallable then
-      let iter _ pf = ignore (Future.join pf) in
+      let iter _ pf = match pf with
+      | OpaqueCertif cert -> ignore (Future.join cert)
+      | OpaqueValue _ -> ()
+      in
       let () = Opaqueproof.HandleMap.iter iter !state in
       !state
     else !state
   let unfreeze s = state := s
 
   let join ?(except=Future.UUIDSet.empty) () =
-    let iter i pf =
-      if Future.UUIDSet.mem (Future.uuid pf) except then ()
-      else ignore (Future.join pf)
+    let iter i pf = match pf with
+    | OpaqueValue _ -> ()
+    | OpaqueCertif cert ->
+      if Future.UUIDSet.mem (Future.uuid cert) except then ()
+      else
+        (* Little belly dance to preserve the fix_exn wrapper around filling *)
+        let () = Future.join @@ Future.chain cert (fun cert -> Global.fill_opaque cert) in
+        state := Opaqueproof.HandleMap.add i (OpaqueCertif cert) !state
     in
     Opaqueproof.HandleMap.iter iter !state
 
@@ -61,46 +71,51 @@ let set_opaque_disk i (c, priv) t =
 let current_opaques = Summary.state
 
 let declare_defined_opaque i (body : Safe_typing.private_constants const_entry_body) =
-  (* TODO: don't rely on global effect *)
-  let proof =
-    Future.chain body begin fun (body, eff) ->
-      Global.join_opaque i (body, eff)
+  (* Note that the environment in which the variable is checked it the one when
+     the thunk is evaluated, not the one where this function is called. It does
+     not matter because the former must be an extension of the latter or
+     otherwise the call to Safe_typing would throw an anomaly. *)
+  let proof = Future.chain body begin fun (body, eff) ->
+      Safe_typing.check_opaque (Global.safe_env ()) i (body, eff)
     end
   in
+  let proof = OpaqueCertif proof in
   let () = assert (not @@ Opaqueproof.HandleMap.mem i !current_opaques) in
   current_opaques := Opaqueproof.HandleMap.add i proof !current_opaques
 
 let declare_private_opaque opaque =
-  let (i, (body, univs)) = Safe_typing.repr_exported_opaque opaque in
+  let (i, pf) = Safe_typing.repr_exported_opaque opaque in
   (* Joining was already done at private declaration time *)
-  let univs = match univs with
-  | Opaqueproof.PrivateMonomorphic () -> Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
-  | Opaqueproof.PrivatePolymorphic (n, actx) -> Opaqueproof.PrivatePolymorphic (n, actx)
-  in
-  let proof = Future.from_val (body, univs) in
+  let proof = OpaqueValue pf in
   let () = assert (not @@ Opaqueproof.HandleMap.mem i !current_opaques) in
   current_opaques := Opaqueproof.HandleMap.add i proof !current_opaques
 
 let get_current_opaque i =
   try
     let pf = Opaqueproof.HandleMap.find i !current_opaques in
-    let c, ctx = Future.force pf in
-    let ctx = match ctx with
-    | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
-    | Opaqueproof.PrivatePolymorphic _ as ctx -> ctx
-    in
-    Some (c, ctx)
+    match pf with
+    | OpaqueValue pf -> Some pf
+    | OpaqueCertif cert ->
+      let c, ctx = Safe_typing.repr_certificate (Future.force cert) in
+      let ctx = match ctx with
+      | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
+      | Opaqueproof.PrivatePolymorphic _ as ctx -> ctx
+      in
+      Some (c, ctx)
   with Not_found -> None
 
 let get_current_constraints i =
   try
     let pf = Opaqueproof.HandleMap.find i !current_opaques in
-    let c, ctx = Future.force pf in
-    let ctx = match ctx with
-    | Opaqueproof.PrivateMonomorphic ctx -> ctx
-    | Opaqueproof.PrivatePolymorphic _ -> Univ.ContextSet.empty
-    in
-    Some ctx
+    match pf with
+    | OpaqueValue _ -> None
+    | OpaqueCertif cert ->
+      let _, ctx = Safe_typing.repr_certificate (Future.force cert) in
+      let ctx = match ctx with
+      | Opaqueproof.PrivateMonomorphic ctx -> ctx
+      | Opaqueproof.PrivatePolymorphic _ -> Univ.ContextSet.empty
+      in
+      Some ctx
   with Not_found -> None
 
 let dump ?(except=Future.UUIDSet.empty) () =
@@ -109,13 +124,18 @@ let dump ?(except=Future.UUIDSet.empty) () =
     else (Opaqueproof.repr_handle @@ fst @@ Opaqueproof.HandleMap.max_binding !current_opaques) + 1
   in
   let opaque_table = Array.make n None in
-  let fold i cu f2t_map =
+  let fold i cu f2t_map = match cu with
+  | OpaqueValue p ->
     let i = Opaqueproof.repr_handle i in
-    let uid = Future.uuid cu in
+    let () = opaque_table.(i) <- Some p in
+    f2t_map
+  | OpaqueCertif cert ->
+    let i = Opaqueproof.repr_handle i in
+    let uid = Future.uuid cert in
     let f2t_map = Future.UUIDMap.add uid i f2t_map in
     let c =
-      if Future.is_val cu then
-        let (c, priv) = Future.force cu in
+      if Future.is_val cert then
+        let (c, priv) = Safe_typing.repr_certificate (Future.force cert) in
         let priv = match priv with
         | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
         | Opaqueproof.PrivatePolymorphic _ as p -> p

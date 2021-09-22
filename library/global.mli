@@ -56,8 +56,7 @@ val export_private_constants :
 val add_constant :
   ?typing_flags:typing_flags ->
   Id.t -> Safe_typing.global_declaration -> Constant.t
-val join_opaque : Opaqueproof.opaque_handle -> Safe_typing.private_constants Entries.proof_output ->
-  (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes)
+val fill_opaque : Safe_typing.opaque_certificate -> unit
 val add_private_constant :
   Id.t -> Univ.ContextSet.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
 val add_mind :

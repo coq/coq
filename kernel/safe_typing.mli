@@ -97,9 +97,29 @@ val add_constant :
 val add_private_constant :
   Label.t -> Univ.ContextSet.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer
 
-(** Fill an opaque body with its contents and check it *)
-val join_opaque : Opaqueproof.opaque_handle -> private_constants Entries.proof_output ->
-  (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes) safe_transformer
+(** {5 Delayed proofs} *)
+
+(** Witness that a delayed Qed hole has a proof. This datatype is marshallable
+    but care must be taken to marshal it at the same time as the environment
+    it is referring to, since {!fill_opaque} relies on a shared pointer between
+    the environment and the certificate. *)
+type opaque_certificate
+
+(** Check that the provided proof is correct for the corresponding handle. This
+    does not modify the environment. Call {!fill_opaque} below for that. *)
+val check_opaque : safe_environment -> Opaqueproof.opaque_handle ->
+  private_constants Entries.proof_output -> opaque_certificate
+
+(** Given an already checked proof for an opaque hole, actually fill it with the
+    proof. This might fail if the current set of global universes is
+    inconsistent with the one at the time of the call to {!check_opaque}. *)
+val fill_opaque : opaque_certificate -> safe_transformer0
+
+(** Get the proof term that was checked by the kernel. *)
+val repr_certificate : opaque_certificate ->
+  Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
+
+(** {5 Inductive blocks} *)
 
 (** Adding an inductive type *)
 

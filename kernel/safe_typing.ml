@@ -134,6 +134,22 @@ type section_data = {
 
 module HandleMap = Opaqueproof.HandleMap
 
+(** We rely on uniqueness of pointers to provide a simple implementation of
+    kernel certificates. For this to work across processes, one needs the
+    safe environments to be marshaled at the same time as their corresponding
+    certificates and sharing to be preserved. *)
+module Nonce :
+sig
+  type t
+  val create : unit -> t
+  val equal : t -> t -> bool
+end =
+struct
+  type t = unit ref
+  let create () = ref ()
+  let equal x y = x == y
+end
+
 type safe_environment =
   { env : Environ.env;
     sections : section_data Section.t option;
@@ -145,7 +161,7 @@ type safe_environment =
     modlabels : Label.Set.t;
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
-    future_cst : (Term_typing.typing_context * safe_environment) HandleMap.t;
+    future_cst : (Term_typing.typing_context * safe_environment * Nonce.t) HandleMap.t;
     required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
@@ -845,7 +861,8 @@ let add_constant l decl senv =
         let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
         (* Push the delayed data in the environment *)
         let (_, _, _, i) = Opaqueproof.repr o in
-        let future_cst = HandleMap.add i (ctx, senv) senv.future_cst in
+        let nonce = Nonce.create () in
+        let future_cst = HandleMap.add i (ctx, senv, nonce) senv.future_cst in
         let senv = { senv with future_cst } in
         senv, { cb with const_body = OpaqueDef o }
       | ConstantEntry ce ->
@@ -865,8 +882,15 @@ let add_constant l decl senv =
 let add_constant ?typing_flags l decl senv =
   with_typing_flags ?typing_flags senv ~f:(add_constant l decl)
 
-let join_opaque (i : Opaqueproof.opaque_handle) pf senv =
-  let ty_ctx, trust =
+type opaque_certificate = {
+  opq_body : Constr.t;
+  opq_univs : Univ.ContextSet.t Opaqueproof.delayed_universes;
+  opq_handle : Opaqueproof.opaque_handle;
+  opq_nonce : Nonce.t;
+}
+
+let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
+  let ty_ctx, trust, nonce =
     try HandleMap.find i senv.future_cst
     with Not_found ->
       CErrors.anomaly Pp.(str "Missing opaque with identifier " ++ int (Opaqueproof.repr_handle i))
@@ -881,16 +905,29 @@ let join_opaque (i : Opaqueproof.opaque_handle) pf senv =
     body, uctx, trusted
   in
   let (c, ctx) = Term_typing.check_delayed handle ty_ctx pf in
+  { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
+
+let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
+match HandleMap.find i senv.future_cst with
+| _, _, nonce ->
+  let () =
+    if not (Nonce.equal n nonce) then
+      CErrors.anomaly  Pp.(str "Invalid opaque certificate")
+  in
   (* TODO: Drop the the monomorphic constraints, they should really be internal
      but the higher levels use them haphazardly. *)
-  let senv, ctx = match ctx with
-  | Opaqueproof.PrivateMonomorphic ctx ->
-    let senv = add_constraints ctx senv in
-    senv, Opaqueproof.PrivateMonomorphic ctx
-  | Opaqueproof.PrivatePolymorphic _ as ctx -> senv, ctx
+  let senv = match ctx with
+  | Opaqueproof.PrivateMonomorphic ctx -> add_constraints ctx senv
+  | Opaqueproof.PrivatePolymorphic _ -> senv
   in
   (* Mark the constant as having been checked *)
-  (c, ctx), { senv with future_cst = HandleMap.remove i senv.future_cst }
+  { senv with future_cst = HandleMap.remove i senv.future_cst }
+| exception Not_found ->
+  (* TODO: give a better API *)
+  senv
+
+let repr_certificate { opq_body = body; opq_univs = ctx; _ } =
+  body, ctx
 
 let check_constraints uctx = function
 | Entries.Polymorphic_entry _ -> Univ.ContextSet.is_empty uctx
