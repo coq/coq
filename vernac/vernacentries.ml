@@ -168,7 +168,7 @@ let print_loadpath dir =
   str "Logical Path / Physical path:" ++ fnl () ++
     prlist_with_sep fnl Loadpath.pp l
 
-let print_modules () =
+let print_libraries () =
   let loaded = Library.loaded_libraries () in
   str"Loaded library files: " ++
   pr_vertical_list DirPath.print loaded
@@ -1943,7 +1943,7 @@ let vernac_print ~pstate =
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
-  | PrintModules -> print_modules ()
+  | PrintLibraries -> print_libraries ()
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
   | PrintNamespace ns -> print_namespace ~pstate ns

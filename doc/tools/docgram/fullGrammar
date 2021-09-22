@@ -1256,7 +1256,6 @@ printable: [
 | "Grammar" IDENT
 | "Custom" "Grammar" IDENT
 | "LoadPath" OPT dirpath
-| "Modules"
 | "Libraries"
 | "ML" "Path"
 | "ML" "Modules"
