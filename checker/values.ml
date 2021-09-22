@@ -244,7 +244,7 @@ let v_typing_flags =
       v_oracle; v_bool; v_bool;
       v_bool; v_bool; v_bool; v_bool; v_bool; v_bool|]
 
-let v_univs = v_sum "universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
+let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;

@@ -106,7 +106,7 @@ let set_allow_sprop b = globalize0 (Safe_typing.set_allow_sprop b)
 let sprop_allowed () = Environ.sprop_allowed (env())
 let export_private_constants cd = globalize (Safe_typing.export_private_constants cd)
 let add_constant ?typing_flags id d = globalize (Safe_typing.add_constant ?typing_flags (i2l id) d)
-let add_private_constant id d = globalize (Safe_typing.add_private_constant (i2l id) d)
+let add_private_constant id u d = globalize (Safe_typing.add_private_constant (i2l id) u d)
 let add_mind ?typing_flags id mie = globalize (Safe_typing.add_mind ?typing_flags (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
@@ -156,7 +156,7 @@ let body_of_constant_body access env cb =
      None
   | Def c ->
     let u = match cb.const_universes with
-    | Monomorphic _ -> Opaqueproof.PrivateMonomorphic ()
+    | Monomorphic -> Opaqueproof.PrivateMonomorphic ()
     | Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AbstractContext.size auctx, Univ.ContextSet.empty)
     in
     Some (c, u, Declareops.constant_polymorphic_context cb)

@@ -27,18 +27,23 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     | NotRecord -> None | FakeRecord -> Some None
     | PrimRecord data -> Some (Some (Array.map (fun (x,_,_,_) -> x) data))
   in
+  let check_template ind = match ind.mind_arity with
+  | RegularArity _ -> false
+  | TemplateArity _ -> true
+  in
+  let mind_entry_template = Array.exists check_template mb.mind_packets in
+  let () = if mind_entry_template then assert (Array.for_all check_template mb.mind_packets) in
   let mind_entry_universes = match mb.mind_universes with
-    | Monomorphic _ ->
+    | Monomorphic ->
       (* We only need to rebuild the set of constraints for template polymorphic
         inductive types. The set of monomorphic constraints is already part of
         the graph at that point, but we need to emulate a broken bound variable
         mechanism for template inductive types. *)
-      let univs = match mb.mind_template with
-      | None -> ContextSet.empty
-      | Some ctx -> ctx.template_context
-      in
-      Monomorphic_entry univs
-    | Polymorphic auctx -> Polymorphic_entry (AbstractContext.repr auctx)
+      begin match mb.mind_template with
+      | None -> Monomorphic_ind_entry
+      | Some ctx -> Template_ind_entry ctx.template_context
+      end
+    | Polymorphic auctx -> Polymorphic_ind_entry (AbstractContext.repr auctx)
   in
   let ntyps = Array.length mb.mind_packets in
   let mind_entry_inds = Array.map_to_list (fun ind ->
@@ -65,12 +70,6 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       })
       mb.mind_packets
   in
-  let check_template ind = match ind.mind_arity with
-  | RegularArity _ -> false
-  | TemplateArity _ -> true
-  in
-  let mind_entry_template = Array.exists check_template mb.mind_packets in
-  let () = if mind_entry_template then assert (Array.for_all check_template mb.mind_packets) in
   let mind_entry_variance = Option.map (Array.map (fun v -> Some v)) mb.mind_variance in
   {
     mind_entry_record;
@@ -78,7 +77,6 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     mind_entry_params = mb.mind_params_ctxt;
     mind_entry_inds;
     mind_entry_universes;
-    mind_entry_template;
     mind_entry_variance;
     mind_entry_private = mb.mind_private;
   }

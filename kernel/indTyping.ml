@@ -264,8 +264,11 @@ let get_param_levels ctx params arity splayed_lc =
 
 let get_template univs params data =
   let ctx = match univs with
-      | Monomorphic ctx -> ctx
-      | Polymorphic _ ->
+      | Template_ind_entry ctx -> ctx
+      | Monomorphic_ind_entry ->
+        CErrors.anomaly ~label:"polymorphic_template_ind"
+          Pp.(strbrk "Template inductive type generated from a monomorphic one.")
+      | Polymorphic_ind_entry _ ->
         CErrors.anomaly ~label:"polymorphic_template_ind"
           Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.") in
   (* For each type in the block, compute potential template parameters *)
@@ -319,21 +322,21 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   mind_check_names mie;
   assert (List.is_empty (Environ.rel_context env));
 
-  let has_template_poly = mie.mind_entry_template in
-
   (* universes *)
   let env_univs =
     match mie.mind_entry_universes with
-    | Monomorphic_entry ctx ->
-      if has_template_poly then
+    | Template_ind_entry ctx ->
         (* For that particular case, we typecheck the inductive in an environment
            where the universes introduced by the definition are only [>= Prop] *)
         let env = set_universes_lbound env UGraph.Bound.Prop in
         push_context_set ~strict:false ctx env
-      else
-        (* In the regular case, all universes are [> Set] *)
-        push_context_set ~strict:true ctx env
-    | Polymorphic_entry ctx -> push_context ctx env
+    | Monomorphic_ind_entry -> env
+    | Polymorphic_ind_entry ctx -> push_context ctx env
+  in
+
+  let has_template_poly = match mie.mind_entry_universes with
+  | Template_ind_entry _ -> true
+  | Monomorphic_ind_entry | Polymorphic_ind_entry _ -> false
   in
 
   (* Params *)
@@ -373,9 +376,9 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     | None -> None
     | Some variances ->
       match mie.mind_entry_universes with
-      | Monomorphic_entry _ ->
+      | Monomorphic_ind_entry | Template_ind_entry _ ->
         CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
-      | Polymorphic_entry uctx ->
+      | Polymorphic_ind_entry uctx ->
         let univs = Instance.to_array @@ UContext.instance uctx in
         let univs = Array.map2 (fun a b -> a,b) univs variances in
         let univs = match sec_univs with
@@ -389,7 +392,14 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   in
 
   (* Abstract universes *)
-  let usubst, univs = Declareops.abstract_universes mie.mind_entry_universes in
+  let usubst, univs = match mie.mind_entry_universes with
+  | Monomorphic_ind_entry | Template_ind_entry _ ->
+    Univ.empty_level_subst, Monomorphic
+  | Polymorphic_ind_entry uctx ->
+    let (inst, auctx) = Univ.abstract_universes uctx in
+    let inst = Univ.make_instance_subst inst in
+    (inst, Polymorphic auctx)
+  in
   let params = Vars.subst_univs_level_context usubst params in
   let data = List.map (abstract_packets usubst) data in
   let template =
@@ -397,7 +407,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     | TemplateArity _ -> true
     | RegularArity _ -> false
     in
-    if List.exists check data then Some (get_template univs params data) else None
+    if List.exists check data then Some (get_template mie.mind_entry_universes params data) else None
   in
 
   let env_ar_par =

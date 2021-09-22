@@ -16,7 +16,6 @@ open Context
 open Constrintern
 open Impargs
 open Pretyping
-open Entries
 
 module RelDecl = Context.Rel.Declaration
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
@@ -34,8 +33,8 @@ let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
   ()
 
 let instance_of_univ_entry = function
-  | Polymorphic_entry univs -> Univ.UContext.instance univs
-  | Monomorphic_entry _ -> Univ.Instance.empty
+  | UState.Polymorphic_entry univs -> Univ.UContext.instance univs
+  | UState.Monomorphic_entry _ -> Univ.Instance.empty
 
 let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.v=name} =
   let do_instance = let open Decls in match kind with
@@ -50,13 +49,8 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.
     | InlineAt i -> Some i
   in
   let kind = Decls.IsAssumption kind in
-  let entry = {
-      parameter_entry_secctx = None;
-      parameter_entry_type = typ;
-      parameter_entry_universes = univs;
-      parameter_entry_inline_code = inl;
-    } in
-  let decl = Declare.ParameterEntry (entry, ubinders) in
+  let entry = Declare.parameter_entry ~univs:(univs, ubinders) ?inline:inl typ in
+  let decl = Declare.ParameterEntry entry in
   let kn = Declare.declare_constant ~name ~local ~kind decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -79,8 +73,8 @@ let interp_assumption ~program_mode env sigma impl_env bl c =
   let ty = EConstr.it_mkProd_or_LetIn ty ctx in
   sigma, ty, impls1@impls2
 
-let empty_poly_univ_entry = Polymorphic_entry Univ.UContext.empty, UnivNames.empty_binders
-let empty_mono_univ_entry = Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
+let empty_poly_univ_entry = UState.Polymorphic_entry Univ.UContext.empty, UnivNames.empty_binders
+let empty_mono_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
 let empty_univ_entry ~poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
 
 (* When declarations are monomorphic (which is always the case in
@@ -90,9 +84,9 @@ let empty_univ_entry ~poly = if poly then empty_poly_univ_entry else empty_mono_
 
 let clear_univs scope univ =
   match scope, univ with
-  | Locality.Global _, (Polymorphic_entry _, _ as univs) -> univs
-  | _, (Monomorphic_entry _, _) -> empty_univ_entry ~poly:false
-  | Locality.Discharge, (Polymorphic_entry _, _) -> empty_univ_entry ~poly:true
+  | Locality.Global _, (UState.Polymorphic_entry _, _ as univs) -> univs
+  | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry ~poly:false
+  | Locality.Discharge, (UState.Polymorphic_entry _, _) -> empty_univ_entry ~poly:true
 
 let declare_assumptions ~poly ~scope ~kind univs nl l =
   let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
@@ -225,13 +219,8 @@ let context_nosection sigma ~poly ctx =
     let univs = if i = 0 then univs else clear_univs (Locality.Global local) univs in
     let decl = match b with
       | None ->
-        let entry = {
-            parameter_entry_secctx = None;
-            parameter_entry_type = t;
-            parameter_entry_universes = univ_entry;
-            parameter_entry_inline_code = None;
-          } in
-        Declare.ParameterEntry (entry, ubinders)
+        let entry = Declare.parameter_entry ~univs:(univ_entry, ubinders) t in
+        Declare.ParameterEntry entry
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         Declare.DefinitionEntry entry

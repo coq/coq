@@ -74,7 +74,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
          as long as they have the right type *)
       let c', univs, ctx' =
         match cb.const_universes, ctx with
-        | Monomorphic _, None ->
+        | Monomorphic, None ->
           let c',cst = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
               let j = Typeops.infer env' c in
@@ -87,7 +87,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
             | Primitive _ ->
               error_incorrect_with_constraint lab
           in
-          c', Monomorphic Univ.ContextSet.empty, cst
+          c', Monomorphic, cst
         | Polymorphic uctx, Some ctx ->
           let () =
             if not (UGraph.check_subtype ~lbound:(Environ.universes_lbound env)

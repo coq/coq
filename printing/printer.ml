@@ -231,7 +231,7 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
     mt()
 
 let pr_universes sigma ?variance ?priv = function
-  | Declarations.Monomorphic ctx -> pr_universe_ctx_set sigma ctx
+  | Declarations.Monomorphic -> mt ()
   | Declarations.Polymorphic ctx -> pr_abstract_universe_ctx sigma ?variance ?priv ctx
 
 (**********************************************************************)

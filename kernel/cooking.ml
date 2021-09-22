@@ -194,9 +194,9 @@ let discharge_abstract_universe_context subst abs_ctx auctx =
     subst, (AbstractContext.union abs_ctx auctx)
 
 let lift_univs subst auctx0 = function
-  | Monomorphic ctx ->
+  | Monomorphic ->
     assert (AbstractContext.is_empty auctx0);
-    subst, (Monomorphic ctx)
+    subst, Monomorphic
   | Polymorphic auctx ->
     let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
     subst, (Polymorphic auctx)

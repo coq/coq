@@ -19,7 +19,7 @@ val declare_mutual_inductive_with_eliminations
   : ?primitive_expected:bool
   -> ?typing_flags:Declarations.typing_flags
   -> Entries.mutual_inductive_entry
-  -> UnivNames.universe_binders
+  -> UState.named_universes_entry
   -> one_inductive_impls list
   -> Names.MutInd.t
 

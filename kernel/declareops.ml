@@ -57,12 +57,12 @@ let hcons_template_universe ar =
     template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
-  | Monomorphic _ -> Univ.AbstractContext.empty
+  | Monomorphic -> Univ.AbstractContext.empty
   | Polymorphic ctx -> ctx
 
 let abstract_universes = function
-  | Entries.Monomorphic_entry ctx ->
-    Univ.empty_level_subst, Monomorphic ctx
+  | Entries.Monomorphic_entry ->
+    Univ.empty_level_subst, Monomorphic
   | Entries.Polymorphic_entry uctx ->
     let (inst, auctx) = Univ.abstract_universes uctx in
     let inst = Univ.make_instance_subst inst in
@@ -72,7 +72,7 @@ let abstract_universes = function
 
 let constant_is_polymorphic cb =
   match cb.const_universes with
-  | Monomorphic _ -> false
+  | Monomorphic -> false
   | Polymorphic _ -> true
 
 
@@ -144,8 +144,7 @@ let hcons_const_def = function
 
 let hcons_universes cbu =
   match cbu with
-  | Monomorphic ctx ->
-    Monomorphic (Univ.hcons_universe_context_set ctx)
+  | Monomorphic -> Monomorphic
   | Polymorphic ctx ->
     Polymorphic (Univ.hcons_abstract_universe_context ctx)
 
@@ -289,7 +288,7 @@ let inductive_polymorphic_context mib =
 
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
-  | Monomorphic _ -> false
+  | Monomorphic -> false
   | Polymorphic _ctx -> true
 
 let inductive_is_cumulative mib =

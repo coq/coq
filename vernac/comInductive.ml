@@ -349,13 +349,13 @@ let check_named {CAst.loc;v=na} = match na with
 
 let template_polymorphism_candidate ~ctor_levels uctx params concl =
   match uctx with
-  | Entries.Monomorphic_entry uctx ->
+  | UState.Monomorphic_entry uctx ->
     let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
     if not concltemplate then false
     else
       let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
       Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
-  | Entries.Polymorphic_entry _ -> false
+  | UState.Polymorphic_entry _ -> false
 
 let check_param = function
 | CLocalDef (na, _, _) -> check_named na
@@ -383,8 +383,8 @@ let check_trivial_variances variances =
 
 let variance_of_entry ~cumulative ~variances uctx =
   match uctx with
-  | Monomorphic_entry _ -> check_trivial_variances variances; None
-  | Polymorphic_entry uctx ->
+  | Monomorphic_ind_entry | Template_ind_entry _ -> check_trivial_variances variances; None
+  | Polymorphic_ind_entry uctx ->
     if not cumulative then begin check_trivial_variances variances; None end
     else
       let lvs = Array.length variances in
@@ -445,6 +445,14 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       indnames arities arityconcl constructors
   in
   let is_template = List.for_all (fun t -> t) template in
+  let univ_entry, ctx = match univ_entry with
+  | UState.Monomorphic_entry ctx ->
+    if is_template then Template_ind_entry ctx, Univ.ContextSet.empty
+    else Monomorphic_ind_entry, ctx
+  | UState.Polymorphic_entry uctx ->
+    Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+  in
+  let variance = variance_of_entry ~cumulative ~variances univ_entry in
   (* Build the mutual inductive entry *)
   let mind_ent =
     { mind_entry_params = ctx_params;
@@ -453,11 +461,10 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       mind_entry_inds = entries;
       mind_entry_private = if private_ind then Some false else None;
       mind_entry_universes = univ_entry;
-      mind_entry_template = is_template;
-      mind_entry_variance = variance_of_entry ~cumulative ~variances univ_entry;
+      mind_entry_variance = variance;
     }
   in
-  mind_ent, binders
+  mind_ent, binders, ctx
 
 let interp_params env udecl uparamsl paramsl =
   let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
@@ -588,8 +595,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
             userimpls @ impls) cimpls)
       indimpls cimpls
   in
-  let mie, binders = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
-  (mie, binders, impls)
+  let mie, binders, ctx = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  (mie, binders, impls, ctx)
 
 
 (* Very syntactical equality *)
@@ -643,7 +650,15 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   in
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let mie,binders,impls = interp_mutual_inductive_gen env ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
+  let mie,binders,impls,ctx = interp_mutual_inductive_gen env ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
+  (* Slightly hackish global universe declaration due to template types. *)
+  let binders = match mie.mind_entry_universes with
+  | Monomorphic_ind_entry -> (UState.Monomorphic_entry ctx, binders)
+  | Template_ind_entry ctx -> (UState.Monomorphic_entry ctx, binders)
+  | Polymorphic_ind_entry uctx -> (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
+  in
+  (* Declare the global universes *)
+  DeclareUctx.declare_universe_context ~poly:false ctx;
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie binders impls);
   (* Declare the possible notations of inductive types *)

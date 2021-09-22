@@ -362,6 +362,10 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   let proj = it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
   let projtyp = it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
+  let univs = match fst univs with
+  | Entries.Monomorphic_entry -> UState.Monomorphic_entry Univ.ContextSet.empty, snd univs
+  | Entries.Polymorphic_entry uctx -> UState.Polymorphic_entry uctx, snd univs
+  in
   let entry = Declare.definition_entry ~univs ~types:projtyp proj in
   let kind = Decls.IsDefinition kind in
   let kn =
@@ -424,7 +428,7 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
   let poly = Declareops.inductive_is_polymorphic mib in
   let uinstance = match fst univs with
     | Polymorphic_entry uctx -> Univ.UContext.instance uctx
-    | Monomorphic_entry ctx -> Univ.Instance.empty
+    | Monomorphic_entry -> Univ.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
   let r = mkIndU (indsp,uinstance) in
@@ -549,8 +553,8 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
   let (univs, ubinders) = univs in
   let poly, projunivs =
     match univs with
-    | Monomorphic_entry _ -> false, Monomorphic_entry Univ.ContextSet.empty
-    | Polymorphic_entry uctx -> true, Polymorphic_entry uctx
+    | UState.Monomorphic_entry _ -> false, Entries.Monomorphic_entry
+    | UState.Polymorphic_entry uctx -> true, Entries.Polymorphic_entry uctx
   in
   let binder_name =
     match name with
@@ -574,6 +578,17 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
     primitive_proj  &&
     List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) record_data
   in
+  let globnames, univs = match univs with
+  | UState.Monomorphic_entry ctx ->
+    if template then
+      (univs, ubinders), Template_ind_entry ctx
+    else
+      let () = DeclareUctx.declare_universe_context ~poly:false ctx in
+      (univs, ubinders), Monomorphic_ind_entry
+  | UState.Polymorphic_entry ctx ->
+    (univs, UnivNames.empty_binders), Polymorphic_ind_entry ctx
+  in
+  let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
   let mie =
     { mind_entry_params = params;
       mind_entry_record = Some (if primitive then Some binder_name else None);
@@ -581,12 +596,11 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
-      mind_entry_template = template;
-      mind_entry_variance = ComInductive.variance_of_entry ~cumulative ~variances univs;
+      mind_entry_variance = variance;
     }
   in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
-  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
+  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
   in
   let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =
@@ -614,8 +628,10 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let inst, univs = match univs with
-    | Monomorphic_entry _, ubinders -> Univ.Instance.empty, (Monomorphic_entry Univ.ContextSet.empty, ubinders)
-    | Polymorphic_entry uctx, _ -> Univ.UContext.instance uctx, univs
+    | UState.Monomorphic_entry _, ubinders ->
+      Univ.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
+    | UState.Polymorphic_entry uctx, _ ->
+      Univ.UContext.instance uctx, univs
   in
   let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu)
@@ -707,14 +723,14 @@ let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild p
   in
   let univs, params, fields =
     match fst univs with
-    | Polymorphic_entry uctx ->
+    | UState.Polymorphic_entry uctx ->
       let usubst, auctx = Univ.abstract_universes uctx in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
       let params = Context.Rel.map map params in
       auctx, params, fields
-    | Monomorphic_entry _ ->
+    | UState.Monomorphic_entry _ ->
       Univ.AbstractContext.empty, params, fields
   in
   let map (impl, projs) =

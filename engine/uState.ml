@@ -14,6 +14,10 @@ open Util
 open Names
 open Univ
 
+type universes_entry =
+| Monomorphic_entry of Univ.ContextSet.t
+| Polymorphic_entry of Univ.UContext.t
+
 module UNameMap = Names.Id.Map
 
 type uinfo = {
@@ -121,10 +125,9 @@ let context uctx =
   let (_, rbinders) = uctx.names in
   ContextSet.to_context (compute_instance_binders rbinders) uctx.local
 
-type named_universes_entry = Entries.universes_entry * UnivNames.universe_binders
+type named_universes_entry = universes_entry * UnivNames.universe_binders
 
 let univ_entry ~poly uctx =
-  let open Entries in
   let (binders, _) = uctx.names in
   let entry =
     if poly then Polymorphic_entry (context uctx)
@@ -450,10 +453,10 @@ let check_univ_decl ~poly uctx decl =
     let inst, csts = universe_context ~names ~extensible uctx in
     let nas = compute_instance_binders rbinders inst in
     let uctx = UContext.make nas (inst, csts) in
-    Entries.Polymorphic_entry uctx, binders
+    Polymorphic_entry uctx, binders
   else
     let () = check_universe_context_set ~names ~extensible uctx in
-    Entries.Monomorphic_entry uctx.local, binders
+    Monomorphic_entry uctx.local, binders
 
 let is_bound l lbound = match lbound with
   | UGraph.Bound.Prop -> Level.is_prop l

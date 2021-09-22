@@ -95,15 +95,15 @@ let check_conv_error error why cst poly f env a1 a2 =
 
 let check_universes error env u1 u2 =
   match u1, u2 with
-  | Monomorphic _, Monomorphic _ -> env
+  | Monomorphic, Monomorphic -> env
   | Polymorphic auctx1, Polymorphic auctx2 ->
     let lbound = Environ.universes_lbound env in
     if not (UGraph.check_subtype ~lbound (Environ.universes env) auctx2 auctx1) then
       error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
     else
       Environ.push_context ~strict:false (Univ.AbstractContext.repr auctx2) env
-  | Monomorphic _, Polymorphic _ -> error (PolymorphicStatusExpected true)
-  | Polymorphic _, Monomorphic _ -> error (PolymorphicStatusExpected false)
+  | Monomorphic, Polymorphic _ -> error (PolymorphicStatusExpected true)
+  | Polymorphic _, Monomorphic -> error (PolymorphicStatusExpected false)
 
 let check_variance error v1 v2 =
   match v1, v2 with

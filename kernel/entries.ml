@@ -17,8 +17,13 @@ open Constr
    types *)
 
 type universes_entry =
-  | Monomorphic_entry of Univ.ContextSet.t
+  | Monomorphic_entry
   | Polymorphic_entry of Univ.UContext.t
+
+type inductive_universes_entry =
+  | Monomorphic_ind_entry
+  | Polymorphic_ind_entry of Univ.UContext.t
+  | Template_ind_entry of Univ.ContextSet.t
 
 type variance_entry = Univ.Variance.t option array
 
@@ -51,8 +56,7 @@ type mutual_inductive_entry = {
   mind_entry_finite : Declarations.recursivity_kind;
   mind_entry_params : Constr.rel_context;
   mind_entry_inds : one_inductive_entry list;
-  mind_entry_universes : universes_entry;
-  mind_entry_template : bool; (* Use template polymorphism *)
+  mind_entry_universes : inductive_universes_entry;
   mind_entry_variance : variance_entry option;
   (* [None] if non-cumulative, otherwise associates each universe of
      the entry to [None] if to be inferred or [Some v] if to be

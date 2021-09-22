@@ -79,21 +79,20 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     | None ->
       let u = UContext.instance (AbstractContext.repr auctx) in
       let typ = Typeops.type_of_prim_or_type env u p in
-      let univs = if AbstractContext.is_empty auctx then Monomorphic ContextSet.empty
+      let univs = if AbstractContext.is_empty auctx then Monomorphic
         else Polymorphic auctx
       in
       univs, typ
 
-    | Some (typ,Monomorphic_entry uctx) ->
+    | Some (typ,Monomorphic_entry) ->
       assert (AbstractContext.is_empty auctx); (* ensured by ComPrimitive *)
-      let env = push_context_set ~strict:true uctx env in
       let u = Instance.empty in
       let typ =
         let typ = Typeops.infer_type env typ in
         check_primitive_type env p u typ.utj_val;
         typ.utj_val
       in
-      Monomorphic uctx, typ
+      Monomorphic, typ
 
     | Some (typ,Polymorphic_entry uctx) ->
       assert (not (AbstractContext.is_empty auctx)); (* ensured by ComPrimitive *)
@@ -131,7 +130,7 @@ let infer_declaration env (dcl : constant_entry) =
   match dcl with
   | ParameterEntry entry ->
     let env = match entry.parameter_entry_universes with
-      | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
+      | Monomorphic_entry -> env
       | Polymorphic_entry uctx -> push_context ~strict:false uctx env
     in
     let j = Typeops.infer env entry.parameter_entry_type in
@@ -154,9 +153,8 @@ let infer_declaration env (dcl : constant_entry) =
       let { const_entry_type = typ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let env, usubst, univs = match c.const_entry_universes with
-      | Monomorphic_entry ctx ->
-        let env = push_context_set ~strict:true ctx env in
-        env, empty_level_subst, Monomorphic ctx
+      | Monomorphic_entry ->
+        env, empty_level_subst, Monomorphic
       | Polymorphic_entry uctx ->
         (** [ctx] must contain local universes, such that it has no impact
             on the rest of the graph (up to transitivity). *)
@@ -190,8 +188,7 @@ let infer_declaration env (dcl : constant_entry) =
 (** Definition is opaque (Qed), so we delay the typing of its body. *)
 let infer_opaque env = function
   | ({ opaque_entry_type = typ;
-                       opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
-      let env = push_context_set ~strict:true univs env in
+                       opaque_entry_universes = Monomorphic_entry; _ } as c) ->
       let { opaque_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
       let context = MonoTyCtx (env, tyj, c.opaque_entry_secctx, feedback_id) in
@@ -199,7 +196,7 @@ let infer_opaque env = function
       {
         Cooking.cook_body = def;
         cook_type = tyj.utj_val;
-        cook_universes = Monomorphic univs;
+        cook_universes = Monomorphic;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = false;
         cook_context = Some c.opaque_entry_secctx;
@@ -361,13 +358,13 @@ let translate_local_def env _id centry =
     const_entry_secctx = centry.secdef_secctx;
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
-    const_entry_universes = Monomorphic_entry ContextSet.empty;
+    const_entry_universes = Monomorphic_entry;
     const_entry_inline_code = false;
   } in
   let decl = infer_declaration env (DefinitionEntry centry) in
   let typ = decl.cook_type in
   let () = match decl.cook_universes with
-  | Monomorphic ctx -> assert (ContextSet.is_empty ctx)
+  | Monomorphic -> ()
   | Polymorphic _ -> assert false
   in
   let c = match decl.cook_body with
