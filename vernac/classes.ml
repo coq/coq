@@ -273,7 +273,6 @@ let class_input : typeclass -> obj =
     { (default_object "type classes state") with
       cache_function = cache_class;
       load_function = (fun _ -> cache_class);
-      open_function = simple_open (fun _ -> cache_class);
       classify_function = (fun x -> Substitute x);
       discharge_function = (fun a -> Some (discharge_class a));
       rebuild_function = rebuild_class;
