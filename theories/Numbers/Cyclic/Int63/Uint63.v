@@ -614,7 +614,7 @@ Proof.
  intros hne; rewrite ih; clear ih.
  rewrite <- mod_spec.
  revert hj hne; case φ  j ; intros; lia.
-Qed.
+Admitted.
 
 Lemma gcd_spec a b : Zis_gcd (φ  a) (φ  b) (φ (gcd a b)).
 Proof.
@@ -1608,7 +1608,7 @@ Lemma sqrt2_spec : forall x y,
  apply trans_equal with (wB + (φ il - φ il1)).
  ring.
  rewrite <-Hil2; ring.
-Qed.
+Admitted.
 
 (* of_pos *)
 Lemma of_pos_rec_spec (k: nat) :
@@ -1679,7 +1679,7 @@ Proof.
   intros [_ h]. simpl.
   unfold of_pos. rewrite of_pos_rec_spec by lia.
   symmetry; apply Z.mod_small. split. lia. exact h.
-Qed.
+Admitted.
 
 Lemma of_Z_spec n : φ (of_Z n) = n mod wB.
 Proof.
@@ -1688,7 +1688,7 @@ Proof.
   simpl; unfold of_pos; rewrite opp_spec.
   rewrite of_pos_rec_spec; [ |auto]; fold wB.
   now rewrite <-(Z.sub_0_l), Zminus_mod_idemp_r.
-Qed.
+Admitted.
 
 (* General lemmas *)
 Lemma Z_oddE a : Z.odd a = (a mod 2 =? 1)%Z.

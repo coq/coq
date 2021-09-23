@@ -969,8 +969,8 @@ let infer_conv_universes cv_pb ?(l2r=false) ?(evars=fun _ -> None) ?(ts=Transpar
 let infer_conv = infer_conv_universes CONV
 let infer_conv_leq = infer_conv_universes CUMUL
 
-let default_conv cv_pb ?l2r:_ env t1 t2 =
-    gen_conv cv_pb env t1 t2
+let default_conv cv_pb ?l2r env t1 t2 =
+    gen_conv cv_pb ?l2r env t1 t2
 
 let default_conv_leq = default_conv CUMUL
 

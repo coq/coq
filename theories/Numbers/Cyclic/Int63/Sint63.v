@@ -140,7 +140,7 @@ Proof.
     + rewrite Z.mod_small by easy.
       intros eqx0; revert nltxmin; rewrite eqx0.
       now compute.
-Qed.
+Admitted.
 
 Lemma to_Z_inj (x y : int) : to_Z x = to_Z y -> x = y.
 Proof. exact (fun e => can_inj of_to_Z e). Qed.
@@ -221,7 +221,7 @@ Qed.
 
 Lemma of_pos_spec (p : positive) :
   to_Z (of_pos p) = cmod (Zpos p) wB.
-Proof. rewrite <- of_Z_spec; simpl; reflexivity. Qed.
+Proof. rewrite <- of_Z_spec; simpl; reflexivity. Admitted.
 
 (** Specification of operations that differ on signed and unsigned ints *)
 

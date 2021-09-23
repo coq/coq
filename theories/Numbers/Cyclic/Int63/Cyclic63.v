@@ -150,7 +150,7 @@ Proof.
  rewrite lsl_spec, to_Z_1, Z.pow_1_r, Zmod_small; auto.
  case (to_Z_bounded i); split; auto with zarith.
  rewrite to_Z_1; assert (0 < 2^ Z_of_nat n); auto with zarith.
-Qed.
+Admitted.
 
 Lemma mulc_WW_spec :
    forall x y, Φ ( x *c y ) = φ x * φ y.

@@ -1025,7 +1025,7 @@ Section Basics.
  symmetry.
  rewrite <- EqShiftL_zero.
  apply (phi_inv_positive_p2ibis size); auto.
- Qed.
+ Admitted.
 
  Lemma positive_to_int31_spec : forall p,
     Zpos p = (Z.of_N (fst (positive_to_int31 p)))*2^(Z.of_nat size) +
@@ -1034,7 +1034,7 @@ Section Basics.
  unfold positive_to_int31.
  intros; rewrite p2i_p2ibis; auto.
  apply p2ibis_spec; auto.
- Qed.
+ Admitted.
 
  (** Thanks to the result about [phi o phi_inv_positive], we can
      now establish easily the most general results about
@@ -1502,7 +1502,7 @@ Section Int31_Specs.
   rewrite spec_mod, H1; auto.
   rewrite H1; compute; auto.
   rewrite H1 in H; destruct H as [H _]; compute in H; elim H; auto.
- Qed.
+ Admitted.
 
  Lemma spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|gcd31 a b|].
  Proof.
@@ -1544,7 +1544,7 @@ Section Int31_Specs.
     iter_nat (Z.abs_nat (Z.succ_double z)) A f a); f_equal.
  rewrite Z.succ_double_spec, <- Z.add_diag.
  lia.
- Qed.
+ Admitted.
 
  Fixpoint addmuldiv31_alt n i j :=
   match n with
@@ -1565,7 +1565,7 @@ Section Int31_Specs.
  simpl addmuldiv31_alt.
  replace (S n) with (n+1)%nat by (rewrite plus_comm; auto).
  rewrite nat_rect_plus; simpl; auto.
- Qed.
+ Admitted.
 
  Lemma spec_add_mul_div : forall x y p, [|p|] <= Zpos 31 ->
    [| addmuldiv31 p x y |] =
