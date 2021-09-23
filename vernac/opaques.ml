@@ -79,6 +79,11 @@ let declare_defined_opaque i (body : Safe_typing.private_constants const_entry_b
       Safe_typing.check_opaque (Global.safe_env ()) i (body, eff)
     end
   in
+  (* If the proof is already computed we fill it eagerly *)
+  let () = match Future.peek_val proof with
+  | None -> ()
+  | Some cert -> Global.fill_opaque cert
+  in
   let proof = OpaqueCertif proof in
   let () = assert (not @@ Opaqueproof.HandleMap.mem i !current_opaques) in
   current_opaques := Opaqueproof.HandleMap.add i proof !current_opaques
