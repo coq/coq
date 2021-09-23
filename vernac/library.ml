@@ -471,6 +471,9 @@ let save_library_to todo_proofs ~output_native_objects dir f =
   (* Ensure that the call below is performed with all opaques joined *)
   let () = Opaques.Summary.join ~except () in
   let opaque_table, f2t_map = Opaques.dump ~except () in
+  let () = assert (not (Future.UUIDSet.is_empty except) ||
+    Safe_typing.is_joined_environment (Global.safe_env ()))
+  in
   let cenv, seg, ast = Declaremods.end_library ~output_native_objects dir in
   let tasks, utab =
     match todo_proofs with

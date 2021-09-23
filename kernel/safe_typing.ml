@@ -1123,15 +1123,11 @@ let build_module_body params restype senv =
 let allow_delayed_constants = ref false
 
 let propagate_senv newdef newenv newresolver senv oldsenv =
-(** FIXME ??? *)
-(*
-  let now_cst, later_cst = List.partition Future.is_val senv.future_cst in
   (* This asserts that after Paral-ITP, standard vo compilation is behaving
    * exctly as before: the same universe constraints are added to modules *)
-  if not !allow_delayed_constants && later_cst <> [] then
+  if not !allow_delayed_constants && not (HandleMap.is_empty senv.future_cst) then
     CErrors.anomaly ~label:"safe_typing"
       Pp.(str "True Future.t were created for opaque constants even if -async-proofs is off");
-*)
   { oldsenv with
     env = newenv;
     modresolver = newresolver;
@@ -1256,8 +1252,6 @@ let start_library dir senv =
     required = senv.required }
 
 let export ~output_native_objects senv dir =
-  (* FIXME: this is not true for vio mode but we should still do something *)
-  (* assert(HandleMap.is_empty senv.future_cst); *)
   let () = check_current_library dir senv in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in

@@ -98,9 +98,8 @@ let access_opaque_table dp i =
     with Not_found -> assert false
   in
   let i = Opaqueproof.repr_handle i in
-  let () = assert (0 <= i) in
-  if i < Array.length t then t.(i)
-  else None (* FIXME: we have to work around #13324 *)
+  let () = assert (0 <= i && i < Array.length t) in
+  t.(i)
 
 let indirect_accessor o =
   let (sub, ci, dp, i) = Opaqueproof.repr o in
