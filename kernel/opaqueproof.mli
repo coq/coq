@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Mod_subst
 
 (** This module implements the handling of opaque proof terms.
@@ -23,7 +22,6 @@ type 'a delayed_universes =
 | PrivatePolymorphic of int * Univ.ContextSet.t
   (** Number of surrounding bound universes + local constraints *)
 
-type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 type opaquetab
 type 'cooking_info opaque
 

@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Mod_subst
 
 type 'a delayed_universes =
@@ -17,8 +16,6 @@ type 'a delayed_universes =
 | PrivatePolymorphic of int * Univ.ContextSet.t
 
 type opaque_proofterm = Constr.t * unit delayed_universes
-
-type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 
 type 'cooking_info opaque =
 | Indirect of substitution list * 'cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)

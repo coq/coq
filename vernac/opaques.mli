@@ -8,7 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val declare_defined_opaque : Opaqueproof.opaque_handle -> Safe_typing.private_constants Entries.const_entry_body -> unit
+type 'a const_entry_body = 'a Entries.proof_output Future.computation
+
+val declare_defined_opaque : Opaqueproof.opaque_handle -> Safe_typing.private_constants const_entry_body -> unit
 val declare_private_opaque : Safe_typing.exported_opaque -> unit
 
 type opaque_disk

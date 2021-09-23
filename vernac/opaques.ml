@@ -17,11 +17,14 @@
     terms, and access them only when a specific command (e.g. Print or
     Print Assumptions) needs it. *)
 
+type 'a const_entry_body = 'a Entries.proof_output Future.computation
+type proofterm = (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes) Future.computation
+
 (** Current table of opaque terms *)
 
 module Summary =
 struct
-  type t = Opaqueproof.proofterm Opaqueproof.HandleMap.t
+  type t = proofterm Opaqueproof.HandleMap.t
   let state : t ref = ref Opaqueproof.HandleMap.empty
   let init () = state := Opaqueproof.HandleMap.empty
   let freeze ~marshallable =
@@ -57,7 +60,7 @@ let set_opaque_disk i (c, priv) t =
 
 let current_opaques = Summary.state
 
-let declare_defined_opaque i (body : Safe_typing.private_constants Entries.const_entry_body) =
+let declare_defined_opaque i (body : Safe_typing.private_constants const_entry_body) =
   (* TODO: don't rely on global effect *)
   let proof =
     Future.chain body begin fun (body, eff) ->
