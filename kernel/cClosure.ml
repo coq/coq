@@ -880,13 +880,12 @@ let drop_parameters depth n argstk =
   (* we know that n < stack_args_size(argstk) (if well-typed term) *)
   anomaly (Pp.str "ill-typed term: found a match on a partially applied constructor.")
 
-let inductive_subst mib u pms e =
+let inductive_subst mib u pms =
   let rec mk_pms i ctx = match ctx with
   | [] -> subs_id 0
   | RelDecl.LocalAssum _ :: ctx ->
-    let c = mk_clos e pms.(i) in
     let subs = mk_pms (i - 1) ctx in
-    subs_cons c subs
+    subs_cons pms.(i) subs
   | RelDecl.LocalDef (_, c, _) :: ctx ->
     let c = Vars.subst_instance_constr u c in
     let subs = mk_pms i ctx in
@@ -923,7 +922,7 @@ let get_branch infos depth ci u pms (ind, c) br e args =
     | Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zprimitive _ ->
       assert false
     in
-    let ind_subst = inductive_subst mib u pms e in
+    let ind_subst = inductive_subst mib u (Array.map (mk_clos e) pms) in
     let args = Array.concat (List.map map args) in
     let rec push i e = function
     | [] -> []

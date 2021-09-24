@@ -147,6 +147,11 @@ val get_native_args1 : CPrimitives.t -> pconstant -> stack ->
 val stack_args_size : stack -> int
 val eta_expand_stack : stack -> stack
 
+val inductive_subst : Declarations.mutual_inductive_body
+  -> Univ.Instance.t
+  -> fconstr array
+  -> fconstr Esubst.subs
+
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
