@@ -620,27 +620,22 @@ let add_constant_aux senv (kn, cb) =
   in
   senv''
 
-let mk_pure_proof c = (c, Univ.ContextSet.empty), SideEffects.empty
-
 let inline_side_effects env body side_eff =
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
   let filter e =
-    let cb = (e.seff_constant, e.seff_body, e.seff_univs) in
     if Environ.mem_constant e.seff_constant env then None
-    else Some (cb, e.seff_certif)
+    else Some e
   in
   (* CAVEAT: we assure that most recent effects come first *)
   let side_eff = List.map_filter filter (SideEffects.repr side_eff) in
-  let sigs = List.rev_map (fun (_, mb) -> mb) side_eff in
-  let side_eff = List.fold_left (fun accu (cb, _) -> cb :: accu) [] side_eff in
-  let side_eff = List.rev side_eff in
+  let sigs = List.rev_map (fun e -> e.seff_certif) side_eff in
   (** Most recent side-effects first in side_eff *)
   if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs, 0)
   else
     (** Second step: compute the lifts and substitutions to apply *)
     let cname c r = Context.make_annot (Name (Label.to_id (Constant.label c))) r in
-    let fold (subst, var, ctx, args) (c, cb, univs) =
+    let fold (subst, var, ctx, args) { seff_constant = c; seff_body = cb; seff_univs = univs; _ } =
       let (b, opaque) = match cb.const_body with
       | Def b -> (b, false)
       | OpaqueDef b -> (b, true)

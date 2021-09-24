@@ -56,7 +56,6 @@ val concat_private : private_constants -> private_constants -> private_constants
 (** [concat_private e1 e2] adds the constants of [e1] to [e2], i.e. constants in
     [e1] must be more recent than those of [e2]. *)
 
-val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
 val inline_private_constants :
   Environ.env -> private_constants Entries.proof_output -> Constr.constr Univ.in_universe_context_set
 
