@@ -40,7 +40,7 @@ let name_op_to_name ~name_op ~name suffix =
   | Some s -> s
   | None -> Nameops.add_suffix name suffix
 
-let declare_abstract = ref (fun ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl ->
+let declare_abstract = ref (fun ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl ->
   CErrors.anomaly (Pp.str "Abstract declaration hook not registered"))
 
 let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
@@ -54,9 +54,9 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
      redundancy on constant declaration. This opens up an interesting
      question, how does abstract behave when discharge is local for example?
   *)
-  let suffix, kind = if opaque
-    then "_subproof", Decls.(IsProof Lemma)
-    else "_subterm", Decls.(IsDefinition Definition)
+  let suffix = if opaque
+    then "_subproof"
+    else "_subterm"
   in
   let name = name_op_to_name ~name_op ~name suffix in
   Proofview.Goal.enter begin fun gl ->
@@ -85,10 +85,17 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
          tac)
     in
     let effs, sigma, lem, args, safe =
-      !declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl
+      !declare_abstract ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl
+    in
+    let pose_tac = match name_op with
+    | None -> Proofview.tclUNIT ()
+    | Some id ->
+      if opaque then Tactics.pose_proof (Names.Name id) lem
+      else Tactics.pose_tac (Names.Name id) lem
     in
     let solve =
       Proofview.tclEFFECTS effs <*>
+      pose_tac <*>
       tacK lem args
     in
     let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in

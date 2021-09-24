@@ -439,7 +439,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
   let () = register_constant kn kind local in
   kn
 
-let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind de =
+let declare_private_constant ?role ~name de =
   let kn, eff =
     let de, ctx =
       if not de.proof_entry_opaque then
@@ -451,7 +451,6 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
     in
     Global.add_private_constant name ctx de
   in
-  let () = register_constant kn kind local in
   let seff_roles = match role with
   | None -> Cmap.empty
   | Some r -> Cmap.singleton kn r
@@ -633,7 +632,8 @@ end
 let declare_definition_scheme ~internal ~univs ~role ~name c =
   let kind = Decls.(IsDefinition Scheme) in
   let entry = pure_definition_entry ~univs c in
-  let kn, eff = declare_private_constant ~role ~kind ~name entry in
+  let kn, eff = declare_private_constant ~role ~name entry in
+  let () = register_constant kn kind Locality.ImportDefaultBehavior in
   let () = if internal then () else definition_message name in
   kn, eff
 
@@ -1803,7 +1803,7 @@ let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
   in
   cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
-let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
+let declare_abstract ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl =
   (* EJGA: flush_and_check_evars is only used in abstract, could we
      use a different API? *)
   let concl =
@@ -1839,13 +1839,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
      kernel will boom. This deserves more investigation. *)
   let const = Internal.set_opacity ~opaque const in
   let const, args = Internal.shrink_entry sign const in
-  let cst () =
-    (* do not compute the implicit arguments, it may be costly *)
-    let () = Impargs.make_implicit_args false in
-    (* ppedrot: seems legit to have abstracted subproofs as local*)
-    declare_private_constant ~local:Locality.ImportNeedQualified ~name ~kind const
-  in
-  let cst, eff = Impargs.with_implicit_protection cst () in
+  let cst, eff = declare_private_constant ~name const in
   let inst = match fst const.proof_entry_universes with
   | UState.Monomorphic_entry _ -> EConstr.EInstance.empty
   | UState.Polymorphic_entry ctx ->
