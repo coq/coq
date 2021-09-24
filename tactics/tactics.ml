@@ -1412,9 +1412,9 @@ let cut c =
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun h ->
-            let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r (Vars.lift 1 concl)) in
+            let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r concl) in
             let (h, x) = Evarutil.new_evar env h c in
-            let f = mkLetIn (make_annot (Name id) r, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
+            let f = mkLetIn (make_annot (Name id) r, x, c, mkApp (f, [|mkRel 1|])) in
             (h, f)
           end)
   end
