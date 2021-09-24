@@ -312,11 +312,6 @@ let lookup_tacs env sigma concl se =
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
-let is_transparent_gr ts = let open GlobRef in function
-  | VarRef id -> TransparentState.is_transparent_variable ts id
-  | ConstRef cst -> TransparentState.is_transparent_constant ts cst
-  | IndRef _ | ConstructRef _ -> false
-
 let strip_params env sigma c =
   match EConstr.kind sigma c with
   | App (f, args) ->
@@ -653,18 +648,9 @@ struct
     | Give_exact _ -> true
     | _ -> false
 
-  let is_unfold = function
-    | Unfold_nth _ -> true
-    | _ -> false
-
   let addkv gr id v db =
     let idv = id, { v with db = db.hintdb_name } in
-    let k = match gr with
-      | Some gr -> if db.use_dn && is_transparent_gr db.hintdb_state gr &&
-          is_unfold v.code.obj then None else Some gr
-      | None -> None
-    in
-      match k with
+      match gr with
       | None ->
           let is_present (_, (_, v')) = KerName.equal v.code.uid v'.code.uid in
           if not (List.exists is_present db.hintdb_nopat) then
