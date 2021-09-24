@@ -840,6 +840,7 @@ let export_private_constants eff senv =
     | Monomorphic -> None
     | Polymorphic auctx -> Some (Univ.AbstractContext.size auctx)
     in
+    let body = Constr.hcons body in
     let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
     senv, (kn, { c with const_body = OpaqueDef o }, Some opaque)
   | Def _ | Undef _ | Primitive _ as body ->
@@ -905,6 +906,13 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
     body, uctx, trusted
   in
   let (c, ctx) = Term_typing.check_delayed handle ty_ctx pf in
+  let c = Constr.hcons c in
+  let ctx = match ctx with
+  | Opaqueproof.PrivateMonomorphic u ->
+    Opaqueproof.PrivateMonomorphic (Univ.hcons_universe_context_set u)
+  | Opaqueproof.PrivatePolymorphic (n, u) ->
+    Opaqueproof.PrivatePolymorphic (n, Univ.hcons_universe_context_set u)
+  in
   { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 
 let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
