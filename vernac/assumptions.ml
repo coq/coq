@@ -239,13 +239,11 @@ let rec traverse current ctx accu t =
 and traverse_object (curr, data, ax2ty) body obj =
   let data, ax2ty =
     let already_in = GlobRef.Map_env.mem obj data in
-    match body () with
+    if already_in then data, ax2ty
+    else match body () (* Beware: this can be very costly *) with
     | None ->
-        let data =
-          if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
-        data, ax2ty
+      GlobRef.Map_env.add obj GlobRef.Set_env.empty data, ax2ty
     | Some body ->
-      if already_in then data, ax2ty else
       let contents,data,ax2ty =
         traverse (label_of obj) Context.Rel.empty
                  (GlobRef.Set_env.empty,data,ax2ty) body in
