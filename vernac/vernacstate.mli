@@ -27,10 +27,6 @@ module System : sig
   (** [protect f x] runs [f x] and discards changes in the system state  *)
   val protect : ('a -> 'b) -> 'a -> 'b
 
-  (** Load / Dump provide unsafe but convenient state dumping from / to disk *)
-  val dump : string -> unit
-  val load : string -> unit
-
 end
 
 module LemmaStack : sig

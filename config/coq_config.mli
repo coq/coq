@@ -32,7 +32,6 @@ val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)
 val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
 val vo_version : int32
-val state_magic_number : int
 
 val all_src_dirs : string list
 

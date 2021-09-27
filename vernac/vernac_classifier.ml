@@ -188,9 +188,6 @@ let classify_vernac e =
     | VernacUndoTo _ | VernacUndo _
     | VernacResetName _ | VernacResetInitial
     | VernacRestart -> VtMeta
-    (* What are these? *)
-    | VernacRestoreState _
-    | VernacWriteState _ -> VtSideff ([], VtNow)
     (* Plugins should classify their commands *)
     | VernacExtend (s,l) ->
         try Vernacextend.get_vernac_classifier s l
