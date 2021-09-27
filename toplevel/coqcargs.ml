@@ -23,7 +23,6 @@ type t =
 
   ; echo : bool
 
-  ; outputstate : string option
   ; glob_out    : Dumpglob.glob_output
 
   ; output_context : bool
@@ -42,7 +41,6 @@ let default =
 
   ; echo = false
 
-  ; outputstate = None
   ; glob_out = Dumpglob.MultFiles
 
   ; output_context = false
@@ -128,19 +126,10 @@ let rec add_vio_args peek next oval =
     add_vio_args peek next oval
   else oval
 
-let warn_deprecated_outputstate =
-  CWarnings.create ~name:"deprecated-outputstate" ~category:"deprecated"
-         (fun () ->
-          Pp.strbrk "The outputstate option is deprecated and discouraged.")
-
 let warn_deprecated_quick =
   CWarnings.create ~name:"deprecated-quick" ~category:"deprecated"
          (fun () ->
           Pp.strbrk "The -quick option is renamed -vio. Please consider using the -vos feature instead.")
-
-let set_outputstate opts s =
-  warn_deprecated_outputstate ();
-  { opts with outputstate = Some s }
 
 let parse arglist : t =
   let echo = ref false in
@@ -211,9 +200,6 @@ let parse arglist : t =
         | "-vio2vo" ->
           let oval = add_compile ~echo:false oval (next ()) in
           set_compilation_mode oval Vio2Vo
-
-        | "-outputstate" ->
-          set_outputstate oval (next ())
 
         (* Glob options *)
         |"-no-glob" | "-noglob" ->
