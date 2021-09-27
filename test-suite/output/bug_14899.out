@@ -1,0 +1,4 @@
+proj2_sig a
+     : 0 < proj1_sig a
+     = le_S 1 2 (le_S 1 1 (le_n 1))
+     : 0 < proj1_sig a
