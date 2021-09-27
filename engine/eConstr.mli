@@ -244,8 +244,8 @@ val whd_evar : Evd.evar_map -> constr -> constr
 
 val eq_constr : Evd.evar_map -> t -> t -> bool
 val eq_constr_nounivs : Evd.evar_map -> t -> t -> bool
-val eq_constr_universes : Environ.env -> Evd.evar_map -> t -> t -> UnivProblem.Set.t option
-val leq_constr_universes : Environ.env -> Evd.evar_map -> t -> t -> UnivProblem.Set.t option
+val eq_constr_universes : Environ.env -> Evd.evar_map -> ?nargs:int -> t -> t -> UnivProblem.Set.t option
+val leq_constr_universes : Environ.env -> Evd.evar_map -> ?nargs:int -> t -> t -> UnivProblem.Set.t option
 
 (** [eq_constr_universes_proj] can equate projections and their eta-expanded constant form. *)
 val eq_constr_universes_proj : Environ.env -> Evd.evar_map -> t -> t -> UnivProblem.Set.t option
