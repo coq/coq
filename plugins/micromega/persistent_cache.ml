@@ -60,14 +60,13 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
 
   type 'a t = {outch : out_channel; mutable htbl : 'a data Table.t; file : string }
 
-  (* XXX: Move to Fun.protect once in Ocaml 4.08 *)
+  (* XXX: Move to Fun.protect once in Ocaml 4.08. We will need to add
+     Fun.Finally_raised to the list of critical errors in
+     cErrors.noncritical. *)
   let fun_protect ~(finally : unit -> unit) work =
     let finally_no_exn () =
-      let exception Finally_raised of exn in
       try finally ()
-      with e ->
-        let bt = Printexc.get_raw_backtrace () in
-        Printexc.raise_with_backtrace (Finally_raised e) bt
+      with e -> CErrors.anomaly ~label:"finally raised " (CErrors.print e)
     in
     match work () with
     | result -> finally_no_exn (); result
