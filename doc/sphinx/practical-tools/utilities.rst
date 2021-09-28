@@ -270,7 +270,7 @@ section of the generated makefile. These include:
    can be used to specify additional flags to the OCaml
    compiler, like ``-bin-annot`` or ``-w``....
 :OCAMLWARN:
-   it contains a default of ``-warn-error +a-3``, useful to modify
+   it contains a default of ``-warn-error +a-3-70``, useful to modify
    this setting; beware this is not recommended for projects in
    Coq's CI.
 :COQC, COQDEP, COQDOC:
