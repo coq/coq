@@ -425,9 +425,11 @@ let check_universe_context_set ~names ~extensible uctx =
 let check_implication uctx cstrs cstrs' =
   let gr = initial_graph uctx in
   let grext = UGraph.merge_constraints cstrs gr in
-  if UGraph.check_constraints cstrs' grext then ()
+  let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
+  if Constraints.is_empty cstrs' then ()
   else CErrors.user_err ~hdr:"check_univ_decl"
-      (str "Universe constraints are not implied by the ones declared.")
+      (str "Universe constraints are not implied by the ones declared: " ++
+       pr_constraints (pr_uctx_level uctx) cstrs')
 
 let check_mono_univ_decl uctx decl =
   let () =
