@@ -8,11 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let outputstate opts =
-  Option.iter (fun ostate_file ->
-    let fname = CUnix.make_suffix ostate_file ".coq" in
-    Vernacstate.System.dump fname) opts.Coqcargs.outputstate
-
 let coqc_init ((_,color_mode),_) injections ~opts =
   Flags.quiet := true;
   System.trust_file_cache := true;
@@ -56,9 +51,6 @@ let coqc_main ((copts,_),stm_opts) injections ~opts =
      point some stuff may not be safe anymore. *)
   Topfmt.(in_phase ~phase:CompilationPhase)
     Ccompile.do_vio opts copts injections;
-
-  (* Allow the user to output an arbitrary state *)
-  outputstate copts;
 
   flush_all();
 

@@ -37,7 +37,6 @@ type t =
 
   ; echo : bool
 
-  ; outputstate : string option
   ; glob_out    : Dumpglob.glob_output
 
   ; output_context : bool

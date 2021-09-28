@@ -1324,9 +1324,6 @@ command: [
 | REPLACE "Remove" IDENT IDENT LIST1 table_value
 | WITH "Remove" setting_name LIST1 table_value
 | DELETE "Remove" IDENT LIST1 table_value
-| DELETE "Restore" "State" IDENT
-| DELETE "Restore" "State" ne_string
-| "Restore" "State" [ IDENT | ne_string ]
 | DELETE "Show"
 | DELETE "Show" natural
 | DELETE "Show" ident
@@ -1351,9 +1348,6 @@ command: [
 | DELETE "Undo" natural
 | REPLACE "Undo" "To" natural
 | WITH "Undo" OPT ( OPT "To" natural )
-| DELETE "Write" "State" IDENT
-| REPLACE "Write" "State" ne_string
-| WITH "Write" "State" [ IDENT | ne_string ]
 | DELETE "Abort"
 | DELETE "Abort" "All"
 | REPLACE "Abort" identref

@@ -21,7 +21,6 @@ let (/) = Filename.concat
 
 let coq_version = "8.15+alpha"
 let vo_magic = 81491
-let state_magic = 581491
 let is_a_released_version = false
 
 (** Default OCaml binaries *)
@@ -449,7 +448,6 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   let pr s = fprintf o s in
   let pr_s = pr "let %s = %S\n" in
   let pr_b = pr "let %s = %B\n" in
-  let pr_i = pr "let %s = %d\n" in
   let pr_i32 = pr "let %s = %dl\n" in
   let pr_p s o = pr "let %s = %S\n" s
     (match o with Relative s -> s | Absolute s -> s) in
@@ -476,7 +474,6 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   pr "let gtk_platform = `%s\n" idearchdef;
   pr_b "has_natdynlink" hasnatdynlink;
   pr_i32 "vo_version" vo_magic;
-  pr_i "state_magic_number" state_magic;
   pr_s "browser" browser;
   pr_s "wwwcoq" prefs.coqwebsite;
   pr_s "wwwbugtracker" (prefs.coqwebsite ^ "bugs/");

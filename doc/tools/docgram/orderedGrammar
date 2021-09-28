@@ -915,8 +915,6 @@ command: [
 | "Add" setting_name LIST1 [ qualid | string ]
 | "Test" setting_name OPT ( "for" LIST1 [ qualid | string ] )
 | "Remove" setting_name LIST1 [ qualid | string ]
-| "Write" "State" [ ident | string ]
-| "Restore" "State" [ ident | string ]
 | "Reset" "Initial"
 | "Reset" ident
 | "Back" OPT natural

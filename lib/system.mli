@@ -72,14 +72,6 @@ type magic_number_error = {filename: string; actual: int32; expected: int32}
 exception Bad_magic_number of magic_number_error
 exception Bad_version_number of magic_number_error
 
-val raw_extern_state : int -> string -> out_channel
-
-val raw_intern_state : int -> string -> in_channel
-
-val extern_state : int -> string -> 'a -> unit
-
-val intern_state : int -> string -> 'a
-
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 
 (** Clones of Marshal.to_channel (with flush) and

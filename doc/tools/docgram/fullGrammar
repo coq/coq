@@ -557,10 +557,6 @@ command: [
 | "Test" setting_name
 | "Remove" IDENT IDENT LIST1 table_value
 | "Remove" IDENT LIST1 table_value
-| "Write" "State" IDENT
-| "Write" "State" ne_string
-| "Restore" "State" IDENT
-| "Restore" "State" ne_string
 | "Reset" "Initial"
 | "Reset" identref
 | "Back"

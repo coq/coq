@@ -1450,17 +1450,6 @@ let vernac_chdir = function
       end;
       Flags.if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
-(********************)
-(* State management *)
-
-let vernac_write_state file =
-  let file = CUnix.make_suffix file ".coq" in
-  Vernacstate.System.dump file
-
-let vernac_restore_state file =
-  let file = Loadpath.locate_file (CUnix.make_suffix file ".coq") in
-  Vernacstate.System.load file
-
 (************)
 (* Commands *)
 
@@ -2325,16 +2314,6 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> with_locality ~atts vernac_declare_ml_module l)
   | VernacChdir s ->
     vtdefault(fun () -> unsupported_attributes atts; vernac_chdir s)
-
-  (* State management *)
-  | VernacWriteState s ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_write_state s)
-  | VernacRestoreState s ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_restore_state s)
 
   (* Commands *)
   | VernacCreateHintDb (dbname,b) ->

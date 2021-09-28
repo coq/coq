@@ -727,12 +727,6 @@ let pr_vernac_expr v =
       if Int.equal i 1 then keyword "Back" else keyword "Back" ++ pr_intarg i
     )
 
-  (* State management *)
-  | VernacWriteState s ->
-    return (keyword "Write State" ++ spc () ++ qs s)
-  | VernacRestoreState s ->
-    return  (keyword "Restore State" ++ spc() ++ qs s)
-
   (* Syntax *)
   | VernacOpenCloseScope (opening,sc) ->
     return (

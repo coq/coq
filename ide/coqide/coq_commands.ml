@@ -103,7 +103,6 @@ let commands = [
    "Require Export";
    "Require Import";
    "Reset Extraction Inline";
-   "Restore State";
    ];
   [  "Scheme";
      "Section";
@@ -152,7 +151,6 @@ let commands = [
   ["Variable";
    "Variant";
    "Variables";];
-  ["Write State";];
 ]
 
 let state_preserving = [
