@@ -3,8 +3,9 @@
   OCaml code extracted with the following modules should be linked to the
   `Zarith <https://github.com/ocaml/Zarith>`_ library.
 
-  + ``ExtrOcamlBigIntConv``
   + ``ExtrOcamlNatBigInt``
   + ``ExtrOcamlZBigInt``
+
+  Remove ``ExtrOcamlBigIntConv`` module.
 
   (`#8252 <https://github.com/coq/coq/pull/8252>`_, by Yishuai Li).

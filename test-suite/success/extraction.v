@@ -649,10 +649,6 @@ Extraction TestCompile N.pred N.sub N.div N.modulo N.compare
            Z.add Z.mul Z.compare Z.of_N Z.abs_N Z.div Z.modulo
            Pos.add Pos.pred Pos.sub Pos.mul Pos.compare.
 
-Require Import ExtrOcamlBigIntConv.
-Recursive Extraction   bigint_of_z z_of_bigint nat_of_bigint.
-Extraction TestCompile bigint_of_z z_of_bigint nat_of_bigint.
-
 Require Import Euclid ExtrOcamlNatBigInt.
 Definition test n m (H:m>0) :=
   let (q,r,_,_) := eucl_dev m H n in
