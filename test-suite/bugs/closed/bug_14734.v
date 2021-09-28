@@ -1,3 +1,5 @@
+(* coq-prog-args: ("-async-proofs" "off") *)
+
 #[universes(cumulative=yes)]
  Polymorphic Class t@{+s} (S : Type@{s}) (A B : Prop) :=
   T {
