@@ -67,7 +67,7 @@ type typing_context =
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
-  try Reduction.default_conv ~l2r:false Reduction.CONV env inft t
+  try Reduction.default_conv Reduction.CONV env inft t
   with Reduction.NotConvertible ->
     Type_errors.error_incorrect_primitive env (make_judge op_t inft) t
 
