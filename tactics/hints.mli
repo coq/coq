@@ -118,13 +118,6 @@ module Hint_db :
     val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> FullHint.t list
 
     (** All hints associated to the reference, respecting modes if evars appear in the
-        arguments, _not_ using the discrimination net.
-        Returns a [ModeMismatch] if there are declared modes and none matches.
-        *)
-    val map_existential : evar_map -> secvars:Id.Pred.t ->
-      (GlobRef.t * constr array) -> constr -> t -> FullHint.t list with_mode
-
-    (** All hints associated to the reference, respecting modes if evars appear in the
         arguments and using the discrimination net.
         Returns a [ModeMismatch] if there are declared modes and none matches. *)
     val map_eauto : env -> evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> FullHint.t list with_mode

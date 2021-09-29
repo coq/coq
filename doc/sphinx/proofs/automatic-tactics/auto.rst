@@ -322,19 +322,15 @@ and `Constants`, while implicitly created databases have the `Opaque` setting.
 .. cmd:: Create HintDb @ident {? discriminated }
 
    Creates a new hint database named :n:`@ident`. The database is
-   implemented by a Discrimination Tree (DT) that serves as an index of
-   all the lemmas. The DT can use transparency information to decide if a
-   constant should be indexed or not
-   making the retrieval more efficient. The legacy implementation (the default one
-   for new databases) uses the DT only on goals without existentials (i.e., :tacn:`auto`
-   goals), for non-Immediate hints and does not make use of transparency
-   hints, putting more work on the unification that is run after
-   retrieval (it keeps a list of the lemmas in case the DT is not used).
-   The new implementation enabled by the discriminated option makes use
-   of DTs in all cases and takes transparency information into account.
-   However, the order in which hints are retrieved from the DT may differ
-   from the order in which they were inserted, making this implementation
-   observationally different from the legacy one.
+   implemented by a Discrimination Tree (DT) that serves as a filter to select
+   the lemmas that will be applied. When discriminated, the DT uses
+   transparency information to decide if a constant should considered rigid for
+   filtering, making the retrieval more efficient. By contrast, undiscriminated
+   databases treat all constants as transparent, resulting in a larger
+   number of selected lemmas to be applied, and thus putting more pressure on
+   unification.
+
+   By default, hint databases are undiscriminated.
 
 .. _creating_hints:
 
