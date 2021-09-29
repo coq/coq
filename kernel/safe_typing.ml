@@ -1053,6 +1053,7 @@ let start_module l senv =
   mp,
   { empty_environment with
     env = senv.env;
+    future_cst = senv.future_cst;
     modresolver = senv.modresolver;
     paramresolver = senv.paramresolver;
     modpath = mp;
@@ -1066,6 +1067,7 @@ let start_modtype l senv =
   mp,
   { empty_environment with
     env = senv.env;
+    future_cst = senv.future_cst;
     modresolver = senv.modresolver;
     paramresolver = senv.paramresolver;
     modpath = mp;
@@ -1142,7 +1144,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     revstruct = newdef::oldsenv.revstruct;
     modlabels = Label.Set.add (fst newdef) oldsenv.modlabels;
     univ = (Univ.ContextSet.union senv.univ oldsenv.univ);
-    future_cst = HandleMap.fold HandleMap.add senv.future_cst oldsenv.future_cst;
+    future_cst = senv.future_cst;
     required = senv.required;
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
