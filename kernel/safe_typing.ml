@@ -1061,6 +1061,7 @@ let start_module l senv =
     paramresolver = senv.paramresolver;
     modpath = mp;
     modvariant = STRUCT ([],senv);
+    univ = senv.univ;
     required = senv.required }
 
 let start_modtype l senv =
@@ -1075,6 +1076,7 @@ let start_modtype l senv =
     paramresolver = senv.paramresolver;
     modpath = mp;
     modvariant = SIG ([], senv);
+    univ = senv.univ;
     required = senv.required }
 
 (** Adding parameters to the current module or module type.
@@ -1146,7 +1148,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     modresolver = newresolver;
     revstruct = newdef::oldsenv.revstruct;
     modlabels = Label.Set.add (fst newdef) oldsenv.modlabels;
-    univ = (Univ.ContextSet.union senv.univ oldsenv.univ);
+    univ = senv.univ;
     future_cst = senv.future_cst;
     required = senv.required;
     loads = senv.loads@oldsenv.loads;
