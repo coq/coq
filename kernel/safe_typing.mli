@@ -112,8 +112,14 @@ val check_opaque : safe_environment -> Opaqueproof.opaque_handle ->
 
 (** Given an already checked proof for an opaque hole, actually fill it with the
     proof. This might fail if the current set of global universes is
-    inconsistent with the one at the time of the call to {!check_opaque}. *)
+    inconsistent with the one at the time of the call to {!check_opaque}.
+    Precondition: the underlying handle must exist and must not have been
+    filled. *)
 val fill_opaque : opaque_certificate -> safe_transformer0
+
+(** Check whether a handle was filled. It assumes that the handle was introduced
+    in the opaque table and throws an anomaly otherwise. *)
+val is_filled_opaque : Opaqueproof.opaque_handle -> safe_environment -> bool
 
 (** Get the proof term that was checked by the kernel. *)
 val repr_certificate : opaque_certificate ->

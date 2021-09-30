@@ -916,8 +916,10 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
   { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 
 let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
-match HandleMap.find i senv.future_cst with
-| _, _, nonce ->
+  let () = if not @@ HandleMap.mem i senv.future_cst then
+    CErrors.anomaly Pp.(str "Missing opaque handle" ++ spc () ++ int (Opaqueproof.repr_handle i))
+  in
+  let _, _, nonce = HandleMap.find i senv.future_cst in
   let () =
     if not (Nonce.equal n nonce) then
       CErrors.anomaly  Pp.(str "Invalid opaque certificate")
@@ -930,9 +932,10 @@ match HandleMap.find i senv.future_cst with
   in
   (* Mark the constant as having been checked *)
   { senv with future_cst = HandleMap.remove i senv.future_cst }
-| exception Not_found ->
-  (* TODO: give a better API *)
-  senv
+
+let is_filled_opaque i senv =
+  let () = assert (Opaqueproof.mem_handle i (Environ.opaque_tables senv.env)) in
+  not (HandleMap.mem i senv.future_cst)
 
 let repr_certificate { opq_body = body; opq_univs = ctx; _ } =
   body, ctx

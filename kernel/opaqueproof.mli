@@ -48,4 +48,6 @@ val discharge_opaque :
 
 val repr_handle : opaque_handle -> int
 
+val mem_handle : opaque_handle -> opaquetab -> bool
+
 val repr : 'c opaque -> substitution list * 'c list * DirPath.t * opaque_handle

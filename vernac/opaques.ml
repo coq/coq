@@ -45,6 +45,8 @@ struct
     | OpaqueValue _ -> ()
     | OpaqueCertif cert ->
       if Future.UUIDSet.mem (Future.uuid cert) except then ()
+      else if Safe_typing.is_filled_opaque i (Global.safe_env ()) then
+        assert (Future.is_over cert)
       else
         (* Little belly dance to preserve the fix_exn wrapper around filling *)
         let () = Future.join @@ Future.chain cert (fun cert -> Global.fill_opaque cert) in

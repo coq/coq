@@ -55,3 +55,5 @@ module HandleMap = Int.Map
 type opaque_handle = int
 
 let repr_handle i = i
+
+let mem_handle i { opaque_len = n; _ } = i < n
