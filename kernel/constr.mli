@@ -195,18 +195,17 @@ type ('constr, 'types) prec_declaration =
     Name.t Context.binder_annot array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
     (int array * int) * ('constr, 'types) prec_declaration
-  (* The array of [int]'s tells for each component of the array of
-     mutual fixpoints the number of lambdas to skip before finding the
-     recursive argument (e.g., value is 2 in "fix f (x:A) (y:=t) (z:B)
-     (v:=u) (w:I) {struct w}"), telling to skip x and z and that w is
-     the recursive argument);
-     The second component [int] tells which component of the block is
-     returned *)
+(** The array of [int]'s tells for each component of the array of
+   mutual fixpoints the number of lambdas to skip before finding the
+   recursive argument (e.g., value is 2 in "fix f (x:A) (y:=t) (z:B)
+   (v:=u) (w:I) {struct w}"), telling to skip x and z and that w is
+   the recursive argument); The second component [int] tells which
+   component of the block is returned *)
 
 type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
-  (* The component [int] tells which component of the block of
-     cofixpoint is returned *)
+(** The component [int] tells which component of the block of
+   cofixpoint is returned *)
 
 type rec_declaration = (constr, types) prec_declaration
 
@@ -235,37 +234,56 @@ val mkCoFix : cofixpoint -> constr
 type 'constr pexistential = Evar.t * 'constr list
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  | Rel       of int                                  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
-
-  | Var       of Id.t                                 (** Gallina-variable that was introduced by Vernacular-command that extends
-                                                          the local context of the currently open section
-                                                          (i.e. [Variable] or [Let]). *)
-
+  | Rel       of int
+  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
+  | Var       of Id.t
+  (** Gallina-variable that was introduced by Vernacular-command that
+     extends the local context of the currently open section (i.e.
+     [Variable] or [Let]). *)
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t Context.binder_annot * 'types * 'types             (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
-  | Lambda    of Name.t Context.binder_annot * 'types * 'constr            (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
-  | LetIn     of Name.t Context.binder_annot * 'constr * 'types * 'constr  (** Concrete syntax ["let A:C := B in D"] is represented as [LetIn (A,B,C,D)]. *)
-  | App       of 'constr * 'constr array              (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
-
-                                                          The {!mkApp} constructor also enforces the following invariant:
-                                                          - [F] itself is not {!App}
-                                                          - and [[|P1;..;Pn|]] is not empty. *)
-
-  | Const     of (Constant.t * 'univs)                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
-                                                          (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
-
-  | Ind       of (inductive * 'univs)                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
-  | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Prod      of Name.t Context.binder_annot * 'types * 'types
+  (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
+  | Lambda    of Name.t Context.binder_annot * 'types * 'constr
+  (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
+  | LetIn     of Name.t Context.binder_annot * 'constr * 'types * 'constr
+  (** Concrete syntax ["let A:C := B in D"] is represented as [LetIn (A,B,C,D)]. *)
+  | App       of 'constr * 'constr array
+  (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
+      The {!mkApp} constructor also enforces the following invariant:
+      - [F] itself is not {!App}
+      - and [[|P1;..;Pn|]] is not empty. *)
+  | Const     of (Constant.t * 'univs)
+  (** Gallina-variable that was introduced by Vernacular-command that
+     extends the global environment (i.e. [Parameter], or [Axiom], or
+     [Definition], or [Theorem] etc.) *)
+  | Ind       of (inductive * 'univs)
+  (** A name of an inductive type defined by [Variant], [Inductive] or
+     [Record] Vernacular-commands. *)
+  | Construct of (constructor * 'univs)
+  (** A constructor of an inductive type defined by [Variant],
+     [Inductive] or [Record] Vernacular-commands. *)
   | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
+  (** [Case (ci,u,params,p,iv,c,brs)] is a [match c return p with brs]
+     expression. [c] lives in inductive [ci.ci_ind] at universe
+     instance [u] and parameters [params]. If this match has case
+     inversion (ie match on a 1 constructor SProp inductive with
+     proof relevant return type) the indices are in [iv].
+
+     The names in [p] are the names of the bound indices and
+     inductive value (ie the [in] and [as] clauses).
+
+     The names in the [brs] are the names of the variables bound in the respective branch. *)
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * 'constr
   | Int       of Uint63.t
   | Float     of Float64.t
   | Array     of 'univs * 'constr array * 'constr * 'types
+  (** [Array (u,vals,def,t)] is an array of [vals] in type [t] with default value [def].
+      [u] is a universe containing [t]. *)
 
 (** User view of [constr]. For [App], it is ensured there is at
    least one argument and the function is not itself an applicative
