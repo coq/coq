@@ -163,13 +163,8 @@ The Docker building job reuses the uploaded image if it is available,
 but if you wish to save more time you can skip the job by setting
 `SKIP_DOCKER` to `true`.
 
-This means you will need to change its value when the Docker image
-needs to be updated. You can do so for a single pipeline by starting
-it through the web interface. Here is a direct link that you can use
-to trigger such a build:
-`https://gitlab.com/coq/coq/pipelines/new?var[SKIP_DOCKER]=false&ref=pr-XXXXX`.
-Note that this link will give a 404 error if you are not logged in or
-a member of the Coq organization on GitLab.  To request to join the
-Coq organization, go to https://gitlab.com/coq to request access.
+In the case of the main Coq repository, this variable is set to true
+by default, but coqbot will set it to `false` anytime a PR modifies a
+path matching `dev/ci/docker/.*Dockerfile.*`.
 
 See also [`docker/README.md`](docker/README.md).

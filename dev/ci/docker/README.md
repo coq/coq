@@ -16,19 +16,13 @@ in forked repositories after the initial Docker build in the fork succeeds.
 
 The steps to generate a new Docker image are:
 - Update the `CACHEKEY` variable in .gitlab-ci.yml with the date and md5.
-- Submit the change in a PR. This triggers a Gitlab CI run that
-  immediately fails, as the Docker image is missing and the `SKIP_DOCKER`
-  default value prevents rebuilding the image.
-- Run a new pipeline on Gitlab with that PR branch (e.g. "pr-99999"), using the green
-  "Run pipeline" button on the [web interface](https://gitlab.com/coq/coq/pipelines),
-  with the `SKIP_DOCKER` environment variable set to `false`. This will run a
-  `docker-boot` process, and once completed, a new Docker image will be available in
-  the container registry, with the name set in `CACHEKEY`.
+- Submit the change in a PR. coqbot will detect that the Dockerfile
+  has changed and will trigger a pipeline build with `SKIP_DOCKER` set
+  to `false`. This will run a `docker-boot` process, and once
+  completed, a new Docker image will be available in the container
+  registry, with the name set in `CACHEKEY`.
 - Any pipeline with the same `CACHEKEY` will now automatically reuse that
   image without rebuilding it from scratch.
-
-In case you do not have the rights to run Gitlab CI pipelines, you should ask
-the ci-maintainers Github team to do it for you.
 
 ## Manual Building
 
