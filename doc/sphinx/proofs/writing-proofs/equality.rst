@@ -110,9 +110,7 @@ Rewriting with Leibniz and setoid equality
 
       :n:`{? forall @open_binders , } EQ @term__1 @term__2`
 
-   .. todo :term:`Leibniz equality` does not work with Sphinx 2.3.1. It does with Sphinx 3.0.3.
-
-   where :g:`EQ` is the Leibniz equality `eq` or a registered :term:`setoid equality`.
+   where :g:`EQ` is the :term:`Leibniz equality` `eq` or a registered :term:`setoid equality`.
    Note that :n:`eq @term__1 @term__2` is typically written with the infix notation
    :n:`@term__1 = @term__2`.  You must `Require Setoid` to use the tactic
    with a setoid equality or with :ref:`setoid rewriting <generalizedrewriting>`.
