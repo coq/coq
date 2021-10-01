@@ -8,6 +8,100 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** This file implements the Coq's [.glob] file format, which
+   provides information about the objects that are defined and referenced
+   from a Coq file.
+
+   The [.glob] file format is notably used by [coqdoc] and [coq2html]
+   to generate links and other documentation meta-data.
+
+   Note that we consider this format a legacy one, and no stability
+   guarantees are provided as of today, as we search to replace this
+   format with a more structured and strongly-typed API.
+
+   However, we do provide up to date documentation about the format of
+   [.glob] files below.
+
+*)
+
+(** {2 The [.glob] file format}
+
+   [.glob] files contain a header, and then a list of entries, with
+  one line per entry.
+
+  {3 [.glob] header }
+
+  The header consists of two lines:
+
+[DIGEST: %md5sum_of_file]
+[F%modpath]
+
+  where %modpath is the fully-qualified module name of the library that the
+  [.glob] file refers to. [%md5sum_of_file] may be NO if [-dump-glob file] was used.
+
+ {3 [.glob] entries }
+
+  There are 2 kinds of [.glob] entries:
+
+  - *definitions*: these entries correspond to definitions of inductives,
+    functions, binders, notations. They are written as:
+
+    [%kind %bc:%ec %secpath %name]
+
+    where [%kind] is one of
+    [{def,coe,subclass,canonstruc,ex,scheme,proj,inst,meth,defax,prfax,thm,prim,class,var,indrec,rec,corec,ind,variant,coind,constr,not,binder,lib,mod,modtype}],
+    meaning:
+    + [def] Definition
+    + [coe] Coertion
+    + [thm] Theorem
+    + [subclass] Sub Class
+    + [canonstruc] Canonical Declaration
+    + [ex] Example
+    + [scheme] Scheme
+    + [class] Class declaration
+    + [proj] Projection from a structure
+    + [inst] Instance
+    + [meth] Class Method
+    + [defax] Definitional assumption
+    + [prfax] Logical assumption
+    + [prim] Primitive
+    + [var] Variable reference
+    + [indrec] Inductive
+    + [rec] Inductive  (variant)
+    + [corec] Coinductive
+    + [ind] Record
+    + [variant] Record (variant)
+    + [coind] Coinductive Record
+    + [constr] Constructor
+    + [not] Notation
+    + [binder] Binder
+    + [lib] Require
+    + [mod] Module Reference (Import, Module start / end)
+    + [modtype] Module Type
+
+    [%bc] and [%ec] are respectively the start and end byte locations in the file (0-indexed)
+    [%secpath] the section path (or [<>] if no section path) and [%name] the name of the
+    defined object, or also [<>] in where no name applies.
+
+    Section paths are ...
+
+    + In the case of notations, [%name] is encoded as [:entry:scope:notation_key] where [_] is used to replace
+      spaces in the notation key, [%entry] is left empty if the notation entry is [constr],
+      and similarly [%scope] is empty if the corresponding notation has no associated scope.
+
+    + For binding variables, [:number] is added to distinguish uniquely different binding variables of the same name in a file.
+
+  - *references*: which identify the object a particular document piece of text points to;
+    their format is:
+
+    [R%bc:%ec %filepath %secpath %name %kind]
+
+    where [%bc], [%ec], [%name], and [%kind] are as the above; [%filepath] contains the
+    file module path the object that the references lives in, whereas [%name] may contain
+    non-file non-directory module names.
+
+*)
+
 val start_dump_glob : vfile:string -> vofile:string -> unit
 val end_dump_glob : unit -> unit
 
