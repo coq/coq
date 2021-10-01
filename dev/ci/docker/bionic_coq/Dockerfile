@@ -43,7 +43,7 @@ ENV COMPILER="4.05.0"
 
 # Common OPAM packages
 ENV BASE_OPAM="zarith.1.10 ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.2" \
-    CI_OPAM="ocamlgraph.1.8.8 yojson.1.7.0" \
+    CI_OPAM="ocamlgraph.1.8.8 yojson.1.7.0 cppo.1.6.8" \
     BASE_ONLY_OPAM="dune.2.7.1 elpi.1.13.6 stdlib-shims.0.1.0"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
