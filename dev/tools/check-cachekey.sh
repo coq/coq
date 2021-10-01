@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 hash=$(md5sum dev/ci/docker/bionic_coq/Dockerfile | head -c 10)
 key=$(grep CACHEKEY: .gitlab-ci.yml)
