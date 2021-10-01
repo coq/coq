@@ -736,21 +736,25 @@ cases:
   inductive definition of the form
 
   .. math::
-     \ind{m}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_n}
+     \ind{p}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_p :P_p ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_p :P_p ,~C_n}
 
   (in particular, it is
-  not mutually defined and it has :math:`m` parameters) and :math:`X` does not occur in
+  not mutually defined and it has :math:`p` parameters) and :math:`X` does not occur in
   any of the :math:`t_i`, and the (instantiated) types of constructor
-  :math:`\subst{C_i}{p_j}{a_j}_{j=1… m}` of :math:`I` satisfy the nested positivity condition for :math:`X`
+  :math:`\subst{C_i}{p_j}{a_j}_{j=1… p}` of :math:`I` satisfy the nested positivity condition for :math:`X`
 
 Nested Positivity
 +++++++++++++++++
 
-The type of constructor :math:`T` of :math:`I` *satisfies the nested positivity
-condition* for a constant :math:`X` in the following cases:
+If :math:`I` is a non-mutual inductive type with :math:`p`
+parameters, then
+the type of constructor :math:`T` of :math:`I` satisfies the *nested
+positivity condition* for a constant :math:`X` in the following
+cases:
 
-+ :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive type with :math:`m`
-  parameters and :math:`X` does not occur in any :math:`u_i`
++ :math:`T=(I~b_1 … b_p~u_1 … u_q)` and :math:`X` does not occur in
+  any :math:`u_i`
+
 + :math:`T=∀ x:U,~V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
   satisfies the nested positivity condition for :math:`X`
 
