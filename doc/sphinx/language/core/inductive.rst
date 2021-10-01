@@ -732,28 +732,32 @@ cases:
 + :math:`T` converts to :math:`(X~t_1 … t_n )` and :math:`X` does not occur in any of :math:`t_i`
 + :math:`T` converts to :math:`∀ x:U,~V` and :math:`X` does not occur in type :math:`U` but occurs
   strictly positively in type :math:`V`
-+ :math:`T` converts to :math:`(I~a_1 … a_m~t_1 … t_p )` where :math:`I` is the name of an
++ :math:`T` converts to :math:`(I~a_1 … a_p~t_1 … t_q )` where :math:`I` is the name of an
   inductive definition of the form
 
   .. math::
      \ind{p}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_p :P_p ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_p :P_p ,~C_n}
 
-  (in particular, it is
-  not mutually defined and it has :math:`p` parameters) and :math:`X` does not occur in
-  any of the :math:`t_i`, and the (instantiated) types of constructor
-  :math:`\subst{C_i}{p_j}{a_j}_{j=1… p}` of :math:`I` satisfy the nested positivity condition for :math:`X`
+  (in particular, it is not mutually defined and it has :math:`p`
+  parameters) and :math:`X` does not occur in any of the :math:`t_i`
+  nor in any of the :math:`a_j` for :math:`m < j ≤ p` where :math:`m ≤
+  p` is the number of recursively uniform parameters, and the
+  (instantiated) types of constructor
+
+  :math:`\subst{C_i}{p_j}{a_j}_{j=1… m}` of :math:`I` satisfy the nested positivity condition for :math:`X`
 
 Nested Positivity
 +++++++++++++++++
 
 If :math:`I` is a non-mutual inductive type with :math:`p`
-parameters, then
-the type of constructor :math:`T` of :math:`I` satisfies the *nested
+parameters, then,
+the type of constructor :math:`T` of :math:`I` *satisfies the nested
 positivity condition* for a constant :math:`X` in the following
 cases:
 
-+ :math:`T=(I~b_1 … b_p~u_1 … u_q)` and :math:`X` does not occur in
-  any :math:`u_i`
++ :math:`T=(I~b_1 … b_p~u_1 … u_q)` and :math:`X` does not occur in any :math:`u_i` nor in
+  any of the :math:`b_j` for :math:`m < j ≤ p` where :math:`m ≤ p` is
+  the number of recursively uniform parameters
 
 + :math:`T=∀ x:U,~V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
   satisfies the nested positivity condition for :math:`X`
