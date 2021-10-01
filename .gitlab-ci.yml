@@ -34,6 +34,7 @@ docker-boot:
     - docker:dind
   before_script: []
   script:
+    - dev/tools/check-cachekey.sh
     - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
     - cd dev/ci/docker/bionic_coq/
     - if docker pull "$IMAGE"; then echo "Image prebuilt!"; exit 0; fi
