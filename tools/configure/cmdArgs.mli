@@ -60,6 +60,8 @@ type t =
   (** Dune profile to use {dev/release}  *)
   ; install_enabled : bool
   (** Enable install [set to no when in -profile devel] *)
+  ; debug : bool
+  (** Debug package and environment detection *)
   }
 
 end

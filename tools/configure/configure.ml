@@ -577,6 +577,7 @@ let write_configpy o =
 (* Main configure routine *)
 let main () =
   let prefs = CmdArgs.parse_args () in
+  Util.debug := prefs.debug;
   let dune_29 = check_for_dune_29 () in
   let coq_annot_flag = coq_annot_flag prefs in
   let coq_bin_annot_flag = coq_bin_annot_flag prefs in

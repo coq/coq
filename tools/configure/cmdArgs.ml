@@ -41,6 +41,7 @@ type t = {
   warn_error : bool;
   dune_profile : string;
   install_enabled : bool;
+  debug : bool;
 }
 
 end
@@ -73,6 +74,7 @@ let default = {
   warn_error = false;
   dune_profile = "--release";
   install_enabled = true;
+  debug = false;
 }
 
 let devel state = { state with
@@ -182,7 +184,8 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
     "(yes|no) Make OCaml warnings into errors (default no)";
-  "-profile", arg_profile, Profiles.doc
+  "-profile", arg_profile, Profiles.doc;
+  "-debug", arg_set (fun p -> { p with debug = true }), " Enable debug information for package detection"
 ]
 
 let parse_args () =
