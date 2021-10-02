@@ -35,7 +35,7 @@ if [ ! -z "$fixes_string" ]; then fixes_string="$(printf '\n  fixes %s,' "$fixes
 # the ` are regular strings, this is intended
 # use %s for the leading - to avoid looking like an option (not sure
 # if necessary but doesn't hurt)
-printf '%s **%s:**\n  Describe your change here but do not end with a period\n  (`#%s <https://github.com/coq/coq/pull/%s>`_,%s\n  by %s)\n' - "$type_full" "$PR" "$PR" "$fixes_string" "$(git config user.name)" > "$where"
+printf '%s **%s:**\n  Describe your change here but do not end with a period\n  (`#%s <https://github.com/coq/coq/pull/%s>`_,%s\n  by %s).\n' - "$type_full" "$PR" "$PR" "$fixes_string" "$(git config user.name)" > "$where"
 
 printf 'Name of created changelog file:\n'
 printf '%s\n' "$where"
