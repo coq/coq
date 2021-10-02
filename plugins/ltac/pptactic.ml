@@ -196,7 +196,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_quantified_hypothesis = function
     | AnonHyp n -> int n
-    | NamedHyp id -> pr_id id
+    | NamedHyp id -> pr_id id.CAst.v
 
   let pr_clear_flag clear_flag pp x =
     match clear_flag with

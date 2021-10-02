@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
 open CErrors
 open Util
 open Names
@@ -55,7 +54,7 @@ let clenv_term clenv c = meta_instance clenv.env clenv.cache c
 let clenv_meta_type clenv mv =
   let ty =
     try Evd.meta_ftype clenv.evd mv
-    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
+    with Not_found -> anomaly Pp.(str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance clenv.env clenv.cache ty
 let clenv_value clenv = meta_instance clenv.env clenv.cache clenv.templval
 let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
@@ -149,7 +148,7 @@ let error_incompatible_inst clenv mv  =
   match na with
       Name id ->
         user_err ~hdr:"clenv_assign"
-          (str "An incompatible instantiation has already been found for " ++
+          Pp.(str "An incompatible instantiation has already been found for " ++
            Id.print id)
     | _ ->
         anomaly ~label:"clenv_assign" (Pp.str "non dependent metavar already assigned.")
@@ -460,40 +459,32 @@ let clenv_independent clenv =
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
 let qhyp_eq h1 h2 = match h1, h2 with
-| NamedHyp n1, NamedHyp n2 -> Id.equal n1 n2
+| NamedHyp n1, NamedHyp n2 -> lident_eq n1 n2
 | AnonHyp i1, AnonHyp i2 -> Int.equal i1 i2
 | _ -> false
 
 let check_bindings bl =
   match List.duplicates qhyp_eq (List.map (fun {CAst.v=x} -> fst x) bl) with
     | NamedHyp s :: _ ->
-        user_err
-          (str "The variable " ++ Id.print s ++
-           str " occurs more than once in binding list.");
+        user_err ?loc:s.CAst.loc
+          Pp.(str "The variable " ++ Id.print s.CAst.v ++
+              str " occurs more than once in binding list.");
     | AnonHyp n :: _ ->
         user_err
-          (str "The position " ++ int n ++
-           str " occurs more than once in binding list.")
+          Pp.(str "The position " ++ int n ++
+              str " occurs more than once in binding list.")
     | [] -> ()
 
-let explain_no_such_bound_variable evd id =
-  let fold l (n, clb) =
-    let na = match clb with
-    | Cltyp (na, _) -> na
-    | Clval (na, _, _) -> na
-    in
-    if na != Anonymous then Name.get_id na :: l else l
+let explain_no_such_bound_variable mvl {CAst.v=id;loc} =
+  let open Pp in
+  let expl = match mvl with
+  | [] -> str "(no bound variables at all in the expression)."
+  | [id] -> str "(possible name is: " ++ Id.print id ++ str ")."
+  | _ -> str "(possible names are: " ++ pr_enum Id.print mvl ++ str ")."
   in
-  let mvl = List.fold_left fold [] (Evd.meta_list evd) in
-  user_err ~hdr:"Evd.meta_with_name"
-    (str"No such bound variable " ++ Id.print id ++
-     (if mvl == [] then str " (no bound variables at all in the expression)."
-      else
-        (str" (possible name" ++
-         str (if List.length mvl == 1 then " is: " else "s are: ") ++
-         pr_enum Id.print mvl ++ str").")))
+  user_err ?loc (str "No such bound variable " ++ Id.print id ++ spc () ++ expl)
 
-let meta_with_name evd id =
+let meta_with_name evd ({CAst.v=id} as lid) =
   let na = Name id in
   let fold (l1, l2 as l) (n, clb) =
     let (na',def) = match clb with
@@ -506,7 +497,15 @@ let meta_with_name evd id =
   let (mvl, mvnodef) = List.fold_left fold ([], []) (Evd.meta_list evd) in
   match mvnodef, mvl with
     | _,[]  ->
-      explain_no_such_bound_variable evd id
+      let fold l (n, clb) =
+        let na = match clb with
+          | Cltyp (na, _) -> na
+          | Clval (na, _, _) -> na
+        in
+        if na != Anonymous then Name.get_id na :: l else l
+      in
+      let mvl = List.fold_left fold [] (Evd.meta_list evd) in
+      explain_no_such_bound_variable mvl lid
     | (n::_,_|_,n::_) ->
         n
 
@@ -515,17 +514,17 @@ let meta_of_binder clause loc mvs = function
   | AnonHyp n ->
       try List.nth mvs (n-1)
       with (Failure _|Invalid_argument _) ->
-        user_err  (str "No such binder.")
+        user_err Pp.(str "No such binder.")
 
 let error_already_defined b =
   match b with
     | NamedHyp id ->
-        user_err
-          (str "Binder name \"" ++ Id.print id ++
-           str"\" already defined with incompatible value.")
+        user_err ?loc:id.CAst.loc
+          Pp.(str "Binder name \"" ++ Id.print id.CAst.v ++
+              str"\" already defined with incompatible value.")
     | AnonHyp n ->
         anomaly
-          (str "Position " ++ int n ++ str" already defined.")
+          Pp.(str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =
   if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.env clenv.evd u))) then
@@ -574,8 +573,8 @@ let clenv_constrain_last_binding c clenv =
 
 let error_not_right_number_missing_arguments n =
   user_err
-    (strbrk "Not the right number of missing arguments (expected " ++
-      int n ++ str ").")
+    Pp.(strbrk "Not the right number of missing arguments (expected " ++
+        int n ++ str ").")
 
 let clenv_constrain_dep_args hyps_only bl clenv =
   if List.is_empty bl then
@@ -728,10 +727,10 @@ let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 (* Pretty-print *)
 
 let pr_clenv clenv =
-  h
-    (str"TEMPL: " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templval.rebus ++
-     str" : " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templtyp.rebus ++ fnl () ++
-     pr_evar_map (Some 2) clenv.env clenv.evd)
+  let prc = Termops.Internal.print_constr_env clenv.env clenv.evd in
+  Pp.(h (str"TEMPL: " ++ prc clenv.templval.rebus ++
+         str" : " ++ prc clenv.templtyp.rebus ++ fnl () ++
+         pr_evar_map (Some 2) clenv.env clenv.evd))
 
 (****************************************************************)
 (** Evar version of mk_clenv *)
@@ -790,27 +789,20 @@ let make_evar_clause env sigma ?len t =
   let clause = { cl_concl = t; cl_holes = holes } in
   (sigma, clause)
 
-let explain_no_such_bound_variable holes id =
-  let fold h accu = match h.hole_name with
-  | Anonymous -> accu
-  | Name id -> id :: accu
-  in
-  let mvl = List.fold_right fold holes [] in
-  let expl = match mvl with
-  | [] -> str " (no bound variables at all in the expression)."
-  | [id] -> str "(possible name is: " ++ Id.print id ++ str ")."
-  | _ -> str "(possible names are: " ++ pr_enum Id.print mvl ++ str ")."
-  in
-  user_err  (str "No such bound variable " ++ Id.print id ++ expl)
-
-let evar_with_name holes id =
+let evar_with_name holes ({CAst.v=id} as lid) =
   let map h = match h.hole_name with
   | Anonymous -> None
   | Name id' -> if Id.equal id id' then Some h else None
   in
   let hole = List.map_filter map holes in
   match hole with
-  | [] -> explain_no_such_bound_variable holes id
+  | [] ->
+    let fold h accu = match h.hole_name with
+      | Anonymous -> accu
+      | Name id -> id :: accu
+    in
+    let mvl = List.fold_right fold holes [] in
+    explain_no_such_bound_variable mvl lid
   | h::_ -> h.hole_evar
 
 let evar_of_binder holes = function
@@ -821,7 +813,7 @@ let evar_of_binder holes = function
     let h = List.nth nondeps (pred n) in
     h.hole_evar
   with e when CErrors.noncritical e ->
-    user_err  (str "No such binder.")
+    user_err Pp.(str "No such binder.")
 
 let define_with_type sigma env ev c =
   let open EConstr in

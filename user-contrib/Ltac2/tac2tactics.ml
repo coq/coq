@@ -426,13 +426,13 @@ let inversion knd arg pat ids =
     | None -> assert false
     | Some (_, Tactics.ElimOnAnonHyp n) ->
       Inv.inv_clause knd pat ids (AnonHyp n)
-    | Some (_, Tactics.ElimOnIdent {CAst.v=id}) ->
+    | Some (_, Tactics.ElimOnIdent id) ->
       Inv.inv_clause knd pat ids (NamedHyp id)
     | Some (_, Tactics.ElimOnConstr c) ->
       let open Tactypes in
       let anon = CAst.make @@ IntroNaming Namegen.IntroAnonymous in
       Tactics.specialize c (Some anon) >>= fun () ->
-      Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp id))
+      Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp (CAst.make id)))
     end
   in
   on_destruction_arg inversion true (Some (None, arg))

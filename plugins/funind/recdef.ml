@@ -983,8 +983,8 @@ let rec make_rewrite_list expr_info max = function
                    (* dep proofs also: *) ~dep:true ~with_evars:false
                    ( mkVar hp
                    , ExplicitBindings
-                       [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
-                       ; CAst.make @@ (NamedHyp k, f_S max) ] )
+                       [ CAst.make @@ (NamedHyp (CAst.make def), expr_info.f_constr)
+                       ; CAst.make @@ (NamedHyp (CAst.make k), f_S max) ] )
                    )))
          [ make_rewrite_list expr_info max l
          ; New.observe_tclTHENLIST
@@ -1018,8 +1018,8 @@ let make_rewrite expr_info l hp max =
                     (* dep proofs also: *) ~dep:true ~with_evars:false
                     ( mkVar hp
                     , ExplicitBindings
-                        [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
-                        ; CAst.make @@ (NamedHyp k, f_S (f_S max)) ] )
+                        [ CAst.make @@ (NamedHyp (CAst.make def), expr_info.f_constr)
+                        ; CAst.make @@ (NamedHyp (CAst.make k), f_S (f_S max)) ] )
                     )))
           [ New.observe_tac
               (fun _ _ -> str "make_rewrite finalize")

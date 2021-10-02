@@ -2409,7 +2409,7 @@ simple_intropattern_closed: [
 ]
 
 simple_binding: [
-| "(" ident ":=" lconstr ")"
+| "(" identref ":=" lconstr ")"
 | "(" natural ":=" lconstr ")"
 ]
 

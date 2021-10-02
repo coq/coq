@@ -529,13 +529,13 @@ let inv_gen thin status names =
 
 let inv k = inv_gen k NoDep
 
-let inv_tac id       = inv FullInversion None (NamedHyp id)
-let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
+let inv_tac id       = inv FullInversion None (NamedHyp (CAst.make id))
+let inv_clear_tac id = inv FullInversionClear None (NamedHyp (CAst.make id))
 
 let dinv k c = inv_gen k (Dep c)
 
-let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
-let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
+let dinv_tac id       = dinv FullInversion None None (NamedHyp (CAst.make id))
+let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp (CAst.make id))
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them
