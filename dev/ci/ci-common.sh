@@ -131,7 +131,7 @@ git_download()
         if [[ $CI ]]; then
             git -c pull.rebase=false -c user.email=nobody@example.invalid -c user.name=Nobody \
                 pull --no-ff "$ov_url" "$ov_ref"
-            git log -n 1 HEAD^2
+            git log -n 1 HEAD^2 || true # no merge commit if the overlay was merged upstream
             git log -n 1
         else
             git remote add -t "$ov_ref" -f overlay "$ov_url"
