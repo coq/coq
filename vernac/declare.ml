@@ -1732,8 +1732,6 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   if poly then
     CErrors.anomaly (Pp.str "Cannot delay universe-polymorphic constants.");
 
-  let uctx = Future.chain fpl snd in
-  let fpl = Future.chain fpl fst in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
@@ -1742,17 +1740,17 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   (* We only support opaque proofs, this will be enforced by using
      different entries soon *)
   let opaque = true in
-  let make_entry p (_, types) =
+  let make_entry i (_, types) =
     (* Already checked the univ_decl for the type universes when starting the proof. *)
     let univs = UState.univ_entry ~poly:false initial_euctx in
     let types = nf (EConstr.Unsafe.to_constr types) in
 
-    Future.chain p (fun (pt,eff) ->
+    Future.chain fpl (fun (pf, uctx) ->
+        let (pt, eff) = List.nth pf i in
         (* Deferred proof, we already checked the universe declaration with
              the initial universes, ensure that the final universes respect
              the declaration as well. If the declaration is non-extensible,
              this will prevent the body from adding universes and constraints. *)
-        let uctx = Future.force uctx in
         let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
         let used_univs = Univ.Level.Set.union
             (Vars.universes_of_constr types)
@@ -1763,14 +1761,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
         (pt,uctx),eff)
     |> delayed_definition_entry ~opaque ~feedback_id ~using ~univs ~types
   in
-  let entries =
-    CList.map_i (fun i y ->
-      let xi = Future.chain fpl (fun x ->
-          try List.nth x i
-          with Failure _ | Invalid_argument _ ->
-            CErrors.anomaly (Pp.str "Future.map2 length mismatch.")) in
-      make_entry xi y) 0 (Proofview.initial_goals entry)
-  in
+  let entries = CList.map_i make_entry 0 (Proofview.initial_goals entry) in
   { name; entries; uctx = initial_euctx; pinfo }
 
 let close_future_proof = close_proof_delayed
