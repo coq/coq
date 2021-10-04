@@ -1,4 +1,3 @@
-(* -*- coding: utf-8; coq-prog-args: ("-top" "Coq.Classes.CMorphisms") -*- *)
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
 (*  v      *         Copyright INRIA, CNRS and contributors             *)
