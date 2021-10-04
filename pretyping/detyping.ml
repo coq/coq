@@ -758,7 +758,7 @@ let rec detype d flags avoid env sigma t =
   delay d detype_r flags avoid env sigma t
 
 and detype_r d flags avoid env sigma t =
-  match EConstr.kind sigma (collapse_appl sigma t) with
+  match EConstr.kind sigma t with
     | Rel n ->
       (try match lookup_name_of_rel n (fst env) with
          | Name id   -> GVar id

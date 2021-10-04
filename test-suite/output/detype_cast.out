@@ -1,0 +1,8 @@
+(Nat.add : forall (_ : nat) (_ : nat), nat) O O
+     : nat
+(Nat.add O : forall _ : nat, nat) O
+     : nat
+(?n O : forall _ : nat, nat) O
+     : nat
+where
+?n : [ |- forall (_ : nat) (_ : nat), nat]
