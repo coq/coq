@@ -66,7 +66,6 @@ val replace : 'a computation -> 'a computation -> unit
 
 (* Inspect a computation *)
 val is_over : 'a computation -> bool
-val is_val : 'a computation -> bool
 val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
 val uuid : 'a computation -> UUID.t

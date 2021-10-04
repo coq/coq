@@ -83,10 +83,6 @@ let is_over kx = let _, _, _, x = get kx in match !x with
   | Val _ | Exn _ -> true
   | Closure _ | Delegated _ -> false
 
-let is_val kx = let _, _, _, x = get kx in match !x with
-  | Val _ -> true
-  | Exn _ | Closure _ | Delegated _ -> false
-
 let is_exn kx = let _, _, _, x = get kx in match !x with
   | Exn _ -> true
   | Val _ | Closure _ | Delegated _ -> false

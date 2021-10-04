@@ -140,15 +140,16 @@ let dump ?(except=Future.UUIDSet.empty) () =
     let i = Opaqueproof.repr_handle i in
     let uid = Future.uuid cert in
     let f2t_map = Future.UUIDMap.add uid i f2t_map in
-    let c =
-      if Future.is_val cert then
-        let (c, priv) = Safe_typing.repr_certificate (Future.force cert) in
-        let priv = match priv with
-        | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
-        | Opaqueproof.PrivatePolymorphic _ as p -> p
-        in
-        Some (c, priv)
-      else if Future.UUIDSet.mem uid except then None
+    let c = match Future.peek_val cert with
+    | Some cert ->
+      let (c, priv) = Safe_typing.repr_certificate cert in
+      let priv = match priv with
+      | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
+      | Opaqueproof.PrivatePolymorphic _ as p -> p
+      in
+      Some (c, priv)
+    | None ->
+      if Future.UUIDSet.mem uid except then None
       else
         CErrors.anomaly
           Pp.(str"Proof object "++int i++str" is not checked nor to be checked")
