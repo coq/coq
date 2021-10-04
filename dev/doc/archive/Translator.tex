@@ -29,10 +29,10 @@
   {\begin{center}\tt\begin{tabular}{l|ll} \hfil\textrm{V7} & \hfil\textrm{V8} \\ \hline}
   {\end{tabular}\end{center}}
 \def\TRANS#1#2
-  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} & 
+  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} &
    \begin{tabular}[t]{@{}l@{}}#2\end{tabular} \\}
 \def\TRANSCOM#1#2#3
-  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} & 
+  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} &
    \begin{tabular}[t]{@{}l@{}}#2\end{tabular} & #3 \\}
 
 %%
@@ -537,7 +537,7 @@ arises:
 
 \subsubsection{Implicit arguments}
 
-%% Hugo: 
+%% Hugo:
 Main definitions of standard library have now implicit
 arguments. These arguments are dropped in the translated files. This
 can exceptionally be a source of incompatibilities which has to be
@@ -680,7 +680,7 @@ x\_}
 \item avoid clash with new keywords by adding a trailing {\tt \_}
 \end{itemize}
 
-If the choices made by translation is not satisfactory 
+If the choices made by translation is not satisfactory
 or in the following cases:
 \begin{itemize}
 \item use of latin letters
@@ -748,7 +748,7 @@ Notation & Precedence & Associativity \\
 
   By default, the translator keeps the associativity given in V7 while
 the levels are mapped according to the following table:
- 
+
 \begin{center}
 \begin{tabular}{l|l|l}
 V7 level & mapped to & associativity \\
@@ -778,7 +778,7 @@ another level with a compatible associativity.
 
   You can choose any level between 0 and 200, knowing that the
 standard operators are already set at the levels shown on the list
-above. 
+above.
 
 Assume you have a notation
 \begin{verbatim}
