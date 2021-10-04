@@ -318,7 +318,7 @@ end
    XXX: This is an internal, low-level API and could become scheduled
    for removal from the public API, use higher-level declare APIs
    instead *)
-type 'a proof_entry
+type proof_entry
 type parameter_entry
 type primitive_entry
 
@@ -329,7 +329,7 @@ val definition_entry
   -> ?types:Constr.types
   -> ?univs:UState.named_universes_entry
   -> Constr.constr
-  -> Evd.side_effects proof_entry
+  -> proof_entry
 
 val parameter_entry
   :  ?inline:int
@@ -352,7 +352,7 @@ val declare_entry
   -> ?hook:Hook.t
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
-  -> Evd.side_effects proof_entry
+  -> proof_entry
   -> GlobRef.t
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
@@ -370,8 +370,8 @@ val declare_variable
    XXX: This is an internal, low-level API and could become scheduled
    for removal from the public API, use higher-level declare APIs
    instead *)
-type 'a constant_entry =
-  | DefinitionEntry of 'a proof_entry
+type constant_entry =
+  | DefinitionEntry of proof_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
@@ -394,7 +394,7 @@ val declare_constant
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> ?typing_flags:Declarations.typing_flags
-  -> Evd.side_effects constant_entry
+  -> constant_entry
   -> Constant.t
 
 (** Declaration messages, for internal use *)

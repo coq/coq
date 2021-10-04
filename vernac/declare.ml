@@ -109,7 +109,7 @@ type 'a pproof_entry = {
   proof_entry_inline_code : bool;
 }
 
-type 'a proof_entry = 'a Opaques.const_entry_body pproof_entry
+type proof_entry = Evd.side_effects Opaques.const_entry_body pproof_entry
 
 type parameter_entry = {
   parameter_entry_secctx : Id.Set.t option;
@@ -153,8 +153,8 @@ let primitive_entry ?types c = {
   prim_entry_content = c;
 }
 
-type 'a constant_entry =
-  | DefinitionEntry of 'a proof_entry
+type constant_entry =
+  | DefinitionEntry of proof_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
@@ -482,7 +482,7 @@ let inline_private_constants ~uctx env ce =
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
-  | SectionLocalDef of Evd.side_effects proof_entry
+  | SectionLocalDef of proof_entry
   | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind ;
                            univs:UState.named_universes_entry }
 
@@ -1612,7 +1612,7 @@ let get_open_goals ps =
 type proof_object =
   { name : Names.Id.t
   (* [name] only used in the STM *)
-  ; entries : Evd.side_effects proof_entry list
+  ; entries : proof_entry list
   ; uctx: UState.t
   ; pinfo : Proof_info.t
   }
@@ -1913,7 +1913,7 @@ module MutualEntry : sig
     (* Common to all recthms *)
     : pinfo:Proof_info.t
     -> uctx:UState.t
-    -> entry:Evd.side_effects proof_entry
+    -> entry:proof_entry
     -> Names.GlobRef.t list
 
 end = struct
