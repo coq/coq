@@ -161,17 +161,6 @@ let join kx =
   kx := Finished v;
   v
 
-let split2 x =
-  chain x (fun x -> fst x), chain x (fun x -> snd x)
-
-let map2 f x l =
-  CList.map_i (fun i y ->
-    let xi = chain x (fun x ->
-        try List.nth x i
-        with Failure _ | Invalid_argument _ ->
-          CErrors.anomaly (Pp.str "Future.map2 length mismatch.")) in
-    f xi y) 0 l
-
 let print f kx =
   let open Pp in
   let name, uid, _, x = get kx in

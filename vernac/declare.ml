@@ -1732,7 +1732,8 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   if poly then
     CErrors.anomaly (Pp.str "Cannot delay universe-polymorphic constants.");
 
-  let fpl, uctx = Future.split2 fpl in
+  let uctx = Future.chain fpl snd in
+  let fpl = Future.chain fpl fst in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
@@ -1762,7 +1763,14 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
         (pt,uctx),eff)
     |> delayed_definition_entry ~opaque ~feedback_id ~using ~univs ~types
   in
-  let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
+  let entries =
+    CList.map_i (fun i y ->
+      let xi = Future.chain fpl (fun x ->
+          try List.nth x i
+          with Failure _ | Invalid_argument _ ->
+            CErrors.anomaly (Pp.str "Future.map2 length mismatch.")) in
+      make_entry xi y) 0 (Proofview.initial_goals entry)
+  in
   { name; entries; uctx = initial_euctx; pinfo }
 
 let close_future_proof = close_proof_delayed
