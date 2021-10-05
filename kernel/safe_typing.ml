@@ -1296,7 +1296,8 @@ let import lib cst vodigest senv =
   check_required senv.required lib.comp_deps;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
     CErrors.user_err ~hdr:"Safe_typing.import"
-     (Pp.strbrk "Cannot load a library with the same name as the current one.");
+      Pp.(strbrk "Cannot load a library with the same name as the current one ("
+          ++ DirPath.print lib.comp_name ++ str").");
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.push_context_set ~strict:true
