@@ -112,7 +112,7 @@ let get_polymorphic_positions env sigma f =
       | Some templ -> templ.template_param_levels)
   | _ -> assert false
 
-let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
+let refresh_universes ?(status=univ_flexible) ?(onlyalg=false) ?(refreshset=false)
                       pbty env evd t =
   let evdref = ref evd in
   (* direction: true for fresh universes lower than the existing ones *)
@@ -1746,7 +1746,9 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
     (* so we recheck acyclicity *)
     if occur_evar_upto_types evd' evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
-    let evd', body = refresh_universes pbty env evd' body in
+    (* needs rigid so that [bla : Type -> _ |- forall A, bla A -> A = nat] produces [A : Type] not [A : Set]
+       (otherwise error in #11811's destruct call) *)
+    let evd', body = refresh_universes ~status:univ_rigid pbty env evd' body in
     instantiate_evar unify flags env evd' evk body
   with
     | NotEnoughInformationToProgress sols ->

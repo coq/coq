@@ -332,7 +332,9 @@ let inductive_levels env evd arities inds =
             (* If not a syntactic arity, the universe may be used in a
                polymorphic instance and so cannot be lowered to Prop.
                See #13300. *)
-              then true, Evd.set_eq_sort env evd Sorts.prop du
+              then begin try true, Evd.set_eq_sort env evd Sorts.prop du
+                with Univ.UniverseInconsistency _ -> false, Evd.set_eq_sort env evd Sorts.set du
+              end
               else false, Evd.set_eq_sort env evd Sorts.set du
             else false, evd
           else false, Evd.set_eq_sort env evd (sort_of_univ cu) du
