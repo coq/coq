@@ -779,7 +779,7 @@ let make_evar_clause env sigma ?len t =
         (* We fix it later *)
         hole_name = na.binder_name;
       } in
-      let t2 = if dep then subst1 ev t2 else t2 in
+      let t2 = subst1 ev t2 in
       clrec (sigma, hole :: holes) inst (pred n) t2
     | LetIn (na, b, _, t) -> clrec (sigma, holes) inst n (subst1 b t)
     | _ -> (sigma, holes, t)
