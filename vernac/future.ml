@@ -83,10 +83,6 @@ let is_over kx = let _, _, _, x = get kx in match !x with
   | Val _ | Exn _ -> true
   | Closure _ | Delegated _ -> false
 
-let is_val kx = let _, _, _, x = get kx in match !x with
-  | Val _ -> true
-  | Exn _ | Closure _ | Delegated _ -> false
-
 let is_exn kx = let _, _, _, x = get kx in match !x with
   | Exn _ -> true
   | Val _ | Closure _ | Delegated _ -> false
@@ -164,17 +160,6 @@ let join kx =
   let v = force kx in
   kx := Finished v;
   v
-
-let split2 x =
-  chain x (fun x -> fst x), chain x (fun x -> snd x)
-
-let map2 f x l =
-  CList.map_i (fun i y ->
-    let xi = chain x (fun x ->
-        try List.nth x i
-        with Failure _ | Invalid_argument _ ->
-          CErrors.anomaly (Pp.str "Future.map2 length mismatch.")) in
-    f xi y) 0 l
 
 let print f kx =
   let open Pp in

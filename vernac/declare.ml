@@ -97,8 +97,8 @@ end
 
 (** Declaration of constants and parameters *)
 
-type 'a proof_entry = {
-  proof_entry_body   : 'a Opaques.const_entry_body;
+type 'a pproof_entry = {
+  proof_entry_body   : 'a;
   (* List of section variables *)
   proof_entry_secctx : Id.Set.t option;
   (* State id on which the completion of type checking is reported *)
@@ -108,6 +108,8 @@ type 'a proof_entry = {
   proof_entry_opaque      : bool;
   proof_entry_inline_code : bool;
 }
+
+type proof_entry = Evd.side_effects Opaques.const_entry_body pproof_entry
 
 type parameter_entry = {
   parameter_entry_secctx : Id.Set.t option;
@@ -151,8 +153,8 @@ let primitive_entry ?types c = {
   prim_entry_content = c;
 }
 
-type 'a constant_entry =
-  | DefinitionEntry of 'a proof_entry
+type constant_entry =
+  | DefinitionEntry of proof_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
@@ -271,7 +273,7 @@ let record_aux env s_ty s_bo =
 
 let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
     ?(univs=default_named_univ_entry) body =
-  { proof_entry_body = Future.from_val ((body,Univ.ContextSet.empty), ());
+  { proof_entry_body = ((body,Univ.ContextSet.empty), ());
     proof_entry_secctx = None;
     proof_entry_type = types;
     proof_entry_universes = univs;
@@ -294,7 +296,7 @@ let extract_monomorphic = function
 | UState.Polymorphic_entry uctx -> Entries.Polymorphic_entry uctx, Univ.ContextSet.empty
 
 let cast_proof_entry e =
-  let (body, ctx), () = Future.force e.proof_entry_body in
+  let (body, ctx), () = e.proof_entry_body in
   let univ_entry =
     if Univ.ContextSet.is_empty ctx then fst (e.proof_entry_universes)
     else match fst (e.proof_entry_universes) with
@@ -315,10 +317,10 @@ let cast_proof_entry e =
   ctx
 
 type ('a, 'b) effect_entry =
-| EffectEntry : (private_constants, unit) effect_entry
-| PureEntry : (unit, Constr.constr) effect_entry
+| EffectEntry : (private_constants Opaques.const_entry_body, unit) effect_entry
+| PureEntry : (unit Entries.proof_output, Constr.constr) effect_entry
 
-let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proof_entry) : b Entries.opaque_entry * _ =
+let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a pproof_entry) : b Entries.opaque_entry * _ =
   let typ = match e.proof_entry_type with
   | None -> assert false
   | Some typ -> typ
@@ -334,7 +336,7 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
         let ids_typ = global_vars_set env typ in
         let pf, env = match entry with
         | PureEntry ->
-          let (pf, _), () = Future.force e.proof_entry_body in
+          let (pf, _), () = e.proof_entry_body in
           pf, env
         | EffectEntry ->
           let (pf, _), eff = Future.force e.proof_entry_body in
@@ -350,7 +352,7 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
   in
   let (body, (univ_entry, ctx) : b * _) = match entry with
   | PureEntry ->
-    let (body, uctx), () = Future.force e.proof_entry_body in
+    let (body, uctx), () = e.proof_entry_body in
     let univ_entry = match fst (e.proof_entry_universes) with
     | UState.Monomorphic_entry uctx' ->
       Entries.Monomorphic_entry, (Univ.ContextSet.union uctx uctx')
@@ -390,7 +392,7 @@ let declare_constant_core ~name ~typing_flags cd =
         (* This globally defines the side-effects in the environment
            and registers their libobjects. *)
         let () = export_side_effects eff in
-        let de = { de with proof_entry_body = Future.from_val (body, ()) } in
+        let de = { de with proof_entry_body = body, () } in
         let e, ctx = cast_proof_entry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         (* We register the global universes after exporting side-effects, since
@@ -473,14 +475,14 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
   kn, eff
 
 let inline_private_constants ~uctx env ce =
-  let body, eff = Future.force ce.proof_entry_body in
+  let body, eff = ce.proof_entry_body in
   let cb, ctx = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
   let uctx = UState.merge ~sideff:true Evd.univ_rigid uctx ctx in
   cb, uctx
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
-  | SectionLocalDef of Evd.side_effects proof_entry
+  | SectionLocalDef of proof_entry
   | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind ;
                            univs:UState.named_universes_entry }
 
@@ -578,6 +580,9 @@ let assumption_message id =
 
 module Internal = struct
 
+  let pmap_entry_body ~f entry =
+    { entry with proof_entry_body = f entry.proof_entry_body }
+
   let map_entry_body ~f entry =
     { entry with proof_entry_body = Future.chain entry.proof_entry_body f }
 
@@ -623,13 +628,11 @@ module Internal = struct
       | None -> assert false
       | Some t -> t
     in
-    (* The body has been forced by the call to [build_constant_by_tactic] *)
-    let () = assert (Future.is_over const.proof_entry_body) in
-    let ((body, uctx), eff) = Future.force const.proof_entry_body in
+    let ((body, uctx), eff) = const.proof_entry_body in
     let (body, typ, ctx) = decompose (List.length sign) body typ [] in
     let (body, typ, args) = shrink ctx sign body typ [] in
     { const with
-      proof_entry_body = Future.from_val ((body, uctx), eff)
+      proof_entry_body = ((body, uctx), eff)
     ; proof_entry_type = Some typ
     }, args
 
@@ -1609,7 +1612,7 @@ let get_open_goals ps =
 type proof_object =
   { name : Names.Id.t
   (* [name] only used in the STM *)
-  ; entries : Evd.side_effects proof_entry list
+  ; entries : proof_entry list
   ; uctx: UState.t
   ; pinfo : Proof_info.t
   }
@@ -1732,7 +1735,6 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   if poly then
     CErrors.anomaly (Pp.str "Cannot delay universe-polymorphic constants.");
 
-  let fpl, uctx = Future.split2 fpl in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
@@ -1741,17 +1743,17 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   (* We only support opaque proofs, this will be enforced by using
      different entries soon *)
   let opaque = true in
-  let make_entry p (_, types) =
+  let make_entry i (_, types) =
     (* Already checked the univ_decl for the type universes when starting the proof. *)
     let univs = UState.univ_entry ~poly:false initial_euctx in
     let types = nf (EConstr.Unsafe.to_constr types) in
 
-    Future.chain p (fun (pt,eff) ->
+    Future.chain fpl (fun (pf, uctx) ->
+        let (pt, eff) = List.nth pf i in
         (* Deferred proof, we already checked the universe declaration with
              the initial universes, ensure that the final universes respect
              the declaration as well. If the declaration is non-extensible,
              this will prevent the body from adding universes and constraints. *)
-        let uctx = Future.force uctx in
         let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
         let used_univs = Univ.Level.Set.union
             (Vars.universes_of_constr types)
@@ -1762,7 +1764,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
         (pt,uctx),eff)
     |> delayed_definition_entry ~opaque ~feedback_id ~using ~univs ~types
   in
-  let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
+  let entries = CList.map_i make_entry 0 (Proofview.initial_goals entry) in
   { name; entries; uctx = initial_euctx; pinfo }
 
 let close_future_proof = close_proof_delayed
@@ -1799,6 +1801,7 @@ let build_constant_by_tactic ~name ?(opaque=Vernacexpr.Transparent) ~uctx ~sign 
   let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
   match entries with
   | [entry] ->
+    let entry = Internal.pmap_entry_body ~f:Future.force entry in
     entry, status, uctx
   | _ ->
     CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
@@ -1811,7 +1814,7 @@ let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
     if side_eff then inline_private_constants ~uctx env ce
     else
       (* GG: side effects won't get reset: no need to treat their universes specially *)
-      let (cb, ctx), _eff = Future.force ce.proof_entry_body in
+      let (cb, ctx), _eff = ce.proof_entry_body in
       cb, UState.merge ~sideff:false Evd.univ_rigid uctx ctx
   in
   cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
@@ -1842,9 +1845,9 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
     Exninfo.iraise (e, info)
   in
   let sigma = Evd.set_universe_context sigma uctx in
-  let body, effs = Future.force const.proof_entry_body in
+  let body, effs = const.proof_entry_body in
   (* We drop the side-effects from the entry, they already exist in the ambient environment *)
-  let const = Internal.map_entry_body const ~f:(fun _ -> body, ()) in
+  let const = Internal.pmap_entry_body const ~f:(fun _ -> body, ()) in
   (* EJGA: Hack related to the above call to
      `build_constant_by_tactic` with `~opaque:Transparent`. Even if
      the abstracted term is destined to be opaque, if we trigger the
@@ -1865,7 +1868,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
     (* We mimic what the kernel does, that is ensuring that no additional
        constraints appear in the body of polymorphic constants. Ideally this
        should be enforced statically. *)
-    let (_, body_uctx), _ = Future.force const.proof_entry_body in
+    let (_, body_uctx), _ = const.proof_entry_body in
     let () = assert (Univ.ContextSet.is_empty body_uctx) in
     EConstr.EInstance.make (Univ.UContext.instance ctx)
   in
@@ -1910,7 +1913,7 @@ module MutualEntry : sig
     (* Common to all recthms *)
     : pinfo:Proof_info.t
     -> uctx:UState.t
-    -> entry:Evd.side_effects proof_entry
+    -> entry:proof_entry
     -> Names.GlobRef.t list
 
 end = struct
@@ -2084,7 +2087,9 @@ let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
           | Some id -> id
           | None -> let n = !obls in incr obls; Nameops.add_suffix i ("_obligation_" ^ string_of_int n)
         in
+        let entry = Internal.pmap_entry_body ~f:Future.force entry in
         let entry, args = Internal.shrink_entry local_context entry in
+        let entry = Internal.pmap_entry_body ~f:Future.from_val entry in
         let cst = declare_constant ~name:id ~kind ~typing_flags:None (DefinitionEntry entry) in
         let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
@@ -2108,6 +2113,7 @@ let finalize_proof ~pm proof_obj proof_info =
     pm, MutualEntry.declare_mutdef ~entry ~uctx ~pinfo:proof_info
   | End_obligation oinfo ->
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
+    let entry = Internal.pmap_entry_body ~f:Future.force entry in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
   | End_derive { f ; name } ->
     pm, finish_derived ~f ~name ~entries:proof_obj.entries

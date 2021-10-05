@@ -66,7 +66,6 @@ val replace : 'a computation -> 'a computation -> unit
 
 (* Inspect a computation *)
 val is_over : 'a computation -> bool
-val is_val : 'a computation -> bool
 val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
 val uuid : 'a computation -> UUID.t
@@ -85,13 +84,6 @@ val compute : 'a computation -> 'a value
  * Also the fix_exn function is lost, hence error reporting can be incomplete
  * in a computation obtained by chaining on a joined future. *)
 val join : 'a computation -> 'a
-
-(*** Utility functions ************************************************* ***)
-val split2 :
-  ('a * 'b) computation -> 'a computation * 'b computation
-val map2 :
-  ('a computation -> 'b -> 'c) ->
-     'a list computation -> 'b list -> 'c list
 
 (** Debug: print a computation given an inner printing function. *)
 val print : ('a -> Pp.t) -> 'a computation -> Pp.t
