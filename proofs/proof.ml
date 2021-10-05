@@ -510,6 +510,10 @@ let solve ?with_end_tac gi info_lvl tac pr =
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)
 
+type purify = { purify : 'a. (unit -> 'a) -> 'a }
+
+let (f_purify, purify_hook) = Hook.make ()
+
 let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Save the initial side-effects to restore them afterwards. We set the
      current set of side-effects to be empty so that we can retrieve the
@@ -521,7 +525,9 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Start a proof *)
   let prf = start ~name ~poly sigma [env, ty] in
   let (prf, _, ()) =
-    try run_tactic env tac prf
+    (* FIXME: we have to work around the fact that a tactic can gladly modify
+       the global imperative environment. *)
+    try (Hook.get f_purify).purify (fun () -> run_tactic env tac prf)
     with Logic_monad.TacticFailure e as src ->
       (* Catch the inner error of the monad tactic *)
       let (_, info) = Exninfo.capture src in

@@ -238,3 +238,9 @@ val get_goal_context_gen : t -> int -> Evd.evar_map * Environ.env
 (** [get_proof_context ()] gets the goal context for the first subgoal
     of the proof *)
 val get_proof_context : t -> Evd.evar_map * Environ.env
+
+(** {6 Internal} *)
+
+type purify = { purify : 'a. (unit -> 'a) -> 'a }
+
+val purify_hook : purify Hook.t

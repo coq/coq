@@ -270,3 +270,17 @@ module Stm = struct
 
 end
 module Declare = Declare_
+
+let () =
+  let purify f =
+    let state = freeze_interp_state ~marshallable:false in
+    try
+      let ans = f () in
+      let () = unfreeze_interp_state state in
+      ans
+    with e ->
+      let e = Exninfo.capture e in
+      let () = unfreeze_interp_state state in
+      Exninfo.iraise e
+  in
+  Hook.set Proof.purify_hook { Proof.purify = purify }
