@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Mod_subst
 
 (** This module implements the handling of opaque proof terms.
@@ -23,48 +22,32 @@ type 'a delayed_universes =
 | PrivatePolymorphic of int * Univ.ContextSet.t
   (** Number of surrounding bound universes + local constraints *)
 
-type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 type opaquetab
 type 'cooking_info opaque
 
 val empty_opaquetab : opaquetab
 
-(** From a [proofterm] to some [opaque]. *)
-val create : DirPath.t -> proofterm -> opaquetab -> 'c opaque * opaquetab
+(** Create a fresh handle in the table. *)
+val create : DirPath.t -> opaquetab -> 'c opaque * opaquetab
 
 type opaque_proofterm = Constr.t * unit delayed_universes
 
 type opaque_handle
 
-type 'cooking_info indirect_accessor = {
-  access_proof : DirPath.t -> opaque_handle -> opaque_proofterm option;
-  access_discharge : 'cooking_info list -> opaque_proofterm -> opaque_proofterm;
-}
+module HandleMap : CSig.MapS with type key = opaque_handle
+
 (** Opaque terms are indexed by their library
     dirpath and an integer index. The two functions above activate
     this indirect storage, by telling how to retrieve terms.
 *)
-
-(** From a [opaque] back to a [constr]. This might use the
-    indirect opaque accessor given as an argument. *)
-val force_proof : 'c indirect_accessor -> opaquetab -> 'c opaque -> opaque_proofterm
-val force_constraints : 'c indirect_accessor -> opaquetab -> 'c opaque -> Univ.ContextSet.t
 
 val subst_opaque : substitution -> 'c opaque -> 'c opaque
 
 val discharge_opaque :
   'cooking_info -> 'cooking_info opaque -> 'cooking_info opaque
 
-val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> 'c opaque -> unit
-
-(** {5 Serialization} *)
-
-type opaque_disk
-
-val dump : ?except:Future.UUIDSet.t -> opaquetab -> opaque_disk * opaque_handle Future.UUIDMap.t
-
-val get_opaque_disk : opaque_handle -> opaque_disk -> opaque_proofterm option
-val set_opaque_disk : opaque_handle -> opaque_proofterm -> opaque_disk -> unit
-
-(** Only used for pretty-printing *)
 val repr_handle : opaque_handle -> int
+
+val mem_handle : opaque_handle -> opaquetab -> bool
+
+val repr : 'c opaque -> substitution list * 'c list * DirPath.t * opaque_handle

@@ -137,10 +137,6 @@ let rec functor_smart_map fty f0 funct = match funct with
   |NoFunctor a ->
     let a' = f0 a in if a==a' then funct else NoFunctor a'
 
-let rec functor_iter fty f0 = function
-  |MoreFunctor (_mbid,ty,e) -> fty ty; functor_iter fty f0 e
-  |NoFunctor a -> f0 a
-
 (** {6 Misc operations } *)
 
 let module_type_of_module mb =
@@ -163,11 +159,6 @@ let implem_smartmap fs fa impl = match impl with
   |Struct e -> let e' = fs e in if e==e' then impl else Struct e'
   |Algebraic a -> let a' = fa a in if a==a' then impl else Algebraic a'
   |Abstract|FullStruct -> impl
-
-let implem_iter fs fa impl = match impl with
-  |Struct e -> fs e
-  |Algebraic a -> fa a
-  |Abstract|FullStruct -> ()
 
 (** {6 Substitutions of modular structures } *)
 
@@ -601,27 +592,3 @@ let rec collect_mbid l sign =  match sign with
 
 let clean_bounded_mod_expr sign =
   if is_functor sign then collect_mbid MBIset.empty sign else sign
-
-(** {6 Stm machinery } *)
-let join_constant_body except otab cb =
-  match cb.const_body with
-  | OpaqueDef o -> Opaqueproof.join_opaque ~except otab o
-  | _ -> ()
-
-let join_structure except otab s =
-  let rec join_module : 'a. 'a generic_module_body -> unit = fun mb ->
-    Option.iter join_expression mb.mod_type_alg;
-    join_signature mb.mod_type
-  and join_field (_l,body) = match body with
-    |SFBconst sb -> join_constant_body except otab sb
-    |SFBmind _ -> ()
-    |SFBmodule m ->
-      implem_iter join_signature join_expression m.mod_expr;
-      join_module m
-    |SFBmodtype m -> join_module m
-  and join_structure struc = List.iter join_field struc
-  and join_signature sign =
-    functor_iter join_module join_structure sign
-  and join_expression me = functor_iter join_module (fun _ -> ()) me in
-  join_structure s
-

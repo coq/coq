@@ -1,0 +1,20 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Failing join from within a module
+#
+
+ADD { Universes u v. }
+ADD { Lemma foo : True. }
+ADD { Proof. }
+ADD { refine (let _ : Type@{v} := Type@{u} in _). }
+ADD { constructor. }
+ADD { Qed. }
+ADD { Lemma bar : True. }
+ADD { Proof. }
+ADD { refine (let _ : Type@{u} := Type@{v} in _). }
+ADD { constructor. }
+ADD { Qed. }
+ADD { Module Foo. }
+FAILJOIN
+ABORT

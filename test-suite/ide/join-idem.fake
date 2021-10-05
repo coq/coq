@@ -1,0 +1,12 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Idempotency of join
+#
+
+ADD { Lemma x : True. }
+ADD { Proof. }
+ADD { constructor. }
+ADD { Qed. }
+JOIN
+JOIN

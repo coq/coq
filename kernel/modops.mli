@@ -82,11 +82,6 @@ val subst_modtype_and_resolver : module_type_body -> ModPath.t ->
 
 val clean_bounded_mod_expr : module_signature -> module_signature
 
-(** {6 Stm machinery } *)
-
-val join_structure :
-  Future.UUIDSet.t -> Opaqueproof.opaquetab -> structure_body -> unit
-
 (** {6 Errors } *)
 
 type signature_mismatch_error =

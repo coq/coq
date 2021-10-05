@@ -8,10 +8,8 @@ open Environ
 
 (** {6 Checking constants } *)
 
-let indirect_accessor = ref {
-  Opaqueproof.access_proof = (fun _ _ -> assert false);
-  Opaqueproof.access_discharge = (fun _ _ -> assert false);
-}
+let indirect_accessor : (cooking_info Opaqueproof.opaque -> Constr.t * unit Opaqueproof.delayed_universes) ref =
+  ref (fun _ -> assert false)
 
 let set_indirect_accessor f = indirect_accessor := f
 
@@ -50,12 +48,11 @@ let check_constant_declaration env opac kn cb opacify =
   in
   let ty = cb.const_type in
   let _ = infer_type env ty in
-  let otab = Environ.opaque_tables env in
   let body, env = match cb.const_body with
     | Undef _ | Primitive _ -> None, env
     | Def c -> Some c, env
     | OpaqueDef o ->
-      let c, u = Opaqueproof.force_proof !indirect_accessor otab o in
+      let c, u = !indirect_accessor o in
       let env = match u, cb.const_universes with
         | Opaqueproof.PrivateMonomorphic (), Monomorphic -> env
         | Opaqueproof.PrivatePolymorphic (_, local), Polymorphic _ ->
