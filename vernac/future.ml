@@ -59,19 +59,15 @@ and 'a comp =
   | Val of 'a
   | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
 
-and 'a comput =
+and 'a computation =
   | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) CEphemeron.key
-  | Finished of 'a
-
-and 'a computation = 'a comput ref
 
 let unnamed = "unnamed"
 
 let create ?(name=unnamed) ?(uuid=UUID.fresh ()) ~fix_exn x =
-  ref (Ongoing (name, CEphemeron.create (uuid, fix_exn, ref x)))
+  Ongoing (name, CEphemeron.create (uuid, fix_exn, ref x))
 let get x =
-  match !x with
-  | Finished v -> unnamed, UUID.invalid, id, ref (Val v)
+  match x with
   | Ongoing (name, x) ->
       try let uuid, fix, c = CEphemeron.get x in name, uuid, fix, c
       with CEphemeron.InvalidKey ->
@@ -155,11 +151,6 @@ let chain x f =
   let y = chain x f in
   if is_over x then ignore(force y);
   y
-
-let join kx =
-  let v = force kx in
-  kx := Finished v;
-  v
 
 let print f kx =
   let open Pp in
