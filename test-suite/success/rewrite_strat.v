@@ -40,6 +40,9 @@ Undo 2.
 Undo 2.
   Time rewrite_strat (topdown (choice lem2 (choice lem1 (choice lem0 lem3)))).
   reflexivity.
+Undo 2.
+  Time rewrite_strat (topdown (choice lem2 lem1 lem0 lem3)).
+  reflexivity.
 Qed.
 
 Goal forall x, h 10 x = f x.

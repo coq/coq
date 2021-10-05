@@ -2288,7 +2288,7 @@ rewstrategy: [
 | "repeat" rewstrategy
 | rewstrategy ";" rewstrategy
 | "(" rewstrategy ")"
-| "choice" rewstrategy rewstrategy
+| "choice" LIST1 rewstrategy
 | "old_hints" preident
 | "hints" preident
 | "terms" LIST0 constr

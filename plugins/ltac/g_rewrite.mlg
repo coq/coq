@@ -114,7 +114,7 @@ ARGUMENT EXTEND rewstrategy
   | [ "repeat" rewstrategy(h) ] -> { StratUnary (Repeat, h) }
   | [ rewstrategy(h) ";" rewstrategy(h') ] -> { StratBinary (Compose, h, h') }
   | [ "(" rewstrategy(h) ")" ] -> { h }
-  | [ "choice" rewstrategy(h) rewstrategy(h') ] -> { StratBinary (Choice, h, h') }
+  | [ "choice" ne_rewstrategy_list(h) ] -> { StratNAry (Choice, h) }
   | [ "old_hints" preident(h) ] -> { StratHints (true, h) }
   | [ "hints" preident(h) ] -> { StratHints (false, h) }
   | [ "terms" constr_list(h) ] -> { StratTerms h }

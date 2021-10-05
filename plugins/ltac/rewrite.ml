@@ -1659,13 +1659,16 @@ type unary_strategy =
   | Bottomup | Topdown | Progress | Try | Any | Repeat
 
 type binary_strategy =
-  | Compose | Choice
+  | Compose
+
+type nary_strategy = Choice
 
 type ('constr,'redexpr) strategy_ast =
   | StratId | StratFail | StratRefl
   | StratUnary of unary_strategy * ('constr,'redexpr) strategy_ast
-  | StratBinary of binary_strategy
-    * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
+  | StratBinary of
+      binary_strategy * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
+  | StratNAry of nary_strategy * ('constr,'redexpr) strategy_ast list
   | StratConstr of 'constr * bool
   | StratTerms of 'constr list
   | StratHints of bool * string
@@ -1676,6 +1679,7 @@ let rec map_strategy (f : 'a -> 'a2) (g : 'b -> 'b2) : ('a,'b) strategy_ast -> (
   | StratId | StratFail | StratRefl as s -> s
   | StratUnary (s, str) -> StratUnary (s, map_strategy f g str)
   | StratBinary (s, str, str') -> StratBinary (s, map_strategy f g str, map_strategy f g str')
+  | StratNAry (s, strs) -> StratNAry (s, List.map (map_strategy f g) strs)
   | StratConstr (c, b) -> StratConstr (f c, b)
   | StratTerms l -> StratTerms (List.map f l)
   | StratHints (b, id) -> StratHints (b, id)
@@ -1702,9 +1706,8 @@ let rec pr_strategy prc prr = function
 | StratRefl -> str "refl"
 | StratUnary (s, str) ->
   pr_ustrategy s ++ spc () ++ paren (pr_strategy prc prr str)
-| StratBinary (Choice, str1, str2) ->
-  str "choice" ++ spc () ++ paren (pr_strategy prc prr str1) ++ spc () ++
-    paren (pr_strategy prc prr str2)
+| StratNAry (Choice, strs) ->
+  str "choice" ++ spc () ++ prlist_with_sep spc (fun str -> paren (pr_strategy prc prr str)) strs
 | StratBinary (Compose, str1, str2) ->
   pr_strategy prc prr str1 ++ str ";" ++ spc () ++ pr_strategy prc prr str2
 | StratConstr (c, true) -> prc c
@@ -1739,8 +1742,13 @@ let rec strategy_of_ast ist = function
     let t' = strategy_of_ast ist t in
     let f' = match f with
       | Compose -> Strategies.seq
-      | Choice -> Strategies.choice
     in f' s' t'
+  | StratNAry (Choice, strs) ->
+    let strs = List.map (strategy_of_ast ist) strs in
+    begin match strs with
+      | [] -> assert false
+      | s::strs -> List.fold_left Strategies.choice s strs
+    end
   | StratConstr (c, b) -> { strategy = apply_glob_constr ist c b AllOccurrences }
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
   | StratTerms l -> { strategy =

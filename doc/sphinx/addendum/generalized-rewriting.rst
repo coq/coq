@@ -772,7 +772,7 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    | progress @rewstrategy
    | try @rewstrategy
    | @rewstrategy ; @rewstrategy
-   | choice @rewstrategy @rewstrategy
+   | choice {+ @rewstrategy }
    | repeat @rewstrategy
    | any @rewstrategy
    | subterm @rewstrategy
@@ -812,8 +812,8 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
 :n:`@rewstrategy ; @rewstrategy`
    composition
 
-:n:`choice @rewstrategy @rewstrategy`
-   left_biased_choice
+:n:`choice {+ @rewstrategy }`
+   first successful strategy
 
 :n:`repeat @rewstrategy`
    one or more
@@ -883,11 +883,11 @@ hand-side. Composition can be used to continue rewriting on the
 current subterm. The ``fail`` strategy always fails while the identity
 strategy succeeds without making progress. The reflexivity strategy
 succeeds, making progress using a reflexivity proof of rewriting.
-``progress`` tests progress of the argument :n:`@rewstrategy` and fails if no
-progress was made, while ``try`` always succeeds, catching failures.
-``choice`` is left-biased: it will launch the first strategy and fall back
-on the second one in case of failure. One can iterate a strategy at
-least 1 time using ``repeat`` and at least 0 times using ``any``.
+``progress`` tests progress of the argument :n:`@rewstrategy` and
+fails if no progress was made, while ``try`` always succeeds, catching
+failures. ``choice`` uses the first successful strategy in the list of
+@rewstrategy. One can iterate a strategy at least 1 time using
+``repeat`` and at least 0 times using ``any``.
 
 The ``subterm`` and ``subterms`` strategies apply their argument :n:`@rewstrategy` to
 respectively one or all subterms of the current term under
