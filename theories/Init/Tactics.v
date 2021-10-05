@@ -232,7 +232,7 @@ Tactic Notation "decide" constr(lemma) "with" constr(H) :=
 Tactic Notation "clear" "dependent" hyp(h) :=
  let rec depclear h :=
   clear h ||
-  match goal with
+  lazymatch goal with
    | H : context [ h ] |- _ => depclear H; depclear h
    | H := context [ h ] |- _ => depclear H; depclear h
   end ||
