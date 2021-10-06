@@ -1416,11 +1416,12 @@ let build_ui () =
   let tools_menu = GAction.action_group ~name:"Tools" () in
   let queries_menu = GAction.action_group ~name:"Queries" () in
   let compile_menu = GAction.action_group ~name:"Compile" () in
+  let debug_menu = GAction.action_group ~name:"Debug" () in
   let windows_menu = GAction.action_group ~name:"Windows" () in
   let help_menu = GAction.action_group ~name:"Help" () in
   let all_menus = [
     file_menu; edit_menu; view_menu; export_menu; navigation_menu;
-    templates_menu; tools_menu; queries_menu; compile_menu; windows_menu;
+    templates_menu; tools_menu; queries_menu; compile_menu; debug_menu; windows_menu;
     help_menu; ] in
 
   menu file_menu [
@@ -1533,14 +1534,6 @@ let build_ui () =
       ];
     item "Show Proof Diffs" ~label:"_Show Proof (with diffs, if set)" ~accel:(modifier_for_display#get ^ "S")
       ~callback:MiscMenu.show_proof_diffs;
-    (* todo: move the following somewhere better *)
-    item "Toggle breakpoint" ~label:"_Toggle breakpoint" ~accel:"F8"
-      ~callback:MiscMenu.toggle_breakpoint;
-    item "Continue" ~label:"_Continue" ~accel:"F9" ~callback:Nav.continue;
-    item "Step in" ~label:"Step in" ~accel:"F10" ~callback:Nav.step_in;
-    item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~callback:Nav.step_out;
-    (* todo: consider other names for Break and Interrupt to be clearer to users *)
-    item "Break" ~label:"Break" ~accel:"F11" ~callback:Nav.break;
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;
 
@@ -1622,6 +1615,17 @@ let build_ui () =
     item "Make makefile" ~label:"Make makefile" ~callback:External.coq_makefile;
   ];
 
+  menu debug_menu [
+    item "Debug" ~label:"_Debug";
+    item "Toggle breakpoint" ~label:"_Toggle breakpoint" ~accel:"F8"
+      ~callback:MiscMenu.toggle_breakpoint;
+    item "Continue" ~label:"_Continue" ~accel:"F9" ~callback:Nav.continue;
+    item "Step in" ~label:"Step in" ~accel:"F10" ~callback:Nav.step_in;
+    item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~callback:Nav.step_out;
+    (* todo: consider other names for Break and Interrupt to be clearer to users *)
+    item "Break" ~label:"Break" ~accel:"F11" ~callback:Nav.break;
+  ];
+
   menu windows_menu [
     item "Windows" ~label:"_Windows";
     item "Detach Proof" ~label:"Detach _Proof" ~callback:MiscMenu.detach_view
@@ -1658,6 +1662,7 @@ let build_ui () =
   Coqide_ui.ui_m#insert_action_group tools_menu 0;
   Coqide_ui.ui_m#insert_action_group queries_menu 0;
   Coqide_ui.ui_m#insert_action_group compile_menu 0;
+  Coqide_ui.ui_m#insert_action_group debug_menu 0;
   Coqide_ui.ui_m#insert_action_group windows_menu 0;
   Coqide_ui.ui_m#insert_action_group help_menu 0;
   w#add_accel_group Coqide_ui.ui_m#get_accel_group ;

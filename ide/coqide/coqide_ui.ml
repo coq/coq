@@ -91,11 +91,6 @@ let init () =
 \n    <menuitem action='Set diff' />\
 \n    <menuitem action='Set removed diff' />\
 \n    <menuitem action='Show Proof Diffs' />\
-\n    <menuitem action='Toggle breakpoint' />\
-\n    <menuitem action='Continue' />\
-\n    <menuitem action='Step in' />\
-\n    <menuitem action='Step out' />\
-\n    <menuitem action='Break' />\
 \n  </menu>\
 \n  <menu action='Navigation'>\
 \n    <menuitem action='Forward' />\
@@ -141,6 +136,13 @@ let init () =
 \n    <menuitem action='Make' />\
 \n    <menuitem action='Next error' />\
 \n    <menuitem action='Make makefile' />\
+\n  </menu>\
+\n  <menu action='Debug'>\
+\n    <menuitem action='Toggle breakpoint' />\
+\n    <menuitem action='Continue' />\
+\n    <menuitem action='Step in' />\
+\n    <menuitem action='Step out' />\
+\n    <menuitem action='Break' />\
 \n  </menu>\
 \n  <menu action='Windows'>\
 \n    <menuitem action='Detach Proof' />\
