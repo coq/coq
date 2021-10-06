@@ -5,6 +5,6 @@ key=$(grep CACHEKEY: .gitlab-ci.yml)
 keyhash=${key%\"}
 keyhash=${keyhash##*-}
 if ! [ "$hash" = "$keyhash" ]; then
-    echo "Bad CACHEKEY: expected '$hash' but got '$keyhash'"
+    >&2 echo "Bad CACHEKEY: expected '$hash' but got '$keyhash'"
     exit 1
 fi
