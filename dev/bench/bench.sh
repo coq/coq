@@ -52,6 +52,7 @@ echo $PWD
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
 : "${num_of_iterations:=1}"
+: "${timeout:=3h}"
 : "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst}"
 
 new_coq_commit=$(git rev-parse HEAD^2)
@@ -440,7 +441,7 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         for iteration in $(seq $num_of_iterations); do
             export COQ_ITERATION=$iteration
             _RES=0
-            opam install -v -b -j1 $coq_opam_package \
+            timeout "$timeout" opam install -v -b -j1 $coq_opam_package \
                  3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
                  4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
                 _RES=$?
