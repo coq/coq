@@ -65,13 +65,17 @@ let print_usage_common co command =
 \n  -quiet                 unset display of extra information (implies -w \"-all\")\
 \n  -w (w1,..,wn)          configure display of warnings\
 \n  -d (d1,..,dn)          configure display of debug messages\
+\n                         some common values are:\
+\n                           all         print all debugging information\
+\n                           backtrace   same as -bt\
+\n                         use the vernac command \"Test Debug\" to see all\
+\n\
 \n  -color (yes|no|auto)   configure color output\
 \n  -emacs                 tells Coq it is executed under Emacs\
 \n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\
-\n  -bt                    print backtraces (requires configure debug flag)\
-\n  -debug                 debug mode (implies -bt)\
+\n  -bt                    print OCaml backtraces\
 \n  -xml-debug             debug mode and print XML messages to/from coqide\
 \n  -diffs (on|off|removed) highlight differences between proof steps\
 \n  -impredicative-set     set sort Set impredicative\
