@@ -548,6 +548,12 @@ Creating Hints
 
       .. warning::
 
+         The regexp matches the entire path. Most hints will start with a
+         leading `( _* )` to match the tail of the path. (Note that `(_*)`
+         misparses since `*)` would end a comment.)
+
+      .. warning::
+
          There is no operator precedence during parsing, one can
          check with :cmd:`Print HintDb` to verify the current cut expression.
 
