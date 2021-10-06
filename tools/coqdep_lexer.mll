@@ -194,6 +194,8 @@ and require_file from = parse
       { syntax_error lexbuf }
 
 and skip_to_dot = parse
+  | "(*"
+      { comment lexbuf; skip_to_dot lexbuf }
   | dot { () }
   | eof { syntax_error lexbuf }
   | _   { skip_to_dot lexbuf }
