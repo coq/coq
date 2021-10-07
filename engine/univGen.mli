@@ -13,6 +13,14 @@ open Constr
 open Environ
 open Univ
 
+type univ_length_mismatch = {
+  actual : int ;
+  expect : int ;
+}
+(* Due to an OCaml bug ocaml/ocaml#10027 inlining this record will cause
+compliation with -rectypes to crash. *)
+exception UniverseLengthMismatch of univ_length_mismatch
+
 (** Side-effecting functions creating new universe levels. *)
 
 val new_univ_global : unit -> Level.UGlobal.t

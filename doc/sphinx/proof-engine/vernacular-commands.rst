@@ -32,7 +32,7 @@ Displaying
    .. exn:: @qualid not a defined object.
       :undocumented:
 
-   .. exn:: Universe instance should have length @natural.
+   .. exn:: Universe instance length is @natural but should be @natural.
       :undocumented:
 
    .. exn:: This object does not support universe names.

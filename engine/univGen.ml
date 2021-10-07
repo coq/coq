@@ -13,6 +13,20 @@ open Names
 open Constr
 open Univ
 
+type univ_length_mismatch = {
+  actual : int ;
+  expect : int ;
+}
+(* Due to an OCaml bug ocaml/ocaml#10027 inlining this record will cause
+compliation with -rectypes to crash. *)
+exception UniverseLengthMismatch of univ_length_mismatch
+
+let () = CErrors.register_handler (function
+  | UniverseLengthMismatch { actual; expect } ->
+      Some Pp.(str "Universe instance length is " ++ int actual
+        ++ str " but should be " ++ int expect ++ str ".")
+  | _ -> None)
+
 (* Generator of levels *)
 let new_univ_id =
   let cnt = ref 0 in
@@ -33,11 +47,10 @@ let fresh_instance auctx =
 
 let existing_instance ?loc auctx inst =
   let () =
-    let len1 = Array.length (Instance.to_array inst)
-    and len2 = AbstractContext.size auctx in
-      if not (len1 == len2) then
-        CErrors.user_err ?loc
-          Pp.(str "Universe instance should have length " ++ int len2 ++ str ".")
+    let actual = Array.length (Instance.to_array inst)
+    and expect = AbstractContext.size auctx in
+      if not (Int.equal actual expect) then
+        raise (UniverseLengthMismatch { actual; expect })
       else ()
   in
   inst, (Level.Set.empty, AbstractContext.instantiate inst auctx)
