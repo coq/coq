@@ -36,7 +36,6 @@ environment for semi-interactive development of machine-checked proofs.
 [![nixpkgs unstable package][nixpkgs-badge]][nixpkgs-link]
 
 [![Docker Hub package][dockerhub-badge]][dockerhub-link]
-[![latest dockerized version][coqorg-badge]][coqorg-link]
 
 [repology-badge]: https://repology.org/badge/latest-versions/coq.svg
 [repology-link]: https://repology.org/metapackage/coq/versions
@@ -61,9 +60,6 @@ environment for semi-interactive development of machine-checked proofs.
 
 [dockerhub-badge]: https://img.shields.io/badge/images%20on-Docker%20Hub-blue.svg
 [dockerhub-link]: https://hub.docker.com/r/coqorg/coq#supported-tags "Supported tags on Docker Hub"
-
-[coqorg-badge]: https://images.microbadger.com/badges/version/coqorg/coq.svg
-[coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
 
 Please see https://coq.inria.fr/download.
 Information on how to build and install from sources can be found in
