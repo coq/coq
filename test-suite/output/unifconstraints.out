@@ -1,5 +1,4 @@
-3 focused goals
-(shelved: 1)
+3 focused goals (shelved: 1)
   
   ============================
   ?Goal 0
@@ -13,8 +12,7 @@ unification constraint:
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
-3 focused goals
-(shelved: 1)
+3 focused goals (shelved: 1)
   
   n, m : nat
   ============================
@@ -29,8 +27,7 @@ unification constraint:
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
-3 focused goals
-(shelved: 1)
+3 focused goals (shelved: 1)
   
   m : nat
   ============================
@@ -46,8 +43,7 @@ unification constraint:
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
-3 focused goals
-(shelved: 1)
+3 focused goals (shelved: 1)
   
   m : nat
   ============================
