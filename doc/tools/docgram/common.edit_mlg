@@ -719,8 +719,9 @@ gallina_ext: [
 | REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
+| DELETE "Require" export_token LIST1 global
 | REPLACE "From" global "Require" export_token LIST1 global
-| WITH "From" dirpath "Require" export_token LIST1 global
+| WITH OPT [ "From" dirpath ] "Require" export_token LIST1 global
 ]
 
 (* lexer stuff *)
