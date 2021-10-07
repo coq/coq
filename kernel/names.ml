@@ -25,63 +25,6 @@ open Util
 
 (** {6 Identifiers } *)
 
-(** Representation and operations on identifiers. *)
-module Id =
-struct
-  type t = string
-
-  let equal = String.equal
-
-  let compare = String.compare
-
-  let hash = String.hash
-
-  let check_valid ?(strict=true) x =
-    let iter (fatal, x) = if fatal || strict then CErrors.user_err Pp.(str x) in
-    Option.iter iter (Unicode.ident_refutation x)
-
-  let is_valid s = match Unicode.ident_refutation s with
-  | None -> true
-  | Some _ -> false
-
-  let is_valid_ident_part s = match Unicode.ident_refutation ("x"^s) with
-  | None -> true
-  | Some _ -> false
-
-  let of_bytes s =
-    let s = Bytes.to_string s in
-    check_valid s;
-    String.hcons s
-
-  let of_string s =
-    let () = check_valid s in
-    String.hcons s
-
-  let of_string_soft s =
-    let () = check_valid ~strict:false s in
-    String.hcons s
-
-  let to_string id = id
-
-  let print id = str id
-
-  module Self =
-  struct
-    type t = string
-    let compare = compare
-  end
-
-  module Set = Set.Make(Self)
-  module Map = CMap.Make(Self)
-
-  module Pred = Predicate.Make(Self)
-
-  module List = String.List
-
-  let hcons = String.hcons
-
-end
-
 (** Representation and operations on identifiers that are allowed to be anonymous
     (i.e. "_" in concrete syntax). *)
 module Name =
@@ -106,7 +49,7 @@ struct
 
   let equal n1 n2 = match n1, n2 with
     | Anonymous, Anonymous -> true
-    | Name id1, Name id2 -> String.equal id1 id2
+    | Name id1, Name id2 -> Id.equal id1 id2
     | _ -> false
 
   let hash = function
@@ -157,7 +100,7 @@ module ModIdmap = Id.Map
     The actual representation is reversed to optimise sharing:
     Coq.A.B is ["B";"A";"Coq"] *)
 
-let default_module_name = "If you see this, it's a bug"
+let default_module_name = Id.of_string "If you see this, it's a bug"
 
 module DirPath =
 struct
@@ -212,10 +155,10 @@ struct
   let repr mbid = mbid
 
   let to_string (_i, s, p) =
-    DirPath.to_string p ^ "." ^ s
+    DirPath.to_string p ^ "." ^ (Id.to_string s)
 
   let debug_to_string (i, s, p) =
-    "<"^DirPath.to_string p ^"#" ^ s ^"#"^ string_of_int i^">"
+    "<"^DirPath.to_string p ^"#" ^ (Id.to_string s) ^"#"^ string_of_int i^">"
 
   let compare (x : t) (y : t) =
     if x == y then 0
@@ -304,7 +247,7 @@ module ModPath = struct
       | MPfile p1, MPfile p2 -> DirPath.compare p1 p2
       | MPbound id1, MPbound id2 -> MBId.compare id1 id2
       | MPdot (mp1, l1), MPdot (mp2, l2) ->
-        let c = String.compare l1 l2 in
+        let c = Id.compare l1 l2 in
         if not (Int.equal c 0) then c
         else compare mp1 mp2
       | MPfile _, _ -> -1
@@ -316,7 +259,7 @@ module ModPath = struct
     match mp1, mp2 with
     | MPfile p1, MPfile p2 -> DirPath.equal p1 p2
     | MPbound id1, MPbound id2 -> MBId.equal id1 id2
-    | MPdot (mp1, l1), MPdot (mp2, l2) -> String.equal l1 l2 && equal mp1 mp2
+    | MPdot (mp1, l1), MPdot (mp2, l2) -> Id.equal l1 l2 && equal mp1 mp2
     | (MPfile _ | MPbound _ | MPdot _), _ -> false
 
   open Hashset.Combine
@@ -336,8 +279,7 @@ module ModPath = struct
 
   module Self_Hashcons = struct
     type t = module_path
-    type u = (DirPath.t -> DirPath.t) * (MBId.t -> MBId.t) *
-        (string -> string)
+    type u = (DirPath.t -> DirPath.t) * (MBId.t -> MBId.t) * (Id.t -> Id.t)
     let rec hashcons (hdir,huniqid,hstr as hfuns) = function
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
@@ -356,7 +298,7 @@ module ModPath = struct
 
   let hcons =
     Hashcons.simple_hcons HashMP.generate HashMP.hcons
-      (DirPath.hcons,MBId.hcons,String.hcons)
+      (DirPath.hcons,MBId.hcons,Id.hcons)
 
 end
 
@@ -400,7 +342,7 @@ module KerName = struct
   let compare (kn1 : kernel_name) (kn2 : kernel_name) =
     if kn1 == kn2 then 0
     else
-      let c = String.compare kn1.knlabel kn2.knlabel in
+      let c = Id.compare kn1.knlabel kn2.knlabel in
       if not (Int.equal c 0) then c
       else
         ModPath.compare kn1.modpath kn2.modpath
@@ -428,8 +370,7 @@ module KerName = struct
 
   module Self_Hashcons = struct
     type t = kernel_name
-    type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t)
-        * (string -> string)
+    type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t) * (Id.t -> Id.t)
     let hashcons (hmod,_hdir,hstr) kn =
       let { modpath = mp; knlabel = l; refhash; } = kn in
       { modpath = hmod mp; knlabel = hstr l; refhash; }
@@ -442,7 +383,7 @@ module KerName = struct
 
   let hcons =
     Hashcons.simple_hcons HashKN.generate HashKN.hcons
-      (ModPath.hcons,DirPath.hcons,String.hcons)
+      (ModPath.hcons,DirPath.hcons,Id.hcons)
 end
 
 module KNmap = HMap.Make(KerName)
@@ -513,8 +454,8 @@ module KerPair = struct
   let change_label kp lbl =
     let (mp1,l1) = KerName.repr (user kp)
     and (mp2,l2) = KerName.repr (canonical kp) in
-    assert (String.equal l1 l2);
-    if String.equal lbl l1 then kp
+    assert (Id.equal l1 l2);
+    if Id.equal lbl l1 then kp
     else
       let kn = KerName.make mp1 lbl in
       if mp1 == mp2 then same kn
@@ -1112,3 +1053,6 @@ type lname = Name.t CAst.t
 type lstring = string CAst.t
 
 let lident_eq = CAst.eq Id.equal
+
+(** Aliases *)
+module Id = Id
