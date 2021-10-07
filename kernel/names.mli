@@ -26,8 +26,9 @@ open Util
 
 (** {6 Identifiers } *)
 
-(** Type [Id.t] now lives in [lib] *)
-module Id : module type of Id
+(** Types [Id.t] and [DirPath.t] now live in [lib] *)
+module Id : module type of Id with type t = Id.t
+module DirPath : module type of DirPath with type t = DirPath.t
 
 (** Representation and operations on identifiers that are allowed to be anonymous
     (i.e. "_" in concrete syntax). *)
@@ -72,47 +73,6 @@ type module_ident = Id.t
 
 module ModIdset : Set.S with type elt = module_ident
 module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIdset
-
-(** {6 Directory paths = section names paths } *)
-
-module DirPath :
-sig
-  type t
-  (** Type of directory paths. Essentially a list of module identifiers. The
-      order is reversed to improve sharing. E.g. A.B.C is ["C";"B";"A"] *)
-
-  val equal : t -> t -> bool
-  (** Equality over directory paths. *)
-
-  val compare : t -> t -> int
-  (** Comparison over directory paths. *)
-
-  val hash : t -> int
-  (** Hash over directory paths. *)
-
-  val make : module_ident list -> t
-  (** Create a directory path. (The list must be reversed). *)
-
-  val repr : t -> module_ident list
-  (** Represent a directory path. (The result list is reversed). *)
-
-  val empty : t
-  (** The empty directory path. *)
-
-  val is_empty : t -> bool
-  (** Test whether a directory path is empty. *)
-
-  val initial : t
-  (** Initial "seed" of the unique identifier generator *)
-
-  val hcons : t -> t
-  (** Hashconsing of directory paths. *)
-
-  val to_string : t -> string
-  (** Print non-empty directory paths as ["coq_root.module.submodule"] *)
-
-  val print : t -> Pp.t
-end
 
 module DPset : Set.S with type elt = DirPath.t
 module DPmap : Map.ExtS with type key = DirPath.t and module Set := DPset
