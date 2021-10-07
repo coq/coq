@@ -11,7 +11,6 @@
 open Pp
 open CErrors
 open Util
-open Names
 
 (**********************************************)
 
@@ -161,7 +160,7 @@ let idset_mem_qualid qid s =
 
 (* Default paths *)
 (* todo: contrary to the comment, this does not give "Top" *)
-let default_library = Names.DirPath.initial (* = ["Top"] *)
+let default_library = DirPath.initial (* = ["Top"] *)
 
 (*s Roots of the space of absolute names *)
 let coq_string = "Coq"

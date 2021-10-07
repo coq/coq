@@ -1,0 +1,6 @@
+(library
+ (name loadpath)
+ (synopsis "Coq's LoadPath Handling")
+ (public_name coq-core.loadpath)
+ (wrapped false)
+ (libraries lib))

@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-
 (** {6 Dirpaths } *)
 val dirpath_of_string : string -> DirPath.t
 
@@ -22,8 +20,8 @@ val pop_dirpath_n : int -> DirPath.t -> DirPath.t
 (** Immediate prefix and basename of a [DirPath.t]. May raise [Failure] *)
 val split_dirpath : DirPath.t -> DirPath.t * Id.t
 
-val add_dirpath_suffix : DirPath.t -> module_ident -> DirPath.t
-val add_dirpath_prefix : module_ident -> DirPath.t -> DirPath.t
+val add_dirpath_suffix : DirPath.t -> DirPath.module_ident -> DirPath.t
+val add_dirpath_prefix : DirPath.module_ident -> DirPath.t -> DirPath.t
 
 val chop_dirpath : int -> DirPath.t -> DirPath.t * DirPath.t
 val append_dirpath : DirPath.t -> DirPath.t -> DirPath.t
@@ -77,7 +75,7 @@ val qualid_of_string : ?loc:Loc.t -> string -> qualid
 val qualid_of_path : ?loc:Loc.t -> full_path -> qualid
 val qualid_of_dirpath : ?loc:Loc.t -> DirPath.t -> qualid
 val qualid_of_ident : ?loc:Loc.t -> Id.t -> qualid
-val qualid_of_lident : lident -> qualid
+val qualid_of_lident : Id.t CAst.t -> qualid
 
 val qualid_is_ident : qualid -> bool
 val qualid_path : qualid -> DirPath.t
@@ -92,7 +90,7 @@ val idset_mem_qualid : qualid -> Id.Set.t -> bool
 val default_library : DirPath.t
 
 (** This is the root of the standard library of Coq *)
-val coq_root : module_ident (* "Coq" *)
+val coq_root : DirPath.module_ident (* "Coq" *)
 val coq_string : string (* "Coq" *)
 
 (** This is the default root prefix for developments which doesn't

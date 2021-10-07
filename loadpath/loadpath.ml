@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Util
-module DP = Names.DirPath
+module DP = DirPath
 
 (** Load paths. Mapping from physical to logical paths. *)
 
@@ -45,7 +45,7 @@ let find_load_path phys_dir =
 
 (* get the list of load paths that correspond to a given logical path *)
 let find_with_logical_path dirpath =
-  List.filter (fun p -> Names.DirPath.equal p.path_logical dirpath) !load_paths
+  List.filter (fun p -> DirPath.equal p.path_logical dirpath) !load_paths
 
 let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
@@ -137,7 +137,7 @@ let select_vo_file ~warn loadpath base =
   let find ext =
     let loadpath = List.map fst loadpath in
     try
-      let name = Names.Id.to_string base ^ ext in
+      let name = Id.to_string base ^ ext in
       let lpath, file =
         System.where_in_path ~warn loadpath name in
       Some (lpath, file)
@@ -246,7 +246,7 @@ let warn_cannot_use_directory =
            strbrk " cannot be used as a Coq identifier (skipped)"))
 
 let convert_string d =
-  try Names.Id.of_string d
+  try Id.of_string d
   with
   | CErrors.UserError _ ->
     let d = Unicode.escaped_if_non_utf8 d in

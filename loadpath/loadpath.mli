@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-
 (** * Load paths.
 
   A load path is a physical path in the file system; to each load path is
@@ -40,7 +38,7 @@ val find_load_path : CUnix.physical_path -> t
 (** Get the binding associated with a physical path. Raises [Not_found] if there
     is none. *)
 
-val find_with_logical_path : Names.DirPath.t -> t list
+val find_with_logical_path : DirPath.t -> t list
 (** get the list of load paths that correspond to a given logical path *)
 
 val locate_file : string -> string
