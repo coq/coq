@@ -1722,7 +1722,7 @@ let run_hint tac k = match warn_hint () with
   if is_imported tac then k tac.obj
   else
     let info = Exninfo.reify () in
-    Proofview.tclZERO ~info (UserError (None, (str "Tactic failure.")))
+    Proofview.tclZERO ~info (UserError (str "Tactic failure."))
 
 module FullHint =
 struct

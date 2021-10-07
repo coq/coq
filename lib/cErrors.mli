@@ -30,7 +30,7 @@ val is_anomaly : exn -> bool
     This is mostly provided for compatibility. Please avoid doing specific
     tricks with anomalies thanks to it. See rather [noncritical] below. *)
 
-exception UserError of string option * Pp.t
+exception UserError of Pp.t
 (** Main error signaling exception. It carries a header plus a pretty printing
     doc *)
 

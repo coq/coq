@@ -2602,7 +2602,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
            This error probably means that you forgot to close the last \"Proof.\" with \"Qed.\" or \"Defined.\". \
            If you really intended to use nested proofs, you can do so by turning the \"Nested Proofs Allowed\" flag on."
            |> Pp.strbrk
-           |> (fun s -> (UserError (None, s), Exninfo.null))
+           |> (fun s -> (UserError s, Exninfo.null))
            |> State.exn_on ~valid:Stateid.dummy newtip
            |> Exninfo.iraise
          else

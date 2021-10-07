@@ -3296,7 +3296,7 @@ let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
   Proofview.tclORELSE
     (dest_intro_patterns with_evars avoid thin dest pat tac)
     begin function (e, info) -> match e with
-      | UserError (Some "move_hyp",_) ->
+      | CannotMoveHyp _ ->
        (* May happen e.g. with "destruct x using s" with an hypothesis
           which is morally an induction hypothesis to be "MoveLast" if
           known as such but which is considered instead as a subterm of

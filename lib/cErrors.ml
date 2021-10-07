@@ -30,13 +30,12 @@ let anomaly ?loc ?info ?label pp =
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (Anomaly (label, pp), info)
 
-(* TODO remove the option *)
-exception UserError of string option * Pp.t (* User errors *)
+exception UserError of Pp.t (* User errors *)
 
 let user_err ?loc ?info ?hdr strm =
   let info = Option.default Exninfo.null info in
   let info = Option.cata (Loc.add_loc info) info loc in
-  Exninfo.iraise (UserError (hdr, strm), info)
+  Exninfo.iraise (UserError strm, info)
 
 exception Timeout = Control.Timeout
 
@@ -133,7 +132,7 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 (** Predefined handlers **)
 
 let _ = register_handler begin function
-  | UserError(s, pps) ->
+  | UserError pps ->
     Some pps
   | _ -> None
   end

@@ -314,7 +314,7 @@ let check_not_nested env sigma forbidden e =
     | CoFix _ -> user_err Pp.(str "check_not_nested : Fix")
   in
   try check_not_nested e
-  with UserError (_, p) ->
+  with UserError p ->
     user_err ~hdr:"_"
       (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p)
 
@@ -796,28 +796,17 @@ let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
           ++ int (Array.length l)
           ++ str ")" ++ spc ()
           ++ Printer.pr_leconstr_env env sigma a')
-        ( try
-            tclTHENS destruct_tac
-              (List.map_i
-                 (fun i e ->
-                   New.observe_tac
-                     (fun _ _ -> str "do treat case")
-                     (treat_case f_is_present to_thin_intro
-                        (next_step continuation_tac)
-                        ci.ci_cstr_ndecls.(i) e new_info))
-                 0 (Array.to_list l))
-          with
-          | UserError (Some "Refiner.thensn_tac3", _)
-           |UserError (Some "Refiner.tclFAIL_s", _)
-          ->
-            New.observe_tac
-              (fun _ _ ->
-                str "is computable "
-                ++ Printer.pr_leconstr_env env sigma new_info.info)
-              (next_step continuation_tac
-                 { new_info with
-                   info = Reductionops.nf_betaiotazeta env sigma new_info.info
-                 }) ))
+        ((* We used to try-catch the error from tclTHENS before the
+            port to the new engine, not sure if it's worth putting it back *)
+          tclTHENS destruct_tac
+            (List.map_i
+               (fun i e ->
+                  New.observe_tac
+                    (fun _ _ -> str "do treat case")
+                    (treat_case f_is_present to_thin_intro
+                       (next_step continuation_tac)
+                       ci.ci_cstr_ndecls.(i) e new_info))
+               0 (Array.to_list l))))
 
 let terminate_app_rec (f, args) expr_info continuation_tac _ =
   let open Tacticals.New in

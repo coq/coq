@@ -264,7 +264,7 @@ let lemInv id c =
     | NoSuchBinding ->
         user_err
           (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
-    | UserError (a,b) ->
+    | UserError _ ->
          user_err ~hdr:"LemInv"
            (str "Cannot refine current goal with the lemma " ++
               pr_leconstr_env (pf_env gls) (project gls) c)

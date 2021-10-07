@@ -467,7 +467,7 @@ module New = struct
     | None -> info
     | Some loc -> Loc.add_loc info loc
     in
-    let err = UserError (None, msg) in
+    let err = UserError msg in
     tclZERO ~info err
 
   let catch_failerror e =
