@@ -795,8 +795,9 @@ format readable by make. When a directory is given as argument, it is
 recursively looked at.
 
 Dependencies of Coq modules are computed by looking at ``Require``
-commands (``Require``, ``Require Export``, ``Require Import``), but also at the
-command ``Declare ML Module``.
+commands (``Require``, ``Require Export``, ``Require Import``,
+possibly preceded by a ``From`` clause), but also at the command
+``Declare ML Module``.
 
 See the man page of ``coqdep`` for more details and options.
 
