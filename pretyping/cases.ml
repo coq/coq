@@ -588,7 +588,7 @@ let check_unused_pattern env used matx =
 
 let extract_rhs pb =
   match pb.mat with
-    | [] -> user_err ~hdr:"build_leaf" (msg_may_need_inversion())
+    | [] -> user_err (msg_may_need_inversion())
     | eqn::_ -> ([eqn.orig,eqn.catch_all_vars], eqn.rhs)
 
 (**********************************************************************)

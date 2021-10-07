@@ -469,7 +469,6 @@ let err_unmapped_library ?from qid =
     str " and prefix " ++ DirPath.print from ++ str "."
   in
   user_err ?loc:qid.CAst.loc
-    ~hdr:"locate_library"
     (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
        DirPath.print dir ++ prefix)
 
@@ -481,7 +480,7 @@ let err_notfound_library ?from qid =
   in
   let bonus =
     if !Flags.load_vos_libraries then " (While searching for a .vos file.)" else "" in
-  user_err ?loc:qid.CAst.loc ~hdr:"locate_library"
+  user_err ?loc:qid.CAst.loc
      (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix ++ str bonus)
 
 let print_located_library qid =
@@ -567,7 +566,7 @@ let vernac_set_used_variables ~pstate using : Declare.Proof.t =
   let vars = Environ.named_context env in
   Names.Id.Set.iter (fun id ->
       if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
-        user_err ~hdr:"vernac_set_used_variables"
+        user_err
           (str "Unknown variable: " ++ Id.print id))
     using;
   let _, pstate = Declare.Proof.set_used_variables pstate ~using in
@@ -821,7 +820,7 @@ let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
   | (((coe,(id,udecl)),b,c,d),e) :: rest ->
     let rest = List.map (fun (((coe,(id,udecl)),b,c,d),e) ->
         if Option.has_some udecl
-        then user_err ~hdr:"inductive udecl" Pp.(strbrk "Universe binders must be on the first inductive of the block.")
+        then user_err Pp.(strbrk "Universe binders must be on the first inductive of the block.")
         else (((coe,id),b,c,d),e))
         rest
     in
@@ -1028,14 +1027,14 @@ let vernac_combined_scheme lid l =
 
 let vernac_universe ~poly l =
   if poly && not (Global.sections_are_opened ()) then
-    user_err ~hdr:"vernac_universe"
+    user_err
                  (str"Polymorphic universes can only be declared inside sections, " ++
                   str "use Monomorphic Universe instead");
   DeclareUniv.do_universe ~poly l
 
 let vernac_constraint ~poly l =
   if poly && not (Global.sections_are_opened ()) then
-    user_err ~hdr:"vernac_constraint"
+    user_err
                  (str"Polymorphic universe constraints can only be declared"
                   ++ str " inside sections, use Monomorphic Constraint instead");
   DeclareUniv.do_constraint ~poly l
@@ -1818,7 +1817,7 @@ let get_current_context_of_args ~pstate =
 let query_command_selector ?loc = function
   | None -> None
   | Some (Goal_select.SelectNth n) -> Some n
-  | _ -> user_err ?loc ~hdr:"query_command_selector"
+  | _ -> user_err ?loc
       (str "Query commands only support the single numbered goal selector.")
 
 let vernac_check_may_eval ~pstate redexp glopt rc =
@@ -1905,7 +1904,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
       | Some n,AN qid when qualid_is_ident qid ->  (* goal number given, catch if wong *)
          (try get_nth_goal ~pstate n, qualid_basename qid
           with
-            Failure _ -> user_err ?loc ~hdr:"print_about_hyp_globs"
+            Failure _ -> user_err ?loc
                           (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
     let hyps = Tacmach.pf_hyps gl in
@@ -2077,7 +2076,7 @@ let vernac_subproof gln ~pstate =
     | None -> Proof.focus subproof_cond () 1 p
     | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
     | Some (Goal_select.SelectId id) -> Proof.focus_id subproof_cond () id p
-    | _ -> user_err ~hdr:"bracket_selector"
+    | _ -> user_err
              (str "Brackets do not support multi-goal selectors."))
     pstate
 

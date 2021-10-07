@@ -166,7 +166,7 @@ let declare_scope scope =
     scope_map := String.Map.add scope empty_scope !scope_map
 
 let error_unknown_scope ~info sc =
-  user_err ~hdr:"Notation" ~info
+  user_err ~info
     (str "Scope " ++ str sc ++ str " is not declared.")
 
 let find_scope ?(tolerant=false) scope =
@@ -308,7 +308,7 @@ let remove_delimiters scope =
 let find_delimiters_scope ?loc key =
   try String.Map.find key !delimiters_map
   with Not_found ->
-    user_err ?loc ~hdr:"find_delimiters"
+    user_err ?loc
       (str "Unknown scope delimiting key " ++ str key ++ str ".")
 
 (* Uninterpretation tables *)
@@ -1039,7 +1039,7 @@ let int63_of_pos_bigint ?loc n =
   mkInt i
 
 let error_overflow ?loc n =
-  CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "overflow in int63 literal: " ++ str (Z.to_string n))
+  CErrors.user_err ?loc Pp.(str "overflow in int63 literal: " ++ str (Z.to_string n))
 
 let coqpos_neg_int63_of_bigint ?loc ind (sign,n) =
   let uint = int63_of_pos_bigint ?loc n in
@@ -1211,7 +1211,7 @@ let coqbyte_of_string ?loc byte s =
         if Int.equal (String.length s) 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
         then int_of_string s else 256 in
       if n < 256 then n else
-       user_err ?loc ~hdr:"coqbyte_of_string"
+       user_err ?loc
          (str "Expects a single character or a three-digit ASCII code.") in
   coqbyte_of_char_code byte p
 
@@ -1316,7 +1316,7 @@ let hashtbl_check_and_set allow_overwrite uid f h eq =
    | _ when allow_overwrite -> Hashtbl.add h uid f
    | g when eq f g -> ()
    | _ ->
-      user_err ~hdr:"prim_token_interpreter"
+      user_err
        (str "Unique identifier " ++ str uid ++
         str " already used to register a number or string (un)interpreter.")
 
@@ -1410,11 +1410,11 @@ let check_required_module ?loc sc (sp,d) =
     let _, info = Exninfo.capture exn in
     match d with
     | [] ->
-      user_err ?loc ~info ~hdr:"prim_token_interpreter"
+      user_err ?loc ~info
         (str "Cannot interpret in " ++ str sc ++ str " because " ++ pr_path sp ++
          str " could not be found in the current environment.")
     | _ ->
-      user_err ?loc ~info ~hdr:"prim_token_interpreter"
+      user_err ?loc ~info
         (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++
          str (List.last d) ++ str ".")
 
@@ -1608,7 +1608,7 @@ let interp_prim_token_gen ?loc g p local_scopes =
     pat, (loc,sc)
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
-    user_err ?loc ~info ~hdr:"interp_prim_token"
+    user_err ?loc ~info
     ((match p with
       | Number _ ->
          str "No interpretation for number " ++ pr_notation (notation_of_prim_token p)
@@ -2328,7 +2328,7 @@ let rec find_pattern nt xl = function
   | _, Break s :: _ | Break s :: _, _ ->
       user_err Pp.(str ("A break occurs on one side of \"..\" but not on the other side."))
   | _, Terminal s :: _ | Terminal s :: _, _ ->
-      user_err ~hdr:"Metasyntax.find_pattern"
+      user_err
         (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
   | _, [] ->
       user_err Pp.(str msg_expected_form_of_recursive_notation)

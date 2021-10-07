@@ -288,7 +288,7 @@ let check_not_nested env sigma forbidden e =
     | Int _ | Float _ -> ()
     | Var x ->
       if Id.List.mem x forbidden then
-        user_err ~hdr:"Recdef.check_not_nested"
+        user_err
           (str "check_not_nested: failure " ++ Id.print x)
     | Meta _ | Evar _ | Sort _ -> ()
     | Cast (e, _, t) -> check_not_nested e; check_not_nested t
@@ -315,7 +315,7 @@ let check_not_nested env sigma forbidden e =
   in
   try check_not_nested e
   with UserError p ->
-    user_err ~hdr:"_"
+    user_err
       (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p)
 
 (* ['a info] contains the local information for traveling *)
@@ -460,7 +460,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
             expr_info.info;
           jinfo.otherS () expr_info continuation_tac expr_info
         with e when CErrors.noncritical e ->
-          user_err ~hdr:"Recdef.travel"
+          user_err
             ( str "the term "
             ++ Printer.pr_leconstr_env env sigma expr_info.info
             ++ str " can not contain a recursive call to "
@@ -472,7 +472,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
             expr_info.info;
           jinfo.otherS () expr_info continuation_tac expr_info
         with e when CErrors.noncritical e ->
-          user_err ~hdr:"Recdef.travel"
+          user_err
             ( str "the term "
             ++ Printer.pr_leconstr_env env sigma expr_info.info
             ++ str " can not contain a recursive call to "
@@ -500,7 +500,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
             travel_args jinfo expr_info.is_main_branch new_continuation_tac
               new_infos
           | Case _ ->
-            user_err ~hdr:"Recdef.travel"
+            user_err
               ( str "the term "
               ++ Printer.pr_leconstr_env env sigma expr_info.info
               ++ str
@@ -1735,7 +1735,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
           Feedback.msg_debug
             (str "Cannot create equation Lemma " ++ CErrors.print e)
         else
-          CErrors.user_err ~hdr:"Cannot create equation Lemma"
+          CErrors.user_err
             ( str "Cannot create equation lemma."
             ++ spc ()
             ++ str "This may be because the function is nested-recursive." );

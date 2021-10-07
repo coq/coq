@@ -36,7 +36,7 @@ let existing_instance ?loc auctx inst =
     let len1 = Array.length (Instance.to_array inst)
     and len2 = AbstractContext.size auctx in
       if not (len1 == len2) then
-        CErrors.user_err ?loc ~hdr:"Universes"
+        CErrors.user_err ?loc
           Pp.(str "Universe instance should have length " ++ int len2 ++ str ".")
       else ()
   in
@@ -77,7 +77,7 @@ let fresh_global_instance ?loc ?names env gr =
 let constr_of_monomorphic_global gr =
   if not (Global.is_polymorphic gr) then
     fst (fresh_global_instance (Global.env ()) gr)
-  else CErrors.user_err ~hdr:"constr_of_global"
+  else CErrors.user_err
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
 

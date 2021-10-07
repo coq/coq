@@ -245,7 +245,7 @@ let rtauto_tac =
     let gamma={next=1;env=[]} in
     let () =
       if Retyping.get_sort_family_of env sigma concl != InProp
-      then user_err ~hdr:"rtauto" (Pp.str "goal should be in Prop") in
+      then user_err (Pp.str "goal should be in Prop") in
     let glf = make_form env sigma gamma concl in
     let hyps = make_hyps env sigma gamma [concl] hyps in
     let formula=
@@ -264,7 +264,7 @@ let rtauto_tac =
     let prf =
       try project (search_fun (init_state [] formula))
       with Not_found ->
-        user_err ~hdr:"rtauto" (Pp.str "rtauto couldn't find any proof") in
+        user_err (Pp.str "rtauto couldn't find any proof") in
     let search_end_time = System.get_time () in
     let () = if verbose () then
         begin

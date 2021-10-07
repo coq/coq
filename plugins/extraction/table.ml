@@ -300,7 +300,7 @@ let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 
 (*S Warning and Error messages. *)
 
-let err ?loc s = user_err ?loc ~hdr:"Extraction" s
+let err ?loc s = user_err ?loc s
 
 let warn_extraction_axiom_to_realize =
   CWarnings.create ~name:"extraction-axiom-to-realize" ~category:"extraction"

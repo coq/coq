@@ -583,7 +583,7 @@ let print_ltac id =
   print_ltac_body id tac
  with
   Not_found ->
-   user_err ~hdr:"print_ltac"
+   user_err
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
 
 (** Grammar *)

@@ -62,7 +62,7 @@ let set_strategy_one ref l  =
         let cb = Global.lookup_constant sp in
         (match cb.const_body with
           | OpaqueDef _ ->
-            user_err ~hdr:"set_transparent_const"
+            user_err
               (str "Cannot make" ++ spc () ++
                  Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
                  spc () ++ str "transparent because it was declared opaque.");
@@ -165,19 +165,19 @@ let red_expr_tab = Summary.ref String.Map.empty ~name:"Declare Reduction"
 
 let declare_reduction s f =
   if String.Map.mem s !reduction_tab || String.Map.mem s !red_expr_tab
-  then user_err ~hdr:"Redexpr.declare_reduction"
+  then user_err
     (str "There is already a reduction expression of name " ++ str s)
   else reduction_tab := String.Map.add s f !reduction_tab
 
 let check_custom = function
   | ExtraRedExpr s ->
       if not (String.Map.mem s !reduction_tab || String.Map.mem s !red_expr_tab)
-      then user_err ~hdr:"Redexpr.check_custom" (str "Reference to undefined reduction expression " ++ str s)
+      then user_err (str "Reference to undefined reduction expression " ++ str s)
   |_ -> ()
 
 let decl_red_expr s e =
   if String.Map.mem s !reduction_tab || String.Map.mem s !red_expr_tab
-  then user_err ~hdr:"Redexpr.decl_red_expr"
+  then user_err
     (str "There is already a reduction expression of name " ++ str s)
   else begin
     check_custom e;
@@ -257,7 +257,7 @@ let reduction_of_red_expr_val = function
   | ExtraRedExpr s ->
       (try (e_red (String.Map.find s !reduction_tab),DEFAULTcast)
       with Not_found ->
-           user_err ~hdr:"Redexpr.reduction_of_red_expr"
+           user_err
              (str "unknown user-defined reduction \"" ++ str s ++ str "\""))
   | CbvVm o -> (contextualize cbv_vm cbv_vm o, VMcast)
   | CbvNative o -> (contextualize cbv_native cbv_native o, NATIVEcast)

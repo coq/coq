@@ -1038,7 +1038,7 @@ let not_transp_msg =
     ++ str "Use 'Defined' instead.")
 
 let err_not_transp () =
-  CErrors.user_err ~hdr:"Program" not_transp_msg
+  CErrors.user_err not_transp_msg
 
 module ProgMap = Id.Map
 
@@ -1091,7 +1091,7 @@ let check_solved_obligations ~pm ~what_for : unit =
   if not (ProgMap.is_empty pm) then
     let keys = map_keys pm in
     let have_string = if Int.equal (List.length keys) 1 then " has " else " have " in
-    CErrors.user_err ~hdr:"Program"
+    CErrors.user_err
       Pp.(
         str "Unsolved obligations when closing "
         ++ what_for ++ str ":" ++ spc ()
@@ -2282,7 +2282,7 @@ let solve_by_tac prg obls i tac =
   | Tacticals.FailError (_, s) as exn ->
     let _ = Exninfo.capture exn in
     let loc = fst obl.obl_location in
-    CErrors.user_err ?loc ~hdr:"solve_obligation" (Lazy.force s)
+    CErrors.user_err ?loc (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)
   | Proof_.OpenProof _ ->
     None

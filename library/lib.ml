@@ -88,7 +88,7 @@ let classify_segment seg =
     end
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
-      user_err ~hdr:"Lib.classify_segment"
+      user_err
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
   in
     clean ([],[],[]) (List.rev seg)
@@ -280,7 +280,7 @@ let start_mod is_type export id mp fs =
     else Nametab.exists_dir dir
   in
   if exists then
-    user_err ~hdr:"open_module" (Id.print id ++ str " already exists.");
+    user_err (Id.print id ++ str " already exists.");
   add_entry (make_foname id) (OpenedModule (is_type,export,prefix,fs));
   lib_state := { !lib_state with path_prefix = prefix} ;
   prefix
@@ -340,7 +340,7 @@ let open_blocks_message es =
 let end_compilation_checks dir =
   let _ = match find_entries_p is_opening_node with
     | [] -> ()
-    | es -> user_err ~hdr:"Lib.end_compilation_checks" (open_blocks_message es) in
+    | es -> user_err (open_blocks_message es) in
   let is_opening_lib = function _,CompilingLibrary _ -> true | _ -> false
   in
   let oname =
@@ -388,7 +388,7 @@ let find_opening_node id =
     let oname,entry = find_entry_p is_opening_node in
     let id' = basename (fst oname) in
     if not (Names.Id.equal id id') then
-      user_err ~hdr:"Lib.find_opening_node"
+      user_err
         (str "Last block to end has name " ++ Id.print id' ++ str ".");
     entry
   with Not_found -> user_err Pp.(str "There is nothing to end.")
@@ -459,7 +459,7 @@ let open_section id =
   let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; } in
   if Nametab.exists_dir obj_dir then
-    user_err ~hdr:"open_section" (Id.print id ++ str " already exists.");
+    user_err (Id.print id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:false in
   add_entry (make_foname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)

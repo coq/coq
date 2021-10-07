@@ -130,16 +130,15 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
   let relargty =
     let error () =
       user_err ?loc:(constr_loc r)
-               ~hdr:"Command.build_wellfounded"
-                    (Printer.pr_econstr_env env sigma rel ++ str " is not an homogeneous binary relation.")
+        (Printer.pr_econstr_env env sigma rel ++ str " is not an homogeneous binary relation.")
     in
-      try
-        let ctx, ar = Reductionops.splay_prod_n env sigma 2 relty in
-          match ctx, EConstr.kind sigma ar with
-          | [LocalAssum (_,t); LocalAssum (_,u)], Sort s
-              when Sorts.is_prop (ESorts.kind sigma s) && Reductionops.is_conv env sigma t u -> t
-          | _, _ -> error ()
-      with e when CErrors.noncritical e -> error ()
+    try
+      let ctx, ar = Reductionops.splay_prod_n env sigma 2 relty in
+      match ctx, EConstr.kind sigma ar with
+      | [LocalAssum (_,t); LocalAssum (_,u)], Sort s
+        when Sorts.is_prop (ESorts.kind sigma s) && Reductionops.is_conv env sigma t u -> t
+      | _, _ -> error ()
+    with e when CErrors.noncritical e -> error ()
   in
   let sigma, measure = interp_casted_constr_evars ~program_mode:true binders_env sigma measure relargty in
   let sigma, wf_rel, wf_rel_fun, measure_fn =
@@ -364,7 +363,7 @@ let do_fixpoint ~pm ~scope ~poly ?typing_flags ?using l =
       let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
       do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind l
     | _, _ ->
-      CErrors.user_err ~hdr:"do_fixpoint"
+      CErrors.user_err
         (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
 let do_cofixpoint ~pm ~scope ~poly ?using fixl =

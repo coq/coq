@@ -505,9 +505,11 @@ let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
 let extract_let_names lrc =
   let fold accu ({loc;v=name}, _) =
     Nameops.Name.fold_right (fun id accu ->
-    if Id.Set.mem id accu then user_err ?loc
-      ~hdr:"glob_tactic" (str "This variable is bound several times.")
-    else Id.Set.add id accu) name accu
+        if Id.Set.mem id accu then
+          user_err ?loc (str "This variable is bound several times.")
+        else Id.Set.add id accu)
+      name
+      accu
   in
   List.fold_left fold Id.Set.empty lrc
 

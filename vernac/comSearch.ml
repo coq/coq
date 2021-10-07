@@ -22,7 +22,7 @@ open Goptions
 let global_module qid =
   try Nametab.full_name_module qid
   with Not_found ->
-    user_err ?loc:qid.CAst.loc ~hdr:"global_module"
+    user_err ?loc:qid.CAst.loc
      (str "Module/section " ++ Ppconstr.pr_qualid qid ++ str " not found.")
 
 let interp_search_restriction = function
@@ -74,7 +74,7 @@ let interp_search_item env sigma =
             ~head:false (fun _ -> true) s sc in
         GlobSearchSubPattern (where,head,Pattern.PRef ref)
       with UserError _ ->
-        user_err ~hdr:"interp_search_item"
+        user_err
           (str "Unable to interpret " ++ quote (str s) ++ str " as a reference."))
   | SearchKind k ->
      match kind_searcher k with

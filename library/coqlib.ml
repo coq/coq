@@ -113,7 +113,7 @@ let check_required_library d =
       | _ -> false
     in
     if not in_current_dir then
-      user_err ~hdr:"Coqlib.check_required_library"
+      user_err
         (str "Library " ++ DirPath.print dir ++ str " has to be required first.")
 
 (************************************************************************)

@@ -221,14 +221,14 @@ let isomorphic_to_tuple lc = Int.equal (Array.length lc) 1
 let encode_bool env ({CAst.loc} as r) =
   let (x,lc) = encode_inductive env r in
   if not (has_two_constructors lc) then
-    user_err ?loc ~hdr:"encode_if"
+    user_err ?loc
       (str "This type has not exactly two constructors.");
   x
 
 let encode_tuple env ({CAst.loc} as r) =
   let (x,lc) = encode_inductive env r in
   if not (isomorphic_to_tuple lc) then
-    user_err ?loc ~hdr:"encode_tuple"
+    user_err ?loc
       (str "This type cannot be seen as a tuple type.");
   x
 

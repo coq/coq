@@ -1217,7 +1217,7 @@ let rec compute_cst_params relnames params gt =
       | GSort _ -> params
       | GHole _ -> params
       | GIf _ | GRec _ | GCast _ | GArray _ ->
-        CErrors.user_err ~hdr:"compute_cst_params" (str "Not handled case"))
+        CErrors.user_err (str "Not handled case"))
     gt
 
 and compute_cst_params_from_app acc (params, rtl) =

@@ -34,9 +34,9 @@ exception UserError of Pp.t
 (** Main error signaling exception. It carries a header plus a pretty printing
     doc *)
 
-val user_err : ?loc:Loc.t -> ?info:Exninfo.info -> ?hdr:string -> Pp.t -> 'a
-(** Main error raising primitive. [user_err ?loc ?hdr pp] signals an
-    error [pp] with optional header and location [hdr] [loc] *)
+val user_err : ?loc:Loc.t -> ?info:Exninfo.info -> Pp.t -> 'a
+(** Main error raising primitive. [user_err ?loc pp] signals an
+    error [pp] with optional header and location [loc] *)
 
 exception Timeout
 

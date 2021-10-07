@@ -119,7 +119,7 @@ end = struct (* {{{ *)
                 let t = EConstr.Unsafe.to_constr t in
                 RespBuiltSubProof (t, Evd.evar_universe_context sigma)
               else
-                CErrors.user_err ~hdr:"STM"
+                CErrors.user_err
                   Pp.(str"The par: selector requires a tactic that makes no progress or fully" ++
                       str" solves the goal and leaves no unresolved existential variables. The following" ++
                       str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key sigma) (Evar.Set.elements evars))

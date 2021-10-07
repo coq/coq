@@ -32,7 +32,7 @@ let anomaly ?loc ?info ?label pp =
 
 exception UserError of Pp.t (* User errors *)
 
-let user_err ?loc ?info ?hdr strm =
+let user_err ?loc ?info strm =
   let info = Option.default Exninfo.null info in
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (UserError strm, info)

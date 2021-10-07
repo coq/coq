@@ -189,7 +189,7 @@ let universe_binders_with_opt_names orig names =
           | Name id -> Name id) orig udecl
     with Invalid_argument _ ->
       let len = List.length orig in
-      CErrors.user_err ~hdr:"universe_binders_with_opt_names"
+      CErrors.user_err
         Pp.(str "Universe instance should have length " ++ int len)
   in
   let fold_named i ubind = function

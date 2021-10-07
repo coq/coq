@@ -40,11 +40,11 @@ type option_state = {
 let nickname table = String.concat " " table
 
 let error_no_table_of_this_type ~kind key =
-  user_err ~hdr:"Goptions"
+  user_err
     (str ("There is no " ^ kind ^ "-valued table with this name: \"" ^ nickname key ^ "\"."))
 
 let error_undeclared_key key =
-  user_err ~hdr:"Goptions"
+  user_err
     (str ("There is no flag, option or table with this name: \"" ^ nickname key ^ "\"."))
 
 (****************************************************************************)

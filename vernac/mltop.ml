@@ -148,7 +148,7 @@ let get_ml_object_suffix name =
 let file_of_name name =
   let suffix = get_ml_object_suffix name in
   let fail s =
-    user_err ~hdr:"Mltop.load_object"
+    user_err
       (str"File not found on loadpath : " ++ str s ++ str"\n" ++
        str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy)) in
   if not (Filename.is_relative name) then
@@ -275,7 +275,7 @@ let trigger_ml_object verb cache reinit ?path name =
     add_loaded_module name (known_module_path name);
     if cache then perform_cache_obj name
   end else if not has_dynlink then
-    user_err ~hdr:"Mltop.trigger_ml_object"
+    user_err
       (str "Dynamic link not supported (module " ++ str name ++ str ")")
   else begin
     let file = file_of_name (Option.default name path) in

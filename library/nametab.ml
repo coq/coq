@@ -501,7 +501,7 @@ let global qid =
   try match locate_extended qid with
     | TrueGlobal ref -> ref
     | SynDef _ ->
-        user_err ?loc:qid.CAst.loc ~hdr:"global"
+        user_err ?loc:qid.CAst.loc
           (str "Unexpected reference to a notation: " ++
            pr_qualid qid)
   with Not_found as exn ->
@@ -582,5 +582,5 @@ let global_inductive qid =
   match global qid with
   | IndRef ind -> ind
   | ref ->
-      user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
+      user_err ?loc:qid.CAst.loc
         (pr_qualid qid ++ spc () ++ str "is not an inductive type")

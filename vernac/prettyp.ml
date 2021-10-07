@@ -844,7 +844,7 @@ let read_sec_context qid =
   let dir =
     try Nametab.locate_section qid
     with Not_found ->
-      user_err ?loc:qid.loc ~hdr:"read_sec_context" (str "Unknown section.") in
+      user_err ?loc:qid.loc (str "Unknown section.") in
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ({Nametab.obj_dir;_},_) as hd)::rest ->
         if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
@@ -866,7 +866,7 @@ let maybe_error_reject_univ_decl na udecl =
   | _, None | Term (ConstRef _ | IndRef _ | ConstructRef _), Some _ -> ()
   | (Term (VarRef _) | Syntactic _ | Dir _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
     (* TODO Print na somehow *)
-    user_err ~hdr:"reject_univ_decl" (str "This object does not support universe names.")
+    user_err (str "This object does not support universe names.")
 
 let print_any_name env sigma na udecl =
   maybe_error_reject_univ_decl na udecl;
@@ -888,9 +888,7 @@ let print_any_name env sigma na udecl =
     if not (DirPath.is_empty dir) then raise Not_found;
     str |> Global.lookup_named |> print_named_decl env sigma
 
-  with Not_found ->
-    user_err
-      ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
+  with Not_found -> user_err (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name env sigma na udecl =
   match na with
@@ -988,7 +986,7 @@ let print_path_between cls clt =
     try
       lookup_path_between_class (cls, clt)
     with Not_found ->
-      user_err ~hdr:"index_cl_of_id"
+      user_err
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
          ++ str ".")
   in

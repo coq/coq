@@ -99,7 +99,7 @@ let reorder_context env sigma sign ord =
       | top::ord' when mem_q top moved_hyps ->
           let ((d,h),mh) = find_q top moved_hyps in
           if occur_vars_in_decl env sigma h d then
-            user_err ~hdr:"reorder_context"
+            user_err
               (str "Cannot move declaration " ++ Id.print top ++ spc() ++
               str "before " ++
               pr_sequence Id.print
@@ -134,7 +134,7 @@ let check_decl_position env sigma sign d =
   let needed = global_vars_set_of_decl env sigma d in
   let deps = dependency_closure env sigma (named_context_of_val sign) needed in
   if Id.List.mem x deps then
-    user_err ~hdr:"Logic.check_decl_position"
+    user_err
       (str "Cannot create self-referring hypothesis " ++ Id.print x);
   x::deps
 
@@ -532,10 +532,10 @@ let convert_hyp ~check ~reorder env sigma d =
   | d' ->
     let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
     if check && not (is_conv env sigma (NamedDecl.get_type d) (EConstr.of_constr (NamedDecl.get_type d'))) then
-      user_err ~hdr:"Logic.convert_hyp"
+      user_err
         (str "Incorrect change of the type of " ++ Id.print id ++ str ".");
     if check && not (Option.equal (is_conv env sigma) b c) then
-      user_err ~hdr:"Logic.convert_hyp"
+      user_err
         (str "Incorrect change of the body of "++ Id.print id ++ str ".");
     let sign' = apply_to_hyp sign id (fun _ _ _ -> EConstr.Unsafe.to_named_decl d) in
     if reorder then reorder_val_context env sigma sign' (check_decl_position env sigma sign d)

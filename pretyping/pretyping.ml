@@ -112,7 +112,7 @@ let search_guard ?loc env possible_indexes fixdefs =
             with TypeError _ -> ())
          (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
-         user_err ?loc ~hdr:"search_guard" (Pp.str errmsg)
+         user_err ?loc (Pp.str errmsg)
      with Found indexes -> indexes)
 
 let esearch_guard ?loc env sigma indexes fix =
@@ -136,7 +136,7 @@ let universe_level_name evd ({CAst.v=id} as lid) =
   with Not_found ->
     if not (is_strict_universe_declarations ()) then
       new_univ_level_variable ?loc:lid.CAst.loc ~name:id univ_rigid evd
-    else user_err ?loc:lid.CAst.loc ~hdr:"universe_level_name"
+    else user_err ?loc:lid.CAst.loc
         (Pp.(str "Undeclared universe: " ++ Id.print id))
 
 let sort_name sigma = function
@@ -156,7 +156,7 @@ let sort_info ?loc evd l =
       | 0 -> u'
       | 1 -> Univ.Universe.super u'
       | n ->
-        user_err ?loc ~hdr:"sort_info"
+        user_err ?loc
           (Pp.(str "Cannot interpret universe increment +" ++ int n))
       in (evd', Univ.sup u u'))
     (evd, Univ.Universe.type0m) l
@@ -388,7 +388,7 @@ let known_glob_level evd = function
   | GLocalUniv lid ->
     try known_universe_level_name evd lid
     with Not_found ->
-      user_err ?loc:lid.CAst.loc ~hdr:"known_level_info"
+      user_err ?loc:lid.CAst.loc
         (str "Undeclared universe " ++ Id.print lid.CAst.v)
 
 let glob_level ?loc evd : glob_level -> _ = function
@@ -404,7 +404,7 @@ let instance ?loc evd l =
       l
   in
   if List.exists (fun l -> Univ.Level.is_prop l) l' then
-    user_err ?loc ~hdr:"pretype"
+    user_err ?loc
       (str "Universe instances cannot contain Prop, polymorphic" ++
        str " universe instances must be greater or equal to Set.");
   evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
@@ -1266,7 +1266,7 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
         let resj =
           try Typing.judge_of_int !!env i
           with Invalid_argument _ ->
-            user_err ?loc ~hdr:"pretype" (str "Type of int63 should be registered first.")
+            user_err ?loc (str "Type of int63 should be registered first.")
         in
         discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 
@@ -1275,7 +1275,7 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
       let resj =
         try Typing.judge_of_float !!env f
         with Invalid_argument _ ->
-          user_err ?loc ~hdr:"pretype" (str "Type of float should be registered first.")
+          user_err ?loc (str "Type of float should be registered first.")
         in
         discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 

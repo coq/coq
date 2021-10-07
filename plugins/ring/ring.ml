@@ -70,7 +70,7 @@ let add_map s m = protect_maps := String.Map.add s m !protect_maps
 let lookup_map map =
   try String.Map.find map !protect_maps
   with Not_found ->
-    CErrors.user_err ~hdr:"lookup_map" (str"Map "++qs map++str"not found")
+    CErrors.user_err (str"Map "++qs map++str"not found")
 
 let protect_red map env sigma c0 =
   let c = EConstr.Unsafe.to_constr c0 in
@@ -344,13 +344,13 @@ let find_ring_structure env sigma l =
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
           if not (Reductionops.is_conv env sigma ty ty') then
-            CErrors.user_err ~hdr:"ring"
+            CErrors.user_err
               (str"Arguments of ring_simplify do not have all the same type.")
         in
         List.iter check cl';
         (try ring_for_carrier (EConstr.to_constr sigma ty)
         with Not_found ->
-          CErrors.user_err ~hdr:"ring"
+          CErrors.user_err
             (str"Cannot find a declared ring structure over"++
              spc() ++ str"\"" ++ pr_econstr_env env sigma ty ++ str"\"."))
     | [] -> assert false
@@ -793,13 +793,13 @@ let find_field_structure env sigma l =
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
           if not (Reductionops.is_conv env sigma ty ty') then
-            CErrors.user_err ~hdr:"field"
+            CErrors.user_err
               (str"Arguments of field_simplify do not have all the same type.")
         in
         List.iter check cl';
         (try field_for_carrier (EConstr.to_constr sigma ty)
         with Not_found ->
-          CErrors.user_err ~hdr:"field"
+          CErrors.user_err
             (str"Cannot find a declared field structure over"++
              spc()++str"\""++pr_econstr_env env sigma ty++str"\"."))
     | [] -> assert false

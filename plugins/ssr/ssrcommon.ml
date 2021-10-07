@@ -36,7 +36,7 @@ module NamedDecl = Context.Named.Declaration
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = CLexer.get_keyword_state () ;;
 
-let errorstrm x = CErrors.user_err ~hdr:"ssreflect" x
+let errorstrm x = CErrors.user_err x
 
 let allocc = Some(false,[])
 
@@ -51,7 +51,7 @@ let allocc = Some(false,[])
 let hyp_id (SsrHyp (_, id)) = id
 
 let hyp_err ?loc msg id =
-  CErrors.user_err ?loc ~hdr:"ssrhyp" Pp.(str msg ++ Id.print id)
+  CErrors.user_err ?loc Pp.(str msg ++ Id.print id)
 
 let not_section_id id = not (Termops.is_section_variable id)
 
@@ -155,7 +155,7 @@ open Genarg
 open Stdarg
 open Pp
 
-let errorstrm x = CErrors.user_err ~hdr:"ssreflect" x
+let errorstrm x = CErrors.user_err x
 let anomaly s = CErrors.anomaly (str s)
 
 (* Tentative patch from util.ml *)
@@ -1256,7 +1256,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
   let sigma, env = project gl, pf_env gl in
   let evar_closed t p =
     if occur_existential sigma t then
-      CErrors.user_err ?loc:(loc_of_cpattern p) ~hdr:"ssreflect"
+      CErrors.user_err ?loc:(loc_of_cpattern p)
         (pr_econstr_pat env sigma t ++
         str" contains holes and matches no subterm of the goal") in
   match gen with
