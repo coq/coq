@@ -958,9 +958,6 @@ accessible, absolute names can never be hidden.
 Libraries and filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: The questions described here have been subject to redesign in Coq 8.5.
-   Former versions of Coq use the same terminology to describe slightly different things.
-
 Compiled files (``.vo`` and ``.vio``) store sub-libraries. In order to refer
 to them inside Coq, a translation from file-system names to Coq names
 is needed. In this translation, names in the file system are called
