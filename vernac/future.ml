@@ -64,7 +64,7 @@ type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computati
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
 and 'a comp =
-  | Delegated of (unit -> unit)
+  | Delegated of (Mutex.t * Condition.t) option
   | Closure of (unit -> 'a)
   | Val of 'a
   | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
@@ -102,30 +102,32 @@ let uuid kx = let _, id, _, _ = get kx in id
 let from_val v = create ~fix_exn:None (Val v)
 
 let create_delegate ?(blocking=true) ~name fix_exn =
-  let assignment signal ck = fun v ->
+  let sync =
+    if blocking then Some (Mutex.create (), Condition.create ())
+    else None
+  in
+  let ck = create ~name ~fix_exn (Delegated sync) in
+  let assignment = fun v ->
     let _, _, fix_exn, c = get ck in
-    assert (match !c with Delegated _ -> true | _ -> false);
+    let sync = match !c with Delegated s -> s | _ -> assert false in
     begin match v with
     | `Val v -> c := Val v
     | `Exn e -> c := Exn (eval_fix_exn fix_exn e)
     | `Comp f -> let _, _, _, comp = get f in c := !comp end;
-    signal () in
-  let wait, signal =
-    if not blocking then (fun () -> raise (NotReady name)), ignore else
-    let lock = Mutex.create () in
-    let cond = Condition.create () in
-    (fun () -> CThread.with_lock lock ~scope:(fun () -> Condition.wait cond lock)),
-    (fun () -> CThread.with_lock lock ~scope:(fun () -> Condition.broadcast cond)) in
-  let ck = create ~name ~fix_exn (Delegated wait) in
-  ck, assignment signal ck
+    let iter (lock, cond) = CThread.with_lock lock ~scope:(fun () -> Condition.broadcast cond) in
+    Option.iter iter sync
+  in
+  ck, assignment
 
 (* TODO: get rid of try/catch to be stackless *)
 let rec compute ck : 'a value =
-  let _, _, fix_exn, c = get ck in
+  let name, _, fix_exn, c = get ck in
   match !c with
   | Val x -> `Val x
   | Exn (e, info) -> `Exn (e, info)
-  | Delegated wait -> wait (); compute ck
+  | Delegated None -> raise (NotReady name)
+  | Delegated (Some (lock, cond)) ->
+    CThread.with_lock lock ~scope:(fun () -> Condition.wait cond lock); compute ck
   | Closure f ->
       try
         let data = f () in
