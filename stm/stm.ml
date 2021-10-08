@@ -1441,7 +1441,7 @@ end = struct (* {{{ *)
   let build_proof_here ~doc ?loc ~drop_pt (id,valid) eop =
     (* [~fix_exn:exn_on] here does more than amending the exn
        information, it also updates the STM state *)
-    Future.create ~fix_exn:(State.exn_on id ~valid) (fun () ->
+    Future.create ~fix_exn:(Some (id, valid)) (fun () ->
       let wall_clock1 = Unix.gettimeofday () in
       Reach.known_state ~doc ~cache:(VCS.is_interactive ()) eop;
       let wall_clock2 = Unix.gettimeofday () in
@@ -1735,12 +1735,12 @@ end = struct (* {{{ *)
      | _ -> 0)
 
   let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname () =
-    let id, valid as t_exn_info = exn_info in
+    let t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
       if VCS.is_vio_doc () then begin
         let f,assign =
-         Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
+         Future.create_delegate ~blocking:true ~name:pname (Some t_exn_info) in
         let t_uuid = Future.uuid f in
         let task = ProofTask.(BuildProof {
           t_exn_info; t_start = block_start; t_stop = block_stop; t_drop = drop_pt;
@@ -1751,7 +1751,7 @@ end = struct (* {{{ *)
       end else
         ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
     else
-      let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
+      let f, t_assign = Future.create_delegate ~name:pname (Some t_exn_info) in
       let t_uuid = Future.uuid f in
       feedback (InProgress 1);
       let task = ProofTask.(BuildProof {

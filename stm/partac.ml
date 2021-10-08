@@ -164,7 +164,7 @@ let enable_par ~nworkers = ComTactic.set_par_implementation
     let results = (Proof.data p).Proof.goals |> CList.map_i (fun i g ->
       let g_solution, t_assign =
       Future.create_delegate ~name:(Printf.sprintf "goal %d" i)
-          (fun x -> x) in
+          None in
       TaskQueue.enqueue_task queue
       ~cancel_switch:(ref false)
       { t_state; t_assign; t_ast;

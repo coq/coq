@@ -32,8 +32,18 @@ let _ = CErrors.register_handler (function
   | NotHere name -> Some (!not_here_msg name)
   | _ -> None)
 
-type fix_exn = Exninfo.iexn -> Exninfo.iexn
-let id x = x
+type fix_exn = (Stateid.t * Stateid.t) option
+
+let eval_fix_exn f (e, info) = match f with
+| None -> (e, info)
+| Some (id, valid) ->
+  match Stateid.get info with
+  | Some _ -> (e, info)
+  | None ->
+    let loc = Loc.get_loc info in
+    let msg = CErrors.iprint (e, info) in
+    let () = Feedback.(feedback ~id (Message (Error, loc, msg))) in
+    (e, Stateid.add info ~valid id)
 
 module UUID = struct
   type t = int
@@ -71,7 +81,7 @@ let get x =
   | Ongoing (name, x) ->
       try let uuid, fix, c = CEphemeron.get x in name, uuid, fix, c
       with CEphemeron.InvalidKey ->
-        name, UUID.invalid, id, ref (Exn (NotHere name, Exninfo.null))
+        name, UUID.invalid, None, ref (Exn (NotHere name, Exninfo.null))
 
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]
 
@@ -89,7 +99,7 @@ let peek_val kx = let _, _, _, x = get kx in match !x with
 
 let uuid kx = let _, id, _, _ = get kx in id
 
-let from_val v = create ~fix_exn:id (Val v)
+let from_val v = create ~fix_exn:None (Val v)
 
 let create_delegate ?(blocking=true) ~name fix_exn =
   let assignment signal ck = fun v ->
@@ -97,7 +107,7 @@ let create_delegate ?(blocking=true) ~name fix_exn =
     assert (match !c with Delegated _ -> true | _ -> false);
     begin match v with
     | `Val v -> c := Val v
-    | `Exn e -> c := Exn (fix_exn e)
+    | `Exn e -> c := Exn (eval_fix_exn fix_exn e)
     | `Comp f -> let _, _, _, comp = get f in c := !comp end;
     signal () in
   let wait, signal =
@@ -122,7 +132,7 @@ let rec compute ck : 'a value =
         c := Val data; `Val data
       with e ->
         let e = Exninfo.capture e in
-        let e = fix_exn e in
+        let e = eval_fix_exn fix_exn e in
         match e with
         | (NotReady _, _) -> `Exn e
         | _ -> c := Exn e; `Exn e
