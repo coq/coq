@@ -1744,23 +1744,13 @@ end = struct (* {{{ *)
   let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname () =
     let t_exn_info = exn_info in
     let cancel_switch = ref false in
-    if TaskQueue.n_workers (Option.get !queue) = 0 then
-      if VCS.is_vio_doc () then begin
-        let f,assign =
-         Future.create_delegate ~blocking:true ~name:pname (Some t_exn_info) in
-        let t_uuid = Future.uuid f in
-        let task = ProofTask.(BuildProof {
-          t_exn_info; t_start = block_start; t_stop = block_stop; t_drop = drop_pt;
-          t_assign = assign; t_loc = loc; t_uuid; t_name = pname;
-          t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
-        TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
-        f, cancel_switch
-      end else
-        ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
+    let n_workers = TaskQueue.n_workers (Option.get !queue) in
+    if Int.equal n_workers 0 && not (VCS.is_vio_doc ()) then
+      ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
     else
       let f, t_assign = Future.create_delegate ~name:pname (Some t_exn_info) in
       let t_uuid = Future.uuid f in
-      feedback (InProgress 1);
+      if n_workers > 0 then feedback (InProgress 1);
       let task = ProofTask.(BuildProof {
         t_exn_info; t_start = block_start; t_stop = block_stop; t_assign; t_drop = drop_pt;
         t_loc = loc; t_uuid; t_name = pname;
