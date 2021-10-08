@@ -59,7 +59,7 @@ end
 module UUIDMap = Map.Make(UUID)
 module UUIDSet = Set.Make(UUID)
 
-type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
+type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of (unit -> 'a)]
 
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
@@ -113,7 +113,7 @@ let create_delegate ?(blocking=true) ~name fix_exn =
     begin match v with
     | `Val v -> c := Val v
     | `Exn e -> c := Exn (eval_fix_exn fix_exn e)
-    | `Comp f -> let _, _, _, comp = get f in c := !comp end;
+    | `Comp f -> c := Closure f end;
     let iter (lock, cond) = CThread.with_lock lock ~scope:(fun () -> Condition.broadcast cond) in
     Option.iter iter sync
   in

@@ -1561,7 +1561,7 @@ end = struct (* {{{ *)
       msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
                              "The system state could not be sent to the worker process. "^
                              "Falling back to local, lazy, evaluation."));
-      t_assign(`Comp(Future.create ~fix_exn:None (fun () -> build_proof_here_fun ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt ~id:(fst t_exn_info) t_stop)));
+      t_assign(`Comp(fun () -> build_proof_here_fun ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt ~id:(fst t_exn_info) t_stop));
       feedback (InProgress ~-1)
 
 end (* }}} *)
