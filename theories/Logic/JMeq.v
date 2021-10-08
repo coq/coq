@@ -17,6 +17,8 @@
 
 *)
 
+Require Import Eqdep.
+
 Set Implicit Arguments.
 
 Unset Elimination Schemes.
@@ -56,7 +58,12 @@ Qed.
 
 Register JMeq_trans as core.JMeq.trans.
 
-Axiom JMeq_eq : forall (A:Type) (x y:A), JMeq x y -> x = y.
+Theorem JMeq_eq : forall (A:Type) (x y:A), JMeq x y -> x = y.
+Proof.
+  intros A x y Heq.
+  inversion Heq.
+  now apply (inj_pairT2 _ _ A x y).
+Qed.
 
 Lemma JMeq_ind : forall (A:Type) (x:A) (P:A -> Prop),
   P x -> forall y, JMeq x y -> P y.
