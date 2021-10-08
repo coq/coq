@@ -70,7 +70,7 @@ let add_map s m = protect_maps := String.Map.add s m !protect_maps
 let lookup_map map =
   try String.Map.find map !protect_maps
   with Not_found ->
-    CErrors.user_err (str"Map "++qs map++str"not found")
+    CErrors.user_err (str "Map " ++ qs map ++ str "not found.")
 
 let protect_red map env sigma c0 =
   let c = EConstr.Unsafe.to_constr c0 in

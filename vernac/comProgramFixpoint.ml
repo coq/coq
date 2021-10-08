@@ -364,7 +364,7 @@ let do_fixpoint ~pm ~scope ~poly ?typing_flags ?using l =
       do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind l
     | _, _ ->
       CErrors.user_err
-        (str "Well-founded fixpoints not allowed in mutually recursive blocks")
+        (str "Well-founded fixpoints not allowed in mutually recursive blocks.")
 
 let do_cofixpoint ~pm ~scope ~poly ?using fixl =
   let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in

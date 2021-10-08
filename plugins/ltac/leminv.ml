@@ -267,7 +267,7 @@ let lemInv id c =
     | UserError _ ->
          user_err
            (str "Cannot refine current goal with the lemma " ++
-              pr_leconstr_env (pf_env gls) (project gls) c)
+              pr_leconstr_env (pf_env gls) (project gls) c ++ str ".")
   end
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id

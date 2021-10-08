@@ -1258,7 +1258,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
     if occur_existential sigma t then
       CErrors.user_err ?loc:(loc_of_cpattern p)
         (pr_econstr_pat env sigma t ++
-        str" contains holes and matches no subterm of the goal") in
+        str" contains holes and matches no subterm of the goal.") in
   match gen with
   | _, Some ((x, mode), None) when mode = "@" || (mode = " " && keep_let) ->
      let x = hoi_id x in

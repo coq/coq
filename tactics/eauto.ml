@@ -401,7 +401,7 @@ exception UnknownDatabase of string
 
 let autounfold db cls =
   if not (Locusops.clause_with_generic_occurrences cls) then
-    user_err (str "\"at\" clause not supported");
+    user_err (str "\"at\" clause not supported.");
   match List.fold_left (fun (ids, csts) dbname ->
     let db = try searchtable_map dbname
       with Not_found -> raise (UnknownDatabase dbname)
@@ -468,7 +468,7 @@ let autounfold_one db cl =
   let st =
     List.fold_left (fun (i,c) dbname ->
       let db = try searchtable_map dbname
-        with Not_found -> user_err (str "Unknown database " ++ str dbname)
+        with Not_found -> user_err (str "Unknown database " ++ str dbname ++ str ".")
       in
       let (ids, csts) = Hint_db.unfolds db in
         (Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db

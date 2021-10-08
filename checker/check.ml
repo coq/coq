@@ -227,11 +227,12 @@ let error_unmapped_dir qid =
   let prefix = qid.dirpath in
   user_err
     (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
-     str "no physical path bound to" ++ spc () ++ pr_dirlist prefix ++ fnl ())
+     str "no physical path bound to" ++ spc () ++ pr_dirlist prefix
+     ++ str "." ++ fnl ())
 
 let error_lib_not_found qid =
   user_err
-    (str"Cannot find library " ++ pr_path qid ++ str" in loadpath")
+    (str "Cannot find library " ++ pr_path qid ++ str " in loadpath.")
 
 let try_locate_absolute_library dir =
   try

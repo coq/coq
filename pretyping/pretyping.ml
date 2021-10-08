@@ -137,7 +137,7 @@ let universe_level_name evd ({CAst.v=id} as lid) =
     if not (is_strict_universe_declarations ()) then
       new_univ_level_variable ?loc:lid.CAst.loc ~name:id univ_rigid evd
     else user_err ?loc:lid.CAst.loc
-        (Pp.(str "Undeclared universe: " ++ Id.print id))
+        (Pp.(str "Undeclared universe: " ++ Id.print id ++ str "."))
 
 let sort_name sigma = function
   | GSProp -> sigma, Univ.Level.sprop
@@ -157,7 +157,7 @@ let sort_info ?loc evd l =
       | 1 -> Univ.Universe.super u'
       | n ->
         user_err ?loc
-          (Pp.(str "Cannot interpret universe increment +" ++ int n))
+          (Pp.(str "Cannot interpret universe increment +" ++ int n ++ str "."))
       in (evd', Univ.sup u u'))
     (evd, Univ.Universe.type0m) l
 

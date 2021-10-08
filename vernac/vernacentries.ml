@@ -470,7 +470,7 @@ let err_unmapped_library ?from qid =
   in
   user_err ?loc:qid.CAst.loc
     (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
-       DirPath.print dir ++ prefix)
+       DirPath.print dir ++ prefix ++ str ".")
 
 let err_notfound_library ?from qid =
   let prefix = match from with
@@ -1029,14 +1029,14 @@ let vernac_universe ~poly l =
   if poly && not (Global.sections_are_opened ()) then
     user_err
                  (str"Polymorphic universes can only be declared inside sections, " ++
-                  str "use Monomorphic Universe instead");
+                  str "use Monomorphic Universe instead.");
   DeclareUniv.do_universe ~poly l
 
 let vernac_constraint ~poly l =
   if poly && not (Global.sections_are_opened ()) then
     user_err
                  (str"Polymorphic universe constraints can only be declared"
-                  ++ str " inside sections, use Monomorphic Constraint instead");
+                  ++ str " inside sections, use Monomorphic Constraint instead.");
   DeclareUniv.do_constraint ~poly l
 
 (**********************)
@@ -2130,7 +2130,7 @@ let vernac_check_guard ~pstate =
       Inductiveops.control_only_guard (Goal.V82.env sigma gl) sigma pfterm;
       (str "The condition holds up to here")
     with UserError s ->
-      (str ("Condition violated: ") ++s)
+      (str ("Condition violated: ") ++ s ++ str ".")
   in message
 
 (* We interpret vernacular commands to a DSL that specifies their

@@ -150,7 +150,7 @@ let file_of_name name =
   let fail s =
     user_err
       (str"File not found on loadpath : " ++ str s ++ str"\n" ++
-       str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy)) in
+       str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy) ++ str ".") in
   if not (Filename.is_relative name) then
     if Sys.file_exists name then name else fail name
   else if Sys.(backend_type = Native) then
@@ -276,7 +276,7 @@ let trigger_ml_object verb cache reinit ?path name =
     if cache then perform_cache_obj name
   end else if not has_dynlink then
     user_err
-      (str "Dynamic link not supported (module " ++ str name ++ str ")")
+      (str "Dynamic link not supported (module " ++ str name ++ str ").")
   else begin
     let file = file_of_name (Option.default name path) in
     let path =

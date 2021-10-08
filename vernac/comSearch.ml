@@ -23,7 +23,7 @@ let global_module qid =
   try Nametab.full_name_module qid
   with Not_found ->
     user_err ?loc:qid.CAst.loc
-     (str "Module/section " ++ Ppconstr.pr_qualid qid ++ str " not found.")
+     (str "Module/Section " ++ Ppconstr.pr_qualid qid ++ str " not found.")
 
 let interp_search_restriction = function
   | SearchOutside l -> (List.map global_module l, true)

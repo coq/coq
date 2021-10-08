@@ -130,7 +130,7 @@ let try_find_library dir =
   try find_library dir
   with Not_found ->
     user_err
-      (str "Unknown library " ++ DirPath.print dir)
+      (str "Unknown library " ++ DirPath.print dir ++ str ".")
 
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
@@ -278,7 +278,7 @@ let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
     user_err
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        DirPath.print m.library_name ++ spc () ++ str "and not library" ++
-       spc() ++ DirPath.print dir);
+       spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
   m.library_digests, intern_library_deps ~lib_resolver (needed, contents) dir m f
 
@@ -404,9 +404,9 @@ let load_library_todo f =
   let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
-  if tasks = None then user_err (str"not a .vio file");
-  if s2 = None then user_err (str"not a .vio file");
-  if snd (Option.get s2) then user_err (str"not a .vio file");
+  if tasks = None then user_err (str "Not a .vio file.");
+  if s2 = None then user_err (str "Not a .vio file.");
+  if snd (Option.get s2) then user_err (str "Not a .vio file.");
   s0, s1, Option.get s2, Option.get tasks, s4
 
 (************************************************************************)
