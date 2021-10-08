@@ -1438,18 +1438,18 @@ end = struct (* {{{ *)
         execution_error start (Pp.strbrk s);
         feedback (InProgress ~-1)
 
+  let build_proof_here_fun ~doc ?loc ~drop_pt ~id eop =
+    let wall_clock1 = Unix.gettimeofday () in
+    Reach.known_state ~doc ~cache:(VCS.is_interactive ()) eop;
+    let wall_clock2 = Unix.gettimeofday () in
+    Aux_file.record_in_aux_at ?loc "proof_build_time"
+      (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
+    let p = if drop_pt then PG_compat.return_partial_proof () else PG_compat.return_proof () in
+    if drop_pt then feedback ~id Complete;
+    p
+
   let build_proof_here ~doc ?loc ~drop_pt (id,valid) eop =
-    (* [~fix_exn:exn_on] here does more than amending the exn
-       information, it also updates the STM state *)
-    Future.create ~fix_exn:(Some (id, valid)) (fun () ->
-      let wall_clock1 = Unix.gettimeofday () in
-      Reach.known_state ~doc ~cache:(VCS.is_interactive ()) eop;
-      let wall_clock2 = Unix.gettimeofday () in
-      Aux_file.record_in_aux_at ?loc "proof_build_time"
-        (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-      let p = if drop_pt then PG_compat.return_partial_proof () else PG_compat.return_proof () in
-      if drop_pt then feedback ~id Complete;
-      p)
+    Future.create ~fix_exn:(Some (id, valid)) (fun () -> build_proof_here_fun ~doc ?loc ~drop_pt ~id eop)
 
   let perform_buildp { Stateid.exn_info; stop; document; loc } drop my_states =
     try
@@ -1457,8 +1457,15 @@ end = struct (* {{{ *)
       VCS.print ();
       let proof, time =
         let wall_clock = Unix.gettimeofday () in
-        let fp = build_proof_here ~doc:dummy_doc (* XXX should be document *) ?loc ~drop_pt:drop exn_info stop in
-        let proof = Future.force fp in
+        let proof =
+          try
+            build_proof_here_fun ~doc:dummy_doc (* XXX should be document *)
+              ?loc ~drop_pt:drop ~id:(fst exn_info) stop
+          with exn ->
+            let iexn = Exninfo.capture exn in
+            let iexn = State.exn_on (fst exn_info) ~valid:(snd exn_info) iexn in
+            Exninfo.iraise iexn
+        in
         proof, Unix.gettimeofday () -. wall_clock in
       (* We typecheck the proof with the kernel (in the worker) to spot
        * the few errors tactics don't catch, like the "fix" tactic building
@@ -1554,7 +1561,7 @@ end = struct (* {{{ *)
       msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
                              "The system state could not be sent to the worker process. "^
                              "Falling back to local, lazy, evaluation."));
-      t_assign(`Comp(build_proof_here ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt t_exn_info t_stop));
+      t_assign(`Comp(Future.create ~fix_exn:None (fun () -> build_proof_here_fun ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt ~id:(fst t_exn_info) t_stop)));
       feedback (InProgress ~-1)
 
 end (* }}} *)
