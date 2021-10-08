@@ -12,12 +12,14 @@ open Pp
 
 let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
 
+type 'a result = Val of 'a | Exn of exn
+
 module TacTask : sig
 
   type output = (Constr.constr * UState.t) option
   type task = {
     t_state    : Vernacstate.t;
-    t_assign   : output Future.assignment -> unit;
+    t_assign   : output result option ref;
     t_ast      : ComTactic.interpretable;
     t_goalno   : int;
     t_goal     : Goal.goal;
@@ -35,7 +37,7 @@ end = struct (* {{{ *)
 
   type task = {
     t_state    : Vernacstate.t;
-    t_assign   : output Future.assignment -> unit;
+    t_assign   : output result option ref;
     t_ast      : ComTactic.interpretable;
     t_goalno   : int;
     t_goal     : Goal.goal;
@@ -70,16 +72,20 @@ end = struct (* {{{ *)
       r_goal     = t_goal;
       r_name     = t_name }
 
+  let assign r v =
+    let () = assert (Option.is_empty !r) in
+    r := Some v
+
   let use_response _ { t_assign; t_kill } resp =
     match resp with
-    | RespBuiltSubProof o -> t_assign (`Val (Some o)); `Stay ((),[])
+    | RespBuiltSubProof o -> assign t_assign (Val (Some o)); `Stay ((),[])
     | RespNoProgress ->
-        t_assign (`Val None);
+        assign t_assign (Val None);
         t_kill ();
         `Stay ((),[])
     | RespError msg ->
-        let e = (AsyncTaskQueue.RemoteException msg, Exninfo.null) in
-        t_assign (`Exn e);
+        let e = (AsyncTaskQueue.RemoteException msg) in
+        assign t_assign (Exn e);
         t_kill ();
         `Stay ((),[])
 
@@ -140,19 +146,18 @@ let assign_tac ~abstract res : unit Proofview.tactic =
   let g_solution =
     try List.assoc gid res
     with Not_found -> CErrors.anomaly(str"Partac: wrong focus.") in
-  if not (Future.is_over g_solution) then
-    tclUNIT ()
-  else
+  match !g_solution with
+  | None -> tclUNIT ()
+  | Some (Val None) -> tclUNIT ()
+  | Some (Val (Some (pt, uc))) ->
     let open Notations in
-    match Future.force g_solution with
-    | Some (pt, uc) ->
         let push_state ctx =
             Proofview.tclEVARMAP >>= fun sigma ->
             Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma ctx)
         in
         (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
             (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
-    | None -> tclUNIT ()
+  | Some (Exn e) -> raise e
   end)
 
 let enable_par ~nworkers = ComTactic.set_par_implementation
@@ -162,15 +167,13 @@ let enable_par ~nworkers = ComTactic.set_par_implementation
     Declare.Proof.map pstate ~f:(fun p ->
     let open TacTask in
     let results = (Proof.data p).Proof.goals |> CList.map_i (fun i g ->
-      let g_solution, t_assign =
-      Future.create_delegate ~name:(Printf.sprintf "goal %d" i)
-          None in
+      let ans = ref None in
       TaskQueue.enqueue_task queue
       ~cancel_switch:(ref false)
-      { t_state; t_assign; t_ast;
+      { t_state; t_assign = ans; t_ast;
           t_goalno = i; t_goal = g; t_name = Goal.uid g;
           t_kill = (fun () -> TaskQueue.cancel_all queue) };
-      g, g_solution) 1 in
+      g, ans) 1 in
     TaskQueue.join queue;
     let p,_,() =
       Proof.run_tactic (Global.env())
