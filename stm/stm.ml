@@ -141,15 +141,23 @@ let may_pierce_opaque = function
   | VernacExtend (("ExtractionInductive",_), _) -> true
   | _ -> false
 
-module Vcs_ = Vcs.Make(Stateid.Self)
-type future_proof = Declare.Proof.closed_proof_output Future.computation
-
 type depth = int
-type branch_type =
+type 'branch branch_type_gen =
   [ `Master
   | `Proof of depth
   | `Edit of
-      Stateid.t * Stateid.t  * Vernacextend.vernac_qed_type * Vcs_.Branch.t ]
+      Stateid.t * Stateid.t  * Vernacextend.vernac_qed_type * 'branch ]
+
+module Kind =
+struct
+  type 'a t = 'a branch_type_gen
+  let master = `Master
+end
+
+module Vcs_ = Vcs.Make(Stateid.Self)(Kind)
+type future_proof = Declare.Proof.closed_proof_output Future.computation
+
+type branch_type = Vcs_.Branch.t Kind.t
 (* TODO 8.7 : split commands and tactics, since this type is too messy now *)
 type cmd_t = {
   ctac : bool; (* is a tactic *)
@@ -167,7 +175,7 @@ type qed_t = {
   keep : vernac_qed_type;
   mutable fproof : (future_proof option * AsyncTaskQueue.cancel_switch) option;
   brname : Vcs_.Branch.t;
-  brinfo : branch_type Vcs_.branch_info
+  brinfo : Vcs_.branch_info
 }
 type seff_t = ReplayCommand of aast | CherryPickEnv
 type alias_t = Stateid.t * aast
@@ -199,7 +207,7 @@ type cached_state =
   | ParsingState of Vernacstate.Parser.t
   | FullState of Vernacstate.t
   | ErrorState of Vernacstate.Parser.t option * Exninfo.iexn
-type branch = Vcs_.Branch.t * branch_type Vcs_.branch_info
+type branch = Vcs_.Branch.t * Vcs_.branch_info
 type backup = { mine : branch; others : branch list }
 
 type 'vcs state_info = { (* TODO: Make this record private to VCS *)
@@ -241,12 +249,12 @@ and static_block_declaration = {
 (* Functions that work on a Vcs with a specific branch type *)
 module Vcs_aux : sig
 
-  val proof_nesting : (branch_type, 't,'i,'c) Vcs_.t -> int
+  val proof_nesting : ('t,'i,'c) Vcs_.t -> int
   val find_proof_at_depth :
-          (branch_type, 't, 'i,'c) Vcs_.t -> int ->
-      Vcs_.Branch.t * branch_type Vcs_.branch_info
+          ('t, 'i,'c) Vcs_.t -> int ->
+      Vcs_.Branch.t * Vcs_.branch_info
   exception Expired
-  val visit : (branch_type, transaction,'i,'c) Vcs_.t -> Vcs_.Dag.node -> visit
+  val visit : (transaction,'i,'c) Vcs_.t -> Vcs_.Dag.node -> visit
 
 end = struct (* {{{ *)
 
@@ -314,13 +322,13 @@ module VCS : sig
 
   module Branch : (module type of Vcs_.Branch with type t = Vcs_.Branch.t)
   type id = Stateid.t
-  type 'branch_type branch_info = 'branch_type Vcs_.branch_info = {
-    kind : [> `Master] as 'branch_type;
+  type branch_info = Vcs_.branch_info = {
+    kind : branch_type;
     root : id;
     pos  : id;
   }
 
-  type vcs = (branch_type, transaction, vcs state_info, box) Vcs_.t
+  type vcs = (transaction, vcs state_info, box) Vcs_.t
 
   val init : stm_doc_type -> id -> Vernacstate.Parser.t -> doc
   (* val get_type : unit -> stm_doc_type *)
@@ -333,7 +341,7 @@ module VCS : sig
   val current_branch : unit -> Branch.t
   val checkout : Branch.t -> unit
   val branches : unit -> Branch.t list
-  val get_branch : Branch.t -> branch_type branch_info
+  val get_branch : Branch.t -> branch_info
   val get_branch_pos : Branch.t -> id
   val new_node : ?id:Stateid.t -> Pvernac.proof_mode option -> unit -> id
   val merge : id -> ours:transaction -> ?into:Branch.t -> Branch.t -> unit
@@ -511,7 +519,7 @@ end = struct (* {{{ *)
     ignore(Sys.command
       ("dot -Tpdf -Gcharset=latin1 " ^ fname_dot ^ " -o" ^ fname_ps))
 
-  type vcs = (branch_type, transaction, vcs state_info, box) t
+  type vcs = (transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
   let doc_type = ref (Interactive (Coqargs.TopLogical (Names.DirPath.make [])))
