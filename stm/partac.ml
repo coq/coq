@@ -144,7 +144,7 @@ let assign_tac ~abstract res : unit Proofview.tactic =
     tclUNIT ()
   else
     let open Notations in
-    match Future.join g_solution with
+    match Future.force g_solution with
     | Some (pt, uc) ->
         let push_state ctx =
             Proofview.tclEVARMAP >>= fun sigma ->
