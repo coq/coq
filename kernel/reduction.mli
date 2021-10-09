@@ -87,8 +87,8 @@ val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) ->
 val generic_conv : conv_pb -> l2r:bool -> (existential->constr option) ->
   TransparentState.t -> (constr,'a) generic_conversion_function
 
-val default_conv     : conv_pb -> ?l2r:bool -> types kernel_conversion_function
-val default_conv_leq : ?l2r:bool -> types kernel_conversion_function
+val default_conv     : conv_pb -> types kernel_conversion_function
+val default_conv_leq : types kernel_conversion_function
 
 (************************************************************************)
 

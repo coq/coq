@@ -518,6 +518,11 @@ let tag_var = tag Tag.variable
       | _ ->
         pr sep inherited a
 
+  let pr_cast = let open Constr in function
+    | DEFAULTcast -> str ":"
+    | VMcast-> str "<:"
+    | NATIVEcast -> str "<<:"
+
   let pr pr sep inherited a =
     let return (cmds, prec) = (tag_constr_expr a cmds, prec) in
     let (strm, prec) = match CAst.(a.v) with
@@ -653,13 +658,10 @@ let tag_var = tag Tag.variable
         return (str "@?" ++ pr_patvar p, latom)
       | CSort s ->
         return (pr_sort_expr s, latom)
-      | CCast (a,b) ->
+      | CCast (a,k,b) ->
         return (
           hv 0 (pr mt (LevelLt lcast) a ++ spc () ++
-                  match b with
-                    | CastConv b -> str ":" ++ ws 1 ++ pr mt (LevelLe (-lcast)) b
-                    | CastVM b -> str "<:" ++ ws 1 ++ pr mt (LevelLe (-lcast)) b
-                    | CastNative b -> str "<<:" ++ ws 1 ++ pr mt (LevelLe (-lcast)) b),
+                (pr_cast k) ++ ws 1 ++ pr mt (LevelLe (-lcast)) b),
           lcast
         )
       | CNotation (_,(_,"( _ )"),([t],[],[],[])) ->

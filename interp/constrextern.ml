@@ -1144,9 +1144,8 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GHole (e,naming,_) -> CHole (Some e, naming, None) (* TODO: extern tactics. *)
 
-  | GCast (c, c') ->
-      CCast (sub_extern true scopes vars c,
-             map_cast_type (extern_typ scopes vars) c')
+  | GCast (c, k, c') ->
+    CCast (sub_extern true scopes vars c, k, extern_typ scopes vars c')
 
   | GInt i ->
      extern_prim_token_delimiter_if_required

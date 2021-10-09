@@ -560,7 +560,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
       *)
       let f_res = build_entry_lc env sigma funnames args_res.to_avoid f in
       combine_results combine_app f_res args_res
-    | GCast (b, _) ->
+    | GCast (b, _, _) ->
       (* for an applied cast we just trash the cast part
          and restart the work.
 
@@ -626,7 +626,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     let v =
       match typ with
       | None -> v
-      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, CastConv t)
+      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, DEFAULTcast, t)
     in
     let v_res = build_entry_lc env sigma funnames avoid v in
     let v_as_constr, ctx = Pretyping.understand env (Evd.from_env env) v in
@@ -688,7 +688,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     let match_expr = mkGCases (None, [(b, (Anonymous, None))], [br]) in
     build_entry_lc env sigma funnames avoid match_expr
   | GRec _ -> user_err Pp.(str "Not handled GRec")
-  | GCast (b, _) -> build_entry_lc env sigma funnames avoid b
+  | GCast (b, _, _) -> build_entry_lc env sigma funnames avoid b
   | GArray _ -> user_err Pp.(str "Not handled GArray")
 
 and build_entry_lc_from_case env sigma funname make_discr (el : tomatch_tuples)
@@ -1130,7 +1130,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     let t =
       match t with
       | None -> v
-      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, CastConv t)
+      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, DEFAULTcast, t)
     in
     let not_free_in_t id = not (is_free_in id t) in
     let evd = Evd.from_env env in

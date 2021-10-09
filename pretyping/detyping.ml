@@ -561,7 +561,7 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
     | CaseInvert {indices} ->
       (* XXX use holes instead of params? *)
       let t = mkApp (mkIndU (ci.ci_ind,univs), Array.append params indices) in
-      DAst.make @@ GCast (tomatch, CastConv (detype t))
+      DAst.make @@ GCast (tomatch, DEFAULTcast, detype t)
   in
   let alias, aliastyp, pred =
     if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
@@ -780,17 +780,10 @@ and detype_r d flags avoid env sigma t =
         (try let _ = Global.lookup_named id in GRef (GlobRef.VarRef id, None)
          with Not_found -> GVar id)
     | Sort s -> GSort (detype_sort sigma (ESorts.kind sigma s))
-    | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
-        DAst.get (detype d flags avoid env sigma c1)
     | Cast (c1,k,c2) ->
-        let d1 = detype d flags avoid env sigma c1 in
-        let d2 = detype d flags avoid env sigma c2 in
-    let cast = match k with
-    | VMcast -> CastVM d2
-    | NATIVEcast -> CastNative d2
-    | _ -> CastConv d2
-    in
-        GCast(d1,cast)
+      let d1 = detype d flags avoid env sigma c1 in
+      let d2 = detype d flags avoid env sigma c2 in
+      GCast(d1,k,d2)
     | Prod (na,ty,c) -> detype_binder d flags BProd avoid env sigma (LocalAssum (na,ty)) c
     | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma (LocalAssum (na,ty)) c
     | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma (LocalDef (na,b,ty)) c
@@ -1158,10 +1151,10 @@ let rec subst_glob_constr env subst = DAst.map (function
     if nsolve == solve && nknd == knd then raw
     else GHole (nknd, naming, nsolve)
 
-  | GCast (r1,k) as raw ->
+  | GCast (r1,k,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 in
-      let k' = smartmap_cast_type (subst_glob_constr env subst) k in
-      if r1' == r1 && k' == k then raw else GCast (r1',k')
+      let r2' = subst_glob_constr env subst r2 in
+      if r1' == r1 && r2' == r2 then raw else GCast (r1',k,r2')
 
   | GArray (u,t,def,ty) as raw ->
       let def' = subst_glob_constr env subst def

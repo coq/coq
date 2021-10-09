@@ -194,7 +194,7 @@ let rec isRHoles cl = match cl with
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
 let mkRVar id = DAst.make @@ GRef (GlobRef.VarRef id,None)
 let mkRltacVar id = DAst.make @@ GVar (id)
-let mkRCast rc rt =  DAst.make @@ GCast (rc, CastConv rt)
+let mkRCast rc rt =  DAst.make @@ GCast (rc, DEFAULTcast, rt)
 let mkRType =  DAst.make @@ GSort (UAnonymous {rigid=true})
 let mkRProp =  DAst.make @@ GSort (UNamed [GProp,0])
 let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
@@ -432,8 +432,8 @@ let mk_anon_id t gl_ids =
     (set s i (Char.chr (Char.code (get s i) + 1)); s) in
   Id.of_string_soft (Bytes.to_string (loop (n - 1)))
 
-let convert_concl_no_check t = Tactics.convert_concl ~check:false t DEFAULTcast
-let convert_concl ~check t = Tactics.convert_concl ~check t DEFAULTcast
+let convert_concl_no_check t = Tactics.convert_concl ~cast:false ~check:false t DEFAULTcast
+let convert_concl ~check t = Tactics.convert_concl ~cast:false ~check t DEFAULTcast
 
 let rename_hd_prod orig_name_ref gl =
   match EConstr.kind (project gl) (pf_concl gl) with
@@ -905,7 +905,7 @@ let mkCLambda ?loc name ty t =  CAst.make ?loc @@
    CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
 let mkCArrow ?loc ty t = CAst.make ?loc @@
    CProdN ([CLocalAssum([CAst.make Anonymous], Default Explicit, ty)], t)
-let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, CastConv ty)
+let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, DEFAULTcast, ty)
 
 let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl = []
 let rec isCxHoles = function ({ CAst.v = CHole _ }, None) :: ch -> isCxHoles ch | _ -> false
@@ -1307,7 +1307,7 @@ let clr_of_wgen gen clrs = match gen with
   | clr, _ -> cleartac clr :: clrs
 
 
-let reduct_in_concl ~check t = Tactics.reduct_in_concl ~check (t, DEFAULTcast)
+let reduct_in_concl ~check t = Tactics.reduct_in_concl ~cast:false ~check (t, DEFAULTcast)
 let unfold cl =
   let module R = Reductionops in let module F = CClosure.RedFlags in
   let flags = F.mkflags [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX; F.fDELTA] in
@@ -1389,7 +1389,7 @@ let tclFULL_BETAIOTA = Goal.enter begin fun gl ->
     Genredexpr.(Lazy {
       rBeta=true; rMatch=true; rFix=true; rCofix=true;
       rZeta=false; rDelta=false; rConst=[]}) in
-  Tactics.e_reduct_in_concl ~check:false (r,Constr.DEFAULTcast)
+  Tactics.e_reduct_in_concl ~cast:false ~check:false (r,Constr.DEFAULTcast)
 end
 
 type intro_id =

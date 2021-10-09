@@ -28,12 +28,12 @@ module NamedDecl = Context.Named.Declaration
 
 exception NotConvertibleVect of int
 
-let conv_leq l2r env x y = default_conv CUMUL ~l2r env x y
+let conv_leq env x y = default_conv CUMUL env x y
 
 let conv_leq_vecti env v1 v2 =
   Array.fold_left2_i
     (fun i _ t1 t2 ->
-      try conv_leq false env t1 t2
+      try conv_leq env t1 t2
       with NotConvertible -> raise (NotConvertibleVect i))
     ()
     v1
@@ -197,7 +197,7 @@ let type_of_apply env func funt argsv argstv =
         let arg = argsv.(i) in
         let argt = argstv.(i) in
         let c1 = term_of_fconstr c1 in
-        begin match conv_leq false env argt c1 with
+        begin match conv_leq env argt c1 with
         | () -> apply_rec (i+1) (mk_clos (Esubst.subs_cons (inject arg) e) c2)
         | exception NotConvertible ->
           error_cant_apply_bad_type env
@@ -295,9 +295,7 @@ let check_cast env c ct k expected_type =
     | VMcast ->
       Vconv.vm_conv CUMUL env ct expected_type
     | DEFAULTcast ->
-      default_conv ~l2r:false CUMUL env ct expected_type
-    | REVERTcast ->
-      default_conv ~l2r:true CUMUL env ct expected_type
+      default_conv CUMUL env ct expected_type
     | NATIVEcast ->
       let sigma = Nativelambda.empty_evars in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
@@ -557,7 +555,7 @@ let rec execute env cstr =
             let args = Array.append pms indices in
             let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
             let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
-            let () = conv_leq false env ct ct' in
+            let () = conv_leq env ct ct' in
             let _, args' = decompose_appvect ct' in
             if args == args' then iv
             else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
@@ -669,7 +667,7 @@ let check_context env rels =
       | LocalDef (x,bd,ty) ->
         let j1 = infer env bd in
         let jty = infer_type env ty in
-        conv_leq false env j1.uj_type ty;
+        conv_leq env j1.uj_type ty;
         let x = check_binder_annot jty.utj_type x in
         push_rel d env, LocalDef (x,j1.uj_val,jty.utj_val) :: rels)
     rels ~init:(env,[])
@@ -708,7 +706,7 @@ let judge_of_apply env funj argjv =
 
 let judge_of_cast env cj k tj =
   let () = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
-  let c = match k with | REVERTcast -> cj.uj_val | _ -> mkCast (cj.uj_val, k, tj.utj_val) in
+  let c = mkCast (cj.uj_val, k, tj.utj_val) in
   make_judge c tj.utj_val
 
 let judge_of_inductive env indu =

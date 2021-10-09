@@ -339,7 +339,8 @@ let introduction id =
     | _ -> raise (RefinerError (env, sigma, IntroNeedsProduct))
   end
 
-let convert_concl ~check ty k =
+(* Not sure if being able to disable [cast] is useful. Uses seem picked somewhat randomly. *)
+let convert_concl ~cast ~check ty k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let conclty = Proofview.Goal.concl gl in
@@ -353,7 +354,7 @@ let convert_concl ~check ty k =
         end else sigma
       in
       let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ty in
-      let ans = if k == DEFAULTcast then x else mkCast(x,k,conclty) in
+      let ans = if not cast then x else mkCast(x,k,conclty) in
       (sigma, ans)
     end
   end
@@ -790,12 +791,12 @@ let bind_change_occurrences occs = function
 
 (** Tactic reduction modulo evars (for universes essentially) *)
 
-let e_change_in_concl ~check (redfun, sty) =
+let e_change_in_concl ~cast ~check (redfun, sty) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let (sigma, c') = redfun (Tacmach.New.pf_env gl) sigma (Tacmach.New.pf_concl gl) in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_concl ~check c' sty)
+    (convert_concl ~cast ~check c' sty)
   end
 
 let e_change_in_hyp ~check ~reorder redfun (id,where) =
@@ -869,9 +870,9 @@ let e_change_in_hyps ~check ~reorder f args = match args with
 
 let e_reduct_in_concl = e_change_in_concl
 
-let reduct_in_concl ~check (redfun, sty) =
+let reduct_in_concl ~cast ~check (redfun, sty) =
   let redfun env sigma c = (sigma, redfun env sigma c) in
-  e_change_in_concl ~check (redfun, sty)
+  e_change_in_concl ~cast ~check (redfun, sty)
 
 let e_reduct_in_hyp ~check ~reorder redfun (id, where) =
   let redfun _ env sigma c = redfun env sigma c in
@@ -881,12 +882,9 @@ let reduct_in_hyp ~check ~reorder redfun (id, where) =
   let redfun _ env sigma c = (sigma, redfun env sigma c) in
   e_change_in_hyp ~check ~reorder redfun (id, where)
 
-let revert_cast (redfun,kind as r) =
-  if kind == DEFAULTcast then (redfun,REVERTcast) else r
-
 let e_reduct_option ~check redfun = function
   | Some id -> e_reduct_in_hyp ~check ~reorder:check (fst redfun) id
-  | None    -> e_change_in_concl ~check (revert_cast redfun)
+  | None    -> e_change_in_concl ~cast:true ~check redfun
 
 let reduct_option ~check (redfun, sty) where =
   let redfun env sigma c = (sigma, redfun env sigma c) in
@@ -952,7 +950,8 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
 
 let change_in_concl ~check occl t =
   (* No need to check in e_change_in_concl, the check is done in change_on_subterm *)
-  e_change_in_concl ~check:false ((change_on_subterm ~check Reduction.CUMUL false t occl),DEFAULTcast)
+  e_change_in_concl ~cast:false ~check:false
+    ((change_on_subterm ~check Reduction.CUMUL false t occl),DEFAULTcast)
 
 let change_in_hyp ~check occl t id  =
   (* Same as above *)
@@ -988,20 +987,20 @@ let change_concl t =
   change_in_concl ~check:true None (make_change_arg t)
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
-let red_in_concl        = reduct_in_concl ~check:false (red_product,REVERTcast)
+let red_in_concl        = reduct_in_concl ~cast:true ~check:false (red_product,DEFAULTcast)
 let red_in_hyp          = reduct_in_hyp ~check:false ~reorder:false red_product
-let red_option          = reduct_option ~check:false (red_product,REVERTcast)
-let hnf_in_concl        = reduct_in_concl ~check:false (hnf_constr,REVERTcast)
+let red_option          = reduct_option ~check:false (red_product,DEFAULTcast)
+let hnf_in_concl        = reduct_in_concl ~cast:true ~check:false (hnf_constr,DEFAULTcast)
 let hnf_in_hyp          = reduct_in_hyp ~check:false ~reorder:false hnf_constr
-let hnf_option          = reduct_option ~check:false (hnf_constr,REVERTcast)
-let simpl_in_concl      = reduct_in_concl ~check:false (simpl,REVERTcast)
+let hnf_option          = reduct_option ~check:false (hnf_constr,DEFAULTcast)
+let simpl_in_concl      = reduct_in_concl ~cast:true ~check:false (simpl,DEFAULTcast)
 let simpl_in_hyp        = reduct_in_hyp ~check:false ~reorder:false simpl
-let simpl_option        = reduct_option ~check:false (simpl,REVERTcast)
-let normalise_in_concl  = reduct_in_concl ~check:false (compute,REVERTcast)
+let simpl_option        = reduct_option ~check:false (simpl,DEFAULTcast)
+let normalise_in_concl  = reduct_in_concl ~cast:true ~check:false (compute,DEFAULTcast)
 let normalise_in_hyp    = reduct_in_hyp ~check:false ~reorder:false compute
-let normalise_option    = reduct_option ~check:false (compute,REVERTcast)
-let normalise_vm_in_concl = reduct_in_concl ~check:false (Redexpr.cbv_vm,VMcast)
-let unfold_in_concl loccname = reduct_in_concl ~check:false (unfoldn loccname,REVERTcast)
+let normalise_option    = reduct_option ~check:false (compute,DEFAULTcast)
+let normalise_vm_in_concl = reduct_in_concl ~cast:true ~check:false (Redexpr.cbv_vm,VMcast)
+let unfold_in_concl loccname = reduct_in_concl ~cast:true ~check:false (unfoldn loccname,DEFAULTcast)
 let unfold_in_hyp   loccname = reduct_in_hyp ~check:false ~reorder:false (unfoldn loccname)
 let unfold_option   loccname = reduct_option ~check:false (unfoldn loccname,DEFAULTcast)
 let pattern_option l = e_reduct_option ~check:false (pattern_occs l,DEFAULTcast)
@@ -1050,7 +1049,7 @@ let reduce redexp cl =
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
     let redfun = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
-    e_change_in_concl ~check (revert_cast redfun)
+    e_change_in_concl ~cast:true ~check redfun
   end
   <*>
   let f (id, occs, where) =
@@ -2272,7 +2271,7 @@ let constructor_tac with_evars expctdnumopt i lbind =
     let nconstr = Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
     check_number_of_constructors expctdnumopt i nconstr;
     Tacticals.New.tclTHENLIST [
-      convert_concl ~check:false redcl DEFAULTcast;
+      convert_concl ~cast:false ~check:false redcl DEFAULTcast;
       intros;
       constructor_core with_evars (ind, i) lbind
     ]
@@ -2301,7 +2300,7 @@ let any_constructor with_evars tacopt =
       Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
     if Int.equal nconstr 0 then error NoConstructors;
     Tacticals.New.tclTHENLIST [
-      convert_concl ~check:false redcl DEFAULTcast;
+      convert_concl ~cast:false ~check:false redcl DEFAULTcast;
       intros;
       any_constr ind nconstr 1 ()
     ]
@@ -2731,7 +2730,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
     in
       Tacticals.New.tclTHENLIST
       [ Proofview.Unsafe.tclEVARS sigma;
-        convert_concl ~check:false newcl DEFAULTcast;
+        convert_concl ~cast:false ~check:false newcl DEFAULTcast;
         intro_gen (NamingMustBe (CAst.make id)) (decode_hyp lastlhyp) true false;
         Tacticals.New.tclMAP (convert_hyp ~check:false ~reorder:false) depdecls;
         eq_tac ]
@@ -3195,7 +3194,7 @@ let unfold_body x =
   let hl = List.fold_right (fun decl cl -> (NamedDecl.get_id decl, InHyp) :: cl) aft [] in
   let rfun _ _ c = replace_vars [x, xval] c in
   let reducth h = reduct_in_hyp ~check:false ~reorder:false rfun h in
-  let reductc = reduct_in_concl ~check:false (rfun, DEFAULTcast) in
+  let reductc = reduct_in_concl ~cast:false ~check:false (rfun, DEFAULTcast) in
   Tacticals.New.tclTHENLIST [Tacticals.New.tclMAP reducth hl; reductc]
   end
   end
@@ -4936,7 +4935,7 @@ let symmetry_red allowred =
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
-        (convert_concl ~check:false concl DEFAULTcast)
+        (convert_concl ~cast:false ~check:false concl DEFAULTcast)
         (Tacticals.New.pf_constr_of_global eq_data.sym >>= apply)
   | None,eq,eq_kind -> prove_symmetry eq eq_kind
   end
@@ -5031,7 +5030,7 @@ let transitivity_red allowred t =
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
-        (convert_concl ~check:false concl DEFAULTcast)
+        (convert_concl ~cast:false ~check:false concl DEFAULTcast)
         (match t with
           | None -> Tacticals.New.pf_constr_of_global eq_data.trans >>= eapply
           | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans >>= fun trans -> apply_list [trans; t])
@@ -5205,7 +5204,7 @@ module New = struct
       let flags = RedFlags.red_add_transparent allnolet TransparentState.empty in
       clos_norm_flags flags env t
     in
-    reduct_in_concl ~check:false (redfun,DEFAULTcast)
+    reduct_in_concl ~cast:false ~check:false (redfun,DEFAULTcast)
 
   let refine ~typecheck c =
     Refine.refine ~typecheck c <*>

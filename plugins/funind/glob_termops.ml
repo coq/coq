@@ -108,10 +108,8 @@ let change_vars =
         | GRec _ -> user_err ?loc Pp.(str "Local (co)fixes are not supported")
         | GSort _ as x -> x | GHole _ as x -> x | GInt _ as x -> x
         | GFloat _ as x -> x
-        | GCast (b, c) ->
-          GCast
-            ( change_vars mapping b
-            , Glob_ops.map_cast_type (change_vars mapping) c )
+        | GCast (b, k, c) ->
+          GCast (change_vars mapping b, k, change_vars mapping c)
         | GArray (u, t, def, ty) ->
           GArray
             ( u
@@ -286,8 +284,8 @@ let rec alpha_rt excluded rt =
         , alpha_rt excluded rhs )
     | GRec _ -> user_err Pp.(str "Not handled GRec")
     | (GSort _ | GInt _ | GFloat _ | GHole _) as rt -> rt
-    | GCast (b, c) ->
-      GCast (alpha_rt excluded b, Glob_ops.map_cast_type (alpha_rt excluded) c)
+    | GCast (b, k, c) ->
+      GCast (alpha_rt excluded b, k, alpha_rt excluded c)
     | GApp (f, args) ->
       GApp (alpha_rt excluded f, List.map (alpha_rt excluded) args)
     | GProj (f, args, c) ->
@@ -345,7 +343,7 @@ let is_free_in id =
           is_free_in cond || is_free_in br1 || is_free_in br2
         | GRec _ -> user_err Pp.(str "Not handled GRec") | GSort _ -> false
         | GHole _ -> false
-        | GCast (b, (CastConv t | CastVM t | CastNative t)) ->
+        | GCast (b, _, t) ->
           is_free_in b || is_free_in t
         | GInt _ | GFloat _ -> false
         | GArray (_u, t, def, ty) ->
@@ -430,10 +428,8 @@ let replace_var_by_term x_id term =
             , Array.map replace_var_by_pattern t
             , replace_var_by_pattern def
             , replace_var_by_pattern ty )
-        | GCast (b, c) ->
-          GCast
-            ( replace_var_by_pattern b
-            , Glob_ops.map_cast_type replace_var_by_pattern c ))
+        | GCast (b, k, c) ->
+          GCast (replace_var_by_pattern b, k, replace_var_by_pattern c))
       x
   and replace_var_by_pattern_br ({CAst.loc; v = idl, patl, res} as br) =
     if List.exists (fun id -> Id.compare id x_id == 0) idl then br
@@ -532,8 +528,8 @@ let expand_as =
           , expand_as map br1
           , expand_as map br2 )
       | GRec _ -> user_err Pp.(str "Not handled GRec")
-      | GCast (b, c) ->
-        GCast (expand_as map b, Glob_ops.map_cast_type (expand_as map) c)
+      | GCast (b, k, c) ->
+        GCast (expand_as map b, k, expand_as map c)
       | GCases (sty, po, el, brl) ->
         GCases
           ( sty

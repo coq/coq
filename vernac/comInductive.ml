@@ -97,7 +97,7 @@ let rec check_type_conclusion ind =
     | GLetIn (_, _, _, e)
     | GLambda (_, _, _, e)
     | GApp (e, _)
-    | GCast (e, _) -> check_type_conclusion e
+    | GCast (e, _, _) -> check_type_conclusion e
     | _ -> None
 
 let make_anonymous_conclusion_flexible sigma = function

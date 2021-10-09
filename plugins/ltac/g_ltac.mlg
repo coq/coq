@@ -14,7 +14,6 @@ DECLARE PLUGIN "ltac_plugin"
 
 open Util
 open Pp
-open Glob_term
 open Constrexpr
 open Tacexpr
 open Namegen
@@ -244,7 +243,7 @@ GRAMMAR EXTEND Gram
         { let t, ty =
             match mpv with
             | Term t -> (match t with
-              | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
+              | { CAst.v = CCast (t, _, ty) } -> Term t, Some (Term ty)
               | _ -> mpv, None)
             | _ -> mpv, None
           in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty) }

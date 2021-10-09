@@ -178,14 +178,6 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
   let instance_eq (x1,c1) (x2,c2) =
     Id.equal x1.CAst.v x2.CAst.v && constr_expr_eq c1 c2
 
-  let cast_expr_eq c1 c2 = match c1, c2 with
-    | CastConv t1, CastConv t2
-    | CastVM t1, CastVM t2
-    | CastNative t1, CastNative t2 -> constr_expr_eq t1 t2
-    | CastConv _, _
-    | CastVM _, _
-    | CastNative _, _ -> false
-
   let constr_expr_eq e1 e2 =
     if CAst.(e1.v == e2.v) then true
     else match CAst.(e1.v, e2.v) with
@@ -249,8 +241,8 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         Id.equal id1.CAst.v id2.CAst.v && List.equal instance_eq c1 c2
       | CSort s1, CSort s2 ->
         sort_expr_eq s1 s2
-      | CCast(t1,c1), CCast(t2,c2) ->
-        constr_expr_eq t1 t2 && cast_expr_eq c1 c2
+      | CCast(c1,k1,t1), CCast(c2,k2,t2) ->
+        constr_expr_eq c1 c2 && Glob_ops.cast_kind_eq k1 k2 && constr_expr_eq t1 t2
       | CNotation(inscope1, n1, s1), CNotation(inscope2, n2, s2) ->
         Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
         notation_eq n1 n2 &&
@@ -363,7 +355,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CProdN (l,b) | CLambdaN (l,b) -> fold_local_binders g f n acc b l
     | CLetIn (na,a,t,b) ->
       f (Name.fold_right g (na.CAst.v) n) (Option.fold_left (f n) (f n acc a) t) b
-    | CCast (a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
+    | CCast (a,_,b) -> f n (f n acc a) b
     | CNotation (_,_,(l,ll,bl,bll)) ->
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
@@ -477,7 +469,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
       let (e,bl) = fold_map_local_binders f g e bl in CLambdaN (bl,f e b)
     | CLetIn (na,a,t,b) ->
       CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (na.CAst.v) e) b)
-    | CCast (a,c) -> CCast (f e a, Glob_ops.map_cast_type (f e) c)
+    | CCast (a,k,c) -> CCast (f e a, k, f e c)
     | CNotation (inscope,n,(l,ll,bl,bll)) ->
       (* This is an approximation because we don't know what binds what *)
       CNotation (inscope,n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
@@ -598,7 +590,7 @@ let split_at_annot bl na =
 
 let mkIdentC id   = CAst.make @@ CRef (qualid_of_ident id,None)
 let mkRefC r      = CAst.make @@ CRef (r,None)
-let mkCastC (a,k) = CAst.make @@ CCast (a,k)
+let mkCastC (a,k,t) = CAst.make @@ CCast (a,k,t)
 let mkLambdaC (idl,bk,a,b) = CAst.make @@ CLambdaN ([CLocalAssum (idl,bk,a)],b)
 let mkLetInC  (id,a,t,b)   = CAst.make @@ CLetIn (id,a,t,b)
 let mkProdC   (idl,bk,a,b) = CAst.make @@ CProdN ([CLocalAssum (idl,bk,a)],b)
@@ -682,7 +674,7 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      CPatRecord (List.map (fun (r,p) -> (r,coerce_to_cases_pattern_expr p)) l)
   | CDelimiters (s,p) ->
      CPatDelimiters (s,coerce_to_cases_pattern_expr p)
-  | CCast (p,CastConv t) ->
+  | CCast (p,Constr.DEFAULTcast, t) ->
      CPatCast (coerce_to_cases_pattern_expr p,t)
   | _ ->
      CErrors.user_err ?loc ~hdr:"coerce_to_cases_pattern_expr"
