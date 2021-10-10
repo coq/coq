@@ -17,9 +17,9 @@
 type +'a t
 (** Type of pure streams. *)
 
-type ('a,'r) u =
+type 'a node =
 | Nil
-| Cons of 'a * 'r
+| Cons of 'a * 'a t
 (** View type to decompose and build streams. *)
 
 (** {6 Constructors} *)
@@ -30,18 +30,15 @@ val empty : 'a t
 val cons : 'a -> 'a t -> 'a t
 (** Append an element in front of a stream. *)
 
-val thunk : (unit -> ('a,'a t) u) -> 'a t
+val thunk : (unit -> 'a node) -> 'a t
 (** Internalize the laziness of a stream. *)
-
-val make : ('a -> ('b, 'a) u) -> 'a -> 'b t
-(** Coiteration constructor. *)
 
 (** {6 Destructors} *)
 
 val is_empty : 'a t -> bool
 (** Whethere a stream is empty. *)
 
-val peek : 'a t -> ('a , 'a t) u
+val peek : 'a t -> 'a node
 (** Return the head and the tail of a stream, if any. *)
 
 (** {6 Standard operations}
