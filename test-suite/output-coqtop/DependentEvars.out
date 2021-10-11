@@ -50,8 +50,7 @@ Coq < Coq < 1 goal
 (dependent evars: ; in current goal:)
 
 p14 < 
-p14 < 4 focused goals
-(shelved: 2)
+p14 < 4 focused goals (shelved: 2)
   
   P1, P2, P3, P4 : Prop
   p12 : P1 -> P2
@@ -69,8 +68,7 @@ goal 4 is:
 
 (dependent evars: ?X4:?P, ?X5:?Q; in current goal: ?X5)
 
-p14 < 3 focused goals
-(shelved: 2)
+p14 < 3 focused goals (shelved: 2)
   
   P1, P2, P3, P4 : Prop
   p12 : P1 -> P2

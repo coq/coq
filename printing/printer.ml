@@ -771,8 +771,8 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
       let goals = print_multiple_goals g1 rest in
       let ngoals = List.length rest+1 in
       v 0 (
-        int ngoals ++ focused_if_needed ++ str(String.plural ngoals "goal")
-        ++ print_extra
+        hov 0 (int ngoals ++ focused_if_needed ++ str(String.plural ngoals "goal")
+               ++ print_extra)
         ++ str (if pr_first && (should_gname()) && ngoals > 1 then ", goal 1" else "")
         ++ (if pr_first && should_tag() then pr_goal_tag g1 else str"")
         ++ (if pr_first then pr_goal_name sigma g1 else mt()) ++ cut () ++ goals

@@ -5,22 +5,19 @@ Coq < 1 goal
   forall i : nat, exists j k : nat, i = j /\ j = k /\ i = k
 
 x < 
-x < 1 focused goal
-(shelved: 1)
+x < 1 focused goal (shelved: 1)
   
   i : nat
   ============================
   exists k : nat, i = ?j /\ ?j = k /\ i = k
 
-x < 1 focused goal
-(shelved: 2)
+x < 1 focused goal (shelved: 2)
   
   i : nat
   ============================
   i = ?j /\ ?j = ?k /\ i = ?k
 
-x < 2 focused goals
-(shelved: 2)
+x < 2 focused goals (shelved: 2)
   
   i : nat
   ============================
@@ -29,15 +26,13 @@ x < 2 focused goals
 goal 2 is:
  ?j = ?k /\ i = ?k
 
-x < 1 focused goal
-(shelved: 1)
+x < 1 focused goal (shelved: 1)
   
   i : nat
   ============================
   i = ?k /\ i = ?k
 
-x < 2 focused goals
-(shelved: 1)
+x < 2 focused goals (shelved: 1)
   
   i : nat
   ============================
