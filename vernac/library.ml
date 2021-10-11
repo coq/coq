@@ -393,12 +393,14 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
 
+type ('uid, 'doc) tasks = (('uid, 'doc) Stateid.request * bool) list
+
 let load_library_todo f =
   let ch = raw_intern_library f in
   let (s0 : seg_sum), _ = ObjFile.marshal_in_segment ch ~segment:"summary" in
   let (s1 : seg_lib), _ = ObjFile.marshal_in_segment ch ~segment:"library" in
   let (s2 : seg_univ option), _ = ObjFile.marshal_in_segment ch ~segment:"universes" in
-  let tasks, _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
+  let (tasks : (Opaqueproof.opaque_handle option, 'doc) tasks option), _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
   let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
@@ -423,6 +425,11 @@ let error_recursively_dependent_library dir =
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")
 
+type 'doc todo_proofs =
+ | ProofsTodoNone (* for .vo *)
+ | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
+ | ProofsTodoSome of Future.UUIDSet.t * (Future.UUID.t, 'doc) tasks (* for .vio *)
+
 (* We now use two different digests in a .vo file. The first one
    only covers half of the file, without the opaque table. It is
    used for identifying this version of this library : this digest
@@ -440,7 +447,7 @@ let save_library_base f sum lib univs tasks proofs =
     ObjFile.marshal_out_segment ch ~segment:"summary" (sum    : seg_sum);
     ObjFile.marshal_out_segment ch ~segment:"library" (lib    : seg_lib);
     ObjFile.marshal_out_segment ch ~segment:"universes" (univs  : seg_univ option);
-    ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks  : 'tasks option);
+    ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks : (Opaqueproof.opaque_handle option, 'doc) tasks option);
     ObjFile.marshal_out_segment ch ~segment:"opaques" (proofs : seg_proofs);
     ObjFile.close_out ch
   with reraise ->
@@ -449,11 +456,6 @@ let save_library_base f sum lib univs tasks proofs =
     Feedback.msg_warning (str "Removed file " ++ str f);
     Sys.remove f;
     Exninfo.iraise reraise
-
-type 'document todo_proofs =
- | ProofsTodoNone (* for .vo *)
- | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list (* for .vio *)
 
 let save_library_to todo_proofs ~output_native_objects dir f =
   assert(

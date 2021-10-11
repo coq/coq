@@ -41,10 +41,12 @@ type seg_proofs = Opaques.opaque_disk
     argument.
     [output_native_objects]: when producing vo objects, also compile the native-code version. *)
 
-type 'document todo_proofs =
+type ('uid, 'doc) tasks = (('uid, 'doc) Stateid.request * bool) list
+
+type 'doc todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list (* for .vio *)
+ | ProofsTodoSome of Future.UUIDSet.t * (Future.UUID.t, 'doc) tasks (* for .vio *)
 
 val save_library_to :
   'document todo_proofs ->
@@ -53,7 +55,7 @@ val save_library_to :
 
 val load_library_todo
   :  CUnix.physical_path
-  -> seg_sum * seg_lib * seg_univ * 'tasks * seg_proofs
+  -> seg_sum * seg_lib * seg_univ * (Opaqueproof.opaque_handle option, 'doc) tasks * seg_proofs
 
 val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> unit
 
