@@ -173,7 +173,7 @@ let replacing_dependency_msg env sigma id err inglobal =
 
 let msg_quantified_hypothesis = function
   | NamedHyp id ->
-      str "quantified hypothesis named " ++ Id.print id
+      str "quantified hypothesis named " ++ Id.print id.CAst.v
   | AnonHyp n ->
       pr_nth n ++
       str " non dependent hypothesis"
@@ -1249,7 +1249,7 @@ let auto_intros_tac ids =
 
 let lookup_hypothesis_as_renamed env sigma ccl = function
   | AnonHyp n -> Detyping.lookup_index_as_renamed env sigma ccl n
-  | NamedHyp id -> Detyping.lookup_name_as_displayed env sigma ccl id
+  | NamedHyp id -> Detyping.lookup_name_as_displayed env sigma ccl id.CAst.v
 
 let lookup_hypothesis_as_renamed_gen red h gl =
   let env = Proofview.Goal.env gl in
@@ -1265,7 +1265,7 @@ let lookup_hypothesis_as_renamed_gen red h gl =
   with Redelimination -> None
 
 let is_quantified_hypothesis id gl =
-  match lookup_hypothesis_as_renamed_gen false (NamedHyp id) gl with
+  match lookup_hypothesis_as_renamed_gen false (NamedHyp (CAst.make id)) gl with
     | Some _ -> true
     | None -> false
 
@@ -1286,7 +1286,7 @@ let intros_until_gen red h =
   Tacticals.New.tclDO n (if red then introf else intro)
   end
 
-let intros_until_id id = intros_until_gen false (NamedHyp id)
+let intros_until_id id = intros_until_gen false (NamedHyp (CAst.make id))
 let intros_until_n_gen red n = intros_until_gen red (AnonHyp n)
 
 let intros_until = intros_until_gen true
@@ -1302,7 +1302,7 @@ let try_intros_until_id_check id =
   Tacticals.New.tclORELSE (intros_until_id id) (tclCHECKVAR id)
 
 let try_intros_until tac = function
-  | NamedHyp id -> Tacticals.New.tclTHEN (try_intros_until_id_check id) (tac id)
+  | NamedHyp {CAst.v=id} -> Tacticals.New.tclTHEN (try_intros_until_id_check id) (tac id)
   | AnonHyp n -> Tacticals.New.tclTHEN (intros_until_n n) (Tacticals.New.onLastHypId tac)
 
 let rec intros_move = function

@@ -228,7 +228,7 @@ GRAMMAR EXTEND Gram
       | c = constr_with_bindings -> { (None,c) } ] ]
   ;
   quantified_hypothesis:
-    [ [ id = ident -> { NamedHyp id }
+    [ [ id = ident -> { NamedHyp (CAst.make ~loc id) }
       | n = natural -> { AnonHyp n } ] ]
   ;
   conversion:
@@ -310,7 +310,7 @@ GRAMMAR EXTEND Gram
       | pat = naming_intropattern -> { CAst.make ~loc @@ IntroNaming pat } ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
+    [ [ "("; id = identref; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
       | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
   ;
   bindings:

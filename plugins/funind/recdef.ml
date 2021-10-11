@@ -104,9 +104,13 @@ let next_ident_away_in_goal ids avoid =
   next_ident_away_in_goal ids (Id.Set.of_list avoid)
 
 let compute_renamed_type gls id =
-  rename_bound_vars_as_displayed (Proofview.Goal.sigma gls)
-    (*no avoid*) Id.Set.empty (*no rels*) []
-    (Tacmach.New.pf_get_hyp_typ id gls)
+  let t = Tacmach.New.pf_get_hyp_typ id gls in
+  if Clenv.rename_with () then
+    rename_bound_vars_as_displayed (Proofview.Goal.sigma gls)
+      (*no avoid*) Id.Set.empty (*no rels*) []
+      t
+  else
+    t
 
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
@@ -979,8 +983,8 @@ let rec make_rewrite_list expr_info max = function
                    (* dep proofs also: *) ~dep:true ~with_evars:false
                    ( mkVar hp
                    , ExplicitBindings
-                       [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
-                       ; CAst.make @@ (NamedHyp k, f_S max) ] )
+                       [ CAst.make @@ (NamedHyp (CAst.make def), expr_info.f_constr)
+                       ; CAst.make @@ (NamedHyp (CAst.make k), f_S max) ] )
                    )))
          [ make_rewrite_list expr_info max l
          ; New.observe_tclTHENLIST
@@ -1014,8 +1018,8 @@ let make_rewrite expr_info l hp max =
                     (* dep proofs also: *) ~dep:true ~with_evars:false
                     ( mkVar hp
                     , ExplicitBindings
-                        [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
-                        ; CAst.make @@ (NamedHyp k, f_S (f_S max)) ] )
+                        [ CAst.make @@ (NamedHyp (CAst.make def), expr_info.f_constr)
+                        ; CAst.make @@ (NamedHyp (CAst.make k), f_S (f_S max)) ] )
                     )))
           [ New.observe_tac
               (fun _ _ -> str "make_rewrite finalize")

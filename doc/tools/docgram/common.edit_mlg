@@ -2139,7 +2139,7 @@ ssexpr35: [
 ]
 
 simple_binding: [
-| REPLACE "(" ident ":=" lconstr ")"
+| REPLACE "(" identref ":=" lconstr ")"
 | WITH "(" [ ident | natural ] ":=" lconstr ")"
 | DELETE "(" natural ":=" lconstr ")"
 ]

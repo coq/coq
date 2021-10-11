@@ -517,7 +517,7 @@ split; intros HF.
   remember (to_list v2) as l2.
   revert n v1 v2 Heql1 Heql2; induction HF; intros n v1 v2 Heql1 Heql2.
   + destruct v1; [ | inversion Heql1 ].
-    apply case0 with (P0 := fun x => Forall2 P (nil A) x); constructor.
+    apply case0; constructor.
   + destruct v1; inversion Heql1; subst.
     rewrite (eta v2) in Heql2; inversion Heql2; subst.
     rewrite (eta v2); constructor; auto.

@@ -783,6 +783,7 @@ End Principle_of_Induction.
 
 Scheme Even_induction := Minimality for even Sort Prop
 with   Odd_induction  := Minimality for odd  Sort Prop.
+Arguments Even_induction P P0 : rename.
 
 Theorem even_plus_four : forall n:nat, even n -> even (4+n).
 Proof.

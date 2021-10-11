@@ -15,7 +15,7 @@ Undo.
 apply @eq_refl with (y := 3).
 Undo.
 pose (y := nat).
-apply (@eq_refl y) with (y0 := 3).
+apply (@eq_refl y) with (y := 3).
 Qed.
 
 Section Test1.
