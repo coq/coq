@@ -32,11 +32,11 @@ let _ = CErrors.register_handler (function
   | NotHere name -> Some (!not_here_msg name)
   | _ -> None)
 
-type fix_exn = (Stateid.t * Stateid.t) option
+type fix_exn = Stateid.exn_info option
 
 let eval_fix_exn f (e, info) = match f with
 | None -> (e, info)
-| Some (id, valid) ->
+| Some { Stateid.id; valid } ->
   match Stateid.get info with
   | Some _ -> (e, info)
   | None ->

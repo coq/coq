@@ -40,8 +40,7 @@ exception NotReady of string
 type 'a computation
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn ]
 
-(* First id is the current state, second id is the last valid state. *)
-type fix_exn = (Stateid.t * Stateid.t) option
+type fix_exn = Stateid.exn_info option
 
 (* Build a computation, no snapshot of the global state is taken.  If you need
    to grab a copy of the state start with from_here () and then chain.
