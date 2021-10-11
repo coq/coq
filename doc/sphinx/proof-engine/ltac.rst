@@ -115,7 +115,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    The documentation for these |Ltac| constructs mentions which group they belong to.
 
    The difference is only relevant in some compound tactics where
-   extra parentheses may be needed.  For example, parenthesees are required in
+   extra parentheses may be needed.  For example, parentheses are required in
    :n:`idtac + (once idtac)` because :tacn:`once` is an :token:`l3_tactic`, which the
    production :n:`@ltac_expr2 ::= @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }` doesn't
    accept after the `+`.
@@ -504,7 +504,7 @@ Repeat loop
 
 .. tacn:: repeat @ltac_expr3
 
-   The repeat loop repeats a tactic until it fails.
+   The repeat loop repeats a tactic until it fails or doesn't change the proof context.
 
    :n:`@ltac_expr` is evaluated to ``v``. If ``v`` denotes a tactic, this tactic is
    applied to each focused goal independently. If the application succeeds, the

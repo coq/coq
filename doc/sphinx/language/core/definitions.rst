@@ -150,11 +150,11 @@ The basic assertion command is:
 
    Forms using the :n:`with` clause are useful for theorems that are proved by simultaneous induction
    over a mutually inductive assumption, or that assert mutually dependent
-   statements in some mutual co-inductive type. It is equivalent to
+   statements in some mutual coinductive type. It is equivalent to
    :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
    the statements (or the :term:`body` of the specification, depending on the point of
-   view). The inductive or co-inductive types on which the induction or
-   co-induction has to be done is assumed to be unambiguous and is guessed by
+   view). The inductive or coinductive types on which the induction or
+   coinduction has to be done is assumed to be unambiguous and is guessed by
    the system.
 
    Like in a :cmd:`Fixpoint` or :cmd:`CoFixpoint` definition, the induction hypotheses

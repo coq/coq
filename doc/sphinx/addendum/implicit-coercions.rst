@@ -379,7 +379,7 @@ replaced by ``x:A'`` where ``A'`` is the result of the application to
 ``A`` of the coercion path between the class of ``A`` and
 ``Sortclass`` if it exists.  This case occurs in the abstraction
 :g:`fun x:A => t`, universal quantification :g:`forall x:A,B`, global
-variables and parameters of (co-)inductive definitions and
+variables and parameters of (co)inductive definitions and
 functions. In :g:`forall x:A,B`, such a coercion path may also be applied
 to ``B`` if necessary.
 

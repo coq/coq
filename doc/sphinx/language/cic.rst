@@ -77,7 +77,7 @@ The notion of substituting a term :math:`t` to free occurrences of a variable
 
 **The logical vs programming readings.**
 The constructions of the |Cic| can be used to express both logical and
-programming notions, accordingly to the Curry-Howard correspondence
+programming notions, according to the Curry-Howard correspondence
 between proofs and programs, and between propositions and types
 :cite:`Cur58,How80,Bru72`.
 
@@ -140,7 +140,7 @@ A :term:`global environment` is an ordered list of *declarations*.
 Global declarations are either *assumptions*, *definitions*
 or declarations of inductive objects. Inductive
 objects declare both constructors and inductive or
-co-inductive types (see Section :ref:`inductive-definitions`).
+coinductive types (see Section :ref:`inductive-definitions`).
 
 In the global environment,
 *assumptions* are written as

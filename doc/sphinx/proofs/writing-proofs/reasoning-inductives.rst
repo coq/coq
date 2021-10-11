@@ -115,7 +115,10 @@ Case analysis
 -------------
 
 The tactics in this section implement case
-analysis on inductive or co-inductive objects (see :ref:`variants`).
+analysis on inductive or coinductive objects (see :ref:`variants`).
+
+.. comment Notes contrasting the various case analysis tactics:
+   https://github.com/coq/coq/pull/14676#discussion_r697904963
 
 .. tacn:: destruct {+, @induction_clause } {? @induction_principle }
 
@@ -127,9 +130,9 @@ analysis on inductive or co-inductive objects (see :ref:`variants`).
       | @natural
 
    Performs case analysis by generating a subgoal for each constructor of the
-   inductive or co-inductive type selected by :n:`@induction_arg`.  The selected
+   inductive or coinductive type selected by :n:`@induction_arg`.  The selected
    subterm, after possibly doing an :tacn:`intros`, must have
-   an inductive or co-inductive type.  Unlike :tacn:`induction`,
+   an inductive or coinductive type.  Unlike :tacn:`induction`,
    :n:`destruct` generates no induction hypothesis.
 
    In each new subgoal, the tactic replaces the selected subterm with the associated
@@ -159,7 +162,7 @@ analysis on inductive or co-inductive objects (see :ref:`variants`).
        introduced hypothesis.
 
    :n:`as @or_and_intropattern`
-      Provides names for (or apply further transformations to)
+      Provides names for (or applies further transformations to)
       the variables and hypotheses introduced in each new subgoal.  The
       :token:`or_and_intropattern` must have one :n:`{* @intropattern }`
       for each constructor, given in the order in which the constructors are
@@ -458,97 +461,125 @@ Induction
 
 .. tacn:: cofix @ident {? with {+ ( @ident {* @simple_binder } : @type ) } }
 
-   Starts a proof by co-induction. The :n:`@ident`\s (including the first one
+   Starts a proof by coinduction. The :n:`@ident`\s (including the first one
    before the `with` clause) are the
-   names of the co-induction hypotheses. As in a cofix expression,
+   names of the coinduction hypotheses. As in a cofix expression,
    the use of induction hypotheses must be guarded by a constructor. The
-   verification that the use of co-inductive hypotheses is correct is
+   verification that the use of coinductive hypotheses is correct is
    done only at the time of registering the lemma in the global environment. To
-   know if the use of co-induction hypotheses is correct at some time of
+   know if the use of coinduction hypotheses is correct at some time of
    the interactive development of a proof, use the command :cmd:`Guarded`.
 
    :n:`with {+ ( @ident {* @simple_binder } : @type ) }`
-     Starts a proof by mutual co-induction. The statements to be
+     Starts a proof by mutual coinduction. The statements to be
      proven are :n:`forall @simple_binder__i, @type__i`.
      The identifiers :n:`@ident` (including the first one before the `with` clause)
-     are the names of the co-induction hypotheses.
+     are the names of the coinduction hypotheses.
 
-.. tacn:: discriminate @term
-   :name: discriminate
+.. _equality-inductive_types:
 
-   This tactic proves any goal from an assumption stating that two
-   structurally different :n:`@term`\s of an inductive set are equal. For
-   example, from :g:`(S (S O))=(S O)` we can derive by absurdity any
-   proposition.
+Equality of inductive types
+---------------------------
 
-   The argument :n:`@term` is assumed to be a proof of a statement of
-   conclusion :n:`@term = @term` with the two terms being elements of an
-   inductive set. To build the proof, the tactic traverses the normal forms
-   [1]_ of the terms looking for a couple of subterms :g:`u` and :g:`w` (:g:`u`
-   subterm of the normal form of :n:`@term` and :g:`w` subterm of the normal
-   form of :n:`@term`), placed at the same positions and whose head symbols are
-   two different constructors. If such a couple of subterms exists, then the
-   proof of the current goal is completed, otherwise the tactic fails.
+This section describes some special purpose tactics to work with
+:term:`Leibniz equality` of inductive sets or types.
 
-.. note::
-   The syntax :n:`discriminate @ident` can be used to refer to a hypothesis
-   quantified in the goal. In this case, the quantified hypothesis whose name is
-   :n:`@ident` is first introduced in the local context using
-   :n:`intros until @ident`.
+.. tacn:: discriminate {? @induction_arg }
 
-.. exn:: No primitive equality found.
-   :undocumented:
+   Proves any goal for which a hypothesis in the form :n:`@term__1 = @term__2`
+   states an impossible structural equality for an inductive type.
+   If :n:`@induction_arg` is not given, it checks all the hypotheses
+   for impossible equalities.
+   For example, :g:`(S (S O)) = (S O)` is impossible.
+   If provided, :n:`@induction_arg` is a proof of an equality, typically
+   specified as the name of a hypothesis.
 
-.. exn:: Not a discriminable equality.
-   :undocumented:
-
-.. tacv:: discriminate @natural
-
-   This does the same thing as :n:`intros until @natural` followed by
-   :n:`discriminate @ident` where :n:`@ident` is the identifier for the last
-   introduced hypothesis.
-
-.. tacv:: discriminate @term with @bindings
-
-   This does the same thing as :n:`discriminate @term` but using the given
-   bindings to instantiate parameters or hypotheses of :n:`@term`.
-
-.. tacv:: ediscriminate @natural
-          ediscriminate @term {? with @bindings}
-   :name: ediscriminate; _
-
-   This works the same as :tacn:`discriminate` but if the type of :token:`term`, or the
-   type of the hypothesis referred to by :token:`natural`, has uninstantiated
-   parameters, these parameters are left as existential variables.
-
-.. tacv:: discriminate
-
-   This behaves like :n:`discriminate @ident` if ident is the name of an
-   hypothesis to which ``discriminate`` is applicable; if the current goal is of
-   the form :n:`@term <> @term`, this behaves as
+   If no :n:`@induction_arg` is provided and the goal is in the form
+   :n:`@term__1 <> @term__2`, then the tactic behaves like
    :n:`intro @ident; discriminate @ident`.
 
-   .. exn:: No discriminable equalities.
+   The tactic traverses the normal forms of :n:`@term__1` and :n:`@term__2`,
+   looking for subterms :g:`u` and :g:`w` placed in the same positions and whose
+   head symbols are different constructors. If such subterms are present, the
+   equality is impossible and the current goal is completed.
+   Otherwise the tactic fails.  Note that opaque constants are not expanded by
+   δ reductions while computing the normal form.
+
+   :n:`@ident`  (in :n:`@induction_arg`)
+     Checks the hypothesis :n:`@ident` for impossible equalities.
+     If :n:`@ident` is not already in the context, this is equivalent to
+     :n:`intros until @ident; discriminate @ident`.
+
+   :n:`@natural` (in :n:`@induction_arg`)
+     Equivalent to :tacn:`intros` :n:`until @natural; discriminate @ident`,
+     where :n:`@ident` is the identifier for the last introduced hypothesis.
+
+   :n:`@one_term with @bindings`  (in :n:`@induction_arg`)
+     Equivalent to :n:`discriminate @one_term` but uses the given
+     bindings to instantiate parameters or hypotheses of :n:`@one_term`.
+     :n:`@one_term` must be a proof of :n:`@term__1 = @term__2`.
+
+   .. exn:: No primitive equality found.
       :undocumented:
 
-.. tacn:: injection @term
-   :name: injection
+   .. exn:: Not a discriminable equality.
+      :undocumented:
 
-   The injection tactic exploits the property that constructors of
-   inductive types are injective, i.e. that if :g:`c` is a constructor of an
-   inductive type and :g:`c t`:sub:`1` and :g:`c t`:sub:`2` are equal then
-   :g:`t`:sub:`1` and :g:`t`:sub:`2` are equal too.
+   .. tacn:: ediscriminate {? @induction_arg }
 
-   If :n:`@term` is a proof of a statement of conclusion :n:`@term = @term`,
-   then :tacn:`injection` applies the injectivity of constructors as deep as
-   possible to derive the equality of all the subterms of :n:`@term` and
-   :n:`@term` at positions where the terms start to differ. For example, from
+      Works the same as :tacn:`discriminate` but if the type of :token:`one_term`, or the
+      type of the hypothesis referred to by :token:`natural`, has uninstantiated
+      parameters, these parameters are left as existential variables.
+
+.. tacn:: injection {? @induction_arg } {? as {* @simple_intropattern } }
+
+   Exploits the property that constructors of
+   inductive types are injective, i.e. that if :n:`c` is a constructor of an
+   inductive type and :n:`c t__1 = c t__2` then
+   :n:`t__1 = t__2` are equal too.
+
+   If there is a hypothesis `H` in the form :n:`@term__1 = @term__2`,
+   then :n:`injection H` applies the injectivity of constructors as deep as
+   possible to derive the equality of subterms of :n:`@term__1` and
+   :n:`@term__2` wherever the subterms start to differ. For example, from
    :g:`(S p, S n) = (q, S (S m))` we may derive :g:`S p = q` and
-   :g:`n = S m`. For this tactic to work, the terms should be typed with an
-   inductive type and they should be neither convertible, nor having a different
-   head constructor. If these conditions are satisfied, the tactic derives the
-   equality of all the subterms at positions where they differ and adds them as
-   antecedents to the conclusion of the current goal.
+   :g:`n = S m`. The terms must have inductive types and the same head
+   constructor, but must not be convertible. If so, the tactic derives the
+   equalities and adds them to the current goal as :term:`premises <premise>`
+   (except if the :n:`as` clause is used).
+
+   If no :n:`induction_arg` is provided and the current goal is of the form
+   :n:`@term <> @term`, :tacn:`injection` is equivalent to
+   :n:`intro @ident; injection @ident`.
+
+   :n:`@ident`  (in :n:`@induction_arg`)
+     Derives equalities based on constructor injectivity for the hypothesis
+     :n:`@ident`.
+     If :n:`@ident` is not already in the context, this is equivalent to
+     :n:`intros until @ident; injection @ident`.
+
+   :n:`@natural` (in :n:`@induction_arg`)
+     Equivalent to :tacn:`intros` :n:`until @natural` followed by
+     :n:`injection @ident` where :n:`@ident` is the identifier for the last
+     introduced hypothesis.
+
+   :n:`@one_term with @bindings`  (in :n:`@induction_arg`)
+     Like :n:`injection @one_term` but uses the given bindings to
+     instantiate parameters or hypotheses of :n:`@one_term`.
+
+   :n:`as [= {* @intropattern } ]`
+     Specifies names to apply after the injection so
+     that all generated equalities become hypotheses, which (unlike :tacn:`intros`)
+     may replace existing hypotheses with same name.  The number of
+     provided names must not exceed
+     the number of newly generated equalities. If it is smaller, fresh
+     names are generated for the unspecified items. The original equality is
+     erased if it corresponds to a provided name or if the list of provided
+     names is incomplete.
+
+     Note that, as a convenience for users, specifying
+     :n:`{+ @simple_intropattern }` is treated as if
+     :n:`[= {+ @simple_intropattern } ]` was specified.
 
    .. example::
 
@@ -567,89 +598,40 @@ Induction
          intros.
          injection H0.
 
-   Beware that injection yields an equality in a sigma type whenever the
-   injected object has a dependent type :g:`P` with its two instances in
-   different types :g:`(P t`:sub:`1` :g:`... t`:sub:`n` :g:`)` and
-   :g:`(P u`:sub:`1` :g:`... u`:sub:`n` :sub:`)`. If :g:`t`:sub:`1` and
-   :g:`u`:sub:`1` are the same and have for type an inductive type for which a decidable
-   equality has been declared using :cmd:`Scheme` :n:`Equality ...`
-   (see :ref:`proofschemes-induction-principles`),
-   the use of a sigma type is avoided.
-
    .. note::
-      If some quantified hypothesis of the goal is named :n:`@ident`,
-      then :n:`injection @ident` first introduces the hypothesis in the local
-      context using :n:`intros until @ident`.
+      Beware that injection yields an equality in a sigma type whenever the
+      injected object has a dependent type :g:`P` with its two instances in
+      different types :n:`(P t__1 … t__n)` and :n:`(P u__1 … u__n)`. If :n:`t__1` and
+      :n:`u__1` are the same and have for type an inductive type for which a decidable
+      equality has been declared using :cmd:`Scheme` :n:`Equality …`,
+      the use of a sigma type is avoided.
 
-   .. exn:: Nothing to do, it is an equality between convertible terms.
+   .. exn:: No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop. You can try to use option Set Keep Proof Equalities.
       :undocumented:
 
-   .. exn:: Not a primitive equality.
+   .. exn:: No primitive equality found.
       :undocumented:
+
+   .. exn:: Not a negated primitive equality
+
+      When :n:`@induction_arg` is not provided, the goal must be in the form
+      :n:`@term <> @term`.
 
    .. exn:: Nothing to inject.
 
-      This error is given when one side of the equality is not a constructor.
+      Generated when one side of the equality is not a constructor.
 
-   .. tacv:: injection @natural
+   .. tacn:: einjection {? @induction_arg } {? as {* @simple_intropattern } }
 
-      This does the same thing as :n:`intros until @natural` followed by
-      :n:`injection @ident` where :n:`@ident` is the identifier for the last
-      introduced hypothesis.
-
-   .. tacv:: injection @term with @bindings
-
-      This does the same as :n:`injection @term` but using the given bindings to
-      instantiate parameters or hypotheses of :n:`@term`.
-
-   .. tacv:: einjection @natural
-             einjection @term {? with @bindings}
-      :name: einjection; _
-
-      This works the same as :n:`injection` but if the type of :n:`@term`, or the
-      type of the hypothesis referred to by :n:`@natural`, has uninstantiated
+      Works the same as :n:`injection` but if the type of :n:`@one_term`, or the
+      type of the hypothesis referred to by :n:`@natural` has uninstantiated
       parameters, these parameters are left as existential variables.
-
-   .. tacv:: injection
-
-      If the current goal is of the form :n:`@term <> @term` , this behaves as
-      :n:`intro @ident; injection @ident`.
-
-      .. exn:: goal does not satisfy the expected preconditions.
-         :undocumented:
-
-   .. tacv:: injection @term {? with @bindings} as {+ @simple_intropattern}
-             injection @natural as {+ @simple_intropattern}
-             injection as {+ @simple_intropattern}
-             einjection @term {? with @bindings} as {+ @simple_intropattern}
-             einjection @natural as {+ @simple_intropattern}
-             einjection as {+ @simple_intropattern}
-
-      These variants apply :n:`intros {+ @simple_intropattern}` after the call to
-      :tacn:`injection` or :tacn:`einjection` so that all equalities generated are moved in
-      the context of hypotheses. The number of :n:`@simple_intropattern` must not exceed
-      the number of equalities newly generated. If it is smaller, fresh
-      names are automatically generated to adjust the list of :n:`@simple_intropattern`
-      to the number of new equalities. The original equality is erased if it
-      corresponds to a hypothesis.
-
-   .. tacv:: injection @term {? with @bindings} as [= @intropattern ]
-             injection @natural as [= @intropattern ]
-             injection as [= @intropattern ]
-             einjection @term {? with @bindings} as [= @intropattern ]
-             einjection @natural as [= @intropattern ]
-             einjection as [= @intropattern ]
-
-      These are equivalent to the previous variants but using instead the
-      syntax :n:`as [= @intropattern ]` which :tacn:`intros`
-      uses. In particular :n:`as [= {+ @simple_intropattern}]` behaves
-      the same as :n:`as {+ @simple_intropattern}`.
 
    .. flag:: Structural Injection
 
       This :term:`flag` ensures that :n:`injection @term` erases the original hypothesis
-      and leaves the generated equalities in the context rather than putting them
-      as antecedents of the current goal, as if giving :n:`injection @term as`
+      and leaves the generated equalities in the context rather than adding them
+      to the current goal as :term:`premises <premise>`, as if giving :n:`injection @term as`
       (with an empty list of names). This flag is off by default.
 
    .. flag:: Keep Proof Equalities
@@ -668,187 +650,137 @@ Induction
       implicitly added to this table when defined.
       Use the :cmd:`Add` and :cmd:`Remove` commands to update this set manually.
 
-.. tacn:: inversion @ident
-   :name: inversion
+.. tacn:: simplify_eq {? @induction_arg }
 
-   Let the type of :n:`@ident` in the local context be :g:`(I t)`, where :g:`I`
-   is a (co)inductive predicate. Then, ``inversion`` applied to :n:`@ident`
-   derives for each possible constructor :g:`c i` of :g:`(I t)`, all the
-   necessary conditions that should hold for the instance :g:`(I t)` to be
-   proved by :g:`c i`.
+   Examines a hypothesis that has the form :n:`@term__1 = @term__2`.  If the terms are
+   structurally different, the tactic does a :tacn:`discriminate`.  Otherwise, it does
+   an :tacn:`injection` to simplify the equality, if possible.  If :n:`induction_arg`
+   is not provided, the tactic examines the goal, which must be in the form
+   :n:`@term__1 <> @term__2`.
 
-.. note::
-   If :n:`@ident` does not denote a hypothesis in the local context but
-   refers to a hypothesis quantified in the goal, then the latter is
-   first introduced in the local context using :n:`intros until @ident`.
+   See the description of :token:`induction_arg` in :tacn:`injection` for an
+   explanation of the parameters.
 
-.. note::
-   As ``inversion`` proofs may be large in size, we recommend the
-   user to stock the lemmas whenever the same instance needs to be
-   inverted several times. See :ref:`derive-inversion`.
+   .. tacn:: esimplify_eq {? @induction_arg }
 
-.. note::
-   Part of the behavior of the ``inversion`` tactic is to generate
-   equalities between expressions that appeared in the hypothesis that is
-   being processed. By default, no equalities are generated if they
-   relate two proofs (i.e. equalities between :token:`term`\s whose type is in sort
-   :g:`Prop`). This behavior can be turned off by using the
-   :flag:`Keep Proof Equalities` setting.
+      Works the same as :tacn:`simplify_eq` but if the type of :n:`@one_term` or the
+      type of the hypothesis referred to by :n:`@natural` has uninstantiated
+      parameters, these parameters are left as existential variables.
 
-.. tacv:: inversion @natural
+.. tacn:: inversion {| @ident | @natural } {? as @or_and_intropattern } {? in {+ @ident } }
+          inversion {| @ident | @natural } using @one_term {? in {+ @ident } }
+   :name: inversion; _
 
-   This does the same thing as :n:`intros until @natural` then :n:`inversion @ident`
-   where :n:`@ident` is the identifier for the last introduced hypothesis.
+   .. comment: the other inversion* tactics don't support the using clause,
+      but they should be able to, if desired.  It wouldn't make sense for
+      inversion_sigma.
+      See https://github.com/coq/coq/pull/14179#discussion_r642193096
 
-.. tacv:: inversion_clear @ident
-   :name: inversion_clear
+   For a hypothesis whose type is a (co)inductively defined
+   proposition, the tactic introduces a goal for each constructor
+   of the proposition that isn't self-contradictory.  Each such goal
+   includes the hypotheses needed to deduce the proposition.
+   :gdef:`(Co)inductively defined propositions <inductively defined proposition>`
+   are those defined with the :cmd:`Inductive` or :cmd:`CoInductive` commands whose
+   contructors yield a `Prop`, as in this :ref:`example <inversion-intropattern-ex>`.
 
-   This behaves as :n:`inversion` and then erases :n:`@ident` from the context.
 
-.. tacv:: inversion @ident as @or_and_intropattern
+   :n:`@ident`
+     The name of the hypothesis to invert.
+     If :n:`@ident` does not denote a hypothesis in the local context but
+     refers to a hypothesis quantified in the goal, then the latter is
+     first introduced in the local context using :n:`intros until @ident`.
 
-   This generally behaves as inversion but using names in :n:`@or_and_intropattern`
-   for naming hypotheses. The :n:`@or_and_intropattern` must have the form
-   :n:`[p`:sub:`11` :n:`... p`:sub:`1n` :n:`| ... | p`:sub:`m1` :n:`... p`:sub:`mn` :n:`]`
-   with `m` being the number of constructors of the type of :n:`@ident`. Be
-   careful that the list must be of length `m` even if ``inversion`` discards
-   some cases (which is precisely one of its roles): for the discarded
-   cases, just use an empty list (i.e. `n = 0`).The arguments of the i-th
-   constructor and the equalities that ``inversion`` introduces in the
-   context of the goal corresponding to the i-th constructor, if it
-   exists, get their names from the list :n:`p`:sub:`i1` :n:`... p`:sub:`in` in
-   order. If there are not enough names, ``inversion`` invents names for the
-   remaining variables to introduce. In case an equation splits into several
-   equations (because ``inversion`` applies ``injection`` on the equalities it
-   generates), the corresponding name :n:`p`:sub:`ij` in the list must be
-   replaced by a sublist of the form :n:`[p`:sub:`ij1` :n:`... p`:sub:`ijq` :n:`]`
-   (or, equivalently, :n:`(p`:sub:`ij1` :n:`, ..., p`:sub:`ijq` :n:`)`) where
-   `q` is the number of subequalities obtained from splitting the original
-   equation. Here is an example. The ``inversion ... as`` variant of
-   ``inversion`` generally behaves in a slightly more expectable way than
-   ``inversion`` (no artificial duplication of some hypotheses referring to
-   other hypotheses). To take benefit of these improvements, it is enough to use
-   ``inversion ... as []``, letting the names being finally chosen by Coq.
+   :n:`@natural`
+     Equivalent to :n:`intros until @natural; inversion @ident`
+     where :n:`@ident` is the identifier for the last introduced hypothesis.
 
-   .. example::
+   :n:`{? in {+ @ident } }`
+     When :n:`{+ @ident}` are identifiers in the local context, this does
+     a :tacn:`generalize` :n:`{+ @ident}` as the initial step of `inversion`.
+
+   :n:`as @or_and_intropattern`
+     Provides names for the variables introduced in each new subgoal.  The
+     :token:`or_and_intropattern` must have one :n:`{* @intropattern }`
+     for each constructor of the (co)inductive predicate, given in the order
+     in which the constructors are defined.
+     If there are not enough names, Coq picks fresh names.
+
+     If an equation splits into several
+     equations (because ``inversion`` applies ``injection`` on the equalities it
+     generates), the corresponding :n:`@intropattern` should be in the form
+     :n:`[ {* @intropattern } ]` (or the equivalent :n:`{*, ( @simple_intropattern ) }`),
+     with the number of entries equal to the number
+     of subequalities obtained from splitting the original equation.
+     Example :ref:`here <inversion-intropattern-ex>`.
+
+   .. note::
+      The ``inversion … as`` variant of
+      ``inversion`` generally behaves in a slightly more expected way than
+      ``inversion`` (no artificial duplication of some hypotheses referring to
+      other hypotheses). To take advantage of these improvements, it is enough to use
+      ``inversion … as []``, letting Coq choose fresh names.
+
+   .. note::
+      As ``inversion`` proofs may be large, we recommend
+      creating and using lemmas whenever the same instance needs to be
+      inverted several times. See :ref:`derive-inversion`.
+
+   .. note::
+      Part of the behavior of the :tacn:`inversion` tactic is to generate
+      equalities between expressions that appeared in the hypothesis that is
+      being processed. By default, no equalities are generated if they
+      relate two proofs (i.e. equalities between :token:`term`\s whose type is in sort
+      :g:`Prop`). This behavior can be turned off by using the
+      :flag:`Keep Proof Equalities` setting.
+
+.. _inversion-intropattern-ex:
+
+   .. example:: :tacn:`inversion` with :n:`as @or_and_intropattern`
 
       .. coqtop:: reset all
 
          Inductive contains0 : list nat -> Prop :=
          | in_hd : forall l, contains0 (0 :: l)
          | in_tl : forall l b, contains0 l -> contains0 (b :: l).
+
+      .. coqtop:: in
+
          Goal forall l:list nat, contains0 (1 :: l) -> contains0 l.
-         intros l H; inversion H as [ | l' p Hl' [Heqp Heql'] ].
 
-.. tacv:: inversion @natural as @or_and_intropattern
+      .. coqtop:: all
 
-   This allows naming the hypotheses introduced by :n:`inversion @natural` in the
-   context.
+         intros l H.
+         inversion H as [ | l' p Hl' [Heqp Heql'] ].
 
-.. tacv:: inversion_clear @ident as @or_and_intropattern
+   .. tacn:: inversion_clear {| @ident | @natural } {? as @or_and_intropattern } {? in {+ @ident } }
 
-   This allows naming the hypotheses introduced by ``inversion_clear`` in the
-   context. Notice that hypothesis names can be provided as if ``inversion``
-   were called, even though the ``inversion_clear`` will eventually erase the
-   hypotheses.
+      Does an :tacn:`inversion` and then erases the hypothesis that was used for
+      the inversion.
 
-.. tacv:: inversion @ident in {+ @ident}
+   .. tacn:: simple inversion {| @ident | @natural } {? as @or_and_intropattern } {? in {+ @ident } }
 
-   Let :n:`{+ @ident}` be identifiers in the local context. This tactic behaves as
-   generalizing :n:`{+ @ident}`, and then performing ``inversion``.
+      A very simple inversion tactic that derives all the necessary
+      equalities but does not simplify the constraints as :tacn:`inversion` does.
 
-.. tacv:: inversion @ident as @or_and_intropattern in {+ @ident}
+   .. tacn:: dependent inversion {| @ident | @natural } {? as @or_and_intropattern } {? with @one_term }
 
-   This allows naming the hypotheses introduced in the context by
-   :n:`inversion @ident in {+ @ident}`.
+      For use when the inverted hypothesis appears in the current goal.
+      Does an :tacn:`inversion` and then substitutes the name of the hypothesis
+      where the corresponding term appears in the goal.
 
-.. tacv:: inversion_clear @ident in {+ @ident}
+   .. tacn:: dependent inversion_clear {| @ident | @natural } {? as @or_and_intropattern } {? with @one_term }
 
-   Let :n:`{+ @ident}` be identifiers in the local context. This tactic behaves
-   as generalizing :n:`{+ @ident}`, and then performing ``inversion_clear``.
+      Does a :tacn:`dependent inversion` and then erases the hypothesis that was used for
+      the dependent inversion.
 
-.. tacv:: inversion_clear @ident as @or_and_intropattern in {+ @ident}
+   .. tacn:: dependent simple inversion {| @ident | @natural } {? as @or_and_intropattern } {? with @one_term }
+      :undocumented:
 
-   This allows naming the hypotheses introduced in the context by
-   :n:`inversion_clear @ident in {+ @ident}`.
+.. tacn:: inversion_sigma {? @ident {? as @simple_intropattern } }
 
-.. tacv:: dependent inversion @ident
-   :name: dependent inversion
-
-   That must be used when :n:`@ident` appears in the current goal. It acts like
-   ``inversion`` and then substitutes :n:`@ident` for the corresponding
-   :n:`@@term` in the goal.
-
-.. tacv:: dependent inversion @ident as @or_and_intropattern
-
-   This allows naming the hypotheses introduced in the context by
-   :n:`dependent inversion @ident`.
-
-.. tacv:: dependent inversion_clear @ident
-
-   Like ``dependent inversion``, except that :n:`@ident` is cleared from the
-   local context.
-
-.. tacv:: dependent inversion_clear @ident as @or_and_intropattern
-
-   This allows naming the hypotheses introduced in the context by
-   :n:`dependent inversion_clear @ident`.
-
-.. tacv:: dependent inversion @ident with @term
-   :name: dependent inversion … with …
-
-   This variant allows you to specify the generalization of the goal. It is
-   useful when the system fails to generalize the goal automatically. If
-   :n:`@ident` has type :g:`(I t)` and :g:`I` has type :g:`forall (x:T), s`,
-   then :n:`@term` must be of type :g:`I:forall (x:T), I x -> s'` where
-   :g:`s'` is the type of the goal.
-
-.. tacv:: dependent inversion @ident as @or_and_intropattern with @term
-
-   This allows naming the hypotheses introduced in the context by
-   :n:`dependent inversion @ident with @term`.
-
-.. tacv:: dependent inversion_clear @ident with @term
-
-   Like :tacn:`dependent inversion … with …` with but clears :n:`@ident` from the
-   local context.
-
-.. tacv:: dependent inversion_clear @ident as @or_and_intropattern with @term
-
-   This allows naming the hypotheses introduced in the context by
-   :n:`dependent inversion_clear @ident with @term`.
-
-.. tacv:: simple inversion @ident
-   :name: simple inversion
-
-   It is a very primitive inversion tactic that derives all the necessary
-   equalities but it does not simplify the constraints as ``inversion`` does.
-
-.. tacv:: simple inversion @ident as @or_and_intropattern
-
-   This allows naming the hypotheses introduced in the context by
-   ``simple inversion``.
-
-.. tacn:: inversion @ident using @ident
-   :name: inversion ... using ...
-
-   .. todo using … instead of ... in the name above gives a Sphinx error, even though
-      this works just find for :tacn:`move`
-
-   Let :n:`@ident` have type :g:`(I t)` (:g:`I` an inductive predicate) in the
-   local context, and :n:`@ident` be a (dependent) inversion lemma. Then, this
-   tactic refines the current goal with the specified lemma.
-
-.. tacv:: inversion @ident using @ident in {+ @ident}
-
-   This tactic behaves as generalizing :n:`{+ @ident}`, then doing
-   :n:`inversion @ident using @ident`.
-
-.. tacv:: inversion_sigma {? @ident {? as @simple_intropattern } }
-   :name: inversion_sigma
-
-   This tactic turns equalities of dependent pairs (e.g.,
-   :g:`existT P x p = existT P y q`, frequently left over by inversion on
+   Turns equalities of dependent pairs (e.g.,
+   :g:`existT P x p = existT P y q`, frequently left over by :tacn:`inversion` on
    a dependent type family) into pairs of equalities (e.g., a hypothesis
    :g:`H : x = y` and a hypothesis of type :g:`rew H in p = q`); these
    hypotheses can subsequently be simplified using :tacn:`subst`, without ever
@@ -869,10 +801,7 @@ Induction
       When applied to a hypothesis, :tacn:`inversion_sigma` can only be called on hypotheses that
       are equalities using :g:`Coq.Logic.Init.eq`.
 
-
-.. example::
-
-   *Non-dependent inversion*.
+.. example:: Non-dependent inversion
 
    Let us consider the relation :g:`Le` over natural numbers:
 
@@ -922,9 +851,7 @@ Induction
 
       inversion H.
 
-.. example::
-
-   *Dependent inversion.*
+.. example:: Dependent inversion
 
    Let us consider the following goal:
 
@@ -949,9 +876,7 @@ Induction
 
    Note that :g:`H` has been substituted by :g:`(LeS n m0 l)` and :g:`m` by :g:`(S m0)`.
 
-.. example::
-
-   *Using inversion_sigma.*
+.. example:: Using :tacn:`inversion_sigma`
 
    Let us consider the following inductive type of
    length-indexed lists, and a lemma about inverting equality of cons:
@@ -1001,90 +926,37 @@ Induction
 
 .. seealso:: :tacn:`functional inversion`
 
-.. todo move the following label to just
-        before ":tacn:`discriminate` and :tacn:`injection`"
-
-.. _equality-inductive_types:
-
-Equality and inductive sets
----------------------------
-
-We describe in this section some special purpose tactics dealing with
-equality and inductive sets or types. These tactics use the
-equality :g:`eq:forall (A:Type), A->A->Prop`, simply written with the infix
-symbol :g:`=`.
+Helper tactics
+~~~~~~~~~~~~~~
 
 .. tacn:: decide equality
-   :name: decide equality
 
-   This tactic solves a goal of the form :g:`forall x y : R, {x = y} + {~ x = y}`,
+   Solves a goal of the form :g:`forall x y : R, {x = y} + {~ x = y}`,
    where :g:`R` is an inductive type such that its constructors do not take
    proofs or functions as arguments, nor objects in dependent types. It
    solves goals of the form :g:`{x = y} + {~ x = y}` as well.
 
-.. tacn:: compare @term @term
-   :name: compare
+.. tacn:: compare @one_term__1 @one_term__2
 
-   This tactic compares two given objects :n:`@term` and :n:`@term` of an
-   inductive datatype. If :g:`G` is the current goal, it leaves the sub-
-   goals :n:`@term =@term -> G` and :n:`~ @term = @term -> G`. The type of
-   :n:`@term` and :n:`@term` must satisfy the same restrictions as in the
-   tactic ``decide equality``.
+   Compares two :n:`@one_term`\s of an
+   inductive datatype. If :g:`G` is the current goal, it leaves the
+   sub-goals :n:`@one_term__1 = @one_term__2 -> G` and :n:`~ @one_term__1 = @one_term__2 -> G`.
+   The type of the :n:`@one_term`\s must satisfy the same restrictions as in the
+   tactic :tacn:`decide equality`.
 
-.. tacn:: simplify_eq @term
-   :name: simplify_eq
+.. tacn:: dependent rewrite {? {| -> | <- } } @one_term {? in @ident }
 
-   Let :n:`@term` be the proof of a statement of conclusion :n:`@term = @term`.
-   If :n:`@term` and :n:`@term` are structurally different (in the sense
-   described for the tactic :tacn:`discriminate`), then the tactic
-   ``simplify_eq`` behaves as :n:`discriminate @term`, otherwise it behaves as
-   :n:`injection @term`.
-
-.. note::
-   If some quantified hypothesis of the goal is named :n:`@ident`,
-   then :n:`simplify_eq @ident` first introduces the hypothesis in the local
-   context using :n:`intros until @ident`.
-
-.. tacv:: simplify_eq @natural
-
-   This does the same thing as :n:`intros until @natural` then
-   :n:`simplify_eq @ident` where :n:`@ident` is the identifier for the last
-   introduced hypothesis.
-
-.. tacv:: simplify_eq @term with @bindings
-
-   This does the same as :n:`simplify_eq @term` but using the given bindings to
-   instantiate parameters or hypotheses of :n:`@term`.
-
-.. tacv:: esimplify_eq @natural
-          esimplify_eq @term {? with @bindings}
-   :name: esimplify_eq; _
-
-   This works the same as :tacn:`simplify_eq` but if the type of :n:`@term`, or the
-   type of the hypothesis referred to by :n:`@natural`, has uninstantiated
-   parameters, these parameters are left as existential variables.
-
-.. tacv:: simplify_eq
-
-   If the current goal has form :g:`t1 <> t2`, it behaves as
-   :n:`intro @ident; simplify_eq @ident`.
-
-.. tacn:: dependent rewrite -> @ident
-   :name: dependent rewrite ->
-
-   This tactic applies to any goal. If :n:`@ident` has type
+   If :n:`@ident` has type
    :g:`(existT B a b)=(existT B a' b')` in the local context (i.e. each
-   :n:`@term` of the equality has a sigma type :g:`{ a:A & (B a)}`) this tactic
+   term of the equality has a sigma type :g:`{ a:A & (B a)}`) this tactic
    rewrites :g:`a` into :g:`a'` and :g:`b` into :g:`b'` in the current goal.
    This tactic works even if :g:`B` is also a sigma type. This kind of
    equalities between dependent pairs may be derived by the
    :tacn:`injection` and :tacn:`inversion` tactics.
 
-.. tacv:: dependent rewrite <- @ident
-   :name: dependent rewrite <-
-
-   Analogous to :tacn:`dependent rewrite ->` but uses the equality from right to
-   left.
+   :n:`{? {| -> | <- } }`
+     By default, the equality is applied from left to right.  Specify `<-` to
+     apply the equality from right to left.
 
 .. _proofschemes-induction-principles:
 
@@ -1104,7 +976,8 @@ Generation of induction principles with ``Scheme``
       | Type
 
   A high-level tool for automatically generating
-  (possibly mutual) induction principles for given types and sorts.
+  (possibly mutual) :term:`induction principles <induction principle>`
+  for given types and sorts.
   Each :n:`@reference` is a different inductive type identifier belonging to
   the same package of mutual inductive definitions.
   The command generates the :n:`@ident`\s as mutually recursive
@@ -1122,23 +995,26 @@ Generation of induction principles with ``Scheme``
      Tries to generate a Boolean equality and a proof of the decidability of the usual equality.
      If :token:`reference` involves other inductive types, their equality has to be defined first.
 
-.. example::
+.. example:: Induction scheme for tree and forest
 
-   Induction scheme for tree and forest.
-
-   A mutual induction principle for tree and forest in sort ``Set`` can be defined using the command
+   Currently the automatically-generated :term:`induction principles <induction principle>`
+   such as `odd_ind` are not useful for mutually-inductive types such as `odd` and `even`.
+   You can define a mutual induction principle for tree and forest in sort ``Set`` with
+   the :cmd:`Scheme` command:
 
     .. coqtop:: reset none
 
        Axiom A : Set.
        Axiom B : Set.
 
-    .. coqtop:: all
+    .. coqtop:: in
 
      Inductive tree : Set := node : A -> forest -> tree
      with forest : Set :=
          leaf : B -> forest
        | cons : tree -> forest -> forest.
+
+    .. coqtop:: all
 
      Scheme tree_forest_rec := Induction for tree Sort Set
        with forest_tree_rec := Induction for forest Sort Set.
@@ -1149,20 +1025,18 @@ Generation of induction principles with ``Scheme``
 
     Check tree_forest_rec.
 
-  This principle involves two different predicates for trees andforests;
+  This principle involves two different predicates for trees and forests;
   it also has three premises each one corresponding to a constructor of
   one of the inductive definitions.
 
   The principle `forest_tree_rec` shares exactly the same premises, only
   the conclusion now refers to the property of forests.
 
-.. example::
-
-  Predicates odd and even on naturals.
+.. example:: Predicates odd and even on naturals
 
   Let odd and even be inductively defined as:
 
-   .. coqtop:: all
+   .. coqtop:: in
 
       Inductive odd : nat -> Prop := oddS : forall n:nat, even n -> odd (S n)
       with even : nat -> Prop :=
@@ -1183,11 +1057,11 @@ Generation of induction principles with ``Scheme``
     Check odd_even.
 
   The type of `even_odd` shares the same premises but the conclusion is
-  `(n:nat)(even n)->(P0 n)`.
+  `forall n : nat, even n -> P0 n`.
 
 
 Automatic declaration of schemes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. flag:: Elimination Schemes
 
@@ -1221,11 +1095,11 @@ Automatic declaration of schemes
    This :term:`flag` governs generation of equality-related schemes such as congruence.
 
 Combined Scheme
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. cmd:: Combined Scheme @ident__def from {+, @ident }
 
-   This command is a tool for combining induction principles generated
+   Combines induction principles generated
    by the :cmd:`Scheme` command.
    Each :n:`@ident` is a different inductive principle that must  belong
    to the same package of mutual inductive principle definitions.
@@ -1285,7 +1159,7 @@ Generation of inversion principles with ``Derive`` ``Inversion``
 .. cmd:: Derive Inversion @ident with @one_term {? Sort @sort_family }
 
    Generates an inversion lemma for the
-   :tacn:`inversion ... using ...` tactic.  :token:`ident` is the name
+   :tacn:`inversion` tactic.  :token:`ident` is the name
    of the generated lemma.  :token:`one_term` should be in the form
    :token:`qualid` or :n:`(forall {+ @binder }, @qualid @term)` where
    :token:`qualid` is the name of an inductive
@@ -1348,10 +1222,10 @@ Generation of inversion principles with ``Derive`` ``Inversion``
 
 .. _dependent-induction-examples:
 
-Examples of dependent destruction / dependent induction
--------------------------------------------------------------------
+Examples of :tacn:`dependent destruction` / :tacn:`dependent induction`
+-----------------------------------------------------------------------
 
-The tactics ``dependent induction`` and ``dependent destruction`` are another
+The tactics :tacn:`dependent induction` and :tacn:`dependent destruction` are another
 solution for inverting inductive predicate instances and potentially
 doing induction at the same time. It is based on the ``BasicElim`` tactic
 of Conor McBride which works by abstracting each argument of an
@@ -1437,7 +1311,7 @@ takes a tactic and combines the building blocks we have seen with it:
 generalizing by equalities calling the given tactic with the
 generalized induction hypothesis as argument and cleaning the subgoals
 with respect to equalities. Its most important instantiations
-are ``dependent induction`` and ``dependent destruction`` that do induction or
+are :tacn:`dependent induction` and :tacn:`dependent destruction` that do induction or
 simply case analysis on the generalized hypothesis. For example we can
 redo what we’ve done manually with dependent destruction:
 
@@ -1577,7 +1451,7 @@ With this proper separation of the index from the instance and the
 right induction loading (putting ``G`` and ``D`` after the inducted-on
 hypothesis), the proof will go through, but it is a very tedious
 process. One is also forced to make a wrapper lemma to get back the
-more natural statement. The ``dependent induction`` tactic alleviates this
+more natural statement. The :tacn:`dependent induction` tactic alleviates this
 trouble by doing all of this plumbing of generalizing and substituting
 back automatically. Indeed we can simply write:
 
@@ -1599,7 +1473,7 @@ back automatically. Indeed we can simply write:
 
    intros G D tau H. dependent induction H generalizing G D ; intros.
 
-This call to dependent induction has an additional arguments which is
+This call to :tacn:`dependent induction` has an additional arguments which is
 a list of variables appearing in the instance that should be
 generalized in the goal, so that they can vary in the induction
 hypotheses. By default, all variables appearing inside constructors
@@ -1646,5 +1520,3 @@ Now concluding this subgoal is easy.
 .. coqtop:: in
 
    constructor; apply IHterm; reflexivity.
-
-.. [1] Reminder: opaque constants will not be expanded by δ reductions.

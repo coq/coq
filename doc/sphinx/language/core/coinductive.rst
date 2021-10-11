@@ -1,29 +1,29 @@
-Co-inductive types and co-recursive functions
+Coinductive types and corecursive functions
 =============================================
 
-.. _co-inductive-types:
+.. _coinductive-types:
 
-Co-inductive types
+Coinductive types
 ------------------
 
 The objects of an inductive type are well-founded with respect to the
 constructors of the type. In other words, such objects contain only a
-*finite* number of constructors. Co-inductive types arise from relaxing
+*finite* number of constructors. Coinductive types arise from relaxing
 this condition, and admitting types whose objects contain an infinity of
 constructors. Infinite objects are introduced by a non-ending (but
 effective) process of construction, defined in terms of the constructors
 of the type.
 
-More information on co-inductive definitions can be found in
+More information on coinductive definitions can be found in
 :cite:`Gimenez95b,Gim98,GimCas05`.
 
 .. cmd:: CoInductive @inductive_definition {* with @inductive_definition }
 
-   This command introduces a co-inductive type.
+   This command introduces a coinductive type.
    The syntax of the command is the same as the command :cmd:`Inductive`.
-   No principle of induction is derived from the definition of a co-inductive
+   No principle of induction is derived from the definition of a coinductive
    type, since such principles only make sense for inductive types.
-   For co-inductive types, the only elimination principle is case analysis.
+   For coinductive types, the only elimination principle is case analysis.
 
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`,
@@ -36,7 +36,7 @@ More information on co-inductive definitions can be found in
 .. example::
 
    The type of infinite sequences of natural numbers, usually called streams,
-   is an example of a co-inductive type.
+   is an example of a coinductive type.
 
    .. coqtop:: in
 
@@ -50,12 +50,12 @@ More information on co-inductive definitions can be found in
       Definition hd (x:Stream) := let (a,s) := x in a.
       Definition tl (x:Stream) := let (a,s) := x in s.
 
-Definitions of co-inductive predicates and blocks of mutually
-co-inductive definitions are also allowed.
+Definitions of coinductive predicates and blocks of mutually
+coinductive definitions are also allowed.
 
 .. example::
 
-   The extensional equality on streams is an example of a co-inductive type:
+   The extensional equality on streams is an example of a coinductive type:
 
    .. coqtop:: in
 
@@ -71,17 +71,17 @@ co-inductive definitions are also allowed.
 Caveat
 ~~~~~~
 
-The ability to define co-inductive types by constructors, hereafter called
-*positive co-inductive types*, is known to break subject reduction. The story is
+The ability to define coinductive types by constructors, hereafter called
+*positive coinductive types*, is known to break subject reduction. The story is
 a bit long: this is due to dependent pattern-matching which implies
 propositional η-equality, which itself would require full η-conversion for
 subject reduction to hold, but full η-conversion is not acceptable as it would
 make type checking undecidable.
 
 Since the introduction of primitive records in Coq 8.5, an alternative
-presentation is available, called *negative co-inductive types*. This consists
-in defining a co-inductive type as a primitive record type through its
-projections. Such a technique is akin to the *co-pattern* style that can be
+presentation is available, called *negative coinductive types*. This consists
+in defining a coinductive type as a primitive record type through its
+projections. Such a technique is akin to the *copattern* style that can be
 found in e.g. Agda, and preserves subject reduction.
 
 The above example can be rewritten in the following way.
@@ -109,15 +109,15 @@ axiom.
 
    Axiom Stream_eta : forall s: Stream, s = Seq (hd s) (tl s).
 
-More generally, as in the case of positive co-inductive types, it is consistent
-to further identify extensional equality of co-inductive types with propositional
+More generally, as in the case of positive coinductive types, it is consistent
+to further identify extensional equality of coinductive types with propositional
 equality:
 
 .. coqtop:: all
 
    Axiom Stream_ext : forall (s1 s2: Stream), EqSt s1 s2 -> s1 = s2.
 
-As of Coq 8.9, it is now advised to use negative co-inductive types rather than
+As of Coq 8.9, it is now advised to use negative coinductive types rather than
 their positive counterparts.
 
 .. seealso::
@@ -140,12 +140,12 @@ Co-recursive functions: cofix
 The expression
 ":n:`cofix @ident__1 @binder__1 : @type__1 with … with @ident__n @binder__n : @type__n for @ident__i`"
 denotes the :math:`i`-th component of a block of terms defined by a mutual guarded
-co-recursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
+corecursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
 :math:`n=1`, the ":n:`for @ident__i`" clause is omitted.
 
 .. _cofixpoint:
 
-Top-level definitions of co-recursive functions
+Top-level definitions of corecursive functions
 -----------------------------------------------
 
 .. cmd:: CoFixpoint @cofix_definition {* with @cofix_definition }
@@ -156,9 +156,9 @@ Top-level definitions of co-recursive functions
       cofix_definition ::= @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
 
    This command introduces a method for constructing an infinite object of a
-   co-inductive type. For example, the stream containing all natural numbers can
+   coinductive type. For example, the stream containing all natural numbers can
    be introduced by applying the following method to the number :g:`O` (see
-   Section :ref:`co-inductive-types` for the definition of :g:`Stream`, :g:`hd`
+   Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd`
    and :g:`tl`):
 
    .. coqtop:: all
@@ -166,9 +166,9 @@ Top-level definitions of co-recursive functions
       CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
 
    Unlike recursive definitions, there is no decreasing argument in a
-   co-recursive definition. To be admissible, a method of construction must
+   corecursive definition. To be admissible, a method of construction must
    provide at least one extra constructor of the infinite object for each
-   iteration. A syntactical guard condition is imposed on co-recursive
+   iteration. A syntactical guard condition is imposed on corecursive
    definitions in order to ensure this: each recursive call in the
    definition must be protected by at least one constructor, and only by
    constructors. That is the case in the former definition, where the single
@@ -181,7 +181,7 @@ Top-level definitions of co-recursive functions
       Fail CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
         if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
 
-   The elimination of co-recursive definition is done lazily, i.e. the
+   The elimination of corecursive definition is done lazily, i.e. the
    definition is expanded only when it occurs at the head of an application
    which is the argument of a case analysis expression. In any other
    context, it is considered as a canonical expression which is completely
