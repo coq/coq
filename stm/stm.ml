@@ -1297,7 +1297,7 @@ module rec ProofTask : sig
 
   type competence = Stateid.t list
   type task_build_proof = {
-    t_exn_info : Stateid.t * Stateid.t;
+    t_exn_info : Stateid.exn_info;
     t_start    : Stateid.t;
     t_stop     : Stateid.t;
     t_drop     : bool;
@@ -1324,7 +1324,7 @@ module rec ProofTask : sig
     doc:doc ->
     ?loc:Loc.t ->
     drop_pt:bool ->
-    Stateid.t * Stateid.t -> Stateid.t ->
+    Stateid.exn_info -> Stateid.t ->
       Declare.Proof.closed_proof_output Future.computation
 
   (* If set, only tasks overlapping with this list are processed *)
@@ -1336,7 +1336,7 @@ end = struct (* {{{ *)
 
   type competence = Stateid.t list
   type task_build_proof = {
-    t_exn_info : Stateid.t * Stateid.t;
+    t_exn_info : Stateid.exn_info;
     t_start    : Stateid.t;
     t_stop     : Stateid.t;
     t_drop     : bool;
@@ -1438,18 +1438,18 @@ end = struct (* {{{ *)
         execution_error start (Pp.strbrk s);
         feedback (InProgress ~-1)
 
-  let build_proof_here ~doc ?loc ~drop_pt (id,valid) eop =
-    (* [~fix_exn:exn_on] here does more than amending the exn
-       information, it also updates the STM state *)
-    Future.create ~fix_exn:(State.exn_on id ~valid) (fun () ->
-      let wall_clock1 = Unix.gettimeofday () in
-      Reach.known_state ~doc ~cache:(VCS.is_interactive ()) eop;
-      let wall_clock2 = Unix.gettimeofday () in
-      Aux_file.record_in_aux_at ?loc "proof_build_time"
-        (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-      let p = if drop_pt then PG_compat.return_partial_proof () else PG_compat.return_proof () in
-      if drop_pt then feedback ~id Complete;
-      p)
+  let build_proof_here_fun ~doc ?loc ~drop_pt ~id eop =
+    let wall_clock1 = Unix.gettimeofday () in
+    Reach.known_state ~doc ~cache:(VCS.is_interactive ()) eop;
+    let wall_clock2 = Unix.gettimeofday () in
+    Aux_file.record_in_aux_at ?loc "proof_build_time"
+      (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
+    let p = if drop_pt then PG_compat.return_partial_proof () else PG_compat.return_proof () in
+    if drop_pt then feedback ~id Complete;
+    p
+
+  let build_proof_here ~doc ?loc ~drop_pt exn_info eop =
+    Future.create ~fix_exn:(Some exn_info) (fun () -> build_proof_here_fun ~doc ?loc ~drop_pt ~id:exn_info.Stateid.id eop)
 
   let perform_buildp { Stateid.exn_info; stop; document; loc } drop my_states =
     try
@@ -1457,8 +1457,15 @@ end = struct (* {{{ *)
       VCS.print ();
       let proof, time =
         let wall_clock = Unix.gettimeofday () in
-        let fp = build_proof_here ~doc:dummy_doc (* XXX should be document *) ?loc ~drop_pt:drop exn_info stop in
-        let proof = Future.force fp in
+        let proof =
+          try
+            build_proof_here_fun ~doc:dummy_doc (* XXX should be document *)
+              ?loc ~drop_pt:drop ~id:exn_info.Stateid.id stop
+          with exn ->
+            let iexn = Exninfo.capture exn in
+            let iexn = State.exn_on exn_info.Stateid.id ~valid:exn_info.Stateid.valid iexn in
+            Exninfo.iraise iexn
+        in
         proof, Unix.gettimeofday () -. wall_clock in
       (* We typecheck the proof with the kernel (in the worker) to spot
        * the few errors tactics don't catch, like the "fix" tactic building
@@ -1485,7 +1492,7 @@ end = struct (* {{{ *)
                actually [fix_exn] there does more more than just
                modifying exn info, it also updates the STM state *)
             let iexn = Exninfo.capture exn in
-            let iexn = State.exn_on (fst exn_info) ~valid:(snd exn_info) iexn in
+            let iexn = State.exn_on exn_info.Stateid.id ~valid:exn_info.Stateid.valid iexn in
             Exninfo.iraise iexn
         end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1554,7 +1561,7 @@ end = struct (* {{{ *)
       msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
                              "The system state could not be sent to the worker process. "^
                              "Falling back to local, lazy, evaluation."));
-      t_assign(`Comp(build_proof_here ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt t_exn_info t_stop));
+      t_assign(`Comp(fun () -> build_proof_here_fun ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt ~id:t_exn_info.Stateid.id t_stop));
       feedback (InProgress ~-1)
 
 end (* }}} *)
@@ -1567,7 +1574,7 @@ and Slaves : sig
     : doc:doc
     -> ?loc:Loc.t
     -> drop_pt:bool
-    -> exn_info:(Stateid.t * Stateid.t)
+    -> exn_info:Stateid.exn_info
     -> block_start:Stateid.t
     -> block_stop:Stateid.t
     -> name:string
@@ -1735,27 +1742,16 @@ end = struct (* {{{ *)
      | _ -> 0)
 
   let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname () =
-    let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
-    if TaskQueue.n_workers (Option.get !queue) = 0 then
-      if VCS.is_vio_doc () then begin
-        let f,assign =
-         Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
-        let t_uuid = Future.uuid f in
-        let task = ProofTask.(BuildProof {
-          t_exn_info; t_start = block_start; t_stop = block_stop; t_drop = drop_pt;
-          t_assign = assign; t_loc = loc; t_uuid; t_name = pname;
-          t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
-        TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
-        f, cancel_switch
-      end else
-        ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
+    let n_workers = TaskQueue.n_workers (Option.get !queue) in
+    if Int.equal n_workers 0 && not (VCS.is_vio_doc ()) then
+      ProofTask.build_proof_here ~doc ?loc ~drop_pt exn_info block_stop, cancel_switch
     else
-      let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
+      let f, t_assign = Future.create_delegate ~name:pname (Some exn_info) in
       let t_uuid = Future.uuid f in
-      feedback (InProgress 1);
+      if n_workers > 0 then feedback (InProgress 1);
       let task = ProofTask.(BuildProof {
-        t_exn_info; t_start = block_start; t_stop = block_stop; t_assign; t_drop = drop_pt;
+        t_exn_info = exn_info; t_start = block_start; t_stop = block_stop; t_assign; t_drop = drop_pt;
         t_loc = loc; t_uuid; t_name = pname;
         t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
       TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
@@ -2177,7 +2173,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
             | `ASync (block_start, nodes, name, delegate) -> (fun () ->
                 let keep' = get_vtkeep keep in
                 let drop_pt = keep' == VtKeepAxiom in
-                let block_stop, exn_info, loc = eop, (id, eop), x.expr.CAst.loc in
+                let block_stop, exn_info, loc = eop, Stateid. { id; valid = eop }, x.expr.CAst.loc in
                 log_processing_async id name;
                 VCS.create_proof_task_box nodes ~qed:id ~block_start;
                 begin match brinfo, qed.fproof with

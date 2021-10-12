@@ -36,8 +36,10 @@ end
 
 module Set = Set.Make(Self)
 
+type exn_info = { id : t; valid : t }
+
 type ('a,'b) request = {
-  exn_info : t * t;
+  exn_info : exn_info;
   stop : t;
   document : 'b;
   loc : Loc.t option;

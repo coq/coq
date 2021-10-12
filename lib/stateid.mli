@@ -33,8 +33,10 @@ val newer_than : t -> t -> bool
 val add : Exninfo.info -> valid:t -> t -> Exninfo.info
 val get : Exninfo.info -> (t * t) option
 
+type exn_info = { id : t; valid : t }
+
 type ('a,'b) request = {
-  exn_info : t * t;
+  exn_info : exn_info;
   stop : t;
   document : 'b;
   loc : Loc.t option;

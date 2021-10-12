@@ -39,7 +39,8 @@ exception NotReady of string
 
 type 'a computation
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn ]
-type fix_exn = Exninfo.iexn -> Exninfo.iexn
+
+type fix_exn = Stateid.exn_info option
 
 (* Build a computation, no snapshot of the global state is taken.  If you need
    to grab a copy of the state start with from_here () and then chain.
@@ -56,7 +57,7 @@ val from_val : 'a -> 'a computation
 (* Run remotely, returns the function to assign.
    If not blocking (the default) it raises NotReady if forced before the
    delegate assigns it. *)
-type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
+type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of (unit -> 'a)]
 val create_delegate :
   ?blocking:bool -> name:string ->
   fix_exn -> 'a computation * ('a assignment -> unit)
@@ -79,11 +80,6 @@ val chain : 'a computation -> ('a -> 'b) -> 'b computation
 (* Forcing a computation *)
 val force : 'a computation -> 'a
 val compute : 'a computation -> 'a value
-
-(* Final call.
- * Also the fix_exn function is lost, hence error reporting can be incomplete
- * in a computation obtained by chaining on a joined future. *)
-val join : 'a computation -> 'a
 
 (** Debug: print a computation given an inner printing function. *)
 val print : ('a -> Pp.t) -> 'a computation -> Pp.t

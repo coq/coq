@@ -32,8 +32,18 @@ let _ = CErrors.register_handler (function
   | NotHere name -> Some (!not_here_msg name)
   | _ -> None)
 
-type fix_exn = Exninfo.iexn -> Exninfo.iexn
-let id x = x
+type fix_exn = Stateid.exn_info option
+
+let eval_fix_exn f (e, info) = match f with
+| None -> (e, info)
+| Some { Stateid.id; valid } ->
+  match Stateid.get info with
+  | Some _ -> (e, info)
+  | None ->
+    let loc = Loc.get_loc info in
+    let msg = CErrors.iprint (e, info) in
+    let () = Feedback.(feedback ~id (Message (Error, loc, msg))) in
+    (e, Stateid.add info ~valid id)
 
 module UUID = struct
   type t = int
@@ -49,33 +59,29 @@ end
 module UUIDMap = Map.Make(UUID)
 module UUIDSet = Set.Make(UUID)
 
-type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
+type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of (unit -> 'a)]
 
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
 and 'a comp =
-  | Delegated of (unit -> unit)
+  | Delegated of (Mutex.t * Condition.t) option
   | Closure of (unit -> 'a)
   | Val of 'a
   | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
 
-and 'a comput =
+and 'a computation =
   | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) CEphemeron.key
-  | Finished of 'a
-
-and 'a computation = 'a comput ref
 
 let unnamed = "unnamed"
 
 let create ?(name=unnamed) ?(uuid=UUID.fresh ()) ~fix_exn x =
-  ref (Ongoing (name, CEphemeron.create (uuid, fix_exn, ref x)))
+  Ongoing (name, CEphemeron.create (uuid, fix_exn, ref x))
 let get x =
-  match !x with
-  | Finished v -> unnamed, UUID.invalid, id, ref (Val v)
+  match x with
   | Ongoing (name, x) ->
       try let uuid, fix, c = CEphemeron.get x in name, uuid, fix, c
       with CEphemeron.InvalidKey ->
-        name, UUID.invalid, id, ref (Exn (NotHere name, Exninfo.null))
+        name, UUID.invalid, None, ref (Exn (NotHere name, Exninfo.null))
 
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]
 
@@ -93,40 +99,42 @@ let peek_val kx = let _, _, _, x = get kx in match !x with
 
 let uuid kx = let _, id, _, _ = get kx in id
 
-let from_val v = create ~fix_exn:id (Val v)
+let from_val v = create ~fix_exn:None (Val v)
 
 let create_delegate ?(blocking=true) ~name fix_exn =
-  let assignment signal ck = fun v ->
+  let sync =
+    if blocking then Some (Mutex.create (), Condition.create ())
+    else None
+  in
+  let ck = create ~name ~fix_exn (Delegated sync) in
+  let assignment = fun v ->
     let _, _, fix_exn, c = get ck in
-    assert (match !c with Delegated _ -> true | _ -> false);
+    let sync = match !c with Delegated s -> s | _ -> assert false in
     begin match v with
     | `Val v -> c := Val v
-    | `Exn e -> c := Exn (fix_exn e)
-    | `Comp f -> let _, _, _, comp = get f in c := !comp end;
-    signal () in
-  let wait, signal =
-    if not blocking then (fun () -> raise (NotReady name)), ignore else
-    let lock = Mutex.create () in
-    let cond = Condition.create () in
-    (fun () -> CThread.with_lock lock ~scope:(fun () -> Condition.wait cond lock)),
-    (fun () -> CThread.with_lock lock ~scope:(fun () -> Condition.broadcast cond)) in
-  let ck = create ~name ~fix_exn (Delegated wait) in
-  ck, assignment signal ck
+    | `Exn e -> c := Exn (eval_fix_exn fix_exn e)
+    | `Comp f -> c := Closure f end;
+    let iter (lock, cond) = CThread.with_lock lock ~scope:(fun () -> Condition.broadcast cond) in
+    Option.iter iter sync
+  in
+  ck, assignment
 
 (* TODO: get rid of try/catch to be stackless *)
 let rec compute ck : 'a value =
-  let _, _, fix_exn, c = get ck in
+  let name, _, fix_exn, c = get ck in
   match !c with
   | Val x -> `Val x
   | Exn (e, info) -> `Exn (e, info)
-  | Delegated wait -> wait (); compute ck
+  | Delegated None -> raise (NotReady name)
+  | Delegated (Some (lock, cond)) ->
+    CThread.with_lock lock ~scope:(fun () -> Condition.wait cond lock); compute ck
   | Closure f ->
       try
         let data = f () in
         c := Val data; `Val data
       with e ->
         let e = Exninfo.capture e in
-        let e = fix_exn e in
+        let e = eval_fix_exn fix_exn e in
         match e with
         | (NotReady _, _) -> `Exn e
         | _ -> c := Exn e; `Exn e
@@ -155,11 +163,6 @@ let chain x f =
   let y = chain x f in
   if is_over x then ignore(force y);
   y
-
-let join kx =
-  let v = force kx in
-  kx := Finished v;
-  v
 
 let print f kx =
   let open Pp in
