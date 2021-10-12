@@ -3,5 +3,6 @@
  (synopsis "Coq's Core Tactics [ML implementation]")
  (public_name coq-core.tactics)
  (wrapped false)
- (private_modules btermdn dnet dn term_dnet)
+ ; until ocaml/dune#4892 fixed
+ ; (private_modules btermdn dnet dn term_dnet)
  (libraries printing))

@@ -3,5 +3,6 @@
  (synopsis "Coq's Tactic Engine")
  (public_name coq-core.engine)
  (wrapped false)
- (private_modules univSubst)
+ ; until ocaml/dune#4892 fixed
+ ; (private_modules univSubst)
  (libraries library))

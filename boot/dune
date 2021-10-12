@@ -4,5 +4,6 @@
  (name boot)
  (public_name coq-core.boot)
  (synopsis "Coq Enviroment and Paths facilities")
- (private_modules util)
+ ; until ocaml/dune#4892 fixed
+ ; (private_modules util)
  (libraries coq-core.config))
