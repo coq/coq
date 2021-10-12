@@ -19,7 +19,7 @@ as the goal, which is then gradually transformed until every subgoal generated
 along the way has been proven.  In this case, the proof of `A /\\ B` begins
 with that formula as the goal.  This can be transformed into two subgoals,
 `A` and `B`, followed by the proofs of `A` and `B`.  Coq and its tactics
-use backward reasoning.
+primarily use backward reasoning.
 
 A tactic may fully prove a goal, in which case the goal is removed
 from the proof state.
@@ -64,15 +64,14 @@ the following character sequences as tokens::
 Invocation of tactics
 ~~~~~~~~~~~~~~~~~~~~~
 
-A tactic is applied as an ordinary command. It may be preceded by a
+Tactics may be preceded by a
 goal selector (see Section :ref:`goal-selectors`). If no selector is
 specified, the default selector is used.
 
 .. _tactic_invocation_grammar:
 
   .. prodn::
-     tactic_invocation ::= @toplevel_selector : @tactic.
-     | @tactic.
+     tactic_invocation ::= {? @toplevel_selector : } @tactic.
 
 .. todo: fully describe selectors.  At the moment, ltac has a fairly complete description
 
@@ -102,35 +101,53 @@ specified, the default selector is used.
 Bindings
 ~~~~~~~~
 
-Tactics that take a term as an argument may also accept :token:`bindings`
-to instantiate some parameters of the term by name or position.
-The general form of a term with :token:`bindings` is
-:n:`@term__tac with @bindings` where :token:`bindings` can take two different forms:
+Tactics that take a term as an argument may also accept :token:`bindings` to
+specify the values to assign unbound variables in a term.
+Bindings can be given by position or name.  Generally these appear in the form
+:n:`@one_term_with_bindings` or :n:`with @bindings`, depending on the tactic.
 
-  .. insertprodn bindings bindings
+  .. insertprodn one_term_with_bindings bindings
 
   .. prodn::
-     bindings ::= {+ ( {| @ident | @natural } := @term ) }
-     | {+ @one_term }
+     one_term_with_bindings ::= @one_term {? with @bindings }
+     bindings ::= {+ @one_term }
+     | {+ ( {| @ident | @natural } := @term ) }
 
-+ In the first form, if an :token:`ident` is specified, it must be bound in the
-  type of :n:`@term` and provides the tactic with an instance for the
-  parameter of this name. If a :token:`natural` is specified, it refers to
-  the ``n``-th non-dependent premise of :n:`@term__tac`.
+* :n:`@one_term {? with @bindings }` — bindings for variables in :n:`@one_term`
+  are typically determined by unifying :n:`@one_term` with a tactic-dependent part
+  of the context, with any remaining unbound variables provided by the :n:`@bindings`.
 
-  .. exn:: No such binder.
-     :undocumented:
+* :n:`{+ @one_term }` — binds free variables in the left-to-right order of their first
+  appearance in the relevant term.
 
-+ In the second form, the interpretation of the :token:`one_term`\s depend on which
-  tactic they appear in.  For :tacn:`induction`, :tacn:`destruct`, :tacn:`elim`
-  and :tacn:`case`, the :token:`one_term`\s
-  provide instances for all the dependent products in the type of :n:`@term__tac` while in
-  the case of :tacn:`apply`, or of :tacn:`constructor` and its variants, only instances
-  for the dependent products that are not bound in the conclusion of :n:`@term__tac`
-  are required.
+  For some tactics, bindings for all free variables
+  must be provided, such as for :tacn:`induction`, :tacn:`destruct`, :tacn:`elim`
+  and :tacn:`case`.  Other tactics automatically generate some or all
+  of the bindings from the conclusion or a hypothesis, such as :tacn:`apply` and
+  :tacn:`constructor` and its variants.  In this case, only instances
+  for the :term:`dependent premises <dependent premise>` that are not bound in
+  the conclusion of the relevant term are required (and permitted).
 
-  .. exn:: Not the right number of missing arguments.
-     :undocumented:
+* :n:`{+ ( {| @ident | @natural } := @term ) }` —  binds variables by name (if :n:`@ident` is given), or
+  by unifying with the ``n``-th :term:`premise` of the relevant term
+  (if :n:`@natural` is given).
+
+.. exn:: No such binder.
+
+   :n:`@natural` is 0 or more than the number of unbound variables.
+
+.. exn:: No such bound variable @ident (no bound variables at all in the expression).
+   :undocumented:
+
+.. exn:: No such bound variable @ident__1 (possible names are: @ident__2 ...).
+
+   The specified binder name :n:`@ident__1` is not used in the :n:`@one_term`.
+   :n:`@ident__2 ...` lists all the valid binder names.
+
+.. exn:: Not the right number of missing arguments (expected @natural).
+
+   Generated when the first form of :n:`@bindings` doesn't have the
+   expected number of arguments.
 
 .. _intropatterns:
 
@@ -215,10 +232,10 @@ For a goal :g:`A \/ B`, use :tacn:`left` to replace the current goal with :g:`A`
   of :n:`let-ins`, the patterns are applied to the arguments and :n:`let-in` variables.
 
 * :n:`( {+& @simple_intropattern} )` — matches a right-hand nested term that consists
-  of one or more nested binary inductive types such as :g:`a1 OP1 a2 OP2 ...`
+  of one or more nested binary inductive types such as :g:`a1 OP1 a2 OP2 …`
   (where the :g:`OPn` are right-associative).
   (If the :g:`OPn` are left-associative, additional parentheses will be needed to make the
-  term right-hand nested, such as :g:`a1 OP1 (a2 OP2 ...)`.)
+  term right-hand nested, such as :g:`a1 OP1 (a2 OP2 …)`.)
   The splitting pattern can have more than 2 names, for example :g:`(H1 & H2 & H3)`
   matches :g:`A /\ B /\ C`.
   The inductive types must have a
@@ -227,9 +244,8 @@ For a goal :g:`A \/ B`, use :tacn:`left` to replace the current goal with :g:`A`
 
 * :n:`[ {+| {* @intropattern } } ]` — splits an inductive type that has
   :ref:`multiple constructors <intropattern_cons_note>`
-  such as :n:`A \/ B`
-  into multiple subgoals.  The number of :token:`intropattern`\s must be the same as the number of
-  constructors for the matched part.
+  such as :n:`A \/ B` into multiple subgoals.  The number of :token:`intropattern`\s
+  must be the same as the number of constructors for the matched part.
 * :n:`[ {+ @intropattern} ]` — splits an inductive type that has a
   :ref:`single constructor with multiple parameters <intropattern_cons_note>`
   such as :n:`A /\ B` into multiple hypotheses.  Use :n:`[H1 [H2 H3]]` to match :g:`A /\ B /\ C`.
@@ -259,17 +275,17 @@ These patterns can be used when the hypothesis is an equality:
 
 **Other patterns**
 
-* :n:`*` — introduces one or more quantified variables from the result
-  until there are no more quantified variables.
+* :n:`*` — introduces one or more :term:`dependent premises <dependent premise>`
+  from the result until there are no more.
   :ref:`Example <intropattern_star_ex>`
 
-* :n:`**` — introduces one or more quantified variables or hypotheses from the result until there are
-  no more quantified variables or implications (:g:`->`).  :g:`intros **` is equivalent
-  to :g:`intros`.
+* :n:`**` — introduces one or more :term:`dependent <dependent premise>`
+  or :term:`non-dependent premises <non-dependent premise>` from the result
+  until there are no more premises.  :g:`intros **` is equivalent to :g:`intros`.
   :ref:`Example <intropattern_2stars_ex>`
 
 * :n:`@simple_intropattern_closed {* % @term}` — first applies each of the terms
-  with the :tacn:`apply … in` tactic on the hypothesis to be introduced, then it uses
+  with the :tacn:`apply` tactic on the hypothesis to be introduced, then it uses
   :n:`@simple_intropattern_closed`.
   :ref:`Example <intropattern_injection_ex>`
 
@@ -298,7 +314,7 @@ These patterns can be used when the hypothesis is an equality:
 
 .. note::
 
-   :n:`intros {+ p}` is not always equivalent to :n:`intros p; ... ; intros p`
+   :tacn:`intros` :n:`{+ p}` is not always equivalent to :n:`intros p; … ; intros p`
    if some of the :n:`p` are :g:`_`.  In the first form, all erasures are done
    at once, while they're done sequentially for each tactic in the second form.
    If the second matched term depends on the first matched term and the pattern
@@ -359,7 +375,7 @@ Examples:
 
    .. example:: [=] intro pattern
 
-      The first :n:`intros [=]` uses :tacn:`injection` to strip :n:`(S ...)` from
+      The first :tacn:`intros` :n:`[=]` uses :tacn:`injection` to strip :n:`(S …)` from
       both sides of the matched equality.  The second uses :tacn:`discriminate` on
       the contradiction :n:`1 = 2` (internally represented as :n:`(S O) = (S (S O))`)
       to complete the goal.
@@ -382,7 +398,7 @@ Examples:
 
 .. _intropattern_ampersand_ex:
 
-   .. example:: (A & B & ...) intro pattern
+   .. example:: (A & B & …) intro pattern
 
       .. coqtop:: reset none
 
@@ -508,9 +524,9 @@ one or more of its hypotheses.
      (Set the :flag:`Printing All` flag to show those in the printed term.)
 
      For example, when matching the pattern `_ + _` in the term `(a + b) + c`,
-     occurrence 1 is `(...) + c` and
+     occurrence 1 is `(…) + c` and
      occurrence 2 is `(a + b)`.  When matching that pattern with term `a + (b + c)`,
-     occurrence 1 is `a + (...)` and occurrence 2 is `b + c`.
+     occurrence 1 is `a + (…)` and occurrence 2 is `b + c`.
 
      Specifying `-` includes all occurrences *except* the ones listed.
 
@@ -572,6 +588,8 @@ one or more of its hypotheses.
    Tactics that use occurrence clauses include :tacn:`set`,
    :tacn:`remember`, :tacn:`induction` and :tacn:`destruct`.
 
+   .. exn:: No such hypothesis: @ident.
+      :undocumented:
 
 .. seealso::
 
@@ -584,25 +602,21 @@ one or more of its hypotheses.
 Applying theorems
 ---------------------
 
-.. tacn:: exact @term
-   :name: exact
+.. tacn:: exact @one_term
 
-   This tactic applies to any goal. It gives directly the exact proof
-   term of the goal. Let ``T`` be our goal, let ``p`` be a term of type ``U`` then
-   ``exact p`` succeeds iff ``T`` and ``U`` are convertible (see
-   :ref:`Conversion-rules`).
+   Directly gives the exact proof term for the goal.
+   ``exact p`` succeeds if and only if :n:`@one_term` and the type of ``p`` are
+   unifiable (see :ref:`Conversion-rules`).
 
    .. exn:: Not an exact proof.
       :undocumented:
 
-   .. tacv:: eexact @term.
-      :name: eexact
+   .. tacn:: eexact @one_term
 
-      This tactic behaves like :tacn:`exact` but is able to handle terms and
+      Behaves like :tacn:`exact` but can handle terms and
       goals with existential variables.
 
 .. tacn:: assumption
-   :name: assumption
 
    This tactic looks in the local context for a hypothesis whose type is
    convertible to the goal. If it is the case, the subgoal is proved.
@@ -611,26 +625,29 @@ Applying theorems
    .. exn:: No such assumption.
       :undocumented:
 
-   .. tacv:: eassumption
-      :name: eassumption
+   .. tacn:: eassumption
 
-      This tactic behaves like :tacn:`assumption` but is able to handle
-      goals with existential variables.
+      Behaves like :tacn:`assumption` but is able to handle
+      goals and hypotheses with existential variables.
 
-.. tacn:: refine @term
+.. tacn:: {? simple } {? notypeclasses } refine @one_term
    :name: refine
 
-   This tactic applies to any goal. It behaves like :tacn:`exact` with a big
-   difference: the user can leave some holes (denoted by ``_``
-   or :n:`(_ : @type)`) in the term. :tacn:`refine` will generate as many
-   subgoals as there are remaining holes in the elaborated term. The type
-   of holes must be either synthesized by the system or declared by an explicit cast
-   like ``(_ : nat -> Prop)``. Any subgoal that
+   Behaves like :tacn:`exact` but allows holes (denoted by ``_``
+   or :n:`(_ : @type)`) in :n:`@one_term`. :tacn:`refine` generates as many
+   subgoals as there are remaining holes in the elaborated term. The types
+   of these holes must be inferable or declared by an explicit cast
+   such as ``(_ : nat -> Prop)``. Any subgoal that
    occurs in other subgoals is automatically shelved, as if calling
-   :tacn:`shelve_unifiable`. The produced subgoals (shelved or not)
-   are *not* candidates for typeclass resolution, even if they have a type-class
-   type as conclusion, letting the user control when and how typeclass resolution
-   is launched on them. This low-level tactic can be useful to advanced users.
+   :tacn:`shelve_unifiable`.
+
+   `simple`
+     If specified, don't shelve any subgoals or perform beta reduction.
+
+   `notypeclasses`
+     If specified, do checking without resolving typeclasses.  The generated
+     subgoals (shelved or not) are *not* candidates for typeclass resolution,
+     even if they have a typeclass type as their conclusion.
 
    .. example::
 
@@ -650,154 +667,358 @@ Applying theorems
            intros; absurd (Fail = Fail); trivial.
          Defined.
 
-   .. exn:: Invalid argument.
-
-      The tactic :tacn:`refine` does not know what to do with the term you gave.
-
-   .. exn:: Refine passed ill-formed term.
-
-      The term you gave is not a valid proof (not easy to debug in general). This
-      message may also occur in higher-level tactics that call :tacn:`refine`
-      internally.
-
    .. exn:: Cannot infer a term for this placeholder.
       :name: Cannot infer a term for this placeholder. (refine)
 
       There is a hole in the term you gave whose type cannot be inferred. Put a
       cast around it.
 
-   .. tacv:: simple refine @term
-      :name: simple refine
-
-      This tactic behaves like refine, but it does not shelve any subgoal. It does
-      not perform any beta-reduction either.
-
-   .. tacv:: notypeclasses refine @term
-      :name: notypeclasses refine
-
-      This tactic behaves like :tacn:`refine` except it performs type checking without
-      resolution of typeclasses.
-
-   .. tacv:: simple notypeclasses refine @term
-      :name: simple notypeclasses refine
-
-      This tactic behaves like the combination of :tacn:`simple refine` and
-      :tacn:`notypeclasses refine`: it performs type checking without resolution of
-      typeclasses, does not perform beta reductions or shelve the subgoals.
-
-   :opt:`Debug` ``"unification"`` enables printing traces of
+   Setting :opt:`Debug` ``"unification"`` enables printing traces of
    unification steps used during elaboration/typechecking and the
    :tacn:`refine` tactic. ``"ho-unification"`` prints information
    about higher order heuristics.
 
-.. tacn:: apply @term
-   :name: apply
+.. tacn:: apply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
 
-   This tactic applies to any goal. The argument term is a term well-formed in
-   the local context. The tactic :tacn:`apply` tries to match the current goal
-   against the conclusion of the type of :token:`term`. If it succeeds, then
-   the tactic returns as many subgoals as the number of non-dependent premises
-   of the type of term. If the conclusion of the type of :token:`term` does
-   not match the goal *and* the conclusion is an inductive type isomorphic to
-   a tuple type, then each component of the tuple is recursively matched to
-   the goal in the left-to-right order.
+   .. insertprodn in_hyp_as as_ipat
 
-   The tactic :tacn:`apply` relies on first-order unification with dependent
-   types unless the conclusion of the type of :token:`term` is of the form
-   :n:`P (t__1 ... t__n)` with ``P`` to be instantiated. In the latter case,
-   the behavior depends on the form of the goal. If the goal is of the form
-   :n:`(fun x => Q) u__1 ... u__n` and the :n:`t__i` and :n:`u__i` unify,
-   then :g:`P` is taken to be :g:`(fun x => Q)`. Otherwise, :tacn:`apply`
-   tries to define :g:`P` by abstracting over :g:`t_1 ... t__n` in the goal.
-   See :tacn:`pattern` to transform the goal so that it
-   gets the form :n:`(fun x => Q) u__1 ... u__n`.
+   .. prodn::
+      in_hyp_as ::= in {+, @ident {? @as_ipat } }
+      as_ipat ::= as @simple_intropattern
 
-   .. exn:: Unable to unify @term with @term.
+   Uses unification to match the type of each :n:`@one_term`
+   (in :n:`@one_term_with_bindings`) with the goal
+   (to do :term:`backward reasoning`) or with a hypothesis (to do :term:`forward reasoning`).
+   Specifying multiple :n:`@one_term_with_bindings` is equivalent to
+   giving each one serially, left to right, as separate `apply` tactics.
 
-      The :tacn:`apply` tactic failed to match the conclusion of :token:`term`
-      and the current goal. You can help the :tacn:`apply` tactic by
+   The type of :n:`@one_term` contains zero or more :term:`premises <premise>`
+   followed by a :ref:`conclusion <conclusion_meaning_2>`,
+   i.e. it typically has the form :n:`{? forall @open_binders , } {* @term__premise -> } @term__conclusion`.
+   (The ``forall``\s may also be interleaved with the premises, but common usage is
+   to equivalently gather them at the beginning of the :n:`@one_term`.)
+   Backward reasoning with a :n:`@one_term` whose type is, for example, `A -> B`
+   replaces an as-yet unproven goal `B` with `A`.  Forward reasoning with the same
+   :n:`@one_term` changes a hypothesis with type `A` to `B`.  (Hypotheses are
+   considered proven propositions within the context that contains them.)
+
+   Unification creates a map from the variables in the type of :n:`@one_term`
+   to matching subterms of the goal or hypothesis.
+   The matching subterms are then substituted into the type of :n:`@one_term`
+   when generating the updated goal or hypothesis.  Unmatched premises become
+   new subgoals with similar substitutions.  If no match is found, the
+   tactic fails.
+
+   Setting :opt:`Debug` ``"tactic-unification"`` enables printing traces of
+   unification steps in tactic unification. Tactic unification is used in
+   tactics such as :tacn:`apply` and :tacn:`rewrite`.
+
+   The goal and hypothesis cases are described separately for clarity.
+
+.. _unused1:
+
+   .. the dummy ref name is needed to get correct formatting of the next line and "Without..."
+
+   :n:`@one_term` (inside :n:`@one_term_with_bindings`)
+     If :n:`@one_term` is an :n:`@ident`, it is the name of
+     a theorem, lemma or hypothesis whose type is given in the
+     theorem statement or shown in the context.  Otherwise it is a proof term whose
+     type can be displayed with :cmd:`Check` :n:`@one_term`.
+
+   Without :n:`@in_hyp_as` (the goal case)
+     If the goal matches all of the type of :n:`@one_term` (both premises and
+     the conclusion), the tactic proves the goal.
+     Otherwise, the tactic matches the goal against the conclusion of :n:`@one_term`
+     and, if possible, one or more premises (from right to left).
+     If the match succeeds, the tactic replaces the current goal with a subgoal for
+     each unmatched premise of the type of :n:`@one_term`.  This
+     :ref:`example <apply_backward>` matches only the conclusion, while
+     this :ref:`one <apply_backward_w_premises>` also matches a premise.
+
+     If the conclusion of the type of :token:`one_term` does not match the goal
+     *and* the conclusion is an inductive type with a single constructor,
+     then each premise in the constructor is recursively matched to the goal in
+     right-to-left order and the first match is used.  In this case, the tactic
+     will not match premises that would result in applying a lemma of the form
+     ``forall A, … -> A``.  See example :ref:`here <apply_with_iff>`.
+
+.. _apply_with_second_order_unification:
+
+     The goal case uses first-order unification with dependent types unless the
+     conclusion of the type of :token:`term` is of the form
+     :n:`P t__1 … t__n` with :n:`P` to be instantiated. In the latter case,
+     the behavior depends on the form of the target. If the target is of the form
+     :n:`Q u__1 … u__n` and the :n:`t__i` and :n:`u__i` unify,
+     then :n:`P` is instantiated into :n:`Q`. Otherwise, :tacn:`apply`
+     tries to define :n:`P` by abstracting over :n:`t__1 … t__n` in the target.
+     You can use :tacn:`pattern` to transform the target so that it
+     gets the form :n:`(fun x__1 … x__n => Q) u__1 … u__n`.  See the example
+     :ref:`here <example_apply_pattern>`.
+
+   :n:`@in_hyp_as` (the hypothesis case)
+     Proceeding from *right to left*, find the first premise of the type of
+     :n:`@one_term` that matches the specified hypothesis.  If a match
+     is found, the hypothesis is replaced with the conclusion of the type of
+     :n:`@one_term` (substituting for the unified variables)
+     and the tactic creates a new subgoal for each unmatched premise.
+     See the example :ref:`here <apply_forward>`.
+
+     If specified, :n:`as @simple_intropattern` is applied to the conclusion
+     of the type of :n:`@one_term`. In this case, the selected hypothesis
+     is left unchanged if its name is not reused.
+
+     If the type of :n:`@one_term` is an inductive type with a single constructor,
+     then each premise in the constructor is recursively matched to the conclusion
+     of the hypothesis in right-to-left order and the first match is used.
+     See example :ref:`here <apply_with_iff>`.
+
+     For the hypothesis case, matching is done only with first-order unification.
+
+   :n:`with @bindings` (in :n:`@one_term_with_bindings`)
+     Gives explicit instantiations for variables used in the type of :n:`@one_term`.
+     There are 3 cases:
+
+     - Bindings for variables can be provided in a list of :n:`@one_term`\s
+       in the left-to-right order of their first appearance in the type of
+       :n:`@one_term`.  For the goal case (:ref:`example <apply_with_binding_goal>`),
+       the list should give bindings only for variables that aren't bound by
+       unification.  However, in the hypothesis case
+       (:ref:`example <apply_with_binding_hyp>`),
+       the list must include bindings for *all* variables.
+
+     - Bindings for unbound variables can be given by name with the
+       :n:`(@ident := @term)` form.
+
+     - The form :n:`(@natural := @term)` binds additional variables by
+       unifying the Nth premise of the type of :n:`@one_term` with :n:`@term`.
+       (Use `1` for the first premise.)
+
+   .. exn:: Unable to unify @one_term with @one_term.
+
+      The :tacn:`apply` tactic failed to match the conclusion of :token:`one_term`.
+      You can help :tacn:`apply` by
       transforming your goal with the :tacn:`change` or :tacn:`pattern`
       tactics.
 
+   .. exn:: Unable to apply lemma of type "..." on hypothesis of type "...".
+
+      This happens if the conclusion of :token:`ident` does not match any of
+      the premises of the type of :token:`one_term`.
+
    .. exn:: Unable to find an instance for the variables {+ @ident}.
 
-      This occurs when some instantiations of the premises of :token:`term` are not deducible
+      This occurs when some instantiations of the premises of :token:`one_term` are not deducible
       from the unification. This is the case, for instance, when you want to apply a
-      transitivity property. In this case, you have to use one of the variants below:
+      transitivity property.  To fix this, add bindings for the :n:`@ident`\s using
+      to :n:`with @bindings` or use :tacn:`eapply`.
 
-   .. tacv:: apply @term with {+ @term}
+   .. todo: we should be listing things like "Debug tactic-unification" in
+      in the options index.  Maybe we should add ":debug:" as a new tag.
 
-      Provides apply with explicit instantiations for all dependent premises of the
-      type of term that do not occur in the conclusion and consequently cannot be
-      found by unification. Notice that the collection :n:`{+ @term}` must be given
-      according to the order of these dependent premises of the type of term.
+   .. flag:: Apply With Renaming
 
-      .. exn:: Not the right number of missing arguments.
-         :undocumented:
+      When on, this flag causes the names in the :n:`@term`'s type to be renamed for uniqueness.
+      By default no renaming is done.
 
-   .. tacv:: apply @term with @bindings
+      .. deprecated:: 8.15
 
-      This also provides apply with values for instantiating premises. Here, variables
-      are referred by names and non-dependent products by increasing numbers (see
-      :ref:`bindings`).
+         Provided for compatibility with versions prior to 8.15.
 
-      .. flag:: Apply With Renaming
+   .. _apply_backward:
+   .. example:: Backward reasoning in the goal with `apply`
 
-         When on, this flag causes the names in the :n:`@term`'s type to be renamed for uniqueness.
-         By default no renaming is done.
+      .. coqtop:: reset none
 
-         .. deprecated:: 8.15
+         Goal forall A B C: Prop, (A -> B -> C) -> C.
 
-            This flag is provided for compatibility with versions prior to 8.15.
+      .. coqtop:: out
 
-   .. tacv:: apply {+, @term}
+         intros A B C H.
 
-      This is a shortcut for :n:`apply @term__1; [.. | ... ; [ .. | apply @term__n] ... ]`,
-      i.e. for the successive applications of :n:`@term`:sub:`i+1` on the last subgoal
-      generated by :n:`apply @term__i` , starting from the application of :n:`@term__1`.
+      .. coqtop:: all
 
-   .. tacv:: eapply @term
-      :name: eapply
+         apply H.  (* replace goal with new goals for unmatched premises of H *)
 
-      The tactic :tacn:`eapply` behaves like :tacn:`apply` but it does not fail when no
-      instantiations are deducible for some variables in the premises. Rather, it
-      turns these variables into existential variables which are variables still to
-      instantiate (see :ref:`Existential-Variables`). The instantiation is
-      intended to be found later in the proof.
+   .. _apply_backward_w_premises:
+   .. example:: Backward reasoning in the goal with `apply` including a premise
 
-   .. tacv:: rapply @term
-      :name: rapply
+      .. coqtop:: reset none
 
-      The tactic :tacn:`rapply` behaves like :tacn:`eapply` but it
-      uses the proof engine of :tacn:`refine` for dealing with
-      existential variables, holes, and conversion problems.  This may
+         Goal forall A B C: Prop, (A -> B -> C) -> (B -> C).
+
+      .. coqtop:: out
+
+         intros A B C H.
+
+      .. coqtop:: all
+
+         apply H.  (* match on "B -> C", replace goal with "A" *)
+
+   .. _apply_forward:
+   .. example:: Forward reasoning in hypotheses with `apply`
+
+      .. coqtop:: reset none
+
+         Goal forall A B C: Prop, B -> (A -> B -> C) -> True.
+
+      .. coqtop:: out
+
+         intros A B C H0 H1.
+
+      .. coqtop:: all
+
+         apply H1 in H0.  (* change H0, create new goals for unmatched premises of H1 *)
+
+   .. _apply_with_binding_goal:
+   .. example:: Apply a theorem with a binding in a goal
+
+      :tacn:`apply` unifies the conclusion `n <= p` of the theorem
+      `le_trans : forall n m p, n <= m -> m <= p -> n <= p`
+      with the goal, assigning `x * x` and `y * y` in the goal
+      to, repectively, `n` and `p` in theorem (backward reasoning).
+      The `with` clause provides the binding for `m`:
+
+      .. coqtop:: reset in
+
+         Require Import PeanoNat.
+
+      .. coqtop:: none
+
+         Goal forall (x y : nat), x <= y -> x * x <= y * y.
+
+      .. coqtop:: out
+
+         intros x y H0.
+
+      .. coqtop:: all
+
+         apply Nat.le_trans with (y * x).
+
+   .. _apply_with_binding_hyp:
+   .. example:: Apply a theorem with a binding in a hypothesis
+
+      When applying a theorem in a hypothesis,
+      :tacn:`apply` unifies the hypothesis with one of the premises
+      of the theorem `le_trans : forall n m p, n <= m -> m <= p -> n <= p`.
+      In this case, it unifies with the first premise
+      (`n <= m`) and assigns `x * x` and `y * y` to,
+      respectively, `n` and `m` in the theorem (forward reasoning).
+      The  `with` clause provides the binding for `p`.
+
+      In addition, :tacn:`apply` in a hypothesis isn't as flexible as
+      :tacn:`apply` in the goal: for hypotheses, the unbound variable can be bound
+      by name (as shown) or values for all the variables can be given
+      positionally, i.e. `apply Nat.le_trans with (x * x) (y * y) (y * x) in H.`
+
+      .. coqtop:: reset in
+
+         Require Import PeanoNat.
+
+      .. coqtop:: none
+
+         Goal forall (x y : nat), x * x <= y * y -> x <= y.
+
+      .. coqtop:: out
+
+         intros x y H.
+
+      .. coqtop:: all
+
+         apply Nat.le_trans with (p := y * x) in H.
+
+   .. _apply_with_iff:
+   .. example:: Applying theorems with `<->`
+
+      .. Note: :n:`/\` and :n:`/\\` don't give the desired output.  A bug.
+
+      :n:`A <-> B` is defined as :n:`(A -> B) /\ (B -> A)`.
+      `/\\` represents an inductive type with a single constructor:
+      :n:`Inductive and (C D:Prop) : Prop := conj : C -> D -> D /\ C`.  The premises
+      of :n:`conj` are :n:`C` and :n:`D`.  The tactic uses the first matching
+      constructor premise in right-to-left order.
+
+      Theorems that use :n:`<->` to state a logical equivalence behave consistently
+      when applied to goals and hypotheses.
+
+      .. coqtop:: reset none
+
+         Goal forall (A B: Prop) (H1: A <-> B) (H: A), A.
+
+      .. coqtop:: out
+
+         intros A B H1 H.
+
+      .. coqtop:: all
+
+         apply H1.
+         apply H1 in H.
+
+   .. _example_apply_pattern:
+   .. example:: Special case of second-order unification in apply
+
+      Shows the use of the special case second-order unification described
+      :ref:`here <apply_with_second_order_unification>` (after "unless").
+
+      Note that we usually use :tacn:`induction` rather than applying ``nat_ind`` directly.
+
+      .. coqtop:: reset none
+
+         Goal forall x y, x + y = y + x.
+
+      .. coqtop:: out
+
+         intros.
+
+      .. coqtop:: all
+
+         Check nat_ind.
+
+         apply nat_ind.  (* Notice the goals are unprovable. *)
+         Show Proof.     (* apply has instantiated P with (eq (x + y))
+                        because the goal was (eq (x + y) (y + x))
+                        and n could be unified with (y + x) *)
+         (* However, we can use the pattern tactic to get the instantiation we want: *)
+
+         Undo.
+         pattern x.
+         apply nat_ind.
+         Show Proof.     (* apply has instantiated P with (fun n : nat => n + y = y + n)
+                        and the goal can be proven *)
+
+   .. tacn:: eapply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
+
+      Behaves like :tacn:`apply`, but creates
+      :ref:`existential variables <Existential-Variables>`
+      when Coq is unable to deduce instantiations for variables, rather than failing.
+
+   .. tacn:: rapply @one_term
+
+      Behaves like :tacn:`eapply` but
+      uses the proof engine of :tacn:`refine` to handle
+      existential variables, holes and conversion problems.  This may
       result in slightly different behavior regarding which conversion
-      problems are solvable.  However, like :tacn:`apply` but unlike
-      :tacn:`eapply`, :tacn:`rapply` will fail if there are any holes
-      which remain in :n:`@term` itself after typechecking and
-      typeclass resolution but before unification with the goal.  More
-      technically, :n:`@term` is first parsed as a
-      :production:`constr` rather than as a :production:`uconstr` or
-      :production:`open_constr` before being applied to the goal. Note
-      that :tacn:`rapply` prefers to instantiate as many hypotheses of
-      :n:`@term` as possible.  As a result, if it is possible to apply
-      :n:`@term` to arbitrarily many arguments without getting a type
+      problems are solvable.  However, :tacn:`rapply` fails if any holes remain
+      in :n:`@one_term` itself after typechecking and
+      typeclass resolution but before unification with the goal. Note
+      that :tacn:`rapply` tries to instantiate as many hypotheses of
+      :n:`@one_term` as possible.  As a result, if it is possible to apply
+      :n:`@one_term` to arbitrarily many arguments without getting a type
       error, :tacn:`rapply` will loop.
 
-      Note that you need to :n:`Require Import Coq.Program.Tactics` to
-      make use of :tacn:`rapply`.
+      Note that you must :n:`Require Import Coq.Program.Tactics` to
+      use :tacn:`rapply`.
 
-   .. tacv:: simple apply @term.
+   .. tacn:: simple apply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
 
-      This behaves like :tacn:`apply` but it reasons modulo conversion only on subterms
-      that contain no variables to instantiate. For instance, the following example
-      does not succeed because it would require the conversion of ``id ?foo`` and
-      :g:`O`.
+      Behaves like :tacn:`apply` but it reasons modulo conversion only on subterms
+      that contain no variables to instantiate and does not traverse tuples.
+      For instance, the following example fails because it would require converting
+      ``id ?foo`` and :g:`O`.
 
       .. _simple_apply_ex:
       .. example::
 
-         .. coqtop:: all
+         .. coqtop:: reset all
 
             Definition id (x : nat) := x.
             Parameter H : forall x y, id x = y.
@@ -805,25 +1026,21 @@ Applying theorems
             Fail simple apply H.
 
       Because it reasons modulo a limited amount of conversion, :tacn:`simple apply` fails
-      quicker than :tacn:`apply` and it is then well-suited for uses in user-defined
-      tactics that backtrack often. Moreover, it does not traverse tuples as :tacn:`apply`
-      does.
+      faster than :tacn:`apply` and it is thus well-suited for use in user-defined
+      tactics that backtrack often.
 
-   .. tacv:: {? simple} apply {+, @term {? with @bindings}}
-             {? simple} eapply {+, @term {? with @bindings}}
-      :name: simple apply; simple eapply
+   .. tacn:: simple eapply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
+      :undocumented:
 
-      This summarizes the different syntaxes for :tacn:`apply` and :tacn:`eapply`.
+   .. tacn:: lapply @one_term
 
-   .. tacv:: lapply @term
-      :name: lapply
+      Splits a :n:`@one_term` in the goal reducible to the form `A -> B`, replacing it
+      with two new subgoals `A` and `B -> G`.
+      ``lapply H`` (where `H` is `A -> B` and `B` does not start with a product)
+      is equivalent to :tacn:`cut` ``B. 2:apply H.``.
 
-      This tactic applies to any goal, say :g:`G`. The argument term has to be
-      well-formed in the current context, its type being reducible to a non-dependent
-      product :g:`A -> B` with :g:`B` possibly containing products. Then it generates
-      two subgoals :g:`B->G` and :g:`A`. Applying ``lapply H`` (where :g:`H` has type
-      :g:`A->B` and :g:`B` does not start with a product) does the same as giving the
-      sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
+      .. exn:: lapply needs a non-dependent product.
+         :undocumented:
 
 .. example::
 
@@ -832,13 +1049,9 @@ Applying theorems
    .. coqtop:: reset in
 
       Parameter R : nat -> nat -> Prop.
-
       Axiom Rtrans : forall x y z:nat, R x y -> R y z -> R x z.
-
       Parameters n m p : nat.
-
       Axiom Rnm : R n m.
-
       Axiom Rmp : R m p.
 
    Consider the goal ``(R n p)`` provable using the transitivity of ``R``:
@@ -880,7 +1093,7 @@ Applying theorems
 
       apply Rtrans with (1 := Rnm).
 
-   ... or the proof of ``(R y z)``.
+   … or the proof of ``(R y z)``.
 
    .. coqtop:: all restart
 
@@ -898,204 +1111,151 @@ Applying theorems
 
       apply Rmp.
 
-.. note::
-   When the conclusion of the type of the term to ``apply`` is an inductive
-   type isomorphic to a tuple type and ``apply`` looks recursively whether a
-   component of the tuple matches the goal, it excludes components whose
-   statement would result in applying an universal lemma of the form
-   ``forall A, ... -> A``. Excluding this kind of lemma can be avoided by
-   setting the following flag:
-
-.. tacn:: apply @term in @ident
-   :name: apply … in
-
-   This tactic applies to any goal. The argument :token:`term` is a term
-   well-formed in the local context and the argument :token:`ident` is an
-   hypothesis of the context.
-   The tactic :n:`apply @term in @ident` tries to match the conclusion of the
-   type of :token:`ident` against a non-dependent premise of the type
-   of :token:`term`, trying them from right to left. If it succeeds, the
-   statement of hypothesis :token:`ident` is replaced by the conclusion of
-   the type of :token:`term`. The tactic also returns as many subgoals as the
-   number of other non-dependent premises in the type of :token:`term` and of
-   the non-dependent premises of the type of :token:`ident`. If the conclusion
-   of the type of :token:`term` does not match the goal *and* the conclusion
-   is an inductive type isomorphic to a tuple type, then
-   the tuple is (recursively) decomposed and the first component of the tuple
-   of which a non-dependent premise matches the conclusion of the type of
-   :token:`ident`. Tuples are decomposed in a width-first left-to-right order
-   (for instance if the type of :g:`H1` is :g:`A <-> B` and the type of
-   :g:`H2` is :g:`A` then :g:`apply H1 in H2` transforms the type of :g:`H2`
-   into :g:`B`). The tactic :tacn:`apply` relies on first-order pattern matching
-   with dependent types.
-
-   .. exn:: Statement without assumptions.
-
-      This happens if the type of :token:`term` has no non-dependent premise.
-
-   .. exn:: Unable to apply.
-
-      This happens if the conclusion of :token:`ident` does not match any of
-      the non-dependent premises of the type of :token:`term`.
-
-   .. tacv:: apply {+, @term} in {+, @ident}
-
-      This applies each :token:`term` in sequence in each hypothesis :token:`ident`.
-
-   .. tacv:: apply {+, @term with @bindings} in {+, @ident}
-
-      This does the same but uses the bindings to instantiate
-      parameters of :token:`term` (see :ref:`bindings`).
-
-   .. tacv:: eapply {+, @term {? with @bindings } } in {+, @ident}
-
-      This works as :tacn:`apply … in` but turns unresolved bindings into
-      existential variables, if any, instead of failing.
-
-   .. tacv:: apply {+, @term {? with @bindings } } in {+, @ident {? as @simple_intropattern}}
-      :name: apply … in … as
-
-      This works as :tacn:`apply … in` but applying an associated
-      :token:`simple_intropattern` to each hypothesis :token:`ident`
-      that comes with such clause.
-
-   .. tacv:: simple apply @term in {+, @ident}
-
-      This behaves like :tacn:`apply … in` but it reasons modulo conversion
-      only on subterms that contain no variables to instantiate and does not
-      traverse tuples. See :ref:`the corresponding example <simple_apply_ex>`.
-
-   .. tacv:: {? simple} apply {+, @term {? with @bindings}} in {+, @ident {? as @simple_intropattern}}
-             {? simple} eapply {+, @term {? with @bindings}} in {+, @ident {? as @simple_intropattern}}
-
-      This summarizes the different syntactic variants of :n:`apply @term in {+, @ident}`
-      and :n:`eapply @term in {+, @ident}`.
-
-:opt:`Debug` ``"tactic-unification"`` enables printing traces of
-unification steps in tactic unification. Tactic unification is used in
-tactics such as :tacn:`apply` and :tacn:`rewrite`.
-
 .. _managingthelocalcontext:
 
 Managing the local context
 ------------------------------
 
-.. tacn:: intro
-   :name: intro
+.. tacn:: intro {? @ident } {? @where }
 
-   This tactic applies to a goal that is either a product or starts with a
-   let-binder. If the goal is a product, the tactic implements the "Lam" rule
-   given in :ref:`Typing-rules` [1]_. If the goal starts with a let-binder,
-   then the tactic implements a mix of the "Let" and "Conv".
+   Applies the :tacn:`hnf` tactic until it finds an item that can be
+   introduced in the context by removing certain constructs in the goal.
+   If no item is found, the tactic fails.  The name used is
+   :n:`@ident` (if specified) or from the construct, except that if the name from the
+   construct already exists in the :term:`local context`, Coq uses a fresh name
+   instead.  The constructs have these forms:
+   (See examples :ref:`here <intro_examples>`.)
 
-   If the current goal is a dependent product :g:`forall x:T, U`
-   (resp :g:`let x:=t in U`) then :tacn:`intro` puts :g:`x:T` (resp :g:`x:=t`)
-   in the local context. The new subgoal is :g:`U`.
+   :n:`forall x : T, @term`
+     `x : T` is a :term:`dependent premise`.  Removes `forall x : T,`
+     from the goal and adds `x : T` to the context.
 
-   If the goal is a non-dependent product :math:`T \rightarrow U`, then it
-   puts in the local context either :g:`Hn:T` (if :g:`T` is of type :g:`Set`
-   or :g:`Prop`) or :g:`Xn:T` (if the type of :g:`T` is :g:`Type`).
-   The optional index ``n`` is such that ``Hn`` or ``Xn`` is a fresh
-   identifier. In both cases, the new subgoal is :g:`U`.
+   :n:`A -> …`
+     `A` is a :term:`non-dependent premise`.  Removes `A ->` from
+     the goal and adds `H : A` to the context.
 
-   If the goal is an existential variable, :tacn:`intro` forces the resolution
-   of the existential variable into a dependent product :math:`\forall`\ :g:`x:?X, ?Y`,
-   puts :g:`x:?X` in the local context and leaves :g:`?Y` as a new subgoal
-   allowed to depend on :g:`x`.
+   :n:`let x := c, @term`
+     Removes `let x := c,` from the goal and adds `x := c : T` to the context.
 
-   The tactic :tacn:`intro` applies the tactic :tacn:`hnf`
-   until :tacn:`intro` can be applied or the goal is not head-reducible.
+.. _warn_should_give_name_in_intro:
+
+   We recommend always specifying :n:`@ident` so that the names of hypotheses don't
+   change as the proof is updated, making your proof easier to maintain.  For example,
+   if H exists in the context, Coq will consider using `H0`, `H1`, ... until it finds an
+   unused name.  Modifications to a proof can change automatically assigned names
+   that subsequent tactics likely refer to, making the proofs harder to maintain.  The
+   :flag:`Mangle Names` flag gives some control over how fresh names are generated (see
+   :ref:`proof-maintenance`).
+
+   Note that :tacn:`intros` lets you introduce multiple items into
+   the context with a single tactic.
+
+   :n:`@ident`
+     The name to give to the introduced item.  If not given, Coq uses the
+     variable name from the :n:`forall` or `H` for premises.
+     If a name such as `H` is already in use, Coq will consider using `H0`,
+     `H1`, ... until it finds a fresh name.
+
+     .. note::
+
+        If a hypothesis name hides the base name of a global constant then
+        the latter can still be referred to by a qualified name
+        (see :ref:`Qualified-names`).
+
+   :n:`@where`
+     Indicates where to place the introduced hypothesis: at the top or bottom
+     of the context or before or after another specified hypothesis.  The default
+     is `at bottom`.
+
+   .. exn:: @ident is already used.
+
+      The provided :n:`@ident` is already used in the :term:`local context`.
 
    .. exn:: No product even after head-reduction.
-      :undocumented:
 
-   .. tacv:: intro @ident
+      There is nothing to introduce even after :tacn:`hnf` has been completely applied.
 
-      This applies :tacn:`intro` but forces :token:`ident` to be the name of
-      the introduced hypothesis.
+   .. _intro_examples:
+   .. example:: `intro` and `intros`
 
-      .. exn:: @ident is already used.
-         :undocumented:
+      .. coqtop:: reset out
 
-   .. note::
+         Goal forall m n, m < n -> (let x := 0 in True).
 
-      If a name used by intro hides the base name of a global constant then
-      the latter can still be referred to by a qualified name
-      (see :ref:`Qualified-names`).
+      .. coqtop:: all
 
-   .. tacv:: intros
-      :name: intros
+         intro m.
+         intro n.
+         intro H.
+         intro x.
 
-      This repeats :tacn:`intro` until it meets the head-constant. It never
-      reduces head-constants and it never fails.
+      This single `intros` tactic is equivalent to the 4 preceding `intro` tactics:
 
-   .. tacv:: intros {+ @ident}.
+      .. coqtop:: reset out
 
-      This is equivalent to the composed tactic :n:`intro @ident; ... ; intro @ident`.
+         Goal forall m n, m < n -> (let x := 0 in True).
 
-   .. tacv:: intros until @ident
+      .. coqtop:: all
 
-      This repeats intro until it meets a premise of the goal having the
-      form :n:`(@ident : @type)` and discharges the variable
-      named :token:`ident` of the current goal.
-
-      .. exn:: No such hypothesis in current goal.
-         :undocumented:
-
-   .. tacv:: intros until @natural
-
-      This repeats :tacn:`intro` until the :token:`natural`\-th non-dependent
-      product.
-
-      .. example::
-
-         On the subgoal :g:`forall x y : nat, x = y -> y = x` the
-         tactic :n:`intros until 1` is equivalent to :n:`intros x y H`,
-         as :g:`x = y -> y = x` is the first non-dependent product.
-
-         On the subgoal :g:`forall x y z : nat, x = y -> y = x` the
-         tactic :n:`intros until 1` is equivalent to :n:`intros x y z`
-         as the product on :g:`z` can be rewritten as a non-dependent
-         product: :g:`forall x y : nat, nat -> x = y -> y = x`.
-
-      .. exn:: No such hypothesis in current goal.
-
-         This happens when :token:`natural` is 0 or is greater than the number of
-         non-dependent products of the goal.
-
-   .. tacv:: intro {? @ident__1 } after @ident__2
-             intro {? @ident__1 } before @ident__2
-             intro {? @ident__1 } at top
-             intro {? @ident__1 } at bottom
-
-      These tactics apply :n:`intro {? @ident__1}` and move the freshly
-      introduced hypothesis respectively after the hypothesis :n:`@ident__2`,
-      before the hypothesis :n:`@ident__2`, at the top of the local context,
-      or at the bottom of the local context. All hypotheses on which the new
-      hypothesis depends are moved too so as to respect the order of
-      dependencies between hypotheses. It is equivalent to :n:`intro {? @ident__1 }`
-      followed by the appropriate call to :tacn:`move`,
-      :tacn:`move … before …`, :tacn:`move … at top`,
-      or :tacn:`move … at bottom`.
-
-      .. note::
-
-         :n:`intro at bottom` is a synonym for :n:`intro` with no argument.
-
-      .. exn:: No such hypothesis: @ident.
-         :undocumented:
+         intros m n H x.
 
 .. tacn:: intros {* @intropattern }
-   :name: intros …
+          intros until {| @ident | @natural }
 
-   Introduces one or more variables or hypotheses from the goal by matching the
-   intro patterns.  See the description in :ref:`intropatterns`.
+      The first form introduces zero or more items into the context from the
+      constructs listed in :tacn:`intro`.  If :n:`@intropattern` is not specified,
+      the tactic introduces items until it reaches the :term:`head constant`;
+      it never fails and may leave the context unchanged.
+
+      If :n:`@intropattern` is specified, the :tacn:`hnf` tactic is applied until
+      it finds an item that can be introduced into the context.
+      The :n:`@intropattern` is
+      often just a list of :n:`@ident`\s, but other forms can also be specified
+      in order to, for example, introduce all :term:`dependent premises <dependent premise>` (`*`);
+      introduce all dependent and :term:`non-dependent premises <non-dependent premise>` (`**`);
+      split terms such as `A /\\ B` (`[]`) and pick a fresh name with a given prefix (`?X`).
+      See :ref:`intropatterns`.
+
+      The second form repeats :n:`intro` until it has introduced a :term:`dependent premise`
+      with the name :n:`@ident` or has introduced
+      :n:`@natural` :term:`premises <premise>` (like ``A`` in ``A -> B``).
+
+      We recommend explicitly naming items with :tacn:`intros` instead of using
+      :n:`intros until @natural`.  See the explanation :ref:`here <warn_should_give_name_in_intro>`.
+
+      .. example:: intros until
+
+         .. coqtop:: reset out
+
+            Goal forall x y : nat, x = y -> y = x.
+
+         .. coqtop:: all
+
+            intros until y.
+
+         Or:
+
+         .. coqtop:: reset out
+
+            Goal forall x y : nat, x = y -> y = x.
+
+         .. coqtop:: all
+
+            intros until 1.
+
+      .. exn:: No quantified hypothesis named @ident in current goal even after head-reduction.
+
+         The :n:`@ident` in the ``until`` clause doesn't appear as a :term:`dependent premise`.
+
+      .. exn:: No @natural-th non dependent hypothesis in current goal even after head-reduction.
+
+         There are fewer than :n:`@natural` premises in the goal.
 
 .. tacn:: eintros {* @intropattern }
-   :name: eintros
 
-   Works just like :tacn:`intros …` except that it creates existential variables
-   for any unresolved variables rather than failing.
+   Works just like :tacn:`intros` except that it creates existential variables
+   for any unresolved variables rather than failing.  Typically this happens when
+   using a ``%`` intropattern (see :n:`@simple_intropattern`).
 
 .. tacn:: clear @ident
    :name: clear
@@ -1736,6 +1896,4 @@ Performance-oriented tactic variants
               native_cast_no_check I.
             Fail Qed.
 
-.. [1] Actually, only the second subgoal will be generated since the
-  other one can be automatically checked.
 .. [2] This corresponds to the cut rule of sequent calculus.

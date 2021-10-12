@@ -32,8 +32,8 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    See :ref:`Terminating an interactive module or module type definition <terminating_module>`
    for a description of its use with modules.
 
-   After closing the
-   section, the local declarations (variables and local definitions, see :cmd:`Variable`) are
+   After closing the section, the section-local declarations (variables and
+   :gdef:`section-local definitions <section-local definition>`, see :cmd:`Variable`) are
    *discharged*, meaning that they stop being visible and that all global
    objects defined in the section are generalized with respect to the
    variables and local definitions they each depended on in the section.

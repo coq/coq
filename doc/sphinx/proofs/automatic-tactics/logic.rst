@@ -97,6 +97,9 @@ Solvers for logic and equality
       This :term:`flag` controls whether :tacn:`intuition` unfolds inner negations which do not need
       to be unfolded. It is on by default.
 
+.. tacn:: gintuition {? @ltac_expr }
+   :undocumented:
+
 .. tacn:: rtauto
 
    Solves propositional tautologies similarly to

@@ -3094,9 +3094,9 @@ A :token:`r_item` can be one of the following.
   other rewrite operations specified by the list of :token:`r_item`.
 + A *folding/unfolding* :token:`r_item`. The tactic
   ``rewrite /term`` unfolds the
-  head constant of ``term`` in every occurrence of the first matching of
+  :term:`head constant` of ``term`` in every occurrence of the first matching of
   ``term`` in the goal. In particular, if ``my_def`` is a (local or global)
-  defined constant, the tactic ``rewrite /my_def.`` is analogous to
+  defined constant, the tactic ``rewrite /my_def.`` is analogous to:
   ``unfold my_def``.
   Conversely, ``rewrite -/my_def.`` is equivalent to ``fold my_def``.
   When an unfold :token:`r_item` is combined with a
@@ -4446,7 +4446,7 @@ Contextual patterns in rewrite
 
      rewrite [_.+1 in X in f _ X](addnC x.+1).
 
-  The explicit redex ``_.+1`` is important, since its head constant ``S``
+  The explicit redex ``_.+1`` is important, since its :term:`head constant` ``S``
   differs from the head constant inferred from
   ``(addnC x.+1)`` (that is ``+``).
   Moreover, the pattern ``f _ X`` is important to rule out

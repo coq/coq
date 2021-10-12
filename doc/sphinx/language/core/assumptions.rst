@@ -90,7 +90,9 @@ These terms are also useful:
 
 * `n : nat` is a :gdef:`dependent premise` of `forall n:nat, n + 0 = n` because
   `n` appears both in the binder of the `forall` and in the quantified statement
-  `n + 0 = n`.
+  `n + 0 = n`.  Note that if `n` isn't used in the statement, Coq considers it
+  a non-dependent premise.  Similarly, :n:`let n := ... in @term` is a
+  dependent premise only if `n` is used in :n:`@term`.
 
 * `A` and `B` are :gdef:`non-dependent premises <non-dependent premise>`
   (or, often, just ":gdef:`premises <premise>`") of `A -> B -> C` because they don't appear

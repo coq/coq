@@ -129,7 +129,8 @@ or a definition giving the type :math:`T` to :math:`x` in :math:`Γ`.
 If :math:`Γ` defines :math:`x:=t:T`, we also write :math:`(x:=t:T) ∈ Γ`.
 For the rest of the chapter, :math:`Γ::(y:T)` denotes the local context :math:`Γ`
 enriched with the local assumption :math:`y:T`. Similarly, :math:`Γ::(y:=t:T)` denotes
-the local context :math:`Γ` enriched with the local definition :math:`(y:=t:T)`. The
+the local context :math:`Γ` enriched with the :term:`local definition <context-local definition>`
+:math:`(y:=t:T)`. The
 notation :math:`[]` denotes the empty local context. Writing :math:`Γ_1 ; Γ_2` means
 concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2`.
 

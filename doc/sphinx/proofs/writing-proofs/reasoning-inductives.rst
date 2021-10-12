@@ -126,7 +126,7 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
 
    .. prodn::
       induction_clause ::= @induction_arg {? as @or_and_intropattern } {? eqn : @naming_intropattern } {? @occurrences }
-      induction_arg ::= @one_term_with_bindings
+      induction_arg ::= {? > } @one_term_with_bindings
       | @natural
 
    Performs case analysis by generating a subgoal for each constructor of the
@@ -146,7 +146,7 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
      + If :n:`@one_term` (in :n:`@one_term_with_bindings`)
        is an identifier :n:`@ident`:
 
-       + If :n:`@ident` denotes a quantified variable of the
+       + If :n:`@ident` denotes a :n:`forall` variable in the
          goal, then :n:`destruct @ident` behaves like
          :tacn:`intros` :n:`until @ident; destruct @ident`.
 
@@ -214,8 +214,8 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
    .. tacn:: edestruct {+, @induction_clause } {? @induction_principle }
 
       If the type of :n:`@one_term` (in :n:`@induction_arg`) has
-      :term:`dependent premises <dependent premise>` or dependent premises
-      whose values are not inferrable from the :n:`with @bindings` clause,
+      :term:`dependent premises <dependent premise>`
+      whose values can't be inferred from the :n:`with @bindings` clause,
       :n:`edestruct` turns them into existential variables to be resolved later on.
 
 .. tacn:: case {+, @induction_clause } {? @induction_principle }
@@ -227,8 +227,8 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
    .. tacn:: ecase {+, @induction_clause } {? @induction_principle }
 
       If the type of :n:`@one_term` (in :n:`@induction_arg`) has
-      :term:`dependent premises <dependent premise>` or dependent premises
-      whose values are not inferrable from the :n:`with @bindings` clause,
+      :term:`dependent premises <dependent premise>`
+      whose values can't be inferred from the :n:`with @bindings` clause,
       :n:`ecase` turns them into existential variables to be resolved later on.
 
    .. tacn:: case_eq @one_term
@@ -245,7 +245,7 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
 .. tacn:: simple destruct {| @ident | @natural }
 
    Equivalent to :tacn:`intros` :n:`until {| @ident | @natural }; case @ident`
-   where :n:`@ident` is a quantified variable of the goal and otherwise fails.
+   where :n:`@ident` is a :n:`forall` variable in the goal and otherwise fails.
 
 .. tacn:: dependent destruction @ident {? generalizing {+ @ident } } {? using @one_term }
    :undocumented:
@@ -261,7 +261,7 @@ Induction
    .. insertprodn induction_principle induction_principle
 
    .. prodn::
-      induction_principle ::= using @one_term {? with @bindings } {? @occurrences }
+      induction_principle ::= using @one_term_with_bindings {? @occurrences }
 
    Applies an :term:`induction principle` to generate a subgoal for
    each constructor of an inductive type.
@@ -342,11 +342,11 @@ Induction
    .. tacn:: einduction {+, @induction_clause } {? @induction_principle }
 
       Behaves like :tacn:`induction` except that it does not fail if
-      some dependent premise of the type of :n:`@one_term` is not inferrable. Instead,
+      some :term:`dependent premise` of the type of :n:`@one_term` can't be inferred. Instead,
       the unresolved premises are posed as existential variables to be inferred
       later, in the same way as :tacn:`eapply` does.
 
-.. tacn:: elim @one_term_with_bindings {? using @one_term {? with @bindings } }
+.. tacn:: elim {? > } @one_term_with_bindings {? using @one_term_with_bindings }
 
    An older, more basic induction tactic.  Unlike :tacn:`induction`, ``elim`` only
    modifies the goal; it does not modify the :term:`local context`.  We recommend
@@ -356,13 +356,13 @@ Induction
      Explicitly gives instances to the premises of the type of :n:`@one_term`
      (see :ref:`bindings`).
 
-   :n:`{? using @one_term {? with @bindings } }`
+   :n:`{? using @one_term_with_bindings }`
      Allows explicitly giving an induction principle :n:`@one_term` that
      is not the standard one for the underlying inductive type of :n:`@one_term`. The
      :n:`@bindings` clause allows instantiating premises of the type of
      :n:`@one_term`.
 
-   .. tacn:: eelim @one_term_with_bindings {? using @one_term {? with @bindings } }
+   .. tacn:: eelim {? > } @one_term_with_bindings {? using @one_term_with_bindings }
 
       If the type of :n:`@one_term` has dependent premises, this turns them into
       existential variables to be resolved later on.
@@ -379,7 +379,7 @@ Induction
 .. tacn:: simple induction {| @ident | @natural }
 
    Behaves like :n:`intros until {| @ident | @natural }; elim @ident` when
-   :n:`@ident` is a quantified variable of the goal.
+   :n:`@ident` is a :n:`forall` variable in the goal.
 
 .. tacn:: dependent induction @ident {? {| generalizing | in } {+ @ident } } {? using @one_term }
 
