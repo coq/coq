@@ -82,7 +82,7 @@ let with_fail ~st f =
   Vernacstate.unfreeze_interp_state st;
   match res with
   | Error () ->
-    CErrors.user_err ~hdr:"Fail" (Pp.str "The command has not failed!")
+    CErrors.user_err (Pp.str "The command has not failed!")
   | Ok msg ->
     if not !Flags.quiet || !test_mode
     then Feedback.msg_notice Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg)

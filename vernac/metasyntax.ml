@@ -217,7 +217,7 @@ let analyze_notation_tokens ~onlyprinting ~infix entry df =
   (if not onlyprinting then
     match List.duplicates Id.equal (mainvars @ List.map snd recvars) with
     | id :: _ ->
-        user_err ~hdr:"Metasyntax.get_notation_vars"
+        user_err
           (str "Variable " ++ Id.print id ++ str " occurs more than once.")
     | _ -> ());
   let isnumeral = is_numeral_in_constr entry symbols in
@@ -255,7 +255,7 @@ let check_no_syntax_modifiers_for_numeral = function
   | l -> List.iter (function {CAst.loc} -> warn_unexpected_primitive_token_modifier ?loc ()) l
 
 let error_not_same_scope x y =
-  user_err ~hdr:"Metasyntax.error_not_name_scope"
+  user_err
     (str "Variables " ++ Id.print x ++ str " and " ++ Id.print y ++ str " must be in the same scope.")
 
 (**********************************************************************)
@@ -908,7 +908,7 @@ let interp_modifiers entry modl = let open NotationMods in
     | SetEntryType (s,typ) ->
         let id = Id.of_string s in
         if Id.List.mem_assoc id acc.etyps then
-          user_err ?loc ~hdr:"Metasyntax.interp_modifiers"
+          user_err ?loc
             (str s ++ str " is already assigned to an entry or constr level.");
         interp subtyps { acc with etyps = (id,typ) :: acc.etyps; } l
     | SetItemLevel ([],bko,n) ->
@@ -916,7 +916,7 @@ let interp_modifiers entry modl = let open NotationMods in
     | SetItemLevel (s::idl,bko,n) ->
         let id = Id.of_string s in
         if Id.List.mem_assoc id acc.etyps then
-          user_err ?loc ~hdr:"Metasyntax.interp_modifiers"
+          user_err ?loc
             (str s ++ str " is already assigned to an entry or constr level.");
         interp ((id,bko,n)::subtyps) acc ((CAst.make ?loc @@ SetItemLevel (idl,bko,n))::l)
     | SetLevel n ->
@@ -960,7 +960,7 @@ let interp_modifiers entry modl = let open NotationMods in
 let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
   match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
-  | (x,_)::_ -> user_err ~hdr:"Metasyntax.check_useless_entry_types"
+  | (x,_)::_ -> user_err
                   (Id.print x ++ str " is unbound in the notation.")
   | _ -> ()
 

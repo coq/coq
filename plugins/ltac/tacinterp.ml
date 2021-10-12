@@ -389,7 +389,7 @@ let interp_intro_pattern_naming_var loc ist env sigma id =
 let interp_int ist ({loc;v=id} as locid) =
   try try_interp_ltac_var coerce_to_int ist None locid
   with Not_found ->
-    user_err ?loc ~hdr:"interp_int"
+    user_err ?loc
      (str "Unbound variable "  ++ Id.print id ++ str".")
 
 let interp_int_or_var ist = function
@@ -775,7 +775,7 @@ let interp_may_eval f ist env sigma = function
         Typing.solve_evars env sigma (EConstr.of_constr c)
       with
         | Not_found ->
-            user_err ?loc ~hdr:"interp_may_eval"
+            user_err ?loc
             (str "Unbound context identifier" ++ Id.print s ++ str"."))
   | ConstrTypeOf c ->
       let (sigma,c_interp) = f ist env sigma c in
@@ -980,7 +980,7 @@ let interp_destruction_arg ist gl arg =
           (keep, ElimOnConstr begin fun env sigma ->
           try (sigma, (constr_of_id env id', NoBindings))
           with Not_found ->
-            user_err ?loc  ~hdr:"interp_destruction_arg" (
+            user_err ?loc  (
             Id.print id ++ strbrk " binds to " ++ Id.print id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
           end)
       in
@@ -1046,7 +1046,7 @@ let read_pattern lfun ist env sigma = function
 (* Reads the hypotheses of a Match Context rule *)
 let cons_and_check_name id l =
   if Id.List.mem id l then
-    user_err ~hdr:"read_match_goal_hyps" (
+    user_err (
       str "Hypothesis pattern-matching variable " ++ Id.print id ++
       str " used twice in the same pattern.")
   else id::l

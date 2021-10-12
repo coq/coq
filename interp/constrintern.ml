@@ -1100,7 +1100,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
     else gvar (loc,id) us
   else if Id.Set.mem id ltacvars.ltac_bound then
     (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
-    user_err ?loc ~hdr:"intern_var"
+    user_err ?loc
      (str "variable " ++ Id.print id ++ str " should be bound to a term.")
   else
     (* Is [id] a goal or section variable *)
@@ -1330,7 +1330,7 @@ let warn_nonprimitive_projection =
     Pp.(fun f -> pr_qualid f ++ str " used as a primitive projection but is not one.")
 
 let error_nonprojection_syntax ?loc qid =
-  CErrors.user_err ?loc ~hdr:"nonprojection-syntax" Pp.(pr_qualid qid ++ str" is not a projection.")
+  CErrors.user_err ?loc Pp.(pr_qualid qid ++ str" is not a projection.")
 
 let check_applied_projection isproj realref qid =
   if isproj then
@@ -1497,10 +1497,10 @@ let find_constructor_head ?loc ref =
   | ConstructRef cstr -> cstr
   | IndRef _ ->
     let error = str "There is an inductive name deep in a \"in\" clause." in
-    user_err ?loc ~hdr:"find_constructor" error
+    user_err ?loc error
   | ConstRef _ | VarRef _ ->
     let error = str "This reference is not a constructor." in
-    user_err ?loc ~hdr:"find_constructor" error
+    user_err ?loc error
 
 let find_inductive_head ?loc ref =
   let open GlobRef in
@@ -2173,7 +2173,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
        in
        begin
           match fields with
-            | None -> user_err ?loc ~hdr:"intern" (str"No constructor inference.")
+            | None -> user_err ?loc (str"No constructor inference.")
             | Some (n, constrname, args) ->
                 let args_scopes = find_arguments_scope constrname in
                 let pars = List.make n (CAst.make ?loc @@ CHole (None, IntroAnonymous, None)) in
@@ -2799,7 +2799,7 @@ let interp_univ_constraints env evd cstrs =
         evd, cstrs'
     with Univ.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
-      CErrors.user_err ~hdr:"interp_constraint" ~info
+      CErrors.user_err ~info
         (Univ.explain_universe_inconsistency (Termops.pr_evd_level evd) e)
   in
   List.fold_left interp (evd,Univ.Constraints.empty) cstrs

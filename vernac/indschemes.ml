@@ -173,7 +173,7 @@ let try_declare_scheme what f internal names kn =
   in
   match msg with
   | None -> ()
-  | Some msg -> Exninfo.iraise (UserError (None, msg), snd e)
+  | Some msg -> Exninfo.iraise (UserError msg, snd e)
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in

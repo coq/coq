@@ -101,7 +101,7 @@ let check_anonymous_type ind =
 let error_parameters_must_be_named bk {CAst.loc; v=name} =
   match bk, name with
   | Default _, Anonymous ->
-    CErrors.user_err ?loc ~hdr:"record" (str "Record parameters must be named")
+    CErrors.user_err ?loc (str "Record parameters must be named")
   | _ -> ()
 
 let check_parameters_must_be_named = function
@@ -285,7 +285,7 @@ let warning_or_error ~info coe indsp err =
           | _ ->
               (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
   in
-  if coe then user_err ~hdr:"structure" ~info st;
+  if coe then user_err ~info st;
   warn_cannot_define_projection (hov 0 st)
 
 type field_status =
@@ -798,7 +798,7 @@ let declare_existing_class g =
     match g with
     | GlobRef.ConstRef x -> add_constant_class env sigma x
     | GlobRef.IndRef x -> add_inductive_class env sigma x
-    | _ -> user_err ~hdr:"declare_existing_class"
+    | _ -> user_err
              (Pp.str"Unsupported class type, only constants and inductives are allowed")
 
 open Vernacexpr

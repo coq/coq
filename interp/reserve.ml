@@ -82,12 +82,12 @@ let add_reserved_type (id,t) =
 
 let declare_reserved_type_binding {CAst.loc;v=id} t =
   if not (Id.equal id (root_of_id id)) then
-    user_err ?loc ~hdr:"declare_reserved_type"
+    user_err ?loc
       ((Id.print id ++ str
       " is not reservable: it must have no trailing digits, quote, or _"));
   begin try
     let _ = Id.Map.find id !reserve_table in
-    user_err ?loc ~hdr:"declare_reserved_type"
+    user_err ?loc
     ((Id.print id++str" is already bound to a type"))
   with Not_found -> () end;
   add_reserved_type (id,t)

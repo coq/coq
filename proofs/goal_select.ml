@@ -70,9 +70,8 @@ let tclSELECT ?nosuchgoal g tac = match g with
     if n == 1 then tac
     else
       let e = CErrors.UserError
-          (None,
-           Pp.(str "Expected a single focused goal but " ++
-               int n ++ str " goals are focused."))
+          Pp.(str "Expected a single focused goal but " ++
+              int n ++ str " goals are focused.")
       in
       let info = Exninfo.reify () in
       Proofview.tclZERO ~info e

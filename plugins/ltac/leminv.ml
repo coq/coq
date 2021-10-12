@@ -187,7 +187,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   let ind =
     try find_rectype env sigma i
     with Not_found ->
-      user_err ~hdr:"inversion_scheme" (no_inductive_inconstr env sigma i)
+      user_err (no_inductive_inconstr env sigma i)
   in
   let (invEnv,invGoal) =
     compute_first_inversion_scheme env sigma ind sort dep_option
@@ -197,7 +197,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
        (global_vars env sigma invGoal)
        (ids_of_named_context (named_context invEnv)));
   (*
-    user_err ~hdr:"lemma_inversion"
+    user_err
     (str"Computed inversion goal was not closed in initial signature.");
   *)
   let pf = Proof.start ~name ~poly (Evd.from_ctx (evar_universe_context sigma)) [invEnv,invGoal] in
@@ -264,8 +264,8 @@ let lemInv id c =
     | NoSuchBinding ->
         user_err
           (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
-    | UserError (a,b) ->
-         user_err ~hdr:"LemInv"
+    | UserError _ ->
+         user_err
            (str "Cannot refine current goal with the lemma " ++
               pr_leconstr_env (pf_env gls) (project gls) c)
   end

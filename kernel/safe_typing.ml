@@ -1297,7 +1297,7 @@ let export ~output_native_objects senv dir =
 let import lib cst vodigest senv =
   check_required senv.required lib.comp_deps;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
-    CErrors.user_err ~hdr:"Safe_typing.import"
+    CErrors.user_err
       Pp.(strbrk "Cannot load a library with the same name as the current one ("
           ++ DirPath.print lib.comp_name ++ str").");
   let mp = MPfile lib.comp_name in
@@ -1419,7 +1419,7 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
   let (mb,ob as spec) = Inductive.lookup_mind_specif env ind in
   let check_if b msg =
     if not b then
-      CErrors.user_err ~hdr:"check_register_ind" msg in
+      CErrors.user_err msg in
   check_if (Int.equal (Array.length mb.mind_packets) 1) Pp.(str "A non mutual inductive is expected");
   let is_monomorphic = function Monomorphic -> true | Polymorphic _ -> false in
   check_if (is_monomorphic mb.mind_universes) Pp.(str "A universe monomorphic inductive type is expected");

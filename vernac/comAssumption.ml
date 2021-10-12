@@ -111,7 +111,7 @@ let declare_assumptions ~poly ~scope ~kind univs nl l =
 
 let maybe_error_many_udecls = function
   | ({CAst.loc;v=id}, Some _) ->
-    user_err ?loc ~hdr:"many_universe_declarations"
+    user_err ?loc
       Pp.(str "When declaring multiple axioms in one command, " ++
           str "only the first is allowed a universe binder " ++
           str "(which will be shared by the whole block).")

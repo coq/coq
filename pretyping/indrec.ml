@@ -646,7 +646,7 @@ let lookup_eliminator env ind_sp s =
     (* using short name (e.g. for "eq_rec") *)
     try Nametab.locate (qualid_of_ident id)
     with Not_found ->
-      user_err ~hdr:"default_elim"
+      user_err
         (strbrk "Cannot find the elimination combinator " ++
          Id.print id ++ strbrk ", the elimination of the inductive definition " ++
          Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind_sp) ++

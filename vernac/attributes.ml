@@ -182,7 +182,7 @@ let qualify_attribute qual (parser:'a attribute) : 'a attribute =
       | (key,attv) :: rem when String.equal key qual ->
         (match attv with
          | VernacFlagEmpty | VernacFlagLeaf _ ->
-           CErrors.user_err ~hdr:"qualified_attribute"
+           CErrors.user_err
              Pp.(str "Malformed attribute " ++ str qual ++ str ": attribute list expected.")
          | VernacFlagList atts ->
            extract extra (atts::qualified) rem)

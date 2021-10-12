@@ -34,7 +34,7 @@ let add_syntax_constant kn syndef =
 
 let load_syntax_constant i ((sp,kn),(_local,syndef)) =
   if Nametab.exists_cci sp then
-    user_err ~hdr:"cache_syntax_constant"
+    user_err
       (Id.print (basename sp) ++ str " already exists");
   add_syntax_constant kn syndef;
   Nametab.push_syndef (Nametab.Until i) sp kn

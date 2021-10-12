@@ -151,7 +151,7 @@ let algebraics uctx = uctx.univ_algebraic
 
 let add_names ?loc s l (names, names_rev) =
   if UNameMap.mem s names
-  then user_err ?loc ~hdr:"add_names"
+  then user_err ?loc
       Pp.(str "Universe " ++ Names.Id.print s ++ str" already bound.");
   (UNameMap.add s l names, Level.Map.add l { uname = Some s; uloc = loc } names_rev)
 
@@ -384,7 +384,7 @@ let error_unbound_universes left uctx =
       info.uloc
     with Not_found -> None
   in
-  user_err ?loc ~hdr:"universe_context"
+  user_err ?loc
     ((str(CString.plural n "Universe") ++ spc () ++
       Level.Set.pr (pr_uctx_level uctx) left ++
       spc () ++ str (CString.conjugate_verb_to_be n) ++
@@ -427,7 +427,7 @@ let check_implication uctx cstrs cstrs' =
   let grext = UGraph.merge_constraints cstrs gr in
   let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
   if Constraints.is_empty cstrs' then ()
-  else CErrors.user_err ~hdr:"check_univ_decl"
+  else CErrors.user_err
       (str "Universe constraints are not implied by the ones declared: " ++
        pr_constraints (pr_uctx_level uctx) cstrs')
 

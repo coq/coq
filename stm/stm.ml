@@ -1168,7 +1168,7 @@ end = struct (* {{{ *)
       | _ -> anomaly Pp.(str "incorrect VtMeta classification")
     with
     | Not_found ->
-       CErrors.user_err ~hdr:"undo_vernac_classifier"
+       CErrors.user_err
         Pp.(str "Cannot undo")
 
   let get_prev_proof ~doc id =
@@ -1250,7 +1250,7 @@ let proof_block_delimiters = ref []
 
 let register_proof_block_delimiter name static dynamic =
   if List.mem_assoc name !proof_block_delimiters then
-    CErrors.user_err ~hdr:"STM" Pp.(str "Duplicate block delimiter " ++ str name);
+    CErrors.user_err Pp.(str "Duplicate block delimiter " ++ str name);
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
@@ -1285,7 +1285,7 @@ let detect_proof_block id name =
           VCS.create_proof_block decl name
       end
     with Not_found ->
-      CErrors.user_err ~hdr:"STM"
+      CErrors.user_err
         Pp.(str "Unknown proof block delimiter " ++ str name)
   )
 (****************************** THE SCHEDULER *********************************)
@@ -2064,7 +2064,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
            | _ -> assert false
         end
       with Not_found ->
-          CErrors.user_err ~hdr:"STM"
+          CErrors.user_err
             (str "Unknown proof block delimiter " ++ str name)
   in
 
@@ -2507,7 +2507,7 @@ let handle_failure (e, info) vcs =
 let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
   let doc = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
-    CErrors.user_err ~hdr:"stm" (str"Cannot dump a vio with open proofs");
+    CErrors.user_err (str"Cannot dump a vio with open proofs");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,
   below, [snapshot] gets computed even if [create_vos] is true. *)
   let tasks = Slaves.dump_snapshot() in
@@ -2598,7 +2598,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
            This error probably means that you forgot to close the last \"Proof.\" with \"Qed.\" or \"Defined.\". \
            If you really intended to use nested proofs, you can do so by turning the \"Nested Proofs Allowed\" flag on."
            |> Pp.strbrk
-           |> (fun s -> (UserError (None, s), Exninfo.null))
+           |> (fun s -> (UserError s, Exninfo.null))
            |> State.exn_on ~valid:Stateid.dummy newtip
            |> Exninfo.iraise
          else
@@ -2748,7 +2748,7 @@ let add ~doc ~ontop ?newtip verb ast =
   let loc = ast.CAst.loc in
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
-    user_err ?loc ~hdr:"Stm.add"
+    user_err ?loc
       (str "Stm.add called for a different state (" ++ str (Stateid.to_string ontop) ++
        str ") than the tip: " ++ str (Stateid.to_string cur_tip) ++ str "." ++ fnl () ++
        str "This is not supported yet, sorry.");

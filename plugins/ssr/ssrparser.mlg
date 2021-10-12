@@ -901,7 +901,7 @@ ARGUMENT EXTEND ssripats_ne TYPED AS ssripat PRINTED BY { pr_ssripats }
 
 (* TODO: review what this function does, it looks suspicious *)
 let check_ssrhpats loc w_binders ipats =
-  let err_loc s = CErrors.user_err ~loc ~hdr:"ssreflect" s in
+  let err_loc s = CErrors.user_err ~loc s in
   let clr, ipats =
     let opt_app = function None -> fun l -> Some l
       | Some l1 -> fun l2 -> Some (l1 @ l2) in

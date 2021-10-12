@@ -438,7 +438,7 @@ let do_replace_lb handle aavoid narg p q =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err ~hdr:"AutoIndDecl.do_replace_lb"
+            else user_err
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
@@ -484,7 +484,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err ~hdr:"AutoIndDecl.do_replace_bl"
+            else user_err
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)

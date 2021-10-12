@@ -373,7 +373,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
             let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
             let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
             if not (Environ.mem_constant c1' (Global.env ())) then
-              user_err ~hdr:"Equality.find_elim"
+              user_err
                 (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
             c1'
           end
@@ -942,7 +942,7 @@ let build_selector env sigma dirn c ind special default =
           on (c bool true) = (c bool false)
           CP : changed assert false in a more informative error
        *)
-      user_err ~hdr:"Equality.construct_discriminator"
+      user_err
         (str "Cannot discriminate on inductive constructors with \
                  dependent types.") in
   let (indp,_) = dest_ind_family indf in
@@ -1746,7 +1746,7 @@ let check_non_indirectly_dependent_section_variable gl x =
     let where = match pos with
       | Some id -> str "hypothesis " ++ Id.print id
       | None -> str "the conclusion of the goal" in
-    user_err ~hdr:"Subst"
+    user_err
       (strbrk "Section variable " ++ Id.print x ++
        strbrk " occurs implicitly in global declaration " ++ Printer.pr_global gr ++
        strbrk " present in " ++ where ++ strbrk ".")
@@ -1803,7 +1803,7 @@ let subst_one_var dep_proof_ok x =
           let hyps = Proofview.Goal.hyps gl in
           let test hyp _ = is_eq_x gl x hyp in
           Context.Named.fold_outside test ~init:() hyps;
-          user_err ~hdr:"Subst"
+          user_err
             (str "Cannot find any non-recursive equality over " ++ Id.print x ++
                str".")
         with FoundHyp res -> res in

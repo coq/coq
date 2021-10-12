@@ -64,7 +64,7 @@ let general_elim_then_using mk_elim
             | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env env sigma elim
             | _ -> mt ()
           in
-          CErrors.user_err ~hdr:"Tacticals.general_elim_then_using"
+          CErrors.user_err
             (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in

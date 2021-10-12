@@ -310,8 +310,7 @@ let existing_instance glob g info =
     match class_of_constr (Environ.push_rel_context ctx env) sigma (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance tc info glob c
       | None -> user_err ?loc:g.CAst.loc
-                         ~hdr:"declare_instance"
-                         (Pp.str "Constant does not build instances of a declared type class.")
+                  (Pp.str "Constant does not build instances of a declared type class.")
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 

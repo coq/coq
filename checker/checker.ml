@@ -216,11 +216,6 @@ let report () = strbrk (". Please report at " ^ Coq_config.wwwbugtracker ^ ".")
 
 let guill s = str "\"" ++ str s ++ str "\""
 
-let where = function
-| None -> mt ()
-| Some s ->
-  if CDebug.(get_flag misc) then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
-
 let explain_exn = function
   | Stream.Failure ->
       hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
@@ -228,8 +223,8 @@ let explain_exn = function
       hov 0 (str "Syntax error: " ++ str txt)
   | Sys_error msg ->
       hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ guill msg ++ report() )
-  | UserError(s,pps) ->
-      hov 1 (str "User error: " ++ where s ++ pps)
+  | UserError pps ->
+      hov 1 (str "User error: " ++ pps)
   | Out_of_memory ->
       hov 0 (str "Out of memory")
   | Stack_overflow ->

@@ -879,7 +879,7 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
   with TooLargeInductive msg as exn ->
     let _, info = Exninfo.capture exn in
     let fn = if fail_on_error then
-        CErrors.user_err ?loc:None ~info ~hdr:"compile"
+        CErrors.user_err ?loc:None ~info
       else
         (fun x -> Feedback.msg_warning x) in
     fn msg; None

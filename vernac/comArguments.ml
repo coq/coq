@@ -116,12 +116,12 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   (* Checks *)
 
   let err_extra_args names =
-    CErrors.user_err ~hdr:"vernac_declare_arguments"
+    CErrors.user_err
       Pp.(strbrk "Extra arguments: " ++
           prlist_with_sep pr_comma Name.print names ++ str ".")
   in
   let err_missing_args names =
-    CErrors.user_err ~hdr:"vernac_declare_arguments"
+    CErrors.user_err
       Pp.(strbrk "The following arguments are not declared: " ++
           prlist_with_sep pr_comma Name.print names ++ str ".")
   in
@@ -210,7 +210,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
       | Some (o,n) ->
         strbrk "Flag \"rename\" expected to rename " ++ Name.print o ++
         strbrk " into " ++ Name.print n ++ str "."
-    in CErrors.user_err ~hdr:"vernac_declare_arguments" msg
+    in CErrors.user_err msg
   end;
 
   let implicits =

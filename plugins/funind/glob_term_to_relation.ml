@@ -1217,7 +1217,7 @@ let rec compute_cst_params relnames params gt =
       | GSort _ -> params
       | GHole _ -> params
       | GIf _ | GRec _ | GCast _ | GArray _ ->
-        CErrors.user_err ~hdr:"compute_cst_params" (str "Not handled case"))
+        CErrors.user_err (str "Not handled case"))
     gt
 
 and compute_cst_params_from_app acc (params, rtl) =
@@ -1525,7 +1525,7 @@ let do_build_inductive evd (funconstants : pconstant list)
             ~uniform:ComInductive.NonUniformParameters))
       Declarations.Finite
   with
-  | UserError (s, msg) as e ->
+  | UserError msg as e ->
     let _time3 = System.get_time () in
     (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
     let repacked_rel_inds =

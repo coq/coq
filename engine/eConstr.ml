@@ -284,7 +284,7 @@ let rec to_lambda sigma n prod =
     match kind sigma prod with
       | Prod (na,ty,bd) -> mkLambda (na,ty,to_lambda sigma (n-1) bd)
       | Cast (c,_,_) -> to_lambda sigma n c
-      | _   -> user_err ~hdr:"to_lambda" (Pp.mt ())
+      | _   -> user_err (Pp.mt ())
 
 let decompose_prod sigma c =
   let rec proddec_rec l c = match kind sigma c with

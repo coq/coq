@@ -151,7 +151,7 @@ let rec intern_library (needed, contents) dir =
   let f = Loadpath.locate_absolute_library dir in
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
-    user_err ~hdr:"load_physical_library"
+    user_err
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        DirPath.print m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir);

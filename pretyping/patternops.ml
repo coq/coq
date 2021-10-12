@@ -409,7 +409,7 @@ let mkPLambda_or_LetIn (na,_,bo,t) c =
 let it_mkPProd_or_LetIn = List.fold_left (fun c d -> mkPProd_or_LetIn d c)
 let it_mkPLambda_or_LetIn = List.fold_left (fun c d -> mkPLambda_or_LetIn d c)
 
-let err ?loc pp = user_err ?loc ~hdr:"pattern_of_glob_constr" pp
+let err ?loc pp = user_err ?loc pp
 
 let warn_cast_in_pattern =
   CWarnings.create ~name:"cast-in-pattern" ~category:"automation"

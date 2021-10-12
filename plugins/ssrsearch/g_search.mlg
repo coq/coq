@@ -45,7 +45,7 @@ let is_ident s = try CLexer.check_ident s; true with _ -> false
 let is_ident_part s = is_ident ("H" ^ s)
 
 let interp_search_notation ?loc tag okey =
-  let err msg = CErrors.user_err ?loc ~hdr:"interp_search_notation" msg in
+  let err msg = CErrors.user_err ?loc msg in
   let mk_pntn s for_key =
     let n = String.length s in
     let s' = Bytes.make (n + 2) ' ' in

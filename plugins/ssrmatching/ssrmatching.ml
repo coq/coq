@@ -38,8 +38,8 @@ open Constrexpr_ops
 
 type ssrtermkind = | InParens | WithAt | NoFlag | Cpattern
 
-let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
-let loc_error loc msg = CErrors.user_err ?loc ~hdr:msg (str msg)
+let errorstrm = CErrors.user_err
+let loc_error loc msg = CErrors.user_err ?loc (str msg)
 let ppnl = Feedback.msg_info
 
 (* 0 cost pp function. Active only if env variable SSRDEBUG is set *)

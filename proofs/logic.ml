@@ -99,7 +99,7 @@ let reorder_context env sigma sign ord =
       | top::ord' when mem_q top moved_hyps ->
           let ((d,h),mh) = find_q top moved_hyps in
           if occur_vars_in_decl env sigma h d then
-            user_err ~hdr:"reorder_context"
+            user_err
               (str "Cannot move declaration " ++ Id.print top ++ spc() ++
               str "before " ++
               pr_sequence Id.print
@@ -134,7 +134,7 @@ let check_decl_position env sigma sign d =
   let needed = global_vars_set_of_decl env sigma d in
   let deps = dependency_closure env sigma (named_context_of_val sign) needed in
   if Id.List.mem x deps then
-    user_err ~hdr:"Logic.check_decl_position"
+    user_err
       (str "Cannot create self-referring hypothesis " ++ Id.print x);
   x::deps
 
@@ -182,6 +182,18 @@ let split_sign env sigma hfrom l =
   in
   splitrec [] l
 
+(* ocaml/ocaml#10027 triggered if inline record *)
+type cannot_move_hyp = { from : Id.t; hto : Id.t move_location; hyp : Id.t }
+exception CannotMoveHyp of cannot_move_hyp
+
+let () = CErrors.register_handler (function
+    | CannotMoveHyp { from; hto; hyp } ->
+      Some Pp.(str "Cannot move " ++ Id.print from ++
+               pr_move_location Id.print hto ++
+               str ": it occurs in the type of " ++
+               Id.print hyp ++ str ".")
+    | _ -> None)
+
 let move_hyp env sigma toleft (left,declfrom,right) hto =
   let open EConstr in
   let push prefix sign = List.fold_right push_named_context_val prefix sign in
@@ -196,11 +208,7 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
           if occur_vars_in_decl env sigma midvars d then
             if not (move_location_eq hto (MoveAfter hyp)) then
               (first, d :: middle, Id.Set.add hyp midvars)
-            else
-              user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
-                pr_move_location Id.print hto ++
-                str ": it occurs in the type of "
-                ++ Id.print hyp ++ str ".")
+            else raise (CannotMoveHyp {from = NamedDecl.get_id declfrom; hto; hyp})
           else
             (d::first, middle, midvars)
         in
@@ -221,11 +229,7 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
               let vars = global_vars_set_of_decl env sigma d in
               let depvars = Id.Set.union vars depvars in
               (first, d::middle, depvars)
-            else
-              user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
-                pr_move_location Id.print hto ++
-                str ": it depends on "
-                ++ Id.print hyp ++ str ".")
+            else raise (CannotMoveHyp {from = NamedDecl.get_id declfrom; hto; hyp})
           else
             (d::first, middle, depvars)
         in
@@ -528,10 +532,10 @@ let convert_hyp ~check ~reorder env sigma d =
   | d' ->
     let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
     if check && not (is_conv env sigma (NamedDecl.get_type d) (EConstr.of_constr (NamedDecl.get_type d'))) then
-      user_err ~hdr:"Logic.convert_hyp"
+      user_err
         (str "Incorrect change of the type of " ++ Id.print id ++ str ".");
     if check && not (Option.equal (is_conv env sigma) b c) then
-      user_err ~hdr:"Logic.convert_hyp"
+      user_err
         (str "Incorrect change of the body of "++ Id.print id ++ str ".");
     let sign' = apply_to_hyp sign id (fun _ _ _ -> EConstr.Unsafe.to_named_decl d) in
     if reorder then reorder_val_context env sigma sign' (check_decl_position env sigma sign d)

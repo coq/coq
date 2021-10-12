@@ -14,12 +14,12 @@ open System
 let magic_number = 0x436F7121l (* "Coq!" *)
 
 let error_corrupted file s =
-  CErrors.user_err ~hdr:"System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
+  CErrors.user_err (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
 let open_trapping_failure name =
   try open_out_bin name
   with e when CErrors.noncritical e ->
-    CErrors.user_err ~hdr:"System.open" (str "Can't open " ++ str name)
+    CErrors.user_err (str "Can't open " ++ str name)
 
 (*
 

@@ -129,7 +129,7 @@ let find_library dir =
 let try_find_library dir =
   try find_library dir
   with Not_found ->
-    user_err ~hdr:"Library.find_library"
+    user_err
       (str "Unknown library " ++ DirPath.print dir)
 
 let register_library_filename dir f =
@@ -192,7 +192,7 @@ let access_table what tables dp i =
       let t =
         try fetch_delayed f
         with Faulty f ->
-          user_err ~hdr:"Library.access_table"
+          user_err
             (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
              str ") is corrupted,\ncannot load some " ++
              str what ++ str " in it.\n")
@@ -275,7 +275,7 @@ let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
   let f = match f with Some f -> f | None -> lib_resolver dir in
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
-    user_err ~hdr:"load_physical_library"
+    user_err
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        DirPath.print m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir);
@@ -402,9 +402,9 @@ let load_library_todo f =
   let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
-  if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if snd (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
+  if tasks = None then user_err (str"not a .vio file");
+  if s2 = None then user_err (str"not a .vio file");
+  if snd (Option.get s2) then user_err (str"not a .vio file");
   s0, s1, Option.get s2, Option.get tasks, s4
 
 (************************************************************************)

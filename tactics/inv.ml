@@ -90,7 +90,7 @@ let make_inv_predicate env evd indf realargs id status concl =
             (hyps_arity,concl)
       | Dep dflt_concl ->
           if not (occur_var env !evd id concl) then
-            user_err ~hdr:"make_inv_predicate"
+            user_err
               (str "Current goal does not depend on " ++ Id.print id ++ str".");
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have

@@ -1689,7 +1689,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     let ids = Environ.ids_of_named_context_val (named_context_val env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
     if mem_named_context_val x (named_context_val env) then
-      user_err ~hdr:"Unification.make_abstraction_core"
+      user_err
         (str "The variable " ++ Id.print x ++ str " is already declared.")
     else
       x

@@ -123,7 +123,7 @@ let find_file_in_path ?(warn=true) paths filename =
       let root = Filename.dirname filename in
       root, filename
     else
-      CErrors.user_err ~hdr:"System.find_file_in_path"
+      CErrors.user_err
         (hov 0 (str "Can't find file" ++ spc () ++ str filename))
   else
     (* the name is considered to be the transcription as a relative
@@ -131,7 +131,7 @@ let find_file_in_path ?(warn=true) paths filename =
        to be locate respecting case *)
     try where_in_path ~warn paths filename
     with Not_found ->
-      CErrors.user_err ~hdr:"System.find_file_in_path"
+      CErrors.user_err
         (hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++
                 str "on loadpath"))
 
@@ -152,7 +152,7 @@ let is_in_system_path filename =
     false
 
 let error_corrupted file s =
-  CErrors.user_err ~hdr:"System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
+  CErrors.user_err (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
 let check_caml_version ~caml:s ~file:f =
   if not (String.equal Coq_config.caml_version s) then
@@ -178,13 +178,13 @@ let with_magic_number_check f a =
   try f a
   with
   | Bad_magic_number {filename=fname; actual; expected} ->
-    CErrors.user_err ~hdr:"with_magic_number_check"
+    CErrors.user_err
     (str"File " ++ str fname ++ strbrk" has bad magic number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
   | Bad_version_number {filename=fname;actual=actual;expected=expected} ->
-    CErrors.user_err ~hdr:"with_magic_number_check"
+    CErrors.user_err
     (str"File " ++ str fname ++ strbrk" has bad version number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++

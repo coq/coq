@@ -146,12 +146,12 @@ let mentions clenv mv0 =
 let error_incompatible_inst clenv mv  =
   let na = meta_name clenv.evd mv in
   match na with
-      Name id ->
-        user_err ~hdr:"clenv_assign"
-          Pp.(str "An incompatible instantiation has already been found for " ++
-           Id.print id)
-    | _ ->
-        anomaly ~label:"clenv_assign" (Pp.str "non dependent metavar already assigned.")
+  | Name id ->
+    user_err
+      Pp.(str "An incompatible instantiation has already been found for " ++
+          Id.print id)
+  | _ ->
+    anomaly ~label:"clenv_assign" (Pp.str "non dependent metavar already assigned.")
 
 (* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)
 let clenv_assign mv rhs clenv =

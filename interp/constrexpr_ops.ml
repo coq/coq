@@ -618,21 +618,20 @@ let mkCLambdaN ?loc bll c =
 let coerce_reference_to_id qid =
   if qualid_is_ident qid then qualid_basename qid
   else
-    CErrors.user_err ?loc:qid.CAst.loc ~hdr:"coerce_reference_to_id"
+    CErrors.user_err ?loc:qid.CAst.loc
       (str "This expression should be a simple identifier.")
 
 let coerce_to_id = function
   | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
     CAst.make ?loc @@ qualid_basename qid
   | { CAst.loc; _ } -> CErrors.user_err ?loc
-                         ~hdr:"coerce_to_id"
                          (str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
   | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
     CAst.make ?loc @@ Name (qualid_basename qid)
   | { CAst.loc; v = CHole (None,IntroAnonymous,None) } -> CAst.make ?loc Anonymous
-  | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
+  | { CAst.loc; _ } -> CErrors.user_err ?loc
                          (str "This expression should be a name.")
 
 let mkCPatOr ?loc = function
@@ -645,13 +644,11 @@ let mkAppPattern ?loc p lp =
   make ?loc @@ (match p.v with
   | CPatAtom (Some r) -> CPatCstr (r, None, lp)
   | CPatCstr (r, None, l2) ->
-     CErrors.user_err ?loc:p.loc ~hdr:"compound_pattern"
+     CErrors.user_err ?loc:p.loc
                       (Pp.str "Nested applications not supported.")
   | CPatCstr (r, l1, l2) -> CPatCstr (r, l1 , l2@lp)
   | CPatNotation (inscope, n, s, l) -> CPatNotation (inscope, n , s, l@lp)
-  | _ -> CErrors.user_err
-           ?loc:p.loc ~hdr:"compound_pattern"
-           (Pp.str "Such pattern cannot have arguments."))
+  | _ -> CErrors.user_err ?loc:p.loc (Pp.str "Such pattern cannot have arguments."))
 
 let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CRef (r,None) ->
@@ -677,5 +674,5 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CCast (p,Constr.DEFAULTcast, t) ->
      CPatCast (coerce_to_cases_pattern_expr p,t)
   | _ ->
-     CErrors.user_err ?loc ~hdr:"coerce_to_cases_pattern_expr"
+     CErrors.user_err ?loc
                       (str "This expression should be coercible to a pattern.")) c

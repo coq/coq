@@ -68,7 +68,7 @@ let build_newrecursive lnameargsardef =
         let def = abstract_glob_constr body_def binders in
         interp_casted_constr_with_implicits rec_sign sigma rec_impls def
       | None ->
-        CErrors.user_err ~hdr:"Function"
+        CErrors.user_err
           (Pp.str "Body of Function must be given")
     in
     Vernacstate.System.protect (List.map f) lnameargsardef
@@ -397,7 +397,7 @@ let register_struct is_rec fixpoint_exprl =
       match body_def with
       | Some body -> body
       | None ->
-        CErrors.user_err ~hdr:"Function"
+        CErrors.user_err
           Pp.(str "Body of Function must be given")
     in
     ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
@@ -1776,7 +1776,7 @@ let do_generate_principle_aux pconstants on_error register_built
         match body_def with
         | Some body -> body
         | None ->
-          CErrors.user_err ~hdr:"Function"
+          CErrors.user_err
             (Pp.str "Body of Function must be given")
       in
       let recdefs, rec_impls = build_newrecursive fixpoint_exprl in
@@ -1807,7 +1807,7 @@ let do_generate_principle_aux pconstants on_error register_built
         match body_def with
         | Some body -> body
         | None ->
-          CErrors.user_err ~hdr:"Function"
+          CErrors.user_err
             Pp.(str "Body of Function must be given")
       in
       let pre_hook pconstants =
@@ -2164,7 +2164,7 @@ let build_scheme fas =
         let f_as_constant =
           try Smartlocate.global_with_alias f
           with Not_found ->
-            CErrors.user_err ~hdr:"FunInd.build_scheme"
+            CErrors.user_err
               Pp.(str "Cannot find " ++ Libnames.pr_qualid f)
         in
         let evd', f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
@@ -2209,7 +2209,7 @@ let build_case_scheme fa =
       | ConstRef c -> c
       | IndRef _ | ConstructRef _ | VarRef _ -> assert false
     with Not_found ->
-      CErrors.user_err ~hdr:"FunInd.build_case_scheme"
+      CErrors.user_err
         Pp.(str "Cannot find " ++ Libnames.pr_qualid f)
   in
   let sigma, (_, u) = Evd.fresh_constant_instance env sigma funs in

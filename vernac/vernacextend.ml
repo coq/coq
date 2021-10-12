@@ -221,14 +221,14 @@ let vinterp_add depr s f =
   try
     Hashtbl.add vernac_tab s (depr, f)
   with Failure _ ->
-    user_err ~hdr:"vinterp_add"
+    user_err
       (str"Cannot add the vernac command " ++ str (fst s) ++ str" twice.")
 
 let vinterp_map s =
   try
     Hashtbl.find vernac_tab s
   with Failure _ | Not_found ->
-    user_err ~hdr:"Vernac Interpreter"
+    user_err
       (str"Cannot find vernac command " ++ str (fst s) ++ str".")
 
 let warn_deprecated_command =

@@ -120,5 +120,5 @@ let add_notation_extra_printing_rule ntn k v =
         } in
       NotationMap.add ntn rules !generic_notation_printing_rules
   with Not_found ->
-    user_err ~hdr:"add_notation_extra_printing_rule"
+    user_err
       (str "No such Notation.")

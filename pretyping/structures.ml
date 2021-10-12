@@ -269,7 +269,7 @@ let subst subst (gref,ind as obj) =
 (*s High-level declaration of a canonical structure *)
 
 let error_not_structure ref description =
-  user_err ~hdr:"object_declare"
+  user_err
     (str"Could not declare a canonical structure " ++
        (Id.print (Nametab.basename_of_global ref) ++ str"." ++ spc() ++
           description))

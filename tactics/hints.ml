@@ -765,7 +765,7 @@ let current_db () = Hintdbmap.bindings !searchtable
 let current_pure_db () = List.map snd (current_db ())
 
 let error_no_such_hint_database x =
-  user_err ~hdr:"Hints" (str "No such Hint database: " ++ str x ++ str ".")
+  user_err (str "No such Hint database: " ++ str x ++ str ".")
 
 (**************************************************************************)
 (*             Auxiliary functions to prepare AUTOHINT objects            *)
@@ -871,7 +871,7 @@ let make_resolves env sigma (eapply, hnf) info ~check ?name cr =
                               make_apply_entry env sigma hnf info ?name]
   in
   if check && List.is_empty ents then
-    user_err ~hdr:"Hint"
+    user_err
       (pr_leconstr_env env sigma c ++ spc() ++
         (if eapply then str"cannot be used as a hint."
         else str "can be used as a hint only for eauto."));
@@ -925,7 +925,7 @@ let make_mode ref m =
   let n = List.length ctx in
   let m' = Array.of_list m in
     if not (n == Array.length m') then
-      user_err ~hdr:"Hint"
+      user_err
         (pr_global ref ++ str" has " ++ int n ++
            str" arguments while the mode declares " ++ int (Array.length m'))
     else m'
@@ -1722,7 +1722,7 @@ let run_hint tac k = match warn_hint () with
   if is_imported tac then k tac.obj
   else
     let info = Exninfo.reify () in
-    Proofview.tclZERO ~info (UserError (None, (str "Tactic failure.")))
+    Proofview.tclZERO ~info (UserError (str "Tactic failure."))
 
 module FullHint =
 struct

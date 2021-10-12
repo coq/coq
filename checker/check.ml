@@ -225,12 +225,12 @@ let locate_qualified_library qid =
 
 let error_unmapped_dir qid =
   let prefix = qid.dirpath in
-  user_err ~hdr:"load_absolute_library_from"
+  user_err
     (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
      str "no physical path bound to" ++ spc () ++ pr_dirlist prefix ++ fnl ())
 
 let error_lib_not_found qid =
-  user_err ~hdr:"load_absolute_library_from"
+  user_err
     (str"Cannot find library " ++ pr_path qid ++ str" in loadpath")
 
 let try_locate_absolute_library dir =
@@ -354,15 +354,15 @@ let intern_from_file ~intern_mode (dir, f) =
       let () = close_in ch in
       let () = System.check_caml_version ~caml:sd.md_ocaml ~file:f in
       if dir <> sd.md_name then
-        user_err ~hdr:"intern_from_file"
+        user_err
           (name_clash_message dir sd.md_name f);
       if tasks <> None then
-        user_err ~hdr:"intern_from_file"
+        user_err
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
        Flags.if_verbose chk_pp (str " (was a vio file) ");
       Option.iter (fun (_,b) -> if not b then
-        user_err ~hdr:"intern_from_file"
+        user_err
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
       end;

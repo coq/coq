@@ -47,7 +47,7 @@ let chop_rlambda_n =
       | Glob_term.GLetIn (name, v, t, b) ->
         chop_lambda_n ((name, v, t) :: acc) (n - 1) b
       | _ ->
-        CErrors.user_err ~hdr:"chop_rlambda_n"
+        CErrors.user_err
           (str "chop_rlambda_n: Not enough Lambdas")
   in
   chop_lambda_n []
@@ -60,7 +60,7 @@ let chop_rprod_n =
       | Glob_term.GProd (name, k, t, b) ->
         chop_prod_n ((name, t) :: acc) (n - 1) b
       | _ ->
-        CErrors.user_err ~hdr:"chop_rprod_n"
+        CErrors.user_err
           (str "chop_rprod_n: Not enough products")
   in
   chop_prod_n []

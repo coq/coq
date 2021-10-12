@@ -352,7 +352,7 @@ let make_project env sigma ind pred c branches ps =
     let mib, _ = Inductive.lookup_mind_specif env ind in
     if (* dependent *) not (Vars.noccurn sigma 1 t) &&
          not (has_dependent_elim mib) then
-      user_err ~hdr:"make_case_or_project"
+      user_err
         Pp.(str"Dependent case analysis not allowed" ++
               str" on inductive type " ++ Termops.Internal.print_constr_env env sigma (mkInd ind))
   in

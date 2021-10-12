@@ -95,7 +95,7 @@ let class_of_global = function
   | GlobRef.IndRef sp -> CL_IND sp
   | GlobRef.VarRef id -> CL_SECVAR id
   | GlobRef.ConstructRef _ as c ->
-      user_err ~hdr:"class_of_global"
+      user_err
         (str "Constructors, such as " ++ Printer.pr_global c ++
            str ", cannot be used as a class.")
 
@@ -171,7 +171,7 @@ let ident_key_of_class = function
 (* Identity coercion *)
 
 let error_not_transparent source =
-  user_err ~hdr:"build_id_coercion"
+  user_err
     (pr_class source ++ str " must be a transparent constant.")
 
 let build_id_coercion idf_opt source poly =
@@ -338,7 +338,7 @@ let add_new_coercion_core coef stre poly source target isid : unit =
 let try_add_new_coercion_core ref ~local c d e f =
   try add_new_coercion_core ref (loc_of_bool local) c d e f
   with CoercionError e ->
-      user_err ~hdr:"try_add_new_coercion_core"
+      user_err
         (explain_coercion_error ref e ++ str ".")
 
 let try_add_new_coercion ref ~local ~poly =

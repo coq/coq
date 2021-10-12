@@ -144,7 +144,7 @@ let deactivate_notation nr =
   | NotationRule (inscope, ntn) ->
      let scopt = match inscope with NotationInScope sc -> Some sc | LastLonelyNotation -> None in
      match availability_of_notation (inscope, ntn) (scopt, []) with
-     | None -> user_err ~hdr:"Notation"
+     | None -> user_err
                         (pr_notation ntn ++ spc () ++ str "does not exist"
                          ++ (match inscope with
                              | LastLonelyNotation -> spc () ++ str "in the empty scope."
@@ -244,7 +244,7 @@ let is_record indsp =
 let encode_record r =
   let indsp = Nametab.global_inductive r in
   if not (is_record indsp) then
-    user_err ?loc:r.CAst.loc ~hdr:"encode_record"
+    user_err ?loc:r.CAst.loc
       (str "This type is not a structure type.");
   indsp
 

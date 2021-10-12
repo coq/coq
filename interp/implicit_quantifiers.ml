@@ -29,11 +29,11 @@ let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
 
 let declare_generalizable_ident table {CAst.loc;v=id} =
   if not (Id.equal id (root_of_id id)) then
-    user_err ?loc ~hdr:"declare_generalizable_ident"
+    user_err ?loc
     ((Id.print id ++ str
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
-    user_err ?loc ~hdr:"declare_generalizable_ident"
+    user_err ?loc
                 ((Id.print id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
@@ -77,7 +77,7 @@ let is_freevar ids env x =
 (* Auxiliary functions for the inference of implicitly quantified variables. *)
 
 let ungeneralizable loc id =
-  user_err ?loc ~hdr:"Generalization"
+  user_err ?loc
                (str "Unbound and ungeneralizable variable " ++ Id.print id ++ str ".")
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =

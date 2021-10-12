@@ -58,7 +58,7 @@ let tclIDTAC_MESSAGE s gls =
   Feedback.msg_info (hov 0 s); tclIDTAC gls
 
 (* General failure tactic *)
-let tclFAIL_s s gls = user_err ~hdr:"Refiner.tclFAIL_s" (str s)
+let tclFAIL_s s gls = user_err (str s)
 
 (* The Fail tactic *)
 let tclFAIL lvl s g = raise (FailError (lvl,lazy s))
@@ -77,7 +77,7 @@ let thens3parts_tac tacfi tac tacli (sigr,gs) =
   let nf = Array.length tacfi in
   let nl = Array.length tacli in
   let ng = List.length gs in
-  if ng<nf+nl then user_err ~hdr:"Refiner.thensn_tac" (str "Not enough subgoals.");
+  if ng<nf+nl then user_err (str "Not enough subgoals.");
   let gll =
       (List.map_i (fun i ->
         apply_sig_tac sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
@@ -156,7 +156,7 @@ the goal unchanged *)
 let tclPROGRESS tac ptree =
   let rslt = tac ptree in
   if Goal.V82.progress rslt ptree then rslt
-  else user_err ~hdr:"Refiner.PROGRESS" (str"Failed to progress.")
+  else user_err (str"Failed to progress.")
 
 (* Execute tac, show the names of new hypothesis names created by tac
    in the "as" format and then forget everything. From the logical
@@ -238,7 +238,7 @@ let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.")
 
 let tclDO n t =
   let rec dorec k =
-    if k < 0 then user_err ~hdr:"Refiner.tclDO"
+    if k < 0 then user_err
       (str"Wrong argument : Do needs a positive integer.");
     if Int.equal k 0 then tclIDTAC
     else if Int.equal k 1 then t else (tclTHEN t (dorec (k-1)))
@@ -467,7 +467,7 @@ module New = struct
     | None -> info
     | Some loc -> Loc.add_loc info loc
     in
-    let err = UserError (None, msg) in
+    let err = UserError msg in
     tclZERO ~info err
 
   let catch_failerror e =

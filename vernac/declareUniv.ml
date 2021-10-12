@@ -121,7 +121,7 @@ let do_universe ~poly l =
   let in_section = Global.sections_are_opened () in
   let () =
     if poly && not in_section then
-      CErrors.user_err ~hdr:"Constraints"
+      CErrors.user_err
         (Pp.str"Cannot declare polymorphic universes outside sections")
   in
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
