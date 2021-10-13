@@ -150,8 +150,10 @@ val snapshot_vio : create_vos:bool -> doc:doc -> output_native_objects:bool -> D
  * after having built a .vio in batch mode *)
 val reset_task_queue : unit -> unit
 
+type document
+
 (* A .vio contains tasks to be completed *)
-type tasks
+type tasks = (Opaqueproof.opaque_handle option, document) Library.tasks
 val check_task : string -> tasks -> int -> bool
 val info_tasks : tasks -> (string * float * int) list
 val finish_tasks : string ->
@@ -294,6 +296,5 @@ val get_all_proof_names : doc:doc -> Id.t list
 (** Enable STM debugging *)
 val stm_debug : bool ref
 
-type document
 val backup : unit -> document
 val restore : document -> unit

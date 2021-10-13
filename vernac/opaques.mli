@@ -21,7 +21,7 @@ val set_opaque_disk : Opaqueproof.opaque_handle -> Opaqueproof.opaque_proofterm 
 val get_current_opaque : Opaqueproof.opaque_handle -> Opaqueproof.opaque_proofterm option
 val get_current_constraints : Opaqueproof.opaque_handle -> Univ.ContextSet.t option
 
-val dump : ?except:Future.UUIDSet.t -> unit -> opaque_disk * int Future.UUIDMap.t
+val dump : ?except:Future.UUIDSet.t -> unit -> opaque_disk * Opaqueproof.opaque_handle Future.UUIDMap.t
 
 module Summary :
 sig

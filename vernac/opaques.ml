@@ -147,17 +147,17 @@ let dump ?(except=Future.UUIDSet.empty) () =
     else (Opaqueproof.repr_handle @@ fst @@ Opaqueproof.HandleMap.max_binding !current_opaques) + 1
   in
   let opaque_table = Array.make n None in
-  let fold i cu f2t_map = match cu with
+  let fold h cu f2t_map = match cu with
   | OpaqueValue p ->
-    let i = Opaqueproof.repr_handle i in
+    let i = Opaqueproof.repr_handle h in
     let () = opaque_table.(i) <- Some p in
     f2t_map
   | OpaqueCertif c ->
-    let i = Opaqueproof.repr_handle i in
+    let i = Opaqueproof.repr_handle h in
     let f2t_map, proof = match !c with
     | Computation cert ->
       let uid = Future.uuid cert in
-      let f2t_map = Future.UUIDMap.add uid i f2t_map in
+      let f2t_map = Future.UUIDMap.add uid h f2t_map in
       let c = Future.peek_val cert in
       let () = if Option.is_empty c && (not @@ Future.UUIDSet.mem uid except) then
         CErrors.anomaly
