@@ -14,6 +14,93 @@ Version 8.14
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
+Coq version 8.14 integrates many usability improvements, as well
+as an important change in the core language. The main changes include:
+
+  - The :ref:`internal representation <814CaseRepresentation>` of `match` has changed
+    to a more space-efficient and cleaner structure, allowing the fix of a completeness
+    issue with cumulative inductive types in the type-checker.
+    The internal representation is now closer to the user-level view of `match`,
+    where the argument context of branches and the inductive binders `in` and `as`
+    do not carry type annotations.
+
+  - A :ref:`new <814CoqNative>` `coqnative` binary performs separate native compilation
+    of libraries, starting from a `.vo` file. It is supported by `coq_makefile`.
+
+  - :ref:`Improvements <814TCCanon>` to typeclasses and canonical structure
+    resolution, allowing more terms to be considered as classes or keys.
+
+  - More control over :ref:`notations <814Notations>` declarations and support
+    for primitive types in string and number notations.
+
+  - :ref:`Removal <814Tactics>` of deprecated tactics, notably `omega`, which has
+    been replaced by a greatly improved `lia`, along with many bug fixes.
+
+  - New  :ref:`Ltac2 <814Ltac2>` APIs for interaction with Ltac1, manipulation of
+    inductive types and printing.
+
+  - Many :ref:`changes and additions <814Stdlib>` to the standard library in the numbers,
+    vectors and lists libraries. A new signed primitive integers library `Sint63`
+    is available in addition to the unsigned `Uint63` library.
+
+See the `Changes in 8.14.0`_ section below for the detailed list of changes,
+including potentially breaking changes marked with **Changed**.
+Coq's `reference manual <https://coq.github.io/doc/v8.14/refman>`_,
+`documentation of the standard library <https://coq.github.io/doc/v8.14/stdlib>`_
+and `developer documentation of the ML API <https://coq.github.io/doc/v8.14/api>`_
+are also available.
+
+Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
+Soegtrop and Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
+
+Erik Martin-Dorel has maintained the `Coq Docker images
+<https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
+projects for continuous integration.
+
+The OPAM repository for Coq packages has been maintained by
+Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
+contributions from many users. A list of packages is available at
+https://coq.inria.fr/opam/www/.
+
+The `Coq Platform <https://github.com/coq/platform>`_ has been maintained
+by Michael Soegtrop and Enrico Tassi.
+
+Our current maintainers are Yves Bertot, Frédéric Besson, Ali Caglayan, Tej
+Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
+Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
+Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
+Vincent Laporte, Olivier Laurent, Assia Mahboubi, Kenji Maillard,
+Guillaume Melquiond, Pierre-Marie Pédrot, Clément Pit-Claudel, Pierre Roux,
+Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Arnaud Spiwack,
+Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia
+and Théo Zimmermann. See the `Coq Team face book <https://coq.inria.fr/coq-team.html>`_
+page for more details.
+
+The 54 contributors to this version are Reynald Affeldt,
+Arthur Azevedo de Amorim, Yves Bertot, Frédéric Besson, Lasse Blaauwbroek, Ana Borges,
+Ali Caglayan, Cyril Cohen,  Columbus240, Pierre Courtieu, Maxime Dénès, Andrej Dudenhefner,
+Jim Fehrle, Yannick Forster,  Simon Friis Vindum, Gaëtan Gilbert, Jason Gross, Samuel Gruetter, Stefan Haan,
+Hugo Herbelin, Jasper Hugunin, Emilio Jesús Gallego Arias, Jacques-Henri Jourdan,
+Ralf Jung, Jan-Oliver Kaiser, Fabian Kunze, Vincent Laporte, Olivier Laurent,
+Yishuai Li, Barry M. Trager, Kenji Maillard, Erik Martin-Dorel, Guillaume Melquiond,
+Isaac Oscar Gariano, Pierre-Marie Pédrot, Rudy Peterson, Clément Pit-Claudel, Pierre Roux,
+Takafumi Saikawa, Kazuhiko Sakaguchi, Gabriel Scherer, Vincent Semeria, shenlebantongying,
+Avi Shinnar, slrnsc, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Hendrik Tews, Anton Trunov,
+Karolin Varner, Li-yao Xia, Beta Ziliani and Théo Zimmermann.
+
+The Coq community at large helped improve the design of this new version via
+the GitHub issue and pull request system, the Coq development mailing list
+coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
+<https://coq.discourse.group/>`_ and the `Coq Zulip chat <http://coq.zulipchat.com>`_.
+
+Version 8.14's development spanned 9 months from the release of
+Coq 8.13.0. Guillaume Melquiond is the release manager of Coq 8.14.
+This release is the result of 522 merged PRs, closing ~150 issues.
+
+| Nantes, September 2021,
+| Matthieu Sozeau for the Coq development team
+
 Changes in 8.14.0
 ~~~~~~~~~~~~~~~~~
 
@@ -22,6 +109,8 @@ Changes in 8.14.0
 
 Kernel
 ^^^^^^
+
+  .. _814CaseRepresentation:
 
 - **Changed:**
   The term representation of pattern-matchings now uses a compact form that
@@ -38,6 +127,7 @@ Kernel
   (`#13563 <https://github.com/coq/coq/pull/13563>`_,
   fixes `#3166 <https://github.com/coq/coq/issues/3166>`_,
   by Pierre-Marie Pédrot).
+
 - **Changed:**
   Linking of native-code libraries used by :tacn:`native_compute` is now delayed
   until an actual call to the :tacn:`native_compute` machinery is
@@ -52,6 +142,8 @@ Kernel
 
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  .. _814TCCanon:
 
 - **Changed:**
   The hints mode ``!`` matches a term iff the applicative head is not an existential variable.
@@ -92,6 +184,8 @@ Specification language, type inference
 
 Notations
 ^^^^^^^^^
+
+  .. _814Notations:
 
 - **Changed:**
   Flag :flag:`Printing Notations` no longer controls
@@ -151,6 +245,8 @@ Notations
 
 Tactics
 ^^^^^^^
+
+  .. _814Tactics:
 
 - **Changed:**
   More systematic checks that occurrences of an :n:`at` clause are
@@ -281,6 +377,8 @@ Tactics
 
 Tactic language
 ^^^^^^^^^^^^^^^
+
+  .. _814Ltac2:
 
 - **Changed:**
   Renamed Ltac2 ``Bool.eq`` into ``Bool.equal`` for uniformity.
@@ -465,30 +563,11 @@ Command-line tools
   Makefiles produced by ``coq_makefile`` now use ``.DELETE_ON_ERROR``
   (`#14238 <https://github.com/coq/coq/pull/14238>`_,
   by Gaëtan Gilbert).
-- **Changed:**
-  `coq_makefile` now uses the `coqnative` binary to generate
-  native compilation files. Project files also understand directly the
-  `-native-compiler` flag without having to wrap it with `-arg`
-  (`#14265 <https://github.com/coq/coq/pull/14265>`_,
-  by Pierre-Marie Pédrot).
 - **Removed:**
   Previously deprecated command line options
   ``-sprop-cumulative`` and ``-input-state`` and its alias ``-is``
   (`#13822 <https://github.com/coq/coq/pull/13822>`_,
   by Gaëtan Gilbert).
-- **Deprecated:**
-  the `-native-compiler` option for coqc. It is now recommended
-  to use the :ref:`coqnative` binary instead to generate native
-  compilation files ahead of time
-  (`#14309 <https://github.com/coq/coq/pull/14309>`_,
-  by Pierre-Marie Pédrot).
-- **Added:**
-  A standalone `coqnative` binary that performs native compilation
-  out of `vo` files, allowing to split library compilation from
-  native compilation. See :ref:`coqnative`. The hybrid build
-  system was adapted to perform a split compilation on the stdlib
-  (`#13287 <https://github.com/coq/coq/pull/13287>`_,
-  by Pierre-Marie Pédrot).
 - **Added:**
   ``coq_makefile``\-made ``Makefile``\s now support inclusion of a
   ``.local-late`` file at the end, allowing the user to access
@@ -506,8 +585,35 @@ Command-line tools
   fixes `#14283 <https://github.com/coq/coq/issues/14283>`_,
   by Arthur Charguéraud and Hugo Herbelin).
 
+Native Compilation
+^^^^^^^^^^^^^^^^^^
+
+  .. _814CoqNative:
+
+- **Changed:**
+  `coq_makefile` now uses the `coqnative` binary to generate
+  native compilation files. Project files also understand directly the
+  `-native-compiler` flag without having to wrap it with `-arg`
+  (`#14265 <https://github.com/coq/coq/pull/14265>`_,
+  by Pierre-Marie Pédrot).
+- **Deprecated:**
+  the `-native-compiler` option for coqc. It is now recommended
+  to use the :ref:`coqnative` binary instead to generate native
+  compilation files ahead of time
+  (`#14309 <https://github.com/coq/coq/pull/14309>`_,
+  by Pierre-Marie Pédrot).
+- **Added:**
+  A standalone `coqnative` binary that performs native compilation
+  out of `vo` files, allowing to split library compilation from
+  native compilation. See :ref:`coqnative`. The hybrid build
+  system was adapted to perform a split compilation on the stdlib
+  (`#13287 <https://github.com/coq/coq/pull/13287>`_,
+  by Pierre-Marie Pédrot).
+
 CoqIDE
 ^^^^^^
+
+  .. _814CoqIDE:
 
 - **Added:**
   Ltac debugger support in CoqIDE (see :flag:`Ltac Debug`).
@@ -520,6 +626,8 @@ CoqIDE
 
 Standard library
 ^^^^^^^^^^^^^^^^
+
+  .. _814Stdlib:
 
 - **Changed:**
   Minor Changes to ``Rpower``:
@@ -661,6 +769,8 @@ Standard library
 
 Infrastructure and dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  .. _814Dune:
 
 - **Changed:**
   Coq's configure script now requires absolute paths for the `-prefix`
