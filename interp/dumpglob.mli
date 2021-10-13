@@ -15,7 +15,6 @@ val dump : unit -> bool
 
 type glob_output =
   | NoGlob
-  | Feedback
   | MultFiles                   (* one glob file per .v file *)
   | File of string              (* Single file for all coqc arguments *)
 

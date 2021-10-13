@@ -22,7 +22,6 @@ let close_glob_file () =
 
 type glob_output =
   | NoGlob
-  | Feedback
   | MultFiles
   | File of string
 
@@ -44,7 +43,7 @@ let continue = pop_output
 let dump () = get_output () <> NoGlob
 
 let dump_string s =
-  if dump () && get_output () != Feedback then
+  if dump () then
     output_string !glob_file s
 
 let start_dump_glob ~vfile ~vofile =
@@ -57,13 +56,13 @@ let start_dump_glob ~vfile ~vofile =
   | File f ->
       open_glob_file f;
       output_string !glob_file "DIGEST NO\n"
-  | NoGlob | Feedback ->
+  | NoGlob ->
       ()
 
 let end_dump_glob () =
   match get_output () with
   | MultFiles | File _ -> close_glob_file ()
-  | NoGlob | Feedback -> ()
+  | NoGlob -> ()
 
 open Decls
 open Declarations
@@ -148,10 +147,6 @@ let interval loc =
 
 let dump_ref ?loc filepath modpath ident ty =
   match get_output () with
-  | Feedback ->
-    Option.iter (fun loc ->
-        Feedback.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
-      ) loc
   | NoGlob -> ()
   | _ -> Option.iter (fun loc ->
     let bl,el = interval loc in
@@ -253,9 +248,6 @@ let add_glob_kn ?loc kn =
     add_glob_gen ?loc sp lib_dp "syndef"
 
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
-  if get_output () = Feedback then
-    Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
-  else
     let bl,el = interval loc in
     dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
   ) loc
