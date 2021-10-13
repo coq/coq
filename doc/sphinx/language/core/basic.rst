@@ -112,11 +112,13 @@ Identifiers
   non-exhaustively includes symbols for prime letters and subscripts.
 
 Numbers
-  Numbers are sequences of digits with an optional fractional part
-  and exponent, optionally preceded by a minus sign. Hexadecimal numbers
-  start with ``0x`` or ``0X``. :n:`@bigint` are integers;
-  numbers without fractional nor exponent parts. :n:`@bignat` are non-negative
-  integers.  Underscores embedded in the digits are ignored, for example
+  Numbers are sequences of digits with an optional fractional part.
+  They support E-notation, for example ``5.02e-6`` means 5.02×10\ :sup:`-6`.
+  Hexadecimal numbers start with ``0x`` or ``0X`` and support base-2
+  exponential notation denoted by ``p`` or ``P``, for example
+  ``0xAp10`` means 10×2\ :sup:`10`. :n:`@bigint` are integers;
+  numbers without fractional parts. :n:`@bignat` are non-negative integers.
+  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
   .. insertprodn number hexdigit
