@@ -97,9 +97,9 @@ Arguments punwrap A%type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
 The command has indeed failed with message:
-Universe instance should have length 3
+Universe instance length is 3 but should be 1.
 The command has indeed failed with message:
-Universe instance should have length 0
+Universe instance length is 0 but should be 1.
 The command has indeed failed with message:
 This object does not support universe names.
 The command has indeed failed with message:

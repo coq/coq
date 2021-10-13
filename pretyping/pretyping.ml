@@ -425,10 +425,12 @@ let pretype_ref ?loc sigma env ref us =
        let ty = NamedDecl.get_type (lookup_named id !!env) in
        (match us with
         | None | Some [] -> ()
-        | Some (_ :: _) ->
-          CErrors.user_err ?loc
-            Pp.(str "Section variables are not polymorphic:" ++ spc ()
-                ++ str "universe instance should have length 0."));
+        | Some us ->
+            let open UnivGen in
+            raise (UniverseLengthMismatch {
+              actual = List.length us;
+              expect = 0;
+            }));
        sigma, make_judge (mkVar id) ty
        with Not_found ->
          (* This may happen if env is a goal env and section variables have
@@ -1286,7 +1288,12 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
       | Some [u] ->
         let sigma, u = glob_level ?loc sigma u in
         sigma, Some u
-      | Some u -> user_err ?loc Pp.(str "Universe instance should have length 1.")
+      | Some u ->
+          let open UnivGen in
+          raise (UniverseLengthMismatch {
+            actual = List.length u;
+            expect = 1;
+          })
     in
     let sigma, tycon' = split_as_array !!env sigma tycon in
     let sigma, jty = eval_type_pretyper self ~program_mode ~poly resolve_tc tycon' env sigma ty in

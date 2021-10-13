@@ -188,9 +188,11 @@ let universe_binders_with_opt_names orig names =
           | Anonymous -> orig
           | Name id -> Name id) orig udecl
     with Invalid_argument _ ->
-      let len = List.length orig in
-      CErrors.user_err
-        Pp.(str "Universe instance should have length " ++ int len)
+      let open UnivGen in
+      raise (UniverseLengthMismatch {
+          actual = List.length orig;
+          expect = List.length udecl;
+        })
   in
   let fold_named i ubind = function
     | Name id -> Id.Map.add id (Univ.Level.var i) ubind
