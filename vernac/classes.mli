@@ -31,7 +31,6 @@ val new_instance_interactive
   -> name_decl
   -> local_binder_expr list
   -> constr_expr
-  -> ?generalize:bool
   -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
@@ -45,7 +44,6 @@ val new_instance
   -> local_binder_expr list
   -> constr_expr
   -> (bool * constr_expr)
-  -> ?generalize:bool
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
   -> Id.t
@@ -58,7 +56,6 @@ val new_instance_program
   -> local_binder_expr list
   -> constr_expr
   -> (bool * constr_expr) option
-  -> ?generalize:bool
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
   -> Declare.OblState.t * Id.t
