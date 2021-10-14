@@ -219,8 +219,7 @@ let get_compat_file = function
   | "8.15" -> "Coq.Compat.Coq815"
   | "8.14" -> "Coq.Compat.Coq814"
   | "8.13" -> "Coq.Compat.Coq813"
-  | "8.12" -> "Coq.Compat.Coq812"
-  | ("8.11" | "8.10" | "8.9" | "8.8" | "8.7" | "8.6" | "8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
+  | ("8.12" | "8.11" | "8.10" | "8.9" | "8.8" | "8.7" | "8.6" | "8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
     CErrors.user_err
       Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
   | s ->
