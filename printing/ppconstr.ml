@@ -135,7 +135,7 @@ let tag_var = tag Tag.variable
   let pr_delimiters key strm =
     strm ++ str ("%"^key)
 
-  let pr_generalization bk ak c =
+  let pr_generalization bk c =
     let hd, tl =
       match bk with
         | NonMaxImplicit -> "[", "]"
@@ -668,8 +668,8 @@ let tag_var = tag Tag.variable
         return (pr (fun()->str"(") ltop t ++ str")", latom)
       | CNotation (which,s,env) ->
         pr_notation (pr mt) (pr_patt_binder (pr mt ltop)) (pr_binders_gen (pr mt ltop)) which s env
-      | CGeneralization (bk,ak,c) ->
-        return (pr_generalization bk ak (pr mt ltop c), latom)
+      | CGeneralization (bk,c) ->
+        return (pr_generalization bk (pr mt ltop c), latom)
       | CPrim p ->
         return (pr_prim_token p, prec_of_prim_token p)
       | CDelimiters (sc,a) ->

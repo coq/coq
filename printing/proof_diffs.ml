@@ -542,7 +542,7 @@ let match_goals ot nt =
       constr_expr ogname t t2
     | CNotation (_,ntn,args), CNotation (_,ntn2,args2) ->
       constr_notation_substitution ogname args args2
-    | CGeneralization (b,a,c), CGeneralization (b2,a2,c2) ->
+    | CGeneralization (b,c), CGeneralization (b2,c2) ->
       constr_expr ogname c c2
     | CPrim p, CPrim p2 -> ()
     | CDelimiters (key,e), CDelimiters (key2,e2) ->

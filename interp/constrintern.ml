@@ -248,6 +248,8 @@ type local_univs = { bound : Univ.Level.t Id.Map.t; unb_univs : bool }
 
 let empty_local_univs = { bound = Id.Map.empty; unb_univs = false }
 
+type abstraction_kind = AbsLambda | AbsPi
+
 type intern_env = {
   ids: Id.Set.t;
   unb: bool;
@@ -630,24 +632,21 @@ let intern_local_binder_aux intern ntnvars (env,bl) = function
       let env, ((disjpat,il),id),na,bk,t = intern_cases_pattern_as_binder intern test_kind_tolerant ntnvars env Explicit p in
       (env, (DAst.make ?loc:p.CAst.loc @@ GLocalPattern((disjpat,List.map (fun x -> x.v) il),id,bk,t)) :: bl)
 
-let intern_generalization intern env ntnvars loc bk ak c =
+let intern_generalization intern env ntnvars loc bk c =
   let c = intern {env with unb = true} c in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:env.ids c in
   let env', c' =
     let abs =
-      let pi = match ak with
-        | Some AbsPi -> true
-        | Some _ -> false
-        | None ->
-          match Notation.current_type_scope_name () with
-          | Some type_scope ->
-              let is_type_scope = match env.tmp_scope with
-              | None -> false
-              | Some sc -> String.equal sc type_scope
-              in
-              is_type_scope ||
-              String.List.mem type_scope env.scopes
-          | None -> false
+      let pi =
+        match Notation.current_type_scope_name () with
+        | Some type_scope ->
+          let is_type_scope = match env.tmp_scope with
+            | None -> false
+            | Some sc -> String.equal sc type_scope
+          in
+          is_type_scope ||
+          String.List.mem type_scope env.scopes
+        | None -> false
       in
         if pi then
           (fun {loc=loc';v=id} acc ->
@@ -2117,8 +2116,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CNotation (_,ntn,args) ->
         let c = intern_notation intern env ntnvars loc ntn args in
         apply_impargs env loc c []
-    | CGeneralization (b,a,c) ->
-        intern_generalization intern env ntnvars loc b a c
+    | CGeneralization (b,c) ->
+        intern_generalization intern env ntnvars loc b c
     | CPrim p ->
         fst (Notation.interp_prim_token ?loc p (env.tmp_scope,env.scopes))
     | CDelimiters (key, e) ->
