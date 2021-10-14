@@ -140,10 +140,10 @@ Numbers
   The :ref:`standard library <thecoqlibrary>` provides a few
   :ref:`interpretations <notation-scopes>` for :n:`@number`.
   Some of these interpretations support exponential notation
-  for decimal numbers, for example ``5.02e-6`` means 5.02×10\ :sup:`-6`
-  by default; and base 2 exponential notation for hexadecimal numbers
-  denoted by ``p`` or ``P``, for example ``0xAp10`` means 10×2\ :sup:`10`
-  by default. The :cmd:`Number Notation` mechanism offers the user
+  for decimal numbers, for example ``5.02e-6`` means 5.02×10\ :sup:`-6`;
+  and base 2 exponential notation for hexadecimal numbers denoted by
+  ``p`` or ``P``, for example ``0xAp12`` means 10×2\ :sup:`12`.
+  The :cmd:`Number Notation` mechanism offers the user
   a way to define custom parsers and printers for :n:`@number`.
 
 Strings
