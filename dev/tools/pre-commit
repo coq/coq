@@ -7,17 +7,20 @@ set -e
 
 dev/tools/check-overlays.sh
 
-1>&2 echo "Auto fixing whitespace issues..."
+log=$(mktemp "git-fix-ws-log.XXXXXX")
+exec > "$log"
+
+1>&2 echo "Auto fixing whitespace issues ($log)..."
 
 # We fix whitespace in the index and in the working tree
 # separately to preserve non-added changes.
 index=$(mktemp "git-fix-ws-index.XXXXXX")
 fixed_index=$(mktemp "git-fix-ws-index-fixed.XXXXXX")
 tree=$(mktemp "git-fix-ws-tree.XXXXXX")
-1>&2 echo "Patches are saved in '$index', '$fixed_index' and '$tree'."
-1>&2 echo "If an error destroys your changes you can recover using them."
-1>&2 echo "(The files are cleaned up on success.)"
-1>&2 echo #newline
+echo "Patches are saved in '$index', '$fixed_index' and '$tree'."
+echo "If an error destroys your changes you can recover using them."
+echo "(The files are cleaned up on success.)"
+echo #newline
 
 git diff-index -p --binary --cached HEAD > "$index"
 git diff-index -p --binary HEAD > "$tree"
@@ -30,12 +33,12 @@ if [ -s "$tree" ]; then git apply --whitespace=nowarn -R "$tree"; fi
 # Fix index
 # For end of file newlines we must go through the worktree
 if [ -s "$index" ]; then
-    1>&2 echo "Fixing staged changes..."
+    echo "Fixing staged changes..."
     git apply --cached --whitespace=fix "$index"
     git apply --whitespace=fix "$index" 2>/dev/null # no need to repeat yourself
     git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
     git add -u
-    1>&2 echo #newline
+    echo #newline
 fi
 
 # reset work tree
@@ -46,25 +49,25 @@ if [ -s "$fixed_index" ]; then git apply --whitespace=nowarn -R "$fixed_index"; 
 
 # Fix worktree
 if [ -s "$tree" ]; then
-    1>&2 echo "Fixing unstaged changes..."
+    echo "Fixing unstaged changes..."
     git apply --whitespace=fix "$tree"
     git diff --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
-    1>&2 echo #newline
+    echo #newline
 fi
 
 if [ -s "$index" ] && ! [ -s "$fixed_index" ]; then
-    1>&2 echo "Fixing whitespace issues cancelled all changes."
+    echo "Fixing whitespace issues cancelled all changes."
     exit 1
 fi
 
 # Check that we did fix whitespace
 if ! git diff-index --check --cached HEAD; then
-    1>&2 echo "Auto-fixing whitespace failed: errors remain."
-    1>&2 echo "This may fix itself if you try again."
-    1>&2 echo "(Consider whether the number of errors decreases after each run.)"
+    echo "Auto-fixing whitespace failed: errors remain."
+    echo "This may fix itself if you try again."
+    echo "(Consider whether the number of errors decreases after each run.)"
     exit 1
 fi
-1>&2 echo "Whitespace pass complete."
+echo "Whitespace pass complete."
 
 # clean up temporary files
-rm "$index" "$tree" "$fixed_index"
+rm "$index" "$tree" "$fixed_index" "$log"
