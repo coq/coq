@@ -112,13 +112,11 @@ Identifiers
   non-exhaustively includes symbols for prime letters and subscripts.
 
 Numbers
-  Numbers are sequences of digits with an optional fractional part.
-  They support E-notation, for example ``5.02e-6`` means 5.02×10\ :sup:`-6`.
-  Hexadecimal numbers start with ``0x`` or ``0X`` and support base-2
-  exponential notation denoted by ``p`` or ``P``, for example
-  ``0xAp10`` means 10×2\ :sup:`10`. :n:`@bigint` are integers;
-  numbers without fractional parts. :n:`@bignat` are non-negative integers.
-  Underscores embedded in the digits are ignored, for example
+  Numbers are sequences of digits with an optional fractional part
+  and exponent, optionally preceded by a minus sign. Hexadecimal numbers
+  start with ``0x`` or ``0X``. :n:`@bigint` are integers;
+  numbers without fractional nor exponent parts. :n:`@bignat` are non-negative
+  integers.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
   .. insertprodn number hexdigit
@@ -139,9 +137,13 @@ Numbers
   into an OCaml integer (63-bit integers on most architectures).
   :n:`@bigint` and :n:`@bignat` have no range limitation.
 
-  The :ref:`standard library <thecoqlibrary>` provides some
-  :ref:`interpretations <notation-scopes>` for :n:`@number`. The
-  :cmd:`Number Notation` mechanism offers the user
+  The :ref:`standard library <thecoqlibrary>` provides a few
+  :ref:`interpretations <notation-scopes>` for :n:`@number`.
+  Some of these interpretations support exponential notation
+  for decimal numbers, for example ``5.02e-6`` means 5.02×10\ :sup:`-6`;
+  and base 2 exponential notation for hexadecimal numbers denoted by
+  ``p`` or ``P``, for example ``0xAp10`` means 10×2\ :sup:`10`.
+  The :cmd:`Number Notation` mechanism offers the user
   a way to define custom parsers and printers for :n:`@number`.
 
 Strings
