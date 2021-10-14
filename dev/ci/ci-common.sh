@@ -118,7 +118,7 @@ git_download()
 
   if [ -d "$dest" ]; then
     echo "Warning: download and unpacking of $project skipped because $dest already exists."
-  elif [[ $ov_url ]] || [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
+  elif [[ $ov_url ]] || [ "$WITH_SUBMODULES" = "1" ] || [ "$CI" = "" ]; then
     git clone "$giturl" "$dest"
     pushd "$dest"
     git checkout "$ref"
@@ -139,6 +139,9 @@ git_download()
             git rebase "$ref"
             git log -n 1
         fi
+    fi
+    if [ "$WITH_SUBMODULES" = 1 ]; then
+        git submodule update --init --recursive
     fi
     popd
   else # When possible, we download tarballs to reduce bandwidth and latency

@@ -5,10 +5,9 @@ set -e
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-FORCE_GIT=1
+WITH_SUBMODULES=1
 git_download argosy
 
 ( cd "${CI_BUILD_DIR}/argosy"
-  git submodule update --init --recursive
   make
 )
