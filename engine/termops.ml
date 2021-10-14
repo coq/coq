@@ -977,25 +977,11 @@ let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
   | Cast (c,_,_) -> strip_outer_cast sigma c
   | _ -> c
 
-(* flattens application lists throwing casts in-between *)
-let collapse_appl sigma c = match EConstr.kind sigma c with
-  | App (f,cl) ->
-    if EConstr.isCast sigma f then
-      let rec collapse_rec f cl2 =
-        match EConstr.kind sigma (strip_outer_cast sigma f) with
-        | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-        | _ -> EConstr.mkApp (f,cl2)
-      in
-      collapse_rec f cl
-    else c
-  | _ -> c
-
 (* First utilities for avoiding telescope computation for subst_term *)
 
 let prefix_application sigma eq_fun k l1 t =
   let open EConstr in
-  let t' = collapse_appl sigma t in
-  if 0 < l1 then match EConstr.kind sigma t' with
+  if 0 < l1 then match EConstr.kind sigma t with
     | App (f2,cl2) ->
         let l2 = Array.length cl2 in
         if l1 <= l2
@@ -1032,7 +1018,6 @@ let replace_term_gen sigma eq_fun ar by_c in_t =
 
 let replace_term sigma c byc t =
   let cache = ref Int.Map.empty in
-  let c = collapse_appl sigma c in
   let ar = Array.length (snd (decompose_app_vect sigma c)) in
   let eq sigma k t = eq_upto_lift cache c sigma k t in
   replace_term_gen sigma eq ar byc t

@@ -144,9 +144,6 @@ val eq_constr : Evd.evar_map -> constr -> constr -> bool (* FIXME rename: erases
 
 val eta_reduce_head : Evd.evar_map -> constr -> constr
 
-(** Flattens application lists *)
-val collapse_appl : Evd.evar_map -> constr -> constr
-
 (** [prod_applist] [forall (x1:B1;...;xn:Bn), B] [a1...an] @return [B[a1...an]] *)
 val prod_applist : Evd.evar_map -> constr -> constr list -> constr
 
