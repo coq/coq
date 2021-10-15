@@ -8,6 +8,8 @@ ci_dir="$(dirname "$0")"
 WITH_SUBMODULES=1
 git_download fiat_parsers
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ulimit -s
 ulimit -s 65536
 ulimit -s

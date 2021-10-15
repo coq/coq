@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download mtac2
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ( cd "${CI_BUILD_DIR}/mtac2"
   coq_makefile -f _CoqProject -o Makefile
   make

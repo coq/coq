@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download coq_performance_tests
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ( cd "${CI_BUILD_DIR}/coq_performance_tests"
   make_full coq perf-Sanity
   make validate

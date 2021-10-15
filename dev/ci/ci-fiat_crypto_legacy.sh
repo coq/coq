@@ -8,6 +8,8 @@ ci_dir="$(dirname "$0")"
 WITH_SUBMODULES=1
 git_download fiat_crypto_legacy
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 targets1=(
     print-old-pipeline-lite-hardcoded
     old-pipeline-lite-hardcoded

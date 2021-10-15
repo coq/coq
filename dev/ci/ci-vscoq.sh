@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download vscoq
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ( cd "$CI_BUILD_DIR/vscoq/language-server"
   make build
 )

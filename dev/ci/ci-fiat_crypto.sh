@@ -8,6 +8,8 @@ ci_dir="$(dirname "$0")"
 WITH_SUBMODULES=1
 git_download fiat_crypto
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 # We need a larger stack size to not overflow ocamlopt+flambda when
 # building the executables.
 # c.f. https://github.com/coq/coq/pull/8313#issuecomment-416650241

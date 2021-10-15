@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download compcert
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 export COQCOPTS='-native-compiler no -w -undeclared-scope -w -omega-is-deprecated'
 ( cd "${CI_BUILD_DIR}/compcert"
   ./configure -ignore-coq-version x86_32-linux -use-external-MenhirLib -use-external-Flocq

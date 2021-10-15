@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download coqtail
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ( cd "${CI_BUILD_DIR}/coqtail"
   PYTHONPATH=python python3 -m pytest tests/coq
 )

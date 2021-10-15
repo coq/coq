@@ -21,6 +21,8 @@ stdpp_CI_REF=$(grep -F '"coq-stdpp"' < "${CI_BUILD_DIR}/iris/coq-iris.opam" | se
 # Download std++
 git_download stdpp
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 # Build
 
 ( cd "${CI_BUILD_DIR}/stdpp"

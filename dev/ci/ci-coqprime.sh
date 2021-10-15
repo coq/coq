@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download coqprime
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ulimit -s
 ulimit -s 65536
 ulimit -s
