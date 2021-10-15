@@ -128,18 +128,18 @@ let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
-let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?feedback_id ?types
+let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
     ?(univs=default_named_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ((body,univsbody), eff);
     proof_entry_secctx = using;
     proof_entry_type = types;
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
-    proof_entry_feedback = feedback_id;
+    proof_entry_feedback = None;
     proof_entry_inline_code = inline}
 
 let definition_entry =
-  definition_entry_core ?eff:None ?univsbody:None ?feedback_id:None
+  definition_entry_core ?eff:None ?univsbody:None
 
 let parameter_entry ?inline ?(univs=default_named_univ_entry) typ = {
   parameter_entry_secctx = None;
@@ -309,7 +309,6 @@ let cast_proof_entry e =
   let univ_entry, ctx = extract_monomorphic univ_entry in
   { Entries.const_entry_body = body;
     const_entry_secctx = e.proof_entry_secctx;
-    const_entry_feedback = e.proof_entry_feedback;
     const_entry_type = e.proof_entry_type;
     const_entry_universes = univ_entry;
     const_entry_inline_code = e.proof_entry_inline_code;
@@ -365,7 +364,6 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a ppro
   in
   { Entries.opaque_entry_body = body;
     opaque_entry_secctx = secctx;
-    opaque_entry_feedback = e.proof_entry_feedback;
     opaque_entry_type = typ;
     opaque_entry_universes = univ_entry;
   },
@@ -403,11 +401,12 @@ let declare_constant_core ~name ~typing_flags cd =
       else
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain de.proof_entry_body map in
+        let feedback_id = de.proof_entry_feedback in
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry EffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = DeclareUctx.declare_universe_context ~poly:false ctx in
-        OpaqueEntry cd, false, ubinders, Some body
+        OpaqueEntry cd, false, ubinders, Some (body, feedback_id)
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
@@ -445,12 +444,12 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
   (* Register the libobjects attached to the constants *)
   let () = match delayed with
   | None -> ()
-  | Some body ->
+  | Some (body, feedback_id) ->
     let open Declarations in
     match (Global.lookup_constant kn).const_body with
     | OpaqueDef o ->
       let (_, _, _, i) = Opaqueproof.repr o in
-      Opaques.declare_defined_opaque i body
+      Opaques.declare_defined_opaque ?feedback_id i body
     | Def _ | Undef _ | Primitive _ -> assert false
   in
   let () = register_constant kn kind local in
@@ -525,7 +524,6 @@ let declare_variable_core ~name ~kind d =
       let se = {
         Entries.secdef_body = body;
         secdef_secctx = de.proof_entry_secctx;
-        secdef_feedback = de.proof_entry_feedback;
         secdef_type = de.proof_entry_type;
       } in
       let () = Global.push_named_def (name, se) in

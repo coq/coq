@@ -752,7 +752,6 @@ let constant_entry_of_side_effect eff =
   OpaqueEff {
     opaque_entry_body = p;
     opaque_entry_secctx = Context.Named.to_vars cb.const_hyps;
-    opaque_entry_feedback = None;
     opaque_entry_type = cb.const_type;
     opaque_entry_universes = univs;
   }
@@ -760,7 +759,6 @@ let constant_entry_of_side_effect eff =
   DefinitionEff {
     const_entry_body = p;
     const_entry_secctx = Some (Context.Named.to_vars cb.const_hyps);
-    const_entry_feedback = None;
     const_entry_type = Some cb.const_type;
     const_entry_universes = univs;
     const_entry_inline_code = cb.const_inline_code }

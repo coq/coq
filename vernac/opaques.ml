@@ -88,13 +88,15 @@ let set_opaque_disk i (c, priv) t =
 
 let current_opaques = Summary.state
 
-let declare_defined_opaque i (body : Safe_typing.private_constants const_entry_body) =
+let declare_defined_opaque ?feedback_id i (body : Safe_typing.private_constants const_entry_body) =
   (* Note that the environment in which the variable is checked it the one when
      the thunk is evaluated, not the one where this function is called. It does
      not matter because the former must be an extension of the latter or
      otherwise the call to Safe_typing would throw an anomaly. *)
   let proof = Future.chain body begin fun (body, eff) ->
-      Safe_typing.check_opaque (Global.safe_env ()) i (body, eff)
+      let cert = Safe_typing.check_opaque (Global.safe_env ()) i (body, eff) in
+      let () = Option.iter (fun id -> Feedback.feedback ~id Feedback.Complete) feedback_id in
+      cert
     end
   in
   (* If the proof is already computed we fill it eagerly *)
