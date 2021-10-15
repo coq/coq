@@ -3,5 +3,6 @@
  (synopsis "Coq's Document Manager and Proof Checking Scheduler")
  (public_name coq-core.stm)
  (wrapped false)
- (private_modules dag proofBlockDelimiter tQueue vcs workerPool)
+ ; until ocaml/dune#4892 fixed
+ ; (private_modules dag proofBlockDelimiter tQueue vcs workerPool)
  (libraries sysinit))
