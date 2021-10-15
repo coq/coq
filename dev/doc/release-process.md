@@ -25,7 +25,7 @@
   `--release` flag; this sets up Coq to support three `-compat` flag
   arguments including the upcoming one (instead of four).  To ensure
   that CI passes, you will have to decide what to do about all
-  test-suite files which mention `-compat U.U` or `Coq.Comapt.CoqUU`
+  test-suite files that mention `-compat U.U` or `Coq.Compat.CoqUU`
   (which is no longer valid, since we only keep compatibility against
   the two previous versions), and you may have to ping maintainers of
   projects that are still relying on the old compatibility flag so
@@ -36,8 +36,10 @@
 ## On the branching date ##
 
 - [ ] In a PR on `master`, change the version name to the next major
-  version and the magic numbers (see
-  [#7008](https://github.com/coq/coq/pull/7008/files)).
+  version and both magic numbers in
+  [`tools/configure/configure.ml`](../../tools/configure/configure.ml).
+  For example, for `8.5`, the version name will be `8.5+alpha` while the
+  magic numbers will end with `80490`.
 
   Additionally, in the same commit, update the compatibility
   infrastructure, which consists of invoking
@@ -110,11 +112,12 @@
 - [ ] Ping the development coordinator (`@mattam82`) to get him
   started on writing the release summary.
 
-  The `dev/tools/list-contributors.sh` script computes the number and
+  The [`dev/tools/list-contributors.sh`](../tools/list-contributors.sh)
+  script computes the number and
   list of contributors between Coq revisions. Typically used with
   `VX.X+alpha..vX.X` to check the contributors of version `VX.X`.
 
-  Note that this script relies on `.mailmap` to merge multiple
+  Note that this script relies on [`.mailmap`](../../.mailmap) to merge multiple
   identities.  If you notice anything incorrect while using it, use
   the opportunity to fix the `.mailmap` file.  Same thing if you want
   to have the full name of a contributor shown instead of a pseudonym.
@@ -125,17 +128,17 @@
 - [ ] Ensure the release changelog has been merged (the release
   summary is required for the final release).
 - [ ] In a PR against `vX.X` (for testing):
-  - Update the version number.
-  - Only update the magic numbers for the final release (see
-    [#7271](https://github.com/coq/coq/pull/7271/files)).
-  - Set `is_a_released_version` to `true` in `configure.ml`.
+  - Update the version number in
+    [`tools/configure/configure.ml`](../../tools/configure/configure.ml).
+  - Only update the magic numbers for the final release.
+  - Set `is_a_released_version` to `true`.
 - [ ] Set the tag `VX.X...` using `git tag -s`.
 - [ ] Push the new tag with `git push upstream VX.X... --dry-run`
   (remove the `--dry-run` and redo if everything looks OK).
-- [ ] Set `is_a_released_version` to `false` in `configure.ml` (if you
+- [ ] Set `is_a_released_version` to `false` (if you
   forget about it, you'll be reminded by the test-suite failing
   whenever you try to backport a PR with a changelog entry).
-- [ ] Close the milestone
+- [ ] Close the milestone.
 - [ ] Send an e-mail on Coqdev + the Coq development category on
   Discourse (coqdev@inria.fr + coq+coq-development@discoursemail.com)
   announcing that the tag has been set so that package managers can
@@ -147,7 +150,7 @@
   for standard releases or in the `core-dev` category of the
   [coq/opam-coq-archive](https://github.com/coq/opam-coq-archive)
   for preview releases.
-- [ ] Make sure to cc `@erikmd` to request that he prepare the
+- [ ] Make sure to cc `@erikmd` to request that he prepares the
   necessary configuration for the Docker release in
   [`coqorg/coq`](https://hub.docker.com/r/coqorg/coq) (namely, he'll
   need to make sure a `coq-bignums` opam package is available in
@@ -156,10 +159,14 @@
   [`released`](https://github.com/coq/opam-coq-archive/tree/master/released),
   so the Docker image gathering `coq` and `coq-bignums` can be built).
 - [ ] Publish a release on GitHub with the PDF version of the
-  reference manual attached.
+  reference manual attached. The PDF can be recovered from the artifacts of the
+  `doc:refman-pdf:dune` job from continuous integration.
 
 ## For each non-preview release ##
 
+- [ ] Modify the version number in the file
+  [`incl/macros.html`](https://github.com/coq/www/blob/master/incl/macros.html)
+  on the website.
 - [ ] Ping `@Zimmi48` to switch the default version of the reference
   manual on the website.
 
