@@ -137,9 +137,13 @@ Numbers
   into an OCaml integer (63-bit integers on most architectures).
   :n:`@bigint` and :n:`@bignat` have no range limitation.
 
-  The :ref:`standard library <thecoqlibrary>` provides some
-  :ref:`interpretations <notation-scopes>` for :n:`@number`. The
-  :cmd:`Number Notation` mechanism offers the user
+  The :ref:`standard library <thecoqlibrary>` provides a few
+  :ref:`interpretations <notation-scopes>` for :n:`@number`.
+  Some of these interpretations support exponential notation
+  for decimal numbers, for example ``5.02e-6`` means 5.02×10\ :sup:`-6`;
+  and base 2 exponential notation for hexadecimal numbers denoted by
+  ``p`` or ``P``, for example ``0xAp12`` means 10×2\ :sup:`12`.
+  The :cmd:`Number Notation` mechanism offers the user
   a way to define custom parsers and printers for :n:`@number`.
 
 Strings
