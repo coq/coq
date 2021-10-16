@@ -26,9 +26,9 @@ let get_host_port opt s =
     Coqargs.error_wrong_arg ("Error: host:portr:portw or stdfds expected after option "^opt)
 
 let get_error_resilience opt = function
-  | "on" | "all" | "yes" -> `All
-  | "off" | "no" -> `None
-  | s -> `Only (String.split_on_char ',' s)
+  | "on" | "all" | "yes" -> Stm.AsyncOpts.FAll
+  | "off" | "no" -> Stm.AsyncOpts.FNone
+  | s -> Stm.AsyncOpts.FOnly (String.split_on_char ',' s)
 
 let get_priority opt s =
   try CoqworkmgrApi.priority_of_string s

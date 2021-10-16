@@ -84,7 +84,7 @@ let add ((s,eid),(sid,verbose)) =
   | Some ast ->
     let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose ast in
     set_doc doc;
-    let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
+    let rc = match rc with Stm.NewAddTip -> CSig.Inl () | Stm.Unfocus id -> CSig.Inr id in
     ide_cmd_warns ~id:newid ast;
     (* All output is sent through the feedback mechanism rather than stdout/stderr *)
     newid, (rc, "")
@@ -92,8 +92,8 @@ let add ((s,eid),(sid,verbose)) =
 let edit_at id =
   let doc = get_doc () in
   match Stm.edit_at ~doc id with
-  | doc, `NewTip -> set_doc doc; CSig.Inl ()
-  | doc, `Focus { Stm.start; stop; tip} -> set_doc doc; CSig.Inr (start, (stop, tip))
+  | doc, Stm.NewTip -> set_doc doc; CSig.Inl ()
+  | doc, Stm.Focus { Stm.start; stop; tip} -> set_doc doc; CSig.Inr (start, (stop, tip))
 
 (* TODO: the "" parameter is a leftover of the times the protocol
  * used to include stderr/stdout output.

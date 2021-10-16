@@ -47,8 +47,8 @@ let simple_goal sigma g gs =
 
 let is_focused_goal_simple ~doc id =
   match state_of_id ~doc id with
-  | `Expired | `Error _ | `Valid None -> `Not
-  | `Valid (Some { Vernacstate.lemmas }) ->
+  | Expired | Error _ | Valid None -> `Not
+  | Valid (Some { Vernacstate.lemmas }) ->
     Option.cata (Vernacstate.LemmaStack.with_top ~f:(fun proof ->
         let proof = Declare.Proof.get proof in
         let Proof.{ goals=focused; stack=r1; sigma } = Proof.data proof in
@@ -97,12 +97,12 @@ let static_bullet ({ entry_point; prev_node } as view) =
 let dynamic_bullet doc { dynamic_switch = id; carry_on_data = b } =
   match is_focused_goal_simple ~doc id with
   | `Simple focused ->
-      `ValidBlock {
+      ValidBlock {
          base_state = id;
          goals_to_admit = focused;
          recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacBullet (to_bullet_val b)})
       }
-  | `Not -> `Leaks
+  | `Not -> Leaks
 
 let () = register_proof_block_delimiter
   "bullet" static_bullet dynamic_bullet
@@ -127,12 +127,12 @@ let static_curly_brace ({ entry_point; prev_node } as view) =
 let dynamic_curly_brace doc { dynamic_switch = id } =
   match is_focused_goal_simple ~doc id with
   | `Simple focused ->
-      `ValidBlock {
+      ValidBlock {
          base_state = id;
          goals_to_admit = focused;
          recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacEndSubproof })
       }
-  | `Not -> `Leaks
+  | `Not -> Leaks
 
 let () = register_proof_block_delimiter
   "curly" static_curly_brace dynamic_curly_brace
@@ -149,12 +149,12 @@ let static_par { entry_point; prev_node } =
 let dynamic_par doc { dynamic_switch = id } =
   match is_focused_goal_simple ~doc id with
   | `Simple focused ->
-      `ValidBlock {
+      ValidBlock {
          base_state = id;
          goals_to_admit = focused;
          recovery_command = None;
       }
-  | `Not -> `Leaks
+  | `Not -> Leaks
 
 let () = register_proof_block_delimiter "par" static_par dynamic_par
 
@@ -178,15 +178,15 @@ let static_indent ({ entry_point; prev_node } as view) =
 let dynamic_indent doc { dynamic_switch = id; carry_on_data = e } =
   Printf.eprintf "%s\n" (Stateid.to_string id);
   match is_focused_goal_simple ~doc id with
-  | `Simple [] -> `Leaks
+  | `Simple [] -> Leaks
   | `Simple focused ->
       let but_last = List.tl (List.rev focused) in
-      `ValidBlock {
+      ValidBlock {
          base_state = id;
          goals_to_admit = but_last;
          recovery_command = Some (to_vernac_control_val e);
       }
-  | `Not -> `Leaks
+  | `Not -> Leaks
 
 let () = register_proof_block_delimiter "indent" static_indent dynamic_indent
 
