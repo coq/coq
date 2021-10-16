@@ -1966,7 +1966,8 @@ let collect_proof keep cur hd brkind id =
         `MaybeASync (parent last, accn, name, delegate name)
     | `Sideff (CherryPickEnv,_) ->
         `Sync (no_name,`NestedProof)
-    | _ -> `Sync (no_name,`Unknown) in
+    | `Qed _ -> `Sync (no_name,`Unknown)
+ in
  let make_sync why = function
    | `Sync(name,_) -> `Sync (name,why)
    | `MaybeASync(_,_,name,_) -> `Sync (name,why)
@@ -2693,13 +2694,13 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
     handle_failure e vcs
 
 let get_ast ~doc id =
-  match VCS.visit id with
-  | { step = `Cmd { cast = { expr } } }
-  | { step = `Fork (({ expr }, _, _, _), _) }
-  | { step = `Sideff ((ReplayCommand { expr }) , _) }
-  | { step = `Qed ({ qast = { expr } }, _) } ->
+  match (VCS.visit id).step with
+  | `Cmd { cast = { expr } }
+  | `Fork (({ expr }, _, _, _), _)
+  | `Sideff ((ReplayCommand { expr }) , _)
+  | `Qed ({ qast = { expr } }, _) ->
     Some expr
-  | _ -> None
+  | `Alias _ | `Sideff (CherryPickEnv, _) -> None
 
 let stop_worker n = Slaves.cancel_worker n
 
