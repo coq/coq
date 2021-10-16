@@ -19,7 +19,7 @@ module AsyncOpts : sig
   type async_proofs = APoff
                     | APonLazy (* Delays proof checking, but does it in master *)
                     | APon
-  type tac_error_filter = [ `None | `Only of string list | `All ]
+  type tac_error_filter = FNone | FOnly of string list | FAll
 
   type stm_opt = {
     async_proofs_n_workers : int;
@@ -88,6 +88,8 @@ val parse_sentence :
 (* Reminder: A parsable [pa] is constructed using
    [Pcoq.Parsable.t stream], where [stream : char Stream.t]. *)
 
+type add_focus = NewAddTip | Unfocus of Stateid.t
+
 (* [add ~ontop ?newtip verbose cmd] adds a new command [cmd] ontop of
    the state [ontop].
    The [ontop] parameter just asserts that the GUI is on
@@ -96,7 +98,7 @@ val parse_sentence :
    to be [newtip] *)
 val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
   bool -> Vernacexpr.vernac_control ->
-  doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+  doc * Stateid.t * add_focus
 
 (* Returns the proof state before the last tactic that was applied at or before
 the specified state AND that has differences in the underlying proof (i.e.,
@@ -111,7 +113,7 @@ val get_proof : doc:doc -> Stateid.t -> Proof.t option
 val query : doc:doc ->
   at:Stateid.t -> route:Feedback.route_id -> Pcoq.Parsable.t -> unit
 
-(* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
+(* [edit_at id] is issued to change the editing zone.  [NewTip] is returned if
    the requested id is the new document tip hence the document portion following
    [id] is dropped by Coq.  [`Focus fo] is returned to say that [fo.tip] is the
    new document tip, the document between [id] and [fo.stop] has been dropped.
@@ -121,7 +123,8 @@ val query : doc:doc ->
    If Flags.async_proofs_full is set, then [id] is not [observe]d, else it is.
 *)
 type focus = { start : Stateid.t; stop : Stateid.t; tip : Stateid.t }
-val edit_at : doc:doc -> Stateid.t -> doc * [ `NewTip | `Focus of focus ]
+type edit_focus = NewTip | Focus of focus
+val edit_at : doc:doc -> Stateid.t -> doc * edit_focus
 
 (* [observe doc sid]] Check / execute span [sid] *)
 val observe : doc:doc -> Stateid.t -> doc
@@ -245,8 +248,10 @@ type recovery_action = {
   recovery_command : Vernacexpr.vernac_control option;
 }
 
+type block_classification = ValidBlock of recovery_action | Leaks
+
 type dynamic_block_error_recovery =
-  doc -> static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
+  doc -> static_block_declaration -> block_classification
 
 val register_proof_block_delimiter :
   Vernacextend.proof_block_name ->
@@ -286,8 +291,10 @@ val sentence_exec_hook : (Stateid.t -> unit) Hook.t
 
 val get_doc : Feedback.doc_id -> doc
 
+type state = Valid of Vernacstate.t option | Expired | Error of exn
+
 val state_of_id : doc:doc ->
-  Stateid.t -> [ `Valid of Vernacstate.t option | `Expired | `Error of exn ]
+  Stateid.t -> state
 
 (* Queries for backward compatibility *)
 val current_proof_depth : doc:doc -> int

@@ -173,7 +173,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
           async_proofs_mode = APon;
           async_proofs_n_workers = 0;
           async_proofs_cmd_error_resilience = false;
-          async_proofs_tac_error_resilience = `None;
+          async_proofs_tac_error_resilience = FNone;
         } in
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)

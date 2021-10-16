@@ -61,7 +61,7 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
 
       (* Main STM interaction *)
-      if ntip <> `NewTip then
+      if ntip <> Stm.NewAddTip then
         anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
 
       (* Force the command  *)

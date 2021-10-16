@@ -28,6 +28,12 @@
     ['cdata] extra data hold by dag properties
 *)
 
+module type Kind =
+sig
+  type 'a t
+  val master : 'a t
+end
+
 module type S = sig
 
   module Branch :
@@ -42,57 +48,61 @@ module type S = sig
 
   type id
 
-  type ('kind) branch_info = {
-    kind : [> `Master] as 'kind;
+  type 'a kind_gen
+  type kind = Branch.t kind_gen
+
+  type branch_info = {
+    kind : kind;
     root : id;
     pos  : id;
   }
 
-  type ('kind,'diff,'info,'property_data) t constraint 'kind = [> `Master ]
+  type ('diff,'info,'property_data) t
 
-  val empty : id -> ('kind,'diff,'info,'property_data) t
+  val empty : id -> ('diff,'info,'property_data) t
 
-  val current_branch : ('k,'e,'i,'c) t -> Branch.t
-  val branches : ('k,'e,'i,'c) t -> Branch.t list
+  val current_branch : ('e,'i,'c) t -> Branch.t
+  val branches : ('e,'i,'c) t -> Branch.t list
 
-  val get_branch : ('k,'e,'i,'c) t -> Branch.t -> 'k branch_info
-  val reset_branch : ('k,'e,'i,'c) t -> Branch.t -> id -> ('k,'e,'i,'c) t
+  val get_branch : ('e,'i,'c) t -> Branch.t -> branch_info
+  val reset_branch : ('e,'i,'c) t -> Branch.t -> id -> ('e,'i,'c) t
   val branch :
-    ('kind,'e,'i,'c) t -> ?root:id -> ?pos:id ->
-        Branch.t -> 'kind -> ('kind,'e,'i,'c) t
-  val delete_branch : ('k,'e,'i,'c) t -> Branch.t -> ('k,'e,'i,'c) t
+    ('e,'i,'c) t -> ?root:id -> ?pos:id ->
+        Branch.t -> kind -> ('e,'i,'c) t
+  val delete_branch : ('e,'i,'c) t -> Branch.t -> ('e,'i,'c) t
   val merge :
-    ('k,'diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
-            Branch.t -> ('k,'diff,'i,'c) t
-  val commit : ('k,'diff,'i,'c) t -> id -> 'diff -> ('k,'diff,'i,'c) t
+    ('diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
+            Branch.t -> ('diff,'i,'c) t
+  val commit : ('diff,'i,'c) t -> id -> 'diff -> ('diff,'i,'c) t
   val rewrite_merge :
-    ('k,'diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
-            Branch.t -> ('k,'diff,'i,'c) t
-  val checkout : ('k,'e,'i,'c) t -> Branch.t -> ('k,'e,'i,'c) t
+    ('diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
+            Branch.t -> ('diff,'i,'c) t
+  val checkout : ('e,'i,'c) t -> Branch.t -> ('e,'i,'c) t
 
-  val set_info : ('k,'e,'info,'c) t -> id -> 'info -> ('k,'e,'info,'c) t
-  val get_info : ('k,'e,'info,'c) t -> id -> 'info option
+  val set_info : ('e,'info,'c) t -> id -> 'info -> ('e,'info,'c) t
+  val get_info : ('e,'info,'c) t -> id -> 'info option
 
   (* Read only dag *)
   module Dag : Dag.S with type node = id
-  val dag : ('kind,'diff,'info,'cdata) t -> ('diff,'info,'cdata) Dag.t
+  val dag : ('diff,'info,'cdata) t -> ('diff,'info,'cdata) Dag.t
 
   (* Properties are not a concept typical of a VCS, but a useful metadata
    * of a DAG (or graph). *)
-  val create_property : ('k,'e,'i,'c) t -> id list -> 'c -> ('k,'e,'i,'c) t
-  val property_of : ('k,'e,'i,'c) t -> id -> 'c Dag.Property.t list
-  val delete_property : ('k,'e,'i,'c) t -> 'c Dag.Property.t -> ('k,'e,'i,'c) t
+  val create_property : ('e,'i,'c) t -> id list -> 'c -> ('e,'i,'c) t
+  val property_of : ('e,'i,'c) t -> id -> 'c Dag.Property.t list
+  val delete_property : ('e,'i,'c) t -> 'c Dag.Property.t -> ('e,'i,'c) t
 
   (* Removes all unreachable nodes and returns them *)
-  val gc : ('k,'e,'info,'c) t -> ('k,'e,'info,'c) t * Dag.NodeSet.t
-  val reachable : ('k,'e,'info,'c) t -> id -> Dag.NodeSet.t
+  val gc : ('e,'info,'c) t -> ('e,'info,'c) t * Dag.NodeSet.t
+  val reachable : ('e,'info,'c) t -> id -> Dag.NodeSet.t
 
 
 end
 
-module Make(OT : Map.OrderedType) : S
+module Make(OT : Map.OrderedType)(K : Kind) : S
 with type id = OT.t
 and type Dag.node = OT.t
+and type 'a kind_gen = 'a K.t
 and type Dag.NodeSet.t = Set.Make(OT).t
 and type Dag.NodeSet.elt = OT.t
 

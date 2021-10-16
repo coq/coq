@@ -405,7 +405,7 @@ let process_toplevel_command ~state stm =
   | VernacBackTo bid ->
     let bid = Stateid.of_int bid in
     let doc, res = Stm.edit_at ~doc:state.doc bid in
-    assert (res = `NewTip);
+    assert (res = Stm.NewTip);
     { state with doc; sid = bid }
 
   | VernacQuit ->
