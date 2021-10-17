@@ -191,14 +191,14 @@ GRAMMAR EXTEND Gram
       | "{"; c = binder_constr ; "}" ->
         { CAst.make ~loc @@ CNotation(None,(InConstrEntry,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = term LEVEL "200"; "}" ->
-        { CAst.make ~loc @@ CGeneralization (MaxImplicit, None, c) }
+        { CAst.make ~loc @@ CGeneralization (MaxImplicit, c) }
       | test_array_opening; "["; "|"; ls = array_elems; "|"; def = lconstr; ty = type_cstr; test_array_closing; "|"; "]"; u = univ_annot ->
         { let t = Array.make (List.length ls) def in
           List.iteri (fun i e -> t.(i) <- e) ls;
           CAst.make ~loc @@ CArray(u, t, def, ty)
         }
       | "`("; c = term LEVEL "200"; ")" ->
-        { CAst.make ~loc @@ CGeneralization (Explicit, None, c) } ] ]
+        { CAst.make ~loc @@ CGeneralization (Explicit, c) } ] ]
   ;
   array_elems:
     [ [ fs = LIST0 lconstr SEP ";" -> { fs } ]]

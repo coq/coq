@@ -1772,7 +1772,7 @@ let anew_instance atts binders (name,t) fields =
   let locality = get_locality atts.global in
   let _id = Classes.new_instance ~poly:atts.polymorphic
       name binders t (true, CAst.make @@ CRecord (fields))
-      ~locality ~generalize:false Hints.empty_hint_info
+      ~locality Hints.empty_hint_info
   in
   ()
 
@@ -1987,7 +1987,7 @@ let add_morphism atts binders m s n =
   let _id, lemma = Classes.new_instance_interactive
       ~locality ~poly:atts.polymorphic
       instance_name binders instance_t
-      ~generalize:false ~tac ~hook:(declare_projection n instance_id)
+      ~tac ~hook:(declare_projection n instance_id)
       Hints.empty_hint_info None
   in
   lemma (* no instance body -> always open proof *)

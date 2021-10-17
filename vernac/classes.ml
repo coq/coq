@@ -545,19 +545,8 @@ let do_instance_program ~pm env env' sigma ?hook ~locality ~poly cty k u ctx ctx
   else
     declare_instance_program pm env sigma ~locality ~poly id pri imps decl term termtype
 
-let auto_generalize =
-  Goptions.declare_bool_option_and_ref
-    ~depr:true
-    ~key:["Instance";"Generalized";"Output"]
-    ~value:false
-
-let interp_instance_context ~program_mode env ctx ?(generalize=auto_generalize()) pl tclass =
+let interp_instance_context ~program_mode env ctx pl tclass =
   let sigma, decl = interp_univ_decl_opt env pl in
-  let tclass =
-    (* when we remove this code, we can remove the middle argument of CGeneralization *)
-    if generalize then CAst.make @@ CGeneralization (Glob_term.MaxImplicit, Some AbsPi, tclass)
-    else tclass
-  in
   let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let sigma, (c', imps') = interp_type_evars_impls ~flags ~impls env' sigma tclass in
@@ -580,10 +569,10 @@ let interp_instance_context ~program_mode env ctx ?(generalize=auto_generalize()
   let sigma = resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env sigma in
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
-let new_instance_common ~program_mode ?generalize env instid ctx cl =
+let new_instance_common ~program_mode env instid ctx cl =
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    interp_instance_context ~program_mode env ?generalize ctx pl cl
+    interp_instance_context ~program_mode env ctx pl cl
   in
   (* The name generator should not be here *)
   let id =
@@ -597,27 +586,27 @@ let new_instance_common ~program_mode ?generalize env instid ctx cl =
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
 
 let new_instance_interactive ~locality ~poly instid ctx cl
-    ?generalize ?(tac:unit Proofview.tactic option) ?hook
+    ?(tac:unit Proofview.tactic option) ?hook
     pri opt_props =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    new_instance_common ~program_mode:false ?generalize env instid ctx cl in
+    new_instance_common ~program_mode:false env instid ctx cl in
   id, do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly
     cty k u ctx ctx' pri decl imps subst id opt_props
 
-let new_instance_program ~locality ~pm ~poly instid ctx cl opt_props ?generalize ?hook pri =
+let new_instance_program ~locality ~pm ~poly instid ctx cl opt_props ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    new_instance_common ~program_mode:true ?generalize env instid ctx cl in
+    new_instance_common ~program_mode:true env instid ctx cl in
   let pm =
     do_instance_program ~pm env env' sigma ?hook ~locality ~poly
       cty k u ctx ctx' pri decl imps subst id opt_props in
   pm, id
 
-let new_instance ~locality ~poly instid ctx cl props ?generalize ?hook pri =
+let new_instance ~locality ~poly instid ctx cl props ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    new_instance_common ~program_mode:false ?generalize env instid ctx cl in
+    new_instance_common ~program_mode:false env instid ctx cl in
   do_instance env env' sigma ?hook ~locality ~poly
     cty k u ctx ctx' pri decl imps subst id props;
   id
@@ -626,7 +615,7 @@ let declare_new_instance ~locality ~program_mode ~poly instid ctx cl pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    interp_instance_context ~program_mode ~generalize:false env ctx pl cl
+    interp_instance_context ~program_mode env ctx pl cl
   in
   do_declare_instance sigma ~locality ~poly k u ctx ctx' pri decl imps subst instid
 

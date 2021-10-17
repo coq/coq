@@ -40,11 +40,6 @@ let sort_expr_eq u1 u2 =
 (***********************)
 (* For binders parsing *)
 
-let abstraction_kind_eq ak1 ak2 = match ak1, ak2 with
-| AbsLambda, AbsLambda -> true
-| AbsPi, AbsPi -> true
-| _ -> false
-
 let binder_kind_eq b1 b2 = match b1, b2 with
 | Default bk1, Default bk2 -> Glob_ops.binding_kind_eq bk1 bk2
 | Generalized (ck1, b1), Generalized (ck2, b2) ->
@@ -249,9 +244,8 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         constr_notation_substitution_eq s1 s2
       | CPrim i1, CPrim i2 ->
         prim_token_eq i1 i2
-      | CGeneralization (bk1, ak1, e1), CGeneralization (bk2, ak2, e2) ->
+      | CGeneralization (bk1, e1), CGeneralization (bk2, e2) ->
         Glob_ops.binding_kind_eq bk1 bk2 &&
-        Option.equal abstraction_kind_eq ak1 ak2 &&
         constr_expr_eq e1 e2
       | CDelimiters(s1,e1), CDelimiters(s2,e2) ->
         String.equal s1 s2 &&
@@ -361,7 +355,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
       List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None,IntroAnonymous,None)) bl) acc bll
-    | CGeneralization (_,_,c) -> f n acc c
+    | CGeneralization (_,c) -> f n acc c
     | CDelimiters (_,a) -> f n acc a
     | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
@@ -474,7 +468,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
       (* This is an approximation because we don't know what binds what *)
       CNotation (inscope,n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
                     List.map (fun bl -> snd (fold_map_local_binders f g e bl)) bll))
-    | CGeneralization (b,a,c) -> CGeneralization (b,a,f e c)
+    | CGeneralization (b,c) -> CGeneralization (b,f e c)
     | CDelimiters (s,a) -> CDelimiters (s,f e a)
     | CHole _ | CEvar _ | CPatVar _ | CSort _
     | CPrim _ | CRef _ as x -> x

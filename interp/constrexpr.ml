@@ -69,8 +69,6 @@ type binder_kind =
       (** (Inner binding always Implicit) Outer bindings, typeclass-specific flag
          for implicit generalization of superclasses *)
 
-type abstraction_kind = AbsLambda | AbsPi
-
 type explicit_flag = bool (** true = with "@" *)
 
 type prim_token =
@@ -130,7 +128,7 @@ and constr_expr_r =
   | CSort   of sort_expr
   | CCast   of constr_expr * Constr.cast_kind * constr_expr
   | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution
-  | CGeneralization of Glob_term.binding_kind * abstraction_kind option * constr_expr
+  | CGeneralization of Glob_term.binding_kind * constr_expr
   | CPrim of prim_token
   | CDelimiters of string * constr_expr
   | CArray of instance_expr option * constr_expr array * constr_expr * constr_expr
