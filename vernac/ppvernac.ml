@@ -1001,7 +1001,7 @@ let pr_vernac_expr v =
     return (
       hov 1 (keyword "Existing" ++ spc () ++
              keyword(String.plural (List.length insts) "Instance") ++
-             spc () ++ prlist_with_sep (fun () -> str", ") pr_inst insts)
+             spc () ++ prlist_with_sep spc pr_inst insts)
     )
 
   | VernacExistingClass id ->
