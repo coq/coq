@@ -520,6 +520,17 @@ type, like:
 .. coqdoc::
    Definition relation A := A -> A -> Prop.
 
+.. versionadded:: 8.15
+
+   :cmd:`Typeclasses Transparent` and :cmd:`Typeclasses Opaque`
+   support locality attributes like :cmd:`Hint <Hint Opaque>` commands.
+
+.. deprecated:: 8.15
+
+   The default value for typeclass transparency hints will change in a future
+   release. Hints added outside of sections without an explicit
+   locality are now deprecated. We recommend using :attr:`export`
+   where possible.
 
 Settings
 ~~~~~~~~
