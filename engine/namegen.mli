@@ -86,7 +86,7 @@ val next_ident_away_from : Id.t -> (Id.t -> bool) -> Id.t
 val next_ident_away : Id.t -> Id.Set.t -> Id.t
 
 (** Avoid clashing with a name already used in current module *)
-val next_ident_away_in_goal : Id.t -> Id.Set.t -> Id.t
+val next_ident_away_in_goal : Environ.env -> Id.t -> Id.Set.t -> Id.t
 
 (** Avoid clashing with a name already used in current module
    but tolerate overwriting section variables, as in goals *)
@@ -113,15 +113,15 @@ type renaming_flags =
 val make_all_name_different : env -> evar_map -> env
 
 val compute_displayed_name_in :
-  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
+  Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
 val compute_and_force_displayed_name_in :
-  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
+  Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
 val compute_displayed_let_name_in :
-  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
+  Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
 val rename_bound_vars_as_displayed :
-  evar_map -> Id.Set.t -> Name.t list -> types -> types
+  Environ.env -> evar_map -> Id.Set.t -> Name.t list -> types -> types
 
 (* Generic function expecting a "not occurn" function *)
 val compute_displayed_name_in_gen :
   (evar_map -> int -> 'a -> bool) ->
-  evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
+  Environ.env -> evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t

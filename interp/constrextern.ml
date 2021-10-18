@@ -1487,16 +1487,16 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       GApp (DAst.make @@ GPatVar (Evar_kinds.SecondOrderPatVar n),
         List.map (glob_of_pat avoid env sigma) args)
   | PProd (na,t,c) ->
-      let na',avoid' = compute_displayed_name_in_pattern sigma avoid na c in
+      let na',avoid' = compute_displayed_name_in_pattern (Global.env ()) sigma avoid na c in
       let env' = Termops.add_name na' env in
       GProd (na',Explicit,glob_of_pat avoid env sigma t,glob_of_pat avoid' env' sigma c)
   | PLetIn (na,b,t,c) ->
-      let na',avoid' = Namegen.compute_displayed_let_name_in sigma Namegen.RenamingForGoal avoid na c in
+      let na',avoid' = Namegen.compute_displayed_let_name_in (Global.env ()) sigma Namegen.RenamingForGoal avoid na c in
       let env' = Termops.add_name na' env in
       GLetIn (na',glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
               glob_of_pat avoid' env' sigma c)
   | PLambda (na,t,c) ->
-      let na',avoid' = compute_displayed_name_in_pattern sigma avoid na c in
+      let na',avoid' = compute_displayed_name_in_pattern (Global.env ()) sigma avoid na c in
       let env' = Termops.add_name na' env in
       GLambda (na',Explicit,glob_of_pat avoid env sigma t, glob_of_pat avoid' env' sigma c)
   | PIf (c,b1,b2) ->
@@ -1574,7 +1574,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
 
 and glob_of_pat_under_context avoid env sigma (nas, pat) =
   let fold (avoid, env, nas, epat) na =
-    let na, avoid = compute_displayed_name_in_pattern sigma avoid na epat in
+    let na, avoid = compute_displayed_name_in_pattern (Global.env ()) sigma avoid na epat in
     let env = Termops.add_name na env in
     let epat = match epat with PLambda (_, _, p) -> p | _ -> assert false in
     (avoid, env, na :: nas, epat)

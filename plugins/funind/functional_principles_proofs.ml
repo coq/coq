@@ -1512,7 +1512,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
         Proofview.Goal.enter (fun gls ->
             let hyps = Tacmach.New.pf_ids_of_hyps gls in
             let hid =
-              next_ident_away_in_goal (Id.of_string "prov")
+              next_ident_away_in_goal (Global.env ()) (Id.of_string "prov")
                 (Id.Set.of_list hyps)
             in
             tclTHENLIST

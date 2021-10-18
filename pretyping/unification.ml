@@ -1687,7 +1687,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     let t = match ty with Some t -> t | None -> get_type_of env sigma c in
     let x = id_of_name_using_hdchar env sigma t name in
     let ids = Environ.ids_of_named_context_val (named_context_val env) in
-    if name == Anonymous then next_ident_away_in_goal x ids else
+    if name == Anonymous then next_ident_away_in_goal (Global.env ()) x ids else
     if mem_named_context_val x (named_context_val env) then
       user_err
         (str "The variable " ++ Id.print x ++ str " is already declared.")

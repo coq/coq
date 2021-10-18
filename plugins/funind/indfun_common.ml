@@ -11,7 +11,7 @@ let mk_complete_id id = Nameops.add_suffix (mk_rel_id id) "_complete"
 let mk_equation_id id = Nameops.add_suffix id "_equation"
 
 let fresh_id avoid s =
-  Namegen.next_ident_away_in_goal (Id.of_string s) (Id.Set.of_list avoid)
+  Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string s) (Id.Set.of_list avoid)
 
 let fresh_name avoid s = Name (fresh_id avoid s)
 

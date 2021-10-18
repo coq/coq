@@ -502,7 +502,7 @@ let rename_hyp repl =
 let fresh_id_in_env avoid id env =
   let avoid' = ids_of_named_context_val (named_context_val env) in
   let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid in
-  next_ident_away_in_goal id avoid
+  next_ident_away_in_goal (Global.env ()) id avoid
 
 let fresh_id avoid id gl =
   fresh_id_in_env avoid id (Tacmach.pf_env gl)
@@ -2798,7 +2798,7 @@ let pose_tac na c =
       id
     | Anonymous ->
       let id = id_of_name_using_hdchar env sigma t Anonymous in
-      next_ident_away_in_goal id (ids_of_named_context_val hyps)
+      next_ident_away_in_goal (Global.env ()) id (ids_of_named_context_val hyps)
     in
     Proofview.Unsafe.tclEVARS sigma <*>
     Refine.refine ~typecheck:false begin fun sigma ->
