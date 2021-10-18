@@ -6,6 +6,12 @@ ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
 git_download struct_tact
+git_download inf_seq_ext
+git_download cheerios
+git_download verdi
+git_download verdi_raft
+
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/struct_tact"
   ./configure
@@ -13,15 +19,11 @@ git_download struct_tact
   make install
 )
 
-git_download inf_seq_ext
-
 ( cd "${CI_BUILD_DIR}/inf_seq_ext"
   ./configure
   make
   make install
 )
-
-git_download cheerios
 
 ( cd "${CI_BUILD_DIR}/cheerios"
   ./configure
@@ -29,15 +31,11 @@ git_download cheerios
   make install
 )
 
-git_download verdi
-
 ( cd "${CI_BUILD_DIR}/verdi"
   ./configure
   make
   make install
 )
-
-git_download verdi_raft
 
 ( cd "${CI_BUILD_DIR}/verdi_raft"
   ./configure

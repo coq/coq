@@ -61,9 +61,7 @@ do
     _CONTRIB_GITURL="https://github.com/$DEVELOPER_NAME/$_CONTRIB_GITSUFFIX"
     _CONTRIB_GITPUSHURL="git@github.com:$DEVELOPER_NAME/${_CONTRIB_GITSUFFIX}.git"
 
-    # This should work better: for example we should be able not to
-    # build but just to checkout.
-    make ci-$_CONTRIB_NAME || true
+    DOWNLOAD_ONLY=1 make ci-$_CONTRIB_NAME || true
     setup_contrib_git $_CONTRIB_DIR $_CONTRIB_GITPUSHURL
 
     echo "overlay ${_CONTRIB_NAME} $_CONTRIB_GITURL $OVERLAY_BRANCH $PR_NUMBER" >> $OVERLAY_FILE

@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download corn
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/corn"
   ./configure.sh

@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download hott
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ( cd "${CI_BUILD_DIR}/hott"
   make
   make validate

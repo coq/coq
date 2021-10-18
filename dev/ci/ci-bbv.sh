@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download bbv
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ( cd "${CI_BUILD_DIR}/bbv"
   make
   make install

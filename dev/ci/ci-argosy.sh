@@ -8,6 +8,8 @@ ci_dir="$(dirname "$0")"
 WITH_SUBMODULES=1
 git_download argosy
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 ( cd "${CI_BUILD_DIR}/argosy"
   make
 )

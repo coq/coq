@@ -7,6 +7,8 @@ ci_dir="$(dirname "$0")"
 
 git_download engine_bench
 
+if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
+
 export COQEXTRAFLAGS='-native-compiler ondemand'
 ( cd "${CI_BUILD_DIR}/engine_bench"
   make coq
