@@ -512,5 +512,5 @@ Proof.
   unfold relation_equivalence in *. compute; firstorder.
 Qed.
 
-Typeclasses Opaque arrows predicate_implication predicate_equivalence
+Global Typeclasses Opaque arrows predicate_implication predicate_equivalence
             relation_equivalence pointwise_lifting.

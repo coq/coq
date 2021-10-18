@@ -1382,8 +1382,7 @@ Definition eq_mem {T} mp1 mp2 := forall x : T, in_mem x mp1 = in_mem x mp2.
 Definition sub_mem {T} mp1 mp2 := forall x : T, in_mem x mp1 -> in_mem x mp2.
 
 Arguments in_mem {T} x mp : simpl never.
-Typeclasses Opaque eq_mem.
-Typeclasses Opaque sub_mem.
+Global Typeclasses Opaque eq_mem sub_mem.
 
 (** The [simpl_of_mem; pred_of_simpl] path provides a new mem_pred >-> pred
   coercion, but does _not_ override the pred_of_mem : mem_pred >-> pred_sort
