@@ -552,6 +552,13 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    predicate :g:`P`. Most of the time, :g:`t` may be computed without computing
    the proof of :g:`P(t)`, thanks to the lazy strategy.
 
+   .. flag:: Kernel Term Sharing
+
+      Turning this flag off disables the sharing of computations in
+      :tacn:`lazy`, making it a call-by-name reduction. This also
+      affects the reduction procedure used by the kernel when
+      typechecking. By default sharing is activated.
+
    The call-by-value strategy is the one used in ML languages: the
    arguments of a function call are systematically weakly evaluated
    first. The lazy strategy is similar to how Haskell reduces terms.
