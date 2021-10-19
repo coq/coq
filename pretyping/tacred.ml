@@ -1041,9 +1041,9 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
    immediately hides a non reducible fix or a cofix *)
 
 let whd_simpl_orelse_delta_but_fix env sigma c =
+  let reds = make_simpl_reds() in
   let rec redrec s =
-    let (constr, stack as s') =
-      whd_simpl_stack (make_simpl_reds()) env sigma s in
+    let (constr, stack as s') = whd_simpl_stack reds env sigma s in
     match match_eval_ref_value env sigma constr stack with
     | Some c ->
       (match EConstr.kind sigma (snd (decompose_lambda sigma c)) with
