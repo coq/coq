@@ -22,6 +22,7 @@ val ppdir : Names.DirPath.t -> unit
 val ppmp : Names.ModPath.t -> unit
 val ppcon : Names.Constant.t -> unit
 val ppproj : Names.Projection.t -> unit
+val ppprojrepr : Names.Projection.Repr.t -> unit
 val ppkn : Names.KerName.t -> unit
 val ppmind : Names.MutInd.t -> unit
 val ppind : Names.inductive -> unit
