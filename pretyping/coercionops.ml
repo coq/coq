@@ -158,7 +158,14 @@ let find_class_type env sigma t =
     | Var id -> CL_SECVAR id, EInstance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
     | Proj (p, c) when not (Projection.unfolded p) ->
-      CL_PROJ (Projection.repr p), EInstance.empty, (c :: args)
+      let revparams =
+        let open Inductiveops in
+        let t = Retyping.get_type_of env sigma c in
+        let IndType (fam,_) = find_rectype env sigma t in
+        let _, params = dest_ind_family fam in
+        List.rev_map EConstr.of_constr params
+      in
+      CL_PROJ (Projection.repr p), EInstance.empty, (List.rev_append revparams (c :: args))
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
     | Prod _ -> CL_FUN, EInstance.empty, []
     | Sort _ -> CL_SORT, EInstance.empty, []
@@ -411,8 +418,7 @@ let reference_arity_length env sigma ref =
   List.length (fst (Reductionops.splay_arity env sigma (EConstr.of_constr t)))
 
 let projection_arity_length env sigma p =
-  let len = reference_arity_length env sigma (GlobRef.ConstRef (Projection.Repr.constant p)) in
-  len - Projection.Repr.npars p
+  reference_arity_length env sigma (GlobRef.ConstRef (Projection.Repr.constant p))
 
 let class_params env sigma = function
   | CL_FUN | CL_SORT -> 0
