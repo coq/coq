@@ -59,7 +59,8 @@ let get_include_dirs () =
     let coqcorelib = Envars.coqcorelib () in
     [ coqcorelib / "kernel" ; coqcorelib / "kernel/.kernel.objs/byte/"
     ; coqcorelib / "library"; coqcorelib / "library/.library.objs/byte/"
-    ]
+    ] |>
+    List.filter Sys.file_exists
   | _::_ as l -> l
   in
   if Lazy.is_val my_temp_dir
