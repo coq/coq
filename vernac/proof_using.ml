@@ -16,7 +16,10 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
+let all_collection_id = Id.of_string "All"
 let known_names = Summary.ref [] ~name:"proofusing-nameset"
+
+let is_known_name id = CList.mem_assoc_f Id.equal id !known_names
 
 let rec close_fwd env sigma s =
   let s' =
@@ -41,7 +44,11 @@ let set_of_type env sigma ty =
 let full_set env =
   List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
+let warning name pp = CWarnings.create ~name:name ~category:"deprecated" pp
+
 let process_expr env sigma e v_ty =
+  let variable_exists id =
+    try ignore (lookup_named id env); true with | Not_found -> false in
   let rec aux = function
     | SsEmpty -> Id.Set.empty
     | SsType -> v_ty
@@ -51,10 +58,18 @@ let process_expr env sigma e v_ty =
     | SsCompl e -> Id.Set.diff (full_set env) (aux e)
     | SsFwdClose e -> close_fwd env sigma (aux e)
   and set_of_id id =
-    if Id.to_string id = "All" then
-      full_set env
-    else if CList.mem_assoc_f Id.equal id !known_names then
-      aux (CList.assoc_f Id.equal id !known_names)
+    if Id.equal id all_collection_id then
+      begin
+        if variable_exists all_collection_id then
+          warning "all-collection-precedence" Pp.(fun () -> str "Variable " ++ Id.print all_collection_id ++ str " is shadowed by Collection named " ++ Id.print all_collection_id ++ str " containing all variables.") ();
+        full_set env
+      end
+    else if is_known_name id then
+      begin
+        if variable_exists id then
+          warning "collection-precedence" Pp.(fun id -> Id.print id ++ str " is both name of a Collection and Variable, Collection " ++ Id.print id ++ str " takes precedence over Variable.") id;
+        aux (CList.assoc_f Id.equal id !known_names)
+      end
     else Id.Set.singleton id
   in
   aux e
@@ -70,7 +85,21 @@ let definition_using env evd ~using ~terms =
   let l = process_expr env evd using terms in
   Names.Id.Set.(List.fold_right add l empty)
 
-let name_set id expr = known_names := (id,expr) :: !known_names
+let name_set id expr =
+  let do_name_set () = known_names := (id,expr) :: !known_names in
+  if Id.equal id all_collection_id then
+    CErrors.user_err Pp.(str "\"" ++ Id.print all_collection_id ++ str "\" is a predefined collection containg all variables, you can't redefine it.")
+  else if is_known_name id then
+    begin
+      warning "collection-redefinition" Pp.(fun id -> str "New Collection definition of " ++ Id.print id ++ str " shadows the previous one.") id;
+      do_name_set ()
+    end
+  else if Termops.is_section_variable id then
+    begin
+      warning "variable-shadowing" Pp.(fun id -> Id.print id ++ str " was already a defined varaible, the name " ++ Id.print id ++ str " will refer to Collection when executing \"Proof using\" command.") id;
+      do_name_set ()
+    end
+  else do_name_set ()
 
 let minimize_hyps env ids =
   let rec aux ids =
