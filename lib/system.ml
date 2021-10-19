@@ -115,6 +115,11 @@ let where_in_path ?(warn=true) path filename =
     let f = Filename.concat lpe filename in
     if file_exists_respecting_case lpe filename then [lpe,f] else []))
 
+let all_in_path path filename =
+  search path (fun lpe ->
+      let f = Filename.concat lpe filename in
+      if file_exists_respecting_case lpe filename then [lpe,f] else [])
+
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
     (* the name is considered to be a physical name and we use the file
