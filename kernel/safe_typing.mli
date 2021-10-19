@@ -200,7 +200,7 @@ val module_num_parameters : safe_environment -> int list
 
 (** returns true if the module is a module type following the nested module
     structure. The inner module (type) comes first in the list. true means
-    a module type, false a regular mofule *)
+    a module type, false a regular module *)
 val module_is_modtype : safe_environment -> bool list
 
 (** Traditional mode: check at end of module that no future was
