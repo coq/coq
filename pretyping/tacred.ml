@@ -1074,7 +1074,7 @@ let hnf_constr env sigma c =
 let whd_simpl_with_reds allowed_reds env sigma c =
   applist (whd_simpl_stack allowed_reds env sigma (c, []))
 
-let whd_simpl = whd_simpl_with_reds (make_simpl_reds ())
+let whd_simpl env sigma x = whd_simpl_with_reds (make_simpl_reds ()) env sigma x
 
 let simpl env sigma c =
   let allowed_reds = make_simpl_reds() in
