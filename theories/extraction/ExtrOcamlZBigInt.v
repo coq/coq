@@ -51,41 +51,41 @@ Extract Inductive N => "Big_int_Z.big_int"
 Extract Constant Pos.add => "Big_int_Z.add_big_int".
 Extract Constant Pos.succ => "Big_int_Z.succ_big_int".
 Extract Constant Pos.pred =>
- "fun n -> Big_int_Z.max_big_int Big_int_Z.unit_big_int
-  (Big_int_Z.pred_big_int n)".
+ "(fun n -> Big_int_Z.max_big_int Big_int_Z.unit_big_int
+  (Big_int_Z.pred_big_int n))".
 Extract Constant Pos.sub =>
- "fun n m -> Big_int_Z.max_big_int
-  Big_int_Z.unit_big_int (Big_int_Z.sub_big_int n m)".
+ "(fun n m -> Big_int_Z.max_big_int
+  Big_int_Z.unit_big_int (Big_int_Z.sub_big_int n m))".
 Extract Constant Pos.mul => "Big_int_Z.mult_big_int".
 Extract Constant Pos.min => "Big_int_Z.min_big_int".
 Extract Constant Pos.max => "Big_int_Z.max_big_int".
 Extract Constant Pos.compare =>
- "fun x y -> let s = Big_int_Z.compare_big_int x y in
-  if s = 0 then Eq else if s < 0 then Lt else Gt".
+ "(fun x y -> let s = Big_int_Z.compare_big_int x y in
+  if s = 0 then Eq else if s < 0 then Lt else Gt)".
 Extract Constant Pos.compare_cont =>
- "fun c x y -> let s = Big_int_Z.compare_big_int x y in
-  if s = 0 then c else if s < 0 then Lt else Gt".
+ "(fun c x y -> let s = Big_int_Z.compare_big_int x y in
+  if s = 0 then c else if s < 0 then Lt else Gt)".
 
 Extract Constant N.add => "Big_int_Z.add_big_int".
 Extract Constant N.succ => "Big_int_Z.succ_big_int".
 Extract Constant N.pred =>
- "fun n -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
-  (Big_int_Z.pred_big_int n)".
+ "(fun n -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
+  (Big_int_Z.pred_big_int n))".
 Extract Constant N.sub =>
- "fun n m -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
-  (Big_int_Z.sub_big_int n m)".
+ "(fun n m -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
+  (Big_int_Z.sub_big_int n m))".
 Extract Constant N.mul => "Big_int_Z.mult_big_int".
 Extract Constant N.min => "Big_int_Z.min_big_int".
 Extract Constant N.max => "Big_int_Z.max_big_int".
 Extract Constant N.div =>
- "fun a b -> if Big_int_Z.eq_big_int b Big_int_Z.zero_big_int
-  then Big_int_Z.zero_big_int else Big_int_Z.div_big_int a b".
+ "(fun a b -> if Big_int_Z.eq_big_int b Big_int_Z.zero_big_int
+  then Big_int_Z.zero_big_int else Big_int_Z.div_big_int a b)".
 Extract Constant N.modulo =>
- "fun a b -> if Big_int_Z.eq_big_int b Big_int_Z.zero_big_int
-  then a else Big_int_Z.mod_big_int a b".
+ "(fun a b -> if Big_int_Z.eq_big_int b Big_int_Z.zero_big_int
+  then a else Big_int_Z.mod_big_int a b)".
 Extract Constant N.compare =>
- "fun x y -> let s = Big_int_Z.compare_big_int x y in
-  if s = 0 then Eq else if s < 0 then Lt else Gt".
+ "(fun x y -> let s = Big_int_Z.compare_big_int x y in
+  if s = 0 then Eq else if s < 0 then Lt else Gt)".
 
 Extract Constant Z.add => "Big_int_Z.add_big_int".
 Extract Constant Z.succ => "Big_int_Z.succ_big_int".
@@ -97,8 +97,8 @@ Extract Constant Z.abs => "Big_int_Z.abs_big_int".
 Extract Constant Z.min => "Big_int_Z.min_big_int".
 Extract Constant Z.max => "Big_int_Z.max_big_int".
 Extract Constant Z.compare =>
- "fun x y -> let s = Big_int_Z.compare_big_int x y in
-  if s = 0 then Eq else if s < 0 then Lt else Gt".
+ "(fun x y -> let s = Big_int_Z.compare_big_int x y in
+  if s = 0 then Eq else if s < 0 then Lt else Gt)".
 
 Extract Constant Z.of_N => "(fun p -> p)".
 Extract Constant Z.abs_N => "Big_int_Z.abs_big_int".

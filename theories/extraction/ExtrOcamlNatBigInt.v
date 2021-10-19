@@ -36,11 +36,11 @@ Extract Inductive nat => "Big_int_Z.big_int"
 Extract Constant plus => "Big_int_Z.add_big_int".
 Extract Constant mult => "Big_int_Z.mult_big_int".
 Extract Constant pred =>
- "fun n -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
-  (Big_int_Z.pred_big_int n)".
+ "(fun n -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
+  (Big_int_Z.pred_big_int n))".
 Extract Constant minus =>
- "fun n m -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
-  (Big_int_Z.sub_big_int n m)".
+ "(fun n m -> Big_int_Z.max_big_int Big_int_Z.zero_big_int
+  (Big_int_Z.sub_big_int n m))".
 Extract Constant max => "Big_int_Z.max_big_int".
 Extract Constant min => "Big_int_Z.min_big_int".
 (*Extract Constant nat_beq => "Big.eq".*)
@@ -50,24 +50,24 @@ Extract Constant EqNat.eq_nat_decide => "Big_int_Z.eq_big_int".
 Extract Constant Peano_dec.eq_nat_dec => "Big_int_Z.eq_big_int".
 
 Extract Constant Nat.compare =>
- "fun x y -> let s = Big_int_Z.compare_big_int x y in
-  if s = 0 then Eq else if s < 0 then Lt else Gt".
+ "(fun x y -> let s = Big_int_Z.compare_big_int x y in
+  if s = 0 then Eq else if s < 0 then Lt else Gt)".
 
 Extract Constant Compare_dec.leb => "Big_int_Z.le_big_int".
 Extract Constant Compare_dec.le_lt_dec => "Big_int_Z.le_big_int".
 Extract Constant Compare_dec.lt_eq_lt_dec =>
- "fun x y -> let s = Big_int_Z.compare_big_int x y in
-  if s = 0 then (Some false) else if s < 0 then (Some true) else None".
+ "(fun x y -> let s = Big_int_Z.compare_big_int x y in
+  if s = 0 then (Some false) else if s < 0 then (Some true) else None)".
 
 Extract Constant Even.even_odd_dec =>
- "fun n -> Big_int_Z.sign_big_int
-  (Big_int_Z.mod_big_int n (Big_int_Z.big_int_of_int 2)) = 0".
-Extract Constant Div2.div2 => "fun n -> Big_int_Z.div_big_int n (Big_int_Z.big_int_of_int 2)".
+ "(fun n -> Big_int_Z.sign_big_int
+  (Big_int_Z.mod_big_int n (Big_int_Z.big_int_of_int 2)) = 0)".
+Extract Constant Div2.div2 => "(fun n -> Big_int_Z.div_big_int n (Big_int_Z.big_int_of_int 2))".
 
 Extract Inductive Euclid.diveucl => "(Big_int_Z.big_int * Big_int_Z.big_int)" [""].
-Extract Constant Euclid.eucl_dev => "fun n m -> Big_int_Z.quomod_big_int m n".
-Extract Constant Euclid.quotient => "fun n m -> Big_int_Z.div_big_int m n".
-Extract Constant Euclid.modulo => "fun n m -> Big_int_Z.mod_big_int m n".
+Extract Constant Euclid.eucl_dev => "(fun n m -> Big_int_Z.quomod_big_int m n)".
+Extract Constant Euclid.quotient => "(fun n m -> Big_int_Z.div_big_int m n)".
+Extract Constant Euclid.modulo => "(fun n m -> Big_int_Z.mod_big_int m n)".
 
 (*
 Require Import Euclid.
