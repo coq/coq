@@ -365,22 +365,23 @@ let end_compilation oname =
   !lib_state.path_prefix,after
 
 (* Returns true if we are inside an opened module or module type *)
+let is_module_or_modtype () =
+  match Safe_typing.module_is_modtype (Global.safe_env ()) with
+  | [] -> false
+  | _ -> true
 
-let is_module_gen which check =
-  let test = function
-    | _, OpenedModule (ty,_,_,_) -> which ty
-    | _ -> false
-  in
-  try
-    match find_entry_p test with
-    | _, OpenedModule (ty,_,_,_) -> check ty
-    | _ -> assert false
-  with Not_found -> false
+let is_modtype () =
+  let modules = Safe_typing.module_is_modtype (Global.safe_env ()) in
+  List.exists (fun x -> x) modules
 
-let is_module_or_modtype () = is_module_gen (fun _ -> true) (fun _ -> true)
-let is_modtype () = is_module_gen (fun b -> b) (fun _ -> true)
-let is_modtype_strict () = is_module_gen (fun _ -> true) (fun b -> b)
-let is_module () = is_module_gen (fun b -> not b) (fun _ -> true)
+let is_modtype_strict () =
+  match Safe_typing.module_is_modtype (Global.safe_env ()) with
+  | b :: _ -> b
+  | [] -> false
+
+let is_module () =
+  let modules = Safe_typing.module_is_modtype (Global.safe_env ()) in
+  List.exists (fun x -> not x) modules
 
 (* Returns the opening node of a given name *)
 let find_opening_node id =
