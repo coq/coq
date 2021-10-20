@@ -28,9 +28,6 @@ let coqdep_warning args =
 
 module StrSet = Set.Make(String)
 
-module StrList = struct type t = string list let compare = compare end
-module StrListMap = Map.Make(StrList)
-
 type dynlink = Opt | Byte | Both | No | Variable
 
 let option_noglob = ref false
@@ -47,6 +44,23 @@ let rec get_extension f = function
   | [] -> (f, "")
   | s :: _ when Filename.check_suffix f s -> (Filename.chop_suffix f s, s)
   | _ :: l -> get_extension f l
+
+(** File comparison *)
+
+let absolute_dir dir =
+  let current = Sys.getcwd () in
+    Sys.chdir dir;
+    let dir' = Sys.getcwd () in
+      Sys.chdir current;
+      dir'
+
+let absolute_file_name basename odir =
+  let dir = match odir with Some dir -> dir | None -> "." in
+  absolute_dir dir // basename
+
+let compare_file f1 f2 =
+  absolute_file_name (Filename.basename f1) (Some (Filename.dirname f1))
+  = absolute_file_name (Filename.basename f2) (Some (Filename.dirname f2))
 
 (** [basename_noext] removes both the directory part and the extension
     (if necessary) of a filename *)
@@ -66,18 +80,24 @@ let vAccu   = ref ([] : (string * string) list)
 
 let addQueue q v = q := v :: !q
 
-let safe_hash_add cmp clq q (k, (v, b)) =
+let safe_hash_add_suffix a from file suffix =
   try
-    let (v2, _) = Hashtbl.find q k in
-    if not (cmp v v2) then
-      let nv =
-        try v :: StrListMap.find k !clq
-        with Not_found -> [v; v2]
-      in
-      clq := StrListMap.add k nv !clq;
-      (* overwrite previous bindings, as coqc does *)
-      Hashtbl.add q k (v, b)
-  with Not_found -> Hashtbl.add q k (v, b)
+    let l = Hashtbl.find a suffix in
+    (* If already present, put it again in front *)
+    let l = CList.remove compare_file file l in
+    Hashtbl.add a suffix (file::l)
+  with Not_found ->
+    Hashtbl.add a suffix [file]
+
+let safe_hash_add q ((from, suffixes), file) =
+  let a =
+    try Hashtbl.find q from
+    with Not_found ->
+      let a = Hashtbl.create 19 in
+      Hashtbl.add q from a;
+      a
+  in
+  List.iter (safe_hash_add_suffix a from file) suffixes
 
 (** Files found in the loadpaths.
     For the ML files, the string is the basename without extension.
@@ -113,45 +133,22 @@ let mkknown () =
 let add_mllib_known, _, search_mllib_known = mkknown ()
 let add_mlpack_known, _, search_mlpack_known = mkknown ()
 
-let vKnown = (Hashtbl.create 19 : (string list, string * bool) Hashtbl.t)
+type filename = string
+type dirpath = string list
+
+let vKnown = (Hashtbl.create 19 : (dirpath, (dirpath, filename list) Hashtbl.t) Hashtbl.t)
 (* The associated boolean is true if this is a root path. *)
-let coqlibKnown = (Hashtbl.create 19 : (string list, unit) Hashtbl.t)
+let coqlibKnown = (Hashtbl.create 19 : (dirpath, (dirpath, filename list) Hashtbl.t) Hashtbl.t)
 
-let get_prefix p l =
-  let rec drop_prefix_rec = function
-    | (h1::tp, h2::tl) when h1 = h2 -> drop_prefix_rec (tp,tl)
-    | ([], tl) -> Some tl
-    | _ -> None
-  in
-  drop_prefix_rec (p, l)
-
-let search_table (type r) is_root table ?from s = match from with
-| None -> Hashtbl.find table s
-| Some from ->
-  let module M = struct exception Found of r end in
-  let iter logpath binding =
-    if is_root binding then match get_prefix from logpath with
-    | None -> ()
-    | Some rem ->
-      match get_prefix (List.rev s) (List.rev rem) with
-      | None -> ()
-      | Some _ -> raise (M.Found binding)
-  in
-  try Hashtbl.iter iter table; raise Not_found
-  with M.Found s -> s
+let search_table table ?(from=[]) s =
+  Hashtbl.find (Hashtbl.find table from) s
 
 let search_v_known ?from s =
-  let is_root (_, root) = root in
-  try
-    let (phys_dir, _) = search_table is_root vKnown ?from s in
-    Some phys_dir
-  with Not_found -> None
+  try search_table vKnown ?from s
+  with Not_found -> []
 
 let is_in_coqlib ?from s =
-  let is_root _ = true in
-  try search_table is_root coqlibKnown ?from s; true with Not_found -> false
-
-let clash_v = ref (StrListMap.empty : string list StrListMap.t)
+  try let _ = search_table coqlibKnown ?from s in true with Not_found -> false
 
 let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
@@ -191,9 +188,8 @@ let warning_module_notfound from f s =
 let warning_declare f s =
   coqdep_warning "in file %s, declared ML module %s has not been found!" f s
 
-let warning_clash file dir =
-  match StrListMap.find dir !clash_v with
-    (f1::f2::fl) ->
+let warning_clash file dir = function
+  | (f1::f2::fl) ->
       let f = Filename.basename f1 in
       let d1 = Filename.dirname f1 in
       let d2 = Filename.dirname f2 in
@@ -209,21 +205,10 @@ let warning_cannot_open_dir dir =
   coqdep_warning "cannot open %s" dir
 
 let safe_assoc from verbose file k =
-  if verbose && StrListMap.mem k !clash_v then warning_clash file k;
   match search_v_known ?from k with
-  | None -> raise Not_found
-  | Some path -> path
-
-let absolute_dir dir =
-  let current = Sys.getcwd () in
-    Sys.chdir dir;
-    let dir' = Sys.getcwd () in
-      Sys.chdir current;
-      dir'
-
-let absolute_file_name basename odir =
-  let dir = match odir with Some dir -> dir | None -> "." in
-  absolute_dir dir // basename
+  | [] -> raise Not_found
+  | [path] -> path
+  | f :: _ as l -> if verbose then warning_clash file k l; f
 
 (** [find_dir_logpath dir] Return the logical path of directory [dir]
     if it has been given one. Raise [Not_found] otherwise. In
@@ -271,10 +256,6 @@ let escape =
       Buffer.add_char s' c
     done;
     Buffer.contents s'
-
-let compare_file f1 f2 =
-  absolute_file_name (Filename.basename f1) (Some (Filename.dirname f1))
-  = absolute_file_name (Filename.basename f2) (Some (Filename.dirname f2))
 
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
@@ -373,8 +354,8 @@ let rec find_dependencies basename =
             let str = Filename.basename str in
             if should_visit_v_and_mark None [str] then begin
               try
-                let (file_str, _) = Hashtbl.find vKnown [str] in
-                let canon = canonize file_str in
+                let file_str = search_table vKnown [str] in
+                let canon = canonize (List.hd file_str) in
                 add_dep_other (sprintf "%s.v" canon);
                 let deps = find_dependencies canon in
                 List.iter add_dep deps
@@ -411,10 +392,24 @@ let coq_dependencies () =
        printf "%!")
     (List.rev !vAccu)
 
+(** Compute the suffixes of a logical path *)
 let rec suffixes = function
   | [] -> assert false
   | [name] -> [[name]]
   | dir::suffix as l -> l::suffixes suffix
+
+(** Compute all the pairs [(from,suffs] such that a logical path
+    decomposes into [from @ ... @ suff] for some [suff] in [suffs],
+    i.e. such that once [from] is fixed, [From from Require suff]
+    refers (in the absence of ambiguity) to this logical path for
+    exactly the [suff] in [suffs] *)
+let rec cuts recur = function
+  | [] -> []
+  | [dir] ->
+    [[],[[dir]]]
+  | dir::tail as l ->
+    ([],if recur then suffixes l else [l]) ::
+    List.map (fun (fromtail,suffixes) -> (dir::fromtail,suffixes)) (cuts true tail)
 
 let add_caml_known phys_dir _ f =
   let basename,suff =
@@ -428,8 +423,10 @@ let add_coqlib_known recur phys_dir log_dir f =
   match get_extension f [".vo"; ".vio"; ".vos"] with
     | (basename, (".vo" | ".vio" | ".vos")) ->
         let name = log_dir@[basename] in
-        let paths = if recur then suffixes name else [name] in
-        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
+        let file = phys_dir//basename in
+        let paths = cuts recur name in
+        let iter n = safe_hash_add coqlibKnown (n, file) in
+        List.iter iter paths
     | _ -> ()
 
 let add_known recur phys_dir log_dir f =
@@ -437,15 +434,15 @@ let add_known recur phys_dir log_dir f =
     | (basename,".v") ->
         let name = log_dir@[basename] in
         let file = phys_dir//basename in
-        let () = safe_hash_add compare_file clash_v vKnown (name, (file, true)) in
-        if recur then
-          let paths = List.tl (suffixes name) in
-          let iter n = safe_hash_add compare_file clash_v vKnown (n, (file, false)) in
-          List.iter iter paths
+        let paths = cuts recur name in
+        let iter n = safe_hash_add vKnown (n, file) in
+        List.iter iter paths
     | (basename, (".vo" | ".vio" | ".vos")) when not(!option_boot) ->
         let name = log_dir@[basename] in
-        let paths = if recur then suffixes name else [name] in
-        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
+        let file = phys_dir//basename in
+        let paths = cuts recur name in
+        let iter n = safe_hash_add vKnown (n, file) in
+        List.iter iter paths
     | _ -> ()
 
 (* Visits all the directories under [dir], including [dir] *)
@@ -544,8 +541,8 @@ let sort () =
                 List.iter
                   (fun s ->
                     match search_v_known ?from s with
-                    | None -> ()
-                    | Some f -> loop f)
+                    | [] -> ()
+                    | f::_ -> loop f)
                 sl
             | _ -> ()
         done
