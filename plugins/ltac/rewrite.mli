@@ -28,13 +28,16 @@ type unary_strategy =
   | Bottomup | Topdown | Progress | Try | Any | Repeat
 
 type binary_strategy =
-  | Compose | Choice
+  | Compose
+
+type nary_strategy = Choice
 
 type ('constr,'redexpr) strategy_ast =
   | StratId | StratFail | StratRefl
   | StratUnary of unary_strategy * ('constr,'redexpr) strategy_ast
-  | StratBinary of binary_strategy
-    * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
+  | StratBinary of
+      binary_strategy * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
+  | StratNAry of nary_strategy * ('constr,'redexpr) strategy_ast list
   | StratConstr of 'constr * bool
   | StratTerms of 'constr list
   | StratHints of bool * string

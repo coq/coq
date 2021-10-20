@@ -2416,7 +2416,7 @@ rewstrategy: [
 | "progress" rewstrategy
 | "try" rewstrategy
 | rewstrategy ";" rewstrategy
-| "choice" rewstrategy rewstrategy
+| "choice" LIST1 rewstrategy
 | "repeat" rewstrategy
 | "any" rewstrategy
 | "subterm" rewstrategy
