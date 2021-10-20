@@ -57,13 +57,9 @@ let rec unzip ctx j =
   | `Cut (n,ty,arg) :: ctx ->
       unzip ctx { j with uj_val = mkApp (mkLambda (n,ty,j.uj_val),arg) }
 
-let feedback_completion_typecheck =
-  Option.iter (fun state_id ->
-      Feedback.feedback ~id:state_id Feedback.Complete)
-
 type typing_context =
-| MonoTyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * Stateid.t option
-| PolyTyCtx of Environ.env * unsafe_type_judgment * universe_level_subst * AbstractContext.t * Id.Set.t * Stateid.t option
+| MonoTyCtx of Environ.env * unsafe_type_judgment * Id.Set.t
+| PolyTyCtx of Environ.env * unsafe_type_judgment * universe_level_subst * AbstractContext.t * Id.Set.t
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
@@ -151,7 +147,7 @@ let infer_declaration env (dcl : constant_entry) =
 
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
-      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+      let { const_entry_body = body; _ } = c in
       let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_entry ->
         env, empty_level_subst, Monomorphic
@@ -174,7 +170,6 @@ let infer_declaration env (dcl : constant_entry) =
       in
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
       let def = Def def in
-        feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
         cook_type = typ;
@@ -189,9 +184,8 @@ let infer_declaration env (dcl : constant_entry) =
 let infer_opaque env = function
   | ({ opaque_entry_type = typ;
                        opaque_entry_universes = Monomorphic_entry; _ } as c) ->
-      let { opaque_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
-      let context = MonoTyCtx (env, tyj, c.opaque_entry_secctx, feedback_id) in
+      let context = MonoTyCtx (env, tyj, c.opaque_entry_secctx) in
       let def = OpaqueDef () in
       {
         Cooking.cook_body = def;
@@ -205,12 +199,11 @@ let infer_opaque env = function
 
   | ({ opaque_entry_type = typ;
                        opaque_entry_universes = Polymorphic_entry uctx; _ } as c) ->
-      let { opaque_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
       let sbst, auctx = abstract_universes uctx in
       let usubst = make_instance_subst sbst in
-      let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx, feedback_id) in
+      let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx) in
       let def = OpaqueDef () in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
       {
@@ -290,7 +283,7 @@ let build_constant_declaration env result =
     const_typing_flags = result.cook_flags }
 
 let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_output) = match tyenv with
-| MonoTyCtx (env, tyj, declared, feedback_id) ->
+| MonoTyCtx (env, tyj, declared) ->
   let ((body, uctx), side_eff) = body in
   let (body, uctx', valid_signatures) = handle env body side_eff in
   let uctx = ContextSet.union uctx uctx' in
@@ -301,9 +294,8 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
   let c = j.uj_val in
   let () = check_section_variables env declared tyj.utj_val body in
-  feedback_completion_typecheck feedback_id;
   c, Opaqueproof.PrivateMonomorphic uctx
-| PolyTyCtx (env, tj, usubst, auctx, declared, feedback_id) ->
+| PolyTyCtx (env, tj, usubst, auctx, declared) ->
   let ((body, ctx), side_eff) = body in
   let body, ctx', _ = handle env body side_eff in
   let ctx = ContextSet.union ctx ctx' in
@@ -315,7 +307,6 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
   let () = check_section_variables env declared tj.utj_val body in
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
-  let () = feedback_completion_typecheck feedback_id in
   def, Opaqueproof.PrivatePolymorphic (AbstractContext.size auctx, private_univs)
 
 (*s Global and local constant declaration. *)
@@ -356,7 +347,6 @@ let translate_local_def env _id centry =
   let centry = {
     const_entry_body = centry.secdef_body;
     const_entry_secctx = centry.secdef_secctx;
-    const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
     const_entry_universes = Monomorphic_entry;
     const_entry_inline_code = false;

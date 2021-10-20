@@ -10,7 +10,8 @@
 
 type 'a const_entry_body = 'a Entries.proof_output Future.computation
 
-val declare_defined_opaque : Opaqueproof.opaque_handle -> Safe_typing.private_constants const_entry_body -> unit
+val declare_defined_opaque : ?feedback_id:Stateid.t ->
+  Opaqueproof.opaque_handle -> Safe_typing.private_constants const_entry_body -> unit
 val declare_private_opaque : Safe_typing.exported_opaque -> unit
 
 type opaque_disk
