@@ -1039,7 +1039,8 @@ let int63_of_pos_bigint ?loc n =
   mkInt i
 
 let error_overflow ?loc n =
-  CErrors.user_err ?loc Pp.(str "overflow in int63 literal: " ++ str (Z.to_string n))
+  CErrors.user_err ?loc Pp.(str "Overflow in int63 literal: " ++ str (Z.to_string n)
+    ++ str ".")
 
 let coqpos_neg_int63_of_bigint ?loc ind (sign,n) =
   let uint = int63_of_pos_bigint ?loc n in

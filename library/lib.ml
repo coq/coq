@@ -89,7 +89,7 @@ let classify_segment seg =
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err
-        (str "there are still opened " ++ str (module_kind ty) ++ str "s")
+        (str "there are still opened " ++ str (module_kind ty) ++ str "s.")
   in
     clean ([],[],[]) (List.rev seg)
 

@@ -1472,7 +1472,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
            if not (Evd.is_defined evars ev) then
              user_err
                (str "Unsolved constraint remaining: " ++ spc () ++
-                Termops.pr_evar_info env evars (Evd.find evars ev)))
+                Termops.pr_evar_info env evars (Evd.find evars ev) ++ str "."))
         cstrs
     in
     let newt = res.rew_to in

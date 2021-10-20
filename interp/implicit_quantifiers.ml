@@ -31,10 +31,10 @@ let declare_generalizable_ident table {CAst.loc;v=id} =
   if not (Id.equal id (root_of_id id)) then
     user_err ?loc
     ((Id.print id ++ str
-      " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
+      " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _."));
   if Id.Pred.mem id table then
     user_err ?loc
-                ((Id.print id++str" is already declared as a generalizable identifier"))
+                ((Id.print id++str" is already declared as a generalizable identifier."))
   else Id.Pred.add id table
 
 let add_generalizable gen table =

@@ -272,7 +272,7 @@ let error_not_structure ref description =
   user_err
     (str"Could not declare a canonical structure " ++
        (Id.print (Nametab.basename_of_global ref) ++ str"." ++ spc() ++
-          description))
+          description) ++ str ".")
 
 let make env sigma ref =
   let vc =
@@ -281,23 +281,23 @@ let make env sigma ref =
         let u = Univ.make_abstract_instance (Environ.constant_context env sp) in
         begin match Environ.constant_opt_value_in env (sp, u) with
         | Some vc -> vc
-        | None -> error_not_structure ref (str "Could not find its value in the global environment.") end
+        | None -> error_not_structure ref (str "Could not find its value in the global environment") end
     | GlobRef.VarRef id ->
         begin match Environ.named_body id env with
         | Some b -> b
-        | None -> error_not_structure ref (str "Could not find its value in the global environment.") end
+        | None -> error_not_structure ref (str "Could not find its value in the global environment") end
     | GlobRef.IndRef _ | GlobRef.ConstructRef _ ->
-        error_not_structure ref (str "Expected an instance of a record or structure.")
+        error_not_structure ref (str "Expected an instance of a record or structure")
   in
   let body = snd (splay_lam env sigma (EConstr.of_constr vc)) in
   let body = EConstr.Unsafe.to_constr body in
   let f,args = match kind body with
     | App (f,args) -> f,args
     | _ ->
-       error_not_structure ref (str "Expected a record or structure constructor applied to arguments.") in
+       error_not_structure ref (str "Expected a record or structure constructor applied to arguments") in
   let indsp = match kind f with
     | Construct ((indsp,1),u) -> indsp
-    | _ -> error_not_structure ref (str "Expected an instance of a record or structure.") in
+    | _ -> error_not_structure ref (str "Expected an instance of a record or structure") in
   let s =
     try Structure.find indsp
     with Not_found ->
@@ -305,7 +305,7 @@ let make env sigma ref =
         (str "Could not find the record or structure " ++ Termops.Internal.print_constr_env env sigma (EConstr.mkInd indsp)) in
   let ntrue_projs = List.count (fun { Structure.proj_true = x } -> x) s.Structure.projections in
   if s.Structure.nparams + ntrue_projs > Array.length args then
-    error_not_structure ref (str "Got too few arguments to the record or structure constructor.");
+    error_not_structure ref (str "Got too few arguments to the record or structure constructor");
   (ref,indsp)
 
 let register ~warn env sigma o =

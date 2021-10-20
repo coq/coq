@@ -1097,7 +1097,7 @@ let check_solved_obligations ~pm ~what_for : unit =
         ++ what_for ++ str ":" ++ spc ()
         ++ prlist_with_sep spc (fun x -> Id.print x) keys
         ++ str have_string
-        ++ str "unsolved obligations" )
+        ++ str "unsolved obligations." )
 
 let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
 let progmap_remove pm prg = ProgMap.remove prg.prg_cinfo.CInfo.name pm

@@ -1180,7 +1180,7 @@ end = struct (* {{{ *)
     with
     | Not_found ->
        CErrors.user_err
-        Pp.(str "Cannot undo")
+        Pp.(str "Cannot undo.")
 
   let get_prev_proof ~doc id =
     try
@@ -1263,7 +1263,7 @@ let proof_block_delimiters = ref []
 
 let register_proof_block_delimiter name static dynamic =
   if List.mem_assoc name !proof_block_delimiters then
-    CErrors.user_err Pp.(str "Duplicate block delimiter " ++ str name);
+    CErrors.user_err Pp.(str "Duplicate block delimiter " ++ str name ++ str ".");
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
@@ -1299,7 +1299,7 @@ let detect_proof_block id name =
       end
     with Not_found ->
       CErrors.user_err
-        Pp.(str "Unknown proof block delimiter " ++ str name)
+        Pp.(str "Unknown proof block delimiter " ++ str name ++ str ".")
   )
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
@@ -2098,7 +2098,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
         end
       with Not_found ->
           CErrors.user_err
-            (str "Unknown proof block delimiter " ++ str name)
+            (str "Unknown proof block delimiter " ++ str name ++ str ".")
   in
 
   (* Absorb tactic errors from f () *)
@@ -2537,7 +2537,7 @@ let handle_failure (e, info) vcs =
 let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
   let doc = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
-    CErrors.user_err (str"Cannot dump a vio with open proofs");
+    CErrors.user_err (str"Cannot dump a vio with open proofs.");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,
   below, [snapshot] gets computed even if [create_vos] is true. *)
   let tasks = Slaves.dump_snapshot() in

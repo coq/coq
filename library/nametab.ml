@@ -503,7 +503,7 @@ let global qid =
     | SynDef _ ->
         user_err ?loc:qid.CAst.loc
           (str "Unexpected reference to a notation: " ++
-           pr_qualid qid)
+           pr_qualid qid ++ str ".")
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
     error_global_not_found ~info qid
@@ -583,4 +583,4 @@ let global_inductive qid =
   | IndRef ind -> ind
   | ref ->
       user_err ?loc:qid.CAst.loc
-        (pr_qualid qid ++ spc () ++ str "is not an inductive type")
+        (pr_qualid qid ++ spc () ++ str "is not an inductive type.")

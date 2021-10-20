@@ -927,7 +927,7 @@ let make_mode ref m =
     if not (n == Array.length m') then
       user_err
         (pr_global ref ++ str" has " ++ int n ++
-           str" arguments while the mode declares " ++ int (Array.length m'))
+           str" arguments while the mode declares " ++ int (Array.length m') ++ str ".")
     else m'
 
 let make_trivial env sigma ?(name=PathAny) r =

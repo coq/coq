@@ -35,7 +35,7 @@ add 2 2
 The command has indeed failed with message:
 Cannot interpret this number as a value of type int
 The command has indeed failed with message:
-overflow in int63 literal: 9223372036854775808
+Overflow in int63 literal: 9223372036854775808.
 0x1
      : int
 2

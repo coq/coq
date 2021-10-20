@@ -122,7 +122,7 @@ let do_universe ~poly l =
   let () =
     if poly && not in_section then
       CErrors.user_err
-        (Pp.str"Cannot declare polymorphic universes outside sections")
+        (Pp.str"Cannot declare polymorphic universes outside sections.")
   in
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
   let ctx = List.fold_left (fun ctx (_,qid) -> Univ.Level.Set.add (Univ.Level.make qid) ctx)

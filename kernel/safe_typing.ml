@@ -1432,9 +1432,9 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
   let check_if b msg =
     if not b then
       CErrors.user_err msg in
-  check_if (Int.equal (Array.length mb.mind_packets) 1) Pp.(str "A non mutual inductive is expected");
+  check_if (Int.equal (Array.length mb.mind_packets) 1) Pp.(str "A non mutual inductive is expected.");
   let is_monomorphic = function Monomorphic -> true | Polymorphic _ -> false in
-  check_if (is_monomorphic mb.mind_universes) Pp.(str "A universe monomorphic inductive type is expected");
+  check_if (is_monomorphic mb.mind_universes) Pp.(str "A universe monomorphic inductive type is expected.");
   check_if (not @@ Inductive.is_private spec) Pp.(str "A non-private inductive type is expected");
   let check_nparams n =
     check_if (Int.equal mb.mind_nparams n) Pp.(str "An inductive type with " ++ int n ++ str " parameters is expected")

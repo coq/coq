@@ -124,7 +124,7 @@ let find_file_in_path ?(warn=true) paths filename =
       root, filename
     else
       CErrors.user_err
-        (hov 0 (str "Can't find file" ++ spc () ++ str filename))
+        (hov 0 (str "Can't find file" ++ spc () ++ str filename ++ str "."))
   else
     (* the name is considered to be the transcription as a relative
        physical name of a logical name, so we deal with it as a name
@@ -133,7 +133,7 @@ let find_file_in_path ?(warn=true) paths filename =
     with Not_found ->
       CErrors.user_err
         (hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++
-                str "on loadpath"))
+                str "on loadpath."))
 
 let is_in_path lpath filename =
   try ignore (where_in_path ~warn:false lpath filename); true

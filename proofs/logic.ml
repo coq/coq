@@ -104,7 +104,7 @@ let reorder_context env sigma sign ord =
               str "before " ++
               pr_sequence Id.print
                 (Id.Set.elements (Id.Set.inter h
-                  (global_vars_set_of_decl env sigma d))));
+                  (global_vars_set_of_decl env sigma d))) ++ str ".");
           step ord' expected ctxt_head mh (d::ctxt_tail)
       | _ ->
           (match ctxt_head with
@@ -135,7 +135,7 @@ let check_decl_position env sigma sign d =
   let deps = dependency_closure env sigma (named_context_of_val sign) needed in
   if Id.List.mem x deps then
     user_err
-      (str "Cannot create self-referring hypothesis " ++ Id.print x);
+      (str "Cannot create self-referring hypothesis " ++ Id.print x ++ str ".");
   x::deps
 
 (* Auxiliary functions for primitive MOVE tactic

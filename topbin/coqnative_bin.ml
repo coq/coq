@@ -154,7 +154,7 @@ let rec intern_library (needed, contents) dir =
     user_err
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        DirPath.print m.library_name ++ spc () ++ str "and not library" ++
-       spc() ++ DirPath.print dir);
+       spc() ++ DirPath.print dir ++ str ".");
   let (needed, contents) = intern_library_deps (needed, contents) dir m f in
   m.library_digests, (dir :: needed, DPmap.add dir m contents)
 

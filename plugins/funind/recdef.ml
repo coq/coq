@@ -128,7 +128,7 @@ let nat = function () -> coq_init_constant "num.nat.type"
 
 let iter_ref () =
   try find_reference ["Recdef"] "iter"
-  with Not_found -> user_err Pp.(str "module Recdef not loaded")
+  with Not_found -> user_err Pp.(str "Module Recdef not loaded.")
 
 let iter_rd = function
   | () -> constr_of_monomorphic_global (delayed_force iter_ref)
@@ -289,7 +289,7 @@ let check_not_nested env sigma forbidden e =
     | Var x ->
       if Id.List.mem x forbidden then
         user_err
-          (str "check_not_nested: failure " ++ Id.print x)
+          (str "check_not_nested: failure " ++ Id.print x ++ str ".")
     | Meta _ | Evar _ | Sort _ -> ()
     | Cast (e, _, t) -> check_not_nested e; check_not_nested t
     | Prod (_, t, b) -> check_not_nested t; check_not_nested b
@@ -316,7 +316,7 @@ let check_not_nested env sigma forbidden e =
   try check_not_nested e
   with UserError p ->
     user_err
-      (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p)
+      (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p ++ str ".")
 
 (* ['a info] contains the local information for traveling *)
 type 'a infos =
@@ -476,7 +476,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
             ( str "the term "
             ++ Printer.pr_leconstr_env env sigma expr_info.info
             ++ str " can not contain a recursive call to "
-            ++ Id.print expr_info.f_id ) )
+            ++ Id.print expr_info.f_id ++ str ".") )
       | Case (ci, u, pms, t, iv, a, l) ->
         let (ci, t, iv, a, l) = EConstr.expand_case env sigma (ci, u, pms, t, iv, a, l) in
         let continuation_tac_a =
@@ -505,7 +505,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
               ++ Printer.pr_leconstr_env env sigma expr_info.info
               ++ str
                    " can not contain an applied match (See Limitation in \
-                    Section 2.3 of refman)" )
+                    Section 2.3 of refman)." )
           | _ ->
             anomaly
               ( Pp.str "travel_aux : unexpected "
@@ -1733,7 +1733,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
       with e when CErrors.noncritical e ->
         if do_observe () then
           Feedback.msg_debug
-            (str "Cannot create equation Lemma " ++ CErrors.print e)
+            (str "Cannot create equation Lemma " ++ CErrors.print e ++ str ".")
         else
           CErrors.user_err
             ( str "Cannot create equation lemma."
