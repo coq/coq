@@ -654,20 +654,21 @@ let whd_nothing_for_iota env sigma s =
 
 (* The reductions that should be performed as part of the simpl tactic,
   excluding symbols that have the NeverUnfold flag. *)
-
-let make_simpl_reds () =
+let make_simpl_reds env =
   let open CClosure.RedFlags in
-  red_add
-    (red_add
-       (GlobRef.Set.fold
-          (fun x r ->
-              (match x with
-                 Names.GlobRef.ConstRef xx ->  red_sub r (fCONST xx)
-               | _ -> r))
-          (ReductionBehaviour.all_tagged ReductionBehaviour.NeverUnfold)
-          (red_add no_red fDELTA))
-       fZETA)
-    fBETA
+  let open ReductionBehaviour in
+  let red_sub_const x reds =
+    match x with
+    | GlobRef.ConstRef c -> red_sub reds (fCONST c)
+    | _ -> reds in
+  let simpl_never = all_tagged NeverUnfold in
+  let transparent_state = Conv_oracle.get_transp_state (Environ.oracle env) in
+  let reds = no_red in
+  let reds = red_add_transparent reds transparent_state in
+  let reds = red_add reds fDELTA in
+  let reds = red_add reds fZETA in
+  let reds = red_add reds fBETA in
+  GlobRef.Set.fold red_sub_const simpl_never reds
 
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;
@@ -1041,7 +1042,7 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
    immediately hides a non reducible fix or a cofix *)
 
 let whd_simpl_orelse_delta_but_fix env sigma c =
-  let reds = make_simpl_reds() in
+  let reds = make_simpl_reds env in
   let rec redrec s =
     let (constr, stack as s') = whd_simpl_stack reds env sigma s in
     match match_eval_ref_value env sigma constr stack with
@@ -1074,10 +1075,10 @@ let hnf_constr env sigma c =
 let whd_simpl_with_reds allowed_reds env sigma c =
   applist (whd_simpl_stack allowed_reds env sigma (c, []))
 
-let whd_simpl env sigma x = whd_simpl_with_reds (make_simpl_reds ()) env sigma x
+let whd_simpl env sigma x = whd_simpl_with_reds (make_simpl_reds env) env sigma x
 
 let simpl env sigma c =
-  let allowed_reds = make_simpl_reds() in
+  let allowed_reds = make_simpl_reds env in
   let rec strongrec env t =
     map_constr_with_full_binders env sigma push_rel strongrec env
         (whd_simpl_with_reds allowed_reds env sigma t) in
