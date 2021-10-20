@@ -16,7 +16,7 @@ type vernac_flag_type =
   | FlagString of string
 
 type vernac_flags = vernac_flag list
-and vernac_flag = string * vernac_flag_value
+and vernac_flag = (string * vernac_flag_value) CAst.t
 and vernac_flag_value =
   | VernacFlagEmpty
   | VernacFlagLeaf of vernac_flag_type
@@ -30,23 +30,26 @@ let rec pr_vernac_flag_value = let open Pp in function
   | VernacFlagEmpty -> mt ()
   | VernacFlagLeaf l -> str "=" ++ pr_vernac_flag_leaf l
   | VernacFlagList s -> surround (prlist_with_sep pr_comma pr_vernac_flag s)
-and pr_vernac_flag (s, arguments) =
+and pr_vernac_flag_r (s, arguments) =
   let open Pp in
   str s ++ (pr_vernac_flag_value arguments)
+and pr_vernac_flag {CAst.v} = pr_vernac_flag_r v
 
 let warn_unsupported_attributes =
   CWarnings.create ~name:"unsupported-attributes" ~category:"parsing" ~default:CWarnings.AsError
     (fun atts ->
-       let keys = List.map fst atts in
+       let keys = List.map (fun x -> fst x.CAst.v) atts in
        let keys = List.sort_uniq String.compare keys in
        let conj = match keys with [_] -> "this attribute: " | _ -> "these attributes: " in
        Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str"."))
 
 let unsupported_attributes = function
   | [] -> ()
-  | atts -> warn_unsupported_attributes atts
+  | atts ->
+    let loc = List.fold_left (fun loc att -> Loc.merge_opt loc att.CAst.loc) None atts in
+    warn_unsupported_attributes ?loc atts
 
-type 'a key_parser = 'a option -> vernac_flag_value -> 'a
+type 'a key_parser = ?loc:Loc.t -> 'a option -> vernac_flag_value -> 'a
 
 type 'a attribute = vernac_flags -> vernac_flags * 'a
 
@@ -93,32 +96,32 @@ module Notations = struct
 end
 open Notations
 
-let assert_empty k v =
+let assert_empty ?loc k v =
   if v <> VernacFlagEmpty
-  then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
+  then user_err ?loc Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
 
-let error_twice ~name : 'a =
-  user_err Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
+let error_twice ?loc ~name : 'a =
+  user_err ?loc Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
 
-let assert_once ~name prev =
+let assert_once ?loc ~name prev =
   if Option.has_some prev then
-    error_twice ~name
+    error_twice ?loc ~name
 
 let attribute_of_list (l:(string * 'a key_parser) list) : 'a option attribute =
   let rec p extra v = function
     | [] -> List.rev extra, v
-    | (key, attv as att) :: rem ->
+    | ({CAst.v=key, attv; loc} as att) :: rem ->
       (match CList.assoc_f String.equal key l with
        | exception Not_found -> p (att::extra) v rem
        | parser ->
-         let v = Some (parser v attv) in
+         let v = Some (parser ?loc v attv) in
          p extra v rem)
   in
   p [] None
 
-let single_key_parser ~name ~key v prev args =
-  assert_empty key args;
-  assert_once ~name prev;
+let single_key_parser ~name ~key v ?loc prev args =
+  assert_empty ?loc key args;
+  assert_once ?loc ~name prev;
   v
 
 let pr_possible_values ~values =
@@ -128,15 +131,15 @@ let pr_possible_values ~values =
   with possible [key] [value] in [values], [default] is for compatibility for users
   doing [qualif(key)] which is parsed as [qualif(key=default)] *)
 let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option attribute =
-  let parser = function
+  let parser ?loc = function
     | Some v ->
-      CErrors.user_err Pp.(str "key '" ++ str key ++ str "' has been already set.")
+      CErrors.user_err ?loc Pp.(str "key '" ++ str key ++ str "' has been already set.")
     | None ->
       begin function
         | VernacFlagLeaf (FlagIdent b) ->
           begin match CList.assoc_f String.equal b values with
             | exception Not_found ->
-              CErrors.user_err
+              CErrors.user_err ?loc
                 Pp.(str "Invalid value '" ++ str b ++ str "' for key " ++ str key ++ fnl () ++
                     str "use one of " ++ pr_possible_values ~values)
             | value -> value
@@ -144,8 +147,8 @@ let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option
         | VernacFlagEmpty ->
           default
         | err ->
-          CErrors.user_err
-            Pp.(str "Invalid syntax " ++ pr_vernac_flag (key, err) ++ str ", try "
+          CErrors.user_err ?loc
+            Pp.(str "Invalid syntax " ++ pr_vernac_flag_r (key, err) ++ str ", try "
                 ++ str key ++ str "=" ++ pr_possible_values ~values ++ str " instead.")
       end
   in
@@ -156,33 +159,34 @@ let bool_attribute ~name : bool option attribute =
   key_value_attribute ~key:name ~default:true ~values
 
 (* Variant of the [bool] attribute with only two values (bool has three). *)
-let get_bool_value ~key ~default =
+let get_bool_value ?loc ~key ~default =
   function
   | VernacFlagEmpty -> default
   | VernacFlagLeaf (FlagIdent "yes") ->
     true
   | VernacFlagLeaf (FlagIdent "no") ->
     false
-  | _ -> user_err Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
+  | _ -> user_err ?loc Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
 
 let enable_attribute ~key ~default : bool attribute =
   fun atts ->
-  let default = default () in
-  let this, extra = List.partition (fun (k, _) -> String.equal key k) atts in
+  let this, extra = List.partition (fun {CAst.v=k, _} -> String.equal key k) atts in
   extra,
   match this with
-  | [] -> default
-  | [ _, value ] -> get_bool_value ~key ~default:true value
-  | _ -> error_twice ~name:key
+  | [] -> default ()
+  | [ {CAst.v=_, value; loc} ] -> get_bool_value ?loc ~key ~default:true value
+  | _ :: {CAst.loc} :: _ ->
+    (* We report the location of the 2nd item *)
+    error_twice ?loc ~name:key
 
 let qualify_attribute qual (parser:'a attribute) : 'a attribute =
   fun atts ->
     let rec extract extra qualified = function
       | [] -> List.rev extra, List.flatten (List.rev qualified)
-      | (key,attv) :: rem when String.equal key qual ->
+      | {CAst.v=key,attv; loc} :: rem when String.equal key qual ->
         (match attv with
          | VernacFlagEmpty | VernacFlagLeaf _ ->
-           CErrors.user_err
+           CErrors.user_err ?loc
              Pp.(str "Malformed attribute " ++ str qual ++ str ": attribute list expected.")
          | VernacFlagList atts ->
            extract extra (atts::qualified) rem)
@@ -190,7 +194,8 @@ let qualify_attribute qual (parser:'a attribute) : 'a attribute =
     in
     let extra, qualified = extract [] [] atts in
     let rem, v = parser qualified in
-    let extra = if rem = [] then extra else (qual, VernacFlagList rem) :: extra in
+    let rem = List.rev_map (fun rem -> CAst.make ?loc:rem.CAst.loc (qual, VernacFlagList [rem])) rem in
+    let extra = List.rev_append rem extra in
     extra, v
 
 (** [program_mode] tells that Program mode has been activated, either
@@ -214,9 +219,9 @@ let program =
 let option_locality_parser =
   let name = "Locality" in
   attribute_of_list [
-    ("local", single_key_parser ~name ~key:"local" Goptions.OptLocal)
-  ; ("global", single_key_parser ~name ~key:"global" Goptions.OptGlobal)
-  ; ("export", single_key_parser ~name ~key:"export" Goptions.OptExport)
+    ("local", single_key_parser ~name ~key:"local" Goptions.OptLocal);
+    ("global", single_key_parser ~name ~key:"global" Goptions.OptGlobal);
+    ("export", single_key_parser ~name ~key:"export" Goptions.OptExport);
   ]
 
 let option_locality =
@@ -228,9 +233,9 @@ let hint_locality ~default =
   let open Hints in
   let name = "Locality" in
   attribute_of_list [
-    ("local", single_key_parser ~name ~key:"local" Local)
-  ; ("global", single_key_parser ~name ~key:"global" SuperGlobal)
-  ; ("export", single_key_parser ~name ~key:"export" Export)
+    ("local", single_key_parser ~name ~key:"local" Local);
+    ("global", single_key_parser ~name ~key:"global" SuperGlobal);
+    ("export", single_key_parser ~name ~key:"export" Export);
   ] >>= function
   | Some v -> return v
   | None -> let v = default () in return v
@@ -239,19 +244,11 @@ let really_hint_locality = hint_locality ~default:Hints.default_hint_locality
 
 (* locality is supposed to be true when local, false when global *)
 let locality =
-  let locality_to_bool =
-    function
-    | Goptions.OptLocal ->
-      true
-    | Goptions.OptGlobal ->
-      false
-    | Goptions.OptExport ->
-      CErrors.user_err Pp.(str "export attribute not supported here")
-    | Goptions.OptDefault ->
-      CErrors.user_err Pp.(str "default attribute not supported here")
-  in
-  option_locality_parser >>= function l ->
-    return (Option.map locality_to_bool l)
+  let name = "Locality" in
+  attribute_of_list [
+    ("local", single_key_parser ~name ~key:"local" true);
+    ("global", single_key_parser ~name ~key:"global" false);
+  ]
 
 let ukey = "universes"
 
@@ -276,17 +273,19 @@ let template =
   qualify_attribute ukey
     (bool_attribute ~name:"template")
 
-let deprecation_parser : Deprecation.t key_parser = fun orig args ->
-  assert_once ~name:"deprecation" orig;
+let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
+  assert_once ?loc ~name:"deprecation" orig;
   match args with
-  | VernacFlagList [ "since", VernacFlagLeaf (FlagString since) ; "note", VernacFlagLeaf (FlagString note) ]
-  | VernacFlagList [ "note", VernacFlagLeaf (FlagString note) ; "since", VernacFlagLeaf (FlagString since) ] ->
+  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)};
+                     {CAst.v="note", VernacFlagLeaf (FlagString note)} ]
+  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)};
+                     {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
     Deprecation.make ~since ~note ()
-  | VernacFlagList [ "since", VernacFlagLeaf (FlagString since) ] ->
+  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
     Deprecation.make ~since ()
-  | VernacFlagList [ "note", VernacFlagLeaf (FlagString note) ] ->
+  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
     Deprecation.make ~note ()
-  |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
+  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute")
 
 let deprecation = attribute_of_list ["deprecated",deprecation_parser]
 
@@ -295,23 +294,25 @@ let only_locality atts = parse locality atts
 let only_polymorphism atts = parse polymorphic atts
 
 
-let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]
-let vernac_monomorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagLeaf (FlagIdent "no")]
+let vernac_polymorphic_flag loc =
+  CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagEmpty)])
+let vernac_monomorphic_flag loc =
+  CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagLeaf (FlagIdent "no"))])
 
 let canonical_field =
   enable_attribute ~key:"canonical" ~default:(fun () -> true)
 let canonical_instance =
   enable_attribute ~key:"canonical" ~default:(fun () -> false)
 
-let uses_parser : string key_parser = fun orig args ->
-  assert_once ~name:"using" orig;
+let uses_parser : string key_parser = fun ?loc orig args ->
+  assert_once ?loc ~name:"using" orig;
   match args with
   | VernacFlagLeaf (FlagString str) -> str
-  |  _ -> CErrors.user_err (Pp.str "Ill formed \"using\" attribute")
+  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed \"using\" attribute")
 
 let using = attribute_of_list ["using",uses_parser]
 
-let process_typing_att ~typing_flags att disable =
+let process_typing_att ?loc ~typing_flags att disable =
   let enable = not disable in
   match att with
   | "universes" ->
@@ -327,22 +328,22 @@ let process_typing_att ~typing_flags att disable =
       Declarations.check_positive = enable
     }
   | att ->
-    CErrors.user_err Pp.(str "Unknown “typing” attribute: " ++ str att)
+    CErrors.user_err ?loc Pp.(str "Unknown “typing” attribute: " ++ str att)
 
-let process_typing_disable ~key = function
+let process_typing_disable ?loc ~key = function
   | VernacFlagEmpty | VernacFlagLeaf (FlagIdent "yes") ->
     true
   | VernacFlagLeaf (FlagIdent "no") ->
     false
   | _ ->
-    CErrors.user_err Pp.(str "Ill-formed attribute value, must be " ++ str key ++ str "={yes, no}")
+    CErrors.user_err ?loc Pp.(str "Ill-formed attribute value, must be " ++ str key ++ str "={yes, no}")
 
-let typing_flags_parser : Declarations.typing_flags key_parser = fun orig args ->
+let typing_flags_parser : Declarations.typing_flags key_parser = fun ?loc orig args ->
   let rec flag_parser typing_flags = function
     | [] -> typing_flags
-    | (typing_att, enable) :: rest ->
-      let disable = process_typing_disable ~key:typing_att enable in
-      let typing_flags = process_typing_att ~typing_flags typing_att disable in
+    | {CAst.v=typing_att, disable; loc} :: rest ->
+      let disable = process_typing_disable ?loc ~key:typing_att disable in
+      let typing_flags = process_typing_att ?loc ~typing_flags typing_att disable in
       flag_parser typing_flags rest
   in
   match args with
@@ -350,7 +351,7 @@ let typing_flags_parser : Declarations.typing_flags key_parser = fun orig args -
     let typing_flags = Global.typing_flags () in
     flag_parser typing_flags atts
   | att ->
-    CErrors.user_err Pp.(str "Ill-formed “typing” attribute: " ++ pr_vernac_flag_value att)
+    CErrors.user_err ?loc Pp.(str "Ill-formed “typing” attribute: " ++ pr_vernac_flag_value att)
 
 let typing_flags =
   attribute_of_list ["bypass_check", typing_flags_parser]

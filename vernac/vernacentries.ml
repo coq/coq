@@ -731,7 +731,7 @@ let vernac_assumption ~atts discharge kind l nl =
             | Global _ -> Dumpglob.dump_definition lid false "ax"
             | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   if Option.has_some atts.using then
-    Attributes.unsupported_attributes  ["using",VernacFlagEmpty];
+    Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
 let is_polymorphic_inductive_cumulativity =
@@ -2341,7 +2341,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacSetStrategy l ->
     vtdefault(fun () -> with_locality ~atts vernac_set_strategy l)
   | VernacSetOption (export,key,v) ->
-    let atts = if export then ("export", VernacFlagEmpty) :: atts else atts in
+    let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
     vtdefault(fun () ->
         vernac_set_option ~locality:(parse option_locality atts) key v)
   | VernacRemoveOption (key,v) ->
