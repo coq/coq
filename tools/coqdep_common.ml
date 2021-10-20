@@ -445,23 +445,67 @@ let add_known recur phys_dir log_dir f =
         List.iter iter paths
     | _ -> ()
 
-(* Visits all the directories under [dir], including [dir] *)
+(** Visit all the directories under [dir], including [dir], in the
+    same order as for [coqc]/[coqtop] in [System.all_subdirs], that
+    is, assuming Sys.readdir to have this structure:
+    ├── B
+    │   └── E.v
+    │   └── C1
+    │   │   └── E.v
+    │   │   └── D1
+    │   │       └── E.v
+    │   │   └── F.v
+    │   │   └── D2
+    │   │       └── E.v
+    │   │   └── G.v
+    │   └── F.v
+    │   └── C2
+    │   │   └── E.v
+    │   │   └── D1
+    │   │       └── E.v
+    │   │   └── F.v
+    │   │   └── D2
+    │   │       └── E.v
+    │   │   └── G.v
+    │   └── G.v
+    it goes in this order:
+    B.C1.E, B.C1.F, B.C1.G,
+    B.C1.D1.E, B.C1.D2.E,
+    B.C2.E, B.C2.F, B.C2.G
+    B.C2.D1.E, B.C2.D2.E,
+    B.E, B.F, B.G,
+    (see discussion at PR #14718)
+*)
 
-let rec add_directory recur add_file phys_dir log_dir =
-  if exists_dir phys_dir then
-    begin
-      register_dir_logpath phys_dir log_dir;
-      let f = function
-        | FileDir (phys_f,f) ->
-            if recur then
-              add_directory true add_file phys_f (log_dir @ [f])
-        | FileRegular f ->
-            add_file phys_dir log_dir f
-      in
-      process_directory f phys_dir
-    end
-  else
-    warning_cannot_open_dir phys_dir
+let add_directory recur add_file phys_dir log_dir =
+  let stack = ref [] in
+  let curdirfiles = ref [] in
+  let subdirfiles = ref [] in
+  let rec aux phys_dir log_dir =
+    if exists_dir phys_dir then
+      begin
+        register_dir_logpath phys_dir log_dir;
+        let f = function
+          | FileDir (phys_f,f) ->
+              if recur then begin
+                stack := (!curdirfiles, !subdirfiles) :: !stack;
+                curdirfiles := []; subdirfiles := [];
+                aux phys_f (log_dir @ [f]);
+                let curdirfiles', subdirfiles' = List.hd !stack in
+                subdirfiles := subdirfiles' @ !curdirfiles @ !subdirfiles;
+                curdirfiles := curdirfiles'; stack := List.tl !stack
+              end
+          | FileRegular f ->
+              curdirfiles := (phys_dir, log_dir, f) :: !curdirfiles
+        in
+        process_directory f phys_dir
+      end
+    else
+      warning_cannot_open_dir phys_dir
+  in
+  aux phys_dir log_dir;
+  List.iter (fun (phys_dir, log_dir, f) -> add_file phys_dir log_dir f) !subdirfiles;
+  List.iter (fun (phys_dir, log_dir, f) -> add_file phys_dir log_dir f) !curdirfiles
 
 (** Simply add this directory and imports it, no subdirs. This is used
     by the implicit adding of the current path (which is not recursive). *)
