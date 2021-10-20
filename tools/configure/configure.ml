@@ -16,7 +16,7 @@ open Printf
 let coq_version = "8.14+debugger_preview"
 let vo_magic = 814001
 let state_magic = 5814001
-let is_a_released_version = true
+let is_a_released_version = false
 let verbose = ref false (* for debugging this script *)
 
 let red, yellow, reset =
