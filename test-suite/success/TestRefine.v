@@ -188,7 +188,7 @@ Qed.
 
 (* Quelques essais de recurrence bien fondée *)
 
-Require Import Wf.
+Require Import Init.Wf.
 Require Import Wf_nat.
 
 Lemma essai_wf : nat -> nat.
