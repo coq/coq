@@ -163,11 +163,11 @@ let error_cannot_parse_project_file file msg =
   exit 1
 
 let error_cannot_stat s unix_error =
-  Printf.eprintf "%s: %s\n" s (error_message unix_error);
+  Printf.eprintf "%s\n" (error_message unix_error);
   exit 1
 
 let error_cannot_stat_in f s unix_error =
-  Printf.eprintf "In file \"%s\": %s: %s\n" f s (error_message unix_error);
+  Printf.eprintf "In file \"%s\": %s\n" f (error_message unix_error);
   exit 1
 
 let error_cannot_open s msg =
