@@ -7,6 +7,7 @@ install_printer Top_printers.ppdir
 install_printer Top_printers.ppmp
 install_printer Top_printers.ppcon
 install_printer Top_printers.ppproj
+install_printer Top_printers.ppprojrepr
 install_printer Top_printers.ppkn
 install_printer Top_printers.ppmind
 install_printer Top_printers.ppind
