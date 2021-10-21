@@ -1,0 +1,12 @@
+
+dumpgraph: $(VFILES)
+	$(SHOW)'COQDEP -dumpgraph'
+	$(HIDE)$(COQDEP) $(VDFILE_FLAGS) -dumpgraph $@
+
+dumpgraphbox: $(VFILES)
+	$(SHOW)'COQDEP -dumpgraphbox'
+	$(HIDE)$(COQDEP) $(VDFILE_FLAGS) -dumpgraphbox $@
+
+# Local Variables:
+# mode: makefile-gmake
+# End:

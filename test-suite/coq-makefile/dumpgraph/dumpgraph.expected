@@ -1,0 +1,5 @@
+digraph dependencies {
+"theories/sub/testsub"[label="testsub"]
+"theories/test"[label="test"]
+"theories/test" -> "theories/sub/testsub"
+}

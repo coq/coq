@@ -1,0 +1,8 @@
+digraph dependencies {
+"theories/test";
+subgraph cluster0 {
+label="sub";
+"theories/sub/testsub";
+}
+"theories/test" -> "theories/sub/testsub"
+}
