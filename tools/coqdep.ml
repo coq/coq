@@ -32,10 +32,15 @@ let coqdep () =
       (Envars.xdg_dirs ~warn:(fun x -> CD.coqdep_warning "%s" x));
     List.iter (fun s -> CD.add_rec_dir_no_import CD.add_coqlib_known s []) Envars.coqpath;
   end;
-  if !CD.option_sort then
+  (if !CD.option_sort then
     CD.sort ()
   else
-    CD.coq_dependencies ()
+    CD.coq_dependencies ());
+  !CD.option_dump |> Option.iter (fun (box,file) ->
+      let chan = open_out file in
+      let chan_fmt = Format.formatter_of_out_channel chan in
+      try CD.coq_dependencies_dump chan_fmt box; close_out chan
+      with e -> close_out chan; raise e)
 
 let _ =
   try

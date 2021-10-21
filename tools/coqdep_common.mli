@@ -23,6 +23,10 @@ val find_dir_logpath: string -> string list
 (** Options *)
 val option_sort : bool ref
 val option_boot : bool ref
+val option_dump : (bool * string) option ref
+
+type dynlink = Opt | Byte | Both | No | Variable
+val option_dynlink : dynlink ref
 
 (** ML-related manipulation *)
 val coq_dependencies : unit -> unit
@@ -46,3 +50,7 @@ val sort : unit -> unit
 
 (** Init coqdep, including argument parsing *)
 val init : unit -> unit
+
+(** Dump a .dot formatted graph in the [formatter]. The boolean
+   indicates if we should box. *)
+val coq_dependencies_dump : Format.formatter -> bool -> unit
