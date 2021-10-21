@@ -55,12 +55,12 @@ endif
 # For now, we respect the values given at configure's time.
 ifdef DUNE_29_PLUS
 install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
-	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coq-core
-	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide-server
+	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coq-core
+	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide-server
 else
 install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
-	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coq-core
-	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide-server
+	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coq-core
+	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide-server
 endif
 
 # IMPORTANT NOTE: before Dune 2.9, the --docdir and --etcdir options
@@ -103,9 +103,9 @@ install-coqide:
 else
 ifdef DUNE_29_PLUS
 install-coqide: $(BCONTEXT)/coqide.install
-	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide
+	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide
 else
-	dune install --display quiet $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide
+	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide
 endif
 endif
 

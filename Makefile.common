@@ -35,7 +35,7 @@ _DBUILD_DEPS+=$(FLOCK)
 
 $(FLOCK): tools/flock/coq_flock.ml tools/flock/flock.c
 	$(SHOW)'DUNE      $@'
-	$(HIDE)dune build $@
+	$(HIDE)dune build --root . $@
 else
 FLOCK:=flock
 endif
