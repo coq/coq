@@ -17,8 +17,15 @@ let error_wrong_arg msg =
   prerr_endline msg; exit 1
 
 let error_missing_arg s =
-  prerr_endline ("Error: extra argument expected after option "^s);
-  prerr_endline "See -help for the syntax of supported options";
+  prerr_endline ("Error: extra argument expected after option "^s^".");
+  prerr_endline "See -help for the syntax of supported options.";
+  exit 1
+
+let error_debug () =
+  prerr_endline "Error: The -debug option has been removed.";
+  prerr_endline "Use the -d option for enabling debug output.";
+  prerr_endline "For an OCaml backtrace use -bt instead.";
+  prerr_endline "See -help for the syntax of supported options.";
   exit 1
 
 (******************************************************************************)
@@ -54,7 +61,6 @@ type coqargs_config = {
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
-  debug       : bool;
   time        : bool;
   print_emacs : bool;
 }
@@ -110,7 +116,6 @@ let default_config = {
   native_compiler = default_native;
   native_output_dir = ".coq-native";
   native_include_dirs = [];
-  debug        = false;
   time         = false;
   print_emacs  = false;
 
@@ -185,12 +190,12 @@ let get_bool ~opt = function
   | "yes" | "on" -> true
   | "no" | "off" -> false
   | _ ->
-    error_wrong_arg ("Error: yes/no expected after option "^opt)
+    error_wrong_arg ("Error: yes/no expected after option "^opt^".")
 
 let get_int ~opt n =
   try int_of_string n
   with Failure _ ->
-    error_wrong_arg ("Error: integer expected after option "^opt)
+    error_wrong_arg ("Error: integer expected after option "^opt^".")
 let get_int_opt ~opt n =
   if n = "" then None
   else Some (get_int ~opt n)
@@ -198,7 +203,7 @@ let get_int_opt ~opt n =
 let get_float ~opt n =
   try float_of_string n
   with Failure _ ->
-    error_wrong_arg ("Error: float expected after option "^opt)
+    error_wrong_arg ("Error: float expected after option "^opt^".")
 
 let interp_set_option opt v old =
   let open Goptions in
@@ -247,7 +252,7 @@ let get_native_compiler s =
     | "ondemand" -> NativeOn {ondemand=true}
     | ("no" | "off") -> NativeOff
     | _ ->
-       error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler") in
+       error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler.") in
   if Coq_config.native_compiler = NativeOff && n <> NativeOff then
     NativeOff, [WarnNativeDeprecated; WarnNoNative s]
   else n, [WarnNativeDeprecated]
@@ -328,7 +333,7 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-top" ->
       let topname = Libnames.dirpath_of_string (next ()) in
       if Names.DirPath.is_empty topname then
-        CErrors.user_err Pp.(str "Need a non empty toplevel module name");
+        CErrors.user_err Pp.(str "Need a non empty toplevel module name.");
       { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = TopLogical topname }}}
 
     |"-topfile" ->
@@ -365,10 +370,11 @@ let parse_args ~usage ~init arglist : t * string list =
     (* Options with zero arg *)
     |"-test-mode" -> Vernacinterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
-    |"-bt" -> add_set_debug oval "backtrace"
     |"-config"|"--config" -> set_query oval PrintConfig
 
-    |"-debug" -> add_set_debug oval "all"
+    |"-bt" -> add_set_debug oval "backtrace"
+    (* -debug is deprecated *)
+    |"-debug" -> error_debug ()
     |"-d" | "-D" -> add_set_debug oval (next())
 
     (* -xml-debug implies -debug. TODO don't be imperative here. *)
