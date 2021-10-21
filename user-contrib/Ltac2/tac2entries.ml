@@ -882,7 +882,7 @@ let perform_eval ~pstate e =
 let unsupported_deprecation = function
 | None -> ()
 | Some _ ->
-  Attributes.unsupported_attributes ["deprecated", Attributes.VernacFlagEmpty]
+  Attributes.unsupported_attributes [CAst.make ("deprecated", Attributes.VernacFlagEmpty)]
 
 let register_struct ?deprecation ?local str = match str with
 | StrVal (mut, isrec, e) -> register_ltac ?deprecation ?local ~mut isrec e

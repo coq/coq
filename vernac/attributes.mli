@@ -14,7 +14,7 @@ type vernac_flag_type =
   | FlagString of string
 
 type vernac_flags = vernac_flag list
-and vernac_flag = string * vernac_flag_value
+and vernac_flag = (string * vernac_flag_value) CAst.t
 and vernac_flag_value =
   | VernacFlagEmpty
   | VernacFlagLeaf of vernac_flag_type
@@ -84,7 +84,7 @@ val parse_with_extra : 'a attribute -> vernac_flags -> vernac_flags * 'a
 
 (** * Defining attributes. *)
 
-type 'a key_parser = 'a option -> vernac_flag_value -> 'a
+type 'a key_parser = ?loc:Loc.t -> 'a option -> vernac_flag_value -> 'a
 (** A parser for some key in an attribute. It is given a nonempty ['a
     option] when the attribute is multiply set for some command.
 
@@ -106,11 +106,11 @@ val qualify_attribute : string -> 'a attribute -> 'a attribute
 (** Combinators to help define your own parsers. See the
    implementation of [bool_attribute] for practical use. *)
 
-val assert_empty : string -> vernac_flag_value -> unit
+val assert_empty : ?loc:Loc.t -> string -> vernac_flag_value -> unit
 (** [assert_empty key v] errors if [v] is not empty. [key] is used in
    the error message as the name of the attribute. *)
 
-val assert_once : name:string -> 'a option -> unit
+val assert_once : ?loc:Loc.t -> name:string -> 'a option -> unit
 (** [assert_once ~name v] errors if [v] is not empty. [name] is used
    in the error message as the name of the attribute. Used to ensure
    that a given attribute is not reapeated. *)
@@ -125,8 +125,8 @@ val make_attribute : (vernac_flags -> vernac_flags * 'a) -> 'a attribute
    access to the full power of attributes. Unstable. *)
 
 (** Compatibility values for parsing [Polymorphic]. *)
-val vernac_polymorphic_flag : vernac_flag
-val vernac_monomorphic_flag : vernac_flag
+val vernac_polymorphic_flag : Loc.t option -> vernac_flag
+val vernac_monomorphic_flag : Loc.t option -> vernac_flag
 
 (** For internal use. *)
 val universe_polymorphism_option_name : string list
