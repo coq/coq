@@ -978,6 +978,32 @@ Arguments implyP {b1 b2}.
 Prenex Implicits idP idPn negP negPn negPf.
 Prenex Implicits andP and3P and4P and5P orP or3P or4P nandP norP implyP.
 
+Section ReflectCombinators.
+
+Variables (P Q : Prop) (p q : bool).
+
+Hypothesis rP : reflect P p.
+Hypothesis rQ : reflect Q q.
+
+Lemma negPP : reflect (~ P) (~~ p).
+Proof. by apply:(iffP negP); apply: contra_not => /rP. Qed.
+
+Lemma andPP : reflect (P /\ Q) (p && q).
+Proof. by apply: (iffP andP) => -[/rP ? /rQ ?]. Qed.
+
+Lemma orPP : reflect (P \/ Q) (p || q).
+Proof. by apply: (iffP orP) => -[/rP ?|/rQ ?]; tauto. Qed.
+
+Lemma implyPP : reflect (P -> Q) (p ==> q).
+Proof. by apply: (iffP implyP) => pq /rP /pq /rQ. Qed.
+
+End ReflectCombinators.
+Arguments negPP {P p}.
+Arguments andPP {P Q p q}.
+Arguments orPP {P Q p q}.
+Arguments implyPP {P Q p q}.
+Prenex Implicits negPP andPP orPP implyPP.
+
 (**  Shorter, more systematic names for the boolean connectives laws.        **)
 
 Lemma andTb : left_id true andb.       Proof. by []. Qed.
