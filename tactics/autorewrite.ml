@@ -214,7 +214,7 @@ let inGlobalHintRewrite : string * HintDN.t -> Libobject.obj =
 
 let inExportHintRewrite : string * HintDN.t -> Libobject.obj =
   let open Libobject in
-  declare_object @@ global_object_nodischarge "HINT_REWRITE_EXPORT"
+  declare_object @@ global_object_nodischarge ~cat:Hints.hint_cat "HINT_REWRITE_EXPORT"
     ~cache:cache_hintrewrite
     ~subst:(Some subst_hintrewrite)
 
