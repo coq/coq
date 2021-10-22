@@ -44,7 +44,20 @@ let set_of_type env sigma ty =
 let full_set env =
   List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
-let warning name pp = CWarnings.create ~name:name ~category:"deprecated" pp
+let warn_all_collection_precedence = CWarnings.create ~name:"all-collection-precedence" ~category:"deprecated"
+    Pp.(fun () -> str "Variable " ++ Id.print all_collection_id ++ str " is shadowed by Collection named " ++ Id.print all_collection_id ++ str " containing all variables.")
+
+let warn_collection_precedence = CWarnings.create ~name:"collection-precedence" ~category:"deprecated"
+    Pp.(fun id -> Id.print id ++ str " is both name of a Collection and Variable, Collection " ++ Id.print id ++ str " takes precedence over Variable.")
+
+let warn_redefine_collection = CWarnings.create ~name:"collection-redefinition" ~category:"deprecated"
+    Pp.(fun id -> str "New Collection definition of " ++ Id.print id ++ str " shadows the previous one.")
+
+let warn_variable_shadowing = CWarnings.create ~name:"variable-shadowing" ~category:"deprecated"
+    Pp.(fun id -> Id.print id ++ str " was already a defined Variable, the name " ++ Id.print id ++ str " will refer to Collection when executing \"Proof using\" command.")
+
+let err_redefine_all_collection () =
+  CErrors.user_err Pp.(str "\"" ++ Id.print all_collection_id ++ str "\" is a predefined collection containing all variables. It can't be redefined.")
 
 let process_expr env sigma e v_ty =
   let variable_exists id =
@@ -61,13 +74,13 @@ let process_expr env sigma e v_ty =
     if Id.equal id all_collection_id then
       begin
         if variable_exists all_collection_id then
-          warning "all-collection-precedence" Pp.(fun () -> str "Variable " ++ Id.print all_collection_id ++ str " is shadowed by Collection named " ++ Id.print all_collection_id ++ str " containing all variables.") ();
+          warn_all_collection_precedence ();
         full_set env
       end
     else if is_known_name id then
       begin
         if variable_exists id then
-          warning "collection-precedence" Pp.(fun id -> Id.print id ++ str " is both name of a Collection and Variable, Collection " ++ Id.print id ++ str " takes precedence over Variable.") id;
+          warn_collection_precedence id;
         aux (CList.assoc_f Id.equal id !known_names)
       end
     else Id.Set.singleton id
@@ -86,20 +99,10 @@ let definition_using env evd ~using ~terms =
   Names.Id.Set.(List.fold_right add l empty)
 
 let name_set id expr =
-  let do_name_set () = known_names := (id,expr) :: !known_names in
-  if Id.equal id all_collection_id then
-    CErrors.user_err Pp.(str "\"" ++ Id.print all_collection_id ++ str "\" is a predefined collection containg all variables, you can't redefine it.")
-  else if is_known_name id then
-    begin
-      warning "collection-redefinition" Pp.(fun id -> str "New Collection definition of " ++ Id.print id ++ str " shadows the previous one.") id;
-      do_name_set ()
-    end
-  else if Termops.is_section_variable id then
-    begin
-      warning "variable-shadowing" Pp.(fun id -> Id.print id ++ str " was already a defined varaible, the name " ++ Id.print id ++ str " will refer to Collection when executing \"Proof using\" command.") id;
-      do_name_set ()
-    end
-  else do_name_set ()
+  if Id.equal id all_collection_id then err_redefine_all_collection ();
+  if is_known_name id then warn_redefine_collection id;
+  if Termops.is_section_variable id then warn_variable_shadowing id;
+  known_names := (id,expr) :: !known_names
 
 let minimize_hyps env ids =
   let rec aux ids =
