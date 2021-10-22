@@ -54,6 +54,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/ClassicalUniqueChoice.v
     theories/Logic/SetoidChoice.v
     theories/Logic/Berardi.v
+    theories/Logic/Reynolds.v
     theories/Logic/Diaconescu.v
     theories/Logic/Hurkens.v
     theories/Logic/ProofIrrelevance.v
