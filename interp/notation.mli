@@ -16,6 +16,8 @@ open Notation_term
 
 (** Notations *)
 
+val notation_cat : Libobject.category
+
 val pr_notation : notation -> Pp.t
 (** Printing *)
 
