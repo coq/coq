@@ -1119,7 +1119,7 @@ let filter_candidates evd evk filter candidates_update =
 (* Given a filter refinement for the evar [evk], restrict it so that
    dependencies are preserved *)
 
-let closure_of_filter can_drop evd evk = function
+let closure_of_filter ~can_drop evd evk = function
   | None -> None
   | Some filter ->
   let evi = Evd.find_undefined evd evk in
@@ -1137,7 +1137,7 @@ let closure_of_filter can_drop evd evk = function
   if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
 
 (* The filter is assumed to be at least stronger than the original one *)
-let restrict_hyps can_drop evd evk filter candidates =
+let restrict_hyps ~can_drop evd evk filter candidates =
     (* What to do with dependencies?
        Assume we have x:A, y:B(x), z:C(x,y) |- ?e:T(x,y,z) and restrict on y.
        - If y is in a non-erasable position in C(x,y) (i.e. it is not below an
@@ -1149,15 +1149,15 @@ let restrict_hyps can_drop evd evk filter candidates =
        it for future work. In any case, thanks to the use of filters, the whole
        (unrestricted) context remains consistent. *)
     let candidates = filter_candidates evd evk (Some filter) candidates in
-    let typablefilter = closure_of_filter can_drop evd evk (Some filter) in
+    let typablefilter = closure_of_filter ~can_drop evd evk (Some filter) in
     (typablefilter,candidates)
 
 exception EvarSolvedWhileRestricting of evar_map * EConstr.constr
 
-let do_restrict_hyps can_drop evd (evk,args as ev) filter candidates =
+let do_restrict_hyps ~can_drop evd (evk,args as ev) filter candidates =
   let filter,candidates = match filter with
   | None -> None,candidates
-  | Some filter -> restrict_hyps can_drop evd evk filter candidates in
+  | Some filter -> restrict_hyps ~can_drop evd evk filter candidates in
   match candidates,filter with
   | UpdateWith [], _ -> user_err Pp.(str "Not solvable.")
   | UpdateWith [nc],_ ->
@@ -1186,7 +1186,7 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
       (* that says that the body is hidden. Note that expand_vars_in_term *)
       (* expands only rels and vars aliases, not rels or vars bound to an *)
       (* arbitrary complex term *)
-  let filter = closure_of_filter false evd evk filter in
+  let filter = closure_of_filter ~can_drop:false evd evk filter in
   let candidates = extract_candidates sols in
   match candidates with
   | NoUpdate ->
@@ -1316,10 +1316,10 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
   let candidates1 =
     try restrict_candidates unify flags env evd filter1 ev1 ev2
     with DoesNotPreserveCandidateRestriction ->
-      let evd,ev1' = do_restrict_hyps force evd ev1 filter1 NoUpdate in
+      let evd,ev1' = do_restrict_hyps ~can_drop:force evd ev1 filter1 NoUpdate in
       raise (CannotProject (evd,ev1')) in
   let evd,(evk1',args1 as ev1') =
-    try do_restrict_hyps force evd ev1 filter1 candidates1
+    try do_restrict_hyps ~can_drop:force evd ev1 filter1 candidates1
     with EvarSolvedWhileRestricting (evd,ev1) ->
       raise (EvarSolvedOnTheFly (evd,ev1)) in
   (* Only try pruning on variable substitutions, postpone otherwise. *)
@@ -1441,7 +1441,7 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
     restrict_upon_filter evd evk
       (fun (a1,a2) -> unify flags TermUnification env evd Reduction.CONV a1 a2) args in
   let candidates = filter_candidates evd evk untypedfilter NoUpdate in
-  let filter = closure_of_filter false evd evk untypedfilter in
+  let filter = closure_of_filter ~can_drop:false evd evk untypedfilter in
   let evd',ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
   let allowed = is_evar_allowed flags evk in
   if Evar.equal (fst ev1) evk && (not allowed || can_drop) then
@@ -1583,7 +1583,7 @@ let rec invert_definition unify flags choose imitate_defs
           let ts = expansions_of_var evd aliases t in
           let test c = isEvar evd c || List.exists (is_alias evd c) ts in
           let filter = restrict_upon_filter evd evk test argsv' in
-          let filter = closure_of_filter choose evd evk' filter in
+          let filter = closure_of_filter ~can_drop:choose evd evk' filter in
           let candidates = extract_candidates sols in
           let evd = match candidates with
           | NoUpdate ->
