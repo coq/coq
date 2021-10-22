@@ -172,7 +172,7 @@ let concl_next_tac =
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
   let min_env = Environ.reset_context env in
-  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name g sigma)) else None in
+  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name (Global.env ()) sigma g)) else None in
   let ccl =
     pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
   in
@@ -187,7 +187,7 @@ let process_goal sigma g =
 
 let process_goal_diffs diff_goal_map oldp nsigma ng =
   let open Evd in
-  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name ng nsigma)) else None in
+  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name (Global.env ()) nsigma ng)) else None in
   let og_s = match oldp with
     | Some oldp ->
       let Proof.{ sigma=osigma } = Proof.data oldp in

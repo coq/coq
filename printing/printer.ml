@@ -483,13 +483,13 @@ let pr_goal_tag g =
 
 (* display a goal name *)
 let pr_goal_name sigma g =
-  if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g)
+  if should_gname() then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g)
   else mt ()
 
 let pr_goal_header nme sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   str "goal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
-  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())
+  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g) else mt ())
 
 (* display the conclusion of a goal *)
 let pr_concl n ?(diffs=false) ?og_s sigma g =
@@ -534,7 +534,7 @@ let pr_evgl_sign env sigma evi =
 let pr_evar sigma (evk, evi) =
   let env = Global.env () in
   let pegl = pr_evgl_sign env sigma evi in
-  hov 0 (pr_existential_key sigma evk ++ str " : " ++ pegl)
+  hov 0 (pr_existential_key (Global.env ()) sigma evk ++ str " : " ++ pegl)
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int_hd pr sigma i = function
@@ -649,7 +649,7 @@ let print_dependent_evars gl sigma seeds =
         let sep = if s = mt_pp then "" else ", " in
         s ++ str sep ++ e' ++
             (match i with
-            | None -> str ":" ++ (Termops.pr_existential_key sigma e)
+            | None -> str ":" ++ (Termops.pr_existential_key (Global.env ()) sigma e)
             | Some i ->
               let using = Evar.Set.fold (fun d s ->
                   s ++ str " " ++ (pr_internal_existential_key d))

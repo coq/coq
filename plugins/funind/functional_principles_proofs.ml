@@ -795,7 +795,7 @@ let generalize_non_dep hyp =
               Id.List.mem hyp hyps
               || List.exists (Termops.occur_var_in_decl env sigma hyp) keep
               || Termops.occur_var env sigma hyp hyp_typ
-              || Termops.is_section_variable hyp
+              || Termops.is_section_variable (Global.env ()) hyp
               (* should be dangerous *)
             then (clear, decl :: keep)
             else (hyp :: clear, keep))

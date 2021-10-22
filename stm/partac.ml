@@ -128,7 +128,7 @@ end = struct (* {{{ *)
                 CErrors.user_err
                   Pp.(str"The par: selector requires a tactic that makes no progress or fully" ++
                       str" solves the goal and leaves no unresolved existential variables. The following" ++
-                      str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key sigma) (Evar.Set.elements evars))
+                      str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key (Global.env ()) sigma) (Evar.Set.elements evars))
        )
     with e when CErrors.noncritical e ->
       RespError (CErrors.print e ++ spc() ++ str "(for goal "++int r_goalno ++ str ")")

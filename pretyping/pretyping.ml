@@ -564,7 +564,7 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
       | Some b, Some c ->
          if not (is_conv !!env sigma b c) then
            user_err ?loc  (str "Cannot interpret " ++
-             pr_existential_key sigma evk ++
+             pr_existential_key (Global.env ()) sigma evk ++
              strbrk " in current context: binding for " ++ Id.print id ++
              strbrk " is not convertible to its expected definition (cannot unify " ++
              quote (Termops.Internal.print_constr_env !!env sigma b) ++
@@ -573,14 +573,14 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
              str ").")
       | Some b, None ->
            user_err ?loc  (str "Cannot interpret " ++
-             pr_existential_key sigma evk ++
+             pr_existential_key (Global.env ()) sigma evk ++
              strbrk " in current context: " ++ Id.print id ++
              strbrk " should be bound to a local definition.")
       | None, _ -> () in
     let check_type sigma id t' =
       if not (is_conv !!env sigma t t') then
         user_err ?loc  (str "Cannot interpret " ++
-          pr_existential_key sigma evk ++
+          pr_existential_key (Global.env ()) sigma evk ++
           strbrk " in current context: binding for " ++ Id.print id ++
           strbrk " is not well-typed.") in
     let sigma, c, update =
@@ -603,7 +603,7 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
         sigma, mkVar id, update
       with Not_found ->
         user_err ?loc  (str "Cannot interpret " ++
-          pr_existential_key sigma evk ++
+          pr_existential_key (Global.env ()) sigma evk ++
           str " in current context: no binding for " ++ Id.print id ++ str ".") in
     ((id,c)::subst, update, sigma) in
   let subst,inst,sigma = List.fold_right f hyps ([],update,sigma) in

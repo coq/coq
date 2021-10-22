@@ -153,7 +153,7 @@ let clear_dependency_msg env sigma id err inglobal =
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot remove " ++ ppid id ++ str " as it would leave the existential " ++
-      Printer.pr_existential_key sigma ev ++ str" without candidates."
+      Printer.pr_existential_key (Global.env ()) sigma ev ++ str" without candidates."
 
 let replacing_dependency_msg env sigma id err inglobal =
   let pp = clear_in_global_msg inglobal in
@@ -169,7 +169,7 @@ let replacing_dependency_msg env sigma id err inglobal =
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot change " ++ Id.print id ++ str " as it would leave the existential " ++
-      Printer.pr_existential_key sigma ev ++ str" without candidates."
+      Printer.pr_existential_key (Global.env ()) sigma ev ++ str" without candidates."
 
 let msg_quantified_hypothesis = function
   | NamedHyp id ->

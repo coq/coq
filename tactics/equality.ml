@@ -1807,7 +1807,7 @@ let subst_one_var dep_proof_ok x =
             (str "Cannot find any non-recursive equality over " ++ Id.print x ++
                str".")
         with FoundHyp res -> res in
-      if is_section_variable x then
+      if is_section_variable (Global.env ()) x then
         check_non_indirectly_dependent_section_variable gl x;
       subst_one dep_proof_ok x res
   end

@@ -741,7 +741,7 @@ let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
 (* Preparing proof entries *)
 let error_unresolved_evars env sigma t evars =
   let pr_unresolved_evar e =
-    hov 2 (str"- " ++ Printer.pr_existential_key sigma e ++  str ": " ++
+    hov 2 (str"- " ++ Printer.pr_existential_key (Global.env ()) sigma e ++  str ": " ++
       Himsg.explain_pretype_error env sigma
         (Pretype_errors.UnsolvableImplicit (e,None)))
   in
