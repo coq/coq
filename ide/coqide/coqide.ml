@@ -809,11 +809,14 @@ module Nav = struct
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
   let forward_one x = forward_one_sid x
   let continue ?sid _ = maybe_update_breakpoints ();
-    ignore (resume_debugger ?sid Interface.Continue)
+    if not (resume_debugger ?sid Interface.Continue) then
+      send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
   let step_in ?sid _ = maybe_update_breakpoints ();
-    ignore (resume_debugger ?sid Interface.StepIn)
+    if not (resume_debugger ?sid Interface.StepIn) then
+      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
   let step_out ?sid _ = maybe_update_breakpoints ();
-    ignore (resume_debugger ?sid Interface.StepOut)
+    if not (resume_debugger ?sid Interface.StepOut) then
+      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
   let backward_one _ = maybe_update_breakpoints ();
     send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
   let goto _ = maybe_update_breakpoints ();
@@ -842,6 +845,8 @@ module Nav = struct
       if not (Coq.is_stopped_in_debugger ocoqtop) then
         Coq.send_break ocoqtop
     end
+  let show_debugger _ =
+    on_current_term (fun sn -> sn.debugger#show ())
   let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
 end
 
@@ -1624,6 +1629,7 @@ let build_ui () =
     item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~callback:Nav.step_out;
     (* todo: consider other names for Break and Interrupt to be clearer to users *)
     item "Break" ~label:"Break" ~accel:"F11" ~callback:Nav.break;
+    item "Show debug panel" ~label:"Show debug panel" ~callback:Nav.show_debugger;
   ];
 
   menu windows_menu [

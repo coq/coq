@@ -143,6 +143,7 @@ let init () =
 \n    <menuitem action='Step in' />\
 \n    <menuitem action='Step out' />\
 \n    <menuitem action='Break' />\
+\n    <menuitem action='Show debug panel' />\
 \n  </menu>\
 \n  <menu action='Windows'>\
 \n    <menuitem action='Detach Proof' />\

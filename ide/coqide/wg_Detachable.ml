@@ -56,6 +56,8 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
 
     method visible = win#misc#visible || self#misc#visible
 
+    method win = win
+
     method frame = frame
 
     method button = but

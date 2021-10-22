@@ -179,7 +179,9 @@ let debugger title sid =
     let open Gtk in
     let open GtkBase in
     let alloc = Widget.allocation debugger_detachable#as_widget in
-    debugger_detachable#frame#coerce#misc#set_size_request ~width:alloc.width ~height:alloc.height ();
+    ignore @@ Glib.Idle.add (fun _ ->
+      debugger_detachable#win#resize ~width:alloc.width ~height:alloc.height;
+      false);
     relayout ();
     !forward_set_paned_pos 1000000;  (* looks OK but debugger_paned in main window is still resizable *)
   in
