@@ -700,7 +700,12 @@ let structure_for_compute env sg c =
 
 let compile f =
   try
-    let args = ["ocamlc";"-I";Filename.dirname f;"-c";f^"i";f] in
+    let args = [ "ocamlc"
+               ; "-package";"zarith"
+               ; "-I"; Filename.dirname f
+               ; "-c"; f^"i"
+               ; f
+               ] in
     let res = CUnix.sys_command (Envars.ocamlfind ()) args in
     match res with
     | Unix.WEXITED 0 -> ()
