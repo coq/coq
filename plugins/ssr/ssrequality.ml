@@ -461,7 +461,15 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
       let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
       let itacs = [introid pattern_id; introid rule_id] in
       let cltac = Tactics.clear [pattern_id; rule_id] in
-      let rwtacs = [rewritetac ?under dir (EConstr.mkVar rule_id); cltac] in
+      let rwtacs = [
+        Tacticals.New.tclTHENLIST [
+          rewritetac ?under dir (EConstr.mkVar rule_id);
+          if !ssroldreworder || Option.default false under then
+            Proofview.tclUNIT ()
+          else
+            Proofview.cycle 1
+          ];
+        cltac] in
       Tactics.apply_type ~typecheck:true cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.New.tclTHENLIST (itacs @ rwtacs), sigma0
   in
   let cvtac' =
