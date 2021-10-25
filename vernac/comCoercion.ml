@@ -120,27 +120,27 @@ let get_source env lp source =
          | [] -> raise Not_found
          | LocalDef _ :: lt -> aux lt
          | LocalAssum (_,t1) :: lt ->
-            let cl1,u1,lv1 = find_class_type env Evd.empty (EConstr.of_constr t1) in
+            let cl1,u1,lv1 = find_class_type (push_rel_context lt env) Evd.empty (EConstr.of_constr t1) in
             cl1,lt,lv1,1
        in aux lp
     | Some cl ->
        (* Take the first argument that matches *)
-       let rec aux acc = function
+       let rec aux env acc = function
          | [] -> raise Not_found
-         | LocalDef _ as decl :: lt -> aux (decl::acc) lt
+         | LocalDef _ as decl :: lt -> aux (push_rel decl env) (decl::acc) lt
          | LocalAssum (_,t1) as decl :: lt ->
             try
               let cl1,u1,lv1 = find_class_type env Evd.empty (EConstr.of_constr t1) in
               if cl_typ_eq cl cl1 then cl1,acc,lv1,Context.Rel.nhyps lt+1
               else raise Not_found
-            with Not_found -> aux (decl::acc) lt
-       in aux [] (List.rev lp)
+            with Not_found -> aux (push_rel decl env) (decl::acc) lt
+       in aux env [] (List.rev lp)
 
-let get_target env t ind =
+let get_target env lp t ind =
   if (ind > 1) then
     CL_FUN
   else
-    match pi1 (find_class_type env Evd.empty (EConstr.of_constr t)) with
+    match pi1 (find_class_type (push_rel_context lp env) Evd.empty (EConstr.of_constr t)) with
     | CL_CONST p when Structures.PrimitiveProjections.mem p ->
       CL_PROJ (Option.get @@ Structures.PrimitiveProjections.find_opt p)
     | x -> x
@@ -321,7 +321,7 @@ let add_new_coercion_core coef stre poly source target isid : unit =
     warn_uniform_inheritance coef;
   let clt =
     try
-      get_target env tg ind
+      get_target env lp tg ind
     with Not_found ->
       raise (CoercionError NoTarget)
   in

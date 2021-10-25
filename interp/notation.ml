@@ -1977,8 +1977,8 @@ let find_scope_class_opt = function
 let rec compute_arguments_classes env sigma t =
   match EConstr.kind sigma (Reductionops.whd_betaiotazeta env sigma t) with
     | Prod (na, t, u) ->
-        let env = EConstr.push_rel (Context.Rel.Declaration.LocalAssum (na, t)) env in
         let cl = try Some (compute_scope_class env sigma t) with Not_found -> None in
+        let env = EConstr.push_rel (Context.Rel.Declaration.LocalAssum (na, t)) env in
         cl :: compute_arguments_classes env sigma u
     | _ -> []
 
