@@ -548,19 +548,46 @@ Creating Hints
 
       .. warning::
 
-         The regexp matches the entire path. Most hints will start with a
-         leading `( _* )` to match the tail of the path. (Note that `(_*)`
-         misparses since `*)` would end a comment.)
-
-      .. warning::
-
-         There is no operator precedence during parsing, one can
-         check with :cmd:`Print HintDb` to verify the current cut expression.
-
-      .. warning::
-
          These hints currently only apply to typeclass proof search and the
          :tacn:`typeclasses eauto` tactic.
+
+      .. warning::
+
+         The regexp matches the entire path. Most hints will start with a
+         leading `( _* )` to match the tail of the path.
+
+      .. knownissue:: Hint Cut regexp precedence
+
+         :cmd:`Hint Cut` doesn't apply any operator precedence when
+         parsing regular expressions.  You can check how the cut
+         expression has been parsed with :cmd:`Print HintDb`.
+
+         .. coqtop:: none reset
+
+            Class foo.
+            #[ local ] Instance bar : foo -> foo := {}.
+
+         In the following example, one would expect the `*` to only
+         apply to the `_`, but that's not the case:
+
+         .. coqtop:: all
+
+            #[ local ] Hint Cut [_* bar _* bar] : typeclass_instances.
+            Print HintDb typeclass_instances.
+
+         To get the expected behavior, one should put additional parentheses.
+
+         .. coqtop:: none reset
+
+            Class foo.
+            #[ local ] Instance bar : foo -> foo := {}.
+
+         .. coqtop:: all
+
+            #[ local ] Hint Cut [(_*) bar (_*) bar] : typeclass_instances.
+            Print HintDb typeclass_instances.
+
+         The issue is tracked in `#5206 <https://github.com/coq/coq/issues/5206>`_.
 
    .. cmd:: Hint Mode @qualid {+ {| + | ! | - } } {? : {+ @ident } }
 

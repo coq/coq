@@ -785,6 +785,73 @@ class ExampleDirective(BaseAdmonition):
         self.options['classes'] = ['admonition', 'note']
         return super().run()
 
+class KnownIssueDirective(BaseAdmonition):
+    """A reST directive for known issues.
+
+    This directive is used to document known issues (confirmed bugs or
+    limitations) that do not look like they will be fixed in time for
+    the next release.
+
+    When a known issue is documented, a link to the Coq bug tracker
+    should always be provided so that interested parties know where to
+    discuss the issue (and what is the canonical reference in case
+    duplicate reports need to be closed).
+
+    The directive behaves like an error admonition; see
+    https://docutils.sourceforge.io/docs/ref/rst/directives.html#specific-admonitions
+    for more details.
+
+    Optionally, any text immediately following the ``.. knownissue::`` header is
+    used as the known issue's title. It is strongly recommended to provide one.
+
+    Example::
+
+      .. knownissue:: Hint Cut regexp precedence
+
+         :cmd:`Hint Cut` doesn't apply any operator precedence when
+         parsing regular expressions.  You can check how the cut
+         expression has been parsed with :cmd:`Print HintDb`.
+
+         .. coqtop:: none reset
+
+            Class foo.
+            #[ local ] Instance bar : foo -> foo := {}.
+
+         In the following example, one would expect the `*` to only
+         apply to the `_`, but that's not the case:
+
+         .. coqtop:: all
+
+            #[ local ] Hint Cut [_* bar _* bar] : typeclass_instances.
+            Print HintDb typeclass_instances.
+
+         To get the expected behavior, one should put additional parentheses.
+
+         .. coqtop:: none reset
+
+            Class foo.
+            #[ local ] Instance bar : foo -> foo := {}.
+
+         .. coqtop:: all
+
+            #[ local ] Hint Cut [(_*) bar (_*) bar] : typeclass_instances.
+            Print HintDb typeclass_instances.
+
+         The issue is tracked in `#5206 <https://github.com/coq/coq/issues/5206>`_.
+    """
+    node_class = nodes.admonition
+    directive_name = "knownissue"
+    optional_arguments = 1
+
+    def run(self):
+        # ‘BaseAdmonition’ checks whether ‘node_class’ is ‘nodes.admonition’,
+        # and uses arguments[0] as the title in that case (in other cases, the
+        # title is unset, and it is instead set in the HTML visitor).
+        assert len(self.arguments) <= 1
+        self.arguments = [": ".join(['Known issue'] + self.arguments)]
+        self.options['classes'] = ['admonition', 'error']
+        return super().run()
+
 class PreambleDirective(Directive):
     r"""A reST directive to include a TeX file.
 
@@ -1418,6 +1485,7 @@ def simplify_source_code_blocks_for_latex(app, doctree, fromdocname): # pylint: 
 COQ_ADDITIONAL_DIRECTIVES = [CoqtopDirective,
                              CoqdocDirective,
                              ExampleDirective,
+                             KnownIssueDirective,
                              InferenceDirective,
                              PreambleDirective]
 
