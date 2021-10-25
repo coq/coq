@@ -80,6 +80,14 @@ val set_typeclass_transparency
   -> bool
   -> unit
 
+val tc_transparency_locality : Hints.hint_locality Attributes.attribute
+
+val set_typeclass_transparency_com
+  :  locality:Hints.hint_locality
+  -> Libnames.qualid list
+  -> bool
+  -> unit
+
 (** For generation on names based on classes only *)
 
 val id_of_class : typeclass -> Id.t
