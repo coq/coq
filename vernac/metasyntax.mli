@@ -15,8 +15,6 @@ open Constrexpr
 open Notation_term
 open Environ
 
-val add_token_obj : string -> unit
-
 (** Adding a (constr) notation in the environment*)
 
 val add_notation : local:bool -> infix:bool -> Deprecation.t option -> env -> constr_expr ->
