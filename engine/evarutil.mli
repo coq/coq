@@ -70,7 +70,7 @@ val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
 
 (** Polymorphic constants *)
 
-val new_global : evar_map -> GlobRef.t -> evar_map * constr
+val new_global : env -> evar_map -> GlobRef.t -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a list -> (Id.t * 'a) list
 

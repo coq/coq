@@ -19,8 +19,8 @@ let c_one sigma =
 (* the long name of "S" was found with the command "About S." *)
   let gr_O =
     find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
-  let sigma, c_O = Evarutil.new_global sigma gr_O in
-  let sigma, c_S = Evarutil.new_global sigma gr_S in
+  let sigma, c_O = Evarutil.new_global (Global.env ()) sigma gr_O in
+  let sigma, c_S = Evarutil.new_global (Global.env ()) sigma gr_S in
 (* Here is the construction of a new term by applying functions to argument. *)
   sigma, EConstr.mkApp (c_S, [| c_O |])
 
@@ -67,43 +67,43 @@ let example_sort_app_lambda () =
 
 let c_S sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_O sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_E sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_D sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_Q sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_R sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_N sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_C sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "C" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_F sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "S_ev" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 let c_P sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "s_half_proof" in
-  Evarutil.new_global sigma gr
+  Evarutil.new_global (Global.env ()) sigma gr
 
 (* If c_S was universe polymorphic, we should have created a new constant
    at each iteration of buildup. *)

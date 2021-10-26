@@ -2089,7 +2089,7 @@ let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
         let entry, args = Internal.shrink_entry local_context entry in
         let entry = Internal.pmap_entry_body ~f:Future.from_val entry in
         let cst = declare_constant ~name:id ~kind ~typing_flags:None (DefinitionEntry entry) in
-        let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
+        let sigma, app = Evarutil.new_global (Global.env ()) sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
         sigma, cst) sigma0
       types proof_obj.entries

@@ -156,7 +156,7 @@ type ('constr, 'types) recursive_preentry =
 (* Wellfounded definition *)
 
 let fix_proto sigma =
-  Evarutil.new_global sigma (Coqlib.lib_ref "program.tactic.fix_proto")
+  Evarutil.new_global (Global.env ()) sigma (Coqlib.lib_ref "program.tactic.fix_proto")
 
 let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
   let open Context.Named.Declaration in

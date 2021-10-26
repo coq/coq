@@ -21,8 +21,8 @@ open Namegen
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let new_global evd x =
-  let (evd, c) = Evd.fresh_global (Global.env()) evd x in
+let new_global env evd x =
+  let (evd, c) = Evd.fresh_global env evd x in
   (evd, c)
 
 let create_clos_infos env sigma flags =
