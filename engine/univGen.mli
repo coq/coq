@@ -55,9 +55,9 @@ val fresh_global_instance : ?loc:Loc.t -> ?names:Univ.Instance.t -> env -> GlobR
 val fresh_universe_context_set_instance : ContextSet.t ->
   universe_level_subst * ContextSet.t
 
-(** Create a fresh global in the global environment, without side effects.
+(** Create a fresh global in the environment argument, without side effects.
     BEWARE: this raises an error on polymorphic constants/inductives:
     the constraints should be properly added to an evd.
     See Evd.fresh_global, Evarutil.new_global, and pf_constr_of_global for
     the proper way to get a fresh copy of a polymorphic global reference. *)
-val constr_of_monomorphic_global : GlobRef.t -> constr
+val constr_of_monomorphic_global : env -> GlobRef.t -> constr

@@ -204,7 +204,7 @@ let exec_tactic env sigma n f args =
   let nf c = constr_of sigma c in
   Array.map nf !tactic_res, Evd.universe_context_set sigma
 
-let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n)))
+let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref n)))
 let gen_reference n = lazy (Coqlib.lib_ref n)
 
 let coq_mk_Setoid = gen_constant "plugins.ring.Build_Setoid_Theory"
@@ -248,7 +248,7 @@ let plugin_modules =
     ]
 
 let my_constant c =
-  lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
+  lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
     [@@ocaml.warning "-3"]
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
@@ -853,7 +853,7 @@ let ftheory_to_obj : field_info -> obj =
 let field_equality env sigma r inv req =
   match EConstr.kind sigma req with
     | App (f, [| _ |]) when eq_constr_nounivs sigma f (Lazy.force coq_eq) ->
-        let c = UnivGen.constr_of_monomorphic_global Coqlib.(lib_ref "core.eq.congr") in
+        let c = UnivGen.constr_of_monomorphic_global (Global.env ()) Coqlib.(lib_ref "core.eq.congr") in
         let c = EConstr.of_constr c in
         mkApp(c,[|r;r;inv|])
     | _ ->

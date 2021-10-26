@@ -969,7 +969,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
         | Ind _
           when EConstr.eq_constr sigma t
                  (EConstr.of_constr
-                    ( UnivGen.constr_of_monomorphic_global
+                    ( UnivGen.constr_of_monomorphic_global (Global.env ())
                     @@ Coqlib.lib_ref "core.False.type" )) ->
           tauto
         | Case (_, _, _, _, _, v, _) ->

@@ -20,7 +20,7 @@ let debug_zify = CDebug.create ~name:"zify" ()
 
 let zify str =
   EConstr.of_constr
-    (UnivGen.constr_of_monomorphic_global
+    (UnivGen.constr_of_monomorphic_global (Global.env ())
        (Coqlib.lib_ref ("ZifyClasses." ^ str)))
 
 (** classes *)
@@ -675,7 +675,7 @@ module MakeTable (E : Elt) = struct
      *)
   let register c =
     try
-      let c = UnivGen.constr_of_monomorphic_global (Nametab.locate c) in
+      let c = UnivGen.constr_of_monomorphic_global (Global.env ()) (Nametab.locate c) in
       let _ = Lib.add_anonymous_leaf (register_obj c) in
       ()
     with Not_found ->

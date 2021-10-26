@@ -125,7 +125,7 @@ let mul = function
   | (Const n,q) when Q.(equal one) n -> q
   | (p,q) -> Mul(p,q)
 
-let gen_constant n = lazy (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n))
+let gen_constant n = lazy (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref n))
 
 let tpexpr  = gen_constant "plugins.ring.pexpr"
 let ttconst = gen_constant "plugins.ring.const"
@@ -533,7 +533,7 @@ let nsatz lpol =
 
 let return_term t =
   let a =
-    mkApp (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.eq.refl",[|tllp ();t|]) in
+    mkApp (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.eq.refl",[|tllp ();t|]) in
   let a = EConstr.of_constr a in
   generalize [a]
 
