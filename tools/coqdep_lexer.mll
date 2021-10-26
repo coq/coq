@@ -15,10 +15,12 @@
 
   type qualid = string list
 
+  type load = Logical of string | Physical of string
+
   type coq_token =
     | Require of qualid option * qualid list
     | Declare of string list
-    | Load of string
+    | Load of load
     | AddLoadPath of string
     | AddRecLoadPath of string * qualid
 
@@ -170,9 +172,9 @@ and load_file = parse
   | '"' [^ '"']* '"' (*'"'*)
       { let s = lexeme lexbuf in
 	parse_dot lexbuf;
-	Load (unquote_vfile_string s) }
+        Load (Physical (unquote_vfile_string s)) }
   | coq_ident
-      { let s = get_ident lexbuf in skip_to_dot lexbuf; Load s }
+      { let s = get_ident lexbuf in skip_to_dot lexbuf; Load (Logical s) }
   | eof
       { syntax_error lexbuf }
   | _

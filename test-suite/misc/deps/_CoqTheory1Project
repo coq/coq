@@ -1,0 +1,9 @@
+-Q Theory1/ Theory
+Theory1/File1.v
+Theory1/File2.v
+Theory1/Subtheory1/File1.v
+Theory1/Subtheory1/Subsubtheory1/File1.v
+Theory1/Subtheory1/Subsubtheory2/File1.v
+Theory1/Subtheory2/File1.v
+Theory1/Subtheory2/Subsubtheory1/File1.v
+Theory1/Subtheory2/Subsubtheory2/File1.v

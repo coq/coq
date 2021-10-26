@@ -17,6 +17,7 @@ type t = {
   path_physical : CUnix.physical_path;
   path_logical : DP.t;
   path_implicit : bool;
+  path_root : (CUnix.physical_path * DP.t);
 }
 
 let load_paths = Summary.ref ([] : t list) ~name:"LOADPATHS"
@@ -58,13 +59,14 @@ let warn_overriding_logical_loadpath =
                ; DP.print old_path; strbrk "; it is remapped to "
                ; DP.print coq_path]))
 
-let add_load_path phys_path coq_path ~implicit =
+let add_load_path root phys_path coq_path ~implicit =
   let phys_path = CUnix.canonical_path_name phys_path in
   let filter p = String.equal p.path_physical phys_path in
   let binding = {
     path_logical = coq_path;
     path_physical = phys_path;
     path_implicit = implicit;
+    path_root = root;
   } in
   match List.filter filter !load_paths with
   | [] ->
@@ -96,20 +98,39 @@ let filter_path f =
   in
   aux !load_paths
 
+let eq_root (phys,log_path) (phys',log_path') =
+  String.equal phys phys' && Names.DirPath.equal log_path log_path'
+
+let add_path root file = function
+  | [] -> [root,[file]]
+  | (root',l) :: l' as l'' -> if eq_root root root' then (root', file::l) :: l' else (root,[file]) :: l''
+
 let expand_path ?root dir =
+  let exact_path = match root with None -> dir | Some root -> Libnames.append_dirpath root dir in
   let rec aux = function
-  | [] -> []
-  | { path_physical = ph; path_logical = lg; path_implicit = implicit } :: l ->
+  | [] -> [], []
+  | { path_physical = ph; path_logical = lg; path_implicit = implicit; path_root } :: l ->
+    let full, others = aux l in
+    if DP.equal exact_path lg then
+      (* Most recent full match comes first *)
+      (ph, lg) :: full, others
+    else
     let success =
       match root with
-      | None ->
-        if implicit then Libnames.is_dirpath_suffix_of dir lg
-        else DP.equal dir lg
+      | None -> implicit && Libnames.is_dirpath_suffix_of dir lg
       | Some root ->
         Libnames.(is_dirpath_prefix_of root lg &&
-                  is_dirpath_suffix_of dir (drop_dirpath_prefix root lg)) in
-    if success then (ph, lg) :: aux l else aux l in
-  aux !load_paths
+                  is_dirpath_suffix_of dir (drop_dirpath_prefix root lg))
+    in
+    if success then
+      (* Only keep partial path in the same "-R" block *)
+      full, add_path path_root (ph, lg) others
+    else
+      full, others in
+  let full, others = aux !load_paths in
+  (* Returns the dirpath matching exactly and the ordered list of
+     -R/-Q blocks with subdirectories that matches *)
+  full, List.map snd others
 
 let locate_file fname =
   let paths = List.map physical !load_paths in
@@ -129,17 +150,14 @@ let warn_several_object_files =
     Pp.(fun (vi, vo) ->
         seq [ str "Loading"; spc (); str vi
             ; strbrk " instead of "; str vo
-            ; strbrk " because it is more recent"
+            ; strbrk " because it is more recent."
             ])
 
-
-let select_vo_file ~warn loadpath base =
+let select_vo_file ~find base =
   let find ext =
-    let loadpath = List.map fst loadpath in
     try
       let name = Names.Id.to_string base ^ ext in
-      let lpath, file =
-        System.where_in_path ~warn loadpath name in
+      let lpath, file = find name in
       Some (lpath, file)
     with Not_found -> None in
   (* If [!Flags.load_vos_libraries]
@@ -168,6 +186,19 @@ let select_vo_file ~warn loadpath base =
     | _ -> load_most_recent_of_vo_and_vio()
   end else load_most_recent_of_vo_and_vio()
 
+let find_first loadpath base =
+  match System.all_in_path loadpath base with
+  | [] -> raise Not_found
+  | f :: _ -> f
+
+let find_unique fullqid loadpath base =
+  match System.all_in_path loadpath base with
+  | [] -> raise Not_found
+  | [f] -> f
+  | _::_ as l ->
+    CErrors.user_err Pp.(str "Required library " ++ Libnames.pr_qualid fullqid ++
+      strbrk " matches several files in path (found " ++ pr_enum str (List.map snd l) ++ str ").")
+
 let locate_absolute_library dir : CUnix.physical_path locate_result =
   (* Search in loadpath *)
   let pref, base = Libnames.split_dirpath dir in
@@ -175,28 +206,41 @@ let locate_absolute_library dir : CUnix.physical_path locate_result =
   match loadpath with
   | [] -> Error LibUnmappedDir
   | _ ->
-    match select_vo_file ~warn:false loadpath base with
+    match select_vo_file ~find:(find_first loadpath) base with
     | Ok (_, file) -> Ok file
     | Error fail -> Error fail
 
-let locate_qualified_library ?root ?(warn = true) qid :
+let locate_qualified_library ?root qid :
   (library_location * DP.t * CUnix.physical_path) locate_result =
   (* Search library in loadpath *)
   let dir, base = Libnames.repr_qualid qid in
-  let loadpath = expand_path ?root dir in
-  match loadpath with
-  | [] -> Error LibUnmappedDir
-  | _ ->
-    match select_vo_file ~warn loadpath base with
-    | Ok (lpath, file) ->
-      let dir = Libnames.add_dirpath_suffix
-          (CString.List.assoc lpath loadpath) base in
+  match expand_path ?root dir with
+  | [], [] -> Error LibUnmappedDir
+  | full_matches, others ->
+    let result =
+      (* Priority to exact matches *)
+      match select_vo_file ~find:(find_first full_matches) base with
+      | Ok _ as x -> x
+      | Error _ ->
+         (* Looking otherwise in -R/-Q blocks of partial matches *)
+        let rec aux = function
+          | [] -> Error LibUnmappedDir
+          | block :: rest ->
+            match select_vo_file ~find:(find_unique qid block) base with
+            | Ok _ as x -> x
+            | Error _ -> aux rest
+        in
+        aux others
+    in
+    match result with
+    | Ok (dir,file) ->
+      let library = Libnames.add_dirpath_suffix dir base in
       (* Look if loaded *)
-      if Library.library_is_loaded dir
-      then Ok (LibLoaded, dir, Library.library_full_filename dir)
+      if Library.library_is_loaded library
+      then Ok (LibLoaded, library, Library.library_full_filename library)
       (* Otherwise, look for it in the file system *)
-      else Ok (LibInPath, dir, file)
-    | Error fail -> Error fail
+      else Ok (LibInPath, library, file)
+    | Error _ as e -> e
 
 let error_unmapped_dir qid =
   let prefix, _ = Libnames.repr_qualid qid in
@@ -276,8 +320,11 @@ let add_vo_path lp =
       else
         ()
     in
-    let add (path, dir) = add_load_path path ~implicit dir in
+    let root = (unix_path,lp.coq_path) in
+    let add (path, dir) = add_load_path root path ~implicit dir in
+    (* deeper dirs registered first and thus be found last *)
+    let dirs = List.rev dirs in
     let () = List.iter add dirs in
-    add_load_path unix_path ~implicit lp.coq_path
+    add_load_path root unix_path ~implicit lp.coq_path
   else
     warn_cannot_open_path unix_path

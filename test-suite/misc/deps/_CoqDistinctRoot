@@ -1,0 +1,5 @@
+-R DistinctRoot/A A
+-R DistinctRoot/B B
+DistinctRoot/A/File1.v
+DistinctRoot/B/File1.v
+DistinctRoot/File2.v

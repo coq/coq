@@ -1058,8 +1058,7 @@ command: [
 | "Section" ident
 | "End" ident
 | "Collection" ident ":=" section_var_expr
-| "Require" OPT [ "Import" | "Export" ] LIST1 qualid
-| "From" dirpath "Require" OPT [ "Import" | "Export" ] LIST1 qualid
+| OPT [ "From" dirpath ] "Require" OPT [ "Import" | "Export" ] LIST1 qualid
 | "Import" LIST1 filtered_import
 | "Export" LIST1 filtered_import
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )

@@ -51,8 +51,21 @@ val is_in_system_path : string -> bool
 val where_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 
+(** [find_file_in_path ?warn loadpath filename] returns the directory
+    name and long name of the first physical occurrence [filename] in
+    one of the directory of the [loadpath];
+    fails with a user error if no such file exists;
+    warn if two or more files exist in the loadpath;
+    returns instead the directory name of [filename] is [filename] is
+    an absolute path *)
 val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
+
+(** [all_in_path loadpath filename] returns the list of the directory
+    name and full name of all physical occurrences of [filename] in a
+    [loadpath] binding physical paths to some arbitrary key *)
+val all_in_path :
+  (CUnix.physical_path * 'a) list -> string -> ('a * string) list
 
 val trust_file_cache : bool ref
 (** [trust_file_cache] indicates whether we trust the underlying

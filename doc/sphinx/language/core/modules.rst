@@ -958,9 +958,6 @@ accessible, absolute names can never be hidden.
 Libraries and filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: The questions described here have been subject to redesign in Coq 8.5.
-   Former versions of Coq use the same terminology to describe slightly different things.
-
 Compiled files (``.vo`` and ``.vio``) store sub-libraries. In order to refer
 to them inside Coq, a translation from file-system names to Coq names
 is needed. In this translation, names in the file system are called
@@ -968,17 +965,18 @@ is needed. In this translation, names in the file system are called
 names.
 
 A logical prefix Lib can be associated with a physical path using
-the command line option ``-Q`` `path` ``Lib``. All subfolders of path are
+either the command line option ``-Q`` `path` ``Lib`` or the command
+line option ``-R`` `path` ``Lib``. All subfolders of path are
 recursively associated with the logical path ``Lib`` extended with the
 corresponding suffix coming from the physical path. For instance, the
-folder ``path/foo/Bar`` maps to ``Lib.foo.Bar``. Subdirectories corresponding
+folder ``path/Foo/Bar`` maps to ``Lib.Foo.Bar``. Subdirectories corresponding
 to invalid Coq identifiers are skipped, and, by convention,
 subdirectories named ``CVS`` or ``_darcs`` are skipped too.
 
 Thanks to this mechanism, ``.vo`` files are made available through the
 logical name of the folder they are in, extended with their own
 basename. For example, the name associated with the file
-``path/foo/Bar/File.vo`` is ``Lib.foo.Bar.File``. The same caveat applies for
+``path/Foo/Bar/File.vo`` is ``Lib.Foo.Bar.File``. The same caveat applies for
 invalid identifiers. When compiling a source file, the ``.vo`` file stores
 its logical name, so that an error is issued if it is loaded with the
 wrong loadpath afterwards.
@@ -995,18 +993,8 @@ with the same physical-to-logical translation and with an empty logical prefix.
 .. todo: Needs a more better explanation of COQPATH and XDG* with example(s)
    and suggest best practices for their use
 
-The command line option ``-R`` is a variant of ``-Q`` which has the strictly
-same behavior regarding loadpaths, but which also makes the
-corresponding ``.vo`` files available through their short names in a way
-similar to the :cmd:`Import` command. For instance, ``-R path Lib``
-associates the file ``/path/foo/Bar/File.vo`` with the logical name
-``Lib.foo.Bar.File`` but allows this file to be accessed through the
-short names ``foo.Bar.File``, ``Bar.File`` and ``File``. If several files with
-identical base name are present in different subdirectories of a
-recursive loadpath, which of these files is found first may be system-
-dependent and explicit qualification is recommended. The ``From`` argument
-of the ``Require`` command can be used to bypass the implicit shortening
-by providing an absolute root to the required file (see :ref:`compiled-files`).
+The choice between ``-Q`` and ``-R`` impacts how ambiguous names are
+resolved in :cmd:`Require` (see :ref:`compiled-files`).
 
 There also exists another independent loadpath mechanism attached to
 OCaml object files (``.cmo`` or ``.cmxs``) rather than Coq object

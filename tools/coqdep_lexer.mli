@@ -10,10 +10,12 @@
 
 type qualid = string list
 
+type load = Logical of string | Physical of string
+
 type coq_token =
   | Require of qualid option * qualid list
   | Declare of string list
-  | Load of string
+  | Load of load
   | AddLoadPath of string
   | AddRecLoadPath of string * qualid
 

@@ -363,6 +363,11 @@ sig
   (** Return the list of unique elements which appear at least twice. Elements
       are kept in the order of their first appearance. *)
 
+  val uniquize_key : ('a -> 'b) -> 'a list -> 'a list
+  (** Return the list of elements without duplicates using the
+      function to associate a comparison key to each element.
+      This is the list unchanged if there was none. *)
+
   val uniquize : 'a list -> 'a list
   (** Return the list of elements without duplicates.
       This is the list unchanged if there was none. *)

@@ -54,7 +54,6 @@ type 'a locate_result = ('a, locate_error) result
 
 val locate_qualified_library
   :  ?root:DirPath.t
-  -> ?warn:bool
   -> Libnames.qualid
   -> (library_location * DirPath.t * CUnix.physical_path) locate_result
 
