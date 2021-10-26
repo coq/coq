@@ -333,15 +333,15 @@ let rec_pte_id = Id.of_string "Hrec"
 let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let coq_False =
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.False.type")
+      (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.False.type")
   in
   let coq_True =
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.True.type")
+      (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.True.type")
   in
   let coq_I =
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.True.I")
+      (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.True.I")
   in
   let open Tacticals.New in
   let rec scan_type context type_of_hyp : unit Proofview.tactic =

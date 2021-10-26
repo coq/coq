@@ -534,7 +534,7 @@ let pr_evgl_sign env sigma evi =
 let pr_evar sigma (evk, evi) =
   let env = Global.env () in
   let pegl = pr_evgl_sign env sigma evi in
-  hov 0 (pr_existential_key (Global.env ()) sigma evk ++ str " : " ++ pegl)
+  hov 0 (pr_existential_key env sigma evk ++ str " : " ++ pegl)
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int_hd pr sigma i = function

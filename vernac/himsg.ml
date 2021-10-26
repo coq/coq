@@ -297,12 +297,12 @@ let explain_unification_error env sigma p1 p2 = function
   | Some e ->
      let rec aux p1 p2 = function
      | OccurCheck (evk,rhs) ->
-        [str "cannot define " ++ quote (pr_existential_key (Global.env ()) sigma evk) ++
+        [str "cannot define " ++ quote (pr_existential_key env sigma evk) ++
         strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
         let env = make_all_name_different env sigma in
-        [str "cannot instantiate " ++ quote (pr_existential_key (Global.env ()) sigma evk)
+        [str "cannot instantiate " ++ quote (pr_existential_key env sigma evk)
         ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
         strbrk " is not in its scope" ++
         (if List.is_empty args then mt() else
@@ -327,13 +327,13 @@ let explain_unification_error env sigma p1 p2 = function
         let t1, t2 = pr_explicit env sigma t1 t2 in
         [ev ++ strbrk " has otherwise to unify with " ++ t1 ++ str " which is incompatible with " ++ t2]
      | MetaOccurInBody evk ->
-        [str "instance for " ++ quote (pr_existential_key (Global.env ()) sigma evk) ++
+        [str "instance for " ++ quote (pr_existential_key env sigma evk) ++
         strbrk " refers to a metavariable - please report your example" ++
         strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
      | InstanceNotSameType (evk,env,t,u) ->
         let t, u = pr_explicit env sigma t u in
         [str "unable to find a well-typed instantiation for " ++
-        quote (pr_existential_key (Global.env ()) sigma evk) ++
+        quote (pr_existential_key env sigma evk) ++
         strbrk ": cannot ensure that " ++
         t ++ strbrk " is a subtype of " ++ u]
      | InstanceNotFunctionalType (evk,env,f,u) ->
@@ -341,7 +341,7 @@ let explain_unification_error env sigma p1 p2 = function
         let f = pr_leconstr_env env sigma f in
         let u = pr_leconstr_env env sigma u in
         [str "unable to find a well-typed instantiation for " ++
-        quote (pr_existential_key (Global.env ()) sigma evk) ++
+        quote (pr_existential_key env sigma evk) ++
         strbrk ": " ++ f ++
         strbrk " is expected to have a functional type but it has type " ++ u]
      | UnifUnivInconsistency p ->
@@ -556,7 +556,7 @@ let explain_cant_find_case_type env sigma c =
 let explain_occur_check env sigma ev rhs =
   let env = make_all_name_different env sigma in
   let pt = pr_leconstr_env env sigma rhs in
-  str "Cannot define " ++ pr_existential_key (Global.env ()) sigma ev ++ str " with term" ++
+  str "Cannot define " ++ pr_existential_key env sigma ev ++ str " with term" ++
   brk(1,1) ++ pt ++ spc () ++ str "that would depend on itself."
 
 let pr_trailing_ne_context_of env sigma =
@@ -587,7 +587,7 @@ let rec explain_evar_kind env sigma evk ty =
       let pp = match ido with
         | Some id -> str "?" ++ Id.print id
         | None ->
-          try pr_existential_key (Global.env ()) sigma evk
+          try pr_existential_key env sigma evk
           with (* defined *) Not_found -> strbrk "an internal placeholder" in
       strbrk "the type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
@@ -620,7 +620,7 @@ let rec explain_evar_kind env sigma evk ty =
       | Evar_defined c -> pr_leconstr_env env sigma c
       | Evar_empty -> assert false in
       let ty' = evi.evar_concl in
-      pr_existential_key (Global.env ()) sigma evk ++
+      pr_existential_key env sigma evk ++
       strbrk " in the partial instance " ++ pc ++
       strbrk " found for " ++
       explain_evar_kind env sigma evk

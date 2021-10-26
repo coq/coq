@@ -184,12 +184,12 @@ end) = struct
 
   let proper_type env (sigma,cstrs) =
     let l = (proper_class env sigma).cl_impl in
-    let (sigma, c) = Evarutil.new_global (Global.env ()) sigma l in
+    let (sigma, c) = Evarutil.new_global env sigma l in
     (sigma, cstrs), c
 
   let proper_proxy_type env (sigma,cstrs) =
     let l = (proper_proxy_class env sigma).cl_impl in
-    let (sigma, c) = Evarutil.new_global (Global.env ()) sigma l in
+    let (sigma, c) = Evarutil.new_global env sigma l in
     (sigma, cstrs), c
 
   let proper_proof env evars carrier relation x =
