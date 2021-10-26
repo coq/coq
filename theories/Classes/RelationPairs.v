@@ -46,7 +46,7 @@ Definition RelCompFun {A} {B : Type}(R:relation B)(f:A->B) : relation A :=
  fun a a' => R (f a) (f a').
 
 (** Instances on RelCompFun must match syntactically *)
-Typeclasses Opaque RelCompFun. 
+Global Typeclasses Opaque RelCompFun.
 
 Infix "@@" := RelCompFun (at level 30, right associativity) : signature_scope.
 
@@ -73,7 +73,7 @@ Instance snd_measure {A B} : @Measure (A * B) B Snd := {}.
 Definition RelProd {A : Type} {B : Type} (RA:relation A)(RB:relation B) : relation (A*B) :=
  relation_conjunction (@RelCompFun (A * B) A RA fst) (RB @@2).
 
-Typeclasses Opaque RelProd.
+Global Typeclasses Opaque RelProd.
 
 Infix "*" := RelProd : signature_scope.
 

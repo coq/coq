@@ -210,7 +210,7 @@ Section Relations.
   Proof. intros H x y H0 a. apply H. apply H0. Qed.
 End Relations.
 
-Typeclasses Opaque respectful pointwise_relation forall_relation.
+Global Typeclasses Opaque respectful pointwise_relation forall_relation.
 Arguments forall_relation {A P}%type sig%signature _ _.
 Arguments pointwise_relation A%type {B}%type R%signature _ _.
   

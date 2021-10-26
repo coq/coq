@@ -447,8 +447,7 @@ Lemma rrefl r : eqrel r r. Proof. by []. Qed.
 
 End ExtensionalEquality.
 
-Typeclasses Opaque eqfun.
-Typeclasses Opaque eqrel.
+Global Typeclasses Opaque eqfun eqrel.
 
 #[global]
 Hint Resolve frefl rrefl : core.

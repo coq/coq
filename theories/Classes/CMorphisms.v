@@ -212,7 +212,7 @@ Section Relations.
     subrelation (forall_relation P R) (forall_relation P S).
   Proof. reduce. firstorder. Qed.
 End Relations.
-Typeclasses Opaque respectful pointwise_relation forall_relation.
+Global Typeclasses Opaque respectful pointwise_relation forall_relation.
 Arguments forall_relation {A P}%type sig%signature _ _.
 Arguments pointwise_relation A%type {B}%type R%signature _ _.
   

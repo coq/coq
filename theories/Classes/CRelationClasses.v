@@ -388,6 +388,4 @@ Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : type
 (*   intros x. refine (fun x => x). *)
 (* Qed. *)
 
-Typeclasses Opaque relation_equivalence.
-
-
+Global Typeclasses Opaque relation_equivalence.
