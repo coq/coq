@@ -288,6 +288,29 @@ are now available through the dot notation.
       This warning is printed when a name in the list of names to
       import was declared as a local constant, and the name is not imported.
 
+   Putting a list of :n:`@import_categories` after ``Import`` will
+   restrict activation of features according to those categories.
+   Currently supported categories are:
+
+   - ``coercions`` corresponding to :cmd:`Coercion`.
+
+   - ``hints`` corresponding to the `Hint` commands (e.g. :cmd:`Hint
+     Resolve` or :cmd:`Hint Rewrite`) and :ref:`typeclass
+     <typeclasses>` instances.
+
+   - ``canonicals`` corresponding to :cmd:`Canonical Structure`.
+
+   - ``notations`` corresponding to :cmd:`Notation` (including
+     :cmd:`Reserved Notation`), scope controls (:cmd:`Delimit Scope`,
+     :cmd:`Bind Scope`, :cmd:`Open Scope`) and :ref:`Abbreviations`.
+
+   - ``ltac.notations`` corresponding to :cmd:`Tactic Notation`.
+
+   - ``ltac2.notations`` corresponding to :cmd:`Ltac2 Notation`
+     (including Ltac2 abbreviations).
+
+   Plugins may define their own categories.
+
 .. cmd:: Export {? @import_categories } {+ @filtered_import }
 
    Similar to :cmd:`Import`, except that when the module containing this command
