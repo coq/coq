@@ -16,10 +16,14 @@ Module M.
   End Alt.
 
   Notation "x <<< y" := (x + y) (at level 22).
+
+  Reserved Notation "@@".
+
+  Tactic Notation "@@" := idtac.
 End M.
 
 Module N.
-    Notation "x <<< y" := (x + y) (at level 23).
+    Notation "x <<< y" := (x - y) (at level 23).
 End N.
 
 Fail Import(coercions) M(AB).
@@ -65,8 +69,30 @@ Module TestExport.
     Export(coercions) Y.
   End X.
 
+  Import(notations) X.
+  Fail Check a : B.
+
   Import X.
   Check a : B.
   Fail Check bla.
   Check Y.bla.
 End TestExport.
+
+Module Notas.
+  Import -(ltac.notations,notations) M.
+
+  Import N.
+
+  Check eq_refl : 1 <<< 1 = 0.
+
+  Module X.
+      Tactic Notation "@@" := fail.
+      Lemma foo : False.
+      Proof. Fail @@. Abort.
+  End X.
+
+  Import (ltac.notations) M.
+
+  Lemma foo : False.
+  Proof. @@. Abort.
+End Notas.
