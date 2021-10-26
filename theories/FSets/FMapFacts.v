@@ -1877,9 +1877,9 @@ Module OrdProperties (M:S).
   2: auto with map.
   intros; destruct x; destruct y; destruct p.
   rewrite gtb_1 in H; unfold O.ltk in H; simpl in *.
-  assert (~ltk (t1,e0) (k,e1)).
+  assert (~ltk (t0,e0) (k,e1)).
   - unfold gtb, O.ltk in *; simpl in *.
-    destruct (E.compare k t1); intuition; try discriminate; ME.order.
+    destruct (E.compare k t0); intuition; try discriminate; ME.order.
   - unfold O.ltk in *; simpl in *; ME.order.
   Qed.
 
@@ -1901,9 +1901,9 @@ Module OrdProperties (M:S).
            rewrite leb_1 in H2.
            destruct y; unfold O.ltk in *; simpl in *.
            rewrite <- elements_mapsto_iff in H1.
-           assert (~E.eq x t0).
+           assert (~E.eq x t).
            ++ contradict H.
-              exists e0; apply MapsTo_1 with t0; auto with ordered_type.
+              exists e0; apply MapsTo_1 with t; auto with ordered_type.
            ++ ME.order.
         -- apply (@filter_sort _ eqke). 1-3: auto with typeclass_instances. auto with map.
     + intros.
@@ -1919,12 +1919,12 @@ Module OrdProperties (M:S).
   - red; intros a; destruct a.
     rewrite InA_app_iff, InA_cons, 2 filter_InA,
       <-2 elements_mapsto_iff, leb_1, gtb_1,
-      find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
+      find_mapsto_iff, (H0 t), <- find_mapsto_iff,
       add_mapsto_iff by auto with map.
     unfold O.eqke, O.ltk; simpl.
-    destruct (E.compare t0 x); intuition; try fold (~E.eq x t0); auto with ordered_type.
-    + elim H; exists e0; apply MapsTo_1 with t0; auto.
-    + fold (~E.lt t0 x); auto with ordered_type.
+    destruct (E.compare t x); intuition; try fold (~E.eq x t); auto with ordered_type.
+    + elim H; exists e0; apply MapsTo_1 with t; auto.
+    + fold (~E.lt t x); auto with ordered_type.
   Qed.
 
   Lemma elements_Add_Above : forall m m' x e,
@@ -1948,14 +1948,14 @@ Module OrdProperties (M:S).
       * inversion H3.
   - red; intros a; destruct a.
     rewrite InA_app_iff, InA_cons, InA_nil, <- 2 elements_mapsto_iff,
-      find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
+      find_mapsto_iff, (H0 t), <- find_mapsto_iff,
       add_mapsto_iff.
     unfold O.eqke; simpl. intuition auto with relations.
-    destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
+    destruct (E.eq_dec x t) as [Heq|Hneq]; auto.
     exfalso.
-    assert (In t0 m).
+    assert (In t m).
     + exists e0; auto.
-    + generalize (H t0 H1).
+    + generalize (H t H1).
       ME.order.
   Qed.
 
@@ -1981,14 +1981,14 @@ Module OrdProperties (M:S).
       * inversion H3.
   - red; intros a; destruct a.
     rewrite InA_cons, <- 2 elements_mapsto_iff,
-      find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
+      find_mapsto_iff, (H0 t), <- find_mapsto_iff,
       add_mapsto_iff.
     unfold O.eqke; simpl. intuition auto with relations.
-    destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
+    destruct (E.eq_dec x t) as [Heq|Hneq]; auto.
     exfalso.
-    assert (In t0 m) by
+    assert (In t m) by
       (exists e0; auto).
-    generalize (H t0 H1).
+    generalize (H t H1).
     ME.order.
   Qed.
 

@@ -62,27 +62,29 @@ let default_generated_non_letter_string = "x"
 (**********************************************************************)
 (* Globality of identifiers *)
 
-let is_imported_modpath = function
-  | MPfile dp ->
-    let rec find_prefix = function
-      |MPfile dp1 -> not (DirPath.equal dp1 dp)
-      |MPdot(mp,_) -> find_prefix mp
-      |MPbound(_) -> false
-    in find_prefix (Lib.current_mp ())
-  | _ -> false
+let is_local_modpath mp =
+  let rec is_prefixed cur =
+    ModPath.equal mp cur ||
+    match cur with
+    | MPbound _ | MPfile _ -> false
+    | MPdot (cur,_) -> is_prefixed cur
+  in
+  let cur = Lib.current_mp () in
+  is_prefixed cur
 
-let is_imported_ref = let open GlobRef in function
+let is_local_ref = let open GlobRef in
+  function
   | VarRef _ -> false
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) ->
-      let mp = MutInd.modpath kn in is_imported_modpath mp
+    let mp = MutInd.modpath kn in is_local_modpath mp
   | ConstRef kn ->
-      let mp = Constant.modpath kn in is_imported_modpath mp
+    let mp = Constant.modpath kn in is_local_modpath mp
 
-let is_global id =
+let is_local id =
   try
     let ref = Nametab.locate (qualid_of_ident id) in
-    not (is_imported_ref ref)
+    is_local_ref ref
   with Not_found ->
     false
 
@@ -93,10 +95,6 @@ let is_constructor id =
       | _ -> false
   with Not_found ->
     false
-
-let is_section_variable env id =
-  try let _ = Environ.lookup_named id env in true
-  with Not_found -> false
 
 (**********************************************************************)
 (* Generating "intuitive" names from its type *)
@@ -336,7 +334,7 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
 
 let next_ident_away_in_goal env id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable env id)) in
+  let bad id = Id.Set.mem id avoid || is_local id in
   next_ident_away_from id bad
 
 let next_name_away_in_goal env na avoid =
