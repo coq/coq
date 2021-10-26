@@ -585,8 +585,8 @@ GRAMMAR EXTEND Gram
         VernacInclude(e::l) } ] ]
   ;
   import_categories:
-  [ [ negative = OPT "-"; "("; cats = LIST1 identref SEP ","; ")" ->
-      { let cats = List.map (CAst.map Id.to_string) cats in
+  [ [ negative = OPT "-"; "("; cats = LIST1 qualid SEP ","; ")" ->
+      { let cats = List.map (fun cat -> CAst.make ?loc:cat.CAst.loc (Libnames.string_of_qualid cat)) cats in
         { negative=Option.has_some negative; import_cats = cats } }
   ] ]
   ;

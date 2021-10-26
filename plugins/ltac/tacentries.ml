@@ -296,9 +296,11 @@ let subst_tactic_notation (subst, tobj) =
 
 let classify_tactic_notation tacobj = Substitute tacobj
 
+let ltac_notation_cat = Libobject.create_category "ltac.notations"
+
 let inTacticGrammar : tactic_grammar_obj -> obj =
   declare_object {(default_object "TacticGrammar") with
-       open_function = simple_open open_tactic_notation;
+       open_function = simple_open ~cat:ltac_notation_cat open_tactic_notation;
        load_function = load_tactic_notation;
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;

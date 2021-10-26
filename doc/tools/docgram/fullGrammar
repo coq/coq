@@ -1057,7 +1057,7 @@ gallina_ext: [
 ]
 
 import_categories: [
-| OPT "-" "(" LIST1 identref SEP "," ")"
+| OPT "-" "(" LIST1 qualid SEP "," ")"
 ]
 
 filtered_import: [

@@ -203,7 +203,7 @@ are now available through the dot notation.
    .. insertprodn import_categories filtered_import
 
    .. prodn::
-      import_categories ::= {? - } ( {+, @ident } )
+      import_categories ::= {? - } ( {+, @qualid } )
       filtered_import ::= @qualid {? ( {+, @qualid {? ( .. ) } } ) }
 
    If :token:`qualid` denotes a valid basic module (i.e. its module type is a

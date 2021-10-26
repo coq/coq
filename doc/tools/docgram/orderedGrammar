@@ -712,7 +712,7 @@ constructor: [
 ]
 
 import_categories: [
-| OPT "-" "(" LIST1 ident SEP "," ")"
+| OPT "-" "(" LIST1 qualid SEP "," ")"
 ]
 
 filtered_import: [
