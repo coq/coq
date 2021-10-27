@@ -8,6 +8,47 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* In OCaml, arrays of double are unboxed (Obj.double_array_tag), we
+   cannot do that with primitive arrays and primitive floats since in
+   Coq, primitive floats can be open terms and it is not possible to
+   mix unboxed floats and pointers to open terms in an array (TODO:
+   link to bug in test-suite).
+   We must then rewrite most array primitives to ensure arrays of floats
+   are boxed. *)
+module Array = struct
+  let length = Array.length
+  let unsafe_get = Array.unsafe_get
+  let unsafe_set = Array.unsafe_set
+  let fold_left = Array.fold_left
+  let fold_left2 = CArray.fold_left2
+
+  let make n def =
+    if Obj.(tag (repr def) != double_tag) then Array.make n def else
+      let a = Array.make n (Obj.magic 0) in
+      for i = 0 to n - 1 do a.(i) <- def done;
+      a
+
+  let init n f =
+    if n <= 0 then Array.init n f else
+      let a = make n (f 0) in
+      for i = 1 to n - 1 do a.(i) <- f i done;
+      a
+
+  let copy a =
+    let n = length a in
+    if n <= 0 || Obj.(tag (repr a) != double_array_tag) then Array.copy a else
+      let a' = make n a.(0) in
+      for i = 1 to n - 1 do a'.(i) <- a.(i) done;
+      a'
+
+  let map f a =
+    let n = length a in
+    if n <= 0 then Array.map f a else
+      let a' = make n (f a.(0)) in
+      for i = 1 to n - 1 do a'.(i) <- f a.(i) done;
+      a'
+end
+
 let max_array_length32 = 4194303
 
 let max_length = Uint63.of_int max_array_length32
@@ -113,5 +154,5 @@ let fold_left2 f a p1 p2 =
   let p2 = reroot p2 in
   match !p1, !p2 with
   | Array (t1, def1), Array (t2, def2) ->
-    f (CArray.fold_left2 f a t1 t2) def1 def2
+    f (Array.fold_left2 f a t1 t2) def1 def2
   | _ -> assert false
