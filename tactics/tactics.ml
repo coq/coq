@@ -3699,12 +3699,12 @@ let make_up_names n ind_opt cname =
 
 let error_ind_scheme s = error (NotAnInductionScheme s)
 
-let coq_eq sigma       = Evarutil.new_global (Global.env ()) sigma Coqlib.(lib_ref "core.eq.type")
-let coq_eq_refl sigma  = Evarutil.new_global (Global.env ()) sigma Coqlib.(lib_ref "core.eq.refl")
+let coq_eq sigma       = Evd.fresh_global (Global.env ()) sigma Coqlib.(lib_ref "core.eq.type")
+let coq_eq_refl sigma  = Evd.fresh_global (Global.env ()) sigma Coqlib.(lib_ref "core.eq.refl")
 
 let coq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
-let coq_heq sigma      = Evarutil.new_global (Global.env ()) sigma (Lazy.force coq_heq_ref)
-let coq_heq_refl sigma = Evarutil.new_global (Global.env ()) sigma (Coqlib.lib_ref "core.JMeq.refl")
+let coq_heq sigma      = Evd.fresh_global (Global.env ()) sigma (Lazy.force coq_heq_ref)
+let coq_heq_refl sigma = Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "core.JMeq.refl")
 (* let coq_heq_refl = lazy (glob (lib_ref "core.JMeq.refl")) *)
 
 let mkEq sigma t x y =

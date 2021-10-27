@@ -218,7 +218,7 @@ let coq_nil = gen_reference "core.list.nil"
 let lapp f args = mkApp(Lazy.force f,args)
 
 let plapp sigma f args =
-  let sigma, fc = Evarutil.new_global (Global.env ()) sigma (Lazy.force f) in
+  let sigma, fc = Evd.fresh_global (Global.env ()) sigma (Lazy.force f) in
   sigma, mkApp(fc,args)
 
 let dest_rel0 sigma t =
@@ -510,7 +510,7 @@ let make_hyp env sigma c =
   plapp sigma coq_mkhypo [|t;c|]
 
 let make_hyp_list env sigma lH =
-  let sigma, carrier = Evarutil.new_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
   let sigma, l =
     List.fold_right
       (fun c (sigma,l) ->
@@ -523,7 +523,7 @@ let make_hyp_list env sigma lH =
   sigma, Evarutil.nf_evars_universes sigma l'
 
 let interp_power env sigma pow =
-  let sigma, carrier = Evarutil.new_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
   match pow with
   | None ->
       let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
@@ -541,7 +541,7 @@ let interp_power env sigma pow =
       sigma, (tac, pow)
 
 let interp_sign env sigma sign =
-  let sigma, carrier = Evarutil.new_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
   match sign with
   | None -> plapp sigma coq_None [|carrier|]
   | Some spec ->
@@ -550,7 +550,7 @@ let interp_sign env sigma sign =
        (* Same remark on ill-typed terms ... *)
 
 let interp_div env sigma div =
-  let sigma, carrier = Evarutil.new_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
   match div with
   | None -> plapp sigma coq_None [|carrier|]
   | Some spec ->

@@ -74,7 +74,7 @@ type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 let find_global dir s =
   let gr = lazy (find_reference dir s) in
     fun (evd,cstrs) ->
-      let (evd, c) = Evarutil.new_global (Global.env ()) evd (Lazy.force gr) in
+      let (evd, c) = Evd.fresh_global (Global.env ()) evd (Lazy.force gr) in
         (evd, cstrs), c
 
 (** Utility for dealing with polymorphic applications *)
@@ -184,12 +184,12 @@ end) = struct
 
   let proper_type env (sigma,cstrs) =
     let l = (proper_class env sigma).cl_impl in
-    let (sigma, c) = Evarutil.new_global env sigma l in
+    let (sigma, c) = Evd.fresh_global env sigma l in
     (sigma, cstrs), c
 
   let proper_proxy_type env (sigma,cstrs) =
     let l = (proper_proxy_class env sigma).cl_impl in
-    let (sigma, c) = Evarutil.new_global env sigma l in
+    let (sigma, c) = Evd.fresh_global env sigma l in
     (sigma, cstrs), c
 
   let proper_proof env evars carrier relation x =
@@ -743,7 +743,7 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 let new_global (evars, cstrs) gr =
-  let (sigma,c) = Evarutil.new_global (Global.env ()) evars gr in
+  let (sigma,c) = Evd.fresh_global (Global.env ()) evars gr in
   (sigma, cstrs), c
 
 let make_eq sigma =
