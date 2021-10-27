@@ -410,8 +410,10 @@ and nf_cofix env sigma cf =
 and nf_array env sigma t typ =
   let ty, allargs = app_type env sigma (EConstr.of_constr typ) in
   let typ_elem = allargs.(0) in
-  let t, vdef = Parray.to_array t in
-  let t = Array.map (fun v -> nf_val env sigma v typ_elem) t in
+  let vdef = Parray.default t in
+  (* Do not cast into an array out of fear that floats may sneak in *)
+  let init i = nf_val env sigma (Parray.get t (Uint63.of_int i)) typ_elem in
+  let t = Array.init (Parray.length_int t) init in
   let u = snd (destConst ty) in
   mkArray(u, t, nf_val env sigma vdef typ_elem, typ_elem)
 
