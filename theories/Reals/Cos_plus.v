@@ -69,8 +69,7 @@ Proof.
   apply RmaxLess1.
 Qed.
 
-Lemma reste1_maj :
-  forall (x y:R) (N:nat),
+Lemma reste1_maj (x y:R) (N:nat) :
     (0 < N)%nat -> Rabs (Reste1 x y N) <= Majxy x y (pred N).
 Proof.
   intros.
@@ -359,8 +358,7 @@ Proof.
   apply S_pred with 0%nat; assumption.
 Qed.
 
-Lemma reste2_maj :
-  forall (x y:R) (N:nat), (0 < N)%nat -> Rabs (Reste2 x y N) <= Majxy x y N.
+Lemma reste2_maj (x y:R) (N:nat) : (0 < N)%nat -> Rabs (Reste2 x y N) <= Majxy x y N.
 Proof.
   intros.
   set (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).

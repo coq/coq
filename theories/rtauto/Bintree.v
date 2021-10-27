@@ -268,7 +268,7 @@ Qed.
 Lemma Full_index_one_empty : forall S, Full S -> index S = 1 -> S=empty.
 intros [ind cont] F one; inversion F.
 reflexivity.
-simpl @index in one;assert (h:=Pos.succ_not_1 (index S)).
+simpl @index in one;assert (h:=Pos.succ_not_1 (index S0)).
 congruence.
 Qed.
 
@@ -288,7 +288,7 @@ get i S = PSome x -> In x S F.
 induction F.
 intro i;rewrite get_empty; congruence.
 intro i;rewrite get_push_Full;trivial.
-case_eq (i ?= index S);simpl.
+case_eq (i ?= index S0);simpl.
 left;congruence.
 right;eauto.
 congruence.
@@ -358,7 +358,7 @@ mkStore (index S) (Tmap (contents S)).
 Lemma get_map: forall i S,
 get i (map S)= match get i S with PNone => PNone
 | PSome a => PSome (f a) end.
-destruct S;unfold get,map,contents,index;apply Tget_Tmap.
+destruct S0;unfold get,map,contents,index;apply Tget_Tmap.
 Defined.
 
 Lemma map_push: forall a S,

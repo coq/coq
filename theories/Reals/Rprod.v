@@ -47,8 +47,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma prod_SO_pos :
-  forall (An:nat -> R) (N:nat),
+Lemma prod_SO_pos (An:nat -> R) (N:nat) :
     (forall n:nat, (n <= N)%nat -> 0 <= An n) -> 0 <= prod_f_R0 An N.
 Proof.
   intros; induction  N as [| N HrecN].
@@ -60,8 +59,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma prod_SO_Rle :
-  forall (An Bn:nat -> R) (N:nat),
+Lemma prod_SO_Rle (An Bn:nat -> R) (N:nat) :
     (forall n:nat, (n <= N)%nat -> 0 <= An n <= Bn n) ->
     prod_f_R0 An N <= prod_f_R0 Bn N.
 Proof.
@@ -106,8 +104,7 @@ Proof.
 Qed.
 
 (** We prove that (N!)^2<=(2N-k)!*k! forall k in [|O;2N|] *)
-Lemma RfactN_fact2N_factk :
-  forall N k:nat,
+Lemma RfactN_fact2N_factk N (k:nat) :
     (k <= 2 * N)%nat ->
     Rsqr (INR (fact N)) <= INR (fact (2 * N - k)) * INR (fact k).
 Proof.
@@ -172,7 +169,7 @@ Proof.
 Qed.
 
 (** We have the following inequality : (C 2N k) <= (C 2N N) forall k in [|O;2N|] *)
-Lemma C_maj : forall N k:nat, (k <= 2 * N)%nat -> C (2 * N) k <= C (2 * N) N.
+Lemma C_maj N (k:nat) : (k <= 2 * N)%nat -> C (2 * N) k <= C (2 * N) N.
 Proof.
   intros; unfold C; unfold Rdiv; apply Rmult_le_compat_l.
   apply pos_INR.

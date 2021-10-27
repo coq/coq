@@ -15,14 +15,13 @@ Require Import Rtopology.
 Local Open Scope R_scope.
 
 (* The Mean Value Theorem *)
-Theorem MVT :
-  forall (f g:R -> R) (a b:R) (pr1:forall c:R, a < c < b -> derivable_pt f c)
-    (pr2:forall c:R, a < c < b -> derivable_pt g c),
-    a < b ->
-    (forall c:R, a <= c <= b -> continuity_pt f c) ->
-    (forall c:R, a <= c <= b -> continuity_pt g c) ->
-    exists c : R,
-      (exists P : a < c < b,
+Theorem MVT (f g:R -> R) (a b:R) (pr1:forall c:R, a < c < b -> derivable_pt f c)
+        (pr2:forall c:R, a < c < b -> derivable_pt g c) :
+  a < b ->
+  (forall c:R, a <= c <= b -> continuity_pt f c) ->
+  (forall c:R, a <= c <= b -> continuity_pt g c) ->
+  exists c : R,
+    (exists P : a < c < b,
         (g b - g a) * derive_pt f c (pr1 c P) =
         (f b - f a) * derive_pt g c (pr2 c P)).
 Proof.
@@ -207,8 +206,7 @@ Proof.
           [ left; assumption | split; [ left; assumption | rewrite <- H3; ring ] ] ].
 Qed.
 
-Lemma Rolle :
-  forall (f:R -> R) (a b:R) (pr:forall x:R, a < x < b -> derivable_pt f x),
+Lemma Rolle (f:R -> R) (a b:R) (pr:forall x:R, a < x < b -> derivable_pt f x) :
     (forall x:R, a <= x <= b -> continuity_pt f x) ->
     a < b ->
     f a = f b ->
@@ -228,8 +226,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma nonneg_derivative_1 :
-  forall (f:R -> R) (pr:derivable f),
+Lemma nonneg_derivative_1 (f:R -> R) (pr:derivable f) :
     (forall x:R, 0 <= derive_pt f x (pr x)) -> increasing f.
 Proof.
   intros.
@@ -372,8 +369,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma nonpos_derivative_1 :
-  forall (f:R -> R) (pr:derivable f),
+Lemma nonpos_derivative_1 (f:R -> R) (pr:derivable f) :
     (forall x:R, derive_pt f x (pr x) <= 0) -> decreasing f.
 Proof.
   intros.
@@ -404,8 +400,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma positive_derivative :
-  forall (f:R -> R) (pr:derivable f),
+Lemma positive_derivative (f:R -> R) (pr:derivable f) :
     (forall x:R, 0 < derive_pt f x (pr x)) -> strict_increasing f.
 Proof.
   intros.
@@ -434,8 +429,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma negative_derivative :
-  forall (f:R -> R) (pr:derivable f),
+Lemma negative_derivative (f:R -> R) (pr:derivable f) :
     (forall x:R, derive_pt f x (pr x) < 0) -> strict_decreasing f.
 Proof.
   intros.
@@ -476,8 +470,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma increasing_decreasing :
-  forall f:R -> R, increasing f -> decreasing f -> constant f.
+Lemma increasing_decreasing (f:R -> R) : increasing f -> decreasing f -> constant f.
 Proof.
   unfold increasing, decreasing, constant; intros;
     case (Rtotal_order x y); intro.
@@ -490,8 +483,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma null_derivative_1 :
-  forall (f:R -> R) (pr:derivable f),
+Lemma null_derivative_1 (f:R -> R) (pr:derivable f) :
     (forall x:R, derive_pt f x (pr x) = 0) -> constant f.
 Proof.
   intros.
@@ -506,8 +498,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma derive_increasing_interv_ax :
-  forall (a b:R) (f:R -> R) (pr:derivable f),
+Lemma derive_increasing_interv_ax (a b:R) (f:R -> R) (pr:derivable f) :
     a < b ->
     ((forall t:R, a < t < b -> 0 < derive_pt f t (pr t)) ->
       forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y) /\
@@ -554,8 +545,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma derive_increasing_interv :
-  forall (a b:R) (f:R -> R) (pr:derivable f),
+Lemma derive_increasing_interv (a b:R) (f:R -> R) (pr:derivable f) :
     a < b ->
     (forall t:R, a < t < b -> 0 < derive_pt f t (pr t)) ->
     forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y.
@@ -579,8 +569,7 @@ Qed.
 
 (**********)
 (**********)
-Theorem IAF :
-  forall (f:R -> R) (a b k:R) (pr:derivable f),
+Theorem IAF (f:R -> R) (a b k:R) (pr:derivable f) :
     a <= b ->
     (forall c:R, a <= c <= b -> derive_pt f c (pr c) <= k) ->
     f b - f a <= k * (b - a).
@@ -600,8 +589,7 @@ Proof.
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H H1)).
 Qed.
 
-Lemma IAF_var :
-  forall (f g:R -> R) (a b:R) (pr1:derivable f) (pr2:derivable g),
+Lemma IAF_var (f g:R -> R) (a b:R) (pr1:derivable f) (pr2:derivable g) :
     a <= b ->
     (forall c:R, a <= c <= b -> derive_pt g c (pr2 c) <= derive_pt f c (pr1 c)) ->
     g b - g a <= f b - f a.
@@ -636,8 +624,7 @@ Qed.
 
 (* If f has a null derivative in ]a,b[ and is continue in [a,b], *)
 (* then f is constant on [a,b] *)
-Lemma null_derivative_loc :
-  forall (f:R -> R) (a b:R) (pr:forall x:R, a < x < b -> derivable_pt f x),
+Lemma null_derivative_loc (f:R -> R) (a b:R) (pr:forall x:R, a < x < b -> derivable_pt f x) :
     (forall x:R, a <= x <= b -> continuity_pt f x) ->
     (forall (x:R) (P:a < x < b), derive_pt f x (pr x P) = 0) ->
     constant_D_eq f (fun x:R => a <= x <= b) (f a).
@@ -679,8 +666,7 @@ Proof.
 Qed.
 
 (* Unicity of the antiderivative *)
-Lemma antiderivative_Ucte :
-  forall (f g1 g2:R -> R) (a b:R),
+Lemma antiderivative_Ucte (f g1 g2:R -> R) (a b:R) :
     antiderivative f g1 a b ->
     antiderivative f g2 a b ->
     exists c : R, (forall x:R, a <= x <= b -> g1 x = g2 x + c).

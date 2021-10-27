@@ -233,8 +233,7 @@ Proof.
   assert (H7 := H4 _ H5); assert (H8 := H4 _ H6); rewrite H7; rewrite H8; ring.
 Qed.
 
-Lemma antiderivative_P2 :
-  forall (f F0 F1:R -> R) (a b c:R),
+Lemma antiderivative_P2 (f F0 F1:R -> R) (a b c:R) :
     antiderivative f F0 a b ->
     antiderivative f F1 b c ->
     antiderivative f
@@ -453,8 +452,7 @@ Proof.
     elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hbc)).
 Qed.
 
-Lemma NewtonInt_P8 :
-  forall (f:R -> R) (a b c:R),
+Lemma NewtonInt_P8 (f:R -> R) (a b c:R) :
     Newton_integrable f a b ->
     Newton_integrable f b c -> Newton_integrable f a c.
 Proof.
@@ -552,9 +550,8 @@ Proof.
 Qed.
 
 (* Chasles' relation *)
-Lemma NewtonInt_P9 :
-  forall (f:R -> R) (a b c:R) (pr1:Newton_integrable f a b)
-    (pr2:Newton_integrable f b c),
+Lemma NewtonInt_P9 (f:R -> R) (a b c:R) (pr1:Newton_integrable f a b)
+    (pr2:Newton_integrable f b c) :
     NewtonInt f a c (NewtonInt_P8 f a b c pr1 pr2) =
     NewtonInt f a b pr1 + NewtonInt f b c pr2.
 Proof.

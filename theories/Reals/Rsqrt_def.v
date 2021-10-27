@@ -308,7 +308,7 @@ Proof.
   apply Rlt_trans with 0.
   assumption.
   unfold pow_2_n; apply pow_lt; prove_sup0.
-  simple induction N.
+  intro N;elim N.
   simpl.
   left; apply Rlt_0_1.
   intros.

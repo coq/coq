@@ -166,7 +166,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
         intro s0.
         destruct s0.
         unfold shr_1.
-        destruct shr_m; try (simpl; lia).
+        destruct shr_m0; try (simpl; lia).
         - destruct p; unfold Zdigits2, shr_m, digits2_pos; lia.
         - destruct p; unfold Zdigits2, shr_m, digits2_pos; lia.
       }
@@ -286,7 +286,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
         unfold SpecFloat.shr_r, SpecFloat.shr_m.
         intros Hshr_r Hshr_m.
         rewrite Hshr_r, Hshr_m.
-        now destruct shr_s.
+        now destruct shr_s0.
       }
 
       rewrite H0.
@@ -318,7 +318,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
         unfold SpecFloat.shr_r, SpecFloat.shr_m.
         intros Hshr_r Hshr_m.
         rewrite Hshr_r, Hshr_m.
-        now destruct shr_s.
+        now destruct shr_s0.
       }
 
       rewrite Hrne'0.

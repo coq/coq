@@ -24,13 +24,12 @@ Require Export Alembert.
 Local Open Scope R_scope.
 
 (**********)
-Lemma sum_maj1 :
-  forall (fn:nat -> R -> R) (An:nat -> R) (x l1 l2:R)
-    (N:nat),
-    Un_cv (fun n:nat => SP fn n x) l1 ->
-    Un_cv (fun n:nat => sum_f_R0 An n) l2 ->
-    (forall n:nat, Rabs (fn n x) <= An n) ->
-    Rabs (l1 - SP fn N x) <= l2 - sum_f_R0 An N.
+Lemma sum_maj1 (fn:nat -> R -> R) (An:nat -> R) (x l1 l2:R)
+      (N:nat) :
+  Un_cv (fun n:nat => SP fn n x) l1 ->
+  Un_cv (fun n:nat => sum_f_R0 An n) l2 ->
+  (forall n:nat, Rabs (fn n x) <= An n) ->
+  Rabs (l1 - SP fn N x) <= l2 - sum_f_R0 An N.
 Proof.
   intros;
     cut { l:R | Un_cv (fun n => sum_f_R0 (fun l => fn (S N + l)%nat x) n) l }.

@@ -1334,7 +1334,7 @@ Proof.
   split.
   exists x0; split; [ reflexivity | rewrite H1; apply (le_INR _ _ H3) ].
   exists N; assumption.
-  unfold ValAdh; intros; unfold ValAdh_un in H;
+  unfold ValAdh; intros ? N ?; unfold ValAdh_un in H;
     unfold intersection_family in H; simpl in H;
       assert
         (H1 :

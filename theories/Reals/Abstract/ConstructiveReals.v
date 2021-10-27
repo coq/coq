@@ -355,7 +355,7 @@ Qed.
 Lemma CRplus_0_l : forall {R : ConstructiveReals} (x : CRcarrier R),
     0 + x == x.
 Proof.
-  intros. destruct (CRisRing R). apply Radd_0_l.
+  intros. destruct (CRisRing R). apply Radd_0_l0.
 Qed.
 
 Lemma CRplus_0_r : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -363,7 +363,7 @@ Lemma CRplus_0_r : forall {R : ConstructiveReals} (x : CRcarrier R),
 Proof.
   intros. destruct (CRisRing R).
   transitivity (0 + x).
-  apply Radd_comm. apply Radd_0_l.
+  apply Radd_comm0. apply Radd_0_l0.
 Qed.
 
 Lemma CRplus_opp_l : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -371,13 +371,13 @@ Lemma CRplus_opp_l : forall {R : ConstructiveReals} (x : CRcarrier R),
 Proof.
   intros. destruct (CRisRing R).
   transitivity (x + - x).
-  apply Radd_comm. apply Ropp_def.
+  apply Radd_comm0. apply Ropp_def0.
 Qed.
 
 Lemma CRplus_opp_r : forall {R : ConstructiveReals} (x : CRcarrier R),
     x + - x == 0.
 Proof.
-  intros. destruct (CRisRing R). apply Ropp_def.
+  intros. destruct (CRisRing R). apply Ropp_def0.
 Qed.
 
 Lemma CRopp_0 : forall {R : ConstructiveReals},
@@ -391,23 +391,23 @@ Lemma CRplus_lt_compat_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R
     r1 < r2 -> r1 + r < r2 + r.
 Proof.
   intros. destruct (CRisRing R).
-  apply (CRlt_proper R (CRplus R r r1) (CRplus R r1 r) (Radd_comm _ _)
+  apply (CRlt_proper R (CRplus R r r1) (CRplus R r1 r) (Radd_comm0 _ _)
                      (CRplus R r2 r) (CRplus R r2 r)).
   apply CReq_refl.
   apply (CRlt_proper R _ _ (CReq_refl _) _ (CRplus R r r2)).
-  apply Radd_comm. apply CRplus_lt_compat_l. exact H.
+  apply Radd_comm0. apply CRplus_lt_compat_l. exact H.
 Qed.
 
 Lemma CRplus_lt_reg_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
     r1 + r < r2 + r -> r1 < r2.
 Proof.
   intros. destruct (CRisRing R).
-  apply (CRlt_proper R (CRplus R r r1) (CRplus R r1 r) (Radd_comm _ _)
+  apply (CRlt_proper R (CRplus R r r1) (CRplus R r1 r) (Radd_comm0 _ _)
                      (CRplus R r2 r) (CRplus R r2 r)) in H.
   2: apply CReq_refl.
   apply (CRlt_proper R _ _ (CReq_refl _) _ (CRplus R r r2)) in H.
   apply CRplus_lt_reg_l in H. exact H.
-  apply Radd_comm.
+  apply Radd_comm0.
 Qed.
 
 Lemma CRplus_le_compat_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -476,22 +476,22 @@ Lemma CRplus_eq_reg_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
     r + r1 == r + r2 -> r1 == r2.
 Proof.
   intros.
-  destruct (CRisRingExt R). clear Rmul_ext Ropp_ext.
-  pose proof (Radd_ext
+  destruct (CRisRingExt R). clear Rmul_ext0 Ropp_ext0.
+  pose proof (Radd_ext0
                 (CRopp R r) (CRopp R r) (CReq_refl _)
                 _ _ H).
   destruct (CRisRing R).
   apply (CReq_trans r1) in H0.
   apply (CReq_trans _ _ _ H0).
   transitivity ((- r + r) + r2).
-  apply Radd_assoc. transitivity (0 + r2).
-  apply Radd_ext. apply CRplus_opp_l. apply CReq_refl.
-  apply Radd_0_l. apply CReq_sym.
+  apply Radd_assoc0. transitivity (0 + r2).
+  apply Radd_ext0. apply CRplus_opp_l. apply CReq_refl.
+  apply Radd_0_l0. apply CReq_sym.
   transitivity (- r + r + r1).
-  apply Radd_assoc.
+  apply Radd_assoc0.
   transitivity (0 + r1).
-  apply Radd_ext. apply CRplus_opp_l. apply CReq_refl.
-  apply Radd_0_l.
+  apply Radd_ext0. apply CRplus_opp_l. apply CReq_refl.
+  apply Radd_0_l0.
 Qed.
 
 Lemma CRplus_eq_reg_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -590,14 +590,14 @@ Lemma CRopp_gt_lt_contravar
 Proof.
   intros. apply (CRplus_lt_reg_l R r1).
   destruct (CRisRing R).
-  apply (CRle_lt_trans _ 0). apply Ropp_def.
+  apply (CRle_lt_trans _ 0). apply Ropp_def0.
   apply (CRplus_lt_compat_l R (CRopp R r2)) in H.
   apply (CRle_lt_trans _ (CRplus R (CRopp R r2) r2)).
   apply (CRle_trans _ (CRplus R r2 (CRopp R r2))).
-  destruct (Ropp_def r2). exact H0.
-  destruct (Radd_comm r2 (CRopp R r2)). exact H1.
+  destruct (Ropp_def0 r2). exact H0.
+  destruct (Radd_comm0 r2 (CRopp R r2)). exact H1.
   apply (CRlt_le_trans _ _ _ H).
-  destruct (Radd_comm r1 (CRopp R r2)). exact H0.
+  destruct (Radd_comm0 r1 (CRopp R r2)). exact H0.
 Qed.
 
 Lemma CRopp_lt_cancel : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
@@ -623,31 +623,31 @@ Lemma CRopp_plus_distr : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
 Proof.
   intros. destruct (CRisRing R), (CRisRingExt R).
   apply (CRplus_eq_reg_l (CRplus R r1 r2)).
-  transitivity (CR_of_Q R 0). apply Ropp_def.
+  transitivity (CR_of_Q R 0). apply Ropp_def0.
   transitivity (r2 + r1 + (-r1 + -r2)).
   transitivity (r2 + (r1 + (-r1 + -r2))).
   transitivity (r2 + - r2).
-  apply CReq_sym. apply Ropp_def. apply Radd_ext.
+  apply CReq_sym. apply Ropp_def0. apply Radd_ext0.
   apply CReq_refl.
   transitivity (0 + - r2).
-  apply CReq_sym, Radd_0_l.
+  apply CReq_sym, Radd_0_l0.
   transitivity (r1 + - r1 + - r2).
-  apply Radd_ext. 2: apply CReq_refl. apply CReq_sym, Ropp_def.
-  apply CReq_sym, Radd_assoc. apply Radd_assoc.
-  apply Radd_ext. 2: apply CReq_refl. apply Radd_comm.
+  apply Radd_ext0. 2: apply CReq_refl. apply CReq_sym, Ropp_def0.
+  apply CReq_sym, Radd_assoc0. apply Radd_assoc0.
+  apply Radd_ext0. 2: apply CReq_refl. apply Radd_comm0.
 Qed.
 
 Lemma CRmult_1_l : forall {R : ConstructiveReals} (r : CRcarrier R),
     1 * r == r.
 Proof.
-  intros. destruct (CRisRing R). apply Rmul_1_l.
+  intros. destruct (CRisRing R). apply Rmul_1_l0.
 Qed.
 
 Lemma CRmult_1_r : forall {R : ConstructiveReals} (x : CRcarrier R),
     x * 1 == x.
 Proof.
   intros. destruct (CRisRing R). transitivity (CRmult R 1 x).
-  apply Rmul_comm. apply Rmul_1_l.
+  apply Rmul_comm0. apply Rmul_1_l0.
 Qed.
 
 Lemma CRmult_assoc : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -667,14 +667,14 @@ Lemma CRmult_plus_distr_l : forall {R : ConstructiveReals} (r1 r2 r3 : CRcarrier
 Proof.
   intros. destruct (CRisRing R).
   transitivity ((r2 + r3) * r1).
-  apply Rmul_comm.
+  apply Rmul_comm0.
   transitivity ((r2 * r1) + (r3 * r1)).
-  apply Rdistr_l.
+  apply Rdistr_l0.
   transitivity ((r1 * r2) + (r3 * r1)).
-  destruct (CRisRingExt R). apply Radd_ext.
-  apply Rmul_comm. apply CReq_refl.
-  destruct (CRisRingExt R). apply Radd_ext.
-  apply CReq_refl. apply Rmul_comm.
+  destruct (CRisRingExt R). apply Radd_ext0.
+  apply Rmul_comm0. apply CReq_refl.
+  destruct (CRisRingExt R). apply Radd_ext0.
+  apply CReq_refl. apply Rmul_comm0.
 Qed.
 
 Lemma CRmult_plus_distr_r : forall {R : ConstructiveReals} (r1 r2 r3 : CRcarrier R),
@@ -698,7 +698,7 @@ Lemma CRmult_0_r : forall {R : ConstructiveReals} (x : CRcarrier R),
 Proof.
   intros. apply CRzero_double.
   transitivity (x * (0 + 0)).
-  destruct (CRisRingExt R). apply Rmul_ext. apply CReq_refl.
+  destruct (CRisRingExt R). apply Rmul_ext0. apply CReq_refl.
   apply CReq_sym, CRplus_0_r.
   destruct (CRisRing R). apply CRmult_plus_distr_l.
 Qed.
@@ -713,13 +713,13 @@ Lemma CRopp_mult_distr_r : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
     - (r1 * r2) == r1 * (- r2).
 Proof.
   intros. apply (CRplus_eq_reg_l (CRmult R r1 r2)).
-  destruct (CRisRing R). transitivity (CR_of_Q R 0). apply Ropp_def.
+  destruct (CRisRing R). transitivity (CR_of_Q R 0). apply Ropp_def0.
   transitivity (r1 * (r2 + - r2)).
   2: apply CRmult_plus_distr_l.
   transitivity (r1 * 0).
   apply CReq_sym, CRmult_0_r.
-  destruct (CRisRingExt R). apply Rmul_ext. apply CReq_refl.
-  apply CReq_sym, Ropp_def.
+  destruct (CRisRingExt R). apply Rmul_ext0. apply CReq_refl.
+  apply CReq_sym, Ropp_def0.
 Qed.
 
 Lemma CRopp_mult_distr_l : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
@@ -751,7 +751,7 @@ Proof.
   apply CRplus_le_compat_l. destruct (CRplus_opp_l r1). exact H1.
   destruct (Radd_assoc (CRisRing R) r2 (CRopp R r1) r1). exact H2.
   destruct (CRisRing R).
-  destruct (Rdistr_l r2 (CRopp R r1) r). exact H2.
+  destruct (Rdistr_l0 r2 (CRopp R r1) r). exact H2.
   apply CRplus_le_compat_l. destruct (CRopp_mult_distr_l r1 r).
   exact H1.
 Qed.

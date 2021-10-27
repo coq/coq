@@ -72,9 +72,9 @@ Proof.
   - unfold CRminus.
     do 2 rewrite <- (Radd_assoc (CRisRing R)).
     apply CRplus_morph. reflexivity. rewrite CRopp_plus_distr.
-    destruct (CRisRing R). rewrite Radd_comm, <- Radd_assoc.
+    destruct (CRisRing R). rewrite Radd_comm0, <- Radd_assoc0.
     apply CRplus_morph. reflexivity.
-    rewrite Radd_comm. reflexivity.
+    rewrite Radd_comm0. reflexivity.
   - apply (CRle_trans _ _ _ (CRabs_triang _ _)).
     apply (CRle_trans _ (CRplus R (CR_of_Q R (1 # 2*p)) (CR_of_Q R (1 # 2*p)))).
     apply CRplus_le_compat. apply imaj, (le_trans _ _ _ (Nat.le_max_l _ _) H).
@@ -381,18 +381,18 @@ Proof.
   intros. intro r.
   apply (CRplus_lt_compat_r (-l)) in r. rewrite CRplus_opp_r in r.
   destruct (Un_cv_nat_real _ l H0 (A - l) r) as [n H1].
-  apply (H (n+N)%nat).
-  rewrite <- (plus_0_l N). rewrite Nat.add_assoc.
+  apply (H (n+N1)%nat).
+  rewrite <- (plus_0_l N1). rewrite Nat.add_assoc.
   apply Nat.add_le_mono_r. apply le_0_n.
-  specialize (H1 (n+N)%nat). apply (CRplus_lt_reg_r (-l)).
-  assert (n + N >= n)%nat. rewrite <- (plus_0_r n). rewrite <- plus_assoc.
+  specialize (H1 (n+N1)%nat). apply (CRplus_lt_reg_r (-l)).
+  assert (n + N1 >= n)%nat. rewrite <- (plus_0_r n). rewrite <- plus_assoc.
   apply Nat.add_le_mono_l. apply le_0_n. specialize (H1 H2).
-  apply (CRle_lt_trans _ (CRabs R (u (n + N)%nat - l))).
+  apply (CRle_lt_trans _ (CRabs R (u (n + N1)%nat - l))).
   apply CRle_abs. assumption.
 Qed.
 
-Lemma CR_cv_bound_up : forall {R : ConstructiveReals}
-                         (u : nat -> CRcarrier R) (A l : CRcarrier R) (N : nat),
+Lemma CR_cv_bound_up {R : ConstructiveReals}
+      (u : nat -> CRcarrier R) (A l : CRcarrier R) (N : nat) :
     (forall n:nat, le N n -> u n <= A)
     -> CR_cv R u l
     -> l <= A.

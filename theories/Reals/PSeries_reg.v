@@ -276,8 +276,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma continuity_pt_finite_SF :
-  forall (fn:nat -> R -> R) (N:nat) (x:R),
+Lemma continuity_pt_finite_SF (fn:nat -> R -> R) (N:nat) (x:R) :
     (forall n:nat, (n <= N)%nat -> continuity_pt (fn n) x) ->
     continuity_pt (fun y:R => sum_f_R0 (fun k:nat => fn k y) N) x.
 Proof.

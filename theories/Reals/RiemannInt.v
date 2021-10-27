@@ -36,16 +36,15 @@ Definition phi_sequence (un:nat -> posreal) (f:R -> R)
   (a b:R) (pr:Riemann_integrable f a b) (n:nat) :=
   projT1 (pr (un n)).
 
-Lemma phi_sequence_prop :
-  forall (un:nat -> posreal) (f:R -> R) (a b:R) (pr:Riemann_integrable f a b)
-    (N:nat),
+Lemma phi_sequence_prop (un:nat -> posreal) (f:R -> R) (a b:R) (pr:Riemann_integrable f a b)
+    (N:nat) :
     { psi:StepFun a b |
       (forall t:R,
         Rmin a b <= t <= Rmax a b ->
         Rabs (f t - phi_sequence un pr N t) <= psi t) /\
       Rabs (RiemannInt_SF psi) < un N }.
 Proof.
-  intros; apply (projT2 (pr (un N))).
+  apply (projT2 (pr (un N))).
 Qed.
 
 Lemma RiemannInt_P1 :
@@ -81,8 +80,7 @@ Proof.
   apply H1.
 Qed.
 
-Lemma RiemannInt_P2 :
-  forall (f:R -> R) (a b:R) (un:nat -> posreal) (vn wn:nat -> StepFun a b),
+Lemma RiemannInt_P2 (f:R -> R) (a b:R) (un:nat -> posreal) (vn wn:nat -> StepFun a b) :
     Un_cv un 0 ->
     a <= b ->
     (forall n:nat,
@@ -133,8 +131,7 @@ Proof.
     assumption.
 Qed.
 
-Lemma RiemannInt_P3 :
-  forall (f:R -> R) (a b:R) (un:nat -> posreal) (vn wn:nat -> StepFun a b),
+Lemma RiemannInt_P3 (f:R -> R) (a b:R) (un:nat -> posreal) (vn wn:nat -> StepFun a b) :
     Un_cv un 0 ->
     (forall n:nat,
       (forall t:R, Rmin a b <= t <= Rmax a b -> Rabs (f t - vn n t) <= wn n t) /\
@@ -583,10 +580,9 @@ Proof.
                ; apply H ] ].
 Qed.
 
-Lemma SubEqui_P3 :
-  forall (N:nat) (a b:R) (del:posreal), length (SubEquiN N a b del) = S N.
+Lemma SubEqui_P3 : forall (N:nat) (a b:R) (del:posreal), length (SubEquiN N a b del) = S N.
 Proof.
-  simple induction N; intros;
+  intro N;elim N; intros;
     [ reflexivity | simpl; rewrite H; reflexivity ].
 Qed.
 
@@ -594,7 +590,7 @@ Lemma SubEqui_P4 :
   forall (N:nat) (a b:R) (del:posreal) (i:nat),
     (i < S N)%nat -> pos_Rl (SubEquiN (S N) a b del) i = a + INR i * del.
 Proof.
-  simple induction N;
+  intro N; elim N;
     [ intros; inversion H; [ simpl; ring | elim (le_Sn_O _ H1) ]
       | intros; induction  i as [| i Hreci];
         [ simpl; ring
@@ -667,8 +663,7 @@ Proof.
     [ apply SubEqui_P7 | apply SubEqui_P1 | apply SubEqui_P2 ].
 Qed.
 
-Lemma RiemannInt_P6 :
-  forall (f:R -> R) (a b:R),
+Lemma RiemannInt_P6 (f:R -> R) (a b:R) :
     a < b ->
     (forall x:R, a <= x <= b -> continuity_pt f x) -> Riemann_integrable f a b.
 Proof.
@@ -1645,13 +1640,12 @@ Proof.
       try assumption; apply RinvN_cv.
 Qed.
 
-Lemma RiemannInt_P18 :
-  forall (f g:R -> R) (a b:R) (pr1:Riemann_integrable f a b)
-    (pr2:Riemann_integrable g a b),
-    a <= b ->
-    (forall x:R, a < x < b -> f x = g x) -> RiemannInt pr1 = RiemannInt pr2.
+Lemma RiemannInt_P18 (f g:R -> R) (a b:R) (pr1:Riemann_integrable f a b)
+      (pr2:Riemann_integrable g a b) :
+  a <= b ->
+  (forall x:R, a < x < b -> f x = g x) -> RiemannInt pr1 = RiemannInt pr2.
 Proof.
-  intro f; intros; unfold RiemannInt;
+  intros; unfold RiemannInt;
     case (RiemannInt_exists pr1 RinvN RinvN_cv) as (x0,HUn_cv0);
     case (RiemannInt_exists pr2 RinvN RinvN_cv) as (x,HUn_cv);
       eapply UL_sequence.
@@ -1741,7 +1735,7 @@ Proof.
   destruct (Req_EM_T x1 b) as [ -> |Hneqb].
   elim H3; intros; elim (Rlt_irrefl _ H5).
   right; reflexivity.
-  intro; assert (H2 := pre (phi2 N)); unfold IsStepFun in H2;
+  intro N; assert (H2 := pre (phi2 N)); unfold IsStepFun in H2;
     unfold is_subdivision in H2; elim H2; clear H2; intros l [lf H2];
       split with l; split with lf; unfold adapted_couple in H2;
         decompose [and] H2; clear H2; unfold adapted_couple;
@@ -2049,8 +2043,7 @@ Proof.
       | elim Hnle; apply Rle_trans with b; [ assumption | left; assumption ] ].
 Qed.
 
-Lemma RiemannInt_P22 :
-  forall (f:R -> R) (a b c:R),
+Lemma RiemannInt_P22 (f:R -> R) (a b c:R) :
     Riemann_integrable f a b -> a <= c <= b -> Riemann_integrable f a c.
 Proof.
   unfold Riemann_integrable; intros; elim (X eps); clear X;
@@ -2120,8 +2113,7 @@ Proof.
   rewrite StepFun_P18; ring.
 Qed.
 
-Lemma RiemannInt_P23 :
-  forall (f:R -> R) (a b c:R),
+Lemma RiemannInt_P23 (f:R -> R) (a b c:R) :
     Riemann_integrable f a b -> a <= c <= b -> Riemann_integrable f c b.
 Proof.
   unfold Riemann_integrable; intros; elim (X eps); clear X;

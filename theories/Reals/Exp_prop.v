@@ -68,25 +68,25 @@ Definition maj_Reste_E (x y:R) (N:nat) : R :=
     Rsqr (INR (fact (div2 (pred N))))).
 
 (**********)
-Lemma div2_double : forall N:nat, div2 (2 * N) = N.
+Lemma div2_double (N:nat) : div2 (2 * N) = N.
 Proof.
-  intro; induction  N as [| N HrecN].
+  induction  N as [| N HrecN].
   reflexivity.
   replace (2 * S N)%nat with (S (S (2 * N))).
   simpl; simpl in HrecN; rewrite HrecN; reflexivity.
   ring.
 Qed.
 
-Lemma div2_S_double : forall N:nat, div2 (S (2 * N)) = N.
+Lemma div2_S_double (N:nat) : div2 (S (2 * N)) = N.
 Proof.
-  intro; induction  N as [| N HrecN].
+  induction  N as [| N HrecN].
   reflexivity.
   replace (2 * S N)%nat with (S (S (2 * N))).
   simpl; simpl in HrecN; rewrite HrecN; reflexivity.
   ring.
 Qed.
 
-Lemma div2_not_R0 : forall N:nat, (1 < N)%nat -> (0 < div2 N)%nat.
+Lemma div2_not_R0 (N:nat) : (1 < N)%nat -> (0 < div2 N)%nat.
 Proof.
   intros; induction N as [| N HrecN].
   - elim (lt_n_O _ H).
@@ -101,8 +101,7 @@ Proof.
     left; apply lt_le_trans with 2%nat; [ apply lt_n_Sn | apply H1 ].
 Qed.
 
-Lemma Reste_E_maj :
-  forall (x y:R) (N:nat),
+Lemma Reste_E_maj (x y:R) (N:nat) :
     (0 < N)%nat -> Rabs (Reste_E x y N) <= maj_Reste_E x y N.
 Proof.
   intros; set (M := Rmax 1 (Rmax (Rabs x) (Rabs y))).

@@ -239,7 +239,7 @@ assert (Sublemma : forall x y lb ub, lb <= x <= ub /\ lb <= y <= ub -> lb <= (x+
   intros x y lb ub Hyp.
   lra.
 intros x y P N x_lt_y.
-induction N.
+induction N as [|N IHN].
  simpl ; intuition.
  simpl.
  case (P ((Dichotomy_lb x y P N + Dichotomy_ub x y P N) / 2)).
@@ -269,14 +269,14 @@ intros x y x0 D x_lt_y bnd.
   unfold Un_cv ; intros ; exists 0%nat ; intros ; unfold R_dist ; replace (y -y) with 0 by field ; rewrite Rabs_R0 ; assumption.
 Qed.
 
-Lemma IVT_interv : forall (f : R -> R) (x y : R),
+Lemma IVT_interv (f : R -> R) (x y : R) :
        (forall a, x <= a <= y -> continuity_pt f a) ->
        x < y ->
        f x < 0 ->
        0 < f y ->
        {z : R | x <= z <= y /\ f z = 0}.
 Proof.
-intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
+intros. (* f_cont_interv x_lt_y fx_neg fy_pos.*)
   cut (x <= y).
   intro.
   generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3).
@@ -465,7 +465,7 @@ Lemma continuity_pt_recip_prelim : forall (f g:R->R) (lb ub : R) (Pr1:lb < ub),
        continuity_pt g b.
 Proof.
 assert (Sublemma : forall x y z, Rmax x y < z <-> x < z /\ y < z).
- intros x y z. split.
+{ intros x y z. split.
   unfold Rmax. case (Rle_dec x y) ; intros Hyp Hyp2.
   split. apply Rle_lt_trans with (r2:=y) ; assumption. assumption.
   split. assumption. apply Rlt_trans with (r2:=x).
@@ -476,9 +476,9 @@ assert (Sublemma : forall x y z, Rmax x y < z <-> x < z /\ y < z).
   intros Hyp.
   unfold Rmax. case (Rle_dec x y).
   intro ; exact (proj2 Hyp).
-  intro ; exact (proj1 Hyp).
+  intro ; exact (proj1 Hyp). }
 assert (Sublemma2 : forall x y z, Rmin x y > z <-> x > z /\ y > z).
- intros x y z. split.
+{ intros x y z. split.
   unfold Rmin. case (Rle_dec x y) ; intros Hyp Hyp2.
   split. assumption.
   apply Rlt_le_trans with (r2:=x) ; intuition.
@@ -491,13 +491,13 @@ assert (Sublemma2 : forall x y z, Rmin x y > z <-> x > z /\ y > z).
   intros Hyp.
   unfold Rmin. case (Rle_dec x y).
   intro ; exact (proj1 Hyp).
-  intro ; exact (proj2 Hyp).
+  intro ; exact (proj2 Hyp). }
 assert (Sublemma3 : forall x y, x <= y /\ x <> y -> x < y).
- intros m n Hyp. unfold Rle in Hyp.
+{ intros m n Hyp. unfold Rle in Hyp.
   destruct Hyp as (Hyp1,Hyp2).
   case Hyp1.
   intuition.
-  intro Hfalse ; apply False_ind ; apply Hyp2 ; exact Hfalse.
+  intro Hfalse ; apply False_ind ; apply Hyp2 ; exact Hfalse. }
 intros f g lb ub lb_lt_ub f_incr_interv f_eq_g f_cont_interv b b_encad.
  assert (f_incr_interv2 : forall x y, lb <= x -> x <= y -> y <= ub -> f x <= f y).
   intros m n cond1 cond2 cond3.
@@ -561,18 +561,18 @@ intros f g lb ub lb_lt_ub f_incr_interv f_eq_g f_cont_interv b b_encad.
  destruct Temp as (_,y_cond).
   rewrite <- f_x_b in y_cond.
   assert (Temp : forall x y d1 d2, d1 > 0 -> d2 > 0 -> Rabs (y - x) < Rmin d1 d2 -> x - d1 <= y <= x + d2).
-   intros.
+  { intros.
     split. assert (H10 : forall x y z, x - y <= z -> x - z <= y). intuition. lra.
     apply H10. apply Rle_trans with (r2:=Rabs (y0 - x0)).
     replace (Rabs (y0 - x0)) with (Rabs (x0 - y0)). apply RRle_abs.
     rewrite <- Rabs_Ropp. unfold Rminus ; rewrite Ropp_plus_distr. rewrite Ropp_involutive.
     intuition.
-    apply Rle_trans with (r2:= Rmin d1 d2). apply Rlt_le ; assumption.
+    apply Rle_trans with (r2:= Rmin d3 d4). apply Rlt_le ; assumption.
     apply Rmin_l.
     assert (H10 : forall x y z, x - y <= z -> x <= y + z). intuition. lra.
     apply H10. apply Rle_trans with (r2:=Rabs (y0 - x0)). apply RRle_abs.
-    apply Rle_trans with (r2:= Rmin d1 d2). apply Rlt_le ; assumption.
-    apply Rmin_r.
+    apply Rle_trans with (r2:= Rmin d3 d4). apply Rlt_le ; assumption.
+    apply Rmin_r. }
   assert (Temp' := Temp (f x) y (f x - f x1) (f x2 - f x)).
   replace (f x - (f x - f x1)) with (f x1) in Temp' by field.
   replace (f x + (f x2 - f x)) with (f x2) in Temp' by field.
@@ -924,18 +924,19 @@ intros f g lb ub x lb_lt_ub x_encad f_eq_g g_wf f_incr f_derivable Df_neq.
    [| |rewrite g_eq_f in g_incr ; rewrite g_eq_f in g_incr| ] ; intuition.
 Qed.
 
-Lemma derivable_pt_recip_interv_decr : forall (f g:R->R) (lb ub x : R)
-         (lb_lt_ub:lb < ub)
-         (x_encad:f ub < x < f lb)
-         (f_eq_g:forall x : R, f ub <= x -> x <= f lb -> comp f g x = id x)
-         (g_wf:forall x : R, f ub <= x -> x <= f lb -> lb <= g x <= ub)
-         (f_decr:forall x y : R, lb <= x -> x < y -> y <= ub -> f y < f x)
-         (f_derivable:forall a : R, lb <= a <= ub -> derivable_pt f a),
-         derive_pt f (g x)
-              (derivable_pt_recip_interv_prelim1_decr f g lb ub x lb_lt_ub
-              x_encad g_wf f_derivable)
-         <> 0 ->
-         derivable_pt g x.
+Lemma derivable_pt_recip_interv_decr (f g:R->R) (lb ub x : R)
+      (lb_lt_ub:lb < ub)
+      (x_encad:f ub < x < f lb)
+      (f_eq_g:forall x : R, f ub <= x -> x <= f lb -> comp f g x = id x)
+      (g_wf:forall x : R, f ub <= x -> x <= f lb -> lb <= g x <= ub)
+      (f_decr:forall x y : R, lb <= x -> x < y -> y <= ub -> f y < f x)
+      (f_derivable:forall a : R, lb <= a <= ub -> derivable_pt f a) :
+  derive_pt f (g x)
+    (derivable_pt_recip_interv_prelim1_decr
+       f g lb ub x lb_lt_ub
+       x_encad g_wf f_derivable)
+  <> 0 ->
+  derivable_pt g x.
 Proof.
   intros.
   apply derivable_pt_opp_rev.
@@ -1055,19 +1056,21 @@ Proof.
   apply f_eq_g; lra.
 Qed.
 
-Lemma derive_pt_recip_interv : forall (f g:R->R) (lb ub x:R)
-       (lb_lt_ub:lb < ub) (x_encad:f lb < x < f ub)
-       (f_incr:forall x y : R, lb <= x -> x < y -> y <= ub -> f x < f y)
-       (g_wf:forall x : R, f lb <= x -> x <= f ub -> lb <= g x <= ub)
-       (Prf:forall a : R, lb <= a <= ub -> derivable_pt f a)
-       (f_eq_g:forall x, f lb <= x -> x <= f ub -> (comp f g) x = id x)
-       (Df_neq:derive_pt f (g x) (derivable_pt_recip_interv_prelim1 f g lb ub x
-                 lb_lt_ub x_encad g_wf Prf) <> 0),
-       derive_pt g x (derivable_pt_recip_interv f g lb ub x lb_lt_ub x_encad f_eq_g
-                 g_wf f_incr Prf Df_neq)
-       =
-       1 / (derive_pt f (g x) (Prf (g x) (derive_pt_recip_interv_prelim1_1 f g lb ub x
-       lb_lt_ub x_encad f_incr g_wf f_eq_g))).
+Lemma derive_pt_recip_interv (f g:R->R) (lb ub x:R)
+      (lb_lt_ub:lb < ub) (x_encad:f lb < x < f ub)
+      (f_incr:forall x y : R, lb <= x -> x < y -> y <= ub -> f x < f y)
+      (g_wf:forall x : R, f lb <= x -> x <= f ub -> lb <= g x <= ub)
+      (Prf:forall a : R, lb <= a <= ub -> derivable_pt f a)
+      (f_eq_g:forall x, f lb <= x -> x <= f ub -> (comp f g) x = id x)
+      (Df_neq:derive_pt f (g x)
+                        (derivable_pt_recip_interv_prelim1 f g lb ub x
+                          lb_lt_ub x_encad g_wf Prf) <> 0)
+  :
+    derive_pt g x
+      (derivable_pt_recip_interv f g lb ub x lb_lt_ub x_encad f_eq_g g_wf f_incr Prf Df_neq)
+    =
+    1 / (derive_pt f (g x) (Prf (g x)
+          (derive_pt_recip_interv_prelim1_1 f g lb ub x lb_lt_ub x_encad f_incr g_wf f_eq_g))).
 Proof.
 intros.
  assert(g_incr := (derive_pt_recip_interv_prelim1_1 f g lb ub x lb_lt_ub
@@ -1081,7 +1084,7 @@ intros.
  exact (derive_pt_recip_interv_prelim1_0 f g lb ub x lb_lt_ub x_encad f_incr g_wf f_eq_g).
 Qed.
 
-Lemma derive_pt_recip_interv_decr : forall (f g:R->R) (lb ub x:R)
+Lemma derive_pt_recip_interv_decr (f g:R->R) (lb ub x:R)
        (lb_lt_ub:lb < ub)
        (x_encad:f ub < x < f lb)
        (f_decr:forall x y : R, lb <= x -> x < y -> y <= ub -> f y < f x)
@@ -1089,7 +1092,7 @@ Lemma derive_pt_recip_interv_decr : forall (f g:R->R) (lb ub x:R)
        (Prf:forall a : R, lb <= a <= ub -> derivable_pt f a)
        (f_eq_g:forall x, f ub <= x -> x <= f lb -> (comp f g) x = id x)
        (Df_neq:derive_pt f (g x) (derivable_pt_recip_interv_prelim1_decr f g lb ub x
-                 lb_lt_ub x_encad g_wf Prf) <> 0),
+                 lb_lt_ub x_encad g_wf Prf) <> 0) :
        derive_pt g x (derivable_pt_recip_interv_decr f g lb ub x lb_lt_ub x_encad f_eq_g
                  g_wf f_decr Prf Df_neq)
        =

@@ -297,14 +297,14 @@ Proof.
           with (Qpower q (Zpos p)).
     rewrite <- N2Z.inj_pos.
     rewrite <- positive_N_nat.
-    rewrite rpow_pow_N.
     rewrite rpow_pow_N0.
+    rewrite rpow_pow_N1.
     apply Q2R_pow_N.
   -
     rewrite  Q2R_inv.
     unfold Qpower_positive.
     rewrite <- positive_N_nat.
-    rewrite rpow_pow_N0.
+    rewrite rpow_pow_N1.
     unfold pow_N.
     rewrite Q2R_pow_pos.
     auto.
@@ -359,10 +359,10 @@ Proof.
       rewrite <- IHc.
       destruct Qpower_theory.
       rewrite <- nat_N_Z.
-      rewrite rpow_pow_N.
+      rewrite rpow_pow_N0.
       destruct R_power_theory.
       rewrite <- (Nnat.Nat2N.id n) at 2.
-      rewrite rpow_pow_N0.
+      rewrite rpow_pow_N1.
       apply Q2R_pow_N.
   - rewrite <- IHc.
     unfold CInvR0.

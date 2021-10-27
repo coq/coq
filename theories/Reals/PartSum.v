@@ -15,9 +15,8 @@ Require Import Rcomplete.
 Require Import Max.
 Local Open Scope R_scope.
 
-Lemma tech1 :
-  forall (An:nat -> R) (N:nat),
-    (forall n:nat, (n <= N)%nat -> 0 < An n) -> 0 < sum_f_R0 An N.
+Lemma tech1 (An:nat -> R) (N:nat) :
+  (forall n:nat, (n <= N)%nat -> 0 < An n) -> 0 < sum_f_R0 An N.
 Proof.
   intros; induction  N as [| N HrecN].
   simpl; apply H; apply le_n.
@@ -62,12 +61,11 @@ Proof.
 Qed.
 
 (* Sum of geometric sequences *)
-Lemma tech3 :
-  forall (k:R) (N:nat),
-    k <> 1 -> sum_f_R0 (fun i:nat => k ^ i) N = (1 - k ^ S N) / (1 - k).
+Lemma tech3 (k:R) (N:nat) :
+  k <> 1 -> sum_f_R0 (fun i:nat => k ^ i) N = (1 - k ^ S N) / (1 - k).
 Proof.
   intros; cut (1 - k <> 0).
-  intro; induction  N as [| N HrecN].
+  intro; induction N as [| N HrecN].
   simpl; rewrite Rmult_1_r; unfold Rdiv; rewrite <- Rinv_r_sym.
   reflexivity.
   apply H0.
@@ -89,9 +87,8 @@ Proof.
     assumption.
 Qed.
 
-Lemma tech4 :
-  forall (An:nat -> R) (k:R) (N:nat),
-    0 <= k -> (forall i:nat, An (S i) < k * An i) -> An N <= An 0%nat * k ^ N.
+Lemma tech4 (An:nat -> R) (k:R) (N:nat) :
+  0 <= k -> (forall i:nat, An (S i) < k * An i) -> An N <= An 0%nat * k ^ N.
 Proof.
   intros; induction  N as [| N HrecN].
   simpl; right; ring.
@@ -111,8 +108,7 @@ Proof.
   intros; reflexivity.
 Qed.
 
-Lemma tech6 :
-  forall (An:nat -> R) (k:R) (N:nat),
+Lemma tech6 (An:nat -> R) (k:R) (N:nat) :
     0 <= k ->
     (forall i:nat, An (S i) < k * An i) ->
     sum_f_R0 An N <= An 0%nat * sum_f_R0 (fun i:nat => k ^ i) N.
@@ -138,8 +134,7 @@ Proof.
   elim H1; symmetry ; assumption.
 Qed.
 
-Lemma tech11 :
-  forall (An Bn Cn:nat -> R) (N:nat),
+Lemma tech11 (An Bn Cn:nat -> R) (N:nat) :
     (forall i:nat, An i = Bn i - Cn i) ->
     sum_f_R0 An N = sum_f_R0 Bn N - sum_f_R0 Cn N.
 Proof.
@@ -157,8 +152,7 @@ Proof.
     assumption.
 Qed.
 
-Lemma scal_sum :
-  forall (An:nat -> R) (N:nat) (x:R),
+Lemma scal_sum (An:nat -> R) (N:nat) (x:R) :
     x * sum_f_R0 An N = sum_f_R0 (fun i:nat => An i * x) N.
 Proof.
   intros; induction  N as [| N HrecN].
@@ -167,8 +161,7 @@ Proof.
   rewrite Rmult_plus_distr_l; rewrite <- HrecN; ring.
 Qed.
 
-Lemma decomp_sum :
-  forall (An:nat -> R) (N:nat),
+Lemma decomp_sum (An:nat -> R) (N:nat) :
     (0 < N)%nat ->
     sum_f_R0 An N = An 0%nat + sum_f_R0 (fun i:nat => An (S i)) (pred N).
 Proof.
@@ -191,8 +184,7 @@ Proof.
   left; apply lt_le_trans with 1%nat; [ apply lt_O_Sn | assumption ].
 Qed.
 
-Lemma plus_sum :
-  forall (An Bn:nat -> R) (N:nat),
+Lemma plus_sum (An Bn:nat -> R) (N:nat) :
     sum_f_R0 (fun i:nat => An i + Bn i) N = sum_f_R0 An N + sum_f_R0 Bn N.
 Proof.
   intros; induction  N as [| N HrecN].
@@ -200,8 +192,7 @@ Proof.
   do 3 rewrite tech5; rewrite HrecN; ring.
 Qed.
 
-Lemma sum_eq :
-  forall (An Bn:nat -> R) (N:nat),
+Lemma sum_eq (An Bn:nat -> R) (N:nat) :
     (forall i:nat, (i <= N)%nat -> An i = Bn i) ->
     sum_f_R0 An N = sum_f_R0 Bn N.
 Proof.
@@ -251,8 +242,7 @@ Proof.
   apply Rinv_neq_0_compat; discrR.
 Qed.
 
-Lemma minus_sum :
-  forall (An Bn:nat -> R) (N:nat),
+Lemma minus_sum (An Bn:nat -> R) (N:nat) :
     sum_f_R0 (fun i:nat => An i - Bn i) N = sum_f_R0 An N - sum_f_R0 Bn N.
 Proof.
   intros; induction  N as [| N HrecN].
@@ -260,8 +250,7 @@ Proof.
   do 3 rewrite tech5; rewrite HrecN; ring.
 Qed.
 
-Lemma sum_decomposition :
-  forall (An:nat -> R) (N:nat),
+Lemma sum_decomposition (An:nat -> R) (N:nat) :
     sum_f_R0 (fun l:nat => An (2 * l)%nat) (S N) +
     sum_f_R0 (fun l:nat => An (S (2 * l))) N = sum_f_R0 An (2 * S N).
 Proof.
@@ -278,8 +267,7 @@ Proof.
   ring.
 Qed.
 
-Lemma sum_Rle :
-  forall (An Bn:nat -> R) (N:nat),
+Lemma sum_Rle (An Bn:nat -> R) (N:nat) :
     (forall n:nat, (n <= N)%nat -> An n <= Bn n) ->
     sum_f_R0 An N <= sum_f_R0 Bn N.
 Proof.
@@ -299,8 +287,7 @@ Proof.
   apply le_trans with N; [ assumption | apply le_n_Sn ].
 Qed.
 
-Lemma Rsum_abs :
-  forall (An:nat -> R) (N:nat),
+Lemma Rsum_abs (An:nat -> R) (N:nat) :
     Rabs (sum_f_R0 An N) <= sum_f_R0 (fun l:nat => Rabs (An l)) N.
 Proof.
   intros.
@@ -315,8 +302,7 @@ Proof.
   apply HrecN.
 Qed.
 
-Lemma sum_cte :
-  forall (x:R) (N:nat), sum_f_R0 (fun _:nat => x) N = x * INR (S N).
+Lemma sum_cte (x:R) (N:nat) : sum_f_R0 (fun _:nat => x) N = x * INR (S N).
 Proof.
   intros.
   induction  N as [| N HrecN].
@@ -326,8 +312,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma sum_growing :
-  forall (An Bn:nat -> R) (N:nat),
+Lemma sum_growing (An Bn:nat -> R) (N:nat) :
     (forall n:nat, An n <= Bn n) -> sum_f_R0 An N <= sum_f_R0 Bn N.
 Proof.
   intros.
@@ -341,8 +326,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma Rabs_triang_gen :
-  forall (An:nat -> R) (N:nat),
+Lemma Rabs_triang_gen (An:nat -> R) (N:nat) :
     Rabs (sum_f_R0 An N) <= sum_f_R0 (fun i:nat => Rabs (An i)) N.
 Proof.
   intros.
@@ -357,8 +341,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma cond_pos_sum :
-  forall (An:nat -> R) (N:nat),
+Lemma cond_pos_sum (An:nat -> R) (N:nat) :
     (forall n:nat, 0 <= An n) -> 0 <= sum_f_R0 An N.
 Proof.
   intros.
@@ -483,8 +466,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma sum_eq_R0 :
-  forall (An:nat -> R) (N:nat),
+Lemma sum_eq_R0 (An:nat -> R) (N:nat) :
     (forall n:nat, (n <= N)%nat -> An n = 0) -> sum_f_R0 An N = 0.
 Proof.
   intros; induction  N as [| N HrecN].
@@ -498,8 +480,7 @@ Definition SP (fn:nat -> R -> R) (N:nat) (x:R) : R :=
   sum_f_R0 (fun k:nat => fn k x) N.
 
 (**********)
-Lemma sum_incr :
-  forall (An:nat -> R) (N:nat) (l:R),
+Lemma sum_incr (An:nat -> R) (N:nat) (l:R) :
     Un_cv (fun n:nat => sum_f_R0 An n) l ->
     (forall n:nat, 0 <= An n) -> sum_f_R0 An N <= l.
 Proof.

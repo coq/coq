@@ -65,8 +65,7 @@ Proof.
 Qed.
 
 (**********)
-Lemma CV_ALT_step2 :
-  forall (Un:nat -> R) (N:nat),
+Lemma CV_ALT_step2 (Un:nat -> R) (N:nat) :
     Un_decreasing Un ->
     positivity_seq Un ->
     sum_f_R0 (fun i:nat => tg_alt Un (S i)) (S (2 * N)) <= 0.
@@ -98,8 +97,7 @@ Proof.
 Qed.
 
 (** A more general inequality *)
-Lemma CV_ALT_step3 :
-  forall (Un:nat -> R) (N:nat),
+Lemma CV_ALT_step3 (Un:nat -> R) (N:nat) :
     Un_decreasing Un ->
     positivity_seq Un -> sum_f_R0 (fun i:nat => tg_alt Un (S i)) N <= 0.
 Proof.

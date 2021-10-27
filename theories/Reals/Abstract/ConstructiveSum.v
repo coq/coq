@@ -30,12 +30,11 @@ Fixpoint CRsum {R : ConstructiveReals}
     | S i => CRsum f i + f (S i)
   end.
 
-Lemma CRsum_eq :
-  forall {R : ConstructiveReals} (An Bn:nat -> CRcarrier R) (N:nat),
+Lemma CRsum_eq {R : ConstructiveReals} (An Bn:nat -> CRcarrier R) (N:nat) :
     (forall i:nat, (i <= N)%nat -> An i == Bn i) ->
     CRsum An N == CRsum Bn N.
 Proof.
-  induction N.
+  induction N as [|N IHN].
   - intros. exact (H O (le_refl _)).
   - intros. simpl. apply CRplus_morph. apply IHN.
     intros. apply H. apply (le_trans _ N _ H0), le_S, le_refl.
@@ -199,12 +198,11 @@ Proof.
     apply CRplus_morph. reflexivity. apply CRplus_comm.
 Qed.
 
-Lemma decomp_sum :
-  forall {R : ConstructiveReals} (An:nat -> CRcarrier R) (N:nat),
+Lemma decomp_sum {R : ConstructiveReals} (An:nat -> CRcarrier R) (N:nat) :
     (0 < N)%nat ->
     CRsum An N == An 0%nat + CRsum (fun i:nat => An (S i)) (pred N).
 Proof.
-  induction N.
+  induction N as [|N IHN].
   - intros. exfalso. inversion H.
   - intros _. destruct N. simpl. reflexivity. simpl.
     rewrite IHN. rewrite CRplus_assoc.
@@ -429,14 +427,14 @@ Proof.
   rewrite <- (CRsum_eq u). apply H0, H1. intros. apply H.
 Qed.
 
-Lemma series_cv_remainder_maj : forall {R : ConstructiveReals} (u : nat -> CRcarrier R)
-                                  (s eps : CRcarrier R)
-                                  (N : nat),
-    series_cv u s
-    -> 0 < eps
-    -> (forall n:nat, 0 <= u n)
-    -> CRabs R (CRsum u N - s) <= eps
-    -> forall n:nat, CRsum (fun k=> u (N + S k)%nat) n <= eps.
+Lemma series_cv_remainder_maj {R : ConstructiveReals} (u : nat -> CRcarrier R)
+      (s eps : CRcarrier R)
+      (N : nat) :
+  series_cv u s
+  -> 0 < eps
+  -> (forall n:nat, 0 <= u n)
+  -> CRabs R (CRsum u N - s) <= eps
+  -> forall n:nat, CRsum (fun k=> u (N + S k)%nat) n <= eps.
 Proof.
   intros. pose proof (sum_assoc u N n).
   rewrite <- (CRsum_eq (fun k : nat => u (S N + k)%nat)).
@@ -453,19 +451,19 @@ Proof.
 Qed.
 
 
-Lemma series_cv_abs_remainder : forall {R : ConstructiveReals} (u : nat -> CRcarrier R)
-                                  (s sAbs : CRcarrier R)
-                                  (n : nat),
-    series_cv u s
-    -> series_cv (fun n => CRabs R (u n)) sAbs
-    -> CRabs R (CRsum u n - s)
-      <= sAbs - CRsum (fun n => CRabs R (u n)) n.
+Lemma series_cv_abs_remainder {R : ConstructiveReals} (u : nat -> CRcarrier R)
+      (s sAbs : CRcarrier R)
+      (n : nat) :
+  series_cv u s
+  -> series_cv (fun n => CRabs R (u n)) sAbs
+  -> CRabs R (CRsum u n - s)
+    <= sAbs - CRsum (fun n => CRabs R (u n)) n.
 Proof.
   intros.
   apply (CR_cv_le (fun N => CRabs R (CRsum u n - (CRsum u (n + N))))
                    (fun N => CRsum (fun n : nat => CRabs R (u n)) (n + N)
                           - CRsum (fun n : nat => CRabs R (u n)) n)).
-  - intro N. destruct N. rewrite plus_0_r. unfold CRminus.
+  - intro N. destruct N as [|N]. rewrite plus_0_r. unfold CRminus.
     rewrite CRplus_opp_r. rewrite CRplus_opp_r.
     rewrite CRabs_right. apply CRle_refl. apply CRle_refl.
     rewrite Nat.add_succ_r.

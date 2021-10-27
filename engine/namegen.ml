@@ -62,29 +62,11 @@ let default_generated_non_letter_string = "x"
 (**********************************************************************)
 (* Globality of identifiers *)
 
-let is_imported_modpath = function
-  | MPfile dp ->
-    let rec find_prefix = function
-      |MPfile dp1 -> not (DirPath.equal dp1 dp)
-      |MPdot(mp,_) -> find_prefix mp
-      |MPbound(_) -> false
-    in find_prefix (Lib.current_mp ())
-  | _ -> false
-
-let is_imported_ref = let open GlobRef in function
-  | VarRef _ -> false
-  | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) ->
-      let mp = MutInd.modpath kn in is_imported_modpath mp
-  | ConstRef kn ->
-      let mp = Constant.modpath kn in is_imported_modpath mp
-
 let is_global id =
-  try
-    let ref = Nametab.locate (qualid_of_ident id) in
-    not (is_imported_ref ref)
-  with Not_found ->
-    false
+  match Nametab.locate (qualid_of_ident id) with
+  | exception Not_found -> false
+  | GlobRef.VarRef _ -> false
+  | GlobRef.(IndRef _ | ConstructRef _ | ConstRef _) -> true
 
 let is_constructor id =
   try
@@ -93,10 +75,6 @@ let is_constructor id =
       | _ -> false
   with Not_found ->
     false
-
-let is_section_variable id =
-  try let _ = Global.lookup_named id in true
-  with Not_found -> false
 
 (**********************************************************************)
 (* Generating "intuitive" names from its type *)
@@ -336,7 +314,7 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
 
 let next_ident_away_in_goal id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable id)) in
+  let bad id = Id.Set.mem id avoid || is_global id in
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =

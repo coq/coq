@@ -176,12 +176,11 @@ Proof.
 Qed.
 
 (** Finite sums : Sum a_k x^k *)
-Lemma continuity_finite_sum :
-  forall (An:nat -> R) (N:nat),
+Lemma continuity_finite_sum (An:nat -> R) (N:nat) :
     continuity (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N).
 Proof.
   intros; unfold continuity; intro.
-  induction  N as [| N HrecN].
+  induction N as [| N HrecN].
   simpl.
   apply continuity_pt_const.
   unfold constant; intros; reflexivity.
@@ -199,8 +198,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma derivable_pt_lim_fs :
-  forall (An:nat -> R) (x:R) (N:nat),
+Lemma derivable_pt_lim_fs (An:nat -> R) (x:R) (N:nat) :
     (0 < N)%nat ->
     derivable_pt_lim (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N) x
     (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred N)).
@@ -256,8 +254,7 @@ Proof.
   right; apply lt_le_trans with 1%nat; [ apply lt_O_Sn | assumption ].
 Qed.
 
-Lemma derivable_pt_lim_finite_sum :
-  forall (An:nat -> R) (x:R) (N:nat),
+Lemma derivable_pt_lim_finite_sum (An:nat -> R) (x:R) (N:nat) :
     derivable_pt_lim (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N) x
     match N with
       | O => 0
@@ -265,7 +262,7 @@ Lemma derivable_pt_lim_finite_sum :
     end.
 Proof.
   intros.
-  induction  N as [| N HrecN].
+  induction N as [| N HrecN].
   simpl.
   rewrite Rmult_1_r.
   replace (fun _:R => An 0%nat) with (fct_cte (An 0%nat));
@@ -273,8 +270,7 @@ Proof.
   apply derivable_pt_lim_fs; apply lt_O_Sn.
 Qed.
 
-Lemma derivable_pt_finite_sum :
-  forall (An:nat -> R) (N:nat) (x:R),
+Lemma derivable_pt_finite_sum (An:nat -> R) (N:nat) (x:R) :
     derivable_pt (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N) x.
 Proof.
   intros.

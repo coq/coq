@@ -219,7 +219,7 @@ Section sequence.
     induction N.
     easy.
     simpl.
-    assert (H6: Un N <= l - eps).
+    assert (H6: Un N1 <= l - eps).
     apply Rle_trans with (2 := H5).
     apply Rge_le.
     apply growing_prop ; try easy.
@@ -259,7 +259,7 @@ Section sequence.
   Lemma finite_greater :
     forall N:nat,  exists M : R, (forall n:nat, (n <= N)%nat -> Un n <= M).
   Proof.
-    intro; induction  N as [| N HrecN].
+    intro N; induction  N as [| N HrecN].
     split with (Un 0); intros; rewrite (le_n_O_eq n H);
       apply (Req_le (Un n) (Un n) (eq_refl (Un n))).
     elim HrecN; clear HrecN; intros; split with (Rmax (Un (S N)) x); intros;

@@ -319,7 +319,7 @@ Lemma StepFun_P10 :
     exists l' : list R,
       (exists lf' : list R, adapted_couple_opt f a b l' lf').
 Proof.
-  induction l as [ | r r0 H].
+  intros f l;induction l as [ | r r0 H].
   intros; unfold adapted_couple in H0; decompose [and] H0; simpl in H4;
     discriminate.
   intros; case (Req_dec a b); intro.
@@ -508,12 +508,11 @@ Proof.
         | unfold Rmax; decide (Rle_dec a b) with H0; reflexivity ].
 Qed.
 
-Lemma StepFun_P11 :
-  forall (a b r r1 r3 s1 s2 r4:R) (r2 lf1 s3 lf2:list R)
-    (f:R -> R),
-    a < b ->
-    adapted_couple f a b (cons r (cons r1 r2)) (cons r3 lf1) ->
-    adapted_couple_opt f a b (cons s1 (cons s2 s3)) (cons r4 lf2) -> r1 <= s2.
+Lemma StepFun_P11 (a b r r1 r3 s1 s2 r4:R) (r2 lf1 s3 lf2:list R)
+      (f:R -> R) :
+  a < b ->
+  adapted_couple f a b (cons r (cons r1 r2)) (cons r3 lf1) ->
+  adapted_couple_opt f a b (cons s1 (cons s2 s3)) (cons r4 lf2) -> r1 <= s2.
 Proof.
   intros; unfold adapted_couple_opt in H1; elim H1; clear H1; intros;
     unfold adapted_couple in H0, H1; decompose [and] H0;
@@ -668,7 +667,7 @@ Lemma StepFun_P14 :
     adapted_couple f a b l1 lf1 ->
     adapted_couple_opt f a b l2 lf2 -> Int_SF lf1 l1 = Int_SF lf2 l2.
 Proof.
-  induction l1 as [ | r r0 H0].
+  intros f l1; induction l1 as [ | r r0 H0].
   intros l2 lf1 lf2 a b Hyp H H0; unfold adapted_couple in H; decompose [and] H;
     clear H H0 H2 H3 H1 H6; simpl in H4; discriminate.
   induction r0 as [|r1 r2 H].
@@ -947,8 +946,7 @@ Proof.
       | simpl; rewrite RList_P18; rewrite RList_P14; reflexivity ].
 Qed.
 
-Lemma StepFun_P21 :
-  forall (a b:R) (f:R -> R) (l:list R),
+Lemma StepFun_P21 (a b:R) (f:R -> R) (l:list R) :
     is_subdivision f a b l -> adapted_couple f a b l (FF l f).
 Proof.
   intros * (x & H & H1 & H0 & H2 & H4).
@@ -1632,8 +1630,7 @@ Proof.
         apply lt_O_Sn ].
 Qed.
 
-Lemma StepFun_P34 :
-  forall (a b:R) (f:StepFun a b),
+Lemma StepFun_P34 (a b:R) (f:StepFun a b) :
     a <= b ->
     Rabs (RiemannInt_SF f) <= RiemannInt_SF (mkStepFun (StepFun_P32 f)).
 Proof.
@@ -1717,8 +1714,7 @@ Proof.
   simpl; apply (H0 0%nat); simpl; apply lt_O_Sn.
 Qed.
 
-Lemma StepFun_P36 :
-  forall (a b:R) (f g:StepFun a b) (l:list R),
+Lemma StepFun_P36 (a b:R) (f g:StepFun a b) (l:list R) :
     a <= b ->
     is_subdivision f a b l ->
     is_subdivision g a b l ->
@@ -1883,8 +1879,7 @@ Proof.
               [ apply lt_S_n; assumption | apply lt_n_Sn ] ].
 Qed.
 
-Lemma StepFun_P39 :
-  forall (a b:R) (f:StepFun a b),
+Lemma StepFun_P39 (a b:R) (f:StepFun a b) :
     RiemannInt_SF f = - RiemannInt_SF (mkStepFun (StepFun_P6 (pre f))).
 Proof.
   intros; unfold RiemannInt_SF; case (Rle_dec a b); case (Rle_dec b a);

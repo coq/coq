@@ -15,8 +15,7 @@ Require Import PartSum.
 Local Open Scope R_scope.
 
   (**********)
-Lemma sum_N_predN :
-  forall (An:nat -> R) (N:nat),
+Lemma sum_N_predN (An:nat -> R) (N:nat) :
     (0 < N)%nat -> sum_f_R0 An N = sum_f_R0 An (pred N) + An N.
 Proof.
   intros.
@@ -27,8 +26,7 @@ Proof.
 Qed.
 
   (**********)
-Lemma sum_plus :
-  forall (An Bn:nat -> R) (N:nat),
+Lemma sum_plus (An Bn:nat -> R) (N:nat) :
     sum_f_R0 (fun l:nat => An l + Bn l) N = sum_f_R0 An N + sum_f_R0 Bn N.
 Proof.
   intros.
@@ -39,8 +37,7 @@ Proof.
 Qed.
 
   (* The main result *)
-Theorem cauchy_finite :
-  forall (An Bn:nat -> R) (N:nat),
+Theorem cauchy_finite (An Bn:nat -> R) (N:nat) :
     (0 < N)%nat ->
     sum_f_R0 An N * sum_f_R0 Bn N =
     sum_f_R0 (fun k:nat => sum_f_R0 (fun p:nat => An p * Bn (k - p)%nat) k) N +

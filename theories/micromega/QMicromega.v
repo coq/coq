@@ -183,7 +183,7 @@ Proof.
   unfold Qeval_expr'.
   simpl.
   rewrite Qeval_op2_hold.
-  split ; destruct Fop ; simpl; auto.
+  split ; destruct Fop0 ; simpl; auto.
 Qed.
 
 

@@ -1032,7 +1032,7 @@ Lemma ps_atanSeq_continuity_pt_1 : forall (N : nat) (x : R),
 Proof.
 assert (Sublemma : forall (x:R) (N:nat), sum_f_R0 (tg_alt (Ratan_seq x)) N = x * (comp (fun x => sum_f_R0 (fun n => (fun i : nat => (-1) ^ i / INR (2 * i + 1)) n * x ^ n) N) (fun x => x ^ 2) x)).
  intros x N.
-  induction N.
+  induction N as [|N IHN].
    unfold tg_alt, Ratan_seq, comp ; simpl ; field.
    simpl sum_f_R0 at 1.
    rewrite IHN.
@@ -1290,7 +1290,7 @@ assert (Tool : forall N, (-1) ^ (S (2 * N))  = - 1).
   reflexivity.
   lia.
 intros N x x_lb x_ub.
- induction N.
+ induction N as [|N IHN].
   unfold Datan_seq, Ratan_seq, tg_alt ; simpl.
   intros eps eps_pos.
    elim (derivable_pt_lim_id x eps eps_pos) ; intros delta Hdelta ; exists delta.
