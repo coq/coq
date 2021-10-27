@@ -391,18 +391,6 @@ and print_modtype extent env mp locals mtb = match mtb.mod_type_alg with
   | Some me -> print_expression true extent env mp locals me
   | None -> print_signature true extent env mp locals mtb.mod_type
 
-let rec printable_body dir =
-  let dir = pop_dirpath dir in
-    DirPath.is_empty dir ||
-    try
-      let open Nametab.GlobDirRef in
-      match Nametab.locate_dir (qualid_of_dirpath dir) with
-          DirOpenModtype _ -> false
-        | DirModule _ | DirOpenModule _ -> printable_body dir
-        | _ -> true
-    with
-        Not_found -> true
-
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)
 
@@ -433,7 +421,7 @@ let unsafe_print_module extent env mp with_body mb =
 
 exception ShortPrinting
 
-let print_module with_body mp =
+let print_module ~with_body mp =
   let me = Global.lookup_module mp in
   try
     if !short then raise ShortPrinting;

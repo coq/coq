@@ -36,7 +36,7 @@ type object_pr = {
   print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
   print_syntactic_def       : env -> KerName.t -> Pp.t;
-  print_module              : bool -> ModPath.t -> Pp.t;
+  print_module              : ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
   print_library_entry       : env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
@@ -45,7 +45,7 @@ type object_pr = {
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
 
-let gallina_print_module  = print_module
+let gallina_print_module mp = print_module ~with_body:true mp
 let gallina_print_modtype = print_modtype
 
 (**************)
@@ -692,7 +692,7 @@ let gallina_print_leaf_entry env sigma with_values ((sp, kn),lobj) =
     handle handler o
   | ModuleObject _ ->
     let (mp,l) = KerName.repr kn in
-    Some (print_module with_values (MPdot (mp,l)))
+    Some (print_module ~with_body:with_values (MPdot (mp,l)))
   | ModuleTypeObject _ ->
     let (mp,l) = KerName.repr kn in
           Some (print_modtype (MPdot (mp,l)))
@@ -825,7 +825,7 @@ let print_full_pure_context env sigma =
   | ((_,kn),Lib.Leaf ModuleObject _)::rest ->
           (* TODO: make it reparsable *)
     let (mp,l) = KerName.repr kn in
-          prec rest ++ print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
+          prec rest ++ print_module (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
   | ((_,kn),Lib.Leaf ModuleTypeObject _)::rest ->
           (* TODO: make it reparsable *)
     let (mp,l) = KerName.repr kn in
@@ -878,7 +878,7 @@ let print_any_name env sigma na udecl =
   | Term (VarRef sp) -> print_section_variable env sigma sp
   | Syntactic kn -> print_syntactic_def env kn
   | Dir (Nametab.GlobDirRef.DirModule Nametab.{ obj_dir; obj_mp; _ } ) ->
-    print_module (printable_body obj_dir) obj_mp
+    print_module obj_mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
   | Other (obj, info) -> info.print obj

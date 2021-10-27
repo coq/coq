@@ -175,15 +175,9 @@ let print_libraries () =
 
 
 let print_module qid =
-  try
-    let open Nametab.GlobDirRef in
-    let globdir = Nametab.locate_dir qid in
-      match globdir with
-          DirModule Nametab.{ obj_dir; obj_mp; _ } ->
-          Printmod.print_module (Printmod.printable_body obj_dir) obj_mp
-        | _ -> raise Not_found
-  with
-    Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
+  match Nametab.locate_module qid with
+  | mp -> Printmod.print_module ~with_body:true mp
+  | exception Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
 
 let print_modtype qid =
   try
@@ -193,7 +187,7 @@ let print_modtype qid =
     (* Is there a module of this name ? If yes we display its type *)
     try
       let mp = Nametab.locate_module qid in
-      Printmod.print_module false mp
+      Printmod.print_module ~with_body:false mp
     with Not_found ->
       user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
 

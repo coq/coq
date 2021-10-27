@@ -96,7 +96,7 @@ type object_pr = {
   print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
   print_syntactic_def       : env -> KerName.t -> Pp.t;
-  print_module              : bool -> ModPath.t -> Pp.t;
+  print_module              : ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
   print_library_entry       : env -> Evd.evar_map -> bool -> (Libobject.object_name * Lib.node) -> Pp.t option;
