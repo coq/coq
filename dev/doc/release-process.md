@@ -162,6 +162,19 @@
   reference manual attached. The PDF can be recovered from the artifacts of the
   `doc:refman-pdf:dune` job from continuous integration.
 
+## For the first release candidate release ##
+
+- [ ] In coordination with platform maintainers, announce the release
+  candidate to Coq-Club and Discourse (coq-club@inria.fr +
+  coq+announcements@discoursemail.com) with the message that:
+  - the release candidate is stable: library authors can safely start
+    preparing compatible releases;
+  - in particular, the authors of packages that are included in the
+    platform should do so as soon as possible to avoid delaying the
+    platform release (and remind the expected calendar);
+  - a further announcement will follow when the platform is ready to
+    install this version of Coq.
+
 ## For each non-preview release ##
 
 - [ ] Modify the version number in the file
