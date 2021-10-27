@@ -651,7 +651,7 @@ Extraction TestCompile string_test.
 
 (* Extraction to native strings *)
 Require Import ExtrOcamlNativeString.
-Extraction TestCompile string_test.
+Extraction TestCompile string_test compare.
 
 Recursive Extraction Z_modulo_2 Zdiv_eucl_exist.
 Extraction TestCompile Z_modulo_2 Zdiv_eucl_exist.
