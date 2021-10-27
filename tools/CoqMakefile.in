@@ -759,7 +759,7 @@ else
 TIMING_EXTRA =
 endif
 
-$(VOFILES): %.vo: %.v
+$(VOFILES): %.vo: %.v | $(VDFILE)
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 ifeq ($(COQDONATIVE), "yes")

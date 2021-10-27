@@ -1,0 +1,5 @@
+- **Fixed:**
+  ``coq_makefile`` has improved logic when dealing with incorrect ``_CoqProject`` files
+  (`#13541 <https://github.com/coq/coq/pull/13541>`_,
+  fixes `#9319 <https://github.com/coq/coq/issues/9319>`_,
+  by Fabian Kunze).
