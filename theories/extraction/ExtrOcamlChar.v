@@ -13,6 +13,7 @@
 Require Coq.extraction.Extraction.
 
 Require Import Ascii String Coq.Strings.Byte.
+Require Export ExtrOcamlBasic.
 
 Extract Inductive ascii => char
 [
