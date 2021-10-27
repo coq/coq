@@ -65,6 +65,8 @@ Scheme Equality for int.
 Scheme Equality for hexadecimal.
 Notation int_eq_dec := signed_int_eq_dec.
 Notation int_beq := signed_int_beq.
+Notation internal_int_dec_lb := internal_signed_int_dec_lb.
+Notation internal_int_dec_bl := internal_signed_int_dec_bl.
 
 Declare Scope hex_uint_scope.
 Delimit Scope hex_uint_scope with huint.
