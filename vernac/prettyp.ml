@@ -394,6 +394,7 @@ type logical_name =
   | Term of GlobRef.t
   | Dir of Nametab.GlobDirRef.t
   | Syntactic of KerName.t
+  | Module of ModPath.t
   | ModuleType of ModPath.t
   | Other : 'a * 'a locatable_info -> logical_name
   | Undefined of qualid
@@ -412,6 +413,8 @@ let locate_any_name qid =
   try Syntactic (Nametab.locate_syndef qid)
   with Not_found ->
   try Dir (Nametab.locate_dir qid)
+  with Not_found ->
+  try Module (Nametab.locate_module qid)
   with Not_found ->
   try ModuleType (Nametab.locate_modtype qid)
   with Not_found ->
@@ -439,9 +442,10 @@ let pr_located_qualid = function
         | DirOpenModule { obj_dir ; _ } -> "Open Module", obj_dir
         | DirOpenModtype { obj_dir ; _ } -> "Open Module Type", obj_dir
         | DirOpenSection { obj_dir ; _ } -> "Open Section", obj_dir
-        | DirModule { obj_dir ; _ } -> "Module", obj_dir
       in
       str s ++ spc () ++ DirPath.print dir
+  | Module mp ->
+    str "Module" ++ spc () ++ DirPath.print (Nametab.dirpath_of_module mp)
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
   | Other (obj, info) -> info.name obj
@@ -483,13 +487,16 @@ let locate_term qid =
   List.map expand (Nametab.locate_extended_all qid)
 
 let locate_module qid =
+  let all = Nametab.locate_extended_all_module qid in
+  let map mp = Module mp, Nametab.shortest_qualid_of_module mp in
+  let mods = List.map map all in
+  (* Don't forget the opened modules: they are not part of the same name tab. *)
   let all = Nametab.locate_extended_all_dir qid in
   let map dir = let open Nametab.GlobDirRef in match dir with
-  | DirModule { Nametab.obj_mp ; _ } -> Some (Dir dir, Nametab.shortest_qualid_of_module obj_mp)
   | DirOpenModule _ -> Some (Dir dir, qid)
   | _ -> None
   in
-  List.map_filter map all
+  mods @ List.map_filter map all
 
 let locate_modtype qid =
   let all = Nametab.locate_extended_all_modtype qid in
@@ -864,7 +871,7 @@ let maybe_error_reject_univ_decl na udecl =
   let open GlobRef in
   match na, udecl with
   | _, None | Term (ConstRef _ | IndRef _ | ConstructRef _), Some _ -> ()
-  | (Term (VarRef _) | Syntactic _ | Dir _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
+  | (Term (VarRef _) | Syntactic _ | Dir _ | Module _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
     (* TODO Print na somehow *)
     user_err (str "This object does not support universe names.")
 
@@ -877,8 +884,7 @@ let print_any_name env sigma na udecl =
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp udecl
   | Term (VarRef sp) -> print_section_variable env sigma sp
   | Syntactic kn -> print_syntactic_def env kn
-  | Dir (Nametab.GlobDirRef.DirModule Nametab.{ obj_dir; obj_mp; _ } ) ->
-    print_module obj_mp
+  | Module mp -> print_module mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
   | Other (obj, info) -> info.print obj
@@ -888,7 +894,7 @@ let print_any_name env sigma na udecl =
     if not (DirPath.is_empty dir) then raise Not_found;
     str |> Global.lookup_named |> print_named_decl env sigma
 
-  with Not_found -> user_err (pr_qualid qid ++ spc () ++ str "not a defined object.")
+  with Not_found -> user_err ?loc:qid.loc (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name env sigma na udecl =
   match na with
@@ -940,7 +946,7 @@ let print_about_any ?loc env sigma k udecl =
       v 0 (
       print_syntactic_def env kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
-  | Dir _ | ModuleType _ | Undefined _ ->
+  | Dir _ | Module _ | ModuleType _ | Undefined _ ->
       hov 0 (pr_located_qualid k)
   | Other (obj, info) -> hov 0 (info.about obj)
 

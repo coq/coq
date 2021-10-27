@@ -84,7 +84,6 @@ module GlobDirRef : sig
     | DirOpenModule of object_prefix
     | DirOpenModtype of object_prefix
     | DirOpenSection of object_prefix
-    | DirModule of object_prefix
   val equal : t -> t -> bool
 end
 
@@ -109,6 +108,7 @@ val map_visibility : (int -> int) -> visibility -> visibility
 
 val push : visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
+val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
 
@@ -145,6 +145,7 @@ val locate_all : qualid -> GlobRef.t list
 val locate_extended_all : qualid -> extended_global_reference list
 val locate_extended_all_dir : qualid -> GlobDirRef.t list
 val locate_extended_all_modtype : qualid -> ModPath.t list
+val locate_extended_all_module : qualid -> ModPath.t list
 
 (** Experimental completion support, API is _unstable_ *)
 val completion_canditates : qualid -> extended_global_reference list
@@ -161,6 +162,7 @@ val extended_global_of_path : full_path -> extended_global_reference
 
 val exists_cci : full_path -> bool
 val exists_modtype : full_path -> bool
+val exists_module : DirPath.t -> bool
 val exists_dir : DirPath.t -> bool
 val exists_universe : full_path -> bool
 
