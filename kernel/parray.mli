@@ -23,6 +23,7 @@ val copy    : 'a t -> 'a t
 val map : ('a -> 'b) -> 'a t -> 'b t
 
 val to_array : 'a t -> 'a array * 'a (* default *)
+(* 'a should not be float (no Obj.double_tag) *)
 
 val of_array : 'a array -> 'a (* default *) -> 'a t
 
