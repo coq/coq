@@ -512,22 +512,24 @@ let restrict_evar evd evk filter ?src candidates =
   | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
   | _ -> Evd.restrict evk filter ?candidates ?src evd
 
-let rec check_and_clear_in_constr env evdref err ids global c =
+let rec check_and_clear_in_constr env evdref err ids globals c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
-     evars). [global] should be true iff there is some variable of [ids] which
-     is a section variable *)
+     evars). [globals] is a set of global references known not to depend on [ids] *)
     match kind c with
       | Var id' ->
       if Id.Set.mem id' ids then raise (ClearDependencyError (id', err, None)) else c
 
       | ( Const _ | Ind _ | Construct _ ) ->
-        let () = if global then
-          let check id' =
-            if Id.Set.mem id' ids then
-              raise (ClearDependencyError (id',err,Some (fst @@ destRef c)))
-          in
-          Id.Set.iter check (Environ.vars_of_global env (fst @@ destRef c))
+        let (gr, _) = destRef c in
+        let () =
+          if not @@ GlobRef.Set.mem gr !globals then
+            let check id' =
+              if Id.Set.mem id' ids then
+                raise (ClearDependencyError (id',err,Some gr))
+            in
+            let () = Id.Set.iter check (Environ.vars_of_global env gr) in
+            globals := GlobRef.Set.add gr !globals
         in
         c
 
@@ -536,7 +538,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
             (* If evk is already defined we replace it by its definition *)
             let nc = Evd.existential_value !evdref (EConstr.of_existential ev) in
             let nc = EConstr.Unsafe.to_constr nc in
-              (check_and_clear_in_constr env evdref err ids global nc)
+              (check_and_clear_in_constr env evdref err ids globals nc)
           else
             (* We check for dependencies to elements of ids in the
                evar_info corresponding to e and in the instance of
@@ -570,9 +572,9 @@ let rec check_and_clear_in_constr env evdref err ids global c =
             let _nconcl =
               try
                 let nids = Id.Map.domain rids in
-                let global = Id.Set.exists (fun id -> is_section_variable (Global.env ()) id) nids in
+                let globals = ref GlobRef.Set.empty in
                 let concl = EConstr.Unsafe.to_constr (evar_concl evi) in
-                check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids global concl
+                check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids globals concl
               with ClearDependencyError (rid,err,where) ->
                 raise (ClearDependencyError (Id.Map.find rid rids,err,where)) in
 
@@ -587,7 +589,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
               evdref := evd;
               Evd.existential_value0 !evdref ev
 
-      | _ -> Constr.map (check_and_clear_in_constr env evdref err ids global) c
+      | _ -> Constr.map (check_and_clear_in_constr env evdref err ids globals) c
 
 let clear_hyps_in_evi_main env sigma hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
@@ -595,13 +597,13 @@ let clear_hyps_in_evi_main env sigma hyps terms ids =
      the contexts of the evars occurring in evi *)
   let evdref = ref sigma in
   let terms = List.map EConstr.Unsafe.to_constr terms in
-  let global = Id.Set.exists (fun id -> is_section_variable (Global.env ()) id) ids in
+  let globals = ref GlobRef.Set.empty in
   let terms =
-    List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids global) terms in
+    List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids globals) terms in
   let nhyps =
     let check_context decl =
       let err = OccurHypInSimpleClause (Some (NamedDecl.get_id decl)) in
-      NamedDecl.map_constr (check_and_clear_in_constr env evdref err ids global) decl
+      NamedDecl.map_constr (check_and_clear_in_constr env evdref err ids globals) decl
     in
     let check_value vk = match force_lazy_val vk with
     | None -> vk
