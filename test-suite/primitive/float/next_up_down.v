@@ -4,22 +4,22 @@ Open Scope float_scope.
 
 Definition f0 := zero.
 Definition f1 := neg_zero.
-Definition f2 := Eval compute in ldexp one 0.
+Definition f2 := Eval compute in Z.ldexp one 0.
 Definition f3 := Eval compute in -f1.
 (* smallest positive float *)
-Definition f4 := Eval compute in ldexp one (-1074).
+Definition f4 := Eval compute in Z.ldexp one (-1074).
 Definition f5 := Eval compute in -f3.
 Definition f6 := infinity.
 Definition f7 := neg_infinity.
-Definition f8 := Eval compute in ldexp one (-1).
+Definition f8 := Eval compute in Z.ldexp one (-1).
 Definition f9 := Eval compute in -f8.
 Definition f10 := Eval compute in of_int63 42.
 Definition f11 := Eval compute in -f10.
 (* max float *)
-Definition f12 := Eval compute in ldexp (of_int63 9007199254740991) 1024.
+Definition f12 := Eval compute in Z.ldexp (of_int63 9007199254740991) 1024.
 Definition f13 := Eval compute in -f12.
 (* smallest positive normalized float *)
-Definition f14 := Eval compute in ldexp one (-1022).
+Definition f14 := Eval compute in Z.ldexp one (-1022).
 Definition f15 := Eval compute in -f14.
 
 Check (eq_refl : Prim2SF (next_up f0) = SF64succ (Prim2SF f0)).

@@ -1,6 +1,6 @@
 Require Import ZArith Floats.
 
-Definition epsilon := Eval compute in ldexp one (-1024)%Z.
+Definition epsilon := Eval compute in Z.ldexp one (-1024)%Z.
 
 Check (eq_refl : classify one = PNormal).
 Check (eq_refl : classify (- one)%float = NNormal).

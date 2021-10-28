@@ -10,9 +10,9 @@ Check (eq_refl three <: sqrt nine = three).
 Definition compute1 := Eval compute in sqrt nine.
 Check (eq_refl : three = three).
 
-Definition huge := Eval compute in ldexp one (1023)%Z.
-Definition tiny := Eval compute in ldexp one (-1023)%Z.
-Definition denorm := Eval compute in ldexp one (-1074)%Z.
+Definition huge := Eval compute in Z.ldexp one (1023)%Z.
+Definition tiny := Eval compute in Z.ldexp one (-1023)%Z.
+Definition denorm := Eval compute in Z.ldexp one (-1074)%Z.
 
 Goal (Prim2SF (sqrt huge) = SF64sqrt (Prim2SF huge)).
   now compute. Undo. now vm_compute.

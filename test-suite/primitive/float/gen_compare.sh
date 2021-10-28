@@ -9,9 +9,9 @@ cat <<EOF
 Require Import ZArith Floats.
 Local Open Scope float_scope.
 
-Definition min_denorm := Eval compute in ldexp one (-1074)%Z.
+Definition min_denorm := Eval compute in Z.ldexp one (-1074)%Z.
 
-Definition min_norm := Eval compute in ldexp one (-1024)%Z.
+Definition min_norm := Eval compute in Z.ldexp one (-1024)%Z.
 
 EOF
 

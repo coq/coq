@@ -18,15 +18,23 @@ Notation emin := (emin prec emax).
 
 Definition shift := 2101%Z. (** [= 2*emax + prec] *)
 
-Definition frexp f :=
-  let (m, se) := frshiftexp f in
-  (m, (φ se - shift)%Z%uint63).
+Module Z.
+  Definition frexp f :=
+    let (m, se) := frshiftexp f in
+    (m, (φ se - shift)%Z%uint63).
 
-Definition ldexp f e :=
-  let e' := Z.max (Z.min e (emax - emin)) (emin - emax - 1) in
-  ldshiftexp f (of_Z (e' + shift)).
+  Definition ldexp f e :=
+    let e' := Z.max (Z.min e (emax - emin)) (emin - emax - 1) in
+    ldshiftexp f (of_Z (e' + shift)).
+End Z.
 
-Definition ulp f := ldexp one (fexp prec emax (snd (frexp f))).
+#[deprecated(since = "8.15.0", note = "Use Z.frexp instead.")]
+Notation frexp := Z.frexp (only parsing).
+
+#[deprecated(since = "8.15.0", note = "Use Z.ldexp instead.")]
+Notation ldexp := Z.ldexp (only parsing).
+
+Definition ulp f := Z.ldexp one (fexp prec emax (snd (Z.frexp f))).
 
 (** [Prim2SF] is an injective function that will be useful to express
 the properties of the implemented Binary64 format (see [FloatAxioms]).
@@ -36,7 +44,7 @@ Definition Prim2SF f :=
   else if is_zero f then S754_zero (get_sign f)
        else if is_infinity f then S754_infinity (get_sign f)
             else
-              let (r, exp) := frexp f in
+              let (r, exp) := Z.frexp f in
               let e := (exp - prec)%Z in
               let (shr, e') := shr_fexp prec emax (φ (normfr_mantissa r))%uint63 e loc_Exact in
               match shr_m shr with
@@ -53,6 +61,6 @@ Definition SF2Prim ef :=
   | S754_infinity true => neg_infinity
   | S754_finite s m e =>
     let pm := of_uint63 (of_Z (Zpos m)) in
-    let f := ldexp pm e in
+    let f := Z.ldexp pm e in
     if s then (-f)%float else f
   end.
