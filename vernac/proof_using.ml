@@ -101,7 +101,7 @@ let definition_using env evd ~using ~terms =
 let name_set id expr =
   if Id.equal id all_collection_id then err_redefine_all_collection ();
   if is_known_name id then warn_redefine_collection id;
-  if Termops.is_section_variable id then warn_variable_shadowing id;
+  if Termops.is_section_variable (Global.env ()) id then warn_variable_shadowing id;
   known_names := (id,expr) :: !known_names
 
 let minimize_hyps env ids =
