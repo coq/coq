@@ -1642,9 +1642,6 @@ module Parsable = struct
   let make ?loc cs =
     let lexer_state = ref (L.State.init ()) in
     L.State.set !lexer_state;
-    (match loc with
-    | Some loc -> L.State.set_loc_offset Loc.(loc.bp)
-    | None -> ());
     let ts = L.tok_func ?loc cs in
     lexer_state := L.State.get ();
     {pa_tok_strm = ts; lexer_state}

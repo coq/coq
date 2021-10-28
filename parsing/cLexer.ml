@@ -392,7 +392,6 @@ let comm_loc bp = match !comment_begin with
 let comments = ref []
 let current_comment = Buffer.create 8192
 let between_commands = ref true
-let loc_offset = ref 0
 
 let real_push_char c = Buffer.add_char current_comment c
 
@@ -791,22 +790,21 @@ let rec next_token ~diff_mode loc s =
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 
-let next_token ~diff_mode loc s =
-  let (t,loc as r) = next_token ~diff_mode loc s in
-  let open Loc in
- (* Debug: uncomment this for tracing tokens seen by coq...*)
-(*  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" loc.line_nb loc.bp loc.ep (Tok.extract_string diff_mode t);*)
-  (t, {loc with bp = loc.bp + !loc_offset; ep = loc.ep + !loc_offset})
-
 (** {6 The lexer of Coq} *)
 
 let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
+  let bp_ = Loc.(loc.bp) in
   let cur_loc = ref loc in
   LStream.from ~loc
     (fun i ->
       let (tok, loc) = next_token !cur_loc cs in
       cur_loc := after loc;
-      Some (tok,loc))
+      let aloc = Loc.{loc with bol_pos = loc.bol_pos + bp_;
+                                    bp = loc.bp + bp_;
+                                    ep = loc.ep + bp_} in
+     (* Debug: uncomment this for tracing tokens seen by coq...*)
+     (*  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" aloc.line_nb aloc.bp aloc.ep (Tok.extract_string diff_mode t);*)
+      Some (tok,aloc))
 
 module MakeLexer (Diff : sig val mode : bool end) = struct
   type te = Tok.t
@@ -842,7 +840,6 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
       (!comment_begin, Buffer.contents current_comment, !between_commands, !comments)
     let drop () = set (init ())
     let get_comments (_,_,_,c) = c
-    let set_loc_offset off = loc_offset := off
 
   end
 end
