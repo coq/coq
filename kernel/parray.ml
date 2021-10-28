@@ -22,7 +22,7 @@ sig
   val of_array : 'a array -> 'a t
   val to_array : 'a t -> 'a array
   (* 'a should not be float (no Obj.double_tag) *)
-  val unsafe_of_array : 'a array -> 'a t
+  val unsafe_of_obj : Obj.t -> 'a t
 end =
 struct
   type 'a t = Obj.t array
@@ -51,9 +51,9 @@ struct
     let () = assert (not (Array.exists obj_is_float v)) in
     Obj.magic (Array.copy v)
 
-  let unsafe_of_array (type a) (v : a array) =
-    let () = assert (Obj.tag (Obj.repr v) != Obj.double_array_tag) in
-    (Obj.magic v : a t)
+  let unsafe_of_obj (type a) (v : Obj.t) =
+    let () = assert (Obj.tag v == 0) in
+    (Obj.obj v : a t)
 
   let unsafe_get = Obj.magic Array.unsafe_get
   let unsafe_set = Obj.magic Array.unsafe_set
@@ -84,7 +84,7 @@ and 'a kind =
   | Array of 'a UArray.t * 'a
   | Updated of int * 'a * 'a t
 
-let unsafe_of_array t def = ref (Array (UArray.unsafe_of_array t, def))
+let unsafe_of_obj t def = ref (Array (UArray.unsafe_of_obj t, def))
 let of_array t def = ref (Array (UArray.of_array t, def))
 
 let rec rerootk t k =

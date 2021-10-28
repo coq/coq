@@ -27,10 +27,10 @@ val to_array : 'a t -> 'a array * 'a (* default *)
 
 val of_array : 'a array -> 'a (* default *) -> 'a t
 
-val unsafe_of_array : 'a array -> 'a -> 'a t
-(* [unsafe_of_array] injects a mutable array into a persistent one, but does
-   not perform a copy. This means that if the persistent array is mutated, the
-   original one will be too. *)
+val unsafe_of_obj : Obj.t -> 'a -> 'a t
+(* [unsafe_of_obj] injects an untyped mutable array into a persistent one, but
+   does not perform a copy. This means that if the persistent array is mutated,
+   the original one will be too. The array must be a non-flat array. *)
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a
