@@ -83,3 +83,6 @@ val tag : ?loc:t -> 'a -> 'a located
 
 val map : ('a -> 'b) -> 'a located -> 'b located
 (** Modify an object carrying a location *)
+
+val pr : t -> Pp.t
+(** Print for user consumption. *)

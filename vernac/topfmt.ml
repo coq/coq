@@ -365,16 +365,7 @@ let in_phase ~phase f x =
     Exninfo.iraise iexn
 
 let pr_loc loc =
-    let fname = loc.Loc.fname in
-    match fname with
-    | Loc.ToplevelInput ->
-      Loc.(str"Toplevel input, characters " ++ int loc.bp ++
-           str"-" ++ int loc.ep ++ str":")
-    | Loc.InFile { file } ->
-      Loc.(str"File " ++ str "\"" ++ str file ++ str "\"" ++
-           str", line " ++ int loc.line_nb ++ str", characters " ++
-           int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
-           str":")
+  Loc.pr loc ++ str ":"
 
 let pr_phase ?loc () =
   match !default_phase, loc with

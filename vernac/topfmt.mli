@@ -65,7 +65,6 @@ type execution_phase =
 
 val in_phase : phase:execution_phase -> ('a -> 'b) -> 'a -> 'b
 
-val pr_loc : Loc.t -> Pp.t
 val pr_phase : ?loc:Loc.t -> unit -> Pp.t option
 val print_err_exn : exn -> unit
 
