@@ -34,8 +34,8 @@ let ssrposetac (id, (_, t)) =
     match t.Ssrast.interp_env with
     | Some ist -> ist, Ssrcommon.ssrterm_of_ast_closure_term t
     | None -> assert false in
-  let sigma, t, ucst, _ = pf_abs_ssrterm ist gl t in
-  posetac id t (pf_merge_uc ucst gl)
+  let gl, t, _ = pf_abs_ssrterm ist gl t in
+  posetac id t gl
   end
 
 let ssrsettac id ((_, (pat, pty)), (_, occ)) =
@@ -174,8 +174,7 @@ let havetac ist
      errorstrm (str"Suff have does not accept a proof term")
    | FwdHave, false, true ->
      let cty = combineCG cty hole (mkCArrow ?loc) mkRArrow in
-     let _,t,uc,_ = interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
-     let gl = pf_merge_uc uc gl in
+     let gl, t, _ = interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
      let gl, ty = pfe_type_of gl t in
      let ctx, _ = EConstr.decompose_prod_n_assum (project gl) 1 ty in
      let assert_is_conv gl =
@@ -190,13 +189,12 @@ let havetac ist
      let skols_args =
        List.map (fun id -> Ssripats.Internal.examine_abstract (EConstr.mkVar id) gl) skols in
      let gl = List.fold_right unlock_abs skols_args gl in
-     let sigma, t, uc, n_evars =
+     let gl, t, n_evars =
        interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
      if skols <> [] && n_evars <> 0 then
        CErrors.user_err (Pp.strbrk @@ "Automatic generalization of unresolved implicit "^
                      "arguments together with abstract variables is "^
                      "not supported");
-     let gl = re_sig (sig_it gl) (Evd.merge_universe_context sigma uc) in
      let gs =
        List.map (fun (_,a) ->
          Ssripats.Internal.pf_find_abstract_proof false gl (EConstr.Unsafe.to_constr a.(1))) skols_args in

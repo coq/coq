@@ -871,7 +871,9 @@ let pf_abs_ssrterm ?(resolve_typeclasses=false) ist gl t =
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma ct in
   let n, c, abstracted_away, ucst = pf_abs_evars gl t in
-  List.fold_left Evd.remove sigma abstracted_away, pf_abs_cterm gl n c, ucst, n
+  let t = pf_abs_cterm gl n c in
+  let gl = pf_merge_uc ucst gl in
+  gl, t, n
 
 let top_id = mk_internal_id "top assumption"
 

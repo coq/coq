@@ -309,7 +309,7 @@ val pf_abs_ssrterm :
            ist ->
            Goal.goal Evd.sigma ->
            ssrterm ->
-           evar_map * EConstr.t * UState.t * int
+           Goal.goal Evd.sigma * EConstr.t * int
 
 val pf_interp_ty :
            ?resolve_typeclasses:bool ->
