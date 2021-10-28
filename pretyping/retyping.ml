@@ -32,6 +32,7 @@ type retype_error =
   | NotASort
   | NotAnArity
   | NotAType
+  | BadRel
   | BadVariable of Id.t
   | BadMeta of int
   | BadRecursiveType
@@ -41,6 +42,7 @@ let print_retype_error = function
   | NotASort -> str "Not a sort"
   | NotAnArity -> str "Not an arity"
   | NotAType -> str "Not a type (1)"
+  | BadRel -> str "unbound local variable"
   | BadVariable id -> str "variable " ++ Id.print id ++ str " unbound"
   | BadMeta n -> str "unknown meta " ++ int n
   | BadRecursiveType -> str "Bad recursive type"
@@ -129,8 +131,10 @@ let retype ?(polyprop=true) sigma =
       (try strip_outer_cast sigma (Evd.meta_ftype sigma n).Evd.rebus
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
-        let ty = RelDecl.get_type (lookup_rel n env) in
-        lift n ty
+      let ty = try RelDecl.get_type (lookup_rel n env)
+        with Not_found -> retype_error BadRel
+      in
+      lift n ty
     | Var id -> type_of_var env id
     | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
     | Evar ev -> existential_type sigma ev

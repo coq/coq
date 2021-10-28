@@ -290,9 +290,9 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   in
   tclSOLVE tacl
 
-and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl =
+and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl0 =
   let open Proofview.Notations in
-  let prods, concl = EConstr.decompose_prod_assum sigma concl in
+  let prods, concl = EConstr.decompose_prod_assum sigma concl0 in
   let nprods = List.length prods in
   let allowed_evars =
     try
@@ -354,7 +354,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
          Tacticals.New.tclTHEN fst snd
       | Unfold_nth c ->
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
-      | Extern (p, tacast) -> conclPattern concl p tacast
+      | Extern (p, tacast) -> conclPattern concl0 p tacast
       in
       let tac = FullHint.run h tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in

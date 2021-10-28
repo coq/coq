@@ -1631,6 +1631,8 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let n = Array.length (snd (decompose_app_vect sigma c)) in
   let cgnd = if occur_meta_or_undefined_evar sigma c then NotGround else Ground in
   let matching_fun _ t =
+    (* make_pattern_test is only ever called with an empty rel context *)
+    if not (EConstr.Vars.closed0 sigma t) then raise (NotUnifiable None);
     try
       let t',l2 =
         if from_prefix_of_ind then
