@@ -177,7 +177,7 @@ and ``coqtop``, unless stated otherwise:
 
      :ref:`names-of-libraries` and the
      command Declare ML Module Section :ref:`compiled-files`.
-:-Q *directory* *dirpath*: Add physical path *directory* to the list of
+:-Q *directory dirpath*: Add physical path *directory* to the list of
   directories where Coq looks for a file and bind it to the logical
   directory *dirpath*. The subdirectory structure of *directory* is
   recursively available from Coq using absolute names (extending the
@@ -191,7 +191,7 @@ and ``coqtop``, unless stated otherwise:
   disallow two files differing only in the case in the same directory.
 
   .. seealso:: Section :ref:`names-of-libraries`.
-:-R *directory* *dirpath*: Do as ``-Q`` *directory* *dirpath* but make the
+:-R *directory dirpath*: Do as ``-Q`` *directory dirpath* but make the
   subdirectory structure of *directory* recursively visible so that the
   recursive contents of physical *directory* is available from Coq using
   short or partially qualified names.
@@ -231,7 +231,7 @@ and ``coqtop``, unless stated otherwise:
      :cmd:`Unset` commands will be executed in the order specified on
      the command-line.
 
-:-rfrom *dirpath* *qualid*: Load Coq compiled library :n:`@qualid`.
+:-rfrom *dirpath qualid*: Load Coq compiled library :n:`@qualid`.
   This is equivalent to running :cmd:`From <From … Require>`
   :n:`@dirpath` :cmd:`Require <From … Require>` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
@@ -244,13 +244,13 @@ and ``coqtop``, unless stated otherwise:
   This is equivalent to running :cmd:`Require Export` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
-:-rifrom *dirpath* *qualid*, -require-import-from *dirpath* *qualid*:
+:-rifrom *dirpath qualid*, -require-import-from *dirpath qualid*:
   Load Coq compiled library :n:`@qualid` and import it.  This is
   equivalent to running :cmd:`From <From … Require>` :n:`@dirpath`
   :cmd:`Require Import <From … Require>` :n:`@qualid`.  See the
   :ref:`note above <interleave-command-line>` regarding the order of
   command-line options.
-:-refrom *dirpath* *qualid*, -require-export-from *dirpath* *qualid*:
+:-refrom *dirpath qualid*, -require-export-from *dirpath qualid*:
   Load Coq compiled library :n:`@qualid` and transitively import it.
   This is equivalent to running :cmd:`From <From … Require>`
   :n:`@dirpath` :cmd:`Require Export <From … Require>` :n:`@qualid`.
