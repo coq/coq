@@ -489,10 +489,10 @@ let generate_type evd g_to_f f graph =
   in
   let named_ctxt = Id.Set.of_list (List.map_filter filter fun_ctxt) in
   let res_id =
-    Namegen.next_ident_away_in_goal (Id.of_string "_res") named_ctxt
+    Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string "_res") named_ctxt
   in
   let fv_id =
-    Namegen.next_ident_away_in_goal (Id.of_string "fv")
+    Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string "fv")
       (Id.Set.add res_id named_ctxt)
   in
   (*i we can then type the argument to be applied to the function [f] i*)
@@ -588,7 +588,7 @@ let find_induction_principle evd f =
 let rec generate_fresh_id x avoid i =
   if i == 0 then []
   else
-    let id = Namegen.next_ident_away_in_goal x (Id.Set.of_list avoid) in
+    let id = Namegen.next_ident_away_in_goal (Global.env ()) x (Id.Set.of_list avoid) in
     id :: generate_fresh_id x (id :: avoid) (pred i)
 
 let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i :
@@ -623,7 +623,7 @@ let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i :
          using a name
       *)
       let principle_id =
-        Namegen.next_ident_away_in_goal (Id.of_string "princ")
+        Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string "princ")
           (Id.Set.of_list ids)
       in
       let ids = principle_id :: ids in
@@ -969,7 +969,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
         | Ind _
           when EConstr.eq_constr sigma t
                  (EConstr.of_constr
-                    ( UnivGen.constr_of_monomorphic_global
+                    ( UnivGen.constr_of_monomorphic_global (Global.env ())
                     @@ Coqlib.lib_ref "core.False.type" )) ->
           tauto
         | Case (_, _, _, _, _, v, _) ->

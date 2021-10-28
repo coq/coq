@@ -333,15 +333,15 @@ let rec_pte_id = Id.of_string "Hrec"
 let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let coq_False =
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.False.type")
+      (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.False.type")
   in
   let coq_True =
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.True.type")
+      (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.True.type")
   in
   let coq_I =
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.True.I")
+      (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.True.I")
   in
   let open Tacticals.New in
   let rec scan_type context type_of_hyp : unit Proofview.tactic =
@@ -795,7 +795,7 @@ let generalize_non_dep hyp =
               Id.List.mem hyp hyps
               || List.exists (Termops.occur_var_in_decl env sigma hyp) keep
               || Termops.occur_var env sigma hyp hyp_typ
-              || Termops.is_section_variable hyp
+              || Termops.is_section_variable (Global.env ()) hyp
               (* should be dangerous *)
             then (clear, decl :: keep)
             else (hyp :: clear, keep))
@@ -1494,7 +1494,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
         | Value lemma -> EConstr.of_constr lemma
         | Not_needed ->
           EConstr.of_constr
-            ( UnivGen.constr_of_monomorphic_global
+            ( UnivGen.constr_of_monomorphic_global (Global.env ())
             @@ Coqlib.lib_ref "core.True.I" )
       in
       (*   let rec list_diff del_list check_list = *)
@@ -1512,7 +1512,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
         Proofview.Goal.enter (fun gls ->
             let hyps = Tacmach.New.pf_ids_of_hyps gls in
             let hid =
-              next_ident_away_in_goal (Id.of_string "prov")
+              next_ident_away_in_goal (Global.env ()) (Id.of_string "prov")
                 (Id.Set.of_list hyps)
             in
             tclTHENLIST

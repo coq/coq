@@ -31,14 +31,14 @@ module RelDecl = Context.Rel.Declaration
 
 open Coqlib
 
-let init_constant sigma rf = Evarutil.new_global sigma rf
+let init_constant sigma rf = Evd.fresh_global sigma rf
 let fix_sub_ref () = lib_ref "program.wf.fix_sub"
 let measure_on_R_ref () = lib_ref "program.wf.mr"
-let well_founded sigma = init_constant sigma (lib_ref "core.wf.well_founded")
+let well_founded sigma = init_constant (Global.env ()) sigma (lib_ref "core.wf.well_founded")
 
 let mkSubset sigma name typ prop =
   let open EConstr in
-  let sigma, app_h = Evarutil.new_global sigma (delayed_force build_sigma).typ in
+  let sigma, app_h = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).typ in
   sigma, mkApp (app_h, [| typ; mkLambda (make_annot name Sorts.Relevant, typ, prop) |])
 
 let make_qref s = qualid_of_string s
@@ -59,7 +59,7 @@ let get_sigmatypes sigma ~sort ~predsort =
     | PropF, TypeF -> "sig", TypeF
     | TypeF, (PropF|TypeF) -> "sigT", TypeF
   in
-  let sigma, ty = Evarutil.new_global sigma (lib_ref ("core."^which^".type")) in
+  let sigma, ty = Evd.fresh_global (Global.env ()) sigma (lib_ref ("core."^which^".type")) in
   let uinstance = snd (destRef sigma ty) in
   let intro = mkRef (lib_ref ("core."^which^".intro"), uinstance) in
   let p1 = mkRef (lib_ref ("core."^which^".proj1"), uinstance) in
@@ -146,7 +146,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
       it_mkLambda_or_LetIn measure letbinders,
       it_mkLambda_or_LetIn measure binders
     in
-    let sigma, comb = Evarutil.new_global sigma (delayed_force measure_on_R_ref) in
+    let sigma, comb = Evd.fresh_global (Global.env ()) sigma (delayed_force measure_on_R_ref) in
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
@@ -165,7 +165,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
     sigma, wfa :: [arg]
   in
   let _intern_env = push_rel_context intern_bl env in
-  let sigma, proj = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.proj1 in
+  let sigma, proj = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.proj1 in
   let wfargpred = mkLambda (make_annot (Name argid') Sorts.Relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
     mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
@@ -180,7 +180,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
                                       intern_fun_arity_prod) in
   let sigma, curry_fun =
     let wfpred = mkLambda (make_annot (Name argid') Sorts.Relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
-    let sigma, intro = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.intro in
+    let sigma, intro = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.intro in
     let arg = mkApp (intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
@@ -209,7 +209,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
   (* XXX: Previous code did parallel evdref update, so possible old
      weak ordering semantics may bite here. *)
   let sigma, def =
-    let sigma, h_a_term = Evarutil.new_global sigma (delayed_force fix_sub_ref) in
+    let sigma, h_a_term = Evd.fresh_global (Global.env ()) sigma (delayed_force fix_sub_ref) in
     let sigma, h_e_term = Evarutil.new_evar env sigma
         ~src:(Loc.tag @@ Evar_kinds.QuestionMark {
             Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Evar_kinds.Define false;
@@ -229,7 +229,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
       (* XXX: Mutating the evar_map in the hook! *)
       (* XXX: Likely the sigma is out of date when the hook is called .... *)
       let hook sigma { Declare.Hook.S.dref; _ } =
-        let sigma, h_body = Evarutil.new_global sigma dref in
+        let sigma, h_body = Evd.fresh_global (Global.env ()) sigma dref in
         let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
         let ty = EConstr.Unsafe.to_constr ty in

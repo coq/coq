@@ -34,7 +34,7 @@ let set_print_constr f = term_printer := f
 
 module EvMap = Evar.Map
 
-let evar_suggested_name evk sigma =
+let evar_suggested_name env sigma evk =
   let open Evd in
   let base_id evk' evi =
   match evar_ident evk' sigma with
@@ -45,7 +45,7 @@ let evar_suggested_name evk sigma =
   | _,Evar_kinds.QuestionMark {Evar_kinds.qm_name = Name id} -> id
   | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
   | _ ->
-      let env = reset_with_named_context evi.evar_hyps (Global.env()) in
+      let env = reset_with_named_context evi.evar_hyps env in
       Namegen.id_of_name_using_hdchar env sigma evi.evar_concl Anonymous
   in
   let names = EvMap.mapi base_id (undefined_map sigma) in
@@ -59,11 +59,11 @@ let evar_suggested_name evk sigma =
   let (_, n) = EvMap.fold fold names (false, 0) in
   if n = 0 then id else Nameops.add_suffix id (string_of_int (pred n))
 
-let pr_existential_key sigma evk =
+let pr_existential_key env sigma evk =
 let open Evd in
 match evar_ident evk sigma with
 | None ->
-  str "?" ++ Id.print (evar_suggested_name evk sigma)
+  str "?" ++ Id.print (evar_suggested_name env sigma evk)
 | Some id ->
   str "?" ++ Id.print id
 
@@ -127,7 +127,7 @@ let pr_evar_source env sigma = function
       let pp = match ido with
         | Some id -> str "?" ++ Id.print id
         | None ->
-          try pr_existential_key sigma evk
+          try pr_existential_key env sigma evk
           with (* defined *) Not_found -> str "an internal placeholder" in
      str "type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
@@ -327,7 +327,7 @@ let pr_evar_list env sigma l =
       str "==" ++ pr_evar_info env sigma evi ++
       pr_alias ev ++
       (if evi.evar_body == Evar_empty
-       then str " {" ++ pr_existential_key sigma ev ++ str "}"
+       then str " {" ++ pr_existential_key env sigma ev ++ str "}"
        else mt ()))
   in
   hv 0 (prlist_with_sep fnl pr l)
@@ -1069,8 +1069,8 @@ let ids_of_context env =
 let names_of_rel_context env =
   List.map RelDecl.get_name (rel_context env)
 
-let is_section_variable id =
-  try let _ = Global.lookup_named id in true
+let is_section_variable env id =
+  try let _ = Environ.lookup_named id env in true
   with Not_found -> false
 
 let global_of_constr sigma c =

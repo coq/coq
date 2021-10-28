@@ -405,7 +405,7 @@ let apply_coercion env sigma p hj typ_cl =
       (fun (ja,typ_cl,trace,sigma) i ->
          let isid = i.coe_is_identity in
          let isproj = i.coe_is_projection in
-         let sigma, c = new_global sigma i.coe_value in
+         let sigma, c = Evd.fresh_global env sigma i.coe_value in
          let u = instance_of_global_constr sigma c in
          let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
          let fv = make_judge c typ in
@@ -448,7 +448,7 @@ let mu env sigma t =
         let sigma, (f, ct, trace) = aux u in
         let p = hnf_nodelta env sigma p in
         let p1 = delayed_force sig_proj1 in
-        let sigma, p1 = Evarutil.new_global sigma p1 in
+        let sigma, p1 = Evd.fresh_global env sigma p1 in
         sigma,
           (Some (fun sigma x ->
                    app_opt env sigma

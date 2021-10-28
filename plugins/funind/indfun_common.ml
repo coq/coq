@@ -11,7 +11,7 @@ let mk_complete_id id = Nameops.add_suffix (mk_rel_id id) "_complete"
 let mk_equation_id id = Nameops.add_suffix id "_equation"
 
 let fresh_id avoid s =
-  Namegen.next_ident_away_in_goal (Id.of_string s) (Id.Set.of_list avoid)
+  Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string s) (Id.Set.of_list avoid)
 
 let fresh_name avoid s = Name (fresh_id avoid s)
 
@@ -73,7 +73,7 @@ let list_union_eq eq_fun l1 l2 =
   urec l1
 
 let list_add_set_eq eq_fun x l = if List.exists (eq_fun x) l then l else x :: l
-let coq_constant s = UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref s
+let coq_constant s = UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
@@ -383,14 +383,14 @@ exception ToShow of exn
 let jmeq () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global
+    EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ())
     @@ Coqlib.lib_ref "core.JMeq.type"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global
+    EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ())
     @@ Coqlib.lib_ref "core.JMeq.refl"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
@@ -414,7 +414,7 @@ let ltof_ref = function () -> find_reference ["Coq"; "Arith"; "Wf_nat"] "ltof"
 let make_eq () =
   try
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref "core.eq.type"))
+      (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.eq.type"))
   with _ -> assert false
 
 let evaluable_of_global_reference r =

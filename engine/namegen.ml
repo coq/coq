@@ -94,8 +94,8 @@ let is_constructor id =
   with Not_found ->
     false
 
-let is_section_variable id =
-  try let _ = Global.lookup_named id in true
+let is_section_variable env id =
+  try let _ = Environ.lookup_named id env in true
   with Not_found -> false
 
 (**********************************************************************)
@@ -334,16 +334,16 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
    - but if the name to use is not fresh in the current context, the fresh
      name is taken by finding a free subscript starting from 0 *)
 
-let next_ident_away_in_goal id avoid =
+let next_ident_away_in_goal env id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable id)) in
+  let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable env id)) in
   next_ident_away_from id bad
 
-let next_name_away_in_goal na avoid =
+let next_name_away_in_goal env na avoid =
   let id = match na with
     | Name id -> id
     | Anonymous -> default_non_dependent_ident in
-  next_ident_away_in_goal id avoid
+  next_ident_away_in_goal env id avoid
 
 (* 3- Looks for next fresh name outside a list that is moreover valid
    as a global identifier; the legacy algorithm is that if the name is
@@ -442,55 +442,55 @@ type renaming_flags =
   | RenamingForGoal
   | RenamingElsewhereFor of (Name.t list * constr)
 
-let next_name_for_display sigma flags =
+let next_name_for_display env sigma flags =
   match flags with
   | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern sigma env_t
-  | RenamingForGoal -> next_name_away_in_goal
+  | RenamingForGoal -> next_name_away_in_goal env
   | RenamingElsewhereFor env_t -> next_name_away_for_default_printing sigma env_t
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let compute_displayed_name_in_gen_poly noccurn_fun sigma flags avoid na c =
+let compute_displayed_name_in_gen_poly noccurn_fun env sigma flags avoid na c =
   match na with
   | Anonymous when noccurn_fun sigma 1 c ->
     (Anonymous,avoid)
   | _ ->
-    let fresh_id = next_name_for_display sigma flags na avoid in
+    let fresh_id = next_name_for_display env sigma flags na avoid in
     let idopt = if noccurn_fun sigma 1 c then Anonymous else Name fresh_id in
     (idopt, Id.Set.add fresh_id avoid)
 
 let compute_displayed_name_in = compute_displayed_name_in_gen_poly noccurn
 
-let compute_displayed_name_in_gen f sigma =
+let compute_displayed_name_in_gen f env sigma =
   (* only flag which does not need a constr, maybe to be refined *)
   let flag = RenamingForGoal in
-  compute_displayed_name_in_gen_poly f sigma flag
+  compute_displayed_name_in_gen_poly f env sigma flag
 
-let compute_and_force_displayed_name_in sigma flags avoid na c =
+let compute_and_force_displayed_name_in env sigma flags avoid na c =
   match na with
   | Anonymous when noccurn sigma 1 c ->
     (Anonymous,avoid)
   | _ ->
-    let fresh_id = next_name_for_display sigma flags na avoid in
+    let fresh_id = next_name_for_display env sigma flags na avoid in
     (Name fresh_id, Id.Set.add fresh_id avoid)
 
-let compute_displayed_let_name_in sigma flags avoid na c =
-  let fresh_id = next_name_for_display sigma flags na avoid in
+let compute_displayed_let_name_in env sigma flags avoid na c =
+  let fresh_id = next_name_for_display env sigma flags na avoid in
   (Name fresh_id, Id.Set.add fresh_id avoid)
 
-let rename_bound_vars_as_displayed sigma avoid env c =
-  let rec rename avoid env c =
+let rename_bound_vars_as_displayed env sigma avoid tenv c =
+  let rec rename avoid tenv c =
     match EConstr.kind sigma c with
     | Prod (na,c1,c2)  ->
         let na',avoid' =
-          compute_displayed_name_in sigma
-            (RenamingElsewhereFor (env,c2)) avoid na.binder_name c2 in
-        mkProd ({na with binder_name=na'}, c1, rename avoid' (na' :: env) c2)
+          compute_displayed_name_in env sigma
+            (RenamingElsewhereFor (tenv,c2)) avoid na.binder_name c2 in
+        mkProd ({na with binder_name=na'}, c1, rename avoid' (na' :: tenv) c2)
     | LetIn (na,c1,t,c2) ->
         let na',avoid' =
-          compute_displayed_let_name_in sigma
-            (RenamingElsewhereFor (env,c2)) avoid na.binder_name c2 in
-        mkLetIn ({na with binder_name=na'},c1,t, rename avoid' (na' :: env) c2)
-    | Cast (c,k,t) -> mkCast (rename avoid env c, k,t)
+          compute_displayed_let_name_in env sigma
+            (RenamingElsewhereFor (tenv,c2)) avoid na.binder_name c2 in
+        mkLetIn ({na with binder_name=na'},c1,t, rename avoid' (na' :: tenv) c2)
+    | Cast (c,k,t) -> mkCast (rename avoid tenv c, k,t)
     | _ -> c
   in
-  rename avoid env c
+  rename avoid tenv c

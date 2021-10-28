@@ -53,7 +53,7 @@ let hyp_id (SsrHyp (_, id)) = id
 let hyp_err ?loc msg id =
   CErrors.user_err ?loc Pp.(str msg ++ Id.print id)
 
-let not_section_id id = not (Termops.is_section_variable id)
+let not_section_id id = not (Termops.is_section_variable (Global.env ()) id)
 
 let hyps_ids = List.map hyp_id
 
@@ -1198,7 +1198,7 @@ let genclrtac cl cs clr =
       (fun type_err gl ->
          tclTHEN
            (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (UnivGen.constr_of_monomorphic_global @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
+             (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
            (fun gl -> raise type_err)
            gl))
     (old_cleartac clr)

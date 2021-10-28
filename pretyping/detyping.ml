@@ -153,8 +153,8 @@ match avoid with
     else RenamingElsewhereFor (fst env, c)
   in
   let na, avoid =
-    if let_in then compute_displayed_let_name_in sigma flags avoid na c
-    else compute_displayed_name_in sigma flags avoid na c
+    if let_in then compute_displayed_let_name_in (Global.env ()) sigma flags avoid na c
+    else compute_displayed_name_in (Global.env ()) sigma flags avoid na c
   in
   na, Nice avoid
 | Fast avoid ->
@@ -329,11 +329,11 @@ let computable sigma (nas, ccl) =
 let lookup_name_as_displayed env sigma t s =
   let rec lookup avoid n c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-        (match compute_displayed_name_in sigma RenamingForGoal avoid name.binder_name c' with
+        (match compute_displayed_name_in (Global.env ()) sigma RenamingForGoal avoid name.binder_name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
            | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
-        (match Namegen.compute_displayed_name_in sigma RenamingForGoal avoid name.binder_name c' with
+        (match Namegen.compute_displayed_name_in (Global.env ()) sigma RenamingForGoal avoid name.binder_name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
            | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
@@ -343,7 +343,7 @@ let lookup_name_as_displayed env sigma t s =
 let lookup_index_as_renamed env sigma t n =
   let rec lookup n d c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
+          (match Namegen.compute_displayed_name_in (Global.env ()) sigma RenamingForGoal Id.Set.empty name.binder_name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
                  if Int.equal n 0 then
@@ -353,7 +353,7 @@ let lookup_index_as_renamed env sigma t n =
                  else
                    lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
+          (match Namegen.compute_displayed_name_in (Global.env ()) sigma RenamingForGoal Id.Set.empty name.binder_name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
                  if Int.equal n 0 then
@@ -832,7 +832,7 @@ and detype_r d flags avoid env sigma t =
       let id,l =
         try
           let id = match Evd.evar_ident evk sigma with
-          | None -> Termops.evar_suggested_name evk sigma
+          | None -> Termops.evar_suggested_name (Global.env ()) sigma evk
           | Some id -> id
           in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in

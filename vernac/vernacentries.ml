@@ -532,7 +532,7 @@ let vernac_custom_entry ~module_local s =
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
-  if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable id ||
+  if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable (Global.env ()) id ||
      locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")

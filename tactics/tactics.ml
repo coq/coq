@@ -153,7 +153,7 @@ let clear_dependency_msg env sigma id err inglobal =
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot remove " ++ ppid id ++ str " as it would leave the existential " ++
-      Printer.pr_existential_key sigma ev ++ str" without candidates."
+      Printer.pr_existential_key env sigma ev ++ str" without candidates."
 
 let replacing_dependency_msg env sigma id err inglobal =
   let pp = clear_in_global_msg inglobal in
@@ -169,7 +169,7 @@ let replacing_dependency_msg env sigma id err inglobal =
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot change " ++ Id.print id ++ str " as it would leave the existential " ++
-      Printer.pr_existential_key sigma ev ++ str" without candidates."
+      Printer.pr_existential_key env sigma ev ++ str" without candidates."
 
 let msg_quantified_hypothesis = function
   | NamedHyp id ->
@@ -502,7 +502,7 @@ let rename_hyp repl =
 let fresh_id_in_env avoid id env =
   let avoid' = ids_of_named_context_val (named_context_val env) in
   let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid in
-  next_ident_away_in_goal id avoid
+  next_ident_away_in_goal (Global.env ()) id avoid
 
 let fresh_id avoid id gl =
   fresh_id_in_env avoid id (Tacmach.pf_env gl)
@@ -2798,7 +2798,7 @@ let pose_tac na c =
       id
     | Anonymous ->
       let id = id_of_name_using_hdchar env sigma t Anonymous in
-      next_ident_away_in_goal id (ids_of_named_context_val hyps)
+      next_ident_away_in_goal (Global.env ()) id (ids_of_named_context_val hyps)
     in
     Proofview.Unsafe.tclEVARS sigma <*>
     Refine.refine ~typecheck:false begin fun sigma ->
@@ -3699,12 +3699,12 @@ let make_up_names n ind_opt cname =
 
 let error_ind_scheme s = error (NotAnInductionScheme s)
 
-let coq_eq sigma       = Evarutil.new_global sigma Coqlib.(lib_ref "core.eq.type")
-let coq_eq_refl sigma  = Evarutil.new_global sigma Coqlib.(lib_ref "core.eq.refl")
+let coq_eq sigma       = Evd.fresh_global (Global.env ()) sigma Coqlib.(lib_ref "core.eq.type")
+let coq_eq_refl sigma  = Evd.fresh_global (Global.env ()) sigma Coqlib.(lib_ref "core.eq.refl")
 
 let coq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
-let coq_heq sigma      = Evarutil.new_global sigma (Lazy.force coq_heq_ref)
-let coq_heq_refl sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.JMeq.refl")
+let coq_heq sigma      = Evd.fresh_global (Global.env ()) sigma (Lazy.force coq_heq_ref)
+let coq_heq_refl sigma = Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "core.JMeq.refl")
 (* let coq_heq_refl = lazy (glob (lib_ref "core.JMeq.refl")) *)
 
 let mkEq sigma t x y =
