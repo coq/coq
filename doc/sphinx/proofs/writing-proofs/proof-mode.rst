@@ -304,6 +304,15 @@ When the proof is completed, you can exit proof mode with commands such as
    :n:`All`
      Use all section variables.
 
+   .. warn:: @ident is both name of a Collection and Variable, Collection @ident takes precedence over Variable.
+
+      If a specified name is ambiguous (it could be either a :cmd:`Collection` or a :cmd:`Variable`),
+      then it is assumed to be a :cmd:`Collection` name.
+
+   .. warn:: Variable All is shadowed by Collection named All containing all variables.
+
+      This is variant of the previous warning for the **All** collection.
+
    .. seealso:: :ref:`tactics-implicit-automation`
 
 .. attr:: using
@@ -382,6 +391,20 @@ Name a set of section hypotheses for ``Proof using``
       ``Fewer`` and the unnamed collection ``x y``::
 
          Collection Many := Fewer - (x y)
+
+   .. exn:: "All" is a predefined collection containing all variables. It can't be redefined.
+
+      When issuing a :cmd:`Proof using` command, **All** used as a collection name always means
+      "use all variables".
+
+   .. warn:: New Collection definition of @ident shadows the previous one.
+
+      Redefining a :cmd:`Collection` overwrites the previous definition.
+
+   .. warn:: @ident was already a defined Variable, the name @ident will refer to Collection when executing "Proof using" command.
+
+      The :cmd:`Proof using` command allows specifying both :cmd:`Collection` and
+      :cmd:`Variable` names. In case of ambiguity, a name is assumed to be Collection name.
 
 Proof modes
 -----------

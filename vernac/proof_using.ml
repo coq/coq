@@ -16,7 +16,10 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
+let all_collection_id = Id.of_string "All"
 let known_names = Summary.ref [] ~name:"proofusing-nameset"
+
+let is_known_name id = CList.mem_assoc_f Id.equal id !known_names
 
 let rec close_fwd env sigma s =
   let s' =
@@ -41,7 +44,24 @@ let set_of_type env sigma ty =
 let full_set env =
   List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
+let warn_all_collection_precedence = CWarnings.create ~name:"all-collection-precedence" ~category:"deprecated"
+    Pp.(fun () -> str "Variable " ++ Id.print all_collection_id ++ str " is shadowed by Collection named " ++ Id.print all_collection_id ++ str " containing all variables.")
+
+let warn_collection_precedence = CWarnings.create ~name:"collection-precedence" ~category:"deprecated"
+    Pp.(fun id -> Id.print id ++ str " is both name of a Collection and Variable, Collection " ++ Id.print id ++ str " takes precedence over Variable.")
+
+let warn_redefine_collection = CWarnings.create ~name:"collection-redefinition" ~category:"deprecated"
+    Pp.(fun id -> str "New Collection definition of " ++ Id.print id ++ str " shadows the previous one.")
+
+let warn_variable_shadowing = CWarnings.create ~name:"variable-shadowing" ~category:"deprecated"
+    Pp.(fun id -> Id.print id ++ str " was already a defined Variable, the name " ++ Id.print id ++ str " will refer to Collection when executing \"Proof using\" command.")
+
+let err_redefine_all_collection () =
+  CErrors.user_err Pp.(str "\"" ++ Id.print all_collection_id ++ str "\" is a predefined collection containing all variables. It can't be redefined.")
+
 let process_expr env sigma e v_ty =
+  let variable_exists id =
+    try ignore (lookup_named id env); true with | Not_found -> false in
   let rec aux = function
     | SsEmpty -> Id.Set.empty
     | SsType -> v_ty
@@ -51,10 +71,18 @@ let process_expr env sigma e v_ty =
     | SsCompl e -> Id.Set.diff (full_set env) (aux e)
     | SsFwdClose e -> close_fwd env sigma (aux e)
   and set_of_id id =
-    if Id.to_string id = "All" then
-      full_set env
-    else if CList.mem_assoc_f Id.equal id !known_names then
-      aux (CList.assoc_f Id.equal id !known_names)
+    if Id.equal id all_collection_id then
+      begin
+        if variable_exists all_collection_id then
+          warn_all_collection_precedence ();
+        full_set env
+      end
+    else if is_known_name id then
+      begin
+        if variable_exists id then
+          warn_collection_precedence id;
+        aux (CList.assoc_f Id.equal id !known_names)
+      end
     else Id.Set.singleton id
   in
   aux e
@@ -70,7 +98,11 @@ let definition_using env evd ~using ~terms =
   let l = process_expr env evd using terms in
   Names.Id.Set.(List.fold_right add l empty)
 
-let name_set id expr = known_names := (id,expr) :: !known_names
+let name_set id expr =
+  if Id.equal id all_collection_id then err_redefine_all_collection ();
+  if is_known_name id then warn_redefine_collection id;
+  if Termops.is_section_variable id then warn_variable_shadowing id;
+  known_names := (id,expr) :: !known_names
 
 let minimize_hyps env ids =
   let rec aux ids =
