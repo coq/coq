@@ -295,10 +295,6 @@ val discharge_hyp :
            Id.t * (Id.t * string) ->
            Goal.goal Evd.sigma -> Evar.t list Evd.sigma
 
-val clear_wilds_and_tmp_and_delayed_ids :
-           (Goal.goal * tac_ctx) Evd.sigma ->
-           (Goal.goal * tac_ctx) list Evd.sigma
-
 val view_error : string -> ssrterm -> 'a
 
 

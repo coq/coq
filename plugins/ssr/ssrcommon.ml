@@ -823,26 +823,6 @@ let discharge_hyp (id', (id, mode)) gl =
      Proofview.V82.of_tactic
        (convert_concl ~check:true (EConstr.of_constr (mkLetIn (id', v, t, cl')))) gl
 
-(* wildcard names *)
-let clear_wilds wilds gl =
-  Proofview.V82.of_tactic (Tactics.clear (List.filter (fun id -> List.mem id wilds) (pf_ids_of_hyps gl))) gl
-
-let clear_with_wilds wilds clr0 gl =
-  let extend_clr clr nd =
-    let id = NamedDecl.get_id nd in
-    if List.mem id clr || not (List.mem id wilds) then clr else
-    let vars = Termops.global_vars_set_of_decl (pf_env gl) (project gl) nd in
-    let occurs id' = Id.Set.mem id' vars in
-    if List.exists occurs clr then id :: clr else clr in
-  Proofview.V82.of_tactic (Tactics.clear (Context.Named.fold_inside extend_clr ~init:clr0 (Tacmach.pf_hyps gl))) gl
-
-let clear_wilds_and_tmp_and_delayed_ids gl =
-  let _, ctx = pull_ctx gl in
-  tac_ctx
-   (tclTHEN
-    (clear_with_wilds ctx.wild_ids ctx.delayed_clears)
-    (clear_wilds (List.map fst ctx.tmp_ids @ ctx.wild_ids))) gl
-
 let view_error s gv =
   errorstrm (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)
 
