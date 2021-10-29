@@ -20,20 +20,50 @@ type object_name = Libnames.full_path * Names.KerName.t
 
 type open_filter =
   | Unfiltered
+  | Filtered of CString.Pred.t
 
+type category = string
 
-let simple_open f filter i o = match filter with
-  | Unfiltered -> f i o
+let known_cats = ref CString.Set.empty
 
+let create_category s =
+  let cats' = CString.Set.add s !known_cats in
+  if !known_cats == cats' then CErrors.anomaly Pp.(str "create_category called twice on " ++ str s);
+  known_cats := cats';
+  s
+
+let unfiltered = Unfiltered
+let make_filter ~finite cats =
+  if CList.is_empty cats then CErrors.anomaly Pp.(str "Libobject.make_filter got an empty list.");
+  let cats = List.fold_left
+      (fun cats CAst.{v=cat;loc} ->
+         if not (CString.Set.mem cat !known_cats)
+         then CErrors.user_err ?loc Pp.(str "Unknown import category " ++ str cat ++ str".");
+         CString.Pred.add cat cats)
+      CString.Pred.empty
+      cats
+  in
+  let cats = if finite then cats else CString.Pred.complement cats in
+  Filtered cats
+
+let in_filter ~cat f =
+  match cat, f with
+  | _, Unfiltered -> true
+  | None, Filtered f -> not (CString.Pred.is_finite f)
+  | Some cat, Filtered f -> CString.Pred.mem cat f
+
+let simple_open ?cat f filter i o = if in_filter ~cat filter then f i o
 
 let filter_and f1 f2 = match f1, f2 with
-  | Unfiltered, f -> Some f
+  | Unfiltered, f | f, Unfiltered -> Some f
+  | Filtered f1, Filtered f2 ->
+    let f = CString.Pred.inter f1 f2 in
+    if CString.Pred.is_empty f then None
+    else Some (Filtered f)
 
 let filter_or f1 f2 = match f1, f2 with
-  | Unfiltered, f -> Unfiltered
-
-let in_filter_ref gr = function
-  | Unfiltered -> true
+  | Unfiltered, f | f, Unfiltered -> Unfiltered
+  | Filtered f1, Filtered f2 -> Filtered (CString.Pred.union f1 f2)
 
 type 'a object_declaration = {
   object_name : string;
@@ -160,11 +190,11 @@ let local_object s ~cache ~discharge =
   { (local_object_nodischarge s ~cache) with
     discharge_function = discharge }
 
-let global_object_nodischarge s ~cache ~subst =
+let global_object_nodischarge ?cat s ~cache ~subst =
   let import i o = if Int.equal i 1 then cache o in
   { (default_object s) with
     cache_function = cache;
-    open_function = simple_open import;
+    open_function = simple_open ?cat import;
     subst_function = (match subst with
         | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
         | Some subst -> subst;
@@ -173,8 +203,8 @@ let global_object_nodischarge s ~cache ~subst =
       if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
   }
 
-let global_object s ~cache ~subst ~discharge =
-  { (global_object_nodischarge s ~cache ~subst) with
+let global_object ?cat s ~cache ~subst ~discharge =
+  { (global_object_nodischarge ?cat s ~cache ~subst) with
     discharge_function = discharge }
 
 let superglobal_object_nodischarge s ~cache ~subst =

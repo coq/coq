@@ -341,7 +341,7 @@ let load_require _ (_,(needed,modl,_)) =
 
 let open_require i (_,(_,modl,export)) =
   Option.iter (fun export ->
-      let mpl = List.map (fun m -> Unfiltered, MPfile m) modl in
+      let mpl = List.map (fun m -> unfiltered, MPfile m) modl in
       (* TODO support filters in Require *)
       Declaremods.import_modules ~export mpl)
     export
@@ -383,7 +383,7 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
       add_anonymous_leaf (in_require (needed,modrefl,None));
       Option.iter (fun export ->
           (* TODO import filters *)
-          List.iter (fun m -> Declaremods.import_module Unfiltered ~export (MPfile m)) modrefl)
+          List.iter (fun m -> Declaremods.import_module unfiltered ~export (MPfile m)) modrefl)
         export
     end
   else

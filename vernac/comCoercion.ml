@@ -257,9 +257,11 @@ let rebuild_coercion c =
 let classify_coercion obj =
   if obj.coe_local then Dispose else Substitute obj
 
+let coe_cat = create_category "coercions"
+
 let inCoercion : coe_info_typ -> obj =
   declare_object {(default_object "COERCION") with
-    open_function = simple_open open_coercion;
+    open_function = simple_open ~cat:coe_cat open_coercion;
     cache_function = cache_coercion;
     subst_function = (fun (subst,c) -> subst_coercion subst c);
     classify_function = classify_coercion;

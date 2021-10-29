@@ -109,6 +109,11 @@ type instance_flag  = BackInstance | NoInstance
 
 type export_flag    = bool (* true = Export;        false = Import         *)
 
+type import_categories = {
+  negative : bool;
+  import_cats : string CAst.t list;
+}
+
 type infix_flag     = bool (* true = Infix;         false = Notation       *)
 
 type one_import_filter_name = qualid * bool (* import inductive components *)
@@ -346,7 +351,7 @@ type nonrec vernac_expr =
   | VernacEndSegment of lident
   | VernacRequire of
       qualid option * export_flag option * qualid list
-  | VernacImport of export_flag * (qualid * import_filter_expr) list
+  | VernacImport of export_flag * import_categories option * (qualid * import_filter_expr) list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *
       class_rawexpr * class_rawexpr

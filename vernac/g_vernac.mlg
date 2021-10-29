@@ -574,13 +574,21 @@ GRAMMAR EXTEND Gram
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
         ; qidl = LIST1 global ->
         { VernacRequire (Some ns, export, qidl) }
-      | IDENT "Import"; qidl = LIST1 filtered_import -> { VernacImport (false,qidl) }
-      | IDENT "Export"; qidl = LIST1 filtered_import -> { VernacImport (true,qidl) }
+      | IDENT "Import"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
+        { VernacImport (false,cats,qidl) }
+      | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
+        { VernacImport (true,cats,qidl) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
           { VernacInclude(e::l) }
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
          { warn_deprecated_include_type ~loc ();
         VernacInclude(e::l) } ] ]
+  ;
+  import_categories:
+  [ [ negative = OPT "-"; "("; cats = LIST1 qualid SEP ","; ")" ->
+      { let cats = List.map (fun cat -> CAst.make ?loc:cat.CAst.loc (Libnames.string_of_qualid cat)) cats in
+        { negative=Option.has_some negative; import_cats = cats } }
+  ] ]
   ;
   filtered_import:
     [ [ m = global -> { (m, ImportAll) }

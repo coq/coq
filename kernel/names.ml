@@ -65,16 +65,9 @@ struct
 
   let print id = str id
 
-  module Self =
-  struct
-    type t = string
-    let compare = compare
-  end
-
-  module Set = Set.Make(Self)
-  module Map = CMap.Make(Self)
-
-  module Pred = Predicate.Make(Self)
+  module Set = CString.Set
+  module Map = CString.Map
+  module Pred = CString.Pred
 
   module List = String.List
 

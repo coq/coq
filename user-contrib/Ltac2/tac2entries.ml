@@ -706,10 +706,12 @@ let subst_synext (subst, syn) =
 let classify_synext o =
   if o.synext_loc then Dispose else Substitute o
 
+let ltac2_notation_cat = Libobject.create_category "ltac2.notations"
+
 let inTac2Notation : synext -> obj =
   declare_object {(default_object "TAC2-NOTATION") with
      cache_function  = cache_synext;
-     open_function   = simple_open open_synext;
+     open_function   = simple_open ~cat:ltac2_notation_cat open_synext;
      subst_function = subst_synext;
      classify_function = classify_synext}
 
@@ -740,7 +742,7 @@ let inTac2Abbreviation : abbreviation -> obj =
   declare_object {(default_object "TAC2-ABBREVIATION") with
      cache_function  = cache_abbreviation;
      load_function   = load_abbreviation;
-     open_function   = simple_open open_abbreviation;
+     open_function   = simple_open ~cat:ltac2_notation_cat open_abbreviation;
      subst_function = subst_abbreviation;
      classify_function = classify_abbreviation}
 

@@ -711,6 +711,10 @@ constructor: [
 | ident LIST0 binder OPT of_type
 ]
 
+import_categories: [
+| OPT "-" "(" LIST1 qualid SEP "," ")"
+]
+
 filtered_import: [
 | qualid OPT [ "(" LIST1 ( qualid OPT [ "(" ".." ")" ] ) SEP "," ")" ]
 ]
@@ -1059,8 +1063,8 @@ command: [
 | "End" ident
 | "Collection" ident ":=" section_var_expr
 | OPT [ "From" dirpath ] "Require" OPT [ "Import" | "Export" ] LIST1 qualid
-| "Import" LIST1 filtered_import
-| "Export" LIST1 filtered_import
+| "Import" OPT import_categories LIST1 filtered_import
+| "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )
 | "Include" "Type" LIST1 module_type_inl SEP "<+"
 | "Transparent" LIST1 reference

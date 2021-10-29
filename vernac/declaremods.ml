@@ -81,11 +81,10 @@ module ModSubstObjs :
 
 let sobjs_no_functor (mbids,_) = List.is_empty mbids
 
-let subst_filtered sub (f,mp) =
-  let f = match f with
-    | Unfiltered -> Unfiltered
-  in
-  f, subst_mp sub mp
+let subst_filtered sub (f,mp as x) =
+  let mp' = subst_mp sub mp in
+  if mp == mp' then x
+  else f, mp'
 
 let rec subst_aobjs sub = function
   | Objs o as objs ->
@@ -366,9 +365,7 @@ and open_module f i obj_dir obj_mp sobjs =
   let prefix = Nametab.{ obj_dir ; obj_mp; } in
   let dirinfo = Nametab.GlobDirRef.DirModule prefix in
   consistency_checks true obj_dir dirinfo;
-  (match f with
-   | Unfiltered -> Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo
-  );
+  if in_filter ~cat:None f then Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo;
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let modobjs = ModObjs.get obj_mp in
@@ -411,7 +408,7 @@ and cache_include ((sp,kn), aobjs) =
   let prefix = Nametab.{ obj_dir; obj_mp; } in
   let o = expand_aobjs aobjs in
   load_objects 1 prefix o;
-  open_objects Unfiltered 1 prefix o
+  open_objects unfiltered 1 prefix o
 
 and cache_keep ((sp,kn),kobjs) =
   anomaly (Pp.str "This module should not be cached!")

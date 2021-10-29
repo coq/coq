@@ -125,6 +125,14 @@ let pr_ltac_ref = Libnames.pr_qualid
 
 let pr_module = Libnames.pr_qualid
 
+let pr_import_cats = function
+  | None -> mt()
+  | Some {negative;import_cats=cats} ->
+    (if negative then str "-" else mt()) ++
+    str "(" ++
+    prlist_with_sep (fun () -> str ",") (fun x -> str x.v) cats ++
+    str ")"
+
 let pr_one_import_filter_name (q,etc) =
   Libnames.pr_qualid q ++ if etc then str "(..)" else mt()
 
@@ -938,9 +946,9 @@ let pr_vernac_expr v =
         (from ++ keyword "Require" ++ spc() ++ pr_require_token exp ++
          prlist_with_sep sep pr_module l)
     )
-  | VernacImport (f,l) ->
+  | VernacImport (f,cats,l) ->
     return (
-      (if f then keyword "Export" else keyword "Import") ++ spc() ++
+      (if f then keyword "Export" else keyword "Import") ++ pr_import_cats cats ++ spc() ++
       prlist_with_sep sep pr_import_module l
     )
   | VernacCanonical q ->

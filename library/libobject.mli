@@ -72,7 +72,7 @@ type 'a substitutivity =
 
 type object_name = full_path * Names.KerName.t
 
-type open_filter = Unfiltered
+type open_filter
 
 type 'a object_declaration = {
   object_name : string;
@@ -84,15 +84,33 @@ type 'a object_declaration = {
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
-val simple_open : (int -> object_name * 'a -> unit) -> open_filter -> int -> object_name * 'a -> unit
-(** Combinator for making objects which are only opened by unfiltered Import *)
+val unfiltered : open_filter
+
+val make_filter : finite:bool -> string CAst.t list -> open_filter
+(** Anomaly when the list is empty. *)
+
+type category
+
+val create_category : string -> category
+(** Anomaly if called more than once for a given string. *)
+
+val in_filter : cat:category option -> open_filter -> bool
+(** On [cat:None], returns whether the filter allows opening
+   uncategorized objects.
+
+    On [cat:(Some category)], returns whether the filter allows
+   opening objects in the given [category]. *)
+
+val simple_open : ?cat:category -> (int -> object_name * 'a -> unit) ->
+  open_filter -> int -> object_name * 'a -> unit
+(** Combinator for making objects with simple category-based open
+   behaviour. When [cat:None], can be opened by Unfiltered, but also
+   by Filtered with a negative set. *)
 
 val filter_and : open_filter -> open_filter -> open_filter option
 (** Returns [None] when the intersection is empty. *)
 
 val filter_or :  open_filter -> open_filter -> open_filter
-
-val in_filter_ref : Names.GlobRef.t -> open_filter -> bool
 
 (** The default object is a "Keep" object with empty methods.
    Object creators are advised to use the construction
@@ -170,13 +188,13 @@ val local_object_nodischarge : string ->
   cache:(object_name * 'a -> unit) ->
   'a object_declaration
 
-val global_object : string ->
+val global_object : ?cat:category -> string ->
   cache:(object_name * 'a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:(object_name * 'a -> 'a option) ->
   'a object_declaration
 
-val global_object_nodischarge : string ->
+val global_object_nodischarge : ?cat:category -> string ->
   cache:(object_name * 'a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   'a object_declaration

@@ -65,6 +65,8 @@ sig
   module Map : CMap.ExtS with type key = t and module Set := Set
   (** Finite maps on [string] *)
 
+  module Pred : Predicate.S with type elt = t
+
   module List : CList.MonoS with type elt = t
   (** Association lists with [string] as keys *)
 
