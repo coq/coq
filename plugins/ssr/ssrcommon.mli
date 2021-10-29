@@ -292,8 +292,7 @@ val mkRefl :
   Goal.goal Evd.sigma -> EConstr.t * Goal.goal Evd.sigma
 
 val discharge_hyp :
-           Id.t * (Id.t * string) ->
-           Goal.goal Evd.sigma -> Evar.t list Evd.sigma
+           Id.t * (Id.t * string) -> unit Proofview.tactic
 
 val view_error : string -> ssrterm -> 'a
 

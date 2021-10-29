@@ -502,8 +502,8 @@ let ssrevaltac ist gtac = Tacinterp.tactic_of_value ist gtac
 
 let env_size env = List.length (Environ.named_context env)
 
-let pf_concl gl = EConstr.Unsafe.to_constr (pf_concl gl)
-let pf_get_hyp gl x = EConstr.Unsafe.to_named_decl (pf_get_hyp gl x)
+let pf_concl gl = EConstr.Unsafe.to_constr (Tacmach.New.pf_concl gl)
+let pf_get_hyp gl x = EConstr.Unsafe.to_named_decl (Tacmach.New.pf_get_hyp x gl)
 
 let pf_e_type_of gl t =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
@@ -809,19 +809,20 @@ let mkRefl t c gl =
   let (sigma, refl) = EConstr.fresh_global (pf_env gl) sigma Coqlib.(lib_ref "core.eq.refl") in
   EConstr.mkApp (refl, [|t; c|]), { gl with sigma }
 
-let discharge_hyp (id', (id, mode)) gl =
+let discharge_hyp (id', (id, mode)) =
+  Proofview.Goal.enter begin fun gl ->
   let cl' = Vars.subst_var id (pf_concl gl) in
   let decl = pf_get_hyp gl id in
   match decl, mode with
   | NamedDecl.LocalAssum _, _ | NamedDecl.LocalDef _, "(" ->
     let id' = {(NamedDecl.get_annot decl) with binder_name = Name id'} in
-    Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true
+    Tactics.apply_type ~typecheck:true
                                (EConstr.of_constr (mkProd (id', NamedDecl.get_type decl, cl')))
-       [EConstr.of_constr (mkVar id)]) gl
+       [EConstr.of_constr (mkVar id)]
   | NamedDecl.LocalDef (_, v, t), _ ->
     let id' = {(NamedDecl.get_annot decl) with binder_name = Name id'} in
-     Proofview.V82.of_tactic
-       (convert_concl ~check:true (EConstr.of_constr (mkLetIn (id', v, t, cl')))) gl
+    convert_concl ~check:true (EConstr.of_constr (mkLetIn (id', v, t, cl')))
+  end
 
 let view_error s gv =
   errorstrm (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)

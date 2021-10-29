@@ -504,7 +504,7 @@ let equality_inj l b id c = Proofview.Goal.enter begin fun gl ->
         let open Proofview.Notations in
         Ssrcommon.tacTYPEOF (EConstr.mkVar id) >>= fun ty ->
         nothing_to_inject (Proofview.Goal.sigma gl, Proofview.Goal.env gl, ty);
-        Proofview.V82.tactic (discharge_hyp (id, (id, "")))
+        discharge_hyp (id, (id, ""))
     | (e,info) -> Proofview.tclZERO ~info e)
   end
 
