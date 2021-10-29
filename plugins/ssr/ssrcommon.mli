@@ -300,12 +300,12 @@ val view_error : string -> ssrterm -> 'a
 
 val top_id : Id.t
 
-val pf_abs_ssrterm :
+val abs_ssrterm :
            ?resolve_typeclasses:bool ->
            ist ->
-           Goal.goal Evd.sigma ->
+           Environ.env -> Evd.evar_map ->
            ssrterm ->
-           Goal.goal Evd.sigma * EConstr.t * int
+           Evd.evar_map * EConstr.t * int
 
 val pf_interp_ty :
            ?resolve_typeclasses:bool ->

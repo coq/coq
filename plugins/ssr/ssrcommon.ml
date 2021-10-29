@@ -842,18 +842,18 @@ let rewritetac ?(under=false) dir c =
 
 type name_hint = (int * EConstr.types array) option ref
 
-let pf_abs_ssrterm ?(resolve_typeclasses=false) ist gl t =
-  let sigma, ct as t = interp_term (pf_env gl) (project gl) ist t in
+let abs_ssrterm ?(resolve_typeclasses=false) ist env sigma t =
+  let sigma0 = sigma in
+  let sigma, ct as t = interp_term env sigma ist t in
   let sigma, _ as t =
-    let env = pf_env gl in
     if not resolve_typeclasses then t
     else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma ct in
-  let n, c, abstracted_away, ucst = pf_abs_evars gl t in
-  let t = pf_abs_cterm gl n c in
-  let gl = pf_merge_uc ucst gl in
-  gl, t, n
+  let n, c, abstracted_away, ucst = abs_evars env sigma0 t in
+  let t = abs_cterm env sigma0 n c in
+  let sigma = Evd.merge_universe_context sigma0 ucst in
+  sigma, t, n
 
 let top_id = mk_internal_id "top assumption"
 

@@ -26,16 +26,18 @@ module RelDecl = Context.Rel.Declaration
 (** 8. Forward chaining tactics (pose, set, have, suffice, wlog) *)
 (** Defined identifier *)
 
-let posetac id cl = Proofview.V82.of_tactic (Tactics.pose_tac (Name id) cl)
-
 let ssrposetac (id, (_, t)) =
-  Proofview.V82.tactic begin fun gl ->
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let ist, t =
     match t.Ssrast.interp_env with
     | Some ist -> ist, Ssrcommon.ssrterm_of_ast_closure_term t
     | None -> assert false in
-  let gl, t, _ = pf_abs_ssrterm ist gl t in
-  posetac id t gl
+  let sigma, t, _ = abs_ssrterm ist env sigma t in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tactics.pose_tac (Name id) t
   end
 
 let ssrsettac id ((_, (pat, pty)), (_, occ)) =
@@ -152,7 +154,10 @@ let havetac ist
  Tacticals.tclTHENFIRST (Proofview.V82.of_tactic itac_mkabs) (fun gl ->
   let mkt t = mk_term NoFlag t in
   let mkl t = (NoFlag, (t, None)) in
-  let interp gl rtc t = pf_abs_ssrterm ~resolve_typeclasses:rtc ist gl t in
+  let interp gl rtc t =
+    let sigma, t, n = abs_ssrterm ~resolve_typeclasses:rtc ist (pf_env gl) (project gl) t in
+    re_sig (sig_it gl) sigma, t, n
+  in
   let interp_ty gl rtc t =
     let a,b,_,u = pf_interp_ty ~resolve_typeclasses:rtc (pf_env gl) (project gl) ist t in a,b,u in
   let open CAst in
