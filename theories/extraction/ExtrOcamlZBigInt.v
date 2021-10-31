@@ -77,15 +77,27 @@ Extract Constant N.sub =>
 Extract Constant N.mul => "Big_int_Z.mult_big_int".
 Extract Constant N.min => "Big_int_Z.min_big_int".
 Extract Constant N.max => "Big_int_Z.max_big_int".
+Extract Constant N.div_eucl =>
+  "Big_int_Z.(fun x y ->
+    if eq_big_int zero_big_int y then (zero_big_int, x) else
+    quomod_big_int x y)".
 Extract Constant N.div =>
  "(fun a b -> if Big_int_Z.eq_big_int b Big_int_Z.zero_big_int
   then Big_int_Z.zero_big_int else Big_int_Z.div_big_int a b)".
 Extract Constant N.modulo =>
  "(fun a b -> if Big_int_Z.eq_big_int b Big_int_Z.zero_big_int
   then a else Big_int_Z.mod_big_int a b)".
+Extract Constant Z.eqb => "Big_int_Z.eq_big_int".
+Extract Constant Z.eq_dec => "Big_int_Z.eq_big_int".
 Extract Constant N.compare =>
  "(fun x y -> let s = Big_int_Z.compare_big_int x y in
   if s = 0 then Eq else if s < 0 then Lt else Gt)".
+
+(* In Zarith, the second operand of a shift is an [int].
+   The conversion to [int] may throw an [Overflow].
+   Bigger shifts involve enormous numbers that don't fit in memory anyway. *)
+Extract Constant N.shiftl => "Big_int_Z.(fun x y -> shift_left_big_int x (int_of_big_int y))".
+Extract Constant N.shiftr => "Big_int_Z.(fun x y -> shift_right_big_int x (int_of_big_int y))".
 
 Extract Constant Z.add => "Big_int_Z.add_big_int".
 Extract Constant Z.succ => "Big_int_Z.succ_big_int".
@@ -100,11 +112,37 @@ Extract Constant Z.compare =>
  "(fun x y -> let s = Big_int_Z.compare_big_int x y in
   if s = 0 then Eq else if s < 0 then Lt else Gt)".
 
+Extract Constant Z.eqb => "Big_int_Z.eq_big_int".
+Extract Constant Z.eq_dec => "Big_int_Z.eq_big_int".
+Extract Constant Z.to_N => "Big_int_Z.(fun p -> if sign_big_int p < 0 then zero_big_int else p)".
 Extract Constant Z.of_N => "(fun p -> p)".
 Extract Constant Z.abs_N => "Big_int_Z.abs_big_int".
 
-(** Z.div and Z.modulo are quite complex to define in terms of (/) and (mod).
-    For the moment we don't even try *)
+Extract Constant Z.div_eucl => "Big_int_Z.(fun x y ->
+  match sign_big_int y with
+  | 0 -> (zero_big_int, x)
+  | 1 -> quomod_big_int x y
+  | _ -> let (q, r) = quomod_big_int (add_int_big_int (-1) x) y in
+          (add_int_big_int (-1) q, add_big_int (add_int_big_int 1 y) r))".
+Extract Constant Z.div => "Big_int_Z.(fun x y ->
+  match sign_big_int y with
+  | 0 -> zero_big_int
+  | 1 -> div_big_int x y
+  | _ -> add_int_big_int (-1) (div_big_int (add_int_big_int (-1) x) y))".
+Extract Constant Z.modulo => "Big_int_Z.(fun x y ->
+  match sign_big_int y with
+  | 0 -> x
+  | 1 -> mod_big_int x y
+  | _ -> add_big_int y (add_int_big_int 1 (mod_big_int (add_int_big_int (-1) x) y)))".
+
+Extract Constant Z.shiftl => "Big_int_Z.(fun x y ->
+  let y = int_of_big_int y in
+  if y < 0 then shift_right_big_int x (-y)
+  else shift_left_big_int x y)".
+Extract Constant Z.shiftr => "Big_int_Z.(fun x y ->
+  let y = int_of_big_int y in
+  if y < 0 then shift_left_big_int x (-y)
+  else shift_right_big_int x y)".
 
 (** Test:
 Require Import ZArith NArith.
