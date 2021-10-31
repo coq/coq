@@ -164,6 +164,7 @@ val db_upd_bpts: Interface.db_upd_bpts_sty-> Interface.db_upd_bpts_rty query
 val db_continue: Interface.db_continue_sty-> Interface.db_continue_rty query
 val db_stack   : Interface.db_stack_sty   -> Interface.db_stack_rty query
 val db_vars    : Interface.db_vars_sty    -> Interface.db_vars_rty query
+val db_configd : Interface.db_configd_sty -> Interface.db_configd_rty query
 
 val stop_worker: Interface.stop_worker_sty-> Interface.stop_worker_rty query
 

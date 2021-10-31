@@ -223,6 +223,10 @@ type db_stack_rty = (string * (string * int list) option) list
 type db_vars_sty = int
 type db_vars_rty = (string * Pp.t) list
 
+(** indicate debugger config is complete *)
+type db_configd_sty = unit
+type db_configd_rty = unit
+
 (** Retrieve the list of options of the current toplevel *)
 type get_options_sty = unit
 type get_options_rty = (option_name * option_state) list
@@ -294,6 +298,7 @@ type handler = {
   db_continue : db_continue_sty -> db_continue_rty;
   db_stack    : db_stack_sty    -> db_stack_rty;
   db_vars     : db_vars_sty     -> db_vars_rty;
+  db_configd  : db_configd_sty  -> db_configd_rty;
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;

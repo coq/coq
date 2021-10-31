@@ -140,6 +140,8 @@ object
   method process_next_phrase : unit task
   method process_db_cmd : string ->
     next:(Interface.db_cmd_rty Interface.value -> unit task) -> unit task
+  method process_db_configd : unit ->
+    next:(Interface.db_configd_rty Interface.value -> unit task) -> unit task
   method process_db_upd_bpts : ((string * int) * bool) list ->
     next:(Interface.db_upd_bpts_rty Interface.value -> unit task) -> unit task
   method process_db_continue : db_continue_opt ->
@@ -169,6 +171,7 @@ object
   method scroll_to_start_of_input : unit -> unit
   method set_forward_clear_db_highlight : (unit -> unit) -> unit
   method set_forward_set_goals_of_dbg_session : (Pp.t -> unit) -> unit
+  method set_forward_init_db : (unit -> unit) -> unit
   method set_debug_goal : Pp.t -> unit
 end
 
@@ -263,6 +266,9 @@ object(self)
 
   val mutable forward_set_goals_of_dbg_session = ((fun x -> failwith "forward_set_goals_of_dbg_session")
                   : Pp.t -> unit)
+
+  val mutable forward_init_db = ((fun x -> failwith "forward_init_db")
+                  : unit -> unit)
   initializer
     Coq.set_feedback_handler _ct
         (fun msg -> self#process_feedback (MsgFeedback msg));
@@ -328,6 +334,9 @@ object(self)
 
   method set_forward_set_goals_of_dbg_session f =
     forward_set_goals_of_dbg_session <- f
+
+  method set_forward_init_db f =
+    forward_init_db <- f
 
   method private print_stack =
     Minilib.log "document:";
@@ -459,6 +468,7 @@ object(self)
       messages#default_route#debug_prompt msg
     | "goal" ->
       forward_set_goals_of_dbg_session msg
+    | "init" -> forward_init_db ()
     | _ ->
       messages#default_route#push Debug msg
 
@@ -765,6 +775,10 @@ object(self)
   method process_db_cmd cmd ~next : unit Coq.task =
     let db_cmd = Coq.db_cmd cmd in
     Coq.bind db_cmd next
+
+  method process_db_configd cmd ~next : unit Coq.task =
+    let db_configd = Coq.db_configd cmd in
+    Coq.bind db_configd next
 
   method process_db_upd_bpts updates ~next : unit Coq.task =
     let db_upd_bpts = Coq.db_upd_bpts updates in

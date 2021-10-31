@@ -429,11 +429,7 @@ let db_continue opt =
   | Interface.Interrupt -> Interrupt
 
 let db_upd_bpts updates =
-  List.iter (fun op ->
-      let ((file, offset), opt) = op in
-(*      Printf.printf "db_upd %s %d %b\n%!" file offset opt;*)
-      DebugHook.upd_ide_bpt file offset opt;
-    ) updates
+  debug_cmd := DebugHook.Action.UpdBpts updates
 
 
 let format_frame text loc =
@@ -482,6 +478,9 @@ let db_stack () =
 
 let db_vars framenum =
   !DebugHook.forward_get_vars framenum
+
+let db_configd () =
+  debug_cmd := DebugHook.Action.Configd
 
 let get_options () =
   let table = Goptions.get_tables () in
@@ -577,6 +576,7 @@ let eval_call c =
     Interface.db_continue = db_continue;
     Interface.db_stack = db_stack;
     Interface.db_vars = db_vars;
+    Interface.db_configd = db_configd;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -678,6 +678,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
       | Prompt msg -> "prompt", msg
       | Goal msg -> "goal", (str "Goal:" ++ fnl () ++ msg)
       | Output msg -> "output", msg
+      | Init -> "init", str ""
     in
     print_xml xml_oc Xmlprotocol.(of_ltac_debug_answer ~tag msg) in
 

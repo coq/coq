@@ -39,6 +39,58 @@ type debug_info =
 let explain_logic_error e = CErrors.print e
 let explain_logic_error_no_anomaly e = CErrors.print_no_report e
 
+
+type breakpoint = {
+  dirpath : string;  (* module dirpath *)
+  offset : int;
+}
+
+module BPSet = CSet.Make(struct
+  type t = breakpoint
+  let compare b1 b2 =
+    let c1 = Int.compare b1.offset b2.offset in
+    if c1 <> 0 then c1 else String.compare b1.dirpath b2.dirpath
+  end)
+
+let breakpoints = ref BPSet.empty
+
+
+(** add or remove a single breakpoint.  Maps the breakpoint from
+  IDE format (absolute path name, offset) to (module dirpath, offset)
+  opt - true to add, false to remove
+  ide_bpt - the breakpoint (absolute path name, offset)
+  *)
+let update_bpt fname offset opt =
+  let open Names in
+  let dp =
+    if fname = "ToplevelInput" then  (* todo: or None? *)
+      DirPath.make [Id.of_string "Top"]
+    else begin (* find the DirPath matching the absolute pathname of the file *)
+      (* ? check for .v extension? *)
+      let dirname = Filename.dirname fname in
+      let basename = Filename.basename fname in
+      let base_id = Id.of_string (Filename.remove_extension basename) in
+      DirPath.make (base_id ::
+          (try
+            let p = Loadpath.find_load_path (CUnix.physical_path_of_string dirname) in
+            DirPath.repr (Loadpath.logical p)
+          with _ -> []))
+    end
+  in
+  let dirpath = DirPath.to_string dp in
+  let bp = { dirpath; offset } in
+(*  Printf.printf "update_bpt: %s -> %s  %d\n%!" fname dirpath ide_bpt.offset;*)
+  match opt with
+  | true  -> breakpoints := BPSet.add bp !breakpoints
+  | false -> breakpoints := BPSet.remove bp !breakpoints
+
+let upd_bpts updates =
+  List.iter (fun op ->
+    let ((file, offset), opt) = op in
+(*    Printf.printf "Coq upd_bpts %s %d %b\n%!" file offset opt;*)
+    update_bpt file offset opt;
+  ) updates
+
 [@@@ocaml.warning "-32"]
 let cmd_to_str cmd =
   let open DebugHook.Action in
@@ -50,6 +102,8 @@ let cmd_to_str cmd =
   | Skip -> "Skip"
   | Interrupt -> "Interrput"
   | Help -> "Help"
+  | UpdBpts _ -> "UpdBpts"
+  | Configd -> "Configd"
   | RunCnt _ -> "RunCnt"
   | RunBreakpoint _ -> "RunBreakpoint"
   | Command _ -> "Command"
@@ -61,25 +115,33 @@ let action = ref DebugHook.Action.StepOver
 
 (* Communications with the outside world *)
 module Comm = struct
+  let hook () = Option.get (DebugHook.Intf.get ())
+  let wrap = Proofview.NonLogical.make
 
   (* TODO: ideally we would check that the debugger hooks are
      correctly set, however we don't do this yet as debugger
-     initialiation is unconditionally done for example in coqc.
+     initialization is unconditionally done for example in coqc.
      Improving this would require some tweaks in tacinterp which
      are out of scope for the current refactoring. *)
   let init () =
     let open DebugHook in
     match Intf.get () with
     | Some intf ->
-      action := if Intf.(intf.isTerminal) then Action.StepIn else Action.Continue;
       DebugHook.set_break false;
-      ()
+      breakpoints := BPSet.empty;
+      (hook ()).Intf.submit_answer (Answer.Init);
+      while
+        let cmd = (hook ()).Intf.read_cmd () in
+        let open DebugHook.Action in
+        match cmd with
+        | UpdBpts updates -> upd_bpts updates; true
+        | Configd ->
+          action := if Intf.(intf.isTerminal) then Action.StepIn else Action.Continue; false
+        | _ -> failwith "Action type not allowed"
+      do () done;
     | None -> ()
       (* CErrors.user_err
        *   (Pp.str "Your user interface does not support the Ltac debugger.") *)
-
-  let hook () = Option.get (DebugHook.Intf.get ())
-  let wrap = Proofview.NonLogical.make
 
   open DebugHook.Intf
   open DebugHook.Answer
@@ -106,8 +168,10 @@ module Comm = struct
   let read = wrap (fun () ->
     let rec l () =
       let cmd = (hook ()).read_cmd () in
+      let open DebugHook.Action in
       match cmd with
-      | DebugHook.Action.Ignore -> l ()
+      | Ignore -> l ()
+      | UpdBpts updates -> upd_bpts updates; l ()
       | _ -> action := cmd; cmd
     in
     l ())
@@ -282,15 +346,8 @@ let () =
       optread  = (fun () -> !batch);
       optwrite = (fun x -> batch := x) }
 
-let prev_load_paths = ref []
-
 (* (Re-)initialize debugger. is_tac controls whether to set the action *)
 let db_initialize is_tac =
-  let load_paths = Loadpath.get_load_paths () in
-  if load_paths != !prev_load_paths then begin
-    prev_load_paths := load_paths;
-    DebugHook.refresh_bpts ()
-  end;
   let open Proofview.NonLogical in
   let x = (skip:=0) >> (skipped:=0) >> (idtac_breakpt:=None) in
   if is_tac then make Comm.init >> x else x
@@ -325,9 +382,11 @@ let rec prompt level =
     | StepIn
     | StepOver
     | StepOut -> return (DebugOn (level+1))
-    | Skip -> return (DebugOff)
+    | Skip -> return DebugOff
     | Interrupt -> Proofview.NonLogical.print_char '\b' >> exit  (* todo: why the \b? *)
     | Help -> help () >> prompt level
+    | UpdBpts updates -> failwith "UpdBpts"  (* handled in init() loop *)
+    | Configd -> failwith "Configd" (* handled in init() loop *)
     | RunCnt num -> (skip:=num) >> (skipped:=0) >>
         runnoprint >> return (DebugOn (level+1))
     | RunBreakpoint s -> (idtac_breakpt:=(Some s)) >> (* todo: look in Continue? *)
@@ -339,8 +398,8 @@ let rec prompt level =
 let at_breakpoint tac =
   let open Loc in
   let check_bpt dirpath offset =
-(*    Printf.printf "In tactic_debug, dirpath = %s offset = %d\n%!" dirpath bp;*)
-    DebugHook.check_bpt dirpath offset
+(*    Printf.printf "In tactic_debug, dirpath = %s offset = %d\n%!" dirpath offset;*)
+    BPSet.mem { dirpath; offset } !breakpoints
   in
   match CAst.(tac.loc) with
   | Some {fname=InFile {dirpath=Some dirpath}; bp} -> check_bpt dirpath bp

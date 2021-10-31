@@ -19,6 +19,8 @@ module Action : sig
     | Skip
     | Interrupt
     | Help
+    | UpdBpts of ((string * int) * bool) list
+    | Configd
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -34,6 +36,7 @@ module Answer : sig
     | Prompt of Pp.t
     | Goal of Pp.t
     | Output of Pp.t
+    | Init
 end
 
 module Intf : sig
@@ -49,14 +52,6 @@ module Intf : sig
   val set : t -> unit
   val get : unit -> t option
 end
-
-(* set or clear a breakpoint at the given filepath and offset *)
-val upd_ide_bpt : string -> int -> bool -> unit
-
-(* test if (module dirpath, offset) has a breakpoint *)
-val check_bpt : string -> int -> bool
-
-val refresh_bpts : unit -> unit
 
 val forward_get_stack : (unit -> (string option * Loc.t option) list) ref
 val forward_get_vars : (int -> (string * Pp.t) list) ref

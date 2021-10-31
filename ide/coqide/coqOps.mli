@@ -18,6 +18,8 @@ object
   method process_next_phrase : unit task
   method process_db_cmd : string ->
     next:(Interface.db_cmd_rty Interface.value -> unit task) -> unit task
+  method process_db_configd : unit ->
+    next:(Interface.db_configd_rty Interface.value -> unit task) -> unit task
   method process_db_upd_bpts : ((string * int) * bool) list ->
     next:(Interface.db_upd_bpts_rty Interface.value -> unit task) -> unit task
   method process_db_continue : db_continue_opt ->
@@ -47,6 +49,7 @@ object
   method scroll_to_start_of_input : unit -> unit
   method set_forward_clear_db_highlight : (unit -> unit) -> unit
   method set_forward_set_goals_of_dbg_session : (Pp.t -> unit) -> unit
+  method set_forward_init_db : (unit -> unit) -> unit
   method set_debug_goal : Pp.t -> unit
 end
 

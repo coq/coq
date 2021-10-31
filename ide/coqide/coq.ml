@@ -558,7 +558,7 @@ let try_grab ?(db=false) coqtop task abort =
     | _ when db && coqtop.handle.db_waiting_for <> None -> (abort (); false)
     | Closed -> abort (); false
     | Busy when db ->
-      if coqtop.stopped_in_debugger && coqtop.handle.db_waiting_for = None then
+      if (*coqtop.stopped_in_debugger &&*) coqtop.handle.db_waiting_for = None then
         (process_task ~db coqtop task; true)
       else
         (abort (); false)
@@ -611,6 +611,7 @@ let db_upd_bpts x = eval_call ~db:true (Xmlprotocol.db_upd_bpts x)
 let db_continue x = eval_call ~db:true (Xmlprotocol.db_continue x)
 let db_stack x = eval_call ~db:true (Xmlprotocol.db_stack x)
 let db_vars x = eval_call ~db:true (Xmlprotocol.db_vars x)
+let db_configd x = eval_call ~db:true (Xmlprotocol.db_configd x)
 
 let interrupt_coqtop coqtop workers =
   if coqtop.status = Busy then

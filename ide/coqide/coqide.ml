@@ -184,6 +184,8 @@ let forward_highlight_code = ref ((fun _ -> failwith "forward_highlight_code")
                      : session -> string * int * int -> unit)
 let forward_restore_bpts = ref ((fun _ -> failwith "forward_restore_bpts")
                      : session -> unit)
+let forward_init_db = ref ((fun _ -> failwith "forward_init_db")
+                     : session -> unit)
 
 let create_session f =
   let project_file, args = make_coqtop_args f in
@@ -203,39 +205,49 @@ let create_session f =
       sn.coqops#set_debug_goal msg;
       let osn = (find_secondary_sn sn) in
       osn.last_db_goals <- msg);
+  sn.coqops#set_forward_init_db (fun () -> !forward_init_db sn);
   let _ = set_drag sn.script#drag in
   sn
 
 
-let db_upd_bpts updates sn =
+let db_upd_bpts ?(next=Coq.return) updates sn =
   if updates <> [] then
     ignore @@ Coq.try_grab ~db:true sn.coqtop
-      (sn.coqops#process_db_upd_bpts updates ~next:(function | _ -> Coq.return ()))
+      (sn.coqops#process_db_upd_bpts updates ~next:(function | _ -> next ()))
       (fun () -> Minilib.log "Coq busy, discarding db_upd_bpts")
 
-let reapply_bpts sn =
-  (* breakpoints in this file *)
+let get_updates sn =
+  (* breakpoints in this buffer *)
   let upds = List.map (fun bp ->
       let start = sn.buffer#get_iter_at_mark (`NAME bp.mark_id) in
       let stop = start#forward_char in
-      sn.buffer#apply_tag Tags.Script.breakpoint ~start ~stop;
+      sn.buffer#apply_tag Tags.Script.breakpoint ~start ~stop; (* restore highlight for init *)
       (("ToplevelInput", bp.prev_byte_offset), true)
     ) sn.breakpoints
   in
-  (* plus breakpoints in other files *)
-  let upds = List.fold_left (fun upds osn ->
+  (* plus breakpoints in other buffers *)
+  List.fold_left (fun upds osn ->
       match osn.abs_file_name with
       | _ when osn == sn -> upds
       | None -> upds
       | Some file ->
         (List.map (fun bp -> ((file, bp.prev_byte_offset), true)) osn.breakpoints) @ upds
     ) upds notebook#pages
-  in
-  db_upd_bpts upds sn
 
 (* init breakpoints for new session or re-init after reset *)
 let init_bpts sn =
-  Coq.add_do_when_ready sn.coqtop (fun _ -> reapply_bpts sn)
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+      let upds = get_updates sn in
+      db_upd_bpts upds sn)
+
+(* todo: shouldn't be so hard to chain operations *)
+let () = forward_init_db := fun sn ->
+  db_upd_bpts (get_updates sn) sn ~next:(fun () ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop
+      (sn.coqops#process_db_configd () ~next:(function | _ -> Coq.return ()))
+      (fun () -> Minilib.log "Coq busy, discarding db_configd");
+      Coq.return ()
+    )
 
 let restore_bpts sn =
   init_bpts sn;

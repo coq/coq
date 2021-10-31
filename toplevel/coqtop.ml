@@ -139,6 +139,8 @@ let ltac_debug_answer = let open DebugHook.Answer in function
       Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with (str "Goal:" ++ fnl () ++ g)
     | Output o ->
       Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with o
+    | Init ->
+      Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with (str "Init")
 
 let ltac_debug_parse () =
   let open DebugHook in

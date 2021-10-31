@@ -1985,9 +1985,13 @@ let default_ist () =
   { lfun = Id.Map.empty; poly = false; extra = extra }
 
 let eval_tactic t =
-  Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
-  Proofview.tclLIFT (db_initialize true) <*>
-  eval_tactic_ist (default_ist ()) t
+  if get_debug () <> DebugOff then
+    Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
+    Proofview.tclLIFT (db_initialize true) <*>
+    eval_tactic_ist (default_ist ()) t
+  else
+    Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
+    eval_tactic_ist (default_ist ()) t
 
 let eval_tactic_ist ist t =
   Proofview.tclLIFT (db_initialize false) <*>
