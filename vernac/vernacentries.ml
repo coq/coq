@@ -462,33 +462,42 @@ let msg_found_library = function
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
 let err_unmapped_library ?from qid =
-  let dir = fst (repr_qualid qid) in
   let prefix = match from with
-  | None -> str "."
+  | None -> mt ()
   | Some from ->
-    str " and prefix " ++ DirPath.print from ++ str "."
+    str " with prefix " ++ DirPath.print from
   in
-  user_err ?loc:qid.CAst.loc
-    (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
-       DirPath.print dir ++ prefix ++ str ".")
+  strbrk "Cannot find a physical path bound to logical path "
+    ++ pr_qualid qid ++ prefix ++ str "."
 
 let err_notfound_library ?from qid =
   let prefix = match from with
-  | None -> str "."
-  | Some from ->
-    str " with prefix " ++ DirPath.print from ++ str "."
+  | None -> mt ()
+  | Some from -> str " with prefix " ++ DirPath.print from
   in
   let bonus =
-    if !Flags.load_vos_libraries then " (While searching for a .vos file.)" else "" in
-  user_err ?loc:qid.CAst.loc
-     (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix ++ str bonus)
+    if !Flags.load_vos_libraries then mt ()
+    else str " (while searching for a .vos file)"
+  in
+  strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix ++ bonus
+    ++ str "."
+
+exception UnmappedLibrary of Names.DirPath.t option * Libnames.qualid
+exception NotFoundLibrary of Names.DirPath.t option * Libnames.qualid
+
+
+let _ = CErrors.register_handler begin function
+  | UnmappedLibrary (from, qid) -> Some (err_unmapped_library ?from qid)
+  | NotFoundLibrary (from, qid) -> Some (err_notfound_library ?from qid)
+  | _ -> None
+end
 
 let print_located_library qid =
   let open Loadpath in
   match locate_qualified_library qid with
   | Ok lib -> msg_found_library lib
-  | Error LibUnmappedDir -> err_unmapped_library qid
-  | Error LibNotFound -> err_notfound_library qid
+  | Error LibUnmappedDir -> raise (UnmappedLibrary (None, qid))
+  | Error LibNotFound    -> raise (NotFoundLibrary (None, qid))
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -1341,8 +1350,8 @@ let vernac_require from import qidl =
     let open Loadpath in
     match locate_qualified_library ?root qid with
     | Ok (_,dir,f) -> dir, f
-    | Error LibUnmappedDir -> err_unmapped_library ?from:root qid
-    | Error LibNotFound -> err_notfound_library ?from:root qid
+    | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
+    | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
