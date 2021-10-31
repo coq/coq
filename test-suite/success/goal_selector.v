@@ -56,6 +56,12 @@ Proof.
   intro H; eexists ?[x]; only [x]: exact True. 1: assumption.
 Qed.
 
+Goal Prop.
+  refine ?[x].
+  [x]: refine _.
+  exact True.
+Qed.
+
 (* Strict focusing! *)
 Set Default Goal Selector "!".
 
