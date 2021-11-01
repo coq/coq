@@ -276,6 +276,16 @@ Instance Op_pos_square : UnOp Pos.square :=
 Add Zify UnOp Op_pos_square.
 
 #[global]
+Instance Op_Pos_Nsucc_double : UnOp Pos.Nsucc_double :=
+  { TUOp x := 2 * x + 1 ; TUOpInj x := ltac:(now destruct x) }.
+Add Zify UnOp Op_Pos_Nsucc_double.
+
+#[global]
+Instance Op_Pos_Ndouble : UnOp Pos.Ndouble :=
+  { TUOp x := 2 * x ; TUOpInj x := ltac:(now destruct x) }.
+Add Zify UnOp Op_Pos_Ndouble.
+
+#[global]
 Instance Op_xO : UnOp xO :=
   { TUOp := fun x => 2 * x ; TUOpInj := ltac: (refl) }.
 Add Zify UnOp Op_xO.
@@ -393,6 +403,39 @@ Add Zify UnOp Op_N_pred.
 Instance Op_N_succ : UnOp N.succ :=
   {| TUOp := fun x => x + 1 ; TUOpInj := N2Z.inj_succ |}.
 Add Zify UnOp Op_N_succ.
+
+#[global]
+Instance Op_N_succ_double : UnOp N.succ_double :=
+  { TUOp x := 2 * x + 1 ; TUOpInj x := ltac:(now destruct x) }.
+Add Zify UnOp Op_N_succ_double.
+
+#[global]
+Instance Op_N_double : UnOp N.double :=
+  { TUOp x := 2 * x ; TUOpInj x := ltac:(now destruct x) }.
+Add Zify UnOp Op_N_double.
+
+#[global]
+Instance Op_N_succ_pos : UnOp N.succ_pos :=
+  { TUOp x := x + 1 ;
+    TUOpInj x := ltac:(now destruct x; simpl; [| rewrite Pplus_one_succ_r]) }.
+Add Zify UnOp Op_N_succ_pos.
+
+#[global]
+Instance Op_N_div2 : UnOp N.div2 :=
+  { TUOp x := x / 2 ;
+    TUOpInj x := ltac:(now rewrite N2Z.inj_div2, Z.div2_div) }.
+Add Zify UnOp Op_N_div2.
+
+#[global]
+Instance Op_N_pow : BinOp N.pow :=
+  { TBOp := Z.pow ; TBOpInj := N2Z.inj_pow }.
+Add Zify BinOp Op_N_pow.
+
+#[global]
+Instance Op_N_square : UnOp N.square :=
+  { TUOp x := x * x ;
+    TUOpInj x := ltac:(now rewrite N.square_spec, N2Z.inj_mul) }.
+Add Zify UnOp Op_N_square.
 
 (** Support for Z - injected to itself *)
 
@@ -539,11 +582,9 @@ Add Zify UnOp Op_Z_quot2.
 
 Lemma of_nat_to_nat_eq : forall x,  Z.of_nat (Z.to_nat x) = Z.max 0 x.
 Proof.
-  intros x; destruct x.
+  intros x; destruct x; simpl.
   - reflexivity.
-  - rewrite Z2Nat.id.
-    reflexivity.
-    compute. congruence.
+  - now rewrite positive_nat_Z.
   - reflexivity.
 Qed.
 
@@ -551,6 +592,13 @@ Qed.
 Instance Op_Z_to_nat : UnOp Z.to_nat :=
   { TUOp := fun x => Z.max 0 x ; TUOpInj := of_nat_to_nat_eq }.
 Add Zify UnOp Op_Z_to_nat.
+
+#[global]
+Instance Op_Z_to_pos : UnOp Z.to_pos :=
+  { TUOp x := Z.max 1 x ;
+    TUOpInj x := ltac:(now simpl; destruct x;
+                       [| rewrite <- Pos2Z.inj_max; rewrite Pos.max_1_l |]) }.
+Add Zify UnOp Op_Z_to_pos.
 
 (** Specification of derived operators over Z *)
 

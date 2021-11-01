@@ -99,6 +99,40 @@ Instance Op_Zgtb : BinOp Z.gtb :=
   { TBOp := Z.gtb; TBOpInj := fun _ _  => eq_refl }.
 Add Zify BinOp Op_Zgtb.
 
+(** Comparison over N *)
+
+#[global]
+Instance Op_Neqb : BinOp N.eqb :=
+  { TBOp := Z.eqb; TBOpInj n m := ltac:(now destruct n, m) }.
+Add Zify BinOp Op_Neqb.
+
+#[global]
+Instance Op_Nleb : BinOp N.leb :=
+  { TBOp := Z.leb; TBOpInj n m := ltac:(now destruct n, m) }.
+Add Zify BinOp Op_Nleb.
+
+#[global]
+Instance Op_Nltb : BinOp N.ltb :=
+  { TBOp := Z.ltb; TBOpInj n m := ltac:(now destruct n, m) }.
+Add Zify BinOp Op_Nltb.
+
+(** Comparison over positive *)
+
+#[global]
+Instance Op_Pos_eqb : BinOp Pos.eqb :=
+  { TBOp := Z.eqb; TBOpInj _ _ := eq_refl }.
+Add Zify BinOp Op_Pos_eqb.
+
+#[global]
+Instance Op_Pos_leb : BinOp Pos.leb :=
+  { TBOp := Z.leb; TBOpInj _ _ := eq_refl }.
+Add Zify BinOp Op_Pos_leb.
+
+#[global]
+Instance Op_Pos_ltb : BinOp Pos.ltb :=
+  { TBOp := Z.ltb; TBOpInj _ _ := eq_refl }.
+Add Zify BinOp Op_Pos_ltb.
+
 (** Comparison over nat *)
 
 Lemma Z_of_nat_eqb_iff : forall n m,
