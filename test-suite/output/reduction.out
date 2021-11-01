@@ -2,3 +2,6 @@
      : nat
      = n + 0
      : nat
+foo = 
+@eq_refl nat (S (S O)) : @eq nat (Nat.add (S O) (S O)) (S (S O))
+     : @eq nat (Nat.add (S O) (S O)) (S (S O))
