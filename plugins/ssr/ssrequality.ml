@@ -91,7 +91,8 @@ let interp_congrarg_at ist gl n rf ty m =
 
 let pattern_id = mk_internal_id "pattern value"
 
-let congrtac ((n, t), ty) ist gl =
+let congrtac ((n, t), ty) ist =
+  Proofview.V82.tactic begin fun gl ->
   debug_ssr (fun () -> (Pp.str"===congr==="));
   debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (Tacmach.pf_concl gl)));
   let sigma, _ as it = interp_term (pf_env gl) (project gl) ist t in
@@ -113,11 +114,13 @@ let congrtac ((n, t), ty) ist gl =
       | None -> loop (i + 1) in
       loop 1 in
   Proofview.V82.of_tactic Tacticals.New.(tclTHEN (refine_with cf) (tclTRY Tactics.reflexivity)) gl
+  end
 
-let pf_typecheck t gl =
-  let it = sig_it gl in
-  let sigma,_  = pf_type_of gl t in
-  re_sig [it] sigma
+let pf_typecheck t =
+  Proofview.Goal.enter begin fun gl ->
+  let sigma, _  = Typing.type_of (Proofview.Goal.env gl) (Proofview.Goal.sigma gl) t in
+  Proofview.Unsafe.tclEVARS sigma
+  end
 
 let newssrcongrtac arg ist =
   let open Proofview.Notations in
@@ -128,13 +131,17 @@ let newssrcongrtac arg ist =
   debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
   (* utils *)
   let fs gl t = Reductionops.nf_evar (project gl) t in
-  let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail gl =
+  let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail =
+    Proofview.Goal.enter begin fun gl ->
+    let open Tacmach.New in
     match try Some (pf_unify_HO gl_c (pf_concl gl) c)
           with exn when CErrors.noncritical exn -> None with
     | Some gl_c ->
-        tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true (fs gl_c c)))
-          (t_ok (proj gl_c)) gl
-    | None -> t_fail () gl in
+        Tacticals.New.tclTHEN (convert_concl ~check:true (fs gl_c c))
+          (t_ok (proj gl_c))
+    | None -> t_fail ()
+    end
+  in
   let mk_evar gl ty =
     let env, sigma, si = pf_env gl, project gl, sig_it gl in
     let sigma = Evd.create_evar_defs sigma in
@@ -144,9 +151,10 @@ let newssrcongrtac arg ist =
   let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
   (* here the two cases: simple equality or arrow *)
   let equality, _, eq_args, gl' = pf_saturate gl (EConstr.of_constr eq) 3 in
-  tclMATCH_GOAL (equality, gl') (fun gl' -> fs gl' (List.assoc 0 eq_args))
+  Proofview.V82.of_tactic (tclMATCH_GOAL (equality, gl') (fun gl' -> fs gl' (List.assoc 0 eq_args))
   (fun ty -> congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
   (fun () ->
+    try
     let gl', t_lhs = pfe_new_type gl in
     let gl', t_rhs = pfe_new_type gl' in
     let lhs, gl' = mk_evar gl' t_lhs in
@@ -155,10 +163,12 @@ let newssrcongrtac arg ist =
     tclMATCH_GOAL (arrow, gl') (fun gl' -> [|fs gl' lhs;fs gl' rhs|])
     (fun lr ->
       let a = ssr_congr lr in
-      tclTHENLIST [ pf_typecheck a
-                  ; Proofview.V82.of_tactic (Tactics.apply a)
+      Tacticals.New.tclTHENLIST [ pf_typecheck a
+                  ; Tactics.apply a
                   ; congrtac (arg, mkRType) ist ])
-    (fun _ _ -> errorstrm Pp.(str"Conclusion is not an equality nor an arrow")))
+    (fun _ -> Tacticals.New.tclZEROMSG Pp.(str"Conclusion is not an equality nor an arrow"))
+    with e -> Proofview.tclZERO e (* FIXME *)
+    ))
     gl
   end
 
