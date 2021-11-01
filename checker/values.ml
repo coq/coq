@@ -197,7 +197,7 @@ let v_abstr_info =
   Tuple ("abstr_info", [|v_rctxt; v_abs_context; List v_id; v_hmap v_level v_level|])
 
 let v_abstr_inst_info =
-  Tuple ("abstr_inst_info", [|Array v_constr; v_instance|])
+  Tuple ("abstr_inst_info", [|List v_id; v_instance|])
 
 let v_expand_info =
   Tuple ("expand_info", [|v_hmap v_cst v_abstr_inst_info; v_hmap v_cst v_abstr_inst_info|])

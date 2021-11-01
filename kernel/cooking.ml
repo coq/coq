@@ -60,8 +60,8 @@ type abstr_info = {
     here, local definitions of the context have been dropped *)
 
 type abstr_inst_info = {
-  abstr_inst : Constr.t array;
-  (** The variables to reapply (excluding "let"s of the context) *)
+  abstr_rev_inst : Id.t list;
+  (** The variables to reapply (excluding "let"s of the context), in reverse order *)
   abstr_uinst : Univ.Instance.t;
   (** Abstracted universe variables to reapply *)
 }
@@ -101,7 +101,7 @@ let empty_cooking_info = {
       abstr_ausubst = Level.Map.empty;
     };
   abstr_inst_info = {
-      abstr_inst = [||];
+      abstr_rev_inst = [];
       abstr_uinst = Univ.Instance.empty;
     };
   names_info = Id.Set.empty;
@@ -130,6 +130,7 @@ struct
 end
 
 module RefTable = Hashtbl.Make(RefHash)
+type internal_abstr_inst_info = Univ.Instance.t * int list * int
 
 let instantiate_my_gr gr u =
   match gr with
@@ -137,85 +138,109 @@ let instantiate_my_gr gr u =
   | IndRef i -> mkIndU (i, u)
   | ConstructRef c -> mkConstructU (c, u)
 
-let share cache r (cstl,knl) =
+let discharge_inst top_abst_subst sub_abst_rev_inst =
+  let rec aux k relargs top_abst_subst sub_abst_rev_inst =
+    match top_abst_subst, sub_abst_rev_inst with
+    | id :: top_abst_subst, id' :: sub_abst_rev_inst' ->
+      if Id.equal id id' then
+        aux (k+1) (k :: relargs) top_abst_subst sub_abst_rev_inst'
+      else
+        aux (k+1) relargs top_abst_subst sub_abst_rev_inst
+    | _, [] -> relargs
+    | [], _ -> assert false in
+  aux 1 [] top_abst_subst sub_abst_rev_inst
+
+let rec find_var k id = function
+| [] -> raise Not_found
+| idc :: subst ->
+  if Id.equal id idc then k+1
+  else find_var (k+1) id subst
+
+let share cache top_abst_subst r (cstl,knl) =
   try RefTable.find cache r
   with Not_found ->
-  let inst =
+  let {abstr_uinst;abstr_rev_inst} =
     match r with
-    | IndRef (kn,_i) ->
-        Mindmap.find kn knl
-    | ConstructRef ((kn,_i),_j) ->
-        Mindmap.find kn knl
-    | ConstRef cst ->
-        Cmap.find cst cstl in
+    | IndRef (kn,_i) -> Mindmap.find kn knl
+    | ConstructRef ((kn,_i),_j) -> Mindmap.find kn knl
+    | ConstRef cst -> Cmap.find cst cstl
+  in
+  let inst = (abstr_uinst, discharge_inst top_abst_subst abstr_rev_inst, List.length abstr_rev_inst) in
   RefTable.add cache r inst;
   inst
 
-let share_univs cache r u l =
-  let {abstr_uinst;abstr_inst} = share cache r l in
-    mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), abstr_inst)
+let make_inst k abstr_inst_rel =
+  Array.map_of_list (fun n -> mkRel (k+n)) abstr_inst_rel
+
+let share_univs cache top_abst_subst k r u l =
+  let (abstr_uinst,abstr_inst_rel,_) = share cache top_abst_subst r l in
+  mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), make_inst k abstr_inst_rel)
 
 let discharge_proj_repr r p = (* To merge with discharge_proj *)
-  let newpars = r.abstr_inst_info.abstr_inst in
-  let map npars = npars + Array.length newpars in
+  let nnewpars = List.length r.abstr_inst_info.abstr_rev_inst in
+  let map npars = npars + nnewpars in
   Projection.Repr.map_npars map p
 
-let discharge_proj r p =
-  let newpars = r.abstr_inst in
-  let map npars = npars + Array.length newpars in
+let discharge_proj (_,_,abstr_inst_length) p =
+  let map npars = npars + abstr_inst_length in
   Projection.map_npars map p
 
 let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
 
-let expand_constr cache modlist c =
-  let share_univs = share_univs cache in
-  let rec substrec c =
+let expand_constr cache modlist top_abst_subst c =
+  let share_univs = share_univs cache top_abst_subst in
+  let rec substrec k c =
     match kind c with
       | Case (ci, u, pms, p, iv, t, br) ->
-        begin match share cache (IndRef ci.ci_ind) modlist with
-        | {abstr_uinst;abstr_inst} ->
+        begin match share cache top_abst_subst (IndRef ci.ci_ind) modlist with
+        | (abstr_uinst, abstr_inst_rel, abstr_inst_length) ->
           let u = Instance.append abstr_uinst u in
-          let pms = Array.append abstr_inst pms in
-          let ci = { ci with ci_npar = ci.ci_npar + Array.length abstr_inst } in
-          Constr.map substrec (mkCase (ci,u,pms,p,iv,t,br))
+          let pms = Array.append (make_inst k abstr_inst_rel) pms in
+          let ci = { ci with ci_npar = ci.ci_npar + abstr_inst_length } in
+          Constr.map_with_binders succ substrec k (mkCase (ci,u,pms,p,iv,t,br))
         | exception Not_found ->
-          Constr.map substrec c
+          Constr.map_with_binders succ substrec k c
         end
 
       | Ind (ind,u) ->
           (try
-            share_univs (IndRef ind) u modlist
+            share_univs k (IndRef ind) u modlist
            with
-            | Not_found -> Constr.map substrec c)
+            | Not_found -> Constr.map_with_binders succ substrec k c)
 
       | Construct (cstr,u) ->
           (try
-             share_univs (ConstructRef cstr) u modlist
+             share_univs k (ConstructRef cstr) u modlist
            with
-            | Not_found -> Constr.map substrec c)
+            | Not_found -> Constr.map_with_binders succ substrec k c)
 
       | Const (cst,u) ->
           (try
-            share_univs (ConstRef cst) u modlist
+            share_univs k (ConstRef cst) u modlist
            with
-            | Not_found -> Constr.map substrec c)
+            | Not_found -> Constr.map_with_binders succ substrec k c)
 
       | Proj (p, c') ->
           let ind = Names.Projection.inductive p in
           let p' =
             try
-              let exp = share cache (IndRef ind) modlist in
+              let exp = share cache top_abst_subst (IndRef ind) modlist in
               discharge_proj exp p
             with Not_found -> p in
-          let c'' = substrec c' in
+          let c'' = substrec k c' in
           if p == p' && c' == c'' then c else mkProj (p', c'')
 
-  | _ -> Constr.map substrec c
+      | Var id ->
+          (try
+            mkRel (find_var k id top_abst_subst)
+           with Not_found -> c)
+
+  | _ -> Constr.map_with_binders succ substrec k c
 
   in
-  if is_empty_modlist modlist then c
-  else substrec c
+  if is_empty_modlist modlist && List.is_empty top_abst_subst then c
+  else substrec 0 c
 
 (** Cooking is made of 4 steps:
     1. expansion of global constants by applying them to the section
@@ -227,9 +252,8 @@ let expand_constr cache modlist c =
 
 (** The main expanding/substitution functions, performing the three first steps *)
 let expand_subst cache expand_info abstr_info c =
-  let c = expand_constr cache expand_info c in
+  let c = expand_constr cache expand_info abstr_info.abstr_subst c in
   let c = Vars.subst_univs_level_constr abstr_info.abstr_ausubst c in
-  let c = Vars.subst_vars abstr_info.abstr_subst c in
   c
 
 (** Adding the final abstraction step, term case *)
@@ -250,8 +274,8 @@ let abstract_as_sort cache { expand_info; abstr_info; _ } s =
     that turns a judgment [G, Δ, Ω[σ][τ] ⊢ J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])]
     via [⊢ ΠG.ΠΔ.Π(Ω[σ][τ]).(J[σ'][τ])] *)
 let abstract_named_context expand_info abstr_info hyps =
-  let cache = RefTable.create 13 in
   let fold decl abstr_info =
+    let cache = RefTable.create 13 in
     let id, decl = match decl with
     | NamedDecl.LocalDef (id, b, t) ->
       let b = expand_subst cache expand_info abstr_info b in
@@ -277,12 +301,12 @@ let abstract_named_context expand_info abstr_info hyps =
     collecting the information needed to do such as a transformation
     of judgment into a [cooking_info] *)
 let make_cooking_info expand_info hyps uctx =
-  let abstr_inst = Named.instance mkVar hyps in
+  let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
   let abstr_ausubst = Univ.make_instance_subst abstr_uinst in
   let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
   let abstr_info = abstract_named_context expand_info abstr_info hyps in
-  let abstr_inst_info = { abstr_inst; abstr_uinst } in
+  let abstr_inst_info = { abstr_rev_inst; abstr_uinst } in
   let names_info = Context.Named.to_vars hyps in
   { expand_info; abstr_info; abstr_inst_info; names_info }
 
@@ -293,7 +317,7 @@ let universe_context_of_cooking_info info =
   info.abstr_info.abstr_auctx
 
 let instance_of_cooking_info info =
-  info.abstr_inst_info.abstr_inst
+  Array.map_of_list mkVar (List.rev info.abstr_inst_info.abstr_rev_inst)
 
 let discharge_abstract_universe_context abstr auctx =
   (** Given a substitution [abstr.abstr_ausubst := u₀ ... uₙ₋₁] together with an abstract

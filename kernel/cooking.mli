@@ -26,8 +26,8 @@ type abstr_info
     here, local definitions of the context have been dropped *)
 
 type abstr_inst_info = {
-  abstr_inst : Constr.t array;
-  (** The variables to reapply (excluding "let"s of the context) *)
+  abstr_rev_inst : Id.t list;
+  (** The variables to reapply (excluding "let"s of the context), in reverse order *)
   abstr_uinst : Univ.Instance.t;
   (** Abstracted universe variables to reapply *)
 }
@@ -63,14 +63,15 @@ val universe_context_of_cooking_info : cooking_info -> Univ.AbstractContext.t
 
 val instance_of_cooking_info : cooking_info -> Constr.t array
 
+type internal_abstr_inst_info
 type my_global_reference
 module RefTable : Hashtbl.S with type key = my_global_reference
 
-val abstract_as_type : abstr_inst_info RefTable.t -> cooking_info -> types -> types
+val abstract_as_type : internal_abstr_inst_info RefTable.t -> cooking_info -> types -> types
 
-val abstract_as_body : abstr_inst_info RefTable.t -> cooking_info -> constr -> constr
+val abstract_as_body : internal_abstr_inst_info RefTable.t -> cooking_info -> constr -> constr
 
-val abstract_as_sort : abstr_inst_info RefTable.t -> cooking_info -> Sorts.t -> Sorts.t
+val abstract_as_sort : internal_abstr_inst_info RefTable.t -> cooking_info -> Sorts.t -> Sorts.t
 
 val lift_mono_univs : cooking_info -> Univ.ContextSet.t -> cooking_info * Univ.ContextSet.t
 
