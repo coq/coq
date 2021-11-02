@@ -374,7 +374,7 @@ let default_univ_decl =
     univdecl_constraints = Constraints.empty;
     univdecl_extensible_constraints = true }
 
-let error_unbound_universes left uctx =
+let pr_error_unbound_universes left uctx =
   let open Pp in
   let n = Level.Set.cardinal left in
   let prlev u =
@@ -383,13 +383,20 @@ let error_unbound_universes left uctx =
         | None | Some {uloc=None} -> mt ()
         | Some {uloc=Some loc} -> spc() ++ str"(" ++ Loc.pr loc ++ str")"))
   in
-  (* Deliberately using no location as the location of the univs
-     doesn't correspond to the failing command. *)
-  user_err ?loc:None
-    (hv 0
-       (str (CString.plural n "Universe") ++ spc () ++
-        (prlist_with_sep spc prlev (Level.Set.elements left)) ++
-        spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound."))
+  (hv 0
+     (str (CString.plural n "Universe") ++ spc () ++
+      (prlist_with_sep spc prlev (Level.Set.elements left)) ++
+      spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound."))
+
+exception UnboundUnivs of Level.Set.t * t
+
+(* Deliberately using no location as the location of the univs
+   doesn't correspond to the failing command. *)
+let error_unbound_universes left uctx = raise (UnboundUnivs (left,uctx))
+
+let _ = CErrors.register_handler (function
+    | UnboundUnivs (left,uctx) -> Some (pr_error_unbound_universes left uctx)
+    | _ -> None)
 
 let universe_context ~names ~extensible uctx =
   let levels = ContextSet.levels uctx.local in
