@@ -32,6 +32,7 @@ module V82 : sig
 
   (* Old style hyps primitive *)
   val hyps : Evd.evar_map -> goal -> Environ.named_context_val
+  [@@ocaml.deprecated "Use Evd.evar_filtered_hyps"]
 
   (* same as [hyps], but ensures that existential variables are
      normalised. *)
