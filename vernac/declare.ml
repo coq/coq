@@ -1979,7 +1979,7 @@ end = struct
       fun i { CInfo.name; typ; impargs } ->
         let pe = {
             parameter_entry_secctx = sec_vars;
-            parameter_entry_type = typ;
+            parameter_entry_type = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ;
             parameter_entry_universes = univs;
             parameter_entry_inline_code = None;
           } in
