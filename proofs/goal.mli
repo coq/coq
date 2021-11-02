@@ -53,10 +53,6 @@ module V82 : sig
   (* Instantiates a goal with an open term *)
   val partial_solution : Environ.env -> Evd.evar_map -> goal -> EConstr.constr -> Evd.evar_map
 
-  (* Instantiates a goal with an open term, reusing name of goal for
-     second goal *)
-  val partial_solution_to : Environ.env -> Evd.evar_map -> goal -> goal -> EConstr.constr -> Evd.evar_map
-
   (* Principal part of the progress tactical *)
   val progress : goal list Evd.sigma -> goal Evd.sigma -> bool
 

@@ -75,14 +75,6 @@ module V82 = struct
     in
     Evd.define evk c sigma
 
-  (* Instantiates a goal with an open term, using name of goal for evk' *)
-  let partial_solution_to env sigma evk evk' c =
-    let id = Evd.evar_ident evk sigma in
-    let sigma = partial_solution env sigma evk c in
-    match id with
-    | None -> sigma
-    | Some id -> Evd.rename evk' id sigma
-
   let weak_progress glss gls =
     match glss.Evd.it with
     | [ g ] -> not (Proofview.Progress.goal_equal ~evd:gls.Evd.sigma

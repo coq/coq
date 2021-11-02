@@ -956,6 +956,13 @@ let interp_term env sigma = function
       on_snd EConstr.Unsafe.to_constr (interp_open_constr ist env sigma c)
   | _ -> errorstrm (str"interpreting a term with no ist")
 
+let partial_solution_to env sigma evk evk' c =
+  let id = Evd.evar_ident evk sigma in
+  let sigma = Goal.V82.partial_solution env sigma evk c in
+  match id with
+  | None -> sigma
+  | Some id -> Evd.rename evk' id sigma
+
 let thin id sigma goal =
   let ids = Id.Set.singleton id in
   let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma goal) in
@@ -969,7 +976,7 @@ let thin id sigma goal =
   | None -> sigma
   | Some (sigma, hyps, concl) ->
     let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl in
-    let sigma = Goal.V82.partial_solution_to env sigma goal gl ev in
+    let sigma = partial_solution_to env sigma goal gl ev in
     sigma
 
 (*
