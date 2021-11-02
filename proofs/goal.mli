@@ -57,9 +57,6 @@ module V82 : sig
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map
   [@@ocaml.deprecated "This should be the identity now"]
 
-  (* Goal represented as a type, doesn't take into account section variables *)
-  val abstract_type : Evd.evar_map -> goal -> EConstr.types
-
 end
 
 module Set = Evar.Set

@@ -10,8 +10,6 @@
 
 open Pp
 
-module NamedDecl = Context.Named.Declaration
-
 (* This module implements the abstract interface to goals *)
 (* A general invariant of the module, is that a goal whose associated
    evar is defined in the current evar_map, should not be accessed. *)
@@ -81,23 +79,6 @@ module V82 = struct
     let evi = Evarutil.nf_evar_info sigma evi in
     let sigma = Evd.add sigma gl evi in
     (gl, sigma)
-
-  (* Goal represented as a type, doesn't take into account section variables *)
-  let abstract_type sigma gl =
-    let open EConstr in
-    let (gl,sigma) = nf_evar sigma gl in
-    let env = env sigma gl in
-    let genv = Global.env () in
-    let is_proof_var decl =
-      try ignore (Environ.lookup_named (NamedDecl.get_id decl) genv); false
-      with Not_found -> true in
-    Environ.fold_named_context_reverse (fun t decl ->
-                                          if is_proof_var decl then
-                                            let decl = Termops.map_named_decl EConstr.of_constr decl in
-                                            mkNamedProd_or_LetIn decl t
-                                          else
-                                            t
-                                       ) ~init:(concl sigma gl) env
 
 end
 

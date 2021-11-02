@@ -1330,10 +1330,26 @@ let whole_start concl_tac nb_args is_mes func input_type relation rec_arg_num :
             ; args_assoc = [] })
         (fun b ids -> tclUSER_if_not_mes concl_tac b ids))
 
+(* Goal represented as a type, doesn't take into account section variables *)
+let abstract_type sigma gl =
+  let open EConstr in
+  let genv = Global.env () in
+  let env = Evd.evar_filtered_env genv (Evd.find sigma gl) in
+  let is_proof_var decl =
+    try ignore (Environ.lookup_named (Context.Named.Declaration.get_id decl) genv); false
+    with Not_found -> true in
+  Environ.fold_named_context_reverse (fun t decl ->
+                                        if is_proof_var decl then
+                                          let decl = Termops.map_named_decl EConstr.of_constr decl in
+                                          mkNamedProd_or_LetIn decl t
+                                        else
+                                          t
+                                      ) ~init:(Goal.V82.concl sigma gl) env
+
 let get_current_subgoals_types pstate =
   let p = Declare.Proof.get pstate in
   let Proof.{goals = sgs; sigma; _} = Proof.data p in
-  (sigma, List.map (Goal.V82.abstract_type sigma) sgs)
+  (sigma, List.map (abstract_type sigma) sgs)
 
 exception EmptySubgoals
 
