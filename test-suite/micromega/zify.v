@@ -1,4 +1,4 @@
-Require Import BinNums BinInt ZifyInst Zify.
+Require Import BinNums BinInt BinNat ZifyInst Zify.
 
 Definition pos := positive.
 
@@ -89,6 +89,51 @@ Proof.
   reflexivity.
 Qed.
 
+Goal forall x, Z.of_N (Pos.Nsucc_double x) = (2 * Z.of_N x + 1)%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x, Z.of_N (Pos.Ndouble x) = (2 * Z.of_N x)%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x, Z.of_N (N.succ_double x) = (2 * Z.of_N x + 1)%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x, Z.of_N (N.double x) = (2 * Z.of_N x)%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x, Z.pos (N.succ_pos x) = (Z.of_N x + 1)%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x, Z.of_N (N.div2 x) = (Z.of_N x / 2)%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x y, Z.of_N (N.pow x y) = (Z.pow (Z.of_N x) (Z.of_N y))%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x, Z.of_N (N.square x) = (Z.of_N x * Z.of_N x)%Z.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x, Z.pos (Z.to_pos x) = Z.max 1 x.
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
 Require Import Lia.
 
 Goal forall n n3,
@@ -167,12 +212,6 @@ Goal  @zero znat = 0%nat.
   reflexivity.
 Qed.
 
-Require Import ZifyBool.
-Instance Op_bool_inj : UnOp (inj : bool -> bool) :=
-  { TUOp := id; TUOpInj := fun _ => eq_refl }.
-Add Zify UnOp Op_bool_inj.
-
-
 Goal forall (x y : positive) (F : forall (P: Pos.le x y) , positive) (P : Pos.le x y),
     (F P + 1 = 1 + F P)%positive.
 Proof.
@@ -221,6 +260,10 @@ Qed.
 
 Require Import ZifyBool.
 
+Instance Op_bool_inj : UnOp (inj : bool -> bool) :=
+  { TUOp := id; TUOpInj := fun _ => eq_refl }.
+Add Zify UnOp Op_bool_inj.
+
 Goal forall x y : nat, Nat.eqb x 1 = true ->
                        Nat.eqb y 0 = true ->
                        Nat.eqb (x + y) 1 = true.
@@ -242,4 +285,34 @@ Goal forall x y : nat, is_true (Nat.eqb x 1) ->
                        is_true (Nat.eqb (x + y) 1).
 Proof.
 lia.
+Qed.
+
+Goal forall x y, Pos.eqb x y = Z.eqb (Z.pos x) (Z.pos y).
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x y, Pos.leb x y = Z.leb (Z.pos x) (Z.pos y).
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x y, Pos.ltb x y = Z.ltb (Z.pos x) (Z.pos y).
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x y, N.eqb x y = Z.eqb (Z.of_N x) (Z.of_N y).
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x y, N.leb x y = Z.leb (Z.of_N x) (Z.of_N y).
+Proof.
+  intros; zify_op; reflexivity.
+Qed.
+
+Goal forall x y, N.ltb x y = Z.ltb (Z.of_N x) (Z.of_N y).
+Proof.
+  intros; zify_op; reflexivity.
 Qed.
