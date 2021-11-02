@@ -490,13 +490,11 @@ let pr_goal_name sigma g =
   else mt ()
 
 let pr_goal_header nme sigma g =
-  let (g,sigma) = Goal.V82.nf_evar sigma g in
   str "goal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
   ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g) else mt ())
 
 (* display the conclusion of a goal *)
 let pr_concl n ?(diffs=false) ?og_s sigma g =
-  let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = goal_env sigma g in
   let pc =
     if diffs then
