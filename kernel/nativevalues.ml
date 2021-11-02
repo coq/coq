@@ -113,10 +113,21 @@ let mk_rel_accu i =
   mk_accu (Arel i)
 
 let rel_tbl_size = 100
-let rel_tbl = Array.init rel_tbl_size mk_rel_accu
+let rel_tbl_init = ref false
+(* Initialize the table lazily not to generate naked pointers at startup *)
+let rel_tbl = Array.make rel_tbl_size (Obj.magic 0 : t)
 
 let mk_rel_accu i =
-  if i < rel_tbl_size then rel_tbl.(i)
+  if i < rel_tbl_size then
+    let () =
+      if not !rel_tbl_init then begin
+        for i = 0 to rel_tbl_size - 1 do
+          rel_tbl.(i) <- mk_rel_accu i
+        done;
+        rel_tbl_init := true
+      end
+    in
+    rel_tbl.(i)
   else mk_rel_accu i
 
 let mk_rels_accu lvl len =
