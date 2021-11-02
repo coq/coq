@@ -75,21 +75,6 @@ module V82 = struct
     in
     Evd.define evk c sigma
 
-  let weak_progress glss gls =
-    match glss.Evd.it with
-    | [ g ] -> not (Proofview.Progress.goal_equal ~evd:gls.Evd.sigma
-                      ~extended_evd:glss.Evd.sigma gls.Evd.it g)
-    | _ -> true
-
-  let progress glss gls =
-    weak_progress glss gls
-    (* spiwack: progress normally goes like this:
-    (Evd.progress_evar_map gls.Evd.sigma glss.Evd.sigma) || (weak_progress glss gls)
-       This is immensly slow in the current implementation. Maybe we could
-       reimplement progress_evar_map with restricted folds like "fold_undefined",
-       with a good implementation of them.
-    *)
-
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
     let evi = Evd.find sigma gl in

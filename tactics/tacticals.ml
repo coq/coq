@@ -151,11 +151,23 @@ let rec tclTHENLIST = function
 let tclMAP tacfun l =
   List.fold_right (fun x -> (tclTHEN (tacfun x))) l tclIDTAC
 
+let weak_progress glss gls =
+match glss.Evd.it with
+| [ g ] -> not (Proofview.Progress.goal_equal ~evd:gls.Evd.sigma
+                  ~extended_evd:glss.Evd.sigma gls.Evd.it g)
+| _ -> true
+
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
 the goal unchanged *)
 let tclPROGRESS tac ptree =
   let rslt = tac ptree in
-  if Goal.V82.progress rslt ptree then rslt
+  if weak_progress rslt ptree then rslt
+(* spiwack: progress normally goes like this:
+(Evd.progress_evar_map gls.Evd.sigma glss.Evd.sigma) || (weak_progress glss gls)
+    This is immensly slow in the current implementation. Maybe we could
+    reimplement progress_evar_map with restricted folds like "fold_undefined",
+    with a good implementation of them.
+*)
   else user_err (str"Failed to progress.")
 
 (* Execute tac, show the names of new hypothesis names created by tac
