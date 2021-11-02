@@ -102,3 +102,15 @@ let raise ?loc e =
   | Some loc ->
     let info = Exninfo.add Exninfo.null location loc in
     Exninfo.iraise (e, info)
+
+let pr loc =
+  let open Pp in
+  let fname = loc.fname in
+  match fname with
+  | ToplevelInput ->
+    (str"Toplevel input, characters " ++ int loc.bp ++
+     str"-" ++ int loc.ep)
+  | InFile { file } ->
+    (str"File " ++ str "\"" ++ str file ++ str "\"" ++
+     str", line " ++ int loc.line_nb ++ str", characters " ++
+     int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos))

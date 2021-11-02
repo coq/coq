@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
 open CErrors
 open Util
 open Names
@@ -375,20 +374,29 @@ let default_univ_decl =
     univdecl_constraints = Constraints.empty;
     univdecl_extensible_constraints = true }
 
-let error_unbound_universes left uctx =
+let pr_error_unbound_universes left uctx =
+  let open Pp in
   let n = Level.Set.cardinal left in
-  let loc =
-    try
-      let info =
-        Level.Map.find (Level.Set.choose left) (snd uctx.names) in
-      info.uloc
-    with Not_found -> None
+  let prlev u =
+    let info = Level.Map.find_opt u (snd uctx.names) in
+    h (pr_uctx_level uctx u ++ (match info with
+        | None | Some {uloc=None} -> mt ()
+        | Some {uloc=Some loc} -> spc() ++ str"(" ++ Loc.pr loc ++ str")"))
   in
-  user_err ?loc
-    ((str(CString.plural n "Universe") ++ spc () ++
-      Level.Set.pr (pr_uctx_level uctx) left ++
-      spc () ++ str (CString.conjugate_verb_to_be n) ++
-      str" unbound."))
+  (hv 0
+     (str (CString.plural n "Universe") ++ spc () ++
+      (prlist_with_sep spc prlev (Level.Set.elements left)) ++
+      spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound."))
+
+exception UnboundUnivs of Level.Set.t * t
+
+(* Deliberately using no location as the location of the univs
+   doesn't correspond to the failing command. *)
+let error_unbound_universes left uctx = raise (UnboundUnivs (left,uctx))
+
+let _ = CErrors.register_handler (function
+    | UnboundUnivs (left,uctx) -> Some (pr_error_unbound_universes left uctx)
+    | _ -> None)
 
 let universe_context ~names ~extensible uctx =
   let levels = ContextSet.levels uctx.local in
@@ -428,8 +436,8 @@ let check_implication uctx cstrs cstrs' =
   let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
   if Constraints.is_empty cstrs' then ()
   else CErrors.user_err
-      (str "Universe constraints are not implied by the ones declared: " ++
-       pr_constraints (pr_uctx_level uctx) cstrs')
+      Pp.(str "Universe constraints are not implied by the ones declared: " ++
+          pr_constraints (pr_uctx_level uctx) cstrs')
 
 let check_mono_univ_decl uctx decl =
   let () =
@@ -745,7 +753,7 @@ let pr_weak prl {weak_constraints=weak} =
   prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
 
 let pr_universe_body = function
-  | None -> mt ()
-  | Some v -> str" := " ++ Univ.Universe.pr v
+  | None -> Pp.mt ()
+  | Some x -> Pp.(str " := " ++ Univ.Universe.pr x)
 
 let pr_universe_opt_subst = Univ.Level.Map.pr pr_universe_body
