@@ -457,6 +457,9 @@ let pr_transparent_state ts =
   hv 0 (str"VARIABLES: " ++ pr_idpred ts.TransparentState.tr_var ++ fnl () ++
         str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl ())
 
+let goal_env sigma g =
+  Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g)
+
 (* display complete goal
  og_s has goal+sigma on the previous proof step for diffs
  g_s has goal+sigma on the current proof step
@@ -464,7 +467,7 @@ let pr_transparent_state ts =
 let pr_goal ?(diffs=false) ?og_s g_s =
   let g = sig_it g_s in
   let sigma = Tacmach.project g_s in
-  let env = Goal.V82.env sigma g in
+  let env = goal_env sigma g in
   let concl = Goal.V82.concl sigma g in
   let goal =
     if diffs then
@@ -494,7 +497,7 @@ let pr_goal_header nme sigma g =
 (* display the conclusion of a goal *)
 let pr_concl n ?(diffs=false) ?og_s sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
-  let env = Goal.V82.env sigma g in
+  let env = goal_env sigma g in
   let pc =
     if diffs then
       Proof_diffs.diff_concl ?og_s sigma g
@@ -590,7 +593,7 @@ let print_evar_constraints gl sigma =
     match gl with
     | None -> fun e' -> pr_context_of e' sigma
     | Some g ->
-       let env = Goal.V82.env sigma g in fun e' ->
+       let env = goal_env sigma g in fun e' ->
        begin
          if Context.Named.equal Constr.equal (named_context env) (named_context e') then
            if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()

@@ -2138,7 +2138,8 @@ let vernac_check_guard ~pstate =
   let message =
     try
       let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
-      Inductiveops.control_only_guard (Goal.V82.env sigma gl) sigma pfterm;
+      let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
+      Inductiveops.control_only_guard env sigma pfterm;
       (str "The condition holds up to here")
     with UserError s ->
       (str ("Condition violated: ") ++ s ++ str ".")

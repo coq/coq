@@ -91,7 +91,7 @@ let pf_hnf_type_of gls          = pf_get_type_of gls %> pf_whd_all gls
 open Pp
 
 let db_pr_goal sigma g =
-  let env = Goal.V82.env sigma g in
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g) in
   let penv = Termops.Internal.print_named_context env in
   let pc = Termops.Internal.print_constr_env env sigma (Goal.V82.concl sigma g) in
   str"  " ++ hv 0 (penv ++ fnl () ++

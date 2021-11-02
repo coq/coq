@@ -229,12 +229,12 @@ let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot 
 (* XXX: Very unfortunately we cannot use the Proofview interface as
    Proof is still using the "legacy" one. *)
 let process_goal_concl sigma g : EConstr.t * Environ.env =
-  let env  = Goal.V82.env   sigma g in
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g) in
   let ty   = Goal.V82.concl sigma g in
   (ty, env)
 
 let process_goal sigma g : EConstr.t reified_goal =
-  let env  = Goal.V82.env   sigma g in
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g) in
   let ty   = Goal.V82.concl sigma g in
   let name = Goal.uid g             in
   (* compaction is usually desired [eg for better display] *)

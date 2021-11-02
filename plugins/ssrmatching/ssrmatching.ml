@@ -958,7 +958,7 @@ let interp_term env sigma = function
 
 let thin id sigma goal =
   let ids = Id.Set.singleton id in
-  let env = Goal.V82.env sigma goal in
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma goal) in
   let cl = Goal.V82.concl sigma goal in
   let sigma = Evd.clear_metas sigma in
   let ans =
