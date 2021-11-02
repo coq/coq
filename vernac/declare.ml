@@ -2206,9 +2206,7 @@ module Error = struct
     CErrors.user_err (Pp.str (Printf.sprintf "Unknown obligation number %i" (succ num)))
 
   let already_solved num =
-    CErrors.user_err
-      ( str "Obligation" ++ spc () ++ int num ++ str "already" ++ spc ()
-        ++ str "solved." )
+    CErrors.user_err Pp.(str "Obligation " ++ int num ++ str " already solved." )
 
   let depends num rem =
     CErrors.user_err
@@ -2413,7 +2411,7 @@ let obligation (user_num, name, typ) ~pm tac =
     let obl = obls.(num) in
     match obl.obl_body with
     | None -> solve_obligation prg num tac
-    | Some r -> Error.already_solved num
+    | Some r -> Error.already_solved user_num
   else Error.unknown_obligation num
 
 let show_single_obligation i n obls x =
