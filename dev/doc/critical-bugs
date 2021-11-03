@@ -354,6 +354,17 @@ Conversion machines
   GH issue number: #13998
   risk: none, unless using primitive array operations; systematic otherwise
 
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: arbitrary code execution on arrays of floating point numbers
+  introduced: 8.13
+  impacted released versions: 8.13.0, 8.13.1, 8.14.0
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in: 8.14.1
+  found by: Melquiond
+  GH issue number: #15070
+  risk: none, unless mixing open terms and primitive floats inside primitive
+  arrays; critical otherwise
+
 Side-effects
 
   component: side-effects

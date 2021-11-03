@@ -831,6 +831,19 @@ Miscellaneous
   (`#13586 <https://github.com/coq/coq/pull/13586>`_,
   by Lasse Blaauwbroek).
 
+Changes in 8.14.1
+~~~~~~~~~~~~~~~~~
+
+Kernel
+^^^^^^
+
+- **Fixed:**
+  Fix the implementation of persistent arrays used by the VM and native compute
+  so that it uses a uniform representation. Previously, storing primitive floats
+  inside primitive arrays could cause memory corruption
+  (`#15081 <https://github.com/coq/coq/pull/15081>`_,
+  closes `#15070 <https://github.com/coq/coq/issues/15070>`_,
+  by Pierre-Marie Pédrot).
 
 Version 8.13
 ------------
