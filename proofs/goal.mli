@@ -41,6 +41,7 @@ module V82 : sig
 
   (* Access to ".evar_concl" *)
   val concl : Evd.evar_map -> goal -> EConstr.constr
+  [@@ocaml.deprecated "Use Evd.evar_concl"]
 
   (* Old style mk_goal primitive, returns a new goal with corresponding
        hypotheses and conclusion, together with a term which is precisely

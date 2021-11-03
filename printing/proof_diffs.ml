@@ -226,16 +226,20 @@ let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot 
     | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
     | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm);;
 
+let goal_repr sigma g =
+  let evi = Evd.find sigma g in
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  let ty  = Evd.evar_concl evi in
+  (env, ty)
+
 (* XXX: Very unfortunately we cannot use the Proofview interface as
    Proof is still using the "legacy" one. *)
 let process_goal_concl sigma g : EConstr.t * Environ.env =
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g) in
-  let ty   = Goal.V82.concl sigma g in
+  let (env, ty) = goal_repr sigma g in
   (ty, env)
 
 let process_goal sigma g : EConstr.t reified_goal =
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g) in
-  let ty   = Goal.V82.concl sigma g in
+  let (env, ty) = goal_repr sigma g in
   let name = Goal.uid g             in
   (* compaction is usually desired [eg for better display] *)
   let hyps      = Termops.compact_named_context (Environ.named_context env) in

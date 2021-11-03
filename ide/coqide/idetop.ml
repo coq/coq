@@ -170,11 +170,12 @@ let concl_next_tac =
   ])
 
 let process_goal sigma g =
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g) in
+  let evi = Evd.find sigma g in
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
   let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env sigma g)) else None in
   let ccl =
-    pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
+    pr_letype_env ~goal_concl_style:true env sigma (Evd.evar_concl evi)
   in
   let process_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in

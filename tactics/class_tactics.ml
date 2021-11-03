@@ -112,8 +112,9 @@ let set_typeclasses_strategy = function
   | Bfs -> Goptions.set_bool_option_value iterative_deepening_opt_name true
 
 let pr_ev evs ev =
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find evs ev) in
-  Printer.pr_econstr_env env evs (Goal.V82.concl evs ev)
+  let evi = Evd.find evs ev in
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  Printer.pr_econstr_env env evs (Evd.evar_concl evi)
 
 (** Typeclasses instance search tactic / eauto *)
 
