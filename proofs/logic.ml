@@ -556,7 +556,14 @@ let refiner ~check r =
   let (sgl,cl',sigma,oterm) = mk_refgoals ~check env sigma [] cl r in
   let map gl = Proofview.goal_with_state gl st in
   let sgl = List.rev_map map sgl in
-  let sigma = Goal.V82.partial_solution env sigma (Proofview.Goal.goal gl) (EConstr.of_constr oterm) in
+  let evk = Proofview.Goal.goal gl in
+  let c = EConstr.of_constr oterm in
+  (* Check that the goal itself does not appear in the refined term *)
+  let _ =
+    if not (Evarutil.occur_evar_upto sigma evk c) then ()
+    else Pretype_errors.error_occur_check env sigma evk c
+  in
+  let sigma = Evd.define evk c sigma in
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS sgl
   end

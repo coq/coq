@@ -52,6 +52,7 @@ module V82 : sig
 
   (* Instantiates a goal with an open term *)
   val partial_solution : Environ.env -> Evd.evar_map -> goal -> EConstr.constr -> Evd.evar_map
+  [@@ocaml.deprecated "Use Refine.refine"]
 
   (* Used by the compatibility layer and typeclasses *)
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map
