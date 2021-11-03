@@ -1,16 +1,19 @@
 Require Import Coq.Classes.Equivalence.
 Require Import Coq.Program.Program.
+Import Relation_Definitions.
+Import Morphisms.
 
-Ltac obligations_tactic ::= program_simpl ; simpl_relation.
+Obligation Tactic := program_simpl ; simpl_relation.
+Generalizable Variables A eqA.
 
-Lemma bla : forall [ ! Equivalence A (eqA : relation A) ] x y, eqA x y -> eqA y x.
+Lemma bla : forall `{ ! @Equivalence A (eqA : relation A) } x y, eqA x y -> eqA y x.
 Proof.
   intros.
   rewrite H0.
   reflexivity.
 Defined.
 
-Lemma bla' : forall [ ! Equivalence A (eqA : relation A) ] x y, eqA x y -> eqA y x.
+Lemma bla' : forall `{ ! @Equivalence A (eqA : relation A) } x y, eqA x y -> eqA y x.
 Proof.
   intros.
   (* Need delta on [relation] to unify with the right lemmas. *)
@@ -23,17 +26,14 @@ Axiom euclid : nat -> { x : nat | x > 0 } -> nat.
 Definition eq_proj {A} {s : A -> Prop} : relation (sig s) :=
   fun x y => `x = `y.
 
-Program Instance {A : Type} {s : A -> Prop} => Equivalence (sig s) eq_proj.
+Program Instance foo {A : Type} {s : A -> Prop} : @Equivalence (sig s) eq_proj.
 
-  Next Obligation.
-  Proof.
-    constructor ; red ; intros.
-    reflexivity.
-  Qed.
+Next Obligation.
+Proof.
+  cbv in *;congruence.
+Qed.
 
-  Admit Obligations.
-
-Instance Morphism (eq ==> eq_proj ==> eq) euclid.
+Instance bar : Proper (eq ==> eq_proj ==> eq) euclid.
 Proof.
 Admitted.
 
