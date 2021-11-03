@@ -47,7 +47,6 @@ val tclFAIL          : int -> Pp.t -> tactic
 val tclFAIL_lazy     : int -> Pp.t Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
-val tclSHOWHYPS      : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 

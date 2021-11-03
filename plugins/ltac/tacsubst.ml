@@ -183,7 +183,6 @@ and subst_tactic subst = CAst.map (function
       TacMatch (lz,subst_tactic subst c,subst_match_rule subst lmr)
   | TacId _ | TacFail _ as x -> x
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
-  | TacShowHyps tac -> TacShowHyps (subst_tactic subst tac:glob_tactic_expr)
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
   | TacThen (t1,t2) ->
       TacThen (subst_tactic subst t1, subst_tactic subst t2)

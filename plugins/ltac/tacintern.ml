@@ -623,7 +623,6 @@ and intern_tactic_seq onlytac ist tac =
   | TacFail (g,n,l) ->
       ist.ltacvars, CAst.make ?loc (TacFail (g,intern_int_or_var ist n,intern_message ist l))
   | TacProgress tac -> ist.ltacvars, CAst.make ?loc (TacProgress (intern_pure_tactic ist tac))
-  | TacShowHyps tac -> ist.ltacvars, CAst.make ?loc (TacShowHyps (intern_pure_tactic ist tac))
   | TacAbstract (tac,s) ->
       ist.ltacvars, CAst.make ?loc (TacAbstract (intern_pure_tactic ist tac,s))
   | TacThen (t1,t2) ->
