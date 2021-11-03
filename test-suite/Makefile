@@ -189,7 +189,6 @@ bugs: $(BUGS)
 
 clean:
 	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
-	rm -f vos/Makefile vos/Makefile.conf
 	rm -f misc/universes/all_stdlib.v
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
 	$(HIDE)find . \( \
@@ -852,26 +851,6 @@ tools/%.log : tools/%/run.sh
 	$(HIDE)(\
 	  export COQBIN=$(BIN);\
 	  cd tools/$* && \
-	  bash run.sh 2>&1; \
-	if [ $$? = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error!"; \
-	    $(FAIL); \
-	  fi; \
-	) > "$@"
-
-# vos/
-
-vos: vos/run.log
-
-vos/run.log: $(wildcard vos/*.sh) $(wildcard vos/*.v)
-	@echo "TEST      vos"
-	$(HIDE)(\
-	  export COQBIN=$(BIN);\
-	  cd vos && \
 	  bash run.sh 2>&1; \
 	if [ $$? = 0 ]; then \
 	    echo $(log_success); \
