@@ -1,0 +1,5 @@
+The command has indeed failed with message:
+Cannot find a physical path bound to logical path Coq.Does.Not.Exist.
+The command has indeed failed with message:
+Cannot find a physical path bound to logical path
+Does.Not.Exist with prefix Coq.
