@@ -320,11 +320,11 @@ let goal_type_of ~check env sigma c =
     (sigma, EConstr.Unsafe.to_constr t)
   else (sigma, EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c)))
 
+let mk_goal = Goal.V82.mk_goal [@ocaml.warning "-3"]
+(* TODO: inline when the Goal.V82 module is removed *)
+
 let rec mk_refgoals ~check env sigma goalacc conclty trm =
   let hyps = Environ.named_context_val env in
-  let mk_goal hyps concl =
-    Goal.V82.mk_goal sigma hyps concl
-  in
     if (not check) && not (occur_meta sigma (EConstr.of_constr trm)) then
       let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
       let t'ty = EConstr.Unsafe.to_constr t'ty in
@@ -336,7 +336,7 @@ let rec mk_refgoals ~check env sigma goalacc conclty trm =
         let conclty = nf_betaiota env sigma conclty in
           if check && occur_meta sigma conclty then
             raise (RefinerError (env, sigma, MetaInType conclty));
-          let (gl,ev,sigma) = mk_goal hyps conclty in
+          let (gl,ev,sigma) = mk_goal sigma hyps conclty in
           let ev = EConstr.Unsafe.to_constr ev in
           let conclty = EConstr.Unsafe.to_constr conclty in
           gl::goalacc, conclty, sigma, ev
@@ -406,12 +406,10 @@ let rec mk_refgoals ~check env sigma goalacc conclty trm =
 
 and mk_hdgoals ~check env sigma goalacc trm =
   let hyps = Environ.named_context_val env in
-  let mk_goal hyps concl =
-    Goal.V82.mk_goal sigma hyps concl in
   match kind trm with
     | Cast (c,_, ty) when isMeta c ->
         let sigma = check_typability ~check env sigma ty in
-        let (gl,ev,sigma) = mk_goal hyps (nf_betaiota env sigma (EConstr.of_constr ty)) in
+        let (gl,ev,sigma) = mk_goal sigma hyps (nf_betaiota env sigma (EConstr.of_constr ty)) in
         let ev = EConstr.Unsafe.to_constr ev in
         gl::goalacc,ty,sigma,ev
 

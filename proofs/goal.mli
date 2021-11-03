@@ -49,6 +49,7 @@ module V82 : sig
                          Environ.named_context_val ->
                          EConstr.constr ->
                          goal * EConstr.constr * Evd.evar_map
+  [@@ocaml.deprecated "Use the Refine.refine primitive and related API"]
 
   (* Instantiates a goal with an open term *)
   val partial_solution : Environ.env -> Evd.evar_map -> goal -> EConstr.constr -> Evd.evar_map
