@@ -944,16 +944,16 @@ let do_replace (evd : Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num
         nb_prod (Proofview.Goal.sigma g) (Proofview.Goal.concl g)
       in
       let open Tacticals.New in
+      let open Proofview.Notations in
       tclTHEN
         (tclDO nb_intro_to_do intro)
         (Proofview.Goal.enter (fun g' ->
              let just_introduced = Tacticals.New.nLastDecls g' nb_intro_to_do in
              let open Context.Named.Declaration in
              let just_introduced_id = List.map get_id just_introduced in
-             tclTHEN
                (* Hack to synchronize the goal with the global env *)
-               (Proofview.V82.tactic
-                  (Proofview.V82.of_tactic (Equality.rewriteLR equation_lemma)))
+               (Proofview.Unsafe.tclSETENV (Global.env ())) <*>
+               (Equality.rewriteLR equation_lemma) <*>
                (revert just_introduced_id))))
 
 let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
