@@ -196,17 +196,17 @@ let dir_of_sp sp =
 (** These functions register the visibility of the module and iterates
     through its components. They are called by plenty of module functions *)
 
-let consistency_checks exists dir dirinfo =
+let consistency_checks exists dir =
   if exists then
-    let globref =
-      try Nametab.locate_dir (qualid_of_dirpath dir)
+    let _ =
+      try Nametab.locate_module (qualid_of_dirpath dir)
       with Not_found ->
         user_err
           (DirPath.print dir ++ str " should already exist!")
     in
-    assert (Nametab.GlobDirRef.equal globref dirinfo)
+    ()
   else
-    if Nametab.exists_dir dir then
+    if Nametab.exists_module dir then
       user_err
         (DirPath.print dir ++ str " already exists.")
 
@@ -217,9 +217,8 @@ let compute_visibility exists i =
 
 let do_module exists iter_objects i obj_dir obj_mp sobjs kobjs =
   let prefix = Nametab.{ obj_dir ; obj_mp; } in
-  let dirinfo = Nametab.GlobDirRef.DirModule prefix in
-  consistency_checks exists obj_dir dirinfo;
-  Nametab.push_dir (compute_visibility exists i) obj_dir dirinfo;
+  consistency_checks exists obj_dir;
+  Nametab.push_module (compute_visibility exists i) obj_dir obj_mp;
   ModSubstObjs.set obj_mp sobjs;
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
@@ -362,10 +361,8 @@ let rec open_object f i (name, obj) =
   | KeepObject objs -> open_keep f i (name, objs)
 
 and open_module f i obj_dir obj_mp sobjs =
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
-  let dirinfo = Nametab.GlobDirRef.DirModule prefix in
-  consistency_checks true obj_dir dirinfo;
-  if in_filter ~cat:None f then Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo;
+  consistency_checks true obj_dir;
+  if in_filter ~cat:None f then Nametab.push_module (Nametab.Exactly i) obj_dir obj_mp;
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let modobjs = ModObjs.get obj_mp in

@@ -30,14 +30,12 @@ module GlobDirRef = struct
     | DirOpenModule of object_prefix
     | DirOpenModtype of object_prefix
     | DirOpenSection of object_prefix
-    | DirModule of object_prefix
 
   let equal r1 r2 = match r1, r2 with
     | DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2
     | DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
     | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
-    | DirModule op1, DirModule op2 -> eq_op op1 op2
-    | _ -> false
+    | (DirOpenModule _ | DirOpenModtype _ | DirOpenSection _), _ -> false
 
 end
 
@@ -338,10 +336,11 @@ struct
     | id :: l -> (id, l)
 end
 
+module MPDTab = Make(DirPath')(MPEqual)
 module DirTab = Make(DirPath')(GlobDirRef)
 
-(* If we have a (closed) module M having a submodule N, than N does not
-   have the entry in [the_dirtab]. *)
+let the_modtab = Summary.ref ~name:"modtab" MPDTab.empty
+
 type dirtab = DirTab.t
 let the_dirtab = Summary.ref ~name:"dirtab" (DirTab.empty : dirtab)
 
@@ -417,12 +416,13 @@ let push_modtype vis sp kn =
   the_modtypetab := MPTab.push vis sp kn !the_modtypetab;
   the_modtyperevtab := MPmap.add kn sp !the_modtyperevtab
 
+let push_module vis dir mp =
+  the_modtab := MPDTab.push vis dir mp !the_modtab;
+  the_modrevtab := MPmap.add mp dir !the_modrevtab
+
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
 let push_dir vis dir dir_ref =
-  the_dirtab := DirTab.push vis dir dir_ref !the_dirtab;
-  match dir_ref with
-  | GlobDirRef.DirModule { obj_mp; _ } -> the_modrevtab := MPmap.add obj_mp dir !the_modrevtab
-  | _ -> ()
+  the_dirtab := DirTab.push vis dir dir_ref !the_dirtab
 
 (* This is for global universe names *)
 
@@ -453,15 +453,9 @@ let locate_universe qid = UnivTab.locate qid !the_univtab
 
 let locate_dir qid = DirTab.locate qid !the_dirtab
 
-let locate_module qid =
-  match locate_dir qid with
-    | GlobDirRef.DirModule { obj_mp ; _} -> obj_mp
-    | _ -> raise Not_found
+let locate_module qid = MPDTab.locate qid !the_modtab
 
-let full_name_module qid =
-  match locate_dir qid with
-    | GlobDirRef.DirModule { obj_dir ; _} -> obj_dir
-    | _ -> raise Not_found
+let full_name_module qid = MPDTab.user_name qid !the_modtab
 
 let locate_section qid =
   match locate_dir qid with
@@ -477,6 +471,8 @@ let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
 let locate_extended_all_dir qid = DirTab.find_prefixes qid !the_dirtab
 
 let locate_extended_all_modtype qid = MPTab.find_prefixes qid !the_modtypetab
+
+let locate_extended_all_module qid = MPDTab.find_prefixes qid !the_modtab
 
 (* Completion *)
 let completion_canditates qualid =
@@ -513,6 +509,8 @@ let global qid =
 let exists_cci sp = ExtRefTab.exists sp !the_ccitab
 
 let exists_dir dir = DirTab.exists dir !the_dirtab
+
+let exists_module dir = MPDTab.exists dir !the_modtab
 
 let exists_modtype sp = MPTab.exists sp !the_modtypetab
 
@@ -560,7 +558,7 @@ let shortest_qualid_of_syndef ?loc ctx kn =
 
 let shortest_qualid_of_module ?loc mp =
   let dir = MPmap.find mp !the_modrevtab in
-    DirTab.shortest_qualid ?loc Id.Set.empty dir !the_dirtab
+  MPDTab.shortest_qualid ?loc Id.Set.empty dir !the_modtab
 
 let shortest_qualid_of_modtype ?loc kn =
   let sp = MPmap.find kn !the_modtyperevtab in

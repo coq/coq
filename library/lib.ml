@@ -277,7 +277,7 @@ let start_mod is_type export id mp fs =
   let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
   let exists =
     if is_type then Nametab.exists_cci (make_path id)
-    else Nametab.exists_dir dir
+    else Nametab.exists_module dir
   in
   if exists then
     user_err (Id.print id ++ str " already exists.");
