@@ -2400,7 +2400,7 @@ Run-time optimization tactic
    heap in the OCaml run-time system. It is analogous to the
    :cmd:`Optimize Heap` command.
 
-.. cmd:: infoH @ltac_expr3
+.. cmd:: infoH @ltac_expr
 
    Used internally by Proof General.  See `#12423 <https://github.com/coq/coq/issues/12423>`_ for
    some background.
