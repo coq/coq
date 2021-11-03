@@ -12,8 +12,8 @@ Check (eq_refl two <<: six / three = two).
 Definition compute1 := Eval compute in six / three.
 Check (eq_refl compute1 : two = two).
 
-Definition huge := Eval compute in ldexp one 1023%Z.
-Definition tiny := Eval compute in ldexp one (-1023)%Z.
+Definition huge := Eval compute in Z.ldexp one 1023%Z.
+Definition tiny := Eval compute in Z.ldexp one (-1023)%Z.
 
 Check (eq_refl : huge / tiny = infinity).
 Check (eq_refl infinity <: huge / tiny = infinity).

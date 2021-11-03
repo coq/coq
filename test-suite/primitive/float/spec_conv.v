@@ -2,9 +2,9 @@ Require Import ZArith Floats.
 
 Definition two := Eval compute in (one + one)%float.
 Definition half := Eval compute in (one / two)%float.
-Definition huge := Eval compute in ldexp one (1023)%Z.
-Definition tiny := Eval compute in ldexp one (-1023)%Z.
-Definition denorm := Eval compute in ldexp one (-1074)%Z.
+Definition huge := Eval compute in Z.ldexp one (1023)%Z.
+Definition tiny := Eval compute in Z.ldexp one (-1023)%Z.
+Definition denorm := Eval compute in Z.ldexp one (-1074)%Z.
 
 Check (eq_refl : SF2Prim (Prim2SF zero) = zero).
 Check (eq_refl : SF2Prim (Prim2SF neg_zero) = neg_zero).

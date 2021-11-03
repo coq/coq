@@ -17,18 +17,20 @@ Lemma shift_value : shift = (2*emax + prec)%Z.
   reflexivity.
 Qed.
 
-Theorem frexp_spec : forall f, let (m,e) := frexp f in (Prim2SF m, e) = SFfrexp prec emax (Prim2SF f).
+Theorem Z_frexp_spec : forall f, let (m,e) := Z.frexp f in (Prim2SF m, e) = SFfrexp prec emax (Prim2SF f).
   intro.
-  unfold frexp.
+  unfold Z.frexp.
   case_eq (frshiftexp f).
   intros.
   assert (H' := frshiftexp_spec f).
   now rewrite H in H'.
 Qed.
+#[deprecated(since = "8.15.0", note = "Use Z_frexp_spec instead.")]
+Notation frexp_spec := Z_frexp_spec (only parsing).
 
-Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2SF f) e.
+Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Prim2SF f) e.
   intros.
-  unfold ldexp.
+  unfold Z.ldexp.
   rewrite (ldshiftexp_spec f _).
   assert (Hv := Prim2SF_valid f).
   destruct (Prim2SF f); auto.
@@ -327,3 +329,5 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
       reflexivity.
     + exfalso; lia.
 Qed.
+#[deprecated(since = "8.15.0", note = "Use Z_ldexp_spec instead.")]
+Notation ldexp_spec := Z_ldexp_spec (only parsing).
