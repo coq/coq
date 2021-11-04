@@ -958,8 +958,9 @@ let interp_term env sigma = function
 
 let thin id sigma goal =
   let ids = Id.Set.singleton id in
-  let env = Goal.V82.env sigma goal in
-  let cl = Goal.V82.concl sigma goal in
+  let evi = Evd.find sigma goal in
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  let cl = Evd.evar_concl evi in
   let sigma = Evd.clear_metas sigma in
   let ans =
     try Some (Evarutil.clear_hyps_in_evi env sigma (Environ.named_context_val env) cl ids)
@@ -968,9 +969,16 @@ let thin id sigma goal =
   match ans with
   | None -> sigma
   | Some (sigma, hyps, concl) ->
-    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl in
-    let sigma = Goal.V82.partial_solution_to env sigma goal gl ev in
-    sigma
+    let (sigma, evk) =
+      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps sigma concl
+    in
+    let sigma = Evd.remove_future_goal sigma evk in
+    let id = Evd.evar_ident goal sigma in
+    let proof = EConstr.mkEvar (evk, Evd.evar_identity_subst @@ Evd.find sigma evk) in
+    let sigma = Evd.define goal proof sigma in
+    match id with
+    | None -> sigma
+    | Some id -> Evd.rename evk id sigma
 
 (*
 let pr_ist { lfun= lfun } =

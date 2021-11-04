@@ -457,6 +457,10 @@ let pr_transparent_state ts =
   hv 0 (str"VARIABLES: " ++ pr_idpred ts.TransparentState.tr_var ++ fnl () ++
         str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl ())
 
+let goal_repr sigma g =
+  let evi = Evd.find sigma g in
+  Evd.evar_filtered_env (Global.env ()) evi, Evd.evar_concl evi
+
 (* display complete goal
  og_s has goal+sigma on the previous proof step for diffs
  g_s has goal+sigma on the current proof step
@@ -464,8 +468,7 @@ let pr_transparent_state ts =
 let pr_goal ?(diffs=false) ?og_s g_s =
   let g = sig_it g_s in
   let sigma = Tacmach.project g_s in
-  let env = Goal.V82.env sigma g in
-  let concl = Goal.V82.concl sigma g in
+  let env, concl = goal_repr sigma g in
   let goal =
     if diffs then
       Proof_diffs.diff_goal ?og_s g sigma
@@ -487,19 +490,17 @@ let pr_goal_name sigma g =
   else mt ()
 
 let pr_goal_header nme sigma g =
-  let (g,sigma) = Goal.V82.nf_evar sigma g in
   str "goal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
   ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g) else mt ())
 
 (* display the conclusion of a goal *)
 let pr_concl n ?(diffs=false) ?og_s sigma g =
-  let (g,sigma) = Goal.V82.nf_evar sigma g in
-  let env = Goal.V82.env sigma g in
+  let env, concl = goal_repr sigma g in
   let pc =
     if diffs then
       Proof_diffs.diff_concl ?og_s sigma g
     else
-      pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
+      pr_letype_env ~goal_concl_style:true env sigma concl
   in
   let header = pr_goal_header (int n) sigma g in
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
@@ -590,7 +591,7 @@ let print_evar_constraints gl sigma =
     match gl with
     | None -> fun e' -> pr_context_of e' sigma
     | Some g ->
-       let env = Goal.V82.env sigma g in fun e' ->
+       let env, _ = goal_repr sigma g in fun e' ->
        begin
          if Context.Named.equal Constr.equal (named_context env) (named_context e') then
            if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()

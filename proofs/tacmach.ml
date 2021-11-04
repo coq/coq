@@ -31,13 +31,13 @@ type tactic = Proofview.V82.tac
 
 let sig_it x = x.it
 let project x = x.sigma
-let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
-let pf_hyps gls = EConstr.named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
+let pf_env { it; sigma } = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma it)
+let pf_hyps { it; sigma } = Evd.evar_filtered_context (Evd.find sigma it)
 
 let test_conversion env sigma pb c1 c2 =
   Reductionops.check_conv ~pb env sigma c1 c2
 
-let pf_concl gls = Goal.V82.concl (project gls) (sig_it gls)
+let pf_concl gls = Evd.evar_concl (Evd.find (project gls) (sig_it gls))
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
   List.map (function LocalAssum (id,x)
@@ -91,9 +91,10 @@ let pf_hnf_type_of gls          = pf_get_type_of gls %> pf_whd_all gls
 open Pp
 
 let db_pr_goal sigma g =
-  let env = Goal.V82.env sigma g in
+  let evi = Evd.find sigma g in
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
   let penv = Termops.Internal.print_named_context env in
-  let pc = Termops.Internal.print_constr_env env sigma (Goal.V82.concl sigma g) in
+  let pc = Termops.Internal.print_constr_env env sigma (Evd.evar_concl evi) in
   str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()

@@ -562,7 +562,8 @@ let get_nth_V82_goal p i =
 
 let get_goal_context_gen pf i =
   let { Evd.it=goal ; sigma=sigma; } = get_nth_V82_goal pf i in
-  (sigma, Global.env_of_context (Goal.V82.hyps sigma goal))
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma goal) in
+  (sigma, env)
 
 let get_proof_context p =
   try get_goal_context_gen p 1

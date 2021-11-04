@@ -160,11 +160,6 @@ let decl_constant na suff univs c =
 let ltac_call tac (args:glob_tactic_arg list) =
   CAst.make @@ TacArg (TacCall (CAst.make (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
-let dummy_goal env sigma =
-  let (gl,_,sigma) =
-    Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp in
-  {Evd.it = gl; Evd.sigma = sigma}
-
 let constr_of sigma v = match Value.to_constr v with
   | Some c -> EConstr.to_constr sigma c
   | None -> failwith "Ring.exec_tactic: anomaly"
@@ -198,9 +193,10 @@ let exec_tactic env sigma n f args =
   let get_res = CAst.make (TacML (get_res, [TacGeneric (None, n)])) in
   let getter = Tacexp (CAst.make (TacFun (List.map (fun n -> Name n) lid, get_res))) in
   (* Evaluate the whole result *)
-  let gl = dummy_goal env sigma in
-  let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
-  let sigma = Evd.minimize_universes gls.Evd.sigma in
+  let _, pv = Proofview.init sigma [env, EConstr.mkProp] in
+  let tac = Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter])) in
+  let ((), pv, _, _) = Proofview.apply ~name:(Id.of_string "ring") ~poly:false (Global.env ()) tac pv in
+  let sigma = Evd.minimize_universes (Proofview.return pv) in
   let nf c = constr_of sigma c in
   Array.map nf !tactic_res, Evd.universe_context_set sigma
 

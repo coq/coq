@@ -10,8 +10,6 @@
 
 open Pp
 
-module NamedDecl = Context.Named.Declaration
-
 (* This module implements the abstract interface to goals *)
 (* A general invariant of the module, is that a goal whose associated
    evar is defined in the current evar_map, should not be accessed. *)
@@ -75,52 +73,12 @@ module V82 = struct
     in
     Evd.define evk c sigma
 
-  (* Instantiates a goal with an open term, using name of goal for evk' *)
-  let partial_solution_to env sigma evk evk' c =
-    let id = Evd.evar_ident evk sigma in
-    let sigma = partial_solution env sigma evk c in
-    match id with
-    | None -> sigma
-    | Some id -> Evd.rename evk' id sigma
-
-  let weak_progress glss gls =
-    match glss.Evd.it with
-    | [ g ] -> not (Proofview.Progress.goal_equal ~evd:gls.Evd.sigma
-                      ~extended_evd:glss.Evd.sigma gls.Evd.it g)
-    | _ -> true
-
-  let progress glss gls =
-    weak_progress glss gls
-    (* spiwack: progress normally goes like this:
-    (Evd.progress_evar_map gls.Evd.sigma glss.Evd.sigma) || (weak_progress glss gls)
-       This is immensly slow in the current implementation. Maybe we could
-       reimplement progress_evar_map with restricted folds like "fold_undefined",
-       with a good implementation of them.
-    *)
-
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
     let evi = Evd.find sigma gl in
     let evi = Evarutil.nf_evar_info sigma evi in
     let sigma = Evd.add sigma gl evi in
     (gl, sigma)
-
-  (* Goal represented as a type, doesn't take into account section variables *)
-  let abstract_type sigma gl =
-    let open EConstr in
-    let (gl,sigma) = nf_evar sigma gl in
-    let env = env sigma gl in
-    let genv = Global.env () in
-    let is_proof_var decl =
-      try ignore (Environ.lookup_named (NamedDecl.get_id decl) genv); false
-      with Not_found -> true in
-    Environ.fold_named_context_reverse (fun t decl ->
-                                          if is_proof_var decl then
-                                            let decl = Termops.map_named_decl EConstr.of_constr decl in
-                                            mkNamedProd_or_LetIn decl t
-                                          else
-                                            t
-                                       ) ~init:(concl sigma gl) env
 
 end
 

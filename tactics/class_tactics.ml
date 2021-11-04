@@ -112,7 +112,9 @@ let set_typeclasses_strategy = function
   | Bfs -> Goptions.set_bool_option_value iterative_deepening_opt_name true
 
 let pr_ev evs ev =
-  Printer.pr_econstr_env (Goal.V82.env evs ev) evs (Goal.V82.concl evs ev)
+  let evi = Evd.find evs ev in
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  Printer.pr_econstr_env env evs (Evd.evar_concl evi)
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -1124,25 +1126,23 @@ let solve_inst env evd filter unique split fail =
 let () =
   Hook.set Typeclasses.solve_all_instances_hook solve_inst
 
-let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
+let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
   let (term, sigma) = Hints.wrap_hint_warning_fun env sigma begin fun sigma ->
-  let nc, gl, subst, _ = Evarutil.push_rel_context_to_named_context env sigma gl in
-  let (gl,t,sigma) = Goal.V82.mk_goal sigma nc gl in
-  let (ev, _) = destEvar sigma t in
-  let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
   let st = Hint_db.transparent_state hints in
   let modes = Hint_db.modes hints in
   let depth = get_typeclasses_depth () in
-  let gls' =
-      try
-        Proofview.V82.of_tactic
-        (Search.eauto_tac (modes,st) ~only_classes:true ~depth [hints] ~dep:true) gls
-      with Tacticals.FailError _ -> raise Not_found
+  let tac = Search.eauto_tac (modes,st) ~only_classes:true ~depth [hints] ~dep:true in
+  let entry, pv = Proofview.init sigma [env, concl] in
+  let pv =
+    let name = Names.Id.of_string "legacy_pe" in
+    match Proofview.apply ~name ~poly:false (Global.env ()) tac pv with
+    | (_, final, _, _) -> final
+    | exception (Logic_monad.TacticFailure (Tacticals.FailError _)) ->
+      raise Not_found
   in
-  let evd = sig_sig gls' in
-  let t' = mkEvar (ev, subst) in
-  let term = Evarutil.nf_evar evd t' in
+  let evd = Proofview.return pv in
+  let term = match Proofview.partial_proof entry pv with [t] -> t | _ -> assert false in
   term, evd
   end in
   (sigma, term)

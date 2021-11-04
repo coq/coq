@@ -981,11 +981,6 @@ let pf_saturate ?beta ?bi_types gl c ?ty m =
   let t, ty, args, sigma = saturate ?beta ?bi_types env sigma c ?ty m in
   t, ty, args, re_sig si sigma
 
-let pf_partial_solution gl t evl =
-  let sigma, g = project gl, sig_it gl in
-  let sigma = Goal.V82.partial_solution (pf_env gl) sigma g t in
-  re_sig (List.map (fun x -> (fst (EConstr.destEvar sigma x))) evl) sigma
-
 let dependent_apply_error =
   try CErrors.user_err (Pp.str "Could not fill dependent hole in \"apply\"")
   with err -> err
@@ -1003,18 +998,29 @@ let dependent_apply_error =
 let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
   Proofview.V82.tactic begin fun gl ->
   if with_evars then
-    let refine gl =
-      let t, ty, args, gl = pf_saturate ?beta ~bi_types:true gl t n in
-(*       pp(lazy(str"sigma@saturate=" ++ pr_evar_map None (project gl))); *)
-      let gl = pf_unify_HO gl ty (Tacmach.pf_concl gl) in
-      let gs = CList.map_filter (fun (_, e) ->
-        if EConstr.isEvar (project gl) e then Some e else None)
-        args in
-      pf_partial_solution gl t gs
+    let refine =
+      Proofview.Goal.enter begin fun gl ->
+      Refine.refine ~typecheck:false begin fun sigma ->
+      let env = Proofview.Goal.env gl in
+      let concl = Proofview.Goal.concl gl in
+      let t, ty, args, sigma = saturate ?beta ~bi_types:true env sigma t n in
+      let sigma = unify_HO env sigma ty concl in
+      (* Set our own set of goals. In theory saturate generates them in the
+         right order, so we could just return sigma directly, but explicit is
+         better than implicit. *)
+      let sigma = Evd.push_future_goals (snd @@ Evd.pop_future_goals sigma) in
+      let fold sigma (_, e) = match EConstr.kind sigma e with
+      | Evar (evk, _) -> Evd.declare_future_goal evk sigma
+      | _ -> sigma
+      in
+      let sigma = List.fold_left fold sigma args in
+      (sigma, t)
+      end
+      end
     in
     Proofview.(V82.of_tactic
       (Tacticals.New.tclTHENLIST [
-        V82.tactic refine;
+        refine;
         (if with_shelve then shelve_unifiable else tclUNIT ());
         (if first_goes_last then cycle 1 else tclUNIT ())
         ])) gl

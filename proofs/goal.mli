@@ -28,16 +28,20 @@ module V82 : sig
 
   (* Old style env primitive *)
   val env : Evd.evar_map -> goal -> Environ.env
+  [@@ocaml.deprecated "Use Evd.evar_filtered_env"]
 
   (* Old style hyps primitive *)
   val hyps : Evd.evar_map -> goal -> Environ.named_context_val
+  [@@ocaml.deprecated "Use Evd.evar_filtered_hyps"]
 
   (* same as [hyps], but ensures that existential variables are
      normalised. *)
   val nf_hyps : Evd.evar_map -> goal -> Environ.named_context_val
+  [@@ocaml.deprecated "Use Evd.evar_filtered_hyps"]
 
   (* Access to ".evar_concl" *)
   val concl : Evd.evar_map -> goal -> EConstr.constr
+  [@@ocaml.deprecated "Use Evd.evar_concl"]
 
   (* Old style mk_goal primitive, returns a new goal with corresponding
        hypotheses and conclusion, together with a term which is precisely
@@ -46,22 +50,15 @@ module V82 : sig
                          Environ.named_context_val ->
                          EConstr.constr ->
                          goal * EConstr.constr * Evd.evar_map
+  [@@ocaml.deprecated "Use the Refine.refine primitive and related API"]
 
   (* Instantiates a goal with an open term *)
   val partial_solution : Environ.env -> Evd.evar_map -> goal -> EConstr.constr -> Evd.evar_map
-
-  (* Instantiates a goal with an open term, reusing name of goal for
-     second goal *)
-  val partial_solution_to : Environ.env -> Evd.evar_map -> goal -> goal -> EConstr.constr -> Evd.evar_map
-
-  (* Principal part of the progress tactical *)
-  val progress : goal list Evd.sigma -> goal Evd.sigma -> bool
+  [@@ocaml.deprecated "Use Refine.refine"]
 
   (* Used by the compatibility layer and typeclasses *)
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map
-
-  (* Goal represented as a type, doesn't take into account section variables *)
-  val abstract_type : Evd.evar_map -> goal -> EConstr.types
+  [@@ocaml.deprecated "This should be the identity now"]
 
 end
 
