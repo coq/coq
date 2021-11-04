@@ -75,7 +75,7 @@ let simpltac s = Proofview.Goal.enter (fun _ -> simpltac s)
 
 (** The "congr" tactic *)
 
-let interp_congrarg_at ist gl n rf ty m =
+let interp_congrarg_at env sigma ist ~concl n rf ty m =
   debug_ssr (fun () -> Pp.(str"===interp_congrarg_at==="));
   let congrn, _ = mkSsrRRef "nary_congruence" in
   let args1 = mkRnat n :: mkRHoles n @ [ty] in
@@ -84,36 +84,39 @@ let interp_congrarg_at ist gl n rf ty m =
     if i + n > m then None else
     try
       let rt = mkRApp congrn (args1 @  mkRApp rf (mkRHoles i) :: args2) in
-      debug_ssr (fun () -> Pp.(str"rt=" ++ Printer.pr_glob_constr_env (pf_env gl) (project gl) rt));
-      Some (interp_refine (pf_env gl) (project gl) ist ~concl:(pf_concl gl) rt)
+      debug_ssr (fun () -> Pp.(str"rt=" ++ Printer.pr_glob_constr_env env sigma rt));
+      Some (interp_refine env sigma ist ~concl rt)
     with _ -> loop (i + 1) in
   loop 0
 
 let pattern_id = mk_internal_id "pattern value"
 
 let congrtac ((n, t), ty) ist =
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
   debug_ssr (fun () -> (Pp.str"===congr==="));
-  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (Tacmach.pf_concl gl)));
-  let sigma, _ as it = interp_term (pf_env gl) (project gl) ist t in
-  let gl = pf_merge_uc_of sigma gl in
-  let _, f, _, _ucst = pf_abs_evars gl it in
+  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env env sigma concl));
+  let nsigma, _ as it = interp_term env sigma ist t in
+  let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context nsigma) in
+  let _, f, _, _ucst = abs_evars2 env sigma [] it in
   let ist' = {ist with lfun =
     Id.Map.add pattern_id (Tacinterp.Value.of_constr f) Id.Map.empty } in
   let rf = mkRltacVar pattern_id in
-  let m = pf_nbargs (pf_env gl) (project gl) f in
+  let m = pf_nbargs env sigma f in
   let _, cf = if n > 0 then
-    match interp_congrarg_at ist' gl n rf ty m with
+    match interp_congrarg_at env sigma ist' ~concl n rf ty m with
     | Some cf -> cf
     | None -> errorstrm Pp.(str "No " ++ int n ++ str "-congruence with "
                          ++ pr_term t)
     else let rec loop i =
       if i > m then errorstrm Pp.(str "No congruence with " ++ pr_term t)
-      else match interp_congrarg_at ist' gl i rf ty m with
+      else match interp_congrarg_at env sigma ist' ~concl i rf ty m with
       | Some cf -> cf
       | None -> loop (i + 1) in
       loop 1 in
-  Proofview.V82.of_tactic Tacticals.New.(tclTHEN (refine_with cf) (tclTRY Tactics.reflexivity)) gl
+  Tacticals.New.(tclTHEN (refine_with cf) (tclTRY Tactics.reflexivity))
   end
 
 let pf_typecheck t =
