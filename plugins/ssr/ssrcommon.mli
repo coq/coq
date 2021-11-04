@@ -396,7 +396,6 @@ val interp_clr :
 val genclrtac :
   EConstr.constr ->
   EConstr.constr list -> Ssrast.ssrhyp list -> Tacmach.tactic
-val old_cleartac : ssrhyps -> v82tac
 val cleartac : ssrhyps -> unit Proofview.tactic
 
 val tclMULT : int * ssrmmod -> unit Proofview.tactic -> unit Proofview.tactic
