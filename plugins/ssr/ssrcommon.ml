@@ -1074,17 +1074,26 @@ let introid ?(orig=ref Anonymous) name =
   end <*>
     (fst_prod false (fun id -> orig := id; Tactics.intro_mustbe_force name))
 
-let anontac decl gl =
+let anontac decl =
+  Proofview.Goal.enter begin fun gl ->
   let id =  match RelDecl.get_name decl with
   | Name id ->
-    if is_discharged_id id then id else mk_anon_id (Id.to_string id) (Tacmach.pf_ids_of_hyps gl)
-  | _ -> mk_anon_id ssr_anon_hyp (Tacmach.pf_ids_of_hyps gl) in
-  Proofview.V82.of_tactic (introid id) gl
+    if is_discharged_id id then id else mk_anon_id (Id.to_string id) (Tacmach.New.pf_ids_of_hyps gl)
+  | _ -> mk_anon_id ssr_anon_hyp (Tacmach.New.pf_ids_of_hyps gl) in
+  introid id
+  end
 
-let rec intro_anon gl =
-  try anontac (List.hd (fst (EConstr.decompose_prod_n_assum (project gl) 1 (Tacmach.pf_concl gl)))) gl
-  with err0 -> try tclTHEN (Proofview.V82.of_tactic Tactics.red_in_concl) intro_anon gl with e when CErrors.noncritical e -> raise err0
-  (* with _ -> CErrors.error "No product even after reduction" *)
+let rec intro_anon () =
+  let open Tacmach.New in
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let d = List.hd (fst (EConstr.decompose_prod_n_assum (project gl) 1 (pf_concl gl))) in
+  Proofview.tclORELSE (anontac d)
+    (fun (err0, info) -> Proofview.tclORELSE
+        (Tactics.red_in_concl <*> intro_anon ()) (fun _ -> Proofview.tclZERO ~info err0))
+  end
+
+let intro_anon = intro_anon ()
 
 let is_pf_var sigma c =
   EConstr.isVar sigma c && not_section_id (EConstr.destVar sigma c)
