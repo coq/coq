@@ -203,10 +203,6 @@ type proof_diff_rty = Pp.t
 type db_cmd_sty = string
 type db_cmd_rty = unit
 
-(** fetch the loc of the current stop point *)
-type db_loc_sty = unit
-type db_loc_rty = (string * int list) option
-
 (** update one or more breakpoints in the specified file *)
 type db_upd_bpts_sty = ((string * int) * bool) list
 type db_upd_bpts_rty = unit

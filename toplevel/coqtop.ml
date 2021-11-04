@@ -141,6 +141,8 @@ let ltac_debug_answer = let open DebugHook.Answer in function
       Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with o
     | Init ->
       Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with (str "Init")
+    | Stack _
+    | Vars _ -> CErrors.anomaly (str "ltac_debug_answer: unsupported Answer type")
 
 let ltac_debug_parse () =
   let open DebugHook in

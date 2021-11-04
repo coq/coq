@@ -21,6 +21,8 @@ module Action = struct
     | Help
     | UpdBpts of ((string * int) * bool) list
     | Configd
+    | GetStack
+    | GetVars of int
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -67,6 +69,8 @@ module Answer = struct
     | Goal of Pp.t
     | Output of Pp.t
     | Init
+    | Stack of (string * (string * int list) option) list
+    | Vars of (string * Pp.t) list
 end
 
 module Intf = struct
@@ -85,12 +89,3 @@ module Intf = struct
   let get () = !ltac_debug_ref
 
 end
-
-let forward_get_stack = ref (fun x -> failwith "forward_get_stack")
-let forward_get_vars = ref (fun x -> failwith "forward_get_vars")
-
-let break = ref false
-(* causes the debugger to stop at the next step *)
-
-let get_break () = !break
-let set_break b = break := b

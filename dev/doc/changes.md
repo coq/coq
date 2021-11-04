@@ -1,5 +1,11 @@
 ## Changes between Coq 8.14 and Coq 8.15
 
+### Ltac Visual Debugger in CoqIDE
+
+- Updated the XML protocol (4 new "db_*" messages and added location info
+  to the "add" message) and added support for these primarily in tactic_debug.ml.
+  See the protocol description in xmlprotocol.md.
+
 ### Internal representation of the type of constructors
 
 The type of constructors in fields `mind_user_lc` and `mind_nf_lc` of

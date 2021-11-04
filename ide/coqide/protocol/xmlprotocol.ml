@@ -748,8 +748,9 @@ let db_stack x    : db_stack_rty call    = Db_stack x
 let db_vars x     : db_vars_rty call     = Db_vars x
 let db_configd x  : db_configd_rty call  = Db_configd x
 
-let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
-  let mkGood : type a. a -> a value = fun x -> Good x in
+let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c ->
+  let send = ref true in
+  let mkGood : type a. a -> bool * a value = fun x -> !send, (Good x) in
   try
     match c with
     | Add x        -> mkGood (handler.add x)
@@ -775,12 +776,12 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | Db_cmd x     -> mkGood (handler.db_cmd x)
     | Db_upd_bpts x-> mkGood (handler.db_upd_bpts x)
     | Db_continue x-> mkGood (handler.db_continue x)
-    | Db_stack x   -> mkGood (handler.db_stack x)
-    | Db_vars x    -> mkGood (handler.db_vars x)
+    | Db_stack x   -> send := false; mkGood (handler.db_stack x)
+    | Db_vars x    -> send := false; mkGood (handler.db_vars x)
     | Db_configd x -> mkGood (handler.db_configd x)
   with any ->
     let any = Exninfo.capture any in
-    Fail (handler.handle_exn any)
+    true, Fail (handler.handle_exn any)
 
 (** brain dead code, edit if protocol messages are added/removed *)
 let of_answer : type a. a call -> a value -> xml = function
@@ -1113,6 +1114,10 @@ let msg_kind = function
   | Element ("feedback", _, _) -> Feedback
   | Element ("ltac_debug", _, _) -> LtacDebugInfo
   | _ -> Other
+
+let of_vars vars = of_value (of_list (of_pair of_string of_pp)) (Good vars)
+let of_stack frames = of_value (of_list (of_pair of_string (of_option
+    (of_pair of_string (of_list of_int))))) (Good frames)
 
 (* vim: set foldmethod=marker: *)
 

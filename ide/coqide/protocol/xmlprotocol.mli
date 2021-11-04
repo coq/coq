@@ -45,7 +45,7 @@ val db_stack    : db_stack_sty    -> db_stack_rty call
 val db_vars     : db_vars_sty     -> db_vars_rty call
 val db_configd  : db_configd_sty  -> db_configd_rty call
 
-val abstract_eval_call : handler -> 'a call -> 'a value
+val abstract_eval_call : handler -> 'a call -> bool * 'a value
 
 (** * Protocol version *)
 
@@ -86,3 +86,9 @@ val to_feedback : xml -> Feedback.feedback
 (** * Serialization of debugger output *)
 val of_ltac_debug_answer : tag:string -> Pp.t -> xml
 val to_ltac_debug_answer : xml -> string * Pp.t
+
+(** * reply for db_vars message *)
+val of_vars : (string * Pp.t) list -> xml
+
+(** * reply for db_stack message *)
+val of_stack : (string * (string * int list) option) list -> xml

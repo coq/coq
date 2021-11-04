@@ -29,10 +29,7 @@ let catch_break = ref false
 
 let init_signal_handler () =
   let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
-  Sys.set_signal Sys.sigint (Sys.Signal_handle f);
-  if Sys.os_type = "Unix" then
-    Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
-      (fun _ -> DebugHook.set_break true))
+  Sys.set_signal Sys.sigint (Sys.Signal_handle f)
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
@@ -373,52 +370,6 @@ let debug_cmd = ref DebugHook.Action.Ignore
 let db_cmd cmd =
   debug_cmd := DebugHook.Action.Command cmd
 
-module CSet = CSet.Make (Names.DirPath)
-let bad_dirpaths = ref CSet.empty
-
-let cvt_loc loc =
-  let open Loc in
-  match loc with
-  | Some {fname=ToplevelInput; bp; ep} ->
-    Some ("ToplevelInput", [bp; ep])
-  | Some {fname=InFile {dirpath=None; file}; bp; ep} ->
-    Some (file, [bp; ep])  (* for Load command *)
-  | Some {fname=InFile {dirpath=(Some dirpath)}; bp; ep} ->
-    let open Names in
-    let dirpath = DirPath.make (List.rev_map (fun i -> Id.of_string i)
-      (String.split_on_char '.' dirpath)) in
-    let pfx = DirPath.make (List.tl (DirPath.repr dirpath)) in
-    let paths = Loadpath.find_with_logical_path pfx in
-    let basename = match DirPath.repr dirpath with
-    | hd :: tl -> (Id.to_string hd) ^ ".v"
-    | [] -> ""
-    in
-    let vs_files = List.map (fun p -> (Filename.concat (Loadpath.physical p) basename)) paths in
-    let filtered = List.filter (fun p -> Sys.file_exists p) vs_files in
-    begin match filtered with
-    | [] -> (* todo: maybe tweak this later to allow showing a popup dialog in the GUI *)
-      if not (CSet.mem dirpath !bad_dirpaths) then begin
-        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
-        let msg = Pp.(fnl () ++ str "Unable to locate source code for module " ++
-                        str (Names.DirPath.to_string dirpath)) in
-        let msg = if vs_files = [] then msg else
-          (List.fold_left (fun msg f -> msg ++ fnl() ++ str f) (msg ++ str " in:") vs_files) in
-        Feedback.msg_warning msg
-      end;
-      None
-    | [f] -> Some (f, [bp; ep])
-    | f :: tl ->
-      if not (CSet.mem dirpath !bad_dirpaths) then begin
-        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
-        let msg = Pp.(fnl () ++ str "Multiple files found matching module " ++
-            str (Names.DirPath.to_string dirpath) ++ str ":") in
-        let msg = List.fold_left (fun msg f -> msg ++ fnl() ++ str f) msg vs_files in
-        Feedback.msg_warning msg
-      end;
-      Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
-    end
-  | None -> None (* nothing to highlight, e.g. not in a .v file *)
-
 let db_continue opt =
   let open DebugHook.Action in
   debug_cmd := match opt with
@@ -431,53 +382,13 @@ let db_continue opt =
 let db_upd_bpts updates =
   debug_cmd := DebugHook.Action.UpdBpts updates
 
-
-let format_frame text loc =
-  try
-    let open Loc in
-      match loc with
-      | Some { fname=InFile {dirpath=(Some dp)}; line_nb } ->
-        let dplen = String.length dp in
-        let lastdot = String.rindex dp '.' in
-        let file = String.sub dp (lastdot+1) (dplen - (lastdot + 1)) in
-        let module_name = String.sub dp 0 lastdot in
-        let routine =
-          try
-            (* try text as a kername *)
-            assert (CString.is_prefix dp text);
-            let knlen = String.length text in
-            let lastdot = String.rindex text '.' in
-            String.sub text (lastdot+1) (knlen - (lastdot + 1))
-          with _ -> text
-        in
-        Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name;
-      | Some { fname=ToplevelInput; line_nb } ->
-        let items = String.split_on_char '.' text in
-        Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items);
-      | _ -> text
-  with _ -> text
-
 let db_stack () =
-(*  Printf.printf "server: db_stack call\n%!";*)
-  let s = !DebugHook.forward_get_stack () in
-  List.map (fun (tac, loc) ->
-      let floc = cvt_loc loc in
-      match tac with
-      | Some tacn ->
-        let tacn = if loc = None then
-          tacn ^ " (no location)"
-        else
-          format_frame tacn loc in
-        (tacn, floc)
-      | None ->
-        match loc with
-        | Some { Loc.line_nb } ->
-          (":" ^ (string_of_int line_nb), floc)
-        | None -> (": (no location)", floc)
-    ) s
+  debug_cmd := DebugHook.Action.GetStack;
+  []  (* return value passed through DebugHook.Answer *)
 
 let db_vars framenum =
-  !DebugHook.forward_get_vars framenum
+  debug_cmd := DebugHook.Action.GetVars framenum;
+  []  (* return value passed through DebugHook.Answer *)
 
 let db_configd () =
   debug_cmd := DebugHook.Action.Configd
@@ -648,11 +559,14 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
         pr_with_pid (Xml_printer.to_string_fmt xml_query);
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r  = eval_call q in
-      let () = pr_debug_answer q r in
-(*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
-      print_xml xml_oc Xmlprotocol.(of_answer (!msg_format ()) q r);
-      flush out_ch
+      let (send, r)  = eval_call q in
+      (* conditional send so that db_stack and db_vars can reply through DebugHook.Answer *)
+      if send then begin
+        let () = pr_debug_answer q r in
+  (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
+        print_xml xml_oc Xmlprotocol.(of_answer (!msg_format ()) q r);
+        flush out_ch
+      end
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
         pr_debug "End of input, exiting gracefully.";
@@ -672,15 +586,17 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
      xmlprotocol file doesn't depend on vernac thus it has no access
      to DebugHook data, we may want to fix that. *)
   let ltac_debug_answer ans =
-    let tag, msg =
-      let open DebugHook.Answer in
-      match ans with
-      | Prompt msg -> "prompt", msg
-      | Goal msg -> "goal", (str "Goal:" ++ fnl () ++ msg)
-      | Output msg -> "output", msg
-      | Init -> "init", str ""
+    let open DebugHook.Answer in
+    let open Xmlprotocol in
+    let xml = match ans with
+      | Prompt msg -> of_ltac_debug_answer ~tag:"prompt" msg
+      | Goal msg -> of_ltac_debug_answer ~tag:"goal" (str "Goal:" ++ fnl () ++ msg)
+      | Output msg -> of_ltac_debug_answer ~tag:"output" msg
+      | Init -> of_ltac_debug_answer ~tag:"init" (str "")
+      | Vars vars -> of_vars vars;
+      | Stack s -> of_stack s
     in
-    print_xml xml_oc Xmlprotocol.(of_ltac_debug_answer ~tag msg) in
+    print_xml xml_oc xml in
 
   (* XXX: no need to have a ref here *)
   let ltac_debug_parse () =

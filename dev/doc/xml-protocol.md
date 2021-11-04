@@ -31,7 +31,6 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [PrintAst](#command-printast)
   - [Annotate](#command-annotate)
   - [Db_cmd](#command-db_cmd)
-  - [Db_loc](#command-db_loc)
   - [Db_upd_bpts](#command-db_upd_bpts)
   - [Db_continue](#command-db_continue)
   - [Db_stack](#command-db_stack)
@@ -661,36 +660,6 @@ take `<call val="Annotate"><string>Theorem plus_0_r : forall n : nat, n + 0 = n.
 `<call val="Db_cmd"><string>h</string></call>` directs Coq to process the debugger command "h".
 It returns unit.  This call is processed only when the debugger is stopped and has just
 sent a `prompt` message.
-
-
-
--------------------------------
-
-
-
-### <a name="command-db_loc">**Db_loc()**</a>
-Returns the location where the debugger has stopped, consisting of the absolute filename
-of the .v file (or "ToplevelInput") and the beginning and ending offset therein.  Offsets
-are in bytes, not counts of unicode characters.
-```html
-<call val="Db_loc">
-  <unit/>
-</call>
-```
-#### *Returns*
-
-
-```html
-<value val="good">
-  <pair>
-    <string>ToplevelInput</string>
-    <list>
-      <int>22</int>
-      <int>31</int>
-    </list>
-  </pair>
-</value>
-```
 
 
 
