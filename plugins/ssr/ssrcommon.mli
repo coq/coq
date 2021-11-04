@@ -232,7 +232,9 @@ val pf_abs_prod :
            EConstr.t ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
+val mkSsrRef : string -> GlobRef.t
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
+val mkSsrConst : Environ.env -> Evd.evar_map -> string -> Evd.evar_map * EConstr.t
 
 val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 

@@ -781,11 +781,11 @@ let mkSsrRef name =
   if Coqlib.has_ref qn then Coqlib.lib_ref qn else
   CErrors.user_err Pp.(str "Small scale reflection library not loaded (" ++ str name ++ str ")")
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
-let mkSsrConst name env sigma =
+let mkSsrConst env sigma name =
   EConstr.fresh_global env sigma (mkSsrRef name)
 let pf_mkSsrConst name gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let (sigma, t) = mkSsrConst name env sigma in
+  let (sigma, t) = mkSsrConst env sigma name in
   t, re_sig it sigma
 let pf_fresh_global name gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
@@ -1238,7 +1238,7 @@ let pfLIFT f =
 ;;
 
 let is_protect hd env sigma =
-  let _, protectC = mkSsrConst "protect_term" env sigma in
+  let _, protectC = mkSsrConst env sigma "protect_term" in
   EConstr.eq_constr_nounivs sigma hd protectC
 
 let abs_wgen keep_let f gen (gl,args,c) =
@@ -1497,7 +1497,7 @@ end
 let tacMK_SSR_CONST name =
   Proofview.tclENV >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  match mkSsrConst name env sigma with
+  match mkSsrConst env sigma name with
   | sigma, c -> Unsafe.tclEVARS sigma <*> tclUNIT c
   | exception e when CErrors.noncritical e ->
     tclLIFT (Proofview.NonLogical.raise (e, Exninfo.null))

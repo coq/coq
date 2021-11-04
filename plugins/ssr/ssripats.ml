@@ -905,44 +905,52 @@ let occur_existential_or_casted_meta sigma c =
   try occrec c; false
   with Not_found -> true
 
-let tacEXAMINE_ABSTRACT id = Ssrcommon.tacTYPEOF id >>= begin fun tid ->
-  Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
-  Goal.enter_one ~__LOC__ begin fun g ->
-  let sigma, env = Goal.(sigma g, env g) in
+let examine_abstract env sigma id =
+  let (sigma, tid) = Typing.type_of env sigma id in
+  let abstract = Ssrcommon.mkSsrRef "abstract" in
   let err () =
     Ssrcommon.errorstrm
       Pp.(strbrk"not a proper abstract constant: "++
         Printer.pr_econstr_env env sigma id) in
   if not (EConstr.isApp sigma tid) then err ();
   let hd, args_id = EConstr.destApp sigma tid in
-  if not (EConstr.eq_constr_nounivs sigma hd abstract) then err ();
+  if not (EConstr.isRefX sigma abstract hd) then err ();
   if Array.length args_id <> 3 then err ();
   if not (is_Evar_or_CastedMeta sigma args_id.(2)) then
     Ssrcommon.errorstrm Pp.(strbrk"abstract constant "++
       Printer.pr_econstr_env env sigma id++str" already used");
-  tclUNIT (tid, args_id)
-end end
+  sigma, (tid, args_id)
 
-let tacFIND_ABSTRACT_PROOF check_lock abstract_n =
-  Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
+let tacEXAMINE_ABSTRACT id =
   Goal.enter_one ~__LOC__ begin fun g ->
-    let sigma, env = Goal.(sigma g, env g) in
+  let sigma, env = Goal.(sigma g, env g) in
+  let sigma, ans = examine_abstract env sigma id in
+  Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT ans
+  end
+
+let find_abstract_proof env sigma check_lock abstract_n =
+  let abstract = Ssrcommon.mkSsrRef "abstract" in
     let l = Evd.fold_undefined (fun e ei l ->
       match EConstr.kind sigma ei.Evd.evar_concl with
       | App(hd, [|ty; n; lock|])
         when (not check_lock ||
                    (occur_existential_or_casted_meta sigma ty &&
                     is_Evar_or_CastedMeta sigma lock)) &&
-             EConstr.eq_constr_nounivs sigma hd abstract &&
+             EConstr.isRefX sigma abstract hd &&
              EConstr.eq_constr_nounivs sigma n abstract_n -> e :: l
       | _ -> l) sigma [] in
     match l with
-    | [e] -> tclUNIT e
+    | [e] -> e
     | _ -> Ssrcommon.errorstrm
        Pp.(strbrk"abstract constant "++
          Printer.pr_econstr_env env sigma abstract_n ++
            strbrk" not found in the evar map exactly once. "++
            strbrk"Did you tamper with it?")
+
+let tacFIND_ABSTRACT_PROOF check_lock abstract_n =
+  Goal.enter_one ~__LOC__ begin fun g ->
+    let sigma, env = Goal.(sigma g, env g) in
+    tclUNIT (find_abstract_proof env sigma check_lock abstract_n)
 end
 
 let ssrabstract dgens =
@@ -996,21 +1004,8 @@ let ssrabstract dgens =
   tclIPATssr ipats)
 
 module Internal = struct
-
-  let pf_find_abstract_proof b gl t =
-    let res = ref None in
-    let _ = V82.of_tactic (tacFIND_ABSTRACT_PROOF b (EConstr.of_constr t) >>= fun x -> res := Some x; tclUNIT ()) gl in
-    match !res with
-    | None -> assert false
-    | Some x -> x
-
-  let examine_abstract t gl =
-    let res = ref None in
-    let _ = V82.of_tactic (tacEXAMINE_ABSTRACT t >>= fun x -> res := Some x; tclUNIT ()) gl in
-    match !res with
-    | None -> assert false
-    | Some x -> x
-
+  let find_abstract_proof = find_abstract_proof
+  let examine_abstract = examine_abstract
 end
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

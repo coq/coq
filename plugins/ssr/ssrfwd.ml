@@ -192,7 +192,8 @@ let havetac ist
        | IOpAbstractVars ids -> ids
        | _ -> assert false) skols) in
      let skols_args =
-       List.map (fun id -> Ssripats.Internal.examine_abstract (EConstr.mkVar id) gl) skols in
+       List.map (fun id -> snd @@ (* FIXME: evar leak *)
+         Ssripats.Internal.examine_abstract (pf_env gl) (project gl) (EConstr.mkVar id)) skols in
      let gl = List.fold_right unlock_abs skols_args gl in
      let gl, t, n_evars =
        interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
@@ -202,7 +203,7 @@ let havetac ist
                      "not supported");
      let gs =
        List.map (fun (_,a) ->
-         Ssripats.Internal.pf_find_abstract_proof false gl (EConstr.Unsafe.to_constr a.(1))) skols_args in
+         Ssripats.Internal.find_abstract_proof (pf_env gl) (project gl) false a.(1)) skols_args in
      let tacopen_skols = Proofview.V82.tactic (fun gl -> re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma) in
      let gl, ty = pf_e_type_of gl t in
      gl, ty, Tactics.apply t, id,
