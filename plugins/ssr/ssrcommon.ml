@@ -985,7 +985,6 @@ let dependent_apply_error =
  * Refiner.refiner that does not handle metas with a non ground type but works
  * with dependently typed higher order metas. *)
 let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
-  Proofview.V82.tactic begin fun gl ->
   if with_evars then
     let refine =
       Proofview.Goal.enter begin fun gl ->
@@ -1007,17 +1006,18 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
       end
       end
     in
-    Proofview.(V82.of_tactic
-      (Tacticals.New.tclTHENLIST [
-        refine;
-        (if with_shelve then shelve_unifiable else tclUNIT ());
-        (if first_goes_last then cycle 1 else tclUNIT ())
-        ])) gl
+    Tacticals.New.tclTHENLIST [
+      refine;
+      Proofview.(if with_shelve then shelve_unifiable else tclUNIT ());
+      Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
+    ]
   else
-    let t, gl = if n = 0 then t, gl else
-      let sigma, si = project gl, sig_it gl in
+    Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let t, sigma = if n = 0 then t, sigma else
       let rec loop sigma bo args = function (* saturate with metas *)
-        | 0 -> EConstr.mkApp (t, Array.of_list (List.rev args)), re_sig si sigma
+        | 0 -> EConstr.mkApp (t, Array.of_list (List.rev args)), sigma
         | n -> match EConstr.kind sigma bo with
           | Lambda (_, ty, bo) ->
               if not (EConstr.Vars.closed0 sigma ty) then
@@ -1026,12 +1026,11 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
               loop (meta_declare m ty sigma) bo ((EConstr.mkMeta m)::args) (n-1)
           | _ -> assert false
       in loop sigma t [] n in
-    pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (pf_env gl) (project gl) t));
-    Proofview.(V82.of_tactic
-      (Tacticals.New.tclTHENLIST [
-         Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
-         (if first_goes_last then cycle 1 else tclUNIT ())
-      ])) gl
+    pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env env sigma t));
+    Tacticals.New.tclTHENLIST [
+      Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
+      Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
+    ]
   end
 
 let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
