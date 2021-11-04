@@ -752,6 +752,12 @@ let pf_abs_cterm gl n c0 = abs_cterm (pf_env gl) (project gl) n c0
 
 (* }}} *)
 
+let merge_uc uc =
+  let open Proofview.Notations in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  try Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma uc)
+  with e when CErrors.noncritical e -> Proofview.tclZERO e
+
 let pf_merge_uc uc gl =
   re_sig (sig_it gl) (Evd.merge_universe_context gl.Evd.sigma uc)
 let pf_merge_uc_of sigma gl =

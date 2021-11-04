@@ -320,6 +320,8 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
 
 (** The "suffice" tactic *)
 
+open Proofview.Notations
+
 let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   let clr = Option.default [] clr in
   let pats = tclCompileIPats pats in
@@ -339,13 +341,12 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
     end
   in
   let ctac =
-    Proofview.V82.tactic begin fun gl ->
-    let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in let gl = pf_merge_uc uc gl in
-    Proofview.V82.of_tactic (basesufftac ty) gl
+    let open Tacmach.New in
+    Proofview.Goal.enter begin fun gl ->
+    let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in
+    merge_uc uc <*> basesufftac ty
   end in
   Tacticals.New.tclTHENS ctac [htac; Tacticals.New.tclTHEN (cleartac clr) (introstac (binders@simpl))]
-
-open Proofview.Notations
 
 let is_app_evar sigma t =
   match EConstr.kind sigma t with

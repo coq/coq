@@ -211,6 +211,7 @@ val pf_abs_evars2 : (* ssr2 *)
 val pf_abs_cterm :
            Goal.goal Evd.sigma -> int -> EConstr.t -> EConstr.t
 
+val merge_uc : UState.t -> unit Proofview.tactic
 val pf_merge_uc :
            UState.t -> 'a Evd.sigma -> 'a Evd.sigma
 val pf_merge_uc_of :
