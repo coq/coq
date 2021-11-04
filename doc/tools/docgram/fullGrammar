@@ -609,6 +609,7 @@ command: [
 | "Print" "Equivalent" "Keys"
 | "Optimize" "Proof"
 | "Optimize" "Heap"
+| "infoH" tactic
 | "Hint" "Cut" "[" hints_path "]" opthints
 | "Typeclasses" "Transparent" LIST1 reference
 | "Typeclasses" "Opaque" LIST1 reference
@@ -2046,7 +2047,6 @@ ltac_expr3: [
 | "progress" ltac_expr3
 | "once" ltac_expr3
 | "exactly_once" ltac_expr3
-| "infoH" ltac_expr3
 | "abstract" ltac_expr2
 | "abstract" ltac_expr2 "using" ident
 | "only" selector ":" ltac_expr3

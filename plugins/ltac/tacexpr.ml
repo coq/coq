@@ -220,7 +220,6 @@ and 'a gen_tactic_expr_r =
   | TacTime of string option * 'a gen_tactic_expr
   | TacRepeat of 'a gen_tactic_expr
   | TacProgress of 'a gen_tactic_expr
-  | TacShowHyps of 'a gen_tactic_expr
   | TacAbstract of
       'a gen_tactic_expr * Id.t option
   | TacId of 'n message_token list

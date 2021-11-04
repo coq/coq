@@ -1110,6 +1110,10 @@ TACTIC EXTEND optimize_heap
 | [ "optimize_heap" ] -> { tclOPTIMIZE_HEAP }
 END
 
+VERNAC COMMAND EXTEND infoH CLASSIFIED AS QUERY
+| ![ proof_query ] [ "infoH" tactic(tac) ] -> { fun ~pstate -> Internals.infoH ~pstate tac }
+END
+
 (** Tactic analogous to [Strategy] vernacular *)
 
 TACTIC EXTEND with_strategy

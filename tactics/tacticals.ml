@@ -170,42 +170,6 @@ let tclPROGRESS tac ptree =
 *)
   else user_err (str"Failed to progress.")
 
-(* Execute tac, show the names of new hypothesis names created by tac
-   in the "as" format and then forget everything. From the logical
-   point of view [tclSHOWHYPS tac] is therefore equivalent to idtac,
-   except that it takes the time and memory of tac and prints "as"
-   information). The resulting (unchanged) goals are printed *after*
-   the as-expression, which forces pg to some gymnastic.
-   TODO: Have something similar (better?) in the xml protocol.
-   NOTE: some tactics delete hypothesis and reuse names (induction,
-   destruct), this is not detected by this tactical. *)
-let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
-    : Goal.goal list Evd.sigma =
-  let oldhyps = pf_hyps goal in
-  let rslt:Goal.goal list Evd.sigma = tac goal in
-  let { it = gls; sigma = sigma; } = rslt in
-  let hyps =
-    List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in
-  let cmp d1 d2 = Names.Id.equal (NamedDecl.get_id d1) (NamedDecl.get_id d2) in
-  let newhyps =
-    List.map
-      (fun hypl -> List.subtract cmp hypl oldhyps)
-      hyps
-  in
-  let s =
-    let frst = ref true in
-    List.fold_left
-    (fun acc lh -> acc ^ (if !frst then (frst:=false;"") else " | ")
-      ^ (List.fold_left
-           (fun acc d -> (Names.Id.to_string (NamedDecl.get_id d)) ^ " " ^ acc)
-           "" lh))
-    "" newhyps in
-  Feedback.msg_notice
-    (str "<infoH>"
-      ++  (hov 0 (str s))
-      ++  (str "</infoH>"));
-  tclIDTAC goal;;
-
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
 let tclORELSE0 t1 t2 g =
   try

@@ -119,7 +119,6 @@ GRAMMAR EXTEND Gram
       | IDENT "progress"; ta = ltac_expr -> { CAst.make ~loc (TacProgress ta) }
       | IDENT "once"; ta = ltac_expr -> { CAst.make ~loc (TacOnce  ta) }
       | IDENT "exactly_once"; ta = ltac_expr -> { CAst.make ~loc (TacExactlyOnce ta) }
-      | IDENT "infoH"; ta = ltac_expr -> { CAst.make ~loc (TacShowHyps ta) }
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> { CAst.make ~loc (TacAbstract (tc,None)) }
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->

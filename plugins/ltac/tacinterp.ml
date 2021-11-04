@@ -1155,10 +1155,6 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       in
       Ftactic.run msg tac
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
-  | TacShowHyps tac ->
-         Proofview.V82.tactic begin
-           Tacticals.tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
-         end
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
       let trace = push_trace(None,call) ist in

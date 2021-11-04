@@ -996,6 +996,7 @@ command: [
 | "Print" "Equivalent" "Keys"
 | "Optimize" "Proof"
 | "Optimize" "Heap"
+| "infoH" ltac_expr
 | "Reset" "Ltac" "Profile"
 | "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | "Show" "Lia" "Profile"      (* micromega plugin *)
@@ -1636,7 +1637,6 @@ simple_tactic: [
 | "progress" ltac_expr3
 | "once" ltac_expr3
 | "exactly_once" ltac_expr3
-| "infoH" ltac_expr3
 | "abstract" ltac_expr2 OPT ( "using" ident )
 | "only" selector ":" ltac_expr3
 | "tryif" ltac_expr "then" ltac_expr "else" ltac_expr2

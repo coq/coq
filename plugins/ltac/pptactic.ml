@@ -982,11 +982,6 @@ let pr_goal_selector ~toplevel s =
                 keyword "progress" ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacShowHyps t ->
-              hov 1 (
-                keyword "infoH" ++ spc ()
-                ++ pr_tac (LevelLe ltactical) t),
-              ltactical
             | TacOr (t1,t2) ->
               hov 1 (
                 pr_tac (LevelLt lorelse) t1 ++ spc ()
