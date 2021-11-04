@@ -142,7 +142,7 @@ val interp_hyp : ist -> goal sigma -> ssrhyp -> evar_map * ssrhyp
 val interp_hyps : ist -> goal sigma -> ssrhyps -> evar_map * ssrhyps
 
 val interp_refine :
-  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
+  Environ.env -> Evd.evar_map -> Tacinterp.interp_sign -> concl:EConstr.constr ->
     Glob_term.glob_constr -> evar_map * (evar_map * EConstr.constr)
 
 val interp_open_constr :
@@ -297,7 +297,7 @@ val mkRefl :
 val discharge_hyp :
            Id.t * (Id.t * string) -> unit Proofview.tactic
 
-val view_error : string -> ssrterm -> 'a
+val view_error : string -> ssrterm -> 'a Proofview.tactic
 
 
 val top_id : Id.t

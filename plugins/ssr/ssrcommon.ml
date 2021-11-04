@@ -235,12 +235,12 @@ let isAppInd env sigma c =
 
 (** Generic argument-based globbing/typing utilities *)
 
-let interp_refine ist gl rc =
-  let constrvars = Tacinterp.extract_ltac_constr_values ist (pf_env gl) in
+let interp_refine env sigma ist ~concl rc =
+  let constrvars = Tacinterp.extract_ltac_constr_values ist env in
   let vars = { Glob_ops.empty_lvar with
     Ltac_pretype.ltac_constrs = constrvars; ltac_genargs = ist.Tacinterp.lfun
   } in
-  let kind = Pretyping.OfType (pf_concl gl) in
+  let kind = Pretyping.OfType concl in
   let flags = {
     Pretyping.use_typeclasses = Pretyping.UseTC;
     solve_unification_constraints = true;
@@ -250,9 +250,9 @@ let interp_refine ist gl rc =
     polymorphic = false;
   }
   in
-  let sigma, c = Pretyping.understand_ltac flags (pf_env gl) (project gl) vars kind rc in
+  let sigma, c = Pretyping.understand_ltac flags env sigma vars kind rc in
 (*   ppdebug(lazy(str"sigma@interp_refine=" ++ pr_evar_map None sigma)); *)
-  debug_ssr (fun () -> str"c@interp_refine=" ++ Printer.pr_econstr_env (pf_env gl) sigma c);
+  debug_ssr (fun () -> str"c@interp_refine=" ++ Printer.pr_econstr_env env sigma c);
   (sigma, (sigma, c))
 
 
@@ -831,7 +831,7 @@ let discharge_hyp (id', (id, mode)) =
   end
 
 let view_error s gv =
-  errorstrm (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)
+  Tacticals.New.tclZEROMSG (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)
 
 
 open Locus

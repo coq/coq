@@ -65,7 +65,7 @@ let interp_agens ist gl gagens =
       if i > n then
          errorstrm Pp.(str "Cannot apply lemma " ++ pf_pr_glob_constr gl rlemma)
       else
-        try interp_refine ist gl (mkRApp rlemma (mkRHoles i @ args))
+        try interp_refine (pf_env gl) (project gl) ist ~concl:(pf_concl gl) (mkRApp rlemma (mkRHoles i @ args))
         with _ -> loop (i + 1) in
     clr, loop 0
   | _ -> assert false
@@ -93,16 +93,21 @@ let mkRAppView ist env sigma rv gv =
   mkRApp rv (mkRHoles (abs nb_view_imps))
 
 let refine_interp_apply_view dbl ist gv =
-  Proofview.V82.tactic begin fun gl ->
+  let open Tacmach.New in
+  Proofview.Goal.enter begin fun gl ->
   let pair i = List.map (fun x -> i, x) in
-  let rv = pf_intern_term ist gl gv in
+  let rv = intern_term ist (pf_env gl) gv in
   let v = mkRAppView ist (pf_env gl) (project gl) rv gv in
   let interp_with (dbl, hint) =
     let i = if dbl = Ssrview.AdaptorDb.Equivalence then 2 else 1 in
-    interp_refine ist gl (mkRApp hint (v :: mkRHoles i)) in
+    interp_refine (pf_env gl) (project gl) ist ~concl:(pf_concl gl) (mkRApp hint (v :: mkRHoles i)) in
   let rec loop = function
-  | [] -> (try Proofview.V82.of_tactic (apply_rconstr ~ist rv) gl with _ -> view_error "apply" gv)
-  | h :: hs -> (try Proofview.V82.of_tactic (refine_with (snd (interp_with h))) gl with _ -> loop hs) in
+  | [] -> Proofview.tclORELSE (apply_rconstr ~ist rv) (fun _ -> view_error "apply" gv)
+  | h :: hs ->
+    match interp_with h with
+    | (_, t) -> Proofview.tclORELSE (refine_with t) (fun _ -> loop hs)
+    | exception e -> loop hs
+  in
   loop (pair dbl (Ssrview.AdaptorDb.get dbl) @
         if dbl = Ssrview.AdaptorDb.Equivalence
         then pair Ssrview.AdaptorDb.Backward (Ssrview.AdaptorDb.(get Backward))

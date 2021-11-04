@@ -85,7 +85,7 @@ let interp_congrarg_at ist gl n rf ty m =
     try
       let rt = mkRApp congrn (args1 @  mkRApp rf (mkRHoles i) :: args2) in
       debug_ssr (fun () -> Pp.(str"rt=" ++ Printer.pr_glob_constr_env (pf_env gl) (project gl) rt));
-      Some (interp_refine ist gl rt)
+      Some (interp_refine (pf_env gl) (project gl) ist ~concl:(pf_concl gl) rt)
     with _ -> loop (i + 1) in
   loop 0
 
