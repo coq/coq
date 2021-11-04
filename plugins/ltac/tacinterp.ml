@@ -843,13 +843,13 @@ let interp_message ist l =
 
 let rec interp_intro_pattern ist env sigma = with_loc_val (fun ?loc -> function
   | IntroAction pat ->
-    let (sigma,pat) = interp_intro_pattern_action ist env sigma pat in
-    sigma, CAst.make ?loc @@ IntroAction pat
+    let pat = interp_intro_pattern_action ist env sigma pat in
+    CAst.make ?loc @@ IntroAction pat
   | IntroNaming (IntroIdentifier id) ->
-    sigma, CAst.make ?loc @@ interp_intro_pattern_var loc ist env sigma id
+    CAst.make ?loc @@ interp_intro_pattern_var loc ist env sigma id
   | IntroNaming pat ->
-    sigma, CAst.make ?loc @@ IntroNaming (interp_intro_pattern_naming loc ist env sigma pat)
-  | IntroForthcoming _  as x -> sigma, CAst.make ?loc x)
+    CAst.make ?loc @@ IntroNaming (interp_intro_pattern_naming loc ist env sigma pat)
+  | IntroForthcoming _  as x -> CAst.make ?loc x)
 
 and interp_intro_pattern_naming loc ist env sigma = function
   | IntroFresh id -> IntroFresh (interp_ident ist env sigma id)
@@ -858,56 +858,56 @@ and interp_intro_pattern_naming loc ist env sigma = function
 
 and interp_intro_pattern_action ist env sigma = function
   | IntroOrAndPattern l ->
-      let (sigma,l) = interp_or_and_intro_pattern ist env sigma l in
-      sigma, IntroOrAndPattern l
+      let l = interp_or_and_intro_pattern ist env sigma l in
+      IntroOrAndPattern l
   | IntroInjection l ->
-      let sigma,l = interp_intro_pattern_list_as_list ist env sigma l in
-      sigma, IntroInjection l
+      let l = interp_intro_pattern_list_as_list ist env sigma l in
+      IntroInjection l
   | IntroApplyOn ({loc;v=c},ipat) ->
       let c env sigma = interp_open_constr ist env sigma c in
-      let sigma,ipat = interp_intro_pattern ist env sigma ipat in
-      sigma, IntroApplyOn (CAst.make ?loc c,ipat)
-  | IntroWildcard | IntroRewrite _ as x -> sigma, x
+      let ipat = interp_intro_pattern ist env sigma ipat in
+      IntroApplyOn (CAst.make ?loc c,ipat)
+  | IntroWildcard | IntroRewrite _ as x -> x
 
 and interp_or_and_intro_pattern ist env sigma = function
   | IntroAndPattern l ->
-      let sigma, l = List.fold_left_map (interp_intro_pattern ist env) sigma l in
-      sigma, IntroAndPattern l
+      let l = List.map (interp_intro_pattern ist env sigma) l in
+      IntroAndPattern l
   | IntroOrPattern ll ->
-      let sigma, ll = List.fold_left_map (interp_intro_pattern_list_as_list ist env) sigma ll in
-      sigma, IntroOrPattern ll
+      let ll = List.map (interp_intro_pattern_list_as_list ist env sigma) ll in
+      IntroOrPattern ll
 
 and interp_intro_pattern_list_as_list ist env sigma = function
   | [{loc;v=IntroNaming (IntroIdentifier id)}] as l ->
-      (try sigma, coerce_to_intro_pattern_list ?loc sigma (Id.Map.find id ist.lfun)
+      (try coerce_to_intro_pattern_list ?loc sigma (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ ->
-         List.fold_left_map (interp_intro_pattern ist env) sigma l)
-  | l -> List.fold_left_map (interp_intro_pattern ist env) sigma l
+         List.map (interp_intro_pattern ist env sigma) l)
+  | l -> List.map (interp_intro_pattern ist env sigma) l
 
 let interp_intro_pattern_naming_option ist env sigma = function
   | None -> None
   | Some lpat -> Some (map_with_loc (fun ?loc pat -> interp_intro_pattern_naming loc ist env sigma pat) lpat)
 
 let interp_or_and_intro_pattern_option ist env sigma = function
-  | None -> sigma, None
+  | None -> None
   | Some (ArgVar {loc;v=id}) ->
       (match interp_intro_pattern_var loc ist env sigma id with
-      | IntroAction (IntroOrAndPattern l) -> sigma, Some (CAst.make ?loc l)
+      | IntroAction (IntroOrAndPattern l) -> Some (CAst.make ?loc l)
       | _ ->
         user_err ?loc (str "Cannot coerce to a disjunctive/conjunctive pattern."))
   | Some (ArgArg {loc;v=l}) ->
-      let sigma,l = interp_or_and_intro_pattern ist env sigma l in
-      sigma, Some (CAst.make ?loc l)
+      let l = interp_or_and_intro_pattern ist env sigma l in
+      Some (CAst.make ?loc l)
 
 let interp_intro_pattern_option ist env sigma = function
-  | None -> sigma, None
+  | None -> None
   | Some ipat ->
-      let sigma, ipat = interp_intro_pattern ist env sigma ipat in
-      sigma, Some ipat
+      let ipat = interp_intro_pattern ist env sigma ipat in
+      Some ipat
 
 let interp_in_hyp_as ist env sigma (id,ipat) =
-  let sigma, ipat = interp_intro_pattern_option ist env sigma ipat in
-  sigma,(interp_hyp ist env sigma id,ipat)
+  let ipat = interp_intro_pattern_option ist env sigma ipat in
+  (interp_hyp ist env sigma id,ipat)
 
 let interp_binding_name ist env sigma = function
   | AnonHyp n -> AnonHyp n
@@ -1674,13 +1674,12 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Tacticals.New.tclWITHHOLES ev
-        (name_atomic ~env
+        let l' = interp_intro_pattern_list_as_list ist env sigma l in
+        name_atomic ~env
           (TacIntroPattern (ev,l))
           (* spiwack: print uninterpreted, not sure if it is the
              expected behaviour. *)
-          (Tactics.intro_patterns ev l')) sigma
+          (Tactics.intro_patterns ev l')
       end
   | TacApply (a,ev,cb,cl) ->
       (* spiwack: until the tactic is in the monad *)
@@ -1692,12 +1691,12 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let loc, f = interp_open_constr_with_bindings_loc ist c in
             (k,(CAst.make ?loc f))) cb
         in
-        let sigma,tac = match cl with
-          | [] -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
+        let tac = match cl with
+          | [] -> Tactics.apply_with_delayed_bindings_gen a ev l
           | cl ->
-              let sigma,cl = List.fold_left_map (interp_in_hyp_as ist env) sigma cl in
-              sigma, List.fold_right (fun (id,ipat) -> Tactics.apply_delayed_in a ev id l ipat) cl Tacticals.New.tclIDTAC in
-        Tacticals.New.tclWITHHOLES ev tac sigma
+              let cl = List.map (interp_in_hyp_as ist env sigma) cl in
+              List.fold_right (fun (id,ipat) -> Tactics.apply_delayed_in a ev id l ipat) cl Tacticals.New.tclIDTAC in
+        tac
       end
       end
   | TacElim (ev,(keep,cb),cbo) ->
@@ -1763,7 +1762,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let flags = open_constr_use_classes_flags () in
           interp_open_constr ~expected_type ~flags ist env sigma c
         in
-        let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
+        let ipat' = interp_intro_pattern_option ist env sigma ipat in
         let tac = Option.map (Option.map (interp_tactic ist)) t in
         Tacticals.New.tclWITHHOLES ev
         (name_atomic ~env
@@ -1824,18 +1823,18 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        let sigma,l =
-          List.fold_left_map begin fun sigma (c,(ipato,ipats),cls) ->
+        let l =
+          List.map begin fun (c,(ipato,ipats),cls) ->
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in
             let c = interp_destruction_arg ist gl c in
             let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
             let ipatsp = ipats in
-            let sigma,ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
+            let ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
             let cls = Option.map (interp_clause ist env sigma) cls in
-            sigma,((c,(ipato,ipats),cls),(cp,(ipato,ipatsp),cls))
-          end sigma l
+            ((c,(ipato,ipats),cls),(cp,(ipato,ipatsp),cls))
+          end l
         in
         let l,lp = List.split l in
         let sigma,el =
@@ -1933,7 +1932,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
               sigma , Some c_interp
         in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
-        let sigma,ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
+        let ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
         Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
           (TacInversion(DepInversion(k,c_interp,ids),dqhyps))
@@ -1945,11 +1944,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
         let hyps = interp_hyp_list ist env sigma idl in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
-        let sigma, ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
-        Tacticals.New.tclWITHHOLES false
-        (name_atomic ~env
+        let ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
+        name_atomic ~env
           (TacInversion (NonDepInversion (k,hyps,ids),dqhyps))
-          (Inv.inv_clause k ids_interp hyps dqhyps)) sigma
+          (Inv.inv_clause k ids_interp hyps dqhyps)
       end
   | TacInversion (InversionUsing (c,idl),hyp) ->
       Proofview.Goal.enter begin fun gl ->
@@ -2131,8 +2129,8 @@ let () =
   register_interp0 wit_pre_ident (lift interp_pre_ident);
   register_interp0 wit_ident (lift interp_ident);
   register_interp0 wit_hyp (lift interp_hyp);
-  register_interp0 wit_intropattern (lifts interp_intro_pattern) [@warning "-3"];
-  register_interp0 wit_simple_intropattern (lifts interp_intro_pattern);
+  register_interp0 wit_intropattern (lift interp_intro_pattern) [@warning "-3"];
+  register_interp0 wit_simple_intropattern (lift interp_intro_pattern);
   register_interp0 wit_clause_dft_concl (lift interp_clause);
   register_interp0 wit_constr (lifts interp_constr);
   register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
