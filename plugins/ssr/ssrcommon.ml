@@ -1238,8 +1238,8 @@ let pfLIFT f =
 ;;
 
 let is_protect hd env sigma =
-  let _, protectC = mkSsrConst env sigma "protect_term" in
-  EConstr.eq_constr_nounivs sigma hd protectC
+  let protectC = mkSsrRef "protect_term" in
+  EConstr.isRefX sigma protectC hd
 
 let abs_wgen keep_let f gen (gl,args,c) =
   let sigma, env = project gl, pf_env gl in
