@@ -655,8 +655,6 @@ let subst_hole_with_term occ tc t =
   in
   substrec t
 
-open Tacmach
-
 let hResolve id c occ t =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
@@ -1008,9 +1006,8 @@ ARGUMENT EXTEND comparison PRINTED BY { pr_cmp' }
 
 {
 
-let interp_test ist gls = function
+let interp_test ist env sigma = function
   | Test (c,x,y) ->
-      project gls ,
       Test(c,Tacinterp.interp_int_or_var ist x,Tacinterp.interp_int_or_var ist y)
 
 }

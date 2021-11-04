@@ -19,7 +19,6 @@ open Glob_term
 open Genintern
 open Geninterp
 open Extraargs
-open Tacmach
 open Rewrite
 open Stdarg
 open Tactypes
@@ -44,7 +43,7 @@ let pr_glob_constr_with_bindings_sign env sigma _ _ _ (ge : glob_constr_with_bin
 let pr_glob_constr_with_bindings env sigma _ _ _ (ge : glob_constr_with_bindings) =
   Printer.pr_glob_constr_env env sigma (fst (fst ge))
 let pr_constr_expr_with_bindings env sigma prc _ _ (ge : constr_expr_with_bindings) = prc env sigma (fst ge)
-let interp_glob_constr_with_bindings ist gl c = Tacmach.project gl , (ist, c)
+let interp_glob_constr_with_bindings ist _ _ c = (ist, c)
 let glob_glob_constr_with_bindings ist l = Tacintern.intern_constr_with_bindings ist l
 let subst_glob_constr_with_bindings s c =
   Tacsubst.subst_glob_with_bindings s c
@@ -69,9 +68,8 @@ END
 type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
 type glob_strategy = (glob_constr_and_expr, Tacexpr.glob_red_expr) strategy_ast
 
-let interp_strategy ist gl s =
-  let sigma = project gl in
-    sigma, strategy_of_ast ist s
+let interp_strategy ist env sigma s =
+    strategy_of_ast ist s
 let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (Tacintern.intern_red_expr ist) s
 let subst_strategy s str = str
 

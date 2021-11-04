@@ -22,7 +22,6 @@ open Stdarg
 open Tacarg
 open Libnames
 open Tactics
-open Tacmach
 open Util
 open Locus
 open Tacexpr
@@ -217,11 +216,11 @@ let intern_ssrhoi ist = function
     let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_ident) id) in
     hyp
 
-let interp_ssrhoi ist gl = function
-  | Hyp h -> let s, h' = interp_hyp ist gl h in s, Hyp h'
+let interp_ssrhoi ist env sigma = function
+  | Hyp h -> let h' = interp_hyp ist env sigma h in Hyp h'
   | Id (SsrHyp (loc, id)) ->
-    let s, id' = interp_wit wit_ident ist gl id in
-    s, Id (SsrHyp (loc, id'))
+    let id' = Tacinterp.interp_ident ist env sigma id in
+    Id (SsrHyp (loc, id'))
 
 }
 
@@ -370,8 +369,7 @@ let mk_index ?loc = function
   | ArgArg i -> ArgArg (check_index ?loc i)
   | iv -> iv
 
-let interp_index ist gl idx =
-  Tacmach.project gl,
+let interp_index ist env sigma idx =
   match idx with
   | ArgArg _ -> idx
   | ArgVar id ->
@@ -383,7 +381,7 @@ let interp_index ist gl idx =
         | None ->
         begin match Tacinterp.Value.to_constr v with
         | Some c ->
-          let rc = Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) c in
+          let rc = Detyping.detype Detyping.Now false Id.Set.empty env sigma c in
           begin match Notation.uninterp_prim_token rc (None, []) with
           | Constrexpr.Number n, _ when NumTok.Signed.is_int n ->
             int_of_string (NumTok.Signed.to_string n)
@@ -525,7 +523,7 @@ let glob_ssrterm gs = function
   | k, (_, Some c) -> k, Tacintern.intern_constr gs c
   | ct -> ct
 let subst_ssrterm s (k, c) = k, Tacsubst.subst_glob_constr_and_expr s c
-let interp_ssrterm _ gl t = Tacmach.project gl, t
+let interp_ssrterm _ _ _ t = t
 
 open Pcoq.Constr
 
@@ -678,11 +676,11 @@ let intern_ipat ist =
 
 let intern_ipats ist = List.map (intern_ipat ist)
 
-let interp_intro_pattern = interp_wit wit_intro_pattern
+let interp_intro_pattern = Tacinterp.interp_intro_pattern
 
-let interp_introid ist gl id =
- try IntroNaming (IntroIdentifier (hyp_id (snd (interp_hyp ist gl (SsrHyp (Loc.tag id))))))
- with _ -> (snd (interp_intro_pattern ist gl (CAst.make @@ IntroNaming (IntroIdentifier id)))).CAst.v
+let interp_introid ist env sigma id =
+ try IntroNaming (IntroIdentifier (hyp_id (interp_hyp ist env sigma (SsrHyp (Loc.tag id)))))
+ with _ -> (interp_intro_pattern ist env sigma (CAst.make @@ IntroNaming (IntroIdentifier id))).CAst.v
 
 let get_intro_id = function
   | IntroNaming (IntroIdentifier id) -> id
@@ -710,28 +708,28 @@ let rec add_intro_pattern_hyps ipat hyps =
 
 (* We interp the ipat using the standard ltac machinery for ids, since
  * we have no clue what a name could be bound to (maybe another ipat) *)
-let interp_ipat ist gl =
+let interp_ipat ist env sigma =
   let ltacvar id = Id.Map.mem id ist.Tacinterp.lfun in
   let interp_block = function
     | Prefix id when ltacvar id ->
-        begin match interp_introid ist gl id with
+        begin match interp_introid ist env sigma id with
         | IntroNaming (IntroIdentifier id) -> Prefix id
         | _ -> Ssrcommon.errorstrm Pp.(str"Variable " ++ Id.print id ++ str" in block intro pattern should be bound to an identifier.")
         end
     | SuffixId id when ltacvar id ->
-        begin match interp_introid ist gl id with
+        begin match interp_introid ist env sigma id with
         | IntroNaming (IntroIdentifier id) -> SuffixId id
         | _ -> Ssrcommon.errorstrm Pp.(str"Variable " ++ Id.print id ++ str" in block intro pattern should be bound to an identifier.")
         end
     | x -> x in
   let rec interp = function
   | IPatId id when ltacvar id ->
-    ipat_of_intro_pattern (interp_introid ist gl id)
+    ipat_of_intro_pattern (interp_introid ist env sigma id)
   | IPatId _ as x -> x
   | IPatClear clr ->
     let add_hyps (SsrHyp (loc, id) as hyp) hyps =
       if not (ltacvar id) then hyp :: hyps else
-      add_intro_pattern_hyps CAst.(make ?loc (interp_introid ist gl id)) hyps in
+      add_intro_pattern_hyps CAst.(make ?loc (interp_introid ist env sigma id)) hyps in
     let clr' = List.fold_right add_hyps clr [] in
     check_hyps_uniq [] clr';
     IPatClear clr'
@@ -745,14 +743,14 @@ let interp_ipat ist gl =
 
   | IPatInj iorpat -> IPatInj (List.map (List.map interp) iorpat)
   | IPatAbstractVars l ->
-     IPatAbstractVars (List.map get_intro_id (List.map (interp_introid ist gl) l))
-  | IPatView l -> IPatView (List.map (fun x -> snd(interp_ast_closure_term ist
-     gl x)) l)
+     IPatAbstractVars (List.map get_intro_id (List.map (interp_introid ist env sigma) l))
+  | IPatView l -> IPatView (List.map (fun x -> interp_ast_closure_term ist
+     env sigma x) l)
   | (IPatSimpl _ | IPatAnon _ | IPatRewrite _ | IPatNoop | IPatFastNondep) as x -> x
     in
   interp
 
-let interp_ipats ist gl l = project gl, List.map (interp_ipat ist gl) l
+let interp_ipats ist env sigma l = List.map (interp_ipat ist env sigma) l
 
 let pushIPatRewrite = function
   | pats :: orpat -> (IPatRewrite (allocc, L2R) :: pats) :: orpat

@@ -919,7 +919,7 @@ let interp_rpattern s = function
   | E_As_X_In_T(e,x,t) ->
     E_As_X_In_T (interp_ssrterm s e,interp_ssrterm s x,interp_ssrterm s t)
 
-let interp_rpattern0 ist gl t = Tacmach.project gl, interp_rpattern ist t
+let interp_rpattern0 ist _ _ t = interp_rpattern ist t
 
 let tag_of_cpattern p = p.kind
 let loc_of_cpattern = loc_ofCG
@@ -949,7 +949,7 @@ let interp_open_constr ist env sigma gc =
   Tacinterp.interp_open_constr ist env sigma gc
 let pf_intern_term env sigma {pattern = c; interpretation = ist; _} = glob_constr ist env sigma c
 
-let interp_ssrterm ist gl t = Tacmach.project gl, interp_ssrterm ist t
+let interp_ssrterm ist env sigma t = interp_ssrterm ist t
 
 let interp_term env sigma = function
   | {pattern = c; interpretation = Some ist; _} ->

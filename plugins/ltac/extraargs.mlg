@@ -107,14 +107,12 @@ let int_list_of_VList v = match Value.to_list v with
 | Some l -> List.map (fun n -> coerce_to_int n) l
 | _ -> raise (CannotCoerceTo "an integer")
 
-let interp_occs ist gl l =
+let interp_occs ist env sigma l =
   match l with
     | ArgArg x -> x
     | ArgVar ({ CAst.v = id } as locid) ->
         (try int_list_of_VList (Id.Map.find id ist.lfun)
           with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
-let interp_occs ist gl l =
-  Tacmach.project gl , interp_occs ist gl l
 
 let glob_occs ist l = l
 
@@ -146,7 +144,7 @@ let pr_gen env sigma prc _prlc _prtac x = prc env sigma x
 let pr_globc env sigma _prc _prlc _prtac (_,glob) =
   Printer.pr_glob_constr_env env sigma glob
 
-let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
+let interp_glob ist env sigma (t,_) = (ist,t)
 
 let glob_glob = Tacintern.intern_constr
 
@@ -203,7 +201,7 @@ let interp_casted_constr ist gl c =
 ARGUMENT EXTEND casted_constr
   TYPED AS constr
   PRINTED BY { pr_gen env sigma }
-  INTERPRETED BY { interp_casted_constr }
+  INTERPRETED [ legacy ] BY { interp_casted_constr }
 | [ constr(c) ] -> { c }
 END
 
@@ -233,9 +231,6 @@ let intern_place ist = function
 let interp_place ist env sigma = function
     ConclLocation () -> ConclLocation ()
   | HypLocation (id,hl) -> HypLocation (Tacinterp.interp_hyp ist env sigma id,hl)
-
-let interp_place ist gl p =
-  Tacmach.project gl , interp_place ist (Tacmach.pf_env gl) (Tacmach.project gl) p
 
 let subst_place subst pl = pl
 
@@ -360,8 +355,8 @@ let intern_strategy ist v = match v with
 
 let subst_strategy _ v = v
 
-let interp_strategy ist gl = function
-| ArgArg n -> gl.Evd.sigma, n
+let interp_strategy ist env sigma = function
+| ArgArg n -> n
 | ArgVar { CAst.v = id; CAst.loc } ->
   let v =
     try Id.Map.find id ist.lfun
@@ -373,7 +368,7 @@ let interp_strategy ist gl = function
     try Tacinterp.Value.cast (Genarg.topwit wit_strategy_level) v
     with CErrors.UserError _ -> Taccoerce.error_ltac_variable ?loc id None v "a strategy_level"
   in
-  gl.Evd.sigma, v
+  v
 
 let pr_loc_strategy _ _ _ v = Pputils.pr_or_var Conv_oracle.pr_level v
 
