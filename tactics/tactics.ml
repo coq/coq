@@ -1607,7 +1607,7 @@ let simplest_ecase c = general_case_analysis true None (c,NoBindings)
 
 exception IsNonrec
 
-let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations.BiFinite
+let is_nonrec env mind = (Environ.lookup_mind (fst mind) env).mind_finite == Declarations.BiFinite
 
 let find_ind_eliminator env sigma ind s =
   let gr = lookup_eliminator env ind s in
@@ -1619,7 +1619,7 @@ let find_eliminator c gl =
   let concl = Proofview.Goal.concl gl in
   let sigma, t = Typing.type_of env sigma c in
   let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
-  if is_nonrec ind then raise IsNonrec;
+  if is_nonrec env ind then raise IsNonrec;
   let sigma, c = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
   sigma, ElimTerm c
 
@@ -2267,8 +2267,9 @@ let constructor_core with_evars cstr lbind =
 let constructor_tac with_evars expctdnumopt i lbind =
   Proofview.Goal.enter begin fun gl ->
     let cl = Tacmach.New.pf_concl gl in
+    let env = Proofview.Goal.env gl in
     let ((ind,_),redcl) = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl cl in
-    let nconstr = Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
+    let nconstr = Array.length (snd (Inductive.lookup_mind_specif env ind)).mind_consnames in
     check_number_of_constructors expctdnumopt i nconstr;
     Tacticals.New.tclTHENLIST [
       convert_concl ~cast:false ~check:false redcl DEFAULTcast;
@@ -2295,9 +2296,10 @@ let any_constructor with_evars tacopt =
     else Tacticals.New.tclORD (one_constr (ind,i)) (any_constr ind n (i + 1)) in
   Proofview.Goal.enter begin fun gl ->
     let cl = Tacmach.New.pf_concl gl in
+    let env = Proofview.Goal.env gl in
     let (ind,_),redcl = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl cl in
     let nconstr =
-      Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
+      Array.length (snd (Inductive.lookup_mind_specif env ind)).mind_consnames in
     if Int.equal nconstr 0 then error NoConstructors;
     Tacticals.New.tclTHENLIST [
       convert_concl ~cast:false ~check:false redcl DEFAULTcast;
@@ -3733,7 +3735,7 @@ let lift_togethern n l =
 
 let lift_list l = List.map (lift 1) l
 
-let ids_of_constr sigma ?(all=false) vars c =
+let ids_of_constr env sigma ?(all=false) vars c =
   let rec aux vars c =
     match EConstr.kind sigma c with
     | Var id -> Id.Set.add id vars
@@ -3741,7 +3743,7 @@ let ids_of_constr sigma ?(all=false) vars c =
         (match EConstr.kind sigma f with
         | Construct ((ind,_),_)
         | Ind (ind,_) ->
-            let (mib,mip) = Global.lookup_inductive ind in
+            let (mib,mip) = Inductive.lookup_mind_specif env ind in
               Array.fold_left_from
                 (if all then 0 else mib.Declarations.mind_nparams)
                 aux vars args
@@ -3749,11 +3751,11 @@ let ids_of_constr sigma ?(all=false) vars c =
     | _ -> EConstr.fold sigma aux vars c
   in aux vars c
 
-let decompose_indapp sigma f args =
+let decompose_indapp env sigma f args =
   match EConstr.kind sigma f with
   | Construct ((ind,_),_)
   | Ind (ind,_) ->
-      let (mib,mip) = Global.lookup_inductive ind in
+      let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let first = mib.Declarations.mind_nparams_rec in
       let pars, args = Array.chop first args in
         mkApp (f, pars), args
@@ -3829,11 +3831,11 @@ let hyps_of_vars env sigma sign nogen hyps =
 
 exception Seen
 
-let linear sigma vars args =
+let linear env sigma vars args =
   let seen = ref vars in
     try
       Array.iter (fun i ->
-        let rels = ids_of_constr sigma ~all:true Id.Set.empty i in
+        let rels = ids_of_constr env sigma ~all:true Id.Set.empty i in
         let seen' =
           Id.Set.fold (fun id acc ->
             if Id.Set.mem id acc then raise Seen
@@ -3900,14 +3902,14 @@ let abstract_args gl generalize_vars dep id defined f args =
           in
           let eqs = eq :: lift_list eqs in
           let refls = refl :: refls in
-          let argvars = ids_of_constr !sigma vars arg in
+          let argvars = ids_of_constr env !sigma vars arg in
             (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls,
             nongenvars, Id.Set.union argvars vars)
   in
-  let f', args' = decompose_indapp !sigma f args in
+  let f', args' = decompose_indapp env !sigma f args in
   let dogen, f', args' =
-    let parvars = ids_of_constr !sigma ~all:true Id.Set.empty f' in
-      if not (linear !sigma parvars args') then true, f, args
+    let parvars = ids_of_constr env !sigma ~all:true Id.Set.empty f' in
+      if not (linear env !sigma parvars args') then true, f, args
       else
         match Array.findi (fun i x -> not (isVar !sigma x) || is_defined_variable env (destVar !sigma x)) args' with
         | None -> false, f', args'
@@ -4251,7 +4253,7 @@ let guess_elim isrec dep s hyp0 gl =
   let env = Tacmach.New.pf_env gl in
   let sigma = Tacmach.New.project gl in
   let sigma, elimc =
-    if isrec && not (is_nonrec mind)
+    if isrec && not (is_nonrec env mind)
     then
       let gr = lookup_eliminator env mind s in
       Evd.fresh_global env sigma gr
