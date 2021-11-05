@@ -766,7 +766,7 @@ New environment formation rules
    \WF{E}{}
    \WFT{E}{S}
    --------------------------
-   WF(E; \ModS{X}{S})[]
+   \WF{E; \ModS{X}{S}}{}
 
 .. inference:: WF-MOD2
 
