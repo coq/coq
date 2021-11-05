@@ -543,7 +543,7 @@ delta-reduced term :math:`t_i` in :math:`p`.
    \end{array}
    ----------------------------------
    \begin{array}{c}
-   \WEV{E}{S~\with~x := p}{}\\
+   \WEV{E}{S~\with~X := p}{}\\
    \Struct~e_1 ;…;e_i ; \ModA{X}{p};e_{i+2} \{p/X\} ;…;e_n \{p/X\} ~\End
    \end{array}
 
