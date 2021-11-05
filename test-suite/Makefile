@@ -379,6 +379,8 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	} > "$@"
 
 ssr: $(wildcard ssr/*.v:%.v=%.v.log)
+	$(MAKE) report
+
 $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
@@ -405,6 +407,8 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v primit
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
 stm: $(wildcard stm/*.v:%.v=%.v.log)
+	$(MAKE) report
+
 $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
@@ -503,6 +507,8 @@ $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	} > "$@"
 
 output-coqchk: $(addsuffix .log,$(wildcard output-coqchk/*.v))
+	$(MAKE) report
+
 $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
@@ -689,6 +695,7 @@ $(addsuffix .log,$(filter-out $(COMMON_MODULE_DEPENDENCIES),$(wildcard modules/*
 #######################################################################
 
 misc: $(patsubst %.sh,%.log,$(wildcard misc/*.sh))
+	$(MAKE) report
 
 misc/universes.log: misc/universes/all_stdlib.v
 
@@ -717,6 +724,7 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 # IDE : some tests of backtracking for coqtop -ideslave
 
 ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
+	$(MAKE) report
 
 ide/fake_ide.exe : ide/fake_ide.ml
 	$(SHOW) 'OCAMLC  $<'
@@ -740,6 +748,7 @@ ide/fake_ide.exe : ide/fake_ide.ml
 # vio compilation
 
 vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
+	$(MAKE) report
 
 %.vio.log:%.v
 	@echo "TEST      $<"
@@ -760,6 +769,7 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 # coqchk
 
 coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
+	$(MAKE) report
 
 %.chk.log:%.v
 	@echo "TEST      $<"
@@ -779,6 +789,7 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 # coqwc : test output
 
 coqwc : $(patsubst %.v,%.v.log,$(wildcard coqwc/*.v))
+	$(MAKE) report
 
 coqwc/%.v.log : coqwc/%.v
 	$(HIDE){ \
@@ -800,6 +811,7 @@ coqwc/%.v.log : coqwc/%.v
 # coq_makefile
 
 coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
+	$(MAKE) report
 
 coq-makefile/%.log : coq-makefile/%/run.sh
 	@echo "TEST      coq-makefile/$*"
@@ -844,6 +856,7 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 # tools/
 
 tools: $(patsubst %/run.sh,%.log,$(wildcard tools/*/run.sh))
+	$(MAKE) report
 
 tools/%.log : tools/%/run.sh
 	@echo "TEST      tools/$*"
@@ -864,6 +877,7 @@ tools/%.log : tools/%/run.sh
 # vos/
 
 vos: vos/run.log
+	$(MAKE) report
 
 vos/run.log: $(wildcard vos/*.sh) $(wildcard vos/*.v)
 	@echo "TEST      vos"
