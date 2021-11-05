@@ -557,7 +557,7 @@ delta-reduced term :math:`t_i` in :math:`p`.
 .. inference:: WEVAL-PATH-MOD1
 
    \begin{array}{c}
-   \WEV{E}{p}{\Struct~e_1 ;…;e_i ; \Mod{X}{S}{S_1};e_{i+2} ;… ;e_n End} \\
+   \WEV{E}{p}{\Struct~e_1 ;…;e_i ; \Mod{X}{S}{S_1};e_{i+2} ;… ;e_n ~\End} \\
    \WEV{E;e_1 ;…;e_i }{S}{\ovl{S}}
    \end{array}
    --------------------------
@@ -574,7 +574,7 @@ delta-reduced term :math:`t_i` in :math:`p`.
 .. inference:: WEVAL-PATH-ALIAS1
 
    \begin{array}{c}
-   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModA{X}{p_1};e_{i+2}  ;… ;e_n End} \\
+   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModA{X}{p_1};e_{i+2}  ;… ;e_n ~\End} \\
    \WEV{E;e_1 ;…;e_i }{p_1}{\ovl{S}}
    \end{array}
    --------------------------
@@ -591,7 +591,7 @@ delta-reduced term :math:`t_i` in :math:`p`.
 .. inference:: WEVAL-PATH-TYPE1
 
    \begin{array}{c}
-   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModType{Y}{S};e_{i+2} ;… ;e_n End} \\
+   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModType{Y}{S};e_{i+2} ;… ;e_n ~\End} \\
    \WEV{E;e_1 ;…;e_i }{S}{\ovl{S}}
    \end{array}
    --------------------------
