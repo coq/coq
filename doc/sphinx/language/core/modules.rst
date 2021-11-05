@@ -804,7 +804,7 @@ New environment formation rules
    \WFT{E}{S_1}
    \WFT{E}{S_2}
    --------------------------
-   \WF{E; \Mod{X}{S_1}{S_2}}{}
+   \WF{E; \ModImp{X}{S_1}{S_2}}{}
 
 .. inference:: WF-ALIAS
 
