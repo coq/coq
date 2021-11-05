@@ -371,7 +371,7 @@ let compute_induction_names check_and branchletsigns = function
       get_and_check_or_and_pattern_gen check_and ?loc names branchletsigns
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
-let compute_constructor_signatures ~rec_flag ((_,k as ity),u) =
+let compute_constructor_signatures env ~rec_flag ((_,k as ity),u) =
   let rec analrec c recargs =
     match c, recargs with
     | RelDecl.LocalAssum _ :: c, recarg::rest ->
@@ -386,7 +386,7 @@ let compute_constructor_signatures ~rec_flag ((_,k as ity),u) =
     | [], [] -> []
     | _ -> anomaly (Pp.str "compute_constructor_signatures.")
   in
-  let (mib,mip) = Global.lookup_inductive ity in
+  let (mib,mip) = Inductive.lookup_mind_specif env ity in
   let map (ctx, _) = List.skipn (Context.Rel.length mib.mind_params_ctxt) (List.rev ctx) in
   let lc = Array.map map mip.mind_nf_lc in
   let lrecargs = Declareops.dest_subterms mip.mind_recargs in

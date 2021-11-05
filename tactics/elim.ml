@@ -68,7 +68,7 @@ let general_elim_then_using mk_elim
             (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-    let branchsigns = Tacticals.compute_constructor_signatures ~rec_flag (ind, u) in
+    let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
     let brnames = Tacticals.compute_induction_names false branchsigns allnames in
     let flags = Unification.elim_flags () in
     let elimclause' =

@@ -104,7 +104,7 @@ val fix_empty_or_and_pattern : int ->
   delayed_open_constr or_and_intro_pattern_expr ->
   delayed_open_constr or_and_intro_pattern_expr
 
-val compute_constructor_signatures : rec_flag:bool -> inductive * 'a -> bool list array
+val compute_constructor_signatures : Environ.env -> rec_flag:bool -> inductive * 'a -> bool list array
 
 (** Useful for [as intro_pattern] modifier *)
 val compute_induction_names :
