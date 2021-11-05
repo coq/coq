@@ -33,9 +33,6 @@ let get_typeclasses_unique_solutions =
     ~key:["Typeclasses";"Unique";"Solutions"]
     ~value:false
 
-let (classes_transparent_state, classes_transparent_state_hook) = Hook.make ()
-let classes_transparent_state () = Hook.get classes_transparent_state ()
-
 let get_solve_one_instance, solve_one_instance_hook = Hook.make ()
 
 let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =

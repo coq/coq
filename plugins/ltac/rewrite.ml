@@ -21,7 +21,6 @@ open Reduction
 open Tacticals.New
 open Tactics
 open Pretype_errors
-open Typeclasses
 open Constrexpr
 open Evd
 open Tactypes
@@ -37,6 +36,8 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 (* module RelDecl = Context.Rel.Declaration *)
+
+module TC = Typeclasses
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -125,7 +126,7 @@ let app_poly_sort b =
 let find_class_proof proof_type proof_method env evars carrier relation =
   try
     let evars, goal = app_poly_check env evars proof_type [| carrier ; relation |] in
-    let evars', c = Typeclasses.resolve_one_typeclass env (goalevars evars) goal in
+    let evars', c = TC.resolve_one_typeclass env (goalevars evars) goal in
       if extends_undefined (goalevars evars) evars' then raise Not_found
       else app_poly_check env (evars',cstrevars evars) proof_method [| carrier; relation; c |]
   with e when CErrors.noncritical e -> raise Not_found
@@ -173,22 +174,22 @@ end) = struct
 
   let proper_class =
     let r = lazy (find_reference morphisms "Proper") in
-    fun env sigma -> class_info env sigma (Lazy.force r)
+    fun env sigma -> TC.class_info env sigma (Lazy.force r)
 
   let proper_proxy_class =
     let r = lazy (find_reference morphisms "ProperProxy") in
-    fun env sigma -> class_info env sigma (Lazy.force r)
+    fun env sigma -> TC.class_info env sigma (Lazy.force r)
 
   let proper_proj env sigma =
-    mkConst (Option.get (List.hd (proper_class env sigma).cl_projs).meth_const)
+    mkConst (Option.get (List.hd (proper_class env sigma).TC.cl_projs).TC.meth_const)
 
   let proper_type env (sigma,cstrs) =
-    let l = (proper_class env sigma).cl_impl in
+    let l = (proper_class env sigma).TC.cl_impl in
     let (sigma, c) = Evd.fresh_global env sigma l in
     (sigma, cstrs), c
 
   let proper_proxy_type env (sigma,cstrs) =
-    let l = (proper_proxy_class env sigma).cl_impl in
+    let l = (proper_proxy_class env sigma).TC.cl_impl in
     let (sigma, c) = Evd.fresh_global env sigma l in
     (sigma, cstrs), c
 
@@ -365,7 +366,7 @@ end) = struct
            let evars, inst =
              app_poly env (evars,Evar.Set.empty)
                rewrite_relation_class [| evar; mkApp (c, params) |] in
-           let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) inst in
+           let _ = TC.resolve_one_typeclass env' (goalevars evars) inst in
              Some (it_mkProd_or_LetIn t rels)
            with e when CErrors.noncritical e -> None)
   | _ -> None
@@ -702,7 +703,7 @@ let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) 
   try
     let left = if l2r then c1 else c2 in
     let sigma = Unification.w_unify ~flags env sigma CONV left t in
-    let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
+    let sigma = TC.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let evd = solve_remaining_by env sigma holes by in
     let nf c = Reductionops.nf_evar evd (Reductionops.nf_meta env evd c) in
@@ -1434,7 +1435,7 @@ let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
 let solve_constraints env (evars,cstrs) =
   let oldtcs = Evd.get_typeclass_evars evars in
   let evars' = Evd.set_typeclass_evars evars cstrs in
-  let evars' = Typeclasses.resolve_typeclasses env ~filter:all_evars ~split:false ~fail:true evars' in
+  let evars' = TC.resolve_typeclasses env ~filter:TC.all_evars ~split:false ~fail:true evars' in
   Evd.set_typeclass_evars evars' oldtcs
 
 let nf_zeta =
@@ -1921,7 +1922,7 @@ let default_morphism sign m =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
   let evars, morph = app_poly_check env evars (PropGlobal.proper_type env) [| t; sign; m |] in
-  let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
+  let evars, mor = TC.resolve_one_typeclass env (goalevars evars) morph in
     mor, proper_projection env sigma mor morph
 
 let add_setoid atts binders a aeq t n =
