@@ -61,14 +61,6 @@ let set_typeclass_transparency_com ~locality refs b =
   in
   set_typeclass_transparency ~locality refs b
 
-let classes_transparent_state () =
-  try
-    Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db)
-  with Not_found -> TransparentState.empty
-
-let () =
-  Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
-
 let add_instance_hint inst path ~locality info =
      Flags.silently (fun () ->
        Hints.add_hints ~locality [typeclasses_db]

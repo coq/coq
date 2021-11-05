@@ -1105,10 +1105,15 @@ let initial_select_evars filter =
        yet determined to be a class or not. *)
     Typeclasses.is_class_evar evd evi
 
+
+let classes_transparent_state () =
+  try Hint_db.transparent_state (searchtable_map typeclasses_db)
+  with Not_found -> TransparentState.empty
+
 let resolve_typeclass_evars debug depth unique env evd filter split fail =
   let evd =
     try Evarconv.solve_unif_constraints_with_heuristics
-      ~flags:(Evarconv.default_flags_of (Typeclasses.classes_transparent_state ())) env evd
+      ~flags:(Evarconv.default_flags_of (classes_transparent_state())) env evd
     with e when CErrors.noncritical e -> evd
   in
     resolve_all_evars debug depth unique env
