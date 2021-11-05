@@ -782,14 +782,14 @@ New environment formation rules
    \WF{E}{}
    E[] ⊢ p : S
    --------------------------
-   \WF{E, \ModA{X}{p}}{}
+   \WF{E; \ModA{X}{p}}{}
 
 .. inference:: WF-MODTYPE
 
    \WF{E}{}
    \WFT{E}{S}
    --------------------------
-   \WF{E, \ModType{Y}{S}}{}
+   \WF{E; \ModType{Y}{S}}{}
 
 .. inference:: WF-IND
 
