@@ -46,3 +46,10 @@ Proof.
 have @h m : 'I_(n+m).+1 by apply: (Sub 0); abstract auto.
 by [].
 Qed.
+
+Lemma test5 : True.
+Proof.
+have @t : nat := 3.
+have : t = 3 by [].
+by [].
+Qed.
