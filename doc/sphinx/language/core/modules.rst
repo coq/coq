@@ -795,7 +795,7 @@ New environment formation rules
 
    \begin{array}{c}
    \WF{E;\ind{Γ_P}{Γ_C}{Γ_I}}{} \\
-   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{Γ_P'}{Γ_C'}{Γ_I'};… ~\End : \\
+   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{Γ_P'}{Γ_C'}{Γ_I'};… ~\End \\
    E[] ⊢ \ind{Γ_P'}{Γ_C'}{Γ_I'} <: \ind{Γ_P}{Γ_C}{Γ_I}
    \end{array}
    --------------------------
