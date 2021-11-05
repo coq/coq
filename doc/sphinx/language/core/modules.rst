@@ -466,7 +466,7 @@ We also need additional typing judgments:
 + :math:`\WTM{E}{p}{S}`, denoting that the module pointed by :math:`p` has type :math:`S` in
   the global environment :math:`E`.
 + :math:`\WEV{E}{S}{\ovl{S}}`, denoting that a structure :math:`S` is evaluated to a
-  structure :math:`S` in weak head normal form.
+  structure :math:`\ovl{S}` in weak head normal form.
 + :math:`\WS{E}{S_1}{S_2}` , denoting that a structure :math:`S_1` is a subtype of a
   structure :math:`S_2`.
 + :math:`\WS{E}{e_1}{e_2}` , denoting that a structure element :math:`e_1` is more
