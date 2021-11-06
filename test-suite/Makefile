@@ -26,10 +26,11 @@
 
 # If Coq is not configured, we can't run the makefile.
 ifneq ($(wildcard ../config/Makefile ../_build/default/config/Makefile),)
--include ../config/Makefile
 -include ../_build/default/config/Makefile
+-include ../config/Makefile
+  COQ_NOT_CONFIGURED:=false
 else
-	COQ_NOT_CONFIGURED=true
+  COQ_NOT_CONFIGURED:=true
 endif
 
 #######################################################################
@@ -67,7 +68,9 @@ endif
 export COQLIB
 
 ifeq ($(wildcard $(COQLIB)/theories/Reals/Reals.vo),)
-	COQLIB_NOT_FOUND:=true
+  COQLIB_NOT_FOUND:=true
+else
+  COQLIB_NOT_FOUND:=false
 endif
 
 COQEXTRAFLAGS?=
@@ -185,7 +188,6 @@ endif
 noop: ;
 
 run: $(SUBSYSTEMS)
-bugs: $(BUGS)
 
 clean:
 	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
