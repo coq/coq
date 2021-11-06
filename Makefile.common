@@ -62,12 +62,11 @@ $(BUILD_OUT_DIR) $(VO_OUT_DIR):
 	$(SHOW)'MKDIR     BUILD_OUT'
 	$(HIDE)mkdir -p $(BUILD_OUT_DIR)
 	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq
-	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq-core
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(LEGACY_BIN_DIR)
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(BUILD_OUT_DIR)/bin
-	$(HIDE)ln -s $(shell pwd)/_build/default/plugins/ $(BUILD_OUT_DIR)/lib/coq-core
-	$(HIDE)ln -s $(shell pwd)/_build/default/tools/ $(BUILD_OUT_DIR)/lib/coq-core
-	$(HIDE)ln -s $(shell pwd)/_build/default/kernel/ $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/coq-core/ $(BUILD_OUT_DIR)/lib/coq-core
+	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/coqide-server/ $(BUILD_OUT_DIR)/lib/coqide-server
+	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/stublibs/ $(BUILD_OUT_DIR)/lib/stublibs
 
 ###########################################################################
 # Executables
