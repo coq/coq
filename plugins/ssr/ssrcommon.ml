@@ -1168,24 +1168,21 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
 let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true x xs)
 
 let genclrtac cl cs clr =
-  let open Tacticals.Old in
-  let tclmyORELSE tac1 tac2 gl =
-    try tac1 gl
-    with e when CErrors.noncritical e -> tac2 e gl in
+  let open Proofview.Notations in
+  let open Tacticals in
   (* apply_type may give a type error, but the useful message is
    * the one of clear.  You type "move: x" and you get
    * "x is used in hyp H" instead of
    * "The term H has type T x but is expected to have type T x0". *)
-  tclTHEN
-    (tclmyORELSE
-      (apply_type cl cs)
-      (fun type_err gl ->
-         tclTHEN
-           (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
-           (fun gl -> raise type_err)
-           gl))
-    (old_cleartac clr)
+  (Proofview.tclORELSE
+    (Tactics.apply_type ~typecheck:true cl cs)
+    (fun (type_err, info) ->
+      pf_constr_of_global Coqlib.(lib_ref "core.False.type") >>= fun f ->
+      (Tactics.elim_type f) <*>
+      (cleartac clr) <*>
+      (Proofview.tclZERO ~info type_err)))
+  <*>
+  (cleartac clr)
 
 let gentac gen =
   Proofview.V82.tactic begin fun gl ->
@@ -1195,7 +1192,7 @@ let gentac gen =
   let gl = pf_merge_uc ucst gl in
   if conv
   then Tacticals.Old.tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
-  else genclrtac cl [c] clr gl
+  else Proofview.V82.of_tactic (genclrtac cl [c] clr) gl
   end
 
 let genstac (gens, clr) =
