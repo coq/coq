@@ -610,12 +610,17 @@ let separate_extraction lr =
   init true false;
   let refs,mps = locate_ref lr in
   let struc = optimize_struct (refs,mps) (mono_environment refs mps) in
+  let () = List.iter (function
+    | MPfile _, _ -> ()
+    | (MPdot _ | MPbound _), _ ->
+      user_err (str "Separate Extraction from inside a module is not supported."))
+      struc
+  in
   warns ();
   let print = function
     | (MPfile dir as mp, sel) as e ->
         print_structure_to_file (module_filename mp) false [e]
-    | (MPdot _ | MPbound _), _ ->
-      user_err (str "Separate Extraction from inside a module is not supported.")
+    | (MPdot _ | MPbound _), _ -> assert false
   in
   List.iter print struc;
   reset ()
