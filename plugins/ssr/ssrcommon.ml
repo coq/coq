@@ -150,7 +150,6 @@ let with_fresh_ctx t gl =
   let gl = t gl in
   fst (pull_ctxs gl)
 
-open Genarg
 open Pp
 
 let errorstrm x = CErrors.user_err x
@@ -259,23 +258,6 @@ let interp_open_constr env sigma0 ist gc =
   (sigma0, (sigma, c))
 
 let interp_term env sigma ist (_, c) = snd (interp_open_constr env sigma ist c)
-
-let of_ftactic ftac gl =
-  let r = ref None in
-  let tac = Ftactic.run ftac (fun ans -> r := Some ans; Proofview.tclUNIT ()) in
-  let tac = Proofview.V82.of_tactic tac in
-  let { sigma = sigma } = tac gl in
-  let ans = match !r with
-  | None -> assert false (* If the tactic failed we should not reach this point *)
-  | Some ans -> ans
-  in
-  (sigma, ans)
-
-let interp_wit wit ist gl x =
-  let globarg = in_gen (glbwit wit) x in
-  let arg = Tacinterp.interp_genarg ist globarg in
-  let (sigma, arg) = of_ftactic arg gl in
-  sigma, Tacinterp.Value.cast (topwit wit) arg
 
 let interp_hyp ist env sigma (SsrHyp (loc, id)) =
   let id' = Tacinterp.interp_hyp ist env sigma CAst.(make ?loc id) in
@@ -1333,8 +1315,7 @@ let tclINTERP_AST_CLOSURE_TERM_AS_CONSTR c =
   let ist =
     option_assert_get c.Ssrast.interp_env
       Pp.(str "tclINTERP_AST_CLOSURE_TERM_AS_CONSTR: term with no ist") in
-  let sigma, t =
-    interp_wit Stdarg.wit_constr ist gl old_ssrterm in
+  let sigma, t = Tacinterp.interp_constr_gen Pretyping.WithoutTypeConstraint ist (pf_env gl) (project gl) old_ssrterm in
   Unsafe.tclEVARS sigma <*>
   tclUNIT t
 end
