@@ -184,20 +184,9 @@ _build/default/%.install: $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
 
-ALL_CONTRIB_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/user-contrib -name '*.ml' -or -name '*.mli' -or -name '*.mlg') $(ALL_PLUGIN_SOURCE_FILES)
-_build/default/user-contrib/%.cmxs: $(ALL_CONTRIB_SOURCE_FILES) $(_DBUILD_DEPS)
-	$(SHOW)'DUNE      $@'
-	$(HIDE)$(_DBUILD) $@
-	$(HIDE)touch $@
-
-_build/default/user-contrib/%.cma: $(ALL_CONTRIB_SOURCE_FILES) $(_DBUILD_DEPS)
-	$(SHOW)'DUNE      $@'
-	$(HIDE)$(_DBUILD) $@
-	$(HIDE)touch $@
-
 .PHONY: all-src
 
-ALL_SOURCE_FILES=$(ALL_CONTRIB_SOURCE_FILES) $(ALL_PLUGIN_SOURCE_FILES) $(ALL_ML_SOURCE_FILES)
+ALL_SOURCE_FILES=$(ALL_PLUGIN_SOURCE_FILES) # NB includes $(ALL_ML_SOURCE_FILES)
 all-src: $(ALL_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      sources'
 	$(HIDE)$(_DBUILD) @all-src

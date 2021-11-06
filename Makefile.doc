@@ -81,7 +81,7 @@ doc: refman doc-stdlib
 
 SPHINX_DEPS ?=
 ifndef QUICK
-SPHINX_DEPS := coq $(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.cmxs
+SPHINX_DEPS := coq
 endif
 
 # refman-html and refman-latex
@@ -313,7 +313,7 @@ DOC_MLGS := \
 	plugins/ssrmatching/g_ssrmatching.mlg \
 	plugins/ssrsearch/g_search.mlg \
 	plugins/syntax/g_number_string.mlg \
-	user-contrib/Ltac2/g_ltac2.mlg
+	plugins/ltac2/g_ltac2.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
 DOC_RSTS := $(wildcard doc/sphinx/*/*.rst) $(wildcard doc/sphinx/*/*/*.rst)
 

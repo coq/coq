@@ -216,7 +216,6 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 PLUGININCLUDES=$(addprefix -I _build/default/, $(wildcard plugins/*))
 DUNEPLUGININCLUDES=$(addprefix -I _build/default/, $(wildcard plugins/*))
 NATIVEINCLUDES=$(addprefix -nI _build/default/, kernel/.kernel.objs/byte)
-USERCONTRIBINCLUDES=$(addprefix -I _build/default/user-contrib/,$(USERCONTRIBDIRS))
 
 ifdef NATIVECOMPUTE
   COQOPTS += -w -deprecated-native-compiler-option -native-compiler ondemand
@@ -225,7 +224,7 @@ COQOPTS += $(COQWARNERROR) $(COQUSERFLAGS)
 # Beware this depends on the makefile being in a particular dir, we
 # should pass an absolute path here but windows is tricky
 # c.f. https://github.com/coq/coq/pull/9560
-BOOTCOQC=$(TIMER) $(COQC) -coqlib $(VO_OUT_DIR) -q $(COQOPTS) $(DUNEPLUGININCLUDES) $(USERCONTRIBINCLUDES)
+BOOTCOQC=$(TIMER) $(COQC) -coqlib $(VO_OUT_DIR) -q $(COQOPTS) $(DUNEPLUGININCLUDES)
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile
@@ -279,7 +278,7 @@ test-suite: world
 # NB: for make world, no need to mention explicitly the .cmxs of the plugins,
 # since they are all mentioned in at least one Declare ML Module in some .v
 
-coqlib: stdlib-vo contrib-vo contrib-vo-fixup
+coqlib: stdlib-vo contrib-vo
 ifdef QUICK
 	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) theories/**.vio'
 	$(HIDE)$(BOOTCOQC) -schedule-vio2vo $(NJOBS) $(THEORIESVO) $(CONTRIBVO)
@@ -290,24 +289,9 @@ coqlib.timing.diff: stdlib.timing.diff
 stdlib-vo: $(THEORIESVO)
 contrib-vo: $(CONTRIBVO)
 
-# This is needed to make $(VO_OUT_DIR) compliant w.r.t. what is expected in Coqlib
-$(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.cmxs: $(BCONTEXT)/user-contrib/Ltac2/ltac2_plugin.cmxs
-	$(HIDE)cp -a $(BCONTEXT)/user-contrib/Ltac2/ltac2_plugin.cmxs $(VO_OUT_DIR)/user-contrib/Ltac2
-	$(HIDE)chmod u+w $(VO_OUT_DIR)/user-contrib/Ltac2/ltac2_plugin.cmxs
-
-$(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.cma: $(BCONTEXT)/user-contrib/Ltac2/ltac2_plugin.cma
-	$(HIDE)cp -a $(BCONTEXT)/user-contrib/Ltac2/ltac2_plugin.cma $(VO_OUT_DIR)/user-contrib/Ltac2
-	$(HIDE)chmod u+w $(VO_OUT_DIR)/user-contrib/Ltac2/ltac2_plugin.cma
-
-$(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.mllib: user-contrib/Ltac2/ltac2_plugin.mllib
-	$(HIDE)mkdir -p $(VO_OUT_DIR)$(shell dirname $<)
-	$(HIDE)cp -a $< $@
-
-contrib-vo-fixup: contrib-vo $(BCONTEXT)/user-contrib/Ltac2/ltac2_plugin.cmxs
-
 stdlib.timing.diff: $(ALLVO:.$(VO)=.v.timing.diff)
 
-.PHONY: coqlib stdlib-vo contrib-vo contrib-vo-fixup coqlib.timing.diff stdlib.timing.diff
+.PHONY: coqlib stdlib-vo contrib-vo coqlib.timing.diff stdlib.timing.diff
 
 # The .vo files in Init are built with the -noinit option
 
@@ -379,11 +363,11 @@ endif
 # can easily produce too long command line with many .v files prefixed by build_vo
 # so we use find + xargs to split coqdep invocation if necessary
 # OSX sed doesn't support -null-data so can't use -print0
-$(VFILED): $(BUILD_VFILES) $(BUILD_MLFILES) $(COQDEP) | all-src
+$(VFILED): $(BUILD_VFILES) $(COQDEP) | all-src
 	$(SHOW)'COQDEP    VFILES'
 	$(HIDE)find theories $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name '*.v' | \
 	sed 's|^|$(VO_OUT_DIR)|' | \
-	xargs $(COQDEP) -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) > "$@"
+	xargs $(COQDEP) -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) > "$@"
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 Makefile $(wildcard Makefile.*) config/Makefile : ;
