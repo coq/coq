@@ -395,9 +395,8 @@ Name a set of section hypotheses for ``Proof using``
    .. deprecated:: 8.15
 
       Redefining a collection, defining a collection with the same name as a variable,
-      and invoking the :cmd:`Proof using` command whenever names of collections and variables overlap
-      are deprecated. See the documentation of the warnings below and the warnigns
-      of the :cmd:`Proof using` command.
+      and invoking the :cmd:`Proof using` command when collection and variable names overlap
+      are deprecated. See the warnings below and in the :cmd:`Proof using` command.
 
    .. exn:: "All" is a predefined collection containing all variables. It can't be redefined.
 
