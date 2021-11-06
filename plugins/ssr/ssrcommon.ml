@@ -681,9 +681,9 @@ let pfe_new_type gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
   let sigma,t  = Evarutil.new_Type sigma in
   re_sig it sigma, t
-let pfe_type_relevance_of gl t =
-  let gl, ty = pfe_type_of gl t in
-  gl, ty, pf_apply Retyping.relevance_of_term gl t
+let pfe_type_relevance_of env sigma t =
+  let sigma, ty = Typing.type_of env sigma t in
+  sigma, ty, Retyping.relevance_of_term env sigma t
 let pf_type_of gl t =
   let sigma, ty = pf_type_of gl (EConstr.of_constr t) in
   re_sig (sig_it gl)  sigma, EConstr.Unsafe.to_constr ty
@@ -752,7 +752,8 @@ let rec constr_name sigma c = match EConstr.kind sigma c with
   | _ -> Anonymous
 
 let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
-  let gl, t, r = pfe_type_relevance_of gl c in
+  let sigma, t, r = pfe_type_relevance_of (pf_env gl) (project gl) c in
+  let gl = re_sig (sig_it gl) sigma in
   if name <> Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (make_annot name r, t, cl) else
   gl, EConstr.mkProd (make_annot (Name (pf_type_id gl t)) r, t, cl)
 
@@ -1160,7 +1161,8 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     let nv, p, _, ucst' = pf_abs_evars gl (fst pat, c) in
     let ucst = UState.union ucst ucst' in
     if nv = 0 then anomaly "occur_existential but no evars" else
-    let gl, pty, rp = pfe_type_relevance_of gl p in
+    let sigma, pty, rp = pfe_type_relevance_of (pf_env gl) (project gl) p in
+    let gl = re_sig (sig_it gl) sigma in
     false, pat, EConstr.mkProd (make_annot (constr_name (project gl) c) rp, pty, Tacmach.Old.pf_concl gl), p, clr,ucst,gl
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
 
@@ -1219,8 +1221,11 @@ let is_protect hd env sigma =
   let protectC = mkSsrRef "protect_term" in
   EConstr.isRefX sigma protectC hd
 
-let abs_wgen keep_let f gen (gl,args,c) =
-  let sigma, env = project gl, pf_env gl in
+let get_hyp env sigma id =
+  try EConstr.of_named_decl (Environ.lookup_named id env)
+  with Not_found -> raise (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
+
+let abs_wgen env sigma keep_let f gen (args,c) =
   let evar_closed t p =
     if occur_existential sigma t then
       CErrors.user_err ?loc:(loc_of_cpattern p)
@@ -1229,21 +1234,21 @@ let abs_wgen keep_let f gen (gl,args,c) =
   match gen with
   | _, Some ((x, mode), None) when mode = "@" || (mode = " " && keep_let) ->
      let x = hoi_id x in
-     let decl = Tacmach.Old.pf_get_hyp gl x in
-     gl,
+     let decl = get_hyp env sigma x in
+     sigma,
      (if NamedDecl.is_local_def decl then args else EConstr.mkVar x :: args),
      EConstr.mkProd_or_LetIn (decl |> NamedDecl.to_rel_decl |> RelDecl.set_name (Name (f x)))
                      (EConstr.Vars.subst_var x c)
   | _, Some ((x, _), None) ->
      let x = hoi_id x in
-     let hyp = Tacmach.Old.pf_get_hyp gl x in
+     let hyp = get_hyp env sigma x in
      let x' = make_annot (Name (f x)) (NamedDecl.get_relevance hyp) in
      let prod = EConstr.mkProd (x', NamedDecl.get_type hyp, EConstr.Vars.subst_var x c) in
-     gl, EConstr.mkVar x :: args, prod
+     sigma, EConstr.mkVar x :: args, prod
   | _, Some ((x, "@"), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern (pf_env gl) (project gl) p None in
-     let gl = pf_merge_uc_of (fst cp) gl in
+     let cp = interp_cpattern env sigma p None in
+     let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
        with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
@@ -1251,21 +1256,23 @@ let abs_wgen keep_let f gen (gl,args,c) =
      let t = EConstr.of_constr t in
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
-     let gl, ty, r = pfe_type_relevance_of gl t in
-     pf_merge_uc ucst gl, args, EConstr.mkLetIn(make_annot (Name (f x)) r, ut, ty, c)
+     let sigma, ty, r = pfe_type_relevance_of env sigma t in
+     let sigma = Evd.merge_universe_context sigma ucst in
+     sigma, args, EConstr.mkLetIn(make_annot (Name (f x)) r, ut, ty, c)
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern (pf_env gl) (project gl) p None in
-     let gl = pf_merge_uc_of (fst cp) gl in
+     let cp = interp_cpattern env sigma p None in
+     let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
        with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
      let c = EConstr.of_constr c in
      let t = EConstr.of_constr t in
      evar_closed t p;
-     let gl, ty, r = pfe_type_relevance_of gl t in
-     pf_merge_uc ucst gl, t :: args, EConstr.mkProd(make_annot (Name (f x)) r, ty, c)
-  | _ -> gl, args, c
+     let sigma, ty, r = pfe_type_relevance_of env sigma t in
+     let sigma = Evd.merge_universe_context sigma ucst in
+     sigma, t :: args, EConstr.mkProd(make_annot (Name (f x)) r, ty, c)
+  | _ -> sigma, args, c
 
 let clr_of_wgen gen clrs = match gen with
   | clr, Some ((x, _), None) ->

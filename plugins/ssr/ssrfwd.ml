@@ -262,7 +262,11 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
   Proofview.V82.tactic begin fun gl ->
   let clr0 = Option.default [] clr0 in
   let pats = tclCompileIPats pats in
-  let mkabs gen = abs_wgen false (fun x -> x) gen in
+  let mkabs gen (gl, args, c) =
+    let sigma, args, c = abs_wgen (pf_env gl) (project gl) false (fun x -> x) gen (args, c) in
+    let gl = re_sig (sig_it gl) sigma in
+    gl, args, c
+  in
   let mkclr gen clrs = clr_of_wgen gen clrs in
   let mkpats = function
   | _, Some ((x, _), _) -> fun pats -> IOpId (hoi_id x) :: pats

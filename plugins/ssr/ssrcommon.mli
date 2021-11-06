@@ -219,9 +219,6 @@ val pfe_type_of :
            Goal.goal Evd.sigma ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 val pfe_new_type : Goal.goal Evd.sigma -> Goal.goal Evd.sigma * EConstr.types
-val pfe_type_relevance_of :
-           Goal.goal Evd.sigma ->
-           EConstr.t -> Goal.goal Evd.sigma * EConstr.types * Sorts.relevance
 val pf_abs_prod :
            Name.t ->
            Goal.goal Evd.sigma ->
@@ -398,14 +395,16 @@ val unprotecttac : unit Proofview.tactic
 val is_protect : EConstr.t -> Environ.env -> Evd.evar_map -> bool
 
 val abs_wgen :
+  Environ.env ->
+  Evd.evar_map ->
   bool ->
   (Id.t -> Id.t) ->
   'a *
     ((Ssrast.ssrhyp_or_id * string) *
        Ssrmatching.cpattern option)
       option ->
-  Goal.goal Evd.sigma * EConstr.t list * EConstr.t ->
-  Goal.goal Evd.sigma * EConstr.t list * EConstr.t
+  EConstr.t list * EConstr.t ->
+  Evd.evar_map * EConstr.t list * EConstr.t
 
 val clr_of_wgen :
   ssrhyps * ((ssrhyp_or_id * 'a) * 'b option) option ->

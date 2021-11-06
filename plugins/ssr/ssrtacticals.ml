@@ -132,6 +132,7 @@ let endclausestac id_map clseq gl_id cl0 =
   end
 
 let tclCLAUSES tac (gens, clseq) =
+  let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   if clseq = InGoal || clseq = InSeqGoal then tac else
   let clr_gens = pf_clauseids gens clseq in
@@ -139,11 +140,14 @@ let tclCLAUSES tac (gens, clseq) =
   let gl_id = mk_anon_id hidden_goal_tag (Tacmach.pf_ids_of_hyps gl) in
   let cl0 = Proofview.Goal.concl gl in
   let dtac =
-    Proofview.V82.tactic begin fun gl ->
-    let c = pf_concl gl in
-    let gl, args, c =
-      List.fold_right (abs_wgen true mk_discharged_id) gens (gl,[], c) in
-    apply_type c args gl
+    Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let c = Proofview.Goal.concl gl in
+    let fold gen (sigma, args, c) = abs_wgen env sigma true mk_discharged_id gen (args, c) in
+    let sigma, args, c = List.fold_right fold gens (sigma, [], c) in
+    Proofview.Unsafe.tclEVARS sigma <*>
+    Tactics.apply_type ~typecheck:true c args
     end
   in
   let endtac =
