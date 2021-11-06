@@ -62,6 +62,12 @@ let rec check_hyps_uniq ids = function
   | SsrHyp (_, id) :: hyps -> check_hyps_uniq (id :: ids) hyps
   | [] -> ()
 
+let rec pf_check_hyps_uniq ids = function
+  | SsrHyp (loc, id) :: _ when List.mem id ids ->
+    Tacticals.tclZEROMSG ?loc Pp.(str "Duplicate assumption " ++ Id.print id)
+  | SsrHyp (_, id) :: hyps -> pf_check_hyps_uniq (id :: ids) hyps
+  | [] -> Proofview.tclUNIT ()
+
 let check_hyp_exists hyps (SsrHyp(_, id)) =
   try ignore(Context.Named.lookup id hyps)
   with Not_found -> errorstrm Pp.(str"No assumption is named " ++ Id.print id)
@@ -1124,7 +1130,7 @@ let tclMULT = function
   | _       -> tclID
 
 let old_cleartac clr = check_hyps_uniq [] clr; Proofview.V82.of_tactic (Tactics.clear (hyps_ids clr))
-let cleartac clr = check_hyps_uniq [] clr; Tactics.clear (hyps_ids clr)
+let cleartac clr = Proofview.tclTHEN (pf_check_hyps_uniq [] clr) (Tactics.clear (hyps_ids clr))
 
 (* }}} *)
 
