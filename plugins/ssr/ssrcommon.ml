@@ -415,13 +415,6 @@ let mk_anon_id t gl_ids =
 let convert_concl_no_check t = Tactics.convert_concl ~cast:false ~check:false t DEFAULTcast
 let convert_concl ~check t = Tactics.convert_concl ~cast:false ~check t DEFAULTcast
 
-let rename_hd_prod orig_name_ref gl =
-  match EConstr.kind (project gl) (pf_concl gl) with
-  | Prod(x,src,tgt) ->
-    let x = {x with binder_name = !orig_name_ref} in
-      Proofview.V82.of_tactic (convert_concl_no_check (EConstr.mkProd (x,src,tgt))) gl
-  | _ -> CErrors.anomaly (str "gentac creates no product")
-
 (* Reduction that preserves the Prod/Let spine of the "in" tactical. *)
 
 let inc_safe n = if n = 0 then n else n + 1
@@ -1197,20 +1190,6 @@ let gentac gen =
 
 let genstac (gens, clr) =
   Tacticals.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
-
-let gen_tmp_ids
-  ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
-=
-  let open Tacticals.Old in
-  let gl, ctx = pull_ctx gl in
-  push_ctxs ctx
-    (tclTHENLIST
-      (List.map (fun (id,orig_ref) ->
-        tclTHEN
-        (Proofview.V82.of_tactic (gentac ((None,Some(false,[])),cpattern_of_id id)))
-        (rename_hd_prod orig_ref))
-      ctx.tmp_ids) gl)
-;;
 
 let pf_interp_gen to_ind gen gl =
   let _, _, a, b, c, ucst,gl = pf_interp_gen_aux gl to_ind gen in

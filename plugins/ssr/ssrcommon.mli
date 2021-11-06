@@ -255,10 +255,6 @@ val pf_abs_evars_pirrel :
            evar_map * Constr.constr -> int * Constr.constr
 val nbargs_open_constr : Environ.env -> Evd.evar_map * EConstr.t -> int
 val pf_nbargs : Environ.env -> Evd.evar_map -> EConstr.t -> int
-val gen_tmp_ids :
-           ?ist:Geninterp.interp_sign ->
-           (Goal.goal * tac_ctx) Evd.sigma ->
-           (Goal.goal * tac_ctx) list Evd.sigma
 
 val ssrevaltac :
   Tacinterp.interp_sign -> Tacinterp.Value.t -> unit Proofview.tactic
