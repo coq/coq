@@ -379,41 +379,42 @@ pkg:opam:
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
 
-pkg:nix:deploy:
-  extends: .nix-template
-  environment:
-    name: cachix
-    url: https://coq.cachix.org
-  script:
-    - nix-build https://coq.inria.fr/nix/toolbox --argstr job coq --arg override "{coq = coq:$CI_COMMIT_SHA;}" -K | cachix push coq
-  only:
-    refs:
-      - master
-      - /^v.*\..*$/
-    variables:
-      - $CACHIX_AUTH_TOKEN
+# broken, see eg https://gitlab.com/coq/coq/-/jobs/1754045983
+# pkg:nix:deploy:
+#   extends: .nix-template
+#   environment:
+#     name: cachix
+#     url: https://coq.cachix.org
+#   script:
+#     - nix-build https://coq.inria.fr/nix/toolbox --argstr job coq --arg override "{coq = coq:$CI_COMMIT_SHA;}" -K | cachix push coq
+#   only:
+#     refs:
+#       - master
+#       - /^v.*\..*$/
+#     variables:
+#       - $CACHIX_AUTH_TOKEN
 
-pkg:nix:deploy:channel:
-  extends: .deploy-template
-  environment:
-    name: cachix
-    url: https://coq.cachix.org
-  only:
-    refs: # Repeat conditions from pkg:nix:deploy
-      - master
-      - /^v.*\..*$/
-    variables:
-      - $CACHIX_AUTH_TOKEN && $CACHIX_DEPLOYMENT_KEY
-       # if the $CACHIX_AUTH_TOKEN variable isn't set, the job it depends on doesn't exist
-  needs:
-    - pkg:nix:deploy
-  script:
-    - echo "$CACHIX_DEPLOYMENT_KEY" | tr -d '\r' | ssh-add - > /dev/null
-    # Remove all pr branches because they could be missing when we run git fetch --unshallow
-    - git branch --list 'pr-*' | xargs -r git branch -D
-    - git fetch --unshallow
-    - git branch -v
-    - git push git@github.com:coq/coq-on-cachix "${CI_COMMIT_SHA}":"refs/heads/${CI_COMMIT_REF_NAME}"
+# pkg:nix:deploy:channel:
+#   extends: .deploy-template
+#   environment:
+#     name: cachix
+#     url: https://coq.cachix.org
+#   only:
+#     refs: # Repeat conditions from pkg:nix:deploy
+#       - master
+#       - /^v.*\..*$/
+#     variables:
+#       - $CACHIX_AUTH_TOKEN && $CACHIX_DEPLOYMENT_KEY
+#        # if the $CACHIX_AUTH_TOKEN variable isn't set, the job it depends on doesn't exist
+#   needs:
+#     - pkg:nix:deploy
+#   script:
+#     - echo "$CACHIX_DEPLOYMENT_KEY" | tr -d '\r' | ssh-add - > /dev/null
+#     # Remove all pr branches because they could be missing when we run git fetch --unshallow
+#     - git branch --list 'pr-*' | xargs -r git branch -D
+#     - git fetch --unshallow
+#     - git branch -v
+#     - git push git@github.com:coq/coq-on-cachix "${CI_COMMIT_SHA}":"refs/heads/${CI_COMMIT_REF_NAME}"
 
 pkg:nix:
   extends: .nix-template
