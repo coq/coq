@@ -638,6 +638,30 @@ Recursive Extraction Everything.
 Require Import ZArith.
 
 Extraction Language OCaml.
+
+Require Import String.
+
+Definition string_test1 := string_dec "foo" "bar".
+
+Definition string_test2 (x: string) : unit :=
+  match x with
+  | EmptyString => tt
+  | _ => tt
+  end.
+
+Definition string_test := (string_test1, string_test2).
+
+(* Raw extraction of strings *)
+Extraction TestCompile string_test.
+
+(* Extraction to char list *)
+Require Import ExtrOcamlString.
+Extraction TestCompile string_test.
+
+(* Extraction to native strings *)
+Require Import ExtrOcamlNativeString.
+Extraction TestCompile string_test compare.
+
 Recursive Extraction Z_modulo_2 Zdiv_eucl_exist.
 Extraction TestCompile Z_modulo_2 Zdiv_eucl_exist.
 
