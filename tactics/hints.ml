@@ -1382,7 +1382,7 @@ let default_prepare_hint_ident = Id.of_string "H"
 
 exception Found of constr * types
 
-let prepare_hint check env init (sigma,c) =
+let prepare_hint env init (sigma,c) =
   let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
   (* We re-abstract over uninstantiated evars and universes.
      It is actually a bit stupid to generalize over evars since the first
@@ -1412,8 +1412,6 @@ let prepare_hint check env init (sigma,c) =
       subst := (evar,mkVar id)::!subst;
       mkNamedLambda (make_annot id Sorts.Relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
   let c' = iter c in
-    let env = Global.env () in
-    if check then Pretyping.check_evars env sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     (c', diff)
 
@@ -1468,7 +1466,7 @@ let expand_constructor_hints env sigma lems =
         List.init (nconstructors env ind)
                   (fun i -> IsGlobRef (GlobRef.ConstructRef ((ind,i+1))))
     | _ ->
-      let (c, ctx) = prepare_hint false env sigma (evd,lem) in
+      let (c, ctx) = prepare_hint env sigma (evd,lem) in
       let ctx = if Univ.ContextSet.is_empty ctx then None else Some ctx in
       [IsConstr (c, ctx)]) lems
 (* builds a hint database from a constr signature *)
