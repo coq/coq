@@ -280,7 +280,7 @@ let ignore_error f x =
   try f x with e when CErrors.noncritical e -> ()
 
 let declare_rewriting_schemes ind =
-  if Hipattern.is_inductive_equality ind then begin
+  if Hipattern.is_inductive_equality (Global.env ()) ind then begin
     define_individual_scheme rew_r2l_scheme_kind None ind;
     define_individual_scheme rew_r2l_dep_scheme_kind None ind;
     define_individual_scheme rew_r2l_forward_dep_scheme_kind
@@ -315,7 +315,7 @@ let declare_congr_scheme ind =
   end
 
 let declare_sym_scheme ind =
-  if Hipattern.is_inductive_equality ind then
+  if Hipattern.is_inductive_equality (Global.env ()) ind then
     (* Expect the equality to be symmetric *)
     ignore_error (define_individual_scheme sym_scheme_kind None) ind
 

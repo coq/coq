@@ -150,10 +150,9 @@ let is_record env sigma t =
 let match_with_tuple env sigma t =
   let t = match_with_one_constructor env sigma None false true t in
   Option.map (fun (hd,l) ->
-    let ind = destInd sigma hd in
-    let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
-    let (mib,mip) = Global.lookup_pinductive ind in
-    let isrec = mis_is_recursive (fst ind,mib,mip) in
+    let ind, _ = destInd sigma hd in
+    let (mib,mip) = Inductive.lookup_mind_specif env ind in
+    let isrec = mis_is_recursive (ind,mib,mip) in
     (hd,l,isrec)) t
 
 let is_tuple env sigma t =
@@ -177,7 +176,7 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) env sigma t =
   let res = match EConstr.kind sigma hdapp with
   | Ind (ind,u)  ->
       let car = constructors_nrealargs env ind in
-      let (mib,mip) = Global.lookup_inductive ind in
+      let (mib,mip) = Inductive.lookup_mind_specif env ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
       && not (mis_is_recursive (ind,mib,mip))
       && (Int.equal mip.mind_nrealargs 0)
@@ -304,7 +303,7 @@ let match_with_equation env sigma t =
          Some (build_coq_jmeq_data()),hdapp,
          HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
        else
-         let (mib,mip) = Global.lookup_inductive ind in
+         let (mib,mip) = Inductive.lookup_mind_specif env ind in
          let constr_types = mip.mind_nf_lc in
          let nconstr = Array.length mip.mind_consnames in
          if Int.equal nconstr 1 then
@@ -327,16 +326,15 @@ let match_with_equation env sigma t =
    True/unit which is the degenerate equality type (isomorphic to ()=());
    in particular, True/unit are provable by "reflexivity" *)
 
-let is_inductive_equality ind =
-  let (mib,mip) = Global.lookup_inductive ind in
+let is_inductive_equality env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let nconstr = Array.length mip.mind_consnames in
-  let env = Global.env () in
   Int.equal nconstr 1 && Int.equal (constructor_nrealargs env (ind,1)) 0
 
 let match_with_equality_type env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-  | Ind (ind,_) when is_inductive_equality ind -> Some (hdapp,args)
+  | Ind (ind,_) when is_inductive_equality env ind -> Some (hdapp,args)
   | _ -> None
 
 let is_equality_type env sigma t = Option.has_some (match_with_equality_type env sigma t)
@@ -401,7 +399,7 @@ let match_with_sigma_type env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
   | Ind (ind, _) ->
-     let (mib,mip) = Global.lookup_inductive ind in
+     let (mib,mip) = Inductive.lookup_mind_specif env ind in
      if Int.equal (Array.length (mib.mind_packets)) 1
         && (Int.equal mip.mind_nrealargs 0)
         && (Int.equal (Array.length mip.mind_consnames)1)
