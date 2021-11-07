@@ -15,7 +15,6 @@ open Term
 open Constr
 open Termops
 open EConstr
-open Tacmach
 open Tactics
 open Clenv
 open Typeclasses
@@ -497,7 +496,7 @@ let make_resolve_hyp env sigma st only_classes decl db =
       push_resolves env sigma id db
     else db
 
-let make_hints g (modes,st) only_classes sign =
+let make_hints env sigma (modes,st) only_classes sign =
   let db = Hint_db.add_modes modes @@ Hint_db.empty st true in
   List.fold_right
     (fun hyp hints ->
@@ -505,11 +504,11 @@ let make_hints g (modes,st) only_classes sign =
         not only_classes ||
         try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
             (* Section variable, reindex only if the type changed *)
-            not (EConstr.eq_constr (project g) (EConstr.of_constr t) (NamedDecl.get_type hyp))
+            not (EConstr.eq_constr sigma (EConstr.of_constr t) (NamedDecl.get_type hyp))
         with Not_found -> true
       in
       if consider then
-        pf_apply make_resolve_hyp g st only_classes hyp hints
+        make_resolve_hyp env sigma st only_classes hyp hints
       else hints)
     sign db
 
@@ -529,22 +528,20 @@ module Search = struct
       (DirPath.empty, true, Context.Named.empty, GlobRef.Map.empty,
        Hint_db.empty TransparentState.full true)
 
-  let make_autogoal_hints only_classes (modes,st as mst) g =
-    let open Proofview in
-    let open Tacmach.New in
-    let sign = Goal.hyps g in
+  let make_autogoal_hints only_classes (modes,st as mst) gl =
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let sign = EConstr.named_context env in
     let (dir, onlyc, sign', cached_modes, cached_hints) = !autogoal_cache in
     let cwd = Lib.cwd () in
-    let eq c1 c2 = EConstr.eq_constr (project g) c1 c2 in
+    let eq c1 c2 = EConstr.eq_constr sigma c1 c2 in
     if DirPath.equal cwd dir &&
          (onlyc == only_classes) &&
            Context.Named.equal eq sign sign' &&
              cached_modes == modes
     then cached_hints
     else
-      let hints = make_hints {it = Goal.goal g; sigma = project g}
-                             mst only_classes sign
-      in
+      let hints = make_hints env sigma mst only_classes sign in
       autogoal_cache := (cwd, only_classes, sign, modes, hints); hints
 
   let make_autogoal mst only_classes dep cut best_effort i g =
