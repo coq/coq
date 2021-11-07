@@ -15,51 +15,50 @@ Local Open Scope Z_scope.
 
 #[global]
 Instance Inj_bool_bool : InjTyp bool bool :=
-  { inj := (fun x => x) ; pred := (fun b => b = true \/ b = false) ;
-    cstr := (ltac:(intro b; destruct b; tauto))}.
+  { inj b := b ; pred b := b = true \/ b = false ;
+    cstr b := ltac:(destruct b; tauto) }.
 Add Zify InjTyp Inj_bool_bool.
 
 (** Boolean operators *)
 
 #[global]
 Instance Op_andb : BinOp andb :=
-  { TBOp := andb ; TBOpInj := fun _ _  => eq_refl}.
+  { TBOp := andb ; TBOpInj _ _ := eq_refl}.
 Add Zify BinOp Op_andb.
 
 #[global]
 Instance Op_orb : BinOp orb :=
-  { TBOp := orb ; TBOpInj := fun _ _ => eq_refl}.
+  { TBOp := orb ; TBOpInj _ _ := eq_refl}.
 Add Zify BinOp Op_orb.
 
 #[global]
 Instance Op_implb : BinOp implb :=
-  { TBOp := implb; TBOpInj := fun _ _ => eq_refl }.
+  { TBOp := implb; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_implb.
 
-Definition xorb_eq : forall b1 b2,
-    xorb b1 b2 = andb (orb b1 b2) (negb (eqb b1 b2)).
+Definition xorb_eq b1 b2 : xorb b1 b2 = andb (orb b1 b2) (negb (eqb b1 b2)).
 Proof.
-  destruct b1,b2 ; reflexivity.
+  destruct b1, b2 ; reflexivity.
 Qed.
 
 #[global]
 Instance Op_xorb : BinOp xorb :=
-  { TBOp := fun x y => andb (orb x y) (negb (eqb x y)); TBOpInj := xorb_eq }.
+  { TBOp x y := andb (orb x y) (negb (eqb x y)); TBOpInj := xorb_eq }.
 Add Zify BinOp Op_xorb.
 
 #[global]
 Instance Op_eqb : BinOp eqb :=
-  { TBOp := eqb; TBOpInj := fun _ _ => eq_refl }.
+  { TBOp := eqb; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_eqb.
 
 #[global]
 Instance Op_negb : UnOp negb :=
-  { TUOp := negb ; TUOpInj := fun _ => eq_refl}.
+  { TUOp := negb ; TUOpInj _ := eq_refl}.
 Add Zify UnOp Op_negb.
 
 #[global]
 Instance Op_eq_bool : BinRel (@eq bool) :=
-  {TR := @eq bool ; TRInj := ltac:(reflexivity) }.
+  {TR := @eq bool ; TRInj b1 b2 := iff_refl (b1 = b2) }.
 Add Zify BinRel Op_eq_bool.
 
 #[global]
@@ -76,55 +75,83 @@ Add Zify CstOp Op_false.
 
 #[global]
 Instance Op_Zeqb : BinOp Z.eqb :=
-  { TBOp := Z.eqb ; TBOpInj := fun _ _ => eq_refl }.
+  { TBOp := Z.eqb ; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_Zeqb.
 
 #[global]
 Instance Op_Zleb : BinOp Z.leb :=
-  { TBOp := Z.leb; TBOpInj :=  fun _ _ => eq_refl }.
+  { TBOp := Z.leb; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_Zleb.
 
 #[global]
 Instance Op_Zgeb : BinOp Z.geb :=
-  { TBOp := Z.geb; TBOpInj := fun _ _ => eq_refl }.
+  { TBOp := Z.geb; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_Zgeb.
 
 #[global]
 Instance Op_Zltb : BinOp Z.ltb :=
-  { TBOp := Z.ltb ; TBOpInj := fun _ _ => eq_refl }.
+  { TBOp := Z.ltb ; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_Zltb.
 
 #[global]
 Instance Op_Zgtb : BinOp Z.gtb :=
-  { TBOp := Z.gtb; TBOpInj := fun _ _  => eq_refl }.
+  { TBOp := Z.gtb; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_Zgtb.
+
+(** Comparison over N *)
+
+#[global]
+Instance Op_Neqb : BinOp N.eqb :=
+  { TBOp := Z.eqb; TBOpInj n m := ltac:(now destruct n, m) }.
+Add Zify BinOp Op_Neqb.
+
+#[global]
+Instance Op_Nleb : BinOp N.leb :=
+  { TBOp := Z.leb; TBOpInj n m := ltac:(now destruct n, m) }.
+Add Zify BinOp Op_Nleb.
+
+#[global]
+Instance Op_Nltb : BinOp N.ltb :=
+  { TBOp := Z.ltb; TBOpInj n m := ltac:(now destruct n, m) }.
+Add Zify BinOp Op_Nltb.
+
+(** Comparison over positive *)
+
+#[global]
+Instance Op_Pos_eqb : BinOp Pos.eqb :=
+  { TBOp := Z.eqb; TBOpInj _ _ := eq_refl }.
+Add Zify BinOp Op_Pos_eqb.
+
+#[global]
+Instance Op_Pos_leb : BinOp Pos.leb :=
+  { TBOp := Z.leb; TBOpInj _ _ := eq_refl }.
+Add Zify BinOp Op_Pos_leb.
+
+#[global]
+Instance Op_Pos_ltb : BinOp Pos.ltb :=
+  { TBOp := Z.ltb; TBOpInj _ _ := eq_refl }.
+Add Zify BinOp Op_Pos_ltb.
 
 (** Comparison over nat *)
 
-Lemma Z_of_nat_eqb_iff : forall n m,
-    (n =? m)%nat = (Z.of_nat n =? Z.of_nat m).
+Lemma Z_of_nat_eqb_iff n m : (n =? m)%nat = (Z.of_nat n =? Z.of_nat m).
 Proof.
-  intros.
   rewrite Nat.eqb_compare.
   rewrite Z.eqb_compare.
   rewrite Nat2Z.inj_compare.
   reflexivity.
 Qed.
 
-Lemma Z_of_nat_leb_iff : forall n m,
-    (n <=? m)%nat = (Z.of_nat n <=? Z.of_nat m).
+Lemma Z_of_nat_leb_iff n m : (n <=? m)%nat = (Z.of_nat n <=? Z.of_nat m).
 Proof.
-  intros.
   rewrite Nat.leb_compare.
   rewrite Z.leb_compare.
   rewrite Nat2Z.inj_compare.
   reflexivity.
 Qed.
 
-Lemma Z_of_nat_ltb_iff : forall n m,
-    (n <? m)%nat = (Z.of_nat n <? Z.of_nat m).
+Lemma Z_of_nat_ltb_iff n m : (n <? m)%nat = (Z.of_nat n <? Z.of_nat m).
 Proof.
-  intros.
   rewrite Nat.ltb_compare.
   rewrite Z.ltb_compare.
   rewrite Nat2Z.inj_compare.
@@ -146,9 +173,9 @@ Instance Op_nat_ltb : BinOp Nat.ltb :=
   { TBOp := Z.ltb; TBOpInj := Z_of_nat_ltb_iff }.
 Add Zify BinOp Op_nat_ltb.
 
-Lemma b2n_b2z :  forall x,  Z.of_nat (Nat.b2n x) = Z.b2z x.
+Lemma b2n_b2z x : Z.of_nat (Nat.b2n x) = Z.b2z x.
 Proof.
-  intro. destruct x ; reflexivity.
+destruct x ; reflexivity.
 Qed.
 
 #[global]
@@ -158,19 +185,18 @@ Add Zify UnOp Op_b2n.
 
 #[global]
 Instance Op_b2z : UnOp Z.b2z :=
-  { TUOp := Z.b2z; TUOpInj := fun _ => eq_refl }.
+  { TUOp := Z.b2z; TUOpInj _ := eq_refl }.
 Add Zify UnOp Op_b2z.
 
-Lemma b2z_spec : forall b, (b = true /\ Z.b2z b = 1) \/ (b = false /\ Z.b2z b = 0).
+Lemma b2z_spec b : (b = true /\ Z.b2z b = 1) \/ (b = false /\ Z.b2z b = 0).
 Proof.
-  destruct b ; simpl; intuition congruence.
+  destruct b ; simpl; tauto.
 Qed.
 
 #[global]
 Instance b2zSpec : UnOpSpec Z.b2z :=
-  { UPred := fun b r => (b = true /\ r = 1) \/ (b = false /\ r = 0);
-    USpec := b2z_spec
-  }.
+  { UPred b r := (b = true /\ r = 1) \/ (b = false /\ r = 0);
+    USpec := b2z_spec }.
 Add Zify UnOpSpec b2zSpec.
 
 Ltac elim_bool_cstr :=
