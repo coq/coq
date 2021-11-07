@@ -212,18 +212,10 @@ val pf_merge_uc :
 val pf_merge_uc_of :
            evar_map -> 'a Evd.sigma -> 'a Evd.sigma
 val constr_name : evar_map -> EConstr.t -> Name.t
-val pf_type_of :
-           Goal.goal Evd.sigma ->
-           Constr.constr -> Goal.goal Evd.sigma * Constr.types
 val pfe_type_of :
            Goal.goal Evd.sigma ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 val pfe_new_type : Goal.goal Evd.sigma -> Goal.goal Evd.sigma * EConstr.types
-val pf_abs_prod :
-           Name.t ->
-           Goal.goal Evd.sigma ->
-           EConstr.t ->
-           EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRef : string -> GlobRef.t
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
@@ -246,9 +238,6 @@ val new_tmp_id :
 val mk_anon_id : string -> Id.t list -> Id.t
 val abs_evars_pirrel :
            Environ.env -> Evd.evar_map ->
-           evar_map * Constr.constr -> int * Constr.constr
-val pf_abs_evars_pirrel :
-           Goal.goal Evd.sigma ->
            evar_map * Constr.constr -> int * Constr.constr
 val nbargs_open_constr : Environ.env -> Evd.evar_map * EConstr.t -> int
 val pf_nbargs : Environ.env -> Evd.evar_map -> EConstr.t -> int
@@ -412,8 +401,6 @@ val clr_of_wgen :
 
 
 val unfold : EConstr.t list -> unit Proofview.tactic
-
-val apply_type : EConstr.types -> EConstr.t list -> Proofview.V82.tac
 
 (* New code ****************************************************************)
 

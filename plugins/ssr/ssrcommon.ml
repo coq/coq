@@ -658,9 +658,6 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   pp(lazy(str"res= " ++ pr_constr res));
   List.length evlist, res
 
-let pf_abs_evars_pirrel gl c =
-  abs_evars_pirrel (pf_env gl) (project gl) c
-
 (* Strip all non-essential dependencies from an abstracted term, generating *)
 (* standard names for the abstracted holes.                                 *)
 
@@ -684,9 +681,6 @@ let pfe_new_type gl =
 let pfe_type_relevance_of env sigma t =
   let sigma, ty = Typing.type_of env sigma t in
   sigma, ty, Retyping.relevance_of_term env sigma t
-let pf_type_of gl t =
-  let sigma, ty = pf_type_of gl (EConstr.of_constr t) in
-  re_sig (sig_it gl)  sigma, EConstr.Unsafe.to_constr ty
 
 let abs_cterm env sigma n c0 =
   if n <= 0 then c0 else
@@ -756,8 +750,6 @@ let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
   let gl = re_sig (sig_it gl) sigma in
   if name <> Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (make_annot name r, t, cl) else
   gl, EConstr.mkProd (make_annot (Name (pf_type_id gl t)) r, t, cl)
-
-let pf_abs_prod name gl c cl = pf_mkprod gl c ~name (Termops.subst_term (project gl) c cl)
 
 (** look up a name in the ssreflect internals module *)
 let ssrdirpath = DirPath.make [Id.of_string "ssreflect"]
@@ -1165,8 +1157,6 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     let gl = re_sig (sig_it gl) sigma in
     false, pat, EConstr.mkProd (make_annot (constr_name (project gl) c) rp, pty, Tacmach.Old.pf_concl gl), p, clr,ucst,gl
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
-
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true x xs)
 
 let genclrtac cl cs clr =
   let open Proofview.Notations in
