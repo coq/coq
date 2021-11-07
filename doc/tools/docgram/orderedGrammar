@@ -1624,7 +1624,7 @@ simple_tactic: [
 | "einjection" OPT induction_arg OPT ( "as" LIST0 simple_intropattern )
 | "simple" "injection" OPT induction_arg
 | "replace" OPT [ "->" | "<-" ] one_term OPT occurrences
-| "typeclasses" "eauto" OPT [ "bfs" | "dfs" ] OPT nat_or_var OPT ( "with" LIST1 ident )
+| "typeclasses" "eauto" OPT [ "bfs" | "dfs" | "best_effort" ] OPT nat_or_var OPT ( "with" LIST1 ident )
 | "setoid_replace" one_term "with" one_term OPT ( "using" "relation" one_term ) OPT ( "in" ident ) OPT ( "at" LIST1 int_or_var ) OPT ( "by" ltac_expr3 )
 | OPT ( [ natural | "[" ident "]" ] ":" ) "{"
 | bullet
@@ -1741,6 +1741,8 @@ simple_tactic: [
 | "autounfold" OPT hintbases OPT simple_occurrences
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
+| "typeclasses" "eauto" "best_effort" OPT nat_or_var "with" LIST1 ident
+| "typeclasses" "eauto" "best_effort" OPT nat_or_var
 | "head_of_constr" ident one_term
 | "not_evar" one_term
 | "is_ground" one_term

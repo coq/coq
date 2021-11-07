@@ -514,8 +514,12 @@ let rec subst_hints_path subst hp =
 
 type hint_db_name = string
 
+type mode_match =
+  | NoMode
+  | WithMode of hint_mode array
+
 type 'a with_mode =
-  | ModeMatch of 'a
+  | ModeMatch of mode_match * 'a
   | ModeMismatch
 
 module Hint_db :
@@ -602,12 +606,15 @@ struct
     | ModeOutput -> true
 
   let matches_mode sigma args mode =
-    Array.length mode == Array.length args &&
-      Array.for_all2 (match_mode sigma) mode args
+    if Array.length mode == Array.length args &&
+        Array.for_all2 (match_mode sigma) mode args then Some mode
+    else None
 
   let matches_modes sigma args modes =
-    if List.is_empty modes then true
-    else List.exists (matches_mode sigma args) modes
+    if List.is_empty modes then Some NoMode
+    else
+      try Some (WithMode (List.find_map (matches_mode sigma args) modes))
+      with Not_found -> None
 
   let merge_entry secvars db nopat pat =
     let h = List.sort pri_order_int (List.map snd db.hintdb_nopat) in
@@ -631,10 +638,11 @@ struct
   (* [c] contains an existential *)
   let map_eauto env sigma ~secvars (k,args) concl db =
     let se = find k db in
-      if matches_modes sigma args se.sentry_mode then
+      match matches_modes sigma args se.sentry_mode with
+      | Some m ->
         let pat = lookup_tacs env sigma concl se in
-        ModeMatch (merge_entry secvars db [] pat)
-      else ModeMismatch
+        ModeMatch (m, merge_entry secvars db [] pat)
+      | None -> ModeMismatch
 
   let is_exact = function
     | Give_exact _ -> true
@@ -1568,7 +1576,7 @@ let pr_hint_term env sigma cl =
           let hdc = decompose_app_bound sigma cl in
             if occur_existential sigma cl then
               (fun db -> match Hint_db.map_eauto env sigma ~secvars:Id.Pred.full hdc cl db with
-              | ModeMatch l -> l
+              | ModeMatch (_, l) -> l
               | ModeMismatch -> [])
             else Hint_db.map_auto env sigma ~secvars:Id.Pred.full hdc cl
         with Bound -> Hint_db.map_none ~secvars:Id.Pred.full

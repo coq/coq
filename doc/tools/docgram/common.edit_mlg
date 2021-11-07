@@ -1134,7 +1134,7 @@ simple_tactic: [
 | DELETE "transparent_abstract" tactic3
 | REPLACE "transparent_abstract" tactic3 "using" ident
 | WITH "transparent_abstract" ltac_expr3 OPT ( "using" ident )
-| "typeclasses" "eauto" OPT [ "bfs" | "dfs" ] OPT nat_or_var OPT ( "with" LIST1 preident )
+| "typeclasses" "eauto" OPT [ "bfs" | "dfs" | "best_effort" ] OPT nat_or_var OPT ( "with" LIST1 preident )
 | DELETE "typeclasses" "eauto" "dfs" OPT nat_or_var "with" LIST1 preident
 | DELETE "typeclasses" "eauto" "dfs" OPT nat_or_var
 | DELETE "typeclasses" "eauto" "bfs" OPT nat_or_var "with" LIST1 preident
