@@ -542,6 +542,7 @@ test-suite:edge+coverage:
   stage: build
   script:
     - ulimit -s 16384
+    - ./configure -prefix $(pwd)/_build/install/coverage -native-compiler no
     - make dunestrap
     - dune build --instrument-with bisect_ppx --workspace dev/dune-workspace.bisect @runtest
     - find _build/coverage/ -name '*.coverage' -size 0 -exec rm {} \; # workaround truncated coverage file bug
