@@ -31,7 +31,7 @@ TACTIC EXTEND reflexivity
 END
 
 TACTIC EXTEND exact
-| [ "exact" casted_constr(c) ] -> { Tactics.exact_no_check c }
+| [ "exact" uconstr(c) ] -> { Internals.exact ist c }
 END
 
 TACTIC EXTEND assumption
