@@ -847,6 +847,8 @@ type ('b, 'c) argument_interp =
 | ArgInterpRet : ('c, 'c) argument_interp
 | ArgInterpFun : ('b, Val.t) interp_fun -> ('b, 'c) argument_interp
 | ArgInterpWit : ('a, 'b, 'r) Genarg.genarg_type -> ('b, 'c) argument_interp
+| ArgInterpSimple :
+  (Geninterp.interp_sign -> Environ.env -> Evd.evar_map -> 'b -> 'c) -> ('b, 'c) argument_interp
 | ArgInterpLegacy :
   (Geninterp.interp_sign -> Goal.goal Evd.sigma -> 'b -> Evd.evar_map * 'c) -> ('b, 'c) argument_interp
 
@@ -881,6 +883,13 @@ match arg.arg_interp with
 | ArgInterpFun f -> f
 | ArgInterpWit wit ->
   (fun ist x -> Tacinterp.interp_genarg ist (Genarg.in_gen (glbwit wit) x))
+| ArgInterpSimple f ->
+  (fun ist v -> Ftactic.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let v = f ist env sigma v in
+    Ftactic.return (Geninterp.Val.inject tag v)
+  end)
 | ArgInterpLegacy f ->
   (fun ist v -> Ftactic.enter (fun gl ->
     let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in

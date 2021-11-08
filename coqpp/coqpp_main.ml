@@ -576,8 +576,12 @@ let print_ast fmt arg =
     fprintf fmt "@[Tacentries.ArgSubstFun (fun s v -> v)@]"
   in
   let interp fmt () = match arg.argext_interp, arg.argext_type with
-  | Some f, (None | Some _) ->
+  | Some (None, f), (None | Some _) ->
+    fprintf fmt "@[Tacentries.ArgInterpSimple (%a)@]" print_code f
+  | Some (Some "legacy", f), (None | Some _) ->
     fprintf fmt "@[Tacentries.ArgInterpLegacy (%a)@]" print_code f
+  | Some (Some kind, f), (None | Some _) ->
+    fatal (Printf.sprintf "Unknown kind %s of interpretation function" kind)
   | None, Some t ->
     fprintf fmt "@[Tacentries.ArgInterpWit (%a)@]" print_wit t
   | None, None ->

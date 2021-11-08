@@ -152,7 +152,6 @@ let with_fresh_ctx t gl =
   fst (pull_ctxs gl)
 
 open Genarg
-open Stdarg
 open Pp
 
 let errorstrm x = CErrors.user_err x
@@ -279,13 +278,13 @@ let interp_wit wit ist gl x =
   let (sigma, arg) = of_ftactic arg gl in
   sigma, Tacinterp.Value.cast (topwit wit) arg
 
-let interp_hyp ist gl (SsrHyp (loc, id)) =
-  let s, id' = interp_wit wit_hyp ist gl CAst.(make ?loc id) in
-  if not_section_id id' then s, SsrHyp (loc, id') else
+let interp_hyp ist env sigma (SsrHyp (loc, id)) =
+  let id' = Tacinterp.interp_hyp ist env sigma CAst.(make ?loc id) in
+  if not_section_id id' then SsrHyp (loc, id') else
   hyp_err ?loc "Can't clear section hypothesis " id'
 
 let interp_hyps ist gl ghyps =
-  let hyps = List.map snd (List.map (interp_hyp ist gl) ghyps) in
+  let hyps = List.map (interp_hyp ist (pf_env gl) (project gl)) ghyps in
   check_hyps_uniq [] hyps; Tacmach.project gl, hyps
 
 (* Old terms *)
@@ -311,10 +310,10 @@ let glob_ast_closure_term (ist : Genintern.glob_sign) t =
 let subst_ast_closure_term (_s : Mod_subst.substitution) t =
   (* _s makes sense only for glob constr *)
   t
-let interp_ast_closure_term (ist : Geninterp.interp_sign) (gl : 'goal Evd.sigma) t =
-  (* gl is only useful if we want to interp *now*, later we have
+let interp_ast_closure_term (ist : Geninterp.interp_sign) env sigma t =
+  (* sigma is only useful if we want to interp *now*, later we have
    * a potentially different gl.sigma *)
-  Tacmach.project gl, { t with interp_env = Some ist }
+  { t with interp_env = Some ist }
 
 let ssrterm_of_ast_closure_term { body; annotation } =
   let c = match annotation with

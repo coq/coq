@@ -138,7 +138,7 @@ val interp_term :
 val interp_wit :
   ('a, 'b, 'c) genarg_type -> ist -> goal sigma -> 'b -> evar_map * 'c
 
-val interp_hyp : ist -> goal sigma -> ssrhyp -> evar_map * ssrhyp
+val interp_hyp : ist -> env -> evar_map -> ssrhyp -> ssrhyp
 val interp_hyps : ist -> goal sigma -> ssrhyps -> evar_map * ssrhyps
 
 val interp_refine :
@@ -166,8 +166,7 @@ val mk_lterm : constr_expr -> ssrterm
 val mk_ast_closure_term :
   [ `None | `Parens | `DoubleParens | `At ] ->
   Constrexpr.constr_expr -> ast_closure_term
-val interp_ast_closure_term : Geninterp.interp_sign -> Goal.goal
-Evd.sigma -> ast_closure_term -> Evd.evar_map * ast_closure_term
+val interp_ast_closure_term : Geninterp.interp_sign -> env -> evar_map -> ast_closure_term -> ast_closure_term
 val subst_ast_closure_term : Mod_subst.substitution -> ast_closure_term -> ast_closure_term
 val glob_ast_closure_term : Genintern.glob_sign -> ast_closure_term -> ast_closure_term
 val ssrterm_of_ast_closure_term : ast_closure_term -> ssrterm
