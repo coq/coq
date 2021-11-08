@@ -58,10 +58,13 @@ let remove_name_from_mapping mapping na =
 let change_vars =
   let rec change_vars mapping rt =
     DAst.map_with_loc
-      (fun ?loc -> function GRef _ as x -> x
+      (fun ?loc -> function
+        | GRef _ as x -> x
         | GVar id ->
           let new_id = try Id.Map.find id mapping with Not_found -> id in
-          GVar new_id | GEvar _ as x -> x | GPatVar _ as x -> x
+          GVar new_id
+        | GEvar _ as x -> x
+        | GPatVar _ as x -> x
         | GApp (rt', rtl) ->
           GApp (change_vars mapping rt', List.map (change_vars mapping) rtl)
         | GProj (f, rtl, rt) ->
@@ -106,7 +109,9 @@ let change_vars =
             , change_vars mapping lhs
             , change_vars mapping rhs )
         | GRec _ -> user_err ?loc Pp.(str "Local (co)fixes are not supported")
-        | GSort _ as x -> x | GHole _ as x -> x | GInt _ as x -> x
+        | GSort _ as x -> x
+        | GHole _ as x -> x
+        | GInt _ as x -> x
         | GFloat _ as x -> x
         | GCast (b, k, c) ->
           GCast (change_vars mapping b, k, change_vars mapping c)
@@ -115,7 +120,7 @@ let change_vars =
             ( u
             , Array.map (change_vars mapping) t
             , change_vars mapping def
-            , change_vars mapping ty ))
+            , change_vars mapping ty ) )
       rt
   and change_vars_br mapping ({CAst.loc; v = idl, patl, res} as br) =
     let new_mapping = List.fold_right Id.Map.remove idl mapping in
@@ -149,7 +154,7 @@ let rec alpha_pat excluded pat =
       List.fold_left
         (fun (patl, excluded, map) pat ->
           let new_pat, new_excluded, new_map = alpha_pat excluded pat in
-          (new_pat :: patl, new_excluded, Id.Map.fold Id.Map.add new_map map))
+          (new_pat :: patl, new_excluded, Id.Map.fold Id.Map.add new_map map) )
         ([], new_excluded, map) patl
     in
     ( DAst.make ?loc @@ PatCstr (constr, List.rev new_patl, new_na)
@@ -161,7 +166,7 @@ let alpha_patl excluded patl =
     List.fold_left
       (fun (patl, excluded, map) pat ->
         let new_pat, new_excluded, new_map = alpha_pat excluded pat in
-        (new_pat :: patl, new_excluded, Id.Map.fold Id.Map.add new_map map))
+        (new_pat :: patl, new_excluded, Id.Map.fold Id.Map.add new_map map) )
       ([], excluded, Id.Map.empty)
       patl
   in
@@ -176,7 +181,7 @@ let raw_get_pattern_id pat acc =
       List.fold_right
         (fun pat idl ->
           let idl' = get_pattern_id pat in
-          idl' @ idl)
+          idl' @ idl )
         patternl []
   in
   get_pattern_id pat @ acc
@@ -256,7 +261,7 @@ let rec alpha_rt excluded rt =
               else
                 ( Name new_id :: nal
                 , id :: excluded
-                , Id.Map.add id new_id mapping ))
+                , Id.Map.add id new_id mapping ) )
           ([], excluded, Id.Map.empty)
           nal
       in
@@ -284,8 +289,7 @@ let rec alpha_rt excluded rt =
         , alpha_rt excluded rhs )
     | GRec _ -> user_err Pp.(str "Not handled GRec")
     | (GSort _ | GInt _ | GFloat _ | GHole _) as rt -> rt
-    | GCast (b, k, c) ->
-      GCast (alpha_rt excluded b, k, alpha_rt excluded c)
+    | GCast (b, k, c) -> GCast (alpha_rt excluded b, k, alpha_rt excluded c)
     | GApp (f, args) ->
       GApp (alpha_rt excluded f, List.map (alpha_rt excluded) args)
     | GProj (f, args, c) ->
@@ -313,9 +317,13 @@ and alpha_br excluded {CAst.loc; v = ids, patl, res} =
 let is_free_in id =
   let rec is_free_in x =
     DAst.with_loc_val
-      (fun ?loc -> function GRef _ -> false | GVar id' -> Id.compare id' id == 0
-        | GEvar _ -> false | GPatVar _ -> false
-        | GApp (rt, rtl) | GProj (_, rtl, rt) -> List.exists is_free_in (rt :: rtl)
+      (fun ?loc -> function
+        | GRef _ -> false
+        | GVar id' -> Id.compare id' id == 0
+        | GEvar _ -> false
+        | GPatVar _ -> false
+        | GApp (rt, rtl) | GProj (_, rtl, rt) ->
+          List.exists is_free_in (rt :: rtl)
         | GLambda (n, _, t, b) | GProd (n, _, t, b) ->
           let check_in_b =
             match n with Name id' -> not (Id.equal id' id) | _ -> true
@@ -336,18 +344,18 @@ let is_free_in id =
             not
               (List.exists
                  (function Name id' -> Id.equal id' id | _ -> false)
-                 nal)
+                 nal )
           in
           is_free_in t || (check_in_nal && is_free_in b)
         | GIf (cond, _, br1, br2) ->
           is_free_in cond || is_free_in br1 || is_free_in br2
-        | GRec _ -> user_err Pp.(str "Not handled GRec") | GSort _ -> false
+        | GRec _ -> user_err Pp.(str "Not handled GRec")
+        | GSort _ -> false
         | GHole _ -> false
-        | GCast (b, _, t) ->
-          is_free_in b || is_free_in t
+        | GCast (b, _, t) -> is_free_in b || is_free_in t
         | GInt _ | GFloat _ -> false
         | GArray (_u, t, def, ty) ->
-          Array.exists is_free_in t || is_free_in def || is_free_in ty)
+          Array.exists is_free_in t || is_free_in def || is_free_in ty )
       x
   and is_free_in_br {CAst.v = ids, _, rt} =
     (not (Id.List.mem id ids)) && is_free_in rt
@@ -369,7 +377,8 @@ let rec pattern_to_term pt =
         in
         let patl_as_term = List.map pattern_to_term patternl in
         mkGApp
-          (mkGRef (GlobRef.ConstructRef constr), implicit_args @ patl_as_term))
+          (mkGRef (GlobRef.ConstructRef constr), implicit_args @ patl_as_term)
+      )
     pt
 
 let replace_var_by_term x_id term =
@@ -381,7 +390,8 @@ let replace_var_by_term x_id term =
         | GApp (rt', rtl) ->
           GApp (replace_var_by_pattern rt', List.map replace_var_by_pattern rtl)
         | GProj (f, rtl, rt) ->
-          GProj (f, List.map replace_var_by_pattern rtl, replace_var_by_pattern rt)
+          GProj
+            (f, List.map replace_var_by_pattern rtl, replace_var_by_pattern rt)
         | GLambda (Name id, _, _, _) as rt when Id.compare id x_id == 0 -> rt
         | GLambda (name, k, t, b) ->
           GLambda (name, k, replace_var_by_pattern t, replace_var_by_pattern b)
@@ -429,7 +439,7 @@ let replace_var_by_term x_id term =
             , replace_var_by_pattern def
             , replace_var_by_pattern ty )
         | GCast (b, k, c) ->
-          GCast (replace_var_by_pattern b, k, replace_var_by_pattern c))
+          GCast (replace_var_by_pattern b, k, replace_var_by_pattern c) )
       x
   and replace_var_by_pattern_br ({CAst.loc; v = idl, patl, res} as br) =
     if List.exists (fun id -> Id.compare id x_id == 0) idl then br
@@ -488,7 +498,7 @@ let ids_of_pat =
     DAst.with_val (function
       | PatVar Anonymous -> ids
       | PatVar (Name id) -> Id.Set.add id ids
-      | PatCstr (_, patl, _) -> List.fold_left ids_of_pat ids patl)
+      | PatCstr (_, patl, _) -> List.fold_left ids_of_pat ids patl )
   in
   ids_of_pat Id.Set.empty
 
@@ -508,7 +518,8 @@ let expand_as =
       | GVar id as rt -> (
         try DAst.get (Id.Map.find id map) with Not_found -> rt )
       | GApp (f, args) -> GApp (expand_as map f, List.map (expand_as map) args)
-      | GProj (f, args, c) -> GProj (f, List.map (expand_as map) args, expand_as map c)
+      | GProj (f, args, c) ->
+        GProj (f, List.map (expand_as map) args, expand_as map c)
       | GLambda (na, k, t, b) ->
         GLambda (na, k, expand_as map t, expand_as map b)
       | GProd (na, k, t, b) -> GProd (na, k, expand_as map t, expand_as map b)
@@ -528,8 +539,7 @@ let expand_as =
           , expand_as map br1
           , expand_as map br2 )
       | GRec _ -> user_err Pp.(str "Not handled GRec")
-      | GCast (b, k, c) ->
-        GCast (expand_as map b, k, expand_as map c)
+      | GCast (b, k, c) -> GCast (expand_as map b, k, expand_as map c)
       | GCases (sty, po, el, brl) ->
         GCases
           ( sty
@@ -538,7 +548,7 @@ let expand_as =
           , List.map (expand_as_br map) brl )
       | GArray (u, t, def, ty) ->
         GArray
-          (u, Array.map (expand_as map) t, expand_as map def, expand_as map ty))
+          (u, Array.map (expand_as map) t, expand_as map def, expand_as map ty) )
   and expand_as_br map {CAst.loc; v = idl, cpl, rt} =
     CAst.make ?loc (idl, cpl, expand_as (List.fold_left add_as map cpl) rt)
   in
@@ -581,7 +591,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
                 GlobRef.equal grk gr_evi && pk = p_evi && bk = b_evi
                 && rt.CAst.loc = loc_evi
               then raise (Found evi)
-            | _ -> ())
+            | _ -> () )
           ctx ();
         (* the hole was not solved : we do nothing *)
         rt
@@ -603,7 +613,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
               | loc_evi, BinderType na' ->
                 if Name.equal na na' && rt.CAst.loc = loc_evi then
                   raise (Found evi)
-              | _ -> ())
+              | _ -> () )
             ctx ();
           (* the hole was not solved : we do nothing *)
           rt

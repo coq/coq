@@ -29,7 +29,8 @@ let rec solve_trivial_holes pat_as_term e =
   | GApp (fp, argsp), GApp (fe, argse) when glob_constr_eq fp fe ->
     DAst.make
       (GApp
-         (solve_trivial_holes fp fe, List.map2 solve_trivial_holes argsp argse))
+         (solve_trivial_holes fp fe, List.map2 solve_trivial_holes argsp argse)
+      )
   | _, _ -> pat_as_term
 
 (*
@@ -72,7 +73,7 @@ let combine_results
     (combine_fun :
          'a build_entry_pre_return
       -> 'b build_entry_pre_return
-      -> 'c build_entry_pre_return) (res1 : 'a build_entry_return)
+      -> 'c build_entry_pre_return ) (res1 : 'a build_entry_return)
     (res2 : 'b build_entry_return) : 'c build_entry_return =
   let pre_result =
     List.map
@@ -80,7 +81,7 @@ let combine_results
         (* for each result in arg_res *)
         List.map (* we add it in each args_res *)
           (fun res2 -> combine_fun res1 res2)
-          res2.result)
+          res2.result )
       res1.result
   in
   (* and then we flatten the map *)
@@ -224,8 +225,8 @@ let mk_result ctxt value avoid =
   {result = [{context = ctxt; value}]; to_avoid = avoid}
 
 (*************************************************
-  Some functions to deal with overlapping patterns
-**************************************************)
+    Some functions to deal with overlapping patterns
+  **************************************************)
 
 let coq_True_ref = lazy (Coqlib.lib_ref "core.True.type")
 let coq_False_ref = lazy (Coqlib.lib_ref "core.False.type")
@@ -254,7 +255,7 @@ let make_discr_match_brl i =
       CAst.make
       @@
       if Int.equal j i then (idl, patl, mkGRef (Lazy.force coq_True_ref))
-      else (idl, patl, mkGRef (Lazy.force coq_False_ref)))
+      else (idl, patl, mkGRef (Lazy.force coq_False_ref)) )
     0
 
 (*
@@ -291,7 +292,7 @@ let build_constructors_of_type ind' argl =
       let pat_as_term =
         mkGApp (mkGRef (GlobRef.ConstructRef (ind', i + 1)), argl)
       in
-      cases_pattern_of_glob_constr (Global.env ()) Anonymous pat_as_term)
+      cases_pattern_of_glob_constr (Global.env ()) Anonymous pat_as_term )
     ind.Declarations.mind_consnames
 
 (******************)
@@ -379,9 +380,9 @@ let add_pat_variables sigma pat typ env : Environ.env =
                ++ fnl () );
              let open Context.Named.Declaration in
              ( Environ.push_named (LocalDef (na, new_v, new_t)) env
-             , mkVar id :: ctxt ))
+             , mkVar id :: ctxt ) )
          (Environ.rel_context new_env)
-         ~init:(env, []))
+         ~init:(env, []) )
   in
   observe
     (str "new var env := " ++ Printer.pr_named_context_of res (Evd.from_env env));
@@ -402,8 +403,7 @@ let rec pattern_to_term_and_type env typ =
       let constructors = Inductiveops.get_constructors env indf in
       let constructor =
         List.find
-          (fun cs ->
-            Construct.CanOrd.equal (fst cs.Inductiveops.cs_cstr) constr)
+          (fun cs -> Construct.CanOrd.equal (fst cs.Inductiveops.cs_cstr) constr)
           (Array.to_list constructors)
       in
       let cs_args_types : types list =
@@ -418,14 +418,14 @@ let rec pattern_to_term_and_type env typ =
              (fun i ->
                Detyping.detype Detyping.Now false Id.Set.empty env
                  (Evd.from_env env)
-                 (EConstr.of_constr csta.(i))))
+                 (EConstr.of_constr csta.(i)) ) )
       in
       let patl_as_term =
         List.map2
           (pattern_to_term_and_type env)
           (List.rev cs_args_types) patternl
       in
-      mkGApp (mkGRef (GlobRef.ConstructRef constr), implicit_args @ patl_as_term))
+      mkGApp (mkGRef (GlobRef.ConstructRef constr), implicit_args @ patl_as_term) )
 
 (* [build_entry_lc funnames avoid rt] construct the list (in fact a build_entry_return)
    of constructors corresponding to [rt] when replacing calls to [funnames] by calls to the
@@ -478,7 +478,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
           let arg_res =
             build_entry_lc env sigma funnames ctxt_argsl.to_avoid arg
           in
-          combine_results combine_args arg_res ctxt_argsl)
+          combine_results combine_args arg_res ctxt_argsl )
         args (mk_result [] [] avoid)
     in
     match DAst.get f with
@@ -519,7 +519,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
               [ (Prod (Name res), res_raw_type)
               ; (Prod Anonymous, mkGApp (res_rt, mkGVar id :: arg_res.value)) ]
             in
-            {context = arg_res.context @ new_hyps; value = res_rt})
+            {context = arg_res.context @ new_hyps; value = res_rt} )
           args_res.result
       in
       {result = new_result; to_avoid = new_avoid}
@@ -581,15 +581,17 @@ let rec build_entry_lc env sigma funnames avoid rt :
           let arg_res =
             build_entry_lc env sigma funnames ctxt_argsl.to_avoid arg
           in
-          combine_results combine_args arg_res ctxt_argsl)
-        (params@[c]) (mk_result [] [] avoid) in
-      { args_res with
-        result =
-          List.map
-            (fun args_res ->
-              let c, params = List.sep_last args_res.value in
-              {args_res with value = DAst.make (GProj (f, params, c))})
-            args_res.result }
+          combine_results combine_args arg_res ctxt_argsl )
+        (params @ [c])
+        (mk_result [] [] avoid)
+    in
+    { args_res with
+      result =
+        List.map
+          (fun args_res ->
+            let c, params = List.sep_last args_res.value in
+            {args_res with value = DAst.make (GProj (f, params, c))} )
+          args_res.result }
   | GLambda (n, _, t, b) ->
     (* we first compute the list of constructor
        corresponding to the body of the function,
@@ -710,7 +712,7 @@ and build_entry_lc_from_case env sigma funname make_discr (el : tomatch_tuples)
           let arg_res =
             build_entry_lc env sigma funname ctxt_argsl.to_avoid case_arg
           in
-          combine_results combine_args arg_res ctxt_argsl)
+          combine_results combine_args arg_res ctxt_argsl )
         el (mk_result [] [] avoid)
     in
     let types =
@@ -720,7 +722,7 @@ and build_entry_lc_from_case env sigma funname make_discr (el : tomatch_tuples)
             Pretyping.understand env (Evd.from_env env) case_arg
           in
           EConstr.Unsafe.to_constr
-            (Retyping.get_type_of env (Evd.from_env env) case_arg_as_constr))
+            (Retyping.get_type_of env (Evd.from_env env) case_arg_as_constr) )
         el
     in
     (****** The next works only if the match is not dependent ****)
@@ -731,7 +733,7 @@ and build_entry_lc_from_case env sigma funname make_discr (el : tomatch_tuples)
             build_entry_lc_from_case_term env sigma types funname make_discr []
               brl case_resl.to_avoid ca
           in
-          res)
+          res )
         case_resl.result
     in
     { result = List.concat (List.map (fun r -> r.result) results)
@@ -766,9 +768,9 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
                 Detyping.detype Detyping.Now false Id.Set.empty env_with_pat_ids
                   (Evd.from_env env) typ_of_id
               in
-              mkGProd (Name id, raw_typ_of_id, acc))
+              mkGProd (Name id, raw_typ_of_id, acc) )
             pat_ids
-            (glob_make_neq pat'_as_term (pattern_to_term renamed_pat)))
+            (glob_make_neq pat'_as_term (pattern_to_term renamed_pat)) )
         patl types
     in
     (* Checking if we can be in this branch
@@ -822,10 +824,10 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
                      in
                      raw_typ_of_id )
                    :: acc
-                 else acc)
+                 else acc )
                idl
-               [(Prod Anonymous, glob_make_eq ~typ pat_as_term e)])
-           patl matched_expr.value types)
+               [(Prod Anonymous, glob_make_eq ~typ pat_as_term e)] )
+           patl matched_expr.value types )
       @
       if
         List.exists
@@ -834,7 +836,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
               let unif, _ =
                 List.split (List.map2 (fun x y -> x y) unifl patl)
               in
-              List.for_all (fun x -> x) unif)
+              List.for_all (fun x -> x) unif )
           patterns_to_prevent
       then
         let i = List.length patterns_to_prevent in
@@ -851,7 +853,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
       List.map
         (fun res ->
           { context = matched_expr.context @ those_pattern_preconds @ res.context
-          ; value = res.value })
+          ; value = res.value } )
         return_res.result
     in
     {brl'_res with result = this_branch_res @ brl'_res.result}
@@ -979,7 +981,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                , List.map
                    (fun p ->
                      Detyping.detype Detyping.Now false Id.Set.empty env
-                       (Evd.from_env env) (EConstr.of_constr p))
+                       (Evd.from_env env) (EConstr.of_constr p) )
                    params
                  @ Array.to_list
                      (Array.make (List.length args' - nparam) (mkGHole ())) )
@@ -1021,7 +1023,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                   , Detyping.detype Detyping.Now false Id.Set.empty env
                       (Evd.from_env env) arg )
                   :: acc
-                else acc)
+                else acc )
               [] arg' ty'
           | _ -> assert false
         in
@@ -1067,7 +1069,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                   , mkGApp
                       ( mkGRef Coqlib.(lib_ref "core.eq.type")
                       , [mkGHole (); lhs; rhs] )
-                  , acc ))
+                  , acc ) )
               b l
           in
           rebuild_cons env nb_args relname args crossed_types depth new_rt
@@ -1217,7 +1219,7 @@ let rec compute_cst_params relnames params gt =
       | GSort _ -> params
       | GHole _ -> params
       | GIf _ | GRec _ | GCast _ | GArray _ ->
-        CErrors.user_err (str "Unhandled case."))
+        CErrors.user_err (str "Unhandled case.") )
     gt
 
 and compute_cst_params_from_app acc (params, rtl) =
@@ -1238,7 +1240,7 @@ let compute_params_name relnames
       (fun i args ->
         List.fold_left
           (fun params (_, cst) -> compute_cst_params relnames params cst)
-          args csts.(i))
+          args csts.(i) )
       args
   in
   let l = ref [] in
@@ -1251,9 +1253,9 @@ let compute_params_name relnames
               (fun l ->
                 let n', nt', typ' = List.nth l i in
                 Name.equal n n' && glob_constr_eq nt nt'
-                && Option.equal glob_constr_eq typ typ')
+                && Option.equal glob_constr_eq typ typ' )
               rels_params
-          then l := param :: !l)
+          then l := param :: !l )
         rels_params.(0)
     with e when CErrors.noncritical e -> ()
   in
@@ -1305,7 +1307,7 @@ let do_build_inductive evd (funconstants : pconstant list)
         let t = EConstr.Unsafe.to_constr t in
         ( evd
         , Environ.push_named (LocalAssum (make_annot id Sorts.Relevant, t)) env
-        ))
+        ) )
       funnames
       (Array.of_list funconstants)
       (evd, Global.env ())
@@ -1319,7 +1321,7 @@ let do_build_inductive evd (funconstants : pconstant list)
             (EConstr.of_constr (mkConstU (Array.of_list funconstants).(i)))
         in
         resolve_and_replace_implicits ~expected_type:(Pretyping.OfType t) env
-          evd rt)
+          evd rt )
       rta
   in
   let resa = Array.map (build_entry_lc env evd funnames_as_set []) rta in
@@ -1343,7 +1345,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                  , Some
                      (with_full_print
                         Constrextern.(extern_glob_constr empty_extern_env)
-                        typ)
+                        typ )
                  , acc )
           | None ->
             CAst.make
@@ -1354,7 +1356,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                        , with_full_print
                            Constrextern.(extern_glob_constr empty_extern_env)
                            t ) ]
-                 , acc ))
+                 , acc ) )
         rel_first_args
         (rebuild_return_type returned_types.(i))
     in
@@ -1371,7 +1373,7 @@ let do_build_inductive evd (funconstants : pconstant list)
         let rex = EConstr.Unsafe.to_constr rex in
         let r = Sorts.Relevant in
         (* TODO relevance *)
-        Environ.push_named (LocalAssum (make_annot rel_name r, rex)) env)
+        Environ.push_named (LocalAssum (make_annot rel_name r, rex)) env )
       env relnames rel_arities
   in
   (* and of the real constructors*)
@@ -1382,7 +1384,7 @@ let do_build_inductive evd (funconstants : pconstant list)
           let rt = compose_glob_context result.context result.value in
           let nb_args = List.length funsargs.(i) in
           (*  with_full_print (fun rt -> Pp.msgnl (str "glob constr " ++ pr_glob_constr rt)) rt; *)
-          fst (rebuild_cons env_with_graphs nb_args relnames.(i) [] [] rt))
+          fst (rebuild_cons env_with_graphs nb_args relnames.(i) [] [] rt) )
       res.result
   in
   (* adding names to constructors  *)
@@ -1432,7 +1434,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                , Some
                    (with_full_print
                       Constrextern.(extern_glob_constr empty_extern_env)
-                      typ)
+                      typ )
                , acc )
         | None ->
           CAst.make
@@ -1443,7 +1445,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                      , with_full_print
                          Constrextern.(extern_glob_constr empty_extern_env)
                          t ) ]
-               , acc ))
+               , acc ) )
       rel_first_args
       (rebuild_return_type returned_types.(i))
   in
@@ -1455,7 +1457,7 @@ let do_build_inductive evd (funconstants : pconstant list)
   let rel_params_ids =
     List.fold_left
       (fun acc (na, _, _) ->
-        match na with Anonymous -> acc | Name id -> id :: acc)
+        match na with Anonymous -> acc | Name id -> id :: acc )
       [] rels_params
   in
   let rel_params =
@@ -1469,12 +1471,12 @@ let do_build_inductive evd (funconstants : pconstant list)
             , Some
                 (with_full_print
                    Constrextern.(extern_glob_constr empty_extern_env)
-                   typ) )
+                   typ ) )
         | None ->
           Constrexpr.CLocalAssum
             ( [CAst.make n]
             , Constrexpr_ops.default_binder_kind
-            , Constrextern.(extern_glob_constr empty_extern_env) t ))
+            , Constrextern.(extern_glob_constr empty_extern_env) t ) )
       rels_params
   in
   let ext_rels_constructors =
@@ -1484,7 +1486,7 @@ let do_build_inductive evd (funconstants : pconstant list)
            , ( CAst.make id
              , with_full_print
                  Constrextern.(extern_glob_type empty_extern_env)
-                 ((* zeta_normalize *) alpha_rt rel_params_ids t) ) )))
+                 ((* zeta_normalize *) alpha_rt rel_params_ids t) ) ) ) )
       rel_constructors
   in
   let rel_ind i ext_rel_constructors =
@@ -1522,7 +1524,7 @@ let do_build_inductive evd (funconstants : pconstant list)
       (Flags.silently
          (ComInductive.do_mutual_inductive ~template:(Some false) None rel_inds
             ~cumulative:false ~poly:false ~private_ind:false
-            ~uniform:ComInductive.NonUniformParameters))
+            ~uniform:ComInductive.NonUniformParameters ) )
       Declarations.Finite
   with
   | UserError msg as e ->
@@ -1531,7 +1533,7 @@ let do_build_inductive evd (funconstants : pconstant list)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
-          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn))
+          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn) )
         rel_inds
     in
     let msg =
@@ -1544,7 +1546,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                 ; attrs = []
                 ; expr =
                     VernacInductive (Vernacexpr.Inductive_kw, repacked_rel_inds)
-                })
+                } )
       ++ fnl () ++ msg
     in
     observe msg; raise e
@@ -1554,7 +1556,7 @@ let do_build_inductive evd (funconstants : pconstant list)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
-          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn))
+          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn) )
         rel_inds
     in
     let msg =

@@ -23,6 +23,6 @@ val recursive_definition :
       -> EConstr.types
       -> int
       -> EConstr.constr
-      -> unit)
+      -> unit )
   -> Constrexpr.constr_expr list
   -> Declare.Proof.t option

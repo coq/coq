@@ -92,8 +92,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     it_mkProd_or_LetIn
       (it_mkProd_or_LetIn
          (Option.fold_right mkProd_or_LetIn princ_type_info.indarg
-            princ_type_info.concl)
-         princ_type_info.args)
+            princ_type_info.concl )
+         princ_type_info.args )
       princ_type_info.branches
   in
   let pre_princ = EConstr.Unsafe.to_constr pre_princ in
@@ -140,7 +140,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
         let num = get_fun_num f in
         raise
           (Toberemoved_with_rel
-             (var_to_be_removed, mk_replacement pre_princ num args))
+             (var_to_be_removed, mk_replacement pre_princ num args) )
       | App (f, args) ->
         let args = if is_pte f && remove then array_get_start args else args in
         let new_args, binders_to_remove =
@@ -218,7 +218,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
         ( mkLetIn (new_x, new_v, new_t, new_b)
         , list_union_eq Constr.equal
             (list_union_eq Constr.equal binders_to_remove_from_t
-               binders_to_remove_from_v)
+               binders_to_remove_from_v )
             (List.map pop binders_to_remove_from_b) )
     with
     | Toberemoved ->
@@ -260,8 +260,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
               LocalDef
                 ( map_annot (fun id -> Name.mk_name (Hashtbl.find tbl id)) id
                 , t
-                , b ))
-          new_predicates))
+                , b ) )
+          new_predicates ) )
     (List.map
        (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d)
-       princ_type_info.params)
+       princ_type_info.params )

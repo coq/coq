@@ -37,7 +37,7 @@ let is_rec_info sigma scheme_info =
 
 let choose_dest_or_ind scheme_info args =
   Proofview.tclBIND Proofview.tclEVARMAP (fun sigma ->
-      Tactics.induction_destruct (is_rec_info sigma scheme_info) false args)
+      Tactics.induction_destruct (is_rec_info sigma scheme_info) false args )
 
 let functional_induction with_clean c princl pat =
   let open Proofview.Notations in
@@ -101,7 +101,7 @@ let functional_induction with_clean c princl pat =
       | Some (princ, binding) ->
         let sigma, princt = pf_type_of gl princ in
         Proofview.Unsafe.tclEVARS sigma
-        <*> Proofview.tclUNIT (princ, binding, princt, args))
+        <*> Proofview.tclUNIT (princ, binding, princt, args) )
   >>= fun (princ, bindings, princ_type, args) ->
   Proofview.Goal.enter (fun gl ->
       let sigma = project gl in
@@ -116,17 +116,17 @@ let functional_induction with_clean c princl pat =
         List.map2
           (fun c pat ->
             ( ( None
-              , ElimOnConstr
-                  (fun env sigma -> (sigma, (c, Tactypes.NoBindings))) )
+              , ElimOnConstr (fun env sigma -> (sigma, (c, Tactypes.NoBindings)))
+              )
             , (None, pat)
-            , None ))
+            , None ) )
           (args @ c_list) encoded_pat_as_patlist
       in
       let princ' = Some (princ, bindings) in
       let princ_vars =
         List.fold_right
           (fun a acc ->
-            try Id.Set.add (destVar sigma a) acc with DestKO -> acc)
+            try Id.Set.add (destVar sigma a) acc with DestKO -> acc )
           args Id.Set.empty
       in
       let old_idl =
@@ -146,11 +146,11 @@ let functional_induction with_clean c princl pat =
           tclTHEN
             (tclMAP
                (fun id ->
-                 tclTRY (Equality.subst_gen (do_rewrite_dependent ()) [id]))
-               idl)
+                 tclTRY (Equality.subst_gen (do_rewrite_dependent ()) [id]) )
+               idl )
             (reduce flag Locusops.allHypsAndConcl)
         else tclIDTAC
       in
       tclTHEN
         (choose_dest_or_ind princ_infos (args_as_induction_constr, princ'))
-        (Proofview.Goal.enter subst_and_reduce))
+        (Proofview.Goal.enter subst_and_reduce) )

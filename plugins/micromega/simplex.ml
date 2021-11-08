@@ -208,7 +208,7 @@ let is_feasible rst tb = IMap.is_empty (unfeasible rst tb)
 let is_maximised_vect rst v =
   Vect.for_all
     (fun xi ai ->
-      if ai >/ Q.zero then false else Restricted.is_restricted xi rst)
+      if ai >/ Q.zero then false else Restricted.is_restricted xi rst )
     v
 
 (** [is_maximised rst v]
@@ -281,7 +281,7 @@ let find_pivot_row rst tbl j sgn =
         (* This would improve *)
         let score' = Q.abs (Vect.get_cst v // aij) in
         min_score res (i', score')
-      else res)
+      else res )
     tbl None
 
 let safe_find err x t =
@@ -399,7 +399,7 @@ let normalise_row (t : tableau) (v : Vect.t) =
       try
         let e = IMap.find vr t in
         Vect.add (Vect.mul ai e) acc
-      with Not_found -> Vect.add (Vect.set vr ai Vect.null) acc)
+      with Not_found -> Vect.add (Vect.set vr ai Vect.null) acc )
     Vect.null v
 
 let normalise_row (t : tableau) (v : Vect.t) =
@@ -450,7 +450,7 @@ let find_solution rst tbl =
   IMap.fold
     (fun vr v res ->
       if Restricted.is_restricted vr rst then res
-      else Vect.set vr (Vect.get_cst v) res)
+      else Vect.set vr (Vect.get_cst v) res )
     tbl Vect.null
 
 let find_full_solution rst tbl =
@@ -489,7 +489,7 @@ let fresh_var l =
     ISet.max_elt
       (List.fold_left
          (fun acc c -> ISet.union acc (Vect.variables c.coeffs))
-         ISet.empty l)
+         ISet.empty l )
   with Not_found -> 0
 
 module PrfEnv = struct
@@ -531,7 +531,7 @@ end
 let make_env (l : Polynomial.cstr list) =
   PrfEnv.of_list [] PrfEnv.empty
     (List.rev_map WithProof.of_cstr
-       (List.mapi (fun i x -> (x, ProofFormat.Hyp i)) l))
+       (List.mapi (fun i x -> (x, ProofFormat.Hyp i)) l) )
 
 let find_point (l : Polynomial.cstr list) =
   let vr = fresh_var l in
@@ -574,8 +574,8 @@ let make_certificate env l =
            match prf with
            | Hyp i -> Vect.set i n acc
            | MulC (_, Hyp i) -> Vect.set i (Q.neg n) acc
-           | _ -> failwith "make_certificate: invalid proof"))
-       Vect.null l)
+           | _ -> failwith "make_certificate: invalid proof") )
+       Vect.null l )
 
 let find_unsat_certificate (l : Polynomial.cstr list) =
   let l', env = make_env l in
@@ -595,7 +595,7 @@ let make_farkas_certificate (env : PrfEnv.t) v =
 let make_farkas_proof (env : PrfEnv.t) v =
   Vect.fold
     (fun wp x n ->
-      WithProof.addition wp (WithProof.mult (Vect.cst n) (PrfEnv.find x env)))
+      WithProof.addition wp (WithProof.mult (Vect.cst n) (PrfEnv.find x env)) )
     WithProof.zero v
 
 let frac_num n = n -/ Q.floor n
@@ -656,7 +656,7 @@ let cut env rmin sol (rst : Restricted.t) tbl (x, v) =
       Vect.fold
         (fun acc x n ->
           if Restricted.is_restricted x rst then Vect.set x (ccoeff n) acc
-          else acc)
+          else acc )
         Vect.null r
     in
     let lcut =
@@ -709,7 +709,7 @@ let merge_best lt oldr newr =
   Vect.fold
     (fun acc _ q -> Z.add (abs (Q.num q)) (Z.add (Q.den q) acc))
     Z.zero v
- *)
+*)
 
 let find_cut nb env u sol rst tbl =
   if nb = 0 then
@@ -751,7 +751,7 @@ let find_split env tbl rst =
       | Some (v, s) -> (
         match acc with
         | None -> Some (v, s)
-        | Some (v', s') -> if s' >/ s then acc else Some (v, s) ))
+        | Some (v', s') -> if s' >/ s then acc else Some (v, s) ) )
     tbl None
 
 let var_of_vect v = fst (fst (Vect.decomp_fst v))
@@ -782,7 +782,7 @@ let eliminate_variable (bounded, env, tbl) x =
         let (v, o), p = lp in
         let ai = Vect.get x v in
         if ai =/ Q.zero then lp
-        else WithProof.addition (WithProof.mult (Vect.cst (Q.neg ai)) xp) lp)
+        else WithProof.addition (WithProof.mult (Vect.cst (Q.neg ai)) xp) lp )
       env
   in
   (* Add the variables to the environment *)
@@ -818,7 +818,7 @@ let integer_solver lp =
         (Step
            ( LinPoly.MonT.get_fresh ()
            , make_farkas_certificate env (Vect.normalise c)
-           , Done ))
+           , Done ) )
     | Inl (rst, tbl, x) -> (
       if debug then begin
         Printf.fprintf stdout "Looking for a cut\n";
@@ -888,7 +888,7 @@ let integer_solver lp =
               (fun acc x n ->
                 if x <> 0 && not (Restricted.is_restricted x rst) then
                   eliminate_variable acc x
-                else acc)
+                else acc )
               (IMap.empty, env, tbl) v
           in
           let prf = isolve env cr (Inl (rst, tbl, None)) in
@@ -897,9 +897,8 @@ let integer_solver lp =
           | Some pf ->
             Some
               (IMap.fold
-                 (fun x (vr, zv, tv) acc ->
-                   ExProof (vr, zv, tv, x, zv, tv, acc))
-                 bounded pf) ) )
+                 (fun x (vr, zv, tv) acc -> ExProof (vr, zv, tv, x, zv, tv, acc))
+                 bounded pf ) ) )
   in
   let res = solve true l' (Restricted.make vr0) IMap.empty in
   isolve env None res

@@ -43,27 +43,20 @@ module Monomial : sig
   val sqrt : t -> t option
   val variables : t -> ISet.t
   val degree : t -> int
-end =
-struct
+end = struct
   type t = int array
   (* Compact representation [| d; e₀; v₀; ...; eₙ; vₙ |] where
-    d = Σi v_i is the multi-degree
-    e_i gives the variable number as a diff, i.e. the variable at position i
-        is Σi e_i, and e_i ≠ 0 for all i > 0
-    v_i is the degree of e_i, must be ≠ 0
+     d = Σi v_i is the multi-degree
+     e_i gives the variable number as a diff, i.e. the variable at position i
+         is Σi e_i, and e_i ≠ 0 for all i > 0
+     v_i is the degree of e_i, must be ≠ 0
   *)
 
   let const = [|0|]
-
   let is_const (m : t) = match m with [|_|] -> true | _ -> false
-
   let var x = [|1; x; 1|]
-
   let is_var (m : t) = Int.equal m.(0) 1
-
-  let get_var (m : t) = match m with
-  | [|1; x; _|] -> Some x
-  | _ -> None
+  let get_var (m : t) = match m with [|1; x; _|] -> Some x | _ -> None
 
   let prod (m1 : t) (m2 : t) =
     let len1 = Array.length m1 in
@@ -115,8 +108,8 @@ struct
     let () = set 0 0 0 1 1 1 in
     m
 
-  (*  [factor m x] returns [None] if [x] does not appear in [m], and decreases
-      its exponent by one otherwise *)
+  (* [factor m x] returns [None] if [x] does not appear in [m], and decreases
+     its exponent by one otherwise *)
   let factor (m : t) (x : var) =
     let len = Array.length m in
     let rec factor cur i =
@@ -133,7 +126,9 @@ struct
           let () = Array.blit m 1 ans 1 (i - 1) in
           let () = Array.blit m (i + 2) ans i (len - i - 2) in
           (* Correct the diff *)
-          let () = if not (Int.equal len (i + 2)) then ans.(i) <- ans.(i) + m.(i) in
+          let () =
+            if not (Int.equal len (i + 2)) then ans.(i) <- ans.(i) + m.(i)
+          in
           Some ans
         else
           let ans = Array.copy m in
@@ -145,20 +140,24 @@ struct
 
   let compare (m1 : t) (m2 : t) = CArray.compare Int.compare m1 m2
 
-  let sqrt (m : t) = match m with
-  | [|_|] -> Some const
-  | _ ->
-    let m = Array.copy m in
-    let len = Array.length m in
-    let () = m.(0) <- m.(0) / 2 in
-    let rec set i =
-      if Int.equal i len then ()
-      else
-        let v = m.(i + 1) in
-        let () = if v mod 2 = 0 then m.(i + 1) <- v / 2 else raise Exit in
-        set (i + 2)
-    in
-    try let () = set 1 in Some m with Exit -> None
+  let sqrt (m : t) =
+    match m with
+    | [|_|] -> Some const
+    | _ -> (
+      let m = Array.copy m in
+      let len = Array.length m in
+      let () = m.(0) <- m.(0) / 2 in
+      let rec set i =
+        if Int.equal i len then ()
+        else
+          let v = m.(i + 1) in
+          let () = if v mod 2 = 0 then m.(i + 1) <- v / 2 else raise Exit in
+          set (i + 2)
+      in
+      try
+        let () = set 1 in
+        Some m
+      with Exit -> None )
 
   let degree (m : t) = m.(0)
 
@@ -173,8 +172,7 @@ struct
     in
     fold accu 0 1
 
-  let variables (m : t) =
-    fold (fun x _ accu -> ISet.add x accu) m ISet.empty
+  let variables (m : t) = fold (fun x _ accu -> ISet.add x accu) m ISet.empty
 
   let pp o m =
     let pp_elt o (k, v) =
@@ -187,7 +185,6 @@ struct
       | e :: l -> Printf.fprintf o "%a*%a" pp_elt e pp_list l
     in
     pp_list o (List.rev @@ fold (fun x v accu -> (x, v) :: accu) m [])
-
 end
 
 module MonMap = struct
@@ -198,7 +195,7 @@ module MonMap = struct
         match (v1, v2) with
         | None, None -> None
         | Some v, None | None, Some v -> Some v
-        | Some v1, Some v2 -> f x v1 v2)
+        | Some v1, Some v2 -> f x v1 v2 )
 end
 
 let pp_mon o (m, i) =
@@ -283,8 +280,7 @@ end = struct
       (fun m v (px, cx) ->
         match Monomial.factor m x with
         | None -> (px, add m v cx)
-        | Some mx ->
-          (add mx v px, cx))
+        | Some mx -> (add mx v px, cx) )
       p
       (constant Q.zero, constant Q.zero)
 end
@@ -377,7 +373,7 @@ module LinPoly = struct
     Poly.fold
       (fun mon num vct ->
         let vr = MonT.register mon in
-        Vect.set vr num vct)
+        Vect.set vr num vct )
       p Vect.null
 
   let pol_of_linpol v =
@@ -389,14 +385,15 @@ module LinPoly = struct
     let pol_of_mon m =
       Monomial.fold
         (fun x v p ->
-          Mc.PEmul (Mc.PEpow (Mc.PEX (CamlToCoq.positive x), CamlToCoq.n v), p))
+          Mc.PEmul (Mc.PEpow (Mc.PEX (CamlToCoq.positive x), CamlToCoq.n v), p)
+          )
         m
         (Mc.PEc (cst Q.one))
     in
     Vect.fold
       (fun acc x v ->
         let mn = MonT.retrieve x in
-        Mc.PEadd (Mc.PEmul (Mc.PEc (cst v), pol_of_mon mn), acc))
+        Mc.PEadd (Mc.PEmul (Mc.PEc (cst v), pol_of_mon mn), acc) )
       (Mc.PEc (cst Q.zero))
       p
 
@@ -411,7 +408,7 @@ module LinPoly = struct
     Vect.for_all
       (fun v _ ->
         let mn = MonT.retrieve v in
-        Monomial.is_var mn || Monomial.is_const mn)
+        Monomial.is_var mn || Monomial.is_const mn )
       p
 
   let is_variable p =
@@ -435,7 +432,7 @@ module LinPoly = struct
           match Monomial.get_var x' with
           | None -> acc
           | Some x -> if is_linear_for x l then x :: acc else acc
-        else acc)
+        else acc )
       [] l
 
   let min_list (l : int list) =
@@ -475,7 +472,7 @@ module LinPoly = struct
     Printf.fprintf o "forall %a\n" pp_vars vars;
     List.iteri
       (fun i (p, op) ->
-        Printf.fprintf o "(H%i : %a %s 0)\n" i pp p (string_of_op op))
+        Printf.fprintf o "(H%i : %a %s 0)\n" i pp p (string_of_op op) )
       l;
     Printf.fprintf o ", False\n"
 
@@ -483,7 +480,7 @@ module LinPoly = struct
     Vect.fold
       (fun acc v _ ->
         let m = MonT.retrieve v in
-        match Monomial.sqrt m with None -> acc | Some s -> MonMap.add s m acc)
+        match Monomial.sqrt m with None -> acc | Some s -> MonMap.add s m acc )
       MonMap.empty p
 end
 
@@ -710,7 +707,7 @@ module ProofFormat = struct
           match (o1, o2) with
           | None, None -> None
           | None, Some v | Some v, None -> Some v
-          | Some v1, Some v2 -> Some (LinPoly.addition v1 v2))
+          | Some v1, Some v2 -> Some (LinPoly.addition v1 v2) )
         (dev_prf_rule p1) (dev_prf_rule p2)
     | MulPrf (p1, p2) -> (
       let p1' = dev_prf_rule p1 in
@@ -756,7 +753,7 @@ module ProofFormat = struct
       , ISet.add i
           (ISet.union
              (ISet.union (pr_rule_collect_defs p1) (pr_rule_collect_defs p2))
-             hyps) )
+             hyps ) )
     | ExProof (i, j, k, x, z, t, prf) ->
       let prf', hyps = simplify_proof prf in
       if
@@ -1150,7 +1147,7 @@ module WithProof = struct
       Vect.fold
         (fun (l, (q, x)) x' q' ->
           let q' = Q.abs q' in
-          (l + 1, if q </ q then (q, x) else (q', x')))
+          (l + 1, if q </ q then (q, x) else (q', x')) )
         (1, (Q.abs q, x))
         p
     in
@@ -1214,68 +1211,67 @@ module WithProof = struct
           , ProofFormat.add_proof
               (ProofFormat.mul_cst_proof cv1 prf1)
               (ProofFormat.mul_cst_proof cv2 prf2) )
-
 end
 
-module BoundWithProof =
-struct
+module BoundWithProof = struct
+  type t = Vect.Bound.t * op * ProofFormat.prf_rule
 
-type t = Vect.Bound.t * op * ProofFormat.prf_rule
-
-let bound_compare b1 b2 =
-  let open Vect.Bound in
-  let {cst = k1; var = v1; coeff = c1} = b1 in
-  let {cst = k2; var = v2; coeff = c2} = b2 in
-  let c = Int.compare v1 v2 in
-  if c <> 0 then c
-  else
-    let c = Q.compare k1 k2 in
+  let bound_compare b1 b2 =
+    let open Vect.Bound in
+    let {cst = k1; var = v1; coeff = c1} = b1 in
+    let {cst = k2; var = v2; coeff = c2} = b2 in
+    let c = Int.compare v1 v2 in
     if c <> 0 then c
-    else Q.compare c1 c2
+    else
+      let c = Q.compare k1 k2 in
+      if c <> 0 then c else Q.compare c1 c2
 
-let compare (p1, o1, _) (p2, o2, _) =
-  let c = bound_compare p1 p2 in
-  if c = 0 then compare_op o1 o2 else c
+  let compare (p1, o1, _) (p2, o2, _) =
+    let c = bound_compare p1 p2 in
+    if c = 0 then compare_op o1 o2 else c
 
-let make ((p, o), prf) = match Vect.Bound.of_vect p with
-| None -> None
-| Some b -> Some (b, o, prf)
+  let make ((p, o), prf) =
+    match Vect.Bound.of_vect p with None -> None | Some b -> Some (b, o, prf)
 
-let padd (o1, prf1) (o2, prf2) = (opAdd o1 o2, ProofFormat.add_proof prf1 prf2)
-let pmul (o1, prf1) (o2, prf2) = (opMult o1 o2, ProofFormat.mul_proof prf1 prf2)
-let pext c (o, prf) =
-  if c =/ Q.zero then (Eq, ProofFormat.Zero)
-  else (o, ProofFormat.mul_cst_proof c prf)
+  let padd (o1, prf1) (o2, prf2) = (opAdd o1 o2, ProofFormat.add_proof prf1 prf2)
 
-let mul_bound (b1, o1, prf1) (b2, o2, prf2) =
-  let open Vect.Bound in
-  match (b1, b2) with
-  | {cst = c1; var = v1; coeff = c1'},
-    {cst = c2; var = v2; coeff = c2'} ->
-    let good_coeff b o =
-      match o with
-      | Eq -> Some (Q.neg b)
-      | _ -> if b <=/ Q.zero then Some (Q.neg b) else None
-    in
-    match (good_coeff c1 o2, good_coeff c2 o1) with
-    | None, _ | _, None -> None
-    | Some c1, Some c2 ->
-      let w1 = (o1, prf1) in
-      let w2 = (o2, prf2) in
-      let (o, prf) = padd (padd (pmul w1 w2) (pext c1 w2)) (pext c2 w1) in
-      let b = {
-        cst = Q.neg (c1 */ c2);
-        var = LinPoly.MonT.register (Monomial.prod (LinPoly.MonT.retrieve v1) (LinPoly.MonT.retrieve v2));
-        coeff = c1' */ c2';
-      } in
-      Some (b, o, prf)
+  let pmul (o1, prf1) (o2, prf2) =
+    (opMult o1 o2, ProofFormat.mul_proof prf1 prf2)
 
-let bound (b, _, _) = b
+  let pext c (o, prf) =
+    if c =/ Q.zero then (Eq, ProofFormat.Zero)
+    else (o, ProofFormat.mul_cst_proof c prf)
 
-let proof (b, o, w) =
-  let p = Vect.Bound.to_vect b in
-  ((p, o), w)
+  let mul_bound (b1, o1, prf1) (b2, o2, prf2) =
+    let open Vect.Bound in
+    match (b1, b2) with
+    | {cst = c1; var = v1; coeff = c1'}, {cst = c2; var = v2; coeff = c2'} -> (
+      let good_coeff b o =
+        match o with
+        | Eq -> Some (Q.neg b)
+        | _ -> if b <=/ Q.zero then Some (Q.neg b) else None
+      in
+      match (good_coeff c1 o2, good_coeff c2 o1) with
+      | None, _ | _, None -> None
+      | Some c1, Some c2 ->
+        let w1 = (o1, prf1) in
+        let w2 = (o2, prf2) in
+        let o, prf = padd (padd (pmul w1 w2) (pext c1 w2)) (pext c2 w1) in
+        let b =
+          { cst = Q.neg (c1 */ c2)
+          ; var =
+              LinPoly.MonT.register
+                (Monomial.prod (LinPoly.MonT.retrieve v1)
+                   (LinPoly.MonT.retrieve v2) )
+          ; coeff = c1' */ c2' }
+        in
+        Some (b, o, prf) )
 
+  let bound (b, _, _) = b
+
+  let proof (b, o, w) =
+    let p = Vect.Bound.to_vect b in
+    ((p, o), w)
 end
 
 (* Local Variables: *)

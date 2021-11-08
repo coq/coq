@@ -1,4 +1,4 @@
-version=0.15.0
+version=0.19.0
 profile=ocamlformat
 
 # to enable a whole directory, put "disable=false" in dir/.ocamlformat

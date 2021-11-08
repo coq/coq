@@ -170,7 +170,7 @@ let mul_add n1 ve1 n2 ve2 =
 let compare : t -> t -> int =
   Mutils.Cmp.compare_list (fun x y ->
       Mutils.Cmp.compare_lexical
-        [(fun () -> Int.compare x.var y.var); (fun () -> Q.compare x.coe y.coe)])
+        [(fun () -> Int.compare x.var y.var); (fun () -> Q.compare x.coe y.coe)] )
 
 (** [tail v vect] returns
         - [None] if [v] is not a variable of the vector [vect]
@@ -252,7 +252,7 @@ let gcd v =
     fold
       (fun c _ n ->
         assert (Int.equal (Z.compare (Q.den n) Z.one) 0);
-        Z.gcd c (Q.num n))
+        Z.gcd c (Q.num n) )
       Z.zero v
   in
   if Int.equal (Z.compare res Z.zero) 0 then Z.one else res
@@ -265,7 +265,7 @@ let normalise v =
   in
   List.map
     (fun {var = x; coe = v} ->
-      {var = x; coe = v */ Q.of_bigint ppcm // Q.of_bigint gcd})
+      {var = x; coe = v */ Q.of_bigint ppcm // Q.of_bigint gcd} )
     v
 
 let rec exists2 p vect1 vect2 =
@@ -297,8 +297,8 @@ let abs_min_elt v =
     Some
       (List.fold_left
          (fun (v1, vl1) {var = v2; coe = vl2} ->
-           if Q.abs vl1 </ Q.abs vl2 then (v1, vl1) else (v2, vl2))
-         (v, vl) r)
+           if Q.abs vl1 </ Q.abs vl2 then (v1, vl1) else (v2, vl2) )
+         (v, vl) r )
 
 let partition p = List.partition (fun {var = vr; coe = vl} -> p vr vl)
 let mkvar x = set x Q.one null
@@ -314,7 +314,7 @@ module Bound = struct
       Some {cst = v; var = x; coeff = v'}
     | _ -> None
 
-  let to_vect { cst = k; var = v; coeff = c } =
+  let to_vect {cst = k; var = v; coeff = c} =
     let () = assert (not (c =/ Q.zero)) in
     if k =/ Q.zero then [{var = v; coe = c}]
     else [{var = 0; coe = k}; {var = v; coe = c}]

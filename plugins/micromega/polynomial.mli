@@ -22,7 +22,6 @@ module Monomial : sig
 
   (** [degree m] is the sum of the degrees of each variable *)
   val degree : t -> int
-
 end
 
 module MonMap : sig
@@ -362,9 +361,9 @@ module WithProof : sig
   val is_substitution : bool -> t -> var option
 end
 
-module BoundWithProof :
-sig
+module BoundWithProof : sig
   type t
+
   val compare : t -> t -> int
   val make : WithProof.t -> t option
   val mul_bound : t -> t -> t option

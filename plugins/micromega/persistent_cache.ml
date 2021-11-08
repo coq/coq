@@ -33,32 +33,36 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
 
   type key = Key.t
 
-  module Table :
-  sig
+  module Table : sig
     type 'a t
+
     val empty : 'a t
     val add : int -> 'a -> 'a t -> 'a t
     val find : int -> 'a t -> 'a list
     val fold : (int -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  end =
-  struct
+  end = struct
     type 'a t = 'a list Int.Map.t
+
     let empty = Int.Map.empty
+
     let add h pos tab =
       try Int.Map.modify h (fun _ l -> pos :: l) tab
       with Not_found -> Int.Map.add h [pos] tab
 
     let fold f tab accu =
-      let fold h l accu = List.fold_left (fun accu pos -> f h pos accu) accu l in
+      let fold h l accu =
+        List.fold_left (fun accu pos -> f h pos accu) accu l
+      in
       Int.Map.fold fold tab accu
 
     let find h tab = Int.Map.find h tab
   end
   (* A mapping key hash -> file position *)
 
-  type 'a data = { pos : int; mutable obj : (Key.t * 'a) option }
+  type 'a data = {pos : int; mutable obj : (Key.t * 'a) option}
 
-  type 'a t = {outch : out_channel; mutable htbl : 'a data Table.t; file : string }
+  type 'a t =
+    {outch : out_channel; mutable htbl : 'a data Table.t; file : string}
 
   (* XXX: Move to Fun.protect once in Ocaml 4.08 *)
   let fun_protect ~(finally : unit -> unit) work =
@@ -83,12 +87,13 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
     let pos = pos_in ch in
     seek_in ch (pos + len)
 
-  let read_key_elem inch = match input_binary_int inch with
-  | hash ->
-    let pos = pos_in inch in
-    let () = skip_blob inch in
-    Some (hash, pos)
-  | exception End_of_file -> None
+  let read_key_elem inch =
+    match input_binary_int inch with
+    | hash ->
+      let pos = pos_in inch in
+      let () = skip_blob inch in
+      Some (hash, pos)
+    | exception End_of_file -> None
 
   (**
     We used to only lock/unlock regions.
@@ -140,21 +145,24 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
     let rec xload table =
       match read_key_elem inch with
       | None -> table
-      | Some (hash, pos) -> xload (Table.add hash { pos; obj = None } table)
-      | exception e when CErrors.noncritical e -> raise (InvalidTableFormat table)
+      | Some (hash, pos) -> xload (Table.add hash {pos; obj = None} table)
+      | exception e when CErrors.noncritical e ->
+        raise (InvalidTableFormat table)
     in
     try
       (* Locking of the (whole) file while reading *)
       let htbl = do_under_lock Read finch (fun () -> xload Table.empty) in
       let () = close_in_noerr inch in
-      let outch = out_channel_of_descr (openfile f [O_WRONLY; O_APPEND; O_CREAT] 0o666) in
-      { outch ; file = f; htbl }
+      let outch =
+        out_channel_of_descr (openfile f [O_WRONLY; O_APPEND; O_CREAT] 0o666)
+      in
+      {outch; file = f; htbl}
     with InvalidTableFormat htbl ->
       (* The file is corrupted *)
       let fold hash data accu =
         let () = seek_in inch data.pos in
         match Marshal.from_channel inch with
-        | (k, v) -> (hash, k, v) :: accu
+        | k, v -> (hash, k, v) :: accu
         | exception e -> accu
       in
       (* Try to salvage what we can *)
@@ -167,7 +175,7 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
         let () = output_binary_int outch h in
         let pos = pos_out outch in
         let () = Marshal.to_channel outch (k, e) [] in
-        Table.add h { pos; obj = None } htbl
+        Table.add h {pos; obj = None} htbl
       in
       let dump () =
         let htbl = List.fold_left fold Table.empty data in
@@ -189,16 +197,17 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
       pos
     in
     let pos = do_under_lock Write fd dump in
-    t.htbl <- Table.add h { pos; obj = Some (k, e) } t.htbl
+    t.htbl <- Table.add h {pos; obj = Some (k, e)} t.htbl
 
   let find t k =
     let {outch; htbl = tbl} = t in
     let h = Key.hash k land 0x7FFFFFFF in
     let lpos = Table.find h tbl in
     (* First look for already live data *)
-    let find data = match data.obj with
-    | Some (k', v) -> if Key.equal k k' then Some v else None
-    | None -> None
+    let find data =
+      match data.obj with
+      | Some (k', v) -> if Key.equal k k' then Some v else None
+      | None -> None
     in
     match CList.find_map find lpos with
     | res -> res
@@ -210,7 +219,7 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
       let find data =
         let () = seek_in ch data.pos in
         match Marshal.from_channel ch with
-        | (k', v) ->
+        | k', v ->
           if Key.equal k k' then
             (* Store the data in memory *)
             let () = data.obj <- Some (k, v) in

@@ -83,7 +83,7 @@ let extract pred l =
       | None -> (
         match pred e with None -> (fd, e :: sys) | Some v -> (Some (v, e), sys)
         )
-      | _ -> (fd, e :: sys))
+      | _ -> (fd, e :: sys) )
     (None, []) l
 
 let extract_best red lt l =
@@ -111,14 +111,14 @@ let find_some pred l = try Some (find_option pred l) with Not_found -> None
 let extract_all pred l =
   List.fold_left
     (fun (s1, s2) e ->
-      match pred e with None -> (s1, e :: s2) | Some v -> (v :: s1, s2))
+      match pred e with None -> (s1, e :: s2) | Some v -> (v :: s1, s2) )
     ([], []) l
 
 let simplify f sys =
   let sys', b =
     List.fold_left
       (fun (sys', b) c ->
-        match f c with None -> (c :: sys', b) | Some c' -> (c' :: sys', true))
+        match f c with None -> (c :: sys', b) | Some c' -> (c' :: sys', true) )
       ([], false) sys
   in
   if b then Some sys' else None
@@ -358,13 +358,13 @@ let command exe_path args vl =
         with any ->
           failwith
             (Printf.sprintf "command \"%s\" exited %s" exe_path
-               (Printexc.to_string any)) )
+               (Printexc.to_string any) ) )
       | Unix.WEXITED i ->
         failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
       | Unix.WSIGNALED i ->
         failwith (Printf.sprintf "command \"%s\" killed %i" exe_path i)
       | Unix.WSTOPPED i ->
-        failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
+        failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i) )
     (* Cleanup  *)
       (fun () ->
       List.iter
@@ -374,7 +374,7 @@ let command exe_path args vl =
         ; stdout_read
         ; stdout_write
         ; stderr_read
-        ; stderr_write ])
+        ; stderr_write ] )
 
 (** Hashing utilities *)
 

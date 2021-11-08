@@ -139,7 +139,8 @@ let selecti s m =
     *)
 
 let constr_of_ref str =
-  EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref str))
+  EConstr.of_constr
+    (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref str))
 
 let coq_and = lazy (constr_of_ref "core.and.type")
 let coq_or = lazy (constr_of_ref "core.or.type")
@@ -365,7 +366,7 @@ let is_declared_term env evd t =
     try
       ignore
         (Typeclasses.resolve_one_typeclass env evd
-           (EConstr.mkApp (Lazy.force coq_DeclaredConstant, [|typ; t|])));
+           (EConstr.mkApp (Lazy.force coq_DeclaredConstant, [|typ; t|])) );
       true
     with Not_found -> false )
   | _ -> false
@@ -700,7 +701,7 @@ module Env = struct
           Pp.str "x"
           ++ Pp.int (i + 1)
           ++ Pp.str ":"
-          ++ Printer.pr_econstr_env genv sigma e)
+          ++ Printer.pr_econstr_env genv sigma e )
         env
     in
     List.fold_right (fun e p -> e ++ Pp.str " ; " ++ p) ppl (Pp.str "\n")
@@ -805,7 +806,7 @@ let rec parse_zexpr gl =
       let z = parse_zconstant gl x in
       match z with
       | Mc.Zneg _ -> Mc.PEc Mc.Z0
-      | _ -> Mc.PEpow (expr, Mc.Z.to_N z))
+      | _ -> Mc.PEpow (expr, Mc.Z.to_N z) )
     zop_spec
 
 and parse_zconstant gl e =
@@ -878,14 +879,14 @@ let parse_qexpr gl =
         | _ -> raise ParseError )
       | _ ->
         let exp = Mc.Z.to_N exp in
-        Mc.PEpow (expr, exp))
+        Mc.PEpow (expr, exp) )
     qop_spec
 
 let parse_rexpr (genv, sigma) =
   parse_expr (genv, sigma) rconstant
     (fun expr x ->
       let exp = Mc.N.of_nat (parse_nat sigma x) in
-      Mc.PEpow (expr, exp))
+      Mc.PEpow (expr, exp) )
     rop_spec
 
 let parse_arith parse_op parse_expr (k : Mc.kind) env cstr (genv, sigma) =
@@ -1295,7 +1296,7 @@ let make_goal_of_formula gl dexpr form =
       (List.map (fun (x, y) -> (Name.Name x, y)) props_n)
       (prodn nb_vars
          (List.map (fun (x, y) -> (Name.Name x, y)) vars_n)
-         (xdump_prop (List.length vars_n) 0 form))
+         (xdump_prop (List.length vars_n) 0 form) )
   , List.rev props_n
   , List.rev var_name_pos
   , form' )
@@ -1314,7 +1315,7 @@ let set l concl =
       xset
         (EConstr.mkNamedLetIn
            (make_annot (Names.Id.of_string name) Sorts.Relevant)
-           expr typ acc)
+           expr typ acc )
         l
   in
   xset concl l
@@ -1491,7 +1492,7 @@ let micromega_order_change spec cert cert_typ env ff (*: unit Proofview.tactic*)
                  , vm
                  , EConstr.mkApp (Lazy.force coq_VarMap, [|spec.typ|]) )
                ; ("__wit", cert, cert_typ) ]
-               (Tacmach.New.pf_concl gl)) ])
+               (Tacmach.New.pf_concl gl) ) ] )
 
 (**
   * The datastructures that aggregate prover attributes.
@@ -1551,12 +1552,12 @@ let witness_list prover l =
 
 let witness_list_tags p g = witness_list p g
 
-(*  let t1 = System.get_time () in
-  let res = witness_list p g in
-  let t2 = System.get_time () in
-  Feedback.msg_info Pp.(str "Witness generation "++int (List.length g) ++ str " "++System.fmt_time_difference t1 t2) ;
-  res
- *)
+(* let t1 = System.get_time () in
+   let res = witness_list p g in
+   let t2 = System.get_time () in
+   Feedback.msg_info Pp.(str "Witness generation "++int (List.length g) ++ str " "++System.fmt_time_difference t1 t2) ;
+   res
+*)
 
 (**
   * Prune the proof object, according to the 'diff' between two cnf formulas.
@@ -1624,7 +1625,7 @@ let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res
         let hyps_idx = prover.hyps prf in
         let hyps = selecti hyps_idx cl in
         Printf.printf "\nProver %a -> %a\n" pp_clause_tag cl pp_clause_tag hyps;
-        flush stdout)
+        flush stdout )
       cnf_res;
     Printf.printf "CNFNEW %a\n" pp_cnf_tag cnf_ff'
   end;
@@ -1637,7 +1638,7 @@ let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res
           flush stdout;
           failwith "Cannot find compatible proof"
       in
-      compact_proof o p x)
+      compact_proof o p x )
     cnf_ff'
 
 (**
@@ -1652,11 +1653,11 @@ let abstract_formula : TagSet.t -> 'a formula -> 'a formula =
       { mkTT =
           (let coq_True = Lazy.force coq_True in
            let coq_true = Lazy.force coq_true in
-           function Mc.IsProp -> coq_True | Mc.IsBool -> coq_true)
+           function Mc.IsProp -> coq_True | Mc.IsBool -> coq_true )
       ; mkFF =
           (let coq_False = Lazy.force coq_False in
            let coq_false = Lazy.force coq_false in
-           function Mc.IsProp -> coq_False | Mc.IsBool -> coq_false)
+           function Mc.IsProp -> coq_False | Mc.IsBool -> coq_false )
       ; mkA = (fun k a (tg, t) -> t)
       ; mkAND =
           (let coq_and = Lazy.force coq_and in
@@ -1664,36 +1665,36 @@ let abstract_formula : TagSet.t -> 'a formula -> 'a formula =
            fun k x y ->
              EConstr.mkApp
                ( (match k with Mc.IsProp -> coq_and | Mc.IsBool -> coq_andb)
-               , [|x; y|] ))
+               , [|x; y|] ) )
       ; mkOR =
           (let coq_or = Lazy.force coq_or in
            let coq_orb = Lazy.force coq_orb in
            fun k x y ->
              EConstr.mkApp
                ( (match k with Mc.IsProp -> coq_or | Mc.IsBool -> coq_orb)
-               , [|x; y|] ))
+               , [|x; y|] ) )
       ; mkIMPL =
           (fun k x y ->
             match k with
             | Mc.IsProp -> EConstr.mkArrow x Sorts.Relevant y
-            | Mc.IsBool -> EConstr.mkApp (Lazy.force coq_implb, [|x; y|]))
+            | Mc.IsBool -> EConstr.mkApp (Lazy.force coq_implb, [|x; y|]) )
       ; mkIFF =
           (let coq_iff = Lazy.force coq_iff in
            let coq_eqb = Lazy.force coq_eqb in
            fun k x y ->
              EConstr.mkApp
                ( (match k with Mc.IsProp -> coq_iff | Mc.IsBool -> coq_eqb)
-               , [|x; y|] ))
+               , [|x; y|] ) )
       ; mkNOT =
           (let coq_not = Lazy.force coq_not in
            let coq_negb = Lazy.force coq_negb in
            fun k x ->
              EConstr.mkApp
                ( (match k with Mc.IsProp -> coq_not | Mc.IsBool -> coq_negb)
-               , [|x|] ))
+               , [|x|] ) )
       ; mkEQ =
           (let coq_eq = Lazy.force coq_eq in
-           fun x y -> EConstr.mkApp (coq_eq, [|Lazy.force coq_bool; x; y|])) }
+           fun x y -> EConstr.mkApp (coq_eq, [|Lazy.force coq_bool; x; y|]) ) }
   in
   Mc.abst_form to_constr (fun (t, _) -> TagSet.mem t hyps) true Mc.IsProp f
 
@@ -1735,16 +1736,16 @@ let formula_hyps_concl hyps concl =
     (fun (id, f) (cc, ids) ->
       match f with
       | Mc.X _ -> (cc, ids)
-      | _ -> (Mc.IMPL (Mc.IsProp, f, Some id, cc), id :: ids))
+      | _ -> (Mc.IMPL (Mc.IsProp, f, Some id, cc), id :: ids) )
     hyps (concl, [])
 
 (* let time str f x =
-  let t1 = System.get_time () in
-  let res = f x in
-  let t2 = System.get_time () in
-  Feedback.msg_info (Pp.str str ++ Pp.str " " ++ System.fmt_time_difference t1 t2) ;
-  res
- *)
+   let t1 = System.get_time () in
+   let res = f x in
+   let t2 = System.get_time () in
+   Feedback.msg_info (Pp.str str ++ Pp.str " " ++ System.fmt_time_difference t1 t2) ;
+   res
+*)
 
 let rec fold_trace f accu = function
   | Micromega.Null -> accu
@@ -1773,10 +1774,10 @@ let micromega_tauto pre_process cnf spec prover env
                 let t = fst (snd (List.nth cl i)) in
                 if debug then Printf.fprintf stdout "T : %i -> %a" i Tag.pp t;
                 (*try*) TagSet.add t s
-                (* with Invalid_argument _ -> s*))
+                (* with Invalid_argument _ -> s*) )
               (p.hyps prf) TagSet.empty
           in
-          TagSet.union s tags)
+          TagSet.union s tags )
         (fold_trace (fun s (i, _) -> TagSet.add i s) TagSet.empty cnf_ff_tags)
         (List.combine cnf_ff res)
     in
@@ -1834,7 +1835,7 @@ let clear_all_no_check =
           (Tacmach.New.pf_env gl)
       in
       Refine.refine ~typecheck:false (fun sigma ->
-          Evarutil.new_evar env sigma ~principal:true concl))
+          Evarutil.new_evar env sigma ~principal:true concl ) )
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
   Proofview.Goal.enter (fun gl ->
@@ -1885,7 +1886,7 @@ let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
           let goal_props =
             List.rev
               (List.map fst
-                 (Env.elements (prop_env_of_formula (genv, sigma) ff')))
+                 (Env.elements (prop_env_of_formula (genv, sigma) ff')) )
           in
           let goal_vars =
             List.map (fun (_, i) -> fst (List.nth env (i - 1))) vars
@@ -1899,12 +1900,12 @@ Tacticals.New.tclTHEN
            (Abstract.tclABSTRACT ~opaque:false None (Tacticals.New.tclTHEN tac_arith tac)) in *)
           Tacticals.New.tclTHEN
             (Tactics.assert_by (Names.Name goal_name) arith_goal
-               (*Proofview.tclTIME  (Some "kill_arith")*) kill_arith)
+               (*Proofview.tclTIME  (Some "kill_arith")*) kill_arith )
             ((*Proofview.tclTIME  (Some "apply_arith") *)
              Tactics.exact_check
                (EConstr.applist
                   ( EConstr.mkVar goal_name
-                  , arith_args @ List.map EConstr.mkVar ids )))
+                  , arith_args @ List.map EConstr.mkVar ids ) ) )
       with
       | Mfourier.TimeOut -> Tacticals.New.tclFAIL 0 (Pp.str "Timeout")
       | CsdpNotFound ->
@@ -1918,11 +1919,11 @@ Tacticals.New.tclTHEN
                 executable in the path. \n\n"
              ^ "Csdp packages are provided by some OS distributions; binaries \
                 and source code can be downloaded from \
-                https://projects.coin-or.org/Csdp" ))
+                https://projects.coin-or.org/Csdp" ) )
       | x ->
         if debug then
           Tacticals.New.tclFAIL 0 (Pp.str (Printexc.get_backtrace ()))
-        else raise x)
+        else raise x )
 
 let micromega_order_changer cert env ff =
   (*let ids = Util.List.map_i (fun i _ -> (Names.Id.of_string ("__v"^(string_of_int i)))) 0 env in *)
@@ -1946,9 +1947,9 @@ let micromega_order_changer cert env ff =
                      , [|formula_typ; Lazy.force coq_IsProp|] ) )
                ; ("__varmap", vm, EConstr.mkApp (Lazy.force coq_VarMap, [|typ|]))
                ; ("__wit", cert, cert_typ) ]
-               (Tacmach.New.pf_concl gl))
+               (Tacmach.New.pf_concl gl) )
           (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
-        ])
+        ] )
 
 let micromega_genr prover tac =
   let parse_arith = parse_rarith in
@@ -1980,7 +1981,7 @@ let micromega_genr prover tac =
               ( n
               , Mc.map_bformula Mc.IsProp
                   (Micromega.map_Formula Micromega.q_of_Rcst)
-                  f ))
+                  f ) )
             hyps
         in
         let concl' =
@@ -2026,7 +2027,7 @@ let micromega_genr prover tac =
           let goal_props =
             List.rev
               (List.map fst
-                 (Env.elements (prop_env_of_formula (genv, sigma) ff')))
+                 (Env.elements (prop_env_of_formula (genv, sigma) ff')) )
           in
           let goal_vars =
             List.map (fun (_, i) -> fst (List.nth env (i - 1))) vars
@@ -2038,7 +2039,7 @@ let micromega_genr prover tac =
              (Tactics.tclABSTRACT  None*)
           Tacticals.New.tclTHENS
             (Tactics.forward true (Some None) (ipat_of_name goal_name)
-               arith_goal)
+               arith_goal )
             [ kill_arith
             ; Tacticals.New.tclTHENLIST
                 [ Tactics.generalize (List.map EConstr.mkVar ids)
@@ -2057,7 +2058,7 @@ let micromega_genr prover tac =
                 executable in the path. \n\n"
              ^ "Csdp packages are provided by some OS distributions; binaries \
                 and source code can be downloaded from \
-                https://projects.coin-or.org/Csdp" )))
+                https://projects.coin-or.org/Csdp" ) ) )
 
 let lift_ratproof prover l =
   match prover l with
@@ -2155,7 +2156,7 @@ let really_call_csdpcert :
 
 let xcall_csdpcert =
   CacheCsdp.memo_opt use_csdp_cache ".csdp.cache" (fun (prover, pb) ->
-      really_call_csdpcert prover pb)
+      really_call_csdpcert prover pb )
 
 (**
   * Prover callback functions.
@@ -2282,22 +2283,21 @@ end)
 
 let memo_lia =
   CacheZ.memo_opt use_lia_cache ".lia.cache" (fun ((_, ce, b), s) ->
-      lift_pexpr_prover (Certificate.lia ce b) s)
+      lift_pexpr_prover (Certificate.lia ce b) s )
 
 let memo_nlia =
   CacheZ.memo_opt use_nia_cache ".nia.cache" (fun ((_, ce, b), s) ->
-      lift_pexpr_prover (Certificate.nlia ce b) s)
+      lift_pexpr_prover (Certificate.nlia ce b) s )
 
 let memo_nra =
   CacheQ.memo_opt use_nra_cache ".nra.cache" (fun (o, s) ->
-      lift_pexpr_prover (Certificate.nlinear_prover o) s)
+      lift_pexpr_prover (Certificate.nlinear_prover o) s )
 
 let linear_prover_Q =
   { name = "linear prover"
   ; get_option = lra_proof_depth
   ; prover =
-      (fun (o, l) ->
-        lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
+      (fun (o, l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
   ; hyps = hyps_of_cone
   ; compact = compact_cone
   ; pp_prf = pp_psatz pp_q
@@ -2307,8 +2307,7 @@ let linear_prover_R =
   { name = "linear prover"
   ; get_option = lra_proof_depth
   ; prover =
-      (fun (o, l) ->
-        lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
+      (fun (o, l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
   ; hyps = hyps_of_cone
   ; compact = compact_cone
   ; pp_prf = pp_psatz pp_q
@@ -2378,7 +2377,7 @@ let exfalso_if_concl_not_Prop =
       Tacmach.New.(
         if is_prop (pf_env gl) (project gl) (pf_concl gl) then
           Tacticals.New.tclIDTAC
-        else Tactics.elim_type (Lazy.force coq_False)))
+        else Tactics.elim_type (Lazy.force coq_False)) )
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
   Tacticals.New.tclTHEN exfalso_if_concl_not_Prop

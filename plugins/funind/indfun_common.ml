@@ -11,7 +11,8 @@ let mk_complete_id id = Nameops.add_suffix (mk_rel_id id) "_complete"
 let mk_equation_id id = Nameops.add_suffix id "_equation"
 
 let fresh_id avoid s =
-  Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string s) (Id.Set.of_list avoid)
+  Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string s)
+    (Id.Set.of_list avoid)
 
 let fresh_name avoid s = Name (fresh_id avoid s)
 
@@ -46,9 +47,7 @@ let chop_rlambda_n =
         chop_lambda_n ((name, t, None) :: acc) (n - 1) b
       | Glob_term.GLetIn (name, v, t, b) ->
         chop_lambda_n ((name, v, t) :: acc) (n - 1) b
-      | _ ->
-        CErrors.user_err
-          (str "chop_rlambda_n: Not enough Lambdas")
+      | _ -> CErrors.user_err (str "chop_rlambda_n: Not enough Lambdas")
   in
   chop_lambda_n []
 
@@ -59,9 +58,7 @@ let chop_rprod_n =
       match DAst.get rt with
       | Glob_term.GProd (name, k, t, b) ->
         chop_prod_n ((name, t) :: acc) (n - 1) b
-      | _ ->
-        CErrors.user_err
-          (str "chop_rprod_n: Not enough products")
+      | _ -> CErrors.user_err (str "chop_rprod_n: Not enough products")
   in
   chop_prod_n []
 
@@ -73,7 +70,9 @@ let list_union_eq eq_fun l1 l2 =
   urec l1
 
 let list_add_set_eq eq_fun x l = if List.exists (eq_fun x) l then l else x :: l
-let coq_constant s = UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s
+
+let coq_constant s =
+  UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
@@ -224,7 +223,7 @@ let pr_info env sigma f_info =
          Printer.pr_lconstr_env env sigma
            (fst
               (Typeops.type_of_global_in_context env
-                 (GlobRef.ConstRef f_info.function_constant)))
+                 (GlobRef.ConstRef f_info.function_constant) ) )
        with e when CErrors.noncritical e -> mt () )
   ++ fnl () ++ str "equation_lemma := "
   ++ pr_ocst env sigma f_info.equation_lemma
@@ -322,7 +321,7 @@ let print_debug_queue b e =
         (hov 1
            ( lmsg
            ++ (str " raised exception " ++ CErrors.print e)
-           ++ str " on goal" ++ fnl () ++ goal ))
+           ++ str " on goal" ++ fnl () ++ goal ) )
     else
       Feedback.msg_debug
         (hov 1 (str " from " ++ lmsg ++ str " on goal" ++ fnl () ++ goal))
@@ -366,7 +365,7 @@ module New = struct
             Proofview.tclUNIT v )
           (fun (exn, info) ->
             if not (Stack.is_empty debug_queue) then print_debug_queue true exn;
-            tclZERO ~info exn))
+            tclZERO ~info exn ) )
 
   let observe_tac ~header s tac =
     if do_observe () then do_observe_tac ~header s tac else tac
@@ -383,14 +382,16 @@ exception ToShow of exn
 let jmeq () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ())
+    EConstr.of_constr
+    @@ UnivGen.constr_of_monomorphic_global (Global.env ())
     @@ Coqlib.lib_ref "core.JMeq.type"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ())
+    EConstr.of_constr
+    @@ UnivGen.constr_of_monomorphic_global (Global.env ())
     @@ Coqlib.lib_ref "core.JMeq.refl"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
@@ -414,7 +415,8 @@ let ltof_ref = function () -> find_reference ["Coq"; "Arith"; "Wf_nat"] "ltof"
 let make_eq () =
   try
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.eq.type"))
+      (UnivGen.constr_of_monomorphic_global (Global.env ())
+         (Coqlib.lib_ref "core.eq.type") )
   with _ -> assert false
 
 let evaluable_of_global_reference r =
@@ -432,9 +434,9 @@ let list_rewrite (rev : bool) (eqs : (EConstr.constr * bool) list) =
         (fun (eq, b) i ->
           tclORELSE
             ((if b then Equality.rewriteLR else Equality.rewriteRL) eq)
-            i)
+            i )
         (if rev then List.rev eqs else eqs)
-        (tclFAIL 0 (mt ()))) [@ocaml.warning "-3"])
+        (tclFAIL 0 (mt ())) ) [@ocaml.warning "-3"] )
 
 let decompose_lam_n sigma n =
   if n < 0 then

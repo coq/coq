@@ -95,9 +95,9 @@ let real_nonlinear_prover d l =
                 match kd with
                 | Axiom_lt i -> poly_mul p y
                 | Axiom_eq i -> poly_mul (poly_pow p 2) y
-                | _ -> failwith "monoids")
+                | _ -> failwith "monoids" )
               m (poly_const Q.one)
-          , List.map snd m ))
+          , List.map snd m ) )
         (sets_of_list neq)
     in
     let cert_ideal, cert_cone, monoid =
@@ -109,8 +109,8 @@ let real_nonlinear_prover d l =
                 real_positivnullstellensatz_general false d peq pge
                   (poly_neg (fst m))
               in
-              (ci, cc, snd m))
-            monoids)
+              (ci, cc, snd m) )
+            monoids )
         0
     in
     let proofs_ideal =
@@ -161,7 +161,7 @@ let pure_sos l =
         ( Rational_lt n
         , List.fold_right
             (fun (c, p) rst ->
-              Sum (Product (Rational_lt c, Square (term_of_poly p)), rst))
+              Sum (Product (Rational_lt c, Square (term_of_poly p)), rst) )
             polys (Rational_lt Q.zero) )
     in
     let proof = Sum (Axiom_lt i, pos) in
@@ -194,8 +194,8 @@ let main () =
   with any ->
     Printf.fprintf chan "error %s" (Printexc.to_string any);
     exit 1
-
 ;;
+
 let _ = main () in
 ()
 

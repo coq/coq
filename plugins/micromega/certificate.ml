@@ -121,7 +121,7 @@ let simplify_cone n_spec c = fixpoint (rec_simpl_cone n_spec) c
    Hence, we can use fourier.
 
    The variable c is at index 1
- *)
+*)
 
 (* fold_left followed by a rev ! *)
 
@@ -182,7 +182,8 @@ let build_dual_linear_system l =
           ( Q.of_bigint Z.zero :: Q.of_bigint Z.one
           :: List.map
                (fun c ->
-                 if is_strict c then Q.of_bigint Z.one else Q.of_bigint Z.zero)
+                 if is_strict c then Q.of_bigint Z.one else Q.of_bigint Z.zero
+                 )
                l )
     ; op = Ge
     ; cst = Q.of_bigint Z.one }
@@ -226,7 +227,8 @@ let optimise v l =
 let output_cstr_sys o sys =
   List.iter
     (fun (c, wp) ->
-      Printf.fprintf o "%a by %a\n" output_cstr c ProofFormat.output_prf_rule wp)
+      Printf.fprintf o "%a by %a\n" output_cstr c ProofFormat.output_prf_rule wp
+      )
     sys
 
 let output_sys o sys =
@@ -363,7 +365,7 @@ let apply_and_normalise check f psys =
         | Tauto -> acc
         | Unsat prf -> raise (FoundProof prf)
         | Cut (c, p) -> (c, p) :: acc
-        | Normalise (c, p) -> (c, p) :: acc ))
+        | Normalise (c, p) -> (c, p) :: acc ) )
     [] psys
 
 let is_linear_for v pc =
@@ -373,7 +375,7 @@ let is_linear_for v pc =
   if LinPoly.is_linear (fst (fst pc'))
   then None (* There are other ways to deal with those *)
   else WithProof.linear_pivot sys pc v pc'
- *)
+*)
 
 let is_linear_substitution sys ((p, o), prf) =
   let pred v = v =/ Q.one || v =/ Q.minus_one in
@@ -416,7 +418,7 @@ let bound_monomials (sys : WithProof.t list) =
         | None -> None
         | Some b ->
           let Vect.Bound.{cst; var; coeff} = BoundWithProof.bound b in
-          Some (Monomial.degree (LinPoly.MonT.retrieve var), b))
+          Some (Monomial.degree (LinPoly.MonT.retrieve var), b) )
       sys
   in
   let deg =
@@ -440,7 +442,7 @@ let bound_monomials (sys : WithProof.t list) =
         else
           match BoundWithProof.mul_bound w1 w2 with
           | None -> None
-          | Some b -> Some (i1 + i2, b))
+          | Some b -> Some (i1 + i2, b) )
       (fst l)
   in
   let has_mon (_, b) =
@@ -475,7 +477,8 @@ let nlinear_preprocess (sys : WithProof.t list) =
     let collect_square =
       List.fold_left
         (fun acc ((p, _), _) ->
-          MonMap.union (fun k e1 e2 -> Some e1) acc (LinPoly.collect_square p))
+          MonMap.union (fun k e1 e2 -> Some e1) acc (LinPoly.collect_square p)
+          )
         MonMap.empty sys
     in
     let sys =
@@ -483,7 +486,7 @@ let nlinear_preprocess (sys : WithProof.t list) =
         (fun s m acc ->
           let s = LinPoly.of_monomial s in
           let m = LinPoly.of_monomial m in
-          ((m, Ge), ProofFormat.Square s) :: acc)
+          ((m, Ge), ProofFormat.Square s) :: acc )
         collect_square sys
     in
     let collect_vars =
@@ -525,7 +528,7 @@ let linear_prover_with_cert prfdepth sys =
     Prf
       (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q
          (List.mapi (fun i e -> ProofFormat.Hyp i) sys)
-         cert)
+         cert )
 
 (* The prover is (probably) incomplete --
    only searching for naive cutting planes *)
@@ -720,7 +723,7 @@ let simpl_sys sys =
       | Tauto -> acc
       | Unsat prf -> raise (FoundProof prf)
       | Cut (c, p) -> (c, p) :: acc
-      | Normalise (c, p) -> (c, p) :: acc)
+      | Normalise (c, p) -> (c, p) :: acc )
     [] sys
 
 (** [ext_gcd a b] is the extended Euclid algorithm.
@@ -738,7 +741,7 @@ let extract_coprime (c1, p1) (c2, p2) =
   if c1.op == Eq && c2.op == Eq then
     Vect.exists2
       (fun n1 n2 ->
-        Int.equal (Z_.compare (Z_.gcd (Q.num n1) (Q.num n2)) Z_.one) 0)
+        Int.equal (Z_.compare (Z_.gcd (Q.num n1) (Q.num n2)) Z_.one) 0 )
       c1.coeffs c2.coeffs
   else None
 
@@ -801,7 +804,7 @@ let reduce_var_change psys =
         Vect.find
           (fun x' v' ->
             let v' = Q.num v' in
-            if Z_.equal (Z_.gcd v v') Z_.one then Some (x', v') else None)
+            if Z_.equal (Z_.gcd v v') Z_.one then Some (x', v') else None )
           vect
       with
       | Some (x', v') -> Some ((x, v), (x', v'))
@@ -832,7 +835,7 @@ let reduce_var_change psys =
 let reduction_equations psys =
   iterate_until_stable
     (app_funs
-       [reduce_unary; reduce_coprime; reduce_var_change (*; reduce_pivot*)])
+       [reduce_unary; reduce_coprime; reduce_var_change (*; reduce_pivot*)] )
     psys
 
 let reduction_equations = tr_cstr_sys "reduction_equations" reduction_equations
@@ -855,7 +858,7 @@ let get_bound sys =
       List.fold_left
         (fun acc c ->
           if List.exists (fun c' -> Vect.equal c.coeffs c'.coeffs) eq then acc
-          else c.coeffs :: acc)
+          else c.coeffs :: acc )
         [] ineq
   in
   let smallest_interval =
@@ -868,7 +871,7 @@ let get_bound sys =
           | Some i ->
             if debug then
               Printf.printf "Found a new bound %a in %a" Vect.pp vect Itv.pp i;
-            select_best (vect, i) acc)
+            select_best (vect, i) acc )
       (Vect.null, (None, None))
       (all_planes sys)
   in
@@ -931,7 +934,7 @@ let xlia (can_enum : bool) reduction_equations sys =
              , e
              , ProofFormat.proof_of_farkas (env_of_list prf)
                  (Vect.from_list prf2)
-             , prfl ))
+             , prfl ) )
       | _ -> Unknown )
   and start_enum id e clb cub sys =
     if clb >/ cub then Prf []
@@ -1029,7 +1032,7 @@ let normalise sys =
     (fun acc s ->
       match WithProof.cutting_plane s with
       | None -> s :: acc
-      | Some s' -> s' :: acc)
+      | Some s' -> s' :: acc )
     [] sys
 
 let normalise = tr_sys "normalise" normalise
@@ -1042,7 +1045,7 @@ let elim_redundant sys =
         match o with
         | Gt -> assert false
         | Ge -> wp :: acc
-        | Eq -> wp :: WithProof.neg wp :: acc)
+        | Eq -> wp :: WithProof.neg wp :: acc )
       [] sys
   in
   let of_list l =
@@ -1055,7 +1058,7 @@ let elim_redundant sys =
           | 0 -> if o = Eq then VectMap.add v' (q, wp) m else m
           | 1 -> m
           | _ -> VectMap.add v' (q, wp) m
-        with Not_found -> VectMap.add v' (q, wp) m)
+        with Not_found -> VectMap.add v' (q, wp) m )
       VectMap.empty l
   in
   let to_list m = VectMap.fold (fun _ (_, wp) sys -> wp :: sys) m [] in
@@ -1081,7 +1084,7 @@ let fourier_small (sys : WithProof.t list) =
         | Some wp2 -> (
           match WithProof.cutting_plane wp2 with
           | Some wp2 -> (s, wp2) :: acc
-          | _ -> acc ))
+          | _ -> acc ) )
       acc l
   in
   let rec all_pivots acc l =
@@ -1124,7 +1127,7 @@ let fourier_small = tr_sys "fourier_small" fourier_small
       acc sys'
   in
   List.fold_left exploit_bound [] bounds
- *)
+*)
 
 let rev_concat l =
   let rec conc acc l =
@@ -1156,7 +1159,7 @@ let lia (can_enum : bool) (prfdepth : int) sys =
     List.iter
       (fun ((p, op), _) ->
         Printf.fprintf stdout "(assert (%s %a))\n" (string_of_op op) Vect.pp_smt
-          p)
+          p )
       sys
   end;
   let sys = pre_process sys in

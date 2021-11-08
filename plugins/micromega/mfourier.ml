@@ -142,7 +142,7 @@ let count v =
     (fun (n, p) _ vl ->
       let sg = Q.sign vl in
       assert (sg <> 0);
-      if Int.equal sg 1 then (n, p + 1) else (n + 1, p))
+      if Int.equal sg 1 then (n, p + 1) else (n + 1, p) )
     (0, 0) v
 
 let norm_cstr {coeffs = v; op = o; cst = c} idx =
@@ -172,7 +172,7 @@ let load_system l =
         | Redundant -> vrs
         | Cstr (vect, info) ->
           xadd_cstr vect info sys;
-          Vect.fold (fun s v _ -> ISet.add v s) vrs cstr.coeffs)
+          Vect.fold (fun s v _ -> ISet.add v s) vrs cstr.coeffs )
       ISet.empty li
   in
   {sys; vars}
@@ -257,8 +257,8 @@ let project vr sys =
           match normalise_cstr vect info with
           | Redundant -> ()
           | Contradiction -> raise (SystemContradiction info.prf)
-          | Cstr (vect, info) -> xadd_cstr vect info new_sys)
-        r)
+          | Cstr (vect, info) -> xadd_cstr vect info new_sys )
+        r )
     l;
   {sys = new_sys; vars = ISet.remove vr sys.vars}
 
@@ -296,7 +296,7 @@ let elim_var_using_eq vr vect cst prf sys =
       match normalise_cstr vect' info' with
       | Redundant -> ()
       | Contradiction -> raise (SystemContradiction info'.prf)
-      | Cstr (vect, info') -> xadd_cstr vect info' new_sys)
+      | Cstr (vect, info') -> xadd_cstr vect info' new_sys )
     sys.sys;
   {sys = new_sys; vars = ISet.remove vr sys.vars}
 
@@ -316,7 +316,7 @@ let eval_vect map vect =
       try
         let val_v = IMap.find v map in
         (sum +/ (val_v */ vl), rst)
-      with Not_found -> (sum, Vect.set v vl rst))
+      with Not_found -> (sum, Vect.set v vl rst) )
     (Q.zero, Vect.null) vect
 
 (** [restrict_bound n sum itv] returns the interval of [x]
@@ -344,7 +344,7 @@ let bound_of_variable map v sys =
           Vect.pp vect (Q.to_string sum) Vect.pp rst;
         Printf.fprintf stdout "current interval:  %a\n" Itv.pp !iref.bound;
         failwith "bound_of_variable: impossible"
-      | Some itv -> itv)
+      | Some itv -> itv )
     sys (None, None)
 
 (** [pick_small_value bnd] picks a value being closed to zero within the interval *)
@@ -449,8 +449,8 @@ module EstimateElimVar = struct
         (ISet.fold
            (fun v (eval, s) ->
              let ts, vl = abstract_partition v s in
-             ((v, vl) :: eval, ts))
-           v ([], sl))
+             ((v, vl) :: eval, ts) )
+           v ([], sl) )
     in
     List.sort (fun x y -> compare_float (snd x) (snd y)) evals
 end
@@ -489,7 +489,7 @@ module EstimateElimEq = struct
         (fun nb_eq (vect, info) ->
           if fst (unroll_until v vect) then
             if itv_point info.bound then nb_eq + 1 else nb_eq
-          else nb_eq)
+          else nb_eq )
         0 sys_l
     in
     let rec find_var vect =
@@ -522,7 +522,7 @@ module EstimateElimEq = struct
               (* This an equation *)
               (vect, a, info.prf, info.neg + info.pos) :: l
             else l
-          | _ -> l)
+          | _ -> l )
         [] sys_l
     in
     let rec estimate_cost v ct sysl acc tlsys =
@@ -555,7 +555,7 @@ module EstimateElimEq = struct
       let all_costs =
         List.fold_left
           (fun all_costs (vect, const, prf, ln) ->
-            cost_eq vect const prf ln all_costs)
+            cost_eq vect const prf ln all_costs )
           [] equalities
       in
       (*      pp_list (fun o ((v,eq,_,_),cst) -> Printf.fprintf o "((%i,%a),%i)\n" v pp_vect eq cst) stdout all_costs ; *)
@@ -613,7 +613,7 @@ module Proof = struct
       (fun acc e1 ->
         List.fold_left
           (fun acc e2 -> match f e1 e2 with None -> acc | Some v -> v :: acc)
-          acc l2)
+          acc l2 )
       [] l1
 
   let add_op x y = match (x, y) with Eq, Eq -> Eq | _ -> Ge
@@ -654,7 +654,7 @@ module Proof = struct
           match norm_cstr cstr 0 with
           | Redundant -> Inl acc
           | Contradiction -> Inr (prf, cstr)
-          | Cstr (v, info) -> Inl ((prf, cstr, v, info) :: acc) ))
+          | Cstr (v, info) -> Inl ((prf, cstr, v, info) :: acc) ) )
       (Inl []) l
 
   type oproof = (vector * cstr * Q.t) option
@@ -711,7 +711,7 @@ module Proof = struct
               (fun acc e ->
                 match acc with
                 | Inr _ -> acc (* I have a contradiction *)
-                | Inl (oleft, oright) -> merge_proof oleft e oright)
+                | Inl (oleft, oright) -> merge_proof oleft e oright )
               (Inl (None, None))
               l
           in

@@ -59,7 +59,7 @@ let revert_graph kn post_tac hid =
               ; Simple.intro hid
               ; post_tac hid ]
         else tclIDTAC
-      | _ -> tclIDTAC)
+      | _ -> tclIDTAC )
 
 (*
    [functional_inversion hid fconst f_correct ] is the functional version of [inversion]
@@ -108,8 +108,8 @@ let functional_inversion kn hid fconst f_correct =
                     (fun id -> not (Id.Set.mem id old_ids))
                     (pf_ids_of_hyps gl)
                 in
-                tclMAP (revert_graph kn pre_tac) (hid :: new_ids)) ]
-      | _ -> tclFAIL 1 Pp.(mt ()))
+                tclMAP (revert_graph kn pre_tac) (hid :: new_ids) ) ]
+      | _ -> tclFAIL 1 Pp.(mt ()) )
 
 let invfun qhyp f =
   let f =
@@ -167,7 +167,7 @@ let invfun qhyp f =
                   CErrors.user_err
                     (Pp.str
                        "Cannot use equivalence with graph for any side of the \
-                        equality")
+                        equality" )
                 else
                   CErrors.user_err
                     Pp.(

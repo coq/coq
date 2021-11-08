@@ -244,7 +244,7 @@ let string_of_poly (p : poly) =
       List.fold_left
         (fun a (m, c) ->
           if c </ Q.zero then a ^ " - " ^ string_of_cmonomial (Q.neg c, m)
-          else a ^ " + " ^ string_of_cmonomial (c, m))
+          else a ^ " + " ^ string_of_cmonomial (c, m) )
         "" cms
     in
     let s1 = String.sub s 0 3 and s2 = String.sub s 3 (String.length s - 3) in
@@ -306,7 +306,7 @@ let sdpa_of_matrix k (m : matrix) =
   List.fold_right
     (fun ((i, j), c) a ->
       pfx ^ string_of_int i ^ " " ^ string_of_int j ^ " " ^ decimalize 20 c
-      ^ "\n" ^ a)
+      ^ "\n" ^ a )
     mss ""
 
 (* ------------------------------------------------------------------------- *)
@@ -617,7 +617,7 @@ let newton_polytope pol =
     (fun m ->
       List.fold_right2
         (fun v i a -> if i = 0 then a else (v |-> i) a)
-        vars m monomial_1)
+        vars m monomial_1 )
     (List.rev all')
 
 (* ------------------------------------------------------------------------- *)
@@ -649,7 +649,8 @@ let diag m =
                     (i + 1, n)
                     (fun k ->
                       (j, k)
-                      |--> element m (j, k) -/ (element v j */ element v' k)))
+                      |--> element m (j, k) -/ (element v j */ element v' k) )
+                  )
                 undefined )
           in
           (a11, v') :: diagonalize (i + 1) m'
@@ -694,7 +695,7 @@ let rec enumerate_monomials d vars =
           let oths = enumerate_monomials (d - k) (List.tl vars) in
           List.map
             (fun ks -> if k = 0 then ks else (List.hd vars |-> k) ks)
-            oths)
+            oths )
         (0 -- d)
     in
     end_itlist ( @ ) alts
@@ -731,8 +732,8 @@ let epoly_pmul p q acc =
         (fun b m2 e ->
           let m = monomial_mul m1 m2 in
           let es = tryapplyd b m undefined in
-          (m |-> equation_add (equation_cmul c e) es) b)
-        a q)
+          (m |-> equation_add (equation_cmul c e) es) b )
+        a q )
     acc p
 
 (* ------------------------------------------------------------------------- *)
@@ -755,7 +756,7 @@ let sdpa_of_blockdiagonal k m =
   List.fold_right
     (fun ((b, i, j), c) a ->
       pfx ^ string_of_int b ^ " " ^ string_of_int i ^ " " ^ string_of_int j
-      ^ " " ^ decimalize 20 c ^ "\n" ^ a)
+      ^ " " ^ decimalize 20 c ^ "\n" ^ a )
     entss ""
 
 (* ------------------------------------------------------------------------- *)
@@ -828,7 +829,7 @@ let blocks blocksizes bm =
           (fun a (b, i, j) c -> if b = b0 then ((i, j) |-> c) a else a)
           undefined bm
       in
-      (((bs, bs), m) : matrix))
+      (((bs, bs), m) : matrix) )
     (List.combine blocksizes (1 -- List.length blocksizes))
 
 (* ------------------------------------------------------------------------- *)
@@ -871,8 +872,8 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
               else
                 let c = if n1 = n2 then Q.one else Q.two in
                 let e = tryapplyd a m undefined in
-                (m |-> equation_add ((k, n1, n2) |=> c) e) a)
-            nons)
+                (m |-> equation_add ((k, n1, n2) |=> c) e) a )
+            nons )
         nons undefined )
   in
   let sqmonlist, sqs =
@@ -888,7 +889,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
       (List.fold_right2
          (fun (p, c) s a -> epoly_pmul p s a)
          monoid sqs
-         (epoly_of_poly (poly_neg pol)))
+         (epoly_of_poly (poly_neg pol)) )
   in
   let eqns = foldl (fun a m e -> e :: a) [] bigsum in
   let pvs, assig = eliminate_all_equations (0, 0, 0) eqns in
@@ -900,7 +901,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
         if b < 0 then m
         else
           let c = tryapplyd ass v Q.zero in
-          if c =/ Q.zero then m else ((b, j, i) |-> c) (((b, i, j) |-> c) m))
+          if c =/ Q.zero then m else ((b, j, i) |-> c) (((b, i, j) |-> c) m) )
       undefined allassig
   in
   let diagents =
@@ -927,7 +928,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
       iter
         (1, dim vec)
         (fun i a ->
-          bmatrix_add (bmatrix_cmul (element vec i) (List.nth mats i)) a)
+          bmatrix_add (bmatrix_cmul (element vec i) (List.nth mats i)) a )
         (bmatrix_neg (List.nth mats 0))
     in
     let allmats = blocks blocksizes blockmat in
@@ -979,7 +980,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
       msq
       (List.fold_right2
          (fun p q -> poly_add (poly_mul p q))
-         cfs eqs (poly_neg pol))
+         cfs eqs (poly_neg pol) )
   in
   if not (is_undefined sanity) then raise Sanity
   else (cfs, List.map (fun (a, b) -> (snd a, b)) msq)
@@ -1058,7 +1059,7 @@ let rec allpermutations l =
   else
     List.fold_right
       (fun h acc ->
-        List.map (fun t -> h :: t) (allpermutations (subtract l [h])) @ acc)
+        List.map (fun t -> h :: t) (allpermutations (subtract l [h])) @ acc )
       l []
 
 let changevariables_monomial zoln (m : monomial) =
@@ -1085,7 +1086,7 @@ let sdpa_of_matrix k (m : matrix) =
   List.fold_right
     (fun ((i, j), c) a ->
       pfx ^ string_of_int i ^ " " ^ string_of_int j ^ " " ^ decimalize 20 c
-      ^ "\n" ^ a)
+      ^ "\n" ^ a )
     mss ""
 
 let sdpa_of_problem comment obj mats =
@@ -1136,7 +1137,7 @@ let sumofsquares_general_symmetry tool pol =
       List.filter
         (fun vars' ->
           is_undefined
-            (poly_sub pol (changevariables (List.combine vars vars') pol)))
+            (poly_sub pol (changevariables (List.combine vars vars') pol)) )
         (allpermutations vars)
     in
     let lpns = List.combine lpps (1 -- List.length lpps) in
@@ -1153,9 +1154,9 @@ let sumofsquares_general_symmetry tool pol =
                (fun vars' ->
                  ( ( changevariables_monomial (List.combine vars vars') m1
                    , changevariables_monomial (List.combine vars vars') m2 )
-                 , (n1, n2) ))
-               invariants)
-           lppcs)
+                 , (n1, n2) ) )
+               invariants )
+           lppcs )
     in
     let clppcs_dom = setify (List.map fst clppcs) in
     let clppcs_cls =
@@ -1181,8 +1182,8 @@ let sumofsquares_general_symmetry tool pol =
                if n1 > n2 then f
                else
                  let c = if n1 = n2 then Q.one else Q.two in
-                 (m |-> ((n1, n2) |-> c) (tryapplyd f m undefined)) f))
-         (foldl (fun a m c -> (m |-> ((0, 0) |=> c)) a) undefined pol))
+                 (m |-> ((n1, n2) |-> c) (tryapplyd f m undefined)) f ) )
+         (foldl (fun a m c -> (m |-> ((0, 0) |=> c)) a) undefined pol) )
     @ sym_eqs
   in
   let pvs, assig = eliminate_all_equations (0, 0) eqs in
@@ -1196,7 +1197,7 @@ let sumofsquares_general_symmetry tool pol =
     , foldl
         (fun m (i, j) ass ->
           let c = tryapplyd ass v Q.zero in
-          if c =/ Q.zero then m else ((j, i) |-> c) (((i, j) |-> c) m))
+          if c =/ Q.zero then m else ((j, i) |-> c) (((i, j) |-> c) m) )
         undefined allassig )
   in
   let mats = List.map mk_matrix qvars
@@ -1214,8 +1215,7 @@ let sumofsquares_general_symmetry tool pol =
     let mat =
       iter
         (1, dim vec)
-        (fun i a ->
-          matrix_add (matrix_cmul (element vec i) (List.nth mats i)) a)
+        (fun i a -> matrix_add (matrix_cmul (element vec i) (List.nth mats i)) a)
         (matrix_neg (List.nth mats 0))
     in
     deration (diag mat)
