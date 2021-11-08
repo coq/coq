@@ -134,9 +134,6 @@ ide/coqide/index_urls.txt
 # coqide generated files (when testing)
 *.crashcoqide
 
-/user-contrib/*
-!/user-contrib/Ltac2
-
 .*.sw*
 .#*
 
