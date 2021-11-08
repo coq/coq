@@ -180,14 +180,7 @@ module New = struct
 
   let pf_nf_evar gl t = nf_evar (project gl) t
 
-  (* deprecated *)
-  let pf_unsafe_type_of gl t =
-    pf_apply (unsafe_type_of[@warning "-3"]) gl t
-
   let pr_gls gl =
     hov 0 (pr_evar_map (Some 2) (pf_env gl) (project gl) ++ fnl () ++ db_pr_goal (project gl) (Proofview.Goal.goal gl))
 
 end
-
-(* deprecated *)
-let pf_unsafe_type_of            = pf_reduce unsafe_type_of[@warning "-3"]

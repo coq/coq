@@ -486,12 +486,6 @@ let check env sigma c t =
   let sigma, j = execute env sigma c in
   check_actual_type env sigma j t
 
-(* Type of a constr *)
-
-let unsafe_type_of env sigma c =
-  let sigma, j = execute env sigma c in
-  j.uj_type
-
 (* Sort of a type *)
 
 let sort_of env sigma c =
