@@ -545,14 +545,20 @@ test-suite:base:dev:
 
 test-suite:edge+coverage:
   stage: build
+  extends: .auto-use-tags
   script:
     - ulimit -s 16384
+    - ./configure -prefix $(pwd)/_build/install/coverage -native-compiler no
     - make dunestrap
     - dune build --instrument-with bisect_ppx --workspace dev/dune-workspace.bisect @runtest
     - find _build/coverage/ -name '*.coverage' -size 0 -exec rm {} \; # workaround truncated coverage file bug
     - bisect-ppx-report html --source-path=_build/coverage --coverage-path=_build/coverage -o _build/coq-coverage --title="Coq's Test suite"
-    # TODO: deploy
-    # bisect-ppx-report send-to Codecov
+    - bisect-ppx-report coveralls coverage.json --source-path=_build/coverage --coverage-path=_build/coverage --git --service-name="github" --service-pull-request="${CI_COMMIT_BRANCH#pr-}" --service-job-id="$CI_JOB_ID"
+    - wget -q https://uploader.codecov.io/v0.1.0_4653/linux/codecov
+    - chmod +x codecov
+    - ./codecov -t ${CODECOV_TOKEN} -f coverage.json
+    # Bah bisect-ppx doesn't support gitlab CI
+    # - bisect-ppx-report send-to --source-path=_build/coverage --coverage-path=_build/coverage Codecov
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
