@@ -504,9 +504,6 @@ let fresh_id_in_env avoid id env =
   let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid in
   next_ident_away_in_goal (Global.env ()) id avoid
 
-let fresh_id avoid id gl =
-  fresh_id_in_env avoid id (Tacmach.Old.pf_env gl)
-
 let new_fresh_id avoid id gl =
   fresh_id_in_env avoid id (Proofview.Goal.env gl)
 
@@ -1078,14 +1075,14 @@ let unfold_constr = function
    iteration of [find_name] above. As [default_id] checks the sort of
    the type to build hyp names, we maintain an environment to be able
    to type dependent hyps. *)
-let find_intro_names ctxt gl =
+let find_intro_names env0 sigma ctxt =
   let _, res, _ = List.fold_right
     (fun decl acc ->
       let env,idl,avoid = acc in
-      let name = fresh_id avoid (default_id env gl.sigma decl) gl in
+      let name = fresh_id_in_env avoid (default_id env sigma decl) env0 in
       let newenv = push_rel decl env in
       (newenv, name :: idl, Id.Set.add name avoid))
-    ctxt (Tacmach.Old.pf_env gl, [], Id.Set.empty) in
+    ctxt (env0, [], Id.Set.empty) in
   List.rev res
 
 let build_intro_tac id dest tac = match dest with
