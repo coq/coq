@@ -402,14 +402,15 @@ let safe_meta_value sigma ev =
 
 (* Beta Reduction tools *)
 
-let apply_subst recfun env sigma cst_l t stack =
+let apply_subst env sigma cst_l t stack =
   let rec aux env cst_l t stack =
     match (Stack.decomp stack, EConstr.kind sigma t) with
     | Some (h,stacktl), Lambda (_,_,c) ->
        let cst_l' = Cst_stack.add_param h cst_l in
        aux (h::env) cst_l' c stacktl
-    | _ -> recfun sigma cst_l (substl env t, stack)
-  in aux env cst_l t stack
+    | _ -> (cst_l, (substl env t, stack))
+  in
+  aux env cst_l t stack
 
 (* Iota reduction tools *)
 
@@ -470,11 +471,9 @@ let contract_cofix env sigma ?reference (bodynum,(names,types,bodies as typedbod
 let reduce_and_refold_cofix recfun env sigma cst_l cofix sk =
   let raw_answer =
     contract_cofix env sigma ?reference:(Cst_stack.reference sigma cst_l) cofix in
-  apply_subst
-    (fun sigma x (t,sk') ->
-      let t' = Cst_stack.best_replace sigma (mkCoFix cofix) cst_l t in
-      recfun x (t',sk'))
-    [] sigma Cst_stack.empty raw_answer sk
+  let (x, (t, sk')) = apply_subst [] sigma Cst_stack.empty raw_answer sk in
+  let t' = Cst_stack.best_replace sigma (mkCoFix cofix) cst_l t in
+  recfun x (t', sk')
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
@@ -499,11 +498,9 @@ let contract_fix env sigma ?reference ((recindices,bodynum),(names,types,bodies 
 let reduce_and_refold_fix recfun env sigma cst_l fix sk =
   let raw_answer =
     contract_fix env sigma ?reference:(Cst_stack.reference sigma cst_l) fix in
-  apply_subst
-    (fun sigma x (t,sk') ->
-      let t' = Cst_stack.best_replace sigma (mkFix fix) cst_l t in
-      recfun x (t',sk'))
-    [] sigma Cst_stack.empty raw_answer sk
+  let (x, (t, sk')) = apply_subst [] sigma Cst_stack.empty raw_answer sk in
+  let t' = Cst_stack.best_replace sigma (mkFix fix) cst_l t in
+  recfun x (t', sk')
 
 module CredNative = Reductionops.CredNative
 
@@ -675,7 +672,8 @@ let whd_state_gen ?csts flags env sigma =
            end)
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
-      apply_subst (fun _ -> whrec) [b] sigma cst_l c stack
+      let (cst_l, p) = apply_subst [b] sigma cst_l c stack in
+      whrec cst_l p
     | Cast (c,_,_) -> whrec cst_l (c, stack)
     | App (f,cl)  ->
       whrec
@@ -684,7 +682,8 @@ let whd_state_gen ?csts flags env sigma =
     | Lambda (na,t,c) ->
       (match Stack.decomp stack with
       | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
-        apply_subst (fun _ -> whrec) [] sigma cst_l x stack
+        let (cst_l, p) = apply_subst [] sigma cst_l x stack in
+        whrec cst_l p
       | _ -> fold ())
 
     | Case (ci,u,pms,p,iv,d,lf) ->
