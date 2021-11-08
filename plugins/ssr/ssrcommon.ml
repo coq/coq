@@ -270,9 +270,9 @@ let interp_hyp ist env sigma (SsrHyp (loc, id)) =
   if not_section_id id' then SsrHyp (loc, id') else
   hyp_err ?loc "Can't clear section hypothesis " id'
 
-let interp_hyps ist gl ghyps =
-  let hyps = List.map (interp_hyp ist (pf_env gl) (project gl)) ghyps in
-  check_hyps_uniq [] hyps; Tacmach.Old.project gl, hyps
+let interp_hyps ist env sigma ghyps =
+  let hyps = List.map (interp_hyp ist env sigma) ghyps in
+  check_hyps_uniq [] hyps; hyps
 
 (* Old terms *)
 let mk_term k c = k, (mkRHole, Some c)

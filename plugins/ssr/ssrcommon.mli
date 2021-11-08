@@ -135,7 +135,7 @@ val interp_term :
     ssrterm -> evar_map * EConstr.t
 
 val interp_hyp : ist -> env -> evar_map -> ssrhyp -> ssrhyp
-val interp_hyps : ist -> goal sigma -> ssrhyps -> evar_map * ssrhyps
+val interp_hyps : ist -> env -> evar_map -> ssrhyps -> ssrhyps
 
 val interp_refine :
   Environ.env -> Evd.evar_map -> Tacinterp.interp_sign -> concl:EConstr.constr ->
