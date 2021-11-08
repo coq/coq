@@ -8,8 +8,367 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
+open Constr
+open EConstr
+open EConstr.Vars
+open Names
 open Tacexpr
+open CErrors
+open Util
+open Termops
+open Namegen
+open Tactypes
+open Tactics
+open Proofview.Notations
+
+let mytclWithHoles tac with_evars c =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Tacmach.New.pf_env gl in
+    let sigma = Tacmach.New.project gl in
+    let sigma',c = Tactics.force_destruction_arg with_evars env sigma c in
+    Tacticals.New.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma'
+  end
+
+(**********************************************************************)
+(* replace, discriminate, injection, simplify_eq                      *)
+(* cutrewrite, dependent rewrite                                      *)
+
+let with_delayed_uconstr ist c tac =
+  let flags = {
+    Pretyping.use_typeclasses = Pretyping.NoUseTC;
+    solve_unification_constraints = true;
+    fail_evar = false;
+    expand_evars = true;
+    program_mode = false;
+    polymorphic = false;
+ } in
+  let c = Tacinterp.type_uconstr ~flags ist c in
+  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+
+let replace_in_clause_maybe_by ist c1 c2 cl tac =
+  with_delayed_uconstr ist c1
+  (fun c1 -> Equality.replace_in_clause_maybe_by c1 c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
+
+let replace_term ist dir_opt c cl =
+  with_delayed_uconstr ist c (fun c -> Equality.replace_term dir_opt c cl)
+
+let elimOnConstrWithHoles tac with_evars c =
+  Tacticals.New.tclDELAYEDWITHHOLES with_evars c
+    (fun c -> tac with_evars (Some (None,ElimOnConstr c)))
+
+let discr_main c = elimOnConstrWithHoles Equality.discr_tac false c
+
+let discrHyp id =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  discr_main (fun env sigma -> (sigma, (EConstr.mkVar id, NoBindings)))
+
+let injection_main with_evars c =
+ elimOnConstrWithHoles (Equality.injClause None None) with_evars c
+
+let injHyp id =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  injection_main false (fun env sigma -> (sigma, (EConstr.mkVar id, NoBindings)))
+
+let constr_flags () = {
+  Pretyping.use_typeclasses = Pretyping.UseTC;
+  Pretyping.solve_unification_constraints = Proof.use_unification_heuristics ();
+  Pretyping.fail_evar = false;
+  Pretyping.expand_evars = true;
+  Pretyping.program_mode = false;
+  Pretyping.polymorphic = false;
+}
+
+let refine_tac ist ~simple ~with_classes c =
+  let with_classes = if with_classes then Pretyping.UseTC else Pretyping.NoUseTC in
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    let env = Proofview.Goal.env gl in
+    let flags =
+      { (constr_flags ()) with Pretyping.use_typeclasses = with_classes } in
+    let expected_type = Pretyping.OfType concl in
+    let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
+    let update = begin fun sigma ->
+      c env sigma
+    end in
+    let refine = Refine.refine ~typecheck:false update in
+    if simple then refine
+    else refine <*>
+           Tactics.New.reduce_after_refine <*>
+           Proofview.shelve_unifiable
+  end
+
+(**********************************************************************)
+(* A tactic that considers a given occurrence of [c] in [t] and       *)
+(* abstract the minimal set of all the occurrences of [c] so that the *)
+(* abstraction [fun x -> t[x/c]] is well-typed                        *)
+(*                                                                    *)
+(* Contributed by Chung-Kil Hur (Winter 2009)                         *)
+(**********************************************************************)
+
+let subst_var_with_hole occ tid t =
+  let open Glob_term in
+  let open Glob_ops in
+  let occref = if occ > 0 then ref occ else Locusops.error_invalid_occurrence [occ] in
+  let locref = ref 0 in
+  let rec substrec x = match DAst.get x with
+    | GVar id ->
+        if Id.equal id tid
+        then
+          (decr occref;
+           if Int.equal !occref 0 then x
+           else
+             (incr locref;
+              DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+              GHole (Evar_kinds.QuestionMark {
+                  Evar_kinds.qm_obligation=Evar_kinds.Define true;
+                  Evar_kinds.qm_name=Anonymous;
+                  Evar_kinds.qm_record_field=None;
+             }, IntroAnonymous, None)))
+        else x
+    | _ -> map_glob_constr_left_to_right substrec x in
+  let t' = substrec t
+  in
+  if !occref > 0 then Locusops.error_invalid_occurrence [occ] else t'
+
+let subst_hole_with_term occ tc t =
+  let open Glob_term in
+  let open Glob_ops in
+  let locref = ref 0 in
+  let occref = ref occ in
+  let rec substrec c = match DAst.get c with
+    | GHole (Evar_kinds.QuestionMark {
+                Evar_kinds.qm_obligation=Evar_kinds.Define true;
+                Evar_kinds.qm_name=Anonymous;
+                Evar_kinds.qm_record_field=None;
+           }, IntroAnonymous, s) ->
+        decr occref;
+        if Int.equal !occref 0 then tc
+        else
+          (incr locref;
+           DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+           GHole (Evar_kinds.QuestionMark {
+               Evar_kinds.qm_obligation=Evar_kinds.Define true;
+               Evar_kinds.qm_name=Anonymous;
+               Evar_kinds.qm_record_field=None;
+          },IntroAnonymous,s))
+    | _ -> map_glob_constr_left_to_right substrec c
+  in
+  substrec t
+
+let hResolve id c occ t =
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
+  let concl = Proofview.Goal.concl gl in
+  let env_ids = Termops.vars_of_env env in
+  let c_raw = Detyping.detype Detyping.Now true env_ids env sigma c in
+  let t_raw = Detyping.detype Detyping.Now true env_ids env sigma t in
+  let rec resolve_hole t_hole =
+    try
+      Pretyping.understand env sigma t_hole
+    with
+      | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
+          let (e, info) = Exninfo.capture e in
+          let loc_begin = Option.cata (fun l -> fst (Loc.unloc l)) 0 (Loc.get_loc info) in
+          resolve_hole (subst_hole_with_term loc_begin c_raw t_hole)
+  in
+  let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
+  let sigma = Evd.merge_universe_context sigma ctx in
+  let t_constr_type = Retyping.get_type_of env sigma t_constr in
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (change_concl (mkLetIn (Context.make_annot Name.Anonymous Sorts.Relevant,t_constr,t_constr_type,concl)))
+  end
+
+let hResolve_auto id c t =
+  let rec resolve_auto n =
+    try
+      hResolve id c n t
+    with
+    | UserError _ as e -> raise e
+    | e when CErrors.noncritical e -> resolve_auto (n+1)
+  in
+  resolve_auto 1
+
+(**********************************************************************)
+
+(**********************************************************************)
+(* A tactic that reduces one match t with ... by doing destruct t.    *)
+(* if t is not a variable, the tactic does                            *)
+(* case_eq t;intros ... heq;rewrite heq in *|-. (but heq itself is    *)
+(* preserved).                                                        *)
+(* Contributed by Julien Forest and Pierre Courtieu (july 2010)       *)
+(**********************************************************************)
+
+let induction_arg_of_quantified_hyp = function
+  | AnonHyp n -> None,ElimOnAnonHyp n
+  | NamedHyp id -> None,ElimOnIdent id
+
+exception Found of unit Proofview.tactic
+
+let rewrite_except h =
+  Proofview.Goal.enter begin fun gl ->
+  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else
+      Tacticals.New.tclTRY (Equality.general_rewrite ~where:(Some id) ~l2r:true Locus.AllOccurrences ~freeze:true ~dep:true ~with_evars:false (mkVar h, NoBindings)))
+    hyps
+  end
+
+
+let refl_equal () = Coqlib.lib_ref "core.eq.type"
+
+(* This is simply an implementation of the case_eq tactic.  this code
+  should be replaced by a call to the tactic but I don't know how to
+  call it before it is defined. *)
+let  mkCaseEq a  : unit Proofview.tactic =
+  Proofview.Goal.enter begin fun gl ->
+    let type_of_a = Tacmach.New.pf_get_type_of gl a in
+    Tacticals.New.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
+    Tacticals.New.tclTHENLIST
+         [Tactics.generalize [(mkApp(req, [| type_of_a; a|]))];
+          Proofview.Goal.enter begin fun gl ->
+            let concl = Proofview.Goal.concl gl in
+            let env = Proofview.Goal.env gl in
+            (* FIXME: this looks really wrong. Does anybody really use
+               this tactic? *)
+            let (_, c) = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env (Evd.from_env env) concl in
+            change_concl c
+          end;
+          simplest_case a]
+  end
+
+
+let case_eq_intros_rewrite x =
+  Proofview.Goal.enter begin fun gl ->
+  let n = nb_prod (Tacmach.New.project gl) (Proofview.Goal.concl gl) in
+  (* Pp.msgnl (Printer.pr_lconstr x); *)
+  Tacticals.New.tclTHENLIST [
+      mkCaseEq x;
+    Proofview.Goal.enter begin fun gl ->
+      let concl = Proofview.Goal.concl gl in
+      let hyps = Tacmach.New.pf_ids_set_of_hyps gl in
+      let n' = nb_prod (Tacmach.New.project gl) concl in
+      let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
+      Tacticals.New.tclTHENLIST [
+                    Tacticals.New.tclDO (n'-n-1) intro;
+                    introduction h;
+                    rewrite_except h]
+    end
+  ]
+  end
+
+let rec find_a_destructable_match sigma t =
+  let cl = induction_arg_of_quantified_hyp (NamedHyp (CAst.make @@ Id.of_string "x")) in
+  let cl = [cl, (None, None), None], None in
+  let dest = CAst.make @@ TacAtom (TacInductionDestruct(false, false, cl)) in
+  match EConstr.kind sigma t with
+    | Case (_,_,_,_,_,x,_) when closed0 sigma x ->
+        if isVar sigma x then
+          (* TODO check there is no rel n. *)
+          raise (Found (Tacinterp.eval_tactic dest))
+        else
+          (* let _ = Pp.msgnl (Printer.pr_lconstr x)  in *)
+          raise (Found (case_eq_intros_rewrite x))
+    | _ -> EConstr.iter sigma (fun c -> find_a_destructable_match sigma c) t
+
+
+let destauto0 t =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  try find_a_destructable_match sigma t;
+    Tacticals.New.tclZEROMSG (Pp.str "No destructable match found")
+  with Found tac -> tac
+
+let destauto =
+  Proofview.Goal.enter begin fun gl -> destauto0 (Proofview.Goal.concl gl) end
+
+let destauto_in id =
+  Proofview.Goal.enter begin fun gl ->
+  let ctype = Tacmach.New.pf_get_type_of gl (mkVar id) in
+(*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
+(*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
+  destauto0 ctype
+  end
+
+(** Term introspection *)
+
+let is_evar x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | Evar _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "Not an evar")
+
+let has_evar x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  if Evarutil.has_undefined_evars sigma x
+  then Proofview.tclUNIT ()
+  else Tacticals.New.tclFAIL 0 (Pp.str "No evars")
+
+let is_var x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | Var _ ->  Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "Not a variable or hypothesis")
+
+let is_fix x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | Fix _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition")
+
+let is_cofix x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | CoFix _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a cofix definition")
+
+let is_ind x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | Ind _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not an (co)inductive datatype")
+
+let is_constructor x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | Construct _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constructor")
+
+let is_proj x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | Proj _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a primitive projection")
+
+let is_const x =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
+    | Const _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant")
+
+let unshelve ist t =
+  Proofview.with_shelf (Tacinterp.tactic_of_value ist t) >>= fun (gls, ()) ->
+  let gls = List.map Proofview.with_empty_state gls in
+  Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
+  Proofview.Unsafe.tclSETGOALS (gls @ ogls)
+
+(** tactic analogous to "OPTIMIZE HEAP" *)
+
+let tclOPTIMIZE_HEAP =
+  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> Gc.compact ()))
+
+let onSomeWithHoles tac = function
+  | None -> tac None
+  | Some c -> Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> tac (Some c))
+
+let decompose l c =
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Tacmach.New.project gl in
+    let to_ind c =
+      if isInd sigma c then fst (destInd sigma c)
+      else user_err Pp.(str "not an inductive type")
+    in
+    let l = List.map to_ind l in
+    Elim.h_decompose l c
+  end
 
 (** ProofGeneral specific command *)
 
@@ -53,3 +412,17 @@ let infoH ~pstate (tac : raw_tactic_expr) : unit =
     Proofview.tclUNIT ()
   in
   ignore (Declare.Proof.by tac pstate)
+
+let declare_equivalent_keys c c' =
+  let get_key c =
+    let env = Global.env () in
+    let evd = Evd.from_env env in
+    let (evd, c) = Constrintern.interp_open_constr env evd c in
+    let kind c = EConstr.kind evd c in
+    Keys.constr_key kind c
+  in
+  let k1 = get_key c in
+  let k2 = get_key c' in
+    match k1, k2 with
+    | Some k1, Some k2 -> Keys.declare_equiv_keys k1 k2
+    | _ -> ()
