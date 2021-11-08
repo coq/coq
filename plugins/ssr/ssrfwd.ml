@@ -26,16 +26,18 @@ module RelDecl = Context.Rel.Declaration
 (** 8. Forward chaining tactics (pose, set, have, suffice, wlog) *)
 (** Defined identifier *)
 
-let posetac id cl = Proofview.V82.of_tactic (Tactics.pose_tac (Name id) cl)
-
 let ssrposetac (id, (_, t)) =
-  Proofview.V82.tactic begin fun gl ->
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let ist, t =
     match t.Ssrast.interp_env with
     | Some ist -> ist, Ssrcommon.ssrterm_of_ast_closure_term t
     | None -> assert false in
-  let sigma, t, ucst, _ = pf_abs_ssrterm ist gl t in
-  posetac id t (pf_merge_uc ucst gl)
+  let sigma, t, _ = abs_ssrterm ist env sigma t in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tactics.pose_tac (Name id) t
   end
 
 let ssrsettac id ((_, (pat, pty)), (_, occ)) =
@@ -152,7 +154,10 @@ let havetac ist
  Tacticals.tclTHENFIRST (Proofview.V82.of_tactic itac_mkabs) (fun gl ->
   let mkt t = mk_term NoFlag t in
   let mkl t = (NoFlag, (t, None)) in
-  let interp gl rtc t = pf_abs_ssrterm ~resolve_typeclasses:rtc ist gl t in
+  let interp gl rtc t =
+    let sigma, t, n = abs_ssrterm ~resolve_typeclasses:rtc ist (pf_env gl) (project gl) t in
+    re_sig (sig_it gl) sigma, t, n
+  in
   let interp_ty gl rtc t =
     let a,b,_,u = pf_interp_ty ~resolve_typeclasses:rtc (pf_env gl) (project gl) ist t in a,b,u in
   let open CAst in
@@ -174,8 +179,7 @@ let havetac ist
      errorstrm (str"Suff have does not accept a proof term")
    | FwdHave, false, true ->
      let cty = combineCG cty hole (mkCArrow ?loc) mkRArrow in
-     let _,t,uc,_ = interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
-     let gl = pf_merge_uc uc gl in
+     let gl, t, _ = interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
      let gl, ty = pfe_type_of gl t in
      let ctx, _ = EConstr.decompose_prod_n_assum (project gl) 1 ty in
      let assert_is_conv gl =
@@ -188,18 +192,18 @@ let havetac ist
        | IOpAbstractVars ids -> ids
        | _ -> assert false) skols) in
      let skols_args =
-       List.map (fun id -> Ssripats.Internal.examine_abstract (EConstr.mkVar id) gl) skols in
+       List.map (fun id -> snd @@ (* FIXME: evar leak *)
+         Ssripats.Internal.examine_abstract (pf_env gl) (project gl) (EConstr.mkVar id)) skols in
      let gl = List.fold_right unlock_abs skols_args gl in
-     let sigma, t, uc, n_evars =
+     let gl, t, n_evars =
        interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
      if skols <> [] && n_evars <> 0 then
        CErrors.user_err (Pp.strbrk @@ "Automatic generalization of unresolved implicit "^
                      "arguments together with abstract variables is "^
                      "not supported");
-     let gl = re_sig (sig_it gl) (Evd.merge_universe_context sigma uc) in
      let gs =
        List.map (fun (_,a) ->
-         Ssripats.Internal.pf_find_abstract_proof false gl (EConstr.Unsafe.to_constr a.(1))) skols_args in
+         Ssripats.Internal.find_abstract_proof (pf_env gl) (project gl) false a.(1)) skols_args in
      let tacopen_skols = Proofview.V82.tactic (fun gl -> re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma) in
      let gl, ty = pf_e_type_of gl t in
      gl, ty, Tactics.apply t, id,
@@ -316,6 +320,8 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
 
 (** The "suffice" tactic *)
 
+open Proofview.Notations
+
 let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   let clr = Option.default [] clr in
   let pats = tclCompileIPats pats in
@@ -335,13 +341,12 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
     end
   in
   let ctac =
-    Proofview.V82.tactic begin fun gl ->
-    let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in let gl = pf_merge_uc uc gl in
-    Proofview.V82.of_tactic (basesufftac ty) gl
+    let open Tacmach.New in
+    Proofview.Goal.enter begin fun gl ->
+    let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in
+    merge_uc uc <*> basesufftac ty
   end in
   Tacticals.New.tclTHENS ctac [htac; Tacticals.New.tclTHEN (cleartac clr) (introstac (binders@simpl))]
-
-open Proofview.Notations
 
 let is_app_evar sigma t =
   match EConstr.kind sigma t with

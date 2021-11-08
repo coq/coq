@@ -43,84 +43,89 @@ let interp_agen ist gl ((goclr, _), (k, gc as c)) (clr, rcs) =
 
 let pf_pr_glob_constr gl = pr_glob_constr_env (pf_env gl) (project gl)
 
-let interp_nbargs ist gl rc =
+let interp_nbargs ist env sigma rc =
   try
     let rc6 = mkRApp rc (mkRHoles 6) in
-    let sigma, t = interp_open_constr (pf_env gl) (project gl) ist (rc6, None) in
-    let si = sig_it gl in
-    let gl = re_sig si sigma in
-    6 + Ssrcommon.nbargs_open_constr (pf_env gl) t
+    let sigma, t = interp_open_constr env sigma ist (rc6, None) in
+    6 + Ssrcommon.nbargs_open_constr env t
   with _ -> 5
 
-let interp_view_nbimps ist gl rc =
+let interp_view_nbimps ist env sigma rc =
   try
-    let sigma, t = interp_open_constr (pf_env gl) (project gl) ist (rc, None) in
-    let si = sig_it gl in
-    let gl = re_sig si sigma in
-    let pl, c = splay_open_constr (pf_env gl) t in
-    if Ssrcommon.isAppInd (pf_env gl) (project gl) c then List.length pl else (-(List.length pl))
+    let sigma, t = interp_open_constr env sigma ist (rc, None) in
+    let pl, c = splay_open_constr env t in
+    if Ssrcommon.isAppInd env sigma c then List.length pl else (-(List.length pl))
   with _ -> 0
 
 let interp_agens ist gl gagens =
   match List.fold_right (interp_agen ist gl) gagens ([], []) with
   | clr, rlemma :: args ->
-    let n = interp_nbargs ist gl rlemma - List.length args in
+    let n = interp_nbargs ist (pf_env gl) (project gl) rlemma - List.length args in
     let rec loop i =
       if i > n then
          errorstrm Pp.(str "Cannot apply lemma " ++ pf_pr_glob_constr gl rlemma)
       else
-        try interp_refine ist gl (mkRApp rlemma (mkRHoles i @ args))
+        try interp_refine (pf_env gl) (project gl) ist ~concl:(pf_concl gl) (mkRApp rlemma (mkRHoles i @ args))
         with _ -> loop (i + 1) in
     clr, loop 0
   | _ -> assert false
 
-let pf_match = pf_apply (fun e s c t -> understand_tcc e s ~expected_type:t c)
-
-let apply_rconstr ?ist t gl =
+let apply_rconstr ?ist t =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let cl = Proofview.Goal.concl gl in
 (* ppdebug(lazy(str"sigma@apply_rconstr=" ++ pr_evar_map None (project gl))); *)
   let n = match ist, DAst.get t with
-    | None, (GVar id | GRef (Names.GlobRef.VarRef id,_)) -> pf_nbargs (pf_env gl) (project gl) (EConstr.mkVar id)
-    | Some ist, _ -> interp_nbargs ist gl t
+    | None, (GVar id | GRef (Names.GlobRef.VarRef id,_)) -> pf_nbargs env sigma (EConstr.mkVar id)
+    | Some ist, _ -> interp_nbargs ist env sigma t
     | _ -> anomaly "apply_rconstr without ist and not RVar" in
   let mkRlemma i = mkRApp t (mkRHoles i) in
-  let cl = pf_concl gl in
   let rec loop i =
     if i > n then
-      errorstrm Pp.(str"Cannot apply lemma "++pf_pr_glob_constr gl t)
-    else try pf_match gl (mkRlemma i) (OfType cl) with _ -> loop (i + 1) in
-  Proofview.V82.of_tactic (refine_with (loop 0)) gl
+      errorstrm Pp.(str"Cannot apply lemma "++pr_glob_constr_env env sigma t)
+    else try understand_tcc env sigma ~expected_type:(OfType cl) (mkRlemma i) with _ -> loop (i + 1) in
+  refine_with (loop 0)
+  end
 
-let mkRAppView ist gl rv gv =
-  let nb_view_imps = interp_view_nbimps ist gl rv in
+let mkRAppView ist env sigma rv gv =
+  let nb_view_imps = interp_view_nbimps ist env sigma rv in
   mkRApp rv (mkRHoles (abs nb_view_imps))
 
-let refine_interp_apply_view dbl ist gl gv =
+let refine_interp_apply_view dbl ist gv =
+  let open Tacmach.New in
+  Proofview.Goal.enter begin fun gl ->
   let pair i = List.map (fun x -> i, x) in
-  let rv = pf_intern_term ist gl gv in
-  let v = mkRAppView ist gl rv gv in
+  let rv = intern_term ist (pf_env gl) gv in
+  let v = mkRAppView ist (pf_env gl) (project gl) rv gv in
   let interp_with (dbl, hint) =
     let i = if dbl = Ssrview.AdaptorDb.Equivalence then 2 else 1 in
-    interp_refine ist gl (mkRApp hint (v :: mkRHoles i)) in
+    interp_refine (pf_env gl) (project gl) ist ~concl:(pf_concl gl) (mkRApp hint (v :: mkRHoles i)) in
   let rec loop = function
-  | [] -> (try apply_rconstr ~ist rv gl with _ -> view_error "apply" gv)
-  | h :: hs -> (try Proofview.V82.of_tactic (refine_with (snd (interp_with h))) gl with _ -> loop hs) in
+  | [] -> Proofview.tclORELSE (apply_rconstr ~ist rv) (fun _ -> view_error "apply" gv)
+  | h :: hs ->
+    match interp_with h with
+    | (_, t) -> Proofview.tclORELSE (refine_with t) (fun _ -> loop hs)
+    | exception e -> loop hs
+  in
   loop (pair dbl (Ssrview.AdaptorDb.get dbl) @
         if dbl = Ssrview.AdaptorDb.Equivalence
         then pair Ssrview.AdaptorDb.Backward (Ssrview.AdaptorDb.(get Backward))
         else [])
+  end
 
 let apply_top_tac =
   Proofview.Goal.enter begin fun _ ->
   Tacticals.New.tclTHENLIST [
     introid top_id;
-    Proofview.V82.tactic (apply_rconstr (mkRVar top_id));
+    apply_rconstr (mkRVar top_id);
     cleartac [SsrHyp(None,top_id)]
   ]
   end
 
 let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:false (fun gl ->
  let _, clr = interp_hyps ist gl gclr in
- let vtac gv i gl' = refine_interp_apply_view i ist gl' gv in
+ let vtac gv i = refine_interp_apply_view i ist gv in
  let ggenl, tclGENTAC =
    if gviews <> [] && ggenl <> [] then
      let ggenl= List.map (fun (x,(k,p)) -> x, {kind=k; pattern=p; interpretation= Some ist}) (List.hd ggenl) in
@@ -133,11 +138,11 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
       if List.length tl = 1
       then Ssrview.AdaptorDb.Equivalence
       else Ssrview.AdaptorDb.Backward in
-    Tacticals.tclTHEN
+    Proofview.V82.of_tactic (Tacticals.New.tclTHEN
       (List.fold_left (fun acc v ->
-         Tacticals.tclTHENLAST acc (vtac v dbl))
+         Tacticals.New.tclTHENLAST acc (vtac v dbl))
         (vtac v Ssrview.AdaptorDb.Backward) tl)
-      (old_cleartac clr) gl
+      (cleartac clr)) gl
   | [], [agens] ->
     let clr', (sigma, lemma) = interp_agens ist gl agens in
     let gl = pf_merge_uc_of sigma gl in
