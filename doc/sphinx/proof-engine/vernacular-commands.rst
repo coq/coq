@@ -83,7 +83,7 @@ described elsewhere
    Displays the type of :n:`@term`. When called in proof mode, the
    term is checked in the local context of the selected goal.
 
-.. cmd:: Search {+ @search_query } {? {| inside | outside } {+ @qualid } }
+.. cmd:: Search {+ @search_query } {? {| inside | in | outside } {+ @qualid } }
 
    This command can be used to filter the goal and the global context
    to retrieve objects whose name or type satisfies a number of
@@ -195,7 +195,7 @@ described elsewhere
 
    Additional clauses:
 
-   * :n:`inside {+ @qualid }` - limit the search to the specified modules
+   * :n:`{| inside | in } {+ @qualid }` - limit the search to the specified modules
    * :n:`outside {+ @qualid }` - exclude the specified modules from the search
 
    .. exn:: Module/section @qualid not found.
@@ -299,14 +299,14 @@ described elsewhere
 
          Search is:Instance [ Reflexive | Symmetric ].
 
-.. cmd:: SearchPattern @one_pattern {? {| inside | outside } {+ @qualid } }
+.. cmd:: SearchPattern @one_pattern {? {| inside | in | outside } {+ @qualid } }
 
    Displays the name and type of all hypotheses of the
    selected goal (if any) and theorems of the current context
    ending with :n:`{? forall {* @binder }, } {* P__i -> } C` that match the pattern
    :n:`@one_pattern`.
 
-   See :cmd:`Search` for an explanation of the `inside`/`outside` clauses.
+   See :cmd:`Search` for an explanation of the `inside`/`in`/`outside` clauses.
 
    .. example:: :cmd:`SearchPattern` examples
 
@@ -324,14 +324,14 @@ described elsewhere
 
          SearchPattern (?X1 + _ = _ + ?X1).
 
-.. cmd:: SearchRewrite @one_pattern {? {| inside | outside } {+ @qualid } }
+.. cmd:: SearchRewrite @one_pattern {? {| inside | in | outside } {+ @qualid } }
 
    Displays the name and type of all hypotheses of the
    selected goal (if any) and theorems of the current context that have the form
    :n:`{? forall {* @binder }, } {* P__i -> } LHS = RHS` where :n:`@one_pattern`
    matches either `LHS` or `RHS`.
 
-   See :cmd:`Search` for an explanation of the `inside`/`outside` clauses.
+   See :cmd:`Search` for an explanation of the `inside`/`in`/`outside` clauses.
 
    .. example:: :cmd:`SearchRewrite` examples
 

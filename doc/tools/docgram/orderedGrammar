@@ -1102,9 +1102,9 @@ command: [
 | "Compute" term
 | "Check" term
 | "About" reference OPT univ_name_list
-| "SearchPattern" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "SearchRewrite" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchPattern" one_pattern OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
+| "SearchRewrite" one_pattern OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
+| "Search" LIST1 ( search_query ) OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
 | "Ltac2" OPT "mutable" OPT "rec" tac2def_body LIST0 ( "with" tac2def_body )
 | "Ltac2" "Type" OPT "rec" tac2typ_def LIST0 ( "with" tac2typ_def )
 | "Ltac2" "@" "external" ident ":" ltac2_type ":=" string string
@@ -2389,9 +2389,9 @@ tac2mode: [
 | "Compute" term
 | "Check" term
 | "About" reference OPT univ_name_list
-| "SearchPattern" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "SearchRewrite" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchPattern" one_pattern OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
+| "SearchRewrite" one_pattern OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
+| "Search" LIST1 ( search_query ) OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
 ]
 
 in_hyp_as: [

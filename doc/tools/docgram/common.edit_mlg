@@ -1673,7 +1673,8 @@ locatable: [
 
 ne_in_or_out_modules: [
 | REPLACE "inside" LIST1 global
-| WITH [ "inside" | "outside" ] LIST1 global
+| WITH [ "inside" | "in" | "outside" ] LIST1 global
+| DELETE "in" LIST1 global
 | DELETE "outside" LIST1 global
 ]
 

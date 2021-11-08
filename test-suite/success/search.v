@@ -9,7 +9,7 @@ Search "*".
 Search "*" "+".
 
 Search plus inside Peano.
-Search plus mult inside Peano.
+Search plus mult in Peano.
 Search "plus_n" inside Peano.
 Search plus "plus_n" inside Peano.
 Search "*" inside Peano.
