@@ -13,7 +13,7 @@
 open Printer
 open Pretyping
 open Glob_term
-open Tacmach
+open Tacmach.Old
 
 open Ssrmatching_plugin
 open Ssrmatching
@@ -93,7 +93,7 @@ let mkRAppView ist env sigma rv gv =
   mkRApp rv (mkRHoles (abs nb_view_imps))
 
 let refine_interp_apply_view dbl ist gv =
-  let open Tacmach.New in
+  let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let pair i = List.map (fun x -> i, x) in
   let rv = intern_term ist (pf_env gl) gv in

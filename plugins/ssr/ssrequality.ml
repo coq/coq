@@ -27,7 +27,7 @@ open Ssrmatching
 open Ssrast
 open Ssrprinters
 open Ssrcommon
-open Tacmach
+open Tacmach.Old
 
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
 let () =
@@ -135,7 +135,7 @@ let newssrcongrtac arg ist =
   let fs gl t = Reductionops.nf_evar (project gl) t in
   let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail =
     Proofview.Goal.enter begin fun gl ->
-    let open Tacmach.New in
+    let open Tacmach in
     match try Some (pf_unify_HO gl_c (pf_concl gl) c)
           with exn when CErrors.noncritical exn -> None with
     | Some gl_c ->
@@ -490,7 +490,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
       let error = Option.cata (fun (env, sigma, te) ->
           Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))
           (Pp.mt ()) e in
-      if occur_existential sigma0 (Tacmach.New.pf_concl gl)
+      if occur_existential sigma0 (Tacmach.pf_concl gl)
       then Tacticals.tclZEROMSG Pp.(str "Rewriting impacts evars" ++ error)
       else Tacticals.tclZEROMSG Pp.(str "Dependent type error in rewrite of "
         ++ pr_econstr_env env sigma0

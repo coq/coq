@@ -17,7 +17,7 @@ open Constr
 open Context
 open Termops
 open Tactypes
-open Tacmach
+open Tacmach.Old
 
 open Ssrmatching_plugin
 open Ssrmatching
@@ -197,7 +197,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
           let t,gl= pf_fresh_global (Indrec.lookup_eliminator env (kn,i) sort) gl in
           gl, t
         else
-          Tacmach.pf_eapply (fun env sigma () ->
+          Tacmach.Old.pf_eapply (fun env sigma () ->
             let indu = (fst indu, EConstr.EInstance.kind sigma (snd indu)) in
             let (sigma, ind) = Indrec.build_case_analysis_scheme env sigma indu true sort in
             (sigma, ind)) gl () in

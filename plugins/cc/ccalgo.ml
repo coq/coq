@@ -19,7 +19,7 @@ open Sorts
 open Constr
 open Context
 open Vars
-open Tacmach
+open Tacmach.Old
 open Util
 open Lazy
 

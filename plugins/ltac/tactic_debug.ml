@@ -71,7 +71,7 @@ let db_pr_goal gl =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let penv = Termops.Internal.print_named_context env in
-  let pc = Printer.pr_econstr_env env (Tacmach.New.project gl) concl in
+  let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()

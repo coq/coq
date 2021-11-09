@@ -23,8 +23,8 @@ open Proofview.Notations
 
 let mytclWithHoles tac with_evars c =
   Proofview.Goal.enter begin fun gl ->
-    let env = Tacmach.New.pf_env gl in
-    let sigma = Tacmach.New.project gl in
+    let env = Tacmach.pf_env gl in
+    let sigma = Tacmach.project gl in
     let sigma',c = Tactics.force_destruction_arg with_evars env sigma c in
     Tacticals.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma'
   end
@@ -207,7 +207,7 @@ exception Found of unit Proofview.tactic
 
 let rewrite_except h =
   Proofview.Goal.enter begin fun gl ->
-  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  let hyps = Tacmach.pf_ids_of_hyps gl in
   Tacticals.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else
       Tacticals.tclTRY (Equality.general_rewrite ~where:(Some id) ~l2r:true Locus.AllOccurrences ~freeze:true ~dep:true ~with_evars:false (mkVar h, NoBindings)))
     hyps
@@ -221,7 +221,7 @@ let refl_equal () = Coqlib.lib_ref "core.eq.type"
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
-    let type_of_a = Tacmach.New.pf_get_type_of gl a in
+    let type_of_a = Tacmach.pf_get_type_of gl a in
     Tacticals.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
     Tacticals.tclTHENLIST
          [Tactics.generalize [(mkApp(req, [| type_of_a; a|]))];
@@ -239,14 +239,14 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 let case_eq_intros_rewrite x =
   Proofview.Goal.enter begin fun gl ->
-  let n = nb_prod (Tacmach.New.project gl) (Proofview.Goal.concl gl) in
+  let n = nb_prod (Tacmach.project gl) (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.tclTHENLIST [
       mkCaseEq x;
     Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
-      let hyps = Tacmach.New.pf_ids_set_of_hyps gl in
-      let n' = nb_prod (Tacmach.New.project gl) concl in
+      let hyps = Tacmach.pf_ids_set_of_hyps gl in
+      let n' = nb_prod (Tacmach.project gl) concl in
       let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
       Tacticals.tclTHENLIST [
                     Tacticals.tclDO (n'-n-1) intro;
@@ -282,7 +282,7 @@ let destauto =
 
 let destauto_in id =
   Proofview.Goal.enter begin fun gl ->
-  let ctype = Tacmach.New.pf_get_type_of gl (mkVar id) in
+  let ctype = Tacmach.pf_get_type_of gl (mkVar id) in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto0 ctype
@@ -361,7 +361,7 @@ let onSomeWithHoles tac = function
 
 let decompose l c =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let to_ind c =
       if isInd sigma c then fst (destInd sigma c)
       else user_err Pp.(str "not an inductive type")

@@ -28,7 +28,7 @@ open Globnames
 open Reductionops
 open Typing
 open Retyping
-open Tacmach.New
+open Tacmach
 open Logic
 open Hipattern
 open Tacticals
@@ -147,7 +147,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
     let clenv = Clenv.update_clenv_evd eqclause evd' in
     Clenv.clenv_pose_dependent_evars ~with_evars:true clenv
   in
-  let flags = make_flags frzevars (Tacmach.New.project gl) rewrite_unif_flags eqclause in
+  let flags = make_flags frzevars (Tacmach.project gl) rewrite_unif_flags eqclause in
   let occs =
     w_unify_to_subterm_all ~flags env eqclause.evd
       ((if l2r then c1 else c2),concl)
@@ -232,7 +232,7 @@ let rewrite_elim with_evars frzevars cls c e =
   Proofview.Goal.enter begin fun gl ->
   let flags = if Unification.is_keyed_unification ()
               then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
-  let flags = make_flags frzevars (Tacmach.New.project gl) flags c in
+  let flags = make_flags frzevars (Tacmach.project gl) flags c in
   general_elim_clause with_evars flags cls c e
   end
 
@@ -449,7 +449,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
     rewrite_side_tac (Hook.get forward_general_setoid_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac)
   else
     Proofview.Goal.enter begin fun gl ->
-      let sigma = Tacmach.New.project gl in
+      let sigma = Tacmach.project gl in
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
     let rels, t = decompose_prod_assum sigma (whd_betaiotazeta env sigma ctype) in
@@ -528,7 +528,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
 
 let apply_special_clear_request clear_flag f =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
     try
       let (sigma, (c, bl)) = f env sigma in
@@ -546,7 +546,7 @@ type multi =
 let general_multi_rewrite with_evars l cl tac =
   let do1 l2r f =
     Proofview.Goal.enter begin fun gl ->
-      let sigma = Tacmach.New.project gl in
+      let sigma = Tacmach.project gl in
       let env = Proofview.Goal.env gl in
       let (sigma, c) = f env sigma in
       tclWITHHOLES with_evars
@@ -622,9 +622,9 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   let t1 = get_type_of c1
   and t2 = get_type_of c2 in
   let evd =
-    if unsafe then Some (Tacmach.New.project gl)
+    if unsafe then Some (Tacmach.project gl)
     else
-      try Some (Evarconv.unify_delay (Proofview.Goal.env gl) (Tacmach.New.project gl) t1 t2)
+      try Some (Evarconv.unify_delay (Proofview.Goal.env gl) (Tacmach.project gl) t1 t2)
       with Evarconv.UnableToUnify _ -> None
   in
   match evd with
@@ -1087,7 +1087,7 @@ let onEquality with_evars tac (c,lbindc) =
 
 let onNegatedEquality with_evars tac =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let ccl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     match EConstr.kind sigma (hnf_constr env sigma ccl) with
@@ -1344,7 +1344,7 @@ let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 let inject_if_homogenous_dependent_pair ty =
   Proofview.Goal.enter begin fun gl ->
   try
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let eq,u,(t,t1,t2) = pf_apply find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
     let sigTconstr   = Coqlib.(lib_ref "core.sigT.type") in
@@ -1729,7 +1729,7 @@ exception FoundDepInGlobal of Id.t option * GlobRef.t
 
 let test_non_indirectly_dependent_section_variable gl x =
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let hyps = Proofview.Goal.hyps gl in
   let concl = Proofview.Goal.concl gl in
   List.iter (fun decl ->
@@ -1761,7 +1761,7 @@ let is_non_indirectly_dependent_section_variable gl z =
 
 let subst_one dep_proof_ok x (hyp,rhs,dir) =
   Proofview.Goal.enter begin fun gl ->
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let hyps = Proofview.Goal.hyps gl in
   let concl = Proofview.Goal.concl gl in
   (* The set of hypotheses using x *)

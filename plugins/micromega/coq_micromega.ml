@@ -1491,7 +1491,7 @@ let micromega_order_change spec cert cert_typ env ff (*: unit Proofview.tactic*)
                  , vm
                  , EConstr.mkApp (Lazy.force coq_VarMap, [|spec.typ|]) )
                ; ("__wit", cert, cert_typ) ]
-               (Tacmach.New.pf_concl gl)) ])
+               (Tacmach.pf_concl gl)) ])
 
 (**
   * The datastructures that aggregate prover attributes.
@@ -1828,20 +1828,20 @@ let fresh_id avoid id gl =
 
 let clear_all_no_check =
   Proofview.Goal.enter (fun gl ->
-      let concl = Tacmach.New.pf_concl gl in
+      let concl = Tacmach.pf_concl gl in
       let env =
         Environ.reset_with_named_context Environ.empty_named_context_val
-          (Tacmach.New.pf_env gl)
+          (Tacmach.pf_env gl)
       in
       Refine.refine ~typecheck:false (fun sigma ->
           Evarutil.new_evar env sigma ~principal:true concl))
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
   Proofview.Goal.enter (fun gl ->
-      let sigma = Tacmach.New.project gl in
-      let genv = Tacmach.New.pf_env gl in
-      let concl = Tacmach.New.pf_concl gl in
-      let hyps = Tacmach.New.pf_hyps_types gl in
+      let sigma = Tacmach.project gl in
+      let genv = Tacmach.pf_env gl in
+      let concl = Tacmach.pf_concl gl in
+      let hyps = Tacmach.pf_hyps_types gl in
       try
         let hyps, concl, env =
           parse_goal (genv, sigma) parse_arith
@@ -1946,7 +1946,7 @@ let micromega_order_changer cert env ff =
                      , [|formula_typ; Lazy.force coq_IsProp|] ) )
                ; ("__varmap", vm, EConstr.mkApp (Lazy.force coq_VarMap, [|typ|]))
                ; ("__wit", cert, cert_typ) ]
-               (Tacmach.New.pf_concl gl))
+               (Tacmach.pf_concl gl))
           (*      Tacticals.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
         ])
 
@@ -1962,10 +1962,10 @@ let micromega_genr prover tac =
       ; coeff_eq = Mc.qeq_bool }
   in
   Proofview.Goal.enter (fun gl ->
-      let sigma = Tacmach.New.project gl in
-      let genv = Tacmach.New.pf_env gl in
-      let concl = Tacmach.New.pf_concl gl in
-      let hyps = Tacmach.New.pf_hyps_types gl in
+      let sigma = Tacmach.project gl in
+      let genv = Tacmach.pf_env gl in
+      let concl = Tacmach.pf_concl gl in
+      let hyps = Tacmach.pf_hyps_types gl in
       try
         let hyps, concl, env =
           parse_goal (genv, sigma) parse_arith
@@ -2375,7 +2375,7 @@ let nlinear_Z =
 
 let exfalso_if_concl_not_Prop =
   Proofview.Goal.enter (fun gl ->
-      Tacmach.New.(
+      Tacmach.(
         if is_prop (pf_env gl) (project gl) (pf_concl gl) then
           Tacticals.tclIDTAC
         else Tactics.elim_type (Lazy.force coq_False)))

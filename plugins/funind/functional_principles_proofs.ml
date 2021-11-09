@@ -254,7 +254,7 @@ let change_eq env sigma hyp_id (context : rel_context) x t end_of_type =
   in
   let prove_new_hyp =
     let open Tacticals in
-    let open Tacmach.New in
+    let open Tacmach in
     tclTHEN (tclDO ctxt_size intro)
       (Proofview.Goal.enter (fun g ->
            let all_ids = pf_ids_of_hyps g in
@@ -509,7 +509,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
                          let sigma = Proofview.Goal.sigma g' in
                          (* We get infos on the equations introduced*)
                          let new_term_value_eq =
-                           Tacmach.New.pf_get_hyp_typ heq_id g'
+                           Tacmach.pf_get_hyp_typ heq_id g'
                          in
                          (* compute the new value of the body *)
                          let new_term_value =
@@ -518,7 +518,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
                            | _ ->
                              observe
                                ( str "cannot compute new term value : "
-                               ++ Tacmach.New.pr_gls g' ++ fnl ()
+                               ++ Tacmach.pr_gls g' ++ fnl ()
                                ++ str "last hyp is"
                                ++ pr_leconstr_env env sigma new_term_value_eq );
                              anomaly (Pp.str "cannot compute new term value.")
@@ -551,7 +551,7 @@ let instantiate_hyps_with_args (do_prove : Id.t list -> unit Proofview.tactic)
     tclORELSE0
       (* we instantiate the hyp if possible  *)
       (Proofview.Goal.enter (fun g ->
-           let prov_hid = Tacmach.New.pf_get_new_id hid g in
+           let prov_hid = Tacmach.pf_get_new_id hid g in
            let c = mkApp (mkVar hid, args) in
            (* Check typing *)
            tclTYPEOFTHEN c (fun _ _ ->
@@ -581,7 +581,7 @@ let instantiate_hyps_with_args (do_prove : Id.t list -> unit Proofview.tactic)
       ; Proofview.Goal.enter (fun g ->
             let all_g_hyps_id =
               List.fold_right Id.Set.add
-                (Tacmach.New.pf_ids_of_hyps g)
+                (Tacmach.pf_ids_of_hyps g)
                 Id.Set.empty
             in
             let remaining_hyps =
@@ -640,7 +640,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
             tclTHEN intro
               (Proofview.Goal.enter (fun g' ->
                    let open Context.Named.Declaration in
-                   let id = Tacmach.New.pf_last_hyp g' |> get_id in
+                   let id = Tacmach.pf_last_hyp g' |> get_id in
                    let new_term =
                      Reductionops.nf_betaiota (Proofview.Goal.env g')
                        (Proofview.Goal.sigma g')
@@ -784,7 +784,7 @@ let generalize_non_dep hyp =
       let hyps = [hyp] in
       let env = Global.env () in
       let sigma = Proofview.Goal.sigma g in
-      let hyp_typ = Tacmach.New.pf_get_hyp_typ hyp g in
+      let hyp_typ = Tacmach.pf_get_hyp_typ hyp g in
       let to_revert, _ =
         let open Context.Named.Declaration in
         Environ.fold_named_context_reverse
@@ -968,7 +968,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
       (* Array.iter (fun c -> Pp.msgnl (Printer.pr_lconstr c)) all_funs; *)
       let princ_info = compute_elim_sig sigma princ_type in
       let fresh_id =
-        let avoid = ref (Tacmach.New.pf_ids_of_hyps g) in
+        let avoid = ref (Tacmach.pf_ids_of_hyps g) in
         fun na ->
           let new_id =
             match na with
@@ -1318,7 +1318,7 @@ let backtrack_eqs_until_hrec hrec eqs : unit Proofview.tactic =
       let eqs = List.map mkVar eqs in
       let rewrite = tclFIRST (List.map Equality.rewriteRL eqs) in
       let _, hrec_concl =
-        decompose_prod sigma (Tacmach.New.pf_get_hyp_typ hrec gls)
+        decompose_prod sigma (Tacmach.pf_get_hyp_typ hrec gls)
       in
       let f_app = Array.last (snd (destApp sigma hrec_concl)) in
       let f = fst (destApp sigma f_app) in
@@ -1408,7 +1408,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
       let princ_type = Proofview.Goal.concl gl in
       let princ_info = compute_elim_sig sigma princ_type in
       let fresh_id =
-        let avoid = ref (Tacmach.New.pf_ids_of_hyps gl) in
+        let avoid = ref (Tacmach.pf_ids_of_hyps gl) in
         fun na ->
           let new_id =
             match na with
@@ -1510,7 +1510,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
       let tcc_list = ref [] in
       let start_tac =
         Proofview.Goal.enter (fun gls ->
-            let hyps = Tacmach.New.pf_ids_of_hyps gls in
+            let hyps = Tacmach.pf_ids_of_hyps gls in
             let hid =
               next_ident_away_in_goal (Global.env ()) (Id.of_string "prov")
                 (Id.Set.of_list hyps)
@@ -1520,7 +1520,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
               ; Simple.intro hid
               ; Elim.h_decompose_and (mkVar hid)
               ; Proofview.Goal.enter (fun g ->
-                    let new_hyps = Tacmach.New.pf_ids_of_hyps g in
+                    let new_hyps = Tacmach.pf_ids_of_hyps g in
                     tcc_list :=
                       List.rev (List.subtract Id.equal new_hyps (hid :: hyps));
                     if List.is_empty !tcc_list then begin

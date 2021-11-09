@@ -69,7 +69,7 @@ val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
 val pr_table : Environ.env -> Evd.evar_map -> Pp.t
 
 val observe_tac :
-  (Environ.env -> Evd.evar_map -> Pp.t) -> Tacmach.tactic -> Tacmach.tactic
+  (Environ.env -> Evd.evar_map -> Pp.t) -> Tacmach.Old.tactic -> Tacmach.Old.tactic
 
 module New : sig
   val observe_tac :

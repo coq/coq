@@ -2212,7 +2212,7 @@ END
 
 let vmexacttac pf =
   Goal.enter begin fun gl ->
-  exact_no_check (EConstr.mkCast (pf, vmCast, Tacmach.New.pf_concl gl))
+  exact_no_check (EConstr.mkCast (pf, vmCast, Tacmach.pf_concl gl))
   end
 
 }

@@ -15,7 +15,7 @@ open Formula
 open Sequent
 open Ground
 open Goptions
-open Tacmach.New
+open Tacmach
 open Tacticals
 open Tacinterp
 open Stdarg

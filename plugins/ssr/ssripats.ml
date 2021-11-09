@@ -291,7 +291,7 @@ let intro_clear ids =
       List.fold_left (fun (used_ids, clear_ids, ren) id ->
             let new_id = Ssrcommon.mk_anon_id (Id.to_string id) used_ids in
             (new_id :: used_ids, new_id :: clear_ids, (id, new_id) :: ren))
-                     (Tacmach.New.pf_ids_of_hyps gl, [], []) ids
+                     (Tacmach.pf_ids_of_hyps gl, [], []) ids
     in
     Tactics.rename_hyp ren <*>
     isCLR_PUSHL clear_ids
@@ -661,7 +661,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
            | [SsrHyp(_, x)], _ -> x
            | _, `EConstr(_,_,t) when EConstr.isVar sigma t ->
               EConstr.destVar sigma t
-           | _ -> Ssrcommon.mk_anon_id "K" (Tacmach.New.pf_ids_of_hyps g) in
+           | _ -> Ssrcommon.mk_anon_id "K" (Tacmach.pf_ids_of_hyps g) in
          Tacticals.tclFIRST
            [ Ssrcommon.tclINTRO_ID elim_name
            ; Ssrcommon.tclINTRO_ANON ~seed:"K" ()]
@@ -686,7 +686,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
            let open EConstr in
            let refl =
              mkApp (eq, [|Vars.lift 1 case_ty; mkRel 1; Vars.lift 1 case|]) in
-           let name = Ssrcommon.mk_anon_id "K" (Tacmach.New.pf_ids_of_hyps g) in
+           let name = Ssrcommon.mk_anon_id "K" (Tacmach.pf_ids_of_hyps g) in
 
            let new_concl =
              mkProd (make_annot (Name name) Sorts.Relevant, case_ty, mkArrow refl Sorts.Relevant (Vars.lift 2 concl)) in
@@ -727,7 +727,7 @@ let mkEq dir cl c t n env sigma =
 let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   Ssrcommon.tacSIGMA >>= fun sigma0 ->
   Goal.enter_one begin fun g ->
-  let pat = Ssrmatching.interp_cpattern (Tacmach.pf_env sigma0) (Tacmach.project sigma0) t None in
+  let pat = Ssrmatching.interp_cpattern (Tacmach.Old.pf_env sigma0) (Tacmach.Old.project sigma0) t None in
   let cl0, env, sigma, hyps = Goal.(concl g, env g, sigma g, hyps g) in
   let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
   let (c, ucst), cl =
@@ -993,7 +993,7 @@ let ssrabstract dgens =
    Ssrcommon.tacSIGMA >>= fun gl0 ->
      let open Ssrmatching in
      let ipats = List.map (fun (_,cp) ->
-       match id_of_pattern (interp_cpattern (Tacmach.pf_env gl0) (Tacmach.project gl0) cp None) with
+       match id_of_pattern (interp_cpattern (Tacmach.Old.pf_env gl0) (Tacmach.Old.project gl0) cp None) with
        | None -> IPatAnon (One None)
        | Some id -> IPatId id)
        (List.tl gens) in

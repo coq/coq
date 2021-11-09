@@ -27,7 +27,7 @@ open Auto
 open Constr_matching
 open Hipattern
 open Proofview.Notations
-open Tacmach.New
+open Tacmach
 open Tactypes
 
 (* This file contains the implementation of the tactics ``Decide

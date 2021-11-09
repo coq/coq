@@ -184,7 +184,7 @@ let pf_apply f =
     f env sigma
   | [gl] ->
     gl >>= fun gl ->
-    f (Proofview.Goal.env gl) (Tacmach.New.project gl)
+    f (Proofview.Goal.env gl) (Tacmach.project gl)
   | _ :: _ :: _ ->
     throw err_notfocussed
 
@@ -943,7 +943,7 @@ end
 let () = define0 "goal" begin
   assert_focussed >>= fun () ->
   Proofview.Goal.enter_one begin fun gl ->
-    let concl = Tacmach.New.pf_nf_concl gl in
+    let concl = Tacmach.pf_nf_concl gl in
     return (Value.of_constr concl)
   end
 end

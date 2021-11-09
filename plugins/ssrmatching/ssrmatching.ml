@@ -22,7 +22,7 @@ open Vars
 open Libnames
 open Tactics
 open Termops
-open Tacmach
+open Tacmach.Old
 open Glob_term
 open Util
 open Evd

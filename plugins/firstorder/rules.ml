@@ -13,7 +13,7 @@ open Util
 open Names
 open EConstr
 open Vars
-open Tacmach.New
+open Tacmach
 open Tactics
 open Tacticals
 open Proofview.Notations

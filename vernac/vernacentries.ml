@@ -132,7 +132,7 @@ let show_intro ~proof all =
   let Proof.{goals;sigma} = Proof.data proof in
   if not (List.is_empty goals) then begin
     let gl = {Evd.it=List.hd goals ; sigma = sigma; } in
-    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (Tacmach.pf_concl gl)) in
+    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (Tacmach.Old.pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
       hov 0 (prlist_with_sep  spc Id.print lid)
@@ -1921,7 +1921,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
             Failure _ -> user_err ?loc
                           (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
-    let hyps = Tacmach.pf_hyps gl in
+    let hyps = Tacmach.Old.pf_hyps gl in
     let decl = Context.Named.lookup id hyps in
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"

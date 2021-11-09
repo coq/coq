@@ -596,7 +596,7 @@ let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i :
   let open Constr in
   let open EConstr in
   let open Context.Rel.Declaration in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
   let open Tacticals in
   Proofview.Goal.enter (fun g ->
@@ -892,7 +892,7 @@ let rec intros_with_rewrite () =
 and intros_with_rewrite_aux () : unit Proofview.tactic =
   let open Constr in
   let open EConstr in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
   let open Tacticals in
   Proofview.Goal.enter (fun g ->
@@ -994,7 +994,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
 let rec reflexivity_with_destruct_cases () =
   let open Constr in
   let open EConstr in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
   let open Tacticals in
   Proofview.Goal.enter (fun g ->
@@ -1065,7 +1065,7 @@ let rec reflexivity_with_destruct_cases () =
 let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
     unit Proofview.tactic =
   let open EConstr in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
   let open Tacticals in
   Proofview.Goal.enter (fun g ->

@@ -14,7 +14,7 @@ open Pp
 open Names
 open Constr
 open Context
-open Tacmach
+open Tacmach.Old
 
 open Ssrmatching_plugin.Ssrmatching
 open Ssrprinters
@@ -300,7 +300,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
       | None, _ -> None, Tacticals.tclIDTAC, clear0, pats
       | Some (Some id),_ -> Some id, introid id, clear0, pats
       | Some _,_ ->
-          let id = mk_anon_id "tmp" (Tacmach.pf_ids_of_hyps gl) in
+          let id = mk_anon_id "tmp" (Tacmach.Old.pf_ids_of_hyps gl) in
           Some id, introid id, Tacticals.tclTHEN clear0 (Tactics.clear [id]), pats in
       let tac_specialize = match id with
       | None -> Tacticals.tclIDTAC
@@ -341,7 +341,7 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
     end
   in
   let ctac =
-    let open Tacmach.New in
+    let open Tacmach in
     Proofview.Goal.enter begin fun gl ->
     let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in
     merge_uc uc <*> basesufftac ty

@@ -342,7 +342,7 @@ let unwrap g_s =
   match g_s with
   | Some g_s ->
     let goal = Evd.sig_it g_s in
-    let sigma = Tacmach.project g_s in
+    let sigma = Tacmach.Old.project g_s in
     goal_info goal sigma
   | None -> ([], CString.Map.empty, Pp.mt ())
 
@@ -566,7 +566,7 @@ let match_goals ot nt =
 
 let get_proof_context (p : Proof.t) =
   let Proof.{goals; sigma} = Proof.data p in
-  sigma, Tacmach.pf_env { Evd.it = List.(hd goals); sigma }
+  sigma, Tacmach.Old.pf_env { Evd.it = List.(hd goals); sigma }
 
 let to_constr pf =
   let open CAst in

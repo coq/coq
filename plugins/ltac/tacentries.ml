@@ -672,7 +672,7 @@ let dummy_id = Id.of_string "_"
 let lift_constr_tac_to_ml_tac vars tac =
   let tac _ ist = Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let map = function
     | Anonymous -> None
     | Name id ->
@@ -892,7 +892,7 @@ match arg.arg_interp with
   end)
 | ArgInterpLegacy f ->
   (fun ist v -> Ftactic.enter (fun gl ->
-    let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
+    let (sigma, v) = Tacmach.of_old (fun gl -> f ist gl v) gl in
     let v = Geninterp.Val.inject tag v in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Ftactic.return v)
   ))

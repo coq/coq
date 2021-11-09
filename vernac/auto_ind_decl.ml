@@ -454,9 +454,9 @@ let do_replace_lb handle aavoid narg p q =
 
   in
   Proofview.Goal.enter begin fun gl ->
-    let type_of_pq = Tacmach.New.pf_get_type_of gl p in
-    let sigma = Tacmach.New.project gl in
-    let env = Tacmach.New.pf_env gl in
+    let type_of_pq = Tacmach.pf_get_type_of gl p in
+    let sigma = Tacmach.project gl in
+    let env = Tacmach.pf_env gl in
     let u,v = destruct_ind env sigma type_of_pq in
     let c = get_scheme handle (!lb_scheme_kind_aux ()) (fst u) in
     let lb_type_of_p = mkConst c in
@@ -503,11 +503,11 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
         Proofview.Goal.enter begin fun gl ->
-        let sigma = Tacmach.New.project gl in
-        let env = Tacmach.New.pf_env gl in
+        let sigma = Tacmach.project gl in
+        let env = Tacmach.pf_env gl in
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
-          let tt1 = Tacmach.New.pf_get_type_of gl t1 in
+          let tt1 = Tacmach.pf_get_type_of gl t1 in
           let u,v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
@@ -669,7 +669,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                *)
               Proofview.Goal.enter begin fun gl ->
                 let concl = Proofview.Goal.concl gl in
-                let sigma = Tacmach.New.project gl in
+                let sigma = Tacmach.project gl in
                 match EConstr.kind sigma concl with
                 | App (c,ca) -> (
                   match EConstr.kind sigma c with
@@ -797,7 +797,7 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
                 );
               Proofview.Goal.enter begin fun gls ->
                 let concl = Proofview.Goal.concl gls in
-                let sigma = Tacmach.New.project gls in
+                let sigma = Tacmach.project gls in
                 (* assume the goal to be eq (eq_type ...) = true *)
                 match EConstr.kind sigma concl with
                 | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with

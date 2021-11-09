@@ -15,7 +15,7 @@ open Names
 open Constr
 open EConstr
 open Declarations
-open Tacmach
+open Tacmach.Old
 open Tactypes
 
 module RelDecl = Context.Rel.Declaration
@@ -29,16 +29,18 @@ open Evd
 
 exception FailError of int * Pp.t Lazy.t
 
-module Old =
-struct
-
-type tactic = Proofview.V82.tac
-
 let catch_failerror (e, info) =
   match e with
   | FailError (lvl,s) when lvl > 0 ->
     Exninfo.iraise (FailError (lvl - 1, s), info)
   | e -> Control.check_for_interrupt ()
+
+module Old =
+struct
+
+type tactic = Proofview.V82.tac
+
+let catch_failerror = catch_failerror
 
 let unpackage glsig = (ref (glsig.sigma)), glsig.it
 
@@ -419,7 +421,7 @@ let compute_constructor_signatures env ~rec_flag ((_,k as ity),u) =
 
 open Proofview
 open Proofview.Notations
-open Tacmach.New
+open Tacmach
 
 let tclIDTAC = tclUNIT ()
 
@@ -451,7 +453,7 @@ let tclZEROMSG ?info ?loc msg =
 
 let catch_failerror e =
   try
-    Old.catch_failerror e;
+    catch_failerror e;
     tclUNIT ()
   with e when CErrors.noncritical e ->
     let _, info = Exninfo.capture e in
@@ -798,7 +800,7 @@ let nLastHyps gl n = List.map mkVar (nLastHypsId gl n)
 
 let ifOnHyp pred tac1 tac2 id =
   Proofview.Goal.enter begin fun gl ->
-  let typ = Tacmach.New.pf_get_hyp_typ id gl in
+  let typ = Tacmach.pf_get_hyp_typ id gl in
   if pf_apply pred gl (id,typ) then
     tac1 id
   else
@@ -819,12 +821,12 @@ let afterHyp id tac =
   end
 
 let fullGoal gl =
-  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  let hyps = Tacmach.pf_ids_of_hyps gl in
   None :: List.map Option.make hyps
 
 let tryAllHyps tac =
   Proofview.Goal.enter begin fun gl ->
-  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  let hyps = Tacmach.pf_ids_of_hyps gl in
   tclFIRST_PROGRESS_ON tac hyps
   end
 let tryAllHypsAndConcl tac =
@@ -834,14 +836,14 @@ let tryAllHypsAndConcl tac =
 
 let onClause tac cl =
   Proofview.Goal.enter begin fun gl ->
-  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  let hyps = Tacmach.pf_ids_of_hyps gl in
   tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
   end
 
-let fullGoal gl = None :: List.map Option.make (Tacmach.New.pf_ids_of_hyps gl)
+let fullGoal gl = None :: List.map Option.make (Tacmach.pf_ids_of_hyps gl)
 let onAllHyps tac =
   Proofview.Goal.enter begin fun gl ->
-    tclMAP tac (Tacmach.New.pf_ids_of_hyps gl)
+    tclMAP tac (Tacmach.pf_ids_of_hyps gl)
     end
 let onAllHypsAndConcl tac =
   Proofview.Goal.enter begin fun gl ->

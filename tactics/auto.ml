@@ -105,7 +105,7 @@ let conclPattern concl pat tac =
   in
   Proofview.Goal.enter begin fun gl ->
      let env = Proofview.Goal.env gl in
-     let sigma = Tacmach.New.project gl in
+     let sigma = Tacmach.project gl in
      constr_bindings env sigma >>= fun constr_bindings ->
      Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
      let open Genarg in
@@ -279,17 +279,17 @@ let rec trivial_fail_db dbg db_list local_db =
   let intro_tac =
     Tacticals.tclTHEN (dbg_intro dbg)
       ( Proofview.Goal.enter begin fun gl ->
-          let sigma = Tacmach.New.project gl in
+          let sigma = Tacmach.project gl in
           let env = Proofview.Goal.env gl in
-          let decl = Tacmach.New.pf_last_hyp gl in
+          let decl = Tacmach.pf_last_hyp gl in
           let hyp = Context.Named.Declaration.get_id decl in
           let local_db = push_resolve_hyp env sigma hyp local_db in
           trivial_fail_db dbg db_list local_db
       end)
   in
   Proofview.Goal.enter begin fun gl ->
-    let concl = Tacmach.New.pf_concl gl in
-    let sigma = Tacmach.New.project gl in
+    let concl = Tacmach.pf_concl gl in
+    let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
     let secvars = compute_secvars gl in
     Tacticals.tclFIRST
@@ -316,7 +316,7 @@ and tac_of_hint dbg db_list local_db concl h =
         (trivial_fail_db (no_dbg dbg) db_list local_db)
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
-       if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
+       if exists_evaluable_reference (Tacmach.pf_env gl) c then
          Tacticals.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else
          let info = Exninfo.reify () in
@@ -353,7 +353,7 @@ let trivial ?(debug=Off) lems dbnames =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = make_db_list dbnames in
   let d = mk_trivial_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
@@ -365,7 +365,7 @@ let full_trivial ?(debug=Off) lems =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = current_pure_db () in
   let d = mk_trivial_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
@@ -401,8 +401,8 @@ let intro_register dbg kont db =
   Tacticals.tclTHEN (dbg_intro dbg)
     (Proofview.Goal.enter begin fun gl ->
       let extend_local_db decl db =
-        let env = Tacmach.New.pf_env gl in
-        let sigma = Tacmach.New.project gl in
+        let env = Tacmach.pf_env gl in
+        let sigma = Tacmach.project gl in
         push_resolve_hyp env sigma (Context.Named.Declaration.get_id decl) db
       in
       Tacticals.onLastDecl (fun decl -> kont (extend_local_db decl db))
@@ -423,8 +423,8 @@ let search d n db_list local_db =
         Tacticals.tclORELSE0 (dbg_assumption d)
           (Tacticals.tclORELSE0 (intro_register d (search d n) local_db)
              ( Proofview.Goal.enter begin fun gl ->
-               let concl = Tacmach.New.pf_concl gl in
-               let sigma = Tacmach.New.project gl in
+               let concl = Tacmach.pf_concl gl in
+               let sigma = Tacmach.project gl in
                let env = Proofview.Goal.env gl in
                let secvars = compute_secvars gl in
                let d' = incr_dbg d in
@@ -443,7 +443,7 @@ let delta_auto debug n lems dbnames =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = make_db_list dbnames in
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
@@ -459,7 +459,7 @@ let delta_full_auto ?(debug=Off) n lems =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = current_pure_db () in
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in

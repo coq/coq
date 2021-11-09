@@ -158,7 +158,7 @@ let auto_unif_flags ?(allowed_evars = Evarsolve.AllowedEvars.all) st =
 }
 
 let e_give_exact flags h =
-  let open Tacmach.New in
+  let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = project gl in
@@ -175,7 +175,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
   let () = assert (Option.is_empty (fst @@ hint_as_term @@ h)) in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let sigma, c = Hints.fresh_hint env sigma h in
   let clenv = mk_clenv_from_n env sigma diff (c, ty) in
   Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
@@ -219,7 +219,7 @@ let with_prods nprods h f =
     Proofview.Goal.enter begin fun gl ->
       if Option.has_some (fst @@ hint_as_term h) || Int.equal nprods 0 then f None
       else
-        let sigma = Tacmach.New.project gl in
+        let sigma = Tacmach.project gl in
         let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma (snd @@ hint_as_term h) in
         let diff = nb_prod sigma ty - nprods in
         if (>=) diff 0 then f (Some (diff, ty))
@@ -280,12 +280,12 @@ let hintmap_of env sigma hdc secvars concl =
 (** Hack to properly solve dependent evars that are typeclasses *)
 let rec e_trivial_fail_db only_classes db_list local_db secvars =
   let open Tacticals in
-  let open Tacmach.New in
+  let open Tacmach in
   let trivial_fail =
     Proofview.Goal.enter
     begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let d = NamedDecl.get_id @@ pf_last_hyp gl in
     let hints = push_resolve_hyp env sigma d local_db in
       e_trivial_fail_db only_classes db_list hints secvars
@@ -924,7 +924,7 @@ module Search = struct
     let open Proofview in
     let env = Goal.env gl in
     let sigma = Goal.sigma gl in
-    let decl = Tacmach.New.pf_last_hyp gl in
+    let decl = Tacmach.pf_last_hyp gl in
     let ldb =
       make_resolve_hyp env sigma (Hint_db.transparent_state info.search_hints)
                        info.search_only_classes decl info.search_hints in
@@ -1401,7 +1401,7 @@ let autoapply c i =
   in
   let flags = auto_unif_flags
     (Hints.Hint_db.transparent_state hintdb) in
-  let cty = Tacmach.New.pf_get_type_of gl c in
+  let cty = Tacmach.pf_get_type_of gl c in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let ce = mk_clenv_from env sigma (c,cty) in

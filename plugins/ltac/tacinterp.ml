@@ -22,7 +22,7 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Tacmach.New
+open Tacmach
 open Tactic_debug
 open Constrexpr
 open Termops
@@ -2149,7 +2149,7 @@ let () =
 
 let () =
   register_interp0 wit_uconstr (fun ist c -> Ftactic.enter begin fun gl ->
-    Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) (Tacmach.New.project gl) c)
+    Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) (Tacmach.project gl) c)
   end)
 
 (***************************************************************************)

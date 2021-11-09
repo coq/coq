@@ -23,7 +23,7 @@ open Evd
 open Printer
 open Reductionops
 open Inductiveops
-open Tacmach.New
+open Tacmach
 open Clenv
 open Tacticals
 open Tactics

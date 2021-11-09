@@ -2,7 +2,7 @@ open Names
 open Pp
 open Constr
 open Libnames
-open Tacmach
+open Tacmach.Old
 
 let mk_prefix pre id = Id.of_string (pre ^ Id.to_string id)
 let mk_rel_id = mk_prefix "R_"
@@ -488,5 +488,5 @@ let funind_purify f x =
     Exninfo.iraise e
 
 let tac_type_of g c =
-  let sigma, t = Tacmach.pf_type_of g c in
+  let sigma, t = Tacmach.Old.pf_type_of g c in
   ({g with Evd.sigma}, t)

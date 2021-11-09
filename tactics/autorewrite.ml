@@ -133,7 +133,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
   Proofview.Goal.enter begin fun gl ->
  (* let's check at once if id exists (to raise the appropriate error) *)
-  let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) idl in
+  let _ = List.map (fun id -> Tacmach.pf_get_hyp id gl) idl in
   let general_rewrite_in id dir cstr tac =
     let cstr = EConstr.of_constr cstr in
     general_rewrite ~where:(Some id) ~l2r:dir AllOccurrences ~freeze:true ~dep:false ~with_evars:false ~tac:(tac, conds) (cstr, Tactypes.NoBindings)
@@ -170,7 +170,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
                  (* try to rewrite in all hypothesis
                     (except maybe the rewritten one) *)
                Proofview.Goal.enter begin fun gl ->
-                 let ids = Tacmach.New.pf_ids_of_hyps gl in
+                 let ids = Tacmach.pf_ids_of_hyps gl in
                  try_do_hyps (fun id -> id)  ids
                end)
 

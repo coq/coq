@@ -13,7 +13,7 @@
 open Pp
 open Names
 open Printer
-open Tacmach
+open Tacmach.Old
 
 open Ssrast
 

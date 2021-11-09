@@ -93,7 +93,7 @@ let const_of_ref = function
 
 (* Generic values *)
 let pf_get_new_ids idl g =
-  let ids = Tacmach.New.pf_ids_of_hyps g in
+  let ids = Tacmach.pf_ids_of_hyps g in
   let ids = Id.Set.of_list ids in
   List.fold_right
     (fun id acc ->
@@ -104,7 +104,7 @@ let next_ident_away_in_goal ids avoid =
   next_ident_away_in_goal (Global.env ()) ids (Id.Set.of_list avoid)
 
 let compute_renamed_type gls id =
-  let t = Tacmach.New.pf_get_hyp_typ id gls in
+  let t = Tacmach.pf_get_hyp_typ id gls in
   if Clenv.rename_with () then
     rename_bound_vars_as_displayed (Global.env ()) (Proofview.Goal.sigma gls)
       (*no avoid*) Id.Set.empty (*no rels*) []
@@ -416,7 +416,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos :
                 ; h_intros to_intros
                 ; Proofview.Goal.enter (fun g' ->
                       let sigma = Proofview.Goal.sigma g' in
-                      let ty_teq = Tacmach.New.pf_get_hyp_typ heq g' in
+                      let ty_teq = Tacmach.pf_get_hyp_typ heq g' in
                       let teq_lhs, teq_rhs =
                         let _, args =
                           try destApp sigma ty_teq with DestKO -> assert false
@@ -549,7 +549,7 @@ let rec prove_lt hyple =
         let h =
           List.find
             (fun id ->
-              match decompose_app sigma (Tacmach.New.pf_get_hyp_typ id g) with
+              match decompose_app sigma (Tacmach.pf_get_hyp_typ id g) with
               | _, t :: _ -> EConstr.eq_constr sigma t varx
               | _ -> false)
             hyple
@@ -557,7 +557,7 @@ let rec prove_lt hyple =
         let y =
           List.hd
             (List.tl
-               (snd (decompose_app sigma (Tacmach.New.pf_get_hyp_typ h g))))
+               (snd (decompose_app sigma (Tacmach.pf_get_hyp_typ h g))))
         in
         New.observe_tclTHENLIST
           (fun _ _ -> str "prove_lt1")
@@ -578,7 +578,7 @@ let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
   Proofview.Goal.enter (fun g ->
       match lbounds with
       | [] ->
-        let ids = Tacmach.New.pf_ids_of_hyps g in
+        let ids = Tacmach.pf_ids_of_hyps g in
         let s_max = mkApp (delayed_force coq_S, [|bound|]) in
         let k = next_ident_away_in_goal k_id ids in
         let ids = k :: ids in
@@ -934,7 +934,7 @@ let rec prove_le () =
               let h, t =
                 List.find
                   (fun (_, t) -> matching_fun t)
-                  (Tacmach.New.pf_hyps_types g)
+                  (Tacmach.pf_hyps_types g)
               in
               let y =
                 let _, args = decompose_app sigma t in
@@ -1453,7 +1453,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     let h_num = ref (-1) in
     let env = Global.env () in
     let start_tac =
-      let open Tacmach.New in
+      let open Tacmach in
       let open Tacticals in
       Proofview.Goal.enter (fun gl ->
           let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gl) in
@@ -1472,7 +1472,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                          tclIDTAC))) ])
     in
     let end_tac =
-      let open Tacmach.New in
+      let open Tacmach in
       let open Tacticals in
       Proofview.Goal.enter (fun gl ->
           let sigma = project gl in
@@ -1568,7 +1568,7 @@ let start_equation (f : GlobRef.t) (term_f : GlobRef.t)
     (cont_tactic : Id.t list -> unit Proofview.tactic) =
   Proofview.Goal.enter (fun g ->
       let sigma = Proofview.Goal.sigma g in
-      let ids = Tacmach.New.pf_ids_of_hyps g in
+      let ids = Tacmach.pf_ids_of_hyps g in
       let terminate_constr = constr_of_monomorphic_global (Global.env ()) term_f in
       let terminate_constr = EConstr.of_constr terminate_constr in
       let nargs =

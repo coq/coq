@@ -14,7 +14,7 @@ open Names
 open Constr
 open Context
 open Termops
-open Tacmach
+open Tacmach.Old
 
 open Ssrast
 open Ssrcommon
@@ -134,7 +134,7 @@ let tclCLAUSES tac (gens, clseq) =
   if clseq = InGoal || clseq = InSeqGoal then tac else
   let clr_gens = pf_clauseids gens clseq in
   let clear = Tacticals.tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
-  let gl_id = mk_anon_id hidden_goal_tag (Tacmach.New.pf_ids_of_hyps gl) in
+  let gl_id = mk_anon_id hidden_goal_tag (Tacmach.pf_ids_of_hyps gl) in
   let cl0 = Proofview.Goal.concl gl in
   let dtac =
     Proofview.V82.tactic begin fun gl ->

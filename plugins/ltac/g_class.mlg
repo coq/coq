@@ -143,7 +143,7 @@ let progress_evars t =
     let concl = Proofview.Goal.concl gl in
     let check =
       Proofview.Goal.enter begin fun gl' ->
-        let sigma = Tacmach.New.project gl' in
+        let sigma = Tacmach.project gl' in
         let newconcl = Proofview.Goal.concl gl' in
         if eq_constr_mod_evars sigma concl newconcl
         then
