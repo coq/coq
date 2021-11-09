@@ -367,7 +367,9 @@ exception PRtype_error of (Environ.env * Evd.evar_map * Pretype_errors.pretype_e
 let id_map_redex _ sigma ~before:_ ~after = sigma, after
 
 let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty =
-  Proofview.V82.tactic begin fun gl ->
+  let open Tacmach in
+  let open Tacticals in
+  Proofview.Goal.enter begin fun gl ->
 (*   ppdebug(lazy(str"sigma@pirrel_rewrite=" ++ pr_evar_map None sigma)); *)
   let env = pf_env gl in
   let beta = Reductionops.clos_norm_flags CClosure.beta env sigma in
@@ -376,12 +378,12 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
     Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
   let pred = EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdx_ty pred in
   let sigma, elim =
-    let sort = Tacticals.Old.elimination_sort_of_goal gl in
+    let sort = Tacticals.elimination_sort_of_goal gl in
     match Equality.eq_elimination_ref (dir = L2R) sort with
     | Some r -> Evd.fresh_global env sigma r
     | None ->
       let ((kn, i) as ind, _), unfolded_c_ty = Tacred.reduce_to_quantified_ind env sigma c_ty in
-      let sort = Tacticals.Old.elimination_sort_of_goal gl in
+      let sort = Tacticals.elimination_sort_of_goal gl in
       let sigma, elim = Evd.fresh_global env sigma (Indrec.lookup_eliminator env ind sort) in
       if dir = R2L then sigma, elim else
       let elim, _ = EConstr.destConst sigma elim in
@@ -399,9 +401,9 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   in
   debug_ssr (fun () -> Pp.(str"pirrel_rewrite: proof term: " ++ pr_econstr_env env sigma proof));
   debug_ssr (fun () -> Pp.(str"pirrel_rewrite of type: " ++ pr_econstr_env env sigma proof_ty));
-  try Proofview.V82.of_tactic (refine_with
-    ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof)) gl
-  with e when CErrors.noncritical e ->
+  Proofview.tclORELSE (refine_with
+    ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof))
+  (fun e ->
     (* we generate a msg like: "Unable to find an instance for the variable" *)
     let hd_ty, miss = match EConstr.kind sigma c with
     | App (hd, args) ->
@@ -425,8 +427,8 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
           if open_evs <> [] then Some name else None)
           (List.combine (Array.to_list args) names)
     | _ -> anomaly "rewrite rule not an application" in
-    errorstrm Pp.(Himsg.explain_refiner_error env sigma (Logic.UnresolvedBindings miss)++
-      (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty))
+      tclZEROMSG Pp.(Himsg.explain_refiner_error env sigma (Logic.UnresolvedBindings miss)++
+      (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty)))
   end
 
 let pf_merge_uc_of s sigma =
