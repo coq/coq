@@ -394,8 +394,14 @@ Requests to the environment
       reference ::= @qualid
       | @string {? % @scope_key }
 
-   Displays the full name of objects from Coq's various qualified namespaces such as terms,
-   modules and Ltac, thereby showing the module they are defined in.  It also displays notation definitions.
+   Displays the full name of objects from Coq's various qualified namespaces
+   such as terms, modules and Ltac, thereby showing the module they are defined
+   in.  It also displays notation definitions.
+
+   Note that objects are reported only when the module containing them has
+   been loaded, such as through a :cmd:`Require` command.  Notation definitions
+   are reported only when the containing module has been imported
+   (e.g. with :cmd:`Require Import` or :cmd:`Import`).
 
    :n:`@qualid`
      refers to object names that end with :n:`@qualid`.
