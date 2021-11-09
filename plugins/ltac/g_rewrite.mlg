@@ -142,10 +142,10 @@ let clsubstitute o c =
   Proofview.Goal.enter begin fun gl ->
   let is_tac id = match DAst.get (fst (fst (snd c))) with GVar id' when Id.equal id' id -> true | _ -> false in
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
-    Tacticals.New.tclMAP
+    Tacticals.tclMAP
       (fun cl ->
         match cl with
-          | Some id when is_tac id -> Tacticals.New.tclIDTAC
+          | Some id when is_tac id -> Tacticals.tclIDTAC
           | _ -> cl_rewrite_clause c o AllOccurrences cl)
       (None :: List.map (fun id -> Some id) hyps)
   end

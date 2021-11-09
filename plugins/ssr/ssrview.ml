@@ -248,7 +248,7 @@ let pad_to_inductive ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
   let rel_ctx =
     List.map (fun (a,b) -> Context.Rel.Declaration.LocalAssum(a,b)) ctx in
   if not (Ssrcommon.isAppInd (EConstr.push_rel_context rel_ctx env) sigma i)
-  then Tacticals.New.tclZEROMSG Pp.(str"not an inductive")
+  then Tacticals.tclZEROMSG Pp.(str"not an inductive")
   else tclUNIT (mkGApp glob (mkGHoles (List.length ctx)))
        >>= tclADD_CLEAR_IF_ID ot
 end

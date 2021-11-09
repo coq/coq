@@ -1348,7 +1348,7 @@ let ssrinstancesof arg =
     while true do
       ignore(find env concl 1 ~k:print)
     done; raise NoMatch
-  with NoMatch -> ppnl (str"END INSTANCES"); Tacticals.New.tclIDTAC
+  with NoMatch -> ppnl (str"END INSTANCES"); Tacticals.tclIDTAC
   end
 
 module Internal =

@@ -16,7 +16,7 @@ open Sorts
 open Constr
 open EConstr
 open Tacmach.New
-open Tacticals.New
+open Tacticals
 open Tactics
 open Indfun_common
 module RelDecl = Context.Rel.Declaration

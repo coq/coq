@@ -16,7 +16,7 @@ open EConstr
 open Inductiveops
 open Hipattern
 open Tacmach.New
-open Tacticals.New
+open Tacticals
 open Clenv
 open Tactics
 

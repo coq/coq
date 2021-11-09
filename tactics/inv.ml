@@ -23,7 +23,7 @@ open Inductiveops
 open Printer
 open Retyping
 open Tacmach.New
-open Tacticals.New
+open Tacticals
 open Tactics
 open Elim
 open Equality

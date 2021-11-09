@@ -25,11 +25,14 @@ module NamedDecl = Context.Named.Declaration
 (*   Tacticals       *)
 (*********************)
 
-type tactic = Proofview.V82.tac
-
 open Evd
 
 exception FailError of int * Pp.t Lazy.t
+
+module Old =
+struct
+
+type tactic = Proofview.V82.tac
 
 let catch_failerror (e, info) =
   match e with
@@ -297,6 +300,28 @@ let ifOnHyp pred tac1 tac2 id gl =
   else
     tac2 id gl
 
+let elimination_sort_of_goal gl =
+  pf_apply Retyping.get_sort_family_of gl (pf_concl gl)
+
+let elimination_sort_of_hyp id gl =
+  pf_apply Retyping.get_sort_family_of gl (pf_get_hyp_typ gl id)
+
+let elimination_sort_of_clause = function
+  | None -> elimination_sort_of_goal
+  | Some id -> elimination_sort_of_hyp id
+
+(* Change evars *)
+let tclEVARS sigma gls = tclIDTAC {gls with Evd.sigma=sigma}
+
+let pf_with_evars glsev k gls =
+  let evd, a = glsev gls in
+    tclTHEN (tclEVARS evd) (k a) gls
+
+let pf_constr_of_global gr k =
+  pf_with_evars (fun gls -> pf_apply Evd.fresh_global gls gr) k
+
+end
+
 (************************************************************************)
 (* Elimination Tacticals                                                *)
 (************************************************************************)
@@ -392,486 +417,462 @@ let compute_constructor_signatures env ~rec_flag ((_,k as ity),u) =
   let lrecargs = Declareops.dest_subterms mip.mind_recargs in
   Array.map2 analrec lc lrecargs
 
+open Proofview
+open Proofview.Notations
+open Tacmach.New
+
+let tclIDTAC = tclUNIT ()
+
+let tclTHEN t1 t2 =
+  t1 <*> t2
+
+let tclFAIL ?info lvl msg =
+  let info = match info with
+    (* If the backtrace points here it means the caller didn't save
+        the backtrace correctly *)
+    | None -> Exninfo.reify ()
+    | Some info -> info
+  in
+  tclZERO ~info (FailError (lvl,lazy msg))
+
+let tclZEROMSG ?info ?loc msg =
+  let info = match info with
+    (* If the backtrace points here it means the caller didn't save
+        the backtrace correctly *)
+    | None -> Exninfo.reify ()
+    | Some info -> info
+  in
+  let info = match loc with
+  | None -> info
+  | Some loc -> Loc.add_loc info loc
+  in
+  let err = UserError msg in
+  tclZERO ~info err
+
+let catch_failerror e =
+  try
+    Old.catch_failerror e;
+    tclUNIT ()
+  with e when CErrors.noncritical e ->
+    let _, info = Exninfo.capture e in
+    tclZERO ~info e
+
+(* spiwack: I chose to give the Ltac + the same semantics as
+    [Proofview.tclOR], however, for consistency with the or-else
+    tactical, we may consider wrapping the first argument with
+    [tclPROGRESS]. It strikes me as a bad idea, but consistency can be
+    considered valuable. *)
+let tclOR t1 t2 =
+  tclINDEPENDENT begin
+    Proofview.tclOR
+      t1
+      begin fun e ->
+        catch_failerror e <*> t2
+      end
+  end
+
+let tclORD t1 t2 =
+  tclINDEPENDENT begin
+    Proofview.tclOR
+      t1
+      begin fun e ->
+        catch_failerror e <*> t2 ()
+      end
+  end
+
+let tclONCE = Proofview.tclONCE
+
+let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (FailError(0,lazy (assert false))) t
+
+let tclIFCATCH t tt te =
+  tclINDEPENDENT begin
+    Proofview.tclIFCATCH t
+      tt
+      (fun e -> catch_failerror e <*> te ())
+  end
+
+let tclORELSE0 t1 t2 =
+  tclINDEPENDENT begin
+    tclORELSE
+      t1
+      begin fun e ->
+        catch_failerror e <*> t2
+      end
+  end
+
+let tclORELSE0L t1 t2 =
+  tclINDEPENDENTL begin
+    tclORELSE
+      t1
+      begin fun e ->
+        catch_failerror e <*> t2
+      end
+  end
+
+let tclORELSE t1 t2 =
+  tclORELSE0 (tclPROGRESS t1) t2
+
+let tclTHENS3PARTS t1 l1 repeat l2 =
+  tclINDEPENDENT begin
+    t1 <*>
+      Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
+        begin tclEXTEND (Array.to_list l1) repeat (Array.to_list l2) end
+        begin function (e, info) -> match e with
+          | SizeMismatch (i,_)->
+              let errmsg =
+                str"Incorrect number of goals" ++ spc() ++
+                str"(expected "++int i++str(String.plural i " tactic") ++ str")"
+              in
+              tclFAIL 0 errmsg
+          | reraise -> tclZERO ~info reraise
+        end
+  end
+let tclTHENSFIRSTn t1 l repeat =
+  tclTHENS3PARTS t1 l repeat [||]
+let tclTHENFIRSTn t1 l =
+  tclTHENSFIRSTn t1 l (tclUNIT())
+let tclTHENFIRST t1 t2 =
+  tclTHENFIRSTn t1 [|t2|]
+
+let tclBINDFIRST t1 t2 =
+  t1 >>= fun ans ->
+  Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+  match gls with
+  | [] -> tclFAIL 0 (str "Expect at least one goal.")
+  | hd::tl ->
+  Proofview.Unsafe.tclSETGOALS [hd] <*> t2 ans >>= fun ans ->
+  Proofview.Unsafe.tclNEWGOALS tl <*>
+  Proofview.tclUNIT ans
+
+let tclTHENSLASTn t1 repeat l =
+  tclTHENS3PARTS t1 [||] repeat l
+
+let tclTHENLASTn t1 l =
+  tclTHENS3PARTS t1 [||] (tclUNIT()) l
+let tclTHENLAST t1 t2 = tclTHENLASTn t1 [|t2|]
+
+let option_of_failure f x = try Some (f x) with Failure _ -> None
+
+let tclBINDLAST t1 t2 =
+  t1 >>= fun ans ->
+  Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+  match option_of_failure List.sep_last gls with
+  | None -> tclFAIL 0 (str "Expect at least one goal.")
+  | Some (last,firstn) ->
+  Proofview.Unsafe.tclSETGOALS [last] <*> t2 ans >>= fun ans ->
+  Proofview.Unsafe.tclGETGOALS >>= fun newgls ->
+  tclEVARMAP >>= fun sigma ->
+  let firstn = Proofview.Unsafe.undefined sigma firstn in
+  Proofview.Unsafe.tclSETGOALS (firstn@newgls) <*>
+  Proofview.tclUNIT ans
+
+let tclTHENS t l =
+  tclINDEPENDENT begin
+    t <*>Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
+        begin tclDISPATCH l end
+        begin function (e, info) -> match e with
+          | SizeMismatch (i,_)->
+              let errmsg =
+                str"Incorrect number of goals" ++ spc() ++
+                str"(expected "++int i++str(String.plural i " tactic") ++ str")"
+              in
+              tclFAIL 0 errmsg
+          | reraise -> tclZERO ~info reraise
+        end
+  end
+let tclTHENLIST l =
+  List.fold_left tclTHEN (tclUNIT()) l
+
+
+(* [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
+let tclMAP tacfun l =
+  List.fold_right (fun x -> (tclTHEN (tacfun x))) l (tclUNIT())
+
+let tclTRY t =
+  tclORELSE0 t (tclUNIT ())
+
+let tclTRYb t =
+  tclORELSE0L (t <*> tclUNIT true) (tclUNIT false)
+
+let tclIFTHENELSE t1 t2 t3 =
+  tclINDEPENDENT begin
+    Proofview.tclIFCATCH t1
+      (fun () -> t2)
+      (fun (e, info) -> Proofview.tclORELSE t3 (fun e' -> tclZERO ~info e))
+  end
+let tclIFTHENSVELSE t1 a t3 =
+  Proofview.tclIFCATCH t1
+    (fun () -> tclDISPATCH (Array.to_list a))
+    (fun _ -> t3)
+let tclIFTHENFIRSTELSE t1 t2 t3 =
+  Proofview.tclIFCATCH t1
+    (fun () -> tclEXTEND [t2] (tclUNIT ()) [])
+    (fun _ -> t3)
+let tclIFTHENTRYELSEMUST t1 t2 =
+  tclIFTHENELSE t1 (tclTRY t2) t2
+let tclIFTHENFIRSTTRYELSEMUST t1 t2 =
+  tclIFTHENFIRSTELSE t1 (tclTRY t2) t2
+
+(* Try the first tactic that does not fail in a list of tactics *)
+let rec tclFIRST = function
+  | [] ->
+    let info = Exninfo.reify () in
+    tclZEROMSG ~info (str"No applicable tactic.")
+  | t::rest -> tclORELSE0 t (tclFIRST rest)
+
+let rec tclFIRST_PROGRESS_ON tac = function
+  | []    -> tclFAIL 0 (str "No applicable tactic")
+  | [a]   -> tac a (* so that returned failure is the one from last item *)
+  | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
+
+let rec tclDO n t =
+  if n < 0 then
+    let info = Exninfo.reify () in
+    tclZEROMSG ~info (str"Wrong argument : Do needs a positive integer.")
+  else if n = 0 then tclUNIT ()
+  else if n = 1 then t
+  else tclTHEN t (tclDO (n-1) t)
+
+let rec tclREPEAT0 t =
+  tclINDEPENDENT begin
+    Proofview.tclIFCATCH t
+      (fun () -> tclCHECKINTERRUPT <*> tclREPEAT0 t)
+      (fun e -> catch_failerror e <*> tclUNIT ())
+  end
+let tclREPEAT t =
+  tclREPEAT0 (tclPROGRESS t)
+let rec tclREPEAT_MAIN0 t =
+  Proofview.tclIFCATCH t
+    (fun () -> tclTRYFOCUS 1 1 (tclREPEAT_MAIN0 t))
+    (fun e -> catch_failerror e <*> tclUNIT ())
+let tclREPEAT_MAIN t =
+  tclREPEAT_MAIN0 (tclPROGRESS t)
+
+let tclCOMPLETE t =
+  t >>= fun res ->
+    (tclINDEPENDENT
+        (let info = Exninfo.reify () in
+        tclZEROMSG ~info (str"Proof is not complete."))
+    ) <*>
+      tclUNIT res
+
+(* Try the first that solves the current goal *)
+let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
+
+let tclPROGRESS t =
+  Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
+
+(* Check that holes in arguments have been resolved *)
+
+let check_evars env sigma extsigma origsigma =
+  let reachable = lazy (Evarutil.reachable_from_evars sigma
+                          (Evar.Map.domain (Evd.undefined_map origsigma))) in
+  let rec is_undefined_up_to_restriction sigma evk =
+    if Evd.mem origsigma evk then None else
+    let evi = Evd.find sigma evk in
+    match Evd.evar_body evi with
+    | Evd.Evar_empty -> Some (evk,evi)
+    | Evd.Evar_defined c -> match Constr.kind (EConstr.Unsafe.to_constr c) with
+      | Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
+      | _ ->
+        (* We make the assumption that there is no way to refine an
+          evar remaining after typing from the initial term given to
+          apply/elim and co tactics, is it correct? *)
+        None in
+  let rest =
+    Evd.fold_undefined (fun evk evi acc ->
+      match is_undefined_up_to_restriction sigma evk with
+      | Some (evk',evi) ->
+          (* If [evk'] descends from [evk] which descends itself from
+            an originally undefined evar in [origsigma], it is a not
+            a fresh undefined hole from [sigma]. *)
+          if Evar.Set.mem evk (Lazy.force reachable) then acc
+          else (evk',evi)::acc
+      | _ -> acc)
+      extsigma []
+  in
+  match rest with
+  | [] -> ()
+  | (evk,evi) :: _ ->
+    let (loc,_) = evi.Evd.evar_source in
+    Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
+
+let tclMAPDELAYEDWITHHOLES accept_unresolved_holes l tac =
+  let rec aux = function
+    | [] -> tclUNIT ()
+    | x :: l ->
+      Proofview.Goal.enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        let sigma_initial = Proofview.Goal.sigma gl in
+        let (sigma, x) = x env sigma_initial in
+        Proofview.Unsafe.tclEVARS sigma <*> tac x >>= fun () -> aux l >>= fun () ->
+        if accept_unresolved_holes then
+          tclUNIT ()
+        else
+          tclEVARMAP >>= fun sigma_final ->
+          try
+            let () = check_evars env sigma_final sigma sigma_initial in
+            tclUNIT ()
+          with e when CErrors.noncritical e ->
+            let e, info = Exninfo.capture e in
+            tclZERO ~info e
+        end in
+  aux l
+
+(* The following is basically
+  tclMAPDELAYEDWITHHOLES accept_unresolved_holes [fun _ _ -> (sigma,())] (fun () -> tac)
+  but with value not necessarily in unit *)
+
+let tclWITHHOLES accept_unresolved_holes tac sigma =
+  tclEVARMAP >>= fun sigma_initial ->
+    if sigma == sigma_initial then tac
+    else
+      let check_evars_if x =
+        if not accept_unresolved_holes then
+          tclEVARMAP >>= fun sigma_final ->
+            tclENV >>= fun env ->
+              try
+                let () = check_evars env sigma_final sigma sigma_initial in
+                tclUNIT x
+              with e when CErrors.noncritical e ->
+                let e, info = Exninfo.capture e in
+                tclZERO ~info e
+        else
+          tclUNIT x
+      in
+      Proofview.Unsafe.tclEVARS sigma <*> tac >>= check_evars_if
+
+let tclDELAYEDWITHHOLES check x tac =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let (sigma, x) = x env sigma in
+    tclWITHHOLES check (tac x) sigma
+  end
+
+let tclTIMEOUT n t =
+  Proofview.tclOR
+    (Proofview.tclTIMEOUT n t)
+    begin function (e, info) -> match e with
+      | Logic_monad.Tac_Timeout as e ->
+        let info = Exninfo.reify () in
+        Proofview.tclZERO ~info (FailError (0,lazy (CErrors.print e)))
+      | e -> Proofview.tclZERO ~info e
+    end
+
+let tclTIME s t =
+  Proofview.tclTIME s t
+
+let nthDecl m gl =
+  let hyps = Proofview.Goal.hyps gl in
+  try
+    List.nth hyps (m-1)
+  with Failure _ -> CErrors.user_err Pp.(str "No such assumption.")
+
+let nLastDecls gl n =
+  try List.firstn n (Proofview.Goal.hyps gl)
+  with Failure _ -> CErrors.user_err Pp.(str "Not enough hypotheses in the goal.")
+
+let nthHypId m gl =
+  (* We only use [id] *)
+  nthDecl m gl |> NamedDecl.get_id
+let nthHyp m gl =
+  mkVar (nthHypId m gl)
+
+let onNthHypId m tac =
+  Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
+let onNthHyp m tac =
+  Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
+
+let onLastHypId = onNthHypId 1
+let onLastHyp   = onNthHyp 1
+
+let onNthDecl m tac =
+  Proofview.Goal.enter begin fun gl ->
+    Proofview.tclUNIT (nthDecl m gl) >>= tac
+  end
+let onLastDecl  = onNthDecl 1
+
+let nLastHypsId gl n = List.map (NamedDecl.get_id) (nLastDecls gl n)
+let nLastHyps gl n = List.map mkVar (nLastHypsId gl n)
+
+let ifOnHyp pred tac1 tac2 id =
+  Proofview.Goal.enter begin fun gl ->
+  let typ = Tacmach.New.pf_get_hyp_typ id gl in
+  if pf_apply pred gl (id,typ) then
+    tac1 id
+  else
+    tac2 id
+  end
+
+let onHyps find tac = Proofview.Goal.enter begin fun gl -> tac (find gl) end
+
+let onNLastDecls n tac  = onHyps (fun gl -> nLastDecls gl n) tac
+let onNLastHypsId n tac = onHyps (fun gl -> nLastHypsId gl n) tac
+let onNLastHyps n tac   = onHyps (fun gl -> nLastHyps gl n) tac
+
+let afterHyp id tac =
+  Proofview.Goal.enter begin fun gl ->
+  let hyps = Proofview.Goal.hyps gl in
+  let rem, _ = List.split_when (NamedDecl.get_id %> Id.equal id) hyps in
+  tac rem
+  end
+
+let fullGoal gl =
+  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  None :: List.map Option.make hyps
+
+let tryAllHyps tac =
+  Proofview.Goal.enter begin fun gl ->
+  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  tclFIRST_PROGRESS_ON tac hyps
+  end
+let tryAllHypsAndConcl tac =
+  Proofview.Goal.enter begin fun gl ->
+    tclFIRST_PROGRESS_ON tac (fullGoal gl)
+  end
+
+let onClause tac cl =
+  Proofview.Goal.enter begin fun gl ->
+  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
+  end
+
+let fullGoal gl = None :: List.map Option.make (Tacmach.New.pf_ids_of_hyps gl)
+let onAllHyps tac =
+  Proofview.Goal.enter begin fun gl ->
+    tclMAP tac (Tacmach.New.pf_ids_of_hyps gl)
+    end
+let onAllHypsAndConcl tac =
+  Proofview.Goal.enter begin fun gl ->
+    tclMAP tac (fullGoal gl)
+    end
+
 let elimination_sort_of_goal gl =
-  pf_apply Retyping.get_sort_family_of gl (pf_concl gl)
+  (* Retyping will expand evars anyway. *)
+  let c = Proofview.Goal.concl gl in
+  pf_apply Retyping.get_sort_family_of gl c
 
 let elimination_sort_of_hyp id gl =
-  pf_apply Retyping.get_sort_family_of gl (pf_get_hyp_typ gl id)
-
-let elimination_sort_of_clause = function
-  | None -> elimination_sort_of_goal
-  | Some id -> elimination_sort_of_hyp id
-
-(* Change evars *)
-let tclEVARS sigma gls = tclIDTAC {gls with Evd.sigma=sigma}
-
-let pf_with_evars glsev k gls =
-  let evd, a = glsev gls in
-    tclTHEN (tclEVARS evd) (k a) gls
-
-let pf_constr_of_global gr k =
-  pf_with_evars (fun gls -> pf_apply Evd.fresh_global gls gr) k
-
-(** Tacticals of Ltac defined directly in term of Proofview *)
-module New = struct
-  open Proofview
-  open Proofview.Notations
-  open Tacmach.New
-
-  let tclIDTAC = tclUNIT ()
-
-  let tclTHEN t1 t2 =
-    t1 <*> t2
-
-  let tclFAIL ?info lvl msg =
-    let info = match info with
-      (* If the backtrace points here it means the caller didn't save
-         the backtrace correctly *)
-      | None -> Exninfo.reify ()
-      | Some info -> info
-    in
-    tclZERO ~info (FailError (lvl,lazy msg))
-
-  let tclZEROMSG ?info ?loc msg =
-    let info = match info with
-      (* If the backtrace points here it means the caller didn't save
-         the backtrace correctly *)
-      | None -> Exninfo.reify ()
-      | Some info -> info
-    in
-    let info = match loc with
-    | None -> info
-    | Some loc -> Loc.add_loc info loc
-    in
-    let err = UserError msg in
-    tclZERO ~info err
-
-  let catch_failerror e =
-    try
-      catch_failerror e;
-      tclUNIT ()
-    with e when CErrors.noncritical e ->
-      let _, info = Exninfo.capture e in
-      tclZERO ~info e
-
-  (* spiwack: I chose to give the Ltac + the same semantics as
-     [Proofview.tclOR], however, for consistency with the or-else
-     tactical, we may consider wrapping the first argument with
-     [tclPROGRESS]. It strikes me as a bad idea, but consistency can be
-     considered valuable. *)
-  let tclOR t1 t2 =
-    tclINDEPENDENT begin
-      Proofview.tclOR
-        t1
-        begin fun e ->
-          catch_failerror e <*> t2
-        end
-    end
-
-  let tclORD t1 t2 =
-    tclINDEPENDENT begin
-      Proofview.tclOR
-        t1
-        begin fun e ->
-          catch_failerror e <*> t2 ()
-        end
-    end
-
-  let tclONCE = Proofview.tclONCE
-
-  let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (FailError(0,lazy (assert false))) t
-
-  let tclIFCATCH t tt te =
-    tclINDEPENDENT begin
-      Proofview.tclIFCATCH t
-        tt
-        (fun e -> catch_failerror e <*> te ())
-    end
-
-  let tclORELSE0 t1 t2 =
-    tclINDEPENDENT begin
-      tclORELSE
-        t1
-        begin fun e ->
-          catch_failerror e <*> t2
-        end
-    end
-
-  let tclORELSE0L t1 t2 =
-    tclINDEPENDENTL begin
-      tclORELSE
-        t1
-        begin fun e ->
-          catch_failerror e <*> t2
-        end
-    end
-
-  let tclORELSE t1 t2 =
-    tclORELSE0 (tclPROGRESS t1) t2
-
-  let tclTHENS3PARTS t1 l1 repeat l2 =
-    tclINDEPENDENT begin
-      t1 <*>
-        Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
-          begin tclEXTEND (Array.to_list l1) repeat (Array.to_list l2) end
-          begin function (e, info) -> match e with
-            | SizeMismatch (i,_)->
-                let errmsg =
-                  str"Incorrect number of goals" ++ spc() ++
-                  str"(expected "++int i++str(String.plural i " tactic") ++ str")"
-                in
-                tclFAIL 0 errmsg
-            | reraise -> tclZERO ~info reraise
-          end
-    end
-  let tclTHENSFIRSTn t1 l repeat =
-    tclTHENS3PARTS t1 l repeat [||]
-  let tclTHENFIRSTn t1 l =
-    tclTHENSFIRSTn t1 l (tclUNIT())
-  let tclTHENFIRST t1 t2 =
-    tclTHENFIRSTn t1 [|t2|]
-
-  let tclBINDFIRST t1 t2 =
-    t1 >>= fun ans ->
-    Proofview.Unsafe.tclGETGOALS >>= fun gls ->
-    match gls with
-    | [] -> tclFAIL 0 (str "Expect at least one goal.")
-    | hd::tl ->
-    Proofview.Unsafe.tclSETGOALS [hd] <*> t2 ans >>= fun ans ->
-    Proofview.Unsafe.tclNEWGOALS tl <*>
-    Proofview.tclUNIT ans
-
-  let tclTHENSLASTn t1 repeat l =
-    tclTHENS3PARTS t1 [||] repeat l
-
-  let tclTHENLASTn t1 l =
-    tclTHENS3PARTS t1 [||] (tclUNIT()) l
-  let tclTHENLAST t1 t2 = tclTHENLASTn t1 [|t2|]
-
-  let option_of_failure f x = try Some (f x) with Failure _ -> None
-
-  let tclBINDLAST t1 t2 =
-    t1 >>= fun ans ->
-    Proofview.Unsafe.tclGETGOALS >>= fun gls ->
-    match option_of_failure List.sep_last gls with
-    | None -> tclFAIL 0 (str "Expect at least one goal.")
-    | Some (last,firstn) ->
-    Proofview.Unsafe.tclSETGOALS [last] <*> t2 ans >>= fun ans ->
-    Proofview.Unsafe.tclGETGOALS >>= fun newgls ->
-    tclEVARMAP >>= fun sigma ->
-    let firstn = Proofview.Unsafe.undefined sigma firstn in
-    Proofview.Unsafe.tclSETGOALS (firstn@newgls) <*>
-    Proofview.tclUNIT ans
-
-  let tclTHENS t l =
-    tclINDEPENDENT begin
-      t <*>Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
-          begin tclDISPATCH l end
-          begin function (e, info) -> match e with
-            | SizeMismatch (i,_)->
-                let errmsg =
-                  str"Incorrect number of goals" ++ spc() ++
-                  str"(expected "++int i++str(String.plural i " tactic") ++ str")"
-                in
-                tclFAIL 0 errmsg
-            | reraise -> tclZERO ~info reraise
-          end
-    end
-  let tclTHENLIST l =
-    List.fold_left tclTHEN (tclUNIT()) l
-
-
-  (* [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
-  let tclMAP tacfun l =
-    List.fold_right (fun x -> (tclTHEN (tacfun x))) l (tclUNIT())
-
-  let tclTRY t =
-    tclORELSE0 t (tclUNIT ())
-
-  let tclTRYb t =
-    tclORELSE0L (t <*> tclUNIT true) (tclUNIT false)
-
-  let tclIFTHENELSE t1 t2 t3 =
-    tclINDEPENDENT begin
-      Proofview.tclIFCATCH t1
-        (fun () -> t2)
-        (fun (e, info) -> Proofview.tclORELSE t3 (fun e' -> tclZERO ~info e))
-    end
-  let tclIFTHENSVELSE t1 a t3 =
-    Proofview.tclIFCATCH t1
-      (fun () -> tclDISPATCH (Array.to_list a))
-      (fun _ -> t3)
-  let tclIFTHENFIRSTELSE t1 t2 t3 =
-    Proofview.tclIFCATCH t1
-      (fun () -> tclEXTEND [t2] (tclUNIT ()) [])
-      (fun _ -> t3)
-  let tclIFTHENTRYELSEMUST t1 t2 =
-    tclIFTHENELSE t1 (tclTRY t2) t2
-  let tclIFTHENFIRSTTRYELSEMUST t1 t2 =
-    tclIFTHENFIRSTELSE t1 (tclTRY t2) t2
-
-  (* Try the first tactic that does not fail in a list of tactics *)
-  let rec tclFIRST = function
-    | [] ->
-      let info = Exninfo.reify () in
-      tclZEROMSG ~info (str"No applicable tactic.")
-    | t::rest -> tclORELSE0 t (tclFIRST rest)
-
-  let rec tclFIRST_PROGRESS_ON tac = function
-    | []    -> tclFAIL 0 (str "No applicable tactic")
-    | [a]   -> tac a (* so that returned failure is the one from last item *)
-    | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
-
-  let rec tclDO n t =
-    if n < 0 then
-      let info = Exninfo.reify () in
-      tclZEROMSG ~info (str"Wrong argument : Do needs a positive integer.")
-    else if n = 0 then tclUNIT ()
-    else if n = 1 then t
-    else tclTHEN t (tclDO (n-1) t)
-
-  let rec tclREPEAT0 t =
-    tclINDEPENDENT begin
-      Proofview.tclIFCATCH t
-        (fun () -> tclCHECKINTERRUPT <*> tclREPEAT0 t)
-        (fun e -> catch_failerror e <*> tclUNIT ())
-    end
-  let tclREPEAT t =
-    tclREPEAT0 (tclPROGRESS t)
-  let rec tclREPEAT_MAIN0 t =
-    Proofview.tclIFCATCH t
-      (fun () -> tclTRYFOCUS 1 1 (tclREPEAT_MAIN0 t))
-      (fun e -> catch_failerror e <*> tclUNIT ())
-  let tclREPEAT_MAIN t =
-    tclREPEAT_MAIN0 (tclPROGRESS t)
-
-  let tclCOMPLETE t =
-    t >>= fun res ->
-      (tclINDEPENDENT
-         (let info = Exninfo.reify () in
-          tclZEROMSG ~info (str"Proof is not complete."))
-      ) <*>
-        tclUNIT res
-
-  (* Try the first that solves the current goal *)
-  let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
-
-  let tclPROGRESS t =
-    Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
-
-  (* Check that holes in arguments have been resolved *)
-
-  let check_evars env sigma extsigma origsigma =
-    let reachable = lazy (Evarutil.reachable_from_evars sigma
-                            (Evar.Map.domain (Evd.undefined_map origsigma))) in
-    let rec is_undefined_up_to_restriction sigma evk =
-      if Evd.mem origsigma evk then None else
-      let evi = Evd.find sigma evk in
-      match Evd.evar_body evi with
-      | Evd.Evar_empty -> Some (evk,evi)
-      | Evd.Evar_defined c -> match Constr.kind (EConstr.Unsafe.to_constr c) with
-        | Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
-        | _ ->
-          (* We make the assumption that there is no way to refine an
-            evar remaining after typing from the initial term given to
-            apply/elim and co tactics, is it correct? *)
-          None in
-    let rest =
-      Evd.fold_undefined (fun evk evi acc ->
-        match is_undefined_up_to_restriction sigma evk with
-        | Some (evk',evi) ->
-           (* If [evk'] descends from [evk] which descends itself from
-              an originally undefined evar in [origsigma], it is a not
-              a fresh undefined hole from [sigma]. *)
-           if Evar.Set.mem evk (Lazy.force reachable) then acc
-           else (evk',evi)::acc
-        | _ -> acc)
-        extsigma []
-    in
-    match rest with
-    | [] -> ()
-    | (evk,evi) :: _ ->
-      let (loc,_) = evi.Evd.evar_source in
-      Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
-
-  let tclMAPDELAYEDWITHHOLES accept_unresolved_holes l tac =
-    let rec aux = function
-      | [] -> tclUNIT ()
-      | x :: l ->
-        Proofview.Goal.enter begin fun gl ->
-          let env = Proofview.Goal.env gl in
-          let sigma_initial = Proofview.Goal.sigma gl in
-          let (sigma, x) = x env sigma_initial in
-          Proofview.Unsafe.tclEVARS sigma <*> tac x >>= fun () -> aux l >>= fun () ->
-          if accept_unresolved_holes then
-            tclUNIT ()
-          else
-            tclEVARMAP >>= fun sigma_final ->
-            try
-              let () = check_evars env sigma_final sigma sigma_initial in
-              tclUNIT ()
-            with e when CErrors.noncritical e ->
-              let e, info = Exninfo.capture e in
-              tclZERO ~info e
-          end in
-    aux l
-
-  (* The following is basically
-    tclMAPDELAYEDWITHHOLES accept_unresolved_holes [fun _ _ -> (sigma,())] (fun () -> tac)
-    but with value not necessarily in unit *)
-
-  let tclWITHHOLES accept_unresolved_holes tac sigma =
-    tclEVARMAP >>= fun sigma_initial ->
-      if sigma == sigma_initial then tac
-      else
-        let check_evars_if x =
-          if not accept_unresolved_holes then
-            tclEVARMAP >>= fun sigma_final ->
-              tclENV >>= fun env ->
-                try
-                  let () = check_evars env sigma_final sigma sigma_initial in
-                  tclUNIT x
-                with e when CErrors.noncritical e ->
-                  let e, info = Exninfo.capture e in
-                  tclZERO ~info e
-          else
-            tclUNIT x
-        in
-        Proofview.Unsafe.tclEVARS sigma <*> tac >>= check_evars_if
-
-  let tclDELAYEDWITHHOLES check x tac =
-    Proofview.Goal.enter begin fun gl ->
-      let env = Proofview.Goal.env gl in
-      let sigma = Proofview.Goal.sigma gl in
-      let (sigma, x) = x env sigma in
-      tclWITHHOLES check (tac x) sigma
-    end
-
-  let tclTIMEOUT n t =
-    Proofview.tclOR
-      (Proofview.tclTIMEOUT n t)
-      begin function (e, info) -> match e with
-        | Logic_monad.Tac_Timeout as e ->
-          let info = Exninfo.reify () in
-          Proofview.tclZERO ~info (FailError (0,lazy (CErrors.print e)))
-        | e -> Proofview.tclZERO ~info e
-      end
-
-  let tclTIME s t =
-    Proofview.tclTIME s t
-
-  let nthDecl m gl =
-    let hyps = Proofview.Goal.hyps gl in
-    try
-      List.nth hyps (m-1)
-    with Failure _ -> CErrors.user_err Pp.(str "No such assumption.")
-
-  let nLastDecls gl n =
-    try List.firstn n (Proofview.Goal.hyps gl)
-    with Failure _ -> CErrors.user_err Pp.(str "Not enough hypotheses in the goal.")
-
-  let nthHypId m gl =
-    (* We only use [id] *)
-    nthDecl m gl |> NamedDecl.get_id
-  let nthHyp m gl =
-    mkVar (nthHypId m gl)
-
-  let onNthHypId m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
-  let onNthHyp m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
-
-  let onLastHypId = onNthHypId 1
-  let onLastHyp   = onNthHyp 1
-
-  let onNthDecl m tac =
-    Proofview.Goal.enter begin fun gl ->
-      Proofview.tclUNIT (nthDecl m gl) >>= tac
-    end
-  let onLastDecl  = onNthDecl 1
-
-  let nLastHypsId gl n = List.map (NamedDecl.get_id) (nLastDecls gl n)
-  let nLastHyps gl n = List.map mkVar (nLastHypsId gl n)
-
-  let ifOnHyp pred tac1 tac2 id =
-    Proofview.Goal.enter begin fun gl ->
-    let typ = Tacmach.New.pf_get_hyp_typ id gl in
-    if pf_apply pred gl (id,typ) then
-      tac1 id
-    else
-      tac2 id
-    end
-
-  let onHyps find tac = Proofview.Goal.enter begin fun gl -> tac (find gl) end
-
-  let onNLastDecls n tac  = onHyps (fun gl -> nLastDecls gl n) tac
-  let onNLastHypsId n tac = onHyps (fun gl -> nLastHypsId gl n) tac
-  let onNLastHyps n tac   = onHyps (fun gl -> nLastHyps gl n) tac
-
-  let afterHyp id tac =
-    Proofview.Goal.enter begin fun gl ->
-    let hyps = Proofview.Goal.hyps gl in
-    let rem, _ = List.split_when (NamedDecl.get_id %> Id.equal id) hyps in
-    tac rem
-    end
-
-  let fullGoal gl =
-    let hyps = Tacmach.New.pf_ids_of_hyps gl in
-    None :: List.map Option.make hyps
-
-  let tryAllHyps tac =
-    Proofview.Goal.enter begin fun gl ->
-    let hyps = Tacmach.New.pf_ids_of_hyps gl in
-    tclFIRST_PROGRESS_ON tac hyps
-    end
-  let tryAllHypsAndConcl tac =
-    Proofview.Goal.enter begin fun gl ->
-      tclFIRST_PROGRESS_ON tac (fullGoal gl)
-    end
-
-  let onClause tac cl =
-    Proofview.Goal.enter begin fun gl ->
-    let hyps = Tacmach.New.pf_ids_of_hyps gl in
-    tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
-    end
-
-  let fullGoal gl = None :: List.map Option.make (Tacmach.New.pf_ids_of_hyps gl)
-  let onAllHyps tac =
-    Proofview.Goal.enter begin fun gl ->
-      tclMAP tac (Tacmach.New.pf_ids_of_hyps gl)
-      end
-  let onAllHypsAndConcl tac =
-    Proofview.Goal.enter begin fun gl ->
-      tclMAP tac (fullGoal gl)
-      end
-
-  let elimination_sort_of_goal gl =
-    (* Retyping will expand evars anyway. *)
-    let c = Proofview.Goal.concl gl in
-    pf_apply Retyping.get_sort_family_of gl c
-
-  let elimination_sort_of_hyp id gl =
-    (* Retyping will expand evars anyway. *)
-    let c = pf_get_hyp_typ id gl in
-    pf_apply Retyping.get_sort_family_of gl c
-
-  let elimination_sort_of_clause id gl = match id with
-  | None -> elimination_sort_of_goal gl
-  | Some id -> elimination_sort_of_hyp id gl
-
-  let pf_constr_of_global ref =
-    Proofview.tclEVARMAP >>= fun sigma ->
-    Proofview.tclENV >>= fun env ->
-    let (sigma, c) = Evd.fresh_global env sigma ref in
-    Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT c
-
-  let tclTYPEOFTHEN ?refresh c tac =
-    Proofview.Goal.enter (fun gl ->
-      let env = Proofview.Goal.env gl in
-      let sigma = Proofview.Goal.sigma gl in
-      let (sigma, t) = Typing.type_of ?refresh env sigma c in
-      Proofview.Unsafe.tclEVARS sigma <*> tac sigma t)
-
-  let tclSELECT = Goal_select.tclSELECT
-
-end
+  (* Retyping will expand evars anyway. *)
+  let c = pf_get_hyp_typ id gl in
+  pf_apply Retyping.get_sort_family_of gl c
+
+let elimination_sort_of_clause id gl = match id with
+| None -> elimination_sort_of_goal gl
+| Some id -> elimination_sort_of_hyp id gl
+
+let pf_constr_of_global ref =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.tclENV >>= fun env ->
+  let (sigma, c) = Evd.fresh_global env sigma ref in
+  Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT c
+
+let tclTYPEOFTHEN ?refresh c tac =
+  Proofview.Goal.enter (fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let (sigma, t) = Typing.type_of ?refresh env sigma c in
+    Proofview.Unsafe.tclEVARS sigma <*> tac sigma t)
+
+let tclSELECT = Goal_select.tclSELECT

@@ -108,7 +108,7 @@ let closed_term args _ = match args with
   let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_ref) c) (Option.get (Value.to_list l)) in
   Proofview.tclEVARMAP >>= fun sigma ->
   let cs = List.fold_right GlobRef.Set_env.add l GlobRef.Set_env.empty in
-  if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
+  if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.tclFAIL 0 (mt())
 | _ -> assert false
 
 let closed_term_ast =

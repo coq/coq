@@ -23,7 +23,7 @@ open Nameops
 open CErrors
 open Util
 open UnivGen
-open Tacticals.New
+open Tacticals
 open Tactics
 open Nametab
 open Tacred
@@ -223,7 +223,7 @@ let (declare_f :
   declare_fun f_id kind (value_f input_type fterm_ref)
 
 module New = struct
-  open Tacticals.New
+  open Tacticals
 
   let observe_tac = New.observe_tac ~header:(Pp.mt ())
 
@@ -247,7 +247,7 @@ end
 (* The boolean value is_mes expresses that the termination is expressed
   using a measure function instead of a well-founded relation. *)
 let tclUSER tac is_mes l =
-  let open Tacticals.New in
+  let open Tacticals in
   let clear_tac =
     match l with
     | None -> tclIDTAC
@@ -268,7 +268,7 @@ let tclUSER tac is_mes l =
 
 let tclUSER_if_not_mes concl_tac is_mes names_to_suppress =
   if is_mes then
-    Tacticals.New.tclCOMPLETE (Simple.apply (delayed_force well_founded_ltof))
+    Tacticals.tclCOMPLETE (Simple.apply (delayed_force well_founded_ltof))
   else
     (* tclTHEN (Simple.apply (delayed_force acc_intro_generator_function) ) *)
     tclUSER concl_tac is_mes names_to_suppress
@@ -409,7 +409,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos :
         (fun _ _ -> str "treat_case1")
         [ h_intros (List.rev rev_ids)
         ; intro_using_then teq_id (fun _ -> Proofview.tclUNIT ())
-        ; Tacticals.New.onLastHypId (fun heq ->
+        ; Tacticals.onLastHypId (fun heq ->
               New.observe_tclTHENLIST
                 (fun _ _ -> str "treat_case2")
                 [ clear to_intros
@@ -574,7 +574,7 @@ let rec prove_lt hyple =
               assumption ])
 
 let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       match lbounds with
       | [] ->
@@ -710,7 +710,7 @@ let terminate_letin (na, b, t, e) expr_info continuation_tac info =
       continuation_tac {info with info = new_e; forbidden_ids = new_forbidden})
 
 let pf_type c tac =
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
@@ -767,7 +767,7 @@ let mkDestructEq not_on_hyp env sigma expr =
 
 let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
     =
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       let sigma = Proofview.Goal.sigma g in
       let env = Proofview.Goal.env g in
@@ -809,7 +809,7 @@ let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
                0 (Array.to_list l))))
 
 let terminate_app_rec (f, args) expr_info continuation_tac _ =
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       let sigma = Proofview.Goal.sigma g in
       let env = Proofview.Goal.env g in
@@ -911,7 +911,7 @@ let equation_case next_step case expr_info continuation_tac infos =
     (terminate_case next_step case expr_info continuation_tac infos)
 
 let rec prove_le () =
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       let sigma = Proofview.Goal.sigma g in
       let x, z =
@@ -946,13 +946,13 @@ let rec prove_le () =
                 ; New.observe_tac
                     (fun _ _ -> str "prove_le (rec)")
                     (prove_le ()) ]
-            with Not_found -> Tacticals.New.tclFAIL 0 (mt ())
+            with Not_found -> Tacticals.tclFAIL 0 (mt ())
           end ])
 
 let rec make_rewrite_list expr_info max = function
   | [] -> Proofview.tclUNIT ()
   | (_, p, hp) :: l ->
-    let open Tacticals.New in
+    let open Tacticals in
     New.observe_tac
       (fun _ _ -> str "make_rewrite_list")
       (tclTHENS
@@ -983,7 +983,7 @@ let rec make_rewrite_list expr_info max = function
              ; New.observe_tac (fun _ _ -> str "prove_le(2)") (prove_le ()) ] ])
 
 let make_rewrite expr_info l hp max =
-  let open Tacticals.New in
+  let open Tacticals in
   tclTHENFIRST
     (New.observe_tac
        (fun _ _ -> str "make_rewrite")
@@ -1037,7 +1037,7 @@ let rec compute_max rew_tac max l =
   match l with
   | [] -> rew_tac max
   | (_, p, _) :: l ->
-    let open Tacticals.New in
+    let open Tacticals in
     New.observe_tclTHENLIST
       (fun _ _ -> str "compute_max")
       [ simplest_elim (mkApp (delayed_force max_constr, [|max; mkVar p|]))
@@ -1048,7 +1048,7 @@ let rec compute_max rew_tac max l =
             | _ -> assert false) ]
 
 let rec destruct_hex expr_info acc l =
-  let open Tacticals.New in
+  let open Tacticals in
   match l with
   | [] -> (
     match List.rev acc with
@@ -1072,7 +1072,7 @@ let rec destruct_hex expr_info acc l =
                   (destruct_hex expr_info ((v, p, hp) :: acc) l))) ]
 
 let rec intros_values_eq expr_info acc =
-  let open Tacticals.New in
+  let open Tacticals in
   tclORELSE
     (New.observe_tclTHENLIST
        (fun _ _ -> str "intros_values_eq")
@@ -1083,7 +1083,7 @@ let rec intros_values_eq expr_info acc =
     (tclCOMPLETE (destruct_hex expr_info [] acc))
 
 let equation_others _ expr_info continuation_tac infos =
-  let open Tacticals.New in
+  let open Tacticals in
   if expr_info.is_final && expr_info.is_main_branch then
     New.observe_tac
       (fun env sigma ->
@@ -1204,7 +1204,7 @@ let compute_terminate_type nb_args func =
 
 let termination_proof_header is_mes input_type ids args_id relation rec_arg_num
     rec_arg_id tac wf_tac : unit Proofview.tactic =
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       let nargs = List.length args_id in
       let pre_rec_args =
@@ -1454,7 +1454,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     let env = Global.env () in
     let start_tac =
       let open Tacmach.New in
-      let open Tacticals.New in
+      let open Tacticals in
       Proofview.Goal.enter (fun gl ->
           let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gl) in
           New.observe_tclTHENLIST
@@ -1473,7 +1473,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     in
     let end_tac =
       let open Tacmach.New in
-      let open Tacticals.New in
+      let open Tacticals in
       Proofview.Goal.enter (fun gl ->
           let sigma = project gl in
           match EConstr.kind sigma (pf_concl gl) with
@@ -1511,12 +1511,12 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                  (tclFIRST
                     (List.map
                        (fun c ->
-                         Tacticals.New.tclTHENLIST
+                         Tacticals.tclTHENLIST
                            [ intros
                            ; Simple.apply
                                (fst (interp_constr (Global.env ()) Evd.empty c))
                              (*FIXME*)
-                           ; Tacticals.New.tclCOMPLETE Auto.default_auto ])
+                           ; Tacticals.tclCOMPLETE Auto.default_auto ])
                        using_lemmas))
                  tclIDTAC))
            lemma
@@ -1552,7 +1552,7 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
   let lemma =
     start_proof
       Global.(env ())
-      ctx Tacticals.New.tclIDTAC Tacticals.New.tclIDTAC
+      ctx Tacticals.tclIDTAC Tacticals.tclIDTAC
   in
   try
     let sigma, new_goal_type = build_new_goal_type lemma in
@@ -1617,7 +1617,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
                     EConstr.of_constr
                       (constr_of_monomorphic_global (Global.env ()) terminate_ref)
                 ; f_constr = EConstr.of_constr f_constr
-                ; concl_tac = Tacticals.New.tclIDTAC
+                ; concl_tac = Tacticals.tclIDTAC
                 ; func = functional_ref
                 ; info =
                     instantiate_lambda Evd.empty

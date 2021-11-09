@@ -1479,7 +1479,7 @@ let micromega_order_change spec cert cert_typ env ff (*: unit Proofview.tactic*)
   let vm = dump_varmap spec.typ (vm_of_list env) in
   (* todo : directly generate the proof term - or generalize before conversion? *)
   Proofview.Goal.enter (fun gl ->
-      Tacticals.New.tclTHENLIST
+      Tacticals.tclTHENLIST
         [ Tactics.change_concl
             (set
                [ ( "__ff"
@@ -1858,23 +1858,23 @@ let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
         with
         | Unknown ->
           flush stdout;
-          Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness")
+          Tacticals.tclFAIL 0 (Pp.str " Cannot find witness")
         | Model (m, e) ->
-          Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness")
+          Tacticals.tclFAIL 0 (Pp.str " Cannot find witness")
         | Prf (ids, ff', res') ->
           let arith_goal, props, vars, ff_arith =
             make_goal_of_formula (genv, sigma) dumpexpr ff'
           in
           let intro (id, _) = Tactics.introduction id in
-          let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
-          let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
+          let intro_vars = Tacticals.tclTHENLIST (List.map intro vars) in
+          let intro_props = Tacticals.tclTHENLIST (List.map intro props) in
           (*       let ipat_of_name id = Some (CAst.make @@ IntroNaming (Namegen.IntroIdentifier id)) in*)
           let goal_name =
             fresh_id Id.Set.empty (Names.Id.of_string "__arith") gl
           in
           let env' = List.map (fun (id, i) -> (EConstr.mkVar id, i)) vars in
           let tac_arith =
-            Tacticals.New.tclTHENLIST
+            Tacticals.tclTHENLIST
               [ clear_all_no_check
               ; intro_props
               ; intro_vars
@@ -1891,13 +1891,13 @@ let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
             List.map (fun (_, i) -> fst (List.nth env (i - 1))) vars
           in
           let arith_args = goal_props @ goal_vars in
-          let kill_arith = Tacticals.New.tclTHEN tac_arith tac in
+          let kill_arith = Tacticals.tclTHEN tac_arith tac in
           (*
 (*tclABSTRACT fails in certain corner cases.*)
-Tacticals.New.tclTHEN
+Tacticals.tclTHEN
            clear_all_no_check
-           (Abstract.tclABSTRACT ~opaque:false None (Tacticals.New.tclTHEN tac_arith tac)) in *)
-          Tacticals.New.tclTHEN
+           (Abstract.tclABSTRACT ~opaque:false None (Tacticals.tclTHEN tac_arith tac)) in *)
+          Tacticals.tclTHEN
             (Tactics.assert_by (Names.Name goal_name) arith_goal
                (*Proofview.tclTIME  (Some "kill_arith")*) kill_arith)
             ((*Proofview.tclTIME  (Some "apply_arith") *)
@@ -1906,10 +1906,10 @@ Tacticals.New.tclTHEN
                   ( EConstr.mkVar goal_name
                   , arith_args @ List.map EConstr.mkVar ids )))
       with
-      | Mfourier.TimeOut -> Tacticals.New.tclFAIL 0 (Pp.str "Timeout")
+      | Mfourier.TimeOut -> Tacticals.tclFAIL 0 (Pp.str "Timeout")
       | CsdpNotFound ->
         flush stdout;
-        Tacticals.New.tclFAIL 0
+        Tacticals.tclFAIL 0
           (Pp.str
              ( " Skipping what remains of this tactic: the complexity of the \
                 goal requires "
@@ -1921,7 +1921,7 @@ Tacticals.New.tclTHEN
                 https://projects.coin-or.org/Csdp" ))
       | x ->
         if debug then
-          Tacticals.New.tclFAIL 0 (Pp.str (Printexc.get_backtrace ()))
+          Tacticals.tclFAIL 0 (Pp.str (Printexc.get_backtrace ()))
         else raise x)
 
 let micromega_order_changer cert env ff =
@@ -1936,7 +1936,7 @@ let micromega_order_changer cert env ff =
   let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
   let vm = dump_varmap typ (vm_of_list env) in
   Proofview.Goal.enter (fun gl ->
-      Tacticals.New.tclTHENLIST
+      Tacticals.tclTHENLIST
         [ Tactics.change_concl
             (set
                [ ( "__ff"
@@ -1947,7 +1947,7 @@ let micromega_order_changer cert env ff =
                ; ("__varmap", vm, EConstr.mkApp (Lazy.force coq_VarMap, [|typ|]))
                ; ("__wit", cert, cert_typ) ]
                (Tacmach.New.pf_concl gl))
-          (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
+          (*      Tacticals.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
         ])
 
 let micromega_genr prover tac =
@@ -1995,7 +1995,7 @@ let micromega_genr prover tac =
         with
         | Unknown | Model _ ->
           flush stdout;
-          Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness")
+          Tacticals.tclFAIL 0 (Pp.str " Cannot find witness")
         | Prf (ids, ff', res') ->
           let ff, ids =
             formula_hyps_concl
@@ -2007,8 +2007,8 @@ let micromega_genr prover tac =
             make_goal_of_formula (genv, sigma) (Lazy.force dump_rexpr) ff'
           in
           let intro (id, _) = Tactics.introduction id in
-          let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
-          let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
+          let intro_vars = Tacticals.tclTHENLIST (List.map intro vars) in
+          let intro_props = Tacticals.tclTHENLIST (List.map intro props) in
           let ipat_of_name id =
             Some (CAst.make @@ IntroNaming (Namegen.IntroIdentifier id))
           in
@@ -2017,7 +2017,7 @@ let micromega_genr prover tac =
           in
           let env' = List.map (fun (id, i) -> (EConstr.mkVar id, i)) vars in
           let tac_arith =
-            Tacticals.New.tclTHENLIST
+            Tacticals.tclTHENLIST
               [ clear_all_no_check
               ; intro_props
               ; intro_vars
@@ -2032,23 +2032,23 @@ let micromega_genr prover tac =
             List.map (fun (_, i) -> fst (List.nth env (i - 1))) vars
           in
           let arith_args = goal_props @ goal_vars in
-          let kill_arith = Tacticals.New.tclTHEN tac_arith tac in
-          (* Tacticals.New.tclTHEN
+          let kill_arith = Tacticals.tclTHEN tac_arith tac in
+          (* Tacticals.tclTHEN
              (Tactics.keep [])
              (Tactics.tclABSTRACT  None*)
-          Tacticals.New.tclTHENS
+          Tacticals.tclTHENS
             (Tactics.forward true (Some None) (ipat_of_name goal_name)
                arith_goal)
             [ kill_arith
-            ; Tacticals.New.tclTHENLIST
+            ; Tacticals.tclTHENLIST
                 [ Tactics.generalize (List.map EConstr.mkVar ids)
                 ; Tactics.exact_check
                     (EConstr.applist (EConstr.mkVar goal_name, arith_args)) ] ]
       with
-      | Mfourier.TimeOut -> Tacticals.New.tclFAIL 0 (Pp.str "Timeout")
+      | Mfourier.TimeOut -> Tacticals.tclFAIL 0 (Pp.str "Timeout")
       | CsdpNotFound ->
         flush stdout;
-        Tacticals.New.tclFAIL 0
+        Tacticals.tclFAIL 0
           (Pp.str
              ( " Skipping what remains of this tactic: the complexity of the \
                 goal requires "
@@ -2377,15 +2377,15 @@ let exfalso_if_concl_not_Prop =
   Proofview.Goal.enter (fun gl ->
       Tacmach.New.(
         if is_prop (pf_env gl) (project gl) (pf_concl gl) then
-          Tacticals.New.tclIDTAC
+          Tacticals.tclIDTAC
         else Tactics.elim_type (Lazy.force coq_False)))
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
-  Tacticals.New.tclTHEN exfalso_if_concl_not_Prop
+  Tacticals.tclTHEN exfalso_if_concl_not_Prop
     (micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac)
 
 let micromega_genr prover tac =
-  Tacticals.New.tclTHEN exfalso_if_concl_not_Prop (micromega_genr prover tac)
+  Tacticals.tclTHEN exfalso_if_concl_not_Prop (micromega_genr prover tac)
 
 let lra_Q =
   micromega_gen parse_qarith

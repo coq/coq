@@ -25,7 +25,7 @@ open Reductionops
 open Inductiveops
 open Tacmach.New
 open Clenv
-open Tacticals.New
+open Tacticals
 open Tactics
 open Context.Named.Declaration
 

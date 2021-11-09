@@ -207,7 +207,7 @@ module Btauto = struct
         str "Not a tautology:" ++ spc () ++ l
       with e when CErrors.noncritical e -> (str "Not a tautology")
     in
-    Tacticals.New.tclFAIL 0 msg
+    Tacticals.tclFAIL 0 msg
   end
 
   let try_unification env =
@@ -219,11 +219,11 @@ module Btauto = struct
       match t with
       | App (c, [|typ; p; _|]) when c === eq ->
       (* should be an equality [@eq poly ?p (Cst false)] *)
-          let tac = Tacticals.New.tclORELSE0 Tactics.reflexivity (print_counterexample p env) in
+          let tac = Tacticals.tclORELSE0 Tactics.reflexivity (print_counterexample p env) in
           tac
       | _ ->
           let msg = str "Btauto: Internal error" in
-          Tacticals.New.tclFAIL 0 msg
+          Tacticals.tclFAIL 0 msg
     end
 
   let tac =
@@ -245,7 +245,7 @@ module Btauto = struct
           let fr = reify env fr in
           let changed_gl = Constr.mkApp (c, [|typ; fl; fr|]) in
           let changed_gl = EConstr.of_constr changed_gl in
-          Tacticals.New.tclTHENLIST [
+          Tacticals.tclTHENLIST [
             Tactics.change_concl changed_gl;
             Tactics.apply (EConstr.of_constr (Lazy.force soundness));
             Tactics.normalise_vm_in_concl;
@@ -253,7 +253,7 @@ module Btauto = struct
           ]
       | _ ->
           let msg = str "Cannot recognize a boolean equality" in
-          Tacticals.New.tclFAIL 0 msg
+          Tacticals.tclFAIL 0 msg
     end
 
 end

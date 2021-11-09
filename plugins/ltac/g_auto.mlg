@@ -182,7 +182,7 @@ TACTIC EXTEND unify
     match table with
     | None ->
       let msg = str "Hint table " ++ str base ++ str " not found" in
-      Tacticals.New.tclZEROMSG msg
+      Tacticals.tclZEROMSG msg
     | Some t ->
       let state = Hints.Hint_db.transparent_state t in
       Tactics.unify ~state x y

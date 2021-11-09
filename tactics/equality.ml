@@ -31,7 +31,7 @@ open Retyping
 open Tacmach.New
 open Logic
 open Hipattern
-open Tacticals.New
+open Tacticals
 open Tactics
 open Tacred
 open Coqlib
@@ -637,8 +637,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
       try lib_ref "core.identity.type", lib_ref "core.identity.sym"
       with UserError _ ->
         user_err (strbrk "Need a registration for either core.eq.type and core.eq.sym or core.identity.type and core.identity.sym.") in
-    Tacticals.New.pf_constr_of_global sym >>= fun sym ->
-    Tacticals.New.pf_constr_of_global e >>= fun e ->
+    Tacticals.pf_constr_of_global sym >>= fun sym ->
+    Tacticals.pf_constr_of_global e >>= fun e ->
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENLAST
       (replace_core clause l2r eq)
@@ -1372,10 +1372,10 @@ let inject_if_homogenous_dependent_pair ty =
       [
        intro;
        onLastHyp (fun hyp ->
-        Tacticals.New.pf_constr_of_global Coqlib.(lib_ref "core.eq.type") >>= fun ceq ->
+        Tacticals.pf_constr_of_global Coqlib.(lib_ref "core.eq.type") >>= fun ceq ->
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar sigma hyp];
-           Tacticals.New.pf_constr_of_global inj2 >>= fun inj2 ->
+           Tacticals.pf_constr_of_global inj2 >>= fun inj2 ->
            Logic.refiner ~check:true EConstr.Unsafe.(to_constr
              (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
           ])]
@@ -1420,7 +1420,7 @@ let inject_at_positions env sigma l2r eq posns tac =
     tclZEROMSG (str "Failed to decompose the equality.")
   else
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
-    (Tacticals.New.tclTHENFIRST
+    (Tacticals.tclTHENFIRST
       (Proofview.tclIGNORE (Proofview.Monad.List.map
          (fun (pf,ty) -> tclTHENS (cut ty)
            [inject_if_homogenous_dependent_pair ty;

@@ -695,7 +695,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       with Not_found -> false
     in
     if has_var then
-      Tacticals.New.tclZEROMSG (str "Variable already exists")
+      Tacticals.tclZEROMSG (str "Variable already exists")
     else
       let open Context.Named.Declaration in
       let nenv = EConstr.push_named (LocalAssum (Context.make_annot id Sorts.Relevant, t)) env in
@@ -953,7 +953,7 @@ let () = define1 "hyp" ident begin fun id ->
   pf_apply begin fun env _ ->
     let mem = try ignore (Environ.lookup_named id env); true with Not_found -> false in
     if mem then return (Value.of_constr (EConstr.mkVar id))
-    else Tacticals.New.tclZEROMSG
+    else Tacticals.tclZEROMSG
       (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (* FIXME: Do something more sensible *)
   end
 end
@@ -989,7 +989,7 @@ let () = define2 "with_holes" closure closure begin fun x f ->
   thaw x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
-  Tacticals.New.tclWITHHOLES false (Tac2ffi.apply f [ans]) sigma
+  Tacticals.tclWITHHOLES false (Tac2ffi.apply f [ans]) sigma
 end
 
 let () = define1 "progress" closure begin fun f ->

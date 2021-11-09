@@ -113,17 +113,17 @@ let one_base general_rewrite_maybe_in tac_main bas =
     Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
   in
     (h.rew_ctx,h.rew_lemma,h.rew_l2r,tac)) lrul in
-    Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS (List.fold_left (fun tac (ctx,csr,dir,tc) ->
-      Tacticals.New.tclTHEN tac
-        (Tacticals.New.tclREPEAT_MAIN
-            (Tacticals.New.tclTHENFIRST (try_rewrite dir ctx csr tc) tac_main)))
+    Tacticals.tclREPEAT_MAIN (Proofview.tclPROGRESS (List.fold_left (fun tac (ctx,csr,dir,tc) ->
+      Tacticals.tclTHEN tac
+        (Tacticals.tclREPEAT_MAIN
+            (Tacticals.tclTHENFIRST (try_rewrite dir ctx csr tc) tac_main)))
       (Proofview.tclUNIT()) lrul))
 
 (* The AutoRewrite tactic *)
 let autorewrite ?(conds=Naive) tac_main lbas =
-  Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
+  Tacticals.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->
-       Tacticals.New.tclTHEN tac
+       Tacticals.tclTHEN tac
         (one_base (fun dir c tac ->
           let tac = (tac, conds) in
             general_rewrite ~where:None ~l2r:dir AllOccurrences ~freeze:true ~dep:false ~with_evars:false ~tac (EConstr.of_constr c, Tactypes.NoBindings))
@@ -138,10 +138,10 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
     let cstr = EConstr.of_constr cstr in
     general_rewrite ~where:(Some id) ~l2r:dir AllOccurrences ~freeze:true ~dep:false ~with_evars:false ~tac:(tac, conds) (cstr, Tactypes.NoBindings)
   in
- Tacticals.New.tclMAP (fun id ->
-  Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
+ Tacticals.tclMAP (fun id ->
+  Tacticals.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->
-       Tacticals.New.tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) (Proofview.tclUNIT()) lbas)))
+       Tacticals.tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) (Proofview.tclUNIT()) lbas)))
    idl
  end
 
@@ -155,12 +155,12 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
      cl.concl_occs != NoOccurrences
   then
     let info = Exninfo.reify () in
-    Tacticals.New.tclZEROMSG ~info (str"The \"at\" syntax isn't available yet for the autorewrite tactic.")
+    Tacticals.tclZEROMSG ~info (str"The \"at\" syntax isn't available yet for the autorewrite tactic.")
   else
     let compose_tac t1 t2 =
       match cl.onhyps with
         | Some [] -> t1
-        | _ ->      Tacticals.New.tclTHENFIRST t1 t2
+        | _ ->      Tacticals.tclTHENFIRST t1 t2
     in
     compose_tac
         (if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else Proofview.tclUNIT ())
@@ -187,7 +187,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
         Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
     | _ ->
       let info = Exninfo.reify () in
-      Tacticals.New.tclZEROMSG ~info
+      Tacticals.tclZEROMSG ~info
         (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
 (* Functions necessary to the library object declaration *)

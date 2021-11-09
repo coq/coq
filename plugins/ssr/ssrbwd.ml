@@ -116,7 +116,7 @@ let refine_interp_apply_view dbl ist gv =
 
 let apply_top_tac =
   Proofview.Goal.enter begin fun _ ->
-  Tacticals.New.tclTHENLIST [
+  Tacticals.tclTHENLIST [
     introid top_id;
     apply_rconstr (mkRVar top_id);
     cleartac [SsrHyp(None,top_id)]
@@ -129,8 +129,8 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
  let ggenl, tclGENTAC =
    if gviews <> [] && ggenl <> [] then
      let ggenl= List.map (fun (x,(k,p)) -> x, {kind=k; pattern=p; interpretation= Some ist}) (List.hd ggenl) in
-     [], Tacticals.tclTHEN (Proofview.V82.of_tactic (genstac (ggenl,[])))
-   else ggenl, Tacticals.tclTHEN Tacticals.tclIDTAC in
+     [], Tacticals.Old.tclTHEN (Proofview.V82.of_tactic (genstac (ggenl,[])))
+   else ggenl, Tacticals.Old.tclTHEN Tacticals.Old.tclIDTAC in
  tclGENTAC (fun gl ->
   match gviews, ggenl with
   | v :: tl, [] ->
@@ -138,17 +138,17 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
       if List.length tl = 1
       then Ssrview.AdaptorDb.Equivalence
       else Ssrview.AdaptorDb.Backward in
-    Proofview.V82.of_tactic (Tacticals.New.tclTHEN
+    Proofview.V82.of_tactic (Tacticals.tclTHEN
       (List.fold_left (fun acc v ->
-         Tacticals.New.tclTHENLAST acc (vtac v dbl))
+         Tacticals.tclTHENLAST acc (vtac v dbl))
         (vtac v Ssrview.AdaptorDb.Backward) tl)
       (cleartac clr)) gl
   | [], [agens] ->
     let clr', (sigma, lemma) = interp_agens ist gl agens in
     let gl = pf_merge_uc_of sigma gl in
-    Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [cleartac clr; refine_with ~beta:true lemma; cleartac clr']) gl
+    Proofview.V82.of_tactic (Tacticals.tclTHENLIST [cleartac clr; refine_with ~beta:true lemma; cleartac clr']) gl
   | _, _ ->
-    Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [apply_top_tac; cleartac clr]) gl) gl
+    Proofview.V82.of_tactic (Tacticals.tclTHENLIST [apply_top_tac; cleartac clr]) gl) gl
 )
 
 let apply_top_tac = apply_top_tac

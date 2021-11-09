@@ -468,7 +468,7 @@ let do_replace_lb handle aavoid narg p q =
         in let app =  if Array.is_empty lb_args
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
-           Tacticals.New.tclTHENLIST [
+           Tacticals.tclTHENLIST [
              Equality.replace p q ; apply app ; Auto.default_auto]
   end
 
@@ -512,7 +512,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
           in if Ind.CanOrd.equal (fst u) ind
-             then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
+             then Tacticals.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
                let c = get_scheme handle (!bl_scheme_kind_aux ()) (fst u) in
                let bl_t1 = mkConst c in
@@ -525,38 +525,38 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
                 let app =  if Array.is_empty bl_args
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
-                Tacticals.New.tclTHENLIST [
+                Tacticals.tclTHENLIST [
                   Equality.replace_by t1 t2
-                    (Tacticals.New.tclTHEN (apply app) (Auto.default_auto)) ;
+                    (Tacticals.tclTHEN (apply app) (Auto.default_auto)) ;
                   aux q1 q2 ]
               )
         )
         end
     | ([],[]) -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclZEROMSG (str "Both side of the equality must have the same arity.")
+    | _ -> Tacticals.tclZEROMSG (str "Both side of the equality must have the same arity.")
   in
   Proofview.tclEVARMAP >>= fun sigma ->
   begin try Proofview.tclUNIT (destApp sigma lft)
-    with DestKO -> Tacticals.New.tclZEROMSG (str "replace failed.")
+    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
   end >>= fun (ind1,ca1) ->
   begin try Proofview.tclUNIT (destApp sigma rgt)
-    with DestKO -> Tacticals.New.tclZEROMSG (str "replace failed.")
+    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
   end >>= fun (ind2,ca2) ->
   begin try Proofview.tclUNIT (fst (destInd sigma ind1))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind1)))
-        with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp1,i1) ->
   begin try Proofview.tclUNIT (fst (destInd sigma ind2))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind2)))
-        with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
   Proofview.tclENV >>= fun env ->
   if not (Environ.QMutInd.equal env sp1 sp2) || not (Int.equal i1 i2)
-  then Tacticals.New.tclZEROMSG (str "Eq should be on the same type")
+  then Tacticals.tclZEROMSG (str "Eq should be on the same type")
   else aux (Array.to_list ca1) (Array.to_list ca2)
 
 (*
@@ -643,21 +643,21 @@ let compute_bl_tact handle ind lnamesparrec nparrec =
     @ ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
   in
   intros_using_then first_intros begin fun fresh_first_intros ->
-    Tacticals.New.tclTHENLIST [
+    Tacticals.tclTHENLIST [
         intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
         intro_using_then (Id.of_string "y") (fun freshm -> destruct_on (EConstr.mkVar freshm));
         intro_using_then (Id.of_string "Z") begin fun freshz ->
-          Tacticals.New.tclTHENLIST [
+          Tacticals.tclTHENLIST [
               intros;
-              Tacticals.New.tclTRY (
-                  Tacticals.New.tclORELSE reflexivity my_discr_tac
+              Tacticals.tclTRY (
+                  Tacticals.tclORELSE reflexivity my_discr_tac
                 );
               simpl_in_hyp (freshz,Locus.InHyp);
               (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                *)
-              Tacticals.New.tclREPEAT (
-                  Tacticals.New.tclTHENLIST [
+              Tacticals.tclREPEAT (
+                  Tacticals.tclTHENLIST [
                       Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
                       destruct_on_as (EConstr.mkVar freshz)
                         (IntroOrPattern [[CAst.make @@ IntroNaming (IntroFresh (Id.of_string "Z"));
@@ -676,17 +676,17 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                   | Ind (indeq, u) ->
                      if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                      then
-                       Tacticals.New.tclTHEN
+                       Tacticals.tclTHEN
                          (do_replace_bl handle ind
                             (List.rev fresh_first_intros)
                             nparrec (ca.(2))
                             (ca.(1)))
                          Auto.default_auto
                      else
-                       Tacticals.New.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
-                  | _ -> Tacticals.New.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
+                       Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
+                  | _ -> Tacticals.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
                 )
-                | _ -> Tacticals.New.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
+                | _ -> Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
                 end
 
             ]
@@ -779,20 +779,20 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
     @ ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
   intros_using_then first_intros begin fun fresh_first_intros ->
-    Tacticals.New.tclTHENLIST [
+    Tacticals.tclTHENLIST [
         intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
         intro_using_then (Id.of_string "y") (fun freshm -> destruct_on (EConstr.mkVar freshm));
         intro_using_then (Id.of_string "Z") begin fun freshz ->
-          Tacticals.New.tclTHENLIST [
+          Tacticals.tclTHENLIST [
               intros;
-              Tacticals.New.tclTRY (
-                  Tacticals.New.tclORELSE reflexivity my_discr_tac
+              Tacticals.tclTRY (
+                  Tacticals.tclORELSE reflexivity my_discr_tac
                 );
               my_inj_tac freshz;
               intros; simpl_in_concl;
               Auto.default_auto;
-              Tacticals.New.tclREPEAT (
-                  Tacticals.New.tclTHENLIST [apply (EConstr.of_constr (andb_true_intro()));
+              Tacticals.tclREPEAT (
+                  Tacticals.tclTHENLIST [apply (EConstr.of_constr (andb_true_intro()));
                                              simplest_split ;Auto.default_auto ]
                 );
               Proofview.Goal.enter begin fun gls ->
@@ -808,10 +808,10 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
                                      nparrec
                                      ca'.(n-2) ca'.(n-1)
                                 | _ ->
-                                   Tacticals.New.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
                                )
                 | _ ->
-                   Tacticals.New.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
                 end
             ]
           end
@@ -949,18 +949,18 @@ let compute_dec_tact handle ind lnamesparrec nparrec =
           let blI = mkConst c in
           let c = get_scheme handle lb_scheme_kind ind in
           let lbI = mkConst c in
-          Tacticals.New.tclTHENLIST [
+          Tacticals.tclTHENLIST [
               (*we do this so we don't have to prove the same goal twice *)
               assert_by (Name freshH) (EConstr.of_constr (
                                            mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
                 ))
-                (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
+                (Tacticals.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
 
               Proofview.Goal.enter begin fun gl ->
                 let freshH2 = fresh_id (Id.of_string "H") gl in
-                Tacticals.New.tclTHENS (destruct_on_using (EConstr.mkVar freshH) freshH2) [
+                Tacticals.tclTHENS (destruct_on_using (EConstr.mkVar freshH) freshH2) [
                     (* left *)
-                    Tacticals.New.tclTHENLIST [
+                    Tacticals.tclTHENLIST [
                         simplest_left;
                         apply (EConstr.of_constr (mkApp(blI,Array.map mkVar xargs)));
                         Auto.default_auto
@@ -970,14 +970,14 @@ let compute_dec_tact handle ind lnamesparrec nparrec =
                     (*right *)
                     Proofview.Goal.enter begin fun gl ->
                       let freshH3 = fresh_id (Id.of_string "H") gl in
-                      Tacticals.New.tclTHENLIST [
+                      Tacticals.tclTHENLIST [
                           simplest_right ;
                           unfold_constr (Coqlib.lib_ref "core.not.type");
                           intro;
                           Equality.subst_all ();
                           assert_by (Name freshH3)
                             (EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
-                            (Tacticals.New.tclTHENLIST [
+                            (Tacticals.tclTHENLIST [
                                  apply (EConstr.of_constr (mkApp(lbI,Array.map mkVar xargs)));
                                  Auto.default_auto
                             ]);

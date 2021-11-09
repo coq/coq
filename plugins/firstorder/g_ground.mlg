@@ -16,7 +16,7 @@ open Sequent
 open Ground
 open Goptions
 open Tacmach.New
-open Tacticals.New
+open Tacticals
 open Tacinterp
 open Stdarg
 open Tacarg

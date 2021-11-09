@@ -16,7 +16,7 @@ open EConstr
 open Vars
 open Tacmach.New
 open Tactics
-open Tacticals.New
+open Tacticals
 open Proofview.Notations
 open Reductionops
 open Formula

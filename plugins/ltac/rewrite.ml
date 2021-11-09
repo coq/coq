@@ -18,7 +18,7 @@ open Context
 open EConstr
 open Vars
 open Reduction
-open Tacticals.New
+open Tacticals
 open Tactics
 open Pretype_errors
 open Constrexpr
@@ -1614,7 +1614,7 @@ let tactic_init_setoid () =
   try init_setoid (); Proofview.tclUNIT ()
   with e when CErrors.noncritical e ->
     let _, info = Exninfo.capture e in
-    Tacticals.New.tclFAIL ~info 0 (str"Setoid library not loaded")
+    Tacticals.tclFAIL ~info 0 (str"Setoid library not loaded")
 
 let cl_rewrite_clause_strat progress strat clause =
   tactic_init_setoid () <*>

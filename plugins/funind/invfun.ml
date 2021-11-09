@@ -14,7 +14,7 @@ open Constr
 open EConstr
 open Tacmach.New
 open Tactics
-open Tacticals.New
+open Tacticals
 open Indfun_common
 
 (***********************************************)

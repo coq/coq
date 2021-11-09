@@ -106,7 +106,7 @@ let apply adv ev cb cl =
   | None -> Tactics.apply_with_delayed_bindings_gen adv ev cb
   | Some (id, cl) ->
     let cl = Option.map mk_intro_pattern cl in
-    Tactics.apply_delayed_in adv ev id cb cl Tacticals.New.tclIDTAC
+    Tactics.apply_delayed_in adv ev id cb cl Tacticals.tclIDTAC
 
 let mk_destruction_arg = function
 | ElimOnConstr c ->
@@ -179,7 +179,7 @@ let rewrite ev rw cl by =
   in
   let rw = List.map map_rw rw in
   let cl = mk_clause cl in
-  let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE (thaw Tac2ffi.unit tac), Equality.Naive) by in
+  let by = Option.map (fun tac -> Tacticals.tclCOMPLETE (thaw Tac2ffi.unit tac), Equality.Naive) by in
   Equality.general_multi_rewrite ev rw cl by
 
 let symmetry cl =
@@ -217,7 +217,7 @@ let get_evaluable_reference = function
 | GlobRef.VarRef id -> Proofview.tclUNIT (Tacred.EvalVarRef id)
 | GlobRef.ConstRef cst -> Proofview.tclUNIT (Tacred.EvalConstRef cst)
 | r ->
-  Tacticals.New.tclZEROMSG (str "Cannot coerce" ++ spc () ++
+  Tacticals.tclZEROMSG (str "Cannot coerce" ++ spc () ++
     Nametab.pr_global_env Id.Set.empty r ++ spc () ++
     str "to an evaluable reference.")
 
@@ -355,7 +355,7 @@ let on_destruction_arg tac ev arg =
     match sigma' with
     | None -> tac ev arg
     | Some sigma' ->
-      Tacticals.New.tclWITHHOLES ev (tac ev arg) sigma'
+      Tacticals.tclWITHHOLES ev (tac ev arg) sigma'
   end
 
 let discriminate ev arg =
@@ -419,7 +419,7 @@ let inversion knd arg pat ids =
   | Some (IntroAction (IntroOrAndPattern p)) ->
     Proofview.tclUNIT (Some (CAst.make @@ mk_or_and_intro_pattern p))
   | Some _ ->
-    Tacticals.New.tclZEROMSG (str "Inversion only accept disjunctive patterns")
+    Tacticals.tclZEROMSG (str "Inversion only accept disjunctive patterns")
   end >>= fun pat ->
   let inversion _ arg =
     begin match arg with
@@ -432,7 +432,7 @@ let inversion knd arg pat ids =
       let open Tactypes in
       let anon = CAst.make @@ IntroNaming Namegen.IntroAnonymous in
       Tactics.specialize c (Some anon) >>= fun () ->
-      Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp (CAst.make id)))
+      Tacticals.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp (CAst.make id)))
     end
   in
   on_destruction_arg inversion true (Some (None, arg))

@@ -148,7 +148,7 @@ let progress_evars t =
         if eq_constr_mod_evars sigma concl newconcl
         then
           let info = Exninfo.reify () in
-          Tacticals.New.tclFAIL ~info 0 (Pp.str"No progress made (modulo evars)")
+          Tacticals.tclFAIL ~info 0 (Pp.str"No progress made (modulo evars)")
         else Proofview.tclUNIT ()
       end
     in t <*> check

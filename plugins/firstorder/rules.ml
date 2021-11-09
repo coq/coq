@@ -15,7 +15,7 @@ open EConstr
 open Vars
 open Tacmach.New
 open Tactics
-open Tacticals.New
+open Tacticals
 open Proofview.Notations
 open Termops
 open Formula
@@ -129,7 +129,7 @@ let left_or_tac ind backtrack id continue seq =
   end
 
 let left_false_tac id=
-  Tacticals.New.pf_constr_of_global id >>= simplest_elim
+  Tacticals.pf_constr_of_global id >>= simplest_elim
 
 (* left arrow connective rules *)
 
@@ -198,7 +198,7 @@ let left_exists_tac ind backtrack id continue seq =
   Proofview.Goal.enter begin fun gl ->
   let n=(construct_nhyps (pf_env gl) ind).(0) in
     tclIFTHENELSE
-      (Tacticals.New.pf_constr_of_global id >>= simplest_elim)
+      (Tacticals.pf_constr_of_global id >>= simplest_elim)
       (tclTHENLIST [clear_global id;
                     tclDO n intro;
                     (wrap (n-1) false continue seq)])

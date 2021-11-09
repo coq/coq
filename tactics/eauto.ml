@@ -15,7 +15,6 @@ open Names
 open Constr
 open Termops
 open EConstr
-open Tacticals
 open Tacmach
 open Evd
 open Tactics
@@ -36,7 +35,7 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   let sigma, t1 = Tacmach.New.pf_type_of gl c in
   let t2 = Tacmach.New.pf_concl gl in
   if occur_existential sigma t1 || occur_existential sigma t2 then
-    Tacticals.New.tclTHENLIST
+    Tacticals.tclTHENLIST
       [Proofview.Unsafe.tclEVARS sigma;
        Clenv.unify ~flags t1;
        exact_no_check c]
@@ -47,12 +46,12 @@ let assumption id = e_give_exact (mkVar id)
 
 let e_assumption =
   Proofview.Goal.enter begin fun gl ->
-    Tacticals.New.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
+    Tacticals.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
   end
 
 let registered_e_assumption =
   Proofview.Goal.enter begin fun gl ->
-  Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
+  Tacticals.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
               (Tacmach.New.pf_ids_of_hyps gl))
   end
 
@@ -101,10 +100,10 @@ let rec e_trivial_fail_db db_list local_db =
   let secvars = compute_secvars gl in
   let tacl =
     registered_e_assumption ::
-    (Tacticals.New.tclTHEN Tactics.intro next) ::
+    (Tacticals.tclTHEN Tactics.intro next) ::
     (e_trivial_resolve (Tacmach.New.pf_env gl) (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_concl gl))
   in
-  Tacticals.New.tclSOLVE tacl
+  Tacticals.tclSOLVE tacl
   end
 
 and e_my_find_search env sigma db_list local_db secvars concl =
@@ -125,7 +124,7 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       | ERes_pf h -> unify_e_resolve st h
       | Give_exact h -> e_exact st h
       | Res_pf_THEN_trivial_fail h ->
-        Tacticals.New.tclTHEN (unify_e_resolve st h)
+        Tacticals.tclTHEN (unify_e_resolve st h)
           (e_trivial_fail_db db_list local_db)
       | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
       | Extern (pat, tacast) -> conclPattern concl pat tacast
@@ -204,7 +203,7 @@ module SearchProblem = struct
               (ngls, lgls, cost, pptac) :: aux tacl
           with e when CErrors.noncritical e ->
             let e = Exninfo.capture e in
-            Tacticals.catch_failerror e; aux tacl
+            Tacticals.Old.catch_failerror e; aux tacl
     in aux l
 
   (* Ordering of states is lexicographic on depth (greatest first) then
@@ -357,7 +356,7 @@ let e_search_auto debug (in_depth,p) lems db_list =
     re_sig (List.map fst s.tacres.it) s.tacres.sigma
   with Not_found ->
     pr_info_nop d;
-    tclIDTAC gl
+    Tacticals.Old.tclIDTAC gl
   end
 
 let eauto_with_bases ?(debug=Off) np lems db_list =
@@ -412,11 +411,11 @@ let autounfold db cls =
   | (ids, csts) -> Proofview.Goal.enter begin fun gl ->
       let cls = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cls in
       let tac = autounfolds ids csts gl in
-      Tacticals.New.tclMAP (function
+      Tacticals.tclMAP (function
       | OnHyp (id, _, where) -> tac (Some (id, where))
       | OnConcl _ -> tac None) cls
     end
-  | exception UnknownDatabase dbname -> Tacticals.New.tclZEROMSG (str "Unknown database " ++ str dbname)
+  | exception UnknownDatabase dbname -> Tacticals.tclZEROMSG (str "Unknown database " ++ str dbname)
 
 let autounfold_tac db cls =
   Proofview.tclUNIT () >>= fun () ->
@@ -482,5 +481,5 @@ let autounfold_one db cl =
       | None -> convert_concl ~cast:false ~check:false c' DEFAULTcast
     else
       let info = Exninfo.reify () in
-      Tacticals.New.tclFAIL ~info 0 (str "Nothing to unfold")
+      Tacticals.tclFAIL ~info 0 (str "Nothing to unfold")
   end

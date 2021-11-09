@@ -26,7 +26,7 @@ let mytclWithHoles tac with_evars c =
     let env = Tacmach.New.pf_env gl in
     let sigma = Tacmach.New.project gl in
     let sigma',c = Tactics.force_destruction_arg with_evars env sigma c in
-    Tacticals.New.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma'
+    Tacticals.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma'
   end
 
 (**********************************************************************)
@@ -43,7 +43,7 @@ let with_delayed_uconstr ist c tac =
     polymorphic = false;
  } in
   let c = Tacinterp.type_uconstr ~flags ist c in
-  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+  Tacticals.tclDELAYEDWITHHOLES false c tac
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
   with_delayed_uconstr ist c1
@@ -53,7 +53,7 @@ let replace_term ist dir_opt c cl =
   with_delayed_uconstr ist c (fun c -> Equality.replace_term dir_opt c cl)
 
 let elimOnConstrWithHoles tac with_evars c =
-  Tacticals.New.tclDELAYEDWITHHOLES with_evars c
+  Tacticals.tclDELAYEDWITHHOLES with_evars c
     (fun c -> tac with_evars (Some (None,ElimOnConstr c)))
 
 let discr_main c = elimOnConstrWithHoles Equality.discr_tac false c
@@ -208,8 +208,8 @@ exception Found of unit Proofview.tactic
 let rewrite_except h =
   Proofview.Goal.enter begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
-  Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else
-      Tacticals.New.tclTRY (Equality.general_rewrite ~where:(Some id) ~l2r:true Locus.AllOccurrences ~freeze:true ~dep:true ~with_evars:false (mkVar h, NoBindings)))
+  Tacticals.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else
+      Tacticals.tclTRY (Equality.general_rewrite ~where:(Some id) ~l2r:true Locus.AllOccurrences ~freeze:true ~dep:true ~with_evars:false (mkVar h, NoBindings)))
     hyps
   end
 
@@ -222,8 +222,8 @@ let refl_equal () = Coqlib.lib_ref "core.eq.type"
 let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
     let type_of_a = Tacmach.New.pf_get_type_of gl a in
-    Tacticals.New.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
-    Tacticals.New.tclTHENLIST
+    Tacticals.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
+    Tacticals.tclTHENLIST
          [Tactics.generalize [(mkApp(req, [| type_of_a; a|]))];
           Proofview.Goal.enter begin fun gl ->
             let concl = Proofview.Goal.concl gl in
@@ -241,15 +241,15 @@ let case_eq_intros_rewrite x =
   Proofview.Goal.enter begin fun gl ->
   let n = nb_prod (Tacmach.New.project gl) (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
-  Tacticals.New.tclTHENLIST [
+  Tacticals.tclTHENLIST [
       mkCaseEq x;
     Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_set_of_hyps gl in
       let n' = nb_prod (Tacmach.New.project gl) concl in
       let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
-      Tacticals.New.tclTHENLIST [
-                    Tacticals.New.tclDO (n'-n-1) intro;
+      Tacticals.tclTHENLIST [
+                    Tacticals.tclDO (n'-n-1) intro;
                     introduction h;
                     rewrite_except h]
     end
@@ -274,7 +274,7 @@ let rec find_a_destructable_match sigma t =
 let destauto0 t =
   Proofview.tclEVARMAP >>= fun sigma ->
   try find_a_destructable_match sigma t;
-    Tacticals.New.tclZEROMSG (Pp.str "No destructable match found")
+    Tacticals.tclZEROMSG (Pp.str "No destructable match found")
   with Found tac -> tac
 
 let destauto =
@@ -294,55 +294,55 @@ let is_evar x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Evar _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "Not an evar")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "Not an evar")
 
 let has_evar x =
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evarutil.has_undefined_evars sigma x
   then Proofview.tclUNIT ()
-  else Tacticals.New.tclFAIL 0 (Pp.str "No evars")
+  else Tacticals.tclFAIL 0 (Pp.str "No evars")
 
 let is_var x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Var _ ->  Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "Not a variable or hypothesis")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "Not a variable or hypothesis")
 
 let is_fix x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Fix _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a fix definition")
 
 let is_cofix x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | CoFix _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a cofix definition")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a cofix definition")
 
 let is_ind x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Ind _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not an (co)inductive datatype")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "not an (co)inductive datatype")
 
 let is_constructor x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Construct _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constructor")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a constructor")
 
 let is_proj x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Proj _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a primitive projection")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a primitive projection")
 
 let is_const x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Const _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant")
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a constant")
 
 let unshelve ist t =
   Proofview.with_shelf (Tacinterp.tactic_of_value ist t) >>= fun (gls, ()) ->
@@ -357,7 +357,7 @@ let tclOPTIMIZE_HEAP =
 
 let onSomeWithHoles tac = function
   | None -> tac None
-  | Some c -> Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> tac (Some c))
+  | Some c -> Tacticals.tclDELAYEDWITHHOLES false c (fun c -> tac (Some c))
 
 let decompose l c =
   Proofview.Goal.enter begin fun gl ->

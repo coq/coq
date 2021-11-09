@@ -22,7 +22,6 @@ open Locusops
 
 open Ltac_plugin
 open Tacmach
-open Tacticals
 open Libnames
 open Ssrmatching_plugin
 open Ssrmatching
@@ -118,13 +117,13 @@ let tclTHENS_a t1 tl gl = tclTHEN_ia t1
   (fun i -> List.nth tl (i-1)) gl
 
 let rec tclTHENLIST_a = function
-  | [] -> tac_ctx tclIDTAC
+  | [] -> tac_ctx Tacticals.Old.tclIDTAC
   | t1::tacl -> tclTHEN_a t1 (tclTHENLIST_a tacl)
 
 (* like  tclTHEN_i but passes to the tac "i of n" and not just i *)
 let tclTHEN_i_max tac taci gl =
   let maxi = ref 0 in
-  tclTHEN_ia (tclTHEN_ia tac (fun i -> maxi := max i !maxi; tac_ctx tclIDTAC))
+  tclTHEN_ia (tclTHEN_ia tac (fun i -> maxi := max i !maxi; tac_ctx Tacticals.Old.tclIDTAC))
     (fun i gl -> taci i !maxi gl) gl
 
 let tac_on_all gl tac =
@@ -830,7 +829,7 @@ let discharge_hyp (id', (id, mode)) =
   end
 
 let view_error s gv =
-  Tacticals.New.tclZEROMSG (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)
+  Tacticals.tclZEROMSG (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)
 
 
 open Locus
@@ -1005,7 +1004,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
       end
       end
     in
-    Tacticals.New.tclTHENLIST [
+    Tacticals.tclTHENLIST [
       refine;
       Proofview.(if with_shelve then shelve_unifiable else tclUNIT ());
       Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
@@ -1026,7 +1025,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
           | _ -> assert false
       in loop sigma t [] n in
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env env sigma t));
-    Tacticals.New.tclTHENLIST [
+    Tacticals.tclTHENLIST [
       Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
       Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
     ]
@@ -1056,8 +1055,8 @@ let rec fst_prod red tac = Proofview.Goal.enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
   match EConstr.kind (Proofview.Goal.sigma gl) concl with
   | Prod (id,_,tgt) | LetIn(id,_,_,tgt) -> tac id.binder_name
-  | _ -> if red then Tacticals.New.tclZEROMSG (str"No product even after head-reduction.")
-         else Tacticals.New.tclTHEN Tactics.hnf_in_concl (fst_prod true tac)
+  | _ -> if red then Tacticals.tclZEROMSG (str"No product even after head-reduction.")
+         else Tacticals.tclTHEN Tactics.hnf_in_concl (fst_prod true tac)
 end
 
 let introid ?(orig=ref Anonymous) name =
@@ -1069,7 +1068,7 @@ let introid ?(orig=ref Anonymous) name =
    match EConstr.kind sigma g with
    | App (hd, _) when EConstr.isLambda sigma hd ->
       convert_concl_no_check (Reductionops.whd_beta env sigma g)
-   | _ -> Tacticals.New.tclIDTAC
+   | _ -> Tacticals.tclIDTAC
   end <*>
     (fst_prod false (fun id -> orig := id; Tactics.intro_mustbe_force name))
 
@@ -1115,7 +1114,7 @@ let interp_clr sigma = function
 let tclID tac = tac
 
 let tclDOTRY n tac =
-  let open Tacticals.New in
+  let open Tacticals in
   if n <= 0 then tclIDTAC else
   let rec loop i =
     if i = n then tclTRY tac else
@@ -1134,16 +1133,16 @@ let tclDO n tac =
   in
   let rec loop i gl =
     if i = n then tac_err_at i gl else
-    (tclTHEN (tac_err_at i) (loop (i + 1))) gl in
+    (Tacticals.Old.tclTHEN (tac_err_at i) (loop (i + 1))) gl in
   Proofview.V82.tactic ~nf_evars:false (loop 1)
 
 let tclAT_LEAST_ONCE t =
-  let open Tacticals.New in
+  let open Tacticals in
   tclTHEN t (tclREPEAT t)
 
 let tclMULT = function
-  | 0, May  -> Tacticals.New.tclREPEAT
-  | 1, May  -> Tacticals.New.tclTRY
+  | 0, May  -> Tacticals.tclREPEAT
+  | 1, May  -> Tacticals.tclTRY
   | n, May  -> tclDOTRY n
   | 0, Must -> tclAT_LEAST_ONCE
   | n, Must when n > 1 -> tclDO n
@@ -1187,6 +1186,7 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
 let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true x xs)
 
 let genclrtac cl cs clr =
+  let open Tacticals.Old in
   let tclmyORELSE tac1 tac2 gl =
     try tac1 gl
     with e when CErrors.noncritical e -> tac2 e gl in
@@ -1212,16 +1212,17 @@ let gentac gen =
   debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c);
   let gl = pf_merge_uc ucst gl in
   if conv
-  then tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
+  then Tacticals.Old.tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
   else genclrtac cl [c] clr gl
   end
 
 let genstac (gens, clr) =
-  Tacticals.New.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
+  Tacticals.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
 
 let gen_tmp_ids
   ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
 =
+  let open Tacticals.Old in
   let gl, ctx = pull_ctx gl in
   push_ctxs ctx
     (tclTHENLIST
@@ -1449,11 +1450,11 @@ let tcl0G ~default tac =
   numgoals >>= fun ng -> if ng = 0 then tclUNIT default else tac
 
 let rec tclFIRSTa = function
-  | [] -> Tacticals.New.tclZEROMSG Pp.(str"No applicable tactic.")
+  | [] -> Tacticals.tclZEROMSG Pp.(str"No applicable tactic.")
   | tac :: rest -> tclORELSE tac (fun _ -> tclFIRSTa rest)
 
 let rec tclFIRSTi tac n =
-  if n < 0 then Tacticals.New.tclZEROMSG Pp.(str "tclFIRSTi")
+  if n < 0 then Tacticals.tclZEROMSG Pp.(str "tclFIRSTi")
   else tclORELSE (tclFIRSTi tac (n-1)) (fun _ -> tac n)
 
 let tacCONSTR_NAME ?name c =
@@ -1530,7 +1531,7 @@ let unprotecttac =
   let open CClosure.RedFlags in
   let flags = red_add_transparent CClosure.allnolet TransparentState.empty in
   let flags = red_add flags (fCONST prot) in
-  Tacticals.New.onClause (fun idopt ->
+  Tacticals.onClause (fun idopt ->
     let hyploc = Option.map (fun id -> id, InHyp) idopt in
     Tactics.reduct_option ~check:false
       (Reductionops.clos_norm_flags flags, DEFAULTcast) hyploc)
