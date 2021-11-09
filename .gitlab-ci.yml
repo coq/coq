@@ -547,7 +547,7 @@ test-suite:edge+coverage:
     - dune build --instrument-with bisect_ppx --workspace dev/dune-workspace.bisect @runtest
     - find _build/coverage/ -name '*.coverage' -size 0 -exec rm {} \; # workaround truncated coverage file bug
     - bisect-ppx-report html --source-path=_build/coverage --coverage-path=_build/coverage -o _build/coq-coverage --title="Coq's Test suite"
-    - bisect-ppx-report send-to Codecov
+    - bisect-ppx-report send-to --source-path=_build/coverage --coverage-path=_build/coverage Codecov
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
