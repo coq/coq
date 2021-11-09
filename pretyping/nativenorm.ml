@@ -102,13 +102,14 @@ let decompose_prod env t =
   in
   (name,dom,codom)
 
-let app_type env c =
-  let t = whd_all env c in
-  try destApp t with DestKO -> (t,[||])
+let e_whd_all = Reductionops.clos_whd_flags CClosure.all
 
+let app_type env sigma c =
+  let t = e_whd_all env sigma c in
+  decompose_appvect (EConstr.Unsafe.to_constr t)
 
-let find_rectype_a env c =
-  let (t, l) = app_type env c in
+let find_rectype_a env sigma c =
+  let (t, l) = app_type env sigma c in
   match kind t with
   | Ind ind -> (ind, l)
   | _ -> raise Not_found
@@ -157,9 +158,8 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params p =
     let typi = type_constructor mind mib u cty params in
     let decl,indapp = Reductionops.splay_prod env sigma (EConstr.of_constr typi) in
     let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
-    let indapp = EConstr.Unsafe.to_constr indapp in
     let decl_with_letin,_ = decompose_prod_assum typi in
-    let ind,cargs = find_rectype_a env indapp in
+    let ind,cargs = find_rectype_a env sigma indapp in
     let nparams = Array.length params in
     let carity = snd (rtbl.(i)) in
     let crealargs = Array.sub cargs nparams (Array.length cargs - nparams) in
@@ -320,7 +320,7 @@ and nf_atom_type env sigma atom =
       mkVar id, Typeops.type_of_variable env id
   | Acase(ans,accu,p,bs) ->
       let a,ta = nf_accu_type env sigma accu in
-      let ((mind,_),u as ind),allargs = find_rectype_a env ta in
+      let ((mind,_),u as ind),allargs = find_rectype_a env sigma (EConstr.of_constr ta) in
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       let nparams = mib.mind_nparams in
       let params,realargs = Array.chop nparams allargs in
@@ -445,7 +445,7 @@ and nf_evar env sigma evk args =
     mkEvar (evk, List.rev args), ty
 
 and nf_array env sigma t typ =
-  let ty, allargs = app_type env typ in
+  let ty, allargs = app_type env sigma (EConstr.of_constr typ) in
   let typ_elem = allargs.(0) in
   let t, vdef = Parray.to_array t in
   let t = Array.map (fun v -> nf_val env sigma v typ_elem) t in
