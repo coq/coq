@@ -872,20 +872,20 @@ let declare_modtype id args mtys (mty,ann) fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_modtype id in
-  let arg_entries_r, ctx = intern_args args in
-  let () = Global.push_context_set ~strict:true ctx in
+  let arg_entries_r, arg_ctx = intern_args args in
+  let () = Global.push_context_set ~strict:true arg_ctx in
   let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
-  let mte, _, ctx = Modintern.interp_module_ast env Modintern.ModType mty in
-  let () = Global.push_context_set ~strict:true ctx in
+  let mte, _, mte_ctx = Modintern.interp_module_ast env Modintern.ModType mty in
+  let () = Global.push_context_set ~strict:true mte_ctx in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
-  let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
-  let () = Global.push_context_set ~strict:true (Univ.LSet.empty,cst) in
+  let _, _, _, mte_cst = Mod_typing.translate_mse env None inl mte in
+  let () = Global.push_context_set ~strict:true (Univ.LSet.empty,mte_cst) in
   let env = Global.env () in
   let entry = params, mte in
-  let sub_mty_l, ctx = build_subtypes env mp arg_entries_r mtys in
-  let () = Global.push_context_set ~strict:true ctx in
+  let sub_mty_l, sub_mty_ctx = build_subtypes env mp arg_entries_r mtys in
+  let () = Global.push_context_set ~strict:true sub_mty_ctx in
   let env = Global.env () in
   let sobjs = get_functor_sobjs false env inl entry in
   let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in
@@ -896,6 +896,10 @@ let declare_modtype id args mtys (mty,ann) fs =
   Summary.unfreeze_summaries fs;
 
   (* We enrich the global environment *)
+  let () = Global.push_context_set ~strict:true arg_ctx in
+  let () = Global.push_context_set ~strict:true mte_ctx in
+  let () = Global.push_context_set ~strict:true (Univ.LSet.empty,mte_cst) in
+  let () = Global.push_context_set ~strict:true sub_mty_ctx in
   let mp_env = Global.add_modtype id entry inl in
 
   (* Name consistency check : kernel vs. library *)
