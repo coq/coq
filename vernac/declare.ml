@@ -1879,6 +1879,7 @@ end = struct
     let { Info.scope; hook } = pinfo.Proof_info.info in
     List.map_i (
       fun i { CInfo.name; typ; impargs } ->
+        let typ = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ in
         let pe = (sec_vars, (typ, univs), None) in
         declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 pinfo.Proof_info.cinfo
