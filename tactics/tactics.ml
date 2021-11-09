@@ -3004,7 +3004,7 @@ let specialize (c,lbind) ipat =
                 (accprods:rel_context) hd (l:EConstr.t list) =
         let open Context.Rel.Declaration in
         match lprd , l with
-        | _, [] -> sigma
+        | [], [] -> sigma
                   , applist (hd, (List.map (nf_evar sigma) (List.rev accargs)))
                   , EConstr.it_mkProd_or_LetIn concl accprods
         | (LocalAssum(nme,_) as assum)::lp' , t::l' when occur_meta sigma t ->
