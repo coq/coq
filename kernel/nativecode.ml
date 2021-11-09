@@ -1687,15 +1687,22 @@ let pp_mllam fmt l =
     | MLsequence(l1,l2) ->
         Format.fprintf fmt "@[%a;@\n%a@]" pp_mllam l1 pp_mllam l2
     | MLarray arr ->
-       let len = Array.length arr in
-       Format.fprintf fmt "@[[|";
-       if 0 < len then begin
-         for i = 0 to len - 2 do
-           Format.fprintf fmt "%a;" pp_mllam arr.(i)
-         done;
-         pp_mllam fmt arr.(len-1)
-       end;
-       Format.fprintf fmt "|]@]"
+      (* We need to ensure that the array does not use the flat representation
+          if ever the first argument is a float *)
+      let len = Array.length arr in
+      if Int.equal len 0 then begin
+        Format.fprintf fmt "@[(Obj.magic [||])@]"
+      end else if Int.equal len 1 then begin
+        (* We have to emulate a 1-uplet *)
+        Format.fprintf fmt "@[(Obj.magic (ref (%a)))@]" pp_mllam arr.(0)
+      end else begin
+        Format.fprintf fmt "@[(Obj.magic (";
+        for i = 0 to len - 2 do
+          Format.fprintf fmt "%a,@ " pp_mllam arr.(i)
+        done;
+        pp_mllam fmt arr.(len-1);
+        Format.fprintf fmt "))@]"
+      end;
     | MLisaccu (prefix, ind, c) ->
         let accu = string_of_accu_construct prefix ind in
         Format.fprintf fmt

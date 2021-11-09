@@ -799,7 +799,7 @@ let arraylength accu vA t =
   else accu vA t
 
 let parray_of_array t def =
-  (Obj.magic (Parray.unsafe_of_array t def) : t)
+  (Obj.magic (Parray.unsafe_of_obj (Obj.repr t) def) : t)
 
 let arrayinit n (f:t->t) def =
   of_parray (Parray.init (to_uint n) (Obj.magic f) def)

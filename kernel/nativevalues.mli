@@ -359,7 +359,7 @@ val no_check_next_down : t -> t
 
 (** Support for arrays *)
 
-val parray_of_array : t array -> t -> t
+val parray_of_array : t -> t -> t
 val is_parray : t -> bool
 
 val arraymake : t -> t -> t -> t -> t (* accu A n def *)
