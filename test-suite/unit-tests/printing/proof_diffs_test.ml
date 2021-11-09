@@ -113,7 +113,7 @@ let t () =
       ])) in
   let (_, n_diff) = diff_pp o_pp n_pp in
 
-  assert_equal ~msg:"added"   ~printer:db_string_of_pp n_exp (flatten n_diff);;
+  assert_equal ~msg:"added"   ~printer:db_string_of_pp n_exp (flatten n_diff)
 let _ = add_test "diff_pp/add_diff_tags a span with spaces" t
 
 
@@ -184,7 +184,7 @@ let _ = if false then add_test "diff_pp/add_diff_tags token containing white spa
 
 let add_entries map idents rhs_pp =
   let make_entry() = { idents; rhs_pp; done_ = false } in
-  List.iter (fun ident -> map := (CString.Map.add ident (make_entry ()) !map); ()) idents;;
+  List.iter (fun ident -> map := CString.Map.add ident (make_entry ()) !map) idents
 
 let print_list hyps = List.iter (fun x -> cprintf "%s\n" (string_of_ppcmds (flatten x))) hyps
 let db_print_list hyps = List.iter (fun x -> cprintf "%s\n" (db_string_of_pp (flatten x))) hyps

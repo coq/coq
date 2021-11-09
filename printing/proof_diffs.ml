@@ -106,7 +106,7 @@ let tokenize_string s =
     toks
   with exn ->
     CLexer.Lexer.State.set st;
-    raise (Diff_Failure "Input string is not lexable");;
+    raise (Diff_Failure "Input string is not lexable")
 
 type hyp_info = {
   idents: string list;
@@ -211,7 +211,7 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
   let cvt s = Array.of_list (List.concat s) in
   let ident_diffs = diff_strs (cvt o_line_idents) (cvt n_line_idents) in
   List.iter process_ident_diff ident_diffs;
-  List.rev !rv;;
+  List.rev !rv
 
 
 type 'a hyp = (Names.Id.t Context.binder_annot list * 'a option * 'a)
@@ -224,7 +224,7 @@ module CDC = Context.Compacted.Declaration
 let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot list * 'pc option * 'pc) =
   let open CDC in function
     | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
-    | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm);;
+    | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm)
 
 let goal_repr sigma g =
   let evi = Evd.find sigma g in
@@ -244,7 +244,7 @@ let process_goal sigma g : EConstr.t reified_goal =
   (* compaction is usually desired [eg for better display] *)
   let hyps      = Termops.compact_named_context (Environ.named_context env) in
   let hyps      = List.map to_tuple hyps in
-  { name; ty; hyps; env; sigma };;
+  { name; ty; hyps; env; sigma }
 
 let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
   Ppconstr.pr_lconstr_expr env sigma
@@ -321,7 +321,7 @@ let goal_info goal sigma =
     List.iter (build_hyp_info env sigma) (List.rev hyps);
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
-  with _ -> ([], !map, Pp.mt ());;
+  with _ -> ([], !map, Pp.mt ())
 
 let diff_goal_info o_info n_info =
   let (o_line_idents, o_hyp_map, o_concl_pp) = o_info in
@@ -336,7 +336,7 @@ let hyp_list_to_pp hyps =
   let open Pp in
   match hyps with
   | h :: tl -> List.fold_left (fun x y -> x ++ cut () ++ y) h tl
-  | [] -> mt ();;
+  | [] -> mt ()
 
 let unwrap g_s =
   match g_s with
@@ -355,7 +355,7 @@ let diff_goal ?og_s ng ns =
   v 0 (
     (hyp_list_to_pp hyps_pp_list) ++ cut () ++
     str "============================" ++ cut () ++
-    concl_pp);;
+    concl_pp)
 
 
 (*** Code to determine which calls to compare between the old and new proofs ***)

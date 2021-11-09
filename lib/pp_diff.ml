@@ -125,7 +125,7 @@ let diff_strs old_strs new_strs =
   let diffs = List.rev (StringDiff.diff old_strs new_strs) in
   shorten_diff_span `Removed (shorten_diff_span `Added diffs)
 
-(* Default string tokenizer.  Makes each character a separate strin.
+(* Default string tokenizer.  Makes each character a separate string.
 Whitespace is not ignored.  Doesn't handle UTF-8 differences well. *)
 let def_tokenize_string s =
   let limit = (String.length s) - 1 in
