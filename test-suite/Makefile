@@ -824,7 +824,7 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) -R coqdoc Coqdoc $* 2>&1; \
+	  $(coqc) -R coqdoc Coqdoc $*; \
 	  cd coqdoc; \
 	  f=`basename $*`; \
 	  $(coqdoc) -utf8 -R . Coqdoc -coqlib_url http://coq.inria.fr/stdlib --html $$f.v; \
@@ -839,7 +839,7 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 	    echo "    $<...Error! (unexpected output)"; \
 	    $(FAIL); \
 	  fi; \
-	} > "$@"
+	} > "$@" 2>&1
 
 # tools/
 
