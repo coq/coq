@@ -1653,7 +1653,8 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
     in
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
-    let thm_ty0 = nf_betaiota env sigma (Retyping.get_type_of env sigma c) in
+    let thm_ty = nf_betaiota env sigma (Retyping.get_type_of env sigma c) in
+    let sigma, thm_ty = Evarsolve.refresh_universes ~onlyalg:true None env sigma thm_ty in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
@@ -1700,10 +1701,10 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
           tac
     in
     tclORELSEOPT
-      (try_apply thm_ty0 concl_nprod)
+      (try_apply thm_ty concl_nprod)
       (function (e, info) -> match e with
       | PretypeError _|RefinerError _|UserError _|Failure _ ->
-        Some (try_red_apply thm_ty0 (e, info))
+        Some (try_red_apply thm_ty (e, info))
       | _ -> None)
     end
   in
