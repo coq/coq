@@ -16,7 +16,7 @@ open Printf
 let coq_version = "8.14.0"
 let vo_magic = 81400
 let state_magic = 581400
-let is_a_released_version = true
+let is_a_released_version = false
 let verbose = ref false (* for debugging this script *)
 
 let red, yellow, reset =
