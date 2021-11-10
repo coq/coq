@@ -97,4 +97,3 @@ type simple_clause = Id.t option list
        convertible to the first which matches"} *)
 
 type 'a or_like_first = AtOccs of 'a | LikeFirst
-

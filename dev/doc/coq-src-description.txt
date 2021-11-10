@@ -6,8 +6,8 @@ clib : Basic files in lib/, such as util.ml
 lib : Other files in lib/
 kernel
 library
-pretyping
 interp
+intern
 proofs
 printing
 parsing
@@ -41,13 +41,13 @@ Hierarchy of A.S.T.
            Constrexpr.constr_expr
               |            /\
  constrintern |            | constrextern
-  (in interp) |            | (in interp)
+  (in intern) |            | (in intern)
 globalization |            |
               V            |
            Glob_term.glob_constr
               |            /\
     pretyping |            | detyping
-              |            | (in pretyping)
+              |            | (in interp)
               V            |
                Term.constr
                  |     /\
@@ -63,12 +63,12 @@ globalization |            |
   V
 constr_pattern_expr = constr_expr
   |
-  | Constrintern.interp_constr_pattern (in interp)
+  | Constrintern.interp_constr_pattern (in intern)
   | reverse way in Constrextern
   V
 Pattern.constr_pattern
   |
-  ---> used for instance by Matching.matches (in pretyping)
+  ---> used for instance by Matching.matches (in interp)
 
 
 *** Notations ***

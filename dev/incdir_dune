@@ -4,8 +4,8 @@
 #directory "_build/default/kernel/.kernel.objs/byte/";;
 #directory "_build/default/library/.library.objs/byte/";;
 #directory "_build/default/engine/.engine.objs/byte/";;
-#directory "_build/default/pretyping/.pretyping.objs/byte/";;
 #directory "_build/default/interp/.interp.objs/byte/";;
+#directory "_build/default/intern/.intern.objs/byte/";;
 #directory "_build/default/parsing/.parsing.objs/byte/";;
 #directory "_build/default/gramlib/.gramlib.objs/byte/";;
 #directory "_build/default/proofs/.proofs.objs/byte/";;

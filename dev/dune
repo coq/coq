@@ -25,9 +25,9 @@
     %{lib:coq-core.vm:../../stublibs/dllcoqrun_stubs.so}
     %{lib:coq-core.library:library.cma}
     %{lib:coq-core.engine:engine.cma}
-    %{lib:coq-core.pretyping:pretyping.cma}
-    %{lib:coq-core.gramlib:gramlib.cma}
     %{lib:coq-core.interp:interp.cma}
+    %{lib:coq-core.gramlib:gramlib.cma}
+    %{lib:coq-core.intern:intern.cma}
     %{lib:coq-core.proofs:proofs.cma}
     %{lib:coq-core.parsing:parsing.cma}
     %{lib:coq-core.printing:printing.cma}

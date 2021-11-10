@@ -489,7 +489,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
      | NativeOndemand -> "NativeOn {ondemand=true}");
 
   let core_src_dirs = [ "boot"; "config"; "lib"; "clib"; "kernel"; "library";
-                        "engine"; "pretyping"; "interp"; "gramlib"; "parsing"; "proofs";
+                        "engine"; "interp"; "intern"; "gramlib"; "parsing"; "proofs";
                         "tactics"; "toplevel"; "printing"; "ide"; "stm"; "vernac" ] in
   let core_src_dirs = List.fold_left (fun acc core_src_subdir -> acc ^ "  \"" ^ core_src_subdir ^ "\";\n")
                                     ""

@@ -85,4 +85,3 @@ val match_notation_constr_ind_pattern :
     (bool * int * 'a cases_pattern_g list)
 
 (** {5 Matching a notation pattern against a [glob_constr]} *)
-

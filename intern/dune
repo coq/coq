@@ -1,0 +1,6 @@
+(library
+ (name intern)
+ (synopsis "Coq's Syntactic Internalization for AST [notations, implicits]")
+ (public_name coq-core.intern)
+ (wrapped false)
+ (libraries zarith interp))

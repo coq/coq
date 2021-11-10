@@ -1,6 +1,6 @@
 (library
  (name interp)
- (synopsis "Coq's Syntactic Interpretation for AST [notations, implicits]")
+ (synopsis "Coq's Type Inference Component (Interpreter)")
  (public_name coq-core.interp)
  (wrapped false)
- (libraries zarith pretyping))
+ (libraries engine))

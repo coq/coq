@@ -2,6 +2,6 @@
  (name parsing)
  (public_name coq-core.parsing)
  (wrapped false)
- (libraries coq-core.gramlib interp))
+ (libraries coq-core.gramlib intern))
 
 (coq.pp (modules g_prim g_constr))

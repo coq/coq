@@ -169,4 +169,3 @@ val unsatisfiable_constraints : env -> Evd.evar_map -> Evar.t option ->
   Evar.Set.t option -> 'a
 
 val unsatisfiable_exception : exn -> bool
-

@@ -108,7 +108,7 @@ ifeq ($(origin COQ_SRC_DIR),undefined)
 COQ_SRC_DIR=.
 endif
 
-COQ_CM_LIBS=coqpp lib clib kernel library engine pretyping gramlib interp printing parsing proofs tactics vernac stm toplevel topbin tools
+COQ_CM_LIBS=coqpp lib clib kernel library engine interp gramlib intern printing parsing proofs tactics vernac stm toplevel topbin tools
 ML_SOURCE_DIRS=$(addprefix $(COQ_SRC_DIR)/,$(COQ_CM_LIBS))
 ALL_ML_SOURCE_FILES=$(shell find $(ML_SOURCE_DIRS) -name '*.ml' -or -name '*.mli' -or -name '*.c' -or -name '*.h')
 DOCGRAM_SOURCE_FILES=$(shell find $(addprefix $(COQ_SRC_DIR)/, doc/tools/docgram) -name '*.ml' -or -name '*.mlg')
