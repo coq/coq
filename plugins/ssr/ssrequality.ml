@@ -27,8 +27,7 @@ open Ssrmatching
 open Ssrast
 open Ssrprinters
 open Ssrcommon
-open Tacticals
-open Tacmach
+open Tacmach.Old
 
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
 let () =
@@ -67,9 +66,9 @@ let safe_simpltac n =
 
 let simpltac = function
   | Simpl n -> safe_simpltac n
-  | Cut n -> Tacticals.New.tclTRY (donetac n)
-  | SimplCut (n,m) -> Tacticals.New.tclTHEN (safe_simpltac m) (Tacticals.New.tclTRY (donetac n))
-  | Nop -> Tacticals.New.tclIDTAC
+  | Cut n -> Tacticals.tclTRY (donetac n)
+  | SimplCut (n,m) -> Tacticals.tclTHEN (safe_simpltac m) (Tacticals.tclTRY (donetac n))
+  | Nop -> Tacticals.tclIDTAC
 
 let simpltac s = Proofview.Goal.enter (fun _ -> simpltac s)
 
@@ -116,7 +115,7 @@ let congrtac ((n, t), ty) ist =
       | Some cf -> cf
       | None -> loop (i + 1) in
       loop 1 in
-  Tacticals.New.(tclTHEN (refine_with cf) (tclTRY Tactics.reflexivity))
+  Tacticals.(tclTHEN (refine_with cf) (tclTRY Tactics.reflexivity))
   end
 
 let pf_typecheck t =
@@ -136,11 +135,11 @@ let newssrcongrtac arg ist =
   let fs gl t = Reductionops.nf_evar (project gl) t in
   let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail =
     Proofview.Goal.enter begin fun gl ->
-    let open Tacmach.New in
+    let open Tacmach in
     match try Some (pf_unify_HO gl_c (pf_concl gl) c)
           with exn when CErrors.noncritical exn -> None with
     | Some gl_c ->
-        Tacticals.New.tclTHEN (convert_concl ~check:true (fs gl_c c))
+        Tacticals.tclTHEN (convert_concl ~check:true (fs gl_c c))
           (t_ok (proj gl_c))
     | None -> t_fail ()
     end
@@ -166,10 +165,10 @@ let newssrcongrtac arg ist =
     tclMATCH_GOAL (arrow, gl') (fun gl' -> [|fs gl' lhs;fs gl' rhs|])
     (fun lr ->
       let a = ssr_congr lr in
-      Tacticals.New.tclTHENLIST [ pf_typecheck a
+      Tacticals.tclTHENLIST [ pf_typecheck a
                   ; Tactics.apply a
                   ; congrtac (arg, mkRType) ist ])
-    (fun _ -> Tacticals.New.tclZEROMSG Pp.(str"Conclusion is not an equality nor an arrow"))
+    (fun _ -> Tacticals.tclZEROMSG Pp.(str"Conclusion is not an equality nor an arrow"))
     with e -> Proofview.tclZERO e (* FIXME *)
     ))
     gl
@@ -227,7 +226,7 @@ let simplintac occ rdx sim =
       convert_concl_no_check (EConstr.of_constr (eval_pattern env0 sigma0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) rdx occ simp))
     end
   in
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter begin fun _ ->
   match sim with
   | Simpl m -> simptac m
@@ -377,12 +376,12 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
     Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
   let pred = EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdx_ty pred in
   let sigma, elim =
-    let sort = elimination_sort_of_goal gl in
+    let sort = Tacticals.Old.elimination_sort_of_goal gl in
     match Equality.eq_elimination_ref (dir = L2R) sort with
     | Some r -> Evd.fresh_global env sigma r
     | None ->
       let ((kn, i) as ind, _), unfolded_c_ty = Tacred.reduce_to_quantified_ind env sigma c_ty in
-      let sort = elimination_sort_of_goal gl in
+      let sort = Tacticals.Old.elimination_sort_of_goal gl in
       let sigma, elim = Evd.fresh_global env sigma (Indrec.lookup_eliminator env ind sort) in
       if dir = R2L then sigma, elim else
       let elim, _ = EConstr.destConst sigma elim in
@@ -458,7 +457,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
       match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
-          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, Tacticals.New.tclIDTAC, sigma0
+          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, Tacticals.tclIDTAC, sigma0
       | _ ->
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
@@ -475,7 +474,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
       let itacs = [introid pattern_id; introid rule_id] in
       let cltac = Tactics.clear [pattern_id; rule_id] in
       let rwtacs = [
-        Tacticals.New.tclTHENLIST [
+        Tacticals.tclTHENLIST [
           rewritetac ?under dir (EConstr.mkVar rule_id);
           if !ssroldreworder || Option.default false under then
             Proofview.tclUNIT ()
@@ -483,7 +482,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
             Proofview.cycle 1
           ];
         cltac] in
-      Tactics.apply_type ~typecheck:true cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.New.tclTHENLIST (itacs @ rwtacs), sigma0
+      Tactics.apply_type ~typecheck:true cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.tclTHENLIST (itacs @ rwtacs), sigma0
   in
   let cvtac' =
     Proofview.tclORELSE cvtac begin function
@@ -491,9 +490,9 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
       let error = Option.cata (fun (env, sigma, te) ->
           Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))
           (Pp.mt ()) e in
-      if occur_existential sigma0 (Tacmach.New.pf_concl gl)
-      then Tacticals.New.tclZEROMSG Pp.(str "Rewriting impacts evars" ++ error)
-      else Tacticals.New.tclZEROMSG Pp.(str "Dependent type error in rewrite of "
+      if occur_existential sigma0 (Tacmach.pf_concl gl)
+      then Tacticals.tclZEROMSG Pp.(str "Rewriting impacts evars" ++ error)
+      else Tacticals.tclZEROMSG Pp.(str "Dependent type error in rewrite of "
         ++ pr_econstr_env env sigma0
           (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl)
         ++ error)
@@ -501,7 +500,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
     end
   in
   Proofview.Unsafe.tclEVARS sigma0 <*>
-  Tacticals.New.tclTHEN cvtac' rwtac
+  Tacticals.tclTHEN cvtac' rwtac
   end
 
 [@@@ocaml.warning "-3"]
@@ -680,7 +679,7 @@ let ssrinstancesofrule ist dir arg =
     while true do
       ignore(find env0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) 1 ~k:print)
     done; raise NoMatch
-  with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); Tacticals.New.tclIDTAC
+  with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); Tacticals.tclIDTAC
   end
 
 let ipat_rewrite occ dir c = Proofview.Goal.enter begin fun gl ->
@@ -717,7 +716,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     end
   in
   let ctac = cleartac (interp_clr sigma (oclr, (fst gt, snd (interp env sigma gt)))) in
-  if !fail then ctac else Tacticals.New.tclTHEN (tclMULT mult rwtac) ctac
+  if !fail then ctac else Tacticals.tclTHEN (tclMULT mult rwtac) ctac
   end
 
 (** Rewrite argument sequence *)
@@ -728,7 +727,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
 
 let ssrrewritetac ?under ?map_redex ist rwargs =
   Proofview.Goal.enter begin fun _ ->
-  Tacticals.New.tclTHENLIST (List.map (rwargtac ?under ?map_redex ist) rwargs)
+  Tacticals.tclTHENLIST (List.map (rwargtac ?under ?map_redex ist) rwargs)
   end
 
 (** The "unlock" tactic *)
@@ -760,4 +759,4 @@ let unlocktac ist args =
     (Proofview.tclEVARMAP >>= fun sigma -> unfoldtac None None (sigma, locked) InParens);
     Ssrelim.casetac key (fun ?seed:_ k -> k)
   ] in
-  Tacticals.New.tclTHENLIST (List.map utac args @ ktacs)
+  Tacticals.tclTHENLIST (List.map utac args @ ktacs)

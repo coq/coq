@@ -86,13 +86,13 @@ END
 
 TACTIC EXTEND left_with
 | [ "left" "with" bindings(bl) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.left_with_bindings false bl)
+    Tacticals.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.left_with_bindings false bl)
   }
 END
 
 TACTIC EXTEND eleft_with
 | [ "eleft" "with" bindings(bl) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.left_with_bindings true bl)
+    Tacticals.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.left_with_bindings true bl)
   }
 END
 
@@ -108,13 +108,13 @@ END
 
 TACTIC EXTEND right_with
 | [ "right" "with" bindings(bl) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.right_with_bindings false bl)
+    Tacticals.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.right_with_bindings false bl)
   }
 END
 
 TACTIC EXTEND eright_with
 | [ "eright" "with" bindings(bl) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.right_with_bindings true bl)
+    Tacticals.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.right_with_bindings true bl)
   }
 END
 
@@ -127,7 +127,7 @@ TACTIC EXTEND constructor
   }
 | [ "constructor" nat_or_var(i) "with" bindings(bl) ] -> {
     let tac bl = Tactics.constructor_tac false None i bl in
-    Tacticals.New.tclDELAYEDWITHHOLES false bl tac
+    Tacticals.tclDELAYEDWITHHOLES false bl tac
   }
 END
 
@@ -138,7 +138,7 @@ TACTIC EXTEND econstructor
   }
 | [ "econstructor" nat_or_var(i) "with" bindings(bl) ] -> {
     let tac bl = Tactics.constructor_tac true None i bl in
-    Tacticals.New.tclDELAYEDWITHHOLES true bl tac
+    Tacticals.tclDELAYEDWITHHOLES true bl tac
   }
 END
 
@@ -146,10 +146,10 @@ END
 
 TACTIC EXTEND specialize
 | [ "specialize" constr_with_bindings(c) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c None)
+    Tacticals.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c None)
   }
 | [ "specialize" constr_with_bindings(c) "as" simple_intropattern(ipat) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c (Some ipat))
+    Tacticals.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c (Some ipat))
   }
 END
 
@@ -173,13 +173,13 @@ END
 
 TACTIC EXTEND split_with
 | [ "split" "with" bindings(bl) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.split_with_bindings false [bl])
+    Tacticals.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.split_with_bindings false [bl])
   }
 END
 
 TACTIC EXTEND esplit_with
 | [ "esplit" "with" bindings(bl) ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.split_with_bindings true [bl])
+    Tacticals.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.split_with_bindings true [bl])
   }
 END
 
@@ -238,8 +238,8 @@ END
 {
 
 let simple_induct h =
-  Tacticals.New.tclTHEN (Tactics.intros_until h)
-    (Tacticals.New.onLastHyp Tactics.simplest_elim)
+  Tacticals.tclTHEN (Tactics.intros_until h)
+    (Tacticals.onLastHyp Tactics.simplest_elim)
 
 }
 
@@ -250,8 +250,8 @@ END
 {
 
 let simple_destruct h =
-  Tacticals.New.tclTHEN (Tactics.intros_until h)
-    (Tacticals.New.onLastHyp Tactics.simplest_case)
+  Tacticals.tclTHEN (Tactics.intros_until h)
+    (Tacticals.onLastHyp Tactics.simplest_case)
 
 }
 
@@ -337,7 +337,7 @@ let register_list_tactical name f =
   let tac args ist = match args with
   | [v] ->
     begin match Tacinterp.Value.to_list v with
-    | None -> Tacticals.New.tclZEROMSG (Pp.str "Expected a list")
+    | None -> Tacticals.tclZEROMSG (Pp.str "Expected a list")
     | Some tacs ->
       let tacs = List.map (fun tac -> Tacinterp.tactic_of_value ist tac) tacs in
       f tacs
@@ -346,8 +346,8 @@ let register_list_tactical name f =
   in
   Tacenv.register_ml_tactic (initial_name name) [|tac|]
 
-let () = register_list_tactical "first" Tacticals.New.tclFIRST
-let () = register_list_tactical "solve" Tacticals.New.tclSOLVE
+let () = register_list_tactical "first" Tacticals.tclFIRST
+let () = register_list_tactical "solve" Tacticals.tclSOLVE
 
 let initial_tacticals () =
   let idn n = Id.of_string (Printf.sprintf "_%i" n) in

@@ -44,8 +44,8 @@ let declare_abstract = ref (fun ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_
   CErrors.anomaly (Pp.str "Abstract declaration hook not registered"))
 
 let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
-  let open Tacticals.New in
-  let open Tacmach.New in
+  let open Tacticals in
+  let open Tacmach in
   let open Proofview.Notations in
   Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (name, poly) ->
   (* This is important: The [Global] and [Proof Theorem] parts of the

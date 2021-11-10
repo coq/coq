@@ -26,7 +26,7 @@ END
 TACTIC EXTEND hello_world_tactic
 | [ "hello_world" ] ->
   { let _ = Feedback.msg_notice (str Tuto0_main.message) in
-    Tacticals.New.tclIDTAC }
+    Tacticals.tclIDTAC }
 END
 
 (*** Printing warnings ***)
@@ -50,7 +50,7 @@ TACTIC EXTEND hello_warning_tactic
 | [ "hello_warning" ] ->
    {
      let _ = tuto_warn () in
-     Tacticals.New.tclIDTAC
+     Tacticals.tclIDTAC
    }
 END
 
@@ -70,5 +70,5 @@ END
 TACTIC EXTEND hello_error_tactic
 | [ "hello_error" ] ->
   { let _ = CErrors.user_err (str Tuto0_main.message) in
-    Tacticals.New.tclIDTAC }
+    Tacticals.tclIDTAC }
 END

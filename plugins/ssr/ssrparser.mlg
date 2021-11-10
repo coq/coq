@@ -1764,7 +1764,7 @@ let ssrautoprop =
 
 let () = ssrautoprop_tac := ssrautoprop
 
-let tclBY tac = Tacticals.New.tclTHEN tac (donetac ~-1)
+let tclBY tac = Tacticals.tclTHEN tac (donetac ~-1)
 
 (** Tactical arguments. *)
 
@@ -2212,7 +2212,7 @@ END
 
 let vmexacttac pf =
   Goal.enter begin fun gl ->
-  exact_no_check (EConstr.mkCast (pf, vmCast, Tacmach.New.pf_concl gl))
+  exact_no_check (EConstr.mkCast (pf, vmCast, Tacmach.pf_concl gl))
   end
 
 }
@@ -2222,7 +2222,7 @@ TACTIC EXTEND ssrexact
      let views, (gens_clr, _) = arg in
      tclBY (inner_ssrapplytac views gens_clr ist) }
 | [ "exact" ] -> {
-     Tacticals.New.tclORELSE (donetac ~-1) (tclBY apply_top_tac) }
+     Tacticals.tclORELSE (donetac ~-1) (tclBY apply_top_tac) }
 | [ "exact" "<:" lconstr(pf) ] -> { vmexacttac pf }
 END
 
@@ -2251,7 +2251,7 @@ TACTIC EXTEND ssrcongr
 { let arg, dgens = arg in
   Proofview.Goal.enter begin fun _ ->
     match dgens with
-    | [gens], clr -> Tacticals.New.tclTHEN (genstac (gens,clr)) (newssrcongrtac arg ist)
+    | [gens], clr -> Tacticals.tclTHEN (genstac (gens,clr)) (newssrcongrtac arg ist)
     | _ -> errorstrm (str"Dependent family abstractions not allowed in congr")
   end }
 END

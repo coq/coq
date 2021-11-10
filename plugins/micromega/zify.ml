@@ -786,13 +786,13 @@ module CstrTable = struct
      *)
   let gen_cstr table =
     Proofview.Goal.enter (fun gl ->
-        let evd = Tacmach.New.project gl in
+        let evd = Tacmach.project gl in
         (* Build the table of existing hypotheses *)
         let has_hyp =
           let hyps_table = HConstr.create 20 in
           List.iter
             (fun (_, (t : EConstr.types)) -> HConstr.add hyps_table t ())
-            (Tacmach.New.pf_hyps_types gl);
+            (Tacmach.pf_hyps_types gl);
           fun c ->
             let m = HConstr.mem hyps_table c in
             if not m then HConstr.add hyps_table c ();
@@ -801,10 +801,10 @@ module CstrTable = struct
         (* Add the constraint (cstr k) if it is not already present *)
         let gen k cstr =
           Proofview.Goal.enter (fun gl ->
-              let env = Tacmach.New.pf_env gl in
+              let env = Tacmach.pf_env gl in
               let term = EConstr.mkApp (cstr, [|k|]) in
               let types = get_type_of env evd term in
-              if has_hyp types then Tacticals.New.tclIDTAC
+              if has_hyp types then Tacticals.tclIDTAC
               else
                 let n =
                   Tactics.fresh_id_in_env Id.Set.empty
@@ -814,8 +814,8 @@ module CstrTable = struct
                 Tactics.pose_proof (Names.Name n) term)
         in
         List.fold_left
-          (fun acc (k, i) -> Tacticals.New.tclTHEN (gen k i) acc)
-          Tacticals.New.tclIDTAC table)
+          (fun acc (k, i) -> Tacticals.tclTHEN (gen k i) acc)
+          Tacticals.tclIDTAC table)
 end
 
 type prf =
@@ -1336,20 +1336,20 @@ let trans_hyps env evd l =
 let trans_hyp h t0 prfp =
   debug_zify (fun () -> Pp.(str "trans_hyp: " ++ pp_prfp prfp ++ fnl ()));
   match prfp with
-  | IProof -> Tacticals.New.tclIDTAC (* Should detect before *)
+  | IProof -> Tacticals.tclIDTAC (* Should detect before *)
   | CProof t' ->
     Proofview.Goal.enter (fun gl ->
-        let env = Tacmach.New.pf_env gl in
-        let evd = Tacmach.New.project gl in
+        let env = Tacmach.pf_env gl in
+        let evd = Tacmach.project gl in
         let t' = Reductionops.nf_betaiota env evd t' in
         Tactics.change_in_hyp ~check:true None
           (Tactics.make_change_arg t')
           (h, Locus.InHypTypeOnly))
   | TProof (t', prf) ->
-    Tacticals.New.(
+    Tacticals.(
       Proofview.Goal.enter (fun gl ->
-          let env = Tacmach.New.pf_env gl in
-          let evd = Tacmach.New.project gl in
+          let env = Tacmach.pf_env gl in
+          let evd = Tacmach.project gl in
           let target = Reductionops.nf_betaiota env evd t' in
           let h' = Tactics.fresh_id_in_env Id.Set.empty h env in
           let prf =
@@ -1363,17 +1363,17 @@ let trans_hyp h t0 prfp =
 let trans_concl prfp =
   debug_zify (fun () -> Pp.(str "trans_concl: " ++ pp_prfp prfp ++ fnl ()));
   match prfp with
-  | IProof -> Tacticals.New.tclIDTAC
+  | IProof -> Tacticals.tclIDTAC
   | CProof t ->
     Proofview.Goal.enter (fun gl ->
-        let env = Tacmach.New.pf_env gl in
-        let evd = Tacmach.New.project gl in
+        let env = Tacmach.pf_env gl in
+        let evd = Tacmach.project gl in
         let t' = Reductionops.nf_betaiota env evd t in
         Tactics.change_concl t')
   | TProof (t, prf) ->
     Proofview.Goal.enter (fun gl ->
-        let env = Tacmach.New.pf_env gl in
-        let evd = Tacmach.New.project gl in
+        let env = Tacmach.pf_env gl in
+        let evd = Tacmach.project gl in
         let typ = get_type_of env evd prf in
         match EConstr.kind evd typ with
         | App (c, a) when Array.length a = 2 ->
@@ -1383,36 +1383,36 @@ let trans_concl prfp =
           raise (CErrors.anomaly Pp.(str "zify cannot transform conclusion")))
 
 let tclTHENOpt e tac tac' =
-  match e with None -> tac' | Some e' -> Tacticals.New.tclTHEN (tac e') tac'
+  match e with None -> tac' | Some e' -> Tacticals.tclTHEN (tac e') tac'
 
 let assert_inj t =
   init_cache ();
   Proofview.Goal.enter (fun gl ->
-      let env = Tacmach.New.pf_env gl in
-      let evd = Tacmach.New.project gl in
+      let env = Tacmach.pf_env gl in
+      let evd = Tacmach.project gl in
       try
         ignore (get_injection env evd t);
-        Tacticals.New.tclIDTAC
+        Tacticals.tclIDTAC
       with Not_found ->
-        Tacticals.New.tclFAIL 0 (Pp.str " InjTyp does not exist"))
+        Tacticals.tclFAIL 0 (Pp.str " InjTyp does not exist"))
 
 let elim_binding x t ty =
   Proofview.Goal.enter (fun gl ->
-      let env = Tacmach.New.pf_env gl in
+      let env = Tacmach.pf_env gl in
       let h =
         Tactics.fresh_id_in_env Id.Set.empty (Nameops.add_prefix "heq_" x) env
       in
-      Tacticals.New.tclTHEN
+      Tacticals.tclTHEN
         (Tactics.pose_proof (Name h) (eq_proof ty (EConstr.mkVar x) t))
-        (Tacticals.New.tclTRY (Tactics.clear_body [x])))
+        (Tacticals.tclTRY (Tactics.clear_body [x])))
 
 let do_let tac (h : Constr.named_declaration) =
   match h with
-  | Context.Named.Declaration.LocalAssum _ -> Tacticals.New.tclIDTAC
+  | Context.Named.Declaration.LocalAssum _ -> Tacticals.tclIDTAC
   | Context.Named.Declaration.LocalDef (id, t, ty) ->
     Proofview.Goal.enter (fun gl ->
-        let env = Tacmach.New.pf_env gl in
-        let evd = Tacmach.New.project gl in
+        let env = Tacmach.pf_env gl in
+        let evd = Tacmach.project gl in
         try
           let x = id.Context.binder_name in
           ignore
@@ -1422,14 +1422,14 @@ let do_let tac (h : Constr.named_declaration) =
                   [|EConstr.of_constr ty; EConstr.mkVar x; EConstr.of_constr t|])
                (ConstrMap.find_all evd eq !table_cache));
           tac x (EConstr.of_constr t) (EConstr.of_constr ty)
-        with Not_found -> Tacticals.New.tclIDTAC)
+        with Not_found -> Tacticals.tclIDTAC)
 
 let iter_let_aux tac =
   Proofview.Goal.enter (fun gl ->
-      let env = Tacmach.New.pf_env gl in
+      let env = Tacmach.pf_env gl in
       let sign = Environ.named_context env in
       init_cache ();
-      Tacticals.New.tclMAP (do_let tac) sign)
+      Tacticals.tclMAP (do_let tac) sign)
 
 let iter_let (tac : Ltac_plugin.Tacinterp.Value.t) =
   iter_let_aux (fun (id : Names.Id.t) t ty ->
@@ -1445,15 +1445,15 @@ let zify_tac =
       Coqlib.check_required_library ["Coq"; "micromega"; "ZifyClasses"];
       Coqlib.check_required_library ["Coq"; "micromega"; "ZifyInst"];
       init_cache ();
-      let evd = Tacmach.New.project gl in
-      let env = Tacmach.New.pf_env gl in
+      let evd = Tacmach.project gl in
+      let env = Tacmach.pf_env gl in
       let sign = Environ.named_context env in
-      let concl = trans_check_prop env evd (Tacmach.New.pf_concl gl) in
+      let concl = trans_check_prop env evd (Tacmach.pf_concl gl) in
       let hyps = trans_hyps env evd sign in
       let l = CstrTable.get () in
       tclTHENOpt concl trans_concl
-        (Tacticals.New.tclTHEN
-           (Tacticals.New.tclTHENLIST
+        (Tacticals.tclTHEN
+           (Tacticals.tclTHENLIST
               (List.rev_map (fun (h, p, t) -> trans_hyp h p t) hyps))
            (CstrTable.gen_cstr l)))
 
@@ -1524,7 +1524,7 @@ let rec spec_of_term env evd (senv : spec_env) t =
 let interp_pscript s =
   match s with
   | Set (id, c) ->
-    Tacticals.New.tclTHEN
+    Tacticals.tclTHEN
       (Tactics.letin_tac None (Names.Name id) c None
          {Locus.onhyps = None; Locus.concl_occs = Locus.AllOccurrences})
       (Tactics.clear_body [id])
@@ -1532,16 +1532,16 @@ let interp_pscript s =
 
 let rec interp_pscripts l =
   match l with
-  | [] -> Tacticals.New.tclIDTAC
-  | s :: l -> Tacticals.New.tclTHEN (interp_pscript s) (interp_pscripts l)
+  | [] -> Tacticals.tclIDTAC
+  | s :: l -> Tacticals.tclTHEN (interp_pscript s) (interp_pscripts l)
 
 let spec_of_hyps =
   Proofview.Goal.enter (fun gl ->
       let terms =
-        Tacmach.New.pf_concl gl :: List.map snd (Tacmach.New.pf_hyps_types gl)
+        Tacmach.pf_concl gl :: List.map snd (Tacmach.pf_hyps_types gl)
       in
-      let env = Tacmach.New.pf_env gl in
-      let evd = Tacmach.New.project gl in
+      let env = Tacmach.pf_env gl in
+      let evd = Tacmach.project gl in
       let s = fresh_subscript env in
       let env =
         List.fold_left
@@ -1611,10 +1611,10 @@ let saturate =
   Proofview.Goal.enter (fun gl ->
       init_cache ();
       let table = CstrTable.HConstr.create 20 in
-      let concl = Tacmach.New.pf_concl gl in
-      let hyps = Tacmach.New.pf_hyps_types gl in
-      let evd = Tacmach.New.project gl in
-      let env = Tacmach.New.pf_env gl in
+      let concl = Tacmach.pf_concl gl in
+      let hyps = Tacmach.pf_hyps_types gl in
+      let evd = Tacmach.project gl in
+      let env = Tacmach.pf_env gl in
       let rec sat t =
         match EConstr.kind evd t with
         | App (c, args) ->
@@ -1636,4 +1636,4 @@ let saturate =
       List.iter (fun (_, t) -> sat t) hyps;
       let s0 = fresh_subscript env in
       let (_,tacs,_) = CstrTable.HConstr.fold (fun c d acc -> sat_constr env evd acc c d) table (s0,[],hyps) in
-      Tacticals.New.tclTHENLIST tacs)
+      Tacticals.tclTHENLIST tacs)

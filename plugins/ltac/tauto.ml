@@ -17,7 +17,7 @@ open Ltac_plugin
 open Tacexpr
 open Tacinterp
 open Util
-open Tacticals.New
+open Tacticals
 open Proofview.Notations
 
 let tauto_plugin = "tauto_plugin"
@@ -213,7 +213,7 @@ let apply_nnpp _ ist =
     (Proofview.tclUNIT ())
     begin fun () ->
       if Coqlib.has_ref nnpp
-      then Tacticals.New.pf_constr_of_global (Coqlib.lib_ref nnpp) >>= apply
+      then Tacticals.pf_constr_of_global (Coqlib.lib_ref nnpp) >>= apply
       else tclFAIL 0 (Pp.mt ())
     end
 

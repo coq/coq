@@ -22,7 +22,7 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Tacmach.New
+open Tacmach
 open Tactic_debug
 open Constrexpr
 open Termops
@@ -833,7 +833,7 @@ let interp_message_token ist = function
     match v with
     | None -> Ftactic.lift (
         let info = Exninfo.reify () in
-        Tacticals.New.tclZEROMSG ~info (Id.print id ++ str" not found."))
+        Tacticals.tclZEROMSG ~info (Id.print id ++ str" not found."))
     | Some v -> message_of_value v
 
 let interp_message ist l =
@@ -1143,7 +1143,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       end
   | TacFail (g,n,s) ->
       let msg = interp_message ist s in
-      let tac ~info l = Tacticals.New.tclFAIL ~info (interp_int_or_var ist n) l in
+      let tac ~info l = Tacticals.tclFAIL ~info (interp_int_or_var ist n) l in
       let tac =
         match g with
         | TacLocal ->
@@ -1154,7 +1154,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
           tac ~info
       in
       Ftactic.run msg tac
-  | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
+  | TacProgress tac -> Tacticals.tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
       let trace = push_trace(None,call) ist in
@@ -1164,38 +1164,38 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
         (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic (flush_ist_evars (project gl) ist) t)
       end end)
   | TacThen (t1,t) ->
-      Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
+      Tacticals.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
   | TacDispatch tl ->
       Proofview.tclDISPATCH (List.map (interp_tactic ist) tl)
   | TacExtendTac (tf,t,tl) ->
       Proofview.tclEXTEND (Array.map_to_list (interp_tactic ist) tf)
                           (interp_tactic ist t)
                           (Array.map_to_list (interp_tactic ist) tl)
-  | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
+  | TacThens (t1,tl) -> Tacticals.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacThens3parts (t1,tf,t,tl) ->
-      Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)
+      Tacticals.tclTHENS3PARTS (interp_tactic ist t1)
         (Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
-  | TacDo (n,tac) -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
-  | TacTimeout (n,tac) -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
-  | TacTime (s,tac) -> Tacticals.New.tclTIME s (interp_tactic ist tac)
-  | TacTry tac -> Tacticals.New.tclTRY (interp_tactic ist tac)
-  | TacRepeat tac -> Tacticals.New.tclREPEAT (interp_tactic ist tac)
+  | TacDo (n,tac) -> Tacticals.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
+  | TacTimeout (n,tac) -> Tacticals.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
+  | TacTime (s,tac) -> Tacticals.tclTIME s (interp_tactic ist tac)
+  | TacTry tac -> Tacticals.tclTRY (interp_tactic ist tac)
+  | TacRepeat tac -> Tacticals.tclREPEAT (interp_tactic ist tac)
   | TacOr (tac1,tac2) ->
-      Tacticals.New.tclOR (interp_tactic ist tac1) (interp_tactic ist tac2)
+      Tacticals.tclOR (interp_tactic ist tac1) (interp_tactic ist tac2)
   | TacOnce tac ->
-      Tacticals.New.tclONCE (interp_tactic ist tac)
+      Tacticals.tclONCE (interp_tactic ist tac)
   | TacExactlyOnce tac ->
-      Tacticals.New.tclEXACTLY_ONCE (interp_tactic ist tac)
+      Tacticals.tclEXACTLY_ONCE (interp_tactic ist tac)
   | TacIfThenCatch (t,tt,te) ->
-      Tacticals.New.tclIFCATCH
+      Tacticals.tclIFCATCH
         (interp_tactic ist t)
         (fun () -> interp_tactic ist tt)
         (fun () -> interp_tactic ist te)
   | TacOrelse (tac1,tac2) ->
-      Tacticals.New.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
-  | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
-  | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
-  | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
+      Tacticals.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
+  | TacFirst l -> Tacticals.tclFIRST (List.map (interp_tactic ist) l)
+  | TacSolve l -> Tacticals.tclSOLVE (List.map (interp_tactic ist) l)
+  | TacComplete tac -> Tacticals.tclCOMPLETE (interp_tactic ist tac)
   | TacArg _ -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
   | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
@@ -1229,7 +1229,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
         if len1 = len2 then tac
         else
           let info = Exninfo.reify () in
-          Tacticals.New.tclZEROMSG ~info
+          Tacticals.tclZEROMSG ~info
             (str "Arguments length mismatch: \
                   expected " ++ int len1 ++ str ", found " ++ int len2)
       in
@@ -1327,7 +1327,7 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
 and interp_app loc ist fv largs : Val.t Ftactic.t =
   Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   let (>>=) = Ftactic.bind in
-  let fail ~info = Tacticals.New.tclZEROMSG ~info (str "Illegal tactic application.") in
+  let fail ~info = Tacticals.tclZEROMSG ~info (str "Illegal tactic application.") in
   if has_type fv (topwit wit_tacvalue) then
   match to_tacvalue fv with
      (* if var=[] and body has been delayed by val_interp, then body
@@ -1378,7 +1378,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
     | (VFun(appl,trace,_,olfun,[],body)) ->
       let extra_args = List.length largs in
       let info = Exninfo.reify () in
-      Tacticals.New.tclZEROMSG ~info
+      Tacticals.tclZEROMSG ~info
         (str "Illegal tactic application: got " ++
          str (string_of_int extra_args) ++
          str " extra " ++ str (String.plural extra_args "argument") ++
@@ -1417,7 +1417,7 @@ and tactic_of_value ist vle =
        List.map (fun (arg,_) -> Names.Id.to_string arg) (Names.Id.Map.bindings vmap) in
      let numgiven = List.length givenargs in
      let info = Exninfo.reify () in
-     Tacticals.New.tclZEROMSG ~info
+     Tacticals.tclZEROMSG ~info
        (Pp.str tactic_nm ++ Pp.str " was not fully applied:" ++ spc() ++
           (match numargs with
             0 -> assert false
@@ -1437,13 +1437,13 @@ and tactic_of_value ist vle =
                pr_enum Pp.str givenargs ++ Pp.str ".")
   | VRec _ ->
     let info = Exninfo.reify () in
-    Tacticals.New.tclZEROMSG ~info (str "A fully applied tactic is expected.")
+    Tacticals.tclZEROMSG ~info (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
     tactic_of_value ist tac
   else
     let info = Exninfo.reify () in
-    Tacticals.New.tclZEROMSG ~info (str "Expression does not evaluate to a tactic.")
+    Tacticals.tclZEROMSG ~info (str "Expression does not evaluate to a tactic.")
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u =
@@ -1642,7 +1642,7 @@ and interp_ltac_constr ist e : EConstr.t Ftactic.t =
   with CannotCoerceTo _ as exn ->
     let _, info = Exninfo.capture exn in
     let env = Proofview.Goal.env gl in
-    Tacticals.New.tclZEROMSG ~info
+    Tacticals.tclZEROMSG ~info
       (str "Must evaluate to a closed term" ++ fnl() ++
        str "offending expression: " ++ fnl() ++ pr_inspect env e result)
   end
@@ -1691,7 +1691,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           | [] -> Tactics.apply_with_delayed_bindings_gen a ev l
           | cl ->
               let cl = List.map (interp_in_hyp_as ist env sigma) cl in
-              List.fold_right (fun (id,ipat) -> Tactics.apply_delayed_in a ev id l ipat) cl Tacticals.New.tclIDTAC in
+              List.fold_right (fun (id,ipat) -> Tactics.apply_delayed_in a ev id l ipat) cl Tacticals.tclIDTAC in
         tac
       end
       end
@@ -1705,7 +1705,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let tac = Tactics.elim ev keep cb cbo in
           name_atomic ~env (TacElim (ev,(keep,cb),cbo)) tac
         in
-        Tacticals.New.tclWITHHOLES ev named_tac sigma
+        Tacticals.tclWITHHOLES ev named_tac sigma
       end
   | TacCase (ev,(keep,cb)) ->
       Proofview.Goal.enter begin fun gl ->
@@ -1716,7 +1716,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let tac = Tactics.general_case_analysis ev keep cb in
           name_atomic ~env (TacCase(ev,(keep,cb))) tac
         in
-        Tacticals.New.tclWITHHOLES ev named_tac sigma
+        Tacticals.tclWITHHOLES ev named_tac sigma
       end
   | TacMutualFix (id,n,l) ->
       (* spiwack: until the tactic is in the monad *)
@@ -1729,7 +1729,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
-        Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Tactics.mutual_fix (interp_ident ist env sigma id) n l_interp 0)
       end
       end
@@ -1744,7 +1744,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
-        Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Tactics.mutual_cofix (interp_ident ist env sigma id) l_interp 0)
       end
       end
@@ -1760,7 +1760,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let ipat' = interp_intro_pattern_option ist env sigma ipat in
         let tac = Option.map (Option.map (interp_tactic ist)) t in
-        Tacticals.New.tclWITHHOLES ev
+        Tacticals.tclWITHHOLES ev
         (name_atomic ~env
           (TacAssert(ev,b,Option.map (Option.map ignore) t,ipat,c))
           (Tactics.forward b tac ipat' c)) sigma
@@ -1770,7 +1770,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
         let env = Proofview.Goal.env gl in
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
-        Tacticals.New.tclWITHHOLES false
+        Tacticals.tclWITHHOLES false
         (name_atomic ~env
           (TacGeneralize cl)
           (Tactics.generalize_gen cl)) sigma
@@ -1793,7 +1793,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
               let with_eq = Some (true, id) in
               Tactics.letin_tac with_eq na c_interp None Locusops.nowhere
           in
-          Tacticals.New.tclWITHHOLES ev
+          Tacticals.tclWITHHOLES ev
           (name_atomic ~env
             (TacLetTac(ev,na,c_interp,clp,b,eqpat))
             let_tac) sigma
@@ -1807,7 +1807,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let (sigma',c) = interp_pure_open_constr ist env sigma c in
           name_atomic ~env
             (TacLetTac(ev,na,c,clp,b,eqpat))
-            (Tacticals.New.tclWITHHOLES ev
+            (Tacticals.tclWITHHOLES ev
                (let_pat_tac b (interp_name ist env sigma na)
                   (sigma,c) clp eqpat) sigma')
       end
@@ -1835,7 +1835,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let l,lp = List.split l in
         let sigma,el =
           Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma el in
-        Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (name_atomic ~env
           (TacInductionDestruct(isrec,ev,(lp,el)))
             (Tactics.induction_destruct isrec ev (l,el)))
@@ -1845,7 +1845,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacReduce (r,cl) ->
       Proofview.Goal.enter begin fun gl ->
         let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
-        Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl))
       end
   | TacChange (check,None,c,cl) ->
@@ -1912,7 +1912,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         name_atomic ~env
           (TacRewrite (ev,l,cl,Option.map ignore by))
           (Equality.general_multi_rewrite ev l' cl
-             (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
+             (Option.map (fun by -> Tacticals.tclCOMPLETE (interp_tactic ist by),
                Equality.Naive)
                 by))
       end
@@ -1929,7 +1929,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
-        Tacticals.New.tclWITHHOLES false
+        Tacticals.tclWITHHOLES false
         (name_atomic ~env
           (TacInversion(DepInversion(k,c_interp,ids),dqhyps))
           (Inv.dinv k c_interp ids_interp dqhyps)) sigma
@@ -1952,7 +1952,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let (sigma,c_interp) = interp_constr ist env sigma c in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let hyps = interp_hyp_list ist env sigma idl in
-        Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (name_atomic ~env
           (TacInversion (InversionUsing (c_interp,hyps),dqhyps))
           (Leminv.lemInv_clause dqhyps c_interp hyps))
@@ -2149,7 +2149,7 @@ let () =
 
 let () =
   register_interp0 wit_uconstr (fun ist c -> Ftactic.enter begin fun gl ->
-    Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) (Tacmach.New.project gl) c)
+    Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) (Tacmach.project gl) c)
   end)
 
 (***************************************************************************)

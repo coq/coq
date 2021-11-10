@@ -2,7 +2,7 @@ open Names
 open Pp
 open Constr
 open Libnames
-open Tacmach
+open Tacmach.Old
 
 let mk_prefix pre id = Id.of_string (pre ^ Id.to_string id)
 let mk_rel_id = mk_prefix "R_"
@@ -394,7 +394,7 @@ let jmeq_refl () =
     @@ Coqlib.lib_ref "core.JMeq.refl"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
-let h_intros l = Tacticals.New.tclMAP (fun x -> Tactics.Simple.intro x) l
+let h_intros l = Tacticals.tclMAP (fun x -> Tactics.Simple.intro x) l
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"
 
@@ -426,7 +426,7 @@ let evaluable_of_global_reference r =
   | _ -> assert false
 
 let list_rewrite (rev : bool) (eqs : (EConstr.constr * bool) list) =
-  let open Tacticals.New in
+  let open Tacticals in
   (tclREPEAT
      (List.fold_right
         (fun (eq, b) i ->
@@ -488,5 +488,5 @@ let funind_purify f x =
     Exninfo.iraise e
 
 let tac_type_of g c =
-  let sigma, t = Tacmach.pf_type_of g c in
+  let sigma, t = Tacmach.Old.pf_type_of g c in
   ({g with Evd.sigma}, t)

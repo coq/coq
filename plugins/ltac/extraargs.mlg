@@ -16,7 +16,7 @@ open Tacarg
 open Pcoq.Prim
 open Pcoq.Constr
 open Names
-open Tacmach
+open Tacmach.Old
 open Tacexpr
 open Taccoerce
 open Tacinterp

@@ -101,11 +101,11 @@ let conclPattern concl pat tac =
           Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
         with Constr_matching.PatternMatchingFailure as exn ->
           let _, info = Exninfo.capture exn in
-          Tacticals.New.tclZEROMSG ~info (str "pattern-matching failed")
+          Tacticals.tclZEROMSG ~info (str "pattern-matching failed")
   in
   Proofview.Goal.enter begin fun gl ->
      let env = Proofview.Goal.env gl in
-     let sigma = Tacmach.New.project gl in
+     let sigma = Tacmach.project gl in
      constr_bindings env sigma >>= fun constr_bindings ->
      Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
      let open Genarg in
@@ -245,7 +245,7 @@ let tclTRY_dbg d tac =
       pr_info_trace env sigma d;
       Proofview.tclUNIT () in
   let after = delay (fun () -> pr_info_nop d; Proofview.tclUNIT ()) in
-  Tacticals.New.tclORELSE0 tac after
+  Tacticals.tclORELSE0 tac after
 
 (**************************************************************************)
 (*                           The Trivial tactic                           *)
@@ -277,24 +277,24 @@ let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
 
 let rec trivial_fail_db dbg db_list local_db =
   let intro_tac =
-    Tacticals.New.tclTHEN (dbg_intro dbg)
+    Tacticals.tclTHEN (dbg_intro dbg)
       ( Proofview.Goal.enter begin fun gl ->
-          let sigma = Tacmach.New.project gl in
+          let sigma = Tacmach.project gl in
           let env = Proofview.Goal.env gl in
-          let decl = Tacmach.New.pf_last_hyp gl in
+          let decl = Tacmach.pf_last_hyp gl in
           let hyp = Context.Named.Declaration.get_id decl in
           let local_db = push_resolve_hyp env sigma hyp local_db in
           trivial_fail_db dbg db_list local_db
       end)
   in
   Proofview.Goal.enter begin fun gl ->
-    let concl = Tacmach.New.pf_concl gl in
-    let sigma = Tacmach.New.project gl in
+    let concl = Tacmach.pf_concl gl in
+    let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
     let secvars = compute_secvars gl in
-    Tacticals.New.tclFIRST
+    Tacticals.tclFIRST
       ((dbg_assumption dbg)::intro_tac::
-          (List.map Tacticals.New.tclCOMPLETE
+          (List.map Tacticals.tclCOMPLETE
              (trivial_resolve env sigma dbg db_list local_db secvars concl)))
   end
 
@@ -306,21 +306,21 @@ and tac_of_hint dbg db_list local_db concl h =
     | Res_pf h -> unify_resolve_nodelta h
     | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
         let info = Exninfo.reify () in
-        Tacticals.New.tclZEROMSG ~info (str "eres_pf"))
+        Tacticals.tclZEROMSG ~info (str "eres_pf"))
     | Give_exact h  -> exact h
     | Res_pf_THEN_trivial_fail h ->
-      Tacticals.New.tclTHEN
+      Tacticals.tclTHEN
         (unify_resolve_nodelta h)
         (* With "(debug) trivial", we shouldn't end here, and
            with "debug auto" we don't display the details of inner trivial *)
         (trivial_fail_db (no_dbg dbg) db_list local_db)
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
-       if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
-         Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
+       if exists_evaluable_reference (Tacmach.pf_env gl) c then
+         Tacticals.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else
          let info = Exninfo.reify () in
-         Tacticals.New.tclFAIL ~info 0 (str"Unbound reference")
+         Tacticals.tclFAIL ~info 0 (str"Unbound reference")
        end
     | Extern (p, tacast) ->
       conclPattern concl p tacast
@@ -353,7 +353,7 @@ let trivial ?(debug=Off) lems dbnames =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = make_db_list dbnames in
   let d = mk_trivial_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
@@ -365,7 +365,7 @@ let full_trivial ?(debug=Off) lems =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = current_pure_db () in
   let d = mk_trivial_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
@@ -398,14 +398,14 @@ let possible_resolve env sigma dbg db_list local_db secvars cl =
    with the hint db extended with the so-obtained hypothesis *)
 
 let intro_register dbg kont db =
-  Tacticals.New.tclTHEN (dbg_intro dbg)
+  Tacticals.tclTHEN (dbg_intro dbg)
     (Proofview.Goal.enter begin fun gl ->
       let extend_local_db decl db =
-        let env = Tacmach.New.pf_env gl in
-        let sigma = Tacmach.New.project gl in
+        let env = Tacmach.pf_env gl in
+        let sigma = Tacmach.project gl in
         push_resolve_hyp env sigma (Context.Named.Declaration.get_id decl) db
       in
-      Tacticals.New.onLastDecl (fun decl -> kont (extend_local_db decl db))
+      Tacticals.onLastDecl (fun decl -> kont (extend_local_db decl db))
     end)
 
 (* n is the max depth of search *)
@@ -418,19 +418,19 @@ let search d n db_list local_db =
     Proofview.tclEXTEND [] begin
       if Int.equal n 0 then
         let info = Exninfo.reify () in
-        Tacticals.New.tclZEROMSG ~info (str"BOUND 2")
+        Tacticals.tclZEROMSG ~info (str"BOUND 2")
       else
-        Tacticals.New.tclORELSE0 (dbg_assumption d)
-          (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
+        Tacticals.tclORELSE0 (dbg_assumption d)
+          (Tacticals.tclORELSE0 (intro_register d (search d n) local_db)
              ( Proofview.Goal.enter begin fun gl ->
-               let concl = Tacmach.New.pf_concl gl in
-               let sigma = Tacmach.New.project gl in
+               let concl = Tacmach.pf_concl gl in
+               let sigma = Tacmach.project gl in
                let env = Proofview.Goal.env gl in
                let secvars = compute_secvars gl in
                let d' = incr_dbg d in
-               Tacticals.New.tclFIRST
+               Tacticals.tclFIRST
                  (List.map
-                    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
+                    (fun ntac -> Tacticals.tclTHEN ntac (search d' (n-1) local_db))
                     (possible_resolve env sigma d db_list local_db secvars concl))
              end))
     end []
@@ -443,7 +443,7 @@ let delta_auto debug n lems dbnames =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = make_db_list dbnames in
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in
@@ -459,7 +459,7 @@ let delta_full_auto ?(debug=Off) n lems =
   Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let db_list = current_pure_db () in
   let d = mk_auto_dbg debug in
   let hints = make_local_hint_db env sigma false lems in

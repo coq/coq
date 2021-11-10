@@ -596,9 +596,9 @@ let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i :
   let open Constr in
   let open EConstr in
   let open Context.Rel.Declaration in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       (* first of all we recreate the lemmas types to be used as predicates of the induction principle
          that is~:
@@ -874,7 +874,7 @@ let tauto =
 *)
 let generalize_dependent_of x hyp =
   let open Context.Named.Declaration in
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       tclMAP
         (function
@@ -892,9 +892,9 @@ let rec intros_with_rewrite () =
 and intros_with_rewrite_aux () : unit Proofview.tactic =
   let open Constr in
   let open EConstr in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       let eq_ind = make_eq () in
       let sigma = Proofview.Goal.sigma g in
@@ -994,9 +994,9 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
 let rec reflexivity_with_destruct_cases () =
   let open Constr in
   let open EConstr in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       let destruct_case () =
         try
@@ -1065,9 +1065,9 @@ let rec reflexivity_with_destruct_cases () =
 let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
     unit Proofview.tactic =
   let open EConstr in
-  let open Tacmach.New in
+  let open Tacmach in
   let open Tactics in
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.Goal.enter (fun g ->
       (* We compute the types of the different mutually recursive lemmas
          in $\zeta$ normal form

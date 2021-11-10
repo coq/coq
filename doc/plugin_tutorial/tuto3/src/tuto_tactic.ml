@@ -104,8 +104,8 @@ let get_type_of_hyp env id =
 
 let repackage i h_hyps_id = Goal.enter begin fun gl ->
     let env = Goal.env gl in
-    let sigma = Tacmach.New.project gl in
-    let concl = Tacmach.New.pf_concl gl in
+    let sigma = Tacmach.project gl in
+    let concl = Tacmach.pf_concl gl in
     let (ty1 : EConstr.t) = get_type_of_hyp env i in
     let (packed_ty2 : EConstr.t) = get_type_of_hyp env h_hyps_id in
     let ty2 = unpack_type sigma packed_ty2 in

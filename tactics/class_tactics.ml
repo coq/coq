@@ -158,7 +158,7 @@ let auto_unif_flags ?(allowed_evars = Evarsolve.AllowedEvars.all) st =
 }
 
 let e_give_exact flags h =
-  let open Tacmach.New in
+  let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = project gl in
@@ -175,7 +175,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
   let () = assert (Option.is_empty (fst @@ hint_as_term @@ h)) in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let sigma, c = Hints.fresh_hint env sigma h in
   let clenv = mk_clenv_from_n env sigma diff (c, ty) in
   Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
@@ -205,9 +205,9 @@ let unify_resolve_refine flags h diff =
     (fun (exn,info) ->
       match exn with
       | Evarconv.UnableToUnify _ ->
-        Tacticals.New.tclZEROMSG ~info (str "Unable to unify")
+        Tacticals.tclZEROMSG ~info (str "Unable to unify")
       | e when CErrors.noncritical e ->
-        Tacticals.New.tclZEROMSG ~info (str "Unexpected error")
+        Tacticals.tclZEROMSG ~info (str "Unexpected error")
       | _ ->
         Exninfo.iraise (exn,info))
 
@@ -219,16 +219,16 @@ let with_prods nprods h f =
     Proofview.Goal.enter begin fun gl ->
       if Option.has_some (fst @@ hint_as_term h) || Int.equal nprods 0 then f None
       else
-        let sigma = Tacmach.New.project gl in
+        let sigma = Tacmach.project gl in
         let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma (snd @@ hint_as_term h) in
         let diff = nb_prod sigma ty - nprods in
         if (>=) diff 0 then f (Some (diff, ty))
-        else Tacticals.New.tclZEROMSG (str"Not enough premisses")
+        else Tacticals.tclZEROMSG (str"Not enough premisses")
     end
   else Proofview.Goal.enter
          begin fun gl ->
          if Int.equal nprods 0 then f None
-         else Tacticals.New.tclZEROMSG (str"Not enough premisses") end
+         else Tacticals.tclZEROMSG (str"Not enough premisses") end
 
 let matches_pattern concl pat =
   let matches env sigma =
@@ -238,7 +238,7 @@ let matches_pattern concl pat =
        if Constr_matching.is_matching env sigma pat concl then
          Proofview.tclUNIT ()
        else
-         Tacticals.New.tclZEROMSG (str "pattern does not match")
+         Tacticals.tclZEROMSG (str "pattern does not match")
   in
    Proofview.Goal.enter begin fun gl ->
      let env = Proofview.Goal.env gl in
@@ -279,13 +279,13 @@ let hintmap_of env sigma hdc secvars concl =
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 let rec e_trivial_fail_db only_classes db_list local_db secvars =
-  let open Tacticals.New in
-  let open Tacmach.New in
+  let open Tacticals in
+  let open Tacmach in
   let trivial_fail =
     Proofview.Goal.enter
     begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let d = NamedDecl.get_id @@ pf_last_hyp gl in
     let hints = push_resolve_hyp env sigma d local_db in
       e_trivial_fail_db only_classes db_list hints secvars
@@ -335,7 +335,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
                           (fun diff ->
                              matches_pattern concl p <*>
                                unify_resolve_refine flags h diff)
-             in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+             in Tacticals.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
                with_prods nprods h (unify_resolve ~with_evars:false flags h) in
@@ -347,7 +347,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
                   (fun diff ->
                              matches_pattern concl p <*>
                              unify_resolve_refine flags h diff)) in
-             Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+             Tacticals.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
                with_prods nprods h (unify_resolve ~with_evars:true flags h) in
@@ -359,20 +359,20 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
                matches_pattern concl p <*>
                  Proofview.Goal.enter
                    (fun gl -> unify_resolve_refine flags h None) in
-             Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+             Tacticals.tclTHEN tac Proofview.shelve_unifiable
            else
              e_give_exact flags h
       | Res_pf_THEN_trivial_fail h ->
          let fst = with_prods nprods h (unify_resolve ~with_evars:true flags h) in
-         let snd = if complete then Tacticals.New.tclIDTAC
+         let snd = if complete then Tacticals.tclIDTAC
                    else e_trivial_fail_db only_classes db_list local_db secvars in
-         Tacticals.New.tclTHEN fst snd
+         Tacticals.tclTHEN fst snd
       | Unfold_nth c ->
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
       | Extern (p, tacast) -> conclPattern concl0 p tacast
       in
       let tac = FullHint.run h tac in
-      let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
+      let tac = if complete then Tacticals.tclCOMPLETE tac else tac in
       let pp =
         match p with
         | Some pat when get_typeclasses_filtered_unification () ->
@@ -924,7 +924,7 @@ module Search = struct
     let open Proofview in
     let env = Goal.env gl in
     let sigma = Goal.sigma gl in
-    let decl = Tacmach.New.pf_last_hyp gl in
+    let decl = Tacmach.pf_last_hyp gl in
     let ldb =
       make_resolve_hyp env sigma (Hint_db.transparent_state info.search_hints)
                        info.search_only_classes decl info.search_hints in
@@ -1022,13 +1022,13 @@ module Search = struct
     let error (e, info) =
       match e with
       | ReachedLimit ->
-        Tacticals.New.tclFAIL ~info 0 (str"Proof search reached its limit")
+        Tacticals.tclFAIL ~info 0 (str"Proof search reached its limit")
       | NoApplicableHint ->
-        Tacticals.New.tclFAIL ~info 0 (str"Proof search failed" ++
+        Tacticals.tclFAIL ~info 0 (str"Proof search failed" ++
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
       | Proofview.MoreThanOneSuccess ->
-        Tacticals.New.tclFAIL ~info 0 (str"Proof search failed: " ++
+        Tacticals.tclFAIL ~info 0 (str"Proof search failed: " ++
                                        str"more than one success found")
       | e -> Proofview.tclZERO ~info e
     in
@@ -1383,11 +1383,11 @@ let head_of_constr h c =
 let not_evar c =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma c with
-  | Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
+  | Evar _ -> Tacticals.tclFAIL 0 (str"Evar")
   | _ -> Proofview.tclUNIT ()
 
 let is_ground c =
-  let open Tacticals.New in
+  let open Tacticals in
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evarutil.is_ground_term sigma c then tclIDTAC
   else tclFAIL 0 (str"Not ground")
@@ -1401,7 +1401,7 @@ let autoapply c i =
   in
   let flags = auto_unif_flags
     (Hints.Hint_db.transparent_state hintdb) in
-  let cty = Tacmach.New.pf_get_type_of gl c in
+  let cty = Tacmach.pf_get_type_of gl c in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let ce = mk_clenv_from env sigma (c,cty) in

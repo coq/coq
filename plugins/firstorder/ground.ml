@@ -13,8 +13,8 @@ open Formula
 open Sequent
 open Rules
 open Instances
-open Tacmach.New
-open Tacticals.New
+open Tacmach
+open Tacticals
 
 let update_flags ()=
   let open TransparentState in

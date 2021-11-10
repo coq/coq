@@ -15,8 +15,8 @@ open Termops
 open EConstr
 open Inductiveops
 open Hipattern
-open Tacmach.New
-open Tacticals.New
+open Tacmach
+open Tacticals
 open Clenv
 open Tactics
 
@@ -187,7 +187,7 @@ let general_decompose recognizer c =
   end
 
 let head_in indl t gl =
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   try
     let ity,_ = extract_mrectype sigma t in
     List.exists (fun i -> Ind.CanOrd.equal (fst i) (fst ity)) indl

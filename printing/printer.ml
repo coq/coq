@@ -467,7 +467,7 @@ let goal_repr sigma g =
  *)
 let pr_goal ?(diffs=false) ?og_s g_s =
   let g = sig_it g_s in
-  let sigma = Tacmach.project g_s in
+  let sigma = Tacmach.Old.project g_s in
   let env, concl = goal_repr sigma g in
   let goal =
     if diffs then

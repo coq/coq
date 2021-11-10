@@ -108,7 +108,7 @@ let closed_term args _ = match args with
   let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_ref) c) (Option.get (Value.to_list l)) in
   Proofview.tclEVARMAP >>= fun sigma ->
   let cs = List.fold_right GlobRef.Set_env.add l GlobRef.Set_env.empty in
-  if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
+  if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.tclFAIL 0 (mt())
 | _ -> assert false
 
 let closed_term_ast =
@@ -677,7 +677,7 @@ let ltac_ring_structure e =
 
 let ring_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
     let rl = make_args_list sigma rl t in
     let e = find_ring_structure env sigma rl in
@@ -970,7 +970,7 @@ let ltac_field_structure e =
 
 let field_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
     let rl = make_args_list sigma rl t in
     let e = find_field_structure env sigma rl in

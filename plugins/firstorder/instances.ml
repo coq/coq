@@ -14,9 +14,9 @@ open CErrors
 open Util
 open EConstr
 open Vars
-open Tacmach.New
+open Tacmach
 open Tactics
-open Tacticals.New
+open Tacticals
 open Proofview.Notations
 open Reductionops
 open Formula

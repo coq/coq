@@ -368,9 +368,9 @@ END
 
 TACTIC EXTEND instantiate
 | [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
-    { Tacticals.New.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals }
+    { Tacticals.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals }
 | [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
-    { Tacticals.New.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals }
+    { Tacticals.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals }
 | [ "instantiate" ] -> { Proofview.V82.nf_evar_goals }
 END
 
@@ -398,12 +398,12 @@ let step left x tac =
   let l =
     List.map (fun lem ->
       let lem = EConstr.of_constr lem in
-      Tacticals.New.tclTHENLAST
+      Tacticals.tclTHENLAST
         (apply_with_bindings (lem, ImplicitBindings [x]))
         tac)
       !(if left then transitivity_left_table else transitivity_right_table)
   in
-  Tacticals.New.tclFIRST l
+  Tacticals.tclFIRST l
 
 (* Main function to push lemmas in persistent environment *)
 
@@ -522,7 +522,7 @@ END
 TACTIC EXTEND constr_eq_nounivs
 | [ "constr_eq_nounivs" constr(x) constr(y) ] -> {
     Proofview.tclEVARMAP >>= fun sigma ->
-    if EConstr.eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "Not equal") }
+    if EConstr.eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.tclFAIL 0 (str "Not equal") }
 END
 
 TACTIC EXTEND is_evar
@@ -681,7 +681,7 @@ let guard tst =
     Proofview.tclUNIT ()
   else
     let msg = Pp.(str"Condition not satisfied:"++ws 1++(pr_itest tst)) in
-    Tacticals.New.tclZEROMSG msg
+    Tacticals.tclZEROMSG msg
 
 }
 

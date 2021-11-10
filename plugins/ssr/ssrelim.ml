@@ -17,7 +17,7 @@ open Constr
 open Context
 open Termops
 open Tactypes
-open Tacmach
+open Tacmach.Old
 
 open Ssrmatching_plugin
 open Ssrmatching
@@ -191,13 +191,13 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
       let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
       let ((kn, i),_ as indu), unfolded_c_ty =
         pf_reduce_to_quantified_ind gl c_ty in
-      let sort = Tacticals.elimination_sort_of_goal gl in
+      let sort = Tacticals.Old.elimination_sort_of_goal gl in
       let gl, elim =
         if not is_case then
           let t,gl= pf_fresh_global (Indrec.lookup_eliminator env (kn,i) sort) gl in
           gl, t
         else
-          Tacmach.pf_eapply (fun env sigma () ->
+          Tacmach.Old.pf_eapply (fun env sigma () ->
             let indu = (fst indu, EConstr.EInstance.kind sigma (snd indu)) in
             let (sigma, ind) = Indrec.build_case_analysis_scheme env sigma indu true sort in
             (sigma, ind)) gl () in
@@ -408,7 +408,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         let concl = EConstr.mkArrow src Sorts.Relevant (EConstr.Vars.lift 1 concl) in
         let clr = if deps <> [] then clr else [] in
         concl, gen_eq_tac, clr, gl
-    | _ -> concl, Tacticals.New.tclIDTAC, clr, gl in
+    | _ -> concl, Tacticals.tclIDTAC, clr, gl in
     let mk_lam t r = EConstr.mkLambda_or_LetIn r t in
     let concl = List.fold_left mk_lam concl pred_rctx in
     let gl, concl =
@@ -457,10 +457,10 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   end >>= fun (elim, seed,clr,is_rec,gen_eq_tac) ->
 
   let elim_tac =
-    Tacticals.New.tclTHENLIST [
+    Tacticals.tclTHENLIST [
       refine_with ~with_evars:false elim;
       cleartac clr] in
-  Tacticals.New.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
+  Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
 ;;
 
 let elimtac x =
@@ -512,7 +512,7 @@ let injectidl2rtac id c =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
-  Tacticals.New.tclTHEN (equality_inj None true id c) (revtoptac (nb_prod sigma concl))
+  Tacticals.tclTHEN (equality_inj None true id c) (revtoptac (nb_prod sigma concl))
   end
 
 let injectl2rtac sigma c = match EConstr.kind sigma c with
@@ -520,7 +520,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 | _ ->
   let id = injecteq_id in
   let xhavetac id c = Tactics.pose_proof (Name id) c in
-  Tacticals.New.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Tactics.clear [id]]
+  Tacticals.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Tactics.clear [id]]
 
 let is_injection_case env sigma c =
   let sigma, cty = Typing.type_of env sigma c in
@@ -544,9 +544,9 @@ let perform_injection c =
   let cl1 = EConstr.mkLambda EConstr.(make_annot Anonymous Sorts.Relevant, mkArrow eqt Sorts.Relevant cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
-  let injtac = Tacticals.New.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
+  let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
   Proofview.Unsafe.tclEVARS sigma <*>
-  Tacticals.New.tclTHENLAST (Tactics.apply (EConstr.compose_lam dc cl1)) injtac
+  Tacticals.tclTHENLAST (Tactics.apply (EConstr.compose_lam dc cl1)) injtac
   end
 
 let ssrscase_or_inj_tac c =

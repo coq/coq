@@ -207,7 +207,7 @@ let litteral_of_constr b env sigma term =
 (* store all equalities from the context *)
 
 let make_prb gls depth additional_terms b =
-  let open Tacmach.New in
+  let open Tacmach in
   let env=pf_env gls in
   let sigma=project gls in
   let state = empty depth {it = Proofview.Goal.goal gls; sigma } in
@@ -253,7 +253,7 @@ let make_prb gls depth additional_terms b =
 (* indhyps builds the array of arrays of constructor hyps for (ind largs) *)
 
 let build_projection intype (cstr:pconstructor) special default gls=
-  let open Tacmach.New in
+  let open Tacmach in
   let ci= (snd(fst cstr)) in
   let sigma = project gls in
   let body=Equality.build_selector (pf_env gls) sigma ci (mkRel 1) intype special default in
@@ -263,7 +263,7 @@ let build_projection intype (cstr:pconstructor) special default gls=
 (* generate an adhoc tactic following the proof tree  *)
 
 let app_global f args k =
-  Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
+  Tacticals.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
 
 let rec gen_holes env sigma t n accu =
   if Int.equal n 0 then (sigma, List.rev accu)
@@ -276,11 +276,11 @@ let rec gen_holes env sigma t n accu =
 
 let app_global_with_holes f args n =
   Proofview.Goal.enter begin fun gl ->
-    Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc ->
+    Tacticals.pf_constr_of_global (Lazy.force f) >>= fun fc ->
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     Refine.refine ~typecheck:false begin fun sigma ->
-      let t = Tacmach.New.pf_get_type_of gl fc in
+      let t = Tacmach.pf_get_type_of gl fc in
       let t = Termops.prod_applist sigma t (Array.to_list args) in
       let ans = mkApp (fc, args) in
       let (sigma, holes) = gen_holes env sigma t n [] in
@@ -292,7 +292,7 @@ let app_global_with_holes f args n =
 
 let assert_before n c =
   Proofview.Goal.enter begin fun gl ->
-    let evm, _ = Tacmach.New.pf_apply type_of gl c in
+    let evm, _ = Tacmach.pf_apply type_of gl c in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm)
     (assert_before n c)
   end
@@ -304,7 +304,7 @@ let refresh_type env evm ty =
 let type_and_refresh c k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let evm = Tacmach.New.project gl in
+    let evm = Tacmach.project gl in
     (* XXX is get_type_of enough? *)
     let evm, ty = Typing.type_of env evm c in
     let evm, ty = refresh_type env evm ty in
@@ -333,7 +333,7 @@ let rec proof_tac p : unit Proofview.tactic =
             t3 = constr_of_term p2.p_rhs in
         type_and_refresh t2 (fun typ ->
         let prf = app_global_with_holes _trans_eq [|typ;t1;t2;t3;|] 2 in
-          Tacticals.New.tclTHENS prf [(proof_tac p1);(proof_tac p2)])
+          Tacticals.tclTHENS prf [(proof_tac p1);(proof_tac p2)])
     | Congr (p1,p2)->
         let tf1=constr_of_term p1.p_lhs
         and tx1=constr_of_term p2.p_lhs
@@ -342,7 +342,7 @@ let rec proof_tac p : unit Proofview.tactic =
         type_and_refresh tf1 (fun typf ->
         type_and_refresh tx1 (fun typx ->
         type_and_refresh (mkApp (tf1,[|tx1|])) (fun typfx ->
-        let id = Tacmach.New.pf_get_new_id (Id.of_string "f") gl in
+        let id = Tacmach.pf_get_new_id (Id.of_string "f") gl in
         let appx1 = mkLambda(make_annot (Name id) Sorts.Relevant,typf,mkApp(mkRel 1,[|tx1|])) in
         let lemma1 = app_global_with_holes _f_equal [|typf;typfx;appx1;tf1;tf2|] 1 in
         let lemma2 = app_global_with_holes _f_equal [|typx;typfx;tf2;tx1;tx2|] 1 in
@@ -352,12 +352,12 @@ let rec proof_tac p : unit Proofview.tactic =
                   mkApp(tf1,[|tx1|]);
                   mkApp(tf2,[|tx1|]);
                   mkApp(tf2,[|tx2|])|] 2 in
-          Tacticals.New.tclTHENS prf
-            [Tacticals.New.tclTHEN lemma1 (proof_tac p1);
-             Tacticals.New.tclFIRST
-               [Tacticals.New.tclTHEN lemma2 (proof_tac p2);
+          Tacticals.tclTHENS prf
+            [Tacticals.tclTHEN lemma1 (proof_tac p1);
+             Tacticals.tclFIRST
+               [Tacticals.tclTHEN lemma2 (proof_tac p2);
                 reflexivity;
-                Tacticals.New.tclZEROMSG
+                Tacticals.tclZEROMSG
                     (Pp.str
                        "I don't know how to handle dependent equality")]])))
   | Inject (prf,cstr,nargs,argind) ->
@@ -372,25 +372,25 @@ let rec proof_tac p : unit Proofview.tactic =
          in
          let injt=
            app_global_with_holes _f_equal [|intype;outtype;proj;ti;tj|] 1 in
-         Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-                               (Tacticals.New.tclTHEN injt (proof_tac prf))))
+         Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+                               (Tacticals.tclTHEN injt (proof_tac prf))))
   end
 
 let refute_tac c t1 t2 p =
   Proofview.Goal.enter begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let hid = Tacmach.New.pf_get_new_id (Id.of_string "Heq") gl in
+  let hid = Tacmach.pf_get_new_id (Id.of_string "Heq") gl in
   let false_t=mkApp (c,[|mkVar hid|]) in
   let k intype =
     let neweq= app_global _eq [|intype;tt1;tt2|] in
-    Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
+    Tacticals.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; simplest_elim false_t]
   in type_and_refresh tt1 k
   end
 
 let refine_exact_check c =
   Proofview.Goal.enter begin fun gl ->
-    let evm, _ = Tacmach.New.pf_apply type_of gl c in
+    let evm, _ = Tacmach.pf_apply type_of gl c in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (exact_check c)
   end
 
@@ -399,11 +399,11 @@ let convert_to_goal_tac c t1 t2 p =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let k sort =
     let neweq= app_global _eq [|sort;tt1;tt2|] in
-    let e = Tacmach.New.pf_get_new_id (Id.of_string "e") gl in
-    let x = Tacmach.New.pf_get_new_id (Id.of_string "X") gl in
+    let e = Tacmach.pf_get_new_id (Id.of_string "e") gl in
+    let x = Tacmach.pf_get_new_id (Id.of_string "X") gl in
     let identity=mkLambda (make_annot (Name x) Sorts.Relevant,sort,mkRel 1) in
     let endt = app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
-    Tacticals.New.tclTHENS (neweq (assert_before (Name e)))
+    Tacticals.tclTHENS (neweq (assert_before (Name e)))
                            [proof_tac p; endt refine_exact_check]
   in type_and_refresh tt2 k
   end
@@ -411,9 +411,9 @@ let convert_to_goal_tac c t1 t2 p =
 let convert_to_hyp_tac c1 t1 c2 t2 p =
   Proofview.Goal.enter begin fun gl ->
   let tt2=constr_of_term t2 in
-  let h = Tacmach.New.pf_get_new_id (Id.of_string "H") gl in
+  let h = Tacmach.pf_get_new_id (Id.of_string "H") gl in
   let false_t=mkApp (c2,[|mkVar h|]) in
-    Tacticals.New.tclTHENS (assert_before (Name h) tt2)
+    Tacticals.tclTHENS (assert_before (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t]
   end
@@ -423,13 +423,13 @@ let discriminate_tac cstru p =
   Proofview.Goal.enter begin fun gl ->
     let lhs=constr_of_term p.p_lhs and rhs=constr_of_term p.p_rhs in
     let env = Proofview.Goal.env gl in
-    let evm = Tacmach.New.project gl in
+    let evm = Tacmach.project gl in
     let evm, intype = Typing.type_of env evm lhs in
     let evm, intype = refresh_type env evm intype in
-    let hid = Tacmach.New.pf_get_new_id (Id.of_string "Heq") gl in
+    let hid = Tacmach.pf_get_new_id (Id.of_string "Heq") gl in
     let neweq=app_global _eq [|intype;lhs;rhs|] in
-    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evm)
-                          (Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
+    Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS evm)
+                          (Tacticals.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; Equality.discrHyp hid])
   end
 
@@ -443,7 +443,7 @@ let build_term_to_complete uf pac =
 
 let cc_tactic depth additional_terms b =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     Coqlib.(check_required_library logic_module_name);
     let _ = debug_congruence (fun () -> Pp.str "Reading goal ...") in
     let state = make_prb gl depth additional_terms b in
@@ -452,12 +452,12 @@ let cc_tactic depth additional_terms b =
     let _ = debug_congruence (fun () -> Pp.str "Computation completed.") in
     let uf=forest state in
     match sol with
-      None -> Tacticals.New.tclFAIL 0 (str (if b then "simple congruence failed" else "congruence failed"))
+      None -> Tacticals.tclFAIL 0 (str (if b then "simple congruence failed" else "congruence failed"))
     | Some reason ->
       debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
       match reason with
         Discrimination (i,ipac,j,jpac) ->
-        let p=build_proof (Tacmach.New.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in
+        let p=build_proof (Tacmach.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in
         let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
         discriminate_tac cstr p
       | Incomplete ->
@@ -483,7 +483,7 @@ let cc_tactic depth additional_terms b =
                         end ++
                       fnl() ++ str "  replacing metavariables by arbitrary terms")
         in
-        Tacticals.New.tclFAIL 0 msg
+        Tacticals.tclFAIL 0 msg
       | Contradiction dis ->
         let env = Proofview.Goal.env gl in
         let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in
@@ -522,22 +522,22 @@ let negative_concl_introf =
     match EConstr.kind sigma nt with
       Prod (_,_,ff) when isRefX sigma (Lazy.force _False) ff -> introf
     | App (f,[|t|]) when isRefX sigma (Lazy.force _not) f ->
-        Tacticals.New.pf_constr_of_global (Lazy.force _False) >>= fun ff ->
+        Tacticals.pf_constr_of_global (Lazy.force _False) >>= fun ff ->
         Refine.refine ~typecheck:true begin fun sigma ->
           let sigma, e = Evarutil.new_evar env sigma (mk_neg_ty ff t nt) in sigma, (mkApp (mk_neg_tm ff t nt, [|e|]))
         end >>= fun _ -> intro >>= fun _ -> intro
-    | _ -> Tacticals.New.tclIDTAC
+    | _ -> Tacticals.tclIDTAC
   end
 
 let congruence_tac depth l =
-  Tacticals.New.tclTHEN
-    (Tacticals.New.tclREPEAT (Tacticals.New.tclFIRST [intro; Tacticals.New.tclTHEN whd_in_concl intro]))
+  Tacticals.tclTHEN
+    (Tacticals.tclREPEAT (Tacticals.tclFIRST [intro; Tacticals.tclTHEN whd_in_concl intro]))
     (cc_tactic depth l false)
 
 
 let simple_congruence_tac depth l =
-  Tacticals.New.tclTHENLIST [
-    Tacticals.New.tclREPEAT intro;
+  Tacticals.tclTHENLIST [
+    Tacticals.tclREPEAT intro;
     negative_concl_introf;
     cc_tactic depth l true]
 
@@ -553,9 +553,9 @@ let simple_congruence_tac depth l =
 *)
 
 let mk_eq f c1 c2 k =
-  Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc ->
+  Tacticals.pf_constr_of_global (Lazy.force f) >>= fun fc ->
   Proofview.Goal.enter begin fun gl ->
-    let open Tacmach.New in
+    let open Tacmach in
     let evm, ty = pf_apply type_of gl c1 in
     let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm ty in
     let term = mkApp (fc, [| ty; c1; c2 |]) in
@@ -566,11 +566,11 @@ let mk_eq f c1 c2 k =
 let f_equal =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let cut_eq c1 c2 =
-        Tacticals.New.tclTHENS
+        Tacticals.tclTHENS
           (mk_eq _eq c1 c2 Tactics.cut)
-          [Proofview.tclUNIT ();Tacticals.New.tclTRY ((app_global _refl_equal [||]) apply)]
+          [Proofview.tclUNIT ();Tacticals.tclTRY ((app_global _refl_equal [||]) apply)]
     in
     Proofview.tclORELSE
       begin match EConstr.kind sigma concl with
@@ -578,8 +578,8 @@ let f_equal =
           begin match EConstr.kind sigma t, EConstr.kind sigma t' with
           | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
               let rec cuts i =
-                if i < 0 then Tacticals.New.tclTRY (congruence_tac 1000 [])
-                else Tacticals.New.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
+                if i < 0 then Tacticals.tclTRY (congruence_tac 1000 [])
+                else Tacticals.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
               in cuts (Array.length v - 1)
           | _ -> Proofview.tclUNIT ()
           end

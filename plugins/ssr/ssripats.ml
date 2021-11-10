@@ -198,7 +198,7 @@ let gen_astac id new_name =
 let isGEN_CONSUME =
   tclGET (fun ({ to_generalize = dgs } as s) ->
   tclSET { s with to_generalize = [] } <*>
-  Tacticals.New.tclTHENLIST
+  Tacticals.tclTHENLIST
     (List.map (fun { tmp_id; orig_name } ->
        gen_astac tmp_id orig_name) dgs) <*>
   Tactics.clear (List.map (fun gen -> gen.tmp_id) dgs))
@@ -240,7 +240,7 @@ let intro_anon_all = Goal.enter begin fun gl ->
   let sigma = Goal.sigma gl in
   let g = Goal.concl gl in
   let n = nb_assums env sigma g in
-  Tacticals.New.tclDO n (Ssrcommon.tclINTRO_ANON ())
+  Tacticals.tclDO n (Ssrcommon.tclINTRO_ANON ())
 end
 
 (*** [=> >*] **************************************************************)
@@ -264,7 +264,7 @@ let intro_anon_deps = Goal.enter begin fun gl ->
   let sigma = Goal.sigma gl in
   let g = Goal.concl gl in
   let n = nb_deps_assums env sigma g in
-  Tacticals.New.tclDO n (Ssrcommon.tclINTRO_ANON ())
+  Tacticals.tclDO n (Ssrcommon.tclINTRO_ANON ())
 end
 
 (** [intro_drop] behaves like [intro_anon] but registers the id of the
@@ -291,7 +291,7 @@ let intro_clear ids =
       List.fold_left (fun (used_ids, clear_ids, ren) id ->
             let new_id = Ssrcommon.mk_anon_id (Id.to_string id) used_ids in
             (new_id :: used_ids, new_id :: clear_ids, (id, new_id) :: ren))
-                     (Tacmach.New.pf_ids_of_hyps gl, [], []) ids
+                     (Tacmach.pf_ids_of_hyps gl, [], []) ids
     in
     Tactics.rename_hyp ren <*>
     isCLR_PUSHL clear_ids
@@ -411,7 +411,7 @@ end
 
 let tclMK_ABSTRACT_VARS ids =
   List.fold_right (fun id tac ->
-    Tacticals.New.tclTHENFIRST (tclMK_ABSTRACT_VAR id) tac) ids (tclUNIT ())
+    Tacticals.tclTHENFIRST (tclMK_ABSTRACT_VAR id) tac) ids (tclUNIT ())
 
 (* Debugging *)
 let tclLOG p t =
@@ -520,7 +520,7 @@ and ipat_tac pl : unit tactic =
 
 and tclIORPAT tac = function
   | [[]] -> tac
-  | p -> Tacticals.New.tclTHENS tac (List.map ipat_tac p)
+  | p -> Tacticals.tclTHENS tac (List.map ipat_tac p)
 
 and ssr_exception is_on = function
   | Some (IOpCaseBranches [[]]) when is_on -> Some IOpNoop
@@ -661,8 +661,8 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
            | [SsrHyp(_, x)], _ -> x
            | _, `EConstr(_,_,t) when EConstr.isVar sigma t ->
               EConstr.destVar sigma t
-           | _ -> Ssrcommon.mk_anon_id "K" (Tacmach.New.pf_ids_of_hyps g) in
-         Tacticals.New.tclFIRST
+           | _ -> Ssrcommon.mk_anon_id "K" (Tacmach.pf_ids_of_hyps g) in
+         Tacticals.tclFIRST
            [ Ssrcommon.tclINTRO_ID elim_name
            ; Ssrcommon.tclINTRO_ANON ~seed:"K" ()]
        end in
@@ -686,7 +686,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
            let open EConstr in
            let refl =
              mkApp (eq, [|Vars.lift 1 case_ty; mkRel 1; Vars.lift 1 case|]) in
-           let name = Ssrcommon.mk_anon_id "K" (Tacmach.New.pf_ids_of_hyps g) in
+           let name = Ssrcommon.mk_anon_id "K" (Tacmach.pf_ids_of_hyps g) in
 
            let new_concl =
              mkProd (make_annot (Name name) Sorts.Relevant, case_ty, mkArrow refl Sorts.Relevant (Vars.lift 2 concl)) in
@@ -727,7 +727,7 @@ let mkEq dir cl c t n env sigma =
 let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   Ssrcommon.tacSIGMA >>= fun sigma0 ->
   Goal.enter_one begin fun g ->
-  let pat = Ssrmatching.interp_cpattern (Tacmach.pf_env sigma0) (Tacmach.project sigma0) t None in
+  let pat = Ssrmatching.interp_cpattern (Tacmach.Old.pf_env sigma0) (Tacmach.Old.project sigma0) t None in
   let cl0, env, sigma, hyps = Goal.(concl g, env g, sigma g, hyps g) in
   let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
   let (c, ucst), cl =
@@ -887,7 +887,7 @@ let ssrmovetac = function
     let gentac = Ssrcommon.genstac (gens, clr) in
     gentac <*> tclIPAT (IpatMachine.tclCompileIPats ipats)
   | _, (_, ({ clr }, ipats)) ->
-    Tacticals.New.tclTHENLIST [ssrsmovetac; Tactics.clear (List.map Ssrcommon.hyp_id clr); tclIPAT (IpatMachine.tclCompileIPats ipats)]
+    Tacticals.tclTHENLIST [ssrsmovetac; Tactics.clear (List.map Ssrcommon.hyp_id clr); tclIPAT (IpatMachine.tclCompileIPats ipats)]
 
 (** [abstract: absvar gens] **************************************************)
 let rec is_Evar_or_CastedMeta sigma x =
@@ -985,7 +985,7 @@ let ssrabstract dgens =
     Unsafe.tclSETGOALS
       (goals @ [Proofview_monad.with_empty_state abstract_proof]) <*>
     tclDISPATCH [
-      Tacticals.New.tclSOLVE [Tactics.apply proof];
+      Tacticals.tclSOLVE [Tactics.apply proof];
       Ssrcommon.unfold[abstract;abstract_key]
     ]
   end in
@@ -993,7 +993,7 @@ let ssrabstract dgens =
    Ssrcommon.tacSIGMA >>= fun gl0 ->
      let open Ssrmatching in
      let ipats = List.map (fun (_,cp) ->
-       match id_of_pattern (interp_cpattern (Tacmach.pf_env gl0) (Tacmach.project gl0) cp None) with
+       match id_of_pattern (interp_cpattern (Tacmach.Old.pf_env gl0) (Tacmach.Old.project gl0) cp None) with
        | None -> IPatAnon (One None)
        | Some id -> IPatId id)
        (List.tl gens) in

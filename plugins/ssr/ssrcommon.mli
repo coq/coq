@@ -10,7 +10,7 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open Tacmach
+open Tacmach.Old
 open Names
 open Environ
 open Evd
@@ -397,7 +397,7 @@ val interp_clr :
 
 val genclrtac :
   EConstr.constr ->
-  EConstr.constr list -> Ssrast.ssrhyp list -> Tacmach.tactic
+  EConstr.constr list -> Ssrast.ssrhyp list -> Tacmach.Old.tactic
 val cleartac : ssrhyps -> unit Proofview.tactic
 
 val tclMULT : int * ssrmmod -> unit Proofview.tactic -> unit Proofview.tactic

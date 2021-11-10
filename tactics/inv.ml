@@ -22,8 +22,8 @@ open Namegen
 open Inductiveops
 open Printer
 open Retyping
-open Tacmach.New
-open Tacticals.New
+open Tacmach
+open Tacticals
 open Tactics
 open Elim
 open Equality

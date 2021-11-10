@@ -18,7 +18,7 @@ open Context
 open EConstr
 open Vars
 open Reduction
-open Tacticals.New
+open Tacticals
 open Tactics
 open Pretype_errors
 open Constrexpr
@@ -1508,7 +1508,7 @@ let assert_replacing id newt tac =
   let prf = Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let ctx = named_context env in
     let after, before = List.split_when (NamedDecl.get_id %> Id.equal id) ctx in
     let nc = match before with
@@ -1583,7 +1583,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let state = Proofview.Goal.state gl in
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let ty = match clause with
     | None -> concl
     | Some id -> EConstr.of_constr (Environ.named_type id env)
@@ -1614,7 +1614,7 @@ let tactic_init_setoid () =
   try init_setoid (); Proofview.tclUNIT ()
   with e when CErrors.noncritical e ->
     let _, info = Exninfo.capture e in
-    Tacticals.New.tclFAIL ~info 0 (str"Setoid library not loaded")
+    Tacticals.tclFAIL ~info 0 (str"Setoid library not loaded")
 
 let cl_rewrite_clause_strat progress strat clause =
   tactic_init_setoid () <*>
@@ -2060,12 +2060,12 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   abs, sigma, res, Sorts.is_prop sort
 
 let get_hyp gl (c,l) clause l2r =
-  let evars = Tacmach.New.project gl in
-  let env = Tacmach.New.pf_env gl in
+  let evars = Tacmach.project gl in
+  let env = Tacmach.pf_env gl in
   let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
-    | Some id -> Tacmach.New.pf_get_hyp_typ id gl
-    | None -> Reductionops.nf_evar evars (Tacmach.New.pf_concl gl)
+    | Some id -> Tacmach.pf_get_hyp_typ id gl
+    | None -> Reductionops.nf_evar evars (Tacmach.pf_concl gl)
   in
   unification_rewrite l2r hi.c1 hi.c2 sigma hi.prf hi.car hi.rel but env
 
@@ -2085,7 +2085,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
     (), res
               }
   in
-  let origsigma = Tacmach.New.project gl in
+  let origsigma = Tacmach.project gl in
   tactic_init_setoid () <*>
     Proofview.tclOR
       (tclPROGRESS
@@ -2110,7 +2110,7 @@ let not_declared ~info env sigma ty rel =
 let setoid_proof ty fn fallback =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let concl = Proofview.Goal.concl gl in
     Proofview.tclORELSE
       begin

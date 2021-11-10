@@ -88,7 +88,7 @@ let instantiate_tac_by_name id c =
 let let_evar name typ =
   let src = (Loc.tag Evar_kinds.GoalEvar) in
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+    let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
     let sigma, _ = Typing.sort_of env sigma typ in
     let id = match name with
@@ -98,14 +98,14 @@ let let_evar name typ =
     | Name.Name id -> id
     in
     let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Namegen.IntroFresh id) typ in
-    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Tactics.pose_tac (Name.Name id) evar)
   end
 
 let hget_evar n =
   let open EConstr in
   Proofview.Goal.enter begin fun gl ->
-  let sigma = Tacmach.New.project gl in
+  let sigma = Tacmach.project gl in
   let concl = Proofview.Goal.concl gl in
   let evl = evar_list sigma concl in
   if List.length evl < n then

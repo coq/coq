@@ -22,12 +22,12 @@ open Context
 open EConstr
 open Declarations
 open Tactics
-open Tacticals.New
+open Tacticals
 open Auto
 open Constr_matching
 open Hipattern
 open Proofview.Notations
-open Tacmach.New
+open Tacmach
 open Tactypes
 
 (* This file contains the implementation of the tactics ``Decide
@@ -99,7 +99,7 @@ let inj_flags = Some {
 let discrHyp id =
   let c env sigma = (sigma, (mkVar id, NoBindings)) in
   let tac c = Equality.discr_tac false (Some (None, ElimOnConstr c)) in
-  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+  Tacticals.tclDELAYEDWITHHOLES false c tac
 
 let solveNoteqBranch side =
   tclTHEN (choose_noteq side)
@@ -144,7 +144,7 @@ let eqCase tac =
 let injHyp id =
   let c env sigma = (sigma, (mkVar id, NoBindings)) in
   let tac c = Equality.injClause inj_flags None false (Some (None, ElimOnConstr c)) in
-  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+  Tacticals.tclDELAYEDWITHHOLES false c tac
 
 let diseqCase hyps eqonleft =
   let diseq  = Id.of_string "diseq" in
@@ -224,7 +224,7 @@ let solveEqBranch rectype =
       end
     end
     begin function (e, info) -> match e with
-      | PatternMatchingFailure -> Tacticals.New.tclZEROMSG (Pp.str"Unexpected conclusion!")
+      | PatternMatchingFailure -> Tacticals.tclZEROMSG (Pp.str"Unexpected conclusion!")
       | e -> Proofview.tclZERO ~info e
     end
 
@@ -254,7 +254,7 @@ let decideGralEquality =
     end
     begin function (e, info) -> match e with
       | PatternMatchingFailure ->
-          Tacticals.New.tclZEROMSG (Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}.")
+          Tacticals.tclZEROMSG (Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}.")
       | e -> Proofview.tclZERO ~info e
     end
 

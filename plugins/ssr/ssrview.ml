@@ -99,7 +99,7 @@ let vsBOOTSTRAP = Goal.enter_one ~__LOC__ begin fun gl ->
     match kind_of_type (Goal.sigma gl) concl with
     | ProdType({binder_name=Name.Name id}, _, _)
       when Ssrcommon.is_discharged_id id -> id
-    | _ -> mk_anon_id "view_subject" (Tacmach.New.pf_ids_of_hyps gl) in
+    | _ -> mk_anon_id "view_subject" (Tacmach.pf_ids_of_hyps gl) in
   let view = EConstr.mkVar id in
   Ssrcommon.tclINTRO_ID id <*>
   tclSET (Some { subject_name = [id]; view; to_clear = [] })
@@ -248,7 +248,7 @@ let pad_to_inductive ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
   let rel_ctx =
     List.map (fun (a,b) -> Context.Rel.Declaration.LocalAssum(a,b)) ctx in
   if not (Ssrcommon.isAppInd (EConstr.push_rel_context rel_ctx env) sigma i)
-  then Tacticals.New.tclZEROMSG Pp.(str"not an inductive")
+  then Tacticals.tclZEROMSG Pp.(str"not an inductive")
   else tclUNIT (mkGApp glob (mkGHoles (List.length ctx)))
        >>= tclADD_CLEAR_IF_ID ot
 end
@@ -316,8 +316,8 @@ Goal.enter_one ~__LOC__ begin fun g ->
       else l
     ) [] s in
   let und0 = (* Unassigned evars in the initial goal *)
-    let sigma0 = Tacmach.project s0 in
-    let g0info = Evd.find sigma0 (Tacmach.sig_it s0) in
+    let sigma0 = Tacmach.Old.project s0 in
+    let g0info = Evd.find sigma0 (Tacmach.Old.sig_it s0) in
     let g0 = Evd.evars_of_filtered_evar_info sigma0 g0info in
     List.filter (fun k -> Evar.Set.mem k g0)
       (List.map fst (Evar.Map.bindings (Evd.undefined_map sigma0))) in

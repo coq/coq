@@ -1556,10 +1556,10 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
       | Some init_terms ->
         (* This is the case for hybrid proof mode / definition
            fixpoint, where terms for some constants are given with := *)
-        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) init_terms in
-        List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl cinfo
+        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.tclIDTAC) init_terms in
+        List.map2 (fun tac thm -> Tacticals.tclTHEN tac (intro_tac thm)) tacl cinfo
     in
-    Tacticals.New.tclTHENS rec_tac term_tac, guard
+    Tacticals.tclTHENS rec_tac term_tac, guard
   in
   match cinfo with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")

@@ -12,9 +12,9 @@ open Util
 open Names
 open Constr
 open EConstr
-open Tacmach.New
+open Tacmach
 open Tactics
-open Tacticals.New
+open Tacticals
 open Indfun_common
 
 (***********************************************)
