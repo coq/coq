@@ -819,6 +819,13 @@ plugin:ci-metacoq:
   - build:base
   - plugin:ci-equations
 
+plugin:ci-metacoq_test_artifact:
+  extends: .ci-template
+  needs:
+  - build:base
+  - plugin:ci-equations
+  - plugin:ci-metacoq
+
 plugin:ci-mtac2:
   extends: .ci-template
 
