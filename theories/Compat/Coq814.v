@@ -15,3 +15,5 @@ Require Export Coq.Compat.Coq815.
 Local Set Warnings "-deprecated".
 
 Export Set Apply With Renaming.
+
+Export Set Avoid Local Imported Names.

@@ -62,6 +62,40 @@ let default_generated_non_letter_string = "x"
 (**********************************************************************)
 (* Globality of identifiers *)
 
+module Old = struct
+  (** Pre 8.15 compat *)
+
+  let is_imported_modpath = function
+    | MPfile dp ->
+      let rec find_prefix = function
+        |MPfile dp1 -> not (DirPath.equal dp1 dp)
+        |MPdot(mp,_) -> find_prefix mp
+        |MPbound(_) -> false
+      in find_prefix (Lib.current_mp ())
+    | _ -> false
+
+  let is_imported_ref = let open GlobRef in function
+      | VarRef _ -> false
+      | IndRef (kn,_)
+      | ConstructRef ((kn,_),_) ->
+        let mp = MutInd.modpath kn in is_imported_modpath mp
+      | ConstRef kn ->
+        let mp = Constant.modpath kn in is_imported_modpath mp
+
+  let is_global id =
+    try
+      let ref = Nametab.locate (qualid_of_ident id) in
+      not (is_imported_ref ref)
+    with Not_found ->
+      false
+
+
+  let is_section_variable env id =
+    try let _ = Environ.lookup_named id env in true
+    with Not_found -> false
+
+end
+
 let is_local_modpath mp =
   let rec is_prefixed cur =
     ModPath.equal mp cur ||
@@ -87,6 +121,13 @@ let is_local id =
     is_local_ref ref
   with Not_found ->
     false
+
+let avoid_imported = Goptions.declare_bool_option_and_ref ~depr:true
+    ~key:["Avoid";"Local";"Imported";"Names"] ~value:false
+
+let is_local env id =
+  if avoid_imported () then Old.is_global id && not (Old.is_section_variable env id)
+  else is_local id
 
 let is_constructor id =
   try
@@ -334,7 +375,7 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
 
 let next_ident_away_in_goal env id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || is_local id in
+  let bad id = Id.Set.mem id avoid || is_local env id in
   next_ident_away_from id bad
 
 let next_name_away_in_goal env na avoid =

@@ -1199,6 +1199,21 @@ Managing the local context
 
          intros m n H x.
 
+   Name generation for names introduced by :tacn:`intro` and other
+   name introducing tactics avoids the names of objects (constants,
+   inductives, constructors) from the current open module and its
+   ancestors so that those objects may be referred to without awkward
+   quantification.
+
+   .. flag:: Avoid Local Imported Names
+
+      When this flag is on (it is off by default), imported names from
+      modules defined in the current file are also avoided.
+
+      .. deprecated:: TODO
+
+         This flag is provided for compatibility with versions prior to TODO.
+
 .. tacn:: intros {* @intropattern }
           intros until {| @ident | @natural }
 
