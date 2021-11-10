@@ -547,7 +547,7 @@ test-suite:edge+coverage:
     - dune build --instrument-with bisect_ppx --workspace dev/dune-workspace.bisect @runtest
     - find _build/coverage/ -name '*.coverage' -size 0 -exec rm {} \; # workaround truncated coverage file bug
     - bisect-ppx-report html --source-path=_build/coverage --coverage-path=_build/coverage -o _build/coq-coverage --title="Coq's Test suite"
-    - bisect-ppx-report coveralls coverage.json --source-path=_build/coverage --coverage-path=_build/coverage --service-name="gitlab-ci" --service-job-id="$GITLAB"
+    - bisect-ppx-report coveralls coverage.json --source-path=_build/coverage --coverage-path=_build/coverage --git --service-name="github" --service-pull-request="${CI_COMMIT_BRANCH#pr-}" --service-job-id="$CI_JOB_ID"
     - wget -q https://uploader.codecov.io/v0.1.0_4653/linux/codecov
     - chmod +x codecov
     - ./codecov -t ${CODECOV_TOKEN} -f coverage.json
