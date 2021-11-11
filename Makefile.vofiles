@@ -28,9 +28,6 @@ VFILES := $(THEORIESV) $(CONTRIBV)
 # Build directory is needed to have the glob files
 BUILD_VFILES=$(addprefix $(VO_OUT_DIR),$(VFILES))
 
-# Needed due to special code for plugins :S
-BUILD_MLFILES= $(VO_OUT_DIR)user-contrib/Ltac2/ltac2_plugin.mllib
-
 THEORIESVO := $(addprefix $(VO_OUT_DIR), $(patsubst %.v,%.$(VO),$(THEORIESV)))
 CONTRIBVO := $(addprefix $(VO_OUT_DIR), $(patsubst %.v,%.$(VO),$(CONTRIBV)))
 ALLVO := $(THEORIESVO) $(CONTRIBVO)
