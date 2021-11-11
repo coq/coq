@@ -93,7 +93,6 @@ theories/setoid_ring/Rings_Z.v
 theories/setoid_ring/ZArithRing.v
 theories/ssr/ssrunder.v
 theories/ssr/ssrsetoid.v
-theories/ssrsearch/ssrsearch.vo
 theories/Reals/Cauchy/ConstructiveExtra.v
 theories/Reals/Cauchy/PosExtra.v
 theories/Reals/Cauchy/QExtra.v

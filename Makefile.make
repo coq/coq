@@ -189,7 +189,7 @@ legacyclean:
 	  plugins/ring/g_ring.ml plugins/ltac/g_tactic.ml \
 	  plugins/ltac/g_rewrite.ml plugins/rtauto/g_rtauto.ml \
 	  plugins/ssr/ssrvernac.ml plugins/ssrmatching/g_ssrmatching.ml plugins/ssr/ssrparser.ml \
-	  plugins/ssrsearch/g_search.ml plugins/syntax/g_number_string.ml tools/coqdep_lexer.ml \
+	  plugins/syntax/g_number_string.ml tools/coqdep_lexer.ml \
 	  tools/coqwc.ml tools/coqdoc/cpretty.ml tools/ocamllibdep.ml vernac/g_vernac.ml
 	find theories \( -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' \
 	  -o -name '*.glob' -o -name '*.aux' \) -exec rm -f {} +
