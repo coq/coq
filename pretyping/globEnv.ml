@@ -181,6 +181,12 @@ let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_ju
      (str "Variable " ++ Id.print id ++ str " should be bound to a term but is \
       bound to a " ++ Geninterp.Val.pr typ ++ str ".")
   end;
+  if Id.Map.mem id env.lvar.ltac_idents then begin
+    let bnd = Id.Map.find id env.lvar.ltac_idents in
+    user_err ?loc
+     (str "Variable " ++ Id.print id ++ str " should be bound to a term but is \
+      bound to the identifier " ++ quote (Id.print bnd) ++ str ".")
+  end;
   raise Not_found
 
 let interp_ltac_id env id = ltac_interp_id env.lvar id
