@@ -131,14 +131,15 @@ let show_intro ~proof all =
   let open EConstr in
   let Proof.{goals;sigma} = Proof.data proof in
   if not (List.is_empty goals) then begin
-    let gl = {Evd.it=List.hd goals ; sigma = sigma; } in
-    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (Tacmach.Old.pf_concl gl)) in
+    let evi = Evd.find sigma (List.hd goals) in
+    let env = Evd.evar_filtered_env (Global.env ()) evi in
+    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (Evd.evar_concl evi)) in
     if all then
-      let lid = Tactics.find_intro_names l gl in
+      let lid = Tactics.find_intro_names env sigma l in
       hov 0 (prlist_with_sep  spc Id.print lid)
     else if not (List.is_empty l) then
       let n = List.last l in
-      Id.print (List.hd (Tactics.find_intro_names [n] gl))
+      Id.print (List.hd (Tactics.find_intro_names env sigma [n]))
     else mt ()
   end else mt ()
 
