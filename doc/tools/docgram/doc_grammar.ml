@@ -562,7 +562,7 @@ let get_plugin_name file =
     "Ltac2"
   (* todo: would be better if g_search.mlg has an "ssr" prefix *)
   else if List.mem file ["plugins/ssr/ssrparser.mlg"; "plugins/ssr/ssrvernac.mlg";
-      "plugins/ssrmatching/g_ssrmatching.mlg"; "plugins/ssrsearch/g_search.mlg"] then
+      "plugins/ssrmatching/g_ssrmatching.mlg"] then
     "SSR"
   else if Str.string_match plugin_regex file 0 then
     Str.matched_group 1 file
