@@ -739,9 +739,9 @@ Applying theorems
          When on, this flag causes the names in the :n:`@term`'s type to be renamed for uniqueness.
          By default no renaming is done.
 
-         .. deprecated:: 8.14
+         .. deprecated:: 8.15
 
-            This flag is provided for compatibility with versions previous to 8.15.
+            This flag is provided for compatibility with versions prior to 8.15.
 
    .. tacv:: apply {+, @term}
 
