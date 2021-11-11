@@ -15,7 +15,6 @@ open Names
 open Constr
 open Termops
 open EConstr
-open Tacmach.Old
 open Evd
 open Tactics
 open Auto
@@ -143,24 +142,14 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
   try e_my_find_search env sigma db_list local_db secvars gl
   with Not_found -> []
 
-(*s Tactics handling a list of goals. *)
-
-(* first_goal : goal list sigma -> goal sigma *)
-
-let find_first_goal gls =
-  let gl = gls.Evd.it and sig_0 = gls.Evd.sigma in
-  match gl with
-  | [] -> assert false
-  | (gl, db) :: _ ->
-    { Evd.it = gl; Evd.sigma = sig_0; }, db
-
 (*s The following module [SearchProblem] is used to instantiate the generic
     exploration functor [Explore.Make]. *)
 
 type search_state = {
   priority : int;
   depth : int; (*r depth of search before failing *)
-  tacres : (Goal.goal * hint_db) list sigma;
+  tacres : (Goal.goal * hint_db) list;
+  sigma : Evd.evar_map;
   last_tactic : Pp.t Lazy.t;
   dblist : hint_db list;
   prev : prev_search_state;
@@ -172,35 +161,43 @@ and prev_search_state = (* for info eauto *)
   | Init
   | State of search_state
 
+(*s Tactics handling a list of goals. *)
+
+(* first_goal : goal list sigma -> goal sigma *)
+
+let find_first_goal s =
+  match s.tacres with
+  | [] -> assert false
+  | (gl, db) :: _ ->
+    let open Tacmach.Old in
+    let gl = { Evd.it = gl; Evd.sigma = s.sigma; } in
+    (pf_env gl, pf_concl gl), db
+
 module SearchProblem = struct
 
   type state = search_state
 
-  let success s = List.is_empty (sig_it s.tacres)
-
-(*   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl) *)
+  let success s = List.is_empty s.tacres
 
 (* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
 
-  let apply_tac_list tac mkdb glls =
-    match glls.it with
+  let apply_tac_list sigma tac mkdb glls =
+    match glls with
     | ((g1, db) :: rest) ->
-        let pack = tac (re_sig g1 glls.sigma) in
-        List.map (fun gl -> gl, mkdb db (re_sig gl pack.sigma)) pack.it, re_sig rest pack.sigma
+        let open Tacmach.Old in
+        let pack = Proofview.V82.of_tactic tac (re_sig g1 sigma) in
+        let map gl = gl, mkdb (pf_env @@ re_sig gl pack.sigma) pack.sigma db in
+        pack.sigma, List.map map pack.it, rest
     | _ -> user_err Pp.(str "apply_tac_list")
 
-  let filter_tactics mkdb glls l =
-(*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
-(*     let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(*     msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
+  let filter_tactics sigma mkdb glls l =
     let rec aux = function
       | [] -> []
       | (tac, cost, pptac) :: tacl ->
           try
-            let ngls, lgls = apply_tac_list (Proofview.V82.of_tactic tac) mkdb glls in
-(* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
-(* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
-              (ngls, lgls, cost, pptac) :: aux tacl
+            let sigma, ngls, lgls = apply_tac_list sigma tac mkdb glls in
+            let is_done = List.is_empty ngls in
+            (sigma, is_done, ngls @ lgls, cost, pptac) :: aux tacl
           with e when CErrors.noncritical e ->
             let e = Exninfo.capture e in
             Tacticals.Old.catch_failerror e; aux tacl
@@ -211,7 +208,7 @@ module SearchProblem = struct
   let compare s s' =
     let d = s'.depth - s.depth in
     let d' = Int.compare s.priority s'.priority in
-    let nbgoals s = List.length (sig_it s.tacres) in
+    let nbgoals s = List.length s.tacres in
     if not (Int.equal d 0) then d
     else if not (Int.equal d' 0) then d'
     else Int.compare (nbgoals s) (nbgoals s')
@@ -221,52 +218,48 @@ module SearchProblem = struct
       []
     else
       let ps = if s.prev == Unknown then Unknown else State s in
-      let lg = s.tacres in
-      let g, db = find_first_goal lg in
-      let hyps = pf_ids_of_hyps g in
-      let secvars = secvars_of_hyps (pf_hyps g) in
+      let (env, concl), db = find_first_goal s in
+      let hyps = EConstr.named_context env in
+      let secvars = secvars_of_hyps hyps in
       let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ Id.print id)) in
       let assumption_tacs =
-        let tacs = List.map map_assum hyps in
-        let mkdb db gl = assert false in (* no goal can be generated *)
-        let l = filter_tactics mkdb s.tacres tacs in
-        List.map (fun (ngl, res, cost, pp) ->
-          let () = assert (List.is_empty ngl) in
-          { depth = s.depth; priority = cost; tacres = res;
+        let tacs = List.map map_assum (ids_of_named_context hyps) in
+        let mkdb env sigma db = assert false in (* no goal can be generated *)
+        let l = filter_tactics s.sigma mkdb s.tacres tacs in
+        List.map (fun (sigma, is_done, res, cost, pp) ->
+          let () = assert is_done in
+          { depth = s.depth; priority = cost; tacres = res; sigma;
                                     last_tactic = pp; dblist = s.dblist;
                                     prev = ps; local_lemmas = s.local_lemmas}) l
       in
       let intro_tac =
-        let mkdb db gl =
-          push_resolve_hyp (pf_env gl) (project gl) (NamedDecl.get_id (pf_last_hyp gl)) db
+        let mkdb env sigma db =
+          push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
         in
-        let l = filter_tactics mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
+        let l = filter_tactics s.sigma mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
         List.map
-          (fun (ngls, lgls, cost, pp) ->
-             let lgls = re_sig (ngls @ lgls.it) lgls.sigma in
-             { depth = s.depth; priority = cost; tacres = lgls;
+          (fun (sigma, _, lgls, cost, pp) ->
+             { depth = s.depth; priority = cost; tacres = lgls; sigma;
                last_tactic = pp; dblist = s.dblist;
                prev = ps;
                local_lemmas = s.local_lemmas})
           l
       in
       let rec_tacs =
-        let hyps = pf_hyps g in
-        let mkdb db gls =
-          let hyps' = pf_hyps gls in
+        let mkdb env sigma db =
+          let hyps' = EConstr.named_context env in
             if hyps' == hyps then db
-            else make_local_hint_db (pf_env gls) (project gls) ~ts:TransparentState.full true s.local_lemmas
+            else make_local_hint_db env sigma ~ts:TransparentState.full true s.local_lemmas
         in
         let l =
-          let concl = Reductionops.nf_evar (project g) (pf_concl g) in
-          filter_tactics mkdb s.tacres
-                         (e_possible_resolve (pf_env g) (project g) s.dblist db secvars concl)
+          let concl = Reductionops.nf_evar s.sigma concl in
+          filter_tactics s.sigma mkdb s.tacres
+                         (e_possible_resolve env s.sigma s.dblist db secvars concl)
         in
         List.map
-          (fun (ngls, lgls, cost, pp) ->
-            let lgls = re_sig (ngls @ lgls.it) lgls.sigma in
-            let depth = if List.is_empty ngls then s.depth else pred s.depth in
-            { depth; priority = cost; tacres = lgls; last_tactic = pp;
+          (fun (sigma, is_done, lgls, cost, pp) ->
+            let depth = if is_done then s.depth else pred s.depth in
+            { depth; priority = cost; tacres = lgls; sigma; last_tactic = pp;
               prev = ps; dblist = s.dblist;
               local_lemmas = s.local_lemmas })
           l
@@ -332,7 +325,8 @@ let pr_info dbg s =
 let make_initial_state dbg n gl dblist localdb lems =
   { depth = n;
     priority = 0;
-    tacres = re_sig [gl.it, localdb] gl.sigma;
+    tacres = [gl.it, localdb];
+    sigma = gl.sigma;
     last_tactic = lazy (mt());
     dblist = dblist;
     prev = if dbg == Info then Init else Unknown;
@@ -340,6 +334,7 @@ let make_initial_state dbg n gl dblist localdb lems =
   }
 
 let e_search_auto debug (in_depth,p) lems db_list =
+  let open Tacmach.Old in
   Proofview.V82.tactic ~nf_evars:false begin fun gl ->
   let local_db = make_local_hint_db (pf_env gl) (project gl) ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
@@ -353,7 +348,7 @@ let e_search_auto debug (in_depth,p) lems db_list =
     pr_dbg_header d;
     let s = tac (make_initial_state d p gl db_list local_db lems) in
     pr_info d s;
-    re_sig (List.map fst s.tacres.it) s.tacres.sigma
+    re_sig (List.map fst s.tacres) s.sigma
   with Not_found ->
     pr_info_nop d;
     Tacticals.Old.tclIDTAC gl
