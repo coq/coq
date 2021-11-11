@@ -311,7 +311,6 @@ DOC_MLGS := \
 	plugins/rtauto/g_rtauto.mlg \
 	plugins/ssr/ssrparser.mlg  plugins/ssr/ssrvernac.mlg \
 	plugins/ssrmatching/g_ssrmatching.mlg \
-	plugins/ssrsearch/g_search.mlg \
 	plugins/syntax/g_number_string.mlg \
 	user-contrib/Ltac2/g_ltac2.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
