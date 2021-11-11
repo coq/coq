@@ -60,8 +60,8 @@ type 'a or_by_notation = 'a or_by_notation_r CAst.t
    but this formulation avoids a useless dependency. *)
 
 type explicitation =
-  | ExplByPos of int * Id.t option (* a reference to the n-th product starting from left *)
   | ExplByName of Id.t
+  | ExplByPos of int (* a reference to the n-th non-dependent implicit starting from left *)
 
 type binder_kind =
   | Default of Glob_term.binding_kind

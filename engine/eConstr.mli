@@ -262,6 +262,7 @@ val iter : Evd.evar_map -> (t -> unit) -> t -> unit
 val iter_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
 val iter_with_full_binders : Environ.env -> Evd.evar_map -> (rel_declaration -> 'a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
 val fold : Evd.evar_map -> ('a -> t -> 'a) -> 'a -> t -> 'a
+val fold_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> 'b -> t -> 'b) -> 'a -> 'b -> t -> 'b
 
 (** Gather the universes transitively used in the term, including in the
    type of evars appearing in it. *)

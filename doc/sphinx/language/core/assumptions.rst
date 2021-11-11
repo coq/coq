@@ -112,6 +112,7 @@ Function application
    term_application ::= @term1 {+ @arg }
    | @ @qualid_annotated {+ @term1 }
    arg ::= ( @ident := @term )
+   | ( @natural := @term )
    | @term1
 
 :n:`@term__fun @term` denotes applying the function :n:`@term__fun` to :token:`term`.
@@ -121,8 +122,8 @@ Function application
 equivalent to :n:`( … ( @term__fun @term__1 ) … ) @term__n`:
 associativity is to the left.
 
-The notation :n:`(@ident := @term)` for arguments is used for making
-explicit the value of implicit arguments (see
+The notations :n:`(@ident := @term)` and :n:`(@natural := @term)`
+for arguments are used for making explicit the value of implicit arguments (see
 Section :ref:`explicit-applications`).
 
 .. _gallina-assumptions:

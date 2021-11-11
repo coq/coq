@@ -155,6 +155,7 @@ DELETE: [
 | test_id_colon
 | test_lpar_id_colon
 | test_lpar_id_coloneq  (* todo: grammar seems incorrect, repeats the "(" IDENT ":=" *)
+| test_lpar_nat_coloneq
 | test_lpar_id_rpar
 | test_lpar_idnum_coloneq
 | test_show_goal

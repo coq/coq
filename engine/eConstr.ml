@@ -446,6 +446,10 @@ let fold sigma f acc c =
   let f acc c = f acc (of_constr c) in
   Constr.fold f acc (unsafe_to_constr (whd_evar sigma c))
 
+let fold_with_binders sigma g f acc e c =
+  let f e acc c = f e acc (of_constr c) in
+  Constr.fold_constr_with_binders g f acc e (unsafe_to_constr (whd_evar sigma c))
+
 let compare_gen k eq_inst eq_sort eq_constr nargs c1 c2 =
   (c1 == c2) || Constr.compare_head_gen_with k k eq_inst eq_sort eq_constr nargs c1 c2
 

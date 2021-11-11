@@ -262,8 +262,19 @@ let compute_implicits_names env sigma t =
   let open Context.Rel.Declaration in
   let rec aux env names t = match whd_prod env sigma t with
   | Some (na, a, b) ->
-    aux (push_rel (LocalAssum (na,a)) env) (na.Context.binder_name::names) b
-  | None -> List.rev names
+    let rels,ids = Termops.free_rels_and_unqualified_refs sigma a in
+    aux (push_rel (LocalAssum (na,a)) env) ((na.Context.binder_name,rels,ids)::names) b
+  | None ->
+    let rels,ids = Termops.free_rels_and_unqualified_refs sigma t in
+    let rec set_names (allrels,ids) = function
+    | [] -> (1,1,[])
+    | (na,rels',ids')::names ->
+      let (absolute_pos,nnondep,names) = set_names (rels'::allrels,Id.Set.union ids ids') names in
+      let isdep = List.exists_i (fun i rels -> Int.Set.mem i rels) 1 allrels in
+      let nnondep',dep_pos = if isdep then nnondep, None else nnondep + 1, Some nnondep in
+      (absolute_pos+1,nnondep',(na,absolute_pos,dep_pos)::names) in
+    let _,_,names = set_names ([rels],ids) names in
+    List.rev names
   in aux env [] t
 
 let compute_implicits_explanation_gen strict strongly_strict revpat contextual env sigma t =
@@ -305,9 +316,11 @@ let compute_auto_implicits env sigma flags enriching t =
 type maximal_insertion = bool (* true = maximal contextual insertion *)
 type force_inference = bool (* true = always infer, never turn into evar/subgoal *)
 
+type implicit_position = Name.t * int * int option
+
 type implicit_status =
     (* None = Not implicit *)
-    (explicitation * implicit_explanation * (maximal_insertion * force_inference)) option
+    (implicit_position * implicit_explanation * (maximal_insertion * force_inference)) option
 
 type implicit_side_condition = DefaultImpArgs | LessArgsThan of int
 
@@ -326,8 +339,15 @@ let binding_kind_of_status = function
 
 let name_of_implicit = function
   | None -> anomaly (Pp.str "Not an implicit argument.")
-  | Some (ExplByName id,_,_) -> id
-  | Some (ExplByPos (k,_),_,_) -> name_of_pos k
+  | Some ((Name id,_,_),_,_) -> id
+  | Some ((Anonymous,k,_),_,_) -> name_of_pos k
+
+let match_implicit imp pos = match imp, pos with
+  | None, _ -> anomaly (Pp.str "Not an implicit argument.")
+  | Some ((Name id,_,_),_,_), ExplByName id' -> Id.equal id id'
+  | Some ((_,_,Some n),_,_), ExplByPos n' -> Int.equal n n'
+  | Some ((_,n,_),_,_), ExplByName id -> Id.equal id (name_of_pos n)
+  | _ -> false
 
 let maximal_insertion_of = function
   | Some (_,_,(b,_)) -> b
@@ -336,6 +356,9 @@ let maximal_insertion_of = function
 let force_inference_of = function
   | Some (_, _, (_, b)) -> b
   | None -> anomaly (Pp.str "Not an implicit argument.")
+
+let is_nondep_implicit p imps =
+  List.exists (function Some ((_,_,Some p'),_,_) -> Int.equal p p' | _ -> false) imps
 
 (* [in_ctx] means we know the expected type, [n] is the index of the argument *)
 let is_inferable_implicit in_ctx n = function
@@ -348,6 +371,14 @@ let is_inferable_implicit in_ctx n = function
   | Some (_,DepFlexAndRigid (_,Conclusion),_) -> in_ctx
   | Some (_,Manual,_) -> true
 
+let explicitation = function
+  | None -> anomaly (Pp.str "not implicit")
+  | Some ((na,_,p),_,_) ->
+    match na, p with
+    | Name id, _ -> ExplByName id
+    | _, Some p -> ExplByPos p
+    | _ -> anomaly (Pp.str "Implicit without a position")
+
 let positions_of_implicits (_,impls) =
   let rec aux n = function
       [] -> []
@@ -359,10 +390,9 @@ let positions_of_implicits (_,impls) =
 
 let rec prepare_implicits i f = function
   | [] -> []
-  | (na, Some imp)::imps ->
+  | ((na,_,_ as pos), Some imp)::imps ->
       let imps' = prepare_implicits (i+1) f imps in
-      let expl = match na with Name id -> ExplByName id | Anonymous -> ExplByPos (i,None) in
-      Some (expl,imp,(set_maximality Silent na i imps' f.maximal,true)) :: imps'
+      Some (pos,imp,(set_maximality Silent na i imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits (i+1) f imps
 
 let set_manual_implicits silent flags enriching autoimps l =
@@ -371,16 +401,13 @@ let set_manual_implicits silent flags enriching autoimps l =
     | autoimp::autoimps, explimp::explimps ->
        let imps' = merge (k+1) autoimps explimps in
        begin match autoimp, explimp.CAst.v with
-       | (Name id,_), Some (_,max) ->
-          Some (ExplByName id, Manual, (set_maximality (if silent then Silent else Error) (Name id) k imps' max, true))
-       | (Name id,Some exp), None when enriching ->
-          Some (ExplByName id, exp, (set_maximality (if silent then Silent else Info) (Name id) k imps' flags.maximal, true))
-       | (Name _,_), None -> None
-       | (Anonymous,_), Some (Name id,max) ->
-          Some (ExplByName id,Manual,(max,true))
-       | (Anonymous,_), Some (Anonymous,max) ->
-          Some (ExplByPos (k,None),Manual,(max,true))
-       | (Anonymous,_), None -> None
+       | ((Name _ as na,_,_ as pos),_), Some (_,max) ->
+          Some (pos, Manual, (set_maximality (if silent then Silent else Error) na k imps' max, true))
+       | ((Anonymous,n1,n2),_), Some (na,max) ->
+          Some ((na,n1,n2),Manual,(max,true))
+       | ((na,_,_ as pos),Some exp), None when enriching ->
+          Some (pos, exp, (set_maximality (if silent then Silent else Info) na k imps' flags.maximal, true))
+       | (pos,_), None -> None
        end :: imps'
     | [], [] -> []
     | [], _ -> assert false
@@ -456,7 +483,7 @@ let compute_global_implicits flags = let open GlobRef in function
   | ConstructRef ((kn,i),j) ->
       let (_,cimps) = (compute_mib_implicits flags kn).(i) in snd cimps.(j-1)
 
-(* Merge a manual explicitation with an implicit_status list *)
+(* Merge a manual implicit position with an implicit_status list *)
 
 let merge_impls (cond,oldimpls) (_,newimpls) =
   let oldimpls,usersuffiximpls = List.chop (List.length newimpls) oldimpls in
@@ -488,8 +515,8 @@ let implicits_of_global ref =
       let rec rename implicits names = match implicits, names with
         | [], _ -> []
         | _, [] -> implicits
-        | Some (_, x,y) :: implicits, Name id :: names ->
-           Some (ExplByName id, x,y) :: rename implicits names
+        | Some ((_,n1,n2), x,y) :: implicits, Name id :: names ->
+           Some ((Name id,n1,n2), x,y) :: rename implicits names
         | imp :: implicits, _ :: names -> imp :: rename implicits names
       in
       List.map (fun (t, il) -> t, rename il rename_l) l
@@ -516,22 +543,34 @@ let sec_implicits =
   Summary.ref Id.Map.empty ~name:"section-implicits"
 
 let impls_of_context ctx =
-  let map decl =
+  let map n decl =
     let id = NamedDecl.get_id decl in
     match Id.Map.get id !sec_implicits with
-    | NonMaxImplicit -> Some (ExplByName id, Manual, (false, true))
-    | MaxImplicit -> Some (ExplByName id, Manual, (true, true))
+    | NonMaxImplicit -> Some ((Name id,n,None), Manual, (false, true))
+    | MaxImplicit -> Some ((Name id,n,None), Manual, (true, true))
     | Explicit -> None
   in
-  List.rev_map map (List.filter (NamedDecl.is_local_assum) ctx)
+  List.map_i map 1 (List.rev (List.filter (NamedDecl.is_local_assum) ctx))
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)
   | DefaultImpArgs -> DefaultImpArgs
 
+let lift_argument_position p = function
+  | Conclusion -> Conclusion
+  | Hyp q -> Hyp (p+q)
+
+let lift_explanation p = function
+  | DepRigid e -> DepRigid (lift_argument_position p e)
+  | DepFlex e -> DepFlex (lift_argument_position p e)
+  | DepFlexAndRigid (e1,e2) -> DepFlexAndRigid (lift_argument_position p e1,lift_argument_position p e2)
+  | Manual -> Manual
+
+let lift_implicits p ((na,n1,o),e,b) = ((na,n1+p,o),lift_explanation p e,b)
+
 let add_section_impls vars extra_impls (cond,impls) =
   let p = List.length vars - List.length extra_impls in
-  adjust_side_condition p cond, extra_impls @ impls
+  adjust_side_condition p cond, extra_impls @ List.map (Option.map (lift_implicits p)) impls
 
 let discharge_implicits (_,(req,l)) =
   match req with
@@ -669,21 +708,19 @@ let maybe_declare_manual_implicits local ref ?enriching l =
   if List.exists (fun x -> x.CAst.v <> None) l then
     declare_manual_implicits local ref ?enriching l
 
-let explicit_kind i = function
-  | Name id -> ExplByName id
-  | Anonymous -> ExplByPos (i,None)
+let set_name (na',x,y as pos) = function
+  | Name _ as na -> (na,x,y)
+  | Anonymous -> pos
 
 let compute_implicit_statuses autoimps l =
   let rec aux i = function
     | _ :: autoimps, (_, Explicit) :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
-    | na :: autoimps, (Anonymous, MaxImplicit) :: manualimps
-    | _ :: autoimps, (na, MaxImplicit) :: manualimps ->
-       Some (explicit_kind i na, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
-    | na :: autoimps, (Anonymous, NonMaxImplicit) :: manualimps
-    | _ :: autoimps, (na, NonMaxImplicit) :: manualimps ->
+    | pos :: autoimps, (na, MaxImplicit) :: manualimps ->
+       Some (set_name pos na, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
+    | pos :: autoimps, (na, NonMaxImplicit) :: manualimps ->
        let imps' = aux (i+1) (autoimps, manualimps) in
        let max = set_maximality Error na i imps' false in
-       Some (explicit_kind i na, Manual, (max, true)) :: imps'
+       Some (set_name pos na, Manual, (max, true)) :: imps'
     | autoimps, [] -> List.map (fun _ -> None) autoimps
     | [], _::_ -> assert false
   in aux 1 (autoimps, l)

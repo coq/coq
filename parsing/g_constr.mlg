@@ -53,6 +53,14 @@ let test_lpar_id_coloneq =
     lk_kw "(" >> lk_ident >> lk_kw ":="
   end
 
+(* Hack to parse "(n:=t)" as an explicit argument without conflicts with the *)
+(* syntax "(n t)" *)
+let test_lpar_nat_coloneq =
+  let open Pcoq.Lookahead in
+  to_entry "test_lpar_id_coloneq" begin
+    lk_kw "(" >> lk_nat >> lk_kw ":="
+  end
+
 let ensure_fixannot =
   let open Pcoq.Lookahead in
   to_entry "check_fixannot" begin
@@ -261,6 +269,7 @@ GRAMMAR EXTEND Gram
   ;
   arg:
     [ [ test_lpar_id_coloneq; "("; id = identref; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ?loc:id.CAst.loc @@ ExplByName id.CAst.v)) }
+      | test_lpar_nat_coloneq; "("; n = natural; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ~loc @@ ExplByPos n)) }
       | c=term LEVEL "9" -> { (c,None) } ] ]
   ;
   atomic_constr:

@@ -81,6 +81,7 @@ term_application: [
 
 arg: [
 | "(" ident ":=" term ")"
+| "(" natural ":=" term ")"
 | term1
 ]
 
