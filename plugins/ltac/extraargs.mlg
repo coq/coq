@@ -16,7 +16,6 @@ open Tacarg
 open Pcoq.Prim
 open Pcoq.Constr
 open Names
-open Tacmach.Old
 open Tacexpr
 open Taccoerce
 open Tacinterp
@@ -189,20 +188,6 @@ ARGUMENT EXTEND lglob
      RAW_PRINTED BY { pr_gen env sigma }
      GLOB_PRINTED BY { pr_gen env sigma }
 | [ lconstr(c) ] -> { c }
-END
-
-{
-
-let interp_casted_constr ist gl c =
-  interp_constr_gen (Pretyping.OfType (pf_concl gl)) ist (pf_env gl) (project gl) c
-
-}
-
-ARGUMENT EXTEND casted_constr
-  TYPED AS constr
-  PRINTED BY { pr_gen env sigma }
-  INTERPRETED [ legacy ] BY { interp_casted_constr }
-| [ constr(c) ] -> { c }
 END
 
 {

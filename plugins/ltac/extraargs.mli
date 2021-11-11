@@ -42,11 +42,6 @@ val wit_lconstr :
   glob_constr_and_expr,
   EConstr.t) Genarg.genarg_type
 
-val wit_casted_constr :
-  (constr_expr,
-  glob_constr_and_expr,
-  EConstr.t) Genarg.genarg_type
-
 val glob : constr_expr Pcoq.Entry.t
 val lglob : constr_expr Pcoq.Entry.t
 
