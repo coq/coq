@@ -1008,7 +1008,6 @@ command: [
 | "Prenex" "Implicits" LIST1 qualid      (* SSR plugin *)
 | "Print" "Hint" "View" OPT ssrviewpos      (* SSR plugin *)
 | "Hint" "View" OPT ssrviewpos LIST1 ( one_term OPT ( "|" natural ) )      (* SSR plugin *)
-| "Search" OPT LIST1 ( "-" [ string OPT ( "%" ident ) | one_pattern ] ) OPT ( "in" LIST1 ( OPT "-" qualid ) )      (* SSR plugin *)
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural

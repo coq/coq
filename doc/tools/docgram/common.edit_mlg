@@ -2355,24 +2355,6 @@ ssrhintref: [
 | DELETE constr      (* SSR plugin *)
 ]
 
-ssr_search_arg: [
-| REPLACE "-" ssr_search_item OPT ssr_search_arg      (* SSR plugin *)
-| WITH LIST1 ( "-" ssr_search_item )      TAG SSR
-| DELETE ssr_search_item OPT ssr_search_arg      (* SSR plugin *)
-]
-
-ssr_search_item: [
-| DELETE string      (* SSR plugin *)
-| REPLACE string "%" preident      (* SSR plugin *)
-| WITH string OPT ( "%" preident )      TAG SSR
-]
-
-modloc: [
-| REPLACE "-" global      (* SSR plugin *)
-| WITH OPT "-" global      TAG SSR
-| DELETE global
-]
-
 ssrmmod: [
 | DELETE LEFTQMARK      (* SSR plugin *)  (* duplicate *)
 ]
@@ -2613,9 +2595,6 @@ SPLICE: [
 | ssrhint
 | ssrpattern_squarep
 | ssrhintref
-| ssr_search_item
-| ssr_modlocs
-| modloc
 | ssrexactarg
 | ssrclear
 | ssrmult
@@ -2626,7 +2605,6 @@ SPLICE: [
 | ssrcongrarg
 | ssrdotac
 | ssrunlockarg
-| ssr_search_arg
 | ssrortacarg
 | ssrsetfwd
 | ssr_idcomma
