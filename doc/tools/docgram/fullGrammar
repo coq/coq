@@ -696,7 +696,6 @@ command: [
 | "Prenex" "Implicits" LIST1 global      (* SSR plugin *)
 | "Print" "Hint" "View" ssrviewpos      (* SSR plugin *)
 | "Hint" "View" ssrviewposspc LIST1 ssrhintref      (* SSR plugin *)
-| "Search" ssr_search_arg ssr_modlocs      (* SSR plugin *)
 | "Number" "Notation" reference reference reference OPT number_options ":" preident
 | "String" "Notation" reference reference reference OPT string_option ":" preident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
@@ -3197,28 +3196,6 @@ lcpattern: [
 
 ssrpatternarg: [
 | rpattern      (* SSR plugin *)
-]
-
-ssr_search_item: [
-| string      (* SSR plugin *)
-| string "%" preident      (* SSR plugin *)
-| constr_pattern      (* SSR plugin *)
-]
-
-ssr_search_arg: [
-| "-" ssr_search_item ssr_search_arg      (* SSR plugin *)
-| ssr_search_item ssr_search_arg      (* SSR plugin *)
-|      (* SSR plugin *)
-]
-
-ssr_modlocs: [
-|      (* SSR plugin *)
-| "in" LIST1 modloc      (* SSR plugin *)
-]
-
-modloc: [
-| "-" global      (* SSR plugin *)
-| global      (* SSR plugin *)
 ]
 
 deprecated_number_modifier: [
