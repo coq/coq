@@ -2,7 +2,6 @@ open Names
 open Pp
 open Constr
 open Libnames
-open Tacmach.Old
 
 let mk_prefix pre id = Id.of_string (pre ^ Id.to_string id)
 let mk_rel_id = mk_prefix "R_"
@@ -329,24 +328,6 @@ let print_debug_queue b e =
 
 (* print_debug_queue false e; *)
 
-let do_observe_tac s tac g =
-  let goal = Printer.pr_goal g in
-  let s = s (pf_env g) (project g) in
-  let lmsg = str "observation : " ++ s in
-  Stack.push (lmsg, goal) debug_queue;
-  try
-    let v = tac g in
-    ignore (Stack.pop debug_queue);
-    v
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    if not (Stack.is_empty debug_queue) then
-      print_debug_queue true (fst reraise);
-    Exninfo.iraise reraise
-
-let observe_tac s tac g =
-  if do_observe () then do_observe_tac s tac g else tac g
-
 module New = struct
   let do_observe_tac ~header s tac =
     let open Proofview.Notations in
@@ -486,7 +467,3 @@ let funind_purify f x =
     let e = Exninfo.capture e in
     Vernacstate.unfreeze_interp_state st;
     Exninfo.iraise e
-
-let tac_type_of g c =
-  let sigma, t = Tacmach.Old.pf_type_of g c in
-  ({g with Evd.sigma}, t)

@@ -68,9 +68,6 @@ val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
 
 val pr_table : Environ.env -> Evd.evar_map -> Pp.t
 
-val observe_tac :
-  (Environ.env -> Evd.evar_map -> Pp.t) -> Tacmach.Old.tactic -> Tacmach.Old.tactic
-
 module New : sig
   val observe_tac :
        header:Pp.t
@@ -119,6 +116,3 @@ val compose_prod :
 type tcc_lemma_value = Undefined | Value of Constr.t | Not_needed
 
 val funind_purify : ('a -> 'b) -> 'a -> 'b
-
-val tac_type_of :
-  Goal.goal Evd.sigma -> EConstr.constr -> Goal.goal Evd.sigma * EConstr.types
