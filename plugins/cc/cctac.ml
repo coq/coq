@@ -10,7 +10,6 @@
 
 (* This file is the interface between the c-c algorithm and Coq *)
 
-open Evd
 open Names
 open Inductiveops
 open Declarations
@@ -210,7 +209,7 @@ let make_prb gls depth additional_terms b =
   let open Tacmach in
   let env=pf_env gls in
   let sigma=project gls in
-  let state = empty depth {it = Proofview.Goal.goal gls; sigma } in
+  let state = empty env sigma depth in
   let pos_hyps = ref [] in
   let neg_hyps =ref [] in
     List.iter
