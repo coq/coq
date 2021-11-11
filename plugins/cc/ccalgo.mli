@@ -137,7 +137,7 @@ val axioms : forest -> (ATerm.t * ATerm.t) Constrhash.t
 
 val epsilons : forest -> pa_constructor list
 
-val empty : int -> Goal.goal Evd.sigma -> state
+val empty : Environ.env -> Evd.evar_map -> int -> state
 
 val add_aterm : state -> ATerm.t -> int
 

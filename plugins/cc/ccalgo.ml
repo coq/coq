@@ -19,7 +19,6 @@ open Sorts
 open Constr
 open Context
 open Vars
-open Tacmach.Old
 open Util
 open Lazy
 
@@ -358,7 +357,7 @@ let empty_forest() =
     syms=Termhash.create init_size
   }
 
-let empty depth gls:state =
+let empty env sigma depth : state =
   {
     uf= empty_forest ();
     terms=Int.Set.empty;
@@ -372,8 +371,8 @@ let empty depth gls:state =
     rew_depth=depth;
     by_type=Constrhash.create init_size;
     changed=false;
-    env=pf_env gls;
-    sigma=project gls
+    env;
+    sigma;
   }
 
 let forest state = state.uf
