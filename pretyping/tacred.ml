@@ -1184,10 +1184,9 @@ let unfold env sigma name c =
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
   begin match name with
-    | EvalVarRef id -> begin try ignore (lookup_named id env) with Not_found as exn ->
-        let _, info = Exninfo.capture exn in
-        Nametab.error_global_not_found ~info (qualid_of_evaluable_ref env name)
-      end
+    | EvalVarRef id ->
+      begin try ignore (lookup_named id env) with Not_found ->
+        Nametab.error_global_not_found ~info:Exninfo.null (qualid_of_evaluable_ref env name) end
     | EvalConstRef _ -> () (* No checks necessary *)
   end;
   match occs with
