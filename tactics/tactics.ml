@@ -2702,7 +2702,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
       let t = typ_of env sigma c in
       Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t
     in
-    let rel = Retyping.relevance_of_type env sigma t in
+    let rel = Retyping.relevance_of_term env sigma c in
     let (sigma, (newcl, eq_tac)) = match with_eq with
       | Some (lr,{CAst.loc;v=ido}) ->
           let heq = match ido with
@@ -2789,7 +2789,7 @@ let pose_tac na c =
     let hyps = named_context_val env in
     let concl = Proofview.Goal.concl gl in
     let t = typ_of env sigma c in
-    let rel = Retyping.relevance_of_type env sigma t in
+    let rel = Retyping.relevance_of_term env sigma c in
     let (sigma, t) = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t in
     let id = match na with
     | Name id ->
