@@ -1156,11 +1156,12 @@ let substlin env sigma evalref occs c =
   Locusops.check_used_occurrences !count;
   (Locusops.current_occurrence !count, t')
 
-let string_of_evaluable_ref env = function
-  | EvalVarRef id -> Id.to_string id
+let qualid_of_evaluable_ref env = function
+  | EvalVarRef id -> qualid_of_ident id
   | EvalConstRef kn ->
-      string_of_qualid
-        (Nametab.shortest_qualid_of_global (vars_of_env env) (GlobRef.ConstRef kn))
+    Nametab.shortest_qualid_of_global (vars_of_env env) (GlobRef.ConstRef kn)
+
+let string_of_evaluable_ref env evref = string_of_qualid (qualid_of_evaluable_ref env evref)
 
 (* Removing fZETA for finer behaviour would break many developments *)
 let unfold_side_flags = RedFlags.[fBETA;fMATCH;fFIX;fCOFIX;fZETA]
@@ -1182,6 +1183,13 @@ let unfold env sigma name c =
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurrences.
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
+  begin match name with
+    | EvalVarRef id -> begin try ignore (lookup_named id env) with Not_found as exn ->
+        let _, info = Exninfo.capture exn in
+        Nametab.error_global_not_found ~info (qualid_of_evaluable_ref env name)
+      end
+    | EvalConstRef _ -> () (* No checks necessary *)
+  end;
   match occs with
   | NoOccurrences -> c
   | AllOccurrences -> unfold env sigma name c
