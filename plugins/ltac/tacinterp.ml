@@ -558,13 +558,13 @@ let extract_ltac_constr_context ist env sigma =
     try Id.Map.add id (coerce_var_to_ident false env sigma v) map
     with CannotCoerceTo _ -> map
   in
-  let fold id v {idents;typed;untyped} =
+  let fold id v {idents;typed;untyped;genargs} =
     let idents = add_ident id v idents in
     let typed = add_constr id v typed in
     let untyped = add_uconstr id v untyped in
-    { idents ; typed ; untyped }
+    { idents ; typed ; untyped; genargs }
   in
-  let empty =  { idents = Id.Map.empty ;typed = Id.Map.empty ; untyped = Id.Map.empty } in
+  let empty = { idents = Id.Map.empty ;typed = Id.Map.empty ; untyped = Id.Map.empty; genargs = ist.lfun } in
   Id.Map.fold fold ist.lfun empty
 
 (** Significantly simpler than [interp_constr], to interpret an
@@ -1079,7 +1079,7 @@ let type_uconstr ?(flags = (constr_flags ()))
     ltac_constrs = closure.typed;
     ltac_uconstrs = closure.untyped;
     ltac_idents = closure.idents;
-    ltac_genargs = Id.Map.empty;
+    ltac_genargs = closure.genargs;
   } in
   let flags = { flags with polymorphic = ist.Geninterp.poly } in
   understand_ltac flags env sigma vars expected_type term
