@@ -14,26 +14,34 @@
      : int
 427
      : int
+File "./output/Int63NumberSyntax.v", line 12, characters 11-17:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type int
+File "./output/Int63NumberSyntax.v", line 13, characters 11-17:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type int
 0
      : int
 0
      : int
+File "./output/Int63NumberSyntax.v", line 16, characters 12-14:
 The command has indeed failed with message:
 The reference xg was not found in the current environment.
+File "./output/Int63NumberSyntax.v", line 17, characters 12-14:
 The command has indeed failed with message:
 The reference xG was not found in the current environment.
+File "./output/Int63NumberSyntax.v", line 18, characters 13-15:
 The command has indeed failed with message:
 The reference x1 was not found in the current environment.
+File "./output/Int63NumberSyntax.v", line 19, characters 12-13:
 The command has indeed failed with message:
 The reference x was not found in the current environment.
 add 2 2
      : int
+File "./output/Int63NumberSyntax.v", line 21, characters 11-13:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type int
+File "./output/Int63NumberSyntax.v", line 22, characters 11-30:
 The command has indeed failed with message:
 Overflow in int63 literal: 9223372036854775808.
 0x1

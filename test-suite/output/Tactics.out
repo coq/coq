@@ -2,11 +2,14 @@ Ltac f H := split; [ a H | e H ]
 Ltac g := match goal with
           | |- context [ if ?X then _ else _ ] => case X
           end
+File "./output/Tactics.v", line 22, characters 13-19:
 The command has indeed failed with message:
 H is already used.
+File "./output/Tactics.v", line 23, characters 20-26:
 The command has indeed failed with message:
 H is already used.
 a
+File "./output/Tactics.v", line 37, characters 16-17:
 The command has indeed failed with message:
 This variable is used in hypothesis H.
 Ltac test a b c d e := apply a, b in c as [], d, e as ->

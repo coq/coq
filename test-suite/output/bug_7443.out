@@ -6,6 +6,7 @@ Literal 1
      : Type
 [1]
      : Type
+File "./output/bug_7443.v", line 30, characters 14-15:
 The command has indeed failed with message:
 The term "1" has type "Datatypes.nat" while it is expected to have type
  "denote ?t".

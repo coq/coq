@@ -1,3 +1,4 @@
+File "./output/bug_12887.v", line 5, characters 25-26:
 The command has indeed failed with message:
 Cannot infer this placeholder of type "Type" in
 environment:

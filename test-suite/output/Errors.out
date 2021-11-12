@@ -1,18 +1,24 @@
 The command has indeed failed with message:
 The field t is missing in Errors.M.
+File "./output/Errors.v", line 19, characters 18-19:
 The command has indeed failed with message:
 Unable to unify "nat" with "True".
+File "./output/Errors.v", line 17, characters 18-19:
 The command has indeed failed with message:
 In nested Ltac calls to "f" and "apply x", last call failed.
 Unable to unify "nat" with "True".
+File "./output/Errors.v", line 29, characters 21-30:
 The command has indeed failed with message:
 Ltac call to "instantiate ( (ident) := (lglob) )" failed.
 Instance is not well-typed in the environment of ?x.
+File "./output/Errors.v", line 34, characters 19-20:
 The command has indeed failed with message:
 Cannot infer ?T in the partial instance "?T -> nat" found for the type of f.
+File "./output/Errors.v", line 35, characters 22-24:
 The command has indeed failed with message:
 Cannot infer ?T in the partial instance "?T -> nat" found for the implicit
 parameter A of id whose type is "Type".
+File "./output/Errors.v", line 36, characters 17-18:
 The command has indeed failed with message:
 Cannot infer ?T in the partial instance "forall x : nat, ?T" found for the
 type of f in environment:

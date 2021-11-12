@@ -1,5 +1,6 @@
 0
      : nat
+File "./output/Succeed.v", line 5, characters 11-12:
 The command has indeed failed with message:
 The reference x was not found in the current environment.
 File "./output/Succeed.v", line 7, characters 14-18:

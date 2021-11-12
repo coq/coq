@@ -1,3 +1,4 @@
+File "./output/bug5778.v", line 2, characters 22-23:
 The command has indeed failed with message:
 In nested Ltac calls to "c", "abs", "abstract b ltac:(())", 
 "b", "a", "pose (I : I)" and "(I : I)", last term evaluation failed.

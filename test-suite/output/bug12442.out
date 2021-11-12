@@ -1,6 +1,9 @@
+File "./output/bug12442.v", line 6, characters 7-19:
 The command has indeed failed with message:
 No product even after head-reduction.
+File "./output/bug12442.v", line 7, characters 7-18:
 The command has indeed failed with message:
 Not an inductive product.
+File "./output/bug12442.v", line 9, characters 7-25:
 The command has indeed failed with message:
 Not an inductive product.

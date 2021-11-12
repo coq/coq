@@ -1,6 +1,9 @@
+File "./output/bug_13857.v", line 6, characters 13-16:
 The command has indeed failed with message:
 Unable to find an instance for the variable x.
+File "./output/bug_13857.v", line 7, characters 13-17:
 The command has indeed failed with message:
 Unable to unify "foo2" with "foo".
+File "./output/bug_13857.v", line 8, characters 13-17:
 The command has indeed failed with message:
 Unable to unify "foo3" with "foo".

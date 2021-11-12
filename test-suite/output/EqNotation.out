@@ -1,3 +1,4 @@
+File "./output/EqNotation.v", line 2, characters 21-26:
 The command has indeed failed with message:
 Cannot infer the implicit parameter A of eq whose type is 
 "Type".

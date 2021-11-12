@@ -60,6 +60,7 @@ end
 The command has indeed failed with message:
 Non exhaustive pattern-matching: no clause found for pattern 
 gadtTy _ _
+File "./output/Cases.v", line 108, characters 17-18:
 The command has indeed failed with message:
 In environment
 texpDenote : forall t : type, texp t -> typeDenote t
@@ -74,6 +75,7 @@ fun '{{n, m, p}} => n + m + p
      : J -> nat
 fun '(D n m p q) => n + m + p + q
      : J -> nat
+File "./output/Cases.v", line 126, characters 29-42:
 The command has indeed failed with message:
 Once notations are expanded, the resulting constructor D (in type J) is
 expected to be applied to no arguments while it is actually applied to
@@ -171,6 +173,7 @@ fun x : K => match x with
              | _ => 2
              end
      : K -> nat
+File "./output/Cases.v", line 224, characters 38-86:
 The command has indeed failed with message:
 Pattern "S _, _" is redundant in this clause.
 stray = 
@@ -190,14 +193,18 @@ Arguments stray N
 File "./output/Cases.v", line 253, characters 4-5:
 Warning: Unused variable B catches more than one case.
 [unused-pattern-matching-variable,pattern-matching]
+File "./output/Cases.v", line 266, characters 33-40:
 The command has indeed failed with message:
 Application of arguments to a recursive notation not supported in patterns.
+File "./output/Cases.v", line 267, characters 33-43:
 The command has indeed failed with message:
 The constructor cons (in type list) is expected to be applied to 2 arguments
 while it is actually applied to 3 arguments.
+File "./output/Cases.v", line 268, characters 33-39:
 The command has indeed failed with message:
 The constructor cons (in type list) is expected to be applied to 2 arguments
 while it is actually applied to 1 argument.
+File "./output/Cases.v", line 271, characters 33-45:
 The command has indeed failed with message:
 The constructor D' (in type J') is expected to be applied to 4 arguments (or
 6 arguments when including variables for local definitions) while it is
@@ -212,18 +219,23 @@ match x with
 | @D' _ _ _ _ n _ p _ => n + p
 end
      : J' bool (true, true) -> nat
+File "./output/Cases.v", line 277, characters 33-40:
 The command has indeed failed with message:
 Application of arguments to a recursive notation not supported in patterns.
+File "./output/Cases.v", line 278, characters 33-43:
 The command has indeed failed with message:
 The constructor cons (in type list) is expected to be applied to 2 arguments
 while it is actually applied to 3 arguments.
+File "./output/Cases.v", line 279, characters 33-39:
 The command has indeed failed with message:
 The constructor cons (in type list) is expected to be applied to 2 arguments
 while it is actually applied to 1 argument.
+File "./output/Cases.v", line 281, characters 33-39:
 The command has indeed failed with message:
 The constructor D' (in type J') is expected to be applied to 3 arguments (or
 4 arguments when including variables for local definitions) while it is
 actually applied to 2 arguments.
+File "./output/Cases.v", line 282, characters 33-45:
 The command has indeed failed with message:
 The constructor D' (in type J') is expected to be applied to 3 arguments (or
 4 arguments when including variables for local definitions) while it is

@@ -1,4 +1,6 @@
+File "./output/injection.v", line 4, characters 39-42:
 The command has indeed failed with message:
 Unexpected pattern.
+File "./output/injection.v", line 5, characters 35-42:
 The command has indeed failed with message:
 Unexpected injection pattern.

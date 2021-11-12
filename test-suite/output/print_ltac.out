@@ -6,6 +6,7 @@ Ltac t3 := idtacstr "my tactic"
 Ltac t4 x := match x with
              | ?A => constr:((A, A))
              end
+File "./output/print_ltac.v", line 17, characters 27-32:
 The command has indeed failed with message:
 idnat is bound to a notation that does not denote a reference.
 Ltac withstrategy l x :=
@@ -119,6 +120,7 @@ Ltac withstrategy l x :=
   x
   ]
   idtac
+File "./output/print_ltac.v", line 52, characters 29-34:
 The command has indeed failed with message:
 idnat is bound to a notation that does not denote a reference.
 Ltac withstrategy l x :=
