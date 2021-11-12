@@ -461,8 +461,10 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	  output=$*.out.real; \
 	  export LC_CTYPE=C; \
 	  export LANG=C; \
-	  $(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
-	    | grep -a -v "Welcome to Coq" \
+	  { $(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1; \
+	      R=$$?; \
+	      if ! [ $$R = 0 ]; then printf '\ncoqc exited with code %s\n' "$$R"; fi; \
+	  } | grep -a -v "Welcome to Coq" \
 	    | grep -a -v "\[Loading ML file" \
 	    | grep -a -v "Skipping rcfile loading" \
 	    | grep -a -v "^<W>" \

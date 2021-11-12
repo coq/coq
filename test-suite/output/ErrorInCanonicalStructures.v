@@ -1,3 +1,7 @@
 Record Foo := MkFoo { field1 : nat; field2 : nat -> nat }.
 
-Canonical Structure Foo.
+Definition bar := 99.
+
+Fail Canonical Structure Foo.
+
+Fail Canonical Structure bar.

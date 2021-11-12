@@ -1,4 +1,0 @@
-File "./output/ErrorLocation_tac_in_term_2.v", line 4, characters 12-20:
-Error:
-The term "true" has type "bool" while it is expected to have type "nat".
-

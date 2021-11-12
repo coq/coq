@@ -1,4 +1,5 @@
 (* Reported in #12152 *)
 Goal True.
-intros H; auto.
+Fail intro H; auto.
+Fail intros H; auto.
 Abort.

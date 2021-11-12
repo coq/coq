@@ -29,7 +29,7 @@ induction t as [ | a t1 IH1 t2 IH2].
 simpl.
 rewrite IH1.
 rewrite IH2.
-reflexivity.
+Fail reflexivity.
 rewrite (Nat.add_comm (count p t2)).
 easy.
 Qed.

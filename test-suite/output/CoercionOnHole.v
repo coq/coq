@@ -20,5 +20,5 @@ Proof.
   - destruct IHe1 as [v1 IH1].
     eexists.
     eapply EAdd.
-    + exact IH1.
+    + Fail exact IH1.
 Abort.

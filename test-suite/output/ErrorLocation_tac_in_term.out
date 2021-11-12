@@ -1,0 +1,6 @@
+File "./output/ErrorLocation_tac_in_term.v", line 4, characters 26-30:
+The command has indeed failed with message:
+The term "true" has type "bool" while it is expected to have type "nat".
+File "./output/ErrorLocation_tac_in_term.v", line 5, characters 17-25:
+The command has indeed failed with message:
+The term "true" has type "bool" while it is expected to have type "nat".

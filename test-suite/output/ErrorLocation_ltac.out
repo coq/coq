@@ -1,0 +1,12 @@
+File "./output/ErrorLocation_ltac.v", line 5, characters 12-16:
+The command has indeed failed with message:
+Tactic failure: Cannot solve this goal.
+File "./output/ErrorLocation_ltac.v", line 6, characters 12-13:
+The command has indeed failed with message:
+Tactic failure.
+File "./output/ErrorLocation_ltac.v", line 7, characters 12-15:
+The command has indeed failed with message:
+Not a negated primitive equality.
+File "./output/ErrorLocation_ltac.v", line 8, characters 27-28:
+The command has indeed failed with message:
+Tactic failure.

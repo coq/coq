@@ -1,4 +1,9 @@
 Require Import Coq.Program.Tactics.
 Obligation Tactic := try constructor.
-Program Definition foo := (fun (x : False) (y : True) => I) _ _.
-Obligation 2.
+
+Axiom P : Prop. Axiom p : P.
+
+Program Definition foo := (fun (x : P) (y : True) => I) _ _.
+Fail Obligation 2.
+
+Obligation 1. exact p. Qed.
