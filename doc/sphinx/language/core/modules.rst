@@ -663,18 +663,18 @@ meaning:
     + :math:`\Assum{}{c}{U}/p = \Def{}{c}{p.c}{U}`
     + :math:`\ModS{X}{S}/p = \ModA{X}{p.X}`
     + :math:`\ModA{X}{p′}/p = \ModA{X}{p′}`
-    + :math:`\Ind{}{Γ_P}{Γ_C}{Γ_I}/p = \Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`
-    + :math:`\Indpstr{}{Γ_P}{Γ_C}{Γ_I}{p'}{p} = \Indp{}{Γ_P}{Γ_C}{Γ_I}{p'}`
+    + :math:`\Ind{Γ_P}{Γ_C}{Γ_I}/p = \Indp{Γ_P}{Γ_C}{Γ_I}{p}`
+    + :math:`\Indpstr{Γ_P}{Γ_C}{Γ_I}{p'}{p} = \Indp{Γ_P}{Γ_C}{Γ_I}{p'}`
 
 + if :math:`S \lra \Functor(X:S′)~S″` then :math:`S/p=S`
 
 
-The notation :math:`\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`
+The notation :math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`
 denotes an inductive definition that is definitionally equal to the
 inductive definition in the module denoted by the path :math:`p`. All rules
-which have :math:`\Ind{}{Γ_P}{Γ_C}{Γ_I}` as premises are also valid for
-:math:`\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`. We give the formation rule for
-:math:`\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`
+which have :math:`\Ind{Γ_P}{Γ_C}{Γ_I}` as premises are also valid for
+:math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`. We give the formation rule for
+:math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`
 below as well as the equality rules on inductive types and
 constructors.
 
@@ -739,7 +739,7 @@ Structure element subtyping rules:
    E[Γ_P ] ⊢ Γ_C =_{βδιζη} Γ_C'
    E[Γ_P ;Γ_C ] ⊢ Γ_I =_{βδιζη} Γ_I'
    --------------------------
-   \WS{E}{\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}}{\ind{Γ_P'}{Γ_C'}{Γ_I'}}
+   \WS{E}{\Indp{Γ_P}{Γ_C}{Γ_I}{p}}{\ind{Γ_P'}{Γ_C'}{Γ_I'}}
 
 .. inference:: INDP-INDP
 
@@ -750,7 +750,7 @@ Structure element subtyping rules:
    E[] ⊢ p =_{βδιζη} p'
    \end{array}
    --------------------------
-   \WS{E}{\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}}{\Indp{}{Γ_P'}{Γ_C'}{Γ_I'}{p'}}
+   \WS{E}{\Indp{Γ_P}{Γ_C}{Γ_I}{p}}{\Indp{Γ_P'}{Γ_C'}{Γ_I'}{p'}}
 
 .. inference:: MOD-MOD
 
@@ -828,7 +828,7 @@ New environment formation rules
    E[] ⊢ \ind{Γ_P'}{Γ_C'}{Γ_I'} <: \ind{Γ_P}{Γ_C}{Γ_I}
    \end{array}
    --------------------------
-   \WF{E; \Indp{}{Γ_P}{Γ_C}{Γ_I}{p} }{}
+   \WF{E; \Indp{Γ_P}{Γ_C}{Γ_I}{p} }{}
 
 
 Component access rules
@@ -873,13 +873,13 @@ and :math:`Γ_C` is :math:`[c_1 :C_1 ;…;c_n :C_n ]`.
 
 .. inference:: ACC-INDP1
 
-   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{}{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
+   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.I_i \triangleright_δ p'.I_i
 
 .. inference:: ACC-INDP2
 
-   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{}{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
+   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.c_i \triangleright_δ p'.c_i
 
