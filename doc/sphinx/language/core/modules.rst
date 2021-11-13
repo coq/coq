@@ -562,8 +562,8 @@ delta-reduced term :math:`t_i` in :math:`p`.
 .. inference:: WEVAL-WITH-DEF
 
    \begin{array}{c}
-   \WEV{E}{S}{\Struct~e_1 ;…;e_i ;\Assum{}{c}{T_1};e_{i+2} ;… ;e_n ~\End} \\
-   \WS{E;e_1 ;…;e_i }{\Def{}{c}{t}{T})}{\Assum{}{c}{T_1}}
+   \WEV{E}{S}{\Struct~e_1 ;…;e_i ;(c:T_1);e_{i+2} ;… ;e_n ~\End} \\
+   \WS{E;e_1 ;…;e_i }{\Def{}{c}{t}{T})}{(c:T_1)}
    \end{array}
    --------------------------
    \begin{array}{c}
@@ -660,7 +660,7 @@ meaning:
   as assumptions):
 
     + :math:`\Def{}{c}{t}{T}/p = \Def{}{c}{t}{T}`
-    + :math:`\Assum{}{c}{U}/p = \Def{}{c}{p.c}{U}`
+    + :math:`(c:U)/p = \Def{}{c}{p.c}{U}`
     + :math:`\ModS{X}{S}/p = \ModA{X}{p.X}`
     + :math:`\ModA{X}{p′}/p = \ModA{X}{p′}`
     + :math:`\ind{r}{Γ_I}{Γ_C}/p = \Indp{r}{Γ_I}{Γ_C}{p}`
@@ -703,20 +703,20 @@ Structure element subtyping rules:
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
    --------------------------
-   \WS{E}{\Assum{}{c}{T_1 }}{\Assum{}{c}{T_2 }}
+   \WS{E}{(c:T_1)}{(c:T_2)}
 
 .. inference:: DEF-ASSUM
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
    --------------------------
-   \WS{E}{\Def{}{c}{t}{T_1 }}{\Assum{}{c}{T_2 }}
+   \WS{E}{\Def{}{c}{t}{T_1 }}{(c:T_2)}
 
 .. inference:: ASSUM-DEF
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
    E[] ⊢ c =_{βδιζη} t_2
    --------------------------
-   \WS{E}{\Assum{}{c}{T_1 }}{\Def{}{c}{t_2 }{T_2 }}
+   \WS{E}{(c:T_1)}{\Def{}{c}{t_2 }{T_2 }}
 
 .. inference:: DEF-DEF
 
@@ -831,7 +831,7 @@ Component access rules
 
 .. inference:: ACC-TYPE1
 
-   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\Assum{}{c}{T};… ~\End
+   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;(c:T);… ~\End
    --------------------------
    E[Γ] ⊢ p.c : T
 
