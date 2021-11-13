@@ -525,7 +525,7 @@ Evaluation of structures to weak head normal form:
    \WTM{E}{p}{S_3}~~~~~ \WS{E}{S_3}{\ovl{S_1}}
    \end{array}
    --------------------------
-   \WEV{E}{S~p}{S_2 \{p/X\}}
+   \WEV{E}{S~p}{\subst{S_2}{X}{p}}
 
 
 .. inference:: WEVAL-WITH-MOD
@@ -539,7 +539,7 @@ Evaluation of structures to weak head normal form:
    ----------------------------------
    \begin{array}{c}
    \WEV{E}{S~\with~X := p}{}\\
-   \Struct~e_1 ;…;e_i ; \ModA{X}{p};e_{i+2} \{p/X\} ;…;e_n \{p/X\} ~\End
+   \Struct~e_1 ;…;e_i ; \ModA{X}{p};\subst{e_{i+2}}{X}{p} ;…;\subst{e_n}{X}{p} ~\End
    \end{array}
 
 .. inference:: WEVAL-WITH-MOD-REC
@@ -551,7 +551,7 @@ Evaluation of structures to weak head normal form:
    --------------------------
    \begin{array}{c}
    \WEV{E}{S~\with~X_1.p := p_1}{} \\
-   \Struct~e_1 ;…;e_i ; \ModS{X}{\ovl{S_2}};e_{i+2} \{p_1 /X_1.p\} ;…;e_n \{p_1 /X_1.p\} ~\End
+   \Struct~e_1 ;…;e_i ; \ModS{X}{\ovl{S_2}};\subst{e_{i+2}}{X_1.p}{p_1} ;…;\subst{e_n}{X_1.p}{p_1} ~\End
    \end{array}
 
 .. inference:: WEVAL-WITH-DEF
