@@ -663,18 +663,18 @@ meaning:
     + :math:`\Assum{}{c}{U}/p = \Def{}{c}{p.c}{U}`
     + :math:`\ModS{X}{S}/p = \ModA{X}{p.X}`
     + :math:`\ModA{X}{p′}/p = \ModA{X}{p′}`
-    + :math:`\ind{Γ_P}{Γ_C}{Γ_I}/p = \Indp{Γ_P}{Γ_C}{Γ_I}{p}`
-    + :math:`\Indpstr{Γ_P}{Γ_C}{Γ_I}{p'}{p} = \Indp{Γ_P}{Γ_C}{Γ_I}{p'}`
+    + :math:`\ind{r}{Γ_I}{Γ_C}/p = \Indp{r}{Γ_I}{Γ_C}{p}`
+    + :math:`\Indpstr{r}{Γ_I}{Γ_C}{p'}{p} = \Indp{r}{Γ_I}{Γ_C}{p'}`
 
 + if :math:`S \lra \Functor(X:S′)~S″` then :math:`S/p=S`
 
 
-The notation :math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`
+The notation :math:`\Indp{r}{Γ_I}{Γ_C}{p}`
 denotes an inductive definition that is definitionally equal to the
 inductive definition in the module denoted by the path :math:`p`. All rules
-which have :math:`\ind{Γ_P}{Γ_C}{Γ_I}` as premises are also valid for
-:math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`. We give the formation rule for
-:math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`
+which have :math:`\ind{r}{Γ_I}{Γ_C}` as premises are also valid for
+:math:`\Indp{r}{Γ_I}{Γ_C}{p}`. We give the formation rule for
+:math:`\Indp{r}{Γ_I}{Γ_C}{p}`
 below as well as the equality rules on inductive types and
 constructors.
 
@@ -727,30 +727,25 @@ Structure element subtyping rules:
 
 .. inference:: IND-IND
 
-   E[] ⊢ Γ_P =_{βδιζη} Γ_P'
-   E[Γ_P ] ⊢ Γ_C =_{βδιζη} Γ_C'
-   E[Γ_P ;Γ_C ] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[Γ_I] ⊢ Γ_C =_{βδιζη} Γ_C'
    --------------------------
-   \WS{E}{\ind{Γ_P}{Γ_C}{Γ_I}}{\ind{Γ_P'}{Γ_C'}{Γ_I'}}
+   \WS{E}{\ind{r}{Γ_I}{Γ_C}}{\ind{r}{Γ_I'}{Γ_C'}}
 
 .. inference:: INDP-IND
 
-   E[] ⊢ Γ_P =_{βδιζη} Γ_P'
-   E[Γ_P ] ⊢ Γ_C =_{βδιζη} Γ_C'
-   E[Γ_P ;Γ_C ] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[Γ_I] ⊢ Γ_C =_{βδιζη} Γ_C'
    --------------------------
-   \WS{E}{\Indp{Γ_P}{Γ_C}{Γ_I}{p}}{\ind{Γ_P'}{Γ_C'}{Γ_I'}}
+   \WS{E}{\Indp{r}{Γ_I}{Γ_C}{p}}{\ind{r}{Γ_I'}{Γ_C'}}
 
 .. inference:: INDP-INDP
 
-   \begin{array}{c}
-   E[] ⊢ Γ_P =_{βδιζη} Γ_P'
-   E[Γ_P ] ⊢ Γ_C =_{βδιζη} Γ_C' \\
-   E[Γ_P ;Γ_C ] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[Γ_I] ⊢ Γ_C =_{βδιζη} Γ_C'
    E[] ⊢ p =_{βδιζη} p'
-   \end{array}
    --------------------------
-   \WS{E}{\Indp{Γ_P}{Γ_C}{Γ_I}{p}}{\Indp{Γ_P'}{Γ_C'}{Γ_I'}{p'}}
+   \WS{E}{\Indp{r}{Γ_I}{Γ_C}{p}}{\Indp{r}{Γ_I'}{Γ_C'}{p'}}
 
 .. inference:: MOD-MOD
 
@@ -823,12 +818,12 @@ New environment formation rules
 .. inference:: WF-IND
 
    \begin{array}{c}
-   \WF{E;\ind{Γ_P}{Γ_C}{Γ_I}}{} \\
-   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{Γ_P'}{Γ_C'}{Γ_I'};… ~\End \\
-   E[] ⊢ \ind{Γ_P'}{Γ_C'}{Γ_I'} <: \ind{Γ_P}{Γ_C}{Γ_I}
+   \WF{E;\ind{r}{Γ_I}{Γ_C}}{} \\
+   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{r}{Γ_I'}{Γ_C'};… ~\End \\
+   E[] ⊢ \ind{r}{Γ_I'}{Γ_C'} <: \ind{r}{Γ_I}{Γ_C}
    \end{array}
    --------------------------
-   \WF{E; \Indp{Γ_P}{Γ_C}{Γ_I}{p} }{}
+   \WF{E; \Indp{r}{Γ_I}{Γ_C}{p} }{}
 
 
 Component access rules
@@ -855,31 +850,32 @@ Notice that the following rule extends the delta rule defined in section :ref:`C
     E[Γ] ⊢ p.c \triangleright_δ t
 
 In the rules below we assume
-:math:`Γ_P` is :math:`[p_1 :P_1 ;…;p_r :P_r ]`,
-:math:`Γ_I` is :math:`[I_1 :A_1 ;…;I_k :A_k ]`,
-and :math:`Γ_C` is :math:`[c_1 :C_1 ;…;c_n :C_n ]`.
+:math:`Γ_P` is :math:`[p_1 :P_1 ;~…;~p_r :P_r ]`,
+:math:`Γ_I` is :math:`[I_1 :∀ Γ_P, A_1 ;~…;~I_k :∀ Γ_P, A_k ]`,
+and :math:`Γ_C` is :math:`[c_1 :∀ Γ_P, C_1 ;~…;~c_n :∀ Γ_P, C_n ]`.
+
 
 .. inference:: ACC-IND1
 
-   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{Γ_P}{Γ_C}{Γ_I};… ~\End
+   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{r}{Γ_I}{Γ_C};… ~\End
    --------------------------
-   E[Γ] ⊢ p.I_j : (p_1 :P_1 )…(p_r :P_r )A_j
+   E[Γ] ⊢ p.I_j : ∀ Γ_P, A_j
 
 .. inference:: ACC-IND2
 
-   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{Γ_P}{Γ_C}{Γ_I};… ~\End
+   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{r}{Γ_I}{Γ_C};… ~\End
    --------------------------
-   E[Γ] ⊢ p.c_m : (p_1 :P_1 )…(p_r :P_r )C_m I_j (I_j~p_1 …p_r )_{j=1… k}
+   E[Γ] ⊢ p.c_m : ∀ Γ_P, C_m
 
 .. inference:: ACC-INDP1
 
-   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
+   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{r}{Γ_I}{Γ_C}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.I_i \triangleright_δ p'.I_i
 
 .. inference:: ACC-INDP2
 
-   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
+   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{r}{Γ_I}{Γ_C}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.c_i \triangleright_δ p'.c_i
 
