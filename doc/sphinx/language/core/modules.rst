@@ -30,7 +30,7 @@ type abbreviation.
   structure expressions
 + an application :math:`S~p`, where :math:`S` is a structure expression and :math:`p` an
   access path
-+ a refined structure :math:`S~\with~p := p`′ or :math:`S~\with~p := t:T` where :math:`S` is a
++ a refined structure :math:`S~\with~p := p′` or :math:`S~\with~p := t:T` where :math:`S` is a
   structure expression, :math:`p` and :math:`p′` are access paths, :math:`t` is a term and :math:`T` is
   the type of :math:`t`.
 
