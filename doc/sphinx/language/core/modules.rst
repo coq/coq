@@ -663,7 +663,7 @@ meaning:
     + :math:`\Assum{}{c}{U}/p = \Def{}{c}{p.c}{U}`
     + :math:`\ModS{X}{S}/p = \ModA{X}{p.X}`
     + :math:`\ModA{X}{p′}/p = \ModA{X}{p′}`
-    + :math:`\Ind{Γ_P}{Γ_C}{Γ_I}/p = \Indp{Γ_P}{Γ_C}{Γ_I}{p}`
+    + :math:`\ind{Γ_P}{Γ_C}{Γ_I}/p = \Indp{Γ_P}{Γ_C}{Γ_I}{p}`
     + :math:`\Indpstr{Γ_P}{Γ_C}{Γ_I}{p'}{p} = \Indp{Γ_P}{Γ_C}{Γ_I}{p'}`
 
 + if :math:`S \lra \Functor(X:S′)~S″` then :math:`S/p=S`
@@ -672,7 +672,7 @@ meaning:
 The notation :math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`
 denotes an inductive definition that is definitionally equal to the
 inductive definition in the module denoted by the path :math:`p`. All rules
-which have :math:`\Ind{Γ_P}{Γ_C}{Γ_I}` as premises are also valid for
+which have :math:`\ind{Γ_P}{Γ_C}{Γ_I}` as premises are also valid for
 :math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`. We give the formation rule for
 :math:`\Indp{Γ_P}{Γ_C}{Γ_I}{p}`
 below as well as the equality rules on inductive types and
