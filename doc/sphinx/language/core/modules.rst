@@ -850,9 +850,9 @@ Notice that the following rule extends the delta rule defined in section :ref:`C
     E[Γ] ⊢ p.c \triangleright_δ t
 
 In the rules below we assume
-:math:`Γ_P` is :math:`[p_1 :P_1 ;~…;~p_r :P_r ]`,
-:math:`Γ_I` is :math:`[I_1 :∀ Γ_P, A_1 ;~…;~I_k :∀ Γ_P, A_k ]`,
-and :math:`Γ_C` is :math:`[c_1 :∀ Γ_P, C_1 ;~…;~c_n :∀ Γ_P, C_n ]`.
+:math:`Γ_P` is :math:`[p_1{:}P_1 ; …; p_r {:}P_r ]`,
+:math:`Γ_I` is :math:`[I_1{:}∀ Γ_P, A_1 ; …; I_k{:}∀ Γ_P, A_k ]`,
+and :math:`Γ_C` is :math:`[c_1{:}∀ Γ_P, C_1 ; …; c_n{:}∀ Γ_P, C_n ]`.
 
 
 .. inference:: ACC-IND1
