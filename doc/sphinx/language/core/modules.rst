@@ -525,13 +525,8 @@ Evaluation of structures to weak head normal form:
    \WTM{E}{p}{S_3}~~~~~ \WS{E}{S_3}{\ovl{S_1}}
    \end{array}
    --------------------------
-   \WEV{E}{S~p}{S_2 \{p/X,t_1 /p_1 .c_1 ,…,t_n /p_n.c_n \}}
+   \WEV{E}{S~p}{S_2 \{p/X\}}
 
-
-In the last rule, :math:`\{t_1 /p_1 .c_1 ,…,t_n /p_n .c_n \}` is the resulting
-substitution from the inlining mechanism. We substitute in :math:`S` the
-inlined fields :math:`p_i .c_i` from :math:`\ModS{X}{S_1 }` by the corresponding
-delta-reduced term :math:`t_i` in :math:`p`.
 
 .. inference:: WEVAL-WITH-MOD
 
