@@ -1,7 +1,10 @@
+File "./output/NumberNotations.v", line 11, characters 13-14:
 The command has indeed failed with message:
 Unexpected term (nat -> nat) while parsing a number notation.
+File "./output/NumberNotations.v", line 21, characters 13-14:
 The command has indeed failed with message:
 Unexpected non-option term opaque4 while parsing a number notation.
+File "./output/NumberNotations.v", line 32, characters 13-14:
 The command has indeed failed with message:
 Unexpected term (fun (A : Type) (x : A) => x) while parsing a number
 notation.
@@ -15,8 +18,10 @@ let v := 0%ppp in v : punit
      : punit
 let v := 0%uto in v : unit
      : unit
+File "./output/NumberNotations.v", line 72, characters 13-14:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type unit
+File "./output/NumberNotations.v", line 73, characters 14-16:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type unit
 let v := 0%upp in v : unit
@@ -30,6 +35,7 @@ let v := 0%ppps in v : punit
 File "./output/NumberNotations.v", line 91, characters 2-46:
 Warning: To avoid stack overflow, large numbers in punit are interpreted as
 applications of pto_punits. [abstract-large-number,numbers]
+File "./output/NumberNotations.v", line 91, characters 32-33:
 The command has indeed failed with message:
 In environment
 v := pto_punits (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) : punit
@@ -57,6 +63,7 @@ let v := 0%wuint8 in v : wuint
      : wuint
 let v := 0 in v : nat
      : nat
+File "./output/NumberNotations.v", line 164, characters 34-35:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
@@ -71,6 +78,7 @@ let v := 0%wuint9' in v : wuint
      : wuint
 let v := 0 in v : nat
      : nat
+File "./output/NumberNotations.v", line 191, characters 34-35:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
@@ -86,14 +94,18 @@ let v := of_uint (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) in v : unit
      : unit
 let v := 0%test13 in v : unit
      : unit
+File "./output/NumberNotations.v", line 238, characters 36-44:
 The command has indeed failed with message:
 to_uint' is bound to a notation that does not denote a reference.
+File "./output/NumberNotations.v", line 239, characters 35-36:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "unit".
+File "./output/NumberNotations.v", line 240, characters 36-45:
 The command has indeed failed with message:
 to_uint'' is bound to a notation that does not denote a reference.
+File "./output/NumberNotations.v", line 241, characters 36-37:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
@@ -102,14 +114,17 @@ let v := 0%test14' in v : unit
      : unit
 let v := 0%test14' in v : unit
      : unit
+File "./output/NumberNotations.v", line 264, characters 34-35:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "unit".
+File "./output/NumberNotations.v", line 265, characters 35-36:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "unit".
+File "./output/NumberNotations.v", line 267, characters 34-35:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
@@ -120,14 +135,17 @@ The command has indeed failed with message:
 This command does not support the Global option in sections.
 let v := 0%test14'' in v : unit
      : unit
+File "./output/NumberNotations.v", line 275, characters 39-40:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "unit".
+File "./output/NumberNotations.v", line 277, characters 36-37:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "unit".
+File "./output/NumberNotations.v", line 278, characters 37-38:
 The command has indeed failed with message:
 In environment
 v := 0 : nat
@@ -140,6 +158,7 @@ let v := 0%test15 in v : unit
      : unit
 let v := foo a.t in v : Foo
      : Foo
+File "./output/NumberNotations.v", line 320, characters 22-23:
 The command has indeed failed with message:
 Cannot interpret in test16_scope because NumberNotations.Test16.F.Foo could not be found in the current environment.
 let v := 0%test17 in v : myint63
@@ -192,6 +211,7 @@ let v := 4%kt in v : ty
      : ty
 let v := 5%kt in v : ty
      : ty
+File "./output/NumberNotations.v", line 451, characters 22-23:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type ty
      = 0%kt
@@ -252,10 +272,13 @@ sum unit (sum unit unit)
      : Set
 The command has indeed failed with message:
 Missing mapping for constructor Isum.
+File "./output/NumberNotations.v", line 552, characters 68-73:
 The command has indeed failed with message:
 Iunit was already mapped to unit and cannot be remapped to unit.
+File "./output/NumberNotations.v", line 556, characters 47-50:
 The command has indeed failed with message:
 add is not an inductive type.
+File "./output/NumberNotations.v", line 562, characters 40-43:
 The command has indeed failed with message:
 add is not a constructor of an inductive type.
 The command has indeed failed with message:
@@ -286,6 +309,7 @@ Warning: Type of IS seems incompatible with the type of Fin.FS.
 Expected type is: (nat -> I -> I) instead of (I -> I).
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
+File "./output/NumberNotations.v", line 668, characters 11-12:
 The command has indeed failed with message:
 The term "0" has type "forall n : nat, Fin.t (S n)"
 while it is expected to have type "nat".
@@ -311,6 +335,7 @@ where
      : Fin.t 3
 2 : Fin.t 3
      : Fin.t 3
+File "./output/NumberNotations.v", line 681, characters 11-42:
 The command has indeed failed with message:
 The term "3" has type "Fin.t (S (S (S (S ?n))))"
 while it is expected to have type "Fin.t 3".
@@ -336,6 +361,7 @@ where
      : Fin.t (S (S (S O)))
 @Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
      : Fin.t (S (S (S O)))
+File "./output/NumberNotations.v", line 690, characters 11-12:
 The command has indeed failed with message:
 The term
  "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
@@ -431,6 +457,7 @@ where
      : Fin.t 3
 2 : Fin.t 3
      : Fin.t 3
+File "./output/NumberNotations.v", line 914, characters 11-42:
 The command has indeed failed with message:
 The term "3" has type "Fin.t (S (S (S (S ?n))))"
 while it is expected to have type "Fin.t 3".
@@ -456,6 +483,7 @@ where
      : Fin.t (S (S (S O)))
 @Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
      : Fin.t (S (S (S O)))
+File "./output/NumberNotations.v", line 923, characters 11-12:
 The command has indeed failed with message:
 The term
  "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
@@ -483,6 +511,7 @@ where
      : Fin.t 3
 2 : Fin.t 3
      : Fin.t 3
+File "./output/NumberNotations.v", line 968, characters 11-42:
 The command has indeed failed with message:
 The term "3" has type "Fin.t (S (S (S (S ?n))))"
 while it is expected to have type "Fin.t 3".
@@ -508,6 +537,7 @@ where
      : Fin.t (S (S (S O)))
 @Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
      : Fin.t (S (S (S O)))
+File "./output/NumberNotations.v", line 977, characters 11-12:
 The command has indeed failed with message:
 The term
  "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"

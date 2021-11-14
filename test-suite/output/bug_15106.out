@@ -1,3 +1,2 @@
-File "./output/bug_15106.v", line 4, characters 0-13:
-Error: Obligation 2 already solved.
-
+The command has indeed failed with message:
+Obligation 2 already solved.

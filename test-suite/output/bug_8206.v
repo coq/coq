@@ -8,4 +8,4 @@ Module Impl.
   Axiom homework: forall (a b: nat), add 0 b = add b 0.
 End Impl.
 
-Module M : Sig := Impl.
+Fail Module M : Sig := Impl.

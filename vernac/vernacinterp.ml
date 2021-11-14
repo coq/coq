@@ -65,7 +65,7 @@ let vernac_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
 let test_mode = ref false
 
 (* Restoring the state is the caller's responsibility *)
-let with_fail f : (Pp.t, unit) result =
+let with_fail f : (Loc.t option * Pp.t, unit) result =
   try
     let _ = f () in
     Error ()
@@ -73,7 +73,8 @@ let with_fail f : (Pp.t, unit) result =
   (* Fail Timeout is a common pattern so we need to support it. *)
   | e when CErrors.noncritical e || e = CErrors.Timeout ->
     (* The error has to be printed in the failing state *)
-    Ok CErrors.(iprint (Exninfo.capture e))
+    let _, info as e = Exninfo.capture e in
+    Ok (Loc.get_loc info, CErrors.iprint e)
 
 (* We restore the state always *)
 let with_fail ~st f =
@@ -83,9 +84,10 @@ let with_fail ~st f =
   match res with
   | Error () ->
     CErrors.user_err (Pp.str "The command has not failed!")
-  | Ok msg ->
+  | Ok (loc, msg) ->
+    let loc = if !test_mode then loc else None in
     if not !Flags.quiet || !test_mode
-    then Feedback.msg_notice Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg)
+    then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
 let with_succeed ~st f =
   let () = ignore (f ()) in

@@ -40,28 +40,36 @@ fun x : nat => ifn x is succ n then n else 0
      : bool
 -4
      : Z
+File "./output/Notations.v", line 139, characters 46-62:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
 in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
+File "./output/Notations.v", line 145, characters 57-58:
 The command has indeed failed with message:
 The reference w was not found in the current environment.
 The command has indeed failed with message:
 in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
+File "./output/Notations.v", line 152, characters 56-57:
 The command has indeed failed with message:
 z is expected to occur in binding position in the right-hand side.
 The command has indeed failed with message:
 as y is a non-closed binder, no such "," is allowed to occur.
+File "./output/Notations.v", line 160, characters 46-69:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
+File "./output/Notations.v", line 161, characters 46-62:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
+File "./output/Notations.v", line 162, characters 49-63:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
+File "./output/Notations.v", line 163, characters 50-64:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
+Toplevel input, characters 4941-4955:
 The command has indeed failed with message:
 Both ends of the recursive pattern are the same.
 SUM (nat * nat) nat

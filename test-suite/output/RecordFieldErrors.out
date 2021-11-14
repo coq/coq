@@ -1,14 +1,21 @@
+File "./output/RecordFieldErrors.v", line 10, characters 14-18:
 The command has indeed failed with message:
 unit: Not a projection.
+File "./output/RecordFieldErrors.v", line 13, characters 14-18:
 The command has indeed failed with message:
 unit: Not a projection.
+File "./output/RecordFieldErrors.v", line 17, characters 14-48:
 The command has indeed failed with message:
 This record contains fields of both t and t'.
+File "./output/RecordFieldErrors.v", line 21, characters 14-18:
 The command has indeed failed with message:
 unit: Not a projection.
+File "./output/RecordFieldErrors.v", line 25, characters 14-48:
 The command has indeed failed with message:
 This record defines several times the field foo.
+File "./output/RecordFieldErrors.v", line 29, characters 14-75:
 The command has indeed failed with message:
 This record defines several times the field unit.
+File "./output/RecordFieldErrors.v", line 37, characters 14-18:
 The command has indeed failed with message:
 unit: Not a projection.

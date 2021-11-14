@@ -1,7 +1,10 @@
+File "./output/NotationSyntax.v", line 2, characters 38-50:
 The command has indeed failed with message:
 "only parsing" is given more than once.
+File "./output/NotationSyntax.v", line 3, characters 38-51:
 The command has indeed failed with message:
 A notation cannot be both "only printing" and "only parsing".
+File "./output/NotationSyntax.v", line 4, characters 39-52:
 The command has indeed failed with message:
 "only printing" is given more than once.
 File "./output/NotationSyntax.v", line 5, characters 33-43:
@@ -12,5 +15,6 @@ Warning: Notations for numbers are primitive; skipping this modifier.
 [primitive-token-modifier,parsing]
 1%nat
      : nat
+File "./output/NotationSyntax.v", line 10, characters 23-26:
 The command has indeed failed with message:
 Notations for numbers are primitive and need not be reserved.

@@ -1,3 +1,4 @@
+File "./output/bug_13595.v", line 5, characters 7-17:
 The command has indeed failed with message:
 Tactic failure: Goal is solvable by congruence but some arguments are missing.
   Try "congruence with ((Triple a _ _)) ((Triple d c _))",

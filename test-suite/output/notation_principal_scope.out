@@ -1,16 +1,21 @@
+File "./output/notation_principal_scope.v", line 4, characters 28-29:
 The command has indeed failed with message:
 Argument X was previously inferred to be in scope function_scope but is here
 used in the empty scope stack. Scope function_scope will be used at parsing
 time unless you override it by annotating the argument with an explicit scope
 of choice. [inconsistent-scopes,syntax]
+File "./output/notation_principal_scope.v", line 6, characters 23-36:
 The command has indeed failed with message:
 Abbreviations don't support only printing
+File "./output/notation_principal_scope.v", line 8, characters 22-33:
 The command has indeed failed with message:
 The reference nonexisting was not found in the current environment.
+File "./output/notation_principal_scope.v", line 10, characters 34-57:
 The command has indeed failed with message:
 Notation scope for argument X can be specified only once.
 pp I
      : True /\ True
+File "./output/notation_principal_scope.v", line 19, characters 18-19:
 The command has indeed failed with message:
 Illegal application (Non-functional construction): 
 The expression "I" of type "True" cannot be applied to the term

@@ -105,6 +105,7 @@ f is transparent
 Expands to: Constant Arguments.f
 forall w : r, w 3 true = tt
      : Prop
+File "./output/Arguments.v", line 52, characters 28-29:
 The command has indeed failed with message:
 Unknown interpretation for notation "$".
 w 3 true = tt

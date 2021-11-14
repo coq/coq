@@ -1,3 +1,3 @@
-File "./output/ErrorInModule.v", line 3, characters 20-31:
-Error: The reference nonexistent was not found in the current environment.
-
+File "./output/ErrorInModule.v", line 3, characters 25-36:
+The command has indeed failed with message:
+The reference nonexistent was not found in the current environment.

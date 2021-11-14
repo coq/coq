@@ -1,9 +1,8 @@
-File "./output/CoercionOnHole.v", line 23, characters 12-15:
-Error:
+File "./output/CoercionOnHole.v", line 23, characters 17-20:
+The command has indeed failed with message:
 In environment
 e1, e2, v1 : expr
 IH1 : eval e1 v1
 IHe2 : exists v : expr, eval e2 v
 The term "IH1" has type "eval e1 v1" while it is expected to have type
  "eval e1 (Const ?v1)".
-

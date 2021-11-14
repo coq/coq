@@ -1050,6 +1050,7 @@ Arguments byte_ind P%function_scope f f f f f f f f f f f f f f f f f f f f f f 
      : byte
 "127"
      : byte
+File "./output/StringSyntax.v", line 18, characters 11-16:
 The command has indeed failed with message:
 Expects a single character or a three-digit ASCII code.
 "000"
@@ -1058,6 +1059,7 @@ Expects a single character or a three-digit ASCII code.
      : ascii
 "127"
      : ascii
+File "./output/StringSyntax.v", line 25, characters 11-16:
 The command has indeed failed with message:
 Expects a single character or a three-digit ASCII code.
 "000"
@@ -1094,6 +1096,7 @@ Expects a single character or a three-digit ASCII code.
      : nat
 "255"
      : nat
+File "./output/StringSyntax.v", line 95, characters 11-16:
 The command has indeed failed with message:
 Expects a single character or a three-digit ASCII code.
 "abc"

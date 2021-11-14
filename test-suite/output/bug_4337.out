@@ -1,8 +1,7 @@
 File "./output/bug_4337.v", line 4, characters 35-36:
-Error:
+The command has indeed failed with message:
 In environment
 Foo : list var -> term -> Prop
 l : list var
 x : var
 The term "x" has type "var" while it is expected to have type "term".
-

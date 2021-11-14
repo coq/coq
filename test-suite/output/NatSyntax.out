@@ -14,20 +14,26 @@
      : nat
 427
      : nat
+File "./output/NatSyntax.v", line 9, characters 11-17:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type nat
+File "./output/NatSyntax.v", line 10, characters 11-17:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type nat
 0
      : nat
 0
      : nat
+File "./output/NatSyntax.v", line 13, characters 12-14:
 The command has indeed failed with message:
 The reference xg was not found in the current environment.
+File "./output/NatSyntax.v", line 14, characters 12-14:
 The command has indeed failed with message:
 The reference xG was not found in the current environment.
+File "./output/NatSyntax.v", line 15, characters 13-15:
 The command has indeed failed with message:
 The reference x1 was not found in the current environment.
+File "./output/NatSyntax.v", line 16, characters 12-13:
 The command has indeed failed with message:
 The reference x was not found in the current environment.
 0x2a

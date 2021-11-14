@@ -3,3 +3,5 @@ Error: Signature components for label test do not match: expected type
 "qualification.M2.t = qualification.M2.M.t" but found type
 "qualification.M2.t = qualification.M2.t".
 
+
+coqc exited with code 1

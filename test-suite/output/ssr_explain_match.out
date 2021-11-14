@@ -50,5 +50,6 @@ instance: (addnC z (x + y)) matches: (x + y + z)
 instance: (addnC y x) matches: (x + y)
 instance: (addnC y x) matches: (x + y)
 END INSTANCES
+File "./output/ssr_explain_match.v", line 22, characters 5-38:
 The command has indeed failed with message:
 Not supported

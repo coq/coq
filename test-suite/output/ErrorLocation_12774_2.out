@@ -1,3 +1,0 @@
-File "./output/ErrorLocation_12774_2.v", line 3, characters 9-10:
-Error: The term "0" has type "nat" while it is expected to have type "Type".
-
