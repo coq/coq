@@ -318,3 +318,8 @@ project vscoq "https://github.com/maximedenes/vscoq" document-manager
 # category-theory
 ########################################################################
 project category_theory "https://github.com/jwiegley/category-theory" "master"
+
+########################################################################
+# itauto
+########################################################################
+project itauto "https://gitlab.inria.fr/fbesson/itauto" "master"
