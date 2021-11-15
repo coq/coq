@@ -1308,6 +1308,7 @@ let () =
       idents = Id.Map.empty;
       typed = Id.Map.empty;
       untyped = Id.Map.empty;
+      genargs = Id.Map.empty;
     } in
     let c = { closure; term = c } in
     return (Value.of_ext val_preterm c)

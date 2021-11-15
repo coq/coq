@@ -46,7 +46,8 @@ type extended_patvar_map = constr_under_binders Id.Map.t
 type closure = {
   idents:Id.t Id.Map.t;
   typed: constr_under_binders Id.Map.t ;
-  untyped:closed_glob_constr Id.Map.t }
+  untyped:closed_glob_constr Id.Map.t;
+  genargs : Geninterp.Val.t Id.Map.t; }
 and closed_glob_constr = {
   closure: closure;
   term: glob_constr }
