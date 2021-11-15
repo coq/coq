@@ -1746,7 +1746,6 @@ simple_tactic: [
 | "head_of_constr" ident one_term
 | "not_evar" one_term
 | "is_ground" one_term
-| "autoapply" one_term "using" ident
 | "autoapply" one_term "with" ident
 | "progress_evars" ltac_expr
 | "rewrite_strat" rewstrategy OPT ( "in" ident )
