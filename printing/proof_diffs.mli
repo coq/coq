@@ -84,7 +84,6 @@ val log_out_ch : out_channel ref
 type hyp_info = {
   idents: string list;
   rhs_pp: Pp.t;
-  mutable done_: bool;
 }
 
 val diff_hyps : string list list -> hyp_info CString.Map.t -> string list list -> hyp_info CString.Map.t -> Pp.t list

@@ -106,112 +106,129 @@ let tokenize_string s =
     toks
   with exn ->
     CLexer.Lexer.State.set st;
-    raise (Diff_Failure "Input string is not lexable");;
+    raise (Diff_Failure "Input string is not lexable")
 
 type hyp_info = {
   idents: string list;
   rhs_pp: Pp.t;
-  mutable done_: bool;
 }
 
-(* Generate the diffs between the old and new hyps.
-   This works by matching lines with the hypothesis name and diffing the right-hand side.
-   Lines that have multiple names such as "n, m : nat" are handled specially to account
-   for, say, the addition of m to a pre-existing "n : nat".
+(* Diff the old and new hypotheses.  The RHS (starting at ":" or ":=") is diffed with
+   the same token-based diff used for goal conclusions.  Identifiers in the LHS are
+   handled differently:
+
+   The order and grouping of LHS identifiers in the added/unchanged lines is always
+   the same as when diff is not enabled.  Identifiers existing in the old context
+   that are present in the new context with the same RHS are not highlighted.  New
+   identifiers are always highlighted.
+
+   If all the existing identifiers in a line have a new RHS, those identifiers are
+   not highlighted (in this case, the RHS will be highlighted, making the change clear).
+
+   Removed and added lines are generated in separate passes.  Removed lines appear
+   before the added line that has most identifiers in common with the old.  (For
+   a tie, use the first one found.  For zero in common, put the removal before
+   the first addition/common line.)  This should be a good but not perfect
+   approximation to what a human might do.
  *)
-let diff_hyps o_line_idents o_map n_line_idents n_map =
+let diff_hyps o_idents_in_lines o_map n_idents_in_lines n_map =
   let rv : Pp.t list ref = ref [] in
+  let removals = ref CString.Map.empty in
 
-  let is_done ident map = (CString.Map.find ident map).done_ in
-  let exists ident map =
-    try let _ = CString.Map.find ident map in true
-    with Not_found -> false in
-  let contains l ident = try [List.find (fun x  -> x = ident) l] with Not_found -> [] in
+  (* get the first identifier on the new line with the most ids in common
+     with the given old idents *)
+  let best_match old_ids =
+    let rec aux best best_score = function
+      | [] -> best
+      | nl_idents :: tl ->
+        let score = List.fold_left (fun rv ident ->
+            if List.mem ident nl_idents then rv+1 else rv) 0 old_ids in
+        if score > best_score then
+          aux (List.hd nl_idents) score tl
+        else
+          aux best best_score tl
+    in
+    aux "" 0 n_idents_in_lines
+  in
 
-  let output old_ids_uo new_ids =
-    (* use the order from the old line in case it's changed in the new *)
-    let old_ids = if old_ids_uo = [] then [] else
-      let orig = (CString.Map.find (List.hd old_ids_uo) o_map).idents in
-      List.concat (List.map (contains orig) old_ids_uo)
+  (* generate the Pp.t for a single line of the hypotheses *)
+  let gen_line old_ids old_rhs new_ids new_rhs otype =
+    let gen_pp ids map hyp =
+      if ids = [] then ("", Pp.mt ()) else begin
+        let open Pp in
+        let pp_ids = List.map (fun x -> str x) ids in
+        let hyp_pp = List.fold_left (fun l1 l2 -> l1 ++ str ", " ++ l2) (List.hd pp_ids) (List.tl pp_ids) ++ hyp in
+        (string_of_ppcmds hyp_pp, hyp_pp)
+      end;
     in
 
-    let setup ids map = if ids = [] then ("", Pp.mt ()) else
-      let open Pp in
-      let rhs_pp = (CString.Map.find (List.hd ids) map).rhs_pp in
-      let pp_ids = List.map (fun x -> str x) ids in
-      let hyp_pp = List.fold_left (fun l1 l2 -> l1 ++ str ", " ++ l2) (List.hd pp_ids) (List.tl pp_ids) ++ rhs_pp in
-      (string_of_ppcmds hyp_pp, hyp_pp)
-    in
-
-    let (o_line, o_pp) = setup old_ids o_map in
-    let (n_line, n_pp) = setup new_ids n_map in
+    let (o_line, o_pp) = gen_pp old_ids o_map old_rhs in
+    let (n_line, n_pp) = gen_pp new_ids n_map new_rhs in
 
     let hyp_diffs = diff_str ~tokenize_string o_line n_line in
-    let (has_added, has_removed) = has_changes hyp_diffs in
-    if show_removed () && has_removed then begin
-      List.iter (fun x -> (CString.Map.find x o_map).done_ <- true) old_ids;
-      rv := (add_diff_tags `Removed o_pp hyp_diffs) :: !rv;
-    end;
-    if n_line <> "" then begin
-      List.iter (fun x -> (CString.Map.find x n_map).done_ <- true) new_ids;
-      rv := (add_diff_tags `Added n_pp hyp_diffs) :: !rv
+    if otype = `Added then begin
+      let rems = try CString.Map.find (List.hd new_ids) !removals with Not_found -> [] in
+      rv := add_diff_tags otype n_pp hyp_diffs :: (rems @ !rv)
+    end else begin
+      let (has_added, has_removed) = has_changes hyp_diffs in
+      if has_removed then begin
+        let d_line = add_diff_tags otype o_pp hyp_diffs in
+        let best = best_match old_ids in
+        if best = "" then
+          rv := d_line :: !rv
+        else begin
+          let ent = try CString.Map.find best !removals with Not_found -> [] in
+          removals := CString.Map.add best (d_line :: ent) !removals
+        end
+      end
     end
   in
 
-  (* process identifier level diff *)
-  let process_ident_diff diff =
-    let (dtype, ident) = get_dinfo diff in
-    match dtype with
-    | `Removed ->
-      if dtype = `Removed then begin
-        let o_idents = (CString.Map.find ident o_map).idents in
-        (* only show lines that have all idents removed here; other removed idents appear later *)
-        if show_removed () && not (is_done ident o_map) &&
-            List.for_all (fun x -> not (exists x n_map)) o_idents then
-          output (List.rev o_idents) []
-      end
-    | _ -> begin (* Added or Common case *)
-      let n_idents = (CString.Map.find ident n_map).idents in
+  (* generate only the removals or only the additions for all hypotheses *)
+  let half_diff old_ids o_map n_idents_in_lines n_map otype =
+    let rec do_lines = function
+      | [] -> ()
+      | ids_in_line :: tl ->
+        let nl_idents, new_rhs =
+          try let ent = CString.Map.find (List.hd ids_in_line) n_map in
+            ent.idents, ent.rhs_pp
+          with Not_found -> [], (Pp.mt ()) in
 
-      (* Process a new hyp line, possibly splitting it.  Duplicates some of
-         process_ident iteration, but easier to understand this way *)
-      let process_line ident2 =
-        if not (is_done ident2 n_map) then begin
-          let n_ids_list : string list ref = ref [] in
-          let o_ids_list : string list ref = ref [] in
-          let fst_omap_idents = ref None in
-          let add ids id map =
-            ids := id :: !ids;
-            (CString.Map.find id map).done_ <- true in
+        let rec get_ol_idents ol_idents old_rhs = function
+          | [] -> List.rev ol_idents, old_rhs
+          | ident :: tl ->
+            try
+              let o_ent = CString.Map.find ident o_map in
+              let eq = (o_ent.rhs_pp = new_rhs) in
+              let ol_idents = if eq then ident :: ol_idents else ol_idents in
+              let old_rhs = if eq || old_rhs = None then Some o_ent.rhs_pp else old_rhs in
+              get_ol_idents ol_idents old_rhs tl
+            with Not_found -> get_ol_idents ol_idents old_rhs tl
+        in
 
-          (* get identifiers shared by one old and one new line, plus
-             other Added in new and other Removed in old *)
-          let process_split ident3 =
-            if not (is_done ident3 n_map) then begin
-              let this_omap_idents = try Some (CString.Map.find ident3 o_map).idents
-                                    with Not_found -> None in
-              if !fst_omap_idents = None then
-                fst_omap_idents := this_omap_idents;
-              match (!fst_omap_idents, this_omap_idents) with
-              | (Some fst, Some this) when fst == this ->  (* yes, == *)
-                add n_ids_list ident3 n_map;
-                (* include, in old order, all undone Removed idents in old *)
-                List.iter (fun x -> if x = ident3 || not (is_done x o_map) && not (exists x n_map) then
-                                    (add o_ids_list x o_map)) fst
-              | (_, None) ->
-                add n_ids_list ident3 n_map (* include all undone Added idents in new *)
-              | _ -> ()
-            end in
-          List.iter process_split n_idents;
-          output (List.rev !o_ids_list) (List.rev !n_ids_list)
-        end in
-      List.iter process_line n_idents (* O(n^2), so sue me *)
-    end in
+        let (ol_idents, old_rhs) = get_ol_idents [] None nl_idents in
+        let old_rhs = Option.default (Pp.mt ()) old_rhs in
 
-  let cvt s = Array.of_list (List.concat s) in
-  let ident_diffs = diff_strs (cvt o_line_idents) (cvt n_line_idents) in
-  List.iter process_ident_diff ident_diffs;
-  List.rev !rv;;
+        let rhs_eq = old_rhs = new_rhs in
+        (* if RHS differs, only highlight idents new to the context *)
+        let filter_ol () = if rhs_eq then ol_idents else
+          List.filter (fun ident -> CString.Map.mem ident o_map) nl_idents in
+        if otype = `Added then begin
+          let ol_idents = filter_ol () in
+          gen_line ol_idents old_rhs  nl_idents new_rhs otype
+        end else if not rhs_eq || List.length nl_idents <> List.length ol_idents then begin
+          let ol_idents = filter_ol () in
+          gen_line nl_idents new_rhs  ol_idents old_rhs otype
+        end;
+        do_lines tl
+    in
+    do_lines n_idents_in_lines
+  in
+  if show_removed () then
+    (* note reversal of new and old *)
+    half_diff (List.flatten n_idents_in_lines) n_map  o_idents_in_lines o_map `Removed;
+  half_diff (List.flatten o_idents_in_lines) o_map  n_idents_in_lines n_map `Added;
+  List.rev !rv
 
 
 type 'a hyp = (Names.Id.t Context.binder_annot list * 'a option * 'a)
@@ -224,7 +241,7 @@ module CDC = Context.Compacted.Declaration
 let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot list * 'pc option * 'pc) =
   let open CDC in function
     | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
-    | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm);;
+    | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm)
 
 let goal_repr sigma g =
   let evi = Evd.find sigma g in
@@ -244,7 +261,7 @@ let process_goal sigma g : EConstr.t reified_goal =
   (* compaction is usually desired [eg for better display] *)
   let hyps      = Termops.compact_named_context (Environ.named_context env) in
   let hyps      = List.map to_tuple hyps in
-  { name; ty; hyps; env; sigma };;
+  { name; ty; hyps; env; sigma }
 
 let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
   Ppconstr.pr_lconstr_expr env sigma
@@ -312,7 +329,7 @@ let goal_info goal sigma =
     let ts = pp_of_type env sigma ty in
     let rhs_pp = mid ++ str " : " ++ ts in
 
-    let make_entry () = { idents; rhs_pp; done_ = false } in
+    let make_entry () = { idents; rhs_pp } in
     List.iter (fun ident -> map := (CString.Map.add ident (make_entry ()) !map); ()) idents
   in
 
@@ -321,22 +338,22 @@ let goal_info goal sigma =
     List.iter (build_hyp_info env sigma) (List.rev hyps);
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
-  with _ -> ([], !map, Pp.mt ());;
+  with _ -> ([], !map, Pp.mt ())
 
 let diff_goal_info o_info n_info =
-  let (o_line_idents, o_hyp_map, o_concl_pp) = o_info in
-  let (n_line_idents, n_hyp_map, n_concl_pp) = n_info in
+  let (o_idents_in_lines, o_hyp_map, o_concl_pp) = o_info in
+  let (n_idents_in_lines, n_hyp_map, n_concl_pp) = n_info in
   let show_removed = Some (show_removed ()) in
   let concl_pp = diff_pp_combined ~tokenize_string ?show_removed o_concl_pp n_concl_pp in
 
-  let hyp_diffs_list = diff_hyps o_line_idents o_hyp_map n_line_idents n_hyp_map in
+  let hyp_diffs_list = diff_hyps o_idents_in_lines o_hyp_map n_idents_in_lines n_hyp_map in
   (hyp_diffs_list, concl_pp)
 
 let hyp_list_to_pp hyps =
   let open Pp in
   match hyps with
   | h :: tl -> List.fold_left (fun x y -> x ++ cut () ++ y) h tl
-  | [] -> mt ();;
+  | [] -> mt ()
 
 let unwrap g_s =
   match g_s with
@@ -355,7 +372,7 @@ let diff_goal ?og_s ng ns =
   v 0 (
     (hyp_list_to_pp hyps_pp_list) ++ cut () ++
     str "============================" ++ cut () ++
-    concl_pp);;
+    concl_pp)
 
 
 (*** Code to determine which calls to compare between the old and new proofs ***)

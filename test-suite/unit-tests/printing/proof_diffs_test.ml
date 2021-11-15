@@ -113,7 +113,7 @@ let t () =
       ])) in
   let (_, n_diff) = diff_pp o_pp n_pp in
 
-  assert_equal ~msg:"added"   ~printer:db_string_of_pp n_exp (flatten n_diff);;
+  assert_equal ~msg:"added"   ~printer:db_string_of_pp n_exp (flatten n_diff)
 let _ = add_test "diff_pp/add_diff_tags a span with spaces" t
 
 
@@ -183,30 +183,37 @@ let t () =
 let _ = if false then add_test "diff_pp/add_diff_tags token containing white space" t
 
 let add_entries map idents rhs_pp =
-  let make_entry() = { idents; rhs_pp; done_ = false } in
-  List.iter (fun ident -> map := (CString.Map.add ident (make_entry ()) !map); ()) idents;;
+  let make_entry() = { idents; rhs_pp } in
+  List.iter (fun ident -> map := CString.Map.add ident (make_entry ()) !map) idents
 
 let print_list hyps = List.iter (fun x -> cprintf "%s\n" (string_of_ppcmds (flatten x))) hyps
 let db_print_list hyps = List.iter (fun x -> cprintf "%s\n" (db_string_of_pp (flatten x))) hyps
 
 
-(* a : foo
-   b : bar car ->
+(* a : uint
+   b : int car ->
    b : car
-   a : foo bar *)
+   a : uint int
+DIFFS
+   b : car   (remove int)
+   b : car   (added bg only)
+   a: uint int (add int)
+*)
 let t () =
   write_diffs_option "removed";   (* turn on "removed" option *)
   let o_line_idents = [ ["a"]; ["b"]] in
   let o_hyp_map = ref CString.Map.empty in
-  add_entries o_hyp_map ["a"] (str " : foo");
-  add_entries o_hyp_map ["b"] (str " : bar car");
+  add_entries o_hyp_map ["a"] (str " : uint");
+  add_entries o_hyp_map ["b"] (str " : int car");
   let n_line_idents = [ ["b"]; ["a"]] in
   let n_hyp_map = ref CString.Map.empty in
   add_entries n_hyp_map ["b"] (str " : car");
-  add_entries n_hyp_map ["a"] (str " : foo bar");
-  let expected = [flatten (wrap_in_bg "diff.removed" (seq [str "b"; str " : "; (tag "diff.removed" (str "bar")); str " car" ]));
-                  flatten (wrap_in_bg "diff.added" (seq [str "b"; str " : car" ]));
-                  flatten (wrap_in_bg "diff.added" (seq [str "a"; str " : foo "; (tag "diff.added" (str "bar")) ]))
+  add_entries n_hyp_map ["a"] (str " : uint int");
+  let expected = [flatten (wrap_in_bg "diff.removed" (seq [str "b"; str " : ";
+                      (tag "diff.removed" (str "int")); str " car" ]));
+                  flatten (wrap_in_bg "diff.added" (seq [str "b"; str " : car"]));
+                  flatten (wrap_in_bg "diff.added" (seq [str "a";
+                      str " : uint "; (tag "diff.added" (str "int")) ]))
   ] in
 
   let hyps_diff_list = diff_hyps o_line_idents !o_hyp_map n_line_idents !n_hyp_map in
@@ -223,7 +230,10 @@ let _ = add_test "diff_hyps simple diffs" t
   c, d : int ->
   a, b : nat
   d : int
- and keeps old order *)
+DIFFS
+ c, d : int (remove c,)
+ a, b : nat (add ,b)
+ d : int *)
 let t () =
   write_diffs_option "removed";   (* turn on "removed" option *)
   let o_line_idents = [ ["a"]; ["c"; "d"]] in
@@ -234,9 +244,11 @@ let t () =
   let n_hyp_map = ref CString.Map.empty in
   add_entries n_hyp_map ["a"; "b"] (str " : nat");
   add_entries n_hyp_map ["d"] (str " : int");
-  let expected = [flatten (wrap_in_bg "diff.added" (seq [str "a"; (tag "start.diff.added" (str ", ")); (tag "end.diff.added" (str "b")); str " : nat" ]));
-                  flatten (wrap_in_bg "diff.removed" (seq [(tag "start.diff.removed" (str "c"));  (tag "end.diff.removed" (str ",")); str " "; str "d";  str " : int" ]));
-                  flatten (wrap_in_bg "diff.added" (seq [str "d"; str " : int" ]))
+  let expected = [flatten (wrap_in_bg "diff.added" (seq [str "a"; (tag "start.diff.added"
+                      (str ", ")); (tag "end.diff.added" (str "b")); str " : nat" ]));
+                  flatten (wrap_in_bg "diff.removed" (seq [(tag "start.diff.removed"
+                      (str "c")); (tag "end.diff.removed" (str ",")); str " "; str "d";  str " : int" ]));
+                  flatten (seq [str "d"; str " : int" ])
   ] in
 
   let hyps_diff_list = diff_hyps o_line_idents !o_hyp_map n_line_idents !n_hyp_map in
@@ -252,33 +264,33 @@ let t () =
       expected hyps_diff_list
 let _ = add_test "diff_hyps compacted" t
 
-(* a : foo
-   b : bar
+(* a : uint
+   b : int
    c : nat ->
    b, a, c : nat
 DIFFS
-   b : bar (remove bar)
-   b : nat (add nat)
-   a : foo (remove foo)
-   a : nat (add nat)
-   c : nat
+   a : uint (remove)
+   b : int (remove)
+   b, a, c : nat (add b, a,)
  is this a realistic use case?
 *)
 let t () =
   write_diffs_option "removed";   (* turn on "removed" option *)
   let o_line_idents = [ ["a"]; ["b"]; ["c"]] in
   let o_hyp_map = ref CString.Map.empty in
-  add_entries o_hyp_map ["a"] (str " : foo");
-  add_entries o_hyp_map ["b"] (str " : bar");
+  add_entries o_hyp_map ["a"] (str " : uint");
+  add_entries o_hyp_map ["b"] (str " : int");
   add_entries o_hyp_map ["c"] (str " : nat");
   let n_line_idents = [ ["b"; "a"; "c"] ] in
   let n_hyp_map = ref CString.Map.empty in
   add_entries n_hyp_map ["b"; "a"; "c"] (str " : nat");
-  let expected = [flatten (wrap_in_bg "diff.removed" (seq [str "b"; str " : "; (tag "diff.removed" (str "bar"))]));
-                  flatten (wrap_in_bg "diff.added" (seq [str "b"; str " : "; (tag "diff.added" (str "nat"))]));
-                  flatten (wrap_in_bg "diff.removed" (seq [str "a"; str " : "; (tag "diff.removed" (str "foo"))]));
-                  flatten (wrap_in_bg "diff.added" (seq [str "a"; str " : "; (tag "diff.added" (str "nat"))]));
-                  flatten (seq [str "c"; str " : nat"])
+  let expected = [flatten (wrap_in_bg "diff.removed" (seq [str "a"; str " : ";
+                      (tag "diff.removed" (str "uint"))]));
+                  flatten (wrap_in_bg "diff.removed" (seq [str "b"; str " : ";
+                      (tag "diff.removed" (str "int"))]));
+                  flatten (wrap_in_bg "diff.added" (seq [(tag "start.diff.added"
+                      (str "b")); str ", "; str "a"; (tag "end.diff.added" (str ","));
+                      str " "; str "c"; str " : nat"]))
   ] in
 
   let hyps_diff_list = diff_hyps o_line_idents !o_hyp_map n_line_idents !n_hyp_map in
@@ -292,14 +304,13 @@ let t () =
 let _ = add_test "diff_hyps compacted with join" t
 
 (* b, a, c : nat ->
-   a : foo
-   b : bar
+   a : uint
+   b : int
    c : nat
 DIFFS
-   a : nat (remove nat)
-   a : foo (add foo)
-   b : nat (remove nat)
-   b : bar (add bar)
+   b, a, c : nat (remove b,a,)
+   a : uint (add uint)
+   b : int (add int)
    c : nat
  is this a realistic use case? *)
 let t () =
@@ -309,13 +320,14 @@ let t () =
   add_entries o_hyp_map ["b"; "a"; "c"] (str " : nat");
   let n_line_idents = [ ["a"]; ["b"]; ["c"]] in
   let n_hyp_map = ref CString.Map.empty in
-  add_entries n_hyp_map ["a"] (str " : foo");
-  add_entries n_hyp_map ["b"] (str " : bar");
+  add_entries n_hyp_map ["a"] (str " : uint");
+  add_entries n_hyp_map ["b"] (str " : int");
   add_entries n_hyp_map ["c"] (str " : nat");
-  let expected = [flatten (wrap_in_bg "diff.removed" (seq [str "a"; str " : "; (tag "diff.removed" (str "nat"))]));
-                  flatten (wrap_in_bg "diff.added" (seq [str "a"; str " : "; (tag "diff.added" (str "foo"))]));
-                  flatten (wrap_in_bg "diff.removed" (seq [str "b"; str " : "; (tag "diff.removed" (str "nat"))]));
-                  flatten (wrap_in_bg "diff.added" (seq [str "b"; str " : "; (tag "diff.added" (str "bar"))]));
+  let expected = [flatten (wrap_in_bg "diff.removed" (seq [(tag "start.diff.removed"
+                      (str "b")); str ", "; str "a"; (tag "end.diff.removed" (str ","));
+                      str " "; str "c"; str " : nat"]));
+                  flatten (wrap_in_bg "diff.added" (seq [str "a"; str " : "; (tag "diff.added" (str "uint"))]));
+                  flatten (wrap_in_bg "diff.added" (seq [str "b"; str " : "; (tag "diff.added" (str "int"))]));
                   flatten (seq [str "c"; str " : nat"])
   ] in
 
@@ -329,6 +341,38 @@ let t () =
       expected hyps_diff_list
 let _ = add_test "diff_hyps compacted with split" t
 
+(* i : nat
+   b : bool
+   j : nat ->
+   i, j : nat
+DIFFS
+   b : bool (removed)
+   i, j : nat
+*)
+let t () =
+  write_diffs_option "removed";   (* turn on "removed" option *)
+  let o_line_idents = [ ["i"]; ["b"]; ["j"] ] in
+  let o_hyp_map = ref CString.Map.empty in
+  add_entries o_hyp_map ["i"] (str " : nat");
+  add_entries o_hyp_map ["b"] (str " : bool");
+  add_entries o_hyp_map ["j"] (str " : nat");
+  let n_line_idents = [ ["i"; "j"]] in
+  let n_hyp_map = ref CString.Map.empty in
+  add_entries n_hyp_map ["i"; "j"] (str " : nat");
+  let expected = [flatten (wrap_in_bg "diff.removed"
+                      (seq [tag "start.diff.removed" (str "b"); tag "end.diff.removed" (str " : bool")]));
+                  flatten (seq [str "i"; str ", "; str "j"; str " : nat"])
+  ] in
+
+  let hyps_diff_list = diff_hyps o_line_idents !o_hyp_map n_line_idents !n_hyp_map in
+
+  (* print_list hyps_diff_list; *)
+  (* db_print_list hyps_diff_list; *)
+
+  List.iter2 (fun exp act ->
+      assert_equal ~msg:"added"   ~printer:db_string_of_pp exp (flatten act))
+      expected hyps_diff_list
+let _ = add_test "diff_hyps removal causes compaction from #14577" t
 
 (* other potential tests
 coqtop/terminal formatting BLOCKED: CAN'T GET TAGS IN FORMATTER

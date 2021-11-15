@@ -201,7 +201,8 @@ let process_goal_diffs diff_goal_map oldp nsigma ng =
     | None -> None
   in
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
-  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng; Interface.goal_name = name }
+  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
+    Interface.goal_id = Goal.uid ng; Interface.goal_name = name }
 
 let export_pre_goals Proof.{ sigma; goals; stack } process =
   let process = List.map (process sigma) in

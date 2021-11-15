@@ -1043,7 +1043,7 @@ let print_and_diff oldp newp =
       else
         pr_open_subgoals ~proof
     in
-    Feedback.msg_notice output;;
+    Feedback.msg_notice output
 
 let pr_typing_flags flags =
   str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
