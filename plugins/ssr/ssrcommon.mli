@@ -18,7 +18,6 @@ open Constrexpr
 open Ssrast
 
 open Ltac_plugin
-open Genarg
 
 open Ssrmatching_plugin
 
@@ -134,9 +133,6 @@ val interp_term :
   Environ.env -> Evd.evar_map ->
   Tacinterp.interp_sign ->
     ssrterm -> evar_map * EConstr.t
-
-val interp_wit :
-  ('a, 'b, 'c) genarg_type -> ist -> goal sigma -> 'b -> evar_map * 'c
 
 val interp_hyp : ist -> env -> evar_map -> ssrhyp -> ssrhyp
 val interp_hyps : ist -> goal sigma -> ssrhyps -> evar_map * ssrhyps
