@@ -695,13 +695,23 @@ sort :math:`s`.
 
    :math:`A→ \Set` and :math:`∀ A:\Prop,~A→ \Prop` are arities.
 
+..
+   Convention in describing inductive types:
+   k is the number of inductive types (I_i : forall params, A_i)
+   n is the number of constructors in the whole block (c_i : forall params, C_i)
+   r is the number of parameters
+   l is the size of the context of parameters (p_i : P_i)
+   m is the number of recursively non-uniform parameters among parameters
+   s is the number of indices
+   q = r+s is the number of parameters and indices
+
 
 Type of constructor
 +++++++++++++++++++
 We say that :math:`T` is a *type of constructor of* :math:`I` in one of the following
 two cases:
 
-+ :math:`T` is :math:`(I~t_1 … t_n )`
++ :math:`T` is :math:`(I~t_1 … t_q )`
 + :math:`T` is :math:`∀ x:U,~T'` where :math:`T'` is also a type of constructor of :math:`I`
 
 .. example::
@@ -715,44 +725,51 @@ Positivity Condition
 ++++++++++++++++++++
 
 The type of constructor :math:`T` will be said to *satisfy the positivity
-condition* for a constant :math:`X` in the following cases:
+condition* for a set of constants :math:`X_1 … X_k` in the following cases:
 
-+ :math:`T=(X~t_1 … t_n )` and :math:`X` does not occur free in any :math:`t_i`
-+ :math:`T=∀ x:U,~V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
-  satisfies the positivity condition for :math:`X`.
++ :math:`T=(X_j~t_1 … t_q )` for some :math:`j` and no :math:`X_1 … X_k` occur free in any :math:`t_i`
++ :math:`T=∀ x:U,~V` and :math:`X_1 … X_k` occur only strictly positively in :math:`U` and the type :math:`V`
+  satisfies the positivity condition for :math:`X_1 … X_k`.
 
 Strict positivity
 +++++++++++++++++
 
-The constant :math:`X` *occurs strictly positively* in :math:`T` in the following
+The constants :math:`X_1 … X_k` *occur strictly positively* in :math:`T` in the following
 cases:
 
 
-+ :math:`X` does not occur in :math:`T`
-+ :math:`T` converts to :math:`(X~t_1 … t_n )` and :math:`X` does not occur in any of :math:`t_i`
-+ :math:`T` converts to :math:`∀ x:U,~V` and :math:`X` does not occur in type :math:`U` but occurs
-  strictly positively in type :math:`V`
-+ :math:`T` converts to :math:`(I~a_1 … a_m~t_1 … t_p )` where :math:`I` is the name of an
++ no :math:`X_1 … X_k` occur in :math:`T`
++ :math:`T` converts to :math:`(X_j~t_1 … t_q )` for some :math:`j` and no :math:`X_1 … X_k` occur in any of :math:`t_i`
++ :math:`T` converts to :math:`∀ x:U,~V` and :math:`X_1 … X_k` occur
+  strictly positively in type :math:`V` but none of them occur in :math:`U`
++ :math:`T` converts to :math:`(I~a_1 … a_r~t_1 … t_s )` where :math:`I` is the name of an
   inductive definition of the form
 
   .. math::
-     \ind{m}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_n}
+     \ind{r}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_r :P_r ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_r :P_r ,~C_n}
 
   (in particular, it is
-  not mutually defined and it has :math:`m` parameters) and :math:`X` does not occur in
-  any of the :math:`t_i`, and the (instantiated) types of constructor
-  :math:`\subst{C_i}{p_j}{a_j}_{j=1… m}` of :math:`I` satisfy the nested positivity condition for :math:`X`
+  not mutually defined and it has :math:`r` parameters) and no :math:`X_1 … X_k` occur in
+  any of the :math:`t_i` nor in any of the :math:`a_j` for :math:`m < j ≤ r` where :math:`m ≤ r`
+  is the number of recursively uniform parameters, and the (instantiated) types of constructor
+  :math:`\subst{C_i}{p_j}{a_j}_{j=1… m}` of :math:`I` satisfy the nested positivity condition for :math:`X_1 … X_k`
 
 Nested Positivity
 +++++++++++++++++
 
-The type of constructor :math:`T` of :math:`I` *satisfies the nested positivity
-condition* for a constant :math:`X` in the following cases:
+If :math:`I` is a non-mutual inductive type with :math:`r`
+parameters, then,
+the type of constructor :math:`T` of :math:`I` *satisfies the nested
+positivity condition* for a set of constants :math:`X_1 … X_k` in the following
+cases:
 
-+ :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive type with :math:`m`
-  parameters and :math:`X` does not occur in any :math:`u_i`
-+ :math:`T=∀ x:U,~V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
-  satisfies the nested positivity condition for :math:`X`
++ :math:`T=(I~b_1 … b_r~u_1 … u_s)` and no :math:`X_1 … X_k` occur in
+  any :math:`u_i` nor in
+  any of the :math:`b_j` for :math:`m < j ≤ r` where :math:`m ≤ r` is
+  the number of recursively uniform parameters
+
++ :math:`T=∀ x:U,~V` and :math:`X_1 … X_k` occur only strictly positively in :math:`U` and the type :math:`V`
+  satisfies the nested positivity condition for :math:`X_1 … X_k`
 
 
 .. example::
@@ -800,14 +817,13 @@ such that :math:`Γ_I` is :math:`[I_1 :∀ Γ_P ,A_1 ;~…;~I_k :∀ Γ_P ,A_k]`
    \WFE{Γ_P}
    (E[Γ_I ;Γ_P ] ⊢ C_i : s_{q_i} )_{i=1… n}
    ------------------------------------------
-   \WF{E;~\ind{p}{Γ_I}{Γ_C}}{}
+   \WF{E;~\ind{l}{Γ_I}{Γ_C}}{}
 
 
 provided that the following side conditions hold:
 
     + :math:`k>0` and all of :math:`I_j` and :math:`c_i` are distinct names for :math:`j=1… k` and :math:`i=1… n`,
-    + :math:`p` is the number of parameters of :math:`\ind{p}{Γ_I}{Γ_C}` and :math:`Γ_P` is the
-      context of parameters,
+    + :math:`l` is the size of :math:`Γ_P` which is called the context of parameters,
     + for :math:`j=1… k` we have that :math:`A_j` is an arity of sort :math:`s_j` and :math:`I_j ∉ E`,
     + for :math:`i=1… n` we have that :math:`C_i` is a type of constructor of :math:`I_{q_i}` which
       satisfies the positivity condition for :math:`I_1 … I_k` and :math:`c_i ∉  E`.

@@ -201,7 +201,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
   (** Positivity of one argument [c] of a constructor (i.e. the
       constructor [cn] has a type of the shape [… -> c … -> P], where,
       more generally, the arrows may be dependent). *)
-  let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c =
+  let rec check_strict_positivity (env, n, ntypes, ra_env as ienv) nmr c =
     let x,largs = decompose_app (whd_all env c) in
       match kind x with
         | Prod (na,b,d) ->
@@ -215,9 +215,9 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
               | None when chkpos ->
                   failwith_non_pos_list n ntypes [b]
               | None ->
-                  check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d
+                  check_strict_positivity (ienv_push_var ienv (na, b, mk_norec)) nmr d
               | Some b ->
-                  check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
+                  check_strict_positivity (ienv_push_var ienv (na, b, mk_norec)) nmr d)
         | Rel k ->
             (try let (ra,rarg) = List.nth ra_env (k-1) in
             let largs = List.map (whd_all env) largs in
@@ -238,12 +238,12 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
             (** If one of the inductives of the mutually inductive
                 block being defined appears in a parameter, then we
                 have a nested inductive type. The positivity is then
-                discharged to the [check_positive_nested] function. *)
+                discharged to the [check_positivity_nested] function. *)
             if List.for_all (noccur_between n ntypes) largs then (nmr,mk_norec)
-            else check_positive_nested ienv nmr (ind_kn, largs)
+            else check_positivity_nested ienv nmr (ind_kn, largs)
         | Const (c,_) when is_primitive_positive_container env c ->
           if List.for_all (noccur_between n ntypes) largs then (nmr,mk_norec)
-          else check_positive_nested_primitive ienv nmr (c, largs)
+          else check_positivity_nested_primitive ienv nmr (c, largs)
         | _err ->
             (** If an inductive of the mutually inductive block
                 appears in any other way, then the positivy check gives
@@ -254,14 +254,14 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
             then (nmr,mk_norec)
             else failwith_non_pos_list n ntypes (x::largs)
 
-  (** [check_positive_nested] handles the case of nested inductive
+  (** [check_positivity_nested] handles the case of nested inductive
       calls, that is, when an inductive types from the mutually
       inductive block is called as an argument of an inductive types
       (for the moment, this inductive type must be a previously
       defined types, not one of the types of the mutually inductive
       block being defined). *)
   (* accesses to the environment are not factorised, but is it worth? *)
-  and check_positive_nested (env,n,ntypes,_ra_env as ienv) nmr (((mind,_ as ind),u), largs) =
+  and check_positivity_nested (env,n,ntypes,_ra_env as ienv) nmr (((mind,_ as ind),u), largs) =
     let (mib,mip) = lookup_mind_specif env ind in
     let auxnrecpar = mib.mind_nparams_rec in
     let auxnnonrecpar = mib.mind_nparams - auxnrecpar in
@@ -303,20 +303,20 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
         in
           (nmr',(Rtree.mk_rec [|mk_paths (Nested (NestedInd ind)) irecargs|]).(0))
 
-  and check_positive_nested_primitive (env,n,ntypes,ra_env) nmr (c, largs) =
+  and check_positivity_nested_primitive (env,n,ntypes,ra_env) nmr (c, largs) =
     (* We model the primitive type c X1 ... Xn as if it had one constructor
        C : X1 -> ... -> Xn -> c X1 ... Xn
        The subterm relation is defined for each primitive in `inductive.ml`. *)
     let ra_env = List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
     let ienv = (env,n,ntypes,ra_env) in
-    let nmr',recargs = List.fold_left_map (check_pos ienv) nmr largs in
+    let nmr',recargs = List.fold_left_map (check_strict_positivity ienv) nmr largs in
     (nmr', (Rtree.mk_rec [| mk_paths (Nested (NestedPrimitive c)) [| recargs |] |]).(0))
 
   (** [check_constructors ienv check_head nmr c] checks the positivity
       condition in the type [c] of a constructor (i.e. that recursive
       calls to the inductives of the mutually inductive definition
       appear strictly positively in each of the arguments of the
-      constructor, see also [check_pos]). If [check_head] is [true],
+      constructor, see also [check_strict_positivity]). If [check_head] is [true],
       then the type of the fully applied constructor (the "head" of
       the type [c]) is checked to be the right (properly applied)
       inductive type. *)
@@ -329,7 +329,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
               let () = assert (List.is_empty largs) in
               if not recursive && not (noccur_between n ntypes b) then
                 raise (InductiveError Type_errors.BadEntry);
-              let nmr',recarg = check_pos ienv nmr b in
+              let nmr',recarg = check_strict_positivity ienv nmr b in
               let ienv' = ienv_push_var ienv (na,b,mk_norec) in
                 check_constr_rec ienv' nmr' (recarg::lrec) d
           | hd ->
