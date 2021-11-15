@@ -17,7 +17,7 @@ open Evd
 
 (** TODO: Move those definitions somewhere sensible *)
 
-val ltac_trace_info : ltac_trace Exninfo.t
+val ltac_trace_info : ltac_stack Exninfo.t
 
 (** This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -30,10 +30,11 @@ type debug_info =
 
 (** Prints the state and waits *)
 val debug_prompt :
-  int -> glob_tactic_expr -> (debug_info -> 'a Proofview.tactic) -> 'a Proofview.tactic
+  int -> glob_tactic_expr -> (debug_info -> 'a Proofview.tactic) ->
+  Geninterp.Val.t Id.Map.t -> Tacexpr.ltac_trace option -> 'a Proofview.tactic
 
 (** Initializes debugger *)
-val db_initialize : unit Proofview.NonLogical.t
+val db_initialize : bool -> unit Proofview.NonLogical.t
 
 (** Prints a constr *)
 val db_constr : debug_info -> env -> evar_map -> constr -> unit Proofview.NonLogical.t
@@ -74,9 +75,18 @@ val explain_logic_error_no_anomaly : exn -> Pp.t
 (** Prints a logic failure message for a rule *)
 val db_logic_failure : debug_info -> exn -> unit Proofview.NonLogical.t
 
-(** Prints a logic failure message for a rule *)
+(** Check for/process idtac breakpoint *)
 val db_breakpoint : debug_info ->
   lident message_token list -> unit Proofview.NonLogical.t
 
 val extract_ltac_trace :
-  ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.t Loc.located
+  ?loc:Loc.t -> Tacexpr.ltac_stack -> Pp.t Loc.located
+
+(** Prints a message only if debugger stops at the next step *)
+val defer_output : (unit -> Pp.t) -> unit Proofview.NonLogical.t
+
+(** Push a trace chunk (multiple frames) onto the trace chunk stack *)
+val push_chunk : ltac_trace -> unit
+
+(** Pop a trace chunk (multiple frames) from the trace chunk stack *)
+val pop_chunk : unit -> unit

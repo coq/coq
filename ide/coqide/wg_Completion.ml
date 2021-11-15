@@ -129,7 +129,7 @@ class completion_provider buffer coqtop =
         let query = Coq.bind (get_semantic_completion w synt) next in
         (* If coqtop is computing, do the syntactic completion altogether *)
         let occupied () = update synt in
-        Coq.try_grab coqtop query occupied
+        ignore @@ Coq.try_grab coqtop query occupied
 
     method matched ctx = !active
 

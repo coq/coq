@@ -27,6 +27,12 @@ class type control =
 type errpage = (int * string) list page
 type jobpage = string CString.Map.t page
 
+type breakpoint = {
+  mark_id : string;
+  mutable prev_byte_offset : int; (* UTF-8 byte offset for Coq *)
+  mutable prev_uni_offset : int;  (* unicode offset for GTK *)
+}
+
 type session = {
   buffer : GText.buffer;
   script : Wg_ScriptView.script_view;
@@ -38,14 +44,23 @@ type session = {
   coqtop : Coq.coqtop;
   command : Wg_Command.command_window;
   finder : Wg_Find.finder;
+  debugger : Wg_Debugger.debugger_view;
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
+  sid : int;
+  basename : string;
   mutable control : control;
+  mutable abs_file_name : string option;
+  mutable debug_stop_pt : (session * int * int) option;
+  mutable breakpoints : breakpoint list;
+  mutable last_db_goals : Pp.t
 }
 
 (** [create filename coqtop_args] *)
 val create : string option -> string list -> session
+
+val to_abs_file_name : string -> string
 
 val kill : session -> unit
 

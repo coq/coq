@@ -76,9 +76,13 @@ let ide_doc = ref None
 let get_doc () = Option.get !ide_doc
 let set_doc doc = ide_doc := Some doc
 
-let add ((s,eid),(sid,verbose)) =
+let add ((((s,eid),(sid,verbose)),off),(line_nb,bol_pos)) =
   let doc = get_doc () in
-  let pa = Pcoq.Parsable.make (Stream.of_string s) in
+  let open Loc in
+  (* note: this won't yield correct values for bol_pos_last,
+     but the debugger doesn't use that *)
+  let loc = { (initial ToplevelInput) with bp=off; line_nb } in
+  let pa = Pcoq.Parsable.make ~loc (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s may not be empty *)
   | Some ast ->
@@ -87,7 +91,7 @@ let add ((s,eid),(sid,verbose)) =
     let rc = match rc with Stm.NewAddTip -> CSig.Inl () | Stm.Unfocus id -> CSig.Inr id in
     ide_cmd_warns ~id:newid ast;
     (* All output is sent through the feedback mechanism rather than stdout/stderr *)
-    newid, (rc, "")
+    newid, rc
 
 let edit_at id =
   let doc = get_doc () in
@@ -361,10 +365,33 @@ let proof_diff (diff_opt, sid) =
       let old = Stm.get_prev_proof ~doc sid in
       Proof_diffs.diff_proofs ~diff_opt ?old proof
 
-let debug_cmd = ref ""
+let debug_cmd = ref DebugHook.Action.Ignore
 
 let db_cmd cmd =
-  debug_cmd := cmd
+  debug_cmd := DebugHook.Action.Command cmd
+
+let db_continue opt =
+  let open DebugHook.Action in
+  debug_cmd := match opt with
+  | Interface.StepIn -> StepIn
+  | Interface.StepOver -> StepOver
+  | Interface.StepOut -> StepOut
+  | Interface.Continue -> Continue
+  | Interface.Interrupt -> Interrupt
+
+let db_upd_bpts updates =
+  debug_cmd := DebugHook.Action.UpdBpts updates
+
+let db_stack () =
+  debug_cmd := DebugHook.Action.GetStack;
+  []  (* return value passed through DebugHook.Answer *)
+
+let db_vars framenum =
+  debug_cmd := DebugHook.Action.GetVars framenum;
+  []  (* return value passed through DebugHook.Answer *)
+
+let db_configd () =
+  debug_cmd := DebugHook.Action.Configd
 
 let get_options () =
   let table = Goptions.get_tables () in
@@ -455,7 +482,12 @@ let eval_call c =
     Interface.status = interruptible status;
     Interface.search = interruptible search;
     Interface.proof_diff = interruptible proof_diff;
-    Interface.db_cmd = interruptible db_cmd;   (* todo: interruptible or not? *)
+    Interface.db_cmd = db_cmd;
+    Interface.db_upd_bpts = db_upd_bpts;
+    Interface.db_continue = db_continue;
+    Interface.db_stack = db_stack;
+    Interface.db_vars = db_vars;
+    Interface.db_configd = db_configd;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -527,11 +559,14 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
         pr_with_pid (Xml_printer.to_string_fmt xml_query);
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r  = eval_call q in
-      let () = pr_debug_answer q r in
-(*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
-      print_xml xml_oc Xmlprotocol.(of_answer (!msg_format ()) q r);
-      flush out_ch
+      let (send, r)  = eval_call q in
+      (* conditional send so that db_stack and db_vars can reply through DebugHook.Answer *)
+      if send then begin
+        let () = pr_debug_answer q r in
+  (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
+        print_xml xml_oc Xmlprotocol.(of_answer (!msg_format ()) q r);
+        flush out_ch
+      end
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
         pr_debug "End of input, exiting gracefully.";
@@ -551,30 +586,38 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
      xmlprotocol file doesn't depend on vernac thus it has no access
      to DebugHook data, we may want to fix that. *)
   let ltac_debug_answer ans =
-    let tag, msg =
-      let open DebugHook.Answer in
-      match ans with
-      | Prompt msg -> "prompt", msg
-      | Goal msg -> "goal", (str "Goal:" ++ fnl () ++ msg)
-      | Output msg -> "output", msg
+    let open DebugHook.Answer in
+    let open Xmlprotocol in
+    let xml = match ans with
+      | Prompt msg -> of_ltac_debug_answer ~tag:"prompt" msg
+      | Goal msg -> of_ltac_debug_answer ~tag:"goal" (str "Goal:" ++ fnl () ++ msg)
+      | Output msg -> of_ltac_debug_answer ~tag:"output" msg
+      | Init -> of_ltac_debug_answer ~tag:"init" (str "")
+      | Vars vars -> of_vars vars;
+      | Stack s -> of_stack s
     in
-    print_xml xml_oc Xmlprotocol.(of_ltac_debug_answer ~tag msg) in
+    print_xml xml_oc xml in
 
   (* XXX: no need to have a ref here *)
   let ltac_debug_parse () =
     let raw_cmd =
+      debug_cmd := DebugHook.Action.Ignore;
       process_xml_msg xml_ic xml_oc out_ch;
       !debug_cmd
     in
     let open DebugHook in
-    match Action.parse raw_cmd with
-    | Ok act -> act
-    | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
+    match raw_cmd with
+    | Action.Command cmd ->
+      (match Action.parse cmd with
+      | Ok act -> act
+      | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed)
+    | act -> act
   in
 
   DebugHook.Intf.(set
       { read_cmd = ltac_debug_parse
       ; submit_answer = ltac_debug_answer
+      ; isTerminal = false;
       });
 
   while not !quit do

@@ -16,10 +16,9 @@ val cb : GData.clipboard
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
 
-(* These two functions are equivalent, the latter is named following
-   glib schema, and exists in glib but is not in lablgtk2 *)
 val byte_offset_to_char_offset : string -> int -> int
-val glib_utf8_pos_to_offset : string -> off:int -> int
+val byte_off_to_buffer_off : GText.buffer -> int -> int
+val buffer_off_to_byte_off : GText.buffer -> int -> int
 
 type timer = { run : ms:int -> callback:(unit->bool) -> unit;
                kill : unit -> unit }
@@ -118,3 +117,7 @@ val encode_string_list : string list -> string
     quote or another backslash. *)
 
 val decode_string_list : string -> string list
+
+(** filter key event to keep only the interesting modifiers *)
+
+val filter_key : GdkEvent.Key.t -> Gdk.keysym * Gdk.Tags.modifier list

@@ -8,14 +8,23 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-class finder : string -> GText.view ->
+type stack_t = (string * (string * int list) option) list
+type vars_t = (string * Pp.t) list
+
+class type debugger_view =
   object
     method coerce : GObj.widget
+    method set_stack : stack_t -> unit
+    method set_vars : vars_t -> unit
     method hide : unit -> unit
     method show : unit -> unit
-    method replace : unit -> unit
-    method replace_all : unit -> unit
-    method find_backward : unit -> unit
-    method find_forward : unit -> unit
-    method setup_is_script_editable : (unit -> bool) -> unit
+    method set_forward_highlight_code : (string * int * int -> unit) -> unit
+    method set_forward_clear_db_highlight : (unit -> unit) -> unit
+    method set_forward_db_vars : (int -> unit) -> unit
+    method set_forward_paned_pos : (int -> unit) -> unit
+    method set_forward_get_basename : (unit -> string) -> unit
   end
+
+val debugger : string -> int -> debugger_view
+
+val forward_keystroke : (Gdk.keysym * Gdk.Tags.modifier list -> int -> bool) ref

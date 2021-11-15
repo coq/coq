@@ -17,13 +17,15 @@ sig
   val error_bg : GText.tag
   val to_process : GText.tag
   val processed : GText.tag
+  val breakpoint : GText.tag
+  val debugging : GText.tag
   val incomplete : GText.tag
   val unjustified : GText.tag
   val sentence : GText.tag
   val tooltip : GText.tag
   val edit_zone : GText.tag (* for debugging *)
   val ephemere : GText.tag list
-  val all : GText.tag list
+  val all_but_bpt : GText.tag list
 end
 
 module Proof :

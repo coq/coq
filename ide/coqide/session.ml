@@ -28,23 +28,38 @@ class type control =
 
 type errpage = (int * string) list page
 type jobpage = string CString.Map.t page
+type breakpoint = {
+  mark_id : string;
+  mutable prev_byte_offset : int; (* UTF-8 byte offset for Coq *)
+  (* prev_uni_offset may differ from mark#offset as the script is edited *)
+  mutable prev_uni_offset : int;  (* unicode offset for GTK *)
+}
 
 type session = {
   buffer : GText.buffer;
   script : Wg_ScriptView.script_view;
-  proof : Wg_ProofView.proof_view;
+  proof : Wg_ProofView.proof_view;   (* the proof context panel *)
   messages : Wg_RoutedMessageViews.message_views_router;
-  segment : Wg_Segment.segment;
+  segment : Wg_Segment.segment; (* color coded status bar near bottom of the screen *)
   fileops : FileOps.ops;
   coqops : CoqOps.ops;
   coqtop : Coq.coqtop;
-  command : Wg_Command.command_window;
-  finder : Wg_Find.finder;
+  command : Wg_Command.command_window; (* aka the Query Pane *)
+  finder : Wg_Find.finder; (* Find / Replace panel *)
+  debugger : Wg_Debugger.debugger_view;
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
+  sid : int;
+  basename : string;
   mutable control : control;
+  mutable abs_file_name : string option;
+  mutable debug_stop_pt : (session * int * int) option;
+  mutable breakpoints : breakpoint list;
+  mutable last_db_goals : Pp.t
 }
+
+let next_sid = ref 0
 
 let create_buffer () =
   let buffer = GSourceView3.source_buffer
@@ -101,6 +116,8 @@ let create_script coqtop source_buffer =
   point. At the end, the zone between the mark and the cursor is to be
   untagged and then retagged. *)
 
+let misc () = CDebug.(get_flag misc)
+
 let set_buffer_handlers
   (buffer : GText.buffer) script (coqops : CoqOps.ops) coqtop
 =
@@ -128,7 +145,7 @@ let set_buffer_handlers
         match !running_action with
         | Some aid when aid = action -> ()
         | _ -> cancel_signal ~stop_emit:false "Coq busy" in
-    Coq.try_grab coqtop action fallback in
+    ignore @@ Coq.try_grab coqtop action fallback in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let get_stop () = buffer#get_iter_at_mark (`NAME "stop_of_input") in
   let ensure_marks_exist () =
@@ -154,13 +171,13 @@ let set_buffer_handlers
       else None in
     aux it it#copy in
   let insert_cb it s = if String.length s = 0 then () else begin
-    Minilib.log ("insert_cb " ^ string_of_int it#offset);
+    if misc () then Minilib.log ("insert_cb " ^ string_of_int it#offset);
     let text_mark = add_mark it in
     let () = update_prev it in
     if it#has_tag Tags.Script.to_process then
-      cancel_signal "Altering the script being processed in not implemented"
+      cancel_signal "Altering the script being processed is not implemented"
     else if it#has_tag Tags.Script.incomplete then
-      cancel_signal "Altering the script being processed in not implemented"
+      cancel_signal "Altering the script being processed is not implemented"
     else if it#has_tag Tags.Script.processed then
       call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
     else if it#has_tag Tags.Script.error_bg then begin
@@ -171,7 +188,7 @@ let set_buffer_handlers
           call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
     end end in
   let delete_cb ~start ~stop =
-    Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
+    if misc () then Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
     let min_iter, max_iter =
       if start#compare stop < 0 then start, stop else stop, start in
     let () = update_prev min_iter in
@@ -193,17 +210,17 @@ let set_buffer_handlers
       else aux min_iter#forward_char in
     aux min_iter in
   let begin_action_cb () =
-    Minilib.log "begin_action_cb";
+    if misc () then Minilib.log "begin_action_cb";
     action_was_cancelled := false;
     no_coq_action_required := true;
     cur_action := new_action_id ();
     let where = get_insert () in
     buffer#move_mark (`NAME "prev_insert") ~where in
   let end_action_cb () =
-    Minilib.log "end_action_cb";
+    if misc () then Minilib.log "end_action_cb";
     ensure_marks_exist ();
     if not !action_was_cancelled then begin
-      (* If coq was asked to backtrack, the clenup must be done by the
+      (* If coq was asked to backtrack, the cleanup must be done by the
          backtrack_until function, since it may move the stop_of_input
          to a point indicated by coq. *)
       if !no_coq_action_required then begin
@@ -216,7 +233,7 @@ let set_buffer_handlers
   let mark_deleted_cb m =
     match GtkText.Mark.get_name m with
     | Some "insert" -> ()
-    | Some s -> Minilib.log (s^" deleted")
+    | Some s -> if misc () then Minilib.log (s^" deleted")
     | None -> ()
   in
   let mark_set_cb it m =
@@ -225,7 +242,7 @@ let set_buffer_handlers
     let () = Ideutils.display_location ins in
     match GtkText.Mark.get_name m with
     | Some "insert" -> ()
-    | Some s -> Minilib.log (s^" moved")
+    | Some s -> if misc () then Minilib.log (s^" moved")
     | None -> ()
   in
   (* Pluging callbacks *)
@@ -335,7 +352,7 @@ let create_jobpage coqtop coqops : jobpage =
         let row = store#get_iter tp in
         let w = store#get ~row ~column:(find_string_col "Worker" columns) in
         let info () = Minilib.log ("Coq busy, discarding query") in
-        Coq.try_grab coqtop (coqops#stop_worker w) info
+        ignore @@ Coq.try_grab coqtop (coqops#stop_worker w) info
       ) in
   let tip = GMisc.label ~text:"Double click to interrupt worker" () in
   let box = GPack.vbox ~homogeneous:false () in
@@ -375,39 +392,61 @@ let create_proof () =
   in
   proof
 
-let create_messages () =
-  let messages = Wg_MessageView.message_view () in
-  let _ = messages#misc#set_can_focus true in
-  Wg_RoutedMessageViews.message_views ~route_0:messages
-
 let dummy_control : control =
   object
     method detach () = ()
   end
 
+let to_abs_file_name f =
+  if Filename.is_relative f then Filename.concat (Unix.getcwd ()) f else f
+
 let create file coqtop_args =
-  let basename = match file with
-    |None -> "*scratch*"
-    |Some f -> Glib.Convert.filename_to_utf8 (Filename.basename f)
+  let (basename, abs_file_name) = match file with
+    | None -> ("*scratch*", None)
+    | Some f -> (Glib.Convert.filename_to_utf8 Filename.(remove_extension (basename f)),
+        Some (to_abs_file_name f))
   in
-  let coqtop = Coq.spawn_coqtop coqtop_args in
+  let coqtop = Coq.spawn_coqtop basename coqtop_args in
   let reset () = Coq.reset_coqtop coqtop in
   let buffer = create_buffer () in
   let script = create_script coqtop buffer in
+  Coq.setup_script_editable coqtop (fun v -> script#set_editable v;script#set_editable2 v);
   let proof = create_proof () in
+  incr next_sid;
+  let sid = !next_sid in
+  let create_messages () =
+    let messages = Wg_MessageView.message_view sid in
+    let _ = messages#misc#set_can_focus true in
+    Wg_RoutedMessageViews.message_views ~route_0:messages
+  in
   let messages = create_messages () in
   let segment = new Wg_Segment.segment () in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
+  finder#setup_is_script_editable (fun _ -> script#editable2);
+  let debugger = Wg_Debugger.debugger (Printf.sprintf "Debugger (%s)" basename) sid in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =
     new CoqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
-  let command = new Wg_Command.command_window basename coqtop cops messages in
+  let command = new Wg_Command.command_window basename coqtop cops messages sid in
   let errpage = create_errpage script in
   let jobpage = create_jobpage coqtop cops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
   let _ = Coq.set_reset_handler coqtop cops#handle_reset_initial in
   let _ = Coq.init_coqtop coqtop cops#initialize in
+  let tab_label = GMisc.label ~text:basename () in
+(*  todo: ugly custom tooltips...*)
+(*
+  tab_label#misc#set_size_request ~height:100 ~width:200 ();
+  tab_label#misc#modify_bg [`NORMAL, `NAME "#FF0000"];
+  (match abs_file_name with
+  | Some f ->
+    GtkBase.Widget.Tooltip.set_markup tab_label#as_widget
+      ("<span background=\"yellow\" foreground=\"black\">" ^ f ^ "</span>");
+    let label2 = GMisc.label ~text:"hello?" () in
+    GtkBase.Tooltip.set_custom (label2#coerce : Gtk.tooltip) label
+  | None -> ());
+*)
   {
     buffer = (buffer :> GText.buffer);
     script=script;
@@ -419,10 +458,17 @@ let create file coqtop_args =
     coqtop=coqtop;
     command=command;
     finder=finder;
-    tab_label= GMisc.label ~text:basename ();
+    debugger=debugger;
+    tab_label= tab_label;
     errpage=errpage;
     jobpage=jobpage;
+    sid=sid;
+    basename = basename;
     control = dummy_control;
+    abs_file_name = abs_file_name;
+    debug_stop_pt = None;
+    breakpoints = [];
+    last_db_goals = Pp.mt ()
   }
 
 let kill (sn:session) =
@@ -436,12 +482,18 @@ let kill (sn:session) =
 let window_size = ref (window_width#get, window_height#get)
 
 let build_layout (sn:session) =
-  let session_paned = GPack.paned `VERTICAL () in
+  let debugger_paned = GPack.paned `VERTICAL () in
+  let debugger_box =
+    GPack.vbox ~packing:(debugger_paned#pack2 ~shrink:false ~resize:true) ()
+  in
+
+  let session_paned = GPack.paned `VERTICAL
+    ~packing:(debugger_paned#pack1 ~shrink:false ~resize:true) () in
   let session_box =
     GPack.vbox ~packing:(session_paned#pack1 ~shrink:false ~resize:true) ()
   in
 
-  (* Right part of the window. *)
+  (* Left part of the window. *)
 
   let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
     ~packing:(session_box#pack ~expand:true) () in
@@ -449,6 +501,9 @@ let build_layout (sn:session) =
     ~packing:(eval_paned#pack1 ~shrink:false) () in
   let script_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
+
+  (* Right part of the window *)
+
   let state_paned = GPack.paned `VERTICAL
     ~packing:(eval_paned#pack2 ~shrink:true) () in
 
@@ -526,7 +581,13 @@ let build_layout (sn:session) =
     if estimated_horizontal_handle_position > 0 then
       state_paned#set_position estimated_horizontal_handle_position in
   session_box#pack sn.finder#coerce;
-  session_box#pack sn.segment#coerce;
+  debugger_box#add sn.debugger#coerce;
+  sn.debugger#hide ();
+  (sn.messages#route 0)#set_forward_show_debugger sn.debugger#show;
+  sn.debugger#set_forward_paned_pos (fun pos -> debugger_paned#set_position pos);
+  (* segment should not be in the debugger box *)
+  debugger_box#pack ~expand:false ~fill:false sn.segment#coerce;
+  debugger_paned#set_position 1000000;
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
@@ -554,4 +615,4 @@ let build_layout (sn:session) =
     end
   in
   let () = sn.control <- control in
-  (Some session_tab#coerce,None,session_paned#coerce)
+  (Some session_tab#coerce,None,debugger_paned#coerce)

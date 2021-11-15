@@ -39,8 +39,13 @@ val print_ast   : print_ast_sty   -> print_ast_rty call
 val annotate    : annotate_sty    -> annotate_rty call
 val proof_diff  : proof_diff_sty  -> proof_diff_rty call
 val db_cmd      : db_cmd_sty      -> db_cmd_rty call
+val db_upd_bpts : db_upd_bpts_sty -> db_upd_bpts_rty call
+val db_continue : db_continue_sty -> db_continue_rty call
+val db_stack    : db_stack_sty    -> db_stack_rty call
+val db_vars     : db_vars_sty     -> db_vars_rty call
+val db_configd  : db_configd_sty  -> db_configd_rty call
 
-val abstract_eval_call : handler -> 'a call -> 'a value
+val abstract_eval_call : handler -> 'a call -> bool * 'a value
 
 (** * Protocol version *)
 
@@ -81,3 +86,9 @@ val to_feedback : xml -> Feedback.feedback
 (** * Serialization of debugger output *)
 val of_ltac_debug_answer : tag:string -> Pp.t -> xml
 val to_ltac_debug_answer : xml -> string * Pp.t
+
+(** * reply for db_vars message *)
+val of_vars : (string * Pp.t) list -> xml
+
+(** * reply for db_stack message *)
+val of_stack : (string * (string * int list) option) list -> xml

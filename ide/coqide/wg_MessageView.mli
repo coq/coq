@@ -24,17 +24,19 @@ class type message_view =
     method add : Pp.t -> unit
     method add_string : string -> unit
     method set : Pp.t -> unit
-    method refresh : bool -> unit
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
 
-    (** In use by the ltac debugger *)
     method debug_prompt : Pp.t -> unit
-
     method has_selection : bool
     method get_selected_text : string
+    method editable2 : bool
+    method set_editable2 : bool -> unit
+    method set_forward_send_db_cmd : (string -> unit) -> unit
+    method set_forward_send_db_stack : (unit -> unit) -> unit
+    method set_forward_show_debugger : (unit -> unit) -> unit
   end
 
-val message_view : unit -> message_view
+val message_view : int -> message_view
 
-val forward_send_db_cmd : (string -> unit) ref
+val forward_keystroke : (Gdk.keysym * Gdk.Tags.modifier list -> int -> bool) ref

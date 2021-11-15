@@ -58,6 +58,10 @@ object(self)
 
   method current_term =
     List.nth term_list super#current_page
+
+  method goto_term term =
+    List.iteri (fun i sn -> if sn == term then self#goto_page i) term_list
+
 end
 
 let create make kill =

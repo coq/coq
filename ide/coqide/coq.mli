@@ -21,6 +21,15 @@ type coqtop
     abrupt failure. It is also called when explicitly requesting coqtop to
     reset. *)
 
+type status = New | Ready | Busy | Closed
+(** Coqtop process status :
+  - New    : a process has been spawned, but not initialized via [init_coqtop].
+             It will reject tasks given via [try_grab].
+  - Ready  : no current task, accepts new tasks via [try_grab].
+  - Busy   : has accepted a task via [init_coqtop] or [try_grab],
+  - Closed : the coqide buffer has been closed, we discard any further task.
+*)
+
 type 'a task
 (** Coqtop tasks.
 
@@ -59,8 +68,20 @@ type reset_kind = Planned | Unexpected
 val is_computing : coqtop -> bool
 (** Check if coqtop is computing, i.e. already has a current task *)
 
-val spawn_coqtop : string list -> coqtop
+val is_stopped_in_debugger : coqtop -> bool
+(** Returns true if coqtop is stopped in the debugger *)
+
+val is_ready_or_stopped_in_debugger : coqtop -> bool
+(** Check if coqtop is Ready or stopped in the debugger *)
+
+val set_stopped_in_debugger : coqtop -> bool -> unit
+(** Records whether coqtop is stopped in the debugger *)
+
+val spawn_coqtop : string -> string list -> coqtop
 (** Create a coqtop process with some command-line arguments. *)
+
+val set_restore_bpts : coqtop -> (unit -> unit) -> unit
+(** Register callback to restore breakpoints after a session has been reset *)
 
 val set_reset_handler : coqtop -> unit task -> unit
 (** Register a handler called when a coqtop dies (badly or on purpose) *)
@@ -71,12 +92,19 @@ val set_feedback_handler : coqtop -> (Feedback.feedback -> unit) -> unit
 val set_debug_prompt_handler : coqtop -> (tag:string -> Pp.t -> unit) -> unit
 (** Register a handler called when the Ltac debugger sends a feedback message *)
 
+val add_do_when_ready : coqtop -> (unit -> unit) -> unit
+(** Register a function to be called when coqtop becomes Ready *)
+
+val setup_script_editable : coqtop -> (bool -> unit) -> unit
+(** Register setter function to make proof script panel editable or not,
+    e.g. to disable editing while any non-debugger message is being processed *)
+
 val init_coqtop : coqtop -> unit task -> unit
 (** Finish initializing a freshly spawned coqtop, by running a first task on it.
     The task should run its inner continuation at the end. *)
 
-val break_coqtop : coqtop -> string list -> unit
-(** Interrupt the current computation of coqtop or the worker if coqtop it not running. *)
+val interrupt_coqtop : coqtop -> string list -> unit
+(** Terminate the current computation of coqtop or the worker if coqtop is not running. *)
 
 val close_coqtop : coqtop -> unit
 (** Close coqtop. Subsequent requests will be discarded. Hook ignored. *)
@@ -96,10 +124,10 @@ val gio_channel_of_descr_socket : (Unix.file_descr -> Glib.Io.channel) ref
 
 (** {5 Task processing} *)
 
-val try_grab : ?db:bool -> coqtop -> unit task -> (unit -> unit) -> unit
+val try_grab : ?db:bool -> coqtop -> unit task -> (unit -> unit) -> bool
 (** Try to schedule a task on a coqtop. If coqtop is available, the task
     callback is run (asynchronously), otherwise the [(unit->unit)] callback
-    is triggered.
+    is triggered.  Returns true if the task is run.
     - If coqtop ever dies during the computation, this function restarts coqtop
       and calls the restart hook with the fresh coqtop.
     - If the argument function raises an exception, a coqtop reset occurs.
@@ -132,6 +160,11 @@ val search     : Interface.search_sty     -> Interface.search_rty query
 val init       : Interface.init_sty       -> Interface.init_rty query
 val proof_diff : Interface.proof_diff_sty -> Interface.proof_diff_rty query
 val db_cmd     : Interface.db_cmd_sty     -> Interface.db_cmd_rty query
+val db_upd_bpts: Interface.db_upd_bpts_sty-> Interface.db_upd_bpts_rty query
+val db_continue: Interface.db_continue_sty-> Interface.db_continue_rty query
+val db_stack   : Interface.db_stack_sty   -> Interface.db_stack_rty query
+val db_vars    : Interface.db_vars_sty    -> Interface.db_vars_rty query
+val db_configd : Interface.db_configd_sty -> Interface.db_configd_rty query
 
 val stop_worker: Interface.stop_worker_sty-> Interface.stop_worker_rty query
 
@@ -183,6 +216,9 @@ val check_connection : string list -> unit
     may terminate coqide in case of trouble *)
 
 val interrupter : (int -> unit) ref
+val breaker : (int -> unit) ref
+val send_break : coqtop -> unit
+
 val save_all : (unit -> unit) ref
 
 (* Flags to be used for ideslave *)
