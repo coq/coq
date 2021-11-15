@@ -349,11 +349,11 @@ partial applications, the synthesis of implicit arguments may fail, so
 one may have to explicitly give certain implicit arguments of an
 application.
 
-To instantiate a dependent implicit arguments, use the :n:`(@ident := @term)` form of :token:`arg`,
+To instantiate a dependent implicit argument, use the :n:`(@ident := @term)` form of :token:`arg`,
 where :token:`ident` is the name of the implicit argument and :token:`term`
 is its corresponding explicit term.
 
-To instantiate a non-dependent implicit arguments, use the :n:`(@natural := @term)` form of :token:`arg`,
+To instantiate a non-dependent implicit argument, use the :n:`(@natural := @term)` form of :token:`arg`,
 where :token:`natural` is the index of the implicit argument among all
 non-dependent arguments of the function (implicit or not, and starting
 from 1) and :token:`term` is its corresponding explicit term.
@@ -383,16 +383,16 @@ the hiding of implicit arguments for a single function application using the
 .. exn:: Wrong argument position
    :undocumented:
 
-.. exn:: Argument at position :n:`@natural` is mentioned more than once
+.. exn:: Argument at position @natural is mentioned more than once
    :undocumented:
 
 .. exn:: Arguments given by name or position not supported in explicit mode
    :undocumented:
 
-.. exn:: Not enough non implicit arguments to accept the argument bound to :n:`@ident`
+.. exn:: Not enough non implicit arguments to accept the argument bound to @ident
    :undocumented:
 
-.. exn:: Not enough non implicit arguments to accept the argument bound to :n:`@natural`
+.. exn:: Not enough non implicit arguments to accept the argument bound to @natural
    :undocumented:
 
 .. _displaying-implicit-args:
