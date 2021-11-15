@@ -1659,7 +1659,6 @@ simple_tactic: [
 | "head_of_constr" ident constr
 | "not_evar" constr
 | "is_ground" constr
-| "autoapply" constr "using" preident
 | "autoapply" constr "with" preident
 | "progress_evars" tactic
 | "decide" "equality"
