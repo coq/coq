@@ -32,14 +32,11 @@
   that they fix this.
 - [ ] Make sure that this change is merged in time for the branching
   date.
-
-## On the branching date ##
-
-- [ ] In a PR on `master`, change the version name to the next major
-  version and both magic numbers in
+- [ ] Prepare a PR on `master` (not yet to be merged) changing the
+  version name to the next major version and both magic numbers in
   [`tools/configure/configure.ml`](../../tools/configure/configure.ml).
-  For example, for `8.5`, the version name will be `8.5+alpha` while the
-  magic numbers will end with `80490`.
+  For example, for `8.5`, the version name will be `8.5+alpha` while
+  the magic numbers will end with `80490`.
 
   Additionally, in the same commit, update the compatibility
   infrastructure, which consists of invoking
@@ -47,9 +44,15 @@
   `--master` flag.
 
   Note that the `update-compat.py` script must be run twice: once in
-  preparation of the release with the `--release` flag (see previous
-  section) and once on the branching date with the `--master` flag to
-  mark the start of the next version.
+  preparation of the release with the `--release` flag (see earlier in
+  this section) and once on the branching date with the `--master`
+  flag to mark the start of the next version.
+
+  This PR should be opened before the branching date to have time to
+  deal with CI issues, but should not be merged until branching.
+
+## On the branching date ##
+
 - [ ] Merge the above PR and create the `vX.X` branch from the last
   merge commit before this one (using this name will ensure that the
   branch will be automatically protected).
