@@ -14,11 +14,6 @@ open Ltac_plugin
 open Stdarg
 open Tacarg
 
-let warn_deprecated_Spec =
-  CWarnings.create ~name:"deprecated-Zify-Spec" ~category:"deprecated"
-    (fun () ->
-      Pp.strbrk ("Show Zify Spec is deprecated. Use either \"Show Zify BinOpSpec\" or \"Show Zify UnOpSpec\"."))
-
 }
 
 DECLARE PLUGIN "zify_plugin"
