@@ -725,7 +725,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
       (* if Not_found, returning None treats the goal as new and it will be diff highlighted;
          returning Some { it = g; sigma = sigma } will compare the new goal
          to itself and it won't be highlighted *)
-      (try Some { it = GoalMap.find g diff_goal_map; sigma = osigma }
+      (try Some (GoalMap.find g diff_goal_map, osigma)
       with Not_found -> None)
     | None -> None
   in

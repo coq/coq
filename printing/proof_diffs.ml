@@ -249,8 +249,6 @@ let goal_repr sigma g =
   let ty  = Evd.evar_concl evi in
   (env, ty)
 
-(* XXX: Very unfortunately we cannot use the Proofview interface as
-   Proof is still using the "legacy" one. *)
 let process_goal_concl sigma g : EConstr.t * Environ.env =
   let (env, ty) = goal_repr sigma g in
   (ty, env)
@@ -280,9 +278,8 @@ let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
   pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
 
 let diff_concl ?og_s nsigma ng =
-  let open Evd in
   let o_concl_pp = match og_s with
-    | Some { it=og; sigma=osigma } ->
+    | Some (og, osigma) ->
       let (oty, oenv) = process_goal_concl osigma og in
       pp_of_type oenv osigma oty
     | None -> Pp.mt()
@@ -357,10 +354,7 @@ let hyp_list_to_pp hyps =
 
 let unwrap g_s =
   match g_s with
-  | Some g_s ->
-    let goal = Evd.sig_it g_s in
-    let sigma = Tacmach.Old.project g_s in
-    goal_info goal sigma
+  | Some (goal, sigma) -> goal_info goal sigma
   | None -> ([], CString.Map.empty, Pp.mt ())
 
 let diff_goal_ide og_s ng nsigma =
@@ -583,7 +577,8 @@ let match_goals ot nt =
 
 let get_proof_context (p : Proof.t) =
   let Proof.{goals; sigma} = Proof.data p in
-  sigma, Tacmach.Old.pf_env { Evd.it = List.(hd goals); sigma }
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma (List.hd goals)) in
+  sigma, env
 
 let to_constr pf =
   let open CAst in
