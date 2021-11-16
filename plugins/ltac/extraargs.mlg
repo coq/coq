@@ -234,14 +234,6 @@ let interp_place ist env sigma = function
 
 let subst_place subst pl = pl
 
-let warn_deprecated_instantiate_syntax =
-  CWarnings.create ~name:"deprecated-instantiate-syntax" ~category:"deprecated"
-         (fun (v,v',id) ->
-           let s = Id.to_string id in
-           Pp.strbrk
-             ("Syntax \"in (" ^ v ^ " of " ^ s ^ ")\" is deprecated; use \"in (" ^ v' ^ " of " ^ s ^ ")\".")
-         )
-
 }
 
 ARGUMENT EXTEND hloc
@@ -257,12 +249,6 @@ ARGUMENT EXTEND hloc
     { ConclLocation () }
 | [ "in" ident(id) ] ->
     { HypLocation ((CAst.make id),InHyp) }
-| [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    { warn_deprecated_instantiate_syntax ("Type","type",id);
-      HypLocation ((CAst.make id),InHypTypeOnly) }
-| [ "in" "(" "Value" "of" ident(id) ")" ] ->
-    { warn_deprecated_instantiate_syntax ("Value","value",id);
-      HypLocation ((CAst.make id),InHypValueOnly) }
 | [ "in" "(" "type" "of" ident(id) ")" ] ->
     { HypLocation ((CAst.make id),InHypTypeOnly) }
 | [ "in" "(" "value" "of" ident(id) ")" ] ->

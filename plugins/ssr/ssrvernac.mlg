@@ -28,7 +28,6 @@ open Pp
 open Ppconstr
 open Printer
 open Util
-open Extraargs
 open Ssrprinters
 open Ssrcommon
 
@@ -344,16 +343,6 @@ GRAMMAR EXTEND Gram
   hypident: TOP [
   [ "("; IDENT "type"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypTypeOnly }
   | "("; IDENT "value"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypValueOnly }
-  ] ];
-END
-
-GRAMMAR EXTEND Gram
-  GLOBAL: hloc;
-hloc: TOP [
-  [ "in"; "("; "Type"; "of"; id = ident; ")" ->
-    { Tacexpr.HypLocation (CAst.make id, Locus.InHypTypeOnly) }
-  | "in"; "("; IDENT "Value"; "of"; id = ident; ")" ->
-    { Tacexpr.HypLocation (CAst.make id, Locus.InHypValueOnly) }
   ] ];
 END
 

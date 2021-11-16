@@ -1931,8 +1931,6 @@ simple_tactic: [
 hloc: [
 | "in" "|-" "*"
 | "in" ident
-| "in" "(" "Type" "of" ident ")"
-| "in" "(" "Value" "of" ident ")"
 | "in" "(" "type" "of" ident ")"
 | "in" "(" "value" "of" ident ")"
 ]
