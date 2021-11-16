@@ -2702,6 +2702,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
       let t = typ_of env sigma c in
       Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t
     in
+    let rel = Retyping.relevance_of_term env sigma c in
     let (sigma, (newcl, eq_tac)) = match with_eq with
       | Some (lr,{CAst.loc;v=ido}) ->
           let heq = match ido with
@@ -2714,7 +2715,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
           let eq = applist (eq,args) in
           let refl = applist (refl, [t;mkVar id]) in
-          let term = mkNamedLetIn (make_annot id Sorts.Relevant) c t
+          let term = mkNamedLetIn (make_annot id rel) c t
               (mkLetIn (make_annot (Name heq) Sorts.Relevant, refl, eq, ccl)) in
           let sigma, _ = Typing.type_of env sigma term in
           let ans = term,
@@ -2725,7 +2726,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           in
           (sigma, ans)
       | None ->
-          (sigma, (mkNamedLetIn (make_annot id Sorts.Relevant) c t ccl, Proofview.tclUNIT ()))
+          (sigma, (mkNamedLetIn (make_annot id rel) c t ccl, Proofview.tclUNIT ()))
     in
       Tacticals.tclTHENLIST
       [ Proofview.Unsafe.tclEVARS sigma;
@@ -2788,6 +2789,7 @@ let pose_tac na c =
     let hyps = named_context_val env in
     let concl = Proofview.Goal.concl gl in
     let t = typ_of env sigma c in
+    let rel = Retyping.relevance_of_term env sigma c in
     let (sigma, t) = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t in
     let id = match na with
     | Name id ->
@@ -2801,8 +2803,7 @@ let pose_tac na c =
     in
     Proofview.Unsafe.tclEVARS sigma <*>
     Refine.refine ~typecheck:false begin fun sigma ->
-      (* TODO relevance *)
-      let id = make_annot id Sorts.Relevant in
+      let id = make_annot id rel in
       let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
       let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
       let inst = EConstr.identity_subst_val hyps in
