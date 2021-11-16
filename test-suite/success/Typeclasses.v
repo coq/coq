@@ -150,7 +150,7 @@ Abort.
 End HintMode_NonStuck_Failure_Refine_DoNotShelve.
 
 Module bt.
-Require Import Equivalence.
+Require Import Classes.Init.
 
 Record Equ (A : Type) (R : A -> A -> Prop).
 Definition equiv {A} R (e : Equ A R) := R.
@@ -166,26 +166,9 @@ Hint Extern 1 => match goal with |- (_ -> _ -> Prop) => shelve end : foo.
 
 Goal exists R, @Refl nat R.
   eexists.
-  Set Typeclasses Debug.
-  (* Fail solve [unshelve eauto with foo]. *)
-  Set Typeclasses Debug Verbosity 1.
-  Test Typeclasses Depth.
   solve [typeclasses eauto with foo].
 Qed.
 
-Set Typeclasses Compatibility "8.5".
-Parameter f : nat -> Prop.
-Parameter g : nat -> nat -> Prop.
-Parameter h : nat -> nat -> nat -> Prop.
-Axiom a : forall x y, g x y -> f x -> f y.
-Axiom b : forall x (y : Empty_set), g (fst (x,y)) x.
-Axiom c : forall x y z, h x y z -> f x -> f y.
-Hint Resolve a b c : mybase.
-Goal forall x y z, h x y z -> f x -> f y.
-  intros.
-  Fail Timeout 1 typeclasses eauto with mybase. (* Loops now *)
-  Unshelve.
-Abort.
 End bt.
 Generalizable All Variables.
 
@@ -230,6 +213,19 @@ Goal forall `{B' T}, a.
 Defined.
 
 End mon.
+
+Module deftwice.
+  Class C (A : Type) := c : A -> Type.
+
+  Record Inhab (A : Type) := { witness : A }.
+
+  Instance inhab_C : C Type := Inhab.
+
+  Axiom full : forall A (X : C A), forall x : A, c x.
+
+  Definition truc {A : Type} : Inhab A := (full _ _ _).
+
+End deftwice.
 
 (* Correct treatment of dependent goals *) 
 

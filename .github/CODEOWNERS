@@ -205,7 +205,6 @@
 /tactics/         @coq/tactics-maintainers
 
 /tactics/class_tactics.* @coq/typeclasses-maintainers
-/test-suite/typeclasses/ @coq/typeclasses-maintainers
 
 ########## Number ##########
 
