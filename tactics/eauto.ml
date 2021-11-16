@@ -239,7 +239,6 @@ module SearchProblem = struct
             if hyps' == hyps then db
             else make_local_hint_db env sigma ~ts:TransparentState.full true s.local_lemmas
         in
-        let concl = Reductionops.nf_evar s.sigma concl in
         filter_tactics ~is_done:false s.sigma mkdb s.tacres
                         (e_possible_resolve env s.sigma s.dblist db secvars concl)
       in
