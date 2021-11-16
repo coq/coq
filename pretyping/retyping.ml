@@ -298,8 +298,7 @@ let relevance_of_term env sigma c =
       | Var x -> Relevanceops.relevance_of_var env x
       | Sort _ -> Sorts.Relevant
       | Cast (c, _, _) -> aux rels c
-      | Prod ({binder_relevance=r}, _, codom) ->
-        aux (Range.cons r rels) codom
+      | Prod _ -> Sorts.Relevant
       | Lambda ({binder_relevance=r}, _, bdy) ->
         aux (Range.cons r rels) bdy
       | LetIn ({binder_relevance=r}, _, _, bdy) ->
