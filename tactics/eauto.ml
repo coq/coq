@@ -190,13 +190,13 @@ module SearchProblem = struct
         pack.sigma, List.map map pack.it, rest
     | _ -> user_err Pp.(str "apply_tac_list")
 
-  let filter_tactics sigma mkdb glls l =
+  let filter_tactics ~is_done sigma mkdb glls l =
     let rec aux = function
       | [] -> []
       | (tac, cost, pptac) :: tacl ->
           try
             let sigma, ngls, lgls = apply_tac_list sigma tac mkdb glls in
-            let is_done = List.is_empty ngls in
+            let is_done = is_done || List.is_empty ngls in
             (sigma, is_done, ngls @ lgls, cost, pptac) :: aux tacl
           with e when CErrors.noncritical e ->
             let e = Exninfo.capture e in
@@ -225,25 +225,13 @@ module SearchProblem = struct
       let assumption_tacs =
         let tacs = List.map map_assum (ids_of_named_context hyps) in
         let mkdb env sigma db = assert false in (* no goal can be generated *)
-        let l = filter_tactics s.sigma mkdb s.tacres tacs in
-        List.map (fun (sigma, is_done, res, cost, pp) ->
-          let () = assert is_done in
-          { depth = s.depth; priority = cost; tacres = res; sigma;
-                                    last_tactic = pp; dblist = s.dblist;
-                                    prev = ps; local_lemmas = s.local_lemmas}) l
+        filter_tactics ~is_done:true s.sigma mkdb s.tacres tacs
       in
       let intro_tac =
         let mkdb env sigma db =
           push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
         in
-        let l = filter_tactics s.sigma mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
-        List.map
-          (fun (sigma, _, lgls, cost, pp) ->
-             { depth = s.depth; priority = cost; tacres = lgls; sigma;
-               last_tactic = pp; dblist = s.dblist;
-               prev = ps;
-               local_lemmas = s.local_lemmas})
-          l
+        filter_tactics ~is_done:true s.sigma mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")]
       in
       let rec_tacs =
         let mkdb env sigma db =
@@ -251,20 +239,17 @@ module SearchProblem = struct
             if hyps' == hyps then db
             else make_local_hint_db env sigma ~ts:TransparentState.full true s.local_lemmas
         in
-        let l =
-          let concl = Reductionops.nf_evar s.sigma concl in
-          filter_tactics s.sigma mkdb s.tacres
-                         (e_possible_resolve env s.sigma s.dblist db secvars concl)
-        in
-        List.map
-          (fun (sigma, is_done, lgls, cost, pp) ->
-            let depth = if is_done then s.depth else pred s.depth in
-            { depth; priority = cost; tacres = lgls; sigma; last_tactic = pp;
-              prev = ps; dblist = s.dblist;
-              local_lemmas = s.local_lemmas })
-          l
+        let concl = Reductionops.nf_evar s.sigma concl in
+        filter_tactics ~is_done:false s.sigma mkdb s.tacres
+                        (e_possible_resolve env s.sigma s.dblist db secvars concl)
       in
-      List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
+      let map (sigma, is_done, lgls, cost, pp) =
+        let depth = if is_done then s.depth else pred s.depth in
+        { depth; priority = cost; tacres = lgls; sigma; last_tactic = pp;
+          prev = ps; dblist = s.dblist;
+          local_lemmas = s.local_lemmas }
+      in
+      List.sort compare (List.map map (assumption_tacs @ intro_tac @ rec_tacs))
 
   let pp s = hov 0 (str " depth=" ++ int s.depth ++ spc () ++
                       (Lazy.force s.last_tactic))
