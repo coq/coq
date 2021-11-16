@@ -1,10 +1,15 @@
 ## Changes between Coq 8.14 and Coq 8.15
 
-### Ltac Visual Debugger in CoqIDE
+### XML protocol
 
-- Updated the XML protocol (4 new "db_*" messages and added location info
-  to the "add" message) and added support for these primarily in tactic_debug.ml.
-  See the protocol description in xmlprotocol.md.
+See xmlprotocol.md for details.
+
+- Added 4 new "db_*" messages to support the Ltac debugger
+- Modified the "add" request (not backward compatible), adding 3 additional
+  parameters to the request giving the buffer offset of the added statement.
+  The parameters are Loc.bp, Loc.line_nb and Loc.bol_pos, which are needed so
+  the debugger gets back a buffer-relative Loc.t rather than a sentence-relative
+  Loc.t.  For other use cases, these can be set to 0.
 
 ### Internal representation of the type of constructors
 
