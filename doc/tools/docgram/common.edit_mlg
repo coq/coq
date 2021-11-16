@@ -2617,7 +2617,6 @@ SPLICE: [
 | preident
 | lpar_id_coloneq
 | binders
-| casted_constr
 | check_module_types
 | decl_sep
 | function_fix_definition (* loses funind annotation *)

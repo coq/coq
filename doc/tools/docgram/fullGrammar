@@ -1477,7 +1477,7 @@ simple_tactic: [
 | "functional" "induction" lconstr fun_ind_using with_names      (* funind plugin *)
 | "soft" "functional" "induction" LIST1 constr fun_ind_using with_names      (* funind plugin *)
 | "reflexivity"
-| "exact" casted_constr
+| "exact" uconstr
 | "assumption"
 | "etransitivity"
 | "cut" constr
@@ -1902,10 +1902,6 @@ EXTRAARGS_lconstr: [
 
 lglob: [
 | EXTRAARGS_lconstr
-]
-
-casted_constr: [
-| constr
 ]
 
 hloc: [
