@@ -185,8 +185,6 @@ module SearchProblem = struct
         let is_done = is_done || List.is_empty ngls in
         Some (sigma, is_done, ngls, cost, pptac)
       with e when CErrors.noncritical e ->
-        let e = Exninfo.capture e in
-        let () = Tacticals.Old.catch_failerror e in
         None
     in
     List.map_filter map l
