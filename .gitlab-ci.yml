@@ -796,9 +796,6 @@ library:ci-deriving:
 plugin:ci-aac_tactics:
   extends: .ci-template
 
-plugin:ci-itauto:
-  extends: .ci-template
-
 plugin:ci-bignums:
   extends: .ci-template-flambda
 

@@ -9,7 +9,6 @@
 ##########################################################################
 
 CI_TARGETS= \
-    ci-itauto \
     ci-aac_tactics \
     ci-argosy \
     ci-autosubst \
