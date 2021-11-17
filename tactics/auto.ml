@@ -62,8 +62,8 @@ let auto_unif_flags =
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
-let unify_resolve flags h = Hints.hint_res_pf ~flags h
-let unify_resolve_nodelta h = Hints.hint_res_pf ~flags:auto_unif_flags h
+let unify_resolve flags h = Hints.hint_res_pf ~db:Typeclasses.typeclasses_db ~flags h
+let unify_resolve_nodelta  h = Hints.hint_res_pf ~db:Typeclasses.typeclasses_db ~flags:auto_unif_flags h
 
 let exact h =
   Proofview.Goal.enter begin fun gl ->

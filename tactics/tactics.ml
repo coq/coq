@@ -1445,7 +1445,7 @@ let do_replace id = function
 
 let clenv_refine_in with_evars targetid replace env sigma0 clenv =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
-  let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) env (clenv_evd clenv) in
+  let evd = Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~fail:(not with_evars) env (clenv_evd clenv) in
   let clenv = Clenv.update_clenv_evd clenv evd in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
@@ -1512,7 +1512,7 @@ let general_elim_clause0 with_evars flags (submetas, c, ty) elim =
     with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
   in
   let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
-  Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
+  Clenv.res_pf ~db:Typeclasses.typeclasses_db elimclause ~with_evars ~with_classes:true ~flags
   end
 
 let general_elim_clause_in0 with_evars flags id (submetas, c, ty) elim =
@@ -1601,8 +1601,8 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
     let indclause = Clenv.update_clenv_evd indclause (meta_merge (meta_list @@ Clenv.clenv_evd indclause) sigma) in
     Proofview.Unsafe.tclEVARS sigma <*>
     Proofview.Unsafe.tclNEWGOALS ~before:true [Proofview.goal_with_state evk state] <*>
-    Proofview.tclDISPATCH [Clenv.res_pf ~with_evars:true indclause; tclIDTAC] <*>
-    Proofview.tclEXTEND [] tclIDTAC [Clenv.case_pf ~with_evars ~dep (ev, argtype)]
+    Proofview.tclDISPATCH [Clenv.res_pf ~db:Typeclasses.typeclasses_db ~with_evars:true indclause; tclIDTAC] <*>
+    Proofview.tclEXTEND [] tclIDTAC [Clenv.case_pf ~db:Typeclasses.typeclasses_db ~with_evars ~dep (ev, argtype)]
   in
   let sigma = Evd.clear_metas (clenv_evd indclause) in
   Tacticals.tclTHENLIST [
@@ -1820,7 +1820,7 @@ let general_apply ?(with_classes=true) ?(respect_opaque=false) with_delta with_d
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
         if n<0 then error NotEnoughPremises;
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
-        Clenv.res_pf clause ~with_classes ~with_evars ~flags
+        Clenv.res_pf clause ~db:Typeclasses.typeclasses_db ~with_classes ~with_evars ~flags
       with exn when noncritical exn ->
         let exn, info = Exninfo.capture exn in
         Proofview.tclZERO ~info exn
@@ -3139,7 +3139,8 @@ let exfalso =
     let elimc = mkConstU elimc in
     let elimt = Retyping.get_type_of env sigma elimc in
     let clause = mk_clenv_from env sigma (elimc, elimt) in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Clenv.res_pf clause ~flags:(elim_flags ()) ~with_evars:false)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+      (Clenv.res_pf ~db:Typeclasses.typeclasses_db clause ~flags:(elim_flags ()) ~with_evars:false)
   end
 
 (************************************************)

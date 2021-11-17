@@ -401,7 +401,7 @@ let eauto debug n lems dbs =
 let typeclasses_eauto strategy depth dbs =
   let only_classes, dbs = match dbs with
   | None ->
-    true, [Class_tactics.typeclasses_db]
+    true, [Typeclasses.typeclasses_db]
   | Some dbs ->
     let dbs = List.map Id.to_string dbs in
     false, dbs

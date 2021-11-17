@@ -108,7 +108,7 @@ let app_poly_sort b =
 let find_class_proof proof_type proof_method env evars carrier relation =
   try
     let evars, goal = app_poly_check env evars proof_type [| carrier ; relation |] in
-    let evars', c = TC.resolve_one_typeclass env (goalevars evars) goal in
+    let evars', c = TC.resolve_one_typeclass ~db:TC.typeclasses_db env (goalevars evars) goal in
       if extends_undefined (goalevars evars) evars' then raise Not_found
       else app_poly_check env (evars',cstrevars evars) proof_method [| carrier; relation; c |]
   with e when CErrors.noncritical e -> raise Not_found
@@ -461,7 +461,7 @@ end) = struct
               let (evars, evset), inst =
                 app_poly env' (sigma,Evar.Set.empty)
                   rewrite_relation_class [| ty1; equiv |] in
-              let sigma, _ = TC.resolve_one_typeclass env' evars inst in
+              let sigma, _ = TC.resolve_one_typeclass ~db:TC.typeclasses_db env' evars inst in
               (* We check that the relation is homogeneous *after* launching resolution,
                  as this convertibility test might be expensive in general (e.g. this
                  slows down mathcomp-odd-order). *)
@@ -715,11 +715,11 @@ let symmetry env sort rew =
   { rew with rew_from = rew.rew_to; rew_to = rew.rew_from; rew_prf; rew_evars; }
 
 (* Matching/unifying the rewriting rule against [t] *)
-let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
+let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) ?by t =
   try
     let left = if l2r then c1 else c2 in
     let sigma = Unification.w_unify ~flags env sigma CONV left t in
-    let sigma = TC.resolve_typeclasses ~filter:(no_constraints cstrs)
+    let sigma = TC.resolve_typeclasses ~db:TC.typeclasses_db ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let sigma = solve_remaining_by env sigma holes by in
     let nf c = Reductionops.nf_evar sigma c in
@@ -887,7 +887,7 @@ let apply_rule unify : occurrences_count pure_strategy =
               (occs, res)
     }
 
-let apply_lemma l2r flags oc by loccs : strategy = { strategy =
+let apply_lemma l2r flags oc ?by loccs : strategy = { strategy =
   fun ({ state = () ; env ; term1 = t ; evars = (sigma, cstrs) } as input) ->
     let sigma, c = oc sigma in
     let sigma, hypinfo = decompose_applied_relation env sigma c in
@@ -895,7 +895,7 @@ let apply_lemma l2r flags oc by loccs : strategy = { strategy =
     let rew = (car, rel, prf, c1, c2, holes, sort) in
     let evars = (sigma, cstrs) in
     let unify env evars t =
-      let rew = unify_eqn rew l2r flags env evars by t in
+      let rew = unify_eqn rew l2r flags env evars ?by t in
       match rew with
       | None -> None
       | Some rew -> Some rew
@@ -1369,7 +1369,7 @@ module Strategies =
 
     let lemmas cs : 'a pure_strategy =
       List.fold_left (fun tac (l,l2r,by) ->
-        choice tac (apply_lemma l2r rewrite_unif_flags l by AllOccurrences))
+        choice tac (apply_lemma l2r rewrite_unif_flags l ?by AllOccurrences))
         fail cs
 
     let inj_open hint = (); fun sigma ->
@@ -1440,7 +1440,7 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
     let unify env evars t =
       let (sigma, cstrs) = evars in
       let (sigma, rew) = refresh_hypinfo env sigma c in
-      unify_eqn rew l2r flags env (sigma, cstrs) None t
+      unify_eqn rew l2r flags env (sigma, cstrs) t
     in
     let app = apply_rule unify in
     let strat =
@@ -1459,10 +1459,10 @@ let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
                             cstr = (prop, Some cstr) ; evars } in
   res
 
-let solve_constraints env (evars,cstrs) =
+let solve_constraints ~db env (evars,cstrs) =
   let oldtcs = Evd.get_typeclass_evars evars in
   let evars' = Evd.set_typeclass_evars evars cstrs in
-  let evars' = TC.resolve_typeclasses env ~filter:TC.all_evars ~fail:true evars' in
+  let evars' = TC.resolve_typeclasses ~db env ~filter:TC.all_evars ~fail:true evars' in
   Evd.set_typeclass_evars evars' oldtcs
 
 let nf_zeta =
@@ -1502,7 +1502,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   | Identity -> Some None
   | Success res ->
     let (_, cstrs) = res.rew_evars in
-    let evars = solve_constraints env res.rew_evars in
+    let evars = solve_constraints ~db:TC.typeclasses_db env res.rew_evars in
     let iter ev = if not (Evd.is_defined evars ev) then raise (UnsolvedConstraints (env, evars, ev)) in
     let () = Evar.Set.iter iter cstrs in
     let newt = res.rew_to in
@@ -1640,7 +1640,7 @@ let apply_glob_constr ((_, c) : _ * EConstr.t delayed_open) l2r occs = (); fun (
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
-  (apply_lemma l2r flags c None occs).strategy input
+  (apply_lemma l2r flags c occs).strategy input
 
 let interp_glob_constr_list env =
   let make c = (); fun sigma ->
@@ -1801,7 +1801,7 @@ let build_morphism_signature env sigma m =
     cstrs
   in
   let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
-  let evd = solve_constraints env !evd in
+  let evd = solve_constraints ~db:TC.typeclasses_db env !evd in
   evd, morph
 
 let default_morphism env sigma sign m =
@@ -1810,7 +1810,7 @@ let default_morphism env sigma sign m =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
   let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
-  let evars, mor = TC.resolve_one_typeclass env (goalevars evars) morph in
+  let evars, mor = TC.resolve_one_typeclass ~db:TC.typeclasses_db env (goalevars evars) morph in
     mor, proper_projection sigma mor morph
 
 (** Bind to "rewrite" too *)

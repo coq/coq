@@ -70,7 +70,7 @@ open Auto
 (***************************************************************************)
 
 let unify_e_resolve flags h =
-  Hints.hint_res_pf ~with_evars:true ~with_classes:true ~flags h
+  Hints.hint_res_pf ~db:Typeclasses.typeclasses_db ~with_evars:true ~with_classes:true ~flags h
 
 type cost = {
   cost_priority : int;

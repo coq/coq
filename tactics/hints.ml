@@ -1459,7 +1459,7 @@ let default_prepare_hint_ident = Id.of_string "H"
 exception Found of constr * types
 
 let prepare_hint env init (sigma,c) =
-  let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
+  let sigma = Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~fail:false env sigma in
   (* We re-abstract over uninstantiated evars and universes.
      It is actually a bit stupid to generalize over evars since the first
      thing make_resolves will do is to re-instantiate the products *)
@@ -1843,8 +1843,8 @@ let fresh_hint env sigma h =
     let sigma = Evd.merge_sort_context_set Evd.univ_flexible sigma ctx in
     sigma, c
 
-let hint_res_pf ?with_evars ?with_classes ?flags h =
+let hint_res_pf ~db ?with_evars ?with_classes ?flags h =
   Proofview.Goal.enter begin fun gl ->
     let clenv = connect_hint_clenv h gl in
-    Clenv.res_pf ?with_evars ?with_classes ?flags clenv
+    Clenv.res_pf ~db ?with_evars ?with_classes ?flags clenv
   end

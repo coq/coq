@@ -1553,7 +1553,8 @@ let check_types env flags (sigma,_,_ as subst) m n =
 
 let try_resolve_typeclasses env evd flag m n =
   if flag then
-    Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd
+    Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~filter:Typeclasses.no_goals
+      ~fail:true env evd
   else evd
 
 let w_unify_core_0 env evd with_types cv_pb flags m n =

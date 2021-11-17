@@ -24,9 +24,6 @@ open Hints
 
 module NamedDecl = Context.Named.Declaration
 
-(** Hint database named "typeclass_instances", created in prelude *)
-let typeclasses_db = "typeclass_instances"
-
 (** Options handling *)
 
 let typeclasses_depth_opt_name = ["Typeclasses";"Depth"]
@@ -122,7 +119,7 @@ let pr_ev_with_id evs ev =
 
   (** Typeclasses instance search tactic / eauto *)
 
-open Auto
+
 open Unification
 
 let auto_core_unif_flags st allowed_evars = {
@@ -162,7 +159,7 @@ let e_give_exact flags h =
 
 let unify_resolve ~with_evars flags h diff = match diff with
 | None ->
-  Hints.hint_res_pf ~with_evars ~with_classes:false ~flags h
+  Hints.hint_res_pf ~db:Typeclasses.typeclasses_db ~with_evars ~with_classes:false ~flags h
 | Some (diff, ty) ->
   let () = assert (Option.is_empty (fst @@ hint_as_term @@ h)) in
   Proofview.Goal.enter begin fun gl ->
@@ -170,7 +167,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
   let sigma = Tacmach.project gl in
   let sigma, c = Hints.fresh_hint env sigma h in
   let clenv = Clenv.mk_clenv_from_n env sigma diff (c, ty) in
-  Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
+  Clenv.res_pf ~db:Typeclasses.typeclasses_db ~with_evars ~with_classes:false ~flags clenv
   end
 
 (** Dealing with goals of the form A -> B and hints of the form
@@ -293,7 +290,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
          Tacticals.tclTHEN fst snd
       | Unfold_nth c ->
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
-      | Extern (p, tacast) -> conclPattern concl0 p tacast
+      | Extern (p, tacast) -> Auto.conclPattern concl0 p tacast
       in
       let tac = FullHint.run h tac in
       let tac = if complete then Tacticals.tclCOMPLETE tac else tac in
@@ -695,7 +692,7 @@ module Search = struct
         (if backtrack then str" with backtracking"
          else str" without backtracking"))
     in
-    let secvars = compute_secvars gl in
+    let secvars = Auto.compute_secvars gl in
     match e_possible_resolve hints info.search_hints secvars
             info.search_only_classes env sigma concl with
     | None ->
@@ -1068,8 +1065,8 @@ module Search = struct
         evars_eauto env evd depth true ~best_effort unique false st hints p)
       ()
 
-  let typeclasses_resolve env evd depth unique ~best_effort p =
-    let db = searchtable_map typeclasses_db in
+  let typeclasses_resolve ~db env evd depth unique ~best_effort p =
+    let db = searchtable_map db in
     let st = Hint_db.transparent_state db in
     let modes = Hint_db.modes db in
     typeclasses_eauto env evd ?depth ~best_effort unique (modes,st) [db] p
@@ -1165,7 +1162,7 @@ exception Unresolved of evar_map
 
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
-let resolve_all_evars depth unique env p oevd fail =
+let resolve_all_evars ~db depth unique env p oevd fail =
   let () =
     ppdebug 0 (fun () ->
         str"Calling typeclass resolution with flags: "++
@@ -1189,7 +1186,7 @@ let resolve_all_evars depth unique env p oevd fail =
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         (try
-          let res = Search.typeclasses_resolve env evd depth
+          let res = Search.typeclasses_resolve ~db env evd depth
             ~best_effort:true unique p in
           match res with
           | Some (finished, evd') ->
@@ -1221,22 +1218,22 @@ let initial_select_evars filter =
     Typeclasses.is_class_evar evd evi
 
 
-let classes_transparent_state () =
-  try Hint_db.transparent_state (searchtable_map typeclasses_db)
+let classes_transparent_state db =
+  try Hint_db.transparent_state (searchtable_map db)
   with Not_found -> TransparentState.empty
 
-let resolve_typeclass_evars depth unique env evd filter fail =
+let resolve_typeclass_evars ~db depth unique env evd filter fail =
   let evd =
     try Evarconv.solve_unif_constraints_with_heuristics
-      ~flags:(Evarconv.default_flags_of (classes_transparent_state())) env evd
+      ~flags:(Evarconv.default_flags_of (classes_transparent_state db)) env evd
     with e when CErrors.noncritical e -> evd
   in
-    resolve_all_evars depth unique env
+    resolve_all_evars ~db depth unique env
       (initial_select_evars filter) evd fail
 
-let solve_inst env evd filter unique fail =
+let solve_inst ~db env evd filter unique fail =
   let ((), sigma) = Hints.wrap_hint_warning_fun env evd begin fun evd ->
-    (), resolve_typeclass_evars
+    (), resolve_typeclass_evars ~db
     (get_typeclasses_depth ())
     unique env evd filter fail
   end in
@@ -1245,9 +1242,9 @@ let solve_inst env evd filter unique fail =
 let () =
   Typeclasses.set_solve_all_instances solve_inst
 
-let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
+let resolve_one_typeclass ~db env ?(sigma=Evd.from_env env) concl unique =
   let (term, sigma) = Hints.wrap_hint_warning_fun env sigma begin fun sigma ->
-  let hints = searchtable_map typeclasses_db in
+  let hints = searchtable_map db in
   let st = Hint_db.transparent_state hints in
   let modes = Hint_db.modes hints in
   let depth = get_typeclasses_depth () in
@@ -1271,7 +1268,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
 
 let () =
   Typeclasses.set_solve_one_instance
-    (fun x y z w -> resolve_one_typeclass x ~sigma:y z w)
+    (fun ~db x y z w -> resolve_one_typeclass ~db x ~sigma:y z w)
 
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)
@@ -1314,7 +1311,7 @@ let autoapply c i =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let ce = Clenv.mk_clenv_from env sigma (c,cty) in
-  Clenv.res_pf ~with_evars:true ~with_classes:false ~flags ce <*>
+  Clenv.res_pf ~db:Typeclasses.typeclasses_db ~with_evars:true ~with_classes:false ~flags ce <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables
           (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.evar_source (Evd.find_undefined sigma ev))))) sigma in
@@ -1329,5 +1326,5 @@ let resolve_tc c =
   let evars = Evarutil.undefined_evars_of_term sigma c in
   let filter = (fun ev _ -> Evar.Set.mem ev evars) in
   let fail = true in
-  let sigma = resolve_all_evars depth unique env (initial_select_evars filter) sigma fail in
+  let sigma = resolve_all_evars ~db:Typeclasses.typeclasses_db depth unique env (initial_select_evars filter) sigma fail in
   Proofview.Unsafe.tclEVARS sigma

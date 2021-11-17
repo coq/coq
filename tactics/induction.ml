@@ -1094,14 +1094,14 @@ let induction_tac with_evars params indvars (elim, elimt) =
   let elimclause = make_clenv_binding env sigma clause bindings in
   (* elimclause' is built from elimclause by instantiating all args and params. *)
   let elimclause = recolle_clenv index params indvars elimclause gl in
-  Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause
+  Clenv.res_pf ~db:Typeclasses.typeclasses_db ~with_evars ~flags:(elim_flags ()) elimclause
   end
 
 let destruct_tac with_evars indvar dep =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let ty = Typing.type_of_variable env indvar in
-  Clenv.case_pf ~with_evars ~dep (mkVar indvar, ty)
+  Clenv.case_pf ~db:Typeclasses.typeclasses_db ~with_evars ~dep (mkVar indvar, ty)
   end
 
 (* Apply induction "in place" taking into account dependent

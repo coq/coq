@@ -251,7 +251,7 @@ let unif_end ?(solve_TC=true) env sigma0 ise0 pt ok =
   let ise1 = Evd.set_typeclass_evars ise1 (Evar.Set.filter (fun ev -> Evd.is_undefined ise1 ev) tcs) in
   let ise1 = Evd.set_universe_context ise1 uc in
   let ise2 =
-    if solve_TC then Typeclasses.resolve_typeclasses ~fail:true env ise1
+    if solve_TC then Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~fail:true env ise1
     else ise1 in
   if not (ok ise) then raise NoProgress else
   if ise2 == ise1 then (c, s, uc, t)

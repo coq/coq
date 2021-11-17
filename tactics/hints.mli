@@ -236,7 +236,7 @@ val wrap_hint_warning_fun : env -> evar_map ->
 
 val fresh_hint : env -> evar_map -> hint -> evar_map * constr
 
-val hint_res_pf : ?with_evars:bool -> ?with_classes:bool ->
+val hint_res_pf : db:string -> ?with_evars:bool -> ?with_classes:bool ->
   ?flags:Unification.unify_flags -> hint -> unit Proofview.tactic
 
 (** Printing  hints *)

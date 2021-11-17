@@ -294,7 +294,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation 
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instantiated *)
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
+  let evd = Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~filter:Typeclasses.no_goals ~fail:true env evd in
     (* Solve remaining evars *)
   let evd = nf_evar_map_undefined evd in
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in

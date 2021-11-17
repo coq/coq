@@ -301,11 +301,12 @@ let typeclasses_filter ~program_mode frozen =
   else (fun evk evi -> Typeclasses.no_goals evk evi && not (filter_frozen frozen evk))
 
 let apply_typeclasses ~program_mode ~fail_evar env sigma frozen =
-  let sigma = Typeclasses.resolve_typeclasses
+  let db = Typeclasses.typeclasses_db in
+  let sigma = Typeclasses.resolve_typeclasses ~db
       ~filter:(typeclasses_filter ~program_mode frozen)
       ~fail:fail_evar env sigma in
   let sigma = if program_mode then (* Try optionally solving the obligations *)
-      Typeclasses.resolve_typeclasses
+      Typeclasses.resolve_typeclasses ~db
         ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen frozen evk)) ~fail:false env sigma
     else sigma in
   sigma

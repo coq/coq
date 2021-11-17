@@ -19,6 +19,10 @@ open Context.Rel.Declaration
 
 (*i*)
 
+(** Hint database named "typeclass_instances", created in prelude *)
+let typeclasses_db = "typeclass_instances"
+
+
 (* Core typeclasses hints *)
 type 'a hint_info_gen =
     { hint_priority : int option;
@@ -32,10 +36,10 @@ let { Goptions.get = get_typeclasses_unique_solutions } =
     ~value:false
     ()
 
-let solve_one_instance = ref (fun env evm t unique -> assert false)
+let solve_one_instance = ref (fun ~db env evm t unique -> assert false)
 
-let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
-  !solve_one_instance env evm t unique
+let resolve_one_typeclass ~db ?(unique=get_typeclasses_unique_solutions ()) env evm t =
+  !solve_one_instance ~db env evm t unique
 
 let set_solve_one_instance f = solve_one_instance := f
 
@@ -253,17 +257,17 @@ let get_filtered_typeclass_evars filter evd =
   let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find_undefined evd ev)))) in
   Evar.Set.filter check tcs
 
-let solve_all_instances_hook = ref (fun env evd filter unique fail -> assert false)
+let solve_all_instances_hook = ref (fun ~db env evd filter unique fail -> assert false)
 
-let solve_all_instances env evd filter unique fail =
-  !solve_all_instances_hook env evd filter unique fail
+let solve_all_instances ~db env evd filter unique fail =
+  !solve_all_instances_hook ~db env evd filter unique fail
 
 let set_solve_all_instances f = solve_all_instances_hook := f
 
 let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
-    ?(fail=true) env evd =
+    ?(fail=true) ~db env evd =
   if not (has_typeclasses filter evd) then evd
-  else solve_all_instances env evd filter unique fail
+  else solve_all_instances ~db env evd filter unique fail
 
 (** In case of unsatisfiable constraints, build a nice error message *)
 

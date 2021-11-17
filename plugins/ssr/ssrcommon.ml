@@ -392,7 +392,7 @@ let resolve_typeclasses env sigma ~where ~fail =
   let filter =
     let evset = Evarutil.undefined_evars_of_term sigma where in
     fun k _ -> Evar.Set.mem k evset in
-  Typeclasses.resolve_typeclasses ~filter ~fail env sigma
+  Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~filter ~fail env sigma
 
 let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
   let c0 = Evarutil.nf_evar sigma c0 in
@@ -680,7 +680,7 @@ let abs_ssrterm ?(resolve_typeclasses=false) ist env sigma t =
   let t =
     if not resolve_typeclasses then (sigma, ct)
     else
-       let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
+       let sigma = Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma ct in
   let c, abstracted_away, ucst = abs_evars env sigma0 t in
   let n = List.length abstracted_away in
@@ -754,7 +754,7 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
    let ty =
      if not resolve_typeclasses then ty
      else
-       let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
+       let sigma = Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma cty in
    let c, evs, ucst = abs_evars env sigma0 ty in
    let n = List.length evs in
