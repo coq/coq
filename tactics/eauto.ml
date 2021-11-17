@@ -165,43 +165,31 @@ and prev_search_state = (* for info eauto *)
 
 (* first_goal : goal list sigma -> goal sigma *)
 
-let find_first_goal s =
-  match s.tacres with
-  | [] -> assert false
-  | (gl, db) :: _ ->
-    let open Tacmach.Old in
-    let gl = { Evd.it = gl; Evd.sigma = s.sigma; } in
-    (pf_env gl, pf_concl gl), db
-
 module SearchProblem = struct
 
   type state = search_state
 
   let success s = List.is_empty s.tacres
 
-(* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
-
-  let apply_tac_list sigma tac mkdb glls =
-    match glls with
-    | ((g1, db) :: rest) ->
-        let open Tacmach.Old in
-        let pack = Proofview.V82.of_tactic tac (re_sig g1 sigma) in
-        let map gl = gl, mkdb (pf_env @@ re_sig gl pack.sigma) pack.sigma db in
-        pack.sigma, List.map map pack.it, rest
-    | _ -> user_err Pp.(str "apply_tac_list")
-
   let filter_tactics ~is_done sigma mkdb glls l =
-    let rec aux = function
-      | [] -> []
-      | (tac, cost, pptac) :: tacl ->
-          try
-            let sigma, ngls, lgls = apply_tac_list sigma tac mkdb glls in
-            let is_done = is_done || List.is_empty ngls in
-            (sigma, is_done, ngls @ lgls, cost, pptac) :: aux tacl
-          with e when CErrors.noncritical e ->
-            let e = Exninfo.capture e in
-            Tacticals.Old.catch_failerror e; aux tacl
-    in aux l
+    let open Tacmach.Old in
+    let gl, db, rest = match glls with
+    | [] -> assert false
+    | (gl, db) :: rest -> (gl, db, rest)
+    in
+    let map (tac, cost, pptac) =
+      try
+        let { it; sigma } = Proofview.V82.of_tactic tac (re_sig gl sigma) in
+        let map gl = gl, mkdb (pf_env @@ re_sig gl sigma) sigma db in
+        let ngls = List.map map it in
+        let is_done = is_done || List.is_empty ngls in
+        Some (sigma, is_done, ngls, cost, pptac)
+      with e when CErrors.noncritical e ->
+        let e = Exninfo.capture e in
+        let () = Tacticals.Old.catch_failerror e in
+        None
+    in
+    List.map_filter map l
 
   (* Ordering of states is lexicographic on depth (greatest first) then
      number of remaining goals. *)
@@ -213,12 +201,19 @@ module SearchProblem = struct
     else if not (Int.equal d' 0) then d'
     else Int.compare (nbgoals s) (nbgoals s')
 
+  let find_first_goal s = match s.tacres with
+  | [] -> assert false
+  | (gl, db) :: rest ->
+    let open Tacmach.Old in
+    let gl = { Evd.it = gl; Evd.sigma = s.sigma; } in
+    pf_env gl, pf_concl gl, db, rest
+
   let branching s =
     if Int.equal s.depth 0 then
       []
     else
       let ps = if s.prev == Unknown then Unknown else State s in
-      let (env, concl), db = find_first_goal s in
+      let env, concl, db, rest = find_first_goal s in
       let hyps = EConstr.named_context env in
       let secvars = secvars_of_hyps hyps in
       let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ Id.print id)) in
@@ -244,7 +239,7 @@ module SearchProblem = struct
       in
       let map (sigma, is_done, lgls, cost, pp) =
         let depth = if is_done then s.depth else pred s.depth in
-        { depth; priority = cost; tacres = lgls; sigma; last_tactic = pp;
+        { depth; priority = cost; tacres = lgls @ rest; sigma; last_tactic = pp;
           prev = ps; dblist = s.dblist;
           local_lemmas = s.local_lemmas }
       in
