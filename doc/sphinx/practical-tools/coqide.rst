@@ -330,3 +330,192 @@ If you choose something else than UTF-8, then missing characters will
 be written encoded by `\x{....}` or `\x{........}` where each dot is
 an hexadecimal digit: the number between braces is the hexadecimal
 Unicode index for the missing character.
+
+.. _coqide-debugger:
+
+Debugger
+--------
+
+Version 8.15 introduces a visual debugger for |Ltac| tactics within
+CoqIDE.  It supports setting breakpoints visually and automatically
+displaying the stopping point in the source code with "continue",
+"step over" "step in" and "step out" operations.  The call stack and variable
+values for each stack frame are shown in a new panel.
+
+The debugger is based on the non-visual |Ltac| :ref:`debugger <interactive-debugger>`.
+We'd like to eventually support other scripting facilities such as Ltac2.
+
+Since the visual debugger is new in 8.15, you may encounter bugs or usability issues.
+The behavior and user interface will evolve as the debugger is refined.
+There are notes on bugs and potential enhancements at the end of
+`this page <https://github.com/coq/coq/wiki/Ltac-Debugger-Preview>`_.
+Feel free to suggest changes and improvements by opening an issue on
+`GitHub <https://github.com/coq/coq/issues/new>`_, or contact `@jfehrle`
+directly through email, Zulip or Discourse.
+
+Breakpoints
+~~~~~~~~~~~
+
+This screenshot shows the debugger stopped at a breakpoint in the |Ltac| tactic
+`my_tac`.  Breakpoints are shown with a red background and the stopping point is
+shown with a dark blue background.  `Set Ltac Debug.` enables stopping in the
+debugger.
+
+  .. image:: ../_static/debugger.png
+     :alt: CoqIDE Debugger
+
+  .. created with:
+     Set Ltac Debug.  (* enable the debugger *)
+
+     Ltac my_tac c :=
+       let con := constr:(forall a b : nat,
+         (a + b) * c = a * c + b * c) in
+       idtac "A"; idtac "B"; idtac "C".
+
+     Goal True.
+     my_tac 2.
+
+You can control the debugger with function and control keys.  Some
+messages are shown in the Messages panel.  You can type
+:ref:`debugger commands <interactive-debugger>`
+in that panel when it shows the debug prompt.
+
+The script is not editable while Coq is processing tactics or stopped
+in the debugger.  When Coq is stopped in the debugger (e.g., at a breakpoint),
+the blue segment in the "in progress" slider at the bottom edge of the window
+will be stopped at the left hand edge of its range.
+
+The function keys are listed, for the moment, with one exception, in the `Debug` menu:
+
+Toggle breakpoint (F8)
+  Position the cursor on the first character of the tactic name in an Ltac
+  construct, then press F8.  Press again to remove the breakpoint.  F8 is
+  accepted only when all of the coqtop sessions are idle (i.e. at the debug
+  prompt or not processing a tactic or command).
+
+  Note that :term:`sentences <sentence>` containing a single built-in tactic
+  are not Ltac constructs.  A breakpoint on :n:`intros.`, for example, is
+  ignored, while breakpoints on either tactic in :n:`intros; idtac.` work.
+  A breakpoint on, say, :n:`my_ltac_tactic.` also works.
+
+  Breakpoints on Ltac :n:`@value_tactic`\s, which compute values without changing
+  the proof context, such as :tacn:`eval`, are ignored.
+
+  You must set at least one breakpoint in order to enter the debugger.
+
+Continue (F9)
+  Continue processing the proof.  If you're not stopped in the debugger, this is
+  equivalent to "Run to end" (Control End).
+
+Step over (Control ↓)
+  When stopped in the debugger,
+  execute the next tactic without stopping inside it.  If the debugger reaches
+  a breakpoint in the tactic, it will stop.  This is the same key combination used
+  for "Forward one command"—if you're stopped in the debugger then it does a "Step over"
+  and otherwise it does a "Forward".  Combining the two functions makes it easy
+  to step through a script in a natural way when some breakpoints are set.
+
+Step in (F10)
+  When stopped in the debugger, if next tactic is an |Ltac| tactic, stop at the
+  first possible point in the tactic.  Otherwise acts as a "step over".
+
+Step out (Shift F10)
+  When stopped in the debugger, continue and then
+  stop at the first possible point after exiting the current |Ltac| tactic.  If the
+  debugger reaches a breakpoint in the tactic, it will stop.
+
+Break (F11)
+  Stops the debugger at the next possible stopping point, from which you can
+  step or continue.   (Not supported in Windows at this time.)
+
+If you step through `idtac "A"; idtac "B"; idtac "C".`, you'll notice that the
+steps for `my_tac` are:
+
+  | `idtac "A"; idtac "B"; idtac "C"`
+  | `idtac "A"; idtac "B"`
+  | `idtac "A"`
+  | `idtac "B"`
+  | `idtac "C"`
+
+which reflects the two-phase execution process for the :n:`@tactic ; @tactic`
+construct.
+
+Also keep in mind that |Ltac| backtracking may cause the call stack to revert to
+a previous state.  This may cause confusion.  Currently there's no special
+indication that this has happened.
+
+.. unfortunately not working:
+   Note: This `Wiki page <https://github.com/coq/coq/wiki/Configuration-of-CoqIDE#the-alternative-set-of-bindings>`_
+   describes a way to change CoqIDE key bindings.
+
+Call Stack and Variables
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The bottom panel shows the call stack and the variables defined for the selected
+stack frame.  Stack frames normally show the name of tactic being executed, the line
+number and the last component of the filename without the :n:`.v` suffix.
+The directory part of the module name is shown when the frame is not in
+the toplevel script file.  For example,
+:n:`make_rewriter:387, AllTactics (Rewriter.Rewriter)` refers to the file
+with the module name :n:`Rewriter.Rewriter.AllTactics`.
+
+Note: A few stack frames aren't yet displayed in this described format (e.g. those starting
+with :n:`???`) and may be extraneous. In some cases, the tactic name is not shown.
+
+Click on a stack frame or press the Up (↑) or Down (↓) keys to select a
+stack frame.  Coq will jump to the associated code and display the variables for that stack
+frame.  You can select text with the mouse and then copy it to the clipboard with
+Control-C.  Control-A selects the entire stack.
+
+The variables panel uses a tree control to show variables defined in the selected
+stack frame.  To see values that don't fit on a single line, click on the triangle.
+You can select one or more entries from the tree in the usual way by
+clicking, shift-clicking and control-clicking on an entry.  Control-A selects
+all entries.  Control-C copies the selected entries to the clipboard.
+
+Note: Some variable are not displayed in a useful form.  For example, the value
+shown for :n:`tac` in a script containing :n:`let tac = ltac:(auto)` appears
+only as :n:`<genarg:tacvalue>`.  We hope to address this soon.
+
+The :n:`DETACH` button moves the debugger panel into a separate window, which
+will make it easier to examine its contents.
+
+Supported use cases
+~~~~~~~~~~~~~~~~~~~
+
+There are two main use cases for the debugger.  They're not very compatible.
+Instead of showing warning messages or forcing the user to explicitly pick one
+mode or another, for now it's up to the user to know the limitations and work within them.
+
+The *single file* case is running the debugger on a single *primary* script without ever
+stopping in other *secondary* scripts.  In this case, you can edit the primary script while
+Coq is not running it nor stopped in the debugger.  The position of breakpoints will be updated
+automatically as you edit the file.  It's fine to run the debugger in multiple buffers--you will not
+be confused.  The single-file case is preferable when you can use it.
+
+The *multi-file* case is when a primary script stops in a secondary script.  In this
+case, breakpoints in the secondary script that move due to script editing may no longer
+match the locations in the compiled secondary script.  The debugger won't stop at these
+breakpoints as you expect.  Also, the code highlighted for stack frames in that
+script may be incorrect.  You will need to re-compile
+the secondary script and then restart the primary script (Restart, Ctrl-HOME) to get back
+to a consistent state.
+
+For multi-file debugging, we suggest detaching the Messages, Proof Context
+and Debugger panels so they are
+in separate windows.  To do so, click on the arrow icon next to "Messages",
+select "Windows / Detach Proof" from the menu and click on "DETACH" in the
+Debugger panel.  Note that the Debugger panel is initially attached to
+the Script panel of the toplevel script.  Also note that, for now, the
+"in progress" slider is accurate only when the associated toplevel script panel
+is visible.
+
+
+If a debugger instance is stopped in a secondary script, the debugger function
+keys are directed to the debugger instance associated with the primary script.
+The debugger doesn't attempt to support multiple instances
+stopped in the same secondary script.  If you have a need to do this, run
+each debugger instance in a separate CoqIDE process/window.
+
+Note that if you set a breakpoint in a script that may be called by multiple debugger
+instances, you may inadvertently find you've gotten into unsupported territory.
