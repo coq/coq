@@ -306,11 +306,11 @@ let pr_info dbg s =
 
 (** Eauto main code *)
 
-let make_initial_state dbg n gl dblist localdb lems =
+let make_initial_state sigma evk dbg n dblist localdb lems =
   { depth = n;
     priority = 0;
-    tacres = [gl.it, localdb];
-    sigma = gl.sigma;
+    tacres = [evk, localdb];
+    sigma = sigma;
     last_tactic = lazy (mt());
     dblist = dblist;
     prev = if dbg == Info then Init else Unknown;
@@ -318,9 +318,10 @@ let make_initial_state dbg n gl dblist localdb lems =
   }
 
 let e_search_auto debug (in_depth,p) lems db_list =
-  let open Tacmach.Old in
-  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
-  let local_db = make_local_hint_db (pf_env gl) (project gl) ~ts:TransparentState.full true lems in
+  let open Tacmach in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
   let tac = match in_depth,d with
     | (true,Debug) -> Search.debug_depth_first
@@ -328,14 +329,17 @@ let e_search_auto debug (in_depth,p) lems db_list =
     | (false,Debug) -> Search.debug_breadth_first
     | (false,_) -> Search.breadth_first
   in
-  try
-    pr_dbg_header d;
-    let s = tac (make_initial_state d p gl db_list local_db lems) in
-    pr_info d s;
-    re_sig (List.map fst s.tacres) s.sigma
-  with Not_found ->
-    pr_info_nop d;
-    Tacticals.Old.tclIDTAC gl
+  let () = pr_dbg_header d in
+  let evk = Proofview.Goal.goal gl in
+  match tac (make_initial_state sigma evk d p db_list local_db lems) with
+  | s ->
+    let () = pr_info d s in
+    let () = assert (List.is_empty s.tacres) in
+    Proofview.Unsafe.tclEVARS s.sigma <*>
+    Proofview.Unsafe.tclSETGOALS []
+  | exception Not_found ->
+    let () = pr_info_nop d in
+    Proofview.tclUNIT ()
   end
 
 let eauto_with_bases ?(debug=Off) np lems db_list =
