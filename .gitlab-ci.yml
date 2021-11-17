@@ -729,6 +729,7 @@ library:ci-corn:
 
 plugin:ci-gappa:
   extends: .ci-template-flambda
+  allow_failure: true # waiting for overlay (https://gitlab.inria.fr/gappa/coq/-/merge_requests/5)
   needs:
   - build:edge+flambda
   - library:ci-flocq
