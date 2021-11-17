@@ -370,6 +370,14 @@ let decompose l c =
     Elim.h_decompose l c
   end
 
+let exact ist (c : Ltac_pretype.closed_glob_constr) =
+  let open Tacmach in
+  Proofview.Goal.enter begin fun gl ->
+  let expected_type = Pretyping.OfType (pf_concl gl) in
+  let sigma, c = Tacinterp.type_uconstr ~expected_type ist c (pf_env gl) (project gl) in
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Tactics.exact_no_check c)
+  end
+
 (** ProofGeneral specific command *)
 
 (* Execute tac, show the names of new hypothesis names created by tac

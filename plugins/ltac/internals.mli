@@ -64,6 +64,8 @@ val tclOPTIMIZE_HEAP : unit tactic
 
 val onSomeWithHoles : ('a option -> unit tactic) -> 'a Tactypes.delayed_open option -> unit tactic
 
+val exact : Geninterp.interp_sign -> Ltac_pretype.closed_glob_constr -> unit Proofview.tactic
+
 (** {5 Commands} *)
 
 val declare_equivalent_keys : Constrexpr.constr_expr -> Constrexpr.constr_expr -> unit
