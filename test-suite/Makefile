@@ -322,7 +322,7 @@ unit-tests: $(UNIT_LOGFILES)
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq-core.toplevel,ounit2 \
+	$(HIDE)$(OCAMLBEST) -linkpkg -package coq-core.toplevel,ounit2 \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)./$<.test
 
@@ -689,7 +689,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 
 ide/fake_ide.exe : ide/fake_ide.ml
 	$(SHOW) 'OCAMLC  $<'
-	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coqide-server.protocol -package coqide-server.core $< -o $@
+	$(HIDE)$(OCAMLBEST) -linkpkg -package coqide-server.protocol -package coqide-server.core $< -o $@
 
 %.fake.log : %.fake ide/fake_ide.exe
 	@echo "TEST      $<"

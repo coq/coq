@@ -5,6 +5,6 @@
  (wrapped false)
  ; until ocaml/dune#4892 fixed
  ; (private_modules comProgramFixpoint egramcoq)
- (libraries tactics parsing))
+ (libraries tactics parsing findlib.dynload))
 
 (coq.pp (modules g_proofs g_vernac))

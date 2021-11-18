@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Pp
-open System
 
 (* Code to hook Coq into the ML toplevel -- depends on having the
    objective-caml compiler mostly visible. The functions implemented here are:
@@ -36,13 +35,6 @@ open System
    (I do not know of a solution to this problem, other than to
    put all the needed names into the ML Module object.) *)
 
-
-(* NB: this module relies on OCaml's Dynlink library. The bytecode version
-   of Dynlink is always available, but there are some architectures
-   with native compilation and no dynlink.cmxa. Instead of nasty IFDEF's
-   here for hiding the calls to Dynlink, we now simply reject this rather
-   rare situation during ./configure, and give instructions there about how
-   to build a dummy dynlink.cmxa, cf. dev/dynlink.ml. *)
 
 (* This path is where we look for .cmo *)
 let coq_mlpath_copy = ref [Sys.getcwd ()]
@@ -98,28 +90,24 @@ let ocaml_toploop () =
    too, as we do in the bytecode init code.
 *)
 let _ = CErrors.register_handler (function
-    | Dynlink.Error e ->
-      Some (hov 0 (str "Dynlink error: " ++ str Dynlink.(error_message e)))
+    | Dynlink.Error msg ->
+      let paths = Findlib.search_path () in
+      Some (hov 0 (str "Dynlink error: " ++ str (Dynlink.error_message msg) ++
+        cut () ++ str "Findlib paths:" ++ cut () ++ v 0 (prlist_with_sep cut str paths) ++ fnl()))
+    | Fl_package_base.No_such_package(p,msg) ->
+      let paths = Findlib.search_path () in
+      Some (hov 0 (str "Findlib error: " ++ str p ++
+        str " not found in:" ++ cut () ++ v 0 (prlist_with_sep cut str paths) ++ fnl() ++ str msg))
     | _ ->
       None
   )
 
 let ml_load s =
-  (match !load with
-   | WithTop t ->
-     t.load_obj s
-   | WithoutTop ->
-     Dynlink.loadfile s
-  );
-  s
-
-let dir_ml_load s =
   match !load with
-    | WithTop _ -> ml_load s
-    | WithoutTop ->
-        let warn = not !Flags.quiet in
-        let _,gname = find_file_in_path ~warn !coq_mlpath_copy s in
-        ml_load gname
+  | WithTop t ->
+     t.load_obj s
+  | WithoutTop ->
+     Fl_dynload.load_packages [s]
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
@@ -127,55 +115,6 @@ let add_ml_dir s =
     | WithTop t -> t.add_dir s; keep_copy_mlpath s
     | WithoutTop when has_dynlink -> keep_copy_mlpath s
     | _ -> ()
-
-(* convertit un nom quelconque en nom de fichier ou de module *)
-let mod_of_name name =
-    if Filename.check_suffix name ".cmo" then
-      Filename.chop_suffix name ".cmo"
-    else
-      name
-
-let get_ml_object_suffix name =
-  if Filename.check_suffix name ".cmo" then
-    Some ".cmo"
-  else if Filename.check_suffix name ".cma" then
-    Some ".cma"
-  else if Filename.check_suffix name ".cmxs" then
-    Some ".cmxs"
-  else
-    None
-
-let file_of_name name =
-  let suffix = get_ml_object_suffix name in
-  let fail s =
-    user_err
-      (str"File not found on loadpath : " ++ str s ++ str"\n" ++
-       str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy) ++ str ".") in
-  if not (Filename.is_relative name) then
-    if Sys.file_exists name then name else fail name
-  else if Sys.(backend_type = Native) then
-    (* XXX: Dynlink.adapt_filename does the same? *)
-    let name = match suffix with
-      | Some ((".cmo"|".cma") as suffix) ->
-          (Filename.chop_suffix name suffix) ^ ".cmxs"
-      | Some ".cmxs" -> name
-      | _ -> name ^ ".cmxs"
-    in
-    if is_in_path !coq_mlpath_copy name then name else fail name
-  else
-    let (full, base) = match suffix with
-      | Some ".cmo" | Some ".cma" -> true, name
-      | Some ".cmxs" -> false, Filename.chop_suffix name ".cmxs"
-      | _ -> false, name
-    in
-    if full then
-      if is_in_path !coq_mlpath_copy base then base else fail base
-    else
-      let name = base ^ ".cma" in
-      if is_in_path !coq_mlpath_copy name then name else
-        let name = base ^ ".cmo" in
-        if is_in_path !coq_mlpath_copy name then name else
-          fail (base ^ ".cm[ao]")
 
 (** Is the ML code of the standard library placed into loadable plugins
     or statically compiled into coqtop ? For the moment this choice is
@@ -187,25 +126,21 @@ let file_of_name name =
  * (linked or loaded with load_object). It is used not to load a
  * module twice. It is NOT the list of ML modules Coq knows. *)
 
-let known_loaded_modules = ref String.Map.empty
+let known_loaded_modules = ref String.Set.empty
 
-let add_known_module mname path =
-  if not (String.Map.mem mname !known_loaded_modules) ||
-     String.Map.find mname !known_loaded_modules = None then
-    known_loaded_modules := String.Map.add mname path !known_loaded_modules
+let add_known_module mname =
+  if not (String.Set.mem mname !known_loaded_modules)  then
+    known_loaded_modules := String.Set.add mname !known_loaded_modules
 
 let module_is_known mname =
-  String.Map.mem mname !known_loaded_modules
-
-let known_module_path mname =
-  String.Map.find mname !known_loaded_modules
+  String.Set.mem mname !known_loaded_modules
 
 (** A plugin is just an ML module with an initialization function. *)
 
 let known_loaded_plugins = ref String.Map.empty
 
 let add_known_plugin init name =
-  add_known_module name None;
+  add_known_module name;
   known_loaded_plugins := String.Map.add name init !known_loaded_plugins
 
 let init_known_plugins () =
@@ -232,15 +167,12 @@ let init_ml_object mname =
   try String.Map.find mname !known_loaded_plugins ()
   with Not_found -> ()
 
-let load_ml_object mname ?path fname=
-  let path = match path with
-    | None -> dir_ml_load fname
-    | Some p -> ml_load p in
-  add_known_module mname (Some path);
-  init_ml_object mname;
-  path
+let load_ml_object mname =
+  ml_load mname;
+  add_known_module mname;
+  init_ml_object mname
 
-let add_known_module m = add_known_module m None
+let add_known_module m = add_known_module m
 
 (* Summary of declared ML Modules *)
 
@@ -248,17 +180,17 @@ let add_known_module m = add_known_module m None
 
 let loaded_modules = ref []
 let get_loaded_modules () = List.rev !loaded_modules
-let add_loaded_module md path =
-  if not (List.mem_assoc md !loaded_modules) then
-    loaded_modules := (md,path) :: !loaded_modules
+let add_loaded_module md =
+  if not (List.mem md !loaded_modules) then
+    loaded_modules := md :: !loaded_modules
 let reset_loaded_modules () = loaded_modules := []
 
-let if_verbose_load verb f name ?path fname =
-  if not verb then f name ?path fname
+let if_verbose_load verb f name =
+  if not verb then f name
   else
-    let info = str "[Loading ML file " ++ str fname ++ str " ..." in
+    let info = str "[Loading ML file " ++ str name ++ str " ..." in
     try
-      let path = f name ?path fname in
+      let path = f name in
       Feedback.msg_info (info ++ str " done]");
       path
     with reraise ->
@@ -269,26 +201,24 @@ let if_verbose_load verb f name ?path fname =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let trigger_ml_object verb cache reinit ?path name =
+let trigger_ml_object verb cache reinit name =
   if module_is_known name then begin
     if reinit then init_ml_object name;
-    add_loaded_module name (known_module_path name);
+    add_loaded_module name;
     if cache then perform_cache_obj name
   end else if not has_dynlink then
     user_err
       (str "Dynamic link not supported (module " ++ str name ++ str ").")
   else begin
-    let file = file_of_name (Option.default name path) in
-    let path =
-      if_verbose_load (verb && not !Flags.quiet) load_ml_object name ?path file in
-    add_loaded_module name (Some path);
+    if_verbose_load (verb && not !Flags.quiet) load_ml_object name;
+    add_loaded_module name;
     if cache then perform_cache_obj name
   end
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
   List.iter
-    (fun (name,path) -> trigger_ml_object false false false ?path name) x
+    (fun name -> trigger_ml_object false false false name) x
 
 let _ =
   Summary.declare_ml_modules_summary
@@ -298,34 +228,17 @@ let _ =
 
 (* Liboject entries of declared ML Modules *)
 
-(* Digest of module used to compile the file *)
-type ml_module_digest =
-  | NoDigest
-  | AnyDigest of Digest.t             (* digest of any used cma / cmxa *)
-
 type ml_module_object = {
   mlocal : Vernacexpr.locality_flag;
-  mnames : (string * ml_module_digest) list
+  mnames : string list
 }
 
-let add_module_digest m =
-  if not has_dynlink then
-    m, NoDigest
-  else
-  try
-    let file = file_of_name m in
-    let path, file = System.where_in_path ~warn:false !coq_mlpath_copy file in
-    m, AnyDigest (Digest.file file)
-  with
-  | Not_found ->
-    m, NoDigest
-
 let cache_ml_objects mnames =
-  let iter (obj, _) = trigger_ml_object true true true obj in
+  let iter obj = trigger_ml_object true true true obj in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames=mnames} =
-  let iter (obj, _) = trigger_ml_object true false true obj in
+  let iter obj = trigger_ml_object true false true obj in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
@@ -343,8 +256,6 @@ let inMLModule : ml_module_object -> Libobject.obj =
 let declare_ml_modules local l =
   if Global.sections_are_opened()
   then user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
-  let l = List.map mod_of_name l in
-  let l = List.map add_module_digest l in
   Lib.add_leaf (inMLModule {mlocal=local; mnames=l});
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
@@ -360,7 +271,7 @@ let print_ml_path () =
 
 let print_ml_modules () =
   let l = get_loaded_modules () in
-  str"Loaded ML Modules: " ++ pr_vertical_list str (List.map fst l)
+  str"Loaded ML Modules: " ++ pr_vertical_list str l
 
 let print_gc () =
   let stat = Gc.stat () in

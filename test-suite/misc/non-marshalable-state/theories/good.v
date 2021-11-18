@@ -1,4 +1,4 @@
-Declare ML Module "good_plugin".
+Declare ML Module "coq-test-suite.good".
 
 magic.
 

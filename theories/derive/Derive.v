@@ -1,1 +1,1 @@
-Declare ML Module "derive_plugin".
+Declare ML Module "coq-core.plugins.derive".

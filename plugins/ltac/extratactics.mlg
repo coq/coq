@@ -28,7 +28,7 @@ open Vernacextend
 
 }
 
-DECLARE PLUGIN "ltac_plugin"
+DECLARE PLUGIN "coq-core.plugins.ltac"
 
 TACTIC EXTEND replace
 | ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]

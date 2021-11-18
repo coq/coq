@@ -4,18 +4,18 @@
 (*                                                                            *)
 (* -------------------------------------------------------------------------- *)
 
-DECLARE PLUGIN "tuto2_plugin"
+DECLARE PLUGIN "coq-core.plugins.tuto2"
 
 (*
    Use this macro before any of the other OCaml macros.
 
    Each plugin has a unique name.
-   We have decided to name this plugin as "tuto2_plugin".
+   We have decided to name this plugin as "coq-core.plugins.tuto2".
    That means that:
 
    (1) We write the following command in a file called Loader.v:
 
-         Declare ML Module "tuto2_plugin".
+         Declare ML Module "tuto2".
 
        to load this command into the Coq top-level.
 
@@ -23,7 +23,7 @@ DECLARE PLUGIN "tuto2_plugin"
 
          From Tuto2 Require Import Loader.
 
-       where Loader is the name of the file that declares "tuto2_plugin",
+       where Loader is the name of the file that declares "coq-core.plugins.tuto2",
        and where Tuto2 is the name passed to the -R argument in our _CoqProject.
 
    (3) The above commands will succeed only if there is "tuto2_plugin.cmxs"

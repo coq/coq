@@ -23,7 +23,7 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 
 }
 
-DECLARE PLUGIN "ssrmatching_plugin"
+DECLARE PLUGIN "coq-core.plugins.ssrmatching"
 
 {
 

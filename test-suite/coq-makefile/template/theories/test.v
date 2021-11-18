@@ -1,4 +1,4 @@
-Declare ML Module "test_plugin".
+Declare ML Module "coq-test-suite.test".
 TestCommand.
 Goal True.
 Proof.

@@ -1,4 +1,4 @@
-DECLARE PLUGIN "good_plugin"
+DECLARE PLUGIN "coq-core.plugins.good"
 
 {
 

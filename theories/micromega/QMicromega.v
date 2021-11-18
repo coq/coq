@@ -19,7 +19,7 @@ Require Import RingMicromega.
 Require Import Refl.
 Require Import QArith.
 Require Import Qfield.
-(*Declare ML Module "micromega_plugin".*)
+(*Declare ML Module "coq-core.plugins.micromega".*)
 
 Lemma Qsor : SOR 0 1 Qplus Qmult Qminus Qopp Qeq  Qle Qlt.
 Proof.

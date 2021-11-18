@@ -1,4 +1,5 @@
 archive(byte)="foo.cma"
 archive(native)="foo.cmxa"
-linkopts="-linkall"
-requires="str"
+requires = "str"
+plugin(byte)="foo.cma"
+plugin(native)="foo.cmxs"

@@ -53,7 +53,7 @@ let () =
   let entries = [
     Pcoq.AnyEntry Pltac.ltac2_expr;
   ] in
-  Pcoq.register_grammars_by_name "ltac2" entries
+  Pcoq.register_grammars_by_name "coq-core.plugins.ltac2" entries
 
 (** Tactic definition *)
 
@@ -987,7 +987,7 @@ let ltac2_interp e =
   let tac = Tac2interp.interp Tac2interp.empty_environment e in
   Proofview.tclIGNORE tac
 
-let ComTactic.Interpreter ltac2_interp = ComTactic.register_tactic_interpreter "ltac2" ltac2_interp
+let ComTactic.Interpreter ltac2_interp = ComTactic.register_tactic_interpreter "coq-core.plugins.ltac2" ltac2_interp
 
 let call ~pstate g ~with_end_tac tac =
   let g = Option.default (Goal_select.get_default_goal_selector()) g in
@@ -1051,4 +1051,4 @@ let _ = Mltop.declare_cache_obj begin fun () ->
     ("::", [GTypVar 0; GTypRef (Other t_list, [GTypVar 0])]);
   ];
   Lib.add_leaf (inTac2Init ());
-end "ltac2_plugin"
+end "coq-core.plugins.ltac2"

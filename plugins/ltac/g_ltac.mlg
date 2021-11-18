@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-DECLARE PLUGIN "ltac_plugin"
+DECLARE PLUGIN "coq-core.plugins.ltac"
 
 {
 

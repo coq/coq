@@ -66,12 +66,12 @@ let is_ssr_loaded () =
 
 }
 
-DECLARE PLUGIN "ssreflect_plugin"
+DECLARE PLUGIN "coq-core.plugins.ssreflect"
 
 {
 
 let ssrtac_name name = {
-  mltac_plugin = "ssreflect_plugin";
+  mltac_plugin = "coq-core.plugins.ssreflect";
   mltac_tactic = "ssr" ^ name;
 }
 

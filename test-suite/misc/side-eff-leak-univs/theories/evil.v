@@ -1,4 +1,4 @@
-Declare ML Module "evil_plugin".
+Declare ML Module "coq-test-suite.evil".
 
 Universes i j.
 

@@ -7,6 +7,8 @@ export PATH=$COQBIN:$PATH
 
 cd misc/non-marshalable-state/
 
+export OCAMLPATH=$PWD:$OCAMLPATH
+
 coq_makefile -f _CoqProject -o Makefile
 
 make clean

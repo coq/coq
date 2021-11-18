@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Declare ML Module "ltac2_plugin".
+Declare ML Module "coq-core.plugins.ltac2".
 
 (** Primitive types *)
 

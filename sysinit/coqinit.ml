@@ -47,7 +47,8 @@ let init_gc () =
 let init_ocaml () =
   CProfile.init_profile ();
   init_gc ();
-  Sys.catch_break false (* Ctrl-C is fatal during the initialisation *)
+  Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+  Findlib.init ()
 
 let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
   | None -> ()

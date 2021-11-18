@@ -26,7 +26,7 @@ open Tacarg
 
 }
 
-DECLARE PLUGIN "micromega_plugin"
+DECLARE PLUGIN "coq-core.plugins.micromega"
 
 TACTIC EXTEND PsatzZ
 | [ "psatz_Z" nat_or_var(i) tactic(t) ] -> {  (Coq_micromega.psatz_Z i

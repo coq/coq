@@ -1,4 +1,4 @@
-DECLARE PLUGIN "evil_plugin"
+DECLARE PLUGIN "coq-core.plugins.evil"
 
 {
 

@@ -24,7 +24,7 @@ Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Ztac.
 Require PreOmega.
-(*Declare ML Module "micromega_plugin".*)
+(*Declare ML Module "coq-core.plugins.micromega".*)
 Local Open Scope Z_scope.
 
 Ltac flatten_bool :=

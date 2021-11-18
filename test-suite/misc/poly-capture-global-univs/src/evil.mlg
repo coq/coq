@@ -3,7 +3,7 @@ open Stdarg
 open EvilImpl
 }
 
-DECLARE PLUGIN "evil_plugin"
+DECLARE PLUGIN "coq-core.plugins.evil"
 
 VERNAC COMMAND EXTEND VernacEvil CLASSIFIED AS SIDEFF
 | [ "Evil" ident(x) ident(y) ] -> { evil x y }

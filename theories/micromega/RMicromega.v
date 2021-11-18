@@ -24,7 +24,7 @@ Require Import Qreals.
 Require Import DeclConstant.
 
 Require Setoid.
-(*Declare ML Module "micromega_plugin".*)
+(*Declare ML Module "coq-core.plugins.micromega".*)
 
 Definition Rsrt : ring_theory R0 R1 Rplus Rmult Rminus Ropp (@eq R).
 Proof.

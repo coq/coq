@@ -21,7 +21,7 @@ open Stdarg
 
 }
 
-DECLARE PLUGIN "ltac_plugin"
+DECLARE PLUGIN "coq-core.plugins.ltac"
 
 TACTIC EXTEND decide_equality
 | [ "decide" "equality" ] -> { decideEqualityGoal }
