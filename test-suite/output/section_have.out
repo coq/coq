@@ -1,0 +1,4 @@
+toto = (fun y : True => conj y y) I
+     : True /\ True
+toto = (fun y : True => conj y y) I
+     : True /\ True
