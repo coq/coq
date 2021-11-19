@@ -22,7 +22,6 @@ open Vars
 open Libnames
 open Tactics
 open Termops
-open Tacmach.Old
 open Glob_term
 open Util
 open Evd
@@ -270,6 +269,7 @@ let unify_HO env sigma0 t1 t2 =
   Evd.set_universe_context sigma uc
 
 let pf_unify_HO gl t1 t2 =
+  let open Tacmach.Old in
   let env, sigma0, si = pf_env gl, project gl, sig_it gl in
   let sigma = unify_HO env sigma0 t1 t2 in
   re_sig si sigma
@@ -1266,11 +1266,6 @@ let fill_occ_term env sigma0 cl occ (sigma, t) =
     errorstrm (str "partial term " ++ pr_econstr_pat env sigma t
             ++ str " does not match any subterm of the goal")
 
-let pf_fill_occ_term gl occ t =
-  let sigma0 = project gl and env = pf_env gl and concl = pf_concl gl in
-  let cl, t = fill_occ_term env sigma0 concl occ t in
-  cl, t
-
 let cpattern_of_id id =
   { kind= NoFlag
   ; pattern = DAst.make @@ GRef (GlobRef.VarRef  id, None), None
@@ -1281,12 +1276,6 @@ let is_wildcard ({pattern = (l, r); _} : cpattern) : bool = match DAst.get l, r 
   | _ -> false
 
 (* "ssrpattern" *)
-
-let pf_merge_uc uc gl =
-  re_sig (sig_it gl) (Evd.merge_universe_context (project gl) uc)
-
-let pf_unsafe_merge_uc uc gl =
-  re_sig (sig_it gl) (Evd.set_universe_context (project gl) uc)
 
 (** All the pattern types reuse the same dynamic toplevel tag *)
 let wit_ssrpatternarg = wit_rpatternty
