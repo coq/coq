@@ -616,7 +616,7 @@ let camltag = match caml_version_list with
     67: "unused functor parameter" seems totally bogus
     68: "This pattern depends on mutable state" no idea what it means, dune builds don't display it
 *)
-let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58-67-68"
+let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58-67-68-70"
 let coq_warn_error =
     if !prefs.warn_error
     then "-warn-error +a"
