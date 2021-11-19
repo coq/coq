@@ -466,7 +466,7 @@ We also need additional typing judgments:
 + :math:`\WTM{E}{p}{S}`, denoting that the module pointed by :math:`p` has type :math:`S` in
   the global environment :math:`E`.
 + :math:`\WEV{E}{S}{\ovl{S}}`, denoting that a structure :math:`S` is evaluated to a
-  structure :math:`S` in weak head normal form.
+  structure :math:`\ovl{S}` in weak head normal form.
 + :math:`\WS{E}{S_1}{S_2}` , denoting that a structure :math:`S_1` is a subtype of a
   structure :math:`S_2`.
 + :math:`\WS{E}{e_1}{e_2}` , denoting that a structure element :math:`e_1` is more
@@ -501,8 +501,8 @@ Evaluation of structures to weak head normal form:
 
 In the last rule, :math:`\{t_1 /p_1 .c_1 ,…,t_n /p_n .c_n \}` is the resulting
 substitution from the inlining mechanism. We substitute in :math:`S` the
-inlined fields :math:`p_i .c_i` from :math:`\ModS{X}{S_1 }` by the corresponding delta-
-reduced term :math:`t_i` in :math:`p`.
+inlined fields :math:`p_i .c_i` from :math:`\ModS{X}{S_1 }` by the corresponding
+delta-reduced term :math:`t_i` in :math:`p`.
 
 .. inference:: WEVAL-WITH-MOD
 
@@ -514,7 +514,7 @@ reduced term :math:`t_i` in :math:`p`.
    \end{array}
    ----------------------------------
    \begin{array}{c}
-   \WEV{E}{S~\with~x := p}{}\\
+   \WEV{E}{S~\with~X := p}{}\\
    \Struct~e_1 ;…;e_i ; \ModA{X}{p};e_{i+2} \{p/X\} ;…;e_n \{p/X\} ~\End
    \end{array}
 
@@ -557,7 +557,7 @@ reduced term :math:`t_i` in :math:`p`.
 .. inference:: WEVAL-PATH-MOD1
 
    \begin{array}{c}
-   \WEV{E}{p}{\Struct~e_1 ;…;e_i ; \Mod{X}{S}{S_1};e_{i+2} ;… ;e_n End} \\
+   \WEV{E}{p}{\Struct~e_1 ;…;e_i ; \Mod{X}{S}{S_1};e_{i+2} ;… ;e_n ~\End} \\
    \WEV{E;e_1 ;…;e_i }{S}{\ovl{S}}
    \end{array}
    --------------------------
@@ -574,7 +574,7 @@ reduced term :math:`t_i` in :math:`p`.
 .. inference:: WEVAL-PATH-ALIAS1
 
    \begin{array}{c}
-   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModA{X}{p_1};e_{i+2}  ;… ;e_n End} \\
+   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModA{X}{p_1};e_{i+2}  ;… ;e_n ~\End} \\
    \WEV{E;e_1 ;…;e_i }{p_1}{\ovl{S}}
    \end{array}
    --------------------------
@@ -591,7 +591,7 @@ reduced term :math:`t_i` in :math:`p`.
 .. inference:: WEVAL-PATH-TYPE1
 
    \begin{array}{c}
-   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModType{Y}{S};e_{i+2} ;… ;e_n End} \\
+   \WEV{E}{p}{~\Struct~e_1 ;…;e_i ; \ModType{Y}{S};e_{i+2} ;… ;e_n ~\End} \\
    \WEV{E;e_1 ;…;e_i }{S}{\ovl{S}}
    \end{array}
    --------------------------
@@ -766,7 +766,7 @@ New environment formation rules
    \WF{E}{}
    \WFT{E}{S}
    --------------------------
-   WF(E; \ModS{X}{S})[]
+   \WF{E; \ModS{X}{S}}{}
 
 .. inference:: WF-MOD2
 
@@ -775,27 +775,27 @@ New environment formation rules
    \WFT{E}{S_1}
    \WFT{E}{S_2}
    --------------------------
-   \WF{E; \Mod{X}{S_1}{S_2}}{}
+   \WF{E; \ModImp{X}{S_1}{S_2}}{}
 
 .. inference:: WF-ALIAS
 
    \WF{E}{}
    E[] ⊢ p : S
    --------------------------
-   \WF{E, \ModA{X}{p}}{}
+   \WF{E; \ModA{X}{p}}{}
 
 .. inference:: WF-MODTYPE
 
    \WF{E}{}
    \WFT{E}{S}
    --------------------------
-   \WF{E, \ModType{Y}{S}}{}
+   \WF{E; \ModType{Y}{S}}{}
 
 .. inference:: WF-IND
 
    \begin{array}{c}
    \WF{E;\ind{Γ_P}{Γ_C}{Γ_I}}{} \\
-   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{Γ_P'}{Γ_C'}{Γ_I'};… ~\End : \\
+   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{Γ_P'}{Γ_C'}{Γ_I'};… ~\End \\
    E[] ⊢ \ind{Γ_P'}{Γ_C'}{Γ_I'} <: \ind{Γ_P}{Γ_C}{Γ_I}
    \end{array}
    --------------------------
