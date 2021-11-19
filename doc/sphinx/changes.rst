@@ -838,6 +838,46 @@ Kernel
   closes `#15070 <https://github.com/coq/coq/issues/15070>`_,
   by Pierre-Marie Pédrot).
 
+Specification language, type inference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  Missing registration of universe constraints in :cmd:`Module Type` elaboration
+  (`#14666 <https://github.com/coq/coq/pull/14666>`_,
+  fixes `#14505 <https://github.com/coq/coq/issues/14505>`_,
+  by Hugo Herbelin).
+
+Tactics
+^^^^^^^
+
+- **Fixed:**
+  :tacn:`abstract` more robust with respect to Ltac `constr` bindings containing
+  existential variables
+  (`#14671 <https://github.com/coq/coq/pull/14671>`_,
+  fixes `#10796 <https://github.com/coq/coq/issues/10796>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  correct support of trailing :n:`let` by tactic :tacn:`specialize`
+  (`#15046 <https://github.com/coq/coq/pull/15046>`_,
+  fixes `#15043 <https://github.com/coq/coq/issues/15043>`_,
+  by Hugo Herbelin).
+
+Commands and options
+^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  anomaly with :flag:`Extraction Conservative Types` when extracting
+  pattern-matching on singleton types
+  (`#14669 <https://github.com/coq/coq/pull/14669>`_,
+  fixes `#3527 <https://github.com/coq/coq/issues/3527>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  a regular error instead of an anomaly when calling :cmd:`Separate
+  Extraction` in a module
+  (`#14670 <https://github.com/coq/coq/pull/14670>`_,
+  fixes `#10796 <https://github.com/coq/coq/issues/10796>`_,
+  by Hugo Herbelin).
+
 Version 8.13
 ------------
 
