@@ -151,11 +151,6 @@ type tac_ctx = {
 let new_ctx () =
   { tmp_ids = []; wild_ids = []; delayed_clears = [] }
 
-let with_fresh_ctx t gl =
-  let gl = push_ctx (new_ctx()) gl in
-  let gl = t gl in
-  fst (pull_ctxs gl)
-
 open Pp
 
 let errorstrm x = CErrors.user_err x
@@ -217,7 +212,6 @@ let glob_constr ist genv = function
     Constrintern.intern_gen Pretyping.WithoutTypeConstraint ~ltacvars genv Evd.(from_env genv) ce
   | rc, None -> rc
 
-let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c
 let intern_term ist env (_, c) = glob_constr ist env c
 
 (* Estimate a bound on the number of arguments of a raw constr. *)
