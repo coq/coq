@@ -139,9 +139,9 @@ let match_pat env sigma0 p occ h cl =
 let fire_subst sigma t = Reductionops.nf_evar sigma t
 let pf_fire_subst gl t = fire_subst (project gl) t
 
-let mkTpat orig_gl gl t = (* takes a term, refreshes it and makes a T pattern *)
-  let n, t, _, ucst = pf_abs_evars orig_gl (project gl, pf_fire_subst gl t) in
-  let t, _, _, sigma = saturate ~beta:true (pf_env orig_gl) (project gl) t n in
+let mkTpat env sigma0 (sigma, t) = (* takes a term, refreshes it and makes a T pattern *)
+  let n, t, _, ucst = abs_evars env sigma0 (sigma, fire_subst sigma t) in
+  let t, _, _, sigma = saturate ~beta:true env sigma t n in
   Evd.merge_universe_context sigma ucst, T (EConstr.Unsafe.to_constr t)
 
 let unif_redex env sigma0 nsigma (sigma, r as p) t = (* t is a hint for the redex of p *)
@@ -155,8 +155,7 @@ let unif_redex env sigma0 nsigma (sigma, r as p) t = (* t is a hint for the rede
       with e when CErrors.noncritical e -> p
 
 let find_eliminator ~is_case ?elim oc c_gen gl =
-  let orig_gl = gl in
-  let env = pf_env orig_gl in
+  let env = pf_env gl in
   match elim with
   | Some elim ->
     let gl, elimty = pf_e_type_of gl elim in
@@ -183,8 +182,8 @@ let find_eliminator ~is_case ?elim oc c_gen gl =
       else
         let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
         let pc = match c_gen with
-          | Some p -> interp_cpattern (pf_env orig_gl) (project orig_gl) p None
-          | _ -> mkTpat orig_gl gl c in
+          | Some p -> interp_cpattern (pf_env gl) (project gl) p None
+          | _ -> mkTpat (pf_env gl) (project gl) (project gl, c) in
         Some(c, c_ty, pc), gl in
     project gl, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
   | None ->
@@ -233,8 +232,8 @@ let find_eliminator ~is_case ?elim oc c_gen gl =
       pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
     let pred = List.assoc pred_id elim_args in
     let pc = match n_c_args, c_gen with
-      | 0, Some p -> interp_cpattern (pf_env orig_gl) (project orig_gl) p None
-      | _ -> mkTpat orig_gl gl c in
+      | 0, Some p -> interp_cpattern (pf_env gl) (project gl) p None
+      | _ -> mkTpat (pf_env gl) (project gl) (project gl, c) in
     let cty = Some (c, c_ty, pc) in
     let elimty = Reductionops.whd_all env (project gl) elimty in
     project gl, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
@@ -407,12 +406,12 @@ let compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig
           interp_clr (project gl) (oclr,(tag_of_cpattern t,EConstr.of_constr (fst (redex_of_pattern env p)))) in
         (* if we are the index for the equation we do not clear *)
         let clr_t = if deps = [] && eqid <> None then [] else clr_t in
-        let p = if is_undef_pat p then mkTpat orig_gl gl inf_t else p in
+        let p = if is_undef_pat p then mkTpat (pf_env gl) (project orig_gl) (project gl, inf_t) else p in
         loop (patterns @ [i, p, inf_t, occ])
           (clr_t @ clr) (i+1) (deps, inf_deps)
     | [], c :: inf_deps ->
         debug_ssr (fun () -> Pp.(str"adding inf pattern " ++ pr_econstr_pat env (project gl) c));
-        loop (patterns @ [i, mkTpat orig_gl gl c, c, allocc])
+        loop (patterns @ [i, mkTpat (pf_env gl) (project orig_gl) (project gl, c), c, allocc])
           clr (i+1) ([], inf_deps)
     | _::_, [] -> errorstrm Pp.(str "Too many dependent abstractions") in
   let deps, head_p, inf_deps_r = match what, c_is_head_p, cty with
