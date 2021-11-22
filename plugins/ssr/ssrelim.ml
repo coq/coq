@@ -137,16 +137,16 @@ let match_pat env sigma0 p occ h cl =
   debug_ssr (fun () -> Pp.(str"     got: " ++ pr_constr_env env sigma0 c));
   c, EConstr.of_constr cl, ucst
 
-let fire_subst gl t = Reductionops.nf_evar (project gl) t
+let fire_subst sigma t = Reductionops.nf_evar sigma t
+let pf_fire_subst gl t = fire_subst (project gl) t
 
 let mkTpat orig_gl gl t = (* takes a term, refreshes it and makes a T pattern *)
-  let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in
+  let n, t, _, ucst = pf_abs_evars orig_gl (project gl, pf_fire_subst gl t) in
   let t, _, _, sigma = saturate ~beta:true (pf_env orig_gl) (project gl) t n in
   Evd.merge_universe_context sigma ucst, T (EConstr.Unsafe.to_constr t)
 
-let unif_redex orig_gl gl (sigma, r as p) t = (* t is a hint for the redex of p *)
-  let env = pf_env orig_gl in
-  let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in
+let unif_redex env sigma0 nsigma (sigma, r as p) t = (* t is a hint for the redex of p *)
+  let n, t, _, ucst = abs_evars env sigma0 (nsigma, fire_subst nsigma t) in
   let t, _, _, sigma = saturate ~beta:true env sigma t n in
   let sigma = Evd.merge_universe_context sigma ucst in
   match r with
@@ -155,7 +155,8 @@ let unif_redex orig_gl gl (sigma, r as p) t = (* t is a hint for the redex of p 
       try unify_HO env sigma t (EConstr.of_constr (fst (redex_of_pattern env p))), r
       with e when CErrors.noncritical e -> p
 
-let find_eliminator ~is_case ?elim oc c_gen orig_gl gl =
+let find_eliminator ~is_case ?elim oc c_gen gl =
+  let orig_gl = gl in
   let env = pf_env orig_gl in
   match elim with
   | Some elim ->
@@ -186,7 +187,7 @@ let find_eliminator ~is_case ?elim oc c_gen orig_gl gl =
           | Some p -> interp_cpattern (pf_env orig_gl) (project orig_gl) p None
           | _ -> mkTpat orig_gl gl c in
         Some(c, c_ty, pc), gl in
-    seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
+    project gl, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
   | None ->
     let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
     let ((kn, i),_ as indu), unfolded_c_ty =
@@ -237,7 +238,7 @@ let find_eliminator ~is_case ?elim oc c_gen orig_gl gl =
       | _ -> mkTpat orig_gl gl c in
     let cty = Some (c, c_ty, pc) in
     let elimty = Reductionops.whd_all env (project gl) elimty in
-    seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
+    project gl, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
 
 let saturate_until gl c c_ty f =
   let rec loop n = try
@@ -249,7 +250,7 @@ let saturate_until gl c c_ty f =
   | e when CErrors.noncritical e -> loop (n+1) in loop 0
 
 let get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty gl = match cty with
-| None -> true, gl  (* The user wrote elim: _ *)
+| None -> project gl, true (* The user wrote elim: _ *)
 | Some (c, c_ty, _) ->
   let rec first = function
     | [] ->
@@ -258,7 +259,7 @@ let get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty gl = m
     | x :: rest ->
       match x () with
       | None -> first rest
-      | Some (b,gl) -> b, gl
+      | Some (sigma, b) -> sigma, b
   in
   (* Unify two terms if their heads are not applied unif variables, eg
     * not (?P x). The idea is to rule out cases where the problem is too
@@ -278,7 +279,7 @@ let get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty gl = m
     let gl, arg_ty = pfe_type_of gl arg in
     match saturate_until gl c c_ty (fun c c_ty gl ->
       pf_unify_HO (pf_unify_HO_rigid gl c_ty arg_ty) arg c) with
-    | Some (c, _, _, gl) -> Some (false, gl)
+    | Some (c, _, _, gl) -> Some (project gl, false)
     | None -> None in
   let try_c_last_pattern () =
     (* we try to see if c unifies with the last inferred pattern *)
@@ -287,7 +288,7 @@ let get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty gl = m
     let gl, inf_arg_ty = pfe_type_of gl inf_arg in
     match saturate_until gl c c_ty (fun _ c_ty gl ->
             pf_unify_HO_rigid gl c_ty inf_arg_ty) with
-    | Some (c, _, _,gl) -> Some(true, gl)
+    | Some (c, _, _,gl) -> Some(project gl, true)
     | None -> None in
   first [try_c_last_arg;try_c_last_pattern]
 
@@ -317,10 +318,10 @@ let is_undef_pat = function
 let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr orig_gl gl =
   let env = pf_env orig_gl in
   let error gl t inf_t = errorstrm Pp.(str"The given pattern matches the term"++
-    spc()++pp_term gl t++spc()++str"while the inferred pattern"++
-    spc()++pr_econstr_pat env (project gl) (fire_subst gl inf_t)++spc()++ str"doesn't") in
+    spc()++pr_econstr_env (pf_env gl) (project gl) t++spc()++str"while the inferred pattern"++
+    spc()++pr_econstr_pat env (project gl) (pf_fire_subst gl inf_t)++spc()++ str"doesn't") in
   let match_or_postpone (cl, gl, post) (h, p, inf_t, occ) =
-    let p = unif_redex orig_gl gl p inf_t in
+    let p = unif_redex env (project orig_gl) (project gl) p inf_t in
     if is_undef_pat p then
       let () = debug_ssr (fun () -> Pp.(str"postponing " ++ pp_pattern env p)) in
       cl, gl, post @ [h, p, inf_t, occ]
@@ -351,19 +352,19 @@ let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c
         str"the defined ones matched")
     else match_all concl gl postponed in
   let concl, gl = match_all concl gl patterns in
-  let pred_rctx, _ = EConstr.decompose_prod_assum (project gl) (fire_subst gl predty) in
+  let pred_rctx, _ = EConstr.decompose_prod_assum (project gl) (pf_fire_subst gl predty) in
   let concl, gen_eq_tac, clr, gl = match eqid with
   | Some (IPatId _) when not is_rec ->
       let k = List.length deps in
-      let c = fire_subst gl (List.assoc (n_elim_args - k - 1) elim_args) in
+      let c = pf_fire_subst gl (List.assoc (n_elim_args - k - 1) elim_args) in
       let gl, t = pfe_type_of gl c in
       let gl, eq = get_eq_type gl in
       let gen_eq_tac, eq_ty, gl =
         let refl = EConstr.mkApp (eq, [|t; c; c|]) in
         let new_concl = EConstr.mkArrow refl Sorts.Relevant (EConstr.Vars.lift 1 (pf_concl orig_gl)) in
-        let new_concl = fire_subst gl new_concl in
+        let new_concl = pf_fire_subst gl new_concl in
         let erefl, gl = mkRefl t c gl in
-        let erefl = fire_subst gl erefl in
+        let erefl = pf_fire_subst gl erefl in
         let erefl_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl in
         let eq_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl_ty in
         let gen_eq_tac =
@@ -392,7 +393,7 @@ let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c
       let gl, _ = pfe_type_of gl concl in
       gl, concl
     else gl, concl in
-  concl, gen_eq_tac, clr, gl
+  project gl, concl, gen_eq_tac, clr
 
 let compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig_gl gl =
   let env = pf_env orig_gl in
@@ -422,7 +423,7 @@ let compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig
         deps, [1, pc, inf_p, occ], inf_deps_r in
   let patterns, clr, gl =
     loop [] orig_clr (List.length head_p+1) (List.rev deps, inf_deps_r) in
-  head_p @ patterns, Util.List.uniquize clr, gl
+  project gl, head_p @ patterns, Util.List.uniquize clr
 
 let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   let open Proofview.Notations in
@@ -432,6 +433,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
 
   fun (oc, orig_clr, occ, c_gen) -> pfLIFT begin fun gl ->
 
+  let it = gl.Evd.it in
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
   debug_ssr (fun () -> (Pp.str(if is_case then "==CASE==" else "==ELIM==")));
   (* finds the eliminator applies it to evars and c saturated as needed  *)
@@ -439,50 +441,49 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* cty is None when the user writes _ (hence we can't make a pattern *)
   (* `seed` represents the array of types from which we derive the name seeds
      for the block intro patterns *)
-  let seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl =
-    find_eliminator ~is_case ?elim oc c_gen orig_gl gl
+  let sigma, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred =
+    find_eliminator ~is_case ?elim oc c_gen gl
   in
   let () =
-    let sigma = project gl in
     debug_ssr (fun () -> Pp.(str"elim= "++ pr_econstr_pat env sigma elim));
     debug_ssr (fun () -> Pp.(str"elimty= "++ pr_econstr_pat env sigma elimty)) in
   let open EConstr in
-  let inf_deps_r = match kind_of_type (project gl) elimty with
+  let inf_deps_r = match kind_of_type sigma elimty with
     | AtomicType (_, args) -> List.rev (Array.to_list args)
     | _ -> assert false in
   (* Here we try to understand if the main pattern/term the user gave is
     * the first pattern to be matched (i.e. if elimty ends in P t1 .. tn,
     * wether tn is the t the user wrote in 'elim: t' *)
-  let c_is_head_p, gl = get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty gl in
+  let sigma, c_is_head_p = get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty (re_sig it sigma) in
   debug_ssr (fun () -> Pp.(str"c_is_head_p= " ++ bool c_is_head_p));
-  let gl, predty = pfe_type_of gl pred in
+  let sigma, predty = Typing.type_of env sigma pred in
   (* Patterns for the inductive types indexes to be bound in pred are computed
    * looking at the ones provided by the user and the inferred ones looking at
    * the type of the elimination principle *)
-  let patterns, clr, gl = compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig_gl gl in
+  let sigma, patterns, clr = compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig_gl (re_sig it sigma) in
   let pp_pat (_,p,_,occ) = Pp.(pr_occ occ ++ pp_pattern env p) in
-  let pp_inf_pat gl (_,_,t,_) = pr_econstr_pat env (project gl) (fire_subst gl t) in
+  let pp_inf_pat (_,_,t,_) = pr_econstr_pat env sigma (pf_fire_subst gl t) in
   debug_ssr (fun () -> Pp.(pp_concat (str"patterns=") (List.map pp_pat patterns)));
-  debug_ssr (fun () -> Pp.(pp_concat (str"inf. patterns=") (List.map (pp_inf_pat gl) patterns)));
+  debug_ssr (fun () -> Pp.(pp_concat (str"inf. patterns=") (List.map pp_inf_pat patterns)));
   (* Predicate generation, and (if necessary) tactic to generalize the
    * equation asked by the user *)
-  let elim_pred, gen_eq_tac, clr, gl =
-    generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr orig_gl gl
+  let sigma, elim_pred, gen_eq_tac, clr =
+    generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr orig_gl (re_sig it sigma)
   in
-  let gl, pty = pf_e_type_of gl elim_pred in
-  debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pp_term gl elim_pred));
-  debug_ssr (fun () -> Pp.(str"elim_pred_ty=" ++ pp_term gl pty));
-  let gl = pf_unify_HO gl pred elim_pred in
-  let elim = fire_subst gl elim in
-  let gl = pf_resolve_typeclasses ~where:elim ~fail:false gl in
-  let gl, _ = pf_e_type_of gl elim in
+  let sigma, pty = Typing.type_of env sigma elim_pred in
+  debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pr_econstr_env env sigma elim_pred));
+  debug_ssr (fun () -> Pp.(str"elim_pred_ty=" ++ pr_econstr_env env sigma pty));
+  let sigma = unify_HO env sigma pred elim_pred in
+  let elim = fire_subst sigma elim in
+  let sigma = resolve_typeclasses env sigma ~where:elim ~fail:false in
+  let sigma, _ = Typing.type_of env sigma elim in
   (* check that the patterns do not contain non instantiated dependent metas *)
-  let () = check_pattern_instantiated env (project gl) patterns in
+  let () = check_pattern_instantiated env sigma patterns in
   (* the elim tactic, with the eliminator and the predicated we computed *)
-  let elim = project gl, elim in
+  let elim = sigma, elim in
   let seed =
     Array.map (fun ty ->
-    let ctx,_ = EConstr.decompose_prod_assum (project gl) ty in
+    let ctx,_ = EConstr.decompose_prod_assum sigma ty in
     CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
   (elim,seed,clr,is_rec,gen_eq_tac), orig_gl
 

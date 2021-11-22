@@ -12,8 +12,6 @@
 
 open Pp
 open Names
-open Printer
-open Tacmach.Old
 
 open Ssrast
 
@@ -23,9 +21,6 @@ let pr_list = prlist_with_sep
 
 let pp_concat hd ?(sep=str", ") = function [] -> hd | x :: xs ->
   hd ++ List.fold_left (fun acc x -> acc ++ sep ++ x) x xs
-
-let pp_term gl t =
-  let t = Reductionops.nf_evar (project gl) t in pr_econstr_env (pf_env gl) (project gl) t
 
 (* Term printing utilities functions for deciding bracketing.  *)
 let pr_paren prx x = hov 1 (str "(" ++ prx x ++ str ")")

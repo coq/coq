@@ -321,12 +321,10 @@ val refine_with :
            ?with_evars:bool ->
            evar_map * EConstr.t -> unit Proofview.tactic
 
-val pf_resolve_typeclasses :
-  where:EConstr.t ->
-  fail:bool -> Goal.goal Evd.sigma -> Goal.goal Evd.sigma
 val resolve_typeclasses :
+  Environ.env -> Evd.evar_map ->
   where:EConstr.t ->
-  fail:bool -> Environ.env -> Evd.evar_map -> Evd.evar_map
+  fail:bool -> Evd.evar_map
 
 (*********************** Wrapped Coq  tactics *****************************)
 
