@@ -165,7 +165,7 @@ let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_ju
       ltac_constrs = closure.typed;
       ltac_uconstrs = closure.untyped;
       ltac_idents = closure.idents;
-      ltac_genargs = Id.Map.empty; }
+      ltac_genargs = closure.genargs; }
     in
     (* spiwack: I'm catching [Not_found] potentially too eagerly
        here, as the call to the main pretyping function is caught
