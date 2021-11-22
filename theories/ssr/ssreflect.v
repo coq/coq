@@ -459,27 +459,6 @@ Canonical locked_with_unlockable T k x :=
 Lemma unlock_with T k x : unlocked (locked_with_unlockable k x) = x :> T.
 Proof. exact: unlock. Qed.
 
-(**  The internal lemmas for the have tactics.  **)
-
-Definition ssr_have Plemma Pgoal (step : Plemma) rest : Pgoal := rest step.
-Arguments ssr_have Plemma [Pgoal].
-
-Definition ssr_have_let Pgoal Plemma step
-  (rest : let x : Plemma := step in Pgoal) : Pgoal := rest.
-Arguments ssr_have_let [Pgoal].
-
-Register ssr_have as plugins.ssreflect.ssr_have.
-Register ssr_have_let as plugins.ssreflect.ssr_have_let.
-
-Definition ssr_suff Plemma Pgoal step (rest : Plemma) : Pgoal := step rest.
-Arguments ssr_suff Plemma [Pgoal].
-
-Definition ssr_wlog := ssr_suff.
-Arguments ssr_wlog Plemma [Pgoal].
-
-Register ssr_suff as plugins.ssreflect.ssr_suff.
-Register ssr_wlog as plugins.ssreflect.ssr_wlog.
-
 (**  Internal N-ary congruence lemmas for the congr tactic.  **)
 
 Fixpoint nary_congruence_statement (n : nat)

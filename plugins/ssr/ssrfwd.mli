@@ -29,7 +29,8 @@ val havetac : ist ->
            bool ->
            bool -> unit Proofview.tactic
 
-val basecuttac : string -> EConstr.t -> unit Proofview.tactic
+type cut_kind = Have | HaveTransp | Suff
+val basecuttac : cut_kind -> EConstr.t -> unit Proofview.tactic
 
 val basesufftac : EConstr.t -> unit Proofview.tactic
 

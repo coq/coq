@@ -48,3 +48,10 @@ have totoc (H : bar _ 5) : 3 = 3 := eq_refl.
 move/totoc: nat => _.
 exact I.
 Qed.
+
+Unset SsrHave NoTCResolution.
+
+Instance test : foo bool.
+Proof.
+  have : foo nat.
+Abort.

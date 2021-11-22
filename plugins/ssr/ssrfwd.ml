@@ -91,26 +91,49 @@ let combineCG t1 t2 f g = match t1, t2 with
  | _, (_, (_, None)) -> anomaly "have: mixed C-G constr"
  | _ -> anomaly "have: mixed G-C constr"
 
-let basecuttac name t =
-  let open Proofview.Notations in
-  Ssrcommon.tacMK_SSR_CONST name >>= fun hd ->
-  let t = EConstr.mkApp (hd, [|t|]) in
-  Ssrcommon.tacTYPEOF t >>= fun _ty ->
-  Tactics.apply t
 
-let basesufftac t =
+ type cut_kind = Have | HaveTransp | Suff
+ let basecuttac k c =
   let open Proofview.Notations in
-  Ssrcommon.tacMK_SSR_CONST "ssr_suff" >>= fun hd ->
-  let t = EConstr.mkApp (hd, [|t|]) in
-  Ssrcommon.tacTYPEOF t >>= fun _ty ->
-  Ssrcommon.applyn ~with_evars:true 3 t
+  let open EConstr in
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.project gl in
+    let concl = Proofview.Goal.concl gl in
+    match Typing.sort_of env sigma c with
+    | exception e when CErrors.noncritical e ->
+      let _, info = Exninfo.capture e in
+      Tacticals.tclZEROMSG ~info (str "Not a proposition or a type.")
+    | sigma, s ->
+      let r = Sorts.relevance_of_sort s in
+      let sigma, f, glf =
+        match k with
+        | HaveTransp ->
+            let name = Context.make_annot Name.Anonymous r in
+            let sigma, p = Evarutil.new_evar env sigma c in
+            let sigma, f = Evarutil.new_evar env sigma (mkLetIn (name,p,c,Vars.lift 1 concl)) in
+            let gp = Proofview_monad.with_empty_state (fst @@ destEvar sigma p) in
+            let gf = Proofview_monad.with_empty_state (fst @@ destEvar sigma f) in
+            sigma, f, [gp;gf]
+        | Have | Suff ->
+            let sigma, f = Evarutil.new_evar env sigma (mkArrow c r concl) in
+            let gf = Proofview_monad.with_empty_state (fst @@ destEvar sigma f) in
+            sigma, f, [gf] in
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Tactics.eapply f)
+      <*>
+      Proofview.Unsafe.tclGETGOALS >>= begin fun gl ->
+        match k with
+        | Suff ->
+            Proofview.Unsafe.tclSETGOALS (glf @ gl) <*>
+            Proofview.tclFOCUS 1 1 Tactics.New.reduce_after_refine
+        | Have | HaveTransp ->
+            let ngoals = List.length gl + 1 in
+            Proofview.Unsafe.tclSETGOALS (gl @ glf) <*>
+            Proofview.tclFOCUS ngoals ngoals Tactics.New.reduce_after_refine
+      end
+    end
 
-let evarcuttac name cs =
-  let open Proofview.Notations in
-  Ssrcommon.tacMK_SSR_CONST name >>= fun hd ->
-  let t = EConstr.mkApp (hd, cs) in
-  Ssrcommon.tacTYPEOF t >>= fun _ty ->
-  applyn ~with_evars:true ~with_shelve:false (Array.length cs) t
+let basesufftac t = basecuttac Suff t
 
 let introstac ipats = tclIPAT ipats
 
@@ -144,8 +167,8 @@ let havetac ist
    match fk with FwdHint(_,true) -> false | _ -> true in
  let hint = hinttac ist true hint in
  let cuttac t = Proofview.Goal.enter begin fun gl ->
-   if transp then evarcuttac "ssr_have_let" [|concl;t|]
-   else basecuttac "ssr_have" t
+   if transp then basecuttac HaveTransp t
+   else basecuttac Have t
   end in
  (* Introduce now abstract constants, so that everything sees them *)
  let unlock_abs (idty,args_id) gl =
@@ -289,8 +312,8 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
   let hinttac = hinttac ist true hint in
   let cut_kind, fst_goal_tac, snd_goal_tac =
     match suff, ghave with
-    | true, `NoGen -> "ssr_wlog", Tacticals.tclTHEN hinttac (tacipat pats), tacigens
-    | false, `NoGen -> "ssr_wlog", hinttac, Tacticals.tclTHEN tacigens (tacipat pats)
+    | true, `NoGen -> Suff, Tacticals.tclTHEN hinttac (tacipat pats), tacigens
+    | false, `NoGen -> Suff, hinttac, Tacticals.tclTHEN tacigens (tacipat pats)
     | true, `Gen _ -> assert false
     | false, `Gen id ->
       if gens = [] then errorstrm(str"gen have requires some generalizations");
@@ -309,9 +332,9 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
         let args = Array.of_list args in
         debug_ssr (fun () -> str"specialized="++ pr_econstr_env (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args)));
         debug_ssr (fun () -> str"specialized_ty="++ pr_econstr_env (pf_env gl) (project gl) ct);
-        Tacticals.tclTHENS (basecuttac "ssr_have" ct)
+        Tacticals.tclTHENS (basecuttac Have ct)
           [Tactics.apply EConstr.(mkApp (mkVar id,args)); Tacticals.tclIDTAC] in
-      "ssr_have",
+      Have,
       (if hint = nohint then tacigens else hinttac),
       Tacticals.tclTHENLIST [name_general_hyp; tac_specialize; tacipat pats; cleanup]
   in
