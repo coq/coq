@@ -258,9 +258,11 @@ val mkProt :
 val mkEtaApp : EConstr.t -> int -> int -> EConstr.t
 
 val mkRefl :
+  Environ.env ->
+  Evd.evar_map ->
   EConstr.t ->
   EConstr.t ->
-  Goal.goal Evd.sigma -> EConstr.t * Goal.goal Evd.sigma
+  Evd.evar_map * EConstr.t
 
 val discharge_hyp :
            Id.t * (Id.t * string) -> unit Proofview.tactic

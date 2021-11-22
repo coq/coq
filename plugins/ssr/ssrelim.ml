@@ -102,9 +102,8 @@ let subgoals_tys sigma (relctx, concl) =
  * 4. build the tactic handle instructions and clears as required in ipats and
  *    by eqid *)
 
-let get_eq_type gl =
-  let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
-  gl, EConstr.of_constr eq
+let get_eq_type env sigma =
+  Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.type")
 
 type elim_what =
 | EConstr of
@@ -317,9 +316,9 @@ let is_undef_pat = function
 
 let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr orig_gl gl =
   let env = pf_env orig_gl in
-  let error gl t inf_t = errorstrm Pp.(str"The given pattern matches the term"++
-    spc()++pr_econstr_env (pf_env gl) (project gl) t++spc()++str"while the inferred pattern"++
-    spc()++pr_econstr_pat env (project gl) (pf_fire_subst gl inf_t)++spc()++ str"doesn't") in
+  let error sigma t inf_t = errorstrm Pp.(str"The given pattern matches the term"++
+    spc()++pr_econstr_env env sigma t++spc()++str"while the inferred pattern"++
+    spc()++pr_econstr_pat env sigma (fire_subst sigma inf_t)++spc()++ str"doesn't") in
   let match_or_postpone (cl, gl, post) (h, p, inf_t, occ) =
     let p = unif_redex env (project orig_gl) (project gl) p inf_t in
     if is_undef_pat p then
@@ -330,7 +329,7 @@ let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c
       let gl = pf_merge_uc ucst gl in
       let c = EConstr.of_constr c in
       let gl = try pf_unify_HO gl inf_t c
-                with exn when CErrors.noncritical exn -> error gl c inf_t in
+                with exn when CErrors.noncritical exn -> error (project gl) c inf_t in
       cl, gl, post
     with
     | NoMatch | NoProgress ->
@@ -340,7 +339,7 @@ let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c
         let n, e, _, _ucst =  pf_abs_evars gl (fst p, e) in
         let e, _, _, gl = pf_saturate ~beta:true gl e n in
         let gl = try pf_unify_HO gl inf_t e
-                  with exn when CErrors.noncritical exn -> error gl e inf_t in
+                  with exn when CErrors.noncritical exn -> error (project gl) e inf_t in
         cl, gl, post
   in
   let rec match_all concl gl patterns =
@@ -355,29 +354,32 @@ let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c
   let pred_rctx, _ = EConstr.decompose_prod_assum (project gl) (pf_fire_subst gl predty) in
   let concl, gen_eq_tac, clr, gl = match eqid with
   | Some (IPatId _) when not is_rec ->
+      let sigma = project gl in
       let k = List.length deps in
-      let c = pf_fire_subst gl (List.assoc (n_elim_args - k - 1) elim_args) in
-      let gl, t = pfe_type_of gl c in
-      let gl, eq = get_eq_type gl in
-      let gen_eq_tac, eq_ty, gl =
+      let c = fire_subst sigma (List.assoc (n_elim_args - k - 1) elim_args) in
+      let sigma, t = Typing.type_of (pf_env gl) sigma c in
+      let sigma, eq = get_eq_type (pf_env gl) sigma in
+      let sigma, gen_eq_tac, eq_ty =
         let refl = EConstr.mkApp (eq, [|t; c; c|]) in
         let new_concl = EConstr.mkArrow refl Sorts.Relevant (EConstr.Vars.lift 1 (pf_concl orig_gl)) in
-        let new_concl = pf_fire_subst gl new_concl in
-        let erefl, gl = mkRefl t c gl in
-        let erefl = pf_fire_subst gl erefl in
-        let erefl_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl in
-        let eq_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl_ty in
+        let new_concl = fire_subst sigma new_concl in
+        let sigma, erefl = mkRefl env sigma t c in
+        let erefl = fire_subst sigma erefl in
+        let erefl_ty = Retyping.get_type_of env sigma erefl in
+        let eq_ty = Retyping.get_type_of env sigma erefl_ty in
+        let ucst = Evd.evar_universe_context sigma in
         let gen_eq_tac =
           let open Proofview.Notations in
           Proofview.Goal.enter begin fun s ->
           let sigma = Proofview.Goal.sigma s in
-          let open Evd in
-          let sigma = merge_universe_context sigma (evar_universe_context (project gl)) in
+          let sigma = Evd.merge_universe_context sigma ucst in
           Proofview.Unsafe.tclEVARS sigma <*>
           Tactics.apply_type ~typecheck:true new_concl [erefl]
           end
         in
-        gen_eq_tac, eq_ty, gl in
+        sigma, gen_eq_tac, eq_ty
+      in
+      let gl = re_sig gl.Evd.it sigma in
       let rel = k + if c_is_head_p then 1 else 0 in
       let src, gl = mkProt eq_ty EConstr.(mkApp (eq,[|t; c; mkRel rel|])) gl in
       let concl = EConstr.mkArrow src Sorts.Relevant (EConstr.Vars.lift 1 concl) in

@@ -766,10 +766,9 @@ let mkEtaApp c n imin =
     let imax = imin + n - 1 in n, (fun i -> mkRel (imax - i)) in
   mkApp (c, Array.init nargs mkarg)
 
-let mkRefl t c gl =
-  let sigma = project gl in
-  let (sigma, refl) = EConstr.fresh_global (pf_env gl) sigma Coqlib.(lib_ref "core.eq.refl") in
-  EConstr.mkApp (refl, [|t; c|]), { gl with sigma }
+let mkRefl env sigma t c =
+  let (sigma, refl) = EConstr.fresh_global env sigma Coqlib.(lib_ref "core.eq.refl") in
+  sigma, EConstr.mkApp (refl, [|t; c|])
 
 let discharge_hyp (id', (id, mode)) =
   Proofview.Goal.enter begin fun gl ->
