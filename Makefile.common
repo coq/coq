@@ -117,6 +117,8 @@ _DDISPLAY?=quiet
 _DPROFILE?=$(CONFIGURE_DPROFILE)
 _DOPT:=--display=$(_DDISPLAY) $(_DPROFILE)
 _DBUILD:=$(FLOCK) .dune.lock dune build $(_DOPT)
+OCAMLPATH := _build/install/default/lib/:$(OCAMLPATH)
+export OCAMLPATH
 
 # We rerun dune when any of the source files have changed
 
@@ -138,14 +140,14 @@ $(CSHARE)/%: $(_DBUILD_DEPS)
 
 ALL_PLUGIN_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/plugins -name '*.ml' -or -name '*.mli' -or -name '*.mlg') $(ALL_ML_SOURCE_FILES)
 
-_build/default/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
+_build/default/plugins/%_plugin.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
-	$(HIDE)$(_DBUILD) $@
+	$(HIDE)$(_DBUILD) _build/install/default/lib/coq-core/plugins/$(addsuffix _plugin.cmxs, $(shell basename $*)/$(shell basename $*)) _build/install/default/lib/coq-core/META
 	$(HIDE)touch $@
 
-_build/default/plugins/%.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
+_build/default/plugins/%_plugin.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
-	$(HIDE)$(_DBUILD) $@
+	$(HIDE)$(_DBUILD) _build/install/default/lib/coq-core/plugins/$(addsuffix _plugin.cma, $(shell basename $*)/$(shell basename $*)) _build/install/default/lib/coq-core/META
 	$(HIDE)touch $@
 
 # Only used for the test-suite in local mode
