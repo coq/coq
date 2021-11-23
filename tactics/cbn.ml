@@ -112,7 +112,13 @@ sig
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
-  | Cst of cst_member * int * int list * 'a t * Cst_stack.t
+  | Cst of { const : cst_member;
+             curr : int;
+             remains : int list;
+             params : 'a t;
+             volatile : bool;
+             cst_l : Cst_stack.t;
+           }
 
   and 'a t = 'a member list
 
@@ -166,7 +172,13 @@ struct
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
-  | Cst of cst_member * int * int list * 'a t * Cst_stack.t
+  | Cst of { const : cst_member;
+             curr : int;
+             remains : int list;
+             params : 'a t;
+             volatile : bool;
+             cst_l : Cst_stack.t;
+           }
 
   and 'a t = 'a member list
 
@@ -188,7 +200,7 @@ struct
     | Primitive (p,c,args,kargs,cst_l) ->
       str "ZPrimitive(" ++ str (CPrimitives.to_string p)
       ++ pr_comma () ++ pr pr_c args ++ str ")"
-    | Cst (mem,curr,remains,params,cst_l) ->
+    | Cst {const=mem;curr;remains;params;cst_l} ->
       str "ZCst(" ++ pr_cst_member pr_c mem ++ pr_comma () ++ int curr
       ++ pr_comma () ++
         prlist_with_sep pr_semicolon int remains ++
@@ -249,9 +261,9 @@ struct
         f_fix f1 f2
           && equal_rec (List.rev s1) (List.rev s2)
           && equal_rec s1' s2'
-      | Cst (c1,curr1,remains1,params1,_)::s1', Cst (c2,curr2,remains2,params2,_)::s2' ->
-        equal_cst_member c1 c2
-          && equal_rec (List.rev params1) (List.rev params2)
+      | Cst c1::s1', Cst c2::s2' ->
+        equal_cst_member c1.const c2.const
+          && equal_rec (List.rev c1.params) (List.rev c2.params)
           && equal_rec s1' s2'
       | ((App _|Case _|Proj _|Fix _|Cst _|Primitive _)::_|[]), _ -> false
     in equal_rec (List.rev sk1) (List.rev sk2)
@@ -289,7 +301,7 @@ struct
   let will_expose_iota args =
     List.exists
       (function (Fix (_,_,l) | Case (_,l) |
-                 Proj (_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
+                 Proj (_,l) | Cst {cst_l=l}) when Cst_stack.is_empty l -> true | _ -> false)
       args
 
   let list_of_app_stack s =
@@ -357,10 +369,10 @@ struct
       zip (best_state sigma (mkFix fix, st @ (append_app [|f|] s)) cst_l)
   | f, (Fix (fix,st,_)::s) -> zip
     (mkFix fix, st @ (append_app [|f|] s))
-  | f, (Cst (cst,_,_,params,cst_l)::s) when refold ->
-    zip (best_state sigma (constr_of_cst_member cst (params @ (append_app [|f|] s))) cst_l)
-  | f, (Cst (cst,_,_,params,_)::s) ->
-    zip (constr_of_cst_member cst (params @ (append_app [|f|] s)))
+  | f, (Cst {const;params;cst_l}::s) when refold ->
+    zip (best_state sigma (constr_of_cst_member const (params @ (append_app [|f|] s))) cst_l)
+  | f, (Cst {const;params}::s) ->
+    zip (constr_of_cst_member const (params @ (append_app [|f|] s)))
   | f, (Proj (p,cst_l)::s) when refold ->
     zip (best_state sigma (mkProj (p,f),s) cst_l)
   | f, (Proj (p,_)::s) -> zip (mkProj (p,f),s)
@@ -610,17 +622,21 @@ let whd_state_gen ?csts flags env sigma =
                   || is_case tm'
                   then fold ()
                   else whrec cst_l' (tm', sk' @ sk)
-              | UnfoldWhen { recargs } -> (* maybe unfolds *)
+              | UnfoldWhen { recargs; nargs } -> (* maybe unfolds *)
                 begin match recargs with
-                  |[] -> (* if nargs has been specified *)
-                    (* CAUTION : the constant is NEVER refold
-                                            (even when it hides a (co)fix) *)
+                  | [] -> (* if nargs has been specified *)
+                    (* CAUTION : the constant is NEVER refolded (even when it hides a (co)fix) *)
                     whrec cst_l (body, stack)
-                  |curr::remains -> match Stack.strip_n_app curr stack with
+                  | curr :: remains -> match Stack.strip_n_app curr stack with
                     | None -> fold ()
                     | Some (bef,arg,s') ->
-                      whrec Cst_stack.empty
-                        (arg,Stack.Cst(Stack.Cst_const (fst const, u'),curr,remains,bef,cst_l)::s')
+                      let cst_l = Stack.Cst
+                          { const = Stack.Cst_const (fst const, u');
+                            volatile = Option.has_some nargs;
+                            curr; remains; params=bef; cst_l;
+                          }
+                      in
+                      whrec Cst_stack.empty (arg,cst_l::s')
                 end
               end
         end
@@ -652,23 +668,40 @@ let whd_state_gen ?csts flags env sigma =
                    let idx = x - npars in
                    if idx < 0 then None else Some idx) recargs
                in
+               let volatile = match behavior with
+                 | UnfoldWhen {nargs} -> Option.has_some nargs
+                 | UnfoldWhenNoMatch _ | NeverUnfold -> false
+               in
                match recargs with
-               |[] -> (* if nargs has been specified *)
+               | [] -> (* if nargs has been specified *)
                  (* CAUTION : the constant is NEVER refold
                                   (even when it hides a (co)fix) *)
                  let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
                  whrec Cst_stack.empty(* cst_l *) stack'
-               | curr::remains ->
+               | curr :: remains ->
                  if curr == 0 then (* Try to reduce the record argument *)
-                   whrec Cst_stack.empty
-                     (c, Stack.Cst(Stack.Cst_proj p,curr,remains,Stack.empty,cst_l)::stack)
+                   let cst_l = Stack.Cst
+                       { const=Stack.Cst_proj p;
+                         volatile; curr; remains;
+                         params=Stack.empty;
+                         cst_l;
+                       }
+                   in
+                   whrec Cst_stack.empty (c, cst_l::stack)
                  else
                    match Stack.strip_n_app curr stack with
                    | None -> fold ()
                    | Some (bef,arg,s') ->
-                     whrec Cst_stack.empty
-                       (arg,Stack.Cst(Stack.Cst_proj p,curr,remains,
-                                      Stack.append_app [|c|] bef,cst_l)::s')
+                     let cst_l = Stack.Cst
+                         { const=Stack.Cst_proj p;
+                           curr;
+                           remains;
+                           volatile;
+                           params=Stack.append_app [|c|] bef;
+                           cst_l;
+                         }
+                     in
+                     whrec Cst_stack.empty (arg,cst_l::s')
            end)
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
@@ -709,7 +742,7 @@ let whd_state_gen ?csts flags env sigma =
           let x' = Stack.zip sigma (x, args) in
           let out_sk = s' @ (Stack.append_app [|x'|] s'') in
           reduce_and_refold_fix whrec env sigma cst_l f out_sk
-        |args, (Stack.Cst (const,curr,remains,s',cst_l) :: s'') ->
+        |args, (Stack.Cst {const;curr;remains;volatile;params=s';cst_l} :: s'') ->
           let x' = Stack.zip sigma (x, args) in
           begin match remains with
           | [] ->
@@ -720,20 +753,27 @@ let whd_state_gen ?csts flags env sigma =
               | Some body ->
                 let const = (fst const, EInstance.make (snd const)) in
                 let body = EConstr.of_constr body in
-                whrec (Cst_stack.add_cst (mkConstU const) cst_l)
-                  (body, s' @ (Stack.append_app [|x'|] s'')))
+                let cst_l = if volatile then cst_l else Cst_stack.add_cst (mkConstU const) cst_l in
+                whrec cst_l (body, s' @ (Stack.append_app [|x'|] s'')))
             | Stack.Cst_proj p ->
               let stack = s' @ (Stack.append_app [|x'|] s'') in
-                match Stack.strip_n_app 0 stack with
-                | None -> assert false
-                | Some (_,arg,s'') ->
-                  whrec Cst_stack.empty (arg, Stack.Proj (p,cst_l) :: s''))
+              match Stack.strip_n_app 0 stack with
+              | None -> assert false
+              | Some (_,arg,s'') ->
+                whrec Cst_stack.empty (arg, Stack.Proj (p,cst_l) :: s''))
           | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
             | None -> fold ()
             | Some (bef,arg,s''') ->
-              whrec Cst_stack.empty
-                (arg,
-                 Stack.Cst (const,next,remains',s' @ (Stack.append_app [|x'|] bef),cst_l) :: s''')
+              let cst_l = Stack.Cst
+                  { const;
+                    curr=next;
+                    volatile;
+                    remains=remains';
+                    params=s' @ (Stack.append_app [|x'|] bef);
+                    cst_l;
+                  }
+              in
+              whrec Cst_stack.empty (arg, cst_l :: s''')
           end
         |_, (Stack.App _)::_ -> assert false
         |_, _ -> fold ()
