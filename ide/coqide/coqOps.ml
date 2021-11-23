@@ -628,7 +628,6 @@ object(self)
   method private fill_command_queue until queue =
     let topstack =
       if Doc.focused document then fst (Doc.context document) else [] in
-    self#scroll_to_start_of_input ();
     let rec loop n iter =
       match Sentence.find buffer iter with
       | None -> ()
@@ -903,12 +902,9 @@ object(self)
     Coq.bind (Coq.return ()) (fun () ->
     messages#default_route#clear;
     let point = self#get_insert in
-    if point#compare self#get_start_of_input >= 0 then
-      self#process_until_iter point
-    else begin
-      self#scroll_to_start_of_input ();
-      self#backtrack_to_iter ~move_insert:false point
-    end)
+    if point#compare self#get_start_of_input >= 0
+    then self#process_until_iter point
+    else self#backtrack_to_iter ~move_insert:false point)
 
   method go_to_mark m =
     Coq.bind (Coq.return ()) (fun () ->
