@@ -27,10 +27,6 @@ sort > desired <<EOT
 .
 ./test
 ./test/test.glob
-./test/test_plugin.cmi
-./test/test_plugin.cmx
-./test/test_plugin.cmxa
-./test/test_plugin.cmxs
 ./test/test.v
 ./test/test.vo
 ./test/.coq-native
@@ -38,4 +34,15 @@ sort > desired <<EOT
 ./test/.coq-native/Ntest_test.cmx
 ./test/.coq-native/Ntest_test.cmxs
 EOT
-exec diff -u desired actual
+diff -u desired actual
+
+(cd "$(find tmp -name coq-test-suite)" && find .) | sort > actual
+sort > desired <<EOT
+.
+./META
+./test_plugin.cmi
+./test_plugin.cmx
+./test_plugin.cmxa
+./test_plugin.cmxs
+EOT
+diff -u desired actual

@@ -151,6 +151,21 @@ let generate_makefile oc conf_file local_file local_late_file dep_file args proj
     ] in
   output_string oc s
 
+let generate_meta_file p =
+  match p.meta_file with
+  | None -> p
+  | Some f ->
+      let ext = Filename.extension f in
+      if ext = ".in" then
+        let meta_file = Filename.chop_extension f in
+        let oc = open_out meta_file in
+        (* META generation is just a renaming for now, we lack some metadata *)
+        output_string oc (read_whole_file f);
+        close_out oc;
+        { p with meta_file = Some meta_file }
+      else
+        p (* already a META.package file *)
+
 let section oc s =
   let pad = String.make (76 - String.length s) ' ' in
   let sharps = String.make 79 '#' in
@@ -200,8 +215,14 @@ let generate_conf_coq_config oc =
   fprintf oc "COQMF_WINDRIVE=%s\n" (windrive coqlib)
 ;;
 
+let check_metafile { mllib_files; mlpack_files; meta_file; _ } =
+  if mlpack_files @ mllib_files <> [] && meta_file = None then begin
+    Printf.eprintf "Error: you need a META.package-name file in order to build plugins\n";
+    exit 1
+  end
+
 let generate_conf_files oc
-  { v_files; mli_files; mlg_files; ml_files; mllib_files; mlpack_files; }
+  { v_files; mli_files; mlg_files; ml_files; mllib_files; mlpack_files; meta_file }
 =
   let module S = String in
   let map = map_sourced_list in
@@ -212,6 +233,7 @@ let generate_conf_files oc
   fprintf oc "COQMF_MLGFILES = %s\n"    (S.concat " " (map quote mlg_files));
   fprintf oc "COQMF_MLPACKFILES = %s\n" (S.concat " " (map quote mlpack_files));
   fprintf oc "COQMF_MLLIBFILES = %s\n"  (S.concat " " (map quote mllib_files));
+  fprintf oc "COQMF_METAFILE = %s\n"  (Option.default "" meta_file);
   let cmdline_vfiles = filter_cmdline v_files in
   fprintf oc "COQMF_CMDLINE_VFILES = %s\n" (S.concat " " (List.map quote cmdline_vfiles));
 ;;
@@ -403,6 +425,10 @@ let _ =
   check_overlapping_include project;
 
   check_native_compiler project.native_compiler;
+
+  check_metafile project;
+
+  let project = generate_meta_file project in
 
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file local_late_file dep_file (prog :: args) project;

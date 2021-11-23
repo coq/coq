@@ -15,7 +15,7 @@ make uninstall-doc DSTROOT="$PWD/tmp"
   while IFS= read -r -d '' d
   do
     pushd "$d" >/dev/null && find . && popd >/dev/null
-  done < <(find tmp -name user-contrib -print0)
+  done < <(find tmp \( -name user-contrib -o -name coq-test-suite \) -print0)
 ) | sort -u > actual
 sort -u > desired <<EOT
 .

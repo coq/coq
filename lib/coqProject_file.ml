@@ -28,6 +28,7 @@ type project = {
   ml_files : string sourced list;
   mllib_files : string sourced list;
   mlpack_files : string sourced list;
+  meta_file : string option;
 
   ml_includes : path sourced list;
   r_includes  : (path * logic_path) sourced list;
@@ -56,6 +57,7 @@ let mk_project project_file makefile native_compiler = {
   mllib_files = [];
   mlpack_files = [];
   ml_includes = [];
+  meta_file = None;
   r_includes = [];
   q_includes = [];
   extra_args = [];
@@ -265,7 +267,14 @@ let process_cmd_line ~warning_fn orig_dir proj args =
         | ".mlpack" ->
           check_filename f;
           { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
-        | _ -> raise (Parsing_error ("Unknown option "^f')) in
+        | _ ->
+          if String.length f > 5 && String.sub f 0 5 = "META." then
+            if proj.meta_file = None then
+              { proj with meta_file = Some f }
+            else
+              raise (Parsing_error "only one META.package file can be specified")
+          else
+            raise (Parsing_error ("Unknown option "^f')) in
       aux proj r
  in
   let proj = aux proj args in

@@ -26,6 +26,7 @@ MLFILES           := $(COQMF_MLFILES)
 MLGFILES          := $(COQMF_MLGFILES)
 MLPACKFILES       := $(COQMF_MLPACKFILES)
 MLLIBFILES        := $(COQMF_MLLIBFILES)
+METAFILE          := $(COQMF_METAFILE)
 CMDLINE_VFILES    := $(COQMF_CMDLINE_VFILES)
 INSTALLCOQDOCROOT := $(COQMF_INSTALLCOQDOCROOT)
 OTHERFLAGS        := $(COQMF_OTHERFLAGS)
@@ -159,6 +160,31 @@ TGTS ?=
 ifdef DSTROOT
 DESTDIR := $(DSTROOT)
 endif
+
+# findlib files installation
+ifeq ($(DESTDIR),)
+FINDLIBPREINST= true
+FINDLIBDESTDIR= -destdir $(COQCORELIB)../
+else
+FINDLIBPREINST= mkdir -p $(DESTDIR)/$(COQCORELIB)../
+FINDLIBDESTDIR= -destdir $(DESTDIR)/$(COQCORELIB)../
+endif
+findlib_install = \
+	$(HIDE)if [ -e META ]; then \
+	  $(FINDLIBPREINST) && \
+	  mv $(METAFILE) $(METAFILE).skip ; \
+	  $(OCAMLFIND) install $(2) $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) $(1); \
+	  rc=$$?; \
+	  mv $(METAFILE).skip $(METAFILE); \
+	  rm -f META; \
+	  exit $$rc; \
+	fi
+ifeq ($(shell which cygpath 2>/dev/null),)
+FINDLIBSEP := :
+else
+FINDLIBSEP := ;
+endif
+EXTRAOCAMLPATH=$(dir $(abspath $(METAFILE)))
 
 # Substitution of the path by appending $(DESTDIR) if needed.
 # The variable $(COQMF_WINDRIVE) can be needed for Cygwin environments.
@@ -356,6 +382,8 @@ ALLNATIVEFILES = \
 	$(OBJFILES:.o=.cmi) \
 	$(OBJFILES:.o=.cmx) \
 	$(OBJFILES:.o=.cmxs)
+FINDLIBPACKAGE=$(patsubst .%,%,$(suffix $(METAFILE)))
+
 # trick: wildcard filters out non-existing files, so that `install` doesn't show
 # warnings and `clean` doesn't pass to rm a list of files that is too long for
 # the shell.
@@ -364,14 +392,12 @@ FILESTOINSTALL = \
 	$(VOFILES) \
 	$(VFILES) \
 	$(GLOBFILES) \
-	$(NATIVEFILES) \
+	$(NATIVEFILES)
+FINDLIBFILESTOINSTALL = \
 	$(CMIFILESTOINSTALL)
-BYTEFILESTOINSTALL = \
-	$(CMOFILESTOINSTALL) \
-	$(CMAFILES)
 ifeq '$(HASNATDYNLINK)' 'true'
 DO_NATDYNLINK = yes
-FILESTOINSTALL += $(CMXSFILES) $(CMXAFILES) $(CMOFILESTOINSTALL:.cmo=.cmx)
+FINDLIBFILESTOINSTALL += $(CMXSFILES) $(CMXAFILES) $(CMOFILESTOINSTALL:.cmo=.cmx)
 else
 DO_NATDYNLINK =
 endif
@@ -568,7 +594,7 @@ beautify: $(BEAUTYFILES)
 # There rules can be extended in @LOCAL_FILE@
 # Extensions can't assume when they run.
 
-install:
+install: META
 	$(HIDE)code=0; for f in $(FILESTOINSTALL); do\
 	 if ! [ -f "$$f" ]; then >&2 echo $$f does not exist; code=1; fi \
 	done; exit $$code
@@ -582,22 +608,22 @@ install:
 	   echo INSTALL "$$f" "$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
+	$(HIDE)if [ ! -z "$(METAFILE)" ]; then \
+	  $(OCAMLFIND) remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) 2>/dev/null; \
+	fi
+	$(call findlib_install, META $(FINDLIBFILESTOINSTALL))
 	$(HIDE)$(MAKE) install-extra -f "$(SELF)"
 install-extra::
 	@# Extension point
 .PHONY: install install-extra
 
-install-byte:
-	$(HIDE)for f in $(BYTEFILESTOINSTALL); do\
-	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`";\
-	 if [ "$$?" != "0" -o -z "$$df" ]; then\
-	   echo SKIP "$$f" since it has no logical path;\
-	 else\
-	   install -d "$(COQLIBINSTALL)/$$df" &&\
-	   install -m 0644 "$$f" "$(COQLIBINSTALL)/$$df" &&\
-	   echo INSTALL "$$f" "$(COQLIBINSTALL)/$$df";\
-	 fi;\
-	done
+META: $(METAFILE)
+	$(HIDE)if [ ! -z "$(METAFILE)" ]; then \
+		cat $(METAFILE) | grep -v 'directory.*=.*' > META; \
+	fi
+
+install-byte: META
+	$(call findlib_install, $(CMAFILES) $(CMOFILESTOINSTALL), -add)
 
 install-doc:: html mlihtml
 	@# Extension point
@@ -618,11 +644,18 @@ install-doc:: html mlihtml
 
 uninstall::
 	@# Extension point
+	$(HIDE)if [ ! -z "$(METAFILE)" ]; then\
+		$(OCAMLFIND) remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE); \
+	fi
 	$(HIDE)for f in $(FILESTOINSTALL); do \
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`" &&\
 	 instf="$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
 	 rm -f "$$instf" &&\
-	 echo RM "$$instf" &&\
+	 echo RM "$$instf" ;\
+	done
+	$(HIDE)for f in $(FILESTOINSTALL); do \
+	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`" &&\
+	 echo RMDIR "$(COQLIBINSTALL)/$$df/" &&\
 	 (rmdir "$(COQLIBINSTALL)/$$df/" 2>/dev/null || true); \
 	done
 .PHONY: uninstall
@@ -666,6 +699,7 @@ clean::
 	$(HIDE)rm -f $(VFILES:.v=.tex)
 	$(HIDE)rm -f $(VFILES:.v=.g.tex)
 	$(HIDE)rm -f pretty-timed-success.ok
+	$(HIDE)rm -f META
 	$(HIDE)rm -rf html mlihtml
 .PHONY: clean
 
@@ -759,7 +793,7 @@ endif
 
 $(VOFILES): %.vo: %.v | $(VDFILE)
 	$(SHOW)COQC $<
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+	$(HIDE)OCAMLPATH=$(EXTRAOCAMLPATH)$(FINDLIBSEP)$(OCAMLPATH) $(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $@
 	$(HIDE)$(COQNATIVE) $(COQLIBS) $@
@@ -849,7 +883,7 @@ VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLI
 
 $(VDFILE): @PROJECT_FILE@ $(VFILES)
 	$(SHOW)'COQDEP VFILES'
-	$(HIDE)$(COQDEP) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
+	$(HIDE)$(COQDEP) $(addprefix -m ,$(METAFILE)) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################
 

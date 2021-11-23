@@ -28,6 +28,7 @@ type project = {
   ml_files : string sourced list;
   mllib_files : string sourced list;
   mlpack_files : string sourced list;
+  meta_file : string option;
 
   ml_includes : path sourced list;
   r_includes  : (path * logic_path) sourced list;
