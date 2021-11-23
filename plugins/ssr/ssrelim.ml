@@ -17,7 +17,6 @@ open Constr
 open Context
 open Termops
 open Tactypes
-open Tacmach.Old
 
 open Ssrmatching_plugin
 open Ssrmatching
@@ -137,7 +136,6 @@ let match_pat env sigma0 p occ h cl =
   EConstr.of_constr c, EConstr.of_constr cl, ucst
 
 let fire_subst sigma t = Reductionops.nf_evar sigma t
-let pf_fire_subst gl t = fire_subst (project gl) t
 
 let mkTpat env sigma0 (sigma, t) = (* takes a term, refreshes it and makes a T pattern *)
   let n, t, _, ucst = abs_evars env sigma0 (sigma, fire_subst sigma t) in
@@ -427,10 +425,12 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* some sanity checks *)
   check_elim sigma (Option.has_some elim) what end >>=
 
-  fun (oc, orig_clr, occ, c_gen) -> pfLIFT begin fun gl ->
-
-  let sigma = project gl in
-  let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
+  fun (oc, orig_clr, occ, c_gen) ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let sigma0 = sigma in
   debug_ssr (fun () -> (Pp.str(if is_case then "==CASE==" else "==ELIM==")));
   (* finds the eliminator applies it to evars and c saturated as needed  *)
   (* obtaining "elim ??? (c ???)". pred is the higher order evar         *)
@@ -456,15 +456,15 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* Patterns for the inductive types indexes to be bound in pred are computed
    * looking at the ones provided by the user and the inferred ones looking at
    * the type of the elimination principle *)
-  let sigma, patterns, clr = compute_patterns env (project orig_gl) what c_is_head_p cty deps inf_deps_r occ orig_clr eqid sigma in
+  let sigma, patterns, clr = compute_patterns env sigma0 what c_is_head_p cty deps inf_deps_r occ orig_clr eqid sigma in
   let pp_pat (_,p,_,occ) = Pp.(pr_occ occ ++ pp_pattern env p) in
-  let pp_inf_pat (_,_,t,_) = pr_econstr_pat env sigma (pf_fire_subst gl t) in
+  let pp_inf_pat (_,_,t,_) = pr_econstr_pat env sigma (fire_subst sigma t) in
   debug_ssr (fun () -> Pp.(pp_concat (str"patterns=") (List.map pp_pat patterns)));
   debug_ssr (fun () -> Pp.(pp_concat (str"inf. patterns=") (List.map pp_inf_pat patterns)));
   (* Predicate generation, and (if necessary) tactic to generalize the
    * equation asked by the user *)
   let sigma, elim_pred, gen_eq_tac, clr =
-    generate_pred env (project orig_gl) ~concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr sigma
+    generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr sigma
   in
   let sigma, pty = Typing.type_of env sigma elim_pred in
   debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pr_econstr_env env sigma elim_pred));
@@ -481,15 +481,13 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     Array.map (fun ty ->
     let ctx,_ = EConstr.decompose_prod_assum sigma ty in
     CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
-  (elim,seed,clr,is_rec,gen_eq_tac), orig_gl
-
-  end >>= fun (elim, seed,clr,is_rec,gen_eq_tac) ->
 
   let elim_tac =
     Tacticals.tclTHENLIST [
       refine_with ~with_evars:false elim;
       cleartac clr] in
   Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
+  end
 
 let elimtac x =
   let k ?seed:_ _what _eqid elim_tac _is_rec _clr = elim_tac in
