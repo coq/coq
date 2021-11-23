@@ -41,27 +41,32 @@ let ssrposetac (id, (_, t)) =
   end
 
 let ssrsettac id ((_, (pat, pty)), (_, occ)) =
-  Proofview.V82.tactic begin fun gl ->
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let cl = Proofview.Goal.concl gl in
   let pty = Option.map (fun { Ssrast.body; interp_env } ->
     let ist = Option.get interp_env in
     (mkRHole, Some body), ist) pty in
-  let pat = interp_cpattern (pf_env gl) (project gl) pat pty in
-  let cl, sigma, env = pf_concl gl, project gl, pf_env gl in
+  let pat = interp_cpattern env sigma pat pty in
   let (c, ucst), cl =
     let cl = EConstr.Unsafe.to_constr cl in
     try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with NoMatch -> redex_of_pattern ~resolve_typeclasses:true env pat, cl in
-  let gl = pf_merge_uc ucst gl in
+  let sigma = Evd.merge_universe_context sigma ucst in
   let c = EConstr.of_constr c in
   let cl = EConstr.of_constr cl in
   if Termops.occur_existential sigma c then errorstrm(str"The pattern"++spc()++
     pr_econstr_pat env sigma c++spc()++str"did not match and has holes."++spc()++
     str"Did you mean pose?") else
-  let c, (gl, cty) =  match EConstr.kind sigma c with
-  | Cast(t, DEFAULTcast, ty) -> t, (gl, ty)
-  | _ -> c, pfe_type_of gl c in
+  let c, (sigma, cty) =  match EConstr.kind sigma c with
+  | Cast(t, DEFAULTcast, ty) -> t, (sigma, ty)
+  | _ -> c, Typing.type_of env sigma c in
   let cl' = EConstr.mkLetIn (make_annot (Name id) Sorts.Relevant, c, cty, cl) in
-  Proofview.V82.of_tactic (Tacticals.tclTHEN (convert_concl ~check:true cl') (introid id)) gl
+  Proofview.Unsafe.tclEVARS sigma <*>
+  convert_concl ~check:true cl' <*>
+  introid id
   end
 
 open Util
@@ -257,7 +262,11 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
   Proofview.V82.tactic begin fun gl ->
   let clr0 = Option.default [] clr0 in
   let pats = tclCompileIPats pats in
-  let mkabs gen = abs_wgen false (fun x -> x) gen in
+  let mkabs gen (gl, args, c) =
+    let sigma, args, c = abs_wgen (pf_env gl) (project gl) false (fun x -> x) gen (args, c) in
+    let gl = re_sig (sig_it gl) sigma in
+    gl, args, c
+  in
   let mkclr gen clrs = clr_of_wgen gen clrs in
   let mkpats = function
   | _, Some ((x, _), _) -> fun pats -> IOpId (hoi_id x) :: pats

@@ -25,14 +25,14 @@ open Ssrcommon
 
 (** The "apply" tactic *)
 
-let interp_agen ist gl ((goclr, _), (k, gc as c)) (clr, rcs) =
+let interp_agen ist env sigma ((goclr, _), (k, gc as c)) (clr, rcs) =
 (* ppdebug(lazy(str"sigma@interp_agen=" ++ pr_evar_map None (project gl))); *)
-  let rc = pf_intern_term ist gl c in
+  let rc = intern_term ist env c in
   let rcs' = rc :: rcs in
   match goclr with
   | None -> clr, rcs'
   | Some ghyps ->
-    let clr' = snd (interp_hyps ist gl ghyps) @ clr in
+    let clr' = interp_hyps ist env sigma ghyps @ clr in
     if k <> NoFlag then clr', rcs' else
     let loc = rc.CAst.loc in
     match DAst.get rc with
@@ -40,8 +40,6 @@ let interp_agen ist gl ((goclr, _), (k, gc as c)) (clr, rcs) =
     | GRef (Names.GlobRef.VarRef id, _) when not_section_id id ->
         SsrHyp (Loc.tag ?loc id) :: clr', rcs'
     | _ -> clr', rcs'
-
-let pf_pr_glob_constr gl = pr_glob_constr_env (pf_env gl) (project gl)
 
 let interp_nbargs ist env sigma rc =
   try
@@ -57,15 +55,15 @@ let interp_view_nbimps ist env sigma rc =
     if Ssrcommon.isAppInd env sigma c then List.length pl else (-(List.length pl))
   with _ -> 0
 
-let interp_agens ist gl gagens =
-  match List.fold_right (interp_agen ist gl) gagens ([], []) with
+let interp_agens ist env sigma ~concl gagens =
+  match List.fold_right (interp_agen ist env sigma) gagens ([], []) with
   | clr, rlemma :: args ->
-    let n = interp_nbargs ist (pf_env gl) (project gl) rlemma - List.length args in
+    let n = interp_nbargs ist env sigma rlemma - List.length args in
     let rec loop i =
       if i > n then
-         errorstrm Pp.(str "Cannot apply lemma " ++ pf_pr_glob_constr gl rlemma)
+         errorstrm Pp.(str "Cannot apply lemma " ++ pr_glob_constr_env env sigma rlemma)
       else
-        try interp_refine (pf_env gl) (project gl) ist ~concl:(pf_concl gl) (mkRApp rlemma (mkRHoles i @ args))
+        try interp_refine env sigma ist ~concl (mkRApp rlemma (mkRHoles i @ args))
         with _ -> loop (i + 1) in
     clr, loop 0
   | _ -> assert false
@@ -124,7 +122,7 @@ let apply_top_tac =
   end
 
 let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:false (fun gl ->
- let _, clr = interp_hyps ist gl gclr in
+ let clr = interp_hyps ist (pf_env gl) (project gl) gclr in
  let vtac gv i = refine_interp_apply_view i ist gv in
  let ggenl, tclGENTAC =
    if gviews <> [] && ggenl <> [] then
@@ -144,7 +142,7 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
         (vtac v Ssrview.AdaptorDb.Backward) tl)
       (cleartac clr)) gl
   | [], [agens] ->
-    let clr', (sigma, lemma) = interp_agens ist gl agens in
+    let clr', (sigma, lemma) = interp_agens ist (pf_env gl) (project gl) ~concl:(pf_concl gl) agens in
     let gl = pf_merge_uc_of sigma gl in
     Proofview.V82.of_tactic (Tacticals.tclTHENLIST [cleartac clr; refine_with ~beta:true lemma; cleartac clr']) gl
   | _, _ ->

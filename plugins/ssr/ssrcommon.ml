@@ -62,6 +62,12 @@ let rec check_hyps_uniq ids = function
   | SsrHyp (_, id) :: hyps -> check_hyps_uniq (id :: ids) hyps
   | [] -> ()
 
+let rec pf_check_hyps_uniq ids = function
+  | SsrHyp (loc, id) :: _ when List.mem id ids ->
+    Tacticals.tclZEROMSG ?loc Pp.(str "Duplicate assumption " ++ Id.print id)
+  | SsrHyp (_, id) :: hyps -> pf_check_hyps_uniq (id :: ids) hyps
+  | [] -> Proofview.tclUNIT ()
+
 let check_hyp_exists hyps (SsrHyp(_, id)) =
   try ignore(Context.Named.lookup id hyps)
   with Not_found -> errorstrm Pp.(str"No assumption is named " ++ Id.print id)
@@ -264,9 +270,9 @@ let interp_hyp ist env sigma (SsrHyp (loc, id)) =
   if not_section_id id' then SsrHyp (loc, id') else
   hyp_err ?loc "Can't clear section hypothesis " id'
 
-let interp_hyps ist gl ghyps =
-  let hyps = List.map (interp_hyp ist (pf_env gl) (project gl)) ghyps in
-  check_hyps_uniq [] hyps; Tacmach.Old.project gl, hyps
+let interp_hyps ist env sigma ghyps =
+  let hyps = List.map (interp_hyp ist env sigma) ghyps in
+  check_hyps_uniq [] hyps; hyps
 
 (* Old terms *)
 let mk_term k c = k, (mkRHole, Some c)
@@ -414,13 +420,6 @@ let mk_anon_id t gl_ids =
 
 let convert_concl_no_check t = Tactics.convert_concl ~cast:false ~check:false t DEFAULTcast
 let convert_concl ~check t = Tactics.convert_concl ~cast:false ~check t DEFAULTcast
-
-let rename_hd_prod orig_name_ref gl =
-  match EConstr.kind (project gl) (pf_concl gl) with
-  | Prod(x,src,tgt) ->
-    let x = {x with binder_name = !orig_name_ref} in
-      Proofview.V82.of_tactic (convert_concl_no_check (EConstr.mkProd (x,src,tgt))) gl
-  | _ -> CErrors.anomaly (str "gentac creates no product")
 
 (* Reduction that preserves the Prod/Let spine of the "in" tactical. *)
 
@@ -659,9 +658,6 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   pp(lazy(str"res= " ++ pr_constr res));
   List.length evlist, res
 
-let pf_abs_evars_pirrel gl c =
-  abs_evars_pirrel (pf_env gl) (project gl) c
-
 (* Strip all non-essential dependencies from an abstracted term, generating *)
 (* standard names for the abstracted holes.                                 *)
 
@@ -682,12 +678,9 @@ let pfe_new_type gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
   let sigma,t  = Evarutil.new_Type sigma in
   re_sig it sigma, t
-let pfe_type_relevance_of gl t =
-  let gl, ty = pfe_type_of gl t in
-  gl, ty, pf_apply Retyping.relevance_of_term gl t
-let pf_type_of gl t =
-  let sigma, ty = pf_type_of gl (EConstr.of_constr t) in
-  re_sig (sig_it gl)  sigma, EConstr.Unsafe.to_constr ty
+let pfe_type_relevance_of env sigma t =
+  let sigma, ty = Typing.type_of env sigma t in
+  sigma, ty, Retyping.relevance_of_term env sigma t
 
 let abs_cterm env sigma n c0 =
   if n <= 0 then c0 else
@@ -753,11 +746,10 @@ let rec constr_name sigma c = match EConstr.kind sigma c with
   | _ -> Anonymous
 
 let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
-  let gl, t, r = pfe_type_relevance_of gl c in
+  let sigma, t, r = pfe_type_relevance_of (pf_env gl) (project gl) c in
+  let gl = re_sig (sig_it gl) sigma in
   if name <> Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (make_annot name r, t, cl) else
   gl, EConstr.mkProd (make_annot (Name (pf_type_id gl t)) r, t, cl)
-
-let pf_abs_prod name gl c cl = pf_mkprod gl c ~name (Termops.subst_term (project gl) c cl)
 
 (** look up a name in the ssreflect internals module *)
 let ssrdirpath = DirPath.make [Id.of_string "ssreflect"]
@@ -1131,7 +1123,7 @@ let tclMULT = function
   | _       -> tclID
 
 let old_cleartac clr = check_hyps_uniq [] clr; Proofview.V82.of_tactic (Tactics.clear (hyps_ids clr))
-let cleartac clr = check_hyps_uniq [] clr; Tactics.clear (hyps_ids clr)
+let cleartac clr = Proofview.tclTHEN (pf_check_hyps_uniq [] clr) (Tactics.clear (hyps_ids clr))
 
 (* }}} *)
 
@@ -1161,31 +1153,27 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     let nv, p, _, ucst' = pf_abs_evars gl (fst pat, c) in
     let ucst = UState.union ucst ucst' in
     if nv = 0 then anomaly "occur_existential but no evars" else
-    let gl, pty, rp = pfe_type_relevance_of gl p in
+    let sigma, pty, rp = pfe_type_relevance_of (pf_env gl) (project gl) p in
+    let gl = re_sig (sig_it gl) sigma in
     false, pat, EConstr.mkProd (make_annot (constr_name (project gl) c) rp, pty, Tacmach.Old.pf_concl gl), p, clr,ucst,gl
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true x xs)
-
 let genclrtac cl cs clr =
-  let open Tacticals.Old in
-  let tclmyORELSE tac1 tac2 gl =
-    try tac1 gl
-    with e when CErrors.noncritical e -> tac2 e gl in
+  let open Proofview.Notations in
+  let open Tacticals in
   (* apply_type may give a type error, but the useful message is
    * the one of clear.  You type "move: x" and you get
    * "x is used in hyp H" instead of
    * "The term H has type T x but is expected to have type T x0". *)
-  tclTHEN
-    (tclmyORELSE
-      (apply_type cl cs)
-      (fun type_err gl ->
-         tclTHEN
-           (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
-           (fun gl -> raise type_err)
-           gl))
-    (old_cleartac clr)
+  (Proofview.tclORELSE
+    (Tactics.apply_type ~typecheck:true cl cs)
+    (fun (type_err, info) ->
+      pf_constr_of_global Coqlib.(lib_ref "core.False.type") >>= fun f ->
+      (Tactics.elim_type f) <*>
+      (cleartac clr) <*>
+      (Proofview.tclZERO ~info type_err)))
+  <*>
+  (cleartac clr)
 
 let gentac gen =
   Proofview.V82.tactic begin fun gl ->
@@ -1195,25 +1183,11 @@ let gentac gen =
   let gl = pf_merge_uc ucst gl in
   if conv
   then Tacticals.Old.tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
-  else genclrtac cl [c] clr gl
+  else Proofview.V82.of_tactic (genclrtac cl [c] clr) gl
   end
 
 let genstac (gens, clr) =
   Tacticals.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
-
-let gen_tmp_ids
-  ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
-=
-  let open Tacticals.Old in
-  let gl, ctx = pull_ctx gl in
-  push_ctxs ctx
-    (tclTHENLIST
-      (List.map (fun (id,orig_ref) ->
-        tclTHEN
-        (Proofview.V82.of_tactic (gentac ((None,Some(false,[])),cpattern_of_id id)))
-        (rename_hd_prod orig_ref))
-      ctx.tmp_ids) gl)
-;;
 
 let pf_interp_gen to_ind gen gl =
   let _, _, a, b, c, ucst,gl = pf_interp_gen_aux gl to_ind gen in
@@ -1237,8 +1211,11 @@ let is_protect hd env sigma =
   let protectC = mkSsrRef "protect_term" in
   EConstr.isRefX sigma protectC hd
 
-let abs_wgen keep_let f gen (gl,args,c) =
-  let sigma, env = project gl, pf_env gl in
+let get_hyp env sigma id =
+  try EConstr.of_named_decl (Environ.lookup_named id env)
+  with Not_found -> raise (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
+
+let abs_wgen env sigma keep_let f gen (args,c) =
   let evar_closed t p =
     if occur_existential sigma t then
       CErrors.user_err ?loc:(loc_of_cpattern p)
@@ -1247,21 +1224,21 @@ let abs_wgen keep_let f gen (gl,args,c) =
   match gen with
   | _, Some ((x, mode), None) when mode = "@" || (mode = " " && keep_let) ->
      let x = hoi_id x in
-     let decl = Tacmach.Old.pf_get_hyp gl x in
-     gl,
+     let decl = get_hyp env sigma x in
+     sigma,
      (if NamedDecl.is_local_def decl then args else EConstr.mkVar x :: args),
      EConstr.mkProd_or_LetIn (decl |> NamedDecl.to_rel_decl |> RelDecl.set_name (Name (f x)))
                      (EConstr.Vars.subst_var x c)
   | _, Some ((x, _), None) ->
      let x = hoi_id x in
-     let hyp = Tacmach.Old.pf_get_hyp gl x in
+     let hyp = get_hyp env sigma x in
      let x' = make_annot (Name (f x)) (NamedDecl.get_relevance hyp) in
      let prod = EConstr.mkProd (x', NamedDecl.get_type hyp, EConstr.Vars.subst_var x c) in
-     gl, EConstr.mkVar x :: args, prod
+     sigma, EConstr.mkVar x :: args, prod
   | _, Some ((x, "@"), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern (pf_env gl) (project gl) p None in
-     let gl = pf_merge_uc_of (fst cp) gl in
+     let cp = interp_cpattern env sigma p None in
+     let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
        with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
@@ -1269,21 +1246,23 @@ let abs_wgen keep_let f gen (gl,args,c) =
      let t = EConstr.of_constr t in
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
-     let gl, ty, r = pfe_type_relevance_of gl t in
-     pf_merge_uc ucst gl, args, EConstr.mkLetIn(make_annot (Name (f x)) r, ut, ty, c)
+     let sigma, ty, r = pfe_type_relevance_of env sigma t in
+     let sigma = Evd.merge_universe_context sigma ucst in
+     sigma, args, EConstr.mkLetIn(make_annot (Name (f x)) r, ut, ty, c)
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern (pf_env gl) (project gl) p None in
-     let gl = pf_merge_uc_of (fst cp) gl in
+     let cp = interp_cpattern env sigma p None in
+     let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
        with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
      let c = EConstr.of_constr c in
      let t = EConstr.of_constr t in
      evar_closed t p;
-     let gl, ty, r = pfe_type_relevance_of gl t in
-     pf_merge_uc ucst gl, t :: args, EConstr.mkProd(make_annot (Name (f x)) r, ty, c)
-  | _ -> gl, args, c
+     let sigma, ty, r = pfe_type_relevance_of env sigma t in
+     let sigma = Evd.merge_universe_context sigma ucst in
+     sigma, t :: args, EConstr.mkProd(make_annot (Name (f x)) r, ty, c)
+  | _ -> sigma, args, c
 
 let clr_of_wgen gen clrs = match gen with
   | clr, Some ((x, _), None) ->

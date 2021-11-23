@@ -135,7 +135,7 @@ val interp_term :
     ssrterm -> evar_map * EConstr.t
 
 val interp_hyp : ist -> env -> evar_map -> ssrhyp -> ssrhyp
-val interp_hyps : ist -> goal sigma -> ssrhyps -> evar_map * ssrhyps
+val interp_hyps : ist -> env -> evar_map -> ssrhyps -> ssrhyps
 
 val interp_refine :
   Environ.env -> Evd.evar_map -> Tacinterp.interp_sign -> concl:EConstr.constr ->
@@ -212,21 +212,10 @@ val pf_merge_uc :
 val pf_merge_uc_of :
            evar_map -> 'a Evd.sigma -> 'a Evd.sigma
 val constr_name : evar_map -> EConstr.t -> Name.t
-val pf_type_of :
-           Goal.goal Evd.sigma ->
-           Constr.constr -> Goal.goal Evd.sigma * Constr.types
 val pfe_type_of :
            Goal.goal Evd.sigma ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 val pfe_new_type : Goal.goal Evd.sigma -> Goal.goal Evd.sigma * EConstr.types
-val pfe_type_relevance_of :
-           Goal.goal Evd.sigma ->
-           EConstr.t -> Goal.goal Evd.sigma * EConstr.types * Sorts.relevance
-val pf_abs_prod :
-           Name.t ->
-           Goal.goal Evd.sigma ->
-           EConstr.t ->
-           EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRef : string -> GlobRef.t
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
@@ -250,15 +239,8 @@ val mk_anon_id : string -> Id.t list -> Id.t
 val abs_evars_pirrel :
            Environ.env -> Evd.evar_map ->
            evar_map * Constr.constr -> int * Constr.constr
-val pf_abs_evars_pirrel :
-           Goal.goal Evd.sigma ->
-           evar_map * Constr.constr -> int * Constr.constr
 val nbargs_open_constr : Environ.env -> Evd.evar_map * EConstr.t -> int
 val pf_nbargs : Environ.env -> Evd.evar_map -> EConstr.t -> int
-val gen_tmp_ids :
-           ?ist:Geninterp.interp_sign ->
-           (Goal.goal * tac_ctx) Evd.sigma ->
-           (Goal.goal * tac_ctx) list Evd.sigma
 
 val ssrevaltac :
   Tacinterp.interp_sign -> Tacinterp.Value.t -> unit Proofview.tactic
@@ -393,7 +375,7 @@ val interp_clr :
 
 val genclrtac :
   EConstr.constr ->
-  EConstr.constr list -> Ssrast.ssrhyp list -> Tacmach.Old.tactic
+  EConstr.constr list -> Ssrast.ssrhyp list -> unit Proofview.tactic
 val cleartac : ssrhyps -> unit Proofview.tactic
 
 val tclMULT : int * ssrmmod -> unit Proofview.tactic -> unit Proofview.tactic
@@ -402,14 +384,16 @@ val unprotecttac : unit Proofview.tactic
 val is_protect : EConstr.t -> Environ.env -> Evd.evar_map -> bool
 
 val abs_wgen :
+  Environ.env ->
+  Evd.evar_map ->
   bool ->
   (Id.t -> Id.t) ->
   'a *
     ((Ssrast.ssrhyp_or_id * string) *
        Ssrmatching.cpattern option)
       option ->
-  Goal.goal Evd.sigma * EConstr.t list * EConstr.t ->
-  Goal.goal Evd.sigma * EConstr.t list * EConstr.t
+  EConstr.t list * EConstr.t ->
+  Evd.evar_map * EConstr.t list * EConstr.t
 
 val clr_of_wgen :
   ssrhyps * ((ssrhyp_or_id * 'a) * 'b option) option ->
@@ -417,8 +401,6 @@ val clr_of_wgen :
 
 
 val unfold : EConstr.t list -> unit Proofview.tactic
-
-val apply_type : EConstr.types -> EConstr.t list -> Proofview.V82.tac
 
 (* New code ****************************************************************)
 

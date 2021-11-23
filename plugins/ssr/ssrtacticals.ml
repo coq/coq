@@ -92,7 +92,8 @@ let hidetacs clseq idhide cl0 =
    convert_concl_no_check (EConstr.mkVar idhide)]
 
 let endclausestac id_map clseq gl_id cl0 =
-  Proofview.V82.tactic begin fun gl ->
+  let open Tacmach in
+  Proofview.Goal.enter begin fun gl ->
   let not_hyp' id = not (List.mem_assoc id id_map) in
   let orig_id id = try List.assoc id id_map with Not_found -> id in
   let dc, c = EConstr.decompose_prod_assum (project gl) (pf_concl gl) in
@@ -112,24 +113,26 @@ let endclausestac id_map clseq gl_id cl0 =
     EConstr.mkLetIn ({na with binder_name=Name (orig_id id)}, unmark v, unmark t, unmark c')
   | _ -> EConstr.map (project gl) unmark c in
   let utac hyp =
-    Proofview.V82.of_tactic
-     (Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.map_constr unmark hyp)) in
-  let utacs = List.map utac (pf_hyps gl) in
-  let ugtac gl' =
-    Proofview.V82.of_tactic
-      (convert_concl_no_check (unmark (pf_concl gl'))) gl' in
+    Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.map_constr unmark hyp) in
+  let utacs = List.map utac (Proofview.Goal.hyps gl) in
+  let ugtac =
+    Proofview.Goal.enter begin fun gl ->
+      convert_concl_no_check (unmark (pf_concl gl))
+    end
+  in
   let ctacs =
-    if hide_goal then [Proofview.V82.of_tactic (Tactics.clear [gl_id])]
+    if hide_goal then [Tactics.clear [gl_id]]
     else [] in
-  let mktac itacs = Tacticals.Old.tclTHENLIST (itacs @ utacs @ ugtac :: ctacs) in
-  let itac (_, id) = Proofview.V82.of_tactic (Tactics.introduction id) in
-  if fits false (id_map, List.rev dc) then mktac (List.map itac id_map) gl else
+  let mktac itacs = Tacticals.tclTHENLIST (itacs @ utacs @ ugtac :: ctacs) in
+  let itac (_, id) = Tactics.introduction id in
+  if fits false (id_map, List.rev dc) then mktac (List.map itac id_map) else
   let all_ids = ids_of_rel_context dc @ pf_ids_of_hyps gl in
-  if List.for_all not_hyp' all_ids && not c_hidden then mktac [] gl else
+  if List.for_all not_hyp' all_ids && not c_hidden then mktac [] else
   errorstrm Pp.(str "tampering with discharged assumptions of \"in\" tactical")
   end
 
 let tclCLAUSES tac (gens, clseq) =
+  let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   if clseq = InGoal || clseq = InSeqGoal then tac else
   let clr_gens = pf_clauseids gens clseq in
@@ -137,11 +140,14 @@ let tclCLAUSES tac (gens, clseq) =
   let gl_id = mk_anon_id hidden_goal_tag (Tacmach.pf_ids_of_hyps gl) in
   let cl0 = Proofview.Goal.concl gl in
   let dtac =
-    Proofview.V82.tactic begin fun gl ->
-    let c = pf_concl gl in
-    let gl, args, c =
-      List.fold_right (abs_wgen true mk_discharged_id) gens (gl,[], c) in
-    apply_type c args gl
+    Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let c = Proofview.Goal.concl gl in
+    let fold gen (sigma, args, c) = abs_wgen env sigma true mk_discharged_id gen (args, c) in
+    let sigma, args, c = List.fold_right fold gens (sigma, [], c) in
+    Proofview.Unsafe.tclEVARS sigma <*>
+    Tactics.apply_type ~typecheck:true c args
     end
   in
   let endtac =
