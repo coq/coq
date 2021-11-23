@@ -250,10 +250,11 @@ val ssrautoprop_tac :
            unit Proofview.tactic ref
 
 val mkProt :
+  Environ.env ->
+  Evd.evar_map ->
   EConstr.t ->
   EConstr.t ->
-  Goal.goal Evd.sigma ->
-  EConstr.t * Goal.goal Evd.sigma
+  Evd.evar_map * EConstr.t
 
 val mkEtaApp : EConstr.t -> int -> int -> EConstr.t
 

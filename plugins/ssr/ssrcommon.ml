@@ -745,18 +745,14 @@ let mkSsrRef name =
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst env sigma name =
   EConstr.fresh_global env sigma (mkSsrRef name)
-let pf_mkSsrConst name gl =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let (sigma, t) = mkSsrConst env sigma name in
-  t, re_sig it sigma
 let pf_fresh_global name gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
   let sigma,t  = Evd.fresh_global env sigma name in
   EConstr.Unsafe.to_constr t, re_sig it sigma
 
-let mkProt t c gl =
-  let prot, gl = pf_mkSsrConst "protect_term" gl in
-  EConstr.mkApp (prot, [|t; c|]), gl
+let mkProt env sigma t c =
+  let sigma, prot = mkSsrConst env sigma "protect_term" in
+  sigma, EConstr.mkApp (prot, [|t; c|])
 
 let mkEtaApp c n imin =
   let open EConstr in

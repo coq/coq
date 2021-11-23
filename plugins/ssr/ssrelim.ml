@@ -134,7 +134,7 @@ let match_pat env sigma0 p occ h cl =
   let (c,ucst), cl =
     fill_occ_pattern ~raise_NoMatch:true env sigma0 (EConstr.Unsafe.to_constr cl) p occ h in
   debug_ssr (fun () -> Pp.(str"     got: " ++ pr_constr_env env sigma0 c));
-  c, EConstr.of_constr cl, ucst
+  EConstr.of_constr c, EConstr.of_constr cl, ucst
 
 let fire_subst sigma t = Reductionops.nf_evar sigma t
 let pf_fire_subst gl t = fire_subst (project gl) t
@@ -312,54 +312,52 @@ let is_undef_pat = function
 | sigma, T t -> EConstr.isEvar sigma (EConstr.of_constr t)
 | _ -> false
 
-let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr orig_gl gl =
-  let env = pf_env orig_gl in
+let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr sigma =
+  let concl0 = concl in
   let error sigma t inf_t = errorstrm Pp.(str"The given pattern matches the term"++
     spc()++pr_econstr_env env sigma t++spc()++str"while the inferred pattern"++
     spc()++pr_econstr_pat env sigma (fire_subst sigma inf_t)++spc()++ str"doesn't") in
-  let match_or_postpone (cl, gl, post) (h, p, inf_t, occ) =
-    let p = unif_redex env (project orig_gl) (project gl) p inf_t in
+  let match_or_postpone (cl, sigma, post) (h, p, inf_t, occ) =
+    let p = unif_redex env sigma0 sigma p inf_t in
     if is_undef_pat p then
       let () = debug_ssr (fun () -> Pp.(str"postponing " ++ pp_pattern env p)) in
-      cl, gl, post @ [h, p, inf_t, occ]
+      cl, sigma, post @ [h, p, inf_t, occ]
     else try
-      let c, cl, ucst = match_pat env (project orig_gl) p occ h cl in
-      let gl = pf_merge_uc ucst gl in
-      let c = EConstr.of_constr c in
-      let gl = try pf_unify_HO gl inf_t c
-                with exn when CErrors.noncritical exn -> error (project gl) c inf_t in
-      cl, gl, post
+      let c, cl, ucst = match_pat env sigma0 p occ h cl in
+      let sigma = Evd.merge_universe_context sigma ucst in
+      let sigma = try unify_HO env sigma inf_t c
+                with exn when CErrors.noncritical exn -> error sigma c inf_t in
+      cl, sigma, post
     with
     | NoMatch | NoProgress ->
         let e, ucst = redex_of_pattern env p in
-        let gl = pf_merge_uc ucst gl in
+        let sigma = Evd.merge_universe_context sigma ucst in
         let e = EConstr.of_constr e in
-        let n, e, _, _ucst =  pf_abs_evars gl (fst p, e) in
-        let e, _, _, gl = pf_saturate ~beta:true gl e n in
-        let gl = try pf_unify_HO gl inf_t e
-                  with exn when CErrors.noncritical exn -> error (project gl) e inf_t in
-        cl, gl, post
+        let n, e, _, _ucst =  abs_evars env sigma (fst p, e) in
+        let e, _, _, sigma = saturate ~beta:true env sigma e n in
+        let sigma = try unify_HO env sigma inf_t e
+                  with exn when CErrors.noncritical exn -> error sigma e inf_t in
+        cl, sigma, post
   in
-  let rec match_all concl gl patterns =
-    let concl, gl, postponed =
-      List.fold_left match_or_postpone (concl, gl, []) patterns in
-    if postponed = [] then concl, gl
+  let rec match_all concl sigma patterns =
+    let concl, sigma, postponed =
+      List.fold_left match_or_postpone (concl, sigma, []) patterns in
+    if postponed = [] then concl, sigma
     else if List.length postponed = List.length patterns then
       errorstrm Pp.(str "Some patterns are undefined even after all"++spc()++
         str"the defined ones matched")
-    else match_all concl gl postponed in
-  let concl, gl = match_all concl gl patterns in
-  let pred_rctx, _ = EConstr.decompose_prod_assum (project gl) (pf_fire_subst gl predty) in
-  let concl, gen_eq_tac, clr, gl = match eqid with
+    else match_all concl sigma postponed in
+  let concl, sigma = match_all concl sigma patterns in
+  let pred_rctx, _ = EConstr.decompose_prod_assum sigma (fire_subst sigma predty) in
+  let sigma, concl, gen_eq_tac, clr = match eqid with
   | Some (IPatId _) when not is_rec ->
-      let sigma = project gl in
       let k = List.length deps in
       let c = fire_subst sigma (List.assoc (n_elim_args - k - 1) elim_args) in
-      let sigma, t = Typing.type_of (pf_env gl) sigma c in
-      let sigma, eq = get_eq_type (pf_env gl) sigma in
+      let sigma, t = Typing.type_of env sigma c in
+      let sigma, eq = get_eq_type env sigma in
       let sigma, gen_eq_tac, eq_ty =
         let refl = EConstr.mkApp (eq, [|t; c; c|]) in
-        let new_concl = EConstr.mkArrow refl Sorts.Relevant (EConstr.Vars.lift 1 (pf_concl orig_gl)) in
+        let new_concl = EConstr.mkArrow refl Sorts.Relevant (EConstr.Vars.lift 1 concl0) in
         let new_concl = fire_subst sigma new_concl in
         let sigma, erefl = mkRefl env sigma t c in
         let erefl = fire_subst sigma erefl in
@@ -377,23 +375,22 @@ let generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c
         in
         sigma, gen_eq_tac, eq_ty
       in
-      let gl = re_sig gl.Evd.it sigma in
       let rel = k + if c_is_head_p then 1 else 0 in
-      let src, gl = mkProt eq_ty EConstr.(mkApp (eq,[|t; c; mkRel rel|])) gl in
+      let sigma, src = mkProt env sigma eq_ty EConstr.(mkApp (eq,[|t; c; mkRel rel|])) in
       let concl = EConstr.mkArrow src Sorts.Relevant (EConstr.Vars.lift 1 concl) in
       let clr = if deps <> [] then clr else [] in
-      concl, gen_eq_tac, clr, gl
-  | _ -> concl, Tacticals.tclIDTAC, clr, gl in
+      sigma, concl, gen_eq_tac, clr
+  | _ -> sigma, concl, Tacticals.tclIDTAC, clr in
   let mk_lam t r = EConstr.mkLambda_or_LetIn r t in
   let concl = List.fold_left mk_lam concl pred_rctx in
-  let gl, concl =
+  let sigma, concl =
     if eqid <> None && is_rec then
-      let gl, concls = pfe_type_of gl concl in
-      let concl, gl = mkProt concls concl gl in
-      let gl, _ = pfe_type_of gl concl in
-      gl, concl
-    else gl, concl in
-  project gl, concl, gen_eq_tac, clr
+      let sigma, concls = Typing.type_of env sigma concl in
+      let sigma, concl = mkProt env sigma concls concl in
+      let sigma, _ = Typing.type_of env sigma concl in
+      sigma, concl
+    else sigma, concl in
+  sigma, concl, gen_eq_tac, clr
 
 let compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig_gl gl =
   let env = pf_env orig_gl in
@@ -469,7 +466,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* Predicate generation, and (if necessary) tactic to generalize the
    * equation asked by the user *)
   let sigma, elim_pred, gen_eq_tac, clr =
-    generate_pred concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr orig_gl (re_sig it sigma)
+    generate_pred env (project orig_gl) ~concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr sigma
   in
   let sigma, pty = Typing.type_of env sigma elim_pred in
   debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pr_econstr_env env sigma elim_pred));
