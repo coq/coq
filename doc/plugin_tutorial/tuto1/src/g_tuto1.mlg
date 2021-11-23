@@ -1,4 +1,4 @@
-DECLARE PLUGIN "coq-core.plugins.tuto1"
+DECLARE PLUGIN "coq-plugin-tutorial.tuto1"
 
 {
 

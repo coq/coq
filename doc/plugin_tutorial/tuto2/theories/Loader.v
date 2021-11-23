@@ -1,1 +1,1 @@
-Declare ML Module "coq-core.plugins.tuto2".
+Declare ML Module "coq-plugin-tutorial.tuto2".

@@ -128,7 +128,7 @@ sphinx-clean:
 plugin-tutorial: states $(BCONTEXT)/coq-core.install | $(VO_OUT_DIR)
 	mkdir -p $(VO_OUT_DIR)/tools/
 	cp tools/CoqMakefile.in $(VO_OUT_DIR)/tools/
-	+$(MAKE) COQBIN=$(shell pwd)/$(CBIN)/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/$(VO_OUT_DIR) -C $(PLUGINTUTO)
+	+$(MAKE) OCAMLPATH=$(shell pwd)/_build/install/default/lib/ COQBIN=$(shell pwd)/$(CBIN)/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/$(VO_OUT_DIR) -C $(PLUGINTUTO)
 
 ######################################################################
 ### Implicit rules
