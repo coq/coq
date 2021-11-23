@@ -154,56 +154,55 @@ let unif_redex env sigma0 nsigma (sigma, r as p) t = (* t is a hint for the rede
       try unify_HO env sigma t (EConstr.of_constr (fst (redex_of_pattern env p))), r
       with e when CErrors.noncritical e -> p
 
-let find_eliminator ~is_case ?elim oc c_gen gl =
-  let env = pf_env gl in
+let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
   match elim with
   | Some elim ->
-    let gl, elimty = pf_e_type_of gl elim in
+    let sigma, elimty = Typing.type_of env sigma elim in
     let elimty =
       let rename_elimty r =
         EConstr.of_constr
           (Arguments_renaming.rename_type
-            (EConstr.to_constr ~abort_on_undefined_evars:false (project gl)
+            (EConstr.to_constr ~abort_on_undefined_evars:false sigma
               elimty) r) in
-      match EConstr.kind (project gl) elim with
+      match EConstr.kind sigma elim with
       | Constr.Var kn -> rename_elimty (GlobRef.VarRef kn)
       | Constr.Const (kn,_) -> rename_elimty (GlobRef.ConstRef kn)
       | _ -> elimty
     in
     let pred_id, n_elim_args, is_rec, elim_is_dep, n_pred_args,ctx_concl =
-      analyze_eliminator elimty env (project gl) in
-    let seed = subgoals_tys (project gl) ctx_concl in
-    let elim, elimty, elim_args, gl =
-      pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
+      analyze_eliminator elimty env sigma in
+    let seed = subgoals_tys sigma ctx_concl in
+    let elim, elimty, elim_args, sigma =
+      saturate ~beta:is_case env sigma elim ~ty:elimty n_elim_args in
     let pred = List.assoc pred_id elim_args in
-    let elimty = Reductionops.whd_all env (project gl) elimty in
-    let cty, gl =
-      if Option.is_empty oc then None, gl
+    let elimty = Reductionops.whd_all env sigma elimty in
+    let cty, sigma =
+      if Option.is_empty oc then None, sigma
       else
-        let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
+        let c = Option.get oc in
+        let sigma, c_ty = Typing.type_of env sigma c in
         let pc = match c_gen with
-          | Some p -> interp_cpattern (pf_env gl) (project gl) p None
-          | _ -> mkTpat (pf_env gl) (project gl) (project gl, c) in
-        Some(c, c_ty, pc), gl in
-    project gl, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
+          | Some p -> interp_cpattern env sigma p None
+          | _ -> mkTpat env sigma (sigma, c) in
+        Some(c, c_ty, pc), sigma in
+    sigma, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
   | None ->
-    let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
+    let c = Option.get oc in
+    let sigma, c_ty = Typing.type_of env sigma c in
     let ((kn, i),_ as indu), unfolded_c_ty =
-      pf_reduce_to_quantified_ind gl c_ty in
-    let sort = Tacticals.Old.elimination_sort_of_goal gl in
-    let gl, elim =
+      Tacred.reduce_to_quantified_ind env sigma c_ty in
+    let sort = Retyping.get_sort_family_of env sigma concl in
+    let sigma, elim =
       if not is_case then
-        let t,gl= pf_fresh_global (Indrec.lookup_eliminator env (kn,i) sort) gl in
-        gl, t
+        Evd.fresh_global env sigma (Indrec.lookup_eliminator env (kn,i) sort)
       else
-        Tacmach.Old.pf_eapply (fun env sigma () ->
           let indu = (fst indu, EConstr.EInstance.kind sigma (snd indu)) in
           let (sigma, ind) = Indrec.build_case_analysis_scheme env sigma indu true sort in
-          (sigma, ind)) gl () in
-    let elim = EConstr.of_constr elim in
-    let gl, elimty = pfe_type_of gl elim in
+          (sigma, EConstr.of_constr ind)
+    in
+    let sigma, elimty = Typing.type_of env sigma elim in
     let pred_id,n_elim_args,is_rec,elim_is_dep,n_pred_args,ctx_concl =
-      analyze_eliminator elimty env (project gl) in
+      analyze_eliminator elimty env sigma in
     let seed =
       if is_case then
         let mind,indb = Inductive.lookup_mind_specif env (kn,i) in
@@ -211,32 +210,32 @@ let find_eliminator ~is_case ?elim oc c_gen gl =
         let renamed_tys =
           Array.mapi (fun j (ctx, cty) ->
             let t = Term.it_mkProd_or_LetIn cty ctx in
-                  debug_ssr (fun () -> Pp.(str "Search" ++ Printer.pr_constr_env env (project gl) t));
+                  debug_ssr (fun () -> Pp.(str "Search" ++ Printer.pr_constr_env env sigma t));
             let t = Arguments_renaming.rename_type t
               (GlobRef.ConstructRef((kn,i),j+1)) in
-            debug_ssr (fun () -> Pp.(str"Done Search " ++ Printer.pr_constr_env env (project gl) t));
+            debug_ssr (fun () -> Pp.(str"Done Search " ++ Printer.pr_constr_env env sigma t));
               t)
           tys
         in
         let drop_params x =
-          snd @@ EConstr.decompose_prod_n_assum (project gl)
+          snd @@ EConstr.decompose_prod_n_assum sigma
             mind.Declarations.mind_nparams (EConstr.of_constr x) in
         Array.map drop_params renamed_tys
       else
-        subgoals_tys (project gl) ctx_concl
+        subgoals_tys sigma ctx_concl
     in
-    let rctx = fst (EConstr.decompose_prod_assum (project gl) unfolded_c_ty) in
+    let rctx = fst (EConstr.decompose_prod_assum sigma unfolded_c_ty) in
     let n_c_args = Context.Rel.length rctx in
-    let c, c_ty, t_args, gl = pf_saturate gl c ~ty:c_ty n_c_args in
-    let elim, elimty, elim_args, gl =
-      pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
+    let c, c_ty, t_args, sigma = saturate env sigma c ~ty:c_ty n_c_args in
+    let elim, elimty, elim_args, sigma =
+      saturate ~beta:is_case env sigma elim ~ty:elimty n_elim_args in
     let pred = List.assoc pred_id elim_args in
     let pc = match n_c_args, c_gen with
-      | 0, Some p -> interp_cpattern (pf_env gl) (project gl) p None
-      | _ -> mkTpat (pf_env gl) (project gl) (project gl, c) in
+      | 0, Some p -> interp_cpattern env sigma p None
+      | _ -> mkTpat env sigma (sigma, c) in
     let cty = Some (c, c_ty, pc) in
-    let elimty = Reductionops.whd_all env (project gl) elimty in
-    project gl, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
+    let elimty = Reductionops.whd_all env sigma elimty in
+    sigma, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
 
 let saturate_until gl c c_ty f =
   let rec loop n = try
@@ -435,6 +434,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   fun (oc, orig_clr, occ, c_gen) -> pfLIFT begin fun gl ->
 
   let it = gl.Evd.it in
+  let sigma = project gl in
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
   debug_ssr (fun () -> (Pp.str(if is_case then "==CASE==" else "==ELIM==")));
   (* finds the eliminator applies it to evars and c saturated as needed  *)
@@ -443,7 +443,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* `seed` represents the array of types from which we derive the name seeds
      for the block intro patterns *)
   let sigma, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred =
-    find_eliminator ~is_case ?elim oc c_gen gl
+    find_eliminator env sigma ~concl ~is_case ?elim oc c_gen
   in
   let () =
     debug_ssr (fun () -> Pp.(str"elim= "++ pr_econstr_pat env sigma elim));
