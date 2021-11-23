@@ -659,7 +659,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
          let sigma = Goal.sigma g in
          let elim_name = match clr, what with
            | [SsrHyp(_, x)], _ -> x
-           | _, `EConstr(_,_,t) when EConstr.isVar sigma t ->
+           | _, Ssrelim.EConstr(_,_,t) when EConstr.isVar sigma t ->
               EConstr.destVar sigma t
            | _ -> Ssrcommon.mk_anon_id "K" (Tacmach.pf_ids_of_hyps g) in
          Tacticals.tclFIRST
@@ -798,11 +798,11 @@ let ssrelimtac (view, (eqid, (dgens, ipats))) =
     | [v] ->
       Ssrcommon.tclINTERP_AST_CLOSURE_TERM_AS_CONSTR v >>= fun cs ->
       tclDISPATCH (List.map (fun elim ->
-          (Ssrelim.ssrelim deps (`EGen gen) ~elim eqid (elim_intro_tac ipats)))
+          (Ssrelim.ssrelim deps (Ssrelim.EGen gen) ~elim eqid (elim_intro_tac ipats)))
         cs)
     | [] ->
       tclINDEPENDENT
-          (Ssrelim.ssrelim deps (`EGen gen) eqid (elim_intro_tac ipats))
+          (Ssrelim.ssrelim deps (Ssrelim.EGen gen) eqid (elim_intro_tac ipats))
     | _ ->
       Ssrcommon.errorstrm
         Pp.(str "elim: only one elimination lemma can be provided")
@@ -825,7 +825,7 @@ let ssrcasetac (view, (eqid, (dgens, ipats))) =
             if view <> [] && eqid <> None && deps = []
             then [gen], [], None
             else deps, clear, occ in
-          Ssrelim.ssrelim ~is_case:true deps (`EConstr (clear, occ, vc))
+          Ssrelim.ssrelim ~is_case:true deps (Ssrelim.EConstr (clear, occ, vc))
             eqid (elim_intro_tac ipats)
       in
       if view = [] then conclusion false c clear c

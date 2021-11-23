@@ -10,7 +10,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open Tacmach.Old
 open Names
 open Environ
 open Evd
@@ -70,12 +69,9 @@ type tac_ctx = {
 val new_ctx : unit -> tac_ctx (* REMOVE *)
 val pull_ctxs : ('a * tac_ctx) list  sigma -> 'a list sigma * tac_ctx list (* REMOVE *)
 
-val with_fresh_ctx : tac_ctx tac_a -> tactic
-
 val pull_ctx : ('a * tac_ctx) sigma -> 'a sigma * tac_ctx
 val push_ctx : tac_ctx -> 'a sigma -> ('a * tac_ctx) sigma
 val push_ctxs : tac_ctx -> 'a list sigma -> ('a * tac_ctx) list sigma
-val tac_ctx : tactic -> tac_ctx tac_a
 val with_ctx :
   (tac_ctx -> 'b * tac_ctx) -> ('a * tac_ctx) sigma -> 'b * ('a * tac_ctx) sigma
 val without_ctx : ('a sigma -> 'b) -> ('a * tac_ctx) sigma -> 'b
@@ -123,10 +119,6 @@ val isCxHoles : (constr_expr * 'a option) list -> bool
 
 val intern_term :
   Tacinterp.interp_sign -> env ->
-    ssrterm -> Glob_term.glob_constr
-
-val pf_intern_term :
-  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
     ssrterm -> Glob_term.glob_constr
 
 val interp_term :
@@ -177,7 +169,6 @@ val mk_tagged_id : string -> int -> Id.t
 val mk_evar_name : int -> Name.t
 val ssr_anon_hyp : string
 val type_id : Environ.env -> Evd.evar_map -> EConstr.types -> Id.t
-val pf_type_id :  Goal.goal Evd.sigma -> EConstr.types -> Id.t
 
 val abs_evars :
            Environ.env -> Evd.evar_map ->
@@ -259,17 +250,20 @@ val ssrautoprop_tac :
            unit Proofview.tactic ref
 
 val mkProt :
+  Environ.env ->
+  Evd.evar_map ->
   EConstr.t ->
   EConstr.t ->
-  Goal.goal Evd.sigma ->
-  EConstr.t * Goal.goal Evd.sigma
+  Evd.evar_map * EConstr.t
 
 val mkEtaApp : EConstr.t -> int -> int -> EConstr.t
 
 val mkRefl :
+  Environ.env ->
+  Evd.evar_map ->
   EConstr.t ->
   EConstr.t ->
-  Goal.goal Evd.sigma -> EConstr.t * Goal.goal Evd.sigma
+  Evd.evar_map * EConstr.t
 
 val discharge_hyp :
            Id.t * (Id.t * string) -> unit Proofview.tactic
@@ -330,12 +324,10 @@ val refine_with :
            ?with_evars:bool ->
            evar_map * EConstr.t -> unit Proofview.tactic
 
-val pf_resolve_typeclasses :
-  where:EConstr.t ->
-  fail:bool -> Goal.goal Evd.sigma -> Goal.goal Evd.sigma
 val resolve_typeclasses :
+  Environ.env -> Evd.evar_map ->
   where:EConstr.t ->
-  fail:bool -> Environ.env -> Evd.evar_map -> Evd.evar_map
+  fail:bool -> Evd.evar_map
 
 (*********************** Wrapped Coq  tactics *****************************)
 

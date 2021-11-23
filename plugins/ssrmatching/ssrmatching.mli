@@ -191,10 +191,9 @@ val mk_tpattern_matcher :
   let concl = eval_pattern env0 sigma0 concl0 pat occ find_R in
   let (d, r), rdx = conclude concl in ]} *)
 
-(* convenience shortcut: [pf_fill_occ_term gl occ (sigma,t)] returns
- * the conclusion of [gl] where [occ] occurrences of [t] have been replaced
+(* convenience shortcut: [fill_occ_term env concl sigma occ (sigma,t)] returns
+ * [concl] where [occ] occurrences of [t] have been replaced
  * by [Rel 1] and the instance of [t] *)
-val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
 val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
@@ -228,8 +227,6 @@ val is_wildcard : cpattern -> bool
 val cpattern_of_id : Names.Id.t -> cpattern
 val pr_constr_pat : env -> evar_map -> constr -> Pp.t
 val pr_econstr_pat : env -> evar_map -> econstr -> Pp.t
-val pf_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
-val pf_unsafe_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 
 (* One can also "Set SsrMatchingDebug" from a .v *)
 val debug : bool -> unit

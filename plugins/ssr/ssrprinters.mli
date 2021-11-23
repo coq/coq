@@ -12,9 +12,6 @@
 
 open Ssrast
 
-val pp_term :
-  Goal.goal Evd.sigma -> EConstr.constr -> Pp.t
-
 val pr_spc : unit -> Pp.t
 val pr_bar : unit -> Pp.t
 val pr_list :

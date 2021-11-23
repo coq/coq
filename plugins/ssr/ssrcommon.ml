@@ -151,11 +151,6 @@ type tac_ctx = {
 let new_ctx () =
   { tmp_ids = []; wild_ids = []; delayed_clears = [] }
 
-let with_fresh_ctx t gl =
-  let gl = push_ctx (new_ctx()) gl in
-  let gl = t gl in
-  fst (pull_ctxs gl)
-
 open Pp
 
 let errorstrm x = CErrors.user_err x
@@ -217,7 +212,6 @@ let glob_constr ist genv = function
     Constrintern.intern_gen Pretyping.WithoutTypeConstraint ~ltacvars genv Evd.(from_env genv) ce
   | rc, None -> rc
 
-let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c
 let intern_term ist env (_, c) = glob_constr ist env c
 
 (* Estimate a bound on the number of arguments of a raw constr. *)
@@ -489,21 +483,11 @@ let pf_e_type_of gl t =
   let sigma, ty = Typing.type_of env sigma t in
   re_sig it sigma, ty
 
-let pf_resolve_typeclasses ~where ~fail gl =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
+let resolve_typeclasses env sigma ~where ~fail =
   let filter =
     let evset = Evarutil.undefined_evars_of_term sigma where in
     fun k _ -> Evar.Set.mem k evset in
-  let sigma = Typeclasses.resolve_typeclasses ~filter ~fail env sigma in
-  re_sig it sigma
-
-let resolve_typeclasses ~where ~fail env sigma =
-  let filter =
-    let evset = Evarutil.undefined_evars_of_term sigma where in
-    fun k _ -> Evar.Set.mem k evset in
-  let sigma = Typeclasses.resolve_typeclasses ~filter ~fail env sigma in
-  sigma
-
+  Typeclasses.resolve_typeclasses ~filter ~fail env sigma
 
 let nf_evar sigma t =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
@@ -761,18 +745,14 @@ let mkSsrRef name =
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst env sigma name =
   EConstr.fresh_global env sigma (mkSsrRef name)
-let pf_mkSsrConst name gl =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let (sigma, t) = mkSsrConst env sigma name in
-  t, re_sig it sigma
 let pf_fresh_global name gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
   let sigma,t  = Evd.fresh_global env sigma name in
   EConstr.Unsafe.to_constr t, re_sig it sigma
 
-let mkProt t c gl =
-  let prot, gl = pf_mkSsrConst "protect_term" gl in
-  EConstr.mkApp (prot, [|t; c|]), gl
+let mkProt env sigma t c =
+  let sigma, prot = mkSsrConst env sigma "protect_term" in
+  sigma, EConstr.mkApp (prot, [|t; c|])
 
 let mkEtaApp c n imin =
   let open EConstr in
@@ -782,10 +762,9 @@ let mkEtaApp c n imin =
     let imax = imin + n - 1 in n, (fun i -> mkRel (imax - i)) in
   mkApp (c, Array.init nargs mkarg)
 
-let mkRefl t c gl =
-  let sigma = project gl in
-  let (sigma, refl) = EConstr.fresh_global (pf_env gl) sigma Coqlib.(lib_ref "core.eq.refl") in
-  EConstr.mkApp (refl, [|t; c|]), { gl with sigma }
+let mkRefl env sigma t c =
+  let (sigma, refl) = EConstr.fresh_global env sigma Coqlib.(lib_ref "core.eq.refl") in
+  sigma, EConstr.mkApp (refl, [|t; c|])
 
 let discharge_hyp (id', (id, mode)) =
   Proofview.Goal.enter begin fun gl ->
