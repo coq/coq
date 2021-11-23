@@ -392,22 +392,21 @@ let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n
     else sigma, concl in
   sigma, concl, gen_eq_tac, clr
 
-let compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig_gl gl =
-  let env = pf_env orig_gl in
+let compute_patterns env sigma0 what c_is_head_p cty deps inf_deps_r occ orig_clr eqid sigma =
   let rec loop patterns clr i = function
-    | [],[] -> patterns, clr, gl
+    | [],[] -> patterns, clr, sigma
     | ((oclr, occ), t):: deps, inf_t :: inf_deps ->
-        let p = interp_cpattern (pf_env orig_gl) (project orig_gl) t None in
+        let p = interp_cpattern env sigma0 t None in
         let clr_t =
-          interp_clr (project gl) (oclr,(tag_of_cpattern t,EConstr.of_constr (fst (redex_of_pattern env p)))) in
+          interp_clr sigma (oclr,(tag_of_cpattern t,EConstr.of_constr (fst (redex_of_pattern env p)))) in
         (* if we are the index for the equation we do not clear *)
         let clr_t = if deps = [] && eqid <> None then [] else clr_t in
-        let p = if is_undef_pat p then mkTpat (pf_env gl) (project orig_gl) (project gl, inf_t) else p in
+        let p = if is_undef_pat p then mkTpat env sigma0 (sigma, inf_t) else p in
         loop (patterns @ [i, p, inf_t, occ])
           (clr_t @ clr) (i+1) (deps, inf_deps)
     | [], c :: inf_deps ->
-        debug_ssr (fun () -> Pp.(str"adding inf pattern " ++ pr_econstr_pat env (project gl) c));
-        loop (patterns @ [i, mkTpat (pf_env gl) (project orig_gl) (project gl, c), c, allocc])
+        debug_ssr (fun () -> Pp.(str"adding inf pattern " ++ pr_econstr_pat env sigma c));
+        loop (patterns @ [i, mkTpat env sigma0 (sigma, c), c, allocc])
           clr (i+1) ([], inf_deps)
     | _::_, [] -> errorstrm Pp.(str "Too many dependent abstractions") in
   let deps, head_p, inf_deps_r = match what, c_is_head_p, cty with
@@ -418,9 +417,9 @@ let compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig
         let occ = if occ = None then allocc else occ in
         let inf_p, inf_deps_r = List.hd inf_deps_r, List.tl inf_deps_r in
         deps, [1, pc, inf_p, occ], inf_deps_r in
-  let patterns, clr, gl =
+  let patterns, clr, sigma =
     loop [] orig_clr (List.length head_p+1) (List.rev deps, inf_deps_r) in
-  project gl, head_p @ patterns, Util.List.uniquize clr
+  sigma, head_p @ patterns, Util.List.uniquize clr
 
 let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   let open Proofview.Notations in
@@ -430,7 +429,6 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
 
   fun (oc, orig_clr, occ, c_gen) -> pfLIFT begin fun gl ->
 
-  let it = gl.Evd.it in
   let sigma = project gl in
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
   debug_ssr (fun () -> (Pp.str(if is_case then "==CASE==" else "==ELIM==")));
@@ -458,7 +456,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* Patterns for the inductive types indexes to be bound in pred are computed
    * looking at the ones provided by the user and the inferred ones looking at
    * the type of the elimination principle *)
-  let sigma, patterns, clr = compute_patterns what c_is_head_p cty deps inf_deps_r occ orig_clr eqid orig_gl (re_sig it sigma) in
+  let sigma, patterns, clr = compute_patterns env (project orig_gl) what c_is_head_p cty deps inf_deps_r occ orig_clr eqid sigma in
   let pp_pat (_,p,_,occ) = Pp.(pr_occ occ ++ pp_pattern env p) in
   let pp_inf_pat (_,_,t,_) = pr_econstr_pat env sigma (pf_fire_subst gl t) in
   debug_ssr (fun () -> Pp.(pp_concat (str"patterns=") (List.map pp_pat patterns)));
