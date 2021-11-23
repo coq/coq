@@ -237,22 +237,22 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
     let elimty = Reductionops.whd_all env sigma elimty in
     sigma, seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred
 
-let saturate_until gl c c_ty f =
+let saturate_until env sigma c c_ty f =
   let rec loop n = try
-    let c, c_ty, _, gl = pf_saturate gl c ~ty:c_ty n in
-    let gl' = f c c_ty gl in
-    Some (c, c_ty, gl, gl')
+    let c, c_ty, _, sigma = saturate env sigma c ~ty:c_ty n in
+    let sigma' = f sigma c c_ty in
+    Some (c, c_ty, sigma, sigma')
   with
   | NotEnoughProducts -> None
   | e when CErrors.noncritical e -> loop (n+1) in loop 0
 
-let get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty gl = match cty with
-| None -> project gl, true (* The user wrote elim: _ *)
+let get_head_pattern env sigma elim_is_dep elim_args n_elim_args inf_deps_r cty = match cty with
+| None -> sigma, true (* The user wrote elim: _ *)
 | Some (c, c_ty, _) ->
   let rec first = function
     | [] ->
       errorstrm Pp.(str"Unable to apply the eliminator to the term"++
-        spc()++pr_econstr_env env (project gl) c++spc())
+        spc()++pr_econstr_env env sigma c++spc())
     | x :: rest ->
       match x () with
       | None -> first rest
@@ -261,31 +261,31 @@ let get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty gl = m
   (* Unify two terms if their heads are not applied unif variables, eg
     * not (?P x). The idea is to rule out cases where the problem is too
     * vague to drive the current heuristics. *)
-  let pf_unify_HO_rigid gl a b =
-    let is_applied_evar x = match EConstr.kind (project gl) x with
-      | App(x,_) -> EConstr.isEvar (project gl) x
+  let unify_HO_rigid env sigma a b =
+    let is_applied_evar x = match EConstr.kind sigma x with
+      | App(x,_) -> EConstr.isEvar sigma x
       | _ -> false in
     if is_applied_evar a || is_applied_evar b then
-      raise Evarconv.(UnableToUnify(project gl,
+      raise Evarconv.(UnableToUnify(sigma,
                 Pretype_errors.ProblemBeyondCapabilities))
-    else pf_unify_HO gl a b in
+    else unify_HO env sigma a b in
   let try_c_last_arg () =
     (* we try to see if c unifies with the last arg of elim *)
     if elim_is_dep then None else
     let arg = List.assoc (n_elim_args - 1) elim_args in
-    let gl, arg_ty = pfe_type_of gl arg in
-    match saturate_until gl c c_ty (fun c c_ty gl ->
-      pf_unify_HO (pf_unify_HO_rigid gl c_ty arg_ty) arg c) with
-    | Some (c, _, _, gl) -> Some (project gl, false)
+    let sigma, arg_ty = Typing.type_of env sigma arg in
+    match saturate_until env sigma c c_ty (fun sigma c c_ty ->
+      unify_HO env (unify_HO_rigid env sigma c_ty arg_ty) arg c) with
+    | Some (c, _, _, sigma) -> Some (sigma, false)
     | None -> None in
   let try_c_last_pattern () =
     (* we try to see if c unifies with the last inferred pattern *)
     if inf_deps_r = [] then None else
     let inf_arg = List.hd inf_deps_r in
-    let gl, inf_arg_ty = pfe_type_of gl inf_arg in
-    match saturate_until gl c c_ty (fun _ c_ty gl ->
-            pf_unify_HO_rigid gl c_ty inf_arg_ty) with
-    | Some (c, _, _,gl) -> Some(project gl, true)
+    let sigma, inf_arg_ty = Typing.type_of env sigma inf_arg in
+    match saturate_until env sigma c c_ty (fun sigma _ c_ty ->
+            unify_HO_rigid env sigma c_ty inf_arg_ty) with
+    | Some (c, _, _, sigma) -> Some(sigma, true)
     | None -> None in
   first [try_c_last_arg;try_c_last_pattern]
 
@@ -455,7 +455,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* Here we try to understand if the main pattern/term the user gave is
     * the first pattern to be matched (i.e. if elimty ends in P t1 .. tn,
     * wether tn is the t the user wrote in 'elim: t' *)
-  let sigma, c_is_head_p = get_head_pattern env elim_is_dep elim_args n_elim_args inf_deps_r cty (re_sig it sigma) in
+  let sigma, c_is_head_p = get_head_pattern env sigma elim_is_dep elim_args n_elim_args inf_deps_r cty in
   debug_ssr (fun () -> Pp.(str"c_is_head_p= " ++ bool c_is_head_p));
   let sigma, predty = Typing.type_of env sigma pred in
   (* Patterns for the inductive types indexes to be bound in pred are computed
