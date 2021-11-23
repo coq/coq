@@ -1180,27 +1180,26 @@ let unfold cl =
 open Proofview
 open Notations
 
-let tacSIGMA = Goal.enter_one ~__LOC__ begin fun g ->
-  let k = Goal.goal g in
-  let sigma = Goal.sigma g in
-  tclUNIT (Tacmach.Old.re_sig k sigma)
+let pf_apply f = Proofview.Goal.enter_one ~__LOC__ begin fun gl ->
+  f (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
 end
 
 let tclINTERP_AST_CLOSURE_TERM_AS_CONSTR c =
-  tclINDEPENDENTL begin tacSIGMA >>= fun gl ->
+  tclINDEPENDENTL @@ pf_apply begin fun env sigma ->
   let old_ssrterm = mkRHole, Some c.Ssrast.body in
   let ist =
     option_assert_get c.Ssrast.interp_env
       Pp.(str "tclINTERP_AST_CLOSURE_TERM_AS_CONSTR: term with no ist") in
-  let sigma, t = Tacinterp.interp_constr_gen Pretyping.WithoutTypeConstraint ist (pf_env gl) (project gl) old_ssrterm in
+  let sigma, t = Tacinterp.interp_constr_gen Pretyping.WithoutTypeConstraint ist env sigma old_ssrterm in
   Unsafe.tclEVARS sigma <*>
   tclUNIT t
 end
 
 let tacREDUCE_TO_QUANTIFIED_IND ty =
-  tacSIGMA >>= fun gl ->
-  try tclUNIT (Tacmach.Old.pf_reduce_to_quantified_ind gl ty)
+  pf_apply begin fun env sigma ->
+  try tclUNIT (Tacred.reduce_to_quantified_ind env sigma ty)
   with e -> tclZERO e
+  end
 
 let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
   let sigma, env = Goal.sigma g, Goal.env g in
@@ -1337,15 +1336,15 @@ let tacMKPROD c ?name cl =
 end
 
 let tacINTERP_CPATTERN cp =
-  tacSIGMA >>= begin fun gl ->
-  tclUNIT (Ssrmatching.interp_cpattern (pf_env gl) (project gl) cp None)
-end
+  pf_apply begin fun env sigma ->
+    tclUNIT (Ssrmatching.interp_cpattern env sigma cp None)
+  end
 
 let tacUNIFY a b =
-  tacSIGMA >>= begin fun gl ->
-  let gl = Ssrmatching.pf_unify_HO gl a b in
-  Unsafe.tclEVARS (Tacmach.Old.project gl)
-end
+  pf_apply begin fun env sigma ->
+  let sigma = Ssrmatching.unify_HO env sigma a b in
+  Unsafe.tclEVARS sigma
+  end
 
 let tclOPTION o d =
   match o with

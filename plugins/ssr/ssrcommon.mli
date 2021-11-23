@@ -359,9 +359,6 @@ val unfold : EConstr.t list -> unit Proofview.tactic
 
 (* New code ****************************************************************)
 
-(* To call old code *)
-val tacSIGMA : Goal.goal Evd.sigma Proofview.tactic
-
 val tclINTERP_AST_CLOSURE_TERM_AS_CONSTR :
   ast_closure_term -> EConstr.t list Proofview.tactic
 

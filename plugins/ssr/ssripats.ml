@@ -725,10 +725,10 @@ let mkEq dir cl c t n env sigma =
     The code here does not "grab" [v last] nor apply [v] to [last], see the
     [tacVIEW_THEN_GRAB] combinator. *)
 let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
-  Ssrcommon.tacSIGMA >>= fun sigma0 ->
-  Goal.enter_one begin fun g ->
-  let pat = Ssrmatching.interp_cpattern (Tacmach.Old.pf_env sigma0) (Tacmach.Old.project sigma0) t None in
-  let cl0, env, sigma, hyps = Goal.(concl g, env g, sigma g, hyps g) in
+  Goal.enter_one begin fun gl ->
+  let cl0, env, sigma, hyps = Goal.(concl gl, env gl, sigma gl, hyps gl) in
+  let sigma0 = sigma in
+  let pat = Ssrmatching.interp_cpattern env sigma t None in
   let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
   let (c, ucst), cl =
     try Ssrmatching.fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
@@ -758,7 +758,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
     if to_ind && occ = None then
       let _, p, _, ucst' =
         (* TODO: use abs_evars2 *)
-        Ssrcommon.pf_abs_evars sigma0 (fst pat, c) in
+        Ssrcommon.abs_evars env sigma0 (fst pat, c) in
       let sigma = Evd.merge_universe_context sigma ucst' in
       Unsafe.tclEVARS sigma <*>
       Ssrcommon.tacTYPEOF p >>= fun pty ->
@@ -989,11 +989,11 @@ let ssrabstract dgens =
       Ssrcommon.unfold[abstract;abstract_key]
     ]
   end in
-  let interp_gens { gens } ~conclusion = Goal.enter begin fun g ->
-   Ssrcommon.tacSIGMA >>= fun gl0 ->
+  let interp_gens { gens } ~conclusion = Goal.enter begin fun gl ->
      let open Ssrmatching in
+     let open Tacmach in
      let ipats = List.map (fun (_,cp) ->
-       match id_of_pattern (interp_cpattern (Tacmach.Old.pf_env gl0) (Tacmach.Old.project gl0) cp None) with
+       match id_of_pattern (interp_cpattern (pf_env gl) (project gl) cp None) with
        | None -> IPatAnon (One None)
        | Some id -> IPatId id)
        (List.tl gens) in
