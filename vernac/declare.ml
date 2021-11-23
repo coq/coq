@@ -26,7 +26,7 @@ module Hook = struct
       (** [(n1,t1),...(nm,tm)]: association list between obligation
           name and the corresponding defined term (might be a constant,
           but also an arbitrary term in the Expand case of obligations) *)
-      ; scope : Locality.locality
+      ; scope : Locality.definition_scope
       (**  [locality]: Locality of the original declaration *)
       ; dref : Names.GlobRef.t
       (** [ref]: identifier of the original declaration *)
@@ -81,7 +81,7 @@ module Info = struct
     ; inline : bool
     ; kind : Decls.logical_kind
     ; udecl : UState.universe_decl
-    ; scope : Locality.locality
+    ; scope : Locality.definition_scope
     ; hook : Hook.t option
     ; typing_flags : Declarations.typing_flags option
     }
@@ -89,7 +89,7 @@ module Info = struct
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
-      ?(udecl=UState.default_univ_decl) ?(scope=Locality.Global Locality.ImportDefaultBehavior)
+      ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
       ?hook ?typing_flags () =
     { poly; inline; kind; udecl; scope; hook; typing_flags }
 
@@ -651,7 +651,7 @@ let declare_definition_scheme ~internal ~univs ~role ~name c =
   kn, eff
 
 (* Locality stuff *)
-let declare_entry_core ~name ~scope ~kind ~typing_flags ?hook ~obls ~impargs ~uctx entry =
+let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags ?hook ~obls ~impargs ~uctx entry =
   let should_suggest =
     entry.proof_entry_opaque
     && not (List.is_empty (Global.named_context()))
@@ -2332,7 +2332,6 @@ let rec solve_obligation prg num tac =
     then Error.depends user_num remaining
   in
   let obl = subst_deps_obl obls obl in
-  let scope = Locality.Global Locality.ImportNeedQualified in
   let kind = kind_of_obligation (snd obl.obl_status) in
   let evd = Evd.from_ctx (Internal.get_uctx prg) in
   let evd = Evd.update_sigma_univs (Global.universes ()) evd in
@@ -2344,7 +2343,7 @@ let rec solve_obligation prg num tac =
   let using = Internal.get_using prg in
   let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) ?using () in
   let poly = Internal.get_poly prg in
-  let info = Info.make ~scope ~kind ~poly () in
+  let info = Info.make ~kind ~poly () in
   let lemma = Proof.start_core ~cinfo ~info ~proof_ending evd  in
   let lemma = fst @@ Proof.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Proof.set_endline_tactic tac lemma) lemma tac in
@@ -2584,5 +2583,5 @@ module OblState = Obls_.State
 let declare_constant ?local ~name ~kind ?typing_flags =
   declare_constant ?local ~name ~kind ~typing_flags
 
-let declare_entry ~name ~scope ~kind =
-  declare_entry ~name ~scope ~kind ~typing_flags:None
+let declare_entry ~name ?scope ~kind =
+  declare_entry ~name ?scope ~kind ~typing_flags:None

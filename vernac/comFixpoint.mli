@@ -16,14 +16,14 @@ open Vernacexpr
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint_interactive
-  : scope:Locality.locality
+  : scope:Locality.definition_scope
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> fixpoint_expr list
   -> Declare.Proof.t
 
 val do_fixpoint
-   : scope:Locality.locality
+   : ?scope:Locality.definition_scope
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?using:Vernacexpr.section_subset_expr
@@ -31,10 +31,14 @@ val do_fixpoint
   -> unit
 
 val do_cofixpoint_interactive :
-  scope:Locality.locality -> poly:bool -> cofixpoint_expr list -> Declare.Proof.t
+  scope:Locality.definition_scope -> poly:bool -> cofixpoint_expr list -> Declare.Proof.t
 
-val do_cofixpoint :
-  scope:Locality.locality -> poly:bool -> ?using:Vernacexpr.section_subset_expr -> cofixpoint_expr list -> unit
+val do_cofixpoint
+  : scope:Locality.definition_scope
+  -> poly:bool
+  -> ?using:Vernacexpr.section_subset_expr
+  -> cofixpoint_expr list
+  -> unit
 
 (************************************************************************)
 (** Internal API  *)

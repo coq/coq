@@ -1879,12 +1879,12 @@ let declare_projection name instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let types = Some (it_mkProd_or_LetIn typ ctx) in
-  let kind, opaque, scope = Decls.(IsDefinition Definition), false, Locality.Global Locality.ImportDefaultBehavior in
+  let kind = Decls.(IsDefinition Definition) in
   let impargs, udecl = [], UState.default_univ_decl in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
-  let info = Declare.Info.make ~scope ~kind ~udecl ~poly () in
+  let info = Declare.Info.make ~kind ~udecl ~poly () in
   let _r : GlobRef.t =
-    Declare.declare_definition ~cinfo ~info ~opaque ~body sigma
+    Declare.declare_definition ~cinfo ~info ~opaque:false ~body sigma
   in ()
 
 let build_morphism_signature env sigma m =
@@ -1948,7 +1948,7 @@ let add_morphism_as_parameter atts m n : unit =
   let env = Global.env () in
   let evd = Evd.from_env env in
   let poly = atts.polymorphic in
-  let kind, opaque, scope = Decls.(IsAssumption Logical), false, Locality.Global Locality.ImportDefaultBehavior in
+  let kind = Decls.(IsAssumption Logical) in
   let impargs, udecl = [], UState.default_univ_decl in
   let evd, types = build_morphism_signature env evd m in
   let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in

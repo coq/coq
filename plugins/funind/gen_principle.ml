@@ -320,7 +320,6 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     let entry = Declare.definition_entry ~univs ?types body in
     let (_ : Names.GlobRef.t) =
       Declare.declare_entry ~name:new_princ_name ~hook
-        ~scope:(Locality.Global Locality.ImportDefaultBehavior)
         ~kind:Decls.(IsProof Theorem)
         ~impargs:[] ~uctx entry
     in
@@ -401,7 +400,6 @@ let register_struct is_rec fixpoint_exprl =
           Pp.(str "Body of Function must be given.")
     in
     ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
-      ~scope:(Locality.Global Locality.ImportDefaultBehavior)
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -419,9 +417,7 @@ let register_struct is_rec fixpoint_exprl =
     in
     (None, evd, List.rev rev_pconstants)
   | _ ->
-    ComFixpoint.do_fixpoint
-      ~scope:(Locality.Global Locality.ImportDefaultBehavior) ~poly:false
-      fixpoint_exprl;
+    ComFixpoint.do_fixpoint ~poly:false fixpoint_exprl;
     let evd, rev_pconstants =
       List.fold_left
         (fun (evd, l) {Vernacexpr.fname} ->

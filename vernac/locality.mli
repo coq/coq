@@ -11,7 +11,10 @@
 (** * Managing locality *)
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
-type locality = Discharge | Global of import_status
+type definition_scope = Discharge | Global of import_status
+
+val default_scope : definition_scope
+(** = [Global ImportDefaultBehavior] *)
 
 (** * Positioning locality for commands supporting discharging and export
     outside of modules *)
@@ -23,7 +26,7 @@ type locality = Discharge | Global of import_status
 
 val make_locality : bool option -> bool
 val make_non_locality : bool option -> bool
-val enforce_locality_exp : bool option -> Vernacexpr.discharge -> locality
+val enforce_locality_exp : bool option -> Vernacexpr.discharge -> definition_scope
 val enforce_locality : bool option -> bool
 
 (** For commands whose default is to not discharge but to export:

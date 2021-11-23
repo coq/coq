@@ -26,7 +26,7 @@ val interp_assumption
 val do_assumptions
   :  program_mode:bool
   -> poly:bool
-  -> scope:Locality.locality
+  -> scope:Locality.definition_scope
   -> kind:Decls.assumption_object_kind
   -> Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
