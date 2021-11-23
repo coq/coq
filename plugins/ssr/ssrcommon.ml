@@ -84,72 +84,8 @@ let mk_orhint tacs = true, tacs
 let nullhint = true, []
 let nohint = false, []
 
-type 'a tac_a = (goal * 'a) sigma -> (goal * 'a) list sigma
-
 let project gl = gl.Evd.sigma
 let re_sig it sigma = { Evd.it = it; Evd.sigma = sigma }
-
-let push_ctx  a gl = re_sig (sig_it gl, a) (project gl)
-let push_ctxs a gl =
-  re_sig (List.map (fun x -> x,a) (sig_it gl)) (project gl)
-let pull_ctx gl = let g, a = sig_it gl in re_sig g (project gl), a
-let pull_ctxs gl = let g, a = List.split (sig_it gl) in re_sig g (project gl), a
-
-let with_ctx f gl =
-  let gl, ctx = pull_ctx gl in
-  let rc, ctx = f ctx in
-  rc, push_ctx ctx gl
-let without_ctx f gl =
-  let gl, _ctx = pull_ctx gl in
-  f gl
-let tac_ctx t gl =
-  let gl, a = pull_ctx gl in
-  let gl = t gl in
-  push_ctxs a gl
-
-let tclTHEN_ia t1 t2 gl =
-  let gal = t1 gl in
-  let goals, sigma = sig_it gal, project gal in
-  let _, opened, sigma =
-    List.fold_left (fun (i,opened,sigma) g ->
-      let gl = t2 i (re_sig g sigma) in
-      i+1, sig_it gl :: opened, project gl)
-      (1,[],sigma) goals in
-  re_sig (List.flatten (List.rev opened)) sigma
-
-let tclTHEN_a t1 t2 gl = tclTHEN_ia t1 (fun _ -> t2) gl
-
-let tclTHENS_a t1 tl gl = tclTHEN_ia t1
-  (fun i -> List.nth tl (i-1)) gl
-
-let rec tclTHENLIST_a = function
-  | [] -> tac_ctx Tacticals.Old.tclIDTAC
-  | t1::tacl -> tclTHEN_a t1 (tclTHENLIST_a tacl)
-
-(* like  tclTHEN_i but passes to the tac "i of n" and not just i *)
-let tclTHEN_i_max tac taci gl =
-  let maxi = ref 0 in
-  tclTHEN_ia (tclTHEN_ia tac (fun i -> maxi := max i !maxi; tac_ctx Tacticals.Old.tclIDTAC))
-    (fun i gl -> taci i !maxi gl) gl
-
-let tac_on_all gl tac =
-  let goals = sig_it gl in
-  let opened, sigma =
-    List.fold_left (fun (opened,sigma) g ->
-      let gl = tac (re_sig g sigma) in
-      sig_it gl :: opened, project gl)
-      ([],project gl) goals in
-  re_sig (List.flatten (List.rev opened)) sigma
-
-(* Used to thread data between intro patterns at run time *)
-type tac_ctx = {
-  tmp_ids : (Id.t * Name.t ref) list;
-  wild_ids : Id.t list;
-  delayed_clears : Id.t list;
-}
-
-let new_ctx () =
-  { tmp_ids = []; wild_ids = []; delayed_clears = [] }
 
 open Pp
 
@@ -319,16 +255,6 @@ let internal_names = ref []
 let add_internal_name pt = internal_names := pt :: !internal_names
 let is_internal_name s = List.exists (fun p -> p s) !internal_names
 
-let tmp_tag = "_the_"
-let tmp_post = "_tmp_"
-let mk_tmp_id i =
-  Id.of_string (Printf.sprintf "%s%s%s" tmp_tag (CString.ordinal i) tmp_post)
-let new_tmp_id ctx =
-  let id = mk_tmp_id (1 + List.length ctx.tmp_ids) in
-  let orig = ref Anonymous in
-  (id, orig), { ctx with tmp_ids = (id, orig) :: ctx.tmp_ids }
-;;
-
 let mk_internal_id s =
   let s' = Printf.sprintf "_%s_" s in
   let s' = String.map (fun c -> if c = ' ' then '_' else c) s' in
@@ -354,8 +280,6 @@ let ssr_anon_hyp = "Hyp"
 
 let wildcard_tag = "_the_"
 let wildcard_post = "_wildcard_"
-let mk_wildcard_id i =
-  Id.of_string (Printf.sprintf "%s%s%s" wildcard_tag (CString.ordinal i) wildcard_post)
 let has_wildcard_tag s =
   let n = String.length s in let m = String.length wildcard_tag in
   let m' = String.length wildcard_post in
@@ -363,11 +287,6 @@ let has_wildcard_tag s =
   String.sub s (n - m') m' = wildcard_post &&
   skip_digits s m = n - m' - 2
 let _ = add_internal_name has_wildcard_tag
-
-let new_wild_id ctx =
-  let i = 1 + List.length ctx.wild_ids in
-  let id = mk_wildcard_id i in
-  id, { ctx with wild_ids = id :: ctx.wild_ids }
 
 let discharged_tag = "_discharged_"
 let mk_discharged_id id =

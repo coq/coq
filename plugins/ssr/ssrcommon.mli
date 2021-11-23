@@ -52,39 +52,6 @@ val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 
 val option_assert_get : 'a option -> Pp.t -> 'a
 
-(**************************** lifted tactics ******************************)
-
-(* tactics with extra data attached to each goals, e.g. the list of
- * temporary variables to be cleared *)
-type 'a tac_a = (goal * 'a) sigma -> (goal * 'a) list sigma
-
-(* Thread around names to be cleared or generalized back, and the speed *)
-type tac_ctx = {
-  tmp_ids : (Id.t * Name.t ref) list;
-  wild_ids : Id.t list;
-  (* List of variables to be cleared at the end of the sentence *)
-  delayed_clears : Id.t list;
-}
-
-val new_ctx : unit -> tac_ctx (* REMOVE *)
-val pull_ctxs : ('a * tac_ctx) list  sigma -> 'a list sigma * tac_ctx list (* REMOVE *)
-
-val pull_ctx : ('a * tac_ctx) sigma -> 'a sigma * tac_ctx
-val push_ctx : tac_ctx -> 'a sigma -> ('a * tac_ctx) sigma
-val push_ctxs : tac_ctx -> 'a list sigma -> ('a * tac_ctx) list sigma
-val with_ctx :
-  (tac_ctx -> 'b * tac_ctx) -> ('a * tac_ctx) sigma -> 'b * ('a * tac_ctx) sigma
-val without_ctx : ('a sigma -> 'b) -> ('a * tac_ctx) sigma -> 'b
-
-(* Standard tacticals lifted to the tac_a type *)
-val tclTHENLIST_a : tac_ctx tac_a list -> tac_ctx tac_a
-val tclTHEN_i_max :
-  tac_ctx tac_a -> (int -> int -> tac_ctx tac_a) -> tac_ctx tac_a
-val tclTHEN_a : tac_ctx tac_a -> tac_ctx tac_a -> tac_ctx tac_a
-val tclTHENS_a : tac_ctx tac_a -> tac_ctx tac_a list -> tac_ctx tac_a
-
-val tac_on_all :
-  (goal * tac_ctx) list sigma -> tac_ctx tac_a -> (goal * tac_ctx) list sigma
 (************************ ssr tactic arguments ******************************)
 
 
@@ -212,8 +179,6 @@ val mkSsrRef : string -> GlobRef.t
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
 val mkSsrConst : Environ.env -> Evd.evar_map -> string -> Evd.evar_map * EConstr.t
 
-val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
-
 val pf_fresh_global :
            GlobRef.t ->
            Goal.goal Evd.sigma ->
@@ -224,8 +189,6 @@ val mk_discharged_id : Id.t -> Id.t
 val is_tagged : string -> string -> bool
 val has_discharged_tag : string -> bool
 val ssrqid : string -> Libnames.qualid
-val new_tmp_id :
-  tac_ctx -> (Names.Id.t * Name.t ref) * tac_ctx
 val mk_anon_id : string -> Id.t list -> Id.t
 val abs_evars_pirrel :
            Environ.env -> Evd.evar_map ->
