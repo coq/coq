@@ -139,6 +139,11 @@ let warn_deprecated_instance_without_locality =
     #[local], #[global] and #[export] depending on your choice. For example: \
     \"#[export] Instance Foo : Bar := baz.\"")
 
+let check_locality_depr = let open Goptions in function
+    | OptDefault -> if Global.sections_are_opened() then OptLocal
+      else (warn_deprecated_instance_without_locality (); OptGlobal)
+    | OptGlobal | OptLocal | OptExport as l -> l
+
 let add_instance cl info glob impl =
   let global = match glob with
   | Goptions.OptDefault ->
@@ -603,6 +608,7 @@ let new_instance_interactive ?(locality=Goptions.OptLocal)
     ?generalize ?(tac:unit Proofview.tactic option) ?hook
     pri opt_props =
   let env = Global.env() in
+  let locality = check_locality_depr locality in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:false ?generalize env instid ctx cl in
   id, do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly
@@ -612,6 +618,7 @@ let new_instance_program ?(locality=Goptions.OptLocal) ~pm
     ~poly instid ctx cl opt_props
     ?generalize ?hook pri =
   let env = Global.env() in
+  let locality = check_locality_depr locality in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     new_instance_common ~program_mode:true ?generalize env instid ctx cl in
   let pm =
