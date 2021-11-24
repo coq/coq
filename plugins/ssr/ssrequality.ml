@@ -28,7 +28,6 @@ open Ssrast
 open Ssrprinters
 open Ssrcommon
 open Proofview.Notations
-open Tacmach.Old
 
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
 let () =
@@ -266,9 +265,11 @@ let fake_pmatcher_end () =
   mkProp, L2R, (Evd.empty, UState.empty, mkProp)
 
 let unfoldintac occ rdx t (kt,_) =
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let fs sigma x = Reductionops.nf_evar sigma x in
-  let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
+  let sigma0 = Proofview.Goal.sigma gl in
+  let env0 = Proofview.Goal.env gl in
+  let concl0 = Proofview.Goal.concl gl in
   let (sigma, t), const = strip_unfold_term env0 t kt in
   let body env t c =
     Tacred.unfoldn [AllOccurrences, get_evalref env sigma t] env sigma0 c in
@@ -318,12 +319,14 @@ let unfoldintac occ rdx t (kt,_) =
     try beta env0 (EConstr.of_constr (eval_pattern env0 sigma0 concl0 rdx occ unfold))
     with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
   let _ = conclude () in
-  Proofview.V82.of_tactic (convert_concl ~check:true concl) gl
+  convert_concl ~check:true concl
   end
 
 let foldtac occ rdx ft =
-  Proofview.V82.tactic begin fun gl ->
-  let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma0 = Proofview.Goal.sigma gl in
+  let env0 = Proofview.Goal.env gl in
+  let concl0 = Proofview.Goal.concl gl in
   let sigma, t = ft in
   let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
   let fold, conclude = match rdx with
@@ -346,7 +349,7 @@ let foldtac occ rdx ft =
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let _ = conclude () in
-  Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.of_constr concl)) gl
+  convert_concl ~check:true (EConstr.of_constr concl)
   end
 
 let converse_dir = function L2R -> R2L | R2L -> L2R
