@@ -36,6 +36,13 @@ DOC_MLGS := \
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
 DOC_RSTS := $(wildcard doc/sphinx/*/*.rst) $(wildcard doc/sphinx/*/*/*.rst)
 
+REAL_DOC_MLGS := $(wildcard */*.mlg plugins/*/*.mlg)
+ifneq ($(sort $(DOC_MLGS)),$(sort $(REAL_DOC_MLGS)))
+missing_mlgs := $(filter-out $(REAL_DOC_MLGS),$(DOC_MLGS))
+extra_mlgs := $(filter-out $(DOC_MLGS),$(REAL_DOC_MLGS))
+$(error mlg file list mismatch in Makefile.doc: $(if $(missing_mlgs),$(missing_mlgs) not found) $(if $(extra_mlgs),$(extra_mlgs) not listed))
+endif
+
 doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
 	$(SHOW)'DOC_GRAM'
 	$(HIDE)$(DOC_GRAM) -short -no-warn $(DOC_MLGS)
