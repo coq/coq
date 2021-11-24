@@ -846,9 +846,13 @@ let pushmoveeqtac cl c = Goal.enter begin fun g ->
 end
 
 let eqmovetac _ gen =
-  Ssrcommon.pfLIFT (Ssrcommon.pf_interp_gen false gen) >>=
-  fun (cl, c, _) -> pushmoveeqtac cl c
-;;
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    let (sigma, (cl, c, _)) = Ssrcommon.interp_gen env sigma ~concl false gen in
+    Proofview.Unsafe.tclEVARS sigma <*> pushmoveeqtac cl c
+  end
 
 let rec eqmoveipats eqpat = function
   | (IOpSimpl _ | IOpClear _ as ipat) :: ipats ->

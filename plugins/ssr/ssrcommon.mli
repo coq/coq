@@ -307,18 +307,14 @@ val genstac :
     list * Ssrast.ssrhyp list ->
   unit Proofview.tactic
 
-val pf_interp_gen :
+val interp_gen :
+  Environ.env ->
+  Evd.evar_map ->
+  concl:EConstr.t ->
   bool ->
   (Ssrast.ssrhyp list option * Ssrmatching.occ) *
     Ssrmatching.cpattern ->
-  Goal.goal Evd.sigma ->
-  (EConstr.t * EConstr.t * Ssrast.ssrhyp list) *
-    Goal.goal Evd.sigma
-
-(* HACK: use to put old pf_code in the tactic monad *)
-val pfLIFT
-  :  (Goal.goal Evd.sigma -> 'a * Goal.goal Evd.sigma)
-  -> 'a Proofview.tactic
+  Evd.evar_map * (EConstr.t * EConstr.t * Ssrast.ssrhyp list)
 
 (** Basic tactics *)
 

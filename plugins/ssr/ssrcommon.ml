@@ -573,7 +573,6 @@ let nb_evar_deps = function
   | _ -> 0
 
 let type_id env sigma t = Id.of_string (Namegen.hdchar env sigma t)
-let pf_type_id gl t = type_id (pf_env gl) (project gl) t
 let pfe_type_of gl t =
   let sigma, ty = pf_type_of gl t in
   re_sig (sig_it gl) sigma, ty
@@ -648,11 +647,12 @@ let rec constr_name sigma c = match EConstr.kind sigma c with
   | App (c', _) -> constr_name sigma c'
   | _ -> Anonymous
 
-let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
-  let sigma, t, r = pfe_type_relevance_of (pf_env gl) (project gl) c in
-  let gl = re_sig (sig_it gl) sigma in
-  if name <> Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (make_annot name r, t, cl) else
-  gl, EConstr.mkProd (make_annot (Name (pf_type_id gl t)) r, t, cl)
+let pf_mkprod env sigma c ?(name=constr_name sigma c) cl =
+  let sigma, t, r = pfe_type_relevance_of env sigma c in
+  if name <> Anonymous || EConstr.Vars.noccurn sigma 1 cl then
+    sigma, EConstr.mkProd (make_annot name r, t, cl)
+  else
+    sigma, EConstr.mkProd (make_annot (Name (type_id env sigma t)) r, t, cl)
 
 (** look up a name in the ssreflect internals module *)
 let ssrdirpath = DirPath.make [Id.of_string "ssreflect"]
@@ -1025,17 +1025,20 @@ let cleartac clr = Proofview.tclTHEN (pf_check_hyps_uniq [] clr) (Tactics.clear 
 
 (* }}} *)
 
+let get_hyp env sigma id =
+  try EConstr.of_named_decl (Environ.lookup_named id env)
+  with Not_found -> raise (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
+
 (** Generalize tactic *)
 
 (* XXX the k of the redex should percolate out *)
-let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
-  let pat = interp_cpattern (pf_env gl) (project gl) t None in (* UGLY API *)
-  let gl = pf_merge_uc_of (fst pat) gl in
-  let cl, env, sigma = Tacmach.Old.pf_concl gl, pf_env gl, project gl in
+let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
+  let pat = interp_cpattern env sigma t None in (* UGLY API *)
+  let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context @@ fst pat) in
   let (c, ucst), cl =
-    try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr cl) pat occ 1
-    with NoMatch -> redex_of_pattern env pat, (EConstr.Unsafe.to_constr cl) in
-  let gl = pf_merge_uc ucst gl in
+    try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr concl) pat occ 1
+    with NoMatch -> redex_of_pattern env pat, (EConstr.Unsafe.to_constr concl) in
+  let sigma = Evd.merge_universe_context sigma ucst in
   let c = EConstr.of_constr c in
   let cl = EConstr.of_constr cl in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
@@ -1043,17 +1046,16 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     if tag_of_cpattern t = WithAt then
       if not (EConstr.isVar sigma c) then
         errorstrm (str "@ can be used with variables only")
-      else match Tacmach.Old.pf_get_hyp gl (EConstr.destVar sigma c) with
+      else match get_hyp env sigma (EConstr.destVar sigma c) with
       | NamedDecl.LocalAssum _ -> errorstrm (str "@ can be used with let-ins only")
-      | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (map_annot Name.mk_name name,b,ty,cl),c,clr,ucst,gl
-    else let gl, ccl =  pf_mkprod gl c cl in false, pat, ccl, c, clr,ucst,gl
+      | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (map_annot Name.mk_name name,b,ty,cl),c,clr,ucst, sigma
+    else let sigma, ccl =  pf_mkprod env sigma c cl in false, pat, ccl, c, clr, ucst, sigma
   else if to_ind && occ = None then
-    let nv, p, _, ucst' = pf_abs_evars gl (fst pat, c) in
+    let nv, p, _, ucst' = abs_evars env sigma (fst pat, c) in
     let ucst = UState.union ucst ucst' in
     if nv = 0 then anomaly "occur_existential but no evars" else
-    let sigma, pty, rp = pfe_type_relevance_of (pf_env gl) (project gl) p in
-    let gl = re_sig (sig_it gl) sigma in
-    false, pat, EConstr.mkProd (make_annot (constr_name (project gl) c) rp, pty, Tacmach.Old.pf_concl gl), p, clr,ucst,gl
+    let sigma, pty, rp = pfe_type_relevance_of env sigma p in
+    false, pat, EConstr.mkProd (make_annot (constr_name sigma c) rp, pty, concl), p, clr,ucst, sigma
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
 
 let genclrtac cl cs clr =
@@ -1076,7 +1078,8 @@ let genclrtac cl cs clr =
 let gentac gen =
   Proofview.V82.tactic begin fun gl ->
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
-  let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
+  let conv, _, cl, c, clr, ucst, sigma = pf_interp_gen_aux (pf_env gl) (project gl) ~concl:(Tacmach.Old.pf_concl gl) false gen in
+  let gl = re_sig gl.Evd.it sigma in
   debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c);
   let gl = pf_merge_uc ucst gl in
   if conv
@@ -1087,31 +1090,13 @@ let gentac gen =
 let genstac (gens, clr) =
   Tacticals.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
 
-let pf_interp_gen to_ind gen gl =
-  let _, _, a, b, c, ucst,gl = pf_interp_gen_aux gl to_ind gen in
-  (a, b ,c), pf_merge_uc ucst gl
-
-let pfLIFT f =
-  let open Proofview.Notations in
-  let hack = ref None in
-  Proofview.V82.tactic (fun gl ->
-    let g = sig_it gl in
-    let x, gl = f gl in
-    hack := Some (x,project gl);
-    re_sig [g] (project gl))
-  >>= fun () ->
-    let x, sigma = option_assert_get !hack (Pp.str"pfLIFT") in
-    Proofview.Unsafe.tclEVARS sigma <*>
-    Proofview.tclUNIT x
-;;
+let interp_gen env sigma ~concl to_ind gen =
+  let _, _, a, b, c, ucst, sigma = pf_interp_gen_aux env sigma ~concl to_ind gen in
+  Evd.merge_universe_context sigma ucst, (a, b ,c)
 
 let is_protect hd env sigma =
   let protectC = mkSsrRef "protect_term" in
   EConstr.isRefX sigma protectC hd
-
-let get_hyp env sigma id =
-  try EConstr.of_named_decl (Environ.lookup_named id env)
-  with Not_found -> raise (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
 
 let abs_wgen env sigma keep_let f gen (args,c) =
   let evar_closed t p =
