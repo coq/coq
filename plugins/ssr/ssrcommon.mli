@@ -103,7 +103,7 @@ val interp_refine :
 val interp_open_constr :
   Environ.env -> Evd.evar_map ->
   Tacinterp.interp_sign ->
-    Genintern.glob_constr_and_expr -> evar_map * (evar_map * EConstr.t)
+    Genintern.glob_constr_and_expr -> evar_map * EConstr.t
 
 val pf_e_type_of :
   Goal.goal Evd.sigma ->

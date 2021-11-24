@@ -43,13 +43,13 @@ let interp_agen ist env sigma ((goclr, _), (k, gc as c)) (clr, rcs) =
 let interp_nbargs ist env sigma rc =
   try
     let rc6 = mkRApp rc (mkRHoles 6) in
-    let sigma, t = interp_open_constr env sigma ist (rc6, None) in
+    let t = interp_open_constr env sigma ist (rc6, None) in
     6 + Ssrcommon.nbargs_open_constr env t
   with _ -> 5
 
 let interp_view_nbimps ist env sigma rc =
   try
-    let sigma, t = interp_open_constr env sigma ist (rc, None) in
+    let t = interp_open_constr env sigma ist (rc, None) in
     let pl, c = splay_open_constr env t in
     if Ssrcommon.isAppInd env sigma c then List.length pl else (-(List.length pl))
   with _ -> 0

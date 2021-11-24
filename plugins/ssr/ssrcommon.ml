@@ -190,11 +190,11 @@ let interp_refine env sigma ist ~concl rc =
   (sigma, c)
 
 
-let interp_open_constr env sigma0 ist gc =
-  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist env sigma0 (gc, Tactypes.NoBindings) in
-  (sigma0, (sigma, c))
+let interp_open_constr env sigma ist gc =
+  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist env sigma (gc, Tactypes.NoBindings) in
+  (sigma, c)
 
-let interp_term env sigma ist (_, c) = snd (interp_open_constr env sigma ist c)
+let interp_term env sigma ist (_, c) = interp_open_constr env sigma ist c
 
 let interp_hyp ist env sigma (SsrHyp (loc, id)) =
   let id' = Tacinterp.interp_hyp ist env sigma CAst.(make ?loc id) in
@@ -722,9 +722,9 @@ type name_hint = (int * EConstr.types array) option ref
 
 let abs_ssrterm ?(resolve_typeclasses=false) ist env sigma t =
   let sigma0 = sigma in
-  let sigma, ct as t = interp_term env sigma ist t in
-  let sigma, _ as t =
-    if not resolve_typeclasses then t
+  let sigma, ct = interp_term env sigma ist t in
+  let t =
+    if not resolve_typeclasses then (sigma, ct)
     else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma ct in
