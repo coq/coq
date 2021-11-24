@@ -838,8 +838,7 @@ module Nav = struct
     maybe_update_breakpoints ();
     if notebook#pages <> [] then begin
       let sn = notebook#current_term in
-      Coq.reset_coqtop sn.coqtop; (* calls init_bpts *)
-      sn.coqops#scroll_to_start_of_input ()
+      Coq.reset_coqtop sn.coqtop (* calls init_bpts *)
     end
   let interrupt _ =  (* terminate computation *)
     Minilib.log "User interrupt received";
