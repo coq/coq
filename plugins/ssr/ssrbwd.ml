@@ -13,7 +13,6 @@
 open Printer
 open Pretyping
 open Glob_term
-open Tacmach.Old
 
 open Ssrmatching_plugin
 open Ssrmatching
@@ -121,32 +120,36 @@ let apply_top_tac =
   ]
   end
 
-let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:false (fun gl ->
+let inner_ssrapplytac gviews (ggenl, gclr) ist =
+  let open Tacmach in
+  Proofview.Goal.enter begin fun gl ->
+
  let clr = interp_hyps ist (pf_env gl) (project gl) gclr in
  let vtac gv i = refine_interp_apply_view i ist gv in
  let ggenl, tclGENTAC =
    if gviews <> [] && ggenl <> [] then
      let ggenl= List.map (fun (x,(k,p)) -> x, {kind=k; pattern=p; interpretation= Some ist}) (List.hd ggenl) in
-     [], Tacticals.Old.tclTHEN (Proofview.V82.of_tactic (genstac (ggenl,[])))
-   else ggenl, Tacticals.Old.tclTHEN Tacticals.Old.tclIDTAC in
- tclGENTAC (fun gl ->
+     [], Tacticals.tclTHEN (genstac (ggenl,[]))
+   else ggenl, (fun tac -> tac) in
+ tclGENTAC (Proofview.Goal.enter (fun gl ->
+ let open Tacmach in
   match gviews, ggenl with
   | v :: tl, [] ->
     let dbl =
       if List.length tl = 1
       then Ssrview.AdaptorDb.Equivalence
       else Ssrview.AdaptorDb.Backward in
-    Proofview.V82.of_tactic (Tacticals.tclTHEN
+    Tacticals.tclTHEN
       (List.fold_left (fun acc v ->
          Tacticals.tclTHENLAST acc (vtac v dbl))
         (vtac v Ssrview.AdaptorDb.Backward) tl)
-      (cleartac clr)) gl
+      (cleartac clr)
   | [], [agens] ->
-    let clr', (sigma, lemma) = interp_agens ist (pf_env gl) (project gl) ~concl:(pf_concl gl) agens in
-    let gl = pf_merge_uc_of sigma gl in
-    Proofview.V82.of_tactic (Tacticals.tclTHENLIST [cleartac clr; refine_with ~beta:true lemma; cleartac clr']) gl
+    let sigma = Proofview.Goal.sigma gl in
+    let clr', (nsigma, lemma) = interp_agens ist (pf_env gl) sigma ~concl:(pf_concl gl) agens in
+    let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context nsigma) in
+    Tacticals.tclTHENLIST [Proofview.Unsafe.tclEVARS sigma; cleartac clr; refine_with ~beta:true lemma; cleartac clr']
   | _, _ ->
-    Proofview.V82.of_tactic (Tacticals.tclTHENLIST [apply_top_tac; cleartac clr]) gl) gl
-)
+    Tacticals.tclTHENLIST [apply_top_tac; cleartac clr]))
 
-let apply_top_tac = apply_top_tac
+  end
