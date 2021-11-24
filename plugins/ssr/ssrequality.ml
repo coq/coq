@@ -134,47 +134,49 @@ let tclMATCH_GOAL env sigma c t_ok t_fail =
   | exception exn when CErrors.noncritical exn -> t_fail ()
   end
 
+let mk_evar env sigma ty =
+  let sigma = Evd.create_evar_defs sigma in
+  let (sigma, x) = Evarutil.new_evar env sigma ty in
+  sigma, x
+
 let newssrcongrtac arg ist =
   let open Proofview.Notations in
   Proofview.Goal.enter_one ~__LOC__ begin fun _g ->
     (Ssrcommon.tacMK_SSR_CONST "ssr_congr_arrow") end >>= fun arr ->
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
   debug_ssr (fun () -> Pp.(str"===newcongr==="));
-  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
+  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env env sigma concl));
   (* utils *)
   let fs sigma t = Reductionops.nf_evar sigma t in
-  let mk_evar gl ty =
-    let env, sigma, si = pf_env gl, project gl, sig_it gl in
-    let sigma = Evd.create_evar_defs sigma in
-    let (sigma, x) = Evarutil.new_evar env sigma ty in
-    x, re_sig si sigma in
   let ssr_congr lr = EConstr.mkApp (arr, lr) in
-  let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
+  let sigma, eq = Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.type") in
   (* here the two cases: simple equality or arrow *)
-  let equality, _, eq_args, sigma' = saturate (pf_env gl) (project gl) (EConstr.of_constr eq) 3 in
-  let gl' = re_sig gl.Evd.it sigma' in
-  Proofview.V82.of_tactic (tclMATCH_GOAL (pf_env gl') (project gl') equality
+  let equality, _, eq_args, sigma' = saturate env sigma eq 3 in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  tclMATCH_GOAL env sigma' equality
   (fun sigma' ->
     let ty = fs sigma' (List.assoc 0 eq_args) in
-    congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
+    congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty env sigma ty) ist)
   (fun () ->
     try
-    let gl', t_lhs = pfe_new_type gl in
-    let gl', t_rhs = pfe_new_type gl' in
-    let lhs, gl' = mk_evar gl' t_lhs in
-    let rhs, gl' = mk_evar gl' t_rhs in
+    let sigma, t_lhs = Evarutil.new_Type sigma in
+    let sigma, t_rhs = Evarutil.new_Type sigma in
+    let sigma, lhs = mk_evar env sigma t_lhs in
+    let sigma, rhs = mk_evar env sigma t_rhs in
     let arrow = EConstr.mkArrow lhs Sorts.Relevant (EConstr.Vars.lift 1 rhs) in
-    tclMATCH_GOAL (pf_env gl') (project gl') arrow
-    (fun sigma' ->
-      let lr = [|fs sigma' lhs;fs sigma' rhs|] in
+    tclMATCH_GOAL env sigma arrow
+    (fun sigma ->
+      let lr = [|fs sigma lhs;fs sigma rhs|] in
       let a = ssr_congr lr in
       Tacticals.tclTHENLIST [ pf_typecheck a
                   ; Tactics.apply a
                   ; congrtac (arg, mkRType) ist ])
     (fun _ -> Tacticals.tclZEROMSG Pp.(str"Conclusion is not an equality nor an arrow"))
     with e -> Proofview.tclZERO e (* FIXME *)
-    ))
-    gl
+    )
   end
 
 (** 7. Rewriting tactics (rewrite, unlock) *)
