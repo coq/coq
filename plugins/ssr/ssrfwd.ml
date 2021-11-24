@@ -16,6 +16,8 @@ open Constr
 open Context
 open Tacmach.Old
 
+open Proofview.Notations
+
 open Ssrmatching_plugin.Ssrmatching
 open Ssrprinters
 open Ssrcommon
@@ -158,6 +160,18 @@ let make_ct t =
     | _ -> mkl t, mkl mkRHole, mkl mkRHole, None
     end
 
+(* FIXME: understand why we have to play with the goal states *)
+
+let drop_state =
+  let map gl = Proofview.with_empty_state (Proofview.drop_state gl) in
+  Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+  Proofview.Unsafe.tclSETGOALS (List.map map gls)
+
+let set_state s =
+  let map gl = Proofview.goal_with_state (Proofview.drop_state gl) s in
+  Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+  Proofview.Unsafe.tclSETGOALS (List.map map gls)
+
 let havetac ist
   (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
   suff namefst
@@ -165,8 +179,9 @@ let havetac ist
  let open Proofview.Notations in
  Ssrcommon.tacMK_SSR_CONST "abstract_key" >>= fun abstract_key ->
  Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
- Proofview.V82.tactic begin fun gl ->
- let concl = pf_concl gl in
+ Proofview.Goal.enter begin fun gl ->
+ let concl = Proofview.Goal.concl gl in
+ let gstate = Proofview.Goal.state gl in
  let pats = tclCompileIPats orig_pats in
  let binders = tclCompileIPats binders in
  let simpl = tclCompileIPats simpl in
@@ -192,7 +207,8 @@ let havetac ist
  let unlock_abs (idty,args_id) gl =
     let gl, _ = pf_e_type_of gl idty in
     pf_unify_HO gl args_id.(2) abstract_key in
- Tacticals.Old.tclTHENFIRST (Proofview.V82.of_tactic itac_mkabs) (fun gl ->
+ drop_state <*>
+ Tacticals.tclTHENFIRST (itac_mkabs) (Proofview.V82.tactic (fun gl ->
   let interp gl rtc t =
     let sigma, t, n = abs_ssrterm ~resolve_typeclasses:rtc ist (pf_env gl) (project gl) t in
     re_sig (sig_it gl) sigma, t, n
@@ -232,9 +248,7 @@ let havetac ist
      let tacopen_skols = Proofview.V82.tactic (fun gl -> re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma) in
      let gl, ty = pf_e_type_of gl t in
      gl, ty, Tactics.apply t,
-       Tacticals.tclTHEN (Tacticals.tclTHEN itac_c simpltac)
-         (Tacticals.tclTHEN tacopen_skols (Proofview.V82.tactic (fun gl ->
-            Proofview.V82.of_tactic (unfold [abstract; abstract_key]) gl)))
+       itac_c <*> simpltac <*> tacopen_skols <*> unfold [abstract; abstract_key]
    | _,true,true  ->
      let _, ty, _, uc = pf_interp_ty ~resolve_typeclasses:fixtc (pf_env gl) (project gl) ist cty in
      let gl = pf_merge_uc uc gl in
@@ -248,8 +262,8 @@ let havetac ist
      let gl = pf_merge_uc uc gl in
      gl, cty, (binderstac n) <*> hint, Tacticals.tclTHEN itac_c simpltac
    | _, true, false -> assert false in
-  Proofview.V82.of_tactic (Tacticals.tclTHENS (cuttac cut) [ itac1; itac2 ]) gl)
- gl
+  Proofview.V82.of_tactic (Tacticals.tclTHENS (cuttac cut) [ itac1; itac2 ]) gl)) <*>
+  set_state gstate
 end
 
 let destProd_or_LetIn sigma c =
