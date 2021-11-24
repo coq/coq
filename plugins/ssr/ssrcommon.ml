@@ -22,6 +22,7 @@ open Locusops
 
 open Ltac_plugin
 open Tacmach.Old
+open Proofview.Notations
 open Libnames
 open Ssrmatching_plugin
 open Ssrmatching
@@ -1020,7 +1021,6 @@ let tclMULT = function
   | n, Must when n > 1 -> tclDO n
   | _       -> tclID
 
-let old_cleartac clr = check_hyps_uniq [] clr; Proofview.V82.of_tactic (Tactics.clear (hyps_ids clr))
 let cleartac clr = Proofview.tclTHEN (pf_check_hyps_uniq [] clr) (Tactics.clear (hyps_ids clr))
 
 (* }}} *)
@@ -1076,15 +1076,18 @@ let genclrtac cl cs clr =
   (cleartac clr)
 
 let gentac gen =
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
-  let conv, _, cl, c, clr, ucst, sigma = pf_interp_gen_aux (pf_env gl) (project gl) ~concl:(Tacmach.Old.pf_concl gl) false gen in
-  let gl = re_sig gl.Evd.it sigma in
-  debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c);
-  let gl = pf_merge_uc ucst gl in
+  let conv, _, cl, c, clr, ucst, sigma = pf_interp_gen_aux env sigma ~concl false gen in
+  debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env env sigma c);
+  let sigma = Evd.merge_universe_context sigma ucst in
+  Proofview.Unsafe.tclEVARS sigma <*>
   if conv
-  then Tacticals.Old.tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
-  else Proofview.V82.of_tactic (genclrtac cl [c] clr) gl
+  then Tacticals.tclTHEN (convert_concl ~check:true cl) (cleartac clr)
+  else genclrtac cl [c] clr
   end
 
 let genstac (gens, clr) =
