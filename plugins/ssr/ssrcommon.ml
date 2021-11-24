@@ -449,13 +449,7 @@ let abs_evars2 env sigma0 rigid (sigma, c0) =
   | [] -> c in
   List.length evlist, EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
 
-let pf_abs_evars2 gl rigid c =
-  abs_evars2 (pf_env gl) (project gl) rigid c
-
 let abs_evars env sigma t = abs_evars2 env sigma [] t
-
-let pf_abs_evars gl t = pf_abs_evars2 gl [] t
-
 
 (* As before but if (?i : T(?j)) and (?j : P : Prop), then the lambda for i
  * looks like (fun evar_i : (forall pi : P. T(pi))) thanks to "loopP" and all
@@ -574,13 +568,6 @@ let nb_evar_deps = function
   | _ -> 0
 
 let type_id env sigma t = Id.of_string (Namegen.hdchar env sigma t)
-let pfe_type_of gl t =
-  let sigma, ty = pf_type_of gl t in
-  re_sig (sig_it gl) sigma, ty
-let pfe_new_type gl =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let sigma,t  = Evarutil.new_Type sigma in
-  re_sig it sigma, t
 let pfe_type_relevance_of env sigma t =
   let sigma, ty = Typing.type_of env sigma t in
   sigma, ty, Retyping.relevance_of_term env sigma t
@@ -624,8 +611,6 @@ let abs_cterm env sigma n c0 =
     | _ -> strip i c in
   EConstr.of_constr (strip_evars 0 c0)
 
-let pf_abs_cterm gl n c0 = abs_cterm (pf_env gl) (project gl) n c0
-
 (* }}} *)
 
 let merge_uc uc =
@@ -665,10 +650,6 @@ let mkSsrRef name =
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst env sigma name =
   EConstr.fresh_global env sigma (mkSsrRef name)
-let pf_fresh_global name gl =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let sigma,t  = Evd.fresh_global env sigma name in
-  EConstr.Unsafe.to_constr t, re_sig it sigma
 
 let mkProt env sigma t c =
   let sigma, prot = mkSsrConst env sigma "protect_term" in

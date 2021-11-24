@@ -150,39 +150,16 @@ val abs_evars2 : (* ssr2 *)
 val abs_cterm :
            Environ.env -> Evd.evar_map -> int -> EConstr.t -> EConstr.t
 
-
-val pf_abs_evars :
-           Goal.goal Evd.sigma ->
-           evar_map * EConstr.t ->
-           int * EConstr.t * Evar.t list *
-           UState.t
-val pf_abs_evars2 : (* ssr2 *)
-           Goal.goal Evd.sigma -> Evar.t list ->
-           evar_map * EConstr.t ->
-           int * EConstr.t * Evar.t list *
-           UState.t
-val pf_abs_cterm :
-           Goal.goal Evd.sigma -> int -> EConstr.t -> EConstr.t
-
 val merge_uc : UState.t -> unit Proofview.tactic
 val pf_merge_uc :
            UState.t -> 'a Evd.sigma -> 'a Evd.sigma
 val pf_merge_uc_of :
            evar_map -> 'a Evd.sigma -> 'a Evd.sigma
 val constr_name : evar_map -> EConstr.t -> Name.t
-val pfe_type_of :
-           Goal.goal Evd.sigma ->
-           EConstr.t -> Goal.goal Evd.sigma * EConstr.types
-val pfe_new_type : Goal.goal Evd.sigma -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRef : string -> GlobRef.t
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
 val mkSsrConst : Environ.env -> Evd.evar_map -> string -> Evd.evar_map * EConstr.t
-
-val pf_fresh_global :
-           GlobRef.t ->
-           Goal.goal Evd.sigma ->
-           Constr.constr * Goal.goal Evd.sigma
 
 val is_discharged_id : Id.t -> bool
 val mk_discharged_id : Id.t -> Id.t

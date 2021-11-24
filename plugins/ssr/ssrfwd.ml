@@ -205,7 +205,7 @@ let havetac ist
    | FwdHave, false, true ->
      let cty = combineCG cty hole (mkCArrow ?loc) mkRArrow in
      let gl, t, _ = interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
-     let gl, ty = pfe_type_of gl t in
+     let gl, ty = pf_e_type_of gl t in
      let ctx, _ = EConstr.decompose_prod_n_assum (project gl) 1 ty in
      let assert_is_conv gl =
        try Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx)) gl
