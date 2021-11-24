@@ -45,6 +45,7 @@
 
 /doc/                  @coq/doc-maintainers
 /Makefile.doc          @coq/doc-maintainers
+/Makefile.docgram      @coq/doc-maintainers
 
 /dev/doc/              @coq/doc-maintainers
 
