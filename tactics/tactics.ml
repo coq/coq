@@ -3149,8 +3149,16 @@ let specialize (c,lbind) ipat =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
-      let naming,tac = prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
+      let ipat = match ipat with None -> Some (CAst.make (IntroNaming (IntroIdentifier id))) | _ -> ipat in
+      let naming,tac = prepare_intros_opt false IntroAnonymous MoveLast ipat in
       let repl = do_replace (Some id) naming in
+      (* "specialize H ... as H", "specialize H ...": do not clear (cleared implicitly at replacing time) *)
+      (* "specialize H ... as H'", "specialize H ... as ?H": keep a copy by convention *)
+      (* "specialize H ... as any_other_pattern": clear *)
+      let doclear = match ipat with
+        | Some {CAst.v=IntroNaming (IntroIdentifier _ | IntroFresh _)} -> false
+        | _ -> true in
+      let tac = if doclear then fun id' -> Tacticals.tclTHEN (clear [id]) (tac id') else tac in
       Tacticals.tclTHENFIRST
         (assert_before_then_gen repl naming typ tac)
         (exact_no_check term)
