@@ -1826,7 +1826,7 @@ let read_coqide_args argv =
       output_string stderr "Error: missing argument after -coqtop"; exit 1
     |"-debug"::args ->
       set_debug ();
-      filter_coqtop coqtop project_files bindings_files ("-debug"::out) args
+      filter_coqtop coqtop project_files bindings_files out args
     |"-xml-debug"::args ->
       set_debug ();
       Flags.xml_debug := true;
