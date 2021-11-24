@@ -14,7 +14,8 @@ open Names
 open Constr
 open Context
 open Termops
-open Tacmach.Old
+
+open Proofview.Notations
 
 open Ssrast
 open Ssrcommon
@@ -31,10 +32,8 @@ let get_index = function Locus.ArgArg i -> i | _ ->
 (** The "first" and "last" tacticals. *)
 
 let tclPERM perm tac =
-  Proofview.V82.tactic begin fun gls ->
-  let subgls = Proofview.V82.of_tactic tac gls in
-  let subgll' = perm subgls.Evd.it in
-  re_sig subgll' subgls.Evd.sigma
+  Proofview.Goal.enter begin fun gls ->
+    tac <*> (Proofview.Unsafe.tclGETGOALS >>= fun gls -> Proofview.Unsafe.tclSETGOALS (perm gls))
   end
 
 let rot_hyps dir i hyps =
