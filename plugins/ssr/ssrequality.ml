@@ -104,7 +104,7 @@ let congrtac ((n, t), ty) ist =
     Id.Map.add pattern_id (Tacinterp.Value.of_constr f) Id.Map.empty } in
   let rf = mkRltacVar pattern_id in
   let m = pf_nbargs env sigma f in
-  let _, cf = if n > 0 then
+  let cf = if n > 0 then
     match interp_congrarg_at env sigma ist' ~concl n rf ty m with
     | Some cf -> cf
     | None -> errorstrm Pp.(str "No " ++ int n ++ str "-congruence with "

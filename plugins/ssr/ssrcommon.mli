@@ -98,7 +98,7 @@ val interp_hyps : ist -> env -> evar_map -> ssrhyps -> ssrhyps
 
 val interp_refine :
   Environ.env -> Evd.evar_map -> Tacinterp.interp_sign -> concl:EConstr.constr ->
-    Glob_term.glob_constr -> evar_map * (evar_map * EConstr.constr)
+    Glob_term.glob_constr -> evar_map * EConstr.constr
 
 val interp_open_constr :
   Environ.env -> Evd.evar_map ->

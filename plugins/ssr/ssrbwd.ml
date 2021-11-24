@@ -102,7 +102,7 @@ let refine_interp_apply_view dbl ist gv =
   | [] -> Proofview.tclORELSE (apply_rconstr ~ist rv) (fun _ -> view_error "apply" gv)
   | h :: hs ->
     match interp_with h with
-    | (_, t) -> Proofview.tclORELSE (refine_with t) (fun _ -> loop hs)
+    | t -> Proofview.tclORELSE (refine_with t) (fun _ -> loop hs)
     | exception e -> loop hs
   in
   loop (pair dbl (Ssrview.AdaptorDb.get dbl) @
@@ -146,8 +146,8 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist =
       (cleartac clr)
   | [], [agens] ->
     let sigma = Proofview.Goal.sigma gl in
-    let clr', (nsigma, lemma) = interp_agens ist (pf_env gl) sigma ~concl:(pf_concl gl) agens in
-    let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context nsigma) in
+    let clr', lemma = interp_agens ist (pf_env gl) sigma ~concl:(pf_concl gl) agens in
+    let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst lemma)) in
     Tacticals.tclTHENLIST [Proofview.Unsafe.tclEVARS sigma; cleartac clr; refine_with ~beta:true lemma; cleartac clr']
   | _, _ ->
     Tacticals.tclTHENLIST [apply_top_tac; cleartac clr]))

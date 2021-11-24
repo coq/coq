@@ -187,7 +187,7 @@ let interp_refine env sigma ist ~concl rc =
   let sigma, c = Pretyping.understand_ltac flags env sigma vars kind rc in
 (*   ppdebug(lazy(str"sigma@interp_refine=" ++ pr_evar_map None sigma)); *)
   debug_ssr (fun () -> str"c@interp_refine=" ++ Printer.pr_econstr_env env sigma c);
-  (sigma, (sigma, c))
+  (sigma, c)
 
 
 let interp_open_constr env sigma0 ist gc =
