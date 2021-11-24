@@ -27,6 +27,7 @@ open Ssrmatching
 open Ssrast
 open Ssrprinters
 open Ssrcommon
+open Proofview.Notations
 open Tacmach.Old
 
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
@@ -124,6 +125,15 @@ let pf_typecheck t =
   Proofview.Unsafe.tclEVARS sigma
   end
 
+let tclMATCH_GOAL env sigma c t_ok t_fail =
+  Proofview.Goal.enter begin fun gl ->
+  match unify_HO env sigma (Proofview.Goal.concl gl) c with
+  | sigma ->
+    (* FIXME: why do we drop the evarmap? *)
+    convert_concl ~check:true (Reductionops.nf_evar sigma c) <*> t_ok sigma
+  | exception exn when CErrors.noncritical exn -> t_fail ()
+  end
+
 let newssrcongrtac arg ist =
   let open Proofview.Notations in
   Proofview.Goal.enter_one ~__LOC__ begin fun _g ->
@@ -132,18 +142,7 @@ let newssrcongrtac arg ist =
   debug_ssr (fun () -> Pp.(str"===newcongr==="));
   debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
   (* utils *)
-  let fs gl t = Reductionops.nf_evar (project gl) t in
-  let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail =
-    Proofview.Goal.enter begin fun gl ->
-    let open Tacmach in
-    match try Some (pf_unify_HO gl_c (pf_concl gl) c)
-          with exn when CErrors.noncritical exn -> None with
-    | Some gl_c ->
-        Tacticals.tclTHEN (convert_concl ~check:true (fs gl_c c))
-          (t_ok (proj gl_c))
-    | None -> t_fail ()
-    end
-  in
+  let fs sigma t = Reductionops.nf_evar sigma t in
   let mk_evar gl ty =
     let env, sigma, si = pf_env gl, project gl, sig_it gl in
     let sigma = Evd.create_evar_defs sigma in
@@ -152,9 +151,12 @@ let newssrcongrtac arg ist =
   let ssr_congr lr = EConstr.mkApp (arr, lr) in
   let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
   (* here the two cases: simple equality or arrow *)
-  let equality, _, eq_args, gl' = pf_saturate gl (EConstr.of_constr eq) 3 in
-  Proofview.V82.of_tactic (tclMATCH_GOAL (equality, gl') (fun gl' -> fs gl' (List.assoc 0 eq_args))
-  (fun ty -> congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
+  let equality, _, eq_args, sigma' = saturate (pf_env gl) (project gl) (EConstr.of_constr eq) 3 in
+  let gl' = re_sig gl.Evd.it sigma' in
+  Proofview.V82.of_tactic (tclMATCH_GOAL (pf_env gl') (project gl') equality
+  (fun sigma' ->
+    let ty = fs sigma' (List.assoc 0 eq_args) in
+    congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
   (fun () ->
     try
     let gl', t_lhs = pfe_new_type gl in
@@ -162,8 +164,9 @@ let newssrcongrtac arg ist =
     let lhs, gl' = mk_evar gl' t_lhs in
     let rhs, gl' = mk_evar gl' t_rhs in
     let arrow = EConstr.mkArrow lhs Sorts.Relevant (EConstr.Vars.lift 1 rhs) in
-    tclMATCH_GOAL (arrow, gl') (fun gl' -> [|fs gl' lhs;fs gl' rhs|])
-    (fun lr ->
+    tclMATCH_GOAL (pf_env gl') (project gl') arrow
+    (fun sigma' ->
+      let lr = [|fs sigma' lhs;fs sigma' rhs|] in
       let a = ssr_congr lr in
       Tacticals.tclTHENLIST [ pf_typecheck a
                   ; Tactics.apply a

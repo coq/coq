@@ -836,11 +836,6 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
   in
    loop ty [] sigma m
 
-let pf_saturate ?beta ?bi_types gl c ?ty m =
-  let env, sigma, si = pf_env gl, project gl, sig_it gl in
-  let t, ty, args, sigma = saturate ?beta ?bi_types env sigma c ?ty m in
-  t, ty, args, re_sig si sigma
-
 let dependent_apply_error =
   try CErrors.user_err (Pp.str "Could not fill dependent hole in \"apply\"")
   with err -> err

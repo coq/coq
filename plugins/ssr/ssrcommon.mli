@@ -263,15 +263,6 @@ val applyn :
            int ->
            EConstr.t -> unit Proofview.tactic
 exception NotEnoughProducts
-val pf_saturate :
-           ?beta:bool ->
-           ?bi_types:bool ->
-           Goal.goal Evd.sigma ->
-           EConstr.constr ->
-           ?ty:EConstr.types ->
-           int ->
-           EConstr.constr * EConstr.types * (int * EConstr.constr) list *
-           Goal.goal Evd.sigma
 val saturate :
            ?beta:bool ->
            ?bi_types:bool ->
