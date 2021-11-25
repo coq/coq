@@ -442,33 +442,29 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
 let pf_merge_uc_of s sigma =
   Evd.merge_universe_context sigma (Evd.evar_universe_context s)
 
-let rwcltac ?under ?map_redex cl rdx dir sr =
+let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma0 = Proofview.Goal.sigma gl in
-  let sr =
-    let sigma, r = sr in
-    let sigma = resolve_typeclasses ~where:r ~fail:false env sigma in
-    sigma, r in
-  let r_n, evs, ucst = abs_evars env sigma0 sr in
+  let sigma = resolve_typeclasses ~where:r ~fail:false env sigma in
+  let r_n, evs, ucst = abs_evars env sigma0 (sigma, r) in
   let n = List.length evs in
   let r_n' = abs_cterm env sigma0 n r_n in
   let r' = EConstr.Vars.subst_var pattern_id r_n' in
   let sigma0 = Evd.set_universe_context sigma0 ucst in
-  let rdxt = Retyping.get_type_of env (fst sr) rdx in
-(*         ppdebug(lazy(str"sigma@rwcltac=" ++ pr_evar_map None (fst sr))); *)
-        debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma0 (snd sr)));
+  let rdxt = Retyping.get_type_of env sigma rdx in
+  let () = debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma r)) in
   let cvtac, rwtac, sigma0 =
     if EConstr.Vars.closed0 sigma0 r' then
-      let sigma, c, c_eq = fst sr, snd sr, Coqlib.(lib_ref "core.eq.type") in
-      let sigma, c_ty = Typing.type_of env sigma c in
-        debug_ssr (fun () -> Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
+      let c_eq = Coqlib.(lib_ref "core.eq.type") in
+      let sigma, c_ty = Typing.type_of env sigma r in
+      let () = debug_ssr (fun () -> Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty)) in
       let open EConstr in
       match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
-          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, Tacticals.tclIDTAC, sigma0
+          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma, r) c_ty, Tacticals.tclIDTAC, sigma0
       | _ ->
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
@@ -478,7 +474,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
       let dc, r2 = EConstr.decompose_lam_n_assum sigma0 n r' in
       let r3, _, r3t  =
         try EConstr.destCast sigma0 r2 with _ ->
-        errorstrm Pp.(str "no cast from " ++ pr_econstr_pat env sigma0 (snd sr)
+        errorstrm Pp.(str "no cast from " ++ pr_econstr_pat env sigma0 r
                     ++ str " to " ++ pr_econstr_env env sigma0 r2) in
       let cl' = EConstr.mkNamedProd (make_annot rule_id Sorts.Relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
       let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
