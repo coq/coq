@@ -455,12 +455,18 @@ let abs_evars env sigma t = abs_evars2 env sigma [] t
 let ssrautoprop_tac = ref (Proofview.Goal.enter (fun gl -> assert false))
 
 (* Thanks to Arnaud Spiwack for this snippet *)
-let call_on_evar tac e s =
-  let { it = gs ; sigma = s } =
-    Proofview.V82.of_tactic tac { it = e ; sigma = s; }
-  in
-  let () = if (gs <> []) then errorstrm (str "Should we tell the user?") in
-  s
+let call_on_evar env sigma tac e =
+  try
+    let tac = Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state e] <*> tac in
+    let _, init = Proofview.init sigma [] in
+    let name = Names.Id.of_string "legacy_pe" in
+    let (_, final, _, _) = Proofview.apply ~name ~poly:false env tac init in
+    let (gs, final) = Proofview.proofview final in
+    let () = if (gs <> []) then errorstrm (str "Should we tell the user?") in
+    final
+  with Logic_monad.TacticFailure e as src ->
+    let (_, info) = Exninfo.capture src in
+    Exninfo.iraise (e, info)
 
 open Pp
 let pp _ = () (* FIXME *)
@@ -504,7 +510,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     if evplist = [] then evlist, [], sigma else
     List.fold_left (fun (ev, evp, sigma) (i, (_,t,_) as p) ->
       try
-        let sigma = call_on_evar !ssrautoprop_tac i sigma in
+        let sigma = call_on_evar env sigma !ssrautoprop_tac i in
         List.filter (fun (j,_) -> j <> i) ev, evp, sigma
       with _ -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
   let c0 = nf_evar sigma c0 in
