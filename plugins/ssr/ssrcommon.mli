@@ -223,7 +223,7 @@ val pf_interp_ty :
            Tacinterp.interp_sign ->
            Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
-           int * EConstr.t * EConstr.t * UState.t
+           Evd.evar_map * int * EConstr.t * EConstr.t
 
 val ssr_n_tac : string -> int -> unit Proofview.tactic
 val donetac : int -> unit Proofview.tactic

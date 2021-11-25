@@ -789,8 +789,8 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
    let n = List.length evs in
    let lam_c = abs_cterm env sigma0 n c in
    let ctx, c = EConstr.decompose_lam_n_assum sigma n lam_c in
-   n, EConstr.it_mkProd_or_LetIn c ctx, lam_c, ucst
-;;
+   let sigma0 = Evd.merge_universe_context sigma0 ucst in
+   sigma0, n, EConstr.it_mkProd_or_LetIn c ctx, lam_c
 
 (* TASSI: given (c : ty), generates (c ??? : ty[???/...]) with m evars *)
 exception NotEnoughProducts

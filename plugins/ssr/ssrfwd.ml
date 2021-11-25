@@ -262,16 +262,13 @@ let havetac ist
      sigma, ty, Tactics.apply t,
        itac_c <*> simpltac <*> tacopen_skols <*> unfold [abstract; abstract_key]
    | _,true,true  ->
-     let _, ty, _, uc = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
-     let sigma = Evd.merge_universe_context sigma uc in
+     let sigma, _, ty, _ = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
      sigma, EConstr.mkArrow ty Sorts.Relevant concl, hint <*> itac, clr
    | _,false,true ->
-     let _, ty, _, uc = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
-     let sigma = Evd.merge_universe_context sigma uc in
+     let sigma, _, ty, _ = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
      sigma, EConstr.mkArrow ty Sorts.Relevant concl, hint, itac_c
    | _, false, false ->
-     let n, cty, _ , uc = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
-     let sigma = Evd.merge_universe_context sigma uc in
+     let sigma, n, cty, _  = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
      sigma, cty, (binderstac n) <*> hint, Tacticals.tclTHEN itac_c simpltac
    | _, true, false -> assert false in
   Proofview.Unsafe.tclEVARS sigma <*>
@@ -321,7 +318,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
       List.fold_left (fun (env, c) _ ->
         let rd, c = destProd_or_LetIn sigma c in
         EConstr.push_rel rd env, c) (env, c) gens in
-    let _, ct, _, uc = pf_interp_ty env sigma ist ct in
+    let sigma, _, ct, _ = pf_interp_ty env sigma ist ct in
     let rec var2rel c g s = match EConstr.kind sigma c, g with
       | Prod({binder_name=Anonymous} as x,_,c), [] -> EConstr.mkProd(x, EConstr.Vars.subst_vars s ct, c)
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
@@ -335,7 +332,6 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
          | Prod(_,_,c) -> pired (EConstr.Vars.subst1 t c) ts
          | LetIn(id,b,ty,c) -> EConstr.mkLetIn (id,b,ty,pired c args)
          | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
-    let sigma = Evd.merge_universe_context sigma uc in
     c, args, pired c args, sigma
   in
   let tacipat pats = introstac pats in
@@ -401,8 +397,8 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   let ctac =
     let open Tacmach in
     Proofview.Goal.enter begin fun gl ->
-    let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in
-    merge_uc uc <*> basesufftac ty
+    let sigma, _, ty, _ = pf_interp_ty (pf_env gl) (project gl) ist c in
+    Proofview.Unsafe.tclEVARS sigma <*> basesufftac ty
   end in
   Tacticals.tclTHENS ctac [htac; Tacticals.tclTHEN (cleartac clr) (introstac (binders@simpl))]
 
