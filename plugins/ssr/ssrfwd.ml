@@ -278,15 +278,12 @@ let destProd_or_LetIn sigma c =
   | _ -> raise DestKO
 
 let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
-  let open Tacmach.Old in
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
   let clr0 = Option.default [] clr0 in
   let pats = tclCompileIPats pats in
-  let mkabs gen (gl, args, c) =
-    let sigma, args, c = abs_wgen (pf_env gl) (project gl) false (fun x -> x) gen (args, c) in
-    let gl = re_sig (sig_it gl) sigma in
-    gl, args, c
-  in
   let mkclr gen clrs = clr_of_wgen gen clrs in
   let mkpats = function
   | _, Some ((x, _), _) -> fun pats -> IOpId (hoi_id x) :: pats
@@ -304,21 +301,19 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
     end
   in
   let cut_implies_goal = not (suff || ghave <> `NoGen) in
-  let c, args, ct, gl =
+  let c, args, ct, sigma =
     let gens = List.filter (function _, Some _ -> true | _ -> false) gens in
-    let concl = pf_concl gl in
     let c = EConstr.mkProp in
     let c = if cut_implies_goal then EConstr.mkArrow c Sorts.Relevant concl else c in
-    let gl, args, c = List.fold_right mkabs gens (gl,[],c) in
+    let mkabs gen (sigma, args, c) =
+      abs_wgen env sigma false (fun x -> x) gen (args, c)
+    in
+    let sigma, args, c = List.fold_right mkabs gens (sigma, [], c) in
     let env, _ =
       List.fold_left (fun (env, c) _ ->
-        let rd, c = destProd_or_LetIn (project gl) c in
-        EConstr.push_rel rd env, c) (pf_env gl, c) gens in
-    let sigma = project gl in
-    let (sigma, ev) = Evarutil.new_evar env sigma EConstr.mkProp in
-    let k, _ = EConstr.destEvar sigma ev in
-    let fake_gl = {Evd.it = k; Evd.sigma = sigma} in
-    let _, ct, _, uc = pf_interp_ty (pf_env fake_gl) sigma ist ct in
+        let rd, c = destProd_or_LetIn sigma c in
+        EConstr.push_rel rd env, c) (env, c) gens in
+    let _, ct, _, uc = pf_interp_ty env sigma ist ct in
     let rec var2rel c g s = match EConstr.kind sigma c, g with
       | Prod({binder_name=Anonymous} as x,_,c), [] -> EConstr.mkProd(x, EConstr.Vars.subst_vars s ct, c)
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
@@ -332,7 +327,9 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
          | Prod(_,_,c) -> pired (EConstr.Vars.subst1 t c) ts
          | LetIn(id,b,ty,c) -> EConstr.mkLetIn (id,b,ty,pired c args)
          | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
-    c, args, pired c args, pf_merge_uc uc gl in
+    let sigma = Evd.merge_universe_context sigma uc in
+    c, args, pired c args, sigma
+  in
   let tacipat pats = introstac pats in
   let tacigens =
     Tacticals.tclTHEN
@@ -352,22 +349,23 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
       | None, _ -> None, Tacticals.tclIDTAC, clear0, pats
       | Some (Some id),_ -> Some id, introid id, clear0, pats
       | Some _,_ ->
-          let id = mk_anon_id "tmp" (Tacmach.Old.pf_ids_of_hyps gl) in
+          let id = mk_anon_id "tmp" (Tacmach.pf_ids_of_hyps gl) in
           Some id, introid id, Tacticals.tclTHEN clear0 (Tactics.clear [id]), pats in
       let tac_specialize = match id with
       | None -> Tacticals.tclIDTAC
       | Some id ->
         if pats = [] then Tacticals.tclIDTAC else
         let args = Array.of_list args in
-        debug_ssr (fun () -> str"specialized="++ pr_econstr_env (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args)));
-        debug_ssr (fun () -> str"specialized_ty="++ pr_econstr_env (pf_env gl) (project gl) ct);
+        debug_ssr (fun () -> str"specialized="++ pr_econstr_env env sigma EConstr.(mkApp (mkVar id,args)));
+        debug_ssr (fun () -> str"specialized_ty="++ pr_econstr_env env sigma ct);
         Tacticals.tclTHENS (basecuttac Have ct)
           [Tactics.apply EConstr.(mkApp (mkVar id,args)); Tacticals.tclIDTAC] in
       Have,
       (if hint = nohint then tacigens else hinttac),
       Tacticals.tclTHENLIST [name_general_hyp; tac_specialize; tacipat pats; cleanup]
   in
-  Proofview.V82.of_tactic (Tacticals.tclTHENS (basecuttac cut_kind c) [fst_goal_tac; snd_goal_tac]) gl
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tacticals.tclTHENS (basecuttac cut_kind c) [fst_goal_tac; snd_goal_tac]
   end
 
 (** The "suffice" tactic *)
