@@ -2,7 +2,7 @@
 
 . ../template/init.sh
 
-sed -i 's/coq-core.plugins.ltac/coq-core.plugins.ltac,foo/' META.coq-test-suite
+sed -i.old 's/coq-core.plugins.ltac/coq-core.plugins.ltac,foo/' META.coq-test-suite
 
 echo "let () = Foolib.foo ();;" >> src/test_aux.ml
 export OCAMLPATH=$OCAMLPATH:$PWD/findlib
