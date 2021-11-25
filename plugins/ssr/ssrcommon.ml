@@ -21,7 +21,6 @@ open Printer
 open Locusops
 
 open Ltac_plugin
-open Tacmach.Old
 open Proofview.Notations
 open Libnames
 open Ssrmatching_plugin
@@ -458,8 +457,10 @@ let ssrautoprop_tac = ref (Proofview.Goal.enter (fun gl -> assert false))
 (* Thanks to Arnaud Spiwack for this snippet *)
 let call_on_evar tac e s =
   let { it = gs ; sigma = s } =
-    tac { it = e ; sigma = s; } in
-  gs, s
+    Proofview.V82.of_tactic tac { it = e ; sigma = s; }
+  in
+  let () = if (gs <> []) then errorstrm (str "Should we tell the user?") in
+  s
 
 open Pp
 let pp _ = () (* FIXME *)
@@ -503,8 +504,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     if evplist = [] then evlist, [], sigma else
     List.fold_left (fun (ev, evp, sigma) (i, (_,t,_) as p) ->
       try
-        let ng, sigma = call_on_evar (Proofview.V82.of_tactic !ssrautoprop_tac) i sigma in
-        if (ng <> []) then errorstrm (str "Should we tell the user?");
+        let sigma = call_on_evar !ssrautoprop_tac i sigma in
         List.filter (fun (j,_) -> j <> i) ev, evp, sigma
       with _ -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
   let c0 = nf_evar sigma c0 in
@@ -966,18 +966,22 @@ let tclDOTRY n tac =
 
 let tclDO n tac =
   let prefix i = str"At iteration " ++ int i ++ str": " in
-  let tac_err_at i gl =
-    try Proofview.V82.of_tactic tac gl
-    with
-    | CErrors.UserError s as e ->
-      let _, info = Exninfo.capture e in
-      let e' = CErrors.UserError (prefix i ++ s) in
-      Exninfo.iraise (e', info)
+  let tac_err_at i =
+    Proofview.Goal.enter begin fun gl ->
+      Proofview.tclORELSE tac begin function
+      | (CErrors.UserError s, info) ->
+        let e' = CErrors.UserError (prefix i ++ s) in
+        Proofview.tclZERO ~info e'
+      | (e, info) -> Proofview.tclZERO ~info e
+      end
+    end
   in
-  let rec loop i gl =
-    if i = n then tac_err_at i gl else
-    (Tacticals.Old.tclTHEN (tac_err_at i) (loop (i + 1))) gl in
-  Proofview.V82.tactic ~nf_evars:false (loop 1)
+  let rec loop i =
+    Proofview.Goal.enter begin fun gl ->
+    if i = n then tac_err_at i else
+    Tacticals.tclTHEN (tac_err_at i) (loop (i + 1))
+  end in
+  loop 1
 
 let tclAT_LEAST_ONCE t =
   let open Tacticals in
