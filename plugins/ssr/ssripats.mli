@@ -76,8 +76,6 @@ val ssrscasetoptac : unit Proofview.tactic
  * ipat, and in ssrfwd for the integration with [have] *)
 val ssrabstract : ssrdgens -> unit Proofview.tactic
 
-(* Handling of [[:var]], needed in ssrfwd. Since ssrfwd is still outside the
- * tactic monad we export code with the V82 interface *)
 module Internal : sig
 val examine_abstract :
   Environ.env -> Evd.evar_map -> EConstr.t -> Evd.evar_map * (EConstr.types * EConstr.t array)
