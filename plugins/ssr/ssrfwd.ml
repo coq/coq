@@ -171,6 +171,21 @@ let set_state s =
   Proofview.Unsafe.tclGETGOALS >>= fun gls ->
   Proofview.Unsafe.tclSETGOALS (List.map map gls)
 
+let assert_is_conv (ctx, concl) =
+  Proofview.Goal.enter begin fun gl ->
+    Proofview.tclORELSE (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx))
+    (fun _ -> Tacticals.tclZEROMSG (str "Given proof term is not of type " ++
+      pr_econstr_env (Tacmach.pf_env gl) (Tacmach.project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl)))
+  end
+
+let push_goals gs =
+  Proofview.Goal.enter begin fun gl ->
+    (* FIXME: do we really want to preserve state? *)
+    let gstate = Proofview.Goal.state gl in
+    let map ev = Proofview.goal_with_state ev gstate in
+    Proofview.Unsafe.tclSETGOALS (List.map map (gs @ [Proofview.Goal.goal gl]))
+  end
+
 let havetac ist
   (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
   suff namefst
@@ -209,7 +224,6 @@ let havetac ist
  in
  drop_state <*>
  Tacticals.tclTHENFIRST itac_mkabs (Proofview.Goal.enter begin fun gl ->
-  let open Tacmach.Old in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let interp sigma rtc t =
@@ -225,13 +239,7 @@ let havetac ist
      let sigma, t, _ = interp sigma false (combineCG ct cty (mkCCast ?loc) mkRCast) in
      let sigma, ty = Typing.type_of env sigma t in
      let ctx, _ = EConstr.decompose_prod_n_assum sigma 1 ty in
-     let assert_is_conv =
-      Proofview.V82.tactic begin fun gl ->
-       try Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx)) gl
-       with _ -> errorstrm (str "Given proof term is not of type " ++
-         pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl))
-      end in
-     sigma, ty, assert_is_conv <*> Tactics.apply t, itac_c
+     sigma, ty, assert_is_conv (ctx, concl) <*> Tactics.apply t, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function
        | IOpAbstractVars ids -> ids
@@ -249,7 +257,7 @@ let havetac ist
      let gs =
        List.map (fun (_,a) ->
          Ssripats.Internal.find_abstract_proof env sigma false a.(1)) skols_args in
-     let tacopen_skols = Proofview.V82.tactic (fun gl -> re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma) in
+     let tacopen_skols = push_goals gs in
      let sigma, ty = Typing.type_of env sigma t in
      sigma, ty, Tactics.apply t,
        itac_c <*> simpltac <*> tacopen_skols <*> unfold [abstract; abstract_key]
