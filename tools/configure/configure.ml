@@ -118,7 +118,8 @@ let check_findlib_version prefs { CamlConf.findlib_version } =
     let () = cprintf prefs "Your version of OCamlfind is %s." findlib_version in
     die "You need OCamlfind 1.8.0 or later."
 
-(** Explanation of disabled warnings:
+(** Note, these warnings are only used in Coq Makefile *)
+(** Explanation of enabled/disabled warnings:
     4: fragile pattern matching: too common in the code and too annoying to avoid in general
     9: missing fields in a record pattern: too common in the code and not worth the bother
     27: innocuous unused variable: innocuous
@@ -133,7 +134,8 @@ let check_findlib_version prefs { CamlConf.findlib_version } =
     70: ".ml file without .mli file" bogus warning when used generally
 *)
 
-let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58-67-68-70"
+(* Note, we list all warnings to be complete *)
+let coq_warnings = "-w -a+1..3-4+5..8-9+10..26-27+28..40-41-42+43-44-45+46..47-48+49..57-58+59..66-67-68+69-70"
 let coq_warn_error prefs =
     if prefs.warn_error
     then "-warn-error +a"
