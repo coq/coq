@@ -142,13 +142,13 @@ let match_pat env sigma0 p occ h cl =
 let fire_subst sigma t = Reductionops.nf_evar sigma t
 
 let mkTpat env sigma0 (sigma, t) = (* takes a term, refreshes it and makes a T pattern *)
-  let n, t, _, ucst = abs_evars env sigma0 (sigma, fire_subst sigma t) in
-  let t, _, _, sigma = saturate ~beta:true env sigma t n in
+  let t, evs, ucst = abs_evars env sigma0 (sigma, fire_subst sigma t) in
+  let t, _, _, sigma = saturate ~beta:true env sigma t (List.length evs) in
   Evd.merge_universe_context sigma ucst, T (EConstr.Unsafe.to_constr t)
 
 let unif_redex env sigma0 nsigma (sigma, r as p) t = (* t is a hint for the redex of p *)
-  let n, t, _, ucst = abs_evars env sigma0 (nsigma, fire_subst nsigma t) in
-  let t, _, _, sigma = saturate ~beta:true env sigma t n in
+  let t, evs, ucst = abs_evars env sigma0 (nsigma, fire_subst nsigma t) in
+  let t, _, _, sigma = saturate ~beta:true env sigma t (List.length evs) in
   let sigma = Evd.merge_universe_context sigma ucst in
   match r with
   | X_In_T (e, p) -> sigma, E_As_X_In_T (EConstr.Unsafe.to_constr t, e, p)
@@ -335,8 +335,8 @@ let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n
         let e, ucst = redex_of_pattern env p in
         let sigma = Evd.merge_universe_context sigma ucst in
         let e = EConstr.of_constr e in
-        let n, e, _, _ucst =  abs_evars env sigma (fst p, e) in
-        let e, _, _, sigma = saturate ~beta:true env sigma e n in
+        let e, evs, _ucst = abs_evars env sigma (fst p, e) in
+        let e, _, _, sigma = saturate ~beta:true env sigma e (List.length evs) in
         let sigma = try unify_HO env sigma inf_t e
                   with exn when CErrors.noncritical exn -> error sigma e inf_t in
         cl, sigma, post

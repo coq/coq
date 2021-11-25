@@ -323,8 +323,8 @@ Goal.enter_one ~__LOC__ begin fun g ->
     List.filter (fun k -> Evar.Set.mem k g0)
       (List.map fst (Evar.Map.bindings (Evd.undefined_map sigma0))) in
   let rigid = rigid_of und0 in
-  let n, p, to_prune, _ucst = abs_evars2 env0 sigma0 rigid (sigma, p) in
-  let p = if simple_types then abs_cterm env0 sigma0 n p else p in
+  let p, to_prune, _ucst = abs_evars2 env0 sigma0 rigid (sigma, p) in
+  let p = if simple_types then abs_cterm env0 sigma0 (List.length to_prune) p else p in
   Ssrprinters.debug_ssr (fun () -> Pp.(str"view@finalized: " ++
     Printer.pr_econstr_env env sigma p));
   let sigma = List.fold_left Evd.remove sigma to_prune in

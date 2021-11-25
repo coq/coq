@@ -425,22 +425,24 @@ let abs_evars2 env sigma0 rigid (sigma, c0) =
     let t = abs_evar n k in (k, (n, t)) :: put evlist t
   | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
-  if evlist = [] then 0, EConstr.of_constr c0,[], ucst else
-  let rec lookup k i = function
+  if List.is_empty evlist then
+    EConstr.of_constr c0, [], ucst
+  else
+    let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n, _)) :: evl -> if k = k' then i, n else lookup k (i + 1) evl in
-  let rec get i c = match Constr.kind c with
-  | Evar (ev, a) ->
-    let j, n = lookup ev i evlist in
-    if j = 0 then Constr.map (get i) c else if n = 0 then mkRel j else
-    let a = Array.of_list a in
-    mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
-  | _ -> Constr.map_with_binders ((+) 1) get i c in
-  let rec loop c i = function
-  | (_, (n, t)) :: evl ->
-    loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
-  | [] -> c in
-  List.length evlist, EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
+    let rec get i c = match Constr.kind c with
+    | Evar (ev, a) ->
+      let j, n = lookup ev i evlist in
+      if j = 0 then Constr.map (get i) c else if n = 0 then mkRel j else
+      let a = Array.of_list a in
+      mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
+    | _ -> Constr.map_with_binders ((+) 1) get i c in
+    let rec loop c i = function
+    | (_, (n, t)) :: evl ->
+      loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
+    | [] -> c in
+    EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
 
 let abs_evars env sigma t = abs_evars2 env sigma [] t
 
@@ -709,7 +711,8 @@ let abs_ssrterm ?(resolve_typeclasses=false) ist env sigma t =
     else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma ct in
-  let n, c, abstracted_away, ucst = abs_evars env sigma0 t in
+  let c, abstracted_away, ucst = abs_evars env sigma0 t in
+  let n = List.length abstracted_away in
   let t = abs_cterm env sigma0 n c in
   let sigma = Evd.merge_universe_context sigma0 ucst in
   sigma, t, n
@@ -782,7 +785,8 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
      else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma cty in
-   let n, c, _, ucst = abs_evars env sigma0 ty in
+   let c, evs, ucst = abs_evars env sigma0 ty in
+   let n = List.length evs in
    let lam_c = abs_cterm env sigma0 n c in
    let ctx, c = EConstr.decompose_lam_n_assum sigma n lam_c in
    n, EConstr.it_mkProd_or_LetIn c ctx, lam_c, ucst
@@ -1031,9 +1035,9 @@ let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
       | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (map_annot Name.mk_name name,b,ty,cl),c,clr,ucst, sigma
     else let sigma, ccl =  pf_mkprod env sigma c cl in false, pat, ccl, c, clr, ucst, sigma
   else if to_ind && occ = None then
-    let nv, p, _, ucst' = abs_evars env sigma (fst pat, c) in
+    let p, evs, ucst' = abs_evars env sigma (fst pat, c) in
     let ucst = UState.union ucst ucst' in
-    if nv = 0 then anomaly "occur_existential but no evars" else
+    if List.is_empty evs then anomaly "occur_existential but no evars" else
     let sigma, pty, rp = pfe_type_relevance_of env sigma p in
     false, pat, EConstr.mkProd (make_annot (constr_name sigma c) rp, pty, concl), p, clr,ucst, sigma
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
