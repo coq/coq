@@ -85,7 +85,6 @@ let mk_orhint tacs = true, tacs
 let nullhint = true, []
 let nohint = false, []
 
-let project gl = gl.Evd.sigma
 let re_sig it sigma = { Evd.it = it; Evd.sigma = sigma }
 
 open Pp
@@ -397,11 +396,6 @@ let env_size env = List.length (Environ.named_context env)
 
 let pf_concl gl = EConstr.Unsafe.to_constr (Tacmach.pf_concl gl)
 let pf_get_hyp gl x = EConstr.Unsafe.to_named_decl (Tacmach.pf_get_hyp x gl)
-
-let pf_e_type_of gl t =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let sigma, ty = Typing.type_of env sigma t in
-  re_sig it sigma, ty
 
 let resolve_typeclasses env sigma ~where ~fail =
   let filter =

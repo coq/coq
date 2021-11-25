@@ -10,7 +10,6 @@
 
 (* (c) Copyright 2006-2015 Microsoft Corporation and Inria.                  *)
 
-open Goal
 open Environ
 open Evd
 open Constr
@@ -216,7 +215,6 @@ val assert_done : 'a option ref -> 'a
     In case of failure they raise [NoMatch] *)
 
 val unify_HO : env -> evar_map -> EConstr.constr -> EConstr.constr -> evar_map
-val pf_unify_HO : goal sigma -> EConstr.constr -> EConstr.constr -> goal sigma
 
 (** Some more low level functions needed to implement the full SSR language
     on top of the former APIs *)

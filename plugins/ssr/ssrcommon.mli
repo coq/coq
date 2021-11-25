@@ -105,10 +105,6 @@ val interp_open_constr :
   Tacinterp.interp_sign ->
     Genintern.glob_constr_and_expr -> evar_map * EConstr.t
 
-val pf_e_type_of :
-  Goal.goal Evd.sigma ->
-  EConstr.constr -> Goal.goal Evd.sigma * EConstr.types
-
 val splay_open_constr :
            Environ.env ->
            evar_map * EConstr.t ->

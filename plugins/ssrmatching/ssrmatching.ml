@@ -268,12 +268,6 @@ let unify_HO env sigma0 t1 t2 =
   let sigma, uc, _ = unif_end ~solve_TC:false env sigma0 sigma t2 (fun _ -> true) in
   Evd.set_universe_context sigma uc
 
-let pf_unify_HO gl t1 t2 =
-  let open Tacmach.Old in
-  let env, sigma0, si = pf_env gl, project gl, sig_it gl in
-  let sigma = unify_HO env sigma0 t1 t2 in
-  re_sig si sigma
-
 (* This is what the definition of iter_constr should be... *)
 let iter_constr_LR f c = match kind c with
   | Evar (k, a) -> List.iter f a
