@@ -99,7 +99,7 @@ let congrtac ((n, t), ty) ist =
   debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env env sigma concl));
   let nsigma, _ as it = interp_term env sigma ist t in
   let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context nsigma) in
-  let f, _, _ucst = abs_evars2 env sigma [] it in
+  let f, _, _ucst = abs_evars env sigma it in
   let ist' = {ist with lfun =
     Id.Map.add pattern_id (Tacinterp.Value.of_constr f) Id.Map.empty } in
   let rf = mkRltacVar pattern_id in

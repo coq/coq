@@ -134,12 +134,7 @@ val ssr_anon_hyp : string
 val type_id : Environ.env -> Evd.evar_map -> EConstr.types -> Id.t
 
 val abs_evars :
-           Environ.env -> Evd.evar_map ->
-           evar_map * EConstr.t ->
-           EConstr.t * Evar.t list *
-           UState.t
-val abs_evars2 : (* ssr2 *)
-           Environ.env -> Evd.evar_map -> Evar.t list ->
+           Environ.env -> Evd.evar_map -> ?rigid:Evar.t list ->
            evar_map * EConstr.t ->
            EConstr.t * Evar.t list *
            UState.t

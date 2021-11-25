@@ -756,9 +756,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
       tclUNIT (false, ccl, c, clr)
   else
     if to_ind && occ = None then
-      let p, _, ucst' =
-        (* TODO: use abs_evars2 *)
-        Ssrcommon.abs_evars env sigma0 (fst pat, c) in
+      let p, _, ucst' = Ssrcommon.abs_evars env sigma0 (fst pat, c) in
       let sigma = Evd.merge_universe_context sigma ucst' in
       Unsafe.tclEVARS sigma <*>
       Ssrcommon.tacTYPEOF p >>= fun pty ->

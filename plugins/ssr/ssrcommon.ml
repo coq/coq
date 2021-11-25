@@ -403,7 +403,7 @@ let resolve_typeclasses env sigma ~where ~fail =
 let nf_evar sigma t =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
 
-let abs_evars2 env sigma0 rigid (sigma, c0) =
+let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
   let c0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma c0 in
   let sigma0, ucst = sigma0, Evd.evar_universe_context sigma in
   let nenv = env_size env in
@@ -441,8 +441,6 @@ let abs_evars2 env sigma0 rigid (sigma, c0) =
       loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
     | [] -> c in
     EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
-
-let abs_evars env sigma t = abs_evars2 env sigma [] t
 
 (* As before but if (?i : T(?j)) and (?j : P : Prop), then the lambda for i
  * looks like (fun evar_i : (forall pi : P. T(pi))) thanks to "loopP" and all
