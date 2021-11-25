@@ -84,8 +84,6 @@ let mk_orhint tacs = true, tacs
 let nullhint = true, []
 let nohint = false, []
 
-let re_sig it sigma = { Evd.it = it; Evd.sigma = sigma }
-
 open Pp
 
 let errorstrm x = CErrors.user_err x
@@ -614,19 +612,6 @@ let abs_cterm env sigma n c0 =
   EConstr.of_constr (strip_evars 0 c0)
 
 (* }}} *)
-
-let merge_uc uc =
-  let open Proofview.Notations in
-  Proofview.tclEVARMAP >>= fun sigma ->
-  try Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma uc)
-  with e when CErrors.noncritical e -> Proofview.tclZERO e
-
-let pf_merge_uc uc gl =
-  re_sig (sig_it gl) (Evd.merge_universe_context gl.Evd.sigma uc)
-let pf_merge_uc_of sigma gl =
-  let ucst = Evd.evar_universe_context sigma in
-  pf_merge_uc ucst gl
-
 
 let rec constr_name sigma c = match EConstr.kind sigma c with
   | Var id -> Name id

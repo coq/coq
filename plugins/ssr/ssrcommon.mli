@@ -146,11 +146,6 @@ val abs_evars2 : (* ssr2 *)
 val abs_cterm :
            Environ.env -> Evd.evar_map -> int -> EConstr.t -> EConstr.t
 
-val merge_uc : UState.t -> unit Proofview.tactic
-val pf_merge_uc :
-           UState.t -> 'a Evd.sigma -> 'a Evd.sigma
-val pf_merge_uc_of :
-           evar_map -> 'a Evd.sigma -> 'a Evd.sigma
 val constr_name : evar_map -> EConstr.t -> Name.t
 
 val mkSsrRef : string -> GlobRef.t
