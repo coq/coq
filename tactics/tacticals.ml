@@ -15,7 +15,6 @@ open Names
 open Constr
 open EConstr
 open Declarations
-open Tacmach.Old
 open Tactypes
 
 module RelDecl = Context.Rel.Declaration
@@ -37,6 +36,8 @@ let catch_failerror (e, info) =
 
 module Old =
 struct
+
+open Tacmach.Old
 
 type tactic = Proofview.V82.tac
 
