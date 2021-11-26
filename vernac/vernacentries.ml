@@ -1894,8 +1894,7 @@ let vernac_global_check c =
 let get_nth_goal ~pstate n =
   let pf = Declare.Proof.get pstate in
   let Proof.{goals;sigma} = Proof.data pf in
-  let gl = {Evd.it=List.nth goals (n-1) ; sigma = sigma; } in
-  gl
+  (sigma, List.nth goals (n - 1))
 
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
@@ -1911,7 +1910,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     in
     (* FIXME error on non None udecl if we find the hyp. *)
     let glnumopt = query_command_selector ?loc glopt in
-    let gl,id =
+    let (sigma, ev), id =
       let open Constrexpr in
       match glnumopt, ref_or_by_not.v with
       | None,AN qid when qualid_is_ident qid -> (* goal number not given, catch any failure *)
@@ -1922,7 +1921,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
             Failure _ -> user_err ?loc
                           (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
-    let hyps = Tacmach.Old.pf_hyps gl in
+    let hyps = Evd.evar_filtered_context (Evd.find sigma ev) in
     let decl = Context.Named.lookup id hyps in
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
