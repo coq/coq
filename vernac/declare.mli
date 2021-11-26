@@ -56,7 +56,7 @@ module Hook : sig
       (** [(n1,t1),...(nm,tm)]: association list between obligation
           name and the corresponding defined term (might be a constant,
           but also an arbitrary term in the Expand case of obligations) *)
-      ; scope : Locality.locality
+      ; scope : Locality.definition_scope
       (** [scope]: Locality of the original declaration *)
       ; dref : GlobRef.t
       (** [dref]: identifier of the original declaration *)
@@ -105,7 +105,7 @@ module Info : sig
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
     -> ?udecl : UState.universe_decl
-    -> ?scope : Locality.locality
+    -> ?scope : Locality.definition_scope
     (** locality  *)
     -> ?hook : Hook.t
     (** Callback to be executed after saving the constant *)
@@ -347,7 +347,7 @@ val primitive_entry
     instead *)
 val declare_entry
   :  name:Id.t
-  -> scope:Locality.locality
+  -> ?scope:Locality.definition_scope
   -> kind:Decls.logical_kind
   -> ?hook:Hook.t
   -> impargs:Impargs.manual_implicits

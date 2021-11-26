@@ -28,7 +28,7 @@ val interp_definition
 val do_definition
   :  ?hook:Declare.Hook.t
   -> name:Id.t
-  -> scope:Locality.locality
+  -> ?scope:Locality.definition_scope
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.definition_object_kind
@@ -44,7 +44,7 @@ val do_definition_program
   :  ?hook:Declare.Hook.t
   -> pm:Declare.OblState.t
   -> name:Id.t
-  -> scope:Locality.locality
+  -> scope:Locality.definition_scope
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.logical_kind

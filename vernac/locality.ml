@@ -11,7 +11,9 @@
 (** * Managing locality *)
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
-type locality = Discharge | Global of import_status
+type definition_scope = Discharge | Global of import_status
+
+let default_scope = Global ImportDefaultBehavior
 
 let importability_of_bool = function
   | true -> ImportNeedQualified

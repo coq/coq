@@ -13,7 +13,7 @@ open Vernacexpr
 (** Special Fixpoint handling when command is activated. *)
 val do_fixpoint :
      pm:Declare.OblState.t
-  -> scope:Locality.locality
+  -> scope:Locality.definition_scope
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?using:Vernacexpr.section_subset_expr
@@ -22,7 +22,7 @@ val do_fixpoint :
 
 val do_cofixpoint :
      pm:Declare.OblState.t
-  -> scope:Locality.locality
+  -> scope:Locality.definition_scope
   -> poly:bool
   -> ?using:Vernacexpr.section_subset_expr
   -> cofixpoint_expr list
