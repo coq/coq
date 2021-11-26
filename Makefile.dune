@@ -7,6 +7,17 @@
 .PHONY: fmt ocheck ireport clean                      # Maintenance targets
 .PHONY: voboot release install                        # Added just not to break old scripts
 
+
+###########################################################################
+# The SHOW and HIDE variables control whether make will echo complete commands
+# or only abbreviated versions.
+# Quiet mode is ON by default except if VERBOSE=1 option is given to make
+# Used only by targets which don't go through dune (eg doc_gram_rsts)
+
+VERBOSE ?=
+SHOW := $(if $(VERBOSE),@true "",@echo "")
+HIDE := $(if $(VERBOSE),,@)
+
 # use DUNEOPT=--display=short for a more verbose build
 # DUNEOPT=--display=short
 
@@ -139,6 +150,17 @@ ireport:
 
 clean:
 	dune clean
+
+# docgram
+
+DOC_GRAM:=_build/default/doc/tools/docgram/doc_grammar.exe
+
+# not worth figuring out dependencies, just leave it to dune
+.PHONY: $(DOC_GRAM)
+$(DOC_GRAM):
+	dune build $(DUNEOPT) $@
+
+include Makefile.docgram
 
 # ci-* targets
 
