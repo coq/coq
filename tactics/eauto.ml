@@ -172,15 +172,18 @@ module SearchProblem = struct
   let success s = List.is_empty s.tacres
 
   let filter_tactics ~is_done sigma mkdb glls l =
-    let open Tacmach.Old in
     let gl, db, rest = match glls with
     | [] -> assert false
     | (gl, db) :: rest -> (gl, db, rest)
     in
     let map (tac, cost, pptac) =
       try
-        let { it; sigma } = Proofview.V82.of_tactic tac (re_sig gl sigma) in
-        let map gl = gl, mkdb (pf_env @@ re_sig gl sigma) sigma db in
+        let gl0 = { Evd.it = gl; Evd.sigma } in
+        let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
+        let map gl =
+          let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
+          gl, mkdb env sigma db
+        in
         let ngls = List.map map it in
         let is_done = is_done || List.is_empty ngls in
         Some (sigma, is_done, ngls, cost, pptac)
@@ -202,9 +205,8 @@ module SearchProblem = struct
   let find_first_goal s = match s.tacres with
   | [] -> assert false
   | (gl, db) :: rest ->
-    let open Tacmach.Old in
-    let gl = { Evd.it = gl; Evd.sigma = s.sigma; } in
-    pf_env gl, pf_concl gl, db, rest
+    let evi = Evd.find s.sigma gl in
+    Evd.evar_filtered_env (Global.env ()) evi, Evd.evar_concl evi, db, rest
 
   let branching s =
     if Int.equal s.depth 0 then
