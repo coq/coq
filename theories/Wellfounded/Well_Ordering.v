@@ -12,7 +12,7 @@
     From: Constructing Recursion Operators in Type Theory
     L. Paulson  JSC (1986) 2, 325-355 *)
 
-Require Import Eqdep.
+Require Import EqdepFacts.
 
 #[universes(template)]
 Inductive WO (A : Type) (B : A -> Type) : Type :=
@@ -27,22 +27,23 @@ Section WellOrdering.
   Inductive le_WO : WO -> WO -> Prop :=
     le_sup : forall (a:A) (f:B a -> WO) (v:B a), le_WO (f v) (sup _ _ a f).
 
+  Lemma le_WO_inv x y : le_WO x y -> exists a f v, f v = x /\ sup _ _ a f = y.
+  Proof.
+    destruct 1;eauto.
+  Qed.
+
   Theorem wf_WO : well_founded le_WO.
   Proof.
     unfold well_founded; intro.
     apply Acc_intro.
-    elim a.
-    intros.
-    inversion H0.
+    induction a as [a f IH].
+    intros y Hle.
+    apply le_WO_inv in Hle.
+    destruct Hle as [a' [g [v [Hy Hsup]]]], Hy.
+    assert (Heq : eq_dep _ (fun a => B a -> WO) a' g a f) by (inversion Hsup;reflexivity).
+    clear Hsup;destruct Heq.
     apply Acc_intro.
-    generalize H4; generalize H1; generalize f0; generalize v.
-    rewrite H3.
-    intros.
-    apply (H v0 y0).
-    cut (f = f1).
-    - intros E; rewrite E; auto.
-    - symmetry .
-      apply (inj_pair2 A (fun a0:A => B a0 -> WO) a0 f1 f H5).
+    apply IH.
   Qed.
 
 End WellOrdering.
