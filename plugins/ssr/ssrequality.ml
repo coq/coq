@@ -128,7 +128,7 @@ let tclMATCH_GOAL env sigma c t_ok t_fail =
   Proofview.Goal.enter begin fun gl ->
   match unify_HO env sigma (Proofview.Goal.concl gl) c with
   | sigma ->
-    (* FIXME: why do we drop the evarmap? *)
+    Proofview.Unsafe.tclEVARS sigma <*>
     convert_concl ~check:true (Reductionops.nf_evar sigma c) <*> t_ok sigma
   | exception exn when CErrors.noncritical exn -> t_fail ()
   end
