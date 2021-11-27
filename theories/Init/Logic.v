@@ -37,6 +37,10 @@ Notation "~ x" := (not x) : type_scope.
 
 Register not as core.not.type.
 
+(** Negation of a type in [Type] *)
+
+Definition notT (A:Type) := A -> False.
+
 (** Create the "core" hint database, and set its transparent state for
   variables and constants explicitly. *)
 

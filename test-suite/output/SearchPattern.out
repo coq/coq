@@ -92,7 +92,6 @@ Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
 iff_refl: forall A : Prop, A <-> A
 le_n: forall n : nat, n <= n
-identity_refl: forall [A : Type] (a : A), identity a a
 eq_refl: forall {A : Type} {x : A}, x = x
 Nat.divmod: nat -> nat -> nat -> nat -> nat * nat
 (use "About" for full details on the implicit arguments of eq_refl)

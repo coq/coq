@@ -68,7 +68,6 @@ Check fun x:{_:{x:nat*nat|fst x = 0 & True}|True}+nat => match x return option n
 
 
 Require Import Prelude.
-Require Import Logic_Type.
 
 Section Orderings.
    Variable U : Type.
