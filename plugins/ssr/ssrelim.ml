@@ -27,7 +27,6 @@ open Ssrcommon
 
 open Proofview.Notations
 
-
 module RelDecl = Context.Rel.Declaration
 
 (** The "case" and "elim" tactic *)
@@ -123,8 +122,13 @@ let check_elim sigma has_elim = function
 | EGen ((None, occ), g) when is_wildcard g ->
       Proofview.tclUNIT (None,[],occ,None)
 | EGen ((_, occ), p as gen) ->
-      pfLIFT (pf_interp_gen true gen) >>= fun (_,c,clr) ->
-      Proofview.tclUNIT (Some c, clr, occ, Some p)
+  Proofview.Goal.enter_one begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    let sigma, (_, c, clr) = interp_gen env sigma ~concl true gen in
+    Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT (Some c, clr, occ, Some p)
+  end
 | EConstr (clr, occ, c) ->
       Proofview.tclUNIT (Some c, clr, occ, None)
 

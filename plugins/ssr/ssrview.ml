@@ -315,15 +315,16 @@ Goal.enter_one ~__LOC__ begin fun g ->
           k :: l @ Evar.Set.elements (evars_of_econstr sigma (EConstr.Unsafe.to_constr bo))
       else l
     ) [] s in
+  let env0 = Proofview.Goal.env s0 in
+  let sigma0 = Proofview.Goal.sigma s0 in
   let und0 = (* Unassigned evars in the initial goal *)
-    let sigma0 = Tacmach.Old.project s0 in
-    let g0info = Evd.find sigma0 (Tacmach.Old.sig_it s0) in
+    let g0info = Evd.find sigma0 (Proofview.Goal.goal s0) in
     let g0 = Evd.evars_of_filtered_evar_info sigma0 g0info in
     List.filter (fun k -> Evar.Set.mem k g0)
       (List.map fst (Evar.Map.bindings (Evd.undefined_map sigma0))) in
   let rigid = rigid_of und0 in
-  let n, p, to_prune, _ucst = pf_abs_evars2 s0 rigid (sigma, p) in
-  let p = if simple_types then pf_abs_cterm s0 n p else p in
+  let n, p, to_prune, _ucst = abs_evars2 env0 sigma0 rigid (sigma, p) in
+  let p = if simple_types then abs_cterm env0 sigma0 n p else p in
   Ssrprinters.debug_ssr (fun () -> Pp.(str"view@finalized: " ++
     Printer.pr_econstr_env env sigma p));
   let sigma = List.fold_left Evd.remove sigma to_prune in
@@ -369,8 +370,9 @@ let rec apply_all_views_aux ~clear_if_id vs finalization conclusion s0 =
              Tactics.clear name <*>
              tclINDEPENDENTL begin
                Ssrprinters.debug_ssr (fun () -> Pp.(str"..was NOT the last view"));
-               Ssrcommon.tacSIGMA >>=
-                 apply_all_views_aux ~clear_if_id vs finalization conclusion
+               Proofview.Goal.enter_one begin fun gl ->
+                 apply_all_views_aux ~clear_if_id vs finalization conclusion gl
+               end
              end >>= reduce_or)
 
 let apply_all_views vs ~conclusion ~clear_if_id =
@@ -380,8 +382,9 @@ let apply_all_views vs ~conclusion ~clear_if_id =
       | None -> k [] None
       | Some t ->
           finalize_view s0 t >>= fun p -> k (names @ to_clear) (Some p)) in
-  Ssrcommon.tacSIGMA >>=
-    apply_all_views_aux ~clear_if_id vs finalization conclusion
+  Proofview.Goal.enter_one begin fun gl ->
+    apply_all_views_aux ~clear_if_id vs finalization conclusion gl
+  end
 
 (* We apply a view to a term given by the user, e.g. `case/V: x`. `x` is
    `subject` *)
@@ -393,10 +396,11 @@ let apply_all_views_to subject ~simple_types vs ~conclusion = begin
       | `Term v -> pile_up_view ~clear_if_id:false v <*> process_all_vs vs in
   State.vsASSERT_EMPTY <*>
   State.vsINIT ~subject_name:[] ~to_clear:[] ~view:subject <*>
-  Ssrcommon.tacSIGMA >>= fun s0 ->
+  Proofview.Goal.enter_one begin fun s0 ->
   process_all_vs vs <*>
   State.vsCONSUME (fun ~names:_ t ~to_clear:_ ->
     finalize_view s0 ~simple_types t >>= conclusion)
+  end
 end
 
 (* Entry points *********************************************************)

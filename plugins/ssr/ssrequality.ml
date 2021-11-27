@@ -27,7 +27,7 @@ open Ssrmatching
 open Ssrast
 open Ssrprinters
 open Ssrcommon
-open Tacmach.Old
+open Proofview.Notations
 
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
 let () =
@@ -104,7 +104,7 @@ let congrtac ((n, t), ty) ist =
     Id.Map.add pattern_id (Tacinterp.Value.of_constr f) Id.Map.empty } in
   let rf = mkRltacVar pattern_id in
   let m = pf_nbargs env sigma f in
-  let _, cf = if n > 0 then
+  let cf = if n > 0 then
     match interp_congrarg_at env sigma ist' ~concl n rf ty m with
     | Some cf -> cf
     | None -> errorstrm Pp.(str "No " ++ int n ++ str "-congruence with "
@@ -124,54 +124,58 @@ let pf_typecheck t =
   Proofview.Unsafe.tclEVARS sigma
   end
 
+let tclMATCH_GOAL env sigma c t_ok t_fail =
+  Proofview.Goal.enter begin fun gl ->
+  match unify_HO env sigma (Proofview.Goal.concl gl) c with
+  | sigma ->
+    Proofview.Unsafe.tclEVARS sigma <*>
+    convert_concl ~check:true (Reductionops.nf_evar sigma c) <*> t_ok sigma
+  | exception exn when CErrors.noncritical exn -> t_fail ()
+  end
+
+let mk_evar env sigma ty =
+  let sigma = Evd.create_evar_defs sigma in
+  let (sigma, x) = Evarutil.new_evar env sigma ty in
+  sigma, x
+
 let newssrcongrtac arg ist =
   let open Proofview.Notations in
   Proofview.Goal.enter_one ~__LOC__ begin fun _g ->
     (Ssrcommon.tacMK_SSR_CONST "ssr_congr_arrow") end >>= fun arr ->
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
   debug_ssr (fun () -> Pp.(str"===newcongr==="));
-  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
+  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env env sigma concl));
   (* utils *)
-  let fs gl t = Reductionops.nf_evar (project gl) t in
-  let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail =
-    Proofview.Goal.enter begin fun gl ->
-    let open Tacmach in
-    match try Some (pf_unify_HO gl_c (pf_concl gl) c)
-          with exn when CErrors.noncritical exn -> None with
-    | Some gl_c ->
-        Tacticals.tclTHEN (convert_concl ~check:true (fs gl_c c))
-          (t_ok (proj gl_c))
-    | None -> t_fail ()
-    end
-  in
-  let mk_evar gl ty =
-    let env, sigma, si = pf_env gl, project gl, sig_it gl in
-    let sigma = Evd.create_evar_defs sigma in
-    let (sigma, x) = Evarutil.new_evar env sigma ty in
-    x, re_sig si sigma in
+  let fs sigma t = Reductionops.nf_evar sigma t in
   let ssr_congr lr = EConstr.mkApp (arr, lr) in
-  let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
+  let sigma, eq = Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.type") in
   (* here the two cases: simple equality or arrow *)
-  let equality, _, eq_args, gl' = pf_saturate gl (EConstr.of_constr eq) 3 in
-  Proofview.V82.of_tactic (tclMATCH_GOAL (equality, gl') (fun gl' -> fs gl' (List.assoc 0 eq_args))
-  (fun ty -> congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
+  let equality, _, eq_args, sigma' = saturate env sigma eq 3 in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  tclMATCH_GOAL env sigma' equality
+  (fun sigma' ->
+    let ty = fs sigma' (List.assoc 0 eq_args) in
+    congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty env sigma ty) ist)
   (fun () ->
     try
-    let gl', t_lhs = pfe_new_type gl in
-    let gl', t_rhs = pfe_new_type gl' in
-    let lhs, gl' = mk_evar gl' t_lhs in
-    let rhs, gl' = mk_evar gl' t_rhs in
+    let sigma, t_lhs = Evarutil.new_Type sigma in
+    let sigma, t_rhs = Evarutil.new_Type sigma in
+    let sigma, lhs = mk_evar env sigma t_lhs in
+    let sigma, rhs = mk_evar env sigma t_rhs in
     let arrow = EConstr.mkArrow lhs Sorts.Relevant (EConstr.Vars.lift 1 rhs) in
-    tclMATCH_GOAL (arrow, gl') (fun gl' -> [|fs gl' lhs;fs gl' rhs|])
-    (fun lr ->
+    tclMATCH_GOAL env sigma arrow
+    (fun sigma ->
+      let lr = [|fs sigma lhs;fs sigma rhs|] in
       let a = ssr_congr lr in
       Tacticals.tclTHENLIST [ pf_typecheck a
                   ; Tactics.apply a
                   ; congrtac (arg, mkRType) ist ])
     (fun _ -> Tacticals.tclZEROMSG Pp.(str"Conclusion is not an equality nor an arrow"))
     with e -> Proofview.tclZERO e (* FIXME *)
-    ))
-    gl
+    )
   end
 
 (** 7. Rewriting tactics (rewrite, unlock) *)
@@ -261,9 +265,11 @@ let fake_pmatcher_end () =
   mkProp, L2R, (Evd.empty, UState.empty, mkProp)
 
 let unfoldintac occ rdx t (kt,_) =
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let fs sigma x = Reductionops.nf_evar sigma x in
-  let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
+  let sigma0 = Proofview.Goal.sigma gl in
+  let env0 = Proofview.Goal.env gl in
+  let concl0 = Proofview.Goal.concl gl in
   let (sigma, t), const = strip_unfold_term env0 t kt in
   let body env t c =
     Tacred.unfoldn [AllOccurrences, get_evalref env sigma t] env sigma0 c in
@@ -313,12 +319,14 @@ let unfoldintac occ rdx t (kt,_) =
     try beta env0 (EConstr.of_constr (eval_pattern env0 sigma0 concl0 rdx occ unfold))
     with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
   let _ = conclude () in
-  Proofview.V82.of_tactic (convert_concl ~check:true concl) gl
+  convert_concl ~check:true concl
   end
 
 let foldtac occ rdx ft =
-  Proofview.V82.tactic begin fun gl ->
-  let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma0 = Proofview.Goal.sigma gl in
+  let env0 = Proofview.Goal.env gl in
+  let concl0 = Proofview.Goal.concl gl in
   let sigma, t = ft in
   let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
   let fold, conclude = match rdx with
@@ -341,7 +349,7 @@ let foldtac occ rdx ft =
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let _ = conclude () in
-  Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.of_constr concl)) gl
+  convert_concl ~check:true (EConstr.of_constr concl)
   end
 
 let converse_dir = function L2R -> R2L | R2L -> L2R

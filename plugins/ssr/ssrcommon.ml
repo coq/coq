@@ -21,7 +21,7 @@ open Printer
 open Locusops
 
 open Ltac_plugin
-open Tacmach.Old
+open Proofview.Notations
 open Libnames
 open Ssrmatching_plugin
 open Ssrmatching
@@ -84,72 +84,7 @@ let mk_orhint tacs = true, tacs
 let nullhint = true, []
 let nohint = false, []
 
-type 'a tac_a = (goal * 'a) sigma -> (goal * 'a) list sigma
-
-let project gl = gl.Evd.sigma
 let re_sig it sigma = { Evd.it = it; Evd.sigma = sigma }
-
-let push_ctx  a gl = re_sig (sig_it gl, a) (project gl)
-let push_ctxs a gl =
-  re_sig (List.map (fun x -> x,a) (sig_it gl)) (project gl)
-let pull_ctx gl = let g, a = sig_it gl in re_sig g (project gl), a
-let pull_ctxs gl = let g, a = List.split (sig_it gl) in re_sig g (project gl), a
-
-let with_ctx f gl =
-  let gl, ctx = pull_ctx gl in
-  let rc, ctx = f ctx in
-  rc, push_ctx ctx gl
-let without_ctx f gl =
-  let gl, _ctx = pull_ctx gl in
-  f gl
-let tac_ctx t gl =
-  let gl, a = pull_ctx gl in
-  let gl = t gl in
-  push_ctxs a gl
-
-let tclTHEN_ia t1 t2 gl =
-  let gal = t1 gl in
-  let goals, sigma = sig_it gal, project gal in
-  let _, opened, sigma =
-    List.fold_left (fun (i,opened,sigma) g ->
-      let gl = t2 i (re_sig g sigma) in
-      i+1, sig_it gl :: opened, project gl)
-      (1,[],sigma) goals in
-  re_sig (List.flatten (List.rev opened)) sigma
-
-let tclTHEN_a t1 t2 gl = tclTHEN_ia t1 (fun _ -> t2) gl
-
-let tclTHENS_a t1 tl gl = tclTHEN_ia t1
-  (fun i -> List.nth tl (i-1)) gl
-
-let rec tclTHENLIST_a = function
-  | [] -> tac_ctx Tacticals.Old.tclIDTAC
-  | t1::tacl -> tclTHEN_a t1 (tclTHENLIST_a tacl)
-
-(* like  tclTHEN_i but passes to the tac "i of n" and not just i *)
-let tclTHEN_i_max tac taci gl =
-  let maxi = ref 0 in
-  tclTHEN_ia (tclTHEN_ia tac (fun i -> maxi := max i !maxi; tac_ctx Tacticals.Old.tclIDTAC))
-    (fun i gl -> taci i !maxi gl) gl
-
-let tac_on_all gl tac =
-  let goals = sig_it gl in
-  let opened, sigma =
-    List.fold_left (fun (opened,sigma) g ->
-      let gl = tac (re_sig g sigma) in
-      sig_it gl :: opened, project gl)
-      ([],project gl) goals in
-  re_sig (List.flatten (List.rev opened)) sigma
-
-(* Used to thread data between intro patterns at run time *)
-type tac_ctx = {
-  tmp_ids : (Id.t * Name.t ref) list;
-  wild_ids : Id.t list;
-  delayed_clears : Id.t list;
-}
-
-let new_ctx () =
-  { tmp_ids = []; wild_ids = []; delayed_clears = [] }
 
 open Pp
 
@@ -250,14 +185,14 @@ let interp_refine env sigma ist ~concl rc =
   let sigma, c = Pretyping.understand_ltac flags env sigma vars kind rc in
 (*   ppdebug(lazy(str"sigma@interp_refine=" ++ pr_evar_map None sigma)); *)
   debug_ssr (fun () -> str"c@interp_refine=" ++ Printer.pr_econstr_env env sigma c);
-  (sigma, (sigma, c))
+  (sigma, c)
 
 
-let interp_open_constr env sigma0 ist gc =
-  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist env sigma0 (gc, Tactypes.NoBindings) in
-  (sigma0, (sigma, c))
+let interp_open_constr env sigma ist gc =
+  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist env sigma (gc, Tactypes.NoBindings) in
+  (sigma, c)
 
-let interp_term env sigma ist (_, c) = snd (interp_open_constr env sigma ist c)
+let interp_term env sigma ist (_, c) = interp_open_constr env sigma ist c
 
 let interp_hyp ist env sigma (SsrHyp (loc, id)) =
   let id' = Tacinterp.interp_hyp ist env sigma CAst.(make ?loc id) in
@@ -319,16 +254,6 @@ let internal_names = ref []
 let add_internal_name pt = internal_names := pt :: !internal_names
 let is_internal_name s = List.exists (fun p -> p s) !internal_names
 
-let tmp_tag = "_the_"
-let tmp_post = "_tmp_"
-let mk_tmp_id i =
-  Id.of_string (Printf.sprintf "%s%s%s" tmp_tag (CString.ordinal i) tmp_post)
-let new_tmp_id ctx =
-  let id = mk_tmp_id (1 + List.length ctx.tmp_ids) in
-  let orig = ref Anonymous in
-  (id, orig), { ctx with tmp_ids = (id, orig) :: ctx.tmp_ids }
-;;
-
 let mk_internal_id s =
   let s' = Printf.sprintf "_%s_" s in
   let s' = String.map (fun c -> if c = ' ' then '_' else c) s' in
@@ -354,8 +279,6 @@ let ssr_anon_hyp = "Hyp"
 
 let wildcard_tag = "_the_"
 let wildcard_post = "_wildcard_"
-let mk_wildcard_id i =
-  Id.of_string (Printf.sprintf "%s%s%s" wildcard_tag (CString.ordinal i) wildcard_post)
 let has_wildcard_tag s =
   let n = String.length s in let m = String.length wildcard_tag in
   let m' = String.length wildcard_post in
@@ -363,11 +286,6 @@ let has_wildcard_tag s =
   String.sub s (n - m') m' = wildcard_post &&
   skip_digits s m = n - m' - 2
 let _ = add_internal_name has_wildcard_tag
-
-let new_wild_id ctx =
-  let i = 1 + List.length ctx.wild_ids in
-  let id = mk_wildcard_id i in
-  id, { ctx with wild_ids = id :: ctx.wild_ids }
 
 let discharged_tag = "_discharged_"
 let mk_discharged_id id =
@@ -478,11 +396,6 @@ let env_size env = List.length (Environ.named_context env)
 let pf_concl gl = EConstr.Unsafe.to_constr (Tacmach.pf_concl gl)
 let pf_get_hyp gl x = EConstr.Unsafe.to_named_decl (Tacmach.pf_get_hyp x gl)
 
-let pf_e_type_of gl t =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let sigma, ty = Typing.type_of env sigma t in
-  re_sig it sigma, ty
-
 let resolve_typeclasses env sigma ~where ~fail =
   let filter =
     let evset = Evarutil.undefined_evars_of_term sigma where in
@@ -529,13 +442,7 @@ let abs_evars2 env sigma0 rigid (sigma, c0) =
   | [] -> c in
   List.length evlist, EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
 
-let pf_abs_evars2 gl rigid c =
-  abs_evars2 (pf_env gl) (project gl) rigid c
-
 let abs_evars env sigma t = abs_evars2 env sigma [] t
-
-let pf_abs_evars gl t = pf_abs_evars2 gl [] t
-
 
 (* As before but if (?i : T(?j)) and (?j : P : Prop), then the lambda for i
  * looks like (fun evar_i : (forall pi : P. T(pi))) thanks to "loopP" and all
@@ -548,10 +455,18 @@ let pf_abs_evars gl t = pf_abs_evars2 gl [] t
 let ssrautoprop_tac = ref (Proofview.Goal.enter (fun gl -> assert false))
 
 (* Thanks to Arnaud Spiwack for this snippet *)
-let call_on_evar tac e s =
-  let { it = gs ; sigma = s } =
-    tac { it = e ; sigma = s; } in
-  gs, s
+let call_on_evar env sigma tac e =
+  try
+    let tac = Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state e] <*> tac in
+    let _, init = Proofview.init sigma [] in
+    let name = Names.Id.of_string "legacy_pe" in
+    let (_, final, _, _) = Proofview.apply ~name ~poly:false env tac init in
+    let (gs, final) = Proofview.proofview final in
+    let () = if (gs <> []) then errorstrm (str "Should we tell the user?") in
+    final
+  with Logic_monad.TacticFailure e as src ->
+    let (_, info) = Exninfo.capture src in
+    Exninfo.iraise (e, info)
 
 open Pp
 let pp _ = () (* FIXME *)
@@ -595,8 +510,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     if evplist = [] then evlist, [], sigma else
     List.fold_left (fun (ev, evp, sigma) (i, (_,t,_) as p) ->
       try
-        let ng, sigma = call_on_evar (Proofview.V82.of_tactic !ssrautoprop_tac) i sigma in
-        if (ng <> []) then errorstrm (str "Should we tell the user?");
+        let sigma = call_on_evar env sigma !ssrautoprop_tac i in
         List.filter (fun (j,_) -> j <> i) ev, evp, sigma
       with _ -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
   let c0 = nf_evar sigma c0 in
@@ -654,14 +568,6 @@ let nb_evar_deps = function
   | _ -> 0
 
 let type_id env sigma t = Id.of_string (Namegen.hdchar env sigma t)
-let pf_type_id gl t = type_id (pf_env gl) (project gl) t
-let pfe_type_of gl t =
-  let sigma, ty = pf_type_of gl t in
-  re_sig (sig_it gl) sigma, ty
-let pfe_new_type gl =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let sigma,t  = Evarutil.new_Type sigma in
-  re_sig it sigma, t
 let pfe_type_relevance_of env sigma t =
   let sigma, ty = Typing.type_of env sigma t in
   sigma, ty, Retyping.relevance_of_term env sigma t
@@ -705,8 +611,6 @@ let abs_cterm env sigma n c0 =
     | _ -> strip i c in
   EConstr.of_constr (strip_evars 0 c0)
 
-let pf_abs_cterm gl n c0 = abs_cterm (pf_env gl) (project gl) n c0
-
 (* }}} *)
 
 let merge_uc uc =
@@ -729,11 +633,12 @@ let rec constr_name sigma c = match EConstr.kind sigma c with
   | App (c', _) -> constr_name sigma c'
   | _ -> Anonymous
 
-let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
-  let sigma, t, r = pfe_type_relevance_of (pf_env gl) (project gl) c in
-  let gl = re_sig (sig_it gl) sigma in
-  if name <> Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (make_annot name r, t, cl) else
-  gl, EConstr.mkProd (make_annot (Name (pf_type_id gl t)) r, t, cl)
+let pf_mkprod env sigma c ?(name=constr_name sigma c) cl =
+  let sigma, t, r = pfe_type_relevance_of env sigma c in
+  if name <> Anonymous || EConstr.Vars.noccurn sigma 1 cl then
+    sigma, EConstr.mkProd (make_annot name r, t, cl)
+  else
+    sigma, EConstr.mkProd (make_annot (Name (type_id env sigma t)) r, t, cl)
 
 (** look up a name in the ssreflect internals module *)
 let ssrdirpath = DirPath.make [Id.of_string "ssreflect"]
@@ -745,10 +650,6 @@ let mkSsrRef name =
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst env sigma name =
   EConstr.fresh_global env sigma (mkSsrRef name)
-let pf_fresh_global name gl =
-  let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let sigma,t  = Evd.fresh_global env sigma name in
-  EConstr.Unsafe.to_constr t, re_sig it sigma
 
 let mkProt env sigma t c =
   let sigma, prot = mkSsrConst env sigma "protect_term" in
@@ -802,9 +703,9 @@ type name_hint = (int * EConstr.types array) option ref
 
 let abs_ssrterm ?(resolve_typeclasses=false) ist env sigma t =
   let sigma0 = sigma in
-  let sigma, ct as t = interp_term env sigma ist t in
-  let sigma, _ as t =
-    if not resolve_typeclasses then t
+  let sigma, ct = interp_term env sigma ist t in
+  let t =
+    if not resolve_typeclasses then (sigma, ct)
     else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma ct in
@@ -915,11 +816,6 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
       | _ -> raise NotEnoughProducts
   in
    loop ty [] sigma m
-
-let pf_saturate ?beta ?bi_types gl c ?ty m =
-  let env, sigma, si = pf_env gl, project gl, sig_it gl in
-  let t, ty, args, sigma = saturate ?beta ?bi_types env sigma c ?ty m in
-  t, ty, args, re_sig si sigma
 
 let dependent_apply_error =
   try CErrors.user_err (Pp.str "Could not fill dependent hole in \"apply\"")
@@ -1076,18 +972,22 @@ let tclDOTRY n tac =
 
 let tclDO n tac =
   let prefix i = str"At iteration " ++ int i ++ str": " in
-  let tac_err_at i gl =
-    try Proofview.V82.of_tactic tac gl
-    with
-    | CErrors.UserError s as e ->
-      let _, info = Exninfo.capture e in
-      let e' = CErrors.UserError (prefix i ++ s) in
-      Exninfo.iraise (e', info)
+  let tac_err_at i =
+    Proofview.Goal.enter begin fun gl ->
+      Proofview.tclORELSE tac begin function
+      | (CErrors.UserError s, info) ->
+        let e' = CErrors.UserError (prefix i ++ s) in
+        Proofview.tclZERO ~info e'
+      | (e, info) -> Proofview.tclZERO ~info e
+      end
+    end
   in
-  let rec loop i gl =
-    if i = n then tac_err_at i gl else
-    (Tacticals.Old.tclTHEN (tac_err_at i) (loop (i + 1))) gl in
-  Proofview.V82.tactic ~nf_evars:false (loop 1)
+  let rec loop i =
+    Proofview.Goal.enter begin fun gl ->
+    if i = n then tac_err_at i else
+    Tacticals.tclTHEN (tac_err_at i) (loop (i + 1))
+  end in
+  loop 1
 
 let tclAT_LEAST_ONCE t =
   let open Tacticals in
@@ -1101,22 +1001,24 @@ let tclMULT = function
   | n, Must when n > 1 -> tclDO n
   | _       -> tclID
 
-let old_cleartac clr = check_hyps_uniq [] clr; Proofview.V82.of_tactic (Tactics.clear (hyps_ids clr))
 let cleartac clr = Proofview.tclTHEN (pf_check_hyps_uniq [] clr) (Tactics.clear (hyps_ids clr))
 
 (* }}} *)
 
+let get_hyp env sigma id =
+  try EConstr.of_named_decl (Environ.lookup_named id env)
+  with Not_found -> raise (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
+
 (** Generalize tactic *)
 
 (* XXX the k of the redex should percolate out *)
-let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
-  let pat = interp_cpattern (pf_env gl) (project gl) t None in (* UGLY API *)
-  let gl = pf_merge_uc_of (fst pat) gl in
-  let cl, env, sigma = Tacmach.Old.pf_concl gl, pf_env gl, project gl in
+let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
+  let pat = interp_cpattern env sigma t None in (* UGLY API *)
+  let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context @@ fst pat) in
   let (c, ucst), cl =
-    try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr cl) pat occ 1
-    with NoMatch -> redex_of_pattern env pat, (EConstr.Unsafe.to_constr cl) in
-  let gl = pf_merge_uc ucst gl in
+    try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr concl) pat occ 1
+    with NoMatch -> redex_of_pattern env pat, (EConstr.Unsafe.to_constr concl) in
+  let sigma = Evd.merge_universe_context sigma ucst in
   let c = EConstr.of_constr c in
   let cl = EConstr.of_constr cl in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
@@ -1124,17 +1026,16 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     if tag_of_cpattern t = WithAt then
       if not (EConstr.isVar sigma c) then
         errorstrm (str "@ can be used with variables only")
-      else match Tacmach.Old.pf_get_hyp gl (EConstr.destVar sigma c) with
+      else match get_hyp env sigma (EConstr.destVar sigma c) with
       | NamedDecl.LocalAssum _ -> errorstrm (str "@ can be used with let-ins only")
-      | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (map_annot Name.mk_name name,b,ty,cl),c,clr,ucst,gl
-    else let gl, ccl =  pf_mkprod gl c cl in false, pat, ccl, c, clr,ucst,gl
+      | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (map_annot Name.mk_name name,b,ty,cl),c,clr,ucst, sigma
+    else let sigma, ccl =  pf_mkprod env sigma c cl in false, pat, ccl, c, clr, ucst, sigma
   else if to_ind && occ = None then
-    let nv, p, _, ucst' = pf_abs_evars gl (fst pat, c) in
+    let nv, p, _, ucst' = abs_evars env sigma (fst pat, c) in
     let ucst = UState.union ucst ucst' in
     if nv = 0 then anomaly "occur_existential but no evars" else
-    let sigma, pty, rp = pfe_type_relevance_of (pf_env gl) (project gl) p in
-    let gl = re_sig (sig_it gl) sigma in
-    false, pat, EConstr.mkProd (make_annot (constr_name (project gl) c) rp, pty, Tacmach.Old.pf_concl gl), p, clr,ucst,gl
+    let sigma, pty, rp = pfe_type_relevance_of env sigma p in
+    false, pat, EConstr.mkProd (make_annot (constr_name sigma c) rp, pty, concl), p, clr,ucst, sigma
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
 
 let genclrtac cl cs clr =
@@ -1155,44 +1056,30 @@ let genclrtac cl cs clr =
   (cleartac clr)
 
 let gentac gen =
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
-  let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
-  debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c);
-  let gl = pf_merge_uc ucst gl in
+  let conv, _, cl, c, clr, ucst, sigma = pf_interp_gen_aux env sigma ~concl false gen in
+  debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env env sigma c);
+  let sigma = Evd.merge_universe_context sigma ucst in
+  Proofview.Unsafe.tclEVARS sigma <*>
   if conv
-  then Tacticals.Old.tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
-  else Proofview.V82.of_tactic (genclrtac cl [c] clr) gl
+  then Tacticals.tclTHEN (convert_concl ~check:true cl) (cleartac clr)
+  else genclrtac cl [c] clr
   end
 
 let genstac (gens, clr) =
   Tacticals.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
 
-let pf_interp_gen to_ind gen gl =
-  let _, _, a, b, c, ucst,gl = pf_interp_gen_aux gl to_ind gen in
-  (a, b ,c), pf_merge_uc ucst gl
-
-let pfLIFT f =
-  let open Proofview.Notations in
-  let hack = ref None in
-  Proofview.V82.tactic (fun gl ->
-    let g = sig_it gl in
-    let x, gl = f gl in
-    hack := Some (x,project gl);
-    re_sig [g] (project gl))
-  >>= fun () ->
-    let x, sigma = option_assert_get !hack (Pp.str"pfLIFT") in
-    Proofview.Unsafe.tclEVARS sigma <*>
-    Proofview.tclUNIT x
-;;
+let interp_gen env sigma ~concl to_ind gen =
+  let _, _, a, b, c, ucst, sigma = pf_interp_gen_aux env sigma ~concl to_ind gen in
+  Evd.merge_universe_context sigma ucst, (a, b ,c)
 
 let is_protect hd env sigma =
   let protectC = mkSsrRef "protect_term" in
   EConstr.isRefX sigma protectC hd
-
-let get_hyp env sigma id =
-  try EConstr.of_named_decl (Environ.lookup_named id env)
-  with Not_found -> raise (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
 
 let abs_wgen env sigma keep_let f gen (args,c) =
   let evar_closed t p =
@@ -1261,27 +1148,26 @@ let unfold cl =
 open Proofview
 open Notations
 
-let tacSIGMA = Goal.enter_one ~__LOC__ begin fun g ->
-  let k = Goal.goal g in
-  let sigma = Goal.sigma g in
-  tclUNIT (Tacmach.Old.re_sig k sigma)
+let pf_apply f = Proofview.Goal.enter_one ~__LOC__ begin fun gl ->
+  f (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
 end
 
 let tclINTERP_AST_CLOSURE_TERM_AS_CONSTR c =
-  tclINDEPENDENTL begin tacSIGMA >>= fun gl ->
+  tclINDEPENDENTL @@ pf_apply begin fun env sigma ->
   let old_ssrterm = mkRHole, Some c.Ssrast.body in
   let ist =
     option_assert_get c.Ssrast.interp_env
       Pp.(str "tclINTERP_AST_CLOSURE_TERM_AS_CONSTR: term with no ist") in
-  let sigma, t = Tacinterp.interp_constr_gen Pretyping.WithoutTypeConstraint ist (pf_env gl) (project gl) old_ssrterm in
+  let sigma, t = Tacinterp.interp_constr_gen Pretyping.WithoutTypeConstraint ist env sigma old_ssrterm in
   Unsafe.tclEVARS sigma <*>
   tclUNIT t
 end
 
 let tacREDUCE_TO_QUANTIFIED_IND ty =
-  tacSIGMA >>= fun gl ->
-  try tclUNIT (Tacmach.Old.pf_reduce_to_quantified_ind gl ty)
+  pf_apply begin fun env sigma ->
+  try tclUNIT (Tacred.reduce_to_quantified_ind env sigma ty)
   with e -> tclZERO e
+  end
 
 let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
   let sigma, env = Goal.sigma g, Goal.env g in
@@ -1418,15 +1304,15 @@ let tacMKPROD c ?name cl =
 end
 
 let tacINTERP_CPATTERN cp =
-  tacSIGMA >>= begin fun gl ->
-  tclUNIT (Ssrmatching.interp_cpattern (pf_env gl) (project gl) cp None)
-end
+  pf_apply begin fun env sigma ->
+    tclUNIT (Ssrmatching.interp_cpattern env sigma cp None)
+  end
 
 let tacUNIFY a b =
-  tacSIGMA >>= begin fun gl ->
-  let gl = Ssrmatching.pf_unify_HO gl a b in
-  Unsafe.tclEVARS (Tacmach.Old.project gl)
-end
+  pf_apply begin fun env sigma ->
+  let sigma = Ssrmatching.unify_HO env sigma a b in
+  Unsafe.tclEVARS sigma
+  end
 
 let tclOPTION o d =
   match o with

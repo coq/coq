@@ -182,4 +182,3 @@ type gist = Tacintern.glob_sign
 type ist = Tacinterp.interp_sign
 type goal = Goal.goal
 type 'a sigma = 'a Evd.sigma
-type v82tac = Tacmach.Old.tactic

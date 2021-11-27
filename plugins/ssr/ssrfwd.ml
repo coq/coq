@@ -14,7 +14,8 @@ open Pp
 open Names
 open Constr
 open Context
-open Tacmach.Old
+
+open Proofview.Notations
 
 open Ssrmatching_plugin.Ssrmatching
 open Ssrprinters
@@ -142,6 +143,49 @@ let basesufftac t = basecuttac Suff t
 
 let introstac ipats = tclIPAT ipats
 
+let make_ct t =
+  let open CAst in
+  let mkt t = mk_term NoFlag t in
+  let mkl t = (NoFlag, (t, None)) in
+  match Ssrcommon.ssrterm_of_ast_closure_term t with
+  | _, (_, Some { loc; v = CCast (ct, DEFAULTcast, cty)}) ->
+    mkt ct, mkt cty, mkt (mkCHole None), loc
+  | _, (_, Some ct) ->
+    mkt ct, mkt (mkCHole None), mkt (mkCHole None), None
+  | _, (t, None) ->
+    begin match DAst.get t with
+    | GCast (ct, DEFAULTcast, cty) ->
+      mkl ct, mkl cty, mkl mkRHole, t.CAst.loc
+    | _ -> mkl t, mkl mkRHole, mkl mkRHole, None
+    end
+
+(* FIXME: understand why we have to play with the goal states *)
+
+let drop_state =
+  let map gl = Proofview.with_empty_state (Proofview.drop_state gl) in
+  Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+  Proofview.Unsafe.tclSETGOALS (List.map map gls)
+
+let set_state s =
+  let map gl = Proofview.goal_with_state (Proofview.drop_state gl) s in
+  Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+  Proofview.Unsafe.tclSETGOALS (List.map map gls)
+
+let assert_is_conv (ctx, concl) =
+  Proofview.Goal.enter begin fun gl ->
+    Proofview.tclORELSE (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx))
+    (fun _ -> Tacticals.tclZEROMSG (str "Given proof term is not of type " ++
+      pr_econstr_env (Tacmach.pf_env gl) (Tacmach.project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl)))
+  end
+
+let push_goals gs =
+  Proofview.Goal.enter begin fun gl ->
+    (* FIXME: do we really want to preserve state? *)
+    let gstate = Proofview.Goal.state gl in
+    let map ev = Proofview.goal_with_state ev gstate in
+    Proofview.Unsafe.tclSETGOALS (List.map map (gs @ [Proofview.Goal.goal gl]))
+  end
+
 let havetac ist
   (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
   suff namefst
@@ -149,8 +193,9 @@ let havetac ist
  let open Proofview.Notations in
  Ssrcommon.tacMK_SSR_CONST "abstract_key" >>= fun abstract_key ->
  Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
- Proofview.V82.tactic begin fun gl ->
- let concl = pf_concl gl in
+ Proofview.Goal.enter begin fun gl ->
+ let concl = Proofview.Goal.concl gl in
+ let gstate = Proofview.Goal.state gl in
  let pats = tclCompileIPats orig_pats in
  let binders = tclCompileIPats binders in
  let simpl = tclCompileIPats simpl in
@@ -161,7 +206,7 @@ let havetac ist
    match clr with
    | None -> introstac pats, []
    | Some clr -> introstac (tclCompileIPats (IPatClear clr :: orig_pats)), clr in
- let itac, id, clr = introstac pats, Tacticals.tclIDTAC, cleartac clr in
+ let itac, clr = introstac pats, cleartac clr in
  let binderstac n =
    let rec aux = function 0 -> [] | n -> IOpInaccessible None :: aux (n-1) in
    Tacticals.tclTHEN (if binders <> [] then introstac (aux n) else Tacticals.tclIDTAC)
@@ -171,85 +216,67 @@ let havetac ist
    not !ssrhaveNOtcresolution &&
    match fk with FwdHint(_,true) -> false | _ -> true in
  let hint = hinttac ist true hint in
- let cuttac t = Proofview.Goal.enter begin fun gl ->
-   if transp then basecuttac HaveTransp t
-   else basecuttac Have t
-  end in
+ let cuttac t = basecuttac (if transp then HaveTransp else Have) t in
  (* Introduce now abstract constants, so that everything sees them *)
- let unlock_abs (idty,args_id) gl =
-    let gl, _ = pf_e_type_of gl idty in
-    pf_unify_HO gl args_id.(2) abstract_key in
- Tacticals.Old.tclTHENFIRST (Proofview.V82.of_tactic itac_mkabs) (fun gl ->
-  let mkt t = mk_term NoFlag t in
-  let mkl t = (NoFlag, (t, None)) in
-  let interp gl rtc t =
-    let sigma, t, n = abs_ssrterm ~resolve_typeclasses:rtc ist (pf_env gl) (project gl) t in
-    re_sig (sig_it gl) sigma, t, n
+ let unlock_abs env (idty,args_id) sigma =
+    let sigma, _ = Typing.type_of env sigma idty in
+    unify_HO env sigma args_id.(2) abstract_key
+ in
+ drop_state <*>
+ Tacticals.tclTHENFIRST itac_mkabs (Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let interp sigma rtc t =
+    abs_ssrterm ~resolve_typeclasses:rtc ist env sigma t
   in
-  let interp_ty gl rtc t =
-    let a,b,_,u = pf_interp_ty ~resolve_typeclasses:rtc (pf_env gl) (project gl) ist t in a,b,u in
-  let open CAst in
-  let ct, cty, hole, loc = match Ssrcommon.ssrterm_of_ast_closure_term t with
-    | _, (_, Some { loc; v = CCast (ct, DEFAULTcast, cty)}) ->
-      mkt ct, mkt cty, mkt (mkCHole None), loc
-    | _, (_, Some ct) ->
-      mkt ct, mkt (mkCHole None), mkt (mkCHole None), None
-    | _, (t, None) ->
-      begin match DAst.get t with
-      | GCast (ct, DEFAULTcast, cty) ->
-        mkl ct, mkl cty, mkl mkRHole, t.CAst.loc
-      | _ -> mkl t, mkl mkRHole, mkl mkRHole, None
-      end
-  in
-  let gl, cut, sol, itac1, itac2 =
+  let ct, cty, hole, loc = make_ct t in
+  let sigma, cut, itac1, itac2 =
    match fk, namefst, suff with
    | FwdHave, true, true ->
      errorstrm (str"Suff have does not accept a proof term")
    | FwdHave, false, true ->
      let cty = combineCG cty hole (mkCArrow ?loc) mkRArrow in
-     let gl, t, _ = interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
-     let gl, ty = pfe_type_of gl t in
-     let ctx, _ = EConstr.decompose_prod_n_assum (project gl) 1 ty in
-     let assert_is_conv gl =
-       try Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx)) gl
-       with _ -> errorstrm (str "Given proof term is not of type " ++
-         pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl)) in
-     gl, ty, Tacticals.tclTHEN (Proofview.V82.tactic assert_is_conv) (Tactics.apply t), id, itac_c
+     let sigma, t, _ = interp sigma false (combineCG ct cty (mkCCast ?loc) mkRCast) in
+     let sigma, ty = Typing.type_of env sigma t in
+     let ctx, _ = EConstr.decompose_prod_n_assum sigma 1 ty in
+     sigma, ty, assert_is_conv (ctx, concl) <*> Tactics.apply t, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function
        | IOpAbstractVars ids -> ids
        | _ -> assert false) skols) in
      let skols_args =
        List.map (fun id -> snd @@ (* FIXME: evar leak *)
-         Ssripats.Internal.examine_abstract (pf_env gl) (project gl) (EConstr.mkVar id)) skols in
-     let gl = List.fold_right unlock_abs skols_args gl in
-     let gl, t, n_evars =
-       interp gl false (combineCG ct cty (mkCCast ?loc) mkRCast) in
+         Ssripats.Internal.examine_abstract env sigma (EConstr.mkVar id)) skols in
+     let sigma = List.fold_right (unlock_abs env) skols_args sigma in
+     let sigma, t, n_evars =
+       interp sigma false (combineCG ct cty (mkCCast ?loc) mkRCast) in
      if skols <> [] && n_evars <> 0 then
        CErrors.user_err (Pp.strbrk @@ "Automatic generalization of unresolved implicit "^
                      "arguments together with abstract variables is "^
                      "not supported");
      let gs =
        List.map (fun (_,a) ->
-         Ssripats.Internal.find_abstract_proof (pf_env gl) (project gl) false a.(1)) skols_args in
-     let tacopen_skols = Proofview.V82.tactic (fun gl -> re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma) in
-     let gl, ty = pf_e_type_of gl t in
-     gl, ty, Tactics.apply t, id,
-       Tacticals.tclTHEN (Tacticals.tclTHEN itac_c simpltac)
-         (Tacticals.tclTHEN tacopen_skols (Proofview.V82.tactic (fun gl ->
-            Proofview.V82.of_tactic (unfold [abstract; abstract_key]) gl)))
+         Ssripats.Internal.find_abstract_proof env sigma false a.(1)) skols_args in
+     let tacopen_skols = push_goals gs in
+     let sigma, ty = Typing.type_of env sigma t in
+     sigma, ty, Tactics.apply t,
+       itac_c <*> simpltac <*> tacopen_skols <*> unfold [abstract; abstract_key]
    | _,true,true  ->
-     let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
-     gl, EConstr.mkArrow ty Sorts.Relevant concl, hint, itac, clr
+     let _, ty, _, uc = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
+     let sigma = Evd.merge_universe_context sigma uc in
+     sigma, EConstr.mkArrow ty Sorts.Relevant concl, hint <*> itac, clr
    | _,false,true ->
-     let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
-     gl, EConstr.mkArrow ty Sorts.Relevant concl, hint, id, itac_c
+     let _, ty, _, uc = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
+     let sigma = Evd.merge_universe_context sigma uc in
+     sigma, EConstr.mkArrow ty Sorts.Relevant concl, hint, itac_c
    | _, false, false ->
-     let n, cty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
-     gl, cty, Tacticals.tclTHEN (binderstac n) hint, id, Tacticals.tclTHEN itac_c simpltac
+     let n, cty, _ , uc = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
+     let sigma = Evd.merge_universe_context sigma uc in
+     sigma, cty, (binderstac n) <*> hint, Tacticals.tclTHEN itac_c simpltac
    | _, true, false -> assert false in
-  Proofview.V82.of_tactic (Tacticals.tclTHENS (cuttac cut) [ Tacticals.tclTHEN sol itac1; itac2 ]) gl)
- gl
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tacticals.tclTHENS (cuttac cut) [ itac1; itac2 ] end) <*>
+  set_state gstate
 end
 
 let destProd_or_LetIn sigma c =
@@ -259,14 +286,12 @@ let destProd_or_LetIn sigma c =
   | _ -> raise DestKO
 
 let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
   let clr0 = Option.default [] clr0 in
   let pats = tclCompileIPats pats in
-  let mkabs gen (gl, args, c) =
-    let sigma, args, c = abs_wgen (pf_env gl) (project gl) false (fun x -> x) gen (args, c) in
-    let gl = re_sig (sig_it gl) sigma in
-    gl, args, c
-  in
   let mkclr gen clrs = clr_of_wgen gen clrs in
   let mkpats = function
   | _, Some ((x, _), _) -> fun pats -> IOpId (hoi_id x) :: pats
@@ -284,21 +309,19 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
     end
   in
   let cut_implies_goal = not (suff || ghave <> `NoGen) in
-  let c, args, ct, gl =
+  let c, args, ct, sigma =
     let gens = List.filter (function _, Some _ -> true | _ -> false) gens in
-    let concl = pf_concl gl in
     let c = EConstr.mkProp in
     let c = if cut_implies_goal then EConstr.mkArrow c Sorts.Relevant concl else c in
-    let gl, args, c = List.fold_right mkabs gens (gl,[],c) in
+    let mkabs gen (sigma, args, c) =
+      abs_wgen env sigma false (fun x -> x) gen (args, c)
+    in
+    let sigma, args, c = List.fold_right mkabs gens (sigma, [], c) in
     let env, _ =
       List.fold_left (fun (env, c) _ ->
-        let rd, c = destProd_or_LetIn (project gl) c in
-        EConstr.push_rel rd env, c) (pf_env gl, c) gens in
-    let sigma = project gl in
-    let (sigma, ev) = Evarutil.new_evar env sigma EConstr.mkProp in
-    let k, _ = EConstr.destEvar sigma ev in
-    let fake_gl = {Evd.it = k; Evd.sigma = sigma} in
-    let _, ct, _, uc = pf_interp_ty (pf_env fake_gl) sigma ist ct in
+        let rd, c = destProd_or_LetIn sigma c in
+        EConstr.push_rel rd env, c) (env, c) gens in
+    let _, ct, _, uc = pf_interp_ty env sigma ist ct in
     let rec var2rel c g s = match EConstr.kind sigma c, g with
       | Prod({binder_name=Anonymous} as x,_,c), [] -> EConstr.mkProd(x, EConstr.Vars.subst_vars s ct, c)
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
@@ -312,7 +335,9 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
          | Prod(_,_,c) -> pired (EConstr.Vars.subst1 t c) ts
          | LetIn(id,b,ty,c) -> EConstr.mkLetIn (id,b,ty,pired c args)
          | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
-    c, args, pired c args, pf_merge_uc uc gl in
+    let sigma = Evd.merge_universe_context sigma uc in
+    c, args, pired c args, sigma
+  in
   let tacipat pats = introstac pats in
   let tacigens =
     Tacticals.tclTHEN
@@ -332,22 +357,23 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
       | None, _ -> None, Tacticals.tclIDTAC, clear0, pats
       | Some (Some id),_ -> Some id, introid id, clear0, pats
       | Some _,_ ->
-          let id = mk_anon_id "tmp" (Tacmach.Old.pf_ids_of_hyps gl) in
+          let id = mk_anon_id "tmp" (Tacmach.pf_ids_of_hyps gl) in
           Some id, introid id, Tacticals.tclTHEN clear0 (Tactics.clear [id]), pats in
       let tac_specialize = match id with
       | None -> Tacticals.tclIDTAC
       | Some id ->
         if pats = [] then Tacticals.tclIDTAC else
         let args = Array.of_list args in
-        debug_ssr (fun () -> str"specialized="++ pr_econstr_env (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args)));
-        debug_ssr (fun () -> str"specialized_ty="++ pr_econstr_env (pf_env gl) (project gl) ct);
+        debug_ssr (fun () -> str"specialized="++ pr_econstr_env env sigma EConstr.(mkApp (mkVar id,args)));
+        debug_ssr (fun () -> str"specialized_ty="++ pr_econstr_env env sigma ct);
         Tacticals.tclTHENS (basecuttac Have ct)
           [Tactics.apply EConstr.(mkApp (mkVar id,args)); Tacticals.tclIDTAC] in
       Have,
       (if hint = nohint then tacigens else hinttac),
       Tacticals.tclTHENLIST [name_general_hyp; tac_specialize; tacipat pats; cleanup]
   in
-  Proofview.V82.of_tactic (Tacticals.tclTHENS (basecuttac cut_kind c) [fst_goal_tac; snd_goal_tac]) gl
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tacticals.tclTHENS (basecuttac cut_kind c) [fst_goal_tac; snd_goal_tac]
   end
 
 (** The "suffice" tactic *)
