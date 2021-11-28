@@ -12,10 +12,8 @@ Require Import Rbase.
 Require Import Ranalysis_reg.
 Require Import Rfunctions.
 Require Import Rseries.
-Require Import Lra.
 Require Import RiemannInt.
 Require Import SeqProp.
-Require Import Max.
 Require Import Lia.
 Require Import Lra.
 Local Open Scope R_scope.
@@ -1425,3 +1423,6 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
  assumption.
  field. assumption.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

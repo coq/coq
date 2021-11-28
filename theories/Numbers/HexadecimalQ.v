@@ -57,8 +57,7 @@ Proof.
         now revert Hn; case nzhead.
     + revert He_den'; case nb_digits as [|n]; [now simpl; rewrite Nat.add_0_r|].
       intro Hn.
-      rewrite Nat.add_succ_r, Nat.add_comm.
-      now rewrite <-le_plus_minus; [|apply le_S_n].
+      rewrite Nat.add_succ_r, Nat.sub_add; [|apply le_S_n]; auto.
 Qed.
 
 Lemma IZ_of_Z_IZ_to_Z z z' : IZ_to_Z z = Some z' -> IZ_of_Z z' = z.
@@ -295,7 +294,7 @@ Proof.
   replace m with (Neg (unorm ni)); [|now unfold m; revert Ha; case nzhead].
   case (uint_eq_dec (nzhead ni) Nil); intro Hni.
   { rewrite <-nzhead_app_nzhead, Hni, app_nil_l.
-    intro H; exfalso; revert H; apply le_not_lt, nb_digits_nzhead. }
+    intro H; exfalso; revert H; apply Nat.le_ngt, nb_digits_nzhead. }
   clear m; set (m := match nzhead ni with Nil => _ | _ => _ end).
   replace m with (Neg (nzhead ni)); [|now unfold m; revert Hni; case nzhead].
   now rewrite (unorm_nzhead _ Hni).

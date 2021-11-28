@@ -33,9 +33,6 @@ Require Export Classical_sets.
 Require Export Powerset.
 Require Export Powerset_facts.
 Require Export Powerset_Classical_facts.
-Require Export Gt.
-Require Export Lt.
-Require Export Le.
 Require Export Finite_sets_facts.
 
 Section Image.
@@ -172,9 +169,9 @@ Section Image.
     rewrite (Im_add A x f).
     elim cardinal_Im_intro with A f n; trivial with sets.
     intros p C H'3.
-    apply le_trans with (S p).
+    apply Nat.le_trans with (S p).
     apply card_Add_gen with V (Im A f) (f x); trivial with sets.
-    apply le_n_S; auto with sets.
+    apply -> Nat.succ_le_mono; auto with sets.
   Qed.
 
   Theorem Pigeonhole :
@@ -184,7 +181,7 @@ Section Image.
   Proof.
     unfold not; intros A f n CAn n' CIfn' ltn'n I.
     cut (n' = n).
-    intro E; generalize ltn'n; rewrite E; exact (lt_irrefl n).
+    intro E; generalize ltn'n; rewrite E; exact (Nat.lt_irrefl n).
     apply injective_preserves_cardinal with (A := A) (f := f) (n := n);
       trivial with sets.
   Qed.
@@ -204,3 +201,6 @@ End Image.
 
 #[global]
 Hint Resolve Im_def image_empty finite_image: sets.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Export Gt Lt Le.

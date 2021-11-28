@@ -36,7 +36,7 @@ Require Import Arith.
 
 Goal forall n, 0 + n = n -> True.
 intros n H.
-rewrite plus_0_l in H.
+rewrite Nat.add_0_l in H.
 Abort.
 
 (* Rewrite dependent proofs from left-to-right *)

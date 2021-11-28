@@ -1027,11 +1027,11 @@ Proof.
     rewrite <- CR_of_Q_plus. apply CR_of_Q_le. apply Qplus_le_r.
     unfold Qle, Qnum, Qden. do 2 rewrite Z.mul_1_l.
     apply Pos2Z.pos_le_pos, Pos2Nat.inj_le.
-    destruct n. destruct n0. apply le_refl.
-    rewrite (Nat2Pos.id (S n0)). apply le_n_S, le_0_n. discriminate.
+    destruct n. destruct n0. apply Nat.le_refl.
+    rewrite (Nat2Pos.id (S n0)). apply -> Nat.succ_le_mono; apply Nat.le_0_l. discriminate.
     destruct n0. exfalso; inversion H1.
     rewrite Nat2Pos.id, Nat2Pos.id. exact H1. discriminate. discriminate.
-  - specialize (nmaj n (le_refl n)).
+  - specialize (nmaj n (Nat.le_refl n)).
     destruct (CR_Q_limit x n). apply CR_of_Q_lt.
     rewrite <- CR_of_Q_plus in nmaj. apply lt_CR_of_Q in nmaj. exact nmaj.
 Qed.

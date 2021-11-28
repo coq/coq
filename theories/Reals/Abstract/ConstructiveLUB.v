@@ -262,7 +262,7 @@ Proof.
   exists l. split.
   - intros. (* find an upper point between the limit and r *)
     destruct (CR_cv_open_above _ (CR_of_Q R r) l lcv H0) as [p pmaj].
-    specialize (pmaj p (le_refl p)).
+    specialize (pmaj p (Nat.le_refl p)).
     unfold proj1_sig in pmaj.
     destruct (DDcut_limit upcut (1 # Pos.of_nat p) eq_refl) as [q qmaj].
     apply (DDinterval upcut q). 2: apply qmaj.
@@ -284,7 +284,7 @@ Proof.
     destruct (CRup_nat (CRinv R _ (inr H2))) as [i imaj].
     destruct i. exfalso. simpl in imaj.
     exact (CRlt_asym _ _ imaj (CRinv_0_lt_compat R _ (inr H2) H2)).
-    specialize (pmaj (max (S i) (S p)) (le_trans p (S p) _ (le_S p p (le_refl p)) (Nat.le_max_r (S i) (S p)))).
+    specialize (pmaj (max (S i) (S p)) (Nat.le_trans p (S p) _ (le_S p p (Nat.le_refl p)) (Nat.le_max_r (S i) (S p)))).
     unfold proj1_sig in pmaj.
     destruct (DDcut_limit upcut (1 # Pos.of_nat (max (S i) (S p))) eq_refl)
       as [q qmaj].

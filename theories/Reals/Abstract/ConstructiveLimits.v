@@ -77,8 +77,8 @@ Proof.
     rewrite Radd_comm. reflexivity.
   - apply (CRle_trans _ _ _ (CRabs_triang _ _)).
     apply (CRle_trans _ (CRplus R (CR_of_Q R (1 # 2*p)) (CR_of_Q R (1 # 2*p)))).
-    apply CRplus_le_compat. apply imaj, (le_trans _ _ _ (Nat.le_max_l _ _) H).
-    apply jmaj, (le_trans _ _ _ (Nat.le_max_r _ _) H).
+    apply CRplus_le_compat. apply imaj, (Nat.le_trans _ _ _ (Nat.le_max_l _ _) H).
+    apply jmaj, (Nat.le_trans _ _ _ (Nat.le_max_r _ _) H).
     apply (CRle_trans _ (CR_of_Q R ((1 # 2 * p) + (1 # 2 * p)))).
     apply CR_of_Q_plus. apply CR_of_Q_le.
     rewrite Qinv_plus_distr. setoid_replace (1 + 1 # 2 * p) with (1 # p).
@@ -104,7 +104,7 @@ Proof.
   - intro abs. destruct (CR_Q_dense R _ _ abs) as [q [H0 H]].
     destruct (Qarchimedean (/(-q))) as [p pmaj].
     specialize (H1 p) as [n nmaj].
-    specialize (nmaj n (le_refl n)). apply nmaj.
+    specialize (nmaj n (Nat.le_refl n)). apply nmaj.
     apply (CRlt_trans _ (CR_of_Q R (-q))). apply CR_of_Q_lt.
     apply H2 in pmaj.
     apply (Qmult_lt_r _ _ (1#p)) in pmaj. 2: reflexivity.
@@ -124,7 +124,7 @@ Proof.
   - intro abs. destruct (CR_Q_dense R _ _ abs) as [q [H0 H]].
     destruct (Qarchimedean (/q)) as [p pmaj].
     specialize (H1 p) as [n nmaj].
-    specialize (nmaj n (le_refl n)). apply nmaj.
+    specialize (nmaj n (Nat.le_refl n)). apply nmaj.
     apply (CRlt_trans _ (CR_of_Q R q)). apply CR_of_Q_lt.
     apply H2 in pmaj.
     apply (Qmult_lt_r _ _ (1#p)) in pmaj. 2: reflexivity.
@@ -244,7 +244,7 @@ Proof.
   intros. intro abs.
   destruct (Un_cv_nat_real _ l H (-l)) as [N H1].
   rewrite <- CRopp_0. apply CRopp_gt_lt_contravar. apply abs.
-  specialize (H1 N (le_refl N)).
+  specialize (H1 N (Nat.le_refl N)).
   pose proof (CRabs_def R (An N - l) (CRabs R (An N - l))) as [_ H2].
   apply (CRle_lt_trans _ _ _ (CRle_abs _)) in H1.
   apply (H0 N). apply (CRplus_lt_reg_r (-l)).
@@ -382,11 +382,11 @@ Proof.
   apply (CRplus_lt_compat_r (-l)) in r. rewrite CRplus_opp_r in r.
   destruct (Un_cv_nat_real _ l H0 (A - l) r) as [n H1].
   apply (H (n+N)%nat).
-  rewrite <- (plus_0_l N). rewrite Nat.add_assoc.
-  apply Nat.add_le_mono_r. apply le_0_n.
+  rewrite <- (Nat.add_0_l N), Nat.add_assoc.
+  apply Nat.add_le_mono_r, Nat.le_0_l.
   specialize (H1 (n+N)%nat). apply (CRplus_lt_reg_r (-l)).
-  assert (n + N >= n)%nat. rewrite <- (plus_0_r n). rewrite <- plus_assoc.
-  apply Nat.add_le_mono_l. apply le_0_n. specialize (H1 H2).
+  assert (n + N >= n)%nat. rewrite <- (Nat.add_0_r n), <- Nat.add_assoc.
+  apply Nat.add_le_mono_l, Nat.le_0_l. specialize (H1 H2).
   apply (CRle_lt_trans _ (CRabs R (u (n + N)%nat - l))).
   apply CRle_abs. assumption.
 Qed.
@@ -401,15 +401,15 @@ Proof.
   apply (CRplus_lt_compat_r (-A)) in r. rewrite CRplus_opp_r in r.
   destruct (Un_cv_nat_real _ l H0 (l-A) r) as [n H1].
   apply (H (n+N)%nat).
-  - rewrite <- (plus_0_l N). apply Nat.add_le_mono_r. apply le_0_n.
+  - rewrite <- (Nat.add_0_l N). apply Nat.add_le_mono_r, Nat.le_0_l.
   - specialize (H1 (n+N)%nat). apply (CRplus_lt_reg_l R (l - A - u (n+N)%nat)).
     unfold CRminus. repeat rewrite CRplus_assoc.
     rewrite CRplus_opp_l, CRplus_0_r, (CRplus_comm (-A)).
     rewrite CRplus_assoc, CRplus_opp_r, CRplus_0_r.
     apply (CRle_lt_trans _ _ _ (CRle_abs _)).
     fold (l - u (n+N)%nat). rewrite CRabs_minus_sym. apply H1.
-    rewrite <- (plus_0_r n). rewrite <- plus_assoc.
-    apply Nat.add_le_mono_l. apply le_0_n.
+    rewrite <- (Nat.add_0_r n), <- Nat.add_assoc.
+    apply Nat.add_le_mono_l, Nat.le_0_l.
 Qed.
 
 Lemma CR_cv_le : forall {R : ConstructiveReals}
@@ -464,9 +464,9 @@ Proof.
   specialize (H eps) as [N Nmaj].
   exists (N+k)%nat. intros n H.
   destruct (Nat.le_exists_sub k n).
-  apply (le_trans _ (N + k)). 2: exact H.
-  apply (le_trans _ (0 + k)). apply le_refl.
-  rewrite <- Nat.add_le_mono_r. apply le_0_n.
+  apply (Nat.le_trans _ (N + k)). 2: exact H.
+  apply (Nat.le_trans _ (0 + k)). apply Nat.le_refl.
+  rewrite <- Nat.add_le_mono_r. apply Nat.le_0_l.
   destruct H0.
   subst n. apply Nmaj. unfold ge in H.
   rewrite <- Nat.add_le_mono_r in H. exact H.
@@ -477,5 +477,6 @@ Lemma CR_cv_shift' :
     CR_cv R f l -> CR_cv R (fun n => f (n + k)%nat) l.
 Proof.
   intros R f' k l cvf eps; destruct (cvf eps) as [N Pn].
-  exists N; intros n nN; apply Pn; auto with arith.
+  exists N; intros n nN; apply Pn; auto.
+  apply Nat.le_trans with n; [ assumption | apply Nat.le_add_r ].
 Qed.

@@ -17,7 +17,6 @@
     for results already present in BinInt.Z. *)
 
 Require Export BinPos BinInt.
-Require Import Lt Gt Plus Mult. (* Useless now, for compatibility only *)
 
 Local Open Scope Z_scope.
 
@@ -191,3 +190,6 @@ Notation Zsgn_1 := Z.sgn_pos (only parsing).
 Notation Zsgn_m1 := Z.sgn_neg (only parsing).
 
 (** Not kept: Zcompare_egal_dec *)
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Lt Gt Plus Mult.

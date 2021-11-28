@@ -129,7 +129,7 @@ Proof.
   apply decreasing_prop.
   assert (H0 := dicho_up_decreasing x y P H).
   assumption.
-  apply le_O_n.
+  apply Nat.le_0_l.
 Qed.
 
 Lemma dicho_lb_maj :
@@ -166,7 +166,7 @@ Proof.
   apply tech9.
   assert (H0 := dicho_lb_growing x y P H).
   assumption.
-  apply le_O_n.
+  apply Nat.le_0_l.
   assumption.
   assumption.
 Qed.

@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 Require Import Arith.
-Require Import Min.
 Require Import BinPos.
 Require Import BinNat.
 Require Import Ndigits.
@@ -49,7 +48,7 @@ Proof.
   simple induction k. trivial.
   generalize H0. case n. intros. inversion H3.
   intros. simpl. unfold N.testbit_nat in H. apply (H n0). simpl in H1. inversion H1. reflexivity.
-  exact (lt_S_n n1 n0 H3).
+  exact (proj2 (Nat.succ_lt_mono n1 n0) H3).
   simpl. intros n H. inversion H. intros. inversion H0.
 Qed.
 
@@ -74,7 +73,7 @@ Proof.
   intros. generalize H0 H1. case n. intros. simpl in H3. discriminate H3.
   intros. simpl. unfold Nplength in H.
   enough (ni (Pplength p0) = ni n0) by (inversion H4; reflexivity).
-  apply H. intros. change (N.testbit_nat (Npos (xO p0)) (S k) = false). apply H2. apply lt_n_S. exact H4.
+  apply H. intros. change (N.testbit_nat (Npos (xO p0)) (S k) = false). apply H2. apply -> Nat.succ_lt_mono. exact H4.
   exact H3.
   intro. case n. trivial.
   intros. simpl in H0. discriminate H0.
@@ -212,7 +211,7 @@ Qed.
 
 Lemma ni_le_le : forall m n:nat, ni_le (ni m) (ni n) -> m <= n.
 Proof.
-  unfold ni_le. unfold ni_min. intros. inversion H. apply le_min_r.
+  unfold ni_le. unfold ni_min. intros. inversion H. apply Nat.le_min_r.
 Qed.
 
 Lemma Nplength_lb :
@@ -220,7 +219,7 @@ Lemma Nplength_lb :
    (forall k:nat, k < n -> N.testbit_nat a k = false) -> ni_le (ni n) (Nplength a).
 Proof.
   simple induction a. intros. exact (ni_min_inf_r (ni n)).
-  intros. unfold Nplength. apply le_ni_le. case (le_or_lt n (Pplength p)). trivial.
+  intros. unfold Nplength. apply le_ni_le. case (Nat.le_gt_cases n (Pplength p)). trivial.
   intro. absurd (N.testbit_nat (Npos p) (Pplength p) = false).
   rewrite
    (Nplength_one (Npos p) (Pplength p)
@@ -233,7 +232,7 @@ Lemma Nplength_ub :
  forall (a:N) (n:nat), N.testbit_nat a n = true -> ni_le (Nplength a) (ni n).
 Proof.
   simple induction a. intros. discriminate H.
-  intros. unfold Nplength. apply le_ni_le. case (le_or_lt (Pplength p) n). trivial.
+  intros. unfold Nplength. apply le_ni_le. case (Nat.le_gt_cases (Pplength p) n). trivial.
   intro. absurd (N.testbit_nat (Npos p) n = true).
   rewrite
    (Nplength_zeros (Npos p) (Pplength p)
@@ -303,7 +302,7 @@ Proof.
   destruct a'. trivial.
   enough (N.testbit_nat (Npos p1) k = false) as -> by reflexivity.
   apply Nplength_zeros with (n := Pplength p1). reflexivity.
-  apply (lt_le_trans k (Pplength p) (Pplength p1)). exact H0.
+  apply (Nat.lt_le_trans k (Pplength p) (Pplength p1)). exact H0.
   apply ni_le_le. exact H.
 Qed.
 
@@ -327,3 +326,6 @@ Proof.
   rewrite N.lxor_assoc. rewrite <- (N.lxor_assoc a'' a'' a'). rewrite N.lxor_nilpotent.
   rewrite N.lxor_0_l. reflexivity.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Min.

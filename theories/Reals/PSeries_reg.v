@@ -13,8 +13,6 @@ Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Ranalysis1.
 Require Import MVT.
-Require Import Max.
-Require Import Even.
 Require Import Lra.
 Local Open Scope R_scope.
 
@@ -290,7 +288,7 @@ Proof.
   apply continuity_pt_plus.
   apply HrecN.
   intros; apply H.
-  apply le_trans with N; [ assumption | apply le_n_Sn ].
+  apply Nat.le_trans with N; [ assumption | apply Nat.le_succ_diag_r ].
   apply (H (S N)); apply le_n.
 Qed.
 
@@ -592,8 +590,8 @@ assert (CVU rho_ rho c d ).
   destruct (cvrho y b_y _ ep2) as [N2 Pn2].
   apply Rle_lt_trans with (1 := R_dist_tri _ _ (rho_ (max N N2) y)).
   apply Rplus_lt_le_compat.
-   solve[rewrite R_dist_sym; apply Pn2, Max.le_max_r].
-  apply unif_ac; auto; solve [apply Max.le_max_l].
+   solve[rewrite R_dist_sym; apply Pn2, Nat.le_max_r].
+  apply unif_ac; auto; solve [apply Nat.le_max_l].
  exists N; intros; apply unif_ac'; solve[auto].
 intros eps ep.
 destruct (CVU_continuity _ _ _ _ H ctrho x bx eps ep) as [delta [dp Pd]].
@@ -608,3 +606,6 @@ unfold rho; destruct (Req_EM_T (x + h) x) as [abs | _];[ | ].
  case hn0; replace h with (x + h - x) by ring; rewrite abs; ring.
 replace (x + h - x) with h by ring; reflexivity.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max Even.

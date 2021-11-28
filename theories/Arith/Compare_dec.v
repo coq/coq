@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Le Lt Gt Decidable PeanoNat.
+Require Import PeanoNat Decidable.
 
 Local Open Scope nat_scope.
 
@@ -16,14 +16,18 @@ Implicit Types m n x y : nat.
 
 Definition zerop n : {n = 0} + {0 < n}.
 Proof.
-  destruct n; auto with arith.
+  destruct n; [left|right]; auto.
+  apply Nat.lt_0_succ.
 Defined.
 
 Definition lt_eq_lt_dec n m : {n < m} + {n = m} + {m < n}.
 Proof.
-  induction n as [|n IHn] in m |- *; destruct m as [|m]; auto with arith.
-  destruct (IHn m) as [H|H]; auto with arith.
-  destruct H; auto with arith.
+  induction n as [|n IHn] in m |- *; destruct m as [|m]; auto.
+  - left; left; apply Nat.lt_0_succ.
+  - right; apply Nat.lt_0_succ.
+  - destruct (IHn m) as [[H|H]|H]; auto.
+    + left; left; now apply Nat.succ_lt_mono in H.
+    + right; now apply Nat.succ_lt_mono in H.
 Defined.
 
 Definition gt_eq_gt_dec n m : {m > n} + {n = m} + {n > m}.
@@ -34,10 +38,12 @@ Defined.
 Definition le_lt_dec n m : {n <= m} + {m < n}.
 Proof.
   induction n as [|n IHn] in m |- *.
-  - left; auto with arith.
+  - left; apply Nat.le_0_l.
   - destruct m as [|m].
-    + right; auto with arith.
-    + elim (IHn m); [left|right]; auto with arith.
+    + right; apply Nat.lt_0_succ.
+    + elim (IHn m); intros H; [left|right].
+      * now apply Nat.succ_le_mono in H.
+      * now apply Nat.succ_lt_mono in H.
 Defined.
 
 Definition le_le_S_dec n m : {n <= m} + {S m <= n}.
@@ -47,7 +53,8 @@ Defined.
 
 Definition le_ge_dec n m : {n <= m} + {n >= m}.
 Proof.
-  elim (le_lt_dec n m); auto with arith.
+  elim (le_lt_dec n m); auto.
+  intros Hlt; right; apply Nat.lt_le_incl; assumption.
 Defined.
 
 Definition le_gt_dec n m : {n <= m} + {n > m}.
@@ -57,15 +64,17 @@ Defined.
 
 Definition le_lt_eq_dec n m : n <= m -> {n < m} + {n = m}.
 Proof.
-  intros; destruct (lt_eq_lt_dec n m); auto with arith.
-  intros; absurd (m < n); auto with arith.
+  intros; destruct (lt_eq_lt_dec n m); auto.
+  exfalso.
+  apply (Nat.lt_irrefl n), (Nat.le_lt_trans n m); assumption.
 Defined.
 
 Theorem le_dec n m : {n <= m} + {~ n <= m}.
 Proof.
   destruct (le_gt_dec n m).
   - now left.
-  - right. now apply gt_not_le.
+  - right; intros Hle.
+    apply (Nat.lt_irrefl n), (Nat.le_lt_trans n m); assumption.
 Defined.
 
 Theorem lt_dec n m : {n < m} + {~ n < m}.
@@ -241,3 +250,6 @@ Lemma leb_compare n m : (n <=? m) = true <-> (n ?= m) <> Gt.
 Proof.
  rewrite Nat.compare_le_iff. apply Nat.leb_le.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Le Lt Gt.

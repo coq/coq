@@ -103,7 +103,7 @@ Proof.
   destruct pen as [uv _]. intros x H H0 H1 x_uc.
   assert (ihi : in_holed_interval a b h u (v x)).
   { split. rewrite -> uv. assumption. rewrite -> uv. split; assumption. }
-  destruct (le_lt_or_eq _ _ (beyond (v x) ihi)) as [lcvx | ecvx].
+  destruct (proj1 (Nat.lt_eq_cases _ _) (beyond (v x) ihi)) as [lcvx | ecvx].
   - exact lcvx.
   - exfalso. apply x_uc. rewrite ecvx. rewrite -> uv. reflexivity.
 Qed.
@@ -199,8 +199,8 @@ Lemma split_lt_succ : forall n m : nat, lt n (S m) -> lt n m \/ n = m.
 Proof.
   intros n m. generalize dependent n. induction m.
   - intros. destruct n. right. reflexivity. exfalso. inversion H. inversion H1.
-  - intros. destruct n. left. unfold lt. apply le_n_S. apply le_0_n.
-    apply lt_pred in H. simpl in H. specialize (IHm n H). destruct IHm. left. apply lt_n_S. assumption.
+  - intros. destruct n. left. unfold lt. apply -> Nat.succ_le_mono; apply Nat.le_0_l.
+    apply Nat.lt_succ_lt_pred in H. simpl in H. specialize (IHm n H). destruct IHm. left. apply -> Nat.succ_lt_mono. assumption.
     subst. right. reflexivity.
 Qed.
 
@@ -379,21 +379,21 @@ Proof.
   intros u [v [H3 H4]]. pose proof (conj H4 H3) as H.
   assert (forall n : nat, n + v (fst (proj1_sig (tearing_sequences u v H 1)))
                    <= v (fst (proj1_sig (tearing_sequences u v H (S n))))).
-  { induction n. simpl. apply le_refl.
-    apply (le_trans (S n + v (fst (proj1_sig (tearing_sequences u v H 1))))
+  { induction n. simpl. apply Nat.le_refl.
+    apply (Nat.le_trans (S n + v (fst (proj1_sig (tearing_sequences u v H 1))))
                     (S (v (fst (proj1_sig (tearing_sequences u v H (S n))))))).
-    simpl. apply le_n_S. assumption. apply first_indices_increasing.
+    simpl. apply -> Nat.succ_le_mono. assumption. apply first_indices_increasing.
     intro H1. discriminate. }
   assert (v (proj1_sig (torn_number u v H)) + v (fst (proj1_sig (tearing_sequences u v H 1)))
           < v (proj1_sig (torn_number u v H))).
   { pose proof (limit_index_above_all_indices u v H (v (proj1_sig (torn_number u v H)))).
     specialize (H0 (v (proj1_sig (torn_number u v H)))).
-    apply (le_lt_trans (v (proj1_sig (torn_number u v H))
+    apply (Nat.le_lt_trans (v (proj1_sig (torn_number u v H))
                         + v (fst (proj1_sig (tearing_sequences u v H 1))))
                        (v (fst (proj1_sig (tearing_sequences u v H (S (v (proj1_sig (torn_number u v H))))))))).
     assumption. assumption. }
   assert (forall n m : nat, ~(n + m < n)).
   { induction n. intros. intro H2. inversion H2. intro m. intro H2. simpl in H2.
-    apply lt_pred in H2. simpl in H2. apply IHn in H2. contradiction. }
+    apply Nat.lt_succ_lt_pred in H2. simpl in H2. apply IHn in H2. contradiction. }
   apply H2 in H1. contradiction.
 Qed.

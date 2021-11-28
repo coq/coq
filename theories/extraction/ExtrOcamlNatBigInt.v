@@ -44,7 +44,7 @@ Extract Constant minus =>
 Extract Constant max => "Big_int_Z.max_big_int".
 Extract Constant min => "Big_int_Z.min_big_int".
 (*Extract Constant nat_beq => "Big.eq".*)
-Extract Constant EqNat.beq_nat => "Big_int_Z.eq_big_int".
+Extract Constant Nat.eqb => "Big_int_Z.eq_big_int".
 Extract Constant EqNat.eq_nat_decide => "Big_int_Z.eq_big_int".
 
 Extract Constant Peano_dec.eq_nat_dec => "Big_int_Z.eq_big_int".
@@ -59,10 +59,10 @@ Extract Constant Compare_dec.lt_eq_lt_dec =>
  "(fun x y -> let s = Big_int_Z.compare_big_int x y in
   if s = 0 then (Some false) else if s < 0 then (Some true) else None)".
 
-Extract Constant Even.even_odd_dec =>
+Extract Constant Nat.Even_or_Odd =>
  "(fun n -> Big_int_Z.sign_big_int
   (Big_int_Z.mod_big_int n (Big_int_Z.big_int_of_int 2)) = 0)".
-Extract Constant Div2.div2 => "(fun n -> Big_int_Z.div_big_int n (Big_int_Z.big_int_of_int 2))".
+Extract Constant Nat.div2 => "(fun n -> Big_int_Z.div_big_int n (Big_int_Z.big_int_of_int 2))".
 
 Extract Inductive Euclid.diveucl => "(Big_int_Z.big_int * Big_int_Z.big_int)" [""].
 Extract Constant Euclid.eucl_dev => "(fun n m -> Big_int_Z.quomod_big_int m n)".

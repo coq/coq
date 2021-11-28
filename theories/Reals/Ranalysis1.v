@@ -1210,7 +1210,7 @@ Lemma derivable_pt_lim_pow_pos :
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  elim (lt_irrefl _ H).
+  elim (Nat.lt_irrefl _ H).
   cut (n = 0%nat \/ (0 < n)%nat).
   intro; elim H0; intro.
   rewrite H1; simpl.
@@ -1233,14 +1233,14 @@ Proof.
   pattern n at 1 5; replace n with (S (pred n)).
   unfold id; rewrite S_INR; simpl.
   ring.
-  symmetry ; apply S_pred with 0%nat; assumption.
+  apply Nat.lt_succ_pred with 0%nat; assumption.
   unfold mult_fct, id; reflexivity.
   reflexivity.
   inversion H.
   left; reflexivity.
   right.
-  apply lt_le_trans with 1%nat.
-  apply lt_O_Sn.
+  apply Nat.lt_le_trans with 1%nat.
+  apply Nat.lt_0_succ.
   assumption.
 Qed.
 
@@ -1255,7 +1255,7 @@ Proof.
   replace (fun _:R => 1) with (fct_cte 1);
   [ apply derivable_pt_lim_const | reflexivity ].
   apply derivable_pt_lim_pow_pos.
-  apply lt_O_Sn.
+  apply Nat.lt_0_succ.
 Qed.
 
 Lemma derivable_pt_pow :

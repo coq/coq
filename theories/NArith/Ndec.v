@@ -160,7 +160,7 @@ Lemma Nleb_ltb_trans a b c :
   Nleb a b = true -> Nleb c b = false -> Nleb c a = false.
 Proof.
   unfold Nleb. intros. apply leb_correct_conv.
-  apply le_lt_trans with (m := N.to_nat b).
+  apply Nat.le_lt_trans with (m := N.to_nat b).
   apply leb_complete. assumption.
   apply leb_complete_conv. assumption.
 Qed.
@@ -169,7 +169,7 @@ Lemma Nltb_leb_trans a b c :
   Nleb b a = false -> Nleb b c = true -> Nleb c a = false.
 Proof.
   unfold Nleb. intros. apply leb_correct_conv.
-  apply lt_le_trans with (m := N.to_nat b).
+  apply Nat.lt_le_trans with (m := N.to_nat b).
   apply leb_complete_conv. assumption.
   apply leb_complete. assumption.
 Qed.
@@ -178,14 +178,14 @@ Lemma Nltb_trans a b c :
   Nleb b a = false -> Nleb c b = false -> Nleb c a = false.
 Proof.
   unfold Nleb. intros. apply leb_correct_conv.
-  apply lt_trans with (m := N.to_nat b).
+  apply Nat.lt_trans with (m := N.to_nat b).
   apply leb_complete_conv. assumption.
   apply leb_complete_conv. assumption.
 Qed.
 
 Lemma Nltb_leb_weak a b : Nleb b a = false -> Nleb a b = true.
 Proof.
-  unfold Nleb. intros. apply leb_correct. apply lt_le_weak.
+  unfold Nleb. intros. apply leb_correct. apply Nat.lt_le_incl.
   apply leb_complete_conv. assumption.
 Qed.
 
@@ -193,7 +193,7 @@ Lemma Nleb_double_mono a b :
   Nleb a b = true -> Nleb (N.double a) (N.double b) = true.
 Proof.
   unfold Nleb. intros. rewrite !N2Nat.inj_double. apply leb_correct.
-  apply mult_le_compat_l. now apply leb_complete.
+  apply Nat.mul_le_mono_l. now apply leb_complete.
 Qed.
 
 Lemma Nleb_double_plus_one_mono a b :
@@ -201,14 +201,15 @@ Lemma Nleb_double_plus_one_mono a b :
    Nleb (N.succ_double a) (N.succ_double b) = true.
 Proof.
   unfold Nleb. intros. rewrite !N2Nat.inj_succ_double. apply leb_correct.
-  apply le_n_S, mult_le_compat_l. now apply leb_complete.
+  apply le_n_S, Nat.mul_le_mono_l. now apply leb_complete.
 Qed.
 
 Lemma Nleb_double_mono_conv a b :
   Nleb (N.double a) (N.double b) = true -> Nleb a b = true.
 Proof.
   unfold Nleb. rewrite !N2Nat.inj_double. intro. apply leb_correct.
-  apply (mult_S_le_reg_l 1). now apply leb_complete.
+  apply <- (Nat.mul_le_mono_pos_l (N.to_nat a) (N.to_nat b) 2); auto.
+  now apply leb_complete.
 Qed.
 
 Lemma Nleb_double_plus_one_mono_conv a b :
@@ -216,7 +217,8 @@ Lemma Nleb_double_plus_one_mono_conv a b :
    Nleb a b = true.
 Proof.
   unfold Nleb. rewrite !N2Nat.inj_succ_double. intro. apply leb_correct.
-  apply (mult_S_le_reg_l 1). apply le_S_n. now apply leb_complete.
+  apply <- (Nat.mul_le_mono_pos_l (N.to_nat a) (N.to_nat b) 2); auto.
+  now apply leb_complete.
 Qed.
 
 Lemma Nltb_double_mono a b :

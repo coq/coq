@@ -1153,7 +1153,7 @@ Proof.
   generalize (      (fold_right (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat
          l)).
   intros.
-  eapply lt_le_trans. eassumption.
+  eapply Nat.lt_le_trans. eassumption.
   rewrite <- Nat.succ_le_mono.
   apply Nat.le_max_r.
 Qed.
@@ -1865,9 +1865,3 @@ Definition eval := eval_formula.
 Definition prod_pos_nat := prod positive nat.
 
 Notation n_of_Z := Z.to_N (only parsing).
-
-(* Local Variables: *)
-(* coding: utf-8 *)
-(* End: *)
-
-

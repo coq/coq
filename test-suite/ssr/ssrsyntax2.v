@@ -15,6 +15,6 @@ Require Import Arith.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite plus_comm, plus_comm.
+rewrite Nat.add_comm, Nat.add_comm.
 split.
 Qed.

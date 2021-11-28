@@ -201,7 +201,7 @@ simpl.
 pattern i at 2; replace i with (i0 + (i - i0))%nat.
 rewrite pow_add.
 ring.
-symmetry ; apply le_plus_minus; assumption.
+rewrite Nat.add_comm; apply Nat.sub_add; assumption.
 unfold C.
 unfold Rdiv; repeat rewrite <- Rmult_assoc.
 rewrite <- Rinv_l_sym.
@@ -216,7 +216,7 @@ apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 reflexivity.
-apply lt_O_Sn.
+apply Nat.lt_0_succ.
 (* ring. *)
 apply sum_eq; intros.
 rewrite scal_sum.
@@ -232,7 +232,7 @@ ring.
 pattern i at 2; replace i with (i0 + (i - i0))%nat.
 rewrite pow_add.
 ring.
-symmetry ; apply le_plus_minus; assumption.
+rewrite Nat.add_comm; apply Nat.sub_add; assumption.
 unfold C.
 unfold Rdiv; repeat rewrite <- Rmult_assoc.
 rewrite <- Rinv_l_sym.
@@ -250,7 +250,7 @@ unfold Rdiv; ring.
 unfold Reste1; apply sum_eq; intros.
 apply sum_eq; intros.
 unfold Rdiv; ring.
-apply lt_O_Sn.
+apply Nat.lt_0_succ.
 Qed.
 
 Lemma pow_sqr : forall (x:R) (i:nat), x ^ (2 * i) = (x * x) ^ i.
@@ -319,7 +319,7 @@ induction  n as [| n Hrecn].
 simpl; ring.
 rewrite tech5; rewrite <- Hrecn.
 simpl; ring.
-unfold ge; apply le_O_n.
+unfold ge; apply Nat.le_0_l.
 unfold sin. destruct (exist_sin (Rsqr x)) as (x0,p).
 unfold sin_in, sin_n, infinite_sum, R_dist in p.
 unfold Un_cv, R_dist; intros.

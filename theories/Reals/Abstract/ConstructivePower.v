@@ -239,7 +239,7 @@ Proof.
     exfalso. inversion H0. pose proof (Pos2Nat.is_pos n).
     rewrite H3 in H2. inversion H2.
     apply Pos2Z.pos_le_pos. apply Pos2Nat.inj_le.
-    apply (le_trans _ _ _ H0). rewrite SuccNat2Pos.id_succ. apply le_refl.
+    apply (Nat.le_trans _ _ _ H0). rewrite SuccNat2Pos.id_succ. apply Nat.le_refl.
     apply (CRmult_eq_reg_l (CR_of_Q R 2)). right. exact H1.
     rewrite CRinv_r. rewrite <- CR_of_Q_mult.
     setoid_replace (2 * (1 # 2))%Q with 1%Q.

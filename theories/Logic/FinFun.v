@@ -13,7 +13,7 @@
 (** Main result : for functions [f:A->A] with finite [A],
     f injective <-> f bijective <-> f surjective. *)
 
-Require Import List Compare_dec EqNat Decidable ListDec. Require Fin.
+Require Import List PeanoNat Compare_dec EqNat Decidable ListDec. Require Fin.
 Set Implicit Arguments.
 
 (** General definitions *)
@@ -264,7 +264,7 @@ Definition restrict n (f:nat->nat)(hf : bFun n f) : (Fin.t n -> Fin.t n) :=
 Ltac break_dec H :=
  let H' := fresh "H" in
  destruct le_lt_dec as [H'|H'];
-  [elim (Lt.le_not_lt _ _ H' H)
+  [elim (proj1 (Nat.le_ngt _ _) H' H)
   |try rewrite (n2f_ext H' H) in *; try clear H'].
 
 Lemma extend_ok n f : bFun n (@extend n f).

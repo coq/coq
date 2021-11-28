@@ -54,7 +54,7 @@ Extract Constant mult => "( * )".
 Extract Inlined Constant max => "Pervasives.max".
 Extract Inlined Constant min => "Pervasives.min".
 (*Extract Inlined Constant nat_beq => "(=)".*)
-Extract Inlined Constant EqNat.beq_nat => "(=)".
+Extract Inlined Constant Nat.eqb => "(=)".
 Extract Inlined Constant EqNat.eq_nat_decide => "(=)".
 
 Extract Inlined Constant Peano_dec.eq_nat_dec => "(=)".
@@ -67,8 +67,8 @@ Extract Inlined Constant Compare_dec.lt_dec => "(<)".
 Extract Constant Compare_dec.lt_eq_lt_dec =>
  "fun n m -> if n>m then None else Some (n<m)".
 
-Extract Constant Even.even_odd_dec => "fun n -> n mod 2 = 0".
-Extract Constant Div2.div2 => "fun n -> n/2".
+Extract Constant Nat.Even_or_Odd => "fun n -> n mod 2 = 0".
+Extract Constant Nat.div2 => "fun n -> n/2".
 
 Extract Inductive Euclid.diveucl => "(int * int)" [ "" ].
 Extract Constant Euclid.eucl_dev => "fun n m -> (m/n, m mod n)".

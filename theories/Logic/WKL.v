@@ -42,7 +42,7 @@ Proposition is_path_from_characterization P n l :
 Proof.
 intros. split.
 - induction 1 as [|* HP _ (l'&Hl'&HPl')|* HP _ (l'&Hl'&HPl')].
-  + exists []. split. reflexivity. intros n <-%le_n_0_eq. assumption.
+  + exists []. split. reflexivity. intros n ->%Nat.le_0_r. assumption.
   + exists (true :: l'). split. apply eq_S, Hl'. intros [|] H.
     * assumption.
     * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
@@ -50,12 +50,12 @@ intros. split.
     * assumption.
     * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
 - intros (l'& <- &HPl'). induction l' as [|[|]] in l, HPl' |- *.
-  + constructor. apply (HPl' 0). apply le_0_n.
+  + constructor. apply (HPl' 0). apply Nat.le_0_l.
   + eapply next_left.
-    * apply (HPl' 0), le_0_n.
+    * apply (HPl' 0), Nat.le_0_l.
     * fold (length l'). apply IHl'. intros n' H%le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
   + apply next_right.
-    * apply (HPl' 0), le_0_n.
+    * apply (HPl' 0), Nat.le_0_l.
     * fold (length l'). apply IHl'. intros n' H%le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
 Qed.
 
@@ -93,19 +93,21 @@ Fixpoint Y P (l:list bool) :=
       if b then exists n, inductively_barred_at P n (false::l) else infinite_from P (false::l)
   end.
 
-Require Import Compare_dec Le Lt.
+Require Import Compare_dec.
 
 Lemma is_path_from_restrict : forall P n n' l, n <= n' ->
   is_path_from P n' l -> is_path_from P n l.
 Proof.
 intros * Hle H; induction H in n, Hle, H |- * ; intros.
-- apply le_n_0_eq in Hle as <-. apply here. assumption.
+- apply Nat.le_0_r in Hle as ->. apply here. assumption.
 - destruct n.
   + apply here. assumption.
-  + apply next_left; auto using le_S_n.
+  + apply Nat.succ_le_mono in Hle.
+    apply next_left; auto.
 - destruct n.
   + apply here. assumption.
-  + apply next_right; auto using le_S_n.
+  + apply Nat.succ_le_mono in Hle.
+    apply next_right; auto.
 Qed.
 
 Lemma inductively_barred_at_monotone : forall P l n n', n' <= n ->
@@ -114,8 +116,8 @@ Proof.
 intros * Hle Hbar.
 induction Hbar in n, l, Hle, Hbar |- *.
 - apply now_at; auto.
-- destruct n; [apply le_Sn_0 in Hle; contradiction|].
-  apply le_S_n in Hle.
+- destruct n; [apply Nat.nle_succ_0 in Hle; contradiction|].
+  apply Nat.succ_le_mono in Hle.
   apply propagate_at; auto.
 Qed.
 
@@ -219,7 +221,7 @@ assert (infinite_from P l).
         apply is_path_from_restrict with n'; [assumption|].
         apply find_left_path; trivial.
       * specialize (IHl' (S n)).
-        apply inductively_barred_at_monotone with (n:=n) in Hbar; [|apply lt_le_weak, Hlt].
+        apply inductively_barred_at_monotone with (n:=n) in Hbar; [|apply Nat.lt_le_incl, Hlt].
         apply find_left_path; trivial.
     + apply inductively_barred_at_imp_is_path_from; firstorder. }
 specialize (H 0). inversion H. assumption.
@@ -261,3 +263,6 @@ intros P Hdec Hinf.
 apply inductively_barred_at_is_path_from_decidable in Hdec.
 apply PreWeakKonigsLemma; assumption.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Le Lt.

@@ -33,9 +33,6 @@ Require Export Classical_sets.
 Require Export Powerset.
 Require Export Powerset_facts.
 Require Export Powerset_Classical_facts.
-Require Export Gt.
-Require Export Lt.
-Require Export Le.
 Require Export Finite_sets_facts.
 Require Export Image.
 
@@ -225,7 +222,7 @@ Section Infinite_sets.
     rewrite (Non_disjoint_union V (Im U V x f) (f x0)); auto with sets.
     rewrite H'4; auto with sets.
     elim (Extension V (Im U V x f) (Im U V A f)); auto with sets.
-    apply le_lt_n_Sm.
+    apply Nat.lt_succ_r.
     apply cardinal_decreases with (U := U) (V := V) (A := x) (f := f);
       auto with sets.
     rewrite H'4; auto with sets.
@@ -243,3 +240,6 @@ Section Infinite_sets.
   Qed.
 
 End Infinite_sets.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Export Gt Lt Le.

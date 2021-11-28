@@ -28,35 +28,36 @@ End Test_Read.
 
 (****************************************************************)
 
+(* Arith.Compare containes Require Export Wf_nat. *)
 Definition le_decide := 1.  (* from Arith/Compare *)
-Definition min := 0.            (* from Arith/Min *)
+Definition lt_wf := 0.      (* from Arith/Wf_nat *)
 
 Module Test_Require.
 
   Module M.
-    Require Import Compare.              (* Imports Min as well *)
+    Require Import Compare.              (* Imports Compare_dec as well *)
 
-    Lemma th1 : le_decide = le_decide.
+    Lemma th1 n : le_decide n = le_decide n.
       reflexivity.
     Qed.
 
-    Lemma th2 : min = min.
+    Lemma th2 n : lt_wf n = lt_wf n.
       reflexivity.
     Qed.
 
   End M.
 
-  (* Checks that Compare and List are loaded *)
+  (* Checks that Compare and Wf_nat are loaded *)
   Check Compare.le_decide.
-  Check Min.min.
+  Check Wf_nat.lt_wf.
 
 
-  (* Checks that Compare and List are _not_ imported *)
+  (* Checks that Compare and Wf_nat are _not_ imported *)
   Lemma th1 : le_decide = 1.
     reflexivity.
   Qed.
 
-  Lemma th2 : min = 0.
+  Lemma th2 : lt_wf = 0.
     reflexivity.
   Qed.
 
@@ -67,7 +68,7 @@ Module Test_Require.
     reflexivity.
   Qed.
 
-  Lemma th4 : min = 0.
+  Lemma th4 : lt_wf = 0.
     reflexivity.
   Qed.
 
@@ -77,29 +78,29 @@ End Test_Require.
 
 Module Test_Import.
   Module M.
-    Import Compare.              (* Imports Min as well *)
+    Import Compare.              (* Imports Wf_nat as well *)
 
-    Lemma th1 : le_decide = le_decide.
+    Lemma th1 n : le_decide n = le_decide n.
       reflexivity.
     Qed.
 
-    Lemma th2 : min = min.
+    Lemma th2 n : lt_wf n = lt_wf n.
       reflexivity.
     Qed.
 
   End M.
 
-  (* Checks that Compare and List are loaded *)
+  (* Checks that Compare and Wf_nat are loaded *)
   Check Compare.le_decide.
-  Check Min.min.
+  Check Wf_nat.lt_wf.
 
 
-  (* Checks that Compare and List are _not_ imported *)
+  (* Checks that Compare and Wf_nat are _not_ imported *)
   Lemma th1 : le_decide = 1.
     reflexivity.
   Qed.
 
-  Lemma th2 : min = 0.
+  Lemma th2 : lt_wf = 0.
     reflexivity.
   Qed.
 
@@ -110,7 +111,7 @@ Module Test_Import.
     reflexivity.
   Qed.
 
-  Lemma th4 : min = 0.
+  Lemma th4 : lt_wf = 0.
     reflexivity.
   Qed.
 End Test_Import.
@@ -119,25 +120,25 @@ End Test_Import.
 
 Module Test_Export.
   Module M.
-    Export Compare.              (* Exports Min as well *)
+    Export Compare.              (* Exports Wf_nat as well *)
 
-    Lemma th1 : le_decide = le_decide.
+    Lemma th1 n : le_decide n = le_decide n.
       reflexivity.
     Qed.
 
-    Lemma th2 : min = min.
+    Lemma th2 n : lt_wf n = lt_wf n.
       reflexivity.
     Qed.
 
   End M.
 
 
-  (* Checks that Compare and List are _not_ imported *)
+  (* Checks that Compare and Wf_nat are _not_ imported *)
   Lemma th1 : le_decide = 1.
     reflexivity.
   Qed.
 
-  Lemma th2 : min = 0.
+  Lemma th2 : lt_wf = 0.
     reflexivity.
   Qed.
 
@@ -146,11 +147,11 @@ Module Test_Export.
 
   Import M.
 
-  Lemma th3 : le_decide = le_decide.
+  Lemma th3 n : le_decide n = le_decide n.
     reflexivity.
   Qed.
 
-  Lemma th4 : min = min.
+  Lemma th4 n : lt_wf n = lt_wf n.
     reflexivity.
   Qed.
 End Test_Export.
@@ -160,29 +161,29 @@ End Test_Export.
 
 Module Test_Require_Export.
 
-  Definition mult_sym := 1.    (* from Arith/Mult *)
-  Definition plus_sym := 0.        (* from Arith/Plus *)
+  Definition le_decide := 1.    (* from Arith/Compare *)
+  Definition lt_wf := 0.        (* from Arith/Wf_nat *)
 
   Module M.
-    Require Export Mult.         (* Exports Plus as well *)
+    Require Export Compare.       (* Exports Wf_nat as well *)
 
-    Lemma th1 : mult_comm = mult_comm.
+    Lemma th1 n : le_decide n = le_decide n.
       reflexivity.
     Qed.
 
-    Lemma th2 : plus_comm = plus_comm.
+    Lemma th2 n : lt_wf n = lt_wf n.
       reflexivity.
     Qed.
 
   End M.
 
 
-  (* Checks that Mult and Plus are _not_ imported *)
-  Lemma th1 : mult_sym = 1.
+  (* Checks that Compare and Wf_nat are _not_ imported *)
+  Lemma th1 : le_decide = 1.
     reflexivity.
   Qed.
 
-  Lemma th2 : plus_sym = 0.
+  Lemma th2 : lt_wf = 0.
     reflexivity.
   Qed.
 
@@ -191,11 +192,11 @@ Module Test_Require_Export.
 
   Import M.
 
-  Lemma th3 : mult_comm = mult_comm.
+  Lemma th3 n : le_decide n = le_decide n.
     reflexivity.
   Qed.
 
-  Lemma th4 : plus_comm = plus_comm.
+  Lemma th4 n : lt_wf n = lt_wf n.
     reflexivity.
   Qed.
 

@@ -343,7 +343,7 @@ Proof.
   destruct (DRealQlim x (pred (2^n))%nat) as [q qmaj].
   exists q.
   rewrite Nat.succ_pred_pos in qmaj.
-    2: apply neq_0_lt, not_eq_sym, Nat.pow_nonzero; intros contra; inversion contra.
+    2: apply Nat.neq_0_lt_0, Nat.pow_nonzero; intros contra; inversion contra.
   exact qmaj.
 Qed.
 
@@ -480,7 +480,7 @@ Proof.
     apply Qplus_le_r. apply (Qle_trans _ (1 # p)).
     unfold Qle, Qnum, Qden. do 2 rewrite Z.mul_1_l.
     apply Pos2Z.pos_le_pos. apply Pos2Nat.inj_le.
-    rewrite Nat2Pos.id. apply le_S, le_refl. discriminate.
+    rewrite Nat2Pos.id. apply le_S, Nat.le_refl. discriminate.
     apply (Qmult_le_l _ _ ( (Z.pos p # 1) / (r-q))).
     rewrite <- (Qmult_0_r (Z.pos p #1)). apply Qmult_lt_l.
     reflexivity. apply Qinv_lt_0_compat.

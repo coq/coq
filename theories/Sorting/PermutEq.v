@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation Lia.
+Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation.
 
 Set Implicit Arguments.
 
@@ -85,7 +85,13 @@ Section Perm.
     rewrite multiplicity_NoDup in H, H0.
     generalize (H a) (H0 a) (H1 a); clear H H0 H1.
     do 2 rewrite multiplicity_In.
-    destruct 3; lia.
+    intros H H' [H0 H0'].
+    destruct (multiplicity (list_contents l) a) as [|[|n]],
+             (multiplicity (list_contents l') a) as [|[|n']];
+    [ tauto | intuition | | intuition | tauto | intuition |  | intuition | ]; exfalso.
+    - now inversion H'.
+    - now inversion H.
+    - now inversion H.
   Qed.
 
   (** Permutation is compatible with In. *)
@@ -223,4 +229,3 @@ Section Perm.
   Qed.
 
 End Perm.
-

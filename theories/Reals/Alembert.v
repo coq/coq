@@ -13,7 +13,6 @@ Require Import Rfunctions.
 Require Import Rseries.
 Require Import SeqProp.
 Require Import PartSum.
-Require Import Max.
 
 Local Open Scope R_scope.
 
@@ -144,10 +143,10 @@ Proof.
   apply Rabs_triang.
   rewrite Rabs_Ropp; apply Rlt_le_trans with (eps / 2 + eps / 2).
   apply Rplus_lt_compat.
-  unfold R_dist in H8; apply H8; unfold ge; apply le_trans with N;
-    [ unfold N; apply le_max_l | assumption ].
-  unfold R_dist in H9; apply H9; unfold ge; apply le_trans with N;
-    [ unfold N; apply le_max_r | assumption ].
+  unfold R_dist in H8; apply H8; unfold ge; apply Nat.le_trans with N;
+    [ unfold N; apply Nat.le_max_l | assumption ].
+  unfold R_dist in H9; apply H9; unfold ge; apply Nat.le_trans with N;
+    [ unfold N; apply Nat.le_max_r | assumption ].
   right; symmetry ; apply double_var.
   symmetry ; apply tech11; intro; unfold Vn, Wn;
     unfold Rdiv; do 2 rewrite <- (Rmult_comm (/ 2));
@@ -387,7 +386,7 @@ Proof.
   induction  n as [| n Hrecn].
   simpl; ring.
   rewrite tech5; rewrite Hrecn;
-    [ rewrite H; simpl; ring | unfold ge; apply le_O_n ].
+    [ rewrite H; simpl; ring | unfold ge; apply Nat.le_0_l ].
 Qed.
 
 (** A useful criterion of convergence for power series *)
@@ -656,7 +655,7 @@ Proof.
   rewrite tech5.
   rewrite <- Hrecn.
   rewrite Heq; simpl; ring.
-  unfold ge; apply le_O_n.
+  unfold ge; apply Nat.le_0_l.
   eapply Alembert_C5 with (k * Rabs x).
   split.
   unfold Rdiv; apply Rmult_le_pos.
@@ -719,3 +718,6 @@ Proof.
   apply Rinv_0_lt_compat; apply Rabs_pos_lt.
   red; intro H7; rewrite H7 in Hgt; elim (Rlt_irrefl _ Hgt).
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

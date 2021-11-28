@@ -49,7 +49,7 @@ Proof.
   destruct H2 as (x0,H6). remember H6 as H7. destruct H7 as (x1,(H8,H9)).
     apply Rle_trans with x0;
       [ rewrite <- H9; change (INR 0 <= INR x1); apply le_INR;
-        apply le_O_n
+        apply Nat.le_0_l
         | apply H4; assumption ].
   assert (H7 := archimed x); elim H7; clear H7; intros;
     assert (H9 : x <= IZR (up x) - 1).
@@ -61,7 +61,7 @@ Proof.
   assert (H14 : (0 <= up x)%Z).
   apply le_IZR; apply Rle_trans with x; [ apply H6 | left; assumption ].
   destruct (IZN _ H14) as (x2,H15).
-    rewrite H15, <- INR_IZR_INZ; apply le_INR; apply lt_le_S.
+    rewrite H15, <- INR_IZR_INZ; apply le_INR; apply Nat.le_succ_l.
       apply INR_lt; apply Rle_lt_trans with x;
         [ assumption | rewrite INR_IZR_INZ; rewrite <- H15; assumption ].
   assert (H10 : x = IZR (up x) - 1).
@@ -85,16 +85,16 @@ Proof.
   replace (1 + (x - 1)) with x; [ idtac | ring ]; rewrite <- H18;
     replace (1 + INR x1) with (INR (S x1)); [ idtac | rewrite S_INR; ring ].
   cut (x = INR (pred x0)).
-  intro H19; rewrite H19; apply le_INR; apply lt_le_S; apply INR_lt; rewrite H18;
+  intro H19; rewrite H19; apply le_INR; apply Nat.le_succ_l; apply INR_lt; rewrite H18;
     rewrite <- H19; assumption.
   rewrite H10; rewrite H8; rewrite <- INR_IZR_INZ;
     rewrite <- (minus_INR _ 1).
   apply f_equal;
-    case x0; [ reflexivity | intro; apply sym_eq, minus_n_O ].
+    case x0; [ reflexivity | intro; apply Nat.sub_0_r ].
   induction x0 as [|x0 Hrecx0].
     rewrite H8 in H3. rewrite <- INR_IZR_INZ in H3; simpl in H3.
       elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H6 H3)).
-    apply le_n_S; apply le_O_n.
+    apply le_n_S; apply Nat.le_0_l.
     rewrite H15 in H13; elim H12; assumption.
   split with (pred x0); unfold E in H13; elim H13; intros; elim H12; intros;
     rewrite H10 in H15; rewrite H8 in H15; rewrite <- INR_IZR_INZ in H15;
@@ -202,11 +202,11 @@ Lemma StepFun_P3 :
 Proof.
   intros; unfold adapted_couple; repeat split.
   unfold ordered_Rlist; intros; simpl in H0; inversion H0;
-    [ simpl; assumption | elim (le_Sn_O _ H2) ].
+    [ simpl; assumption | elim (Nat.nle_succ_0 _ H2) ].
   simpl; unfold Rmin; decide (Rle_dec a b) with H; reflexivity.
   simpl; unfold Rmax; decide (Rle_dec a b) with H; reflexivity.
   unfold constant_D_eq, open_interval; intros; simpl in H0;
-    inversion H0; [ reflexivity | elim (le_Sn_O _ H3) ].
+    inversion H0; [ reflexivity | elim (Nat.nle_succ_0 _ H3) ].
 Qed.
 
 Lemma StepFun_P4 : forall a b c:R, IsStepFun (fct_cte c) a b.
@@ -259,7 +259,7 @@ Proof.
   intros; unfold constant_D_eq, open_interval; intros;
     unfold constant_D_eq, open_interval in H6;
       assert (H9 : (S i < pred (length (cons r1 (cons r2 l))))%nat).
-  simpl; simpl in H0; apply lt_n_S; assumption.
+  simpl; simpl in H0; apply -> Nat.succ_lt_mono; assumption.
   assert (H10 := H6 _ H9); apply H10; assumption.
 Qed.
 
@@ -289,7 +289,7 @@ Proof.
       case (Rle_dec a b); intro; [ assumption | reflexivity ].
 
   unfold adapted_couple in H1; decompose [and] H1; intros; apply Rle_antisym.
-  apply (H3 0%nat); simpl; apply lt_O_Sn.
+  apply (H3 0%nat); simpl; apply Nat.lt_0_succ.
   simpl in H5; rewrite H2 in H5; rewrite H5; replace (Rmin b b) with (Rmax a b);
     [ rewrite <- H4; apply RList_P7;
       [ assumption | simpl; right; left; reflexivity ]
@@ -309,7 +309,7 @@ Proof.
             unfold Rmin, Rmax; case (Rle_dec a b);
               intros; elim H0; rewrite <- H5; rewrite <- H7;
                 reflexivity
-            | simpl; do 2 apply le_n_S; apply le_O_n ] ].
+            | simpl; do 2 apply le_n_S; apply Nat.le_0_l ] ].
 Qed.
 
 Lemma StepFun_P10 :
@@ -325,7 +325,7 @@ Proof.
   intros; case (Req_dec a b); intro.
   exists (cons a nil); exists nil; unfold adapted_couple_opt;
     unfold adapted_couple; unfold ordered_Rlist;
-      repeat split; try (intros; simpl in H3; elim (lt_n_O _ H3)).
+      repeat split; try (intros; simpl in H3; elim (Nat.nlt_0_r _ H3)).
   simpl; rewrite <- H2; unfold Rmin; case (Rle_dec a a); intro;
     reflexivity.
   simpl; rewrite <- H2; unfold Rmax; case (Rle_dec a a); intro;
@@ -349,20 +349,20 @@ Proof.
     unfold adapted_couple_opt; unfold adapted_couple;
       repeat split.
   unfold ordered_Rlist; intros; simpl in H8; inversion H8;
-    [ simpl; assumption | elim (le_Sn_O _ H10) ].
+    [ simpl; assumption | elim (Nat.nle_succ_0 _ H10) ].
   simpl; unfold Rmin; decide (Rle_dec a b) with H0; reflexivity.
   simpl; unfold Rmax; decide (Rle_dec a b) with H0; reflexivity.
   intros; simpl in H8; inversion H8.
   unfold constant_D_eq, open_interval; intros; simpl;
     simpl in H9; rewrite H3 in H1; unfold adapted_couple in H1;
       decompose [and] H1; apply (H16 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   unfold open_interval; simpl; rewrite H7; simpl in H13;
     rewrite H13; unfold Rmin; decide (Rle_dec a b) with H0; assumption.
-  elim (le_Sn_O _ H10).
-  intros; simpl in H8; elim (lt_n_O _ H8).
+  elim (Nat.nle_succ_0 _ H10).
+  intros; simpl in H8; elim (Nat.nlt_0_r _ H8).
   intros; simpl in H8; inversion H8;
-    [ simpl; assumption | elim (le_Sn_O _ H10) ].
+    [ simpl; assumption | elim (Nat.nle_succ_0 _ H10) ].
   assert (Hyp_min : Rmin t2 b = t2).
   unfold Rmin; decide (Rle_dec t2 b) with H5; reflexivity.
   unfold adapted_couple in H6; elim H6; clear H6; intros;
@@ -382,9 +382,9 @@ Proof.
   simpl; apply Rle_trans with s1.
   replace s1 with t2.
   apply (H12 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   simpl in H19; rewrite H19; symmetry ; apply Hyp_min.
-  apply (H16 0%nat); simpl; apply lt_O_Sn.
+  apply (H16 0%nat); simpl; apply Nat.lt_0_succ.
   change (pos_Rl (cons s2 s3) i <= pos_Rl (cons s2 s3) (S i));
     apply (H16 (S i)); simpl; assumption.
   simpl; simpl in H14; rewrite H14; reflexivity.
@@ -395,12 +395,12 @@ Proof.
     induction  i as [| i Hreci].
   simpl; simpl in H6; destruct (total_order_T x t2) as [[Hlt|Heq]|Hgt].
   apply (H17 0%nat);
-    [ simpl; apply lt_O_Sn
+    [ simpl; apply Nat.lt_0_succ
       | unfold open_interval; simpl; elim H6; intros; split;
         assumption ].
   rewrite Heq; assumption.
   rewrite H10; apply (H22 0%nat);
-    [ simpl; apply lt_O_Sn
+    [ simpl; apply Nat.lt_0_succ
       | unfold open_interval; simpl; replace s1 with t2;
         [ elim H6; intros; split; assumption
           | simpl in H19; rewrite H19; rewrite Hyp_min; reflexivity ] ].
@@ -415,9 +415,9 @@ Proof.
         simpl; apply H1.
   intros; induction  i as [| i Hreci].
   simpl; red; intro; elim Hyp_eq; apply Rle_antisym.
-  apply (H12 0%nat); simpl; apply lt_O_Sn.
+  apply (H12 0%nat); simpl; apply Nat.lt_0_succ.
   rewrite <- Hyp_min; rewrite H6; simpl in H19; rewrite <- H19;
-    apply (H16 0%nat); simpl; apply lt_O_Sn.
+    apply (H16 0%nat); simpl; apply Nat.lt_0_succ.
   elim H8; intros; rewrite H9 in H21; apply (H21 (S i)); simpl;
     simpl in H1; apply H1.
   exists (cons t1 l'); exists (cons r1 (cons r2 lf')); rewrite H9 in H6;
@@ -428,11 +428,11 @@ Proof.
   rewrite H9; unfold ordered_Rlist; intros; simpl in H1;
     induction  i as [| i Hreci].
   simpl; replace s1 with t2.
-  apply (H16 0%nat); simpl; apply lt_O_Sn.
+  apply (H16 0%nat); simpl; apply Nat.lt_0_succ.
   simpl in H14; rewrite H14; rewrite Hyp_min; reflexivity.
   change
     (pos_Rl (cons s1 (cons s2 s3)) i <= pos_Rl (cons s1 (cons s2 s3)) (S i))
-   ; apply (H12 i); simpl; apply lt_S_n;
+   ; apply (H12 i); simpl; apply Nat.succ_lt_mono;
       assumption.
   simpl; simpl in H19; apply H19.
   rewrite H9; simpl; simpl in H13; rewrite H13; unfold Rmax;
@@ -441,27 +441,27 @@ Proof.
   intros; simpl in H1; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
   simpl; rewrite H9 in H6; simpl in H6; apply (H22 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   unfold open_interval; simpl.
   replace t2 with s1.
   assumption.
   simpl in H14; rewrite H14; rewrite Hyp_min; reflexivity.
   change (f x = pos_Rl (cons r2 lf') i); clear Hreci; apply (H17 i).
-  simpl; rewrite H9 in H1; simpl in H1; apply lt_S_n; apply H1.
+  simpl; rewrite H9 in H1; simpl in H1; apply Nat.succ_lt_mono; apply H1.
   rewrite H9 in H6; unfold open_interval; apply H6.
   intros; simpl in H1; induction  i as [| i Hreci].
   simpl; rewrite H9; right; simpl; replace s1 with t2.
   assumption.
   simpl in H14; rewrite H14; rewrite Hyp_min; reflexivity.
   elim H8; intros; apply (H6 i).
-  simpl; apply lt_S_n; apply H1.
+  simpl; apply Nat.succ_lt_mono; apply H1.
   intros; rewrite H9; induction  i as [| i Hreci].
   simpl; red; intro; elim Hyp_eq; apply Rle_antisym.
-  apply (H16 0%nat); simpl; apply lt_O_Sn.
+  apply (H16 0%nat); simpl; apply Nat.lt_0_succ.
   rewrite <- Hyp_min; rewrite H6; simpl in H14; rewrite <- H14; right;
     reflexivity.
   elim H8; intros; rewrite <- H9; apply (H21 i); rewrite H9; rewrite H9 in H1;
-    simpl; simpl in H1; apply lt_S_n; apply H1.
+    simpl; simpl in H1; apply Nat.succ_lt_mono; apply H1.
   exists (cons t1 l'); exists (cons r1 (cons r2 lf')); rewrite H9 in H6;
     rewrite H3 in H1; unfold adapted_couple in H1, H6;
       decompose [and] H6; decompose [and] H1; clear H6 H1;
@@ -470,11 +470,11 @@ Proof.
   rewrite H9; unfold ordered_Rlist; intros; simpl in H1;
     induction  i as [| i Hreci].
   simpl; replace s1 with t2.
-  apply (H15 0%nat); simpl; apply lt_O_Sn.
+  apply (H15 0%nat); simpl; apply Nat.lt_0_succ.
   simpl in H13; rewrite H13; rewrite Hyp_min; reflexivity.
   change
     (pos_Rl (cons s1 (cons s2 s3)) i <= pos_Rl (cons s1 (cons s2 s3)) (S i))
-   ; apply (H11 i); simpl; apply lt_S_n;
+   ; apply (H11 i); simpl; apply Nat.succ_lt_mono;
       assumption.
   simpl; simpl in H18; apply H18.
   rewrite H9; simpl; simpl in H12; rewrite H12; unfold Rmax;
@@ -483,24 +483,24 @@ Proof.
   intros; simpl in H1; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
   simpl; rewrite H9 in H6; simpl in H6; apply (H21 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   unfold open_interval; simpl; replace t2 with s1.
   assumption.
   simpl in H13; rewrite H13; rewrite Hyp_min; reflexivity.
   change (f x = pos_Rl (cons r2 lf') i); clear Hreci; apply (H16 i).
-  simpl; rewrite H9 in H1; simpl in H1; apply lt_S_n; apply H1.
+  simpl; rewrite H9 in H1; simpl in H1; apply Nat.succ_lt_mono; apply H1.
   rewrite H9 in H6; unfold open_interval; apply H6.
   intros; simpl in H1; induction  i as [| i Hreci].
   simpl; left; assumption.
   elim H8; intros; apply (H6 i).
-  simpl; apply lt_S_n; apply H1.
+  simpl; apply Nat.succ_lt_mono; apply H1.
   intros; rewrite H9; induction  i as [| i Hreci].
   simpl; red; intro; elim Hyp_eq; apply Rle_antisym.
-  apply (H15 0%nat); simpl; apply lt_O_Sn.
+  apply (H15 0%nat); simpl; apply Nat.lt_0_succ.
   rewrite <- Hyp_min; rewrite H6; simpl in H13; rewrite <- H13; right;
     reflexivity.
   elim H8; intros; rewrite <- H9; apply (H20 i); rewrite H9; rewrite H9 in H1;
-    simpl; simpl in H1; apply lt_S_n; apply H1.
+    simpl; simpl in H1; apply Nat.succ_lt_mono; apply H1.
   rewrite H3 in H1; clear H4; unfold adapted_couple in H1; decompose [and] H1;
     clear H1; clear H H7 H9; cut (Rmax a b = b);
       [ intro; rewrite H in H5; rewrite <- H5; apply RList_P7;
@@ -519,8 +519,8 @@ Proof.
     unfold adapted_couple in H0, H1; decompose [and] H0;
       decompose [and] H1; clear H0 H1; assert (H12 : r = s1).
   simpl in H10; simpl in H5; rewrite H10; rewrite H5; reflexivity.
-  assert (H14 := H3 0%nat (lt_O_Sn _)); simpl in H14; elim H14; intro.
-  assert (H15 := H7 0%nat (lt_O_Sn _)); simpl in H15; elim H15; intro.
+  assert (H14 := H3 0%nat (Nat.lt_0_succ _)); simpl in H14; elim H14; intro.
+  assert (H15 := H7 0%nat (Nat.lt_0_succ _)); simpl in H15; elim H15; intro.
   rewrite <- H12 in H1; destruct (Rle_dec r1 s2) as [Hle|Hnle]; try assumption.
   assert (H16 : s2 < r1); auto with real.
   induction  s3 as [| r0 s3 Hrecs3].
@@ -531,8 +531,8 @@ Proof.
   clear Hrecs3; induction  lf2 as [| r5 lf2 Hreclf2].
   simpl in H11; discriminate.
   clear Hreclf2; assert (H17 : r3 = r4).
-  set (x := (r + s2) / 2); assert (H17 := H8 0%nat (lt_O_Sn _));
-    assert (H18 := H13 0%nat (lt_O_Sn _));
+  set (x := (r + s2) / 2); assert (H17 := H8 0%nat (Nat.lt_0_succ _));
+    assert (H18 := H13 0%nat (Nat.lt_0_succ _));
       unfold constant_D_eq, open_interval in H17, H18; simpl in H17;
         simpl in H18; rewrite <- (H17 x).
   rewrite <- (H18 x).
@@ -569,16 +569,16 @@ Proof.
       | assumption ].
   assert (H18 : f s2 = r3).
   apply (H8 0%nat);
-    [ simpl; apply lt_O_Sn
+    [ simpl; apply Nat.lt_0_succ
       | unfold open_interval; simpl; split; assumption ].
   assert (H19 : r3 = r5).
   assert (H19 := H7 1%nat); simpl in H19;
-    assert (H20 := H19 (lt_n_S _ _ (lt_O_Sn _))); elim H20;
+    assert (H20 := H19 (proj1 (Nat.succ_lt_mono _ _) (Nat.lt_0_succ _))); elim H20;
       intro.
   set (x := (s2 + Rmin r1 r0) / 2); assert (H22 := H8 0%nat);
     assert (H23 := H13 1%nat); simpl in H22; simpl in H23;
-      rewrite <- (H22 (lt_O_Sn _) x).
-  rewrite <- (H23 (lt_n_S _ _ (lt_O_Sn _)) x).
+      rewrite <- (H22 (Nat.lt_0_succ _) x).
+  rewrite <- (H23 (proj1 (Nat.succ_lt_mono _ _) (Nat.lt_0_succ _)) x).
   reflexivity.
   unfold open_interval; simpl; unfold x; split.
   apply Rmult_lt_reg_l with 2;
@@ -621,15 +621,15 @@ Proof.
                 | apply Rplus_le_compat_l; apply Rmin_l ]
             | discrR ] ].
   elim H2; clear H2; intros; assert (H23 := H22 1%nat); simpl in H23;
-    assert (H24 := H23 (lt_n_S _ _ (lt_O_Sn _))); elim H24;
+    assert (H24 := H23 (proj1 (Nat.succ_lt_mono _ _) (Nat.lt_0_succ _))); elim H24;
       assumption.
   elim H2; intros; assert (H22 := H20 0%nat); simpl in H22;
-    assert (H23 := H22 (lt_O_Sn _)); elim H23; intro;
+    assert (H23 := H22 (Nat.lt_0_succ _)); elim H23; intro;
       [ elim H24; rewrite <- H17; rewrite <- H19; reflexivity
         | elim H24; rewrite <- H17; assumption ].
   elim H2; clear H2; intros; assert (H17 := H16 0%nat); simpl in H17;
-    elim (H17 (lt_O_Sn _)); assumption.
-  rewrite <- H0; rewrite H12; apply (H7 0%nat); simpl; apply lt_O_Sn.
+    elim (H17 (Nat.lt_0_succ _)); assumption.
+  rewrite <- H0; rewrite H12; apply (H7 0%nat); simpl; apply Nat.lt_0_succ.
 Qed.
 
 Lemma StepFun_P12 :
@@ -676,7 +676,7 @@ Proof.
   unfold adapted_couple_opt in H2; elim H2; intros; rewrite (StepFun_P8 H4 H3);
     rewrite (StepFun_P8 H1 H3); reflexivity.
   assert (H4 := StepFun_P9 H1 H3); simpl in H4;
-    elim (le_Sn_O _ (le_S_n _ _ H4)).
+    elim (Nat.nle_succ_0 _ (le_S_n _ _ H4)).
   intros; clear H; unfold adapted_couple_opt in H3; elim H3; clear H3; intros;
     case (Req_dec a b); intro.
   rewrite (StepFun_P8 H2 H4); rewrite (StepFun_P8 H H4); reflexivity.
@@ -702,10 +702,10 @@ Proof.
   intro; unfold adapted_couple in H2, H; decompose [and] H; decompose [and] H2;
     clear H H2; set (x := (r + r1) / 2); assert (H18 := H14 0%nat);
       assert (H20 := H19 0%nat); unfold constant_D_eq, open_interval in H18, H20;
-        simpl in H18; simpl in H20; rewrite <- (H18 (lt_O_Sn _) x).
-  rewrite <- (H20 (lt_O_Sn _) x).
+        simpl in H18; simpl in H20; rewrite <- (H18 (Nat.lt_0_succ _) x).
+  rewrite <- (H20 (Nat.lt_0_succ _) x).
   reflexivity.
-  assert (H21 := H13 0%nat (lt_O_Sn _)); simpl in H21; elim H21; intro;
+  assert (H21 := H13 0%nat (Nat.lt_0_succ _)); simpl in H21; elim H21; intro;
     [ idtac | elim H7; assumption ]; unfold x;
       split.
   apply Rmult_lt_reg_l with 2;
@@ -721,7 +721,7 @@ Proof.
           [ rewrite Rmult_1_l; rewrite <- (Rplus_comm r1); rewrite double;
             apply Rplus_lt_compat_l; apply H
             | discrR ] ].
-  rewrite <- H6; assert (H21 := H13 0%nat (lt_O_Sn _)); simpl in H21; elim H21;
+  rewrite <- H6; assert (H21 := H13 0%nat (Nat.lt_0_succ _)); simpl in H21; elim H21;
     intro; [ idtac | elim H7; assumption ]; unfold x;
       split.
   apply Rmult_lt_reg_l with 2;
@@ -776,29 +776,29 @@ Proof.
   unfold adapted_couple; repeat split.
   unfold ordered_Rlist; intros; simpl in H; induction  i as [| i Hreci].
   simpl; rewrite <- H20; apply (H11 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   induction  i as [| i Hreci0].
   simpl; assumption.
   change (pos_Rl (cons s2 s3) i <= pos_Rl (cons s2 s3) (S i));
-    apply (H15 (S i)); simpl; apply lt_S_n; assumption.
+    apply (H15 (S i)); simpl; apply Nat.succ_lt_mono; assumption.
   simpl; symmetry ; apply Hyp_min.
   rewrite <- H17; reflexivity.
   simpl in H19; simpl; rewrite H19; reflexivity.
   intros; simpl in H; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
   simpl; apply (H16 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   simpl in H2; rewrite <- H20 in H2; unfold open_interval;
     simpl; apply H2.
   clear Hreci; induction  i as [| i Hreci].
   simpl; simpl in H2; rewrite H9; apply (H21 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   unfold open_interval; simpl; elim H2; intros; split.
   apply Rle_lt_trans with r1; try assumption; rewrite <- H6; apply (H11 0%nat);
-    simpl; apply lt_O_Sn.
+    simpl; apply Nat.lt_0_succ.
   assumption.
   clear Hreci; simpl; apply (H21 (S i)).
-  simpl; apply lt_S_n; assumption.
+  simpl; apply Nat.succ_lt_mono; assumption.
   unfold open_interval; apply H2.
   elim H3; clear H3; intros; split.
   rewrite H9;
@@ -830,7 +830,7 @@ Proof.
   unfold adapted_couple; repeat split.
   unfold ordered_Rlist; intros; simpl in H; induction  i as [| i Hreci].
   simpl; rewrite <- H20; apply (H11 0%nat); simpl;
-    apply lt_O_Sn.
+    apply Nat.lt_0_succ.
   rewrite H10; apply (H15 (S i)); simpl; assumption.
   simpl; symmetry ; apply Hyp_min.
   rewrite <- H17; rewrite H10; reflexivity.
@@ -838,7 +838,7 @@ Proof.
   intros; simpl in H; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
   simpl; apply (H16 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   simpl in H2; rewrite <- H20 in H2; unfold open_interval;
     simpl; apply H2.
   clear Hreci; simpl; apply (H21 (S i)).
@@ -847,11 +847,11 @@ Proof.
   elim H3; clear H3; intros; split.
   rewrite H5 in H3; intros; apply (H3 (S i)).
   simpl; replace (length lf2) with (S (pred (length lf2))).
-  apply lt_n_S; apply H12.
-  symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
-    intro; rewrite <- H13 in H12; elim (lt_n_O _ H12).
+  apply -> Nat.succ_lt_mono; apply H12.
+  apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; red;
+    intro; rewrite H13 in H12; elim (Nat.nlt_0_r _ H12).
   intros; simpl in H12; rewrite H10; rewrite H5 in H11; apply (H11 (S i));
-    simpl; apply lt_n_S; apply H12.
+    simpl; apply -> Nat.succ_lt_mono; apply H12.
   simpl; rewrite H9; unfold Rminus; rewrite Rplus_opp_r;
     rewrite Rmult_0_r; rewrite Rplus_0_l;
       change
@@ -943,7 +943,7 @@ Lemma StepFun_P20 :
     (0 < length l)%nat -> length l = S (length (FF l f)).
 Proof.
   intros l f H; induction l;
-    [ elim (lt_irrefl _ H)
+    [ elim (Nat.lt_irrefl _ H)
       | simpl; rewrite RList_P18; rewrite RList_P14; reflexivity ].
 Qed.
 
@@ -953,7 +953,7 @@ Lemma StepFun_P21 :
 Proof.
   intros * (x & H & H1 & H0 & H2 & H4).
   repeat split; try assumption.
-  apply StepFun_P20; rewrite H2; apply lt_O_Sn.
+  apply StepFun_P20; rewrite H2; apply Nat.lt_0_succ.
   intros; assert (H5 := H4 _ H3); unfold constant_D_eq, open_interval in H5;
     unfold constant_D_eq, open_interval; intros;
       induction  l as [| r l Hrecl].
@@ -1011,25 +1011,25 @@ Proof.
     (RList_P3 (cons_ORlist (cons r lf) lg)
       (pos_Rl (cons_ORlist (cons r lf) lg) 0)); intros _ H10;
     apply H10; exists 0%nat; split;
-      [ reflexivity | rewrite RList_P11; simpl; apply lt_O_Sn ].
+      [ reflexivity | rewrite RList_P11; simpl; apply Nat.lt_0_succ ].
   elim (RList_P9 (cons r lf) lg (pos_Rl (cons_ORlist (cons r lf) lg) 0));
     intros H12 _; assert (H13 := H12 H10); elim H13; intro.
   elim (RList_P3 (cons r lf) (pos_Rl (cons_ORlist (cons r lf) lg) 0));
     intros H11 _; assert (H14 := H11 H8); elim H14; intros;
       elim H15; clear H15; intros; rewrite H15; rewrite <- H6;
         elim (RList_P6 (cons r lf)); intros; apply H17;
-          [ assumption | apply le_O_n | assumption ].
+          [ assumption | apply Nat.le_0_l | assumption ].
   elim (RList_P3 lg (pos_Rl (cons_ORlist (cons r lf) lg) 0)); intros H11 _;
     assert (H14 := H11 H8); elim H14; intros; elim H15;
       clear H15; intros; rewrite H15; rewrite <- H1; elim (RList_P6 lg);
-        intros; apply H17; [ assumption | apply le_O_n | assumption ].
+        intros; apply H17; [ assumption | apply Nat.le_0_l | assumption ].
   induction  lf as [| r lf Hreclf].
   simpl; right; assumption.
   assert (H8 : In a (cons_ORlist (cons r lf) lg)).
   elim (RList_P9 (cons r lf) lg a); intros; apply H10; left;
     elim (RList_P3 (cons r lf) a); intros; apply H12;
       exists 0%nat; split;
-        [ symmetry ; assumption | simpl; apply lt_O_Sn ].
+        [ symmetry ; assumption | simpl; apply Nat.lt_0_succ ].
   apply RList_P5; [ apply RList_P2; assumption | assumption ].
   rewrite Hyp_max; apply Rle_antisym.
   induction  lf as [| r lf Hreclf].
@@ -1046,7 +1046,7 @@ Proof.
         (pred (length (cons_ORlist (cons r lf) lg)))));
     intros _ H10; apply H10;
       exists (pred (length (cons_ORlist (cons r lf) lg)));
-        split; [ reflexivity | rewrite RList_P11; simpl; apply lt_n_Sn ].
+        split; [ reflexivity | rewrite RList_P11; simpl; apply Nat.lt_succ_diag_r ].
   elim
     (RList_P9 (cons r lf) lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
@@ -1061,8 +1061,8 @@ Proof.
       elim H15; clear H15; intros; rewrite H15; rewrite <- H5;
         elim (RList_P6 (cons r lf)); intros; apply H17;
           [ assumption
-            | simpl; simpl in H14; apply lt_n_Sm_le; assumption
-            | simpl; apply lt_n_Sn ].
+            | simpl; simpl in H14; apply Nat.lt_succ_r; assumption
+            | simpl; apply Nat.lt_succ_diag_r ].
   elim
     (RList_P3 lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
@@ -1070,22 +1070,22 @@ Proof.
     intros H13 _; assert (H14 := H13 H12); elim H14; intros;
       elim H15; clear H15; intros.
   rewrite H15; assert (H17 : length lg = S (pred (length lg))).
-  apply S_pred with 0%nat; apply neq_O_lt; red; intro;
-    rewrite <- H17 in H16; elim (lt_n_O _ H16).
+  symmetry; apply Nat.lt_succ_pred with 0%nat. apply Nat.neq_0_lt_0; red; intro;
+    rewrite H17 in H16; elim (Nat.nlt_0_r _ H16).
   rewrite <- H0; elim (RList_P6 lg); intros; apply H18;
     [ assumption
-      | rewrite H17 in H16; apply lt_n_Sm_le; assumption
-      | apply lt_pred_n_n; rewrite H17; apply lt_O_Sn ].
+      | rewrite H17 in H16; apply Nat.lt_succ_r; assumption
+      | apply Nat.lt_pred_l; rewrite H17; intros Heq; discriminate ].
   induction  lf as [| r lf Hreclf].
   simpl; right; symmetry ; assumption.
   assert (H8 : In b (cons_ORlist (cons r lf) lg)).
   elim (RList_P9 (cons r lf) lg b); intros; apply H10; left;
     elim (RList_P3 (cons r lf) b); intros; apply H12;
       exists (pred (length (cons r lf))); split;
-        [ symmetry ; assumption | simpl; apply lt_n_Sn ].
+        [ symmetry ; assumption | simpl; apply Nat.lt_succ_diag_r ].
   apply RList_P7; [ apply RList_P2; assumption | assumption ].
   apply StepFun_P20; rewrite RList_P11; rewrite H2; rewrite H7; simpl;
-    apply lt_O_Sn.
+    apply Nat.lt_0_succ.
   intros; unfold constant_D_eq, open_interval; intros;
     cut
       (exists l : R,
@@ -1096,7 +1096,7 @@ Proof.
     assert
       (Hyp_cons :
         exists r : R, (exists r0 : list R, cons_ORlist lf lg = cons r r0)).
-  apply RList_P19; red; intro; rewrite H13 in H8; elim (lt_n_O _ H8).
+  apply RList_P19; red; intro; rewrite H13 in H8; elim (Nat.nlt_0_r _ H8).
   elim Hyp_cons; clear Hyp_cons; intros r [r0 Hyp_cons]; rewrite Hyp_cons;
     unfold FF; rewrite RList_P12.
   change (f x = f (pos_Rl (mid_Rlist (cons r r0) r) (S i)));
@@ -1133,11 +1133,11 @@ Proof.
   rewrite <- H6; rewrite <- (RList_P15 lf lg).
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H11.
   apply RList_P2; assumption.
-  apply le_O_n.
-  apply lt_trans with (pred (length (cons_ORlist lf lg)));
+  apply Nat.le_0_l.
+  apply Nat.lt_trans with (pred (length (cons_ORlist lf lg)));
     [ assumption
-      | apply lt_pred_n_n; apply neq_O_lt; red; intro;
-        rewrite <- H13 in H8; elim (lt_n_O _ H8) ].
+      | apply Nat.lt_pred_l; apply Nat.neq_0_lt_0; apply Nat.neq_0_lt_0; red; intro;
+        rewrite H13 in H8; elim (Nat.nlt_0_r _ H8) ].
   assumption.
   assumption.
   rewrite H1; assumption.
@@ -1146,9 +1146,9 @@ Proof.
   rewrite <- H5; rewrite <- (RList_P16 lf lg); try assumption.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H11.
   apply RList_P2; assumption.
-  apply lt_n_Sm_le; apply lt_n_S; assumption.
-  apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H13 in H8;
-    elim (lt_n_O _ H8).
+  apply Nat.lt_succ_r; apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.lt_pred_l; red; intro; rewrite H13 in H8;
+    elim (Nat.nlt_0_r _ H8).
   rewrite H0; assumption.
   set
     (I :=
@@ -1156,7 +1156,7 @@ Proof.
         pos_Rl lf j <= pos_Rl (cons_ORlist lf lg) i /\ (j < length lf)%nat);
     assert (H12 : Nbound I).
   unfold Nbound; exists (length lf); intros; unfold I in H12; elim H12;
-    intros; apply lt_le_weak; assumption.
+    intros; apply Nat.lt_le_incl; assumption.
   assert (H13 :  exists n : nat, I n).
   exists 0%nat; unfold I; split.
   apply Rle_trans with (pos_Rl (cons_ORlist lf lg) 0).
@@ -1164,20 +1164,20 @@ Proof.
   apply RList_P15; try assumption; rewrite H1; assumption.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H13.
   apply RList_P2; assumption.
-  apply le_O_n.
-  apply lt_trans with (pred (length (cons_ORlist lf lg))).
+  apply Nat.le_0_l.
+  apply Nat.lt_trans with (pred (length (cons_ORlist lf lg))).
   assumption.
-  apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H15 in H8;
-    elim (lt_n_O _ H8).
-  apply neq_O_lt; red; intro; rewrite <- H13 in H5;
+  apply Nat.lt_pred_l; red; intro; rewrite H15 in H8;
+    elim (Nat.nlt_0_r _ H8).
+  apply Nat.neq_0_lt_0; red; intro; rewrite H13 in H5;
     rewrite <- H6 in H11; rewrite <- H5 in H11; elim (Rlt_irrefl _ H11).
   assert (H14 := Nzorn H13 H12); elim H14; clear H14; intros x0 H14;
     exists (pos_Rl lf0 x0); unfold constant_D_eq, open_interval;
       intros; assert (H16 := H9 x0); assert (H17 : (x0 < pred (length lf))%nat).
   elim H14; clear H14; intros; unfold I in H14; elim H14; clear H14; intros;
-    apply lt_S_n; replace (S (pred (length lf))) with (length lf).
+    apply Nat.succ_lt_mono; replace (S (pred (length lf))) with (length lf).
   inversion H18.
-  2: apply lt_n_S; assumption.
+  2: apply -> Nat.succ_lt_mono; assumption.
   cut (x0 = pred (length lf)).
   intro; rewrite H19 in H14; rewrite H5 in H14;
     cut (pos_Rl (cons_ORlist lf lg) i < b).
@@ -1189,13 +1189,13 @@ Proof.
       (pos_Rl (cons_ORlist lf lg) (pred (length (cons_ORlist lf lg)))).
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H21.
   apply RList_P2; assumption.
-  apply lt_n_Sm_le; apply lt_n_S; assumption.
-  apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H23 in H8;
-    elim (lt_n_O _ H8).
+  apply Nat.lt_succ_r; apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.lt_pred_l; red; intro; rewrite H23 in H8;
+    elim (Nat.nlt_0_r _ H8).
   right; apply RList_P16; try assumption; rewrite H0; assumption.
   rewrite <- H20; reflexivity.
-  apply S_pred with 0%nat; apply neq_O_lt; red; intro;
-    rewrite <- H19 in H18; elim (lt_n_O _ H18).
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; red; intro;
+    rewrite H19 in H18; elim (Nat.nlt_0_r _ H18).
   assert (H18 := H16 H17); unfold constant_D_eq, open_interval in H18;
     rewrite (H18 x1).
   reflexivity.
@@ -1205,13 +1205,13 @@ Proof.
   apply Rlt_le_trans with (pos_Rl (cons_ORlist lf lg) (S i)); try assumption.
   assert (H22 : (S x0 < length lf)%nat).
   replace (length lf) with (S (pred (length lf)));
-  [ apply lt_n_S; assumption
-    | symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
-      intro; rewrite <- H22 in H21; elim (lt_n_O _ H21) ].
+  [ apply -> Nat.succ_lt_mono; assumption
+    | apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; red;
+      intro; rewrite H22 in H21; elim (Nat.nlt_0_r _ H21) ].
   elim (Rle_dec (pos_Rl lf (S x0)) (pos_Rl (cons_ORlist lf lg) i)); intro a0.
   assert (H23 : (S x0 <= x0)%nat).
   apply H20; unfold I; split; assumption.
-  elim (le_Sn_n _ H23).
+  elim (Nat.nle_succ_diag_l _ H23).
   assert (H23 : pos_Rl (cons_ORlist lf lg) i < pos_Rl lf (S x0)).
   auto with real.
   clear a0; apply RList_P17; try assumption.
@@ -1261,25 +1261,25 @@ Proof.
     (RList_P3 (cons_ORlist (cons r lf) lg)
       (pos_Rl (cons_ORlist (cons r lf) lg) 0)); intros _ H10;
     apply H10; exists 0%nat; split;
-      [ reflexivity | rewrite RList_P11; simpl; apply lt_O_Sn ].
+      [ reflexivity | rewrite RList_P11; simpl; apply Nat.lt_0_succ ].
   elim (RList_P9 (cons r lf) lg (pos_Rl (cons_ORlist (cons r lf) lg) 0));
     intros H12 _; assert (H13 := H12 H10); elim H13; intro.
   elim (RList_P3 (cons r lf) (pos_Rl (cons_ORlist (cons r lf) lg) 0));
     intros H11 _; assert (H14 := H11 H8); elim H14; intros;
       elim H15; clear H15; intros; rewrite H15; rewrite <- H6;
         elim (RList_P6 (cons r lf)); intros; apply H17;
-          [ assumption | apply le_O_n | assumption ].
+          [ assumption | apply Nat.le_0_l | assumption ].
   elim (RList_P3 lg (pos_Rl (cons_ORlist (cons r lf) lg) 0)); intros H11 _;
     assert (H14 := H11 H8); elim H14; intros; elim H15;
       clear H15; intros; rewrite H15; rewrite <- H1; elim (RList_P6 lg);
-        intros; apply H17; [ assumption | apply le_O_n | assumption ].
+        intros; apply H17; [ assumption | apply Nat.le_0_l | assumption ].
   induction  lf as [| r lf Hreclf].
   simpl; right; assumption.
   assert (H8 : In a (cons_ORlist (cons r lf) lg)).
   elim (RList_P9 (cons r lf) lg a); intros; apply H10; left;
     elim (RList_P3 (cons r lf) a); intros; apply H12;
       exists 0%nat; split;
-        [ symmetry ; assumption | simpl; apply lt_O_Sn ].
+        [ symmetry ; assumption | simpl; apply Nat.lt_0_succ ].
   apply RList_P5; [ apply RList_P2; assumption | assumption ].
   rewrite Hyp_max; apply Rle_antisym.
   induction  lf as [| r lf Hreclf].
@@ -1296,7 +1296,7 @@ Proof.
         (pred (length (cons_ORlist (cons r lf) lg)))));
     intros _ H10; apply H10;
       exists (pred (length (cons_ORlist (cons r lf) lg)));
-        split; [ reflexivity | rewrite RList_P11; simpl; apply lt_n_Sn ].
+        split; [ reflexivity | rewrite RList_P11; simpl; apply Nat.lt_succ_diag_r ].
   elim
     (RList_P9 (cons r lf) lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
@@ -1310,8 +1310,8 @@ Proof.
       elim H15; clear H15; intros; rewrite H15; rewrite <- H5;
         elim (RList_P6 (cons r lf)); intros; apply H17;
           [ assumption
-            | simpl; simpl in H14; apply lt_n_Sm_le; assumption
-            | simpl; apply lt_n_Sn ].
+            | simpl; simpl in H14; apply Nat.lt_succ_r; assumption
+            | simpl; apply Nat.lt_succ_diag_r ].
   elim
     (RList_P3 lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
@@ -1319,22 +1319,22 @@ Proof.
     intros H13 _; assert (H14 := H13 H12); elim H14; intros;
       elim H15; clear H15; intros; rewrite H15;
         assert (H17 : length lg = S (pred (length lg))).
-  apply S_pred with 0%nat; apply neq_O_lt; red; intro;
-    rewrite <- H17 in H16; elim (lt_n_O _ H16).
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; red; intro;
+    rewrite H17 in H16; elim (Nat.nlt_0_r _ H16).
   rewrite <- H0; elim (RList_P6 lg); intros; apply H18;
     [ assumption
-      | rewrite H17 in H16; apply lt_n_Sm_le; assumption
-      | apply lt_pred_n_n; rewrite H17; apply lt_O_Sn ].
+      | rewrite H17 in H16; apply Nat.lt_succ_r; assumption
+      | apply Nat.lt_pred_l; rewrite H17; intros Heq; discriminate ].
   induction  lf as [| r lf Hreclf].
   simpl; right; symmetry ; assumption.
   assert (H8 : In b (cons_ORlist (cons r lf) lg)).
   elim (RList_P9 (cons r lf) lg b); intros; apply H10; left;
     elim (RList_P3 (cons r lf) b); intros; apply H12;
       exists (pred (length (cons r lf))); split;
-        [ symmetry ; assumption | simpl; apply lt_n_Sn ].
+        [ symmetry ; assumption | simpl; apply Nat.lt_succ_diag_r ].
   apply RList_P7; [ apply RList_P2; assumption | assumption ].
   apply StepFun_P20; rewrite RList_P11; rewrite H7; rewrite H2; simpl;
-    apply lt_O_Sn.
+    apply Nat.lt_0_succ.
   unfold constant_D_eq, open_interval; intros;
     cut
       (exists l : R,
@@ -1345,7 +1345,7 @@ Proof.
     assert
       (Hyp_cons :
         exists r : R, (exists r0 : list R, cons_ORlist lf lg = cons r r0)).
-  apply RList_P19; red; intro; rewrite H13 in H8; elim (lt_n_O _ H8).
+  apply RList_P19; red; intro; rewrite H13 in H8; elim (Nat.nlt_0_r _ H8).
   elim Hyp_cons; clear Hyp_cons; intros r [r0 Hyp_cons]; rewrite Hyp_cons;
     unfold FF; rewrite RList_P12.
   change (g x = g (pos_Rl (mid_Rlist (cons r r0) r) (S i)));
@@ -1382,20 +1382,20 @@ Proof.
   rewrite <- H6; rewrite <- (RList_P15 lf lg); try assumption.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H11.
   apply RList_P2; assumption.
-  apply le_O_n.
-  apply lt_trans with (pred (length (cons_ORlist lf lg)));
+  apply Nat.le_0_l.
+  apply Nat.lt_trans with (pred (length (cons_ORlist lf lg)));
     [ assumption
-      | apply lt_pred_n_n; apply neq_O_lt; red; intro;
-        rewrite <- H13 in H8; elim (lt_n_O _ H8) ].
+      | apply Nat.lt_pred_l; red; intro;
+        rewrite H13 in H8; elim (Nat.nlt_0_r _ H8) ].
   rewrite H1; assumption.
   apply Rlt_le_trans with (pos_Rl (cons_ORlist lf lg) (S i)).
   elim H10; intros; apply Rlt_trans with x; assumption.
   rewrite <- H5; rewrite <- (RList_P16 lf lg); try assumption.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H11.
   apply RList_P2; assumption.
-  apply lt_n_Sm_le; apply lt_n_S; assumption.
-  apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H13 in H8;
-    elim (lt_n_O _ H8).
+  apply Nat.lt_succ_r; apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.lt_pred_l; red; intro; rewrite H13 in H8;
+    elim (Nat.nlt_0_r _ H8).
   rewrite H0; assumption.
   set
     (I :=
@@ -1403,7 +1403,7 @@ Proof.
         pos_Rl lg j <= pos_Rl (cons_ORlist lf lg) i /\ (j < length lg)%nat);
     assert (H12 : Nbound I).
   unfold Nbound; exists (length lg); intros; unfold I in H12; elim H12;
-    intros; apply lt_le_weak; assumption.
+    intros; apply Nat.lt_le_incl; assumption.
   assert (H13 :  exists n : nat, I n).
   exists 0%nat; unfold I; split.
   apply Rle_trans with (pos_Rl (cons_ORlist lf lg) 0).
@@ -1411,20 +1411,20 @@ Proof.
     try assumption; rewrite H1; assumption.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H13;
     [ apply RList_P2; assumption
-      | apply le_O_n
-      | apply lt_trans with (pred (length (cons_ORlist lf lg)));
+      | apply Nat.le_0_l
+      | apply Nat.lt_trans with (pred (length (cons_ORlist lf lg)));
         [ assumption
-          | apply lt_pred_n_n; apply neq_O_lt; red; intro;
-            rewrite <- H15 in H8; elim (lt_n_O _ H8) ] ].
-  apply neq_O_lt; red; intro; rewrite <- H13 in H0;
+          | apply Nat.lt_pred_l; red; intro;
+            rewrite H15 in H8; elim (Nat.nlt_0_r _ H8) ] ].
+  apply Nat.neq_0_lt_0; red; intro; rewrite H13 in H0;
     rewrite <- H1 in H11; rewrite <- H0 in H11; elim (Rlt_irrefl _ H11).
   assert (H14 := Nzorn H13 H12); elim H14; clear H14; intros x0 H14;
     exists (pos_Rl lg0 x0); unfold constant_D_eq, open_interval;
       intros; assert (H16 := H4 x0); assert (H17 : (x0 < pred (length lg))%nat).
   elim H14; clear H14; intros; unfold I in H14; elim H14; clear H14; intros;
-    apply lt_S_n; replace (S (pred (length lg))) with (length lg).
+    apply Nat.succ_lt_mono; replace (S (pred (length lg))) with (length lg).
   inversion H18.
-  2: apply lt_n_S; assumption.
+  2: apply -> Nat.succ_lt_mono; assumption.
   cut (x0 = pred (length lg)).
   intro; rewrite H19 in H14; rewrite H0 in H14;
     cut (pos_Rl (cons_ORlist lf lg) i < b).
@@ -1436,14 +1436,14 @@ Proof.
       (pos_Rl (cons_ORlist lf lg) (pred (length (cons_ORlist lf lg)))).
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H21.
   apply RList_P2; assumption.
-  apply lt_n_Sm_le; apply lt_n_S; assumption.
-  apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H23 in H8;
-    elim (lt_n_O _ H8).
+  apply Nat.lt_succ_r; apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.lt_pred_l; red; intro; rewrite H23 in H8;
+    elim (Nat.nlt_0_r _ H8).
   right; rewrite H0; rewrite <- H5; apply RList_P16; try assumption.
   rewrite H0; assumption.
   rewrite <- H20; reflexivity.
-  apply S_pred with 0%nat; apply neq_O_lt; red; intro;
-    rewrite <- H19 in H18; elim (lt_n_O _ H18).
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; red; intro;
+    rewrite H19 in H18; elim (Nat.nlt_0_r _ H18).
   assert (H18 := H16 H17); unfold constant_D_eq, open_interval in H18;
     rewrite (H18 x1).
   reflexivity.
@@ -1453,12 +1453,12 @@ Proof.
   apply Rlt_le_trans with (pos_Rl (cons_ORlist lf lg) (S i)); try assumption.
   assert (H22 : (S x0 < length lg)%nat).
   replace (length lg) with (S (pred (length lg))).
-  apply lt_n_S; assumption.
-  symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
-    intro; rewrite <- H22 in H21; elim (lt_n_O _ H21).
+  apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; red;
+    intro; rewrite H22 in H21; elim (Nat.nlt_0_r _ H21).
   elim (Rle_dec (pos_Rl lg (S x0)) (pos_Rl (cons_ORlist lf lg) i)); intro a0.
   assert (H23 : (S x0 <= x0)%nat);
-    [ apply H20; unfold I; split; assumption | elim (le_Sn_n _ H23) ].
+    [ apply H20; unfold I; split; assumption | elim (Nat.nle_succ_diag_l _ H23) ].
   assert (H23 : pos_Rl (cons_ORlist lf lg) i < pos_Rl lg (S x0)).
   auto with real.
   clear a0; apply RList_P17; try assumption;
@@ -1494,7 +1494,7 @@ Proof.
   intros i H8 x1 H10; unfold open_interval in H10, H9, H4;
     rewrite (H9 _ H8 _ H10); rewrite (H4 _ H8 _ H10);
       assert (H11 : l1 <> nil).
-  red; intro H11; rewrite H11 in H8; elim (lt_n_O _ H8).
+  red; intro H11; rewrite H11 in H8; elim (Nat.nlt_0_r _ H8).
   destruct (RList_P19 _ H11) as (r,(r0,H12));
     rewrite H12; unfold FF;
       change
@@ -1523,7 +1523,7 @@ Proof.
                     | discrR ] ] ]).
   rewrite <- H12; assumption.
   rewrite RList_P14; simpl; rewrite H12 in H8; simpl in H8;
-    apply lt_n_S; apply H8.
+    apply -> Nat.succ_lt_mono; apply H8.
 Qed.
 
 Lemma StepFun_P27 :
@@ -1629,7 +1629,7 @@ Proof.
   rewrite Rabs_mult; rewrite (Rabs_right (r2 - r1));
     [ apply Rplus_le_compat_l; apply H; apply RList_P4 with r1; assumption
       | apply Rge_minus; apply Rle_ge; apply (H0 0%nat); simpl;
-        apply lt_O_Sn ].
+        apply Nat.lt_0_succ ].
 Qed.
 
 Lemma StepFun_P34 :
@@ -1667,7 +1667,7 @@ Proof.
   rewrite H4; right; ring.
   do 2 rewrite <- (Rmult_comm (r0 - r)); apply Rmult_le_compat_l.
   apply Rge_le; apply Rge_minus; apply Rle_ge; apply (H0 0%nat); simpl;
-    apply lt_O_Sn.
+    apply Nat.lt_0_succ.
   apply H3; split.
   apply Rmult_lt_reg_l with 2.
   prove_sup0.
@@ -1676,7 +1676,7 @@ Proof.
   assert (H5 : r = a).
   apply H1.
   rewrite H5; rewrite Rmult_1_l; rewrite double; apply Rplus_lt_compat_l.
-  assert (H6 := H0 0%nat (lt_O_Sn _)).
+  assert (H6 := H0 0%nat (Nat.lt_0_succ _)).
   simpl in H6.
   elim H6; intro.
   rewrite H5 in H7; apply H7.
@@ -1693,14 +1693,14 @@ Proof.
   elim (RList_P6 (cons r (cons r0 r1))); intros; apply H5.
   assumption.
   simpl; apply le_n_S.
-  apply le_O_n.
-  simpl; apply lt_n_Sn.
+  apply Nat.le_0_l.
+  simpl; apply Nat.lt_succ_diag_r.
   reflexivity.
   apply Rle_lt_trans with (r + b).
   apply Rplus_le_compat_l; assumption.
   rewrite (Rplus_comm r); apply Rplus_lt_compat_l.
   apply Rlt_le_trans with r0.
-  assert (H6 := H0 0%nat (lt_O_Sn _)).
+  assert (H6 := H0 0%nat (Nat.lt_0_succ _)).
   simpl in H6.
   elim H6; intro.
   apply H7.
@@ -1714,7 +1714,7 @@ Proof.
   intros; apply H3; elim H4; intros; split; try assumption.
   apply Rle_lt_trans with r0; try assumption.
   rewrite <- H1.
-  simpl; apply (H0 0%nat); simpl; apply lt_O_Sn.
+  simpl; apply (H0 0%nat); simpl; apply Nat.lt_0_succ.
 Qed.
 
 Lemma StepFun_P36 :
@@ -1769,11 +1769,11 @@ Proof.
   intros a H H0 H1; simpl in H0; simpl in H1;
     exists (mkStepFun (StepFun_P4 a b (f b))); split.
   reflexivity.
-  intros; elim (lt_n_O _ H2).
+  intros; elim (Nat.nlt_0_r _ H2).
   intros; destruct l as [| r1 l].
   simpl in H1; simpl in H0; exists (mkStepFun (StepFun_P4 a b (f b))); split.
   reflexivity.
-  intros i H2; elim (lt_n_O _ H2).
+  intros i H2; elim (Nat.nlt_0_r _ H2).
   intros; assert (H2 : ordered_Rlist (cons r1 l)).
   apply RList_P4 with r; assumption.
   assert (H3 : pos_Rl (cons r1 l) 0 = r1).
@@ -1799,13 +1799,13 @@ Proof.
   unfold ordered_Rlist; intros; simpl in H9;
     induction  i as [| i Hreci].
   simpl; rewrite H12; replace (Rmin r1 b) with r1.
-  simpl in H0; rewrite <- H0; apply (H 0%nat); simpl; apply lt_O_Sn.
+  simpl in H0; rewrite <- H0; apply (H 0%nat); simpl; apply Nat.lt_0_succ.
   unfold Rmin; decide (Rle_dec r1 b) with H7; reflexivity.
-  apply (H10 i); apply lt_S_n.
+  apply (H10 i); apply Nat.succ_lt_mono.
   replace (S (pred (length lg))) with (length lg).
   apply H9.
-  apply S_pred with 0%nat; apply neq_O_lt; intro; rewrite <- H14 in H9;
-    elim (lt_n_O _ H9).
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; intro; rewrite H14 in H9;
+    elim (Nat.nlt_0_r _ H9).
   simpl; assert (H14 : a <= b).
   rewrite <- H1; simpl in H0; rewrite <- H0; apply RList_P7;
     [ assumption | left; reflexivity ].
@@ -1832,11 +1832,11 @@ Proof.
     (constant_D_eq g' (open_interval (pos_Rl lg i) (pos_Rl lg (S i)))
       (pos_Rl lg2 i)); clear Hreci; assert (H16 := H15 i);
     assert (H17 : (i < pred (length lg))%nat).
-  apply lt_S_n.
+  apply Nat.succ_lt_mono.
   replace (S (pred (length lg))) with (length lg).
   assumption.
-  apply S_pred with 0%nat; apply neq_O_lt; red; intro;
-    rewrite <- H14 in H9; elim (lt_n_O _ H9).
+  symmetry; apply Nat.lt_succ_pred with 0%nat; apply Nat.neq_0_lt_0; red; intro;
+    rewrite H14 in H9; elim (Nat.nlt_0_r _ H9).
   assert (H18 := H16 H17); unfold constant_D_eq, open_interval in H18;
     unfold constant_D_eq, open_interval; intros;
       assert (H19 := H18 _ H14); rewrite <- H19; unfold g';
@@ -1849,9 +1849,9 @@ Proof.
   assumption.
   elim (RList_P3 lg (pos_Rl lg i)); intros; apply H21; exists i; split.
   reflexivity.
-  apply lt_trans with (pred (length lg)); try assumption.
-  apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H22 in H17;
-    elim (lt_n_O _ H17).
+  apply Nat.lt_trans with (pred (length lg)); try assumption.
+  apply Nat.lt_pred_l; red; intro; rewrite H22 in H17;
+    elim (Nat.nlt_0_r _ H17).
   unfold Rmin; decide (Rle_dec r1 b) with H7; reflexivity.
   exists (mkStepFun H8); split.
   simpl; unfold g'; decide (Rle_dec r1 b) with H7; assumption.
@@ -1867,7 +1867,7 @@ Proof.
         (co_interval (pos_Rl (cons r1 l) i) (pos_Rl (cons r1 l) (S i)))
         (f (pos_Rl (cons r1 l) i))); assert (H10 := H6 i);
       assert (H11 : (i < pred (length (cons r1 l)))%nat).
-  simpl; apply lt_S_n; assumption.
+  simpl; apply Nat.succ_lt_mono; assumption.
   assert (H12 := H10 H11); unfold constant_D_eq, co_interval in H12;
     unfold constant_D_eq, co_interval; intros;
       rewrite <- (H12 _ H13); simpl; unfold g';
@@ -1878,9 +1878,9 @@ Proof.
       change (pos_Rl (cons r1 l) 0 <= pos_Rl (cons r1 l) i);
         elim (RList_P6 (cons r1 l)); intros; apply H15;
           [ assumption
-            | apply le_O_n
-            | simpl; apply lt_trans with (length l);
-              [ apply lt_S_n; assumption | apply lt_n_Sn ] ].
+            | apply Nat.le_0_l
+            | simpl; apply Nat.lt_trans with (length l);
+              [ apply Nat.succ_lt_mono; assumption | apply Nat.lt_succ_diag_r ] ].
 Qed.
 
 Lemma StepFun_P39 :
@@ -1947,20 +1947,19 @@ Proof.
         | left; assumption ].
   red; intro; rewrite H1 in H11; discriminate.
   apply StepFun_P20.
-  rewrite app_length; apply neq_O_lt; red; intro.
-  assert (H2 : (length l1 + length l2)%nat = 0%nat).
-  symmetry ; apply H1.
-  elim (plus_is_O _ _ H2); intros; rewrite H12 in H6; discriminate.
+  rewrite app_length; apply Nat.neq_0_lt_0; red; intro.
+  assert (List.length l1 = 0)%nat as H12 by now destruct (List.length l1); inversion H1.
+  rewrite H12 in H6; discriminate.
   unfold constant_D_eq, open_interval; intros;
-    elim (le_or_lt (S (S i)) (length l1)); intro.
+    elim (Nat.le_gt_cases (S (S i)) (length l1)); intro.
   assert (H14 : pos_Rl (app l1 l2) i = pos_Rl l1 i).
-  apply RList_P26; apply lt_S_n; apply le_lt_n_Sm; apply le_S_n;
-    apply le_trans with (length l1); [ assumption | apply le_n_Sn ].
+  apply RList_P26; apply Nat.succ_lt_mono; apply Nat.lt_succ_r; apply Nat.succ_le_mono;
+    apply Nat.le_trans with (length l1); [ assumption | apply Nat.le_succ_diag_r ].
   assert (H15 : pos_Rl (app l1 l2) (S i) = pos_Rl l1 (S i)).
-  apply RList_P26; apply lt_S_n; apply le_lt_n_Sm; assumption.
+  apply RList_P26; apply Nat.succ_lt_mono; apply Nat.lt_succ_r; assumption.
   rewrite H14 in H2; rewrite H15 in H2; assert (H16 : (2 <= length l1)%nat).
-  apply le_trans with (S (S i));
-    [ repeat apply le_n_S; apply le_O_n | assumption ].
+  apply Nat.le_trans with (S (S i));
+    [ repeat apply -> Nat.succ_le_mono; apply Nat.le_0_l | assumption ].
   elim (RList_P20 _ H16); intros r1 [r2 [r3 H17]]; rewrite H17;
     change
       (f x = pos_Rl (map f (mid_Rlist (app (cons r2 r3) l2) r1)) i)
@@ -1969,12 +1968,12 @@ Proof.
   simpl; assert (H18 := H8 0%nat);
     unfold constant_D_eq, open_interval in H18;
       assert (H19 : (0 < pred (length l1))%nat).
-  rewrite H17; simpl; apply lt_O_Sn.
+  rewrite H17; simpl; apply Nat.lt_0_succ.
   assert (H20 := H18 H19); repeat rewrite H20.
   reflexivity.
   assert (H21 : r1 <= r2).
   rewrite H17 in H3; apply (H3 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   elim H21; intro.
   split.
   rewrite H17; simpl; apply Rmult_lt_reg_l with 2;
@@ -2005,11 +2004,11 @@ Proof.
         rewrite H15; assert (H18 := H8 (S i));
           unfold constant_D_eq, open_interval in H18;
             assert (H19 : (S i < pred (length l1))%nat).
-  apply lt_pred; apply lt_S_n; apply le_lt_n_Sm; assumption.
+  apply -> Nat.lt_succ_lt_pred; apply Nat.succ_lt_mono; apply Nat.lt_succ_r; assumption.
   assert (H20 := H18 H19); repeat rewrite H20.
   reflexivity.
   rewrite <- H17; assert (H21 : pos_Rl l1 (S i) <= pos_Rl l1 (S (S i))).
-  apply (H3 (S i)); apply lt_pred; apply lt_S_n; apply le_lt_n_Sm; assumption.
+  apply (H3 (S i)); apply -> Nat.lt_succ_lt_pred; apply Nat.succ_lt_mono; apply Nat.lt_succ_r; assumption.
   elim H21; intro.
   split.
   apply Rmult_lt_reg_l with 2;
@@ -2028,40 +2027,40 @@ Proof.
   elim H2; intros; rewrite H22 in H23;
     elim (Rlt_irrefl _ (Rlt_trans _ _ _ H23 H24)).
   assumption.
-  simpl; rewrite H17 in H1; simpl in H1; apply lt_S_n; assumption.
+  simpl; rewrite H17 in H1; simpl in H1; apply Nat.succ_lt_mono; assumption.
   rewrite RList_P14; rewrite H17 in H1; simpl in H1; apply H1.
   inversion H12.
   assert (H16 : pos_Rl (app l1 l2) (S i) = b).
   rewrite RList_P29.
-  rewrite H15; rewrite <- minus_n_n; rewrite H10; unfold Rmin;
+  rewrite H15; rewrite Nat.sub_diag; rewrite H10; unfold Rmin;
     case (Rle_dec b c) as [|[]]; [ reflexivity | left; assumption ].
   rewrite H15; apply le_n.
   induction  l1 as [| r l1 Hrecl1].
   simpl in H15; discriminate.
-  clear Hrecl1; simpl in H1; simpl; apply lt_n_S; assumption.
+  clear Hrecl1; simpl in H1; simpl; apply -> Nat.succ_lt_mono; assumption.
   assert (H17 : pos_Rl (app l1 l2) i = b).
   rewrite RList_P26.
   replace i with (pred (length l1));
   [ rewrite H4; unfold Rmax; case (Rle_dec a b) as [|[]];
     [ reflexivity | left; assumption ]
     | rewrite H15; reflexivity ].
-  rewrite H15; apply lt_n_Sn.
+  rewrite H15; apply Nat.lt_succ_diag_r.
   rewrite H16 in H2; rewrite H17 in H2; elim H2; intros;
     elim (Rlt_irrefl _ (Rlt_trans _ _ _ H14 H18)).
   assert (H16 : pos_Rl (app l1 l2) i = pos_Rl l2 (i - length l1)).
   apply RList_P29.
-  apply le_S_n; assumption.
-  apply lt_le_trans with (pred (length (app l1 l2)));
-    [ assumption | apply le_pred_n ].
+  apply Nat.succ_le_mono; assumption.
+  apply Nat.lt_le_trans with (pred (length (app l1 l2)));
+    [ assumption | apply Nat.le_pred_l ].
   assert
     (H17 : pos_Rl (app l1 l2) (S i) = pos_Rl l2 (S (i - length l1))).
   replace (S (i - length l1)) with (S i - length l1)%nat.
   apply RList_P29.
-  apply le_S_n; apply le_trans with (S i); [ assumption | apply le_n_Sn ].
+  apply le_S_n; apply Nat.le_trans with (S i); [ assumption | apply Nat.le_succ_diag_r ].
   induction  l1 as [| r l1 Hrecl1].
   simpl in H6; discriminate.
-  clear Hrecl1; simpl in H1; simpl; apply lt_n_S; assumption.
-  symmetry ; apply minus_Sn_m; apply le_S_n; assumption.
+  clear Hrecl1; simpl in H1; simpl; apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.sub_succ_l, Nat.succ_le_mono; assumption.
   assert (H18 : (2 <= length l1)%nat).
   clear f c l2 lf2 H0 H3 H8 H7 H10 H9 H11 H13 i H1 x H2 H12 m H14 H15 H16 H17;
     induction  l1 as [| r l1 Hrecl1].
@@ -2071,14 +2070,14 @@ Proof.
   unfold Rmin, Rmax; case (Rle_dec a b) as [|[]];
     [ assumption | left; assumption ].
   rewrite <- H5 in H0; rewrite <- H4 in H0; elim (Rlt_irrefl _ H0).
-  clear Hrecl1; simpl; repeat apply le_n_S; apply le_O_n.
+  clear Hrecl1; simpl; repeat apply -> Nat.succ_le_mono; apply Nat.le_0_l.
   elim (RList_P20 _ H18); intros r1 [r2 [r3 H19]]; rewrite H19;
     change
       (f x = pos_Rl (map f (mid_Rlist (app (cons r2 r3) l2) r1)) i)
      ; rewrite RList_P12.
   induction  i as [| i Hreci].
-  assert (H20 := le_S_n _ _ H15); assert (H21 := le_trans _ _ _ H18 H20);
-    elim (le_Sn_O _ H21).
+  assert (H20 := le_S_n _ _ H15); assert (H21 := Nat.le_trans _ _ _ H18 H20);
+    elim (Nat.nle_succ_0 _ H21).
   clear Hreci; rewrite RList_P13.
   rewrite H19 in H16; rewrite H19 in H17;
     change
@@ -2091,24 +2090,24 @@ Proof.
           in H17; rewrite H17; assert (H20 := H13 (S i - length l1)%nat);
             unfold constant_D_eq, open_interval in H20;
               assert (H21 : (S i - length l1 < pred (length l2))%nat).
-  apply lt_pred; rewrite minus_Sn_m.
-  apply plus_lt_reg_l with (length l1); rewrite <- le_plus_minus.
+  apply Nat.lt_succ_lt_pred; rewrite <- Nat.sub_succ_l.
+  apply Nat.add_lt_mono_l with (length l1); rewrite Nat.add_comm, Nat.sub_add.
   rewrite H19 in H1; simpl in H1; rewrite H19; simpl;
-    rewrite app_length in H1; apply lt_n_S; assumption.
-  apply le_trans with (S i); [ apply le_S_n; assumption | apply le_n_Sn ].
-  apply le_S_n; assumption.
+    rewrite app_length in H1; apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.le_trans with (S i); [ apply Nat.succ_le_mono; assumption | apply Nat.le_succ_diag_r ].
+  apply Nat.succ_le_mono; assumption.
   assert (H22 := H20 H21); repeat rewrite H22.
   reflexivity.
   rewrite <- H19;
     assert
       (H23 : pos_Rl l2 (S i - length l1) <= pos_Rl l2 (S (S i - length l1))).
-  apply H7; apply lt_pred.
-  rewrite minus_Sn_m.
-  apply plus_lt_reg_l with (length l1); rewrite <- le_plus_minus.
+  apply H7; apply Nat.lt_succ_lt_pred.
+  rewrite <- Nat.sub_succ_l.
+  apply Nat.add_lt_mono_l with (length l1); rewrite Nat.add_comm, Nat.sub_add.
   rewrite H19 in H1; simpl in H1; rewrite H19; simpl;
-    rewrite app_length in H1; apply lt_n_S; assumption.
-  apply le_trans with (S i); [ apply le_S_n; assumption | apply le_n_Sn ].
-  apply le_S_n; assumption.
+    rewrite app_length in H1; apply -> Nat.succ_lt_mono; assumption.
+  apply Nat.le_trans with (S i); [ apply Nat.succ_le_mono; assumption | apply Nat.le_succ_diag_r ].
+  apply Nat.succ_le_mono; assumption.
   elim H23; intro.
   split.
   apply Rmult_lt_reg_l with 2;
@@ -2136,7 +2135,7 @@ Proof.
       pos_Rl (app l1 l2) (S (S i)) = pos_Rl l2 (S (S i - length l1))).
   rewrite H19; simpl; simpl in H17; apply H17.
   rewrite <- H23; rewrite <- H24; assumption.
-  simpl; rewrite H19 in H1; simpl in H1; apply lt_S_n; assumption.
+  simpl; rewrite H19 in H1; simpl in H1; apply Nat.succ_lt_mono; assumption.
   rewrite RList_P14; rewrite H19 in H1; simpl in H1; simpl; apply H1.
 Qed.
 
@@ -2438,19 +2437,19 @@ Proof.
       | elim H0; intros; apply Rle_trans with c; assumption ].
   elim H0; clear H0; intros; unfold adapted_couple; repeat split.
   rewrite H6; unfold ordered_Rlist; intros; simpl in H8; inversion H8;
-    [ simpl; assumption | elim (le_Sn_O _ H10) ].
+    [ simpl; assumption | elim (Nat.nle_succ_0 _ H10) ].
   simpl; unfold Rmin; decide (Rle_dec a c) with H; assumption.
   simpl; unfold Rmax; decide (Rle_dec a c) with H; reflexivity.
   unfold constant_D_eq, open_interval; intros; simpl in H8;
     inversion H8.
   simpl; assert (H10 := H7 0%nat);
     assert (H12 : (0 < pred (length (cons r (cons r1 r2))))%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   apply (H10 H12); unfold open_interval; simpl;
     rewrite H11 in H9; simpl in H9; elim H9; clear H9;
       intros; split; try assumption.
   apply Rlt_le_trans with c; assumption.
-  elim (le_Sn_O _ H11).
+  elim (Nat.nle_succ_0 _ H11).
   cut (adapted_couple f r1 b (cons r1 r2) lf1).
   cut (r1 <= c <= b).
   intros.
@@ -2468,10 +2467,10 @@ Proof.
   unfold ordered_Rlist; intros; simpl in H; induction  i as [| i Hreci].
   simpl; replace r4 with r1.
   apply (H5 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   simpl in H12; rewrite H12; unfold Rmin; case (Rle_dec r1 c) as [|[]];
     [ reflexivity | left; assumption ].
-  apply (H9 i); simpl; apply lt_S_n; assumption.
+  apply (H9 i); simpl; apply Nat.succ_lt_mono; assumption.
   simpl; unfold Rmin; case (Rle_dec a c) as [|[]];
     [ assumption | elim H0; intros; assumption ].
   replace (Rmax a c) with (Rmax r1 c).
@@ -2486,7 +2485,7 @@ Proof.
     induction  i as [| i Hreci].
   simpl; assert (H17 := H10 0%nat);
     assert (H18 : (0 < pred (length (cons r (cons r1 r2))))%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   apply (H17 H18); unfold open_interval; simpl; simpl in H4;
     elim H4; clear H4; intros; split; try assumption;
       replace r1 with r4.
@@ -2494,7 +2493,7 @@ Proof.
   simpl in H12; rewrite H12; unfold Rmin; case (Rle_dec r1 c) as [|[]];
     [ reflexivity | left; assumption ].
   clear Hreci; simpl; apply H15.
-  simpl; apply lt_S_n; assumption.
+  simpl; apply Nat.succ_lt_mono; assumption.
   unfold open_interval; apply H4.
   split.
   left; assumption.
@@ -2560,7 +2559,7 @@ Proof.
   intros; simpl in H; induction  i as [| i Hreci].
   unfold constant_D_eq, open_interval; intros; simpl;
     apply (H7 0%nat).
-  simpl; apply lt_O_Sn.
+  simpl; apply Nat.lt_0_succ.
   unfold open_interval; simpl; simpl in H6; elim H6; clear H6;
     intros; split; try assumption; apply Rle_lt_trans with c;
       try assumption; replace r with a.

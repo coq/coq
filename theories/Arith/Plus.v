@@ -8,190 +8,146 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Properties of addition.
+(** Properties of addition. *)
 
- This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+(** * This file is OBSOLETE, see [Arith_base] instead. *)
 
- [Nat.add] is defined in [Init/Nat.v] as:
-<<
-Fixpoint add (n m:nat) : nat :=
-  match n with
-  | O => m
-  | S p => S (p + m)
-  end
-where "n + m" := (add n m) : nat_scope.
->>
-*)
+Require Export Arith_prebase.
 
-Require Import PeanoNat.
 
 Local Open Scope nat_scope.
 
 (** * Neutrality of 0, commutativity, associativity *)
 
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_0_l instead.")]
 Notation plus_0_l := Nat.add_0_l (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_0_r instead.")]
 Notation plus_0_r := Nat.add_0_r (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_comm instead.")]
 Notation plus_comm := Nat.add_comm (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_assoc instead.")]
 Notation plus_assoc := Nat.add_assoc (only parsing).
-
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_shuffle3 instead.")]
 Notation plus_permute := Nat.add_shuffle3 (only parsing).
-
-Definition plus_Snm_nSm : forall n m, S n + m = n + S m :=
- Peano.plus_n_Sm.
-
-Lemma plus_assoc_reverse n m p : n + m + p = n + (m + p).
-Proof.
-  symmetry. apply Nat.add_assoc.
-Qed.
+#[local]
+Definition plus_Snm_nSm_stt : forall n m, S n + m = n + S m := Peano.plus_n_Sm.
+Opaque plus_Snm_nSm_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_succ_r instead.")]
+Notation plus_Snm_nSm := plus_Snm_nSm_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_assoc instead.")]
+Notation plus_assoc_reverse := Arith_prebase.plus_assoc_reverse_stt.
 
 (** * Simplification *)
 
-Lemma plus_reg_l n m p : p + n = p + m -> n = m.
-Proof.
- apply Nat.add_cancel_l.
-Qed.
-
-Lemma plus_le_reg_l n m p : p + n <= p + m -> n <= m.
-Proof.
- apply Nat.add_le_mono_l.
-Qed.
-
-Lemma plus_lt_reg_l n m p : p + n < p + m -> n < m.
-Proof.
- apply Nat.add_lt_mono_l.
-Qed.
+#[local]
+Definition plus_reg_l_stt := fun n m p => proj1 (Nat.add_cancel_l n m p).
+Opaque plus_reg_l_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_cancel_l instead.")]
+Notation plus_reg_l := plus_reg_l_stt.
+#[local]
+Definition plus_le_reg_l_stt := fun n m p => proj2 (Nat.add_le_mono_l n m p).
+Opaque plus_le_reg_l_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_le_mono_l instead.")]
+Notation plus_le_reg_l := plus_le_reg_l_stt.
+#[local]
+Definition plus_lt_reg_l_stt := fun n m p => proj2 (Nat.add_lt_mono_l n m p).
+Opaque plus_lt_reg_l_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_lt_mono_l instead.")]
+Notation plus_lt_reg_l := plus_lt_reg_l_stt.
 
 (** * Compatibility with order *)
 
-Lemma plus_le_compat_l n m p : n <= m -> p + n <= p + m.
-Proof.
- apply Nat.add_le_mono_l.
-Qed.
+#[local]
+Definition plus_le_compat_l_stt := fun n m p => proj1 (Nat.add_le_mono_l n m p).
+Opaque plus_le_compat_l_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_le_mono_l instead.")]
+Notation plus_le_compat_l := plus_le_compat_l_stt.
+#[local]
+Definition plus_le_compat_r_stt := fun n m p => proj1 (Nat.add_le_mono_r n m p).
+Opaque plus_le_compat_r_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_le_mono_r instead.")]
+Notation plus_le_compat_r := plus_le_compat_r_stt.
+#[local]
+Definition plus_lt_compat_l_stt := fun n m p => proj1 (Nat.add_lt_mono_l n m p).
+Opaque plus_lt_compat_l_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_lt_mono_l instead.")]
+Notation plus_lt_compat_l := plus_lt_compat_l_stt.
+#[local]
+Definition plus_lt_compat_r_stt := fun n m p => proj1 (Nat.add_lt_mono_r n m p).
+Opaque plus_lt_compat_r_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_lt_mono_r instead.")]
+Notation plus_lt_compat_r := plus_lt_compat_r_stt.
 
-Lemma plus_le_compat_r n m p : n <= m -> n + p <= m + p.
-Proof.
- apply Nat.add_le_mono_r.
-Qed.
-
-Lemma plus_lt_compat_l n m p : n < m -> p + n < p + m.
-Proof.
- apply Nat.add_lt_mono_l.
-Qed.
-
-Lemma plus_lt_compat_r n m p : n < m -> n + p < m + p.
-Proof.
- apply Nat.add_lt_mono_r.
-Qed.
-
-Lemma plus_le_compat n m p q : n <= m -> p <= q -> n + p <= m + q.
-Proof.
- apply Nat.add_le_mono.
-Qed.
-
-Lemma plus_le_lt_compat n m p q : n <= m -> p < q -> n + p < m + q.
-Proof.
- apply Nat.add_le_lt_mono.
-Qed.
-
-Lemma plus_lt_le_compat n m p q : n < m -> p <= q -> n + p < m + q.
-Proof.
- apply Nat.add_lt_le_mono.
-Qed.
-
-Lemma plus_lt_compat n m p q : n < m -> p < q -> n + p < m + q.
-Proof.
- apply Nat.add_lt_mono.
-Qed.
-
-Lemma le_plus_l n m : n <= n + m.
-Proof.
- apply Nat.le_add_r.
-Qed.
-
-Lemma le_plus_r n m : m <= n + m.
-Proof.
- rewrite Nat.add_comm. apply Nat.le_add_r.
-Qed.
-
-Theorem le_plus_trans n m p : n <= m -> n <= m + p.
-Proof.
-  intros. now rewrite <- Nat.le_add_r.
-Qed.
-
-Theorem lt_plus_trans n m p : n < m -> n < m + p.
-Proof.
-  intros. apply Nat.lt_le_trans with m. trivial. apply Nat.le_add_r.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_le_mono instead.")]
+Notation plus_le_compat := Nat.add_le_mono (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_le_lt_mono instead.")]
+Notation plus_le_lt_compat := Nat.add_le_lt_mono (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_lt_le_mono instead.")]
+Notation plus_lt_le_compat := Nat.add_lt_le_mono (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_lt_mono instead.")]
+Notation plus_lt_compat := Nat.add_lt_mono (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_r instead.")]
+Notation le_plus_l := Nat.le_add_r (only parsing).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_r instead.")]
+Notation le_plus_r := Arith_prebase.le_plus_r_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_r instead.")]
+Notation le_plus_trans := Arith_prebase.le_plus_trans_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_r instead.")]
+Notation lt_plus_trans := Arith_prebase.lt_plus_trans_stt.
 
 (** * Inversion lemmas *)
 
-Lemma plus_is_O n m : n + m = 0 -> n = 0 /\ m = 0.
+#[local]
+Definition plus_is_O_stt n m : n + m = 0 -> n = 0 /\ m = 0.
 Proof.
   destruct n; now split.
 Qed.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete.")]
+Notation plus_is_O := plus_is_O_stt.
 
-Definition plus_is_one m n :
+#[local]
+Definition plus_is_one_stt m n :
   m + n = 1 -> {m = 0 /\ n = 1} + {m = 1 /\ n = 0}.
 Proof.
   destruct m as [| m]; auto.
   destruct m; auto.
   discriminate.
 Defined.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete.")]
+Notation plus_is_one := plus_is_one_stt.
 
 (** * Derived properties *)
 
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_shuffle1 instead.")]
 Notation plus_permute_2_in_4 := Nat.add_shuffle1 (only parsing).
-
-(** * Tail-recursive plus *)
-
-(** [tail_plus] is an alternative definition for [plus] which is
-    tail-recursive, whereas [plus] is not. This can be useful
-    when extracting programs. *)
-
-Fixpoint tail_plus n m : nat :=
-  match n with
-    | O => m
-    | S n => tail_plus n (S m)
-  end.
-
-Lemma plus_tail_plus : forall n m, n + m = tail_plus n m.
-Proof.
-intro n; induction n as [| n IHn]; simpl; auto.
-intro m; rewrite <- IHn; simpl; auto.
-Qed.
 
 (** * Discrimination *)
 
-Lemma succ_plus_discr n m : n <> S (m+n).
-Proof.
- apply Nat.succ_add_discr.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.succ_add_discr instead.")]
+Notation succ_plus_discr := Nat.succ_add_discr (only parsing).
+#[local]
+Definition n_SSn_stt : forall n, n <> S (S n) := fun n => Nat.succ_add_discr 1 n.
+Opaque n_SSn_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.succ_add_discr instead.")]
+Notation n_SSn := n_SSn_stt.
+#[local]
+Definition n_SSSn_stt : forall n, n <> S (S (S n)) := fun n => Nat.succ_add_discr 2 n.
+Opaque n_SSSn_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.succ_add_discr instead.")]
+Notation n_SSSn := n_SSSn_stt.
+#[local]
+Definition n_SSSSn_stt : forall n, n <> S (S (S (S n))) := fun n => Nat.succ_add_discr 3 n.
+Opaque n_SSSSn_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.succ_add_discr instead.")]
+Notation n_SSSSn := n_SSSSn_stt.
 
-Lemma n_SSn n : n <> S (S n).
-Proof (succ_plus_discr n 1).
-
-Lemma n_SSSn n : n <> S (S (S n)).
-Proof (succ_plus_discr n 2).
-
-Lemma n_SSSSn n : n <> S (S (S (S n))).
-Proof (succ_plus_discr n 3).
-
-
-(** * Compatibility Hints *)
-
-#[global]
-Hint Immediate plus_comm : arith.
-#[global]
-Hint Resolve plus_assoc plus_assoc_reverse : arith.
-#[global]
-Hint Resolve plus_le_compat_l plus_le_compat_r : arith.
-#[global]
-Hint Resolve le_plus_l le_plus_r le_plus_trans : arith.
-#[global]
-Hint Immediate lt_plus_trans : arith.
-#[global]
-Hint Resolve plus_lt_compat_l plus_lt_compat_r : arith.
-
-(** For compatibility, we "Require" the same files as before *)
+(** * Tail-recursive [plus] *)
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.tail_add instead.")]
+Notation tail_plus := Nat.tail_add (only parsing).
+#[local]
+Definition plus_tail_plus_stt := fun n m => eq_sym (Nat.tail_add_spec n m).
+Opaque plus_tail_plus_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.tail_add_spec instead.")]
+Notation plus_tail_plus := plus_tail_plus_stt.
 
 Require Import Le Lt.

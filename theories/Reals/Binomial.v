@@ -21,7 +21,7 @@ Proof.
   intros; unfold C; replace (n - (n - i))%nat with i.
   rewrite Rmult_comm.
   reflexivity.
-  apply plus_minus; rewrite plus_comm; apply le_plus_minus; assumption.
+  symmetry; apply Nat.add_sub_eq_l, Nat.sub_add; assumption.
 Qed.
 
 Lemma pascal_step2 :
@@ -42,7 +42,7 @@ Proof.
   apply not_O_INR; discriminate.
   apply INR_fact_neq_0.
   intro; reflexivity.
-  apply minus_Sn_m; assumption.
+  symmetry; apply Nat.sub_succ_l; assumption.
 Qed.
 
 Lemma pascal_step3 :
@@ -69,9 +69,9 @@ Proof.
   apply INR_fact_neq_0.
   apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
   apply INR_fact_neq_0.
-  rewrite minus_Sn_m.
+  rewrite <- Nat.sub_succ_l.
   simpl; reflexivity.
-  apply lt_le_S; assumption.
+  apply -> Nat.le_succ_l; assumption.
   intro; reflexivity.
 Qed.
 
@@ -88,21 +88,19 @@ Proof.
   rewrite Rmult_comm; replace (S i) with (S n - (n - i))%nat.
   rewrite <- pascal_step2.
   apply pascal_step1.
-  apply le_trans with n.
+  apply Nat.le_trans with n.
   apply le_minusni_n.
-  apply lt_le_weak; assumption.
-  apply le_n_Sn.
+  apply Nat.lt_le_incl; assumption.
+  apply Nat.le_succ_diag_r.
   apply le_minusni_n.
-  apply lt_le_weak; assumption.
-  rewrite <- minus_Sn_m.
+  apply Nat.lt_le_incl; assumption.
+  rewrite Nat.sub_succ_l.
   cut ((n - (n - i))%nat = i).
   intro; rewrite H0; reflexivity.
-  symmetry ; apply plus_minus.
-  rewrite plus_comm; rewrite le_plus_minus_r.
-  reflexivity.
-  apply lt_le_weak; assumption.
-  apply le_minusni_n; apply lt_le_weak; assumption.
-  apply lt_le_weak; assumption.
+  apply Nat.add_sub_eq_l, Nat.sub_add.
+  apply Nat.lt_le_incl; assumption.
+  apply le_minusni_n; apply Nat.lt_le_incl; assumption.
+  apply Nat.lt_le_incl; assumption.
   unfold Rdiv.
   repeat rewrite S_INR.
   rewrite minus_INR.
@@ -117,7 +115,7 @@ Proof.
   ring.
   rewrite <- S_INR.
   apply not_O_INR; discriminate.
-  apply lt_le_weak; assumption.
+  apply Nat.lt_le_incl; assumption.
 Qed.
 
   (*********************)
@@ -135,7 +133,7 @@ Proof.
   rewrite tech5.
   cut (forall p:nat, C p p = 1).
   cut (forall p:nat, C p 0 = 1).
-  intros; rewrite H0; rewrite <- minus_n_n; rewrite Rmult_1_l.
+  intros; rewrite H0; rewrite Nat.sub_diag; rewrite Rmult_1_l.
   replace (y ^ 0) with 1; [ rewrite Rmult_1_r | simpl; reflexivity ].
   induction  n as [| n Hrecn0].
   simpl; do 2 rewrite H; ring.
@@ -169,39 +167,39 @@ Proof.
   replace (pred N) with n.
   ring.
   unfold N; simpl; reflexivity.
-  unfold N; apply lt_O_Sn.
+  unfold N; apply Nat.lt_0_succ.
   unfold Cn; rewrite H; simpl; ring.
   apply sum_eq.
   intros; apply H1.
-  unfold N; apply le_lt_trans with n; [ assumption | apply lt_n_Sn ].
+  unfold N; apply Nat.le_lt_trans with n; [ assumption | apply Nat.lt_succ_diag_r ].
   reflexivity.
-  unfold An; fold N; rewrite <- minus_n_n; rewrite H0;
+  unfold An; fold N; rewrite Nat.sub_diag; rewrite H0;
     simpl; ring.
   apply sum_eq.
   intros; unfold An, Bn.
   change (S N - S i)%nat with (N - i)%nat.
   rewrite <- pascal;
     [ ring
-      | apply le_lt_trans with n; [ assumption | unfold N; apply lt_n_Sn ] ].
+      | apply Nat.le_lt_trans with n; [ assumption | unfold N; apply Nat.lt_succ_diag_r ] ].
   unfold N; reflexivity.
-  unfold N; apply lt_O_Sn.
+  unfold N; apply Nat.lt_0_succ.
   rewrite <- (Rmult_comm y); rewrite scal_sum; apply sum_eq.
   intros; replace (S N - i)%nat with (S (N - i)).
   replace (S (N - i)) with (N - i + 1)%nat; [ idtac | ring ].
   rewrite pow_add; replace (y ^ 1) with y; [ idtac | simpl; ring ];
     ring.
-  apply minus_Sn_m; assumption.
+  symmetry; apply Nat.sub_succ_l; assumption.
   rewrite <- (Rmult_comm x); rewrite scal_sum; apply sum_eq.
   intros; replace (S i) with (i + 1)%nat; [ idtac | ring ]; rewrite pow_add;
     replace (x ^ 1) with x; [ idtac | simpl; ring ];
       ring.
   intro; unfold C.
   replace (INR (fact 0)) with 1; [ idtac | reflexivity ].
-  replace (p - 0)%nat with p; [ idtac | apply minus_n_O ].
+  replace (p - 0)%nat with p; [ idtac | symmetry; apply Nat.sub_0_r ].
   rewrite Rmult_1_l; unfold Rdiv; rewrite <- Rinv_r_sym;
     [ reflexivity | apply INR_fact_neq_0 ].
   intro; unfold C.
-  replace (p - p)%nat with 0%nat; [ idtac | apply minus_n_n ].
+  replace (p - p)%nat with 0%nat; [ idtac | symmetry; apply Nat.sub_diag ].
   replace (INR (fact 0)) with 1; [ idtac | reflexivity ].
   rewrite Rmult_1_r; unfold Rdiv; rewrite <- Rinv_r_sym;
     [ reflexivity | apply INR_fact_neq_0 ].

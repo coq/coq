@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import PeanoNat Plus Mult Lt.
+Require Import PeanoNat.
 Local Open Scope nat_scope.
 
 (** Factorial *)
@@ -23,7 +23,8 @@ Arguments fact n%nat.
 
 Lemma lt_O_fact n : 0 < fact n.
 Proof.
-  induction n; simpl; auto with arith.
+  induction n; simpl; auto.
+  apply Nat.lt_lt_add_r; assumption.
 Qed.
 
 Lemma fact_neq_0 n : fact n <> 0.
@@ -37,3 +38,6 @@ Proof.
   - apply le_n.
   - simpl. transitivity (fact m). trivial. apply Nat.le_add_r.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Plus Mult Lt.

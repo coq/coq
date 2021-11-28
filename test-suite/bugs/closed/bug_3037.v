@@ -1,6 +1,6 @@
 (* Anomaly before 4a8950ec7a0d9f2b216e67e69b446c064590a8e9 *)
 
-Require Import Recdef.
+Require Import Arith_base Recdef.
 
 Function f_R (a: nat) {wf (fun x y: nat => False)  a}:Prop:=
   match a:nat with

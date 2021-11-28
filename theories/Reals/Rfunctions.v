@@ -151,10 +151,8 @@ Proof.
   apply pow_lt; auto with real.
   apply Rlt_trans with (r2 := 1); auto with real.
   apply Rlt_minus; auto with real.
-  apply Rlt_pow_R1; auto with arith.
-  apply plus_lt_reg_l with (p := n); auto with arith.
-  rewrite le_plus_minus_r; auto with arith; rewrite <- plus_n_O; auto.
-  rewrite plus_comm; auto with arith.
+  apply Rlt_pow_R1; [ | apply lt_minus_O_lt ]; assumption.
+  apply Nat.sub_add, Nat.lt_le_incl; assumption.
 Qed.
 #[global]
 Hint Resolve Rlt_pow: real.
@@ -194,7 +192,7 @@ Proof.
   simpl; rewrite Rmult_0_l; unfold Rle; right; auto.
   unfold Rle; left; generalize Rmult_gt_0_compat; unfold Rgt;
     intro; fold (Rsqr x);
-      apply (H3 (INR (S n1)) (Rsqr x) (lt_INR_0 (S n1) (lt_O_Sn n1)));
+      apply (H3 (INR (S n1)) (Rsqr x) (lt_INR_0 (S n1) (Nat.lt_0_succ n1)));
         fold (x > 0) in H;
           apply (Rlt_0_sqr x (Rlt_dichotomy_converse x 0 (or_intror (x < 0) H))).
   rewrite (S_INR n0); ring.
@@ -481,8 +479,7 @@ Proof.
   apply Rmult_le_compat_l.
   apply pow_le; left; apply Rlt_le_trans with 1; [ apply Rlt_0_1 | assumption ].
   apply pow_R1_Rle; assumption.
-  rewrite plus_comm.
-  symmetry ; apply le_plus_minus; assumption.
+  apply Nat.sub_add; assumption.
 Qed.
 
 Lemma pow1 : forall n:nat, 1 ^ n = 1.
@@ -608,13 +605,12 @@ Proof.
  - rewrite Pos2Nat.inj_sub by trivial.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat n)) by auto with real.
-   rewrite plus_comm, le_plus_minus_r by auto with real.
+   rewrite Nat.sub_add; [ | apply Nat.lt_le_incl; assumption ].
    rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
  - rewrite Pos2Nat.inj_sub by trivial.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat m)) by auto with real.
-   rewrite plus_comm, le_plus_minus_r by auto with real.
-   reflexivity.
+   rewrite Nat.sub_add; [ reflexivity | apply Nat.lt_le_incl; assumption ].
 Qed.
 
 Lemma powerRZ_add :

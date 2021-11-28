@@ -1045,7 +1045,7 @@ Proof.
     assert (0 < inject_Q (Z.of_nat (S n) #1)) as nPos.
     { apply inject_Q_lt. unfold Qlt, Qnum, Qden.
       do 2 rewrite Z.mul_1_r. apply Z2Nat.inj_lt. discriminate.
-      apply Zle_0_nat. rewrite Nat2Z.id. apply le_n_S, le_0_n. }
+      apply Zle_0_nat. rewrite Nat2Z.id. apply -> Nat.succ_le_mono; apply Nat.le_0_l. }
     assert (b * (/ inject_Q (Z.of_nat (S n) #1)) (inr nPos) < -(a*b)).
     { apply (CReal_mult_lt_reg_r (inject_Q (Z.of_nat (S n) #1))). apply nPos.
       rewrite CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r.

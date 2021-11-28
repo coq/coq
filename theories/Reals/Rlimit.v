@@ -469,7 +469,7 @@ Proof.
   apply Rabs_pos_lt; assumption.
   apply Rabs_pos_lt; assumption.
   apply Rinv_0_lt_compat; cut (0%nat <> 2%nat);
-    [ intro H17; generalize (lt_INR_0 2 (neq_O_lt 2 H17)); unfold INR;
+    [ intro H17; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H17))); unfold INR;
       intro H18; assumption
       | discriminate ].
   replace (Rabs (f x) * Rabs l * / 2 * / Rabs (f x)) with (Rabs l / 2).
@@ -517,7 +517,7 @@ Proof.
   unfold Rdiv; apply Rmult_lt_0_compat.
   apply Rabs_pos_lt; assumption.
   apply Rinv_0_lt_compat; cut (0%nat <> 2%nat);
-    [ intro H17; generalize (lt_INR_0 2 (neq_O_lt 2 H17)); unfold INR;
+    [ intro H17; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H17))); unfold INR;
       intro; assumption
       | discriminate ].
   pattern (Rabs l) at 3; rewrite double_var.
@@ -535,13 +535,13 @@ Proof.
   assumption.
   apply Rmult_lt_0_compat. apply Rsqr_pos_lt; assumption.
   apply Rinv_0_lt_compat; cut (0%nat <> 2%nat);
-    [ intro H3; generalize (lt_INR_0 2 (neq_O_lt 2 H3)); unfold INR;
+    [ intro H3; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H3))); unfold INR;
       intro; assumption
       | discriminate ].
   change (0 < Rabs l / 2); unfold Rdiv; apply Rmult_lt_0_compat;
     [ apply Rabs_pos_lt; assumption
       | apply Rinv_0_lt_compat; cut (0%nat <> 2%nat);
-        [ intro H3; generalize (lt_INR_0 2 (neq_O_lt 2 H3)); unfold INR;
+        [ intro H3; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H3))); unfold INR;
           intro; assumption
           | discriminate ] ].
 Qed.

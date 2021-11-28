@@ -128,7 +128,7 @@ Proof.
         | generalize (Rlt_le 0 2 Hyp); intro H1; assert (Hyp2 : 0 < 3);
           [ prove_sup0
             | generalize (Rlt_le 0 3 Hyp2); intro H2;
-              generalize (lt_INR_0 1 (neq_O_lt 1 H0));
+              generalize (lt_INR_0 1 (proj1 (Nat.neq_0_lt_0 1) (Nat.neq_sym 0 1 H0)));
                 unfold INR; intro H3;
                   generalize (Rplus_lt_compat_l 2 0 1 H3);
                     rewrite Rplus_comm; rewrite Rplus_0_l; replace (2 + 1) with 3;

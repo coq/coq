@@ -8,126 +8,74 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Properties of subtraction between natural numbers.
+(** Properties of subtraction between natural numbers. *)
 
- This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+(** * This file is OBSOLETE, see [Arith_base] instead. *)
 
- [minus] is now an alias for [Nat.sub], which is defined in [Init/Nat.v] as:
-<<
-Fixpoint sub (n m:nat) : nat :=
-  match n, m with
-  | S k, S l => k - l
-  | _, _ => n
-  end
-where "n - m" := (sub n m) : nat_scope.
->>
-*)
+Require Export Arith_prebase.
 
-Require Import PeanoNat Lt Le.
 
 Local Open Scope nat_scope.
 
 (** * 0 is right neutral *)
 
-Lemma minus_n_O n : n = n - 0.
-Proof.
- symmetry. apply Nat.sub_0_r.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_0_r instead.")]
+Notation minus_n_O := Arith_prebase.minus_n_O_stt.
 
 (** * Permutation with successor *)
 
-Lemma minus_Sn_m n m : m <= n -> S (n - m) = S n - m.
-Proof.
- intros. symmetry. now apply Nat.sub_succ_l.
-Qed.
-
-Theorem pred_of_minus n : pred n = n - 1.
-Proof.
- symmetry. apply Nat.sub_1_r.
-Qed.
-
-Register pred_of_minus as num.nat.pred_of_minus.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_succ_l instead.")]
+Notation minus_Sn_m := Arith_prebase.minus_Sn_m_stt.
+#[local]
+Definition pred_of_minus_stt := fun n => eq_sym (Nat.sub_1_r n).
+Opaque pred_of_minus_stt.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_1_r instead.")]
+Notation pred_of_minus:= pred_of_minus_stt.
 
 (** * Diagonal *)
 
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_diag instead.")]
 Notation minus_diag := Nat.sub_diag (only parsing). (* n - n = 0 *)
-
-Lemma minus_diag_reverse n : 0 = n - n.
-Proof.
- symmetry. apply Nat.sub_diag.
-Qed.
-
-Notation minus_n_n := minus_diag_reverse.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_diag instead.")]
+Notation minus_diag_reverse := Arith_prebase.minus_diag_reverse_stt.
+#[local]
+Definition minus_n_n_stt := fun n => eq_sym (Nat.sub_diag n).
+Opaque minus_n_n_stt.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_diag instead.")]
+Notation minus_n_n := minus_n_n_stt.
 
 (** * Simplification *)
 
-Lemma minus_plus_simpl_l_reverse n m p : n - m = p + n - (p + m).
-Proof.
- now rewrite Nat.sub_add_distr, Nat.add_comm, Nat.add_sub.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete.")]
+Notation minus_plus_simpl_l_reverse := Arith_prebase.minus_plus_simpl_l_reverse_stt.
 
 (** * Relation with plus *)
 
-Lemma plus_minus n m p : n = m + p -> p = n - m.
-Proof.
- symmetry. now apply Nat.add_sub_eq_l.
-Qed.
-
-Lemma minus_plus n m : n + m - n = m.
-Proof.
- rewrite Nat.add_comm. apply Nat.add_sub.
-Qed.
-
-Lemma le_plus_minus_r n m : n <= m -> n + (m - n) = m.
-Proof.
- rewrite Nat.add_comm. apply Nat.sub_add.
-Qed.
-
-Lemma le_plus_minus n m : n <= m -> m = n + (m - n).
-Proof.
- intros. symmetry. rewrite Nat.add_comm. now apply Nat.sub_add.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.add_sub_eq_l instead.")]
+Notation plus_minus := Arith_prebase.plus_minus_stt.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.add_sub instead.")]
+Notation minus_plus := Arith_prebase.minus_plus_stt.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_add instead.")]
+Notation le_plus_minus_r := Arith_prebase.le_plus_minus_r_stt.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_add instead.")]
+Notation le_plus_minus := Arith_prebase.le_plus_minus_stt.
 
 (** * Relation with order *)
 
-Notation minus_le_compat_r :=
-  Nat.sub_le_mono_r (only parsing). (* n <= m -> n - p <= m - p. *)
-
-Notation minus_le_compat_l :=
-  Nat.sub_le_mono_l (only parsing). (* n <= m -> p - m <= p - n. *)
-
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_le_mono_r instead.")]
+Notation minus_le_compat_r := Nat.sub_le_mono_r (only parsing). (* n <= m -> n - p <= m - p. *)
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_le_mono_l instead.")]
+Notation minus_le_compat_l := Nat.sub_le_mono_l (only parsing). (* n <= m -> p - m <= p - n. *)
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.le_sub_l instead.")]
 Notation le_minus := Nat.le_sub_l (only parsing). (* n - m <= n *)
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_lt instead.")]
 Notation lt_minus := Nat.sub_lt (only parsing). (* m <= n -> 0 < m -> n-m < n *)
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.lt_add_lt_sub_r instead.")]
+Notation lt_O_minus_lt := Arith_prebase.lt_O_minus_lt_stt.
+#[local]
+Definition not_le_minus_0_stt := fun n m Hn => proj2 (Nat.sub_0_le n m) (Nat.lt_le_incl _ _ (proj2 (Nat.lt_nge _ _) Hn)).
+Opaque not_le_minus_0_stt.
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_0_le instead.")]
+Notation not_le_minus_0 := not_le_minus_0_stt.
 
-Lemma lt_O_minus_lt n m : 0 < n - m -> m < n.
-Proof.
- apply Nat.lt_add_lt_sub_r.
-Qed.
-
-Theorem not_le_minus_0 n m : ~ m <= n -> n - m = 0.
-Proof.
- intros. now apply Nat.sub_0_le, Nat.lt_le_incl, Nat.lt_nge.
-Qed.
-
-(** * Hints *)
-
-#[global]
-Hint Resolve minus_n_O: arith.
-#[global]
-Hint Resolve minus_Sn_m: arith.
-#[global]
-Hint Resolve minus_diag_reverse: arith.
-#[global]
-Hint Resolve minus_plus_simpl_l_reverse: arith.
-#[global]
-Hint Immediate plus_minus: arith.
-#[global]
-Hint Resolve minus_plus: arith.
-#[global]
-Hint Resolve le_plus_minus: arith.
-#[global]
-Hint Resolve le_plus_minus_r: arith.
-#[global]
-Hint Resolve lt_minus: arith.
-#[global]
-Hint Immediate lt_O_minus_lt: arith.
+Require Import Lt Le.

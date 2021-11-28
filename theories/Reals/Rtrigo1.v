@@ -685,14 +685,14 @@ Proof.
     apply Rmult_lt_compat_l.
   apply pow_lt; assumption.
   rewrite <- H1; apply Rmult_lt_reg_l with (INR (fact (2 * n + 1))).
-  apply lt_INR_0; apply neq_O_lt.
+  apply lt_INR_0; apply Nat.neq_0_lt_0.
   assert (H2 := fact_neq_0 (2 * n + 1)).
-  red in |- *; intro; elim H2; symmetry  in |- *; assumption.
+  red in |- *; intro; elim H2; assumption.
   rewrite <- Rinv_r_sym.
   apply Rmult_lt_reg_l with (INR (fact (2 * S n + 1))).
-  apply lt_INR_0; apply neq_O_lt.
+  apply lt_INR_0; apply Nat.neq_0_lt_0.
   assert (H2 := fact_neq_0 (2 * S n + 1)).
-  red in |- *; intro; elim H2; symmetry  in |- *; assumption.
+  red in |- *; intro; elim H2; assumption.
   rewrite (Rmult_comm (INR (fact (2 * S n + 1)))); repeat rewrite Rmult_assoc;
     rewrite <- Rinv_l_sym.
   do 2 rewrite Rmult_1_r; apply Rle_lt_trans with (INR (fact (2 * n + 1)) * 4).
@@ -713,9 +713,9 @@ Proof.
   repeat rewrite <- Rmult_assoc.
   rewrite <- (Rmult_comm (INR (fact (2 * n + 1)))).
   apply Rmult_lt_compat_l.
-  apply lt_INR_0; apply neq_O_lt.
+  apply lt_INR_0; apply Nat.neq_0_lt_0.
   assert (H2 := fact_neq_0 (2 * n + 1)).
-  red in |- *; intro; elim H2; symmetry  in |- *; assumption.
+  red in |- *; intro; elim H2; assumption.
   do 2 rewrite S_INR; rewrite plus_INR; rewrite mult_INR; set (x := INR n);
     unfold INR in |- *.
   replace (((1 + 1) * x + 1 + 1 + 1) * ((1 + 1) * x + 1 + 1)) with (4 * x * x + 10 * x + 6);

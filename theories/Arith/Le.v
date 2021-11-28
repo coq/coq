@@ -8,79 +8,58 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Order on natural numbers.
+(** Order on natural numbers. *)
 
- This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+(** * This file is OBSOLETE, see [Arith_base] instead. *)
 
- [le] is defined in [Init/Peano.v] as:
-<<
-Inductive le (n:nat) : nat -> Prop :=
-  | le_n : n <= n
-  | le_S : forall m:nat, n <= m -> n <= S m
+Require Export Arith_prebase.
 
-where "n <= m" := (le n m) : nat_scope.
->>
-*)
-
-Require Import PeanoNat.
-
-Local Open Scope nat_scope.
 
 (** * [le] is an order on [nat] *)
 
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_refl instead.")]
 Notation le_refl := Nat.le_refl (only parsing).
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_trans instead.")]
 Notation le_trans := Nat.le_trans (only parsing).
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_antisym instead.")]
 Notation le_antisym := Nat.le_antisymm (only parsing).
-
-#[global]
-Hint Resolve le_trans: arith.
-#[global]
-Hint Immediate le_antisym: arith.
 
 (** * Properties of [le] w.r.t 0 *)
 
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_0_l instead.")]
 Notation le_0_n := Nat.le_0_l (only parsing).  (* 0 <= n *)
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.nle_succ_0 instead.")]
 Notation le_Sn_0 := Nat.nle_succ_0 (only parsing).  (* ~ S n <= 0 *)
-
-Lemma le_n_0_eq n : n <= 0 -> 0 = n.
-Proof.
- intros. symmetry. now apply Nat.le_0_r.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_0_r instead.")]
+Notation le_n_0_eq := Arith_prebase.le_n_0_eq_stt.
 
 (** * Properties of [le] w.r.t successor *)
 
-(** See also [Nat.succ_le_mono]. *)
-
-Theorem le_n_S : forall n m, n <= m -> S n <= S m.
-Proof Peano.le_n_S.
-
-Theorem le_S_n : forall n m, S n <= S m -> n <= m.
-Proof Peano.le_S_n.
-
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.succ_le_mono instead.")]
+Notation le_n_S := Peano.le_n_S (only parsing).
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.succ_le_mono instead.")]
+Notation le_S_n := Peano.le_S_n (only parsing).
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_succ_diag_r instead.")]
 Notation le_n_Sn := Nat.le_succ_diag_r (only parsing). (* n <= S n *)
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.nle_succ_diag_l instead.")]
 Notation le_Sn_n := Nat.nle_succ_diag_l (only parsing). (* ~ S n <= n *)
-
-Theorem le_Sn_le : forall n m, S n <= m -> n <= m.
-Proof Nat.lt_le_incl.
-
-#[global]
-Hint Resolve le_0_n le_Sn_0: arith.
-#[global]
-Hint Resolve le_n_S le_n_Sn le_Sn_n : arith.
-#[global]
-Hint Immediate le_n_0_eq le_Sn_le le_S_n : arith.
+#[local]
+Definition le_Sn_le_stt : forall n m, S n <= m -> n <= m := Nat.lt_le_incl.
+Opaque le_Sn_le_stt.
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.lt_le_incl instead.")]
+Notation le_Sn_le := le_Sn_le_stt.
 
 (** * Properties of [le] w.r.t predecessor *)
 
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_pred_l instead.")]
 Notation le_pred_n := Nat.le_pred_l (only parsing). (* pred n <= n *)
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.pred_le_mono instead.")]
 Notation le_pred := Nat.pred_le_mono (only parsing). (* n<=m -> pred n <= pred m *)
-
-#[global]
-Hint Resolve le_pred_n: arith.
 
 (** * A different elimination principle for the order on natural numbers *)
 
-Lemma le_elim_rel :
+#[local]
+Definition le_elim_rel_stt :
  forall P:nat -> nat -> Prop,
    (forall p, P 0 p) ->
    (forall p (q:nat), p <= q -> P p q -> P (S p) (S q)) ->
@@ -88,11 +67,16 @@ Lemma le_elim_rel :
 Proof.
   intros P H0 HS n.
   induction n; trivial.
-  intros m Le. elim Le; auto with arith.
- Qed.
+  intros m Le. elim Le; intuition.
+Qed.
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete.")]
+Notation le_elim_rel := le_elim_rel_stt.
 
 (* begin hide *)
-Notation le_O_n := le_0_n (only parsing).
-Notation le_Sn_O := le_Sn_0 (only parsing).
-Notation le_n_O_eq := le_n_0_eq (only parsing).
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_0_l instead.")]
+Notation le_O_n := Nat.le_0_l (only parsing).
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.nle_succ_0 instead.")]
+Notation le_Sn_O := Nat.nle_succ_0 (only parsing).
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_0_r instead.")]
+Notation le_n_O_eq := Arith_prebase.le_n_0_eq_stt.
 (* end hide *)

@@ -16,7 +16,6 @@
 (************************************************************************)
 
 Require Import ZArith_base.
-Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.
 
@@ -80,5 +79,7 @@ Section MakeVarMap.
       end
     end.
 
-  
-End MakeVarMap.  
+End MakeVarMap.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

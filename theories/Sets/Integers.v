@@ -33,9 +33,6 @@ Require Export Classical_sets.
 Require Export Powerset.
 Require Export Powerset_facts.
 Require Export Powerset_Classical_facts.
-Require Export Gt.
-Require Export Lt.
-Require Export Le.
 Require Export Finite_sets_facts.
 Require Export Image.
 Require Export Infinite_sets.
@@ -56,12 +53,12 @@ Section Integers_sect.
 
   Lemma le_antisym : Antisymmetric nat le.
   Proof.
-    red; intros x y H H'; rewrite (le_antisym x y); auto.
+    red; intros x y H H'; rewrite (Nat.le_antisymm x y); auto.
   Qed.
 
   Lemma le_trans : Transitive nat le.
   Proof.
-    red; intros; apply le_trans with y; auto.
+    red; intros; apply Nat.le_trans with y; auto.
   Qed.
 
   Lemma le_Order : Order nat le.
@@ -87,10 +84,10 @@ Section Integers_sect.
     apply Totally_ordered_definition.
     simpl.
     intros H' x y H'0.
-    elim le_or_lt with (n := x) (m := y).
+    elim Nat.le_gt_cases with (n := x) (m := y).
     intro H'1; left; auto with sets arith.
     intro H'1; right.
-    cut (y <= x); auto with sets arith.
+    apply Nat.lt_le_incl; assumption.
   Qed.
 
   Lemma Finite_subset_has_lub :
@@ -144,8 +141,7 @@ Section Integers_sect.
     intro H'3.
     specialize H'2 with (y := S x); lapply H'2;
       [ intro H'5; clear H'2 | try assumption; clear H'2 ].
-    simpl in H'5.
-    absurd (S x <= x); auto with arith.
+    apply Nat.nle_succ_diag_l in H'5; assumption.
     apply triv_nat.
  Qed.
 
@@ -159,6 +155,5 @@ Section Integers_sect.
 
 End Integers_sect.
 
-
-
-
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Export Gt Lt Le.

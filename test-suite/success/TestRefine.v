@@ -203,8 +203,7 @@ exact lt_wf.
 Abort.
 
 
-Require Import Compare_dec.
-Require Import Lt.
+Require Import Arith_base.
 
 Lemma fibo : nat -> nat.
  refine
@@ -220,6 +219,5 @@ Lemma fibo : nat -> nat.
      end)).
 exact lt_wf.
 auto with arith.
-apply lt_trans with (m := pred x0); auto with arith.
+apply Nat.lt_trans with (m := pred x0); auto with arith.
 Qed.
-

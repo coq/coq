@@ -324,7 +324,7 @@ Proof.
   simple induction n; intros.
   simpl; rewrite Rmult_0_l; apply Dconst.
   intros; cut (n0 = (S n0 - 1)%nat);
-    [ intro a; rewrite <- a; clear a | simpl; apply minus_n_O ].
+    [ intro a; rewrite <- a; clear a | simpl; symmetry; apply Nat.sub_0_r ].
   generalize
     (Dmult D (fun _:R => 1) (fun x:R => INR n0 * x ^ (n0 - 1)) (
       fun x:R => x) (fun x:R => x ^ n0) x0 (Dx D x0) (

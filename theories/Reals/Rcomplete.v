@@ -12,7 +12,6 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import SeqProp.
-Require Import Max.
 Local Open Scope R_scope.
 
 (****************************************************)
@@ -85,20 +84,20 @@ Proof.
   repeat apply Rplus_lt_compat.
   unfold R_dist in H1.
   apply H1.
-  unfold ge; apply le_trans with (max x1 x2).
-  apply le_max_l.
+  unfold ge; apply Nat.le_trans with (max x1 x2).
+  apply Nat.le_max_l.
   assumption.
   rewrite <- Rabs_Ropp.
   replace (- (x - Vn n)) with (Vn n - x); [ idtac | ring ].
   unfold R_dist in H3.
   apply H3.
-  unfold ge; apply le_trans with (max x1 x2).
-  apply le_max_r.
+  unfold ge; apply Nat.le_trans with (max x1 x2).
+  apply Nat.le_max_r.
   assumption.
   unfold R_dist in H3.
   apply H3.
-  unfold ge; apply le_trans with (max x1 x2).
-  apply le_max_r.
+  unfold ge; apply Nat.le_trans with (max x1 x2).
+  apply Nat.le_max_r.
   assumption.
   right.
   pattern eps at 4; replace eps with (3 * (eps / 3)).
@@ -131,7 +130,7 @@ Proof.
   rewrite <- Rabs_Ropp.
   replace (- (x - Wn N)) with (Wn N - x); [ apply H4 | ring ].
   unfold ge, N.
-  apply le_trans with (max N1 N2); apply le_max_l.
+  apply Nat.le_trans with (max N1 N2); apply Nat.le_max_l.
   unfold Wn, Vn.
   unfold sequence_majorant, sequence_minorant.
   assert
@@ -169,22 +168,22 @@ Proof.
   assumption.
   apply H6.
   unfold ge.
-  apply le_trans with N.
-  unfold N; apply le_max_r.
-  apply le_plus_l.
+  apply Nat.le_trans with N.
+  unfold N; apply Nat.le_max_r.
+  apply Nat.le_add_r.
   unfold ge.
-  apply le_trans with N.
-  unfold N; apply le_max_r.
-  apply le_plus_l.
+  apply Nat.le_trans with N.
+  unfold N; apply Nat.le_max_r.
+  apply Nat.le_add_r.
   rewrite <- Rabs_Ropp.
   replace (- (Un (N + k1)%nat - Vn N)) with (Vn N - Un (N + k1)%nat);
   [ assumption | ring ].
   reflexivity.
   reflexivity.
   apply H5.
-  unfold ge; apply le_trans with (max N1 N2).
-  apply le_max_r.
-  unfold N; apply le_max_l.
+  unfold ge; apply Nat.le_trans with (max N1 N2).
+  apply Nat.le_max_r.
+  unfold N; apply Nat.le_max_l.
   pattern eps at 4; replace eps with (5 * (eps / 5)).
   ring.
   unfold Rdiv; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m.
@@ -192,5 +191,8 @@ Proof.
   unfold Rdiv; apply Rmult_lt_0_compat.
   assumption.
   apply Rinv_0_lt_compat.
-  prove_sup0; try apply lt_O_Sn.
+  prove_sup0.
 Qed.
+
+(* TODO #14736 for compatibility only, should be removed after deprecation *)
+Require Import Max.

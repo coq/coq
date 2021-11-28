@@ -39,7 +39,7 @@ Proof.
     case Nat.ltb_spec; intro He_den'.
     - apply del_head_nonnil.
       revert He_den'; case nb_digits as [|n]; [now simpl|].
-      now intro H; simpl; apply le_lt_n_Sm, Nat.le_sub_l.
+      now intro H; simpl; apply Nat.lt_succ_r, Nat.le_sub_l.
     - apply nb_digits_n0.
       now rewrite nb_digits_iter_D0, Nat.sub_add. }
   replace (match den with 1%positive => _ | _ => _ end)

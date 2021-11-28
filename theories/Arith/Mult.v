@@ -8,16 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Properties of multiplication.
+(** * Properties of multiplication. *)
 
- This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+(** * This file is OBSOLETE, see [Arith_base] instead. *)
 
- [Nat.mul] is defined in [Init/Nat.v].
-*)
+Require Export Arith_prebase.
 
-Require Import PeanoNat.
-(** For Compatibility: *)
-Require Export Plus Minus Le Lt.
 
 Local Open Scope nat_scope.
 
@@ -25,164 +21,116 @@ Local Open Scope nat_scope.
 
 (** ** Zero property *)
 
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_0_l instead.")]
 Notation mult_0_l := Nat.mul_0_l (only parsing). (* 0 * n = 0 *)
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_0_r instead.")]
 Notation mult_0_r := Nat.mul_0_r (only parsing). (* n * 0 = 0 *)
 
 (** ** 1 is neutral *)
 
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_1_l instead.")]
 Notation mult_1_l := Nat.mul_1_l (only parsing). (* 1 * n = n *)
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_1_r instead.")]
 Notation mult_1_r := Nat.mul_1_r (only parsing). (* n * 1 = n *)
-
-#[global]
-Hint Resolve mult_1_l mult_1_r: arith.
 
 (** ** Commutativity *)
 
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_comm instead.")]
 Notation mult_comm := Nat.mul_comm (only parsing). (* n * m = m * n *)
-
-#[global]
-Hint Resolve mult_comm: arith.
 
 (** ** Distributivity *)
 
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_add_distr_r instead.")]
 Notation mult_plus_distr_r :=
   Nat.mul_add_distr_r (only parsing). (* (n+m)*p = n*p + m*p *)
-
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_add_distr_l instead.")]
 Notation mult_plus_distr_l :=
   Nat.mul_add_distr_l (only parsing). (* n*(m+p) = n*m + n*p *)
-
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_sub_distr_r instead.")]
 Notation mult_minus_distr_r :=
   Nat.mul_sub_distr_r (only parsing). (* (n-m)*p = n*p - m*p *)
-
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_sub_distr_l instead.")]
 Notation mult_minus_distr_l :=
   Nat.mul_sub_distr_l (only parsing). (* n*(m-p) = n*m - n*p *)
 
-#[global]
-Hint Resolve mult_plus_distr_r: arith.
-#[global]
-Hint Resolve mult_minus_distr_r: arith.
-#[global]
-Hint Resolve mult_minus_distr_l: arith.
-
 (** ** Associativity *)
 
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_assoc instead.")]
 Notation mult_assoc := Nat.mul_assoc (only parsing). (* n*(m*p)=n*m*p *)
-
-Lemma mult_assoc_reverse n m p : n * m * p = n * (m * p).
-Proof.
- symmetry. apply Nat.mul_assoc.
-Qed.
-
-#[global]
-Hint Resolve mult_assoc_reverse: arith.
-#[global]
-Hint Resolve mult_assoc: arith.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_assoc instead.")]
+Notation mult_assoc_reverse := Arith_prebase.mult_assoc_reverse_stt.
 
 (** ** Inversion lemmas *)
 
-Lemma mult_is_O n m : n * m = 0 -> n = 0 \/ m = 0.
-Proof.
- apply Nat.eq_mul_0.
-Qed.
-
-Lemma mult_is_one n m : n * m = 1 -> n = 1 /\ m = 1.
-Proof.
- apply Nat.eq_mul_1.
-Qed.
+#[local]
+Definition mult_is_O_stt := fun n m Heq => proj1 (Nat.eq_mul_0 n m) Heq.
+Opaque mult_is_O_stt.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.eq_mul_0 instead.")]
+Notation mult_is_O := mult_is_O_stt.
+#[local]
+Definition mult_is_one_stt := fun n m Heq => proj1 (Nat.eq_mul_1 n m) Heq.
+Opaque mult_is_one_stt.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.eq_mul_1 instead.")]
+Notation mult_is_one := mult_is_one_stt.
 
 (** ** Multiplication and successor *)
 
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_succ_l instead.")]
 Notation mult_succ_l := Nat.mul_succ_l (only parsing). (* S n * m = n * m + m *)
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_succ_r instead.")]
 Notation mult_succ_r := Nat.mul_succ_r (only parsing). (* n * S m = n * m + n *)
 
 (** * Compatibility with orders *)
 
-Lemma mult_O_le n m : m = 0 \/ n <= m * n.
-Proof.
- destruct m; [left|right]; simpl; trivial using Nat.le_add_r.
-Qed.
-#[global]
-Hint Resolve mult_O_le: arith.
-
-Lemma mult_le_compat_l n m p : n <= m -> p * n <= p * m.
-Proof.
- apply Nat.mul_le_mono_nonneg_l, Nat.le_0_l. (* TODO : get rid of 0<=n hyp *)
-Qed.
-#[global]
-Hint Resolve mult_le_compat_l: arith.
-
-Lemma mult_le_compat_r n m p : n <= m -> n * p <= m * p.
-Proof.
- apply Nat.mul_le_mono_nonneg_r, Nat.le_0_l.
-Qed.
-
-Lemma mult_le_compat n m p q : n <= m -> p <= q -> n * p <= m * q.
-Proof.
-  intros. apply Nat.mul_le_mono_nonneg; trivial; apply Nat.le_0_l.
-Qed.
-
-Lemma mult_S_lt_compat_l n m p : m < p -> S n * m < S n * p.
-Proof.
-  apply Nat.mul_lt_mono_pos_l, Nat.lt_0_succ.
-Qed.
-
-#[global]
-Hint Resolve mult_S_lt_compat_l: arith.
-
-Lemma mult_lt_compat_l n m p : n < m -> 0 < p -> p * n < p * m.
-Proof.
- intros. now apply Nat.mul_lt_mono_pos_l.
-Qed.
-
-Lemma mult_lt_compat_r n m p : n < m -> 0 < p -> n * p < m * p.
-Proof.
- intros. now apply Nat.mul_lt_mono_pos_r.
-Qed.
-
-Lemma mult_S_le_reg_l n m p : S n * m <= S n * p -> m <= p.
-Proof.
- apply Nat.mul_le_mono_pos_l, Nat.lt_0_succ.
-Qed.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete.")]
+Notation mult_O_le := Arith_prebase.mult_O_le_stt.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_le_mono_l instead.")]
+Notation mult_le_compat_l := Nat.mul_le_mono_l (only parsing).
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_le_mono_r instead.")]
+Notation mult_le_compat_r := Nat.mul_le_mono_r (only parsing).
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_le_mono instead.")]
+Notation mult_le_compat := Nat.mul_le_mono (only parsing).
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_lt_mono_pos_l instead.")]
+Notation mult_S_lt_compat_l := Arith_prebase.mult_S_lt_compat_l_stt.
+#[local]
+Definition mult_lt_compat_l_stt := fun n m p Hlt Hp => proj1 (Nat.mul_lt_mono_pos_l p n m Hp) Hlt.
+Opaque mult_lt_compat_l_stt.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_lt_mono_pos_l instead.")]
+Notation mult_lt_compat_l := mult_lt_compat_l_stt.
+#[local]
+Definition mult_lt_compat_r_stt := fun n m p Hlt Hp => proj1 (Nat.mul_lt_mono_pos_r p n m Hp) Hlt.
+Opaque mult_lt_compat_r_stt.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_lt_mono_pos_r instead.")]
+Notation mult_lt_compat_r := mult_lt_compat_r_stt.
+#[local]
+Definition mult_S_le_reg_l_stt := fun n m p Hle => proj2 (Nat.mul_le_mono_pos_l m p (S n) (Nat.lt_0_succ n)) Hle.
+Opaque mult_S_le_reg_l_stt.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_le_mono_pos_l instead.")]
+Notation mult_S_le_reg_l := mult_S_le_reg_l_stt.
 
 (** * n|->2*n and n|->2n+1 have disjoint image *)
 
-Theorem odd_even_lem p q : 2 * p + 1 <> 2 * q.
+#[local]
+Definition odd_even_lem_stt p q : 2 * p + 1 <> 2 * q.
 Proof.
  intro. apply (Nat.Even_Odd_False (2*q)).
  - now exists q.
  - now exists p.
 Qed.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete.")]
+Notation odd_even_lem := odd_even_lem_stt.
 
+(** * Tail-recursive [mult] *)
 
-(** * Tail-recursive mult *)
-
-(** [tail_mult] is an alternative definition for [mult] which is
-    tail-recursive, whereas [mult] is not. This can be useful
-    when extracting programs. *)
-
-Fixpoint mult_acc (s:nat) m n : nat :=
-  match n with
-    | O => s
-    | S p => mult_acc (tail_plus m s) m p
-  end.
-
-Lemma mult_acc_aux : forall n m p, m + n * p = mult_acc m p n.
-Proof.
-  intro n; induction n as [| n IHn]; simpl; auto.
-  intros. rewrite Nat.add_assoc, IHn. f_equal.
-  rewrite Nat.add_comm. apply plus_tail_plus.
-Qed.
-
-Definition tail_mult n m := mult_acc 0 m n.
-
-Lemma mult_tail_mult : forall n m, n * m = tail_mult n m.
-Proof.
-  intros; unfold tail_mult; rewrite <- mult_acc_aux; auto.
-Qed.
-
-(** [TailSimpl] transforms any [tail_plus] and [tail_mult] into [plus]
-    and [mult] and simplify *)
-
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.tail_mul instead.")]
+Notation tail_mult := Nat.tail_mul (only parsing).
+#[local]
+Definition mult_tail_mult_stt := fun n m => eq_sym (Nat.tail_mul_spec n m).
+Opaque mult_tail_mult_stt.
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.tail_mul_spec instead.")]
+Notation mult_tail_mult := mult_tail_mult_stt.
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete.")]
 Ltac tail_simpl :=
-  repeat rewrite <- plus_tail_plus; repeat rewrite <- mult_tail_mult;
-    simpl.
+  repeat rewrite Nat.tail_add_spec; repeat rewrite Nat.tail_mul_spec; simpl.
+
+Require Export Plus Minus Le Lt.
