@@ -64,7 +64,7 @@ Programmable proof search
       fail even if applying manually one of the hints would succeed.
 
    .. seealso::
-      :ref:`thehintsdatabasesforautoandeauto` for the list of
+      :ref:`hintdatabases` for the list of
       pre-defined databases and the way to create or extend a database.
 
    .. tacn:: info_auto {? @nat_or_var } {? @auto_using } {? @hintbases }
@@ -117,7 +117,7 @@ Programmable proof search
 
       `ex_intro` is declared as a hint so the proof succeeds.
 
-   .. seealso:: :ref:`thehintsdatabasesforautoandeauto`
+   .. seealso:: :ref:`hintdatabases`
 
    .. tacn:: info_eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
@@ -292,14 +292,14 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    Run :n:`@tactic` followed by :tacn:`easy`. This is a notation for :n:`@tactic; easy`.
 
-.. _thehintsdatabasesforautoandeauto:
+.. _hintdatabases:
 
-The hints databases for auto and eauto
---------------------------------------
+Hint databases
+--------------
 
-The hints for :tacn:`auto` and :tacn:`eauto` are stored in databases. Each database
-maps head symbols to a list of hints.  Use the :cmd:`Print Hint` command to view
-the database.
+Hints used by :tacn:`auto`, :tacn:`eauto` and other tactics are stored in hint
+databases.  Each database maps head symbols to a list of hints.  Use the
+:cmd:`Print Hint` command to view a database.
 
 Each hint has a cost that is a nonnegative
 integer and an optional pattern. Hints with lower costs are tried first.
