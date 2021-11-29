@@ -611,7 +611,7 @@ Section BoolIf.
 
 Variables (A B : Type) (x : A) (f : A -> B) (b : bool) (vT vF : A).
 
-Variant if_spec (not_b : Prop) : bool -> A -> Set :=
+Variant if_spec (not_b : Prop) : bool -> A -> Type :=
   | IfSpecTrue  of      b : if_spec not_b true vT
   | IfSpecFalse of  not_b : if_spec not_b false vF.
 
