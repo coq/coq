@@ -94,3 +94,6 @@ Buchberger algorithm.
 
 This computation is done after a step of *reification*, which is
 performed using :ref:`typeclasses`.
+
+.. tacn:: nsatz_compute @one_term
+   :undocumented:

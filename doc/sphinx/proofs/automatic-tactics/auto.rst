@@ -148,6 +148,9 @@ Programmable proof search
    :n:`@simple_occurrences`
      Performs the unfolding in the specified occurrences.
 
+.. tacn:: autounfold_one {? @hintbases } {? in @ident }
+   :undocumented:
+
 .. tacn:: autorewrite {? * } with {+ @ident } {? @occurrences } {? using @ltac_expr }
 
    `*`
@@ -448,7 +451,7 @@ Creating Hints
    .. cmd:: Hint Unfold {+ @qualid } {? : {+ @ident } }
 
       For each :n:`@qualid`, adds the tactic :tacn:`unfold` :n:`@qualid` to the
-      hint list that will only be used when the head constant of the goal is :token:`qualid`.
+      hint list that will only be used when the :term:`head constant` of the goal is :token:`qualid`.
       Its cost is 4.
 
    .. cmd:: Hint {| Transparent | Opaque } {+ @qualid } {? : {+ @ident } }

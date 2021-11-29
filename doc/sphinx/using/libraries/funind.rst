@@ -219,6 +219,9 @@ Tactics
    .. exn:: Not the right number of induction arguments.
       :undocumented:
 
+.. tacn:: soft functional induction {+ @one_term } {? using @one_term {? with @bindings } } {? as @simple_intropattern }
+   :undocumented:
+
 .. tacn:: functional inversion {| @ident | @natural } {? @qualid }
 
    Performs inversion on hypothesis

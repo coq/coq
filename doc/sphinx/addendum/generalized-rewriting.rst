@@ -535,10 +535,11 @@ pass additional arguments such as ``using relation``.
 .. tacn:: setoid_reflexivity
           setoid_symmetry {? in @ident }
           setoid_transitivity @one_term
+          setoid_etransitivity
           setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } {? at @rewrite_occs } {? in @ident }
           setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } in @ident at @rewrite_occs
           setoid_replace @one_term with @one_term {? using relation @one_term } {? in @ident } {? at {+ @int_or_var } } {? by @ltac_expr3 }
-   :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_rewrite; _; setoid_replace
+   :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_etransitivity; setoid_rewrite; _; setoid_replace
 
    .. todo: move rewrite_occs to rewrite chapter when that chapter is revised
 

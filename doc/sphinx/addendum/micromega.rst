@@ -151,6 +151,14 @@ and checked to be :math:`-1`.
    The deductive power of :tacn:`lra` overlaps with the one of :tacn:`field`
    tactic *e.g.*, :math:`x = 10 * x / 10` is solved by :tacn:`lra`.
 
+.. tacn:: lra_Q @ltac_expr
+          lra_R @ltac_expr
+          sos_Q @ltac_expr
+          sos_R @ltac_expr
+          sos_Z @ltac_expr
+
+   For internal use only.
+
 `lia`: a tactic for linear integer arithmetic
 ---------------------------------------------
 
@@ -215,6 +223,11 @@ Our current oracle tries to find an expression :math:`e` with a small range
 with an equation :math:`e = i` for :math:`i \in [c_1,c_2]` and recursively search for
 a proof.
 
+.. tacn:: xlia @ltac_expr
+          xnqa @ltac_expr
+
+   For internal use only.
+
 `nra`: a proof procedure for non-linear arithmetic
 --------------------------------------------------
 
@@ -235,6 +248,10 @@ a proof.
 After this pre-processing, the linear prover of :tacn:`lra` searches for a
 proof by abstracting monomials by variables.
 
+.. tacn:: xnra @ltac_expr
+
+   For internal use only.
+
 `nia`: a proof procedure for non-linear integer arithmetic
 ----------------------------------------------------------
 
@@ -243,6 +260,10 @@ proof by abstracting monomials by variables.
    This tactic is a proof procedure for non-linear integer arithmetic.
    It performs a pre-processing similar to :tacn:`nra`. The obtained goal is
    solved using the linear integer prover :tacn:`lia`.
+
+.. tacn:: xnlia @ltac_expr
+
+   For internal use only.
 
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
@@ -272,6 +293,12 @@ cone expression :math:`2 \times (x-1) + (\mathbf{x-1}) \times (\mathbf{x−1}) +
 (polynomial hypotheses are printed in bold). By construction, this expression
 belongs to :math:`\mathit{Cone}({−x^2,x -1})`. Moreover, by running :tacn:`ring` we
 obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
+
+.. tacn:: psatz_Q {? @nat_or_var } @ltac_expr
+          psatz_R {? @nat_or_var } @ltac_expr
+          psatz_Z {? @nat_or_var } @ltac_expr
+
+   For internal use only.
 
 `zify`: pre-processing of arithmetic goals
 ------------------------------------------
@@ -321,6 +348,14 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    Prints instances for the specified typeclass.  For instance, :cmd:`Show Zify` ``InjTyp``
    prints the list of types that supported by :tacn:`zify` i.e.,
    :g:`Z`, :g:`nat`, :g:`positive` and :g:`N`.
+
+.. tacn:: zify_elim_let
+          zify_iter_let @ltac_expr
+          zify_iter_specs
+          zify_op
+          zify_saturate
+
+   For internal use only.
 
 
 .. [#csdp] Sources and binaries can be found at https://projects.coin-or.org/Csdp
