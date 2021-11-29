@@ -95,7 +95,7 @@ let create_empty_file filename =
 let check_pending_proofs filename =
   let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
   if not (CList.is_empty pfs) then
-    fatal_error (str "There are pending proofs: "
+    fatal_error (str "There are pending proofs in file " ++ str filename ++ str": "
                  ++ (pfs
                      |> List.rev
                      |> prlist_with_sep pr_comma Names.Id.print)
