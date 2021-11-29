@@ -272,8 +272,6 @@ let is_impredicative_family env = function
 let type_in_type env = not (typing_flags env).check_universes
 let deactivated_guard env = not (typing_flags env).check_guarded
 
-let indices_matter env = env.env_typing_flags.indices_matter
-
 let universes env = env.env_universes
 let universes_lbound env = env.env_universes_lbound
 
@@ -433,7 +431,6 @@ let same_flags {
      check_positive;
      check_universes;
      conv_oracle;
-     indices_matter;
      share_reduction;
      enable_VM;
      enable_native_compiler;
@@ -446,7 +443,6 @@ let same_flags {
   check_positive == alt.check_positive &&
   check_universes == alt.check_universes &&
   conv_oracle == alt.conv_oracle &&
-  indices_matter == alt.indices_matter &&
   share_reduction == alt.share_reduction &&
   enable_VM == alt.enable_VM &&
   enable_native_compiler == alt.enable_native_compiler &&

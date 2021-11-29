@@ -32,7 +32,6 @@ val named_context : unit -> Constr.named_context
 (** Changing the (im)predicativity of the system *)
 val set_impredicative_set : bool -> unit
 
-val set_indices_matter : bool -> unit
 val set_typing_flags : typing_flags -> unit
 val set_check_guarded : bool -> unit
 val set_check_positive : bool -> unit

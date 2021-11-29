@@ -103,7 +103,6 @@ let init_runtime opts =
 
   (* Configuration *)
   Global.set_impredicative_set opts.config.logic.impredicative_set;
-  Global.set_indices_matter opts.config.logic.indices_matter;
   Global.set_check_universes (not opts.config.logic.type_in_type);
   Global.set_VM opts.config.enable_VM;
   Flags.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);

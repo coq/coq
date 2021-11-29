@@ -85,9 +85,6 @@ type typing_flags = {
   enable_native_compiler : bool;
   (** If [false], all native conversions fall back to VM ones *)
 
-  indices_matter: bool;
-  (** The universe of an inductive type must be above that of its indices. *)
-
   impredicative_set: bool;
   (** Predicativity of the [Set] universe. *)
 

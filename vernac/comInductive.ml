@@ -282,11 +282,8 @@ let inductive_levels env evd arities inds =
         in
         let minlev =
           (* Indices contribute. *)
-          if indices_matter env then begin
-            let ilev = sign_level env evd ctx in
-            Univ.sup ilev minlev
-          end
-          else minlev
+          let ilev = sign_level env evd ctx in
+          Univ.sup ilev minlev
         in
         let clev = extract_level env evd minlev tys in
         (clev, len))
@@ -304,7 +301,7 @@ let inductive_levels env evd arities inds =
         evd, (false, arity) :: arities
       else (* If in a predicative sort, or asked to infer the type,
               we take the max of:
-              - indices (if in indices-matter mode)
+              - indices
               - constructors
               - Type(1) if there is more than 1 constructor
            *)

@@ -40,7 +40,6 @@ type injection_command =
 
 type coqargs_logic_config = {
   impredicative_set : bool;
-  indices_matter    : bool;
   type_in_type      : bool;
   toplevel_name     : top;
 }

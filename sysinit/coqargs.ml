@@ -28,6 +28,11 @@ let error_debug () =
   prerr_endline "See -help for the syntax of supported options.";
   exit 1
 
+let error_indices_matter () =
+  prerr_endline "Error: The -indices-matter option has been removed.";
+  prerr_endline "Indices now always matter.";
+  exit 1
+
 (******************************************************************************)
 
 type native_compiler = Coq_config.native_compiler =
@@ -48,7 +53,6 @@ type injection_command =
 
 type coqargs_logic_config = {
   impredicative_set : bool;
-  indices_matter    : bool;
   type_in_type      : bool;
   toplevel_name     : top;
 }
@@ -103,7 +107,6 @@ let default_native = Coq_config.native_compiler
 
 let default_logic_config = {
   impredicative_set = false;
-  indices_matter = false;
   type_in_type = false;
   toplevel_name = TopLogical default_toplevel;
 }
@@ -390,7 +393,7 @@ let parse_args ~usage ~init arglist : t * string list =
       add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
     |"-disallow-sprop" ->
       add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
-    |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
+    |"-indices-matter" -> error_indices_matter ()
     |"-m"|"--memory" -> { oval with post = { memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
     |"-boot" -> { oval with pre = { oval.pre with boot = true }}

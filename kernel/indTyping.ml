@@ -96,10 +96,6 @@ let check_context_univs ~ctor env info ctx =
   in
   fst (Context.Rel.fold_outside ~init:(info,env) check_one ctx)
 
-let check_indices_matter env_params info indices =
-  if not (indices_matter env_params) then info
-  else check_context_univs ~ctor:false env_params info indices
-
 (* env_ar contains the inductives before the current ones in the block, and no parameters *)
 let check_arity ~template env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
@@ -113,7 +109,6 @@ let check_arity ~template env_params env_ar ind =
     missing=Universe.Set.empty;
   }
   in
-  let univ_info = check_indices_matter env_params univ_info indices in
   (* We do not need to generate the universe of the arity with params;
      if later, after the validation of the inductive definition,
      full_arity is used as argument or subject to cast, an upper
