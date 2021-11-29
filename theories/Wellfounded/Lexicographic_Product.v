@@ -10,7 +10,7 @@
 
 (** Authors: Bruno Barras, Cristina Cornes *)
 
-Require Import Eqdep.
+Require Import EqdepFacts.
 Require Import Relation_Operators.
 Require Import Transitive_Closure.
 Require Import Inclusion.
@@ -55,9 +55,10 @@ Section WfLexicographic_Product.
         injection H3 as [= <- _]; auto with sets.
 
     - rewrite <- H1.
-      injection H3 as [= -> H3].
+      apply eq_sigT_eq_dep in H3.
+      destruct H3.
       apply IHAcc0.
-      elim inj_pair2 with A B x y' x0; assumption.
+      assumption.
   Defined.
 
   Theorem wf_lexprod :
