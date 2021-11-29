@@ -10,9 +10,7 @@
 
 open Pp
 
-(* This module implements the abstract interface to goals *)
-(* A general invariant of the module, is that a goal whose associated
-   evar is defined in the current evar_map, should not be accessed. *)
+(** Don't use this module. *)
 
 (* type of the goals *)
 type goal = Evar.t
@@ -20,66 +18,3 @@ type goal = Evar.t
 let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
 
 let uid e = string_of_int (Evar.repr e)
-
-(* Layer to implement v8.2 tactic engine ontop of the new architecture.
-   Types are different from what they used to be due to a change of the
-   internal types. *)
-module V82 = struct
-
-  (* Old style env primitive *)
-  let env evars gl =
-    let env = Global.env () in
-    let evi = Evd.find evars gl in
-    Evd.evar_filtered_env env evi
-
-  (* Old style hyps primitive *)
-  let hyps evars gl =
-    let evi = Evd.find evars gl in
-    Evd.evar_filtered_hyps evi
-
-  (* same as [hyps], but ensures that existential variables are
-     normalised. *)
-  let nf_hyps evars gl =
-    let hyps = Environ.named_context_of_val (hyps evars gl) in
-    Environ.val_of_named_context (Evarutil.nf_named_context_evar evars hyps)
-
-  (* Access to ".evar_concl" *)
-  let concl evars gl =
-    let evi = Evd.find evars gl in
-    evi.Evd.evar_concl
-
-  (* Old style mk_goal primitive *)
-  let mk_goal evars hyps concl =
-    (* A goal created that way will not be used by refine and will not
-       be shelved. It must not appear as a future_goal, so the future
-       goals are restored to their initial value after the evar is
-       created. *)
-    let evars = Evd.push_future_goals evars in
-    let inst = EConstr.identity_subst_val hyps in
-    let identity = Evd.Identity.make inst in
-    let (evars,evk) =
-      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity hyps evars concl
-    in
-    let _, evars = Evd.pop_future_goals evars in
-    let ev = EConstr.mkEvar (evk,inst) in
-    (evk, ev, evars)
-
-  (* Instantiates a goal with an open term *)
-  let partial_solution env sigma evk c =
-    (* Check that the goal itself does not appear in the refined term *)
-    let _ =
-      if not (Evarutil.occur_evar_upto sigma evk c) then ()
-      else Pretype_errors.error_occur_check env sigma evk c
-    in
-    Evd.define evk c sigma
-
-  (* Used by the compatibility layer and typeclasses *)
-  let nf_evar sigma gl =
-    let evi = Evd.find sigma gl in
-    let evi = Evarutil.nf_evar_info sigma evi in
-    let sigma = Evd.add sigma gl evi in
-    (gl, sigma)
-
-end
-
-module Set = Evar.Set

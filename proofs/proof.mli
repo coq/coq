@@ -199,7 +199,7 @@ module V82 : sig
 end
 
 (* returns the set of all goals in the proof *)
-val all_goals : t -> Goal.Set.t
+val all_goals : t -> Evar.Set.t
 
 (** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
     subgoal of the current focused proof. [solve SelectAll
