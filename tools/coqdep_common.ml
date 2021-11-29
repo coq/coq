@@ -34,6 +34,8 @@ let option_noglob = ref false
 let option_dynlink = ref Both
 let option_boot = ref false
 
+let meta_files = ref []
+
 type dir = string option
 
 (** [get_extension f l] checks whether [f] has one of the extensions
@@ -171,6 +173,14 @@ let error_cannot_parse_project_file file msg =
   Printf.eprintf "Project file \"%s\": Syntax error: %s\n" file msg;
   exit 1
 
+let error_cannot_parse_meta_file file msg =
+  Printf.eprintf "META file \"%s\": Syntax error: %s\n" file msg;
+  exit 1
+
+let error_meta_file_lacks_field meta_file package field =
+  Printf.eprintf "META file \"%s\" lacks field %s for package %s.\n" meta_file field package;
+  exit 1
+
 let error_cannot_stat s unix_error =
   Printf.eprintf "%s\n" (error_message unix_error);
   exit 1
@@ -183,6 +193,16 @@ let error_cannot_open s msg =
   (* Print an arbitrary line number, such that the message matches
      common error message pattern. *)
   Printf.eprintf "%s: %s\n" s msg;
+  exit 1
+
+let error_declare_in_META f s m =
+  Printf.eprintf "in file %s, declared ML module %s has not been found in %s.\n" f s m;
+  exit 1
+
+let error_findlib_name f s =
+  Printf.eprintf "in file %s, %s is not a valid plugin name anymore.\n" f s;
+  Printf.eprintf "Plugins should be loaded using their public name according to findlib,\n";
+  Printf.eprintf "for example package-name.foo and not foo_plugin.\n";
   exit 1
 
 let warning_module_notfound from f s =
@@ -223,6 +243,9 @@ let warning_clash exact file dir f1 = function
 
 let warning_cannot_open_dir dir =
   coqdep_warning "cannot open %s" dir
+
+let warning_no_meta_file package =
+  coqdep_warning "you need a META.%s file in order to build plugins\n" package
 
 let safe_assoc from verbose file k =
   match search_v_known ?from k with
@@ -314,6 +337,78 @@ let string_of_dependency_list suffix_for_require deps =
     in
   String.concat " " (List.map string_of_dep deps)
 
+(* dune calls coqdep from the directory containing the .v, so we walk back *)
+let has_dune_project ps =
+  let p = String.concat "/" @@ ps @ ["dune-project"] in
+  try close_in (open_in p); true
+  with Sys_error _ -> false
+
+let parse_META package f =
+  try
+    let ic = open_in f in
+    let m = Fl_metascanner.parse ic in
+    close_in ic;
+    Some (f, m)
+  with
+  | Stream.Error msg -> error_cannot_parse_meta_file package msg
+  | Sys_error _msg -> None
+
+let rec find_META_walking package ps =
+  let p = String.concat "/" @@ ps @ ["META." ^ package] in
+  match parse_META package p with
+  | Some _ as x -> x
+  | None ->
+      if has_dune_project ps || List.length ps > 2 then None
+      else find_META_walking package (".." :: ps)
+
+let find_META package =
+  let rec aux = function
+    | [] ->
+        if !meta_files = [] then
+          find_META_walking package [] (* compat dune *)
+        else
+          None
+    | m :: ms ->
+        if Filename.extension m = "." ^ package then
+          parse_META package m
+        else
+          aux ms
+  in
+    aux !meta_files
+
+let findlib_resolve f package plugin =
+  let open Fl_metascanner in
+  match find_META package with
+  | None ->
+      (* XXX error once dune gets fixed and generates META files early *)
+      warning_no_meta_file package;
+      None, String.concat "/" plugin ^ "_plugin"
+  | Some (meta_file, meta) ->
+      let rec find_plugin path p { pkg_defs ; pkg_children  } =
+        match p with
+        | [] -> path, pkg_defs
+        | p :: ps ->
+            let rec find_child = function
+              | [] -> error_declare_in_META f (String.concat "." plugin) meta_file
+              | (s, def) :: _ when s = p -> def
+              | _ :: rest -> find_child rest
+            in
+            let c = find_child pkg_children in
+            let path = path @ [find_plugin_field "directory" (Some ".") c.pkg_defs] in
+            find_plugin path ps c
+      and find_plugin_field fld def = function
+        | { def_var; def_value; _ } :: _ when def_var = fld -> def_value
+        | _ :: rest -> find_plugin_field fld def rest
+        | [] ->
+            match def with
+            | Some x -> x
+            | None -> error_meta_file_lacks_field meta_file package fld
+      in
+      let path = [find_plugin_field "directory" (Some ".") meta.pkg_defs] in
+      let path, plug = find_plugin path plugin meta in
+      Some meta_file, String.concat "/" path ^ "/" ^
+        Filename.chop_extension @@ find_plugin_field "plugin" None plug
+
 let rec find_dependencies basename =
   let verbose = true in (* for past/future use? *)
   try
@@ -351,6 +446,12 @@ let rec find_dependencies basename =
                   warning_module_notfound from f str
               end) strl
         | Declare sl ->
+            let public_to_private_name s =
+              match String.split_on_char '.' s with
+              | [] -> assert false
+              | [x] -> error_findlib_name f x
+              | package :: plugin -> findlib_resolve f package plugin in
+            let sl = List.map public_to_private_name sl in
             let declare suff dir s =
               let base = escape (file_name s dir) in
               match !option_dynlink with
@@ -362,7 +463,8 @@ let rec find_dependencies basename =
               | Variable -> add_dep_other (sprintf "%s%s" base
                   (if suff=".cmo" then "$(DYNOBJ)" else "$(DYNLIB)"))
               in
-            let decl str =
+            let decl (meta_file,str) =
+              Option.iter add_dep_other meta_file;
               let s = basename_noext str in
               if not (StrSet.mem s !visited_ml) then begin
                 visited_ml := StrSet.add s !visited_ml;
@@ -643,6 +745,7 @@ let usage () =
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
+  eprintf "  -m META : resolve plugins names using the META file\n";
   exit 1
 
 let option_sort = ref false
@@ -688,6 +791,7 @@ let rec parse = function
   | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
   | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
   | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
+  | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse ll
   | ("-h"|"--help"|"-help") :: _ -> usage ()
   | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
     coqdep_warning "unknown option %s" opt;
