@@ -101,6 +101,7 @@ val pf_with_evars :  (Goal.goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) ->
 val pf_constr_of_global : GlobRef.t -> (constr -> tactic) -> tactic
 
 end
+[@@ocaml.deprecated "Use the new engine"]
 
 (** Tacticals defined directly in term of Proofview *)
 

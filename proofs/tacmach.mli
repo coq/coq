@@ -83,6 +83,7 @@ val pf_conv_x      : Goal.goal sigma -> constr -> constr -> bool
 val pr_gls    : Goal.goal sigma -> Pp.t
 
 end
+[@@ocaml.deprecated "Use the new engine"]
 
 (** Variants of [Tacmach] functions built with the new proof engine *)
 
