@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-noinit" "-indices-matter" "-w" "-notation-overridden,-deprecated-option") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-noinit" "-w" "-notation-overridden,-deprecated-option") -*- *)
 (*
     The Coq Proof Assistant, version 8.7.1 (January 2018)
     compiled on Jan 21 2018 15:02:24 with OCaml 4.06.0

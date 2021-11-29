@@ -1,5 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-noinit" "-indices-matter") -*- *)
-
+(* -*- mode: coq; coq-prog-args: ("-noinit") -*- *)
 (* This file tests the discriminate tactic compatibility with HoTT.
    The first part of the file will setup a mini HoTT environment.
    Afterwards a number of tests are performed. The tests are basically
