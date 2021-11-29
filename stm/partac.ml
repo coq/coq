@@ -171,7 +171,7 @@ let enable_par ~nworkers = ComTactic.set_par_implementation
       TaskQueue.enqueue_task queue
       ~cancel_switch:(ref false)
       { t_state; t_assign = ans; t_ast;
-          t_goalno = i; t_goal = g; t_name = Goal.uid g;
+          t_goalno = i; t_goal = g; t_name = Proof.goal_uid g;
           t_kill = (fun () -> TaskQueue.cancel_all queue) };
       g, ans) 1 in
     TaskQueue.join queue;

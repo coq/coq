@@ -255,7 +255,7 @@ let process_goal_concl sigma g : EConstr.t * Environ.env =
 
 let process_goal sigma g : EConstr.t reified_goal =
   let (env, ty) = goal_repr sigma g in
-  let name = Goal.uid g             in
+  let name = Proof.goal_uid g             in
   (* compaction is usually desired [eg for better display] *)
   let hyps      = Termops.compact_named_context (Environ.named_context env) in
   let hyps      = List.map to_tuple hyps in

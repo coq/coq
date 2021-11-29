@@ -11,10 +11,3 @@
 (** Don't use this module. *)
 
 type goal = Evar.t
-
-(* Gives a unique identifier to each goal. The identifier is
-   guaranteed to contain no space. *)
-val uid : goal -> string
-
-(* Debugging help *)
-val pr_goal : goal -> Pp.t

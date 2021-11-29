@@ -183,6 +183,10 @@ val maximal_unfocus : 'a focus_kind -> t -> t
    focused goals. *)
 val unshelve : t -> t
 
+(* Gives a unique identifier to each goal. The identifier is
+   guaranteed to contain no space. *)
+val goal_uid : Evar.t -> string
+
 val pr_proof : t -> Pp.t
 
 (*** Compatibility layer with <=v8.2 ***)

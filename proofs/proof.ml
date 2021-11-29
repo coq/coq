@@ -453,10 +453,14 @@ let data { proofview; focus_stack; entry; name; poly } =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) focus_stack in
   { sigma; goals; entry; stack; name; poly }
 
+let pr_goal e = Pp.(str "GOAL:" ++ int (Evar.repr e))
+
+let goal_uid e = string_of_int (Evar.repr e)
+
 let pr_proof p =
   let { goals=fg_goals; stack=bg_goals; sigma } = data p in
   Pp.(
-    let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
+    let pr_goal_list = prlist_with_sep spc pr_goal in
     let rec aux acc = function
       | [] -> acc
       | (before,after)::stack ->

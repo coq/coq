@@ -481,7 +481,7 @@ let pr_goal ?(diffs=false) ?og_s g_s =
 
 (* display a goal tag *)
 let pr_goal_tag g =
-  let s = " (ID " ^ Goal.uid g ^ ")" in
+  let s = " (ID " ^ Proof.goal_uid g ^ ")" in
   str s
 
 (* display a goal name *)

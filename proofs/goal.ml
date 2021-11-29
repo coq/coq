@@ -8,13 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-
 (** Don't use this module. *)
 
 (* type of the goals *)
 type goal = Evar.t
-
-let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
-
-let uid e = string_of_int (Evar.repr e)
