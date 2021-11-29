@@ -899,13 +899,6 @@ Applying theorems
    ``forall A, ... -> A``. Excluding this kind of lemma can be avoided by
    setting the following flag:
 
-.. flag:: Universal Lemma Under Conjunction
-
-   This :term:`flag`, which preserves compatibility with versions of Coq prior to
-   8.4 is also available for :n:`apply @term in @ident` (see :tacn:`apply … in`).
-
-   .. deprecated:: 8.15
-
 .. tacn:: apply @term in @ident
    :name: apply … in
 

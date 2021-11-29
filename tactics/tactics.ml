@@ -70,21 +70,6 @@ let () =
       optread  = (fun () -> !clear_hyp_by_default) ;
       optwrite = (fun b -> clear_hyp_by_default := b) }
 
-(* Compatibility option useful in developments using apply intensively
-   in ltac code *)
-
-let universal_lemma_under_conjunctions = ref false
-
-let accept_universal_lemma_under_conjunctions () =
-  !universal_lemma_under_conjunctions
-
-let () =
-  declare_bool_option
-    { optdepr  = true;
-      optkey   = ["Universal";"Lemma";"Under";"Conjunction"];
-      optread  = (fun () -> !universal_lemma_under_conjunctions) ;
-      optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
-
 (*********************************************)
 (*                 Errors                    *)
 (*********************************************)
@@ -1685,7 +1670,7 @@ let make_projection env sigma params cstr sign elim i n c u =
         (* to avoid surprising unifications, excludes flexible
         projection types or lambda which will be instantiated by Meta/Evar *)
         && not (isEvar sigma (fst (whd_betaiota_stack env sigma t)))
-        && (accept_universal_lemma_under_conjunctions () || not (isRel sigma t))
+        && (not (isRel sigma t))
       then
         let t = lift (i+1-n) t in
         let abselim = beta_applist sigma (elim, params@[t;branch]) in
