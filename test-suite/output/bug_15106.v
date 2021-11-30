@@ -1,5 +1,5 @@
 Require Import Coq.Program.Tactics.
-Obligation Tactic := try constructor.
+Local Obligation Tactic := try constructor.
 
 Axiom P : Prop. Axiom p : P.
 

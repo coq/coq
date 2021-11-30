@@ -94,7 +94,8 @@ Program Instance unit_eqdec : EqDec unit eq := fun x y => in_left.
     reflexivity.
   Qed.
 
-Obligation Tactic := unfold complement, equiv ; program_simpl.
+#[global] Obligation Tactic := unfold complement, equiv ; program_simpl.
+#[export] Obligation Tactic := unfold complement, equiv ; program_simpl.
 
 #[global]
 Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :

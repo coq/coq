@@ -8,10 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Tacexpr
-open Vernacexpr
+type tac_option_locality
+
+val tac_option_locality : tac_option_locality Attributes.attribute
 
 val declare_tactic_option : ?default:Tacexpr.glob_tactic_expr -> string ->
-  (* put *) (locality_flag -> glob_tactic_expr -> unit) *
+  (* put *) (?loc:Loc.t -> tac_option_locality -> Tacexpr.glob_tactic_expr -> unit) *
   (* get *) (unit -> unit Proofview.tactic) *
   (* print *) (unit -> Pp.t)
