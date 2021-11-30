@@ -147,7 +147,7 @@ let is_done p =
 
 (* spiwack: for compatibility with <= 8.2 proof engine *)
 let has_unresolved_evar p =
-  Proofview.V82.has_unresolved_evar p.proofview
+  Evd.has_undefined (Proofview.return p.proofview)
 let has_shelved_goals p =
   let (_goals,sigma) = Proofview.proofview p.proofview in
   Evd.has_shelved sigma

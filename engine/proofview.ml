@@ -1242,9 +1242,6 @@ module V82 = struct
     { ps with solution = evd; }
     end
 
-  let has_unresolved_evar pv =
-    Evd.has_undefined pv.solution
-
   let top_goals initial { solution=solution; } =
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
     { Evd.it = goals ; sigma=solution; }

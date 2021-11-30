@@ -599,8 +599,6 @@ module V82 : sig
      solution. *)
   val nf_evar_goals : unit tactic
 
-  val has_unresolved_evar : proofview -> bool
-
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma
 
   (* returns the existential variable used to start the proof *)
