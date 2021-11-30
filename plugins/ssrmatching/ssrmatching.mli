@@ -145,7 +145,7 @@ val mk_tpattern :
   @raise UserEerror if the raise_NoMatch flag given to [mk_tpattern_matcher] is
     [false] and if the pattern did not match *)
 type find_P =
-  env -> constr -> int -> k:subst -> constr
+  Environ.env -> EConstr.t -> int -> k:subst -> EConstr.t
 
 (** [conclude ()] asserts that all mentioned occurrences have been visited.
   @return the instance of the pattern, the evarmap after the pattern

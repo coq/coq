@@ -283,7 +283,7 @@ let unfoldintac occ rdx t (kt,_) =
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
     (fun env c _ h ->
-      try EConstr.of_constr @@ find_T env (EConstr.Unsafe.to_constr c) h ~k:(fun env c _ _ -> body env t c)
+      try find_T env c h ~k:(fun env c _ _ -> body env t c)
       with NoMatch when easy -> c
       | NoMatch | NoProgress -> errorstrm Pp.(str"No occurrence of "
         ++ pr_econstr_pat env sigma0 t ++ spc() ++ str "in " ++ Printer.pr_econstr_env env sigma c)),
@@ -336,7 +336,7 @@ let foldtac occ rdx ft =
     let ise, ut = mk_tpattern env0 sigma0 (ise,t) all_ok L2R ut in
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[ut]) in
-    (fun env c _ h -> try EConstr.of_constr @@ find_T env (EConstr.Unsafe.to_constr c) h ~k:(fun env t _ _ -> t) with NoMatch ->c),
+    (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
     (fun () -> try end_T () with NoMatch -> fake_pmatcher_end ())
   | _ ->
     (fun env c _ h ->
@@ -647,7 +647,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
         sigma, pats @ [pat] in
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
-      (fun e c _ i -> EConstr.of_constr @@ find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e (EConstr.Unsafe.to_constr c) i),
+      (fun e c _ i -> find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e c i),
       fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
   | Some(_, (T e | X_In_T (_,e) | E_As_X_In_T (e,_,_) | E_In_X_In_T (e,_,_))) ->
       let r = ref None in
@@ -684,7 +684,7 @@ let ssrinstancesofrule ist dir arg =
   Feedback.msg_info Pp.(str"BEGIN INSTANCES");
   try
     while true do
-      ignore(find env0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) 1 ~k:print)
+      ignore(find env0 (Reductionops.nf_evar sigma0 concl0) 1 ~k:print)
     done; raise NoMatch
   with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); Tacticals.tclIDTAC
   end
