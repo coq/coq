@@ -69,8 +69,9 @@ let gen_ground_tac flag taco ids bases =
       qflag:=flag;
       let solver=
         match taco with
-            Some tac-> tac
-          | None-> snd (default_solver ()) in
+        | Some tac -> tac
+        | None-> default_solver ()
+      in
       let startseq k =
         Proofview.Goal.enter begin fun gl ->
         let seq=empty_seq (ground_depth ()) in

@@ -13,5 +13,5 @@ open Vernacexpr
 
 val declare_tactic_option : ?default:Tacexpr.glob_tactic_expr -> string ->
   (* put *) (locality_flag -> glob_tactic_expr -> unit) *
-  (* get *) (unit -> locality_flag * unit Proofview.tactic) *
+  (* get *) (unit -> unit Proofview.tactic) *
   (* print *) (unit -> Pp.t)

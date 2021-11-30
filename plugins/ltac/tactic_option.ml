@@ -9,20 +9,17 @@
 (************************************************************************)
 
 open Libobject
-open Pp
 
 let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
-  let locality = Summary.ref false ~name:(name^"-locality") in
   let default_tactic : Tacexpr.glob_tactic_expr ref =
     Summary.ref default ~name:(name^"-default-tactic")
   in
-  let set_default_tactic local t =
-    locality := local;
+  let set_default_tactic t =
     default_tactic := t
   in
-  let cache (local, tac) = set_default_tactic local tac in
+  let cache (local, tac) = set_default_tactic tac in
   let load (local, tac) =
-    if not local then set_default_tactic local tac
+    if not local then set_default_tactic tac
   in
   let subst (s, (local, tac)) =
     (local, Tacsubst.subst_tactic s tac)
@@ -39,9 +36,6 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
   let put local tac =
     Lib.add_leaf (input (local, tac))
   in
-  let get () = !locality, Tacinterp.eval_tactic !default_tactic in
-  let print () =
-    Pptactic.pr_glob_tactic (Global.env ()) !default_tactic ++
-      (if !locality then str" (locally defined)" else str" (globally defined)")
-  in
+  let get () = Tacinterp.eval_tactic !default_tactic in
+  let print () = Pptactic.pr_glob_tactic (Global.env ()) !default_tactic in
   put, get, print
