@@ -1605,11 +1605,9 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
 
 .. tacv:: instantiate
 
-   Without argument, the instantiate tactic tries to solve as many existential
-   variables as possible, using information gathered from other tactics in the
-   same tactical. This is automatically done after each complete tactic (i.e.
-   after a dot in proof mode), but not, for example, between each tactic when
-   they are sequenced by semicolons.
+   This tactic behaves functionally as :tacn:`idtac`.
+
+   .. deprecated:: 8.16
 
 .. tacn:: admit
    :name: admit
