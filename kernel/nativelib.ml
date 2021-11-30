@@ -32,6 +32,11 @@ let source_ext = ".native"
 
 let ( / ) = Filename.concat
 
+let delay_cleanup_file =
+  let toclean = ref [] in
+  let () = at_exit (fun () -> List.iter (fun f -> if Sys.file_exists f then Sys.remove f) !toclean) in
+  fun f -> if not !Flags.debug then toclean := f :: !toclean
+
 (* We have to delay evaluation of include_dirs because coqlib cannot be guessed
 until flags have been properly initialized *)
 let include_dirs () =
@@ -114,7 +119,9 @@ let call_compiler ml_filename =
 let compile fn code =
   write_ml_code fn code;
   let r = call_compiler fn in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
+  (* NB: to prevent reusing the same filename we MUST NOT remove the file until exit
+     cf #15263 *)
+  delay_cleanup_file fn;
   r
 
 let compile_library dir code fn =
@@ -130,7 +137,7 @@ let compile_library dir code fn =
   let fn = dirname / basename in
   write_ml_code fn ~header code;
   let r = fst (call_compiler fn) in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
+  delay_cleanup_file fn;
   r
 
 (* call_linker links dynamically the code for constants in environment or a  *)
