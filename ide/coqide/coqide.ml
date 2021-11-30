@@ -242,12 +242,16 @@ let init_bpts sn =
 
 (* todo: shouldn't be so hard to chain operations *)
 let () = forward_init_db := fun sn ->
-  db_upd_bpts (get_updates sn) sn ~next:(fun () ->
+  let updates = get_updates sn in
+  let send_configd () =
     ignore @@ Coq.try_grab ~db:true sn.coqtop
       (sn.coqops#process_db_configd () ~next:(function | _ -> Coq.return ()))
-      (fun () -> Minilib.log "Coq busy, discarding db_configd");
-      Coq.return ()
-    )
+      (fun () -> Minilib.log "Coq busy, discarding db_configd")
+  in
+  if updates = [] then
+    send_configd ()
+  else
+    db_upd_bpts updates sn ~next:(fun () -> send_configd (); Coq.return ())
 
 let restore_bpts sn =
   init_bpts sn;
