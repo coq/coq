@@ -91,7 +91,7 @@ type subst = Environ.env -> EConstr.t -> EConstr.t -> int -> EConstr.t
     [subst] *)
 val eval_pattern :
   ?raise_NoMatch:bool ->
-  env -> evar_map -> constr ->
+  env -> evar_map -> EConstr.t ->
   pattern option -> occ -> subst ->
     EConstr.t
 
@@ -105,7 +105,7 @@ val eval_pattern :
     transformed as described above. *)
 val fill_occ_pattern :
   ?raise_NoMatch:bool ->
-  env -> evar_map -> constr ->
+  env -> evar_map -> EConstr.t ->
   pattern -> occ -> int ->
     EConstr.t Evd.in_evar_universe_context * EConstr.t
 

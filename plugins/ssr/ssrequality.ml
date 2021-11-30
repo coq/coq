@@ -227,7 +227,7 @@ let simplintac occ rdx sim =
     end else
       let sigma0, concl0, env0 = Proofview.Goal.(sigma gl, concl gl, env gl) in
       let simp env c _ _ = red_safe Tacred.simpl env sigma0 c in
-      convert_concl_no_check (eval_pattern env0 sigma0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) rdx occ simp)
+      convert_concl_no_check (eval_pattern env0 sigma0 (Reductionops.nf_evar sigma0 concl0) rdx occ simp)
     end
   in
   let open Tacticals in
@@ -315,7 +315,6 @@ let unfoldintac occ rdx t (kt,_) =
           pr_econstr_env env sigma c ++spc()++ str "does not unify with " ++ pr_econstr_pat env sigma t)),
     fake_pmatcher_end in
   let concl =
-    let concl0 = EConstr.Unsafe.to_constr concl0 in
     try beta env0 (eval_pattern env0 sigma0 concl0 rdx occ unfold)
     with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
   let _ = conclude () in
@@ -346,7 +345,6 @@ let foldtac occ rdx ft =
     with _ -> errorstrm Pp.(str "fold pattern " ++ pr_constr_pat env sigma t ++ spc ()
       ++ str "does not match redex " ++ pr_econstr_pat env sigma c)),
     fake_pmatcher_end in
-  let concl0 = EConstr.Unsafe.to_constr concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let _ = conclude () in
   convert_concl ~check:true concl
@@ -654,7 +652,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;
         let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, Reductionops.nf_evar ev c)) , x) in
-  let concl0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0 in
+  let concl0 = Reductionops.nf_evar sigma0 concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
   let r = Evd.merge_universe_context (pi1 r) (pi2 r), (pi3 r) in

@@ -52,7 +52,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) =
     (mkRHole, Some body), ist) pty in
   let pat = interp_cpattern env sigma pat pty in
   let (c, ucst), cl =
-    try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr cl) pat occ 1
+    try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with NoMatch -> redex_of_pattern ~resolve_typeclasses:true env pat, cl in
   let sigma = Evd.merge_universe_context sigma ucst in
   if Termops.occur_existential sigma c then errorstrm(str"The pattern"++spc()++

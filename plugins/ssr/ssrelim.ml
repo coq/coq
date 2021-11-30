@@ -135,7 +135,7 @@ let check_elim sigma has_elim = function
 let match_pat env sigma0 p occ h cl =
   debug_ssr (fun () -> Pp.(str"matching: " ++ pr_occ occ ++ pp_pattern env p));
   let (c,ucst), cl =
-    fill_occ_pattern ~raise_NoMatch:true env sigma0 (EConstr.Unsafe.to_constr cl) p occ h in
+    fill_occ_pattern ~raise_NoMatch:true env sigma0 cl p occ h in
   debug_ssr (fun () -> Pp.(str"     got: " ++ pr_econstr_env env sigma0 c));
   c, cl, ucst
 
