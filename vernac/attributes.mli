@@ -49,6 +49,8 @@ end
 
 (** Definitions for some standard attributes. *)
 
+val raw_attributes : vernac_flags attribute
+
 val polymorphic : bool attribute
 val program : bool attribute
 val template : bool option attribute

@@ -815,7 +815,7 @@ let inTac2Redefinition : redefinition -> obj =
      subst_function = subst_redefinition;
      classify_function = classify_redefinition }
 
-let register_redefinition ?(local = false) qid old e =
+let register_redefinition qid old e =
   let kn =
     try Tac2env.locate_ltac qid
     with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown tactic " ++ pr_qualid qid)
@@ -881,21 +881,22 @@ let perform_eval ~pstate e =
 
 (** Toplevel entries *)
 
-let unsupported_deprecation = function
-| None -> ()
-| Some _ ->
-  Attributes.unsupported_attributes [CAst.make ("deprecated", Attributes.VernacFlagEmpty)]
-
-let register_struct ?deprecation ?local str = match str with
-| StrVal (mut, isrec, e) -> register_ltac ?deprecation ?local ~mut isrec e
+let register_struct atts str = match str with
+| StrVal (mut, isrec, e) ->
+  let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
+  register_ltac ?deprecation ?local ~mut isrec e
 | StrTyp (isrec, t) ->
-  let () = unsupported_deprecation deprecation in (* TODO *)
+  let local = Attributes.(parse locality) atts in
   register_type ?local isrec t
-| StrPrm (id, t, ml) -> register_primitive ?deprecation ?local id t ml
-| StrSyn (tok, lev, e) -> register_notation ?deprecation ?local tok lev e
+| StrPrm (id, t, ml) ->
+  let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
+  register_primitive ?deprecation ?local id t ml
+| StrSyn (tok, lev, e) ->
+  let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
+  register_notation ?deprecation ?local tok lev e
 | StrMut (qid, old, e) ->
-  let () = unsupported_deprecation deprecation in (* TODO: what does that mean? *)
-  register_redefinition ?local qid old e
+  let () = Attributes.unsupported_attributes atts in
+  register_redefinition qid old e
 
 (** Toplevel exception *)
 
