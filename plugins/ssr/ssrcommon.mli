@@ -153,9 +153,6 @@ val is_tagged : string -> string -> bool
 val has_discharged_tag : string -> bool
 val ssrqid : string -> Libnames.qualid
 val mk_anon_id : string -> Id.t list -> Id.t
-val abs_evars_pirrel :
-           Environ.env -> Evd.evar_map ->
-           evar_map * Constr.constr -> int * Constr.constr
 val nbargs_open_constr : Environ.env -> Evd.evar_map * EConstr.t -> int
 val pf_nbargs : Environ.env -> Evd.evar_map -> EConstr.t -> int
 

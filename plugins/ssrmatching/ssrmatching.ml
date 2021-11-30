@@ -522,8 +522,7 @@ let dont_impact_evars_in sigma0 cl =
 (*  - w_unify expands let-in (zeta conversion) eagerly, whereas we want to  *)
 (*    match a head let rigidly.                                             *)
 let match_upats_FO upats env sigma0 ise orig_c =
-  let orig_c = EConstr.Unsafe.to_constr orig_c in
-  let dont_impact_evars = dont_impact_evars_in sigma0 (EConstr.of_constr orig_c) in
+  let dont_impact_evars = dont_impact_evars_in sigma0 orig_c in
   let rec loop c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
     let fpats =
@@ -561,12 +560,11 @@ let match_upats_FO upats env sigma0 ise orig_c =
     List.iter one_match fpats
   done;
   iter_constr_LR loop f; Array.iter loop a in
-  try loop orig_c with Invalid_argument _ -> CErrors.anomaly (str"IN FO.")
+  try loop (EConstr.Unsafe.to_constr orig_c) with Invalid_argument _ -> CErrors.anomaly (str"IN FO.")
 
 
 let match_upats_HO ~on_instance upats env sigma0 ise c =
- let c = EConstr.Unsafe.to_constr c in
- let dont_impact_evars = dont_impact_evars_in sigma0 (EConstr.of_constr c) in
+ let dont_impact_evars = dont_impact_evars_in sigma0 c in
  let it_did_match = ref false in
  let failed_because_of_TC = ref false in
  let rec aux upats env sigma0 ise c =
@@ -612,7 +610,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
   iter_constr_LR (aux upats env sigma0 ise) f;
   Array.iter (aux upats env sigma0 ise) a
  in
- aux upats env sigma0 ise c;
+ aux upats env sigma0 ise (EConstr.Unsafe.to_constr c);
  if !it_did_match then raise NoProgress;
  !failed_because_of_TC
 
@@ -1246,14 +1244,13 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
 ;;
 
 let pf_fill_occ env concl occ sigma0 p (sigma, t) ok h =
- let concl = EConstr.Unsafe.to_constr concl in
  let ise = create_evar_defs sigma in
  let ise, u = mk_tpattern env sigma0 (ise, t) ok L2R p in
  let find_U, end_U =
    mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
- let concl = apply_find_P find_U env concl h ~k:(fun _ _ _ n -> EConstr.mkRel n) in
+ let concl = find_U env concl h ~k:(fun _ _ _ n -> EConstr.mkRel n) in
  let rdx, _, (sigma, uc, p) = end_U () in
- sigma, uc, p, EConstr.of_constr concl, rdx
+ sigma, uc, p, concl, rdx
 
 let fill_occ_term env sigma0 cl occ (sigma, t) =
   try
@@ -1323,7 +1320,7 @@ let ssrinstancesof arg =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
-  let concl = EConstr.to_constr ~abort_on_undefined_evars:false sigma concl in
+  let concl = Reductionops.nf_evar sigma concl in
   let sigma0, cpat = interp_cpattern env sigma arg None in
   let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
   let pat = EConstr.of_constr pat in
@@ -1336,7 +1333,7 @@ let ssrinstancesof arg =
   ppnl (str"BEGIN INSTANCES");
   try
     while true do
-      ignore(apply_find_P find env concl 1 ~k:print)
+      ignore(find env concl 1 ~k:print)
     done; raise NoMatch
   with NoMatch -> ppnl (str"END INSTANCES"); Tacticals.tclIDTAC
   end

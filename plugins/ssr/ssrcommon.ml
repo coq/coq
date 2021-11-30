@@ -391,9 +391,6 @@ let ssrevaltac ist gtac = Tacinterp.tactic_of_value ist gtac
 
 let env_size env = List.length (Environ.named_context env)
 
-let pf_concl gl = EConstr.Unsafe.to_constr (Tacmach.pf_concl gl)
-let pf_get_hyp gl x = EConstr.Unsafe.to_named_decl (Tacmach.pf_get_hyp x gl)
-
 let resolve_typeclasses env sigma ~where ~fail =
   let filter =
     let evset = Evarutil.undefined_evars_of_term sigma where in
@@ -472,8 +469,9 @@ module Intset = Evar.Set
 
 let abs_evars_pirrel env sigma0 (sigma, c0) =
   pp(lazy(str"==PF_ABS_EVARS_PIRREL=="));
-  pp(lazy(str"c0= " ++ Printer.pr_constr_env env sigma c0));
-  let c0 = nf_evar sigma0 (nf_evar sigma c0) in
+  pp(lazy(str"c0= " ++ Printer.pr_econstr_env env sigma c0));
+  let c0 = Evarutil.nf_evar sigma0 (Evarutil.nf_evar sigma c0) in
+  let c0 = EConstr.Unsafe.to_constr c0 in
   let nenv = env_size env in
   let abs_evar n k =
     let evi = Evd.find sigma k in
@@ -653,18 +651,19 @@ let mkRefl env sigma t c =
   sigma, EConstr.mkApp (refl, [|t; c|])
 
 let discharge_hyp (id', (id, mode)) =
+  let open EConstr in
+  let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
-  let cl' = Vars.subst_var id (pf_concl gl) in
-  let decl = pf_get_hyp gl id in
+  let cl' = Vars.subst_var id (Tacmach.pf_concl gl) in
+  let decl = pf_get_hyp id gl in
   match decl, mode with
   | NamedDecl.LocalAssum _, _ | NamedDecl.LocalDef _, "(" ->
     let id' = {(NamedDecl.get_annot decl) with binder_name = Name id'} in
     Tactics.apply_type ~typecheck:true
-                               (EConstr.of_constr (mkProd (id', NamedDecl.get_type decl, cl')))
-       [EConstr.of_constr (mkVar id)]
+                               (mkProd (id', NamedDecl.get_type decl, cl')) [mkVar id]
   | NamedDecl.LocalDef (_, v, t), _ ->
     let id' = {(NamedDecl.get_annot decl) with binder_name = Name id'} in
-    convert_concl ~check:true (EConstr.of_constr (mkLetIn (id', v, t, cl')))
+    convert_concl ~check:true (mkLetIn (id', v, t, cl'))
   end
 
 let view_error s gv =
@@ -873,7 +872,7 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let uct = Evd.evar_universe_context (fst oc) in
-  let n, oc = abs_evars_pirrel env sigma (fst oc, EConstr.to_constr ~abort_on_undefined_evars:false (fst oc) (snd oc)) in
+  let n, oc = abs_evars_pirrel env sigma oc in
   Proofview.Unsafe.tclEVARS (Evd.set_universe_context sigma uct) <*>
   Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n (EConstr.of_constr oc))
     (fun _ -> Proofview.tclZERO dependent_apply_error)
@@ -1120,9 +1119,10 @@ let clr_of_wgen gen clrs = match gen with
 
 let reduct_in_concl ~check t = Tactics.reduct_in_concl ~cast:false ~check (t, DEFAULTcast)
 let unfold cl =
+  Proofview.tclEVARMAP >>= fun sigma ->
   let module R = Reductionops in let module F = CClosure.RedFlags in
   let flags = F.mkflags [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX; F.fDELTA] in
-  let fold accu c = F.red_add accu (F.fCONST (fst (destConst (EConstr.Unsafe.to_constr c)))) in
+  let fold accu c = F.red_add accu (F.fCONST (fst (EConstr.destConst sigma c))) in
   let flags = List.fold_left fold flags cl in
   reduct_in_concl ~check:false (R.clos_norm_flags flags)
 

@@ -307,12 +307,12 @@ Goal.enter_one ~__LOC__ begin fun g ->
   let p = Reductionops.nf_evar sigma p in
   let get_body = function Evd.Evar_defined x -> x | _ -> assert false in
   let evars_of_econstr sigma t =
-    Evarutil.undefined_evars_of_term sigma (EConstr.of_constr t) in
+    Evarutil.undefined_evars_of_term sigma t in
   let rigid_of s =
     List.fold_left (fun l k ->
       if Evd.is_defined sigma k then
         let bo = get_body Evd.(evar_body (find sigma k)) in
-          k :: l @ Evar.Set.elements (evars_of_econstr sigma (EConstr.Unsafe.to_constr bo))
+          k :: l @ Evar.Set.elements (evars_of_econstr sigma bo)
       else l
     ) [] s in
   let env0 = Proofview.Goal.env s0 in
