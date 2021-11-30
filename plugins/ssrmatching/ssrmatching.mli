@@ -79,7 +79,7 @@ type occ = (bool * int list) option
 
 (** [subst e p t i]. [i] is the number of binders
     traversed so far, [p] the term from the pattern, [t] the matched one *)
-type subst = env -> constr -> constr -> int -> constr
+type subst = Environ.env -> EConstr.t -> EConstr.t -> int -> EConstr.t
 
 (** [eval_pattern b env sigma t pat occ subst] maps [t] calling [subst] on every
     [occ] occurrence of [pat]. The [int] argument is the number of

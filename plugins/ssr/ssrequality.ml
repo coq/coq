@@ -226,7 +226,7 @@ let simplintac occ rdx sim =
       simpltac (Simpl m)
     end else
       let sigma0, concl0, env0 = Proofview.Goal.(sigma gl, concl gl, env gl) in
-      let simp env c _ _ = EConstr.Unsafe.to_constr (red_safe Tacred.simpl env sigma0 (EConstr.of_constr c)) in
+      let simp env c _ _ = red_safe Tacred.simpl env sigma0 c in
       convert_concl_no_check (EConstr.of_constr (eval_pattern env0 sigma0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) rdx occ simp))
     end
   in
@@ -283,10 +283,10 @@ let unfoldintac occ rdx t (kt,_) =
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
     (fun env c _ h ->
-      try find_T env c h ~k:(fun env c _ _ -> EConstr.Unsafe.to_constr (body env t (EConstr.of_constr c)))
+      try EConstr.of_constr @@ find_T env (EConstr.Unsafe.to_constr c) h ~k:(fun env c _ _ -> body env t c)
       with NoMatch when easy -> c
       | NoMatch | NoProgress -> errorstrm Pp.(str"No occurrence of "
-        ++ pr_econstr_pat env sigma0 t ++ spc() ++ str "in " ++ Printer.pr_constr_env env sigma c)),
+        ++ pr_econstr_pat env sigma0 t ++ spc() ++ str "in " ++ Printer.pr_econstr_env env sigma c)),
     (fun () -> try end_T () with
       | NoMatch when easy -> fake_pmatcher_end ()
       | NoMatch -> anomaly "unfoldintac")
@@ -306,13 +306,13 @@ let unfoldintac occ rdx t (kt,_) =
             | Proj _ when same_proj sigma0 c t -> body env t c
             | Const f -> aux (body env c c)
             | App (f, a) -> aux (EConstr.mkApp (body env f f, a))
-            | _ -> errorstrm Pp.(str "The term "++ pr_constr_env env sigma orig_c++
+            | _ -> errorstrm Pp.(str "The term "++ pr_econstr_env env sigma orig_c ++
                 str" contains no " ++ pr_econstr_env env sigma t ++ str" even after unfolding")
-          in EConstr.Unsafe.to_constr @@ aux (EConstr.of_constr c)
+          in aux c
       else
-        try EConstr.Unsafe.to_constr @@ body env t (fs (unify_HO env sigma (EConstr.of_constr c) t) t)
+        try body env t (fs (unify_HO env sigma c t) t)
         with _ -> errorstrm Pp.(str "The term " ++
-          pr_constr_env env sigma c ++spc()++ str "does not unify with " ++ pr_econstr_pat env sigma t)),
+          pr_econstr_env env sigma c ++spc()++ str "does not unify with " ++ pr_econstr_pat env sigma t)),
     fake_pmatcher_end in
   let concl =
     let concl0 = EConstr.Unsafe.to_constr concl0 in
@@ -336,15 +336,15 @@ let foldtac occ rdx ft =
     let ise, ut = mk_tpattern env0 sigma0 (ise,t) all_ok L2R ut in
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[ut]) in
-    (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
+    (fun env c _ h -> try EConstr.of_constr @@ find_T env (EConstr.Unsafe.to_constr c) h ~k:(fun env t _ _ -> t) with NoMatch ->c),
     (fun () -> try end_T () with NoMatch -> fake_pmatcher_end ())
   | _ ->
     (fun env c _ h ->
        try
-         let sigma = unify_HO env sigma (EConstr.of_constr c) (EConstr.of_constr t) in
-         EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
+         let sigma = unify_HO env sigma c (EConstr.of_constr t) in
+         Reductionops.nf_evar sigma (EConstr.of_constr t)
     with _ -> errorstrm Pp.(str "fold pattern " ++ pr_constr_pat env sigma t ++ spc ()
-      ++ str "does not match redex " ++ pr_constr_pat env sigma c)),
+      ++ str "does not match redex " ++ pr_econstr_pat env sigma c)),
     fake_pmatcher_end in
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
@@ -647,13 +647,13 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
         sigma, pats @ [pat] in
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
-      (fun e c _ i -> find_R ~k:(fun _ _ _ h -> mkRel h) e c i),
+      (fun e c _ i -> EConstr.of_constr @@ find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e (EConstr.Unsafe.to_constr c) i),
       fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
   | Some(_, (T e | X_In_T (_,e) | E_As_X_In_T (e,_,_) | E_In_X_In_T (e,_,_))) ->
       let r = ref None in
-      (fun env c _ h -> do_once r (fun () -> find_rule (EConstr.of_constr c), c); mkRel h),
+      (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;
-        let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, EConstr.to_constr ~abort_on_undefined_evars:false ev c)) , x) in
+        let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, EConstr.to_constr ~abort_on_undefined_evars:false ev c)) , EConstr.Unsafe.to_constr x) in
   let concl0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
@@ -680,7 +680,7 @@ let ssrinstancesofrule ist dir arg =
       sigma, pats @ [pat] in
     let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true sigma0 None ~upats_origin rpats in
-  let print env p c _ = Feedback.msg_info Pp.(hov 1 (str"instance:" ++ spc() ++ pr_constr_env env r_sigma p ++ spc() ++ str "matches:" ++ spc() ++ pr_constr_env env r_sigma c)); c in
+  let print env p c _ = Feedback.msg_info Pp.(hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env r_sigma p ++ spc() ++ str "matches:" ++ spc() ++ pr_econstr_env env r_sigma c)); c in
   Feedback.msg_info Pp.(str"BEGIN INSTANCES");
   try
     while true do

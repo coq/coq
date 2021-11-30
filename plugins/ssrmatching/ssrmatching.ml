@@ -629,13 +629,16 @@ let assert_done_multires r =
       r := Some (e, n+1,xs);
       try List.nth xs n with Failure _ -> raise NoMatch
 
-type subst = Environ.env -> constr -> constr -> int -> constr
+type subst = Environ.env -> EConstr.t -> EConstr.t -> int -> EConstr.t
 type find_P =
   Environ.env -> constr -> int ->
   k:subst ->
      constr
 type conclude = unit ->
   constr * ssrdir * (Evd.evar_map * UState.t * constr)
+
+let apply_subst (k : subst) env (c : constr) (t : constr) n =
+  EConstr.Unsafe.to_constr (k env (EConstr.of_constr c) (EConstr.of_constr t) n)
 
 (* upats_origin makes a better error message only            *)
 let mk_tpattern_matcher ?(all_instances=false)
@@ -736,7 +739,7 @@ let rec uniquize = function
     if Array.length a >= pn && match_EQ f && unif_EQ_args env sigma pa a then
       let a1, a2 = Array.chop (Array.length pa) a in
       let fa1 = mkApp (f, a1) in
-      let f' = if subst_occ () then k env u.up_t fa1 h else fa1 in
+      let f' = if subst_occ () then apply_subst k env u.up_t fa1 h else fa1 in
       mkApp (f', Array.map_left (subst_loop acc) a2)
     else
       (* TASSI: clear letin values to avoid unfolding *)
@@ -1119,7 +1122,7 @@ let id_of_pattern = function
 let noindex = Some(false,[])
 
 (* calls do_subst on every sub-term identified by (pattern,occ) *)
-let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
+let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst) =
   let fs sigma x = nf_evar sigma x in
   let pop_evar sigma e p =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
@@ -1137,7 +1140,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let sigma,pat= mk_tpattern ?hack env sigma0 (sigma,p) ok L2R (fs sigma t) in
     sigma, [pat] in
   match pattern with
-  | None -> do_subst env0 concl0 concl0 1, UState.empty
+  | None -> apply_subst do_subst env0 concl0 concl0 1, UState.empty
   | Some (sigma, (T rp | In_T rp)) ->
     let rp = fs sigma rp in
     let ise = create_evar_defs sigma in
@@ -1157,10 +1160,10 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let holep = mk_upat_for env0 sigma (sigma, hole) all_ok in
     let find_X, end_X = mk_tpattern_matcher ?raise_NoMatch sigma occ holep in
     let concl = find_T env0 concl0 1 ~k:(fun env c _ h ->
-      let p_sigma = unify_HO env (create_evar_defs sigma) (EConstr.of_constr c) (EConstr.of_constr p) in
+      let p_sigma = unify_HO env (create_evar_defs sigma) c (EConstr.of_constr p) in
       let sigma, e_body = pop_evar p_sigma ex p in
-      fs p_sigma (find_X env (fs sigma p) h
-        ~k:(fun env _ -> do_subst env e_body))) in
+      EConstr.of_constr @@ fs p_sigma (find_X env (fs sigma p) h
+        ~k:(fun env _ -> do_subst env (EConstr.of_constr e_body)))) in
     let _ = end_X () in let _, _, (_, us, _) = end_T () in
     concl, us
   | Some (sigma, E_In_X_In_T (e, hole, p)) ->
@@ -1173,10 +1176,10 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let re = mk_upat_for env0 sigma0 (sigma, e) all_ok in
     let find_E, end_E = mk_tpattern_matcher ?raise_NoMatch sigma0 occ re in
     let concl = find_T env0 concl0 1 ~k:(fun env c _ h ->
-      let p_sigma = unify_HO env (create_evar_defs sigma) (EConstr.of_constr c) (EConstr.of_constr p) in
+      let p_sigma = unify_HO env (create_evar_defs sigma) c (EConstr.of_constr p) in
       let sigma, e_body = pop_evar p_sigma ex p in
-      fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
-        find_E env e_body h ~k:do_subst))) in
+      EConstr.of_constr @@ fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
+        EConstr.of_constr @@ find_E env e_body h ~k:do_subst))) in
     let _,_,(_,us,_) = end_E () in
     let _ = end_X () in let _ = end_T () in
     concl, us
@@ -1191,12 +1194,12 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let holep = mk_upat_for env0 sigma (sigma, hole) all_ok in
     let find_X, end_X = mk_tpattern_matcher sigma occ holep in
     let concl = find_TE env0 concl0 1 ~k:(fun env c _ h ->
-      let p_sigma = unify_HO env (create_evar_defs sigma) (EConstr.of_constr c) (EConstr.of_constr p) in
+      let p_sigma = unify_HO env (create_evar_defs sigma) c (EConstr.of_constr p) in
       let sigma, e_body = pop_evar p_sigma ex p in
-      fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
+      EConstr.of_constr @@ fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
         let e_sigma = unify_HO env sigma (EConstr.of_constr e_body) (EConstr.of_constr e) in
         let e_body = fs e_sigma e in
-        do_subst env e_body e_body h))) in
+        EConstr.of_constr @@ apply_subst do_subst env e_body e_body h))) in
     let _ = end_X () in let _,_,(_,us,_) = end_TE () in
     concl, us
 ;;
@@ -1217,9 +1220,9 @@ let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
     let r = ref None in
     (fun env c _ h' ->
        do_once r (fun () -> c);
-       if do_make_rel then mkRel (h'+h-1) else c),
+       if do_make_rel then EConstr.mkRel (h'+h-1) else c),
     (fun _ -> if !r = None then fst(redex_of_pattern env pat)
-                           else assert_done r) in
+                           else EConstr.Unsafe.to_constr @@ assert_done r) in
   let cl, us =
     eval_pattern ?raise_NoMatch env sigma cl (Some pat) occ find_R in
   let e = conclude cl in
@@ -1242,7 +1245,7 @@ let pf_fill_occ env concl occ sigma0 p (sigma, t) ok h =
  let ise, u = mk_tpattern env sigma0 (ise,EConstr.Unsafe.to_constr t) ok L2R p in
  let find_U, end_U =
    mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
- let concl = find_U env concl h ~k:(fun _ _ _ -> mkRel) in
+ let concl = find_U env concl h ~k:(fun _ _ _ n -> EConstr.mkRel n) in
  let rdx, _, (sigma, uc, p) = end_U () in
  sigma, uc, EConstr.of_constr p, EConstr.of_constr concl, EConstr.of_constr rdx
 
@@ -1324,8 +1327,8 @@ let ssrinstancesof arg =
   let find, conclude =
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
       sigma None (etpat,[tpat]) in
-  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_constr_env env (Proofview.Goal.sigma gl) p ++ spc()
-                                     ++ str "matches:" ++ spc() ++ pr_constr_env env (Proofview.Goal.sigma gl)  c)); c in
+  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) p ++ spc()
+                                     ++ str "matches:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) c)); c in
   ppnl (str"BEGIN INSTANCES");
   try
     while true do
