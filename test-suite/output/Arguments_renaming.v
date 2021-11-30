@@ -1,6 +1,6 @@
 (* coq-prog-args: ("-top" "Arguments_renaming") *)
 Fail Arguments eq_refl {B y}, [B] y.
-Arguments identity A _ _.
+Arguments eq A _ _.
 Arguments eq_refl A x : assert.
 Arguments eq_refl {B y}, [B] y : rename.
 

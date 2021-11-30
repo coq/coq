@@ -447,22 +447,47 @@ Proof. intros. apply CompareSpec2Type; assumption. Defined.
 (** [identity A a] is the family of datatypes on [A] whose sole non-empty
     member is the singleton datatype [identity A a a] whose
     sole inhabitant is denoted [identity_refl A a] *)
-(** Beware: this inductive actually falls into [Prop], as the sole
-    constructor has no arguments and [-indices-matter] is not
-    activated in the standard library. *)
 
-Inductive identity (A:Type) (a:A) : A -> Type :=
-  identity_refl : identity a a.
-#[global]
-Hint Resolve identity_refl: core.
+#[deprecated(since="8.16",note="Use eq instead")]
+Notation identity := eq (only parsing).
+#[deprecated(since="8.16",note="Use eq_refl instead")]
+Notation identity_refl := eq_refl (only parsing).
+#[deprecated(since="8.16",note="Use eq_ind instead")]
+Notation identity_ind := eq_ind (only parsing).
+#[deprecated(since="8.16",note="Use eq_rec instead")]
+Notation identity_rec := eq_rec (only parsing).
+#[deprecated(since="8.16",note="Use eq_rect instead")]
+Notation identity_rect := eq_rect (only parsing).
+#[deprecated(since="8.16",note="Use eq_sym instead")]
+Notation identity_sym := eq_sym (only parsing).
+#[deprecated(since="8.16",note="Use eq_trans instead")]
+Notation identity_trans := eq_trans (only parsing).
+#[deprecated(since="8.16",note="Use f_equal instead")]
+Notation identity_congr := f_equal (only parsing).
+#[deprecated(since="8.16",note="Use not_eq_sym instead")]
+Notation not_identity_sym := not_eq_sym (only parsing).
+#[deprecated(since="8.16",note="Use eq_ind_r instead")]
+Notation identity_ind_r := eq_ind_r (only parsing).
+#[deprecated(since="8.16",note="Use eq_rec_r instead")]
+Notation identity_rec_r := eq_rec_r (only parsing).
+#[deprecated(since="8.16",note="Use eq_rect_r instead")]
+Notation identity_rect_r := eq_rect_r (only parsing).
 
-Arguments identity_ind [A] a P f y i.
-Arguments identity_rec [A] a P f y i.
-Arguments identity_rect [A] a P f y i.
+Register eq as core.identity.type.
+Register eq_refl as core.identity.refl.
+Register eq_ind as core.identity.ind.
+Register eq_sym as core.identity.sym.
+Register eq_trans as core.identity.trans.
+Register f_equal as core.identity.congr.
 
-Register identity as core.identity.type.
-Register identity_refl as core.identity.refl.
-Register identity_ind as core.identity.ind.
+#[deprecated(since="8.16",note="Use eq_refl instead")]
+Notation refl_id := eq_refl (only parsing).
+#[deprecated(since="8.16",note="Use eq_sym instead")]
+Notation sym_id := eq_sym (only parsing).
+#[deprecated(since="8.16",note="Use eq_trans instead")]
+Notation trans_id := eq_trans (only parsing).
+#[deprecated(since="8.16",note="Use not_eq_sym instead")]
+Notation sym_not_id := not_eq_sym (only parsing).
 
 (** Identity type *)
 

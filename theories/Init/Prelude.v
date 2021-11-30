@@ -10,7 +10,6 @@
 
 Require Export Notations.
 Require Export Logic.
-Require Export Logic_Type.
 Require Export Datatypes.
 Require Export Specif.
 Require Coq.Init.Byte.
