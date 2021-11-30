@@ -1191,14 +1191,12 @@ struct
         | VMcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
           let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
-          if not (occur_existential sigma cty || occur_existential sigma tval) then
-            match Reductionops.vm_infer_conv !!env sigma cty tval with
+          begin match Reductionops.vm_infer_conv !!env sigma cty tval with
             | Some sigma -> (sigma, cj), tval
             | None ->
               error_actual_type ?loc !!env sigma cj tval
                 (ConversionFailed (!!env,cty,tval))
-          else user_err ?loc  (str "Cannot check cast with vm: " ++
-                               str "unresolved arguments remain.")
+          end
         | NATIVEcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
           let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
