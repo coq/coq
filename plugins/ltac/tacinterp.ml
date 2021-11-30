@@ -774,17 +774,16 @@ let interp_may_eval f ist env sigma = function
       let (redfun, _) = Redexpr.reduction_of_red_expr env redexp in
       redfun env sigma c_interp
   | ConstrContext ({loc;v=s},c) ->
-      (try
-        let (sigma,ic) = f ist env sigma c in
-        let ctxt = try_interp_ltac_var coerce_to_constr_context ist (Some (env, sigma)) (CAst.make ?loc s) in
-        let ctxt = EConstr.Unsafe.to_constr ctxt in
-        let ic = EConstr.Unsafe.to_constr ic in
-        let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
-        Typing.solve_evars env sigma (EConstr.of_constr c)
-      with
-        | Not_found ->
-            user_err ?loc
-            (str "Unbound context identifier" ++ Id.print s ++ str"."))
+    let (sigma,ic) = f ist env sigma c in
+    let ctxt =
+      try try_interp_ltac_var coerce_to_constr_context ist (Some (env, sigma)) (CAst.make ?loc s)
+      with Not_found ->
+        user_err ?loc (str "Unbound context identifier" ++ Id.print s ++ str".")
+    in
+    let ctxt = EConstr.Unsafe.to_constr ctxt in
+    let ic = EConstr.Unsafe.to_constr ic in
+    let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
+    Typing.solve_evars env sigma (EConstr.of_constr c)
   | ConstrTypeOf c ->
       let (sigma,c_interp) = f ist env sigma c in
       let (sigma, t) = Typing.type_of ~refresh:true env sigma c_interp in
