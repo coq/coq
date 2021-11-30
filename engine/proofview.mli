@@ -595,10 +595,6 @@ module V82 : sig
    * (conclusion and context) before calling the tactic *)
   val tactic : ?nf_evars:bool -> tac -> unit tactic
 
-  (* normalises the evars in the goals, and stores the result in
-     solution. *)
-  val nf_evar_goals : unit tactic
-
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma
 
   (* returns the existential variable used to start the proof *)
