@@ -56,7 +56,7 @@ val pr_rpattern : rpattern -> Pp.t
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
 val redex_of_pattern :
   ?resolve_typeclasses:bool -> env -> pattern ->
-     constr Evd.in_evar_universe_context
+     EConstr.t Evd.in_evar_universe_context
 
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]
     in the current [Ltac] interpretation signature [ise] and tactic input [gl]*)
@@ -93,7 +93,7 @@ val eval_pattern :
   ?raise_NoMatch:bool ->
   env -> evar_map -> constr ->
   pattern option -> occ -> subst ->
-    constr
+    EConstr.t
 
 (** [fill_occ_pattern b env sigma t pat occ h] is a simplified version of
     [eval_pattern].
@@ -107,7 +107,7 @@ val fill_occ_pattern :
   ?raise_NoMatch:bool ->
   env -> evar_map -> constr ->
   pattern -> occ -> int ->
-    constr Evd.in_evar_universe_context * constr
+    EConstr.t Evd.in_evar_universe_context * EConstr.t
 
 (** *************************** Low level APIs ****************************** *)
 

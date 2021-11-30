@@ -1145,7 +1145,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let sigma,pat= mk_tpattern ?hack env sigma0 (sigma,p) ok L2R (fs sigma t) in
     sigma, [pat] in
   match pattern with
-  | None -> apply_subst do_subst env0 concl0 concl0 1, UState.empty
+  | None -> EConstr.of_constr @@ apply_subst do_subst env0 concl0 concl0 1, UState.empty
   | Some (sigma, (T rp | In_T rp)) ->
     let rp = fs sigma rp in
     let ise = create_evar_defs sigma in
@@ -1154,7 +1154,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let find_T, end_T = mk_tpattern_matcher ?raise_NoMatch sigma0 occ rp in
     let concl = apply_find_P find_T env0 concl0 1 ~k:do_subst in
     let _, _, (_, us, _) = end_T () in
-    concl, us
+    EConstr.of_constr concl, us
   | Some (sigma, (X_In_T (hole, p) | In_X_In_T (hole, p))) ->
     let p = fs sigma p in
     let occ = match pattern with Some (_, X_In_T _) -> occ | _ -> noindex in
@@ -1170,7 +1170,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
       EConstr.of_constr @@ fs p_sigma (apply_find_P find_X env (fs sigma p) h
         ~k:(fun env _ -> do_subst env (EConstr.of_constr e_body)))) in
     let _ = end_X () in let _, _, (_, us, _) = end_T () in
-    concl, us
+    EConstr.of_constr concl, us
   | Some (sigma, E_In_X_In_T (e, hole, p)) ->
     let p, e = fs sigma p, fs sigma e in
     let ex = ex_value hole in
@@ -1187,7 +1187,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
         EConstr.of_constr @@ apply_find_P find_E env e_body h ~k:do_subst))) in
     let _,_,(_,us,_) = end_E () in
     let _ = end_X () in let _ = end_T () in
-    concl, us
+    EConstr.of_constr concl, us
   | Some (sigma, E_As_X_In_T (e, hole, p)) ->
     let p, e = fs sigma p, fs sigma e in
     let ex = ex_value hole in
@@ -1206,7 +1206,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
         let e_body = fs e_sigma e in
         EConstr.of_constr @@ apply_subst do_subst env e_body e_body h))) in
     let _ = end_X () in let _,_,(_,us,_) = end_TE () in
-    concl, us
+    EConstr.of_constr concl, us
 ;;
 
 let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
@@ -1216,7 +1216,7 @@ let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
   let sigma =
     if not resolve_typeclasses then sigma
     else Typeclasses.resolve_typeclasses ~fail:false env sigma in
-  nf_evar sigma e, Evd.evar_universe_context sigma
+  EConstr.of_constr (nf_evar sigma e), Evd.evar_universe_context sigma
 
 let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
   let do_make_rel, occ =
@@ -1227,7 +1227,7 @@ let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
        do_once r (fun () -> c);
        if do_make_rel then EConstr.mkRel (h'+h-1) else c),
     (fun _ -> if !r = None then fst(redex_of_pattern env pat)
-                           else EConstr.Unsafe.to_constr @@ assert_done r) in
+                           else assert_done r) in
   let cl, us =
     eval_pattern ?raise_NoMatch env sigma cl (Some pat) occ find_R in
   let e = conclude cl in
@@ -1294,8 +1294,6 @@ let ssrpatterntac _ist arg =
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let (t, uc), concl_x =
     fill_occ_pattern env sigma0 concl0 pat noindex 1 in
-  let t = EConstr.of_constr t in
-  let concl_x = EConstr.of_constr concl_x in
   let sigma, tty = Typing.type_of env sigma0 t in
   let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) Sorts.Relevant, t, tty, concl_x) in
   Proofview.Unsafe.tclEVARS sigma <*>

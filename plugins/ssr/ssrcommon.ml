@@ -1004,10 +1004,8 @@ let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
   let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context @@ fst pat) in
   let (c, ucst), cl =
     try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr concl) pat occ 1
-    with NoMatch -> redex_of_pattern env pat, (EConstr.Unsafe.to_constr concl) in
+    with NoMatch -> redex_of_pattern env pat, concl in
   let sigma = Evd.merge_universe_context sigma ucst in
-  let c = EConstr.of_constr c in
-  let cl = EConstr.of_constr cl in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
   if not(occur_existential sigma c) then
     if tag_of_cpattern t = WithAt then
@@ -1094,9 +1092,7 @@ let abs_wgen env sigma keep_let f gen (args,c) =
      let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
-       with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
-     let c = EConstr.of_constr c in
-     let t = EConstr.of_constr t in
+       with NoMatch -> redex_of_pattern env cp, c in
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
      let sigma, ty, r = pfe_type_relevance_of env sigma t in
@@ -1108,9 +1104,7 @@ let abs_wgen env sigma keep_let f gen (args,c) =
      let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
-       with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
-     let c = EConstr.of_constr c in
-     let t = EConstr.of_constr t in
+       with NoMatch -> redex_of_pattern env cp, c in
      evar_closed t p;
      let sigma, ty, r = pfe_type_relevance_of env sigma t in
      let sigma = Evd.merge_universe_context sigma ucst in

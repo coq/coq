@@ -227,7 +227,7 @@ let simplintac occ rdx sim =
     end else
       let sigma0, concl0, env0 = Proofview.Goal.(sigma gl, concl gl, env gl) in
       let simp env c _ _ = red_safe Tacred.simpl env sigma0 c in
-      convert_concl_no_check (EConstr.of_constr (eval_pattern env0 sigma0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) rdx occ simp))
+      convert_concl_no_check (eval_pattern env0 sigma0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) rdx occ simp)
     end
   in
   let open Tacticals in
@@ -316,7 +316,7 @@ let unfoldintac occ rdx t (kt,_) =
     fake_pmatcher_end in
   let concl =
     let concl0 = EConstr.Unsafe.to_constr concl0 in
-    try beta env0 (EConstr.of_constr (eval_pattern env0 sigma0 concl0 rdx occ unfold))
+    try beta env0 (eval_pattern env0 sigma0 concl0 rdx occ unfold)
     with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
   let _ = conclude () in
   convert_concl ~check:true concl
@@ -349,7 +349,7 @@ let foldtac occ rdx ft =
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let _ = conclude () in
-  convert_concl ~check:true (EConstr.of_constr concl)
+  convert_concl ~check:true concl
   end
 
 let converse_dir = function L2R -> R2L | R2L -> L2R
@@ -535,7 +535,7 @@ let ssr_is_setoid env =
       sigma [] (EConstr.mkApp (r, args)) <> None
 
 let closed0_check env sigma cl p =
-  if closed0 cl then
+  if closed0 (EConstr.Unsafe.to_constr cl) then
     errorstrm Pp.(str"No occurrence of redex "++ pr_constr_env env sigma p)
 
 let dir_org = function L2R -> 1 | R2L -> 2
@@ -658,7 +658,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
   let r = Evd.merge_universe_context (pi1 r) (pi2 r), (pi3 r) in
-  rwcltac ?under ?map_redex (EConstr.of_constr concl) rdx d r
+  rwcltac ?under ?map_redex concl rdx d r
   end
 
 let ssrinstancesofrule ist dir arg =

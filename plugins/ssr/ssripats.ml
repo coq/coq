@@ -729,12 +729,11 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   let cl0, env, sigma, hyps = Goal.(concl gl, env gl, sigma gl, hyps gl) in
   let sigma0 = sigma in
   let pat = Ssrmatching.interp_cpattern env sigma t None in
-  let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
+  let cl = Reductionops.nf_evar sigma cl0 in
   let (c, ucst), cl =
-    try Ssrmatching.fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
+    try Ssrmatching.fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr cl) pat occ 1
     with Ssrmatching.NoMatch -> Ssrmatching.redex_of_pattern env pat, cl in
   let sigma = Evd.merge_universe_context sigma ucst in
-  let c, cl = EConstr.of_constr c, EConstr.of_constr cl in
   let clr =
     Ssrcommon.interp_clr sigma (oclr, (Ssrmatching.tag_of_cpattern t,c)) in
   (* Historically in Coq, and hence in ssr, [case t] accepts [t] of type
