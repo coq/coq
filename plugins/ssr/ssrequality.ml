@@ -648,6 +648,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       (fun e c _ i -> find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e c i),
       fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl (EConstr.Unsafe.to_constr rdx); (d,r),rdx
   | Some(_, (T e | X_In_T (_,e) | E_As_X_In_T (e,_,_) | E_In_X_In_T (e,_,_))) ->
+      let e = EConstr.Unsafe.to_constr e in
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;
@@ -699,7 +700,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
   let fail = ref false in
   let interp_rpattern env sigma gc =
     try interp_rpattern env sigma gc
-    with _ when snd mult = May -> fail := true; sigma, T mkProp in
+    with _ when snd mult = May -> fail := true; sigma, T EConstr.mkProp in
   let interp env sigma gc =
     try interp_term env sigma ist gc
     with _ when snd mult = May -> fail := true; (sigma, EConstr.mkProp) in

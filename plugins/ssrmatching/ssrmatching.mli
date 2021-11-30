@@ -43,7 +43,7 @@ type ('ident, 'term) ssrpattern =
   | E_In_X_In_T of 'term * 'ident * 'term
   | E_As_X_In_T of 'term * 'ident * 'term
 
-type pattern = evar_map * (constr, constr) ssrpattern
+type pattern = Evd.evar_map * (EConstr.t, EConstr.t) ssrpattern
 val pp_pattern : env -> pattern -> Pp.t
 
 (** The type of rewrite patterns, the patterns of the [rewrite] tactic.
@@ -220,7 +220,7 @@ val unify_HO : env -> evar_map -> EConstr.constr -> EConstr.constr -> evar_map
     on top of the former APIs *)
 val tag_of_cpattern : cpattern -> ssrtermkind
 val loc_of_cpattern : cpattern -> Loc.t option
-val id_of_pattern : pattern -> Names.Id.t option
+val id_of_pattern : evar_map -> pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
 val cpattern_of_id : Names.Id.t -> cpattern
 val pr_constr_pat : env -> evar_map -> constr -> Pp.t

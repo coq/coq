@@ -959,7 +959,7 @@ let ssrabstract dgens =
     Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
     Ssrcommon.tacMK_SSR_CONST "abstract_key" >>= fun abstract_key ->
     Ssrcommon.tacINTERP_CPATTERN cid >>= fun cid ->
-    let id = EConstr.mkVar (Option.get (Ssrmatching.id_of_pattern cid)) in
+    let id = EConstr.mkVar (Option.get (Ssrmatching.id_of_pattern (Goal.sigma g) cid)) in
     tacEXAMINE_ABSTRACT id >>= fun (idty, args_id) ->
     let abstract_n = args_id.(1) in
     tacFIND_ABSTRACT_PROOF true abstract_n >>= fun abstract_proof ->
@@ -994,7 +994,7 @@ let ssrabstract dgens =
      let open Ssrmatching in
      let open Tacmach in
      let ipats = List.map (fun (_,cp) ->
-       match id_of_pattern (interp_cpattern (pf_env gl) (project gl) cp None) with
+       match id_of_pattern (project gl) (interp_cpattern (pf_env gl) (project gl) cp None) with
        | None -> IPatAnon (One None)
        | Some id -> IPatId id)
        (List.tl gens) in
