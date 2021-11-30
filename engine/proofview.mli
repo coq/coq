@@ -609,10 +609,6 @@ module V82 : sig
      expected for a tactic obtained from {!V82.tactic} though. *)
   val of_tactic : 'a tactic -> tac
 
-  (* exception for which it is deemed to be safe to transmute into
-     tactic failure. *)
-  val catchable_exception : exn -> bool
-
   (* transforms every Ocaml (catchable) exception into a failure in
      the monad. *)
   val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
