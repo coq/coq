@@ -637,7 +637,7 @@ type find_P =
   k:subst ->
      EConstr.t
 type conclude = unit ->
-  constr * ssrdir * (Evd.evar_map * UState.t * constr)
+  EConstr.t * ssrdir * (Evd.evar_map * UState.t * EConstr.t)
 
 let apply_subst (k : subst) env (c : constr) (t : constr) n =
   EConstr.Unsafe.to_constr (k env (EConstr.of_constr c) (EConstr.of_constr t) n)
@@ -767,7 +767,7 @@ let rec uniquize = function
     | Some (env,_,x) -> env,List.hd x | None when raise_NoMatch -> raise NoMatch
     | None -> CErrors.anomaly (str"companion function never called.") in
   let p' = mkApp (pf, pa) in
-  if max_occ <= !nocc then p', u.up_dir, (sigma, uc, u.up_t)
+  if max_occ <= !nocc then EConstr.of_constr p', u.up_dir, (sigma, uc, EConstr.of_constr u.up_t)
   else errorstrm (str"Only " ++ int !nocc ++ str" < " ++ int max_occ ++
         str(String.plural !nocc " occurrence") ++ match upats_origin with
         | None -> str" of" ++ spc() ++ pr_constr_pat env sigma p'
@@ -1252,7 +1252,7 @@ let pf_fill_occ env concl occ sigma0 p (sigma, t) ok h =
    mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
  let concl = apply_find_P find_U env concl h ~k:(fun _ _ _ n -> EConstr.mkRel n) in
  let rdx, _, (sigma, uc, p) = end_U () in
- sigma, uc, EConstr.of_constr p, EConstr.of_constr concl, EConstr.of_constr rdx
+ sigma, uc, p, EConstr.of_constr concl, rdx
 
 let fill_occ_term env sigma0 cl occ (sigma, t) =
   try

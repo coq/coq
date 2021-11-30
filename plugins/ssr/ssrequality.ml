@@ -262,7 +262,7 @@ let same_proj sigma t1 t2 =
 let all_ok _ _ = true
 
 let fake_pmatcher_end () =
-  mkProp, L2R, (Evd.empty, UState.empty, mkProp)
+  EConstr.mkProp, L2R, (Evd.empty, UState.empty, EConstr.mkProp)
 
 let unfoldintac occ rdx t (kt,_) =
   Proofview.Goal.enter begin fun gl ->
@@ -648,17 +648,17 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
       (fun e c _ i -> find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e c i),
-      fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
+      fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl (EConstr.Unsafe.to_constr rdx); (d,r),rdx
   | Some(_, (T e | X_In_T (_,e) | E_As_X_In_T (e,_,_) | E_In_X_In_T (e,_,_))) ->
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;
-        let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, EConstr.to_constr ~abort_on_undefined_evars:false ev c)) , EConstr.Unsafe.to_constr x) in
+        let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, Reductionops.nf_evar ev c)) , x) in
   let concl0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
-  let r = Evd.merge_universe_context (pi1 r) (pi2 r), EConstr.of_constr (pi3 r) in
-  rwcltac ?under ?map_redex (EConstr.of_constr concl) (EConstr.of_constr rdx) d r
+  let r = Evd.merge_universe_context (pi1 r) (pi2 r), (pi3 r) in
+  rwcltac ?under ?map_redex (EConstr.of_constr concl) rdx d r
   end
 
 let ssrinstancesofrule ist dir arg =
