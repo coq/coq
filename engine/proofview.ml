@@ -1266,8 +1266,6 @@ module V82 = struct
       let (_, info) = Exninfo.capture src in
       Exninfo.iraise (e, info)
 
-  let put_status = Status.put
-
   let catchable_exception = catchable_exception
 
   let wrap_exceptions f =

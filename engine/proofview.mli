@@ -611,9 +611,6 @@ module V82 : sig
      expected for a tactic obtained from {!V82.tactic} though. *)
   val of_tactic : 'a tactic -> tac
 
-  (* marks as unsafe if the argument is [false] *)
-  val put_status : bool -> unit tactic
-
   (* exception for which it is deemed to be safe to transmute into
      tactic failure. *)
   val catchable_exception : exn -> bool
