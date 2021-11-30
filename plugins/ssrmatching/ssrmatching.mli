@@ -127,11 +127,11 @@ type tpattern
   @return the compiled [tpattern] and its [evar_map]
   @raise UserEerror is the pattern is a wildcard *)
 val mk_tpattern :
-  ?p_origin:ssrdir * constr ->
+  ?p_origin:ssrdir * EConstr.t ->
   env -> evar_map ->
-  evar_map * constr ->
-  (constr -> evar_map -> bool) ->
-  ssrdir -> constr ->
+  evar_map * EConstr.t ->
+  (EConstr.t -> evar_map -> bool) ->
+  ssrdir -> EConstr.t ->
     evar_map * tpattern
 
 (** [findP env t i k] is a stateful function that finds the next occurrence
@@ -163,7 +163,7 @@ type conclude =
 val mk_tpattern_matcher :
   ?all_instances:bool ->
   ?raise_NoMatch:bool ->
-  ?upats_origin:ssrdir * constr ->
+  ?upats_origin:ssrdir * EConstr.t ->
   evar_map -> occ -> evar_map * tpattern list ->
     find_P * conclude
 

@@ -279,7 +279,7 @@ let unfoldintac occ rdx t (kt,_) =
   let unfold, conclude = match rdx with
   | Some (_, (In_T _ | In_X_In_T _)) | None ->
     let ise = Evd.create_evar_defs sigma in
-    let ise, u = mk_tpattern env0 sigma0 (ise,EConstr.Unsafe.to_constr t) all_ok L2R (EConstr.Unsafe.to_constr t) in
+    let ise, u = mk_tpattern env0 sigma0 (ise, t) all_ok L2R t in
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
     (fun env c _ h ->
@@ -327,11 +327,11 @@ let foldtac occ rdx ft =
   let env0 = Proofview.Goal.env gl in
   let concl0 = Proofview.Goal.concl gl in
   let sigma, t = ft in
-  let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
+  let t = Reductionops.nf_evar sigma t in
   let fold, conclude = match rdx with
   | Some (_, (In_T _ | In_X_In_T _)) | None ->
     let ise = Evd.create_evar_defs sigma in
-    let ut = EConstr.Unsafe.to_constr (red_product_skip_id env0 sigma (EConstr.of_constr t)) in
+    let ut = red_product_skip_id env0 sigma t in
     let ise, ut = mk_tpattern env0 sigma0 (ise,t) all_ok L2R ut in
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[ut]) in
@@ -340,9 +340,9 @@ let foldtac occ rdx ft =
   | _ ->
     (fun env c _ h ->
        try
-         let sigma = unify_HO env sigma c (EConstr.of_constr t) in
-         Reductionops.nf_evar sigma (EConstr.of_constr t)
-    with _ -> errorstrm Pp.(str "fold pattern " ++ pr_constr_pat env sigma t ++ spc ()
+         let sigma = unify_HO env sigma c t in
+         Reductionops.nf_evar sigma t
+    with _ -> errorstrm Pp.(str "fold pattern " ++ pr_econstr_pat env sigma t ++ spc ()
       ++ str "does not match redex " ++ pr_econstr_pat env sigma c)),
     fake_pmatcher_end in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
@@ -637,11 +637,11 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
   let concl0 = Proofview.Goal.concl gl in
   let find_R, conclude = match rdx_pat with
   | Some (_, (In_T _ | In_X_In_T _)) | None ->
-      let upats_origin = dir, EConstr.Unsafe.to_constr (snd rule) in
+      let upats_origin = dir, (snd rule) in
       let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
         let sigma, pat =
-          let rw_progress rhs t evd = rw_progress rhs (EConstr.of_constr t) evd in
-          mk_tpattern env sigma0 (sigma, EConstr.to_constr ~abort_on_undefined_evars:false sigma r) (rw_progress rhs) d (EConstr.to_constr ~abort_on_undefined_evars:false sigma lhs) in
+          let rw_progress rhs t evd = rw_progress rhs t evd in
+          mk_tpattern env sigma0 (sigma, Reductionops.nf_evar sigma r) (rw_progress rhs) d (Reductionops.nf_evar sigma lhs) in
         sigma, pats @ [pat] in
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
@@ -667,14 +667,14 @@ let ssrinstancesofrule ist dir arg =
   let rule = interp_term env0 sigma0 ist arg in
   let r_sigma, rules = rwprocess_rule env0 dir rule in
   let find, conclude =
-    let upats_origin = dir, EConstr.Unsafe.to_constr (snd rule) in
+    let upats_origin = dir, (snd rule) in
     let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
       let sigma, pat =
-        let rw_progress rhs t evd = rw_progress rhs (EConstr.of_constr t) evd in
+        let rw_progress rhs t evd = rw_progress rhs t evd in
         mk_tpattern env sigma0
-          (sigma,EConstr.to_constr ~abort_on_undefined_evars:false sigma r)
+          (sigma, Reductionops.nf_evar sigma r)
           (rw_progress rhs) d
-          (EConstr.to_constr ~abort_on_undefined_evars:false sigma lhs) in
+          (Reductionops.nf_evar sigma lhs) in
       sigma, pats @ [pat] in
     let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true sigma0 None ~upats_origin rpats in
