@@ -554,11 +554,7 @@ where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
 We can now extract this program to OCaml:
 
-.. coqtop:: none
-
-   Reset Initial.
-
-.. coqtop:: all
+.. coqtop:: reset all
 
    Require Extraction.
    Require Import Euclid Wf_nat.
