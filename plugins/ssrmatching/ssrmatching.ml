@@ -223,26 +223,24 @@ let unif_FO env ise p c =
 
 (* Perform evar substitution in main term and prune substitution. *)
 let nf_open_term sigma0 ise c =
-  let c = EConstr.Unsafe.to_constr c in
+  let open EConstr in
   let s = ise and s' = ref sigma0 in
-  let rec nf c' = match kind c' with
+  let rec nf c' = match EConstr.kind s c' with
   | Evar ex ->
-    begin try nf (existential_value0 s ex) with _ ->
     let k, a = ex in let a' = List.map nf a in
     if not (Evd.mem !s' k) then
       s' := Evd.add !s' k (Evarutil.nf_evar_info s (Evd.find s k));
     mkEvar (k, a')
-    end
-  | _ -> map nf c' in
+  | _ -> map s nf c' in
   let copy_def k evi () =
     if evar_body evi != Evd.Evar_empty then () else
     match Evd.evar_body (Evd.find s k) with
       | Evar_defined c' ->
-        let c' = EConstr.of_constr (nf (EConstr.Unsafe.to_constr c')) in
+        let c' = nf c' in
         s' := Evd.define k c' !s'
     | _ -> () in
   let c' = nf c in let _ = Evd.fold copy_def sigma0 () in
-  !s', Evd.evar_universe_context s, EConstr.of_constr c'
+  !s', Evd.evar_universe_context s, c'
 
 let unif_end ?(solve_TC=true) env sigma0 ise0 pt ok =
   let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
@@ -646,9 +644,6 @@ type find_P =
      EConstr.t
 type conclude = unit ->
   EConstr.t * ssrdir * (Evd.evar_map * UState.t * EConstr.t)
-
-let apply_find_P (f : find_P) env (c : constr) n ~k =
-  EConstr.Unsafe.to_constr (f env (EConstr.of_constr c) n ~k)
 
 (* upats_origin makes a better error message only            *)
 let mk_tpattern_matcher ?(all_instances=false)
@@ -1135,8 +1130,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
   let fs sigma x = Reductionops.nf_evar sigma x in
   let pop_evar sigma e p =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
-    let e_body = match e_body with Evar_defined c -> EConstr.Unsafe.to_constr c
-    | _ -> errorstrm (str "Matching the pattern " ++ pr_constr_env env0 sigma0 p ++
+    let e_body = match e_body with Evar_defined c -> c
+    | _ -> errorstrm (str "Matching the pattern " ++ pr_econstr_env env0 sigma0 p ++
           str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++
           str "Does the variable bound by the \"in\" construct occur "++
           str "in the pattern?") in
@@ -1170,9 +1165,9 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let find_X, end_X = mk_tpattern_matcher ?raise_NoMatch sigma occ holep in
     let concl = find_T env0 concl0 1 ~k:(fun env c _ h ->
       let p_sigma = unify_HO env (create_evar_defs sigma) c p in
-      let sigma, e_body = pop_evar p_sigma ex (EConstr.Unsafe.to_constr p) in
+      let sigma, e_body = pop_evar p_sigma ex p in
       fs p_sigma (find_X env (fs sigma p) h
-        ~k:(fun env _ -> do_subst env (EConstr.of_constr e_body)))) in
+        ~k:(fun env _ -> do_subst env e_body))) in
     let _ = end_X () in let _, _, (_, us, _) = end_T () in
     concl, us
   | Some (sigma, E_In_X_In_T (e, hole, p)) ->
@@ -1186,9 +1181,9 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let find_E, end_E = mk_tpattern_matcher ?raise_NoMatch sigma0 occ re in
     let concl = find_T env0 concl0 1 ~k:(fun env c _ h ->
       let p_sigma = unify_HO env (create_evar_defs sigma) c p in
-      let sigma, e_body = pop_evar p_sigma ex (EConstr.Unsafe.to_constr p) in
+      let sigma, e_body = pop_evar p_sigma ex p in
       fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
-        EConstr.of_constr @@ apply_find_P find_E env e_body h ~k:do_subst))) in
+        find_E env e_body h ~k:do_subst))) in
     let _,_,(_,us,_) = end_E () in
     let _ = end_X () in let _ = end_T () in
     concl, us
@@ -1204,9 +1199,9 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let find_X, end_X = mk_tpattern_matcher sigma occ holep in
     let concl = find_TE env0 concl0 1 ~k:(fun env c _ h ->
       let p_sigma = unify_HO env (create_evar_defs sigma) c p in
-      let sigma, e_body = pop_evar p_sigma ex (EConstr.Unsafe.to_constr p) in
+      let sigma, e_body = pop_evar p_sigma ex p in
       fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
-        let e_sigma = unify_HO env sigma (EConstr.of_constr e_body) e in
+        let e_sigma = unify_HO env sigma e_body e in
         let e_body = fs e_sigma e in
         do_subst env e_body e_body h))) in
     let _ = end_X () in let _,_,(_,us,_) = end_TE () in
