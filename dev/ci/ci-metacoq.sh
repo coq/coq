@@ -11,8 +11,9 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/metacoq"
-  ./configure.sh local
+  [ -e pcuic/metacoq-config ] || ./configure.sh local
   make .merlin
-  make ci-local-noclean
+  make all TIMED=pretty-timed
+  make test-suite TIMED=pretty-timed
   make install
 )
