@@ -245,7 +245,16 @@ let warning_cannot_open_dir dir =
   coqdep_warning "cannot open %s" dir
 
 let warning_no_meta_file package =
-  coqdep_warning "you need a META.%s file in order to build plugins\n" package
+  coqdep_warning "you need a META.%s file in order to build plugins.\n" package
+
+let warning_findlib_name f s =
+  coqdep_warning {|in file %s, %s is not a valid plugin name anymore.
+Plugins should be loaded using their public name according to findlib,
+for example package-name.foo and not foo_plugin.
+Since %s is a coq-core plugin we make an exception.
+This warnings will become an error in Coq 8.17.
+|} f s s
+
 
 let safe_assoc from verbose file k =
   match search_v_known ?from k with
@@ -381,7 +390,7 @@ let findlib_resolve f package plugin =
   match find_META package with
   | None ->
       (* XXX error once dune gets fixed and generates META files early *)
-      warning_no_meta_file package;
+      if package <> "coq-core" then warning_no_meta_file package;
       None, String.concat "/" plugin ^ "_plugin"
   | Some (meta_file, meta) ->
       let rec find_plugin path p { pkg_defs ; pkg_children  } =
@@ -408,6 +417,8 @@ let findlib_resolve f package plugin =
       let path, plug = find_plugin path plugin meta in
       Some meta_file, String.concat "/" path ^ "/" ^
         Filename.chop_extension @@ find_plugin_field "plugin" None plug
+
+let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
 
 let rec find_dependencies basename =
   let verbose = true in (* for past/future use? *)
@@ -449,6 +460,9 @@ let rec find_dependencies basename =
             let public_to_private_name s =
               match String.split_on_char '.' s with
               | [] -> assert false
+              | [x] when List.mem_assoc x legacy_mapping ->
+                  warning_findlib_name f x;
+                  findlib_resolve f "coq-core" (List.assoc x legacy_mapping)
               | [x] -> error_findlib_name f x
               | package :: plugin -> findlib_resolve f package plugin in
             let sl = List.map public_to_private_name sl in

@@ -1448,9 +1448,23 @@ let vernac_remove_loadpath path =
 let vernac_add_ml_path path =
   Mltop.add_ml_dir (expand path)
 
+let warn_legacy_plugin_name =
+  CWarnings.create ~name:"legacy-plugin-name" ~category:"deprecated"
+    (fun (s,s') -> strbrk (Printf.sprintf "Plugin name %s is deprecated, use %s instead." s s'))
+
 let vernac_declare_ml_module ~local l =
   let local = Option.default false local in
-  Mltop.declare_ml_modules local (List.map expand l)
+  let l = List.map expand l in
+  let legacy_mapping s =
+    let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib in
+    if List.mem_assoc s legacy_mapping then begin
+      let t = "coq-core." ^ String.concat "." @@ List.assoc s legacy_mapping in
+      warn_legacy_plugin_name (s,t);
+      t
+    end else
+      s
+  in
+  Mltop.declare_ml_modules local (List.map legacy_mapping l)
 
 let vernac_chdir = function
   | None -> Feedback.msg_notice (str (Sys.getcwd()))
