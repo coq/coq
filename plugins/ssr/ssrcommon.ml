@@ -401,43 +401,45 @@ let nf_evar sigma t =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
 
 let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
-  let c0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma c0 in
+  let c0 = Evarutil.nf_evar sigma c0 in
   let sigma0, ucst = sigma0, Evd.evar_universe_context sigma in
   let nenv = env_size env in
   let abs_evar n k =
+    let open EConstr in
     let evi = Evd.find sigma k in
-    let concl = EConstr.Unsafe.to_constr evi.evar_concl in
-    let dc = EConstr.Unsafe.to_named_context (CList.firstn n (evar_filtered_context evi)) in
+    let concl = evi.evar_concl in
+    let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t x.binder_relevance c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
-    nf_evar sigma t in
-  let rec put evlist c = match Constr.kind c with
+    Evarutil.nf_evar sigma t in
+  let rec put evlist c = match EConstr.kind sigma c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k || List.mem k rigid then evlist else
     let n = max 0 (List.length a - nenv) in
     let t = abs_evar n k in (k, (n, t)) :: put evlist t
-  | _ -> Constr.fold put evlist c in
+  | _ -> EConstr.fold sigma put evlist c in
   let evlist = put [] c0 in
   if List.is_empty evlist then
-    EConstr.of_constr c0, [], ucst
+    c0, [], ucst
   else
+    let open EConstr in
     let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n, _)) :: evl -> if k = k' then i, n else lookup k (i + 1) evl in
-    let rec get i c = match Constr.kind c with
+    let rec get i c = match EConstr.kind sigma c with
     | Evar (ev, a) ->
       let j, n = lookup ev i evlist in
-      if j = 0 then Constr.map (get i) c else if n = 0 then mkRel j else
+      if j = 0 then EConstr.map sigma (get i) c else if n = 0 then mkRel j else
       let a = Array.of_list a in
       mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
-    | _ -> Constr.map_with_binders ((+) 1) get i c in
+    | _ -> EConstr.map_with_binders sigma ((+) 1) get i c in
     let rec loop c i = function
     | (_, (n, t)) :: evl ->
       loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
     | [] -> c in
-    EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
+    loop (get 1 c0) 1 evlist, List.map fst evlist, ucst
 
 (* As before but if (?i : T(?j)) and (?j : P : Prop), then the lambda for i
  * looks like (fun evar_i : (forall pi : P. T(pi))) thanks to "loopP" and all
