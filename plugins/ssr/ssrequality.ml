@@ -533,8 +533,8 @@ let ssr_is_setoid env =
       sigma [] (EConstr.mkApp (r, args)) <> None
 
 let closed0_check env sigma cl p =
-  if closed0 (EConstr.Unsafe.to_constr cl) then
-    errorstrm Pp.(str"No occurrence of redex "++ pr_constr_env env sigma p)
+  if EConstr.Vars.closed0 sigma cl then
+    errorstrm Pp.(str"No occurrence of redex "++ pr_econstr_env env sigma p)
 
 let dir_org = function L2R -> 1 | R2L -> 2
 
@@ -646,9 +646,8 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
       (fun e c _ i -> find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e c i),
-      fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl (EConstr.Unsafe.to_constr rdx); (d,r),rdx
+      fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
   | Some(_, (T e | X_In_T (_,e) | E_As_X_In_T (e,_,_) | E_In_X_In_T (e,_,_))) ->
-      let e = EConstr.Unsafe.to_constr e in
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;
