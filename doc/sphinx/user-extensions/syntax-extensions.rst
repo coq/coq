@@ -173,11 +173,7 @@ Grammar` `constr` is at level 100. To avoid ``x : A`` being parsed as a type cas
 it is necessary to put ``x`` at a level below 100, typically 99. Hence, a correct
 definition is the following:
 
-.. coqtop:: none
-
-   Reset Initial.
-
-.. coqtop:: all
+.. coqtop:: reset all
 
    Notation "{ x : A | P }" := (sig A (fun x => P)) (x at level 99).
 
@@ -253,6 +249,10 @@ curly braces.
    Check (sig (fun x : nat => x=x)).
 
 The second, more powerful control on printing is by using :n:`@syntax_modifier`\s. Here is an example
+
+.. coqtop:: in
+
+   Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
 .. coqtop:: all
 
@@ -425,12 +425,17 @@ Here are examples:
    Inductive and' (A B : Prop) : Prop := conj' : A -> B -> A & B
    where "A & B" := (and' A B).
 
+.. without this we get "not a truly recursive fixpoint"
+.. coqtop:: none
+
+   Arguments S _ : clear scopes.
+
 .. coqtop:: in
 
    Fixpoint plus (n m : nat) {struct n} : nat :=
    match n with
        | O => m
-       | S p => S (p+m)
+       | S p => S (p + m)
    end
    where "n + m" := (plus n m).
 
@@ -1147,9 +1152,8 @@ Another special situation is when parsing global references or
 identifiers. To indicate that a custom entry should parse identifiers,
 use the following form:
 
-.. coqtop:: none
+.. coqtop:: reset none
 
-   Reset Initial.
    Declare Custom Entry expr.
 
 .. coqtop:: in
@@ -1159,9 +1163,8 @@ use the following form:
 Similarly, to indicate that a custom entry should parse global references
 (i.e. qualified or unqualified identifiers), use the following form:
 
-.. coqtop:: none
+.. coqtop:: reset none
 
-   Reset Initial.
    Declare Custom Entry expr.
 
 .. coqtop:: in
