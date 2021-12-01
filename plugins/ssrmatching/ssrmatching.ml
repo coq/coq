@@ -14,7 +14,6 @@ open Ltac_plugin
 open Names
 open Pp
 open Genarg
-open Term
 open Context
 module CoqConstr = Constr
 open CoqConstr
@@ -345,14 +344,13 @@ let pr_econstr_pat env sigma c0 =
 
 (* Turn (new) evars into metas *)
 let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
+  let open EConstr in
   let ise = ref ise0 in
   let sigma = ref ise0 in
   let nenv = env_size env + if hack then 1 else 0 in
-  let rec put c = match kind c with
-  | Evar (k, a as ex) ->
-    begin try put (existential_value0 !sigma ex)
-    with NotInstantiatedEvar ->
-    if Evd.mem sigma0 k then map put c else
+  let rec put c = match EConstr.kind !sigma c with
+  | Evar (k, a) ->
+    if Evd.mem sigma0 k then map !sigma put c else
     let evi = Evd.find !sigma k in
     let dc = List.firstn (max 0 (List.length a - nenv)) (evar_filtered_context evi) in
     let abs_dc (d, c) = function
@@ -361,17 +359,14 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
     | Context.Named.Declaration.LocalAssum (x, t) ->
         mkVar x.binder_name :: d, mkNamedProd x (put t) c in
     let a, t =
-      Context.Named.fold_inside abs_dc
-        ~init:([], (put @@ EConstr.Unsafe.to_constr evi.evar_concl))
-        (EConstr.Unsafe.to_named_context dc) in
+      Context.Named.fold_inside abs_dc ~init:([], put evi.evar_concl) dc
+    in
     let m = Evarutil.new_meta () in
-    ise := meta_declare m (EConstr.of_constr t) !ise;
-    sigma := Evd.define k (EConstr.of_constr (applistc (mkMeta m) a)) !sigma;
-    put (existential_value0 !sigma ex)
-    end
-  | _ -> map put c in
-  let c0 = EConstr.Unsafe.to_constr c0 in
-  let c1 = put c0 in !ise, EConstr.of_constr c1
+    ise := meta_declare m t !ise;
+    sigma := Evd.define k (applistc (mkMeta m) a) !sigma;
+    put c
+  | _ -> map !sigma put c in
+  let c1 = put c0 in !ise, c1
 
 (* Compile a match pattern from a term; t is the term to fill. *)
 (* p_origin can be passed to obtain a better error message     *)
