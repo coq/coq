@@ -660,8 +660,8 @@ let mk_tpattern_matcher ?(all_instances=false)
       let match_let f = match EConstr.kind ise f with
       | LetIn (_, v, _, b) -> unif_EQ env sigma pv v && unif_EQ env' sigma pb b
       | _ -> false in match_let
-    | KpatFixed -> fun c -> Constr.eq_constr_nounivs (EConstr.Unsafe.to_constr u.up_f) (EConstr.Unsafe.to_constr c)
-    | KpatConst -> fun c -> Constr.eq_constr_nounivs (EConstr.Unsafe.to_constr u.up_f) (EConstr.Unsafe.to_constr c)
+    | KpatFixed -> fun c -> EConstr.eq_constr_nounivs sigma u.up_f c
+    | KpatConst -> fun c -> EConstr.eq_constr_nounivs sigma u.up_f c
     | KpatLam -> fun c ->
        (match EConstr.kind sigma c with
        | Lambda _ -> unif_EQ env sigma u.up_f c
@@ -688,15 +688,10 @@ let rec uniquize = function
   | [] -> []
   | (sigma,_,{ up_f = f; up_a = a; up_t = t } as x) :: xs ->
     let nf_evar sigma c = EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma c) in
-    let t = nf_evar sigma t in
-    let f = nf_evar sigma f in
-    let a = Array.map (nf_evar sigma) a in
+    let equal sigma1 sigma2 c1 c2 = Constr.equal (nf_evar sigma1 c1) (nf_evar sigma2 c2) in
     let neq (sigma1,_,{ up_f = f1; up_a = a1; up_t = t1 }) =
-      let t1 = nf_evar sigma1 t1 in
-      let f1 = nf_evar sigma1 f1 in
-      let a1 = Array.map (nf_evar sigma1) a1 in
-      not (equal t t1 &&
-           equal f f1 && CArray.for_all2 equal a a1) in
+      not (equal sigma sigma1 t t1 &&
+           equal sigma sigma1 f f1 && CArray.for_all2 (equal sigma sigma1) a a1) in
     x :: uniquize (List.filter neq xs) in
 
 ((fun env c h ~k ->
@@ -1015,12 +1010,12 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
         end)
       with Not_found -> ref (Some x), fun _ -> () in
     let new_evars =
-      let rec aux acc t = match kind t with
+      let rec aux acc t = match EConstr.kind sigma t with
       | Evar (k,_) ->
           if k = h_k || List.mem k acc || Evd.mem sigma0 k then acc else
           (update k; k::acc)
-      | _ -> CoqConstr.fold aux acc t in
-      aux [] (EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma rp)) in
+      | _ -> EConstr.fold sigma aux acc t in
+      aux [] rp in
     let sigma =
       List.fold_left (fun sigma e ->
         if Evd.is_defined sigma e then sigma else (* clear may be recursive *)
