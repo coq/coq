@@ -1,5 +1,0 @@
-- **Fixed:**
-  SSR patterns now work with primitive values such as ints, floats or arrays
-  (`#14660 <https://github.com/coq/coq/pull/14660>`_,
-  fixes `#12770 <https://github.com/coq/coq/issues/12770>`_,
-  by Juan C.).
