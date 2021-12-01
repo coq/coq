@@ -1242,9 +1242,6 @@ module V82 = struct
     { ps with solution = evd; }
     end
 
-  let has_unresolved_evar pv =
-    Evd.has_undefined pv.solution
-
   let top_goals initial { solution=solution; } =
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
     { Evd.it = goals ; sigma=solution; }
@@ -1265,8 +1262,6 @@ module V82 = struct
     with Logic_monad.TacticFailure e as src ->
       let (_, info) = Exninfo.capture src in
       Exninfo.iraise (e, info)
-
-  let put_status = Status.put
 
   let catchable_exception = catchable_exception
 
