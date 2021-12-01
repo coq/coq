@@ -38,12 +38,13 @@ Number.uint_beq: Number.uint -> Number.uint -> bool
 Decimal.uint_beq: Decimal.uint -> Decimal.uint -> bool
 Hexadecimal.hexadecimal_beq:
   Hexadecimal.hexadecimal -> Hexadecimal.hexadecimal -> bool
-Number.int_beq: Number.int -> Number.int -> bool
+Number.signed_int_beq: Number.signed_int -> Number.signed_int -> bool
 Hexadecimal.uint_beq: Hexadecimal.uint -> Hexadecimal.uint -> bool
 Nat.ltb: nat -> nat -> bool
 Nat.leb: nat -> nat -> bool
-Hexadecimal.int_beq: Hexadecimal.int -> Hexadecimal.int -> bool
-Decimal.int_beq: Decimal.int -> Decimal.int -> bool
+Hexadecimal.signed_int_beq:
+  Hexadecimal.signed_int -> Hexadecimal.signed_int -> bool
+Decimal.signed_int_beq: Decimal.signed_int -> Decimal.signed_int -> bool
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 eq_true_rec_r:
   forall (P : bool -> Set) [b : bool], P b -> eq_true b -> P true
@@ -69,27 +70,29 @@ Number.internal_uint_dec_bl1:
 Hexadecimal.internal_hexadecimal_dec_lb:
   forall x y : Hexadecimal.hexadecimal,
   x = y -> Hexadecimal.hexadecimal_beq x y = true
-Hexadecimal.internal_int_dec_lb0:
-  forall x y : Hexadecimal.int, x = y -> Hexadecimal.int_beq x y = true
+Hexadecimal.internal_signed_int_dec_lb0:
+  forall x y : Hexadecimal.signed_int,
+  x = y -> Hexadecimal.signed_int_beq x y = true
 Number.internal_number_dec_lb:
   forall x y : Number.number, x = y -> Number.number_beq x y = true
 Decimal.internal_decimal_dec_lb:
   forall x y : Decimal.decimal, x = y -> Decimal.decimal_beq x y = true
-Hexadecimal.internal_int_dec_bl0:
-  forall x y : Hexadecimal.int, Hexadecimal.int_beq x y = true -> x = y
-Number.internal_int_dec_lb1:
-  forall x y : Number.int, x = y -> Number.int_beq x y = true
-Number.internal_int_dec_bl1:
-  forall x y : Number.int, Number.int_beq x y = true -> x = y
+Hexadecimal.internal_signed_int_dec_bl0:
+  forall x y : Hexadecimal.signed_int,
+  Hexadecimal.signed_int_beq x y = true -> x = y
+Number.internal_signed_int_dec_lb1:
+  forall x y : Number.signed_int, x = y -> Number.signed_int_beq x y = true
+Number.internal_signed_int_dec_bl1:
+  forall x y : Number.signed_int, Number.signed_int_beq x y = true -> x = y
 Hexadecimal.internal_hexadecimal_dec_bl:
   forall x y : Hexadecimal.hexadecimal,
   Hexadecimal.hexadecimal_beq x y = true -> x = y
 Number.internal_uint_dec_lb1:
   forall x y : Number.uint, x = y -> Number.uint_beq x y = true
-Decimal.internal_int_dec_bl:
-  forall x y : Decimal.int, Decimal.int_beq x y = true -> x = y
-Decimal.internal_int_dec_lb:
-  forall x y : Decimal.int, x = y -> Decimal.int_beq x y = true
+Decimal.internal_signed_int_dec_bl:
+  forall x y : Decimal.signed_int, Decimal.signed_int_beq x y = true -> x = y
+Decimal.internal_signed_int_dec_lb:
+  forall x y : Decimal.signed_int, x = y -> Decimal.signed_int_beq x y = true
 Number.internal_number_dec_bl:
   forall x y : Number.number, Number.number_beq x y = true -> x = y
 Byte.of_bits:
@@ -162,15 +165,15 @@ f_equal2_nat:
   x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2
 Number.internal_number_dec_lb:
   forall x y : Number.number, x = y -> Number.number_beq x y = true
-Number.internal_int_dec_lb1:
-  forall x y : Number.int, x = y -> Number.int_beq x y = true
+Number.internal_signed_int_dec_lb1:
+  forall x y : Number.signed_int, x = y -> Number.signed_int_beq x y = true
 Number.internal_number_dec_bl:
   forall x y : Number.number, Number.number_beq x y = true -> x = y
 Hexadecimal.internal_hexadecimal_dec_lb:
   forall x y : Hexadecimal.hexadecimal,
   x = y -> Hexadecimal.hexadecimal_beq x y = true
-Number.internal_int_dec_bl1:
-  forall x y : Number.int, Number.int_beq x y = true -> x = y
+Number.internal_signed_int_dec_bl1:
+  forall x y : Number.signed_int, Number.signed_int_beq x y = true -> x = y
 Number.internal_uint_dec_lb1:
   forall x y : Number.uint, x = y -> Number.uint_beq x y = true
 Number.internal_uint_dec_bl1:
@@ -180,16 +183,18 @@ Decimal.internal_decimal_dec_lb:
 Hexadecimal.internal_hexadecimal_dec_bl:
   forall x y : Hexadecimal.hexadecimal,
   Hexadecimal.hexadecimal_beq x y = true -> x = y
-Hexadecimal.internal_int_dec_lb0:
-  forall x y : Hexadecimal.int, x = y -> Hexadecimal.int_beq x y = true
-Hexadecimal.internal_int_dec_bl0:
-  forall x y : Hexadecimal.int, Hexadecimal.int_beq x y = true -> x = y
-Decimal.internal_int_dec_lb:
-  forall x y : Decimal.int, x = y -> Decimal.int_beq x y = true
+Hexadecimal.internal_signed_int_dec_lb0:
+  forall x y : Hexadecimal.signed_int,
+  x = y -> Hexadecimal.signed_int_beq x y = true
+Hexadecimal.internal_signed_int_dec_bl0:
+  forall x y : Hexadecimal.signed_int,
+  Hexadecimal.signed_int_beq x y = true -> x = y
+Decimal.internal_signed_int_dec_lb:
+  forall x y : Decimal.signed_int, x = y -> Decimal.signed_int_beq x y = true
 Decimal.internal_decimal_dec_bl:
   forall x y : Decimal.decimal, Decimal.decimal_beq x y = true -> x = y
-Decimal.internal_int_dec_bl:
-  forall x y : Decimal.int, Decimal.int_beq x y = true -> x = y
+Decimal.internal_signed_int_dec_bl:
+  forall x y : Decimal.signed_int, Decimal.signed_int_beq x y = true -> x = y
 Decimal.internal_uint_dec_bl:
   forall x : Decimal.uint,
   (fun x0 : Decimal.uint =>
@@ -217,10 +222,10 @@ Number.internal_number_dec_lb:
   forall x y : Number.number, x = y -> Number.number_beq x y = true
 Number.internal_number_dec_bl:
   forall x y : Number.number, Number.number_beq x y = true -> x = y
-Number.internal_int_dec_lb1:
-  forall x y : Number.int, x = y -> Number.int_beq x y = true
-Number.internal_int_dec_bl1:
-  forall x y : Number.int, Number.int_beq x y = true -> x = y
+Number.internal_signed_int_dec_lb1:
+  forall x y : Number.signed_int, x = y -> Number.signed_int_beq x y = true
+Number.internal_signed_int_dec_bl1:
+  forall x y : Number.signed_int, Number.signed_int_beq x y = true -> x = y
 Number.internal_uint_dec_lb1:
   forall x y : Number.uint, x = y -> Number.uint_beq x y = true
 Number.internal_uint_dec_bl1:
@@ -231,18 +236,20 @@ Hexadecimal.internal_hexadecimal_dec_lb:
 Hexadecimal.internal_hexadecimal_dec_bl:
   forall x y : Hexadecimal.hexadecimal,
   Hexadecimal.hexadecimal_beq x y = true -> x = y
-Hexadecimal.internal_int_dec_lb0:
-  forall x y : Hexadecimal.int, x = y -> Hexadecimal.int_beq x y = true
-Hexadecimal.internal_int_dec_bl0:
-  forall x y : Hexadecimal.int, Hexadecimal.int_beq x y = true -> x = y
+Hexadecimal.internal_signed_int_dec_lb0:
+  forall x y : Hexadecimal.signed_int,
+  x = y -> Hexadecimal.signed_int_beq x y = true
+Hexadecimal.internal_signed_int_dec_bl0:
+  forall x y : Hexadecimal.signed_int,
+  Hexadecimal.signed_int_beq x y = true -> x = y
 Decimal.internal_decimal_dec_lb:
   forall x y : Decimal.decimal, x = y -> Decimal.decimal_beq x y = true
 Decimal.internal_decimal_dec_bl:
   forall x y : Decimal.decimal, Decimal.decimal_beq x y = true -> x = y
-Decimal.internal_int_dec_lb:
-  forall x y : Decimal.int, x = y -> Decimal.int_beq x y = true
-Decimal.internal_int_dec_bl:
-  forall x y : Decimal.int, Decimal.int_beq x y = true -> x = y
+Decimal.internal_signed_int_dec_lb:
+  forall x y : Decimal.signed_int, x = y -> Decimal.signed_int_beq x y = true
+Decimal.internal_signed_int_dec_bl:
+  forall x y : Decimal.signed_int, Decimal.signed_int_beq x y = true -> x = y
 Hexadecimal.internal_uint_dec_bl0:
   forall x : Hexadecimal.uint,
   (fun x0 : Hexadecimal.uint =>
@@ -308,19 +315,20 @@ nat_rect_plus:
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 Number.internal_number_dec_bl:
   forall x y : Number.number, Number.number_beq x y = true -> x = y
-Number.internal_int_dec_bl1:
-  forall x y : Number.int, Number.int_beq x y = true -> x = y
+Number.internal_signed_int_dec_bl1:
+  forall x y : Number.signed_int, Number.signed_int_beq x y = true -> x = y
 Number.internal_uint_dec_bl1:
   forall x y : Number.uint, Number.uint_beq x y = true -> x = y
 Hexadecimal.internal_hexadecimal_dec_bl:
   forall x y : Hexadecimal.hexadecimal,
   Hexadecimal.hexadecimal_beq x y = true -> x = y
-Hexadecimal.internal_int_dec_bl0:
-  forall x y : Hexadecimal.int, Hexadecimal.int_beq x y = true -> x = y
+Hexadecimal.internal_signed_int_dec_bl0:
+  forall x y : Hexadecimal.signed_int,
+  Hexadecimal.signed_int_beq x y = true -> x = y
 Decimal.internal_decimal_dec_bl:
   forall x y : Decimal.decimal, Decimal.decimal_beq x y = true -> x = y
-Decimal.internal_int_dec_bl:
-  forall x y : Decimal.int, Decimal.int_beq x y = true -> x = y
+Decimal.internal_signed_int_dec_bl:
+  forall x y : Decimal.signed_int, Decimal.signed_int_beq x y = true -> x = y
 Byte.of_bits:
   bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))) ->
   Byte.byte
@@ -332,15 +340,16 @@ Number.internal_number_dec_lb:
   forall x y : Number.number, x = y -> Number.number_beq x y = true
 Number.internal_uint_dec_lb1:
   forall x y : Number.uint, x = y -> Number.uint_beq x y = true
-Number.internal_int_dec_lb1:
-  forall x y : Number.int, x = y -> Number.int_beq x y = true
-Decimal.internal_int_dec_lb:
-  forall x y : Decimal.int, x = y -> Decimal.int_beq x y = true
+Number.internal_signed_int_dec_lb1:
+  forall x y : Number.signed_int, x = y -> Number.signed_int_beq x y = true
+Decimal.internal_signed_int_dec_lb:
+  forall x y : Decimal.signed_int, x = y -> Decimal.signed_int_beq x y = true
 Hexadecimal.internal_hexadecimal_dec_lb:
   forall x y : Hexadecimal.hexadecimal,
   x = y -> Hexadecimal.hexadecimal_beq x y = true
-Hexadecimal.internal_int_dec_lb0:
-  forall x y : Hexadecimal.int, x = y -> Hexadecimal.int_beq x y = true
+Hexadecimal.internal_signed_int_dec_lb0:
+  forall x y : Hexadecimal.signed_int,
+  x = y -> Hexadecimal.signed_int_beq x y = true
 Decimal.internal_decimal_dec_lb:
   forall x y : Decimal.decimal, x = y -> Decimal.decimal_beq x y = true
 Byte.to_bits:

@@ -48,7 +48,8 @@ Notation zero := (D0 Nil).
 
 (** For signed integers, we use two constructors [Pos] and [Neg]. *)
 
-Variant int := Pos (d:uint) | Neg (d:uint).
+Variant signed_int := Pos (d:uint) | Neg (d:uint).
+Notation int := signed_int.
 
 (** For decimal numbers, we use two constructors [Hexadecimal] and
     [HexadecimalExp], depending on whether or not they are given with an
@@ -62,6 +63,10 @@ Variant hexadecimal :=
 Scheme Equality for uint.
 Scheme Equality for int.
 Scheme Equality for hexadecimal.
+Notation int_eq_dec := signed_int_eq_dec.
+Notation int_beq := signed_int_beq.
+Notation internal_int_dec_lb := internal_signed_int_dec_lb.
+Notation internal_int_dec_bl := internal_signed_int_dec_bl.
 
 Declare Scope hex_uint_scope.
 Delimit Scope hex_uint_scope with huint.
