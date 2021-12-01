@@ -397,9 +397,6 @@ let resolve_typeclasses env sigma ~where ~fail =
     fun k _ -> Evar.Set.mem k evset in
   Typeclasses.resolve_typeclasses ~filter ~fail env sigma
 
-let nf_evar sigma t =
-  EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
-
 let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
   let c0 = Evarutil.nf_evar sigma c0 in
   let sigma0, ucst = sigma0, Evd.evar_universe_context sigma in
@@ -473,18 +470,18 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   pp(lazy(str"==PF_ABS_EVARS_PIRREL=="));
   pp(lazy(str"c0= " ++ Printer.pr_econstr_env env sigma c0));
   let c0 = Evarutil.nf_evar sigma0 (Evarutil.nf_evar sigma c0) in
-  let c0 = EConstr.Unsafe.to_constr c0 in
   let nenv = env_size env in
   let abs_evar n k =
+    let open EConstr in
     let evi = Evd.find sigma k in
-    let concl = EConstr.Unsafe.to_constr evi.evar_concl in
-    let dc = EConstr.Unsafe.to_named_context (CList.firstn n (evar_filtered_context evi)) in
+    let concl = evi.evar_concl in
+    let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t x.binder_relevance c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
-    nf_evar sigma0 (nf_evar sigma t) in
-  let rec put evlist c = match Constr.kind c with
+    Evarutil.nf_evar sigma0 (Evarutil.nf_evar sigma t) in
+  let rec put evlist c = match EConstr.kind sigma c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
     let n = max 0 (List.length a - nenv) in
@@ -493,15 +490,14 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
         env sigma (Evd.evar_concl (Evd.find sigma k)) in
     let is_prop = k_ty = InProp in
     let t = abs_evar n k in (k, (n, t, is_prop)) :: put evlist t
-  | _ -> Constr.fold put evlist c in
+  | _ -> EConstr.fold sigma put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
-  let pr_constr t = Printer.pr_econstr_env env sigma (Reductionops.nf_beta env sigma0 (EConstr.of_constr t)) in
+  let pr_constr t = Printer.pr_econstr_env env sigma (Reductionops.nf_beta env sigma0 t) in
   pp(lazy(str"evlist=" ++ pr_list (fun () -> str";")
     (fun (k,_) -> Evar.print k) evlist));
   let evplist =
     let depev = List.fold_left (fun evs (_,(_,t,_)) ->
-        let t = EConstr.of_constr t in
         Intset.union evs (Evarutil.undefined_evars_of_term sigma t)) Intset.empty evlist in
     List.filter (fun (i,(_,_,b)) -> b && Intset.mem i depev) evlist in
   let evlist, evplist, sigma =
@@ -511,27 +507,28 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
         let sigma = call_on_evar env sigma !ssrautoprop_tac i in
         List.filter (fun (j,_) -> j <> i) ev, evp, sigma
       with _ -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
-  let c0 = nf_evar sigma c0 in
+  let c0 = Evarutil.nf_evar sigma c0 in
   let evlist =
-    List.map (fun (x,(y,t,z)) -> x,(y,nf_evar sigma t,z)) evlist in
+    List.map (fun (x,(y,t,z)) -> x,(y,Evarutil.nf_evar sigma t,z)) evlist in
   let evplist =
-    List.map (fun (x,(y,t,z)) -> x,(y,nf_evar sigma t,z)) evplist in
+    List.map (fun (x,(y,t,z)) -> x,(y,Evarutil.nf_evar sigma t,z)) evplist in
   pp(lazy(str"c0= " ++ pr_constr c0));
   let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n,_,_)) :: evl -> if k = k' then i,n else lookup k (i + 1) evl in
-  let rec get evlist i c = match Constr.kind c with
+  let open EConstr in
+  let rec get evlist i c = match EConstr.kind sigma c with
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
-    if j = 0 then Constr.map (get evlist i) c else if n = 0 then mkRel j else
+    if j = 0 then EConstr.map sigma (get evlist i) c else if n = 0 then mkRel j else
     let a = Array.of_list a in
     mkApp (mkRel j, Array.init n (fun k -> get evlist i a.(n - 1 - k)))
-  | _ -> Constr.map_with_binders ((+) 1) (get evlist) i c in
-  let rec app extra_args i c = match decompose_app c with
-  | hd, args when isRel hd && destRel hd = i ->
-      let j = destRel hd in
+  | _ -> EConstr.map_with_binders sigma ((+) 1) (get evlist) i c in
+  let rec app extra_args i c = match decompose_app sigma c with
+  | hd, args when isRel sigma hd && destRel sigma hd = i ->
+      let j = destRel sigma hd in
       mkApp (mkRel j, Array.of_list (List.map (Vars.lift (i-1)) extra_args @ args))
-  | _ -> Constr.map_with_binders ((+) 1) (app extra_args) i c in
+  | _ -> EConstr.map_with_binders sigma ((+) 1) (app extra_args) i c in
   let rec loopP evlist c i = function
   | (_, (n, t, _)) :: evl ->
     let t = get evlist (i - 1) t in
@@ -540,7 +537,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   | [] -> c in
   let rec loop c i = function
   | (_, (n, t, _)) :: evl ->
-    let evs = Evarutil.undefined_evars_of_term sigma (EConstr.of_constr t) in
+    let evs = Evarutil.undefined_evars_of_term sigma t in
     let t_evplist = List.filter (fun (k,_) -> Intset.mem k evs) evplist in
     let t = loopP t_evplist (get t_evplist 1 t) 1 t_evplist in
     let t = get evlist (i - 1) t in
@@ -876,7 +873,7 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
   let uct = Evd.evar_universe_context (fst oc) in
   let n, oc = abs_evars_pirrel env sigma oc in
   Proofview.Unsafe.tclEVARS (Evd.set_universe_context sigma uct) <*>
-  Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n (EConstr.of_constr oc))
+  Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n oc)
     (fun _ -> Proofview.tclZERO dependent_apply_error)
   end
 
