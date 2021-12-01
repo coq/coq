@@ -80,7 +80,7 @@ let accept_universal_lemma_under_conjunctions () =
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true;
       optkey   = ["Universal";"Lemma";"Under";"Conjunction"];
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
       optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
