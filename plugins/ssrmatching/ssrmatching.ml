@@ -317,7 +317,7 @@ let proj_nparams c =
   try 1 + Structures.Structure.projection_nparams c
   with Not_found -> 0
 
-let isRigid c = match kind c with
+let isRigid sigma c = match EConstr.kind sigma c with
   | (Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _| Int _
     | Float _ | Array _) -> true
   | (Rel _ | Var _ | Meta _ | Evar (_, _) | Cast (_, _, _) | LetIn (_, _, _, _)
@@ -434,11 +434,11 @@ let nb_cs_proj_args ise pc f u =
   | _ -> -1
   with Not_found -> -1
 
-let isEvar_k k f =
-  match kind f with Evar (k', _) -> k = k' | _ -> false
+let isEvar_k ise k f =
+  match EConstr.kind ise f with Evar (k', _) -> k = k' | _ -> false
 
-let nb_args c =
-  match kind c with App (_, a) -> Array.length a | _ -> 0
+let nb_args sigma c =
+  match EConstr.kind sigma c with App (_, a) -> Array.length a | _ -> 0
 
 let mkSubArg i a =
   if i = Array.length a then a else Array.sub a 0 i
@@ -456,38 +456,40 @@ let splay_app ise =
   | Cast _ | Evar _ -> loop c [| |]
   | _ -> c, [| |]
 
-let filter_upat ise i0 f n u fpats =
+let filter_upat sigma i0 f n u fpats =
+  let open EConstr in
   let na = Array.length u.up_a in
   if n < na then fpats else
   let np = match u.up_k with
-  | KpatConst when eq_constr_nounivs (EConstr.Unsafe.to_constr u.up_f) f -> na
-  | KpatFixed when eq_constr_nounivs (EConstr.Unsafe.to_constr u.up_f) f -> na
-  | KpatEvar k when isEvar_k k f -> na
-  | KpatLet when isLetIn f -> na
-  | KpatLam when isLambda f -> na
-  | KpatRigid when isRigid f -> na
+  | KpatConst when eq_constr_nounivs sigma u.up_f f -> na
+  | KpatFixed when eq_constr_nounivs sigma u.up_f f -> na
+  | KpatEvar k when isEvar_k sigma k f -> na
+  | KpatLet when isLetIn sigma f -> na
+  | KpatLam when isLambda sigma f -> na
+  | KpatRigid when isRigid sigma f -> na
   | KpatFlex -> na
   | KpatProj pc ->
-    let np = na + nb_cs_proj_args ise pc (EConstr.of_constr f) u in if n < np then -1 else np
+    let np = na + nb_cs_proj_args sigma pc f u in if n < np then -1 else np
   | _ -> -1 in
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
 
-let eq_prim_proj c t = match kind t with
+let eq_prim_proj sigma c t = match EConstr.kind sigma t with
   | Proj(p,_) -> Constant.CanOrd.equal (Projection.constant p) c
   | _ -> false
 
-let filter_upat_FO i0 f n u fpats =
-  let np = nb_args (EConstr.Unsafe.to_constr u.up_FO) in
+let filter_upat_FO sigma i0 f n u fpats =
+  let open EConstr in
+  let np = nb_args sigma u.up_FO in
   if n < np then fpats else
   let ok = match u.up_k with
-  | KpatConst -> eq_constr_nounivs (EConstr.Unsafe.to_constr u.up_f) f
-  | KpatFixed -> eq_constr_nounivs (EConstr.Unsafe.to_constr u.up_f) f
-  | KpatEvar k -> isEvar_k k f
-  | KpatLet -> isLetIn f
-  | KpatLam -> isLambda f
-  | KpatRigid -> isRigid f
-  | KpatProj pc -> equal f (mkConst pc) || eq_prim_proj pc f
+  | KpatConst -> eq_constr_nounivs sigma u.up_f f
+  | KpatFixed -> eq_constr_nounivs sigma u.up_f f
+  | KpatEvar k -> isEvar_k sigma k f
+  | KpatLet -> isLetIn sigma f
+  | KpatLam -> isLambda sigma f
+  | KpatRigid -> isRigid sigma f
+  | KpatProj pc -> eq_constr sigma f (mkConst pc) || eq_prim_proj sigma pc f
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
@@ -514,8 +516,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
   let rec loop c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
     let fpats =
-      let f = EConstr.Unsafe.to_constr f in
-      List.fold_right (filter_upat_FO i0 f (Array.length a)) upats [] in
+      List.fold_right (filter_upat_FO ise i0 f (Array.length a)) upats [] in
     while !i0 >= 0 do
       let i = !i0 in i0 := -1;
       let c' = mkSubApp f i a in
@@ -559,7 +560,6 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
  let rec aux upats env sigma0 ise c =
   let f, a = splay_app ise c in let i0 = ref (-1) in
   let fpats =
-    let f = EConstr.Unsafe.to_constr f in
     List.fold_right (filter_upat ise i0 f (Array.length a)) upats []
   in
   while !i0 >= 0 do
