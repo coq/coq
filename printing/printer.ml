@@ -671,15 +671,27 @@ let print_dependent_evars gl sigma seeds =
       str "; in current goal:" ++ evars_current_pp ++ str ")"
   else mt ()
 
+let top_evars initial =
+  let evars_of_initial (c,_) =
+    Evar.Set.elements (Evd.evar_nodes_of_term c)
+  in
+  CList.flatten (CList.map evars_of_initial initial)
+
+let print_dependent_evars_entry gl sigma = function
+  | None -> mt ()
+  | Some entry ->
+    let seeds = top_evars (Proofview.initial_goals entry) in
+    print_dependent_evars gl sigma seeds
+
 module GoalMap = Evar.Map
 
 (* Print open subgoals. Checks for uninstantiated existential variables *)
-(* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
+(* spiwack: [entry] is for printing dependent evars in emacs mode. *)
 (* spiwack: [pr_first] is true when the first goal must be singled out
    and printed in its entirety. *)
 (* [os_map] is derived from the previous proof step, used for diffs *)
-let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
-                        close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals =
+let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map  ?entry
+    close_cmd sigma ~shelf ~stack ~unfocused ~goals =
   let diff_goal_map =
     match os_map with
     | Some (_, diff_goal_map) -> diff_goal_map
@@ -746,9 +758,9 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
     else
       pr_rec 1 (g::l)
   in
-  let pr_evar_info gl sigma seeds =
+  let pr_evar_info gl =
     let first_goal = if pr_first then gl else None in
-    print_evar_constraints gl sigma ++ print_dependent_evars first_goal sigma seeds
+    print_evar_constraints gl sigma ++ print_dependent_evars_entry first_goal sigma entry
   in
   (* Side effect! This has to be made more robust *)
   let () =
@@ -762,13 +774,13 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
   | [] ->
     let exl = Evd.undefined_map sigma in
     if Evar.Map.is_empty exl then
-      v 0 (str "No more goals." ++ pr_evar_info None sigma seeds)
+      v 0 (str "No more goals." ++ pr_evar_info None)
     else
       let pei = pr_evars_int sigma ~shelf ~given_up:[] 1 exl in
       v 0 ((str "No more goals,"
           ++ str " but there are non-instantiated existential variables:"
           ++ cut () ++ (hov 0 pei)
-          ++ pr_evar_info None sigma seeds
+          ++ pr_evar_info None
           ++ cut () ++ str "You can use Unshelve."))
   | g1::rest ->
       let goals = print_multiple_goals g1 rest in
@@ -782,7 +794,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
         ++ (if unfocused=[] then str ""
            else (cut() ++ cut() ++ str "*** Unfocused goals:" ++ cut()
                  ++ pr_rec (List.length rest + 2) unfocused))
-        ++ pr_evar_info (Some g1) sigma seeds
+        ++ pr_evar_info (Some g1)
       )
 
 let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
@@ -791,24 +803,23 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
   let p = proof in
-  let Proof.{goals; stack; sigma} = Proof.data p in
+  let Proof.{goals; stack; sigma;entry} = Proof.data p in
   let shelf = Evd.shelf sigma in
   let given_up = Evd.given_up sigma in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
-  let seeds = Proof.V82.top_evars p in
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
           begin match bgoals,shelf,given_up with
-          | [] , [] , g when Evar.Set.is_empty g -> pr_subgoals None sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
+          | [] , [] , g when Evar.Set.is_empty g -> pr_subgoals None sigma ~entry ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
              Feedback.msg_info (str "No more goals, but there are some goals you gave up:");
              fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
+            ++ pr_subgoals ~pr_first:false None bsigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
             Feedback.msg_info (str "All the remaining goals are on the shelf.");
             fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
+            ++ pr_subgoals ~pr_first:false None bsigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
           | _ , _, _ ->
             let cmd = if quiet then None else
               Some
@@ -817,7 +828,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
                  if Pp.ismt s then s else fnl () ++ s) ++
                 fnl ())
             in
-            pr_subgoals ~pr_first:false cmd bsigma ~seeds ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
+            pr_subgoals ~pr_first:false cmd bsigma ~entry ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
           end
   | _ ->
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
@@ -834,7 +845,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
            None)
        | _ -> None
      in
-     pr_subgoals ~pr_first:true ~diffs ?os_map None bsigma ~seeds ~shelf ~stack:[]
+     pr_subgoals ~pr_first:true ~diffs ?os_map None bsigma ~entry ~shelf ~stack:[]
         ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
 

@@ -595,10 +595,8 @@ module V82 : sig
    * (conclusion and context) before calling the tactic *)
   val tactic : ?nf_evars:bool -> tac -> unit tactic
 
-  val top_goals : entry -> proofview -> Evar.t list Evd.sigma
-
   (* returns the existential variable used to start the proof *)
-  val top_evars : entry -> proofview -> Evar.t list
+  val top_goals : entry -> Evar.t list
 
   (* Caution: this function loses quite a bit of information. It
      should be avoided as much as possible.  It should work as

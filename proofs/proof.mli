@@ -195,11 +195,6 @@ module V82 : sig
   (* All the subgoals of the proof, including those which are not focused. *)
   val background_subgoals : t -> Goal.goal list Evd.sigma
 
-  val top_goal : t -> Goal.goal Evd.sigma
-
-  (* returns the existential variable used to start the proof *)
-  val top_evars : t -> Evar.t list
-
 end
 
 (* returns the set of all goals in the proof *)

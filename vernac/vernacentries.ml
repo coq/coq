@@ -2140,7 +2140,8 @@ let vernac_check_guard ~pstate =
   let pfterm = List.hd (Proof.partial_proof pts) in
   let message =
     try
-      let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
+      let { Proof.entry; Proof.sigma } = Proof.data pts in
+      let gl = List.hd (Proofview.V82.top_goals entry) in
       let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
       Inductiveops.control_only_guard env sigma pfterm;
       (str "The condition holds up to here")

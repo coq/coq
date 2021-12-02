@@ -1231,15 +1231,8 @@ module V82 = struct
       let (e, info) = Exninfo.capture e in
       tclZERO ~info e
 
-  let top_goals initial { solution=solution; } =
-    let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
-    { Evd.it = goals ; sigma=solution; }
-
-  let top_evars initial { solution=sigma; } =
-    let evars_of_initial (c,_) =
-      Evar.Set.elements (Evd.evar_nodes_of_term c)
-    in
-    CList.flatten (CList.map evars_of_initial initial)
+  let top_goals initial =
+    CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial
 
   let of_tactic t gls =
     try
