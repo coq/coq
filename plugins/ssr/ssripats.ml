@@ -729,12 +729,11 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   let cl0, env, sigma, hyps = Goal.(concl gl, env gl, sigma gl, hyps gl) in
   let sigma0 = sigma in
   let pat = Ssrmatching.interp_cpattern env sigma t None in
-  let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
+  let cl = Reductionops.nf_evar sigma cl0 in
   let (c, ucst), cl =
     try Ssrmatching.fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with Ssrmatching.NoMatch -> Ssrmatching.redex_of_pattern env pat, cl in
   let sigma = Evd.merge_universe_context sigma ucst in
-  let c, cl = EConstr.of_constr c, EConstr.of_constr cl in
   let clr =
     Ssrcommon.interp_clr sigma (oclr, (Ssrmatching.tag_of_cpattern t,c)) in
   (* Historically in Coq, and hence in ssr, [case t] accepts [t] of type
@@ -756,9 +755,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
       tclUNIT (false, ccl, c, clr)
   else
     if to_ind && occ = None then
-      let _, p, _, ucst' =
-        (* TODO: use abs_evars2 *)
-        Ssrcommon.abs_evars env sigma0 (fst pat, c) in
+      let p, _, ucst' = Ssrcommon.abs_evars env sigma0 (fst pat, c) in
       let sigma = Evd.merge_universe_context sigma ucst' in
       Unsafe.tclEVARS sigma <*>
       Ssrcommon.tacTYPEOF p >>= fun pty ->
@@ -962,7 +959,7 @@ let ssrabstract dgens =
     Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
     Ssrcommon.tacMK_SSR_CONST "abstract_key" >>= fun abstract_key ->
     Ssrcommon.tacINTERP_CPATTERN cid >>= fun cid ->
-    let id = EConstr.mkVar (Option.get (Ssrmatching.id_of_pattern cid)) in
+    let id = EConstr.mkVar (Option.get (Ssrmatching.id_of_pattern (Goal.sigma g) cid)) in
     tacEXAMINE_ABSTRACT id >>= fun (idty, args_id) ->
     let abstract_n = args_id.(1) in
     tacFIND_ABSTRACT_PROOF true abstract_n >>= fun abstract_proof ->
@@ -997,7 +994,7 @@ let ssrabstract dgens =
      let open Ssrmatching in
      let open Tacmach in
      let ipats = List.map (fun (_,cp) ->
-       match id_of_pattern (interp_cpattern (pf_env gl) (project gl) cp None) with
+       match id_of_pattern (project gl) (interp_cpattern (pf_env gl) (project gl) cp None) with
        | None -> IPatAnon (One None)
        | Some id -> IPatId id)
        (List.tl gens) in

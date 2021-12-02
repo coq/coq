@@ -43,7 +43,7 @@ type ('ident, 'term) ssrpattern =
   | E_In_X_In_T of 'term * 'ident * 'term
   | E_As_X_In_T of 'term * 'ident * 'term
 
-type pattern = evar_map * (constr, constr) ssrpattern
+type pattern = Evd.evar_map * (EConstr.t, EConstr.t) ssrpattern
 val pp_pattern : env -> pattern -> Pp.t
 
 (** The type of rewrite patterns, the patterns of the [rewrite] tactic.
@@ -56,7 +56,7 @@ val pr_rpattern : rpattern -> Pp.t
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
 val redex_of_pattern :
   ?resolve_typeclasses:bool -> env -> pattern ->
-     constr Evd.in_evar_universe_context
+     EConstr.t Evd.in_evar_universe_context
 
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]
     in the current [Ltac] interpretation signature [ise] and tactic input [gl]*)
@@ -79,7 +79,7 @@ type occ = (bool * int list) option
 
 (** [subst e p t i]. [i] is the number of binders
     traversed so far, [p] the term from the pattern, [t] the matched one *)
-type subst = env -> constr -> constr -> int -> constr
+type subst = Environ.env -> EConstr.t -> EConstr.t -> int -> EConstr.t
 
 (** [eval_pattern b env sigma t pat occ subst] maps [t] calling [subst] on every
     [occ] occurrence of [pat]. The [int] argument is the number of
@@ -91,9 +91,9 @@ type subst = env -> constr -> constr -> int -> constr
     [subst] *)
 val eval_pattern :
   ?raise_NoMatch:bool ->
-  env -> evar_map -> constr ->
+  env -> evar_map -> EConstr.t ->
   pattern option -> occ -> subst ->
-    constr
+    EConstr.t
 
 (** [fill_occ_pattern b env sigma t pat occ h] is a simplified version of
     [eval_pattern].
@@ -105,9 +105,9 @@ val eval_pattern :
     transformed as described above. *)
 val fill_occ_pattern :
   ?raise_NoMatch:bool ->
-  env -> evar_map -> constr ->
+  env -> evar_map -> EConstr.t ->
   pattern -> occ -> int ->
-    constr Evd.in_evar_universe_context * constr
+    EConstr.t Evd.in_evar_universe_context * EConstr.t
 
 (** *************************** Low level APIs ****************************** *)
 
@@ -127,11 +127,11 @@ type tpattern
   @return the compiled [tpattern] and its [evar_map]
   @raise UserEerror is the pattern is a wildcard *)
 val mk_tpattern :
-  ?p_origin:ssrdir * constr ->
+  ?p_origin:ssrdir * EConstr.t ->
   env -> evar_map ->
-  evar_map * constr ->
-  (constr -> evar_map -> bool) ->
-  ssrdir -> constr ->
+  evar_map * EConstr.t ->
+  (EConstr.t -> evar_map -> bool) ->
+  ssrdir -> EConstr.t ->
     evar_map * tpattern
 
 (** [findP env t i k] is a stateful function that finds the next occurrence
@@ -145,14 +145,14 @@ val mk_tpattern :
   @raise UserEerror if the raise_NoMatch flag given to [mk_tpattern_matcher] is
     [false] and if the pattern did not match *)
 type find_P =
-  env -> constr -> int -> k:subst -> constr
+  Environ.env -> EConstr.t -> int -> k:subst -> EConstr.t
 
 (** [conclude ()] asserts that all mentioned occurrences have been visited.
   @return the instance of the pattern, the evarmap after the pattern
     instantiation, the proof term and the ssrdit stored in the tpattern
   @raise UserEerror if too many occurrences were specified *)
 type conclude =
-  unit -> constr * ssrdir * (evar_map * UState.t * constr)
+  unit -> EConstr.t * ssrdir * (evar_map * UState.t * EConstr.t)
 
 (** [mk_tpattern_matcher b o sigma0 occ sigma_tplist] creates a pair
     a function [find_P] and [conclude] with the behaviour explained above.
@@ -163,7 +163,7 @@ type conclude =
 val mk_tpattern_matcher :
   ?all_instances:bool ->
   ?raise_NoMatch:bool ->
-  ?upats_origin:ssrdir * constr ->
+  ?upats_origin:ssrdir * EConstr.t ->
   evar_map -> occ -> evar_map * tpattern list ->
     find_P * conclude
 
@@ -220,7 +220,7 @@ val unify_HO : env -> evar_map -> EConstr.constr -> EConstr.constr -> evar_map
     on top of the former APIs *)
 val tag_of_cpattern : cpattern -> ssrtermkind
 val loc_of_cpattern : cpattern -> Loc.t option
-val id_of_pattern : pattern -> Names.Id.t option
+val id_of_pattern : evar_map -> pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
 val cpattern_of_id : Names.Id.t -> cpattern
 val pr_constr_pat : env -> evar_map -> constr -> Pp.t

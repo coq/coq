@@ -84,8 +84,6 @@ let mk_orhint tacs = true, tacs
 let nullhint = true, []
 let nohint = false, []
 
-let re_sig it sigma = { Evd.it = it; Evd.sigma = sigma }
-
 open Pp
 
 let errorstrm x = CErrors.user_err x
@@ -393,56 +391,52 @@ let ssrevaltac ist gtac = Tacinterp.tactic_of_value ist gtac
 
 let env_size env = List.length (Environ.named_context env)
 
-let pf_concl gl = EConstr.Unsafe.to_constr (Tacmach.pf_concl gl)
-let pf_get_hyp gl x = EConstr.Unsafe.to_named_decl (Tacmach.pf_get_hyp x gl)
-
 let resolve_typeclasses env sigma ~where ~fail =
   let filter =
     let evset = Evarutil.undefined_evars_of_term sigma where in
     fun k _ -> Evar.Set.mem k evset in
   Typeclasses.resolve_typeclasses ~filter ~fail env sigma
 
-let nf_evar sigma t =
-  EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
-
-let abs_evars2 env sigma0 rigid (sigma, c0) =
-  let c0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma c0 in
+let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
+  let c0 = Evarutil.nf_evar sigma c0 in
   let sigma0, ucst = sigma0, Evd.evar_universe_context sigma in
   let nenv = env_size env in
   let abs_evar n k =
+    let open EConstr in
     let evi = Evd.find sigma k in
-    let concl = EConstr.Unsafe.to_constr evi.evar_concl in
-    let dc = EConstr.Unsafe.to_named_context (CList.firstn n (evar_filtered_context evi)) in
+    let concl = evi.evar_concl in
+    let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t x.binder_relevance c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
-    nf_evar sigma t in
-  let rec put evlist c = match Constr.kind c with
+    Evarutil.nf_evar sigma t in
+  let rec put evlist c = match EConstr.kind sigma c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k || List.mem k rigid then evlist else
     let n = max 0 (List.length a - nenv) in
     let t = abs_evar n k in (k, (n, t)) :: put evlist t
-  | _ -> Constr.fold put evlist c in
+  | _ -> EConstr.fold sigma put evlist c in
   let evlist = put [] c0 in
-  if evlist = [] then 0, EConstr.of_constr c0,[], ucst else
-  let rec lookup k i = function
+  if List.is_empty evlist then
+    c0, [], ucst
+  else
+    let open EConstr in
+    let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n, _)) :: evl -> if k = k' then i, n else lookup k (i + 1) evl in
-  let rec get i c = match Constr.kind c with
-  | Evar (ev, a) ->
-    let j, n = lookup ev i evlist in
-    if j = 0 then Constr.map (get i) c else if n = 0 then mkRel j else
-    let a = Array.of_list a in
-    mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
-  | _ -> Constr.map_with_binders ((+) 1) get i c in
-  let rec loop c i = function
-  | (_, (n, t)) :: evl ->
-    loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
-  | [] -> c in
-  List.length evlist, EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
-
-let abs_evars env sigma t = abs_evars2 env sigma [] t
+    let rec get i c = match EConstr.kind sigma c with
+    | Evar (ev, a) ->
+      let j, n = lookup ev i evlist in
+      if j = 0 then EConstr.map sigma (get i) c else if n = 0 then mkRel j else
+      let a = Array.of_list a in
+      mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
+    | _ -> EConstr.map_with_binders sigma ((+) 1) get i c in
+    let rec loop c i = function
+    | (_, (n, t)) :: evl ->
+      loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
+    | [] -> c in
+    loop (get 1 c0) 1 evlist, List.map fst evlist, ucst
 
 (* As before but if (?i : T(?j)) and (?j : P : Prop), then the lambda for i
  * looks like (fun evar_i : (forall pi : P. T(pi))) thanks to "loopP" and all
@@ -474,19 +468,20 @@ module Intset = Evar.Set
 
 let abs_evars_pirrel env sigma0 (sigma, c0) =
   pp(lazy(str"==PF_ABS_EVARS_PIRREL=="));
-  pp(lazy(str"c0= " ++ Printer.pr_constr_env env sigma c0));
-  let c0 = nf_evar sigma0 (nf_evar sigma c0) in
+  pp(lazy(str"c0= " ++ Printer.pr_econstr_env env sigma c0));
+  let c0 = Evarutil.nf_evar sigma0 (Evarutil.nf_evar sigma c0) in
   let nenv = env_size env in
   let abs_evar n k =
+    let open EConstr in
     let evi = Evd.find sigma k in
-    let concl = EConstr.Unsafe.to_constr evi.evar_concl in
-    let dc = EConstr.Unsafe.to_named_context (CList.firstn n (evar_filtered_context evi)) in
+    let concl = evi.evar_concl in
+    let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t x.binder_relevance c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
-    nf_evar sigma0 (nf_evar sigma t) in
-  let rec put evlist c = match Constr.kind c with
+    Evarutil.nf_evar sigma0 (Evarutil.nf_evar sigma t) in
+  let rec put evlist c = match EConstr.kind sigma c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
     let n = max 0 (List.length a - nenv) in
@@ -495,15 +490,14 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
         env sigma (Evd.evar_concl (Evd.find sigma k)) in
     let is_prop = k_ty = InProp in
     let t = abs_evar n k in (k, (n, t, is_prop)) :: put evlist t
-  | _ -> Constr.fold put evlist c in
+  | _ -> EConstr.fold sigma put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
-  let pr_constr t = Printer.pr_econstr_env env sigma (Reductionops.nf_beta env sigma0 (EConstr.of_constr t)) in
+  let pr_constr t = Printer.pr_econstr_env env sigma (Reductionops.nf_beta env sigma0 t) in
   pp(lazy(str"evlist=" ++ pr_list (fun () -> str";")
     (fun (k,_) -> Evar.print k) evlist));
   let evplist =
     let depev = List.fold_left (fun evs (_,(_,t,_)) ->
-        let t = EConstr.of_constr t in
         Intset.union evs (Evarutil.undefined_evars_of_term sigma t)) Intset.empty evlist in
     List.filter (fun (i,(_,_,b)) -> b && Intset.mem i depev) evlist in
   let evlist, evplist, sigma =
@@ -513,27 +507,28 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
         let sigma = call_on_evar env sigma !ssrautoprop_tac i in
         List.filter (fun (j,_) -> j <> i) ev, evp, sigma
       with _ -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
-  let c0 = nf_evar sigma c0 in
+  let c0 = Evarutil.nf_evar sigma c0 in
   let evlist =
-    List.map (fun (x,(y,t,z)) -> x,(y,nf_evar sigma t,z)) evlist in
+    List.map (fun (x,(y,t,z)) -> x,(y,Evarutil.nf_evar sigma t,z)) evlist in
   let evplist =
-    List.map (fun (x,(y,t,z)) -> x,(y,nf_evar sigma t,z)) evplist in
+    List.map (fun (x,(y,t,z)) -> x,(y,Evarutil.nf_evar sigma t,z)) evplist in
   pp(lazy(str"c0= " ++ pr_constr c0));
   let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n,_,_)) :: evl -> if k = k' then i,n else lookup k (i + 1) evl in
-  let rec get evlist i c = match Constr.kind c with
+  let open EConstr in
+  let rec get evlist i c = match EConstr.kind sigma c with
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
-    if j = 0 then Constr.map (get evlist i) c else if n = 0 then mkRel j else
+    if j = 0 then EConstr.map sigma (get evlist i) c else if n = 0 then mkRel j else
     let a = Array.of_list a in
     mkApp (mkRel j, Array.init n (fun k -> get evlist i a.(n - 1 - k)))
-  | _ -> Constr.map_with_binders ((+) 1) (get evlist) i c in
-  let rec app extra_args i c = match decompose_app c with
-  | hd, args when isRel hd && destRel hd = i ->
-      let j = destRel hd in
+  | _ -> EConstr.map_with_binders sigma ((+) 1) (get evlist) i c in
+  let rec app extra_args i c = match decompose_app sigma c with
+  | hd, args when isRel sigma hd && destRel sigma hd = i ->
+      let j = destRel sigma hd in
       mkApp (mkRel j, Array.of_list (List.map (Vars.lift (i-1)) extra_args @ args))
-  | _ -> Constr.map_with_binders ((+) 1) (app extra_args) i c in
+  | _ -> EConstr.map_with_binders sigma ((+) 1) (app extra_args) i c in
   let rec loopP evlist c i = function
   | (_, (n, t, _)) :: evl ->
     let t = get evlist (i - 1) t in
@@ -542,7 +537,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   | [] -> c in
   let rec loop c i = function
   | (_, (n, t, _)) :: evl ->
-    let evs = Evarutil.undefined_evars_of_term sigma (EConstr.of_constr t) in
+    let evs = Evarutil.undefined_evars_of_term sigma t in
     let t_evplist = List.filter (fun (k,_) -> Intset.mem k evs) evplist in
     let t = loopP t_evplist (get t_evplist 1 t) 1 t_evplist in
     let t = get evlist (i - 1) t in
@@ -573,58 +568,45 @@ let pfe_type_relevance_of env sigma t =
   sigma, ty, Retyping.relevance_of_term env sigma t
 
 let abs_cterm env sigma n c0 =
+  let open EConstr in
   if n <= 0 then c0 else
-  let c0 = EConstr.Unsafe.to_constr c0 in
   let noargs = [|0|] in
   let eva = Array.make n noargs in
-  let rec strip i c = match Constr.kind c with
-  | App (f, a) when isRel f ->
-    let j = i - destRel f in
+  let rec strip i c = match EConstr.kind sigma c with
+  | App (f, a) when isRel sigma f ->
+    let j = i - destRel sigma f in
     if j >= n || eva.(j) = noargs then mkApp (f, Array.map (strip i) a) else
     let dp = eva.(j) in
     let nd = Array.length dp - 1 in
     let mkarg k = strip i a.(if k < nd then dp.(k + 1) - j else k + dp.(0)) in
     mkApp (f, Array.init (Array.length a - dp.(0)) mkarg)
-  | _ -> Constr.map_with_binders ((+) 1) strip i c in
-  let rec strip_ndeps j i c = match Constr.kind c with
+  | _ -> EConstr.map_with_binders sigma ((+) 1) strip i c in
+  let rec strip_ndeps j i c = match EConstr.kind sigma c with
   | Prod (x, t, c1) when i < j ->
     let dl, c2 = strip_ndeps j (i + 1) c1 in
-    if Vars.noccurn 1 c2 then dl, Vars.lift (-1) c2 else
+    if Vars.noccurn sigma 1 c2 then dl, Vars.lift (-1) c2 else
     i :: dl, mkProd (x, strip i t, c2)
   | LetIn (x, b, t, c1) when i < j ->
-    let _, _, c1' = destProd c1 in
+    let _, _, c1' = destProd sigma c1 in
     let dl, c2 = strip_ndeps j (i + 1) c1' in
-    if Vars.noccurn 1 c2 then dl, Vars.lift (-1) c2 else
+    if Vars.noccurn sigma 1 c2 then dl, Vars.lift (-1) c2 else
     i :: dl, mkLetIn (x, strip i b, strip i t, c2)
   | _ -> [], strip i c in
-  let rec strip_evars i c = match Constr.kind c with
+  let rec strip_evars i c = match EConstr.kind sigma c with
     | Lambda (x, t1, c1) when i < n ->
       let na = nb_evar_deps x.binder_name in
       let dl, t2 = strip_ndeps (i + na) i t1 in
       let na' = List.length dl in
       eva.(i) <- Array.of_list (na - na' :: dl);
       let x' =
-        if na' = 0 then Name (type_id env sigma (EConstr.of_constr t2)) else mk_evar_name na' in
+        if na' = 0 then Name (type_id env sigma t2) else mk_evar_name na' in
       mkLambda ({x with binder_name=x'}, t2, strip_evars (i + 1) c1)
 (*      if noccurn 1 c2 then lift (-1) c2 else
       mkLambda (Name (pf_type_id gl t2), t2, c2) *)
     | _ -> strip i c in
-  EConstr.of_constr (strip_evars 0 c0)
+  strip_evars 0 c0
 
 (* }}} *)
-
-let merge_uc uc =
-  let open Proofview.Notations in
-  Proofview.tclEVARMAP >>= fun sigma ->
-  try Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma uc)
-  with e when CErrors.noncritical e -> Proofview.tclZERO e
-
-let pf_merge_uc uc gl =
-  re_sig (sig_it gl) (Evd.merge_universe_context gl.Evd.sigma uc)
-let pf_merge_uc_of sigma gl =
-  let ucst = Evd.evar_universe_context sigma in
-  pf_merge_uc ucst gl
-
 
 let rec constr_name sigma c = match EConstr.kind sigma c with
   | Var id -> Name id
@@ -668,18 +650,19 @@ let mkRefl env sigma t c =
   sigma, EConstr.mkApp (refl, [|t; c|])
 
 let discharge_hyp (id', (id, mode)) =
+  let open EConstr in
+  let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
-  let cl' = Vars.subst_var id (pf_concl gl) in
-  let decl = pf_get_hyp gl id in
+  let cl' = Vars.subst_var id (Tacmach.pf_concl gl) in
+  let decl = pf_get_hyp id gl in
   match decl, mode with
   | NamedDecl.LocalAssum _, _ | NamedDecl.LocalDef _, "(" ->
     let id' = {(NamedDecl.get_annot decl) with binder_name = Name id'} in
     Tactics.apply_type ~typecheck:true
-                               (EConstr.of_constr (mkProd (id', NamedDecl.get_type decl, cl')))
-       [EConstr.of_constr (mkVar id)]
+                               (mkProd (id', NamedDecl.get_type decl, cl')) [mkVar id]
   | NamedDecl.LocalDef (_, v, t), _ ->
     let id' = {(NamedDecl.get_annot decl) with binder_name = Name id'} in
-    convert_concl ~check:true (EConstr.of_constr (mkLetIn (id', v, t, cl')))
+    convert_concl ~check:true (mkLetIn (id', v, t, cl'))
   end
 
 let view_error s gv =
@@ -709,7 +692,8 @@ let abs_ssrterm ?(resolve_typeclasses=false) ist env sigma t =
     else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma ct in
-  let n, c, abstracted_away, ucst = abs_evars env sigma0 t in
+  let c, abstracted_away, ucst = abs_evars env sigma0 t in
+  let n = List.length abstracted_away in
   let t = abs_cterm env sigma0 n c in
   let sigma = Evd.merge_universe_context sigma0 ucst in
   sigma, t, n
@@ -782,11 +766,12 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
      else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma cty in
-   let n, c, _, ucst = abs_evars env sigma0 ty in
+   let c, evs, ucst = abs_evars env sigma0 ty in
+   let n = List.length evs in
    let lam_c = abs_cterm env sigma0 n c in
    let ctx, c = EConstr.decompose_lam_n_assum sigma n lam_c in
-   n, EConstr.it_mkProd_or_LetIn c ctx, lam_c, ucst
-;;
+   let sigma0 = Evd.merge_universe_context sigma0 ucst in
+   sigma0, n, EConstr.it_mkProd_or_LetIn c ctx, lam_c
 
 (* TASSI: given (c : ty), generates (c ??? : ty[???/...]) with m evars *)
 exception NotEnoughProducts
@@ -886,9 +871,9 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let uct = Evd.evar_universe_context (fst oc) in
-  let n, oc = abs_evars_pirrel env sigma (fst oc, EConstr.to_constr ~abort_on_undefined_evars:false (fst oc) (snd oc)) in
+  let n, oc = abs_evars_pirrel env sigma oc in
   Proofview.Unsafe.tclEVARS (Evd.set_universe_context sigma uct) <*>
-  Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n (EConstr.of_constr oc))
+  Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n oc)
     (fun _ -> Proofview.tclZERO dependent_apply_error)
   end
 
@@ -1016,11 +1001,9 @@ let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
   let pat = interp_cpattern env sigma t None in (* UGLY API *)
   let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context @@ fst pat) in
   let (c, ucst), cl =
-    try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr concl) pat occ 1
-    with NoMatch -> redex_of_pattern env pat, (EConstr.Unsafe.to_constr concl) in
+    try fill_occ_pattern ~raise_NoMatch:true env sigma concl pat occ 1
+    with NoMatch -> redex_of_pattern env pat, concl in
   let sigma = Evd.merge_universe_context sigma ucst in
-  let c = EConstr.of_constr c in
-  let cl = EConstr.of_constr cl in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
   if not(occur_existential sigma c) then
     if tag_of_cpattern t = WithAt then
@@ -1031,9 +1014,9 @@ let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
       | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (map_annot Name.mk_name name,b,ty,cl),c,clr,ucst, sigma
     else let sigma, ccl =  pf_mkprod env sigma c cl in false, pat, ccl, c, clr, ucst, sigma
   else if to_ind && occ = None then
-    let nv, p, _, ucst' = abs_evars env sigma (fst pat, c) in
+    let p, evs, ucst' = abs_evars env sigma (fst pat, c) in
     let ucst = UState.union ucst ucst' in
-    if nv = 0 then anomaly "occur_existential but no evars" else
+    if List.is_empty evs then anomaly "occur_existential but no evars" else
     let sigma, pty, rp = pfe_type_relevance_of env sigma p in
     false, pat, EConstr.mkProd (make_annot (constr_name sigma c) rp, pty, concl), p, clr,ucst, sigma
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
@@ -1106,10 +1089,8 @@ let abs_wgen env sigma keep_let f gen (args,c) =
      let cp = interp_cpattern env sigma p None in
      let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
-       try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
-       with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
-     let c = EConstr.of_constr c in
-     let t = EConstr.of_constr t in
+       try fill_occ_pattern ~raise_NoMatch:true env sigma c cp None 1
+       with NoMatch -> redex_of_pattern env cp, c in
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
      let sigma, ty, r = pfe_type_relevance_of env sigma t in
@@ -1120,10 +1101,8 @@ let abs_wgen env sigma keep_let f gen (args,c) =
      let cp = interp_cpattern env sigma p None in
      let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
      let (t, ucst), c =
-       try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
-       with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
-     let c = EConstr.of_constr c in
-     let t = EConstr.of_constr t in
+       try fill_occ_pattern ~raise_NoMatch:true env sigma c cp None 1
+       with NoMatch -> redex_of_pattern env cp, c in
      evar_closed t p;
      let sigma, ty, r = pfe_type_relevance_of env sigma t in
      let sigma = Evd.merge_universe_context sigma ucst in
@@ -1139,9 +1118,10 @@ let clr_of_wgen gen clrs = match gen with
 
 let reduct_in_concl ~check t = Tactics.reduct_in_concl ~cast:false ~check (t, DEFAULTcast)
 let unfold cl =
+  Proofview.tclEVARMAP >>= fun sigma ->
   let module R = Reductionops in let module F = CClosure.RedFlags in
   let flags = F.mkflags [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX; F.fDELTA] in
-  let fold accu c = F.red_add accu (F.fCONST (fst (destConst (EConstr.Unsafe.to_constr c)))) in
+  let fold accu c = F.red_add accu (F.fCONST (fst (EConstr.destConst sigma c))) in
   let flags = List.fold_left fold flags cl in
   reduct_in_concl ~check:false (R.clos_norm_flags flags)
 

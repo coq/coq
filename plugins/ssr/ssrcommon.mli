@@ -134,23 +134,13 @@ val ssr_anon_hyp : string
 val type_id : Environ.env -> Evd.evar_map -> EConstr.types -> Id.t
 
 val abs_evars :
-           Environ.env -> Evd.evar_map ->
+           Environ.env -> Evd.evar_map -> ?rigid:Evar.t list ->
            evar_map * EConstr.t ->
-           int * EConstr.t * Evar.t list *
-           UState.t
-val abs_evars2 : (* ssr2 *)
-           Environ.env -> Evd.evar_map -> Evar.t list ->
-           evar_map * EConstr.t ->
-           int * EConstr.t * Evar.t list *
+           EConstr.t * Evar.t list *
            UState.t
 val abs_cterm :
            Environ.env -> Evd.evar_map -> int -> EConstr.t -> EConstr.t
 
-val merge_uc : UState.t -> unit Proofview.tactic
-val pf_merge_uc :
-           UState.t -> 'a Evd.sigma -> 'a Evd.sigma
-val pf_merge_uc_of :
-           evar_map -> 'a Evd.sigma -> 'a Evd.sigma
 val constr_name : evar_map -> EConstr.t -> Name.t
 
 val mkSsrRef : string -> GlobRef.t
@@ -163,9 +153,6 @@ val is_tagged : string -> string -> bool
 val has_discharged_tag : string -> bool
 val ssrqid : string -> Libnames.qualid
 val mk_anon_id : string -> Id.t list -> Id.t
-val abs_evars_pirrel :
-           Environ.env -> Evd.evar_map ->
-           evar_map * Constr.constr -> int * Constr.constr
 val nbargs_open_constr : Environ.env -> Evd.evar_map * EConstr.t -> int
 val pf_nbargs : Environ.env -> Evd.evar_map -> EConstr.t -> int
 
@@ -223,7 +210,7 @@ val pf_interp_ty :
            Tacinterp.interp_sign ->
            Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
-           int * EConstr.t * EConstr.t * UState.t
+           Evd.evar_map * int * EConstr.t * EConstr.t
 
 val ssr_n_tac : string -> int -> unit Proofview.tactic
 val donetac : int -> unit Proofview.tactic
