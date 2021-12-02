@@ -368,10 +368,13 @@ END
 
 TACTIC EXTEND instantiate
 | [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
-    { Tacticals.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals }
+    { instantiate_tac_by_name id c }
 | [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
-    { Tacticals.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals }
-| [ "instantiate" ] -> { Proofview.V82.nf_evar_goals }
+    { instantiate_tac i c hl }
+END
+
+TACTIC EXTEND instantiate_noarg DEPRECATED { Deprecation.make ~since:"8.16" () }
+| [ "instantiate" ] -> { Proofview.tclUNIT () }
 END
 
 (**********************************************************************)

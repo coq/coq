@@ -1231,17 +1231,6 @@ module V82 = struct
       let (e, info) = Exninfo.capture e in
       tclZERO ~info e
 
-
-  (* normalises the evars in the goals, and stores the result in
-     solution. *)
-  let nf_evar_goals =
-    Pv.modify begin fun ps ->
-    let map g s = goal_nf_evar s g in
-    let comb = CList.map drop_state ps.comb in
-    let (_goals,evd) = Evd.Monad.List.map map comb ps.solution in
-    { ps with solution = evd; }
-    end
-
   let top_goals initial { solution=solution; } =
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
     { Evd.it = goals ; sigma=solution; }
