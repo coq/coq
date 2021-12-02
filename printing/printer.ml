@@ -641,47 +641,48 @@ let should_print_dependent_evars =
     ~key:["Printing";"Dependent";"Evars";"Line"]
     ~value:false
 
+let print_dependent_evars_core gl sigma evars =
+  let mt_pp = mt () in
+  let evars_pp = Evar.Map.fold (fun e i s ->
+      let e' = pr_internal_existential_key e in
+      let sep = if s = mt_pp then "" else ", " in
+      s ++ str sep ++ e' ++
+      (match i with
+       | None -> str ":" ++ (Termops.pr_existential_key (Global.env ()) sigma e)
+       | Some i ->
+         let using = Evar.Set.fold (fun d s ->
+             s ++ str " " ++ (pr_internal_existential_key d))
+             i mt_pp in
+         str " using" ++ using))
+      evars mt_pp
+  in
+  let evars_current_pp = match gl with
+    | None -> mt_pp
+    | Some gl ->
+      let evars_current = Evarutil.gather_dependent_evars sigma [ gl ] in
+      Evar.Map.fold (fun e _ s ->
+          s ++ str " " ++ (pr_internal_existential_key e))
+        evars_current mt_pp
+  in
+  cut () ++ cut () ++
+  str "(dependent evars: " ++ evars_pp ++
+  str "; in current goal:" ++ evars_current_pp ++ str ")"
+
+
 let print_dependent_evars gl sigma seeds =
   if should_print_dependent_evars () then
-    let mt_pp = mt () in
     let evars = Evarutil.gather_dependent_evars sigma seeds in
-    let evars_pp = Evar.Map.fold (fun e i s ->
-        let e' = pr_internal_existential_key e in
-        let sep = if s = mt_pp then "" else ", " in
-        s ++ str sep ++ e' ++
-            (match i with
-            | None -> str ":" ++ (Termops.pr_existential_key (Global.env ()) sigma e)
-            | Some i ->
-              let using = Evar.Set.fold (fun d s ->
-                  s ++ str " " ++ (pr_internal_existential_key d))
-                i mt_pp in
-              str " using" ++ using))
-      evars mt_pp
-    in
-    let evars_current_pp = match gl with
-        | None -> mt_pp
-        | Some gl ->
-           let evars_current = Evarutil.gather_dependent_evars sigma [ gl ] in
-           Evar.Map.fold (fun e _ s ->
-               s ++ str " " ++ (pr_internal_existential_key e))
-             evars_current mt_pp
-    in
-    cut () ++ cut () ++
-      str "(dependent evars: " ++ evars_pp ++
-      str "; in current goal:" ++ evars_current_pp ++ str ")"
+    print_dependent_evars_core gl sigma evars
   else mt ()
-
-let top_evars initial =
-  let evars_of_initial (c,_) =
-    Evar.Set.elements (Evd.evar_nodes_of_term c)
-  in
-  CList.flatten (CList.map evars_of_initial initial)
 
 let print_dependent_evars_entry gl sigma = function
   | None -> mt ()
   | Some entry ->
-    let seeds = top_evars (Proofview.initial_goals entry) in
-    print_dependent_evars gl sigma seeds
+    if should_print_dependent_evars () then
+      let terms = List.map fst (Proofview.initial_goals entry) in
+      let evars = Evarutil.gather_dependent_evars_terms sigma terms in
+      print_dependent_evars_core gl sigma evars
+    else mt ()
 
 module GoalMap = Evar.Map
 
