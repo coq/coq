@@ -320,8 +320,21 @@ let goal_type_of ~check env sigma c =
     (sigma, EConstr.Unsafe.to_constr t)
   else (sigma, EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c)))
 
-let mk_goal = Goal.V82.mk_goal [@ocaml.warning "-3"]
-(* TODO: inline when the Goal.V82 module is removed *)
+(* Old style mk_goal primitive *)
+let mk_goal evars hyps concl =
+  (* A goal created that way will not be used by refine and will not
+      be shelved. It must not appear as a future_goal, so the future
+      goals are restored to their initial value after the evar is
+      created. *)
+  let evars = Evd.push_future_goals evars in
+  let inst = EConstr.identity_subst_val hyps in
+  let identity = Evd.Identity.make inst in
+  let (evars,evk) =
+    Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity hyps evars concl
+  in
+  let _, evars = Evd.pop_future_goals evars in
+  let ev = EConstr.mkEvar (evk,inst) in
+  (evk, ev, evars)
 
 let rec mk_refgoals ~check env sigma goalacc conclty trm =
   let hyps = Environ.named_context_val env in

@@ -1195,7 +1195,7 @@ end = struct (* {{{ *)
           did := fold_until back_tactic 1 !did;
           rv := get_proof ~doc !did;
           done_ := match !rv with
-            | Some rv -> not (Goal.Set.equal (Proof.all_goals rv) (Proof.all_goals cp))
+            | Some rv -> not (Evar.Set.equal (Proof.all_goals rv) (Proof.all_goals cp))
             | None -> true
         done;
         !rv

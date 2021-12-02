@@ -183,6 +183,10 @@ val maximal_unfocus : 'a focus_kind -> t -> t
    focused goals. *)
 val unshelve : t -> t
 
+(* Gives a unique identifier to each goal. The identifier is
+   guaranteed to contain no space. *)
+val goal_uid : Evar.t -> string
+
 val pr_proof : t -> Pp.t
 
 (*** Compatibility layer with <=v8.2 ***)
@@ -199,7 +203,7 @@ module V82 : sig
 end
 
 (* returns the set of all goals in the proof *)
-val all_goals : t -> Goal.Set.t
+val all_goals : t -> Evar.Set.t
 
 (** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
     subgoal of the current focused proof. [solve SelectAll

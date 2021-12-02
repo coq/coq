@@ -192,14 +192,15 @@ let ppexistentialset evars =
 let ppexistentialfilter filter = match Evd.Filter.repr filter with
 | None -> pp (Pp.str "ø")
 | Some f -> pp (prlist_with_sep spc bool f)
+let pr_goal e = Pp.(str "GOAL:" ++ int (Evar.repr e))
 let ppclenv clenv = pp(pr_clenv clenv)
-let ppgoalgoal gl = pp(Goal.pr_goal gl)
+let ppgoalgoal gl = pp(pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
 let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None (Global.env ()) g.Evd.sigma)
 let pphintdb db = pp(envpp Hints.pr_hint_db_env db)
 let ppproofview p =
   let gls,sigma = Proofview.proofview p in
-  pp(pr_enum Goal.pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) (Global.env ()) sigma)
+  pp(pr_enum pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) (Global.env ()) sigma)
 
 let ppopenconstr (x : Evd.open_constr) =
   let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) (Global.env ()) evd ++ envpp pr_econstr_env c)

@@ -255,7 +255,7 @@ let process_goal_concl sigma g : EConstr.t * Environ.env =
 
 let process_goal sigma g : EConstr.t reified_goal =
   let (env, ty) = goal_repr sigma g in
-  let name = Goal.uid g             in
+  let name = Proof.goal_uid g             in
   (* compaction is usually desired [eg for better display] *)
   let hyps      = Termops.compact_named_context (Environ.named_context env) in
   let hyps      = List.map to_tuple hyps in
@@ -594,7 +594,7 @@ module GoalMap = Evar.Map
 
 let goal_to_evar g sigma = Id.to_string (Termops.evar_suggested_name (Global.env ()) sigma g)
 
-open Goal.Set
+open Evar.Set
 
 [@@@ocaml.warning "-32"]
 let db_goal_map op np ng_to_og =
@@ -614,10 +614,10 @@ let db_goal_map op np ng_to_og =
   Printf.printf "\nGoal map: ";
   GoalMap.iter (fun ng og -> Printf.printf "%d -> %d  " (Evar.repr ng) (Evar.repr og)) ng_to_og;
   let unmapped = ref (Proof.all_goals np) in
-  GoalMap.iter (fun ng _ -> unmapped := Goal.Set.remove ng !unmapped) ng_to_og;
-  if Goal.Set.cardinal !unmapped > 0 then begin
+  GoalMap.iter (fun ng _ -> unmapped := Evar.Set.remove ng !unmapped) ng_to_og;
+  if Evar.Set.cardinal !unmapped > 0 then begin
     Printf.printf "\nUnmapped goals: ";
-    Goal.Set.iter (fun ng -> Printf.printf "%d  " (Evar.repr ng)) !unmapped
+    Evar.Set.iter (fun ng -> Printf.printf "%d  " (Evar.repr ng)) !unmapped
   end;
   Printf.printf "\n"
 [@@@ocaml.warning "+32"]
@@ -648,7 +648,7 @@ let make_goal_map_i op np =
   match op with
   | None -> !ng_to_og
   | Some op ->
-    let open Goal.Set in
+    let open Evar.Set in
     let ogs = Proof.all_goals op in
     let ngs = Proof.all_goals np in
     let rem_gs = diff ogs ngs in
@@ -657,7 +657,7 @@ let make_goal_map_i op np =
     let num_adds = cardinal add_gs in
 
     (* add common goals *)
-    Goal.Set.iter (fun x -> ng_to_og := GoalMap.add x x !ng_to_og) (inter ogs ngs);
+    Evar.Set.iter (fun x -> ng_to_og := GoalMap.add x x !ng_to_og) (inter ogs ngs);
 
     if num_rems = 0 then
       !ng_to_og (* proofs are the same *)
@@ -666,7 +666,7 @@ let make_goal_map_i op np =
     else if num_rems = 1 then begin
       (* only 1 removal, some additions *)
       let removed_g = List.hd (elements rem_gs) in
-      Goal.Set.iter (fun x -> ng_to_og := GoalMap.add x removed_g !ng_to_og) add_gs;
+      Evar.Set.iter (fun x -> ng_to_og := GoalMap.add x removed_g !ng_to_og) add_gs;
       !ng_to_og
     end else begin
       (* >= 2 removals, >= 1 addition, need to match *)
@@ -675,7 +675,7 @@ let make_goal_map_i op np =
       let oevar_to_og = ref CString.Map.empty in
       let Proof.{sigma=osigma} = Proof.data op in
       List.iter (fun og -> oevar_to_og := CString.Map.add (goal_to_evar og osigma) og !oevar_to_og)
-          (Goal.Set.elements rem_gs);
+          (Evar.Set.elements rem_gs);
 
       let Proof.{sigma=nsigma} = Proof.data np in
       let get_og ng =
@@ -684,7 +684,7 @@ let make_goal_map_i op np =
         let og = CString.Map.find oevar !oevar_to_og in
         og
       in
-      Goal.Set.iter (fun ng ->
+      Evar.Set.iter (fun ng ->
           try ng_to_og := GoalMap.add ng (get_og ng) !ng_to_og with Not_found -> ())  add_gs;
       !ng_to_og
     end

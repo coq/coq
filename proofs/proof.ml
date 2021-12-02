@@ -416,12 +416,12 @@ end
 
 let all_goals p =
   let add gs set =
-    List.fold_left (fun s g -> Goal.Set.add g s) set gs in
+    List.fold_left (fun s g -> Evar.Set.add g s) set gs in
   let (goals,stack,sigma) = proof p in
-    let set = add goals Goal.Set.empty in
+    let set = add goals Evar.Set.empty in
     let set = List.fold_left (fun s gs -> let (g1, g2) = gs in add g1 (add g2 set)) set stack in
     let set = add (Evd.shelf sigma) set in
-    let set = Goal.Set.union (Evd.given_up sigma) set in
+    let set = Evar.Set.union (Evd.given_up sigma) set in
     let { Evd.it = bgoals ; sigma = bsigma } = V82.background_subgoals p in
     add bgoals set
 
@@ -453,10 +453,14 @@ let data { proofview; focus_stack; entry; name; poly } =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) focus_stack in
   { sigma; goals; entry; stack; name; poly }
 
+let pr_goal e = Pp.(str "GOAL:" ++ int (Evar.repr e))
+
+let goal_uid e = string_of_int (Evar.repr e)
+
 let pr_proof p =
   let { goals=fg_goals; stack=bg_goals; sigma } = data p in
   Pp.(
-    let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
+    let pr_goal_list = prlist_with_sep spc pr_goal in
     let rec aux acc = function
       | [] -> acc
       | (before,after)::stack ->
