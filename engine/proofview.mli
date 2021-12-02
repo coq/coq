@@ -71,7 +71,7 @@ val finished : proofview -> bool
 val return : proofview -> Evd.evar_map
 
 val partial_proof : entry -> proofview -> constr list
-val initial_goals : entry -> (constr * types) list
+val initial_goals : entry -> (Environ.named_context_val * constr * types) list
 
 (** goal <-> goal_with_state *)
 
@@ -594,9 +594,6 @@ module V82 : sig
   (* [nf_evars=true] applies the evar (assignment) map to the goals
    * (conclusion and context) before calling the tactic *)
   val tactic : ?nf_evars:bool -> tac -> unit tactic
-
-  (* returns the existential variable used to start the proof *)
-  val top_goals : entry -> Evar.t list
 
   (* Caution: this function loses quite a bit of information. It
      should be avoided as much as possible.  It should work as

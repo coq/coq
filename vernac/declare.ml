@@ -1656,7 +1656,7 @@ let prepare_proof ~unsafe_typ { proof } =
      equations and so far there is no code in the CI that will
      actually call those and do a side-effect, TTBOMK *)
   (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
-  let proofs = List.map (fun (body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
+  let proofs = List.map (fun (_, body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
   proofs, Evd.evar_universe_context evd
 
 let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
@@ -1740,7 +1740,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   (* We only support opaque proofs, this will be enforced by using
      different entries soon *)
   let opaque = true in
-  let make_entry i (_, types) =
+  let make_entry i (_, _, types) =
     (* Already checked the univ_decl for the type universes when starting the proof. *)
     let univs = UState.univ_entry ~poly:false initial_euctx in
     let types = nf (EConstr.Unsafe.to_constr types) in
@@ -2024,7 +2024,7 @@ let save_admitted ~pm ~proof =
   let udecl = get_universe_decl proof in
   let Proof.{ poly; entry } = Proof.data (get proof) in
   let typ = match Proofview.initial_goals entry with
-    | [typ] -> snd typ
+    | [_, _, typ] -> typ
     | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
   in
   let typ = EConstr.Unsafe.to_constr typ in

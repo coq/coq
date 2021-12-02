@@ -565,7 +565,7 @@ let vernac_set_used_variables ~pstate using : Declare.Proof.t =
   let env = Global.env () in
   let sigma, _ = Declare.Proof.get_current_context pstate in
   let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
-  let terms = List.map snd (initial_goals (Declare.Proof.get pstate)) in
+  let terms = List.map pi3 (initial_goals (Declare.Proof.get pstate)) in
   let using = Proof_using.definition_using env sigma ~using ~terms in
   let vars = Environ.named_context env in
   Names.Id.Set.iter (fun id ->
@@ -2141,8 +2141,8 @@ let vernac_check_guard ~pstate =
   let message =
     try
       let { Proof.entry; Proof.sigma } = Proof.data pts in
-      let gl = List.hd (Proofview.V82.top_goals entry) in
-      let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
+      let hyps, _, _ = List.hd (Proofview.initial_goals entry) in
+      let env = Environ.reset_with_named_context hyps (Global.env ()) in
       Inductiveops.control_only_guard env sigma pfterm;
       (str "The condition holds up to here")
     with UserError s ->

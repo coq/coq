@@ -526,7 +526,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let { goals; stack; sigma; entry } = data prf in
   assert (stack = []);
   let ans = match Proofview.initial_goals entry with
-  | [c, _] -> c
+  | [_, c, _] -> c
   | _ -> assert false
   in
   let ans = EConstr.to_constr ~abort_on_undefined_evars:false sigma ans in

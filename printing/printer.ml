@@ -679,7 +679,7 @@ let print_dependent_evars_entry gl sigma = function
   | None -> mt ()
   | Some entry ->
     if should_print_dependent_evars () then
-      let terms = List.map fst (Proofview.initial_goals entry) in
+      let terms = List.map pi2 (Proofview.initial_goals entry) in
       let evars = Evarutil.gather_dependent_evars_terms sigma terms in
       print_dependent_evars_core gl sigma evars
     else mt ()
