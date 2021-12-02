@@ -568,43 +568,43 @@ let pfe_type_relevance_of env sigma t =
   sigma, ty, Retyping.relevance_of_term env sigma t
 
 let abs_cterm env sigma n c0 =
+  let open EConstr in
   if n <= 0 then c0 else
-  let c0 = EConstr.Unsafe.to_constr c0 in
   let noargs = [|0|] in
   let eva = Array.make n noargs in
-  let rec strip i c = match Constr.kind c with
-  | App (f, a) when isRel f ->
-    let j = i - destRel f in
+  let rec strip i c = match EConstr.kind sigma c with
+  | App (f, a) when isRel sigma f ->
+    let j = i - destRel sigma f in
     if j >= n || eva.(j) = noargs then mkApp (f, Array.map (strip i) a) else
     let dp = eva.(j) in
     let nd = Array.length dp - 1 in
     let mkarg k = strip i a.(if k < nd then dp.(k + 1) - j else k + dp.(0)) in
     mkApp (f, Array.init (Array.length a - dp.(0)) mkarg)
-  | _ -> Constr.map_with_binders ((+) 1) strip i c in
-  let rec strip_ndeps j i c = match Constr.kind c with
+  | _ -> EConstr.map_with_binders sigma ((+) 1) strip i c in
+  let rec strip_ndeps j i c = match EConstr.kind sigma c with
   | Prod (x, t, c1) when i < j ->
     let dl, c2 = strip_ndeps j (i + 1) c1 in
-    if Vars.noccurn 1 c2 then dl, Vars.lift (-1) c2 else
+    if Vars.noccurn sigma 1 c2 then dl, Vars.lift (-1) c2 else
     i :: dl, mkProd (x, strip i t, c2)
   | LetIn (x, b, t, c1) when i < j ->
-    let _, _, c1' = destProd c1 in
+    let _, _, c1' = destProd sigma c1 in
     let dl, c2 = strip_ndeps j (i + 1) c1' in
-    if Vars.noccurn 1 c2 then dl, Vars.lift (-1) c2 else
+    if Vars.noccurn sigma 1 c2 then dl, Vars.lift (-1) c2 else
     i :: dl, mkLetIn (x, strip i b, strip i t, c2)
   | _ -> [], strip i c in
-  let rec strip_evars i c = match Constr.kind c with
+  let rec strip_evars i c = match EConstr.kind sigma c with
     | Lambda (x, t1, c1) when i < n ->
       let na = nb_evar_deps x.binder_name in
       let dl, t2 = strip_ndeps (i + na) i t1 in
       let na' = List.length dl in
       eva.(i) <- Array.of_list (na - na' :: dl);
       let x' =
-        if na' = 0 then Name (type_id env sigma (EConstr.of_constr t2)) else mk_evar_name na' in
+        if na' = 0 then Name (type_id env sigma t2) else mk_evar_name na' in
       mkLambda ({x with binder_name=x'}, t2, strip_evars (i + 1) c1)
 (*      if noccurn 1 c2 then lift (-1) c2 else
       mkLambda (Name (pf_type_id gl t2), t2, c2) *)
     | _ -> strip i c in
-  EConstr.of_constr (strip_evars 0 c0)
+  strip_evars 0 c0
 
 (* }}} *)
 
