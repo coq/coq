@@ -213,6 +213,13 @@ Tactics
   fixes `#13942 <https://github.com/coq/coq/pull/13952>`_ and
   `#14125 <https://github.com/coq/coq/pull/14125>`_, by Matthieu Sozeau).
 - **Added:**
+  A new :table:`Keep Equalities` table to selectively control the
+  preservation of subterm equalities for the :tacn:`injection` tactic. It allows
+  a finer control than the boolean flag :flag:`Keep Proof Equalities` that acts
+  globally.
+  (`#14439 <https://github.com/coq/coq/pull/14439>`_,
+  by Pierre-Marie Pédrot).
+- **Added:**
   :tacn:`simple congruence` tactic which works like :tacn:`congruence`
   but does not unfold definitions.
   (`#14657 <https://github.com/coq/coq/pull/14657>`_,
@@ -268,13 +275,6 @@ Tactics
 Tactic language
 ^^^^^^^^^^^^^^^
 
-- **Added:**
-  A new :table:`Keep Equalities` table to selectively control the
-  preservation of subterm equalities for the :tacn:`injection` tactic. It allows
-  a finer control than the boolean flag :flag:`Keep Proof Equalities` that acts
-  globally.
-  (`#14439 <https://github.com/coq/coq/pull/14439>`_,
-  by Pierre-Marie Pédrot).
 - **Fixed:**
   the parsing level of the Ltac2 tactic :tacn:`now`
   was set to level 6 in order to behave as it did before
@@ -354,8 +354,7 @@ Commands and options
   vernacular commands `Write State` and `Restore State`
   (`#14940 <https://github.com/coq/coq/pull/14940>`_,
   by Pierre-Marie Pédrot)
-- **Deprecated:**
-  Deprecate ambiguous :cmd:`Proof using` and :cmd:`Collection` usage
+- **Deprecated:** ambiguous :cmd:`Proof using` and :cmd:`Collection` usage
   (`#15056 <https://github.com/coq/coq/pull/15056>`_,
   fixes `#13296 <https://github.com/coq/coq/issues/13296>`_,
   by Wojciech Karpiel).
@@ -363,6 +362,12 @@ Commands and options
   `Universal Lemma Under Conjunction` flag that was introduced for
   compatibility with Coq versions prior to 8.4 (`#15272
   <https://github.com/coq/coq/pull/15272>`_, by Théo Zimmermann).
+- **Deprecated:** using :cmd:`Hint Cut`, :cmd:`Hint Mode`, :cmd:`Hint
+  Transparent`, :cmd:`Hint Opaque`, :cmd:`Typeclasses Transparent` or
+  :cmd:`Typeclasses Opaque` without an explicit locality outside
+  sections. (`#14697 <https://github.com/coq/coq/pull/14697>`_, by
+  Pierre-Marie Pédrot, and `#14685
+  <https://github.com/coq/coq/pull/14685>`_, by Gaëtan Gilbert)
 - **Added:**
   The :flag:`Mangle Names Light` flag, which changes the behavior of
   :flag:`Mangle Names`. For example, the name `foo` becomes `_0` with
@@ -371,14 +376,16 @@ Commands and options
   (`#14695 <https://github.com/coq/coq/pull/14695>`_,
   fixes `#14548 <https://github.com/coq/coq/issues/14548>`_,
   by Ali Caglayan).
-- **Added:**
-  The :cmd:`Hint Cut`, :cmd:`Hint Mode`, :cmd:`Hint Transparent` and
-  :cmd:`Hint Opaque` commands now accept the :attr:`export` and :attr:`global`
-  locality attributes inside sections. With either attribute, the commands will
-  trigger the `non-local-section-hint` warning if the arguments refer to local
-  section variables
-  (`#14697 <https://github.com/coq/coq/pull/14697>`_,
-  by Pierre-Marie Pédrot).
+- **Added:** The :cmd:`Hint Cut`, :cmd:`Hint Mode`, :cmd:`Hint
+  Transparent`, :cmd:`Hint Opaque`, :cmd:`Typeclasses Transparent` and
+  :cmd:`Typeclasses Opaque` commands now accept the :attr:`local`,
+  :attr:`export` and :attr:`global` locality attributes inside
+  sections. With either attribute, the commands will trigger the
+  `non-local-section-hint` warning if the arguments refer to local
+  section variables (`#14697
+  <https://github.com/coq/coq/pull/14697>`_, by Pierre-Marie Pédrot,
+  and `#14685 <https://github.com/coq/coq/pull/14685>`_, fixes `#14513
+  <https://github.com/coq/coq/issues/14513>`_, by Gaëtan Gilbert).
 - **Added:**
   :attr:`projections(primitive)` attribute to make a record use
   primitive projections
@@ -434,7 +441,7 @@ Command-line tools
   ``make --warn`` mode (`#14787 <https://github.com/coq/coq/pull/14787>`_, by
   Clément Pit-Claudel).
 - **Changed:**
-  ``coqchk`` respects the ``Kernel Term Sharing`` flag instead of forcing it on
+  ``coqchk`` respects the :flag:`Kernel Term Sharing` flag instead of forcing it on
   (`#14957 <https://github.com/coq/coq/pull/14957>`_,
   by Gaëtan Gilbert)
 - **Removed:**
@@ -462,7 +469,7 @@ Command-line tools
   fixes `#9319 <https://github.com/coq/coq/issues/9319>`_,
   by Fabian Kunze).
 - **Fixed:**
-  :n:`coqdep` was confusing periods occurring in comments with periods ending Coq sentences
+  ``coqdep`` was confusing periods occurring in comments with periods ending Coq sentences
   (`#14996 <https://github.com/coq/coq/pull/14996>`_,
   fixes `#7393 <https://github.com/coq/coq/issues/7393>`_,
   by Hugo Herbelin).
@@ -567,20 +574,23 @@ Infrastructure and dependencies
 - **Changed:**
   Coq's ``./configure`` script has gone through a major cleanup. In
   particular, the following options have been removed:
+
   - ``-force-caml-version``, ``-force-findlib-version``: Coq won't
-  compile with OCaml or findlib lower than the required versions;
+    compile with OCaml or findlib lower than the required versions;
   - ``-vmbyteflags``, ``-custom``, ``-no-custom``: linking options for
-  toplevels are now controlled in ``topbin/dune``;
+    toplevels are now controlled in ``topbin/dune``;
   - ``-ocamlfind``: Coq will now use the toolchain specified in the
-  Dune configuration; this can be controlled using the workspaces
-  feature;
+    Dune configuration; this can be controlled using the workspaces
+    feature;
   - ``-nodebug``: Coq will now follow the standard, which is to always
-  pass ``-g`` to OCaml; this can be modified using a custom Dune workspace;
+    pass ``-g`` to OCaml; this can be modified using a custom Dune
+    workspace;
   - ``-flambda-opts``: compilation options are now set in Coq's root
-  ``dune`` file, can be updated using a custom Dune workspace;
+    ``dune`` file, can be updated using a custom Dune workspace;
   - ``-local``, ``-bindir``, ``-coqdocdir``, ``-annotate``,
-  ``-camldir``, ``-profiling``: these flags were deprecated in 8.14,
-  and are now removed.
+    ``-camldir``, ``-profiling``: these flags were deprecated in 8.14,
+    and are now removed.
+
   Moreover, the ``-annot`` and ``-bin-annot`` flags only take effect
   to set ``coq-makefile``'s defaults.
   (`#14189 <https://github.com/coq/coq/pull/14189>`_,
@@ -602,8 +612,8 @@ Infrastructure and dependencies
   (`#14963 <https://github.com/coq/coq/pull/14263>`_,
   by Théo Zimmermann)
 
-Miscellaneous
-^^^^^^^^^^^^^
+Extraction
+^^^^^^^^^^
 
 - **Changed:** replaced ``Big`` module with ``Big_int_Z`` functions from ``zarith``.
 
