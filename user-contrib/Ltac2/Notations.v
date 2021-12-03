@@ -594,4 +594,4 @@ Ltac2 Notation f_equal := f_equal0 ().
 (** now *)
 
 Ltac2 now0 t := t (); ltac1:(easy).
-Ltac2 Notation "now" t(thunk(self)) := now0 t.
+Ltac2 Notation "now" t(thunk(self)) : 6 := now0 t.
