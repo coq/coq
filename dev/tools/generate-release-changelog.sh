@@ -13,13 +13,13 @@ branch=$1
 # Set SLOW_CONF to have the confirmation output wait for a newline
 # Emacs doesn't send characters until the RET so we can't quick_conf
 if [ -z ${SLOW_CONF+x} ] || [ -n "$INSIDE_EMACS" ]; then
-    quick_conf="-n 1"
+    quick_conf=(-n 1)
 else
-    quick_conf=""
+    quick_conf=()
 fi
 
 ask_confirmation() {
-    read -p "Continue anyway? [y/N] " $quick_conf -r
+    read -p "Continue anyway? [y/N] " "${quick_conf[@]}" -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         exit 1
@@ -38,7 +38,7 @@ if [ -z "$remote" ]; then
     ask_confirmation
 else
 
-    if [ "$remote" != $(git config --get "branch.master.remote" || true) ]; then
+    if [[ "$remote" != $(git config --get "branch.master.remote") ]]; then
         echo "Warning: branch master and branch $branch do not have the same remote."
         ask_confirmation
     fi
@@ -61,32 +61,52 @@ else
 
     git fetch "$remote"
 
-    if [ $(git rev-parse master) != $(git rev-parse "${remote}/master") ]; then
+    if [[ $(git rev-parse master) != $(git rev-parse "${remote}/master") ]]; then
         echo "Warning: branch master is not up-to-date with ${remote}/master."
         ask_confirmation
     fi
 
-    if [ $(git rev-parse "$branch") != $(git rev-parse "${remote}/${branch}") ]; then
+    if [[ $(git rev-parse "$branch") != $(git rev-parse "${remote}/${branch}") ]]; then
         echo "Warning: branch ${branch} is not up-to-date with ${remote}/${branch}."
         ask_confirmation
     fi
 
 fi
 
-git checkout $branch --detach
-changelog_entries_with_title=$(ls doc/changelog/*/*.rst)
-changelog_entries_no_title=$(echo "$changelog_entries_with_title" | grep -v "00000-title.rst")
-git checkout master
-for f in $changelog_entries_with_title; do
-    if [ -f "$f" ]; then
-        cat "$f" >> released.rst
+git checkout "$branch" --detach > /dev/null 2>&1
+changelog_entries_with_title=(doc/changelog/*/*.rst)
+git checkout master > /dev/null 2>&1
+
+tmp=$(mktemp)
+for f in "${changelog_entries_with_title[@]}"; do
+    if ! [ -f "$f" ]; then
+        >&2 echo "Warning: $f is missing in master branch."
+        continue
+    fi
+
+    cat=${f%/*} # dirname
+    if [[ ${f##*/} = 00000-title.rst ]]; then
+        type=0
     else
-        echo "Warning: $f is missing in master branch."
+        type_name=$(head -n 1 "$f" | cut -f 2 -d ' ')
+        type_name=${type_name%":**"}
+        type_name=${type_name#"**"}
+        case "$type_name" in
+            Changed) type=1;;
+            Removed) type=2;;
+            Deprecated) type=3;;
+            Added) type=4;;
+            Fixed) type=5;;
+            *) >&2 echo "Unknown changelog type $type_name in $f"; type=6;;
+        esac
     fi
+    printf '%s %s %s\n' "$cat" "$type" "$f" >> "$tmp"
 done
-for f in $changelog_entries_no_title; do
-    if [ -f "$f" ]; then
-        git rm "$f"
-    fi
-done
+
+while read -r _ _ f; do
+    cat "$f" >> released.rst
+    git rm "$f" >> /dev/null
+done < <(sort "$tmp")
+
+echo
 echo "Changelog written in released.rst. Move its content to a new section in doc/sphinx/changes.rst."

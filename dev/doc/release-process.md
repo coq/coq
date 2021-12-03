@@ -109,9 +109,10 @@
   and include it in a new section in
   [`doc/sphinx/changes.rst`](../../doc/sphinx/changes.rst).
 
-  At the moment, the script doesn't do it automatically, but we
-  recommend reordering the entries to show first the **Changed**, then
-  the **Removed**, **Deprecated**, **Added** and last the **Fixed**.
+  The script automatically reorders the entries to show first the
+  **Changed**, then the **Removed**, **Deprecated**, **Added** and
+  last the **Fixed**. Manual adjustement is still needed when multiple
+  entries are combined in a single changelog file.
 - [ ] Ping the development coordinator (`@mattam82`) to get him
   started on writing the release summary.
 
