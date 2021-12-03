@@ -1204,18 +1204,15 @@ let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
 let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
   let do_make_rel, occ =
     if occ = Some(true,[]) then false, Some(false,[1]) else true, occ in
-  let find_R, conclude =
-    let r = ref None in
-    (fun env c _ h' ->
-       do_once r (fun () -> c);
-       if do_make_rel then EConstr.mkRel (h'+h-1) else c),
-    (fun _ -> if !r = None then fst(redex_of_pattern env pat)
-                           else assert_done r) in
+  let r = ref None in
+  let find_R env c _ h' =
+    let () = do_once r (fun () -> c) in
+    if do_make_rel then EConstr.mkRel (h'+h-1) else c
+  in
   let cl, us =
     eval_pattern ?raise_NoMatch env sigma cl (Some pat) occ find_R in
-  let e = conclude cl in
+  let e = match !r with None -> fst(redex_of_pattern env pat) | Some x -> x in
   (e, us), cl
-;;
 
 (* clenup interface for external use *)
 let mk_tpattern ?p_origin env sigma0 sigma_t f dir c =
