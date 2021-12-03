@@ -1,5 +1,0 @@
-- **Fixed:**
-  A bug where :tacn:`suff` would fail due to use of :tacn:`apply` under the hood.
-  (`#14687 <https://github.com/coq/coq/pull/14687>`_,
-  fixes `#14678 <https://github.com/coq/coq/issues/14678>`_,
-  by Ali Caglayan helped by Enrico Tassi).
