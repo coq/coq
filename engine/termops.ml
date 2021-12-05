@@ -228,7 +228,7 @@ let evar_dependency_closure n sigma =
   EvMap.bindings map
 
 let has_no_evar sigma =
-  try let () = Evd.fold (fun _ _ () -> raise Exit) sigma () in true
+  try let () = Evd.fold (fun _ _ () -> raise_notrace Exit) sigma () in true
   with Exit -> false
 
 let pr_evd_level sigma = UState.pr_uctx_level (Evd.evar_universe_context sigma)

@@ -205,20 +205,20 @@ let node_info (v,o,p) =
 let access_children vs os pos =
   if Array.length os = Array.length vs then
     Array.mapi (fun i v -> v, os.(i), i::pos) vs
-  else raise Exit
+  else raise_notrace Exit
 
 let access_list v o pos =
   let rec loop o pos accu = match Repr.repr o with
   | INT 0 -> List.rev accu
   | BLOCK (0, [|hd; tl|]) ->
     loop tl (1 :: pos) ((v, hd, 0 :: pos) :: accu)
-  | _ -> raise Exit
+  | _ -> raise_notrace Exit
   in
   Array.of_list (loop o pos [])
 
 let access_block o = match Repr.repr o with
 | BLOCK (tag, os) -> (tag, os)
-| _ -> raise Exit
+| _ -> raise_notrace Exit
 
 (** raises Exit if the object has not the expected structure *)
 exception Forbidden
@@ -230,7 +230,7 @@ let rec get_children v o pos = match v with
     begin match Repr.repr o with
     | BLOCK (tag, os) -> access_children vv.(tag) os pos
     | INT _ -> [||]
-    | _ -> raise Exit
+    | _ -> raise_notrace Exit
     end
   |Array v ->
     let (_, os) = access_block o in
@@ -240,31 +240,31 @@ let rec get_children v o pos = match v with
     begin match Repr.repr o with
     | INT 0 -> [||]
     | BLOCK (0, [|x|]) -> [|(v, x, 0 :: pos)|]
-    | _ -> raise Exit
+    | _ -> raise_notrace Exit
     end
   | String ->
     begin match Repr.repr o with
     | STRING _ -> [||]
-    | _ -> raise Exit
+    | _ -> raise_notrace Exit
     end
   | Int ->
     begin match Repr.repr o with
     | INT _ -> [||]
-    | _ -> raise Exit
+    | _ -> raise_notrace Exit
     end
   |Annot (s,v) -> get_children v o pos
-  |Any -> raise Exit
+  |Any -> raise_notrace Exit
   |Dyn ->
     begin match Repr.repr o with
     | BLOCK (0, [|id; o|]) ->
       let tpe = Any in
       [|(Int, id, 0 :: pos); (tpe, o, 1 :: pos)|]
-    | _ -> raise Exit
+    | _ -> raise_notrace Exit
     end
   |Fail s -> raise Forbidden
   | Proxy v -> get_children !v o pos
-  | Int64 -> raise Exit
-  | Float64 -> raise Exit
+  | Int64 -> raise_notrace Exit
+  | Float64 -> raise_notrace Exit
 
 let get_children v o pos =
   try get_children v o pos

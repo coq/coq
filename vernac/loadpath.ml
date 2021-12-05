@@ -295,7 +295,7 @@ let convert_string d =
   | CErrors.UserError _ ->
     let d = Unicode.escaped_if_non_utf8 d in
     warn_cannot_use_directory d;
-    raise Exit
+    raise_notrace Exit
 
 let add_vo_path lp =
   let unix_path = lp.unix_path in

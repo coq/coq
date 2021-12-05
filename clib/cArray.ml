@@ -457,7 +457,7 @@ let distinct v =
   try
     Array.iter
       (fun x ->
-        if Hashtbl.mem visited x then raise Exit
+        if Hashtbl.mem visited x then raise_notrace Exit
         else Hashtbl.add visited x x)
       v;
     true

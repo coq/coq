@@ -428,14 +428,14 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
 
 let extern_record_pattern cstrsp args =
   try
-    if !Flags.raw_print then raise Exit;
+    if !Flags.raw_print then raise_notrace Exit;
     let projs = Structure.find_projections (fst cstrsp) in
     if PrintingRecord.active (fst cstrsp) then
       ()
     else if PrintingConstructor.active (fst cstrsp) then
-      raise Exit
+      raise_notrace Exit
     else if not (get_record_print ()) then
-      raise Exit;
+      raise_notrace Exit;
     let rec ip projs args acc =
       match projs, args with
       | [], [] -> acc
@@ -706,15 +706,15 @@ let is_start_implicit = function
 
 let extern_record ref args =
   try
-    if !Flags.raw_print then raise Exit;
+    if !Flags.raw_print then raise_notrace Exit;
     let cstrsp = match ref with GlobRef.ConstructRef c -> c | _ -> raise Not_found in
     let struc = Structure.find (fst cstrsp) in
     if PrintingRecord.active (fst cstrsp) then
       ()
     else if PrintingConstructor.active (fst cstrsp) then
-      raise Exit
+      raise_notrace Exit
     else if not (get_record_print ()) then
-      raise Exit;
+      raise_notrace Exit;
     let projs = struc.Structure.projections in
     let rec cut args n =
       if Int.equal n 0 then args

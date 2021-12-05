@@ -210,7 +210,7 @@ module List =
     | [] -> []
     | x :: l ->
       match f x with
-      | None -> raise Exit
+      | None -> raise_notrace Exit
       | Some y -> y :: aux f l
     in
     try Some (aux f l) with Exit -> None

@@ -1351,18 +1351,18 @@ let inject_if_homogenous_dependent_pair ty =
     let existTconstr = Coqlib.lib_ref    "core.sigT.intro" in
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app sigma t) in
-    if not (isRefX sigma sigTconstr eqTypeDest) then raise Exit;
+    if not (isRefX sigma sigTconstr eqTypeDest) then raise_notrace Exit;
     let hd1,ar1 = decompose_app_vect sigma t1 and
         hd2,ar2 = decompose_app_vect sigma t2 in
-    if not (isRefX sigma existTconstr hd1) then raise Exit;
-    if not (isRefX sigma existTconstr hd2) then raise Exit;
-    let (ind, _), _ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
+    if not (isRefX sigma existTconstr hd1) then raise_notrace Exit;
+    if not (isRefX sigma existTconstr hd2) then raise_notrace Exit;
+    let (ind, _), _ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise_notrace Exit in
     (* check if the user has declared the dec principle *)
     (* and compare the fst arguments of the dep pair *)
     (* Note: should work even if not an inductive type, but the table only *)
     (* knows inductive types *)
     if not (Option.has_some (Ind_tables.lookup_scheme (!eq_dec_scheme_kind_name()) ind) &&
-      pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
+      pf_apply is_conv gl ar1.(2) ar2.(2)) then raise_notrace Exit;
     check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_get_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
     let inj2 = lib_ref "core.eqdep_dec.inj_pair2" in

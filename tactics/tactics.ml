@@ -4146,10 +4146,10 @@ let compute_elim_sig sigma elimt =
       res := { !res with
         indarg = None;
         indarg_in_concl = false; farg_in_concl = true };
-      raise Exit
+      raise_notrace Exit
     end;
     (* 2- If no args_indargs (=!res.nargs at this point) then no indarg *)
-    if Int.equal !res.nargs 0 then raise Exit;
+    if Int.equal !res.nargs 0 then raise_notrace Exit;
     (* 3- Look at last arg: is it the indarg? *)
     ignore (
       match List.hd args_indargs with
@@ -4166,15 +4166,15 @@ let compute_elim_sig sigma elimt =
             let hi_args_enough = (* hi a le bon nbre d'arguments *)
               Int.equal (List.length hi_args) (List.length params + !res.nargs -1) in
             (* FIXME: Ces deux tests ne sont pas suffisants. *)
-            if not (hi_is_ind && hi_args_enough) then raise Exit (* No indarg *)
+            if not (hi_is_ind && hi_args_enough) then raise_notrace Exit (* No indarg *)
             else (* Last arg is the indarg *)
               res := {!res with
                 indarg = Some (List.hd !res.args);
                 indarg_in_concl = occur_rel sigma 1 ccl;
                 args = List.tl !res.args; nargs = !res.nargs - 1;
               };
-            raise Exit);
-    raise Exit(* exit anyway *)
+            raise_notrace Exit);
+    raise_notrace Exit(* exit anyway *)
   with Exit -> (* Ending by computing indref: *)
     match !res.indarg with
       | None -> !res (* No indref *)
@@ -4223,7 +4223,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
       | LetIn (_,_,_,c) ->
         (OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch (p+1) c
       | _ when is_pred p c == IndArg -> []
-      | _ -> raise Exit
+      | _ -> raise_notrace Exit
   in
   let rec find_branches p lbrch =
     match lbrch with

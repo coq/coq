@@ -155,7 +155,7 @@ struct
       if Int.equal i len then ()
       else
         let v = m.(i + 1) in
-        let () = if v mod 2 = 0 then m.(i + 1) <- v / 2 else raise Exit in
+        let () = if v mod 2 = 0 then m.(i + 1) <- v / 2 else raise_notrace Exit in
         set (i + 2)
     in
     try let () = set 1 in Some m with Exit -> None
