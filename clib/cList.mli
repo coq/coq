@@ -97,6 +97,10 @@ sig
   (** [filter_with bl l] selects elements of [l] whose corresponding element in
       [bl] is [true]. Raise [Invalid_argument _] if sizes differ. *)
 
+  val filter_with_mask : Bitv_string.t -> 'a list -> 'a list
+  (** [filter_with_mask bl l] selects elements of [l] whose corresponding
+      element in [bl] is [true]. Raise [Invalid_argument _] if sizes differ. *)
+
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   (** Like [map] but keeping only non-[None] elements *)
 

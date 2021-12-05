@@ -128,6 +128,8 @@ sig
   (** [filter_with b a] selects elements of [a] whose corresponding element in
       [b] is [true].  Raise [Invalid_argument _] when sizes differ. *)
 
+  val filter_with_mask : Bitv_string.t -> 'a array -> 'a array
+
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a array -> 'a array

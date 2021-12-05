@@ -1131,9 +1131,11 @@ let closure_of_filter ~can_drop evd evk = function
                     | LocalDef (_,c,_) ->
                        not (can_drop || isRel evd c || isVar evd c)
   in
-  let newfilter = Filter.map_along test filter (evar_context evi) in
-  (* Now ensure that restriction is at least what is was originally *)
-  let newfilter = Option.cata (Filter.map_along (&&) newfilter) newfilter (Filter.repr (evar_filter evi)) in
+  let newfilter =
+    let newfilter = Filter.map_along test filter (evar_context evi) in
+    (* Now ensure that restriction is at least what is was originally *)
+    Filter.and_ newfilter (evar_filter evi)
+  in
   if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
 
 (* The filter is assumed to be at least stronger than the original one *)

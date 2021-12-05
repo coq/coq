@@ -38,92 +38,102 @@ sig
   val restrict_upon : t -> int -> (int -> bool) -> t option
   val map_along : (bool -> 'a -> bool) -> t -> 'a list -> t
   val make : bool list -> t
-  val repr :  t -> bool list option
+  val as_list :  t -> bool list option
+  val and_ : t -> t -> t
+  val repr : t -> Bitv_string.t option
 end =
 struct
-  type t = bool list option
+  type t = Bitv_string.t option
   (** We guarantee through the interface that if a filter is [Some _] then it
       contains at least one [false] somewhere. *)
 
   let identity = None
 
-  let rec equal l1 l2 = match l1, l2 with
-  | [], [] -> true
-  | h1 :: l1, h2 :: l2 ->
-    (if h1 then h2 else not h2) && equal l1 l2
-  | _ -> false
-
   let equal l1 l2 = match l1, l2 with
   | None, None -> true
   | Some _, None | None, Some _ -> false
-  | Some l1, Some l2 -> equal l1 l2
+  | Some l1, Some l2 -> Bitv_string.equal l1 l2
 
-  let rec is_identity = function
-  | [] -> true
-  | true :: l -> is_identity l
-  | false :: _ -> false
-
-  let normalize f = if is_identity f then None else Some f
+  let normalize f = if Bitv_string.all_true f then None else Some f
 
   let filter_list f l = match f with
   | None -> l
-  | Some f -> CList.filter_with f l
+  | Some f -> CList.filter_with_mask f l
 
   let filter_array f v = match f with
   | None -> v
-  | Some f -> CArray.filter_with f v
-
-  let rec extend n l =
-    if n = 0 then l
-    else extend (pred n) (true :: l)
+  | Some f -> CArray.filter_with_mask f v
 
   let extend n = function
   | None -> None
-  | Some f -> Some (extend n f)
+  | Some f -> Some (Bitv_string.append (Bitv_string.create n true) f)
 
   let compose f1 f2 = match f1 with
   | None -> f2
   | Some f1 ->
     match f2 with
     | None -> None
-    | Some f2 -> normalize (CList.filter_with f1 f2)
+    | Some f2 -> normalize (Bitv_string.compose f1 f2)
 
-  let apply_subfilter_array filter subfilter =
-    (* In both cases we statically know that the argument will contain at
-       least one [false] *)
-    match filter with
-    | None -> Some (Array.to_list subfilter)
-    | Some f ->
-    let len = Array.length subfilter in
-    let fold b (i, ans) =
-      if b then
-        let () = assert (0 <= i) in
-        (pred i, Array.unsafe_get subfilter i :: ans)
-      else
-        (i, false :: ans)
-    in
-    Some (snd (List.fold_right fold f (pred len, [])))
+  let apply_subfilter' filter subfilter =
+    let subfilter = ref subfilter in
+    Bitv_string.map (fun b ->
+      b && (
+        match !subfilter with
+        | [] -> assert false
+        | b :: subf ->
+            subfilter := subf;
+            b)) filter
 
   let apply_subfilter filter subfilter =
-    apply_subfilter_array filter (Array.of_list subfilter)
+    Some (
+      match filter with
+      | None -> Bitv_string.of_list_mapi subfilter (fun _ a -> a)
+      | Some filter -> apply_subfilter' filter subfilter)
 
-  let restrict_upon f len p =
-    let newfilter = Array.init len p in
-    if Array.for_all (fun id -> id) newfilter then None
+  let apply_subfilter_bitv filter bitv =
+    (* In both cases we statically know that the argument will contain at
+       least one [false] *)
+    let idx = ref 0 in
+    Bitv_string.map (fun b ->
+      b && (
+        let res = Bitv_string.get bitv !idx in
+        incr idx;
+        res)) filter
+
+  let restrict_upon (f : t) len p =
+    let newfilter = Bitv_string.init len p in
+    if Bitv_string.all_true newfilter then None
     else
-      Some (apply_subfilter_array f newfilter)
+      Some (
+        Some (
+          match f with
+          | None -> newfilter
+          | Some f -> (apply_subfilter_bitv f newfilter)))
 
   let map_along f flt l =
     let ans = match flt with
-    | None -> List.map (fun x -> f true x) l
-    | Some flt -> List.map2 f flt l
+    | None -> Bitv_string.of_list_mapi l (fun _ x -> f true x)
+    | Some flt ->
+        Bitv_string.of_list_mapi l (fun i x ->
+          f (Bitv_string.get flt i) x)
     in
     normalize ans
 
-  let make l = normalize l
+  let make l = normalize (Bitv_string.of_list_mapi l (fun _ a -> a))
 
-  let repr f = f
+  let as_list x =
+    match x with
+    | None -> None
+    | Some bitv -> Some (Bitv_string.fold_right (fun b acc -> b :: acc) bitv [])
 
+  let and_ x y =
+    match x, y with
+    | None, _ -> y
+    | _, None -> x
+    | Some x, Some y -> Some (Bitv_string.bw_and x y)
+
+  let repr t = t
 end
 
 module Abstraction = struct
@@ -217,15 +227,19 @@ let evar_hyps evi = evi.evar_hyps
 let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
 | None -> evar_hyps evi
 | Some filter ->
-  let rec make_hyps filter ctxt = match filter, ctxt with
-  | [], [] -> empty_named_context_val
-  | false :: filter, _ :: ctxt -> make_hyps filter ctxt
-  | true :: filter, decl :: ctxt ->
-    let hyps = make_hyps filter ctxt in
-    push_named_context_val decl hyps
-  | _ -> instance_mismatch ()
+  let rec make_hyps idx ctxt = match ctxt with
+  | [] ->
+      if idx <> Bitv_string.length filter then
+        instance_mismatch ();
+      empty_named_context_val
+  | decl :: ctxt ->
+      if Bitv_string.get filter idx then
+        let hyps = make_hyps (succ idx) ctxt in
+        push_named_context_val decl hyps
+      else
+        make_hyps (succ idx) ctxt
   in
-  make_hyps filter (evar_context evi)
+  make_hyps 0 (evar_context evi)
 
 let evar_env env evi =
   Environ.reset_with_named_context evi.evar_hyps env
@@ -233,15 +247,19 @@ let evar_env env evi =
 let evar_filtered_env env evi = match Filter.repr (evar_filter evi) with
 | None -> evar_env env evi
 | Some filter ->
-  let rec make_env filter ctxt = match filter, ctxt with
-  | [], [] -> reset_context env
-  | false :: filter, _ :: ctxt -> make_env filter ctxt
-  | true :: filter, decl :: ctxt ->
-    let env = make_env filter ctxt in
-    push_named decl env
-  | _ -> instance_mismatch ()
+  let rec make_env idx ctxt = match ctxt with
+  | [] ->
+      if idx <> Bitv_string.length filter then
+        instance_mismatch ();
+      reset_context env
+  | decl :: ctxt ->
+      if Bitv_string.get filter idx then
+        let env = make_env (succ idx) ctxt in
+        push_named decl env
+      else
+        make_env (succ idx) ctxt
   in
-  make_env filter (evar_context evi)
+  make_env 0 (evar_context evi)
 
 let evar_identity_subst evi =
   Identity.repr evi.evar_hyps evi.evar_filter evi.evar_identity
@@ -263,13 +281,16 @@ exception NotInstantiatedEvar
 (* Note: let-in contributes to the instance *)
 
 let evar_instance_array test_id info args =
-  let rec instrec filter ctxt args = match filter, ctxt, args with
-  | [], [], [] -> []
-  | false :: filter, _ :: ctxt, args ->
-    instrec filter ctxt args
-  | true :: filter, d :: ctxt, c :: args ->
-    if test_id d c then instrec filter ctxt args
-    else (NamedDecl.get_id d, c) :: instrec filter ctxt args
+  let rec instrec idx filter ctxt args = match ctxt, args with
+  | [], [] ->
+      if idx <> Bitv_string.length filter then
+        instance_mismatch ();
+      []
+  | _ :: ctxt, args when not (Bitv_string.get filter idx) ->
+    instrec (succ idx) filter ctxt args
+  | d :: ctxt, c :: args ->
+    if test_id d c then instrec (succ idx) filter ctxt args
+    else (NamedDecl.get_id d, c) :: instrec (succ idx) filter ctxt args
   | _ -> instance_mismatch ()
   in
   match Filter.repr (evar_filter info) with
@@ -282,8 +303,7 @@ let evar_instance_array test_id info args =
     | _ -> instance_mismatch ()
     in
     instance (evar_context info) args
-  | Some filter ->
-    instrec filter (evar_context info) args
+  | Some filter -> instrec 0 filter (evar_context info) args
 
 let make_evar_instance_array info args =
   if Identity.is_identity args info.evar_identity then []

@@ -67,6 +67,7 @@ sig
   val rev_of_list : 'a list -> 'a array
   val rev_to_list : 'a array -> 'a list
   val filter_with : bool list -> 'a array -> 'a array
+  val filter_with_mask : Bitv_string.t -> 'a array -> 'a array
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a array -> 'a array
@@ -470,6 +471,25 @@ let rev_to_list a =
 
 let filter_with filter v =
   Array.of_list (CList.filter_with filter (Array.to_list v))
+
+let filter_with_mask mask v =
+  let len_v = Array.length v in
+  if len_v <> Bitv_string.length mask then
+    raise (Invalid_argument "filter_with_mask");
+  let len = ref 0 in
+  for i = 0 to len_v - 1 do
+    if Bitv_string.get mask i then incr len
+  done;
+  let offset = ref 0 in
+  let rec f i =
+    if Bitv_string.get mask (i + !offset) then
+      v.(i + !offset)
+    else begin
+      incr offset;
+      f i
+    end
+  in
+  Array.init !len f
 
 module Smart =
 struct

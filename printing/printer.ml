@@ -509,7 +509,7 @@ let pr_concl n ?(diffs=false) ?og_s sigma g =
 let pr_evgl_sign env sigma evi =
   let env = evar_env env evi in
   let ps = pr_named_context_of env sigma in
-  let _, l = match Filter.repr (evar_filter evi) with
+  let _, l = match Filter.as_list (evar_filter evi) with
   | None -> [], []
   | Some f -> List.filter2 (fun b c -> not b) f (evar_context evi)
   in

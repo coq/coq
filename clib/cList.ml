@@ -38,6 +38,7 @@ sig
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
   val filter_with : bool list -> 'a list -> 'a list
+  val filter_with_mask : Bitv_string.t -> 'a list -> 'a list
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
   val partitioni :
@@ -359,6 +360,32 @@ let rec filter_with filter l = match filter, l with
       if c.tail == l' then l else cast c
     else filter_with filter l'
   | _ -> invalid_arg "List.filter_with"
+
+let rec filter_with_mask_loop bitv p l idx = match l with
+  | [] ->
+    if idx <> Bitv_string.length bitv then
+      invalid_arg "filter_with_mask"
+  | x :: l' ->
+    filter_with_mask_loop bitv p l' (succ idx);
+    if Bitv_string.get bitv idx then
+      if p.tail == l' then p.tail <- l else p.tail <- x :: p.tail
+
+let rec filter_with_mask bitv l idx =
+  match l with
+    | [] ->
+        if idx <> Bitv_string.length bitv then
+          invalid_arg "filter_with_mask"
+        else
+          []
+    | x :: l' ->
+      if Bitv_string.get bitv idx then
+        let c = { head = x; tail = [] } in
+        filter_with_mask_loop bitv c l' (succ idx);
+        if c.tail == l' then l else cast c
+      else filter_with_mask bitv l' (succ idx)
+
+let filter_with_mask bitv l =
+  filter_with_mask bitv l 0
 
 let rec map_filter_loop f p = function
   | [] -> ()

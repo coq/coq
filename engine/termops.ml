@@ -156,7 +156,7 @@ let pr_evar_info env sigma evi =
   let print_constr = print_kconstr in
   let phyps =
     try
-      let decls = match Filter.repr (evar_filter evi) with
+      let decls = match Filter.as_list (evar_filter evi) with
       | None -> List.map (fun c -> (c, true)) (evar_context evi)
       | Some filter -> List.combine (evar_context evi) filter
       in

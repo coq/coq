@@ -59,6 +59,8 @@ sig
   (** Horizontal composition : [compose f1 f2] only keeps parts of [f2] where
       [f1] is set. In particular, [f1] and [f2] must have the same length. *)
 
+  val and_ : t -> t -> t
+
   val apply_subfilter : t -> bool list -> t
   (** [apply_subfilter f1 f2] applies filter [f2] where [f1] is [true]. In
       particular, the length of [f2] is the number of times [f1] is [true] *)
@@ -72,7 +74,7 @@ sig
   val make : bool list -> t
   (** Create out of a list *)
 
-  val repr :  t -> bool list option
+  val as_list :  t -> bool list option
   (** Observe as a bool list. *)
 
 end
