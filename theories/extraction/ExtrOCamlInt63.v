@@ -16,7 +16,6 @@ From Coq Require Uint63 Sint63 Extraction.
 
 Extract Inductive bool => bool [ true false ].
 Extract Inductive prod => "( * )" [ "" ].
-Extract Inductive comparison => int [ "0" "(-1)" "1" ].
 Extract Inductive DoubleType.carry => "Uint63.carry" [ "Uint63.C0" "Uint63.C1" ].
 
 (** Primitive types and operators. *)
@@ -56,8 +55,8 @@ Extract Constant Uint63.diveucl => "Uint63.diveucl".
 Extract Constant Uint63.diveucl_21 => "Uint63.div21".
 Extract Constant Uint63.addmuldiv => "Uint63.addmuldiv".
 
-Extract Constant Uint63.compare => "Uint63.compare".
-Extract Constant Sint63.compare => "Uint63.compares".
+Extract Constant Uint63.compare => "(fun x y -> let c = Uint63.compare x y in if c = 0 then Eq else if c < 0 then Lt else Gt)".
+Extract Constant Sint63.compare => "(fun x y -> let c = Uint63.compares x y in if c = 0 then Eq else if c < 0 then Lt else Gt)".
 
 Extract Constant Uint63.head0 => "Uint63.head0".
 Extract Constant Uint63.tail0 => "Uint63.tail0".
