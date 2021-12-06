@@ -2560,8 +2560,8 @@ selector: [
 ]
 
 range_selector: [
-| natural "-" natural
 | natural
+| natural "-" natural
 ]
 
 match_key: [
