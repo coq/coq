@@ -366,14 +366,6 @@ Unshelve. (* In 8.4: the goal ?A was there *)
 exact I.
 Qed.
 
-(* Testing compatibility mode with v8.4 *)
-
-Goal True.
-Fail eapply existT.
-Set Universal Lemma Under Conjunction.
-eapply existT.
-Abort.
-
 (* The following was not accepted from r12612 to r12657 *)
 
 Record sig0 := { p1 : nat; p2 : p1 = 0 }.
