@@ -58,6 +58,9 @@ val redex_of_pattern :
   ?resolve_typeclasses:bool -> env -> pattern ->
      EConstr.t Evd.in_evar_universe_context
 
+val redex_of_pattern0 :
+  pattern -> (Evd.evar_map * EConstr.t) option
+
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]
     in the current [Ltac] interpretation signature [ise] and tactic input [gl]*)
 val interp_rpattern :

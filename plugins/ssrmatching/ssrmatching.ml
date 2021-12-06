@@ -1196,11 +1196,16 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     concl, us
 ;;
 
-let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
-  let e = match p with
-  | In_T _ | In_X_In_T _ -> CErrors.anomaly (str"pattern without redex.")
-  | X_In_T (e, _) -> EConstr.mkEvar e
-  | T e | E_As_X_In_T (e, _, _) | E_In_X_In_T (e, _, _) -> e in
+let redex_of_pattern0 (sigma, p) = match p with
+| In_T _ | In_X_In_T _ -> None
+| X_In_T (e, _) -> Some (sigma, EConstr.mkEvar e)
+| T e | E_As_X_In_T (e, _, _) | E_In_X_In_T (e, _, _) -> Some (sigma, e)
+
+let redex_of_pattern ?(resolve_typeclasses=false) env p =
+  let sigma, e = match redex_of_pattern0 p with
+  | None -> CErrors.anomaly (str"pattern without redex.")
+  | Some (sigma, e) -> sigma, e
+  in
   let sigma =
     if not resolve_typeclasses then sigma
     else Typeclasses.resolve_typeclasses ~fail:false env sigma in
