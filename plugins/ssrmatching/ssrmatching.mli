@@ -43,7 +43,7 @@ type ('ident, 'term) ssrpattern =
   | E_In_X_In_T of 'term * 'ident * 'term
   | E_As_X_In_T of 'term * 'ident * 'term
 
-type pattern = Evd.evar_map * (EConstr.t, EConstr.t) ssrpattern
+type pattern = Evd.evar_map * (EConstr.existential, EConstr.t) ssrpattern
 val pp_pattern : env -> pattern -> Pp.t
 
 (** The type of rewrite patterns, the patterns of the [rewrite] tactic.

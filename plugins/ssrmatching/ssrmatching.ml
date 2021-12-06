@@ -777,15 +777,17 @@ let pr_pattern pr_ident pr_term = function
   | E_As_X_In_T (e,x,t) ->
       pr_term e ++ str " as " ++ pr_ident x ++ str " in " ++ pr_term t
 
+let pr_hole pr_constr e = pr_constr (EConstr.mkEvar e)
+
 let pr_pattern_aux pr_constr = function
   | T t -> pr_constr t
   | In_T t -> str "in " ++ pr_constr t
-  | X_In_T (x,t) -> pr_constr x ++ str " in " ++ pr_constr t
-  | In_X_In_T (x,t) -> str "in " ++ pr_constr x ++ str " in " ++ pr_constr t
+  | X_In_T (x,t) -> pr_hole pr_constr x ++ str " in " ++ pr_constr t
+  | In_X_In_T (x,t) -> str "in " ++ pr_hole pr_constr x ++ str " in " ++ pr_constr t
   | E_In_X_In_T (e,x,t) ->
-      pr_constr e ++ str " in " ++ pr_constr x ++ str " in " ++ pr_constr t
+      pr_constr e ++ str " in " ++ pr_hole pr_constr x ++ str " in " ++ pr_constr t
   | E_As_X_In_T (e,x,t) ->
-      pr_constr e ++ str " as " ++ pr_constr x ++ str " in " ++ pr_constr t
+      pr_constr e ++ str " as " ++ pr_hole pr_constr x ++ str " in " ++ pr_constr t
 let pp_pattern env (sigma, p) =
   pr_pattern_aux (fun t -> pr_econstr_pat env sigma (pi3 (nf_open_term sigma sigma t))) p
 
@@ -916,7 +918,7 @@ let pr_rpattern = pr_pattern pr_cpattern pr_cpattern
 
 let wit_rpatternty = add_genarg "rpatternty" (fun env sigma -> pr_pattern pr_cpattern pr_cpattern)
 
-type pattern = Evd.evar_map * (EConstr.t, EConstr.t) ssrpattern
+type pattern = Evd.evar_map * (EConstr.existential, EConstr.t) ssrpattern
 
 let id_of_cpattern {pattern = (c1, c2); _} =
   let open CAst in
@@ -995,8 +997,7 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
     | it -> g t with e when CErrors.noncritical e -> g t in
   let decodeG ist t f g = decode (mkG t ist) f g in
   let bad_enc id _ = CErrors.anomaly (str"bad encoding for pattern "++str id++str".") in
-  let cleanup_XinE h x rp sigma =
-    let h_k = match EConstr.kind sigma h with Evar (k,_) -> k | _ -> assert false in
+  let cleanup_XinE (h_k, _) x rp sigma =
     let to_clean, update = (* handle rename if x is already used *)
       let ctx = Environ.named_context env in
       let len = Context.Named.length ctx in
@@ -1085,8 +1086,9 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
     let rp = mkXLetIn (Name x) rp in
     let sigma, rp = interp_term env sigma0 rp in
     let _, h, _, rp = EConstr.destLetIn sigma rp in
+    let h = EConstr.destEvar sigma h in
     let sigma = cleanup_XinE h x rp sigma in
-    let rp = EConstr.Vars.subst1 h (Evarutil.nf_evar sigma rp) in
+    let rp = EConstr.Vars.subst1 (EConstr.mkEvar h) (Evarutil.nf_evar sigma rp) in
     sigma, mk h rp
   | E_In_X_In_T(e, x, rp) | E_As_X_In_T (e, x, rp) ->
     let mk e x p =
@@ -1094,8 +1096,9 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
     let rp = mkXLetIn (Name x) rp in
     let sigma, rp = interp_term env sigma0 rp in
     let _, h, _, rp = EConstr.destLetIn sigma rp in
+    let h = EConstr.destEvar sigma h in
     let sigma = cleanup_XinE h x rp sigma in
-    let rp = EConstr.Vars.subst1 h (Evarutil.nf_evar sigma rp) in
+    let rp = EConstr.Vars.subst1 (EConstr.mkEvar h) (Evarutil.nf_evar sigma rp) in
     let sigma, e = interp_term env sigma e in
     sigma, mk e h rp
 ;;
@@ -1122,8 +1125,6 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let sigma =
       Evd.add (Evd.remove sigma e) e {e_def with Evd.evar_body = Evar_empty} in
     sigma, e_body in
-  let ex_value sigma hole =
-    match EConstr.kind sigma hole with Evar (e,_) -> e | _ -> assert false in
   let mk_upat_for ?hack env sigma0 (sigma, t) ?(p=t) ok =
     let sigma,pat= mk_tpattern ?hack env sigma0 (sigma,p) ok L2R (fs sigma t) in
     sigma, [pat] in
@@ -1141,7 +1142,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
   | Some (sigma, (X_In_T (hole, p) | In_X_In_T (hole, p))) ->
     let p = fs sigma p in
     let occ = match pattern with Some (_, X_In_T _) -> occ | _ -> noindex in
-    let ex = ex_value sigma hole in
+    let ex = fst hole in
+    let hole = EConstr.mkEvar hole in
     let rp = mk_upat_for ~hack:true env0 sigma0 (sigma, p) all_ok in
     let find_T, end_T = mk_tpattern_matcher sigma0 noindex rp in
     (* we start from sigma, so hole is considered a rigid head *)
@@ -1156,7 +1158,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     concl, us
   | Some (sigma, E_In_X_In_T (e, hole, p)) ->
     let p, e = fs sigma p, fs sigma e in
-    let ex = ex_value sigma hole in
+    let ex = fst hole in
+    let hole = EConstr.mkEvar hole in
     let rp = mk_upat_for ~hack:true env0 sigma0 (sigma, p) all_ok in
     let find_T, end_T = mk_tpattern_matcher sigma0 noindex rp in
     let holep = mk_upat_for env0 sigma (sigma, hole) all_ok in
@@ -1173,7 +1176,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     concl, us
   | Some (sigma, E_As_X_In_T (e, hole, p)) ->
     let p, e = fs sigma p, fs sigma e in
-    let ex = ex_value sigma hole in
+    let ex = fst hole in
+    let hole = EConstr.mkEvar hole in
     let rp =
       let e_sigma = unify_HO env0 sigma hole e in
       e_sigma, fs e_sigma p in
@@ -1195,7 +1199,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
 let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
   let e = match p with
   | In_T _ | In_X_In_T _ -> CErrors.anomaly (str"pattern without redex.")
-  | T e | X_In_T (e, _) | E_As_X_In_T (e, _, _) | E_In_X_In_T (e, _, _) -> e in
+  | X_In_T (e, _) -> EConstr.mkEvar e
+  | T e | E_As_X_In_T (e, _, _) | E_In_X_In_T (e, _, _) -> e in
   let sigma =
     if not resolve_typeclasses then sigma
     else Typeclasses.resolve_typeclasses ~fail:false env sigma in
