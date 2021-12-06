@@ -324,7 +324,6 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
   in
   let tac_of_hint =
     fun (flags, h) ->
-      let b = FullHint.priority h in
       let p = FullHint.pattern h in
       let name = FullHint.name h in
       let tac = function
@@ -373,15 +372,17 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       in
       let tac = FullHint.run h tac in
       let tac = if complete then Tacticals.tclCOMPLETE tac else tac in
-      let pp =
+      let pp() =
         match p with
         | Some pat when get_typeclasses_filtered_unification () ->
            str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
         | _ -> mt ()
       in
-        match FullHint.repr h with
-        | Extern _ -> (tac, b, true, name, lazy (FullHint.print env sigma h ++ pp))
-        | _ -> (tac, b, false, name, lazy (FullHint.print env sigma h ++ pp))
+      let extern = match FullHint.repr h with
+        | Extern _ -> true
+        | _ -> false
+      in
+      (tac, FullHint.priority h, extern, name, lazy (FullHint.print env sigma h ++ pp ()))
   in
   let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
