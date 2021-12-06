@@ -355,3 +355,5 @@ let typing_flags_parser : Declarations.typing_flags key_parser = fun ?loc orig a
 
 let typing_flags =
   attribute_of_list ["bypass_check", typing_flags_parser]
+
+let raw_attributes : _ attribute = fun flags -> [], flags

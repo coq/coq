@@ -23,7 +23,7 @@ val register_type : ?local:bool -> rec_flag ->
 val register_primitive : ?deprecation:Deprecation.t -> ?local:bool ->
   Names.lident -> raw_typexpr -> ml_tactic_name -> unit
 
-val register_struct : ?deprecation:Deprecation.t -> ?local:bool -> strexpr -> unit
+val register_struct : Attributes.vernac_flags -> strexpr -> unit
 
 val register_notation : ?deprecation:Deprecation.t -> ?local:bool -> sexpr list ->
   int option -> raw_tacexpr -> unit
