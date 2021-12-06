@@ -530,7 +530,7 @@ Typeclasses Transparent, Typeclasses Opaque
    anything which does not look like an abbreviation. This can
    additionally speed up proof search as the typeclass map can be
    indexed by such rigid constants (see
-   :ref:`thehintsdatabasesforautoandeauto`).
+   :ref:`hintdatabases`).
 
 By default, all :term:`constants <constant>` and local variables are considered transparent. One
 should take care not to make opaque any constant that is used to abbreviate a

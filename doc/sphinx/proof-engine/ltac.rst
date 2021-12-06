@@ -1646,7 +1646,7 @@ Testing boolean expressions: guard
 
    .. todo why doesn't it support = and <> as well?
 
-   .. example::
+   .. example:: guard
 
       .. coqtop:: in
 
@@ -1660,6 +1660,158 @@ Testing boolean expressions: guard
 
    .. exn:: Condition not satisfied.
       :undocumented:
+
+Checking properties of terms
+----------------------------
+
+Each of the following tactics acts as the identity if the check
+succeeds, and results in an error otherwise.
+
+.. tacn:: constr_eq_strict @one_term @one_term
+
+   Succeeds if the arguments are equal modulo alpha conversion and ignoring casts.
+   Universes are considered equal when they are equal in the universe graph.
+
+   .. exn:: Not equal.
+      :undocumented:
+
+   .. exn:: Not equal (due to universes).
+      :undocumented:
+
+.. tacn:: constr_eq @one_term @one_term
+
+   Like :tacn:`constr_eq_strict`, but may add constraints to make universes equal.
+
+   .. exn:: Not equal.
+      :undocumented:
+
+   .. exn:: Not equal (due to universes).
+      :undocumented:
+
+.. tacn:: constr_eq_nounivs @one_term @one_term
+
+   Like :tacn:`constr_eq_strict`, but all universes are considered equal.
+
+.. tacn:: unify @one_term @one_term {? with @ident }
+
+   Succeeds if the arguments are unifiable, potentially
+   instantiating existential variables, and fails otherwise.
+
+   :n:`@ident`, if specified, is the name of the :ref:`hint database <hintdatabases>`
+   that specifies which definitions are transparent.
+   Otherwise, all definitions are considered transparent.  Unification only expands
+   transparent definitions while matching the two :n:`@one_term`\s.
+
+.. tacn:: is_evar @one_term
+
+   Succeeds if :n:`@one_term` is an existential
+   variable and otherwise fails. Existential variables are uninstantiated
+   variables generated
+   by :tacn:`eapply` and some other tactics.
+
+   .. exn:: Not an evar.
+      :undocumented:
+
+.. tacn:: has_evar @one_term
+
+   Succeeds if :n:`@one_term` has an existential variable as
+   a subterm and fails otherwise. Unlike context patterns combined with
+   ``is_evar``, this tactic scans all subterms, including those under binders.
+
+   .. exn:: No evars.
+      :undocumented:
+
+.. tacn:: is_ground @one_term
+
+   The negation of :n:`has_evar @one_term`.  Succeeds if :n:`@one_term`
+   does not have an existential variable as a subterm and fails otherwise.
+
+   .. exn:: Not ground.
+      :undocumented:
+
+.. tacn:: is_var @one_term
+
+   Succeeds if :n:`@one_term` is a variable or hypothesis in
+   the current local context and fails otherwise.
+
+   .. exn:: Not a variable or hypothesis.
+      :undocumented:
+
+.. tacn:: is_const @one_term
+
+   Succeeds if :n:`@one_term` is a global constant that is neither a (co)inductive
+   type nor a constructor and fails otherwise.
+
+   .. exn:: not a constant.
+      :undocumented:
+
+.. tacn:: is_fix @one_term
+
+   Succeeds if :n:`@one_term` is a `fix` construct (see :n:`@term_fix`)
+   and fails otherwise.  Fails for `let fix` forms.
+
+   .. exn:: not a fix definition.
+      :undocumented:
+
+   .. example:: is_fix
+
+      .. coqtop:: reset in
+
+         Goal True.
+         is_fix (fix f (n : nat) := match n with S n => f n | O => O end).
+
+.. tacn:: is_cofix @one_term
+   :undocumented:
+
+   Succeeds if :n:`@one_term` is a `cofix` construct (see :n:`@term_cofix`)
+   and fails otherwise.  Fails for `let cofix` forms.
+
+   .. exn:: not a cofix definition.
+      :undocumented:
+
+   .. example:: is_cofix
+
+      .. coqtop:: reset in
+
+         Require Import Coq.Lists.Streams.
+         Goal True.
+         let c := constr:(cofix f : Stream unit := Cons tt f) in
+           is_cofix c.
+
+.. tacn:: is_constructor @one_term
+
+   Succeeds if :n:`@one_term` is the constructor of a (co)inductive type and fails
+   otherwise.
+
+   .. exn:: not a constructor.
+      :undocumented:
+
+.. tacn:: is_ind @one_term
+
+   Succeeds if :n:`@one_term` is a (co)inductive type (family) and fails otherwise.
+   Note that `is_ind (list nat)` fails even though `is_ind list` succeeds, because
+   `list nat` is an application.
+
+   .. exn:: not an (co)inductive datatype.
+      :undocumented:
+
+.. tacn:: is_proj @one_term
+
+   Succeeds if :n:`@one_term` is a primitive projection applied to a record argument
+   and fails otherwise.
+
+   .. exn:: not a primitive projection.
+      :undocumented:
+
+   .. example:: is_proj
+
+      .. coqtop:: reset in
+
+         Set Primitive Projections.
+         Record Box {T : Type} := box { unbox : T }.
+         Arguments box {_} _.
+         Goal True.
+         is_proj (unbox (box 0)).
 
 Proving a subgoal as a separate lemma: abstract
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
