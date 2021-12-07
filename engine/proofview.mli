@@ -584,6 +584,9 @@ module NonLogical : module type of Logic_monad.NonLogical
 (** [tclLIFT c] is a tactic which behaves exactly as [c]. *)
 val tclLIFT : 'a NonLogical.t -> 'a tactic
 
+(* transforms every Ocaml (catchable) exception into a failure in
+    the monad. *)
+val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
 
 (**/**)
 
@@ -600,9 +603,6 @@ module V82 : sig
      expected for a tactic obtained from {!V82.tactic} though. *)
   val of_tactic : 'a tactic -> tac
 
-  (* transforms every Ocaml (catchable) exception into a failure in
-     the monad. *)
-  val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
 end
 
 (** {7 Notations} *)

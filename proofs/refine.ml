@@ -56,7 +56,7 @@ let generic_refine ~typecheck f gl =
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   f >>= fun (v, c) ->
   Proofview.tclEVARMAP >>= fun sigma' ->
-  Proofview.V82.wrap_exceptions begin fun () ->
+  Proofview.wrap_exceptions begin fun () ->
   (* Redo the effects in sigma in the monad's env *)
   let privates_csts = Evd.eval_side_effects sigma' in
   let env = Safe_typing.push_private_constants env privates_csts.Evd.seff_private in
@@ -106,7 +106,7 @@ let generic_refine ~typecheck f gl =
 
 let lift c =
   Proofview.tclEVARMAP >>= fun sigma ->
-  Proofview.V82.wrap_exceptions begin fun () ->
+  Proofview.wrap_exceptions begin fun () ->
   let (sigma, c) = c sigma in
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   Proofview.tclUNIT c
