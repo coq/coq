@@ -100,6 +100,10 @@ val is_ground_env  :  evar_map -> env -> bool
     its (partial) definition. *)
 val gather_dependent_evars : evar_map -> Evar.t list -> (Evar.Set.t option) Evar.Map.t
 
+(** Like [gather_dependent_evars] but gets the [seeds] from the evars
+   appearing in the term list (including defined evars) *)
+val gather_dependent_evars_terms : evar_map -> EConstr.t list -> (Evar.Set.t option) Evar.Map.t
+
 (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
     the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially)

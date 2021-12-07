@@ -403,15 +403,6 @@ module V82 = struct
     let it, sigma = Proofview.proofview (unroll_focus p.proofview p.focus_stack) in
     Evd.{ it; sigma }
 
-  let top_goal p =
-    let { Evd.it=gls ; sigma=sigma; } =
-        Proofview.V82.top_goals p.entry p.proofview
-    in
-    { Evd.it=List.hd gls ; sigma=sigma; }
-
-  let top_evars p =
-    Proofview.V82.top_evars p.entry p.proofview
-
 end
 
 let all_goals p =
@@ -535,7 +526,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let { goals; stack; sigma; entry } = data prf in
   assert (stack = []);
   let ans = match Proofview.initial_goals entry with
-  | [c, _] -> c
+  | [_, c, _] -> c
   | _ -> assert false
   in
   let ans = EConstr.to_constr ~abort_on_undefined_evars:false sigma ans in

@@ -194,7 +194,7 @@ val pr_transparent_state   : TransparentState.t -> Pp.t
     records containing the goal and sigma for, respectively, the new and old proof steps,
     e.g. [{ it = g ; sigma = sigma }].
 *)
-val pr_goal                : ?diffs:bool -> ?og_s:(Goal.goal * Evd.evar_map) -> Goal.goal sigma -> Pp.t
+val pr_goal : ?diffs:bool -> ?og_s:(Goal.goal * Evd.evar_map) -> Goal.goal sigma -> Pp.t
 
 (** [pr_subgoals ~pr_first ~diffs ~os_map close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals]
    prints the goals in [goals] followed by the goals in [unfocused] in a compact form
@@ -211,17 +211,25 @@ val pr_goal                : ?diffs:bool -> ?og_s:(Goal.goal * Evd.evar_map) -> 
    there are non-instantiated existential variables.  [stack] is used to print summary info on unfocused
    goals.
 *)
-val pr_subgoals            : ?pr_first:bool -> ?diffs:bool -> ?os_map:(evar_map * Goal.goal Evar.Map.t) -> Pp.t option -> evar_map
-                             -> seeds:Goal.goal list -> shelf:Goal.goal list -> stack:int list
-                             -> unfocused:Goal.goal list -> goals:Goal.goal list -> Pp.t
+val pr_subgoals
+  : ?pr_first:bool
+  -> ?diffs:bool
+  -> ?os_map:(evar_map * Goal.goal Evar.Map.t)
+  -> ?entry:Proofview.entry
+  -> Pp.t option -> evar_map
+  -> shelf:Goal.goal list
+  -> stack:int list
+  -> unfocused:Goal.goal list
+  -> goals:Goal.goal list
+  -> Pp.t
 
-val pr_subgoal             : int -> evar_map -> Goal.goal list -> Pp.t
+val pr_subgoal : int -> evar_map -> Goal.goal list -> Pp.t
 
 (** [pr_concl n ~diffs ~og_s sigma g] prints the conclusion of the goal [g] using [sigma].  The output
     is labelled "subgoal [n]".  If [diffs] is true, highlight the differences between the old conclusion,
     [og_s], and [g]+[sigma].  [og_s] is a record containing the old goal and sigma, e.g. [{ it = g ; sigma = sigma }].
 *)
-val pr_concl               : int -> ?diffs:bool -> ?og_s:(Goal.goal * Evd.evar_map) -> evar_map -> Goal.goal -> Pp.t
+val pr_concl : int -> ?diffs:bool -> ?og_s:(Goal.goal * Evd.evar_map) -> evar_map -> Goal.goal -> Pp.t
 
 (** [pr_open_subgoals_diff ~quiet ~diffs ~oproof proof] shows the context for [proof] as used by, for example, coqtop.
     The first active goal is printed with all its antecedents and the conclusion.  The other active goals only show their

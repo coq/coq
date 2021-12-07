@@ -628,6 +628,14 @@ let clear_hyps2_in_evi env sigma hyps t concl ids =
   | (sigma,nhyps,[t;nconcl]) -> (sigma,nhyps,t,nconcl)
   | _ -> assert false
 
+let evar_nodes_of_term c =
+  let rec evrec acc c =
+    match kind c with
+    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
+    | _ -> Constr.fold evrec acc c
+  in
+  evrec Evar.Set.empty (EConstr.Unsafe.to_constr c)
+
 (* spiwack: a few functions to gather evars on which goals depend. *)
 let queue_set q is_dependent set =
   Evar.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
@@ -668,6 +676,11 @@ let gather_dependent_evars q evm =
     end
   done;
   !acc
+
+let gather_dependent_evars_terms evm l =
+  let q = Queue.create () in
+  List.iter (queue_term q false) l;
+  gather_dependent_evars q evm
 
 let gather_dependent_evars evm l =
   let q = Queue.create () in
