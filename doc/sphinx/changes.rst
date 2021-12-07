@@ -142,7 +142,7 @@ Tactics
   to replace instances of ``Hint Unfold foo.``
   with ``Hint Extern 4 => progress (unfold foo).``. A less compatible but
   finer-grained change can be achieved by only adding the missing normalization
-  phase with ``Hint Extern 4 => progress (lazy beta iota).``.
+  phase with ``Hint Extern 4 => progress (lazy beta iota).``
   (`#14679 <https://github.com/coq/coq/pull/14679>`_,
   fixes `#14874 <https://github.com/coq/coq/issues/14874>`_,
   by Pierre-Marie Pédrot).
@@ -555,7 +555,7 @@ Standard library
   (`#14809 <https://github.com/coq/coq/pull/14809>`_,
   by Laurent Thery).
 - **Added:**
-  The notations ``(x; y)``, ``x.1``, ``x.2`` for sigT are now exported and available  after ``Import SigTNotations.``.
+  The notations ``(x; y)``, ``x.1``, ``x.2`` for sigT are now exported and available  after ``Import SigTNotations.``
   (`#14813 <https://github.com/coq/coq/pull/14813>`_, by Laurent Théry).
 - **Added:**
   The function ``sigT_of_prod`` turns a pair ``A * B`` into ``{_ : A & B}``. Its inverse function is ``prod_of_sigT``. This is shown by theorems ``sigT_prod_sigT`` and ``prod_sigT_prod``.
