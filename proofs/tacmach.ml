@@ -30,7 +30,9 @@ let re_sig it  gc = { it = it; sigma = gc; }
 (* Operations for handling terms under a local typing context *)
 (**************************************************************)
 
+[@@@ocaml.warning "-3"]
 type tactic = Proofview.V82.tac
+[@@@ocaml.warning "+3"]
 
 let sig_it x = x.it
 let project x = x.sigma

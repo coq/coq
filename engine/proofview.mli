@@ -604,6 +604,7 @@ module V82 : sig
   val of_tactic : 'a tactic -> tac
 
 end
+[@@ocaml.deprecated "Use the new engine."]
 
 (** {7 Notations} *)
 

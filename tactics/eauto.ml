@@ -171,6 +171,7 @@ module SearchProblem = struct
 
   let success s = List.is_empty s.tacres
 
+  [@@@ocaml.warning "-3"]
   let filter_tactics ~is_done sigma mkdb glls l =
     let gl, db, rest = match glls with
     | [] -> assert false
@@ -191,6 +192,7 @@ module SearchProblem = struct
         None
     in
     List.map_filter map l
+  [@@@ocaml.warning "+3"]
 
   (* Ordering of states is lexicographic on depth (greatest first) then
      number of remaining goals. *)
