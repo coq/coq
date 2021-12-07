@@ -951,7 +951,7 @@ let fold_match ?(force=false) env sigma c =
   let app =
     let ind, args = Inductiveops.find_mrectype env sigma cty in
     let pars, args = List.chop ci.ci_npar args in
-    let meths = List.map (fun br -> br) (Array.to_list brs) in
+    let meths = Array.to_list brs in
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
   in
     sk, (if exists then env else reset_env env), app
