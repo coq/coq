@@ -1,6 +1,21 @@
-File "./output/ErrorLocation_tac_in_term.v", line 4, characters 26-30:
+File "./output/ErrorLocation_tac_in_term.v", line 3, characters 11-14:
+The command has indeed failed with message:
+Illegal application (Non-functional construction): 
+The expression "I" of type "True" cannot be applied to the term
+ "I" : "True"
+File "./output/ErrorLocation_tac_in_term.v", line 8, characters 0-15:
+The command has indeed failed with message:
+Illegal application (Non-functional construction): 
+The expression "I" of type "True" cannot be applied to the term
+ "I" : "True"
+File "./output/ErrorLocation_tac_in_term.v", line 12, characters 16-19:
+The command has indeed failed with message:
+Illegal application (Non-functional construction): 
+The expression "I" of type "True" cannot be applied to the term
+ "I" : "True"
+File "./output/ErrorLocation_tac_in_term.v", line 17, characters 26-30:
 The command has indeed failed with message:
 The term "true" has type "bool" while it is expected to have type "nat".
-File "./output/ErrorLocation_tac_in_term.v", line 5, characters 17-25:
+File "./output/ErrorLocation_tac_in_term.v", line 18, characters 17-25:
 The command has indeed failed with message:
 The term "true" has type "bool" while it is expected to have type "nat".

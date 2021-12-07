@@ -76,16 +76,20 @@ let with_fail f : (Loc.t option * Pp.t, unit) result =
     let _, info as e = Exninfo.capture e in
     Ok (Loc.get_loc info, CErrors.iprint e)
 
+let real_error_loc ~cmdloc ~eloc =
+  if Loc.finer eloc cmdloc then eloc
+  else cmdloc
+
 (* We restore the state always *)
-let with_fail ~st f =
+let with_fail ~loc ~st f =
   let res = with_fail f in
   Vernacstate.invalidate_cache ();
   Vernacstate.unfreeze_interp_state st;
   match res with
   | Error () ->
     CErrors.user_err (Pp.str "The command has not failed!")
-  | Ok (loc, msg) ->
-    let loc = if !test_mode then loc else None in
+  | Ok (eloc, msg) ->
+    let loc = if !test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
     if not !Flags.quiet || !test_mode
     then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
@@ -97,9 +101,7 @@ let with_succeed ~st f =
   then Feedback.msg_notice Pp.(str "The command has succeeded and its effects have been reverted.")
 
 let locate_if_not_already ?loc (e, info) =
-  match Loc.get_loc info with
-  | None   -> (e, Option.cata (Loc.add_loc info) info loc)
-  | Some l -> (e, info)
+  (e, Option.cata (Loc.add_loc info) info (real_error_loc ~cmdloc:loc ~eloc:(Loc.get_loc info)))
 
 let mk_time_header =
   (* Drop the time header to print the command, we should indeed use a
@@ -115,11 +117,11 @@ let mk_time_header =
   in
   fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
 
-let interp_control_flag ~time_header (f : control_flag) ~st
+let interp_control_flag ~loc ~time_header (f : control_flag) ~st
     (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t NeList.t) =
   match f with
   | ControlFail ->
-    with_fail ~st (fun () -> fn ~st);
+    with_fail ~loc ~st (fun () -> fn ~st);
     st.Vernacstate.lemmas, st.Vernacstate.program
   | ControlSucceed ->
     with_succeed ~st (fun () -> fn ~st);
@@ -194,7 +196,7 @@ and vernac_load ~verbosely fname =
 
 and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
   let time_header = mk_time_header vernac in
-  List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
+  List.fold_right (fun flag fn -> interp_control_flag ~loc ~time_header flag fn)
     cmd.control
     (fun ~st ->
        let before_univs = Global.universes () in
@@ -230,7 +232,7 @@ let interp_qed_delayed ~proof ~st pe =
 
 let interp_qed_delayed_control ~proof ~st ~control { CAst.loc; v=pe } =
   let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in
-  List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
+  List.fold_right (fun flag fn -> interp_control_flag ~loc ~time_header flag fn)
     control
     (fun ~st -> interp_qed_delayed ~proof ~st pe)
     ~st
@@ -265,3 +267,6 @@ let interp ?(verbosely=true) ~st cmd =
 let interp_qed_delayed_proof ~proof ~st ~control pe : Vernacstate.t =
   interp_gen ~verbosely:false ~st
     ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe
+
+(* 8.15 only compat definition *)
+let with_fail ~st f = with_fail ~loc:None ~st f

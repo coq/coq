@@ -1,3 +1,4 @@
+File "./output/bug_13942.v", line 102, characters 2-34:
 The command has indeed failed with message:
 The following term contains unresolved implicit arguments:
   (fi fu)
@@ -35,6 +36,7 @@ More precisely:
   i : Union (M A)
   i' : Union (M B)
   fi' : Insert K B (M B)
+File "./output/bug_13942.v", line 106, characters 2-39:
 The command has indeed failed with message:
 The following term contains unresolved implicit arguments:
   (fi fu)
@@ -50,6 +52,7 @@ More precisely:
   i : Union (M A)
   i' : Union (M B)
   fi' : Insert K B (M B)
+File "./output/bug_13942.v", line 120, characters 2-34:
 The command has indeed failed with message:
 The following term contains unresolved implicit arguments:
   (fi fu)
@@ -87,6 +90,7 @@ More precisely:
   i' : Union (M B)
   fi' : Insert K B (M B)
   i : Union (M A)
+File "./output/bug_13942.v", line 124, characters 2-40:
 The command has indeed failed with message:
 The following term contains unresolved implicit arguments:
   (fi fu)
@@ -102,6 +106,7 @@ More precisely:
   i' : Union (M B)
   fi' : Insert K B (M B)
   i : Union (M A)
+File "./output/bug_13942.v", line 140, characters 2-20:
 The command has indeed failed with message:
 Unable to satisfy the following constraints:
 In environment:
@@ -119,6 +124,7 @@ i : Choose false -> Union (M A)
 
 ?hu : "Union (M ?A)"
 
+File "./output/bug_13942.v", line 145, characters 2-24:
 The command has indeed failed with message:
 Unable to satisfy the following constraints:
 In environment:
@@ -136,6 +142,7 @@ i : Choose false -> Union (M A)
 
 fi fu : B
      : B
+File "./output/bug_13942.v", line 305, characters 2-126:
 The command has indeed failed with message:
 Unable to satisfy the following constraints:
 In environment:

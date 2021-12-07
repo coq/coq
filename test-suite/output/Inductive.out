@@ -1,3 +1,4 @@
+File "./output/Inductive.v", line 1, characters 0-93:
 The command has indeed failed with message:
 In environment
 list' : Set -> Set

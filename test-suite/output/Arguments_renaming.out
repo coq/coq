@@ -1,3 +1,4 @@
+File "./output/Arguments_renaming.v", line 2, characters 0-36:
 The command has indeed failed with message:
 Flag "rename" expected to rename A into B.
 File "./output/Arguments_renaming.v", line 3, characters 0-25:
@@ -89,19 +90,26 @@ myplus is transparent
 Expands to: Constant Arguments_renaming.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
+File "./output/Arguments_renaming.v", line 49, characters 0-36:
 The command has indeed failed with message:
 Argument lists should agree on the names they provide.
+File "./output/Arguments_renaming.v", line 50, characters 0-41:
 The command has indeed failed with message:
 Sequences of implicit arguments must be of different lengths.
+File "./output/Arguments_renaming.v", line 51, characters 0-37:
 The command has indeed failed with message:
 Argument number 3 is a trailing implicit, so it can't be declared non
 maximal. Please use { } instead of [ ].
+File "./output/Arguments_renaming.v", line 52, characters 0-37:
 The command has indeed failed with message:
 Argument z is a trailing implicit, so it can't be declared non maximal.
 Please use { } instead of [ ].
+File "./output/Arguments_renaming.v", line 53, characters 0-28:
 The command has indeed failed with message:
 Extra arguments: y.
+File "./output/Arguments_renaming.v", line 54, characters 0-26:
 The command has indeed failed with message:
 Flag "rename" expected to rename A into R.
+File "./output/Arguments_renaming.v", line 58, characters 2-36:
 The command has indeed failed with message:
 Arguments of section variables such as allTrue may not be renamed.

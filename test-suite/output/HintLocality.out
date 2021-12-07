@@ -67,6 +67,7 @@ For any goal ->
 For nat ->   
 For S (modes !) ->   
 
+File "./output/HintLocality.v", line 61, characters 0-38:
 The command has indeed failed with message:
 This command does not support the global attribute in sections.
 Non-discriminated database

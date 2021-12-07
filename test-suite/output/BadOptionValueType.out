@@ -1,14 +1,21 @@
+File "./output/BadOptionValueType.v", line 1, characters 0-29:
 The command has indeed failed with message:
 Bad type of value for this option: expected int, got string.
+File "./output/BadOptionValueType.v", line 2, characters 0-25:
 The command has indeed failed with message:
 This is an option. A value must be provided.
+File "./output/BadOptionValueType.v", line 3, characters 0-27:
 The command has indeed failed with message:
 Bad type of value for this option: expected string, got int.
+File "./output/BadOptionValueType.v", line 4, characters 0-25:
 The command has indeed failed with message:
 This is an option. A value must be provided.
+File "./output/BadOptionValueType.v", line 5, characters 0-27:
 The command has indeed failed with message:
 This is a flag. It does not take a value.
+File "./output/BadOptionValueType.v", line 6, characters 0-23:
 The command has indeed failed with message:
 This is a flag. It does not take a value.
+File "./output/BadOptionValueType.v", line 7, characters 0-20:
 The command has indeed failed with message:
 This option does not support the "Unset" command.

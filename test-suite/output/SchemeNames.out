@@ -1,7 +1,10 @@
+File "./output/SchemeNames.v", line 14, characters 2-47:
 The command has indeed failed with message:
 Induction on sort Prop is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 15, characters 2-46:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 16, characters 2-47:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooSProp.
 fooSProp_inds :
@@ -11,10 +14,13 @@ fooSProp_inds is not universe polymorphic
 Arguments fooSProp_inds P%function_scope f f f
 fooSProp_inds is transparent
 Expands to: Constant SchemeNames.fooSProp_inds
+File "./output/SchemeNames.v", line 23, characters 2-48:
 The command has indeed failed with message:
 Induction on sort Prop is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 24, characters 2-47:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 25, characters 2-48:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooSProp.
 fooSProp_inds_nodep : forall P : SProp, P -> P -> fooSProp -> P
@@ -23,10 +29,13 @@ fooSProp_inds_nodep is not universe polymorphic
 Arguments fooSProp_inds_nodep P%type_scope f f f
 fooSProp_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooSProp_inds_nodep
+File "./output/SchemeNames.v", line 32, characters 2-49:
 The command has indeed failed with message:
 Induction on sort Prop is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 33, characters 2-48:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 34, characters 2-49:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooSProp.
 fooSProp_cases :
@@ -36,10 +45,13 @@ fooSProp_cases is not universe polymorphic
 Arguments fooSProp_cases P%function_scope f f f
 fooSProp_cases is transparent
 Expands to: Constant SchemeNames.fooSProp_cases
+File "./output/SchemeNames.v", line 41, characters 2-42:
 The command has indeed failed with message:
 Induction on sort Prop is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 42, characters 2-41:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooSProp.
+File "./output/SchemeNames.v", line 43, characters 2-42:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooSProp.
 fooSProp_cases_nodep : forall P : SProp, P -> P -> fooSProp -> P
@@ -48,11 +60,14 @@ fooSProp_cases_nodep is not universe polymorphic
 Arguments fooSProp_cases_nodep P%type_scope f f f
 fooSProp_cases_nodep is transparent
 Expands to: Constant SchemeNames.fooSProp_cases_nodep
+File "./output/SchemeNames.v", line 49, characters 2-36:
 The command has indeed failed with message:
 Cannot extract computational content from proposition 
 "fooSProp".
+File "./output/SchemeNames.v", line 61, characters 2-45:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooProp.
+File "./output/SchemeNames.v", line 62, characters 2-46:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooProp.
 fooProp_inds_dep :
@@ -69,8 +84,10 @@ fooProp_ind_dep is not universe polymorphic
 Arguments fooProp_ind_dep P%function_scope f f f
 fooProp_ind_dep is transparent
 Expands to: Constant SchemeNames.fooProp_ind_dep
+File "./output/SchemeNames.v", line 71, characters 2-46:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooProp.
+File "./output/SchemeNames.v", line 72, characters 2-47:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooProp.
 fooProp_inds : forall P : SProp, P -> P -> fooProp -> P
@@ -85,8 +102,10 @@ fooProp_ind is not universe polymorphic
 Arguments fooProp_ind P%type_scope f f f
 fooProp_ind is transparent
 Expands to: Constant SchemeNames.fooProp_ind
+File "./output/SchemeNames.v", line 81, characters 2-47:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooProp.
+File "./output/SchemeNames.v", line 82, characters 2-48:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooProp.
 fooProp_cases_dep :
@@ -103,8 +122,10 @@ fooProp_case_dep is not universe polymorphic
 Arguments fooProp_case_dep P%function_scope f f f
 fooProp_case_dep is transparent
 Expands to: Constant SchemeNames.fooProp_case_dep
+File "./output/SchemeNames.v", line 91, characters 2-40:
 The command has indeed failed with message:
 Induction on sort Set is not allowed for inductive definition fooProp.
+File "./output/SchemeNames.v", line 92, characters 2-41:
 The command has indeed failed with message:
 Induction on sort Type is not allowed for inductive definition fooProp.
 fooProp_cases : forall P : SProp, P -> P -> fooProp -> P
@@ -119,6 +140,7 @@ fooProp_case is not universe polymorphic
 Arguments fooProp_case P%type_scope f f f
 fooProp_case is transparent
 Expands to: Constant SchemeNames.fooProp_case
+File "./output/SchemeNames.v", line 99, characters 2-35:
 The command has indeed failed with message:
 Cannot extract computational content from proposition 
 "fooProp".

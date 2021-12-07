@@ -1,3 +1,4 @@
+File "./output/bug_8206.v", line 11, characters 0-28:
 The command has indeed failed with message:
 Signature components for label homework do not match: expected type
 "forall a b : nat, bug_8206.M.add a b = bug_8206.M.add b a" but found type
