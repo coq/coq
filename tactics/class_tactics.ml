@@ -324,7 +324,6 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
   in
   let tac_of_hint =
     fun (flags, h) ->
-      let b = FullHint.priority h in
       let p = FullHint.pattern h in
       let name = FullHint.name h in
       let tac = function
@@ -373,15 +372,17 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       in
       let tac = FullHint.run h tac in
       let tac = if complete then Tacticals.tclCOMPLETE tac else tac in
-      let pp =
+      let pp() =
         match p with
         | Some pat when get_typeclasses_filtered_unification () ->
            str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
         | _ -> mt ()
       in
-        match FullHint.repr h with
-        | Extern _ -> (tac, b, true, name, lazy (FullHint.print env sigma h ++ pp))
-        | _ -> (tac, b, false, name, lazy (FullHint.print env sigma h ++ pp))
+      let extern = match FullHint.repr h with
+        | Extern _ -> true
+        | _ -> false
+      in
+      (tac, FullHint.priority h, extern, name, lazy (FullHint.print env sigma h ++ pp ()))
   in
   let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
@@ -401,13 +402,26 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
           m, List.map (fun x -> tac_of_hint (flags, x)) tacs)
         hintl
     in
-    Some hintl
+    let modes, hintl = List.split hintl in
+    let all_mode_match = List.for_all (fun m -> m != NoMode) modes in
+    let hintl = match hintl with
+      (* Optim: only sort if multiple hint sources were involved *)
+      | [hintl] -> hintl
+      | _ ->
+        let hintl = List.flatten hintl in
+        let hintl = List.stable_sort
+            (fun (_, pri1, _, _, _) (_, pri2, _, _, _) -> Int.compare pri1 pri2)
+            hintl
+        in
+        hintl
+    in
+    Some (all_mode_match, hintl)
 
 and e_trivial_resolve db_list local_db secvars only_classes env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
     (match e_my_find_search db_list local_db secvars hd true only_classes env sigma concl with
-    | Some l -> List.map_append snd l
+    | Some (_,l) -> l
     | None -> [])
   with Not_found -> []
 
@@ -415,7 +429,7 @@ let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
     e_my_find_search db_list local_db secvars hd false only_classes env sigma concl
-  with Not_found -> Some []
+  with Not_found -> Some (true, [])
 
 let cut_of_hints h =
   List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
@@ -575,9 +589,6 @@ module Search = struct
     if unique || is_Prop env evd concl then
       occur_existential evd concl
     else true
-
-  let all_mode_match l =
-    List.for_all (fun m -> m != NoMode) l
 
   exception NonStuckFailure
   (* exception Backtrack *)
@@ -757,14 +768,12 @@ module Search = struct
             info.search_only_classes env sigma concl with
     | None ->
       Proofview.tclZERO StuckGoal
-    | Some poss ->
+    | Some (all_mode_match, poss) ->
     (* If no goal depends on the solution of this one or the
        instances are irrelevant/assumed to be unique, then
        we don't need to backtrack, as long as no evar appears in the goal
        This is an overapproximation. Evars could appear in this goal only
        and not any other *)
-    let modes, poss = List.split poss in
-    let poss = List.flatten poss in
     let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
     let idx = ref 1 in
     let foundone = ref false in
@@ -907,7 +916,7 @@ module Search = struct
                solution could be found, we consider it a failed goal, and let
                proof search proceed on the rest of the
                constraints, thus giving a more precise error message. *)
-            if all_mode_match modes &&
+            if all_mode_match &&
               info.search_best_effort then
               Proofview.tclZERO ~info:ie NonStuckFailure
             else Proofview.tclZERO ~info:ie NoApplicableHint
