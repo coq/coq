@@ -89,8 +89,8 @@ end
 
 val pf_apply : (env -> evar_map -> 'a) -> Proofview.Goal.t -> 'a
 
-(** FIXME: encapsulate the level in an existential type. *)
 val of_old : (Goal.goal Evd.sigma -> 'a) -> Proofview.Goal.t -> 'a
+[@@ocaml.deprecated "Use the new engine"]
 
 val project : Proofview.Goal.t -> Evd.evar_map
 val pf_env : Proofview.Goal.t -> Environ.env
