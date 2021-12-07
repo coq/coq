@@ -15,7 +15,3 @@ open Evd
 (** This module implements normalization by evaluation to OCaml code *)
 
 val native_norm : env -> evar_map -> constr -> types -> constr
-
-(** Conversion with inference of universe constraints *)
-val native_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
-  evar_map option

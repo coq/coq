@@ -233,9 +233,10 @@ val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TransparentState.t ->
   env -> evar_map -> constr -> constr -> evar_map option
 
 (** Conversion with inference of universe constraints *)
-val set_vm_infer_conv : (?pb:conv_pb -> env -> evar_map -> constr -> constr ->
-  evar_map option) -> unit
 val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
+  evar_map option
+
+val native_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
   evar_map option
 
 

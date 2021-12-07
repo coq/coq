@@ -1201,7 +1201,7 @@ struct
           let sigma, cj = pretype empty_tycon env sigma c in
           let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
           begin
-            match Nativenorm.native_infer_conv !!env sigma cty tval with
+            match Reductionops.native_infer_conv !!env sigma cty tval with
             | Some sigma -> (sigma, cj), tval
             | None ->
               error_actual_type ?loc !!env sigma cj tval

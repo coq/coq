@@ -423,10 +423,3 @@ let cbv_vm env sigma c t  =
   let t = EConstr.Unsafe.to_constr t in
   let v = Vmsymtable.val_of_constr env (Evd.existential_opt_value0 sigma) c in
   EConstr.of_constr (nf_val env sigma v t)
-
-let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
-  Reductionops.infer_conv_gen (fun pb ~l2r sigma ts ->
-      Vconv.vm_conv_gen pb (Evd.existential_opt_value0 sigma))
-    ~catch_incon:true ~pb env sigma t1 t2
-
-let _ = if Coq_config.bytecode_compiler then Reductionops.set_vm_infer_conv vm_infer_conv
