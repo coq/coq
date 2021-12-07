@@ -1835,4 +1835,3 @@ let solve_simple_eqn unify flags ?(choose=false) ?(imitate_defs=true)
         UnifFailure (evd,InstanceNotFunctionalType (evk1,env,f,u))
     | IncompatibleCandidates t ->
         UnifFailure (evd,IncompatibleInstances (env,ev1,t,t2))
-

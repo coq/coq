@@ -117,4 +117,3 @@ let rename_typing env c =
     | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstructRef k) }
     | _ -> j
   in j'
-

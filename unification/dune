@@ -1,0 +1,6 @@
+(library
+ (name unification)
+ (synopsis "Coq's Unification Engine (and unification aware term manipulations)")
+ (public_name coq-core.unification)
+ (wrapped false)
+ (libraries engine))
