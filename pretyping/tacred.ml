@@ -1245,17 +1245,9 @@ let pattern_occs loccs_trm = begin fun env sigma c ->
 (* Used in several tactics. *)
 
 let check_privacy env ind =
-  let spec = Inductive.lookup_mind_specif env (fst ind) in
+  let spec = Inductive.lookup_mind_specif env ind in
   if Inductive.is_private spec then
     user_err Pp.(str "case analysis on a private type.")
-  else ind
-
-let check_not_primitive_record env ind =
-  let spec = Inductive.lookup_mind_specif env (fst ind) in
-    if Inductive.is_primitive_record spec then
-      user_err Pp.(str "case analysis on a primitive record type: " ++
-                   str "use projections or let instead.")
-    else ind
 
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
    return name, B and t' *)
@@ -1264,7 +1256,7 @@ let reduce_to_ind_gen allow_product env sigma t =
   let rec elimrec env t l =
     let t = hnf_constr env sigma t in
     match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
-      | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
+      | Ind (ind, _ as indu) -> check_privacy env ind; (indu, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
           let open Context.Rel.Declaration in
           if allow_product then
@@ -1276,7 +1268,7 @@ let reduce_to_ind_gen allow_product env sigma t =
              was partially the case between V5.10 and V8.1 *)
           let t' = whd_all env sigma t in
           match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
-            | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
+            | Ind (ind, _ as indu) -> check_privacy env ind; (indu, it_mkProd_or_LetIn t' l)
             | _ -> user_err Pp.(str"Not an inductive product.")
   in
   elimrec env t []

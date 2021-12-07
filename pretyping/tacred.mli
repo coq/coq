@@ -15,7 +15,6 @@ open EConstr
 open Reductionops
 open Pattern
 open Locus
-open Univ
 open Ltac_pretype
 
 (* XXX: Move to a module *)
@@ -116,10 +115,5 @@ val contextually : bool -> occurrences * constr_pattern ->
 val e_contextually : bool -> occurrences * constr_pattern ->
   (patvar_map -> e_reduction_function) -> e_reduction_function
 
-(** Returns the same inductive if it is allowed for pattern-matching
-    raises an error otherwise. **)
-val check_privacy : env -> inductive puniverses -> inductive puniverses
-
-(** Returns the same inductive if it is not a primitive record
-    raises an error otherwise. **)
-val check_not_primitive_record : env -> inductive puniverses -> inductive puniverses
+(** Errors if the inductive is not allowed for pattern-matching. **)
+val check_privacy : env -> inductive -> unit

@@ -892,8 +892,8 @@ let descend_then env sigma head dirn =
     with Not_found ->
       user_err Pp.(str "Cannot project on an inductive type derived from a dependency.")
   in
-  let indp,_ = (dest_ind_family indf) in
-  let ind, _ = check_privacy env indp in
+  let (ind, _),_ = (dest_ind_family indf) in
+  let () = check_privacy env ind in
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
@@ -945,8 +945,8 @@ let build_selector env sigma dirn c ind special default =
       user_err
         (str "Cannot discriminate on inductive constructors with \
                  dependent types.") in
-  let (indp,_) = dest_ind_family indf in
-  let ind, _ = check_privacy env indp in
+  let (ind, _),_ = dest_ind_family indf in
+  let () = check_privacy env ind in
   let typ = Retyping.get_type_of env sigma default in
   let (mib,mip) = lookup_mind_specif env ind in
   let deparsign = make_arity_signature env sigma true indf in
