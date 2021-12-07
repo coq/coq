@@ -8,25 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
 open CErrors
 open Util
 open Names
 open Constr
 open Context
-open Libnames
-open Globnames
 open Termops
 open Environ
 open EConstr
-open Vars
-open Find_subterm
-open Namegen
 open CClosure
 open Reductionops
-open Cbv
-open Patternops
-open Locus
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -64,8 +55,8 @@ let subst_evaluable_reference subst = function
 
 let error_not_evaluable r =
   user_err
-    (str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r ++
-     spc () ++ str "to an evaluable reference.")
+    Pp.(str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r ++
+        spc () ++ str "to an evaluable reference.")
 
 let is_evaluable_const env cst =
   is_transparent env (ConstKey cst) && evaluable_constant cst env
@@ -136,7 +127,7 @@ let unsafe_reference_opt_value env sigma eval =
   | EvalVar id ->
       env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
+      env |> lookup_rel n |> RelDecl.get_value |> Option.map (Vars.lift n)
   | EvalEvar ev ->
     match EConstr.kind sigma (mkEvar ev) with
     | Evar _ -> None
@@ -150,7 +141,7 @@ let reference_opt_value env sigma eval u =
   | EvalVar id ->
       env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
+      env |> lookup_rel n |> RelDecl.get_value |> Option.map (Vars.lift n)
   | EvalEvar ev ->
     match EConstr.kind sigma (mkEvar ev) with
     | Evar _ -> None
@@ -378,7 +369,7 @@ let reference_eval env sigma = function
    The type Tij' is Tij[yi(j-1)..y1 <- ai(j-1)..a1]
 *)
 
-let x = Name default_dependent_ident
+let xname = Name Namegen.default_dependent_ident
 
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)]:
    do so that the reduction uses this extra information *)
@@ -485,7 +476,7 @@ let contract_fix_use_function env sigma f
         List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
           let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
           let tij' = Vars.substl (List.rev subst) tij in
-          let x = make_annot x Sorts.Relevant in  (* TODO relevance *)
+          let x = make_annot xname Sorts.Relevant in  (* TODO relevance *)
           mkLambda (x,tij',c)) 1 body (List.rev lv)
       in Some (minargs,g)
   in
@@ -591,7 +582,7 @@ let match_eval_ref_value env sigma constr stack =
   | Var id when is_evaluable env (EvalVarRef id) ->
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
-     env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
+     env |> lookup_rel n |> RelDecl.get_value |> Option.map (Vars.lift n)
   | _ -> None
 
 let push_app sigma (hd, stk as p) = match EConstr.kind sigma hd with
@@ -620,7 +611,7 @@ let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
 
 let rec beta_applist sigma accu c stk = match EConstr.kind sigma c, stk with
 | Lambda (_, _, c), arg :: stk -> beta_applist sigma (arg :: accu) c stk
-| _ -> substl accu c, stk
+| _ -> Vars.substl accu c, stk
 
 let whd_nothing_for_iota env sigma s =
   let rec whrec (x, stack as s) =
@@ -628,7 +619,7 @@ let whd_nothing_for_iota env sigma s =
       | Rel n ->
           let open Context.Rel.Declaration in
           (match lookup_rel n env with
-             | LocalDef (_,body,_) -> whrec (lift n body, stack)
+             | LocalDef (_,body,_) -> whrec (Vars.lift n body, stack)
              | _ -> s)
       | Var id ->
           let open Context.Named.Declaration in
@@ -959,7 +950,7 @@ let try_red_product env sigma c =
 
 let red_product env sigma c =
   try try_red_product env sigma c
-  with Redelimination -> user_err (str "No head constant to reduce.")
+  with Redelimination -> user_err Pp.(str "No head constant to reduce.")
 
 (*
 (* This old version of hnf uses betadeltaiota instead of itself (resp
@@ -1095,7 +1086,7 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
       let ok, count' = Locusops.update_occurrence_counter !count in count := count';
       if ok then begin
         if Option.has_some nested then
-          user_err  (str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (Locusops.current_occurrence !count) ++ str ".");
+          user_err Pp.(str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (Locusops.current_occurrence !count) ++ str ".");
         (* Skip inner occurrences for stable counting of occurrences *)
         if Locusops.more_specific_occurrences !count then
           ignore (traverse_below (Some (Locusops.current_occurrence !count)) envc t);
@@ -1114,7 +1105,7 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
     | Proj (p,c) when byhead -> mkProj (p,traverse nested envc c)
     | _ ->
         change_map_constr_with_binders_left_to_right
-          (fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
+          (fun d (env,c) -> (push_rel d env, Patternops.lift_pattern 1 c))
           (traverse nested) envc sigma t
   in
   let t' = traverse None (env,c) t in
@@ -1159,7 +1150,7 @@ let substlin env sigma evalref occs c =
 let string_of_evaluable_ref env = function
   | EvalVarRef id -> Id.to_string id
   | EvalConstRef kn ->
-      string_of_qualid
+      Libnames.string_of_qualid
         (Nametab.shortest_qualid_of_global (vars_of_env env) (GlobRef.ConstRef kn))
 
 (* Removing fZETA for finer behaviour would break many developments *)
@@ -1182,6 +1173,7 @@ let unfold env sigma name c =
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurrences.
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
+  let open Locus in
   match occs with
   | NoOccurrences -> c
   | AllOccurrences -> unfold env sigma name c
@@ -1216,7 +1208,7 @@ let fold_commands cl env sigma c =
 
 (* call by value reduction functions *)
 let cbv_norm_flags flags env sigma t =
-  cbv_norm (create_cbv_infos flags env sigma) t
+  Cbv.(cbv_norm (create_cbv_infos flags env sigma) t)
 
 let cbv_beta = cbv_norm_flags beta
 let cbv_betaiota = cbv_norm_flags betaiota
@@ -1232,13 +1224,13 @@ let compute = cbv_betadeltaiota
 let abstract_scheme env (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
   let sigma, ta = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma ta in
-  let na = named_hd env sigma ta Anonymous in
+  let na = Namegen.named_hd env sigma ta Anonymous in
   let na = make_annot na Sorts.Relevant in (* TODO relevance *)
   if occur_meta sigma ta then user_err Pp.(str "Cannot find a type for the generalisation.");
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma
   else
-    let c', sigma = subst_closed_term_occ env sigma (AtOccs locc) a c in
+    let c', sigma = Find_subterm.subst_closed_term_occ env sigma (Locus.AtOccs locc) a c in
       mkLambda (na,ta,c'), sigma
 
 let pattern_occs loccs_trm = begin fun env sigma c ->
@@ -1255,14 +1247,14 @@ let pattern_occs loccs_trm = begin fun env sigma c ->
 let check_privacy env ind =
   let spec = Inductive.lookup_mind_specif env (fst ind) in
   if Inductive.is_private spec then
-    user_err  (str "case analysis on a private type.")
+    user_err Pp.(str "case analysis on a private type.")
   else ind
 
 let check_not_primitive_record env ind =
   let spec = Inductive.lookup_mind_specif env (fst ind) in
     if Inductive.is_primitive_record spec then
-      user_err  (str "case analysis on a primitive record type: " ++
-                       str "use projections or let instead.")
+      user_err Pp.(str "case analysis on a primitive record type: " ++
+                   str "use projections or let instead.")
     else ind
 
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
@@ -1278,14 +1270,14 @@ let reduce_to_ind_gen allow_product env sigma t =
           if allow_product then
             elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
           else
-            user_err  (str"Not an inductive definition.")
+            user_err Pp.(str"Not an inductive definition.")
       | _ ->
           (* Last chance: we allow to bypass the Opaque flag (as it
              was partially the case between V5.10 and V8.1 *)
           let t' = whd_all env sigma t in
           match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
             | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
-            | _ -> user_err  (str"Not an inductive product.")
+            | _ -> user_err Pp.(str"Not an inductive product.")
   in
   elimrec env t []
 
@@ -1335,11 +1327,11 @@ let one_step_reduce env sigma c =
 
 let error_cannot_recognize ref =
   user_err
-    (str "Cannot recognize a statement based on " ++
-     Nametab.pr_global_env Id.Set.empty ref ++ str".")
+    Pp.(str "Cannot recognize a statement based on " ++
+        Nametab.pr_global_env Id.Set.empty ref ++ str".")
 
 let reduce_to_ref_gen allow_product env sigma ref t =
-  if isIndRef ref then
+  if Globnames.isIndRef ref then
     let ((mind,u),t) = reduce_to_ind_gen allow_product env sigma t in
     begin match ref with
     | GlobRef.IndRef mind' when Ind.CanOrd.equal mind mind' -> t
