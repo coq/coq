@@ -113,6 +113,9 @@ val force_destruction_arg : evars_flag -> env -> evar_map ->
     delayed_open_constr_with_bindings destruction_arg ->
     evar_map * constr with_bindings destruction_arg
 
+val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
+  env -> evar_map -> (evar_map * constr) -> evar_map * constr
+
 (** Tell if a used hypothesis should be cleared by default or not *)
 
 val use_clear_hyp_by_default : unit -> bool

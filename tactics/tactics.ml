@@ -1360,6 +1360,11 @@ let map_destruction_arg f sigma = function
   | clear_flag,ElimOnAnonHyp n as x -> (sigma,x)
   | clear_flag,ElimOnIdent id as x -> (sigma,x)
 
+
+let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
+  let sigma = Pretyping.solve_remaining_evars flags env current_sigma ~initial:pending in
+  (sigma, nf_evar sigma c)
+
 let finish_delayed_evar_resolution with_evars env sigma f =
   let (sigma', (c, lbind)) = f env sigma in
   let flags = tactic_infer_flags with_evars in
