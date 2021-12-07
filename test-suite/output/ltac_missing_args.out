@@ -1,39 +1,49 @@
+File "./output/ltac_missing_args.v", line 11, characters 2-11:
 The command has indeed failed with message:
 The user-defined tactic "foo" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 12, characters 2-11:
 The command has indeed failed with message:
 The user-defined tactic "bar" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 13, characters 2-16:
 The command has indeed failed with message:
 The user-defined tactic "bar" was not fully applied:
 There are missing arguments for variables y and _,
 an argument was provided for variable x.
+File "./output/ltac_missing_args.v", line 14, characters 2-11:
 The command has indeed failed with message:
 The user-defined tactic "baz" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 15, characters 2-11:
 The command has indeed failed with message:
 The user-defined tactic "qux" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 16, characters 2-36:
 The command has indeed failed with message:
 The user-defined tactic "mydo" was not fully applied:
 There is a missing argument for variable _,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 17, characters 2-42:
 The command has indeed failed with message:
 An unnamed user-defined tactic was not fully applied:
 There is a missing argument for variable _,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 18, characters 2-24:
 The command has indeed failed with message:
 An unnamed user-defined tactic was not fully applied:
 There is a missing argument for variable _,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 19, characters 2-16:
 The command has indeed failed with message:
 The user-defined tactic "rec" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+File "./output/ltac_missing_args.v", line 20, characters 2-40:
 The command has indeed failed with message:
 An unnamed user-defined tactic was not fully applied:
 There is a missing argument for variable x,

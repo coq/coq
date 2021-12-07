@@ -20,9 +20,6 @@ val interp_qed_delayed_proof
   -> Vernacexpr.proof_end CAst.t
   -> Vernacstate.t
 
-(** [with_fail ~st f] runs [f ()] and expects it to fail, otherwise it fails. *)
-val with_fail : st:Vernacstate.t -> (unit -> 'a) -> unit
-
 (** Flag set when the test-suite is called. Its only effect to display
     verbose information for [Fail] *)
 val test_mode : bool ref

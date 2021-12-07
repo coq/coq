@@ -1,9 +1,11 @@
+File "./output/RecordMissingField.v", line 6, characters 0-80:
 The command has indeed failed with message:
 The following term contains unresolved implicit arguments:
   (fun p : point2d => {| x2p := x2p p + 1; y2p := ?y2p |})
 More precisely: 
 - ?y2p: Cannot infer field y2p of record point2d in environment:
   p : point2d
+File "./output/RecordMissingField.v", line 11, characters 0-93:
 The command has indeed failed with message:
 The following term contains unresolved implicit arguments:
   (fun p : point2d => {| x2p := x2p p + (fun n : nat => ?n) 1; y2p := ?y2p |})
