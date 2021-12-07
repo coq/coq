@@ -190,19 +190,18 @@ let warn_bytecode_compiler_failed =
          (fun () -> strbrk "Bytecode compiler failed, " ++
                       strbrk "falling back to standard conversion")
 
-let vm_conv_gen cv_pb env univs t1 t2 =
+let vm_conv_gen cv_pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_VM then
-    Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
+    Reduction.generic_conv cv_pb ~l2r:false sigma
       TransparentState.full env univs t1 t2
   else
   try
-    let sigma _ = assert false in
     let v1 = val_of_constr env sigma t1 in
     let v2 = val_of_constr env sigma t2 in
     fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
   with Not_found | Invalid_argument _ ->
     warn_bytecode_compiler_failed ();
-    Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
+    Reduction.generic_conv cv_pb ~l2r:false sigma
       TransparentState.full env univs t1 t2
 
 let vm_conv cv_pb env t1 t2 =
@@ -213,4 +212,4 @@ let vm_conv cv_pb env t1 t2 =
   in
   if not b then
     let state = (univs, checked_universes) in
-    let _ = vm_conv_gen cv_pb env state t1 t2 in ()
+    let _ = vm_conv_gen cv_pb (fun _ -> None) env state t1 t2 in ()
