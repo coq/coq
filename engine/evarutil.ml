@@ -677,14 +677,9 @@ let gather_dependent_evars q evm =
   done;
   !acc
 
-let gather_dependent_evars_terms evm l =
-  let q = Queue.create () in
-  List.iter (queue_term q false) l;
-  gather_dependent_evars q evm
-
 let gather_dependent_evars evm l =
   let q = Queue.create () in
-  List.iter (fun a -> Queue.add (false,a) q) l;
+  List.iter (queue_term q false) l;
   gather_dependent_evars q evm
 
 (* /spiwack *)

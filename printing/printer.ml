@@ -641,6 +641,13 @@ let should_print_dependent_evars =
     ~key:["Printing";"Dependent";"Evars";"Line"]
     ~value:false
 
+let gather_dependent_evars_goal sigma goals =
+  let map evk =
+    let evi = Evd.find sigma evk in
+    EConstr.mkEvar (evk, Evd.evar_identity_subst evi)
+  in
+  Evarutil.gather_dependent_evars sigma (List.map map goals)
+
 let print_dependent_evars_core gl sigma evars =
   let mt_pp = mt () in
   let evars_pp = Evar.Map.fold (fun e i s ->
@@ -659,7 +666,7 @@ let print_dependent_evars_core gl sigma evars =
   let evars_current_pp = match gl with
     | None -> mt_pp
     | Some gl ->
-      let evars_current = Evarutil.gather_dependent_evars sigma [ gl ] in
+      let evars_current = gather_dependent_evars_goal sigma [gl] in
       Evar.Map.fold (fun e _ s ->
           s ++ str " " ++ (pr_internal_existential_key e))
         evars_current mt_pp
@@ -671,7 +678,7 @@ let print_dependent_evars_core gl sigma evars =
 
 let print_dependent_evars gl sigma seeds =
   if should_print_dependent_evars () then
-    let evars = Evarutil.gather_dependent_evars sigma seeds in
+    let evars = gather_dependent_evars_goal sigma seeds in
     print_dependent_evars_core gl sigma evars
   else mt ()
 
@@ -680,7 +687,7 @@ let print_dependent_evars_entry gl sigma = function
   | Some entry ->
     if should_print_dependent_evars () then
       let terms = List.map pi2 (Proofview.initial_goals entry) in
-      let evars = Evarutil.gather_dependent_evars_terms sigma terms in
+      let evars = Evarutil.gather_dependent_evars sigma terms in
       print_dependent_evars_core gl sigma evars
     else mt ()
 
