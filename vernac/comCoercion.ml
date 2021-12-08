@@ -255,7 +255,7 @@ let rebuild_coercion c =
   { c with coe_typ = fst (Typeops.type_of_global_in_context (Global.env ()) c.coe_value) }
 
 let classify_coercion obj =
-  if obj.coe_local then Dispose else Substitute obj
+  if obj.coe_local then Dispose else Substitute
 
 let coe_cat = create_category "coercions"
 

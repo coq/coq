@@ -42,7 +42,7 @@ let inBidiHints =
   declare_object { (default_object "BIDIRECTIONALITY-HINTS" ) with
                    load_function = load_bidi_hints;
                    cache_function = cache_bidi_hints;
-                   classify_function = (fun o -> Substitute o);
+                   classify_function = (fun o -> Substitute);
                    subst_function = subst_bidi_hints;
                    discharge_function = discharge_bidi_hints;
                  }

@@ -294,7 +294,7 @@ let subst_tactic_notation (subst, tobj) =
     tacobj_body = { alias with alias_body = Tacsubst.subst_tactic subst alias.alias_body };
   }
 
-let classify_tactic_notation tacobj = Substitute tacobj
+let classify_tactic_notation tacobj = Substitute
 
 let ltac_notation_cat = Libobject.create_category "ltac.notations"
 

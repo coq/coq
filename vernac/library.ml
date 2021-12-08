@@ -363,7 +363,7 @@ let in_require : require_obj -> obj =
      load_function = load_require;
      open_function = (fun _ _ -> assert false);
      discharge_function = discharge_require;
-     classify_function = (fun o -> Anticipate o) }
+     classify_function = (fun o -> Anticipate) }
 
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)

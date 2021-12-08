@@ -63,7 +63,7 @@ let objInductive : inductive_obj Libobject.Dyn.tag =
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = simple_open open_inductive;
-    classify_function = (fun a -> Substitute a);
+    classify_function = (fun a -> Substitute);
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;
   }
@@ -85,7 +85,7 @@ let inPrim : (Projection.Repr.t * Constant.t) -> Libobject.obj =
     cache_function = cache_prim ;
     load_function = load_prim;
     subst_function = subst_prim;
-    classify_function = (fun x -> Substitute x);
+    classify_function = (fun x -> Substitute);
     discharge_function = discharge_prim }
 
 let declare_primitive_projection p c = Lib.add_anonymous_leaf (inPrim (p,c))

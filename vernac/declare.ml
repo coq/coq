@@ -201,7 +201,7 @@ let cache_constant ((sp,kn), obj) =
 
 let discharge_constant obj = Some obj
 
-let classify_constant cst = Libobject.Substitute cst
+let classify_constant cst = Libobject.Substitute
 
 let (objConstant : constant_obj Libobject.Dyn.tag) =
   let open Libobject in

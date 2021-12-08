@@ -94,8 +94,8 @@ let map_strategy f l =
       if List.is_empty ql' then str else (lev,ql')::str) l [] in
   if List.is_empty l' then None else Some (false,l')
 
-let classify_strategy (local,_ as obj) =
-  if local then Dispose else Substitute obj
+let classify_strategy (local,_) =
+  if local then Dispose else Substitute
 
 let disch_ref ref =
   match ref with
@@ -357,7 +357,7 @@ let inReduction : bool * string * red_expr -> obj =
      subst_function =
        (fun (subs,(b,s,e)) -> b,s,subst_red_expr subs e);
      classify_function =
-       (fun ((b,_,_) as obj) -> if b then Dispose else Substitute obj) }
+       (fun ((b,_,_)) -> if b then Dispose else Substitute) }
 
 let declare_red_expr locality s expr =
     Lib.add_anonymous_leaf (inReduction (locality,s,expr))

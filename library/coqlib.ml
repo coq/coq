@@ -65,7 +65,7 @@ let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
   declare_object { (default_object "COQLIBREF") with
     cache_function = cache_ref;
     load_function = (fun _ x -> cache_ref x);
-    classify_function = (fun o -> Substitute o);
+    classify_function = (fun _ -> Substitute);
     subst_function = ident_subst_function;
     discharge_function = (fun sc -> Some sc); }
 

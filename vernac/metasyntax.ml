@@ -842,8 +842,8 @@ let cache_syntax_extension (_, sy) =
 let subst_syntax_extension (subst, (local, (ntn, synext))) =
   (local, (ntn, synext))
 
-let classify_syntax_definition (local, _ as o) =
-  if local then Dispose else Substitute o
+let classify_syntax_definition (local, _) =
+  if local then Dispose else Substitute
 
 let open_syntax_extension i o =
   if Int.equal i 1 then cache_syntax_extension o
@@ -1430,7 +1430,7 @@ let subst_notation (subst, nobj) =
   { nobj with notobj_interp = subst_interpretation subst nobj.notobj_interp; }
 
 let classify_notation nobj =
-  if nobj.notobj_local then Dispose else Substitute nobj
+  if nobj.notobj_local then Dispose else Substitute
 
 let inNotation : notation_obj -> obj =
   declare_object {(default_object "NOTATION") with
@@ -1789,8 +1789,8 @@ let subst_scope_command (subst,(local,scope,o as x)) = match o with
       local, scope, ScopeClasses cl'
   | _ -> x
 
-let classify_scope_command (local, _, _ as o) =
-  if local then Dispose else Substitute o
+let classify_scope_command (local, _, _) =
+  if local then Dispose else Substitute
 
 let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
   declare_object {(default_object "DELIMITERS") with
@@ -1860,8 +1860,8 @@ let cache_custom_entry o = load_custom_entry 1 o
 
 let subst_custom_entry (subst,x) = x
 
-let classify_custom_entry (local,s as o) =
-  if local then Dispose else Substitute o
+let classify_custom_entry (local,s) =
+  if local then Dispose else Substitute
 
 let inCustomEntry : locality_flag * string -> obj =
   declare_object {(default_object "CUSTOM-ENTRIES") with

@@ -246,8 +246,8 @@ open Libobject
 let discharge_scope (local,_,_ as o) =
   if local then None else Some o
 
-let classify_scope (local,_,_ as o) =
-  if local then Dispose else Substitute o
+let classify_scope (local,_,_) =
+  if local then Dispose else Substitute
 
 let inScope : bool * bool * scope_item -> obj =
   declare_object {(default_object "SCOPE") with
@@ -1360,7 +1360,7 @@ let subst_prim_token_interpretation (subs,infos) =
     pt_refs = List.map (subst_global_reference subs) infos.pt_refs }
 
 let classify_prim_token_interpretation infos =
-    if infos.pt_local then Dispose else Substitute infos
+    if infos.pt_local then Dispose else Substitute
 
 let open_prim_token_interpretation i o =
   if Int.equal i 1 then cache_prim_token_interpretation o
@@ -2057,8 +2057,8 @@ let discharge_arguments_scope (req,r,n,l,_) =
         Not_found (* Not a ref defined in this section *) -> 0 in
     Some (req,r,n,l,[])
 
-let classify_arguments_scope (req,_,_,_,_ as obj) =
-  if req == ArgsScopeNoDischarge then Dispose else Substitute obj
+let classify_arguments_scope (req,_,_,_,_) =
+  if req == ArgsScopeNoDischarge then Dispose else Substitute
 
 let rebuild_arguments_scope sigma (req,r,n,l,_) =
   match req with

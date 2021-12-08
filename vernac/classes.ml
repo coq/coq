@@ -133,7 +133,7 @@ let rebuild_instance inst =
 
 let classify_instance inst = match inst.inst_global with
 | Local -> Dispose
-| SuperGlobal | Export -> Substitute inst
+| SuperGlobal | Export -> Substitute
 
 let instance_input : instance_obj -> obj =
   declare_object
@@ -292,7 +292,7 @@ let class_input : typeclass -> obj =
     { (default_object "type classes state") with
       cache_function = cache_class;
       load_function = (fun _ -> cache_class);
-      classify_function = (fun x -> Substitute x);
+      classify_function = (fun x -> Substitute);
       discharge_function = (fun a -> Some (discharge_class a));
       rebuild_function = rebuild_class;
       subst_function = subst_class }

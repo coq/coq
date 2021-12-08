@@ -328,8 +328,8 @@ let load_ml_objects _ {mnames=mnames} =
   let iter (obj, _) = trigger_ml_object true false true obj in
   List.iter iter mnames
 
-let classify_ml_objects ({mlocal=mlocal} as o) =
-  if mlocal then Libobject.Dispose else Libobject.Substitute o
+let classify_ml_objects {mlocal=mlocal} =
+  if mlocal then Libobject.Dispose else Libobject.Substitute
 
 let inMLModule : ml_module_object -> Libobject.obj =
   let open Libobject in

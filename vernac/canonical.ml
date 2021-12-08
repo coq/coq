@@ -32,7 +32,7 @@ let inCanonStruc : Instance.t * bool -> obj =
                   open_function = simple_open ~cat:canon_cat open_canonical_structure;
                   cache_function = cache_canonical_structure;
                   subst_function = (fun (subst,(c,local)) -> Instance.subst subst c, local);
-                  classify_function = (fun x -> Substitute x);
+                  classify_function = (fun x -> Substitute);
                   discharge_function = discharge_canonical_structure }
 
 let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)

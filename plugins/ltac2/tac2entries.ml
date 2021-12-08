@@ -94,7 +94,7 @@ let subst_tacdef (subst, def) =
   if expr' == def.tacdef_expr && type' == def.tacdef_type then def
   else { def with tacdef_expr = expr'; tacdef_type = type' }
 
-let classify_tacdef o = Substitute o
+let classify_tacdef o = Substitute
 
 let inTacDef : tacdef -> obj =
   declare_named_object {(default_object "TAC2-DEFINITION") with
@@ -201,7 +201,7 @@ let subst_typdef (subst, def) =
   let expr' = subst_quant_typedef subst def.typdef_expr in
   if expr' == def.typdef_expr then def else { def with typdef_expr = expr' }
 
-let classify_typdef o = Substitute o
+let classify_typdef o = Substitute
 
 let inTypDef : typdef -> obj =
   declare_named_object {(default_object "TAC2-TYPE-DEFINITION") with
@@ -271,7 +271,7 @@ let subst_typext (subst, e) =
   else
     { e with typext_type; typext_expr }
 
-let classify_typext o = Substitute o
+let classify_typext o = Substitute
 
 let inTypExt : typext -> obj =
   declare_named_object {(default_object "TAC2-TYPE-EXTENSION") with
@@ -704,7 +704,7 @@ let subst_synext (subst, syn) =
   if e == syn.synext_exp then syn else { syn with synext_exp = e }
 
 let classify_synext o =
-  if o.synext_loc then Dispose else Substitute o
+  if o.synext_loc then Dispose else Substitute
 
 let ltac2_notation_cat = Libobject.create_category "ltac2.notations"
 
@@ -736,7 +736,7 @@ let subst_abbreviation (subst, abbr) =
   if body' == abbr.abbr_body then abbr
   else { abbr_body = body'; abbr_depr = abbr.abbr_depr }
 
-let classify_abbreviation o = Substitute o
+let classify_abbreviation o = Substitute
 
 let inTac2Abbreviation : abbreviation -> obj =
   declare_named_object {(default_object "TAC2-ABBREVIATION") with
@@ -806,7 +806,7 @@ let subst_redefinition (subst, redef) =
   if kn == redef.redef_kn && body == redef.redef_body then redef
   else { redef_kn = kn; redef_body = body; redef_old = redef.redef_old }
 
-let classify_redefinition o = Substitute o
+let classify_redefinition o = Substitute
 
 let inTac2Redefinition : redefinition -> obj =
   declare_object

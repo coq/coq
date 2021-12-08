@@ -78,12 +78,12 @@ let classify_segment seg =
         | AtomicObject obj ->
           begin match classify_object obj with
             | Dispose -> clean acc stk
-            | Keep o' ->
-              clean (substl, (id,AtomicObject o')::keepl, anticipl) stk
-            | Substitute o' ->
-              clean ((id,AtomicObject o')::substl, keepl, anticipl) stk
-            | Anticipate o' ->
-              clean (substl, keepl, AtomicObject o'::anticipl) stk
+            | Keep ->
+              clean (substl, (id,AtomicObject obj)::keepl, anticipl) stk
+            | Substitute ->
+              clean ((id,AtomicObject obj)::substl, keepl, anticipl) stk
+            | Anticipate ->
+              clean (substl, keepl, AtomicObject obj::anticipl) stk
           end
       end
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")

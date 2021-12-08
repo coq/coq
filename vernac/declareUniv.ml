@@ -71,7 +71,7 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
       open_function = simple_open open_univ_names;
       discharge_function = discharge_univ_names;
       subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
-      classify_function = (fun a -> Substitute a) }
+      classify_function = (fun a -> Substitute) }
 
 let input_univ_names (src, l) =
   if CList.is_empty l then ()

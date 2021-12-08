@@ -97,7 +97,7 @@ module ReductionBehaviour = struct
 
   let cache o = load 1 o
 
-  let classify (local,_ as o) = if local then Dispose else Substitute o
+  let classify (local,_) = if local then Dispose else Substitute
 
   let subst (subst, (local, (r,o) as orig)) =
     let r' = subst_global_reference subst r in if r==r' then orig

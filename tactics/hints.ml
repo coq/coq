@@ -1024,7 +1024,7 @@ let cache_db {db_name=name; db_use_dn=b; db_ts=ts} =
 
 let load_db _ x = cache_db x
 
-let classify_db db = if db.db_local then Dispose else Substitute db
+let classify_db db = if db.db_local then Dispose else Substitute
 
 let inDB : db_obj -> obj =
   declare_object {(default_object "AUTOHINT_DB") with
@@ -1198,7 +1198,7 @@ let is_hint_local = function Local -> true | Export | SuperGlobal -> false
 
 let classify_autohint obj =
   if is_hint_local obj.hint_local || is_trivial_action obj.hint_action then Dispose
-  else Substitute obj
+  else Substitute
 
 let discharge_autohint obj =
   if is_hint_local obj.hint_local then None

@@ -499,7 +499,7 @@ let inStruc : Structure.t -> Libobject.obj =
     cache_function = cache_structure;
     load_function = load_structure;
     subst_function = subst_structure;
-    classify_function = (fun x -> Substitute x);
+    classify_function = (fun x -> Substitute);
     discharge_function = discharge_structure;
     rebuild_function = rebuild_structure; }
 

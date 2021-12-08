@@ -63,8 +63,7 @@ open Mod_subst
 
 *)
 
-type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
    can be substituted and a "syntactic" [full_path] which can be printed
@@ -79,7 +78,7 @@ type ('a,'b) object_declaration = {
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
   open_function : open_filter -> int -> 'b -> unit;
-  classify_function : 'a -> 'a substitutivity;
+  classify_function : 'a -> substitutivity;
   subst_function :  substitution * 'a -> 'a;
   discharge_function : 'a -> 'a option;
   rebuild_function : 'a -> 'a;
@@ -165,7 +164,7 @@ val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
 val open_object : open_filter -> int -> object_name * obj -> unit
 val subst_object : substitution * obj -> obj
-val classify_object : obj -> obj substitutivity
+val classify_object : obj -> substitutivity
 val discharge_object : obj -> obj option
 val rebuild_object : obj -> obj
 

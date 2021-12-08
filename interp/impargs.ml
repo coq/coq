@@ -618,9 +618,9 @@ let rebuild_implicits (req,l) =
          else
            [ref,oldimpls]
 
-let classify_implicits (req,_ as obj) = match req with
+let classify_implicits (req,_) = match req with
 | ImplLocal -> Dispose
-| _ -> Substitute obj
+| _ -> Substitute
 
 type implicits_obj =
     implicit_discharge_request *

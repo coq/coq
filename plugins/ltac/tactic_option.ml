@@ -33,8 +33,7 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
         cache_function = cache;
         load_function = (fun _ -> load);
         open_function = simple_open (fun _ -> load);
-        classify_function = (fun (local, tac) ->
-          if local then Dispose else Substitute (local, tac));
+        classify_function = (fun (local, _) -> if local then Dispose else Substitute);
         subst_function = subst}
   in
   let put local tac =

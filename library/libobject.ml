@@ -13,8 +13,7 @@ open Names
 
 module Dyn = Dyn.Make ()
 
-type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 type object_name = Libnames.full_path * Names.KerName.t
 
@@ -70,7 +69,7 @@ type ('a,'b) object_declaration = {
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
   open_function : open_filter -> int -> 'b -> unit;
-  classify_function : 'a -> 'a substitutivity;
+  classify_function : 'a -> substitutivity;
   subst_function :  Mod_subst.substitution * 'a -> 'a;
   discharge_function : 'a -> 'a option;
   rebuild_function : 'a -> 'a;
@@ -83,7 +82,7 @@ let default_object s = {
   open_function = (fun _ _ _ -> ());
   subst_function = (fun _ ->
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
-  classify_function = (fun atomic_obj -> Keep atomic_obj);
+  classify_function = (fun _ -> Keep);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x);
 }
@@ -176,9 +175,9 @@ let classify_object (Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
   match decl.classify_function v with
   | Dispose -> Dispose
-  | Substitute v -> Substitute (Dyn.Dyn (tag, v))
-  | Keep v -> Keep (Dyn.Dyn (tag, v))
-  | Anticipate v -> Anticipate (Dyn.Dyn (tag, v))
+  | Substitute -> Substitute
+  | Keep -> Keep
+  | Anticipate -> Anticipate
 
 let discharge_object (Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
@@ -213,7 +212,7 @@ let global_object_nodischarge ?cat s ~cache ~subst =
         | Some subst -> subst;
       );
     classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+      if Option.has_some subst then (fun _ -> Substitute) else (fun _ -> Keep);
   }
 
 let global_object ?cat s ~cache ~subst ~discharge =
@@ -229,7 +228,7 @@ let superglobal_object_nodischarge s ~cache ~subst =
         | Some subst -> subst;
       );
     classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+      if Option.has_some subst then (fun _ -> Substitute) else (fun _ -> Keep);
   }
 
 let superglobal_object s ~cache ~subst ~discharge =

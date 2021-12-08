@@ -102,7 +102,7 @@ module MakeTable =
                 Libobject.open_function = simple_open load_options;
                 Libobject.cache_function = cache_options;
                 Libobject.subst_function = subst_options;
-                Libobject.classify_function = (fun x -> Substitute x)}
+                Libobject.classify_function = (fun x -> Substitute)}
         in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
@@ -283,8 +283,8 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
       let subst_options (subst,obj) = obj in
       let discharge_options (l,_,_ as o) =
         match l with OptLocal -> None | (OptExport | OptGlobal | OptDefault) -> Some o in
-      let classify_options (l,_,_ as o) =
-        match l with (OptExport | OptGlobal) -> Substitute o | (OptLocal | OptDefault) -> Dispose in
+      let classify_options (l,_,_) =
+        match l with (OptExport | OptGlobal) -> Substitute | (OptLocal | OptDefault) -> Dispose in
       let options : option_locality * option_mod * _ -> obj =
         declare_object
           { (default_object (nickname key)) with

@@ -35,7 +35,7 @@ let cache_rename_args o = load_rename_args 1 o
 
 let classify_rename_args = function
   | ReqLocal, _ -> Dispose
-  | ReqGlobal _, _ as o -> Substitute o
+  | ReqGlobal _, _ -> Substitute
 
 let subst_rename_args (subst, (_, (r, names as orig))) =
   ReqLocal,

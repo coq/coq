@@ -186,7 +186,7 @@ let subst_kind subst id = match id with
 let subst_md (subst, {local; replace=id; for_ml; expr=t; depr}) =
   {local; replace=subst_kind subst id; for_ml; expr=Tacsubst.subst_tactic subst t; depr}
 
-let classify_md o = Substitute o
+let classify_md o = Substitute
 
 let inMD : tacdef -> obj =
   declare_named_object {(default_object "TAC-DEFINITION") with

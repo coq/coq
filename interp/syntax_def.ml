@@ -67,8 +67,8 @@ let subst_syntax_constant (subst,(local,syndef)) =
   let syndef_pattern = Notation_ops.subst_interpretation subst syndef.syndef_pattern in
   (local, { syndef with syndef_pattern })
 
-let classify_syntax_constant (local,_ as o) =
-  if local then Dispose else Substitute o
+let classify_syntax_constant (local,_) =
+  if local then Dispose else Substitute
 
 let in_syntax_constant : (bool * syndef) -> obj =
   declare_named_object {(default_object "SYNDEF") with
