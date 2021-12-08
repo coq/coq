@@ -231,8 +231,8 @@ let diff_hyps o_idents_in_lines o_map n_idents_in_lines n_map =
   List.rev !rv
 
 
-type 'a hyp = (Names.Id.t Context.binder_annot list * 'a option * 'a)
-type 'a reified_goal = { name: string; ty: 'a; hyps: 'a hyp list; env : Environ.env; sigma: Evd.evar_map }
+type hyp = (Names.Id.t Context.binder_annot list * EConstr.t option * EConstr.t)
+type reified_goal = { name: string; ty: EConstr.t; hyps: hyp list; env : Environ.env; sigma: Evd.evar_map }
 
 (* XXX: Port to proofview, one day. *)
 (* open Proofview *)
@@ -253,7 +253,7 @@ let process_goal_concl sigma g : EConstr.t * Environ.env =
   let (env, ty) = goal_repr sigma g in
   (ty, env)
 
-let process_goal sigma g : EConstr.t reified_goal =
+let process_goal sigma g : reified_goal =
   let (env, ty) = goal_repr sigma g in
   let name = Proof.goal_uid g             in
   (* compaction is usually desired [eg for better display] *)
