@@ -413,8 +413,6 @@ and cache_keep ((sp,kn),kobjs) =
 (* Adding operations with containers *)
 
 let add_leaf id obj =
-  if ModPath.equal (Lib.current_mp ()) ModPath.initial then
-    user_err Pp.(str "No session module started (use -top dir)");
   let oname = Lib.make_foname id in
   cache_object (oname,obj);
   Lib.add_entry oname (Lib.Leaf obj);
