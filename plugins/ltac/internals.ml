@@ -407,7 +407,7 @@ let infoH ~pstate (tac : raw_tactic_expr) : unit =
     Proofview.tclEVARMAP >>= fun sigma ->
     let map gl =
       let gl = Proofview_monad.drop_state gl in
-      let hyps = Evd.evar_filtered_context (Evd.find sigma gl) in
+      let hyps = Evd.evar_filtered_context (Evd.find_undefined sigma gl) in
       List.map Context.Named.Declaration.get_id @@ hyps
     in
     let hyps = List.map map gls in

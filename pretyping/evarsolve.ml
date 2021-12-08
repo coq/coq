@@ -163,7 +163,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
        if f' == f && args' == args then t
        else mkApp (f', args')
     | Evar (ev, a) when onevars ->
-      let evi = Evd.find !evdref ev in
+      let evi = Evd.find_undefined !evdref ev in
       let ty = Evd.evar_concl evi in
       let ty' = refresh ~onlyalg univ_flexible ~direction:true ty in
       if ty == ty' then t
@@ -983,7 +983,7 @@ let rec find_projectable_vars aliases sigma y subst =
     else if Evd.is_defined sigma (fst c) then subst2 (* already solved *)
     else
       let (evk,argsv as t) = c in
-      let evi = Evd.find sigma evk in
+      let evi = Evd.find_undefined sigma evk in
       let subst = make_projectable_subst aliases sigma (evar_filtered_context evi) argsv in
       let l = find_projectable_vars aliases sigma y subst in
       match l with

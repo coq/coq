@@ -228,7 +228,7 @@ let nf_open_term sigma0 ise c =
   | Evar ex ->
     let k, a = ex in let a' = SList.Skip.map nf a in
     if not (Evd.mem !s' k) then
-      s' := Evd.add !s' k (Evarutil.nf_evar_info ise (Evd.find ise k));
+      s' := Evd.add !s' k (Evarutil.nf_evar_info ise (Evd.find_undefined ise k));
     mkEvar (k, a')
   | _ -> map ise nf c' in
   let copy_def k _ () = match Evd.evar_body (Evd.find ise k) with
@@ -363,7 +363,7 @@ let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
   let rec put c = match EConstr.kind !sigma c with
   | Evar (k, a) ->
     if rigid k then map !sigma put c else
-    let evi = Evd.find !sigma k in
+    let evi = Evd.find_undefined !sigma k in
     let dc = List.firstn (max 0 (SList.length a - nenv)) (evar_filtered_context evi) in
     let abs_dc (d, c) = function
     | Context.Named.Declaration.LocalDef (x, b, t) ->
