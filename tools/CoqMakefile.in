@@ -164,10 +164,10 @@ endif
 # findlib files installation
 ifeq ($(DESTDIR),)
 FINDLIBPREINST= true
-FINDLIBDESTDIR= -destdir $(COQCORELIB)../
+FINDLIBDESTDIR= -destdir $(COQCORELIB)/../
 else
-FINDLIBPREINST= mkdir -p $(DESTDIR)/$(COQCORELIB)../
-FINDLIBDESTDIR= -destdir $(DESTDIR)/$(COQCORELIB)../
+FINDLIBPREINST= mkdir -p $(DESTDIR)/$(COQCORELIB)/../
+FINDLIBDESTDIR= -destdir $(DESTDIR)/$(COQCORELIB)/../
 endif
 findlib_install = \
 	$(HIDE)if [ -e META ]; then \
@@ -608,7 +608,7 @@ install: META
 	   echo INSTALL "$$f" "$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
-	$(HIDE)if [ ! -z "$(METAFILE)" ]; then \
+	$(HIDE)if [ "$(METAFILE)" ]; then \
 	  $(OCAMLFIND) remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) 2>/dev/null; \
 	fi
 	$(call findlib_install, META $(FINDLIBFILESTOINSTALL))
@@ -618,7 +618,7 @@ install-extra::
 .PHONY: install install-extra
 
 META: $(METAFILE)
-	$(HIDE)if [ ! -z "$(METAFILE)" ]; then \
+	$(HIDE)if [ "$(METAFILE)" ]; then \
 		cat $(METAFILE) | grep -v 'directory.*=.*' > META; \
 	fi
 

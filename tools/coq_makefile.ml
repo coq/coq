@@ -37,7 +37,8 @@ let usage_coq_makefile () =
 \ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
-\n  ...  [-arg opt] ... [-docroot path] [-f file] [-o file]\
+\n  ... [-arg opt] ... [-docroot path] [-f file] [-o file]\
+\n  ... [-generate-meta-for-package project-name]\
 \n  [-h] [--help]\
 \n";
   output_string stderr "\
@@ -61,6 +62,7 @@ let usage_coq_makefile () =
 \n[-f file]: take the contents of file as arguments\
 \n[-o file]: output should go in file file (recommended)\
 \n	Output file outside the current directory is forbidden.\
+\n[-generate-meta-for-package project-name]: generate META.project-name.\
 \n[-h]: print this usage summary\
 \n[--help]: equivalent to [-h]\n";
   exit 1
@@ -152,19 +154,48 @@ let generate_makefile oc conf_file local_file local_late_file dep_file args proj
   output_string oc s
 
 let generate_meta_file p =
-  match p.meta_file with
-  | None -> p
-  | Some f ->
-      let ext = Filename.extension f in
-      if ext = ".in" then
-        let meta_file = Filename.chop_extension f in
-        let oc = open_out meta_file in
-        (* META generation is just a renaming for now, we lack some metadata *)
-        output_string oc (read_whole_file f);
+  try
+    match p.meta_file with
+    | Absent -> p
+    | Generate proj ->
+        let cmname = List.map (fun { thing } -> thing) (p.mllib_files @ p.mlpack_files) in
+        let dir, cmname =
+          match cmname with
+          | [] -> Printf.eprintf "In order to generate a META file one needs an .mlpack or .mllib file\n"; exit 1
+          | [x] -> Filename.dirname x, Filename.(basename @@ chop_extension x)
+          | _ -> Printf.eprintf "Automatic META generation only works for one .mlpack or .mllib file, since you have more you need to write the META file by hand\n"; exit 1 in
+        let f = "META." ^ proj in
+        let oc = open_out f in
+        let meta : _ format = {|
+package "plugin" (
+  directory = "%s"
+  requires = "coq-core.plugins.ltac"
+  archive(byte) = "%s.cma"
+  archive(native) = "%s.cmxa"
+  plugin(byte) = "%s.cma"
+  plugin(native) = "%s.cmxs"
+)
+directory = "."
+|}
+        in
+        let meta = Printf.sprintf meta dir cmname cmname cmname cmname in
+        output_string oc meta;
         close_out oc;
-        { p with meta_file = Some meta_file }
-      else
-        p (* already a META.package file *)
+        { p with meta_file = Present f }
+    | Present f ->
+        let ext = Filename.extension f in
+        if ext = ".in" then
+          let meta_file = Filename.chop_extension f in
+          let oc = open_out meta_file in
+          (* META generation is just a renaming for now, we lack some metadata *)
+          output_string oc (read_whole_file f);
+          close_out oc;
+          { p with meta_file = Present meta_file }
+        else
+          p (* already a META.package file *)
+  with Sys_error e ->
+    Printf.eprintf "Error: %s\n" e;
+    exit 1
 
 let section oc s =
   let pad = String.make (76 - String.length s) ' ' in
@@ -216,8 +247,8 @@ let generate_conf_coq_config oc =
 ;;
 
 let check_metafile { mllib_files; mlpack_files; meta_file; _ } =
-  if mlpack_files @ mllib_files <> [] && meta_file = None then begin
-    Printf.eprintf "Error: you need a META.package-name file in order to build plugins\n";
+  if mlpack_files @ mllib_files <> [] && meta_file = Absent then begin
+    Printf.eprintf "Error: you need a META.package-name file in order to build plugins, see also -generate-meta-for-package\n";
     exit 1
   end
 
@@ -233,7 +264,7 @@ let generate_conf_files oc
   fprintf oc "COQMF_MLGFILES = %s\n"    (S.concat " " (map quote mlg_files));
   fprintf oc "COQMF_MLPACKFILES = %s\n" (S.concat " " (map quote mlpack_files));
   fprintf oc "COQMF_MLLIBFILES = %s\n"  (S.concat " " (map quote mllib_files));
-  fprintf oc "COQMF_METAFILE = %s\n"  (Option.default "" meta_file);
+  fprintf oc "COQMF_METAFILE = %s\n"  (match meta_file with Present x -> x | _ -> "");
   let cmdline_vfiles = filter_cmdline v_files in
   fprintf oc "COQMF_CMDLINE_VFILES = %s\n" (S.concat " " (List.map quote cmdline_vfiles));
 ;;
