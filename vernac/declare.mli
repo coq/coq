@@ -569,6 +569,6 @@ module Internal : sig
     val kind : t -> Decls.logical_kind
   end
 
-  val objVariable : unit Libobject.Dyn.tag
+  val objVariable : Id.t Libobject.Dyn.tag
 
 end

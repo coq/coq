@@ -486,10 +486,10 @@ type variable_declaration =
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
-let objVariable : unit Libobject.Dyn.tag =
+let objVariable : Id.t Libobject.Dyn.tag =
   let open Libobject in
   declare_object_full { (default_object "VARIABLE") with
-    classify_function = (fun () -> Dispose)}
+    classify_function = (fun _ -> Dispose)}
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
@@ -530,7 +530,7 @@ let declare_variable_core ~name ~kind d =
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});
-  ignore(Lib.add_leaf name (inVariable ()) : Libobject.object_name);
+  Lib.add_anonymous_leaf (inVariable name);
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 

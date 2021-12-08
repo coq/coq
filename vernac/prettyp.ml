@@ -679,10 +679,10 @@ let gallina_print_leaf_entry env sigma with_values ((sp, kn),lobj) =
   match lobj with
   | AtomicObject o ->
     let handler =
-      DynHandle.add Declare.Internal.objVariable begin fun _ ->
+      DynHandle.add Declare.Internal.objVariable begin fun id ->
           (* Outside sections, VARIABLES still exist but only with universes
              constraints *)
-          (try Some(print_named_decl env sigma (basename sp)) with Not_found -> None)
+          (try Some(print_named_decl env sigma id) with Not_found -> None)
       end @@
       DynHandle.add Declare.Internal.Constant.tag begin fun _ ->
           Some (print_constant with_values sep (Constant.make1 kn) None)
