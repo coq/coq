@@ -281,7 +281,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         assert false
       in
       let subst_options (subst,obj) = obj in
-      let discharge_options (_,(l,_,_ as o)) =
+      let discharge_options (l,_,_ as o) =
         match l with OptLocal -> None | (OptExport | OptGlobal | OptDefault) -> Some o in
       let classify_options (l,_,_ as o) =
         match l with (OptExport | OptGlobal) -> Substitute o | (OptLocal | OptDefault) -> Dispose in

@@ -102,7 +102,7 @@ let disch_ref ref =
       EvalConstRef c -> Some ref
     | EvalVarRef id -> if Lib.is_in_section (GlobRef.VarRef id) then None else Some ref
 
-let discharge_strategy (_,(local,obj)) =
+let discharge_strategy (local,obj) =
   if local then None else
   map_strategy disch_ref obj
 

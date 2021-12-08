@@ -104,7 +104,7 @@ module ReductionBehaviour = struct
     else (local,(r',o))
 
   let discharge = function
-    | _,(false, (gr, b)) ->
+    | false, (gr, b) ->
       let b =
         if Lib.is_in_section gr then
           let vars = Lib.variable_section_segment_of_reference gr in
@@ -113,7 +113,7 @@ module ReductionBehaviour = struct
         else b
       in
       Some (false, (gr, b))
-    | _ -> None
+    | true, _ -> None
 
   let rebuild = function
     | req, (GlobRef.ConstRef c, _ as x) -> req, x

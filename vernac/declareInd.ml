@@ -57,7 +57,7 @@ let cache_inductive ((sp, kn), names) =
   let names = inductive_names sp kn names in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
-let discharge_inductive ((sp, kn), names) =
+let discharge_inductive names =
   Some names
 
 let objInductive : inductive_obj Libobject.Dyn.tag =
@@ -79,7 +79,7 @@ let load_prim _ p = cache_prim p
 
 let subst_prim (subst,(p,c)) = Mod_subst.subst_proj_repr subst p, Mod_subst.subst_constant subst c
 
-let discharge_prim (_,(p,c)) = Some (Lib.discharge_proj_repr p, c)
+let discharge_prim (p,c) = Some (Lib.discharge_proj_repr p, c)
 
 let inPrim : (Projection.Repr.t * Constant.t) -> Libobject.obj =
   let open Libobject in

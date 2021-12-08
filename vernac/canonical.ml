@@ -20,7 +20,7 @@ let cache_canonical_structure (_, (o,_)) =
   let sigma = Evd.from_env env in
   Instance.register ~warn:true env sigma o
 
-let discharge_canonical_structure (_,(x, local)) =
+let discharge_canonical_structure (x, local) =
   let gref = Instance.repr x in
   if local || (Globnames.isVarRef gref && Lib.is_in_section gref) then None
   else Some (x, local)

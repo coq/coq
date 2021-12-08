@@ -205,8 +205,7 @@ let cache_constant ((sp,kn), obj) =
   Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef (Constant.make1 kn));
   Dumpglob.add_constant_kind (Constant.make1 kn) obj.cst_kind
 
-let discharge_constant ((sp, kn), obj) =
-  Some obj
+let discharge_constant obj = Some obj
 
 let classify_constant cst = Libobject.Substitute cst
 

@@ -243,7 +243,7 @@ let subst_scope (subst,sc) = sc
 
 open Libobject
 
-let discharge_scope (_,(local,_,_ as o)) =
+let discharge_scope (local,_,_ as o) =
   if local then None else Some o
 
 let classify_scope (local,_,_ as o) =
@@ -2046,7 +2046,7 @@ let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
   let cls' = List.Smart.map subst_cl cls in
   (ArgsScopeNoDischarge,r',n,scl,cls')
 
-let discharge_arguments_scope (_,(req,r,n,l,_)) =
+let discharge_arguments_scope (req,r,n,l,_) =
   if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
   else
     let n =

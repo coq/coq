@@ -455,14 +455,14 @@ let open_section id =
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
 
-let discharge_item ((sp,_ as oname),e) =
+let discharge_item ((sp,_),e) =
   match e with
   | Leaf lobj ->
     begin match lobj with
     | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
     | ExportObject _ -> None
     | AtomicObject obj ->
-      Option.map (fun o -> (basename sp,o)) (discharge_object (oname,obj))
+      Option.map (fun o -> (basename sp,o)) (discharge_object obj)
     end
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")

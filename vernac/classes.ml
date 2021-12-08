@@ -120,7 +120,7 @@ let subst_instance (subst, inst) =
       inst_class = fst (subst_global subst inst.inst_class);
       inst_impl = fst (subst_global subst inst.inst_impl) }
 
-let discharge_instance (_, inst) =
+let discharge_instance inst =
   match inst.inst_global with
   | Local -> None
   | SuperGlobal | Export ->
@@ -236,7 +236,7 @@ let subst_class (subst,cl) =
     cl_strict = cl.cl_strict;
     cl_unique = cl.cl_unique }
 
-let discharge_class (_,cl) =
+let discharge_class cl =
   let open CVars in
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right

@@ -72,7 +72,7 @@ type 'a object_declaration = {
   open_function : open_filter -> int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function : Mod_subst.substitution * 'a -> 'a;
-  discharge_function : object_name * 'a -> 'a option;
+  discharge_function : 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
 let default_object s = {
@@ -168,9 +168,9 @@ let classify_object (Dyn.Dyn (tag, v)) =
   | Keep v -> Keep (Dyn.Dyn (tag, v))
   | Anticipate v -> Anticipate (Dyn.Dyn (tag, v))
 
-let discharge_object (sp, Dyn.Dyn (tag, v)) =
+let discharge_object (Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
-  match decl.discharge_function (sp, v) with
+  match decl.discharge_function v with
   | None -> None
   | Some v -> Some (Dyn.Dyn (tag, v))
 
@@ -190,7 +190,7 @@ let local_object_nodischarge s ~cache =
 
 let local_object s ~cache ~discharge =
   { (local_object_nodischarge s ~cache) with
-    discharge_function = forget_names discharge;
+    discharge_function = discharge;
   }
 
 let global_object_nodischarge ?cat s ~cache ~subst =
@@ -208,7 +208,7 @@ let global_object_nodischarge ?cat s ~cache ~subst =
 
 let global_object ?cat s ~cache ~subst ~discharge =
   { (global_object_nodischarge ?cat s ~cache ~subst) with
-    discharge_function = forget_names discharge }
+    discharge_function = discharge }
 
 let superglobal_object_nodischarge s ~cache ~subst =
   { (default_object s) with
@@ -224,4 +224,4 @@ let superglobal_object_nodischarge s ~cache ~subst =
 
 let superglobal_object s ~cache ~subst ~discharge =
   { (superglobal_object_nodischarge s ~cache ~subst) with
-    discharge_function = forget_names discharge }
+    discharge_function = discharge }

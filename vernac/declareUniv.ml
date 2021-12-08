@@ -59,8 +59,8 @@ let open_univ_names i ((sp, _), (src, univs)) =
   List.iter (do_univ_name ~check:false (Nametab.Exactly i) (Libnames.dirpath sp) src) univs
 
 let discharge_univ_names = function
-  | _, (BoundUniv, _) -> None
-  | _, ((QualifiedUniv _ | UnqualifiedUniv), _ as x) -> Some x
+  | BoundUniv, _ -> None
+  | (QualifiedUniv _ | UnqualifiedUniv), _ as x -> Some x
 
 let input_univ_names : universe_name_decl -> Libobject.obj =
   let open Libobject in

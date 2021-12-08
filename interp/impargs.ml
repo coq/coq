@@ -572,7 +572,7 @@ let add_section_impls vars extra_impls (cond,impls) =
   let p = List.length vars - List.length extra_impls in
   adjust_side_condition p cond, extra_impls @ List.map (Option.map (lift_implicits p)) impls
 
-let discharge_implicits (_,(req,l)) =
+let discharge_implicits (req,l) =
   match req with
   | ImplLocal -> None
   | ImplMutualInductive _ | ImplInteractive _ | ImplConstant _ ->

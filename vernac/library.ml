@@ -351,7 +351,7 @@ let cache_require o =
   load_require 1 o;
   open_require 1 o
 
-let discharge_require (_,o) = Some o
+let discharge_require o = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 

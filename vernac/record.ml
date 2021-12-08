@@ -489,7 +489,7 @@ let cache_structure o = load_structure 1 o
 
 let subst_structure (subst, obj) = Structure.subst subst obj
 
-let discharge_structure (_, x) = Some x
+let discharge_structure x = Some x
 
 let rebuild_structure s = Structure.rebuild (Global.env()) s
 

@@ -30,7 +30,7 @@ let subst_bidi_hints (subst, (gr, ohint as orig)) =
   let gr' = Globnames.subst_global_reference subst gr in
   if gr == gr' then orig else (gr', ohint)
 
-let discharge_bidi_hints (_name, (gr, ohint)) =
+let discharge_bidi_hints (gr, ohint) =
   if Globnames.isVarRef gr && Lib.is_in_section gr then None
   else
     let vars = Lib.variable_section_segment_of_reference gr in

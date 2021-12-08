@@ -67,7 +67,7 @@ let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
     load_function = (fun _ x -> cache_ref x);
     classify_function = (fun o -> Substitute o);
     subst_function = ident_subst_function;
-    discharge_function = fun (_, sc) -> Some sc }
+    discharge_function = (fun sc -> Some sc); }
 
 (** Replaces a binding ! *)
 let register_ref s c =

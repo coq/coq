@@ -81,7 +81,7 @@ type 'a object_declaration = {
   open_function : open_filter -> int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function :  substitution * 'a -> 'a;
-  discharge_function : object_name * 'a -> 'a option;
+  discharge_function : 'a -> 'a option;
   rebuild_function : 'a -> 'a;
 }
 
@@ -163,7 +163,7 @@ val load_object : int -> object_name * obj -> unit
 val open_object : open_filter -> int -> object_name * obj -> unit
 val subst_object : substitution * obj -> obj
 val classify_object : obj -> obj substitutivity
-val discharge_object : object_name * obj -> obj option
+val discharge_object : obj -> obj option
 val rebuild_object : obj -> obj
 
 (** Higher-level API for objects with fixed scope.

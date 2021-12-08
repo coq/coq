@@ -236,7 +236,7 @@ let open_coercion i o =
   if Int.equal i 1 then
     cache_coercion o
 
-let discharge_coercion (_, c) =
+let discharge_coercion c =
   if c.coe_local then None
   else
     let n =

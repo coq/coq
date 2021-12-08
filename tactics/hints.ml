@@ -1200,7 +1200,7 @@ let classify_autohint obj =
   if is_hint_local obj.hint_local || is_trivial_action obj.hint_action then Dispose
   else Substitute obj
 
-let discharge_autohint (_, obj) =
+let discharge_autohint obj =
   if is_hint_local obj.hint_local then None
   else
     let action = match obj.hint_action with
