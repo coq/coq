@@ -68,12 +68,12 @@ See [`test-suite/Makefile`](Makefile) for more information.
 ## Adding a test
 
 Regression tests for closed bugs should be added to
-[`bugs/closed`](bugs/closed), as `bug_1234.v` where `1234` is the bug number.
+[`bugs`](bugs), as `bug_1234.v` where `1234` is the bug number.
 Files in this directory are tested for successful compilation.
 When you fix a bug, you should usually add a regression test here as well.
 
 The error "(bug seems to be opened, please check)" when running
-`make test-suite` means that a test in [`bugs/closed`](bugs/closed) failed to
+`make test-suite` means that a test in [`bugs`](bugs) failed to
 compile.
 
 There are also output tests in [`output`](output) which consist of a `.v` file

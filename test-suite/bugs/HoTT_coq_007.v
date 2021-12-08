@@ -38,10 +38,10 @@ Module Comment1.
   Set Printing All.
   Set Printing Universes.
 
-  Lemma foo objC (C : @Category objC) (C0 : Category (Functor Cat0 C)) (x : Functor Cat0 Cat0) 
-  : forall (y : Functor C0 Cat0) z, (ComposeFunctors y z = x). 
+  Lemma foo objC (C : @Category objC) (C0 : Category (Functor Cat0 C)) (x : Functor Cat0 Cat0)
+  : forall (y : Functor C0 Cat0) z, (ComposeFunctors y z = x).
     intro. intro.
-    unfold ComposeFunctors.     
+    unfold ComposeFunctors.
   Abort.
 End Comment1.
 
