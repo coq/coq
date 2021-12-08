@@ -110,14 +110,13 @@ let declare_mind ?typing_flags mie =
   List.iter (fun (typ, cons) ->
       Declare.check_exists typ;
       List.iter Declare.check_exists cons) names;
-  let _kn' = Global.add_mind ?typing_flags id mie in
-  let (sp,kn as oname) = Lib.add_leaf id (inInductive { ind_names = names }) in
+  let mind = Global.add_mind ?typing_flags id mie in
+  let (_,_) : Libobject.object_name = Lib.add_leaf id (inInductive { ind_names = names }) in
   if is_unsafe_typing_flags() then feedback_axiom ();
-  let mind = Global.mind_of_delta_kn kn in
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
   Impargs.declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
-  oname, isprim
+  mind, isprim
 
 let is_recursive mie =
   let open Constr in
@@ -163,8 +162,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind ?typing_flags mie in
-  let mind = Global.mind_of_delta_kn kn in
+  let mind, prim = declare_mind ?typing_flags mie in
   let is_template = match mie.mind_entry_universes with Template_ind_entry _ -> true | _ -> false in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
   DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) ubinders;
