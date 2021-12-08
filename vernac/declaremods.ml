@@ -1094,8 +1094,7 @@ let debug_print_modtab _ =
   in
   let pr_modinfo mp modobjs s =
     let objs = modobjs.module_substituted_objects @ modobjs.module_keep_objects in
-    s ++ str (ModPath.to_string mp) ++ (spc ())
-    ++ (pr_seg (Lib.segment_of_objects modobjs.module_prefix objs))
+    s ++ str (ModPath.to_string mp) ++ spc () ++ pr_seg objs
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in
   hov 0 modules

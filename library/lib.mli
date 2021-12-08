@@ -49,10 +49,6 @@ val subst_atomic_objects : Mod_subst.substitution -> lib_atomic_objects -> lib_a
 val classify_segment :
   library_segment -> lib_objects * lib_objects * Libobject.t list
 
-(** [segment_of_objects prefix objs] forms a list of Leafs *)
-val segment_of_objects :
-  Nametab.object_prefix -> lib_objects -> library_segment
-
 (** {6 ... } *)
 (** Low-level adding operations *)
 

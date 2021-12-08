@@ -93,10 +93,6 @@ let classify_segment seg =
   in
     clean ([],[],[]) (List.rev seg)
 
-
-let segment_of_objects prefix =
-  List.map (fun (id,obj) -> (make_oname prefix id, Leaf obj))
-
 (* We keep trace of operations in the stack [lib_stk].
    [path_prefix] is the current path of sections, where sections are stored in
    ``correct'' order, the oldest coming first in the list. It may seems
