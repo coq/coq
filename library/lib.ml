@@ -67,31 +67,31 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
-          let id = Names.Label.to_id (Names.KerName.label kn) in
-    begin match o with
-    | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
-      clean ((id,o)::substl, keepl, anticipl) stk
-    | KeepObject _ ->
-      clean (substl, (id,o)::keepl, anticipl) stk
-    | ExportObject _ ->
-      clean ((id,o)::substl, keepl, anticipl) stk
-    | AtomicObject obj ->
-      begin match classify_object obj with
-        | Dispose -> clean acc stk
-        | Keep o' ->
-          clean (substl, (id,AtomicObject o')::keepl, anticipl) stk
-        | Substitute o' ->
-          clean ((id,AtomicObject o')::substl, keepl, anticipl) stk
-        | Anticipate o' ->
-          clean (substl, keepl, AtomicObject o'::anticipl) stk
+      let id = Names.Label.to_id (Names.KerName.label kn) in
+      begin match o with
+        | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
+          clean ((id,o)::substl, keepl, anticipl) stk
+        | KeepObject _ ->
+          clean (substl, (id,o)::keepl, anticipl) stk
+        | ExportObject _ ->
+          clean ((id,o)::substl, keepl, anticipl) stk
+        | AtomicObject obj ->
+          begin match classify_object obj with
+            | Dispose -> clean acc stk
+            | Keep o' ->
+              clean (substl, (id,AtomicObject o')::keepl, anticipl) stk
+            | Substitute o' ->
+              clean ((id,AtomicObject o')::substl, keepl, anticipl) stk
+            | Anticipate o' ->
+              clean (substl, keepl, AtomicObject o'::anticipl) stk
+          end
       end
-    end
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err
         (str "there are still opened " ++ str (module_kind ty) ++ str "s.")
   in
-    clean ([],[],[]) (List.rev seg)
+  clean ([],[],[]) (List.rev seg)
 
 (* We keep trace of operations in the stack [lib_stk].
    [path_prefix] is the current path of sections, where sections are stored in
