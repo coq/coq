@@ -360,7 +360,7 @@ end) = struct
         if isRefX sigma (coq_eq_ref ()) head then None
         else
           (try
-           let params, args = Array.chop (Array.length args - 2) args in
+           let params = Array.sub args 0 (Array.length args - 2) in
            let env' = push_rel_context rels env in
            let (evars, (evar, _)) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
            let evars, inst =
