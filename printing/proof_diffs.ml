@@ -230,7 +230,7 @@ let diff_hyps o_idents_in_lines o_map n_idents_in_lines n_map =
   half_diff (List.flatten o_idents_in_lines) o_map  n_idents_in_lines n_map `Added;
   List.rev !rv
 
-type reified_goal = { ty: EConstr.t; env : Environ.env }
+type goal = { ty: EConstr.t; env : Environ.env; sigma : Evd.evar_map; }
 
 (* XXX: Port to proofview, one day. *)
 (* open Proofview *)
@@ -241,11 +241,11 @@ let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot 
     | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
     | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm)
 
-let process_goal sigma g =
+let make_goal env sigma g =
   let evi = Evd.find sigma g in
-  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  let env = Evd.evar_filtered_env env evi in
   let ty  = Evd.evar_concl evi in
-  { ty; env }
+  { ty; env; sigma }
 
 let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
   Ppconstr.pr_lconstr_expr env sigma
@@ -263,14 +263,12 @@ let pr_econstr_env ?lax ?inctx ?scope env sigma t =
 let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
   pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
 
-let diff_concl ?og_s nsigma ng =
+let diff_concl ?og_s ng =
   let o_concl_pp = match og_s with
-    | Some (og, osigma) ->
-      let { ty = oty; env = oenv } = process_goal osigma og in
-      pp_of_type oenv osigma oty
-    | None -> Pp.mt()
+  | Some { ty = oty; env = oenv; sigma = osigma } -> pp_of_type oenv osigma oty
+  | None -> Pp.mt()
   in
-  let { ty = nty; env = nenv } = process_goal nsigma ng in
+  let { ty = nty; env = nenv; sigma = nsigma } = ng in
   let n_concl_pp = pp_of_type nenv nsigma nty in
 
   let show_removed = Some (show_removed ()) in
@@ -294,7 +292,7 @@ map will contain:
 
 concl_pp is the conclusion as a Pp.t
 *)
-let goal_info goal sigma =
+let goal_info goal =
   let map = ref CString.Map.empty in
   let line_idents = ref [] in
   let build_hyp_info env sigma hyp =
@@ -317,7 +315,7 @@ let goal_info goal sigma =
   in
 
   try
-    let { ty=ty; env=env } = process_goal sigma goal in
+    let { ty=ty; env=env; sigma } = goal in
     (* compaction is usually desired [eg for better display] *)
     let hyps = Termops.compact_named_context (Environ.named_context env) in
     let () = List.iter (build_hyp_info env sigma) (List.rev hyps) in
@@ -342,14 +340,14 @@ let hyp_list_to_pp hyps =
 
 let unwrap g_s =
   match g_s with
-  | Some (goal, sigma) -> goal_info goal sigma
+  | Some g_s -> goal_info g_s
   | None -> ([], CString.Map.empty, Pp.mt ())
 
-let diff_goal_ide og_s ng nsigma =
-  diff_goal_info (unwrap og_s) (goal_info ng nsigma)
+let diff_goal_ide og_s ng =
+  diff_goal_info (unwrap og_s) (goal_info ng)
 
-let diff_goal ?og_s ng ns =
-  let (hyps_pp_list, concl_pp) = diff_goal_info (unwrap og_s) (goal_info ng ns) in
+let diff_goal ?og_s ng =
+  let (hyps_pp_list, concl_pp) = diff_goal_info (unwrap og_s) (goal_info ng) in
   let open Pp in
   v 0 (
     (hyp_list_to_pp hyps_pp_list) ++ cut () ++

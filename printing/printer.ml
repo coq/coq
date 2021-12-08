@@ -471,7 +471,8 @@ let pr_goal ?(diffs=false) ?og_s g_s =
   let env, concl = goal_repr sigma g in
   let goal =
     if diffs then
-      Proof_diffs.diff_goal ?og_s g sigma
+      let g = Proof_diffs.make_goal (Global.env ()) sigma g in
+      Proof_diffs.diff_goal ?og_s g
     else
       pr_context_of env sigma ++ cut () ++
         str "============================" ++ cut ()  ++
@@ -498,7 +499,7 @@ let pr_concl n ?(diffs=false) ?og_s sigma g =
   let env, concl = goal_repr sigma g in
   let pc =
     if diffs then
-      Proof_diffs.diff_concl ?og_s sigma g
+      Proof_diffs.diff_concl ?og_s (Proof_diffs.make_goal env sigma g)
     else
       pr_letype_env ~goal_concl_style:true env sigma concl
   in
@@ -698,13 +699,8 @@ module GoalMap = Evar.Map
 (* spiwack: [pr_first] is true when the first goal must be singled out
    and printed in its entirety. *)
 (* [os_map] is derived from the previous proof step, used for diffs *)
-let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map  ?entry
+let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map ?entry
     close_cmd sigma ~shelf ~stack ~unfocused ~goals =
-  let diff_goal_map =
-    match os_map with
-    | Some (_, diff_goal_map) -> diff_goal_map
-    | None -> GoalMap.empty
-  in
 
   (* Printing functions for the extra informations. *)
   let rec print_stack a = function
@@ -741,12 +737,14 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map  ?entry
 
   let get_ogs g =
     match os_map with
-    | Some (osigma, _) ->
-      (* if Not_found, returning None treats the goal as new and it will be diff highlighted;
+    | Some (osigma, diff_goal_map) ->
+      (* if not found, returning None treats the goal as new and it will be diff highlighted;
          returning Some { it = g; sigma = sigma } will compare the new goal
          to itself and it won't be highlighted *)
-      (try Some (GoalMap.find g diff_goal_map, osigma)
-      with Not_found -> None)
+      begin match GoalMap.find_opt g diff_goal_map with
+      | None -> None
+      | Some g -> Some (Proof_diffs.make_goal (Global.env ()) osigma g)
+      end
     | None -> None
   in
   let rec pr_rec n = function

@@ -33,6 +33,10 @@ open Evd
 open Environ
 open Constr
 
+type goal
+
+val make_goal : Environ.env -> Evd.evar_map -> Evar.t -> goal
+
 (** Computes the diff between the goals of two Proofs and returns
 the highlighted lists of hypotheses and conclusions.
 
@@ -44,7 +48,7 @@ If you want to make your call especially bulletproof, catch these
 exceptions, print a user-visible message, then recall this routine with
 the first argument set to None, which will skip the diff.
 *)
-val diff_goal_ide : (Goal.goal * Evd.evar_map) option -> Goal.goal -> Evd.evar_map -> Pp.t list * Pp.t
+val diff_goal_ide : goal option -> goal -> Pp.t list * Pp.t
 
 (** Computes the diff between two goals
 
@@ -56,7 +60,7 @@ If you want to make your call especially bulletproof, catch these
 exceptions, print a user-visible message, then recall this routine with
 the first argument set to None, which will skip the diff.
 *)
-val diff_goal : ?og_s:(Goal.goal * Evd.evar_map) -> Goal.goal -> Evd.evar_map -> Pp.t
+val diff_goal : ?og_s:goal -> goal -> Pp.t
 
 (** Convert a string to a list of token strings using the lexer *)
 val tokenize_string : string -> string list
@@ -66,7 +70,7 @@ val pr_leconstr_env        : ?lax:bool -> ?inctx:bool -> ?scope:Notation_term.sc
 val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:Notation_term.scope_name -> env -> evar_map -> constr -> Pp.t
 
 (** Computes diffs for a single conclusion *)
-val diff_concl : ?og_s:(Goal.goal * Evd.evar_map) -> Evd.evar_map -> Goal.goal -> Pp.t
+val diff_concl : ?og_s:goal -> goal -> Pp.t
 
 (** Generates a map from [np] to [op] that maps changed goals to their prior
 forms.  The map doesn't include entries for unchanged goals; unchanged goals

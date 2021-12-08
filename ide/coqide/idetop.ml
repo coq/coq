@@ -191,15 +191,16 @@ let process_goal sigma g =
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = Proof.goal_uid g; Interface.goal_name = name }
 
 let process_goal_diffs diff_goal_map oldp nsigma ng =
-  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name (Global.env ()) nsigma ng)) else None in
+  let env = Global.env () in
+  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env nsigma ng)) else None in
   let og_s = match oldp with
     | Some oldp ->
       let Proof.{ sigma=osigma } = Proof.data oldp in
-      (try Some (Evar.Map.find ng diff_goal_map, osigma)
+      (try Some (Proof_diffs.make_goal env osigma (Evar.Map.find ng diff_goal_map))
        with Not_found -> None)
     | None -> None
   in
-  let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
+  let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s (Proof_diffs.make_goal env nsigma ng) in
   { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
     Interface.goal_id = Proof.goal_uid ng; Interface.goal_name = name }
 
