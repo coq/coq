@@ -196,6 +196,13 @@ Tactics
   deprecated ``autoapply ... using`` syntax for :tacn:`autoapply`
   (`#15194 <https://github.com/coq/coq/pull/15194>`_,
   by Gaëtan Gilbert).
+- **Deprecated:**
+  the :tacn:`bfs eauto` tactic. Since its introduction
+  it has behaved exactly like the :tacn:`eauto` tactic.
+  Use :tacn:`typeclasses eauto` with the `bfs` flag instead
+  (`#15314 <https://github.com/coq/coq/pull/15314>`_,
+  fixes `#15300 <https://github.com/coq/coq/issues/15300>`_,
+  by Pierre-Marie Pédrot).
 - **Added:**
   The :tacn:`zify` tactic can now recognize `Pos.Nsucc_double`, `Pos.Ndouble`,
   `N.succ_double`, `N.double`, `N.succ_pos`, `N.div2`, `N.pow`, `N.square`, and
