@@ -112,6 +112,12 @@ val fill_occ_pattern :
   pattern -> occ -> int ->
     EConstr.t Evd.in_evar_universe_context * EConstr.t
 
+(** Variant of the above function where we fix [h := 1] and return
+    [redex_of_pattern pat] if [pat] has no occurrence. *)
+val fill_rel_occ_pattern :
+  env -> evar_map -> EConstr.t -> pattern -> occ ->
+    EConstr.t Evd.in_evar_universe_context * EConstr.t
+
 (** *************************** Low level APIs ****************************** *)
 
 (* The primitive matching facility. It matches of a term with holes, like

@@ -1000,9 +1000,7 @@ let get_hyp env sigma id =
 let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
   let pat = interp_cpattern env sigma t None in (* UGLY API *)
   let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context @@ fst pat) in
-  let (c, ucst), cl =
-    try fill_occ_pattern ~raise_NoMatch:true env sigma concl pat occ 1
-    with NoMatch -> redex_of_pattern env pat, concl in
+  let (c, ucst), cl = fill_rel_occ_pattern env sigma concl pat occ in
   let sigma = Evd.merge_universe_context sigma ucst in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
   if not(occur_existential sigma c) then
@@ -1088,9 +1086,7 @@ let abs_wgen env sigma keep_let f gen (args,c) =
      let x = hoi_id x in
      let cp = interp_cpattern env sigma p None in
      let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
-     let (t, ucst), c =
-       try fill_occ_pattern ~raise_NoMatch:true env sigma c cp None 1
-       with NoMatch -> redex_of_pattern env cp, c in
+     let (t, ucst), c = fill_rel_occ_pattern env sigma c cp None in
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
      let sigma, ty, r = pfe_type_relevance_of env sigma t in
@@ -1100,9 +1096,7 @@ let abs_wgen env sigma keep_let f gen (args,c) =
      let x = hoi_id x in
      let cp = interp_cpattern env sigma p None in
      let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst cp)) in
-     let (t, ucst), c =
-       try fill_occ_pattern ~raise_NoMatch:true env sigma c cp None 1
-       with NoMatch -> redex_of_pattern env cp, c in
+     let (t, ucst), c = fill_rel_occ_pattern env sigma c cp None in
      evar_closed t p;
      let sigma, ty, r = pfe_type_relevance_of env sigma t in
      let sigma = Evd.merge_universe_context sigma ucst in
