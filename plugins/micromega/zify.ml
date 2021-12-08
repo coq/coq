@@ -657,7 +657,7 @@ module MakeTable (E : Elt) = struct
              ++ str " X1 ... Xn"))
 
   let register_obj : Constr.constr -> Libobject.obj =
-    let cache_constr (_, c) =
+    let cache_constr c =
       let env = Global.env () in
       let evd = Evd.from_env env in
       register_constr env evd c

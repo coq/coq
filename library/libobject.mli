@@ -82,7 +82,8 @@ type 'a object_declaration = {
   classify_function : 'a -> 'a substitutivity;
   subst_function :  substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
-  rebuild_function : 'a -> 'a }
+  rebuild_function : 'a -> 'a;
+}
 
 val unfiltered : open_filter
 
@@ -180,33 +181,33 @@ variants.
 *)
 
 val local_object : string ->
-  cache:(object_name * 'a -> unit) ->
-  discharge:(object_name * 'a -> 'a option) ->
+  cache:('a -> unit) ->
+  discharge:('a -> 'a option) ->
   'a object_declaration
 
 val local_object_nodischarge : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   'a object_declaration
 
 val global_object : ?cat:category -> string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  discharge:(object_name * 'a -> 'a option) ->
+  discharge:('a -> 'a option) ->
   'a object_declaration
 
 val global_object_nodischarge : ?cat:category -> string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   'a object_declaration
 
 val superglobal_object : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  discharge:(object_name * 'a -> 'a option) ->
+  discharge:('a -> 'a option) ->
   'a object_declaration
 
 val superglobal_object_nodischarge : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   'a object_declaration
 

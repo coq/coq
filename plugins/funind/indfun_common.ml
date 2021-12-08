@@ -164,7 +164,7 @@ let cache_Function (_,(finfos)) =
   then function_table := new_tbl
 *)
 
-let cache_Function (_, finfos) =
+let cache_Function finfos =
   from_function := Cmap_env.add finfos.function_constant finfos !from_function;
   from_graph := Indmap.add finfos.graph_ind finfos !from_graph
 
@@ -207,7 +207,7 @@ let subst_Function (subst, finfos) =
     ; sprop_lemma = sprop_lemma'
     ; is_general = finfos.is_general }
 
-let discharge_Function (_, finfos) = Some finfos
+let discharge_Function finfos = Some finfos
 
 let pr_ocst env sigma c =
   Option.fold_right

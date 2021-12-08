@@ -83,7 +83,7 @@ let equiv_keys k k' =
 
 (** Registration of keys as an object *)
 
-let load_keys _ (_,(ref,ref')) =
+let load_keys _ (ref,ref') =
   add_keys ref ref'
 
 let cache_keys o =
@@ -101,7 +101,7 @@ let discharge_key = function
   | KGlob (GlobRef.VarRef _ as g) when Lib.is_in_section g -> None
   | x -> Some x
 
-let discharge_keys (_,(k,k')) =
+let discharge_keys (k,k') =
   match discharge_key k, discharge_key k' with
   | Some x, Some y -> Some (x, y)
   | _ -> None

@@ -180,20 +180,23 @@ let rebuild_object (Dyn.Dyn (tag, v)) =
 
 let dump = Dyn.dump
 
+let forget_names f = (); fun (_,o) -> f o
+
 let local_object_nodischarge s ~cache =
   { (default_object s) with
-    cache_function = cache;
+    cache_function = forget_names cache;
     classify_function = (fun _ -> Dispose);
   }
 
 let local_object s ~cache ~discharge =
   { (local_object_nodischarge s ~cache) with
-    discharge_function = discharge }
+    discharge_function = forget_names discharge;
+  }
 
 let global_object_nodischarge ?cat s ~cache ~subst =
-  let import i o = if Int.equal i 1 then cache o in
+  let import i o = if Int.equal i 1 then forget_names cache o in
   { (default_object s) with
-    cache_function = cache;
+    cache_function = forget_names cache;
     open_function = simple_open ?cat import;
     subst_function = (match subst with
         | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
@@ -205,12 +208,12 @@ let global_object_nodischarge ?cat s ~cache ~subst =
 
 let global_object ?cat s ~cache ~subst ~discharge =
   { (global_object_nodischarge ?cat s ~cache ~subst) with
-    discharge_function = discharge }
+    discharge_function = forget_names discharge }
 
 let superglobal_object_nodischarge s ~cache ~subst =
   { (default_object s) with
-    load_function = (fun _ x -> cache x);
-    cache_function = cache;
+    load_function = (fun _ x -> forget_names cache x);
+    cache_function = forget_names cache;
     subst_function = (match subst with
         | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
         | Some subst -> subst;
@@ -221,4 +224,4 @@ let superglobal_object_nodischarge s ~cache ~subst =
 
 let superglobal_object s ~cache ~subst ~discharge =
   { (superglobal_object_nodischarge s ~cache ~subst) with
-    discharge_function = discharge }
+    discharge_function = forget_names discharge }

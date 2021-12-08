@@ -1121,19 +1121,19 @@ let cache_name (len,n) =
   | TrueGlobal gr ->
     Nametab.(push (Exactly (len+1)) (path_of_global gr) gr)
 
-let cache_names (_,ns) = List.iter cache_name ns
+let cache_names ns = List.iter cache_name ns
 
 let subst_names (subst,ns) = List.Smart.map (on_snd (Globnames.subst_extended_reference subst)) ns
 
 let inExportNames = Libobject.declare_object
     (Libobject.global_object "EXPORTNAMES"
        ~cache:cache_names ~subst:(Some subst_names)
-       ~discharge:(fun (_,x) -> Some x))
+       ~discharge:(fun x -> Some x))
 
 let import_names ~export m ns =
   let ns = interp_names m ns in
   if export then Lib.add_anonymous_leaf (inExportNames ns)
-  else cache_names ((),ns)
+  else cache_names ns
 
 let vernac_import export cats refl =
   if Option.has_some cats then
