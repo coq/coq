@@ -42,10 +42,6 @@ sig
     val map : ('a -> 'a) -> 'a t -> 'a t
     val mapi : (key -> 'a -> 'a) -> 'a t -> 'a t
   end
-  module Unsafe :
-  sig
-    val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
-  end
   module Monad(M : MonadS) :
   sig
     val fold : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
@@ -71,10 +67,6 @@ sig
   sig
     val map : ('a -> 'a) -> 'a map -> 'a map
     val mapi : (M.t -> 'a -> 'a) -> 'a map -> 'a map
-  end
-  module Unsafe :
-  sig
-    val map : (M.t -> 'a -> M.t * 'b) -> 'a map -> 'b map
   end
   module Monad(MS : MonadS) :
   sig
@@ -290,17 +282,6 @@ struct
       let v' = f k v in
       if l == l' && r == r' && v == v' then s
       else map_inj (MNode {l=l'; v=k; d=v'; r=r'; h})
-
-  end
-
-  module Unsafe =
-  struct
-
-    let rec map f (s : 'a map) : 'b map = match map_prj s with
-    | MEmpty -> map_inj MEmpty
-    | MNode {l; v=k; d=v; r; h} ->
-      let (k, v) = f k v in
-      map_inj (MNode {l=map f l; v=k; d=v; r=map f r; h})
 
   end
 

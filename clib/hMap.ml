@@ -435,13 +435,6 @@ struct
     in
     Int.Map.update (M.hash k) aux m
 
-  module Unsafe =
-  struct
-    let map f s =
-      let fs m = Map.Unsafe.map f m in
-      Int.Map.map fs s
-  end
-
   module Monad(M : CMap.MonadS) =
   struct
     module IntM = Int.Map.Monad(M)
