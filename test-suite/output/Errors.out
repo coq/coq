@@ -23,3 +23,6 @@ The command has indeed failed with message:
 Cannot infer ?T in the partial instance "forall x : nat, ?T" found for the
 type of f in environment:
 x : nat
+The command has indeed failed with message:
+The first term has type "nat" while the second term has incompatible type
+"bool".

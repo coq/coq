@@ -80,7 +80,7 @@ exception ReplacingDependency of env * evar_map * Id.t * Evarutil.clear_dependen
 exception AlreadyUsed of Id.t
 exception UsedTwice of Id.t
 exception VariableHasNoValue of Id.t
-exception ConvertIncompatibleTypes
+exception ConvertIncompatibleTypes of env * evar_map * constr * constr
 exception ConvertNotAType
 exception NotConvertible
 exception NotUnfoldable
@@ -199,8 +199,11 @@ let tactic_interp_error_handler = function
       Id.print id ++ str" is used twice."
   | VariableHasNoValue id ->
       Id.print id ++ str" is not a defined hypothesis."
-  | ConvertIncompatibleTypes ->
-      str "Types are incompatible."
+  | ConvertIncompatibleTypes (env,sigma,t1,t2) ->
+      str "The first term has type" ++ spc () ++
+      quote (Termops.Internal.print_constr_env env sigma t1) ++ spc () ++
+      strbrk "while the second term has incompatible type" ++ spc () ++
+      quote (Termops.Internal.print_constr_env env sigma t2) ++ str "."
   | ConvertNotAType ->
       str "Not a type."
   | NotConvertible ->
@@ -889,7 +892,7 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
         isSort sigma (whd_all env sigma t2)
       then (mayneedglobalcheck := true; sigma)
       else
-        error ConvertIncompatibleTypes
+        error (ConvertIncompatibleTypes (env,sigma,t2,t1))
     | Some sigma -> sigma
   end
   else

@@ -37,3 +37,11 @@ Fail Goal forall f P,  P (f 0).
 
 Definition t := unit.
 End M.
+
+Module Change.
+
+Goal 0 = 0.
+Fail change 0 with true.
+Abort.
+
+End Change.
