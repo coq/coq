@@ -1182,6 +1182,8 @@ let define_aux def undef evk body =
 
 (* define the existential of section path sp as the constr body *)
 let define_gen evk body evd evar_flags =
+  let future_goals = FutureGoals.remove evk evd.future_goals in
+  let evd = { evd with future_goals } in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   let last_mods = match evd.conv_pbs with
   | [] ->  evd.last_mods
@@ -1200,8 +1202,6 @@ let define_with_evar evk body evd =
   let evk' = fst (destEvar body) in
   let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
   let evd = unshelve evd [evk] in
-  let future_goals = FutureGoals.remove evk evd.future_goals in
-  let evd = { evd with future_goals } in
   define_gen evk body evd evar_flags
 
 (* In case of restriction, we declare the aliasing and inherit the obligation
