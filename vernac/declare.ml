@@ -195,15 +195,9 @@ let check_exists id =
     raise (DeclareUniv.AlreadyDeclared (None, id))
 
 let cache_constant ((sp,kn), obj) =
-  (* Invariant: the constant must exist in the logical environment *)
-  let kn' =
-    if Global.exists_objlabel (Label.of_id (Libnames.basename sp))
-    then Constant.make1 kn
-    else CErrors.anomaly Pp.(str"Missing constant " ++ Id.print(Libnames.basename sp) ++ str".")
-  in
-  assert (Environ.QConstant.equal (Global.env ()) kn' (Constant.make1 kn));
-  Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef (Constant.make1 kn));
-  Dumpglob.add_constant_kind (Constant.make1 kn) obj.cst_kind
+  let kn = Global.constant_of_delta_kn kn in
+  Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef kn);
+  Dumpglob.add_constant_kind kn obj.cst_kind
 
 let discharge_constant obj = Some obj
 
