@@ -97,7 +97,7 @@ let subst_tacdef (subst, def) =
 let classify_tacdef o = Substitute o
 
 let inTacDef : tacdef -> obj =
-  declare_object {(default_object "TAC2-DEFINITION") with
+  declare_named_object {(default_object "TAC2-DEFINITION") with
      cache_function  = cache_tacdef;
      load_function   = load_tacdef;
      open_function   = simple_open open_tacdef;
@@ -204,7 +204,7 @@ let subst_typdef (subst, def) =
 let classify_typdef o = Substitute o
 
 let inTypDef : typdef -> obj =
-  declare_object {(default_object "TAC2-TYPE-DEFINITION") with
+  declare_named_object {(default_object "TAC2-TYPE-DEFINITION") with
      cache_function  = cache_typdef;
      load_function   = load_typdef;
      open_function   = simple_open open_typdef;
@@ -274,7 +274,7 @@ let subst_typext (subst, e) =
 let classify_typext o = Substitute o
 
 let inTypExt : typext -> obj =
-  declare_object {(default_object "TAC2-TYPE-EXTENSION") with
+  declare_named_object {(default_object "TAC2-TYPE-EXTENSION") with
      cache_function  = cache_typext;
      load_function   = load_typext;
      open_function   = simple_open open_typext;
@@ -693,10 +693,10 @@ let perform_notation syn st =
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation
 
-let cache_synext (_, syn) =
+let cache_synext syn =
   Pcoq.extend_grammar_command ltac2_notation syn
 
-let open_synext i (_, syn) =
+let open_synext i syn =
   if Int.equal i 1 then Pcoq.extend_grammar_command ltac2_notation syn
 
 let subst_synext (subst, syn) =
@@ -739,7 +739,7 @@ let subst_abbreviation (subst, abbr) =
 let classify_abbreviation o = Substitute o
 
 let inTac2Abbreviation : abbreviation -> obj =
-  declare_object {(default_object "TAC2-ABBREVIATION") with
+  declare_named_object {(default_object "TAC2-ABBREVIATION") with
      cache_function  = cache_abbreviation;
      load_function   = load_abbreviation;
      open_function   = simple_open ~cat:ltac2_notation_cat open_abbreviation;
@@ -788,7 +788,7 @@ type redefinition = {
   redef_old : Id.t option;
 }
 
-let perform_redefinition (_, redef) =
+let perform_redefinition redef =
   let kn = redef.redef_kn in
   let data = Tac2env.interp_global kn in
   let body = match redef.redef_old with
@@ -809,11 +809,13 @@ let subst_redefinition (subst, redef) =
 let classify_redefinition o = Substitute o
 
 let inTac2Redefinition : redefinition -> obj =
-  declare_object {(default_object "TAC2-REDEFINITION") with
+  declare_object
+    {(default_object "TAC2-REDEFINITION") with
      cache_function  = perform_redefinition;
      open_function   = simple_open (fun _ -> perform_redefinition);
      subst_function = subst_redefinition;
-     classify_function = classify_redefinition }
+     classify_function = classify_redefinition;
+    }
 
 let register_redefinition qid old e =
   let kn =
@@ -1022,13 +1024,13 @@ let t_list = coq_def "list"
 
 let (f_register_constr_quotations, register_constr_quotations) = Hook.make ()
 
-let cache_ltac2_init (_, ()) =
+let cache_ltac2_init () =
   Hook.get f_register_constr_quotations ()
 
-let load_ltac2_init _ (_, ()) =
+let load_ltac2_init _ () =
   Hook.get f_register_constr_quotations ()
 
-let open_ltac2_init _ (_, ()) =
+let open_ltac2_init _ () =
   Goptions.set_string_option_value_gen ["Default"; "Proof"; "Mode"] "Ltac2"
 
 (** Dummy object that register global rules when Require is called *)

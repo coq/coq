@@ -324,7 +324,7 @@ let cache_ml_objects mnames =
   let iter (obj, _) = trigger_ml_object true true true obj in
   List.iter iter mnames
 
-let load_ml_objects _ (_,{mnames=mnames}) =
+let load_ml_objects _ {mnames=mnames} =
   let iter (obj, _) = trigger_ml_object true false true obj in
   List.iter iter mnames
 

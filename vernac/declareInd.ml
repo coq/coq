@@ -34,14 +34,11 @@ let inductive_names sp kn obj =
          let names, _ =
            List.fold_left
              (fun (names, p) l ->
-                let sp =
-                  Libnames.make_path dp l
-                in
-                  ((sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
+                let sp = Libnames.make_path dp l in
+                ((sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
              (names, 1) consnames in
-         let sp = Libnames.make_path dp typename
-         in
-           ((sp, GlobRef.IndRef ind_p) :: names, n+1))
+         let sp = Libnames.make_path dp typename in
+         ((sp, GlobRef.IndRef ind_p) :: names, n+1))
       ([], 0) obj.ind_names
   in names
 
@@ -73,7 +70,7 @@ let objInductive : inductive_obj Libobject.Dyn.tag =
 
 let inInductive v = Libobject.Dyn.Easy.inj v objInductive
 
-let cache_prim (_,(p,c)) = Structures.PrimitiveProjections.register p c
+let cache_prim (p,c) = Structures.PrimitiveProjections.register p c
 
 let load_prim _ p = cache_prim p
 

@@ -80,7 +80,7 @@ let ssrtac_entry name = {
   mltac_index = 0;
 }
 
-let cache_tactic_notation (_, (key, body, parule)) =
+let cache_tactic_notation (key, body, parule) =
   Tacenv.register_alias key body;
   Pptactic.declare_notation_tactic_pprule key parule
 

@@ -227,7 +227,7 @@ let check_source = function
 | Some (CL_FUN as s) -> raise (CoercionError (ForbiddenSourceClass s))
 | _ -> ()
 
-let cache_coercion (_,c) =
+let cache_coercion c =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   Coercionops.declare_coercion env sigma c

@@ -836,7 +836,7 @@ let cache_one_syntax_extension (ntn,synext) =
   (* Printing *)
   Option.iter (declare_generic_notation_printing_rules ntn) synext.synext_notprint
 
-let cache_syntax_extension (_, (_, sy)) =
+let cache_syntax_extension (_, sy) =
   cache_one_syntax_extension sy
 
 let subst_syntax_extension (subst, (local, (ntn, synext))) =
@@ -849,11 +849,12 @@ let open_syntax_extension i o =
   if Int.equal i 1 then cache_syntax_extension o
 
 let inSyntaxExtension : syntax_extension_obj -> obj =
-  declare_object {(default_object "SYNTAX-EXTENSION") with
-       open_function = simple_open ~cat:notation_cat open_syntax_extension;
-       cache_function = cache_syntax_extension;
-       subst_function = subst_syntax_extension;
-       classify_function = classify_syntax_definition}
+  declare_object
+    {(default_object "SYNTAX-EXTENSION") with
+     open_function = simple_open ~cat:notation_cat open_syntax_extension;
+     cache_function = cache_syntax_extension;
+     subst_function = subst_syntax_extension;
+     classify_function = classify_syntax_definition}
 
 (**************************************************************************)
 (* Precedences                                                            *)
@@ -1388,7 +1389,7 @@ type notation_obj = {
   notobj_also_in_cases_pattern : bool;
 }
 
-let load_notation_common silently_define_scope_if_undefined _ (_, nobj) =
+let load_notation_common silently_define_scope_if_undefined _ nobj =
   (* When the default shall be to require that a scope already exists *)
   (* the call to ensure_scope will have to be removed *)
   if silently_define_scope_if_undefined then
@@ -1401,7 +1402,7 @@ let load_notation_common silently_define_scope_if_undefined _ (_, nobj) =
 let load_notation =
   load_notation_common true
 
-let open_notation i (_, nobj) =
+let open_notation i nobj =
   if Int.equal i 1 then begin
     let scope = nobj.notobj_scope in
     let (ntn, df) = nobj.notobj_notation in
@@ -1751,7 +1752,7 @@ type scope_command =
   | ScopeDelimRemove
   | ScopeClasses of scope_class list
 
-let load_scope_command_common silently_define_scope_if_undefined _ (_,(local,scope,o)) =
+let load_scope_command_common silently_define_scope_if_undefined _ (local,scope,o) =
   let declare_scope_if_needed =
     if silently_define_scope_if_undefined then Notation.declare_scope
     else Notation.ensure_scope in
@@ -1766,7 +1767,7 @@ let load_scope_command_common silently_define_scope_if_undefined _ (_,(local,sco
 let load_scope_command =
   load_scope_command_common true
 
-let open_scope_command i (_,(local,scope,o)) =
+let open_scope_command i (local,scope,o) =
   if Int.equal i 1 then
     match o with
     | ScopeDeclare -> ()
@@ -1851,7 +1852,7 @@ let warn_custom_entry =
          (fun s ->
           strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 
-let load_custom_entry _ (_,(local,s)) =
+let load_custom_entry _ (local,s) =
   if Egramcoq.exists_custom_entry s then warn_custom_entry s
   else Egramcoq.create_custom_entry ~local s
 

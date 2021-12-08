@@ -92,7 +92,7 @@ module ReductionBehaviour = struct
   let table =
     Summary.ref (GlobRef.Map.empty : t GlobRef.Map.t) ~name:"reductionbehaviour"
 
-  let load _ (_,(_,(r, b))) =
+  let load _ (_,(r, b)) =
     table := GlobRef.Map.add r b !table
 
   let cache o = load 1 o
@@ -120,14 +120,14 @@ module ReductionBehaviour = struct
     | _ -> assert false
 
   let inRedBehaviour = declare_object {
-                        (default_object "REDUCTIONBEHAVIOUR") with
-                        load_function = load;
-                        cache_function = cache;
-                        classify_function = classify;
-                        subst_function = subst;
-                        discharge_function = discharge;
-                        rebuild_function = rebuild;
-                      }
+      (default_object "REDUCTIONBEHAVIOUR") with
+      load_function = load;
+      cache_function = cache;
+      classify_function = classify;
+      subst_function = subst;
+      discharge_function = discharge;
+      rebuild_function = rebuild;
+    }
 
   let set ~local r b =
     Lib.add_anonymous_leaf (inRedBehaviour (local, (r, b)))

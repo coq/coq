@@ -87,7 +87,7 @@ module MakeTable =
     let t = Summary.ref MySet.empty ~name:nick
 
     let (add_option,remove_option) =
-        let cache_options (_,(f,p)) = match f with
+        let cache_options (f,p) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
         let load_options i o = if Int.equal i 1 then cache_options o in
@@ -262,18 +262,18 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         { Summary.freeze_function = (fun ~marshallable -> read ());
           Summary.unfreeze_function = write;
           Summary.init_function = (fun () -> write default) } in
-      let cache_options (_,(l,m,v)) =
+      let cache_options (l,m,v) =
         match m with
         | OptSet -> write v
         | OptAppend -> write (append (read ()) v) in
-      let load_options i (_, (l, _, _) as o) = match l with
+      let load_options i (l, _, _ as o) = match l with
       | OptGlobal -> cache_options o
       | OptExport -> ()
       | OptLocal | OptDefault ->
         (* Ruled out by classify_function *)
         assert false
       in
-      let open_options i  (_, (l, _, _) as o) = match l with
+      let open_options i  (l, _, _ as o) = match l with
       | OptExport -> if Int.equal i 1 then cache_options o
       | OptGlobal -> ()
       | OptLocal | OptDefault ->

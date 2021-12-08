@@ -265,19 +265,19 @@ let check_key key =
     user_err Pp.(str "Conflicting tactic notations keys. This can happen when including \
     twice the same module.")
 
-let cache_tactic_notation (_, tobj) =
+let cache_tactic_notation tobj =
   let key = tobj.tacobj_key in
   let () = check_key key in
   Tacenv.register_alias key tobj.tacobj_body;
   extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram)
 
-let open_tactic_notation i (_, tobj) =
+let open_tactic_notation i tobj =
   let key = tobj.tacobj_key in
   if Int.equal i 1 && not tobj.tacobj_local then
     extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
 
-let load_tactic_notation i (_, tobj) =
+let load_tactic_notation i tobj =
   let key = tobj.tacobj_key in
   let () = check_key key in
   (* Only add the printing and interpretation rules. *)

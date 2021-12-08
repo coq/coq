@@ -71,7 +71,7 @@ let classify_syntax_constant (local,_ as o) =
   if local then Dispose else Substitute o
 
 let in_syntax_constant : (bool * syndef) -> obj =
-  declare_object {(default_object "SYNDEF") with
+  declare_named_object {(default_object "SYNDEF") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
     open_function = simple_open open_syntax_constant;

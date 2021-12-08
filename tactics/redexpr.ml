@@ -110,12 +110,14 @@ type strategy_obj =
     bool * (Conv_oracle.level * evaluable_global_reference list) list
 
 let inStrategy : strategy_obj -> obj =
-  declare_object {(default_object "STRATEGY") with
-                    cache_function = (fun (_,obj) -> cache_strategy obj);
-                    load_function = (fun _ (_,obj) -> cache_strategy obj);
-                    subst_function = subst_strategy;
-                    discharge_function = discharge_strategy;
-                    classify_function = classify_strategy }
+  declare_object
+    {(default_object "STRATEGY") with
+     cache_function = cache_strategy;
+     load_function = (fun _ obj -> cache_strategy obj);
+     subst_function = subst_strategy;
+     discharge_function = discharge_strategy;
+     classify_function = classify_strategy;
+    }
 
 
 let set_strategy local str =
@@ -350,12 +352,12 @@ let subst_red_expr subs =
 let inReduction : bool * string * red_expr -> obj =
   declare_object
     {(default_object "REDUCTION") with
-       cache_function = (fun (_,(_,s,e)) -> decl_red_expr s e);
-       load_function = (fun _ (_,(_,s,e)) -> decl_red_expr s e);
-       subst_function =
-        (fun (subs,(b,s,e)) -> b,s,subst_red_expr subs e);
-       classify_function =
-        (fun ((b,_,_) as obj) -> if b then Dispose else Substitute obj) }
+     cache_function = (fun (_,s,e) -> decl_red_expr s e);
+     load_function = (fun _ (_,s,e) -> decl_red_expr s e);
+     subst_function =
+       (fun (subs,(b,s,e)) -> b,s,subst_red_expr subs e);
+     classify_function =
+       (fun ((b,_,_) as obj) -> if b then Dispose else Substitute obj) }
 
 let declare_red_expr locality s expr =
     Lib.add_anonymous_leaf (inReduction (locality,s,expr))

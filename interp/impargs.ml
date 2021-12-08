@@ -525,7 +525,7 @@ let implicits_of_global ref =
 let cache_implicits_decl (ref,imps) =
   implicits_table := GlobRef.Map.add ref imps !implicits_table
 
-let load_implicits _ (_,(_,l)) = List.iter cache_implicits_decl l
+let load_implicits _ (_,l) = List.iter cache_implicits_decl l
 
 let cache_implicits o =
   load_implicits 1 o

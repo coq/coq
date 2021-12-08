@@ -28,7 +28,7 @@ type req =
   | ReqLocal
   | ReqGlobal of GlobRef.t * Name.t list
 
-let load_rename_args _ (_, (_, (r, names))) =
+let load_rename_args _ (_, (r, names)) =
   name_table := GlobRef.Map.add r names !name_table
 
 let cache_rename_args o = load_rename_args 1 o

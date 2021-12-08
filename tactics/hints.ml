@@ -1019,7 +1019,7 @@ type db_obj = {
   db_ts : TransparentState.t;
 }
 
-let cache_db (_, {db_name=name; db_use_dn=b; db_ts=ts}) =
+let cache_db {db_name=name; db_use_dn=b; db_ts=ts} =
   searchtable_add (name, Hint_db.empty ~name ts b)
 
 let load_db _ x = cache_db x
@@ -1078,7 +1078,7 @@ let superglobal h = match h.hint_local with
   | SuperGlobal -> true
   | Local | Export -> false
 
-let load_autohint _ (kn, h) =
+let load_autohint _ h =
   let name = h.hint_name in
   let superglobal = superglobal h in
   match h.hint_action with
@@ -1093,7 +1093,7 @@ let load_autohint _ (kn, h) =
   | AddMode { gref; mode } ->
     if superglobal then add_mode name gref mode
 
-let open_autohint i (kn, h) =
+let open_autohint i h =
   let superglobal = superglobal h in
   if Int.equal i 1 then match h.hint_action with
   | AddHints hints ->
@@ -1114,8 +1114,8 @@ let open_autohint i (kn, h) =
   | AddMode { gref; mode } ->
     if not superglobal then add_mode h.hint_name gref mode
 
-let cache_autohint (kn, obj) =
-  load_autohint 1 (kn, obj); open_autohint 1 (kn, obj)
+let cache_autohint o =
+  load_autohint 1 o; open_autohint 1 o
 
 let subst_autohint (subst, obj) =
   let subst_key gr =
@@ -1237,14 +1237,15 @@ let discharge_autohint obj =
 let hint_cat = create_category "hints"
 
 let inAutoHint : hint_obj -> obj =
-  declare_object {(default_object "AUTOHINT") with
-                    cache_function = cache_autohint;
-                    load_function = load_autohint;
-                    open_function = simple_open ~cat:hint_cat open_autohint;
-                    subst_function = subst_autohint;
-                    classify_function = classify_autohint;
-                    discharge_function = discharge_autohint;
-                  }
+  declare_object
+    {(default_object "AUTOHINT") with
+     cache_function = cache_autohint;
+     load_function = load_autohint;
+     open_function = simple_open ~cat:hint_cat open_autohint;
+     subst_function = subst_autohint;
+     classify_function = classify_autohint;
+     discharge_function = discharge_autohint;
+    }
 
 let check_locality locality =
   let not_local what =

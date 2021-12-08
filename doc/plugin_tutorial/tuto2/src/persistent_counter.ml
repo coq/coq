@@ -14,7 +14,7 @@ let counter = Summary.ref ~name:"persistent_counter" 0
  * using Libobject.declare_object. To do that, we define a function that
  * saves the value that is passed to it into the reference we have just defined:
  *)
-let cache_count (_, v) =
+let cache_count v =
   counter := v
 
 (*

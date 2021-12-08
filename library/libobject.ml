@@ -65,15 +65,16 @@ let filter_or f1 f2 = match f1, f2 with
   | Unfiltered, f | f, Unfiltered -> Unfiltered
   | Filtered f1, Filtered f2 -> Filtered (CString.Pred.union f1 f2)
 
-type 'a object_declaration = {
+type ('a,'b) object_declaration = {
   object_name : string;
-  cache_function : object_name * 'a -> unit;
-  load_function : int -> object_name * 'a -> unit;
-  open_function : open_filter -> int -> object_name * 'a -> unit;
+  cache_function : 'b -> unit;
+  load_function : int -> 'b -> unit;
+  open_function : open_filter -> int -> 'b -> unit;
   classify_function : 'a -> 'a substitutivity;
-  subst_function : Mod_subst.substitution * 'a -> 'a;
+  subst_function :  Mod_subst.substitution * 'a -> 'a;
   discharge_function : 'a -> 'a option;
-  rebuild_function : 'a -> 'a }
+  rebuild_function : 'a -> 'a;
+}
 
 let default_object s = {
   object_name = s;
@@ -84,7 +85,8 @@ let default_object s = {
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
   classify_function = (fun atomic_obj -> Keep atomic_obj);
   discharge_function = (fun _ -> None);
-  rebuild_function = (fun x -> x)}
+  rebuild_function = (fun x -> x);
+}
 
 
 (* The suggested object declaration is the following:
@@ -129,7 +131,7 @@ and objects = (Names.Id.t * t) list
 
 and substitutive_objects = MBId.t list * algebraic_objects
 
-module DynMap = Dyn.Map (struct type 'a t = 'a object_declaration end)
+module DynMap = Dyn.Map (struct type 'a t = ('a,object_name * 'a) object_declaration end)
 
 let cache_tab = ref DynMap.empty
 
@@ -139,10 +141,20 @@ let declare_object_full odecl =
   let () = cache_tab := DynMap.add tag odecl !cache_tab in
   tag
 
-let declare_object odecl =
+let declare_named_object odecl =
   let tag = declare_object_full odecl in
   let infun v = Dyn.Dyn (tag, v) in
   infun
+
+let declare_object odecl =
+  let odecl =
+    { odecl with
+      cache_function = (fun (_,o) -> odecl.cache_function o);
+      load_function = (fun i (_,o) -> odecl.load_function i o);
+      open_function = (fun f i (_,o) -> odecl.open_function f i o);
+    }
+  in
+  declare_named_object odecl
 
 let cache_object (sp, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
@@ -180,11 +192,9 @@ let rebuild_object (Dyn.Dyn (tag, v)) =
 
 let dump = Dyn.dump
 
-let forget_names f = (); fun (_,o) -> f o
-
 let local_object_nodischarge s ~cache =
   { (default_object s) with
-    cache_function = forget_names cache;
+    cache_function = cache;
     classify_function = (fun _ -> Dispose);
   }
 
@@ -194,9 +204,9 @@ let local_object s ~cache ~discharge =
   }
 
 let global_object_nodischarge ?cat s ~cache ~subst =
-  let import i o = if Int.equal i 1 then forget_names cache o in
+  let import i o = if Int.equal i 1 then cache o in
   { (default_object s) with
-    cache_function = forget_names cache;
+    cache_function = cache;
     open_function = simple_open ?cat import;
     subst_function = (match subst with
         | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
@@ -212,8 +222,8 @@ let global_object ?cat s ~cache ~subst ~discharge =
 
 let superglobal_object_nodischarge s ~cache ~subst =
   { (default_object s) with
-    load_function = (fun _ x -> forget_names cache x);
-    cache_function = forget_names cache;
+    load_function = (fun _ x -> cache x);
+    cache_function = cache;
     subst_function = (match subst with
         | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
         | Some subst -> subst;

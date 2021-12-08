@@ -483,7 +483,7 @@ let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min
     (* auto detect template *)
     ComInductive.should_auto_template id (template && template_candidate ())
 
-let load_structure i (_, structure) = Structure.register structure
+let load_structure i structure = Structure.register structure
 
 let cache_structure o = load_structure 1 o
 

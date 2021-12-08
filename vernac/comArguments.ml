@@ -18,7 +18,7 @@ let smart_global r =
   Dumpglob.add_glob ?loc:r.loc gr;
   gr
 
-let cache_bidi_hints (_name, (gr, ohint)) =
+let cache_bidi_hints (gr, ohint) =
   match ohint with
   | None -> Pretyping.clear_bidirectionality_hint gr
   | Some nargs -> Pretyping.add_bidirectionality_hint gr nargs

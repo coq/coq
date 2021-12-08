@@ -57,7 +57,7 @@ let lib_ref s =
 let add_ref s c =
   table := CString.Map.add s c !table
 
-let cache_ref (_,(s,c)) =
+let cache_ref (s,c) =
   add_ref s c
 
 let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =

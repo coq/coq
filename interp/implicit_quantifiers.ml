@@ -44,10 +44,10 @@ let add_generalizable gen table =
   | Some l -> List.fold_left (fun table lid -> declare_generalizable_ident table lid)
       table l
 
-let cache_generalizable_type (_,(local,cmd)) =
+let cache_generalizable_type (local,cmd) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
-let load_generalizable_type _ (_,(local,cmd)) =
+let load_generalizable_type _ (local,cmd) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
 let in_generalizable : bool * lident list option -> obj =

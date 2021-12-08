@@ -335,10 +335,10 @@ let register_library m =
    - called at module or module type closing when a Require occurs in
      the module or module type
    - not called from a library (i.e. a module identified with a file) *)
-let load_require _ (_,(needed,modl,_)) =
+let load_require _ (needed,modl,_) =
   List.iter register_library needed
 
-let open_require i (_,(_,modl,export)) =
+let open_require i (_,modl,export) =
   Option.iter (fun export ->
       let mpl = List.map (fun m -> unfiltered, MPfile m) modl in
       (* TODO support filters in Require *)
@@ -357,12 +357,13 @@ let discharge_require o = Some o
 type require_obj = library_t list * DirPath.t list * bool option
 
 let in_require : require_obj -> obj =
-  declare_object {(default_object "REQUIRE") with
-       cache_function = cache_require;
-       load_function = load_require;
-       open_function = (fun _ _ -> assert false);
-       discharge_function = discharge_require;
-       classify_function = (fun o -> Anticipate o) }
+  declare_object
+    {(default_object "REQUIRE") with
+     cache_function = cache_require;
+     load_function = load_require;
+     open_function = (fun _ _ -> assert false);
+     discharge_function = discharge_require;
+     classify_function = (fun o -> Anticipate o) }
 
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)

@@ -103,14 +103,14 @@ let perform_instance i =
   let i = { is_class = i.inst_class; is_info = i.inst_info; is_impl = i.inst_impl } in
   Typeclasses.load_instance i
 
-let cache_instance (_, inst) = perform_instance inst
+let cache_instance inst = perform_instance inst
 
-let load_instance _ (_, inst) = match inst.inst_global with
+let load_instance _ inst = match inst.inst_global with
 | Local -> assert false
 | SuperGlobal -> perform_instance inst
 | Export -> ()
 
-let open_instance i (_, inst) = match inst.inst_global with
+let open_instance i inst = match inst.inst_global with
 | Local -> assert false
 | SuperGlobal -> perform_instance inst
 | Export -> if Int.equal i 1 then perform_instance inst
@@ -210,7 +210,7 @@ let declare_instance ?(warn = false) env sigma info local glob =
  * classes persistent object
  *)
 
-let cache_class (_,c) = load_class c
+let cache_class c = load_class c
 
 let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c

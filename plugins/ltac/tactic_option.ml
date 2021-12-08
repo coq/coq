@@ -20,8 +20,8 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
     locality := local;
     default_tactic := t
   in
-  let cache (_, (local, tac)) = set_default_tactic local tac in
-  let load (_, (local, tac)) =
+  let cache (local, tac) = set_default_tactic local tac in
+  let load (local, tac) =
     if not local then set_default_tactic local tac
   in
   let subst (s, (local, tac)) =

@@ -230,7 +230,7 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 (* Exportation of scopes *)
-let open_scope i (_,(local,op,sc)) =
+let open_scope i (local,op,sc) =
   if Int.equal i 1 then
     scope_stack :=
       if op then sc :: !scope_stack
@@ -1342,7 +1342,7 @@ let register_string_interpretation ?(allow_overwrite=false) uid (interp, uninter
   register_gen_interpretation allow_overwrite uid
     (InnerPrimToken.StringInterp interp, InnerPrimToken.StringUninterp uninterp)
 
-let cache_prim_token_interpretation (_,infos) =
+let cache_prim_token_interpretation infos =
   let ptii = infos.pt_interp_info in
   let sc = infos.pt_scope in
   check_scope ~tolerant:true sc;
@@ -2023,7 +2023,7 @@ type arguments_scope_discharge_request =
   | ArgsScopeManual
   | ArgsScopeNoDischarge
 
-let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
+let load_arguments_scope _ (_,r,n,scl,cls) =
   List.iter (Option.iter check_scope) scl;
   let initial_stamp = ScopeClassMap.empty in
   arguments_scope := GlobRef.Map.add r (scl,cls,initial_stamp) !arguments_scope

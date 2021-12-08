@@ -74,11 +74,11 @@ type object_name = full_path * Names.KerName.t
 
 type open_filter
 
-type 'a object_declaration = {
+type ('a,'b) object_declaration = {
   object_name : string;
-  cache_function : object_name * 'a -> unit;
-  load_function : int -> object_name * 'a -> unit;
-  open_function : open_filter -> int -> object_name * 'a -> unit;
+  cache_function : 'b -> unit;
+  load_function : int -> 'b -> unit;
+  open_function : open_filter -> int -> 'b -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function :  substitution * 'a -> 'a;
   discharge_function : 'a -> 'a option;
@@ -122,7 +122,7 @@ val filter_or :  open_filter -> open_filter -> open_filter
 
 *)
 
-val default_object : string -> 'a object_declaration
+val default_object : string -> ('a,'b) object_declaration
 
 (** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
@@ -153,10 +153,13 @@ and objects = (Names.Id.t * t) list
 and substitutive_objects = Names.MBId.t list * algebraic_objects
 
 val declare_object_full :
-  'a object_declaration -> 'a Dyn.tag
+  ('a,object_name * 'a) object_declaration -> 'a Dyn.tag
+
+val declare_named_object :
+  ('a,object_name * 'a) object_declaration -> ('a -> obj)
 
 val declare_object :
-  'a object_declaration -> ('a -> obj)
+  ('a,'a) object_declaration -> ('a -> obj)
 
 val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
@@ -183,33 +186,33 @@ variants.
 val local_object : string ->
   cache:('a -> unit) ->
   discharge:('a -> 'a option) ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 val local_object_nodischarge : string ->
   cache:('a -> unit) ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 val global_object : ?cat:category -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 val global_object_nodischarge : ?cat:category -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 val superglobal_object : string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 val superglobal_object_nodischarge : string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 (** {6 Debug} *)
 
