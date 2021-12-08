@@ -230,9 +230,7 @@ let diff_hyps o_idents_in_lines o_map n_idents_in_lines n_map =
   half_diff (List.flatten o_idents_in_lines) o_map  n_idents_in_lines n_map `Added;
   List.rev !rv
 
-
-type hyp = (Names.Id.t Context.binder_annot list * EConstr.t option * EConstr.t)
-type reified_goal = { name: string; ty: EConstr.t; hyps: hyp list; env : Environ.env; sigma: Evd.evar_map }
+type reified_goal = { ty: EConstr.t; env : Environ.env }
 
 (* XXX: Port to proofview, one day. *)
 (* open Proofview *)
@@ -243,23 +241,11 @@ let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot 
     | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
     | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm)
 
-let goal_repr sigma g =
+let process_goal sigma g =
   let evi = Evd.find sigma g in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let ty  = Evd.evar_concl evi in
-  (env, ty)
-
-let process_goal_concl sigma g : EConstr.t * Environ.env =
-  let (env, ty) = goal_repr sigma g in
-  (ty, env)
-
-let process_goal sigma g : reified_goal =
-  let (env, ty) = goal_repr sigma g in
-  let name = Proof.goal_uid g             in
-  (* compaction is usually desired [eg for better display] *)
-  let hyps      = Termops.compact_named_context (Environ.named_context env) in
-  let hyps      = List.map to_tuple hyps in
-  { name; ty; hyps; env; sigma }
+  { ty; env }
 
 let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
   Ppconstr.pr_lconstr_expr env sigma
@@ -280,11 +266,11 @@ let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
 let diff_concl ?og_s nsigma ng =
   let o_concl_pp = match og_s with
     | Some (og, osigma) ->
-      let (oty, oenv) = process_goal_concl osigma og in
+      let { ty = oty; env = oenv } = process_goal osigma og in
       pp_of_type oenv osigma oty
     | None -> Pp.mt()
   in
-  let (nty, nenv) = process_goal_concl nsigma ng in
+  let { ty = nty; env = nenv } = process_goal nsigma ng in
   let n_concl_pp = pp_of_type nenv nsigma nty in
 
   let show_removed = Some (show_removed ()) in
@@ -312,7 +298,7 @@ let goal_info goal sigma =
   let map = ref CString.Map.empty in
   let line_idents = ref [] in
   let build_hyp_info env sigma hyp =
-    let (names, body, ty) = hyp in
+    let (names, body, ty) = to_tuple hyp in
     let open Pp in
     let idents = List.map (fun x -> Names.Id.to_string x.Context.binder_name) names in
 
@@ -331,8 +317,10 @@ let goal_info goal sigma =
   in
 
   try
-    let { ty=ty; hyps=hyps; env=env } = process_goal sigma goal in
-    List.iter (build_hyp_info env sigma) (List.rev hyps);
+    let { ty=ty; env=env } = process_goal sigma goal in
+    (* compaction is usually desired [eg for better display] *)
+    let hyps = Termops.compact_named_context (Environ.named_context env) in
+    let () = List.iter (build_hyp_info env sigma) (List.rev hyps) in
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
   with _ -> ([], !map, Pp.mt ())
