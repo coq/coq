@@ -72,11 +72,6 @@ val add_anonymous_leaf : Libobject.obj -> unit
 
 val contents : unit -> library_segment
 
-(** The function [contents_after] returns the current library segment,
-  starting from a given section path. *)
-
-val contents_after : Libobject.object_name -> library_segment
-
 (** {6 Functions relative to current path } *)
 
 (** User-side names *)
