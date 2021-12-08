@@ -116,7 +116,7 @@ val fill_occ_pattern :
     [redex_of_pattern pat] if [pat] has no occurrence. *)
 val fill_rel_occ_pattern :
   env -> evar_map -> EConstr.t -> pattern -> occ ->
-    EConstr.t Evd.in_evar_universe_context * EConstr.t
+    evar_map * EConstr.t * EConstr.t
 
 (** *************************** Low level APIs ****************************** *)
 

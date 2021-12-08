@@ -1225,8 +1225,12 @@ let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
   (e, us), cl
 
 let fill_rel_occ_pattern env sigma cl pat occ =
-  try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
-  with NoMatch -> redex_of_pattern env pat, cl
+  let (e, us), cl =
+    try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
+    with NoMatch -> redex_of_pattern env pat, cl
+  in
+  let sigma = Evd.merge_universe_context sigma us in
+  sigma, e, cl
 
 (* clenup interface for external use *)
 let mk_tpattern ?p_origin env sigma0 sigma_t f dir c =

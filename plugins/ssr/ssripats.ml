@@ -730,8 +730,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   let sigma0 = sigma in
   let pat = Ssrmatching.interp_cpattern env sigma t None in
   let cl = Reductionops.nf_evar sigma cl0 in
-  let (c, ucst), cl = Ssrmatching.fill_rel_occ_pattern env sigma cl pat occ in
-  let sigma = Evd.merge_universe_context sigma ucst in
+  let sigma, c, cl = Ssrmatching.fill_rel_occ_pattern env sigma cl pat occ in
   let clr =
     Ssrcommon.interp_clr sigma (oclr, (Ssrmatching.tag_of_cpattern t,c)) in
   (* Historically in Coq, and hence in ssr, [case t] accepts [t] of type
