@@ -102,8 +102,8 @@ val in_filter : cat:category option -> open_filter -> bool
     On [cat:(Some category)], returns whether the filter allows
    opening objects in the given [category]. *)
 
-val simple_open : ?cat:category -> (int -> object_name * 'a -> unit) ->
-  open_filter -> int -> object_name * 'a -> unit
+val simple_open : ?cat:category -> ('i -> 'a -> unit) ->
+  open_filter -> 'i -> 'a -> unit
 (** Combinator for making objects with simple category-based open
    behaviour. When [cat:None], can be opened by Unfiltered, but also
    by Filtered with a negative set. *)
