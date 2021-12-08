@@ -243,16 +243,11 @@ let add_discharged_leaf id obj =
   cache_object (oname,newobj);
   add_entry oname (Leaf (AtomicObject newobj))
 
-let add_anonymous_leaf ?(cache_first = true) obj =
+let add_anonymous_leaf obj =
   let id = anonymous_id () in
   let oname = make_foname id in
-  if cache_first then begin
-    cache_object (oname,obj);
-    add_entry oname (Leaf (AtomicObject obj))
-  end else begin
-    add_entry oname (Leaf (AtomicObject obj));
-    cache_object (oname,obj)
-  end
+  cache_object (oname,obj);
+  add_entry oname (Leaf (AtomicObject obj))
 
 (* Modules. *)
 

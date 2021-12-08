@@ -320,7 +320,7 @@ let add_module_digest m =
   | Not_found ->
     m, NoDigest
 
-let cache_ml_objects (_,{mnames=mnames}) =
+let cache_ml_objects mnames =
   let iter (obj, _) = trigger_ml_object true true true obj in
   List.iter iter mnames
 
@@ -335,15 +335,21 @@ let inMLModule : ml_module_object -> Libobject.obj =
   let open Libobject in
   declare_object
     {(default_object "ML-MODULE") with
-      cache_function = cache_ml_objects;
+      cache_function = (fun _ -> ());
       load_function = load_ml_objects;
       subst_function = (fun (_,o) -> o);
       classify_function = classify_ml_objects }
 
 let declare_ml_modules local l =
+  if Global.sections_are_opened()
+  then user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
   let l = List.map mod_of_name l in
   let l = List.map add_module_digest l in
-  Lib.add_anonymous_leaf ~cache_first:false (inMLModule {mlocal=local; mnames=l})
+  Lib.add_anonymous_leaf (inMLModule {mlocal=local; mnames=l});
+  (* We can't put this in cache_function: it may declare other
+     objects, and when the current module is required we want to run
+     the ML-MODULE object before them. *)
+  cache_ml_objects l
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in
