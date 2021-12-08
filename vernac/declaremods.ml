@@ -418,7 +418,7 @@ let add_leaf id obj =
   let oname = Lib.make_foname id in
   cache_object (oname,obj);
   Lib.add_entry oname (Lib.Leaf obj);
-  oname
+  ()
 
 let add_leaves id objs =
   let oname = Lib.make_foname id in
@@ -817,7 +817,7 @@ let declare_module id args res mexpr_o fs =
   check_subtypes mp subs;
 
   let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
-  ignore (add_leaf id (ModuleObject sobjs));
+  add_leaf id (ModuleObject sobjs);
   mp
 
 end
@@ -895,7 +895,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   (* Subtyping checks *)
   check_subtypes_mt mp sub_mty_l;
 
-  ignore (add_leaf id (ModuleTypeObject sobjs));
+  add_leaf id (ModuleTypeObject sobjs);
   mp
 
 end
@@ -950,7 +950,7 @@ let declare_one_include (me_ast,annot) =
   let resolver = Global.add_include me is_mod inl in
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
   let aobjs = subst_aobjs subst aobjs in
-  ignore (add_leaf (Lib.current_mod_id ()) (IncludeObject aobjs))
+  add_leaf (Lib.current_mod_id ()) (IncludeObject aobjs)
 
 let declare_include me_asts = List.iter declare_one_include me_asts
 

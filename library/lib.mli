@@ -63,7 +63,7 @@ val add_anonymous_entry : node -> unit
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
-val add_leaf : Id.t -> Libobject.obj -> Libobject.object_name
+val add_leaf : Id.t -> Libobject.obj -> unit
 val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
 
 (** {6 ... } *)

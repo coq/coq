@@ -369,7 +369,7 @@ let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
       tacdef_type = t;
       tacdef_deprecation = deprecation;
     } in
-    ignore (Lib.add_leaf id (inTacDef def))
+    Lib.add_leaf id (inTacDef def)
   in
   List.iter iter defs
 
@@ -460,7 +460,7 @@ let register_typedef ?(local = false) isrec types =
     (id, typdef)
   in
   let types = List.map map types in
-  let iter (id, def) = ignore (Lib.add_leaf id (inTypDef def)) in
+  let iter (id, def) = Lib.add_leaf id (inTypDef def) in
   List.iter iter types
 
 let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
@@ -489,7 +489,7 @@ let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
     tacdef_type = t;
     tacdef_deprecation = deprecation;
   } in
-  ignore (Lib.add_leaf id (inTacDef def))
+  Lib.add_leaf id (inTacDef def)
 
 let register_open ?(local = false) qid (params, def) =
   let kn =
@@ -752,7 +752,7 @@ let register_notation ?deprecation ?(local = false) tkn lev body = match tkn, le
   let () = check_lowercase CAst.(make ?loc id) in
   let body = Tac2intern.globalize Id.Set.empty body in
   let abbr = { abbr_body = body; abbr_depr = deprecation } in
-  ignore (Lib.add_leaf id (inTac2Abbreviation abbr))
+  Lib.add_leaf id (inTac2Abbreviation abbr)
 | _ ->
   (* Check that the tokens make sense *)
   let entries = List.map ParseToken.parse_token tkn in
@@ -1009,7 +1009,7 @@ let register_prim_alg name params def =
   } in
   let def = (params, GTydAlg alg) in
   let def = { typdef_local = false; typdef_expr = def } in
-  ignore (Lib.add_leaf id (inTypDef def))
+  Lib.add_leaf id (inTypDef def)
 
 let coq_def n = KerName.make Tac2env.coq_prefix (Label.make n)
 
@@ -1040,7 +1040,7 @@ let inTac2Init : unit -> obj =
   }
 
 let _ = Mltop.declare_cache_obj begin fun () ->
-  ignore (Lib.add_leaf (Id.of_string "unit") (inTypDef def_unit));
+  Lib.add_leaf (Id.of_string "unit") (inTypDef def_unit);
   register_prim_alg "list" 1 [
     ("[]", []);
     ("::", [GTypVar 0; GTypRef (Other t_list, [GTypVar 0])]);

@@ -188,7 +188,7 @@ let inMD : bool * ltac_constant option * bool * glob_tactic_expr *
      classify_function = classify_md}
 
 let register_ltac for_ml local ?deprecation id tac =
-  ignore (Lib.add_leaf id (inMD (local, None, for_ml, tac, deprecation)))
+  Lib.add_leaf id (inMD (local, None, for_ml, tac, deprecation))
 
 let redefine_ltac local ?deprecation kn tac =
   Lib.add_anonymous_leaf (inMD (local, Some kn, false, tac, deprecation))

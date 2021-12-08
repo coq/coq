@@ -232,7 +232,7 @@ let register_constant kn kind local =
     cst_locl = local;
   } in
   let id = Label.to_id (Constant.label kn) in
-  let _ = Lib.add_leaf id o in
+  let () = Lib.add_leaf id o in
   update_tables kn
 
 let register_side_effect (c, body, role) =

@@ -235,7 +235,7 @@ let add_leaf id obj =
   let oname = make_foname id in
   cache_object (oname,obj);
   add_entry oname (Leaf (AtomicObject obj));
-  oname
+  ()
 
 let add_discharged_leaf id obj =
   let oname = make_foname id in
