@@ -606,7 +606,7 @@ let extr_lang : lang -> obj =
     ~cache:(fun l -> lang_ref := l)
     ~subst:None
 
-let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
+let extraction_language x = Lib.add_leaf (extr_lang x)
 
 (*s Extraction Inline/NoInline *)
 
@@ -641,7 +641,7 @@ let extraction_inline b l =
     (fun r -> match r with
        | GlobRef.ConstRef _ -> ()
        | _ -> error_constant r) refs;
-  Lib.add_anonymous_leaf (inline_extraction (b,refs))
+  Lib.add_leaf (inline_extraction (b,refs))
 
 (* Printing part *)
 
@@ -664,7 +664,7 @@ let reset_inline : unit -> obj =
     ~cache:(fun () -> inline_table := empty_inline_table)
     ~subst:None
 
-let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
+let reset_extraction_inline () = Lib.add_leaf (reset_inline ())
 
 (*s Extraction Implicit *)
 
@@ -713,7 +713,7 @@ let implicit_extraction : GlobRef.t * int_or_id list -> obj =
 
 let extraction_implicit r l =
   check_inside_section ();
-  Lib.add_anonymous_leaf (implicit_extraction (Smartlocate.global_with_alias r,l))
+  Lib.add_leaf (implicit_extraction (Smartlocate.global_with_alias r,l))
 
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
@@ -762,7 +762,7 @@ let blacklist_extraction : string list -> obj =
 
 let extraction_blacklist l =
   let l = List.rev l in
-  Lib.add_anonymous_leaf (blacklist_extraction l)
+  Lib.add_leaf (blacklist_extraction l)
 
 (* Printing part *)
 
@@ -776,7 +776,7 @@ let reset_blacklist : unit -> obj =
     ~cache:(fun ()-> blacklist_table := Id.Set.empty)
     ~subst:None
 
-let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
+let reset_extraction_blacklist () = Lib.add_leaf (reset_blacklist ())
 
 (*s Extract Constant/Inductive. *)
 
@@ -842,8 +842,8 @@ let extract_constant_inline inline r ids s =
             let nargs = Hook.get use_type_scheme_nb_args env typ in
             if not (Int.equal (List.length ids) nargs) then error_axiom_scheme ?loc:r.CAst.loc g nargs
           end;
-        Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
-        Lib.add_anonymous_leaf (in_customs (g,ids,s))
+        Lib.add_leaf (inline_extraction (inline,[g]));
+        Lib.add_leaf (in_customs (g,ids,s))
     | _ -> error_constant ?loc:r.CAst.loc g
 
 
@@ -856,15 +856,15 @@ let extract_inductive r s l optstr =
         let mib = Global.lookup_mind kn in
         let n = Array.length mib.mind_packets.(i).mind_consnames in
         if not (Int.equal n (List.length l)) then error_nb_cons ();
-        Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-        Lib.add_anonymous_leaf (in_customs (g,[],s));
-        Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
+        Lib.add_leaf (inline_extraction (true,[g]));
+        Lib.add_leaf (in_customs (g,[],s));
+        Option.iter (fun s -> Lib.add_leaf (in_custom_matchs (g,s)))
           optstr;
         List.iteri
           (fun j s ->
              let g = GlobRef.ConstructRef (ip,succ j) in
-             Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-             Lib.add_anonymous_leaf (in_customs (g,[],s))) l
+             Lib.add_leaf (inline_extraction (true,[g]));
+             Lib.add_leaf (in_customs (g,[],s))) l
     | _ -> error_inductive ?loc:r.CAst.loc g
 
 

@@ -35,7 +35,7 @@ let inCanonStruc : Instance.t * bool -> obj =
                   classify_function = (fun x -> Substitute);
                   discharge_function = discharge_canonical_structure }
 
-let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
+let add_canonical_structure x = Lib.add_leaf (inCanonStruc x)
 
 let declare_canonical_structure ?(local=false) ref =
   let env = Global.env () in

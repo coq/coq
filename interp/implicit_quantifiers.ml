@@ -58,7 +58,7 @@ let in_generalizable : bool * lident list option -> obj =
   }
 
 let declare_generalizable ~local gen =
- Lib.add_anonymous_leaf (in_generalizable (local, gen))
+ Lib.add_leaf (in_generalizable (local, gen))
 
 let find_generalizable_ident id = Id.Pred.mem (root_of_id id) !generalizable_table
 

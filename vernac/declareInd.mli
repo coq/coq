@@ -28,7 +28,7 @@ module Internal :
 sig
 
 type inductive_obj
-val objInductive : inductive_obj Libobject.Dyn.tag
+val objInductive : (Names.Id.t * inductive_obj) Libobject.Dyn.tag
 
 end
 

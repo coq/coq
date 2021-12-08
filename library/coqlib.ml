@@ -71,7 +71,7 @@ let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
 
 (** Replaces a binding ! *)
 let register_ref s c =
-  Lib.add_anonymous_leaf @@ inCoqlibRef (s,c)
+  Lib.add_leaf @@ inCoqlibRef (s,c)
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)

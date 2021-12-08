@@ -47,16 +47,16 @@ let do_univ_name ~check i dp src (id,univ) =
   if check then check_exists_universe sp;
   Nametab.push_universe i sp univ
 
-let cache_univ_names ((sp, _), (src, univs)) =
+let cache_univ_names (prefix, (src, univs)) =
   let depth = Lib.sections_depth () in
-  let dp = Libnames.pop_dirpath_n depth (Libnames.dirpath sp) in
+  let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
   List.iter (do_univ_name ~check:true (Nametab.Until 1) dp src) univs
 
-let load_univ_names i ((sp, _), (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Until i) (Libnames.dirpath sp) src) univs
+let load_univ_names i (prefix, (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir src) univs
 
-let open_univ_names i ((sp, _), (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Exactly i) (Libnames.dirpath sp) src) univs
+let open_univ_names i (prefix, (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir src) univs
 
 let discharge_univ_names = function
   | BoundUniv, _ -> None
@@ -64,7 +64,7 @@ let discharge_univ_names = function
 
 let input_univ_names : universe_name_decl -> Libobject.obj =
   let open Libobject in
-  declare_named_object
+  declare_named_object0
     { (default_object "Global universe name state") with
       cache_function = cache_univ_names;
       load_function = load_univ_names;
@@ -75,7 +75,7 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
 
 let input_univ_names (src, l) =
   if CList.is_empty l then ()
-  else Lib.add_anonymous_leaf (input_univ_names (src, l))
+  else Lib.add_leaf (input_univ_names (src, l))
 
 let invent_name (named,cnt) u =
   let rec aux i =

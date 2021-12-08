@@ -296,14 +296,14 @@ let vernac_arguments ~section_local reference args more_implicits flags =
     if section_local then
       Pretyping.add_bidirectionality_hint sr n
     else
-      Lib.add_anonymous_leaf (inBidiHints (sr, Some n))
+      Lib.add_leaf (inBidiHints (sr, Some n))
   end;
 
   if clear_bidi_hint then begin
     if section_local then
       Pretyping.clear_bidirectionality_hint sr
     else
-      Lib.add_anonymous_leaf (inBidiHints (sr, None))
+      Lib.add_leaf (inBidiHints (sr, None))
   end;
 
   if not (renaming_specified ||

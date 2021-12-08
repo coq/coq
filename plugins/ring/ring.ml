@@ -585,7 +585,7 @@ let add_theory0 env sigma name rth eqth morphth cst_tac (pre,post) power sign di
   let req = EConstr.to_constr sigma req in
   let sth = EConstr.to_constr sigma sth in
   let _ =
-    Lib.add_anonymous_leaf
+    Lib.add_leaf
       (theory_to_obj
         { ring_name = name;
           ring_carrier = r;
@@ -907,7 +907,7 @@ let add_field_theory0 env sigma name fth eqth morphth cst_tac inj (pre,post) pow
   let r = EConstr.to_constr sigma r in
   let req = EConstr.to_constr sigma req in
   let _ =
-    Lib.add_anonymous_leaf
+    Lib.add_leaf
       (ftheory_to_obj
         { field_name = name;
           field_carrier = r;

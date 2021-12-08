@@ -145,51 +145,57 @@ let add ~depr kn b t =
   mactab := KNmap.add kn entry !mactab
 
 let replace kn path t =
-  let path = KerName.modpath path in
   let entry _ e = { e with tac_body = t; tac_redef = path :: e.tac_redef } in
   mactab := KNmap.modify kn entry !mactab
 
 let tac_deprecation kn =
   try (KNmap.find kn !mactab).tac_deprecation with Not_found -> None
 
+type replace =
+  | NoReplace of Id.t
+  | Replace of ltac_constant
+
 type tacdef = {
   local : bool;
-  replace : ltac_constant option;
+  replace : replace;
   for_ml : bool;
   expr : glob_tactic_expr;
   depr : Deprecation.t option;
 }
 
-let load_md i ((sp, kn), {local; replace=id; for_ml=b; expr=t; depr}) = match id with
-| None ->
+let load_md i (prefix, {local; replace=repl; for_ml=b; expr=t; depr}) = match repl with
+| NoReplace id ->
+  let sp, kn = Lib.make_oname prefix id in
   let () = if not local then push_tactic (Nametab.Until i) sp kn in
   add ~depr kn b t
-| Some kn0 -> replace kn0 kn t
+| Replace kn0 -> replace kn0 prefix.Nametab.obj_mp t
 
-let open_md i ((sp, kn), {local; replace=id; for_ml=b; expr=t; depr}) = match id with
-| None ->
+let open_md i (prefix, {local; replace=repl; for_ml=b; expr=t; depr}) = match repl with
+| NoReplace id ->
   (* todo: generate a warning when non-unique, record choices for non-unique mappings *)
+  let sp, kn = Lib.make_oname prefix id in
   let () = if not local then push_tactic (Nametab.Exactly i) sp kn in
   add ~depr kn b t
-| Some kn0 -> replace kn0 kn t
+| Replace kn0 -> replace kn0 prefix.Nametab.obj_mp t
 
-let cache_md ((sp, kn), {local; replace=id; for_ml=b; expr=t; depr}) = match id with
-| None ->
+let cache_md (prefix, {local; replace=repl; for_ml=b; expr=t; depr}) = match repl with
+| NoReplace id ->
+  let sp, kn = Lib.make_oname prefix id in
   let () = push_tactic (Nametab.Until 1) sp kn in
   add ~depr kn b t
-| Some kn0 -> replace kn0 kn t
+| Replace kn0 -> replace kn0 prefix.Nametab.obj_mp t
 
-let subst_kind subst id = match id with
-| None -> None
-| Some kn -> Some (Mod_subst.subst_kn subst kn)
+let subst_kind subst = function
+| NoReplace _ as repl -> repl
+| Replace kn -> Replace (Mod_subst.subst_kn subst kn)
 
-let subst_md (subst, {local; replace=id; for_ml; expr=t; depr}) =
-  {local; replace=subst_kind subst id; for_ml; expr=Tacsubst.subst_tactic subst t; depr}
+let subst_md (subst, {local; replace=repl; for_ml; expr=t; depr}) =
+  {local; replace=subst_kind subst repl; for_ml; expr=Tacsubst.subst_tactic subst t; depr}
 
 let classify_md o = Substitute
 
 let inMD : tacdef -> obj =
-  declare_named_object {(default_object "TAC-DEFINITION") with
+  declare_named_object0 {(default_object "TAC-DEFINITION") with
      cache_function = cache_md;
      load_function = load_md;
      open_function = simple_open open_md;
@@ -197,7 +203,7 @@ let inMD : tacdef -> obj =
      classify_function = classify_md}
 
 let register_ltac for_ml local ?deprecation id tac =
-  Lib.add_leaf id (inMD {local; replace=None; for_ml; expr=tac; depr=deprecation})
+  Lib.add_leaf (inMD {local; replace=NoReplace id; for_ml; expr=tac; depr=deprecation})
 
 let redefine_ltac local ?deprecation kn tac =
-  Lib.add_anonymous_leaf (inMD {local; replace=Some kn; for_ml=false; expr=tac; depr=deprecation})
+  Lib.add_leaf (inMD {local; replace=Replace kn; for_ml=false; expr=tac; depr=deprecation})

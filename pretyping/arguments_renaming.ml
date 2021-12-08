@@ -73,7 +73,7 @@ let rename_arguments local r names =
     | _ -> ()
   in
   let req = if local then ReqLocal else ReqGlobal (r, names) in
-  Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))
+  Lib.add_leaf (inRenameArgs (req, (r, names)))
 
 let arguments_names r = GlobRef.Map.find r !name_table
 

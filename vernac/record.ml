@@ -504,7 +504,7 @@ let inStruc : Structure.t -> Libobject.obj =
     rebuild_function = rebuild_structure; }
 
 let declare_structure_entry o =
-  Lib.add_anonymous_leaf (inStruc o)
+  Lib.add_leaf (inStruc o)
 
 (** In the type of every projection, the record is bound to a variable named
   using the first character of the record type. We rename it to avoid

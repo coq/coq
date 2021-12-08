@@ -76,17 +76,19 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
 let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit) =
   List.iter (fun d -> fn (GlobRef.VarRef (NamedDecl.get_id d)) None env (NamedDecl.get_type d))
     (Environ.named_context env);
-  let iter_obj (sp, kn) lobj = match lobj with
+  let iter_obj (_, kn) lobj = match lobj with
     | AtomicObject o ->
       let handler =
-        DynHandle.add Declare.Internal.Constant.tag begin fun obj ->
+        DynHandle.add Declare.Internal.Constant.tag begin fun (id,obj) ->
+          let kn = KerName.make (KerName.modpath kn) (Label.of_id id) in
           let cst = Global.constant_of_delta_kn kn in
           let gr = GlobRef.ConstRef cst in
           let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
           let kind = Declare.Internal.Constant.kind obj in
           fn gr (Some kind) env typ
         end @@
-        DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
+        DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
+          let kn = KerName.make (KerName.modpath kn) (Label.of_id id) in
           let mind = Global.mind_of_delta_kn kn in
           let mib = Global.lookup_mind mind in
           let iter_packet i mip =

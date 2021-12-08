@@ -37,7 +37,7 @@ let inScheme : string * (inductive * Constant.t) array -> Libobject.obj =
     ~discharge:discharge_scheme
 
 let declare_scheme kind indcl =
-  Lib.add_anonymous_leaf (inScheme (kind,indcl))
+  Lib.add_leaf (inScheme (kind,indcl))
 
 let lookup_scheme kind ind = CString.Map.find kind (Indmap.find ind !scheme_map)
 

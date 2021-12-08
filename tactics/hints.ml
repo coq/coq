@@ -1035,7 +1035,7 @@ let inDB : db_obj -> obj =
 
 let create_hint_db l n ts b =
   let hint = {db_local=l; db_name=n; db_use_dn=b; db_ts=ts} in
-  Lib.add_anonymous_leaf (inDB hint)
+  Lib.add_leaf (inDB hint)
 
 type hint_action =
   | AddTransparency of {
@@ -1287,7 +1287,7 @@ let remove_hints ~locality dbnames grs =
     List.iter
       (fun dbname ->
         let hint = make_hint ~locality dbname (RemoveHints grs) in
-        Lib.add_anonymous_leaf (inAutoHint hint))
+        Lib.add_leaf (inAutoHint hint))
       dbnames
 
 (**************************************************************************)
@@ -1322,21 +1322,21 @@ let add_resolves env sigma clist ~locality dbnames =
       in
       let () = if not !Flags.quiet then List.iter check r in
       let hint = make_hint ~locality dbname (AddHints r) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_unfolds l ~locality dbnames =
   List.iter
     (fun dbname ->
       let hint = make_hint ~locality dbname (AddHints (List.map make_unfold l)) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_cuts l ~locality dbnames =
   List.iter
     (fun dbname ->
       let hint = make_hint ~locality dbname (AddCut l) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_mode l m ~locality dbnames =
@@ -1344,14 +1344,14 @@ let add_mode l m ~locality dbnames =
     (fun dbname ->
       let m' = make_mode l m in
       let hint = make_hint ~locality dbname (AddMode { gref = l; mode = m' }) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_transparency l b ~locality dbnames =
   List.iter
     (fun dbname ->
       let hint = make_hint ~locality dbname (AddTransparency { grefs = l; state = b }) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_extern info tacast ~locality dbname =
@@ -1361,7 +1361,7 @@ let add_extern info tacast ~locality dbname =
   in
   let hint = make_hint ~locality dbname
                        (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
-  Lib.add_anonymous_leaf (inAutoHint hint)
+  Lib.add_leaf (inAutoHint hint)
 
 let add_externs info tacast ~locality dbnames =
   List.iter (add_extern info tacast ~locality) dbnames
@@ -1371,7 +1371,7 @@ let add_trivials env sigma l ~locality dbnames =
     (fun dbname ->
       let l = List.map (fun (name, c) -> make_trivial env sigma ~name c) l in
       let hint = make_hint ~locality dbname (AddHints l) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 type hnf = bool

@@ -130,18 +130,41 @@ and objects = (Names.Id.t * t) list
 
 and substitutive_objects = MBId.t list * algebraic_objects
 
-module DynMap = Dyn.Map (struct type 'a t = ('a,object_name * 'a) object_declaration end)
+module DynMap = Dyn.Map (struct type 'a t = ('a, Nametab.object_prefix * 'a) object_declaration end)
 
 let cache_tab = ref DynMap.empty
 
-let declare_object_full odecl =
+let declare_object_gen odecl =
   let na = odecl.object_name in
   let tag = Dyn.create na in
   let () = cache_tab := DynMap.add tag odecl !cache_tab in
   tag
 
+let make_oname Nametab.{ obj_dir; obj_mp } id =
+  Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id)
+
+let declare_object_full odecl =
+  let odecl =
+    let oname = make_oname in
+    { object_name = odecl.object_name;
+      cache_function = (fun (p, (id, o)) -> odecl.cache_function (oname p id, o));
+      load_function = (fun i (p, (id, o)) -> odecl.load_function i (oname p id, o));
+      open_function = (fun f i (p, (id, o)) -> odecl.open_function f i (oname p id, o));
+      classify_function = (fun (id, o) -> odecl.classify_function o);
+      subst_function = (fun (subst, (id, o)) -> id, odecl.subst_function (subst, o));
+      discharge_function = (fun (id, o) -> Option.map (fun x -> id, x) (odecl.discharge_function o));
+      rebuild_function = Util.on_snd odecl.rebuild_function;
+    }
+  in
+  declare_object_gen odecl
+
 let declare_named_object odecl =
   let tag = declare_object_full odecl in
+  let infun id v = Dyn.Dyn (tag, (id, v)) in
+  infun
+
+let declare_named_object0 odecl =
+  let tag = declare_object_gen odecl in
   let infun v = Dyn.Dyn (tag, v) in
   infun
 
@@ -153,7 +176,9 @@ let declare_object odecl =
       open_function = (fun f i (_,o) -> odecl.open_function f i o);
     }
   in
-  declare_named_object odecl
+  let tag = declare_object_gen odecl in
+  let infun v = Dyn.Dyn (tag, v) in
+  infun
 
 let cache_object (sp, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in

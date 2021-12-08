@@ -323,7 +323,7 @@ let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
     tacobj_body = { alias_args = ids; alias_body = tac; alias_deprecation = deprecation };
     tacobj_forml = forml;
   } in
-  Lib.add_anonymous_leaf (inTacticGrammar tacobj)
+  Lib.add_leaf (inTacticGrammar tacobj)
 
 let add_tactic_notation local n ?deprecation prods e =
   let ids = List.map_filter cons_production_parameter prods in

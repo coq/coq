@@ -67,7 +67,7 @@ let declare_reduction_effect funkey f =
 
 (** A function to set the value of the print function *)
 let set_reduction_effect x funkey =
-  Lib.add_anonymous_leaf (inReductionEffect (x,funkey))
+  Lib.add_leaf (inReductionEffect (x,funkey))
 
 
 (** Machinery to custom the behavior of the reduction *)
@@ -130,7 +130,7 @@ module ReductionBehaviour = struct
     }
 
   let set ~local r b =
-    Lib.add_anonymous_leaf (inRedBehaviour (local, (r, b)))
+    Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
   let get r = GlobRef.Map.find_opt r !table
 

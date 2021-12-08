@@ -21,6 +21,7 @@ type export = bool option (* None for a Module Type *)
 
 val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
 val make_foname : Names.Id.t -> Libobject.object_name
+val oname_prefix : Libobject.object_name -> Nametab.object_prefix
 
 type node =
   | Leaf of Libobject.t
@@ -59,8 +60,7 @@ val add_anonymous_entry : node -> unit
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
-val add_leaf : Id.t -> Libobject.obj -> unit
-val add_anonymous_leaf : Libobject.obj -> unit
+val add_leaf : Libobject.obj -> unit
 
 (** {6 ... } *)
 

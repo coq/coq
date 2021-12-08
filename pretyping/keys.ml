@@ -115,7 +115,7 @@ let inKeys : key_obj -> obj =
     ~discharge:discharge_keys
 
 let declare_equiv_keys ref ref' =
-  Lib.add_anonymous_leaf (inKeys (ref,ref'))
+  Lib.add_leaf (inKeys (ref,ref'))
 
 let constr_key kind c =
   try

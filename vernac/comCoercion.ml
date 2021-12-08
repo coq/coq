@@ -284,7 +284,7 @@ let declare_coercion coef typ ?(local = false) ~isid ~src:cls ~target:clt ~param
     coe_target = clt;
     coe_param = ps;
   } in
-  Lib.add_anonymous_leaf (inCoercion c)
+  Lib.add_leaf (inCoercion c)
 
 (*
 nom de la fonction coercion

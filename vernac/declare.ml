@@ -203,7 +203,7 @@ let discharge_constant obj = Some obj
 
 let classify_constant cst = Libobject.Substitute
 
-let (objConstant : constant_obj Libobject.Dyn.tag) =
+let (objConstant : (Id.t * constant_obj) Libobject.Dyn.tag) =
   let open Libobject in
   declare_object_full { (default_object "CONSTANT") with
     cache_function = cache_constant;
@@ -220,12 +220,9 @@ let update_tables c =
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c)
 
 let register_constant kn kind local =
-  let o = inConstant {
-    cst_kind = kind;
-    cst_locl = local;
-  } in
   let id = Label.to_id (Constant.label kn) in
-  let () = Lib.add_leaf id o in
+  let o = inConstant (id, { cst_kind = kind; cst_locl = local; }) in
+  let () = Lib.add_leaf o in
   update_tables kn
 
 let register_side_effect (c, body, role) =
@@ -479,10 +476,10 @@ type variable_declaration =
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
-let objVariable : Id.t Libobject.Dyn.tag =
+let objVariable : (Id.t * unit) Libobject.Dyn.tag =
   let open Libobject in
   declare_object_full { (default_object "VARIABLE") with
-    classify_function = (fun _ -> Dispose)}
+    classify_function = (fun () -> Dispose)}
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
@@ -523,7 +520,7 @@ let declare_variable_core ~name ~kind d =
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});
-  Lib.add_anonymous_leaf (inVariable name);
+  Lib.add_leaf (inVariable (name,()));
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 

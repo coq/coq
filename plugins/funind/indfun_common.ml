@@ -266,7 +266,7 @@ let find_Function_of_graph ind = Indmap.find_opt ind !from_graph
 
 let update_Function finfo =
   (* Pp.msgnl (pr_info finfo); *)
-  Lib.add_anonymous_leaf (in_Function finfo)
+  Lib.add_leaf (in_Function finfo)
 
 let add_Function is_general f =
   let f_id = Label.to_id (Constant.label f) in

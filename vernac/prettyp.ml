@@ -674,21 +674,23 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
    no reason that an object in the stack corresponds to a user-facing
    declaration. It may have been so at the time this was written, but this
    needs to be done in a more principled way. *)
-let gallina_print_leaf_entry env sigma with_values ((sp, kn),lobj) =
+let gallina_print_leaf_entry env sigma with_values ((_, kn),lobj) =
   let sep = if with_values then " = " else " : " in
   match lobj with
   | AtomicObject o ->
     let handler =
-      DynHandle.add Declare.Internal.objVariable begin fun id ->
+      DynHandle.add Declare.Internal.objVariable begin fun (id,()) ->
           (* Outside sections, VARIABLES still exist but only with universes
              constraints *)
           (try Some(print_named_decl env sigma id) with Not_found -> None)
       end @@
-      DynHandle.add Declare.Internal.Constant.tag begin fun _ ->
-          Some (print_constant with_values sep (Constant.make1 kn) None)
+      DynHandle.add Declare.Internal.Constant.tag begin fun (id,_) ->
+        let kn = Constant.make2 (KerName.modpath kn) (Label.of_id id) in
+        Some (print_constant with_values sep kn None)
       end @@
-      DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
-          Some (gallina_print_inductive (MutInd.make1 kn) None)
+      DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
+        let kn = MutInd.make2 (KerName.modpath kn) (Label.of_id id) in
+        Some (gallina_print_inductive kn None)
       end @@
       DynHandle.empty
     in
@@ -792,7 +794,8 @@ let print_full_pure_context env sigma =
   let rec prec = function
   | ((_,kn),Lib.Leaf AtomicObject lobj)::rest ->
     let handler =
-      DynHandleF.add Declare.Internal.Constant.tag begin fun _ ->
+      DynHandleF.add Declare.Internal.Constant.tag begin fun (id,_) ->
+          let kn = KerName.make (KerName.modpath kn) (Label.of_id id) in
           let con = Global.constant_of_delta_kn kn in
           let cb = Global.lookup_constant con in
           let typ = cb.const_type in
@@ -815,7 +818,8 @@ let print_full_pure_context env sigma =
                    print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ)
           ++ str "." ++ fnl () ++ fnl ()
       end @@
-      DynHandleF.add DeclareInd.Internal.objInductive begin fun _ ->
+      DynHandleF.add DeclareInd.Internal.objInductive begin fun (id,_) ->
+          let kn = KerName.make (KerName.modpath kn) (Label.of_id id) in
           let mind = Global.mind_of_delta_kn kn in
           let mib = Global.lookup_mind mind in
           pr_mutual_inductive_body (Global.env()) mind mib None ++

@@ -53,7 +53,7 @@ module AdaptorDb = struct
       ~subst:(Some subst_adaptor)
 
   let declare kind terms =
-    List.iter (fun term -> Lib.add_anonymous_leaf (in_db (kind,term)))
+    List.iter (fun term -> Lib.add_leaf (in_db (kind,term)))
       (List.rev terms)
 
 end

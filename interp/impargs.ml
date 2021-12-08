@@ -639,7 +639,7 @@ let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
 let declare_implicits_gen req flags ref =
   let imps = compute_global_implicits flags ref in
-  Lib.add_anonymous_leaf (inImplicits (req,[ref,imps]))
+  Lib.add_leaf (inImplicits (req,[ref,imps]))
 
 let declare_implicits local ref =
   let flags = { !implicit_args with auto = true } in
@@ -661,7 +661,7 @@ let declare_mib_implicits kn =
   let imps = Array.map_to_list
     (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
     (compute_mib_implicits flags kn) in
-    Lib.add_anonymous_leaf
+    Lib.add_leaf
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
 (* Declare manual implicits *)
@@ -702,7 +702,7 @@ let declare_manual_implicits local ref ?enriching l =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length autoimpls))
   in
-  Lib.add_anonymous_leaf (inImplicits (req,[ref,l]))
+  Lib.add_leaf (inImplicits (req,[ref,l]))
 
 let maybe_declare_manual_implicits local ref ?enriching l =
   if List.exists (fun x -> x.CAst.v <> None) l then
@@ -753,7 +753,7 @@ let set_implicits local ref l =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length autoimpls))
   in
-  Lib.add_anonymous_leaf (inImplicits (req,[ref,l']))
+  Lib.add_leaf (inImplicits (req,[ref,l']))
 
 let extract_impargs_data impls =
   let rec aux p = function

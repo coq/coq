@@ -258,7 +258,7 @@ let inScope : bool * bool * scope_item -> obj =
       classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
-  Lib.add_anonymous_leaf (inScope (local,opening,OpenScopeItem (normalize_scope sc)))
+  Lib.add_leaf (inScope (local,opening,OpenScopeItem (normalize_scope sc)))
 
 let empty_scope_stack = []
 
@@ -1373,7 +1373,7 @@ let inPrimTokenInterp : prim_token_infos -> obj =
      classify_function = classify_prim_token_interpretation}
 
 let enable_prim_token_interpretation infos =
-  Lib.add_anonymous_leaf (inPrimTokenInterp infos)
+  Lib.add_leaf (inPrimTokenInterp infos)
 
 (** Compatibility.
     Avoid the next two functions, they will now store unnecessary
@@ -2098,7 +2098,7 @@ let inArgumentsScope : arguments_scope_obj -> obj =
 let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
 let declare_arguments_scope_gen req r n (scl,cls) =
-  Lib.add_anonymous_leaf (inArgumentsScope (req,r,n,scl,cls))
+  Lib.add_leaf (inArgumentsScope (req,r,n,scl,cls))
 
 let declare_arguments_scope local r scl =
   let req = if is_local local r then ArgsScopeNoDischarge else ArgsScopeManual in

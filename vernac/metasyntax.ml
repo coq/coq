@@ -1656,7 +1656,7 @@ let add_reserved_notation ~local ~infix ({CAst.loc;v=df},mods) =
   let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
   let synext = make_syntax_rules true main_data ntn sd in
   List.iter (fun f -> f ()) sd.msgs;
-  Lib.add_anonymous_leaf (inSyntaxExtension(local,(ntn,synext)))
+  Lib.add_leaf (inSyntaxExtension(local,(ntn,synext)))
 
 (* Notations associated to a where clause *)
 
@@ -1686,16 +1686,16 @@ let prepare_where_notation decl_ntn =
 let add_notation_interpretation ~local env (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
   let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
   let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
-  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
-  Lib.add_anonymous_leaf (inNotation notation);
+  syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
+  Lib.add_leaf (inNotation notation);
   Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
 
 (* interpreting a where clause *)
 let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
   let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
   let notation = make_notation_interpretation ~local:true main_data notation_symbols ntn syntax_rules df env ~impls c sc in
-  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (true,(ntn,sy)))) syntax_rules;
-  Lib.add_anonymous_leaf (inNotation notation);
+  syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (true,(ntn,sy)))) syntax_rules;
+  Lib.add_leaf (inNotation notation);
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point for command Notation *)
@@ -1729,8 +1729,8 @@ let add_notation ~local ~infix deprecation env c ({CAst.loc;v=df},modifiers) sc 
   (* Build the interpretation *)
   let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
   (* Declare both syntax and interpretation *)
-  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
-  Lib.add_anonymous_leaf (inNotation notation);
+  syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
+  Lib.add_leaf (inNotation notation);
   (* Dump the location of the notation for coqdoc *)
   Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
 
@@ -1801,16 +1801,16 @@ let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
       classify_function = classify_scope_command}
 
 let declare_scope local scope =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDeclare))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeDeclare))
 
 let add_delimiters local scope key =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimAdd key))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeDelimAdd key))
 
 let remove_delimiters local scope =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimRemove))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeDelimRemove))
 
 let add_class_scope local scope cl =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
 let interp_syndef_modifiers deprecation modl =
   let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:true deprecation modl in
@@ -1874,4 +1874,4 @@ let declare_custom_entry local s =
   if Egramcoq.exists_custom_entry s then
     user_err Pp.(str "Custom entry " ++ str s ++ str " already exists.")
   else
-    Lib.add_anonymous_leaf (inCustomEntry (local,s))
+    Lib.add_leaf (inCustomEntry (local,s))

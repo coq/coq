@@ -565,10 +565,10 @@ module Internal : sig
   (* Liboject exports *)
   module Constant : sig
     type t
-    val tag : t Libobject.Dyn.tag
+    val tag : (Id.t * t) Libobject.Dyn.tag
     val kind : t -> Decls.logical_kind
   end
 
-  val objVariable : Id.t Libobject.Dyn.tag
+  val objVariable : (Id.t * unit) Libobject.Dyn.tag
 
 end

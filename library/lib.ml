@@ -21,11 +21,12 @@ module NamedDecl = Context.Named.Declaration
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
 
-(* let make_oname (dirpath,(mp,dir)) id = *)
 let make_oname Nametab.{ obj_dir; obj_mp } id =
   Names.(make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
 
-(* let make_oname (dirpath,(mp,dir)) id = *)
+let oname_prefix (sp, kn) =
+  { Nametab.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
+
 type node =
   | Leaf of Libobject.t
   | CompilingLibrary of Nametab.object_prefix
@@ -43,7 +44,7 @@ let module_kind is_type =
   if is_type then "module type" else "module"
 
 let iter_objects f i prefix =
-  List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
+  List.iter (fun (id,obj) -> f i (prefix, obj))
 
 let load_atomic_objects i pr = iter_objects load_object i pr
 let open_atomic_objects f i pr = iter_objects (open_object f) i pr
@@ -125,6 +126,7 @@ let library_dp () =
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
 
+let prefix () = !lib_state.path_prefix
 let cwd () = !lib_state.path_prefix.Nametab.obj_dir
 let current_mp () = !lib_state.path_prefix.Nametab.obj_mp
 let current_sections () = Safe_typing.sections_of_safe_env (Global.safe_env())
@@ -221,24 +223,16 @@ let anonymous_id =
 let add_anonymous_entry node =
   add_entry (make_foname (anonymous_id ())) node
 
-let add_leaf id obj =
-  if ModPath.equal (current_mp ()) ModPath.initial then
-    user_err Pp.(str "No session module started (use -top dir)");
-  let oname = make_foname id in
-  cache_object (oname,obj);
-  add_entry oname (Leaf (AtomicObject obj));
-  ()
-
 let add_discharged_leaf id obj =
   let oname = make_foname id in
   let newobj = rebuild_object obj in
-  cache_object (oname,newobj);
+  cache_object (prefix(),newobj);
   add_entry oname (Leaf (AtomicObject newobj))
 
-let add_anonymous_leaf obj =
+let add_leaf obj =
   let id = anonymous_id () in
   let oname = make_foname id in
-  cache_object (oname,obj);
+  cache_object (prefix(),obj);
   add_entry oname (Leaf (AtomicObject obj))
 
 (* Modules. *)

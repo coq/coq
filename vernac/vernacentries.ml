@@ -1132,7 +1132,7 @@ let inExportNames = Libobject.declare_object
 
 let import_names ~export m ns =
   let ns = interp_names m ns in
-  if export then Lib.add_anonymous_leaf (inExportNames ns)
+  if export then Lib.add_leaf (inExportNames ns)
   else cache_names ns
 
 let vernac_import export cats refl =

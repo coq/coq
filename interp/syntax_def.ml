@@ -70,7 +70,7 @@ let subst_syntax_constant (subst,(local,syndef)) =
 let classify_syntax_constant (local,_) =
   if local then Dispose else Substitute
 
-let in_syntax_constant : (bool * syndef) -> obj =
+let in_syntax_constant : Id.t -> (bool * syndef) -> obj =
   declare_named_object {(default_object "SYNDEF") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
@@ -86,7 +86,7 @@ let declare_syntactic_definition ~local ?(also_in_cases_pattern=true) deprecatio
       syndef_also_in_cases_pattern = also_in_cases_pattern;
     }
   in
-  Lib.add_leaf id (in_syntax_constant (local,syndef))
+  Lib.add_leaf (in_syntax_constant id (local,syndef))
 
 let pr_syndef kn = pr_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn)
 

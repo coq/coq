@@ -104,8 +104,8 @@ module MakeTable =
                 Libobject.subst_function = subst_options;
                 Libobject.classify_function = (fun x -> Substitute)}
         in
-        ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
-         (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
+        ((fun c -> Lib.add_leaf (inGo (GOadd, c))),
+         (fun c -> Lib.add_leaf (inGo (GOrmv, c))))
 
     let print_table table_name printer table =
       Feedback.msg_notice
@@ -294,7 +294,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
             subst_function = subst_options;
             discharge_function = discharge_options;
             classify_function = classify_options } in
-      (fun l m v -> let v = preprocess v in Lib.add_anonymous_leaf (options (l, m, v)))
+      (fun l m v -> let v = preprocess v in Lib.add_leaf (options (l, m, v)))
   in
   let warn () = if depr then warn_deprecated_option key in
   let cread () = cast (read ()) in

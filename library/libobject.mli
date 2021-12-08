@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Libnames
+open Nametab
 open Mod_subst
 
 (** [Libobject] declares persistent objects, given with methods:
@@ -69,7 +69,7 @@ type substitutivity = Dispose | Substitute | Keep | Anticipate
    can be substituted and a "syntactic" [full_path] which can be printed
 *)
 
-type object_name = full_path * Names.KerName.t
+type object_name = Libnames.full_path * Names.KerName.t
 
 type open_filter
 
@@ -152,17 +152,20 @@ and objects = (Names.Id.t * t) list
 and substitutive_objects = Names.MBId.t list * algebraic_objects
 
 val declare_object_full :
-  ('a,object_name * 'a) object_declaration -> 'a Dyn.tag
+  ('a,object_name * 'a) object_declaration -> (Names.Id.t * 'a) Dyn.tag
 
 val declare_named_object :
-  ('a,object_name * 'a) object_declaration -> ('a -> obj)
+  ('a,object_name * 'a) object_declaration -> (Names.Id.t -> 'a -> obj)
+
+val declare_named_object0 :
+  ('a,object_prefix * 'a) object_declaration -> ('a -> obj)
 
 val declare_object :
   ('a,'a) object_declaration -> ('a -> obj)
 
-val cache_object : object_name * obj -> unit
-val load_object : int -> object_name * obj -> unit
-val open_object : open_filter -> int -> object_name * obj -> unit
+val cache_object : object_prefix * obj -> unit
+val load_object : int -> object_prefix * obj -> unit
+val open_object : open_filter -> int -> object_prefix * obj -> unit
 val subst_object : substitution * obj -> obj
 val classify_object : obj -> substitutivity
 val discharge_object : obj -> obj option

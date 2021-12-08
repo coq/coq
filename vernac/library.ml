@@ -380,14 +380,14 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
   if Lib.is_module_or_modtype () then
     begin
       warn_require_in_module ();
-      Lib.add_anonymous_leaf (in_require (needed,modrefl,None));
+      Lib.add_leaf (in_require (needed,modrefl,None));
       Option.iter (fun export ->
           (* TODO import filters *)
           List.iter (fun m -> Declaremods.import_module unfiltered ~export (MPfile m)) modrefl)
         export
     end
   else
-    Lib.add_anonymous_leaf (in_require (needed,modrefl,export))
+    Lib.add_leaf (in_require (needed,modrefl,export))
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)

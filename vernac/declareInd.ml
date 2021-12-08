@@ -57,7 +57,7 @@ let cache_inductive ((sp, kn), names) =
 let discharge_inductive names =
   Some names
 
-let objInductive : inductive_obj Libobject.Dyn.tag =
+let objInductive : (Id.t * inductive_obj) Libobject.Dyn.tag =
   let open Libobject in
   declare_object_full {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
@@ -88,7 +88,7 @@ let inPrim : (Projection.Repr.t * Constant.t) -> Libobject.obj =
     classify_function = (fun x -> Substitute);
     discharge_function = discharge_prim }
 
-let declare_primitive_projection p c = Lib.add_anonymous_leaf (inPrim (p,c))
+let declare_primitive_projection p c = Lib.add_leaf (inPrim (p,c))
 
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
 
@@ -108,7 +108,7 @@ let declare_mind ?typing_flags mie =
       Declare.check_exists typ;
       List.iter Declare.check_exists cons) names;
   let mind = Global.add_mind ?typing_flags id mie in
-  let () = Lib.add_leaf id (inInductive { ind_names = names }) in
+  let () = Lib.add_leaf (inInductive (id, { ind_names = names })) in
   if is_unsafe_typing_flags() then feedback_axiom ();
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
   Impargs.declare_mib_implicits mind;

@@ -345,7 +345,7 @@ let declare_ml_modules local l =
   then user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
   let l = List.map mod_of_name l in
   let l = List.map add_module_digest l in
-  Lib.add_anonymous_leaf (inMLModule {mlocal=local; mnames=l});
+  Lib.add_leaf (inMLModule {mlocal=local; mnames=l});
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
      the ML-MODULE object before them. *)

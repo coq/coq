@@ -121,7 +121,7 @@ let inStrategy : strategy_obj -> obj =
 
 
 let set_strategy local str =
-  Lib.add_anonymous_leaf (inStrategy (local,str))
+  Lib.add_leaf (inStrategy (local,str))
 
 (* Generic reduction: reduction functions used in reduction tactics *)
 
@@ -360,4 +360,4 @@ let inReduction : bool * string * red_expr -> obj =
        (fun ((b,_,_)) -> if b then Dispose else Substitute) }
 
 let declare_red_expr locality s expr =
-    Lib.add_anonymous_leaf (inReduction (locality,s,expr))
+    Lib.add_leaf (inReduction (locality,s,expr))

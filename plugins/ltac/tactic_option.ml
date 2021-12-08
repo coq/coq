@@ -37,7 +37,7 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
         subst_function = subst}
   in
   let put local tac =
-    Lib.add_anonymous_leaf (input (local, tac))
+    Lib.add_leaf (input (local, tac))
   in
   let get () = !locality, Tacinterp.eval_tactic !default_tactic in
   let print () =

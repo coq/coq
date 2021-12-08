@@ -110,7 +110,7 @@ let register_ssrtac name f prods =
     pptac_prods = prods
   } in
   let obj () =
-    Lib.add_anonymous_leaf (inSsrGrammar (key, body, parule)) in
+    Lib.add_leaf (inSsrGrammar (key, body, parule)) in
   Mltop.declare_cache_obj obj __coq_plugin_name;
   key
 

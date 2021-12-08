@@ -255,7 +255,7 @@ let load_modtype i sp mp sobjs =
 
 let rec load_object i (name, obj) =
   match obj with
-  | AtomicObject o -> Libobject.load_object i (name, o)
+  | AtomicObject o -> Libobject.load_object i (Lib.oname_prefix name, o)
   | ModuleObject sobjs -> do_module' false load_objects i (name, sobjs)
   | ModuleTypeObject sobjs ->
     let (sp,kn) = name in
@@ -350,7 +350,7 @@ let open_modtype i ((sp,kn),_) =
 
 let rec open_object f i (name, obj) =
   match obj with
-  | AtomicObject o -> Libobject.open_object f i (name, o)
+  | AtomicObject o -> Libobject.open_object f i (Lib.oname_prefix name, o)
   | ModuleObject sobjs ->
     let dir = dir_of_sp (fst name) in
     let mp = mp_of_kn (snd name) in
@@ -390,7 +390,7 @@ and open_keep f i ((sp,kn),kobjs) =
 
 let rec cache_object (name, obj) =
   match obj with
-  | AtomicObject o -> Libobject.cache_object (name, o)
+  | AtomicObject o -> Libobject.cache_object (Lib.oname_prefix name, o)
   | ModuleObject sobjs -> do_module' false load_objects 1 (name, sobjs)
   | ModuleTypeObject sobjs ->
     let (sp,kn) = name in
