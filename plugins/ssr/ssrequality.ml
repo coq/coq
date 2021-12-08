@@ -266,7 +266,7 @@ let fake_pmatcher_end () =
 
 let classify_pattern p = match p with
 | None -> None
-| Some p -> redex_of_pattern0 p
+| Some p -> redex_of_pattern p
 
 let unfoldintac occ rdx t (kt,_) =
   Proofview.Goal.enter begin fun gl ->

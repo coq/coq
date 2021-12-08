@@ -55,10 +55,6 @@ val pr_rpattern : rpattern -> Pp.t
 (** Extracts the redex and applies to it the substitution part of the pattern.
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
 val redex_of_pattern :
-  ?resolve_typeclasses:bool -> env -> pattern ->
-     EConstr.t Evd.in_evar_universe_context
-
-val redex_of_pattern0 :
   pattern -> (Evd.evar_map * EConstr.t) option
 
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]

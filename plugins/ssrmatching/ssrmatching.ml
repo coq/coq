@@ -1196,19 +1196,16 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     concl, us
 ;;
 
-let redex_of_pattern0 (sigma, p) = match p with
+let redex_of_pattern (sigma, p) = match p with
 | In_T _ | In_X_In_T _ -> None
 | X_In_T (e, _) -> Some (sigma, EConstr.mkEvar e)
 | T e | E_As_X_In_T (e, _, _) | E_In_X_In_T (e, _, _) -> Some (sigma, e)
 
-let redex_of_pattern ?(resolve_typeclasses=false) env p =
-  let sigma, e = match redex_of_pattern0 p with
+let redex_of_pattern_nf env p =
+  let sigma, e = match redex_of_pattern p with
   | None -> CErrors.anomaly (str"pattern without redex.")
   | Some (sigma, e) -> sigma, e
   in
-  let sigma =
-    if not resolve_typeclasses then sigma
-    else Typeclasses.resolve_typeclasses ~fail:false env sigma in
   Evarutil.nf_evar sigma e, Evd.evar_universe_context sigma
 
 let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
@@ -1221,13 +1218,13 @@ let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
   in
   let cl, us =
     eval_pattern ?raise_NoMatch env sigma cl (Some pat) occ find_R in
-  let e = match !r with None -> fst(redex_of_pattern env pat) | Some x -> x in
+  let e = match !r with None -> fst(redex_of_pattern_nf env pat) | Some x -> x in
   (e, us), cl
 
 let fill_rel_occ_pattern env sigma cl pat occ =
   let (e, us), cl =
     try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
-    with NoMatch -> redex_of_pattern env pat, cl
+    with NoMatch -> redex_of_pattern_nf env pat, cl
   in
   let sigma = Evd.merge_universe_context sigma us in
   sigma, e, cl
