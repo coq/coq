@@ -13,7 +13,6 @@ open CErrors
 open Names
 open Libnames
 open Libobject
-open Lib
 open Notation_term
 
 (* Syntactic definitions. *)
@@ -87,7 +86,7 @@ let declare_syntactic_definition ~local ?(also_in_cases_pattern=true) deprecatio
       syndef_also_in_cases_pattern = also_in_cases_pattern;
     }
   in
-  add_leaf id (in_syntax_constant (local,syndef))
+  Lib.add_leaf id (in_syntax_constant (local,syndef))
 
 let pr_syndef kn = pr_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn)
 

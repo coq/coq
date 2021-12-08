@@ -20,7 +20,7 @@ type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
 
 val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
-val make_foname : Names.Id.t -> Libnames.full_path * Names.KerName.t
+val make_foname : Names.Id.t -> Libobject.object_name
 
 type node =
   | Leaf of Libobject.t
@@ -123,7 +123,7 @@ val end_modtype :
 val start_compilation : DirPath.t -> ModPath.t -> unit
 val end_compilation_checks : DirPath.t -> Libobject.object_name
 val end_compilation :
-  Libobject.object_name-> Nametab.object_prefix * library_segment
+  Libobject.object_name -> Nametab.object_prefix * library_segment
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)
