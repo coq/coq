@@ -940,13 +940,6 @@ simple_occurrences: [
 ]
 
 simple_tactic: [
-| REPLACE "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
-| WITH "eauto" OPT nat_or_var auto_using hintbases
-| REPLACE "debug" "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
-| WITH "debug" "eauto" OPT nat_or_var auto_using hintbases
-| REPLACE "info_eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
-| WITH "info_eauto" OPT nat_or_var auto_using hintbases
-
 | DELETE "autorewrite" "with" LIST1 preident clause
 | DELETE "autorewrite" "with" LIST1 preident clause "using" tactic
 | DELETE "autorewrite" "*" "with" LIST1 preident clause
