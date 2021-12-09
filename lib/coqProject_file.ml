@@ -276,7 +276,7 @@ let process_cmd_line ~warning_fn orig_dir proj args =
           check_filename f;
           { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
         | _ ->
-          if String.length f > 5 && String.sub f 0 5 = "META." then
+          if CString.is_prefix "META." f then
             if proj.meta_file = Absent then
               { proj with meta_file = Present f }
             else
