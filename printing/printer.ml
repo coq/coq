@@ -844,7 +844,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
        | Some op when diffs ->
          (try
            let Proof.{sigma=osigma} = Proof.data op in
-           let diff_goal_map = Proof_diffs.make_goal_map oproof proof in
+           let diff_goal_map = Proof_diffs.make_goal_map op proof in
            Some (osigma, diff_goal_map)
          with Pp_diff.Diff_Failure msg ->
            Proof_diffs.notify_proof_diff_failure msg;

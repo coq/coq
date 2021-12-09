@@ -78,7 +78,7 @@ will have the same goal id in both versions.
 
 [op] and [np] must be from the same proof document and [op] must be for a state
 before [np]. *)
-val make_goal_map : Proof.t option -> Proof.t -> Goal.goal Evar.Map.t
+val make_goal_map : Proof.t -> Proof.t -> Goal.goal Evar.Map.t
 
 (* Exposed for unit test, don't use these otherwise *)
 (* output channel for the test log file *)

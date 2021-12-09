@@ -220,7 +220,10 @@ let goals () =
     if Proof_diffs.show_diffs () then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       (try
-        let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
+        let diff_goal_map = match oldp with
+        | None -> Evar.Map.empty
+        | Some oldp -> Proof_diffs.make_goal_map oldp newp
+        in
         Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
        with Pp_diff.Diff_Failure msg ->
          Proof_diffs.notify_proof_diff_failure msg;
