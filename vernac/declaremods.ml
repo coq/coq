@@ -1042,9 +1042,8 @@ let append_end_library_hook f =
 
 let end_library ~output_native_objects dir =
   !end_library_hook();
-  let oname = Lib.end_compilation_checks dir in
+  let prefix, lib_stack = Lib.end_compilation dir in
   let mp,cenv,ast = Global.export ~output_native_objects dir in
-  let prefix, lib_stack = Lib.end_compilation oname in
   assert (ModPath.equal mp (MPfile dir));
   let substitute, keep, _ = Lib.classify_segment lib_stack in
   cenv,(substitute,keep),ast
