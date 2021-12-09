@@ -389,8 +389,9 @@ let cast_alias_chain = function
 
 type aliases = {
   rel_aliases : Alias.t alias_chain Int.Map.t;
-  var_aliases : EConstr.t alias_chain Id.Map.t;
-  (** Only contains [VarAlias] *)
+  var_aliases : (EConstr.t alias_chain * int option) Id.Map.t;
+  (** Only contains [VarAlias]. The integer is the index of the last variable of
+      the chain, if it exists. *)
 }
 
 (* Expand rels and vars that are bound to other rels or vars so that
@@ -400,20 +401,24 @@ type aliases = {
 let compute_var_aliases sign sigma =
   let open Context.Named.Declaration in
   (* push from oldest to more recent variables *)
-  List.fold_right (fun decl aliases ->
+  List.fold_right_i (fun i decl aliases ->
     let id = get_id decl in
     match decl with
     | LocalDef (_,t,_) ->
       let aliases_of_id =
         match EConstr.kind sigma t with
         | Var id' ->
-          (try push_alias (Id.Map.find id' aliases) (VarAlias id')
-          with Not_found -> init_var_alias_chain (VarAlias id'))
+          (try
+            let a, ai = Id.Map.find id' aliases in
+            let ai = match ai with None -> Some i | Some _ -> ai in
+            push_alias a (VarAlias id'), ai
+          with Not_found -> init_var_alias_chain (VarAlias id'), Some i)
         | _ ->
-          init_term_alias_chain t in
+          init_term_alias_chain t, None
+      in
       Id.Map.add id aliases_of_id aliases
     | LocalAssum _ -> aliases)
-    sign Id.Map.empty
+    0 sign Id.Map.empty
 
 let compute_rel_aliases var_aliases rels sigma =
   (* push from oldest to more recent variables *)
@@ -426,7 +431,7 @@ let compute_rel_aliases var_aliases rels sigma =
                match EConstr.kind sigma t with
                | Var id' ->
                    (let alias = VarAlias id' in
-                    try push_alias (cast_alias_chain (Id.Map.find id' var_aliases)) alias
+                    try push_alias (cast_alias_chain (fst @@ Id.Map.find id' var_aliases)) alias
                     with Not_found -> init_var_alias_chain alias)
                | Rel p ->
                    (let alias = RelAlias (p+n) in
@@ -457,7 +462,7 @@ let lift_aliases n aliases =
 
 let get_alias_chain_of sigma aliases x = match x with
   | RelAlias n -> (try Some (Int.Map.find n aliases.rel_aliases) with Not_found -> None)
-  | VarAlias id -> (try Some (cast_alias_chain (Id.Map.find id aliases.var_aliases)) with Not_found -> None)
+  | VarAlias id -> (try Some (cast_alias_chain (fst @@ Id.Map.find id aliases.var_aliases)) with Not_found -> None)
 
 (* Expand an alias as much as possible while remaining a variable *)
 (* i.e. returns either a declared variable [y], or the last expansion
@@ -467,13 +472,6 @@ let normalize_alias sigma aliases x =
   | None | Some (NonVarAliasChain ([], _)) -> x
   | Some (NonVarAliasChain (l, _)) -> List.last l
   | Some (VarAliasChain (_, a)) -> a
-
-(* Idem, specifically for named variables *)
-let normalize_alias_var sigma var_aliases id =
-  let aliases = { var_aliases; rel_aliases = Int.Map.empty } in
-  match normalize_alias sigma aliases (VarAlias id) with
-  | VarAlias id -> id
-  | RelAlias _ -> assert false (** var only aliases to variables *)
 
 let extend_alias sigma decl { var_aliases; rel_aliases } =
   let rel_aliases =
@@ -486,7 +484,7 @@ let extend_alias sigma decl { var_aliases; rel_aliases } =
         match EConstr.kind sigma t with
         | Var id' ->
             let alias = VarAlias id' in
-            (try push_alias (cast_alias_chain (Id.Map.find id' var_aliases)) alias
+            (try push_alias (cast_alias_chain (fst @@ Id.Map.find id' var_aliases)) alias
             with Not_found -> init_var_alias_chain alias)
         | Rel p ->
             let alias = RelAlias (p+1) in
@@ -706,12 +704,11 @@ let solve_pattern_eqn env sigma l c =
 let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
   let evar_aliases = compute_var_aliases sign sigma in
-  let (_,full_subst,cstr_subst,_) =
+  let (_,full_subst,cstr_subst) =
     List.fold_right_i
-      (fun i decl (args,all,cstrs,revmap) ->
+      (fun i decl (args,all,cstrs) ->
         match decl,args with
         | LocalAssum ({binder_name=id},c), a::rest ->
-            let revmap = Id.Map.add id i revmap in
             let cstrs =
               let a',args = decompose_app_vect sigma a in
               match EConstr.kind sigma a' with
@@ -720,25 +717,25 @@ let make_projectable_subst aliases sigma evi args =
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
             let all = Int.Map.add i [a, id] all in
-            (rest,all,cstrs,revmap)
+            (rest,all,cstrs)
         | LocalDef ({binder_name=id},c,_), a::rest ->
-            let revmap = Id.Map.add id i revmap in
             (match EConstr.kind sigma c with
             | Var id' ->
-                let idc = normalize_alias_var sigma evar_aliases id' in
-                let ic, sub =
-                  try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
-                  with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
+              let ic, sub = match snd @@ Id.Map.find id' evar_aliases with
+              | Some ic -> ic, Int.Map.find ic all
+              | None -> i, []
+              | exception Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *)
+              in
                 if List.exists (fun (c, _) -> EConstr.eq_constr sigma a c) sub then
-                  (rest,all,cstrs,revmap)
+                  (rest,all,cstrs)
                 else
                   let all = Int.Map.add ic ((a, id)::sub) all in
-                  (rest,all,cstrs,revmap)
+                  (rest,all,cstrs)
             | _ ->
                 let all = Int.Map.add i [a, id] all in
-                (rest,all,cstrs,revmap))
+                (rest,all,cstrs))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
-      sign (List.rev args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
+      sign (List.rev args,Int.Map.empty,Constrmap.empty) in
   (full_subst,cstr_subst)
 
 (*------------------------------------*
