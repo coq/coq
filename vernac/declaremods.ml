@@ -110,9 +110,9 @@ and subst_objects subst seg =
     | ModuleTypeObject (id, sobjs) ->
       let sobjs' = subst_sobjs subst sobjs in
       if sobjs' == sobjs then node else ModuleTypeObject (id, sobjs')
-    | IncludeObject (id, aobjs) ->
+    | IncludeObject aobjs ->
       let aobjs' = subst_aobjs subst aobjs in
-      if aobjs' == aobjs then node else IncludeObject (id, aobjs')
+      if aobjs' == aobjs then node else IncludeObject aobjs'
     | ExportObject { mpl } ->
       let mpl' = List.Smart.map (subst_filtered subst) mpl in
       if mpl'==mpl then node else ExportObject { mpl = mpl' }
@@ -263,9 +263,8 @@ let rec load_object i (prefix, obj) =
     let name = Lib.make_oname prefix id in
     let (sp,kn) = name in
     load_modtype i sp (mp_of_kn kn) sobjs
-  | IncludeObject (id,aobjs) ->
-    let name = Lib.make_oname prefix id in
-    load_include i (name, aobjs)
+  | IncludeObject aobjs ->
+    load_include i (prefix, aobjs)
   | ExportObject _ -> ()
   | KeepObject (id,objs) ->
     let name = Lib.make_oname prefix id in
@@ -274,10 +273,7 @@ let rec load_object i (prefix, obj) =
 and load_objects i prefix objs =
   List.iter (fun obj -> load_object i (prefix, obj)) objs
 
-and load_include i ((sp,kn), aobjs) =
-  let obj_dir = Libnames.dirpath sp in
-  let obj_mp = KerName.modpath kn in
-  let prefix = Nametab.{ obj_dir; obj_mp; } in
+and load_include i (prefix, aobjs) =
   let o = expand_aobjs aobjs in
   load_objects i prefix o
 
@@ -366,9 +362,8 @@ let rec open_object f i (prefix, obj) =
   | ModuleTypeObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     open_modtype i (name, sobjs)
-  | IncludeObject (id,aobjs) ->
-    let name = Lib.make_oname prefix id in
-    open_include f i (name, aobjs)
+  | IncludeObject aobjs ->
+    open_include f i (prefix, aobjs)
   | ExportObject { mpl } -> open_export f i mpl
   | KeepObject (id,objs) ->
     let name = Lib.make_oname prefix id in
@@ -386,10 +381,7 @@ and open_module f i obj_dir obj_mp sobjs =
 and open_objects f i prefix objs =
   List.iter (fun obj -> open_object f i (prefix, obj)) objs
 
-and open_include f i ((sp,kn), aobjs) =
-  let obj_dir = Libnames.dirpath sp in
-  let obj_mp = KerName.modpath kn in
-  let prefix = Nametab.{ obj_dir; obj_mp; } in
+and open_include f i (prefix, aobjs) =
   let o = expand_aobjs aobjs in
   open_objects f i prefix o
 
@@ -412,18 +404,14 @@ let rec cache_object (prefix, obj) =
     let name = Lib.make_oname prefix id in
     let (sp,kn) = name in
     load_modtype 0 sp (mp_of_kn kn) sobjs
-  | IncludeObject (id,aobjs) ->
-    let name = Lib.make_oname prefix id in
-    cache_include (name, aobjs)
+  | IncludeObject aobjs ->
+    cache_include (prefix, aobjs)
   | ExportObject { mpl } -> anomaly Pp.(str "Export should not be cached")
   | KeepObject (id,objs) ->
     let name = Lib.make_oname prefix id in
     cache_keep (name, objs)
 
-and cache_include ((sp,kn), aobjs) =
-  let obj_dir = Libnames.dirpath sp in
-  let obj_mp = KerName.modpath kn in
-  let prefix = Nametab.{ obj_dir; obj_mp; } in
+and cache_include (prefix, aobjs) =
   let o = expand_aobjs aobjs in
   load_objects 1 prefix o;
   open_objects unfiltered 1 prefix o
@@ -459,7 +447,7 @@ let mp_id mp id = MPdot (mp, Label.of_id id)
 let rec register_mod_objs mp obj = match obj with
   | ModuleObject (id,sobjs) -> ModSubstObjs.set (mp_id mp id) sobjs
   | ModuleTypeObject (id,sobjs) -> ModSubstObjs.set (mp_id mp id) sobjs
-  | IncludeObject (id,aobjs) ->
+  | IncludeObject aobjs ->
     List.iter (register_mod_objs mp) (expand_aobjs aobjs)
   | _ -> ()
 
@@ -967,8 +955,8 @@ let declare_one_include (me_ast,annot) =
   let resolver = Global.add_include me is_mod inl in
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
   let aobjs = subst_aobjs subst aobjs in
-  let id = Lib.current_mod_id () in
-  add_leaf id (IncludeObject (id, aobjs))
+  cache_include (Lib.prefix(), aobjs);
+  Lib.add_anonymous_entry (Lib.Leaf (IncludeObject aobjs))
 
 let declare_include me_asts = List.iter declare_one_include me_asts
 
@@ -1080,7 +1068,7 @@ let import_module f ~export mp =
 
 let iter_all_segments f =
   let rec apply_obj prefix obj = match obj with
-    | IncludeObject (id, aobjs) ->
+    | IncludeObject aobjs ->
       let objs = expand_aobjs aobjs in
       List.iter (apply_obj prefix) objs
     | _ -> f prefix obj

@@ -58,6 +58,7 @@ val contents : unit -> library_segment
 (** {6 Functions relative to current path } *)
 
 (** User-side names *)
+val prefix : unit -> Nametab.object_prefix
 val cwd : unit -> DirPath.t
 val cwd_except_section : unit -> DirPath.t
 val current_dirpath : bool -> DirPath.t (* false = except sections *)
@@ -80,7 +81,6 @@ val is_modtype : unit -> bool
    if the latest module started is a module type.  *)
 val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
-val current_mod_id : unit -> module_ident
 
 (** Returns the opening node of a given name *)
 val find_opening_node : Id.t -> node

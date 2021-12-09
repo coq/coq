@@ -143,7 +143,7 @@ type algebraic_objects =
 and t =
   | ModuleObject of Id.t * substitutive_objects
   | ModuleTypeObject of Id.t * substitutive_objects
-  | IncludeObject of Id.t * algebraic_objects
+  | IncludeObject of algebraic_objects
   | KeepObject of Id.t * t list
   | ExportObject of { mpl : (open_filter * ModPath.t) list }
   | AtomicObject of Id.t * obj

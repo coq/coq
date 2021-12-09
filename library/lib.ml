@@ -211,14 +211,6 @@ let is_opening_node_or_lib = function
   | _,(CompilingLibrary _ | OpenedSection _ | OpenedModule _) -> true
   | _ -> false
 
-let current_mod_id () =
-  try match find_entry_p is_opening_node_or_lib with
-    | oname,OpenedModule (_,_,_,fs) -> basename (fst oname)
-    | oname,CompilingLibrary _ -> basename (fst oname)
-    | _ -> user_err Pp.(str "you are not in a module")
-  with Not_found -> user_err Pp.(str "no opened modules")
-
-
 let start_mod is_type export id mp fs =
   let dir = add_dirpath_suffix (!lib_state.path_prefix.Nametab.obj_dir) id in
   let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
