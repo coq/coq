@@ -147,22 +147,6 @@ let make_kn id =
 
 let make_foname id = make_oname !lib_state.path_prefix id
 
-let recalc_path_prefix () =
-  let rec recalc = function
-    | (sp, OpenedSection (dir,_)) :: _ -> dir
-    | (sp, OpenedModule (_,_,dir,_)) :: _ -> dir
-    | (sp, CompilingLibrary dir) :: _ -> dir
-    | _::l -> recalc l
-    | [] -> initial_prefix
-  in
-  lib_state := { !lib_state with path_prefix = recalc !lib_state.lib_stk }
-
-let pop_path_prefix () =
-  let op = !lib_state.path_prefix in
-  lib_state := { !lib_state
-                 with path_prefix = Nametab.{ op with obj_dir = pop_dirpath op.obj_dir;
-                                            } }
-
 let find_entry_p p =
   let rec find = function
     | [] -> raise Not_found
@@ -239,6 +223,23 @@ let error_still_opened string oname =
   let id = basename (fst oname) in
   user_err
     (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
+
+let recalc_path_prefix () =
+  let path_prefix = match snd (pi2 (split_lib_at_opening ())) with
+    | Leaf _ -> assert false
+    | CompilingLibrary dir
+    | OpenedModule (_, _, dir, _)
+    | OpenedSection (dir, _) -> dir
+  in
+  lib_state := { !lib_state with path_prefix }
+
+let pop_path_prefix () =
+  let op = !lib_state.path_prefix in
+  lib_state := {
+    !lib_state
+    with path_prefix = Nametab.{
+        op with obj_dir = pop_dirpath op.obj_dir;
+      } }
 
 let end_mod is_type =
   let (after,mark,before) = split_lib_at_opening () in
