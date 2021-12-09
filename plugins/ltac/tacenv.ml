@@ -195,7 +195,7 @@ let subst_md (subst, {local; replace=repl; for_ml; expr=t; depr}) =
 let classify_md o = Substitute
 
 let inMD : tacdef -> obj =
-  declare_named_object0 {(default_object "TAC-DEFINITION") with
+  declare_named_object_gen {(default_object "TAC-DEFINITION") with
      cache_function = cache_md;
      load_function = load_md;
      open_function = simple_open open_md;

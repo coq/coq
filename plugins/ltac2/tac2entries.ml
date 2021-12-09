@@ -274,7 +274,7 @@ let subst_typext (subst, e) =
 let classify_typext o = Substitute
 
 let inTypExt : typext -> obj =
-  declare_named_object0 {(default_object "TAC2-TYPE-EXTENSION") with
+  declare_named_object_gen {(default_object "TAC2-TYPE-EXTENSION") with
      cache_function  = cache_typext;
      load_function   = load_typext;
      open_function   = simple_open open_typext;

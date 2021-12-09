@@ -59,7 +59,7 @@ let discharge_inductive names =
 
 let objInductive : (Id.t * inductive_obj) Libobject.Dyn.tag =
   let open Libobject in
-  declare_object_full {(default_object "INDUCTIVE") with
+  declare_named_object_full {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = simple_open open_inductive;

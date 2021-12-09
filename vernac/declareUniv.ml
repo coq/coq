@@ -64,7 +64,7 @@ let discharge_univ_names = function
 
 let input_univ_names : universe_name_decl -> Libobject.obj =
   let open Libobject in
-  declare_named_object0
+  declare_named_object_gen
     { (default_object "Global universe name state") with
       cache_function = cache_univ_names;
       load_function = load_univ_names;

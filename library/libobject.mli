@@ -150,17 +150,33 @@ and t =
 
 and substitutive_objects = MBId.t list * algebraic_objects
 
+(** Object declaration and names: if you need the current prefix
+   (typically to interact with the nametab), you need to have it
+   passed to you.
+
+    - [declare_object_full] and [declare_named_object_gen] pass the
+   raw prefix which you can manipulate as you wish.
+
+    - [declare_named_object_full] and [declare_named_object] provide
+   the convenience of packaging it with the provided [Id.t] into a
+   [object_name].
+
+    - [declare_object] ignores the prefix for you. *)
+
+val declare_object :
+  ('a,'a) object_declaration -> ('a -> obj)
+
 val declare_object_full :
+  ('a,object_prefix * 'a) object_declaration -> 'a Dyn.tag
+
+val declare_named_object_full :
   ('a,object_name * 'a) object_declaration -> (Id.t * 'a) Dyn.tag
 
 val declare_named_object :
   ('a,object_name * 'a) object_declaration -> (Id.t -> 'a -> obj)
 
-val declare_named_object0 :
+val declare_named_object_gen :
   ('a,object_prefix * 'a) object_declaration -> ('a -> obj)
-
-val declare_object :
-  ('a,'a) object_declaration -> ('a -> obj)
 
 val cache_object : object_prefix * obj -> unit
 val load_object : int -> object_prefix * obj -> unit
