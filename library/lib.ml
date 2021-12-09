@@ -37,25 +37,10 @@ type library_entry = object_name * node
 
 type library_segment = library_entry list
 
-type lib_atomic_objects = (Id.t * Libobject.obj) list
 type lib_objects =  (Names.Id.t * Libobject.t) list
 
 let module_kind is_type =
   if is_type then "module type" else "module"
-
-let iter_objects f i prefix =
-  List.iter (fun (id,obj) -> f i (prefix, obj))
-
-let load_atomic_objects i pr = iter_objects load_object i pr
-let open_atomic_objects f i pr = iter_objects (open_object f) i pr
-
-let subst_atomic_objects subst seg =
-  let subst_one = fun (id,obj as node) ->
-    let obj' = subst_object (subst,obj) in
-      if obj' == obj then node else
-        (id, obj')
-  in
-    List.Smart.map subst_one seg
 
 (*let load_and_subst_objects i prefix subst seg =
   List.rev (List.fold_left (fun seg (id,obj as node) ->

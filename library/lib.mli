@@ -31,16 +31,7 @@ type node =
 
 type library_segment = (Libobject.object_name * node) list
 
-type lib_atomic_objects = (Id.t * Libobject.obj) list
 type lib_objects = (Id.t * Libobject.t) list
-
-(** {6 Object iteration functions. } *)
-
-val open_atomic_objects : Libobject.open_filter
-  -> int -> Nametab.object_prefix -> lib_atomic_objects -> unit
-val load_atomic_objects : int -> Nametab.object_prefix -> lib_atomic_objects -> unit
-val subst_atomic_objects : Mod_subst.substitution -> lib_atomic_objects -> lib_atomic_objects
-(*val load_and_subst_objects : int -> Libnames.Nametab.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects*)
 
 (** [classify_segment seg] verifies that there are no OpenedThings,
    clears ClosedSections and FrozenStates and divides Leafs according
