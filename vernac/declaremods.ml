@@ -718,7 +718,7 @@ let start_module export id args res fs =
   mp
 
 let end_module () =
-  let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
+  let oldoname,fs,lib_stack = Lib.end_module () in
   let substitute, keep, special = Lib.classify_segment lib_stack in
   let m_info = !openmod_info in
 
@@ -837,7 +837,7 @@ let start_modtype id args mtys fs =
   mp
 
 let end_modtype () =
-  let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
+  let oldoname,fs,lib_stack = Lib.end_modtype () in
   let id = basename (fst oldoname) in
   let substitute, _, special = Lib.classify_segment lib_stack in
   let sub_mty_l = !openmodtype_info in

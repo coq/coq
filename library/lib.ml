@@ -286,9 +286,8 @@ let end_mod is_type =
   in
   let (after,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
-  let prefix = !lib_state.path_prefix in
   recalc_path_prefix ();
-  (oname, prefix, fs, after)
+  (oname, fs, after)
 
 let end_module () = end_mod false
 let end_modtype () = end_mod true

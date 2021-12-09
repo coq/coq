@@ -110,13 +110,11 @@ val start_modtype :
 
 val end_module :
   unit ->
-  Libobject.object_name * Nametab.object_prefix *
-    Summary.frozen * library_segment
+  Libobject.object_name * Summary.frozen * library_segment
 
 val end_modtype :
   unit ->
-  Libobject.object_name * Nametab.object_prefix *
-    Summary.frozen * library_segment
+  Libobject.object_name * Summary.frozen * library_segment
 
 (** {6 Compilation units } *)
 
