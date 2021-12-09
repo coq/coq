@@ -87,14 +87,6 @@ sig
     (** As [mapi] but tries to preserve sharing. *)
   end
 
-  module Unsafe :
-  sig
-    val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
-    (** As the usual [map], but also allows modifying the key of a binding.
-        It is required that the mapping function [f] preserves key equality,
-        i.e.: for all (k : key) (x : 'a), compare (fst (f k x)) k = 0. *)
-  end
-
   module Monad(M : MonadS) :
   sig
     val fold : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
