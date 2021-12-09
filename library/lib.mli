@@ -24,12 +24,16 @@ val make_foname : Names.Id.t -> Libobject.object_name
 val oname_prefix : Libobject.object_name -> Nametab.object_prefix
 
 type node =
-  | Leaf of Libobject.t
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
   | OpenedSection of Nametab.object_prefix * Summary.frozen
 
-type library_segment = (Libobject.object_name * node) list
+(** Extract the [object_prefix] component. Note that it is the prefix
+   of the objects *inside* this node, eg in [Module M.] we have
+   [OpenedModule] with prefix containing [M]. *)
+val node_prefix : node -> Nametab.object_prefix
+
+type library_segment = (node * Libobject.t list) list
 
 type classified_objects = {
   substobjs : Libobject.t list;
@@ -38,10 +42,10 @@ type classified_objects = {
 }
 
 (** {6 ... } *)
-(** Low-level adding operations *)
+(** Low-level adding operations (does not cache) *)
 
-val add_entry : Libobject.object_name -> node -> unit
-val add_anonymous_entry : node -> unit
+val add_entry : node -> unit
+val add_leaf_entry : Libobject.t -> unit
 
 (** {6 ... } *)
 (** Adding operations (which call the [cache] method, and getting the
@@ -97,11 +101,11 @@ val start_modtype :
 
 val end_module :
   unit ->
-  Libobject.object_name * Summary.frozen * classified_objects
+  Nametab.object_prefix * Summary.frozen * classified_objects
 
 val end_modtype :
   unit ->
-  Libobject.object_name * Summary.frozen * classified_objects
+  Nametab.object_prefix * Summary.frozen * classified_objects
 
 (** {6 Compilation units } *)
 

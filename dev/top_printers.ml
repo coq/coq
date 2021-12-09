@@ -23,6 +23,7 @@ open Context
 open Genarg
 open Clenv
 
+let _ = Flags.in_debugger := true
 let _ = Detyping.print_evar_arguments := true
 let _ = Detyping.print_universes := true
 let _ = Goptions.set_bool_option_value ["Printing";"Matching"] false
@@ -631,6 +632,5 @@ let short_string_of_ref ?loc _ = let open GlobRef in function
 (* Anticipate that printers can be used from ocamldebug and that
    pretty-printer should not make calls to the global env since ocamldebug
    runs in a different process and does not have the proper env at hand *)
-let _ = Flags.in_debugger := true
 let _ = Constrextern.set_extern_reference
   (if !rawdebug then raw_string_of_ref else short_string_of_ref)

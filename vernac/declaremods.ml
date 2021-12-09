@@ -421,20 +421,17 @@ and cache_keep ((sp,kn),kobjs) =
 
 (* Adding operations with containers *)
 
-let add_leaf id obj =
-  let oname = Lib.make_foname id in
-  cache_object (Lib.oname_prefix oname,obj);
-  Lib.add_entry oname (Lib.Leaf obj);
+let add_leaf obj =
+  cache_object (Lib.prefix (),obj);
+  Lib.add_leaf_entry obj;
   ()
 
 let add_leaves id objs =
-  let oname = Lib.make_foname id in
   let add_obj obj =
-    Lib.add_entry oname (Lib.Leaf obj);
-    load_object 1 (Lib.oname_prefix oname,obj)
+    Lib.add_leaf_entry obj;
+    load_object 1 (Lib.prefix (),obj)
   in
-  List.iter add_obj objs;
-  oname
+  List.iter add_obj objs
 
 (** {6 Handler for missing entries in ModSubstObjs} *)
 
@@ -725,7 +722,7 @@ let start_module export id args res fs =
   mp
 
 let end_module () =
-  let oldoname,fs,lib_stack = Lib.end_module () in
+  let oldprefix,fs,lib_stack = Lib.end_module () in
   let {Lib.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = lib_stack in
   let m_info = !openmod_info in
 
@@ -735,7 +732,7 @@ let end_module () =
     | Some (mty, inline) ->
       get_module_sobjs false (Global.env()) inline mty, [], []
   in
-  let id = basename (fst oldoname) in
+  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
   let mp,mbids,resolver = Global.end_module fs id m_info.cur_typ in
   let sobjs = let (ms,objs) = sobjs0 in (mbids@ms,objs) in
 
@@ -754,11 +751,11 @@ let end_module () =
     | [], _ | _, _ :: _ -> special@[node]
     | _ -> special@[node;KeepObject (id,keep)]
   in
-  let newoname = add_leaves id objects in
+  let () = add_leaves id objects in
 
   (* Name consistency check : start_ vs. end_module, kernel vs. library *)
-  assert (eq_full_path (fst newoname) (fst oldoname));
-  assert (ModPath.equal (mp_of_kn (snd newoname)) mp);
+  assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
+  assert (ModPath.equal oldprefix.Nametab.obj_mp mp);
 
   mp
 
@@ -822,7 +819,7 @@ let declare_module id args res mexpr_o fs =
   check_subtypes mp subs;
 
   let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
-  add_leaf id (ModuleObject (id,sobjs));
+  add_leaf (ModuleObject (id,sobjs));
   mp
 
 end
@@ -844,18 +841,17 @@ let start_modtype id args mtys fs =
   mp
 
 let end_modtype () =
-  let oldoname,fs,lib_stack = Lib.end_modtype () in
-  let id = basename (fst oldoname) in
+  let oldprefix,fs,lib_stack = Lib.end_modtype () in
+  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
   let {Lib.substobjs = substitute; keepobjs = _; anticipateobjs = special; } = lib_stack in
   let sub_mty_l = !openmodtype_info in
   let mp, mbids = Global.end_modtype fs id in
   let modtypeobjs = (mbids, Objs substitute) in
   check_subtypes_mt mp sub_mty_l;
-  let oname = add_leaves id (special@[ModuleTypeObject (id,modtypeobjs)])
-  in
+  let () = add_leaves id (special@[ModuleTypeObject (id,modtypeobjs)]) in
   (* Check name consistence : start_ vs. end_modtype, kernel vs. library *)
-  assert (eq_full_path (fst oname) (fst oldoname));
-  assert (ModPath.equal (mp_of_kn (snd oname)) mp);
+  assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
+  assert (ModPath.equal oldprefix.Nametab.obj_mp mp);
 
   mp
 
@@ -900,7 +896,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   (* Subtyping checks *)
   check_subtypes_mt mp sub_mty_l;
 
-  add_leaf id (ModuleTypeObject (id, sobjs));
+  add_leaf (ModuleTypeObject (id, sobjs));
   mp
 
 end
@@ -956,7 +952,7 @@ let declare_one_include (me_ast,annot) =
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
   let aobjs = subst_aobjs subst aobjs in
   cache_include (Lib.prefix(), aobjs);
-  Lib.add_anonymous_entry (Lib.Leaf (IncludeObject aobjs))
+  Lib.add_leaf_entry (IncludeObject aobjs)
 
 let declare_include me_asts = List.iter declare_one_include me_asts
 
@@ -1059,7 +1055,7 @@ let end_library ~output_native_objects dir =
 let import_modules ~export mpl =
   let _,objs = collect_modules mpl (MPmap.empty, []) in
   List.iter (fun (f,o) -> open_object f 1 o) objs;
-  if export then Lib.add_anonymous_entry (Lib.Leaf (ExportObject { mpl }))
+  if export then Lib.add_leaf_entry (ExportObject { mpl })
 
 let import_module f ~export mp =
   import_modules ~export [f,mp]
@@ -1078,12 +1074,9 @@ let iter_all_segments f =
     List.iter (apply_obj prefix) modobjs.module_substituted_objects;
     List.iter (apply_obj prefix) modobjs.module_keep_objects
   in
-  let apply_node = function
-    | sp, Lib.Leaf o -> f (Lib.oname_prefix sp) o
-    | _ -> ()
-  in
+  let apply_nodes (node, os) = List.iter (fun o -> f (Lib.node_prefix node) o) os in
   MPmap.iter apply_mod_obj (ModObjs.all ());
-  List.iter apply_node (Lib.contents ())
+  List.iter apply_nodes (Lib.contents ())
 
 
 (** {6 Some types used to shorten declaremods.mli} *)
