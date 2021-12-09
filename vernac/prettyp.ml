@@ -695,12 +695,12 @@ let gallina_print_leaf_entry env sigma with_values ((_, kn),lobj) =
       DynHandle.empty
     in
     handle handler o
-  | ModuleObject _ ->
-    let (mp,l) = KerName.repr kn in
-    Some (print_module ~with_body:with_values (MPdot (mp,l)))
-  | ModuleTypeObject _ ->
-    let (mp,l) = KerName.repr kn in
-          Some (print_modtype (MPdot (mp,l)))
+  | ModuleObject (id,_) ->
+    let mp = KerName.modpath kn in
+    Some (print_module ~with_body:with_values (MPdot (mp,Label.of_id id)))
+  | ModuleTypeObject (id,_) ->
+    let mp = KerName.modpath kn in
+    Some (print_modtype (MPdot (mp, Label.of_id id)))
   | _ -> None
 
 let gallina_print_library_entry env sigma with_values ent =
@@ -829,14 +829,14 @@ let print_full_pure_context env sigma =
     in
     let pp = handleF handler lobj in
       prec rest ++ pp
-  | ((_,kn),Lib.Leaf ModuleObject _)::rest ->
-          (* TODO: make it reparsable *)
-    let (mp,l) = KerName.repr kn in
-          prec rest ++ print_module (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
-  | ((_,kn),Lib.Leaf ModuleTypeObject _)::rest ->
-          (* TODO: make it reparsable *)
-    let (mp,l) = KerName.repr kn in
-          prec rest ++ print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
+  | ((_,kn),Lib.Leaf ModuleObject (id,_))::rest ->
+    (* TODO: make it reparsable *)
+    let mp = KerName.modpath kn in
+    prec rest ++ print_module (MPdot (mp,Label.of_id id)) ++ str "." ++ fnl () ++ fnl ()
+  | ((_,kn),Lib.Leaf ModuleTypeObject (id,_))::rest ->
+    (* TODO: make it reparsable *)
+    let mp = KerName.modpath kn in
+    prec rest ++ print_modtype (MPdot (mp,Label.of_id id)) ++ str "." ++ fnl () ++ fnl ()
   | _::rest -> prec rest
   | _ -> mt () in
   prec (Lib.contents ())
