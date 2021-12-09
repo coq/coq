@@ -314,17 +314,16 @@ let make_initial_state sigma evk dbg n dblist localdb lems =
     local_lemmas = lems;
   }
 
-let e_search_auto debug (in_depth,p) lems db_list =
+let e_search_auto ?(debug = Off) ?depth lems db_list =
   let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
+  let p = Option.default !default_search_depth depth in
   let sigma = Proofview.Goal.sigma gl in
   let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
-  let tac = match in_depth,d with
-    | (true,Debug) -> Search.debug_depth_first
-    | (true,_) -> Search.depth_first
-    | (false,Debug) -> Search.debug_breadth_first
-    | (false,_) -> Search.breadth_first
+  let tac = match d with
+  | Debug -> Search.debug_depth_first
+  | _ -> Search.depth_first
   in
   let () = pr_dbg_header d in
   let evk = Proofview.Goal.goal gl in
@@ -339,28 +338,12 @@ let e_search_auto debug (in_depth,p) lems db_list =
     Proofview.tclUNIT ()
   end
 
-let eauto_with_bases ?(debug=Off) np lems db_list =
-  Hints.wrap_hint_warning (e_search_auto debug np lems db_list)
+let eauto_with_bases ?debug ?depth lems db_list =
+  Hints.wrap_hint_warning (e_search_auto ?debug ?depth lems db_list)
 
-let eauto ?(debug=Off) np lems dbnames =
-  let db_list = make_db_list dbnames in
-  e_search_auto debug np lems db_list
-
-let full_eauto ?(debug=Off) n lems =
-  let db_list = current_pure_db () in
-  e_search_auto debug n lems db_list
-
-let gen_eauto ?(debug=Off) np lems = function
-  | None -> Hints.wrap_hint_warning (full_eauto ~debug np lems)
-  | Some l -> Hints.wrap_hint_warning (eauto ~debug np lems l)
-
-let make_depth = function
-  | None -> !default_search_depth
-  | Some d -> d
-
-let make_dimension n = function
-  | None -> (true,make_depth n)
-  | Some d -> (false,d)
+let gen_eauto ?debug ?depth lems dbs =
+  let dbs = match dbs with None -> current_pure_db () | Some dbs -> make_db_list dbs in
+  eauto_with_bases ?debug ?depth lems dbs
 
 let autounfolds ids csts gl cls =
   let open Tacred in

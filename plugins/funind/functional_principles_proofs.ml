@@ -1308,7 +1308,7 @@ let prove_with_tcc tcc_lemma_constr eqs : unit Proofview.tactic =
         (*               let ids = List.filter (fun id -> not (List.mem id ids)) ids' in  *)
         (*               rewrite *)
         (*            ) *)
-        Eauto.gen_eauto (false, 5) [] (Some []) ]
+        Eauto.gen_eauto ~depth:5 [] (Some []) ]
   | Not_needed -> Proofview.tclUNIT ()
 
 let backtrack_eqs_until_hrec hrec eqs : unit Proofview.tactic =
@@ -1376,7 +1376,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : unit Proofview.tactic
                    ; observe_tac "rewrite_eqs_in_eqs" (rewrite_eqs_in_eqs eqs)
                    ; observe_tac "finishing using"
                        (tclCOMPLETE
-                          (Eauto.eauto_with_bases (true, 5)
+                          (Eauto.eauto_with_bases ~depth:5
                              [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
                              [Hints.Hint_db.empty TransparentState.empty false]))
                    ]) ] ] ]

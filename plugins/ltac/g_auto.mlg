@@ -112,23 +112,23 @@ END
 (** Eauto *)
 
 TACTIC EXTEND eauto
-| [ "eauto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-  { Eauto.gen_eauto (Eauto.make_dimension n None) (eval_uconstrs ist lems) db }
+| [ "eauto" nat_or_var_opt(depth) auto_using(lems) hintbases(db) ] ->
+  { Eauto.gen_eauto ?depth (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND debug_eauto
-| [ "debug" "eauto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-  { Eauto.gen_eauto ~debug:Debug (Eauto.make_dimension n None) (eval_uconstrs ist lems) db }
+| [ "debug" "eauto" nat_or_var_opt(depth) auto_using(lems) hintbases(db) ] ->
+  { Eauto.gen_eauto ~debug:Debug ?depth (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND info_eauto
-| [ "info_eauto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-  { Eauto.gen_eauto ~debug:Info (Eauto.make_dimension n None) (eval_uconstrs ist lems) db }
+| [ "info_eauto" nat_or_var_opt(depth) auto_using(lems) hintbases(db) ] ->
+  { Eauto.gen_eauto ~debug:Info ?depth (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND dfs_eauto
-| [ "dfs" "eauto" nat_or_var_opt(p) auto_using(lems) hintbases(db) ] ->
-  { Eauto.gen_eauto (Eauto.make_dimension p None) (eval_uconstrs ist lems) db }
+| [ "dfs" "eauto" nat_or_var_opt(depth) auto_using(lems) hintbases(db) ] ->
+  { Eauto.gen_eauto ?depth (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND autounfold

@@ -110,7 +110,7 @@ val trivial : Hints.debug -> constr thunk list -> Id.t list option ->
 val auto : Hints.debug -> int option -> constr thunk list ->
   Id.t list option -> unit Proofview.tactic
 
-val eauto : Hints.debug -> int option -> int option -> constr thunk list ->
+val eauto : Hints.debug -> int option -> constr thunk list ->
   Id.t list option -> unit Proofview.tactic
 
 val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->
