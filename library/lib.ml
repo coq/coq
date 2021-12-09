@@ -37,7 +37,13 @@ type library_entry = object_name * node
 
 type library_segment = library_entry list
 
-type lib_objects =  (Names.Id.t * Libobject.t) list
+type lib_objects = (Names.Id.t * Libobject.t) list
+
+type classified_objects = {
+  substobjs : lib_objects;
+  keepobjs : lib_objects;
+  anticipateobjs : Libobject.t list;
+}
 
 let module_kind is_type =
   if is_type then "module type" else "module"
@@ -78,6 +84,10 @@ let classify_segment seg =
         (str "there are still opened " ++ str (module_kind ty) ++ str "s.")
   in
   clean ([],[],[]) (List.rev seg)
+
+let classify_segment seg =
+  let substobjs, keepobjs, anticipateobjs = classify_segment seg in
+  { substobjs; keepobjs; anticipateobjs; }
 
 (* We keep trace of operations in the stack [lib_stk].
    [path_prefix] is the current path of sections, where sections are stored in
@@ -254,6 +264,7 @@ let end_mod is_type =
   in
   lib_state := { !lib_state with lib_stk = before };
   recalc_path_prefix ();
+  let after = classify_segment after in
   (oname, fs, after)
 
 let end_module () = end_mod false
@@ -300,7 +311,8 @@ let end_compilation dir =
   end_compilation_checks dir;
   let (after,mark,before) = split_lib_at_opening () in
   lib_state := { !lib_state with comp_name = None };
-  !lib_state.path_prefix,after
+  let after = classify_segment after in
+  !lib_state.path_prefix, after
 
 (* Returns true if we are inside an opened module or module type *)
 let is_module_or_modtype () =

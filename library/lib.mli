@@ -33,13 +33,11 @@ type library_segment = (Libobject.object_name * node) list
 
 type lib_objects = (Id.t * Libobject.t) list
 
-(** [classify_segment seg] verifies that there are no OpenedThings,
-   clears ClosedSections and FrozenStates and divides Leafs according
-   to their answers to the [classify_object] function in three groups:
-   [Substitute], [Keep], [Anticipate] respectively.  The order of each
-   returned list is the same as in the input list. *)
-val classify_segment :
-  library_segment -> lib_objects * lib_objects * Libobject.t list
+type classified_objects = {
+  substobjs : lib_objects;
+  keepobjs : lib_objects;
+  anticipateobjs : Libobject.t list;
+}
 
 (** {6 ... } *)
 (** Low-level adding operations *)
@@ -101,16 +99,16 @@ val start_modtype :
 
 val end_module :
   unit ->
-  Libobject.object_name * Summary.frozen * library_segment
+  Libobject.object_name * Summary.frozen * classified_objects
 
 val end_modtype :
   unit ->
-  Libobject.object_name * Summary.frozen * library_segment
+  Libobject.object_name * Summary.frozen * classified_objects
 
 (** {6 Compilation units } *)
 
 val start_compilation : DirPath.t -> ModPath.t -> unit
-val end_compilation : DirPath.t -> Nametab.object_prefix * library_segment
+val end_compilation : DirPath.t -> Nametab.object_prefix * classified_objects
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)

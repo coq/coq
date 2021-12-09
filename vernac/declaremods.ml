@@ -719,7 +719,7 @@ let start_module export id args res fs =
 
 let end_module () =
   let oldoname,fs,lib_stack = Lib.end_module () in
-  let substitute, keep, special = Lib.classify_segment lib_stack in
+  let {Lib.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = lib_stack in
   let m_info = !openmod_info in
 
   (* For sealed modules, we use the substitutive objects of their signatures *)
@@ -839,7 +839,7 @@ let start_modtype id args mtys fs =
 let end_modtype () =
   let oldoname,fs,lib_stack = Lib.end_modtype () in
   let id = basename (fst oldoname) in
-  let substitute, _, special = Lib.classify_segment lib_stack in
+  let {Lib.substobjs = substitute; keepobjs = _; anticipateobjs = special; } = lib_stack in
   let sub_mty_l = !openmodtype_info in
   let mp, mbids = Global.end_modtype fs id in
   let modtypeobjs = (mbids, Objs substitute) in
@@ -1045,7 +1045,7 @@ let end_library ~output_native_objects dir =
   let prefix, lib_stack = Lib.end_compilation dir in
   let mp,cenv,ast = Global.export ~output_native_objects dir in
   assert (ModPath.equal mp (MPfile dir));
-  let substitute, keep, _ = Lib.classify_segment lib_stack in
+  let {Lib.substobjs = substitute; keepobjs = keep; anticipateobjs = _; } = lib_stack in
   cenv,(substitute,keep),ast
 
 let import_modules ~export mpl =
