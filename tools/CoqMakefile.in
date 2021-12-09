@@ -169,16 +169,22 @@ else
 FINDLIBPREINST= mkdir -p $(DESTDIR)/$(COQCORELIB)/../
 FINDLIBDESTDIR= -destdir $(DESTDIR)/$(COQCORELIB)/../
 endif
+# we need to move out of sight $(METAFILE) otherwise findlib thinks the
+# package is already installed
 findlib_install = \
-	$(HIDE)if [ -e META ]; then \
+	$(HIDE)if [ "$(METAFILE)" ]; then \
 	  $(FINDLIBPREINST) && \
 	  mv $(METAFILE) $(METAFILE).skip ; \
 	  $(OCAMLFIND) install $(2) $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) $(1); \
 	  rc=$$?; \
 	  mv $(METAFILE).skip $(METAFILE); \
-	  rm -f META; \
 	  exit $$rc; \
 	fi
+findlib_remove = \
+	$(HIDE)if [ ! -z "$(METAFILE)" ]; then\
+	  $(OCAMLFIND) remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE); \
+	fi
+
 ifeq ($(shell which cygpath 2>/dev/null),)
 FINDLIBSEP := :
 else
@@ -608,9 +614,9 @@ install: META
 	   echo INSTALL "$$f" "$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
-	$(HIDE)if [ "$(METAFILE)" ]; then \
-	  $(OCAMLFIND) remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) 2>/dev/null; \
-	fi
+	# findlib needs the package to not be installed, so we remove it before
+	# installing it
+	$(call findlib_remove)
 	$(call findlib_install, META $(FINDLIBFILESTOINSTALL))
 	$(HIDE)$(MAKE) install-extra -f "$(SELF)"
 install-extra::
@@ -622,7 +628,7 @@ META: $(METAFILE)
 		cat $(METAFILE) | grep -v 'directory.*=.*' > META; \
 	fi
 
-install-byte: META
+install-byte:
 	$(call findlib_install, $(CMAFILES) $(CMOFILESTOINSTALL), -add)
 
 install-doc:: html mlihtml
@@ -644,9 +650,7 @@ install-doc:: html mlihtml
 
 uninstall::
 	@# Extension point
-	$(HIDE)if [ ! -z "$(METAFILE)" ]; then\
-		$(OCAMLFIND) remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE); \
-	fi
+	$(call findlib_remove)
 	$(HIDE)for f in $(FILESTOINSTALL); do \
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`" &&\
 	 instf="$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
