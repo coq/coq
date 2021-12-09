@@ -77,9 +77,6 @@ type abstraction_request =
 | AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Names.Name.t * (evar_map * constr) * Locus.clause * bool
 | AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
 
-val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
-  env -> evar_map -> (evar_map * constr) -> evar_map * constr
-
 type 'r abstraction_result =
   Names.Id.t * named_context_val *
     named_declaration list * Names.Id.t option *

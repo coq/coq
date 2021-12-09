@@ -1446,11 +1446,11 @@ let compile ~program_mode sigma pb =
           compile_all_variables initial tomatch sigma pb
       | IsInd (_,(IndType(indf,realargs) as indt),names) ->
         let mind,_ = dest_ind_family indf in
-          let mind = Tacred.check_privacy !!(pb.env) mind in
-          let cstrs = get_constructors !!(pb.env) indf in
-          let arsign, _ = get_arity !!(pb.env) indf in
+        let () = Tacred.check_privacy !!(pb.env) (fst mind) in
+        let cstrs = get_constructors !!(pb.env) indf in
+        let arsign, _ = get_arity !!(pb.env) indf in
         let eqns,onlydflt = group_equations pb (fst mind) current cstrs pb.mat in
-          let no_cstr = Int.equal (Array.length cstrs) 0 in
+        let no_cstr = Int.equal (Array.length cstrs) 0 in
         if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt then
             compile_all_variables initial tomatch sigma pb
         else

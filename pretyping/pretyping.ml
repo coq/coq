@@ -235,13 +235,11 @@ let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen
     else
       sigma) pending sigma
 
-let apply_heuristics env sigma fail_evar =
+let apply_heuristics env sigma =
   (* Resolve eagerly, potentially making wrong choices *)
   let flags = default_flags_of (Conv_oracle.get_transp_state (Environ.oracle env)) in
   try solve_unif_constraints_with_heuristics ~flags env sigma
-  with e when CErrors.noncritical e ->
-    let e = Exninfo.capture e in
-    if fail_evar then Exninfo.iraise e else sigma
+  with e when CErrors.noncritical e -> sigma
 
 let check_typeclasses_instances_are_solved ~program_mode env current_sigma frozen =
   (* Naive way, call resolution again with failure flag *)
@@ -296,7 +294,7 @@ let solve_remaining_evars ?hook flags env ?initial sigma =
   | Some hook -> apply_inference_hook hook env sigma frozen
   in
   let sigma = if flags.solve_unification_constraints
-    then apply_heuristics env sigma false
+    then apply_heuristics env sigma
     else sigma
   in
   if flags.fail_evar then check_evars_are_solved ~program_mode env sigma frozen;
@@ -1201,7 +1199,7 @@ struct
           let sigma, cj = pretype empty_tycon env sigma c in
           let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
           begin
-            match Nativenorm.native_infer_conv !!env sigma cty tval with
+            match Reductionops.native_infer_conv !!env sigma cty tval with
             | Some sigma -> (sigma, cj), tval
             | None ->
               error_actual_type ?loc !!env sigma cj tval
