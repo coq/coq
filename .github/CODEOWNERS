@@ -177,6 +177,7 @@
 /plugins/rtauto/       @coq/rtauto-maintainers
 /theories/rtauto/      @coq/rtauto-maintainers
 
+/plugins/ltac2/        @coq/ltac2-maintainers
 /user-contrib/Ltac2    @coq/ltac2-maintainers
 
 ########## Pretyper ##########
