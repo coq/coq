@@ -677,7 +677,7 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
 let gallina_print_leaf_entry env sigma with_values ((_, kn),lobj) =
   let sep = if with_values then " = " else " : " in
   match lobj with
-  | AtomicObject (_,o) ->
+  | AtomicObject o ->
     let handler =
       DynHandle.add Declare.Internal.objVariable begin fun (id,()) ->
           (* Outside sections, VARIABLES still exist but only with universes
@@ -792,7 +792,7 @@ let handleF h (Libobject.Dyn.Dyn (tag, o)) = match DynHandleF.find tag h with
 (* TODO: see the comment for {!gallina_print_leaf_entry} *)
 let print_full_pure_context env sigma =
   let rec prec = function
-  | ((_,kn),Lib.Leaf AtomicObject (_, lobj))::rest ->
+  | ((_,kn),Lib.Leaf AtomicObject lobj)::rest ->
     let handler =
       DynHandleF.add Declare.Internal.Constant.tag begin fun (id,_) ->
           let kn = KerName.make (KerName.modpath kn) (Label.of_id id) in

@@ -101,9 +101,9 @@ and subst_sobjs sub (mbids,aobjs as sobjs) =
 and subst_objects subst seg =
   let subst_one node =
     match node with
-    | AtomicObject (id, obj) ->
+    | AtomicObject obj ->
       let obj' = Libobject.subst_object (subst,obj) in
-      if obj' == obj then node else AtomicObject (id, obj')
+      if obj' == obj then node else AtomicObject obj'
     | ModuleObject (id, sobjs) ->
       let sobjs' = subst_sobjs subst sobjs in
       if sobjs' == sobjs then node else ModuleObject (id, sobjs')
@@ -255,7 +255,7 @@ let load_modtype i sp mp sobjs =
 
 let rec load_object i (prefix, obj) =
   match obj with
-  | AtomicObject (_,o) -> Libobject.load_object i (prefix, o)
+  | AtomicObject o -> Libobject.load_object i (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     do_module' false load_objects i (name, sobjs)
@@ -353,7 +353,7 @@ let open_modtype i ((sp,kn),_) =
 
 let rec open_object f i (prefix, obj) =
   match obj with
-  | AtomicObject (_,o) -> Libobject.open_object f i (prefix, o)
+  | AtomicObject o -> Libobject.open_object f i (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     let dir = dir_of_sp (fst name) in
@@ -396,7 +396,7 @@ and open_keep f i ((sp,kn),kobjs) =
 
 let rec cache_object (prefix, obj) =
   match obj with
-  | AtomicObject (_,o) -> Libobject.cache_object (prefix, o)
+  | AtomicObject o -> Libobject.cache_object (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     do_module' false load_objects 1 (name, sobjs)

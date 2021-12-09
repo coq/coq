@@ -77,7 +77,7 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
   List.iter (fun d -> fn (GlobRef.VarRef (NamedDecl.get_id d)) None env (NamedDecl.get_type d))
     (Environ.named_context env);
   let iter_obj prefix lobj = match lobj with
-    | AtomicObject (_,o) ->
+    | AtomicObject o ->
       let handler =
         DynHandle.add Declare.Internal.Constant.tag begin fun (id,obj) ->
           let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in

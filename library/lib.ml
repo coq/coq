@@ -64,7 +64,7 @@ let classify_segment seg =
           clean (substl, o::keepl, anticipl) stk
         | ExportObject _ ->
           clean (o::substl, keepl, anticipl) stk
-        | AtomicObject (id, obj) as o ->
+        | AtomicObject obj as o ->
           begin match classify_object obj with
             | Dispose -> clean acc stk
             | Keep ->
@@ -193,13 +193,13 @@ let add_discharged_leaf id obj =
   let oname = make_foname id in
   let newobj = rebuild_object obj in
   cache_object (prefix(),newobj);
-  add_entry oname (Leaf (AtomicObject (id, newobj)))
+  add_entry oname (Leaf (AtomicObject newobj))
 
 let add_leaf obj =
   let id = anonymous_id () in
   let oname = make_foname id in
   cache_object (prefix(),obj);
-  add_entry oname (Leaf (AtomicObject (id, obj)))
+  add_entry oname (Leaf (AtomicObject obj))
 
 (* Modules. *)
 
@@ -415,8 +415,7 @@ let discharge_item ((sp,_),e) =
     begin match lobj with
     | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
     | ExportObject _ -> None
-    | AtomicObject (id,obj) ->
-      Option.map (fun o -> (basename sp,o)) (discharge_object obj)
+    | AtomicObject obj -> Option.map (fun o -> Libnames.basename sp, o) (discharge_object obj)
     end
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")

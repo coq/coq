@@ -390,7 +390,7 @@ and v_libobjt = Sum("Libobject.t",0,
      [| v_aobjs |];
      [| v_id; v_libobjs |];
      [| List (v_pair v_open_filter v_mp)|];
-     [| v_id; v_obj |]
+     [| v_obj |]
   |])
 
 and v_libobjs = List v_libobjt
