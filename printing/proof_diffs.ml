@@ -628,47 +628,39 @@ let db_goal_map op np ng_to_og =
    to create the map from new goal ids to old goal ids.
 *)
 let make_goal_map op np =
-  let ng_to_og = ref GoalMap.empty in
   let open Evar.Set in
   let ogs = Proof.all_goals op in
   let ngs = Proof.all_goals np in
   let rem_gs = diff ogs ngs in
-  let num_rems = cardinal rem_gs in
   let add_gs = diff ngs ogs in
-  let num_adds = cardinal add_gs in
 
   (* add common goals *)
-  Evar.Set.iter (fun x -> ng_to_og := GoalMap.add x x !ng_to_og) (inter ogs ngs);
+  let ng_to_og = Evar.Set.fold (fun x accu -> GoalMap.add x x accu) (inter ogs ngs) GoalMap.empty in
 
-  if num_rems = 0 then
-    !ng_to_og (* proofs are the same *)
-  else if num_adds = 0 then
-    !ng_to_og (* only removals *)
-  else if num_rems = 1 then begin
+  match Evar.Set.elements rem_gs with
+  | [] -> ng_to_og (* proofs are the same *)
+  | [hd] ->
     (* only 1 removal, some additions *)
-    let removed_g = List.hd (elements rem_gs) in
-    Evar.Set.iter (fun x -> ng_to_og := GoalMap.add x removed_g !ng_to_og) add_gs;
-    !ng_to_og
-  end else begin
-    (* >= 2 removals, >= 1 addition, need to match *)
-    let nevar_to_oevar = match_goals (to_constr op) (to_constr np) in
+    Evar.Set.fold (fun x accu -> GoalMap.add x hd accu) add_gs ng_to_og
+  | elts ->
+    if Evar.Set.is_empty add_gs then ng_to_og (* only removals *)
+    else
+      (* >= 2 removals, >= 1 addition, need to match *)
+      let nevar_to_oevar = match_goals (to_constr op) (to_constr np) in
 
-    let oevar_to_og = ref CString.Map.empty in
-    let Proof.{sigma=osigma} = Proof.data op in
-    List.iter (fun og -> oevar_to_og := CString.Map.add (goal_to_evar og osigma) og !oevar_to_og)
-        (Evar.Set.elements rem_gs);
+      let Proof.{sigma=osigma} = Proof.data op in
+      let fold accu og = CString.Map.add (goal_to_evar og osigma) og accu in
+      let oevar_to_og = List.fold_left fold CString.Map.empty elts in
 
-    let Proof.{sigma=nsigma} = Proof.data np in
-    let get_og ng =
-      let nevar = goal_to_evar ng nsigma in
-      let oevar = CString.Map.find nevar nevar_to_oevar in
-      let og = CString.Map.find oevar !oevar_to_og in
-      og
-    in
-    Evar.Set.iter (fun ng ->
-        try ng_to_og := GoalMap.add ng (get_og ng) !ng_to_og with Not_found -> ())  add_gs;
-    !ng_to_og
-  end
+      let Proof.{sigma=nsigma} = Proof.data np in
+      let get_og ng =
+        let nevar = goal_to_evar ng nsigma in
+        let oevar = CString.Map.find nevar nevar_to_oevar in
+        let og = CString.Map.find oevar oevar_to_og in
+        og
+      in
+      let fold ng accu = try GoalMap.add ng (get_og ng) accu with Not_found -> accu in
+      Evar.Set.fold fold add_gs ng_to_og
 
 let notify_proof_diff_failure msg =
   Feedback.msg_notice Pp.(str "Unable to compute diffs: " ++ str msg)
