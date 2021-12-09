@@ -556,9 +556,7 @@ let match_goals ot nt =
     end
   in
 
-  (match ot with
-  | Some ot -> match_goals_r "" ot nt
-  | None -> ());
+  let () = match_goals_r "" ot nt in
   !nevar_to_oevar
 
 let get_proof_context (p : Proof.t) =
@@ -656,7 +654,7 @@ let make_goal_map_i op np =
       !ng_to_og
     end else begin
       (* >= 2 removals, >= 1 addition, need to match *)
-      let nevar_to_oevar = match_goals (Some (to_constr op)) (to_constr np) in
+      let nevar_to_oevar = match_goals (to_constr op) (to_constr np) in
 
       let oevar_to_og = ref CString.Map.empty in
       let Proof.{sigma=osigma} = Proof.data op in
