@@ -1,5 +1,5 @@
 - **Changed:**
-  Load plugins using `findlib <http://projects.camlcity.org/projects/findlib.html>`.
+  Load plugins using `findlib <http://projects.camlcity.org/projects/findlib.html>`_.
   This requires projects built with ``coq_makefile`` to either provide a
   hand written ``META`` file or use the ``-generate-meta-for-package`` option
   when applicable. As a consequence :cmd:`Declare ML Module` now uses plugin

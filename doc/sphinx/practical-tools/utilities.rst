@@ -90,7 +90,7 @@ project, so its modules are properly qualified. Omitting it will
 generate object files that are not usable except for expert cases.
 
 Also note that when a project includes a plugin it also needs to include a
-``META`` file, as per `findlib <http://projects.camlcity.org/projects/findlib.html>`.
+``META`` file, as per `findlib <http://projects.camlcity.org/projects/findlib.html>`_.
 If the project includes exactly one plugin, the ``META`` file is
 generated automatically when the option ``-generate-meta-for-package my-package``
 is given. The generated file will make the plugin available
