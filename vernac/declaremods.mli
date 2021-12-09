@@ -114,7 +114,7 @@ val declare_include : (Constrexpr.module_ast * inline) list -> unit
     (together with their section path). *)
 
 val iter_all_segments :
-  (Libobject.object_name -> Libobject.t -> unit) -> unit
+  (Nametab.object_prefix -> Libobject.t -> unit) -> unit
 
 
 val debug_print_modtab : unit -> Pp.t

@@ -115,18 +115,16 @@ type obj = Dyn.t (* persistent dynamic objects *)
 *)
 
 type algebraic_objects =
-  | Objs of objects
-  | Ref of Names.ModPath.t * Mod_subst.substitution
+  | Objs of t list
+  | Ref of ModPath.t * Mod_subst.substitution
 
 and t =
-  | ModuleObject of substitutive_objects
-  | ModuleTypeObject of substitutive_objects
-  | IncludeObject of algebraic_objects
-  | KeepObject of objects
+  | ModuleObject of Id.t * substitutive_objects
+  | ModuleTypeObject of Id.t * substitutive_objects
+  | IncludeObject of Id.t * algebraic_objects
+  | KeepObject of Id.t * t list
   | ExportObject of { mpl : (open_filter * ModPath.t) list }
-  | AtomicObject of obj
-
-and objects = (Names.Id.t * t) list
+  | AtomicObject of Id.t * obj
 
 and substitutive_objects = MBId.t list * algebraic_objects
 

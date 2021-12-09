@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
 open Nametab
 open Mod_subst
 
@@ -69,7 +70,7 @@ type substitutivity = Dispose | Substitute | Keep | Anticipate
    can be substituted and a "syntactic" [full_path] which can be printed
 *)
 
-type object_name = Libnames.full_path * Names.KerName.t
+type object_name = Libnames.full_path * KerName.t
 
 type open_filter
 
@@ -136,26 +137,24 @@ module Dyn : Dyn.S
 type obj = Dyn.t
 
 type algebraic_objects =
-  | Objs of objects
-  | Ref of Names.ModPath.t * Mod_subst.substitution
+  | Objs of t list
+  | Ref of ModPath.t * Mod_subst.substitution
 
 and t =
-  | ModuleObject of substitutive_objects
-  | ModuleTypeObject of substitutive_objects
-  | IncludeObject of algebraic_objects
-  | KeepObject of objects
-  | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
-  | AtomicObject of obj
+  | ModuleObject of Id.t * substitutive_objects
+  | ModuleTypeObject of Id.t * substitutive_objects
+  | IncludeObject of Id.t * algebraic_objects
+  | KeepObject of Id.t * t list
+  | ExportObject of { mpl : (open_filter * ModPath.t) list }
+  | AtomicObject of Id.t * obj
 
-and objects = (Names.Id.t * t) list
-
-and substitutive_objects = Names.MBId.t list * algebraic_objects
+and substitutive_objects = MBId.t list * algebraic_objects
 
 val declare_object_full :
-  ('a,object_name * 'a) object_declaration -> (Names.Id.t * 'a) Dyn.tag
+  ('a,object_name * 'a) object_declaration -> (Id.t * 'a) Dyn.tag
 
 val declare_named_object :
-  ('a,object_name * 'a) object_declaration -> (Names.Id.t -> 'a -> obj)
+  ('a,object_name * 'a) object_declaration -> (Id.t -> 'a -> obj)
 
 val declare_named_object0 :
   ('a,object_prefix * 'a) object_declaration -> ('a -> obj)

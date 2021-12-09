@@ -31,11 +31,9 @@ type node =
 
 type library_segment = (Libobject.object_name * node) list
 
-type lib_objects = (Id.t * Libobject.t) list
-
 type classified_objects = {
-  substobjs : lib_objects;
-  keepobjs : lib_objects;
+  substobjs : Libobject.t list;
+  keepobjs : Libobject.t list;
   anticipateobjs : Libobject.t list;
 }
 

@@ -37,11 +37,9 @@ type library_entry = object_name * node
 
 type library_segment = library_entry list
 
-type lib_objects = (Names.Id.t * Libobject.t) list
-
 type classified_objects = {
-  substobjs : lib_objects;
-  keepobjs : lib_objects;
+  substobjs : Libobject.t list;
+  keepobjs : Libobject.t list;
   anticipateobjs : Libobject.t list;
 }
 
@@ -59,23 +57,22 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
-      let id = Names.Label.to_id (Names.KerName.label kn) in
       begin match o with
         | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
-          clean ((id,o)::substl, keepl, anticipl) stk
+          clean (o::substl, keepl, anticipl) stk
         | KeepObject _ ->
-          clean (substl, (id,o)::keepl, anticipl) stk
+          clean (substl, o::keepl, anticipl) stk
         | ExportObject _ ->
-          clean ((id,o)::substl, keepl, anticipl) stk
-        | AtomicObject obj ->
+          clean (o::substl, keepl, anticipl) stk
+        | AtomicObject (id, obj) as o ->
           begin match classify_object obj with
             | Dispose -> clean acc stk
             | Keep ->
-              clean (substl, (id,AtomicObject obj)::keepl, anticipl) stk
+              clean (substl, o::keepl, anticipl) stk
             | Substitute ->
-              clean ((id,AtomicObject obj)::substl, keepl, anticipl) stk
+              clean (o::substl, keepl, anticipl) stk
             | Anticipate ->
-              clean (substl, keepl, AtomicObject obj::anticipl) stk
+              clean (substl, keepl, o::anticipl) stk
           end
       end
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
@@ -196,13 +193,13 @@ let add_discharged_leaf id obj =
   let oname = make_foname id in
   let newobj = rebuild_object obj in
   cache_object (prefix(),newobj);
-  add_entry oname (Leaf (AtomicObject newobj))
+  add_entry oname (Leaf (AtomicObject (id, newobj)))
 
 let add_leaf obj =
   let id = anonymous_id () in
   let oname = make_foname id in
   cache_object (prefix(),obj);
-  add_entry oname (Leaf (AtomicObject obj))
+  add_entry oname (Leaf (AtomicObject (id, obj)))
 
 (* Modules. *)
 
@@ -426,7 +423,7 @@ let discharge_item ((sp,_),e) =
     begin match lobj with
     | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
     | ExportObject _ -> None
-    | AtomicObject obj ->
+    | AtomicObject (id,obj) ->
       Option.map (fun o -> (basename sp,o)) (discharge_object obj)
     end
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
