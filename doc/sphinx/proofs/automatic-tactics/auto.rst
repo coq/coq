@@ -136,8 +136,13 @@ Programmable proof search
 
    .. tacn:: bfs eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
-      Like :tacn:`eauto`, but uses a
-      `breadth-first search <https://en.wikipedia.org/wiki/Breadth-first_search>`_.
+      .. deprecated:: 8.15
+
+         This tactic was meant to provide a `breadth-first search
+         <https://en.wikipedia.org/wiki/Breadth-first_search>`_
+         version of :tacn:`eauto` but it actually behaved like
+         :tacn:`eauto`. Use :tacn:`typeclasses
+         eauto` with the `bfs` flag instead.
 
 .. tacn:: autounfold {? @hintbases } {? @simple_occurrences }
 
