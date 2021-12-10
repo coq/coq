@@ -46,7 +46,4 @@ module Make : functor(S : SearchProblem) -> sig
   val depth_first : S.state -> S.state
   val debug_depth_first : S.state -> S.state
 
-  val breadth_first : S.state -> S.state
-  val debug_breadth_first : S.state -> S.state
-
 end

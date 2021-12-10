@@ -52,42 +52,4 @@ module Make = functor(S : SearchProblem) -> struct
     in
     explore [1] s
 
-  (*s Breadth first search. We use functional FIFOS à la Okasaki. *)
-
-  type 'a queue = 'a list * 'a list
-
-  exception Empty
-
-  let empty = [],[]
-
-  let push x (h,t) : _ queue = (x::h,t)
-
-  let pop = function
-    | h, x::t -> x, (h,t)
-    | h, [] -> match List.rev h with x::t -> x, ([],t) | [] -> raise Empty
-
-  let breadth_first s =
-    let rec explore q =
-      let (s, q') = try pop q with Empty -> raise Not_found in
-      enqueue q' (S.branching s)
-    and enqueue q = function
-      | [] -> explore q
-      | s :: l -> if S.success s then s else enqueue (push s q) l
-    in
-    enqueue empty [s]
-
-  let debug_breadth_first s =
-    let rec explore q =
-      let ((p,s), q') = try pop q with Empty -> raise Not_found in
-      enqueue 1 p q' (S.branching s)
-    and enqueue i p q = function
-      | [] ->
-          explore q
-      | s :: l ->
-          let ps = i::p in
-          msg_with_position ps (S.pp s);
-          if S.success s then s else enqueue (succ i) p (push (ps,s) q) l
-    in
-    enqueue 1 [] empty [s]
-
 end
