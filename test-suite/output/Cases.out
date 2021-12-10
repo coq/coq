@@ -57,6 +57,7 @@ match H with
       else fun _ : P false => Logic.I) x0) x
 end
      : B -> True
+File "./output/Cases.v", line 91, characters 0-98:
 The command has indeed failed with message:
 Non exhaustive pattern-matching: no clause found for pattern 
 gadtTy _ _

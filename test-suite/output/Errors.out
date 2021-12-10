@@ -1,9 +1,10 @@
+File "./output/Errors.v", line 12, characters 0-11:
 The command has indeed failed with message:
 The field t is missing in Errors.M.
 File "./output/Errors.v", line 19, characters 18-19:
 The command has indeed failed with message:
 Unable to unify "nat" with "True".
-File "./output/Errors.v", line 17, characters 18-19:
+File "./output/Errors.v", line 20, characters 0-16:
 The command has indeed failed with message:
 In nested Ltac calls to "f" and "apply x", last call failed.
 Unable to unify "nat" with "True".

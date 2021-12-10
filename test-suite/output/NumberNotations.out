@@ -87,6 +87,7 @@ File "./output/NumberNotations.v", line 203, characters 2-71:
 Warning: The 'abstract after' directive has no effect when the parsing
 function (of_uint) targets an option type.
 [abstract-large-number-no-op,numbers]
+File "./output/NumberNotations.v", line 206, characters 2-77:
 The command has indeed failed with message:
 The 'abstract after' directive has no effect when the parsing function
 (of_uint) targets an option type. [abstract-large-number-no-op,numbers]
@@ -131,6 +132,7 @@ v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "unit".
 let v := 0%test14' in v : unit
      : unit
+File "./output/NumberNotations.v", line 273, characters 4-71:
 The command has indeed failed with message:
 This command does not support the Global option in sections.
 let v := 0%test14'' in v : unit
@@ -270,6 +272,7 @@ sum unit unit
      : Set
 sum unit (sum unit unit)
      : Set
+File "./output/NumberNotations.v", line 546, characters 0-112:
 The command has indeed failed with message:
 Missing mapping for constructor Isum.
 File "./output/NumberNotations.v", line 552, characters 68-73:
@@ -281,6 +284,7 @@ add is not an inductive type.
 File "./output/NumberNotations.v", line 562, characters 40-43:
 The command has indeed failed with message:
 add is not a constructor of an inductive type.
+File "./output/NumberNotations.v", line 566, characters 0-103:
 The command has indeed failed with message:
 Missing mapping for constructor Iempty.
 File "./output/NumberNotations.v", line 580, characters 56-61:
@@ -297,6 +301,7 @@ Warning: Type of Iunit seems incompatible with the type of O.
 Expected type is: I instead of I.
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
+File "./output/NumberNotations.v", line 589, characters 0-146:
 The command has indeed failed with message:
 'via' and 'abstract' cannot be used together.
 File "./output/NumberNotations.v", line 665, characters 21-23:

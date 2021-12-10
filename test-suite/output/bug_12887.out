@@ -5,6 +5,7 @@ environment:
 Functor : (Type -> Type) -> Type
 F : Type -> Type
 fmap : forall A B : Type, (A -> B) -> F A -> F B
+File "./output/bug_12887.v", line 8, characters 0-53:
 The command has indeed failed with message:
 Cannot infer an existential variable of type "nat" in
 environment:

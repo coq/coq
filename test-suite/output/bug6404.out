@@ -1,4 +1,4 @@
-File "./output/bug6404.v", line 2, characters 22-23:
+File "./output/bug6404.v", line 7, characters 2-12:
 The command has indeed failed with message:
 In nested Ltac calls to "c", "abs", "transparent_abstract (tactic3)", 
 "b", "a", "pose (I : I)" and "(I : I)", last term evaluation failed.
