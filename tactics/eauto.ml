@@ -240,7 +240,7 @@ module SearchProblem = struct
           prev = ps; dblist = s.dblist;
           local_lemmas = s.local_lemmas }
       in
-      List.sort compare (List.map map (assumption_tacs @ intro_tac @ rec_tacs))
+      List.map map (assumption_tacs @ intro_tac) @ (List.sort compare (List.map map rec_tacs))
 
   let pp s = hov 0 (str " depth=" ++ int s.depth ++ spc () ++
                       (Lazy.force s.last_tactic))
