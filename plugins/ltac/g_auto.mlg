@@ -119,7 +119,7 @@ let make_depth n = snd (Eauto.make_dimension n None)
 let deprecated_eauto_bfs =
   CWarnings.create
     ~name:"eauto_bfs" ~category:"deprecated"
-    (fun () -> Pp.str "The syntax [eauto @int_or_var @int_or_var] is deprecated. Use [bfs eauto] instead.")
+    (fun () -> Pp.str "The syntax [eauto @int_or_var @int_or_var] is deprecated. Use [typeclasses eauto bfs] instead.")
 
 let deprecated_bfs tacname =
   CWarnings.create
@@ -158,7 +158,7 @@ TACTIC EXTEND dfs_eauto
     { Eauto.gen_eauto (Eauto.make_dimension p None) (eval_uconstrs ist lems) db }
 END
 
-TACTIC EXTEND bfs_eauto
+TACTIC EXTEND bfs_eauto DEPRECATED { Deprecation.make ~since:"8.15" ~note:"Use [typeclasses eauto bfs] instead." () }
 | [ "bfs" "eauto" nat_or_var_opt(p) auto_using(lems)
       hintbases(db) ] ->
     { Eauto.gen_eauto (true, Eauto.make_depth p) (eval_uconstrs ist lems) db }
