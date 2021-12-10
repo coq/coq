@@ -140,8 +140,8 @@ Programmable proof search
 
          This tactic was meant to provide a `breadth-first search
          <https://en.wikipedia.org/wiki/Breadth-first_search>`_
-         version of :tacn:`eauto` but actually behaved like
-         :tacn:`eauto` since it was introduced. Use :tacn:`typeclasses
+         version of :tacn:`eauto` but it actually behaved like
+         :tacn:`eauto`. Use :tacn:`typeclasses
          eauto` with the `bfs` flag instead.
 
 .. tacn:: autounfold {? @hintbases } {? @simple_occurrences }
