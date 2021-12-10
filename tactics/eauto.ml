@@ -321,10 +321,8 @@ let e_search_auto ?(debug = Off) ?depth lems db_list =
   let sigma = Proofview.Goal.sigma gl in
   let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
-  let tac = match d with
-  | Debug -> Search.debug_depth_first
-  | _ -> Search.depth_first
-  in
+  let debug = match d with Debug -> true | Info | Off -> false in
+  let tac s = Search.depth_first ~debug s in
   let () = pr_dbg_header d in
   let evk = Proofview.Goal.goal gl in
   match tac (make_initial_state sigma evk d p db_list local_db lems) with

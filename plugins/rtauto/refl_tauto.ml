@@ -250,10 +250,11 @@ let rtauto_tac =
     let hyps = make_hyps env sigma gamma [concl] hyps in
     let formula=
       List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in
-    let search_fun = match Tacinterp.get_debug() with
-      | Tactic_debug.DebugOn 0 -> Search.debug_depth_first
-      | _ -> Search.depth_first
+    let debug = match Tacinterp.get_debug () with
+    | Tactic_debug.DebugOn 0 -> true
+    | _ -> false
     in
+    let search_fun s = Search.depth_first ~debug s in
     let () =
       begin
         reset_info ();

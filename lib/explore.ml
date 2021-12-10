@@ -23,7 +23,10 @@ module Make = functor(S : SearchProblem) -> struct
 
   type position = int list
 
-  let msg_with_position (p : position) pp =
+  let msg_with_position (p : position) s = match p with
+  | [] -> ()
+  | _ :: _ ->
+    let pp = S.pp s in
     let rec pp_rec = function
       | [] -> mt ()
       | [i] -> int i
@@ -31,25 +34,19 @@ module Make = functor(S : SearchProblem) -> struct
     in
     Feedback.msg_debug (h (pp_rec p) ++ pp)
 
-  (*s Depth first search. *)
+  let push i p = match p with [] -> [] | _ :: _ -> i :: p
 
-  let rec depth_first s =
-    if S.success s then s else depth_first_many (S.branching s)
-  and depth_first_many = function
-    | [] -> raise Not_found
-    | [s] -> depth_first s
-    | s :: l -> try depth_first s with Not_found -> depth_first_many l
-
-  let debug_depth_first s =
+  let depth_first ?(debug=false) s =
     let rec explore p s =
-      msg_with_position p (S.pp s);
+      let () = msg_with_position p s in
       if S.success s then s else explore_many 1 p (S.branching s)
     and explore_many i p = function
       | [] -> raise Not_found
-      | [s] -> explore (i::p) s
+      | [s] -> explore (push i p) s
       | s :: l ->
-          try explore (i::p) s with Not_found -> explore_many (succ i) p l
+          try explore (push i p) s with Not_found -> explore_many (succ i) p l
     in
-    explore [1] s
+    let pos = if debug then [1] else [] in
+    explore pos s
 
 end

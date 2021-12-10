@@ -43,7 +43,6 @@ end
 
 module Make : functor(S : SearchProblem) -> sig
 
-  val depth_first : S.state -> S.state
-  val debug_depth_first : S.state -> S.state
+  val depth_first : ?debug:bool -> S.state -> S.state
 
 end
