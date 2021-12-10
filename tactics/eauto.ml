@@ -142,9 +142,6 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
   try e_my_find_search env sigma db_list local_db secvars gl
   with Not_found -> []
 
-(*s The following module [SearchProblem] is used to instantiate the generic
-    exploration functor [Explore.Make]. *)
-
 type search_state = {
   priority : int;
   depth : int; (*r depth of search before failing *)
@@ -166,8 +163,6 @@ and prev_search_state = (* for info eauto *)
 (* first_goal : goal list sigma -> goal sigma *)
 
 module SearchProblem = struct
-
-  type state = search_state
 
   let success s = List.is_empty s.tacres
 
@@ -252,7 +247,37 @@ module SearchProblem = struct
 
 end
 
-module Search = Explore.Make(SearchProblem)
+module Search = struct
+
+  type position = int list
+
+  let msg_with_position (p : position) s = match p with
+  | [] -> ()
+  | _ :: _ ->
+    let pp = SearchProblem.pp s in
+    let rec pp_rec = function
+      | [] -> mt ()
+      | [i] -> int i
+      | i :: l -> pp_rec l ++ str "." ++ int i
+    in
+    Feedback.msg_debug (h (pp_rec p) ++ pp)
+
+  let push i p = match p with [] -> [] | _ :: _ -> i :: p
+
+  let search ?(debug=false) s =
+    let rec explore p s =
+      let () = msg_with_position p s in
+      if SearchProblem.success s then s else explore_many 1 p (SearchProblem.branching s)
+    and explore_many i p = function
+      | [] -> raise Not_found
+      | [s] -> explore (push i p) s
+      | s :: l ->
+          try explore (push i p) s with Not_found -> explore_many (succ i) p l
+    in
+    let pos = if debug then [1] else [] in
+    explore pos s
+
+end
 
 (** Utilities for debug eauto / info eauto *)
 
@@ -322,7 +347,7 @@ let e_search_auto ?(debug = Off) ?depth lems db_list =
   let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
   let debug = match d with Debug -> true | Info | Off -> false in
-  let tac s = Search.depth_first ~debug s in
+  let tac s = Search.search ~debug s in
   let () = pr_dbg_header d in
   let evk = Proofview.Goal.goal gl in
   match tac (make_initial_state sigma evk d p db_list local_db lems) with

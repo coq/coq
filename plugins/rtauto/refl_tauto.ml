@@ -8,9 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
-module Search = Explore.Make(Proof_search)
-
 open Ltac_plugin
 open CErrors
 open Util
@@ -19,6 +16,40 @@ open Constr
 open Context
 open Proof_search
 open Context.Named.Declaration
+
+module Search = struct
+
+  open Pp
+
+  type position = int list
+
+  let msg_with_position (p : position) s = match p with
+  | [] -> ()
+  | _ :: _ ->
+    let pp = Proof_search.pp s in
+    let rec pp_rec = function
+      | [] -> mt ()
+      | [i] -> int i
+      | i :: l -> pp_rec l ++ str "." ++ int i
+    in
+    Feedback.msg_debug (h (pp_rec p) ++ pp)
+
+  let push i p = match p with [] -> [] | _ :: _ -> i :: p
+
+  let depth_first ?(debug=false) s =
+    let rec explore p s =
+      let () = msg_with_position p s in
+      if Proof_search.success s then s else explore_many 1 p (Proof_search.branching s)
+    and explore_many i p = function
+      | [] -> raise Not_found
+      | [s] -> explore (push i p) s
+      | s :: l ->
+          try explore (push i p) s with Not_found -> explore_many (succ i) p l
+    in
+    let pos = if debug then [1] else [] in
+    explore pos s
+
+end
 
 let force count lazc = incr count;Lazy.force lazc
 
