@@ -133,7 +133,7 @@ let left_instance_tac (inst,id) continue seq=
   match inst with
       Phantom dom->
         if lookup env sigma (id,None) seq then
-          tclFAIL 0 (Pp.str "already done")
+          tclFAIL (Pp.str "already done")
         else
           tclTHENS (cut dom)
             [tclTHENLIST
@@ -150,7 +150,7 @@ let left_instance_tac (inst,id) continue seq=
     | Real((m,t),_)->
         let c = (m, EConstr.to_constr ~abort_on_undefined_evars:false sigma t) in
         if lookup env sigma (id,Some c) seq then
-          tclFAIL 0 (Pp.str "already done")
+          tclFAIL (Pp.str "already done")
         else
           let special_generalize=
             if m>0 then
@@ -195,7 +195,7 @@ let right_instance_tac inst continue seq=
         (tclTHEN (split (Tactypes.ImplicitBindings [t]))
            (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
-        tclFAIL 0 (Pp.str "not implemented ... yet")
+        tclFAIL (Pp.str "not implemented ... yet")
   end
 
 let instance_tac inst=

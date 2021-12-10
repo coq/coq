@@ -629,7 +629,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   in
   match evd with
   | None ->
-    tclFAIL 0 (str"Terms do not have convertible types")
+    tclFAIL (str"Terms do not have convertible types")
   | Some evd ->
     let e,sym =
       try lib_ref "core.eq.type", lib_ref "core.eq.sym"

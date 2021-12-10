@@ -125,10 +125,13 @@ val catch_failerror : Exninfo.iexn -> unit tactic
 
 val tclIDTAC : unit tactic
 val tclTHEN : unit tactic -> unit tactic -> unit tactic
-(* [tclFAIL n msg] fails with [msg] as an error message at level [n]
+(* [tclFAILn n msg] fails with [msg] as an error message at level [n]
     (meaning that it will jump over [n] error catching tacticals FROM
     THIS MODULE. *)
-val tclFAIL : ?info:Exninfo.info -> int -> Pp.t -> 'a tactic
+val tclFAILn : ?info:Exninfo.info -> int -> Pp.t -> 'a tactic
+
+val tclFAIL : ?info:Exninfo.info -> Pp.t -> 'a tactic
+(** Same as above with level set to 0. *)
 
 val tclZEROMSG : ?info:Exninfo.info -> ?loc:Loc.t -> Pp.t -> 'a tactic
 (** Fail with a [User_Error] containing the given message. *)

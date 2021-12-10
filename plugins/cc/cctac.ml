@@ -451,7 +451,7 @@ let cc_tactic depth additional_terms b =
     let _ = debug_congruence (fun () -> Pp.str "Computation completed.") in
     let uf=forest state in
     match sol with
-      None -> Tacticals.tclFAIL 0 (str (if b then "simple congruence failed" else "congruence failed"))
+      None -> Tacticals.tclFAIL (str (if b then "simple congruence failed" else "congruence failed"))
     | Some reason ->
       debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
       match reason with
@@ -482,7 +482,7 @@ let cc_tactic depth additional_terms b =
                         end ++
                       fnl() ++ str "  replacing metavariables by arbitrary terms")
         in
-        Tacticals.tclFAIL 0 msg
+        Tacticals.tclFAIL msg
       | Contradiction dis ->
         let env = Proofview.Goal.env gl in
         let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in

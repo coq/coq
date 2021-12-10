@@ -1150,7 +1150,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       end
   | TacFail (g,n,s) ->
       let msg = interp_message ist s in
-      let tac ~info l = Tacticals.tclFAIL ~info (interp_int_or_var ist n) l in
+      let tac ~info l = Tacticals.tclFAILn ~info (interp_int_or_var ist n) l in
       let tac =
         match g with
         | TacLocal ->

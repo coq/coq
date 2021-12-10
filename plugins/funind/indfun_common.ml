@@ -415,7 +415,7 @@ let list_rewrite (rev : bool) (eqs : (EConstr.constr * bool) list) =
             ((if b then Equality.rewriteLR else Equality.rewriteRL) eq)
             i)
         (if rev then List.rev eqs else eqs)
-        (tclFAIL 0 (mt ()))) [@ocaml.warning "-3"])
+        (tclFAIL (mt ()))) [@ocaml.warning "-3"])
 
 let decompose_lam_n sigma n =
   if n < 0 then
