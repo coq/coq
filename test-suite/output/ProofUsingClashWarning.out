@@ -5,6 +5,7 @@ clashing_name was already a defined Variable, the name clashing_name will refer 
 File "./output/ProofUsingClashWarning.v", line 6, characters 2-39:
 Warning: New Collection definition of redefined_col shadows the previous one.
 [collection-redefinition,deprecated]
+File "./output/ProofUsingClashWarning.v", line 8, characters 2-34:
 The command has indeed failed with message:
 "All" is a predefined collection containing all variables. It can't be redefined.
 File "./output/ProofUsingClashWarning.v", line 11, characters 2-28:

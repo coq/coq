@@ -55,6 +55,7 @@ mono
      : Type@{mono.uu+1}
 Type@{mono.uu}
      : Type@{mono.uu+1}
+File "./output/UnivBinders.v", line 50, characters 2-31:
 The command has indeed failed with message:
 Universe uu already exists.
 monomono
@@ -65,6 +66,7 @@ monomono
      : Type@{MONOU+1}
 mono
      : Type@{mono.uu+1}
+File "./output/UnivBinders.v", line 70, characters 0-52:
 The command has indeed failed with message:
 Universe uu already exists.
 bobmorane = 
@@ -97,12 +99,16 @@ punwrap is universe polymorphic
 Arguments punwrap A%type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
+File "./output/UnivBinders.v", line 100, characters 0-19:
 The command has indeed failed with message:
 Universe instance length is 3 but should be 1.
+File "./output/UnivBinders.v", line 101, characters 0-20:
 The command has indeed failed with message:
 Universe instance length is 0 but should be 1.
+File "./output/UnivBinders.v", line 104, characters 0-30:
 The command has indeed failed with message:
 This object does not support universe names.
+File "./output/UnivBinders.v", line 108, characters 0-49:
 The command has indeed failed with message:
 Cannot enforce v < u because u < gU < gV < v
 insec@{v} = Type@{uu} -> Type@{v}

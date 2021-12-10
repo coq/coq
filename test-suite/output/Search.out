@@ -271,10 +271,13 @@ h: n <> newdef n
 h: n <> newdef n
 h: n <> newdef n
 h': newdef n <> n
+File "./output/Search.v", line 23, characters 2-23:
 The command has indeed failed with message:
 [Focus] No such goal.
+File "./output/Search.v", line 24, characters 2-25:
 The command has indeed failed with message:
 Query commands only support the single numbered goal selector.
+File "./output/Search.v", line 25, characters 2-25:
 The command has indeed failed with message:
 Query commands only support the single numbered goal selector.
 h: P n
