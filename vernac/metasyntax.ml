@@ -468,7 +468,7 @@ let rec split_format_at_ldots hd = function
   | u :: fmt ->
       check_no_ldots_in_box u;
       split_format_at_ldots (u::hd) fmt
-  | [] -> raise Exit
+  | [] -> raise_notrace Exit
 
 and check_no_ldots_in_box = function
   | (_,UnpBox (_,fmt)) ->
@@ -628,7 +628,7 @@ let include_possible_similar_trailing_pattern typ etyps sl l =
   | [], NonTerminal x ::l' when is_constr_typ typ x etyps -> try_aux n l'
   | Break _ :: sl, l -> aux n (sl,l)
   | sl, Break _ :: l -> aux n (sl,l)
-  | _ -> raise Exit
+  | _ -> raise_notrace Exit
   and try_aux n l =
     try aux (n+1) (sl,l)
     with Exit -> n,l in

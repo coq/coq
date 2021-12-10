@@ -109,7 +109,7 @@ let find_position_gen current ensure assoc lev =
           let a' = create_assoc assoc in
           (init := Some (a', q); (p,a',false)::l)
         else if admissible_assoc (a,assoc) then
-          raise Exit
+          raise_notrace Exit
         else
           error_level_assoc p a (Option.get assoc)
       | l -> after := q; (n,create_assoc assoc,ensure)::l

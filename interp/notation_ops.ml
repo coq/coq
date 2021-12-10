@@ -72,18 +72,18 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
      new iteration or the tail of a recursive pattern *)
   let tail = ref [] in
   let check_alphameta id1 id2 =
-    try if not (Id.equal (List.assoc id1 !alphameta) id2) then raise Exit
+    try if not (Id.equal (List.assoc id1 !alphameta) id2) then raise_notrace Exit
     with Not_found ->
-      if (List.mem_assoc id1 !alphameta) then raise Exit;
+      if (List.mem_assoc id1 !alphameta) then raise_notrace Exit;
       alphameta := (id1,id2) :: !alphameta in
   let check_eq_id (vars1,vars2) renaming id1 id2 =
     let ismeta1 = List.mem_f Id.equal id1 vars1 in
     let ismeta2 = List.mem_f Id.equal id2 vars2 in
     match ismeta1, ismeta2 with
     | true, true -> check_alphameta id1 id2
-    | false, false -> if not (alpha_var id1 id2 renaming) then raise Exit
+    | false, false -> if not (alpha_var id1 id2 renaming) then raise_notrace Exit
     | false, true ->
-      if not lt then raise Exit
+      if not lt then raise_notrace Exit
       else
         (* a binder which is not bound in the notation can be
            considered as strictly more precise since it prevents the
@@ -93,13 +93,13 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
            same binder is bound in the notation; this is hawever
            disputable *)
         strictly_lt := true
-    | true, false -> if not lt then raise Exit in
+    | true, false -> if not lt then raise_notrace Exit in
   let check_eq_name vars renaming na1 na2 =
     match na1, na2 with
     | Name id1, Name id2 -> check_eq_id vars renaming id1 id2; (id1,id2)::renaming
     | Anonymous, Anonymous -> renaming
     | Anonymous, Name _ when lt -> renaming
-    | _ -> raise Exit in
+    | _ -> raise_notrace Exit in
   let rec aux (vars1,vars2 as vars) renaming t1 t2 = match t1, t2 with
   | NVar id1, NVar id2 when id1 = ldots_var && id2 = ldots_var -> ()
   | _, NVar id2 when lt && id2 = ldots_var -> tail := t1 :: !tail
@@ -113,7 +113,7 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
   | _, NHole (_, _, _) when lt -> strictly_lt := true
   | NList (i1, j1, iter1, tail1, b1), NList (i2, j2, iter2, tail2, b2)
   | NBinderList (i1, j1, iter1, tail1, b1), NBinderList (i2, j2, iter2, tail2, b2) ->
-    if b1 <> b2 then raise Exit;
+    if b1 <> b2 then raise_notrace Exit;
     let vars1 = replace_var i1 j1 vars1 in
     let vars2 = replace_var i2 j2 vars2 in
     check_alphameta i1 i2; aux (vars1,vars2) renaming iter1 iter2; aux vars renaming tail1 tail2;
@@ -140,7 +140,7 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
     aux (vars1,vars2) renaming iter1 t2;
     let t2 = match !tail with
       | t::rest -> tail := rest; t
-      | _ -> (* ".." is in a discarded fine-grained position *) raise Exit in
+      | _ -> (* ".." is in a discarded fine-grained position *) raise_notrace Exit in
     (* it had to be a single iteration of iter1 *)
     aux vars renaming tail1 t2
   | NApp (t1, a1), NApp (t2, a2) -> aux vars renaming t1 t2; List.iter2 (aux vars renaming) a1 a2
@@ -153,7 +153,7 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
      | None, None -> ()
      | Some _, None -> if lt then strictly_lt := true
      | Some t1, Some t2 -> aux vars renaming t1 t2
-     | None, Some _ -> raise Exit);
+     | None, Some _ -> raise_notrace Exit);
     let renaming = check_eq_name vars renaming na1 na2 in
     aux vars renaming u1 u2
   | NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
@@ -163,14 +163,14 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
     aux vars renaming u1 u2
   | NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (* FIXME? *)
     let check_pat (p1, t1) (p2, t2) =
-      if not (List.equal cases_pattern_eq p1 p2) then raise Exit; (* TODO: subtyping and renaming *)
+      if not (List.equal cases_pattern_eq p1 p2) then raise_notrace Exit; (* TODO: subtyping and renaming *)
       aux vars renaming t1 t2
     in
     let eqf renaming (t1, (na1, o1)) (t2, (na2, o2)) =
       aux vars renaming t1 t2;
       let renaming = check_eq_name vars renaming na1 na2 in
       let eq renaming (i1, n1) (i2, n2) =
-        if not (Ind.CanOrd.equal i1 i2) then raise Exit;
+        if not (Ind.CanOrd.equal i1 i2) then raise_notrace Exit;
         List.fold_left2 (check_eq_name vars) renaming n1 n2 in
         Option.fold_left2 eq renaming o1 o2 in
     let renaming = List.fold_left2 eqf renaming r1 r2 in
@@ -201,7 +201,7 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
   | NSort s1, NSort s2 when glob_sort_eq s1 s2 -> ()
   | NCast (c1, k1, t1), NCast (c2, k2, t2) ->
     aux vars renaming c1 c2;
-    if not (cast_kind_eq k1 k2) then raise Exit;
+    if not (cast_kind_eq k1 k2) then raise_notrace Exit;
     aux vars renaming t1 t2
   | NInt i1, NInt i2 when Uint63.equal i1 i2 -> ()
   | NFloat f1, NFloat f2 when Float64.equal f1 f2 -> ()
@@ -211,7 +211,7 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
     aux vars renaming ty1 ty2
   | (NRef _ | NVar _ | NApp _ | NProj _ | NHole _ | NList _ | NLambda _ | NProd _
     | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
-    | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NArray _), _ -> raise Exit in
+    | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NArray _), _ -> raise_notrace Exit in
   try
     let _ = aux (vars1,vars2) [] t1 t2 in
     if not lt then

@@ -1065,7 +1065,7 @@ let extract_unique_projection = function
 let extract_candidates sols =
   try
     UpdateWith
-      (List.map (function (id,ProjectVar) -> mkVar id | _ -> raise Exit) sols)
+      (List.map (function (id,ProjectVar) -> mkVar id | _ -> raise_notrace Exit) sols)
   with Exit ->
     NoUpdate
 

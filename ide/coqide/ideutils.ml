@@ -527,7 +527,7 @@ let url_for_keyword =
             (fun x -> Sys.file_exists (Filename.concat x "index_urls.txt"))
             (Minilib.coqide_data_dirs ())) "index_urls.txt" in
             open_in index_urls
-          with Not_found -> raise Exit
+          with Not_found -> raise_notrace Exit
         in
           try while true do
             let s = input_line cin in

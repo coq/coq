@@ -309,7 +309,7 @@ let marshal_in_segment ~validate ~value ~segment f ch =
       try
         let v = Analyze.parse_channel ch in
         let digest = Digest.input ch in
-        let () = if not (String.equal digest segment.ObjFile.hash) then raise Exit in
+        let () = if not (String.equal digest segment.ObjFile.hash) then raise_notrace Exit in
         v
       with _ ->
         user_err (str "Corrupted file " ++ quote (str f))

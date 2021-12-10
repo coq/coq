@@ -75,7 +75,7 @@ let convert_string d =
   with CErrors.UserError _ ->
     Flags.if_verbose Feedback.msg_warning
       (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
-    raise Exit
+    raise_notrace Exit
 
 let add_rec_path ~unix_path ~coq_root =
   if exists_dir unix_path then
