@@ -39,6 +39,17 @@ type 'a constr_entry_key_gen =
   | ETConstr of Constrexpr.notation_entry * Notation_term.constr_as_binder_kind option * 'a
   | ETPattern of bool * int option (* true = strict pattern, i.e. not a single variable *)
 
+let constr_entry_key_eq v1 v2 = match v1, v2 with
+  | ETIdent, ETIdent -> true
+  | ETName _, ETName _ -> true
+  | ETGlobal, ETGlobal -> true
+  | ETBigint, ETBigint -> true
+  | ETBinder b1, ETBinder b2 -> b1 == b2
+  | ETConstr (s1,bko1,_lev1), ETConstr (s2,bko2,_lev2) ->
+    Notation.notation_entry_eq s1 s2 && Option.equal (=) bko1 bko2
+  | ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
+  | (ETIdent | ETName _ | ETGlobal | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
+
 (** Entries level (left-hand side of grammar rules) *)
 
 type constr_entry_key =
