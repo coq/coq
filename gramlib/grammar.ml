@@ -1608,8 +1608,12 @@ module Parsable = struct
     let get_parsing_loc () =
       (* Build the loc spanning from just after what is consumed (count)
          up to the further token known to have been read (max_peek).
-         Being a parsing error, there needs
-         to be a next token that caused the failure. *)
+         Being a parsing error, there needs to be a next token that
+         caused the failure, except when the rule is empty (e.g. an
+         empty custom entry); thus, we need to ensure that the token
+         at location cnt has been peeked (which in turn ensures that
+         the max peek is at least the current position) *)
+      let _ = LStream.peek ts in
       let loc' = LStream.max_peek_loc ts in
       let loc = LStream.get_loc (LStream.count ts) ts in
       Loc.merge loc loc'
