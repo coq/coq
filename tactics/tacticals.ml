@@ -39,9 +39,8 @@ struct
 
 [@@@ocaml.warning "-3"]
 open Tacmach.Old
-[@@@ocaml.warning "+3"]
-
 type tactic = Proofview.V82.tac
+[@@@ocaml.warning "+3"]
 
 let catch_failerror = catch_failerror
 

@@ -1198,6 +1198,11 @@ let tclLIFT = Proof.lift
 let tclCHECKINTERRUPT =
    tclLIFT (NonLogical.make Control.check_for_interrupt)
 
+let wrap_exceptions f =
+  try f ()
+  with e when catchable_exception e ->
+    let (e, info) = Exninfo.capture e in tclZERO ~info e
+
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 = struct
   type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
@@ -1243,13 +1248,6 @@ module V82 = struct
     with Logic_monad.TacticFailure e as src ->
       let (_, info) = Exninfo.capture src in
       Exninfo.iraise (e, info)
-
-  let catchable_exception = catchable_exception
-
-  let wrap_exceptions f =
-    try f ()
-    with e when catchable_exception e ->
-      let (e, info) = Exninfo.capture e in tclZERO ~info e
 
 end
 

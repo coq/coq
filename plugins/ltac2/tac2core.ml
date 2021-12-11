@@ -435,7 +435,7 @@ end
 (** constr -> constr *)
 let () = define1 "constr_type" constr begin fun c ->
   let get_type env sigma =
-  Proofview.V82.wrap_exceptions begin fun () ->
+  Proofview.wrap_exceptions begin fun () ->
     let (sigma, t) = Typing.type_of env sigma c in
     let t = Value.of_constr t in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
@@ -719,7 +719,7 @@ let () = define1 "constr_pretype" (repr_ext val_preterm) begin fun c ->
   let open Pretyping in
   let open Ltac_pretype in
   let pretype env sigma =
-  Proofview.V82.wrap_exceptions begin fun () ->
+  Proofview.wrap_exceptions begin fun () ->
     (* For now there are no primitives to create preterms with a non-empty
        closure. I do not know whether [closed_glob_constr] is really the type
        we want but it does not hurt in the meantime. *)

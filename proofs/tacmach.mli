@@ -21,7 +21,9 @@ open Evd
 module Old :
 sig
 
+[@@@ocaml.warning "-3"]
 type tactic = Proofview.V82.tac
+[@@@ocaml.warning "+3"]
 
 val sig_it  : 'a sigma   -> 'a
 val project : Goal.goal sigma -> evar_map

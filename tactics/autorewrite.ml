@@ -175,7 +175,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
                end)
 
 let auto_multi_rewrite ?(conds=Naive) lems cl =
-  Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds (Proofview.tclUNIT()) lems cl)
+  Proofview.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds (Proofview.tclUNIT()) lems cl)
 
 let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
   let onconcl = match cl.Locus.concl_occs with NoOccurrences -> false | _ -> true in
@@ -184,7 +184,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
         (* autorewrite with .... in clause using tac n'est sur que
            si clause represente soit le but soit UNE hypothese
         *)
-        Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
+        Proofview.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
     | _ ->
       let info = Exninfo.reify () in
       Tacticals.tclZEROMSG ~info

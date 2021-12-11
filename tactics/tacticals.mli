@@ -26,7 +26,9 @@ val catch_failerror  : Exninfo.iexn -> unit
 
 (** Tacticals i.e. functions from tactics to tactics. *)
 
+[@@@ocaml.warning "-3"]
 type tactic = Proofview.V82.tac
+[@@@ocaml.warning "+3"]
 
 val tclIDTAC         : tactic
 val tclIDTAC_MESSAGE : Pp.t -> tactic
