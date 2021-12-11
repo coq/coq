@@ -1183,9 +1183,12 @@ let is_coercion level typs =
 let printability level typs onlyparsing reversibility = function
 | NVar _ when reversibility = APrioriReversible ->
   let coe = is_coercion level typs in
-  if not onlyparsing && coe = None then
-    warn_notation_bound_to_variable ();
-  true, coe
+  let onlyparsing =
+    if not onlyparsing && Option.is_empty coe then
+      (warn_notation_bound_to_variable (); true)
+    else
+      onlyparsing in
+  onlyparsing, coe
 | _ ->
    (if not onlyparsing && reversibility <> APrioriReversible then
      (warn_non_reversible_notation reversibility; true)

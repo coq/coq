@@ -1833,19 +1833,13 @@ let declare_notation (scopt,ntn) pat df ~use ~also_in_cases_pattern coe deprecat
   let notation_update,printing_update = update_notation_data (scopt,ntn) use notdata sc.notations in
   let sc = { sc with notations = notation_update } in
   scope_map := String.Map.add scope sc !scope_map;
-  (* Update the uninterpretation cache *)
-  begin match printing_update with
-  | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) pat
-  | None -> ()
-  end;
-  if use <> OnlyParsing then declare_uninterpretation ~also_in_cases_pattern (NotationRule (scopt,ntn)) pat;
   (* Register visibility of lonely notations *)
   begin match scopt with
   | LastLonelyNotation -> scope_stack := LonelyNotationItem ntn :: !scope_stack
   | NotationInScope _ -> ()
   end;
   (* Declare a possible coercion *)
-  begin match coe with
+  if use <> OnlyParsing then begin match coe with
    | Some (IsEntryCoercion entry) ->
      let (_,level,_) = level_of_notation ntn in
      let level = match fst ntn with
@@ -1855,7 +1849,13 @@ let declare_notation (scopt,ntn) pat df ~use ~also_in_cases_pattern coe deprecat
      declare_entry_coercion (scopt,ntn) level entry
    | Some (IsEntryGlobal (entry,n)) -> declare_custom_entry_has_global entry n
    | Some (IsEntryIdent (entry,n)) -> declare_custom_entry_has_ident entry n
-   | None -> ()
+   | None ->
+     (* Update the uninterpretation cache *)
+     begin match printing_update with
+     | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) pat
+     | None -> ()
+     end;
+     declare_uninterpretation ~also_in_cases_pattern (NotationRule (scopt,ntn)) pat
   end
 
 let availability_of_prim_token n printer_scope local_scopes =
