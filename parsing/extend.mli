@@ -39,6 +39,8 @@ type 'a constr_entry_key_gen =
 type constr_entry_key =
     (production_level * production_position) constr_entry_key_gen
 
+val constr_entry_key_eq : constr_entry_key -> constr_entry_key -> bool
+
 (** Entries used in productions, vernac side (e.g. "x bigint" or "x ident") *)
 
 type simple_constr_prod_entry_key =
