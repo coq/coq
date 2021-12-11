@@ -849,8 +849,6 @@ type ('b, 'c) argument_interp =
 | ArgInterpWit : ('a, 'b, 'r) Genarg.genarg_type -> ('b, 'c) argument_interp
 | ArgInterpSimple :
   (Geninterp.interp_sign -> Environ.env -> Evd.evar_map -> 'b -> 'c) -> ('b, 'c) argument_interp
-| ArgInterpLegacy :
-  (Geninterp.interp_sign -> Goal.goal Evd.sigma -> 'b -> Evd.evar_map * 'c) -> ('b, 'c) argument_interp
 
 type ('a, 'b, 'c) tactic_argument = {
   arg_parsing : 'a Vernacextend.argument_rule;
@@ -890,12 +888,6 @@ match arg.arg_interp with
     let v = f ist env sigma v in
     Ftactic.return (Geninterp.Val.inject tag v)
   end)
-| ArgInterpLegacy f ->
-  (fun ist v -> Ftactic.enter (fun gl ->
-    let (sigma, v) = Tacmach.of_old (fun gl -> f ist gl v) gl in
-    let v = Geninterp.Val.inject tag v in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Ftactic.return v)
-  ))
 
 let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
   let wit = Genarg.create_arg name in
