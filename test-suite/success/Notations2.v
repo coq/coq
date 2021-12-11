@@ -164,7 +164,7 @@ Notation "####" := 0 (in custom foo2).
 
 Module M17.
 
-Notation "# x ## t & u" := ((fun x => (x,t)),(fun x => (x,u))) (at level 0, x pattern).
+Notation "# x ## t & u" := ((fun x => (x,t)),(fun x => (x,u))) (at level 0, x pattern, right associativity).
 Check fun y : nat => # (x,z) ## y & y.
 
 End M17.

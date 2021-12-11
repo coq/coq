@@ -8,7 +8,7 @@ End M1.
 
 Module M2.
 Fixpoint stupid (x : nat) : nat := 1.
-Notation " x '==' 1" := (stupid x) (in custom example at level 0).
+Notation " x '==' 1" := (stupid x) (in custom example at level 0, left associativity).
 Fail Notation " x '==' 1" := (stupid x) (in custom example at level 1).
 End M2.
 

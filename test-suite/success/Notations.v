@@ -105,7 +105,7 @@ Notation traverse_var f l := (traverse (fun l => f l) l).
 (* Check that when an ident become a keyword, it does not break
    previous rules relying on the string to be classified as an ident *)
 
-Notation "'intros' x" := (S x) (at level 0).
+Notation "'intros' x" := (S x) (at level 0, right associativity).
 Goal True -> True. intros H. exact H. Qed.
 
 (* Check absence of collision on ".." in nested notations with ".." *)

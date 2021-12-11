@@ -1,7 +1,7 @@
 Disable Notation "x + y" := (Nat.add x y).
 
 Declare Custom Entry foo.
-Notation "x * y" := (Nat.mul x y) (in custom foo at level 0).
+Notation "x * y" := (Nat.mul x y) (in custom foo at level 1).
 Fail Disable Notation "x * y" := (Nat.mul x y). (* need flag all *)
 Disable Notation "x * y" := (Nat.mul x y) (all).
 Enable Notation := (Nat.mul _ _) : nat_scope.

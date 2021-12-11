@@ -23,7 +23,7 @@ Qed.
 
 Ltac unfld what := rewrite /what.
 
-Notation "% n" := (ltac:( unfld n )) (at level 0) : ssripat_scope.
+Notation "% n" := (ltac:( unfld n )) (at level 0, right associativity) : ssripat_scope.
 Notation "% n" := n : nat_scope.
 
 Open Scope nat_scope.

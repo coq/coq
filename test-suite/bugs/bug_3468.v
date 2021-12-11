@@ -10,7 +10,7 @@ Check bar2 (Set + Set) Set.
 
 Declare Scope foo_scope.
 Delimit Scope foo_scope with foo.
-Notation "x ~~" := (x) (at level 0, only parsing) : foo_scope.
+Notation "x ~~" := (x) (at level 1, only parsing) : foo_scope.
 Notation bar x := (x%foo) (only parsing).
 Notation baz x := ltac:(exact x%foo) (only parsing).
 Check bar (O ~~).

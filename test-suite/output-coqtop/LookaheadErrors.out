@@ -4,13 +4,13 @@ Coq <
 Coq < Toplevel input, characters 9-11:
 > Check ## [].
 >          ^^
-Error: Syntax error: '##' or [term] expected after '##' (in [term]).
+Error: Syntax error: '##' or [term level 0] expected after '##' (in [term]).
 
 Coq < Coq < 
 Coq < 
 Coq < Toplevel input, characters 9-11:
 > Check ## [].
 >          ^^
-Error: Syntax error: '##' or [term] expected after '##' (in [term]).
+Error: Syntax error: '##' or [term level 0] expected after '##' (in [term]).
 
 Coq < 
