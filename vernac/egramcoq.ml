@@ -250,7 +250,7 @@ type prod_info = production_level * production_position
 type (_, _) entry =
 | TTIdent : ('self, lident) entry
 | TTName : ('self, lname) entry
-| TTReference : ('self, qualid) entry
+| TTGlobal : ('self, qualid) entry
 | TTBigint : ('self, string) entry
 | TTBinder : bool -> ('self, kinded_cases_pattern_expr) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
@@ -375,12 +375,12 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol =
 | TTBinder false -> MayRecNo (Pcoq.Symbol.nterm Constr.one_closed_binder)
 | TTOpenBinderList -> MayRecNo (Pcoq.Symbol.nterm Constr.open_binders)
 | TTBigint -> MayRecNo (Pcoq.Symbol.nterm Prim.bignat)
-| TTReference -> MayRecNo (Pcoq.Symbol.nterm Constr.global)
+| TTGlobal -> MayRecNo (Pcoq.Symbol.nterm Constr.global)
 
 let interp_entry forpat e = match e with
 | ETProdIdent -> TTAny TTIdent
 | ETProdName -> TTAny TTName
-| ETProdReference -> TTAny TTReference
+| ETProdGlobal -> TTAny TTGlobal
 | ETProdBigint -> TTAny TTBigint
 | ETProdOneBinder o -> TTAny (TTBinder o)
 | ETProdConstr (s,p) -> TTAny (TTConstr (s, p, forpat))
@@ -431,7 +431,7 @@ match e with
   | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Number (NumTok.Signed.of_int_string v)))
   | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Number (NumTok.Signed.of_int_string v)))
   end
-| TTReference ->
+| TTGlobal ->
   begin match forpat with
   | ForConstr  -> push_constr subst (CAst.make @@ CRef (v, None))
   | ForPattern -> push_constr subst (CAst.make @@ CPatAtom (Some v))

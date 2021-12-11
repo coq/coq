@@ -58,7 +58,7 @@ type binder_target = ForBinder | ForTerm
 type constr_prod_entry_key =
   | ETProdIdent           (* Parsed as an ident *)
   | ETProdName            (* Parsed as a name (ident or _) *)
-  | ETProdReference       (* Parsed as a global reference *)
+  | ETProdGlobal          (* Parsed as a global reference *)
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
   | ETProdOneBinder of bool (* Parsed as name, or name:type or 'pattern, possibly in closed form *)
   | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
