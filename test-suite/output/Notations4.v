@@ -268,6 +268,14 @@ Check (0 :=: 0).
 
 End Bug12691.
 
+Module Issue15336.
+
+Fail Notation "a ; b" := (prod a b) (at level 0).
+Fail Notation "[ a ; b ]" := (prod a b) (at level 0, a at next level).
+Fail Notation "[ a ; b ]" := (prod a b) (a at next level).
+
+End Issue15336.
+
 Module CoercionEntryTransitivity.
 
 Declare Custom Entry com.

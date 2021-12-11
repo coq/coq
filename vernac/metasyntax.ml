@@ -1193,10 +1193,16 @@ let make_interpretation_type isrec isbinding default_if_binding typ =
   | ETBigint, true | ETGlobal, true -> NtnTypeConstrList
   | ETBigint, false | ETGlobal, false -> NtnTypeConstr
 
-let entry_relative_level_of_constr_prod_entry from_level = function
+let entry_relative_level_of_constr_prod_entry id from_level = function
   | ETConstr (entry,_,(_,y)) as x ->
-     let side = match y with BorderProd (side,_) -> Some side | _ -> None in
-     { notation_subentry = entry; notation_relative_level = precedence_of_entry_type from_level x; notation_position = side }
+    let side = match y with BorderProd (side,_) -> Some side | _ -> None in
+    (match precedence_of_entry_type from_level x with
+    | LevelLt 0 ->
+      let why = match y with
+        | BorderProd _ -> "To respect expected associativity, "
+        | _ -> if Int.equal from_level.notation_level 0 then "The notation being at level 0, " else "" in
+      user_err (strbrk why ++ Id.print id ++ strbrk " would need to be set at level strictly less than 0.")
+    | lev -> { notation_subentry = entry; notation_relative_level = lev; notation_position = side })
   | _ -> constr_some_level
 
 let make_interpretation_vars
@@ -1217,7 +1223,7 @@ let make_interpretation_vars
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let typ = Id.List.assoc x typs in
-    ((entry_relative_level_of_constr_prod_entry entry typ,sc),
+    ((entry_relative_level_of_constr_prod_entry x entry typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1246,10 +1252,10 @@ let warn_non_reversible_notation =
 
 let is_coercion level typs =
   match level, typs with
-  | Some ({notation_entry = custom; notation_level = n} as entry,_), [_,e] ->
+  | Some ({notation_entry = custom; notation_level = n} as entry,_), [x,e] ->
      (match e, custom with
      | ETConstr _, _ ->
-         let entry_relative = entry_relative_level_of_constr_prod_entry entry e in
+         let entry_relative = entry_relative_level_of_constr_prod_entry x entry e in
          if is_coercion entry entry_relative then
            Some (IsEntryCoercion (entry,entry_relative))
          else

@@ -125,6 +125,18 @@ Warning: Notation "_ :=: _" was already used.
 [notation-overridden,parsing,default]
 0 :=: 0
      : Prop
+File "./output/Notations4.v", line 273, characters 0-49:
+The command has indeed failed with message:
+To respect expected associativity, a would need to be set at level strictly
+less than 0.
+File "./output/Notations4.v", line 274, characters 0-70:
+The command has indeed failed with message:
+The notation being at level 0, a would need to be set at level strictly less
+than 0.
+File "./output/Notations4.v", line 275, characters 0-58:
+The command has indeed failed with message:
+The notation being at level 0, a would need to be set at level strictly less
+than 0.
 fun x : nat => <{ x; (S x) }>
      : nat -> nat
 Set
@@ -137,49 +149,49 @@ exists p : nat, ▢_p (p >= 1)
      : Prop
 ▢_n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 336, characters 17-20:
+File "./output/Notations4.v", line 344, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a variable name was expected.
-File "./output/Notations4.v", line 337, characters 17-18:
+File "./output/Notations4.v", line 345, characters 17-18:
 The command has indeed failed with message:
 Found a constructor while a variable name was expected.
-File "./output/Notations4.v", line 339, characters 17-18:
+File "./output/Notations4.v", line 347, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a variable name was expected.
 exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
      : Prop
 ▢_n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 352, characters 17-20:
+File "./output/Notations4.v", line 360, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 ▢_tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 355, characters 17-18:
+File "./output/Notations4.v", line 363, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
      : Prop
 pseudo_force n (fun n : nat => n >= 1)
      : Prop
-File "./output/Notations4.v", line 368, characters 17-20:
+File "./output/Notations4.v", line 376, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 ▢_tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 371, characters 17-18:
+File "./output/Notations4.v", line 379, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 exists x y : nat, myforce (x, y) (x >= 1 /\ y >= 2)
      : Prop
 myforce n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 383, characters 21-24:
+File "./output/Notations4.v", line 391, characters 21-24:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 myforce tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 386, characters 21-22:
+File "./output/Notations4.v", line 394, characters 21-22:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 id nat
@@ -188,7 +200,7 @@ fun a : bool => id a
      : bool -> bool
 fun nat : bool => id nat
      : bool -> bool
-File "./output/Notations4.v", line 398, characters 17-20:
+File "./output/Notations4.v", line 406, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 !! nat, nat = true
@@ -217,7 +229,7 @@ Found an inductive type while a pattern was expected.
      : Type
 ## (x, _) (x = 0)
      : Prop
-File "./output/Notations4.v", line 494, characters 21-30:
+File "./output/Notations4.v", line 502, characters 21-30:
 The command has indeed failed with message:
 Unexpected type constraint in notation already providing a type constraint.
 ## '(x, y) (x + y = 0)
@@ -250,12 +262,12 @@ where
 ?A : [ |- Type]
 0
      : nat
-File "./output/Notations4.v", line 544, characters 0-78:
+File "./output/Notations4.v", line 552, characters 0-78:
 The command has indeed failed with message:
 Notation "func _ .. _ , _" is already defined at level 200 with arguments
 binder, constr at next level while it is now required to be at level 200
 with arguments constr, constr at next level.
-File "./output/Notations4.v", line 549, characters 0-57:
+File "./output/Notations4.v", line 557, characters 0-57:
 The command has indeed failed with message:
 Notation "[[ _ ]]" is already defined at level 0 with arguments custom foo
 while it is now required to be at level 0 with arguments custom bar.
