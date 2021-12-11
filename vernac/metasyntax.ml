@@ -880,7 +880,7 @@ let check_and_extend_constr_grammar ntn rule =
 let cache_one_syntax_extension (ntn,synext) =
   let prec = synext.synext_level in
   (* Check and ensure that the level and the precomputed parsing rule is declared *)
-  let oldparsing =
+  begin
     try
       let oldprec = Notation.level_of_notation ntn in
       let oldparsing =
@@ -891,19 +891,16 @@ let cache_one_syntax_extension (ntn,synext) =
       let oldtyps = Notgram_ops.non_terminals_of_notation ntn in
       if not (level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
          (oldparsing <> None || synext.synext_notgram = None) then
-        error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
-      oldparsing
+        error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps
     with Not_found ->
       (* Declare the level and the precomputed parsing rule *)
       let () = Notation.declare_notation_level ntn prec in
       let () = Notgram_ops.declare_notation_non_terminals ntn synext.synext_nottyps in
       let () = Option.iter (Notgram_ops.declare_notation_grammar ntn) synext.synext_notgram in
-      None in
-  (* Declare the parsing rule *)
-  begin match oldparsing, synext.synext_notgram with
-  | None, Some grams -> List.iter (check_and_extend_constr_grammar ntn) grams
-  | _ -> (* The grammars rules are canonically derived from the string and the precedence*) ()
+      ()
   end;
+  (* Declare (or redeclare) the parsing rule *)
+  Option.iter (List.iter (check_and_extend_constr_grammar ntn)) synext.synext_notgram;
   (* Printing *)
   Option.iter (declare_generic_notation_printing_rules ntn) synext.synext_notprint
 

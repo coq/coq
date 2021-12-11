@@ -66,6 +66,11 @@ Check fun e => match e with
 | y => [y + e]
 end.
 
+(* Check overridding of ident by global *)
+(* was an anomaly at some time *)
+Notation "x" := x (in custom expr at level 0, x global).
+Check [True].
+
 End B.
 
 Module C.
