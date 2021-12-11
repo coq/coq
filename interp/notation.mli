@@ -13,6 +13,7 @@ open Libnames
 open Constrexpr
 open Glob_term
 open Notation_term
+open Notationextern
 
 (** Notations *)
 
@@ -23,9 +24,6 @@ val pr_notation : notation -> Pp.t
 
 val notation_entry_eq : notation_entry -> notation_entry -> bool
 (** Equality on [notation_entry]. *)
-
-val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bool
-(** Equality on [notation_entry_level]. *)
 
 val notation_with_optional_scope_eq : notation_with_optional_scope -> notation_with_optional_scope -> bool
 
@@ -246,15 +244,6 @@ val availability_of_prim_token :
 
 (** {6 Declare and interpret back and forth a notation } *)
 
-(** Binds a notation in a given scope to an interpretation *)
-
-type notation_use =
-  | OnlyPrinting
-  | OnlyParsing
-  | ParsingAndPrinting
-
-val declare_uninterpretation : ?also_in_cases_pattern:bool -> interp_rule -> interpretation -> unit
-
 type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level
   | IsEntryGlobal of string * int
@@ -271,25 +260,13 @@ val declare_notation : notation_with_optional_scope * notation ->
 val interp_notation : ?loc:Loc.t -> notation -> subscopes ->
       interpretation * (notation_location * scope_name option)
 
-type notation_applicative_status =
-  | AppBoundedNotation of int
-  | AppUnboundedNotation
-  | NotAppNotation
-
-type notation_rule = interp_rule * interpretation * notation_applicative_status
-
-(** Return the possible notations for a given term *)
-val uninterp_notations : 'a glob_constr_g -> notation_rule list
-val uninterp_cases_pattern_notations : 'a cases_pattern_g -> notation_rule list
-val uninterp_ind_pattern_notations : inductive -> notation_rule list
-
 (** Test if a notation is available in the scopes
    context [scopes]; if available, the result is not None; the first
    argument is itself not None if a delimiters is needed *)
 val availability_of_notation : specific_notation -> subscopes ->
   (scope_name option * delimiters option) option
 
-val is_printing_inactive_rule : interp_rule -> interpretation -> bool
+val is_printing_inactive_rule : Notationextern.interp_rule -> interpretation -> bool
 
 (** {6 Miscellaneous} *)
 

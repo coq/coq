@@ -685,7 +685,7 @@ let gallina_print_abbreviation env kn =
         spc () ++ str ":=") ++
      spc () ++
      Constrextern.without_specific_symbols
-       [Notation_term.AbbrevRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
+       [Notationextern.AbbrevRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
 
 module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t option end)
 

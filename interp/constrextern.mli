@@ -85,7 +85,7 @@ val with_universes : ('a -> 'b) -> 'a -> 'b
 val without_symbols : ('a -> 'b) -> 'a -> 'b
 
 (** This suppresses printing of specific notations only *)
-val without_specific_symbols : interp_rule list -> ('a -> 'b) -> 'a -> 'b
+val without_specific_symbols : Notationextern.interp_rule list -> ('a -> 'b) -> 'a -> 'b
 
 (** This prints metas as anonymous holes *)
 val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b

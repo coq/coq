@@ -19,7 +19,6 @@ open Libnames
 open Namegen
 open Impargs
 open CAst
-open Notation_term
 open Notation
 open Constrexpr
 open Constrexpr_ops
@@ -29,6 +28,7 @@ open Glob_ops
 open Pattern
 open Detyping
 open Structures
+open Notationextern
 
 module NamedDecl = Context.Named.Declaration
 (*i*)
