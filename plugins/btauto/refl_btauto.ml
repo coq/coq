@@ -207,7 +207,7 @@ module Btauto = struct
         str "Not a tautology:" ++ spc () ++ l
       with e when CErrors.noncritical e -> (str "Not a tautology")
     in
-    Tacticals.tclFAIL 0 msg
+    Tacticals.tclFAIL msg
   end
 
   let try_unification env =
@@ -223,7 +223,7 @@ module Btauto = struct
           tac
       | _ ->
           let msg = str "Btauto: Internal error" in
-          Tacticals.tclFAIL 0 msg
+          Tacticals.tclFAIL msg
     end
 
   let tac =
@@ -253,7 +253,7 @@ module Btauto = struct
           ]
       | _ ->
           let msg = str "Cannot recognize a boolean equality" in
-          Tacticals.tclFAIL 0 msg
+          Tacticals.tclFAIL msg
     end
 
 end

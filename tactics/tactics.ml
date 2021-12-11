@@ -365,11 +365,11 @@ let convert_gen pb x y =
     | Some sigma -> Proofview.Unsafe.tclEVARS sigma
     | None ->
       let info = Exninfo.reify () in
-      Tacticals.tclFAIL ~info 0 (str "Not convertible")
+      Tacticals.tclFAIL ~info (str "Not convertible")
     | exception e ->
       let _, info = Exninfo.capture e in
       (* FIXME: Sometimes an anomaly is raised from conversion *)
-      Tacticals.tclFAIL ~info 0 (str "Not convertible")
+      Tacticals.tclFAIL ~info (str "Not convertible")
 end
 
 let convert x y = convert_gen Reduction.CONV x y
@@ -4043,7 +4043,7 @@ let specialize_eqs id =
         (exact_no_check ((* refresh_universes_strict *) acc'))
     else
       let info = Exninfo.reify () in
-      Tacticals.tclFAIL ~info 0 (str "Nothing to do in hypothesis " ++ Id.print id)
+      Tacticals.tclFAIL ~info (str "Nothing to do in hypothesis " ++ Id.print id)
   end
 
 let specialize_eqs id = Proofview.Goal.enter begin fun gl ->
@@ -5056,8 +5056,8 @@ let transitivity t = transitivity_gen (Some t)
 let intros_transitivity  n  = Tacticals.tclTHEN intros (transitivity_gen n)
 
 let constr_eq ~strict x y =
-  let fail ~info = Tacticals.tclFAIL ~info 0 (str "Not equal") in
-  let fail_universes ~info = Tacticals.tclFAIL ~info 0 (str "Not equal (due to universes)") in
+  let fail ~info = Tacticals.tclFAIL ~info (str "Not equal") in
+  let fail_universes ~info = Tacticals.tclFAIL ~info (str "Not equal (due to universes)") in
   Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.pf_env gl in
     let evd = Tacmach.project gl in

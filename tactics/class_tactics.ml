@@ -1031,13 +1031,13 @@ module Search = struct
     let error (e, info) =
       match e with
       | ReachedLimit ->
-        Tacticals.tclFAIL ~info 0 (str"Proof search reached its limit")
+        Tacticals.tclFAIL ~info (str"Proof search reached its limit")
       | NoApplicableHint ->
-        Tacticals.tclFAIL ~info 0 (str"Proof search failed" ++
+        Tacticals.tclFAIL ~info (str"Proof search failed" ++
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
       | Proofview.MoreThanOneSuccess ->
-        Tacticals.tclFAIL ~info 0 (str"Proof search failed: " ++
+        Tacticals.tclFAIL ~info (str"Proof search failed: " ++
                                        str"more than one success found")
       | e -> Proofview.tclZERO ~info e
     in
@@ -1392,14 +1392,14 @@ let head_of_constr h c =
 let not_evar c =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma c with
-  | Evar _ -> Tacticals.tclFAIL 0 (str"Evar")
+  | Evar _ -> Tacticals.tclFAIL (str"Evar")
   | _ -> Proofview.tclUNIT ()
 
 let is_ground c =
   let open Tacticals in
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evarutil.is_ground_term sigma c then tclIDTAC
-  else tclFAIL 0 (str"Not ground")
+  else tclFAIL (str"Not ground")
 
 let autoapply c i =
   let open Proofview.Notations in

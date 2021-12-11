@@ -75,7 +75,7 @@ let () =
 (** Base tactics *)
 
 let idtac = Proofview.tclUNIT ()
-let fail = Proofview.tclINDEPENDENT (tclFAIL 0 (Pp.mt ()))
+let fail = Proofview.tclINDEPENDENT (tclFAIL (Pp.mt ()))
 
 let intro = Tactics.intro
 
@@ -214,7 +214,7 @@ let apply_nnpp _ ist =
     begin fun () ->
       if Coqlib.has_ref nnpp
       then Tacticals.pf_constr_of_global (Coqlib.lib_ref nnpp) >>= apply
-      else tclFAIL 0 (Pp.mt ())
+      else tclFAIL (Pp.mt ())
     end
 
 (* This is the uniform mode dealing with ->, not, iff and types isomorphic to

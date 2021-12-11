@@ -65,7 +65,7 @@ let axiom_tac t seq =
   try
     pf_constr_of_global (find_left (project gl) t seq) >>= fun c ->
     exact_no_check c
-  with Not_found -> tclFAIL 0 (Pp.str "No axiom link")
+  with Not_found -> tclFAIL (Pp.str "No axiom link")
   end
 
 let ll_atom_tac a backtrack id continue seq =
@@ -75,7 +75,7 @@ let ll_atom_tac a backtrack id continue seq =
         [(Proofview.tclEVARMAP >>= fun sigma ->
           let gr =
             try Proofview.tclUNIT (find_left sigma a seq)
-            with Not_found -> tclFAIL 0 (Pp.str "No link")
+            with Not_found -> tclFAIL (Pp.str "No link")
           in
           gr >>= fun gr ->
           pf_constr_of_global gr >>= fun left ->
@@ -190,7 +190,7 @@ let forall_tac backtrack continue seq=
           (tclTHEN introf (tclCOMPLETE (wrap 0 true continue seq)))
           backtrack))
     (if !qflag then
-       tclFAIL 0 (Pp.str "reversible in 1st order mode")
+       tclFAIL (Pp.str "reversible in 1st order mode")
      else
        backtrack)
 

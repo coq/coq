@@ -320,7 +320,7 @@ and tac_of_hint dbg db_list local_db concl h =
          Tacticals.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else
          let info = Exninfo.reify () in
-         Tacticals.tclFAIL ~info 0 (str"Unbound reference")
+         Tacticals.tclFAIL ~info (str"Unbound reference")
        end
     | Extern (p, tacast) ->
       conclPattern concl p tacast

@@ -525,7 +525,7 @@ END
 TACTIC EXTEND constr_eq_nounivs
 | [ "constr_eq_nounivs" constr(x) constr(y) ] -> {
     Proofview.tclEVARMAP >>= fun sigma ->
-    if EConstr.eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.tclFAIL 0 (str "Not equal") }
+    if EConstr.eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.tclFAIL (str "Not equal") }
 END
 
 TACTIC EXTEND is_evar

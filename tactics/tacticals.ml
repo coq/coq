@@ -431,7 +431,7 @@ let tclIDTAC = tclUNIT ()
 let tclTHEN t1 t2 =
   t1 <*> t2
 
-let tclFAIL ?info lvl msg =
+let tclFAILn ?info lvl msg =
   let info = match info with
     (* If the backtrace points here it means the caller didn't save
         the backtrace correctly *)
@@ -439,6 +439,8 @@ let tclFAIL ?info lvl msg =
     | Some info -> info
   in
   tclZERO ~info (FailError (lvl,lazy msg))
+
+let tclFAIL ?info msg = tclFAILn ?info 0 msg
 
 let tclZEROMSG ?info ?loc msg =
   let info = match info with
@@ -528,7 +530,7 @@ let tclTHENS3PARTS t1 l1 repeat l2 =
                 str"Incorrect number of goals" ++ spc() ++
                 str"(expected "++int i++str(String.plural i " tactic") ++ str")"
               in
-              tclFAIL 0 errmsg
+              tclFAIL errmsg
           | reraise -> tclZERO ~info reraise
         end
   end
@@ -543,7 +545,7 @@ let tclBINDFIRST t1 t2 =
   t1 >>= fun ans ->
   Proofview.Unsafe.tclGETGOALS >>= fun gls ->
   match gls with
-  | [] -> tclFAIL 0 (str "Expect at least one goal.")
+  | [] -> tclFAIL (str "Expect at least one goal.")
   | hd::tl ->
   Proofview.Unsafe.tclSETGOALS [hd] <*> t2 ans >>= fun ans ->
   Proofview.Unsafe.tclNEWGOALS tl <*>
@@ -562,7 +564,7 @@ let tclBINDLAST t1 t2 =
   t1 >>= fun ans ->
   Proofview.Unsafe.tclGETGOALS >>= fun gls ->
   match option_of_failure List.sep_last gls with
-  | None -> tclFAIL 0 (str "Expect at least one goal.")
+  | None -> tclFAIL (str "Expect at least one goal.")
   | Some (last,firstn) ->
   Proofview.Unsafe.tclSETGOALS [last] <*> t2 ans >>= fun ans ->
   Proofview.Unsafe.tclGETGOALS >>= fun newgls ->
@@ -581,7 +583,7 @@ let tclTHENS t l =
                 str"Incorrect number of goals" ++ spc() ++
                 str"(expected "++int i++str(String.plural i " tactic") ++ str")"
               in
-              tclFAIL 0 errmsg
+              tclFAIL errmsg
           | reraise -> tclZERO ~info reraise
         end
   end
@@ -626,7 +628,7 @@ let rec tclFIRST = function
   | t::rest -> tclORELSE0 t (tclFIRST rest)
 
 let rec tclFIRST_PROGRESS_ON tac = function
-  | []    -> tclFAIL 0 (str "No applicable tactic")
+  | []    -> tclFAIL (str "No applicable tactic")
   | [a]   -> tac a (* so that returned failure is the one from last item *)
   | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
 

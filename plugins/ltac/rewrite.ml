@@ -1614,7 +1614,7 @@ let tactic_init_setoid () =
   try init_setoid (); Proofview.tclUNIT ()
   with e when CErrors.noncritical e ->
     let _, info = Exninfo.capture e in
-    Tacticals.tclFAIL ~info 0 (str"Setoid library not loaded")
+    Tacticals.tclFAIL ~info (str"Setoid library not loaded")
 
 let cl_rewrite_clause_strat progress strat clause =
   tactic_init_setoid () <*>
@@ -1625,7 +1625,7 @@ let cl_rewrite_clause_strat progress strat clause =
        | RewriteFailure e ->
          tclZEROMSG ~info (str"setoid rewrite failed: " ++ e)
        | Tacticals.FailError (n, pp) ->
-         tclFAIL ~info n (str"setoid rewrite failed: " ++ Lazy.force pp)
+         tclFAILn ~info n (str"setoid rewrite failed: " ++ Lazy.force pp)
        | e ->
          Proofview.tclZERO ~info e))
 
@@ -2094,7 +2094,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
             (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
     (fun (e, info) -> match e with
     | RewriteFailure e ->
-      tclFAIL ~info 0 (str"setoid rewrite failed: " ++ e)
+      tclFAIL ~info (str"setoid rewrite failed: " ++ e)
     | e -> Proofview.tclZERO ~info e)
   end
 
@@ -2103,7 +2103,7 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
 let not_declared ~info env sigma ty rel =
-  tclFAIL ~info 0
+  tclFAIL ~info
     (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 

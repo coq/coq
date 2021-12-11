@@ -459,5 +459,5 @@ let autounfold_one db cl =
       | None -> convert_concl ~cast:false ~check:false c' DEFAULTcast
     else
       let info = Exninfo.reify () in
-      Tacticals.tclFAIL ~info 0 (str "Nothing to unfold")
+      Tacticals.tclFAIL ~info (str "Nothing to unfold")
   end

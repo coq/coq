@@ -294,55 +294,55 @@ let is_evar x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Evar _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "Not an evar")
+    | _ -> Tacticals.tclFAIL (Pp.str "Not an evar")
 
 let has_evar x =
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evarutil.has_undefined_evars sigma x
   then Proofview.tclUNIT ()
-  else Tacticals.tclFAIL 0 (Pp.str "No evars")
+  else Tacticals.tclFAIL (Pp.str "No evars")
 
 let is_var x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Var _ ->  Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "Not a variable or hypothesis")
+    | _ -> Tacticals.tclFAIL (Pp.str "Not a variable or hypothesis")
 
 let is_fix x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Fix _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a fix definition")
+    | _ -> Tacticals.tclFAIL (Pp.str "not a fix definition")
 
 let is_cofix x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | CoFix _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a cofix definition")
+    | _ -> Tacticals.tclFAIL (Pp.str "not a cofix definition")
 
 let is_ind x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Ind _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "not an (co)inductive datatype")
+    | _ -> Tacticals.tclFAIL (Pp.str "not an (co)inductive datatype")
 
 let is_constructor x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Construct _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a constructor")
+    | _ -> Tacticals.tclFAIL (Pp.str "not a constructor")
 
 let is_proj x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Proj _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a primitive projection")
+    | _ -> Tacticals.tclFAIL (Pp.str "not a primitive projection")
 
 let is_const x =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Const _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a constant")
+    | _ -> Tacticals.tclFAIL (Pp.str "not a constant")
 
 let unshelve ist t =
   Proofview.with_shelf (Tacinterp.tactic_of_value ist t) >>= fun (gls, ()) ->
