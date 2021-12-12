@@ -326,7 +326,7 @@ type ccitab = ExtRefTab.t
 let the_ccitab = Summary.ref ~name:"ccitab" (ExtRefTab.empty : ccitab)
 
 type mptab = MPTab.t
-let the_modtypetab = Summary.ref ~name:"modtypetab" (MPTab.empty : mptab)
+let the_modtypetab = ref (MPTab.empty : mptab)
 
 module DirPath' =
 struct
@@ -339,10 +339,10 @@ end
 module MPDTab = Make(DirPath')(MPEqual)
 module DirTab = Make(DirPath')(GlobDirRef)
 
-let the_modtab = Summary.ref ~name:"modtab" MPDTab.empty
+let the_modtab = ref MPDTab.empty
 
 type dirtab = DirTab.t
-let the_dirtab = Summary.ref ~name:"dirtab" (DirTab.empty : dirtab)
+let the_dirtab = ref (DirTab.empty : dirtab)
 
 module UnivIdEqual =
 struct
@@ -361,10 +361,10 @@ let the_globrevtab = Summary.ref ~name:"globrevtab" (ExtRefMap.empty : globrevta
 
 
 type mprevtab = DirPath.t MPmap.t
-let the_modrevtab = Summary.ref ~name:"modrevtab" (MPmap.empty : mprevtab)
+let the_modrevtab = ref (MPmap.empty : mprevtab)
 
 type mptrevtab = full_path MPmap.t
-let the_modtyperevtab = Summary.ref ~name:"modtyperevtab" (MPmap.empty : mptrevtab)
+let the_modtyperevtab = ref (MPmap.empty : mptrevtab)
 
 module UnivIdOrdered =
 struct
@@ -582,3 +582,28 @@ let global_inductive qid =
   | ref ->
       user_err ?loc:qid.CAst.loc
         (pr_qualid qid ++ spc () ++ str "is not an inductive type.")
+
+type modules_frozen_t = MPTab.t * MPDTab.t * DirTab.t * mprevtab * mptrevtab
+
+let freeze_modules ~marshallable =
+  (!the_modtypetab, !the_modtab, !the_dirtab, !the_modrevtab, !the_modtyperevtab)
+
+let unfreeze_modules (modtypetab, modtab, dirtab, modrevtab, modtyperevtab) =
+  the_modtypetab := modtypetab;
+  the_modtab := modtab;
+  the_dirtab := dirtab;
+  the_modrevtab := modrevtab;
+  the_modtyperevtab := modtyperevtab
+
+let init_modules () =
+  the_modtypetab := MPTab.empty;
+  the_modtab := MPDTab.empty;
+  the_dirtab := DirTab.empty;
+  the_modrevtab := MPmap.empty;
+  the_modtyperevtab := MPmap.empty
+
+let modules_nametab_summary_tag =
+  Summary.declare_summary_tag "MODULES-NAMETAB"
+    { Summary.freeze_function = freeze_modules;
+      Summary.unfreeze_function = unfreeze_modules;
+      Summary.init_function = init_modules }
