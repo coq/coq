@@ -99,10 +99,10 @@ let is_reserved_type na t =
 module IRuleSet = Set.Make(struct
     type t = interp_rule
     let compare x y = match x, y with
-      | SynDefRule kn, SynDefRule kn' -> KerName.compare kn kn'
+      | AbbrevRule kn, AbbrevRule kn' -> KerName.compare kn kn'
       | NotationRule (scope,ntn), NotationRule (scope',ntn') -> compare x y
-      | SynDefRule _, NotationRule _ -> -1
-      | NotationRule _, SynDefRule _ -> 1
+      | AbbrevRule _, NotationRule _ -> -1
+      | NotationRule _, AbbrevRule _ -> 1
   end)
 
 let inactive_notations_table =
@@ -134,12 +134,12 @@ let _show_inactive_notations () =
       (function
        | NotationRule (inscope, ntn) ->
          Feedback.msg_notice (pr_notation ntn ++ show_scope inscope)
-       | SynDefRule kn -> Feedback.msg_notice (str (string_of_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn))))
+       | AbbrevRule kn -> Feedback.msg_notice (str (string_of_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn))))
       !inactive_notations_table
 
 let deactivate_notation nr =
   match nr with
-  | SynDefRule kn ->
+  | AbbrevRule kn ->
      (* shouldn't we check whether it is well defined? *)
      inactive_notations_table := IRuleSet.add nr !inactive_notations_table
   | NotationRule (inscope, ntn) ->
@@ -167,8 +167,8 @@ let reactivate_notation nr =
        Feedback.msg_warning (str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
                              ++ str "is already active" ++ show_scope inscope ++
   str ".")
-    | SynDefRule kn ->
-       let s = string_of_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn) in
+    | AbbrevRule kn ->
+       let s = string_of_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn) in
        Feedback.msg_warning
          (str "Notation" ++ spc () ++ str s
           ++ spc () ++ str "is already active.")
@@ -195,7 +195,7 @@ let is_inactive_rule nr =
   match nr with
     | NotationRule (NotationInScope sc, ntn) -> CString.Set.mem sc !inactive_scopes_table
     | NotationRule (LastLonelyNotation, ntn) -> false
-    | SynDefRule _ -> false
+    | AbbrevRule _ -> false
 
 (* args: notation, scope, activate/deactivate *)
 let toggle_scope_printing ~scope ~activate =
@@ -551,11 +551,11 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
               (insert_pat_delimiters ?loc
                  (make_pat_notation ?loc specific_ntn (l,ll) l2') key)
       end
-    | SynDefRule kn ->
+    | AbbrevRule kn ->
       match availability_of_entry_coercion custom InConstrEntrySomeLevel with
       | None -> raise No_match
       | Some coercion ->
-      let qid = Nametab.shortest_qualid_of_syndef ?loc vars kn in
+      let qid = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
       let l1 =
         List.rev_map (fun (c,(subentry,(scopt,scl))) ->
           extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes)) vars c)
@@ -786,14 +786,14 @@ let extern_applied_ref inctx impl (cf,f) us args =
     | _ ->
        CAppExpl ((f,us), args)
 
-let extern_applied_syntactic_definition inctx n extraimpl (cf,f) syndefargs extraargs =
+let extern_applied_abbreviation inctx n extraimpl (cf,f) abbrevargs extraargs =
   try
-    let syndefargs = List.map (fun a -> (a,None)) syndefargs in
+    let abbrevargs = List.map (fun a -> (a,None)) abbrevargs in
     let extraargs = adjust_implicit_arguments inctx n extraargs extraimpl in
-    let args = syndefargs @ extraargs in
+    let args = abbrevargs @ extraargs in
     if args = [] then cf else CApp (CAst.make cf, args)
   with Expl ->
-    let args = syndefargs @ List.map Lazy.force extraargs in
+    let args = abbrevargs @ List.map Lazy.force extraargs in
     CAppExpl ((f,None), args)
 
 let mkFlattenedCApp (head,args) =
@@ -1380,17 +1380,17 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
                   let args = fill_arg_scopes args argsscopes allscopes in
                   let args = extern_args (extern true) (vars,uvars) args in
                   CAst.make ?loc @@ extern_applied_notation inctx nallargs argsimpls c args)
-          | SynDefRule kn ->
+          | AbbrevRule kn ->
               let l =
                 List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
                   extern true (subentry,(scopt,scl@snd scopes)) (vars,uvars) c)
                   terms
               in
-              let cf = Nametab.shortest_qualid_of_syndef ?loc vars kn in
+              let cf = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
               let a = CRef (cf,None) in
               let args = fill_arg_scopes args argsscopes allscopes in
               let args = extern_args (extern true) (vars,uvars) args in
-              let c = CAst.make ?loc @@ extern_applied_syntactic_definition inctx nallargs argsimpls (a,cf) l args in
+              let c = CAst.make ?loc @@ extern_applied_abbreviation inctx nallargs argsimpls (a,cf) l args in
               if isCRef_no_univ c.CAst.v && entry_has_global custom then c
              else match availability_of_entry_coercion custom InConstrEntrySomeLevel with
              | None -> raise No_match

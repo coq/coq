@@ -20,7 +20,7 @@ open Globnames
     - 1a) internal kernel names: [kernel_name], [constant], [inductive],
          [module_path], [DirPath.t]
 
-    - 1b) other internal names: [global_reference], [syndef_name],
+    - 1b) other internal names: [global_reference], [abbreviation],
         [extended_global_reference], [global_dir_reference], ...
 
     - 2) full, non ambiguous user names: [full_path]
@@ -109,7 +109,7 @@ val push : visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
-val push_syndef : visibility -> full_path -> syndef_name -> unit
+val push_abbreviation : visibility -> full_path -> abbreviation -> unit
 
 module UnivIdMap : CMap.ExtS with type key = Univ.Level.UGlobal.t
 
@@ -123,7 +123,7 @@ val push_universe : visibility -> full_path -> Univ.Level.UGlobal.t -> unit
 val locate : qualid -> GlobRef.t
 val locate_extended : qualid -> extended_global_reference
 val locate_constant : qualid -> Constant.t
-val locate_syndef : qualid -> syndef_name
+val locate_abbreviation : qualid -> abbreviation
 val locate_modtype : qualid -> ModPath.t
 val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
@@ -178,7 +178,7 @@ val full_name_module : qualid -> DirPath.t
 (** Returns the full path bound to a global reference or syntactic
    definition, and the (full) dirpath associated to a module path *)
 
-val path_of_syndef : syndef_name -> full_path
+val path_of_abbreviation : abbreviation -> full_path
 val path_of_global : GlobRef.t -> full_path
 val dirpath_of_module : ModPath.t -> DirPath.t
 val path_of_modtype : ModPath.t -> full_path
@@ -204,7 +204,7 @@ val pr_global_env : Id.Set.t -> GlobRef.t -> Pp.t
    @raise Not_found for unknown objects. *)
 
 val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
-val shortest_qualid_of_syndef : ?loc:Loc.t -> Id.Set.t -> syndef_name -> qualid
+val shortest_qualid_of_abbreviation : ?loc:Loc.t -> Id.Set.t -> abbreviation -> qualid
 val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
 

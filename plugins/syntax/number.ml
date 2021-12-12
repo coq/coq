@@ -188,8 +188,8 @@ let locate_global_sort_inductive_or_constant sigma qid =
   let locate_sort qid =
     match Nametab.locate_extended qid with
     | Globnames.TrueGlobal _ -> raise Not_found
-    | Globnames.SynDef kn ->
-    match Syntax_def.search_syntactic_definition kn with
+    | Globnames.Abbrev kn ->
+    match Abbreviation.search_abbreviation kn with
     | [], Notation_term.NSort r ->
        let sigma,c = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family r) in
        sigma,Constr.mkSort c
@@ -389,8 +389,8 @@ let locate_global_inductive_with_params allow_params qid =
   if not allow_params then raise Not_found else
     match Nametab.locate_extended qid with
     | Globnames.TrueGlobal _ -> raise Not_found
-    | Globnames.SynDef kn ->
-    match Syntax_def.search_syntactic_definition kn with
+    | Globnames.Abbrev kn ->
+    match Abbreviation.search_abbreviation kn with
     | [], Notation_term.(NApp (NRef (GlobRef.IndRef i,None), l)) ->
        i,
        List.map (function

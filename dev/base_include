@@ -98,7 +98,7 @@ open Modintern
 open Notation
 open Ppextend
 open Reserve
-open Syntax_def
+open Abbreviation
 open Constrexpr
 open Constrexpr_ops
 open Notation_term

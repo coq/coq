@@ -79,11 +79,11 @@ let printable_constr_of_global = function
 
 (* Extended global references *)
 
-type syndef_name = KerName.t
+type abbreviation = KerName.t
 
 type extended_global_reference =
   | TrueGlobal of GlobRef.t
-  | SynDef of syndef_name
+  | Abbrev of abbreviation
 
 (* We order [extended_global_reference] via their user part
    (cf. pretty printer) *)
@@ -95,22 +95,22 @@ module ExtRefOrdered = struct
     x == y ||
     match x, y with
     | TrueGlobal rx, TrueGlobal ry -> GlobRef.UserOrd.equal rx ry
-    | SynDef knx, SynDef kny -> KerName.equal knx kny
-    | (TrueGlobal _ | SynDef _), _ -> false
+    | Abbrev knx, Abbrev kny -> KerName.equal knx kny
+    | (TrueGlobal _ | Abbrev _), _ -> false
 
   let compare x y =
     if x == y then 0
     else match x, y with
       | TrueGlobal rx, TrueGlobal ry -> GlobRef.UserOrd.compare rx ry
-      | SynDef knx, SynDef kny -> KerName.compare knx kny
-      | TrueGlobal _, SynDef _ -> -1
-      | SynDef _, TrueGlobal _ -> 1
+      | Abbrev knx, Abbrev kny -> KerName.compare knx kny
+      | TrueGlobal _, Abbrev _ -> -1
+      | Abbrev _, TrueGlobal _ -> 1
 
   open Hashset.Combine
 
   let hash = function
   | TrueGlobal gr -> combinesmall 1 (GlobRef.UserOrd.hash gr)
-  | SynDef kn -> combinesmall 2 (KerName.hash kn)
+  | Abbrev kn -> combinesmall 2 (KerName.hash kn)
 
 end
 
@@ -118,5 +118,5 @@ module ExtRefMap = HMap.Make(ExtRefOrdered)
 module ExtRefSet = ExtRefMap.Set
 
 let subst_extended_reference sub = function
-  | SynDef kn -> SynDef (subst_kn sub kn)
+  | Abbrev kn -> Abbrev (subst_kn sub kn)
   | TrueGlobal gr -> TrueGlobal (subst_global_reference sub gr)

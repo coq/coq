@@ -109,4 +109,4 @@ type notation_interp_env = {
 
 type interp_rule =
   | NotationRule of Constrexpr.specific_notation
-  | SynDefRule of KerName.t
+  | AbbrevRule of KerName.t

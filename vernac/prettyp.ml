@@ -35,7 +35,7 @@ type object_pr = {
   print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
   print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
-  print_syntactic_def       : env -> KerName.t -> Pp.t;
+  print_abbreviation        : env -> abbreviation -> Pp.t;
   print_module              : ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
@@ -389,7 +389,7 @@ type locatable = Locatable : 'a locatable_info -> locatable
 type logical_name =
   | Term of GlobRef.t
   | Dir of Nametab.GlobDirRef.t
-  | Syntactic of KerName.t
+  | Abbreviation of abbreviation
   | Module of ModPath.t
   | ModuleType of ModPath.t
   | Other : 'a * 'a locatable_info -> logical_name
@@ -406,7 +406,7 @@ exception ObjFound of logical_name
 let locate_any_name qid =
   try Term (Nametab.locate qid)
   with Not_found ->
-  try Syntactic (Nametab.locate_syndef qid)
+  try Abbreviation (Nametab.locate_abbreviation qid)
   with Not_found ->
   try Dir (Nametab.locate_dir qid)
   with Not_found ->
@@ -429,8 +429,8 @@ let pr_located_qualid = function
         | ConstructRef _ -> "Constructor"
         | VarRef _ -> "Variable" in
       str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref)
-  | Syntactic kn ->
-      str "Notation" ++ spc () ++ pr_path (Nametab.path_of_syndef kn)
+  | Abbreviation kn ->
+      str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
   | Dir dir ->
       let s,dir =
         let open Nametab in
@@ -477,8 +477,8 @@ let locate_term qid =
   let expand = function
     | TrueGlobal ref ->
         Term ref, Nametab.shortest_qualid_of_global Id.Set.empty ref
-    | SynDef kn ->
-        Syntactic kn, Nametab.shortest_qualid_of_syndef Id.Set.empty kn
+    | Abbrev kn ->
+        Abbreviation kn, Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn
   in
   List.map expand (Nametab.locate_extended_all qid)
 
@@ -651,9 +651,9 @@ let gallina_print_constant_with_infos sp udecl =
   print_constant true " = " sp udecl ++
   with_line_skip (print_name_infos (GlobRef.ConstRef sp))
 
-let gallina_print_syntactic_def env kn =
-  let qid = Nametab.shortest_qualid_of_syndef Id.Set.empty kn
-  and (vars,a) = Syntax_def.search_syntactic_definition kn in
+let gallina_print_abbreviation env kn =
+  let qid = Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn
+  and (vars,a) = Abbreviation.search_abbreviation kn in
   let c = Notation_ops.glob_constr_of_notation_constr a in
   hov 2
     (hov 4
@@ -662,7 +662,7 @@ let gallina_print_syntactic_def env kn =
         spc () ++ str ":=") ++
      spc () ++
      Constrextern.without_specific_symbols
-       [Notation_term.SynDefRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
+       [Notation_term.AbbrevRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
 
 module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t option end)
 
@@ -753,7 +753,7 @@ let default_object_pr = {
   print_inductive           = gallina_print_inductive;
   print_constant_with_infos = gallina_print_constant_with_infos;
   print_section_variable    = gallina_print_section_variable;
-  print_syntactic_def       = gallina_print_syntactic_def;
+  print_abbreviation        = gallina_print_abbreviation;
   print_module              = gallina_print_module;
   print_modtype             = gallina_print_modtype;
   print_named_decl          = gallina_print_named_decl;
@@ -769,7 +769,7 @@ let set_object_pr = (:=) object_pr
 let print_inductive x = !object_pr.print_inductive x
 let print_constant_with_infos c = !object_pr.print_constant_with_infos c
 let print_section_variable c = !object_pr.print_section_variable c
-let print_syntactic_def x = !object_pr.print_syntactic_def x
+let print_abbreviation x = !object_pr.print_abbreviation x
 let print_module x  = !object_pr.print_module  x
 let print_modtype x = !object_pr.print_modtype x
 let print_named_decl x = !object_pr.print_named_decl x
@@ -894,7 +894,7 @@ let maybe_error_reject_univ_decl na udecl =
   let open GlobRef in
   match na, udecl with
   | _, None | Term (ConstRef _ | IndRef _ | ConstructRef _), Some _ -> ()
-  | (Term (VarRef _) | Syntactic _ | Dir _ | Module _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
+  | (Term (VarRef _) | Abbreviation _ | Dir _ | Module _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
     (* TODO Print na somehow *)
     user_err (str "This object does not support universe names.")
 
@@ -906,7 +906,7 @@ let print_any_name env sigma na udecl =
   | Term (IndRef (sp,_)) -> print_inductive sp udecl
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp udecl
   | Term (VarRef sp) -> print_section_variable env sigma sp
-  | Syntactic kn -> print_syntactic_def env kn
+  | Abbreviation kn -> print_abbreviation env kn
   | Module mp -> print_module mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
@@ -962,12 +962,12 @@ let print_about_any ?loc env sigma k udecl =
         print_opacity ref @
   print_bidi_hints ref @
   [hov 0 (str "Expands to: " ++ pr_located_qualid k)])
-  | Syntactic kn ->
-    let () = match Syntax_def.search_syntactic_definition kn with
+  | Abbreviation kn ->
+    let () = match Abbreviation.search_abbreviation kn with
     | [],Notation_term.NRef (ref,_) -> Dumpglob.add_glob ?loc ref
     | _ -> () in
       v 0 (
-      print_syntactic_def env kn ++ fnl () ++
+      print_abbreviation env kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
   | Dir _ | Module _ | ModuleType _ | Undefined _ ->
       hov 0 (pr_located_qualid k)

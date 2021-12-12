@@ -70,11 +70,11 @@ val get_extern_reference :
 (** WARNING: The following functions are evil due to
     side-effects. Think of the following case as used in the printer:
 
-    without_specific_symbols [SynDefRule kn] (pr_glob_constr_env env) c
+    without_specific_symbols [AbbrevRule kn] (pr_glob_constr_env env) c
 
     vs
 
-    without_specific_symbols [SynDefRule kn] pr_glob_constr_env env c
+    without_specific_symbols [AbbrevRule kn] pr_glob_constr_env env c
 
     which one is wrong? We should turn this kind of state into an
     explicit argument.

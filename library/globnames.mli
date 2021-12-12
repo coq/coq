@@ -48,11 +48,11 @@ val global_of_constr : constr -> GlobRef.t
 
 (** {6 Extended global references } *)
 
-type syndef_name = KerName.t
+type abbreviation = KerName.t
 
 type extended_global_reference =
   | TrueGlobal of GlobRef.t
-  | SynDef of syndef_name
+  | Abbrev of abbreviation
 
 module ExtRefOrdered : sig
   type t = extended_global_reference

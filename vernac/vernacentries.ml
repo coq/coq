@@ -1065,7 +1065,7 @@ let add_subnames_of ?loc len n ns full_n ref =
   let open GlobRef in
   let add1 r ns = (len, Globnames.TrueGlobal r) :: ns in
   match ref with
-  | Globnames.SynDef _ | Globnames.TrueGlobal (ConstRef _ | ConstructRef _ | VarRef _) ->
+  | Globnames.Abbrev _ | Globnames.TrueGlobal (ConstRef _ | ConstructRef _ | VarRef _) ->
     CErrors.user_err ?loc Pp.(str "Only inductive types can be used with Import (...).")
   | Globnames.TrueGlobal (IndRef (mind,i)) ->
     let open Declarations in
@@ -1113,7 +1113,7 @@ let cache_name (len,n) =
   let open Globnames in
   let open GlobRef in
   match n with
-  | SynDef kn -> Syntax_def.import_syntax_constant (len+1) (Nametab.path_of_syndef kn) kn
+  | Abbrev kn -> Abbreviation.import_abbreviation (len+1) (Nametab.path_of_abbreviation kn) kn
   | TrueGlobal (VarRef _) -> assert false
   | TrueGlobal (ConstRef c) when Declare.is_local_constant c ->
     (* Can happen through functor application *)
@@ -1493,10 +1493,10 @@ let vernac_hints ~atts dbnames h =
   let locality, poly = Attributes.(parse Notations.(really_hint_locality ++ polymorphic) atts) in
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
-let vernac_syntactic_definition ~atts lid x only_parsing =
+let vernac_abbreviation ~atts lid x only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
-  Dumpglob.dump_definition lid false "syndef";
-  Metasyntax.add_syntactic_definition ~local:module_local deprecation (Global.env()) lid.v x only_parsing
+  Dumpglob.dump_definition lid false "abbrev";
+  Metasyntax.add_abbreviation ~local:module_local deprecation (Global.env()) lid.v x only_parsing
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
@@ -2341,7 +2341,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () ->
         vernac_hints ~atts dbnames hints)
   | VernacSyntacticDefinition (id,c,b) ->
-     vtdefault(fun () -> vernac_syntactic_definition ~atts id c b)
+     vtdefault(fun () -> vernac_abbreviation ~atts id c b)
   | VernacArguments (qid, args, more_implicits, flags) ->
     vtdefault(fun () ->
         with_section_locality ~atts
