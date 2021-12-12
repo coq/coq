@@ -662,7 +662,7 @@ let gallina_print_syntactic_def env kn =
         spc () ++ str ":=") ++
      spc () ++
      Constrextern.without_specific_symbols
-       [Notation.SynDefRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
+       [Notation_term.SynDefRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
 
 module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t option end)
 

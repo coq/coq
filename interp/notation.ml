@@ -316,10 +316,6 @@ let find_delimiters_scope ?loc key =
 
 (* Uninterpretation tables *)
 
-type interp_rule =
-  | NotationRule of specific_notation
-  | SynDefRule of KerName.t
-
 (* We define keys for glob_constr and aconstr to split the syntax entries
    according to the key of the pattern (adapted from Chet Murthy by HH) *)
 

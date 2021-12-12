@@ -52,7 +52,7 @@ let open_syntax_constant i ((sp,kn),(_local,syndef)) =
     if not syndef.syndef_onlyparsing then
       (* Redeclare it to be used as (short) name in case an other (distfix)
          notation was declared in between *)
-      Notation.declare_uninterpretation ~also_in_cases_pattern:syndef.syndef_also_in_cases_pattern (Notation.SynDefRule kn) pat
+      Notation.declare_uninterpretation ~also_in_cases_pattern:syndef.syndef_also_in_cases_pattern (Notation_term.SynDefRule kn) pat
   end
 
 let import_syntax_constant i sp kn =

@@ -245,9 +245,6 @@ val availability_of_prim_token :
 (** {6 Declare and interpret back and forth a notation } *)
 
 (** Binds a notation in a given scope to an interpretation *)
-type interp_rule =
-  | NotationRule of specific_notation
-  | SynDefRule of KerName.t
 
 type notation_use =
   | OnlyPrinting
