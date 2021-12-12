@@ -1492,6 +1492,35 @@ let inNotation : notation_obj -> obj =
        classify_function = classify_notation}
 
 (**********************************************************************)
+(* Registration of interpretation scopes opening/closing              *)
+
+let open_scope i (local,op,sc) =
+  if Int.equal i 1 then
+    if op then Notation.open_scope sc else Notation.close_scope sc
+
+let cache_scope o =
+  open_scope 1 o
+
+let subst_scope (subst,sc) = sc
+
+let discharge_scope (local,_,_ as o) =
+  if local then None else Some o
+
+let classify_scope (local,_,_) =
+  if local then Dispose else Substitute
+
+let inScope : bool * bool * scope_name -> obj =
+  declare_object {(default_object "SCOPE") with
+      cache_function = cache_scope;
+      open_function = simple_open ~cat:notation_cat open_scope;
+      subst_function = subst_scope;
+      discharge_function = discharge_scope;
+      classify_function = classify_scope }
+
+let open_close_scope local ~to_open sc =
+  Lib.add_leaf (inScope (local,to_open,normalize_scope sc))
+
+(**********************************************************************)
 
 let with_lib_stk_protection f x =
   let fs = Lib.freeze () in
@@ -1738,7 +1767,7 @@ let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_sym
   let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
   let notation = make_notation_interpretation ~local:true main_data notation_symbols ntn syntax_rules df env ~impls c sc in
   Lib.add_leaf (inNotation notation);
-  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
+  Option.iter (fun sc -> Lib.add_leaf (inScope (false,true,sc))) sc
 
 (* Main entry point for command Notation *)
 

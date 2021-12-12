@@ -58,9 +58,11 @@ val scope_is_open_in_scopes : scope_name -> scopes -> bool
 val scope_is_open : scope_name -> bool
 
 (** Open scope *)
+val open_scope : scope_name -> unit
+val close_scope : scope_name -> unit
 
-val open_close_scope :
-  (* locality *) bool * (* open *) bool * scope_name -> unit
+(** Return a scope taking either a scope name or delimiter *)
+val normalize_scope : string -> scope_name
 
 (** Extend a list of scopes *)
 val empty_scope_stack : scopes

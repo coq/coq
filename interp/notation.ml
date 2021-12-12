@@ -16,6 +16,7 @@ open Names
 open Constr
 open Libnames
 open Globnames
+open Libobject
 open Constrexpr
 open Notation_term
 open Glob_term
@@ -228,36 +229,8 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
-(* Exportation of scopes *)
-let open_scope i (local,op,sc) =
-  if Int.equal i 1 then
-    scope_stack :=
-      if op then sc :: !scope_stack
-      else List.remove scope_eq sc !scope_stack
-
-let cache_scope o =
-  open_scope 1 o
-
-let subst_scope (subst,sc) = sc
-
-open Libobject
-
-let discharge_scope (local,_,_ as o) =
-  if local then None else Some o
-
-let classify_scope (local,_,_) =
-  if local then Dispose else Substitute
-
-let inScope : bool * bool * scope_item -> obj =
-  declare_object {(default_object "SCOPE") with
-      cache_function = cache_scope;
-      open_function = simple_open ~cat:notation_cat open_scope;
-      subst_function = subst_scope;
-      discharge_function = discharge_scope;
-      classify_function = classify_scope }
-
-let open_close_scope (local,opening,sc) =
-  Lib.add_leaf (inScope (local,opening,OpenScopeItem (normalize_scope sc)))
+let open_scope sc = scope_stack := OpenScopeItem sc :: !scope_stack
+let close_scope sc = scope_stack := List.remove scope_eq (OpenScopeItem sc) !scope_stack
 
 let empty_scope_stack = []
 

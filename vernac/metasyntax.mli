@@ -27,6 +27,10 @@ val add_delimiters : locality_flag -> scope_name -> string -> unit
 val remove_delimiters : locality_flag -> scope_name -> unit
 val add_class_scope : locality_flag -> scope_name -> add_scope_where option -> scope_class list -> unit
 
+(** Scope opening *)
+
+val open_close_scope : locality_flag -> to_open:bool -> scope_name -> unit
+
 (** Add a notation interpretation associated to a "where" clause (already has pa/pp rules) *)
 
 type where_decl_notation
