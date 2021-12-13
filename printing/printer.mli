@@ -214,7 +214,7 @@ val pr_goal : ?diffs:bool -> ?og_s:Proof_diffs.goal -> Goal.goal sigma -> Pp.t
 val pr_subgoals
   : ?pr_first:bool
   -> ?diffs:bool
-  -> ?os_map:(evar_map * Goal.goal Evar.Map.t)
+  -> ?os_map:Proof_diffs.goal_map
   -> ?entry:Proofview.entry
   -> Pp.t option -> evar_map
   -> shelf:Goal.goal list

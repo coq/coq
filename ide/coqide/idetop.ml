@@ -193,12 +193,9 @@ let process_goal sigma g =
 let process_goal_diffs diff_goal_map oldp nsigma ng =
   let env = Global.env () in
   let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env nsigma ng)) else None in
-  let og_s = match oldp with
-    | Some oldp ->
-      let Proof.{ sigma=osigma } = Proof.data oldp in
-      (try Some (Proof_diffs.make_goal env osigma (Evar.Map.find ng diff_goal_map))
-       with Not_found -> None)
-    | None -> None
+  let og_s = match oldp, diff_goal_map with
+  | Some oldp, Some diff_goal_map -> Proof_diffs.map_goal ng diff_goal_map
+  | None, _ | _, None -> None
   in
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s (Proof_diffs.make_goal env nsigma ng) in
   { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
@@ -221,8 +218,8 @@ let goals () =
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       (try
         let diff_goal_map = match oldp with
-        | None -> Evar.Map.empty
-        | Some oldp -> Proof_diffs.make_goal_map oldp newp
+        | None -> None
+        | Some oldp -> Some (Proof_diffs.make_goal_map oldp newp)
         in
         Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
        with Pp_diff.Diff_Failure msg ->

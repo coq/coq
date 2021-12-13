@@ -692,8 +692,6 @@ let print_dependent_evars_entry gl sigma = function
       print_dependent_evars_core gl sigma evars
     else mt ()
 
-module GoalMap = Evar.Map
-
 (* Print open subgoals. Checks for uninstantiated existential variables *)
 (* spiwack: [entry] is for printing dependent evars in emacs mode. *)
 (* spiwack: [pr_first] is true when the first goal must be singled out
@@ -735,17 +733,9 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map ?entry
     else str" " (* non-breakable space *)
   in
 
-  let get_ogs g =
-    match os_map with
-    | Some (osigma, diff_goal_map) ->
-      (* if not found, returning None treats the goal as new and it will be diff highlighted;
-         returning Some { it = g; sigma = sigma } will compare the new goal
-         to itself and it won't be highlighted *)
-      begin match GoalMap.find_opt g diff_goal_map with
-      | None -> None
-      | Some g -> Some (Proof_diffs.make_goal (Global.env ()) osigma g)
-      end
-    | None -> None
+  let get_ogs g = match os_map with
+  | None -> None
+  | Some map -> Proof_diffs.map_goal g map
   in
   let rec pr_rec n = function
     | [] -> (mt ())
@@ -842,10 +832,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
      let os_map = match oproof with
        | Some op when diffs ->
-         (try
-           let Proof.{sigma=osigma} = Proof.data op in
-           let diff_goal_map = Proof_diffs.make_goal_map op proof in
-           Some (osigma, diff_goal_map)
+         (try Some (Proof_diffs.make_goal_map op proof)
          with Pp_diff.Diff_Failure msg ->
            Proof_diffs.notify_proof_diff_failure msg;
            None)

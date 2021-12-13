@@ -606,6 +606,15 @@ let db_goal_map op np ng_to_og =
   Printf.printf "\n"
 [@@@ocaml.warning "+32"]
 
+type goal_map = Evd.evar_map * Goal.goal Evar.Map.t
+
+let map_goal g (osigma, map) = match GoalMap.find_opt g map with
+| None -> None
+| Some g -> Some (make_goal (Global.env ()) osigma g)
+(* if not found, returning None treats the goal as new and it will be diff highlighted;
+    returning Some { it = g; sigma = sigma } will compare the new goal
+    to itself and it won't be highlighted *)
+
 (* Create a map from new goals to old goals for proof diff.  New goals
  that are evars not appearing in the proof will not have a mapping.
 
@@ -661,6 +670,10 @@ let make_goal_map op np =
       in
       let fold ng accu = try GoalMap.add ng (get_og ng) accu with Not_found -> accu in
       Evar.Set.fold fold add_gs ng_to_og
+
+let make_goal_map op np =
+  let map = make_goal_map op np in
+  ((Proof.data op).Proof.sigma, map)
 
 let notify_proof_diff_failure msg =
   Feedback.msg_notice Pp.(str "Unable to compute diffs: " ++ str msg)

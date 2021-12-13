@@ -72,13 +72,17 @@ val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:Notation_term.sc
 (** Computes diffs for a single conclusion *)
 val diff_concl : ?og_s:goal -> goal -> Pp.t
 
+type goal_map
+
 (** Generates a map from [np] to [op] that maps changed goals to their prior
 forms.  The map doesn't include entries for unchanged goals; unchanged goals
 will have the same goal id in both versions.
 
 [op] and [np] must be from the same proof document and [op] must be for a state
 before [np]. *)
-val make_goal_map : Proof.t -> Proof.t -> Goal.goal Evar.Map.t
+val make_goal_map : Proof.t -> Proof.t -> goal_map
+
+val map_goal : Evar.t -> goal_map -> goal option
 
 (* Exposed for unit test, don't use these otherwise *)
 (* output channel for the test log file *)
