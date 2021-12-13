@@ -178,28 +178,29 @@ module Make (E : EqType) =
     in
     loop 0
 
+  external unsafe_weak_get : 'a Weak.t -> int -> 'a option = "caml_weak_get"
+
   let repr h d t =
     let table = t.table in
     let index = get_index table h in
-    let bucket = table.(index) in
-    let hashes = t.hashes.(index) in
+    let bucket = Array.unsafe_get table index in
+    let hashes = Array.unsafe_get t.hashes index in
     let sz = Weak.length bucket in
     let pos = ref 0 in
     let ans = ref None in
     while !pos < sz && !ans == None do
       let i = !pos in
-      if Int.equal h hashes.(i) then begin
-        match Weak.get bucket i with
+      if Int.equal h (Array.unsafe_get hashes i) then begin
+        match unsafe_weak_get bucket i with
         | Some v as res when E.eq v d -> ans := res
         | _ -> incr pos
       end else incr pos
     done;
-    if !pos >= sz then
+    match !ans with
+    | Some v -> v
+    | None ->
       let () = add_aux t Weak.set (Some d) h index in
       d
-    else match !ans with
-    | None -> assert false
-    | Some v -> v
 
   let stats t =
     let fold accu bucket = max (count_bucket 0 bucket 0) accu in
