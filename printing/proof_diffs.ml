@@ -230,9 +230,7 @@ let diff_hyps o_idents_in_lines o_map n_idents_in_lines n_map =
   half_diff (List.flatten o_idents_in_lines) o_map  n_idents_in_lines n_map `Added;
   List.rev !rv
 
-
-type 'a hyp = (Names.Id.t Context.binder_annot list * 'a option * 'a)
-type 'a reified_goal = { name: string; ty: 'a; hyps: 'a hyp list; env : Environ.env; sigma: Evd.evar_map }
+type goal = { ty: EConstr.t; env : Environ.env; sigma : Evd.evar_map; }
 
 (* XXX: Port to proofview, one day. *)
 (* open Proofview *)
@@ -243,23 +241,11 @@ let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot 
     | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
     | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm)
 
-let goal_repr sigma g =
+let make_goal env sigma g =
   let evi = Evd.find sigma g in
-  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  let env = Evd.evar_filtered_env env evi in
   let ty  = Evd.evar_concl evi in
-  (env, ty)
-
-let process_goal_concl sigma g : EConstr.t * Environ.env =
-  let (env, ty) = goal_repr sigma g in
-  (ty, env)
-
-let process_goal sigma g : EConstr.t reified_goal =
-  let (env, ty) = goal_repr sigma g in
-  let name = Proof.goal_uid g             in
-  (* compaction is usually desired [eg for better display] *)
-  let hyps      = Termops.compact_named_context (Environ.named_context env) in
-  let hyps      = List.map to_tuple hyps in
-  { name; ty; hyps; env; sigma }
+  { ty; env; sigma }
 
 let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
   Ppconstr.pr_lconstr_expr env sigma
@@ -277,14 +263,12 @@ let pr_econstr_env ?lax ?inctx ?scope env sigma t =
 let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
   pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
 
-let diff_concl ?og_s nsigma ng =
+let diff_concl ?og_s ng =
   let o_concl_pp = match og_s with
-    | Some (og, osigma) ->
-      let (oty, oenv) = process_goal_concl osigma og in
-      pp_of_type oenv osigma oty
-    | None -> Pp.mt()
+  | Some { ty = oty; env = oenv; sigma = osigma } -> pp_of_type oenv osigma oty
+  | None -> Pp.mt()
   in
-  let (nty, nenv) = process_goal_concl nsigma ng in
+  let { ty = nty; env = nenv; sigma = nsigma } = ng in
   let n_concl_pp = pp_of_type nenv nsigma nty in
 
   let show_removed = Some (show_removed ()) in
@@ -308,11 +292,11 @@ map will contain:
 
 concl_pp is the conclusion as a Pp.t
 *)
-let goal_info goal sigma =
+let goal_info goal =
   let map = ref CString.Map.empty in
   let line_idents = ref [] in
   let build_hyp_info env sigma hyp =
-    let (names, body, ty) = hyp in
+    let (names, body, ty) = to_tuple hyp in
     let open Pp in
     let idents = List.map (fun x -> Names.Id.to_string x.Context.binder_name) names in
 
@@ -331,8 +315,10 @@ let goal_info goal sigma =
   in
 
   try
-    let { ty=ty; hyps=hyps; env=env } = process_goal sigma goal in
-    List.iter (build_hyp_info env sigma) (List.rev hyps);
+    let { ty=ty; env=env; sigma } = goal in
+    (* compaction is usually desired [eg for better display] *)
+    let hyps = Termops.compact_named_context (Environ.named_context env) in
+    let () = List.iter (build_hyp_info env sigma) (List.rev hyps) in
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
   with _ -> ([], !map, Pp.mt ())
@@ -354,14 +340,14 @@ let hyp_list_to_pp hyps =
 
 let unwrap g_s =
   match g_s with
-  | Some (goal, sigma) -> goal_info goal sigma
+  | Some g_s -> goal_info g_s
   | None -> ([], CString.Map.empty, Pp.mt ())
 
-let diff_goal_ide og_s ng nsigma =
-  diff_goal_info (unwrap og_s) (goal_info ng nsigma)
+let diff_goal_ide og_s ng =
+  diff_goal_info (unwrap og_s) (goal_info ng)
 
-let diff_goal ?og_s ng ns =
-  let (hyps_pp_list, concl_pp) = diff_goal_info (unwrap og_s) (goal_info ng ns) in
+let diff_goal ?og_s ng =
+  let (hyps_pp_list, concl_pp) = diff_goal_info (unwrap og_s) (goal_info ng) in
   let open Pp in
   v 0 (
     (hyp_list_to_pp hyps_pp_list) ++ cut () ++
@@ -570,9 +556,7 @@ let match_goals ot nt =
     end
   in
 
-  (match ot with
-  | Some ot -> match_goals_r "" ot nt
-  | None -> ());
+  let () = match_goals_r "" ot nt in
   !nevar_to_oevar
 
 let get_proof_context (p : Proof.t) =
@@ -622,6 +606,15 @@ let db_goal_map op np ng_to_og =
   Printf.printf "\n"
 [@@@ocaml.warning "+32"]
 
+type goal_map = Evd.evar_map * Goal.goal Evar.Map.t
+
+let map_goal g (osigma, map) = match GoalMap.find_opt g map with
+| None -> None
+| Some g -> Some (make_goal (Global.env ()) osigma g)
+(* if not found, returning None treats the goal as new and it will be diff highlighted;
+    returning Some { it = g; sigma = sigma } will compare the new goal
+    to itself and it won't be highlighted *)
+
 (* Create a map from new goals to old goals for proof diff.  New goals
  that are evars not appearing in the proof will not have a mapping.
 
@@ -643,55 +636,44 @@ let db_goal_map op np ng_to_og =
    match_goals to get a map between old and new evar names, then use this
    to create the map from new goal ids to old goal ids.
 *)
-let make_goal_map_i op np =
-  let ng_to_og = ref GoalMap.empty in
-  match op with
-  | None -> !ng_to_og
-  | Some op ->
-    let open Evar.Set in
-    let ogs = Proof.all_goals op in
-    let ngs = Proof.all_goals np in
-    let rem_gs = diff ogs ngs in
-    let num_rems = cardinal rem_gs in
-    let add_gs = diff ngs ogs in
-    let num_adds = cardinal add_gs in
+let make_goal_map op np =
+  let open Evar.Set in
+  let ogs = Proof.all_goals op in
+  let ngs = Proof.all_goals np in
+  let rem_gs = diff ogs ngs in
+  let add_gs = diff ngs ogs in
 
-    (* add common goals *)
-    Evar.Set.iter (fun x -> ng_to_og := GoalMap.add x x !ng_to_og) (inter ogs ngs);
+  (* add common goals *)
+  let ng_to_og = Evar.Set.fold (fun x accu -> GoalMap.add x x accu) (inter ogs ngs) GoalMap.empty in
 
-    if num_rems = 0 then
-      !ng_to_og (* proofs are the same *)
-    else if num_adds = 0 then
-      !ng_to_og (* only removals *)
-    else if num_rems = 1 then begin
-      (* only 1 removal, some additions *)
-      let removed_g = List.hd (elements rem_gs) in
-      Evar.Set.iter (fun x -> ng_to_og := GoalMap.add x removed_g !ng_to_og) add_gs;
-      !ng_to_og
-    end else begin
+  match Evar.Set.elements rem_gs with
+  | [] -> ng_to_og (* proofs are the same *)
+  | [hd] ->
+    (* only 1 removal, some additions *)
+    Evar.Set.fold (fun x accu -> GoalMap.add x hd accu) add_gs ng_to_og
+  | elts ->
+    if Evar.Set.is_empty add_gs then ng_to_og (* only removals *)
+    else
       (* >= 2 removals, >= 1 addition, need to match *)
-      let nevar_to_oevar = match_goals (Some (to_constr op)) (to_constr np) in
+      let nevar_to_oevar = match_goals (to_constr op) (to_constr np) in
 
-      let oevar_to_og = ref CString.Map.empty in
       let Proof.{sigma=osigma} = Proof.data op in
-      List.iter (fun og -> oevar_to_og := CString.Map.add (goal_to_evar og osigma) og !oevar_to_og)
-          (Evar.Set.elements rem_gs);
+      let fold accu og = CString.Map.add (goal_to_evar og osigma) og accu in
+      let oevar_to_og = List.fold_left fold CString.Map.empty elts in
 
       let Proof.{sigma=nsigma} = Proof.data np in
       let get_og ng =
         let nevar = goal_to_evar ng nsigma in
         let oevar = CString.Map.find nevar nevar_to_oevar in
-        let og = CString.Map.find oevar !oevar_to_og in
+        let og = CString.Map.find oevar oevar_to_og in
         og
       in
-      Evar.Set.iter (fun ng ->
-          try ng_to_og := GoalMap.add ng (get_og ng) !ng_to_og with Not_found -> ())  add_gs;
-      !ng_to_og
-    end
+      let fold ng accu = try GoalMap.add ng (get_og ng) accu with Not_found -> accu in
+      Evar.Set.fold fold add_gs ng_to_og
 
 let make_goal_map op np =
-  let ng_to_og = make_goal_map_i op np in
-  ng_to_og
+  let map = make_goal_map op np in
+  ((Proof.data op).Proof.sigma, map)
 
 let notify_proof_diff_failure msg =
   Feedback.msg_notice Pp.(str "Unable to compute diffs: " ++ str msg)
