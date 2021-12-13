@@ -23,7 +23,7 @@ exception LocalOccur
 
 let closedn n c =
   let rec closed_rec n c = match Constr.kind c with
-    | Constr.Rel m -> if m>n then raise LocalOccur
+    | Constr.Rel m -> if m>n then raise_notrace LocalOccur
     | _ -> Constr.iter_with_binders succ closed_rec n c
   in
   try closed_rec n c; true with LocalOccur -> false
@@ -36,7 +36,7 @@ let closed0 c = closedn 0 c
 
 let noccurn n term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel m -> if Int.equal m n then raise LocalOccur
+    | Constr.Rel m -> if Int.equal m n then raise_notrace LocalOccur
     | _ -> Constr.iter_with_binders succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -46,7 +46,7 @@ let noccurn n term =
 
 let noccur_between n m term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel p -> if n<=p && p<n+m then raise LocalOccur
+    | Constr.Rel p -> if n<=p && p<n+m then raise_notrace LocalOccur
     | _        -> Constr.iter_with_binders succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -64,7 +64,7 @@ let isMeta c = match Constr.kind c with
 
 let noccur_with_meta n m term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel p -> if n<=p && p<n+m then raise LocalOccur
+    | Constr.Rel p -> if n<=p && p<n+m then raise_notrace LocalOccur
     | Constr.App(f,_cl) ->
         (match Constr.kind f with
            | Constr.Cast (c,_,_) when isMeta c -> ()
@@ -218,7 +218,7 @@ let rec thin_val = function
     | _ -> (id, make_substituend c) :: (thin_val tl)
 
 let rec find_var id = function
-| [] -> raise Not_found
+| [] -> raise_notrace Not_found
 | (idc, c) :: subst ->
   if Id.equal id idc then c
   else find_var id subst
@@ -231,8 +231,10 @@ let replace_vars var_alist x =
   | _ ->
     let rec substrec n c = match Constr.kind c with
     | Constr.Var x ->
-      (try lift_substituend n (find_var x var_alist)
-      with Not_found -> c)
+      begin match find_var x var_alist with
+      | var -> lift_substituend n var
+      | exception Not_found -> c
+      end
     | _ -> Constr.map_with_binders succ substrec n c
     in
     substrec 0 x
