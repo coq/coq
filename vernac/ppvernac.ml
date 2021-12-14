@@ -343,11 +343,8 @@ let rec pr_module_ast leading_space pr_c = function
     let m = pr_module_ast leading_space pr_c mty in
     let p = pr_with_declaration pr_c decl in
     m ++ spc() ++ keyword "with" ++ spc() ++ p
-  | { v = CMapply (me1, ( { v = CMident _ } as me2 ) ) } ->
-    pr_module_ast leading_space pr_c me1 ++ spc() ++ pr_module_ast false pr_c me2
-  | { v = CMapply (me1,me2) } ->
-    pr_module_ast leading_space pr_c me1 ++ spc() ++
-    hov 1 (str"(" ++ pr_module_ast false pr_c me2 ++ str")")
+  | { v = CMapply (me1, me2 ) } ->
+    pr_module_ast leading_space pr_c me1 ++ spc() ++ pr_located pr_qualid (me2.loc, me2)
 
 let pr_inline = function
   | DefaultInline -> mt ()

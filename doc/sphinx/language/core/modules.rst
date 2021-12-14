@@ -76,7 +76,7 @@ together, as well as a means of massive abstraction.
       with_declaration ::= Definition @qualid {? @univ_decl } := @term
       | Module @qualid := @qualid
       module_expr_atom ::= @qualid
-      | ( {+ @module_expr_atom } )
+      | ( @module_expr_atom )
       of_module_type ::= : @module_type_inl
       | {* <: @module_type_inl }
       module_expr_inl ::= ! {+ @module_expr_atom }
