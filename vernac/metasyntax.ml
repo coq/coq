@@ -637,7 +637,7 @@ let include_possible_similar_trailing_pattern typ etyps sl l =
 let prod_entry_type = function
   | ETIdent -> ETProdIdent
   | ETName _ -> ETProdName
-  | ETGlobal -> ETProdReference
+  | ETGlobal -> ETProdGlobal
   | ETBigint -> ETProdBigint
   | ETBinder o -> ETProdOneBinder o
   | ETConstr (s,_,p) -> ETProdConstr (s,p)
