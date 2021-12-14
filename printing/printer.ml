@@ -793,7 +793,7 @@ let pr_subgoals ?(pr_first=true) ?diffs ?entry
         ++ pr_evar_info (Some g1)
       )
 
-let pr_open_subgoals_diff ?(quiet=false) ?diffs proof =
+let pr_open_subgoals ?(quiet=false) ?diffs proof =
   (* spiwack: it shouldn't be the job of the printer to look up stuff
      in the [evar_map], I did stuff that way because it was more
      straightforward, but seriously, [Proof.proof] should return
@@ -842,9 +842,6 @@ let pr_open_subgoals_diff ?(quiet=false) ?diffs proof =
      pr_subgoals ~pr_first:true ?diffs None bsigma ~entry ~shelf ~stack:[]
         ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
-
-let pr_open_subgoals ~proof =
-  pr_open_subgoals_diff proof
 
 let pr_nth_open_subgoal ~proof n =
   let Proof.{goals;sigma} = Proof.data proof in
@@ -1035,15 +1032,15 @@ let pr_assumptionset env sigma s =
 let print_and_diff oldp proof =
   let output =
     if Proof_diffs.show_diffs () then
-      try pr_open_subgoals_diff ~diffs:oldp proof
+      try pr_open_subgoals ~diffs:oldp proof
       with Pp_diff.Diff_Failure msg -> begin
         (* todo: print the unparsable string (if we know it) *)
         Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
             ++ str "Showing results without diff highlighting" );
-        pr_open_subgoals ~proof
+        pr_open_subgoals proof
       end
     else
-      pr_open_subgoals ~proof
+      pr_open_subgoals proof
   in
   Feedback.msg_notice output
 

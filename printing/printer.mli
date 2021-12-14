@@ -227,13 +227,12 @@ val pr_subgoal : int -> evar_map -> Evar.t list -> Pp.t
     [og_s], and [g, sigma]. *)
 val pr_concl : int -> ?diffs:Proof_diffs.goal option -> evar_map -> Evar.t -> Pp.t
 
-(** [pr_open_subgoals_diff ~quiet ?diffs proof] shows the context for [proof] as used by, for example, coqtop.
+(** [pr_open_subgoals ~quiet ?diffs proof] shows the context for [proof] as used by, for example, coqtop.
     The first active goal is printed with all its antecedents and the conclusion.  The other active goals only show their
      conclusions.  If [diffs] is [Some oproof], highlight the differences between the old proof [oproof], and [proof].  [quiet]
      disables printing messages as Feedback.
 *)
-val pr_open_subgoals_diff  : ?quiet:bool -> ?diffs:Proof.t option -> Proof.t -> Pp.t
-val pr_open_subgoals       : proof:Proof.t -> Pp.t
+val pr_open_subgoals       : ?quiet:bool -> ?diffs:Proof.t option -> Proof.t -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
 val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
 val pr_evars_int           : evar_map -> shelf:Evar.t list -> given_up:Evar.t list -> int -> evar_info Evar.Map.t -> Pp.t
