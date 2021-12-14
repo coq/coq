@@ -773,10 +773,8 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
     let id' = find_fresh_name renaming subst avoid id in
-    let renaming' =
-      if Id.equal id id' then renaming else Id.Map.add id id' renaming
-    in
-    (renaming',env), None, Name id', Explicit, set_type ty None
+    let renaming = Id.Map.add id id' renaming in
+    (renaming,env), None, Name id', Explicit, set_type ty None
 
 type binder_action =
   | AddLetIn of lname * constr_expr * constr_expr option
