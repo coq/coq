@@ -1639,11 +1639,10 @@ simple_tactic: [
 | "auto" OPT nat_or_var auto_using hintbases
 | "info_auto" OPT nat_or_var auto_using hintbases
 | "debug" "auto" OPT nat_or_var auto_using hintbases
-| "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
-| "debug" "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
-| "info_eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
+| "eauto" OPT nat_or_var auto_using hintbases
+| "debug" "eauto" OPT nat_or_var auto_using hintbases
+| "info_eauto" OPT nat_or_var auto_using hintbases
 | "dfs" "eauto" OPT nat_or_var auto_using hintbases
-| "bfs" "eauto" OPT nat_or_var auto_using hintbases
 | "autounfold" hintbases clause_dft_concl
 | "autounfold_one" hintbases "in" hyp
 | "autounfold_one" hintbases

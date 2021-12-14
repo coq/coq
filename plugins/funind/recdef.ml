@@ -1487,7 +1487,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                      (eapply_with_bindings
                         (mkVar (List.nth !lid !h_num), NoBindings))
                      e_assumption
-                 ; Eauto.eauto_with_bases (true, 5)
+                 ; Eauto.eauto_with_bases ~depth:5
                      [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
                      [Hints.Hint_db.empty TransparentState.empty false] ]))
     in

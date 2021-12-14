@@ -254,7 +254,7 @@ Ltac2 @ external trivial : debug -> (unit -> constr) list -> ident list option -
 
 Ltac2 @ external auto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_auto".
 
-Ltac2 @ external eauto : debug -> int option -> int option -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_eauto".
+Ltac2 @ external eauto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_eauto".
 
 Ltac2 @ external typeclasses_eauto : strategy option -> int option -> ident list option -> unit := "ltac2" "tac_typeclasses_eauto".
 

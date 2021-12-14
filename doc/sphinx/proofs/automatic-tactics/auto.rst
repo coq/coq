@@ -134,16 +134,6 @@ Programmable proof search
       Behaves like :tacn:`eauto` but shows the tactics it tries to solve the goal,
       including failing paths.
 
-   .. tacn:: bfs eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
-
-      .. deprecated:: 8.15
-
-         This tactic was meant to provide a `breadth-first search
-         <https://en.wikipedia.org/wiki/Breadth-first_search>`_
-         version of :tacn:`eauto` but it actually behaved like
-         :tacn:`eauto`. Use :tacn:`typeclasses
-         eauto` with the `bfs` flag instead.
-
 .. tacn:: autounfold {? @hintbases } {? @simple_occurrences }
 
    Unfolds constants that were declared through a :cmd:`Hint Unfold`

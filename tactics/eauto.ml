@@ -142,9 +142,6 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
   try e_my_find_search env sigma db_list local_db secvars gl
   with Not_found -> []
 
-(*s The following module [SearchProblem] is used to instantiate the generic
-    exploration functor [Explore.Make]. *)
-
 type search_state = {
   priority : int;
   depth : int; (*r depth of search before failing *)
@@ -166,8 +163,6 @@ and prev_search_state = (* for info eauto *)
 (* first_goal : goal list sigma -> goal sigma *)
 
 module SearchProblem = struct
-
-  type state = search_state
 
   let success s = List.is_empty s.tacres
 
@@ -252,7 +247,37 @@ module SearchProblem = struct
 
 end
 
-module Search = Explore.Make(SearchProblem)
+module Search = struct
+
+  type position = int list
+
+  let msg_with_position (p : position) s = match p with
+  | [] -> ()
+  | _ :: _ ->
+    let pp = SearchProblem.pp s in
+    let rec pp_rec = function
+      | [] -> mt ()
+      | [i] -> int i
+      | i :: l -> pp_rec l ++ str "." ++ int i
+    in
+    Feedback.msg_debug (h (pp_rec p) ++ pp)
+
+  let push i p = match p with [] -> [] | _ :: _ -> i :: p
+
+  let search ?(debug=false) s =
+    let rec explore p s =
+      let () = msg_with_position p s in
+      if SearchProblem.success s then s else explore_many 1 p (SearchProblem.branching s)
+    and explore_many i p = function
+      | [] -> raise Not_found
+      | [s] -> explore (push i p) s
+      | s :: l ->
+          try explore (push i p) s with Not_found -> explore_many (succ i) p l
+    in
+    let pos = if debug then [1] else [] in
+    explore pos s
+
+end
 
 (** Utilities for debug eauto / info eauto *)
 
@@ -314,18 +339,15 @@ let make_initial_state sigma evk dbg n dblist localdb lems =
     local_lemmas = lems;
   }
 
-let e_search_auto debug (in_depth,p) lems db_list =
+let e_search_auto ?(debug = Off) ?depth lems db_list =
   let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
+  let p = Option.default !default_search_depth depth in
   let sigma = Proofview.Goal.sigma gl in
   let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
-  let tac = match in_depth,d with
-    | (true,Debug) -> Search.debug_depth_first
-    | (true,_) -> Search.depth_first
-    | (false,Debug) -> Search.debug_breadth_first
-    | (false,_) -> Search.breadth_first
-  in
+  let debug = match d with Debug -> true | Info | Off -> false in
+  let tac s = Search.search ~debug s in
   let () = pr_dbg_header d in
   let evk = Proofview.Goal.goal gl in
   match tac (make_initial_state sigma evk d p db_list local_db lems) with
@@ -339,28 +361,12 @@ let e_search_auto debug (in_depth,p) lems db_list =
     Proofview.tclUNIT ()
   end
 
-let eauto_with_bases ?(debug=Off) np lems db_list =
-  Hints.wrap_hint_warning (e_search_auto debug np lems db_list)
+let eauto_with_bases ?debug ?depth lems db_list =
+  Hints.wrap_hint_warning (e_search_auto ?debug ?depth lems db_list)
 
-let eauto ?(debug=Off) np lems dbnames =
-  let db_list = make_db_list dbnames in
-  e_search_auto debug np lems db_list
-
-let full_eauto ?(debug=Off) n lems =
-  let db_list = current_pure_db () in
-  e_search_auto debug n lems db_list
-
-let gen_eauto ?(debug=Off) np lems = function
-  | None -> Hints.wrap_hint_warning (full_eauto ~debug np lems)
-  | Some l -> Hints.wrap_hint_warning (eauto ~debug np lems l)
-
-let make_depth = function
-  | None -> !default_search_depth
-  | Some d -> d
-
-let make_dimension n = function
-  | None -> (true,make_depth n)
-  | Some d -> (false,d)
+let gen_eauto ?debug ?depth lems dbs =
+  let dbs = match dbs with None -> current_pure_db () | Some dbs -> make_db_list dbs in
+  eauto_with_bases ?debug ?depth lems dbs
 
 let autounfolds ids csts gl cls =
   let open Tacred in

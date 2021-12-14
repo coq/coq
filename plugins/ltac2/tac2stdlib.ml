@@ -557,8 +557,8 @@ let () = define_prim3 "tac_trivial" debug (list (thunk constr)) (option (list id
   Tac2tactics.trivial dbg lems dbs
 end
 
-let () = define_prim5 "tac_eauto" debug (option int) (option int) (list (thunk constr)) (option (list ident)) begin fun dbg n p lems dbs ->
-  Tac2tactics.eauto dbg n p lems dbs
+let () = define_prim4 "tac_eauto" debug (option int) (list (thunk constr)) (option (list ident)) begin fun dbg n lems dbs ->
+  Tac2tactics.eauto dbg n lems dbs
 end
 
 let () = define_prim4 "tac_auto" debug (option int) (list (thunk constr)) (option (list ident)) begin fun dbg n lems dbs ->
