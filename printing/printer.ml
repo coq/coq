@@ -468,12 +468,21 @@ let goal_repr sigma g =
 let pr_goal ?diffs g_s =
   let g = sig_it g_s in
   let sigma = g_s.Evd.sigma in
-  let env, concl = goal_repr sigma g in
   let goal = match diffs with
   | Some og_s ->
     let g = Proof_diffs.make_goal (Global.env ()) sigma g in
-    Proof_diffs.diff_goal ?og_s g
+    let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal ?og_s g in
+    let hyp_list_to_pp hyps =
+      match hyps with
+      | h :: tl -> List.fold_left (fun x y -> x ++ cut () ++ y) h tl
+      | [] -> mt ()
+    in
+    v 0 (
+      (hyp_list_to_pp hyps_pp_list) ++ cut () ++
+      str "============================" ++ cut () ++
+      concl_pp)
   | None ->
+    let env, concl = goal_repr sigma g in
       pr_context_of env sigma ++ cut () ++
         str "============================" ++ cut ()  ++
         hov 0 (pr_letype_env ~goal_concl_style:true env sigma concl)

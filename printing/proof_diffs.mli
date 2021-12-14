@@ -48,19 +48,7 @@ If you want to make your call especially bulletproof, catch these
 exceptions, print a user-visible message, then recall this routine with
 the first argument set to None, which will skip the diff.
 *)
-val diff_goal_ide : goal option -> goal -> Pp.t list * Pp.t
-
-(** Computes the diff between two goals
-
-If the strings used to display the goal are not lexable (this is believed
-unlikely), this routine will generate a Diff_Failure.  This routine may also
-raise Diff_Failure under some "impossible" conditions.
-
-If you want to make your call especially bulletproof, catch these
-exceptions, print a user-visible message, then recall this routine with
-the first argument set to None, which will skip the diff.
-*)
-val diff_goal : ?og_s:goal -> goal -> Pp.t
+val diff_goal : ?og_s:goal -> goal -> Pp.t list * Pp.t
 
 (** Convert a string to a list of token strings using the lexer *)
 val tokenize_string : string -> string list
