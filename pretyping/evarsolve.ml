@@ -1628,7 +1628,7 @@ let rec invert_definition unify flags choose imitate_defs
         (* Note that we don't need to declare ?evk'' yet: it may remain virtual *)
         let aliases = lift_aliases k aliases in
         (try
-          let ev = (evk,List.map (lift k) argsv) in
+          let ev = normalize_evar !evdref (evk,List.map (lift k) argsv) in
           let evd,body = project_evar_on_evar false unify flags env' !evdref aliases k None ev' ev in
           evdref := evd;
           body
