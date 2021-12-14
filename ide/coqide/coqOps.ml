@@ -575,7 +575,6 @@ object(self)
           Coq.set_stopped_in_debugger _ct true;
         self#debug_prompt ~tag msg2
     with e -> (Printf.printf "Exception: %s\n%!" (Printexc.to_string e);
-        Printexc.print_backtrace stdout;
         flush stdout;
         raise e)
 

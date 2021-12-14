@@ -1781,7 +1781,6 @@ let make_scratch_buffer () =
   ()
 
 let main files =
-  Printexc.record_backtrace true;
   let w = build_ui () in
   reset_revert_timer ();
   reset_autosave_timer ();
