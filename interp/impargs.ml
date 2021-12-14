@@ -806,7 +806,7 @@ let select_impargs_size_for_proj ~nexpectedparams ~ngivenparams ~nextraargs impl
   | (_, imps1, imps2) :: _ -> Inl (imps1, imps2)
   | [] ->
     if Int.equal ngivenparams nexpectedparams then Inl ([], [])
-    else Inr (lazy (List.sort Int.compare (List.uniquize (List.map pi1 impls))))
+    else Inr (lazy (List.sort_uniq Int.compare (List.rev_map pi1 impls)))
 
 let impargs_for_proj ~nexpectedparams ~nextraargs imps =
   let imps1, imps2 = try List.chop nexpectedparams imps with Failure _ -> imps, [] in
