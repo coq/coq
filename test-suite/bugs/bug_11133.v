@@ -7,7 +7,7 @@ Include Univ.
 End Univ_prop.
 
 Module Monad (Univ : Universe).
-Module UP := (Univ_prop Univ).
+Module UP := Univ_prop Univ.
 End Monad.
 
 Module Rules (Univ:Universe).

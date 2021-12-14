@@ -648,12 +648,12 @@ GRAMMAR EXTEND Gram
   ;
   (* Module expressions *)
   module_expr:
-    [ [ me = module_expr_atom -> { me }
+    [ [ me = module_expr_atom -> { CAst.make ~loc @@ CMident me }
       | me1 = module_expr; me2 = module_expr_atom -> { CAst.make ~loc @@ CMapply (me1,me2) }
       ] ]
   ;
   module_expr_atom:
-    [ [ qid = qualid -> { CAst.make ~loc @@ CMident qid } | "("; me = module_expr; ")" -> { me } ] ]
+    [ [ qid = qualid -> { qid } | "("; me = module_expr_atom; ")" -> { me } ] ]
   ;
   with_declaration:
     [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = Constr.lconstr ->

@@ -32,9 +32,6 @@ let error_not_a_module_loc ~info kind loc qid =
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (e,info)
 
-let error_application_to_not_path loc me =
-  Loc.raise ?loc (Modops.ModuleTypingError (Modops.ApplicationToNotPath me))
-
 let error_incorrect_with_in_module loc =
   Loc.raise ?loc (ModuleInternalizationError IncorrectWithInModule)
 
@@ -131,11 +128,7 @@ let rec interp_module_ast env kind m cst = match m with
       (MEident mp, mp, kind, cst)
   | {CAst.loc;v=CMapply (me1,me2)} ->
       let me1', base, kind1, cst = interp_module_ast env kind me1 cst in
-      let me2', _, kind2, cst = interp_module_ast env ModAny me2 cst in
-      let mp2 = match me2' with
-        | MEident mp -> mp
-        | _ -> error_application_to_not_path (loc_of_module me2) me2'
-      in
+      let mp2, kind2 = lookup_module_or_modtype ModAny me2 in
       if kind2 == ModType then
         error_application_to_module_type (loc_of_module me2);
       (MEapply (me1',mp2), base, kind1, cst)
