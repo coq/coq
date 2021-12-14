@@ -241,7 +241,7 @@ val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
 
-val print_and_diff : Proof.t option -> Proof.t option -> unit
+val print_and_diff : Proof.t option -> Proof.t -> unit
 val print_dependent_evars : Evar.t option -> evar_map -> Evar.t list -> Pp.t
 
 (** Declarations for the "Print Assumption" command *)

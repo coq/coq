@@ -366,7 +366,7 @@ let print_anyway c =
    generic way, but that'll do for now *)
 let top_goal_print ~doc c oldp newp =
   try
-    let proof_changed = not (Option.equal cproof oldp newp) in
+    let proof_changed = not (Option.equal cproof oldp (Some newp)) in
     let print_goals = proof_changed && Vernacstate.Declare.there_are_pending_proofs () ||
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
@@ -413,7 +413,10 @@ let process_toplevel_command ~state stm =
 
   | VernacControl { CAst.loc; v=c } ->
     let nstate = Vernac.process_expr ~state (CAst.make ?loc c) in
-    top_goal_print ~doc:state.doc c state.proof nstate.proof;
+    let () = match nstate.proof with
+    | None -> ()
+    | Some proof -> top_goal_print ~doc:state.doc c state.proof proof
+    in
     nstate
 
   | VernacShowGoal { gid; sid } ->

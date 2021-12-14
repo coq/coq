@@ -1032,23 +1032,20 @@ let pr_assumptionset env sigma s =
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
 (* print the proof step, possibly with diffs highlighted, *)
-let print_and_diff oldp newp =
-  match newp with
-  | None -> ()
-  | Some proof ->
-    let output =
-      if Proof_diffs.show_diffs () then
-        try pr_open_subgoals_diff ~diffs:oldp proof
-        with Pp_diff.Diff_Failure msg -> begin
-          (* todo: print the unparsable string (if we know it) *)
-          Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
-              ++ str "Showing results without diff highlighting" );
-          pr_open_subgoals ~proof
-        end
-      else
+let print_and_diff oldp proof =
+  let output =
+    if Proof_diffs.show_diffs () then
+      try pr_open_subgoals_diff ~diffs:oldp proof
+      with Pp_diff.Diff_Failure msg -> begin
+        (* todo: print the unparsable string (if we know it) *)
+        Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
+            ++ str "Showing results without diff highlighting" );
         pr_open_subgoals ~proof
-    in
-    Feedback.msg_notice output
+      end
+    else
+      pr_open_subgoals ~proof
+  in
+  Feedback.msg_notice output
 
 let pr_typing_flags flags =
   str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
