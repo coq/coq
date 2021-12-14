@@ -62,13 +62,15 @@ let pr_econstr_n_env ?lax ?inctx ?scope env sigma n t =
   pr_constr_expr_n env sigma n (extern_constr ?lax ?inctx ?scope env sigma t)
 let pr_econstr_env ?lax ?inctx ?scope env sigma t =
   pr_constr_expr env sigma (extern_constr ?lax ?inctx ?scope env sigma t)
-let pr_leconstr_env = Proof_diffs.pr_leconstr_env
+let pr_leconstr_env ?lax ?inctx ?scope env sigma t =
+  Ppconstr.pr_lconstr_expr env sigma (extern_constr ?lax ?inctx ?scope env sigma t)
 
 let pr_constr_n_env ?lax ?inctx ?scope env sigma n c =
   pr_econstr_n_env ?lax ?inctx ?scope env sigma n (EConstr.of_constr c)
 let pr_constr_env ?lax ?inctx ?scope env sigma c =
   pr_econstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
-let pr_lconstr_env = Proof_diffs.pr_lconstr_env
+let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
+  pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
 
 let pr_open_lconstr_env ?lax ?inctx ?scope env sigma (_,c) =
   pr_leconstr_env ?lax ?inctx ?scope env sigma c
@@ -87,7 +89,8 @@ let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_e
 
 let pr_etype_env ?lax ?goal_concl_style env sigma t =
   pr_constr_expr env sigma (extern_type ?lax ?goal_concl_style env sigma t)
-let pr_letype_env = Proof_diffs.pr_letype_env
+let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
+  pr_lconstr_expr env sigma (extern_type ?lax ?goal_concl_style env sigma ?impargs t)
 
 let pr_type_env ?lax ?goal_concl_style env sigma c =
   pr_etype_env ?lax ?goal_concl_style env sigma (EConstr.of_constr c)

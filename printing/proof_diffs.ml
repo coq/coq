@@ -260,9 +260,6 @@ let pr_leconstr_env ?lax ?inctx ?scope env sigma t =
 let pr_econstr_env ?lax ?inctx ?scope env sigma t =
   Ppconstr.pr_constr_expr env sigma (Constrextern.extern_constr ?lax ?inctx ?scope env sigma t)
 
-let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
-  pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
-
 let diff_concl ?og_s ng =
   let o_concl_pp = match og_s with
   | Some { ty = oty; env = oenv; sigma = osigma } -> pp_of_type oenv osigma oty
