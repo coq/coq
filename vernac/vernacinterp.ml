@@ -71,10 +71,11 @@ let with_fail f : (Loc.t option * Pp.t, unit) result =
     Error ()
   with
   (* Fail Timeout is a common pattern so we need to support it. *)
-  | e when CErrors.noncritical e || e = CErrors.Timeout ->
+  | e ->
     (* The error has to be printed in the failing state *)
-    let _, info as e = Exninfo.capture e in
-    Ok (Loc.get_loc info, CErrors.iprint e)
+    let _, info as exn = Exninfo.capture e in
+    if CErrors.is_anomaly e && e != CErrors.Timeout then Exninfo.iraise exn;
+    Ok (Loc.get_loc info, CErrors.iprint exn)
 
 let real_error_loc ~cmdloc ~eloc =
   if Loc.finer eloc cmdloc then eloc
