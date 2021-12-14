@@ -123,53 +123,59 @@ Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
      : Prop
 fun x : nat => <{ x; (S x) }>
      : nat -> nat
+Set
+     : Type
+fun x : nat => S x
+     : nat -> nat
+True
+     : Prop
 exists p : nat, ▢_p (p >= 1)
      : Prop
 ▢_n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 297, characters 17-20:
+File "./output/Notations4.v", line 327, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a variable name was expected.
-File "./output/Notations4.v", line 298, characters 17-18:
+File "./output/Notations4.v", line 328, characters 17-18:
 The command has indeed failed with message:
 Found a constructor while a variable name was expected.
-File "./output/Notations4.v", line 300, characters 17-18:
+File "./output/Notations4.v", line 330, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a variable name was expected.
 exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
      : Prop
 ▢_n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 313, characters 17-20:
+File "./output/Notations4.v", line 343, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 ▢_tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 316, characters 17-18:
+File "./output/Notations4.v", line 346, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
      : Prop
 pseudo_force n (fun n : nat => n >= 1)
      : Prop
-File "./output/Notations4.v", line 329, characters 17-20:
+File "./output/Notations4.v", line 359, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 ▢_tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 332, characters 17-18:
+File "./output/Notations4.v", line 362, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 exists x y : nat, myforce (x, y) (x >= 1 /\ y >= 2)
      : Prop
 myforce n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 344, characters 21-24:
+File "./output/Notations4.v", line 374, characters 21-24:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 myforce tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 347, characters 21-22:
+File "./output/Notations4.v", line 377, characters 21-22:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 id nat
@@ -178,7 +184,7 @@ fun a : bool => id a
      : bool -> bool
 fun nat : bool => id nat
      : bool -> bool
-File "./output/Notations4.v", line 359, characters 17-20:
+File "./output/Notations4.v", line 389, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 !! nat, nat = true
@@ -207,7 +213,7 @@ Found an inductive type while a pattern was expected.
      : Type
 ## (x, _) (x = 0)
      : Prop
-File "./output/Notations4.v", line 455, characters 21-30:
+File "./output/Notations4.v", line 485, characters 21-30:
 The command has indeed failed with message:
 Unexpected type constraint in notation already providing a type constraint.
 ## '(x, y) (x + y = 0)

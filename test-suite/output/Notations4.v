@@ -273,6 +273,36 @@ Check fun x => <{ x ; (S x) }>.
 
 End CoercionEntryTransitivity.
 
+Module CoercionEntryOnlyParsing.
+
+(* bug #15335 *)
+Declare Custom Entry ent.
+Notation "ent:( x )" := x (x custom ent, only parsing).
+Notation "!" := Set (in custom ent at level 0).
+Check ent:( ! ).
+
+End CoercionEntryOnlyParsing.
+
+Module CustomIdentOnlyParsing.
+
+Declare Custom Entry ent2.
+Notation "ent:( x )" := x (x custom ent2, format "ent:( x )").
+Notation "# x" := (S x) (in custom ent2 at level 0, x at level 0).
+Notation "x" := x (in custom ent2 at level 0, x ident, only parsing).
+Check fun x : nat => ent:(# x).
+
+End CustomIdentOnlyParsing.
+
+Module CustomGlobalOnlyParsing.
+
+Declare Custom Entry ent3.
+Notation "ent:( x )" := x (x custom ent3, format "ent:( x )").
+Notation "# x" := (S x) (in custom ent3 at level 0, x at level 0).
+Notation "x" := x (in custom ent3 at level 0, x global, only parsing).
+Check ent:(True).
+
+End CustomGlobalOnlyParsing.
+
 (* Some corner cases *)
 
 Module P.
