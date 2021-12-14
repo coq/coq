@@ -355,7 +355,6 @@ prove that the argument of the morphism is defined.
    ``y`` in ``div x n = div y n`` opens an additional goal ``eq0 n n``
    which is equivalent to ``n = n /\ n <> 0``.
 
-
 Rewriting and nonsymmetric relations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -408,6 +407,7 @@ covariant position.
    respect to the relation itself).
 
 
+
 Rewriting in ambiguous setoid contexts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -445,10 +445,32 @@ same names based on ``Type`` are in ``Classes.CRelations``,
 Importing these modules allows for generalized rewriting with relations of the
 form ``R : A -> A -> Type`` together with support for universe polymorphism.
 
+Declaring rewrite relations
+---------------------------
+
+The ``RewriteRelation A R`` typeclass, indexed by a type and relation, registers
+relations that generalized rewriting handles.
+The default instances of this class are the ``iff```, ``impl`` and ``flip impl``
+relations on ``Prop``, any declared ``Equivalence`` on a type ``A`` (including :term:`Leibniz equality`),
+and pointwise extensions of declared relations for function types.
+Users can simply add new instances of this class to register relations with the generalized rewriting
+machinery.
+It is used in two cases:
+
+   + Inference of morphisms:
+     In some cases, generalized rewriting might face constraints of the shape
+     ``Proper (S ==> ?R) f`` for a function ``f`` with no matching ``Proper`` instance.
+     In this situation, the ``RewriteRelation`` instances are used to instantiate
+     the relation ``?R``. If the instantiated relation is reflexive, then the ``Proper``
+     constraint can be automatically discharged.
+
+   + Compatibility with ssreflect's rewrite:
+     The :tacn:`rewrite (ssreflect)` tactic uses generalized rewriting when possible, by
+     checking that a ``RewriteRelation R`` instance exists when rewriting with a
+     term of type ``R t u``.
 
 Commands and tactics
 --------------------
-
 
 .. _first-class-setoids-and-morphisms:
 
@@ -489,7 +511,7 @@ further explanations.
 
 One can inform the rewrite tactic about morphisms and relations just
 by using the typeclass mechanism to declare them using the :cmd:`Instance` and
-:cmd:`Context` commands. Any object of type Proper (the type of
+:cmd:`Context` commands. Any object of type ``Proper`` (the type of
 morphism declarations) in the local context will also be automatically
 used by the rewriting tactic to solve constraints.
 
