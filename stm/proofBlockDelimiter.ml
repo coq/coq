@@ -12,8 +12,8 @@ open Stm
 
 module Util : sig
 
-val simple_goal : Evd.evar_map -> Goal.goal -> Goal.goal list -> bool
-val is_focused_goal_simple : doc:Stm.doc -> Stateid.t -> [ `Simple of Goal.goal list | `Not ]
+val simple_goal : Evd.evar_map -> Evar.t -> Evar.t list -> bool
+val is_focused_goal_simple : doc:Stm.doc -> Stateid.t -> [ `Simple of Evar.t list | `Not ]
 
 type 'a until = [ `Stop | `Found of static_block_declaration | `Cont of 'a ]
 

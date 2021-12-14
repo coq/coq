@@ -180,5 +180,5 @@ type ssrapplyarg = ssrterm list * (ssrterm ssragens * ssripats)
 (* OOP : these are general shortcuts *)
 type gist = Tacintern.glob_sign
 type ist = Tacinterp.interp_sign
-type goal = Goal.goal
+type goal = Evar.t
 type 'a sigma = 'a Evd.sigma

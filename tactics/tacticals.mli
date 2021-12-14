@@ -67,14 +67,14 @@ val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
 val onNLastHyps      : int -> (constr list -> tactic) -> tactic
 val onNLastDecls     : int -> (named_context -> tactic) -> tactic
 
-val lastHypId   : Goal.goal sigma -> Id.t
-val lastHyp     : Goal.goal sigma -> constr
-val lastDecl    : Goal.goal sigma -> named_declaration
-val nLastHypsId : int -> Goal.goal sigma -> Id.t list
-val nLastHyps   : int -> Goal.goal sigma -> constr list
-val nLastDecls  : int -> Goal.goal sigma -> named_context
+val lastHypId   : Evar.t sigma -> Id.t
+val lastHyp     : Evar.t sigma -> constr
+val lastDecl    : Evar.t sigma -> named_declaration
+val nLastHypsId : int -> Evar.t sigma -> Id.t list
+val nLastHyps   : int -> Evar.t sigma -> constr list
+val nLastDecls  : int -> Evar.t sigma -> named_context
 
-val afterHyp    : Id.t -> Goal.goal sigma -> named_context
+val afterHyp    : Id.t -> Evar.t sigma -> named_context
 
 val ifOnHyp     : (Id.t * types -> bool) ->
                   (Id.t -> tactic) -> (Id.t -> tactic) ->
@@ -95,9 +95,9 @@ val onAllHypsAndConcl   : (Id.t option -> tactic) -> tactic
 val onClause   : (Id.t option -> tactic) -> clause -> tactic
 val onClauseLR : (Id.t option -> tactic) -> clause -> tactic
 
-val elimination_sort_of_goal : Goal.goal sigma -> Sorts.family
-val elimination_sort_of_hyp  : Id.t -> Goal.goal sigma -> Sorts.family
-val elimination_sort_of_clause : Id.t option -> Goal.goal sigma -> Sorts.family
+val elimination_sort_of_goal : Evar.t sigma -> Sorts.family
+val elimination_sort_of_hyp  : Id.t -> Evar.t sigma -> Sorts.family
+val elimination_sort_of_clause : Id.t option -> Evar.t sigma -> Sorts.family
 
 val pf_with_evars :  (Goal.goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
 val pf_constr_of_global : GlobRef.t -> (constr -> tactic) -> tactic

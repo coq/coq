@@ -22,8 +22,8 @@
     i.e. if skipping it could impact other goals (like not instantiating their
     type).  `Simple carries the list of focused goals.
 *)
-val simple_goal : Evd.evar_map -> Goal.goal -> Goal.goal list -> bool
-val is_focused_goal_simple : doc:Stm.doc -> Stateid.t -> [ `Simple of Goal.goal list | `Not ]
+val simple_goal : Evd.evar_map -> Evar.t -> Evar.t list -> bool
+val is_focused_goal_simple : doc:Stm.doc -> Stateid.t -> [ `Simple of Evar.t list | `Not ]
 
 type 'a until = [ `Stop | `Found of Stm.static_block_declaration | `Cont of 'a ]
 

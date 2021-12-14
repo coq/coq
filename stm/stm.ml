@@ -1250,7 +1250,7 @@ type static_block_detection =
 
 type recovery_action = {
   base_state : Stateid.t;
-  goals_to_admit : Goal.goal list;
+  goals_to_admit : Evar.t list;
   recovery_command : Vernacexpr.vernac_control option;
 }
 
