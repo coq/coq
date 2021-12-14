@@ -359,6 +359,22 @@ let print_anyway c =
   | VernacSetOption (_, opt, _) -> List.mem opt print_anyway_opts
   | _ -> false
 
+(* print the proof step, possibly with diffs highlighted, *)
+let print_and_diff oldp proof =
+  let output =
+    if Proof_diffs.show_diffs () then
+      try Printer.pr_open_subgoals ~diffs:oldp proof
+      with Pp_diff.Diff_Failure msg -> begin
+        (* todo: print the unparsable string (if we know it) *)
+        Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
+            ++ str "Showing results without diff highlighting" );
+        Printer.pr_open_subgoals proof
+      end
+    else
+      Printer.pr_open_subgoals proof
+  in
+  Feedback.msg_notice output
+
 (* We try to behave better when goal printing raises an exception
    [usually Ctrl-C]
 
@@ -371,7 +387,7 @@ let top_goal_print ~doc c oldp newp =
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
       let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      Printer.print_and_diff dproof newp
+      print_and_diff dproof newp
     end
   with
   | exn ->
