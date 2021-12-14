@@ -229,7 +229,7 @@ let recheck_applications unify flags env evdref t =
              | Success evd -> evdref := evd;
                              aux (succ i) (subst1 args.(i) codom)
              | UnifFailure (evd, reason) -> raise (IllTypedInstance (env, evd, argsty.(i), dom)))
-         | _ -> raise (IllTypedInstanceFun (env, !evdref, f, ty))
+         | _ -> raise_notrace (IllTypedInstanceFun (env, !evdref, f, ty))
        else ()
      in aux 0 fty
     | _ ->
@@ -292,7 +292,7 @@ let noccur_evar env evd evk c =
   let rec occur_rec check_types (k, env as acc) c =
   match EConstr.kind evd c with
   | Evar (evk',args' as ev') ->
-    if Evar.equal evk evk' then raise Occur
+    if Evar.equal evk evk' then raise_notrace Occur
     else (if check_types then
             occur_rec false acc (existential_type evd ev');
           List.iter (occur_rec check_types acc) args')
@@ -781,7 +781,7 @@ exception MorePreciseOccurCheckNeeeded
 let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   if Evd.is_defined evd evk1 then
       (* Some circularity somewhere (see e.g. #3209) *)
-      raise MorePreciseOccurCheckNeeeded;
+      raise_notrace MorePreciseOccurCheckNeeeded;
   let (evk1,args1) = destEvar evd (mkEvar (evk1,args1)) in
   let evi1 = Evd.find_undefined evd evk1 in
   let env1,rel_sign = env_rel_context_chop k env in
@@ -903,7 +903,7 @@ exception NotUnique
 exception NotUniqueInType of (Id.t * evar_projection) list
 
 let rec assoc_up_to_alias sigma aliases y = function
-  | [] -> raise Not_found
+  | [] -> raise_notrace Not_found
   | (c, id)::l ->
     match to_alias sigma c with
     | None -> assoc_up_to_alias sigma aliases y l
@@ -916,7 +916,7 @@ let rec assoc_up_to_alias sigma aliases y = function
           (* Last chance, we reason up to alias conversion *)
           let cc = normalize_alias sigma aliases c in
           let yc = normalize_alias sigma aliases y in
-          if eq_alias cc yc then id else raise Not_found
+          if eq_alias cc yc then id else raise_notrace Not_found
 
 let rec find_projectable_vars aliases sigma y subst =
   let is_projectable _ idcl (subst1,subst2 as subst') =
@@ -953,8 +953,8 @@ let rec find_projectable_vars aliases sigma y subst =
  * among a set of solutions to a projection problem *)
 
 let filter_solution = function
-  | [] -> raise Not_found
-  | _ :: _ :: _ -> raise NotUnique
+  | [] -> raise_notrace Not_found
+  | _ :: _ :: _ -> raise_notrace NotUnique
   | [id] -> mkVar id
 
 let project_with_effects aliases sigma t subst =
@@ -1031,7 +1031,7 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
     try project_with_effects aliases evd t subst_in_env_extended_with_k_binders
     with Not_found ->
       match expand_alias_once evd aliases t with
-      | None -> raise Not_found
+      | None -> raise_notrace Not_found
       | Some c -> aux k (Alias.eval (Alias.lift k c)) in
   try
     let c = aux 0 c_in_env_extended_with_k_binders in
@@ -1060,7 +1060,7 @@ let extract_unique_projection = function
     (* (typically a rel) that is not inversible and that cannot be *)
     (* inverted either because it is needed for typing the conclusion *)
     (* of the evar to project *)
-  raise NotEnoughInformationToInvert
+  raise_notrace NotEnoughInformationToInvert
 
 let extract_candidates sols =
   try
@@ -1162,7 +1162,7 @@ let do_restrict_hyps ~can_drop evd (evk,args as ev) filter candidates =
   | UpdateWith [], _ -> user_err Pp.(str "Not solvable.")
   | UpdateWith [nc],_ ->
       let evd = Evd.define evk nc evd in
-      raise (EvarSolvedWhileRestricting (evd,mkEvar ev))
+      raise_notrace (EvarSolvedWhileRestricting (evd,mkEvar ev))
   | NoUpdate, None -> evd,ev
   | _ -> restrict_applied_evar evd ev filter candidates
 
@@ -1232,7 +1232,7 @@ let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) 
   let evi2 = Evd.find evd evk2 in
   match evi1.evar_candidates, evi2.evar_candidates with
   | _, None -> filter_candidates evd evk1 filter1 NoUpdate
-  | None, Some _ -> raise DoesNotPreserveCandidateRestriction
+  | None, Some _ -> raise_notrace DoesNotPreserveCandidateRestriction
   | Some l1, Some l2 ->
       let l1 = filter_effective_candidates evd evi1 filter1 l1 in
       let l1' = List.filter (fun c1 ->
@@ -1317,20 +1317,20 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
     try restrict_candidates unify flags env evd filter1 ev1 ev2
     with DoesNotPreserveCandidateRestriction ->
       let evd,ev1' = do_restrict_hyps ~can_drop:force evd ev1 filter1 NoUpdate in
-      raise (CannotProject (evd,ev1')) in
+      raise_notrace (CannotProject (evd,ev1')) in
   let evd,(evk1',args1 as ev1') =
     try do_restrict_hyps ~can_drop:force evd ev1 filter1 candidates1
     with EvarSolvedWhileRestricting (evd,ev1) ->
-      raise (EvarSolvedOnTheFly (evd,ev1)) in
+      raise_notrace (EvarSolvedOnTheFly (evd,ev1)) in
   (* Only try pruning on variable substitutions, postpone otherwise. *)
   (* Rules out non-linear instances. *)
   if Option.is_empty pbty && is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
     try
       evd,mkEvar (evk1',invert_invertible_arg env evd aliases k2 ev2 args1)
     with NotEnoughInformationToInvert ->
-      raise (CannotProject (evd,ev1'))
+      raise_notrace (CannotProject (evd,ev1'))
   else
-    raise (CannotProject (evd,ev1'))
+    raise_notrace (CannotProject (evd,ev1'))
 
 let update_evar_info ev1 ev2 evd =
   (* We update the source of obligation evars during evar-evar unifications. *)
@@ -1365,21 +1365,21 @@ let solve_evar_evar_aux force f unify flags env evd pbty (evk1,args1 as ev1) (ev
   if preferred_orientation evd evk1 evk2 then
     try if allowed_ev1 then
         solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
-      else raise (CannotProject (evd,ev2))
+      else raise_notrace (CannotProject (evd,ev2))
     with CannotProject (evd,ev2) ->
       try if allowed_ev2 then
           solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 ev2
-        else raise (CannotProject (evd,ev1))
+        else raise_notrace (CannotProject (evd,ev1))
       with CannotProject (evd,ev1) ->
         add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
   else
     try if allowed_ev2 then
         solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 ev2
-      else raise (CannotProject (evd,ev1))
+      else raise_notrace (CannotProject (evd,ev1))
     with CannotProject (evd,ev1) ->
     try if allowed_ev1 then
         solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
-      else raise (CannotProject (evd,ev2))
+      else raise_notrace (CannotProject (evd,ev2))
     with CannotProject (evd,ev2) ->
       add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
@@ -1469,7 +1469,7 @@ exception IncompatibleCandidates of EConstr.t
 let solve_candidates unify flags env evd (evk,argsv) rhs =
   let evi = Evd.find evd evk in
   match evi.evar_candidates with
-  | None -> raise NoCandidates
+  | None -> raise_notrace NoCandidates
   | Some l ->
       let rec aux = function
         | [] -> [], []
@@ -1479,7 +1479,7 @@ let solve_candidates unify flags env evd (evk,argsv) rhs =
            | Inl c -> c::compatl, disjointl
            | Inr c -> compatl, c::disjointl in
       match aux l with
-      | [], c::_ -> raise (IncompatibleCandidates c)
+      | [], c::_ -> raise_notrace (IncompatibleCandidates c)
       | [c,evd], _ ->
           (* solve_candidates might have been called recursively in the mean *)
           (* time and the evar been solved by the filtering process *)
@@ -1497,7 +1497,7 @@ let occur_evar_upto_types sigma n c =
   let seen = ref Evar.Set.empty in
   (* FIXME: Is that supposed to be evar-insensitive? *)
   let rec occur_rec c = match Constr.kind c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
+    | Evar (sp,_) when Evar.equal sp n -> raise_notrace Occur
     | Evar (sp,args as e) ->
        if Evar.Set.mem sp !seen then
          List.iter occur_rec args
@@ -1560,20 +1560,20 @@ let rec invert_definition unify flags choose imitate_defs
     try
       let sols = find_projectable_vars aliases !evdref t subst in
       let c, p = match sols with
-        | [] -> raise Not_found
+        | [] -> raise_notrace Not_found
         | [id,p] -> (mkVar id, p)
         | (id,p)::_ ->
-            if choose then (mkVar id, p) else raise (NotUniqueInType sols)
+            if choose then (mkVar id, p) else raise_notrace (NotUniqueInType sols)
       in
       let ty = lazy (Retyping.get_type_of env !evdref (of_alias t)) in
       let evd = do_projection_effects unify flags (evar_define unify flags ~choose) env ty !evdref p in
       evdref := evd;
       c
     with
-      | Not_found -> raise (NotInvertibleUsingOurAlgorithm (of_alias t))
+      | Not_found -> raise_notrace (NotInvertibleUsingOurAlgorithm (of_alias t))
       | NotUniqueInType sols ->
           if not !progress then
-            raise (NotEnoughInformationToProgress sols);
+            raise_notrace (NotEnoughInformationToProgress sols);
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
           let t' = of_alias t in
@@ -1615,7 +1615,7 @@ let rec invert_definition unify flags choose imitate_defs
     | LetIn (na,b,u,c) ->
         imitate envk (subst1 b c)
     | Evar (evk',args' as ev') ->
-        if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
+        if Evar.equal evk evk' then raise_notrace (OccurCheckIn (evd,rhs));
         (* At this point, we imitated a context say, C[ ], and virtually
            instantiated ?evk@{x₁..xn} with C[?evk''@{x₁..xn,y₁..yk}]
            for y₁..yk the spine of variables of C[ ], now facing the
@@ -1636,7 +1636,7 @@ let rec invert_definition unify flags choose imitate_defs
         | EvarSolvedOnTheFly (evd,t) -> evdref:=evd; imitate envk t
         | CannotProject (evd,ev') ->
           if not !progress then
-            raise (NotEnoughInformationEvarEvar t);
+            raise_notrace (NotEnoughInformationEvarEvar t);
           (* We could not invert args' in terms of args, so we now make ?evk'' real *)
           let ty = get_type_of env' evd t in
           let (evd,evar'',ev'') =
@@ -1741,10 +1741,10 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
   with NoCandidates ->
   try
     let (evd',body) = invert_definition unify flags choose imitate_defs env evd pbty ev rhs in
-    if occur_meta evd' body then raise MetaOccurInBodyInternal;
+    if occur_meta evd' body then raise_notrace MetaOccurInBodyInternal;
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
-    if occur_evar_upto_types evd' evk body then raise (OccurCheckIn (evd',body));
+    if occur_evar_upto_types evd' evk body then raise_notrace (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
     let evd', body = refresh_universes pbty env evd' body in
     instantiate_evar unify flags env evd' evk body
@@ -1756,7 +1756,7 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
     | MorePreciseOccurCheckNeeeded ->
         add_conv_oriented_pb (pbty,env,mkEvar ev,rhs) evd
     | NotInvertibleUsingOurAlgorithm _ | MetaOccurInBodyInternal as e ->
-        raise e
+        raise_notrace e
     | OccurCheckIn (evd,rhs) ->
         (* last chance: rhs actually reduces to ev *)
         let c = whd_all env evd rhs in
@@ -1765,7 +1765,7 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
             solve_refl (fun flags _b env sigma pb c c' -> is_fconv pb env sigma c c') flags
                        env evd pbty evk argsv argsv2
         | _ ->
-            raise (OccurCheckIn (evd,rhs))
+            raise_notrace (OccurCheckIn (evd,rhs))
 
 (* This code (i.e. solve_pb, etc.) takes a unification
  * problem, and tries to solve it. If it solves it, then it removes
