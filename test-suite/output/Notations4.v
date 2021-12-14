@@ -498,3 +498,15 @@ Check 0+.
 Check 0.
 
 End LeadingNumber.
+
+Module Incompatibility.
+
+Notation "'func' x .. y , P" := (fun x => .. (fun y => P) ..) (x binder, y binder, at level 200).
+Fail Notation "'func' x .. y , P" := (pair x .. (pair y P) ..) (at level 200).
+
+Declare Custom Entry foo.
+Declare Custom Entry bar.
+Notation "[[ x ]]" := x (x custom foo) : nat_scope.
+Fail Notation "[[ x ]]" := x (x custom bar) : type_scope.
+
+End Incompatibility.
