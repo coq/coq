@@ -20,8 +20,8 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
     locality := local;
     default_tactic := t
   in
-  let cache (_, (local, tac)) = set_default_tactic local tac in
-  let load (_, (local, tac)) =
+  let cache (local, tac) = set_default_tactic local tac in
+  let load (local, tac) =
     if not local then set_default_tactic local tac
   in
   let subst (s, (local, tac)) =
@@ -33,12 +33,11 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
         cache_function = cache;
         load_function = (fun _ -> load);
         open_function = simple_open (fun _ -> load);
-        classify_function = (fun (local, tac) ->
-          if local then Dispose else Substitute (local, tac));
+        classify_function = (fun (local, _) -> if local then Dispose else Substitute);
         subst_function = subst}
   in
   let put local tac =
-    Lib.add_anonymous_leaf (input (local, tac))
+    Lib.add_leaf (input (local, tac))
   in
   let get () = !locality, Tacinterp.eval_tactic !default_tactic in
   let print () =

@@ -94,10 +94,10 @@ let subst_tacdef (subst, def) =
   if expr' == def.tacdef_expr && type' == def.tacdef_type then def
   else { def with tacdef_expr = expr'; tacdef_type = type' }
 
-let classify_tacdef o = Substitute o
+let classify_tacdef o = Substitute
 
-let inTacDef : tacdef -> obj =
-  declare_object {(default_object "TAC2-DEFINITION") with
+let inTacDef : Id.t -> tacdef -> obj =
+  declare_named_object {(default_object "TAC2-DEFINITION") with
      cache_function  = cache_tacdef;
      load_function   = load_tacdef;
      open_function   = simple_open open_tacdef;
@@ -201,10 +201,10 @@ let subst_typdef (subst, def) =
   let expr' = subst_quant_typedef subst def.typdef_expr in
   if expr' == def.typdef_expr then def else { def with typdef_expr = expr' }
 
-let classify_typdef o = Substitute o
+let classify_typdef o = Substitute
 
-let inTypDef : typdef -> obj =
-  declare_object {(default_object "TAC2-TYPE-DEFINITION") with
+let inTypDef : Id.t -> typdef -> obj =
+  declare_named_object {(default_object "TAC2-TYPE-DEFINITION") with
      cache_function  = cache_typdef;
      load_function   = load_typdef;
      open_function   = simple_open open_typdef;
@@ -225,17 +225,17 @@ type typext = {
   typext_expr : extension_data list;
 }
 
-let push_typext vis sp kn def =
+let push_typext vis prefix def =
   let iter data =
-    let spc = change_sp_label sp data.edata_name in
-    let knc = change_kn_label kn data.edata_name in
+    let spc = Libnames.make_path prefix.obj_dir data.edata_name in
+    let knc = KerName.make prefix.obj_mp (Label.of_id data.edata_name) in
     Tac2env.push_constructor vis spc knc
   in
   List.iter iter def.typext_expr
 
-let define_typext kn def =
+let define_typext mp def =
   let iter data =
-    let knc = change_kn_label kn data.edata_name in
+    let knc = KerName.make mp (Label.of_id data.edata_name) in
     let cdata = {
       Tac2env.cdata_prms = def.typext_prms;
       cdata_type = def.typext_type;
@@ -246,13 +246,13 @@ let define_typext kn def =
   in
   List.iter iter def.typext_expr
 
-let cache_typext ((sp, kn), def) =
-  let () = define_typext kn def in
-  push_typext (Until 1) sp kn def
+let cache_typext (prefix, def) =
+  let () = define_typext prefix.obj_mp def in
+  push_typext (Until 1) prefix def
 
-let perform_typext vs ((sp, kn), def) =
-  let () = if not def.typext_local then push_typext vs sp kn def in
-  define_typext kn def
+let perform_typext vs (prefix, def) =
+  let () = if not def.typext_local then push_typext vs prefix def in
+  define_typext prefix.obj_mp def
 
 let load_typext i obj = perform_typext (Until i) obj
 let open_typext i obj = perform_typext (Exactly i) obj
@@ -271,10 +271,10 @@ let subst_typext (subst, e) =
   else
     { e with typext_type; typext_expr }
 
-let classify_typext o = Substitute o
+let classify_typext o = Substitute
 
 let inTypExt : typext -> obj =
-  declare_object {(default_object "TAC2-TYPE-EXTENSION") with
+  declare_named_object_gen {(default_object "TAC2-TYPE-EXTENSION") with
      cache_function  = cache_typext;
      load_function   = load_typext;
      open_function   = simple_open open_typext;
@@ -369,7 +369,7 @@ let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
       tacdef_type = t;
       tacdef_deprecation = deprecation;
     } in
-    ignore (Lib.add_leaf id (inTacDef def))
+    Lib.add_leaf (inTacDef id def)
   in
   List.iter iter defs
 
@@ -460,7 +460,7 @@ let register_typedef ?(local = false) isrec types =
     (id, typdef)
   in
   let types = List.map map types in
-  let iter (id, def) = ignore (Lib.add_leaf id (inTypDef def)) in
+  let iter (id, def) = Lib.add_leaf (inTypDef id def) in
   List.iter iter types
 
 let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
@@ -489,7 +489,7 @@ let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
     tacdef_type = t;
     tacdef_deprecation = deprecation;
   } in
-  ignore (Lib.add_leaf id (inTacDef def))
+  Lib.add_leaf (inTacDef id def)
 
 let register_open ?(local = false) qid (params, def) =
   let kn =
@@ -546,7 +546,7 @@ let register_open ?(local = false) qid (params, def) =
       typext_prms = tparams;
       typext_expr = def;
     } in
-    Lib.add_anonymous_leaf (inTypExt def)
+    Lib.add_leaf (inTypExt def)
   | CTydRec _ | CTydDef _ ->
     user_err ?loc:qid.CAst.loc (str "Extensions only accept inductive constructors")
 
@@ -693,10 +693,10 @@ let perform_notation syn st =
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation
 
-let cache_synext (_, syn) =
+let cache_synext syn =
   Pcoq.extend_grammar_command ltac2_notation syn
 
-let open_synext i (_, syn) =
+let open_synext i syn =
   if Int.equal i 1 then Pcoq.extend_grammar_command ltac2_notation syn
 
 let subst_synext (subst, syn) =
@@ -704,7 +704,7 @@ let subst_synext (subst, syn) =
   if e == syn.synext_exp then syn else { syn with synext_exp = e }
 
 let classify_synext o =
-  if o.synext_loc then Dispose else Substitute o
+  if o.synext_loc then Dispose else Substitute
 
 let ltac2_notation_cat = Libobject.create_category "ltac2.notations"
 
@@ -736,10 +736,10 @@ let subst_abbreviation (subst, abbr) =
   if body' == abbr.abbr_body then abbr
   else { abbr_body = body'; abbr_depr = abbr.abbr_depr }
 
-let classify_abbreviation o = Substitute o
+let classify_abbreviation o = Substitute
 
-let inTac2Abbreviation : abbreviation -> obj =
-  declare_object {(default_object "TAC2-ABBREVIATION") with
+let inTac2Abbreviation : Id.t -> abbreviation -> obj =
+  declare_named_object {(default_object "TAC2-ABBREVIATION") with
      cache_function  = cache_abbreviation;
      load_function   = load_abbreviation;
      open_function   = simple_open ~cat:ltac2_notation_cat open_abbreviation;
@@ -752,7 +752,7 @@ let register_notation ?deprecation ?(local = false) tkn lev body = match tkn, le
   let () = check_lowercase CAst.(make ?loc id) in
   let body = Tac2intern.globalize Id.Set.empty body in
   let abbr = { abbr_body = body; abbr_depr = deprecation } in
-  ignore (Lib.add_leaf id (inTac2Abbreviation abbr))
+  Lib.add_leaf (inTac2Abbreviation id abbr)
 | _ ->
   (* Check that the tokens make sense *)
   let entries = List.map ParseToken.parse_token tkn in
@@ -780,7 +780,7 @@ let register_notation ?deprecation ?(local = false) tkn lev body = match tkn, le
     synext_loc = local;
     synext_depr = deprecation;
   } in
-  Lib.add_anonymous_leaf (inTac2Notation ext)
+  Lib.add_leaf (inTac2Notation ext)
 
 type redefinition = {
   redef_kn : ltac_constant;
@@ -788,7 +788,7 @@ type redefinition = {
   redef_old : Id.t option;
 }
 
-let perform_redefinition (_, redef) =
+let perform_redefinition redef =
   let kn = redef.redef_kn in
   let data = Tac2env.interp_global kn in
   let body = match redef.redef_old with
@@ -806,14 +806,16 @@ let subst_redefinition (subst, redef) =
   if kn == redef.redef_kn && body == redef.redef_body then redef
   else { redef_kn = kn; redef_body = body; redef_old = redef.redef_old }
 
-let classify_redefinition o = Substitute o
+let classify_redefinition o = Substitute
 
 let inTac2Redefinition : redefinition -> obj =
-  declare_object {(default_object "TAC2-REDEFINITION") with
+  declare_object
+    {(default_object "TAC2-REDEFINITION") with
      cache_function  = perform_redefinition;
      open_function   = simple_open (fun _ -> perform_redefinition);
      subst_function = subst_redefinition;
-     classify_function = classify_redefinition }
+     classify_function = classify_redefinition;
+    }
 
 let register_redefinition qid old e =
   let kn =
@@ -851,7 +853,7 @@ let register_redefinition qid old e =
     redef_body = e;
     redef_old = old;
   } in
-  Lib.add_anonymous_leaf (inTac2Redefinition def)
+  Lib.add_leaf (inTac2Redefinition def)
 
 let perform_eval ~pstate e =
   let env = Global.env () in
@@ -1009,7 +1011,7 @@ let register_prim_alg name params def =
   } in
   let def = (params, GTydAlg alg) in
   let def = { typdef_local = false; typdef_expr = def } in
-  ignore (Lib.add_leaf id (inTypDef def))
+  Lib.add_leaf (inTypDef id def)
 
 let coq_def n = KerName.make Tac2env.coq_prefix (Label.make n)
 
@@ -1022,13 +1024,13 @@ let t_list = coq_def "list"
 
 let (f_register_constr_quotations, register_constr_quotations) = Hook.make ()
 
-let cache_ltac2_init (_, ()) =
+let cache_ltac2_init () =
   Hook.get f_register_constr_quotations ()
 
-let load_ltac2_init _ (_, ()) =
+let load_ltac2_init _ () =
   Hook.get f_register_constr_quotations ()
 
-let open_ltac2_init _ (_, ()) =
+let open_ltac2_init _ () =
   Goptions.set_string_option_value_gen ["Default"; "Proof"; "Mode"] "Ltac2"
 
 (** Dummy object that register global rules when Require is called *)
@@ -1040,10 +1042,11 @@ let inTac2Init : unit -> obj =
   }
 
 let _ = Mltop.declare_cache_obj begin fun () ->
-  ignore (Lib.add_leaf (Id.of_string "unit") (inTypDef def_unit));
+  let unit = Id.of_string "unit" in
+  Lib.add_leaf (inTypDef unit def_unit);
   register_prim_alg "list" 1 [
     ("[]", []);
     ("::", [GTypVar 0; GTypRef (Other t_list, [GTypVar 0])]);
   ];
-  Lib.add_anonymous_leaf (inTac2Init ());
+  Lib.add_leaf (inTac2Init ());
 end "ltac2_plugin"

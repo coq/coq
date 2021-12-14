@@ -34,14 +34,11 @@ let inductive_names sp kn obj =
          let names, _ =
            List.fold_left
              (fun (names, p) l ->
-                let sp =
-                  Libnames.make_path dp l
-                in
-                  ((sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
+                let sp = Libnames.make_path dp l in
+                ((sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
              (names, 1) consnames in
-         let sp = Libnames.make_path dp typename
-         in
-           ((sp, GlobRef.IndRef ind_p) :: names, n+1))
+         let sp = Libnames.make_path dp typename in
+         ((sp, GlobRef.IndRef ind_p) :: names, n+1))
       ([], 0) obj.ind_names
   in names
 
@@ -57,29 +54,29 @@ let cache_inductive ((sp, kn), names) =
   let names = inductive_names sp kn names in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
-let discharge_inductive ((sp, kn), names) =
+let discharge_inductive names =
   Some names
 
-let objInductive : inductive_obj Libobject.Dyn.tag =
+let objInductive : (Id.t * inductive_obj) Libobject.Dyn.tag =
   let open Libobject in
-  declare_object_full {(default_object "INDUCTIVE") with
+  declare_named_object_full {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = simple_open open_inductive;
-    classify_function = (fun a -> Substitute a);
+    classify_function = (fun a -> Substitute);
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;
   }
 
 let inInductive v = Libobject.Dyn.Easy.inj v objInductive
 
-let cache_prim (_,(p,c)) = Structures.PrimitiveProjections.register p c
+let cache_prim (p,c) = Structures.PrimitiveProjections.register p c
 
 let load_prim _ p = cache_prim p
 
 let subst_prim (subst,(p,c)) = Mod_subst.subst_proj_repr subst p, Mod_subst.subst_constant subst c
 
-let discharge_prim (_,(p,c)) = Some (Lib.discharge_proj_repr p, c)
+let discharge_prim (p,c) = Some (Lib.discharge_proj_repr p, c)
 
 let inPrim : (Projection.Repr.t * Constant.t) -> Libobject.obj =
   let open Libobject in
@@ -88,10 +85,10 @@ let inPrim : (Projection.Repr.t * Constant.t) -> Libobject.obj =
     cache_function = cache_prim ;
     load_function = load_prim;
     subst_function = subst_prim;
-    classify_function = (fun x -> Substitute x);
+    classify_function = (fun x -> Substitute);
     discharge_function = discharge_prim }
 
-let declare_primitive_projection p c = Lib.add_anonymous_leaf (inPrim (p,c))
+let declare_primitive_projection p c = Lib.add_leaf (inPrim (p,c))
 
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
 
@@ -110,14 +107,13 @@ let declare_mind ?typing_flags mie =
   List.iter (fun (typ, cons) ->
       Declare.check_exists typ;
       List.iter Declare.check_exists cons) names;
-  let _kn' = Global.add_mind ?typing_flags id mie in
-  let (sp,kn as oname) = Lib.add_leaf id (inInductive { ind_names = names }) in
+  let mind = Global.add_mind ?typing_flags id mie in
+  let () = Lib.add_leaf (inInductive (id, { ind_names = names })) in
   if is_unsafe_typing_flags() then feedback_axiom ();
-  let mind = Global.mind_of_delta_kn kn in
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
   Impargs.declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
-  oname, isprim
+  mind, isprim
 
 let is_recursive mie =
   let open Constr in
@@ -163,8 +159,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind ?typing_flags mie in
-  let mind = Global.mind_of_delta_kn kn in
+  let mind, prim = declare_mind ?typing_flags mie in
   let is_template = match mie.mind_entry_universes with Template_ind_entry _ -> true | _ -> false in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
   DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) ubinders;

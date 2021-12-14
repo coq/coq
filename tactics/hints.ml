@@ -1019,12 +1019,12 @@ type db_obj = {
   db_ts : TransparentState.t;
 }
 
-let cache_db (_, {db_name=name; db_use_dn=b; db_ts=ts}) =
+let cache_db {db_name=name; db_use_dn=b; db_ts=ts} =
   searchtable_add (name, Hint_db.empty ~name ts b)
 
 let load_db _ x = cache_db x
 
-let classify_db db = if db.db_local then Dispose else Substitute db
+let classify_db db = if db.db_local then Dispose else Substitute
 
 let inDB : db_obj -> obj =
   declare_object {(default_object "AUTOHINT_DB") with
@@ -1035,7 +1035,7 @@ let inDB : db_obj -> obj =
 
 let create_hint_db l n ts b =
   let hint = {db_local=l; db_name=n; db_use_dn=b; db_ts=ts} in
-  Lib.add_anonymous_leaf (inDB hint)
+  Lib.add_leaf (inDB hint)
 
 type hint_action =
   | AddTransparency of {
@@ -1078,7 +1078,7 @@ let superglobal h = match h.hint_local with
   | SuperGlobal -> true
   | Local | Export -> false
 
-let load_autohint _ (kn, h) =
+let load_autohint _ h =
   let name = h.hint_name in
   let superglobal = superglobal h in
   match h.hint_action with
@@ -1093,7 +1093,7 @@ let load_autohint _ (kn, h) =
   | AddMode { gref; mode } ->
     if superglobal then add_mode name gref mode
 
-let open_autohint i (kn, h) =
+let open_autohint i h =
   let superglobal = superglobal h in
   if Int.equal i 1 then match h.hint_action with
   | AddHints hints ->
@@ -1114,8 +1114,8 @@ let open_autohint i (kn, h) =
   | AddMode { gref; mode } ->
     if not superglobal then add_mode h.hint_name gref mode
 
-let cache_autohint (kn, obj) =
-  load_autohint 1 (kn, obj); open_autohint 1 (kn, obj)
+let cache_autohint o =
+  load_autohint 1 o; open_autohint 1 o
 
 let subst_autohint (subst, obj) =
   let subst_key gr =
@@ -1198,9 +1198,9 @@ let is_hint_local = function Local -> true | Export | SuperGlobal -> false
 
 let classify_autohint obj =
   if is_hint_local obj.hint_local || is_trivial_action obj.hint_action then Dispose
-  else Substitute obj
+  else Substitute
 
-let discharge_autohint (_, obj) =
+let discharge_autohint obj =
   if is_hint_local obj.hint_local then None
   else
     let action = match obj.hint_action with
@@ -1237,14 +1237,15 @@ let discharge_autohint (_, obj) =
 let hint_cat = create_category "hints"
 
 let inAutoHint : hint_obj -> obj =
-  declare_object {(default_object "AUTOHINT") with
-                    cache_function = cache_autohint;
-                    load_function = load_autohint;
-                    open_function = simple_open ~cat:hint_cat open_autohint;
-                    subst_function = subst_autohint;
-                    classify_function = classify_autohint;
-                    discharge_function = discharge_autohint;
-                  }
+  declare_object
+    {(default_object "AUTOHINT") with
+     cache_function = cache_autohint;
+     load_function = load_autohint;
+     open_function = simple_open ~cat:hint_cat open_autohint;
+     subst_function = subst_autohint;
+     classify_function = classify_autohint;
+     discharge_function = discharge_autohint;
+    }
 
 let check_locality locality =
   let not_local what =
@@ -1286,7 +1287,7 @@ let remove_hints ~locality dbnames grs =
     List.iter
       (fun dbname ->
         let hint = make_hint ~locality dbname (RemoveHints grs) in
-        Lib.add_anonymous_leaf (inAutoHint hint))
+        Lib.add_leaf (inAutoHint hint))
       dbnames
 
 (**************************************************************************)
@@ -1321,21 +1322,21 @@ let add_resolves env sigma clist ~locality dbnames =
       in
       let () = if not !Flags.quiet then List.iter check r in
       let hint = make_hint ~locality dbname (AddHints r) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_unfolds l ~locality dbnames =
   List.iter
     (fun dbname ->
       let hint = make_hint ~locality dbname (AddHints (List.map make_unfold l)) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_cuts l ~locality dbnames =
   List.iter
     (fun dbname ->
       let hint = make_hint ~locality dbname (AddCut l) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_mode l m ~locality dbnames =
@@ -1343,14 +1344,14 @@ let add_mode l m ~locality dbnames =
     (fun dbname ->
       let m' = make_mode l m in
       let hint = make_hint ~locality dbname (AddMode { gref = l; mode = m' }) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_transparency l b ~locality dbnames =
   List.iter
     (fun dbname ->
       let hint = make_hint ~locality dbname (AddTransparency { grefs = l; state = b }) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 let add_extern info tacast ~locality dbname =
@@ -1360,7 +1361,7 @@ let add_extern info tacast ~locality dbname =
   in
   let hint = make_hint ~locality dbname
                        (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
-  Lib.add_anonymous_leaf (inAutoHint hint)
+  Lib.add_leaf (inAutoHint hint)
 
 let add_externs info tacast ~locality dbnames =
   List.iter (add_extern info tacast ~locality) dbnames
@@ -1370,7 +1371,7 @@ let add_trivials env sigma l ~locality dbnames =
     (fun dbname ->
       let l = List.map (fun (name, c) -> make_trivial env sigma ~name c) l in
       let hint = make_hint ~locality dbname (AddHints l) in
-      Lib.add_anonymous_leaf (inAutoHint hint))
+      Lib.add_leaf (inAutoHint hint))
     dbnames
 
 type hnf = bool

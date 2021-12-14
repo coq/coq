@@ -80,7 +80,7 @@ let ssrtac_entry name = {
   mltac_index = 0;
 }
 
-let cache_tactic_notation (_, (key, body, parule)) =
+let cache_tactic_notation (key, body, parule) =
   Tacenv.register_alias key body;
   Pptactic.declare_notation_tactic_pprule key parule
 
@@ -90,7 +90,7 @@ let inSsrGrammar : tactic_grammar_obj -> obj =
   declare_object {(default_object "SsrGrammar") with
                   load_function = (fun _ -> cache_tactic_notation);
                   cache_function = cache_tactic_notation;
-                  classify_function = (fun x -> Keep x)}
+                  classify_function = (fun x -> Keep)}
 
 let path = MPfile (DirPath.make @@ List.map Id.of_string ["ssreflect"; "ssr"; "Coq"])
 
@@ -110,7 +110,7 @@ let register_ssrtac name f prods =
     pptac_prods = prods
   } in
   let obj () =
-    Lib.add_anonymous_leaf (inSsrGrammar (key, body, parule)) in
+    Lib.add_leaf (inSsrGrammar (key, body, parule)) in
   Mltop.declare_cache_obj obj __coq_plugin_name;
   key
 

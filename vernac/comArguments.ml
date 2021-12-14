@@ -18,7 +18,7 @@ let smart_global r =
   Dumpglob.add_glob ?loc:r.loc gr;
   gr
 
-let cache_bidi_hints (_name, (gr, ohint)) =
+let cache_bidi_hints (gr, ohint) =
   match ohint with
   | None -> Pretyping.clear_bidirectionality_hint gr
   | Some nargs -> Pretyping.add_bidirectionality_hint gr nargs
@@ -30,7 +30,7 @@ let subst_bidi_hints (subst, (gr, ohint as orig)) =
   let gr' = Globnames.subst_global_reference subst gr in
   if gr == gr' then orig else (gr', ohint)
 
-let discharge_bidi_hints (_name, (gr, ohint)) =
+let discharge_bidi_hints (gr, ohint) =
   if Globnames.isVarRef gr && Lib.is_in_section gr then None
   else
     let vars = Lib.variable_section_segment_of_reference gr in
@@ -42,7 +42,7 @@ let inBidiHints =
   declare_object { (default_object "BIDIRECTIONALITY-HINTS" ) with
                    load_function = load_bidi_hints;
                    cache_function = cache_bidi_hints;
-                   classify_function = (fun o -> Substitute o);
+                   classify_function = (fun o -> Substitute);
                    subst_function = subst_bidi_hints;
                    discharge_function = discharge_bidi_hints;
                  }
@@ -296,14 +296,14 @@ let vernac_arguments ~section_local reference args more_implicits flags =
     if section_local then
       Pretyping.add_bidirectionality_hint sr n
     else
-      Lib.add_anonymous_leaf (inBidiHints (sr, Some n))
+      Lib.add_leaf (inBidiHints (sr, Some n))
   end;
 
   if clear_bidi_hint then begin
     if section_local then
       Pretyping.clear_bidirectionality_hint sr
     else
-      Lib.add_anonymous_leaf (inBidiHints (sr, None))
+      Lib.add_leaf (inBidiHints (sr, None))
   end;
 
   if not (renaming_specified ||

@@ -28,14 +28,14 @@ type req =
   | ReqLocal
   | ReqGlobal of GlobRef.t * Name.t list
 
-let load_rename_args _ (_, (_, (r, names))) =
+let load_rename_args _ (_, (r, names)) =
   name_table := GlobRef.Map.add r names !name_table
 
 let cache_rename_args o = load_rename_args 1 o
 
 let classify_rename_args = function
   | ReqLocal, _ -> Dispose
-  | ReqGlobal _, _ as o -> Substitute o
+  | ReqGlobal _, _ -> Substitute
 
 let subst_rename_args (subst, (_, (r, names as orig))) =
   ReqLocal,
@@ -43,7 +43,7 @@ let subst_rename_args (subst, (_, (r, names as orig))) =
   if r==r' then orig else (r', names)
 
 let discharge_rename_args = function
-  | _, (ReqGlobal (c, names), _ as req) when not (isVarRef c && Lib.is_in_section c) ->
+  | ReqGlobal (c, names), _ as req when not (isVarRef c && Lib.is_in_section c) ->
      (try
        let vars = Lib.variable_section_segment_of_reference c in
        let var_names = List.map (NamedDecl.get_id %> Name.mk_name) vars in
@@ -73,7 +73,7 @@ let rename_arguments local r names =
     | _ -> ()
   in
   let req = if local then ReqLocal else ReqGlobal (r, names) in
-  Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))
+  Lib.add_leaf (inRenameArgs (req, (r, names)))
 
 let arguments_names r = GlobRef.Map.find r !name_table
 

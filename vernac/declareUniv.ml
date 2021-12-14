@@ -47,35 +47,35 @@ let do_univ_name ~check i dp src (id,univ) =
   if check then check_exists_universe sp;
   Nametab.push_universe i sp univ
 
-let cache_univ_names ((sp, _), (src, univs)) =
+let cache_univ_names (prefix, (src, univs)) =
   let depth = Lib.sections_depth () in
-  let dp = Libnames.pop_dirpath_n depth (Libnames.dirpath sp) in
+  let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
   List.iter (do_univ_name ~check:true (Nametab.Until 1) dp src) univs
 
-let load_univ_names i ((sp, _), (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Until i) (Libnames.dirpath sp) src) univs
+let load_univ_names i (prefix, (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir src) univs
 
-let open_univ_names i ((sp, _), (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Exactly i) (Libnames.dirpath sp) src) univs
+let open_univ_names i (prefix, (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir src) univs
 
 let discharge_univ_names = function
-  | _, (BoundUniv, _) -> None
-  | _, ((QualifiedUniv _ | UnqualifiedUniv), _ as x) -> Some x
+  | BoundUniv, _ -> None
+  | (QualifiedUniv _ | UnqualifiedUniv), _ as x -> Some x
 
 let input_univ_names : universe_name_decl -> Libobject.obj =
   let open Libobject in
-  declare_object
+  declare_named_object_gen
     { (default_object "Global universe name state") with
       cache_function = cache_univ_names;
       load_function = load_univ_names;
       open_function = simple_open open_univ_names;
       discharge_function = discharge_univ_names;
       subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
-      classify_function = (fun a -> Substitute a) }
+      classify_function = (fun a -> Substitute) }
 
 let input_univ_names (src, l) =
   if CList.is_empty l then ()
-  else Lib.add_anonymous_leaf (input_univ_names (src, l))
+  else Lib.add_leaf (input_univ_names (src, l))
 
 let invent_name (named,cnt) u =
   let rec aux i =

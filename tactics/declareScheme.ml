@@ -16,7 +16,7 @@ let cache_one_scheme kind (ind,const) =
   let map = try Indmap.find ind !scheme_map with Not_found -> CString.Map.empty in
   scheme_map := Indmap.add ind (CString.Map.add kind const map) !scheme_map
 
-let cache_scheme (_,(kind,l)) =
+let cache_scheme (kind,l) =
   Array.iter (cache_one_scheme kind) l
 
 let subst_one_scheme subst (ind,const) =
@@ -26,7 +26,7 @@ let subst_one_scheme subst (ind,const) =
 let subst_scheme (subst,(kind,l)) =
   (kind, CArray.Smart.map (subst_one_scheme subst) l)
 
-let discharge_scheme (_,(kind,l)) =
+let discharge_scheme (kind,l) =
   Some (kind, l)
 
 let inScheme : string * (inductive * Constant.t) array -> Libobject.obj =
@@ -37,7 +37,7 @@ let inScheme : string * (inductive * Constant.t) array -> Libobject.obj =
     ~discharge:discharge_scheme
 
 let declare_scheme kind indcl =
-  Lib.add_anonymous_leaf (inScheme (kind,indcl))
+  Lib.add_leaf (inScheme (kind,indcl))
 
 let lookup_scheme kind ind = CString.Map.find kind (Indmap.find ind !scheme_map)
 

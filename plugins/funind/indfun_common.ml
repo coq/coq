@@ -164,7 +164,7 @@ let cache_Function (_,(finfos)) =
   then function_table := new_tbl
 *)
 
-let cache_Function (_, finfos) =
+let cache_Function finfos =
   from_function := Cmap_env.add finfos.function_constant finfos !from_function;
   from_graph := Indmap.add finfos.graph_ind finfos !from_graph
 
@@ -207,7 +207,7 @@ let subst_Function (subst, finfos) =
     ; sprop_lemma = sprop_lemma'
     ; is_general = finfos.is_general }
 
-let discharge_Function (_, finfos) = Some finfos
+let discharge_Function finfos = Some finfos
 
 let pr_ocst env sigma c =
   Option.fold_right
@@ -266,7 +266,7 @@ let find_Function_of_graph ind = Indmap.find_opt ind !from_graph
 
 let update_Function finfo =
   (* Pp.msgnl (pr_info finfo); *)
-  Lib.add_anonymous_leaf (in_Function finfo)
+  Lib.add_leaf (in_Function finfo)
 
 let add_Function is_general f =
   let f_id = Label.to_id (Constant.label f) in

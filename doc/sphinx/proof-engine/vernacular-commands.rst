@@ -733,9 +733,6 @@ interactively, they cannot be part of a Coq file loaded via
    declared object as well as the name of a section. One cannot reset
    over the name of a module or of an object inside a module.
 
-   .. exn:: @ident: no such entry.
-      :undocumented:
-
 .. cmd:: Reset Initial
 
    Goes back to the initial state, just after the start

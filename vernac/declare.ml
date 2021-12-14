@@ -195,24 +195,17 @@ let check_exists id =
     raise (DeclareUniv.AlreadyDeclared (None, id))
 
 let cache_constant ((sp,kn), obj) =
-  (* Invariant: the constant must exist in the logical environment *)
-  let kn' =
-    if Global.exists_objlabel (Label.of_id (Libnames.basename sp))
-    then Constant.make1 kn
-    else CErrors.anomaly Pp.(str"Missing constant " ++ Id.print(Libnames.basename sp) ++ str".")
-  in
-  assert (Environ.QConstant.equal (Global.env ()) kn' (Constant.make1 kn));
-  Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef (Constant.make1 kn));
-  Dumpglob.add_constant_kind (Constant.make1 kn) obj.cst_kind
+  let kn = Global.constant_of_delta_kn kn in
+  Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef kn);
+  Dumpglob.add_constant_kind kn obj.cst_kind
 
-let discharge_constant ((sp, kn), obj) =
-  Some obj
+let discharge_constant obj = Some obj
 
-let classify_constant cst = Libobject.Substitute cst
+let classify_constant cst = Libobject.Substitute
 
-let (objConstant : constant_obj Libobject.Dyn.tag) =
+let (objConstant : (Id.t * constant_obj) Libobject.Dyn.tag) =
   let open Libobject in
-  declare_object_full { (default_object "CONSTANT") with
+  declare_named_object_full { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = simple_open open_constant;
@@ -227,12 +220,9 @@ let update_tables c =
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c)
 
 let register_constant kn kind local =
-  let o = inConstant {
-    cst_kind = kind;
-    cst_locl = local;
-  } in
   let id = Label.to_id (Constant.label kn) in
-  let _ = Lib.add_leaf id o in
+  let o = inConstant (id, { cst_kind = kind; cst_locl = local; }) in
+  let () = Lib.add_leaf o in
   update_tables kn
 
 let register_side_effect (c, body, role) =
@@ -486,10 +476,10 @@ type variable_declaration =
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
-let objVariable : unit Libobject.Dyn.tag =
+let objVariable : Id.t Libobject.Dyn.tag =
   let open Libobject in
   declare_object_full { (default_object "VARIABLE") with
-    classify_function = (fun () -> Dispose)}
+    classify_function = (fun _ -> Dispose)}
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
@@ -530,7 +520,7 @@ let declare_variable_core ~name ~kind d =
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});
-  ignore(Lib.add_leaf name (inVariable ()) : Libobject.object_name);
+  Lib.add_leaf (inVariable name);
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 

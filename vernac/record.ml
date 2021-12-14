@@ -483,13 +483,13 @@ let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min
     (* auto detect template *)
     ComInductive.should_auto_template id (template && template_candidate ())
 
-let load_structure i (_, structure) = Structure.register structure
+let load_structure i structure = Structure.register structure
 
 let cache_structure o = load_structure 1 o
 
 let subst_structure (subst, obj) = Structure.subst subst obj
 
-let discharge_structure (_, x) = Some x
+let discharge_structure x = Some x
 
 let rebuild_structure s = Structure.rebuild (Global.env()) s
 
@@ -499,12 +499,12 @@ let inStruc : Structure.t -> Libobject.obj =
     cache_function = cache_structure;
     load_function = load_structure;
     subst_function = subst_structure;
-    classify_function = (fun x -> Substitute x);
+    classify_function = (fun x -> Substitute);
     discharge_function = discharge_structure;
     rebuild_function = rebuild_structure; }
 
 let declare_structure_entry o =
-  Lib.add_anonymous_leaf (inStruc o)
+  Lib.add_leaf (inStruc o)
 
 (** In the type of every projection, the record is bound to a variable named
   using the first character of the record type. We rename it to avoid

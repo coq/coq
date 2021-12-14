@@ -836,24 +836,25 @@ let cache_one_syntax_extension (ntn,synext) =
   (* Printing *)
   Option.iter (declare_generic_notation_printing_rules ntn) synext.synext_notprint
 
-let cache_syntax_extension (_, (_, sy)) =
+let cache_syntax_extension (_, sy) =
   cache_one_syntax_extension sy
 
 let subst_syntax_extension (subst, (local, (ntn, synext))) =
   (local, (ntn, synext))
 
-let classify_syntax_definition (local, _ as o) =
-  if local then Dispose else Substitute o
+let classify_syntax_definition (local, _) =
+  if local then Dispose else Substitute
 
 let open_syntax_extension i o =
   if Int.equal i 1 then cache_syntax_extension o
 
 let inSyntaxExtension : syntax_extension_obj -> obj =
-  declare_object {(default_object "SYNTAX-EXTENSION") with
-       open_function = simple_open ~cat:notation_cat open_syntax_extension;
-       cache_function = cache_syntax_extension;
-       subst_function = subst_syntax_extension;
-       classify_function = classify_syntax_definition}
+  declare_object
+    {(default_object "SYNTAX-EXTENSION") with
+     open_function = simple_open ~cat:notation_cat open_syntax_extension;
+     cache_function = cache_syntax_extension;
+     subst_function = subst_syntax_extension;
+     classify_function = classify_syntax_definition}
 
 (**************************************************************************)
 (* Precedences                                                            *)
@@ -1388,7 +1389,7 @@ type notation_obj = {
   notobj_also_in_cases_pattern : bool;
 }
 
-let load_notation_common silently_define_scope_if_undefined _ (_, nobj) =
+let load_notation_common silently_define_scope_if_undefined _ nobj =
   (* When the default shall be to require that a scope already exists *)
   (* the call to ensure_scope will have to be removed *)
   if silently_define_scope_if_undefined then
@@ -1401,7 +1402,7 @@ let load_notation_common silently_define_scope_if_undefined _ (_, nobj) =
 let load_notation =
   load_notation_common true
 
-let open_notation i (_, nobj) =
+let open_notation i nobj =
   if Int.equal i 1 then begin
     let scope = nobj.notobj_scope in
     let (ntn, df) = nobj.notobj_notation in
@@ -1429,7 +1430,7 @@ let subst_notation (subst, nobj) =
   { nobj with notobj_interp = subst_interpretation subst nobj.notobj_interp; }
 
 let classify_notation nobj =
-  if nobj.notobj_local then Dispose else Substitute nobj
+  if nobj.notobj_local then Dispose else Substitute
 
 let inNotation : notation_obj -> obj =
   declare_object {(default_object "NOTATION") with
@@ -1655,7 +1656,7 @@ let add_reserved_notation ~local ~infix ({CAst.loc;v=df},mods) =
   let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
   let synext = make_syntax_rules true main_data ntn sd in
   List.iter (fun f -> f ()) sd.msgs;
-  Lib.add_anonymous_leaf (inSyntaxExtension(local,(ntn,synext)))
+  Lib.add_leaf (inSyntaxExtension(local,(ntn,synext)))
 
 (* Notations associated to a where clause *)
 
@@ -1685,16 +1686,16 @@ let prepare_where_notation decl_ntn =
 let add_notation_interpretation ~local env (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
   let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
   let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
-  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
-  Lib.add_anonymous_leaf (inNotation notation);
+  syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
+  Lib.add_leaf (inNotation notation);
   Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
 
 (* interpreting a where clause *)
 let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
   let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
   let notation = make_notation_interpretation ~local:true main_data notation_symbols ntn syntax_rules df env ~impls c sc in
-  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (true,(ntn,sy)))) syntax_rules;
-  Lib.add_anonymous_leaf (inNotation notation);
+  syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (true,(ntn,sy)))) syntax_rules;
+  Lib.add_leaf (inNotation notation);
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point for command Notation *)
@@ -1728,8 +1729,8 @@ let add_notation ~local ~infix deprecation env c ({CAst.loc;v=df},modifiers) sc 
   (* Build the interpretation *)
   let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
   (* Declare both syntax and interpretation *)
-  syntax_rules_iter (fun sy -> Lib.add_anonymous_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
-  Lib.add_anonymous_leaf (inNotation notation);
+  syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
+  Lib.add_leaf (inNotation notation);
   (* Dump the location of the notation for coqdoc *)
   Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
 
@@ -1751,7 +1752,7 @@ type scope_command =
   | ScopeDelimRemove
   | ScopeClasses of scope_class list
 
-let load_scope_command_common silently_define_scope_if_undefined _ (_,(local,scope,o)) =
+let load_scope_command_common silently_define_scope_if_undefined _ (local,scope,o) =
   let declare_scope_if_needed =
     if silently_define_scope_if_undefined then Notation.declare_scope
     else Notation.ensure_scope in
@@ -1766,7 +1767,7 @@ let load_scope_command_common silently_define_scope_if_undefined _ (_,(local,sco
 let load_scope_command =
   load_scope_command_common true
 
-let open_scope_command i (_,(local,scope,o)) =
+let open_scope_command i (local,scope,o) =
   if Int.equal i 1 then
     match o with
     | ScopeDeclare -> ()
@@ -1788,8 +1789,8 @@ let subst_scope_command (subst,(local,scope,o as x)) = match o with
       local, scope, ScopeClasses cl'
   | _ -> x
 
-let classify_scope_command (local, _, _ as o) =
-  if local then Dispose else Substitute o
+let classify_scope_command (local, _, _) =
+  if local then Dispose else Substitute
 
 let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
   declare_object {(default_object "DELIMITERS") with
@@ -1800,16 +1801,16 @@ let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
       classify_function = classify_scope_command}
 
 let declare_scope local scope =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDeclare))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeDeclare))
 
 let add_delimiters local scope key =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimAdd key))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeDelimAdd key))
 
 let remove_delimiters local scope =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimRemove))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeDelimRemove))
 
 let add_class_scope local scope cl =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
 let interp_syndef_modifiers deprecation modl =
   let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:true deprecation modl in
@@ -1851,7 +1852,7 @@ let warn_custom_entry =
          (fun s ->
           strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 
-let load_custom_entry _ (_,(local,s)) =
+let load_custom_entry _ (local,s) =
   if Egramcoq.exists_custom_entry s then warn_custom_entry s
   else Egramcoq.create_custom_entry ~local s
 
@@ -1859,8 +1860,8 @@ let cache_custom_entry o = load_custom_entry 1 o
 
 let subst_custom_entry (subst,x) = x
 
-let classify_custom_entry (local,s as o) =
-  if local then Dispose else Substitute o
+let classify_custom_entry (local,s) =
+  if local then Dispose else Substitute
 
 let inCustomEntry : locality_flag * string -> obj =
   declare_object {(default_object "CUSTOM-ENTRIES") with
@@ -1873,4 +1874,4 @@ let declare_custom_entry local s =
   if Egramcoq.exists_custom_entry s then
     user_err Pp.(str "Custom entry " ++ str s ++ str " already exists.")
   else
-    Lib.add_anonymous_leaf (inCustomEntry (local,s))
+    Lib.add_leaf (inCustomEntry (local,s))

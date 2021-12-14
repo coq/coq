@@ -49,7 +49,7 @@ let reduction_effect_hook env sigma con c =
     effect env sigma (Lazy.force c)
   with Not_found -> ()
 
-let cache_reduction_effect (_,(con,funkey)) =
+let cache_reduction_effect (con,funkey) =
   constant_effect_table := Cmap.add con funkey !constant_effect_table
 
 let subst_reduction_effect (subst,(con,funkey)) =
@@ -67,7 +67,7 @@ let declare_reduction_effect funkey f =
 
 (** A function to set the value of the print function *)
 let set_reduction_effect x funkey =
-  Lib.add_anonymous_leaf (inReductionEffect (x,funkey))
+  Lib.add_leaf (inReductionEffect (x,funkey))
 
 
 (** Machinery to custom the behavior of the reduction *)
@@ -92,19 +92,19 @@ module ReductionBehaviour = struct
   let table =
     Summary.ref (GlobRef.Map.empty : t GlobRef.Map.t) ~name:"reductionbehaviour"
 
-  let load _ (_,(_,(r, b))) =
+  let load _ (_,(r, b)) =
     table := GlobRef.Map.add r b !table
 
   let cache o = load 1 o
 
-  let classify (local,_ as o) = if local then Dispose else Substitute o
+  let classify (local,_) = if local then Dispose else Substitute
 
   let subst (subst, (local, (r,o) as orig)) =
     let r' = subst_global_reference subst r in if r==r' then orig
     else (local,(r',o))
 
   let discharge = function
-    | _,(false, (gr, b)) ->
+    | false, (gr, b) ->
       let b =
         if Lib.is_in_section gr then
           let vars = Lib.variable_section_segment_of_reference gr in
@@ -113,24 +113,24 @@ module ReductionBehaviour = struct
         else b
       in
       Some (false, (gr, b))
-    | _ -> None
+    | true, _ -> None
 
   let rebuild = function
     | req, (GlobRef.ConstRef c, _ as x) -> req, x
     | _ -> assert false
 
   let inRedBehaviour = declare_object {
-                        (default_object "REDUCTIONBEHAVIOUR") with
-                        load_function = load;
-                        cache_function = cache;
-                        classify_function = classify;
-                        subst_function = subst;
-                        discharge_function = discharge;
-                        rebuild_function = rebuild;
-                      }
+      (default_object "REDUCTIONBEHAVIOUR") with
+      load_function = load;
+      cache_function = cache;
+      classify_function = classify;
+      subst_function = subst;
+      discharge_function = discharge;
+      rebuild_function = rebuild;
+    }
 
   let set ~local r b =
-    Lib.add_anonymous_leaf (inRedBehaviour (local, (r, b)))
+    Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
   let get r = GlobRef.Map.find_opt r !table
 

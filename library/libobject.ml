@@ -13,8 +13,7 @@ open Names
 
 module Dyn = Dyn.Make ()
 
-type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 type object_name = Libnames.full_path * Names.KerName.t
 
@@ -65,15 +64,16 @@ let filter_or f1 f2 = match f1, f2 with
   | Unfiltered, f | f, Unfiltered -> Unfiltered
   | Filtered f1, Filtered f2 -> Filtered (CString.Pred.union f1 f2)
 
-type 'a object_declaration = {
+type ('a,'b) object_declaration = {
   object_name : string;
-  cache_function : object_name * 'a -> unit;
-  load_function : int -> object_name * 'a -> unit;
-  open_function : open_filter -> int -> object_name * 'a -> unit;
-  classify_function : 'a -> 'a substitutivity;
-  subst_function : Mod_subst.substitution * 'a -> 'a;
-  discharge_function : object_name * 'a -> 'a option;
-  rebuild_function : 'a -> 'a }
+  cache_function : 'b -> unit;
+  load_function : int -> 'b -> unit;
+  open_function : open_filter -> int -> 'b -> unit;
+  classify_function : 'a -> substitutivity;
+  subst_function :  Mod_subst.substitution * 'a -> 'a;
+  discharge_function : 'a -> 'a option;
+  rebuild_function : 'a -> 'a;
+}
 
 let default_object s = {
   object_name = s;
@@ -82,9 +82,10 @@ let default_object s = {
   open_function = (fun _ _ _ -> ());
   subst_function = (fun _ ->
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
-  classify_function = (fun atomic_obj -> Keep atomic_obj);
+  classify_function = (fun _ -> Keep);
   discharge_function = (fun _ -> None);
-  rebuild_function = (fun x -> x)}
+  rebuild_function = (fun x -> x);
+}
 
 
 (* The suggested object declaration is the following:
@@ -114,22 +115,20 @@ type obj = Dyn.t (* persistent dynamic objects *)
 *)
 
 type algebraic_objects =
-  | Objs of objects
-  | Ref of Names.ModPath.t * Mod_subst.substitution
+  | Objs of t list
+  | Ref of ModPath.t * Mod_subst.substitution
 
 and t =
-  | ModuleObject of substitutive_objects
-  | ModuleTypeObject of substitutive_objects
+  | ModuleObject of Id.t * substitutive_objects
+  | ModuleTypeObject of Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
-  | KeepObject of objects
+  | KeepObject of Id.t * t list
   | ExportObject of { mpl : (open_filter * ModPath.t) list }
   | AtomicObject of obj
 
-and objects = (Names.Id.t * t) list
-
 and substitutive_objects = MBId.t list * algebraic_objects
 
-module DynMap = Dyn.Map (struct type 'a t = 'a object_declaration end)
+module DynMap = Dyn.Map (struct type 'a t = ('a, Nametab.object_prefix * 'a) object_declaration end)
 
 let cache_tab = ref DynMap.empty
 
@@ -139,7 +138,42 @@ let declare_object_full odecl =
   let () = cache_tab := DynMap.add tag odecl !cache_tab in
   tag
 
+let make_oname Nametab.{ obj_dir; obj_mp } id =
+  Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id)
+
+let declare_named_object_full odecl =
+  let odecl =
+    let oname = make_oname in
+    { object_name = odecl.object_name;
+      cache_function = (fun (p, (id, o)) -> odecl.cache_function (oname p id, o));
+      load_function = (fun i (p, (id, o)) -> odecl.load_function i (oname p id, o));
+      open_function = (fun f i (p, (id, o)) -> odecl.open_function f i (oname p id, o));
+      classify_function = (fun (id, o) -> odecl.classify_function o);
+      subst_function = (fun (subst, (id, o)) -> id, odecl.subst_function (subst, o));
+      discharge_function = (fun (id, o) -> Option.map (fun x -> id, x) (odecl.discharge_function o));
+      rebuild_function = Util.on_snd odecl.rebuild_function;
+    }
+  in
+  declare_object_full odecl
+
+let declare_named_object odecl =
+  let tag = declare_named_object_full odecl in
+  let infun id v = Dyn.Dyn (tag, (id, v)) in
+  infun
+
+let declare_named_object_gen odecl =
+  let tag = declare_object_full odecl in
+  let infun v = Dyn.Dyn (tag, v) in
+  infun
+
 let declare_object odecl =
+  let odecl =
+    { odecl with
+      cache_function = (fun (_,o) -> odecl.cache_function o);
+      load_function = (fun i (_,o) -> odecl.load_function i o);
+      open_function = (fun f i (_,o) -> odecl.open_function f i o);
+    }
+  in
   let tag = declare_object_full odecl in
   let infun v = Dyn.Dyn (tag, v) in
   infun
@@ -164,13 +198,13 @@ let classify_object (Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
   match decl.classify_function v with
   | Dispose -> Dispose
-  | Substitute v -> Substitute (Dyn.Dyn (tag, v))
-  | Keep v -> Keep (Dyn.Dyn (tag, v))
-  | Anticipate v -> Anticipate (Dyn.Dyn (tag, v))
+  | Substitute -> Substitute
+  | Keep -> Keep
+  | Anticipate -> Anticipate
 
-let discharge_object (sp, Dyn.Dyn (tag, v)) =
+let discharge_object (Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
-  match decl.discharge_function (sp, v) with
+  match decl.discharge_function v with
   | None -> None
   | Some v -> Some (Dyn.Dyn (tag, v))
 
@@ -188,7 +222,8 @@ let local_object_nodischarge s ~cache =
 
 let local_object s ~cache ~discharge =
   { (local_object_nodischarge s ~cache) with
-    discharge_function = discharge }
+    discharge_function = discharge;
+  }
 
 let global_object_nodischarge ?cat s ~cache ~subst =
   let import i o = if Int.equal i 1 then cache o in
@@ -200,7 +235,7 @@ let global_object_nodischarge ?cat s ~cache ~subst =
         | Some subst -> subst;
       );
     classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+      if Option.has_some subst then (fun _ -> Substitute) else (fun _ -> Keep);
   }
 
 let global_object ?cat s ~cache ~subst ~discharge =
@@ -216,7 +251,7 @@ let superglobal_object_nodischarge s ~cache ~subst =
         | Some subst -> subst;
       );
     classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+      if Option.has_some subst then (fun _ -> Substitute) else (fun _ -> Keep);
   }
 
 let superglobal_object s ~cache ~subst ~discharge =

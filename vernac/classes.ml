@@ -103,14 +103,14 @@ let perform_instance i =
   let i = { is_class = i.inst_class; is_info = i.inst_info; is_impl = i.inst_impl } in
   Typeclasses.load_instance i
 
-let cache_instance (_, inst) = perform_instance inst
+let cache_instance inst = perform_instance inst
 
-let load_instance _ (_, inst) = match inst.inst_global with
+let load_instance _ inst = match inst.inst_global with
 | Local -> assert false
 | SuperGlobal -> perform_instance inst
 | Export -> ()
 
-let open_instance i (_, inst) = match inst.inst_global with
+let open_instance i inst = match inst.inst_global with
 | Local -> assert false
 | SuperGlobal -> perform_instance inst
 | Export -> if Int.equal i 1 then perform_instance inst
@@ -120,7 +120,7 @@ let subst_instance (subst, inst) =
       inst_class = fst (subst_global subst inst.inst_class);
       inst_impl = fst (subst_global subst inst.inst_impl) }
 
-let discharge_instance (_, inst) =
+let discharge_instance inst =
   match inst.inst_global with
   | Local -> None
   | SuperGlobal | Export ->
@@ -133,7 +133,7 @@ let rebuild_instance inst =
 
 let classify_instance inst = match inst.inst_global with
 | Local -> Dispose
-| SuperGlobal | Export -> Substitute inst
+| SuperGlobal | Export -> Substitute
 
 let instance_input : instance_obj -> obj =
   declare_object
@@ -182,7 +182,7 @@ let add_instance cl info global impl =
     inst_global = global ;
     inst_impl = impl;
   } in
-  Lib.add_anonymous_leaf (instance_input i);
+  Lib.add_leaf (instance_input i);
   add_instance_base i
 
 let warning_not_a_class =
@@ -210,7 +210,7 @@ let declare_instance ?(warn = false) env sigma info local glob =
  * classes persistent object
  *)
 
-let cache_class (_,c) = load_class c
+let cache_class c = load_class c
 
 let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
@@ -236,7 +236,7 @@ let subst_class (subst,cl) =
     cl_strict = cl.cl_strict;
     cl_unique = cl.cl_unique }
 
-let discharge_class (_,cl) =
+let discharge_class cl =
   let open CVars in
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
@@ -292,13 +292,13 @@ let class_input : typeclass -> obj =
     { (default_object "type classes state") with
       cache_function = cache_class;
       load_function = (fun _ -> cache_class);
-      classify_function = (fun x -> Substitute x);
+      classify_function = (fun x -> Substitute);
       discharge_function = (fun a -> Some (discharge_class a));
       rebuild_function = rebuild_class;
       subst_function = subst_class }
 
 let add_class cl =
-  Lib.add_anonymous_leaf (class_input cl)
+  Lib.add_leaf (class_input cl)
 
 let add_class env sigma cl =
   add_class cl;

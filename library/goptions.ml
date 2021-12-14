@@ -87,7 +87,7 @@ module MakeTable =
     let t = Summary.ref MySet.empty ~name:nick
 
     let (add_option,remove_option) =
-        let cache_options (_,(f,p)) = match f with
+        let cache_options (f,p) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
         let load_options i o = if Int.equal i 1 then cache_options o in
@@ -102,10 +102,10 @@ module MakeTable =
                 Libobject.open_function = simple_open load_options;
                 Libobject.cache_function = cache_options;
                 Libobject.subst_function = subst_options;
-                Libobject.classify_function = (fun x -> Substitute x)}
+                Libobject.classify_function = (fun x -> Substitute)}
         in
-        ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
-         (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
+        ((fun c -> Lib.add_leaf (inGo (GOadd, c))),
+         (fun c -> Lib.add_leaf (inGo (GOrmv, c))))
 
     let print_table table_name printer table =
       Feedback.msg_notice
@@ -262,18 +262,18 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         { Summary.freeze_function = (fun ~marshallable -> read ());
           Summary.unfreeze_function = write;
           Summary.init_function = (fun () -> write default) } in
-      let cache_options (_,(l,m,v)) =
+      let cache_options (l,m,v) =
         match m with
         | OptSet -> write v
         | OptAppend -> write (append (read ()) v) in
-      let load_options i (_, (l, _, _) as o) = match l with
+      let load_options i (l, _, _ as o) = match l with
       | OptGlobal -> cache_options o
       | OptExport -> ()
       | OptLocal | OptDefault ->
         (* Ruled out by classify_function *)
         assert false
       in
-      let open_options i  (_, (l, _, _) as o) = match l with
+      let open_options i  (l, _, _ as o) = match l with
       | OptExport -> if Int.equal i 1 then cache_options o
       | OptGlobal -> ()
       | OptLocal | OptDefault ->
@@ -281,10 +281,10 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         assert false
       in
       let subst_options (subst,obj) = obj in
-      let discharge_options (_,(l,_,_ as o)) =
+      let discharge_options (l,_,_ as o) =
         match l with OptLocal -> None | (OptExport | OptGlobal | OptDefault) -> Some o in
-      let classify_options (l,_,_ as o) =
-        match l with (OptExport | OptGlobal) -> Substitute o | (OptLocal | OptDefault) -> Dispose in
+      let classify_options (l,_,_) =
+        match l with (OptExport | OptGlobal) -> Substitute | (OptLocal | OptDefault) -> Dispose in
       let options : option_locality * option_mod * _ -> obj =
         declare_object
           { (default_object (nickname key)) with
@@ -294,7 +294,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
             subst_function = subst_options;
             discharge_function = discharge_options;
             classify_function = classify_options } in
-      (fun l m v -> let v = preprocess v in Lib.add_anonymous_leaf (options (l, m, v)))
+      (fun l m v -> let v = preprocess v in Lib.add_leaf (options (l, m, v)))
   in
   let warn () = if depr then warn_deprecated_option key in
   let cread () = cast (read ()) in

@@ -227,7 +227,7 @@ let check_source = function
 | Some (CL_FUN as s) -> raise (CoercionError (ForbiddenSourceClass s))
 | _ -> ()
 
-let cache_coercion (_,c) =
+let cache_coercion c =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   Coercionops.declare_coercion env sigma c
@@ -236,7 +236,7 @@ let open_coercion i o =
   if Int.equal i 1 then
     cache_coercion o
 
-let discharge_coercion (_, c) =
+let discharge_coercion c =
   if c.coe_local then None
   else
     let n =
@@ -255,7 +255,7 @@ let rebuild_coercion c =
   { c with coe_typ = fst (Typeops.type_of_global_in_context (Global.env ()) c.coe_value) }
 
 let classify_coercion obj =
-  if obj.coe_local then Dispose else Substitute obj
+  if obj.coe_local then Dispose else Substitute
 
 let coe_cat = create_category "coercions"
 
@@ -284,7 +284,7 @@ let declare_coercion coef typ ?(local = false) ~isid ~src:cls ~target:clt ~param
     coe_target = clt;
     coe_param = ps;
   } in
-  Lib.add_anonymous_leaf (inCoercion c)
+  Lib.add_leaf (inCoercion c)
 
 (*
 nom de la fonction coercion

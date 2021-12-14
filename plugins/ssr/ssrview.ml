@@ -37,12 +37,12 @@ module AdaptorDb = struct
     try AdaptorMap.find k !term_view_adaptor_db
     with Not_found -> []
 
-  let cache_adaptor (_, (k, t)) =
+  let cache_adaptor (k, t) =
     let lk = get k in
     if not (List.exists (Glob_ops.glob_constr_eq t) lk) then
       term_view_adaptor_db := AdaptorMap.add k (t :: lk) !term_view_adaptor_db
 
-  let subst_adaptor ( subst, (k, t as a)) =
+  let subst_adaptor (subst, (k, t as a)) =
     let t' = Detyping.subst_glob_constr (Global.env()) subst t in
     if t' == t then a else k, t'
 
@@ -53,7 +53,7 @@ module AdaptorDb = struct
       ~subst:(Some subst_adaptor)
 
   let declare kind terms =
-    List.iter (fun term -> Lib.add_anonymous_leaf (in_db (kind,term)))
+    List.iter (fun term -> Lib.add_leaf (in_db (kind,term)))
       (List.rev terms)
 
 end

@@ -603,10 +603,10 @@ let lang () = !lang_ref
 
 let extr_lang : lang -> obj =
   declare_object @@ superglobal_object_nodischarge "Extraction Lang"
-    ~cache:(fun (_,l) -> lang_ref := l)
+    ~cache:(fun l -> lang_ref := l)
     ~subst:None
 
-let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
+let extraction_language x = Lib.add_leaf (extr_lang x)
 
 (*s Extraction Inline/NoInline *)
 
@@ -629,9 +629,9 @@ let add_inline_entries b l =
 
 let inline_extraction : bool * GlobRef.t list -> obj =
   declare_object @@ superglobal_object "Extraction Inline"
-    ~cache:(fun (_,(b,l)) -> add_inline_entries b l)
+    ~cache:(fun (b,l) -> add_inline_entries b l)
     ~subst:(Some (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l))))
-    ~discharge:(fun (_,x) -> Some x)
+    ~discharge:(fun x -> Some x)
 
 (* Grammar entries. *)
 
@@ -641,7 +641,7 @@ let extraction_inline b l =
     (fun r -> match r with
        | GlobRef.ConstRef _ -> ()
        | _ -> error_constant r) refs;
-  Lib.add_anonymous_leaf (inline_extraction (b,refs))
+  Lib.add_leaf (inline_extraction (b,refs))
 
 (* Printing part *)
 
@@ -661,10 +661,10 @@ let print_extraction_inline () =
 
 let reset_inline : unit -> obj =
   declare_object @@ superglobal_object_nodischarge "Reset Extraction Inline"
-    ~cache:(fun (_,_)-> inline_table :=  empty_inline_table)
+    ~cache:(fun () -> inline_table := empty_inline_table)
     ~subst:None
 
-let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
+let reset_extraction_inline () = Lib.add_leaf (reset_inline ())
 
 (*s Extraction Implicit *)
 
@@ -706,14 +706,14 @@ let add_implicits r l =
 
 let implicit_extraction : GlobRef.t * int_or_id list -> obj =
   declare_object @@ superglobal_object_nodischarge "Extraction Implicit"
-    ~cache:(fun (_,(r,l)) -> add_implicits r l)
+    ~cache:(fun (r,l) -> add_implicits r l)
     ~subst:(Some (fun (s,(r,l)) -> (fst (subst_global s r), l)))
 
 (* Grammar entries. *)
 
 let extraction_implicit r l =
   check_inside_section ();
-  Lib.add_anonymous_leaf (implicit_extraction (Smartlocate.global_with_alias r,l))
+  Lib.add_leaf (implicit_extraction (Smartlocate.global_with_alias r,l))
 
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
@@ -755,14 +755,14 @@ let add_blacklist_entries l =
 
 let blacklist_extraction : string list -> obj =
   declare_object @@ superglobal_object_nodischarge "Extraction Blacklist"
-    ~cache:(fun (_,l) -> add_blacklist_entries l)
+    ~cache:add_blacklist_entries
     ~subst:None
 
 (* Grammar entries. *)
 
 let extraction_blacklist l =
   let l = List.rev l in
-  Lib.add_anonymous_leaf (blacklist_extraction l)
+  Lib.add_leaf (blacklist_extraction l)
 
 (* Printing part *)
 
@@ -773,10 +773,10 @@ let print_extraction_blacklist () =
 
 let reset_blacklist : unit -> obj =
   declare_object @@ superglobal_object_nodischarge "Reset Extraction Blacklist"
-    ~cache:(fun (_,_)-> blacklist_table := Id.Set.empty)
+    ~cache:(fun ()-> blacklist_table := Id.Set.empty)
     ~subst:None
 
-let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
+let reset_extraction_blacklist () = Lib.add_leaf (reset_blacklist ())
 
 (*s Extract Constant/Inductive. *)
 
@@ -819,12 +819,12 @@ let find_custom_match pv =
 
 let in_customs : GlobRef.t * string list * string -> obj =
   declare_object @@ superglobal_object_nodischarge "ML extractions"
-    ~cache:(fun (_,(r,ids,s)) -> add_custom r ids s)
+    ~cache:(fun (r,ids,s) -> add_custom r ids s)
     ~subst:(Some (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str)))
 
 let in_custom_matchs : GlobRef.t * string -> obj =
   declare_object @@ superglobal_object_nodischarge "ML extractions custom matches"
-    ~cache:(fun (_,(r,s)) -> add_custom_match r s)
+    ~cache:(fun (r,s) -> add_custom_match r s)
     ~subst:(Some (fun (subs,(r,s)) -> (fst (subst_global subs r), s)))
 
 (* Grammar entries. *)
@@ -842,8 +842,8 @@ let extract_constant_inline inline r ids s =
             let nargs = Hook.get use_type_scheme_nb_args env typ in
             if not (Int.equal (List.length ids) nargs) then error_axiom_scheme ?loc:r.CAst.loc g nargs
           end;
-        Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
-        Lib.add_anonymous_leaf (in_customs (g,ids,s))
+        Lib.add_leaf (inline_extraction (inline,[g]));
+        Lib.add_leaf (in_customs (g,ids,s))
     | _ -> error_constant ?loc:r.CAst.loc g
 
 
@@ -856,15 +856,15 @@ let extract_inductive r s l optstr =
         let mib = Global.lookup_mind kn in
         let n = Array.length mib.mind_packets.(i).mind_consnames in
         if not (Int.equal n (List.length l)) then error_nb_cons ();
-        Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-        Lib.add_anonymous_leaf (in_customs (g,[],s));
-        Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
+        Lib.add_leaf (inline_extraction (true,[g]));
+        Lib.add_leaf (in_customs (g,[],s));
+        Option.iter (fun s -> Lib.add_leaf (in_custom_matchs (g,s)))
           optstr;
         List.iteri
           (fun j s ->
              let g = GlobRef.ConstructRef (ip,succ j) in
-             Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-             Lib.add_anonymous_leaf (in_customs (g,[],s))) l
+             Lib.add_leaf (inline_extraction (true,[g]));
+             Lib.add_leaf (in_customs (g,[],s))) l
     | _ -> error_inductive ?loc:r.CAst.loc g
 
 

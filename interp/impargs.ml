@@ -16,7 +16,6 @@ open Constr
 open Globnames
 open Glob_term
 open Declarations
-open Lib
 open Libobject
 open EConstr
 open Reductionops
@@ -526,7 +525,7 @@ let implicits_of_global ref =
 let cache_implicits_decl (ref,imps) =
   implicits_table := GlobRef.Map.add ref imps !implicits_table
 
-let load_implicits _ (_,(_,l)) = List.iter cache_implicits_decl l
+let load_implicits _ (_,l) = List.iter cache_implicits_decl l
 
 let cache_implicits o =
   load_implicits 1 o
@@ -572,14 +571,14 @@ let add_section_impls vars extra_impls (cond,impls) =
   let p = List.length vars - List.length extra_impls in
   adjust_side_condition p cond, extra_impls @ List.map (Option.map (lift_implicits p)) impls
 
-let discharge_implicits (_,(req,l)) =
+let discharge_implicits (req,l) =
   match req with
   | ImplLocal -> None
   | ImplMutualInductive _ | ImplInteractive _ | ImplConstant _ ->
      let l' =
        try
          List.map (fun (gr, l) ->
-             let vars = variable_section_segment_of_reference gr in
+             let vars = Lib.variable_section_segment_of_reference gr in
              let extra_impls = impls_of_context vars in
              let newimpls = List.map (add_section_impls vars extra_impls) l in
              (gr, newimpls)) l
@@ -605,7 +604,7 @@ let rebuild_implicits (req,l) =
 
   | ImplInteractive (flags,o) ->
       let ref,oldimpls = List.hd l in
-      (if isVarRef ref && is_in_section ref then ImplLocal else req),
+      (if isVarRef ref && Lib.is_in_section ref then ImplLocal else req),
       match o with
       | ImplAuto ->
          let newimpls = compute_global_implicits flags ref in
@@ -619,9 +618,9 @@ let rebuild_implicits (req,l) =
          else
            [ref,oldimpls]
 
-let classify_implicits (req,_ as obj) = match req with
+let classify_implicits (req,_) = match req with
 | ImplLocal -> Dispose
-| _ -> Substitute obj
+| _ -> Substitute
 
 type implicits_obj =
     implicit_discharge_request *
@@ -636,11 +635,11 @@ let inImplicits : implicits_obj -> obj =
     discharge_function = discharge_implicits;
     rebuild_function = rebuild_implicits }
 
-let is_local local ref = local || isVarRef ref && is_in_section ref
+let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
 let declare_implicits_gen req flags ref =
   let imps = compute_global_implicits flags ref in
-  add_anonymous_leaf (inImplicits (req,[ref,imps]))
+  Lib.add_leaf (inImplicits (req,[ref,imps]))
 
 let declare_implicits local ref =
   let flags = { !implicit_args with auto = true } in
@@ -662,7 +661,7 @@ let declare_mib_implicits kn =
   let imps = Array.map_to_list
     (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
     (compute_mib_implicits flags kn) in
-    add_anonymous_leaf
+    Lib.add_leaf
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
 (* Declare manual implicits *)
@@ -702,7 +701,8 @@ let declare_manual_implicits local ref ?enriching l =
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length autoimpls))
-  in add_anonymous_leaf (inImplicits (req,[ref,l]))
+  in
+  Lib.add_leaf (inImplicits (req,[ref,l]))
 
 let maybe_declare_manual_implicits local ref ?enriching l =
   if List.exists (fun x -> x.CAst.v <> None) l then
@@ -752,7 +752,8 @@ let set_implicits local ref l =
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length autoimpls))
-  in add_anonymous_leaf (inImplicits (req,[ref,l']))
+  in
+  Lib.add_leaf (inImplicits (req,[ref,l']))
 
 let extract_impargs_data impls =
   let rec aux p = function

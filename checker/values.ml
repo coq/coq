@@ -385,17 +385,15 @@ let rec v_aobjs = Sum("algebraic_objects", 0,
 and v_substobjs =
   Tuple("*", [|List v_uid;v_aobjs|])
 and v_libobjt = Sum("Libobject.t",0,
-  [| [| v_substobjs |];
-     [| v_substobjs |];
+  [| [| v_id; v_substobjs |];
+     [| v_id; v_substobjs |];
      [| v_aobjs |];
-     [| v_libobjs |];
+     [| v_id; v_libobjs |];
      [| List (v_pair v_open_filter v_mp)|];
      [| v_obj |]
   |])
 
-and v_libobj = Tuple ("libobj", [|v_id;v_libobjt|])
-
-and v_libobjs = List v_libobj
+and v_libobjs = List v_libobjt
 
 let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
 

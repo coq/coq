@@ -8,7 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Libnames
+open Names
+open Nametab
 open Mod_subst
 
 (** [Libobject] declares persistent objects, given with methods:
@@ -63,26 +64,26 @@ open Mod_subst
 
 *)
 
-type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
    can be substituted and a "syntactic" [full_path] which can be printed
 *)
 
-type object_name = full_path * Names.KerName.t
+type object_name = Libnames.full_path * KerName.t
 
 type open_filter
 
-type 'a object_declaration = {
+type ('a,'b) object_declaration = {
   object_name : string;
-  cache_function : object_name * 'a -> unit;
-  load_function : int -> object_name * 'a -> unit;
-  open_function : open_filter -> int -> object_name * 'a -> unit;
-  classify_function : 'a -> 'a substitutivity;
+  cache_function : 'b -> unit;
+  load_function : int -> 'b -> unit;
+  open_function : open_filter -> int -> 'b -> unit;
+  classify_function : 'a -> substitutivity;
   subst_function :  substitution * 'a -> 'a;
-  discharge_function : object_name * 'a -> 'a option;
-  rebuild_function : 'a -> 'a }
+  discharge_function : 'a -> 'a option;
+  rebuild_function : 'a -> 'a;
+}
 
 val unfiltered : open_filter
 
@@ -101,8 +102,8 @@ val in_filter : cat:category option -> open_filter -> bool
     On [cat:(Some category)], returns whether the filter allows
    opening objects in the given [category]. *)
 
-val simple_open : ?cat:category -> (int -> object_name * 'a -> unit) ->
-  open_filter -> int -> object_name * 'a -> unit
+val simple_open : ?cat:category -> ('i -> 'a -> unit) ->
+  open_filter -> 'i -> 'a -> unit
 (** Combinator for making objects with simple category-based open
    behaviour. When [cat:None], can be opened by Unfiltered, but also
    by Filtered with a negative set. *)
@@ -121,7 +122,7 @@ val filter_or :  open_filter -> open_filter -> open_filter
 
 *)
 
-val default_object : string -> 'a object_declaration
+val default_object : string -> ('a,'b) object_declaration
 
 (** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
@@ -136,33 +137,53 @@ module Dyn : Dyn.S
 type obj = Dyn.t
 
 type algebraic_objects =
-  | Objs of objects
-  | Ref of Names.ModPath.t * Mod_subst.substitution
+  | Objs of t list
+  | Ref of ModPath.t * Mod_subst.substitution
 
 and t =
-  | ModuleObject of substitutive_objects
-  | ModuleTypeObject of substitutive_objects
+  | ModuleObject of Id.t * substitutive_objects
+  | ModuleTypeObject of Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
-  | KeepObject of objects
-  | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
+  | KeepObject of Id.t * t list
+  | ExportObject of { mpl : (open_filter * ModPath.t) list }
   | AtomicObject of obj
 
-and objects = (Names.Id.t * t) list
+and substitutive_objects = MBId.t list * algebraic_objects
 
-and substitutive_objects = Names.MBId.t list * algebraic_objects
+(** Object declaration and names: if you need the current prefix
+   (typically to interact with the nametab), you need to have it
+   passed to you.
 
-val declare_object_full :
-  'a object_declaration -> 'a Dyn.tag
+    - [declare_object_full] and [declare_named_object_gen] pass the
+   raw prefix which you can manipulate as you wish.
+
+    - [declare_named_object_full] and [declare_named_object] provide
+   the convenience of packaging it with the provided [Id.t] into a
+   [object_name].
+
+    - [declare_object] ignores the prefix for you. *)
 
 val declare_object :
-  'a object_declaration -> ('a -> obj)
+  ('a,'a) object_declaration -> ('a -> obj)
 
-val cache_object : object_name * obj -> unit
-val load_object : int -> object_name * obj -> unit
-val open_object : open_filter -> int -> object_name * obj -> unit
+val declare_object_full :
+  ('a,object_prefix * 'a) object_declaration -> 'a Dyn.tag
+
+val declare_named_object_full :
+  ('a,object_name * 'a) object_declaration -> (Id.t * 'a) Dyn.tag
+
+val declare_named_object :
+  ('a,object_name * 'a) object_declaration -> (Id.t -> 'a -> obj)
+
+val declare_named_object_gen :
+  ('a,object_prefix * 'a) object_declaration -> ('a -> obj)
+
+val cache_object : object_prefix * obj -> unit
+val load_object : int -> object_prefix * obj -> unit
+val open_object : open_filter -> int -> object_prefix * obj -> unit
 val subst_object : substitution * obj -> obj
-val classify_object : obj -> obj substitutivity
-val discharge_object : object_name * obj -> obj option
+val classify_object : obj -> substitutivity
+val discharge_object : obj -> obj option
 val rebuild_object : obj -> obj
 
 (** Higher-level API for objects with fixed scope.
@@ -180,35 +201,35 @@ variants.
 *)
 
 val local_object : string ->
-  cache:(object_name * 'a -> unit) ->
-  discharge:(object_name * 'a -> 'a option) ->
-  'a object_declaration
+  cache:('a -> unit) ->
+  discharge:('a -> 'a option) ->
+  ('a,'a) object_declaration
 
 val local_object_nodischarge : string ->
-  cache:(object_name * 'a -> unit) ->
-  'a object_declaration
+  cache:('a -> unit) ->
+  ('a,'a) object_declaration
 
 val global_object : ?cat:category -> string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  discharge:(object_name * 'a -> 'a option) ->
-  'a object_declaration
+  discharge:('a -> 'a option) ->
+  ('a,'a) object_declaration
 
 val global_object_nodischarge : ?cat:category -> string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 val superglobal_object : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  discharge:(object_name * 'a -> 'a option) ->
-  'a object_declaration
+  discharge:('a -> 'a option) ->
+  ('a,'a) object_declaration
 
 val superglobal_object_nodischarge : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  'a object_declaration
+  ('a,'a) object_declaration
 
 (** {6 Debug} *)
 

@@ -265,19 +265,19 @@ let check_key key =
     user_err Pp.(str "Conflicting tactic notations keys. This can happen when including \
     twice the same module.")
 
-let cache_tactic_notation (_, tobj) =
+let cache_tactic_notation tobj =
   let key = tobj.tacobj_key in
   let () = check_key key in
   Tacenv.register_alias key tobj.tacobj_body;
   extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram)
 
-let open_tactic_notation i (_, tobj) =
+let open_tactic_notation i tobj =
   let key = tobj.tacobj_key in
   if Int.equal i 1 && not tobj.tacobj_local then
     extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
 
-let load_tactic_notation i (_, tobj) =
+let load_tactic_notation i tobj =
   let key = tobj.tacobj_key in
   let () = check_key key in
   (* Only add the printing and interpretation rules. *)
@@ -294,7 +294,7 @@ let subst_tactic_notation (subst, tobj) =
     tacobj_body = { alias with alias_body = Tacsubst.subst_tactic subst alias.alias_body };
   }
 
-let classify_tactic_notation tacobj = Substitute tacobj
+let classify_tactic_notation tacobj = Substitute
 
 let ltac_notation_cat = Libobject.create_category "ltac.notations"
 
@@ -323,7 +323,7 @@ let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
     tacobj_body = { alias_args = ids; alias_body = tac; alias_deprecation = deprecation };
     tacobj_forml = forml;
   } in
-  Lib.add_anonymous_leaf (inTacticGrammar tacobj)
+  Lib.add_leaf (inTacticGrammar tacobj)
 
 let add_tactic_notation local n ?deprecation prods e =
   let ids = List.map_filter cons_production_parameter prods in

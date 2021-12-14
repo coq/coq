@@ -20,51 +20,38 @@ type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
 
 val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
-val make_foname : Names.Id.t -> Libnames.full_path * Names.KerName.t
+val make_foname : Names.Id.t -> Libobject.object_name
+val oname_prefix : Libobject.object_name -> Nametab.object_prefix
 
 type node =
-  | Leaf of Libobject.t
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
   | OpenedSection of Nametab.object_prefix * Summary.frozen
 
-type library_segment = (Libobject.object_name * node) list
+(** Extract the [object_prefix] component. Note that it is the prefix
+   of the objects *inside* this node, eg in [Module M.] we have
+   [OpenedModule] with prefix containing [M]. *)
+val node_prefix : node -> Nametab.object_prefix
 
-type lib_atomic_objects = (Id.t * Libobject.obj) list
-type lib_objects = (Id.t * Libobject.t) list
+type library_segment = (node * Libobject.t list) list
 
-(** {6 Object iteration functions. } *)
-
-val open_atomic_objects : Libobject.open_filter
-  -> int -> Nametab.object_prefix -> lib_atomic_objects -> unit
-val load_atomic_objects : int -> Nametab.object_prefix -> lib_atomic_objects -> unit
-val subst_atomic_objects : Mod_subst.substitution -> lib_atomic_objects -> lib_atomic_objects
-(*val load_and_subst_objects : int -> Libnames.Nametab.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects*)
-
-(** [classify_segment seg] verifies that there are no OpenedThings,
-   clears ClosedSections and FrozenStates and divides Leafs according
-   to their answers to the [classify_object] function in three groups:
-   [Substitute], [Keep], [Anticipate] respectively.  The order of each
-   returned list is the same as in the input list. *)
-val classify_segment :
-  library_segment -> lib_objects * lib_objects * Libobject.t list
-
-(** [segment_of_objects prefix objs] forms a list of Leafs *)
-val segment_of_objects :
-  Nametab.object_prefix -> lib_objects -> library_segment
+type classified_objects = {
+  substobjs : Libobject.t list;
+  keepobjs : Libobject.t list;
+  anticipateobjs : Libobject.t list;
+}
 
 (** {6 ... } *)
-(** Low-level adding operations *)
+(** Low-level adding operations (does not cache) *)
 
-val add_entry : Libobject.object_name -> node -> unit
-val add_anonymous_entry : node -> unit
+val add_entry : node -> unit
+val add_leaf_entry : Libobject.t -> unit
 
 (** {6 ... } *)
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
-val add_leaf : Id.t -> Libobject.obj -> Libobject.object_name
-val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
+val add_leaf : Libobject.obj -> unit
 
 (** {6 ... } *)
 
@@ -72,14 +59,10 @@ val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
 
 val contents : unit -> library_segment
 
-(** The function [contents_after] returns the current library segment,
-  starting from a given section path. *)
-
-val contents_after : Libobject.object_name -> library_segment
-
 (** {6 Functions relative to current path } *)
 
 (** User-side names *)
+val prefix : unit -> Nametab.object_prefix
 val cwd : unit -> DirPath.t
 val cwd_except_section : unit -> DirPath.t
 val current_dirpath : bool -> DirPath.t (* false = except sections *)
@@ -102,7 +85,6 @@ val is_modtype : unit -> bool
    if the latest module started is a module type.  *)
 val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
-val current_mod_id : unit -> module_ident
 
 (** Returns the opening node of a given name *)
 val find_opening_node : Id.t -> node
@@ -119,20 +101,16 @@ val start_modtype :
 
 val end_module :
   unit ->
-  Libobject.object_name * Nametab.object_prefix *
-    Summary.frozen * library_segment
+  Nametab.object_prefix * Summary.frozen * classified_objects
 
 val end_modtype :
   unit ->
-  Libobject.object_name * Nametab.object_prefix *
-    Summary.frozen * library_segment
+  Nametab.object_prefix * Summary.frozen * classified_objects
 
 (** {6 Compilation units } *)
 
 val start_compilation : DirPath.t -> ModPath.t -> unit
-val end_compilation_checks : DirPath.t -> Libobject.object_name
-val end_compilation :
-  Libobject.object_name-> Nametab.object_prefix * library_segment
+val end_compilation : DirPath.t -> Nametab.object_prefix * classified_objects
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)

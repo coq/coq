@@ -57,7 +57,7 @@ let lib_ref s =
 let add_ref s c =
   table := CString.Map.add s c !table
 
-let cache_ref (_,(s,c)) =
+let cache_ref (s,c) =
   add_ref s c
 
 let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
@@ -65,13 +65,13 @@ let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
   declare_object { (default_object "COQLIBREF") with
     cache_function = cache_ref;
     load_function = (fun _ x -> cache_ref x);
-    classify_function = (fun o -> Substitute o);
+    classify_function = (fun _ -> Substitute);
     subst_function = ident_subst_function;
-    discharge_function = fun (_, sc) -> Some sc }
+    discharge_function = (fun sc -> Some sc); }
 
 (** Replaces a binding ! *)
 let register_ref s c =
-  Lib.add_anonymous_leaf @@ inCoqlibRef (s,c)
+  Lib.add_leaf @@ inCoqlibRef (s,c)
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)

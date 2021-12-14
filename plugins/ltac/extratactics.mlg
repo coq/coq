@@ -384,7 +384,6 @@ END
 
 open Tactics
 open Libobject
-open Lib
 
 (* Registered lemmas are expected to be of the form
      x R y -> y == z -> x R z    (in the right table)
@@ -410,7 +409,7 @@ let step left x tac =
 
 (* Main function to push lemmas in persistent environment *)
 
-let cache_transitivity_lemma (_,(left,lem)) =
+let cache_transitivity_lemma (left,lem) =
   if left then
     transitivity_left_table  := lem :: !transitivity_left_table
   else
@@ -430,7 +429,7 @@ let add_transitivity_lemma left lem =
   let sigma = Evd.from_env env in
   let lem',ctx (*FIXME*) = Constrintern.interp_constr env sigma lem in
   let lem' = EConstr.to_constr sigma lem' in
-  add_anonymous_leaf (inTransitivity (left,lem'))
+  Lib.add_leaf (inTransitivity (left,lem'))
 
 }
 

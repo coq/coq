@@ -21,40 +21,34 @@ module NamedDecl = Context.Named.Declaration
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
 
-(* let make_oname (dirpath,(mp,dir)) id = *)
 let make_oname Nametab.{ obj_dir; obj_mp } id =
   Names.(make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
 
-(* let make_oname (dirpath,(mp,dir)) id = *)
+let oname_prefix (sp, kn) =
+  { Nametab.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
+
 type node =
-  | Leaf of Libobject.t
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
   | OpenedSection of Nametab.object_prefix * Summary.frozen
 
-type library_entry = object_name * node
+let node_prefix = function
+  | CompilingLibrary prefix
+  | OpenedModule (_,_,prefix,_)
+  | OpenedSection (prefix,_) -> prefix
 
-type library_segment = library_entry list
+let prefix_id prefix = snd (split_dirpath prefix.Nametab.obj_dir)
 
-type lib_atomic_objects = (Id.t * Libobject.obj) list
-type lib_objects =  (Names.Id.t * Libobject.t) list
+type library_segment = (node * Libobject.t list) list
+
+type classified_objects = {
+  substobjs : Libobject.t list;
+  keepobjs : Libobject.t list;
+  anticipateobjs : Libobject.t list;
+}
 
 let module_kind is_type =
   if is_type then "module type" else "module"
-
-let iter_objects f i prefix =
-  List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
-
-let load_atomic_objects i pr = iter_objects load_object i pr
-let open_atomic_objects f i pr = iter_objects (open_object f) i pr
-
-let subst_atomic_objects subst seg =
-  let subst_one = fun (id,obj as node) ->
-    let obj' = subst_object (subst,obj) in
-      if obj' == obj then node else
-        (id, obj')
-  in
-    List.Smart.map subst_one seg
 
 (*let load_and_subst_objects i prefix subst seg =
   List.rev (List.fold_left (fun seg (id,obj as node) ->
@@ -65,37 +59,32 @@ let subst_atomic_objects subst seg =
 *)
 let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
-    | (_,CompilingLibrary _) :: _ | [] -> acc
-    | ((sp,kn),Leaf o) :: stk ->
-          let id = Names.Label.to_id (Names.KerName.label kn) in
-    begin match o with
-    | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
-      clean ((id,o)::substl, keepl, anticipl) stk
-    | KeepObject _ ->
-      clean (substl, (id,o)::keepl, anticipl) stk
-    | ExportObject _ ->
-      clean ((id,o)::substl, keepl, anticipl) stk
-    | AtomicObject obj ->
-      begin match classify_object obj with
-        | Dispose -> clean acc stk
-        | Keep o' ->
-          clean (substl, (id,AtomicObject o')::keepl, anticipl) stk
-        | Substitute o' ->
-          clean ((id,AtomicObject o')::substl, keepl, anticipl) stk
-        | Anticipate o' ->
-          clean (substl, keepl, AtomicObject o'::anticipl) stk
+    | [] -> acc
+    | o :: stk ->
+      begin match o with
+        | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
+          clean (o::substl, keepl, anticipl) stk
+        | KeepObject _ ->
+          clean (substl, o::keepl, anticipl) stk
+        | ExportObject _ ->
+          clean (o::substl, keepl, anticipl) stk
+        | AtomicObject obj as o ->
+          begin match classify_object obj with
+            | Dispose -> clean acc stk
+            | Keep ->
+              clean (substl, o::keepl, anticipl) stk
+            | Substitute ->
+              clean (o::substl, keepl, anticipl) stk
+            | Anticipate ->
+              clean (substl, keepl, o::anticipl) stk
+          end
       end
-    end
-    | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
-    | (_,OpenedModule (ty,_,_,_)) :: _ ->
-      user_err
-        (str "there are still opened " ++ str (module_kind ty) ++ str "s.")
   in
-    clean ([],[],[]) (List.rev seg)
+  clean ([],[],[]) (List.rev seg)
 
-
-let segment_of_objects prefix =
-  List.map (fun (id,obj) -> (make_oname prefix id, Leaf obj))
+let classify_segment seg =
+  let substobjs, keepobjs, anticipateobjs = classify_segment seg in
+  { substobjs; keepobjs; anticipateobjs; }
 
 (* We keep trace of operations in the stack [lib_stk].
    [path_prefix] is the current path of sections, where sections are stored in
@@ -129,6 +118,7 @@ let library_dp () =
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
 
+let prefix () = !lib_state.path_prefix
 let cwd () = !lib_state.path_prefix.Nametab.obj_dir
 let current_mp () = !lib_state.path_prefix.Nametab.obj_mp
 let current_sections () = Safe_typing.sections_of_safe_env (Global.safe_env())
@@ -157,120 +147,46 @@ let make_kn id =
 
 let make_foname id = make_oname !lib_state.path_prefix id
 
-let recalc_path_prefix () =
-  let rec recalc = function
-    | (sp, OpenedSection (dir,_)) :: _ -> dir
-    | (sp, OpenedModule (_,_,dir,_)) :: _ -> dir
-    | (sp, CompilingLibrary dir) :: _ -> dir
-    | _::l -> recalc l
-    | [] -> initial_prefix
-  in
-  lib_state := { !lib_state with path_prefix = recalc !lib_state.lib_stk }
-
-let pop_path_prefix () =
-  let op = !lib_state.path_prefix in
-  lib_state := { !lib_state
-                 with path_prefix = Nametab.{ op with obj_dir = pop_dirpath op.obj_dir;
-                                            } }
-
-let find_entry_p p =
-  let rec find = function
-    | [] -> raise Not_found
-    | ent::l -> if p ent then ent else find l
-  in
-  find !lib_state.lib_stk
-
 let find_entries_p p =
   let rec find = function
     | [] -> []
-    | ent::l -> if p ent then ent::find l else find l
+    | (ent,_)::l -> if p ent then ent::find l else find l
   in
   find !lib_state.lib_stk
 
-let split_lib_gen test =
-  let rec collect after equal = function
-    | hd::before when test hd -> collect after (hd::equal) before
-    | before -> after,equal,before
-  in
-  let rec findeq after = function
-    | hd :: before when test hd -> collect after [hd] before
-    | hd :: before -> findeq (hd::after) before
-    | [] -> user_err Pp.(str "no such entry")
-  in
-  findeq [] !lib_state.lib_stk
-
-let eq_object_name (fp1, kn1) (fp2, kn2) =
-  eq_full_path fp1 fp2 && Names.KerName.equal kn1 kn2
-
-let split_lib sp =
-  let is_sp (nsp, _) = eq_object_name sp nsp in
-  split_lib_gen is_sp
-
-let split_lib_at_opening sp =
-  let is_sp (nsp, obj) = match obj with
-    | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
-      eq_object_name nsp sp
-    | _ -> false
-  in
-  let a, s, b = split_lib_gen is_sp in
-  match s with
-  | [obj] -> (a, obj, b)
-  | _ -> assert false
-
 (* Adding operations. *)
 
-let add_entry sp node =
-  lib_state := { !lib_state with lib_stk = (sp,node) :: !lib_state.lib_stk }
+let add_entry node =
+  lib_state := { !lib_state with lib_stk = (node,[]) :: !lib_state.lib_stk }
 
-let anonymous_id =
-  let n = ref 0 in
-  fun () -> incr n; Names.Id.of_string ("_" ^ (string_of_int !n))
+let dummylib = CompilingLibrary
+    {Nametab.obj_dir = DirPath.initial;
+     Nametab.obj_mp = ModPath.MPfile DirPath.initial;
+    }
 
-let add_anonymous_entry node =
-  add_entry (make_foname (anonymous_id ())) node
+let add_leaf_entry leaf =
+  let lib_stk = match !lib_state.lib_stk with
+    | [] ->
+      (* top_printers does set_bool_option_value which adds a leaf *)
+      if !Flags.in_debugger then [dummylib, [leaf]] else assert false
+    | (node, leaves) :: rest -> (node, leaf :: leaves) :: rest
+  in
+  lib_state := { !lib_state with lib_stk }
 
-let add_leaf id obj =
-  if ModPath.equal (current_mp ()) ModPath.initial then
-    user_err Pp.(str "No session module started (use -top dir)");
-  let oname = make_foname id in
-  cache_object (oname,obj);
-  add_entry oname (Leaf (AtomicObject obj));
-  oname
-
-let add_discharged_leaf id obj =
-  let oname = make_foname id in
+let add_discharged_leaf obj =
   let newobj = rebuild_object obj in
-  cache_object (oname,newobj);
-  add_entry oname (Leaf (AtomicObject newobj))
+  cache_object (prefix(),newobj);
+  add_leaf_entry (AtomicObject newobj)
 
-let add_anonymous_leaf ?(cache_first = true) obj =
-  let id = anonymous_id () in
-  let oname = make_foname id in
-  if cache_first then begin
-    cache_object (oname,obj);
-    add_entry oname (Leaf (AtomicObject obj))
-  end else begin
-    add_entry oname (Leaf (AtomicObject obj));
-    cache_object (oname,obj)
-  end
+let add_leaf obj =
+  cache_object (prefix(),obj);
+  add_leaf_entry (AtomicObject obj)
 
 (* Modules. *)
 
 let is_opening_node = function
-  | _,(OpenedSection _ | OpenedModule _) -> true
+  | OpenedSection _ | OpenedModule _ -> true
   | _ -> false
-
-let is_opening_node_or_lib = function
-  | _,(CompilingLibrary _ | OpenedSection _ | OpenedModule _) -> true
-  | _ -> false
-
-let current_mod_id () =
-  try match find_entry_p is_opening_node_or_lib with
-    | oname,OpenedModule (_,_,_,fs) -> basename (fst oname)
-    | oname,CompilingLibrary _ -> basename (fst oname)
-    | _ -> user_err Pp.(str "you are not in a module")
-  with Not_found -> user_err Pp.(str "no opened modules")
-
 
 let start_mod is_type export id mp fs =
   let dir = add_dirpath_suffix (!lib_state.path_prefix.Nametab.obj_dir) id in
@@ -281,40 +197,58 @@ let start_mod is_type export id mp fs =
   in
   if exists then
     user_err (Id.print id ++ str " already exists.");
-  add_entry (make_foname id) (OpenedModule (is_type,export,prefix,fs));
+  add_entry (OpenedModule (is_type,export,prefix,fs));
   lib_state := { !lib_state with path_prefix = prefix} ;
   prefix
 
 let start_module = start_mod false
 let start_modtype = start_mod true None
 
+let split_lib_at_opening () =
+  match !lib_state.lib_stk with
+  | [] -> assert false
+  | (node,leaves) :: rest -> List.rev leaves, node, rest
+
 let error_still_opened string oname =
-  let id = basename (fst oname) in
+  let id = prefix_id oname in
   user_err
     (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
 
-let end_mod is_type =
-  let oname,fs =
-    try match find_entry_p is_opening_node with
-      | oname,OpenedModule (ty,_,_,fs) ->
-        if ty == is_type then oname, fs
-        else error_still_opened (module_kind ty) oname
-      | oname,OpenedSection _ -> error_still_opened "section" oname
-      | _ -> assert false
-    with Not_found -> user_err (Pp.str "No opened modules.")
+let recalc_path_prefix () =
+  let path_prefix = match pi2 (split_lib_at_opening ()) with
+    | CompilingLibrary dir
+    | OpenedModule (_, _, dir, _)
+    | OpenedSection (dir, _) -> dir
   in
-  let (after,mark,before) = split_lib_at_opening oname in
+  lib_state := { !lib_state with path_prefix }
+
+let pop_path_prefix () =
+  let op = !lib_state.path_prefix in
+  lib_state := {
+    !lib_state
+    with path_prefix = Nametab.{
+        op with obj_dir = pop_dirpath op.obj_dir;
+      } }
+
+let end_mod is_type =
+  let (after,mark,before) = split_lib_at_opening () in
+  (* The errors here should not happen because we checked in the upper layers *)
+  let prefix, fs = match mark with
+    | OpenedModule (ty,_,prefix,fs) ->
+      if ty == is_type then prefix, fs
+      else error_still_opened (module_kind ty) prefix
+    | OpenedSection (prefix, _) -> error_still_opened "section" prefix
+    | CompilingLibrary _ -> user_err (Pp.str "No opened modules.")
+  in
   lib_state := { !lib_state with lib_stk = before };
-  let prefix = !lib_state.path_prefix in
   recalc_path_prefix ();
-  (oname, prefix, fs, after)
+  let after = classify_segment after in
+  (prefix, fs, after)
 
 let end_module () = end_mod false
 let end_modtype () = end_mod true
 
 let contents () = !lib_state.lib_stk
-
-let contents_after sp = let (after,_,_) = split_lib sp in after
 
 (* Modules. *)
 
@@ -322,34 +256,32 @@ let contents_after sp = let (after,_,_) = split_lib sp in after
 let start_compilation s mp =
   if !lib_state.comp_name != None then
     user_err Pp.(str "compilation unit is already started");
+  assert (List.is_empty !lib_state.lib_stk);
   if Global.sections_are_opened () then (* XXX not sure if we need this check *)
     user_err Pp.(str "some sections are already opened");
   let prefix = Nametab.{ obj_dir = s; obj_mp = mp } in
-  add_anonymous_entry (CompilingLibrary prefix);
-  lib_state := { !lib_state with comp_name = Some s;
-                                 path_prefix = prefix }
+  lib_state := {
+    comp_name = Some s;
+    path_prefix = prefix;
+    lib_stk = [ CompilingLibrary prefix, [] ];
+  }
 
 let open_blocks_message es =
   let open_block_name = function
-      | oname, OpenedSection _ -> str "section " ++ Id.print (basename (fst oname))
-      | oname, OpenedModule (ty,_,_,_) -> str (module_kind ty) ++ spc () ++ Id.print (basename (fst oname))
-      | _ -> assert false in
+    | OpenedSection (prefix,_) ->
+      str "section " ++ Id.print (prefix_id prefix)
+    | OpenedModule (ty,_,prefix,_) ->
+      str (module_kind ty) ++ spc () ++ Id.print (prefix_id prefix)
+    | _ -> assert false
+  in
   str "The " ++ pr_enum open_block_name es ++ spc () ++
   str "need" ++ str (if List.length es == 1 then "s" else "") ++ str " to be closed."
 
 let end_compilation_checks dir =
-  let _ = match find_entries_p is_opening_node with
+  let () = match find_entries_p is_opening_node with
     | [] -> ()
     | es -> user_err (open_blocks_message es) in
-  let is_opening_lib = function _,CompilingLibrary _ -> true | _ -> false
-  in
-  let oname =
-    try match find_entry_p is_opening_lib with
-      |	(oname, CompilingLibrary prefix) -> oname
-      | _ -> assert false
-    with Not_found -> anomaly (Pp.str "No module declared.")
-  in
-  let _ =
+  let () =
     match !lib_state.comp_name with
       | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
@@ -357,12 +289,15 @@ let end_compilation_checks dir =
            (str "The current open module has name" ++ spc () ++ DirPath.print m ++
              spc () ++ str "and not" ++ spc () ++ DirPath.print m ++ str ".");
   in
-  oname
+  ()
 
-let end_compilation oname =
-  let (after,mark,before) = split_lib_at_opening oname in
+let end_compilation dir =
+  end_compilation_checks dir;
+  let (after,mark,before) = split_lib_at_opening () in
+  assert (List.is_empty before);
   lib_state := { !lib_state with comp_name = None };
-  !lib_state.path_prefix,after
+  let after = classify_segment after in
+  !lib_state.path_prefix, after
 
 (* Returns true if we are inside an opened module or module type *)
 let is_module_or_modtype () =
@@ -385,14 +320,16 @@ let is_module () =
 
 (* Returns the opening node of a given name *)
 let find_opening_node id =
-  try
-    let oname,entry = find_entry_p is_opening_node in
-    let id' = basename (fst oname) in
-    if not (Names.Id.equal id id') then
-      user_err
-        (str "Last block to end has name " ++ Id.print id' ++ str ".");
-    entry
-  with Not_found -> user_err Pp.(str "There is nothing to end.")
+  let entry = match !lib_state.lib_stk with
+    | [] -> assert false
+    | (CompilingLibrary _, _) :: _ -> user_err Pp.(str "There is nothing to end.")
+    | (entry, _) :: _ -> entry
+  in
+  let id' = prefix_id (node_prefix entry) in
+  if not (Names.Id.equal id id') then
+    user_err
+      (str "Last block to end has name " ++ Id.print id' ++ str ".");
+  entry
 
 (* Discharge tables *)
 
@@ -462,7 +399,7 @@ let open_section id =
   if Nametab.exists_dir obj_dir then
     user_err (Id.print id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:false in
-  add_entry (make_foname id) (OpenedSection (prefix, fs));
+  add_entry (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
   lib_state := { !lib_state with path_prefix = prefix }
@@ -470,32 +407,22 @@ let open_section id =
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
 
-let discharge_item ((sp,_ as oname),e) =
-  match e with
-  | Leaf lobj ->
-    begin match lobj with
-    | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
-    | ExportObject _ -> None
-    | AtomicObject obj ->
-      Option.map (fun o -> (basename sp,o)) (discharge_object (oname,obj))
-    end
-  | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
-      anomaly (Pp.str "discharge_item.")
+let discharge_item = function
+  | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
+  | ExportObject _ -> None
+  | AtomicObject obj -> discharge_object obj
 
 let close_section () =
-  let oname,fs =
-    try match find_entry_p is_opening_node with
-      | oname,OpenedSection (_,fs) -> oname,fs
-      | _ -> assert false
-    with Not_found ->
-      user_err Pp.(str  "No opened section.")
+  let (secdecls,mark,before) = split_lib_at_opening () in
+  let fs = match mark with
+    | OpenedSection (_,fs) -> fs
+    | _ -> user_err Pp.(str "No opened section.")
   in
-  let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
   pop_path_prefix ();
   let newdecls = List.map discharge_item secdecls in
   let () = Global.close_section fs in
-  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
+  List.iter (Option.iter add_discharged_leaf) newdecls
 
 (* State and initialization. *)
 
@@ -506,15 +433,14 @@ let freeze () = !lib_state
 let unfreeze st = lib_state := st
 
 let drop_objects st =
-  let lib_stk =
-    CList.map_filter (function
-        | _, Leaf _ -> None
-        | n, (CompilingLibrary _ as x) -> Some (n,x)
-        | n, OpenedModule (it,e,op,_) ->
-          Some(n,OpenedModule(it,e,op,Summary.empty_frozen))
-        | n, OpenedSection (op, _) ->
-          Some(n,OpenedSection(op,Summary.empty_frozen)))
-      st.lib_stk in
+  let drop_node = function
+    | CompilingLibrary _ as x -> x
+    | OpenedModule (it,e,op,_) ->
+      OpenedModule(it,e,op,Summary.empty_frozen)
+    | OpenedSection (op, _) ->
+      OpenedSection(op,Summary.empty_frozen)
+  in
+  let lib_stk = List.map (fun (node,_) -> drop_node node, []) st.lib_stk in
   { st with lib_stk }
 
 let init () =

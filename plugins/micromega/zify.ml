@@ -657,7 +657,7 @@ module MakeTable (E : Elt) = struct
              ++ str " X1 ... Xn"))
 
   let register_obj : Constr.constr -> Libobject.obj =
-    let cache_constr (_, c) =
+    let cache_constr c =
       let env = Global.env () in
       let evd = Evd.from_env env in
       register_constr env evd c
@@ -676,7 +676,7 @@ module MakeTable (E : Elt) = struct
   let register c =
     try
       let c = UnivGen.constr_of_monomorphic_global (Global.env ()) (Nametab.locate c) in
-      let _ = Lib.add_anonymous_leaf (register_obj c) in
+      let _ = Lib.add_leaf (register_obj c) in
       ()
     with Not_found ->
       raise

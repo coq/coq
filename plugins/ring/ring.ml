@@ -396,9 +396,8 @@ let subst_th (subst,th) =
 
 
 let theory_to_obj : ring_info -> obj =
-  let cache_th (_, th) = add_entry th in
   declare_object @@ global_object_nodischarge "tactic-new-ring-theory"
-    ~cache:cache_th
+    ~cache:add_entry
     ~subst:(Some subst_th)
 
 let setoid_of_relation env sigma a r =
@@ -586,7 +585,7 @@ let add_theory0 env sigma name rth eqth morphth cst_tac (pre,post) power sign di
   let req = EConstr.to_constr sigma req in
   let sth = EConstr.to_constr sigma sth in
   let _ =
-    Lib.add_anonymous_leaf
+    Lib.add_leaf
       (theory_to_obj
         { ring_name = name;
           ring_carrier = r;
@@ -841,9 +840,8 @@ let subst_th (subst,th) =
       field_post_tac = posttac' }
 
 let ftheory_to_obj : field_info -> obj =
-  let cache_th (_, th) = add_field_entry th in
   declare_object @@ global_object_nodischarge "tactic-new-field-theory"
-    ~cache:cache_th
+    ~cache:add_field_entry
     ~subst:(Some subst_th)
 
 let field_equality env sigma r inv req =
@@ -909,7 +907,7 @@ let add_field_theory0 env sigma name fth eqth morphth cst_tac inj (pre,post) pow
   let r = EConstr.to_constr sigma r in
   let req = EConstr.to_constr sigma req in
   let _ =
-    Lib.add_anonymous_leaf
+    Lib.add_leaf
       (ftheory_to_obj
         { field_name = name;
           field_carrier = r;

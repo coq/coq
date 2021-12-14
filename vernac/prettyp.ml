@@ -39,7 +39,7 @@ type object_pr = {
   print_module              : ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
-  print_library_entry       : env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
+  print_library_leaf       : env -> Evd.evar_map -> bool -> ModPath.t -> Libobject.t -> Pp.t option;
   print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
@@ -674,54 +674,73 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
    no reason that an object in the stack corresponds to a user-facing
    declaration. It may have been so at the time this was written, but this
    needs to be done in a more principled way. *)
-let gallina_print_leaf_entry env sigma with_values ((sp, kn),lobj) =
+let gallina_print_library_leaf env sigma with_values mp lobj =
   let sep = if with_values then " = " else " : " in
   match lobj with
   | AtomicObject o ->
     let handler =
-      DynHandle.add Declare.Internal.objVariable begin fun _ ->
+      DynHandle.add Declare.Internal.objVariable begin fun id ->
           (* Outside sections, VARIABLES still exist but only with universes
              constraints *)
-          (try Some(print_named_decl env sigma (basename sp)) with Not_found -> None)
+          (try Some(print_named_decl env sigma id) with Not_found -> None)
       end @@
-      DynHandle.add Declare.Internal.Constant.tag begin fun _ ->
-          Some (print_constant with_values sep (Constant.make1 kn) None)
+      DynHandle.add Declare.Internal.Constant.tag begin fun (id,_) ->
+        let kn = Constant.make2 mp (Label.of_id id) in
+        Some (print_constant with_values sep kn None)
       end @@
-      DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
-          Some (gallina_print_inductive (MutInd.make1 kn) None)
+      DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
+        let kn = MutInd.make2 mp (Label.of_id id) in
+        Some (gallina_print_inductive kn None)
       end @@
       DynHandle.empty
     in
     handle handler o
-  | ModuleObject _ ->
-    let (mp,l) = KerName.repr kn in
-    Some (print_module ~with_body:with_values (MPdot (mp,l)))
-  | ModuleTypeObject _ ->
-    let (mp,l) = KerName.repr kn in
-          Some (print_modtype (MPdot (mp,l)))
-  | _ -> None
+  | ModuleObject (id,_) ->
+    Some (print_module ~with_body:with_values (MPdot (mp,Label.of_id id)))
+  | ModuleTypeObject (id,_) ->
+    Some (print_modtype (MPdot (mp, Label.of_id id)))
+  | IncludeObject _ | KeepObject _ | ExportObject _ -> None
 
-let gallina_print_library_entry env sigma with_values ent =
-  let pr_name (sp,_) = Id.print (basename sp) in
-  match ent with
-    | (oname,Lib.Leaf lobj) ->
-      gallina_print_leaf_entry env sigma with_values (oname,lobj)
-    | (oname,Lib.OpenedSection (dir,_)) ->
-      Some (str " >>>>>>> Section " ++ pr_name oname)
-    | (_,Lib.CompilingLibrary { Nametab.obj_dir; _ }) ->
-      Some (str " >>>>>>> Library " ++ DirPath.print obj_dir)
-    | (oname,Lib.OpenedModule _) ->
-      Some (str " >>>>>>> Module " ++ pr_name oname)
+let decr = Option.map ((+) (-1))
+
+let is_done = Option.equal Int.equal (Some 0)
+
+let print_leaves env sigma with_values mp =
+  let rec prec n = function
+    | [] -> n, mt()
+    | o :: rest ->
+      if is_done n then n, mt()
+      else begin match gallina_print_library_leaf env sigma with_values mp o with
+        | Some pp ->
+          let n, prest = prec (decr n) rest in
+          n, prest ++ pp
+        | None -> prec n rest
+      end
+  in
+  prec
 
 let gallina_print_context env sigma with_values =
   let rec prec n = function
-    | h::rest when Option.is_empty n || Option.get n > 0 ->
-      (match gallina_print_library_entry env sigma with_values h with
-       | None -> prec n rest
-       | Some pp -> prec (Option.map ((+) (-1)) n) rest ++ pp ++ fnl ())
-    | _ -> mt ()
+    | [] -> mt()
+    | (node, leaves) :: rest ->
+      if is_done n then mt()
+      else
+        let mp = (Lib.node_prefix node).Nametab.obj_mp in
+        let n, pleaves = print_leaves env sigma with_values mp n leaves in
+        if is_done n then pleaves
+        else prec n rest ++ pleaves
   in
   prec
+
+let pr_prefix_name prefix = Id.print (snd (split_dirpath prefix.Nametab.obj_dir))
+
+let print_library_node = function
+  | Lib.OpenedSection (prefix, _) ->
+    str " >>>>>>> Section " ++ pr_prefix_name prefix
+  | Lib.OpenedModule (_,_,prefix,_) ->
+    str " >>>>>>> Module " ++ pr_prefix_name prefix
+  | Lib.CompilingLibrary { Nametab.obj_dir; _ } ->
+    str " >>>>>>> Library " ++ DirPath.print obj_dir
 
 let gallina_print_eval red_fun env sigma _ {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env sigma trm in
@@ -738,7 +757,7 @@ let default_object_pr = {
   print_module              = gallina_print_module;
   print_modtype             = gallina_print_modtype;
   print_named_decl          = gallina_print_named_decl;
-  print_library_entry       = gallina_print_library_entry;
+  print_library_leaf        = gallina_print_library_leaf;
   print_context             = gallina_print_context;
   print_typed_value_in_env  = gallina_print_typed_value_in_env;
   print_eval                = gallina_print_eval;
@@ -754,7 +773,7 @@ let print_syntactic_def x = !object_pr.print_syntactic_def x
 let print_module x  = !object_pr.print_module  x
 let print_modtype x = !object_pr.print_modtype x
 let print_named_decl x = !object_pr.print_named_decl x
-let print_library_entry x = !object_pr.print_library_entry x
+let print_library_leaf x = !object_pr.print_library_leaf x
 let print_context x = !object_pr.print_context x
 let print_typed_value_in_env x = !object_pr.print_typed_value_in_env x
 let print_eval x = !object_pr.print_eval x
@@ -788,53 +807,61 @@ let handleF h (Libobject.Dyn.Dyn (tag, o)) = match DynHandleF.find tag h with
 | exception Not_found -> mt ()
 
 (* TODO: see the comment for {!gallina_print_leaf_entry} *)
+let print_full_pure_atomic env sigma mp lobj =
+  let handler =
+    DynHandleF.add Declare.Internal.Constant.tag begin fun (id,_) ->
+      let kn = KerName.make mp (Label.of_id id) in
+      let con = Global.constant_of_delta_kn kn in
+      let cb = Global.lookup_constant con in
+      let typ = cb.const_type in
+      hov 0 (
+        match cb.const_body with
+        | Undef _ ->
+          str "Parameter " ++
+          print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ
+        | OpaqueDef lc ->
+          str "Theorem " ++ print_basename con ++ cut () ++
+          str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
+          str "Proof " ++ pr_lconstr_env env sigma
+            (fst (Global.force_proof Library.indirect_accessor lc))
+        | Def c ->
+          str "Definition " ++ print_basename con ++ cut () ++
+          str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++
+          pr_lconstr_env env sigma c
+        | Primitive _ ->
+          str "Primitive " ++
+          print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ)
+      ++ str "." ++ fnl () ++ fnl ()
+    end @@
+    DynHandleF.add DeclareInd.Internal.objInductive begin fun (id,_) ->
+      let kn = KerName.make mp (Label.of_id id) in
+      let mind = Global.mind_of_delta_kn kn in
+      let mib = Global.lookup_mind mind in
+      pr_mutual_inductive_body (Global.env()) mind mib None ++
+      str "." ++ fnl () ++ fnl ()
+    end @@
+    DynHandleF.empty
+  in
+  handleF handler lobj
+
+let print_full_pure_leaf env sigma mp = function
+  | AtomicObject lobj -> print_full_pure_atomic env sigma mp lobj
+  | ModuleObject (id, _) ->
+    (* TODO: make it reparsable *)
+    print_module (MPdot (mp,Label.of_id id)) ++ str "." ++ fnl () ++ fnl ()
+  | ModuleTypeObject (id, _) ->
+    (* TODO: make it reparsable *)
+    print_modtype (MPdot (mp,Label.of_id id)) ++ str "." ++ fnl () ++ fnl ()
+  | _ -> mt()
+
 let print_full_pure_context env sigma =
   let rec prec = function
-  | ((_,kn),Lib.Leaf AtomicObject lobj)::rest ->
-    let handler =
-      DynHandleF.add Declare.Internal.Constant.tag begin fun _ ->
-          let con = Global.constant_of_delta_kn kn in
-          let cb = Global.lookup_constant con in
-          let typ = cb.const_type in
-          hov 0 (
-            match cb.const_body with
-              | Undef _ ->
-                str "Parameter " ++
-                print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ
-              | OpaqueDef lc ->
-                str "Theorem " ++ print_basename con ++ cut () ++
-                str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
-                str "Proof " ++ pr_lconstr_env env sigma
-                  (fst (Global.force_proof Library.indirect_accessor lc))
-              | Def c ->
-                str "Definition " ++ print_basename con ++ cut () ++
-                str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++
-                pr_lconstr_env env sigma c
-              | Primitive _ ->
-                 str "Primitive " ++
-                   print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ)
-          ++ str "." ++ fnl () ++ fnl ()
-      end @@
-      DynHandleF.add DeclareInd.Internal.objInductive begin fun _ ->
-          let mind = Global.mind_of_delta_kn kn in
-          let mib = Global.lookup_mind mind in
-          pr_mutual_inductive_body (Global.env()) mind mib None ++
-            str "." ++ fnl () ++ fnl ()
-      end @@
-      DynHandleF.empty
-    in
-    let pp = handleF handler lobj in
+    | (node,leaves)::rest ->
+      let mp = (Lib.node_prefix node).Nametab.obj_mp in
+      let pp = Pp.prlist (print_full_pure_leaf env sigma mp) leaves in
       prec rest ++ pp
-  | ((_,kn),Lib.Leaf ModuleObject _)::rest ->
-          (* TODO: make it reparsable *)
-    let (mp,l) = KerName.repr kn in
-          prec rest ++ print_module (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
-  | ((_,kn),Lib.Leaf ModuleTypeObject _)::rest ->
-          (* TODO: make it reparsable *)
-    let (mp,l) = KerName.repr kn in
-          prec rest ++ print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
-  | _::rest -> prec rest
-  | _ -> mt () in
+  | [] -> mt ()
+  in
   prec (Lib.contents ())
 
 (* For printing an inductive definition with
@@ -849,7 +876,7 @@ let read_sec_context qid =
     with Not_found ->
       user_err ?loc:qid.loc (str "Unknown section.") in
   let rec get_cxt in_cxt = function
-    | (_,Lib.OpenedSection ({Nametab.obj_dir;_},_) as hd)::rest ->
+    | (Lib.OpenedSection ({Nametab.obj_dir;_},_), _ as hd)::rest ->
         if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest

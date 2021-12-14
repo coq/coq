@@ -230,7 +230,7 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 (* Exportation of scopes *)
-let open_scope i (_,(local,op,sc)) =
+let open_scope i (local,op,sc) =
   if Int.equal i 1 then
     scope_stack :=
       if op then sc :: !scope_stack
@@ -243,11 +243,11 @@ let subst_scope (subst,sc) = sc
 
 open Libobject
 
-let discharge_scope (_,(local,_,_ as o)) =
+let discharge_scope (local,_,_ as o) =
   if local then None else Some o
 
-let classify_scope (local,_,_ as o) =
-  if local then Dispose else Substitute o
+let classify_scope (local,_,_) =
+  if local then Dispose else Substitute
 
 let inScope : bool * bool * scope_item -> obj =
   declare_object {(default_object "SCOPE") with
@@ -258,7 +258,7 @@ let inScope : bool * bool * scope_item -> obj =
       classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
-  Lib.add_anonymous_leaf (inScope (local,opening,OpenScopeItem (normalize_scope sc)))
+  Lib.add_leaf (inScope (local,opening,OpenScopeItem (normalize_scope sc)))
 
 let empty_scope_stack = []
 
@@ -1342,7 +1342,7 @@ let register_string_interpretation ?(allow_overwrite=false) uid (interp, uninter
   register_gen_interpretation allow_overwrite uid
     (InnerPrimToken.StringInterp interp, InnerPrimToken.StringUninterp uninterp)
 
-let cache_prim_token_interpretation (_,infos) =
+let cache_prim_token_interpretation infos =
   let ptii = infos.pt_interp_info in
   let sc = infos.pt_scope in
   check_scope ~tolerant:true sc;
@@ -1360,7 +1360,7 @@ let subst_prim_token_interpretation (subs,infos) =
     pt_refs = List.map (subst_global_reference subs) infos.pt_refs }
 
 let classify_prim_token_interpretation infos =
-    if infos.pt_local then Dispose else Substitute infos
+    if infos.pt_local then Dispose else Substitute
 
 let open_prim_token_interpretation i o =
   if Int.equal i 1 then cache_prim_token_interpretation o
@@ -1373,7 +1373,7 @@ let inPrimTokenInterp : prim_token_infos -> obj =
      classify_function = classify_prim_token_interpretation}
 
 let enable_prim_token_interpretation infos =
-  Lib.add_anonymous_leaf (inPrimTokenInterp infos)
+  Lib.add_leaf (inPrimTokenInterp infos)
 
 (** Compatibility.
     Avoid the next two functions, they will now store unnecessary
@@ -2023,7 +2023,7 @@ type arguments_scope_discharge_request =
   | ArgsScopeManual
   | ArgsScopeNoDischarge
 
-let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
+let load_arguments_scope _ (_,r,n,scl,cls) =
   List.iter (Option.iter check_scope) scl;
   let initial_stamp = ScopeClassMap.empty in
   arguments_scope := GlobRef.Map.add r (scl,cls,initial_stamp) !arguments_scope
@@ -2046,7 +2046,7 @@ let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
   let cls' = List.Smart.map subst_cl cls in
   (ArgsScopeNoDischarge,r',n,scl,cls')
 
-let discharge_arguments_scope (_,(req,r,n,l,_)) =
+let discharge_arguments_scope (req,r,n,l,_) =
   if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
   else
     let n =
@@ -2057,8 +2057,8 @@ let discharge_arguments_scope (_,(req,r,n,l,_)) =
         Not_found (* Not a ref defined in this section *) -> 0 in
     Some (req,r,n,l,[])
 
-let classify_arguments_scope (req,_,_,_,_ as obj) =
-  if req == ArgsScopeNoDischarge then Dispose else Substitute obj
+let classify_arguments_scope (req,_,_,_,_) =
+  if req == ArgsScopeNoDischarge then Dispose else Substitute
 
 let rebuild_arguments_scope sigma (req,r,n,l,_) =
   match req with
@@ -2098,7 +2098,7 @@ let inArgumentsScope : arguments_scope_obj -> obj =
 let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
 let declare_arguments_scope_gen req r n (scl,cls) =
-  Lib.add_anonymous_leaf (inArgumentsScope (req,r,n,scl,cls))
+  Lib.add_leaf (inArgumentsScope (req,r,n,scl,cls))
 
 let declare_arguments_scope local r scl =
   let req = if is_local local r then ArgsScopeNoDischarge else ArgsScopeManual in

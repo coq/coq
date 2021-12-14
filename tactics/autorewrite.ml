@@ -191,7 +191,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
         (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
 (* Functions necessary to the library object declaration *)
-let cache_hintrewrite (_,(rbase,lrl)) =
+let cache_hintrewrite (rbase,lrl) =
   let base = try raw_find_base rbase with Not_found -> HintDN.empty in
   let max = try fst (Util.List.last (HintDN.find_all base)) with Failure _ -> 0
   in
@@ -292,18 +292,18 @@ let add_rew_rules ~locality base lrul =
   in
   let open Hints in
   match locality with
-  | Local -> cache_hintrewrite ((),(base,lrul))
+  | Local -> cache_hintrewrite (base,lrul)
   | SuperGlobal ->
     let () =
       if Global.sections_are_opened () then
       CErrors.user_err Pp.(str
         "This command does not support the global attribute in sections.");
     in
-    Lib.add_anonymous_leaf (inGlobalHintRewrite (base,lrul))
+    Lib.add_leaf (inGlobalHintRewrite (base,lrul))
   | Export ->
     let () =
       if Global.sections_are_opened () then
         CErrors.user_err Pp.(str
           "This command does not support the export attribute in sections.");
     in
-    Lib.add_anonymous_leaf (inExportHintRewrite (base,lrul))
+    Lib.add_leaf (inExportHintRewrite (base,lrul))
