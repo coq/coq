@@ -819,7 +819,8 @@ let cache_one_syntax_extension (ntn,synext) =
         with Not_found -> None
       in
       let oldtyps = Notgram_ops.subentries_of_notation ntn in
-      if not (Notation.level_eq prec oldprec) && (oldparsing <> None || synext.synext_notgram = None) then
+      if not (Notation.level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
+         (oldparsing <> None || synext.synext_notgram = None) then
         error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
       oldparsing
     with Not_found ->
