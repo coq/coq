@@ -19,7 +19,6 @@ open Evd
 open Tactics
 open Auto
 open Genredexpr
-open Tactypes
 open Locus
 open Locusops
 open Hints
@@ -148,9 +147,7 @@ type search_state = {
   tacres : (Goal.goal * hint_db) list;
   sigma : Evd.evar_map;
   last_tactic : Pp.t Lazy.t;
-  dblist : hint_db list;
   prev : prev_search_state;
-  local_lemmas : delayed_open_constr list;
 }
 
 and prev_search_state = (* for info eauto *)
@@ -205,7 +202,7 @@ module SearchProblem = struct
     let evi = Evd.find s.sigma gl in
     Evd.evar_filtered_env (Global.env ()) evi, Evd.evar_concl evi, db, rest
 
-  let branching s =
+  let branching dblist local_lemmas s =
     if Int.equal s.depth 0 then
       []
     else
@@ -229,16 +226,15 @@ module SearchProblem = struct
         let mkdb env sigma db =
           let hyps' = EConstr.named_context env in
             if hyps' == hyps then db
-            else make_local_hint_db env sigma ~ts:TransparentState.full true s.local_lemmas
+            else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
         in
         filter_tactics ~is_done:false s.sigma mkdb s.tacres
-                        (e_possible_resolve env s.sigma s.dblist db secvars concl)
+                        (e_possible_resolve env s.sigma dblist db secvars concl)
       in
       let map (sigma, is_done, lgls, cost, pp) =
         let depth = if is_done then s.depth else pred s.depth in
         { depth; priority = cost; tacres = lgls @ rest; sigma; last_tactic = pp;
-          prev = ps; dblist = s.dblist;
-          local_lemmas = s.local_lemmas }
+          prev = ps; }
       in
       List.map map (assumption_tacs @ intro_tac) @ (List.sort compare (List.map map rec_tacs))
 
@@ -264,10 +260,11 @@ module Search = struct
 
   let push i p = match p with [] -> [] | _ :: _ -> i :: p
 
-  let search ?(debug=false) s =
+  let search ?(debug=false) dblist local_lemmas s =
     let rec explore p s =
       let () = msg_with_position p s in
-      if SearchProblem.success s then s else explore_many 1 p (SearchProblem.branching s)
+      if SearchProblem.success s then s
+      else explore_many 1 p (SearchProblem.branching dblist local_lemmas s)
     and explore_many i p = function
       | [] -> raise Not_found
       | [s] -> explore (push i p) s
@@ -328,15 +325,13 @@ let pr_info dbg s =
 
 (** Eauto main code *)
 
-let make_initial_state sigma evk dbg n dblist localdb lems =
+let make_initial_state sigma evk dbg n localdb =
   { depth = n;
     priority = 0;
     tacres = [evk, localdb];
     sigma = sigma;
     last_tactic = lazy (mt());
-    dblist = dblist;
     prev = if dbg == Info then Init else Unknown;
-    local_lemmas = lems;
   }
 
 let e_search_auto ?(debug = Off) ?depth lems db_list =
@@ -347,10 +342,10 @@ let e_search_auto ?(debug = Off) ?depth lems db_list =
   let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
   let debug = match d with Debug -> true | Info | Off -> false in
-  let tac s = Search.search ~debug s in
+  let tac s = Search.search ~debug db_list lems s in
   let () = pr_dbg_header d in
   let evk = Proofview.Goal.goal gl in
-  match tac (make_initial_state sigma evk d p db_list local_db lems) with
+  match tac (make_initial_state sigma evk d p local_db) with
   | s ->
     let () = pr_info d s in
     let () = assert (List.is_empty s.tacres) in
