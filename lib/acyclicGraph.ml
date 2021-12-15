@@ -314,7 +314,7 @@ module Make (Point:Point) = struct
     let count = count - 1 in
     if count < 0 then begin
       revert_graph to_revert g;
-      raise (AbortBackward g)
+      raise_notrace (AbortBackward g)
     end;
     if x.status = NoMark then begin
       x.status <- Visited;
@@ -393,7 +393,7 @@ module Make (Point:Point) = struct
       | true ->
         (* There is a lt edge inside the new component. This is a
             "bad cycle". *)
-        raise CycleDetected
+        raise_notrace CycleDetected
       | false -> PMap.remove a.canon accu
       | exception Not_found -> accu
     in
@@ -501,7 +501,7 @@ module Make (Point:Point) = struct
       let u = repr g u in
       let v = repr g v in
       if u == v then
-        if strict then raise CycleDetected else g
+        if strict then raise_notrace CycleDetected else g
       else
         let g =
           try let oldstrict = PMap.find v.canon u.ltle in
@@ -517,7 +517,7 @@ module Make (Point:Point) = struct
           let v = { v with gtge = PSet.add u.canon v.gtge } in
           change_node g v
     with
-    | CycleDetected as e -> raise e
+    | CycleDetected as e -> raise_notrace e
     | e ->
       (* Unlikely event: fatal error or signal *)
       let () = cleanup_marks g in
@@ -571,7 +571,7 @@ module Make (Point:Point) = struct
                 | Some exp ->
                   let typ = if strictu' then Lt else Le in
                   let u' = Index.repr u' g.table in
-                  raise (Found_explanation ((typ, u') :: exp)))
+                  raise_notrace (Found_explanation ((typ, u') :: exp)))
               u.ltle;
             None
           with Found_explanation exp -> Some exp
@@ -606,14 +606,14 @@ module Make (Point:Point) = struct
           u.status <- if strict then WeakVisited else Visited;
           if try PMap.find v.canon u.ltle || not strict
             with Not_found -> false
-          then raise (Found to_revert)
+          then raise_notrace (Found to_revert)
           else
             begin
               let next_todo =
                 PMap.fold (fun u strictu next_todo ->
                     let strict = not strictu && strict in
                     let u = repr g u in
-                    if u == v && not strict then raise (Found to_revert)
+                    if u == v && not strict then raise_notrace (Found to_revert)
                     else if topo_compare u v = 1 then next_todo
                     else (u, strict)::next_todo)
                   u.ltle next_todo
@@ -778,7 +778,7 @@ module Make (Point:Point) = struct
             let rv = (repr g v').canon in
             if rv == ru then
               let v = Index.repr v g.table in
-              if p v then raise (Found v)
+              if p v then raise_notrace (Found v)
             (* NB: we could also try [p v'] but it will come up in the
                rest of the iteration regardless. *)
         ) g.entries; None
