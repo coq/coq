@@ -45,9 +45,6 @@ type t =
   (** Build documentation [controls makefile variable]  *)
   ; byteonly : bool
   (** Whether to build a byte-only version of Coq *)
-  ; bin_annot : bool
-  ; annot : bool
-  (** OCaml annot options [only relevant to coq_makefile] *)
   ; bytecodecompiler : bool
   (** Enable/disable Coq's VM *)
   ; nativecompiler : nativecompiler

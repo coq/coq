@@ -30,14 +30,6 @@ let camlexec = { find = "ocamlfind" }
 
 let reset_caml_find c o = c.find <- o
 
-let coq_annot_flag prefs = if prefs.annot then "-annot" else ""
-let coq_bin_annot_flag prefs = if prefs.bin_annot then "-bin-annot" else ""
-
-(* This variable can be overridden only for debug purposes, use with
-   care. *)
-let coq_safe_string = "-safe-string"
-let coq_strict_sequence = "-strict-sequence"
-
 (* Query for the architecture *)
 let arch prefs = arch prefs.arch
 
@@ -117,36 +109,6 @@ let check_findlib_version prefs { CamlConf.findlib_version } =
   else
     let () = cprintf prefs "Your version of OCamlfind is %s." findlib_version in
     die "You need OCamlfind 1.8.0 or later."
-
-(** Note, these warnings are only used in Coq Makefile *)
-(** Explanation of enabled/disabled warnings:
-    4: fragile pattern matching: too common in the code and too annoying to avoid in general
-    9: missing fields in a record pattern: too common in the code and not worth the bother
-    27: innocuous unused variable: innocuous
-    41: ambiguous constructor or label: too common
-    42: disambiguated counstructor or label: too common
-    44: "open" shadowing already defined identifier: too common, especially when some are aliases
-    45: "open" shadowing a label or constructor: see 44
-    48: implicit elimination of optional arguments: too common
-    58: "no cmx file was found in path": See https://github.com/ocaml/num/issues/9
-    67: "unused functor parameter" seems totally bogus
-    68: "This pattern depends on mutable state" no idea what it means, dune builds don't display it
-    70: ".ml file without .mli file" bogus warning when used generally
-*)
-
-(* Note, we list all warnings to be complete *)
-let coq_warnings = "-w -a+1..3-4+5..8-9+10..26-27+28..40-41-42+43-44-45+46..47-48+49..57-58+59..66-67-68+69-70"
-let coq_warn_error prefs =
-    if prefs.warn_error
-    then "-warn-error +a"
-    else ""
-
-(* Flags used to compile Coq and plugins (via coq_makefile) *)
-let caml_flags coq_annot_flag coq_bin_annot_flag =
-  Printf.sprintf "-thread -rectypes %s %s %s %s %s" coq_warnings coq_annot_flag coq_bin_annot_flag coq_safe_string coq_strict_sequence
-
-(* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
-let coq_caml_flags = coq_warn_error
 
 (** * Native compiler *)
 
@@ -445,7 +407,7 @@ let write_dbg_wrapper camlenv o =
 
 (** * Build the config/coq_config.ml file *)
 
-let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs o =
+let write_configml camlenv coqenv caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs o =
   let { CoqEnv.coqlib; coqlibsuffix; configdir; configdirsuffix; docdir; docdirsuffix; datadir; datadirsuffix } = coqenv in
   let { CamlConf.caml_version } = camlenv in
   let pr s = fprintf o s in
@@ -467,7 +429,6 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   pr_p "datadirsuffix" datadirsuffix;
   pr_p "docdirsuffix" docdirsuffix;
   pr_s "ocamlfind" camlexec.find;
-  pr_s "caml_flags" caml_flags;
   pr_s "version" coq_version;
   pr_s "caml_version" caml_version;
   pr_li "caml_version_nums" caml_version_nums;
@@ -521,7 +482,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
 
 (** * Build the config/Makefile file *)
 
-let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags coqide arch exe dune_29 o =
+let write_makefile prefs install_dirs best_compiler coqide arch exe dune_29 o =
   let pr s = fprintf o s in
   pr "###### config/Makefile : Configuration file for Coq ##############\n";
   pr "#                                                                #\n";
@@ -544,7 +505,6 @@ let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags co
   pr "# Findlib command\n";
   pr "OCAMLFIND=%S\n" camlexec.find;
   pr "# Caml flags\n";
-  pr "CAMLFLAGS=%s %s\n" caml_flags coq_caml_flags;
   pr "# Your architecture\n";
   pr "# Can be obtain by UNIX command arch\n";
   pr "ARCH=%s\n" arch;
@@ -552,8 +512,6 @@ let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags co
   pr "#  Unix systems:\n";
   pr "#  Win32 systems : .exe\n";
   pr "EXE=%s\n" exe;
-  pr "# the command MKDIR (try to use mkdirhier if you have problems)\n";
-  pr "MKDIR=mkdir -p\n\n";
   pr "# CoqIDE (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
   pr "# Defining REVISION\n";
@@ -582,8 +540,6 @@ let main () =
   let prefs = CmdArgs.parse_args () in
   Util.debug := prefs.debug;
   let dune_29 = check_for_dune_29 () in
-  let coq_annot_flag = coq_annot_flag prefs in
-  let coq_bin_annot_flag = coq_bin_annot_flag prefs in
   let arch = arch prefs in
   let arch_is_win32 = arch_is_win32 arch in
   let exe = resolve_binary_suffix arch in
@@ -595,8 +551,6 @@ let main () =
   check_caml_version prefs camlenv.CamlConf.caml_version caml_version_nums;
   check_findlib_version prefs camlenv;
   let best_compiler = best_compiler prefs camlenv in
-  let caml_flags = caml_flags coq_annot_flag coq_bin_annot_flag in
-  let coq_caml_flags = coq_caml_flags prefs in
   let hasnatdynlink = hasnatdynlink prefs best_compiler in
   check_for_zarith prefs;
   let coqide, lablgtkdir = Coqide.coqide camlexec.find prefs best_compiler camlenv.CamlConf.camllib in
@@ -610,9 +564,9 @@ let main () =
     print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdir hasnatdynlink idearchdef browser;
   write_config_file ~file:"dev/ocamldebug-coq" ~bin:true (write_dbg_wrapper camlenv);
   write_config_file ~file:"config/coq_config.ml"
-    (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);
+    (write_configml camlenv coqenv caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);
   write_config_file ~file:"config/Makefile"
-    (write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags coqide arch exe dune_29);
+    (write_makefile prefs install_dirs best_compiler coqide arch exe dune_29);
   write_config_file ~file:"config/dune.c_flags" (write_dune_c_flags cflags);
   write_config_file ~file:"config/coq_config.py" write_configpy;
   ()

@@ -23,8 +23,6 @@ val docdirsuffix : string    (* doc directory relative to installation prefix *)
 
 val ocamlfind : string
 
-val caml_flags : string     (* arguments passed to ocamlc (ie. CAMLFLAGS) *)
-
 val arch : string       (* architecture *)
 val arch_is_win32 : bool
 

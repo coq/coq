@@ -39,9 +39,7 @@ COQLIB            := $(COQMF_COQLIB)
 COQCORELIB        := $(COQMF_COQCORELIB)
 DOCDIR            := $(COQMF_DOCDIR)
 OCAMLFIND         := $(COQMF_OCAMLFIND)
-CAMLFLAGS         := $(COQMF_CAMLFLAGS)
 HASNATDYNLINK     := $(COQMF_HASNATDYNLINK)
-OCAMLWARN         := $(COQMF_WARN)
 
 @CONF_FILE@: @PROJECT_FILE@
 	@COQ_MAKEFILE_INVOCATION@
@@ -266,9 +264,28 @@ COQMAKEFILE_VERSION:=@COQ_VERSION@
 COQ_SRC_SUBDIRS?=
 COQSRCLIBS?= $(foreach d,$(COQCORE_SRC_SUBDIRS), -I "$(COQCORELIB)/$(d)") $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)/$(d)")
 
-CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS)
+# Explanation of enabled/disabled warnings:
+# 4: fragile pattern matching: too common in the code and too annoying to avoid in general
+# 9: missing fields in a record pattern: too common in the code and not worth the bother
+# 27: innocuous unused variable: innocuous
+# 41: ambiguous constructor or label: too common
+# 42: disambiguated counstructor or label: too common
+# 44: "open" shadowing already defined identifier: too common, especially when some are aliases
+# 45: "open" shadowing a label or constructor: see 44
+# 48: implicit elimination of optional arguments: too common
+# 58: "no cmx file was found in path": See https://github.com/ocaml/num/issues/9
+# 67: "unused functor parameter" seems totally bogus
+# 68: "This pattern depends on mutable state" no idea what it means, dune builds don't display it
+# 70: ".ml file without .mli file" bogus warning when used generally
+
+# Note, we list all warnings to be complete
+BASE_CAMLFLAGS:=-thread -rectypes -w -a+1..3-4+5..8-9+10..26-27+28..40-41-42+43-44-45+46..47-48+49..57-58+59..66-67-68+69-70  -bin-annot -safe-string -strict-sequence
+
+CAMLFLAGS:=$(BASE_CAMLFLAGS) $(OCAMLLIBS) $(COQSRCLIBS)
 # ocamldoc fails with unknown argument otherwise
 CAMLDOCFLAGS:=$(filter-out -annot, $(filter-out -bin-annot, $(CAMLFLAGS)))
+
+OCAMLWARN:=-warn-error +a-3
 CAMLFLAGS+=$(OCAMLWARN)
 
 ifneq (,$(TIMING))
@@ -888,7 +905,7 @@ printenv::
 # file you can extend the merlin-hook target in @LOCAL_FILE@
 .merlin:
 	$(SHOW)'FILL .merlin'
-	$(HIDE)echo 'FLG $(COQMF_CAMLFLAGS)' > .merlin
+	$(HIDE)echo 'FLG $(BASE_CAMLFLAGS)' > .merlin
 	$(HIDE)echo 'B $(COQCORELIB)' >> .merlin
 	$(HIDE)echo 'S $(COQCORELIB)' >> .merlin
 	$(HIDE)$(foreach d,$(COQCORE_SRC_SUBDIRS), \

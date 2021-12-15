@@ -33,8 +33,6 @@ type t = {
   browser : string option;
   withdoc : bool;
   byteonly : bool;
-  bin_annot : bool;
-  annot : bool;
   bytecodecompiler : bool;
   nativecompiler : nativecompiler;
   coqwebsite : string;
@@ -65,8 +63,6 @@ let default = {
   browser = None;
   withdoc = false;
   byteonly = false;
-  bin_annot = false;
-  annot = false;
   bytecodecompiler = true;
   nativecompiler =
     if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
@@ -78,8 +74,6 @@ let default = {
 }
 
 let devel state = { state with
-  bin_annot = true;
-  annot = true;
   warn_error = true;
   dune_profile = "--profile=dev";
   interactive = true;
@@ -169,10 +163,6 @@ let args_options = Arg.align [
     "(yes|no) Compile the documentation or not";
   "-byte-only", arg_set (fun p -> { p with byteonly = true }),
     " Compiles only bytecode version of Coq";
-  "-annot", arg_set (fun p -> { p with annot = true }),
-    " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
-  "-bin-annot", arg_set (fun p -> { p with bin_annot = true }),
-    " Dumps ml binary annotation files while compiling Coq (e.g. for Merlin)";
   "-bytecode-compiler", arg_bool (fun p bytecodecompiler -> { p with bytecodecompiler }),
     "(yes|no) Enable Coq's bytecode reduction machine (VM)";
   "-native-compiler", arg_native (fun p nativecompiler -> { p with nativecompiler }),

@@ -70,6 +70,22 @@ ifeq ($(wildcard $(COQLIB)/theories/Reals/Reals.vo),)
 	COQLIB_NOT_FOUND:=true
 endif
 
+# TODO use dune instead
+# Explanation of enabled/disabled warnings:
+# 4: fragile pattern matching: too common in the code and too annoying to avoid in general
+# 9: missing fields in a record pattern: too common in the code and not worth the bother
+# 27: innocuous unused variable: innocuous
+# 41: ambiguous constructor or label: too common
+# 42: disambiguated counstructor or label: too common
+# 44: "open" shadowing already defined identifier: too common, especially when some are aliases
+# 45: "open" shadowing a label or constructor: see 44
+# 48: implicit elimination of optional arguments: too common
+# 58: "no cmx file was found in path": See https://github.com/ocaml/num/issues/9
+# 67: "unused functor parameter" seems totally bogus
+# 68: "This pattern depends on mutable state" no idea what it means, dune builds don't display it
+# 70: ".ml file without .mli file" bogus warning when used generally
+CAMLFLAGS:=-thread -rectypes -w -a+1..3-4+5..8-9+10..26-27+28..40-41-42+43-44-45+46..47-48+49..57-58+59..66-67-68+69-70  -bin-annot -safe-string -strict-sequence
+
 COQEXTRAFLAGS?=
 COQFLAGS?=$(COQEXTRAFLAGS)
 
