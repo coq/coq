@@ -31,7 +31,7 @@ Module Version1.
     let C1 := constr:(CObject) in
     let C2 := constr:(fun C => @Object (CObject C) C) in
     unify C1 C2; idtac C1 C2. Show Universes.
-    progress change @CObject with (fun C => @Object (CObject C) C) in *. 
+    progress change @CObject with (fun C => @Object (CObject C) C) in *.
     simpl in *.
     match type of Hf with
       | focus ?V => exact V

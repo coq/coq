@@ -133,10 +133,9 @@ FAIL = >&2 echo 'FAILED    $@'
 
 # These targets can be skipped by doing `make TARGET= test-suite`
 COMPLEXITY := $(if $(bogomips),complexity)
-BUGS := bugs/opened bugs/closed
 INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
-VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
+VSUBSYSTEMS := prerequisite success failure bugs output output-coqtop \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
   coqdoc ssr $(wildcard primitive/*) ltac2
 
@@ -265,45 +264,12 @@ report: summary.log
 # Regression (and progression) tests
 #######################################################################
 
-# Process verifications concerning submitted bugs. A message is
-# printed for all opened bugs (still active or seems to be closed).
-# For closed bugs that behave as expected, no message is printed
-
-# All files are assumed to have bug_<# of the bug>.v as a name
-
-# Opened bugs that should not fail
-$(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
-	@echo "TEST      $<  $(call get_coq_prog_args_in_parens,"$<")"
-	$(HIDE){ \
-	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
-	  if [ $$R = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...still active"; \
-	  elif [ $$R = 129 ]; then \
-	    echo $(log_anomaly); \
-	    echo "    $<...still active"; \
-	  elif [ $$R = 139 ]; then \
-	    echo $(log_segfault); \
-	    echo "    $<...still active"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error! (bug seems to be closed, please check)"; \
-	    $(FAIL); \
-	  fi; \
-	} > "$@"
-
 # Closed bugs that should succeed
-$(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard bugs/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  (echo "\
-	     bugs/closed/bug_3783.v \
-	     bugs/closed/bug_4157.v \
-	     bugs/closed/bug_5127.v \
-	   " | grep -q "$<") && no_native="-native-compiler no"; \
-	  $(coqc) $$no_native "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

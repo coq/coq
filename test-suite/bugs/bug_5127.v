@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-native-compiler" "no"); -*- *)
 Fixpoint arrow (n: nat) :=
   match n with
   | S n => bool -> arrow n
