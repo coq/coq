@@ -193,7 +193,7 @@ val pr_proof : t -> Pp.t
 module V82 : sig
 
   (* All the subgoals of the proof, including those which are not focused. *)
-  val background_subgoals : t -> Goal.goal list Evd.sigma
+  val background_subgoals : t -> Evar.t list Evd.sigma
 
 end
 

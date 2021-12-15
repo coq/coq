@@ -606,7 +606,7 @@ let db_goal_map op np ng_to_og =
   Printf.printf "\n"
 [@@@ocaml.warning "+32"]
 
-type goal_map = Evd.evar_map * Goal.goal Evar.Map.t
+type goal_map = Evd.evar_map * Evar.t Evar.Map.t
 
 let map_goal g (osigma, map) = match GoalMap.find_opt g map with
 | None -> None

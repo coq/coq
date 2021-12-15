@@ -22,7 +22,7 @@ module TacTask : sig
     t_assign   : output result option ref;
     t_ast      : ComTactic.interpretable;
     t_goalno   : int;
-    t_goal     : Goal.goal;
+    t_goal     : Evar.t;
     t_kill     : unit -> unit;
     t_name     : string }
 
@@ -40,7 +40,7 @@ end = struct (* {{{ *)
     t_assign   : output result option ref;
     t_ast      : ComTactic.interpretable;
     t_goalno   : int;
-    t_goal     : Goal.goal;
+    t_goal     : Evar.t;
     t_kill     : unit -> unit;
     t_name     : string }
 
@@ -48,7 +48,7 @@ end = struct (* {{{ *)
     r_state    : Vernacstate.t option;
     r_ast      : ComTactic.interpretable;
     r_goalno   : int;
-    r_goal     : Goal.goal;
+    r_goal     : Evar.t;
     r_name     : string }
 
   type response =

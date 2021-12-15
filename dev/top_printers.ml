@@ -195,7 +195,6 @@ let ppexistentialfilter filter = match Evd.Filter.repr filter with
 | Some f -> pp (prlist_with_sep spc bool f)
 let pr_goal e = Pp.(str "GOAL:" ++ int (Evar.repr e))
 let ppclenv clenv = pp(pr_clenv clenv)
-let ppgoalgoal gl = pp(pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
 let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None (Global.env ()) g.Evd.sigma)
 let pphintdb db = pp(envpp Hints.pr_hint_db_env db)
