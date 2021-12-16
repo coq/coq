@@ -590,7 +590,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
     let open Xmlprotocol in
     let xml = match ans with
       | Prompt msg -> of_ltac_debug_answer ~tag:"prompt" msg
-      | Goal msg -> of_ltac_debug_answer ~tag:"goal" (str "Goal:" ++ fnl () ++ msg)
+      | Goal msg -> of_ltac_debug_answer ~tag:"goal" msg
       | Output msg -> of_ltac_debug_answer ~tag:"output" msg
       | Init -> of_ltac_debug_answer ~tag:"init" (str "")
       | Vars vars -> of_vars vars;
