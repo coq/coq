@@ -181,4 +181,3 @@ type ssrapplyarg = ssrterm list * (ssrterm ssragens * ssripats)
 type gist = Tacintern.glob_sign
 type ist = Tacinterp.interp_sign
 type goal = Evar.t
-type 'a sigma = 'a Evd.sigma

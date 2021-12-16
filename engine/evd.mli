@@ -458,13 +458,13 @@ type 'a sigma = {
   (** The base object. *)
   sigma : evar_map
   (** The added unification state. *)
-}
+} [@@ocaml.deprecated]
 (** The type constructor ['a sigma] adds an evar map to an object of type
     ['a]. *)
 
-val sig_it  : 'a sigma -> 'a
-val sig_sig : 'a sigma -> evar_map
-val on_sig : 'a sigma -> (evar_map -> evar_map * 'b) -> 'a sigma * 'b
+val sig_it  : 'a sigma -> 'a  [@@ocaml.warning "-3"] [@@ocaml.deprecated]
+val sig_sig : 'a sigma -> evar_map [@@ocaml.warning "-3"] [@@ocaml.deprecated]
+val on_sig : 'a sigma -> (evar_map -> evar_map * 'b) -> 'a sigma * 'b [@@ocaml.warning "-3"] [@@ocaml.deprecated]
 
 (** {5 The state monad with state an evar map} *)
 

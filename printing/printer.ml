@@ -491,6 +491,7 @@ let pr_goal ?diffs g_s =
         hov 0 (pr_letype_env ~goal_concl_style:true env sigma concl)
   in
   str "  " ++ v 0 goal
+  [@@ocaml.warning "-3"]
 
 (* display a goal tag *)
 let pr_goal_tag g =

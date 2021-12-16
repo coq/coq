@@ -24,15 +24,15 @@ module NamedDecl = Context.Named.Declaration
 module Old =
 struct
 
+[@@@ocaml.warning "-3"]
+
 let re_sig it  gc = { it = it; sigma = gc; }
 
 (**************************************************************)
 (* Operations for handling terms under a local typing context *)
 (**************************************************************)
 
-[@@@ocaml.warning "-3"]
 type tactic = Proofview.V82.tac
-[@@@ocaml.warning "+3"]
 
 let sig_it x = x.it
 let project x = x.sigma
@@ -106,6 +106,8 @@ let db_pr_goal sigma g =
 
 let pr_gls gls =
   hov 0 (pr_evar_map (Some 2) (pf_env gls) (project gls) ++ fnl () ++ db_pr_goal (project gls) (sig_it gls))
+
+[@@@ocaml.warning "+3"]
 
 end
 

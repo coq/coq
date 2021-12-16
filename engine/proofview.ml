@@ -1203,6 +1203,8 @@ let wrap_exceptions f =
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 = struct
+[@@@ocaml.warning "-3"]
+
   type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
 
   let tactic ?(nf_evars=true) tac =
@@ -1247,6 +1249,7 @@ module V82 = struct
       let (_, info) = Exninfo.capture src in
       Exninfo.iraise (e, info)
 
+[@@@ocaml.warning "-3"]
 end
 
 (** {7 Notations} *)

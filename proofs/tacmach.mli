@@ -23,7 +23,6 @@ sig
 
 [@@@ocaml.warning "-3"]
 type tactic = Proofview.V82.tac
-[@@@ocaml.warning "+3"]
 
 val sig_it  : 'a sigma   -> 'a
 val project : Evar.t sigma -> evar_map
@@ -84,6 +83,7 @@ val pf_conv_x      : Evar.t sigma -> constr -> constr -> bool
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : Evar.t sigma -> Pp.t
 
+[@@@ocaml.warning "+3"]
 end
 [@@ocaml.deprecated "Use the new engine"]
 
@@ -92,7 +92,7 @@ end
 val pf_apply : (env -> evar_map -> 'a) -> Proofview.Goal.t -> 'a
 
 val of_old : (Goal.goal Evd.sigma -> 'a) -> Proofview.Goal.t -> 'a
-[@@ocaml.deprecated "Use the new engine"]
+[@@ocaml.warning "-3"] [@@ocaml.deprecated "Use the new engine"]
 
 val project : Proofview.Goal.t -> Evd.evar_map
 val pf_env : Proofview.Goal.t -> Environ.env
