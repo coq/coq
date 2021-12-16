@@ -3871,7 +3871,8 @@ ltac2_expr: [
 ]
 
 tac2mode: [
-| ltac2_expr6 ltac_use_default      (* ltac2 plugin *)
+| OPT ltac_selector ltac2_expr6 ltac_use_default      (* ltac2 plugin *)
+| "par" ":" ltac2_expr6 ltac_use_default      (* ltac2 plugin *)
 | G_vernac.query_command      (* ltac2 plugin *)
 ]
 
