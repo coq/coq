@@ -49,3 +49,21 @@ Arguments fst {A B} p%foo.
 Check [[2,3]].(fst).
 
 End ScopeProjNotation.
+
+Module BindScopeGranularity.
+
+Notation "0" := true.
+Definition f (a: id nat) := a.
+Check f 0.
+
+Definition g (a: fst (nat, nat)) := a.
+Check g 0.
+
+Set Primitive Projections.
+Record prod A B := {fst:A; snd:B}.
+Arguments fst {_ _}.
+
+Definition h (a: {|fst:=nat;snd:=nat|}.(fst)) := a.
+Check h 0.
+
+End BindScopeGranularity.

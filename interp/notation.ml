@@ -1973,12 +1973,25 @@ let find_scope_class_opt = function
   | None -> []
   | Some cl -> try find_scope_class cl with Not_found -> []
 
-let compute_type_scope env sigma t =
+let rec compute_type_scope env sigma t =
   try
-    let cl,_,_ = find_class_type env sigma t in
-    find_scope_class_opt (Some cl)
+    let cl = find_class_type env sigma t in
+    find_scope_class_env env sigma cl
   with Not_found ->
     []
+
+and find_scope_class_env env sigma (cl,u,args) =
+  try find_scope_class cl
+  with Not_found ->
+    let c,args = match cl with
+    | CL_CONST cst -> Environ.constant_opt_value_in env (cst,EConstr.EInstance.kind sigma u), args
+    | CL_SECVAR id -> Context.Named.Declaration.get_value (Environ.lookup_named id env), args
+    | CL_PROJ p -> Some (mkProj (Projection.make p true,EConstr.to_constr sigma (List.hd args))), List.tl args
+    | _ -> None, args
+    in
+    match c with
+    | None -> []
+    | Some c -> compute_type_scope env sigma EConstr.(applist (of_constr c,args))
 
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
