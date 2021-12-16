@@ -1215,13 +1215,13 @@ let one_subterm = subterm false default_flags
 (** Requires transitivity of the rewrite step, if not a reduction.
     Not tail-recursive. *)
 
-let transitivity state env unfresh prop (res : rewrite_result_info) (next : 'a pure_strategy) :
+let transitivity state env unfresh cstr (res : rewrite_result_info) (next : 'a pure_strategy) :
     'a * rewrite_result =
   let state, nextres =
-    next.strategy { state ; env ; unfresh ;
-                    term1 = res.rew_to ; ty1 = res.rew_car ;
-                    cstr = (prop, get_opt_rew_rel res.rew_prf) ;
-                    evars = res.rew_evars }
+    next.strategy { state; env; unfresh; cstr;
+                    term1 = res.rew_to;
+                    ty1 = res.rew_car;
+                    evars = res.rew_evars; }
   in
   let res =
     match nextres with
@@ -1235,11 +1235,11 @@ let transitivity state env unfresh prop (res : rewrite_result_info) (next : 'a p
         | RewCast _ -> Success { res with rew_to = res'.rew_to }
         | RewPrf (res'_rel, res'_prf) ->
           let trans =
-            if prop then PropGlobal.transitive_type
+            if fst cstr then PropGlobal.transitive_type
             else TypeGlobal.transitive_type
           in
           let evars, prfty =
-            app_poly_sort prop env res'.rew_evars trans [| res.rew_car; rew_rel |]
+            app_poly_sort (fst cstr) env res'.rew_evars trans [| res.rew_car; rew_rel |]
           in
           let evars, prf = new_cstr_evar evars env prfty in
           let prf = mkApp (prf, [|res.rew_from; res'.rew_from; res'.rew_to;
@@ -1303,7 +1303,7 @@ module Strategies =
           match res with
           | Fail -> state, Fail
           | Identity -> snd.strategy { input with state }
-          | Success res -> transitivity state env unfresh (fst cstr) res snd
+          | Success res -> transitivity state env unfresh cstr res snd
                                            }
 
     let choice fst snd : 'a pure_strategy = { strategy =
