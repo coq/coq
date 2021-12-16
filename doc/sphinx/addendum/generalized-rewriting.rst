@@ -795,6 +795,11 @@ Usage
    :tacn:`setoid_rewrite` :n:`@one_term` is basically equivalent to
    :n:`rewrite_strat outermost @one_term`.
 
+.. tacn:: rewrite_strat @rewstrategy with @ident
+
+   Equivalent to :tacn:`rewrite_strat` but the hint database
+   :n:`@ident` is used in typeclass inference instead of
+   `typeclasses_db`.
 
 .. tacn:: rewrite_db @ident__1 {? in @ident__2 }
 

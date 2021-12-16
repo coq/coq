@@ -69,7 +69,7 @@ val pr_strategy : ('a -> Pp.t) -> ('b -> Pp.t) ->
   ('a, 'b) strategy_ast -> Pp.t
 
 (** Entry point for user-level "rewrite_strat" *)
-val cl_rewrite_clause_strat : strategy -> Id.t option -> unit Proofview.tactic
+val cl_rewrite_clause_strat : ?db:string -> strategy -> Id.t option -> unit Proofview.tactic
 
 (** Entry point for user-level "setoid_rewrite" *)
 val cl_rewrite_clause :

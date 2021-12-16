@@ -155,6 +155,7 @@ let cl_rewrite_clause (ist, c) b occ cl =
 TACTIC EXTEND rewrite_strat
 | [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> { cl_rewrite_clause_strat s (Some id) }
 | [ "rewrite_strat" rewstrategy(s) ] -> { cl_rewrite_clause_strat s None }
+| [ "rewrite_strat" rewstrategy(s) "with" preident(db) ] -> { cl_rewrite_clause_strat ~db s None }
 | [ "rewrite_db" preident(db) "in" hyp(id) ] -> { cl_rewrite_clause_db ist db (Some id) }
 | [ "rewrite_db" preident(db) ] -> { cl_rewrite_clause_db ist db None }
 END

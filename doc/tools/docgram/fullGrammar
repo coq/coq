@@ -1727,6 +1727,7 @@ simple_tactic: [
 | "compare" constr constr
 | "rewrite_strat" rewstrategy "in" hyp
 | "rewrite_strat" rewstrategy
+| "rewrite_strat" rewstrategy "with" preident
 | "rewrite_db" preident "in" hyp
 | "rewrite_db" preident
 | "substitute" orient glob_constr_with_bindings

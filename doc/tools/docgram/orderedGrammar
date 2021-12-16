@@ -1475,6 +1475,7 @@ simple_tactic: [
 | "is_ground" one_term
 | "autoapply" one_term "with" ident
 | "rewrite_strat" rewstrategy OPT ( "in" ident )
+| "rewrite_strat" rewstrategy "with" ident
 | "rewrite_db" ident OPT ( "in" ident )
 | "substitute" OPT [ "->" | "<-" ] one_term_with_bindings
 | "setoid_rewrite" OPT [ "->" | "<-" ] one_term_with_bindings OPT ( "at" rewrite_occs ) OPT ( "in" ident )

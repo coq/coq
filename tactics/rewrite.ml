@@ -1481,7 +1481,7 @@ let () = CErrors.register_handler begin function
 | _ -> None
 end
 
-let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
+let cl_rewrite_clause_aux ?(abs=None) ~db strat env avoid sigma concl is_hyp : result =
   let sigma, sort = Typing.sort_of env sigma concl in
   let evdref = ref sigma in
   let evars = (!evdref, Evar.Set.empty) in
@@ -1502,7 +1502,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   | Identity -> Some None
   | Success res ->
     let (_, cstrs) = res.rew_evars in
-    let evars = solve_constraints ~db:TC.typeclasses_db env res.rew_evars in
+    let evars = solve_constraints ~db env res.rew_evars in
     let iter ev = if not (Evd.is_defined evars ev) then raise (UnsolvedConstraints (env, evars, ev)) in
     let () = Evar.Set.iter iter cstrs in
     let newt = res.rew_to in
@@ -1532,7 +1532,7 @@ let newfail n s =
   let info = Exninfo.reify () in
   Proofview.tclZERO ~info (Tacticals.FailError (n, lazy s))
 
-let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
+let cl_rewrite_clause_newtac ?abs ?origsigma ~db ~progress strat clause =
   let open Proofview.Notations in
   (* For compatibility *)
   let beta = Tactics.reduct_in_concl ~cast:false ~check:false
@@ -1597,7 +1597,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     in
     try
       let res =
-        cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma ty clause
+        cl_rewrite_clause_aux ?abs ~db strat env Id.Set.empty sigma ty clause
       in
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
       treat sigma res state <*>
@@ -1614,11 +1614,12 @@ let tactic_init_setoid () =
     let _, info = Exninfo.capture e in
     Tacticals.tclFAIL ~info (str"Setoid library not loaded")
 
-let cl_rewrite_clause_strat progress strat clause =
+let cl_rewrite_clause_strat ~db progress strat clause =
+  let db = Option.default TC.typeclasses_db db in
   tactic_init_setoid () <*>
   (if progress then Proofview.tclPROGRESS else fun x -> x)
    (Proofview.tclOR
-      (cl_rewrite_clause_newtac ~progress strat clause)
+      (cl_rewrite_clause_newtac ~db ~progress strat clause)
       (fun (e, info) -> match e with
        | Tacticals.FailError (n, pp) ->
          tclFAILn ~info n (str"setoid rewrite failed: " ++ Lazy.force pp)
@@ -1628,11 +1629,11 @@ let cl_rewrite_clause_strat progress strat clause =
 (** Setoid rewriting when called with "setoid_rewrite" *)
 let cl_rewrite_clause l left2right occs clause =
   let strat = rewrite_with left2right (general_rewrite_unif_flags ()) l occs in
-    cl_rewrite_clause_strat true strat clause
+    cl_rewrite_clause_strat ~db:None true strat clause
 
 (** Setoid rewriting when called with "rewrite_strat" *)
-let cl_rewrite_clause_strat strat clause =
-  cl_rewrite_clause_strat false strat clause
+let cl_rewrite_clause_strat ?db strat clause =
+  cl_rewrite_clause_strat ~db false strat clause
 
 let apply_glob_constr ((_, c) : _ * EConstr.t delayed_open) l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
@@ -1877,7 +1878,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
       (tclPROGRESS
         (tclTHEN
            (Proofview.Unsafe.tclEVARS evd)
-            (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
+            (cl_rewrite_clause_newtac ~db:TC.typeclasses_db ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
     (fun (e, info) -> match e with
     | e -> Proofview.tclZERO ~info e)
   end
