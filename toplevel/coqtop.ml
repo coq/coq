@@ -136,7 +136,7 @@ let ltac_debug_answer = let open DebugHook.Answer in function
       (* No newline *)
       Format.fprintf !Topfmt.err_ft "@[%a@]%!" Pp.pp_with prompt
     | Goal g ->
-      Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with (str "Goal:" ++ fnl () ++ g)
+      Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with g
     | Output o ->
       Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with o
     | Init ->
