@@ -61,6 +61,7 @@ sig
   val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val name : t -> hints_path_atom
   val print : env -> evar_map -> t -> Pp.t
+  val subgoals : t -> int option
 
   (** This function is for backward compatibility only, not to use in newly
     written code. *)
