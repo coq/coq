@@ -878,6 +878,21 @@ Commands and options
   fixes `#10796 <https://github.com/coq/coq/issues/10796>`_,
   by Hugo Herbelin).
 
+
+Changes in 8.14.2
+~~~~~~~~~~~~~~~~~
+
+Commands and options
+^^^^^^^^^^^^^^^^^^^^
+
+- **Changed:**
+  :cmd:`Instance` warns about the default locality immediately rather than waiting until the instance is ready to be defined.
+  This changes which command warns when the instance has a separate proof: the :cmd:`Instance` command itself warns instead of the proof closing command (such as :cmd:`Defined`).
+  (`#15243 <https://github.com/coq/coq/pull/15243>`_,
+  fixes `#14704 <https://github.com/coq/coq/issues/14704>`_,
+  by Gaëtan Gilbert).
+
+
 Version 8.13
 ------------
 
