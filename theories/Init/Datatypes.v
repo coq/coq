@@ -217,11 +217,15 @@ Register sum as core.sum.type.
 Register inl as core.sum.inl.
 Register inr as core.sum.inr.
 
+Local Set Primitive Projections.
+
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
 #[universes(template)]
 Record prod (A B:Type) : Type := pair { fst: A ; snd: B }.
+
+Local Unset Primitive Projections.
 
 Notation "x * y" := (prod x y) : type_scope.
 
