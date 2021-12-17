@@ -221,31 +221,26 @@ Register inr as core.sum.inr.
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
 #[universes(template)]
-Inductive prod (A B:Type) : Type :=
-  pair : A -> B -> A * B
+Record prod (A B:Type) : Type := pair { fst: A ; snd: B }.
 
-where "x * y" := (prod x y) : type_scope.
+Notation "x * y" := (prod x y) : type_scope.
 
 Add Printing Let prod.
 
+Arguments pair {A B} _ _.
+Arguments fst {A B} _.
+Arguments snd {A B} _.
+
 Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 
-Arguments pair {A B} _ _.
+Scheme prod_rect := Induction for prod Sort Type.
 
 Register prod as core.prod.type.
 Register pair as core.prod.intro.
 Register prod_rect as core.prod.rect.
 
-Section projections.
-  Context {A : Type} {B : Type}.
-
-  Definition fst (p:A * B) := match p with (x, y) => x end.
-  Definition snd (p:A * B) := match p with (x, y) => y end.
-
-  Register fst as core.prod.proj1.
-  Register snd as core.prod.proj2.
-
-End projections.
+Register fst as core.prod.proj1.
+Register snd as core.prod.proj2.
 
 #[global]
 Hint Resolve pair inl inr: core.
