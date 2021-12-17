@@ -66,6 +66,13 @@ open Auto
 let unify_e_resolve flags h =
   Hints.hint_res_pf ~with_evars:true ~with_classes:true ~flags h
 
+type cost = {
+  cost_priority : int;
+  cost_subgoals : int option;
+}
+
+let dummy_cost = { cost_priority = -1; cost_subgoals = None }
+
 let hintmap_of env sigma secvars concl =
   (* Warning: for computation sharing, we need to return a closure *)
   let hdc = try Some (decompose_app_bound sigma concl) with Bound -> None in
@@ -127,13 +134,14 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
       | Extern (pat, tacast) -> conclPattern concl pat tacast
       in
+      let b = { cost_priority = b; cost_subgoals = FullHint.subgoals h } in
       let tac = FullHint.run h tac in
       (tac, b, lazy (FullHint.print env sigma h))
   in
   List.map tac_of_hint hintl
 
 and e_trivial_resolve env sigma db_list local_db secvars gl =
-  let filter (tac, pr, _) = if Int.equal pr 0 then Some tac else None in
+  let filter (tac, pr, _) = if Int.equal pr.cost_priority 0 then Some tac else None in
   try List.map_filter filter (e_my_find_search env sigma db_list local_db secvars gl)
   with Not_found -> []
 
@@ -142,7 +150,7 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
   with Not_found -> []
 
 type search_state = {
-  priority : int;
+  priority : cost;
   depth : int; (*r depth of search before failing *)
   tacres : (Goal.goal * hint_db) list;
   sigma : Evd.evar_map;
@@ -186,15 +194,35 @@ module SearchProblem = struct
     List.map_filter map l
   [@@@ocaml.warning "+3"]
 
-  (* Ordering of states is lexicographic on depth (greatest first) then
-     number of remaining goals. *)
-  let compare s s' =
-    let d = s'.depth - s.depth in
-    let d' = Int.compare s.priority s'.priority in
-    let nbgoals s = List.length s.tacres in
+  let is_solved p = match p.cost_subgoals with
+  | Some n -> Int.equal n 0
+  | None ->
+    (* Approximation: this is an Extern hint and we can't statically decide
+       whether it will solve the goal. As a heuristic we decide that if the
+       priority is 0 then it is treated as if it were solving the goal. *)
+       Int.equal p.cost_priority 0
+
+  let solve_order p1 p2 = match is_solved p1, is_solved p2 with
+  | true, true | false, false -> 0
+  | false, true -> 1
+  | true, false -> -1 (* solved comes first *)
+
+  let subgoals_order p1 p2 = match p1.cost_subgoals, p2.cost_subgoals with
+  | Some n1, Some n2 -> Int.compare n1 n2
+  | Some _, None -> -1
+  | None, Some _ -> 1
+  | None, None -> 0
+
+  (* Ordering of states is lexicographic:
+     1. tactics known to solve the goal
+     2. priority
+     3. number of generated goals. *)
+  let compare { priority = p1 } { priority = p2 } =
+    let d = solve_order p1 p2 in
+    let d' = Int.compare p1.cost_priority p2.cost_priority in
     if not (Int.equal d 0) then d
     else if not (Int.equal d' 0) then d'
-    else Int.compare (nbgoals s) (nbgoals s')
+    else subgoals_order p1 p2
 
   let find_first_goal s = match s.tacres with
   | [] -> assert false
@@ -210,7 +238,7 @@ module SearchProblem = struct
       let env, concl, db, rest = find_first_goal s in
       let hyps = EConstr.named_context env in
       let secvars = secvars_of_hyps hyps in
-      let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ Id.print id)) in
+      let map_assum id = (e_give_exact (mkVar id), dummy_cost, lazy (str "exact" ++ spc () ++ Id.print id)) in
       let assumption_tacs =
         let tacs = List.map map_assum (ids_of_named_context hyps) in
         let mkdb env sigma db = assert false in (* no goal can be generated *)
@@ -220,7 +248,7 @@ module SearchProblem = struct
         let mkdb env sigma db =
           push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
         in
-        filter_tactics ~is_done:true s.sigma mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")]
+        filter_tactics ~is_done:true s.sigma mkdb s.tacres [Tactics.intro, dummy_cost, lazy (str "intro")]
       in
       let rec_tacs =
         let mkdb env sigma db =
@@ -327,7 +355,7 @@ let pr_info dbg s =
 
 let make_initial_state sigma evk dbg n localdb =
   { depth = n;
-    priority = 0;
+    priority = dummy_cost;
     tacres = [evk, localdb];
     sigma = sigma;
     last_tactic = lazy (mt());
