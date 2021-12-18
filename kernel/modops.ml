@@ -302,7 +302,7 @@ let add_module mb env =
 let add_module_type mp mtb env =
   add_module (module_body_of_type mp mtb) env
 
-(** {6 Strengthening } *)
+(** {6 Strengthening a signature for subtyping } *)
 
 let strengthen_const mp_from l cb resolver =
   match cb.const_body with
@@ -361,6 +361,8 @@ let strengthen mtb mp =
           (add_mp_delta_resolver mtb.mod_mp mp reso') }
   | MoreFunctor _ -> mtb
 
+(** {6 Strengthening a module for [Module M := M'] or [Include M] } *)
+
 let rec strengthen_and_subst_module mb subst mp_from mp_to =
   match mb.mod_type with
   | NoFunctor struc ->
@@ -385,7 +387,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
     | (l,SFBconst cb) ->
         let cb' = subst_const_body subst cb in
         let cb' =
-          if alias then cb'
+          if alias then (* optimization *) cb'
           else strengthen_const mp_from l cb' reso
         in
         let item' = if cb' == cb then item else (l, SFBconst cb') in
@@ -446,8 +448,18 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
 (** Let P be a module path when we write:
      "Module M:=P." or "Module M. Include P. End M."
     We need to perform two operations to compute the body of M.
-    - The first one is applying the substitution {P <- M} on the type of P
-    - The second one is strengthening. *)
+    - The first one is applying the substitution {P <- M} on the type of P, i.e.
+      to replace any expression in P referring to P itself by the same
+      expression referring instead to M
+    - The second one is strengthening, i.e. associating to each
+      abstract/opaque field t in P a defined field t := Q.t where Q is the
+      Delta-normal form of P (possibly P itself):
+      - in the alias case "Module M:=P." where "P" is already an alias
+        with canonical form "Q": add the module Delta-equivalence "M := Q"
+      - in the alias case where P is not itself an alias:
+        add the module Delta-equivalence "M := Q"
+      - in the "Include" case: add a Delta-equivalence "t := t'" where
+        "t'" is the canonical form of "P.t" on each field *)
 
 let strengthen_and_subst_module_body mb mp include_b = match mb.mod_type with
   | NoFunctor struc ->

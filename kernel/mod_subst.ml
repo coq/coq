@@ -21,7 +21,8 @@ open Names
 open Constr
 
 (* For Inline, the int is an inlining level, and the constr (if present)
-   is the term into which we should inline. *)
+   is the term into which we should inline.
+   Equiv gives the canonical name in the given context. *)
 
 type delta_hint =
   | Inline of int * constr Univ.univ_abstracted option

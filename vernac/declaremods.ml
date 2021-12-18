@@ -911,6 +911,10 @@ let type_of_incl env is_mod = function
     decompose_functor mp_l (type_of_mod mp0 env is_mod)
   | MEwith _ -> raise NoIncludeSelf
 
+(** Implements [Include F] where [F] has parameters [mbids] to be
+    instantiated by fields of the current "self" module, i.e. using
+    subtyping, by the current module itself. *)
+
 let declare_one_include (me_ast,annot) =
   let env = Global.env() in
   let me, kind, cst = Modintern.interp_module_ast env Modintern.ModAny me_ast in
