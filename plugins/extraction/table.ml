@@ -36,9 +36,9 @@ let occur_kn_in_ref kn = let open GlobRef in function
   | ConstRef _ | VarRef _ -> false
 
 let repr_of_r = let open GlobRef in function
-  | ConstRef kn -> Constant.repr2 kn
+  | ConstRef kn -> KerName.repr (Constant.user kn)
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> MutInd.repr2 kn
+  | ConstructRef ((kn,_),_) -> KerName.repr (MutInd.user kn)
   | VarRef v -> KerName.repr (Lib.make_kn v)
 
 let modpath_of_r r =
@@ -288,7 +288,7 @@ let safe_pr_long_global r =
   try Printer.pr_global r
   with Not_found -> match r with
     | GlobRef.ConstRef kn ->
-        let mp,l = Constant.repr2 kn in
+        let mp,l = KerName.repr (Constant.user kn) in
         str ((ModPath.to_string mp)^"."^(Label.to_string l))
     | _ -> assert false
 
