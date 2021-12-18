@@ -70,7 +70,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
         | _ -> error_not_a_constant lab
       in
       (* In the spirit of subtyping.check_constant, we accept
-         any implementations of parameters and opaques terms,
+         any implementations of parameters and opaque terms,
          as long as they have the right type *)
       let c', univs, ctx' =
         match cb.const_universes, ctx with

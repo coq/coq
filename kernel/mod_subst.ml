@@ -528,7 +528,7 @@ let add_delta_resolver resolver1 resolver2 =
   else
     update_delta_resolver resolver1 resolver2
 
-let substition_prefixed_by k mp subst =
+let substitution_prefixed_by k mp subst =
   let mp_prefixmp kmp (mp_to,reso) sub =
     if mp_in_mp mp kmp && not (ModPath.equal mp kmp) then
       let new_key = replace_mp_in_mp mp k kmp in
@@ -551,7 +551,7 @@ let join subst1 subst2 =
         | None ->
             subst_codom_delta_resolver subst2 resolve
     in
-    let prefixed_subst = substition_prefixed_by mpk mp' subst2 in
+    let prefixed_subst = substitution_prefixed_by mpk mp' subst2 in
     Umap.join prefixed_subst (add (mp',resolve'') res)
   in
   let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in

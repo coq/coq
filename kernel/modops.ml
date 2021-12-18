@@ -302,7 +302,7 @@ let add_module mb env =
 let add_module_type mp mtb env =
   add_module (module_body_of_type mp mtb) env
 
-(** {6 Strengtening } *)
+(** {6 Strengthening } *)
 
 let strengthen_const mp_from l cb resolver =
   match cb.const_body with

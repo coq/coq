@@ -260,7 +260,7 @@ let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty2 =  module_type_of_module msb2 in
   check_modtypes cst env mty1 mty2 subst1 subst2 false
 
-and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
+and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2 =
   let map1 = make_labmap mp1 sig1 in
   let check_one_body cst (l,spec2) =
     match spec2 with
@@ -303,7 +303,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
           in
           let cst2 = check_signatures cst env
             mtb2.mod_mp list2 mtb1.mod_mp list1 subst2 subst1
-            mtb2.mod_delta  mtb1.mod_delta
+            mtb2.mod_delta mtb1.mod_delta
           in
           Univ.Constraints.union cst1 cst2
         else
