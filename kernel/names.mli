@@ -386,9 +386,6 @@ sig
   val user : t -> KerName.t
   val canonical : t -> KerName.t
 
-  val repr2 : t -> ModPath.t * Label.t
-  (** Shortcut for [KerName.repr (user ...)] *)
-
   val modpath : t -> ModPath.t
   (** Shortcut for [KerName.modpath (user ...)] *)
 
@@ -459,9 +456,6 @@ sig
 
   val user : t -> KerName.t
   val canonical : t -> KerName.t
-
-  val repr2 : t -> ModPath.t * Label.t
-  (** Shortcut for [KerName.repr (user ...)] *)
 
   val modpath : t -> ModPath.t
   (** Shortcut for [KerName.modpath (user ...)] *)

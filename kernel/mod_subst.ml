@@ -275,7 +275,7 @@ let progress f x ~orelse =
   if y != x then y else orelse
 
 let subst_mind sub mind =
-  let mpu,l = MutInd.repr2 mind in
+  let mpu,l = KerName.repr (MutInd.user mind) in
   let mpc = KerName.modpath (MutInd.canonical mind) in
   try
     let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
@@ -300,7 +300,7 @@ let subst_pind sub (ind,u) =
   (subst_ind sub ind, u)
 
 let subst_con0 sub cst =
-  let mpu,l = Constant.repr2 cst in
+  let mpu,l = KerName.repr (Constant.user cst) in
   let mpc = KerName.modpath (Constant.canonical cst) in
   let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
   let knu = KerName.make mpu l in

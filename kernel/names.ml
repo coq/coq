@@ -499,7 +499,6 @@ module KerPair = struct
 
   let make1 = same
   let make2 mp l = same (KerName.make mp l)
-  let repr2 kp = KerName.repr (user kp)
   let label kp = KerName.label (user kp)
   let modpath kp = KerName.modpath (user kp)
 
