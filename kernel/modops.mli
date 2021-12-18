@@ -23,7 +23,7 @@ val is_functor : ('ty,'a) functorize -> bool
 
 val destr_functor : ('ty,'a) functorize -> MBId.t * 'ty * ('ty,'a) functorize
 
-val destr_nofunctor : ('ty,'a) functorize -> 'a
+val destr_nofunctor : ModPath.t -> ('ty,'a) functorize -> 'a
 
 (** Conversions between [module_body] and [module_type_body] *)
 
@@ -113,13 +113,11 @@ type module_typing_error =
       Label.t * structure_field_body * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
   | NotAFunctor
-  | IsAFunctor
+  | IsAFunctor of ModPath.t
   | IncompatibleModuleTypes of module_type_body * module_type_body
   | NotEqualModulePaths of ModPath.t * ModPath.t
-  | NoSuchLabel of Label.t
-  | IncompatibleLabels of Label.t * Label.t
-  | NotAModule of string
-  | NotAModuleType of string
+  | NoSuchLabel of Label.t * ModPath.t
+  | NotAModuleLabel of Label.t
   | NotAConstant of Label.t
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
@@ -136,11 +134,9 @@ val error_incompatible_modtypes :
 val error_signature_mismatch :
   Label.t -> structure_field_body -> signature_mismatch_error -> 'a
 
-val error_incompatible_labels : Label.t -> Label.t -> 'a
+val error_no_such_label : Label.t -> ModPath.t -> 'a
 
-val error_no_such_label : Label.t -> 'a
-
-val error_not_a_module : string -> 'a
+val error_not_a_module_label : Label.t -> 'a
 
 val error_not_a_constant : Label.t -> 'a
 

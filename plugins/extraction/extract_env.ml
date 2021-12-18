@@ -35,7 +35,7 @@ let environment_until dir_opt =
     | [] -> []
     | d :: l ->
       let meb =
-        Modops.destr_nofunctor (Global.lookup_module (MPfile d)).mod_type
+        Modops.destr_nofunctor (MPfile d) (Global.lookup_module (MPfile d)).mod_type
       in
       match dir_opt with
       | Some d' when DirPath.equal d d' -> [MPfile d, meb]
@@ -179,7 +179,7 @@ let flatten_modtype env mp me_alg struc_opt =
 *)
 
 let env_for_mtb_with_def env mp me reso idl =
-  let struc = Modops.destr_nofunctor me in
+  let struc = Modops.destr_nofunctor mp me in
   let l = Label.of_id (List.hd idl) in
   let spot = function (l',SFBconst _) -> Label.equal l l' | _ -> false in
   let before = fst (List.split_when spot struc) in

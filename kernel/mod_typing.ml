@@ -128,11 +128,11 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
       (* Definition inside a sub-module *)
       let mb = match spec with
         | SFBmodule mb -> mb
-        | _ -> error_not_a_module (Label.to_string lab)
+        | _ -> error_not_a_module_label lab
       in
       begin match mb.mod_expr with
         | Abstract ->
-          let struc = Modops.destr_nofunctor mb.mod_type in
+          let struc = Modops.destr_nofunctor (MPdot (mp,lab)) mb.mod_type in
           let struc',c',cst =
             check_with_def env' struc (idl,(c,ctx)) (MPdot(mp,lab)) mb.mod_delta
           in
@@ -144,7 +144,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
         | _ -> error_generative_module_expected lab
       end
   with
-  | Not_found -> error_no_such_label lab
+  | Not_found -> error_no_such_label lab mp
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
 let rec check_with_mod env struc (idl,mp1) mp equiv =
@@ -157,7 +157,7 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
     let env' = Modops.add_structure mp before equiv env in
     let old = match spec with
       | SFBmodule mb -> mb
-      | _ -> error_not_a_module (Label.to_string lab)
+      | _ -> error_not_a_module_label lab
     in
     if List.is_empty idl then
       (* Toplevel module definition *)
@@ -192,11 +192,11 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       let mp' = MPdot (mp,lab) in
       let old = match spec with
         | SFBmodule msb -> msb
-        | _ -> error_not_a_module (Label.to_string lab)
+        | _ -> error_not_a_module_label lab
       in
       begin match old.mod_expr with
       | Abstract ->
-        let struc = destr_nofunctor old.mod_type in
+        let struc = destr_nofunctor mp' old.mod_type in
         let struc',equiv',cst =
           check_with_mod env' struc (idl,mp1) mp' old.mod_delta
         in
@@ -217,17 +217,17 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       | _ -> error_generative_module_expected lab
       end
   with
-  | Not_found -> error_no_such_label lab
+  | Not_found -> error_no_such_label lab mp
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
 let check_with env mp (sign,alg,reso,cst) = function
   |WithDef(idl, (c, ctx)) ->
-    let struc = destr_nofunctor sign in
+    let struc = destr_nofunctor mp sign in
     let struc', c', cst' = check_with_def env struc (idl, (c, ctx)) mp reso in
     let wd' = WithDef (idl, (c', ctx)) in
     NoFunctor struc', MEwith (alg,wd'), reso, Univ.Constraints.union cst' cst
   |WithMod(idl,mp1) as wd ->
-    let struc = destr_nofunctor sign in
+    let struc = destr_nofunctor mp sign in
     let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in
     NoFunctor struc', MEwith (alg,wd), reso', Univ.Constraints.union cst' cst
 
