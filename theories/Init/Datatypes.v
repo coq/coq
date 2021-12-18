@@ -218,6 +218,7 @@ Register inl as core.sum.inl.
 Register inr as core.sum.inr.
 
 Local Set Primitive Projections.
+Local Set Nonrecursive Elimination Schemes.
 
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
@@ -226,6 +227,7 @@ Local Set Primitive Projections.
 Record prod (A B:Type) : Type := pair { fst: A ; snd: B }.
 
 Local Unset Primitive Projections.
+Local Unset Nonrecursive Elimination Schemes.
 
 Notation "x * y" := (prod x y) : type_scope.
 
@@ -236,10 +238,6 @@ Arguments fst {A B} _.
 Arguments snd {A B} _.
 
 Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
-
-Scheme prod_ind := Induction for prod Sort Prop.
-Scheme prod_rec := Induction for prod Sort Set.
-Scheme prod_rect := Induction for prod Sort Type.
 
 Register prod as core.prod.type.
 Register pair as core.prod.intro.
