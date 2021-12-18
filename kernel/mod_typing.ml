@@ -54,7 +54,7 @@ let rec rebuild_mp mp l =
   | []-> mp
   | i::r -> rebuild_mp (MPdot(mp,Label.of_id i)) r
 
-let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
+let rec check_with_def env struc (idl,(c,ctx)) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> Label.of_id id, idl
@@ -62,7 +62,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
   try
     let modular = not (List.is_empty idl) in
     let before,spec,after = split_struc lab modular struc in
-    let env' = Modops.add_structure mp before equiv env in
+    let env' = Modops.add_structure mp before reso env in
     if List.is_empty idl then
       (* Toplevel definition *)
       let cb = match spec with
@@ -147,46 +147,46 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
   | Not_found -> error_no_such_label lab mp
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
-let rec check_with_mod env struc (idl,mp1) mp equiv =
+let rec check_with_mod env struc (idl,new_mp) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> Label.of_id id, idl
   in
   try
     let before,spec,after = split_struc lab true struc in
-    let env' = Modops.add_structure mp before equiv env in
+    let env' = Modops.add_structure mp before reso env in
     let old = match spec with
       | SFBmodule mb -> mb
       | _ -> error_not_a_module_label lab
     in
     if List.is_empty idl then
       (* Toplevel module definition *)
-      let mb_mp1 = lookup_module mp1 env in
-      let mtb_mp1 = module_type_of_module mb_mp1 in
+      let new_mb = lookup_module new_mp env in
+      let new_mtb = module_type_of_module new_mb in
       let cst = match old.mod_expr with
         | Abstract ->
           let mtb_old = module_type_of_module old in
-          let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
+          let chk_cst = Subtyping.check_subtypes env' new_mtb mtb_old in
           chk_cst
         | Algebraic (NoFunctor (MEident(mp'))) ->
-          check_modpath_equiv env' mp1 mp';
+          check_modpath_equiv env' new_mp mp';
           Univ.Constraints.empty
         | _ -> error_generative_module_expected lab
       in
       let mp' = MPdot (mp,lab) in
-      let new_mb = strengthen_and_subst_module_body mb_mp1 mp' false in
+      let new_mb = strengthen_and_subst_module_body new_mb mp' false in
       let new_mb' =
         { new_mb with
           mod_mp = mp';
-          mod_expr = Algebraic (NoFunctor (MEident mp1));
+          mod_expr = Algebraic (NoFunctor (MEident new_mp));
         }
       in
-      let new_equiv = add_delta_resolver equiv new_mb.mod_delta in
+      let new_reso = add_delta_resolver reso new_mb.mod_delta in
       (* we propagate the new equality in the rest of the signature
          with the identity substitution accompanied by the new resolver*)
       let id_subst = map_mp mp' mp' new_mb.mod_delta in
       let new_after = subst_structure id_subst after in
-      before@(lab,SFBmodule new_mb')::new_after, new_equiv, cst
+      before@(lab,SFBmodule new_mb')::new_after, new_reso, cst
     else
       (* Module definition of a sub-module *)
       let mp' = MPdot (mp,lab) in
@@ -197,23 +197,23 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       begin match old.mod_expr with
       | Abstract ->
         let struc = destr_nofunctor mp' old.mod_type in
-        let struc',equiv',cst =
-          check_with_mod env' struc (idl,mp1) mp' old.mod_delta
+        let struc',reso',cst =
+          check_with_mod env' struc (idl,new_mp) mp' old.mod_delta
         in
         let new_mb =
           { old with
             mod_type = NoFunctor struc';
             mod_type_alg = None;
-            mod_delta = equiv' }
+            mod_delta = reso' }
         in
-        let new_equiv = add_delta_resolver equiv equiv' in
-        let id_subst = map_mp mp' mp' equiv' in
+        let new_reso = add_delta_resolver reso reso' in
+        let id_subst = map_mp mp' mp' reso' in
         let new_after = subst_structure id_subst after in
-        before@(lab,SFBmodule new_mb)::new_after, new_equiv, cst
+        before@(lab,SFBmodule new_mb)::new_after, new_reso, cst
       | Algebraic (NoFunctor (MEident mp0)) ->
         let mpnew = rebuild_mp mp0 idl in
         check_modpath_equiv env' mpnew mp;
-        before@(lab,spec)::after, equiv, Univ.Constraints.empty
+        before@(lab,spec)::after, reso, Univ.Constraints.empty
       | _ -> error_generative_module_expected lab
       end
   with
@@ -226,9 +226,9 @@ let check_with env mp (sign,alg,reso,cst) = function
     let struc', c', cst' = check_with_def env struc (idl, (c, ctx)) mp reso in
     let wd' = WithDef (idl, (c', ctx)) in
     NoFunctor struc', MEwith (alg,wd'), reso, Univ.Constraints.union cst' cst
-  | WithMod(idl,mp1) as wd ->
+  | WithMod(idl,new_mp) as wd ->
     let struc = destr_nofunctor mp sign in
-    let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in
+    let struc',reso',cst' = check_with_mod env struc (idl,new_mp) mp reso in
     NoFunctor struc', MEwith (alg,wd), reso', Univ.Constraints.union cst' cst
 
 let translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =

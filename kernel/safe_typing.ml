@@ -1127,7 +1127,7 @@ let propagate_loads senv =
 let functorize_module params mb =
   let f x = functorize params x in
   { mb with
-    mod_expr = Modops.implem_smartmap f f mb.mod_expr;
+    mod_expr = Modops.implem_smart_map f f mb.mod_expr;
     mod_type = f mb.mod_type;
     mod_type_alg = Option.map f mb.mod_type_alg }
 

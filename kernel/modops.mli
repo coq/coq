@@ -32,7 +32,7 @@ val module_body_of_type : ModPath.t -> module_type_body -> module_body
 
 val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
 
-val implem_smartmap :
+val implem_smart_map :
   (module_signature -> module_signature) ->
   (module_expression -> module_expression) ->
   (module_implementation -> module_implementation)

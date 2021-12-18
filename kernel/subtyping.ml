@@ -291,8 +291,8 @@ and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2 =
 and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
   if mtb1==mtb2 || mtb1.mod_type == mtb2.mod_type then cst
   else
-    let rec check_structure cst env str1 str2 equiv subst1 subst2 =
-      match str1,str2 with
+    let rec check_structure cst env struc1 struc2 equiv subst1 subst2 =
+      match struc1,struc2 with
       | NoFunctor list1,
         NoFunctor list2 ->
         if equiv then
