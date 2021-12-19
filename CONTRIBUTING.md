@@ -489,7 +489,7 @@ producing a design document as a [Coq Enhancement Proposal][CEP].
 Another recommendation is that you do not put several unrelated
 changes in the same PR (even if you produced them together).  In
 particular, make sure you split bug fixes into separate PRs when this
-is possible.  More generally, smaller-sized PRs, or PRs changing less
+is possible.  More generally, smaller-sized PRs, or PRs changing fewer
 components, are more likely to be reviewed and merged promptly.
 
 #### Seeking early feedback on work-in-progress ####
