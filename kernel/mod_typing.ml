@@ -264,7 +264,7 @@ let rec translate_mse env mpo inl = function
   |MEapply (fe,mp1) ->
     translate_apply env inl (translate_mse env mpo inl fe) mp1 mk_alg_app
   |MEwith(me, with_decl) ->
-    assert (mpo == None); (* No 'with' syntax for modules *)
+    assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
     let mp = mp_from_mexpr me in
     check_with env mp (translate_mse env None inl me) with_decl
 
@@ -280,23 +280,25 @@ let mk_modtype mp ty reso =
   let mb = mk_mod mp Abstract ty reso in
   { mb with mod_expr = (); mod_retroknowledge = ModTypeRK }
 
-let rec translate_mse_funct env mpo inl mse = function
+let rec translate_mse_funct env ~is_mod mp inl mse = function
   |[] ->
-    let sign,alg,reso,cst = translate_mse env mpo inl mse in
+    let sign,alg,reso,cst = translate_mse env (if is_mod then Some mp else None) inl mse in
+    let sign,reso =
+      if is_mod then sign,reso
+      else subst_modtype_signature_and_resolver (mp_from_mexpr mse) mp sign reso in
     sign, NoFunctor alg, reso, cst
   |(mbid, ty) :: params ->
     let mp_id = MPbound mbid in
     let mtb, cst = translate_modtype env mp_id inl ([],ty) in
     let env' = add_module_type mp_id mtb env in
-    let sign,alg,reso,cst' = translate_mse_funct env' mpo inl mse params in
+    let sign,alg,reso,cst' = translate_mse_funct env' ~is_mod mp inl mse params in
     let alg' = MoreFunctor (mbid,mtb,alg) in
     MoreFunctor (mbid, mtb, sign), alg',reso, Univ.Constraints.union cst cst'
 
 and translate_modtype env mp inl (params,mte) =
-  let sign,alg,reso,cst = translate_mse_funct env None inl mte params in
-  let mtb = mk_modtype (mp_from_mexpr mte) sign reso in
-  let mtb' = subst_modtype_and_resolver mtb mp in
-  { mtb' with mod_type_alg = Some alg }, cst
+  let sign,alg,reso,cst = translate_mse_funct env ~is_mod:false mp inl mte params in
+  let mtb = mk_modtype mp sign reso in
+  { mtb with mod_type_alg = Some alg }, cst
 
 (** [finalize_module] :
     from an already-translated (or interactive) implementation and
@@ -326,7 +328,7 @@ let translate_module env mp inl = function
     let mtb, cst = translate_modtype env mp inl (params,ty) in
     module_body_of_type mp mtb, cst
   |MExpr (params,mse,oty) ->
-    let (sg,alg,reso,cst) = translate_mse_funct env (Some mp) inl mse params in
+    let (sg,alg,reso,cst) = translate_mse_funct env ~is_mod:true mp inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
     finalize_module env mp (sg,Some alg,reso,cst) restype
 
