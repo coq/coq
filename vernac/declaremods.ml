@@ -546,7 +546,7 @@ let rec get_module_sobjs is_mod env inl = function
 
 let get_functor_sobjs is_mod env inl (params,mexpr) =
   let (mbids, aobjs) = get_module_sobjs is_mod env inl mexpr in
-  (List.map fst params @ mbids, aobjs)
+  (List.map pi1 params @ mbids, aobjs)
 
 
 (** {6 Handling of module parameters} *)
@@ -602,7 +602,8 @@ let intern_arg (acc, cst) (idl,(typ,ann)) =
 *)
 
 let intern_args params =
-  List.fold_left intern_arg ([], Univ.ContextSet.empty) params
+  let args, ctx = List.fold_left intern_arg ([], Univ.ContextSet.empty) params in
+  List.rev args, ctx
 
 
 (** {6 Auxiliary functions concerning subtyping checks} *)
@@ -616,8 +617,8 @@ let check_sub mtb sub_mtb_l =
             sub_mtb_l (Global.env()))
 
 (** This function checks if the type calculated for the module [mp] is
-    a subtype of all signatures in [sub_mtb_l]. Uses only the global
-    environment. *)
+    a "<:"-like subtype of all signatures in [sub_mtb_l]. Uses only
+    the global environment. *)
 
 let check_subtypes mp sub_mtb_l =
   let mb =
@@ -634,23 +635,6 @@ let check_subtypes_mt mp sub_mtb_l =
   in
   check_sub mtb sub_mtb_l
 
-(** Create a params entry.
-    In [args], the youngest module param now comes first. *)
-
-let mk_params_entry args =
-  List.rev_map (fun (mbid,arg_t,_) -> (mbid,arg_t)) args
-
-(** Create a functor type struct.
-    In [args], the youngest module param now comes first. *)
-
-let mk_funct_type env args seb0 =
-  List.fold_left
-    (fun (seb,cst) (arg_id,arg_t,arg_inl) ->
-      let mp = MPbound arg_id in
-      let arg_t, cst' = Mod_typing.translate_modtype env mp arg_inl ([],arg_t) in
-      MoreFunctor(arg_id,arg_t,seb), Univ.Constraints.union cst cst')
-    seb0 args
-
 (** Prepare the module type list for check of subtypes *)
 
 let build_subtypes env mp args mtys =
@@ -660,10 +644,9 @@ let build_subtypes env mp args mtys =
        let mte, _, ctx' = Modintern.interp_module_ast env Modintern.ModType m in
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
-       let mtb, cst = Mod_typing.translate_modtype env mp inl ([],mte) in
-       let mod_type, cst = mk_funct_type env args (mtb.mod_type,cst) in
+       let mtb, cst = Mod_typing.translate_modtype env mp inl (args,mte) in
        let ctx = Univ.ContextSet.add_constraints cst ctx in
-       ctx, { mtb with mod_type })
+       ctx, mtb)
     Univ.ContextSet.empty mtys
   in
   (ans, ctx)
@@ -699,7 +682,7 @@ module RawModOps = struct
 
 let start_module export id args res fs =
   let mp = Global.start_module id in
-  let arg_entries_r, ctx = intern_args args in
+  let params, ctx = intern_args args in
   let () = Global.push_context_set ~strict:true ctx in
   let env = Global.env () in
   let res_entry_o, subtyps, ctx = match res with
@@ -712,7 +695,7 @@ let start_module export id args res fs =
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
     | Check resl ->
-      let typs, ctx = build_subtypes env mp arg_entries_r resl in
+      let typs, ctx = build_subtypes env mp params resl in
       None, typs, ctx
   in
   let () = Global.push_context_set ~strict:true ctx in
@@ -764,8 +747,7 @@ let declare_module id args res mexpr_o fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_module id in
-  let arg_entries_r, ctx = intern_args args in
-  let params = mk_params_entry arg_entries_r in
+  let params, ctx = intern_args args in
   let env = Global.env () in
   let env = Environ.push_context_set ~strict:true ctx env in
   let mty_entry_o, subs, inl_res, ctx' = match res with
@@ -778,7 +760,7 @@ let declare_module id args res mexpr_o fs =
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some mte, [], inl, ctx
     | Check mtys ->
-      let typs, ctx = build_subtypes env mp arg_entries_r mtys in
+      let typs, ctx = build_subtypes env mp params mtys in
       None, typs, default_inline (), ctx
   in
   let env = Environ.push_context_set ~strict:true ctx' env in
@@ -860,9 +842,8 @@ let declare_modtype id args mtys (mty,ann) fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_modtype id in
-  let arg_entries_r, arg_ctx = intern_args args in
+  let params, arg_ctx = intern_args args in
   let () = Global.push_context_set ~strict:true arg_ctx in
-  let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
   let mte, _, mte_ctx = Modintern.interp_module_ast env Modintern.ModType mty in
   let () = Global.push_context_set ~strict:true mte_ctx in
@@ -872,7 +853,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let env = Global.env () in
   let entry = params, mte in
-  let sub_mty_l, sub_mty_ctx = build_subtypes env mp arg_entries_r mtys in
+  let sub_mty_l, sub_mty_ctx = build_subtypes env mp params mtys in
   let () = Global.push_context_set ~strict:true sub_mty_ctx in
   let env = Global.env () in
   let sobjs = get_functor_sobjs false env inl entry in
