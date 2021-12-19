@@ -164,31 +164,7 @@ and prev_search_state = (* for info eauto *)
 
 (* first_goal : goal list sigma -> goal sigma *)
 
-module SearchProblem = struct
-
-  let success s = List.is_empty s.tacres
-
-  [@@@ocaml.warning "-3"]
-  let filter_tactics sigma mkdb glls l =
-    let gl, db, rest = match glls with
-    | [] -> assert false
-    | (gl, db) :: rest -> (gl, db, rest)
-    in
-    let map (tac, pptac) =
-      try
-        let gl0 = { Evd.it = gl; Evd.sigma } in
-        let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
-        let map gl =
-          let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
-          gl, mkdb env sigma db
-        in
-        let ngls = List.map map it in
-        Some (sigma, ngls, pptac)
-      with e when CErrors.noncritical e ->
-        None
-    in
-    List.map_filter map l
-  [@@@ocaml.warning "+3"]
+module Search = struct
 
   let is_solved p = match p.cost_subgoals with
   | Some n -> Int.equal n 0
@@ -220,65 +196,39 @@ module SearchProblem = struct
     else if not (Int.equal d' 0) then d'
     else subgoals_order p1 p2
 
-  let find_first_goal s = match s.tacres with
-  | [] -> assert false
-  | (gl, db) :: rest ->
-    let evi = Evd.find s.sigma gl in
-    Evd.evar_filtered_env (Global.env ()) evi, Evd.evar_concl evi, db, rest
-
-  let branching dblist local_lemmas s =
+  let branching env concl db dblist local_lemmas s =
     if Int.equal s.depth 0 then
-      []
+      [], []
     else
-      let ps = if s.prev == Unknown then Unknown else State s in
-      let env, concl, db, rest = find_first_goal s in
       let hyps = EConstr.named_context env in
       let secvars = secvars_of_hyps hyps in
-      let map_assum id = (e_give_exact (mkVar id), lazy (str "exact" ++ spc () ++ Id.print id)) in
-      let map_state (sigma, lgls, pp) =
-        { depth = s.depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
-      in
       let assumption_tacs =
-        let tacs = List.map map_assum (ids_of_named_context hyps) in
-        let mkdb env sigma db = assert false in (* no goal can be generated *)
-        List.map map_state @@ filter_tactics s.sigma mkdb s.tacres tacs
+        let mkdb env sigma = assert false in (* no goal can be generated *)
+        let map_assum id = (mkdb, e_give_exact (mkVar id), lazy (str "exact" ++ spc () ++ Id.print id)) in
+        List.map map_assum (ids_of_named_context hyps)
       in
       let intro_tac =
-        let mkdb env sigma db =
+        let mkdb env sigma =
           push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
         in
-        List.map map_state @@ filter_tactics s.sigma mkdb s.tacres [Tactics.intro, lazy (str "intro")]
+        [mkdb, Tactics.intro, lazy (str "intro")]
       in
       let rec_tacs =
-        let mkdb env sigma db =
+        let mkdb env sigma =
           let hyps' = EConstr.named_context env in
             if hyps' == hyps then db
             else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
         in
         let tacs = e_possible_resolve env s.sigma dblist db secvars concl in
         let tacs = List.sort compare tacs in
-        let tacs = List.map (fun (tac, _, pp) -> (tac, pp)) tacs in
-        filter_tactics s.sigma mkdb s.tacres tacs
+        List.map (fun (tac, _, pp) -> (mkdb, tac, pp)) tacs
       in
-      let map (sigma, lgls, pp) =
-        let depth = if List.is_empty lgls then s.depth else pred s.depth in
-        { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
-      in
-      assumption_tacs @ intro_tac @ List.map map rec_tacs
+      assumption_tacs @ intro_tac, rec_tacs
 
-  let pp s = hov 0 (str " depth=" ++ int s.depth ++ spc () ++
-                      (Lazy.force s.last_tactic))
-
-end
-
-module Search = struct
-
-  type position = int list
-
-  let msg_with_position (p : position) s = match p with
+  let msg_with_position (p : int list) s = match p with
   | [] -> ()
   | _ :: _ ->
-    let pp = SearchProblem.pp s in
+    let pp = hov 0 (str " depth=" ++ int s.depth ++ spc () ++ (Lazy.force s.last_tactic)) in
     let rec pp_rec = function
       | [] -> mt ()
       | [i] -> int i
@@ -288,11 +238,46 @@ module Search = struct
 
   let push i p = match p with [] -> [] | _ :: _ -> i :: p
 
+  [@@@ocaml.warning "-3"]
+  let filter_tactics gl sigma l =
+    let map (mkdb, tac, pptac) =
+      try
+        let gl0 = { Evd.it = gl; Evd.sigma } in
+        let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
+        let map gl =
+          let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
+          gl, mkdb env sigma
+        in
+        let ngls = List.map map it in
+        Some (sigma, ngls, pptac)
+      with e when CErrors.noncritical e ->
+        None
+    in
+    List.map_filter map l
+  [@@@ocaml.warning "+3"]
+
   let search ?(debug=false) dblist local_lemmas s =
     let rec explore p s =
       let () = msg_with_position p s in
-      if SearchProblem.success s then s
-      else explore_many 1 p (SearchProblem.branching dblist local_lemmas s)
+      match s.tacres with
+      | [] -> s
+      | (gl, db) :: rest ->
+        let evi = Evd.find s.sigma gl in
+        let env = Evd.evar_filtered_env (Global.env ()) evi in
+        let concl = Evd.evar_concl evi in
+        let ps = if s.prev == Unknown then Unknown else State s in
+        let tacs, rectacs = branching env concl db dblist local_lemmas s in
+        let map (sigma, lgls, pp) =
+          { depth = s.depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
+        in
+        let recmap (sigma, lgls, pp) =
+          let depth = if List.is_empty lgls then s.depth else pred s.depth in
+          { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
+        in
+        let tacs = List.map map @@ filter_tactics gl s.sigma tacs in
+        let rectacs = List.map recmap @@ filter_tactics gl s.sigma rectacs in
+        explore_many 1 p (tacs @ rectacs)
+
     and explore_many i p = function
       | [] -> raise Not_found
       | [s] -> explore (push i p) s
