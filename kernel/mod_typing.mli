@@ -56,6 +56,6 @@ val finalize_module :
 (** [translate_mse_incl] translate the mse of a module or
     module type given to an Include *)
 
-val translate_mse_incl :
+val translate_mse_include :
   bool -> env -> ModPath.t -> inline -> module_struct_entry ->
     unit translation

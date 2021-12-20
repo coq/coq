@@ -67,7 +67,7 @@ val inline_delta_resolver :
   env -> inline -> ModPath.t -> MBId.t -> module_type_body ->
   delta_resolver -> delta_resolver
 
-val strengthen_and_subst_mb : module_body -> ModPath.t -> bool -> module_body
+val strengthen_and_subst_module_body : module_body -> ModPath.t -> bool -> module_body
 
 val subst_modtype_signature_and_resolver : ModPath.t -> ModPath.t ->
   module_signature -> delta_resolver -> module_signature * delta_resolver

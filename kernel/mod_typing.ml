@@ -174,7 +174,7 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
         | _ -> error_generative_module_expected lab
       in
       let mp' = MPdot (mp,lab) in
-      let new_mb = strengthen_and_subst_mb mb_mp1 mp' false in
+      let new_mb = strengthen_and_subst_module_body mb_mp1 mp' false in
       let new_mb' =
         { new_mb with
           mod_mp = mp';
@@ -255,7 +255,7 @@ let mk_alg_app alg arg = MEapply (alg,arg)
 let rec translate_mse env mpo inl = function
   | MEident mp1 as me ->
     let mb = match mpo with
-      | Some mp -> strengthen_and_subst_mb (lookup_module mp1 env) mp false
+      | Some mp -> strengthen_and_subst_module_body (lookup_module mp1 env) mp false
       | None ->
         let mt = lookup_modtype mp1 env in
         module_body_of_type mt.mod_mp mt
@@ -355,20 +355,20 @@ let rec forbid_incl_signed_functor env = function
       forbid_incl_signed_functor env (unfunct me)
     |_ -> ()
 
-let rec translate_mse_inclmod env mp inl = function
+let rec translate_mse_include_module env mp inl = function
   | MEident mp1 ->
-    let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp true in
+    let mb = strengthen_and_subst_module_body (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr mb.mod_type in
     sign,(),mb.mod_delta,Univ.Constraints.empty
   | MEapply (fe,arg) ->
-    let ftrans = translate_mse_inclmod env mp inl fe in
+    let ftrans = translate_mse_include_module env mp inl fe in
     translate_apply env inl ftrans arg (fun _ _ -> ())
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
-let translate_mse_incl is_mod env mp inl me =
+let translate_mse_include is_mod env mp inl me =
   if is_mod then
     let () = forbid_incl_signed_functor env me in
-    translate_mse_inclmod env mp inl me
+    translate_mse_include_module env mp inl me
   else
     let mtb, cst = translate_modtype env mp inl ([],me) in
     let sign = clean_bounded_mod_expr mtb.mod_type in

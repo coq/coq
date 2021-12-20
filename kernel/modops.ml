@@ -499,7 +499,7 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
     - The first one is applying the substitution {P <- M} on the type of P
     - The second one is strengthening. *)
 
-let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
+let strengthen_and_subst_module_body mb mp include_b = match mb.mod_type with
   | NoFunctor struc ->
     let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
     (* if mb.mod_mp is an alias then the strengthening is useless

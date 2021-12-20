@@ -1215,7 +1215,7 @@ let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
   let sign,(),resolver,cst =
-    translate_mse_incl is_module senv.env mp_sup inl me
+    translate_mse_include is_module senv.env mp_sup inl me
   in
   let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   (* Include Self support  *)

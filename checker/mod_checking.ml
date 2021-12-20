@@ -159,7 +159,7 @@ and check_structure_field env opac mp lab res opacify = function
 and check_mexpr env opac mse mp_mse res = match mse with
   | MEident mp ->
       let mb = lookup_module mp env in
-      let mb = Modops.strengthen_and_subst_mb mb mp_mse false in
+      let mb = Modops.strengthen_and_subst_module_body mb mp_mse false in
       mb.mod_type, mb.mod_delta
   | MEapply (f,mp) ->
       let sign, delta = check_mexpr env opac f mp_mse res in
