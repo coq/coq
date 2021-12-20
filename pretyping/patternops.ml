@@ -184,9 +184,9 @@ let pattern_of_constr env sigma t =
          with
          | Some n -> PSoApp (n,Array.to_list (Array.map (pattern_of_constr env) a))
          | None -> PApp (pattern_of_constr env f,Array.map (pattern_of_constr env) a))
-    | Const (sp,u)  -> PRef (GlobRef.ConstRef (Constant.make1 (Constant.canonical sp)))
-    | Ind (sp,u)    -> PRef (canonical_gr (GlobRef.IndRef sp))
-    | Construct (sp,u) -> PRef (canonical_gr (GlobRef.ConstructRef sp))
+    | Const (con,u)  -> PRef (canonical_gr (GlobRef.ConstRef con))
+    | Ind (ind,u)    -> PRef (canonical_gr (GlobRef.IndRef ind))
+    | Construct (cstr,u) -> PRef (canonical_gr (GlobRef.ConstructRef cstr))
     | Proj (p, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->

@@ -392,6 +392,10 @@ sig
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
 
+  (** Normalization *)
+
+  val canonize : t -> t
+
   (** Comparisons *)
 
   include QNameS with type t := t
@@ -462,6 +466,10 @@ sig
 
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
+
+  (** Normalization *)
+
+  val canonize : t -> t
 
   (** Comparisons *)
 

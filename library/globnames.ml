@@ -57,9 +57,9 @@ let subst_global subst ref = match ref with
       if c'==c then ref,None else ConstructRef c', None
 
 let canonical_gr = function
-  | ConstRef con -> ConstRef(Constant.make1 (Constant.canonical con))
-  | IndRef (kn,i) -> IndRef(MutInd.make1(MutInd.canonical kn),i)
-  | ConstructRef ((kn,i),j )-> ConstructRef((MutInd.make1(MutInd.canonical kn),i),j)
+  | ConstRef con -> ConstRef(Constant.canonize con)
+  | IndRef (mind,i) -> IndRef(MutInd.canonize mind,i)
+  | ConstructRef ((mind,i),j )-> ConstructRef((MutInd.canonize mind,i),j)
   | VarRef id -> VarRef id
 
 let global_of_constr c = match kind c with

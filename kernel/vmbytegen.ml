@@ -889,9 +889,9 @@ let compile_constant_body ~fail_on_error env univs = function
   | Def body ->
       let instance_size = Univ.AbstractContext.size (Declareops.universes_context univs) in
       match kind body with
-        | Const (kn',u) when is_univ_copy instance_size u ->
+        | Const (cst,u) when is_univ_copy instance_size u ->
             (* we use the canonical name of the constant*)
-            let con= Constant.make1 (Constant.canonical kn') in
+            let con = Constant.canonize cst in
               Some (BCalias (get_alias env con))
         | _ ->
             let sigma _ = assert false in
@@ -900,4 +900,4 @@ let compile_constant_body ~fail_on_error env univs = function
 
 (* Shortcut of the previous function used during module strengthening *)
 
-let compile_alias kn = BCalias (Constant.make1 (Constant.canonical kn))
+let compile_alias cst = BCalias (Constant.canonize cst)

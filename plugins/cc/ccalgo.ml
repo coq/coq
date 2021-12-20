@@ -482,14 +482,14 @@ let rec canonize_name c =
   let c = EConstr.Unsafe.to_constr c in
   let func c = canonize_name (EConstr.of_constr c) in
     match Constr.kind c with
-      | Const (kn,u) ->
-          let canon_const = Constant.make1 (Constant.canonical kn) in
+      | Const (cst,u) ->
+          let canon_const = Constant.canonize cst in
             (mkConstU (canon_const,u))
-      | Ind ((kn,i),u) ->
-          let canon_mind = MutInd.make1 (MutInd.canonical kn) in
+      | Ind ((mind,i),u) ->
+          let canon_mind = MutInd.canonize mind in
             (mkIndU ((canon_mind,i),u))
-      | Construct (((kn,i),j),u) ->
-          let canon_mind = MutInd.make1 (MutInd.canonical kn) in
+      | Construct (((mind,i),j),u) ->
+          let canon_mind = MutInd.canonize mind in
             mkConstructU (((canon_mind,i),j),u)
       | Prod (na,t,ct) ->
           mkProd (na,func t, func ct)
@@ -500,8 +500,7 @@ let rec canonize_name c =
       | App (ct,l) ->
           mkApp (func ct,Array.Smart.map func l)
       | Proj(p,c) ->
-        let p' = Projection.map (fun kn ->
-          MutInd.make1 (MutInd.canonical kn)) p in
+        let p' = Projection.map MutInd.canonize p in
           (mkProj (p', func c))
       | _ -> c
 
