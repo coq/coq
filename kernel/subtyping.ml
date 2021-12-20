@@ -293,8 +293,8 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
   else
     let rec check_structure cst env str1 str2 equiv subst1 subst2 =
       match str1,str2 with
-      |NoFunctor list1,
-       NoFunctor list2 ->
+      | NoFunctor list1,
+        NoFunctor list2 ->
         if equiv then
           let subst2 = add_mp mtb2.mod_mp mtb1.mod_mp mtb1.mod_delta subst2 in
           let cst1 = check_signatures cst env
@@ -310,8 +310,8 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
           check_signatures cst env
             mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
             mtb1.mod_delta  mtb2.mod_delta
-      |MoreFunctor (arg_id1,arg_t1,body_t1),
-       MoreFunctor (arg_id2,arg_t2,body_t2) ->
+      | MoreFunctor (arg_id1,arg_t1,body_t1),
+        MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mp2 = MPbound arg_id2 in
         let subst1 = join (map_mbid arg_id1 mp2 arg_t2.mod_delta) subst1 in
         let cst = check_modtypes cst env arg_t2 arg_t1 subst2 subst1 equiv in

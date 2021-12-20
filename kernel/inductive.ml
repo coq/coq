@@ -623,7 +623,7 @@ let push_fix_renv renv (_,v,_ as recdef) =
     genv = iterate (fun ge -> lazy Not_subterm::ge) n renv.genv }
 
 (* Definition and manipulation of the stack *)
-type stack_element = |SClosure of guard_env*constr |SArg of subterm_spec Lazy.t
+type stack_element = SClosure of guard_env*constr | SArg of subterm_spec Lazy.t
 
 let push_stack_closures renv l stack =
   List.fold_right (fun h b -> (SClosure (renv,h))::b) l stack
@@ -644,7 +644,7 @@ let match_inductive ind ra =
     | Mrec i | Nested (NestedInd i) -> Ind.CanOrd.equal ind i
     | Norec | Nested (NestedPrimitive _) -> false
 
-(* In {match c as z in ci y_s return P with |C_i x_s => t end}
+(* In {match c as z in ci y_s return P with | C_i x_s => t end}
    [branches_specif renv c_spec ci] returns an array of x_s specs knowing
    c_spec. *)
 let branches_specif renv c_spec ci =
@@ -964,8 +964,8 @@ and lazy_subterm_specif renv stack t =
   lazy (subterm_specif renv stack t)
 
 and stack_element_specif = function
-  |SClosure (h_renv,h) -> lazy_subterm_specif h_renv [] h
-  |SArg x -> x
+  | SClosure (h_renv,h) -> lazy_subterm_specif h_renv [] h
+  | SArg x -> x
 
 and extract_stack = function
    | [] -> Lazy.from_val Not_subterm , []
@@ -1082,8 +1082,8 @@ let check_one_fix renv recpos trees def =
                   let z = List.nth stack' np in
                   if not (check_is_subterm (stack_element_specif z) trees.(glob)) then
                     begin match z with
-                      |SClosure (z,z') -> error_illegal_rec_call renv glob (z,z')
-                      |SArg _ -> error_partial_apply renv glob
+                      | SClosure (z,z') -> error_illegal_rec_call renv glob (z,z')
+                      | SArg _ -> error_partial_apply renv glob
                     end
               end
             else

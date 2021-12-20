@@ -221,12 +221,12 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
 let check_with env mp (sign,alg,reso,cst) = function
-  |WithDef(idl, (c, ctx)) ->
+  | WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor mp sign in
     let struc', c', cst' = check_with_def env struc (idl, (c, ctx)) mp reso in
     let wd' = WithDef (idl, (c', ctx)) in
     NoFunctor struc', MEwith (alg,wd'), reso, Univ.Constraints.union cst' cst
-  |WithMod(idl,mp1) as wd ->
+  | WithMod(idl,mp1) as wd ->
     let struc = destr_nofunctor mp sign in
     let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in
     NoFunctor struc', MEwith (alg,wd), reso', Univ.Constraints.union cst' cst
@@ -253,15 +253,15 @@ let translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
 let mk_alg_app alg arg = MEapply (alg,arg)
 
 let rec translate_mse env mpo inl = function
-  |MEident mp1 as me ->
+  | MEident mp1 as me ->
     let mb = match mpo with
-      |Some mp -> strengthen_and_subst_mb (lookup_module mp1 env) mp false
-      |None ->
+      | Some mp -> strengthen_and_subst_mb (lookup_module mp1 env) mp false
+      | None ->
         let mt = lookup_modtype mp1 env in
         module_body_of_type mt.mod_mp mt
     in
     mb.mod_type, me, mb.mod_delta, Univ.Constraints.empty
-  |MEapply (fe,mp1) ->
+  | MEapply (fe,mp1) ->
     translate_apply env inl (translate_mse env mpo inl fe) mp1 mk_alg_app
   |MEwith(me, with_decl) ->
     assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
@@ -324,7 +324,7 @@ let finalize_module env mp (sign,alg,reso,cst1) restype = match restype with
     Univ.Constraints.(union cst1 (union cst2 cst3))
 
 let translate_module env mp inl = function
-  |MType (params,ty) ->
+  | MType (params,ty) ->
     let mtb, cst = translate_modtype env mp inl (params,ty) in
     module_body_of_type mp mtb, cst
   |MExpr (params,mse,oty) ->
@@ -338,32 +338,32 @@ let translate_module env mp inl = function
     thanks to strengthening. *)
 
 let rec unfunct = function
-  |NoFunctor me -> me
-  |MoreFunctor(_,_,me) -> unfunct me
+  | NoFunctor me -> me
+  | MoreFunctor(_,_,me) -> unfunct me
 
 let rec forbid_incl_signed_functor env = function
-  |MEapply(fe,_) -> forbid_incl_signed_functor env fe
-  |MEwith _ -> assert false (* No 'with' syntax for modules *)
-  |MEident mp1 ->
+  | MEapply(fe,_) -> forbid_incl_signed_functor env fe
+  | MEwith _ -> assert false (* No 'with' syntax for modules *)
+  | MEident mp1 ->
     let mb = lookup_module mp1 env in
     match mb.mod_type, mb.mod_type_alg, mb.mod_expr with
-    |MoreFunctor _, Some _, _ ->
+    | MoreFunctor _, Some _, _ ->
       (* functor + restricted signature = error *)
       error_include_restricted_functor mp1
-    |MoreFunctor _, None, Algebraic me ->
+    | MoreFunctor _, None, Algebraic me ->
       (* functor, no signature yet, a definition which may be restricted *)
       forbid_incl_signed_functor env (unfunct me)
     |_ -> ()
 
 let rec translate_mse_inclmod env mp inl = function
-  |MEident mp1 ->
+  | MEident mp1 ->
     let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr mb.mod_type in
     sign,(),mb.mod_delta,Univ.Constraints.empty
-  |MEapply (fe,arg) ->
+  | MEapply (fe,arg) ->
     let ftrans = translate_mse_inclmod env mp inl fe in
     translate_apply env inl ftrans arg (fun _ _ -> ())
-  |MEwith _ -> assert false (* No 'with' syntax for modules *)
+  | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
 let translate_mse_incl is_mod env mp inl me =
   if is_mod then
