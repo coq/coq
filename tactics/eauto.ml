@@ -196,34 +196,31 @@ module Search = struct
     else if not (Int.equal d' 0) then d'
     else subgoals_order p1 p2
 
-  let branching env concl db dblist local_lemmas s =
-    if Int.equal s.depth 0 then
-      [], []
-    else
-      let hyps = EConstr.named_context env in
-      let secvars = secvars_of_hyps hyps in
-      let assumption_tacs =
-        let mkdb env sigma = assert false in (* no goal can be generated *)
-        let map_assum id = (mkdb, e_give_exact (mkVar id), lazy (str "exact" ++ spc () ++ Id.print id)) in
-        List.map map_assum (ids_of_named_context hyps)
+  let branching env sigma concl db dblist local_lemmas =
+    let hyps = EConstr.named_context env in
+    let secvars = secvars_of_hyps hyps in
+    let assumption_tacs =
+      let mkdb env sigma = assert false in (* no goal can be generated *)
+      let map_assum id = (mkdb, e_give_exact (mkVar id), lazy (str "exact" ++ spc () ++ Id.print id)) in
+      List.map map_assum (ids_of_named_context hyps)
+    in
+    let intro_tac =
+      let mkdb env sigma =
+        push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
       in
-      let intro_tac =
-        let mkdb env sigma =
-          push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
-        in
-        [mkdb, Tactics.intro, lazy (str "intro")]
+      [mkdb, Tactics.intro, lazy (str "intro")]
+    in
+    let rec_tacs =
+      let mkdb env sigma =
+        let hyps' = EConstr.named_context env in
+          if hyps' == hyps then db
+          else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
       in
-      let rec_tacs =
-        let mkdb env sigma =
-          let hyps' = EConstr.named_context env in
-            if hyps' == hyps then db
-            else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
-        in
-        let tacs = e_possible_resolve env s.sigma dblist db secvars concl in
-        let tacs = List.sort compare tacs in
-        List.map (fun (tac, _, pp) -> (mkdb, tac, pp)) tacs
-      in
-      assumption_tacs @ intro_tac, rec_tacs
+      let tacs = e_possible_resolve env sigma dblist db secvars concl in
+      let tacs = List.sort compare tacs in
+      List.map (fun (tac, _, pp) -> (mkdb, tac, pp)) tacs
+    in
+    assumption_tacs @ intro_tac, rec_tacs
 
   let msg_with_position (p : int list) s = match p with
   | [] -> ()
@@ -259,14 +256,15 @@ module Search = struct
   let search ?(debug=false) dblist local_lemmas s =
     let rec explore p s =
       let () = msg_with_position p s in
-      match s.tacres with
+      if Int.equal s.depth 0 then raise Not_found
+      else match s.tacres with
       | [] -> s
       | (gl, db) :: rest ->
         let evi = Evd.find s.sigma gl in
         let env = Evd.evar_filtered_env (Global.env ()) evi in
         let concl = Evd.evar_concl evi in
         let ps = if s.prev == Unknown then Unknown else State s in
-        let tacs, rectacs = branching env concl db dblist local_lemmas s in
+        let tacs, rectacs = branching env s.sigma concl db dblist local_lemmas in
         let map (sigma, lgls, pp) =
           { depth = s.depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
         in
