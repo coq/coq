@@ -69,10 +69,10 @@ let reserve_table = Summary.ref Id.Map.empty ~name:"reserved-type"
 let reserve_revtable = Summary.ref KeyMap.empty ~name:"reserved-type-rev"
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef (ref,_),args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | NApp (NRef (ref,_),args) -> RefKey(canonize_global ref), Some (List.length args)
   | NList (_,_,NApp (NRef (ref,_),args),_,_)
-  | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) -> RefKey (canonical_gr ref), Some (List.length args)
-  | NRef (ref,_) -> RefKey(canonical_gr ref), None
+  | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) -> RefKey (canonize_global ref), Some (List.length args)
+  | NRef (ref,_) -> RefKey(canonize_global ref), None
   | _ -> Oth, None
 
 let add_reserved_type (id,t) =
@@ -98,7 +98,7 @@ let declare_reserved_type idl t =
 let find_reserved_type id = Id.Map.find (root_of_id id) !reserve_table
 
 let constr_key c =
-  try RefKey (canonical_gr (fst @@ Constr.destRef (fst (Constr.decompose_app c))))
+  try RefKey (canonize_global (fst @@ Constr.destRef (fst (Constr.decompose_app c))))
   with Constr.DestKO -> Oth
 
 let revert_reserved_type t =

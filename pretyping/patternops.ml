@@ -184,9 +184,9 @@ let pattern_of_constr env sigma t =
          with
          | Some n -> PSoApp (n,Array.to_list (Array.map (pattern_of_constr env) a))
          | None -> PApp (pattern_of_constr env f,Array.map (pattern_of_constr env) a))
-    | Const (con,u)  -> PRef (canonical_gr (GlobRef.ConstRef con))
-    | Ind (ind,u)    -> PRef (canonical_gr (GlobRef.IndRef ind))
-    | Construct (cstr,u) -> PRef (canonical_gr (GlobRef.ConstructRef cstr))
+    | Const (con,u)  -> PRef (canonize_global (GlobRef.ConstRef con))
+    | Ind (ind,u)    -> PRef (canonize_global (GlobRef.IndRef ind))
+    | Construct (cstr,u) -> PRef (canonize_global (GlobRef.ConstructRef cstr))
     | Proj (p, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
@@ -422,7 +422,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GPatVar (Evar_kinds.FirstOrderPatVar n) ->
       metas := n::!metas; PMeta (Some n)
   | GRef (gr,_) ->
-      PRef (canonical_gr gr)
+      PRef (canonize_global gr)
   (* Hack to avoid rewriting a complete interpretation of patterns *)
   | GApp (c, cl) ->
     begin match DAst.get c with

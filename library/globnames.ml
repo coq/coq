@@ -56,11 +56,23 @@ let subst_global subst ref = match ref with
       let c' = subst_constructor subst c in
       if c'==c then ref,None else ConstructRef c', None
 
-let canonical_gr = function
+let canonize_global = function
   | ConstRef con -> ConstRef(Constant.canonize con)
   | IndRef (mind,i) -> IndRef(MutInd.canonize mind,i)
   | ConstructRef ((mind,i),j )-> ConstructRef((MutInd.canonize mind,i),j)
   | VarRef id -> VarRef id
+
+let canonize_global_opt = function
+  | ConstRef cst ->
+    if Constant.is_canonical cst then None
+    else Some (ConstRef (Constant.canonize cst))
+  | IndRef (mind,i) ->
+    if MutInd.is_canonical mind then None
+    else Some (IndRef (MutInd.canonize mind, i))
+  | ConstructRef ((mind,i),j) ->
+    if MutInd.is_canonical mind then None
+    else Some (ConstructRef ((MutInd.canonize mind, i),j))
+  | VarRef _ -> None
 
 let global_of_constr c = match kind c with
   | Const (sp,u) -> ConstRef sp

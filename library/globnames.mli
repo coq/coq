@@ -24,7 +24,11 @@ val isConstRef : GlobRef.t -> bool
 val isIndRef : GlobRef.t -> bool
 val isConstructRef : GlobRef.t -> bool
 
-val canonical_gr : GlobRef.t -> GlobRef.t
+val canonize_global : GlobRef.t -> GlobRef.t
+(** Turn a global reference into its canonical representative *)
+
+val canonize_global_opt : GlobRef.t -> GlobRef.t option
+(** Returns the canonical representative of a global reference if not already canonical *)
 
 val destVarRef : GlobRef.t -> variable
 val destConstRef : GlobRef.t -> Constant.t

@@ -448,21 +448,9 @@ let pr_located_qualid = function
   | Undefined qid ->
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
-let canonize_ref = let open GlobRef in function
-  | ConstRef cst ->
-    if Constant.is_canonical cst then None
-    else Some (ConstRef (Constant.canonize cst))
-  | IndRef (mind,i) ->
-    if MutInd.is_canonical mind then None
-    else Some (IndRef (MutInd.canonize mind, i))
-  | ConstructRef ((mind,i),j) ->
-    if MutInd.is_canonical mind then None
-    else Some (ConstructRef ((MutInd.canonize mind, i),j))
-  | VarRef _ -> None
-
 let display_alias = function
   | Term r ->
-    begin match canonize_ref r with
+    begin match Globnames.canonize_global_opt r with
     | None -> mt ()
     | Some r' ->
       let q' = Nametab.shortest_qualid_of_global Id.Set.empty r' in

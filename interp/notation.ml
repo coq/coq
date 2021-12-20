@@ -377,38 +377,38 @@ let keymap_find key map =
 let notations_key_table = ref (KeyMap.empty : (bool * notation_rule) list KeyMap.t)
 
 let glob_prim_constr_key c = match DAst.get c with
-  | GRef (ref, _) -> Some (canonical_gr ref)
+  | GRef (ref, _) -> Some (canonize_global ref)
   | GApp (c, _) ->
     begin match DAst.get c with
-    | GRef (ref, _) -> Some (canonical_gr ref)
+    | GRef (ref, _) -> Some (canonize_global ref)
     | _ -> None
     end
-  | GProj ((cst,_), _, _) -> Some (canonical_gr (GlobRef.ConstRef cst))
+  | GProj ((cst,_), _, _) -> Some (canonize_global (GlobRef.ConstRef cst))
   | _ -> None
 
 let glob_constr_keys c = match DAst.get c with
   | GApp (c, _) ->
     begin match DAst.get c with
-    | GRef (ref, _) -> [RefKey (canonical_gr ref); Oth]
+    | GRef (ref, _) -> [RefKey (canonize_global ref); Oth]
     | _ -> [Oth]
     end
-  | GProj ((cst,_), _, _) -> [RefKey (canonical_gr (GlobRef.ConstRef cst))]
-  | GRef (ref,_) -> [RefKey (canonical_gr ref)]
+  | GProj ((cst,_), _, _) -> [RefKey (canonize_global (GlobRef.ConstRef cst))]
+  | GRef (ref,_) -> [RefKey (canonize_global ref)]
   | _ -> [Oth]
 
 let cases_pattern_key c = match DAst.get c with
-  | PatCstr (ref,_,_) -> RefKey (canonical_gr (GlobRef.ConstructRef ref))
+  | PatCstr (ref,_,_) -> RefKey (canonize_global (GlobRef.ConstructRef ref))
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef (ref,_),args) -> RefKey(canonical_gr ref), AppBoundedNotation (List.length args)
-  | NProj ((cst,_),args,_) -> RefKey(canonical_gr (GlobRef.ConstRef cst)), AppBoundedNotation (List.length args + 1)
+  | NApp (NRef (ref,_),args) -> RefKey(canonize_global ref), AppBoundedNotation (List.length args)
+  | NProj ((cst,_),args,_) -> RefKey(canonize_global (GlobRef.ConstRef cst)), AppBoundedNotation (List.length args + 1)
   | NList (_,_,NApp (NRef (ref,_),args),_,_)
   | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) ->
-      RefKey (canonical_gr ref), AppBoundedNotation (List.length args)
-  | NRef (ref,_) -> RefKey(canonical_gr ref), NotAppNotation
+      RefKey (canonize_global ref), AppBoundedNotation (List.length args)
+  | NRef (ref,_) -> RefKey(canonize_global ref), NotAppNotation
   | NApp (NList (_,_,NApp (NRef (ref,_),args),_,_), args') ->
-      RefKey (canonical_gr ref), AppBoundedNotation (List.length args + List.length args')
+      RefKey (canonize_global ref), AppBoundedNotation (List.length args + List.length args')
   | NApp (NList (_,_,NApp (_,args),_,_), args') ->
       Oth, AppBoundedNotation (List.length args + List.length args')
   | NApp (_,args) -> Oth, AppBoundedNotation (List.length args)
@@ -1661,7 +1661,7 @@ let uninterp_cases_pattern_notations c =
   filter_also_for_pattern (keymap_find (cases_pattern_key c) !notations_key_table)
 
 let uninterp_ind_pattern_notations ind =
-  filter_also_for_pattern (keymap_find (RefKey (canonical_gr (GlobRef.IndRef ind))) !notations_key_table)
+  filter_also_for_pattern (keymap_find (RefKey (canonize_global (GlobRef.IndRef ind))) !notations_key_table)
 
 let has_active_parsing_rule_in_scope ntn sc =
   try
