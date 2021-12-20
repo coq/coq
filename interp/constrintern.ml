@@ -784,6 +784,7 @@ type binder_action =
   | AddTermIter of (constr_expr * subscopes) Names.Id.Map.t
   | AddPreBinderIter of Id.t * local_binder_expr (* A binder to be internalized *)
   | AddBinderIter of Id.t * extended_glob_local_binder (* A binder already internalized - used for generalized binders *)
+  | AddNList (* Insert a ".. term .." block *)
 
 let dmap_with_loc f n =
   CAst.map_with_loc (fun ?loc c -> f ?loc (DAst.get_thunk c)) n
@@ -820,7 +821,13 @@ let terms_of_binders bl =
 let flatten_generalized_binders_if_any y l =
   match List.rev l with
   | [] -> assert false
-  | a::l -> a, List.map (fun a -> AddBinderIter (y,a)) l (* if l not empty, this means we had a generalized binder *)
+  | l ->
+     (* if l not empty, this means we had a generalized binder *)
+     let select_iter a =
+       match DAst.get a with
+       | GLocalAssum (Name id,_,_) when Id.equal id ldots_var -> AddNList
+       | _ -> AddBinderIter (y,a) in
+     List.map select_iter l
 
 let flatten_binders bl =
   let dispatch = function
@@ -854,15 +861,18 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         | [],terminator,_ -> aux (terms,None,None) (renaming,env) terminator
         | AddPreBinderIter (y,binder)::rest,terminator,iter ->
            let env,binders = intern_local_binder_aux intern ntnvars (adjust_env env iter,[]) binder in
-           let binder,extra = flatten_generalized_binders_if_any y binders in
-           aux (terms,Some (y,binder),Some (extra@rest,terminator,iter)) (renaming,env) iter
+           let binders = flatten_generalized_binders_if_any y binders in
+           aux_letin env (binders@rest,terminator,iter)
         | AddBinderIter (y,binder)::rest,terminator,iter ->
            aux (terms,Some (y,binder),Some (rest,terminator,iter)) (renaming,env) iter
         | AddTermIter nterms::rest,terminator,iter ->
            aux (nterms,None,Some (rest,terminator,iter)) (renaming,env) iter
         | AddLetIn (na,c,t)::rest,terminator,iter ->
            let env,(na,c,t) = intern_letin_binder intern ntnvars (adjust_env env iter) (na,c,t) in
-           DAst.make ?loc (GLetIn (na,c,t,aux_letin env (rest,terminator,iter))) in
+           DAst.make ?loc (GLetIn (na,c,t,aux_letin env (rest,terminator,iter)))
+        | AddNList::rest,terminator,iter ->
+           DAst.make ?loc (GApp (DAst.make ?loc (GVar ldots_var), [aux_letin env (rest,terminator,iter)]))
+        in
         aux_letin env (Option.get iteropt)
     | NVar id -> subst_var subst' (renaming, env) id
     | NList (x,y,iter,terminator,revert) ->

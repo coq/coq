@@ -540,3 +540,15 @@ Notation "[[ x ]]" := x (x custom foo) : nat_scope.
 Fail Notation "[[ x ]]" := x (x custom bar) : type_scope.
 
 End Incompatibility.
+
+Module RecursivePatternsArgumentsInRecursiveNotations.
+
+Notation "'λ' x .. y , t" := (fun x => .. (fun y => t) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' 'λ'  x  ..  y ']' ,  '/' t ']'").
+
+Notation "'lambda' x .. y , t" := (λ x .. y, t) (at level 200, x binder, y binder).
+
+Check lambda x y, x+y=0.
+
+End RecursivePatternsArgumentsInRecursiveNotations.
