@@ -189,63 +189,24 @@ val pr_transparent_state   : TransparentState.t -> Pp.t
 
 (** Proofs, these functions obey [Hyps Limit] and [Compact contexts]. *)
 
-(** [pr_goal ~diffs ~og_s g_s] prints the goal specified by [g_s].  If [diffs] is true,
-    highlight the differences between the old goal, [og_s], and [g_s].  [g_s] and [og_s] are
-    records containing the goal and sigma for, respectively, the new and old proof steps,
-    e.g. [{ it = g ; sigma = sigma }].
+(** [pr_goal ?diffs g_s] prints the goal specified by [g_s].  If [diffs] is [Some og_s],
+    highlight the differences between the (optional) old goal [og_s] and [g_s].
+    This is a UI-facing function, you should not use that for debug printing.
 *)
-val pr_goal : ?diffs:bool -> ?og_s:Proof_diffs.goal -> Evar.t sigma -> Pp.t
+val pr_goal : ?diffs:Proof_diffs.goal option -> Evar.t sigma -> Pp.t
 
-(** [pr_subgoals ~pr_first ~diffs ~os_map close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals]
-   prints the goals in [goals] followed by the goals in [unfocused] in a compact form
-   (typically only the conclusion).  If [pr_first] is true, print the first goal in full.
-   [close_cmd] is printed afterwards verbatim.
-
-   If [diffs] is true, then highlight diffs relative to [os_map] in the output for first goal.
-   [os_map] contains sigma for the old proof step and the goal map created by
-   [Proof_diffs.make_goal_map].
-
-   This function prints only the focused goals unless the corresponding option [enable_unfocused_goal_printing] is set.
-   [seeds] is for printing dependent evars (mainly for emacs proof tree mode).  [shelf] is from
-   Proof.proof and is used to identify shelved goals in a message if there are no more subgoals but
-   there are non-instantiated existential variables.  [stack] is used to print summary info on unfocused
-   goals.
-*)
-val pr_subgoals
-  : ?pr_first:bool
-  -> ?diffs:bool
-  -> ?os_map:Proof_diffs.goal_map
-  -> ?entry:Proofview.entry
-  -> Pp.t option -> evar_map
-  -> shelf:Evar.t list
-  -> stack:int list
-  -> unfocused:Evar.t list
-  -> goals:Evar.t list
-  -> Pp.t
-
-val pr_subgoal : int -> evar_map -> Evar.t list -> Pp.t
-
-(** [pr_concl n ~diffs ~og_s sigma g] prints the conclusion of the goal [g] using [sigma].  The output
-    is labelled "subgoal [n]".  If [diffs] is true, highlight the differences between the old conclusion,
-    [og_s], and [g]+[sigma].  [og_s] is a record containing the old goal and sigma, e.g. [{ it = g ; sigma = sigma }].
-*)
-val pr_concl : int -> ?diffs:bool -> ?og_s:Proof_diffs.goal -> evar_map -> Evar.t -> Pp.t
-
-(** [pr_open_subgoals_diff ~quiet ~diffs ~oproof proof] shows the context for [proof] as used by, for example, coqtop.
+(** [pr_open_subgoals ~quiet ?diffs proof] shows the context for [proof] as used by, for example, coqtop.
     The first active goal is printed with all its antecedents and the conclusion.  The other active goals only show their
-     conclusions.  If [diffs] is true, highlight the differences between the old proof, [oproof], and [proof].  [quiet]
+     conclusions.  If [diffs] is [Some oproof], highlight the differences between the old proof [oproof], and [proof].  [quiet]
      disables printing messages as Feedback.
 *)
-val pr_open_subgoals_diff  : ?quiet:bool -> ?diffs:bool -> ?oproof:Proof.t -> Proof.t -> Pp.t
-val pr_open_subgoals       : proof:Proof.t -> Pp.t
+val pr_open_subgoals       : ?quiet:bool -> ?diffs:Proof.t option -> Proof.t -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
 val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
 val pr_evars_int           : evar_map -> shelf:Evar.t list -> given_up:Evar.t list -> int -> evar_info Evar.Map.t -> Pp.t
-val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
 
-val print_and_diff : Proof.t option -> Proof.t option -> unit
 val print_dependent_evars : Evar.t option -> evar_map -> Evar.t list -> Pp.t
 
 (** Declarations for the "Print Assumption" command *)

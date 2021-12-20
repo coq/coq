@@ -29,10 +29,6 @@ type diffOpt = DiffOff | DiffOn | DiffRemoved
 
 val string_to_diffs : string -> diffOpt
 
-open Evd
-open Environ
-open Constr
-
 type goal
 
 val make_goal : Environ.env -> Evd.evar_map -> Evar.t -> goal
@@ -48,26 +44,10 @@ If you want to make your call especially bulletproof, catch these
 exceptions, print a user-visible message, then recall this routine with
 the first argument set to None, which will skip the diff.
 *)
-val diff_goal_ide : goal option -> goal -> Pp.t list * Pp.t
-
-(** Computes the diff between two goals
-
-If the strings used to display the goal are not lexable (this is believed
-unlikely), this routine will generate a Diff_Failure.  This routine may also
-raise Diff_Failure under some "impossible" conditions.
-
-If you want to make your call especially bulletproof, catch these
-exceptions, print a user-visible message, then recall this routine with
-the first argument set to None, which will skip the diff.
-*)
-val diff_goal : ?og_s:goal -> goal -> Pp.t
+val diff_goal : ?og_s:goal -> goal -> Pp.t list * Pp.t
 
 (** Convert a string to a list of token strings using the lexer *)
 val tokenize_string : string -> string list
-
-val pr_letype_env          : ?lax:bool -> ?goal_concl_style:bool -> Environ.env -> Evd.evar_map -> ?impargs:Glob_term.binding_kind list -> EConstr.types -> Pp.t
-val pr_leconstr_env        : ?lax:bool -> ?inctx:bool -> ?scope:Notation_term.scope_name -> Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
-val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:Notation_term.scope_name -> env -> evar_map -> constr -> Pp.t
 
 (** Computes diffs for a single conclusion *)
 val diff_concl : ?og_s:goal -> goal -> Pp.t

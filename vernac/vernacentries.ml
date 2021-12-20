@@ -2121,7 +2121,7 @@ let vernac_show ~pstate =
     begin function
     | ShowGoal goalref ->
       begin match goalref with
-        | OpenSubgoals -> pr_open_subgoals ~proof
+        | OpenSubgoals -> pr_open_subgoals proof
         | NthGoal n -> pr_nth_open_subgoal ~proof n
         | GoalId id -> pr_goal_by_id ~proof id
       end

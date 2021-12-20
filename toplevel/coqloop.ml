@@ -359,6 +359,22 @@ let print_anyway c =
   | VernacSetOption (_, opt, _) -> List.mem opt print_anyway_opts
   | _ -> false
 
+(* print the proof step, possibly with diffs highlighted, *)
+let print_and_diff oldp proof =
+  let output =
+    if Proof_diffs.show_diffs () then
+      try Printer.pr_open_subgoals ~diffs:oldp proof
+      with Pp_diff.Diff_Failure msg -> begin
+        (* todo: print the unparsable string (if we know it) *)
+        Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
+            ++ str "Showing results without diff highlighting" );
+        Printer.pr_open_subgoals proof
+      end
+    else
+      Printer.pr_open_subgoals proof
+  in
+  Feedback.msg_notice output
+
 (* We try to behave better when goal printing raises an exception
    [usually Ctrl-C]
 
@@ -366,12 +382,12 @@ let print_anyway c =
    generic way, but that'll do for now *)
 let top_goal_print ~doc c oldp newp =
   try
-    let proof_changed = not (Option.equal cproof oldp newp) in
+    let proof_changed = not (Option.equal cproof oldp (Some newp)) in
     let print_goals = proof_changed && Vernacstate.Declare.there_are_pending_proofs () ||
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
       let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      Printer.print_and_diff dproof newp
+      print_and_diff dproof newp
     end
   with
   | exn ->
@@ -413,7 +429,10 @@ let process_toplevel_command ~state stm =
 
   | VernacControl { CAst.loc; v=c } ->
     let nstate = Vernac.process_expr ~state (CAst.make ?loc c) in
-    top_goal_print ~doc:state.doc c state.proof nstate.proof;
+    let () = match nstate.proof with
+    | None -> ()
+    | Some proof -> top_goal_print ~doc:state.doc c state.proof proof
+    in
     nstate
 
   | VernacShowGoal { gid; sid } ->

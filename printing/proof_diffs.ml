@@ -260,9 +260,6 @@ let pr_leconstr_env ?lax ?inctx ?scope env sigma t =
 let pr_econstr_env ?lax ?inctx ?scope env sigma t =
   Ppconstr.pr_constr_expr env sigma (Constrextern.extern_constr ?lax ?inctx ?scope env sigma t)
 
-let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
-  pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
-
 let diff_concl ?og_s ng =
   let o_concl_pp = match og_s with
   | Some { ty = oty; env = oenv; sigma = osigma } -> pp_of_type oenv osigma oty
@@ -332,28 +329,13 @@ let diff_goal_info o_info n_info =
   let hyp_diffs_list = diff_hyps o_idents_in_lines o_hyp_map n_idents_in_lines n_hyp_map in
   (hyp_diffs_list, concl_pp)
 
-let hyp_list_to_pp hyps =
-  let open Pp in
-  match hyps with
-  | h :: tl -> List.fold_left (fun x y -> x ++ cut () ++ y) h tl
-  | [] -> mt ()
-
 let unwrap g_s =
   match g_s with
   | Some g_s -> goal_info g_s
   | None -> ([], CString.Map.empty, Pp.mt ())
 
-let diff_goal_ide og_s ng =
-  diff_goal_info (unwrap og_s) (goal_info ng)
-
 let diff_goal ?og_s ng =
-  let (hyps_pp_list, concl_pp) = diff_goal_info (unwrap og_s) (goal_info ng) in
-  let open Pp in
-  v 0 (
-    (hyp_list_to_pp hyps_pp_list) ++ cut () ++
-    str "============================" ++ cut () ++
-    concl_pp)
-
+  diff_goal_info (unwrap og_s) (goal_info ng)
 
 (*** Code to determine which calls to compare between the old and new proofs ***)
 
