@@ -127,6 +127,8 @@ sig
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a list -> 'a list
+    val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b list -> 'a * 'b list
+    val fold_right_map : ('b -> 'a -> 'b * 'a) -> 'b list -> 'a -> 'b list * 'a
   end
 
   module type MonoS = sig
@@ -1044,6 +1046,22 @@ struct
     let h' = f h in
     let tl' = map f tl in
     if h' == h && tl' == tl then l else h' :: tl'
+
+  let rec fold_left_map f e l =
+    match l with
+    | [] -> e, []
+    | h :: tl ->
+      let e', h' = f e h in
+      let e'', tl' = fold_left_map f e' tl in
+      e'', (if h' == h && tl' == tl then l else h' :: tl')
+
+  let rec fold_right_map f l e =
+    match l with
+    | [] -> [], e
+    | h :: tl ->
+      let tl', e' = fold_right_map f tl e in
+      let h', e'' = f h e' in
+      (if h' == h && tl' == tl then l else h' :: tl'), e''
 
 end
 

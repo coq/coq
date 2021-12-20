@@ -407,11 +407,24 @@ sig
   (** Like [cartesians op init l] but keep only the tuples for which
       [op] returns [Some _] on all the elements of the tuple. *)
 
+  (** When returning a list of same type as the input, maximally
+      shares the suffix of the output which is physically equal to the
+      corresponding suffix of the input *)
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a list -> 'a list
-    (** [Smart.map f [a1...an] = List.map f [a1...an]] but if for all i
-        [f ai == ai], then [Smart.map f l == l] *)
+    (** Like [List.map] but sharing with the input the longest suffix
+        of the output which is physically the same as the input; in
+        particular, [Smart.map f l == l] (physically) if [f a == a]
+        (physically) for all members of the list *)
+
+    val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b list -> 'a * 'b list
+    (** Idem for the second argument of [List.fold_left_map f e l]
+        relatively to the second argument of [f] *)
+
+    val fold_right_map : ('b -> 'a -> 'b * 'a) -> 'b list -> 'a -> 'b list * 'a
+    (** Idem for the first argument of [List.fold_right_map f l e]
+        relatively to the second argument of [f] *)
   end
 
   module type MonoS = sig

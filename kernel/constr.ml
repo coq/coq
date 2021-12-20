@@ -694,7 +694,7 @@ let map f c = match kind c with
 let fold_map_invert f acc = function
   | NoInvert -> acc, NoInvert
   | CaseInvert {indices;} as orig ->
-    let acc, indices' = Array.fold_left_map f acc indices in
+    let acc, indices' = Array.Smart.fold_left_map f acc indices in
     if indices==indices' then acc, orig
     else acc, CaseInvert {indices=indices';}
 
@@ -745,7 +745,7 @@ let fold_map f accu c = match kind c with
       else accu, mkProj (p, t')
   | Evar (e,l) ->
     (* Doesn't matter, we should not hashcons evars anyways *)
-      let accu, l' = List.fold_left_map f accu l in
+      let accu, l' = List.Smart.fold_left_map f accu l in
       if l'==l then accu, c
       else accu, mkEvar (e, l')
   | Case (ci,u,pms,p,iv,b,bl) ->
