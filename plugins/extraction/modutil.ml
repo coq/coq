@@ -41,7 +41,7 @@ let se_iter do_decl do_spec do_mp =
         let mp_w =
           List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
         in
-        let r = GlobRef.ConstRef (Constant.make2 mp_w (Label.of_id l')) in
+        let r = GlobRef.ConstRef (Constant.make mp_w (Label.of_id l')) in
         mt_iter mt; do_spec (Stype(r,l,Some t))
     | MTwith (mt,ML_With_module(idl,mp))->
         let mp_mt = msid_of_mt mt in
@@ -117,7 +117,7 @@ let ind_iter_references do_term do_cons do_type kn ind =
     do_type (GlobRef.IndRef ip);
     if lang () == Ocaml then
       (match ind.ind_equiv with
-         | Miniml.Equiv kne -> do_type (GlobRef.IndRef (MutInd.make1 kne, snd ip));
+         | Miniml.Equiv kne -> do_type (GlobRef.IndRef (MutInd.of_kn kne, snd ip));
          | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in

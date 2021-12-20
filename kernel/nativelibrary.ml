@@ -27,7 +27,7 @@ let rec translate_mod mp env mod_expr acc =
 and translate_field mp env acc (l,x) =
   match x with
   | SFBconst cb ->
-     let con = Constant.make2 mp l in
+     let con = Constant.make mp l in
      (debug_native_compiler (fun () ->
         let msg = Printf.sprintf "Compiling constant %s..." (Constant.to_string con) in
         Pp.str msg));

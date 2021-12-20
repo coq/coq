@@ -151,11 +151,11 @@ let datatypes_module = MPfile (make_dir datatypes_module_name)
 
 (** Identity *)
 
-let id = Constant.make2 datatypes_module @@ Label.make "idProp"
-let type_of_id = Constant.make2 datatypes_module @@ Label.make "IDProp"
+let id = Constant.make datatypes_module @@ Label.make "idProp"
+let type_of_id = Constant.make datatypes_module @@ Label.make "IDProp"
 
 (** Natural numbers *)
-let nat_kn = MutInd.make2 datatypes_module @@ Label.make "nat"
+let nat_kn = MutInd.make datatypes_module @@ Label.make "nat"
 let nat_path = Libnames.make_path (make_dir datatypes_module_name) (Id.of_string "nat")
 
 let glob_nat = GlobRef.IndRef (nat_kn,0)
@@ -166,7 +166,7 @@ let glob_O = GlobRef.ConstructRef path_of_O
 let glob_S = GlobRef.ConstructRef path_of_S
 
 (** Booleans *)
-let bool_kn = MutInd.make2 datatypes_module @@ Label.make "bool"
+let bool_kn = MutInd.make datatypes_module @@ Label.make "bool"
 
 let glob_bool = GlobRef.IndRef (bool_kn,0)
 
@@ -176,13 +176,13 @@ let glob_true  = GlobRef.ConstructRef path_of_true
 let glob_false  = GlobRef.ConstructRef path_of_false
 
 (** Equality *)
-let eq_kn = MutInd.make2 logic_module @@ Label.make "eq"
+let eq_kn = MutInd.make logic_module @@ Label.make "eq"
 let glob_eq = GlobRef.IndRef (eq_kn,0)
 
-let identity_kn = MutInd.make2 datatypes_module @@ Label.make "identity"
+let identity_kn = MutInd.make datatypes_module @@ Label.make "identity"
 let glob_identity = GlobRef.IndRef (identity_kn,0)
 
-let jmeq_kn = MutInd.make2 jmeq_module @@ Label.make "JMeq"
+let jmeq_kn = MutInd.make jmeq_module @@ Label.make "JMeq"
 let glob_jmeq = GlobRef.IndRef (jmeq_kn,0)
 
 (* Sigma data *)

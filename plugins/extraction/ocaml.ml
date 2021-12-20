@@ -479,7 +479,7 @@ let pp_Dfix (rv,c,t) =
 let pp_equiv param_list name = function
   | NoEquiv, _ -> mt ()
   | Equiv kn, i ->
-      str " = " ++ pp_parameters param_list ++ pp_global Type (GlobRef.IndRef (MutInd.make1 kn,i))
+      str " = " ++ pp_parameters param_list ++ pp_global Type (GlobRef.IndRef (MutInd.of_kn kn,i))
   | RenEquiv ren, _  ->
       str " = " ++ pp_parameters param_list ++ str (ren^".") ++ name
 
@@ -680,7 +680,7 @@ and pp_module_type params = function
       let mp_w =
         List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
       in
-      let r = GlobRef.ConstRef (Constant.make2 mp_w (Label.of_id l)) in
+      let r = GlobRef.ConstRef (Constant.make mp_w (Label.of_id l)) in
       push_visible mp_mt [];
       let pp_w = str " with type " ++ ids ++ pp_global Type r in
       pop_visible();

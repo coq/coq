@@ -515,7 +515,7 @@ and extract_really_ind env kn mib =
           | {binder_name=Anonymous}::l, typ::typs ->
               None :: (select_fields (i+1) l typs)
           | {binder_name=Name id}::l, typ::typs ->
-              let knp = Constant.make2 mp (Label.of_id id) in
+              let knp = Constant.make mp (Label.of_id id) in
               (* Is it safe to use [id] for projections [foo.id] ? *)
               if List.for_all ((==) Keep) (type2signature env typ)
               then projs := Cset.add knp !projs;

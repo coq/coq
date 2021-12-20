@@ -852,7 +852,7 @@ let export_private_constants eff senv =
   exported, senv
 
 let add_constant l decl senv =
-  let kn = Constant.make2 senv.modpath l in
+  let kn = Constant.make senv.modpath l in
   let senv, cb =
       match decl with
       | OpaqueEntry ce ->
@@ -943,7 +943,7 @@ let check_constraints uctx = function
 | Entries.Monomorphic_entry -> true
 
 let add_private_constant l uctx decl senv : (Constant.t * private_constants) * safe_environment =
-  let kn = Constant.make2 senv.modpath l in
+  let kn = Constant.make senv.modpath l in
   let senv = push_context_set ~strict:true uctx senv in
     let cb =
       match decl with
@@ -995,7 +995,7 @@ let add_checked_mind kn mib senv =
 
 let add_mind l mie senv =
   let () = check_mind mie l in
-  let kn = MutInd.make2 senv.modpath l in
+  let kn = MutInd.make senv.modpath l in
   let sec_univs = Option.map Section.all_poly_univs  senv.sections
   in
   let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in

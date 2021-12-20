@@ -191,16 +191,16 @@ let kn_of_deltas resolve1 resolve2 kn =
   if kn' == kn then kn_of_delta resolve2 kn else kn'
 
 let constant_of_delta_kn resolve kn =
-  Constant.make kn (kn_of_delta resolve kn)
+  Constant.of_kn ~user:kn (kn_of_delta resolve kn)
 
 let constant_of_deltas_kn resolve1 resolve2 kn =
-  Constant.make kn (kn_of_deltas resolve1 resolve2 kn)
+  Constant.of_kn ~user:kn (kn_of_deltas resolve1 resolve2 kn)
 
 let mind_of_delta_kn resolve kn =
-  MutInd.make kn (kn_of_delta resolve kn)
+  MutInd.of_kn ~user:kn (kn_of_delta resolve kn)
 
 let mind_of_deltas_kn resolve1 resolve2 kn =
-  MutInd.make kn (kn_of_deltas resolve1 resolve2 kn)
+  MutInd.of_kn ~user:kn (kn_of_deltas resolve1 resolve2 kn)
 
 let inline_of_delta inline resolver =
   match inline with
@@ -284,7 +284,7 @@ let subst_mind sub mind =
     let knc' =
       progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
     in
-    MutInd.make knu knc'
+    MutInd.of_kn ~user:knu knc'
   with No_subst -> mind
 
 let subst_ind sub (ind,i as indi) =
@@ -308,12 +308,12 @@ let subst_con0 sub cst =
   match search_delta_inline resolve knu knc with
     | Some t ->
       (* In case of inlining, discard the canonical part (cf #2608) *)
-      Constant.make1 knu, Some t
+      Constant.of_kn knu, Some t
     | None ->
       let knc' =
         progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
       in
-      let cst' = Constant.make knu knc' in
+      let cst' = Constant.of_kn ~user:knu knc' in
       cst', None
 
 let subst_con sub cst =

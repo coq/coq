@@ -98,7 +98,7 @@ let get_float_type env =
 let get_cmp_type env =
   match env.retroknowledge.retro_cmp with
   | Some (((mindcmp,_),_),_,_) ->
-     Constant.make (MutInd.user mindcmp) (MutInd.canonical mindcmp)
+     Constant.of_kn ~user:(MutInd.user mindcmp) (MutInd.canonical mindcmp)
   | None -> anomaly Pp.(str"Reduction of primitive: comparison not registered")
 
 let get_bool_constructors env =

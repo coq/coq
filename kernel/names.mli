@@ -372,14 +372,15 @@ sig
 
   (** Constructors *)
 
-  val make : KerName.t -> KerName.t -> t
-  (** Builds a constant name from a user and a canonical kernel name. *)
+  val make : ?user:ModPath.t -> ModPath.t -> Label.t -> t
+  (** Builds a constant name from a user and canonical module
+      paths and from a label. If the user path is not provided, it is
+      taken to be the same as the canonical one. *)
 
-  val make1 : KerName.t -> t
-  (** Special case of [make] where the user name is canonical.  *)
-
-  val make2 : ModPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make2 ...))] *)
+  val of_kn : ?user:KerName.t -> KerName.t -> t
+  (** Builds a constant name from a user and canonical kernel
+      name. If the user name is not provided, it is taken to be the
+      same as the canonical one. *)
 
   (** Projections *)
 
@@ -448,14 +449,15 @@ sig
 
   (** Constructors *)
 
-  val make : KerName.t -> KerName.t -> t
-  (** Builds a mutual inductive name from a user and a canonical kernel name. *)
+  val make : ?user:ModPath.t -> ModPath.t -> Label.t -> t
+  (** Builds a mutual inductive name from a user and canonical module
+      paths and from a label. If the user path is not provided, it is
+      taken to be the same as the canonical one. *)
 
-  val make1 : KerName.t -> t
-  (** Special case of [make] where the user name is canonical.  *)
-
-  val make2 : ModPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make2 ...))] *)
+  val of_kn : ?user:KerName.t -> KerName.t -> t
+  (** Builds a mutual inductive name from a user and canonical kernel
+      name. If the user name is not provided, it is taken to be the
+      same as the canonical one. *)
 
   (** Projections *)
 

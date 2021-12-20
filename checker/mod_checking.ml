@@ -100,7 +100,7 @@ let mk_mtb mp sign delta =
 let rec collect_constants_without_body sign mp accu =
   let collect_sf s lab = function
   | SFBconst cb ->
-     let c = Constant.make2 mp lab in
+     let c = Constant.make mp lab in
      if Declareops.constant_has_body cb then s else Cset.add c s
   | SFBmodule msb -> collect_constants_without_body msb.mod_type (MPdot(mp,lab)) s
   | SFBmind _ | SFBmodtype _ -> s in
@@ -143,7 +143,7 @@ and check_module_type env mty =
 
 and check_structure_field env opac mp lab res opacify = function
   | SFBconst cb ->
-      let c = Constant.make2 mp lab in
+      let c = Constant.make mp lab in
       check_constant_declaration env opac c cb (Cset.mem c opacify)
   | SFBmind mib ->
       let kn = KerName.make mp lab in

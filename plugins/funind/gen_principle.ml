@@ -1215,7 +1215,7 @@ let get_funs_constant mp =
         (fun i na ->
           match na.Context.binder_name with
           | Name id ->
-            let const = Constant.make2 mp (Label.of_id id) in
+            let const = Constant.make mp (Label.of_id id) in
             (const, i)
           | Anonymous -> CErrors.anomaly (Pp.str "Anonymous fix."))
         na
@@ -2134,7 +2134,7 @@ let make_graph (f_ref : GlobRef.t) =
     (* We register the infos *)
     List.iter
       (fun {Vernacexpr.fname = {CAst.v = id}} ->
-        add_Function false (Constant.make2 mp (Label.of_id id)))
+        add_Function false (Constant.make mp (Label.of_id id)))
       expr_list
 
 (* *************** statically typed entrypoints ************************* *)

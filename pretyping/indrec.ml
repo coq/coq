@@ -639,7 +639,7 @@ let lookup_eliminator env ind_sp s =
   let knc = KerName.make mpc l in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
-  let cst = Constant.make knu knc in
+  let cst = Constant.of_kn ~user:knu knc in
   if mem_constant cst env then GlobRef.ConstRef cst
   else
     (* Then try to get a user-defined eliminator in some other places *)

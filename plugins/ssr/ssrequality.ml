@@ -395,7 +395,7 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
       let elim, _ = EConstr.destConst sigma elim in
       let mp,l = KerName.repr (Constant.canonical elim) in
       let l' = Label.of_id (Nameops.add_suffix (Label.to_id l) "_r")  in
-      let c1' = Global.constant_of_delta_kn (Constant.canonical (Constant.make2 mp l')) in
+      let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
       sigma, EConstr.of_constr (mkConst c1')
   in
   let proof = EConstr.mkApp (elim, [| rdx_ty; new_rdx; pred; p; rdx; c |]) in

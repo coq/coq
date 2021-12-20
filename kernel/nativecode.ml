@@ -2140,7 +2140,7 @@ let compile_constant_field env con acc cb =
     gl@acc
 
 let compile_mind_field mp l acc mb =
-  let mind = MutInd.make2 mp l in
+  let mind = MutInd.make mp l in
   compile_mind mb mind acc
 
 let mk_open s = Gopen s

@@ -1447,7 +1447,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
       | GlobRef.ConstRef c -> is_opaque_constant c
       | _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant.")
     in
-    let lemma = mkConst (Names.Constant.make1 (Lib.make_kn na)) in
+    let lemma = mkConst (Names.Constant.of_kn (Lib.make_kn na)) in
     ref_ := Value (EConstr.Unsafe.to_constr lemma);
     let lid = ref [] in
     let h_num = ref (-1) in

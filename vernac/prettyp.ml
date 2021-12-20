@@ -682,11 +682,11 @@ let gallina_print_library_leaf env sigma with_values mp lobj =
           (try Some(print_named_decl env sigma id) with Not_found -> None)
       end @@
       DynHandle.add Declare.Internal.Constant.tag begin fun (id,_) ->
-        let kn = Constant.make2 mp (Label.of_id id) in
+        let kn = Constant.make mp (Label.of_id id) in
         Some (print_constant with_values sep kn None)
       end @@
       DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
-        let kn = MutInd.make2 mp (Label.of_id id) in
+        let kn = MutInd.make mp (Label.of_id id) in
         Some (gallina_print_inductive kn None)
       end @@
       DynHandle.empty

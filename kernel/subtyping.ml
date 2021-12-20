@@ -43,7 +43,7 @@ type namedmodule =
    constructors *)
 
 let add_mib_nameobjects mp l mib map =
-  let ind = MutInd.make2 mp l in
+  let ind = MutInd.make mp l in
   let add_mip_nameobjects j oib map =
     let ip = (ind,j) in
     let map =
@@ -155,7 +155,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       let cst = check_inductive_type cst p2.mind_typename ty1 ty2 in
         cst
   in
-  let mind = MutInd.make1 kn1 in
+  let mind = MutInd.of_kn kn1 in
   let check_cons_types i cst p1 p2 =
     Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst
@@ -183,7 +183,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     let kn2' = kn_of_delta reso2 kn2 in
     if KerName.equal kn2 kn2' ||
        MutInd.CanOrd.equal (mind_of_delta_kn reso1 kn1)
-                    (subst_mind subst2 (MutInd.make kn2 kn2'))
+                    (subst_mind subst2 (MutInd.of_kn ~user:kn2 kn2'))
     then ()
     else error NotEqualInductiveAliases
   end;

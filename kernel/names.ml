@@ -495,10 +495,13 @@ module KerPair = struct
     | Dual (kn,_) -> kn
 
   let same kn = Same kn
-  let make knu knc = if KerName.equal knu knc then Same knc else Dual (knu,knc)
+  let make_pair knu knc = if KerName.equal knu knc then Same knc else Dual (knu,knc)
 
-  let make1 = same
-  let make2 mp l = same (KerName.make mp l)
+  let of_kn ?user knc = match user with None -> same knc | Some knu -> make_pair knu knc
+  let make ?user mpc l =
+    let knc = KerName.make mpc l in
+    match user with None -> same knc | Some mpu -> make_pair (KerName.make mpu l) knc
+
   let label kp = KerName.label (user kp)
   let modpath kp = KerName.modpath (user kp)
 
@@ -513,7 +516,7 @@ module KerPair = struct
     else
       let kn = KerName.make mp1 lbl in
       if mp1 == mp2 then same kn
-      else make kn (KerName.make mp2 lbl)
+      else Dual (kn, KerName.make mp2 lbl)
 
   let to_string kp = KerName.to_string (user kp)
   let print kp = str (to_string kp)
@@ -570,7 +573,7 @@ module KerPair = struct
       type u = KerName.t -> KerName.t
       let hashcons hkn = function
         | Same kn -> Same (hkn kn)
-        | Dual (knu,knc) -> make (hkn knu) (hkn knc)
+        | Dual (knu,knc) -> Dual (hkn knu, hkn knc)
       let eq x y = (* physical comparison on subterms *)
         x == y ||
         match x,y with

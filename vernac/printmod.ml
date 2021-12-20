@@ -229,9 +229,9 @@ let nametab_register_body mp dir (l,body) =
     | SFBmodule _ -> () (* TODO *)
     | SFBmodtype _ -> () (* TODO *)
     | SFBconst _ ->
-      push (Label.to_id l) (GlobRef.ConstRef (Constant.make2 mp l))
+      push (Label.to_id l) (GlobRef.ConstRef (Constant.make mp l))
     | SFBmind mib ->
-      let mind = MutInd.make2 mp l in
+      let mind = MutInd.make mp l in
       Array.iteri
         (fun i mip ->
           push mip.mind_typename (GlobRef.IndRef (mind,i));
@@ -303,7 +303,7 @@ let print_body is_impl extent env mp (l,body) =
     | SFBmind mib ->
       match extent with
       | WithContents ->
-        pr_mutual_inductive_body env (MutInd.make2 mp l) mib None
+        pr_mutual_inductive_body env (MutInd.make mp l) mib None
       | OnlyNames ->
         let keyword =
           let open Declarations in
