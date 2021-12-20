@@ -199,6 +199,9 @@ val adjust_app_list_size : constr -> constr list -> constr -> constr list ->
 val adjust_app_array_size : constr -> constr array -> constr -> constr array ->
   (constr * constr array * constr * constr array)
 
+(** Replace the global references of a term by their canonical form *)
+val canonize_globals : Constr.t -> Constr.t
+
 (** name contexts *)
 type names_context = Name.t list
 val add_name : Name.t -> names_context -> names_context

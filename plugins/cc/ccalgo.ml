@@ -477,32 +477,8 @@ let new_representative typ =
    class_type=typ;
    functions=PafMap.empty}
 
-
-let rec canonize_name c =
-  let c = EConstr.Unsafe.to_constr c in
-  let func c = canonize_name (EConstr.of_constr c) in
-    match Constr.kind c with
-      | Const (cst,u) ->
-          let canon_const = Constant.canonize cst in
-            (mkConstU (canon_const,u))
-      | Ind ((mind,i),u) ->
-          let canon_mind = MutInd.canonize mind in
-            (mkIndU ((canon_mind,i),u))
-      | Construct (((mind,i),j),u) ->
-          let canon_mind = MutInd.canonize mind in
-            mkConstructU (((canon_mind,i),j),u)
-      | Prod (na,t,ct) ->
-          mkProd (na,func t, func ct)
-      | Lambda (na,t,ct) ->
-          mkLambda (na, func t,func ct)
-      | LetIn (na,b,t,ct) ->
-          mkLetIn (na, func b,func t,func ct)
-      | App (ct,l) ->
-          mkApp (func ct,Array.Smart.map func l)
-      | Proj(p,c) ->
-        let p' = Projection.map MutInd.canonize p in
-          (mkProj (p', func c))
-      | _ -> c
+let canonize_name c =
+  Termops.canonize_globals (EConstr.Unsafe.to_constr c)
 
 (* rebuild a term from a pattern and a substitution *)
 

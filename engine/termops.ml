@@ -1445,4 +1445,16 @@ let env_rel_context_chop k env =
   ctx1
 end
 
+let rec canonize_globals c =
+  match Constr.kind c with
+  | Const (cst,u) -> mkConstU (Constant.canonize cst,u)
+  | Ind ((mind,i),u) -> mkIndU ((MutInd.canonize mind,i),u)
+  | Construct (((mind,i),j),u) -> mkConstructU (((MutInd.canonize mind,i),j),u)
+  | Prod (na,t,ct) -> mkProd (na,canonize_globals t, canonize_globals ct)
+  | Lambda (na,t,ct) -> mkLambda (na, canonize_globals t, canonize_globals ct)
+  | LetIn (na,b,t,ct) -> mkLetIn (na, canonize_globals b, canonize_globals t, canonize_globals ct)
+  | App (ct,l) -> mkApp (canonize_globals ct,Array.Smart.map canonize_globals l)
+  | Proj(p,c) -> mkProj (Projection.map MutInd.canonize p, canonize_globals c)
+  | _ -> c
+
 include Internal
