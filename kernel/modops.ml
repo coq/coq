@@ -479,11 +479,8 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
         else
           add_delta_resolver reso' mb'.mod_delta, str'
     | (l,SFBmodtype mty) as item :: rest ->
-        let mp_from' = MPdot (mp_from,l) in
-        let mp_to' = MPdot(mp_to,l) in
-        let subst' = add_mp mp_from' mp_to' empty_delta_resolver subst in
-        let mty' = subst_modtype subst'
-          (fun resolver _ -> subst_dom_codom_delta_resolver subst' resolver)
+        let mty' = subst_modtype subst
+          (fun resolver _ -> subst_dom_codom_delta_resolver subst resolver)
           mty
         in
         let item' = if mty' == mty then item else (l, SFBmodtype mty') in
@@ -494,6 +491,7 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
           if rest' == rest && item' == item then str
           else item' :: rest'
         in
+        let mp_to' = MPdot(mp_to,l) in
         add_mp_delta_resolver mp_to' mp_to' reso', str'
 
 
