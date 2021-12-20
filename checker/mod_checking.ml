@@ -98,7 +98,7 @@ let mk_mtb mp sign delta =
     mod_retroknowledge = ModTypeRK; }
 
 let rec collect_constants_without_body sign mp accu =
-  let collect_sf s lab = function
+  let collect_field s lab = function
   | SFBconst cb ->
      let c = Constant.make2 mp lab in
      if Declareops.constant_has_body cb then s else Cset.add c s
@@ -107,7 +107,7 @@ let rec collect_constants_without_body sign mp accu =
   match sign with
   | MoreFunctor _ -> Cset.empty  (* currently ignored *)
   | NoFunctor struc ->
-     List.fold_left (fun s (lab,mb) -> collect_sf s lab mb) accu struc
+     List.fold_left (fun s (lab,mb) -> collect_field s lab mb) accu struc
 
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));

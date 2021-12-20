@@ -166,7 +166,7 @@ let subst_with_body subst = function
     if c==c' then orig else WithDef(id,(c',ctx))
 
 let rec subst_structure subst do_delta sign =
-  let subst_body ((l,body) as orig) = match body with
+  let subst_field ((l,body) as orig) = match body with
     | SFBconst cb ->
       let cb' = subst_const_body subst cb in
       if cb==cb' then orig else (l,SFBconst cb')
@@ -180,7 +180,7 @@ let rec subst_structure subst do_delta sign =
       let mtb' = subst_modtype subst do_delta mtb in
       if mtb==mtb' then orig else (l,SFBmodtype mtb')
   in
-  List.Smart.map subst_body sign
+  List.Smart.map subst_field sign
 
 and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a module_retroknowledge =
   fun subst retro ->
@@ -190,7 +190,7 @@ and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a
       let l' = List.Smart.map (subst_retro_action subst) l in
       if l == l' then r else ModBodyRK l
 
-and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
+and subst_module_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
   fun is_mod subst subst_impl do_delta mb ->
     let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty;
           mod_retroknowledge=retro; _ } = mb in
@@ -218,13 +218,13 @@ and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body ->
     }
 
 and subst_module subst do_delta mb =
-  subst_body true subst subst_impl do_delta mb
+  subst_module_body true subst subst_impl do_delta mb
 
 and subst_impl subst me =
   implem_smart_map
     (subst_signature subst id_delta) (subst_expression subst id_delta) me
 
-and subst_modtype subst do_delta mtb = subst_body false subst (fun _ () -> ()) do_delta mtb
+and subst_modtype subst do_delta mtb = subst_module_body false subst (fun _ () -> ()) do_delta mtb
 
 and subst_expr subst do_delta seb = match seb with
   | MEident mp ->
@@ -264,7 +264,7 @@ let add_retroknowledge r env =
   | ModBodyRK l -> List.fold_left Primred.add_retroknowledge env l
 
 let rec add_structure mp sign resolver linkinfo env =
-  let add_one env (l,elem) = match elem with
+  let add_field env (l,elem) = match elem with
     | SFBconst cb ->
       let c = constant_of_delta_kn resolver (KerName.make mp l) in
       Environ.add_constant_key c cb linkinfo env
@@ -279,7 +279,7 @@ let rec add_structure mp sign resolver linkinfo env =
     | SFBmodule mb -> add_module mb linkinfo env (* adds components as well *)
     | SFBmodtype mtb -> Environ.add_modtype mtb env
   in
-  List.fold_left add_one env sign
+  List.fold_left add_field env sign
 
 and add_module mb linkinfo env =
   let mp = mb.mod_mp in
@@ -402,55 +402,40 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
     let subst = add_mp mb.mod_mp mp_to empty_delta_resolver subst in
     subst_module subst do_delta_dom mb
 
-and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
-  match str with
-    | [] -> empty_delta_resolver,[]
-    | (l,SFBconst cb) as item :: rest ->
+and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
+  let strengthen_and_subst_field reso' item = match item with
+    | (l,SFBconst cb) ->
         let cb' = subst_const_body subst cb in
         let cb' =
           if alias then cb'
           else strengthen_const mp_from l cb' reso
         in
         let item' = if cb' == cb then item else (l, SFBconst cb') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
         if incl then
           (* If we are performing an inclusion we need to add
              the fact that the constant mp_to.l is \Delta-equivalent
              to reso(mp_from.l) *)
           let kn_from = KerName.make mp_from l in
           let kn_to = KerName.make mp_to l in
-          let old_name = kn_of_delta reso kn_from in
-          add_kn_delta_resolver kn_to old_name reso', str'
+          let kn_canonical = kn_of_delta reso kn_from in
+          add_kn_delta_resolver kn_to kn_canonical reso', item'
         else
           (* In this case the fact that the constant mp_to.l is
              \Delta-equivalent to resolver(mp_from.l) is already known
              because reso' contains mp_to maps to reso(mp_from) *)
-          reso', str'
-    | (l,SFBmind mib) as item :: rest ->
+          reso', item'
+    | (l,SFBmind mib) ->
         let mib' = subst_mind_body subst mib in
         let item' = if mib' == mib then item else (l, SFBmind mib') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
         (* Same as constant *)
         if incl then
           let kn_from = KerName.make mp_from l in
           let kn_to = KerName.make mp_to l in
-          let old_name = kn_of_delta reso kn_from in
-          add_kn_delta_resolver kn_to old_name reso', str'
+          let kn_canonical = kn_of_delta reso kn_from in
+          add_kn_delta_resolver kn_to kn_canonical reso', item'
         else
-          reso', str'
-    | (l,SFBmodule mb) as item :: rest ->
+          reso', item'
+    | (l,SFBmodule mb) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot (mp_to,l) in
         let mb' = if alias then
@@ -459,22 +444,15 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
           strengthen_and_subst_module mb subst mp_from' mp_to'
         in
         let item' = if mb' == mb then item else (l, SFBmodule mb') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
         (* if mb is a functor we should not derive new equivalences
            on names, hence we add the fact that the functor can only
            be equivalent to itself. If we adopt an applicative
            semantic for functor this should be changed.*)
         if is_functor mb'.mod_type then
-          add_mp_delta_resolver mp_to' mp_to' reso', str'
+          add_mp_delta_resolver mp_to' mp_to' reso', item'
         else
-          add_delta_resolver reso' mb'.mod_delta, str'
-    | (l,SFBmodtype mty) as item :: rest ->
+          add_delta_resolver reso' mb'.mod_delta, item'
+    | (l,SFBmodtype mty) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot(mp_to,l) in
         let subst' = add_mp mp_from' mp_to' empty_delta_resolver subst in
@@ -483,15 +461,9 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
           mty
         in
         let item' = if mty' == mty then item else (l, SFBmodtype mty') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
-        add_mp_delta_resolver mp_to' mp_to' reso', str'
-
+        add_mp_delta_resolver mp_to' mp_to' reso', item'
+  in
+  List.Smart.fold_left_map strengthen_and_subst_field empty_delta_resolver struc
 
 (** Let P be a module path when we write:
      "Module M:=P." or "Module M. Include P. End M."
