@@ -449,18 +449,15 @@ let pr_located_qualid = function
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
 let canonize_ref = let open GlobRef in function
-  | ConstRef c ->
-    let kn = Constant.canonical c in
-    if KerName.equal (Constant.user c) kn then None
-    else Some (ConstRef (Constant.make1 kn))
-  | IndRef (ind,i) ->
-    let kn = MutInd.canonical ind in
-    if KerName.equal (MutInd.user ind) kn then None
-    else Some (IndRef (MutInd.make1 kn, i))
-  | ConstructRef ((ind,i),j) ->
-    let kn = MutInd.canonical ind in
-    if KerName.equal (MutInd.user ind) kn then None
-    else Some (ConstructRef ((MutInd.make1 kn, i),j))
+  | ConstRef cst ->
+    if Constant.is_canonical cst then None
+    else Some (ConstRef (Constant.canonize cst))
+  | IndRef (mind,i) ->
+    if MutInd.is_canonical mind then None
+    else Some (IndRef (MutInd.canonize mind, i))
+  | ConstructRef ((mind,i),j) ->
+    if MutInd.is_canonical mind then None
+    else Some (ConstructRef ((MutInd.canonize mind, i),j))
   | VarRef _ -> None
 
 let display_alias = function

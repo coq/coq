@@ -503,6 +503,7 @@ module KerPair = struct
   let modpath kp = KerName.modpath (user kp)
 
   let canonize kp = Same (canonical kp)
+  let is_canonical = function Same _ -> true | Dual _ -> false
 
   let change_label kp lbl =
     let (mp1,l1) = KerName.repr (user kp)

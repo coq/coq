@@ -392,9 +392,10 @@ sig
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
 
-  (** Normalization *)
+  (** Normalization, queries *)
 
   val canonize : t -> t
+  val is_canonical : t -> bool
 
   (** Comparisons *)
 
@@ -467,9 +468,10 @@ sig
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
 
-  (** Normalization *)
+  (** Normalization, queries *)
 
   val canonize : t -> t
+  val is_canonical : t -> bool
 
   (** Comparisons *)
 

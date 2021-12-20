@@ -415,12 +415,12 @@ and extract_really_ind env kn mib =
     let equiv =
       if lang () != Ocaml ||
          (not (modular ()) && at_toplevel (MutInd.modpath kn)) ||
-         KerName.equal (MutInd.canonical kn) (MutInd.user kn)
+         MutInd.is_canonical kn
       then
         NoEquiv
       else
         begin
-          ignore (extract_ind env (MutInd.make1 (MutInd.canonical kn)));
+          ignore (extract_ind env (MutInd.canonize kn));
           Equiv (MutInd.canonical kn)
         end
     in
