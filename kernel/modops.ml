@@ -23,7 +23,6 @@ open Constr
 open Declarations
 open Declareops
 open Environ
-open Entries
 open Mod_subst
 
 (** {6 Errors } *)
@@ -56,7 +55,6 @@ type module_typing_error =
   | SignatureMismatch of
       Label.t * structure_field_body * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
-  | ApplicationToNotPath of module_struct_entry
   | NotAFunctor
   | IsAFunctor
   | IncompatibleModuleTypes of module_type_body * module_type_body

@@ -176,6 +176,6 @@ type with_declaration_ast =
 
 type module_ast_r =
   | CMident of qualid
-  | CMapply of module_ast * module_ast
+  | CMapply of module_ast * qualid
   | CMwith  of module_ast * with_declaration_ast
 and module_ast = module_ast_r CAst.t

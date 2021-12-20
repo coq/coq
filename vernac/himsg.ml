@@ -1013,11 +1013,6 @@ let explain_signature_mismatch l spec why =
 let explain_label_already_declared l =
   str "The label " ++ Label.print l ++ str " is already declared."
 
-let explain_application_to_not_path _ =
-  strbrk "A module cannot be applied to another module application or " ++
-  strbrk "with-expression; you must give a name to the intermediate result " ++
-  strbrk "module first."
-
 let explain_not_a_functor () =
   str "Application of a non-functor."
 
@@ -1078,7 +1073,6 @@ let explain_include_restricted_functor mp =
 let explain_module_error = function
   | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
-  | ApplicationToNotPath mexpr -> explain_application_to_not_path mexpr
   | NotAFunctor -> explain_not_a_functor ()
   | IsAFunctor -> explain_is_a_functor ()
   | IncompatibleModuleTypes (m1,m2) -> explain_incompatible_module_types m1 m2

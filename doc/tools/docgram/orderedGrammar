@@ -772,7 +772,7 @@ with_declaration: [
 
 module_expr_atom: [
 | qualid
-| "(" LIST1 module_expr_atom ")"
+| "(" module_expr_atom ")"
 ]
 
 of_module_type: [
