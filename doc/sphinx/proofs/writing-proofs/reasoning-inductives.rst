@@ -627,10 +627,16 @@ This section describes some special purpose tactics to work with
       type of the hypothesis referred to by :n:`@natural` has uninstantiated
       parameters, these parameters are left as existential variables.
 
+   .. tacn:: simple injection {? @induction_arg }
+
+      Similar to :tacn:`injection`, but always adds the derived equalities
+      as new :term:`premises <premise>` in the current goal (instead of as
+      new hypotheses) even if the :flag:`Structural Injection` flag is set.
+
    .. flag:: Structural Injection
 
-      This :term:`flag` ensures that :n:`injection @term` erases the original hypothesis
-      and leaves the generated equalities in the context rather than adding them
+      When this :term:`flag` is set, :n:`injection @term` erases the original hypothesis
+      and adds the generated equalities as new hypotheses rather than adding them
       to the current goal as :term:`premises <premise>`, as if giving :n:`injection @term as`
       (with an empty list of names). This flag is off by default.
 

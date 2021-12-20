@@ -135,6 +135,11 @@ Solvers for logic and equality
 
       This :term:`option` controls the proof search depth bound.
 
+   .. tacn:: gintuition {? @ltac_expr }
+
+      An extension of :tacn:`intuition` to first-order reasoning
+      (similar to how :tacn:`firstorder` extends :tacn:`tauto`).
+
 .. tacn:: congruence {? @natural } {? with {+ @one_term } }
 
    :token:`natural`
@@ -198,7 +203,7 @@ Solvers for logic and equality
       additional arguments can be given to congruence by filling in the holes in the
       terms given in the error message, using the `with` clause.
 
-   :opt:`Debug` ``"congruence"`` makes :tacn:`congruence` print debug information.
+   Setting :opt:`Debug` ``"congruence"`` makes :tacn:`congruence` print debug information.
 
 .. tacn:: btauto
 

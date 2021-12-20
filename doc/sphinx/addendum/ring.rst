@@ -192,6 +192,10 @@ Error messages:
 
   Same as above in the case of the :tacn:`ring` tactic.
 
+.. tacn:: ring_lookup @ltac_expr0 [ {* @one_term } ] {+ @one_term }
+          protect_fv @string {? in @ident }
+
+   For internal use only.
 
 Adding a ring structure
 ----------------------------
@@ -614,6 +618,9 @@ Dealing with fields
    :n:`in @ident`
      If specified, simplify in the hypothesis :n:`@ident` instead of the conclusion.
 
+.. tacn:: field_lookup @ltac_expr [ {* @one_term } ] {+ @one_term }
+
+   For internal use only.
 
 Adding a new field structure
 ---------------------------------
