@@ -361,28 +361,6 @@ let strengthen mtb mp =
           (add_mp_delta_resolver mtb.mod_mp mp reso') }
   | MoreFunctor _ -> mtb
 
-let inline_delta_resolver env inl mp mbid mtb delta =
-  let constants = inline_of_delta inl mtb.mod_delta in
-  let rec make_inline delta = function
-    | [] -> delta
-    | (lev,kn)::r ->
-      let kn = replace_mp_in_kn (MPbound mbid) mp kn in
-      let con = constant_of_delta_kn delta kn in
-      if not (Environ.mem_constant con env) then
-        error_no_such_label_sub (Constant.label con)
-          (ModPath.to_string (Constant.modpath con))
-      else
-        let constant = lookup_constant con env in
-        let l = make_inline delta r in
-        match constant.const_body with
-        | Undef _ | OpaqueDef _ | Primitive _ -> l
-        | Def constr ->
-          let ctx = Declareops.constant_polymorphic_context constant in
-          let constr = Univ.{univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
-          add_inline_delta_resolver kn (lev, Some constr) l
-  in
-  make_inline delta constants
-
 let rec strengthen_and_subst_module mb subst mp_from mp_to =
   match mb.mod_type with
   | NoFunctor struc ->
@@ -556,3 +534,27 @@ let rec collect_mbid l sign =  match sign with
 
 let clean_bounded_mod_expr sign =
   if is_functor sign then collect_mbid MBIset.empty sign else sign
+
+(** {6 Building map of constants to inline } *)
+
+let inline_delta_resolver env inl mp mbid mtb delta =
+  let constants = inline_of_delta inl mtb.mod_delta in
+  let rec make_inline delta = function
+    | [] -> delta
+    | (lev,kn)::r ->
+      let kn = replace_mp_in_kn (MPbound mbid) mp kn in
+      let con = constant_of_delta_kn delta kn in
+      if not (Environ.mem_constant con env) then
+        error_no_such_label_sub (Constant.label con)
+          (ModPath.to_string (Constant.modpath con))
+      else
+        let constant = lookup_constant con env in
+        let l = make_inline delta r in
+        match constant.const_body with
+        | Undef _ | OpaqueDef _ | Primitive _ -> l
+        | Def constr ->
+          let ctx = Declareops.constant_polymorphic_context constant in
+          let constr = Univ.{univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
+          add_inline_delta_resolver kn (lev, Some constr) l
+  in
+  make_inline delta constants
