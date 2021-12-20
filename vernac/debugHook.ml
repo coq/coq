@@ -66,7 +66,6 @@ end
 module Answer = struct
   type t =
     | Prompt of Pp.t
-    | Goal of Pp.t
     | Output of Pp.t
     | Init
     | Stack of (string * (string * int list) option) list
@@ -89,3 +88,12 @@ module Intf = struct
   let get () = !ltac_debug_ref
 
 end
+
+let debug_proof = ref None (* only need to save sigma and goals here *)
+let proof_data () =
+  let p = Proof.data (Vernacstate.Declare.give_me_the_proof ()) in
+  let open Proof in
+  match !debug_proof with
+  | Some (sigma, goals) -> { p with sigma; goals }
+  | None -> p
+  [@@ocaml.warning "-3"];;

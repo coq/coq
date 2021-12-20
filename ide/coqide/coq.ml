@@ -584,7 +584,7 @@ type 'a query = 'a Interface.value task
 let eval_call ?(db=false) call handle k =
   (* Send messages to coqtop and prepare the decoding of the answer *)
   let in_db = if db then "db " else "" in
-  Minilib.log ("Start " ^ in_db ^ "eval_call " ^ Xmlprotocol.pr_call call);
+  Printf.printf "%s\n%!" ("Start " ^ in_db ^ "eval_call " ^ Xmlprotocol.pr_call call);
   if db then begin
     assert (handle.alive && handle.db_waiting_for = None);
     handle.db_waiting_for <- Some (mk_ccb (call,k))
@@ -710,15 +710,15 @@ struct
   let enforce h k =
     let mkopt o v acc = (o, v) :: acc in
     let opts = Hashtbl.fold mkopt current_state [] in
-    eval_call (Xmlprotocol.set_options opts) h
+    eval_call ~db:true (Xmlprotocol.set_options opts) h
       (function
         | Interface.Good () -> k ()
         | _ -> failwith "Cannot set options. Resetting coqtop")
 
 end
 
-let goals x h k =
-  PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.goals x) h k)
+let goals ?(db=false) x h k =
+  PrintOpt.enforce h (fun () -> eval_call ~db (Xmlprotocol.goals x) h k)
 
-let evars x h k =
-  PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.evars x) h k)
+let evars ?(db=false) x h k =
+  PrintOpt.enforce h (fun () -> eval_call ~db (Xmlprotocol.evars x) h k)

@@ -66,7 +66,6 @@ module Answer : sig
     | Prompt of Pp.t (* output signalling the debugger has stopped
                         Should be printed as a prompt for user input,
                         e.g. in color without a newline at the end *)
-    | Goal of Pp.t   (* goal for the current proof state *)
     | Output of Pp.t (* general output *)
     | Init           (* signals initialization of the debugger *)
     | Stack of (string * (string * int list) option) list
@@ -95,3 +94,6 @@ module Intf : sig
   val set : t -> unit
   val get : unit -> t option
 end
+
+val debug_proof : (Evd.evar_map * Evar.t list) option ref
+val proof_data : unit -> Proof.data

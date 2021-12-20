@@ -88,7 +88,7 @@ let upd_bpts updates =
   List.iter (fun op ->
     let ((file, offset), opt) = op in
 (*    Printf.printf "Coq upd_bpts %s %d %b\n%!" file offset opt;*)
-    update_bpt file offset opt;
+    update_bpt file offset opt
   ) updates
 
 type debugger_state = {
@@ -278,7 +278,6 @@ module Comm = struct
   open DebugHook.Answer
 
   let prompt g = wrap (fun () -> (hook ()).submit_answer (Prompt g))
-  let goal g = wrap (fun () -> (hook ()).submit_answer (Goal g))
   let output g = wrap (fun () -> (hook ()).submit_answer (Output g))
 
   (* routines for deferring output; output is sent only if
@@ -333,9 +332,15 @@ let db_pr_goal =
   let open Notations in
   Goal.goals >>= fun gl ->
   Monad.List.map (fun x -> x) gl >>= fun gls ->
+  let sigma =  match gls with (* todo: check for consistency across goals? *)
+    | hd :: tl -> Goal.sigma hd
+    | [] -> Evd.empty
+  in
+  let goals = List.map (fun gl -> Goal.goal gl) gls in
+  DebugHook.debug_proof := Some (sigma, goals);
   let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
       Pp.seq (List.map db_pr_goal gls) in
-  Proofview.tclLIFT (Comm.goal pg)
+  Proofview.tclLIFT (Comm.output pg)
 
 (* Prints the commands *)
 let help () =
@@ -629,6 +634,7 @@ let debug_prompt lev tac f varmap trace =
           if Option.has_some idtac_breakpt then
             Proofview.tclLIFT(runprint >> return (DebugOn (lev+1)))
           else begin
+            DebugHook.debug_proof.contents <- None;
             let open DebugHook.Action in
             let stop = match action.contents with
               | Continue -> false

@@ -54,7 +54,6 @@ type session = {
   mutable abs_file_name : string option;
   mutable debug_stop_pt : (session * int * int) option;
   mutable breakpoints : breakpoint list;
-  mutable last_db_goals : Pp.t
 }
 
 (** [create filename coqtop_args] *)
