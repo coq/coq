@@ -553,7 +553,6 @@ module Goal : sig
 
   (** Compatibility: avoid if possible *)
   val goal : t -> Evar.t
-  val print : t -> Evar.t Evd.sigma
 
 end
 
