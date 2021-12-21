@@ -257,7 +257,7 @@ type intern_env = {
   tmp_scope: Notation_term.tmp_scope_name option;
   scopes: Notation_term.scope_name list;
   impls: internalization_env;
-  binder_block_names: (abstraction_kind option (* None = unknown *) * Id.Set.t) option;
+  binder_block_names: abstraction_kind option (* None = unknown *) option;
 }
 
 type pattern_intern_env = {
@@ -403,28 +403,28 @@ let restart_no_binders env =
   (* Not in relation with the "Arguments" of a name *)
 
 let restart_prod_binders env =
-  { env with binder_block_names = Some (Some AbsPi, Id.Set.empty) }
+  { env with binder_block_names = Some (Some AbsPi) }
   (* In a position binding a type to a name *)
 
 let restart_lambda_binders env =
-  { env with binder_block_names = Some (Some AbsLambda, Id.Set.empty) }
+  { env with binder_block_names = Some (Some AbsLambda) }
   (* In a position binding a body to a name *)
 
 let switch_prod_binders env =
   match env.binder_block_names with
-  | Some (o,ids) when o <> Some AbsLambda -> restart_prod_binders env
+  | Some o when o <> Some AbsLambda -> restart_prod_binders env
   | _ -> restart_no_binders env
   (* In a position switching to a type *)
 
 let switch_lambda_binders env =
   match env.binder_block_names with
-  | Some (o,ids) when o <> Some AbsPi -> restart_lambda_binders env
+  | Some o when o <> Some AbsPi -> restart_lambda_binders env
   | _ -> restart_no_binders env
   (* In a position switching to a term *)
 
 let slide_binders env =
   match env.binder_block_names with
-  | Some (o,ids) when o <> Some AbsPi -> restart_prod_binders env
+  | Some o when o <> Some AbsPi -> restart_prod_binders env
   | _ -> restart_no_binders env
   (* In a position of cast *)
 
@@ -486,7 +486,6 @@ let pure_push_name_env (id,implargs) env =
   {env with
     ids = Id.Set.add id env.ids;
     impls = Id.Map.add id implargs env.impls;
-    binder_block_names = Option.map (fun (b,ids) -> (b,Id.Set.add id ids)) env.binder_block_names;
   }
 
 let push_name_env ntnvars implargs env =
@@ -2559,7 +2558,7 @@ let intern_gen kind env sigma
   internalize env {ids = extract_ids env; unb = false;
                    local_univs = { bound = bound_univs sigma; unb_univs = true };
                    tmp_scope = tmp_scope; scopes = [];
-                   impls; binder_block_names = Some (k,Id.Map.domain impls)}
+                   impls; binder_block_names = Some k}
     pattern_mode (ltacvars, Id.Map.empty) c
 
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
@@ -2651,7 +2650,7 @@ let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
     {ids; unb = false;
      local_univs = { bound = bound_univs sigma; unb_univs = true };
      tmp_scope; scopes = []; impls;
-     binder_block_names = Some (k,Id.Set.empty)}
+     binder_block_names = Some k}
     pattern_mode (ltacvars, vl) c
 
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
@@ -2708,7 +2707,7 @@ let intern_context env ~bound_univs impl_env binders =
             ({ids; unb = false;
               local_univs = { bound = bound_univs; unb_univs = true };
               tmp_scope = None; scopes = []; impls = impl_env;
-              binder_block_names = Some (Some AbsPi,ids)}, []) binders in
+              binder_block_names = Some (Some AbsPi)}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
 
 let interp_glob_context_evars ?(program_mode=false) env sigma bl =
@@ -2757,7 +2756,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
   let int_env = {ids; unb = false;
               local_univs = { bound = bound_univs sigma; unb_univs = true };
               tmp_scope = None; scopes = []; impls = impl_env;
-              binder_block_names = Some (Some AbsPi,ids)} in
+              binder_block_names = Some (Some AbsPi)} in
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
   let (int_env, (env, sigma, bl, impls)) =
     List.fold_left
