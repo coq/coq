@@ -545,13 +545,9 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let (ans, _) = Safe_typing.inline_private_constants env ((ans, Univ.ContextSet.empty), neff) in
   ans, sigma
 
-let get_nth_V82_goal p i =
-  let { sigma; goals } = data p in
-  try { Evd.it = List.nth goals (i-1) ; sigma }
-  with Failure _ -> raise (NoSuchGoal None)
-
 let get_goal_context_gen pf i =
-  let { Evd.it=goal ; sigma=sigma; } = get_nth_V82_goal pf i in
+  let { sigma; goals } = data pf in
+  let goal = try List.nth goals (i-1) with Failure _ -> raise (NoSuchGoal None) in
   let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma goal) in
   (sigma, env)
 
