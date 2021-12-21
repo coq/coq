@@ -81,6 +81,7 @@ sig
   exception IndexOutOfRange
   val goto : int -> 'a list -> 'a list * 'a list
   val split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
+  val sep_first : 'a list -> 'a * 'a list
   val sep_last : 'a list -> 'a * 'a list
   val drop_last : 'a list -> 'a list
   val last : 'a list -> 'a
@@ -746,6 +747,10 @@ let firstn n l =
     | _ -> failwith "firstn"
   in
   aux [] n l
+
+let sep_first = function
+  | [] -> failwith "sep_first"
+  | hd :: tl -> (hd, tl)
 
 let rec sep_last = function
   | [] -> failwith "sep_last"
