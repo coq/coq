@@ -816,18 +816,18 @@ let pr_open_subgoals ?(quiet=false) ?diffs proof =
   let given_up = Evd.given_up sigma in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   begin match goals with
-  | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
+  | [] -> let bgoals = Proof.background_subgoals p in
           begin match bgoals,shelf,given_up with
           | [] , [] , g when Evar.Set.is_empty g -> pr_subgoals None sigma ~entry ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
              Feedback.msg_info (str "No more goals, but there are some goals you gave up:");
              fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
+            ++ pr_subgoals ~pr_first:false None sigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
             Feedback.msg_info (str "All the remaining goals are on the shelf.");
             fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
+            ++ pr_subgoals ~pr_first:false None sigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
           | _ , _, _ ->
             let cmd = if quiet then None else
               Some
@@ -836,10 +836,10 @@ let pr_open_subgoals ?(quiet=false) ?diffs proof =
                  if Pp.ismt s then s else fnl () ++ s) ++
                 fnl ())
             in
-            pr_subgoals ~pr_first:false cmd bsigma ~entry ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
+            pr_subgoals ~pr_first:false cmd sigma ~entry ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
           end
   | _ ->
-     let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
+     let bgoals = Proof.background_subgoals p in
      let bgoals_focused, bgoals_unfocused = List.partition (fun x -> List.mem x goals) bgoals in
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
      let diffs = match diffs with
@@ -851,7 +851,7 @@ let pr_open_subgoals ?(quiet=false) ?diffs proof =
        | Some None -> Some None
        | None -> None
      in
-     pr_subgoals ~pr_first:true ?diffs None bsigma ~entry ~shelf ~stack:[]
+     pr_subgoals ~pr_first:true ?diffs None sigma ~entry ~shelf ~stack:[]
         ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
 
