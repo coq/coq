@@ -120,9 +120,7 @@ val ppexistentialfilter : Evd.Filter.t -> unit
 
 val ppclenv : Clenv.clausenv -> unit
 
-val ppgoal : Evar.t Evd.sigma -> unit
-(* also print evar map *)
-val ppgoalsigma : Evar.t Evd.sigma -> unit
+val ppgoal : Proofview.Goal.t -> unit
 
 val pphintdb : Hints.Hint_db.t -> unit
 val ppproofview : Proofview.proofview -> unit

@@ -1046,3 +1046,12 @@ let pr_typing_flags flags =
   ++ str "check_universes: " ++ bool flags.check_universes ++ fnl ()
   ++ str "cumulative sprop: " ++ bool flags.cumulative_sprop ++ fnl ()
   ++ str "definitional uip: " ++ bool flags.allow_uip
+
+module Debug =
+struct
+
+let pr_goal gl =
+  let g = Proofview.Goal.goal gl in
+  pr_goal { Evd.it = g; Evd.sigma = Proofview.Goal.sigma gl }
+
+end

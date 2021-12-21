@@ -570,7 +570,7 @@ let rec prove_lt hyple =
           ; New.observe_tac
               (fun _ _ ->
                 str "assumption: "
-                ++ Printer.pr_goal Evd.{it = Proofview.Goal.goal g; sigma})
+                ++ Printer.Debug.pr_goal g)
               assumption ])
 
 let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
