@@ -28,11 +28,9 @@ Require Import Ranalysis4.
 Require Import Lra.
 Local Open Scope R_scope.
 
-Lemma P_Rmin : forall (P:R -> Prop) (x y:R), P x -> P y -> P (Rmin x y).
-Proof.
-  intros P x y H1 H2; unfold Rmin; case (Rle_dec x y); intro;
-    assumption.
-Qed.
+Definition P_Rmin_stt (P:R -> Prop) x y := Rmin_case x y P.
+#[deprecated(since="8.16", note="Use Rmin_case instead.")]
+Notation P_Rmin := P_Rmin_stt.
 
 Lemma exp_le_3 : exp 1 <= 3.
 Proof.
@@ -350,7 +348,7 @@ Proof.
   cut (1 < exp eps); [ intros H1 | idtac ].
   cut (exp (- eps) < 1); [ intros H2 | idtac ].
   exists (Rmin (y * (exp eps - 1)) (y * (1 - exp (- eps)))); split.
-  red; apply P_Rmin.
+  red; apply Rmin_case.
   apply Rmult_lt_0_compat.
   assumption.
   apply Rplus_lt_reg_l with 1.
