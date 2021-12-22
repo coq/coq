@@ -258,6 +258,7 @@ let do_delta_dom reso sub = subst_dom_delta_resolver sub reso
 let do_delta_codom reso sub = subst_codom_delta_resolver sub reso
 let do_delta_dom_codom reso sub = subst_dom_codom_delta_resolver sub reso
 
+let subst_dom_codom_signature subst = subst_signature subst do_delta_dom_codom
 let subst_signature subst = subst_signature subst do_delta_codom
 let subst_structure subst = subst_structure subst do_delta_codom
 
@@ -530,11 +531,9 @@ let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
     let subst = map_mp mb.mod_mp mp empty_delta_resolver in
     subst_module subst do_delta_dom_codom mb
 
-let subst_modtype_and_resolver mtb mp =
-  let subst = map_mp mtb.mod_mp mp empty_delta_resolver in
-  let new_delta = subst_dom_codom_delta_resolver subst mtb.mod_delta in
-  let full_subst = map_mp mtb.mod_mp mp new_delta in
-  subst_modtype full_subst do_delta_dom_codom mtb
+let subst_modtype_signature_and_resolver mp_from mp_to sign reso =
+  let subst = map_mp mp_from mp_to empty_delta_resolver in
+  subst_dom_codom_signature subst sign, subst_dom_codom_delta_resolver subst reso
 
 (** {6 Cleaning a module expression from bounded parts }
 
