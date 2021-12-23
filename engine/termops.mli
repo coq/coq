@@ -251,7 +251,6 @@ val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b,
 
 val clear_named_body : Id.t -> env -> env
 
-val global_vars : env -> Evd.evar_map -> constr -> Id.t list
 val global_vars_set : env -> Evd.evar_map -> constr -> Id.Set.t
 val global_vars_set_of_decl : env -> Evd.evar_map -> named_declaration -> Id.Set.t
 val global_app_of_constr : Evd.evar_map -> constr -> (GlobRef.t * EInstance.t) * constr option

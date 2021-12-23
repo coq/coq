@@ -155,13 +155,13 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       pty,goal
     else
       let i = mkAppliedInd ind in
-      let ivars = global_vars env sigma i in
+      let ivars = Termops.global_vars_set env sigma i in
       let revargs,ownsign =
         fold_named_context
           (fun env d (revargs,hyps) ->
             let d = map_named_decl EConstr.of_constr d in
              let id = NamedDecl.get_id d in
-             if Id.List.mem id ivars then
+             if Id.Set.mem id ivars then
                ((mkVar id)::revargs, Context.Named.add d hyps)
              else
                (revargs,hyps))
@@ -193,9 +193,9 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
     compute_first_inversion_scheme env sigma ind sort dep_option
   in
   assert
-    (List.subset
-       (global_vars env sigma invGoal)
-       (ids_of_named_context (named_context invEnv)));
+    (Id.Set.subset
+       (Termops.global_vars_set env sigma invGoal)
+       (ids_of_named_context_val (named_context_val invEnv)));
   (*
     user_err
     (str"Computed inversion goal was not closed in initial signature.");
