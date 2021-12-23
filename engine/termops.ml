@@ -1373,8 +1373,6 @@ let global_vars_set env sigma constr =
   in
   filtrec Id.Set.empty constr
 
-let global_vars env sigma ids = Id.Set.elements (global_vars_set env sigma ids)
-
 let global_vars_set_of_decl env sigma = function
   | NamedDecl.LocalAssum (_,t) -> global_vars_set env sigma t
   | NamedDecl.LocalDef (_,c,t) ->
