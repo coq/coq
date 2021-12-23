@@ -468,9 +468,7 @@ let goal_repr sigma g =
  og_s has goal+sigma on the previous proof step for diffs
  g_s has goal+sigma on the current proof step
  *)
-let pr_goal ?diffs g_s =
-  let g = sig_it g_s in
-  let sigma = g_s.Evd.sigma in
+let pr_goal ?diffs sigma g =
   let goal = match diffs with
   | Some og_s ->
     let g = Proof_diffs.make_goal (Global.env ()) sigma g in
@@ -491,7 +489,6 @@ let pr_goal ?diffs g_s =
         hov 0 (pr_letype_env ~goal_concl_style:true env sigma concl)
   in
   str "  " ++ v 0 goal
-  [@@ocaml.warning "-3"]
 
 (* display a goal tag *)
 let pr_goal_tag g =
@@ -583,7 +580,7 @@ let pr_ne_evar_set hd tl sigma l =
     mt ()
 
 let pr_selected_subgoal name sigma g =
-  let pg = pr_goal { sigma=sigma ; it=g; } in
+  let pg = pr_goal sigma g in
   let header = pr_goal_header name sigma g in
   v 0 (header ++ str " is:" ++ cut () ++ pg)
 
@@ -761,7 +758,7 @@ let pr_subgoals ?(pr_first=true) ?diffs ?entry
   let print_multiple_goals g l =
     if pr_first then
       let diffs = Option.map (fun map -> get_ogs map g) diffs in
-      pr_goal ?diffs { it = g ; sigma = sigma }
+      pr_goal ?diffs sigma g
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
     else
@@ -875,13 +872,13 @@ let pr_goal_emacs ~proof gid sid =
   match proof with
   | None -> user_err Pp.(str "No proof for that state.")
   | Some proof ->
-    let pr gs =
+    let pr sigma gs =
       v 0 ((str "goal ID " ++ (int gid) ++ str " at state " ++ (int sid)) ++ cut ()
-          ++ pr_goal gs)
+          ++ pr_goal sigma gs)
     in
     try
       let { Proof.sigma } = Proof.data proof in
-      pr { it = Evar.unsafe_of_int gid ; sigma }
+      pr sigma (Evar.unsafe_of_int gid)
     with Not_found -> user_err Pp.(str "No such goal.")
 
 (* Printer function for sets of Assumptions.assumptions.
@@ -1052,7 +1049,6 @@ module Debug =
 struct
 
 let pr_goal gl =
-  let g = Proofview.Goal.goal gl in
-  pr_goal { Evd.it = g; Evd.sigma = Proofview.Goal.sigma gl }
+  pr_goal (Proofview.Goal.sigma gl) (Proofview.Goal.goal gl)
 
 end
