@@ -333,7 +333,7 @@ module New = struct
     let open Proofview.Notations in
     let open Proofview in
     Goal.enter (fun gl ->
-        let goal = Printer.pr_goal (Goal.print gl) in
+        let goal = Printer.Debug.pr_goal gl in
         let env, sigma = (Goal.env gl, Goal.sigma gl) in
         let s = s env sigma in
         let lmsg = seq [header; str " : " ++ s] in

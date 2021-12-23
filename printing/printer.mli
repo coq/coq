@@ -189,12 +189,6 @@ val pr_transparent_state   : TransparentState.t -> Pp.t
 
 (** Proofs, these functions obey [Hyps Limit] and [Compact contexts]. *)
 
-(** [pr_goal ?diffs g_s] prints the goal specified by [g_s].  If [diffs] is [Some og_s],
-    highlight the differences between the (optional) old goal [og_s] and [g_s].
-    This is a UI-facing function, you should not use that for debug printing.
-*)
-val pr_goal : ?diffs:Proof_diffs.goal option -> Evar.t sigma -> Pp.t
-
 (** [pr_open_subgoals ~quiet ?diffs proof] shows the context for [proof] as used by, for example, coqtop.
     The first active goal is printed with all its antecedents and the conclusion.  The other active goals only show their
      conclusions.  If [diffs] is [Some oproof], highlight the differences between the old proof [oproof], and [proof].  [quiet]
@@ -236,3 +230,11 @@ val pr_typing_flags : Declarations.typing_flags -> Pp.t
 
 (** Tells if flag "Printing Goal Names" is activated *)
 val print_goal_names : unit -> bool
+
+module Debug :
+sig
+
+val pr_goal : Proofview.Goal.t -> Pp.t
+
+end
+(** Debug printers *)

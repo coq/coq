@@ -20,15 +20,15 @@ exception FailError of int * Pp.t Lazy.t
 module Old :
 sig
 
+[@@@ocaml.warning "-3"]
+
 (** Takes an exception and either raise it at the next
    level or do nothing. *)
 val catch_failerror  : Exninfo.iexn -> unit
 
 (** Tacticals i.e. functions from tactics to tactics. *)
 
-[@@@ocaml.warning "-3"]
 type tactic = Proofview.V82.tac
-[@@@ocaml.warning "+3"]
 
 val tclIDTAC         : tactic
 val tclIDTAC_MESSAGE : Pp.t -> tactic
@@ -101,6 +101,8 @@ val elimination_sort_of_clause : Id.t option -> Evar.t sigma -> Sorts.family
 
 val pf_with_evars :  (Goal.goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
 val pf_constr_of_global : GlobRef.t -> (constr -> tactic) -> tactic
+
+[@@@ocaml.warning "+3"]
 
 end
 [@@ocaml.deprecated "Use the new engine"]

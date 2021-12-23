@@ -553,7 +553,6 @@ module Goal : sig
 
   (** Compatibility: avoid if possible *)
   val goal : t -> Evar.t
-  val print : t -> Evar.t Evd.sigma
 
 end
 
@@ -592,7 +591,9 @@ val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 : sig
+  [@@@ocaml.warning "-3"]
   type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
+  [@@@ocaml.warning "+3"]
 
   (* [nf_evars=true] applies the evar (assignment) map to the goals
    * (conclusion and context) before calling the tactic *)

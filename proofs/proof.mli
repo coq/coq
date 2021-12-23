@@ -189,13 +189,8 @@ val goal_uid : Evar.t -> string
 
 val pr_proof : t -> Pp.t
 
-(*** Compatibility layer with <=v8.2 ***)
-module V82 : sig
-
-  (* All the subgoals of the proof, including those which are not focused. *)
-  val background_subgoals : t -> Evar.t list Evd.sigma
-
-end
+(* All the subgoals of the proof, including those which are not focused. *)
+val background_subgoals : t -> Evar.t list
 
 (* returns the set of all goals in the proof *)
 val all_goals : t -> Evar.Set.t

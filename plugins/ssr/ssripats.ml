@@ -422,7 +422,7 @@ let tclLOG p t =
   Goal.enter begin fun g ->
     Ssrprinters.debug_ssr (fun () -> Pp.(str" on state:" ++ spc () ++
       isPRINT g ++
-      str" goal:" ++ spc () ++ Printer.pr_goal (Goal.print g)));
+      str" goal:" ++ spc () ++ Printer.Debug.pr_goal g));
     tclUNIT ()
   end
   <*>
