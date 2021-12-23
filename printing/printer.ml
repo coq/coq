@@ -708,7 +708,7 @@ let print_dependent_evars_entry gl sigma = function
    and printed in its entirety. *)
 (* [os_map] is derived from the previous proof step, used for diffs *)
 let pr_subgoals ?(pr_first=true) ?diffs ?entry
-    close_cmd sigma ~shelf ~stack ~unfocused ~goals =
+    sigma ~shelf ~stack ~unfocused ~goals =
 
   (* Printing functions for the extra informations. *)
   let rec print_stack a = function
@@ -768,12 +768,6 @@ let pr_subgoals ?(pr_first=true) ?diffs ?entry
     let first_goal = if pr_first then gl else None in
     print_evar_constraints gl sigma ++ print_dependent_evars_entry first_goal sigma entry
   in
-  (* Side effect! This has to be made more robust *)
-  let () =
-    match close_cmd with
-    | Some cmd -> Feedback.msg_info cmd
-    | None -> ()
-  in
 
   (* Main function *)
   match goals with
@@ -816,25 +810,27 @@ let pr_open_subgoals ?(quiet=false) ?diffs proof =
   begin match goals with
   | [] -> let bgoals = Proof.background_subgoals p in
           begin match bgoals,shelf,given_up with
-          | [] , [] , g when Evar.Set.is_empty g -> pr_subgoals None sigma ~entry ~shelf ~stack ~unfocused:[] ~goals
+          | [] , [] , g when Evar.Set.is_empty g -> pr_subgoals sigma ~entry ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
              Feedback.msg_info (str "No more goals, but there are some goals you gave up:");
              fnl ()
-            ++ pr_subgoals ~pr_first:false None sigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
+            ++ pr_subgoals ~pr_first:false sigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
             Feedback.msg_info (str "All the remaining goals are on the shelf.");
             fnl ()
-            ++ pr_subgoals ~pr_first:false None sigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
+            ++ pr_subgoals ~pr_first:false sigma ~entry ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
           | _ , _, _ ->
-            let cmd = if quiet then None else
-              Some
+            let () =
+              if quiet then ()
+              else
+              Feedback.msg_info
                 (str "This subproof is complete, but there are some unfocused goals." ++
                 (let s = Proof_bullet.suggest p in
                  if Pp.ismt s then s else fnl () ++ s) ++
                 fnl ())
             in
-            pr_subgoals ~pr_first:false cmd sigma ~entry ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
+            pr_subgoals ~pr_first:false sigma ~entry ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
           end
   | _ ->
      let bgoals = Proof.background_subgoals p in
@@ -849,7 +845,7 @@ let pr_open_subgoals ?(quiet=false) ?diffs proof =
        | Some None -> Some None
        | None -> None
      in
-     pr_subgoals ~pr_first:true ?diffs None sigma ~entry ~shelf ~stack:[]
+     pr_subgoals ~pr_first:true ?diffs sigma ~entry ~shelf ~stack:[]
         ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
 
