@@ -556,5 +556,3 @@ let compose subst1 subst2 =
   in
   let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in
   Umap.fold mp_apply_subst subst1 empty_subst
-
-let join subst1 subst2 = Umap.join subst2 (compose subst1 subst2)

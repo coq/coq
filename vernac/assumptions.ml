@@ -64,7 +64,7 @@ let rec fields_of_functor f subs mp0 args = function
     match args with
     | [] -> assert false (* we should only encounter applied functors *)
     | mpa :: args ->
-      let subs = join (map_mbid mbid mpa empty_delta_resolver (*TODO*)) subs in
+      let subs = add_mbid mbid mpa empty_delta_resolver (*TODO*) subs in
       fields_of_functor f subs mp0 args e
 
 let rec lookup_module_in_impl mp =

@@ -489,7 +489,7 @@ let rec compute_subst env mbids sign mp_l inl =
           else
             Modops.inline_delta_resolver env inl mp farg_id farg_b mb.mod_delta
         in
-        mbid_left,join (map_mbid mbid mp resolver) subst
+        mbid_left,add_mbid mbid mp resolver subst
 
 (** Create the objects of a "with Module" structure. *)
 
@@ -917,7 +917,7 @@ let rec include_subst env mp reso mbids sign inline = match mbids with
     let mp_delta =
       Modops.inline_delta_resolver env inline mp farg_id farg_b reso
     in
-    join (map_mbid mbid mp mp_delta) subst
+    add_mbid mbid mp mp_delta subst
 
 let rec decompose_functor mpl typ =
   match mpl, typ with
@@ -953,7 +953,7 @@ let declare_one_include (me_ast,annot) =
   in
   let base_mp = get_module_path me in
   let resolver = Global.add_include me is_mod inl in
-  let subst = join subst_self (map_mp base_mp cur_mp resolver) in
+  let subst = add_mp base_mp cur_mp resolver subst_self in
   let aobjs = subst_aobjs subst aobjs in
   cache_include (Lib.prefix(), aobjs);
   Lib.add_leaf_entry (IncludeObject aobjs)

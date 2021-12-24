@@ -84,13 +84,8 @@ val map_mbid :
 val map_mp :
   ModPath.t -> ModPath.t -> delta_resolver -> substitution
 
-(** sequential composition:
-   [substitute (join sub1 sub2) t = substitute sub2 (substitute sub1 t)]
-*)
-val join : substitution -> substitution -> substitution
-
-(** sequential composition when [sub2] applies only to [sub1],
-    i.e. when [t[sub1]] is already a closure
+(** sequential composition when [sub1] binds all free variables of [t]:
+   [substitute (compose sub1 sub2) t = substitute sub2 (substitute sub1 t)]
 *)
 val compose : substitution -> substitution -> substitution
 
