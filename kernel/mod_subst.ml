@@ -537,7 +537,7 @@ let substition_prefixed_by k mp subst =
   in
   Umap.fold mp_prefixmp subst empty_subst
 
-let join subst1 subst2 =
+let compose subst1 subst2 =
   let apply_subst mpk add (mp,resolve) res =
     let mp',resolve' =
       match subst_mp0 subst2 mp with
@@ -555,5 +555,6 @@ let join subst1 subst2 =
     Umap.join prefixed_subst (add (mp',resolve'') res)
   in
   let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in
-  let subst = Umap.fold mp_apply_subst subst1 empty_subst in
-  Umap.join subst2 subst
+  Umap.fold mp_apply_subst subst1 empty_subst
+
+let join subst1 subst2 = Umap.join subst2 (compose subst1 subst2)

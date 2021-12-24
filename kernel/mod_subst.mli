@@ -89,6 +89,11 @@ val map_mp :
 *)
 val join : substitution -> substitution -> substitution
 
+(** sequential composition when [sub2] applies only to [sub1],
+    i.e. when [t[sub1]] is already a closure
+*)
+val compose : substitution -> substitution -> substitution
+
 
 (** Apply the substitution on the domain of the resolver  *)
 val subst_dom_delta_resolver : substitution -> delta_resolver -> delta_resolver

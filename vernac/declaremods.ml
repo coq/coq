@@ -91,7 +91,7 @@ let rec subst_aobjs sub = function
     let o' = subst_objects sub o in
     if o == o' then objs else Objs o'
   | Ref (mp, sub0) as r ->
-    let sub0' = join sub0 sub in
+    let sub0' = compose sub0 sub in
     if sub0' == sub0 then r else Ref (mp, sub0')
 
 and subst_sobjs sub (mbids,aobjs as sobjs) =
@@ -520,11 +520,15 @@ let rec get_module_path = function
 
 (** Substitutive objects of a module expression (or module type) *)
 
+let make_id_subst mbids mp =
+  let f mbid = add_mp (MPbound mbid) (MPbound mbid) empty_delta_resolver in
+  List.fold_right f mbids (map_mp mp mp empty_delta_resolver)
+
 let rec get_module_sobjs is_mod env inl = function
   |MEident mp ->
     begin match ModSubstObjs.get mp with
     |(mbids,Objs _) when not (ModPath.is_bound mp) ->
-      (mbids,Ref (mp, empty_subst)) (* we create an alias *)
+      (mbids,Ref (mp, make_id_subst mbids mp)) (* we create an alias *)
     |sobjs -> sobjs
     end
   |MEwith (mty, WithDef _) -> get_module_sobjs is_mod env inl mty
