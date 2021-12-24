@@ -113,7 +113,7 @@ type zipper =
   | Zapp of arguments
   | Zfix of vfix * arguments  (** might be empty *)
   | Zswitch of vswitch
-  | Zproj of Projection.Repr.t (* name of the projection *)
+  | Zproj of int (* index of the projection as in Projection.Repr *)
 
 type stack = zipper list
 
@@ -143,14 +143,13 @@ val val_of_rel : int -> values
 val val_of_named : Id.t -> values
 val val_of_constant : Constant.t -> values
 val val_of_evar : Evar.t -> values
-val val_of_proj : Projection.Repr.t -> values -> values
+val val_of_proj : int -> values -> values
 val val_of_atom : atom -> values
 val val_of_int : int -> structured_values
 val val_of_block : tag -> structured_values array -> structured_values
 val val_of_uint : Uint63.t -> structured_values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
-external val_of_proj_name : Projection.Repr.t -> values = "%identity"
 
 (** Destructors *)
 
