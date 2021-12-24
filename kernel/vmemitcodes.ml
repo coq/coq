@@ -28,7 +28,7 @@ type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
-  | Reloc_caml_prim of CPrimitives.t
+  | Reloc_caml_prim of caml_prim
 
 let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_annot sw1, Reloc_annot sw2 -> eq_annot_switch sw1 sw2
@@ -37,7 +37,7 @@ let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_const _, _ -> false
 | Reloc_getglobal c1, Reloc_getglobal c2 -> Constant.CanOrd.equal c1 c2
 | Reloc_getglobal _, _ -> false
-| Reloc_caml_prim p1, Reloc_caml_prim p2 -> CPrimitives.equal p1 p2
+| Reloc_caml_prim p1, Reloc_caml_prim p2 -> CPrimitives.equal (caml_prim_to_prim p1) (caml_prim_to_prim p2)
 | Reloc_caml_prim _, _ -> false
 
 let hash_reloc_info r =
@@ -46,7 +46,7 @@ let hash_reloc_info r =
   | Reloc_annot sw -> combinesmall 1 (hash_annot_switch sw)
   | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
   | Reloc_getglobal c -> combinesmall 3 (Constant.CanOrd.hash c)
-  | Reloc_caml_prim p -> combinesmall 4 (CPrimitives.hash p)
+  | Reloc_caml_prim p -> combinesmall 4 (CPrimitives.hash (caml_prim_to_prim p))
 
 module RelocTable = Hashtbl.Make(struct
   type t = reloc_info
@@ -259,11 +259,14 @@ let check_prim_op = function
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
   | Float64next_up    -> opCHECKNEXTUPFLOAT
   | Float64next_down  -> opCHECKNEXTDOWNFLOAT
-  | Arraymake -> opCHECKCAMLCALL2_1
-  | Arrayget -> opCHECKCAMLCALL2
-  | Arrayset -> opCHECKCAMLCALL3_1
-  | Arraydefault | Arraycopy | Arraylength ->
-      opCHECKCAMLCALL1
+  | Arraymake | Arrayget | Arrayset | Arraydefault | Arraycopy | Arraylength ->
+    assert false
+
+let check_caml_prim_op = function
+| CAML_Arraymake -> opCHECKCAMLCALL2_1
+| CAML_Arrayget -> opCHECKCAMLCALL2
+| CAML_Arrayset -> opCHECKCAMLCALL3_1
+| CAML_Arraydefault | CAML_Arraycopy | CAML_Arraylength -> opCHECKCAMLCALL1
 
 let inplace_prim_op = function
   | Float64next_up | Float64next_down -> true
@@ -368,7 +371,7 @@ let emit_instr env = function
       slot_for_getglobal env q
 
   | Kcamlprim (op,lbl) ->
-    out env (check_prim_op op);
+    out env (check_caml_prim_op op);
     out_label env lbl;
     slot_for_caml_prim env op
 

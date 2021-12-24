@@ -27,6 +27,14 @@ module Label =
     let reset_label_counter () = counter := no
   end
 
+type caml_prim =
+| CAML_Arraymake
+| CAML_Arrayget
+| CAML_Arraydefault
+| CAML_Arrayset
+| CAML_Arraycopy
+| CAML_Arraylength
+
 type instruction =
   | Klabel of Label.t
   | Kacc of int
@@ -61,7 +69,7 @@ type instruction =
   | Kensurestackcapacity of int
   | Kbranch of Label.t                  (* jump to label *)
   | Kprim of CPrimitives.t * pconstant
-  | Kcamlprim of CPrimitives.t * Label.t
+  | Kcamlprim of caml_prim * Label.t
 
 and bytecodes = instruction list
 
@@ -76,6 +84,14 @@ type fv = fv_elem array
 (* --- Pretty print *)
 open Pp
 open Util
+
+let caml_prim_to_prim = function
+| CAML_Arraymake -> CPrimitives.Arraymake
+| CAML_Arrayget -> CPrimitives.Arrayget
+| CAML_Arraydefault -> CPrimitives.Arraydefault
+| CAML_Arrayset -> CPrimitives.Arrayset
+| CAML_Arraycopy -> CPrimitives.Arraycopy
+| CAML_Arraylength -> CPrimitives.Arraylength
 
 let pp_lbl lbl = str "L" ++ int lbl
 
@@ -148,7 +164,7 @@ let rec pp_instr i =
         (Constant.print (fst id))
 
   | Kcamlprim (op, lbl) ->
-    str "camlcall " ++ str (CPrimitives.to_string op) ++ str ", branch " ++
+    str "camlcall " ++ str (CPrimitives.to_string (caml_prim_to_prim op)) ++ str ", branch " ++
     pp_lbl lbl ++ str " on accu"
 
 and pp_bytecodes c =

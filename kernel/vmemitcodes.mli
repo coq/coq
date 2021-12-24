@@ -15,7 +15,7 @@ type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of Constant.t
-  | Reloc_caml_prim of CPrimitives.t
+  | Reloc_caml_prim of caml_prim
 
 type patches
 type emitcodes

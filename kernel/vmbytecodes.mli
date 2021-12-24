@@ -22,6 +22,14 @@ module Label :
     val reset_label_counter : unit -> unit
   end
 
+type caml_prim =
+| CAML_Arraymake
+| CAML_Arrayget
+| CAML_Arraydefault
+| CAML_Arrayset
+| CAML_Arraycopy
+| CAML_Arraylength
+
 type instruction =
   | Klabel of Label.t
   | Kacc of int                         (** accu = sp[n] *)
@@ -60,7 +68,7 @@ type instruction =
 
   | Kbranch of Label.t                  (** jump to label, is it needed ? *)
   | Kprim of CPrimitives.t * pconstant
-  | Kcamlprim of CPrimitives.t * Label.t
+  | Kcamlprim of caml_prim * Label.t
 
 and bytecodes = instruction list
 
@@ -75,3 +83,5 @@ type fv_elem =
 type fv = fv_elem array
 
 val pp_fv_elem : fv_elem -> Pp.t
+
+val caml_prim_to_prim : caml_prim -> CPrimitives.t

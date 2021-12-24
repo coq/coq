@@ -123,15 +123,13 @@ let slot_for_annot key =
     AnnotTable.add annot_tbl key n;
     n
 
-let slot_for_caml_prim =
-  let open CPrimitives in function
-  | Arraymake -> parray_make
-  | Arrayget -> parray_get
-  | Arraydefault -> parray_get_default
-  | Arrayset -> parray_set
-  | Arraycopy -> parray_copy
-  | Arraylength -> parray_length
-  | _ -> assert false
+let slot_for_caml_prim = function
+  | CAML_Arraymake -> parray_make
+  | CAML_Arrayget -> parray_get
+  | CAML_Arraydefault -> parray_get_default
+  | CAML_Arrayset -> parray_set
+  | CAML_Arraycopy -> parray_copy
+  | CAML_Arraylength -> parray_length
 
 let rec slot_for_getglobal env sigma kn =
   let (cb,(_,rk)) = lookup_constant_key kn env in
