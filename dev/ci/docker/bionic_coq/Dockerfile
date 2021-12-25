@@ -47,7 +47,7 @@ ENV BASE_OPAM="zarith.1.10 ocamlfind.1.9.1 ounit2.2.2.3 odoc.1.5.3" \
     BASE_ONLY_OPAM="dune.2.7.1 elpi.1.13.6 stdlib-shims.0.1.0"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
-ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.0"
+ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.2"
 
 # Must add this to COQIDE_OPAM{,_EDGE} when we update the opam
 # packages "lablgtk3-gtksourceview3"
