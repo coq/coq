@@ -12,8 +12,6 @@ let ppripos (ri,pos) =
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
     print_string ("getglob "^(Constant.to_string kn)^"\n")
-  | Reloc_proj_name p ->
-    print_string ("proj "^(Projection.Repr.to_string p)^"\n")
   | Reloc_caml_prim op ->
     print_string ("caml primitive "^CPrimitives.to_string op)
   );

@@ -85,14 +85,10 @@ module AnnotTable = Hashtbl.Make (struct
   let hash = hash_annot_switch
 end)
 
-module ProjNameTable = Hashtbl.Make (Projection.Repr.CanOrd)
-
 let str_cst_tbl : int SConstTable.t = SConstTable.create 31
 
 let annot_tbl : int AnnotTable.t = AnnotTable.create 31
     (* (annot_switch * int) Hashtbl.t  *)
-
-let proj_name_tbl : int ProjNameTable.t = ProjNameTable.create 31
 
 (*************************************************************)
 (*** Mise a jour des valeurs des variables et des constantes *)
@@ -136,13 +132,6 @@ let slot_for_caml_prim =
   | Arraycopy -> parray_copy
   | Arraylength -> parray_length
   | _ -> assert false
-
-let slot_for_proj_name key =
-  try ProjNameTable.find proj_name_tbl key
-  with Not_found ->
-    let n =  set_global (val_of_proj_name key) in
-    ProjNameTable.add proj_name_tbl key n;
-    n
 
 let rec slot_for_getglobal env sigma kn =
   let (cb,(_,rk)) = lookup_constant_key kn env in
@@ -199,7 +188,6 @@ and eval_to_patch env sigma (buff,pl,fv) =
     | Reloc_annot a -> slot_for_annot a
     | Reloc_const sc -> slot_for_str_cst sc
     | Reloc_getglobal kn -> slot_for_getglobal env sigma kn
-    | Reloc_proj_name p -> slot_for_proj_name p
     | Reloc_caml_prim op -> slot_for_caml_prim op
   in
   let tc = patch buff pl slots in

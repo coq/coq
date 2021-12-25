@@ -1061,11 +1061,10 @@ value coq_interprete
           default:
             {
               value block;
-              /* Skip over the index of projected field */
-              ++pc;
+              int index = *pc++;
               /* Create atom */
               Alloc_small(accu, 2, ATOM_PROJ_TAG);
-              Field(accu, 0) = Field(coq_global_data, *pc++);
+              Field(accu, 0) = Val_int(index);
               Field(accu, 1) = *sp++;
               /* Create accumulator */
               Alloc_small(block, 3, Closure_tag);
@@ -1077,7 +1076,7 @@ value coq_interprete
           }
         } else {
           accu = Field(accu, *pc);
-          pc += 2;
+          pc++;
         }
         Next;
       }

@@ -84,7 +84,7 @@ let opcodes =
     "GETFIELD1", 0;
     "GETFIELD", 1;
     "SETFIELD", 1;
-    "PROJ", 2;
+    "PROJ", 1;
     "ENSURESTACKCAPACITY", 1;
     "CONST0", 0;
     "CONST1", 0;

@@ -292,10 +292,20 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       in
       nf_stk env sigma (mkCase (Inductive.contract_case env (ci, p, iv, c, branchs))) tcase stk
   | Zproj p :: stk ->
-     assert (from = 0) ;
-     let p' = Projection.make p true in
-     let ty = Inductiveops.type_of_projection_knowing_arg env sigma p' (EConstr.of_constr c) (EConstr.of_constr t) in
-     nf_stk env sigma (mkProj(p',c)) ty stk
+    let () = assert (from = 0) in
+    let ((ind, u), args) = Inductiveops.find_mrectype env sigma (EConstr.of_constr t) in
+    let (mib, mip) = Inductive.lookup_mind_specif env ind in
+    let pars = List.firstn mib.mind_nparams args in
+    let ty = match mib.mind_record with
+    | NotRecord | FakeRecord -> assert false
+    | PrimRecord infos ->
+      let _, _, _, tys = infos.(snd ind) in
+      let ty = Vars.subst_instance_constr (EConstr.Unsafe.to_instance u) tys.(p) in
+      substl (c :: List.rev_map EConstr.Unsafe.to_constr pars) ty
+    in
+    let p = Option.get @@ Declareops.inductive_make_projection ind mib ~proj_arg:p in
+    let p = Projection.make p true in
+    nf_stk env sigma (mkProj (p, c)) ty stk
 
 and nf_predicate env sigma ind mip params v pT =
   match kind (whd_allnolet env pT) with
