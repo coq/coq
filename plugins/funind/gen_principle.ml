@@ -194,7 +194,7 @@ let prepare_body {Vernacexpr.binders} rt =
   let fun_args, rt' = chop_rlambda_n n rt in
   (fun_args, rt')
 
-let build_functional_principle (sigma : Evd.evar_map) old_princ_type sorts funs
+let build_functional_principle env (sigma : Evd.evar_map) old_princ_type sorts funs
     _i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams =
@@ -202,17 +202,16 @@ let build_functional_principle (sigma : Evd.evar_map) old_princ_type sorts funs
       .Tactics.nparams
   in
   let new_principle_type =
-    Functional_principles_types.compute_new_princ_type_from_rel
+    Functional_principles_types.compute_new_princ_type_from_rel (Global.env ())
       (Array.map Constr.mkConstU funs)
       sorts old_princ_type
   in
   let sigma, _ =
-    Typing.type_of ~refresh:true (Global.env ()) sigma
+    Typing.type_of ~refresh:true env sigma
       (EConstr.of_constr new_principle_type)
   in
   let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
   let ftac = proof_tac (Array.map map funs) mutr_nparams in
-  let env = Global.env () in
   let uctx = Evd.evar_universe_context sigma in
   let typ = EConstr.of_constr new_principle_type in
   let body, typ, univs, _safe, _uctx =
@@ -309,7 +308,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
         register_with_sort Sorts.InSet )
     in
     let body, types, univs, hook, sigma0 =
-      build_functional_principle !evd old_princ_type new_sorts funs i proof_tac
+      build_functional_principle (Global.env ()) !evd old_princ_type new_sorts funs i proof_tac
         hook
     in
     evd := sigma0;
@@ -1360,7 +1359,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
   in
   let body, typ, univs, _hook, sigma0 =
     try
-      build_functional_principle !evd first_type (Array.of_list sorts)
+      build_functional_principle (Global.env ()) !evd first_type (Array.of_list sorts)
         this_block_funs 0
         (Functional_principles_proofs.prove_princ_for_struct evd false 0
            (Array.of_list (List.map fst funs)))
@@ -1376,7 +1375,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
       let funs = Array.map Constr.mkConstU this_block_funs in
       let sorts = Array.of_list sorts in
       List.map
-        (Functional_principles_types.compute_new_princ_type_from_rel funs sorts)
+        (Functional_principles_types.compute_new_princ_type_from_rel (Global.env ()) funs sorts)
         other_princ_types
     in
     let first_princ_body = body in
@@ -1413,7 +1412,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
                We fall back to the previous method
             *)
             let body, typ, univs, _hook, sigma0 =
-              build_functional_principle !evd
+              build_functional_principle (Global.env ()) !evd
                 (List.nth other_princ_types (!i - 1))
                 (Array.of_list sorts) this_block_funs !i
                 (Functional_principles_proofs.prove_princ_for_struct evd false

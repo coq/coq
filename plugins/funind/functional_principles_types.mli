@@ -9,4 +9,4 @@
 (************************************************************************)
 
 val compute_new_princ_type_from_rel :
-  Constr.constr array -> Sorts.t array -> Constr.t -> Constr.types
+  Environ.env -> Constr.constr array -> Sorts.t array -> Constr.t -> Constr.types

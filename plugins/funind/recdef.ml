@@ -77,12 +77,12 @@ let def_of_const t =
         ++ str "." ) )
   | _ -> assert false
 
-let type_of_const sigma t =
+let type_of_const env sigma t =
   match EConstr.kind sigma t with
   | Const (sp, u) ->
     let u = EInstance.kind sigma u in
     (* FIXME discarding universe constraints *)
-    Typeops.type_of_constant_in (Global.env ()) (sp, u)
+    Typeops.type_of_constant_in env (sp, u)
   | _ -> assert false
 
 let constant sl s = UnivGen.constr_of_monomorphic_global (Global.env ()) (find_reference sl s)
@@ -1572,7 +1572,7 @@ let start_equation (f : GlobRef.t) (term_f : GlobRef.t)
       let terminate_constr = constr_of_monomorphic_global (Global.env ()) term_f in
       let terminate_constr = EConstr.of_constr terminate_constr in
       let nargs =
-        nb_prod sigma (EConstr.of_constr (type_of_const sigma terminate_constr))
+        nb_prod sigma (EConstr.of_constr (type_of_const (Global.env ()) sigma terminate_constr))
       in
       let x = n_x_id ids nargs in
       New.observe_tac
