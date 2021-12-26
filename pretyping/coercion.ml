@@ -186,9 +186,9 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
             in
             let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
             let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
-            let sigma, eq = papp sigma coq_eq_ind [| eqT; hdx; hdy |] in
+            let sigma, eq = papp env sigma coq_eq_ind [| eqT; hdx; hdy |] in
             let sigma, evar = make_existential ?loc n.binder_name env sigma eq in
-            let eq_app sigma x = papp sigma coq_eq_rect
+            let eq_app sigma x = papp env sigma coq_eq_rect
                 [| eqT; hdx; pred; x; hdy; evar|]
             in
             aux sigma (hdy :: tele) (subst1 hdx restT)
@@ -279,11 +279,11 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
                | _, _ ->
                  sigma,
                  Some (fun sigma x ->
-                     let sigma, t1 = papp sigma sigT_proj1 [| a; pb; x |] in
-                     let sigma, t2 = papp sigma sigT_proj2 [| a; pb; x |] in
+                     let sigma, t1 = papp env sigma sigT_proj1 [| a; pb; x |] in
+                     let sigma, t2 = papp env sigma sigT_proj2 [| a; pb; x |] in
                      let sigma, x =  app_opt env' sigma c1 t1 in
                      let sigma, y = app_opt env' sigma c2 t2 in
-                     papp sigma sigT_intro [| a'; pb'; x ; y |])
+                     papp env sigma sigT_intro [| a'; pb'; x ; y |])
              end
            else
              begin
@@ -297,11 +297,11 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
                | _, _ ->
                  sigma,
                  Some (fun sigma x ->
-                     let sigma, t1 = papp sigma prod_proj1 [| a; b; x |] in
-                     let sigma, t2 = papp sigma prod_proj2 [| a; b; x |] in
+                     let sigma, t1 = papp env sigma prod_proj1 [| a; b; x |] in
+                     let sigma, t2 = papp env sigma prod_proj2 [| a; b; x |] in
                      let sigma, x = app_opt env sigma c1 t1 in
                      let sigma, y = app_opt env sigma c2 t2 in
-                     papp sigma prod_intro [| a'; b'; x ; y |])
+                     papp env sigma prod_intro [| a'; b'; x ; y |])
              end
          else
          if Ind.CanOrd.equal i i' && Int.equal len (Array.length l') then
@@ -326,7 +326,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
       Some (u, p) ->
       let sigma, c = coerce_unify env sigma u y in
       let f sigma x =
-        let sigma, t = papp sigma sig_proj1 [| u; p; x |] in
+        let sigma, t = papp env sigma sig_proj1 [| u; p; x |] in
         app_opt env sigma c t
       in sigma, Some f
     | None ->
@@ -338,7 +338,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
              let sigma, cx = app_opt env sigma c x in
              let sigma, evar = make_existential ?loc Anonymous env sigma (mkApp (p, [| cx |]))
              in
-             (papp sigma sig_intro [| u; p; cx; evar |]))
+             (papp env sigma sig_intro [| u; p; cx; evar |]))
       | None ->
         raise NoSubtacCoercion
   in coerce_unify env sigma x y
