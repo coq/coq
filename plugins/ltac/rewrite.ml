@@ -74,8 +74,8 @@ type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 let find_global dir s =
   let gr = lazy (find_reference dir s) in
-    fun (evd,cstrs) ->
-      let (evd, c) = Evd.fresh_global (Global.env ()) evd (Lazy.force gr) in
+    fun env (evd,cstrs) ->
+      let (evd, c) = Evd.fresh_global env evd (Lazy.force gr) in
         (evd, cstrs), c
 
 (** Utility for dealing with polymorphic applications *)
@@ -111,12 +111,12 @@ let extends_undefined evars evars' =
   in fold_undefined f evars' false
 
 let app_poly_check env evars f args =
-  let (evars, cstrs), fc = f evars in
+  let (evars, cstrs), fc = f env evars in
   let evars, t = Typing.solve_evars env evars (mkApp (fc, args)) in
   (evars, cstrs), t
 
 let app_poly_nocheck env evars f args =
-  let evars, fc = f evars in
+  let evars, fc = f env evars in
     evars, mkApp (fc, args)
 
 let app_poly_sort b =
@@ -137,12 +137,12 @@ module GlobalBindings (M : sig
   val relation_classes : string list
   val morphisms : string list
   val relation : string list * string
-  val app_poly : env -> evars -> (evars -> evars * constr) -> constr array -> evars * constr
-  val arrow : evars -> evars * constr
+  val app_poly : env -> evars -> (env -> evars -> evars * constr) -> constr array -> evars * constr
+  val arrow : env -> evars -> evars * constr
 end) = struct
   open M
   open Context.Rel.Declaration
-  let relation : evars -> evars * constr = find_global (fst relation) (snd relation)
+  let relation : env -> evars -> evars * constr = find_global (fst relation) (snd relation)
 
   let reflexive_type = find_global relation_classes "Reflexive"
   let reflexive_proof = find_global relation_classes "reflexivity"
@@ -194,7 +194,7 @@ end) = struct
     (sigma, cstrs), c
 
   let proper_proof env evars carrier relation x =
-    let evars, goal = app_poly env evars (proper_proxy_type env) [| carrier ; relation; x |] in
+    let evars, goal = app_poly env evars proper_proxy_type [| carrier ; relation; x |] in
       new_cstr_evar evars env goal
 
   let get_reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
@@ -743,20 +743,20 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
-let new_global (evars, cstrs) gr =
-  let (sigma,c) = Evd.fresh_global (Global.env ()) evars gr in
+let new_global env (evars, cstrs) gr =
+  let (sigma,c) = Evd.fresh_global env evars gr in
   (sigma, cstrs), c
 
-let make_eq sigma =
-  new_global sigma Coqlib.(lib_ref "core.eq.type")
-let make_eq_refl sigma =
-  new_global sigma Coqlib.(lib_ref "core.eq.refl")
+let make_eq env sigma =
+  new_global env sigma Coqlib.(lib_ref "core.eq.type")
+let make_eq_refl env sigma =
+  new_global env sigma Coqlib.(lib_ref "core.eq.refl")
 
-let get_rew_prf evars r = match r.rew_prf with
+let get_rew_prf env evars r = match r.rew_prf with
   | RewPrf (rel, prf) -> evars, (rel, prf)
   | RewCast c ->
-    let evars, eq = make_eq evars in
-    let evars, eq_refl = make_eq_refl evars in
+    let evars, eq = make_eq env evars in
+    let evars, eq_refl = make_eq_refl env evars in
     let rel = mkApp (eq, [| r.rew_car |]) in
     evars, (rel, mkCast (mkApp (eq_refl, [| r.rew_car; r.rew_from |]),
                          c, mkApp (rel, [| r.rew_from; r.rew_to |])))
@@ -795,7 +795,7 @@ let resolve_morphism env m args args' (b,cstr) evars =
     in
       (* Actual signature found *)
     let cl_args = [| appmtype' ; signature ; appm |] in
-    let evars, app = app_poly_sort b env evars (if b then PropGlobal.proper_type env else TypeGlobal.proper_type env)
+    let evars, app = app_poly_sort b env evars (if b then PropGlobal.proper_type else TypeGlobal.proper_type)
       cl_args in
     let dosub, appsub =
       if b then PropGlobal.do_subrelation, PropGlobal.apply_subrelation
@@ -825,7 +825,7 @@ let resolve_morphism env m args args' (b,cstr) evars =
                       env evars carrier relation x in
                     [ proof ; x ; x ] @ acc, subst, evars, sigargs, x :: typeargs'
               | Some r ->
-                 let evars, proof = get_rew_prf evars r in
+                 let evars, proof = get_rew_prf env evars r in
                  [ snd proof; r.rew_to; x ] @ acc, subst, evars,
               sigargs, r.rew_to :: typeargs')
           | None ->
@@ -846,7 +846,7 @@ let apply_constraint env car rel prf cstr res =
   | Some r -> resolve_subrelation env car rel (fst cstr) prf r res
 
 let coerce env cstr res =
-  let evars, (rel, prf) = get_rew_prf res.rew_evars res in
+  let evars, (rel, prf) = get_rew_prf env res.rew_evars res in
   let res = { res with rew_evars = evars } in
     apply_constraint env res.rew_car rel prf cstr res
 
@@ -908,15 +908,11 @@ let make_leibniz_proof env c ty r =
     { rew_car = ty; rew_evars = !evars;
       rew_from = subst1 r.rew_from c; rew_to = subst1 r.rew_to c; rew_prf = prf }
 
-let reset_env env =
-  let env' = Global.env_of_context (Environ.named_context_val env) in
-    Environ.push_rel_context (Environ.rel_context env) env'
-
 let fold_match ?(force=false) env sigma c =
   let case = destCase sigma c in
   let (ci, p, iv, c, brs) = EConstr.expand_case env sigma case in
   let cty = Retyping.get_type_of env sigma c in
-  let dep, pred, exists, sk =
+  let dep, pred, sk =
     let env', ctx, body =
       let ctx, pred = decompose_lam_assum sigma p in
       let env' = push_rel_context ctx env in
@@ -944,7 +940,7 @@ let fold_match ?(force=false) env sigma c =
     in
     match Ind_tables.lookup_scheme sk ci.ci_ind with
     | Some cst ->
-        dep, pred, true, cst
+        dep, pred, cst
     | None ->
       raise Not_found
   in
@@ -954,12 +950,12 @@ let fold_match ?(force=false) env sigma c =
     let meths = Array.to_list brs in
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
   in
-    sk, (if exists then env else reset_env env), app
+    sk, env, app
 
 let unfold_match env sigma sk app =
   match EConstr.kind sigma app with
   | App (f', args) when QConstant.equal env (fst (destConst sigma f')) sk ->
-      let v = Environ.constant_value_in (Global.env ()) (sk,Univ.Instance.empty)(*FIXME*) in
+      let v = Environ.constant_value_in env (sk,Univ.Instance.empty)(*FIXME*) in
       let v = EConstr.of_constr v in
         Reductionops.whd_beta env sigma (mkApp (v, args))
   | _ -> app
@@ -1277,8 +1273,8 @@ module Strategies =
         in
         let evars, proof =
           let proxy =
-            if prop then PropGlobal.proper_proxy_type env
-            else TypeGlobal.proper_proxy_type env
+            if prop then PropGlobal.proper_proxy_type
+            else TypeGlobal.proper_proxy_type
           in
           let evars, mty = app_poly_sort prop env evars proxy [| ty ; rel; t |] in
             new_cstr_evar evars env mty
@@ -1851,8 +1847,8 @@ let proper_projection env sigma r ty =
     it_mkLambda_or_LetIn app ctx
 
 let declare_projection name instance_id r =
-  let poly = Global.is_polymorphic r in
   let env = Global.env () in
+  let poly = Environ.is_polymorphic env r in
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in
   let ty = Retyping.get_type_of env sigma c in
@@ -1910,7 +1906,7 @@ let build_morphism_signature env sigma m =
         rel)
     cstrs
   in
-  let morph = e_app_poly env evd (PropGlobal.proper_type env) [| t; sig_; m |] in
+  let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
   let evd = solve_constraints env !evd in
   evd, morph
 
@@ -1921,7 +1917,7 @@ let default_morphism sign m =
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
-  let evars, morph = app_poly_check env evars (PropGlobal.proper_type env) [| t; sign; m |] in
+  let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
   let evars, mor = TC.resolve_one_typeclass env (goalevars evars) morph in
     mor, proper_projection env sigma mor morph
 
