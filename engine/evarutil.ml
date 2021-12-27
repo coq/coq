@@ -308,15 +308,21 @@ let update_var src tgt subst =
       let csubst_var = Id.Map.add id (Constr.mkVar tgt) subst.csubst_var in
       { subst with csubst_var; csubst_rev }
 
+module VarSet =
+struct
+  type t = Id.t -> bool
+  let empty _ = false
+  let full _ = true
+  let variables env id = is_section_variable env id
+end
+
 type naming_mode =
-  | KeepUserNameAndRenameExistingButSectionNames
-  | KeepUserNameAndRenameExistingEvenSectionNames
-  | KeepExistingNames
+  | RenameExistingBut of VarSet.t
   | FailIfConflict
-  | ProgramNaming
+  | ProgramNaming of VarSet.t
 
 let push_rel_decl_to_named_context
-  ?(hypnaming=KeepUserNameAndRenameExistingButSectionNames)
+  ~hypnaming
   sigma decl ((subst, avoid, nc) : ext_named_context) =
   let open EConstr in
   let open Vars in
@@ -346,37 +352,42 @@ let push_rel_decl_to_named_context
         using this function. For now, we only attempt to preserve the
         old behaviour of Program, but ultimately, one should do something
         about this whole name generation problem. *)
-    if hypnaming = ProgramNaming then next_name_away na avoid
-    else
+    match hypnaming with
+    | ProgramNaming _ -> next_name_away na avoid
+    | RenameExistingBut _ | FailIfConflict ->
       (* id_of_name_using_hdchar only depends on the rel context which is empty
          here *)
       next_ident_away (id_of_name_using_hdchar empty_env sigma (RelDecl.get_type decl) na) avoid
   in
   match extract_if_neq id na with
-  | Some id0 when hypnaming = KeepUserNameAndRenameExistingEvenSectionNames ||
-                  (hypnaming = KeepUserNameAndRenameExistingButSectionNames ||
-                   hypnaming = ProgramNaming) &&
-                  not (is_section_variable (Global.env ()) id0) ->
-      (* spiwack: if [id<>id0], rather than introducing a new
-          binding named [id], we will keep [id0] (the name given
-          by the user) and rename [id0] into [id] in the named
-          context. Unless [id] is a section variable. *)
-      let subst = update_var id0 id subst in
-      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
-      let nc = replace_var_named_declaration id0 id nc in
-      let avoid = Id.Set.add id (Id.Set.add id0 avoid) in
-      (push_var id0 subst, avoid, push_named_context_val d nc)
-  | Some id0 when hypnaming = FailIfConflict ->
+  | Some id0 ->
+    begin match hypnaming with
+    | RenameExistingBut f | ProgramNaming f ->
+      if f id0 then
+        (* spiwack: if [id0] is a section variable renaming it is
+            incorrect. We revert to a less robust behaviour where
+            the new binder has name [id]. Which amounts to the same
+            behaviour than when [id=id0]. *)
+        let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
+        (push_var id subst, Id.Set.add id avoid, push_named_context_val d nc)
+      else
+        (* spiwack: if [id<>id0], rather than introducing a new
+            binding named [id], we will keep [id0] (the name given
+            by the user) and rename [id0] into [id] in the named
+            context. Unless [id] is a section variable. *)
+        let subst = update_var id0 id subst in
+        let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
+        let nc = replace_var_named_declaration id0 id nc in
+        let avoid = Id.Set.add id (Id.Set.add id0 avoid) in
+        (push_var id0 subst, avoid, push_named_context_val d nc)
+    | FailIfConflict ->
        user_err Pp.(Id.print id0 ++ str " is already used.")
-  | _ ->
-      (* spiwack: if [id0] is a section variable renaming it is
-          incorrect. We revert to a less robust behaviour where
-          the new binder has name [id]. Which amounts to the same
-          behaviour than when [id=id0]. *)
-      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
-      (push_var id subst, Id.Set.add id avoid, push_named_context_val d nc)
+    end
+  | None ->
+    let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
+    (push_var id subst, Id.Set.add id avoid, push_named_context_val d nc)
 
-let push_rel_context_to_named_context ?hypnaming env sigma typ =
+let push_rel_context_to_named_context ~hypnaming env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
   let open EConstr in
   let inst_vars = EConstr.identity_subst_val (named_context_val env) in
@@ -389,7 +400,7 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
     let (subst, _, env) =
-      Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ?hypnaming sigma d acc)
+      Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ~hypnaming sigma d acc)
         (rel_context env) ~init:(empty_csubst, avoid, named_context_val env) in
     (env, csubst_subst subst typ, inst_rels@inst_vars, subst)
 
@@ -437,7 +448,11 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
     ?principal ?hypnaming env evd typ =
-  let sign,typ',instance,subst = push_rel_context_to_named_context ?hypnaming env evd typ in
+  let hypnaming = match hypnaming with
+  | Some n -> n
+  | None -> RenameExistingBut (VarSet.variables (Global.env ()))
+  in
+  let sign,typ',instance,subst = push_rel_context_to_named_context ~hypnaming env evd typ in
   let map c = csubst_subst subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
