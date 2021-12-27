@@ -11,11 +11,14 @@
 open Environ
 open Entries
 open Constrexpr
+open Libnames
 
 (** Module internalization errors *)
 
 type module_internalization_error =
-  | NotAModuleNorModtype of string
+  | NotAModuleNorModtype of qualid
+  | NotAModuleType of qualid
+  | NotAModule of qualid
   | IncorrectWithInModule
   | IncorrectModuleApplication
 

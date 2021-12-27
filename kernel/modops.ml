@@ -56,13 +56,11 @@ type module_typing_error =
       Label.t * structure_field_body * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
   | NotAFunctor
-  | IsAFunctor
+  | IsAFunctor of ModPath.t
   | IncompatibleModuleTypes of module_type_body * module_type_body
   | NotEqualModulePaths of ModPath.t * ModPath.t
-  | NoSuchLabel of Label.t
-  | IncompatibleLabels of Label.t * Label.t
-  | NotAModule of string
-  | NotAModuleType of string
+  | NoSuchLabel of Label.t * ModPath.t
+  | NotAModuleLabel of Label.t
   | NotAConstant of Label.t
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
@@ -77,8 +75,8 @@ let error_existing_label l =
 let error_not_a_functor () =
   raise (ModuleTypingError NotAFunctor)
 
-let error_is_a_functor () =
-  raise (ModuleTypingError IsAFunctor)
+let error_is_a_functor mp =
+  raise (ModuleTypingError (IsAFunctor mp))
 
 let error_incompatible_modtypes mexpr1 mexpr2 =
   raise (ModuleTypingError (IncompatibleModuleTypes (mexpr1,mexpr2)))
@@ -89,14 +87,11 @@ let error_not_equal_modpaths mp1 mp2 =
 let error_signature_mismatch l spec why =
   raise (ModuleTypingError (SignatureMismatch (l,spec,why)))
 
-let error_no_such_label l =
-  raise (ModuleTypingError (NoSuchLabel l))
+let error_no_such_label l mp =
+  raise (ModuleTypingError (NoSuchLabel (l,mp)))
 
-let error_incompatible_labels l l' =
-  raise (ModuleTypingError (IncompatibleLabels (l,l')))
-
-let error_not_a_module s =
-  raise (ModuleTypingError (NotAModule s))
+let error_not_a_module_label s =
+  raise (ModuleTypingError (NotAModuleLabel s))
 
 let error_not_a_constant l =
   raise (ModuleTypingError (NotAConstant l))
@@ -123,9 +118,9 @@ let destr_functor = function
   |NoFunctor _ -> error_not_a_functor ()
   |MoreFunctor (mbid,ty,x) -> (mbid,ty,x)
 
-let destr_nofunctor = function
+let destr_nofunctor mp = function
   |NoFunctor a -> a
-  |MoreFunctor _ -> error_is_a_functor ()
+  |MoreFunctor _ -> error_is_a_functor mp
 
 let rec functor_smart_map fty f0 funct = match funct with
   |MoreFunctor (mbid,ty,e) ->

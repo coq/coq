@@ -137,10 +137,7 @@ matches the module type.  If the module is not a
 functor, its components (:term:`constants <constant>`, inductive types, submodules etc.)
 are now available through the dot notation.
 
-.. exn:: No such label @ident.
-    :undocumented:
-
-.. exn:: Signature components for label @ident do not match.
+.. exn:: Signature components for field @ident do not match.
     :undocumented:
 
 .. exn:: The field @ident is missing in @qualid.
@@ -421,6 +418,12 @@ The definition of :g:`N` using the module type expression :g:`SIG` with
    End SIG'.
 
    Module N : SIG' := M.
+
+.. exn:: No field named @ident in @qualid.
+
+   Raised when the final :n:`@ident` in the left-hand side :n:`@qualid` of
+   a :n:`@with_declaration` is applied to a module type :n:`@qualid` that
+   has no field named this :n:`@ident`.
 
 If we just want to be sure that our implementation satisfies a
 given module type without restricting the interface, we can use a

@@ -929,6 +929,24 @@ let rec explain_pretype_error env sigma err =
 
 (* Module errors *)
 
+let pr_modpath mp =
+  Libnames.pr_qualid (Nametab.shortest_qualid_of_module mp)
+
+let pr_modtype_subpath upper mp =
+  let rec aux mp =
+    try
+      let (dir,id) = Libnames.repr_qualid (Nametab.shortest_qualid_of_modtype mp) in
+      Libnames.add_dirpath_suffix dir id, []
+    with Not_found ->
+      match mp with
+      | MPdot (mp',id) -> let mp, suff = aux mp' in mp, Label.to_id id::suff
+      | _ -> assert false
+  in
+  let mp, suff = aux mp in
+  (if suff = [] then mt ()
+   else str (if upper then "Module " else "module ") ++ DirPath.print (DirPath.make suff) ++ str " of ") ++
+  DirPath.print mp
+
 open Modops
 
 let explain_not_match_error = function
@@ -1007,7 +1025,7 @@ let explain_not_match_error = function
     str "incompatible variance information"
 
 let explain_signature_mismatch l spec why =
-  str "Signature components for label " ++ Label.print l ++
+  str "Signature components for field " ++ Label.print l ++
   str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
 
 let explain_label_already_declared l =
@@ -1016,8 +1034,8 @@ let explain_label_already_declared l =
 let explain_not_a_functor () =
   str "Application of a non-functor."
 
-let explain_is_a_functor () =
-  str "Illegal use of a functor."
+let explain_is_a_functor mp =
+  pr_modtype_subpath true mp ++ str " not expected to be a functor."
 
 let explain_incompatible_module_types mexpr1 mexpr2 =
   let open Declarations in
@@ -1033,20 +1051,13 @@ let explain_incompatible_module_types mexpr1 mexpr2 =
   else str "Incompatible module types."
 
 let explain_not_equal_module_paths mp1 mp2 =
-  str "Non equal modules."
+  str "Module " ++ pr_modpath mp1 ++ strbrk " is not equal to " ++ pr_modpath mp2 ++ str "."
 
-let explain_no_such_label l =
-  str "No such label " ++ Label.print l ++ str "."
+let explain_no_such_label l mp =
+  str "No field named " ++ Label.print l ++ str " in " ++ pr_modtype_subpath false mp ++ str "."
 
-let explain_incompatible_labels l l' =
-  str "Opening and closing labels are not the same: " ++
-  Label.print l ++ str " <> " ++ Label.print l' ++ str "!"
-
-let explain_not_a_module s =
-  quote (str s) ++ str " is not a module."
-
-let explain_not_a_module_type s =
-  quote (str s) ++ str " is not a module type."
+let explain_not_a_module_label l =
+  Label.print l ++ str " is not the name of a module field."
 
 let explain_not_a_constant l =
   quote (Label.print l) ++ str " is not a constant."
@@ -1065,8 +1076,7 @@ let explain_label_missing l s =
   ++ str s ++ str "."
 
 let explain_include_restricted_functor mp =
-  let q = Nametab.shortest_qualid_of_module mp in
-  str "Cannot include the functor " ++ Libnames.pr_qualid q ++
+  str "Cannot include the functor " ++ pr_modpath mp ++
   strbrk " since it has a restricted signature. " ++
   strbrk "You may name first an instance of this functor, and include it."
 
@@ -1074,13 +1084,11 @@ let explain_module_error = function
   | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
   | NotAFunctor -> explain_not_a_functor ()
-  | IsAFunctor -> explain_is_a_functor ()
+  | IsAFunctor mp -> explain_is_a_functor mp
   | IncompatibleModuleTypes (m1,m2) -> explain_incompatible_module_types m1 m2
   | NotEqualModulePaths (mp1,mp2) -> explain_not_equal_module_paths mp1 mp2
-  | NoSuchLabel l -> explain_no_such_label l
-  | IncompatibleLabels (l1,l2) -> explain_incompatible_labels l1 l2
-  | NotAModule s -> explain_not_a_module s
-  | NotAModuleType s -> explain_not_a_module_type s
+  | NoSuchLabel (l,mp) -> explain_no_such_label l mp
+  | NotAModuleLabel l -> explain_not_a_module_label l
   | NotAConstant l -> explain_not_a_constant l
   | IncorrectWithConstraint l -> explain_incorrect_label_constraint l
   | GenerativeModuleExpected l -> explain_generative_module_expected l
@@ -1095,8 +1103,14 @@ let explain_declaration_not_path _ =
 
 *)
 
-let explain_not_module_nor_modtype s =
-  quote (str s) ++ str " is not a module or module type."
+let explain_not_module_nor_modtype qid =
+  Libnames.pr_qualid qid ++ str " is not a module or module type."
+
+let explain_not_a_module qid =
+  Libnames.pr_qualid qid ++ str " is not a module."
+
+let explain_not_a_module_type qid =
+  Libnames.pr_qualid qid ++ str " is not a module type."
 
 let explain_incorrect_with_in_module () =
   str "The syntax \"with\" is not allowed for modules."
@@ -1105,7 +1119,9 @@ let explain_incorrect_module_application () =
   str "Illegal application to a module type."
 
 let explain_module_internalization_error = let open Modintern in function
-  | NotAModuleNorModtype s -> explain_not_module_nor_modtype s
+  | NotAModuleNorModtype qid -> explain_not_module_nor_modtype qid
+  | NotAModule qid -> explain_not_a_module qid
+  | NotAModuleType qid -> explain_not_a_module_type qid
   | IncorrectWithInModule -> explain_incorrect_with_in_module ()
   | IncorrectModuleApplication -> explain_incorrect_module_application ()
 

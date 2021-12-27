@@ -14,7 +14,9 @@ open Constrexpr
 open Constrintern
 
 type module_internalization_error =
-  | NotAModuleNorModtype of string
+  | NotAModuleNorModtype of qualid
+  | NotAModuleType of qualid
+  | NotAModule of qualid
   | IncorrectWithInModule
   | IncorrectModuleApplication
 
@@ -23,14 +25,13 @@ exception ModuleInternalizationError of module_internalization_error
 type module_kind = Module | ModType | ModAny
 
 let error_not_a_module_loc ~info kind loc qid =
-  let s = string_of_qualid qid in
   let e = match kind with
-    | Module -> Modops.ModuleTypingError (Modops.NotAModule s)
-    | ModType -> Modops.ModuleTypingError (Modops.NotAModuleType s)
-    | ModAny -> ModuleInternalizationError (NotAModuleNorModtype s)
+    | Module -> NotAModule qid
+    | ModType -> NotAModuleType qid
+    | ModAny -> NotAModuleNorModtype qid
   in
   let info = Option.cata (Loc.add_loc info) info loc in
-  Exninfo.iraise (e,info)
+  Exninfo.iraise (ModuleInternalizationError e,info)
 
 let error_incorrect_with_in_module loc =
   Loc.raise ?loc (ModuleInternalizationError IncorrectWithInModule)

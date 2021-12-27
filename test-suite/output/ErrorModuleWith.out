@@ -1,0 +1,15 @@
+File "./output/ErrorModuleWith.v", line 5, characters 0-53:
+The command has indeed failed with message:
+No field named V in module A.B of M.
+File "./output/ErrorModuleWith.v", line 6, characters 0-53:
+The command has indeed failed with message:
+No field named C in module A of M.
+File "./output/ErrorModuleWith.v", line 7, characters 0-49:
+The command has indeed failed with message:
+No field named V in M.
+File "./output/ErrorModuleWith.v", line 8, characters 0-53:
+The command has indeed failed with message:
+Module A' of M not expected to be a functor.
+File "./output/ErrorModuleWith.v", line 13, characters 0-38:
+The command has indeed failed with message:
+Module M2 is not equal to M1.
