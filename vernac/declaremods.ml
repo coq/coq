@@ -532,7 +532,7 @@ let rec get_module_sobjs is_mod env inl = function
     assert (not is_mod);
     let sobjs0 = get_module_sobjs is_mod env inl mty in
     assert (sobjs_no_functor sobjs0);
-    (* For now, we expanse everything, to be safe *)
+    (* For now, we expand everything, to be safe *)
     let mp0 = get_module_path mty in
     let objs0 = expand_sobjs sobjs0 in
     let objs1 = expand_sobjs (ModSubstObjs.get mp1) in
