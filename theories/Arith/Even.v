@@ -25,57 +25,42 @@ Implicit Types m n : nat.
 
 (** * Inductive definition of [even] and [odd] *)
 
-Inductive even : nat -> Prop :=
-  | even_O : even 0
-  | even_S : forall n, odd n -> even (S n)
-with odd : nat -> Prop :=
-    odd_S : forall n, even n -> odd (S n).
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Even_alt instead.")]
+Notation even := Nat.Even_alt.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Even_alt instead.")]
+Notation odd := Nat.Odd_alt.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Even_alt_O instead.")]
+Notation even_O := Nat.Even_alt_O.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Even_alt_S instead.")]
+Notation even_S := Nat.Even_alt_S.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Odd_alt_S instead.")]
+Notation odd_S := Nat.Odd_alt_S.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Even_alt_ind instead.")]
+Notation even_ind := Nat.Even_alt_ind.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Even_alt_sind instead.")]
+Notation even_sind := Nat.Even_alt_sind.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Odd_alt_ind instead.")]
+Notation odd_ind := Nat.Odd_alt_ind.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even or Nat.Odd_alt_ind instead.")]
+Notation odd_sind := Nat.Odd_alt_sind.
 
 #[global]
-Hint Constructors even: arith.
+Hint Constructors Nat.Even_alt: arith.
 #[global]
-Hint Constructors odd: arith.
+Hint Constructors Nat.Odd_alt: arith.
 
 (** * Equivalence with predicates [Nat.Even] and [Nat.odd] *)
 
-#[local]
-Definition even_equiv_stt : forall n, even n <-> Nat.Even n.
-Proof.
- fix even_equiv 1.
- intros n; destruct n as [|[|n]]; simpl.
- - split; [now exists 0 | constructor].
- - split.
-   + inversion_clear 1 as [|? H0]. inversion_clear H0.
-   + now rewrite <- Nat.even_spec.
- - rewrite Nat.Even_succ_succ, <- even_equiv.
-   split.
-   + inversion_clear 1 as [|? H0]. now inversion_clear H0.
-   + now do 2 constructor.
-Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
-Notation even_equiv := even_equiv_stt.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_alt_Even instead.")]
+Notation even_equiv := Nat.Even_alt_Even.
 
-#[local]
-Definition odd_equiv_stt : forall n, odd n <-> Nat.Odd n.
-Proof.
- fix odd_equiv 1.
- intros n; destruct n as [|[|n]]; simpl.
- - split.
-   + inversion_clear 1.
-   + now rewrite <- Nat.odd_spec.
- - split; [ now exists 0 | do 2 constructor ].
- - rewrite Nat.Odd_succ_succ, <- odd_equiv.
-   split.
-   + inversion_clear 1 as [? H0]. now inversion_clear H0.
-   + now do 2 constructor.
-Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
-Notation odd_equiv := odd_equiv_stt.
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_alt_Odd instead")]
+Notation odd_equiv := Nat.Odd_alt_Odd.
 
 (** Basic facts *)
 
 #[local]
-Definition even_or_odd_stt n : even n \/ odd n.
+Definition even_or_odd_stt n : Nat.Even_alt n \/ Nat.Odd_alt n.
 Proof.
   induction n as [|n IHn].
   - auto with arith.
@@ -85,17 +70,17 @@ Qed.
 Notation even_or_odd := even_or_odd_stt.
 
 #[local]
-Definition even_odd_dec_stt n : {even n} + {odd n}.
+Definition even_odd_dec_stt n : {Nat.Even_alt n} + {Nat.Odd_alt n}.
 Proof.
   induction n as [|n IHn].
   - auto with arith.
   - elim IHn; auto with arith.
 Defined.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_Odd_dec instead")]
 Notation even_odd_dec := even_odd_dec_stt.
 
 #[local]
-Definition not_even_and_odd_stt n : even n -> odd n -> False.
+Definition not_even_and_odd_stt n : Nat.Even_alt n -> Nat.Odd_alt n -> False.
 Proof.
   induction n.
   - intros Ev Od. inversion Od.
@@ -109,11 +94,11 @@ Notation not_even_and_odd := not_even_and_odd_stt (only parsing).
 
 #[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
 Ltac parity2bool :=
- rewrite ?even_equiv_stt, ?odd_equiv_stt, <- ?Nat.even_spec, <- ?Nat.odd_spec.
+ rewrite ?Nat.Even_alt_Even, ?Nat.Odd_alt_Odd, <- ?Nat.even_spec, <- ?Nat.odd_spec.
 
 #[local]
 Ltac parity2bool_dep :=
- rewrite ?even_equiv_stt, ?odd_equiv_stt, <- ?Nat.even_spec, <- ?Nat.odd_spec.
+ rewrite ?Nat.Even_alt_Even, ?Nat.Odd_alt_Odd, <- ?Nat.even_spec, <- ?Nat.odd_spec.
 
 #[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
 Ltac parity_binop_spec :=
@@ -135,96 +120,96 @@ Ltac parity_binop_dep :=
 
 #[local]
 Definition even_plus_split_stt n m :
-  even (n + m) -> even n /\ even m \/ odd n /\ odd m.
+  Nat.Even_alt (n + m) -> Nat.Even_alt n /\ Nat.Even_alt m \/ Nat.Odd_alt n /\ Nat.Odd_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_add_split instead.")]
 Notation even_plus_split := even_plus_split_stt.
 
 #[local]
 Definition odd_plus_split_stt n m :
-  odd (n + m) -> odd n /\ even m \/ even n /\ odd m.
+  Nat.Odd_alt (n + m) -> Nat.Odd_alt n /\ Nat.Even_alt m \/ Nat.Even_alt n /\ Nat.Odd_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_add_split instead.")]
 Notation odd_plus_split := odd_plus_split_stt.
 
 #[local]
-Definition even_even_plus_stt n m: even n -> even m -> even (n + m).
+Definition even_even_plus_stt n m: Nat.Even_alt n -> Nat.Even_alt m -> Nat.Even_alt (n + m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_Even_add instead.")]
 Notation even_even_plus := even_even_plus_stt.
 
 #[local]
-Definition odd_plus_l_stt n m : odd n -> even m -> odd (n + m).
+Definition odd_plus_l_stt n m : Nat.Odd_alt n -> Nat.Even_alt m -> Nat.Odd_alt (n + m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_add_l instead.")]
 Notation odd_plus_l := odd_plus_l_stt.
 
 #[local]
-Definition odd_plus_r_stt n m : even n -> odd m -> odd (n + m).
+Definition odd_plus_r_stt n m : Nat.Even_alt n -> Nat.Odd_alt m -> Nat.Odd_alt (n + m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_add_r instead.")]
 Notation odd_plus_r := odd_plus_r_stt.
 
 #[local]
-Definition odd_even_plus_stt n m : odd n -> odd m -> even (n + m).
+Definition odd_even_plus_stt n m : Nat.Odd_alt n -> Nat.Odd_alt m -> Nat.Even_alt (n + m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_Odd_add instead.")]
 Notation odd_even_plus := odd_even_plus_stt.
 
 #[local]
 Definition even_plus_aux_stt n m :
-    (odd (n + m) <-> odd n /\ even m \/ even n /\ odd m) /\
-    (even (n + m) <-> even n /\ even m \/ odd n /\ odd m).
+    (Nat.Odd_alt (n + m) <-> Nat.Odd_alt n /\ Nat.Even_alt m \/ Nat.Even_alt n /\ Nat.Odd_alt m) /\
+    (Nat.Even_alt (n + m) <-> Nat.Even_alt n /\ Nat.Even_alt m \/ Nat.Odd_alt n /\ Nat.Odd_alt m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_add_aux instead.")]
 Notation even_plus_aux := even_plus_aux_stt.
 
 #[local]
-Definition even_plus_even_inv_r_stt n m : even (n + m) -> even n -> even m.
+Definition even_plus_even_inv_r_stt n m : Nat.Even_alt (n + m) -> Nat.Even_alt n -> Nat.Even_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_add_Even_inv_r instead.")]
 Notation even_plus_even_inv_r := even_plus_even_inv_r_stt.
 
 #[local]
-Definition even_plus_even_inv_l_stt n m : even (n + m) -> even m -> even n.
+Definition even_plus_even_inv_l_stt n m : Nat.Even_alt (n + m) -> Nat.Even_alt m -> Nat.Even_alt n.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_add_Even_inv_l instead.")]
 Notation even_plus_even_inv_l := even_plus_even_inv_l_stt.
 
 #[local]
-Definition even_plus_odd_inv_r_stt n m : even (n + m) -> odd n -> odd m.
+Definition even_plus_odd_inv_r_stt n m : Nat.Even_alt (n + m) -> Nat.Odd_alt n -> Nat.Odd_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_add_Odd_inv_r instead.")]
 Notation even_plus_odd_inv_r := even_plus_odd_inv_r_stt.
 
 #[local]
-Definition even_plus_odd_inv_l_stt n m : even (n + m) -> odd m -> odd n.
+Definition even_plus_odd_inv_l_stt n m : Nat.Even_alt (n + m) -> Nat.Odd_alt m -> Nat.Odd_alt n.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_add_Even_inv_l instead.")]
 Notation even_plus_odd_inv_l := even_plus_odd_inv_l_stt.
 
 #[local]
-Definition odd_plus_even_inv_l_stt n m : odd (n + m) -> odd m -> even n.
+Definition odd_plus_even_inv_l_stt n m : Nat.Odd_alt (n + m) -> Nat.Odd_alt m -> Nat.Even_alt n.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_add_Even_inv_l instead.")]
 Notation odd_plus_even_inv_l := odd_plus_even_inv_l_stt.
 
 #[local]
-Definition odd_plus_even_inv_r_stt n m : odd (n + m) -> odd n -> even m.
+Definition odd_plus_even_inv_r_stt n m : Nat.Odd_alt (n + m) -> Nat.Odd_alt n -> Nat.Even_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_add_Even_inv_r instead.")]
 Notation odd_plus_even_inv_r := odd_plus_even_inv_r_stt.
 
 #[local]
-Definition odd_plus_odd_inv_l_stt n m : odd (n + m) -> even m -> odd n.
+Definition odd_plus_odd_inv_l_stt n m : Nat.Odd_alt (n + m) -> Nat.Even_alt m -> Nat.Odd_alt n.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_add_Odd_inv_l instead.")]
 Notation odd_plus_odd_inv_l := odd_plus_odd_inv_l_stt.
 
 #[local]
-Definition odd_plus_odd_inv_r_stt n m : odd (n + m) -> even n -> odd m.
+Definition odd_plus_odd_inv_r_stt n m : Nat.Odd_alt (n + m) -> Nat.Even_alt n -> Nat.Odd_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_add_Odd_inv_r instead.")]
 Notation odd_plus_odd_inv_r := odd_plus_odd_inv_r_stt.
 
 
@@ -232,51 +217,51 @@ Notation odd_plus_odd_inv_r := odd_plus_odd_inv_r_stt.
 
 #[local]
 Definition even_mult_aux_stt n m :
-  (odd (n * m) <-> odd n /\ odd m) /\ (even (n * m) <-> even n \/ even m).
+  (Nat.Odd_alt (n * m) <-> Nat.Odd_alt n /\ Nat.Odd_alt m) /\ (Nat.Even_alt (n * m) <-> Nat.Even_alt n \/ Nat.Even_alt m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_mul_aux instead.")]
 Notation even_mult_aux := even_mult_aux_stt.
 
 #[local]
-Definition even_mult_l_stt n m : even n -> even (n * m).
+Definition even_mult_l_stt n m : Nat.Even_alt n -> Nat.Even_alt (n * m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_mul_l instead.")]
 Notation even_mult_l := even_mult_l_stt.
 
 #[local]
-Definition even_mult_r_stt n m : even m -> even (n * m).
+Definition even_mult_r_stt n m : Nat.Even_alt m -> Nat.Even_alt (n * m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_mul_r instead.")]
 Notation even_mult_r := even_mult_r_stt.
 
 #[local]
-Definition even_mult_inv_r_stt n m : even (n * m) -> odd n -> even m.
+Definition even_mult_inv_r_stt n m : Nat.Even_alt (n * m) -> Nat.Odd_alt n -> Nat.Even_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_mul_inv_r instead.")]
 Notation even_mult_inv_r := even_mult_inv_r_stt.
 
 #[local]
-Definition even_mult_inv_l_stt n m : even (n * m) -> odd m -> even n.
+Definition even_mult_inv_l_stt n m : Nat.Even_alt (n * m) -> Nat.Odd_alt m -> Nat.Even_alt n.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Even_mul_inv_l instead.")]
 Notation even_mult_inv_l := even_mult_inv_l_stt.
 
 #[local]
-Definition odd_mult_stt n m : odd n -> odd m -> odd (n * m).
+Definition odd_mult_stt n m : Nat.Odd_alt n -> Nat.Odd_alt m -> Nat.Odd_alt (n * m).
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_mul instead.")]
 Notation odd_mult := odd_mult_stt.
 
 #[local]
-Definition odd_mult_inv_l_stt n m : odd (n * m) -> odd n.
+Definition odd_mult_inv_l_stt n m : Nat.Odd_alt (n * m) -> Nat.Odd_alt n.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_mul_inv_l instead.")]
 Notation odd_mult_inv_l := odd_mult_inv_l_stt.
 
 #[local]
-Definition odd_mult_inv_r_stt n m : odd (n * m) -> odd m.
+Definition odd_mult_inv_r_stt n m : Nat.Odd_alt (n * m) -> Nat.Odd_alt m.
 Proof. parity_binop_dep. Qed.
-#[deprecated(since="8.16",note="The Arith.Even file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Even file is obsolete. Use Nat.Odd_mul_inv_r instead.")]
 Notation odd_mult_inv_r := odd_mult_inv_r_stt.
 
 #[global]

@@ -78,13 +78,11 @@ Notation gt_trans_S := Arith_prebase.gt_trans_S_stt.
 
 #[local]
 Definition gt_0_eq_stt n : n > 0 \/ 0 = n.
-Proof.
- destruct n; [now right | left; apply Nat.lt_0_succ].
-Qed.
-#[deprecated(since="8.16",note="The Arith.Gt file is obsolete.")]
+Proof. destruct (Nat.eq_0_gt_0_cases n); auto. Qed.
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.eq_0_gt_0_cases instead.")]
 Notation gt_0_eq := gt_0_eq_stt.
 (* begin hide *)
-#[deprecated(since="8.16",note="The Arith.Gt file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Gt file is obsolete. Use Nat.eq_0_gt_0_cases instead.")]
 Notation gt_O_eq := gt_0_eq_stt (only parsing).
 (* end hide *)
 

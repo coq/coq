@@ -307,6 +307,12 @@ Hint Resolve Nat.max_l Nat.max_r Nat.le_max_l Nat.le_max_r: arith.
 #[global]
 Hint Resolve Nat.min_l Nat.min_r Nat.le_min_l Nat.le_min_r: arith.
 
+(* ** [Even_alt] and [Odd_alt] *)
+#[global]
+Hint Constructors Nat.Even_alt: arith.
+#[global]
+Hint Constructors Nat.Odd_alt: arith.
+
 
 (* Register *)
 #[local]

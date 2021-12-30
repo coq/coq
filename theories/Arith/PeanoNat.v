@@ -297,6 +297,11 @@ Definition Odd n := exists m, n = 2*m+1.
 
 Module Private_Parity.
 
+Lemma Even_0 : Even 0.
+Proof.
+ exists 0; reflexivity.
+Qed.
+
 Lemma Even_1 : ~ Even 1.
 Proof.
  intros ([|], H); try discriminate.
@@ -316,6 +321,11 @@ Proof.
  now intros ([|], H).
 Qed.
 
+Lemma Odd_1 : Odd 1.
+Proof.
+ exists 0; reflexivity.
+Qed.
+
 Lemma Odd_2 n : Odd n <-> Odd (S (S n)).
 Proof.
  split; intros (m,H).
@@ -332,7 +342,7 @@ Lemma even_spec : forall n, even n = true <-> Even n.
 Proof.
  fix even_spec 1.
   intro n; destruct n as [|[|n]]; simpl.
-  - split; [ now exists 0 | trivial ].
+  - split; [ intros; apply Even_0  | trivial ].
   - split; [ discriminate | intro H; elim (Even_1 H) ].
   - rewrite even_spec. apply Even_2.
 Qed.
@@ -343,7 +353,7 @@ Proof.
  fix odd_spec 1.
   intro n; destruct n as [|[|n]]; simpl.
   - split; [ discriminate | intro H; elim (Odd_0 H) ].
-  - split; [ now exists 0 | trivial ].
+  - split; [ intros; apply Odd_1 | trivial ].
   - rewrite odd_spec. apply Odd_2.
 Qed.
 
@@ -495,19 +505,19 @@ Lemma gcd_divide : forall a b, (gcd a b | a) /\ (gcd a b | b).
 Proof.
  fix gcd_divide 1.
  intros [|a] b; simpl.
- split.
-  now exists 0.
-  exists 1. simpl. now rewrite <- plus_n_O.
- fold (b mod (S a)).
- destruct (gcd_divide (b mod (S a)) (S a)) as (H,H').
- set (a':=S a) in *.
- split; auto.
- rewrite (div_mod b a') at 2 by discriminate.
- destruct H as (u,Hu), H' as (v,Hv).
- rewrite mul_comm.
- exists ((b/a')*v + u).
- rewrite mul_add_distr_r.
- now rewrite <- mul_assoc, <- Hv, <- Hu.
+ - split.
+   + now exists 0.
+   + exists 1. simpl. now rewrite <- plus_n_O.
+ - fold (b mod (S a)).
+   destruct (gcd_divide (b mod (S a)) (S a)) as (H,H').
+   set (a':=S a) in *.
+   split; auto.
+   rewrite (div_mod b a') at 2 by discriminate.
+   destruct H as (u,Hu), H' as (v,Hv).
+   rewrite mul_comm.
+   exists ((b/a')*v + u).
+   rewrite mul_add_distr_r.
+   now rewrite <- mul_assoc, <- Hv, <- Hu.
 Qed.
 
 Lemma gcd_divide_l : forall a b, (gcd a b | a).
@@ -580,6 +590,12 @@ Lemma double_twice : forall n, double n = 2*n.
 Proof.
  simpl; intros. now rewrite add_0_r.
 Qed.
+
+Definition double_S : forall n, double (S n) = S (S (double n))
+                    := fun n => add_succ_r (S n) n.
+
+Definition double_add : forall n m, double (n + m) = double n + double m
+                      := fun n m => add_shuffle1 n m n m.
 
 Lemma testbit_0_l : forall n, testbit 0 n = false.
 Proof.
@@ -765,6 +781,290 @@ Lemma tail_mul_spec n m : tail_mul n m = n * m.
 Proof.
  unfold tail_mul. now rewrite tail_addmul_spec.
 Qed.
+
+(** Additional results about [Even] and [Odd] *)
+
+Definition Even_Odd_dec n : {Even n} + {Odd n}.
+Proof.
+ induction n as [|n IHn].
+ - left; apply Even_0.
+ - elim IHn; intros.
+   + right; apply Even_succ, Even_succ_succ; assumption.
+   + left; apply Odd_succ, Odd_succ_succ; assumption.
+Defined.
+
+Definition Even_add_split n m :
+ Even (n + m) -> Even n /\ Even m \/ Odd n /\ Odd m.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, even_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_add_split n m :
+ Odd (n + m) -> Odd n /\ Even m \/ Even n /\ Odd m.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Even_Even_add n m: Even n -> Even m -> Even (n + m).
+Proof.
+ rewrite <- ? even_spec, even_add; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_add_l n m : Odd n -> Even m -> Odd (n + m).
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_add_r n m : Even n -> Odd m -> Odd (n + m).
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_Odd_add n m : Odd n -> Odd m -> Even (n + m).
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, even_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Even_add_aux n m :
+ (Odd (n + m) <-> Odd n /\ Even m \/ Even n /\ Odd m) /\
+ (Even (n + m) <-> Even n /\ Even m \/ Odd n /\ Odd m).
+Proof.
+ split; split.
+ - apply Odd_add_split.
+ - intros [[HO HE]|[HE HO]]; [ apply Odd_add_l | apply Odd_add_r ]; assumption.
+ - apply Even_add_split.
+ - intros [[HO HE]|[HE HO]]; [ apply Even_Even_add | apply Odd_Odd_add ]; assumption.
+Qed.
+
+Definition Even_add_Even_inv_r n m : Even (n + m) -> Even n -> Even m.
+Proof.
+ rewrite <- ? even_spec, even_add; do 2 destruct even; auto.
+Qed.
+
+Definition Even_add_Even_inv_l n m : Even (n + m) -> Even m -> Even n.
+Proof.
+ rewrite <- ? even_spec, even_add; do 2 destruct even; auto.
+Qed.
+
+Definition Even_add_Odd_inv_r n m : Even (n + m) -> Odd n -> Odd m.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, even_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Even_add_Odd_inv_l n m : Even (n + m) -> Odd m -> Odd n.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, even_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_add_Even_inv_l n m : Odd (n + m) -> Odd m -> Even n.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_add_Even_inv_r n m : Odd (n + m) -> Odd n -> Even m.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_add_Odd_inv_l n m : Odd (n + m) -> Even m -> Odd n.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_add_Odd_inv_r n m : Odd (n + m) -> Even n -> Odd m.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_add; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Even_mul_aux n m :
+ (Odd (n * m) <-> Odd n /\ Odd m) /\ (Even (n * m) <-> Even n \/ Even m).
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, odd_mul, even_mul; unfold odd; do 2 destruct even; tauto.
+Qed.
+
+Definition Even_mul_l n m : Even n -> Even (n * m).
+Proof.
+ rewrite <- ? even_spec, even_mul; do 2 destruct even; auto.
+Qed.
+
+Definition Even_mul_r n m : Even m -> Even (n * m).
+Proof.
+ rewrite <- ? even_spec, even_mul; do 2 destruct even; auto.
+Qed.
+
+Definition Even_mul_inv_r n m : Even (n * m) -> Odd n -> Even m.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, even_mul; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Even_mul_inv_l n m : Even (n * m) -> Odd m -> Even n.
+Proof.
+ rewrite <- ? even_spec, <- ? odd_spec, even_mul; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_mul n m : Odd n -> Odd m -> Odd (n * m).
+Proof.
+ rewrite <- ? odd_spec, odd_mul; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_mul_inv_l n m : Odd (n * m) -> Odd n.
+Proof.
+ rewrite <- ? odd_spec, odd_mul; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Odd_mul_inv_r n m : Odd (n * m) -> Odd m.
+Proof.
+ rewrite <- ? odd_spec, odd_mul; unfold odd; do 2 destruct even; auto.
+Qed.
+
+Definition Even_div2 n : Even n -> div2 n = div2 (S n).
+Proof.
+ intros [p ->]; rewrite div2_succ_double; apply div2_double.
+Qed.
+
+Definition Odd_div2 n : Odd n -> S (div2 n) = div2 (S n).
+Proof.
+ intros [p ->]; rewrite add_1_r, div2_succ_double; cbn.
+ f_equal; symmetry; apply div2_double.
+Qed.
+
+Definition div2_Even n : div2 n = div2 (S n) -> Even n.
+Proof.
+ destruct (Even_or_Odd n) as [Ev|Od]; trivial.
+ apply Odd_div2 in Od; rewrite <- Od.
+ intro Od'; destruct (neq_succ_diag_r _ Od').
+Qed.
+
+Definition div2_Odd n : S (div2 n) = div2 (S n) -> Odd n.
+Proof.
+ destruct (Even_or_Odd n) as [Ev|Od]; trivial.
+ apply Even_div2 in Ev; rewrite <- Ev.
+ intro Ev'; symmetry in Ev'; destruct (neq_succ_diag_r _ Ev').
+Qed.
+
+Definition Even_Odd_div2 n :
+ (Even n <-> div2 n = div2 (S n)) /\ (Odd n <-> S (div2 n) = div2 (S n)).
+Proof.
+split; split; [ apply Even_div2 | apply div2_Even | apply Odd_div2 | apply div2_Odd ].
+Qed.
+
+Definition Even_Odd_double n :
+  (Even n <-> n = double (div2 n)) /\ (Odd n <-> n = S (double (div2 n))).
+Proof.
+  revert n. fix Even_Odd_double 1. intros n; destruct n as [|[|n]].
+  - (* n = 0 *)
+    split; split; intros H; [ reflexivity | apply Even_0 | apply Odd_0 in H as [] | inversion H ].
+  - (* n = 1 *)
+    split; split; intros H; [ apply Even_1 in H as [] | inversion H | reflexivity | apply Odd_1 ].
+  - (* n = (S (S n')) *)
+    destruct (Even_Odd_double n) as ((Ev,Ev'),(Od,Od')).
+    split; split; simpl div2; rewrite ? double_S, ? Even_succ_succ, ? Odd_succ_succ.
+    + intros; do 2 f_equal; auto.
+    + injection 1; auto.
+    + intros; do 2 f_equal; auto.
+    + injection 1; auto.
+Qed.
+
+Definition Even_double n : Even n -> n = double (div2 n).
+Proof proj1 (proj1 (Even_Odd_double n)).
+
+Definition double_Even n : n = double (div2 n) -> Even n.
+Proof proj2 (proj1 (Even_Odd_double n)).
+
+Definition Odd_double n : Odd n -> n = S (double (div2 n)).
+Proof proj1 (proj2 (Even_Odd_double n)).
+
+Definition double_Odd n : n = S (double (div2 n)) -> Odd n.
+Proof proj2 (proj2 (Even_Odd_double n)).
+
+(** Inductive definition of even and odd *)
+Inductive Even_alt : nat -> Prop :=
+ | Even_alt_O : Even_alt 0
+ | Even_alt_S : forall n, Odd_alt n -> Even_alt (S n)
+with Odd_alt : nat -> Prop :=
+ | Odd_alt_S : forall n, Even_alt n -> Odd_alt (S n).
+
+Definition Even_alt_Even : forall n, Even_alt n <-> Even n.
+Proof.
+ fix Even_alt_Even 1.
+ intros n; destruct n as [|[|n]]; simpl.
+ - split; [now exists 0 | constructor].
+ - split.
+   + inversion_clear 1 as [|? H0]. inversion_clear H0.
+   + now rewrite <- Nat.even_spec.
+ - rewrite Nat.Even_succ_succ, <- Even_alt_Even.
+   split.
+   + inversion_clear 1 as [|? H0]. now inversion_clear H0.
+   + now do 2 constructor.
+Qed.
+
+Definition Odd_alt_Odd : forall n, Odd_alt n <-> Odd n.
+Proof.
+ fix Odd_alt_Odd 1.
+ intros n; destruct n as [|[|n]]; simpl.
+ - split.
+   + inversion_clear 1.
+   + now rewrite <- Nat.odd_spec.
+ - split; [ now exists 0 | do 2 constructor ].
+ - rewrite Nat.Odd_succ_succ, <- Odd_alt_Odd.
+   split.
+   + inversion_clear 1 as [? H0]. now inversion_clear H0.
+   + now do 2 constructor.
+Qed.
+
+Scheme Odd_alt_Even_alt_ind := Minimality for Odd_alt Sort Prop
+with Even_alt_Odd_alt_ind := Minimality for Even_alt Sort Prop.
+
+Lemma Odd_Even_ind (P Q : nat -> Prop) :
+  (forall n, Even n -> Q n -> P (S n)) ->
+  Q 0 -> (forall n, Odd n -> P n -> Q (S n)) -> forall n, Odd n -> P n.
+Proof.
+intros HSE H0 HSO n HO%Odd_alt_Odd.
+apply Odd_alt_Even_alt_ind with Q; try assumption.
+- intros m HSE'%Even_alt_Even; auto.
+- intros m HSO'%Odd_alt_Odd; auto.
+Qed.
+
+Lemma Even_Odd_ind (P Q : nat -> Prop) :
+  (forall n, Even n -> Q n -> P (S n)) ->
+  Q 0 -> (forall n, Odd n -> P n -> Q (S n)) -> forall n, Even n -> Q n.
+Proof.
+intros HSE H0 HSO n HE%Even_alt_Even.
+apply Even_alt_Odd_alt_ind with P; try assumption.
+- intros m HSE'%Even_alt_Even; auto.
+- intros m HSO'%Odd_alt_Odd; auto.
+Qed.
+
+(* Anomaly see Issue #15413
+Combined Scheme Even_Odd_mutind from Even_Odd_ind, Odd_Even_ind.
+*)
+
+Scheme Odd_alt_Even_alt_sind := Minimality for Odd_alt Sort SProp
+with Even_alt_Odd_alt_sind := Minimality for Even_alt Sort SProp.
+
+Lemma Odd_Even_sind (P Q : nat -> SProp) :
+  (forall n, Even n -> Q n -> P (S n)) ->
+  Q 0 -> (forall n, Odd n -> P n -> Q (S n)) -> forall n, Odd n -> P n.
+Proof.
+intros HSE H0 HSO n HO%Odd_alt_Odd.
+apply Odd_alt_Even_alt_sind with Q; try assumption.
+- intros m HSE'%Even_alt_Even; auto.
+- intros m HSO'%Odd_alt_Odd; auto.
+Qed.
+
+Lemma Even_Odd_sind (P Q : nat -> SProp) :
+  (forall n, Even n -> Q n -> P (S n)) ->
+  Q 0 -> (forall n, Odd n -> P n -> Q (S n)) -> forall n, Even n -> Q n.
+Proof.
+intros HSE H0 HSO n HE%Even_alt_Even.
+apply Even_alt_Odd_alt_sind with P; try assumption.
+- intros m HSE'%Even_alt_Even; auto.
+- intros m HSO'%Odd_alt_Odd; auto.
+Qed.
+
+(* Anomaly see Issue #15413
+Combined Scheme Even_Odd_mutsind from Even_Odd_sind, Odd_Even_sind.
+*)
 
 End Nat.
 
