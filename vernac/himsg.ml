@@ -447,22 +447,12 @@ let explain_not_product env sigma c =
   str "while it is expected to be" ++
   (if EConstr.isType sigma c then str " a sort" else (brk(1,1) ++ pr)) ++ str "."
 
-(* TODO: use the names *)
-(* (co)fixpoints *)
-let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
-  let pr_lconstr_env env sigma c = pr_leconstr_env env sigma c in
-  let prt_name i =
-    match names.(i).binder_name with
-        Name id -> str "Recursive definition of " ++ Id.print id
-      | Anonymous -> str "The " ++ pr_nth i ++ str " definition" in
-
-  let st = match err with
-
+let explain_ill_formed_fix_body env sigma names i = function
   (* Fixpoint guard errors *)
   | NotEnoughAbstractionInFixBody ->
       str "Not enough abstractions in the definition"
   | RecursionNotOnInductiveType c ->
-      str "Recursive definition on" ++ spc () ++ pr_lconstr_env env sigma c ++
+      str "Recursive definition on" ++ spc () ++ pr_leconstr_env env sigma c ++
       spc () ++ str "which should be a recursive inductive type"
   | RecursionOnIllegalTerm(j,(arg_env, arg),le_lt) ->
       let arg_env = make_all_name_different arg_env sigma in
@@ -483,58 +473,69 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
               pr_sequence pr_db lt in
       str "Recursive call to " ++ called ++ spc () ++
       strbrk "has principal argument equal to" ++ spc () ++
-      pr_lconstr_env arg_env sigma arg ++ strbrk " instead of " ++ vars
-
+      pr_leconstr_env arg_env sigma arg ++ strbrk " instead of " ++ vars
   | NotEnoughArgumentsForFixCall j ->
       let called =
         match names.(j).binder_name with
             Name id -> Id.print id
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
      str "Recursive call to " ++ called ++ str " has not enough arguments"
+  | FixpointOnIrrelevantInductive ->
+    strbrk "Fixpoints on proof irrelevant inductive types should produce proof irrelevant values"
 
+let explain_ill_formed_cofix_body env sigma = function
   (* CoFixpoint guard errors *)
   | CodomainNotInductiveType c ->
-      str "The codomain is" ++ spc () ++ pr_lconstr_env env sigma c ++ spc () ++
+      str "The codomain is" ++ spc () ++ pr_leconstr_env env sigma c ++ spc () ++
       str "which should be a coinductive type"
   | NestedRecursiveOccurrences ->
       str "Nested recursive occurrences"
   | UnguardedRecursiveCall c ->
-      str "Unguarded recursive call in" ++ spc () ++ pr_lconstr_env env sigma c
+      str "Unguarded recursive call in" ++ spc () ++ pr_leconstr_env env sigma c
   | RecCallInTypeOfAbstraction c ->
       str "Recursive call forbidden in the domain of an abstraction:" ++
-      spc () ++ pr_lconstr_env env sigma c
+      spc () ++ pr_leconstr_env env sigma c
   | RecCallInNonRecArgOfConstructor c ->
       str "Recursive call on a non-recursive argument of constructor" ++
-      spc () ++ pr_lconstr_env env sigma c
+      spc () ++ pr_leconstr_env env sigma c
   | RecCallInTypeOfDef c ->
       str "Recursive call forbidden in the type of a recursive definition" ++
-      spc () ++ pr_lconstr_env env sigma c
+      spc () ++ pr_leconstr_env env sigma c
   | RecCallInCaseFun c ->
       str "Invalid recursive call in a branch of" ++
-      spc () ++ pr_lconstr_env env sigma c
+      spc () ++ pr_leconstr_env env sigma c
   | RecCallInCaseArg c ->
       str "Invalid recursive call in the argument of \"match\" in" ++ spc () ++
-      pr_lconstr_env env sigma c
+      pr_leconstr_env env sigma c
   | RecCallInCasePred c ->
       str "Invalid recursive call in the \"return\" clause of \"match\" in" ++
-      spc () ++ pr_lconstr_env env sigma c
+      spc () ++ pr_leconstr_env env sigma c
   | NotGuardedForm c ->
-      str "Sub-expression " ++ pr_lconstr_env env sigma c ++
+      str "Sub-expression " ++ pr_leconstr_env env sigma c ++
       strbrk " not in guarded form (should be a constructor," ++
       strbrk " an abstraction, a match, a cofix or a recursive call)"
   | ReturnPredicateNotCoInductive c ->
      str "The return clause of the following pattern matching should be" ++
      strbrk " a coinductive type:" ++
-     spc () ++ pr_lconstr_env env sigma c
-  | FixpointOnIrrelevantInductive ->
-    strbrk "Fixpoints on proof irrelevant inductive types should produce proof irrelevant values"
+     spc () ++ pr_leconstr_env env sigma c
+
+(* TODO: use the names *)
+(* (co)fixpoints *)
+let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
+  let prt_name i =
+    match names.(i).binder_name with
+        Name id -> str "Recursive definition of " ++ Id.print id
+      | Anonymous -> str "The " ++ pr_nth i ++ str " definition" in
+  let st = match err with
+    | FixGuardError err -> explain_ill_formed_fix_body env sigma names i err
+    | CoFixGuardError  err -> explain_ill_formed_cofix_body env sigma err
   in
   prt_name i ++ str " is ill-formed." ++ fnl () ++
   pr_ne_context_of (str "In environment") env sigma ++
   st ++ str "." ++ fnl () ++
   (try (* May fail with unresolved globals. *)
       let fixenv = make_all_name_different fixenv sigma in
-      let pvd = pr_lconstr_env fixenv sigma vdefj.(i).uj_val in
+      let pvd = pr_leconstr_env fixenv sigma vdefj.(i).uj_val in
         str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with e when CErrors.noncritical e -> mt ())
 

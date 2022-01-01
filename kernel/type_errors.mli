@@ -17,13 +17,16 @@ open Univ
 
 (*i Rem: NotEnoughAbstractionInFixBody should only occur with "/i" Fix
     notation i*)
-type 'constr pguard_error =
-  (** Fixpoints *)
+type 'constr pfix_guard_error =
+  (* Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType of 'constr
   | RecursionOnIllegalTerm of int * (env * 'constr) * (int list * int list) Lazy.t
   | NotEnoughArgumentsForFixCall of int
-  (** CoFixpoints *)
+  | FixpointOnIrrelevantInductive
+
+type 'constr pcofix_guard_error =
+  (* CoFixpoints *)
   | CodomainNotInductiveType of 'constr
   | NestedRecursiveOccurrences
   | UnguardedRecursiveCall of 'constr
@@ -35,8 +38,13 @@ type 'constr pguard_error =
   | RecCallInCasePred of 'constr
   | NotGuardedForm of 'constr
   | ReturnPredicateNotCoInductive of 'constr
-  | FixpointOnIrrelevantInductive
 
+type 'constr pguard_error =
+  | FixGuardError of 'constr pfix_guard_error
+  | CoFixGuardError of 'constr pcofix_guard_error
+
+type fix_guard_error = constr pfix_guard_error
+type cofix_guard_error = constr pcofix_guard_error
 type guard_error = constr pguard_error
 
 type arity_error =

@@ -1020,7 +1020,7 @@ let check_is_subterm x tree =
 
 (************************************************************************)
 
-exception FixGuardError of env * guard_error
+exception FixGuardError of env * fix_guard_error
 
 let error_illegal_rec_call renv fx (arg_renv,arg) =
   let le_lt_vars =
@@ -1177,7 +1177,7 @@ let check_one_fix renv recpos trees def =
                   let recArg = List.nth stack' decrArg in
                   let arg_sp = stack_element_specif recArg in
                   let illformed () =
-                    error_ill_formed_rec_body renv.env NotEnoughAbstractionInFixBody
+                    error_ill_formed_rec_body renv.env (Type_errors.FixGuardError NotEnoughAbstractionInFixBody)
                       (pi1 recdef) i (push_rec_types recdef renv.env)
                       (judgment_of_fixpoint recdef)
                   in
@@ -1300,7 +1300,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   let fixenv = push_rec_types recdef env in
   let vdefj = judgment_of_fixpoint recdef in
   let raise_err env i err =
-    error_ill_formed_rec_body env err names i fixenv vdefj in
+    error_ill_formed_rec_body env (Type_errors.FixGuardError err) names i fixenv vdefj in
   (* Check the i-th definition with recarg k *)
   let find_ind i k def =
     (* check fi does not appear in the k+1 first abstractions,
@@ -1355,7 +1355,7 @@ let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
       let renv = make_renv fenv nvect.(i) trees.(i) in
       try check_one_fix renv nvect trees body
       with FixGuardError (fixenv,err) ->
-        error_ill_formed_rec_body fixenv err names i
+        error_ill_formed_rec_body fixenv (Type_errors.FixGuardError err) names i
           (push_rec_types recdef env) (judgment_of_fixpoint recdef)
     done
   else
@@ -1364,7 +1364,7 @@ let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
 (************************************************************************)
 (* Co-fixpoints. *)
 
-exception CoFixGuardError of env * guard_error
+exception CoFixGuardError of env * cofix_guard_error
 
 let anomaly_ill_typed () =
   anomaly ~label:"check_one_cofix" (Pp.str "too many arguments applied to constructor.")
@@ -1475,7 +1475,7 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
       let fixenv = push_rec_types recdef env in
       try check_one_cofix fixenv nbfix bodies.(i) types.(i)
       with CoFixGuardError (errenv,err) ->
-        error_ill_formed_rec_body errenv err names i
+        error_ill_formed_rec_body errenv (Type_errors.CoFixGuardError err) names i
           fixenv (judgment_of_fixpoint recdef)
     done
   else

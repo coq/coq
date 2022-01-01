@@ -16,12 +16,15 @@ open Univ
 
 (* Type errors. *)
 
-type 'constr pguard_error =
+type 'constr pfix_guard_error =
   (* Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType of 'constr
   | RecursionOnIllegalTerm of int * (env * 'constr) * (int list * int list) Lazy.t
   | NotEnoughArgumentsForFixCall of int
+  | FixpointOnIrrelevantInductive
+
+type 'constr pcofix_guard_error =
   (* CoFixpoints *)
   | CodomainNotInductiveType of 'constr
   | NestedRecursiveOccurrences
@@ -34,8 +37,13 @@ type 'constr pguard_error =
   | RecCallInCasePred of 'constr
   | NotGuardedForm of 'constr
   | ReturnPredicateNotCoInductive of 'constr
-  | FixpointOnIrrelevantInductive
 
+type 'constr pguard_error =
+  | FixGuardError of 'constr pfix_guard_error
+  | CoFixGuardError of 'constr pcofix_guard_error
+
+type fix_guard_error = constr pfix_guard_error
+type cofix_guard_error = constr pcofix_guard_error
 type guard_error = constr pguard_error
 
 type arity_error =
@@ -167,11 +175,14 @@ let error_bad_invert env =
 let error_bad_variance env ~lev ~expected ~actual =
   raise (TypeError (env, BadVariance {lev;expected;actual}))
 
-let map_pguard_error f = function
+let map_pfix_guard_error f = function
 | NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
 | RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
 | RecursionOnIllegalTerm (n, (env, c), l1_l2) -> RecursionOnIllegalTerm (n, (env, f c), l1_l2)
 | NotEnoughArgumentsForFixCall n -> NotEnoughArgumentsForFixCall n
+| FixpointOnIrrelevantInductive -> FixpointOnIrrelevantInductive
+
+let map_pcofix_guard_error f = function
 | CodomainNotInductiveType c -> CodomainNotInductiveType (f c)
 | NestedRecursiveOccurrences -> NestedRecursiveOccurrences
 | UnguardedRecursiveCall c -> UnguardedRecursiveCall (f c)
@@ -183,7 +194,10 @@ let map_pguard_error f = function
 | RecCallInCasePred c -> RecCallInCasePred (f c)
 | NotGuardedForm c -> NotGuardedForm (f c)
 | ReturnPredicateNotCoInductive c -> ReturnPredicateNotCoInductive (f c)
-| FixpointOnIrrelevantInductive -> FixpointOnIrrelevantInductive
+
+let map_pguard_error f = function
+| FixGuardError e -> FixGuardError (map_pfix_guard_error f e)
+| CoFixGuardError e -> CoFixGuardError (map_pcofix_guard_error f e)
 
 let map_ptype_error f = function
 | UnboundRel n -> UnboundRel n
