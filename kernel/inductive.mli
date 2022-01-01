@@ -159,9 +159,10 @@ exception SingletonInductiveBecomesProp of Id.t
 
 type size = Large | Strict
 type subterm_spec =
-    Subterm of (size * wf_paths)
+    Subterm of (int list * size * wf_paths)
   | Dead_code
   | Not_subterm
+  | Internally_bound_subterm of int list
 type guard_env =
   { env     : env;
     (** dB of last fixpoint *)

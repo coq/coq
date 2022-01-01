@@ -134,3 +134,93 @@ Check mod_local.imm_local.
 Check by_proof_importable.
 Fail Check by_proof_local.
 Check mod_local.by_proof_local.
+
+(* Miscellaneous tests *)
+
+Module IotaRedex.
+
+Fixpoint minus (n m:nat) {struct n} : nat :=
+  match (n, m) with
+  | (O , _) => O
+  | (S _ , O) => n
+  | (S n', S m') => minus n' m'
+  end.
+
+End IotaRedex.
+
+Module ReturningInductive.
+
+Fail Fixpoint geneq s (x: list nat) {struct s} : Prop :=
+  match x with
+  | cons a t => geneq (S a) t /\ geneq (S a) t
+  | _ => False
+  end.
+
+End ReturningInductive.
+
+Module NestingAndUnfolding.
+
+Fail Fixpoint f (x:nat) := id (fix g x : nat := f x) 0.
+
+Fixpoint f x :=
+  match x with
+  | 0 => 0
+  | S n => id (fix g x := f x) n
+  end.
+
+End NestingAndUnfolding.
+
+Module NestingAndConstructedUnfolding.
+
+Definition fold_left {A B : Type} (f : A -> B -> A) :=
+fix fold_left (l : list B) (a0 : A) {struct l} : A :=
+  match l with
+  | nil => a0
+  | cons b t => fold_left t (f a0 b)
+  end.
+
+Record t A : Type :=
+    mk {
+        elt: A
+      }.
+
+Arguments elt {A} t.
+
+Inductive LForm : Type :=
+| LIMPL : t LForm -> list (t LForm) -> LForm.
+
+Fixpoint hcons  (m : unit) (f : LForm) :=
+  match f with
+  | LIMPL f l => fold_left (fun m f => hcons m f.(elt) ) (cons f l) m
+  end.
+End NestingAndConstructedUnfolding.
+
+Module CofixRedex.
+
+CoInductive Stream := {hd : nat; tl : Stream}.
+Definition zeros := cofix zeros := {|hd := 0; tl := zeros|}.
+
+Fixpoint f n :=
+  match n with
+  | 0 => 0
+  | S n =>
+    match zeros with
+    | {|hd:=_|} => fun f => f n
+    end f
+  end.
+
+End CofixRedex.
+
+Module CofixRedexPrimProj.
+
+Set Primitive Projections.
+CoInductive Stream A := {hd : A; tl : Stream A}.
+Arguments hd {A} s.
+
+Fixpoint f n :=
+  match n with
+  | 0 => 0
+  | S n => (cofix cst := {|hd := (fun f => f n); tl := cst|}).(hd) f
+  end.
+
+End CofixRedexPrimProj.
