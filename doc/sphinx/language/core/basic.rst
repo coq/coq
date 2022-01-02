@@ -166,7 +166,7 @@ Keywords
 
   The following are keywords defined in notations or plugins loaded in the :term:`prelude`::
 
-    IF by exists exists2 using
+    by exists exists2 using
 
   Note that loading additional modules or plugins may expand the set of reserved
   keywords.
