@@ -316,10 +316,6 @@ let find_delimiters_scope ?loc key =
 
 (* Uninterpretation tables *)
 
-type interp_rule =
-  | NotationRule of specific_notation
-  | SynDefRule of KerName.t
-
 (* We define keys for glob_constr and aconstr to split the syntax entries
    according to the key of the pattern (adapted from Chet Murthy by HH) *)
 
@@ -1689,8 +1685,8 @@ let is_printing_inactive_rule rule pat =
   match rule with
   | NotationRule (scope,ntn) ->
     not (is_printing_active_in_scope (scope,ntn) pat)
-  | SynDefRule kn ->
-    try let _ = Nametab.path_of_syndef kn in false with Not_found -> true
+  | AbbrevRule kn ->
+    try let _ = Nametab.path_of_abbreviation kn in false with Not_found -> true
 
 let availability_of_notation (ntn_scope,ntn) scopes =
   find_without_delimiters (has_active_parsing_rule_in_scope ntn) (ntn_scope,Some ntn) (make_current_scopes scopes)

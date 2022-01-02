@@ -12,6 +12,7 @@ open Names
 open Environ
 open Reductionops
 open Libnames
+open Globnames
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
@@ -99,7 +100,7 @@ type object_pr = {
   print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
   print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
-  print_syntactic_def       : env -> KerName.t -> Pp.t;
+  print_abbreviation        : env -> abbreviation -> Pp.t;
   print_module              : ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;

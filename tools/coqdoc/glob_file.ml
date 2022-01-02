@@ -25,7 +25,7 @@ let type_of_string = function
   | "inst" -> Instance
   | "var" -> Variable
   | "defax" | "prfax" | "ax" -> Axiom
-  | "syndef" -> Abbreviation
+  | "abbrev" | "syndef" -> Abbreviation
   | "not" -> Notation
   | "lib" -> Library
   | "mod" | "modtype" -> Module

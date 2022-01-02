@@ -1014,20 +1014,20 @@ let set_item_scope ?loc main_data ids sc =
   | (id,_)::_ -> user_err ?loc (str "Notation scope for argument " ++ Id.print id ++ str " can be specified only once.")
   | [] -> { main_data with itemscopes }
 
-let interp_non_syntax_modifiers ~reserved ~infix ~syndef deprecation mods =
+let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
   let set (main_data,rest) = CAst.with_loc_val (fun ?loc -> function
     | SetOnlyParsing ->
        if not (Option.is_empty main_data.format && List.is_empty main_data.extra) then
          (warn_only_parsing_discarded_format ?loc (); (main_data, rest))
        else
          (set_onlyparsing ?loc ~reserved main_data,rest)
-    | SetOnlyPrinting when not syndef -> (set_onlyprinting ?loc main_data,rest)
-    | SetCustomEntry (entry,None) when not syndef -> (set_custom_entry ?loc main_data entry,rest)
-    | SetCustomEntry (entry,Some _) as x when not syndef -> (set_custom_entry main_data entry,CAst.make ?loc x :: rest)
+    | SetOnlyPrinting when not abbrev -> (set_onlyprinting ?loc main_data,rest)
+    | SetCustomEntry (entry,None) when not abbrev -> (set_custom_entry ?loc main_data entry,rest)
+    | SetCustomEntry (entry,Some _) as x when not abbrev -> (set_custom_entry main_data entry,CAst.make ?loc x :: rest)
     | SetEntryType _ when infix -> user_err ?loc Pp.(str "Unexpected entry type in infix notation.")
     | SetItemLevel _ when infix -> user_err ?loc Pp.(str "Unexpected entry level in infix notation.")
-    | SetFormat (TextFormat s) when not syndef -> (set_format ?loc main_data s, rest)
-    | SetFormat (ExtraFormat (k,s)) when not syndef -> (set_extra_format ?loc main_data (k,s), rest)
+    | SetFormat (TextFormat s) when not abbrev -> (set_format ?loc main_data s, rest)
+    | SetFormat (ExtraFormat (k,s)) when not abbrev -> (set_extra_format ?loc main_data (k,s), rest)
     | SetItemScope (ids,sc) -> (set_item_scope ?loc main_data ids sc, rest)
     | modif -> (main_data,(CAst.make ?loc modif)::rest))
   in
@@ -1651,7 +1651,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
 
 let add_reserved_notation ~local ~infix ({CAst.loc;v=df},mods) =
   let open SynData in
-  let (main_data,mods) = interp_non_syntax_modifiers ~reserved:true ~infix ~syndef:false None mods in
+  let (main_data,mods) = interp_non_syntax_modifiers ~reserved:true ~infix ~abbrev:false None mods in
   let mods = interp_modifiers main_data.entry mods in
   let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
   let notation_symbols = if infix then adjust_reserved_infix_notation notation_symbols else notation_symbols in
@@ -1674,7 +1674,7 @@ let prepare_where_notation decl_ntn =
       decl_ntn_modifiers = modifiers;
       decl_ntn_scope = sc;
     } = decl_ntn in
-  let (main_data,mods) = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:false None modifiers in
+  let (main_data,mods) = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:false None modifiers in
   match mods with
   | _::_ -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
   | [] ->
@@ -1706,7 +1706,7 @@ let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_sym
 
 let add_notation ~local ~infix deprecation env c ({CAst.loc;v=df},modifiers) sc =
   (* Extract the modifiers not affecting the parsing rule *)
-  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~syndef:false deprecation modifiers in
+  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false deprecation modifiers in
   (* Extract the modifiers not affecting the parsing rule *)
   let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
   (* Add variables on both sides if an infix notation *)
@@ -1816,15 +1816,15 @@ let remove_delimiters local scope =
 let add_class_scope local scope cl =
   Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
-let interp_syndef_modifiers deprecation modl =
-  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~syndef:true deprecation modl in
+let interp_abbreviation_modifiers deprecation modl =
+  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true deprecation modl in
   if skipped <> [] then
     (let modifier = List.hd skipped in
     user_err ?loc:modifier.CAst.loc (str "Abbreviations don't support " ++ Ppvernac.pr_syntax_modifier modifier));
   (mods.onlyparsing, mods.itemscopes)
 
-let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
-  let (only_parsing, scopes) = interp_syndef_modifiers deprecation modl in
+let add_abbreviation ~local deprecation env ident (vars,c) modl =
+  let (only_parsing, scopes) = interp_abbreviation_modifiers deprecation modl in
   let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
     match vars, intern_name_alias c with
@@ -1846,7 +1846,7 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] false reversibility pat) in
-  Syntax_def.declare_syntactic_definition ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
+  Abbreviation.declare_abbreviation ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Declaration of custom entry                                        *)

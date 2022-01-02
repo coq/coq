@@ -147,15 +147,15 @@ val interp_constr_pattern :
   env -> evar_map -> ?expected_type:typing_constraint ->
     constr_pattern_expr -> constr_pattern
 
-(** Returns None if it's a syndef not bound to a name, raises an error
+(** Returns None if it's an abbreviation not bound to a name, raises an error
     if not existing *)
 val intern_reference : qualid -> GlobRef.t option
 
-(** Returns None if not a reference or a syndef not bound to a name *)
+(** Returns None if not a reference or a abbrev not bound to a name *)
 val intern_name_alias :
   constr_expr -> (GlobRef.t * Glob_term.glob_level list option) option
 
-(** Expands abbreviations (syndef); raise an error if not existing *)
+(** Expands abbreviations; raise an error if not existing *)
 val interp_reference : ltac_sign -> qualid -> glob_constr
 
 (** Interpret binders *)

@@ -248,9 +248,9 @@ let mp_of_kn kn =
 
 let add_glob_kn ?loc kn =
   if dump () then
-    let sp = Nametab.path_of_syndef kn in
+    let sp = Nametab.path_of_abbreviation kn in
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
-    add_glob_gen ?loc sp lib_dp "syndef"
+    add_glob_gen ?loc sp lib_dp "abbrev"
 
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
   if get_output () = Feedback then

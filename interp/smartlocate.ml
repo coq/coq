@@ -18,13 +18,13 @@ open Pp
 open CErrors
 open Libnames
 open Globnames
-open Syntax_def
+open Abbreviation
 open Notation_term
 
 let global_of_extended_global_head = function
   | TrueGlobal ref -> ref
-  | SynDef kn ->
-      let _, syn_def = search_syntactic_definition kn in
+  | Abbrev kn ->
+      let _, syn_def = search_abbreviation kn in
       let rec head_of = function
         | NRef (ref,None) -> ref
         | NApp (rc, _) -> head_of rc
@@ -35,8 +35,8 @@ let global_of_extended_global_head = function
 
 let global_of_extended_global_exn = function
   | TrueGlobal ref -> ref
-  | SynDef kn ->
-  match search_syntactic_definition kn with
+  | Abbrev kn ->
+  match search_abbreviation kn with
   | [],NRef (ref,None) -> ref
   | [],NApp (NRef (ref,None),[]) -> ref
   | _ -> raise Not_found

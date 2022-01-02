@@ -10,15 +10,16 @@
 
 open Names
 open Notation_term
+open Globnames
 
-(** Syntactic definitions. *)
+(** Abbreviations. *)
 
-val declare_syntactic_definition : local:bool -> ?also_in_cases_pattern:bool -> Deprecation.t option -> Id.t ->
+val declare_abbreviation : local:bool -> ?also_in_cases_pattern:bool -> Deprecation.t option -> Id.t ->
   onlyparsing:bool -> interpretation -> unit
 
-val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> interpretation
+val search_abbreviation : ?loc:Loc.t -> abbreviation -> interpretation
 
-val search_filtered_syntactic_definition : ?loc:Loc.t ->
-  (interpretation -> 'a option) -> KerName.t -> 'a option
+val search_filtered_abbreviation : ?loc:Loc.t ->
+  (interpretation -> 'a option) -> abbreviation -> 'a option
 
-val import_syntax_constant : int -> Libnames.full_path -> KerName.t -> unit
+val import_abbreviation : int -> Libnames.full_path -> abbreviation -> unit

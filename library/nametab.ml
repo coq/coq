@@ -407,8 +407,8 @@ let push_cci visibility sp ref =
   push_xref visibility sp (TrueGlobal ref)
 
 (* This is for Syntactic Definitions *)
-let push_syndef visibility sp kn =
-  push_xref visibility sp (SynDef kn)
+let push_abbreviation visibility sp kn =
+  push_xref visibility sp (Abbrev kn)
 
 let push = push_cci
 
@@ -439,12 +439,12 @@ let locate_extended qid = ExtRefTab.locate qid !the_ccitab
 (* This should be used when no syntactic definitions is expected *)
 let locate qid = match locate_extended qid with
   | TrueGlobal ref -> ref
-  | SynDef _ -> raise Not_found
+  | Abbrev _ -> raise Not_found
 let full_name_cci qid = ExtRefTab.user_name qid !the_ccitab
 
-let locate_syndef qid = match locate_extended qid with
+let locate_abbreviation qid = match locate_extended qid with
   | TrueGlobal _ -> raise Not_found
-  | SynDef kn -> kn
+  | Abbrev kn -> kn
 
 let locate_modtype qid = MPTab.locate qid !the_modtypetab
 let full_name_modtype qid = MPTab.user_name qid !the_modtypetab
@@ -496,7 +496,7 @@ let extended_global_of_path sp = ExtRefTab.find sp !the_ccitab
 let global qid =
   try match locate_extended qid with
     | TrueGlobal ref -> ref
-    | SynDef _ ->
+    | Abbrev _ ->
         user_err ?loc:qid.CAst.loc
           (str "Unexpected reference to a notation: " ++
            pr_qualid qid ++ str ".")
@@ -530,8 +530,8 @@ let dirpath_of_global ref =
 let basename_of_global ref =
   snd (repr_path (path_of_global ref))
 
-let path_of_syndef kn =
-  ExtRefMap.find (SynDef kn) !the_globrevtab
+let path_of_abbreviation kn =
+  ExtRefMap.find (Abbrev kn) !the_globrevtab
 
 let dirpath_of_module mp =
   MPmap.find mp !the_modrevtab
@@ -552,8 +552,8 @@ let shortest_qualid_of_global ?loc ctx ref =
         let sp = ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
         ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
-let shortest_qualid_of_syndef ?loc ctx kn =
-  let sp = path_of_syndef kn in
+let shortest_qualid_of_abbreviation ?loc ctx kn =
+  let sp = path_of_abbreviation kn in
     ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
 let shortest_qualid_of_module ?loc mp =

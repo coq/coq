@@ -1135,7 +1135,7 @@ let is_global id =
 
 let dump_extended_global loc = function
   | TrueGlobal ref -> (*feedback_global loc ref;*) Dumpglob.add_glob ?loc ref
-  | SynDef sp -> Dumpglob.add_glob_kn ?loc sp
+  | Abbrev sp -> Dumpglob.add_glob_kn ?loc sp
 
 let intern_extended_global_of_qualid qid =
   let r = Nametab.locate_extended qid in dump_extended_global qid.CAst.loc r; r
@@ -1266,8 +1266,8 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       (* Rule out section vars since these should have been found by intern_var *)
       raise Not_found
   | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), Some ref, args
-  | SynDef sp ->
-      let (ids,c) = Syntax_def.search_syntactic_definition ?loc sp in
+  | Abbrev sp ->
+      let (ids,c) = Abbreviation.search_abbreviation ?loc sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments ?loc;
       let args1,args2 = List.chop nids args in
@@ -1304,7 +1304,7 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
   | TrueGlobal g ->
     test_global g;
     (g, false, Some [], pats)
-  | SynDef kn ->
+  | Abbrev kn ->
     let filter (vars,a) =
       match a with
       | NRef (g,_) ->
@@ -1312,7 +1312,7 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
         test_global g;
         let () = assert (List.is_empty vars) in
         Some (g, Some [], pats)
-      | NApp (NRef (g,_),[]) -> (* special case: Syndef for @Cstr deactivates implicit arguments *)
+      | NApp (NRef (g,_),[]) -> (* special case: abbreviation for @Cstr deactivates implicit arguments *)
         test_global g;
         let () = assert (List.is_empty vars) in
         Some (g, None, pats)
@@ -1326,7 +1326,7 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
         let args = List.map (intern_not subst) args in
         Some (g, Some args, pats2)
       | _ -> None in
-    match Syntax_def.search_filtered_syntactic_definition filter kn with
+    match Abbreviation.search_filtered_abbreviation filter kn with
     | Some (g, pats1, pats2) -> (g, true, pats1, pats2)
     | None -> raise Not_found
 
@@ -1703,7 +1703,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       | _ -> 0 in
     List.make n (DAst.make ?loc @@ RCPatAtom None)
   in
-  let rec drop_syndef {test_kind} ?loc scopes qid add_par_if_no_ntn_with_par no_impl pats =
+  let rec drop_abbrev {test_kind} ?loc scopes qid add_par_if_no_ntn_with_par no_impl pats =
     try
       if qualid_is_ident qid && Option.cata (Id.Set.mem (qualid_basename qid)) false env.pat_ids && List.is_empty pats then
         raise Not_found;
@@ -1738,13 +1738,13 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       end
     | CPatCstr (head, None, pl) ->
       begin
-        match drop_syndef test_kind ?loc scopes head add_par_if_no_ntn_with_par no_impl pl with
+        match drop_abbrev test_kind ?loc scopes head add_par_if_no_ntn_with_par no_impl pl with
         | Some (g,pl) -> DAst.make ?loc @@ RCPatCstr(g, pl)
         | None -> Loc.raise ?loc (InternalizationError (NotAConstructor head))
       end
     | CPatCstr (qid, Some expl_pl, pl) ->
       begin
-        match drop_syndef test_kind ?loc scopes qid false true (expl_pl@pl) with
+        match drop_abbrev test_kind ?loc scopes qid false true (expl_pl@pl) with
         | Some (g,pl) -> DAst.make ?loc @@ RCPatCstr (g, pl)
         | None -> Loc.raise ?loc (InternalizationError (NotAConstructor qid))
       end
@@ -1767,7 +1767,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       rcp_of_glob scopes pat
     | CPatAtom (Some id) ->
       begin
-        match drop_syndef test_kind ?loc scopes id add_par_if_no_ntn_with_par no_impl [] with
+        match drop_abbrev test_kind ?loc scopes id add_par_if_no_ntn_with_par no_impl [] with
         | Some (g, pl) -> DAst.make ?loc @@ RCPatCstr (g, pl)
         | None         -> DAst.make ?loc @@ RCPatAtom (Some ((make ?loc @@ find_pattern_variable id),scopes))
       end
