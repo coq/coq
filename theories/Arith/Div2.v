@@ -12,7 +12,7 @@
     Please consider using [Nat.div2] directly, and results about it
     (see file PeanoNat). *)
 
-Require Import PeanoNat Even.
+Require Import PeanoNat.
 
 Local Open Scope nat_scope.
 
@@ -52,42 +52,38 @@ Hint Resolve Nat.lt_div2: arith.
 (** Properties related to the parity *)
 
 #[local]
-Definition even_div2_stt n : even n -> Nat.div2 n = Nat.div2 (S n).
+Definition even_div2_stt n : Nat.Even_alt n -> Nat.div2 n = Nat.div2 (S n).
 Proof.
- rewrite Even.even_equiv_stt. intros (p,->).
+ rewrite Nat.Even_alt_Even. intros (p,->).
  rewrite Nat.div2_succ_double. apply Nat.div2_double.
 Qed.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.Even_div2 instead.")]
 Notation even_div2 := even_div2_stt.
 
 #[local]
-Definition odd_div2_stt n : odd n -> S (Nat.div2 n) = Nat.div2 (S n).
+Definition odd_div2_stt n : Nat.Odd_alt n -> S (Nat.div2 n) = Nat.div2 (S n).
 Proof.
- rewrite Even.odd_equiv_stt. intros (p,->).
+ rewrite Nat.Odd_alt_Odd. intros (p,->).
  rewrite Nat.add_1_r, Nat.div2_succ_double.
  simpl. f_equal. symmetry. apply Nat.div2_double.
 Qed.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.Odd_div2 instead.")]
 Notation odd_div2 := odd_div2_stt.
 
 #[local]
-Definition div2_even_stt n : Nat.div2 n = Nat.div2 (S n) -> even n.
+Definition div2_even_stt n : Nat.div2 n = Nat.div2 (S n) -> Nat.Even_alt n.
 Proof.
- destruct (Even.even_or_odd_stt n) as [Ev|Od]; trivial.
- apply odd_div2_stt in Od. rewrite <- Od. intro Od'.
- elim (n_Sn _ Od').
+ rewrite Nat.Even_alt_Even; apply Nat.div2_Even.
 Qed.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.div2_Even instead.")]
 Notation div2_even := div2_even_stt.
 
 #[local]
-Definition div2_odd_stt n : S (Nat.div2 n) = Nat.div2 (S n) -> odd n.
+Definition div2_odd_stt n : S (Nat.div2 n) = Nat.div2 (S n) -> Nat.Odd_alt n.
 Proof.
- destruct (Even.even_or_odd_stt n) as [Ev|Od]; trivial.
- apply even_div2_stt in Ev. rewrite <- Ev. intro Ev'.
- symmetry in Ev'. elim (n_Sn _ Ev').
+ rewrite Nat.Odd_alt_Odd; apply Nat.div2_Odd.
 Qed.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.div2_Odd instead.")]
 Notation div2_odd := div2_odd_stt.
 
 #[global]
@@ -95,12 +91,12 @@ Hint Resolve even_div2_stt div2_even_stt odd_div2_stt div2_odd_stt: arith.
 
 #[local]
 Definition even_odd_div2_stt n :
- (even n <-> Nat.div2 n = Nat.div2 (S n)) /\
- (odd n <-> S (Nat.div2 n) = Nat.div2 (S n)).
+ (Nat.Even_alt n <-> Nat.div2 n = Nat.div2 (S n)) /\
+ (Nat.Odd_alt n <-> S (Nat.div2 n) = Nat.div2 (S n)).
 Proof.
  split; split; auto using div2_odd_stt, div2_even_stt, odd_div2_stt, even_div2_stt.
 Qed.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.Even_Odd_div2 instead.")]
 Notation even_odd_div2 := even_odd_div2_stt.
 
 
@@ -113,67 +109,48 @@ Notation double := Nat.double (only parsing).
 #[global]
 Hint Unfold Nat.double: arith.
 
-#[local]
-Definition double_S_stt : forall n, Nat.double (S n) = S (S (Nat.double n))
-                        := fun n => Nat.add_succ_r (S n) n.
-Opaque double_S_stt.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.add_succ_r instead.")]
-Notation double_S := double_S_stt.
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.double_S instead.")]
+Notation double_S := Nat.double_S.
 
-#[local]
-Definition double_plus_stt : forall n m, Nat.double (n + m) = Nat.double n + Nat.double m
-                           := fun n m => Nat.add_shuffle1 n m n m.
-Opaque double_plus_stt.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.add_shuffle1 instead.")]
-Notation double_plus := double_plus_stt.
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.double_add instead.")]
+Notation double_plus := Nat.double_add.
 
 #[global]
-Hint Resolve double_S_stt: arith.
+Hint Resolve Nat.double_S: arith.
 
 #[local]
 Definition even_odd_double_stt n :
-  (even n <-> n = Nat.double (Nat.div2 n)) /\ (odd n <-> n = S (Nat.double (Nat.div2 n))).
+ (Nat.Even_alt n <-> n = Nat.double (Nat.div2 n)) /\ (Nat.Odd_alt n <-> n = S (Nat.double (Nat.div2 n))).
 Proof.
-  revert n. fix even_odd_double 1. intros n; destruct n as [|[|n]].
-  - (* n = 0 *)
-    split; split; auto with arith. inversion 1.
-  - (* n = 1 *)
-    split; split; auto with arith. inversion_clear 1 as [|? H0]. inversion H0.
-  - (* n = (S (S n')) *)
-    destruct (even_odd_double n) as ((Ev,Ev'),(Od,Od')).
-    split; split; simpl Nat.div2; rewrite ?double_S_stt.
-    + inversion_clear 1 as [|? H0]. inversion_clear H0. auto.
-    + injection 1. auto with arith.
-    + inversion_clear 1 as [? H0]. inversion_clear H0. auto.
-    + injection 1. auto with arith.
+ rewrite Nat.Even_alt_Even, Nat.Odd_alt_Odd; apply Nat.Even_Odd_double.
 Qed.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Even_Odd_double instead.")]
 Notation even_odd_double := even_odd_double_stt.
 
 (** Specializations *)
 
 #[local]
-Definition even_double_stt n : even n -> n = Nat.double (Nat.div2 n).
+Definition even_double_stt n : Nat.Even_alt n -> n = Nat.double (Nat.div2 n).
 Proof proj1 (proj1 (even_odd_double_stt n)).
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Even_double instead.")]
 Notation even_double := even_double_stt.
 
 #[local]
-Definition double_even_stt n : n = Nat.double (Nat.div2 n) -> even n.
+Definition double_even_stt n : n = Nat.double (Nat.div2 n) -> Nat.Even_alt n.
 Proof proj2 (proj1 (even_odd_double_stt n)).
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use double_Even instead.")]
 Notation double_even := double_even_stt.
 
 #[local]
-Definition odd_double_stt n : odd n -> n = S (Nat.double (Nat.div2 n)).
+Definition odd_double_stt n : Nat.Odd_alt n -> n = S (Nat.double (Nat.div2 n)).
 Proof proj1 (proj2 (even_odd_double_stt n)).
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Odd_double instead.")]
 Notation odd_double := odd_double_stt.
 
 #[local]
-Definition double_odd_stt n : n = S (Nat.double (Nat.div2 n)) -> odd n.
+Definition double_odd_stt n : n = S (Nat.double (Nat.div2 n)) -> Nat.Odd_alt n.
 Proof proj2 (proj2 (even_odd_double_stt n)).
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use double_Odd instead.")]
 Notation double_odd := double_odd_stt.
 
 #[global]
@@ -186,19 +163,19 @@ Hint Resolve even_double_stt double_even_stt odd_double_stt double_odd_stt: arit
     (Immediate: it is [n/2]) *)
 
 #[local]
-Definition even_2n_stt : forall n, even n -> {p : nat | n = Nat.double p}.
+Definition even_2n_stt : forall n, Nat.Even_alt n -> {p : nat | n = Nat.double p}.
 Proof.
   intros n H. exists (Nat.div2 n). auto with arith.
 Defined.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.Even_alt_Even instead.")]
 Notation even_2n := even_2n_stt.
 
 #[local]
-Definition odd_S2n_stt : forall n, odd n -> {p : nat | n = S (Nat.double p)}.
+Definition odd_S2n_stt : forall n, Nat.Odd_alt n -> {p : nat | n = S (Nat.double p)}.
 Proof.
   intros n H. exists (Nat.div2 n). auto with arith.
 Defined.
-#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.Odd_alt_Odd instead.")]
 Notation odd_S2n := odd_S2n_stt.
 
 (** Doubling before dividing by two brings back to the initial number. *)
@@ -214,3 +191,6 @@ Definition div2_double_plus_one_stt n : Nat.div2 (S (2*n)) = n.
 Proof. apply Nat.div2_succ_double. Qed.
 #[deprecated(since="8.16",note="The Arith.Div2 file is obsolete. Use Nat.div2_succ_double instead.")]
 Notation div2_double_plus_one := div2_double_plus_one_stt.
+
+(* TODO #15411 for compatibility only, should be removed after deprecation *)
+Require Import Even.

@@ -21,7 +21,7 @@ Require Export Arith_prebase.
 Notation le_refl := Nat.le_refl (only parsing).
 #[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_trans instead.")]
 Notation le_trans := Nat.le_trans (only parsing).
-#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_antisym instead.")]
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_antisymm instead.")]
 Notation le_antisym := Nat.le_antisymm (only parsing).
 
 (** * Properties of [le] w.r.t 0 *)

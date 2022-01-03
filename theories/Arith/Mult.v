@@ -117,7 +117,7 @@ Proof.
  - now exists q.
  - now exists p.
 Qed.
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.Even_Odd_False instead.")]
 Notation odd_even_lem := odd_even_lem_stt.
 
 (** * Tail-recursive [mult] *)

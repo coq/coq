@@ -98,11 +98,8 @@ Notation lt_plus_trans := Arith_prebase.lt_plus_trans_stt.
 (** * Inversion lemmas *)
 
 #[local]
-Definition plus_is_O_stt n m : n + m = 0 -> n = 0 /\ m = 0.
-Proof.
-  destruct n; now split.
-Qed.
-#[deprecated(since="8.16",note="The Arith.Plus file is obsolete.")]
+Definition plus_is_O_stt := fun n m => proj1 (Nat.eq_add_0 n m).
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.eq_add_0 instead.")]
 Notation plus_is_O := plus_is_O_stt.
 
 #[local]
@@ -113,7 +110,7 @@ Proof.
   destruct m; auto.
   discriminate.
 Defined.
-#[deprecated(since="8.16",note="The Arith.Plus file is obsolete.")]
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.eq_add_1 instead.")]
 Notation plus_is_one := plus_is_one_stt.
 
 (** * Derived properties *)
