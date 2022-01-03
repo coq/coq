@@ -19,6 +19,6 @@ Defined.
 Lemma bar'' (a b:unit) (H0: a = b) (H: a = b) : a = b.
 Proof.
   unshelve erewrite (_: a = b) in *.
-  { revert H; destruct a,b;reflexivity. }
+  { Fail revert H. destruct a,b;reflexivity. }
   destruct a,b;reflexivity.
 Defined.

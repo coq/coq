@@ -513,7 +513,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
               (do_hyps l)
         in
         begin match l with
-        | [_] ->
+        | [] | [_] ->
           (* don't clear when rewriting in 1 hyp *)
           tac
         | _ ->
@@ -531,14 +531,8 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
               (do_hyps_atleastonce l)
         in
         let do_hyps =
-          (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
-          let ids gl =
-            let ids_in_c = Termops.global_vars_set (Proofview.Goal.env gl) (project gl) (fst c) in
-            let ids_of_hyps = pf_ids_of_hyps gl in
-            Id.Set.fold (fun id l -> List.remove Id.equal id l) ids_in_c ids_of_hyps
-          in
           Proofview.Goal.enter begin fun gl ->
-            do_hyps_atleastonce (ids gl)
+            do_hyps_atleastonce (pf_ids_of_hyps gl)
           end
         in
         if cl.concl_occs == NoOccurrences then do_hyps else
