@@ -30,6 +30,8 @@ $(IDETOP): $(ALL_ML_SOURCE_FILES) $(PROTO_IDE_FILES) ide/coqide/idetop.ml
 
 ifeq ($(HASCOQIDE),no)
 coqide:
+	>&2 echo "CoqIDE compilation configured off."
+	false
 else
 coqide: $(COQIDE) $(IDETOP) $(TOPBINOPT) $(IDEBINDINGS) $(VO_OUT_DIR)theories/Init/Prelude.$(VO) $(BCONTEXT)/coqide.install
 endif
