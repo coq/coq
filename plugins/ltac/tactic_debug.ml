@@ -326,13 +326,16 @@ let db_pr_goal gl =
   let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
-                   str" "  ++ pc) ++ fnl ()
+                   str" "  ++ pc) ++ fnl () ++ fnl ()
 
 let db_pr_goal =
-  Proofview.Goal.enter begin fun gl ->
-  let pg = db_pr_goal gl in
+  let open Proofview in
+  let open Notations in
+  Goal.goals >>= fun gl ->
+  Monad.List.map (fun x -> x) gl >>= fun gls ->
+  let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
+      Pp.seq (List.map db_pr_goal gls) in
   Proofview.tclLIFT (Comm.goal pg)
-  end
 
 (* Prints the commands *)
 let help () =
