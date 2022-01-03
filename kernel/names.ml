@@ -587,6 +587,8 @@ module KerPair = struct
 
   module HashKP = Hashcons.Make(Self_Hashcons)
 
+  let hcons = Hashcons.simple_hcons HashKP.generate HashKP.hcons KerName.hcons
+
 end
 
 (** {6 Constant Names} *)
@@ -775,8 +777,8 @@ module Hconstruct = Hashcons.Make(
     let hash = constructor_hash
   end)
 
-let hcons_con = Hashcons.simple_hcons Constant.HashKP.generate Constant.HashKP.hcons KerName.hcons
-let hcons_mind = Hashcons.simple_hcons MutInd.HashKP.generate MutInd.HashKP.hcons KerName.hcons
+let hcons_con = Constant.hcons
+let hcons_mind = MutInd.hcons
 let hcons_ind = Hashcons.simple_hcons Hind.generate Hind.hcons hcons_mind
 let hcons_construct = Hashcons.simple_hcons Hconstruct.generate Hconstruct.hcons hcons_ind
 
