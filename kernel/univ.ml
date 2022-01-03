@@ -441,7 +441,7 @@ struct
 
   module Huniv = Hashcons.Hlist(Expr)
 
-  let hcons = Hashcons.recursive_hcons Huniv.generate Huniv.hcons Expr.hcons
+  let hcons = Hashcons.simple_hcons Huniv.generate Huniv.hcons Expr.hcons
 
   module Self = struct type nonrec t = t let compare = compare end
   module Map = CMap.Make(Self)

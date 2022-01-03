@@ -82,20 +82,6 @@ let simple_hcons h f u =
   let table = h u in
   fun x -> f table x
 
-(* For a recursive type T, we write the module of sig Comp with u equals
- * to (T -> T) * u0
- * The first component will be used to hash-cons the recursive subterms
- * The second one to hashcons the other sub-structures.
- * We just have to take the fixpoint of h
- *)
-let recursive_hcons h f u =
-  let loop = ref (fun _ -> assert false) in
-  let self x = !loop x in
-  let table = h (self, u) in
-  let hrec x = f table x in
-  let () = loop := hrec in
-  hrec
-
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
@@ -103,26 +89,44 @@ module type HashedType = sig type t val hash : t -> int end
 
 (* list *)
 module Hlist (D:HashedType) =
-  Make(
+  struct
+    module X =
     struct
       type t = D.t list
-      type u = (t -> t) * (D.t -> D.t)
-      let hashcons (hrec,hdata) = function
-        | x :: l -> hdata x :: hrec l
-        | l -> l
       let eq l1 l2 =
         l1 == l2 ||
           match l1, l2 with
           | [], [] -> true
           | x1::l1, x2::l2 -> x1==x2 && l1==l2
           | _ -> false
-      let rec hash accu = function
-      | [] -> accu
+    end
+
+    type t = X.t
+    type u = (D.t -> D.t)
+
+    module Htbl = Hashset.Make(X)
+
+    type table = (Htbl.t * u)
+
+    let generate u =
+      let tab = Htbl.create 97 in
+      (tab, u)
+
+    let rec hcons (tab, hdata as data) l =
+      let h, l = match l with
+      | [] -> 0, []
       | x :: l ->
-        let accu = Hashset.Combine.combine (D.hash x) accu in
-        hash accu l
-      let hash l = hash 0 l
-    end)
+        let h, l = hcons data l in
+        let h = Hashset.Combine.combine (D.hash x) h in
+        h, hdata x :: l
+      in
+      h, Htbl.repr h l tab
+
+    let hcons data l = snd (hcons data l)
+
+    let stats (tab, _) = Htbl.stats tab
+
+  end
 
 (* string *)
 module Hstring = Make(

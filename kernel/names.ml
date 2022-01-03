@@ -184,7 +184,7 @@ struct
 
   module Hdir = Hashcons.Hlist(Id)
 
-  let hcons = Hashcons.recursive_hcons Hdir.generate Hdir.hcons Id.hcons
+  let hcons = Hashcons.simple_hcons Hdir.generate Hdir.hcons Id.hcons
 
 end
 

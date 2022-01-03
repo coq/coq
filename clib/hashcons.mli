@@ -83,9 +83,6 @@ val simple_hcons : ('u -> 'tab) -> ('tab -> 't -> 't) -> 'u -> 't -> 't
 (** [simple_hcons f sub obj] creates a new table each time it is applied to any
     sub-hash function [sub]. *)
 
-val recursive_hcons : (('t -> 't) * 'u -> 'tab) -> ('tab -> 't -> 't) -> ('u -> 't -> 't)
-(** As [simple_hcons] but intended to be used with well-founded data structures. *)
-
 (** {6 Hashconsing of usual structures} *)
 
 module type HashedType = sig type t val hash : t -> int end
@@ -94,5 +91,5 @@ module Hstring : (S with type t = string and type u = unit)
 (** Hashconsing of strings.  *)
 
 module Hlist (D:HashedType) :
-  (S with type t = D.t list and type u = (D.t list -> D.t list)*(D.t->D.t))
+  (S with type t = D.t list and type u = (D.t->D.t))
 (** Hashconsing of lists.  *)
