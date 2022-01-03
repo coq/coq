@@ -69,8 +69,8 @@ val inline_delta_resolver :
 
 val strengthen_and_subst_mb : module_body -> ModPath.t -> bool -> module_body
 
-val subst_modtype_and_resolver : module_type_body -> ModPath.t ->
-  module_type_body
+val subst_modtype_signature_and_resolver : ModPath.t -> ModPath.t ->
+  module_signature -> delta_resolver -> module_signature * delta_resolver
 
 (** {6 Cleaning a module expression from bounded parts }
 
