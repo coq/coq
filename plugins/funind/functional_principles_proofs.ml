@@ -131,7 +131,7 @@ let find_rectype env sigma c =
   | Construct _ -> (t, l)
   | _ -> raise Not_found
 
-let isAppConstruct ?(env = Global.env ()) sigma t =
+let isAppConstruct env sigma t =
   try
     let t', l = find_rectype env sigma t in
     observe
@@ -191,7 +191,7 @@ let change_eq env sigma hyp_id (context : rel_context) x t end_of_type =
       with Not_found ->
         assert (closed0 sigma t1);
         Int.Map.add t2 t1 sub )
-    else if isAppConstruct sigma t1 && isAppConstruct sigma t2 then begin
+    else if isAppConstruct env sigma t1 && isAppConstruct env sigma t2 then begin
       let c1, args1 = find_rectype env sigma t1
       and c2, args2 = find_rectype env sigma t2 in
       if not (eq_constr c1 c2) then nochange "cannot solve (diff)";
@@ -311,8 +311,9 @@ let rewrite_until_var arg_num eq_ids : unit Proofview.tactic =
   *)
   let test_var g =
     let sigma = Proofview.Goal.sigma g in
+    let env = Proofview.Goal.env g in
     let _, args = destApp sigma (Proofview.Goal.concl g) in
-    not (isConstruct sigma args.(arg_num) || isAppConstruct sigma args.(arg_num))
+    not (isConstruct sigma args.(arg_num) || isAppConstruct env sigma args.(arg_num))
   in
   let rec do_rewrite eq_ids =
     Proofview.Goal.enter (fun g ->
@@ -782,7 +783,7 @@ let generalize_non_dep hyp =
   Proofview.Goal.enter (fun g ->
       (*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
       let hyps = [hyp] in
-      let env = Global.env () in
+      let env = Proofview.Goal.env g in
       let sigma = Proofview.Goal.sigma g in
       let hyp_typ = Tacmach.pf_get_hyp_typ hyp g in
       let to_revert, _ =
@@ -799,7 +800,7 @@ let generalize_non_dep hyp =
               (* should be dangerous *)
             then (clear, decl :: keep)
             else (hyp :: clear, keep))
-          ~init:([], []) (Proofview.Goal.env g)
+          ~init:([], []) env
       in
       (*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
       Tacticals.tclTHEN
@@ -813,13 +814,13 @@ let var_of_decl = id_of_decl %> mkVar
 let revert idl =
   Tacticals.tclTHEN (generalize (List.map mkVar idl)) (clear idl)
 
-let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
+let generate_equation_lemma env evd fnames f fun_num nb_params nb_args rec_args_num
     =
   let open Tacticals in
   (*   observe (str "nb_args := " ++ str (string_of_int nb_args)); *)
   (*   observe (str "nb_params := " ++ str (string_of_int nb_params)); *)
   (*   observe (str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
-  let f_def = Global.lookup_constant (fst (destConst evd f)) in
+  let f_def = Environ.lookup_constant (fst (destConst evd f)) env in
   let eq_lhs =
     mkApp
       ( f
@@ -846,7 +847,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
   in
   (*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
   let eq_rhs =
-    Reductionops.nf_betaiotazeta (Global.env ()) evd
+    Reductionops.nf_betaiotazeta env evd
       (mkApp
          ( compose_lam params f_body_with_params_and_other_fun
          , Array.init (nb_params + nb_args) (fun i ->
@@ -854,7 +855,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
   in
   (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
   let (type_ctxt, type_of_f), evd =
-    let evd, t = Typing.type_of ~refresh:true (Global.env ()) evd f in
+    let evd, t = Typing.type_of ~refresh:true env evd f in
     (decompose_prod_n_assum evd (nb_params + nb_args) t, evd)
   in
   let eqn = mkApp (Lazy.force eq, [|type_of_f; eq_lhs; eq_rhs|]) in
@@ -891,6 +892,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
 let do_replace (evd : Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num
     all_funs =
   Proofview.Goal.enter (fun g ->
+      let env = Proofview.Goal.env g in
       let equation_lemma =
         try
           let finfos =
@@ -906,7 +908,7 @@ let do_replace (evd : Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num
             i*)
           let equation_lemma_id = mk_equation_id f_id in
           evd :=
-            generate_equation_lemma !evd all_funs f fun_num (List.length params)
+            generate_equation_lemma env !evd all_funs f fun_num (List.length params)
               (List.length rev_args_id) rec_arg_num;
           let _ =
             match e with

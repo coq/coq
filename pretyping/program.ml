@@ -11,10 +11,10 @@
 open CErrors
 open Util
 
-let papp sigma r args =
+let papp env sigma r args =
   let open EConstr in
   let gr = delayed_force r in
-  let evd, hd = Evd.fresh_global (Global.env ()) sigma gr in
+  let evd, hd = Evd.fresh_global env sigma gr in
   sigma, mkApp (hd, args)
 
 let sig_typ   () = Coqlib.lib_ref "core.sig.type"
@@ -37,8 +37,8 @@ let coq_eq_refl     () = Coqlib.lib_ref "core.eq.refl"
 let coq_eq_refl_ref () = Coqlib.lib_ref "core.eq.refl"
 let coq_eq_rect     () = Coqlib.lib_ref "core.eq.rect"
 
-let mk_coq_not sigma x =
-  let sigma, notc = Evd.fresh_global (Global.env ()) sigma Coqlib.(lib_ref "core.not.type") in
+let mk_coq_not env sigma x =
+  let sigma, notc = Evd.fresh_global env sigma Coqlib.(lib_ref "core.not.type") in
   sigma, EConstr.mkApp (notc, [| x |])
 
 let coq_JMeq_ind  () =
@@ -54,8 +54,8 @@ let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> invalid_arg "unsafe_fold_right"
 
-let mk_coq_and sigma l =
-  let sigma, and_typ = Evd.fresh_global (Global.env ()) sigma Coqlib.(lib_ref "core.and.type") in
+let mk_coq_and env sigma l =
+  let sigma, and_typ = Evd.fresh_global env sigma Coqlib.(lib_ref "core.and.type") in
   sigma, unsafe_fold_right
       (fun c conj ->
          EConstr.(mkApp (and_typ, [| c ; conj |])))
