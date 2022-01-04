@@ -824,7 +824,7 @@ Section Elts.
   Lemma count_occ_app l1 l2 x :
     count_occ (l1 ++ l2) x = count_occ l1 x + count_occ l2 x.
   Proof.
-    induction l1 as [ | h l1 IHl1]; cbn; auto.
+    induction l1 as [ | h l1 IHl1]; cbn; trivial.
     now destruct (eq_dec h x); [ rewrite IHl1 | ].
   Qed.
 
@@ -1018,6 +1018,13 @@ Section ListOps.
 
   Lemma list_eq_dec : forall l l':list A, {l = l'} + {l <> l'}.
   Proof. decide equality. Defined.
+
+  Lemma count_occ_rev l x : count_occ eq_dec (rev l) x = count_occ eq_dec l x.
+  Proof.
+    induction l as [|a l IHl]; trivial.
+    cbn; rewrite count_occ_app, IHl; cbn.
+    destruct (eq_dec a x); rewrite Nat.add_comm; reflexivity.
+  Qed.
 
 End ListOps.
 
