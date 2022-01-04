@@ -1039,6 +1039,114 @@ Qed.
 Combined Scheme Even_Odd_mutsind from Even_Odd_sind, Odd_Even_sind.
 *)
 
+(** additional versions of parity predicates in [Type]
+    useful for eliminating into [Type], but still with opaque proofs *)
+
+Definition EvenT n := { m | n = 2 * m }.
+Definition OddT n := { m | n = 2 * m + 1 }.
+
+Lemma EvenT_0 : EvenT 0.
+Proof. exists 0; reflexivity. Qed.
+
+Lemma EvenT_2 n : EvenT n -> EvenT (S (S n)).
+Proof.
+  intros [m H]; exists (S m); rewrite H.
+  cbn; rewrite add_succ_r; reflexivity.
+Qed.
+
+Lemma OddT_1 : OddT 1.
+Proof. exists 0; reflexivity. Qed.
+
+Lemma OddT_2 n : OddT n -> OddT (S (S n)).
+Proof.
+  intros [m H]; exists (S m).
+  rewrite H, ? mul_succ_r, <- ? add_1_r, add_assoc; reflexivity.
+Qed.
+
+Lemma EvenT_S_OddT n : EvenT (S n) -> OddT n.
+Proof.
+  intros [[|k] HE]; inversion HE.
+  exists k; rewrite add_succ_r, add_1_r; reflexivity.
+Qed.
+
+Lemma OddT_S_EvenT n : OddT (S n) -> EvenT n.
+Proof.
+  intros [k HO]; rewrite add_1_r in HO; injection HO; intros ->.
+  exists k; reflexivity.
+Qed.
+
+Lemma even_EvenT : forall n, even n = true -> EvenT n.
+Proof.
+  fix even_specT 1.
+    intro n; destruct n as [|[|n]]; simpl.
+    - intros; apply EvenT_0.
+    - intros H; discriminate.
+    - intros He%even_specT; apply EvenT_2; assumption.
+Qed.
+
+Lemma odd_OddT : forall n, odd n = true -> OddT n.
+Proof.
+  unfold odd.
+  fix odd_specT 1.
+    intro n; destruct n as [|[|n]]; simpl.
+    - intro H; discriminate.
+    - intros; apply OddT_1.
+    - intros He%odd_specT; apply OddT_2; assumption.
+Qed.
+
+Lemma EvenT_Even n : EvenT n -> Even n.
+Proof. intros [k ?]; exists k; assumption. Qed.
+
+Lemma OddT_Odd n : OddT n -> Odd n.
+Proof. intros [k ?]; exists k; assumption. Qed.
+
+Lemma Even_EvenT n : Even n -> EvenT n.
+Proof. intros; apply even_EvenT, even_spec; assumption. Qed.
+
+Lemma Odd_OddT n : Odd n -> OddT n.
+Proof. intros; apply odd_OddT, odd_spec; assumption. Qed.
+
+Lemma EvenT_even n : EvenT n -> even n = true.
+Proof. intros; apply even_spec, EvenT_Even; assumption. Qed.
+
+Lemma OddT_odd n : OddT n -> odd n = true.
+Proof. intros; apply odd_spec, OddT_Odd; assumption. Qed.
+
+Lemma EvenT_OddT_dec n : EvenT n + OddT n.
+Proof.
+  case_eq (even n); intros Hp.
+  - left; apply even_EvenT; assumption.
+  - right; apply odd_OddT.
+    unfold odd; rewrite Hp; reflexivity.
+Qed.
+
+Lemma OddT_EvenT_rect (P Q : nat -> Type) :
+  (forall n, EvenT n -> Q n -> P (S n)) ->
+  Q 0 -> (forall n, OddT n -> P n -> Q (S n)) -> forall n, OddT n -> P n.
+Proof.
+  intros HQP HQ0 HPQ.
+  fix OddT_EvenT_rect 1.
+    intros [|[|n]].
+    - intros [[|k] H0]; inversion H0.
+    - intros _; apply (HQP _ EvenT_0 HQ0).
+    - intros HOSS.
+      assert (EvenT (S n)) as HES by apply (OddT_S_EvenT _ HOSS).
+      assert (OddT n) as HO by apply (EvenT_S_OddT _ HES).
+      apply (HQP _ HES (HPQ _ HO (OddT_EvenT_rect _ HO))).
+Qed.
+
+Lemma EvenT_OddT_rect (P Q : nat -> Type) :
+  (forall n, EvenT n -> Q n -> P (S n)) ->
+  Q 0 -> (forall n, OddT n -> P n -> Q (S n)) -> forall n, EvenT n -> Q n.
+Proof.
+  intros HQP HQ0 HPQ [|n] HES; [ assumption | ].
+  assert (OddT n) as HO by apply (EvenT_S_OddT _ HES).
+  apply HPQ, (OddT_EvenT_rect P Q); assumption.
+Qed.
+
+(* Anomaly see Issue #15413
+Combined Scheme EvenT_OddT_mutrect from EvenT_OddT_rect, OddT_EvenT_rect.
+*)
 End Nat.
 
 (** Re-export notations that should be available even when
