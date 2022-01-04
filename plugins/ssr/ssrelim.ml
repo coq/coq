@@ -146,6 +146,10 @@ let mkTpat env sigma0 (sigma, t) = (* takes a term, refreshes it and makes a T p
   let t, _, _, sigma = saturate ~beta:true env sigma t (List.length evs) in
   Evd.merge_universe_context sigma ucst, T t
 
+let redex_of_pattern env p = match redex_of_pattern p with
+| None -> CErrors.anomaly (Pp.str "pattern without redex.")
+| Some (sigma, e) -> Evarutil.nf_evar sigma e, Evd.evar_universe_context sigma
+
 let unif_redex env sigma0 nsigma (sigma, r as p) t = (* t is a hint for the redex of p *)
   let t, evs, ucst = abs_evars env sigma0 (nsigma, fire_subst nsigma t) in
   let t, _, _, sigma = saturate ~beta:true env sigma t (List.length evs) in

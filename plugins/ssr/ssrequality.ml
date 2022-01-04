@@ -264,6 +264,10 @@ let all_ok _ _ = true
 let fake_pmatcher_end () =
   EConstr.mkProp, L2R, (Evd.empty, UState.empty, EConstr.mkProp)
 
+let classify_pattern p = match p with
+| None -> None
+| Some p -> redex_of_pattern p
+
 let unfoldintac occ rdx t (kt,_) =
   Proofview.Goal.enter begin fun gl ->
   let fs sigma x = Reductionops.nf_evar sigma x in
@@ -276,8 +280,8 @@ let unfoldintac occ rdx t (kt,_) =
   let easy = occ = None && rdx = None in
   let red_flags = if easy then CClosure.betaiotazeta else CClosure.betaiota in
   let beta env = Reductionops.clos_norm_flags red_flags env sigma0 in
-  let unfold, conclude = match rdx with
-  | Some (_, (In_T _ | In_X_In_T _)) | None ->
+  let unfold, conclude = match classify_pattern rdx with
+  | None ->
     let ise = Evd.create_evar_defs sigma in
     let ise, u = mk_tpattern env0 sigma0 (ise, t) all_ok L2R t in
     let find_T, end_T =
@@ -290,7 +294,7 @@ let unfoldintac occ rdx t (kt,_) =
     (fun () -> try end_T () with
       | NoMatch when easy -> fake_pmatcher_end ()
       | NoMatch -> anomaly "unfoldintac")
-  | _ ->
+  | Some _ ->
     (fun env (c as orig_c) _ h ->
       if const then
         let rec aux c =
@@ -328,8 +332,8 @@ let foldtac occ rdx ft =
   let concl0 = Proofview.Goal.concl gl in
   let sigma, t = ft in
   let t = Reductionops.nf_evar sigma t in
-  let fold, conclude = match rdx with
-  | Some (_, (In_T _ | In_X_In_T _)) | None ->
+  let fold, conclude = match classify_pattern rdx with
+  | None ->
     let ise = Evd.create_evar_defs sigma in
     let ut = red_product_skip_id env0 sigma t in
     let ise, ut = mk_tpattern env0 sigma0 (ise,t) all_ok L2R ut in
@@ -337,7 +341,7 @@ let foldtac occ rdx ft =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[ut]) in
     (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
     (fun () -> try end_T () with NoMatch -> fake_pmatcher_end ())
-  | _ ->
+  | Some _ ->
     (fun env c _ h ->
        try
          let sigma = unify_HO env sigma c t in
@@ -635,8 +639,8 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
      rwtac rules in
   let env0 = env in
   let concl0 = Proofview.Goal.concl gl in
-  let find_R, conclude = match rdx_pat with
-  | Some (_, (In_T _ | In_X_In_T _)) | None ->
+  let find_R, conclude = match classify_pattern rdx_pat with
+  | None ->
       let upats_origin = dir, (snd rule) in
       let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
         let sigma, pat =
@@ -647,7 +651,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
       (fun e c _ i -> find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e c i),
       fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
-  | Some(_, (T e | X_In_T (_,e) | E_As_X_In_T (e,_,_) | E_In_X_In_T (e,_,_))) ->
+  | Some (_, e) ->
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;

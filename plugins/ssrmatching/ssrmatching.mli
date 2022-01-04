@@ -43,7 +43,7 @@ type ('ident, 'term) ssrpattern =
   | E_In_X_In_T of 'term * 'ident * 'term
   | E_As_X_In_T of 'term * 'ident * 'term
 
-type pattern = Evd.evar_map * (EConstr.t, EConstr.t) ssrpattern
+type pattern = Evd.evar_map * (EConstr.existential, EConstr.t) ssrpattern
 val pp_pattern : env -> pattern -> Pp.t
 
 (** The type of rewrite patterns, the patterns of the [rewrite] tactic.
@@ -55,8 +55,7 @@ val pr_rpattern : rpattern -> Pp.t
 (** Extracts the redex and applies to it the substitution part of the pattern.
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
 val redex_of_pattern :
-  ?resolve_typeclasses:bool -> env -> pattern ->
-     EConstr.t Evd.in_evar_universe_context
+  pattern -> (Evd.evar_map * EConstr.t) option
 
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]
     in the current [Ltac] interpretation signature [ise] and tactic input [gl]*)
@@ -108,6 +107,12 @@ val fill_occ_pattern :
   env -> evar_map -> EConstr.t ->
   pattern -> occ -> int ->
     EConstr.t Evd.in_evar_universe_context * EConstr.t
+
+(** Variant of the above function where we fix [h := 1] and return
+    [redex_of_pattern pat] if [pat] has no occurrence. *)
+val fill_rel_occ_pattern :
+  env -> evar_map -> EConstr.t -> pattern -> occ ->
+    evar_map * EConstr.t * EConstr.t
 
 (** *************************** Low level APIs ****************************** *)
 
