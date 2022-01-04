@@ -192,7 +192,7 @@ $(DOC_STDLIB_DIR)/Library.coqdoc.tex:
 else
 $(DOC_STDLIB_DIR)/Library.coqdoc.tex: | $(COQDOC) $(COQDOCSTY) $(THEORIESLIGHTVO)
 endif
-	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout \
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q --gallina --body-only --latex --stdout \
             -R $(VO_OUT_DIR)theories Coq $(THEORIESLIGHTVO:.$(VO)=.v) >> $@
 
 SHOW_LATEX_MESSAGES:=$(shell pwd)/doc/tools/show_latex_messages
@@ -217,12 +217,12 @@ $(DOC_STDLIB_DIR)/FullLibrary.tex: $(DOC_STDLIB_DIR)/Library.tex
 
 ifdef QUICK
 $(DOC_STDLIB_DIR)/FullLibrary.coqdoc.tex:
-	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q --gallina --body-only --latex --stdout --utf8 \
             $(DOCLIBS) $(BUILD_VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 else
 $(DOC_STDLIB_DIR)/FullLibrary.coqdoc.tex: $(COQDOC) $(COQDOCSTY) $(ALLVO)
-	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+	export COQLIB=$(CONTEXT)/lib/coq-core && $(COQDOC) -q --gallina --body-only --latex --stdout --utf8 \
             $(DOCLIBS) $(BUILD_VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 endif

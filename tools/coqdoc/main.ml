@@ -49,7 +49,6 @@ let usage () =
   prerr_endline "  --external <url> <d> set URL for external library d";
   prerr_endline "  --coqlib_url <url>   set URL for Coq standard library";
   prerr_endline ("                       (default is " ^ Coq_config.wwwstdlib ^ ")");
-  prerr_endline "  --boot               run in boot mode (no-op)";
   prerr_endline "  --coqlib <dir>       set the path where Coq files are installed";
   prerr_endline "  -R <dir> <coqdir>    map physical dir to Coq dir";
   prerr_endline "  -Q <dir> <coqdir>    map physical dir to Coq dir";
@@ -307,16 +306,14 @@ let parse () =
         Cdglobals.coqlib_url := u; parse_rec rem
     | ("--coqlib_url" | "-coqlib_url") :: [] ->
         usage ()
-    | ("--boot" | "-boot") :: rem ->
-        (* XXX: This is useless it seems *)
-        parse_rec rem
     | ("--coqlib" | "-coqlib") :: d :: rem ->
         warn_on_option_renaming_for_url d;
         Boot.Env.set_coqlib d; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
         usage ()
     | f :: rem ->
-        add_file (what_file f); parse_rec rem
+      if String.length f > 0 && f.[0] = '-' then usage()
+      else add_file (what_file f); parse_rec rem
   in
     parse_rec (List.tl (Array.to_list Sys.argv));
     List.rev !files
