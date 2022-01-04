@@ -1523,10 +1523,7 @@ type ('option, 'a, 'prf, 'model) prover =
 
 let find_witness p polys1 =
   let polys1 = List.map fst polys1 in
-  match p.prover (p.get_option (), polys1) with
-  | Model m -> Model m
-  | Unknown -> Unknown
-  | Prf prf -> Prf (prf, p)
+  p.prover (p.get_option (), polys1)
 
 (**
   * Given a prover and a CNF, find a proof for each of the clauses.
@@ -1549,8 +1546,6 @@ let witness_list prover l =
   in
   xwitness_list l
 
-let witness_list_tags p g = witness_list p g
-
 (*  let t1 = System.get_time () in
   let res = witness_list p g in
   let t2 = System.get_time () in
@@ -1562,13 +1557,13 @@ let witness_list_tags p g = witness_list p g
   * Prune the proof object, according to the 'diff' between two cnf formulas.
   *)
 
-let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res
+let compact_proofs prover (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res
     (cnf_ff' : 'cst cnf) =
   let eq_formula (p1, o1) (p2, o2) =
     let open Mutils.Hash in
     eq_pol eq_cst p1 p2 && eq_op1 o1 o2
   in
-  let compact_proof (old_cl : 'cst clause) (prf, prover) (new_cl : 'cst clause)
+  let compact_proof (old_cl : 'cst clause) prf (new_cl : 'cst clause)
       =
     let new_cl = List.mapi (fun i (f, _) -> (f, i)) new_cl in
     let remap i =
@@ -1601,7 +1596,7 @@ let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res
     end;
     res
   in
-  let is_proof_compatible (old_cl : 'cst clause) (prf, prover)
+  let is_proof_compatible (old_cl : 'cst clause) prf
       (new_cl : 'cst clause) =
     let hyps_idx = prover.hyps prf in
     let hyps = selecti hyps_idx old_cl in
@@ -1620,7 +1615,7 @@ let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res
     flush stdout;
     Printf.printf "CNFOLD %a\n" pp_cnf_tag cnf_ff;
     List.iter
-      (fun (cl, (prf, prover)) ->
+      (fun (cl, prf) ->
         let hyps_idx = prover.hyps prf in
         let hyps = selecti hyps_idx cl in
         Printf.printf "\nProver %a -> %a\n" pp_clause_tag cl pp_clause_tag hyps;
@@ -1759,14 +1754,14 @@ let micromega_tauto pre_process cnf spec prover env
   (* Construction of cnf *)
   let pre_ff = pre_process mt (ff : 'a formula) in
   let cnf_ff, cnf_ff_tags = cnf Mc.IsProp pre_ff in
-  match witness_list_tags prover cnf_ff with
+  match witness_list prover cnf_ff with
   | Model m -> Model m
   | Unknown -> Unknown
   | Prf res ->
     (*Printf.printf "\nList %i" (List.length `res); *)
     let deps =
       List.fold_left
-        (fun s (cl, (prf, p)) ->
+        (fun s (cl, prf) ->
           let tags =
             ISet.fold
               (fun i s ->
@@ -1774,7 +1769,7 @@ let micromega_tauto pre_process cnf spec prover env
                 if debug then Printf.fprintf stdout "T : %i -> %a" i Tag.pp t;
                 (*try*) TagSet.add t s
                 (* with Invalid_argument _ -> s*))
-              (p.hyps prf) TagSet.empty
+              (prover.hyps prf) TagSet.empty
           in
           TagSet.union s tags)
         (fold_trace (fun s (i, _) -> TagSet.add i s) TagSet.empty cnf_ff_tags)
@@ -1807,7 +1802,7 @@ let micromega_tauto pre_process cnf spec prover env
            | None -> failwith "abstraction is wrong"
            | Some res -> ()
        end ; *)
-    let res' = compact_proofs spec.coeff_eq cnf_ff res cnf_ff' in
+    let res' = compact_proofs prover spec.coeff_eq cnf_ff res cnf_ff' in
     let ff', res', ids = (ff', res', Mc.ids_of_formula Mc.IsProp ff') in
     let res' = dump_list spec.proof_typ spec.dump_proof res' in
     Prf (ids, ff', res')
