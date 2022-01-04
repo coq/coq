@@ -164,38 +164,9 @@ class finder name (view : GText.view) =
           let _ = Ideutils.flash_info "String not found" in
           self#set_not_found ()
       | Some (start, stop) ->
-        let text = view#buffer#start_iter#get_text ~stop:view#buffer#end_iter in
-        let rec find_all offs accum =
-          if offs > String.length text then
-            List.rev accum
-          else try
-            let i = Str.search_forward self#regex text offs in
-            let j = Str.match_end () in
-            find_all (j + 1) (i :: accum)
-          with Not_found -> List.rev accum
-        in
-        let occurs = find_all 0 [] in
-        let num_occurs = List.length occurs in
-        (* assoc table of offset, occurrence index pairs *)
-        let occur_tbl = List.mapi (fun ndx occ -> (occ,ndx+1)) occurs in
         let _ = view#buffer#select_range start stop in
         let scroll = `MARK (view#buffer#create_mark stop) in
         let _ = view#scroll_to_mark ~use_align:false scroll in
-        let _ =
-          try
-            let occ_ndx = List.assoc start#offset occur_tbl in
-            let occ_str = CString.plural num_occurs "occurrence" in
-            let wrap_str = if wrapped then
-                             if backward then " (wrapped backwards)"
-                             else " (wrapped)"
-                           else ""
-            in
-            Ideutils.flash_info
-              (string_of_int occ_ndx ^ " of " ^ string_of_int num_occurs ^
-                 " " ^ occ_str ^ wrap_str)
-          with Not_found ->
-            CErrors.anomaly (Pp.str "Occurrence of Find string not in table")
-        in
         self#set_found ()
 
     method find_forward () =
