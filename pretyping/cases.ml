@@ -475,7 +475,8 @@ let remove_current_pattern eqn =
     | [] -> anomaly (Pp.str "Empty list of patterns.")
 
 let push_current_pattern ~program_mode sigma (cur,ty) eqn =
-  let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
+  let vars = VarSet.variables (Global.env ()) in
+  let hypnaming = if program_mode then ProgramNaming vars else RenameExistingBut vars in
   match eqn.patterns with
     | pat::pats ->
         let r = Sorts.Relevant in (* TODO relevance *)
@@ -1331,7 +1332,8 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
   let typs' =
     List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 typs in
 
-  let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
+  let vars = VarSet.variables (Global.env ()) in
+  let hypnaming = if program_mode then ProgramNaming vars else RenameExistingBut vars in
   let typs,extenv = push_rel_context ~hypnaming sigma typs pb.env in
 
   let typs' =
@@ -1427,6 +1429,8 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
 (**********************************************************************)
 (* Main compiling descent *)
 let compile ~program_mode sigma pb =
+  let vars = VarSet.variables (Global.env ()) in
+  let hypnaming = if program_mode then ProgramNaming vars else RenameExistingBut vars in
   let rec compile sigma pb =
     match pb.tomatch with
       | Pushed cur :: rest -> match_current sigma { pb with tomatch = rest } cur
@@ -1492,7 +1496,6 @@ let compile ~program_mode sigma pb =
     let tomatch = lift_tomatch_stack 1 pb.tomatch in
     let pred = specialize_predicate_var (current,t,na) !!(pb.env) pb.tomatch pb.pred in
     let env = Name.fold_left (fun env id -> hide_variable env Anonymous id) pb.env na in
-    let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let pb =
       { pb with
          env = snd (push_rel ~hypnaming sigma (LocalDef (annotR na,current,ty)) env);
@@ -1530,7 +1533,6 @@ let compile ~program_mode sigma pb =
 
   (* Abstract over a declaration before continuing splitting *)
   and compile_generalization sigma pb i d rest =
-    let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let pb =
       { pb with
          env = snd (push_rel ~hypnaming sigma d pb.env);
@@ -1544,7 +1546,6 @@ let compile ~program_mode sigma pb =
      been introduced by a toplevel branch ([true]) or a deep one
      ([false]). *)
   and compile_alias initial sigma pb (na,orig,(expanded,expanded_typ)) rest =
-    let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let f c t =
       let r = Retyping.relevance_of_type !!(pb.env) sigma t in
       let alias = LocalDef (make_annot na r,c,t) in
@@ -1696,7 +1697,8 @@ let adjust_to_extended_env_and_remove_deps env extenv sigma subst t =
   (subst0, t0)
 
 let push_binder sigma d (k,env,subst) =
-  (k+1,snd (push_rel ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma d env),List.map (fun (na,u,d) -> (na,lift 1 u,d)) subst)
+  let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
+  (k+1,snd (push_rel ~hypnaming sigma d env),List.map (fun (na,u,d) -> (na,lift 1 u,d)) subst)
 
 let rec list_assoc_in_triple x = function
     [] -> raise Not_found
@@ -1819,6 +1821,7 @@ let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
  *)
 
 let build_inversion_problem ~program_mode loc env sigma tms t =
+  let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
   let make_patvar t (subst,avoid) =
     let id = next_name_away (named_hd !!env sigma t Anonymous) avoid in
     DAst.make @@ PatVar (Name id), ((id,t)::subst, Id.Set.add id avoid) in
@@ -1843,14 +1846,14 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
         let patl = pat :: List.rev patl in
         let patl,sign = recover_and_adjust_alias_names acc patl sign in
         let p = List.length patl in
-        let _,env' = push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma sign env in
+        let _,env' = push_rel_context ~hypnaming sigma sign env in
         let patl',acc_sign,acc = aux (n+p) env' (sign@acc_sign) tms acc in
         List.rev_append patl patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
       let pat,acc = make_patvar t acc in
       let typ = lift n typ in
       let d = LocalAssum (annotR (alias_of_pat pat),typ) in
-      let patl,acc_sign,acc = aux (n+1) (snd (push_rel ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma d env)) (d::acc_sign) tms acc in
+      let patl,acc_sign,acc = aux (n+1) (snd (push_rel ~hypnaming sigma d env)) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
   let avoid0 = GlobEnv.vars_of_env env in
   (* [patl] is a list of patterns revealing the substructure of
@@ -1868,7 +1871,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
   let decls =
     List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 sign in
 
-  let _,pb_env = push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma sign env in
+  let _,pb_env = push_rel_context ~hypnaming sigma sign env in
   let decls =
     List.map (fun (c,d) -> (c,extract_inductive_data !!(pb_env) sigma d,d)) decls in
 
@@ -2079,7 +2082,8 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
   in
   assert (len == 0);
   let p = predicate 0 c in
-  let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
+  let vars = VarSet.variables (Global.env ()) in
+  let hypnaming = if program_mode then ProgramNaming vars else RenameExistingBut vars in
   let arsign,env' = List.fold_right_map (push_rel_context ~hypnaming sigma) arsign env in
   try let sigma' = fst (Typing.type_of !!env' sigma p) in
         Some (sigma', p, arsign)
@@ -2143,7 +2147,8 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
     (* Some type annotation *)
     | Some rtntyp ->
       (* We extract the signature of the arity *)
-      let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma) arsign env in
+      let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
+      let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming sigma) arsign env in
       (* We put a type constraint on the predicate so that one
          branch type-checked first does not lead to a lower type than
          another branch; we take into account the possible elimination
@@ -2370,6 +2375,7 @@ let build_ineqs env sigma prevpatterns pats liftsign =
 
 let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
   let i = ref 0 in
+  let hypnaming = ProgramNaming (VarSet.variables (Global.env ())) in
   let (sigma, x, y, z) =
     List.fold_left
       (fun (sigma, branches, eqns, prevpatterns) eqn ->
@@ -2403,7 +2409,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
          in
          let sigma, ineqs = build_ineqs !!env sigma prevpatterns pats signlen in
          let rhs_rels' = rels_of_patsign sigma rhs_rels in
-         let _signenv,_ = push_rel_context ~hypnaming:ProgramNaming sigma rhs_rels' env in
+         let _signenv,_ = push_rel_context ~hypnaming sigma rhs_rels' env in
          let arity =
            let args, nargs =
              List.fold_right (fun (sign, c, (_, args), _) (allargs,n) ->
@@ -2424,7 +2430,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
            let eqs_rels, arity = decompose_prod_n_assum sigma neqs arity in
              eqs_rels @ neqs_rels @ rhs_rels', arity
          in
-         let _,rhs_env = push_rel_context ~hypnaming:ProgramNaming sigma rhs_rels' env in
+         let _,rhs_env = push_rel_context ~hypnaming sigma rhs_rels' env in
          let sigma, j = typing_fun (mk_tycon tycon) rhs_env sigma eqn.rhs.it in
          let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
          and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
@@ -2595,6 +2601,7 @@ let context_of_arsign l =
 
 let compile_program_cases ?loc style (typing_function, sigma) tycon env
     (predopt, tomatchl, eqns) =
+  let hypnaming = ProgramNaming (VarSet.variables (Global.env ())) in
   let typing_fun tycon env sigma = function
     | Some t ->	typing_function tycon env sigma t
     | None -> coq_unit_judge !!env sigma in
@@ -2607,7 +2614,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   let env, sigma, tomatchs = coerce_to_indtype ~program_mode:true typing_function env sigma matx tomatchl in
   let tycon = valcon_of_tycon tycon in
   let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env sigma tomatchs tycon in
-  let _,env = push_rel_context ~hypnaming:ProgramNaming sigma tomatchs_lets env in
+  let _,env = push_rel_context ~hypnaming sigma tomatchs_lets env in
   let len = List.length eqns in
   let sigma, sign, allnames, signlen, eqs, neqs, args =
     (* The arity signature *)
@@ -2643,7 +2650,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   in
   let matx = List.rev matx in
   let _ = assert (Int.equal len (List.length lets)) in
-  let _,env = push_rel_context ~hypnaming:ProgramNaming sigma lets env in
+  let _,env = push_rel_context ~hypnaming sigma lets env in
   let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
   let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
   let args = List.rev_map (lift len) args in

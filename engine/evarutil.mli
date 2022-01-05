@@ -24,12 +24,18 @@ val new_meta : unit -> metavariable
 
 (** {6 Creating a fresh evar given their type and context} *)
 
+module VarSet :
+sig
+  type t
+  val empty : t
+  val full : t
+  val variables : Environ.env -> t
+end
+
 type naming_mode =
-  | KeepUserNameAndRenameExistingButSectionNames
-  | KeepUserNameAndRenameExistingEvenSectionNames
-  | KeepExistingNames
+  | RenameExistingBut of VarSet.t
   | FailIfConflict
-  | ProgramNaming
+  | ProgramNaming of VarSet.t
 
 val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
@@ -254,10 +260,10 @@ val csubst_subst : csubst -> constr -> constr
 type ext_named_context =
   csubst * Id.Set.t * named_context_val
 
-val push_rel_decl_to_named_context : ?hypnaming:naming_mode ->
+val push_rel_decl_to_named_context : hypnaming:naming_mode ->
   evar_map -> rel_declaration -> ext_named_context -> ext_named_context
 
-val push_rel_context_to_named_context : ?hypnaming:naming_mode ->
+val push_rel_context_to_named_context : hypnaming:naming_mode ->
   Environ.env -> evar_map -> types ->
   named_context_val * types * constr list * csubst
 
