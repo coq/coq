@@ -1023,16 +1023,18 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
     Proofview.tclUNIT
        (applist (eq_elim, [t;t1;mkNamedLambda (make_annot e Sorts.Relevant) t discriminator;i;t2]))
 
-type equality = {
+type 'a equality = {
   eq_data  : (coq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
   (* equality data + A : Type, t1 : A, t2 : A *)
-  eq_clenv : clausenv;
+  eq_clenv : 'a;
   (* clause [M : R A t1 t2] where [R] is the equality from above *)
 }
 
+let project_value eq = { eq with eq_clenv = Clenv.clenv_value eq.eq_clenv }
+
 let eq_baseid = Id.of_string "e"
 
-let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause } cpath dirn =
+let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = v } cpath dirn =
   build_coq_True () >>= fun true_0 ->
   build_coq_False () >>= fun false_0 ->
   let false_ty = Retyping.get_type_of env sigma false_0 in
@@ -1051,13 +1053,14 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause
     discriminator >>= fun discriminator ->
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
     (* pf : eq t t1 t2 -> False *)
-    let pf = EConstr.mkApp (pf, [|clenv_value eq_clause|]) in
+    let pf = EConstr.mkApp (pf, [|v|]) in
     tclTHENS (assert_after Anonymous false_0)
       [onLastHypId gen_absurdity; (Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
 let discrEq eq =
   let { eq_data = (_, (_, t1, t2)); eq_clenv = eq_clause } = eq in
   let sigma = eq_clause.evd in
+  let eq = project_value eq in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     match find_positions env sigma ~keep_proofs:false ~no_discr:false t1 t2 with
@@ -1394,7 +1397,7 @@ let simplify_args env sigma t =
     | _ -> t
 
 let inject_at_positions env sigma l2r eq posns tac =
-  let { eq_data = (eq, (t,t1,t2)); eq_clenv = eq_clause } = eq in
+  let { eq_data = (eq, (t,t1,t2)); eq_clenv = v } = eq in
   let e = next_ident_away eq_baseid (vars_of_env env) in
   let e_env = push_named (LocalAssum (make_annot e Sorts.Relevant,t)) env in
   let evdref = ref sigma in
@@ -1408,7 +1411,7 @@ let inject_at_positions env sigma l2r eq posns tac =
       let pf = mkApp (congr,[|t; resty; injfun; t1; t2|]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
       let pf_typ = Vars.subst1 mkProp (pi3 @@ destProd sigma pf_typ) in
-      let pf = mkApp (pf, [| Clenv.clenv_value eq_clause |]) in
+      let pf = mkApp (pf, [| v |]) in
       let ty = simplify_args env sigma pf_typ in
         evdref := sigma;
         Some (pf, ty)
@@ -1436,6 +1439,7 @@ let injEqThen keep_proofs tac l2r eql =
   let { eq_data = (eq, (t,t1,t2)); eq_clenv = eq_clause } = eql in
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
+  let eql = project_value eql in
   match find_positions env sigma ~keep_proofs ~no_discr:true t1 t2 with
   | Inl _ ->
      assert false
@@ -1449,7 +1453,7 @@ let injEqThen keep_proofs tac l2r eql =
      Proofview.tclZERO NothingToInject
   | Inr posns ->
       inject_at_positions env sigma l2r eql posns
-        (tac (clenv_value eq_clause))
+        (tac eql.eq_clenv)
 
 let get_previous_hyp_position id gl =
   let env, sigma = Proofview.Goal.(env gl, sigma gl) in
@@ -1504,6 +1508,7 @@ let injHyp flags ?injection_in_context clear_flag id = injClause flags ?injectio
 
 let decompEqThen keep_proofs ntac eq =
   let { eq_data = (_, (_,t1,t2) as u); eq_clenv = clause } = eq in
+  let eq = project_value eq in
   Proofview.Goal.enter begin fun gl ->
     let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
@@ -1511,10 +1516,10 @@ let decompEqThen keep_proofs ntac eq =
       | Inl (cpath, (_,dirn), _) ->
           discr_positions env sigma eq cpath dirn
       | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
-        ntac (clenv_value clause) 0
+        ntac eq.eq_clenv 0
     | Inr posns ->
         inject_at_positions env sigma true eq posns
-          (ntac (clenv_value clause))
+          (ntac eq.eq_clenv)
   end
 
 let dEqThen ~keep_proofs with_evars ntac = function
