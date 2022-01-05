@@ -483,11 +483,11 @@ End first_definitions.
 
 Section other_definitions.
 
-  Definition set_prod : forall {A B:Type}, set A -> set B -> set (A * B) :=
+  Definition set_prod {A B : Type} : set A -> set B -> set (A * B) :=
     list_prod.
 
   (** [B^A], set of applications from [A] to [B] *)
-  Definition set_power : forall {A B:Type}, set A -> set B -> set (set (A * B)) :=
+  Definition set_power {A B : Type} : set A -> set B -> set (set (A * B)) :=
     list_power.
 
   Definition set_fold_left {A B:Type} : (B -> A -> B) -> set A -> B -> B :=
