@@ -591,14 +591,15 @@ let alias_distinct l =
   in
   check (Int.Set.empty, Id.Set.empty) l
 
-let get_actual_deps env evd aliases l t =
-  if occur_meta evd t then
-    (* The instance of a meta can virtually contains any variable of the context *)
-    l
+let distinct_actual_deps env evd aliases l t =
+  (* If the aliases are already unique, any subset will also be. *)
+  if alias_distinct l then true
+  (* The instance of a meta can virtually contains any variable of the context *)
+  else if occur_meta evd t then false
   else
     (* Probably strong restrictions coming from t being evar-closed *)
     let (fv_rels,fv_ids,_,_) = free_vars_and_rels_up_alias_expansion env evd aliases t in
-    List.filter (function
+    alias_distinct @@ List.filter (function
       | VarAlias id -> Id.Set.mem id fv_ids
       | RelAlias n -> Int.Set.mem n fv_rels
     ) l
@@ -619,7 +620,7 @@ let remove_instance_local_defs evd evk args =
 let find_unification_pattern_args env evd l t =
   let aliases = make_alias_map env evd in
   match expand_and_check_vars evd aliases l with
-  | Some l as x when alias_distinct (get_actual_deps env evd aliases l t) -> x
+  | Some l as x when distinct_actual_deps env evd aliases l t -> x
   | _ -> None
 
 let is_unification_pattern_meta env evd nb m l t =
