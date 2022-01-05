@@ -316,6 +316,10 @@ struct
   let variables env id = is_section_variable env id
 end
 
+let program_naming =
+  Goptions.declare_bool_option_and_ref ~depr:true
+    ~key:["Program";"Naming"] ~value:false
+
 type naming_mode =
   | RenameExistingBut of VarSet.t
   | FailIfConflict
@@ -353,8 +357,8 @@ let push_rel_decl_to_named_context
         old behaviour of Program, but ultimately, one should do something
         about this whole name generation problem. *)
     match hypnaming with
-    | ProgramNaming _ -> next_name_away na avoid
-    | RenameExistingBut _ | FailIfConflict ->
+    | ProgramNaming _ when program_naming () -> next_name_away na avoid
+    | ProgramNaming _ | RenameExistingBut _ | FailIfConflict ->
       (* id_of_name_using_hdchar only depends on the rel context which is empty
          here *)
       next_ident_away (id_of_name_using_hdchar empty_env sigma (RelDecl.get_type decl) na) avoid

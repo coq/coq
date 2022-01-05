@@ -23,5 +23,5 @@ Defined.
 
 Next Obligation.
   case (le_lt_dec p i) ; intros. assert(i = p) by lia. subst.
-  revert H0. clear_subset_proofs. auto.
+  revert e. clear_subset_proofs. auto.
   apply H. simpl. assumption. Defined.

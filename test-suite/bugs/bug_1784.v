@@ -85,15 +85,15 @@ Program Fixpoint lt_dec (x y:sv) { struct x } : {slt x y}+{~slt x y} :=
       end
   end.
 
-Next Obligation. intro H0. apply H; inversion H0; subst; trivial. Defined.
+Next Obligation. intro H0. apply n; inversion H0; subst; trivial. Defined.
 Next Obligation. intro H; inversion H. Defined.
 Next Obligation. intro H; inversion H. Defined.
 Next Obligation. intro H; inversion H; subst. Defined.
 Next Obligation.
-  intro H1; contradict H. inversion H1; subst. assumption.
-  contradict H0; assumption.  Defined.
-Next Obligation. intro H1; contradict H0. inversion H1; subst. assumption. Defined.
+  intro H1; contradict n. inversion H1; subst. assumption.
+  contradict n0; assumption.  Defined.
+Next Obligation. intro H1; contradict n. inversion H1; subst. assumption. Defined.
 Next Obligation.
-  intro H1; contradict H. inversion H1; subst. assumption. Defined.
+  intro H1; contradict n. inversion H1; subst. assumption. Defined.
 Next Obligation.
-  intro H0; contradict H. inversion H0; subst; auto. Defined.
+  intro H0; contradict n. inversion H0; subst; auto. Defined.
