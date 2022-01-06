@@ -459,8 +459,8 @@ let subset_prefixed_by mp resolver =
   in
   let kn_prefix kn hint rslv =
     match hint with
-      | Inline _ -> rslv
-      | Equiv _ ->
+      | Inline (_,None) -> rslv
+      | Equiv _ | Inline (_,Some _) ->
         if mp_in_mp mp (KerName.modpath kn) then Deltamap.add_kn kn hint rslv else rslv
   in
   Deltamap.fold mp_prefix kn_prefix resolver empty_delta_resolver
