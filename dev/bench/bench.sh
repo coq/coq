@@ -55,8 +55,8 @@ echo $PWD
 : "${timeout:=3h}"
 : "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq3 coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst}"
 
-new_coq_commit=$(git rev-parse HEAD^2)
-old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
+new_coq_commit=76e81f9a7d9dafb36d993aa217e8faa955efe690
+old_coq_commit=6015db928c4b4b769c6a442e986e4474fcef27d3
 
 if echo "$num_of_iterations" | grep '^[1-9][0-9]*$' 2> /dev/null > /dev/null; then
     :
