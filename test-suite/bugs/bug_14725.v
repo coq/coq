@@ -5,7 +5,7 @@ Axiom Teq : relation T.
 #[local] Declare Instance Teq_Equivalence : Equivalence Teq.
 
 Axiom P : T -> Prop.
-Axiom P_Proper : Proper (Teq ==> Basics.flip Basics.impl) P.
+Axiom P_Proper : Proper (Teq ==> flip Basics.impl) P.
 
 (** This is a manually crafted hint which is essentially declaring P_Proper as
     a typeclass instance, except that it builds a proof term that captures the
@@ -13,7 +13,7 @@ Axiom P_Proper : Proper (Teq ==> Basics.flip Basics.impl) P.
     escape, the call to rewrite below would fail with a type error. *)
 Ltac manual_P_proper :=
 match goal with
-| [ H : apply_subrelation |- Proper (Teq ==> Basics.flip Basics.impl) P ] =>
+| [ H : apply_subrelation |- Proper (Teq ==> flip Basics.impl) P ] =>
   case H; apply P_Proper
 end.
 

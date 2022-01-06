@@ -497,6 +497,14 @@ Definition idProp : IDProp := fun A x => x.
 
 Register idProp as core.IDProp.idProp.
 
+(** The non-dependent function space between [A] and [B]. *)
+
+#[universes(polymorphic)]
+Definition arrow (A B : Type) := A -> B.
+
+#[universes(polymorphic)]
+Definition flip {A B C : Type} (f : A -> B -> C) := fun x y => f y x.
+
 (** Equivalence in [Type] *)
 #[universes(polymorphic)]
 Definition iffT (A B : Type) := ((A -> B) * (B -> A))%type.

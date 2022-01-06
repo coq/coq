@@ -14,14 +14,14 @@ Existing Instance eq_Reflexive.
 
 Global Instance foo (A := nat)
   : Proper ((pointwise_relation _ eq)
-              ==> eq ==> forall_relation (fun _ => Basics.flip Basics.impl))
+              ==> eq ==> forall_relation (fun _ => flip Basics.impl))
            (@option_rect A (fun _ => Prop)) | 0.
 exact admit.
 Qed.
 
 Global Instance bar (A := nat)
   : Proper ((pointwise_relation _ eq)
-              ==> eq ==> eq ==> Basics.flip Basics.impl)
+              ==> eq ==> eq ==> flip Basics.impl)
            (@option_rect A (fun _ => Prop)) | 0.
 exact admit.
 Qed.

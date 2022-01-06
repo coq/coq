@@ -485,8 +485,8 @@ module PropGlobal = struct
     let morphisms = ["Coq"; "Classes"; "Morphisms"]
     let relation = ["Coq"; "Relations";"Relation_Definitions"], "relation"
     let app_poly = app_poly_nocheck
-    let arrow = find_global ["Coq"; "Program"; "Basics"] "arrow"
-    let coq_inverse = find_global ["Coq"; "Program"; "Basics"] "flip"
+    let arrow = find_global ["Coq"; "Init"; "Datatypes"] "arrow"
+    let coq_inverse = find_global ["Coq"; "Init"; "Datatypes"] "flip"
   end
 
   module G = GlobalBindings(Consts)
@@ -506,8 +506,8 @@ module TypeGlobal = struct
       let morphisms = ["Coq"; "Classes"; "CMorphisms"]
       let relation = relation_classes, "crelation"
       let app_poly = app_poly_check
-      let arrow = find_global ["Coq"; "Classes"; "CRelationClasses"] "arrow"
-      let coq_inverse = find_global ["Coq"; "Classes"; "CRelationClasses"] "flip"
+      let arrow = find_global ["Coq"; "Init"; "Datatypes"] "arrow"
+      let coq_inverse = find_global ["Coq"; "Init"; "Datatypes"] "flip"
     end
 
   module G = GlobalBindings(Consts)

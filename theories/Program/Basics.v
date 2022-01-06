@@ -37,8 +37,8 @@ Notation " g ∘ f " := (compose g f)
 Local Open Scope program_scope.
 
 (** The non-dependent function space between [A] and [B]. *)
-
-Definition arrow (A B : Type) := A -> B.
+#[deprecated(since="8.16",note="Use Init.Datatypes.arrow instead.")]
+Notation arrow := arrow.
 
 (** Logical implication. *)
 
@@ -49,8 +49,8 @@ Definition impl (A B : Prop) : Prop := A -> B.
 Definition const {A B} (a : A) := fun _ : B => a.
 
 (** The [flip] combinator reverses the first two arguments of a function. *)
-
-Definition flip {A B C} (f : A -> B -> C) x y := f y x.
+#[deprecated(since="8.16",note="Use Init.Datatypes.flip instead.")]
+Notation flip := flip.
 
 (** Application as a combinator. *)
 

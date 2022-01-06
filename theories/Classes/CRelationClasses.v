@@ -27,10 +27,6 @@ Set Universe Polymorphism.
 
 Definition crelation (A : Type) := A -> A -> Type.
 
-Definition arrow (A B : Type) := A -> B.
-
-Definition flip {A B C : Type} (f : A -> B -> C) := fun x y => f y x.
-
 (** We allow to unfold the [crelation] definition while doing morphism search. *)
 
 Section Defs.
@@ -397,5 +393,9 @@ Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : type
 
 Global Typeclasses Opaque relation_equivalence.
 
+#[deprecated(since="8.16",note="Use Init.Datatypes.arrow instead.")]
+Notation arrow := arrow.
+#[deprecated(since="8.16",note="Use Init.Datatypes.flip instead.")]
+Notation flip := flip.
 #[deprecated(since="8.16",note="Use Init.Datatypes.iffT instead.")]
 Notation iffT := iffT.

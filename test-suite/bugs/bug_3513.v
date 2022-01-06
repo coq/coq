@@ -67,7 +67,7 @@ Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
          catOP_entails_m_Proper a a' H b b' H') in
     pose P;
     refine (P _ _)
-  end; unfold Basics.flip.
+  end; unfold flip.
   Focus 2.
   (* As in 8.5, allow a shelved subgoal to remain *)
   apply reflexivity.

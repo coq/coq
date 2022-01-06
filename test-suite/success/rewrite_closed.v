@@ -8,7 +8,7 @@ forall [T : Type] (P : Type), (forall t : T, P) -> forall l : lattice_for T, P.
 
 #[local]
 Declare Instance lattice_for_rect_Proper_85 : forall {A},
-  Proper (forall_relation (fun _ => eq) ==> eq ==> Basics.flip Basics.impl)
+  Proper (forall_relation (fun _ => eq) ==> eq ==> flip Basics.impl)
            (@lattice_for_rect A Prop) | 3.
 
 Axiom lattice_rewrite :
