@@ -47,6 +47,10 @@ CI_TARGETS= \
     ci-math_classes \
     ci-mathcomp \
     ci-mczify \
+    ci-mathcomp_base \
+    ci-finmap \
+    ci-bigenough \
+    ci-analysis \
     ci-menhir \
     ci-metacoq \
     ci-mtac2 \
@@ -95,6 +99,9 @@ ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp
 ci-mczify: ci-mathcomp
+ci-finmap: ci-mathcomp_base
+ci-bigenough: ci-mathcomp_base
+ci-analysis: ci-elpi ci-finmap ci-bigenough
 
 ci-iris: ci-autosubst
 
