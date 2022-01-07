@@ -518,16 +518,12 @@ let decompose_applied_relation env sigma (c,l) =
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
-    (* Feedback.msg_debug Pp.(str"Found relation " ++ Printer.pr_econstr_env env sigma t); *)
     match decompose_app_rel env sigma t with
     | None -> None
     | Some (equiv, ty1, ty2, concl, c1, c2) ->
       match evd_convertible env sigma ty1 ty2 with
       | None -> None
       | Some sigma ->
-        (* Feedback.msg_debug Pp.(str"Found relation " ++ Printer.pr_econstr_env env sigma equiv); *)
-        (* Feedback.msg_debug Pp.(str"Types: " ++ Printer.pr_econstr_env env sigma ty1 ++ spc () ++ *)
-          (* Printer.pr_econstr_env env sigma ty2); *)
         let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
         let value = mkApp (c, args) in
           Some (sigma, { prf=value;
@@ -537,13 +533,11 @@ let decompose_applied_relation env sigma (c,l) =
     match find_rel ctype with
     | Some c -> c
     | None ->
-      (* Feedback.msg_debug Pp.(str"Splaying " ++ Printer.pr_econstr_env env sigma ctype); *)
       let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
       let t' = it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx) in
-      (* Feedback.msg_debug Pp.(str"Reduced: " ++ Printer.pr_econstr_env env sigma t'); *)
-        match find_rel t' with
-        | Some c -> c
-        | None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
+      match find_rel t' with
+      | Some c -> c
+      | None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
 
 let rewrite_db = "rewrite"
 
