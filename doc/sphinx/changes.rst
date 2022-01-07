@@ -14,11 +14,11 @@ Version 8.15
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-Coq version 8.15 integrates many bugfixes, deprecations and cleanups as well
+Coq version 8.15 integrates many bug fixes, deprecations and cleanups as well
 as a few new features. We highlight some of the most impactful changes here:
 
   - The apply with tactic :ref:`no longer renames arguments <815ApplyWith>`
-    unless using compatibility flag :flag:`Apply With Renaming`.
+    unless compatibility flag :flag:`Apply With Renaming` is set.
 
   - :ref:`Improvements <815Auto>` to the :tacn:`auto` tactic family,
     fixing the :cmd:`Hint Unfold` behavior, and generalizing the use
@@ -37,7 +37,7 @@ as a few new features. We highlight some of the most impactful changes here:
     to :ref:`select the components <815Import>` of a module to import or not, including
     features such as hints, coercions, and notations.
 
-  - An :ref:`interactive Ltac debugger <815LtacDebugger>` is now available in CoqIDE.
+  - A :ref:`visual Ltac debugger <815LtacDebugger>` is now available in CoqIDE.
 
 See the `Changes in 8.15.0`_ section below for the detailed list of changes,
 including potentially breaking changes marked with **Changed**.
