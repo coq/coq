@@ -28,7 +28,7 @@ Unset Strict Implicit.
 Generalizable Variables A R eqA B S eqB.
 Local Obligation Tactic := try solve [simpl_crelation].
 
-Local Open Scope signature_scope.
+Local Open Scope signatureT_scope.
 
 Definition equiv `{Equivalence A R} : crelation A := R.
 
