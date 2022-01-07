@@ -526,10 +526,6 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   Tacticals.tclTHEN cvtac' rwtac
   end
 
-[@@@ocaml.warning "-3"]
-let lz_coq_prod =
-  let prod = lazy (Coqlib.build_prod ()) in fun () -> Lazy.force prod
-
 let lz_setoid_relation =
   let sdir = ["Classes"; "RelationClasses"] in
   let last_srel = ref None in
@@ -557,8 +553,11 @@ let closed0_check env sigma cl p =
 let dir_org = function L2R -> 1 | R2L -> 2
 
 let rwprocess_rule env dir rule =
-  let coq_prod = lz_coq_prod () in
   let is_setoid = ssr_is_setoid env in
+  let prod_type = Coqlib.lib_ref "core.prod.type" in
+  let prod_intro = Coqlib.lib_ref "core.prod.intro" in
+  let prod_proj1 = Coqlib.lib_ref "core.prod.proj1" in
+  let prod_proj2 = Coqlib.lib_ref "core.prod.proj2" in
   let r_sigma, rules =
     let rec loop d sigma r t0 rs red =
       let t =
@@ -570,15 +569,15 @@ let rwprocess_rule env dir rule =
         let sigma = Evd.create_evar_defs sigma in
         let (sigma, x) = Evarutil.new_evar env sigma xt in
         loop d sigma EConstr.(mkApp (r, [|x|])) (EConstr.Vars.subst1 x at) rs 0
-      | App (pr, a) when is_ind_ref env sigma pr coq_prod.Coqlib.typ ->
+      | App (pr, a) when is_ind_ref env sigma pr prod_type ->
         let r0 = Reductionops.clos_whd_flags RedFlags.all env sigma r in
         let sigma, pL, pR = match EConstr.kind sigma r0 with
-        | App (c, ra) when is_construct_ref env sigma c coq_prod.Coqlib.intro ->
+        | App (c, ra) when is_construct_ref env sigma c prod_intro ->
           (sigma, ra.(2), ra.(3))
         | _ ->
           let ra = Array.append a [|r|] in
-          let sigma, pi1 = Evd.fresh_global env sigma coq_prod.Coqlib.proj1 in
-          let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
+          let sigma, pi1 = Evd.fresh_global env sigma prod_proj1 in
+          let sigma, pi2 = Evd.fresh_global env sigma prod_proj2 in
           let pL = EConstr.mkApp (pi1, ra) in
           let pR = EConstr.mkApp (pi2, ra) in
           (sigma, pL, pR)
