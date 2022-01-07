@@ -186,10 +186,25 @@ let drop_weak_constraints =
     ~key:["Cumulativity";"Weak";"Constraints"]
     ~value:false
 
+let enforce_eq_level u v (graph, cst) =
+  let cst = enforce_eq_level u v cst in
+  let graph = UGraph.enforce_constraint (u, Eq, v) graph in
+  (graph, cst)
+
+let enforce_leq_level u v (graph, cst) =
+  let cst = Constraints.add (u, Le, v) cst in
+  let graph = UGraph.enforce_constraint (u, Le, v) graph in
+  (graph, cst)
+
+let enforce_leq u v (graph, cst) =
+  let ncst = enforce_leq u v Constraints.empty in
+  let cst = Constraints.fold Constraints.add ncst cst in
+  let graph = UGraph.merge_constraints ncst graph in
+  (graph, cst)
+
 let process_universe_constraints uctx cstrs =
   let open UnivSubst in
   let open UnivProblem in
-  let univs = uctx.universes in
   let vars = ref uctx.univ_variables in
   let weak = ref uctx.weak_constraints in
   let normalize u = normalize_univ_variable_opt_subst !vars u in
@@ -212,7 +227,7 @@ let process_universe_constraints uctx cstrs =
         instantiate_variable l' r vars
       else if is_local r' then
         instantiate_variable r' l vars
-      else if not (UGraph.check_eq_level univs l' r') then
+      else if not (UGraph.check_eq_level (fst local) l' r') then
         (* Two rigid/global levels, none of them being local,
             one of them being Prop/Set, disallow *)
         if Level.is_small l' || Level.is_small r' then
@@ -235,7 +250,7 @@ let process_universe_constraints uctx cstrs =
           enforce_leq inst lu local
         else raise (UniverseInconsistency (Eq, lu, r, None))
   | Inl _, Inl _ (* both are algebraic *) ->
-    if UGraph.check_eq univs l r then local
+    if UGraph.check_eq (fst local) l r then local
     else raise (UniverseInconsistency (Eq, l, r, None))
   in
   let unify_universes cst local =
@@ -246,7 +261,7 @@ let process_universe_constraints uctx cstrs =
           | ULe (l, r) ->
             begin match Univ.Universe.level r with
             | None ->
-              if UGraph.check_leq univs l r then local
+              if UGraph.check_leq (fst local) l r then local
               else user_err Pp.(str "Algebraic universe on the right")
             | Some r' ->
               if Level.is_small r' then
@@ -254,9 +269,8 @@ let process_universe_constraints uctx cstrs =
                   then (* l contains a +1 and r=r' small so l <= r impossible *)
                     raise (UniverseInconsistency (Le, l, r, None))
                   else
-                    if UGraph.check_leq univs l r then match Univ.Universe.level l with
-                    | Some l ->
-                      Univ.Constraints.add (l, Le, r') local
+                    if UGraph.check_leq (fst local) l r then match Univ.Universe.level l with
+                    | Some l -> enforce_leq_level l r' local
                     | None -> local
                     else
                     let levels = Universe.levels l in
@@ -269,8 +283,7 @@ let process_universe_constraints uctx cstrs =
                     Level.Set.fold fold levels local
               else
                 match Univ.Universe.level l with
-                | Some l ->
-                  Univ.Constraints.add (l, Le, r') local
+                | Some l -> enforce_leq_level l r' local
                 | None ->
                   (* We insert the constraint in the graph even if the graph
                      already contains it.  Indeed, checking the existance of the
@@ -289,13 +302,13 @@ let process_universe_constraints uctx cstrs =
           | UEq (l, r) -> equalize_universes l r local
   in
   let unify_universes cst local =
-    if not (UGraph.type_in_type univs) then unify_universes cst local
+    if not (UGraph.type_in_type (fst local)) then unify_universes cst local
     else try unify_universes cst local with UniverseInconsistency _ -> local
   in
-  let local =
-    UnivProblem.Set.fold unify_universes cstrs Constraints.empty
+  let ugraph, local =
+    UnivProblem.Set.fold unify_universes cstrs (uctx.universes, Constraints.empty)
   in
-    !vars, !weak, local
+    !vars, !weak, ugraph, local
 
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in
@@ -310,20 +323,20 @@ let add_constraints uctx cstrs =
     in UnivProblem.Set.add cstr' acc)
     cstrs UnivProblem.Set.empty
   in
-  let vars, weak, cstrs' = process_universe_constraints uctx cstrs' in
+  let vars, weak, ugraph, cstrs' = process_universe_constraints uctx cstrs' in
   { uctx with
     local = (univs, Constraints.union old_cstrs cstrs');
     univ_variables = vars;
-    universes = UGraph.merge_constraints cstrs' uctx.universes;
+    universes = ugraph;
     weak_constraints = weak; }
 
 let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
-  let vars, weak, local' = process_universe_constraints uctx cstrs in
+  let vars, weak, ugraph, local' = process_universe_constraints uctx cstrs in
   { uctx with
     local = (univs, Constraints.union local local');
     univ_variables = vars;
-    universes = UGraph.merge_constraints local' uctx.universes;
+    universes = ugraph;
     weak_constraints = weak; }
 
 let constrain_variables diff uctx =
