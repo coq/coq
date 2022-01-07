@@ -85,7 +85,7 @@ Enrico Tassi, Laurent Théry, Anton Trunov and Théo Zimmerman.
 The Coq community at large helped improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the `Coq Zulip chat <http://coq.zulipchat.com>`_.
+<https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
 
 Version 8.15's development spanned 3 months from the release of
 Coq 8.14.0. Gaëtan Gilbert is the release manager of Coq 8.15.
