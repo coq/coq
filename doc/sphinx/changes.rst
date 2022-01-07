@@ -823,7 +823,7 @@ Karolin Varner, Li-yao Xia, Beta Ziliani and Théo Zimmermann.
 The Coq community at large helped improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the `Coq Zulip chat <http://coq.zulipchat.com>`_.
+<https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
 
 Version 8.14's development spanned 9 months from the release of
 Coq 8.13.0. Guillaume Melquiond is the release manager of Coq 8.14.
@@ -1705,7 +1705,7 @@ Enrico Tassi, Anton Trunov, Edward Wang, Li-yao Xia, Beta Ziliani and Théo Zimm
 The Coq community at large helped improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the `Coq Zulip chat <http://coq.zulipchat.com>`_.
+<https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
 
 Version 8.13's development spanned 5 months from the release of
 Coq 8.12.0. Enrico Tassi and Maxime Dénès are the release managers of Coq 8.13.
@@ -2446,7 +2446,7 @@ Nickolai Zeldovich and Théo Zimmermann.
 Many power users helped to improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the new `Coq Zulip chat <http://coq.zulipchat.com>`_
+<https://coq.discourse.group/>`_ and the new `Coq Zulip chat <https://coq.zulipchat.com>`_
 (thanks to Cyril Cohen for organizing the move from Gitter).
 
 Version 8.12's development spanned 6 months from the release of
