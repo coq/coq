@@ -1596,28 +1596,27 @@ let compact_proofs prover (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) re
     end;
     res
   in
-  let is_proof_compatible (old_cl : 'cst clause) prf
-      (new_cl : 'cst clause) =
-    let hyps_idx = prover.hyps prf in
-    let hyps = selecti hyps_idx old_cl in
+  let is_proof_compatible (hyps, (old_cl : 'cst clause), prf) (new_cl : 'cst clause) =
     let eq (f1, (t1, e1)) (f2, (t2, e2)) =
       Int.equal (Tag.compare t1 t2) 0
       && eq_formula f1 f2
       && (e1 : EConstr.t) = (e2 : EConstr.t)
       (* FIXME: what equality should we use here? *)
     in
-    is_sublist eq hyps new_cl
+    is_sublist eq (Lazy.force hyps) new_cl
   in
-  let cnf_res = List.combine cnf_ff res in
+  let map cl prf =
+    let hyps = lazy (selecti (prover.hyps prf) cl) in
+    hyps, cl, prf
+  in
+  let cnf_res = List.map2 map cnf_ff res in
   (* we get pairs clause * proof *)
   if debug then begin
     Printf.printf "CNFRES\n";
     flush stdout;
     Printf.printf "CNFOLD %a\n" pp_cnf_tag cnf_ff;
     List.iter
-      (fun (cl, prf) ->
-        let hyps_idx = prover.hyps prf in
-        let hyps = selecti hyps_idx cl in
+      (fun (lazy hyps, cl, prf) ->
         Printf.printf "\nProver %a -> %a\n" pp_clause_tag cl pp_clause_tag hyps;
         flush stdout)
       cnf_res;
@@ -1625,8 +1624,8 @@ let compact_proofs prover (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) re
   end;
   List.map
     (fun x ->
-      let o, p =
-        try List.find (fun (l, p) -> is_proof_compatible l p x) cnf_res
+      let _, o, p =
+        try List.find (fun p -> is_proof_compatible p x) cnf_res
         with Not_found ->
           Printf.printf "ERROR: no compatible proof";
           flush stdout;
