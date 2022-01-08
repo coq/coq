@@ -1061,6 +1061,22 @@ let dest_lam_assum env =
   in
   lamec_rec env Context.Rel.empty
 
+let dest_lam_n_assum env n =
+  let rec lamec_rec env n l c =
+    if Int.equal n 0 then l,c
+    else
+    let rc = whd_allnolet env c in
+    match kind rc with
+    | Lambda (x,t,c)  ->
+        let d = LocalAssum (x,t) in
+        lamec_rec (push_rel d env) (n-1) (Context.Rel.add d l) c
+    | LetIn (x,b,t,c) ->
+        let d = LocalDef (x,b,t) in
+        lamec_rec (push_rel d env) n (Context.Rel.add d l) c
+    | _ -> anomaly (Pp.str "dest_lam_n_assum: not enough abstractions")
+  in
+  lamec_rec env n Context.Rel.empty
+
 exception NotArity
 
 let dest_arity env c =
