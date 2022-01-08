@@ -1600,8 +1600,8 @@ let compact_proofs prover (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) re
     let eq (f1, (t1, e1)) (f2, (t2, e2)) =
       Int.equal (Tag.compare t1 t2) 0
       && eq_formula f1 f2
-      && (e1 : EConstr.t) = (e2 : EConstr.t)
-      (* FIXME: what equality should we use here? *)
+      (* We do not have to compare [e1] with [e2] because [t1 = t2] ensures
+         by uid generation that they must be the same *)
     in
     is_sublist eq (Lazy.force hyps) new_cl
   in
