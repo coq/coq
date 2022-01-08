@@ -158,11 +158,12 @@ exception SingletonInductiveBecomesProp of Id.t
 (** {6 Debug} *)
 
 type size = Large | Strict
+type internal_subterm_source = IotaTerm | LamTerm
 type subterm_spec =
-    Subterm of (int list * size * wf_paths)
+    Subterm of (internal_subterm_source Int.Map.t * size * wf_paths)
   | Dead_code
   | Not_subterm
-  | Internally_bound_subterm of int list
+  | Internally_bound_subterm of internal_subterm_source Int.Map.t
 type guard_env =
   { env     : env;
     (** dB of last fixpoint *)

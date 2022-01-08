@@ -591,7 +591,9 @@ let size_glb s1 s2 =
      refer to the number of redexes stacked, with 1 counting for the
      variables bound at head in the body of the fix (as e.g. [x] in
      [fix f n := fun x => f x]); there may be several such indices
-     because [match] subterms may have combine several results
+     because [match] subterms may have combine several results;
+     a IotaTerm is an argument of a match/fix made abstract; a LamTerm is
+     a variable internally bound in a subterm of a redex
    - Subterm: when the term is a subterm of the recursive argument
        the wf_paths argument specifies which subterms are recursive;
      the [int list] is used in the [match] case where one branch of
@@ -601,11 +603,13 @@ let size_glb s1 s2 =
        empty type
  *)
 
+type internal_subterm_source = IotaTerm | LamTerm
+
 type subterm_spec =
-    Subterm of (int list * size * wf_paths)
+    Subterm of (internal_subterm_source Int.Map.t * size * wf_paths)
   | Dead_code
   | Not_subterm
-  | Internally_bound_subterm of int list
+  | Internally_bound_subterm of internal_subterm_source Int.Map.t
 
 let eq_wf_paths = Rtree.equal Declareops.eq_recarg
 
@@ -629,7 +633,13 @@ let incl_wf_paths = Rtree.incl Declareops.eq_recarg inter_recarg Norec
 let spec_of_tree t =
   if eq_wf_paths t mk_norec
   then Not_subterm
-  else Subterm ([], Strict, t)
+  else Subterm (Int.Map.empty, Strict, t)
+
+let merge_internal_subterms l1 l2 =
+  Int.Map.union (fun _ a1 a2 ->
+      match a1, a2 with
+      | IotaTerm, _ | _, IotaTerm -> Some IotaTerm
+      | LamTerm, LamTerm -> Some LamTerm) l1 l2
 
 let inter_spec s1 s2 =
   match s1, s2 with
@@ -637,11 +647,11 @@ let inter_spec s1 s2 =
   | Dead_code, _ -> s2
   | Not_subterm, _ -> s1
   | _, Not_subterm -> s2
-  | Internally_bound_subterm l1, Internally_bound_subterm l2 -> Internally_bound_subterm (List.merge_set Int.compare l1 l2)
-  | Subterm (l1,a1,t1), Internally_bound_subterm l2 -> Subterm (List.merge_set Int.compare l1 l2,a1,t1)
-  | Internally_bound_subterm l1, Subterm (l2,a2,t2) -> Subterm (List.merge_set Int.compare l1 l2,a2,t2)
+  | Internally_bound_subterm l1, Internally_bound_subterm l2 -> Internally_bound_subterm (merge_internal_subterms l1 l2)
+  | Subterm (l1,a1,t1), Internally_bound_subterm l2 -> Subterm (merge_internal_subterms l1 l2,a1,t1)
+  | Internally_bound_subterm l1, Subterm (l2,a2,t2) -> Subterm (merge_internal_subterms l1 l2,a2,t2)
   | Subterm (l1,a1,t1), Subterm (l2,a2,t2) ->
-     Subterm (List.merge_set Int.compare l1 l2, size_glb a1 a2, inter_wf_paths t1 t2)
+     Subterm (merge_internal_subterms l1 l2, size_glb a1 a2, inter_wf_paths t1 t2)
 
 let subterm_spec_glb =
   Array.fold_left inter_spec Dead_code
@@ -657,7 +667,7 @@ type guard_env =
 let make_renv env recarg tree =
   { env = env;
     rel_min = recarg+2; (* recarg = 0 ==> Rel 1 -> recarg; Rel 2 -> fix *)
-    genv = [Lazy.from_val(Subterm([], Large,tree))] }
+    genv = [Lazy.from_val(Subterm(Int.Map.empty, Large,tree))] }
 
 let push_var renv (x,ty,spec) =
   { env = push_rel (LocalAssum (x,ty)) renv.env;
@@ -977,7 +987,7 @@ let rec subterm_specif renv stack t =
                      (* Why Strict here ? To be general, it could also be
                         Large... *)
           assign_var_spec renv'
-          (nbfix-i, lazy (Subterm([],Strict,recargs))) in
+          (nbfix-i, lazy (Subterm(Int.Map.empty,Strict,recargs))) in
         let decrArg = recindxs.(i) in
         let theBody = bodies.(i)   in
         let nbOfAbst = decrArg+1 in
@@ -1036,8 +1046,8 @@ and stack_element_specif = function
   | SClosure (h_renv,h) -> lazy_subterm_specif h_renv [] h
   | SArg x -> x
 
-and extract_stack nr = function
-   | [] -> Lazy.from_val (if nr >= 1 then Internally_bound_subterm [nr] else Not_subterm), []
+and extract_stack n = function
+   | [] -> Lazy.from_val (if n >= 1 then Internally_bound_subterm (Int.Map.singleton n LamTerm) else Not_subterm), []
    | h::t -> stack_element_specif h, t
 
 and primitive_specif renv op args =
@@ -1060,7 +1070,7 @@ and primitive_specif renv op args =
 
 let set_iota_specif nr spec =
   lazy (match Lazy.force spec with
-        | Not_subterm -> if nr >= 1 then Internally_bound_subterm [nr] else Not_subterm
+        | Not_subterm -> if nr >= 1 then Internally_bound_subterm (Int.Map.singleton nr IotaTerm) else Not_subterm
         | spec -> spec)
 
 (************************************************************************)
@@ -1086,26 +1096,26 @@ let illegal_rec_call renv fx = function
     NotEnoughArgumentsForFixCall fx
 
 type fix_check_result =
-  | NeedReduce of env * fix_guard_error
+  | NeedReduce of internal_subterm_source * env * fix_guard_error
   | Valid
 
-let set_need_reduce_one env nr err rs =
+let set_need_reduce_one env nr b err rs =
   let mr = List.length rs in
   let rs1, rs2 = List.chop (mr-nr) rs in
   let _, rs2 = List.sep_first rs2 in
-  rs1 @ NeedReduce (env, err) :: rs2
+  rs1 @ NeedReduce (b, env, err) :: rs2
 
 let set_need_reduce env l err rs =
-  List.fold_right (fun n -> set_need_reduce_one env n err) l rs
+  Int.Map.fold (fun n b -> set_need_reduce_one env n b err) l rs
 
 let set_need_reduce_top env err rs =
-  set_need_reduce_one env (List.length rs) err rs
+  set_need_reduce_one env (List.length rs) LamTerm err rs
 
 let redex_level rs = List.length rs
 
 type check_subterm_result =
   | InvalidSubterm
-  | NeedReduceSubterm of int list (* empty = Valid *)
+  | NeedReduceSubterm of internal_subterm_source Int.Map.t (* empty = Valid *)
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm x tree =
@@ -1113,7 +1123,7 @@ let check_is_subterm x tree =
   | Subterm (need_reduce,Strict,tree') ->
     if incl_wf_paths tree tree' then NeedReduceSubterm need_reduce
     else InvalidSubterm
-  | Dead_code -> NeedReduceSubterm []
+  | Dead_code -> NeedReduceSubterm Int.Map.empty
   | Not_subterm | Subterm (_,Large,_) -> InvalidSubterm
   | Internally_bound_subterm l -> NeedReduceSubterm l
 
@@ -1216,7 +1226,7 @@ let check_one_fix renv recpos trees def =
                   check_rec_call renv stack_br rs br') rs brs in
             (match List.sep_first rs with
             | Valid, rs -> rs
-            | NeedReduce (env,err), rs ->
+            | NeedReduce (b,env,err), rs ->
               (* we try hard to reduce the match away by looking for a
                  constructor in c_0 (we unfold definitions too) *)
               let c_0 = whd_all renv.env c_0 in
@@ -1233,7 +1243,11 @@ let check_one_fix renv recpos trees def =
               | Sort _ | Int _ | Float _ | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
               | Proj _ | Cast _ | Meta _ | Evar _ ->
-                 set_need_reduce_top env err rs)
+                  match b with
+                  | IotaTerm -> (* no hope *) raise (FixGuardError (env,err))
+                  | LamTerm ->
+                     (* a commutative cut across the "match" can be triggered by a reduction at a outer level *)
+                     set_need_reduce_top env err rs)
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
            way, ie, the rule :
@@ -1266,7 +1280,7 @@ let check_one_fix renv recpos trees def =
               else check_rec_call renv' [] rs body) rs bodies in
             (match List.sep_first rs with
             | Valid, rs -> rs
-            | NeedReduce (env,err), rs ->
+            | NeedReduce (b,env,err), rs ->
               (* we try hard to reduce the fix away by looking for a
                  constructor in l[decrArg] (we unfold definitions too) *)
               if List.length l <= decrArg then set_need_reduce_top env err rs else
@@ -1281,7 +1295,12 @@ let check_one_fix renv recpos trees def =
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
               | Sort _ | Int _ | Float _ | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
-              | Proj _ | Cast _ | Meta _ | Evar _ -> set_need_reduce_top env err rs)
+              | Proj _ | Cast _ | Meta _ | Evar _ ->
+                  match b with
+                  | IotaTerm -> (* no hope *) raise (FixGuardError (env,err))
+                  | LamTerm ->
+                     (* a commutative cut across the "match" can be triggered by a reduction at a outer level *)
+                     set_need_reduce_top env err rs)
 
         | Const (kn,_u as cu) ->
             if evaluable_constant kn renv.env then
@@ -1409,7 +1428,7 @@ let check_one_fix renv recpos trees def =
   let rs = check_rec_call renv [] [Valid] def in
   match rs with
   | [Valid] -> ()
-  | [NeedReduce (env,exn)] -> raise (FixGuardError (env,exn))
+  | [NeedReduce (b,env,err)] -> assert (b = LamTerm); raise (FixGuardError (env,err))
   | _ -> assert false
 
 let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
@@ -1559,7 +1578,7 @@ let check_one_cofix env nbfix def deftype =
         | Case (ci, u, pms, p, iv, tm, br) -> (* iv ignored: just a cache *)
           begin
             let (_, p, _iv, tm, vrest) = expand_case env (ci, u, pms, p, iv, tm, br) in
-            let tree = match restrict_spec env (Subterm ([], Strict, tree)) p with
+            let tree = match restrict_spec env (Subterm (Int.Map.empty, Strict, tree)) p with
             | Dead_code -> assert false
             | Subterm (_, _, tree') -> tree'
             | _ -> raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
