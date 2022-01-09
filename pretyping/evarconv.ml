@@ -366,7 +366,9 @@ let compare_cumulative_instances evd variances u u' =
     Success evd
   | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
 
-let is_int_opt o n = match o with None -> true | Some m -> Int.equal m n
+type application = FullyApplied | NumArgs of int
+
+let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal m n
 
 let compare_heads env evd ~nargs term term' =
   let check_strict evd u u' =
@@ -376,7 +378,7 @@ let compare_heads env evd ~nargs term term' =
   in
   match EConstr.kind evd term, EConstr.kind evd term' with
   | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
-    if is_int_opt nargs 1 && Environ.is_array_type env c
+    if is_applied nargs 1 && Environ.is_array_type env c
     then
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       compare_cumulative_instances evd [|Univ.Variance.Irrelevant|] u u'
@@ -394,7 +396,7 @@ let compare_heads env evd ~nargs term term' =
         | None -> check_strict evd u u'
         | Some variances ->
           let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
-          if not (is_int_opt nargs needed)
+          if not (is_applied nargs needed)
           then check_strict evd u u'
           else
             compare_cumulative_instances evd variances u u'
@@ -411,7 +413,7 @@ let compare_heads env evd ~nargs term term' =
         | None -> check_strict evd u u'
         | Some variances ->
           let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in
-          if not (is_int_opt nargs needed)
+          if not (is_applied nargs needed)
           then check_strict evd u u'
           else
             Success (compare_constructor_instances evd u u')
@@ -448,7 +450,7 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
       let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
       begin
         match ise_and i [
-          (fun i -> compare_heads env i ~nargs:None hd1 hd2);
+          (fun i -> compare_heads env i ~nargs:FullyApplied hd1 hd2);
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) pms1 pms2);
           (fun i -> fctx i t1 t2);
           (fun i -> ise_array2 i fctx br1 br2);
@@ -493,7 +495,7 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
       let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
       ise_and i [
         (fun i -> ise_rev_stack2 i q1 q2);
-        (fun i -> compare_heads env i ~nargs:None hd1 hd2);
+        (fun i -> compare_heads env i ~nargs:FullyApplied hd1 hd2);
         (fun i -> ise_array2 i (fun ii -> f env ii CONV) pms1 pms2);
         (fun i -> fctx i t1 t2);
         (fun i -> ise_array2 i fctx br1 br2);
@@ -523,7 +525,7 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
 let compare_heads env evd ~nargs term term' =
-  compare_heads env evd ~nargs:(Some nargs) term term'
+  compare_heads env evd ~nargs:(NumArgs nargs) term term'
 
 let conv_fun f flags on_types =
   let typefn env evd pbty term1 term2 =
