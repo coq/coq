@@ -792,7 +792,7 @@ let select_impargs_size_for_proj ~nexpectedparams ~ngivenparams ~nextraargs impl
     (* Force the main argument to be explicit *)
     (nimps1, imps1 @ [None], imps2)
   in
-  let nallgivenargs = ngivenparams + nextraargs in
+  let nallgivenargs = ngivenparams + nextraargs + 1 in
   let little_enough_all_implicit = function
   | (DefaultImpArgs, impls) -> Some (split_implicit_params impls)
   | (LessArgsThan r, impls) when nallgivenargs <= r -> Some (split_implicit_params impls)
