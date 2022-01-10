@@ -675,6 +675,7 @@ let intern_ipat ist =
     (glob_ast_closure_term ist)
 
 let intern_ipats ist = List.map (intern_ipat ist)
+let intern_ipat_option ist = Option.map (intern_ipat ist)
 
 let interp_intro_pattern = Tacinterp.interp_intro_pattern
 
@@ -751,6 +752,7 @@ let interp_ipat ist env sigma =
   interp
 
 let interp_ipats ist env sigma l = List.map (interp_ipat ist env sigma) l
+let interp_ipat_option ist env sigma o = Option.map (interp_ipat ist env sigma) o
 
 let pushIPatRewrite = function
   | pats :: orpat -> (IPatRewrite (allocc, L2R) :: pats) :: orpat
@@ -863,6 +865,9 @@ let _test_nobinder = Pcoq.Entry.(of_parser "test_nobinder" { parser_fun = reject
 }
 
 ARGUMENT EXTEND ssrcpat TYPED AS ssripatrep PRINTED BY { pr_ssripat }
+  INTERPRETED BY { interp_ipat }
+  GLOBALIZED BY { intern_ipat }
+
 END
 
 (* Pcoq *)
@@ -1987,6 +1992,9 @@ let pr_ssreqid _ _ _ = pr_eqid
 (* We must use primitive parsing here to avoid conflicts with the  *)
 (* basic move, case, and elim tactics.                             *)
 ARGUMENT EXTEND ssreqid TYPED AS ssripatrep option PRINTED BY { pr_ssreqid }
+  INTERPRETED BY { interp_ipat_option }
+  GLOBALIZED BY { intern_ipat_option }
+
 END
 
 {
