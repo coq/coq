@@ -2162,15 +2162,17 @@ Variables (aT rT : predArgType) (f : aT -> rT) (g : rT -> aT).
 Variables (aD : {pred aT}) (rD : {pred rT}).
 Variable (aP : pred aT) (rP : pred rT) (aR : rel aT) (rR : rel rT).
 
+Lemma mono1W_in :
+    {in aD, {mono f : x / aP x >-> rP x}} ->
+  {in aD, {homo f : x / aP x >-> rP x}}.
+Proof. by move=> hf x hx ax; rewrite hf. Qed.
+#[deprecated(since="Coq 8.16", note="Use mono1W_in instead.")]
+Notation mono2W_in := mono1W_in.
+
 Lemma monoW_in :
     {in aD &, {mono f : x y / aR x y >-> rR x y}} ->
   {in aD &, {homo f : x y / aR x y >-> rR x y}}.
 Proof. by move=> hf x y hx hy axy; rewrite hf. Qed.
-
-Lemma mono2W_in :
-    {in aD, {mono f : x / aP x >-> rP x}} ->
-  {in aD, {homo f : x / aP x >-> rP x}}.
-Proof. by move=> hf x hx ax; rewrite hf. Qed.
 
 Hypothesis fgK : {in rD, {on aD, cancel g & f}}.
 Hypothesis mem_g : {homo g : x / x \in rD >-> x \in aD}.
