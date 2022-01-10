@@ -74,9 +74,9 @@ and Théo Zimmermann. See the `Coq Team face book <https://coq.inria.fr/coq-team
 page for more details.
 
 The 41 contributors to this version are
-Tanaka Akira, Frédéric Besson, Juan C, Ali Caglayan, Cyril Cohen, Columbus240, Adrian Dapprich, Maxime Dénès,
-Christian Doczkal, Andrej Dudenhefner, Jim Fehrle, Attila Gáspár, Gaëtan Gilbert, Jason Gross,
-Hugo Herbelin, Jasper Hugunin, Bart Jacobs, Emilio Jesús Gallego Arias, Ralf Jung, Grant Jurgensen,
+Tanaka Akira, Frédéric Besson, Juan Conejero, Ali Caglayan, Cyril Cohen, Adrian Dapprich, Maxime Dénès,
+Stéphane Desarzens, Christian Doczkal, Andrej Dudenhefner, Jim Fehrle, Emilio Jesús Gallego Arias,
+Attila Gáspár, Gaëtan Gilbert, Jason Gross, Hugo Herbelin, Jasper Hugunin, Bart Jacobs, Ralf Jung, Grant Jurgensen,
 Jan-Oliver Kaiser, Wojciech Karpiel, Fabian Kunze, Olivier Laurent, Yishuai Li, Erik Martin-Dorel,
 Guillaume Melquiond, Jean-Francois Monin, Pierre-Marie Pédrot, Rudy Peterson, Clément Pit-Claudel,
 Seth Poulsen, Pierre Roux, Takafumi Saikawa, Kazuhiko Sakaguchi, Michael Soegtrop, Matthieu Sozeau,
@@ -404,7 +404,7 @@ SSReflect
   SSR patterns now work with primitive values such as ints, floats or arrays
   (`#14660 <https://github.com/coq/coq/pull/14660>`_,
   fixes `#12770 <https://github.com/coq/coq/issues/12770>`_,
-  by Juan C.).
+  by Juan Conejero).
 - **Fixed:**
   A bug where :tacn:`suff` would fail due to use of :tacn:`apply` under the hood.
   (`#14687 <https://github.com/coq/coq/pull/14687>`_,
@@ -531,7 +531,7 @@ Command-line tools
   Syntax of `_CoqProject` files: `-arg` is now handled by :ref:`coq_makefile
   <coq_makefile>` and not by `make`. Unquoted `#` now start line comments.
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
-  by Columbus240, with help from Jim Fehrle and Enrico Tassi).
+  by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Changed:**
   :cmd:`Require` now selects files whose logical name
   exactly matches the required name, making it possible to unambiguously select
@@ -553,12 +553,12 @@ Command-line tools
   `-custom`, `-no-install`, `-install`, `-no-opt`, `-byte`.
   Support for subdirectories is also removed.
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
-  by Columbus240, with help from Jim Fehrle and Enrico Tassi).
+  by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Added:**
   :ref:`coq_makefile <coq_makefile>` now takes the `-docroot` option as alternative to the
   `INSTALLCOQDOCROOT` variable
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
-  by Columbus240, with help from Jim Fehrle and Enrico Tassi).
+  by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Fixed:**
   Various `coqdep` issues with the `From` clause of :cmd:`Require` and
   a few inconsistencies between `coqdep` and `coqc` disambiguation
@@ -810,7 +810,7 @@ page for more details.
 
 The 54 contributors to this version are Reynald Affeldt,
 Arthur Azevedo de Amorim, Yves Bertot, Frédéric Besson, Lasse Blaauwbroek, Ana Borges,
-Ali Caglayan, Cyril Cohen,  Columbus240, Pierre Courtieu, Maxime Dénès, Andrej Dudenhefner,
+Ali Caglayan, Cyril Cohen, Pierre Courtieu, Maxime Dénès, Stéphane Desarzens, Andrej Dudenhefner,
 Jim Fehrle, Yannick Forster,  Simon Friis Vindum, Gaëtan Gilbert, Jason Gross, Samuel Gruetter, Stefan Haan,
 Hugo Herbelin, Jasper Hugunin, Emilio Jesús Gallego Arias, Jacques-Henri Jourdan,
 Ralf Jung, Jan-Oliver Kaiser, Fabian Kunze, Vincent Laporte, Olivier Laurent,
