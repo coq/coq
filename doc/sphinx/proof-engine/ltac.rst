@@ -422,7 +422,11 @@ Selectors can also be used nested within a tactic expression with the
       range_selector ::= @natural - @natural
       | @natural
 
-   Applies :token:`ltac_expr3` to the selected goals.
+   Applies :token:`ltac_expr3` to the selected goals.  (At the beginning of a
+   sentence, use the form :n:`@selector: @tactic` rather than :n:`only @selector: @tactic`.
+   In the latter, the :opt:`Default Goal Selector` (by default set to :n:`1:`)
+   is applied before :n:`only` is interpreted.  This is probably not what you
+   want.)
 
    :tacn:`only` is an :token:`l3_tactic`.
 
