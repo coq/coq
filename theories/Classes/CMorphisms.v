@@ -88,28 +88,28 @@ Hint Extern 2 (ProperProxy ?R _) =>
   not_evar R; class_apply @proper_proper_proxy : typeclass_instances.
 
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
-Declare Scope signature_scope.
-Delimit Scope signature_scope with signature.
+Declare Scope signatureT_scope.
+Delimit Scope signatureT_scope with signatureT.
 
 Module ProperNotations.
 
-  Notation " R ++> R' " := (@respectful _ _ (R%signature) (R'%signature))
-    (right associativity, at level 55) : signature_scope.
+  Notation " R ++> R' " := (@respectful _ _ (R%signatureT) (R'%signatureT))
+    (right associativity, at level 55) : signatureT_scope.
 
-  Notation " R ==> R' " := (@respectful _ _ (R%signature) (R'%signature))
-    (right associativity, at level 55) : signature_scope.
+  Notation " R ==> R' " := (@respectful _ _ (R%signatureT) (R'%signatureT))
+    (right associativity, at level 55) : signatureT_scope.
 
-  Notation " R --> R' " := (@respectful _ _ (flip (R%signature)) (R'%signature))
-    (right associativity, at level 55) : signature_scope.
+  Notation " R --> R' " := (@respectful _ _ (flip (R%signatureT)) (R'%signatureT))
+    (right associativity, at level 55) : signatureT_scope.
 
 End ProperNotations.
 
-Arguments Proper {A}%type R%signature m.
-Arguments respectful {A B}%type (R R')%signature _ _.
+Arguments Proper {A}%type R%signatureT m.
+Arguments respectful {A B}%type (R R')%signatureT _ _.
 
 Export ProperNotations.
 
-Local Open Scope signature_scope.
+Local Open Scope signatureT_scope.
 
 (** [solve_proper] try to solve the goal [Proper (?==> ... ==>?) f]
     by repeated introductions and setoid rewrites. It should work
@@ -139,7 +139,7 @@ Ltac f_equiv :=
     let Rx := fresh "R" in
     evar (Rx : crelation T);
     let H := fresh in
-    assert (H : (Rx==>R)%signature f f');
+    assert (H : (Rx==>R)%signatureT f f');
     unfold Rx in *; clear Rx; [ f_equiv | apply H; clear H; try reflexivity ]
   | |- ?R ?f ?f' =>
     solve [change (Proper R f); eauto with typeclass_instances | reflexivity ]
@@ -213,8 +213,8 @@ Section Relations.
   Proof. reduce. firstorder. Qed.
 End Relations.
 Global Typeclasses Opaque respectful pointwise_relation forall_relation.
-Arguments forall_relation {A P}%type sig%signature _ _.
-Arguments pointwise_relation A%type {B}%type R%signature _ _.
+Arguments forall_relation {A P}%type sig%signatureT _ _.
+Arguments pointwise_relation A%type {B}%type R%signatureT _ _.
   
 #[global]
 Hint Unfold Reflexive : core.
@@ -582,7 +582,7 @@ Section Normalize.
 End Normalize.
 
 Lemma flip_arrow `(NA : Normalizes A R (flip R'''), NB : Normalizes B R' (flip R'')) :
-  Normalizes (A -> B) (R ==> R') (flip (R''' ==> R'')%signature).
+  Normalizes (A -> B) (R ==> R') (flip (R''' ==> R'')%signatureT).
 Proof. 
   unfold Normalizes in *. intros.
   rewrite NA, NB. firstorder. 
