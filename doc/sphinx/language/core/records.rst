@@ -184,8 +184,12 @@ The corresponding grammar rules are given in the preceding grammar. When :token:
 denotes a projection, the syntax :n:`@term0.(@qualid)` is equivalent to :n:`@qualid @term0`,
 the syntax :n:`@term0.(@qualid {+ @arg })` to :n:`@qualid {+ @arg } @term0`.
 and the syntax :n:`@term0.(@@qualid {+ @term0 })` to :n:`@@qualid {+ @term0 } @term0`.
-In each case, :token:`term0` is the object projected and the
+In each case, :token:`term0` is the projected object and the
 other arguments are the parameters of the inductive type.
+
+Since the projected object is part of the notation,
+it is always considered an explicit argument of :token:`qualid`,
+even if it is formally declared as implicit (see :ref:`ImplicitArguments`),
 
 
 .. note:: Records defined with the :cmd:`Record` command are not allowed to be
