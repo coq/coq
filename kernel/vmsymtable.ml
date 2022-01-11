@@ -167,10 +167,12 @@ type global_table = {
 
 let get_global_data table = GlobVal.vm_global table.glob_val
 
-let set_global v table =
+let set_global v rtable =
+  let table = !rtable in
   let (n, glob_val) = GlobVal.push table.glob_val v in
   let table = { table with glob_val } in
-  table, n
+  let () = rtable := table in
+  n
 
 (*************************************************************)
 (*** Mise a jour des valeurs des variables et des constantes *)
@@ -192,20 +194,20 @@ let key rk =
    dans la table global, rend sa position dans la table *)
 
 let slot_for_str_cst key table =
-  try table, SConstTable.find key table.glob_sconst
+  try SConstTable.find key !table.glob_sconst
   with Not_found ->
-    let table, n = set_global (val_of_str_const key) table in
-    let glob_sconst = SConstTable.add key n table.glob_sconst in
-    let table = { table with glob_sconst } in
-    table, n
+    let n = set_global (val_of_str_const key) table in
+    let glob_sconst = SConstTable.add key n !table.glob_sconst in
+    let () = table := { !table with glob_sconst } in
+    n
 
 let slot_for_annot key table =
-  try table, AnnotTable.find key table.glob_annot
+  try AnnotTable.find key !table.glob_annot
   with Not_found ->
-    let table, n = set_global (val_of_annot_switch key) table in
-    let glob_annot = AnnotTable.add key n table.glob_annot in
-    let table = { table with glob_annot } in
-    table, n
+    let n = set_global (val_of_annot_switch key) table in
+    let glob_annot = AnnotTable.add key n !table.glob_annot in
+    let () = table := { !table with glob_annot } in
+    n
 
 (* Initialization of OCaml primitives *)
 let eval_caml_prim = function
@@ -235,38 +237,38 @@ let make_static_prim table =
   table, Array.of_list prims
 
 let slot_for_caml_prim op table =
-  table, table.glob_prim.(fst (eval_caml_prim op))
+  !table.glob_prim.(fst (eval_caml_prim op))
 
 let rec slot_for_getglobal env sigma kn table =
   let (cb,(_,rk)) = lookup_constant_key kn env in
-  try table, key rk
+  try key rk
   with NotEvaluated ->
 (*    Pp.msgnl(str"not yet evaluated");*)
-    let table, pos =
+    let pos =
       match cb.const_body_code with
       | None -> set_global (val_of_constant kn) table
       | Some code ->
         match code with
         | BCdefined (code, fv) ->
-           let table, v = eval_to_patch env sigma (code, fv) table in
+           let v = eval_to_patch env sigma (code, fv) table in
            set_global v table
         | BCalias kn' -> slot_for_getglobal env sigma kn' table
         | BCconstant -> set_global (val_of_constant kn) table
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (CEphemeron.create pos);
-    table, pos
+    pos
 
 and slot_for_fv env sigma fv table =
   let fill_fv_cache cache id v_of_id env_of_id b =
-    let table, v, d =
+    let v, d =
       match b with
-      | None -> table, v_of_id id, Id.Set.empty
+      | None -> v_of_id id, Id.Set.empty
       | Some c ->
-        let table, v = val_of_constr (env_of_id id env) sigma c table in
-        table, v, Environ.global_vars_set env c
+        let v = val_of_constr (env_of_id id env) sigma c table in
+        v, Environ.global_vars_set env c
     in
-    build_lazy_val cache (v, d); table, v in
+    build_lazy_val cache (v, d); v in
   let val_of_rel i = val_of_rel (nb_rel env - i) in
   let idfun _ x = x in
   match fv with
@@ -275,42 +277,41 @@ and slot_for_fv env sigma fv table =
       begin match force_lazy_val nv with
       | None ->
          env |> lookup_named id |> NamedDecl.get_value |> fill_fv_cache nv id val_of_named idfun
-      | Some (v, _) -> table, v
+      | Some (v, _) -> v
       end
   | FVrel i ->
       let rv = lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
         env |> lookup_rel i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
-      | Some (v, _) -> table, v
+      | Some (v, _) -> v
       end
-  | FVevar evk -> table, val_of_evar evk
+  | FVevar evk -> val_of_evar evk
   | FVuniv_var _idu ->
     assert false
 
 and eval_to_patch env sigma (code, fv) table =
   let slots = function
-    | Reloc_annot a -> slot_for_annot a
-    | Reloc_const sc -> slot_for_str_cst sc
-    | Reloc_getglobal kn -> slot_for_getglobal env sigma kn
-    | Reloc_caml_prim op -> slot_for_caml_prim op
+    | Reloc_annot a -> slot_for_annot a table
+    | Reloc_const sc -> slot_for_str_cst sc table
+    | Reloc_getglobal kn -> slot_for_getglobal env sigma kn table
+    | Reloc_caml_prim op -> slot_for_caml_prim op table
   in
-  let table, tc = patch code slots table in
-  let table, vm_env =
+  let tc = patch code slots in
+  let vm_env =
     (* Environment should look like a closure, so free variables start at slot 2. *)
     let a = Array.make (Array.length fv + 2) crazy_val in
     a.(1) <- Obj.magic 2;
-    let fold i accu fv =
-      let accu, v = slot_for_fv env sigma fv accu in
-      let () = a.(i + 2) <- v in
-      accu
+    let iter i fv =
+      let v = slot_for_fv env sigma fv table in
+      a.(i + 2) <- v
     in
-    let table = Array.fold_left_i fold table fv in
-    table, a
+    let () = Array.iteri iter fv in
+    a
   in
-  let global = get_global_data table in
+  let global = get_global_data !table in
   let v = coq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 in
-  table, v
+  v
 
 and val_of_constr env sigma c table =
   match compile ~fail_on_error:true env sigma c with
@@ -328,8 +329,7 @@ let global_table =
   }
 
 let val_of_constr env sigma c =
-  let table, v = val_of_constr env sigma c !global_table in
-  let () = global_table := table in
+  let v = val_of_constr env sigma c global_table in
   v
 
 let vm_interp code v env k =
