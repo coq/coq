@@ -14,7 +14,85 @@ Version 8.15
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-Not yet written.
+Coq version 8.15 integrates many bug fixes, deprecations and cleanups as well
+as a few new features. We highlight some of the most impactful changes here:
+
+  - The :tacn:`apply with <apply>` tactic :ref:`no longer renames arguments <815ApplyWith>`
+    unless compatibility flag :flag:`Apply With Renaming` is set.
+
+  - :ref:`Improvements <815Auto>` to the :tacn:`auto` tactic family,
+    fixing the :cmd:`Hint Unfold` behavior, and generalizing the use
+    of discrimination nets.
+
+  - The :tacn:`typeclasses eauto` tactic has a new :ref:`best_effort <815BestEffort>`
+    option allowing it to return *partial* solutions to a proof search problem,
+    depending on the mode declarations associated to each constraint.
+    This mode is used by typeclass resolution during type inference to
+    provide more precise error messages.
+
+  - Many :ref:`commands and options <815Commands>` were deprecated or removed
+    after deprecation and more consistently support locality attributes.
+
+  - The :cmd:`Import` command is extended with :token:`import_categories`
+    to :ref:`select the components <815Import>` of a module to import or not, including
+    features such as hints, coercions, and notations.
+
+  - A :ref:`visual Ltac debugger <815LtacDebugger>` is now available in CoqIDE.
+
+See the `Changes in 8.15.0`_ section below for the detailed list of changes,
+including potentially breaking changes marked with **Changed**.
+Coq's `reference manual for 8.15 <https://coq.github.io/doc/v8.15/refman>`_,
+`documentation of the 8.15 standard library <https://coq.github.io/doc/v8.15/stdlib>`_
+and `developer documentation of the 8.15 ML API <https://coq.github.io/doc/v8.15/api>`_
+are also available.
+
+Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
+Soegtrop and Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
+
+Erik Martin-Dorel has maintained the `Coq Docker images
+<https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
+projects for continuous integration.
+
+The OPAM repository for Coq packages has been maintained by
+Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
+contributions from many users. A list of packages is available at
+https://coq.inria.fr/opam/www/.
+
+The `Coq Platform <https://github.com/coq/platform>`_ has been maintained
+by Michael Soegtrop and Enrico Tassi.
+
+Our current maintainers are Yves Bertot, Frédéric Besson, Ali Caglayan, Tej
+Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
+Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
+Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
+Vincent Laporte, Olivier Laurent, Assia Mahboubi, Kenji Maillard,
+Guillaume Melquiond, Pierre-Marie Pédrot, Clément Pit-Claudel, Pierre Roux,
+Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Arnaud Spiwack,
+Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia
+and Théo Zimmermann. See the `Coq Team face book <https://coq.inria.fr/coq-team.html>`_
+page for more details.
+
+The 41 contributors to this version are
+Tanaka Akira, Frédéric Besson, Juan Conejero, Ali Caglayan, Cyril Cohen, Adrian Dapprich, Maxime Dénès,
+Stéphane Desarzens, Christian Doczkal, Andrej Dudenhefner, Jim Fehrle, Emilio Jesús Gallego Arias,
+Attila Gáspár, Gaëtan Gilbert, Jason Gross, Hugo Herbelin, Jasper Hugunin, Bart Jacobs, Ralf Jung, Grant Jurgensen,
+Jan-Oliver Kaiser, Wojciech Karpiel, Fabian Kunze, Olivier Laurent, Yishuai Li, Erik Martin-Dorel,
+Guillaume Melquiond, Jean-Francois Monin, Pierre-Marie Pédrot, Rudy Peterson, Clément Pit-Claudel,
+Seth Poulsen, Pierre Roux, Takafumi Saikawa, Kazuhiko Sakaguchi, Michael Soegtrop, Matthieu Sozeau,
+Enrico Tassi, Laurent Théry, Anton Trunov and Théo Zimmerman.
+
+The Coq community at large helped improve the design of this new version via
+the GitHub issue and pull request system, the Coq development mailing list
+coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
+<https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
+
+Version 8.15's development spanned 3 months from the release of
+Coq 8.14.0. Gaëtan Gilbert is the release manager of Coq 8.15.
+This release is the result of 384 merged PRs, closing 67 issues.
+
+| Nantes, January 2022,
+| Matthieu Sozeau for the Coq development team
 
 Changes in 8.15.0
 ~~~~~~~~~~~~~~~~~
@@ -110,6 +188,8 @@ Notations
 Tactics
 ^^^^^^^
 
+  .. _815ApplyWith:
+
 - **Changed:**
   ``apply with`` does not rename arguments unless using compatibility flag :flag:`Apply With Renaming`
   (`#13837 <https://github.com/coq/coq/pull/13837>`_,
@@ -121,6 +201,9 @@ Tactics
   the argument is called ``x``) it is probably caused by an
   interaction with implicit arguments and ``apply @foo with (x :=
   bar)`` will usually be a backwards compatible fix.
+
+  .. _815Auto:
+
 - **Changed:**
   :cmd:`Hint Unfold` in discriminated databases now respects its
   specification, namely that a constant may be unfolded only when
@@ -210,6 +293,9 @@ Tactics
   `Pos.leb`, `Pos.ltb`, `N.eqb`, `N.leb`, and `N.ltb`
   (`#10998 <https://github.com/coq/coq/pull/10998>`_,
   by Kazuhiko Sakaguchi).
+
+  .. _815BestEffort:
+
 - **Added:**
   :ref:`best_effort <TypeclassesEautoBestEffort>` option to :tacn:`typeclasses eauto`,
   to return a *partial* solution to its initial proof-search problem. The goals that
@@ -318,7 +404,7 @@ SSReflect
   SSR patterns now work with primitive values such as ints, floats or arrays
   (`#14660 <https://github.com/coq/coq/pull/14660>`_,
   fixes `#12770 <https://github.com/coq/coq/issues/12770>`_,
-  by Juan C.).
+  by Juan Conejero).
 - **Fixed:**
   A bug where :tacn:`suff` would fail due to use of :tacn:`apply` under the hood.
   (`#14687 <https://github.com/coq/coq/pull/14687>`_,
@@ -327,6 +413,8 @@ SSReflect
 
 Commands and options
 ^^^^^^^^^^^^^^^^^^^^
+
+  .. _815Commands:
 
 - **Changed:**
   :cmd:`About` and :cmd:`Print` now display all known argument names
@@ -405,6 +493,9 @@ Commands and options
   (`#14699 <https://github.com/coq/coq/pull/14699>`_,
   fixes `#13150 <https://github.com/coq/coq/issues/13150>`_,
   by Ali Caglayan).
+
+  .. _815Import:
+
 - **Added:** Syntax for :token:`import_categories` providing selective
   import of module components (eg ``Import(notations) M`` (`#14892
   <https://github.com/coq/coq/pull/14892>`_, by Gaëtan Gilbert).
@@ -440,7 +531,7 @@ Command-line tools
   Syntax of `_CoqProject` files: `-arg` is now handled by :ref:`coq_makefile
   <coq_makefile>` and not by `make`. Unquoted `#` now start line comments.
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
-  by Columbus240, with help from Jim Fehrle and Enrico Tassi).
+  by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Changed:**
   :cmd:`Require` now selects files whose logical name
   exactly matches the required name, making it possible to unambiguously select
@@ -462,12 +553,12 @@ Command-line tools
   `-custom`, `-no-install`, `-install`, `-no-opt`, `-byte`.
   Support for subdirectories is also removed.
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
-  by Columbus240, with help from Jim Fehrle and Enrico Tassi).
+  by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Added:**
   :ref:`coq_makefile <coq_makefile>` now takes the `-docroot` option as alternative to the
   `INSTALLCOQDOCROOT` variable
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
-  by Columbus240, with help from Jim Fehrle and Enrico Tassi).
+  by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Fixed:**
   Various `coqdep` issues with the `From` clause of :cmd:`Require` and
   a few inconsistencies between `coqdep` and `coqc` disambiguation
@@ -499,6 +590,9 @@ CoqIDE
   installing and uninstalling desktop icons, causing apparent duplicates.
   (`#14696 <https://github.com/coq/coq/pull/14696>`_, fixes `#14310
   <https://github.com/coq/coq/issues/14310>`_, by Ali Caglayan).
+
+  .. _815LtacDebugger:
+
 - **Added:**
   Initial version of a visual debugger in CoqIDE.  Supports setting breakpoints
   visually and jumping to the stopping point plus continue, step over,
@@ -716,7 +810,7 @@ page for more details.
 
 The 54 contributors to this version are Reynald Affeldt,
 Arthur Azevedo de Amorim, Yves Bertot, Frédéric Besson, Lasse Blaauwbroek, Ana Borges,
-Ali Caglayan, Cyril Cohen,  Columbus240, Pierre Courtieu, Maxime Dénès, Andrej Dudenhefner,
+Ali Caglayan, Cyril Cohen, Pierre Courtieu, Maxime Dénès, Stéphane Desarzens, Andrej Dudenhefner,
 Jim Fehrle, Yannick Forster,  Simon Friis Vindum, Gaëtan Gilbert, Jason Gross, Samuel Gruetter, Stefan Haan,
 Hugo Herbelin, Jasper Hugunin, Emilio Jesús Gallego Arias, Jacques-Henri Jourdan,
 Ralf Jung, Jan-Oliver Kaiser, Fabian Kunze, Vincent Laporte, Olivier Laurent,
@@ -729,7 +823,7 @@ Karolin Varner, Li-yao Xia, Beta Ziliani and Théo Zimmermann.
 The Coq community at large helped improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the `Coq Zulip chat <http://coq.zulipchat.com>`_.
+<https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
 
 Version 8.14's development spanned 9 months from the release of
 Coq 8.13.0. Guillaume Melquiond is the release manager of Coq 8.14.
@@ -1611,7 +1705,7 @@ Enrico Tassi, Anton Trunov, Edward Wang, Li-yao Xia, Beta Ziliani and Théo Zimm
 The Coq community at large helped improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the `Coq Zulip chat <http://coq.zulipchat.com>`_.
+<https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
 
 Version 8.13's development spanned 5 months from the release of
 Coq 8.12.0. Enrico Tassi and Maxime Dénès are the release managers of Coq 8.13.
@@ -2352,7 +2446,7 @@ Nickolai Zeldovich and Théo Zimmermann.
 Many power users helped to improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the new `Coq Zulip chat <http://coq.zulipchat.com>`_
+<https://coq.discourse.group/>`_ and the new `Coq Zulip chat <https://coq.zulipchat.com>`_
 (thanks to Cyril Cohen for organizing the move from Gitter).
 
 Version 8.12's development spanned 6 months from the release of
