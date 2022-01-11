@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+
+import matplotlib.pyplot as plt
+import xdg
+import re
+import pycurl
+import certifi
+import os
+import sys
+from bs4 import BeautifulSoup
+from io import BytesIO
+
+# where we get the bench list from
+# sadly message edits don't appear in the public archive so we have to
+# download the gitlab raw logs too
+# (maybe we should be getting the messages from the zulip API instead??)
+archive = 'https://coq.gitlab.io/zulip-archive/stream/240008-GitHub-notifications/topic/Bench.20Notifications.html'
+
+print ('Getting bench list.')
+buffer = BytesIO()
+c = pycurl.Curl()
+c.setopt(c.URL, archive)
+c.setopt(c.WRITEFUNCTION, buffer.write)
+c.setopt(c.CAINFO, certifi.where())
+c.perform()
+c.close()
+str = buffer.getvalue().decode('utf8')
+
+print ('Parsing bench list.')
+
+# parse HTML and remove tags
+# NB since coq was made default language on zulip the tables are full of <span> tags
+# so we really don't want to keep them
+str = BeautifulSoup(str, "html.parser").text
+
+# NB: the line with the date starts with a space
+# (in the original there is the avatar broken image)
+datere = re.compile(' Bench bot \((.*)\):')
+
+jobre = re.compile('Bench at https://gitlab.com/coq/coq/-/jobs/(.*)$')
+
+benches=[]
+curdate=None
+
+for line in iter(str.splitlines()):
+    match = re.match(datere, line)
+    if match:
+        # Next post
+        curdate = match[1]
+    else:
+        match = re.match(jobre, line)
+        if match:
+            job = match[1]
+            benches += [(curdate, match[1])]
+
+cachedir = xdg.xdg_cache_home() / "coq-bench-plotter"
+os.makedirs(cachedir, exist_ok=True)
+
+## download job logs
+print ('Downloading job logs.')
+
+m = pycurl.CurlMulti()
+files=[]
+
+for _, job in benches:
+    fname = cachedir / (job + '.log')
+    if not(os.path.exists(fname)):
+        f = open(fname, 'xb') # x: will error if already exists
+        files += [f]
+        c = pycurl.Curl()
+        c.setopt(c.URL, 'https://gitlab.com/coq/coq/-/jobs/' + job + '/raw')
+        c.setopt(c.WRITEFUNCTION, f.write)
+        c.setopt(c.CAINFO, certifi.where())
+        c.setopt(c.FOLLOWLOCATION, True)
+        m.add_handle(c)
+
+num_handles = len(files)
+while num_handles:
+    print (f'Downloading {num_handles} log files.')
+    ret = m.select(5.0)
+    if ret == -1:
+        continue
+    while 1:
+        ret, num_handles = m.perform()
+        if ret != pycurl.E_CALL_MULTI_PERFORM:
+            break
+
+for f in files:
+    f.flush()
+    f.close()
+
+## parse job logs
+print ('Parsing job logs.')
+
+# captures package name and OLD time
+# the numerals are to avoid matching the table header
+packre = re.compile('│[ ]+([^ ]+) │[ ]+[^ ]+[ ]+([0-9][^ ]*) ')
+
+parsed=[]
+for date, job in benches:
+    cur={}
+    fname = cachedir / (job + '.log')
+    with open(fname) as f:
+        for l in f:
+            match = re.match(packre, l)
+            if match:
+                # the table appears multiple times in the log so this may be overriding the value
+                # that is OK (it's not worth bothering to find the last table)
+                cur[match[1]] = match[2]
+    if cur:
+        parsed += [(date, job, cur)]
+
+def filter_to(packname):
+    dates=[]
+    hotbenches=[]
+    for date, _, packs in parsed:
+        if packname in packs:
+            dates += [date]
+            hotbenches += [float(packs[packname])]
+    return dates, hotbenches
+
+def plot(packname):
+    dates, hotbenches = filter_to(packname)
+    plt.plot(hotbenches)
+    plt.ylabel(packname)
+    plt.show()
+
+def list_packs():
+    known={}
+    for _, _, packs in parsed:
+        for pack in packs.keys():
+            if pack in known.keys():
+                known[pack] += 1
+            else:
+                known[pack] = 1
+    return known
+
+plot(sys.argv[1])
+
+# dates is only useful if you want to zoom, there are too many to read otherwise
+# plt.plot(dates, hotbenches)
+# plt.show()
