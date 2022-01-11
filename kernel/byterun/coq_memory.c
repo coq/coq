@@ -15,6 +15,11 @@
 #include <caml/alloc.h>
 #include <caml/address_class.h>
 #include <caml/roots.h>
+#include <caml/version.h>
+
+#if OCAML_VERSION >= 50000
+#include <caml/shared_heap.h>
+#endif
 
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -58,6 +63,7 @@ value accumulate_code(value unit) /* ML */
   CAMLreturn(res);
 }
 
+#if OCAML_VERSION < 50000
 static void (*coq_prev_scan_roots_hook) (scanning_action);
 
 static void coq_scan_roots(scanning_action action)
@@ -70,9 +76,22 @@ static void coq_scan_roots(scanning_action action)
   };
   /* Hook */
   if (coq_prev_scan_roots_hook != NULL) (*coq_prev_scan_roots_hook)(action);
-
-
 }
+#else
+static void (*coq_prev_scan_roots_hook) (scanning_action, void *, caml_domain_state *);
+
+static void coq_scan_roots(scanning_action action, void *ctx, caml_domain_state *state)
+{
+  register value * i;
+  /* Scan the stack */
+  for (i = coq_sp; i < coq_stack_high; i++) {
+    if (!Is_block(*i)) continue;
+    (*action) (ctx, *i, i);
+  };
+  /* Hook */
+  if (coq_prev_scan_roots_hook != NULL) (*coq_prev_scan_roots_hook)(action, ctx, state);
+}
+#endif
 
 void init_coq_stack()
 {
@@ -105,14 +124,18 @@ value init_coq_vm(value unit) /* ML */
      * It is typically contained in accumulator blocks and thus might be
      * scanned by the GC, so make it look like an OCaml block. */
     value accu_block = (value) coq_stat_alloc(2 * sizeof(value));
-    Hd_hp (accu_block) = Make_header (1, Abstract_tag, Caml_black);        \
+#if OCAML_VERSION < 50000
+    Hd_hp (accu_block) = Make_header (1, Abstract_tag, Caml_black);
+#else
+    Hd_hp (accu_block) = Make_header (1, Abstract_tag, NOT_MARKABLE);
+#endif
     accumulate = (code_t) Val_hp(accu_block);
     *accumulate = VALINSTR(ACCUMULATE);
 
   /* Initialize GC */
     if (coq_prev_scan_roots_hook == NULL)
-      coq_prev_scan_roots_hook = scan_roots_hook;
-    scan_roots_hook = coq_scan_roots;
+      coq_prev_scan_roots_hook = caml_scan_roots_hook;
+    caml_scan_roots_hook = coq_scan_roots;
     coq_vm_initialized = 1;
   }
   return Val_unit;;

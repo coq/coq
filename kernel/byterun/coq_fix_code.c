@@ -33,7 +33,7 @@ char * coq_instr_base;
 void * coq_stat_alloc (asize_t sz)
 {
   void * result = malloc (sz);
-  if (result == NULL) raise_out_of_memory ();
+  if (result == NULL) caml_raise_out_of_memory ();
   return result;
 }
 
