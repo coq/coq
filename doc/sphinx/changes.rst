@@ -17,7 +17,7 @@ Summary of changes
 Coq version 8.15 integrates many bug fixes, deprecations and cleanups as well
 as a few new features. We highlight some of the most impactful changes here:
 
-  - The apply with tactic :ref:`no longer renames arguments <815ApplyWith>`
+  - The :tacn:`apply with <apply>` tactic :ref:`no longer renames arguments <815ApplyWith>`
     unless compatibility flag :flag:`Apply With Renaming` is set.
 
   - :ref:`Improvements <815Auto>` to the :tacn:`auto` tactic family,
