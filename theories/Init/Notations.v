@@ -57,7 +57,8 @@ Reserved Notation "x && y" (at level 40, left associativity).
 
 (** Notations for pairs *)
 
-Reserved Notation "( x , y , .. , z )" (at level 0).
+Reserved Notation "( x , y , .. , z )"
+  (at level 0, format "( '[' x ,  '/' y ,  '/' .. ,  '/' z ']' )").
 
 (** Notation "{ x }" is reserved and has a special status as component
     of other notations such as "{ A } + { B }" and "A + { B }" (which
