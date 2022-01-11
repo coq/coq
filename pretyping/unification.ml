@@ -638,6 +638,18 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM 
       | None -> error_cannot_unify env sigma (m,n)
     else sigma
 
+let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
+  match subst_defined_metas_evars sigma (metasubst,[]) tyM with
+  | None -> UnivProblem.Set.empty
+  | Some m ->
+  match subst_defined_metas_evars sigma (metasubst,[]) tyN with
+  | None -> UnivProblem.Set.empty
+  | Some n ->
+    if is_ground_term sigma m && is_ground_term sigma n then
+      match infer_conv_ustate ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
+      | Some uprob -> uprob
+      | None -> error_cannot_unify env sigma (m,n)
+    else UnivProblem.Set.empty
 
 let rec is_neutral env sigma ts t =
   let (f, l) = decompose_app_vect sigma t in
@@ -1034,19 +1046,23 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       | None -> (* some undefined Metas in cN *) None
       | Some n1 ->
          (* No subterm restriction there, too much incompatibilities *)
-         let sigma =
+         let uprob =
            if opt.with_types then
              try (* Ensure we call conversion on terms of the same type *)
                let tyM = get_type_of curenv ~lax:true sigma m1 in
                let tyN = get_type_of curenv ~lax:true sigma n1 in
-               check_compatibility curenv CUMUL flags substn tyM tyN
+               check_compatibility_ustate curenv CUMUL flags substn tyM tyN
              with RetypeError _ ->
-               (* Renounce, maybe metas/evars prevents typing *) sigma
-           else sigma
+               (* Renounce, maybe metas/evars prevents typing *) UnivProblem.Set.empty
+           else UnivProblem.Set.empty
          in
-        match infer_conv ~pb ~ts:convflags curenv sigma m1 n1 with
-        | Some sigma ->
-          Some (sigma, metasubst, evarsubst)
+        match infer_conv_ustate ~pb ~ts:convflags curenv sigma m1 n1 with
+        | Some uprob' ->
+          let uprob = UnivProblem.Set.union uprob uprob' in
+          begin match Evd.add_universe_constraints sigma uprob with
+          | sigma -> Some (sigma, metasubst, evarsubst)
+          | exception (Univ.UniverseInconsistency _ | UniversesDiffer) -> None
+          end
         | None ->
           if is_ground_term sigma m1 && is_ground_term sigma n1 then
             error_cannot_unify curenv sigma (cM,cN)
