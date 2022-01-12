@@ -198,6 +198,14 @@ let print_universes = ref false
 (** If true, prints local context of evars, whatever print_arguments *)
 let print_evar_arguments = ref false
 
+let () =
+  let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optkey   = ["Printing";"Existential";"Instances"];
+      optread  = (fun () -> !print_evar_arguments);
+      optwrite = (:=) print_evar_arguments }
+
 let add_name decl (nenv, env) =
   add_name (get_name decl) nenv, push_rel decl env
 
@@ -836,8 +844,28 @@ and detype_r d flags avoid env sigma t =
           | Some id -> id
           in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
-          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
-          let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
+          (* If the instance is {x:=y; y:=y; z:=z} we print {x:=y; y:=y}
+             ie the non-identity part + the variables which also instantiate other variables
+             NB if the instance is {x:=f y; y:=y} we only print {x:=f y}
+          *)
+          let fvs,rels = List.fold_left
+              (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with
+                 | Rel n -> (fvs,Int.Set.add n rels)
+                 | Var id -> (Id.Set.add id fvs,rels)
+                 | _ -> (fvs,rels))
+              (Id.Set.empty,Int.Set.empty)
+              l
+          in
+          let l = Evd.evar_instance_array (fun d c ->
+              not !print_evar_arguments
+              && bound_to_itself_or_letin d c
+              && not (match EConstr.kind sigma c with
+                  | Rel n -> Int.Set.mem n rels
+                  | Var id -> Id.Set.mem id fvs
+                  | _ -> false))
+              (Evd.find sigma evk)
+              cl
+          in
           id,List.map (fun (id,c) -> (CAst.make id,c)) l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),

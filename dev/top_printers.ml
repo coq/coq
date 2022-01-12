@@ -23,10 +23,10 @@ open Context
 open Genarg
 open Clenv
 
-let _ = Flags.in_debugger := true
-let _ = Detyping.print_evar_arguments := true
-let _ = Detyping.print_universes := true
-let _ = Goptions.set_bool_option_value ["Printing";"Matching"] false
+let () = Flags.in_debugger := true
+let () = Goptions.set_bool_option_value ["Printing";"Existential";"Instances"] true
+let () = Detyping.print_universes := true
+let () = Goptions.set_bool_option_value ["Printing";"Matching"] false
 
 let with_env_evm f x =
   let env = Global.env() in
@@ -569,7 +569,7 @@ VERNAC COMMAND EXTEND PrintConstr
 END
 *)
 
-let _ =
+let () =
   let open Vernacextend in
   let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
   let cmd_sig = TyTerminal("PrintConstr", TyNonTerminal(ty_constr, TyNil)) in
@@ -578,7 +578,7 @@ let _ =
   let cmd : ty_ml = TyML (false, cmd_sig, cmd_fn, Some cmd_class) in
   vernac_extend ~command:"PrintConstr" [cmd]
 
-let _ =
+let () =
   let open Vernacextend in
   let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
   let cmd_sig = TyTerminal("PrintPureConstr", TyNonTerminal(ty_constr, TyNil)) in
@@ -630,5 +630,5 @@ let short_string_of_ref ?loc _ = let open GlobRef in function
 (* Anticipate that printers can be used from ocamldebug and that
    pretty-printer should not make calls to the global env since ocamldebug
    runs in a different process and does not have the proper env at hand *)
-let _ = Constrextern.set_extern_reference
+let () = Constrextern.set_extern_reference
   (if !rawdebug then raw_string_of_ref else short_string_of_ref)
