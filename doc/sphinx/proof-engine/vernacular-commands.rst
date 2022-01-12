@@ -835,7 +835,7 @@ Quitting and debugging
    For debugging scripts, sometimes it is desirable to know whether a
    command or a tactic fails. If :n:`@sentence` fails, then
    :n:`Fail @sentence` succeeds (except for
-   critical errors, such as "stack overflow"), without changing the
+   anomalies or for critical failures such as "stack overflow"), without changing the
    proof state.  In interactive mode, the system prints a message
    confirming the failure.
 
