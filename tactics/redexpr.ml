@@ -14,7 +14,6 @@ open Util
 open Names
 open Constr
 open EConstr
-open Declarations
 open Genredexpr
 open Pattern
 open Reductionops
@@ -54,20 +53,16 @@ let set_strategy_one ref l  =
     match ref with
       | EvalConstRef sp -> ConstKey sp
       | EvalVarRef id -> VarKey id in
-  Global.set_strategy k l;
-  match k,l with
-      ConstKey sp, Conv_oracle.Opaque ->
-        Vmsymtable.set_opaque_const sp
-    | ConstKey sp, _ ->
-        let cb = Global.lookup_constant sp in
-        (match cb.const_body with
-          | OpaqueDef _ ->
-            user_err
-              (str "Cannot make" ++ spc () ++
-                 Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
-                 spc () ++ str "transparent because it was declared opaque.");
-          | _ -> Vmsymtable.set_transparent_const sp)
-    | _ -> ()
+  let () = Global.set_strategy k l in
+  match k, l with
+  | ConstKey sp, Conv_oracle.Opaque -> ()
+  | ConstKey sp, _ ->
+    if Declareops.is_opaque (Global.lookup_constant sp) then
+      user_err
+        (str "Cannot make" ++ spc () ++
+            Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
+            spc () ++ str "transparent because it was declared opaque.")
+  | _ -> ()
 
 let cache_strategy (_,str) =
   List.iter

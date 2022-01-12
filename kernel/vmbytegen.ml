@@ -500,14 +500,14 @@ let rec get_alias env kn =
 
 (* Some primitives are not implemented natively by the VM, but calling OCaml
    code instead *)
-let is_caml_prim = let open CPrimitives in function
-  | Arraymake
-  | Arrayget
-  | Arraydefault
-  | Arrayset
-  | Arraycopy
-  | Arraylength -> true
-  | _ -> false
+let get_caml_prim = let open CPrimitives in function
+  | Arraymake -> Some CAML_Arraymake
+  | Arrayget -> Some CAML_Arrayget
+  | Arraydefault -> Some CAML_Arraydefault
+  | Arrayset -> Some CAML_Arrayset
+  | Arraycopy -> Some CAML_Arraycopy
+  | Arraylength -> Some CAML_Arraylength
+  | _ -> None
 
 (* sz is the size of the local stack *)
 let rec compile_lam env cenv lam sz cont =
@@ -757,28 +757,31 @@ let rec compile_lam env cenv lam sz cont =
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
 
-  | Lprim (kn, op, args) when is_caml_prim op ->
-    let arity = CPrimitives.arity op in
-    let nparams = CPrimitives.nparams op in
-    let nargs = arity - nparams in
-    assert (arity = Array.length args && arity <= 4 && nargs >= 1);
-    let (jump, cont) = make_branch cont in
-    let lbl_default = Label.create () in
-    let default =
-      let cont = [Kshort_apply arity; jump] in
-      let cont = Kpush :: compile_get_global cenv kn (sz + arity) cont in
-      let cont =
-        if Int.equal nparams 0 then cont
-        else
-          let params = Array.sub args 0 nparams in
-          Kpush :: comp_args (compile_lam env) cenv params (sz + nargs) cont in
-      Klabel lbl_default :: cont in
-    fun_code := Ksequence default :: !fun_code;
-    let cont = Kcamlprim (op, lbl_default) :: cont in
-    comp_args (compile_lam env) cenv (Array.sub args nparams nargs) sz cont
-
   | Lprim (kn, op, args) ->
-    comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)
+
+    begin match get_caml_prim op with
+    | Some cop ->
+      let arity = CPrimitives.arity op in
+      let nparams = CPrimitives.nparams op in
+      let nargs = arity - nparams in
+      assert (arity = Array.length args && arity <= 4 && nargs >= 1);
+      let (jump, cont) = make_branch cont in
+      let lbl_default = Label.create () in
+      let default =
+        let cont = [Kshort_apply arity; jump] in
+        let cont = Kpush :: compile_get_global cenv kn (sz + arity) cont in
+        let cont =
+          if Int.equal nparams 0 then cont
+          else
+            let params = Array.sub args 0 nparams in
+            Kpush :: comp_args (compile_lam env) cenv params (sz + nargs) cont in
+        Klabel lbl_default :: cont in
+      fun_code := Ksequence default :: !fun_code;
+      let cont = Kcamlprim (cop, lbl_default) :: cont in
+      comp_args (compile_lam env) cenv (Array.sub args nparams nargs) sz cont
+    | None ->
+      comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)
+    end
 
 and compile_get_global cenv (kn,u) sz cont =
   set_max_stack_size sz;
@@ -875,7 +878,8 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
     let fv = List.rev (!(cenv.in_env).fv_rev) in
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
-    Some (init_code,!fun_code, Array.of_list fv)
+    let res = init_code @ !fun_code in
+    Some (to_memory res, Array.of_list fv)
   with TooLargeInductive msg as exn ->
     let _, info = Exninfo.capture exn in
     let fn = if fail_on_error then
@@ -896,7 +900,7 @@ let compile_constant_body ~fail_on_error env univs = function
         | _ ->
             let sigma _ = assert false in
             let res = compile ~fail_on_error ~universes:instance_size env sigma body in
-              Option.map (fun x -> BCdefined (to_memory x)) res
+            Option.map (fun (code, fv) -> BCdefined (code, fv)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 

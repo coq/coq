@@ -1970,7 +1970,3 @@ value  coq_interprete_ml(value tcode, value a, value t, value g, value e, value 
 value coq_interprete_byte(value* argv, int argn){
   return coq_interprete_ml(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
-
-value coq_eval_tcode (value tcode, value t, value g, value e) {
-  return coq_interprete_ml(tcode, Val_unit, t, g, e, 0);
-}

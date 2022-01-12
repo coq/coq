@@ -162,15 +162,13 @@ let fix_val v = (Obj.magic v : values)
 let cofix_upd_val v = (Obj.magic v : values)
 
 type vm_env
-type vm_global
+let inj_env v = (Obj.magic v : vm_env)
 let fun_env v = (Obj.magic v : vm_env)
 let cofix_env v = (Obj.magic v : vm_env)
 let cofix_upd_env v = (Obj.magic v : vm_env)
 type vstack = values array
 
 let fun_of_val v = (Obj.magic v : vfun)
-
-let vm_global (v : values array) = (Obj.magic v : vm_global)
 
 (*******************************************)
 (* Machine code *** ************************)

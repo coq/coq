@@ -10,13 +10,10 @@
 
 (* $Id$ *)
 
-open Names
 open Constr
 open Environ
+open Vmvalues
 
 val val_of_constr : env -> (existential -> constr option) -> constr -> Vmvalues.values
 
-val set_opaque_const      : Constant.t -> unit
-val set_transparent_const : Constant.t -> unit
-
-val get_global_data : unit -> Vmvalues.vm_global
+val vm_interp : tcode -> values -> vm_env -> int -> values

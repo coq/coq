@@ -26,69 +26,153 @@ open Vmbytegen
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
-external eval_tcode : tcode -> atom array -> vm_global -> values array -> values = "coq_eval_tcode"
+type vm_global = values array
 
-type global_data = { mutable glob_len : int; mutable glob_val : values array }
+(* interpreter *)
+external coq_interprete : tcode -> values -> atom array -> vm_global -> Vmvalues.vm_env -> int -> values =
+  "coq_interprete_byte" "coq_interprete_ml"
 
-(*******************)
-(* Linkage du code *)
-(*******************)
+(* table for structured constants and switch annotations *)
 
-(* Table des globaux *)
+module HashMap (M : Hashtbl.HashedType) :
+sig
+  type +'a t
+  val empty : 'a t
+  val add : M.t -> 'a -> 'a t -> 'a t
+  val find : M.t -> 'a t -> 'a
+end =
+struct
+  type 'a t = (M.t * 'a) list Int.Map.t
+  let empty = Int.Map.empty
+  let add k v m =
+    let hash = M.hash k in
+    try Int.Map.modify hash (fun _ l -> (k, v) :: l) m
+    with Not_found -> Int.Map.add hash [k, v] m
+  let find k m =
+    let hash = M.hash k in
+    let l = Int.Map.find hash m in
+    List.assoc_f M.equal k l
+end
 
-(* [global_data] contient les valeurs des constantes globales
-   (axiomes,definitions), les annotations des switch et les structured
-   constant *)
-let global_data = {
-  glob_len = 0;
-  glob_val = Array.make 4096 crazy_val;
-}
-
-let get_global_data () = Vmvalues.vm_global global_data.glob_val
-
-let realloc_global_data n =
-  let n = min (2 * n + 0x100) Sys.max_array_length in
-  let ans = Array.make n crazy_val in
-  let src = global_data.glob_val in
-  let () = Array.blit src 0 ans 0 (Array.length src) in
-  global_data.glob_val <- ans
-
-let check_global_data n =
-  if n >= Array.length global_data.glob_val then realloc_global_data n
-
-let set_global v =
-  let n = global_data.glob_len in
-  check_global_data n;
-  global_data.glob_val.(n) <- v;
-  global_data.glob_len <- global_data.glob_len + 1;
-  n
-
-(* Initialization of OCaml primitives *)
-let parray_make = set_global Vmvalues.parray_make
-let parray_get = set_global Vmvalues.parray_get
-let parray_get_default = set_global Vmvalues.parray_get_default
-let parray_set = set_global Vmvalues.parray_set
-let parray_copy = set_global Vmvalues.parray_copy
-let parray_length = set_global Vmvalues.parray_length
-
-(* table pour les structured_constant et les annotations des switchs *)
-
-module SConstTable = Hashtbl.Make (struct
+module SConstTable = HashMap (struct
   type t = structured_constant
   let equal = eq_structured_constant
   let hash = hash_structured_constant
 end)
 
-module AnnotTable = Hashtbl.Make (struct
+module AnnotTable = HashMap (struct
   type t = annot_switch
   let equal = eq_annot_switch
   let hash = hash_annot_switch
 end)
 
-let str_cst_tbl : int SConstTable.t = SConstTable.create 31
+module GlobVal :
+sig
+  type key = int
+  type t
+  val empty : int -> t
+  val push : t -> values -> key * t
+  val vm_global : t -> vm_global
+  (** Warning: due to sharing, the resulting value can be modified by
+      persistent operations. When calling this function one must ensure
+      that no other context modification is performed before the value drops
+      out of scope. *)
+end =
+struct
+  type key = int
 
-let annot_tbl : int AnnotTable.t = AnnotTable.create 31
-    (* (annot_switch * int) Hashtbl.t  *)
+  type view =
+  | Root of values array
+  | DSet of int * values * view ref
+
+  type t = {
+    data : view ref;
+    size : int;
+    (** number of actual elements in the array *)
+  }
+
+  let empty n = {
+    data = ref (Root (Array.make n crazy_val));
+    size = 0;
+  }
+
+  let rec rerootk t k = match !t with
+  | Root _ -> k ()
+  | DSet (i, v, t') ->
+    let next () = match !t' with
+    | Root a as n ->
+      let v' = Array.unsafe_get a i in
+      let () = Array.unsafe_set a i v in
+      let () = t := n in
+      let () = t' := DSet (i, v', t) in
+      k ()
+    | DSet _ -> assert false
+    in
+    rerootk t' next
+
+  let reroot t = rerootk t (fun () -> ())
+
+  let push { data = t; size = i } v =
+    let () = reroot t in
+    match !t with
+    | DSet _ -> assert false
+    | Root a as n ->
+      let len = Array.length a in
+      let data =
+        if i < len then
+          let old = Array.unsafe_get a i in
+          if old == v then t
+          else
+            let () = Array.unsafe_set a i v in
+            let res = ref n in
+            let () = t := DSet (i, old, res) in
+            res
+        else
+          let nlen = 2 * len + 1 in
+          let nlen = min nlen Sys.max_array_length in
+          let () = assert (i < nlen) in
+          let a' = Array.make nlen crazy_val in
+          let () = Array.blit a 0 a' 0 len in
+          let () = Array.unsafe_set a' i v in
+          let res = ref (Root a') in
+          let () = t := DSet (i, crazy_val, res) in
+          res
+      in
+      (i, { data; size = i + 1 })
+
+  let vm_global { data; _ } =
+    let () = reroot data in
+    match !data with
+    | DSet _ -> assert false
+    | Root a -> (a : vm_global)
+
+end
+
+
+(****************)
+(* Code linking *)
+(****************)
+
+(* Global Table *)
+
+(** [global_table] contains values of global constants, switch annotations,
+    and structured constants. *)
+
+type global_table = {
+  glob_val : GlobVal.t;
+  glob_sconst : GlobVal.key SConstTable.t;
+  glob_annot : GlobVal.key AnnotTable.t;
+  glob_prim : GlobVal.key array;
+}
+
+let get_global_data table = GlobVal.vm_global table.glob_val
+
+let set_global v rtable =
+  let table = !rtable in
+  let (n, glob_val) = GlobVal.push table.glob_val v in
+  let table = { table with glob_val } in
+  let () = rtable := table in
+  n
 
 (*************************************************************)
 (*** Mise a jour des valeurs des variables et des constantes *)
@@ -109,58 +193,81 @@ let key rk =
 (* slot_for_*, calcul la valeur de l'objet, la place
    dans la table global, rend sa position dans la table *)
 
-let slot_for_str_cst key =
-  try SConstTable.find str_cst_tbl key
+let slot_for_str_cst key table =
+  try SConstTable.find key !table.glob_sconst
   with Not_found ->
-    let n = set_global (val_of_str_const key) in
-    SConstTable.add str_cst_tbl key n;
+    let n = set_global (val_of_str_const key) table in
+    let glob_sconst = SConstTable.add key n !table.glob_sconst in
+    let () = table := { !table with glob_sconst } in
     n
 
-let slot_for_annot key =
-  try AnnotTable.find annot_tbl key
+let slot_for_annot key table =
+  try AnnotTable.find key !table.glob_annot
   with Not_found ->
-    let n =  set_global (val_of_annot_switch key) in
-    AnnotTable.add annot_tbl key n;
+    let n = set_global (val_of_annot_switch key) table in
+    let glob_annot = AnnotTable.add key n !table.glob_annot in
+    let () = table := { !table with glob_annot } in
     n
 
-let slot_for_caml_prim =
-  let open CPrimitives in function
-  | Arraymake -> parray_make
-  | Arrayget -> parray_get
-  | Arraydefault -> parray_get_default
-  | Arrayset -> parray_set
-  | Arraycopy -> parray_copy
-  | Arraylength -> parray_length
-  | _ -> assert false
+(* Initialization of OCaml primitives *)
+let eval_caml_prim = function
+| CAML_Arraymake -> 0, Vmvalues.parray_make
+| CAML_Arrayget -> 1, Vmvalues.parray_get
+| CAML_Arraydefault -> 2, Vmvalues.parray_get_default
+| CAML_Arrayset -> 3, Vmvalues.parray_set
+| CAML_Arraycopy -> 4, Vmvalues.parray_copy
+| CAML_Arraylength -> 5, Vmvalues.parray_length
 
-let rec slot_for_getglobal env sigma kn =
+let make_static_prim table =
+  let fold table prim =
+    let _, v = eval_caml_prim prim in
+    let key, table = GlobVal.push table v in
+    table, key
+  in
+  (* Keep synchronized *)
+  let prims = [
+    CAML_Arraymake;
+    CAML_Arrayget;
+    CAML_Arraydefault;
+    CAML_Arrayset;
+    CAML_Arraycopy;
+    CAML_Arraylength;
+  ] in
+  let table, prims = CList.fold_left_map fold table prims in
+  table, Array.of_list prims
+
+let slot_for_caml_prim op table =
+  !table.glob_prim.(fst (eval_caml_prim op))
+
+let rec slot_for_getglobal env sigma kn table =
   let (cb,(_,rk)) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
 (*    Pp.msgnl(str"not yet evaluated");*)
     let pos =
       match cb.const_body_code with
-      | None -> set_global (val_of_constant kn)
+      | None -> set_global (val_of_constant kn) table
       | Some code ->
-         match code with
-         | BCdefined(code,pl,fv) ->
-           let v = eval_to_patch env sigma (code,pl,fv) in
-           set_global v
-         | BCalias kn' -> slot_for_getglobal env sigma kn'
-         | BCconstant -> set_global (val_of_constant kn)
+        match code with
+        | BCdefined (code, fv) ->
+           let v = eval_to_patch env sigma (code, fv) table in
+           set_global v table
+        | BCalias kn' -> slot_for_getglobal env sigma kn' table
+        | BCconstant -> set_global (val_of_constant kn) table
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (CEphemeron.create pos);
     pos
 
-and slot_for_fv env sigma fv =
+and slot_for_fv env sigma fv table =
   let fill_fv_cache cache id v_of_id env_of_id b =
-    let v,d =
+    let v, d =
       match b with
       | None -> v_of_id id, Id.Set.empty
       | Some c ->
-          val_of_constr (env_of_id id env) sigma c,
-          Environ.global_vars_set env c in
+        let v = val_of_constr (env_of_id id env) sigma c table in
+        v, Environ.global_vars_set env c
+    in
     build_lazy_val cache (v, d); v in
   let val_of_rel i = val_of_rel (nb_rel env - i) in
   let idfun _ x = x in
@@ -183,26 +290,47 @@ and slot_for_fv env sigma fv =
   | FVuniv_var _idu ->
     assert false
 
-and eval_to_patch env sigma (buff,pl,fv) =
+and eval_to_patch env sigma (code, fv) table =
   let slots = function
-    | Reloc_annot a -> slot_for_annot a
-    | Reloc_const sc -> slot_for_str_cst sc
-    | Reloc_getglobal kn -> slot_for_getglobal env sigma kn
-    | Reloc_caml_prim op -> slot_for_caml_prim op
+    | Reloc_annot a -> slot_for_annot a table
+    | Reloc_const sc -> slot_for_str_cst sc table
+    | Reloc_getglobal kn -> slot_for_getglobal env sigma kn table
+    | Reloc_caml_prim op -> slot_for_caml_prim op table
   in
-  let tc = patch buff pl slots in
+  let tc = patch code slots in
   let vm_env =
     (* Environment should look like a closure, so free variables start at slot 2. *)
     let a = Array.make (Array.length fv + 2) crazy_val in
     a.(1) <- Obj.magic 2;
-    Array.iteri (fun i v -> a.(i + 2) <- slot_for_fv env sigma v) fv;
-    a in
-  eval_tcode tc (get_atom_rel ()) (vm_global global_data.glob_val) vm_env
+    let iter i fv =
+      let v = slot_for_fv env sigma fv table in
+      a.(i + 2) <- v
+    in
+    let () = Array.iteri iter fv in
+    a
+  in
+  let global = get_global_data !table in
+  let v = coq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 in
+  v
 
-and val_of_constr env sigma c =
+and val_of_constr env sigma c table =
   match compile ~fail_on_error:true env sigma c with
-  | Some v -> eval_to_patch env sigma (to_memory v)
+  | Some v -> eval_to_patch env sigma v table
   | None -> assert false
 
-let set_transparent_const _kn = () (* !?! *)
-let set_opaque_const _kn = () (* !?! *)
+let global_table =
+  let glob_val = GlobVal.empty 4096 in
+  (* Register OCaml primitives statically *)
+  let glob_val, glob_prim = make_static_prim glob_val in
+  ref {
+    glob_val; glob_prim;
+    glob_sconst = SConstTable.empty;
+    glob_annot = AnnotTable.empty;
+  }
+
+let val_of_constr env sigma c =
+  let v = val_of_constr env sigma c global_table in
+  v
+
+let vm_interp code v env k =
+  coq_interprete code v (get_atom_rel ()) (get_global_data !global_table) env k

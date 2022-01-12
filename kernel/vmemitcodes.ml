@@ -28,7 +28,7 @@ type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
-  | Reloc_caml_prim of CPrimitives.t
+  | Reloc_caml_prim of caml_prim
 
 let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_annot sw1, Reloc_annot sw2 -> eq_annot_switch sw1 sw2
@@ -37,7 +37,7 @@ let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_const _, _ -> false
 | Reloc_getglobal c1, Reloc_getglobal c2 -> Constant.CanOrd.equal c1 c2
 | Reloc_getglobal _, _ -> false
-| Reloc_caml_prim p1, Reloc_caml_prim p2 -> CPrimitives.equal p1 p2
+| Reloc_caml_prim p1, Reloc_caml_prim p2 -> CPrimitives.equal (caml_prim_to_prim p1) (caml_prim_to_prim p2)
 | Reloc_caml_prim _, _ -> false
 
 let hash_reloc_info r =
@@ -46,7 +46,7 @@ let hash_reloc_info r =
   | Reloc_annot sw -> combinesmall 1 (hash_annot_switch sw)
   | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
   | Reloc_getglobal c -> combinesmall 3 (Constant.CanOrd.hash c)
-  | Reloc_caml_prim p -> combinesmall 4 (CPrimitives.hash p)
+  | Reloc_caml_prim p -> combinesmall 4 (CPrimitives.hash (caml_prim_to_prim p))
 
 module RelocTable = Hashtbl.Make(struct
   type t = reloc_info
@@ -75,17 +75,17 @@ let patch1 buff pos n =
     (Char.unsafe_chr (n asr 24))
 
 let patch_int buff reloc =
-  (* copy code *before* patching because of nested evaluations:
-     the code we are patching might be called (and thus "concurrently" patched)
-     and results in wrong results. Side-effects... *)
   let buff = Bytes.of_string buff in
   let iter (reloc, npos) = Array.iter (fun pos -> patch1 buff pos reloc) npos in
   let () = CArray.iter iter reloc in
   buff
 
-let patch buff pl f =
-  (** Order seems important here? *)
-  let reloc = CArray.map (fun (r, pos) -> (f r, pos)) pl.reloc_infos in
+let patch (buff, pl) f =
+  let map (r, pos) =
+    let r = f r in
+    (r, pos)
+  in
+  let reloc = CArray.map_left map pl.reloc_infos in
   let buff = patch_int buff reloc in
   tcode_of_code buff
 
@@ -99,11 +99,11 @@ type env = {
   mutable out_buffer : Bytes.t;
   mutable out_position : int;
   mutable label_table : label_definition array;
-  (* le ieme element de la table = Label_defined n signifie que l'on a
-    deja rencontrer le label i et qu'il est a l'offset n.
-                                = Label_undefined l signifie que l'on a
-    pas encore rencontrer ce label, le premier entier indique ou est l'entier
-    a patcher dans la string, le deuxieme son origine  *)
+  (* i-th table element = Label_defined n means that label i was already
+     encountered and lives at offset n
+     i-th table element = Label_undefined l means that the label was not
+     encountered yet, first integer is the location of the value to be patched
+     in the string, seconed one is its origin *)
   reloc_info : int list RelocTable.t;
 }
 
@@ -116,7 +116,7 @@ let out_word env b1 b2 b3 b4 =
       then 2 * len
       else
         if len = Sys.max_string_length
-        then invalid_arg "String.create"  (* Pas la bonne exception .... *)
+        then invalid_arg "String.create"  (* Not the right exception... *)
         else Sys.max_string_length in
     let new_buffer = Bytes.create new_len in
     Bytes.blit env.out_buffer 0 new_buffer 0 len;
@@ -175,10 +175,6 @@ let out_label_with_orig env orig lbl =
     Label_defined def ->
       out_int env ((def - orig) asr 2)
   | Label_undefined patchlist ->
-      (* spiwack: patchlist is supposed to be non-empty all the time
-         thus I commented that out. If there is no problem I suggest
-         removing it for next release (cur: 8.1) *)
-      (*if patchlist = [] then *)
         (env.label_table).(lbl) <-
           Label_undefined((env.out_position, orig) :: patchlist);
       out_int env 0
@@ -259,11 +255,14 @@ let check_prim_op = function
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
   | Float64next_up    -> opCHECKNEXTUPFLOAT
   | Float64next_down  -> opCHECKNEXTDOWNFLOAT
-  | Arraymake -> opCHECKCAMLCALL2_1
-  | Arrayget -> opCHECKCAMLCALL2
-  | Arrayset -> opCHECKCAMLCALL3_1
-  | Arraydefault | Arraycopy | Arraylength ->
-      opCHECKCAMLCALL1
+  | Arraymake | Arrayget | Arrayset | Arraydefault | Arraycopy | Arraylength ->
+    assert false
+
+let check_caml_prim_op = function
+| CAML_Arraymake -> opCHECKCAMLCALL2_1
+| CAML_Arrayget -> opCHECKCAMLCALL2
+| CAML_Arrayset -> opCHECKCAMLCALL3_1
+| CAML_Arraydefault | CAML_Arraycopy | CAML_Arraylength -> opCHECKCAMLCALL1
 
 let inplace_prim_op = function
   | Float64next_up | Float64next_down -> true
@@ -368,7 +367,7 @@ let emit_instr env = function
       slot_for_getglobal env q
 
   | Kcamlprim (op,lbl) ->
-    out env (check_prim_op op);
+    out env (check_caml_prim_op op);
     out_label env lbl;
     slot_for_caml_prim env op
 
@@ -426,7 +425,7 @@ let rec emit env insns remaining = match insns with
 
 (* Initialization *)
 
-type to_patch = emitcodes * patches * fv
+type to_patch = emitcodes * patches
 
 (* Substitution *)
 let subst_strcst s sc =
@@ -448,28 +447,27 @@ let subst_patches subst p =
   let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in
   { reloc_infos = infos; }
 
-let subst_to_patch s (code,pl,fv) =
-  code, subst_patches s pl, fv
+let subst_to_patch s (code, pl) =
+  (code, subst_patches s pl)
 
 type body_code =
-  | BCdefined of to_patch
+  | BCdefined of to_patch * fv
   | BCalias of Names.Constant.t
   | BCconstant
 
 let subst_body_code s = function
-| BCdefined tp -> BCdefined (subst_to_patch s tp)
+| BCdefined (tp, fv) -> BCdefined (subst_to_patch s tp, fv)
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant
 
-let to_memory (init_code, fun_code, fv) =
+let to_memory code =
   let env = {
     out_buffer = Bytes.create 1024;
     out_position = 0;
     label_table = Array.make 16 (Label_undefined []);
     reloc_info = RelocTable.create 91;
   } in
-  emit env init_code [];
-  emit env fun_code [];
+  emit env code [];
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
   let code = CString.hcons code in
@@ -481,4 +479,4 @@ let to_memory (init_code, fun_code, fv) =
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
         assert (patchlist = []))) env.label_table;
-  (code, reloc, fv)
+  (code, reloc)

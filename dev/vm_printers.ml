@@ -13,7 +13,7 @@ let ppripos (ri,pos) =
   | Reloc_getglobal kn ->
     print_string ("getglob "^(Constant.to_string kn)^"\n")
   | Reloc_caml_prim op ->
-    print_string ("caml primitive "^CPrimitives.to_string op)
+    print_string ("caml primitive "^ CPrimitives.to_string @@ Vmbytecodes.caml_prim_to_prim op)
   );
    print_flush ()
 
