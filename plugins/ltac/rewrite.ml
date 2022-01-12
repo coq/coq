@@ -477,11 +477,15 @@ let rec decompose_app_rel env evd t =
   match EConstr.kind evd t with
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
+    (* This treats the special case `g (R x y)`, turning it into
+       the relation `(fun x y => g (R x y))`. Useful when g is negation in particular. *)
     let (f', argl, argr) = decompose_app_rel env evd arg in
     let ty = Retyping.get_type_of env evd argl in
+    let ty' = Retyping.get_type_of env evd argr in
     let r = Retyping.relevance_of_type env evd ty in
+    let r' = Retyping.relevance_of_type env evd ty' in
     let f'' = mkLambda (make_annot (Name Namegen.default_dependent_ident) r, ty,
-      mkLambda (make_annot (Name (Id.of_string "y")) r, lift 1 ty,
+      mkLambda (make_annot (Name (Id.of_string "y")) r', lift 1 ty',
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
     in (f'', argl, argr)
   | App (f, args) ->
@@ -494,8 +498,18 @@ let rec decompose_app_rel env evd t =
 let decompose_app_rel env evd t =
   let (rel, t1, t2) = decompose_app_rel env evd t in
   let ty = try Retyping.get_type_of ~lax:true env evd rel with Retyping.RetypeError _ -> error_no_relation () in
-  let () = if not (Reductionops.is_arity env evd ty) then error_no_relation () in
-  (rel, t1, t2)
+  if not (Reductionops.is_arity env evd ty) then None else
+  match Reductionops.splay_arity env evd ty with
+  | [_, ty2; _, ty1], concl ->
+    if noccurn evd 1 ty2 then
+      Some (rel, ty1, subst1 mkProp ty2, concl, t1, t2)
+    else None
+  | _ -> assert false
+
+let decompose_app_rel_error env evd t =
+  match decompose_app_rel env evd t with
+  | Some e -> e
+  | None -> error_no_relation ()
 
 let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
@@ -504,26 +518,26 @@ let decompose_applied_relation env sigma (c,l) =
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
-    let (equiv, c1, c2) = decompose_app_rel env sigma t in
-    let ty1 = Retyping.get_type_of env sigma c1 in
-    let ty2 = Retyping.get_type_of env sigma c2 in
-    match evd_convertible env sigma ty1 ty2 with
+    match decompose_app_rel env sigma t with
     | None -> None
-    | Some sigma ->
-      let sort = sort_of_rel env sigma equiv in
-      let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
-      let value = mkApp (c, args) in
-        Some (sigma, { prf=value;
-                car=ty1; rel = equiv; sort = Sorts.is_prop sort;
-                c1=c1; c2=c2; holes })
+    | Some (equiv, ty1, ty2, concl, c1, c2) ->
+      match evd_convertible env sigma ty1 ty2 with
+      | None -> None
+      | Some sigma ->
+        let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
+        let value = mkApp (c, args) in
+          Some (sigma, { prf=value;
+                  car=ty1; rel = equiv; sort = Sorts.is_prop (ESorts.kind sigma concl);
+                  c1=c1; c2=c2; holes })
   in
     match find_rel ctype with
     | Some c -> c
     | None ->
-        let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
-        match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx)) with
-        | Some c -> c
-        | None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
+      let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
+      let t' = it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx) in
+      match find_rel t' with
+      | Some c -> c
+      | None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
 
 let rewrite_db = "rewrite"
 
@@ -2111,7 +2125,7 @@ let setoid_proof ty fn fallback =
     Proofview.tclORELSE
       begin
         try
-          let rel, _, _ = decompose_app_rel env sigma concl in
+          let rel, ty1, ty2, concl, _, _ = decompose_app_rel_error env sigma concl in
           let (sigma, t) = Typing.type_of env sigma rel in
           let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
             (try init_relation_classes () with _ -> raise Not_found);
@@ -2129,7 +2143,7 @@ let setoid_proof ty fn fallback =
                 | Hipattern.NoEquationFound ->
                     begin match e with
                     | (Not_found, _) ->
-                      let rel, _, _ = decompose_app_rel env sigma concl in
+                      let rel, _, _, _, _, _ = decompose_app_rel_error env sigma concl in
                       not_declared ~info env sigma ty rel
                     | (e, info) ->
                       Proofview.tclZERO ~info e
