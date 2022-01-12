@@ -276,15 +276,17 @@ let compute_implicits_names env sigma t =
     List.rev names
   in aux env [] t
 
-let compute_implicits_explanation_gen strict strongly_strict revpat contextual env sigma t =
+let compute_implicits_explanation_gen auto strict strongly_strict revpat contextual env sigma t =
   let open Context.Rel.Declaration in
   let rec aux env n t = match whd_prod env sigma t with
   | Some (na, a, b) ->
-    add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1))
-      (aux (push_rel (LocalAssum (na,a)) env) (n+1) b)
+    let v = aux (push_rel (LocalAssum (na,a)) env) (n+1) b in
+    if auto then
+      add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1)) v
+    else v
   | _ ->
     let v = Array.make n None in
-    if contextual then
+    if auto && contextual then
       add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
     else v
   in
@@ -296,7 +298,7 @@ let compute_implicits_explanation_gen strict strongly_strict revpat contextual e
 
 let compute_implicits_explanation_flags env sigma f t =
   compute_implicits_explanation_gen
-    (f.strict || f.strongly_strict) f.strongly_strict
+    f.auto (f.strict || f.strongly_strict) f.strongly_strict
     f.reversible_pattern f.contextual env sigma t
 
 let compute_implicits_flags env sigma f t =
@@ -307,8 +309,8 @@ let compute_implicits_flags env sigma f t =
 let compute_auto_implicits env sigma flags enriching t =
   List.combine
     (compute_implicits_names env sigma t)
-    (if enriching then compute_implicits_explanation_flags env sigma flags t
-     else compute_implicits_explanation_gen false false false true env sigma t)
+    (if enriching then compute_implicits_explanation_flags env sigma {flags with auto = true} t
+     else compute_implicits_explanation_gen true false false false true env sigma t)
 
 (* Extra information about implicit arguments *)
 
@@ -416,9 +418,8 @@ let set_manual_implicits silent flags enriching autoimps l =
   in merge 1 autoimps l
 
 let compute_semi_auto_implicits env sigma f t =
-  if not f.auto then [DefaultImpArgs, []]
-  else let l = compute_implicits_flags env sigma f t in
-       [DefaultImpArgs, prepare_implicits 1 f l]
+  let l = compute_implicits_flags env sigma f t in
+  [DefaultImpArgs, prepare_implicits 1 f l]
 
 (*s Constants. *)
 
