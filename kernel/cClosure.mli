@@ -34,6 +34,8 @@ module RedFlags : sig
 
   val fBETA : red_kind
   val fDELTA : red_kind
+  val fETA : red_kind
+  (** The fETA flag is never used by the kernel reduction but pretyping does *)
   val fMATCH : red_kind
   val fFIX : red_kind
   val fCOFIX : red_kind

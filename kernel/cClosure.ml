@@ -41,6 +41,7 @@ let stats = ref false
 (* Profiling *)
 let beta = ref 0
 let delta = ref 0
+let eta = ref 0
 let zeta = ref 0
 let evar = ref 0
 let nb_match = ref 0
@@ -54,7 +55,7 @@ let reset () =
 
 let stop() =
   Feedback.msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
-         str" zeta=" ++ int !zeta ++ str" evar=" ++
+         str " eta=" ++ int !eta ++ str" zeta=" ++ int !zeta ++ str" evar=" ++
          int !evar ++ str" match=" ++ int !nb_match ++ str" fix=" ++ int !fix ++
          str " cofix=" ++ int !cofix ++ str" prune=" ++ int !prune ++
          str"]")
@@ -82,6 +83,7 @@ module type RedFlagsSig = sig
   type red_kind
   val fBETA : red_kind
   val fDELTA : red_kind
+  val fETA : red_kind
   val fMATCH : red_kind
   val fFIX : red_kind
   val fCOFIX : red_kind
@@ -110,17 +112,19 @@ module RedFlags : RedFlagsSig = struct
   type reds = {
     r_beta : bool;
     r_delta : bool;
+    r_eta : bool;
     r_const : TransparentState.t;
     r_zeta : bool;
     r_match : bool;
     r_fix : bool;
     r_cofix : bool }
 
-  type red_kind = BETA | DELTA | MATCH | FIX
+  type red_kind = BETA | DELTA | ETA | MATCH | FIX
               | COFIX | ZETA
               | CONST of Constant.t | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
+  let fETA = ETA
   let fMATCH = MATCH
   let fFIX = FIX
   let fCOFIX = COFIX
@@ -130,6 +134,7 @@ module RedFlags : RedFlagsSig = struct
   let no_red = {
     r_beta = false;
     r_delta = false;
+    r_eta = false;
     r_const = all_opaque;
     r_zeta = false;
     r_match = false;
@@ -138,6 +143,7 @@ module RedFlags : RedFlagsSig = struct
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
+    | ETA -> { red with r_eta = true }
     | DELTA -> { red with r_delta = true }
     | CONST kn ->
       let r = red.r_const in
@@ -152,6 +158,7 @@ module RedFlags : RedFlagsSig = struct
 
   let red_sub red = function
     | BETA -> { red with r_beta = false }
+    | ETA -> { red with r_eta = false }
     | DELTA -> { red with r_delta = false }
     | CONST kn ->
       let r = red.r_const in
@@ -175,6 +182,7 @@ module RedFlags : RedFlagsSig = struct
 
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
+    | ETA -> incr_cnt red.r_eta eta
     | CONST kn ->
       let c = is_transparent_constant red.r_const kn in
         incr_cnt c delta
