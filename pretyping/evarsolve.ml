@@ -199,9 +199,11 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     else refresh_term_evars ~onevars:false ~top:true t
   in !evdref, t'
 
-let get_type_of_refresh ?(polyprop=true) ?(lax=false) env sigma c =
-  let ty = Retyping.get_type_of ~polyprop ~lax env sigma c in
-    refresh_universes (Some false) env sigma ty
+let get_type_of_refresh  ?(polyprop=true) ?(lax=false) env evars t =
+  let tty = Retyping.get_type_of env evars t in
+  let evars', tty = refresh_universes ~onlyalg:true
+    ~status:(Evd.UnivFlexible false) (Some false) env evars tty in
+  evars', tty
 
 let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
   match pbty with

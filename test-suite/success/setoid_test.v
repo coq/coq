@@ -179,3 +179,155 @@ intros.
 setoid_rewrite H. (* Fallback on ordinary rewrite without anomaly *)
 reflexivity.
 Qed.
+
+Module InType.
+Require Import CRelationClasses CMorphisms.
+
+Inductive All {A : Type} (P : A -> Type) : list A -> Type :=
+| All_nil : All P nil
+| All_cons x (px : P x) xs (pxs : All P xs) : All P (x :: xs).
+
+Lemma All_impl {A} (P Q : A -> Type) l : (forall x, P x -> Q x) -> All P l -> All Q l.
+Proof.
+  intros HP. induction 1; constructor; eauto.
+Qed.
+
+Axiom add_0_r_peq : forall x : nat, eq (x + 0)%nat x.
+
+Instance All_proper {A} :
+  CMorphisms.Proper ((pointwise_relation A iffT) ==> eq ==> iffT) All.
+Proof.
+  intros f g Hfg x y e. destruct e. split; apply All_impl, Hfg.
+Qed.
+
+Lemma rewrite_all {l : list nat} (Q : nat -> Type) :
+  All (fun x => Q x) l ->
+  All (fun x => Q (x + 0)) l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_peq.
+  exact a.
+Qed.
+
+Lemma rewrite_all_in {l : list nat} (Q : nat -> Type) :
+  All (fun x => Q (x + 0)) l ->
+  All (fun x => Q x) l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_peq in a.
+  exact a.
+Qed.
+
+Lemma rewrite_all_in2 {l : list nat} (Q : nat -> Type) (R : nat -> Type) :
+  All (fun x => prod (Q (x + 0)%nat) (R x))%type l ->
+  All (fun x => prod (Q x) (R x))%type l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_peq in a.
+  exact a.
+Qed.
+End InType.
+
+Module Polymorphism.
+Require Import CRelationClasses CMorphisms.
+
+#[universes(polymorphic, cumulative)]
+Inductive plist@{i} (A : Type@{i}) : Type@{i} :=
+| pnil : plist A
+| pcons : A -> plist A -> plist A.
+Arguments pnil {A}.
+Arguments pcons {A}.
+#[universes(polymorphic, cumulative)]
+Record pprod@{i j} (A : Type@{i}) (B : Type@{j}) : Type@{max(i, j)} :=
+  { pfst : A;
+    psnd : B }.
+Arguments pfst {A B}.
+Arguments psnd {A B}.
+
+Notation "x :: xs" := (pcons x xs).
+
+#[universes(polymorphic)]
+Fixpoint All@{i j} {A : Type@{i}} (P : A -> Type@{j}) (l : plist A) : Type@{j} :=
+ match l with
+ | pnil => unit
+ | x :: xs => pprod (P x) (All P xs)
+ end.
+(*
+#[universes(polymorphic, cumulative)]
+Inductive All {A : Type} (P : A -> Type) : list A -> Type :=
+| All_nil : All P nil
+| All_cons x (px : P x) xs (pxs : All P xs) : All P (x :: xs). *)
+
+#[universes(polymorphic)]
+Lemma All_impl {A} (P Q : A -> Type) l : (forall x, P x -> Q x) -> All P l -> All Q l.
+Proof.
+  intros HP.
+  induction l; [intros|intros []]; constructor; eauto.
+Qed.
+Check pointwise_relation.
+
+#[universes(polymorphic)]
+Inductive peq@{i} (A : Type@{i}) (a : A) : A -> Type@{i} :=
+  peq_refl : peq A a a.
+
+Arguments peq {A}.
+Arguments peq_refl {A a}.
+
+#[universes(polymorphic)]
+Axiom add_0_r_peq : forall x : nat, peq (x + 0)%nat x.
+
+#[universes(polymorphic)]
+Instance peq_left {A : Type} {B : Type} {R : crelation B} (f : A -> B) `{Reflexive B R} : Proper (peq ==> R) f.
+Admitted.
+
+Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
+  Reflexive@{j jr} R ->
+  Reflexive@{mij mijr} (@peq A ==> R)%signature.
+Proof.
+  intros hr x ? ? e. destruct e. apply hr.
+Qed.
+
+#[universes(polymorphic)]
+Instance All_proper {A} :
+  CMorphisms.Proper ((pointwise_relation A iffT) ==> peq ==> iffT) All.
+Proof.
+  intros f g Hfg x y e. destruct e. split; apply All_impl, Hfg.
+Qed.
+
+#[universes(polymorphic)]
+Instance eq_proper_proxy@{i} {A : Type@{i}} (x : A) : ProperProxy@{i i} peq x.
+Proof. red. exact peq_refl. Defined.
+
+#[universes(polymorphic)]
+Instance peq_equiv {A} : Equivalence (@peq A).
+Proof.
+  split.
+Admitted.
+
+Lemma rewrite_all {l : plist nat} (Q : nat -> Type) :
+  All (fun x => Q x) l ->
+  All (fun x => Q (x + 0)) l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_peq.
+  exact a.
+Qed.
+
+Lemma rewrite_all_in {l : plist nat} (Q : nat -> Type) :
+  All (fun x => Q (x + 0)) l ->
+  All (fun x => Q x) l.
+Proof.
+  intros a.  Show Universes.
+  setoid_rewrite add_0_r_peq in a.
+  exact a.
+Qed.
+
+Lemma rewrite_all_in2 {l : plist nat} (Q : nat -> Type) (R : nat -> Type) :
+  All (fun x => pprod (Q (x + 0)%nat) (R x))%type l ->
+  All (fun x => pprod (Q x) (R x))%type l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_peq in a.
+  exact a.
+Qed.
+End Polymorphism.
