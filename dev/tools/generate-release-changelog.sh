@@ -103,9 +103,9 @@ for f in "${changelog_entries_with_title[@]}"; do
     printf '%s %s %s\n' "$cat" "$type" "$f" >> "$tmp"
 done
 
-while read -r _ _ f; do
+while read -r _ type f; do
     cat "$f" >> released.rst
-    git rm "$f" >> /dev/null
+    if ! [[ $type = 0 ]]; then git rm "$f" >> /dev/null; fi
 done < <(sort "$tmp")
 
 echo
