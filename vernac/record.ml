@@ -683,7 +683,7 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
 (** [declare_class] will prepare and declare a [Class]. This is done in
    2 steps:
 
-  1. two markely different paths are followed depending on whether the
+  1. two markedly different paths are followed depending on whether the
    class declaration refers to a constant "definitional classes" or to
    a record, that is to say:
 
@@ -862,7 +862,7 @@ let extract_record_data records =
   ps, data
 
 (* declaring structures, common data to refactor *)
-let class_struture ~cumulative ~template ~impargs ~univs ~params ~primitive_proj def records data =
+let class_structure ~cumulative ~template ~impargs ~univs ~params ~primitive_proj def records data =
   let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
@@ -917,7 +917,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   let template = template, auto_template in
   match kind with
   | Class def ->
-    class_struture ~template ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
+    class_structure ~template ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
       def records data
   | Inductive_kw | CoInductive | Variant | Record | Structure ->
     regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
