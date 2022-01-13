@@ -201,10 +201,8 @@ end) = struct
   let get_symmetric_proof env = find_class_proof symmetric_type symmetric_proof env
   let get_transitive_proof env = find_class_proof transitive_type transitive_proof env
 
-  let mk_relation env evars ty =
-    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
-    (Some false) env (fst evars) ty in
-    app_poly env (evars', snd evars) relation [| ty |]
+  let mk_relation env evd a =
+    app_poly env evd relation [| a |]
 
   (** Build an inferred signature from constraints on the arguments and expected output
       relation *)
@@ -230,9 +228,7 @@ end) = struct
             let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
             let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
             let evars, relty = mk_relty evars env ty obj in
-            let evars', b' = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
-              (Some false) env (fst evars) b' in
-            let evars, newarg = app_poly env (evars', snd evars) respectful [| ty ; b' ; relty ; arg |] in
+            let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
               evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
           else
             let (evars, b, arg, cstrs) =
@@ -309,17 +305,11 @@ end) = struct
       | _ -> invalid_arg "apply_pointwise")
     | [] -> rel
 
-  let refresh_univs env evars ty =
-    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
-      (Some false) env (fst evars) ty in
-    (evars', snd evars), ty
-
-  let pointwise_or_dep_relation env evars n t car rel =
-    let evars, car = refresh_univs env evars car in
-    if noccurn (goalevars evars) 1 car && noccurn (goalevars evars) 1 rel then
-      app_poly env evars pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
+  let pointwise_or_dep_relation env evd n t car rel =
+    if noccurn (goalevars evd) 1 car && noccurn (goalevars evd) 1 rel then
+      app_poly env evd pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
     else
-      app_poly env evars forall_relation
+      app_poly env evd forall_relation
         [| t; mkLambda (make_annot n Sorts.Relevant, t, car);
            mkLambda (make_annot n Sorts.Relevant, t, rel) |]
 
@@ -427,15 +417,10 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel =
-    let evd, car = Evarsolve.refresh_universes ~onlyalg:true (Some false) env evd car in
     let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible evd in
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
-
-let get_type_of_refresh env evars t =
-  let evars', tty = Evarsolve.get_type_of_refresh env (fst evars) t in
-  (evars', snd evars), tty
 
 let sort_of_rel env evm rel =
   ESorts.kind evm (Reductionops.sort_of_arity env evm (Retyping.get_type_of env evm rel))
@@ -823,10 +808,8 @@ let resolve_morphism env m args args' (b,cstr) evars =
       else TypeGlobal.build_signature evars env appmtype cstrs cstr
     in
       (* Actual signature found *)
-    let evars', appmtype' = Evarsolve.refresh_universes ~status:(Evd.UnivFlexible false) ~onlyalg:true
-      (Some false) env (fst evars) appmtype' in
     let cl_args = [| appmtype' ; signature ; appm |] in
-    let evars, app = app_poly_sort b env (evars', snd evars) (if b then PropGlobal.proper_type else TypeGlobal.proper_type)
+    let evars, app = app_poly_sort b env evars (if b then PropGlobal.proper_type else TypeGlobal.proper_type)
       cl_args in
     let dosub, appsub =
       if b then PropGlobal.do_subrelation, PropGlobal.apply_subrelation
@@ -1006,7 +989,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                   if not (Option.is_empty progress) && not all then
                     state, (None :: acc, evars, progress)
                   else
-                    let evars, argty = get_type_of_refresh env evars arg in
+                    let argty = Retyping.get_type_of env (goalevars evars) arg in
                     let state, res = s.strategy { state ; env ;
                                                   unfresh ;
                                                   term1 = arg ;        ty1 = argty ;
@@ -1054,7 +1037,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
             in state, res
           in
             if flags.on_morphisms then
-              let evars, mty = get_type_of_refresh env evars m in
+              let mty = Retyping.get_type_of env (goalevars evars) m in
               let evars, cstr', m, mty, argsl, args =
                 let argsl = Array.to_list args in
                 let lift = if prop then PropGlobal.lift_cstr else TypeGlobal.lift_cstr in
@@ -1096,8 +1079,8 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 
       | Prod (n, x, b) when noccurn (goalevars evars) 1 b ->
           let b = subst1 mkProp b in
-          let evars, tx = get_type_of_refresh env evars x in
-          let evars, tb = get_type_of_refresh env evars b in
+          let tx = Retyping.get_type_of env (goalevars evars) x
+          and tb = Retyping.get_type_of env (goalevars evars) b in
           let arr = if prop then PropGlobal.arrow_morphism
             else TypeGlobal.arrow_morphism
           in
