@@ -14,7 +14,8 @@ open Ideutils
 open Interface
 open Feedback
 
-let b2c = byte_offset_to_char_offset
+let b2c = byte_off_to_buffer_off
+let c2b = buffer_off_to_byte_off
 
 type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string Loc.located | `WARNING of string Loc.located ]
 type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR | `WARNING ]
@@ -454,8 +455,8 @@ object(self)
   method private attach_tooltip ?loc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
     let pre_chars, post_chars = Option.cata Loc.unloc (0, String.length phrase) loc in
-    let pre = b2c phrase pre_chars in
-    let post = b2c phrase post_chars in
+    let pre = b2c buffer pre_chars in
+    let post = b2c buffer post_chars in
     let start = start_sentence#forward_chars pre in
     let stop = start_sentence#forward_chars post in
     let markup = Glib.Markup.escape_text text in
@@ -592,8 +593,8 @@ object(self)
     | Some loc ->
       let start, stop = Loc.unloc loc in
       buffer#apply_tag tag
-        ~start:(buffer#get_iter (`OFFSET (b2c phrase start)))
-        ~stop:(buffer#get_iter (`OFFSET (b2c phrase stop)))
+        ~start:(buffer#get_iter (`OFFSET (b2c buffer start)))
+        ~stop:(buffer#get_iter (`OFFSET (b2c buffer stop)))
 
   method private position_tag_at_sentence ?loc tag sentence =
     let start, stop, phrase = self#get_sentence sentence in
@@ -703,9 +704,9 @@ object(self)
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let start, _, phrase = self#get_sentence sentence in
-            let bp = start#offset in
+            let bp = c2b buffer start#offset in
             let line_nb = start#line + 1 in
-            let bol_pos = start#line_offset in
+            let bol_pos = c2b buffer start#line_offset in
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
@@ -759,7 +760,7 @@ object(self)
            | Some loc ->
              let (iter, _, phrase) = self#get_sentence s in
              let (start, _) = Loc.unloc loc in
-             iter#forward_chars (b2c phrase start)
+             iter#forward_chars (b2c buffer start)
          end in iter#line + 1, msg
       | _ -> assert false in
     List.rev
