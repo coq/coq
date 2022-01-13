@@ -282,7 +282,7 @@ Admitted.
 
 Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
   Reflexive@{j jr} R ->
-  Reflexive@{mij mijr} (@peq A ==> R)%signature.
+  Reflexive@{mij mijr} (@peq A ==> R)%signatureT.
 Proof.
   intros hr x ? ? e. destruct e. apply hr.
 Qed.
