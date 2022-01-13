@@ -101,6 +101,18 @@ Changes in 8.15.0
    :local:
 
 
+Kernel
+^^^^^^
+
+- **Fixed:**
+  Name clash in a computation of the type of parameters of functorial
+  module types; this computation was provided for the purpose of
+  clients using the algebraic form of module types such as :cmd:`Print
+  Module Type`
+  (`#15385 <https://github.com/coq/coq/pull/15385>`_,
+  fixes `#9555 <https://github.com/coq/coq/issues/9555>`_,
+  by Hugo Herbelin).
+
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -167,6 +179,12 @@ Notations
   Include floats in the number notation mechanism
   (`#14525 <https://github.com/coq/coq/pull/14525>`_,
   by Pierre Roux).
+- **Added:**
+  Coercion entries and :n:`ident`/:n:`global` entries in custom notations now
+  respect the :n:`only parsing` modifier
+  (`#15340 <https://github.com/coq/coq/pull/15340>`_,
+  fixes `#15335 <https://github.com/coq/coq/issues/15335>`_,
+  by Hugo Herbelin).
 - **Fixed:**
   :cmd:`Reserved Infix` now accept further parameters in the infix notation
   (`#14379 <https://github.com/coq/coq/pull/14379>`_,
@@ -183,6 +201,11 @@ Notations
   notation have a notation variable at head
   (`#14713 <https://github.com/coq/coq/pull/14713>`_,
   fixes `#14708 <https://github.com/coq/coq/issues/14708>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  Regression in parsing error reporting in case of empty custom entry
+  (`#15338 <https://github.com/coq/coq/pull/15338>`_,
+  fixes `#15334 <https://github.com/coq/coq/issues/15334>`_,
   by Hugo Herbelin).
 
 Tactics
