@@ -347,6 +347,7 @@ pkg:opam:
     - opam pin add --kind=path coq-stdlib.dev .
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
+    - coqc -config
     - set +e
   variables:
     OPAM_SWITCH: "edge"
