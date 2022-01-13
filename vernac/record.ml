@@ -843,13 +843,13 @@ let check_priorities kind records =
     List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
   in
   if isnot_class && List.exists has_priority records then
-    user_err Pp.(str "Priorities only allowed for type class substructures")
+    user_err Pp.(str "Priorities only allowed for type class substructures.")
 
 let extract_record_data records =
   let data = List.map Ast.to_datai records in
   let pss = List.map (fun { Ast.binders; _ } -> binders) records in
   let ps = match pss with
-  | [] -> CErrors.anomaly (str "Empty record block")
+  | [] -> CErrors.anomaly (str "Empty record block.")
   | ps :: rem ->
     let eq_local_binders bl1 bl2 = List.equal local_binder_eq bl1 bl2 in
     let () =
@@ -866,7 +866,7 @@ let class_struture ~cumulative ~template ~impargs ~univs ~params ~primitive_proj
   let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
-      CErrors.user_err (str "Mutual definitional classes are not handled")
+      CErrors.user_err (str "Mutual definitional classes are not handled.")
   in
   let coers = List.map (fun (_, { rf_subclass; rf_priority }) ->
       match rf_subclass with
