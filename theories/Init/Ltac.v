@@ -8,6 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Declare ML Module "coq-core.plugins.ltac".
+Declare ML Module "ltac_plugin".
 
 Export Set Default Proof Mode "Classic".

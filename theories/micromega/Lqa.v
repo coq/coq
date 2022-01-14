@@ -20,7 +20,7 @@ Require Import RingMicromega.
 Require Import VarMap.
 Require Import DeclConstant.
 Require Coq.micromega.Tauto.
-Declare ML Module "coq-core.plugins.micromega".
+Declare ML Module "micromega_plugin".
 
 Ltac rchange := 
   intros ?__wit ?__varmap ?__ff ;

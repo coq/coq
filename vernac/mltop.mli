@@ -12,8 +12,13 @@
 
 (** If there is a toplevel under Coq, it is described by the following
    record. *)
+type plugin =
+| Legacy of { obj_file_path : string; fl_public_name : string }
+| Findlib of { fl_public_name : string }
+val pp_plugin : plugin -> string
+
 type toplevel = {
-  load_obj : string -> unit;
+  load_obj : plugin -> unit;
   add_dir  : string -> unit;
   ml_loop  : unit -> unit }
 

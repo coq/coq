@@ -203,6 +203,13 @@ let error_findlib_name f s =
   Printf.eprintf "in file %s, %s is not a valid plugin name anymore.\n" f s;
   Printf.eprintf "Plugins should be loaded using their public name according to findlib,\n";
   Printf.eprintf "for example package-name.foo and not foo_plugin.\n";
+  Printf.eprintf "If you are building with dune < 2.9.2 you must specify both\n";
+  Printf.eprintf "the legacy and the findlib plugin name as in:\n";
+  Printf.eprintf "Declare ML Module \"foo_plugin:package-name.foo\".\n";
+  exit 1
+
+let error_no_meta f package =
+  Printf.eprintf "in file %s, could not find META.%s.\n" f package;
   exit 1
 
 let warning_module_notfound from f s =
@@ -243,18 +250,6 @@ let warning_clash exact file dir f1 = function
 
 let warning_cannot_open_dir dir =
   coqdep_warning "cannot open %s" dir
-
-let warning_no_meta_file package =
-  coqdep_warning "you need a META.%s file in order to build plugins.\n" package
-
-let warning_findlib_name f s =
-  coqdep_warning {|in file %s, %s is not a valid plugin name anymore.
-Plugins should be loaded using their public name according to findlib,
-for example package-name.foo and not foo_plugin.
-Since %s is a coq-core plugin we make an exception.
-This warnings will become an error in Coq 8.17.
-|} f s s
-
 
 let safe_assoc from verbose file k =
   match search_v_known ?from k with
@@ -346,12 +341,6 @@ let string_of_dependency_list suffix_for_require deps =
     in
   String.concat " " (List.map string_of_dep deps)
 
-(* dune calls coqdep from the directory containing the .v, so we walk back *)
-let has_dune_project ps =
-  let p = String.concat "/" @@ ps @ ["dune-project"] in
-  try close_in (open_in p); true
-  with Sys_error _ -> false
-
 let parse_META package f =
   try
     let ic = open_in f in
@@ -362,21 +351,15 @@ let parse_META package f =
   | Stream.Error msg -> error_cannot_parse_meta_file package msg
   | Sys_error _msg -> None
 
-let rec find_META_walking package ps =
-  let p = String.concat "/" @@ ps @ ["META." ^ package] in
-  match parse_META package p with
-  | Some _ as x -> x
-  | None ->
-      if has_dune_project ps || List.length ps > 2 then None
-      else find_META_walking package (".." :: ps)
-
 let find_META package =
   let rec aux = function
     | [] ->
-        if !meta_files = [] then
-          find_META_walking package [] (* compat dune *)
-        else
-          None
+      (* this is needed by stdlib2 for example, since it loads a package it
+         does not own, so we check it is installed. *)
+      begin try
+        let m = Findlib.package_meta_file package in
+        parse_META package m
+      with Not_found -> None end
     | m :: ms ->
         if Filename.extension m = "." ^ package then
           parse_META package m
@@ -385,14 +368,12 @@ let find_META package =
   in
     aux !meta_files
 
-let findlib_resolve f package plugin =
+let findlib_resolve f package legacy_name plugin =
   let open Fl_metascanner in
-  match find_META package with
-  | None ->
-      (* XXX error once dune gets fixed and generates META files early *)
-      if package <> "coq-core" then warning_no_meta_file package;
-      None, String.concat "/" plugin ^ "_plugin"
-  | Some (meta_file, meta) ->
+  match find_META package, legacy_name with
+  | None, Some p -> None, p
+  | None, None -> error_no_meta f package
+  | Some (meta_file, meta), _ ->
       let rec find_plugin path p { pkg_defs ; pkg_children  } =
         match p with
         | [] -> path, pkg_defs
@@ -457,14 +438,18 @@ let rec find_dependencies basename =
                   warning_module_notfound from f str
               end) strl
         | Declare sl ->
-            let public_to_private_name s =
-              match String.split_on_char '.' s with
-              | [] -> assert false
-              | [x] when List.mem_assoc x legacy_mapping ->
-                  warning_findlib_name f x;
-                  findlib_resolve f "coq-core" (List.assoc x legacy_mapping)
-              | [x] -> error_findlib_name f x
-              | package :: plugin -> findlib_resolve f package plugin in
+            let public_to_private_name = function
+              | [[x]] when List.mem_assoc x legacy_mapping ->
+                  findlib_resolve f "coq-core" (Some x) (List.assoc x legacy_mapping)
+              | [[x]] ->
+                  error_findlib_name f x
+              | [[legacy]; package :: plugin] ->
+                  findlib_resolve f package (Some legacy) plugin
+              | [package :: plugin] ->
+                  findlib_resolve f package None plugin
+              | _ -> assert false in
+            let sl = List.map (String.split_on_char ':') sl in
+            let sl = List.map (List.map (String.split_on_char '.')) sl in
             let sl = List.map public_to_private_name sl in
             let declare suff dir s =
               let base = escape (file_name s dir) in

@@ -20,15 +20,7 @@
 
 (alias
  (name default)
- (deps (alias core) (alias stdlib) coqide-server.install coqide.install))
-
-(alias
-  (name core)
-  (deps (package coq-core)))
-
-(alias
-  (name stdlib)
-  (deps (package coq-stdlib)))
+ (deps coq-core.install coq-stdlib.install coqide-server.install coqide.install))
 
 (install
  (section lib)

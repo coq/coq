@@ -44,9 +44,22 @@ let keep_copy_mlpath path =
   in
   coq_mlpath_copy := cpath :: List.filter filter !coq_mlpath_copy
 
+type plugin =
+| Legacy of { obj_file_path : string; fl_public_name : string }
+| Findlib of { fl_public_name : string }
+
+let pp_plugin = function
+| Legacy { obj_file_path; _ } ->
+    Filename.(chop_extension @@ basename obj_file_path) ^ " (using legacy method)"
+| Findlib { fl_public_name } -> fl_public_name
+
+let canonical_plugin_name = function
+  | Findlib { fl_public_name }
+  | Legacy { fl_public_name } -> fl_public_name
+
 (* If there is a toplevel under Coq *)
 type toplevel = {
-  load_obj : string -> unit;
+  load_obj : plugin -> unit;
   add_dir  : string -> unit;
   ml_loop  : unit -> unit }
 
@@ -62,7 +75,8 @@ let load = ref WithoutTop
 (* Sets and initializes a toplevel (if any) *)
 let set_top toplevel = load :=
   WithTop toplevel;
-  Nativelib.load_obj := toplevel.load_obj
+  Nativelib.load_obj := (fun x ->
+    toplevel.load_obj (Legacy { obj_file_path = x; fl_public_name = x }))
 
 (* Removes the toplevel (if any) *)
 let remove () =
@@ -102,12 +116,96 @@ let _ = CErrors.register_handler (function
       None
   )
 
-let ml_load s =
+module Legacy_code_waiting_for_dune_release = struct
+
+(* convertit un nom quelconque en nom de fichier ou de module *)
+
+let get_ml_object_suffix name =
+  if Filename.check_suffix name ".cmo" then
+    Some ".cmo"
+  else if Filename.check_suffix name ".cma" then
+    Some ".cma"
+  else if Filename.check_suffix name ".cmxs" then
+    Some ".cmxs"
+  else
+    None
+
+let file_of_name name =
+  let suffix = get_ml_object_suffix name in
+  let fail s =
+    user_err
+      (str"File not found on loadpath: " ++ str s ++ str"\n" ++
+       str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy) ++ str ".") in
+  if not (Filename.is_relative name) then
+    if Sys.file_exists name then name else fail name
+  else if Sys.(backend_type = Native) then
+    (* XXX: Dynlink.adapt_filename does the same? *)
+    let name = match suffix with
+      | Some ((".cmo"|".cma") as suffix) ->
+          (Filename.chop_suffix name suffix) ^ ".cmxs"
+      | Some ".cmxs" -> name
+      | _ -> name ^ ".cmxs"
+    in
+    if System.is_in_path !coq_mlpath_copy name then name else fail name
+  else
+    let (full, base) = match suffix with
+      | Some ".cmo" | Some ".cma" -> true, name
+      | Some ".cmxs" -> false, Filename.chop_suffix name ".cmxs"
+      | _ -> false, name
+    in
+    if full then
+      if System.is_in_path !coq_mlpath_copy base then base else fail base
+    else
+      let name = base ^ ".cma" in
+      if System.is_in_path !coq_mlpath_copy name then name else
+        let name = base ^ ".cmo" in
+        if System.is_in_path !coq_mlpath_copy name then name else
+          fail (base ^ ".cm[ao]")
+
+  let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
+
+  let rec resolve_legacy_name_if_needed m =
+    match String.split_on_char ':' m with
+    | [x] when List.mem_assoc x legacy_mapping ->
+        resolve_legacy_name_if_needed (m ^ ":coq-core." ^ String.concat "." @@ List.assoc x legacy_mapping)
+    | [x] when String.index_opt m '.' = None ->
+        CErrors.user_err Pp.(str Printf.(sprintf
+         "%s is not a valid plugin name anymore." m) ++ spc() ++
+         str "Plugins should be loaded using their public name" ++ spc () ++
+         str "according to findlib, for example package-name.foo and not " ++
+         str "foo_plugin.")
+    | [ x; fl_public_name] ->
+        begin try
+          let file = file_of_name x in
+          let _, obj_file_path = System.find_file_in_path ~warn:false !coq_mlpath_copy file in
+          Legacy { obj_file_path; fl_public_name }
+        with CErrors.UserError _ ->
+          Findlib { fl_public_name }
+        end
+    | [ fl_public_name ] -> Findlib { fl_public_name }
+    | [] -> assert false
+    | _ :: _ :: _ ->
+        CErrors.user_err Pp.(str Printf.(sprintf
+          "%s is not a valid plugin name." m) ++ spc () ++
+          str "It should be a public findlib name, e.g. package-name.foo," ++ spc () ++
+          str "or a legacy name followed by a findlib public name, e.g. "++ spc () ++
+          str "legacy_plugin:package-name.plugin.")
+
+end
+
+let ml_load use_legacy_loading_if_possible p =
   match !load with
-  | WithTop t ->
-     t.load_obj s
+  | WithTop t -> t.load_obj p
   | WithoutTop ->
-     Fl_dynload.load_packages [s]
+      match p with
+      | Findlib { fl_public_name } ->
+        Fl_dynload.load_packages [fl_public_name]
+      | Legacy { obj_file_path; fl_public_name } ->
+        if use_legacy_loading_if_possible then begin
+          Dynlink.loadfile obj_file_path;
+          Findlib.(record_package Record_load) fl_public_name
+        end else
+          Fl_dynload.load_packages [fl_public_name]
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
@@ -134,6 +232,7 @@ let add_known_module mname =
 
 let module_is_known mname =
   String.Set.mem mname !known_loaded_modules
+let plugin_is_known x = module_is_known @@ canonical_plugin_name x
 
 (** A plugin is just an ML module with an initialization function. *)
 
@@ -160,16 +259,18 @@ let perform_cache_obj name =
   let objs = try String.Map.find name !cache_objs with Not_found -> [] in
   let objs = List.rev objs in
   List.iter (fun f -> f ()) objs
+let perform_cache_obj x = perform_cache_obj @@ canonical_plugin_name x
 
 (** ml object = ml module or plugin *)
 
 let init_ml_object mname =
   try String.Map.find mname !known_loaded_plugins ()
   with Not_found -> ()
+let init_ml_object x = init_ml_object @@ canonical_plugin_name x
 
-let load_ml_object mname =
-  ml_load mname;
-  add_known_module mname;
+let load_ml_object use_legacy_loading_if_possible mname =
+  ml_load use_legacy_loading_if_possible mname;
+  add_known_module @@ canonical_plugin_name mname;
   init_ml_object mname
 
 let add_known_module m = add_known_module m
@@ -183,12 +284,14 @@ let get_loaded_modules () = List.rev !loaded_modules
 let add_loaded_module md =
   if not (List.mem md !loaded_modules) then
     loaded_modules := md :: !loaded_modules
+let add_loaded_module (use_legacy_loading_if_possible,p) =
+  add_loaded_module (use_legacy_loading_if_possible,canonical_plugin_name p)
 let reset_loaded_modules () = loaded_modules := []
 
 let if_verbose_load verb f name =
   if not verb then f name
   else
-    let info = str "[Loading ML file " ++ str name ++ str " ..." in
+    let info = str "[Loading ML file " ++ str (pp_plugin name) ++ str " ..." in
     try
       let path = f name in
       Feedback.msg_info (info ++ str " done]");
@@ -201,24 +304,25 @@ let if_verbose_load verb f name =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let trigger_ml_object verb cache reinit name =
-  if module_is_known name then begin
-    if reinit then init_ml_object name;
-    add_loaded_module name;
-    if cache then perform_cache_obj name
+let trigger_ml_object verb cache reinit use_legacy_loading_if_possible s =
+  let plugin = Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed s in
+  if plugin_is_known plugin then begin
+    if reinit then init_ml_object plugin;
+    add_loaded_module (use_legacy_loading_if_possible,plugin);
+    if cache then perform_cache_obj plugin
   end else if not has_dynlink then
     user_err
-      (str "Dynamic link not supported (module " ++ str name ++ str ").")
+      (str "Dynamic link not supported (module " ++ str (pp_plugin plugin) ++ str ").")
   else begin
-    if_verbose_load (verb && not !Flags.quiet) load_ml_object name;
-    add_loaded_module name;
-    if cache then perform_cache_obj name
+    if_verbose_load (verb && not !Flags.quiet) (load_ml_object use_legacy_loading_if_possible) plugin;
+    add_loaded_module (use_legacy_loading_if_possible,plugin);
+    if cache then perform_cache_obj plugin
   end
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
   List.iter
-    (fun name -> trigger_ml_object false false false name) x
+    (fun (use_legacy_loading_if_possible,name) -> trigger_ml_object false false false use_legacy_loading_if_possible name) x
 
 let _ =
   Summary.declare_ml_modules_summary
@@ -230,15 +334,21 @@ let _ =
 
 type ml_module_object = {
   mlocal : Vernacexpr.locality_flag;
-  mnames : string list
+  mnames : string list;
+  dune_compat_logpathroot : Names.module_ident
 }
+let current_logpathroot () =
+  let open Names in
+  List.hd @@ List.rev @@ DirPath.repr @@ ModPath.dp @@ Global.current_modpath ()
 
-let cache_ml_objects mnames =
-  let iter obj = trigger_ml_object true true true obj in
+let cache_ml_objects mnames use_legacy_loading_if_possible =
+  let iter obj = trigger_ml_object true true true use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
-let load_ml_objects _ {mnames=mnames} =
-  let iter obj = trigger_ml_object true false true obj in
+let load_ml_objects _ {mnames; dune_compat_logpathroot; _} =
+  let use_legacy_loading_if_possible =
+    Names.Id.equal dune_compat_logpathroot (current_logpathroot ()) in
+  let iter obj = trigger_ml_object true false true use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
@@ -256,11 +366,12 @@ let inMLModule : ml_module_object -> Libobject.obj =
 let declare_ml_modules local l =
   if Global.sections_are_opened()
   then user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
-  Lib.add_leaf (inMLModule {mlocal=local; mnames=l});
+  let dune_compat_logpathroot = current_logpathroot () in
+  Lib.add_leaf (inMLModule {mlocal=local; mnames=l;dune_compat_logpathroot});
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
      the ML-MODULE object before them. *)
-  cache_ml_objects l
+  cache_ml_objects l true
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in
@@ -271,7 +382,7 @@ let print_ml_path () =
 
 let print_ml_modules () =
   let l = get_loaded_modules () in
-  str"Loaded ML Modules: " ++ pr_vertical_list str l
+  str"Loaded ML Modules: " ++ pr_vertical_list str (List.map snd l)
 
 let print_gc () =
   let stat = Gc.stat () in

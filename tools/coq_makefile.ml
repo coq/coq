@@ -248,8 +248,8 @@ let generate_conf_coq_config oc =
 
 let check_metafile { mllib_files; mlpack_files; meta_file; _ } =
   if mlpack_files @ mllib_files <> [] && meta_file = Absent then begin
-    Printf.eprintf "Error: you need a META.package-name file in order to build plugins, see also -generate-meta-for-package\n";
-    exit 1
+    eprintf "Warning: it is recommended you provide a META.package-name file\n";
+    eprintf "Warning: since you build plugins. See also -generate-meta-for-package.\n";
   end
 
 let generate_conf_files oc

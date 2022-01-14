@@ -8,27 +8,27 @@
  ; (per_file
  ;  (Init/*.v -> -boot))
  (libraries
-   coq-core.plugins.ltac
-   coq-core.plugins.tauto
+   ltac_plugin
+   tauto_plugin
 
-   coq-core.plugins.cc
-   coq-core.plugins.firstorder
+   cc_plugin
+   firstorder_plugin
 
-   coq-core.plugins.number_string_notation
+   number_string_notation_plugin
 
-   coq-core.plugins.btauto
-   coq-core.plugins.rtauto
+   btauto_plugin
+   rtauto_plugin
 
-   coq-core.plugins.ring
-   coq-core.plugins.nsatz
+   ring_plugin
+   nsatz_plugin
 
-   coq-core.plugins.zify
-   coq-core.plugins.micromega
+   zify_plugin
+   micromega_plugin
 
-   coq-core.plugins.funind
+   funind_plugin
 
-   coq-core.plugins.ssreflect
-   coq-core.plugins.derive))
+   ssreflect_plugin
+   derive_plugin))
 
 (include_subdirs qualified)
 

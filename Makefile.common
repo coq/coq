@@ -64,6 +64,7 @@ $(BUILD_OUT_DIR) $(VO_OUT_DIR):
 	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(LEGACY_BIN_DIR)
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(BUILD_OUT_DIR)/bin
+	$(HIDE)mkdir -p $(shell pwd)/_build/install/default/lib/coq-core/
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/coq-core/ $(BUILD_OUT_DIR)/lib/coq-core
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/coqide-server/ $(BUILD_OUT_DIR)/lib/coqide-server
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/stublibs/ $(BUILD_OUT_DIR)/lib/stublibs
@@ -148,11 +149,13 @@ ALL_PLUGIN_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/plugins -name '*.ml' -or -na
 
 _build/default/plugins/%_plugin.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
 	$(HIDE)$(_DBUILD) _build/install/default/lib/coq-core/plugins/$(addsuffix _plugin.cmxs, $(shell basename $*)/$(shell basename $*))
 	$(HIDE)touch $@
 
 _build/default/plugins/%_plugin.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
+	$(HIDE)$(_DBUILD) $@
 	$(HIDE)$(_DBUILD) _build/install/default/lib/coq-core/plugins/$(addsuffix _plugin.cma, $(shell basename $*)/$(shell basename $*))
 	$(HIDE)touch $@
 
