@@ -117,10 +117,9 @@ Check fun x => x.(f) : 0 = 0.
 
 End MaximalImplicit.
 
-Module NoRecursiveOrMutualRecord.
+Module NoRecursiveRecordVariant.
 
 Fail Record t := {a:t}.
-Fail Record t := {a:u} with u := {c:t}.
-Fail Record t := {a:nat} with u := {c:nat}.
+Fail Variant t := C : t -> t.
 
-End NoRecursiveOrMutualRecord.
+End NoRecursiveRecordVariant.

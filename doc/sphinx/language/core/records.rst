@@ -11,7 +11,7 @@ sense, the :cmd:`Record` construction allows defining“signatures”.
 
 .. _record_grammar:
 
-.. cmd:: {| Record | Structure } @record_definition {* with @record_definition }
+.. cmd:: {| Record | Structure } @record_definition
    :name: Record; Structure
 
    .. insertprodn record_definition field_def
