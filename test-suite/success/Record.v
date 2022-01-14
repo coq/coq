@@ -116,3 +116,10 @@ Arguments f _ {a}.
 Check fun x => x.(f) : 0 = 0.
 
 End MaximalImplicit.
+
+Module NoRecursiveOrMutualRecord.
+
+Fail Record t := {a:t}.
+Fail Record t := {a:u} with u := {c:t}.
+
+End NoRecursiveOrMutualRecord.

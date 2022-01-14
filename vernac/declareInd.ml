@@ -117,25 +117,23 @@ let declare_mind ?typing_flags mie =
 
 let is_recursive mie =
   let open Constr in
-  let rec is_recursive_constructor lift typ =
+  let rec is_recursive_constructor lift n typ =
     match Constr.kind typ with
     | Prod (_,arg,rest) ->
-        not (EConstr.Vars.noccurn Evd.empty (* FIXME *) lift (EConstr.of_constr arg)) ||
-        is_recursive_constructor (lift+1) rest
-    | LetIn (na,b,t,rest) -> is_recursive_constructor (lift+1) rest
+        not (Vars.noccur_between lift n arg) ||
+        is_recursive_constructor (lift+1) n rest
+    | LetIn (na,b,t,rest) -> is_recursive_constructor (lift+1) n rest
     | _ -> false
   in
-  match mie.mind_entry_inds with
-  | [ind] ->
-      let nparams = List.length mie.mind_entry_params in
-      List.exists (fun t -> is_recursive_constructor (nparams+1) t) ind.mind_entry_lc
-  | _ -> false
+  let nind = List.length mie.mind_entry_inds in
+  let nparams = List.length mie.mind_entry_params in
+  List.exists (fun ind -> List.exists (fun t -> is_recursive_constructor (nparams+1) nind t) ind.mind_entry_lc) mie.mind_entry_inds
 
 let warn_non_primitive_record =
   CWarnings.create ~name:"non-primitive-record" ~category:"record"
     (fun indsp ->
        Pp.(hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef indsp) ++
-                  strbrk" could not be defined as a primitive record")))
+                  strbrk" could not be defined as a primitive record.")))
 
 let minductive_message = function
   | []  -> CErrors.user_err Pp.(str "No inductive definition.")
@@ -153,9 +151,9 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
   begin match mie.mind_entry_finite with
     | Declarations.BiFinite when is_recursive mie ->
       if Option.has_some mie.mind_entry_record then
-        CErrors.user_err Pp.(str "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
+        CErrors.user_err Pp.(strbrk "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
       else
-        CErrors.user_err Pp.(str ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command."))
+        CErrors.user_err Pp.(strbrk "Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command.")
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
