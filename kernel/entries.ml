@@ -115,7 +115,7 @@ type constant_entry =
 type module_struct_entry = Declarations.module_alg_expr
 
 type module_params_entry =
-  (MBId.t * module_struct_entry) list (** older first *)
+  (MBId.t * module_struct_entry * inline) list (** older first *)
 
 type module_type_entry = module_params_entry * module_struct_entry
 

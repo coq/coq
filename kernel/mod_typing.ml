@@ -287,9 +287,9 @@ let rec translate_mse_funct env ~is_mod mp inl mse = function
       if is_mod then sign,reso
       else subst_modtype_signature_and_resolver (mp_from_mexpr mse) mp sign reso in
     sign, NoFunctor alg, reso, cst
-  |(mbid, ty) :: params ->
+  |(mbid, ty, ty_inl) :: params ->
     let mp_id = MPbound mbid in
-    let mtb, cst = translate_modtype env mp_id inl ([],ty) in
+    let mtb, cst = translate_modtype env mp_id ty_inl ([],ty) in
     let env' = add_module_type mp_id mtb env in
     let sign,alg,reso,cst' = translate_mse_funct env' ~is_mod mp inl mse params in
     let alg' = MoreFunctor (mbid,mtb,alg) in
