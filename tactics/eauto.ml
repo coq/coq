@@ -168,11 +168,7 @@ module Search = struct
 
   let is_solved p = match p.cost_subgoals with
   | Some n -> Int.equal n 0
-  | None ->
-    (* Approximation: this is an Extern hint and we can't statically decide
-       whether it will solve the goal. As a heuristic we decide that if the
-       priority is 0 then it is treated as if it were solving the goal. *)
-       Int.equal p.cost_priority 0
+  | None -> assert false (* Ruled out by partial_eval *)
 
   let solve_order p1 p2 = match is_solved p1, is_solved p2 with
   | true, true | false, false -> 0
@@ -196,6 +192,27 @@ module Search = struct
     else if not (Int.equal d' 0) then d'
     else subgoals_order p1 p2
 
+  (* We cannot determine statically the cost of an Extern hint, so we evaluate
+     it locally, backtrack and return a dummy tactic that immediately sets the
+     result. *)
+  let partial_eval (tac, cost, pp) = match cost.cost_subgoals with
+  | Some _ -> Proofview.tclUNIT (Some (tac, cost, pp))
+  | None ->
+    (* Assert that we are focussed *)
+    Proofview.Goal.enter_one begin fun _ ->
+    Proofview.tclORELSE (Proofview.UnsafeRepr.make begin
+      let open Logic_monad.BackState in
+      get >>= fun s ->
+      Proofview.UnsafeRepr.repr (Proofview.tclONCE tac) >>= fun () ->
+      get >>= fun r ->
+      Proofview.UnsafeRepr.repr Proofview.numgoals >>= fun n ->
+      set s >>= fun () ->
+      let tac = Proofview.UnsafeRepr.make (set r) in
+      let cost = { cost with cost_subgoals = Some n } in
+      return (Some (tac, cost, pp))
+    end) (fun _ -> Proofview.tclUNIT None)
+    end
+
   let branching env sigma concl db dblist local_lemmas =
     let hyps = EConstr.named_context env in
     let secvars = secvars_of_hyps hyps in
@@ -217,8 +234,10 @@ module Search = struct
           else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
       in
       let tacs = e_possible_resolve env sigma dblist db secvars concl in
+      Proofview.Monad.List.map_filter partial_eval tacs >>= fun tacs ->
       let tacs = List.sort compare tacs in
-      List.map (fun (tac, _, pp) -> (mkdb, tac, pp)) tacs
+      let tacs = List.map (fun (tac, _, pp) -> (mkdb, tac, pp)) tacs in
+      Proofview.tclUNIT tacs
     in
     assumption_tacs @ intro_tac, rec_tacs
 
@@ -240,6 +259,26 @@ module Search = struct
     let map (mkdb, tac, pptac) =
       try
         let gl0 = { Evd.it = gl; Evd.sigma } in
+        let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
+        let map gl =
+          let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
+          gl, mkdb env sigma
+        in
+        let ngls = List.map map it in
+        Some (sigma, ngls, pptac)
+      with e when CErrors.noncritical e ->
+        None
+    in
+    List.map_filter map l
+
+  let filter_rec_tactics gl sigma l =
+    let gl0 = { Evd.it = gl; Evd.sigma } in
+    let hack = ref None in
+    let hack_tac = l >>= fun ans -> hack := Some ans; Proofview.tclUNIT () in
+    let _ = Proofview.V82.of_tactic hack_tac gl0 in
+    let l = Option.get !hack in
+    let map (mkdb, tac, pptac) =
+      try
         let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
         let map gl =
           let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
@@ -273,7 +312,7 @@ module Search = struct
           { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
         in
         let tacs = List.map map @@ filter_tactics gl s.sigma tacs in
-        let rectacs = List.map recmap @@ filter_tactics gl s.sigma rectacs in
+        let rectacs = List.map recmap @@ filter_rec_tactics gl s.sigma rectacs in
         explore_many 1 p (tacs @ rectacs)
 
     and explore_many i p = function
