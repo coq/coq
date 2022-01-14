@@ -371,6 +371,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
 let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
   let ntypes = Array.length inds in
   let recursive = finite != BiFinite in
+  if not recursive && Array.length inds <> 1 then raise (InductiveError Type_errors.BadEntry);
   let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in
   let ra_env_ar = Array.rev_to_list rc in
   let nparamsctxt = Context.Rel.length paramsctxt in

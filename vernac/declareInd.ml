@@ -149,11 +149,17 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
-    | Declarations.BiFinite when is_recursive mie ->
+  | Declarations.BiFinite ->
+    if is_recursive mie then
       if Option.has_some mie.mind_entry_record then
         CErrors.user_err Pp.(strbrk "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
       else
-        CErrors.user_err Pp.(strbrk "Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command.")
+        CErrors.user_err Pp.(strbrk "Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command.");
+    if not (Int.equal (List.length mie.mind_entry_inds) 1) then
+      if Option.has_some mie.mind_entry_record then
+        CErrors.user_err Pp.(strbrk "Keywords Record and Structure are to define a single type at once.")
+      else
+        CErrors.user_err Pp.(strbrk "Keyword Variant is to define a single type at once.")
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
