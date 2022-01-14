@@ -213,7 +213,11 @@ module Search = struct
     end) (fun _ -> Proofview.tclUNIT None)
     end
 
-  let branching env sigma concl db dblist local_lemmas =
+  let branching db dblist local_lemmas =
+    Proofview.Goal.enter_one begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
     let hyps = EConstr.named_context env in
     let secvars = secvars_of_hyps hyps in
     let assumption_tacs =
@@ -239,7 +243,9 @@ module Search = struct
       let tacs = List.map (fun (tac, _, pp) -> (mkdb, tac, pp)) tacs in
       Proofview.tclUNIT tacs
     in
-    assumption_tacs @ intro_tac, rec_tacs
+    rec_tacs >>= fun rec_tacs ->
+    Proofview.tclUNIT (assumption_tacs @ intro_tac, rec_tacs)
+    end
 
   let msg_with_position (p : int list) s = match p with
   | [] -> ()
@@ -270,56 +276,43 @@ module Search = struct
         None
     in
     List.map_filter map l
-
-  let filter_rec_tactics gl sigma l =
-    let gl0 = { Evd.it = gl; Evd.sigma } in
-    let hack = ref None in
-    let hack_tac = l >>= fun ans -> hack := Some ans; Proofview.tclUNIT () in
-    let _ = Proofview.V82.of_tactic hack_tac gl0 in
-    let l = Option.get !hack in
-    let map (mkdb, tac, pptac) =
-      try
-        let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
-        let map gl =
-          let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
-          gl, mkdb env sigma
-        in
-        let ngls = List.map map it in
-        Some (sigma, ngls, pptac)
-      with e when CErrors.noncritical e ->
-        None
-    in
-    List.map_filter map l
   [@@@ocaml.warning "+3"]
+
+  exception SearchFailure
 
   let search ?(debug=false) dblist local_lemmas s =
     let rec explore p s =
       let () = msg_with_position p s in
-      if Int.equal s.depth 0 then raise Not_found
+      if Int.equal s.depth 0 then Proofview.tclZERO SearchFailure
       else match s.tacres with
-      | [] -> s
+      | [] -> Proofview.tclUNIT s
       | (gl, db) :: rest ->
-        let evi = Evd.find s.sigma gl in
-        let env = Evd.evar_filtered_env (Global.env ()) evi in
-        let concl = Evd.evar_concl evi in
-        let ps = if s.prev == Unknown then Unknown else State s in
-        let tacs, rectacs = branching env s.sigma concl db dblist local_lemmas in
-        let map (sigma, lgls, pp) =
-          { depth = s.depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
-        in
-        let recmap (sigma, lgls, pp) =
-          let depth = if List.is_empty lgls then s.depth else pred s.depth in
-          { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
-        in
-        let tacs = List.map map @@ filter_tactics gl s.sigma tacs in
-        let rectacs = List.map recmap @@ filter_rec_tactics gl s.sigma rectacs in
-        explore_many 1 p (tacs @ rectacs)
+        Proofview.Unsafe.tclEVARS s.sigma <*>
+        match Proofview.Unsafe.advance s.sigma gl with
+        | None -> explore p { s with tacres = rest }
+        | Some gl ->
+          Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state gl] <*>
+          let ps = if s.prev == Unknown then Unknown else State s in
+          branching db dblist local_lemmas >>= fun (tacs, rectacs) ->
+          let map (sigma, lgls, pp) =
+            { depth = s.depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
+          in
+          let recmap (sigma, lgls, pp) =
+            let depth = if List.is_empty lgls then s.depth else pred s.depth in
+            { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
+          in
+          let tacs = List.map map @@ filter_tactics gl s.sigma tacs in
+          let rectacs = List.map recmap @@ filter_tactics gl s.sigma rectacs in
+          explore_many 1 p (tacs @ rectacs)
 
     and explore_many i p = function
-      | [] -> raise Not_found
-      | [s] -> explore (push i p) s
-      | s :: l ->
-          try explore (push i p) s with Not_found -> explore_many (succ i) p l
+    | [] -> Proofview.tclZERO SearchFailure
+    | [s] -> explore (push i p) s
+    | s :: l ->
+      Proofview.tclORELSE (explore (push i p) s) begin function
+      | (SearchFailure, _) -> explore_many (succ i) p l
+      | (e, info) -> Proofview.tclZERO ~info e
+      end
     in
     let pos = if debug then [1] else [] in
     explore pos s
@@ -394,15 +387,20 @@ let e_search_auto ?(debug = Off) ?depth lems db_list =
   let tac s = Search.search ~debug db_list lems s in
   let () = pr_dbg_header d in
   let evk = Proofview.Goal.goal gl in
-  match tac (make_initial_state sigma evk d p local_db) with
-  | s ->
-    let () = pr_info d s in
-    let () = assert (List.is_empty s.tacres) in
-    Proofview.Unsafe.tclEVARS s.sigma <*>
-    Proofview.Unsafe.tclSETGOALS []
-  | exception Not_found ->
-    let () = pr_info_nop d in
-    Proofview.tclUNIT ()
+  Proofview.tclORELSE
+    begin
+      tac (make_initial_state sigma evk d p local_db) >>= fun s ->
+      let () = pr_info d s in
+      let () = assert (List.is_empty s.tacres) in
+      Proofview.Unsafe.tclEVARS s.sigma <*>
+      Proofview.Unsafe.tclSETGOALS []
+    end
+    begin function
+    | (Search.SearchFailure, _) ->
+      let () = pr_info_nop d in
+      Proofview.tclUNIT ()
+    | (e, info) -> Proofview.tclZERO ~info e
+    end
   end
 
 let eauto_with_bases ?debug ?depth lems db_list =
