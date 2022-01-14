@@ -58,29 +58,33 @@ let rich_pp ~width ?depth ppcmds =
       context.offset <- context.offset + len
   in
 
-  let open_xml_tag tag =
-    let () = push_pcdata () in
-    context.stack <- Node (tag, [], context.offset, context.stack)
+  let open_xml_tag = function
+    | Format.String_tag tag ->
+      let () = push_pcdata () in
+      context.stack <- Node (tag, [], context.offset, context.stack)
+    | _ -> ()
   in
 
-  let close_xml_tag tag =
-    let () = push_pcdata () in
-    match context.stack with
-    | Leaf -> assert false
-    | Node (node, child, pos, ctx) ->
-      let () = assert (String.equal tag node) in
-      let annotation = {
-        annotation = Some tag;
-        startpos = pos;
-        endpos = context.offset;
-      } in
-      let xml = Element (node, annotation, List.rev child) in
-      match ctx with
-      | Leaf ->
-        (* Final node: we keep the result in a dummy context *)
-        context.stack <- Node ("", [xml], 0, Leaf)
+  let close_xml_tag = function
+    | Format.String_tag tag ->
+      let () = push_pcdata () in
+      (match context.stack with
+      | Leaf -> assert false
       | Node (node, child, pos, ctx) ->
-        context.stack <- Node (node, xml :: child, pos, ctx)
+        let () = assert (String.equal tag node) in
+        let annotation = {
+          annotation = Some tag;
+          startpos = pos;
+          endpos = context.offset;
+        } in
+        let xml = Element (node, annotation, List.rev child) in
+        match ctx with
+        | Leaf ->
+          (* Final node: we keep the result in a dummy context *)
+          context.stack <- Node ("", [xml], 0, Leaf)
+        | Node (node, child, pos, ctx) ->
+          context.stack <- Node (node, xml :: child, pos, ctx))
+    | _ -> ()
   in
 
   let open Format in
@@ -88,13 +92,13 @@ let rich_pp ~width ?depth ppcmds =
   let ft = formatter_of_buffer pp_buffer in
 
   let tag_functions = {
-    mark_open_tag = (fun tag -> let () = open_xml_tag tag in "");
-    mark_close_tag = (fun tag -> let () = close_xml_tag tag in "");
-    print_open_tag = ignore;
-    print_close_tag = ignore;
+    mark_open_stag = (fun tag -> let () = open_xml_tag tag in "");
+    mark_close_stag = (fun tag -> let () = close_xml_tag tag in "");
+    print_open_stag = ignore;
+    print_close_stag = ignore;
   } in
 
-  pp_set_formatter_tag_functions ft tag_functions [@warning "-3"];
+  pp_set_formatter_stag_functions ft tag_functions;
   pp_set_mark_tags ft true;
 
   (* Setting the formatter *)
@@ -108,9 +112,9 @@ let rich_pp ~width ?depth ppcmds =
   (* The whole output must be a valid document. To that
      end, we nest the document inside <pp> tags. *)
   pp_open_box ft 0;
-  pp_open_tag ft "pp" [@warning "-3"];
+  pp_open_stag ft (String_tag "pp");
   Pp.(pp_with ft ppcmds);
-  pp_close_tag ft () [@warning "-3"];
+  pp_close_stag ft ();
   pp_close_box ft ();
 
   (* Get the resulting XML tree. *)
