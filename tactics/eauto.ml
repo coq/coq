@@ -15,7 +15,6 @@ open Names
 open Constr
 open Termops
 open EConstr
-open Evd
 open Tactics
 open Auto
 open Genredexpr
@@ -222,14 +221,14 @@ module Search = struct
     let secvars = secvars_of_hyps hyps in
     let assumption_tacs =
       let mkdb env sigma = assert false in (* no goal can be generated *)
-      let map_assum id = (mkdb, e_give_exact (mkVar id), lazy (str "exact" ++ spc () ++ Id.print id)) in
+      let map_assum id = (false, mkdb, e_give_exact (mkVar id), lazy (str "exact" ++ spc () ++ Id.print id)) in
       List.map map_assum (ids_of_named_context hyps)
     in
     let intro_tac =
       let mkdb env sigma =
         push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
       in
-      [mkdb, Tactics.intro, lazy (str "intro")]
+      (false, mkdb, Tactics.intro, lazy (str "intro"))
     in
     let rec_tacs =
       let mkdb env sigma =
@@ -240,11 +239,11 @@ module Search = struct
       let tacs = e_possible_resolve env sigma dblist db secvars concl in
       Proofview.Monad.List.map_filter partial_eval tacs >>= fun tacs ->
       let tacs = List.sort compare tacs in
-      let tacs = List.map (fun (tac, _, pp) -> (mkdb, tac, pp)) tacs in
+      let tacs = List.map (fun (tac, _, pp) -> (true, mkdb, tac, pp)) tacs in
       Proofview.tclUNIT tacs
     in
     rec_tacs >>= fun rec_tacs ->
-    Proofview.tclUNIT (assumption_tacs @ intro_tac, rec_tacs)
+    Proofview.tclUNIT (assumption_tacs @ intro_tac :: rec_tacs)
     end
 
   let msg_with_position (p : int list) s = match p with
@@ -260,25 +259,9 @@ module Search = struct
 
   let push i p = match p with [] -> [] | _ :: _ -> i :: p
 
-  [@@@ocaml.warning "-3"]
-  let filter_tactics gl sigma l =
-    let map (mkdb, tac, pptac) =
-      try
-        let gl0 = { Evd.it = gl; Evd.sigma } in
-        let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
-        let map gl =
-          let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
-          gl, mkdb env sigma
-        in
-        let ngls = List.map map it in
-        Some (sigma, ngls, pptac)
-      with e when CErrors.noncritical e ->
-        None
-    in
-    List.map_filter map l
-  [@@@ocaml.warning "+3"]
-
   exception SearchFailure
+
+  let is_failure (e, _) = match e with SearchFailure -> true | _ -> false
 
   let search ?(debug=false) dblist local_lemmas s =
     let rec explore p s =
@@ -293,26 +276,33 @@ module Search = struct
         | Some gl ->
           Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state gl] <*>
           let ps = if s.prev == Unknown then Unknown else State s in
-          branching db dblist local_lemmas >>= fun (tacs, rectacs) ->
-          let map (sigma, lgls, pp) =
-            { depth = s.depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
+          branching db dblist local_lemmas >>= fun tacs ->
+          let map (isrec, mkdb, tac, pp) =
+            Proofview.tclONCE tac >>= fun () ->
+            Proofview.Unsafe.tclGETGOALS >>= fun lgls ->
+            Proofview.tclEVARMAP >>= fun sigma ->
+            let map gl =
+              let gl = Proofview.drop_state gl in
+              (* FIXME *)
+              let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
+              gl, mkdb env sigma
+            in
+            let depth =
+              if isrec then if List.is_empty lgls then s.depth else pred s.depth
+              else s.depth
+            in
+            let lgls = List.map map lgls in
+            Proofview.tclUNIT { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
           in
-          let recmap (sigma, lgls, pp) =
-            let depth = if List.is_empty lgls then s.depth else pred s.depth in
-            { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
-          in
-          let tacs = List.map map @@ filter_tactics gl s.sigma tacs in
-          let rectacs = List.map recmap @@ filter_tactics gl s.sigma rectacs in
-          explore_many 1 p (tacs @ rectacs)
+          let tacs = List.map map tacs in
+          explore_many 1 p tacs
 
     and explore_many i p = function
     | [] -> Proofview.tclZERO SearchFailure
-    | [s] -> explore (push i p) s
-    | s :: l ->
-      Proofview.tclORELSE (explore (push i p) s) begin function
-      | (SearchFailure, _) -> explore_many (succ i) p l
-      | (e, info) -> Proofview.tclZERO ~info e
-      end
+    | tac :: l ->
+      Proofview.tclORELSE (tac >>= fun s -> explore (push i p) s)
+        (fun e -> explore_many (if is_failure e then succ i else i) p l)
+        (* discriminate between search failures and [tac] raising an error *)
     in
     let pos = if debug then [1] else [] in
     explore pos s
