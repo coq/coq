@@ -2229,7 +2229,7 @@ let setoid_symmetry_in id =
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
   tclTHENLAST
     (Tactics.assert_after_replacing id new_hyp)
-    (Tacticals.New.tclTHENLIST
+    (Tacticals.tclTHENLIST
        [ intros; setoid_symmetry;
          apply ~with_delta:true (mkVar id); Tactics.assumption ])
   end

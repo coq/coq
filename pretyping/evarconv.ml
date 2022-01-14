@@ -596,8 +596,8 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                      Miller patterns *)
                 default ()
               | x ->
-                if debug_unification () then
-                  Feedback.msg_debug Pp.(str "Solved as a simple equation");
+                debug_unification (fun () ->
+                  Pp.(str "Solved as a simple equation"));
                 x)
           | _, Evar ev when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
@@ -609,8 +609,8 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                      Miller patterns *)
                 default ()
               | x ->
-                if debug_unification () then
-                  Feedback.msg_debug Pp.(str "Solved as a simple equation");
+                debug_unification (fun () ->
+                  Pp.(str "Solved as a simple equation"));
                 x)
           | _ -> default ()
         end
@@ -626,7 +626,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
       | None -> fallback ()
       | Some l1' -> (* Miller-Pfenning's patterns unification *)
         debug_unification (fun () ->
-          Feedback.msg_debug Pp.(str "Miller pattern detected"));
+          Pp.(str "Miller pattern detected"));
         let t2 = tM in
         let t2 = solve_pattern_eqn env evd l1' t2 in
         match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
@@ -1479,7 +1479,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                                 prc env_rhs evd c ++ str" in " ++
                                 prc env_rhs evd rhs));
      let occ = ref 1 in
-     let set_var evd fixed inst =
+     let set_var evd fixed k inst =
        let oc = !occ in
        debug_ho_unification (fun () ->
        Pp.(str"Found one occurrence" ++ fnl () ++
@@ -1563,7 +1563,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
            try
              debug_ho_unification (fun () ->
               Pp.(str"instantiating evar " ++
-                 Termops.pr_existential_key evd evk ++ spc () ++ str " abstracting " ++
+                 Termops.pr_existential_key env_rhs evd evk ++ spc () ++ str " abstracting " ++
                  prc env_rhs evd inst ++ str " in the goal and " ++
                  prc env_rhs evd c ++ str " in the predicate application " ++
                  str" by variable " ++ Id.print id));
@@ -1574,7 +1574,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                  if not (noccur_evar env_rhs evd ev (EConstr.of_constr t)) then
                    raise (TypingFailed evd);
                  debug_ho_unification (fun () ->
-                  Feedback.msg_debug Pp.(str"One candidate only: " ++ prc env_rhs evd (EConstr.of_constr t)));
+                  Pp.(str"One candidate only: " ++ prc env_rhs evd (EConstr.of_constr t)));
                  instantiate_evar evar_unify flags env_rhs evd ev (EConstr.of_constr t)
                 | Some l when abstract = Abstraction.Abstract &&
                           List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
@@ -1584,11 +1584,10 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                | _ ->
                   (* At least inst will always be a valid candidate *)
                   debug_ho_unification (fun () ->
-                    Feedback.msg_debug Pp.(str"Multiple candidates and nothing to disambiguate"));
+                    Pp.(str"Multiple candidates and nothing to disambiguate"));
                   evd)
            with e when CErrors.noncritical e ->
-             let e, info = Exninfo.capture e in
-             Exninfo.iraise (NotFoundInstance e, info)
+            user_err (Pp.str "Cannot find an instance.")
          else
            (debug_ho_unification (fun () ->
                let evi = Evd.find evd evk in

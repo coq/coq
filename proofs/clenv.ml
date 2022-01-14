@@ -695,7 +695,7 @@ let unify ?(flags=fail_quick_unif_flags) ?(with_ho=true) m =
   Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.pf_env gl in
     let n = Tacmach.pf_concl gl in
-    let evd = clear_metas (Tacmach.project gl) in
+    let sigma = clear_metas (Tacmach.project gl) in
     try
       let sigma = Evarutil.add_unification_pb (CONV,env,m,n) sigma in
       let flags = Unification.flags_of flags in
@@ -755,8 +755,8 @@ type clause = {
   (** The value the clause was built from, applied to holes *)
 }
 
-let make_prod_evar env sigma ~identity na t1 t2 =
-  let sigma, ev = new_pure_evar ~identity ~typeclass_candidate:false ctx sigma t1 in
+let make_prod_evar env sigma ~identity ~args na t1 t2 =
+  let sigma, ev = new_pure_evar ~identity ~typeclass_candidate:false env sigma t1 in
   let ev = mkEvar (ev, args) in
   let dep = not (noccurn sigma 1 t2) in
   let hole = {
@@ -776,7 +776,7 @@ let strip_params env sigma c =
   | App (f, args) ->
     (match EConstr.kind sigma f with
      | Const (cst,_) ->
-       (match Recordops.find_primitive_projection cst with
+       (match Structures.PrimitiveProjections.find_opt cst with
         | Some p ->
           let p = Projection.make p false in
           let npars = Projection.npars p in
@@ -809,7 +809,7 @@ let make_evar_clause env sigma ?len ?occs c t =
         Some (ctx, args, id, subst), ctx, args, id, subst
       | Some (ctx, args, id, subst) -> inst, ctx, args, id, subst
       in
-      let sigma, hole, t2 = make_prod_evar env sigma ~identity na.binder_name (csubst_subst subst t1) t2 in
+      let sigma, hole, t2 = make_prod_evar ctx sigma ~identity ~args na (csubst_subst subst t1) t2 in
       clrec (sigma, hole :: holes) inst (pred n) t2
     | LetIn (na, b, _, t) -> clrec (sigma, holes) inst n (subst1 b t)
     | _ -> (sigma, holes, t)
@@ -822,7 +822,7 @@ let make_evar_clause env sigma ?len ?occs c t =
                  cl_concl = t; cl_concl_occs = occs } in
   (sigma, clause)
 
-let evar_with_name holes ({CAst.v=id} as lid) =
+let hole_with_name holes ({CAst.v=id} as lid) =
   let map h = match h.hole_name with
   | Anonymous -> None
   | Name id' -> if Id.equal id id' then Some h else None
@@ -836,34 +836,7 @@ let evar_with_name holes ({CAst.v=id} as lid) =
     in
     let mvl = List.fold_right fold holes [] in
     explain_no_such_bound_variable mvl lid
-  | h::_ -> h.hole_evar
-  
-let explain_no_such_bound_variable holes id =
-  let fold h accu = match h.hole_name with
-  | Anonymous -> accu
-  | Name id -> id :: accu
-  in
-  let mvl = List.fold_right fold holes [] in
-  let expl = match mvl with
-  | [] -> str " (no bound variables at all in the expression)."
-  | [id] -> str " (possible name is: " ++ Id.print id ++ str ")."
-  | _ -> str " (possible names are: " ++ pr_enum Id.print mvl ++ str ")."
-  in
-  user_err  (str "No such bound variable " ++ Id.print id ++ expl)
-
-let evar_with_name holes id =
-  let map h = match h.hole_name with
-  | Anonymous -> None
-  | Name id' -> if Id.equal id id' then Some h else None
-  in
-  let hole = List.map_filter map holes in
-  match hole with
-  | [] -> explain_no_such_bound_variable holes id
-  | [h] -> h
-  | _ ->
-    user_err
-      (str "Binder name \"" ++ Id.print id ++
-        str "\" occurs more than once in clause.")
+  | h::_ -> h
 
 (* let nth_anonymous holes n =
   let rec hole holes n =
@@ -875,12 +848,11 @@ let evar_with_name holes id =
   in hole holes (pred n) *)
 
 let hole_of_binder holes = function
-| NamedHyp s -> evar_with_name holes s
+| NamedHyp s -> hole_with_name holes s
 | AnonHyp n ->
   try
     let nondeps = List.filter (fun hole -> not hole.hole_deps) holes in
-    let h = List.nth nondeps (pred n) in
-    h.hole_evar
+    List.nth nondeps (pred n)
   with e when CErrors.noncritical e ->
     user_err Pp.(str "No such binder.")
 
@@ -1009,13 +981,17 @@ let clenv_dep_holes clenv =
   let holes = clenv_holes clenv in
   List.filter (fun h -> h.hole_deps) holes
 
+exception NotExtensibleClause
+
 let clenv_dest_prod env sigma
   { cl_concl = concl; cl_holes = holes; cl_val = v; cl_concl_occs = occs } =
   let typ = whd_all env sigma concl in
   let rec clrec typ = match EConstr.kind sigma typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
-       make_prod_evar env sigma na.binder_name t u
+      let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
+      let ctx, _, args, subst = push_rel_context_to_named_context ~hypnaming env sigma mkProp in
+      make_prod_evar ctx sigma ~identity:(Identity.none ()) ~args na t u
     | _ -> raise NotExtensibleClause
   in
   let sigma, hole, typ' = clrec typ in
@@ -1253,7 +1229,7 @@ let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=
   let open Proofview in
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
-  let env = Tacmach.New.pf_env gl in
+  let env = Tacmach.pf_env gl in
   let sigma, clenv =
     try
       let sigma = Evarconv.solve_unif_constraints_with_heuristics ~flags ~with_ho:true env sigma in
@@ -1302,9 +1278,9 @@ let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=
 
 let clenv_unify_concl_tac flags clenv =
   Ftactic.enter begin fun gl ->
-  let env = Tacmach.New.pf_env gl in
-  let sigma = Tacmach.New.project gl in
-  let concl = Tacmach.New.pf_concl gl in
+  let env = Tacmach.pf_env gl in
+  let sigma = Tacmach.project gl in
+  let concl = Tacmach.pf_concl gl in
   try let sigma, clenv = clenv_unify_concl env sigma flags concl clenv in
       Ftactic.return (sigma, clenv)
   with Evarconv.UnableToUnify (evd, reason) ->
@@ -1359,5 +1335,5 @@ let with_clause (c, t) kont =
   let open Proofview in
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
-  let sigma, cl = Tacmach.New.pf_apply (fun env sigma c -> make_clenv_from_env env sigma c) gl (c, t) in
+  let sigma, cl = Tacmach.pf_apply (fun env sigma c -> make_clenv_from_env env sigma c) gl (c, t) in
   Unsafe.tclEVARS sigma <*> kont cl end

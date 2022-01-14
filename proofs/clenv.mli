@@ -214,6 +214,8 @@ val make_clenv_bindings :
 (** Combination of [make_evar_clause] and [solve_evar_clause], creating a clause
     and immediately solving them with the given bindings. *)
 
+exception NotExtensibleClause
+
 val clenv_dest_prod : env -> evar_map -> clause -> evar_map * clause
 (* [clenv_dest_prod env sigma cl]
 

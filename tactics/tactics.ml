@@ -1787,7 +1787,7 @@ let general_apply ?(respect_opaque=false) ~with_delta ~with_destruct ~with_evars
          lemmas finding trivial predicates. *)
       default_no_delta_unify_flags ts in
     let thm_ty0 = nf_betaiota env sigma (Retyping.get_type_of env sigma c) in
-    let sigma, thm_ty = Evarsolve.refresh_universes ~onlyalg:true None env sigma thm_ty in
+    let sigma, thm_ty = Evarsolve.refresh_universes ~onlyalg:true None env sigma thm_ty0 in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
@@ -1933,16 +1933,8 @@ let progress_with_clause env sigma flags innerclause clause =
                 env sigma innerclause)
     with Failure _ -> None
   in
-  try List.find_map f mvs
+  try List.find_map f ordered_metas
   with Not_found -> raise UnableToApply
-
-let explain_unable_to_apply_lemma ?loc env sigma thm innerclause =
-  user_err ?loc (hov 0
-    (Pp.str "Unable to apply lemma of type" ++ brk(1,1) ++
-     Pp.quote (Printer.pr_leconstr_env env sigma thm) ++ spc() ++
-     str "on hypothesis of type" ++ brk(1,1) ++
-     Pp.quote (Printer.pr_leconstr_env env sigma innerclause.cl_concl) ++
-     str "."))
 
 let clenvtac_advance clenv =
   Proofview.tclEVARMAP >>= fun sigma ->
@@ -1970,13 +1962,13 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) flag
   let new_hyp_typ = clenv_concl clenv in
   let naming = NamingMustBe (CAst.make targetid) in
   let with_clear = do_replace (Some id) naming in
-  Tacticals.New.tclTHEN
+  Tacticals.tclTHEN
     (Proofview.Unsafe.tclEVARS sigma)
     ((if sidecond_first then
-        Tacticals.New.tclTHENFIRST
+        Tacticals.tclTHENFIRST
         (assert_before_then_gen with_clear naming new_hyp_typ tac)
       else
-        Tacticals.New.tclTHENLAST
+        Tacticals.tclTHENLAST
         (assert_after_then_gen with_clear naming new_hyp_typ tac))
      exact_tac)
 
@@ -1999,7 +1991,7 @@ let apply_in_once_main flags env sigma innerclause (loc,d,lbind) =
     try aux (clenv_dest_prod env sigma clause)
     with NotExtensibleClause ->
       match e with
-      | UnableToApply -> error ?loc (UnableToApplyLemma (env,sigma,thm,t))
+      | UnableToApply -> error ?loc (UnableToApplyLemma (env,sigma,thm,innerclause.cl_val))
       | _ -> Exninfo.iraise e'
   in
   let sigma, delayed, clenv = make_clenv_bindings env sigma ~hyps_only:false (* TODO ?occs *) (d,thm) lbind in
@@ -2011,11 +2003,12 @@ let apply_in_once ?(respect_opaque = false) with_delta
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma0 = Tacmach.New.project gl in
+  let sigma0 = Tacmach.project gl in
   let t' = Tacmach.pf_get_hyp_typ id gl in
   let sigma, innerclause = make_clenv_from_env env sigma0 ~len:0 (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
-  let replace = Id.equal id targetid in
+  (* FIXME *)
+  let _replace = Id.equal id targetid in
   let rec aux ?err idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -2025,7 +2018,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
     in
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
-    let origsigma = Tacmach.New.project gl in
+    let origsigma = Tacmach.project gl in
     try
       let sigma, clause = apply_in_once_main flags env origsigma innerclause (loc,c,lbind) in
       Proofview.Unsafe.tclEVARS sigma <*>

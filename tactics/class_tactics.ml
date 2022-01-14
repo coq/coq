@@ -190,7 +190,7 @@ let unify_resolve_refine flags h diff =
     let sigma, term = Hints.fresh_hint env sigma h in
     let ty = Retyping.get_type_of env sigma term in
     let sigma, cl = Clenv.make_evar_clause env sigma ?len term ty in
-    Tacticals.New.tclTHEN
+    Tacticals.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
       (Clenv.clenv_refine2 ~with_evars:true ~with_classes:false ~flags cl)
   end
