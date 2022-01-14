@@ -712,11 +712,13 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let rx = Option.map (interp_rpattern env sigma) grx in
+    (* Evarmaps below are extensions of sigma, so setting the universe context is correct *)
     let sigma = match rx with
-      | None -> sigma
-      | Some (s,_) -> pf_merge_uc_of s sigma in
+    | None -> sigma
+    | Some (s,_) -> Evd.set_universe_context sigma (Evd.evar_universe_context s)
+    in
     let t = interp env sigma gt in
-    let sigma = pf_merge_uc_of (fst t) sigma in
+    let sigma = Evd.set_universe_context sigma  (Evd.evar_universe_context (fst t)) in
     Proofview.Unsafe.tclEVARS sigma <*>
     (match kind with
     | RWred sim -> simplintac occ rx sim
