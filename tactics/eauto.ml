@@ -146,10 +146,11 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
   try e_my_find_search env sigma db_list local_db secvars gl
   with Not_found -> []
 
+type delayed_db = Environ.env -> Evd.evar_map -> hint_db
+
 type search_state = {
   depth : int; (*r depth of search before failing *)
-  tacres : (Goal.goal * hint_db) list;
-  sigma : Evd.evar_map;
+  tacres : (Proofview_monad.goal_with_state * delayed_db) list;
   last_tactic : Pp.t Lazy.t;
   prev : prev_search_state;
 }
@@ -218,6 +219,7 @@ module Search = struct
     let sigma = Proofview.Goal.sigma gl in
     let concl = Proofview.Goal.concl gl in
     let hyps = EConstr.named_context env in
+    let db = db env sigma in
     let secvars = secvars_of_hyps hyps in
     let assumption_tacs =
       let mkdb env sigma = assert false in (* no goal can be generated *)
@@ -270,29 +272,24 @@ module Search = struct
       else match s.tacres with
       | [] -> Proofview.tclUNIT s
       | (gl, db) :: rest ->
-        Proofview.Unsafe.tclEVARS s.sigma <*>
-        match Proofview.Unsafe.advance s.sigma gl with
-        | None -> explore p { s with tacres = rest }
-        | Some gl ->
-          Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state gl] <*>
+        Proofview.tclEVARMAP >>= fun sigma ->
+        match Proofview.Unsafe.undefined sigma [gl] with
+        | [] -> explore p { s with tacres = rest }
+        | gl :: _ ->
+          Proofview.Unsafe.tclSETGOALS [gl] <*>
           let ps = if s.prev == Unknown then Unknown else State s in
           branching db dblist local_lemmas >>= fun tacs ->
           let map (isrec, mkdb, tac, pp) =
             Proofview.tclONCE tac >>= fun () ->
             Proofview.Unsafe.tclGETGOALS >>= fun lgls ->
             Proofview.tclEVARMAP >>= fun sigma ->
-            let map gl =
-              let gl = Proofview.drop_state gl in
-              (* FIXME *)
-              let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
-              gl, mkdb env sigma
-            in
+            let map gl = gl, mkdb in
             let depth =
               if isrec then if List.is_empty lgls then s.depth else pred s.depth
               else s.depth
             in
             let lgls = List.map map lgls in
-            Proofview.tclUNIT { depth; tacres = lgls @ rest; sigma; last_tactic = pp; prev = ps; }
+            Proofview.tclUNIT { depth; tacres = lgls @ rest; last_tactic = pp; prev = ps; }
           in
           let tacs = List.map map tacs in
           explore_many 1 p tacs
@@ -358,31 +355,27 @@ let pr_info dbg s =
 
 (** Eauto main code *)
 
-let make_initial_state sigma evk dbg n localdb =
+let make_initial_state evk dbg n localdb =
   { depth = n;
     tacres = [evk, localdb];
-    sigma = sigma;
     last_tactic = lazy (mt());
     prev = if dbg == Info then Init else Unknown;
   }
 
 let e_search_auto ?(debug = Off) ?depth lems db_list =
-  let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let p = Option.default !default_search_depth depth in
-  let sigma = Proofview.Goal.sigma gl in
-  let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
+  let local_db env sigma = make_local_hint_db env sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
   let debug = match d with Debug -> true | Info | Off -> false in
   let tac s = Search.search ~debug db_list lems s in
   let () = pr_dbg_header d in
-  let evk = Proofview.Goal.goal gl in
   Proofview.tclORELSE
     begin
-      tac (make_initial_state sigma evk d p local_db) >>= fun s ->
+      let evk = Proofview.goal_with_state (Proofview.Goal.goal gl) (Proofview.Goal.state gl) in
+      tac (make_initial_state evk d p local_db) >>= fun s ->
       let () = pr_info d s in
       let () = assert (List.is_empty s.tacres) in
-      Proofview.Unsafe.tclEVARS s.sigma <*>
       Proofview.Unsafe.tclSETGOALS []
     end
     begin function
