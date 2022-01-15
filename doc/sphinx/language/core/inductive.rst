@@ -48,7 +48,8 @@ Inductive types
    such types are not useful.  Use the :cmd:`Scheme` command to generate useful
    induction principles.  See :ref:`mutually_inductive_types`.
 
-   If the entire inductive definition is parameterized with :n:`@binder`\s, the parameters correspond
+   If the entire inductive definition is parameterized with :n:`@binder`\s, those
+   :gdef:`inductive parameters <inductive parameter>` correspond
    to a local context in which the entire set of inductive declarations is interpreted.
    For this reason, the parameters must be strictly the same for each inductive type.
    See :ref:`parametrized-inductive-types`.

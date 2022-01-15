@@ -300,12 +300,7 @@ Summary of the commands
 -----------------------
 
 .. cmd:: Class @record_definition
-         Class @singleton_class_definition
-
-   .. insertprodn singleton_class_definition singleton_class_definition
-
-   .. prodn::
-      singleton_class_definition ::= {? > } @ident_decl {* @binder } {? : @sort } := @constructor
+         Class {? > } @ident_decl {* @binder } {? : @sort } := @constructor
 
    The first form declares a record and makes the record a typeclass with parameters
    :n:`{* @binder }` and the listed record fields.
@@ -339,11 +334,11 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
-.. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_def } %} | := @term } }
+.. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_val } %} | := @term } }
 
    Declares a typeclass instance named
    :token:`ident_decl` of the class :n:`@type` with the specified parameters and with
-   fields defined by :token:`field_def`, where each field must be a declared field of
+   fields defined by :token:`field_val`, where each field must be a declared field of
    the class.
 
    Adds one or more :token:`binder`\s to declare a parameterized instance. :token:`hint_info`
