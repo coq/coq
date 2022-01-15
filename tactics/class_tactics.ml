@@ -300,7 +300,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     end
   in
   let tacl =
-    Eauto.registered_e_assumption ::
+    Eauto.e_assumption ::
     (tclTHEN Tactics.intro trivial_fail :: [trivial_resolve])
   in
   tclSOLVE tacl
