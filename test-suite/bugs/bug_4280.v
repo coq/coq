@@ -10,7 +10,7 @@ Next Obligation. lia. Qed.
 Program Definition t_eq (x y: t) : {x=y} + {x<>y} :=
   if Z.eq_dec (proj1_sig x) (proj1_sig y) then left _ else right _.
 Next Obligation.
-  destruct x as [x Px], y as [y Py]. simpl in H; subst y.
+  destruct x as [x Px], y as [y Py]. simpl in e; subst y.
   f_equal. apply UIP_dec. decide equality.
 Qed.
 Next Obligation.

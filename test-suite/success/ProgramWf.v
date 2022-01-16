@@ -93,9 +93,9 @@ Next Obligation.
 Qed.
 
 Next Obligation. simpl in *; intros.
-  revert H0 ; clear_subset_proofs. intros.
+  revert e ; clear_subset_proofs. intros.
   case (le_gt_dec p i) ; intro. simpl in *. assert(p = i) by lia. subst.
-  revert H0 ; clear_subset_proofs ; tauto.
+  revert e ; clear_subset_proofs ; tauto.
 
   apply H. simpl. lia.
 Qed.
