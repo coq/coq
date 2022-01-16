@@ -942,8 +942,13 @@ constructors_or_record: [
 | "|" LIST1 constructor SEP "|"
 | identref constructor_type "|" LIST1 constructor SEP "|"
 | identref constructor_type
-| identref "{" record_fields "}"
-| "{" record_fields "}"
+| identref "{" record_fields "}" default_inhabitant_ident
+| "{" record_fields "}" default_inhabitant_ident
+|
+]
+
+default_inhabitant_ident: [
+| "as" identref
 |
 ]
 

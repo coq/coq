@@ -149,6 +149,7 @@ module Data = struct
   ; is_coercion : bool
   ; coers : projection_flags list
   ; rdata : DataR.t
+  ; inhabitant_id : Id.t
   }
 end
 
@@ -422,7 +423,7 @@ let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls param
 
 (** [declare_projections] prepares the common context for all record
    projections and then calls [build_proj] for each one. *)
-let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name flags fieldimpls fields =
+let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_id flags fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
@@ -434,7 +435,7 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
   let r = mkIndU (indsp,uinstance) in
   let rp = applist (r, Context.Rel.instance_list mkRel 0 paramdecls) in
   let paramargs = Context.Rel.instance_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
-  let x = make_annot (Name binder_name) mip.mind_relevance in
+  let x = make_annot (Name inhabitant_id) mip.mind_relevance in
   let fields = instantiate_possibly_recursive_type (fst indsp) uinstance mib.mind_ntypes paramdecls fields in
   let lifted_fields = Vars.lift_rel_context 1 fields in
   let primitive =
@@ -528,7 +529,7 @@ let bound_names_rdata { DataR.fields; _ } : Id.Set.t =
   List.fold_left add_names Id.Set.empty fields
 
 (** Pick a variable name for a record, avoiding names bound in its fields. *)
-let data_name { Data.id; Data.rdata; _ } =
+let data_name id rdata =
   let name = Id.of_string (Unicode.lowercase_first_char (Id.to_string id)) in
   Namegen.next_ident_away name (bound_names_rdata rdata)
 
@@ -555,11 +556,6 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
     match univs with
     | UState.Monomorphic_entry _ -> false, Entries.Monomorphic_entry
     | UState.Polymorphic_entry uctx -> true, Entries.Polymorphic_entry uctx
-  in
-  let binder_name =
-    match name with
-    | None -> Array.map_of_list data_name record_data
-    | Some n -> n
   in
   let ntypes = List.length record_data in
   let mk_block i { Data.id; idbuild; rdata = { DataR.min_univ; arity; fields; _ }; _ } =
@@ -591,7 +587,7 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
   let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
   let mie =
     { mind_entry_params = params;
-      mind_entry_record = Some (if primitive then Some binder_name else None);
+      mind_entry_record = Some (if primitive then Some (Array.map_of_list (fun a -> a.Data.inhabitant_id) record_data) else None);
       mind_entry_finite = finite;
       mind_entry_inds = blocks;
       mind_entry_private = None;
@@ -603,10 +599,10 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
   in
-  let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =
+  let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; inhabitant_id; id; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let projections = declare_projections rsp (projunivs,ubinders) ~kind binder_name.(i) coers implfs fields in
+    let projections = declare_projections rsp (projunivs,ubinders) ~kind inhabitant_id coers implfs fields in
     let build = GlobRef.ConstructRef cstr in
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly in
     let struc = Structure.make (Global.env ()) rsp projections in
@@ -658,16 +654,17 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
   [cref, [m]]
 
 let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
-    fields params paramimpls coers id idbuild binder_name =
+    fields params paramimpls coers id idbuild inhabitant_id =
   let record_data =
     { Data.id
     ; idbuild
     ; is_coercion = false
     ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields
     ; rdata
+    ; inhabitant_id
     } in
   let inds = declare_structure ~cumulative Declarations.BiFinite ~univs ~variances ~primitive_proj paramimpls
-      params template ~kind:Decls.Method ~name:[|binder_name|] [record_data]
+      params template ~kind:Decls.Method ~name:[|inhabitant_id|] [record_data]
   in
   let map ind =
     let map decl b y = {
@@ -683,7 +680,7 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
 (** [declare_class] will prepare and declare a [Class]. This is done in
    2 steps:
 
-  1. two markely different paths are followed depending on whether the
+  1. two markedly different paths are followed depending on whether the
    class declaration refers to a constant "definitional classes" or to
    a record, that is to say:
 
@@ -702,7 +699,7 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
   2. declare the class, using the information from 1. in the form of [Classes.typeclass]
 
   *)
-let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild paramimpls params
+let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild inhabitant_id paramimpls params
     rdata template ?(kind=Decls.StructureComponent) coers =
   let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -710,17 +707,16 @@ let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild p
       List.map (fun x -> impls @ x) rdata.DataR.implfs
   in
   let rdata = { rdata with DataR.implfs } in
-  let binder_name = Namegen.next_ident_away id (Termops.vars_of_env (Global.env())) in
   let fields = rdata.DataR.fields in
   let data =
     match fields with
     | [ LocalAssum ({binder_name=Name proj_name} as binder, field)
       | LocalDef ({binder_name=Name proj_name} as binder, _, field) ] when def ->
-      let binder = {binder with binder_name=Name binder_name} in
+      let binder = {binder with binder_name=Name inhabitant_id} in
       build_class_constant ~rdata ~univs ~primitive_proj field implfs params paramimpls coers binder id proj_name
     | _ ->
       build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
-        fields params paramimpls coers id idbuild binder_name
+        fields params paramimpls coers id idbuild inhabitant_id
   in
   let univs, params, fields =
     match fst univs with
@@ -813,6 +809,7 @@ module Ast = struct
     ; cfs : (local_decl_expr * record_field_attr) list
     ; idbuild : Id.t
     ; sort : constr_expr option
+    ; default_inhabitant_id : Id.t option
     }
 
   let to_datai { name; is_coercion; cfs; idbuild; sort } =
@@ -843,13 +840,13 @@ let check_priorities kind records =
     List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
   in
   if isnot_class && List.exists has_priority records then
-    user_err Pp.(str "Priorities only allowed for type class substructures")
+    user_err Pp.(str "Priorities only allowed for type class substructures.")
 
 let extract_record_data records =
   let data = List.map Ast.to_datai records in
   let pss = List.map (fun { Ast.binders; _ } -> binders) records in
   let ps = match pss with
-  | [] -> CErrors.anomaly (str "Empty record block")
+  | [] -> CErrors.anomaly (str "Empty record block.")
   | ps :: rem ->
     let eq_local_binders bl1 bl2 = List.equal local_binder_eq bl1 bl2 in
     let () =
@@ -862,11 +859,11 @@ let extract_record_data records =
   ps, data
 
 (* declaring structures, common data to refactor *)
-let class_struture ~cumulative ~template ~impargs ~univs ~params ~primitive_proj def records data =
-  let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
+let class_structure ~cumulative ~template ~impargs ~univs ~params ~primitive_proj def records data =
+  let { Ast.name; cfs; idbuild; default_inhabitant_id; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
-      CErrors.user_err (str "Mutual definitional classes are not handled")
+      CErrors.user_err (str "Mutual definitional classes are not handled.")
   in
   let coers = List.map (fun (_, { rf_subclass; rf_priority }) ->
       match rf_subclass with
@@ -874,7 +871,12 @@ let class_struture ~cumulative ~template ~impargs ~univs ~params ~primitive_proj
       | Vernacexpr.NoInstance -> None)
       cfs
   in
-  declare_class def ~cumulative ~univs ~primitive_proj name.CAst.v idbuild
+  let inhabitant_id =
+    match default_inhabitant_id with
+    | None -> Namegen.next_ident_away name.CAst.v (Termops.vars_of_env (Global.env()))
+    | Some id -> id
+  in
+  declare_class def ~cumulative ~univs ~primitive_proj name.CAst.v idbuild inhabitant_id
     impargs params rdata template coers
 
 let regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
@@ -882,14 +884,19 @@ let regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~
   let adjust_impls impls = impargs @ [CAst.make None] @ impls in
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
   (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
-  let map rdata { Ast.name; is_coercion; cfs; idbuild; _ } =
+  let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
     let coers = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
         { pf_subclass =
             (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
           pf_canonical = rf_canonical })
         cfs
     in
-    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers }
+    let inhabitant_id =
+      match default_inhabitant_id with
+      | None -> data_name name.CAst.v rdata
+      | Some n -> n
+    in
+    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers; inhabitant_id }
   in
   let data = List.map2 map data records in
   let inds = declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
@@ -917,7 +924,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   let template = template, auto_template in
   match kind with
   | Class def ->
-    class_struture ~template ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
+    class_structure ~template ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
       def records data
   | Inductive_kw | CoInductive | Variant | Record | Structure ->
     regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj

@@ -678,7 +678,7 @@ singleton_class_definition: [
 ]
 
 record_definition: [
-| OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] OPT ( ":=" OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" )
+| OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] OPT ( ":=" OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" OPT [ "as" ident ] )
 ]
 
 record_field: [
@@ -705,7 +705,7 @@ inductive_definition: [
 
 constructors_or_record: [
 | OPT "|" LIST1 constructor SEP "|"
-| OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}"
+| OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" OPT ( "as" ident )
 ]
 
 constructor: [

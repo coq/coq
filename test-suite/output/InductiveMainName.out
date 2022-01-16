@@ -1,0 +1,18 @@
+bar : foo -> nat
+
+bar is not universe polymorphic
+Arguments bar id
+bar is transparent
+Expands to: Constant InductiveMainName.bar
+bar' : foo' -> nat
+
+bar' is not universe polymorphic
+Arguments bar' {id'}
+bar' is transparent
+Expands to: Constant InductiveMainName.bar'
+bar'' : foo'' -> foo''
+
+bar'' is not universe polymorphic
+Arguments bar'' id''
+bar'' is transparent
+Expands to: Constant InductiveMainName.bar''
