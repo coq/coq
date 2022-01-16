@@ -178,7 +178,7 @@ let print_libraries () =
 let print_module qid =
   match Nametab.locate_module qid with
   | mp -> Printmod.print_module ~with_body:true mp
-  | exception Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
+  | exception Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid ++ str".")
 
 let print_modtype qid =
   try
@@ -190,7 +190,7 @@ let print_modtype qid =
       let mp = Nametab.locate_module qid in
       Printmod.print_module ~with_body:false mp
     with Not_found ->
-      user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
+      user_err (str"Unknown Module Type or Module " ++ pr_qualid qid ++ str".")
 
 let print_namespace ~pstate ns =
   let ns = List.rev (Names.DirPath.repr ns) in
@@ -293,7 +293,7 @@ let print_strategy r =
     let key = let open GlobRef in match r with
     | VarRef id -> VarKey id
     | ConstRef cst -> ConstKey cst
-    | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable")
+    | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable.")
     in
     let lvl = get_strategy oracle key in
     pr_strategy (r, lvl)
@@ -571,7 +571,7 @@ let vernac_set_used_variables ~pstate using : Declare.Proof.t =
   Names.Id.Set.iter (fun id ->
       if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
         user_err
-          (str "Unknown variable: " ++ Id.print id))
+          (str "Unknown variable: " ++ Id.print id ++ str "."))
     using;
   let _, pstate = Declare.Proof.set_used_variables pstate ~using in
   pstate
@@ -813,7 +813,7 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_p
   let records = List.map map records in
   match typing_flags with
   | Some _ ->
-    CErrors.user_err (Pp.str "typing flags are not yet supported for records")
+    CErrors.user_err (Pp.str "Typing flags are not yet supported for records.")
   | None ->
     let _ : _ list =
       Record.definition_structure ~template udecl k ~cumulative ~poly ~primitive_proj finite records in
@@ -925,7 +925,7 @@ let vernac_inductive ~atts kind indl =
     let check_where ((_, _, _, _), wh) = match wh with
     | [] -> ()
     | _ :: _ ->
-      user_err (str "where clause not supported for records")
+      user_err (str "\"where\" clause not supported for records.")
     in
     let () = List.iter check_where indl in
     let unpack ((id, bl, c, decl), _) = match decl with
@@ -946,7 +946,7 @@ let vernac_inductive ~atts kind indl =
     | (Record | Structure) ->
       user_err (str "The Record keyword is for types defined using the syntax { ... }.")
     | Class _ ->
-      user_err (str "Inductive classes not supported")
+      user_err (str "Inductive classes not supported.")
     | Variant | Inductive_kw | CoInductive -> ()
     in
     let check_name ((na, _, _, _), _) = match na with
@@ -965,7 +965,7 @@ let vernac_inductive ~atts kind indl =
     let uniform = should_treat_as_uniform () in
     ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
   else
-    user_err (str "Mixed record-inductive definitions are not allowed")
+    user_err (str "Mixed record-inductive definitions are not allowed.")
 
 let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
@@ -976,7 +976,7 @@ let vernac_fixpoint_interactive ~atts discharge l =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts discharge l in
   if atts.program then
-    CErrors.user_err Pp.(str"Program Fixpoint requires a body");
+    CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
   let typing_flags = atts.typing_flags in
   ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic ?typing_flags l
   |> vernac_set_used_variables_opt ?using:atts.using
@@ -1001,7 +1001,7 @@ let vernac_cofixpoint_interactive ~atts discharge l =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts discharge l in
   if atts.program then
-    CErrors.user_err Pp.(str"Program CoFixpoint requires a body");
+    CErrors.user_err Pp.(str"Program CoFixpoint requires a body.");
   vernac_set_used_variables_opt ?using:atts.using
     (ComFixpoint.do_cofixpoint_interactive ~scope ~poly:atts.polymorphic l)
 
@@ -1098,7 +1098,7 @@ let interp_names m ns =
           with Not_found ->
             CErrors.user_err ?loc:n.loc
               Pp.(str "Cannot find name " ++ pr_qualid n ++ spc() ++
-                  str "in module " ++ pr_qualid (Nametab.shortest_qualid_of_module m))
+                  str "in module " ++ pr_qualid (Nametab.shortest_qualid_of_module m) ++ str ".")
         in
         (* TODO dumpglob? *)
         match ref with
@@ -1159,7 +1159,7 @@ let vernac_import export cats refl =
         in
         m
       with Not_found ->
-        CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid)
+        CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid ++ str ".")
     in
     match f with
     | ImportAll -> Declaremods.import_module cats ~export m
@@ -1299,7 +1299,7 @@ let vernac_end_segment ~pm ~proof ({v=id} as lid) =
   let ss = Lib.find_opening_node id in
   let what_for = msg_of_subsection ss lid.v in
   if Option.has_some proof then
-    CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");
+    CErrors.user_err (Pp.str "Command not supported (Open proofs remain).");
   Declare.Obls.check_solved_obligations ~pm ~what_for;
   match ss with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
@@ -1767,7 +1767,7 @@ let vernac_set_strategy ~local l =
       | GlobRef.ConstRef sp -> EvalConstRef sp
       | GlobRef.VarRef id -> EvalVarRef id
       | _ -> user_err Pp.(str
-          "cannot set an inductive type or a constructor as transparent") in
+          "Cannot set an inductive type or a constructor as transparent.") in
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
   Redexpr.set_strategy local l
 
@@ -1779,7 +1779,7 @@ let vernac_set_opacity ~local (v,l) =
       | GlobRef.ConstRef sp -> EvalConstRef sp
       | GlobRef.VarRef id -> EvalVarRef id
       | _ -> user_err Pp.(str
-          "cannot set an inductive type or a constructor as transparent") in
+          "Cannot set an inductive type or a constructor as transparent.") in
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
@@ -2030,13 +2030,13 @@ let vernac_register qid r =
   | RegisterInline ->
     begin match gr with
     | GlobRef.ConstRef c -> Global.register_inline c
-    | _ -> CErrors.user_err (Pp.str "Register Inline: expecting a constant")
+    | _ -> CErrors.user_err (Pp.str "Register Inline: expecting a constant.")
     end
   | RegisterCoqlib n ->
     let ns, id = Libnames.repr_qualid n in
     if DirPath.equal (dirpath_of_string "kernel") ns then begin
       if Global.sections_are_opened () then
-        user_err Pp.(str "Registering a kernel type is not allowed in sections");
+        user_err Pp.(str "Registering a kernel type is not allowed in sections.");
       let CPrimitives.PIE pind = match Id.to_string id with
         | "ind_bool" -> CPrimitives.(PIE PIT_bool)
         | "ind_carry" -> CPrimitives.(PIE PIT_carry)
@@ -2044,11 +2044,11 @@ let vernac_register qid r =
         | "ind_cmp" -> CPrimitives.(PIE PIT_cmp)
         | "ind_f_cmp" -> CPrimitives.(PIE PIT_f_cmp)
         | "ind_f_class" -> CPrimitives.(PIE PIT_f_class)
-        | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the “kernel” namespace")
+        | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the \"kernel\" namespace.")
       in
       match gr with
       | GlobRef.IndRef ind -> Global.register_inductive ind pind
-      | _ -> CErrors.user_err (Pp.str "Register in kernel: expecting an inductive type")
+      | _ -> CErrors.user_err (Pp.str "Register in kernel: expecting an inductive type.")
     end
     else Coqlib.register_ref (Libnames.string_of_qualid n) gr
 

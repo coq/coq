@@ -478,7 +478,7 @@ let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min
   match template with
   | Some template, _ ->
     (* templateness explicitly requested *)
-    if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
+    if poly && template then user_err Pp.(strbrk "Attributes \"template\" and \"polymorphism\" are not compatible.");
     template
   | None, template ->
     (* auto detect template *)
@@ -832,7 +832,7 @@ let check_unique_names records =
   in
   match List.duplicates Id.equal allnames with
   | [] -> ()
-  | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id))
+  | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id) ++ str ".")
 
 let check_priorities kind records =
   let isnot_class = match kind with Class false -> false | _ -> true in

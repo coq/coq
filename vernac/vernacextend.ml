@@ -88,9 +88,9 @@ module InProof = struct
     match x, ty with
     | _, Ignore -> ()
     | None, Reject -> ()
-    | Some _, Reject -> CErrors.user_err (Pp.str "Command not supported (Open proofs remain)")
+    | Some _, Reject -> CErrors.user_err (Pp.str "Command not supported (Open proofs remain).")
     | Some x, Use -> x
-    | None, Use -> CErrors.user_err (Pp.str "Command not supported (No proof-editing in progress)")
+    | None, Use -> CErrors.user_err (Pp.str "Command not supported (No proof-editing in progress).")
     | _, UseOpt -> x
 end
 
