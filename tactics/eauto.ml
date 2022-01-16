@@ -47,12 +47,6 @@ let e_assumption =
     Tacticals.tclFIRST (List.map assumption (Tacmach.pf_ids_of_hyps gl))
   end
 
-let registered_e_assumption =
-  Proofview.Goal.enter begin fun gl ->
-  Tacticals.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
-              (Tacmach.pf_ids_of_hyps gl))
-  end
-
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
 (************************************************************************)
@@ -97,7 +91,7 @@ let rec e_trivial_fail_db db_list local_db =
   Proofview.Goal.enter begin fun gl ->
   let secvars = compute_secvars gl in
   let tacl =
-    registered_e_assumption ::
+    e_assumption ::
     (Tacticals.tclTHEN Tactics.intro next) ::
     (e_trivial_resolve (Tacmach.pf_env gl) (Tacmach.project gl) db_list local_db secvars (Tacmach.pf_concl gl))
   in
