@@ -210,7 +210,7 @@ sig
   val zip : evar_map -> constr * t -> constr
   val check_native_args : CPrimitives.t -> t -> bool
   val get_next_primitive_args : CPrimitives.args_red -> t -> CPrimitives.args_red * (t * EConstr.t * t) option
-  val expand_case : env -> evar_map -> case_stk -> constr * constr array
+  val expand_case : env -> evar_map -> case_stk -> case_info * EInstance.t * constr array * (rel_context * constr) * (rel_context * constr) array
 end =
 struct
   open EConstr
@@ -420,8 +420,8 @@ struct
 
   let expand_case env sigma ((ci, u, pms, t, iv, br) : case_stk) =
     let dummy = mkProp in
-    let (_, t, _, _, br) = EConstr.expand_case env sigma (ci, u, pms, t, iv, dummy, br) in
-    (t, br)
+    let (ci, u, pms, t, _, _, br) = EConstr.annotate_case env sigma (ci, u, pms, t, iv, dummy, br) in
+    (ci, u, pms, t, br)
 
 end
 

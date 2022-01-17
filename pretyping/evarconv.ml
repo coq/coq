@@ -358,6 +358,69 @@ let rec ise_app_rev_stack2 env f evd revsk1 revsk2 =
      end
   | _, _ -> (revsk1,revsk2), Success evd
 
+(* Add equality constraints for covariant/invariant positions. For
+   irrelevant positions, unify universes when flexible. *)
+let compare_cumulative_instances evd variances u u' =
+  match Evarutil.compare_cumulative_instances CONV variances u u' evd with
+  | Inl evd ->
+    Success evd
+  | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
+
+type application = FullyApplied | NumArgs of int
+
+let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal m n
+
+let compare_heads env evd ~nargs term term' =
+  let check_strict evd u u' =
+    let cstrs = Univ.enforce_eq_instances u u' Univ.Constraints.empty in
+    try Success (Evd.add_constraints evd cstrs)
+    with Univ.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
+  in
+  match EConstr.kind evd term, EConstr.kind evd term' with
+  | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
+    if is_applied nargs 1 && Environ.is_array_type env c
+    then
+      let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+      compare_cumulative_instances evd [|Univ.Variance.Irrelevant|] u u'
+    else
+      let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+      check_strict evd u u'
+  | Const _, Const _ -> UnifFailure (evd, NotSameHead)
+  | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.Ind.CanOrd.equal ind ind' ->
+    if EInstance.is_empty u && EInstance.is_empty u' then Success evd
+    else
+      let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+      let mind = Environ.lookup_mind mi env in
+      let open Declarations in
+      begin match mind.mind_variance with
+        | None -> check_strict evd u u'
+        | Some variances ->
+          let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
+          if not (is_applied nargs needed)
+          then check_strict evd u u'
+          else
+            compare_cumulative_instances evd variances u u'
+      end
+  | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
+  | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
+    when Names.Construct.CanOrd.equal cons cons' ->
+    if EInstance.is_empty u && EInstance.is_empty u' then Success evd
+    else
+      let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+      let mind = Environ.lookup_mind mi env in
+      let open Declarations in
+      begin match mind.mind_variance with
+        | None -> check_strict evd u u'
+        | Some variances ->
+          let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in
+          if not (is_applied nargs needed)
+          then check_strict evd u u'
+          else
+            Success (compare_constructor_instances evd u u')
+      end
+  | Construct _, Construct _ -> UnifFailure (evd, NotSameHead)
+  | _, _ -> anomaly (Pp.str "")
+
 (* This function tries to unify 2 stacks element by element. It works
    from the end to the beginning. If it unifies a non empty suffix of
    stacks but not the entire stacks, the first part of the answer is
@@ -380,12 +443,18 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
     match revsk1, revsk2 with
     | [], [] -> None, Success i
     | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
-      let (t1, c1) = Stack.expand_case env evd cse1 in
-      let (t2, c2) = Stack.expand_case env evd cse2 in
+      let (ci1, u1, pms1, t1, br1) = Stack.expand_case env evd cse1 in
+      let (ci2, u2, pms2, t2, br2) = Stack.expand_case env evd cse2 in
+      let hd1 = mkIndU (ci1.ci_ind, u1) in
+      let hd2 = mkIndU (ci2.ci_ind, u2) in
+      let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
       begin
         match ise_and i [
-          (fun i -> f env i CONV t1 t2);
-          (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2)]
+          (fun i -> compare_heads env i ~nargs:FullyApplied hd1 hd2);
+          (fun i -> ise_array2 i (fun ii -> f env ii CONV) pms1 pms2);
+          (fun i -> fctx i t1 t2);
+          (fun i -> ise_array2 i fctx br1 br2);
+        ]
         with
         | Success i' -> ise_rev_stack2 true i' q1 q2
         | UnifFailure _ as x -> fail x
@@ -419,12 +488,18 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
     match revsk1, revsk2 with
     | [], [] -> Success i
     | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
-      let (t1, c1) = Stack.expand_case env evd cse1 in
-      let (t2, c2) = Stack.expand_case env evd cse2 in
+      let (ci1, u1, pms1, t1, br1) = Stack.expand_case env evd cse1 in
+      let (ci2, u2, pms2, t2, br2) = Stack.expand_case env evd cse2 in
+      let hd1 = mkIndU (ci1.ci_ind, u1) in
+      let hd2 = mkIndU (ci2.ci_ind, u2) in
+      let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
       ise_and i [
-      (fun i -> ise_rev_stack2 i q1 q2);
-      (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2);
-      (fun i -> f env i CONV t1 t2)]
+        (fun i -> ise_rev_stack2 i q1 q2);
+        (fun i -> compare_heads env i ~nargs:FullyApplied hd1 hd2);
+        (fun i -> ise_array2 i (fun ii -> f env ii CONV) pms1 pms2);
+        (fun i -> fctx i t1 t2);
+        (fun i -> ise_array2 i fctx br1 br2);
+      ]
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
       Stack.Fix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
       if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
@@ -449,65 +524,8 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
     ise_rev_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
-(* Add equality constraints for covariant/invariant positions. For
-   irrelevant positions, unify universes when flexible. *)
-let compare_cumulative_instances evd variances u u' =
-  match Evarutil.compare_cumulative_instances CONV variances u u' evd with
-  | Inl evd ->
-    Success evd
-  | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
-
 let compare_heads env evd ~nargs term term' =
-    let check_strict evd u u' =
-      let cstrs = Univ.enforce_eq_instances u u' Univ.Constraints.empty in
-      try Success (Evd.add_constraints evd cstrs)
-      with Univ.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
-    in
-      match EConstr.kind evd term, EConstr.kind evd term' with
-      | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
-        if Int.equal nargs 1 && Environ.is_array_type env c
-        then
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          compare_cumulative_instances evd [|Univ.Variance.Irrelevant|] u u'
-        else
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          check_strict evd u u'
-      | Const _, Const _ -> UnifFailure (evd, NotSameHead)
-      | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.Ind.CanOrd.equal ind ind' ->
-        if EInstance.is_empty u && EInstance.is_empty u' then Success evd
-        else
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          let mind = Environ.lookup_mind mi env in
-          let open Declarations in
-          begin match mind.mind_variance with
-            | None -> check_strict evd u u'
-            | Some variances ->
-              let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
-              if not (Int.equal nargs needed)
-              then check_strict evd u u'
-              else
-                compare_cumulative_instances evd variances u u'
-          end
-      | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
-      | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
-        when Names.Construct.CanOrd.equal cons cons' ->
-        if EInstance.is_empty u && EInstance.is_empty u' then Success evd
-        else
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          let mind = Environ.lookup_mind mi env in
-          let open Declarations in
-          begin match mind.mind_variance with
-            | None -> check_strict evd u u'
-            | Some variances ->
-              let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in
-              if not (Int.equal nargs needed)
-              then check_strict evd u u'
-              else
-                Success (compare_constructor_instances evd u u')
-          end
-      | Construct _, Construct _ -> UnifFailure (evd, NotSameHead)
-      | _, _ -> anomaly (Pp.str "")
-
+  compare_heads env evd ~nargs:(NumArgs nargs) term term'
 
 let conv_fun f flags on_types =
   let typefn env evd pbty term1 term2 =

@@ -112,7 +112,8 @@ module Stack : sig
   (** [zip sigma t sk] *)
   val zip : evar_map -> constr * t -> constr
 
-  val expand_case : env -> evar_map -> case_stk -> constr * constr array
+  val expand_case : env -> evar_map -> case_stk ->
+    case_info * EInstance.t * constr array * (rel_context * constr) * (rel_context * constr) array
 end
 
 (************************************************************************)
