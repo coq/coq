@@ -15,7 +15,6 @@ open Names
 open Constr
 open Termops
 open EConstr
-open Evd
 open Tactics
 open Auto
 open Genredexpr
@@ -59,6 +58,11 @@ open Auto
 
 let unify_e_resolve flags h =
   Hints.hint_res_pf ~with_evars:true ~with_classes:true ~flags h
+
+type cost = {
+  cost_priority : int;
+  cost_subgoals : int option;
+}
 
 let hintmap_of env sigma secvars concl =
   (* Warning: for computation sharing, we need to return a closure *)
@@ -121,13 +125,14 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
       | Extern (pat, tacast) -> conclPattern concl pat tacast
       in
+      let b = { cost_priority = b; cost_subgoals = FullHint.subgoals h } in
       let tac = FullHint.run h tac in
       (tac, b, lazy (FullHint.print env sigma h))
   in
   List.map tac_of_hint hintl
 
 and e_trivial_resolve env sigma db_list local_db secvars gl =
-  let filter (tac, pr, _) = if Int.equal pr 0 then Some tac else None in
+  let filter (tac, pr, _) = if Int.equal pr.cost_priority 0 then Some tac else None in
   try List.map_filter filter (e_my_find_search env sigma db_list local_db secvars gl)
   with Not_found -> []
 
@@ -135,11 +140,11 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
   try e_my_find_search env sigma db_list local_db secvars gl
   with Not_found -> []
 
+type delayed_db = Environ.env -> Evd.evar_map -> hint_db
+
 type search_state = {
-  priority : int;
   depth : int; (*r depth of search before failing *)
-  tacres : (Goal.goal * hint_db) list;
-  sigma : Evd.evar_map;
+  tacres : (Proofview_monad.goal_with_state * delayed_db) list;
   last_tactic : Pp.t Lazy.t;
   prev : prev_search_state;
 }
@@ -153,98 +158,94 @@ and prev_search_state = (* for info eauto *)
 
 (* first_goal : goal list sigma -> goal sigma *)
 
-module SearchProblem = struct
-
-  let success s = List.is_empty s.tacres
-
-  [@@@ocaml.warning "-3"]
-  let filter_tactics ~is_done sigma mkdb glls l =
-    let gl, db, rest = match glls with
-    | [] -> assert false
-    | (gl, db) :: rest -> (gl, db, rest)
-    in
-    let map (tac, cost, pptac) =
-      try
-        let gl0 = { Evd.it = gl; Evd.sigma } in
-        let { it; sigma } = Proofview.V82.of_tactic tac gl0 in
-        let map gl =
-          let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma gl) in
-          gl, mkdb env sigma db
-        in
-        let ngls = List.map map it in
-        let is_done = is_done || List.is_empty ngls in
-        Some (sigma, is_done, ngls, cost, pptac)
-      with e when CErrors.noncritical e ->
-        None
-    in
-    List.map_filter map l
-  [@@@ocaml.warning "+3"]
-
-  (* Ordering of states is lexicographic on depth (greatest first) then
-     number of remaining goals. *)
-  let compare s s' =
-    let d = s'.depth - s.depth in
-    let d' = Int.compare s.priority s'.priority in
-    let nbgoals s = List.length s.tacres in
-    if not (Int.equal d 0) then d
-    else if not (Int.equal d' 0) then d'
-    else Int.compare (nbgoals s) (nbgoals s')
-
-  let find_first_goal s = match s.tacres with
-  | [] -> assert false
-  | (gl, db) :: rest ->
-    let evi = Evd.find s.sigma gl in
-    Evd.evar_filtered_env (Global.env ()) evi, Evd.evar_concl evi, db, rest
-
-  let branching dblist local_lemmas s =
-    if Int.equal s.depth 0 then
-      []
-    else
-      let ps = if s.prev == Unknown then Unknown else State s in
-      let env, concl, db, rest = find_first_goal s in
-      let hyps = EConstr.named_context env in
-      let secvars = secvars_of_hyps hyps in
-      let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ Id.print id)) in
-      let assumption_tacs =
-        let tacs = List.map map_assum (ids_of_named_context hyps) in
-        let mkdb env sigma db = assert false in (* no goal can be generated *)
-        filter_tactics ~is_done:true s.sigma mkdb s.tacres tacs
-      in
-      let intro_tac =
-        let mkdb env sigma db =
-          push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
-        in
-        filter_tactics ~is_done:true s.sigma mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")]
-      in
-      let rec_tacs =
-        let mkdb env sigma db =
-          let hyps' = EConstr.named_context env in
-            if hyps' == hyps then db
-            else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
-        in
-        filter_tactics ~is_done:false s.sigma mkdb s.tacres
-                        (e_possible_resolve env s.sigma dblist db secvars concl)
-      in
-      let map (sigma, is_done, lgls, cost, pp) =
-        let depth = if is_done then s.depth else pred s.depth in
-        { depth; priority = cost; tacres = lgls @ rest; sigma; last_tactic = pp;
-          prev = ps; }
-      in
-      List.map map (assumption_tacs @ intro_tac) @ (List.sort compare (List.map map rec_tacs))
-
-  let pp s = hov 0 (str " depth=" ++ int s.depth ++ spc () ++
-                      (Lazy.force s.last_tactic))
-
-end
-
 module Search = struct
 
-  type position = int list
+  let is_solved p = match p.cost_subgoals with
+  | Some n -> Int.equal n 0
+  | None -> assert false (* Ruled out by partial_eval *)
 
-  let msg_with_position (p : position) s = match p with
+  let solve_order p1 p2 = match is_solved p1, is_solved p2 with
+  | true, true | false, false -> 0
+  | false, true -> 1
+  | true, false -> -1 (* solved comes first *)
+
+  let subgoals_order p1 p2 = match p1.cost_subgoals, p2.cost_subgoals with
+  | Some n1, Some n2 -> Int.compare n1 n2
+  | Some _, None -> -1
+  | None, Some _ -> 1
+  | None, None -> 0
+
+  (* Ordering of states is lexicographic:
+     1. tactics known to solve the goal
+     2. priority
+     3. number of generated goals. *)
+  let compare (_, p1, _) (_, p2, _) =
+    let d = solve_order p1 p2 in
+    let d' = Int.compare p1.cost_priority p2.cost_priority in
+    if not (Int.equal d 0) then d
+    else if not (Int.equal d' 0) then d'
+    else subgoals_order p1 p2
+
+  (* We cannot determine statically the cost of an Extern hint, so we evaluate
+     it locally, backtrack and return a dummy tactic that immediately sets the
+     result. *)
+  let partial_eval (tac, cost, pp) = match cost.cost_subgoals with
+  | Some _ -> Proofview.tclUNIT (Some (tac, cost, pp))
+  | None ->
+    (* Assert that we are focussed *)
+    Proofview.Goal.enter_one begin fun _ ->
+    Proofview.tclORELSE (Proofview.UnsafeRepr.make begin
+      let open Logic_monad.BackState in
+      get >>= fun s ->
+      Proofview.UnsafeRepr.repr (Proofview.tclONCE tac) >>= fun () ->
+      get >>= fun r ->
+      Proofview.UnsafeRepr.repr Proofview.numgoals >>= fun n ->
+      set s >>= fun () ->
+      let tac = Proofview.UnsafeRepr.make (set r) in
+      let cost = { cost with cost_subgoals = Some n } in
+      return (Some (tac, cost, pp))
+    end) (fun _ -> Proofview.tclUNIT None)
+    end
+
+  let branching db dblist local_lemmas =
+    Proofview.Goal.enter_one begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    let hyps = EConstr.named_context env in
+    let db = db env sigma in
+    let secvars = secvars_of_hyps hyps in
+    let assumption_tacs =
+      let mkdb env sigma = assert false in (* no goal can be generated *)
+      let map_assum id = (false, mkdb, e_give_exact (mkVar id), lazy (str "exact" ++ spc () ++ Id.print id)) in
+      List.map map_assum (ids_of_named_context hyps)
+    in
+    let intro_tac =
+      let mkdb env sigma =
+        push_resolve_hyp env sigma (NamedDecl.get_id (List.hd (EConstr.named_context env))) db
+      in
+      (false, mkdb, Tactics.intro, lazy (str "intro"))
+    in
+    let rec_tacs =
+      let mkdb env sigma =
+        let hyps' = EConstr.named_context env in
+          if hyps' == hyps then db
+          else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
+      in
+      let tacs = e_possible_resolve env sigma dblist db secvars concl in
+      Proofview.Monad.List.map_filter partial_eval tacs >>= fun tacs ->
+      let tacs = List.sort compare tacs in
+      let tacs = List.map (fun (tac, _, pp) -> (true, mkdb, tac, pp)) tacs in
+      Proofview.tclUNIT tacs
+    in
+    rec_tacs >>= fun rec_tacs ->
+    Proofview.tclUNIT (assumption_tacs @ intro_tac :: rec_tacs)
+    end
+
+  let msg_with_position (p : int list) s = match p with
   | [] -> ()
   | _ :: _ ->
-    let pp = SearchProblem.pp s in
+    let pp = hov 0 (str " depth=" ++ int s.depth ++ spc () ++ (Lazy.force s.last_tactic)) in
     let rec pp_rec = function
       | [] -> mt ()
       | [i] -> int i
@@ -254,16 +255,45 @@ module Search = struct
 
   let push i p = match p with [] -> [] | _ :: _ -> i :: p
 
+  exception SearchFailure
+
+  let is_failure (e, _) = match e with SearchFailure -> true | _ -> false
+
   let search ?(debug=false) dblist local_lemmas s =
     let rec explore p s =
       let () = msg_with_position p s in
-      if SearchProblem.success s then s
-      else explore_many 1 p (SearchProblem.branching dblist local_lemmas s)
+      if Int.equal s.depth 0 then Proofview.tclZERO SearchFailure
+      else match s.tacres with
+      | [] -> Proofview.tclUNIT s
+      | (gl, db) :: rest ->
+        Proofview.tclEVARMAP >>= fun sigma ->
+        match Proofview.Unsafe.undefined sigma [gl] with
+        | [] -> explore p { s with tacres = rest }
+        | gl :: _ ->
+          Proofview.Unsafe.tclSETGOALS [gl] <*>
+          let ps = if s.prev == Unknown then Unknown else State s in
+          branching db dblist local_lemmas >>= fun tacs ->
+          let map (isrec, mkdb, tac, pp) =
+            Proofview.tclONCE tac >>= fun () ->
+            Proofview.Unsafe.tclGETGOALS >>= fun lgls ->
+            Proofview.tclEVARMAP >>= fun sigma ->
+            let map gl = gl, mkdb in
+            let depth =
+              if isrec then if List.is_empty lgls then s.depth else pred s.depth
+              else s.depth
+            in
+            let lgls = List.map map lgls in
+            Proofview.tclUNIT { depth; tacres = lgls @ rest; last_tactic = pp; prev = ps; }
+          in
+          let tacs = List.map map tacs in
+          explore_many 1 p tacs
+
     and explore_many i p = function
-      | [] -> raise Not_found
-      | [s] -> explore (push i p) s
-      | s :: l ->
-          try explore (push i p) s with Not_found -> explore_many (succ i) p l
+    | [] -> Proofview.tclZERO SearchFailure
+    | tac :: l ->
+      Proofview.tclORELSE (tac >>= fun s -> explore (push i p) s)
+        (fun e -> explore_many (if is_failure e then succ i else i) p l)
+        (* discriminate between search failures and [tac] raising an error *)
     in
     let pos = if debug then [1] else [] in
     explore pos s
@@ -319,35 +349,35 @@ let pr_info dbg s =
 
 (** Eauto main code *)
 
-let make_initial_state sigma evk dbg n localdb =
+let make_initial_state evk dbg n localdb =
   { depth = n;
-    priority = 0;
     tacres = [evk, localdb];
-    sigma = sigma;
     last_tactic = lazy (mt());
     prev = if dbg == Info then Init else Unknown;
   }
 
 let e_search_auto ?(debug = Off) ?depth lems db_list =
-  let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let p = Option.default !default_search_depth depth in
-  let sigma = Proofview.Goal.sigma gl in
-  let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
+  let local_db env sigma = make_local_hint_db env sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
   let debug = match d with Debug -> true | Info | Off -> false in
   let tac s = Search.search ~debug db_list lems s in
   let () = pr_dbg_header d in
-  let evk = Proofview.Goal.goal gl in
-  match tac (make_initial_state sigma evk d p local_db) with
-  | s ->
-    let () = pr_info d s in
-    let () = assert (List.is_empty s.tacres) in
-    Proofview.Unsafe.tclEVARS s.sigma <*>
-    Proofview.Unsafe.tclSETGOALS []
-  | exception Not_found ->
-    let () = pr_info_nop d in
-    Proofview.tclUNIT ()
+  Proofview.tclORELSE
+    begin
+      let evk = Proofview.goal_with_state (Proofview.Goal.goal gl) (Proofview.Goal.state gl) in
+      tac (make_initial_state evk d p local_db) >>= fun s ->
+      let () = pr_info d s in
+      let () = assert (List.is_empty s.tacres) in
+      Proofview.Unsafe.tclSETGOALS []
+    end
+    begin function
+    | (Search.SearchFailure, _) ->
+      let () = pr_info_nop d in
+      Proofview.tclUNIT ()
+    | (e, info) -> Proofview.tclZERO ~info e
+    end
   end
 
 let eauto_with_bases ?debug ?depth lems db_list =
