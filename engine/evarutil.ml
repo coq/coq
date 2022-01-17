@@ -638,6 +638,12 @@ let clear_hyps_in_evi_main env sigma hyps terms ids =
   in
   (!evdref, nhyps,List.map EConstr.of_constr terms)
 
+let check_and_clear_in_constr ~is_section_variable env evd err ids global c =
+  let evdref = ref evd in
+  let c = EConstr.Unsafe.to_constr c in
+  let c = check_and_clear_in_constr ~is_section_variable env evdref err ids global c in
+  !evdref, EConstr.of_constr c
+
 let clear_hyps_in_evi env sigma hyps concl ids =
   match clear_hyps_in_evi_main env sigma hyps [concl] ids with
   | (sigma,nhyps,[nconcl]) -> (sigma,nhyps,nconcl)

@@ -479,6 +479,25 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
             end
     end
 
+let clear_for_rewrite_in_hyps ids c =
+  match ids with
+  | [x] -> Proofview.tclUNIT ()
+  | _ ->
+    let ids = Id.Set.of_list ids in
+    Proofview.Goal.enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let is_section_variable = Termops.is_section_variable (Global.env()) in
+      (* Is this the right err? *)
+      let err = (Evarutil.OccurHypInSimpleClause None) in
+      let sigma, _ =
+        try Evarutil.check_and_clear_in_constr ~is_section_variable env sigma err ids true c
+        with Evarutil.ClearDependencyError (id,err,inglobal) ->
+          CErrors.user_err Pp.(str "Cannot rewrite due to dependency on " ++ Id.print id ++ str ".")
+      in
+      Proofview.Unsafe.tclEVARS sigma
+    end
+
 let general_rewrite_clause l2r with_evars ?tac c cl =
   let occs_of = occurrences_map (List.fold_left
     (fun acc ->
@@ -496,10 +515,14 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
               (general_rewrite ~where:(Some id) ~l2r (occs_of occs) ~freeze:false ~dep:true ~with_evars ?tac c)
               (do_hyps l)
         in
-        if cl.concl_occs == NoOccurrences then do_hyps l else
-          tclTHENFIRST
-            (general_rewrite ~where:None ~l2r (occs_of cl.concl_occs) ~freeze:false ~dep:true ~with_evars ?tac c)
-            (do_hyps l)
+        let tac =
+          if cl.concl_occs == NoOccurrences then do_hyps l
+          else
+            tclTHENFIRST
+              (general_rewrite ~where:None ~l2r (occs_of cl.concl_occs) ~freeze:false ~dep:true ~with_evars ?tac c)
+              (do_hyps l)
+        in
+        tclTHEN (clear_for_rewrite_in_hyps (List.map (fun ((_,id),_) -> id) l) (fst c)) tac
     | None ->
         (* Otherwise, if we are told to rewrite in all hypothesis via the
            syntax "* |-", we fail iff all the different rewrites fail *)
@@ -507,8 +530,9 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
           | [] -> tclZEROMSG (Pp.str"Nothing to rewrite.")
           | id :: l ->
             tclIFTHENFIRSTTRYELSEMUST
-             (general_rewrite ~where:(Some id) ~l2r AllOccurrences ~freeze:false ~dep:true ~with_evars ?tac c)
-             (do_hyps_atleastonce l)
+              (tclTHEN (clear_for_rewrite_in_hyps [id] (fst c))
+                 (general_rewrite ~where:(Some id) ~l2r AllOccurrences ~freeze:false ~dep:true ~with_evars ?tac c))
+              (do_hyps_atleastonce l)
         in
         let do_hyps =
           (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
