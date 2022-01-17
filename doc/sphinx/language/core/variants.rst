@@ -6,12 +6,7 @@ Variants and the `match` construct
 Variants
 --------
 
-.. cmd:: Variant @variant_definition
-
-   .. insertprodn variant_definition variant_definition
-
-   .. prodn::
-      variant_definition ::= @ident_decl {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
+.. cmd:: Variant @ident_decl {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
 
    The :cmd:`Variant` command is similar to the :cmd:`Inductive` command, except
    that it disallows recursive definition of types (for instance, lists cannot
