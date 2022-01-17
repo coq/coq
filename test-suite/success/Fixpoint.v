@@ -224,3 +224,185 @@ Fixpoint f n :=
   end.
 
 End CofixRedexPrimProj.
+
+Module ArgumentsAcrossMatch.
+
+(* large subterm passed across match *)
+Fail Fixpoint f n p {struct n} :=
+  match n with
+  | 0 => fun _ => 0
+  | S q => fun r => f q (f r 0)
+  end n.
+
+(* strict subterm passed across match *)
+Fixpoint f n p {struct n} :=
+  match n with
+  | 0 => 0
+  | S q =>
+     match q with
+     | 0 => fun _ => 0
+     | S q' => fun r => f q (f r 0)
+     end q
+  end.
+
+End ArgumentsAcrossMatch.
+
+Module LetToExpand.
+
+Fixpoint h n :=
+  let f n := (fun x : h n -> True => True) (fun y : h n => I) in
+  match n with
+  | 0 => True
+  | S n => f n
+  end.
+
+End LetToExpand.
+
+Module RecursiveCallInsideCoFix.
+
+CoInductive I := { field : I }.
+
+Fail Fixpoint f (n:nat) :=
+  (cofix g n := {| field := f n |}) 0.
+
+End RecursiveCallInsideCoFix.
+
+Module NestedRedexes.
+
+Fixpoint f n :=
+  match n with
+  | 0 => 0
+  | S n => id (fun x => id (fun _ => id (f x)) 0) n
+  end.
+
+End NestedRedexes.
+
+Module NestedRedexesWithCofix.
+
+CoInductive I := { field : nat -> nat }.
+
+Fail Fixpoint f n :=
+  ((cofix g h := {| field := h |}) f).(field) n.
+
+Fixpoint f n :=
+  match n with
+  | 0 => 0
+  | S p => ((cofix g h := {| field := h |}) f).(field) p
+  end.
+
+End NestedRedexesWithCofix.
+
+Module NestedApplicationsWithVariables.
+
+Section S.
+Variable h : (nat -> nat) -> nat.
+Fixpoint f n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) (h f)
+  end.
+End S.
+
+End NestedApplicationsWithVariables.
+
+Module NestedApplicationsWithParameters.
+
+Parameter h : (nat -> nat) -> nat.
+Fixpoint f n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) (h f)
+  end.
+
+End NestedApplicationsWithParameters.
+
+Module NestedApplicationsWithLocalVariables.
+
+Fixpoint f (h:(nat->nat)->nat) n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) (h (f h))
+  end.
+
+End NestedApplicationsWithLocalVariables.
+
+Module NestedApplicationsWithProjections.
+
+Set Primitive Projections.
+Record R := { field : (nat -> nat) -> nat }.
+
+Fixpoint f x n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) (x.(field) (f x))
+  end.
+
+End NestedApplicationsWithProjections.
+
+Module NestedRedexesWithFix.
+
+Fixpoint f n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) ((fix h k (q:nat) {struct q} := k) f)
+  end.
+
+(* inner fix fully applied with a match subterm *)
+Fixpoint f' n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) ((fix h k (q:nat) {struct q} := k) f' p)
+  end.
+
+(* inner fix fully applied with an arbitrary term *)
+Fixpoint f'' o n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) ((fix h k (q:nat) {struct q} := k o) f'' o)
+  end.
+
+End NestedRedexesWithFix.
+
+Module NestedRedexesWithMatch.
+
+Fixpoint f o n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) (match o with tt => f o end)
+  end.
+
+Fixpoint f' o n :=
+  match n with
+  | 0 => 0
+  | S p => (fun _ => 0) ((match o with tt => fun x => x o end) f')
+  end.
+
+End NestedRedexesWithMatch.
+
+Module ErasableInertSubterm.
+
+Fixpoint P (n:nat) :=
+  (fun _ => True) (forall a : (forall p, P p), True).
+
+End ErasableInertSubterm.
+
+Module WithLetInLift.
+
+Fixpoint f (n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S n => (let x := 0 in fun n => f n) n
+  end.
+
+End WithLetInLift.
+
+Module WithLateCaseReduction.
+
+Definition B := true.
+Fixpoint f (n : nat) :=
+  match n with
+  | 0 => 0
+  | S n => (if B as b return if b then nat -> nat else unit then fun n => f n else tt) n
+  end.
+
+End WithLateCaseReduction.

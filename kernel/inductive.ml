@@ -592,8 +592,6 @@ let size_glb s1 s2 =
      variables bound at head in the body of the fix (as e.g. [x] in
      [fix f n := fun x => f x]); there may be several such indices
      because [match] subterms may have combine several results;
-     a IotaTerm is an argument of a match/fix made abstract; a LamTerm is
-     a variable internally bound in a subterm of a redex
    - Subterm: when the term is a subterm of the recursive argument
        the wf_paths argument specifies which subterms are recursive;
      the [int list] is used in the [match] case where one branch of
@@ -603,13 +601,11 @@ let size_glb s1 s2 =
        empty type
  *)
 
-type internal_subterm_source = IotaTerm | LamTerm
-
 type subterm_spec =
-    Subterm of (internal_subterm_source Int.Map.t * size * wf_paths)
+    Subterm of (Int.Set.t * size * wf_paths)
   | Dead_code
   | Not_subterm
-  | Internally_bound_subterm of internal_subterm_source Int.Map.t
+  | Internally_bound_subterm of Int.Set.t
 
 let eq_wf_paths = Rtree.equal Declareops.eq_recarg
 
@@ -633,13 +629,10 @@ let incl_wf_paths = Rtree.incl Declareops.eq_recarg inter_recarg Norec
 let spec_of_tree t =
   if eq_wf_paths t mk_norec
   then Not_subterm
-  else Subterm (Int.Map.empty, Strict, t)
+  else Subterm (Int.Set.empty, Strict, t)
 
 let merge_internal_subterms l1 l2 =
-  Int.Map.union (fun _ a1 a2 ->
-      match a1, a2 with
-      | IotaTerm, _ | _, IotaTerm -> Some IotaTerm
-      | LamTerm, LamTerm -> Some LamTerm) l1 l2
+  Int.Set.union l1 l2
 
 let inter_spec s1 s2 =
   match s1, s2 with
@@ -667,18 +660,24 @@ type guard_env =
 let make_renv env recarg tree =
   { env = env;
     rel_min = recarg+2; (* recarg = 0 ==> Rel 1 -> recarg; Rel 2 -> fix *)
-    genv = [Lazy.from_val(Subterm(Int.Map.empty, Large,tree))] }
+    genv = [Lazy.from_val(Subterm(Int.Set.empty, Large,tree))] }
 
 let push_var renv (x,ty,spec) =
   { env = push_rel (LocalAssum (x,ty)) renv.env;
     rel_min = renv.rel_min+1;
     genv = spec:: renv.genv }
 
+let push_let renv (x,c,ty,spec) =
+  { env = push_rel (LocalDef (x,c,ty)) renv.env;
+    rel_min = renv.rel_min+1;
+    genv = spec:: renv.genv }
+
 let assign_var_spec renv (i,spec) =
   { renv with genv = List.assign renv.genv (i-1) spec }
 
-let push_var_renv renv (x,ty) =
-  push_var renv (x,ty,lazy Not_subterm)
+let push_var_renv renv n (x,ty) =
+  let spec = Lazy.from_val (if n >= 1 then Internally_bound_subterm (Int.Set.singleton n) else Not_subterm) in
+  push_var renv (x,ty,spec)
 
 (* Fetch recursive information about a variable p *)
 let subterm_var p renv =
@@ -697,14 +696,44 @@ let push_fix_renv renv (_,v,_ as recdef) =
     rel_min = renv.rel_min+n;
     genv = iterate (fun ge -> lazy Not_subterm::ge) n renv.genv }
 
+type fix_check_result =
+  | NeedReduce of env * fix_guard_error
+  | NoNeedReduce
+
 (* Definition and manipulation of the stack *)
-type stack_element = SClosure of guard_env*constr | SArg of subterm_spec Lazy.t
+type stack_element =
+  (* arguments in the evaluation stack *)
+  (* [constr] is typed in [guard_env] and [int] is the number of
+     binders added in the current env on top of [guard_env.env] *)
+  | SClosure of fix_check_result * guard_env * int * constr
+  (* arguments applied to a "match": only their spec traverse the match *)
+  | SArg of subterm_spec Lazy.t
+
+let needreduce_of_stack = function
+  | [] | SArg _ :: _ -> NoNeedReduce
+  | SClosure (needreduce,_,_,_) :: _ -> needreduce
+
+let (|||) x y = match x with
+  | NeedReduce _ -> x
+  | NoNeedReduce -> y
+
+let redex_level rs = List.length rs
+
+let push_stack_closure renv needreduce c stack =
+  (* In (f a b), if b requires reduction, than a has to require too *)
+  let needreduce' = needreduce ||| needreduce_of_stack stack in
+  (SClosure (needreduce', renv, 0, c)) :: stack
 
 let push_stack_closures renv l stack =
-  List.fold_right (fun h b -> (SClosure (renv,h))::b) l stack
+  List.fold_right (push_stack_closure renv NoNeedReduce) l stack
 
 let push_stack_args l stack =
-  List.fold_right (fun h b -> (SArg h)::b) l stack
+  List.fold_right (fun spec stack -> SArg spec :: stack) l stack
+
+let lift_stack =
+   List.map (function
+       | SClosure (needreduce,s,n,c) -> SClosure (needreduce,s,n+1,c)
+       | x -> x)
 
 (******************************)
 (* {6 Computing the recursive subterms of a term (propagation of size
@@ -987,7 +1016,7 @@ let rec subterm_specif renv stack t =
                      (* Why Strict here ? To be general, it could also be
                         Large... *)
           assign_var_spec renv'
-          (nbfix-i, lazy (Subterm(Int.Map.empty,Strict,recargs))) in
+          (nbfix-i, lazy (Subterm(Int.Set.empty,Strict,recargs))) in
         let decrArg = recindxs.(i) in
         let theBody = bodies.(i)   in
         let nbOfAbst = decrArg+1 in
@@ -1005,7 +1034,7 @@ let rec subterm_specif renv stack t =
 
     | Lambda (x,a,b) ->
       let () = assert (List.is_empty l) in
-      let spec,stack' = extract_stack 0 stack in
+      let spec,stack' = extract_stack stack in
         subterm_specif (push_var renv (x,a,spec)) stack' b
 
       (* Metas and evars are considered OK *)
@@ -1043,12 +1072,12 @@ and lazy_subterm_specif renv stack t =
   lazy (subterm_specif renv stack t)
 
 and stack_element_specif = function
-  | SClosure (h_renv,h) -> lazy_subterm_specif h_renv [] h
+  | SClosure (_, h_renv, _, h) -> lazy_subterm_specif h_renv [] h
   | SArg x -> x
 
-and extract_stack n = function
-   | [] -> Lazy.from_val (if n >= 1 then Internally_bound_subterm (Int.Map.singleton n LamTerm) else Not_subterm), []
-   | h::t -> stack_element_specif h, t
+and extract_stack = function
+   | [] -> Lazy.from_val Not_subterm, []
+   | elt :: l -> stack_element_specif elt, l
 
 and primitive_specif renv op args =
   let open CPrimitives in
@@ -1070,7 +1099,7 @@ and primitive_specif renv op args =
 
 let set_iota_specif nr spec =
   lazy (match Lazy.force spec with
-        | Not_subterm -> if nr >= 1 then Internally_bound_subterm (Int.Map.singleton nr IotaTerm) else Not_subterm
+        | Not_subterm -> if nr >= 1 then Internally_bound_subterm (Int.Set.singleton nr) else Not_subterm
         | spec -> spec)
 
 (************************************************************************)
@@ -1078,7 +1107,7 @@ let set_iota_specif nr spec =
 exception FixGuardError of env * fix_guard_error
 
 let illegal_rec_call renv fx = function
-  | SClosure (arg_renv,arg) ->
+  | SClosure (_,arg_renv,_,arg) ->
     let le_lt_vars =
     lazy (let (_,le_vars,lt_vars) =
       List.fold_left
@@ -1095,27 +1124,21 @@ let illegal_rec_call renv fx = function
        rewriting before been applied to the parameter of a constructor *)
     NotEnoughArgumentsForFixCall fx
 
-type fix_check_result =
-  | NeedReduce of internal_subterm_source * env * fix_guard_error
-  | Valid
-
-let set_need_reduce_one env nr b err rs =
+let set_need_reduce_one env nr err rs =
   let mr = List.length rs in
   let rs1, rs2 = List.chop (mr-nr) rs in
   let _, rs2 = List.sep_first rs2 in
-  rs1 @ NeedReduce (b, env, err) :: rs2
+  rs1 @ NeedReduce (env, err) :: rs2
 
 let set_need_reduce env l err rs =
-  Int.Map.fold (fun n b -> set_need_reduce_one env n b err) l rs
+  Int.Set.fold (fun n -> set_need_reduce_one env n err) l rs
 
 let set_need_reduce_top env err rs =
-  set_need_reduce_one env (List.length rs) LamTerm err rs
-
-let redex_level rs = List.length rs
+  set_need_reduce_one env (List.length rs) err rs
 
 type check_subterm_result =
   | InvalidSubterm
-  | NeedReduceSubterm of internal_subterm_source Int.Map.t (* empty = Valid *)
+  | NeedReduceSubterm of Int.Set.t (* empty = NoNeedReduce *)
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm x tree =
@@ -1123,11 +1146,11 @@ let check_is_subterm x tree =
   | Subterm (need_reduce,Strict,tree') ->
     if incl_wf_paths tree tree' then NeedReduceSubterm need_reduce
     else InvalidSubterm
-  | Dead_code -> NeedReduceSubterm Int.Map.empty
+  | Dead_code -> NeedReduceSubterm Int.Set.empty
   | Not_subterm | Subterm (_,Large,_) -> InvalidSubterm
   | Internally_bound_subterm l -> NeedReduceSubterm l
 
-let filter_stack_domain env p stack =
+let filter_stack_domain env nr p stack =
   let absctx, ar = Term.decompose_lam_assum p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
@@ -1146,17 +1169,17 @@ let filter_stack_domain env p stack =
       let ty, args = decompose_app (whd_all env a) in
       let elt = match kind ty with
       | Ind ind ->
-        let spec' = stack_element_specif elt in
-        (match (Lazy.force spec') with
-        | Not_subterm | Dead_code | Internally_bound_subterm _ -> elt
+        let spec = stack_element_specif elt in
+        (match Lazy.force spec with
+        | Not_subterm | Dead_code | Internally_bound_subterm _ -> SArg spec
         | Subterm(l,s,path) ->
             let recargs = get_recargs_approx env path ind args in
             let path = inter_wf_paths path recargs in
             SArg (lazy (Subterm(l,s,path))))
-      | _ -> (SArg (lazy Not_subterm))
+      | _ -> SArg (set_iota_specif nr (lazy Not_subterm))
       in
       elt :: filter_stack (push_rel d env) c0 stack'
-    | _ -> List.fold_right (fun _ l -> SArg (lazy Not_subterm) :: l) stack []
+    | _ -> List.fold_right (fun _ l -> SArg (set_iota_specif nr (lazy Not_subterm)) :: l) stack []
   in
   filter_stack env ar stack
 
@@ -1174,59 +1197,59 @@ let check_one_fix renv recpos trees def =
      arguments that will be applied after reduction.
      example u in t where we have (match .. with |.. => t end) u;
      [rs] is the stack of redexes traversed w/o having been triggered *)
-  let rec check_rec_call renv stack rs t =
-    (* if [t] does not make recursive calls, it is guarded: *)
-    if noccur_with_meta renv.rel_min nfi t then rs
-    else
-      let (f,l) = decompose_app t in
-      match kind f with
+  let rec check_rec_call_stack renv stack rs t =
+      match kind t with
+        | App (f,args) ->
+            begin
+              let rs, stack =
+                Array.fold_right (fun a (rs,stack) ->
+                    let needreduce,rs = check_rec_call renv rs a in
+                    let stack = push_stack_closure renv needreduce a stack in
+                    (rs,stack)) args (rs,stack)
+              in
+              check_rec_call_stack renv stack rs f
+            end
+
         | Rel p ->
-            (* Test if [p] is a fixpoint (recursive call) *)
-            if renv.rel_min <= p && p < renv.rel_min+nfi then
-              begin
-                let rs = List.fold_left (check_rec_call renv []) rs l in
+            begin
+              (* Test if [p] is a fixpoint (recursive call) *)
+              if renv.rel_min <= p && p < renv.rel_min+nfi then
                 (* the position of the invoked fixpoint: *)
                 let glob = renv.rel_min+nfi-1-p in
                 (* the decreasing arg of the rec call: *)
                 let np = recpos.(glob) in
-                let stack' = push_stack_closures renv l stack in
-                if List.length stack' <= np then
+                if List.length stack <= np then
                   set_need_reduce_top renv.env (NotEnoughArgumentsForFixCall glob) rs
                 else
                   (* Retrieve the expected tree for the argument *)
                   (* Check the decreasing arg is smaller *)
-                  let z = List.nth stack' np in
+                  let z = List.nth stack np in
                   match check_is_subterm (stack_element_specif z) trees.(glob) with
                   | NeedReduceSubterm l -> set_need_reduce renv.env l (illegal_rec_call renv glob z) rs
                   | InvalidSubterm -> raise (FixGuardError (renv.env, illegal_rec_call renv glob z))
-              end
-            else
-              begin
-                match lookup_rel p renv.env with
-                | LocalAssum _ ->
-                    List.fold_left (check_rec_call renv []) rs l
-                | LocalDef (_,c,_) ->
-                    let rs = List.fold_left (check_rec_call renv []) (Valid::rs) l in
-                    match List.sep_first rs with
-                    | Valid, rs -> rs
-                    | NeedReduce _, rs -> check_rec_call renv stack rs (Term.applist(lift p c,l))
-              end
+              else
+                check_rec_call_state renv NoNeedReduce stack rs (fun () ->
+                    match lookup_rel p renv.env with
+                    | LocalAssum _ -> None
+                    | LocalDef (_,c,_) -> Some (lift p c))
+            end
 
         | Case (ci, u, pms, ret, iv, c_0, br) -> (* iv ignored: it's just a cache *)
             let (ci, p, _iv, c_0, brs) = expand_case renv.env (ci, u, pms, ret, iv, c_0, br) in
-            let rs = List.fold_left (check_rec_call renv []) (Valid::rs) (c_0::p::l) in
+            let needreduce_c_0, rs = check_rec_call renv rs c_0 in
+            let rs = check_inert_subterm_rec_call renv rs p in
             (* compute the recarg info for the arguments of each branch *)
+            let rs' = NoNeedReduce::rs in
+            let nr = redex_level rs' in
             let case_spec =
-              branches_specif renv (set_iota_specif (redex_level rs) (lazy_subterm_specif renv [] c_0)) ci in
-            let stack' = push_stack_closures renv l stack in
-            let stack' = filter_stack_domain renv.env p stack' in
-            let rs =
-              Array.fold_left_i (fun k rs br' ->
+              branches_specif renv (set_iota_specif nr (lazy_subterm_specif renv [] c_0)) ci in
+            let stack' = filter_stack_domain renv.env nr p stack in
+            let rs' =
+              Array.fold_left_i (fun k rs' br' ->
                   let stack_br = push_stack_args case_spec.(k) stack' in
-                  check_rec_call renv stack_br rs br') rs brs in
-            (match List.sep_first rs with
-            | Valid, rs -> rs
-            | NeedReduce (b,env,err), rs ->
+                  check_rec_call_stack renv stack_br rs' br') rs' brs in
+            let needreduce_br, rs = List.sep_first rs' in
+            check_rec_call_state renv (needreduce_br ||| needreduce_c_0) stack rs (fun () ->
               (* we try hard to reduce the match away by looking for a
                  constructor in c_0 (we unfold definitions too) *)
               let c_0 = whd_all renv.env c_0 in
@@ -1236,18 +1259,11 @@ let check_one_fix renv recpos trees def =
                   decompose_app (whd_all renv.env (Term.applist (contract_cofix cofix, args)))
               | _ -> hd, args in
               match kind hd with
-              | Construct cstr ->
-                  check_rec_call renv [] rs
-                    (Term.applist (apply_branch cstr args ci brs, l))
+              | Construct cstr -> Some (apply_branch cstr args ci brs)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
               | Sort _ | Int _ | Float _ | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
-              | Proj _ | Cast _ | Meta _ | Evar _ ->
-                  match b with
-                  | IotaTerm -> (* no hope *) raise (FixGuardError (env,err))
-                  | LamTerm ->
-                     (* a commutative cut across the "match" can be triggered by a reduction at a outer level *)
-                     set_need_reduce_top env err rs)
+              | Proj _ | Cast _ | Meta _ | Evar _ -> None)
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
            way, ie, the rule :
@@ -1263,93 +1279,86 @@ let check_one_fix renv recpos trees def =
            Eduardo 7/9/98 *)
         | Fix ((recindxs,i),(_,typarray,bodies as recdef) as fix) ->
             let decrArg = recindxs.(i) in
-            let rs = List.fold_left (check_rec_call renv []) (Valid::rs) l in
-            let rs = Array.fold_left (check_rec_call renv []) rs typarray in
+            let rs' = Array.fold_left (check_inert_subterm_rec_call renv) (NoNeedReduce::rs) typarray in
             let renv' = push_fix_renv renv recdef in
-            let stack' = push_stack_closures renv l stack in
-            let rs = Array.fold_left_i (fun j rs body ->
-              if Int.equal i j && (List.length stack' > decrArg) then
-                let recArg = List.nth stack' decrArg in
-                let arg_sp = set_iota_specif (redex_level rs) (stack_element_specif recArg) in
+            let rs' = Array.fold_left_i (fun j rs' body ->
+              if Int.equal i j && (List.length stack > decrArg) then
+                let recArg = List.nth stack decrArg in
+                let arg_spec = set_iota_specif (redex_level rs') (stack_element_specif recArg) in
                 let illformed () =
                   error_ill_formed_rec_body renv.env (Type_errors.FixGuardError NotEnoughAbstractionInFixBody)
                     (pi1 recdef) i (push_rec_types recdef renv.env)
                     (judgment_of_fixpoint recdef)
                 in
-                check_nested_fix_body illformed renv' (decrArg+1) arg_sp rs body
-              else check_rec_call renv' [] rs body) rs bodies in
-            (match List.sep_first rs with
-            | Valid, rs -> rs
-            | NeedReduce (b,env,err), rs ->
+                check_nested_fix_body illformed renv' (decrArg+1) arg_spec rs' body
+              else
+                let needreduce, rs' = check_rec_call renv' rs' body in
+                (needreduce ||| List.hd rs') :: List.tl rs') rs' bodies in
+            let needreduce_fix, rs = List.sep_first rs' in
+            check_rec_call_state renv needreduce_fix stack rs (fun () ->
               (* we try hard to reduce the fix away by looking for a
                  constructor in l[decrArg] (we unfold definitions too) *)
-              if List.length l <= decrArg then set_need_reduce_top env err rs else
-              let recArg = List.nth l decrArg in
-              let recArg = whd_all renv.env recArg in
-              let hd, _ = decompose_app recArg in
+              if List.length stack <= decrArg then None else
+              match List.nth stack decrArg with
+              | SArg _ -> (* A match on the way *) None
+              | SClosure (_,_,n,recArg) ->
+              let c = whd_all renv.env (lift n recArg) in
+              let hd, _ = decompose_app c in
               match kind hd with
-              | Construct _ ->
-                  let before, after = CList.(firstn decrArg l, skipn (decrArg+1) l) in
-                  check_rec_call renv [] rs
-                    (Term.applist (contract_fix fix, before @ recArg :: after))
+              | Construct _ -> Some (contract_fix fix)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
               | Sort _ | Int _ | Float _ | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
-              | Proj _ | Cast _ | Meta _ | Evar _ ->
-                  match b with
-                  | IotaTerm -> (* no hope *) raise (FixGuardError (env,err))
-                  | LamTerm ->
-                     (* a commutative cut across the "match" can be triggered by a reduction at a outer level *)
-                     set_need_reduce_top env err rs)
+              | Proj _ | Cast _ | Meta _ | Evar _ -> None)
 
         | Const (kn,_u as cu) ->
-            if evaluable_constant kn renv.env then
-              let rs = List.fold_left (check_rec_call renv []) (Valid::rs) l in
-              match List.sep_first rs with
-              | Valid, rs -> rs
-              | NeedReduce _, rs ->
-                let value = Term.applist(constant_value_in renv.env cu, l) in
-                check_rec_call renv stack rs value
-            else
-              List.fold_left (check_rec_call renv []) rs l
+            check_rec_call_state renv NoNeedReduce stack rs (fun () ->
+                if evaluable_constant kn renv.env then Some (constant_value_in renv.env cu)
+                else None)
 
         | Lambda (x,a,b) ->
             begin
-              match l with
-              | [] ->
-                let spec, stack' = extract_stack (redex_level rs) stack in
-                let rs = check_rec_call renv [] rs a in
-                check_rec_call (push_var renv (x,a,spec)) stack' rs b
-              | c::l ->
-                let rs = check_erasable_inert_subterm_rec_call renv rs a in
-                let rs = check_rec_call renv [] (Valid::rs) c in
-                (* Don't care about not fully applied or internally-applied recusive calls *)
-                (* since we beta-contract anyway *)
-                let rs = List.tl rs in
-                let value = Term.applist (subst1 c b, l) in
-                check_rec_call renv stack rs value
+              let needreduce, rs = check_rec_call renv rs a in
+              match needreduce, stack with
+              | NoNeedReduce, (SClosure (NoNeedReduce, _, n, c) as elt :: stack) ->
+                  (* Neither function nor args have rec calls on internally bound variables *)
+                  let spec = stack_element_specif elt in
+                  let stack = lift_stack stack in
+                  (* Thus, args do not a priori require to be rechecked, so we push a let *)
+                  (* maybe the body of the let will have to be locally expanded though, see Rel case *)
+                  check_rec_call_stack (push_let renv (x,lift n c,a,spec)) stack rs b
+              | _, SClosure (_, _, n, c) :: stack ->
+                  (* Either function or args have rec call on internally bound variables *)
+                  check_rec_call_stack renv stack rs (subst1 (lift n c) b)
+              | _, SArg spec :: stack ->
+                  (* Going down a case branch *)
+                  let stack = lift_stack stack in
+                  check_rec_call_stack (push_var renv (x,a,spec)) stack rs b
+              | _, [] ->
+                  check_rec_call_stack (push_var_renv renv (redex_level rs) (x,a)) [] rs b
             end
 
         | Prod (x,a,u) ->
-            let () = assert (List.is_empty l && List.is_empty stack) in
-            let rs = check_rec_call renv [] rs a in
+            let () = assert (List.is_empty stack) in
+            let rs = check_inert_subterm_rec_call renv rs a in
             (* Note: can recursive calls on [x] be else than inert "dead code"? *)
-            check_rec_call (push_var_renv renv (x,a)) [] rs u
+            check_rec_call_stack (push_var_renv renv (redex_level rs) (x,a)) [] rs u
 
         | CoFix (_i,(_,typarray,bodies as recdef)) ->
-            let rs = List.fold_left (check_rec_call renv []) rs l in
-            let rs = Array.fold_left (check_rec_call renv []) rs typarray in
+            let rs = Array.fold_left (check_inert_subterm_rec_call renv) rs typarray in
             let renv' = push_fix_renv renv recdef in
-            Array.fold_left (check_rec_call renv' []) rs bodies
+            Array.fold_left (fun rs body ->
+                let needreduce', rs = check_rec_call renv' rs body in
+                check_rec_call_state renv needreduce' stack rs (fun _ -> None))
+              rs bodies
 
         | Ind _ | Construct _ ->
-            List.fold_left (check_rec_call renv []) rs l
+            check_rec_call_state renv NoNeedReduce stack rs (fun () -> None)
 
         | Proj (p, c) ->
-            let rs = List.fold_left (check_rec_call renv []) (Valid::rs) (c::l) in
-            begin match List.sep_first rs with
-            | Valid, rs -> rs
-            | NeedReduce _ as need_reduce, rs ->
+            begin
+              let needreduce', rs = check_rec_call renv rs c in
+              check_rec_call_state renv needreduce' stack rs (fun () ->
               (* we try hard to reduce the proj away by looking for a
                  constructor in c (we unfold definitions too) *)
               let c = whd_all renv.env c in
@@ -1359,77 +1368,95 @@ let check_one_fix renv recpos trees def =
                   decompose_appvect (whd_all renv.env (mkApp (contract_cofix cofix, args)))
               | _ -> hd, args in
               match kind hd with
-              | Construct _ ->
-                  check_rec_call renv [] rs
-                    (Term.applist (args.(Projection.npars p + Projection.arg p), l))
+              | Construct _ -> Some args.(Projection.npars p + Projection.arg p)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
               | Sort _ | Int _ | Float _ | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
-              | Proj _ | Cast _ | Meta _ | Evar _ ->
-                  let _, rs = List.sep_first rs in need_reduce :: rs
+              | Proj _ | Cast _ | Meta _ | Evar _ -> None)
             end
 
         | Var id ->
-            begin
+            check_rec_call_state renv NoNeedReduce stack rs (fun () ->
               let open! Context.Named.Declaration in
               match lookup_named id renv.env with
-              | LocalAssum _ ->
-                  List.fold_left (check_rec_call renv []) rs l
-              | LocalDef (_,c,_) ->
-                  let rs = List.fold_left (check_rec_call renv []) (Valid::rs) l in
-                  match List.sep_first rs with
-                  | Valid, rs -> rs
-                  | NeedReduce _, rs ->
-                    check_rec_call renv stack rs (Term.applist(c,l))
+              | LocalAssum _ -> None
+              | LocalDef (_,c,_) -> Some c)
+
+        | LetIn (x,c,t,b) ->
+            let needreduce_c, rs = check_rec_call renv rs c in
+            let needreduce_t, rs = check_rec_call renv rs t in
+            begin
+              match needreduce_of_stack stack ||| needreduce_c ||| needreduce_t with
+              | NoNeedReduce ->
+                  (* Stack do not require to beta-reduce; let's look if the body of the let needs *)
+                  let spec = lazy_subterm_specif renv [] c in
+                  let stack = lift_stack stack in
+                  check_rec_call_stack (push_let renv (x,c,t,spec)) stack rs b
+              | NeedReduce _ -> check_rec_call_stack renv stack rs (subst1 c b)
             end
 
-        | LetIn (_x,c,t,b) ->
-            let rs = check_erasable_inert_subterm_rec_call renv rs t in
-            let rs = check_rec_call renv [] (Valid::rs) c in
-            let rs = List.tl rs in
-            let value = Term.applist (subst1 c b, l) in
-            check_rec_call renv stack rs value
-
         | Cast (c,_,t) ->
-            let rs = check_erasable_inert_subterm_rec_call renv rs t in
-            check_rec_call renv stack rs (Term.applist (c, l))
+            let rs = check_inert_subterm_rec_call renv rs t in
+            let rs = check_rec_call_stack renv stack rs c in
+            rs
 
         | Sort _ | Int _ | Float _ ->
-          assert (List.is_empty l); rs
+            assert (List.is_empty stack); rs
 
         | Array (_u,t,def,ty) ->
-          assert (List.is_empty l);
-          let rs = Array.fold_left (check_rec_call renv []) rs t in
-          let rs = check_rec_call renv [] rs def in
-          check_rec_call renv [] rs ty
+            assert (List.is_empty stack);
+            let rs = Array.fold_left (check_inert_subterm_rec_call renv) rs t in
+            let rs = check_inert_subterm_rec_call renv rs def in
+            let rs = check_inert_subterm_rec_call renv rs ty in
+            rs
 
         (* l is not checked because it is considered as the meta's context *)
-        | (Evar _ | Meta _) -> rs
-
-        | App _ -> assert false (* decompose_app *)
+        | (Evar _ | Meta _) ->
+            rs
 
   and check_nested_fix_body illformed renv decr recArgsDecrArg rs body =
     if Int.equal decr 0 then
-      check_rec_call (assign_var_spec renv (1,recArgsDecrArg)) [] rs body
+      check_inert_subterm_rec_call (assign_var_spec renv (1,recArgsDecrArg)) rs body
     else
       match kind (whd_all renv.env body) with
         | Lambda (x,a,body) ->
-            let rs = check_rec_call renv [] rs a in
-            let renv' = push_var_renv renv (x,a) in
+            let rs = check_inert_subterm_rec_call renv rs a in
+            let renv' = push_var_renv renv (redex_level rs) (x,a) in
               check_nested_fix_body illformed renv' (decr-1) recArgsDecrArg rs body
         | _ -> illformed ()
 
-  and check_erasable_inert_subterm_rec_call renv rs c =
-    let rs = check_rec_call renv [] (Valid::rs) c in
-    match List.sep_first rs with
-    | (Valid | NeedReduce _), rs -> rs
+  and check_rec_call_state renv needreduce_of_head stack rs expand_head =
+    (* Test if either the head or the stack of a state
+       needs the state to be reduced before continuing checking *)
+    match needreduce_of_head ||| needreduce_of_stack stack with
+    | NoNeedReduce -> rs
+    | NeedReduce _ as e ->
+        (* Expand if possible, otherwise, last chance, propagate need
+           for expansion, in the hope to be eventually erased *)
+        match expand_head () with
+        | None -> e :: List.tl rs
+        | Some c -> check_rec_call_stack renv stack rs c
+
+  and check_inert_subterm_rec_call renv rs c =
+    (* Check rec calls of a term which does not interact with its
+       immediate context and which can be possibly erased at higher
+       level of the redex stack *)
+    let need_reduce, rs = check_rec_call renv rs c in
+    check_rec_call_state renv need_reduce [] rs (fun () -> None)
+
+  and check_rec_call renv rs c =
+    (* either fails if a non guarded call occurs or tells if there is
+       rec call on a variable bound at the top of [c] and update the
+       need for reduction in the redex stack with rec calls on
+       variables bound at higher levels of the redex stack *)
+    List.sep_first (check_rec_call_stack renv [] (NoNeedReduce::rs) c)
 
   in
-  let rs = check_rec_call renv [] [Valid] def in
-  match rs with
-  | [Valid] -> ()
-  | [NeedReduce (b,env,err)] -> assert (b = LamTerm); raise (FixGuardError (env,err))
-  | _ -> assert false
+  let need_reduce, rs = check_rec_call renv [] def in
+  assert (List.is_empty rs);
+  match need_reduce with
+  | NeedReduce (env,err) -> raise (FixGuardError (env,err))
+  | NoNeedReduce -> ()
 
 let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   let nbfix = Array.length bodies in
@@ -1578,7 +1605,7 @@ let check_one_cofix env nbfix def deftype =
         | Case (ci, u, pms, p, iv, tm, br) -> (* iv ignored: just a cache *)
           begin
             let (_, p, _iv, tm, vrest) = expand_case env (ci, u, pms, p, iv, tm, br) in
-            let tree = match restrict_spec env (Subterm (Int.Map.empty, Strict, tree)) p with
+            let tree = match restrict_spec env (Subterm (Int.Set.empty, Strict, tree)) p with
             | Dead_code -> assert false
             | Subterm (_, _, tree') -> tree'
             | _ -> raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))

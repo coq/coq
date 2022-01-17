@@ -89,3 +89,8 @@ Fail Fixpoint foo n :=
        | S n => aux n
        end) (S n)
   end.
+
+(* Loop in inert erasable subterm *)
+
+Fail Fixpoint g (n:nat) : Prop :=
+  (fun x : g n -> True => True) (fun y : g n => I).
