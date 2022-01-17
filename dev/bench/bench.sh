@@ -64,7 +64,7 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.14.1}"
+: "${new_ocaml_version:=5.2.0}"
 : "${old_ocaml_version:=4.14.1}"
 : "${new_ocaml_flambda:=0}"
 : "${old_ocaml_flambda:=0}"
