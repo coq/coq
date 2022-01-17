@@ -465,14 +465,6 @@ let compute_displayed_name_in_gen f env sigma =
   let flag = RenamingForGoal in
   compute_displayed_name_in_gen_poly f env sigma flag
 
-let compute_and_force_displayed_name_in env sigma flags avoid na c =
-  match na with
-  | Anonymous when noccurn sigma 1 c ->
-    (Anonymous,avoid)
-  | _ ->
-    let fresh_id = next_name_for_display env sigma flags na avoid in
-    (Name fresh_id, Id.Set.add fresh_id avoid)
-
 let compute_displayed_let_name_in env sigma flags avoid na c =
   let fresh_id = next_name_for_display env sigma flags na avoid in
   (Name fresh_id, Id.Set.add fresh_id avoid)
