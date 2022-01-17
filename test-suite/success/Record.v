@@ -116,3 +116,10 @@ Arguments f _ {a}.
 Check fun x => x.(f) : 0 = 0.
 
 End MaximalImplicit.
+
+Module NoRecursiveRecordVariant.
+
+Fail Record t := {a:t}.
+Fail Variant t := C : t -> t.
+
+End NoRecursiveRecordVariant.

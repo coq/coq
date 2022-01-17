@@ -1053,8 +1053,8 @@ command: [
 | "Universes" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
-| "Variant" variant_definition LIST0 ( "with" variant_definition )
-| [ "Record" | "Structure" ] record_definition LIST0 ( "with" record_definition )
+| "Variant" variant_definition
+| [ "Record" | "Structure" ] record_definition
 | "Class" record_definition
 | "Class" singleton_class_definition
 | "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder OPT of_module_type OPT ( ":=" LIST1 module_expr_inl SEP "<+" )

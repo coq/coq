@@ -229,7 +229,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Let"; id = ident_decl; b = def_body ->
           { VernacDefinition ((DoDischarge, Let), name_of_ident_decl id, b) }
       (* Gallina inductive declarations *)
-      | f = finite_token; indl = LIST1 inductive_definition SEP "with" ->
+      | f = finite_token; ind = inductive_definition ->
+          { VernacInductive (f, [ind]) }
+      | f = inductive_token; indl = LIST1 inductive_definition SEP "with" ->
           { VernacInductive (f, indl) }
       | "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
           { VernacFixpoint (NoDischarge, recs) }
@@ -340,10 +342,12 @@ GRAMMAR EXTEND Gram
     [ [ i = identref; l = OPT cumul_univ_decl -> { (i, l) }
   ] ]
   ;
-  finite_token:
+  inductive_token:
     [ [ IDENT "Inductive" -> { Inductive_kw }
-      | IDENT "CoInductive" -> { CoInductive }
-      | IDENT "Variant" -> { Variant }
+      | IDENT "CoInductive" -> { CoInductive } ] ]
+  ;
+  finite_token:
+    [ [ IDENT "Variant" -> { Variant }
       | IDENT "Record" -> { Record }
       | IDENT "Structure" -> { Structure }
       | IDENT "Class" -> { Class true } ] ]

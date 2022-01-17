@@ -577,11 +577,12 @@ gallina: [
 | REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
-| REPLACE finite_token LIST1 inductive_definition SEP "with"
+| REPLACE inductive_token LIST1 inductive_definition SEP "with"
 | WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
-|   "Variant" variant_definition LIST0 ( "with" variant_definition )
-|   [ "Record" | "Structure" ] record_definition LIST0 ( "with" record_definition )
+| REPLACE finite_token inductive_definition
+| WITH "Variant" variant_definition
+|   [ "Record" | "Structure" ] record_definition
 |   "Class" record_definition
 |   "Class" singleton_class_definition
 | REPLACE "Fixpoint" LIST1 fix_definition SEP "with"
@@ -597,6 +598,10 @@ gallina: [
 ]
 
 finite_token: [
+| DELETENT
+]
+
+inductive_token: [
 | DELETENT
 ]
 

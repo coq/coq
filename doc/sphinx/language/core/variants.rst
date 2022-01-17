@@ -6,7 +6,7 @@ Variants and the `match` construct
 Variants
 --------
 
-.. cmd:: Variant @variant_definition {* with @variant_definition }
+.. cmd:: Variant @variant_definition
 
    .. insertprodn variant_definition variant_definition
 

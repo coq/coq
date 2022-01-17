@@ -142,6 +142,7 @@ let get_fields =
 
 let print_record env mind mib udecl =
   let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  assert (Array.length mib.mind_packets = 1);
   let mip = mib.mind_packets.(0) in
   let params = Inductive.inductive_paramdecls (mib,u) in
   let nparamdecls = Context.Rel.length params in
