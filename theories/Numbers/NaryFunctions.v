@@ -47,11 +47,15 @@ Fixpoint nfun_to_nfun (A B C:Type)(f:B -> C) n :
   | S n => fun g a => nfun_to_nfun _ _ _ f n (g a)
   end.
 
-(** [napply_except_last _ _ n f] expects [n] arguments of type [A],
-    applies [n-1] of them to [f] and discard the last one. *)
+(** [napply_except_last _ _ n f] expects [S n] arguments of type [A],
+    applies [n] of them to [f] and discards the last one. *)
 
-Definition napply_except_last (A B:Type) :=
-  nfun_to_nfun A B (A->B) (fun b a => b).
+Fixpoint napply_except_last (A B:Type) (n : nat) (f : A^^n-->B) {struct n} : A^^S n-->B.
+Proof.
+  destruct n.
+  - exact (fun _ => f).
+  - exact (fun arg => napply_except_last A B n (f arg)).
+Defined.
 
 (** [napply_then_last _ _ a n f] expects [n] arguments of type [A],
     applies them to [f] and then apply [a] to the result. *)
