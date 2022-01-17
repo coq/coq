@@ -93,7 +93,7 @@ val whd_head_evar :  evar_map -> constr -> constr
 val has_undefined_evars : evar_map -> constr -> bool
 
 val is_ground_term :  evar_map -> constr -> bool
-val is_ground_env  :  evar_map -> env -> bool
+val is_ground_env  :  env -> evar_map -> bool
 
 (** [gather_dependent_evars evm seeds] classifies the evars in [evm]
     as dependent_evars and goals (these may overlap). A goal is an evar

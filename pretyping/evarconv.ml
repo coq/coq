@@ -556,7 +556,7 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
           | exception Univ.UniverseInconsistency e -> UnifFailure (evd, UnifUnivInconsistency e)
       in
         match e with
-        | UnifFailure (evd, e) when not (is_ground_env evd env) -> None
+        | UnifFailure (evd, e) when not (is_ground_env env evd) -> None
         | _ -> Some e)
     else None
   in

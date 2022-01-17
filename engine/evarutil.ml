@@ -107,7 +107,7 @@ let has_undefined_evars evd t =
 let is_ground_term evd t =
   not (has_undefined_evars evd t)
 
-let is_ground_env evd env =
+let is_ground_env env evd =
   let is_ground_rel_decl = function
     | RelDecl.LocalDef (_,b,_) -> is_ground_term evd (EConstr.of_constr b)
     | _ -> true in
@@ -117,14 +117,20 @@ let is_ground_env evd env =
   List.for_all is_ground_rel_decl (rel_context env) &&
   List.for_all is_ground_named_decl (named_context env)
 
+module E = Ephemeron.K2.Make
+  (struct type t = Environ.env let hash _ = 0 let equal = (==) end)
+  (struct type t = Evd.evar_map let hash _ = 0 let equal = (==) end)
+
 (* Memoization is safe since evar_map and environ are applicative
    structures *)
 let memo f =
-  let module E = Ephemeron.K2 in
-  let m = E.create () in
-  fun x y -> match E.get_key1 m, E.get_key2 m with
-  | Some x', Some y' when x == x' && y == y' -> Option.get (E.get_data m)
-  | _ -> let r = f x y in E.set_key1 m x; E.set_key2 m y; E.set_data m r; r
+  let m = E.create 1 in
+  fun x y -> match E.find_opt m (x, y) with
+  | Some v -> v
+  | None ->
+    let r = f x y in
+    let () = E.replace m (x, y) r in
+    r
 
 let is_ground_env = memo is_ground_env
 

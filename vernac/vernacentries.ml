@@ -548,7 +548,7 @@ let program_inference_hook env sigma ev =
   let env = Evd.evar_filtered_env env evi in
   try
     let concl = evi.Evd.evar_concl in
-    if not (Evarutil.is_ground_env sigma env &&
+    if not (Evarutil.is_ground_env env sigma &&
             Evarutil.is_ground_term sigma concl)
     then None
     else
