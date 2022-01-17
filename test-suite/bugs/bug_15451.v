@@ -29,3 +29,19 @@ Fixpoint f n :=
   end.
 
 End CofixRedexPrimProj.
+
+(* Stack was missing when unfolding primitive projection in guard condition *)
+
+Module ProjectionStack.
+
+Set Primitive Projections.
+
+Record T := { a : nat -> nat }.
+
+Check fix f (b:bool) n : nat :=
+  match n with
+  | 0 => 0
+  | S n => (if b then {| a := f b |}.(a) else f b) n
+  end.
+
+End ProjectionStack.

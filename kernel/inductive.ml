@@ -1214,7 +1214,7 @@ let check_one_fix renv recpos trees def =
               let hd, _ = decompose_app c in
               match kind hd with
               | Construct _ | CoFix _ ->
-                  check_rec_call renv []
+                  check_rec_call renv stack
                     (Term.applist (mkProj(Projection.unfold p,c), l))
               | Rel _ | Var _ | Const _ | App _ | Lambda _ | Prod _ | LetIn _
               | Ind _ | Case _ | Fix _ | Proj _ | Sort _ | Cast _
