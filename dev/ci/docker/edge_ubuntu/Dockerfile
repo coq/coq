@@ -36,10 +36,12 @@ ENV NJOBS="2" \
     OPAMYES="true"
 
 # Edge opam is the set of edge packages required by Coq
-ENV COMPILER="4.14.1" \
+# Note: no ppxlib on 5.3.0+trunk , also odoc is broken, thus we need
+# to remove dune-release if we want to test that
+ENV COMPILER="5.2.0+trunk" \
     BASE_OPAM="zarith.1.13 ounit2.2.2.6" \
     CI_OPAM="ocamlgraph.2.0.0 cppo.1.6.9" \
-    BASE_OPAM_EDGE="dune.3.14.0 dune-build-info.3.14.0 dune-release.2.0.0 ocamlfind.1.9.6 odoc.2.3.1" \
+    BASE_OPAM_EDGE="dune.3.14.0 dune-build-info.3.14.0 dune-release.2.0.0 ocamlfind.1.9.6 odoc.2.4.2" \
     CI_OPAM_EDGE="elpi.1.19.2 ppx_import.1.10.0 cmdliner.1.1.1 sexplib.v0.15.1 ppx_sexp_conv.v0.15.1 ppx_hash.v0.15.0 ppx_compare.v0.15.0 ppx_deriving_yojson.3.7.0 yojson.2.1.0 uri.4.2.0 ppx_yojson_conv.v0.15.1 ppx_inline_test.v0.15.1 ppx_assert.v0.15.0 ppx_optcomp.v0.15.0 lsp.1.16.2 sel.0.4.0" \
     COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.3"
 
@@ -47,7 +49,6 @@ ENV COMPILER="4.14.1" \
 # `ci-template-flambda` with everything.
 RUN opam init -a --disable-sandboxing --bare && eval $(opam env) && opam update && \
     opam switch create "${COMPILER}+flambda" \
-      --repositories default,ocaml-beta=git+https://github.com/ocaml/ocaml-beta-repository.git \
       --packages="ocaml-variants.${COMPILER}+options,ocaml-option-flambda" && eval $(opam env) && \
     opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM $CI_OPAM_EDGE && \
     opam clean -a -c && \

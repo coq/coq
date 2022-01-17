@@ -19,6 +19,7 @@ To compile Coq yourself, you need:
 
 - [OCaml](https://ocaml.org/) (version >= 4.09.0)
   (This version of Coq has been tested up to OCaml 4.14.1, for the 4.x series)
+  (This version of Coq has been tested up to OCaml 5.2.0, for the 5.x series)
 
   Support for OCaml 5.x remains experimental.
 
