@@ -1110,9 +1110,35 @@ let sigma_univ_state =
     compare_instances = sigma_compare_instances;
     compare_cumul_instances = sigma_check_inductive_instances; }
 
+let univproblem_compare_sorts env pb s0 s1 uset =
+  let open UnivProblem in
+  match pb with
+  | Reduction.CONV -> UnivProblem.Set.add (UEq (Sorts.univ_of_sort s0, Sorts.univ_of_sort s1)) uset
+  | Reduction.CUMUL -> UnivProblem.Set.add (ULe (Sorts.univ_of_sort s0, Sorts.univ_of_sort s1)) uset
+
+let univproblem_compare_instances ~flex i0 i1 uset =
+  UnivProblem.enforce_eq_instances_univs flex i0 i1 uset
+
+let univproblem_check_inductive_instances cv_pb variances u u' uset =
+  let open UnivProblem in
+  let open Univ.Variance in
+  let mk u = Univ.Universe.make u in
+  let fold cstr v u u' = match v with
+  | Irrelevant -> Set.add (UWeak (u,u')) cstr
+  | Covariant when cv_pb == Reduction.CUMUL -> Set.add (ULe (mk u, mk u')) cstr
+  | Covariant | Invariant -> Set.add (UEq (mk u, mk u')) cstr
+  in
+  Array.fold_left3 fold uset
+    variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+
+let univproblem_univ_state =
+  let open Reduction in
+  { compare_sorts = univproblem_compare_sorts;
+    compare_instances = univproblem_compare_instances;
+    compare_cumul_instances = univproblem_check_inductive_instances; }
+
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
-  (* FIXME *)
   try
       let ans = match pb with
       | Reduction.CUMUL ->
@@ -1145,6 +1171,32 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (existential_opt_value0 sigma))
+
+let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
+    ?(ts=TransparentState.full) env sigma x y =
+  try
+      let ans = match pb with
+      | Reduction.CUMUL ->
+          EConstr.leq_constr_universes env sigma x y
+      | Reduction.CONV ->
+          EConstr.eq_constr_universes env sigma x y
+      in
+      match ans with
+      | Some cstr -> Some cstr
+      | None ->
+        let x = EConstr.Unsafe.to_constr x in
+        let y = EConstr.Unsafe.to_constr y in
+        let env = Environ.set_universes (Evd.universes sigma) env in
+        let cstr =
+          Reduction.generic_conv pb ~l2r:false (existential_opt_value0 sigma) ts
+            env (UnivProblem.Set.empty, univproblem_univ_state) x y in
+        Some cstr
+  with
+  | Reduction.NotConvertible -> None
+  | Univ.UniverseInconsistency _ when catch_incon -> None
+  | e ->
+    let e = Exninfo.capture e in
+    report_anomaly e
 
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
   infer_conv_gen (fun pb ~l2r sigma ts ->
