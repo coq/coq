@@ -557,11 +557,13 @@ let get_symmetric_proof b =
   if b then PropGlobal.get_symmetric_proof else TypeGlobal.get_symmetric_proof
 
 let rewrite_db = "rewrite"
-
-let conv_transparent_state = TransparentState.cst_full
+let rewrite_conv_db = "rewrite_conv"
 
 let rewrite_transparent_state () =
   Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)
+
+let rewrite_conv_transparent_state () =
+  Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_conv_db)
 
 let rewrite_core_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
@@ -590,16 +592,18 @@ let rewrite_unif_flags =
   Unification.resolve_evars = true
   }
 
-let rewrite_core_conv_unif_flags = {
+let rewrite_core_conv_unif_flags () =
+  let ts = rewrite_conv_transparent_state () in {
   rewrite_core_unif_flags with
-    Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
-    Unification.modulo_delta_types = conv_transparent_state;
+    Unification.modulo_conv_on_closed_terms = Some ts;
+    (* modulo_delta is empty *)
+    Unification.modulo_delta_types = TransparentState.full;
     Unification.modulo_betaiota = true
-}
+  }
 
 (* Fallback flags for the setoid variant of "rewrite" *)
-let rewrite_conv_unif_flags =
-  let flags = rewrite_core_conv_unif_flags in {
+let rewrite_conv_unif_flags () =
+  let flags = rewrite_core_conv_unif_flags () in {
   Unification.core_unify_flags = flags;
   Unification.merge_unify_flags = flags;
   Unification.subterm_unify_flags = flags;
@@ -2079,7 +2083,7 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
         (* ~flags:(true,true) to make Ring work (since it really
            exploits conversion) *)
       Unification.w_unify_to_subterm
-        ~flags:rewrite_conv_unif_flags
+        ~flags:(rewrite_conv_unif_flags ())
         env sigma ((if l2r then c1 else c2),but)
   in
   let nf c = Reductionops.nf_evar sigma c in

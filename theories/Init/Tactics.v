@@ -347,7 +347,22 @@ Tactic Notation "assert_succeeds" tactic3(tac) :=
 Tactic Notation "assert_fails" tactic3(tac) :=
   assert_fails tac.
 
+(** Standard library databases *)
+
+(** The global typeclass instances database. *)
+Create HintDb typeclass_instances discriminated.
+
+(** This hint database's transparent state controls
+  the delta-reduction happening during subterm selection in
+  setoid-rewrite. *)
 Create HintDb rewrite discriminated.
 #[global]
 Hint Variables Opaque : rewrite.
-Create HintDb typeclass_instances discriminated.
+
+(** This hint database's transparent state controls
+  the delta-reduction happening during subterm selection in
+  setoid-rewrite called through rewrite *on closed terms* only.
+  No delta-reduction is used on open terms. *)
+Create HintDb rewrite_conv discriminated.
+#[global]
+Hint Variables Opaque : rewrite_conv.
