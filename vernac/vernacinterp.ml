@@ -195,7 +195,9 @@ and vernac_load ~verbosely fname =
       let stack, pm = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack; program = pm }) stm in
       (load_loop [@ocaml.tailcall]) ~stack ~pm
   in
+  let () = Dumpglob.(push_output NoGlob) in
   let stack, pm = load_loop ~pm:st.Vernacstate.program ~stack:st.Vernacstate.lemmas in
+  let () = Dumpglob.pop_output () in
   (* If Load left a proof open, we fail too. *)
   if Option.has_some stack then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
