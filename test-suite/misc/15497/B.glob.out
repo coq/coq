@@ -1,0 +1,6 @@
+DIGEST 4f20981d9fdb7f179fb549820cab8dea
+FTop.B
+R15:18 Coq.Classes.Init <> <> lib
+R64:67 Coq.Classes.Init <> <> lib
+R75:75 Top.A <> <> lib
+R84:86 Coq.Init.Datatypes <> nat ind
