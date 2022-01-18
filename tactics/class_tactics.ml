@@ -54,6 +54,12 @@ let get_typeclasses_dependency_order =
     ~depr:false
     ~key:["Typeclasses";"Dependency";"Order"]
     ~value:false
+let typeclasses_caching_opt_name = ["Typeclasses";"Caching"]
+let get_typeclasses_caching =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:typeclasses_caching_opt_name
+    ~value:true
 
 let iterative_deepening_opt_name = ["Typeclasses";"Iterative";"Deepening"]
 let get_typeclasses_iterative_deepening =
@@ -527,6 +533,13 @@ let make_hints env sigma (modes,st) only_classes sign =
     sign db
 
 module Search = struct
+
+  type match_result =
+  | Solution of EConstr.constr
+  | Failure of exn * Exninfo.info
+
+  type cache = (Evar.t * Evd.evar_info * match_result) list
+
   type autoinfo =
     { search_depth : int list;
       last_tac : Pp.t Lazy.t;
@@ -571,17 +584,18 @@ module Search = struct
   exception ReachedLimit
   exception NoApplicableHint
   exception StuckGoal
+  exception WithState of cache * exn
 
   (** ReachedLimit has priority over NoApplicableHint to handle
       iterative deepening: it should fail when no hints are applicable,
       but go to a deeper depth otherwise. *)
-  let merge_exceptions e e' =
-    match fst e, fst e' with
-    | ReachedLimit, _ -> e
-    | _, ReachedLimit -> e'
-    | _, _ -> e
+  let merge_exceptions cache (e, ei) (e', ei') =
+    match e, e' with
+    | ReachedLimit, _ -> WithState (cache, e), ei
+    | _, ReachedLimit -> WithState (cache, e'), ei'
+    | _, _ -> WithState (cache, e), ei
 
-  (** Determine if backtracking is needed for this goal.
+  (** Determine if backtrackinsg is needed for this goal.
       If the type class is unique or in Prop
       and there are no evars in the goal then we do
       NOT backtrack. *)
@@ -637,47 +651,123 @@ module Search = struct
   let pr_search_goals sigma =
     prlist_with_sep fnl (pr_search_goal sigma)
 
-  let search_fixpoint ~best_effort ~allow_out_of_order tacs =
+  let pr_match_result env sigma = function
+   | Solution c -> Pp.(str"success: " ++ Printer.pr_econstr_env env sigma c)
+   | Failure (e, ie) -> Pp.str"failure"
+
+  let pr_cache_goal env sigma (ev, evi, res) =
+    let env = evar_filtered_env env evi in
+    Pp.(Printer.pr_econstr_env env sigma evi.evar_concl ++ str" with result " ++ pr_match_result env sigma res)
+
+  let pr_cache env sigma l =
+    prlist_with_sep fnl (pr_cache_goal env sigma) l
+
+  let cache_goal env sigma ev cache res =
+    let evi = Evd.find sigma ev in
+    let evi = Evarutil.nf_evar_info sigma evi in
+    ppdebug 1 (fun () -> Pp.str"caching goal: " ++ pr_cache_goal env sigma (ev, evi, res));
+    ((ev, evi, res) :: cache)
+
+  let eq_constr_upto_evars sigma c c' =
+    let rec aux c c' =
+      match kind sigma c, kind sigma c' with
+      | Evar _, Evar _ -> true
+      | _, _ -> compare_constr sigma aux c c'
+    in aux c c'
+
+  let equivalent_goal sigma concl (ev, evi, res) =
+    let concl' = evar_concl evi in
+    eq_constr_upto_evars sigma concl concl'
+
+  let find_solution sigma concl cache =
+    match List.find_opt (equivalent_goal sigma concl) cache with
+    | None -> raise Not_found
+    | Some (ev, evi, res) -> res
+
+  let try_cache cache tac =
+    if not (get_typeclasses_caching ()) then tac cache else
+    let open Proofview in
+    tclEVARMAP >>= fun sigma ->
+    tclFOCUS ~nosuchgoal:(tclUNIT cache) 1 1
+      (Goal.enter_one (fun gl ->
+        let env = Goal.env gl in
+        let concl = Goal.concl gl in
+        match find_solution sigma concl cache with
+        | exception Not_found -> tac cache
+        | Solution c ->
+          tclORELSE (Refine.refine ~typecheck:true (fun sigma -> sigma, c) >>= fun () ->
+             (ppdebug 0 (fun () -> Pp.(str"Cache success hit")); tclUNIT cache))
+            (fun e -> tac cache)
+        | Failure (e, info) -> (* We do not even try tac as it is an impossible goal *)
+          ppdebug 0 (fun () -> Pp.(str"Cache failure hit on " ++ Printer.pr_econstr_env env sigma concl ++ fnl () ++
+            str"cache is: " ++ pr_cache env sigma cache));
+          tclZERO ~info (WithState (cache, e))
+      ))
+
+  let split_exn state = function
+    | WithState (cache, e), ie -> cache, (e, ie)
+    | e, ie -> state, (e, ie)
+
+  let search_fixpoint ~best_effort ~allow_out_of_order cache tacs =
     let open Pp in
     let open Proofview in
     let open Proofview.Notations in
-    let rec fixpoint progress tacs stuck fk =
+    let rec fixpoint progress tacs stuck cache fk : cache Proofview.tactic =
       let next (glid, ev, status, tac) tacs stuck =
         let () = ppdebug 1 (fun () ->
             str "considering goal " ++ int glid ++
             str " of status " ++ pr_goal_status status)
         in
         let rec kont = function
-          | Fail ((NonStuckFailure | StuckGoal as exn), info) when allow_out_of_order ->
-            let () = ppdebug 1 (fun () ->
-                str "Goal " ++ int glid ++
-                str" is stuck or failed without being stuck, trying other tactics.")
-            in
-            let status =
-              match exn with
-              | NonStuckFailure -> IsNonStuckFailure
-              | StuckGoal -> IsStuckGoal
-              | _ -> assert false
-            in
-            cycle 1 (* Puts the first goal last *) <*>
-            fixpoint progress tacs ((glid, ev, status, tac) :: stuck) fk (* Launches the search on the rest of the goals *)
-          | Fail (e, info) ->
-            let () = ppdebug 1 (fun () ->
-                str "Goal " ++ int glid ++ str" has no more solutions, returning exception: "
-                ++ CErrors.iprint (e, info))
-            in
-            fk (e, info)
-          | Next (res, fk') ->
+          | Fail e ->
+            let cache, (e, info) = split_exn cache e in
+            begin match e with
+            | (NonStuckFailure | StuckGoal as exn) when allow_out_of_order ->
+              let () = ppdebug 1 (fun () ->
+                  str "Goal " ++ int glid ++
+                  str" is stuck or failed without being stuck, trying other tactics.")
+              in
+              let status =
+                match exn with
+                | NonStuckFailure -> IsNonStuckFailure
+                | StuckGoal -> IsStuckGoal
+                | _ -> assert false
+              in
+              cycle 1 (* Puts the first goal last *) <*>
+              fixpoint progress tacs ((glid, ev, status, tac) :: stuck) cache fk (* Launches the search on the rest of the goals *)
+            | e ->
+              let () = ppdebug 1 (fun () ->
+                  str "Goal " ++ int glid ++ str" has no more solutions, returning exception: "
+                  ++ CErrors.iprint (e, info))
+              in
+              tclENV >>= fun env ->
+              tclEVARMAP >>= fun sigma ->
+              let cache = cache_goal env sigma ev cache (Failure (e, info)) in
+              fk (WithState (cache, e), info)
+            end
+          | Next (cache, fk') ->
             let () = ppdebug 1 (fun () ->
                 str "Goal " ++ int glid ++ str" has a success, continuing resolution")
             in
+            tclENV >>= fun env ->
+            tclEVARMAP >>= fun sigma ->
+            ppdebug 1 (fun () -> str"Current cache " ++ pr_cache env sigma cache);
+            let evi = Evd.find sigma ev in
+            let body = match Evd.evar_body evi with Evar_empty -> assert false | Evar_defined c -> c in
+            let cache = cache_goal env sigma ev cache (Solution body) in
               (* We try to solve the rest of the constraints, and if that fails
                 we backtrack to the next result of tac, etc.... Ultimately if none of the solutions
                 for tac work, we will come back to the failure continuation fk in one of
                 the above cases *)
-            fixpoint true tacs stuck (fun e -> tclCASE (fk' e) >>= kont)
-        in tclCASE tac >>= kont
+            ppdebug 1 (fun () -> str"Current cache " ++ pr_cache env sigma cache);
+            fixpoint true tacs stuck cache (fun (e, info) -> tclCASE (fk' (e, info)) >>= kont)
+        in
+        tclENV >>= fun env ->
+        tclEVARMAP >>= fun sigma ->
+        ppdebug 1 (fun () -> str"Current cache: " ++ pr_cache env sigma cache);
+        tclCASE (try_cache cache tac) >>= kont
       in
+      tclENV >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       let () = ppdebug 1 (fun () ->
           let stuck, failed = List.partition (fun (_, _, status, _) -> status = IsStuckGoal) stuck in
@@ -689,7 +779,8 @@ module Search = struct
           str"progress made in this run." ++ fnl () ++
           str "Stuck: " ++ pr_search_goals sigma stuck ++ fnl () ++
           str "Failed: " ++ pr_search_goals sigma failed ++ fnl () ++
-          str "Initial: " ++ pr_search_goals sigma tacs)
+          str "Initial: " ++ pr_search_goals sigma tacs ++ fnl () ++
+          str"Current cache " ++ pr_cache env sigma cache)
       in
       tclCHECKINTERRUPT <*>
       match tacs with
@@ -699,14 +790,15 @@ module Search = struct
         | [] ->
             (* We found a solution! Great, but in case it's not good for the rest of the proof search,
                we might have other solutions available through fk. *)
-            tclOR (tclUNIT ()) fk
+            tclOR (tclUNIT cache) fk
         | stuck ->
-          if progress then fixpoint false stuck [] fk
+          if progress then fixpoint false stuck [] cache fk
           else (* No progress can be made on the stuck goals arising from this resolution,
             try a different solution on the non-stuck goals, if any. *)
           begin
-            tclORELSE (fk (NoApplicableHint, Exninfo.null))
-              (fun (e, info) ->
+            tclORELSE (fk (WithState (cache, NoApplicableHint), Exninfo.null))
+              (fun e ->
+                 let cache, (e, info) = split_exn cache e in
                  let () = ppdebug 1 (fun () -> int (List.length stuck) ++ str " remaining goals left, no progress, calling continuation failed")
                  in
                  (* We keep the stuck goals to display to the user *)
@@ -728,8 +820,8 @@ module Search = struct
                        str "Shelving subgoals: " ++
                        prlist_with_sep spc Evar.print to_shelve)
                    in
-                   Unsafe.tclNEWSHELVED to_shelve
-                 else tclZERO ~info e)
+                   Unsafe.tclNEWSHELVED to_shelve <*> tclUNIT cache
+                 else tclZERO ~info (WithState (cache, e)))
           end
     in
     pr_goals (str"Launching resolution fixpoint on ") <*>
@@ -738,18 +830,22 @@ module Search = struct
       It might happen that an initial goal is solved during the resolution of another goal,
       hence the `tclUNIT` in case there is no goal for the tactic to apply anymore. *)
     let tacs = List.map2_i
-      (fun i gls tac -> (succ i, Proofview.drop_state gls, IsInitial, tclFOCUS ~nosuchgoal:(tclUNIT ()) 1 1 tac))
+      (fun i gls tac -> (succ i, Proofview.drop_state gls, IsInitial,
+        fun cache -> tclFOCUS ~nosuchgoal:(tclUNIT cache) 1 1 (tac cache)))
       0 gls tacs
     in
-    fixpoint false tacs [] (fun (e, info) -> tclZERO ~info e) <*>
-    pr_goals (str "Result goals after fixpoint: ")
+    fixpoint false tacs [] cache (fun (e, info) -> tclZERO ~info e)
+    (* pr_goals (str "Result goals after fixpoint: ") *)
 
+  let rec clean_exn = function
+    | WithState (cache, e), ie -> clean_exn (e, ie)
+    | e, ie -> e, ie
 
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
       depending on the dependencies of the goal and the unique/Prop
       status *)
-  let hints_tac_gl hints info kont gl : unit Proofview.tactic =
+  let hints_tac_gl hints cache info kont gl : cache Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
     let env = Goal.env gl in
@@ -767,7 +863,7 @@ module Search = struct
     match e_possible_resolve hints info.search_hints secvars
             info.search_only_classes env sigma concl with
     | None ->
-      Proofview.tclZERO StuckGoal
+      Proofview.tclZERO (WithState (cache, StuckGoal))
     | Some (all_mode_match, poss) ->
     (* If no goal depends on the solution of this one or the
        instances are irrelevant/assumed to be unique, then
@@ -777,7 +873,8 @@ module Search = struct
     let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
     let idx = ref 1 in
     let foundone = ref false in
-    let rec onetac e (tac, pat, b, name, pp) tl =
+    let rec onetac e (tac, pat, b, name, pp) tl : cache Proofview.tactic =
+      let cache, e = split_exn cache e in
       let derivs = path_derivate info.search_cut name in
       let pr_error ie =
         ppdebug 1 (fun () ->
@@ -790,7 +887,7 @@ module Search = struct
                else mt ())
             in
             let msg =
-              match fst ie with
+              match fst (clean_exn ie) with
               | Pretype_errors.PretypeError (env, evd, Pretype_errors.CannotUnify (x,y,_)) ->
                 str"Cannot unify " ++
                 Printer.pr_econstr_env env evd x ++ str" and " ++
@@ -802,7 +899,7 @@ module Search = struct
             in
             (header ++ str " failed with: " ++ msg))
       in
-      let tac_of gls i j = Goal.enter begin fun gl' ->
+      let tac_of gls cache i j = Goal.enter_one begin fun gl' ->
         let sigma' = Goal.sigma gl' in
         let () = ppdebug 0 (fun () ->
             pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
@@ -826,9 +923,9 @@ module Search = struct
             search_hints = hints';
             search_cut = derivs;
             search_best_effort = info.search_best_effort }
-        in kont info' end
+        in kont cache info' end
       in
-      let rec result (shelf, ()) i k =
+      let rec result (shelf, cache) i k : cache Proofview.tactic =
         foundone := true;
         Proofview.Unsafe.tclGETGOALS >>= fun gls ->
         let gls = CList.map Proofview.drop_state gls in
@@ -841,11 +938,11 @@ module Search = struct
                (mt()) k))
         in
         let res =
-          if j = 0 then tclUNIT ()
-          else search_fixpoint ~best_effort:false ~allow_out_of_order:false
-                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
+          if j = 0 then tclUNIT cache
+          else search_fixpoint ~best_effort:false ~allow_out_of_order:false cache
+                 (List.init j (fun j' cache -> (tac_of gls cache i (Option.default 0 k + j'))))
         in
-        let finish nestedshelf sigma =
+        let finish nestedshelf sigma cache =
           let filter ev =
             try
               let evi = Evd.find_undefined sigma ev in
@@ -877,27 +974,29 @@ module Search = struct
                     prlist_with_sep spc (pr_ev sigma) shelved)
             in
             shelve_goals shelved <*>
-            if List.is_empty goals then tclUNIT ()
+            if List.is_empty goals then tclUNIT cache
             else
               let make_unresolvables = tclEVARMAP >>= fun sigma ->
                 let sigma = make_unresolvables (fun x -> List.mem_f Evar.equal x goals) sigma in
                 Unsafe.tclEVARS sigma
               in
               let goals = CList.map Proofview.with_empty_state goals in
-              with_shelf (make_unresolvables <*> Unsafe.tclNEWGOALS goals) >>= fun s ->
-              result s i (Some (Option.default 0 k + j))
+              with_shelf (make_unresolvables <*> Unsafe.tclNEWGOALS goals) >>= fun (s, ()) ->
+              result (s, cache) i (Some (Option.default 0 k + j))
           end
         in
-        with_shelf res >>= fun (sh, ()) ->
-        tclEVARMAP >>= finish sh
+        with_shelf res >>= fun (sh, cache) ->
+        tclEVARMAP >>= fun sigma -> finish sh sigma cache
       in
       if path_matches derivs [] then aux e tl
       else
         ortac
-             (with_shelf tac >>= fun s ->
-              let i = !idx in incr idx; result s i None)
+             (with_shelf tac >>= fun (s, ()) ->
+              let i = !idx in incr idx; result (s, cache) i None)
              (fun e' ->
-                (pr_error e'; aux (merge_exceptions e e') tl))
+                let cache, e' = split_exn cache e' in
+                ppdebug 1 (fun () -> str"Current cache after a tactic failure " ++ pr_cache env sigma cache);
+                (pr_error e'; aux (merge_exceptions cache e e') tl))
     and aux e = function
       | tac :: tacs -> onetac e tac tacs
       | [] ->
@@ -908,9 +1007,10 @@ module Search = struct
                 str ", " ++ int (List.length poss) ++
                 str" possibilities")
         in
+        let cache, e = split_exn cache e in
          match e with
-         | (ReachedLimit,ie) -> Proofview.tclZERO ~info:ie ReachedLimit
-         | (StuckGoal,ie) -> Proofview.tclZERO ~info:ie StuckGoal
+         | (ReachedLimit,ie) -> Proofview.tclZERO ~info:ie (WithState (cache, ReachedLimit))
+         | (StuckGoal,ie) -> Proofview.tclZERO ~info:ie (WithState (cache, StuckGoal))
          | (NoApplicableHint,ie) ->
             (* If the constraint abides by the (non-trivial) modes but no
                solution could be found, we consider it a failed goal, and let
@@ -918,16 +1018,16 @@ module Search = struct
                constraints, thus giving a more precise error message. *)
             if all_mode_match &&
               info.search_best_effort then
-              Proofview.tclZERO ~info:ie NonStuckFailure
-            else Proofview.tclZERO ~info:ie NoApplicableHint
-         | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableHint
+              Proofview.tclZERO ~info:ie (WithState (cache, NonStuckFailure))
+            else Proofview.tclZERO ~info:ie (WithState (cache, NoApplicableHint))
+         | (_,ie) -> Proofview.tclZERO ~info:ie (WithState (cache, NoApplicableHint))
     in
     if backtrack then aux (NoApplicableHint,Exninfo.null) poss
     else tclONCE (aux (NoApplicableHint,Exninfo.null) poss)
 
-  let hints_tac hints info kont : unit Proofview.tactic =
-    Proofview.Goal.enter
-      (fun gl -> hints_tac_gl hints info kont gl)
+  let hints_tac hints cache info kont : cache Proofview.tactic =
+    Proofview.Goal.enter_one
+      (fun gl -> hints_tac_gl hints cache info kont gl)
 
   let intro_tac info kont gl =
     let open Proofview in
@@ -944,53 +1044,55 @@ module Search = struct
 
   let intro info kont =
     Proofview.tclBIND Tactics.intro
-     (fun _ -> Proofview.Goal.enter (fun gl -> intro_tac info kont gl))
+     (fun _ -> Proofview.Goal.enter_one (fun gl -> intro_tac info kont gl))
 
-  let rec search_tac hints limit depth =
-    let kont info =
+  let rec search_tac hints cache limit depth : autoinfo -> cache Proofview.tactic =
+    let kont cache info =
       Proofview.numgoals >>= fun i ->
       let () = ppdebug 1 (fun () ->
           str "calling eauto recursively at depth " ++ int (succ depth) ++
           str " on " ++ int i ++ str " subgoals")
       in
-      search_tac hints limit (succ depth) info
+      search_tac hints cache limit (succ depth) info
     in
     fun info ->
     if Int.equal depth (succ limit) then
       let info = Exninfo.reify () in
       Proofview.tclZERO ~info ReachedLimit
     else
-      Proofview.tclOR (hints_tac hints info kont)
-                      (fun e -> Proofview.tclOR (intro info kont)
-                      (fun e' -> let (e, info) = merge_exceptions e e' in
-                              Proofview.tclZERO ~info e))
+      Proofview.tclOR (hints_tac hints cache info kont)
+                      (fun e -> Proofview.tclOR (intro info (kont cache))
+                      (fun e' ->
+                        let cache, e = split_exn cache e in
+                        let _, e' = split_exn cache e' in
+                        let (e, info) = merge_exceptions cache e e' in
+                        Proofview.tclZERO ~info e))
 
-  let search_tac_gl mst only_classes dep hints best_effort depth i sigma gls gl :
-        unit Proofview.tactic =
+  let search_tac_gl mst only_classes dep hints best_effort depth i sigma cache gls gl : cache Proofview.tactic =
     let open Proofview in
     let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
     let info = make_autogoal mst only_classes dep (cut_of_hints hints)
       best_effort i gl in
-    search_tac hints depth 1 info
+    search_tac hints [] depth 1 info
 
   let search_tac mst only_classes best_effort dep hints depth =
     let open Proofview in
-    let tac sigma gls i =
-      Goal.enter
+    let tac sigma cache gls i =
+      Goal.enter_one
         begin fun gl ->
-          search_tac_gl mst only_classes dep hints best_effort depth (succ i) sigma gls gl end
+          search_tac_gl mst only_classes dep hints best_effort depth (succ i) sigma cache gls gl end
     in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       let gls = CList.map Proofview.drop_state gls in
       Proofview.tclEVARMAP >>= fun sigma ->
       let j = List.length gls in
-      search_fixpoint ~best_effort ~allow_out_of_order:true (List.init j (fun i -> tac sigma gls i))
+      search_fixpoint ~best_effort ~allow_out_of_order:true [] (List.init j (fun i cache -> tac sigma cache gls i))
 
   let fix_iterative t =
     let rec aux depth =
       Proofview.tclOR
         (t depth)
-        (function
+        (fun e -> match clean_exn e with
          | (ReachedLimit,_) -> aux (succ depth)
          | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
@@ -1002,7 +1104,8 @@ module Search = struct
       then
         let info = Exninfo.reify () in
         tclZERO ~info ReachedLimit
-      else tclOR (t depth) (function
+      else tclOR (t depth)
+        (fun e -> match clean_exn e with
           | (ReachedLimit, _) -> aux (succ depth)
           | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
@@ -1028,18 +1131,18 @@ module Search = struct
         | None -> fix_iterative search
         | Some l -> fix_iterative_limit l search
     in
-    let error (e, info) =
-      match e with
-      | ReachedLimit ->
+    let error e =
+      match clean_exn e with
+      | ReachedLimit, info ->
         Tacticals.tclFAIL ~info (str"Proof search reached its limit")
-      | NoApplicableHint ->
+      | NoApplicableHint, info ->
         Tacticals.tclFAIL ~info (str"Proof search failed" ++
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
-      | Proofview.MoreThanOneSuccess ->
+      | Proofview.MoreThanOneSuccess, info ->
         Tacticals.tclFAIL ~info (str"Proof search failed: " ++
                                        str"more than one success found")
-      | e -> Proofview.tclZERO ~info e
+      | e, info -> Proofview.tclZERO ~info e
     in
     let tac = Proofview.tclOR tac error in
     let tac =
@@ -1057,7 +1160,7 @@ module Search = struct
         | None -> str ", unbounded"
         | Some i -> str ", with depth limit " ++ int i)
     in
-    tac <*> pr_goals (str "after eauto_tac_stuck: ")
+    tac >>= fun cache -> pr_goals (str "after eauto_tac_stuck: ")
 
   let eauto_tac mst ?unique ~only_classes ~best_effort ?strategy ~depth ~dep hints =
     Hints.wrap_hint_warning @@

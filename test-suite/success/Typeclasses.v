@@ -1,3 +1,31 @@
+Module Cache.
+  Class A (X : Type) := {}.
+
+  Parameter foo : forall {T} {x y : A T}, True.
+  Set Typeclasses Debug Verbosity 1.
+
+  Goal forall x : A nat, True.
+    intros.
+    unshelve eapply foo.
+  Qed.
+
+  Class B (X : Type) := {}.
+
+  Class C (X : Type) := {}.
+
+  Local Instance ac : forall {X}, C X -> A X := {}.
+  Local Instance ab : forall {X}, B X -> A X := {}.
+
+  Example cache_failure : C nat -> A nat * A nat.
+  Proof.
+    intros. split.
+    all:typeclasses eauto.
+
+
+End Cache.
+
+
+
 (* coq-prog-args: ("-async-proofs" "off") *)
 Module applydestruct.
   Class Foo (A : Type) :=
@@ -301,6 +329,7 @@ Module IterativeDeepening.
     Fail Timeout 1 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
     Fail typeclasses eauto 1.
+    Set Typeclasses Debug.
     typeclasses eauto 2.
     Undo.
     Unset Typeclasses Iterative Deepening.
