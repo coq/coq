@@ -21,8 +21,6 @@ open Reduction
 open Type_errors
 open Context.Rel.Declaration
 
-type mind_specif = mutual_inductive_body * one_inductive_body
-
 (* raises an anomaly if not an inductive type *)
 let lookup_mind_specif env (kn,tyi) =
   let mib = Environ.lookup_mind kn env in

@@ -278,6 +278,8 @@ type mutual_inductive_body = {
     mind_typing_flags : typing_flags; (** typing flags at the time of the inductive creation *)
 }
 
+type mind_specif = mutual_inductive_body * one_inductive_body
+
 (** {6 Module declarations } *)
 
 (** Functor expressions are forced to be on top of other expressions *)
