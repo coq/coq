@@ -541,6 +541,17 @@ let conv_fun f flags on_types =
     | TypeUnification -> typefn
     | TermUnification -> termfn
 
+let evar_conv_x flags env evd pbty term1 term2 =
+
+let cache = ref None in
+let is_ground_env env sigma = match !cache with
+| Some (sigma', env', v) when sigma == sigma' && env == env' -> v
+| None | Some _ ->
+  let v = is_ground_env env sigma in
+  let () = cache := Some (sigma, env, v) in
+  v
+in
+
 let rec evar_conv_x flags env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
   let term2 = whd_head_evar evd term2 in
@@ -1223,6 +1234,8 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
            UnifFailure(evd,NotSameHead))
       end
     | _ -> UnifFailure (evd,NotSameHead)
+in
+evar_conv_x flags env evd pbty term1 term2
 
 let evar_conv_x flags = evar_conv_x flags
 
