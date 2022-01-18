@@ -15,5 +15,5 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
       ./configure COQEXTRAFLAGS="-compat 8.13";
   fi
   ./remake "-j${NJOBS}"
-  ./remake install
+  ./remake install install-glob
 )
