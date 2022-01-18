@@ -57,7 +57,7 @@ val mis_is_recursive_subset : int list -> wf_paths -> bool
 val mis_is_recursive :
   inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :
-  pinductive * mutual_inductive_body * one_inductive_body -> int -> constr
+  pconstructor -> mutual_inductive_body * one_inductive_body -> constr
 
 (** {6 Extract information from an inductive name} *)
 
@@ -191,6 +191,10 @@ val find_mrectype_vect : env -> evar_map -> EConstr.types -> (inductive * EConst
 val find_rectype     : env -> evar_map -> EConstr.types -> inductive_type
 val find_inductive   : env -> evar_map -> EConstr.types -> (inductive * EConstr.EInstance.t) * constr list
 val find_coinductive : env -> evar_map -> EConstr.types -> (inductive * EConstr.EInstance.t) * constr list
+
+(** [instantiate_constructor_params cstr mind params] instantiates the
+    type of the given constructor with parameters [params] *)
+val instantiate_constructor_params : pconstructor -> Inductive.mind_specif -> constr list -> constr
 
 (********************)
 
