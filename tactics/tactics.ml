@@ -1508,7 +1508,7 @@ type eliminator =
 | ElimTerm of EConstr.constr
 | ElimClause of EConstr.constr with_bindings
 
-let general_elim_clause with_evars flags where indclause elim =
+let general_elim_clause with_evars flags where (c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1530,9 +1530,11 @@ let general_elim_clause with_evars flags where indclause elim =
        | Meta mv -> mv
        | _  -> error IllFormedEliminationType)
   in
+  (* Assumes that the metas of [c] are part of [sigma] already *)
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge ~with_univs:false sigma elimclause.Clenv.evd) in
   match where with
   | None ->
-    let elimclause = clenv_fchain ~flags indmv elimclause indclause in
+    let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
     Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   | Some id ->
     let hypmv =
@@ -1540,7 +1542,7 @@ let general_elim_clause with_evars flags where indclause elim =
       | [a] -> a
       | _ -> error IllFormedEliminationType
     in
-    let elimclause = clenv_fchain ~flags indmv elimclause indclause in
+    let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
     elimination_in_clause_scheme env sigma with_evars ~flags id hypmv elimclause
   end
 
@@ -1551,11 +1553,11 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let ct = Retyping.get_type_of env sigma c in
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding env sigma (c, t) lbindc in
-  let sigma = meta_merge sigma (clear_metas indclause.evd) in
+  let sigma = meta_merge ~with_univs:false sigma indclause.evd in
   let flags = elim_flags () in
   Proofview.Unsafe.tclEVARS sigma <*>
   Tacticals.tclTHEN
-    (general_elim_clause with_evars flags None indclause elim)
+    (general_elim_clause with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c)
   end
 

@@ -259,9 +259,10 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
       (* we would have to take the clenv_value *)
       let newevars = lazy (Evarutil.undefined_evars_of_term sigma (Clenv.clenv_type rew)) in
       let flags = make_flags frzevars sigma flags newevars in
-      general_elim_clause with_evars flags cls rew elim
+      general_elim_clause with_evars flags cls (Clenv.clenv_value rew, Clenv.clenv_type rew) elim
       end
     in
+    Proofview.Unsafe.tclEVARS rew.Clenv.evd <*>
     elim_wrapper cls rewrite_elim
   in
   let strat, tac =
@@ -286,15 +287,10 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     let try_clause evd' =
       let clenv = Clenv.update_clenv_evd eqclause evd' in
       let clenv = Clenv.clenv_pose_dependent_evars ~with_evars:true clenv in
-      side_tac
-        (tclTHEN
-          (Proofview.Unsafe.tclEVARS clenv.Clenv.evd)
-          (general_elim_clause0 clenv))
-        tac
+      side_tac (general_elim_clause0 clenv) tac
     in
     match strat with
     | Naive ->
-      Proofview.Unsafe.tclEVARS eqclause.Clenv.evd <*>
       side_tac (general_elim_clause0 eqclause) tac
     | FirstSolved ->
       let flags = make_flags frzevars sigma rewrite_unif_flags (lazy Evar.Set.empty) in
