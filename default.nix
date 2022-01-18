@@ -90,10 +90,10 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  buildFlags = [ "world" "byte" ] ++ optional buildDoc "doc-html";
+  buildFlags = [ "world" ] ++ optional buildDoc "doc-html";
 
   installTargets =
-    [ "install" "install-byte" ] ++ optional buildDoc "install-doc-html";
+    [ "install" ] ++ optional buildDoc "install-doc-html";
 
   createFindlibDestdir = !shell;
 
