@@ -126,7 +126,7 @@ Module Leivantex2PR339.
   (** Was a bug preventing to find hints associated with no pattern *)
   Class Bar := {}.
   Instance bar1 (t:Type) : Bar := {}.
-  Hint Extern 0 => exact True : typeclass_instances.
+  Local Hint Extern 0 => exact True : typeclass_instances.
   Typeclasses eauto := debug.
   Goal Bar.
     Set Typeclasses Debug Verbosity 2.
@@ -322,3 +322,22 @@ Module AxiomsAreNotInstances.
   Definition testdef2 : TestClass2 := _.
 
 End AxiomsAreNotInstances.
+
+Module InternalHintBacktracking.
+
+  Class A (T : Type) := mkA { ofA : T }.
+  Definition a0 : A nat := {| ofA := 0 |}.
+  Definition a1 : A bool := {| ofA := true |}.
+
+  (** This defines an instance that returns an A bool on first success and A nat
+    on second success *)
+  Local Hint Extern 0 (A _) => exact a1 + exact a0 : typeclass_instances.
+
+  Class B (T : Type).
+  Instance b0 : B nat := {}.
+
+  Definition foo {T} {x : A T} {b : B T} : T := ofA.
+  (* This definition only passes because we backtrack on [exact a1] above and try a0 : A nat *)
+  Definition test := foo.
+  Check test : nat.
+End InternalHintBacktracking.

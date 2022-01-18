@@ -131,6 +131,105 @@ let find_class_proof proof_type proof_method env evars carrier relation =
       else app_poly_check env (evars',cstrevars evars) proof_method [| carrier; relation; c |]
   with e when CErrors.noncritical e -> raise Not_found
 
+let eq_pb (ty, env, x, y as pb) (ty', env', x', y' as pb') =
+  let equal x y = Constr.equal (EConstr.Unsafe.to_constr x) (EConstr.Unsafe.to_constr y) in
+  pb == pb' || (ty == ty' && equal x x' && equal y y')
+
+let problem_inclusion x y =
+  List.for_all (fun pb -> List.exists (fun pb' -> eq_pb pb pb') y) x
+
+let evd_convertible env evd x y =
+  try
+    (* Unfortunately, the_conv_x might say they are unifiable even if some
+        unsolvable constraints remain, so we check that this unification
+        does not introduce any new problem. *)
+    let _, pbs = Evd.extract_all_conv_pbs evd in
+    let evd' = Evarconv.unify_delay env evd x y in
+    let _, pbs' = Evd.extract_all_conv_pbs evd' in
+    if evd' == evd || problem_inclusion pbs' pbs then Some evd'
+    else None
+  with e when CErrors.noncritical e -> None
+
+type hypinfo = {
+  prf : constr;
+  car : constr;
+  rel : constr;
+  sort : bool; (* true = Prop; false = Type *)
+  c1 : constr;
+  c2 : constr;
+  holes : Clenv.hole list;
+}
+
+let error_no_relation () = user_err Pp.(str "Cannot find a relation to rewrite.")
+
+let rec decompose_app_rel env evd t =
+  (* Head normalize for compatibility with the old meta mechanism *)
+  let t = Reductionops.whd_betaiota env evd t in
+  match EConstr.kind evd t with
+  | App (f, [||]) -> assert false
+  | App (f, [|arg|]) ->
+    (* This treats the special case `g (R x y)`, turning it into
+        the relation `(fun x y => g (R x y))`. Useful when g is negation in particular. *)
+    let (f', argl, argr) = decompose_app_rel env evd arg in
+    let ty = Retyping.get_type_of env evd argl in
+    let ty' = Retyping.get_type_of env evd argr in
+    let r = Retyping.relevance_of_type env evd ty in
+    let r' = Retyping.relevance_of_type env evd ty' in
+    let f'' = mkLambda (make_annot (Name Namegen.default_dependent_ident) r, ty,
+      mkLambda (make_annot (Name (Id.of_string "y")) r', lift 1 ty',
+        mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
+    in (f'', argl, argr)
+  | App (f, args) ->
+    let len = Array.length args in
+    let fargs = Array.sub args 0 (Array.length args - 2) in
+    let rel = mkApp (f, fargs) in
+    rel, args.(len - 2), args.(len - 1)
+  | _ -> error_no_relation ()
+
+let decompose_app_rel env evd t =
+  let (rel, t1, t2) = decompose_app_rel env evd t in
+  let ty = try Retyping.get_type_of ~lax:true env evd rel with Retyping.RetypeError _ -> error_no_relation () in
+  if not (Reductionops.is_arity env evd ty) then None else
+  match Reductionops.splay_arity env evd ty with
+  | [_, ty2; _, ty1], concl ->
+    if noccurn evd 1 ty2 then
+      Some (rel, ty1, subst1 mkProp ty2, concl, t1, t2)
+    else None
+  | _ -> assert false
+
+let decompose_app_rel_error env evd t =
+  match decompose_app_rel env evd t with
+  | Some e -> e
+  | None -> error_no_relation ()
+
+let decompose_applied_relation env sigma (c,l) =
+  let open Context.Rel.Declaration in
+  let ctype = Retyping.get_type_of env sigma c in
+  let find_rel ty =
+    let sigma, cl = Clenv.make_evar_clause env sigma ty in
+    let sigma = Clenv.solve_evar_clause env sigma true cl l in
+    let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
+    match decompose_app_rel env sigma t with
+    | None -> None
+    | Some (equiv, ty1, ty2, concl, c1, c2) ->
+      match evd_convertible env sigma ty1 ty2 with
+      | None -> None
+      | Some sigma ->
+        let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
+        let value = mkApp (c, args) in
+          Some (sigma, { prf=value;
+                  car=ty1; rel = equiv; sort = Sorts.is_prop (ESorts.kind sigma concl);
+                  c1=c1; c2=c2; holes })
+  in
+    match find_rel ctype with
+    | Some c -> c
+    | None ->
+      let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
+      let t' = it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx) in
+      match find_rel t' with
+      | Some c -> c
+      | None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
+
 (** Utility functions *)
 
 module GlobalBindings (M : sig
@@ -370,17 +469,22 @@ end) = struct
         if isRefX sigma (coq_eq_ref ()) head then None
         else
           (try
-           let params = Array.sub args 0 (Array.length args - 2) in
-           let env' = push_rel_context rels env in
-           let (evars, (evar, _)) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
-           let evars, inst =
-             app_poly env (evars,Evar.Set.empty)
-               rewrite_relation_class [| evar; mkApp (c, params) |] in
-           let _ = TC.resolve_one_typeclass env' (goalevars evars) inst in
-             Some (it_mkProd_or_LetIn t rels)
+            let env' = push_rel_context rels env in
+            match decompose_app_rel env' sigma t with
+            | None -> None
+            | Some (equiv, ty1, ty2, concl, c1, c2) ->
+              let (evars, evset), inst =
+                app_poly env' (sigma,Evar.Set.empty)
+                  rewrite_relation_class [| ty1; equiv |] in
+              let sigma, _ = TC.resolve_one_typeclass env' evars inst in
+              (* We check that the relation is homogeneous *after* launching resolution,
+                 as this convertibility test might be expensive in general (e.g. this
+                 slows down mathcomp-odd-order). *)
+              match evd_convertible env sigma ty1 ty2 with
+              | None -> None
+              | Some sigma -> Some (it_mkProd_or_LetIn t rels)
            with e when CErrors.noncritical e -> None)
   | _ -> None
-
 
 end
 
@@ -449,110 +553,11 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
-let eq_pb (ty, env, x, y as pb) (ty', env', x', y' as pb') =
-  let equal x y = Constr.equal (EConstr.Unsafe.to_constr x) (EConstr.Unsafe.to_constr y) in
-  pb == pb' || (ty == ty' && equal x x' && equal y y')
-
-let problem_inclusion x y =
-  List.for_all (fun pb -> List.exists (fun pb' -> eq_pb pb pb') y) x
-
-let evd_convertible env evd x y =
-  try
-    (* Unfortunately, the_conv_x might say they are unifiable even if some
-       unsolvable constraints remain, so we check that this unification
-       does not introduce any new problem. *)
-    let _, pbs = Evd.extract_all_conv_pbs evd in
-    let evd' = Evarconv.unify_delay env evd x y in
-    let _, pbs' = Evd.extract_all_conv_pbs evd' in
-    if evd' == evd || problem_inclusion pbs' pbs then Some evd'
-    else None
-  with e when CErrors.noncritical e -> None
-
 let convertible env evd x y =
   Reductionops.is_conv_leq env evd x y
 
-type hypinfo = {
-  prf : constr;
-  car : constr;
-  rel : constr;
-  sort : bool; (* true = Prop; false = Type *)
-  c1 : constr;
-  c2 : constr;
-  holes : Clenv.hole list;
-}
-
 let get_symmetric_proof b =
   if b then PropGlobal.get_symmetric_proof else TypeGlobal.get_symmetric_proof
-
-let error_no_relation () = user_err Pp.(str "Cannot find a relation to rewrite.")
-
-let rec decompose_app_rel env evd t =
-  (* Head normalize for compatibility with the old meta mechanism *)
-  let t = Reductionops.whd_betaiota env evd t in
-  match EConstr.kind evd t with
-  | App (f, [||]) -> assert false
-  | App (f, [|arg|]) ->
-    (* This treats the special case `g (R x y)`, turning it into
-       the relation `(fun x y => g (R x y))`. Useful when g is negation in particular. *)
-    let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Retyping.get_type_of env evd argl in
-    let ty' = Retyping.get_type_of env evd argr in
-    let r = Retyping.relevance_of_type env evd ty in
-    let r' = Retyping.relevance_of_type env evd ty' in
-    let f'' = mkLambda (make_annot (Name Namegen.default_dependent_ident) r, ty,
-      mkLambda (make_annot (Name (Id.of_string "y")) r', lift 1 ty',
-        mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
-    in (f'', argl, argr)
-  | App (f, args) ->
-    let len = Array.length args in
-    let fargs = Array.sub args 0 (Array.length args - 2) in
-    let rel = mkApp (f, fargs) in
-    rel, args.(len - 2), args.(len - 1)
-  | _ -> error_no_relation ()
-
-let decompose_app_rel env evd t =
-  let (rel, t1, t2) = decompose_app_rel env evd t in
-  let ty = try Retyping.get_type_of ~lax:true env evd rel with Retyping.RetypeError _ -> error_no_relation () in
-  if not (Reductionops.is_arity env evd ty) then None else
-  match Reductionops.splay_arity env evd ty with
-  | [_, ty2; _, ty1], concl ->
-    if noccurn evd 1 ty2 then
-      Some (rel, ty1, subst1 mkProp ty2, concl, t1, t2)
-    else None
-  | _ -> assert false
-
-let decompose_app_rel_error env evd t =
-  match decompose_app_rel env evd t with
-  | Some e -> e
-  | None -> error_no_relation ()
-
-let decompose_applied_relation env sigma (c,l) =
-  let open Context.Rel.Declaration in
-  let ctype = Retyping.get_type_of env sigma c in
-  let find_rel ty =
-    let sigma, cl = Clenv.make_evar_clause env sigma ty in
-    let sigma = Clenv.solve_evar_clause env sigma true cl l in
-    let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
-    match decompose_app_rel env sigma t with
-    | None -> None
-    | Some (equiv, ty1, ty2, concl, c1, c2) ->
-      match evd_convertible env sigma ty1 ty2 with
-      | None -> None
-      | Some sigma ->
-        let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
-        let value = mkApp (c, args) in
-          Some (sigma, { prf=value;
-                  car=ty1; rel = equiv; sort = Sorts.is_prop (ESorts.kind sigma concl);
-                  c1=c1; c2=c2; holes })
-  in
-    match find_rel ctype with
-    | Some c -> c
-    | None ->
-      let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
-      let t' = it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx) in
-      match find_rel t' with
-      | Some c -> c
-      | None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
 
 let rewrite_db = "rewrite"
 
