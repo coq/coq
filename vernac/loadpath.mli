@@ -52,10 +52,19 @@ type library_location = LibLoaded | LibInPath
 type locate_error = LibUnmappedDir | LibNotFound
 type 'a locate_result = ('a, locate_error) result
 
-val locate_qualified_library
+val try_locate_qualified_library_status
   :  ?root:DirPath.t
   -> Libnames.qualid
-  -> (library_location * DirPath.t * CUnix.physical_path) locate_result
+  -> library_location * DirPath.t * CUnix.physical_path
+
+val try_locate_qualified_library
+  :  ?root:DirPath.t
+  -> Libnames.qualid
+  -> DirPath.t * CUnix.physical_path
+
+val try_locate_qualified_library_source
+  :  Libnames.qualid
+  -> DirPath.t * CUnix.physical_path
 
 (** Locates a library by implicit name.
 

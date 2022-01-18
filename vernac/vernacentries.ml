@@ -456,43 +456,8 @@ let msg_found_library = function
   | Loadpath.LibInPath, fulldir, file ->
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
-let err_unmapped_library ?from qid =
-  let prefix = match from with
-  | None -> mt ()
-  | Some from ->
-    str " with prefix " ++ DirPath.print from
-  in
-  strbrk "Cannot find a physical path bound to logical path "
-    ++ pr_qualid qid ++ prefix ++ str "."
-
-let err_notfound_library ?from qid =
-  let prefix = match from with
-  | None -> mt ()
-  | Some from -> str " with prefix " ++ DirPath.print from
-  in
-  let bonus =
-    if !Flags.load_vos_libraries then mt ()
-    else str " (while searching for a .vos file)"
-  in
-  strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix ++ bonus
-    ++ str "."
-
-exception UnmappedLibrary of Names.DirPath.t option * Libnames.qualid
-exception NotFoundLibrary of Names.DirPath.t option * Libnames.qualid
-
-
-let _ = CErrors.register_handler begin function
-  | UnmappedLibrary (from, qid) -> Some (err_unmapped_library ?from qid)
-  | NotFoundLibrary (from, qid) -> Some (err_notfound_library ?from qid)
-  | _ -> None
-end
-
 let print_located_library qid =
-  let open Loadpath in
-  match locate_qualified_library qid with
-  | Ok lib -> msg_found_library lib
-  | Error LibUnmappedDir -> raise (UnmappedLibrary (None, qid))
-  | Error LibNotFound    -> raise (NotFoundLibrary (None, qid))
+  msg_found_library (Loadpath.try_locate_qualified_library_status qid)
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -1342,14 +1307,7 @@ let vernac_require from import qidl =
     let (hd, tl) = Libnames.repr_qualid from in
     Some (Libnames.add_dirpath_suffix hd tl)
   in
-  let locate qid =
-    let open Loadpath in
-    match locate_qualified_library ?root qid with
-    | Ok (_,dir,f) -> dir, f
-    | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
-    | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
-  in
-  let modrefl = List.map locate qidl in
+  let modrefl = List.map (Loadpath.try_locate_qualified_library ?root) qidl in
   if Dumpglob.dump () then
     List.iter2 (fun {CAst.loc} (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   let lib_resolver = Loadpath.try_locate_absolute_library in

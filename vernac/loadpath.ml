@@ -156,8 +156,7 @@ let warn_several_object_files =
 let select_vo_file ~find base =
   let find ext =
     try
-      let name = Names.Id.to_string base ^ ext in
-      let lpath, file = find name in
+      let lpath, file = find base ext in
       Some (lpath, file)
     with Not_found -> None in
   (* If [!Flags.load_vos_libraries]
@@ -186,15 +185,23 @@ let select_vo_file ~find base =
     | _ -> load_most_recent_of_vo_and_vio()
   end else load_most_recent_of_vo_and_vio()
 
-let find_first loadpath base =
-  match System.all_in_path loadpath base with
-  | [] -> raise Not_found
-  | f :: _ -> f
+let select_v_file ~find base =
+  try
+    let lpath, file = find base ".v" in
+    Ok (lpath, file)
+  with Not_found -> Error LibNotFound
 
-let find_unique fullqid loadpath base =
-  match System.all_in_path loadpath base with
+let find_first loadpath base ext =
+  let name = Names.Id.to_string base ^ ext in
+  match System.all_in_path loadpath name with
   | [] -> raise Not_found
-  | [f] -> f
+  | (dir,f) :: _ -> (Libnames.add_dirpath_suffix dir base, f)
+
+let find_unique fullqid loadpath base ext =
+  let name = Names.Id.to_string base ^ ext in
+  match System.all_in_path loadpath name with
+  | [] -> raise Not_found
+  | [dir,f] -> (Libnames.add_dirpath_suffix dir base, f)
   | _::_ as l ->
     CErrors.user_err Pp.(str "Required library " ++ Libnames.pr_qualid fullqid ++
       strbrk " matches several files in path (found " ++ pr_enum str (List.map snd l) ++ str ").")
@@ -210,37 +217,56 @@ let locate_absolute_library dir : CUnix.physical_path locate_result =
     | Ok (_, file) -> Ok file
     | Error fail -> Error fail
 
-let locate_qualified_library ?root qid :
-  (library_location * DP.t * CUnix.physical_path) locate_result =
+let locate_qualified_library_core select ?root qid =
   (* Search library in loadpath *)
   let dir, base = Libnames.repr_qualid qid in
   match expand_path ?root dir with
   | [], [] -> Error LibUnmappedDir
   | full_matches, others ->
-    let result =
       (* Priority to exact matches *)
-      match select_vo_file ~find:(find_first full_matches) base with
+      match select ~find:(find_first full_matches) base with
       | Ok _ as x -> x
       | Error _ ->
          (* Looking otherwise in -R/-Q blocks of partial matches *)
         let rec aux = function
           | [] -> Error LibUnmappedDir
           | block :: rest ->
-            match select_vo_file ~find:(find_unique qid block) base with
+            match select ~find:(find_unique qid block) base with
             | Ok _ as x -> x
             | Error _ -> aux rest
         in
         aux others
-    in
-    match result with
-    | Ok (dir,file) ->
-      let library = Libnames.add_dirpath_suffix dir base in
-      (* Look if loaded *)
-      if Library.library_is_loaded library
-      then Ok (LibLoaded, library, Library.library_full_filename library)
-      (* Otherwise, look for it in the file system *)
-      else Ok (LibInPath, library, file)
-    | Error _ as e -> e
+
+exception UnmappedLibrary of Names.DirPath.t option * Libnames.qualid
+exception NotFoundLibrary of Names.DirPath.t option * Libnames.qualid
+
+let err_unmapped_library ?from qid =
+  let open Pp in
+  let prefix = match from with
+  | None -> mt ()
+  | Some from -> str " with prefix " ++ Names.DirPath.print from
+  in
+  strbrk "Cannot find a physical path bound to logical path "
+    ++ Libnames.pr_qualid qid ++ prefix ++ str "."
+
+let err_notfound_library ?from qid =
+  let open Pp in
+  let prefix = match from with
+  | None -> mt ()
+  | Some from -> str " with prefix " ++ Names.DirPath.print from
+  in
+  let bonus =
+    if !Flags.load_vos_libraries then mt ()
+    else str " (while searching for a .vos file)"
+  in
+  strbrk "Unable to locate library " ++ Libnames.pr_qualid qid ++ prefix ++ bonus
+    ++ str "."
+
+let _ = CErrors.register_handler begin function
+  | UnmappedLibrary (from, qid) -> Some (err_unmapped_library ?from qid)
+  | NotFoundLibrary (from, qid) -> Some (err_notfound_library ?from qid)
+  | _ -> None
+end
 
 let error_unmapped_dir qid =
   let prefix, _ = Libnames.repr_qualid qid in
@@ -255,6 +281,26 @@ let error_lib_not_found qid =
   let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
   CErrors.user_err
     Pp.(seq ([ str "Cannot find library "; Libnames.pr_qualid qid; str" in loadpath"]@vos_msg))
+
+let try_locate_qualified_library ?root qid =
+  match locate_qualified_library_core select_vo_file ?root qid with
+  | Ok res -> res
+  | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
+  | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
+
+let try_locate_qualified_library_status ?root qid =
+  let (library,file) = try_locate_qualified_library ?root qid in
+  (* Look if loaded *)
+  if Library.library_is_loaded library
+  then (LibLoaded, library, Library.library_full_filename library)
+  (* Otherwise, look for it in the file system *)
+  else (LibInPath, library, file)
+
+let try_locate_qualified_library_source qid =
+  match locate_qualified_library_core select_v_file qid with
+  | Ok res -> res
+  | Error LibUnmappedDir -> raise (UnmappedLibrary (None, qid))
+  | Error LibNotFound -> raise (NotFoundLibrary (None, qid))
 
 let try_locate_absolute_library dir =
   match locate_absolute_library dir with
