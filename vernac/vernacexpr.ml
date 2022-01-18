@@ -316,9 +316,13 @@ type hints_expr =
   | HintsConstructors of Libnames.qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
+type load_name =
+  | LoadByQualid of qualid
+  | LoadByFilename of lstring
+
 type nonrec vernac_expr =
 
-  | VernacLoad of verbose_flag * string
+  | VernacLoad of verbose_flag * load_name
   (* Syntax *)
   | VernacReservedNotation of infix_flag * (lstring * syntax_modifier CAst.t list)
   | VernacOpenCloseScope of bool * scope_name

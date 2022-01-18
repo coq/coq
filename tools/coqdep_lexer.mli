@@ -10,7 +10,7 @@
 
 type qualid = string list
 
-type load = Logical of string | Physical of string
+type load = Logical of qualid | Physical of string
 
 type coq_token =
   | Require of qualid option * qualid list

@@ -678,11 +678,9 @@ let pr_vernac_expr v =
   match v with
   | VernacLoad (f,s) ->
     return (
-      keyword "Load"
-      ++ if f then
-        (spc() ++ keyword "Verbose" ++ spc())
-      else
-        spc() ++ qs s
+      keyword "Load" ++ spc() ++
+      (if f then keyword "Verbose" ++ spc() else mt()) ++
+      (match s with LoadByQualid qid -> pr_qualid qid | LoadByFilename s -> qs s.CAst.v)
     )
 
   (* Proof management *)

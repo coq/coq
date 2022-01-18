@@ -168,11 +168,17 @@ let rec interp_expr ?loc ~atts ~st c =
 and vernac_load ~verbosely fname =
   (* Note that no proof should be open here, so the state here is just token for now *)
   let st = Vernacstate.freeze_interp_state ~marshallable:false in
-  let fname =
-    Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (Pp.str x)) fname in
-  let fname = CUnix.make_suffix fname ".v" in
   let input =
-    let longfname = Loadpath.locate_file fname in
+    let longfname =
+      match fname with
+        | LoadByQualid qid ->
+          let dp, longfname = Loadpath.try_locate_qualified_library_source qid in
+          longfname
+        | LoadByFilename (CAst.{v=fname}) ->
+          let fname =
+            Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (Pp.str x)) fname in
+          let fname = CUnix.make_suffix fname ".v" in
+          Loadpath.locate_file fname in
     let in_chan = Util.open_utf8_file_in longfname in
     Pcoq.Parsable.make ~loc:Loc.(initial (InFile { dirpath=None; file=longfname}))
         (Stream.of_channel in_chan) in

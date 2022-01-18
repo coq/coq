@@ -914,7 +914,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Cd"; dir = ne_string -> { VernacChdir (Some dir) }
 
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> { true } | -> { false } ];
-        s = [ s = ne_string -> { s } | s = IDENT -> { s } ] ->
+        s = [ s = ne_lstring -> { LoadByFilename s } | qid = global -> { LoadByQualid qid } ] ->
           { VernacLoad (verbosely, s) }
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
           { VernacDeclareMLModule l }

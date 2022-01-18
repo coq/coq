@@ -379,9 +379,12 @@ let rec find_dependencies basename =
             let canon =
               match file with
               | Logical str ->
-                if should_visit_v_and_mark None [str] then safe_assoc None verbose f [str]
+                if should_visit_v_and_mark None str then
+                  Option.map (List.map canonize) (safe_assoc None verbose f str)
                 else None
               | Physical str ->
+                (* TODO: look in the physical part of the path even
+                   when str contains "/", as coqc does *)
                 if String.equal (Filename.basename str) str then
                   if should_visit_v_and_mark None [str] then safe_assoc None verbose f [str]
                   else None

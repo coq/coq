@@ -15,7 +15,7 @@
 
   type qualid = string list
 
-  type load = Logical of string | Physical of string
+  type load = Logical of qualid | Physical of string
 
   type coq_token =
     | Require of qualid option * qualid list
@@ -174,7 +174,9 @@ and load_file = parse
 	parse_dot lexbuf;
         Load (Physical (unquote_vfile_string s)) }
   | coq_ident
-      { let s = get_ident lexbuf in skip_to_dot lexbuf; Load (Logical s) }
+      { let name = coq_qual_id_tail [get_ident lexbuf] lexbuf in
+        parse_dot lexbuf;
+        Load (Logical name) }
   | eof
       { syntax_error lexbuf }
   | _
@@ -203,6 +205,8 @@ and skip_to_dot = parse
   | _   { skip_to_dot lexbuf }
 
 and parse_dot = parse
+  | "(*"
+      { comment lexbuf; parse_dot lexbuf }
   | dot { () }
   | eof { syntax_error lexbuf }
   | _ { syntax_error lexbuf }

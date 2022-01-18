@@ -479,19 +479,21 @@ toplevel. This kind of file is called a *script* for Coq. The standard
 (and default) extension of Coq’s script files is .v.
 
 
-.. cmd:: Load {? Verbose } {| @string | @ident }
+.. cmd:: Load {? Verbose } {| @string | @qualid }
 
-   Loads a file.  If :n:`@ident` is specified, the command loads a file
-   named :n:`@ident.v`, searching successively in
-   each of the directories specified in the *loadpath*. (see Section
-   :ref:`libraries-and-filesystem`)
+   Executes the commands of a file in the current context.
+
+   If :n:`@qualid` is specified, :n:`Load` searches
+   in the *loadpath* (see Section :ref:`libraries-and-filesystem`)
+   for a file with suffix :n:`.v` whose logical name is :n:`@qualid`.
 
    If :n:`@string` is specified, it must specify a complete filename.
    `~` and .. abbreviations are
    allowed as well as shell variables. If no extension is specified, Coq
-   will use the default extension ``.v``.
+   will use the default extension ``.v``. If the filename is relative,
+   it is searched in the loadpath, ignoring the logical part.
 
-   Files loaded this way can't leave proofs open, nor can :cmd:`Load`
+   Files included this way can't leave proofs open, nor can :cmd:`Load`
    be used inside a proof.
 
    We discourage the use of :cmd:`Load`; use :cmd:`Require` instead.
@@ -501,7 +503,7 @@ toplevel. This kind of file is called a *script* for Coq. The standard
    :n:`Verbose` displays the Coq output for each command and tactic
    in the loaded file, as if the commands and tactics were entered interactively.
 
-   .. exn:: Can’t find file @ident on loadpath.
+   .. exn:: Can’t find file @qualid on loadpath.
       :undocumented:
 
    .. exn:: Load is not supported inside proofs.
