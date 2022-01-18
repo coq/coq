@@ -553,9 +553,6 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
-let convertible env evd x y =
-  Reductionops.is_conv_leq env evd x y
-
 let get_symmetric_proof b =
   if b then PropGlobal.get_symmetric_proof else TypeGlobal.get_symmetric_proof
 
@@ -739,19 +736,22 @@ let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) 
     let sigma = Unification.w_unify ~flags env sigma CONV left t in
     let sigma = TC.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
-    let evd = solve_remaining_by env sigma holes by in
-    let nf c = Reductionops.nf_evar evd (Reductionops.nf_meta env evd c) in
+    let sigma = solve_remaining_by env sigma holes by in
+    let nf c = Reductionops.nf_evar sigma (Reductionops.nf_meta env sigma c) in
     let c1 = nf c1 and c2 = nf c2
     and rew_car = nf car and rel = nf rel
     and prf = nf prf in
-    let ty1 = Retyping.get_type_of env evd c1 in
-    let ty2 = Retyping.get_type_of env evd c2 in
-    let () = if not (convertible env evd ty2 ty1) then raise Reduction.NotConvertible in
-    let rew_evars = evd, cstrs in
-    let rew_prf = RewPrf (rel, prf) in
-    let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
-    let rew = if l2r then rew else symmetry env sort rew in
-    Some rew
+    let ty1 = Retyping.get_type_of env sigma c1 in
+    let ty2 = Retyping.get_type_of env sigma c2 in
+    begin match Reductionops.infer_conv ~pb:CUMUL env sigma ty2 ty1 with
+      | None -> None
+      | Some sigma ->
+        let rew_evars = sigma, cstrs in
+        let rew_prf = RewPrf (rel, prf) in
+        let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
+        let rew = if l2r then rew else symmetry env sort rew in
+        Some rew
+    end
   with
   | e when noncritical e -> None
 
