@@ -173,6 +173,7 @@ and vernac_load ~verbosely fname =
       match fname with
         | LoadByQualid qid ->
           let dp, longfname = Loadpath.try_locate_qualified_library_source qid in
+          Dumpglob.dump_libref ?loc:qid.CAst.loc dp "lib";
           longfname
         | LoadByFilename (CAst.{v=fname}) ->
           let fname =
