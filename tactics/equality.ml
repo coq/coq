@@ -1058,11 +1058,10 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = v } cpath
       [onLastHypId gen_absurdity; (Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
 let discrEq eq =
-  let { eq_data = (_, (_, t1, t2)); eq_clenv = eq_clause } = eq in
-  let sigma = eq_clause.evd in
-  let eq = project_value eq in
+  let { eq_data = (_, (_, t1, t2)) } = eq in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
     match find_positions env sigma ~keep_proofs:false ~no_discr:false t1 t2 with
     | Inr _ ->
       let info = Exninfo.reify () in
@@ -1082,6 +1081,7 @@ let onEquality with_evars tac (c,lbindc) =
   (* FIXME evar leak *)
   let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
   let eq = { eq_data = (eq, eq_args); eq_clenv = eq_clause' } in
+  let eq = project_value eq in
   tclTHEN
     (Proofview.Unsafe.tclEVARS eq_clause'.evd)
     (tac eq)
@@ -1436,10 +1436,10 @@ let () = CErrors.register_handler (function
   | _ -> None)
 
 let injEqThen keep_proofs tac l2r eql =
-  let { eq_data = (eq, (t,t1,t2)); eq_clenv = eq_clause } = eql in
-  let sigma = eq_clause.evd in
-  let env = eq_clause.env in
-  let eql = project_value eql in
+  Proofview.Goal.enter begin fun gl ->
+  let { eq_data = (eq, (t,t1,t2)) } = eql in
+  let sigma = Proofview.Goal.sigma gl in
+  let env = Proofview.Goal.env gl in
   match find_positions env sigma ~keep_proofs ~no_discr:true t1 t2 with
   | Inl _ ->
      assert false
@@ -1454,6 +1454,7 @@ let injEqThen keep_proofs tac l2r eql =
   | Inr posns ->
       inject_at_positions env sigma l2r eql posns
         (tac eql.eq_clenv)
+  end
 
 let get_previous_hyp_position id gl =
   let env, sigma = Proofview.Goal.(env gl, sigma gl) in
@@ -1507,11 +1508,10 @@ let injConcl flags ?injection_in_context () = injClause flags ?injection_in_cont
 let injHyp flags ?injection_in_context clear_flag id = injClause flags ?injection_in_context None false (Some (clear_flag,ElimOnIdent CAst.(make id)))
 
 let decompEqThen keep_proofs ntac eq =
-  let { eq_data = (_, (_,t1,t2) as u); eq_clenv = clause } = eq in
-  let eq = project_value eq in
+  let { eq_data = (_, (_,t1,t2) as u) } = eq in
   Proofview.Goal.enter begin fun gl ->
-    let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
       match find_positions env sigma ~keep_proofs ~no_discr:false t1 t2 with
       | Inl (cpath, (_,dirn), _) ->
           discr_positions env sigma eq cpath dirn
@@ -1534,6 +1534,8 @@ let intro_decomp_eq tac (eq, _, data) (c, t) =
   Proofview.Goal.enter begin fun gl ->
     let cl = pf_apply make_clenv_binding gl (c, t) NoBindings in
     let eq = { eq_data = (eq, data); eq_clenv = cl } in
+    let eq = project_value eq in
+    Proofview.Unsafe.tclEVARS cl.evd <*>
     decompEqThen !keep_proof_equalities_for_injection (fun _ -> tac) eq
   end
 
