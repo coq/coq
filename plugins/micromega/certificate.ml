@@ -676,8 +676,9 @@ open Polynomial
 
 type prf_sys = (cstr * ProofFormat.prf_rule) list
 
-(** Proof generating pivoting over variable v *)
-let pivot v (c1, p1) (c2, p2) =
+(** Proof generating pivoting over variable v.
+    Assumes [a] is the non-zero coefficient for [v] in [c1]. *)
+let pivot v (a, c1, p1) (c2, p2) =
   let {coeffs = v1; op = op1; cst = n1} = c1
   and {coeffs = v2; op = op2; cst = n2} = c2 in
   (* Could factorise gcd... *)
@@ -689,8 +690,8 @@ let pivot v (c1, p1) (c2, p2) =
         (ProofFormat.mul_cst_proof cv1 p1)
         (ProofFormat.mul_cst_proof cv2 p2) )
   in
-  let a, b = (Vect.get v v1, Vect.get v v2) in
-  if a =/ Q.zero || b =/ Q.zero then None
+  let b = Vect.get v v2 in
+  if b =/ Q.zero then None
   else if Int.equal (Q.sign a * Q.sign b) (-1) then
     let cv1 = Q.abs b and cv2 = Q.abs a in
     Some (xpivot cv1 cv2)
@@ -754,7 +755,10 @@ let extract2 pred l =
   xextract2 [] l
 
 let extract_coprime_equation psys = extract2 extract_coprime psys
-let pivot_sys v pc psys = apply_and_normalise check_int_sat (pivot v pc) psys
+let pivot_sys v (cstr, prf) psys =
+  let a = Vect.get v cstr.coeffs in
+  if a =/ Q.zero then List.rev psys
+  else apply_and_normalise check_int_sat (pivot v (a, cstr, prf)) psys
 
 let reduce_coprime psys =
   let oeq, sys = extract_coprime_equation psys in
