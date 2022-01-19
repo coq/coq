@@ -754,6 +754,7 @@ type clause = {
   cl_val   : constr;
   (** The value the clause was built from, applied to holes *)
 }
+let debug_clenv = CDebug.create ~name:"clenv" ()
 
 let pr_clause ?(with_evars=false) env sigma clause =
   let prc = Termops.Internal.print_constr_env env sigma in
@@ -879,6 +880,19 @@ let define_with_type env sigma ?flags ev c ty =
   let sigma = Evd.define ev j.Environ.uj_val sigma in
   sigma
 
+let warn_unused_with_argument =
+  CWarnings.create ~name:"unused-with-argument" ~category:"apply"
+    Pp.(fun na -> str"Ignoring 'with' argument for binder " ++ Name.print na ++ str", already solved by unification.")
+
+let try_define_with_type env sigma ev c ty =
+  if isEvar sigma ev.hole_evar then
+    define_with_type env sigma ev.hole_evar c ty
+  else
+    (warn_unused_with_argument ev.hole_name; sigma)
+
+let apply_delayed_bindings env delayed sigma =
+  List.fold_right (fun (ev,arg) sigma -> try_define_with_type env sigma ev arg None) delayed sigma
+
 (** This requires to look at the evar even if it is defined *)
 let hole_goal h = fst (Constr.destEvar (EConstr.Unsafe.to_constr h.hole_evar))
 
@@ -936,7 +950,8 @@ let solve_evar_clause env sigma ~hyps_only clause b =
   let define_if_known_type (sigma,delayed) ev arg =
     let head, _ = decompose_app sigma ev.hole_type in
     if EConstr.isEvar sigma head then
-      (sigma, (ev,arg) :: delayed)
+      (debug_clenv Pp.(fun () -> Pp.str"Delaying instantiation of " ++ Name.print ev.hole_name);
+      (sigma, (ev,arg) :: delayed))
     else
       try
         (define_with_type env sigma ev.hole_evar arg None, delayed)
@@ -1243,7 +1258,6 @@ let get_dependent_typeclass_holes env sigma clenv =
     if h.hole_deps && Evd.is_maybe_typeclass sigma (EConstr.Unsafe.to_constr ty) then Some (hole_evar sigma h)
     else None) clenv.cl_holes
   in Evar.Set.of_list evs
-let debug_clenv = CDebug.create ~name:"clenv" ()
 
 let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=true) ?origsigma
                      flags (sigma, clenv) =
@@ -1318,9 +1332,6 @@ let clenv_unify_concl_tac flags clenv =
     let ex = Pretype_errors.(PretypeError (env, evd,
         CannotUnify (concl, clenv_concl clenv, Some reason))) in
     Ftactic.lift (Proofview.tclZERO ex) end
-
-let apply_delayed_bindings env delayed sigma =
-  List.fold_right (fun (ev,arg) sigma -> define_with_type env sigma ev.hole_evar arg None) delayed sigma
 
 let clenv_refine_bindings
     ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=true)
