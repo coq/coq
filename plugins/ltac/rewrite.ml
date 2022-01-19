@@ -744,13 +744,13 @@ let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) 
     let ty1 = Retyping.get_type_of env sigma c1 in
     let ty2 = Retyping.get_type_of env sigma c2 in
     begin match Reductionops.infer_conv ~pb:CUMUL env sigma ty2 ty1 with
-      | None -> None
-      | Some sigma ->
-        let rew_evars = sigma, cstrs in
-        let rew_prf = RewPrf (rel, prf) in
-        let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
-        let rew = if l2r then rew else symmetry env sort rew in
-        Some rew
+    | None -> None
+    | Some sigma ->
+      let rew_evars = sigma, cstrs in
+      let rew_prf = RewPrf (rel, prf) in
+      let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
+      let rew = if l2r then rew else symmetry env sort rew in
+      Some rew
     end
   with
   | e when noncritical e -> None
