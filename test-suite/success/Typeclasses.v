@@ -20,7 +20,7 @@ Module Cache.
   Proof.
     intros. split.
     all:typeclasses eauto.
-
+  Qed.
 
 End Cache.
 

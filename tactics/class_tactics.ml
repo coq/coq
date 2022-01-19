@@ -763,7 +763,7 @@ module Search = struct
                   str "Goal " ++ int glid ++ str" has no more solutions, returning exception: "
                   ++ CErrors.iprint (e, info))
               in
-              if not progress then
+              if not progress && not (e == ReachedLimit) then
                 tclENV >>= fun env ->
                 tclEVARMAP >>= fun sigma ->
                 let cache = cache_goal env sigma ev cache (Failure (e, info)) in
