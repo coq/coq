@@ -1994,7 +1994,7 @@ let apply_in_once_main flags env sigma innerclause (loc,d,lbind) =
       | UnableToApply -> error ?loc (UnableToApplyLemma (env,sigma,thm,innerclause.cl_val))
       | _ -> Exninfo.iraise e'
   in
-  let sigma, delayed, clenv = make_clenv_bindings env sigma ~hyps_only:false (* TODO ?occs *) (d,thm) lbind in
+  let sigma, delayed, clenv = make_clenv_bindings env sigma ~hyps_only:false (d,thm) lbind in
   let sigma = apply_delayed_bindings env delayed sigma in
   aux (sigma, clenv)
 
@@ -2030,8 +2030,8 @@ let apply_in_once ?(respect_opaque = false) with_delta
         clenv_refine_in ?err with_evars flags targetid replace env sigma origsigma clause
         (fun id -> replace_error_option err (
             apply_clear_request clear_flag false c <*>
-            clear idstoclear <*>
-            tac id))
+            clear idstoclear) <*>
+            tac id)
     with e when with_destruct && CErrors.noncritical e ->
       let err = Option.default (Exninfo.capture e) err in
         (descend_in_conjunctions (Id.Set.singleton targetid)
