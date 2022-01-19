@@ -662,12 +662,6 @@ module Search = struct
   let pr_cache env sigma l =
     prlist_with_sep fnl (pr_cache_goal env sigma) l
 
-  let cache_goal env sigma ev cache res =
-    let evi = Evd.find sigma ev in
-    let evi = Evarutil.nf_evar_info sigma evi in
-    ppdebug 1 (fun () -> Pp.str"caching goal: " ++ pr_cache_goal env sigma (ev, evi, res));
-    ((ev, evi, res) :: cache)
-
   let eq_constr_upto_evars sigma c c' =
     let rec aux c c' =
       match kind sigma c, kind sigma c' with
@@ -683,6 +677,35 @@ module Search = struct
     match List.find_opt (equivalent_goal sigma concl) cache with
     | None -> raise Not_found
     | Some (ev, evi, res) -> res
+
+  let find_ev ev cache =
+    List.find (fun (ev', _, _) -> Evar.equal ev ev') cache
+
+
+  (* We only keep ground terms in the cache. A more elaborate
+    solution is to abstract the solution over its evars (and universes) *)
+  let abstract_result sigma concl = function
+    | Failure _ as e ->
+      let c = Evarutil.nf_evar sigma concl in
+      let evs = evars_of_term sigma c in
+      if Evar.Set.is_empty evs then Some e
+      else None
+    | Solution c ->
+      let c = Evarutil.nf_evar sigma c in
+      let evs = evars_of_term sigma c in
+      if Evar.Set.is_empty evs then Some (Solution c)
+      else None
+
+  let cache_goal env sigma ev cache res =
+    try ignore (find_ev ev cache); cache
+    with Not_found ->
+      let evi = Evd.find sigma ev in
+      let evi = Evarutil.nf_evar_info sigma evi in
+      match abstract_result sigma evi.evar_concl res with
+      | Some res ->
+        ppdebug 0 (fun () -> Pp.str"caching goal: " ++ pr_cache_goal env sigma (ev, evi, res));
+        ((ev, evi, res) :: cache)
+      | None -> cache
 
   let try_cache cache tac =
     if not (get_typeclasses_caching ()) then tac cache else
@@ -718,7 +741,7 @@ module Search = struct
             str "considering goal " ++ int glid ++
             str " of status " ++ pr_goal_status status)
         in
-        let rec kont = function
+        let rec kont progress = function
           | Fail e ->
             let cache, (e, info) = split_exn cache e in
             begin match e with
@@ -740,10 +763,12 @@ module Search = struct
                   str "Goal " ++ int glid ++ str" has no more solutions, returning exception: "
                   ++ CErrors.iprint (e, info))
               in
-              tclENV >>= fun env ->
-              tclEVARMAP >>= fun sigma ->
-              let cache = cache_goal env sigma ev cache (Failure (e, info)) in
-              fk (WithState (cache, e), info)
+              if not progress then
+                tclENV >>= fun env ->
+                tclEVARMAP >>= fun sigma ->
+                let cache = cache_goal env sigma ev cache (Failure (e, info)) in
+                fk (WithState (cache, e), info)
+              else fk (WithState (cache, e), info)
             end
           | Next (cache, fk') ->
             let () = ppdebug 1 (fun () ->
@@ -760,12 +785,12 @@ module Search = struct
                 for tac work, we will come back to the failure continuation fk in one of
                 the above cases *)
             ppdebug 1 (fun () -> str"Current cache " ++ pr_cache env sigma cache);
-            fixpoint true tacs stuck cache (fun (e, info) -> tclCASE (fk' (e, info)) >>= kont)
+            fixpoint true tacs stuck cache (fun (e, info) -> tclCASE (fk' (e, info)) >>= kont true)
         in
         tclENV >>= fun env ->
         tclEVARMAP >>= fun sigma ->
         ppdebug 1 (fun () -> str"Current cache: " ++ pr_cache env sigma cache);
-        tclCASE (try_cache cache tac) >>= kont
+        tclCASE (try_cache cache tac) >>= kont false
       in
       tclENV >>= fun env ->
       tclEVARMAP >>= fun sigma ->
