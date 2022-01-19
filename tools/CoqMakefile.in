@@ -187,10 +187,11 @@ findlib_remove = \
 
 ifeq ($(shell which cygpath 2>/dev/null),)
 FINDLIBSEP := :
+EXTRAOCAMLPATH=$(dir $(abspath $(METAFILE)))
 else
 FINDLIBSEP := ;
+EXTRAOCAMLPATH=$(shell cygpath -m $(dir $(abspath $(METAFILE))))
 endif
-EXTRAOCAMLPATH=$(dir $(abspath $(METAFILE)))
 
 # Substitution of the path by appending $(DESTDIR) if needed.
 # The variable $(COQMF_WINDRIVE) can be needed for Cygwin environments.
