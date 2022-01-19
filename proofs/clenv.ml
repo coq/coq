@@ -765,8 +765,13 @@ let pr_clause ?(with_evars=false) env sigma clause =
          str"Holes: " ++ prlist_with_sep spc pr_hole clause.cl_holes ++
          if with_evars then pr_evar_map (Some 0) env sigma else mt ()))
 
+let hole_source = function
+  | Anonymous -> Loc.tag Evar_kinds.GoalEvar
+  | Name id   -> Loc.tag @@ Evar_kinds.VarInstance id
+
 let make_prod_evar env sigma ~identity ~args na t1 t2 =
-  let sigma, ev = new_pure_evar ~identity ~typeclass_candidate:false env sigma t1 in
+  let sigma, ev = new_pure_evar ~src:(hole_source na.binder_name)
+    ~identity ~typeclass_candidate:false env sigma t1 in
   (* Do not mark any evar as a future goal at this point *)
   let sigma = remove_future_goal sigma ev in
   let ev = mkEvar (ev, args) in
