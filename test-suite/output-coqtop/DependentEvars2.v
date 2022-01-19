@@ -21,7 +21,7 @@ Section eex.
     idtac "Second proof:".
     eapply strange_imp_trans.
           {
-            apply modpon.
+            eapply modpon.
           }
   Abort.
 End eex.
