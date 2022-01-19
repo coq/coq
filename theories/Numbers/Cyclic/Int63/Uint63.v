@@ -587,6 +587,7 @@ Proof.
  unfold oppcarry; rewrite sub_spec.
  rewrite <- Zminus_plus_distr, Zplus_comm, Zminus_plus_distr.
  apply Zmod_small.
+ change (0 <= wB - 1 - φ (x) < wB).
  generalize (to_Z_bounded x); auto with zarith.
 Qed.
 
