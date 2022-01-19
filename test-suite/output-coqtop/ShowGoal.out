@@ -5,6 +5,12 @@ Coq < 1 goal
   forall i : nat, exists j k : nat, i = j /\ j = k /\ i = k
 
 x < 
+x < 1 goal
+  
+  i : nat
+  ============================
+  exists j k : nat, i = j /\ j = k /\ i = k
+
 x < 1 focused goal (shelved: 1)
   
   i : nat
@@ -51,18 +57,18 @@ x < goal ID 13 at state 5
   
   i : nat
   ============================
-  i = ?j /\ ?j = ?k /\ i = ?k
+  nat
 
 x < goal ID 13 at state 7
   
   i : nat
   ============================
-  i = i /\ i = ?k /\ i = ?k
+  nat
 
 x < goal ID 13 at state 9
   
   i : nat
   ============================
-  i = i /\ i = i /\ i = i
+  nat
 
 x < 

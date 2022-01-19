@@ -1,7 +1,8 @@
 Lemma x: forall(i : nat), exists(j k : nat), i = j /\ j = k /\ i = k.
 Proof using.
-  eexists.
-  eexists.
+  intros i.
+  eexists ?[j].
+  eexists ?[k].
   split.
     trivial.
   split.
