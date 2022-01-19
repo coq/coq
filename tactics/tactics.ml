@@ -1946,12 +1946,13 @@ let clenvtac_advance clenv =
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) flags
-                    targetid id env sigma origsigma clenv tac =
-  let sigma =
+let clenv_refine_in ?err ?(sidecond_first=false) with_evars ?(with_classes=true) flags
+                    targetid replace env sigma origsigma clenv tac =
+  let sigma, clenv =
     if with_classes then
-      Typeclasses.resolve_typeclasses ~fail:(not with_evars) env sigma
-    else sigma
+      let sigma = Typeclasses.resolve_typeclasses ~fail:(not with_evars) env sigma in
+      sigma, clenv_advance sigma clenv
+    else sigma, clenv
   in
   (* For compatibility: reduce the conclusion *)
   let clenv = clenv_map_concl (Reductionops.nf_betaiota env sigma) clenv in
@@ -1961,15 +1962,14 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) flag
                                    ~shelve_subgoals:true ~origsigma clenv in
   let new_hyp_typ = clenv_concl clenv in
   let naming = NamingMustBe (CAst.make targetid) in
-  let with_clear = do_replace (Some id) naming in
   Tacticals.tclTHEN
     (Proofview.Unsafe.tclEVARS sigma)
     ((if sidecond_first then
         Tacticals.tclTHENFIRST
-        (assert_before_then_gen with_clear naming new_hyp_typ tac)
+        (assert_before_then_gen replace naming new_hyp_typ tac)
       else
         Tacticals.tclTHENLAST
-        (assert_after_then_gen with_clear naming new_hyp_typ tac))
+        (assert_after_then_gen ?err replace naming new_hyp_typ tac))
      exact_tac)
 
      (*
@@ -1998,6 +1998,8 @@ let apply_in_once_main flags env sigma innerclause (loc,d,lbind) =
   let sigma = apply_delayed_bindings env delayed sigma in
   aux (sigma, clenv)
 
+(* let debug_apply = CDebug.create ~name:"apply" () *)
+
 let apply_in_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{ CAst.loc; v= d,lbind}) tac =
   let open Context.Rel.Declaration in
@@ -2008,7 +2010,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
   let sigma, innerclause = make_clenv_from_env env sigma0 ~len:0 (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
   (* FIXME *)
-  let _replace = Id.equal id targetid in
+  let replace = Id.equal id targetid in
   let rec aux ?err idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -2022,16 +2024,14 @@ let apply_in_once ?(respect_opaque = false) with_delta
     try
       let sigma, clause = apply_in_once_main flags env origsigma innerclause (loc,c,lbind) in
       Proofview.Unsafe.tclEVARS sigma <*>
-        (Clenv.clenv_solve_clause_constraints ~flags ~with_ho:true clause >>=
-           fun clause ->
-           Proofview.tclEVARMAP >>= fun sigma ->
-      clenv_refine_in with_evars flags targetid id env sigma origsigma clause
-        (fun id ->
-          replace_error_option err (
+      Clenv.clenv_solve_clause_constraints ~flags ~with_ho:true clause >>= fun clause ->
+      Proofview.tclEVARMAP >>= fun sigma ->
+        let clause = Clenv.clenv_recompute_deps env sigma ~hyps_only:false clause in
+        clenv_refine_in ?err with_evars flags targetid replace env sigma origsigma clause
+        (fun id -> replace_error_option err (
             apply_clear_request clear_flag false c <*>
             clear idstoclear <*>
-            tac id
-          )))
+            tac id))
     with e when with_destruct && CErrors.noncritical e ->
       let err = Option.default (Exninfo.capture e) err in
         (descend_in_conjunctions (Id.Set.singleton targetid)

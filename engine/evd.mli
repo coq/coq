@@ -252,6 +252,9 @@ val undefined_map : evar_map -> evar_info Evar.Map.t
 val drop_all_defined : evar_map -> evar_map
 
 val is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t
+(** Private: do not try to set! *)
+
+val is_maybe_typeclass : evar_map -> constr -> bool
 
 (** {6 Instantiating partial terms} *)
 

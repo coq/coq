@@ -755,6 +755,15 @@ type clause = {
   (** The value the clause was built from, applied to holes *)
 }
 
+let pr_clause ?(with_evars=false) env sigma clause =
+  let prc = Termops.Internal.print_constr_env env sigma in
+  let pr_hole hole = Pp.(Name.print hole.hole_name ++ str" : " ++ prc hole.hole_evar ++
+    str"(dep:" ++ Pp.bool hole.hole_deps ++ str")") in
+  Pp.(h (str"Value: " ++ prc clause.cl_val ++
+         str" : " ++ prc clause.cl_concl ++ fnl () ++
+         str"Holes: " ++ prlist_with_sep spc pr_hole clause.cl_holes ++
+         if with_evars then pr_evar_map (Some 0) env sigma else mt ()))
+
 let make_prod_evar env sigma ~identity ~args na t1 t2 =
   let sigma, ev = new_pure_evar ~identity ~typeclass_candidate:false env sigma t1 in
   let ev = mkEvar (ev, args) in
@@ -1224,6 +1233,16 @@ let rename_term env sigma t =
 
 *)
 
+(** Compatibility: dependent typeclasses holes which previously resulted from turning metas into evars
+    should be resolved. *)
+let get_dependent_typeclass_holes env sigma clenv =
+  let evs = List.map_filter (fun h ->
+    let ty = hole_type env sigma h in
+    if h.hole_deps && Evd.is_maybe_typeclass sigma (EConstr.Unsafe.to_constr ty) then Some (hole_evar sigma h)
+    else None) clenv.cl_holes
+  in Evar.Set.of_list evs
+let debug_clenv = CDebug.create ~name:"clenv" ()
+
 let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=true) ?origsigma
                      flags (sigma, clenv) =
   let open Proofview in
@@ -1235,14 +1254,20 @@ let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=
       let sigma = Evarconv.solve_unif_constraints_with_heuristics ~flags ~with_ho:true env sigma in
       sigma, clenv_advance sigma clenv
     with _ -> sigma, clenv in
-  let sigma =
+  let sigma, clenv =
     if with_classes then
+      let hole_tcs = get_dependent_typeclass_holes env sigma clenv in
+      let tcs = Evd.get_typeclass_evars sigma in
+      let sigma = Evd.set_typeclass_evars sigma (Evar.Set.union tcs hole_tcs) in
+      let () = debug_clenv (fun () -> Pp.(str"Solving typeclasses:" ++ pr_clause ~with_evars:true env sigma clenv)) in
       let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
         (* Don't split as this can result in typeclasses not failing due
            to initial holes not being marked as "mandatory". *)
-        ~split:false ~fail:(not with_evars) env sigma
-      in Typeclasses.make_unresolvables (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.find sigma ev).evar_source))) sigma (* MD FIXME I put this randomly *)
-    else sigma
+        ~split:false ~fail:(false) env sigma
+      in
+      let sigma = Evd.set_typeclass_evars sigma tcs in
+      sigma, clenv_advance sigma clenv
+    else sigma, clenv
   in
   let run sigma =
     (* Declare the future goals here, as they should become subgoals of this refine. *)
@@ -1269,9 +1294,11 @@ let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=
     let sigma = Typeclasses.make_unresolvables (fun ev -> Evar.equal ev glev) sigma in
     Proofview.Unsafe.tclEVARS sigma
   in
+  let () = debug_clenv (fun () -> Pp.(str"Checking dependent holes are resolved: " ++ pr_clause env sigma clenv)) in
   Proofview.Unsafe.tclEVARS sigma <*>
     clenv_check_dep_holes with_evars env sigma ?origsigma clenv >>= (fun deps ->
-  (Refine.refine ~typecheck:false run) <*>
+      let () = debug_clenv (fun () -> Pp.str"Refining the goal") in
+      (Refine.refine ~typecheck:false run) <*>
   (if shelve_subgoals then shelve_goals deps else tclUNIT ()) <*>
     Proofview.Goal.enter reduce_goal)
   end
@@ -1303,13 +1330,17 @@ let clenv_refine_bindings
     let sigma, delayed, clenv =
       solve_evar_clause env sigma ~hyps_only clenv b
     in
+    debug_clenv (fun () -> Pp.str"Solved evar clause");
     let tac = clenv_unify_concl_tac flags clenv in
     (Unsafe.tclEVARS sigma) <*>
     (Ftactic.run tac
       (fun (sigma, clenv) ->
+        debug_clenv (fun () -> Pp.str"Unified conclusion of clause with goal conclusion");
         try
           let clenv = clenv_recompute_deps env sigma ~hyps_only:false clenv in
+          debug_clenv (fun () -> Pp.str"Recomputed dependencies");
           let sigma = apply_delayed_bindings env delayed sigma in
+          debug_clenv (fun () -> Pp.str"Applied delayed bindings");
           clenv_refine_gen ~with_evars ~with_classes ~shelve_subgoals ?origsigma
                          flags (sigma, clenv)
         with e when Pretype_errors.precatchable_exception e -> Proofview.tclZERO e))
