@@ -51,7 +51,7 @@ val do_scheme : Environ.env -> (Names.Id.t CAst.t option * Vernacexpr.scheme) li
 
 (** Main call to Scheme Equality command *)
 
-val do_scheme_equality : Libnames.qualid Constrexpr.or_by_notation -> unit
+val do_scheme_equality : Vernacexpr.equality_scheme_type -> Libnames.qualid Constrexpr.or_by_notation -> unit
 
 (** Combine a list of schemes into a conjunction of them *)
 

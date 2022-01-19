@@ -400,10 +400,11 @@ let do_scheme env l =
   let lnamedepindsort = name_and_process_schemes env l in
   do_mutual_induction_scheme env lnamedepindsort
 
-let do_scheme_equality id =
+let do_scheme_equality sch id =
   let mind,_ = Smartlocate.smart_global_inductive id in
+  let dec = match sch with SchemeBooleanEquality -> false | SchemeEquality -> true in
   declare_beq_scheme mind;
-  declare_eq_decidability mind
+  if dec then declare_eq_decidability mind
 
 (**********************************************************************)
 (* Combined scheme *)

@@ -1008,12 +1008,15 @@ Generation of induction principles with ``Scheme``
 
    See examples of the :n:`@scheme_type`\s :ref:`here <scheme_example>`.
 
-.. cmd:: Scheme Equality for @reference
-   :name: Scheme Equality
+.. cmd:: Scheme {? Boolean } Equality for @reference
+   :name: Scheme Equality; Scheme Boolean Equality
 
-   Generates a Boolean equality and a proof of the decidability of the usual
-   equality. If :token:`reference` refers to other inductive types, their
-   equality must already be defined.
+   Tries to generate a Boolean equality for :n:`@reference`. If
+   :n:`Boolean` is not specified, the command also tries to generate
+   a proof of the decidability of propositional equality over
+   :n:`@reference`.
+   If :token:`reference` involves independent constants or other
+   inductive types, we recommend defining their equality first.
 
 .. example:: Induction scheme for tree and forest
 

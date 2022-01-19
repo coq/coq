@@ -1051,7 +1051,7 @@ command: [
 | "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | "Scheme" OPT ( ident ":=" ) scheme_kind LIST0 ( "with" OPT ( ident ":=" ) scheme_kind )
-| "Scheme" "Equality" "for" reference
+| "Scheme" OPT "Boolean" "Equality" "for" reference
 | "Combined" "Scheme" ident "from" LIST1 ident SEP ","
 | "Register" qualid "as" qualid
 | "Register" "Inline" qualid

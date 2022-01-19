@@ -220,6 +220,10 @@ type scheme_type =
   | SchemeElimination
   | SchemeCase
 
+type equality_scheme_type =
+  | SchemeBooleanEquality
+  | SchemeEquality
+
   (* The data of a Scheme decleration *)
 type scheme = {
   sch_type : scheme_type ;
@@ -350,7 +354,7 @@ type nonrec vernac_expr =
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list
-  | VernacSchemeEquality of Libnames.qualid Constrexpr.or_by_notation
+  | VernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
   | VernacConstraint of univ_constraint_expr list

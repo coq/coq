@@ -402,6 +402,12 @@ let pr_onescheme (idop, {sch_type; sch_qualid; sch_sort}) =
   hov 0 str_identifier ++ spc () ++ hov 0 (str_scheme ++ spc() ++ pr_smart_global sch_qualid)
     ++ spc () ++ hov 0 (keyword "Sort" ++ spc() ++ Sorts.pr_sort_family sch_sort)
 
+let pr_equality_scheme_type sch id =
+  let str_scheme = match sch with
+  | SchemeBooleanEquality -> keyword "Boolean Equality for"
+  | SchemeEquality -> keyword "Equality for" in
+  hov 0 (str_scheme ++ spc() ++ pr_smart_global id)
+
 let begin_of_inductive = function
   | [] -> 0
   | (_,({loc},_))::_ -> Option.cata (fun loc -> fst (Loc.unloc loc)) 0 loc
@@ -895,9 +901,9 @@ let pr_vernac_expr v =
       hov 2 (keyword "Scheme" ++ spc() ++
              prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onescheme l)
     )
-  | VernacSchemeEquality id ->
+  | VernacSchemeEquality (sch,id) ->
     return (
-      hov 2 (keyword "Scheme Equality for" ++ spc() ++ pr_or_by_notation pr_qualid id)
+      hov 2 (keyword "Scheme " ++ pr_equality_scheme_type sch id)
     )
   | VernacCombinedScheme (id, l) ->
     return (

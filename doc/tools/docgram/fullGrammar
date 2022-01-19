@@ -816,6 +816,7 @@ gallina: [
 | "Let" "CoFixpoint" LIST1 cofix_definition SEP "with"
 | "Scheme" LIST1 scheme SEP "with"
 | "Scheme" "Equality" "for" smart_global
+| "Scheme" "Boolean" "Equality" "for" smart_global
 | "Combined" "Scheme" identref "from" LIST1 identref SEP ","
 | "Register" global "as" qualid
 | "Register" "Inline" global
