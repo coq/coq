@@ -50,6 +50,12 @@ project oddorder "https://github.com/math-comp/odd-order" "master"
 
 project mczify "https://github.com/math-comp/mczify" "master"
 
+project finmap "https://github.com/math-comp/finmap" "master"
+
+project bigenough "https://github.com/math-comp/bigenough" "master"
+
+project analysis "https://github.com/math-comp/analysis" "master"
+
 ########################################################################
 # UniMath
 ########################################################################

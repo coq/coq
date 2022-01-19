@@ -763,6 +763,31 @@ library:ci-mczify:
   - build:edge+flambda
   - library:ci-mathcomp
 
+library:ci-mathcomp_base:
+  extends: .ci-template
+
+library:ci-finmap:
+  extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-mathcomp_base
+
+library:ci-bigenough:
+  extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-mathcomp_base
+
+library:ci-analysis:
+  extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-mathcomp_base
+  - library:ci-finmap
+  - library:ci-bigenough
+  - plugin:ci-elpi  # for Hierarchy Builder
+  # we need a mathcomp_base here as elpi requires OCaml < 4.13
+
 library:ci-sf:
   extends: .ci-template
 
