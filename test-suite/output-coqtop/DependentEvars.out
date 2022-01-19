@@ -82,7 +82,7 @@ goal 2 is:
 goal 3 is:
  ?P
 
-(dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?P0; in current goal: ?X4 ?X5 ?X10 ?X11)
+(dependent evars: ?X4:?P, ?X5 using ?X11 ?X12, ?X11:?P0, ?X12 using; in current goal: ?X4 ?X5 ?X11 ?X12)
 
 p14 < 
 Coq < 
