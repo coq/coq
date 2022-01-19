@@ -7,5 +7,10 @@ a : T
 t1, t2 : btree T
 IH1 : count p (rev_tree t1)[37m =[0m count p t1
 IH2 : count p (rev_tree t2)[37m =[0m count p t2
-Unable to unify "[48;2;91;0;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p [48;2;170;0;0;4mt1[48;2;91;0;0;24m[37m +[39m count p [48;2;170;0;0;4mt2[48;2;91;0;0;24m)[0m" with
- "[48;2;0;91;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p [48;2;0;141;0;4mt2[48;2;0;91;0;24m[37m +[39m count p [48;2;0;141;0;4mt1[48;2;0;91;0;24m)[0m".
+Unable to unify
+ "[48;2;91;0;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p t2[37m +[39m count p t1)[37m =[39m[49m
+  [48;2;91;0;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p [48;2;170;0;0;4mt2[48;2;91;0;0;24m[37m +[39m count p [48;2;170;0;0;4mt1[48;2;91;0;0;24m)[0m" with
+ "[48;2;0;91;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p t2[37m +[39m count p t1)[37m =[39m[49m
+  [48;2;0;91;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p [48;2;0;141;0;4mt1[48;2;0;91;0;24m[37m +[39m count p [48;2;0;141;0;4mt2[48;2;0;91;0;24m)[0m"
+(cannot unify "[48;2;91;0;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p [48;2;170;0;0;4mt2[48;2;91;0;0;24m[37m +[39m count p [48;2;170;0;0;4mt1[48;2;91;0;0;24m)[0m" and
+"[48;2;0;91;0m([1mif[22m p a [1mthen[22m 1 [1melse[22m 0)[37m +[39m (count p [48;2;0;141;0;4mt1[48;2;0;91;0;24m[37m +[39m count p [48;2;0;141;0;4mt2[48;2;0;91;0;24m)[0m").
