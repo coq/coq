@@ -45,6 +45,6 @@ Lemma L (T : Prop) (H : forall Q R S : Prop, (Q /\ R) /\ S -> T) :
   exists P:Prop, (P -> T) /\ P.
 Proof.
 eexists ?[P]. split.
-- apply H.
+- eapply H.
 - Show.
 Abort.
