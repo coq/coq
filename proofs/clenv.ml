@@ -766,6 +766,8 @@ let pr_clause ?(with_evars=false) env sigma clause =
 
 let make_prod_evar env sigma ~identity ~args na t1 t2 =
   let sigma, ev = new_pure_evar ~identity ~typeclass_candidate:false env sigma t1 in
+  (* Do not mark any evar as a future goal at this point *)
+  let sigma = remove_future_goal sigma ev in
   let ev = mkEvar (ev, args) in
   let dep = not (noccurn sigma 1 t2) in
   let hole = {
@@ -1245,9 +1247,9 @@ let debug_clenv = CDebug.create ~name:"clenv" ()
 
 let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=true) ?origsigma
                      flags (sigma, clenv) =
-  let open Proofview in
   let open Proofview.Notations in
-  Proofview.Goal.enter begin fun gl ->
+  let open Proofview in
+  Goal.enter begin fun gl ->
   let env = Tacmach.pf_env gl in
   let sigma, clenv =
     try
@@ -1269,38 +1271,40 @@ let clenv_refine_gen ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=
       sigma, clenv_advance sigma clenv
     else sigma, clenv
   in
-  let run sigma =
+  let run shelf sigma =
     (* Declare the future goals here, as they should become subgoals of this refine. *)
     let declare_goal sigma h =
       let ev, _ = destEvar sigma h.hole_evar in
-      declare_future_goal ev sigma
+      if List.mem_f Evar.equal ev shelf then sigma
+      else declare_future_goal ev sigma
     in
     let sigma = List.fold_left declare_goal sigma (clenv_holes clenv) in
+    let sigma = Evd.shelve sigma shelf in
     let v = nf_betaiota env sigma (clenv_val clenv) in
-    (* This renaming hack should really stop at 8.6 *)
-    (* FIXME remove
-    if Flags.version_less_or_equal Flags.Current then
-      rename_term env sigma v
-    else *) sigma, v
+    sigma, v
   in
   let reduce_goal gl =
-    let sigma = Proofview.Goal.sigma gl in
-    let concl = Proofview.Goal.concl gl in
-    let glev = Proofview.Goal.goal gl in
+    let sigma = Goal.sigma gl in
+    let concl = Goal.concl gl in
+    let glev = Goal.goal gl in
     (* For compatibility: beta iota reduction *)
     let concl = Reductionops.clos_norm_flags CClosure.betaiota env sigma concl in
     let evi = Evd.find sigma glev in
     let sigma = Evd.add sigma glev { evi with evar_concl = concl } in
     let sigma = Typeclasses.make_unresolvables (fun ev -> Evar.equal ev glev) sigma in
-    Proofview.Unsafe.tclEVARS sigma
+    Unsafe.tclEVARS sigma
   in
   let () = debug_clenv (fun () -> Pp.(str"Checking dependent holes are resolved: " ++ pr_clause env sigma clenv)) in
-  Proofview.Unsafe.tclEVARS sigma <*>
+  Unsafe.tclEVARS sigma <*>
     clenv_check_dep_holes with_evars env sigma ?origsigma clenv >>= (fun deps ->
       let () = debug_clenv (fun () -> Pp.str"Refining the goal") in
-      (Refine.refine ~typecheck:false run) <*>
-  (if shelve_subgoals then shelve_goals deps else tclUNIT ()) <*>
-    Proofview.Goal.enter reduce_goal)
+      let shelf = if shelve_subgoals then deps else [] in
+      (Refine.refine ~typecheck:false (run shelf)) <*>
+      Unsafe.tclGETSHELF >>= fun shelf ->
+      Unsafe.tclGETGOALS >>= fun gls ->
+      let () = debug_clenv Pp.(fun () -> str"New shelf: " ++ prlist_with_sep spc Evar.print shelf ++ fnl ()
+        ++ str "New goals " ++ prlist_with_sep spc (fun x -> Evar.print (drop_state x)) gls) in
+      Proofview.Goal.enter reduce_goal)
   end
 
 let clenv_unify_concl_tac flags clenv =
