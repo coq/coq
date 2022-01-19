@@ -206,8 +206,7 @@ let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
   let ctype = Retyping.get_type_of env sigma c in
   let find_rel ty =
-    let sigma, cl = Clenv.make_evar_clause env sigma c ty in
-    let sigma, delayed, cl = Clenv.solve_evar_clause env sigma ~hyps_only:true cl l in
+    let sigma, delayed, cl = Clenv.make_clenv_bindings env sigma (c, ty) ~hyps_only:true l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
     match decompose_app_rel env sigma t with
     | None -> None
@@ -215,9 +214,7 @@ let decompose_applied_relation env sigma (c,l) =
       match evd_convertible env sigma ty1 ty2 with
       | None -> None
       | Some sigma ->
-        let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
-        let value = mkApp (c, args) in
-          Some (sigma, { prf=value;
+         Some (sigma, { prf=Clenv.clenv_val cl;
                   car=ty1; rel = equiv; sort = Sorts.is_prop (ESorts.kind sigma concl);
                   c1=c1; c2=c2; holes })
   in
