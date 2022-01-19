@@ -23,6 +23,10 @@ eq_refl is not universe polymorphic
 Arguments eq_refl {B}%type_scope {y}, [_] _
   (where some original arguments have been renamed)
 Expands to: Constructor Coq.Init.Logic.eq_refl
+File "./output/Arguments_renaming.v", line 15, characters 0-29:
+Warning:
+Ignoring 'with' argument for binder y, already solved by unification.
+[unused-with-argument,apply]
 Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x.
 
 Arguments myEq B%type_scope x _
