@@ -402,9 +402,9 @@ Qed.
 
 Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
   intros; eexists; intros.
-  eauto. (* MS: Eauto succeeds without leaving an unresolved evar now *)
-  Fail Unshelve. 
-  (* exact (fun x => x) *)
+  eauto.
+  Unshelve.
+  exact (fun x => x).
 Qed.
 
 (* The following was accepted before r12612 but is still not accepted in r12658
