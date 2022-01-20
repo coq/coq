@@ -933,10 +933,14 @@ open Vernacextend
 }
 
 VERNAC { tac2mode } EXTEND VernacLtac2
-| ![proof] [ ltac2_expr(t) ltac_use_default(with_end_tac) ] =>
-    { classify_as_proofstep } -> {
-(*     let g = Option.default (Proof_global.get_default_goal_selector ()) g in *)
-  fun ~pstate -> Tac2entries.call ~pstate ~with_end_tac t }
+| ![proof] [ ltac_selector_opt(g) ltac2_expr(t) ltac_use_default(with_end_tac) ] =>
+  { classify_as_proofstep } -> { fun ~pstate ->
+    Tac2entries.call ~pstate g ~with_end_tac t
+  }
+| ![proof] [ "par" ":" ltac2_expr(t) ltac_use_default(with_end_tac) ] =>
+  { classify_as_proofstep } -> { fun ~pstate ->
+    Tac2entries.call_par ~pstate ~with_end_tac t
+  }
 END
 
 GRAMMAR EXTEND Gram

@@ -1763,6 +1763,10 @@ ltac2_scope: [
 | WITH name "(" LIST1 ltac2_scope SEP "," ")" TAG Ltac2
 ]
 
+tac2mode: [
+| DELETE "par" ":" ltac2_expr6 ltac_use_default
+]
+
 syn_node: [ | DELETENT ]
 
 RENAME: [

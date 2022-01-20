@@ -2380,7 +2380,7 @@ atomic_tac2pat: [
 ]
 
 tac2mode: [
-| ltac2_expr [ "." | "..." ]      (* ltac2 plugin *)
+| OPT ( toplevel_selector ":" ) ltac2_expr [ "." | "..." ]      (* ltac2 plugin *)
 | "Eval" red_expr "in" term
 | "Compute" term
 | "Check" term

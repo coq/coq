@@ -989,10 +989,12 @@ let ltac2_interp e =
 
 let ComTactic.Interpreter ltac2_interp = ComTactic.register_tactic_interpreter "ltac2" ltac2_interp
 
-let call ~pstate ~with_end_tac tac =
-  ComTactic.solve ~pstate ~with_end_tac
-    (Goal_select.get_default_goal_selector())
-    ~info:None (ltac2_interp tac)
+let call ~pstate g ~with_end_tac tac =
+  let g = Option.default (Goal_select.get_default_goal_selector()) g in
+  ComTactic.solve ~pstate ~with_end_tac g ~info:None (ltac2_interp tac)
+
+let call_par ~pstate ~with_end_tac tac =
+  ComTactic.solve_parallel ~pstate ~info:None (ltac2_interp tac) ~abstract:false ~with_end_tac
 
 (** Primitive algebraic types than can't be defined Coq-side *)
 
