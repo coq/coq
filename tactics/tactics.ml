@@ -1666,7 +1666,7 @@ let make_projection env sigma params cstr sign elim i n c u =
   let open Context.Rel.Declaration in
   let elim = match elim with
   | NotADefinedRecordUseScheme elim ->
-      (* bugs: goes from right to left when i increases! *)
+      let i = n - succ i in
       let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstr.cs_args in
       let decl = List.nth cs_args i in
       let t = RelDecl.get_type decl in
@@ -1706,6 +1706,8 @@ let make_projection env sigma params cstr sign elim i n c u =
       | None -> None
   in elim
 
+let debug_tactic = CDebug.create ~name:"tactics" ()
+
 let descend_in_conjunctions avoid tac (err, info) c =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -1735,10 +1737,13 @@ let descend_in_conjunctions avoid tac (err, info) c =
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
             let sigma = Tacmach.project gl in
+            debug_tactic Pp.(fun () -> str"Trying constructor argument: " ++ int i);
             match make_projection env sigma params cstr sign elim i n c u with
             | None ->
+              debug_tactic Pp.(fun () -> str"Trying constructor argument: " ++ int i ++ str" failed");
               Proofview.tclZERO ~info err
             | Some (p,pt) ->
+              debug_tactic Pp.(fun () -> str"Trying constructor argument: " ++ Printer.pr_econstr_env env sigma pt);
               Tacticals.tclTHENS
                 (Proofview.tclORELSE
                   (assert_before_gen false (NamingAvoid avoid) pt)
@@ -1946,14 +1951,18 @@ let clenvtac_advance clenv =
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
+let solve_typeclasses with_evars with_classes =
+  let open Proofview in
+  if with_classes then
+    tclENV >>= fun env ->
+    tclEVARMAP >>= fun sigma ->
+    try let sigma = Typeclasses.resolve_typeclasses ~fail:(not with_evars) env sigma in
+        Unsafe.tclEVARS sigma
+    with e when noncritical e -> tclZERO e
+  else tclIDTAC
+
 let clenv_refine_in ?err ?(sidecond_first=false) with_evars ?(with_classes=true) flags
                     targetid replace env sigma origsigma clenv tac =
-  let sigma, clenv =
-    if with_classes then
-      let sigma = Typeclasses.resolve_typeclasses ~fail:(not with_evars) env sigma in
-      sigma, clenv_advance sigma clenv
-    else sigma, clenv
-  in
   (* For compatibility: reduce the conclusion *)
   let clenv = clenv_map_concl (Reductionops.nf_betaiota env sigma) clenv in
   let exact_tac =
@@ -1972,16 +1981,6 @@ let clenv_refine_in ?err ?(sidecond_first=false) with_evars ?(with_classes=true)
         (assert_after_then_gen ?err replace naming new_hyp_typ tac))
      exact_tac)
 
-     (*
-     let apply_in_once_main flags (id, t) env sigma (loc,d,lbind) =
-  let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
-  let rec aux clause mvs =
-    try progress_with_clause flags (id, t) clause mvs
-    with e when CErrors.noncritical e ->
-    let e' = Exninfo.capture e in
-    match clenv_push_prod clause with
-    | Some (mv, dep, clause) -> aux clause (if dep then [] else [mv])
-    | None ->*)
 let apply_in_once_main flags env sigma innerclause (loc,d,lbind) =
   let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
   let rec aux (sigma, clause) =
@@ -2027,6 +2026,9 @@ let apply_in_once ?(respect_opaque = false) with_delta
       Clenv.clenv_solve_clause_constraints ~flags ~with_ho:true clause >>= fun clause ->
       Proofview.tclEVARMAP >>= fun sigma ->
         let clause = Clenv.clenv_recompute_deps env sigma ~hyps_only:false clause in
+        solve_typeclasses with_evars true <*>
+        Proofview.tclEVARMAP >>= fun sigma ->
+        let clause = clenv_advance sigma clause in
         clenv_refine_in ?err with_evars flags targetid replace env sigma origsigma clause
         (fun id -> replace_error_option err (
             apply_clear_request clear_flag false c <*>
