@@ -429,9 +429,9 @@ end end end .
 Ltac nsatz_default:=
   intros;
   match goal with
-  | [ |- ?P ?x _ ] =>
+  | [ |- ?P ?x ?y ] =>
     let car := type of x in
-    try apply (@psos_r1b car _ _ _ _ _ _ _ _ _ _);
+    try apply (psos_r1b x y);
     repeat equalities_to_goal;
     nsatz_generic 6%N 1%Z (@nil car) (@nil car)
   end.
@@ -445,9 +445,8 @@ Tactic Notation "nsatz" "with"
  "variables" ":=" constr(lvar):=
   intros;
   match goal with
-  | [ |- ?P ?x _ ] =>
-    let car := type of x in
-    try apply (@psos_r1b car _ _ _ _ _ _ _ _ _ _);
+  | [ |- ?P ?x ?y ] =>
+    try apply (psos_r1b x y);
     repeat equalities_to_goal;
     nsatz_generic radicalmax info lparam lvar
   end.
