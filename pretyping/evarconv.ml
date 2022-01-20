@@ -1327,7 +1327,8 @@ let apply_on_subterm env evd fixed f test c t =
      Pp.(str"Testing " ++ prc env !evdref c ++ str" against " ++ prc env !evdref t)); *)
      let b, evd =
         try test env !evdref k c t
-        with e when CErrors.noncritical e -> assert false in
+        with e when CErrors.noncritical e -> false, evd
+     in
      if b then ((*debug_ho_unification (fun () -> Pp.str "succeeded");*)
                 let evd', fixed, t' = f !evdref evd !fixedref k t in
                 fixedref := fixed;
