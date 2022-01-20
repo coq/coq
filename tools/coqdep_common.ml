@@ -359,7 +359,7 @@ let find_META package =
       begin try
         let m = Findlib.package_meta_file package in
         parse_META package m
-      with Not_found -> None end
+      with Fl_package_base.No_such_package _ -> None end
     | m :: ms ->
         if Filename.extension m = "." ^ package then
           parse_META package m
