@@ -52,8 +52,6 @@ val extern_rel_context : constr option -> env -> Evd.evar_map ->
 (** Printing options *)
 val print_implicits : bool ref
 val print_implicits_defensive : bool ref
-val print_arguments : bool ref
-val print_evar_arguments : bool ref
 val print_coercions : bool ref
 val print_parentheses : bool ref
 val print_universes : bool ref

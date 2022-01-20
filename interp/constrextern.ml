@@ -38,12 +38,6 @@ module NamedDecl = Context.Named.Declaration
 (**********************************************************************)
 (* Parametrization                                                    *)
 
-(* This governs printing of local context of references *)
-let print_arguments = ref false
-
-(* If true, prints local context of evars *)
-let print_evar_arguments = Detyping.print_evar_arguments
-
 (* This governs printing of implicit arguments.  When
    [print_implicits] is on then [print_implicits_explicit_args] tells
    how implicit args are printed. If on, implicit args are printed
