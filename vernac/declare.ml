@@ -1202,7 +1202,7 @@ let declare_mutual_definition ~pm l =
         ( d :: a1
         , r :: a2
         , typ :: a3
-        , CInfo.{name; typ; impargs; args = []; using } :: a4 ))
+        , (CInfo.make ~name ~typ ~impargs ?using ()) :: a4 ))
       defs first.prg_deps ([], [], [], [])
   in
   let fixkind = Option.get first.prg_fixkind in
@@ -1483,6 +1483,7 @@ let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof
    can typically contain universe constraints) *)
 let start_core ~info ~cinfo ?proof_ending sigma =
   let { CInfo.name; typ; _ } = cinfo in
+  check_exists name;
   let cinfo = [{ cinfo with CInfo.typ = EConstr.Unsafe.to_constr cinfo.CInfo.typ }] in
   let pinfo = Proof_info.make ~cinfo ~info ?proof_ending () in
   start_proof_core ~name ~typ ~pinfo ?sign:None sigma
