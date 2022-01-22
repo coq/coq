@@ -214,6 +214,7 @@ val names_of_rel_context : env -> names_context
    [n] hypotheses, excluding local definitions, and [Γ₁], if not empty,
    starts with an hypothesis (i.e. [Γ₁] has the form empty or [x:A;Γ₁'] *)
 val context_chop : int -> Constr.rel_context -> Constr.rel_context * Constr.rel_context
+  [@@ocaml.deprecated "Use synonymous [Context.Rel.chop_nhyps]."]
 
 (* [env_rel_context_chop n env] extracts out the [n] top declarations
    of the rel_context part of [env], counting both local definitions and

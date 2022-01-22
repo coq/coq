@@ -326,8 +326,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let evdref = ref sigma in
-  let lnonparrec,lnamesparrec =
-    Termops.context_chop (nparams-nparrec) (Vars.subst_instance_context u mib.mind_params_ctxt) in
+  let lnonparrec,lnamesparrec = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.make mib.mind_ntypes (None : (bool * constr) option) in

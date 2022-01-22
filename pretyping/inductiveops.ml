@@ -313,7 +313,7 @@ let lift_constructor n cs = {
 let instantiate_params t params sign =
   let nnonrecpar = Context.Rel.nhyps sign - List.length params in
   (* Adjust the signature if recursively non-uniform parameters are not here *)
-  let _,sign = context_chop nnonrecpar sign in
+  let _,sign = Context.Rel.chop_nhyps nnonrecpar sign in
   let _,t = decompose_prod_n_assum (Context.Rel.length sign) t in
   let subst = subst_of_rel_context_instance_list sign params in
   substl subst t
@@ -407,13 +407,11 @@ let get_arity env ((ind,u),params) =
        parameters *)
     let nparams = List.length params in
     if Int.equal nparams mib.mind_nparams then
-      mib.mind_params_ctxt
+      Inductive.inductive_paramdecls (mib,u)
     else begin
       assert (Int.equal nparams mib.mind_nparams_rec);
-      let nnonrecparamdecls = mib.mind_nparams - mib.mind_nparams_rec in
-      snd (Termops.context_chop nnonrecparamdecls mib.mind_params_ctxt)
+      snd (Inductive.inductive_nonrec_rec_paramdecls (mib,u))
     end in
-  let parsign = Vars.subst_instance_context u parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
   let subst = subst_of_rel_context_instance_list parsign params in
