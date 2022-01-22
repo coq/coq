@@ -34,7 +34,14 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 val lookup_mind_specif : env -> inductive -> mind_specif
 
 (** {6 Functions to build standard types related to inductive } *)
+
+(** Returns the parameters of an inductive type with universes instantiated *)
 val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context
+
+(** Returns the parameters of an inductive type with universes
+    instantiated, splitting it into the contexts of recursively
+    uniform and recursively non-uniform parameters *)
+val inductive_nonrec_rec_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context * Constr.rel_context
 
 val instantiate_inductive_constraints :
   mutual_inductive_body -> Instance.t -> Constraints.t
