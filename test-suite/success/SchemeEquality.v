@@ -27,3 +27,15 @@ Module C.
   Inductive J := D : list A -> J.
   Scheme Equality for J.
 End C.
+
+(* Universe polymorphism *)
+Module D.
+  Set Universe Polymorphism.
+  Inductive prod (A B:Type) := pair : A -> B -> prod A B.
+  Scheme Equality for prod.
+
+  (* With an indirection *)
+  Inductive box A := c : A -> box A.
+  Inductive prodbox (A B:Type) := pairbox : box A -> box B -> prodbox A B.
+  Scheme Equality for prodbox.
+End D.
