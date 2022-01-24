@@ -17,25 +17,15 @@
    declaring new schemes *)
 
 open Pp
-open CErrors
 open Util
-open Names
 open Declarations
 open Term
-open Constr
-open Inductive
-open Declare
-open Libnames
 open Goptions
-open Nameops
-open Termops
-open Smartlocate
 open Vernacexpr
 open Ind_tables
 open Auto_ind_decl
 open Eqschemes
 open Elimschemes
-open Context.Rel.Declaration
 
 (** Data of an inductive scheme with name resolved *)
 type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Sorts.family
@@ -102,8 +92,8 @@ let define ~poly name sigma c types =
   let univs = Evd.univ_entry ~poly sigma in
   let entry = Declare.definition_entry ~univs ?types c in
   let kind = Decls.(IsDefinition Scheme) in
-  let kn = declare_constant ~kind ~name (DefinitionEntry entry) in
-  definition_message name;
+  let kn = Declare.declare_constant ~kind ~name (Declare.DefinitionEntry entry) in
+  Declare.definition_message name;
   kn
 
 (* Boolean equality *)
@@ -175,7 +165,7 @@ let try_declare_scheme what f internal names kn =
   in
   match msg with
   | None -> ()
-  | Some msg -> Exninfo.iraise (UserError msg, snd e)
+  | Some msg -> Exninfo.iraise (CErrors.UserError msg, snd e)
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in
@@ -198,13 +188,13 @@ let declare_beq_scheme = declare_beq_scheme_with []
 (* Case analysis schemes *)
 let declare_one_case_analysis_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
-  let kind = inductive_sort_family mip in
+  let kind = Inductive.inductive_sort_family mip in
   let dep =
     if kind == InProp then case_scheme_kind_from_prop
     else if not (Inductiveops.has_dependent_elim mib) then
       case_scheme_kind_from_type
     else case_dep_scheme_kind_from_type in
-  let kelim = elim_sort (mib,mip) in
+  let kelim = Inductive.elim_sort (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
@@ -233,10 +223,10 @@ let nondep_kinds_from_type =
 
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
-  let kind = inductive_sort_family mip in
+  let kind = Inductive.inductive_sort_family mip in
   let from_prop = kind == InProp in
   let depelim = Inductiveops.has_dependent_elim mib in
-  let kelim = Inductiveops.sorts_below (elim_sort (mib,mip)) in
+  let kelim = Inductiveops.sorts_below (Inductive.elim_sort (mib,mip)) in
   let kelim = if Global.sprop_allowed () then kelim
     else List.filter (fun s -> s <> InSProp) kelim
   in
@@ -306,7 +296,7 @@ let warn_cannot_build_congruence =
 let declare_congr_scheme ind =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  if Hipattern.is_equality_type env sigma (EConstr.of_constr (mkInd ind)) (* FIXME *) then begin
+  if Hipattern.is_equality_type env sigma (EConstr.of_constr (Constr.mkInd ind)) (* FIXME *) then begin
     if
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false
@@ -361,14 +351,14 @@ let rec name_and_process_schemes env l =
  match l with
   | [] -> []
   | (Some id, {sch_type; sch_qualid; sch_sort}) :: q
-  -> ((id, sch_isdep sch_type, smart_global_inductive sch_qualid, sch_sort)
+  -> ((id, sch_isdep sch_type, Smartlocate.smart_global_inductive sch_qualid, sch_sort)
     :: name_and_process_schemes env q)
 (* If no name has been provided, we build one from the types of the ind requested *)
   | (None, {sch_type; sch_qualid; sch_sort}) :: q
-   -> let ind = smart_global_inductive sch_qualid in
-      let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
+   -> let ind = Smartlocate.smart_global_inductive sch_qualid in
+      let sort_of_ind = Inductive.inductive_sort_family (snd (Inductive.lookup_mind_specif env ind)) in
       let suffix = scheme_suffix_gen {sch_type; sch_qualid; sch_sort} sort_of_ind in
-      let newid = add_suffix (Nametab.basename_of_global (GlobRef.IndRef ind)) suffix in
+      let newid = Nameops.add_suffix (Nametab.basename_of_global (Names.GlobRef.IndRef ind)) suffix in
       let newref = CAst.make newid in
       (newref, sch_isdep sch_type, ind, sch_sort) :: name_and_process_schemes env q
 
@@ -381,7 +371,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) env l =
        let evd, indu, inst =
          match inst with
          | None ->
-            let _, ctx = Typeops.type_of_global_in_context env (GlobRef.IndRef ind) in
+            let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
             let u, ctx = UnivGen.fresh_instance_from ctx None in
             let evd = Evd.from_ctx (UState.of_context_set ctx) in
               evd, (ind,u), Some u
@@ -395,23 +385,23 @@ let do_mutual_induction_scheme ?(force_mutual=false) env l =
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
     let _,_,ind,_ = List.hd l in
-    Global.is_polymorphic (GlobRef.IndRef ind)
+    Global.is_polymorphic (Names.GlobRef.IndRef ind)
   in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env sigma (EConstr.of_constr decl) in
     let decltype = EConstr.to_constr sigma decltype in
     let cst = define ~poly fi sigma decl (Some decltype) in
-    GlobRef.ConstRef cst :: lrecref
+    Names.GlobRef.ConstRef cst :: lrecref
   in
   let _ = List.fold_right2 declare listdecl lrecnames [] in
-  fixpoint_message None lrecnames
+  Declare.fixpoint_message None lrecnames
 
 let do_scheme env l =
   let lnamedepindsort = name_and_process_schemes env l in
   do_mutual_induction_scheme env lnamedepindsort
 
 let do_scheme_equality id =
-  let mind,_ = smart_global_inductive id in
+  let mind,_ = Smartlocate.smart_global_inductive id in
   declare_beq_scheme mind;
   declare_eq_decidability mind
 
@@ -445,11 +435,11 @@ let build_combined_scheme env schemes =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
       match Constr.kind last with
-        | App (ind, args) ->
-            let ind = destInd ind in
+        | Constr.App (ind, args) ->
+            let ind = Constr.destInd ind in
             let (_,spec) = Inductive.lookup_mind_specif env (fst ind) in
               ctx, ind, spec.mind_nrealargs
-        | _ -> ctx, destInd last, 0
+        | _ -> ctx, Constr.destInd last, 0
   in
   let (c, t) = List.hd defs in
   let ctx, ind, nargs = find_inductive t in
@@ -469,23 +459,23 @@ let build_combined_scheme env schemes =
     else (mk_coq_prod, mk_coq_pair)
   in
   (* Number of clauses, including the predicates quantification *)
-  let prods = nb_prod sigma (EConstr.of_constr t) - (nargs + 1) in
+  let prods = Termops.nb_prod sigma (EConstr.of_constr t) - (nargs + 1) in
   let sigma, coqand  = mk_and sigma in
   let sigma, coqconj = mk_conj sigma in
-  let relargs = rel_vect 0 prods in
+  let relargs = Termops.rel_vect 0 prods in
   let concls = List.rev_map
     (fun (cst, t) ->
-      mkApp(mkConstU cst, relargs),
+      Constr.mkApp(Constr.mkConstU cst, relargs),
       snd (decompose_prod_n prods t)) defs in
   let concl_bod, concl_typ =
     fold_left'
       (fun (accb, acct) (cst, x) ->
-        mkApp (EConstr.to_constr sigma coqconj, [| x; acct; cst; accb |]),
-        mkApp (EConstr.to_constr sigma coqand, [| x; acct |])) concls
+        Constr.mkApp (EConstr.to_constr sigma coqconj, [| x; acct; cst; accb |]),
+        Constr.mkApp (EConstr.to_constr sigma coqand, [| x; acct |])) concls
   in
   let ctx, _ =
     list_split_rev_at prods
-      (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
+      (List.rev_map (fun (x, y) -> Context.Rel.Declaration.LocalAssum (x, y)) ctx) in
   let typ = List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d) concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
   let sigma = Typing.check env sigma (EConstr.of_constr body) (EConstr.of_constr typ) in
@@ -495,9 +485,11 @@ let do_combined_scheme name schemes =
   let open CAst in
   let csts =
     List.map (fun {CAst.loc;v} ->
-        let qualid = qualid_of_ident v in
+        let qualid = Libnames.qualid_of_ident v in
         try Nametab.locate_constant qualid
-        with Not_found -> user_err ?loc Pp.(pr_qualid qualid ++ str " is not declared."))
+        with
+          Not_found -> CErrors.user_err ?loc
+            Pp.(Libnames.pr_qualid qualid ++ str " is not declared."))
       schemes
   in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
@@ -507,9 +499,9 @@ let do_combined_scheme name schemes =
      polymorphism of the inductive block). In that case if they want
      some other polymorphism they can also manually define the
      combined scheme. *)
-  let poly = Global.is_polymorphic (GlobRef.ConstRef (List.hd csts)) in
+  let poly = Global.is_polymorphic (Names.GlobRef.ConstRef (List.hd csts)) in
   ignore (define ~poly name.v sigma body (Some typ));
-  fixpoint_message None [name.v]
+  Declare.fixpoint_message None [name.v]
 
 (**********************************************************************)
 
