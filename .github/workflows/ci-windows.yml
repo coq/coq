@@ -1,0 +1,54 @@
+name: Windows CI
+
+on: [push, pull_request]
+
+jobs:
+  Windows:
+    name: Windows
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture:
+          # - '32'
+          - '64'
+
+    steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - name: Git checkout
+        uses: actions/checkout@v2
+
+      - name: System Information
+        run: |
+          .\dev\ci\platform\coq-pf-01-sysinfo.bat
+
+      - name: Download Platform
+        env:
+          PLATFORM: "https://github.com/coq/platform/archive/dev-ci.zip"
+        run: |
+          .\dev\ci\platform\coq-pf-02-download.bat
+
+      - name: Build Platform
+        env:
+          ARCH: ${{matrix.architecture}}
+        shell: cmd
+        run: |
+          .\dev\ci\platform\coq-pf-03-build.bat
+
+      - name: Build Installer
+        env:
+          ARCH: ${{matrix.architecture}}
+        shell: cmd
+        run: |
+          .\dev\ci\platform\coq-pf-04-installer.bat
+
+      - name: Upload Installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-installer
+          path: artifacts
+          if-no-files-found: error
