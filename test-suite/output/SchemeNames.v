@@ -229,3 +229,11 @@ Unset Elimination Schemes.
   About fooType_eq_dec.
   About internal_fooType_dec_bl.
   About internal_fooType_dec_lb.
+
+Set Elimination Schemes.
+
+Inductive F f := C : f -> F f.
+About F_rect.
+
+Inductive PP P := D : P -> PP P.
+About PP_rect.
