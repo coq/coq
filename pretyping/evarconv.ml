@@ -541,6 +541,22 @@ let conv_fun f flags on_types =
     | TypeUnification -> typefn
     | TermUnification -> termfn
 
+let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
+  let has_evar = ref false in
+  let conv pb ~l2r sigma = Reduction.generic_conv pb ~l2r (fun ev ->
+      let v = existential_opt_value0 sigma ev in
+      if Option.is_empty v then has_evar := true;
+      v)
+  in
+  match infer_conv_gen conv ~catch_incon:false ~pb ~ts env sigma t1 t2 with
+  | Some sigma -> Some (Success sigma)
+  | None ->
+    if !has_evar then None
+    else Some (UnifFailure (sigma, ConversionFailed (env,t1,t2)))
+  | exception Univ.UniverseInconsistency e ->
+    if !has_evar then None
+    else Some (UnifFailure (sigma, UnifUnivInconsistency e))
+
 let rec evar_conv_x flags env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
   let term2 = whd_head_evar evd term2 in
@@ -548,16 +564,8 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
   let ground_test =
-    if is_ground_term evd term1 && is_ground_term evd term2 then (
-      let e =
-          match infer_conv ~catch_incon:false ~pb:pbty ~ts:flags.closed_ts env evd term1 term2 with
-          | Some evd -> Success evd
-          | None -> UnifFailure (evd, ConversionFailed (env,term1,term2))
-          | exception Univ.UniverseInconsistency e -> UnifFailure (evd, UnifUnivInconsistency e)
-      in
-        match e with
-        | UnifFailure (evd, e) when not (is_ground_env evd env) -> None
-        | _ -> Some e)
+    if is_ground_term evd term1 && is_ground_term evd term2 then
+      infer_conv_noticing_evars ~pb:pbty ~ts:flags.closed_ts env evd term1 term2
     else None
   in
   match ground_test with
