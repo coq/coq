@@ -18,7 +18,7 @@ Parameter add : data -> t -> t.
 
 Program Fixpoint union
   (s u:t)
-  (hb1: bst s)(ha1: avl s)(hb2: bst u)(hb2: avl u)
+  (hb1: bst s)(ha1: avl s)(hb2: bst u)(hb3: avl u)
   { measure (cardinal s + cardinal u) } :
   {s' : t | bst s' /\ avl s' /\ forall x, In x s' <-> In x s \/ In x u} :=
   match s, u with

@@ -6,9 +6,10 @@ Check leibniz_equiv_iff (A := nat) 2 3 : True.
 Unset Mangle Names.
 
 (* Coq doesn't make up names for arguments *)
-Definition bar (a a : nat) : nat := 3.
+Fail Definition bar (a a : nat) : nat := 3.
+Definition bar (a a0 : nat) : nat := 3.
 Arguments bar _ _ : assert.
-Fail Arguments bar a a0 : assert.
+Fail Arguments bar a a1 : assert.
 
 (* This definition caused an anomaly in a version of this PR
 without the change to prepare_implicits *)

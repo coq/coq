@@ -574,7 +574,7 @@ let intern_assumption intern ntnvars env nal bk ty =
      let env, b = intern_generalized_binder intern_type ntnvars env (List.hd nal) b' t ty in
      env, b
 
-let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
+let glob_local_binder_of_extended = DAst.map_with_loc (fun ?loc -> function
   | GLocalAssum (na,bk,t) -> (na,bk,None,t)
   | GLocalDef (na,c,Some t) -> (na,Explicit,Some c,t)
   | GLocalDef (na,c,None) ->
@@ -583,6 +583,18 @@ let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
   | GLocalPattern (_,_,_,_) ->
       Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed here")
   )
+
+let glob_local_binders_of_extended bl =
+  fst (List.fold_right_map (fun b ids ->
+      let b = glob_local_binder_of_extended b in
+      let (na,_,_,_ as b') = DAst.get b in
+      match na with
+      | Name id ->
+        if Id.Set.mem id ids then
+          user_err ?loc:b.CAst.loc (Id.print id ++ str " occurs twice in binding block.");
+        (b', Id.Set.add id ids)
+      | Anonymous ->
+        (b', ids)) bl Id.Set.empty)
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
 
@@ -2119,7 +2131,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                  | _ -> user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")) recarg
                in
                let (env',bl) = List.fold_left intern_local_binder (env,[]) bl in
-               let bl = List.rev_map glob_local_binder_of_extended bl in
+               let bl = List.rev (glob_local_binders_of_extended bl) in
                let n = Option.map (fun recarg ->
                    List.fold_left_until (fun n (id,_,body,_) -> match body with
                        | None ->
@@ -2162,7 +2174,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let idl_tmp = Array.map
           (fun ({ CAst.loc; v = id },bl,ty,_) ->
             let (env',rbl) = List.fold_left intern_local_binder (env,[]) bl in
-            let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
+            let bl = List.rev (glob_local_binders_of_extended rbl) in
             let bl_impls = remember_binders_impargs env' bl in
             (bl,intern_type env' ty,bl_impls)) dl in
         let env_rec = List.fold_left_i (fun i en name ->
@@ -2771,7 +2783,8 @@ let intern_context env ~bound_univs impl_env binders =
               tmp_scope = []; scopes = []; impls = impl_env;
               binder_block_names = Some (Some AbsPi);
               ntn_binding_ids = Id.Set.empty}, []) binders in
-  (lenv.impls, List.map glob_local_binder_of_extended bl)
+  let bl = glob_local_binders_of_extended bl in
+  (lenv.impls, bl)
 
 let interp_glob_context_evars ?(program_mode=false) env sigma bl =
   let open EConstr in
@@ -2825,7 +2838,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
     List.fold_left
       (fun (int_env, acc) b ->
         let int_env, bl = intern_local_binder_aux (my_intern_constr env lvar) Id.Map.empty (int_env,[]) b in
-        let bl = List.map glob_local_binder_of_extended bl in
+        let bl = glob_local_binders_of_extended bl in
         let acc = List.fold_right (fun (na, bk, b, t) (int_env, (env,sigma,params,impls)) ->
           let id = match na with
           | Name id -> id
