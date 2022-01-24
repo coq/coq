@@ -60,7 +60,6 @@ let set_names env_for_named_hd env_for_next_ident_away l =
       let id = ident_hd env_for_named_hd ids (get_type d) (get_name d) in (Id.Set.add id ids, set_name (Name id) d :: l)) l (ids,[]))
 let it_mkLambda_or_LetIn_name env b l = it_mkLambda_or_LetIn b (set_names env env l)
 let it_mkProd_or_LetIn_name env b l = it_mkProd_or_LetIn b (set_names env env l)
-let it_mkLambda_or_LetIn_name_bug env env' b l = it_mkLambda_or_LetIn b (set_names env env' l)
 
 let make_prod_dep dep env = if dep then mkProd_name env else mkProd
 let make_name env s r =
@@ -122,7 +121,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
            if dep then Context.Rel.instance mkRel 0 deparsign
            else Context.Rel.instance mkRel 1 arsign) in
       let p =
-        it_mkLambda_or_LetIn_name_bug env' env
+        it_mkLambda_or_LetIn_name env
           ((if dep then mkLambda_name env else mkLambda)
            (make_annot Anonymous r,depind,pbody))
           arsign
@@ -155,7 +154,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
                 mkCast (term, DEFAULTcast, ty)
             else term
       in
-        it_mkLambda_or_LetIn_name_bug env' env obj deparsign
+        it_mkLambda_or_LetIn_name env obj deparsign
     else
       let cs = lift_constructor (k+1) constrs.(k) in
       let t = build_branch_type env sigma dep (mkRel (k+1)) cs in
