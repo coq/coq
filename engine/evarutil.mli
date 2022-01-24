@@ -233,7 +233,7 @@ raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
-| EvarTypingBreak of Constr.existential
+| EvarTypingBreak of EConstr.existential
 | NoCandidatesLeft of Evar.t
 
 exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
@@ -247,10 +247,10 @@ val restrict_evar : evar_map -> Evar.t -> Filter.t ->
   ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * Evar.t
 
 val clear_hyps_in_evi : env -> evar_map -> named_context_val -> types ->
-  Id.Set.t -> evar_map * named_context_val * types
+  Id.Set.t -> evar_map * named_context_val
 
 val clear_hyps2_in_evi : env -> evar_map -> named_context_val -> types -> types ->
-  Id.Set.t -> evar_map * named_context_val * types * types
+  Id.Set.t -> evar_map * named_context_val
 
 type csubst
 

@@ -151,7 +151,7 @@ val pr_global              : GlobRef.t -> Pp.t
 
 val pr_constant            : env -> Constant.t -> Pp.t
 val pr_existential_key     : env -> evar_map -> Evar.t -> Pp.t
-val pr_existential         : env -> evar_map -> existential -> Pp.t
+val pr_existential         : env -> evar_map -> EConstr.existential -> Pp.t
 val pr_constructor         : env -> constructor -> Pp.t
 val pr_inductive           : env -> inductive -> Pp.t
 val pr_evaluable_reference : Tacred.evaluable_global_reference -> Pp.t

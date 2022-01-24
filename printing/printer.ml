@@ -265,7 +265,7 @@ let pr_puniverses f env sigma (c,u) =
   else f env c
 
 let pr_existential_key = Termops.pr_existential_key
-let pr_existential env sigma ev = pr_lconstr_env env sigma (mkEvar ev)
+let pr_existential env sigma ev = pr_leconstr_env env sigma (EConstr.mkEvar ev)
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef cst)
 let pr_inductive env ind = pr_global_env (Termops.vars_of_env env) (GlobRef.IndRef ind)

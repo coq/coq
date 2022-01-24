@@ -389,7 +389,7 @@ let clear_gen fail = function
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.project gl in
     let concl = Proofview.Goal.concl gl in
-    let (sigma, hyps, concl) =
+    let (sigma, hyps) =
       try clear_hyps_in_evi env sigma (named_context_val env) concl ids
       with Evarutil.ClearDependencyError (id,err,inglobal) -> fail env sigma id err inglobal
     in
@@ -579,16 +579,16 @@ let internal_cut ?(check=true) replace id t =
     let concl = Proofview.Goal.concl gl in
     let sign = named_context_val env in
     let r = Retyping.relevance_of_type env sigma t in
-    let env',t,concl,sigma =
+    let env', t, sigma =
       if replace then
         let nexthyp = get_next_hyp_position env sigma id (named_context_of_val sign) in
-        let sigma,sign',t,concl = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
+        let sigma, sign' = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
         let sign' = insert_decl_in_named_context env sigma (LocalAssum (make_annot id r,t)) nexthyp sign' in
-        Environ.reset_with_named_context sign' env,t,concl,sigma
+        Environ.reset_with_named_context sign' env, t, sigma
       else
         (if check && mem_named_context_val id sign then
            error (IntroAlreadyDeclared id);
-         push_named (LocalAssum (make_annot id r,t)) env,t,concl,sigma) in
+         push_named (LocalAssum (make_annot id r,t)) env, t, sigma) in
     let nf_t = nf_betaiota env sigma t in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)

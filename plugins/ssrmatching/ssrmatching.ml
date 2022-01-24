@@ -955,9 +955,9 @@ let thin id sigma goal =
   in
   match ans with
   | None -> sigma
-  | Some (sigma, hyps, concl) ->
+  | Some (sigma, hyps) ->
     let (sigma, evk) =
-      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps sigma concl
+      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps sigma cl
     in
     let sigma = Evd.remove_future_goal sigma evk in
     let id = Evd.evar_ident goal sigma in
