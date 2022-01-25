@@ -117,17 +117,6 @@ let is_ground_env evd env =
   List.for_all is_ground_rel_decl (rel_context env) &&
   List.for_all is_ground_named_decl (named_context env)
 
-(* Memoization is safe since evar_map and environ are applicative
-   structures *)
-let memo f =
-  let module E = Ephemeron.K2 in
-  let m = E.create () in
-  fun x y -> match E.get_key1 m, E.get_key2 m with
-  | Some x', Some y' when x == x' && y == y' -> Option.get (E.get_data m)
-  | _ -> let r = f x y in E.set_key1 m x; E.set_key2 m y; E.set_data m r; r
-
-let is_ground_env = memo is_ground_env
-
 (* Return the head evar if any *)
 
 exception NoHeadEvar
