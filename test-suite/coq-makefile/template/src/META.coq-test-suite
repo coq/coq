@@ -1,5 +1,5 @@
 package "test" (
-    directory = "src"
+    directory = "."
     version = "dev"
     description = "A test plugin"
     requires = "coq-core.plugins.ltac"
