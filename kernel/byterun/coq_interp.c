@@ -121,6 +121,13 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define Coq_alloc_small(result, wosize, tag) Alloc_small(result, wosize, tag)
 #endif
 
+/* If there is an asynchronous exception, we reset the vm */
+#define Handle_potential_exception(res) \
+  if (Is_exception_result(res)) {       \
+    coq_sp = coq_stack_high;            \
+    caml_raise(Extract_exception(res)); \
+  }
+
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
    the abstract machine registers, and don't put them in hardware registers,
@@ -563,20 +570,12 @@ value coq_interprete
       if (Caml_check_gc_interrupt(Caml_state) || caml_check_for_pending_signals()) {
         // FIXME: it should be caml_process_pending_actions_exn
         value res = caml_process_pending_signals_exn();
-        if (Is_exception_result(res)) {
-          /* If there is an asynchronous exception, we reset the vm */
-          coq_sp = coq_stack_high;
-          caml_raise(Extract_exception(res));
-        }
+        Handle_potential_exception(res);
       }
 #elif OCAML_VERSION >= 41000
       if (caml_something_to_do) {
         value res = caml_process_pending_actions_exn();
-        if (Is_exception_result(res)) {
-          /* If there is an asynchronous exception, we reset the vm */
-          coq_sp = coq_stack_high;
-          caml_raise(Extract_exception(res));
-        }
+        Handle_potential_exception(res);
       }
 #else
       if (caml_signals_are_pending) {
@@ -1859,8 +1858,9 @@ value coq_interprete
           print_int(*pc);
           arg = sp[0];
           Setup_for_caml_call;
-          accu = caml_callback2(Field(coq_global_data, *pc), accu, arg);
+          accu = caml_callback2_exn(Field(coq_global_data, *pc), accu, arg);
           Restore_after_caml_call;
+          Handle_potential_exception(accu);
           sp += 1;
           pc++;
         } else pc += *pc;
@@ -1874,8 +1874,9 @@ value coq_interprete
           pc++;
           Setup_for_caml_call;
           print_int(*pc);
-          accu = caml_callback(Field(coq_global_data, *pc), accu);
+          accu = caml_callback_exn(Field(coq_global_data, *pc), accu);
           Restore_after_caml_call;
+          Handle_potential_exception(accu);
           pc++;
         }
         else pc += *pc;
@@ -1891,8 +1892,9 @@ value coq_interprete
           arg = sp[0];
           Setup_for_caml_call;
           print_int(*pc);
-          accu = caml_callback2(Field(coq_global_data, *pc), accu, arg);
+          accu = caml_callback2_exn(Field(coq_global_data, *pc), accu, arg);
           Restore_after_caml_call;
+          Handle_potential_exception(accu);
           sp += 1;
           pc++;
         } else pc += *pc;
@@ -1910,8 +1912,9 @@ value coq_interprete
           arg2 = sp[1];
           Setup_for_caml_call;
           print_int(*pc);
-          accu = caml_callback3(Field(coq_global_data, *pc), accu, arg1, arg2);
+          accu = caml_callback3_exn(Field(coq_global_data, *pc), accu, arg1, arg2);
           Restore_after_caml_call;
+          Handle_potential_exception(accu);
           sp += 2;
           pc++;
         } else pc += *pc;
