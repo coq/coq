@@ -423,10 +423,13 @@ let print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdi
   pr "  Coq web site                : %s\n" prefs.coqwebsite;
   pr "  Bytecode VM enabled         : %B\n" prefs.bytecodecompiler;
   pr "  Native Compiler enabled     : %s\n\n" (pr_native prefs.nativecompiler);
-  (pr "  Paths for true installation:\n";
-   List.iter
-     (fun ((_,msg),(dir,_)) -> pr "  - %s will be copied in %s\n" msg (esc dir))
-     install_dirs);
+  if prefs.install_enabled then begin
+    pr "  Paths for true installation:\n";
+    List.iter
+      (fun ((_,msg),(dir,_)) -> pr "  - %s will be copied in %s\n" msg (esc dir))
+      install_dirs
+  end
+  else pr "  Installation not available (local mode)";
   pr "\n";
   pr "If anything is wrong above, please restart './configure'.\n\n";
   pr "*Warning* To compile the system for a new architecture\n";
@@ -562,7 +565,7 @@ let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags co
   pr "# Option to produce precompiled files for native_compute\n";
   pr "NATIVECOMPUTE=%s\n" (if prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
   pr "COQWARNERROR=%s\n" (if prefs.warn_error then "-w +default" else "");
-  pr "CONFIGURE_DPROFILE=%s\n" prefs.dune_profile;
+  pr "CONFIGURE_DARGS=%s\n" prefs.dune_args;
   pr "COQ_INSTALL_ENABLED=%b\n" prefs.install_enabled;
   if dune_29 then pr "DUNE_29_PLUS=yes\n";
   ()

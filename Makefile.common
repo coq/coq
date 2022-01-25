@@ -115,7 +115,7 @@ DOCGRAM_SOURCE_FILES=$(shell find $(addprefix $(COQ_SRC_DIR)/, doc/tools/docgram
 
 # Override for developer build [to get warn-as-error for example]
 _DDISPLAY?=quiet
-_DPROFILE?=$(CONFIGURE_DPROFILE)
+_DPROFILE?=$(CONFIGURE_DARGS)
 _DOPT:=--display=$(_DDISPLAY) $(_DPROFILE)
 _DBUILD:=$(FLOCK) .dune.lock dune build $(_DOPT)
 

@@ -56,7 +56,7 @@ type t =
   (** Override Coq's website, used by distributions  *)
   ; warn_error : bool
   (** Enable/disable warn-error in makefile build *)
-  ; dune_profile : string
+  ; dune_args : string
   (** Dune profile to use {dev/release}  *)
   ; install_enabled : bool
   (** Enable install [set to no when in -profile devel] *)

@@ -39,7 +39,7 @@ type t = {
   nativecompiler : nativecompiler;
   coqwebsite : string;
   warn_error : bool;
-  dune_profile : string;
+  dune_args : string;
   install_enabled : bool;
   debug : bool;
 }
@@ -47,8 +47,6 @@ type t = {
 end
 
 open Prefs
-
-module Profiles = struct
 
 let default = {
   prefix = None;
@@ -72,22 +70,28 @@ let default = {
     if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
   coqwebsite = "http://coq.inria.fr/";
   warn_error = false;
-  dune_profile = "--release";
+  dune_args = "--release";
   install_enabled = true;
   debug = false;
 }
 
-let devel state = { state with
-  bin_annot = true;
-  annot = true;
-  warn_error = true;
-  dune_profile = "--profile=dev";
-  interactive = true;
-  prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
+let local_prefix = Filename.concat (Sys.getcwd ()) "_build_vo/default"
+
+let local state = { state with
+  prefix = Some local_prefix;
   install_enabled = false;
 }
 
-let devel_doc = "-annot -bin-annot -warn-error yes"
+module Profiles = struct
+
+let devel state = { (local state) with
+  bin_annot = true;
+  annot = true;
+  warn_error = true;
+  dune_args = "--profile=dev";
+}
+
+let devel_doc = "-annot -bin-annot -warn-error yes -dune-args --profile=dev -prefix "^(Filename.quote local_prefix)
 
 let get = function
   | "devel" -> devel
@@ -116,7 +120,7 @@ let get_native = function
   | "ondemand" -> NativeOndemand
   | s -> raise (Arg.Bad ("(yes|no|ondemand) argument expected instead of "^s))
 
-let prefs = ref Profiles.default
+let prefs = ref default
 
 let arg_bool f = Arg.String (fun s -> prefs := f !prefs (get_bool s))
 
@@ -133,15 +137,15 @@ let arg_profile = Arg.String (fun s -> prefs := Profiles.get s !prefs)
 
 (* TODO : earlier any option -foo was also available as --foo *)
 
-let check_absolute = function
-  | None -> ()
-  | Some path ->
-    if Filename.is_relative path then
-      die "argument to -prefix must be an absolute path"
-    else ()
+let check_absolute path =
+  if Filename.is_relative path then
+    die "argument to -prefix must be an absolute path"
+  else ()
 
 let args_options = Arg.align [
-  "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
+    "-prefix", arg_string (fun p prefix ->
+        check_absolute prefix;
+        { p with prefix = Some prefix; install_enabled = not (String.equal prefix local_prefix) }),
     "<dir> Set installation directory to <dir> (absolute path required)";
   "-no-ask", arg_set (fun p -> { p with interactive = false }),
     " Don't ask questions / print variables during configure [questions will be filled with defaults]";
@@ -184,6 +188,8 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
     "(yes|no) Make OCaml warnings into errors (default no)";
+  "-dune-args", arg_string (fun p arg -> { p with dune_args = arg }),
+    "<args> Set arguments passed to Dune (default is --release)";
   "-profile", arg_profile, Profiles.doc;
   "-debug", arg_set (fun p -> { p with debug = true }), " Enable debug information for package detection"
 ]
