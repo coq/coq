@@ -48,6 +48,7 @@ docker-boot:
     - docker
 
 before_script:
+  - dev/ci/gitlab-section.sh start before_script before_script
   - cat /proc/{cpu,mem}info || true
   - ls -a # figure out if artifacts are around
   - printenv -0 | sort -z | tr '\0' '\n'
@@ -58,6 +59,7 @@ before_script:
   - opam list
   - opam config list
   - dev/tools/check-cachekey.sh
+  - dev/ci/gitlab-section.sh end before_script
 
 ################ GITLAB CACHING ######################
 # - use artifacts between jobs                       #
@@ -81,25 +83,21 @@ before_script:
       - dmesg.txt
     expire_in: 1 month
   script:
-    - set -e
-
-    - echo 'start:coq.clean'
+    - dev/ci/gitlab-section.sh start coq.clean coq.clean
     - make clean # ensure that `make clean` works on a fresh clone
-    - echo 'end:coq.clean'
+    - dev/ci/gitlab-section.sh end coq.clean
 
-    - echo 'start:coq.config'
+    - dev/ci/gitlab-section.sh start coq.config coq.config
     - ./configure -warn-error yes -prefix "$(pwd)/_install_ci" $COQ_EXTRA_CONF
-    - echo 'end:coq.config'
+    - dev/ci/gitlab-section.sh end coq.config
 
-    - echo 'start:coq.build'
+    - dev/ci/gitlab-section.sh start coq.build coq.build
     - make -j "$NJOBS" world $EXTRA_TARGET
-    - echo 'end:coq:build'
+    - dev/ci/gitlab-section.sh end coq.build
 
-    - echo 'start:coq.install'
+    - dev/ci/gitlab-section.sh start coq.install coq.install
     - make install $EXTRA_INSTALL
-    - echo 'end:coq.install'
-
-    - set +e
+    - dev/ci/gitlab-section.sh end coq.install
 
 # Template for building Coq + stdlib, typical use: overload the switch
 .dune-template:
@@ -113,9 +111,7 @@ before_script:
     # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
     # and https://github.com/coq/coq/pull/11916#issuecomment-609977375
     - ulimit -s 16384
-    - set -e
     - make -f Makefile.dune world
-    - set +e
     - tar cfj _build.tar.bz2 _build
   variables:
     OPAM_SWITCH: edge
@@ -138,11 +134,7 @@ before_script:
     - build:edge+flambda:dune:dev
   script:
     - tar xfj _build.tar.bz2
-    - set -e
-    - echo 'start:coq.test'
     - make -f Makefile.dune "$DUNE_TARGET"
-    - echo 'end:coq.test'
-    - set +e
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -230,11 +222,7 @@ before_script:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
-    - set -e
-    - echo 'start:coq.test'
     - make -f Makefile.ci -j "$NJOBS" "${CI_JOB_NAME#*:}"
-    - echo 'end:coq.test'
-    - set +e
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -342,12 +330,10 @@ pkg:opam:
   interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
-    - set -e
     - opam pin add --kind=path coq-core.dev .
     - opam pin add --kind=path coq-stdlib.dev .
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
-    - set +e
   variables:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
