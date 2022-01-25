@@ -33,6 +33,8 @@ val pause : unit -> unit
 val continue : unit -> unit
 [@@ocaml.deprecated "Use pop_output"]
 
+val with_glob_output : glob_output -> (unit -> 'a) -> unit -> 'a
+
 val add_glob : ?loc:Loc.t -> Names.GlobRef.t -> unit
 val add_glob_kn : ?loc:Loc.t -> Names.KerName.t -> unit
 

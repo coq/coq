@@ -41,6 +41,17 @@ let pop_output () = glob_output := match !glob_output with
 let pause () = push_output NoGlob
 let continue = pop_output
 
+let with_glob_output g f () =
+  push_output g;
+  try
+    let res = f () in
+    pop_output ();
+    res
+  with reraise ->
+    let reraise = Exninfo.capture reraise in
+    pop_output ();
+    Exninfo.iraise reraise
+
 let dump () = get_output () <> NoGlob
 
 let dump_string s =
