@@ -13,7 +13,6 @@ open Constr
 open EConstr
 open Environ
 open Evd
-open Clenv
 open Redexpr
 open Pattern
 open Unification
@@ -284,7 +283,7 @@ val general_elim  : evars_flag -> clear_flag ->
   constr with_bindings -> eliminator -> unit Proofview.tactic
 
 val general_elim_clause : evars_flag -> unify_flags -> Id.t option ->
-  clausenv -> eliminator -> unit Proofview.tactic
+  (EConstr.t * EConstr.t) -> eliminator -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
   unit Proofview.tactic

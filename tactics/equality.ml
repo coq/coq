@@ -37,7 +37,6 @@ open Tacred
 open Coqlib
 open Declarations
 open Indrec
-open Clenv
 open Ind_tables
 open Eqschemes
 open Locus
@@ -110,11 +109,7 @@ let rewrite_unif_flags = {
   resolve_evars = true
 }
 
-let freeze_initial_evars sigma flags clause =
-  (* We take evars of the type: this may include old evars! For excluding *)
-  (* all old evars, including the ones occurring in the rewriting lemma, *)
-  (* we would have to take the clenv_value *)
-  let newevars = lazy (Evarutil.undefined_evars_of_term sigma (clenv_type clause)) in
+let freeze_initial_evars sigma flags newevars =
   let initial = Evd.undefined_map sigma in
   let allowed evk =
     if Evar.Map.mem evk initial then false
@@ -126,38 +121,22 @@ let freeze_initial_evars sigma flags clause =
     merge_unify_flags = {flags.merge_unify_flags with allowed_evars};
     subterm_unify_flags = {flags.subterm_unify_flags with allowed_evars}}
 
-let make_flags frzevars sigma flags clause =
-  if frzevars then freeze_initial_evars sigma flags clause else flags
+let make_flags frzevars sigma flags newevars =
+  if frzevars then freeze_initial_evars sigma flags newevars else flags
 
 let side_tac tac sidetac =
   match sidetac with
   | None -> tac
   | Some sidetac -> tclTHENSFIRSTn tac [|Proofview.tclUNIT ()|] sidetac
 
-let instantiate_lemma_all frzevars gl c ty l l2r concl =
-  let env = Proofview.Goal.env gl in
-  let sigma = project gl in
-  let eqclause = pf_apply Clenv.make_clenv_binding gl (c,ty) l in
-  let (equiv, args) = decompose_app_vect sigma (Clenv.clenv_type eqclause) in
+let instantiate_lemma_all env flags eqclause l2r concl =
+  let (_, args) = decompose_app_vect eqclause.Clenv.evd (Clenv.clenv_type eqclause) in
   let arglen = Array.length args in
   let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
-  let try_occ (evd', c') =
-    let clenv = Clenv.update_clenv_evd eqclause evd' in
-    Clenv.clenv_pose_dependent_evars ~with_evars:true clenv
-  in
-  let flags = make_flags frzevars (Tacmach.project gl) rewrite_unif_flags eqclause in
-  let occs =
-    w_unify_to_subterm_all ~flags env eqclause.evd
-      ((if l2r then c1 else c2),concl)
-  in List.map try_occ occs
-
-let instantiate_lemma gl c ct l l2r concl =
-  let sigma = Proofview.Goal.sigma gl in
-  let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
-  let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
-  eqclause
+  w_unify_to_subterm_all ~flags env eqclause.Clenv.evd
+    ((if l2r then c1 else c2),concl)
 
 let rewrite_conv_closed_core_unif_flags = {
   modulo_conv_on_closed_terms = Some TransparentState.full;
@@ -228,14 +207,6 @@ let rewrite_keyed_unif_flags = {
   resolve_evars = false
 }
 
-let rewrite_elim with_evars frzevars cls c e =
-  Proofview.Goal.enter begin fun gl ->
-  let flags = if Unification.is_keyed_unification ()
-              then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
-  let flags = make_flags frzevars (Tacmach.project gl) flags c in
-  general_elim_clause with_evars flags cls c e
-  end
-
 let tclNOTSAMEGOAL tac =
   let goal gl = Proofview.Goal.goal gl in
   Proofview.Goal.enter begin fun gl ->
@@ -257,8 +228,7 @@ let tclNOTSAMEGOAL tac =
       Proofview.tclUNIT ()
   end
 
-(* Ad hoc asymmetric general_elim_clause *)
-let general_elim_clause with_evars frzevars cls rew elim =
+let elim_wrapper cls rwtac =
   let open Pretype_errors in
   Proofview.tclORELSE
     begin match cls with
@@ -266,8 +236,8 @@ let general_elim_clause with_evars frzevars cls rew elim =
       (* was tclWEAK_PROGRESS which only fails for tactics generating one
           subgoal and did not fail for useless conditional rewritings generating
           an extra condition *)
-      tclNOTSAMEGOAL (rewrite_elim with_evars frzevars cls rew elim)
-    | Some _ -> rewrite_elim with_evars frzevars cls rew elim
+      tclNOTSAMEGOAL rwtac
+    | Some _ -> rwtac
     end
     begin function (e, info) -> match e with
     | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
@@ -277,6 +247,24 @@ let general_elim_clause with_evars frzevars cls rew elim =
     end
 
 let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
+  (* Ad hoc asymmetric general_elim_clause *)
+  let general_elim_clause0 rew =
+    let rewrite_elim =
+      Proofview.Goal.enter begin fun gl ->
+      let sigma = Proofview.Goal.sigma gl in
+      let flags = if Unification.is_keyed_unification ()
+                  then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
+      (* We take evars of the type: this may include old evars! For excluding *)
+      (* all old evars, including the ones occurring in the rewriting lemma, *)
+      (* we would have to take the clenv_value *)
+      let newevars = lazy (Evarutil.undefined_evars_of_term sigma (Clenv.clenv_type rew)) in
+      let flags = make_flags frzevars sigma flags newevars in
+      general_elim_clause with_evars flags cls (Clenv.clenv_value rew, Clenv.clenv_type rew) elim
+      end
+    in
+    Proofview.Unsafe.tclEVARS rew.Clenv.evd <*>
+    elim_wrapper cls rewrite_elim
+  in
   let strat, tac =
     match tac with
     | None -> Naive, None
@@ -284,27 +272,33 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     | Some (tac, FirstSolved) -> FirstSolved, Some (tclCOMPLETE tac)
     | Some (tac, AllMatches) -> AllMatches, Some (tclCOMPLETE tac)
   in
-  let try_clause c =
-    side_tac
-      (tclTHEN
-         (Proofview.Unsafe.tclEVARS c.evd)
-         (general_elim_clause with_evars frzevars cls c elim))
-      tac
-  in
   Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
     let typ = match cls with
     | None -> pf_concl gl
     | Some id -> pf_get_hyp_typ id gl
     in
+    let ty = match strat with
+    | Naive -> (try snd (reduce_to_quantified_ind env sigma t) with UserError _ -> t)
+    | FirstSolved | AllMatches -> t
+    in
+    let eqclause = Clenv.make_clenv_binding env sigma (c, ty) l in
+    let try_clause evd' =
+      let clenv = Clenv.update_clenv_evd eqclause evd' in
+      let clenv = Clenv.clenv_pose_dependent_evars ~with_evars:true clenv in
+      side_tac (general_elim_clause0 clenv) tac
+    in
     match strat with
     | Naive ->
-      let cs = instantiate_lemma gl c t l l2r typ in
-      try_clause cs
+      side_tac (general_elim_clause0 eqclause) tac
     | FirstSolved ->
-      let cs = instantiate_lemma_all frzevars gl c t l l2r typ in
+      let flags = make_flags frzevars sigma rewrite_unif_flags (lazy Evar.Set.empty) in
+      let cs = instantiate_lemma_all env flags eqclause l2r typ in
       tclFIRST (List.map try_clause cs)
     | AllMatches ->
-      let cs = instantiate_lemma_all frzevars gl c t l l2r typ in
+      let flags = make_flags frzevars sigma rewrite_unif_flags (lazy Evar.Set.empty) in
+      let cs = instantiate_lemma_all env flags eqclause l2r typ in
       tclMAP try_clause cs
   end
 
@@ -1027,13 +1021,13 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
 type equality = {
   eq_data  : (coq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
   (* equality data + A : Type, t1 : A, t2 : A *)
-  eq_clenv : clausenv;
-  (* clause [M : R A t1 t2] where [R] is the equality from above *)
+  eq_term : EConstr.t;
+  (* term [M : R A t1 t2] where [R] is the equality from above *)
 }
 
 let eq_baseid = Id.of_string "e"
 
-let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause } cpath dirn =
+let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v } cpath dirn =
   build_coq_True () >>= fun true_0 ->
   build_coq_False () >>= fun false_0 ->
   let false_ty = Retyping.get_type_of env sigma false_0 in
@@ -1052,15 +1046,15 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause
     discriminator >>= fun discriminator ->
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
     (* pf : eq t t1 t2 -> False *)
-    let pf = EConstr.mkApp (pf, [|clenv_value eq_clause|]) in
+    let pf = EConstr.mkApp (pf, [|v|]) in
     tclTHENS (assert_after Anonymous false_0)
       [onLastHypId gen_absurdity; (Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
 let discrEq eq =
-  let { eq_data = (_, (_, t1, t2)); eq_clenv = eq_clause } = eq in
-  let sigma = eq_clause.evd in
+  let { eq_data = (_, (_, t1, t2)) } = eq in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
     match find_positions env sigma ~keep_proofs:false ~no_discr:false t1 t2 with
     | Inr _ ->
       let info = Exninfo.reify () in
@@ -1074,14 +1068,14 @@ let onEquality with_evars tac (c,lbindc) =
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
   let t = pf_get_type_of gl c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
-  let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
+  let eq_clause = pf_apply Clenv.make_clenv_binding gl (c,t') lbindc in
   let eq_clause' = Clenv.clenv_pose_dependent_evars ~with_evars eq_clause in
-  let eqn = clenv_type eq_clause' in
+  let eqn = Clenv.clenv_type eq_clause' in
   (* FIXME evar leak *)
   let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
-  let eq = { eq_data = (eq, eq_args); eq_clenv = eq_clause' } in
+  let eq = { eq_data = (eq, eq_args); eq_term = Clenv.clenv_value eq_clause' } in
   tclTHEN
-    (Proofview.Unsafe.tclEVARS eq_clause'.evd)
+    (Proofview.Unsafe.tclEVARS eq_clause'.Clenv.evd)
     (tac eq)
   end
 
@@ -1395,7 +1389,7 @@ let simplify_args env sigma t =
     | _ -> t
 
 let inject_at_positions env sigma l2r eq posns tac =
-  let { eq_data = (eq, (t,t1,t2)); eq_clenv = eq_clause } = eq in
+  let { eq_data = (eq, (t,t1,t2)); eq_term = v } = eq in
   let e = next_ident_away eq_baseid (vars_of_env env) in
   let e_env = push_named (LocalAssum (make_annot e Sorts.Relevant,t)) env in
   let evdref = ref sigma in
@@ -1409,7 +1403,7 @@ let inject_at_positions env sigma l2r eq posns tac =
       let pf = mkApp (congr,[|t; resty; injfun; t1; t2|]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
       let pf_typ = Vars.subst1 mkProp (pi3 @@ destProd sigma pf_typ) in
-      let pf = mkApp (pf, [| Clenv.clenv_value eq_clause |]) in
+      let pf = mkApp (pf, [| v |]) in
       let ty = simplify_args env sigma pf_typ in
         evdref := sigma;
         Some (pf, ty)
@@ -1434,9 +1428,10 @@ let () = CErrors.register_handler (function
   | _ -> None)
 
 let injEqThen keep_proofs tac l2r eql =
-  let { eq_data = (eq, (t,t1,t2)); eq_clenv = eq_clause } = eql in
-  let sigma = eq_clause.evd in
-  let env = eq_clause.env in
+  Proofview.Goal.enter begin fun gl ->
+  let { eq_data = (eq, (t,t1,t2)) } = eql in
+  let sigma = Proofview.Goal.sigma gl in
+  let env = Proofview.Goal.env gl in
   match find_positions env sigma ~keep_proofs ~no_discr:true t1 t2 with
   | Inl _ ->
      assert false
@@ -1450,7 +1445,8 @@ let injEqThen keep_proofs tac l2r eql =
      Proofview.tclZERO NothingToInject
   | Inr posns ->
       inject_at_positions env sigma l2r eql posns
-        (tac (clenv_value eq_clause))
+        (tac eql.eq_term)
+  end
 
 let get_previous_hyp_position id gl =
   let env, sigma = Proofview.Goal.(env gl, sigma gl) in
@@ -1504,18 +1500,18 @@ let injConcl flags ?injection_in_context () = injClause flags ?injection_in_cont
 let injHyp flags ?injection_in_context clear_flag id = injClause flags ?injection_in_context None false (Some (clear_flag,ElimOnIdent CAst.(make id)))
 
 let decompEqThen keep_proofs ntac eq =
-  let { eq_data = (_, (_,t1,t2) as u); eq_clenv = clause } = eq in
+  let { eq_data = (_, (_,t1,t2) as u) } = eq in
   Proofview.Goal.enter begin fun gl ->
-    let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
       match find_positions env sigma ~keep_proofs ~no_discr:false t1 t2 with
       | Inl (cpath, (_,dirn), _) ->
           discr_positions env sigma eq cpath dirn
       | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
-        ntac (clenv_value clause) 0
+        ntac eq.eq_term 0
     | Inr posns ->
         inject_at_positions env sigma true eq posns
-          (ntac (clenv_value clause))
+          (ntac eq.eq_term)
   end
 
 let dEqThen ~keep_proofs with_evars ntac = function
@@ -1528,8 +1524,9 @@ let dEq ~keep_proofs with_evars =
 
 let intro_decomp_eq tac (eq, _, data) (c, t) =
   Proofview.Goal.enter begin fun gl ->
-    let cl = pf_apply make_clenv_binding gl (c, t) NoBindings in
-    let eq = { eq_data = (eq, data); eq_clenv = cl } in
+    let cl = pf_apply Clenv.make_clenv_binding gl (c, t) NoBindings in
+    let eq = { eq_data = (eq, data); eq_term = Clenv.clenv_value cl } in
+    Proofview.Unsafe.tclEVARS cl.Clenv.evd <*>
     decompEqThen !keep_proof_equalities_for_injection (fun _ -> tac) eq
   end
 

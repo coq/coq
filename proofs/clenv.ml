@@ -422,9 +422,9 @@ let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
   let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
   clenv_assign mv c clenv
 
-let clenv_fchain ?with_univs ?(flags=fchain_flags ()) mv clenv nextclenv =
+let clenv_fchain ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
-  let evd = meta_merge ?with_univs nextclenv.evd clenv.evd in
+  let evd = meta_merge nextclenv.evd clenv.evd in
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
