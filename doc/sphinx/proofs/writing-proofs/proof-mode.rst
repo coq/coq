@@ -994,7 +994,7 @@ command in CoqIDE.  You can change the background colors shown for diffs from th
 lets you control other attributes of the highlights, such as the foreground
 color, bold, italic, underline and strikeout.
 
-Proof General and Coqtail can also display Coq-generated proof diffs automatically.
+Proof General, VsCoq and Coqtail can also display Coq-generated proof diffs automatically.
 Please see the PG documentation section
 `"Showing Proof Diffs" <https://proofgeneral.github.io/doc/master/userman/Coq-Proof-General#Showing-Proof-Diffs>`_
 and Coqtail's `"Proof Diffs" <https://github.com/whonore/Coqtail#proof-diffs>`_
