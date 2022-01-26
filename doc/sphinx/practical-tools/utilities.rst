@@ -91,7 +91,7 @@ generate object files that are not usable except for expert cases.
 The ``-native-compiler`` option given in the ``_CoqProject`` file will override
 the global one passed at configure time.
 
-CoqIDE, Proof-General, VSCoq and Coqtail all
+CoqIDE, Proof General, VsCoq and Coqtail all
 understand ``_CoqProject`` files and can be used to invoke Coq with the desired options.
 
 The ``coq_makefile`` utility can be used to set up a build infrastructure
