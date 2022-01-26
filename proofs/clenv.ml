@@ -424,7 +424,7 @@ let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
 
 let clenv_fchain ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
-  let evd = meta_merge nextclenv.evd clenv.evd in
+  let evd = meta_merge (Evd.meta_list nextclenv.evd) clenv.evd in
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;

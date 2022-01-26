@@ -1348,9 +1348,9 @@ let meta_reassign mv (v, pb) evd =
 
 let clear_metas evd = {evd with metas = Metamap.empty}
 
-let meta_merge evd1 evd2 =
-  let metas = Metamap.fold Metamap.add evd1.metas evd2.metas in
-  { evd2 with metas }
+let meta_merge metas sigma =
+  let metas = Metamap.fold Metamap.add metas sigma.metas in
+  { sigma with metas }
 
 type metabinding = metavariable * constr * instance_status
 

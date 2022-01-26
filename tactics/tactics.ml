@@ -1545,7 +1545,7 @@ let general_elim_clause with_evars flags where (c, ty) elim =
        | _  -> error IllFormedEliminationType)
   in
   (* Assumes that the metas of [c] are part of [sigma] already *)
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge sigma elimclause.Clenv.evd) in
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge (Evd.meta_list sigma) elimclause.Clenv.evd) in
   match where with
   | None ->
     let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
@@ -1568,7 +1568,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let id = try Some (destVar sigma c) with DestKO -> None in
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding env sigma (c, t) lbindc in
-  let sigma = meta_merge sigma indclause.evd in
+  let sigma = meta_merge (Evd.meta_list sigma) indclause.evd in
   let flags = elim_flags () in
   Proofview.Unsafe.tclEVARS sigma <*>
   Tacticals.tclTHEN
