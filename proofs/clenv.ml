@@ -50,7 +50,6 @@ let update_clenv_evd clenv evd =
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let clenv_term clenv c = meta_instance clenv.env clenv.cache c
 let clenv_meta_type clenv mv =
   let ty =
     try Evd.meta_ftype clenv.evd mv
@@ -421,27 +420,6 @@ let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
   clenv_assign mv c clenv
-
-let clenv_fchain ?(flags=fchain_flags ()) mv clenv nextclenv =
-  (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
-  let evd = meta_merge (Evd.meta_list nextclenv.evd) clenv.evd in
-  let clenv' =
-    { templval = clenv.templval;
-      templtyp = clenv.templtyp;
-      evd;
-      env = nextclenv.env;
-      cache = create_meta_instance_subst evd } in
-  (* unify the type of the template of [nextclenv] with the type of [mv] *)
-  let clenv'' =
-    clenv_unify ~flags CUMUL
-      (clenv_term clenv' nextclenv.templtyp)
-      (clenv_meta_type clenv' mv)
-      clenv' in
-  (* assign the metavar *)
-  let clenv''' =
-    clenv_assign mv (clenv_term clenv' nextclenv.templval) clenv''
-  in
-  clenv'''
 
 (***************************************************************)
 (* Bindings *)

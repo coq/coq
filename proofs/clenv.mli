@@ -51,9 +51,6 @@ val mk_clenv_from_n : env -> evar_map -> int -> EConstr.constr * EConstr.types -
 
 val clenv_instantiate : ?flags:unify_flags -> metavariable -> clausenv -> (constr * types) -> clausenv
 
-val clenv_fchain :
-  ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
-
 (** {6 Unification with clenvs } *)
 
 (** Unifies two terms in a clenv. The boolean is [allow_K] (see [Unification]) *)

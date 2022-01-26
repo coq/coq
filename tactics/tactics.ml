@@ -1902,7 +1902,12 @@ let progress_with_clause flags (id, t) clause mvs =
   if List.is_empty mvs then raise UnableToApply;
   let f mv =
     let rec find innerclause =
-      try Some (clenv_fchain mv ~flags clause innerclause)
+      try
+        let clause =
+          Clenv.update_clenv_evd clause
+            (meta_merge (Evd.meta_list innerclause.Clenv.evd) clause.Clenv.evd)
+        in
+        Some (clenv_instantiate mv ~flags clause (clenv_value innerclause, clenv_type innerclause))
       with e when noncritical e ->
       match clenv_push_prod innerclause with
       | Some (_, _, innerclause) -> find innerclause
