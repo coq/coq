@@ -164,11 +164,11 @@ let generate_meta_file p =
           | [] -> Printf.eprintf "In order to generate a META file one needs an .mlpack or .mllib file\n"; exit 1
           | [x] -> Filename.dirname x, Filename.(basename @@ chop_extension x)
           | _ -> Printf.eprintf "Automatic META generation only works for one .mlpack or .mllib file, since you have more you need to write the META file by hand\n"; exit 1 in
-        let f = "META." ^ proj in
+        let f = dir ^ "/META." ^ proj in
         let oc = open_out f in
         let meta : _ format = {|
 package "plugin" (
-  directory = "%s"
+  directory = "."
   requires = "coq-core.plugins.ltac"
   archive(byte) = "%s.cma"
   archive(native) = "%s.cmxa"
@@ -178,7 +178,7 @@ package "plugin" (
 directory = "."
 |}
         in
-        let meta = Printf.sprintf meta dir cmname cmname cmname cmname in
+        let meta = Printf.sprintf meta cmname cmname cmname cmname in
         output_string oc meta;
         close_out oc;
         { p with meta_file = Present f }
