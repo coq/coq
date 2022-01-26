@@ -258,6 +258,11 @@ project menhirlib "https://gitlab.inria.fr/fpottier/menhir" "20210310"
 project aac_tactics "https://github.com/coq-community/aac-tactics" "master"
 
 ########################################################################
+# paco
+########################################################################
+project paco "https://github.com/snu-sf/paco" "master"
+
+########################################################################
 # paramcoq
 ########################################################################
 project paramcoq "https://github.com/coq-community/paramcoq" "master"

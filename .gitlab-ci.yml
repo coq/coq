@@ -774,6 +774,9 @@ library:ci-analysis:
   - plugin:ci-elpi  # for Hierarchy Builder
   # we need a mathcomp_base here as elpi requires OCaml < 4.13
 
+library:ci-paco:
+  extends: .ci-template
+
 library:ci-sf:
   extends: .ci-template
 
