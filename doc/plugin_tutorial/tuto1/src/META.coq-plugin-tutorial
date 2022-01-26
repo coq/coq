@@ -1,5 +1,5 @@
 package "tuto1" (
-    directory = "src"
+    directory = "."
     version = "dev"
     description = "A tuto1 plugin"
     requires = "coq-core.plugins.ltac"
