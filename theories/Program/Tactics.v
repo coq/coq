@@ -314,7 +314,7 @@ Ltac program_solve_wf :=
     | |- ?T => match type of T with Prop => auto end
   end.
 
-Create HintDb program discriminated.
+Create HintDb program Variables(Transparent) Constants(Transparent) discriminated.
 
 Ltac program_simpl := program_simplify ; try typeclasses eauto 10 with program ; try program_solve_wf.
 

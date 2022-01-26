@@ -26,7 +26,7 @@ Arguments LT [X lt eq x y] _.
 Arguments EQ [X lt eq x y] _.
 Arguments GT [X lt eq x y] _.
 
-Create HintDb ordered_type.
+Create HintDb ordered_type Variables(Transparent) Constants(Transparent).
 
 Module Type MiniOrderedType.
 

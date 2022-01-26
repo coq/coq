@@ -98,13 +98,23 @@ GRAMMAR EXTEND Gram
       | IDENT "Guarded" -> { VernacCheckGuard }
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
-          id = IDENT ; b = [ IDENT "discriminated" -> { true } | -> { false } ] ->
-            { VernacCreateHintDb (id, b) }
+          id = IDENT ; args = LIST0 create_hintdb_arg ->
+            { VernacCreateHintDb (id, args) }
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
           { VernacRemoveHints (dbnames, ids) }
       | IDENT "Hint"; h = hint; dbnames = opt_hintbases ->
           { VernacHints (dbnames, h) }
-      ] ];
+      ] ]
+  ;
+  create_hintdb_arg:
+  [ [ IDENT "discriminated" -> { Discriminated }
+    | IDENT "Variables"; "(" ; o = opacity_flag; ")" -> { Variables o }
+    | IDENT "Constants"; "(" ; o = opacity_flag; ")" -> { Constants o } ] ]
+  ;
+  opacity_flag:
+  [ [ IDENT "Opaque" -> { Opaque }
+    | IDENT "Transparent" -> { Transparent } ] ]
+  ;
   reference_or_constr:
    [ [ r = global -> { HintsReference r }
      | c = constr -> { HintsConstr c } ] ]

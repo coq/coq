@@ -302,6 +302,9 @@ type discharge = DoDischarge | NoDischarge
 
 type hint_info_expr = Constrexpr.constr_pattern_expr Typeclasses.hint_info_gen
 
+type create_hintdb_arg =
+  Discriminated | Variables of opacity_flag | Constants of opacity_flag
+
 type reference_or_constr =
   | HintsReference of Libnames.qualid
   | HintsConstr of Constrexpr.constr_expr
@@ -405,7 +408,7 @@ type nonrec vernac_expr =
   | VernacBack of int
 
   (* Commands *)
-  | VernacCreateHintDb of string * bool
+  | VernacCreateHintDb of string * create_hintdb_arg list
   | VernacRemoveHints of string list * qualid list
   | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of

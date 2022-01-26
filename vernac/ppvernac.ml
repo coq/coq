@@ -1073,10 +1073,19 @@ let pr_vernac_expr v =
     return (keyword "Cd" ++ pr_opt qs s)
 
   (* Commands *)
-  | VernacCreateHintDb (dbname,b) ->
-    return (
-      hov 1 (keyword "Create HintDb" ++ spc () ++
-             str dbname ++ (if b then str" discriminated" else mt ()))
+  | VernacCreateHintDb (dbname,flags) ->
+    let pr_opacity_flag = function
+      | Opaque -> str"Opaque"
+      | Transparent -> str"Transparent"
+    in
+    let pr_create_hintdb_flag = function
+      | Discriminated -> str" discriminated"
+      | Variables o -> str" Variables(" ++ pr_opacity_flag o ++ str")"
+      | Constants o -> str" Constants(" ++ pr_opacity_flag o ++ str")"
+    in
+      return (
+        hov 1 (keyword "Create HintDb" ++ spc () ++
+             str dbname ++ prlist_with_sep (fun _ -> mt ()) pr_create_hintdb_flag flags)
     )
   | VernacRemoveHints (dbnames, ids) ->
     return (

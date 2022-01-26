@@ -1467,9 +1467,52 @@ let vernac_chdir = function
 
 (************)
 (* Commands *)
+let warn_create_hint_db_no_transparent_state =
+  CWarnings.create ~name:"implicit-transparency-hint-db" ~category:"deprecated"
+         (fun () -> strbrk "Declaring a hint database without specifying its transparency information is deprecated. "
+             ++ strbrk"Please specify both Variables and Constants arguments. They are both set to Transparent by default.")
 
-let vernac_create_hintdb ~module_local id b =
-  Hints.create_hint_db module_local id TransparentState.full b
+let vernac_create_hintdb ~module_local id flags =
+  let interp_var_opacity opt o =
+    match opt with
+    | Some o -> user_err Pp.(str"Multiple specifications of the 'Variables' flag")
+    | None ->
+      match o with
+      | Opaque -> Names.Id.Pred.empty
+      | Transparent -> Names.Id.Pred.full
+  in
+  let interp_cst_opacity opt o =
+    match opt with
+    | Some o -> user_err Pp.(str"Multiple specifications of the 'Constants' flag")
+    | None ->
+      match o with
+      | Opaque -> Names.Cpred.empty
+      | Transparent -> Names.Cpred.full
+  in
+  let rec interp_flags (discriminated, vars, csts) = function
+    | [] ->
+      (match vars, csts with
+      | Some v, Some c ->
+        Option.default false discriminated, v, c
+      | _, _ ->
+        warn_create_hint_db_no_transparent_state ();
+        let vars = Option.default Names.Id.Pred.full vars in
+        let csts = Option.default Names.Cpred.full csts in
+        Option.default false discriminated, vars, csts)
+    | Discriminated :: flags ->
+      begin match discriminated with
+      | Some _ -> user_err Pp.(str"Multiple specifications of the 'discriminated' flag")
+      | None -> interp_flags (Some true, vars, csts) flags
+      end
+    | Variables o :: flags ->
+      let vars = Some (interp_var_opacity vars o) in
+      interp_flags (discriminated, vars, csts) flags
+    | Constants o :: flags ->
+      let csts = Some (interp_cst_opacity csts o) in
+      interp_flags (discriminated, vars, csts) flags
+  in
+  let discriminated, v, c = interp_flags (None, None, None) flags in
+  Hints.create_hint_db module_local id TransparentState.{ tr_var = v; tr_cst = c} discriminated
 
 let warn_implicit_core_hint_db =
   CWarnings.create ~name:"implicit-core-hint-db" ~category:"deprecated"
