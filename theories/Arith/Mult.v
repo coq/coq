@@ -57,7 +57,7 @@ Notation mult_minus_distr_l :=
 
 #[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_assoc instead.")]
 Notation mult_assoc := Nat.mul_assoc (only parsing). (* n*(m*p)=n*m*p *)
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_assoc instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_assoc (with symmetry of equality) instead.")]
 Notation mult_assoc_reverse := Arith_prebase.mult_assoc_reverse_stt.
 
 (** ** Inversion lemmas *)
@@ -65,12 +65,12 @@ Notation mult_assoc_reverse := Arith_prebase.mult_assoc_reverse_stt.
 #[local]
 Definition mult_is_O_stt := fun n m Heq => proj1 (Nat.eq_mul_0 n m) Heq.
 Opaque mult_is_O_stt.
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.eq_mul_0 instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use the bidirectional version Nat.eq_mul_0 instead.")]
 Notation mult_is_O := mult_is_O_stt.
 #[local]
 Definition mult_is_one_stt := fun n m Heq => proj1 (Nat.eq_mul_1 n m) Heq.
 Opaque mult_is_one_stt.
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.eq_mul_1 instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use the bidirectional version Nat.eq_mul_1 instead.")]
 Notation mult_is_one := mult_is_one_stt.
 
 (** ** Multiplication and successor *)
@@ -90,22 +90,22 @@ Notation mult_le_compat_l := Nat.mul_le_mono_l (only parsing).
 Notation mult_le_compat_r := Nat.mul_le_mono_r (only parsing).
 #[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_le_mono instead.")]
 Notation mult_le_compat := Nat.mul_le_mono (only parsing).
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_lt_mono_pos_l instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use the bidirectional version (Nat.mul_lt_mono_pos_l (S _)) (together with Nat.lt_0_succ) instead.")]
 Notation mult_S_lt_compat_l := Arith_prebase.mult_S_lt_compat_l_stt.
 #[local]
 Definition mult_lt_compat_l_stt := fun n m p Hlt Hp => proj1 (Nat.mul_lt_mono_pos_l p n m Hp) Hlt.
 Opaque mult_lt_compat_l_stt.
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_lt_mono_pos_l instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use the bidirectional version Nat.mul_lt_mono_pos_l instead.")]
 Notation mult_lt_compat_l := mult_lt_compat_l_stt.
 #[local]
 Definition mult_lt_compat_r_stt := fun n m p Hlt Hp => proj1 (Nat.mul_lt_mono_pos_r p n m Hp) Hlt.
 Opaque mult_lt_compat_r_stt.
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_lt_mono_pos_r instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use the bidirectional version Nat.mul_lt_mono_pos_r instead.")]
 Notation mult_lt_compat_r := mult_lt_compat_r_stt.
 #[local]
 Definition mult_S_le_reg_l_stt := fun n m p Hle => proj2 (Nat.mul_le_mono_pos_l m p (S n) (Nat.lt_0_succ n)) Hle.
 Opaque mult_S_le_reg_l_stt.
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.mul_le_mono_pos_l instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use the bidirectional version (Nat.mul_le_mono_pos_l _ _ (S _)) (together with Nat.lt_0_succ) instead.")]
 Notation mult_S_le_reg_l := mult_S_le_reg_l_stt.
 
 (** * n|->2*n and n|->2n+1 have disjoint image *)
@@ -127,7 +127,7 @@ Notation tail_mult := Nat.tail_mul (only parsing).
 #[local]
 Definition mult_tail_mult_stt := fun n m => eq_sym (Nat.tail_mul_spec n m).
 Opaque mult_tail_mult_stt.
-#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.tail_mul_spec instead.")]
+#[deprecated(since="8.16",note="The Arith.Mult file is obsolete. Use Nat.tail_mul_spec (with symmetry of equality) instead.")]
 Notation mult_tail_mult := mult_tail_mult_stt.
 #[deprecated(since="8.16",note="The Arith.Plus file is obsolete.")]
 Ltac tail_simpl :=
