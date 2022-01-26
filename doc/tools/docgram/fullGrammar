@@ -815,6 +815,7 @@ gallina: [
 | "CoFixpoint" LIST1 cofix_definition SEP "with"
 | "Let" "CoFixpoint" LIST1 cofix_definition SEP "with"
 | "Scheme" LIST1 scheme SEP "with"
+| "Scheme" "Equality" "for" smart_global
 | "Combined" "Scheme" identref "from" LIST1 identref SEP ","
 | "Register" global "as" qualid
 | "Register" "Inline" global
@@ -975,11 +976,14 @@ scheme: [
 ]
 
 scheme_kind: [
-| "Induction" "for" smart_global "Sort" sort_family
-| "Minimality" "for" smart_global "Sort" sort_family
-| "Elimination" "for" smart_global "Sort" sort_family
-| "Case" "for" smart_global "Sort" sort_family
-| "Equality" "for" smart_global
+| scheme_type "for" smart_global "Sort" sort_family
+]
+
+scheme_type: [
+| "Induction"
+| "Minimality"
+| "Elimination"
+| "Case"
 ]
 
 record_field: [

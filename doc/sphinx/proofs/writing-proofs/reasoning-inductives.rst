@@ -603,7 +603,7 @@ This section describes some special purpose tactics to work with
       injected object has a dependent type :g:`P` with its two instances in
       different types :n:`(P t__1 … t__n)` and :n:`(P u__1 … u__n)`. If :n:`t__1` and
       :n:`u__1` are the same and have for type an inductive type for which a decidable
-      equality has been declared using :cmd:`Scheme` :n:`Equality …`,
+      equality has been declared using :cmd:`Scheme Equality`,
       the use of a sigma type is avoided.
 
    .. exn:: No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop. You can try to use option Set Keep Proof Equalities.
@@ -971,35 +971,49 @@ Generation of induction principles with ``Scheme``
 
 .. cmd:: Scheme {? @ident := } @scheme_kind {* with {? @ident := } @scheme_kind }
 
-   .. insertprodn scheme_kind sort_family
+   .. insertprodn scheme_kind sort_family scheme_type
 
    .. prodn::
-      scheme_kind ::= Equality for @reference
-      | {| Induction | Minimality | Elimination | Case } for @reference Sort @sort_family
-      sort_family ::= Set
-      | Prop
+      scheme_kind ::= @scheme_type for @reference Sort @sort_family
+      scheme_type ::= Induction
+      | Minimality
+      | Elimination
+      | Case
+      sort_family ::= Prop
       | SProp
+      | Set
       | Type
 
-  A high-level tool for automatically generating
-  (possibly mutual) :term:`induction principles <induction principle>`
-  for given types and sorts.
-  Each :n:`@reference` is a different inductive type identifier belonging to
-  the same package of mutual inductive definitions.
-  The command generates the :n:`@ident`\s as mutually recursive
-  definitions. Each term :n:`@ident` proves a general principle of mutual
-  induction for objects in type :n:`@reference`.
+   Generates an :term:`induction principles <induction principle>` with given
+   :n:`scheme_type`\s and :n:`scheme_sort`\s for an inductive type. In the case
+   where the inductive definition is a mutual inductive definition, the
+   :n:`with` clause is used to generate a mutually recursive inductive scheme
+   for each clause of the mutual inductive type.
 
-  :n:`@ident`
-    The name of the scheme. If not provided, the scheme name will be determined automatically
-    from the sorts involved.
+   :n:`@ident`
+      The name of the scheme. If not provided, the name will be determined
+      automatically from the :n:`@scheme_type` and :n:`@sort_family`.
 
-  :n:`Minimality for @reference Sort @sort_family`
-    Defines a non-dependent elimination principle more natural for inductively defined relations.
+   The following :n:`@scheme_type`\s generate induction principles with
+   given properties:
 
-  :n:`Equality for @reference`
-     Tries to generate a Boolean equality and a proof of the decidability of the usual equality.
-     If :token:`reference` involves other inductive types, their equality has to be defined first.
+   =================== =========== ===========
+    :n:`@scheme_type`   Recursive   Dependent
+   =================== =========== ===========
+    :n:`Induction`         Yes         Yes
+    :n:`Minimality`        Yes         No
+    :n:`Elimination`       No          Yes
+    :n:`Case`              No          No
+   =================== =========== ===========
+
+   See examples of the :n:`@scheme_type`\s :ref:`here <scheme_example>`.
+
+.. cmd:: Scheme Equality for @reference
+   :name: Scheme Equality
+
+   Generates a Boolean equality and a proof of the decidability of the usual
+   equality. If :token:`reference` refers to other inductive types, their
+   equality must already be defined.
 
 .. example:: Induction scheme for tree and forest
 
@@ -1015,10 +1029,11 @@ Generation of induction principles with ``Scheme``
 
     .. coqtop:: in
 
-     Inductive tree : Set := node : A -> forest -> tree
+     Inductive tree : Set :=
+     | node : A -> forest -> tree
      with forest : Set :=
-         leaf : B -> forest
-       | cons : tree -> forest -> forest.
+     | leaf : B -> forest
+     | cons : tree -> forest -> forest.
 
     .. coqtop:: all
 
@@ -1044,10 +1059,11 @@ Generation of induction principles with ``Scheme``
 
    .. coqtop:: in
 
-      Inductive odd : nat -> Prop := oddS : forall n:nat, even n -> odd (S n)
+      Inductive odd : nat -> Prop :=
+      | oddS : forall n : nat, even n -> odd (S n)
       with even : nat -> Prop :=
-        | evenO : even 0
-        | evenS : forall n:nat, odd n -> even (S n).
+      | evenO : even 0
+      | evenS : forall n : nat, odd n -> even (S n).
 
   The following command generates a powerful elimination principle:
 
@@ -1065,6 +1081,35 @@ Generation of induction principles with ``Scheme``
   The type of `even_odd` shares the same premises but the conclusion is
   `forall n : nat, even n -> P0 n`.
 
+.. _scheme_example:
+
+   .. example:: `Scheme` commands with various :n:`@scheme_type`\s
+
+      Let us demonstrate the difference between the Scheme commands.
+
+      .. coqtop:: in
+
+         Unset Elimination Schemes.
+
+         Inductive Nat :=
+         | z : Nat
+         | s : Nat -> Nat.
+
+         (* dependent, recursive *)
+         Scheme Induction for Nat Sort Set.
+         About Nat_rec.
+
+         (* non-dependent, recursive *)
+         Scheme Minimality for Nat Sort Set.
+         About Nat_rec_nodep.
+
+         (* dependent, non-recursive *)
+         Scheme Elimination for Nat Sort Set.
+         About Nat_case.
+
+         (* non-dependent, non-recursive *)
+         Scheme Case for Nat Sort Set.
+         About Nat_case_nodep.
 
 Automatic declaration of schemes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1319,7 +1364,7 @@ generalized induction hypothesis as argument and cleaning the subgoals
 with respect to equalities. Its most important instantiations
 are :tacn:`dependent induction` and :tacn:`dependent destruction` that do induction or
 simply case analysis on the generalized hypothesis. For example we can
-redo what we’ve done manually with dependent destruction:
+redo what we've done manually with dependent destruction:
 
 .. coqtop:: in
 
@@ -1374,7 +1419,7 @@ dismissed because ``S n <> 0``.
 A larger example
 ~~~~~~~~~~~~~~~~
 
-Let’s see how the technique works with induction on inductive
+Let's see how the technique works with induction on inductive
 predicates on a real example. We will develop an example application
 to the theory of simply-typed lambda-calculus formalized in a
 dependently-typed style:
@@ -1443,7 +1488,7 @@ Once we have this datatype we want to do proofs on it, like weakening:
    Lemma weakening : forall G D tau, term (G ; D) tau ->
                      forall tau', term (G , tau' ; D) tau.
 
-The problem here is that we can’t just use induction on the typing
+The problem here is that we can't just use induction on the typing
 derivation because it will forget about the ``G ; D`` constraint appearing
 in the instance. A solution would be to rewrite the goal as:
 

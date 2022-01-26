@@ -1224,14 +1224,6 @@ show_zify: [
 | [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec" | "Spec" ]  TAG Micromega
 ]
 
-scheme_kind: [
-| DELETE "Induction" "for" smart_global "Sort" sort_family
-| DELETE "Minimality" "for" smart_global "Sort" sort_family
-| DELETE "Elimination" "for" smart_global "Sort" sort_family
-| DELETE "Case" "for" smart_global "Sort" sort_family
-| [ "Induction" | "Minimality" | "Elimination" | "Case" ] "for" smart_global "Sort" sort_family
-]
-
 command: [
 | REPLACE "Print" printable
 | WITH printable

@@ -1016,13 +1016,15 @@ let vernac_cofixpoint ~atts ~pm discharge l =
 
 let vernac_scheme l =
   if Dumpglob.dump () then
-    List.iter (fun (lid, s) ->
-               Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
-               match s with
-               | InductionScheme (_, r, _)
-               | CaseScheme (_, r, _)
-               | EqualityScheme r -> dump_global r) l;
-  Indschemes.do_scheme l
+    List.iter (fun (lid, sch) ->
+      Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
+      dump_global sch.sch_qualid) l;
+  Indschemes.do_scheme (Global.env ()) l
+
+let vernac_scheme_equality id =
+  if Dumpglob.dump () then
+    dump_global id;
+  Indschemes.do_scheme_equality id
 
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
@@ -2231,6 +2233,10 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_scheme l)
+  | VernacSchemeEquality id ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_scheme_equality id)
   | VernacCombinedScheme (id, l) ->
     vtdefault(fun () ->
         unsupported_attributes atts;

@@ -390,31 +390,17 @@ let pr_binders_arg =
 let pr_and_type_binders_arg bl =
   pr_binders_arg bl
 
-let pr_onescheme (idop,schem) =
-  match schem with
-  | InductionScheme (dep,ind,s) ->
-    (match idop with
-     | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
-     | None -> spc ()
-    ) ++
-    hov 0 ((if dep then keyword "Induction for" else keyword "Minimality for")
-           ++ spc() ++ pr_smart_global ind) ++ spc() ++
-    hov 0 (keyword "Sort" ++ spc() ++ Sorts.pr_sort_family s)
-  | CaseScheme (dep,ind,s) ->
-    (match idop with
-     | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
-     | None -> spc ()
-    ) ++
-    hov 0 ((if dep then keyword "Elimination for" else keyword "Case for")
-           ++ spc() ++ pr_smart_global ind) ++ spc() ++
-    hov 0 (keyword "Sort" ++ spc() ++ Sorts.pr_sort_family s)
-  | EqualityScheme ind ->
-    (match idop with
-     | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
-     | None -> spc()
-    ) ++
-    hov 0 (keyword "Equality for")
-    ++ spc() ++ pr_smart_global ind
+let pr_onescheme (idop, {sch_type; sch_qualid; sch_sort}) =
+  let str_identifier = match idop with
+    | Some id -> pr_lident id ++ str " :="
+    | None -> str "" in
+  let str_scheme = match sch_type with
+    | SchemeInduction ->  keyword "Induction for"
+    | SchemeMinimality ->  keyword "Minimality for"
+    | SchemeElimination ->  keyword "Elimination for"
+    | SchemeCase -> keyword "Case for" in
+  hov 0 str_identifier ++ spc () ++ hov 0 (str_scheme ++ spc() ++ pr_smart_global sch_qualid)
+    ++ spc () ++ hov 0 (keyword "Sort" ++ spc() ++ Sorts.pr_sort_family sch_sort)
 
 let begin_of_inductive = function
   | [] -> 0
@@ -908,6 +894,10 @@ let pr_vernac_expr v =
     return (
       hov 2 (keyword "Scheme" ++ spc() ++
              prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onescheme l)
+    )
+  | VernacSchemeEquality id ->
+    return (
+      hov 2 (keyword "Scheme Equality for" ++ spc() ++ pr_or_by_notation pr_qualid id)
     )
   | VernacCombinedScheme (id, l) ->
     return (

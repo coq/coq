@@ -214,10 +214,18 @@ type proof_end =
   (*                         name in `Save ident` when closing goal *)
   | Proved of opacity_flag * lident option
 
-type scheme =
-  | InductionScheme of bool * qualid or_by_notation * Sorts.family
-  | CaseScheme of bool * qualid or_by_notation * Sorts.family
-  | EqualityScheme of qualid or_by_notation
+type scheme_type =
+  | SchemeInduction
+  | SchemeMinimality
+  | SchemeElimination
+  | SchemeCase
+
+  (* The data of a Scheme decleration *)
+type scheme = {
+  sch_type : scheme_type ;
+  sch_qualid : Libnames.qualid Constrexpr.or_by_notation ;
+  sch_sort : Sorts.family ;
+}
 
 type section_subset_expr =
   | SsEmpty
@@ -342,6 +350,7 @@ type nonrec vernac_expr =
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list
+  | VernacSchemeEquality of Libnames.qualid Constrexpr.or_by_notation
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
   | VernacConstraint of univ_constraint_expr list
