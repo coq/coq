@@ -234,7 +234,8 @@ Rewriting with Leibniz and setoid equality
    :undocumented:
 
 .. tacn:: rewrite_db @ident {? in @ident }
-   :undocumented:
+
+   Equivalent to :tacn:`rewrite_strat` :n:`(topdown (hints @ident)) in @ident`
 
 .. tacn:: replace @one_term__from with @one_term__to {? @occurrences } {? by @ltac_expr3 }
           replace {? {| -> | <- } } @one_term__from {? @occurrences }
