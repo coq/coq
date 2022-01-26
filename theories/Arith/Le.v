@@ -30,7 +30,7 @@ Notation le_antisym := Nat.le_antisymm (only parsing).
 Notation le_0_n := Nat.le_0_l (only parsing).  (* 0 <= n *)
 #[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.nle_succ_0 instead.")]
 Notation le_Sn_0 := Nat.nle_succ_0 (only parsing).  (* ~ S n <= 0 *)
-#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_0_r instead.")]
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use the bidirectional version Nat.le_0_r (with symmetry of equality) instead.")]
 Notation le_n_0_eq := Arith_prebase.le_n_0_eq_stt.
 
 (** * Properties of [le] w.r.t successor *)
@@ -77,6 +77,6 @@ Notation le_elim_rel := le_elim_rel_stt.
 Notation le_O_n := Nat.le_0_l (only parsing).
 #[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.nle_succ_0 instead.")]
 Notation le_Sn_O := Nat.nle_succ_0 (only parsing).
-#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use Nat.le_0_r instead.")]
+#[deprecated(since="8.16",note="The Arith.Le file is obsolete. Use the bidirectional version Nat.le_0_r (with symmetry of equality) instead.")]
 Notation le_n_O_eq := Arith_prebase.le_n_0_eq_stt.
 (* end hide *)
