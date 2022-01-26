@@ -984,7 +984,7 @@ Generation of induction principles with ``Scheme``
       | Set
       | Type
 
-   Generates an :term:`induction principles <induction principle>` with given
+   Generates :term:`induction principles <induction principle>` with given
    :n:`scheme_type`\s and :n:`scheme_sort`\s for an inductive type. In the case
    where the inductive definition is a mutual inductive definition, the
    :n:`with` clause is used to generate a mutually recursive inductive scheme
@@ -1087,7 +1087,7 @@ Generation of induction principles with ``Scheme``
 
       Let us demonstrate the difference between the Scheme commands.
 
-      .. coqtop:: in
+      .. coqtop:: all
 
          Unset Elimination Schemes.
 
