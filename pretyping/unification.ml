@@ -499,7 +499,6 @@ let isApp_or_Proj sigma c =
 
 type unirec_flags = {
   at_top: bool;
-  with_types: bool;
   with_cs : bool;
 }
 
@@ -624,32 +623,6 @@ let subst_defined_metas_evars sigma (bl,el) c =
     | _ -> Constr.map substrec c
   in try Some (EConstr.of_constr (substrec c)) with Not_found -> None
 
-let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
-  match subst_defined_metas_evars sigma (metasubst,[]) tyM with
-  | None -> sigma
-  | Some m ->
-  match subst_defined_metas_evars sigma (metasubst,[]) tyN with
-  | None -> sigma
-  | Some n ->
-    if is_ground_term sigma m && is_ground_term sigma n then
-      match infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
-      | Some sigma -> sigma
-      | None -> error_cannot_unify env sigma (m,n)
-    else sigma
-
-let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
-  match subst_defined_metas_evars sigma (metasubst,[]) tyM with
-  | None -> UnivProblem.Set.empty
-  | Some m ->
-  match subst_defined_metas_evars sigma (metasubst,[]) tyN with
-  | None -> UnivProblem.Set.empty
-  | Some n ->
-    if is_ground_term sigma m && is_ground_term sigma n then
-      match infer_conv_ustate ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
-      | Some uprob -> uprob
-      | None -> error_cannot_unify env sigma (m,n)
-    else UnivProblem.Set.empty
-
 let rec is_neutral env sigma ts t =
   let (f, l) = decompose_app_vect sigma t in
     match EConstr.kind sigma f with
@@ -732,28 +705,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         | Meta k1, Meta k2 ->
             if Int.equal k1 k2 then substn else
             let stM,stN = extract_instance_status pb in
-            let sigma =
-              if opt.with_types && flags.check_applied_meta_types then
-                let tyM = Typing.meta_type curenv sigma k1 in
-                let tyN = Typing.meta_type curenv sigma k2 in
-                let l, r = if k2 < k1 then tyN, tyM else tyM, tyN in
-                  check_compatibility curenv CUMUL flags substn l r
-              else sigma
-            in
             if k2 < k1 then sigma,(k1,cN,stN)::metasubst,evarsubst
             else sigma,(k2,cM,stM)::metasubst,evarsubst
         | Meta k, _
             when not (occur_metavariable sigma k cN) (* helps early trying alternatives *) ->
-            let sigma =
-              if opt.with_types && flags.check_applied_meta_types then
-                (try
-                   let tyM = Typing.meta_type curenv sigma k in
-                   let tyN = get_type_of curenv ~lax:true sigma cN in
-                     check_compatibility curenv CUMUL flags substn tyN tyM
-                 with RetypeError _ ->
-                   (* Renounce, maybe metas/evars prevents typing *) sigma)
-              else sigma
-            in
             (* Here we check that [cN] does not contain any local variables *)
             if Int.equal nb 0 then
               sigma,(k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
@@ -764,16 +719,6 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             else error_cannot_unify_local curenv sigma (m,n,cN)
         | _, Meta k
             when not (occur_metavariable sigma k cM) (* helps early trying alternatives *) ->
-          let sigma =
-            if opt.with_types && flags.check_applied_meta_types then
-              (try
-                 let tyM = get_type_of curenv ~lax:true sigma cM in
-                 let tyN = Typing.meta_type curenv sigma k in
-                   check_compatibility curenv CUMUL flags substn tyM tyN
-               with RetypeError _ ->
-                 (* Renounce, maybe metas/evars prevents typing *) sigma)
-            else sigma
-          in
             (* Here we check that [cM] does not contain any local variables *)
             if Int.equal nb 0 then
               (sigma,(k,cM,fst (extract_instance_status pb))::metasubst,evarsubst)
@@ -819,10 +764,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 
         | Lambda (na,t1,c1), Lambda (__,t2,c2) ->
             unirec_rec (push (na,t1) curenvnb) CONV {opt with at_top = true}
-              (unirec_rec curenvnb CONV {opt with at_top = true; with_types = false} substn t1 t2) c1 c2
+              (unirec_rec curenvnb CONV {opt with at_top = true} substn t1 t2) c1 c2
         | Prod (na,t1,c1), Prod (_,t2,c2) ->
             unirec_rec (push (na,t1) curenvnb) pb {opt with at_top = true}
-              (unirec_rec curenvnb CONV {opt with at_top = true; with_types = false} substn t1 t2) c1 c2
+              (unirec_rec curenvnb CONV {opt with at_top = true} substn t1 t2) c1 c2
         | LetIn (_,a,_,c), _ -> unirec_rec curenvnb pb opt substn (subst1 a c) cN
         | _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb opt substn cM (subst1 a c)
 
@@ -849,7 +794,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             is_eta_constructor_app curenv sigma flags.modulo_delta f1 l1 cN ->
           (try
              let l1', l2' = eta_constructor_app curenv sigma f1 l1 cN in
-             let opt' = {opt with at_top = true; with_cs = false} in
+             let opt' = {at_top = true; with_cs = false} in
                Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
              match EConstr.kind sigma cN with
@@ -863,7 +808,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             is_eta_constructor_app curenv sigma flags.modulo_delta f2 l2 cM ->
           (try
              let l2', l1' = eta_constructor_app curenv sigma f2 l2 cM in
-             let opt' = {opt with at_top = true; with_cs = false} in
+             let opt' = {at_top = true; with_cs = false} in
                Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
              match EConstr.kind sigma cM with
@@ -876,7 +821,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         | Case (ci1, u1, pms1, p1, iv1, c1, cl1), Case (ci2, u2, pms2, p2, iv2, c2, cl2) ->
             (try
              let () = if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then error_cannot_unify curenv sigma (cM,cN) in
-             let opt' = {opt with at_top = true; with_types = false} in
+             let opt' = {opt with at_top = true} in
              let substn = Array.fold_left2 (unirec_rec curenvnb CONV ~nargs:0 opt') substn pms1 pms2 in
              let (ci1, _, _, p1, _, c1, cl1) = EConstr.annotate_case env sigma (ci1, u1, pms1, p1, iv1, c1, cl1) in
              let unif opt substn (ctx1, c1) (_, c2) =
@@ -892,7 +837,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         | Fix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(_,tl2,bl2)) when
                Int.equal i1 i2 && Array.equal Int.equal ln1 ln2 ->
             (try
-             let opt' = {opt with at_top = true; with_types = false} in
+             let opt' = {opt with at_top = true} in
              let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
                Array.fold_left2 (unirec_rec curenvnb' CONV opt' ~nargs:0)
                (Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn tl1 tl2) bl1 bl2
@@ -902,7 +847,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         | CoFix (i1,(lna1,tl1,bl1)), CoFix (i2,(_,tl2,bl2)) when
                Int.equal i1 i2 ->
             (try
-             let opt' = {opt with at_top = true; with_types = false} in
+             let opt' = {opt with at_top = true} in
              let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
                Array.fold_left2 (unirec_rec curenvnb' CONV opt' ~nargs:0)
                (Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn tl1 tl2) bl1 bl2
@@ -966,19 +911,19 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       in
       let f1, l1 = expand_proj f1 f2 l1 in
       let f2, l2 = expand_proj f2 f1 l2 in
-      let opta = {opt with at_top = true; with_types = false} in
-      let optf = {opt with at_top = true; with_types = true} in
+      let opta = {opt with at_top = true} in
+      let optf = {opt with at_top = true} in
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
         if Array.length l1 == 0 then error_cannot_unify (fst curenvnb) sigma (cM,cN)
         else
           Array.fold_left2 (unirec_rec curenvnb CONV opta ~nargs:0)
             (unirec_rec curenvnb CONV optf substn f1 f2 ~nargs:(Array.length l1)) l1 l2
     with ex when precatchable_exception ex ->
-    try reduce curenvnb pb {opt with with_types = false} substn cM cN
+    try reduce curenvnb pb opt substn cM cN
     with ex when precatchable_exception ex ->
     try canonical_projections curenvnb pb opt cM cN substn
     with ex when precatchable_exception ex ->
-    expand curenvnb pb {opt with with_types = false} substn cM f1 l1 cN f2 l2
+    expand curenvnb pb opt substn cM f1 l1 cN f2 l2
 
   and unify_same_proj (curenv, nb as curenvnb) cv_pb opt substn c1 c2 =
     let substn = unirec_rec curenvnb CONV opt substn c1 c2 in
@@ -1045,19 +990,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       | None -> (* some undefined Metas in cN *) None
       | Some n1 ->
          (* No subterm restriction there, too much incompatibilities *)
-         let uprob =
-           if opt.with_types then
-             try (* Ensure we call conversion on terms of the same type *)
-               let tyM = get_type_of curenv ~lax:true sigma m1 in
-               let tyN = get_type_of curenv ~lax:true sigma n1 in
-               check_compatibility_ustate curenv CUMUL flags substn tyM tyN
-             with RetypeError _ ->
-               (* Renounce, maybe metas/evars prevents typing *) UnivProblem.Set.empty
-           else UnivProblem.Set.empty
-         in
         match infer_conv_ustate ~pb ~ts:convflags curenv sigma m1 n1 with
-        | Some uprob' ->
-          let uprob = UnivProblem.Set.union uprob uprob' in
+        | Some uprob ->
           begin match Evd.add_universe_constraints sigma uprob with
           | sigma -> Some (sigma, metasubst, evarsubst)
           | exception (Univ.UniverseInconsistency _ | UniversesDiffer) -> None
@@ -1140,7 +1074,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           (sigma,[],List.length bs) bs
       in
       try
-      let opt' = {opt with with_types = false} in
+      let opt' = opt in
       let fold u1 u s = unirec_rec curenvnb pb opt' s u1 (substl ks u) in
       let foldl acc l1 l2 =
         try List.fold_right2 fold l1 l2 acc
@@ -1158,7 +1092,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   in
 
   debug_tactic_unification (fun () -> str "Starting unification");
-  let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
+  let opt = { at_top = conv_at_top; with_cs = true } in
   try
   let res =
     if subterm_restriction opt flags ||
