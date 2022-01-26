@@ -339,7 +339,7 @@ let adjust_meta_source evd mv = function
           | None -> None)
         | _ -> None
       else None in
-    let id = try List.find_map f (Evd.meta_list evd) with Not_found -> id in
+    let id = try List.find_map f (Evd.Metamap.bindings (Evd.meta_list evd)) with Not_found -> id in
     loc,Evar_kinds.VarInstance id
   | src -> src
 
@@ -486,7 +486,7 @@ let explain_no_such_bound_variable mvl {CAst.v=id;loc} =
 
 let meta_with_name evd ({CAst.v=id} as lid) =
   let na = Name id in
-  let fold (l1, l2 as l) (n, clb) =
+  let fold n clb (l1, l2 as l) =
     let (na',def) = match clb with
     | Cltyp (na, _) -> (na, false)
     | Clval (na, _, _) -> (na, true)
@@ -494,17 +494,17 @@ let meta_with_name evd ({CAst.v=id} as lid) =
     if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
     else l
   in
-  let (mvl, mvnodef) = List.fold_left fold ([], []) (Evd.meta_list evd) in
-  match mvnodef, mvl with
+  let (mvl, mvnodef) = Evd.Metamap.fold fold (Evd.meta_list evd) ([], []) in
+  match List.rev mvnodef, List.rev mvl with
     | _,[]  ->
-      let fold l (n, clb) =
+      let fold n clb l =
         let na = match clb with
           | Cltyp (na, _) -> na
           | Clval (na, _, _) -> na
         in
         if na != Anonymous then Name.get_id na :: l else l
       in
-      let mvl = List.fold_left fold [] (Evd.meta_list evd) in
+      let mvl = Evd.Metamap.fold fold (Evd.meta_list evd) [] in
       explain_no_such_bound_variable mvl lid
     | (n::_,_|_,n::_) ->
         n

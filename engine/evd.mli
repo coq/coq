@@ -553,7 +553,7 @@ val evars_of_named_context : evar_map -> (econstr, etypes) Context.Named.pt -> E
 val evars_of_filtered_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 (** Metas *)
-val meta_list : evar_map -> (metavariable * clbinding) list
+val meta_list : evar_map -> clbinding Metamap.t
 val meta_defined : evar_map -> metavariable -> bool
 
 val meta_value     : evar_map -> metavariable -> econstr

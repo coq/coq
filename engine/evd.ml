@@ -376,9 +376,6 @@ module Metaset = Int.Set
 
 module Metamap = Int.Map
 
-let metamap_to_list m =
-  Metamap.fold (fun n v l -> (n,v)::l) m []
-
 (*************************)
 (* Unification state *)
 
@@ -1256,14 +1253,14 @@ let set_metas evd metas = {
   extras = evd.extras;
 }
 
-let meta_list evd = metamap_to_list evd.metas
+let meta_list evd = evd.metas
 
 let undefined_metas evd =
-  let filter = function
-    | (n,Clval(_,_,typ)) -> None
-    | (n,Cltyp (_,typ))  -> Some n
+  let fold n b accu = match b with
+  | Clval(_,_,typ) -> accu
+  | Cltyp (_,typ)  -> n :: accu
   in
-  let m = List.map_filter filter (meta_list evd) in
+  let m = Metamap.fold fold evd.metas [] in
   List.sort Int.compare m
 
 let map_metas_fvalue f evd =

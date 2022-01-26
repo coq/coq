@@ -1498,11 +1498,11 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
 
   let check_types evd =
     let metas = Evd.meta_list evd in
-    let eqns = List.fold_left (fun acc (mv, b) ->
+    let eqns = Metamap.fold (fun mv b acc ->
       match b with
       | Clval (n, (t, (c, TypeNotProcessed)), v) -> (mv, c, t.rebus) :: acc
-      | _ -> acc) [] metas
-    in w_merge_rec evd [] [] eqns
+      | _ -> acc) metas []
+    in w_merge_rec evd [] [] (List.rev eqns)
   in
   let res =  (* merge constraints *)
     w_merge_rec evd (order_metas metas)
