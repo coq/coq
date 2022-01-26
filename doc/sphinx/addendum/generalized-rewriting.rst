@@ -968,3 +968,7 @@ on success. It is stronger than the tactic ``fold``.
    .. coqtop:: none
 
       Abort.
+
+.. tacn:: rewrite_db @ident {? in @ident }
+
+   Equivalent to :tacn:`rewrite_strat` :n:`(topdown (hints @ident)) in @ident`
