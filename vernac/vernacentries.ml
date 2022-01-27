@@ -1475,7 +1475,7 @@ let warn_create_hint_db_no_transparent_state =
 let vernac_create_hintdb ~module_local id flags =
   let interp_var_opacity opt o =
     match opt with
-    | Some o -> user_err Pp.(str"Multiple specifications of the 'Variables' flag")
+    | Some o -> user_err Pp.(str"Multiple specifications of the 'Variables' flag.")
     | None ->
       match o with
       | Opaque -> Names.Id.Pred.empty
@@ -1483,7 +1483,7 @@ let vernac_create_hintdb ~module_local id flags =
   in
   let interp_cst_opacity opt o =
     match opt with
-    | Some o -> user_err Pp.(str"Multiple specifications of the 'Constants' flag")
+    | Some o -> user_err Pp.(str"Multiple specifications of the 'Constants' flag.")
     | None ->
       match o with
       | Opaque -> Names.Cpred.empty
@@ -1501,7 +1501,7 @@ let vernac_create_hintdb ~module_local id flags =
         Option.default false discriminated, vars, csts)
     | Discriminated :: flags ->
       begin match discriminated with
-      | Some _ -> user_err Pp.(str"Multiple specifications of the 'discriminated' flag")
+      | Some _ -> user_err Pp.(str"Multiple specifications of the 'discriminated' flag.")
       | None -> interp_flags (Some true, vars, csts) flags
       end
     | Variables o :: flags ->
