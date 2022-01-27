@@ -332,6 +332,8 @@ let decompose_prod_n_assum sigma n c =
   in
   prodec_rec Context.Rel.empty n c
 
+let prod_assum sigma t = fst (decompose_prod_assum sigma t)
+
 let existential_type = Evd.existential_type
 
 let lift n c = of_constr (Vars.lift n (unsafe_to_constr c))

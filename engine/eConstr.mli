@@ -273,6 +273,8 @@ val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
      @raise UserError if the term doesn't have enough lambdas/letins. *)
 val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
+val prod_assum : Evd.evar_map -> t -> rel_context
+
 val compose_lam : (Name.t Context.binder_annot * t) list -> t -> t
 [@@ocaml.deprecated "Use [it_mkLambda] instead."]
 
