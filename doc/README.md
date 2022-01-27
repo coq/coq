@@ -47,6 +47,8 @@ Nix users should get the correct development environment to build the
 HTML documentation from Coq's [`default.nix`](../default.nix) (note this
 doesn't include the LaTeX packages needed to build the full documentation).
 
+You can check the dependencies using the `doc/tools/coqrst/checkdeps.py` script.
+
 ### Other formats
 
 To produce the documentation in PDF and PostScript formats, the following
@@ -82,61 +84,36 @@ environment variables to determine the locale; see the
 Compilation
 -----------
 
-To produce all documentation about Coq in all formats, just run:
+The current documentation targets are:
 
-    ./configure           # (if you hadn't already)
-    make doc
+- `make refman-html`
+  Build the HTML reference manual on `_build/default/doc/refman-html`
 
+- `make refman-pdf`
+  Build the PDF reference manual on `_build/default/doc/refman-pdf`
 
-Alternatively, you can use some specific targets:
+- `make stdlib-html`
+  Build the documentation for Coq's standard library `_build/default/doc/stdlib/html`
 
-- `make doc-ps`
-  to produce all PostScript documents
-
-- `make doc-pdf`
-  to produce all PDF documents
-
-- `make doc-html`
-  to produce all HTML documents
-
-- `make refman`
-  to produce the HTML and PDF versions of the reference manual
-
-- `make refman-{html,pdf}`
-  to produce only one format of the reference manual
-
-- `make doc-stdlib`
-  to produce all formats of the Coq standard library
-
-
-Also note the `-with-doc yes` option of `./configure` to enable the
-build of the documentation as part of the default make target.
+- `make apidoc`
+  Build the documentation for Coq's standard library `_build/default/_doc/_html`
 
 To build the Sphinx documentation without stopping at the first
-warning with the legacy Makefile, set `SPHINXWARNERROR` to 0 as such:
+warning, change the value of the `SPHINXWARNOPT` variable (default is
+`-W`). The following will build the Sphinx documentation without
+stopping at the first warning, and store all the warnings in the file
+`/tmp/warn.log`:
 
 ```
-SPHINXWARNERROR=0 make refman-html
-```
-
-To do the same with the Dune build system, change the value of the
-`SPHINXWARNOPT` variable (default is `-W`). The following will build
-the Sphinx documentation without stopping at the first warning, and
-store all the warnings in the file `/tmp/warn.log`:
-
-```
-SPHINXWARNOPT="-w/tmp/warn.log" dune build @refman-html
+SPHINXWARNOPT="-w/tmp/warn.log" make refman-html
 ```
 
 Installation
 ------------
 
-To install all produced documents, do:
+The produced documents are stored in the described directories above,
+you can install them just by copying the contents to the desired
+directory.
 
-    make install-doc
-
-This will install the documentation in `/usr/share/doc/coq` unless you
-specify another value through the `-docdir` option of `./configure` or
-the `DOCDIR` environment variable. Note that `DOCDIR` controls the
-root of the documentation, that is to say, in the example above, the
-root is `/usr/share/doc`.
+In the future, the `coq-doc` and `coq-stdlib` opam packages will
+install the documentation automatically.

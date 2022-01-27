@@ -34,11 +34,6 @@ type t =
   (** native dynlink enabled [only relevant to coq_makefile] *)
   ; browser : string option
   (** override default browser command [for CoqIDE] *)
-  ; withdoc : bool
-  (** Build documentation [controls makefile variable]  *)
-  ; bin_annot : bool
-  ; annot : bool
-  (** OCaml annot options [only relevant to coq_makefile] *)
   ; bytecodecompiler : bool
   (** Enable/disable Coq's VM *)
   ; nativecompiler : nativecompiler
