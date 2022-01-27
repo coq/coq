@@ -149,6 +149,9 @@ val type1 : t
 val applist : t * t list -> t
 val applistc : t -> t list -> t
 
+val it_mkProd : t -> (Name.t Context.binder_annot * t) list -> t
+val it_mkLambda : t -> (Name.t Context.binder_annot * t) list -> t
+
 val mkProd_or_LetIn : rel_declaration -> t -> t
 val mkLambda_or_LetIn : rel_declaration -> t -> t
 val it_mkProd_or_LetIn : t -> rel_context -> t

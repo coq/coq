@@ -906,6 +906,9 @@ let mkNamedLambda_or_LetIn sigma decl c =
     | LocalAssum (id,t) -> mkNamedLambda sigma id t c
     | LocalDef (id,b,t) -> mkNamedLetIn sigma id b t c
 
+let it_mkProd init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
+let it_mkLambda init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
+
 let it_mkProd_or_LetIn t ctx = List.fold_left (fun c d -> mkProd_or_LetIn d c) t ctx
 let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d c) t ctx
 
