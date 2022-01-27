@@ -55,6 +55,7 @@ CI_TARGETS= \
     ci-metacoq \
     ci-mtac2 \
     ci-oddorder \
+    ci-paco \
     ci-paramcoq \
     ci-perennial \
     ci-quickchick \
