@@ -271,16 +271,6 @@ let decompose_lam_n_decls sigma n =
   in
   lamdec_rec Context.Rel.empty n
 
-let lamn n env b =
-  let rec lamrec = function
-    | (0, env, b)        -> b
-    | (n, ((v,t)::l), b) -> lamrec (n-1,  l, mkLambda (v,t,b))
-    | _ -> assert false
-  in
-  lamrec (n,env,b)
-
-let compose_lam l b = lamn (List.length l) l b
-
 let rec to_lambda sigma n prod =
   if Int.equal n 0 then
     prod
@@ -908,6 +898,8 @@ let mkNamedLambda_or_LetIn sigma decl c =
 
 let it_mkProd init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
 let it_mkLambda init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
+
+let compose_lam l b = it_mkLambda b l
 
 let it_mkProd_or_LetIn t ctx = List.fold_left (fun c d -> mkProd_or_LetIn d c) t ctx
 let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d c) t ctx

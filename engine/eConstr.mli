@@ -237,6 +237,8 @@ val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
 val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
 val compose_lam : (Name.t Context.binder_annot * t) list -> t -> t
+[@@ocaml.deprecated "Use [it_mkLambda] instead."]
+
 val to_lambda : Evd.evar_map -> int -> t -> t
 
 val decompose_prod : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
