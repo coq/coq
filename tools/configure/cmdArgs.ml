@@ -27,9 +27,6 @@ type t = {
   arch : string option;
   natdynlink : bool;
   browser : string option;
-  withdoc : bool;
-  bin_annot : bool;
-  annot : bool;
   bytecodecompiler : bool;
   nativecompiler : nativecompiler;
   coqwebsite : string;
@@ -52,9 +49,6 @@ let default_prefs = {
   arch = None;
   natdynlink = true;
   browser = None;
-  withdoc = false;
-  bin_annot = false;
-  annot = false;
   bytecodecompiler = true;
   nativecompiler =
     if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
@@ -115,12 +109,6 @@ let args_options = Arg.align [
     "(yes|no) Use dynamic loading of native code or not";
   "-browser", arg_string_option (fun p browser -> { p with browser }),
     "<command> Use <command> to open URL %s";
-  "-with-doc", arg_bool (fun p withdoc -> { p with withdoc }),
-    "(yes|no) Compile the documentation or not";
-  "-annot", arg_set (fun p -> { p with annot = true }),
-    " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
-  "-bin-annot", arg_set (fun p -> { p with bin_annot = true }),
-    " Dumps ml binary annotation files while compiling Coq (e.g. for Merlin)";
   "-bytecode-compiler", arg_bool (fun p bytecodecompiler -> { p with bytecodecompiler }),
     "(yes|no) Enable Coq's bytecode reduction machine (VM)";
   "-native-compiler", arg_native (fun p nativecompiler -> { p with nativecompiler }),

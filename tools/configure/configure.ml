@@ -8,13 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+[@@@ocaml.warning "+a"]
+
 (**********************************)
 (**  Configuration script for Coq *)
 (**********************************)
 open Printf
 open Conf
 open Util
-open CmdArgs
+(* cprintf is shadowed here... *)
+open! CmdArgs
 open CmdArgs.Prefs
 
 let (/) = Filename.concat
@@ -29,14 +32,6 @@ type camlexec = { mutable find : string }
 let camlexec = { find = "ocamlfind" }
 
 let reset_caml_find c o = c.find <- o
-
-let coq_annot_flag prefs = if prefs.annot then "-annot" else ""
-let coq_bin_annot_flag prefs = if prefs.bin_annot then "-bin-annot" else ""
-
-(* This variable can be overridden only for debug purposes, use with
-   care. *)
-let coq_safe_string = "-safe-string"
-let coq_strict_sequence = "-strict-sequence"
 
 (* Query for the architecture *)
 let arch prefs = arch prefs.arch
@@ -84,7 +79,7 @@ module CamlConf = struct
     }
 end
 
-let resolve_caml prefs =
+let resolve_caml () =
   let () =
     try reset_caml_find camlexec (which camlexec.find)
     with Not_found ->
@@ -102,7 +97,7 @@ let resolve_caml prefs =
     { CamlConf.camlbin; caml_version; camllib; findlib_version }
 
 (** Caml version as a list of ints [4;0;1] *)
-let caml_version_nums { CamlConf.caml_version } =
+let caml_version_nums { CamlConf.caml_version; _ } =
   generic_version_nums ~name:"the OCaml compiler" caml_version
 
 let check_caml_version prefs caml_version caml_version_nums =
@@ -112,7 +107,7 @@ let check_caml_version prefs caml_version caml_version_nums =
     let () = cprintf prefs "Your version of OCaml is %s." caml_version in
     die "You need OCaml 4.09.0 or later."
 
-let check_findlib_version prefs { CamlConf.findlib_version } =
+let check_findlib_version prefs { CamlConf.findlib_version; _ } =
   let findlib_version_nums = generic_version_nums ~name:"findlib" findlib_version in
   if findlib_version_nums >= [1;8;1] then
     cprintf prefs "You have OCamlfind %s. Good!" findlib_version
@@ -145,8 +140,8 @@ let coq_warn_error prefs =
     else ""
 
 (* Flags used to compile Coq and plugins (via coq_makefile) *)
-let caml_flags coq_annot_flag coq_bin_annot_flag =
-  Printf.sprintf "-thread -rectypes %s %s %s %s %s" coq_warnings coq_annot_flag coq_bin_annot_flag coq_safe_string coq_strict_sequence
+let caml_flags =
+  Printf.sprintf "-thread -rectypes -bin-annot -strict-sequence %s" coq_warnings
 
 (* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
 let coq_caml_flags = coq_warn_error
@@ -172,7 +167,7 @@ let check_native prefs camlenv =
   then let () = msg_no_dynlink_cmxa prefs in raise Not_found
   else
     let () =
-      let { CamlConf.caml_version } = camlenv in
+      let { CamlConf.caml_version; _ } = camlenv in
       if version <> caml_version then
         warn "Native and bytecode compilers do not have the same version!"
     in cprintf prefs "You have native-code compilation. Good!"
@@ -203,19 +198,6 @@ let check_for_zarith prefs =
       cprintf prefs "You have the Zarith library %s installed. Good!" zarith_version
     else
       die ("Zarith version 1.11 is required, you have " ^ zarith_version)
-
-(** * Documentation : do we have latex, hevea, ... *)
-
-let check_sphinx_deps () =
-  ignore (run (which "python3") ["doc/tools/coqrst/checkdeps.py"])
-
-let check_doc () =
-  let err s =
-    die (sprintf "A documentation build was requested, but %s was not found." s);
-  in
-  if not (program_in_path "python3") then err "python3";
-  if not (program_in_path "sphinx-build") then err "sphinx-build";
-  check_sphinx_deps ()
 
 (** * Installation directories : bindir, libdir, mandir, docdir, etc *)
 
@@ -382,8 +364,8 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink browser =
-  let { CamlConf.caml_version; camlbin; camllib } = camlenv in
+let print_summary prefs arch camlenv install_dirs browser =
+  let { CamlConf.caml_version; camlbin; camllib; _ } = camlenv in
   let pr s = printf s in
   pr "\n";
   pr "  Architecture                : %s\n" arch;
@@ -391,15 +373,11 @@ let print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink br
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
-  if best_compiler = "opt" then
-    pr "  Native dynamic link support : %B\n" hasnatdynlink;
-  pr "  Documentation               : %s\n"
-    (if prefs.withdoc then "All" else "None");
   pr "  Web browser                 : %s\n" browser;
   pr "  Coq web site                : %s\n" prefs.coqwebsite;
   pr "  Bytecode VM enabled         : %B\n" prefs.bytecodecompiler;
   pr "  Native Compiler enabled     : %s\n\n" (pr_native prefs.nativecompiler);
-  (pr "  Paths where installation is expected:\n";
+  (pr "  Paths where installation is expected by Coq Makefile:\n";
    List.iter
      (fun ((_,msg),(dir,_)) -> pr "  - %s is expected in %s\n" msg (esc dir))
      install_dirs);
@@ -408,22 +386,11 @@ let print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink br
   pr "*Warning* To compile the system for a new architecture\n";
   pr "          don't forget to do a 'make clean' before './configure'.\n"
 
-(** * Build the dev/ocamldebug-coq file *)
-let write_dbg_wrapper camlenv o =
-  let { CamlConf.camlbin } = camlenv in
-  let pr s = fprintf o s in
-  pr "#!/bin/sh\n\n";
-  pr "###### ocamldebug-coq : a wrapper around ocamldebug for Coq ######\n\n";
-  pr "# DO NOT EDIT THIS FILE: automatically generated by ../configure #\n\n";
-  pr "export COQTOP=%S\n" coqsrc;
-  pr "OCAMLDEBUG=%S\n" (camlbin^"/ocamldebug");
-  pr ". $COQTOP/dev/ocamldebug-coq.run\n"
-
 (** * Build the config/coq_config.ml file *)
 
 let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs o =
   let { CoqEnv.coqlib; coqlibsuffix; configdir; configdirsuffix; docdir; docdirsuffix; datadir; datadirsuffix } = coqenv in
-  let { CamlConf.caml_version } = camlenv in
+  let { CamlConf.caml_version; _ } = camlenv in
   let pr s = fprintf o s in
   let pr_s = pr "let %s = %S\n" in
   let pr_b = pr "let %s = %B\n" in
@@ -457,7 +424,6 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   pr_s "wwwbugtracker" (prefs.coqwebsite ^ "bugs/");
   pr_s "wwwrefman" (prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/refman/");
   pr_s "wwwstdlib" (prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/stdlib/");
-  pr_s "localwwwrefman"  ("file:/" ^ docdir ^ "/html/refman");
   pr_b "bytecode_compiler" prefs.bytecodecompiler;
   pr "type native_compiler = NativeOff | NativeOn of { ondemand : bool }\n";
   pr "let native_compiler = %s\n"
@@ -468,6 +434,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   let core_src_dirs = [ "boot"; "config"; "lib"; "clib"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "gramlib"; "parsing"; "proofs";
                         "tactics"; "toplevel"; "printing"; "ide"; "stm"; "vernac" ] in
+
   let core_src_dirs = List.fold_left (fun acc core_src_subdir -> acc ^ "  \"" ^ core_src_subdir ^ "\";\n")
                                     ""
                                     core_src_dirs in
@@ -496,7 +463,8 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
 
 (** * Build the config/Makefile file *)
 
-let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags arch exe o =
+(** This Makefile is only used in the test-suite now, remove eventually. *)
+let write_makefile install_dirs best_compiler caml_flags coq_caml_flags o =
   let pr s = fprintf o s in
   pr "###### config/Makefile : Configuration file for Coq ##############\n";
   pr "#                                                                #\n";
@@ -506,34 +474,19 @@ let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags ar
   pr "# with the good options (see the file INSTALL).                  #\n";
   pr "#                                                                #\n";
   pr "##################################################################\n\n";
-  pr "#Variable used to detect whether ./configure has run successfully.\n";
-  pr "COQ_CONFIGURED=yes\n\n";
+
+  (* XXX: Not used anymore, or only in the test suite makefile *)
   pr "# Paths for true installation\n";
   List.iter (fun ((v,msg),_) -> pr "# %s: path for %s\n" v msg) install_dirs;
   List.iter (fun ((v,_),(dir,_)) -> pr "%s=%S\n" v dir) install_dirs;
-  pr "\n# Coq version\n";
-  pr "VERSION=%s\n" coq_version;
+
+  (* XXX: Only used in the test suite: BEST OCAMLFIND CAMLFLAGS ARCH *)
   pr "# The best compiler: native (=opt) or bytecode (=byte)\n";
   pr "BEST=%s\n\n" best_compiler;
-  (* Only used in the test suite: OCAMLFIND CAMLFLAGS *)
   pr "# Findlib command\n";
   pr "OCAMLFIND=%S\n" camlexec.find;
   pr "# Caml flags\n";
   pr "CAMLFLAGS=%s %s\n" caml_flags coq_caml_flags;
-  pr "# Your architecture\n";
-  pr "# Can be obtain by UNIX command arch\n";
-  pr "ARCH=%s\n" arch;
-  pr "# executable files extension, currently:\n";
-  pr "#  Unix systems:\n";
-  pr "#  Win32 systems : .exe\n";
-  pr "EXE=%s\n" exe;
-  pr "# the command MKDIR (try to use mkdirhier if you have problems)\n";
-  pr "MKDIR=mkdir -p\n\n";
-  pr "# Option to control compilation and installation of the documentation\n";
-  pr "WITHDOC=%s\n\n" (if prefs.withdoc then "all" else "no");
-  pr "# Option to produce precompiled files for native_compute\n";
-  pr "NATIVECOMPUTE=%s\n" (if prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
-  pr "COQWARNERROR=%s\n" (if prefs.warn_error then "-w +default" else "");
   ()
 
 let write_dune_c_flags cflags o =
@@ -550,35 +503,30 @@ let write_configpy o =
 let main () =
   let prefs = CmdArgs.parse_args () in
   Util.debug := prefs.debug;
-  let coq_annot_flag = coq_annot_flag prefs in
-  let coq_bin_annot_flag = coq_bin_annot_flag prefs in
   let arch = arch prefs in
   let arch_is_win32 = arch_is_win32 arch in
   let exe = resolve_binary_suffix arch in
   Util.exe := exe;
   install_precommit_hook prefs;
   let browser = browser prefs arch in
-  let camlenv = resolve_caml prefs in
+  let camlenv = resolve_caml () in
   let caml_version_nums = caml_version_nums camlenv in
   check_caml_version prefs camlenv.CamlConf.caml_version caml_version_nums;
   check_findlib_version prefs camlenv;
   let best_compiler = best_compiler prefs camlenv in
-  let caml_flags = caml_flags coq_annot_flag coq_bin_annot_flag in
   let coq_caml_flags = coq_caml_flags prefs in
   let hasnatdynlink = hasnatdynlink prefs best_compiler in
   check_for_zarith prefs;
-  (if prefs.withdoc then check_doc ());
   let install_dirs = install_dirs prefs arch in
   let coqenv = resolve_coqenv install_dirs in
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
   if prefs.interactive then
-    print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink browser;
-  write_config_file ~file:"dev/ocamldebug-coq" ~bin:true (write_dbg_wrapper camlenv);
+    print_summary prefs arch camlenv install_dirs browser;
   write_config_file ~file:"config/coq_config.ml"
     (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs);
   write_config_file ~file:"config/Makefile"
-    (write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags arch exe);
+    (write_makefile install_dirs best_compiler caml_flags coq_caml_flags);
   write_config_file ~file:"config/dune.c_flags" (write_dune_c_flags cflags);
   write_config_file ~file:"config/coq_config.py" write_configpy;
   ()
