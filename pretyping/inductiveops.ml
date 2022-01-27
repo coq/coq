@@ -351,8 +351,8 @@ let make_project env sigma ind pred c branches ps =
   let open EConstr in
   assert(Array.length branches == 1);
   let na, ty, t = destLambda sigma pred in
+  let mib, mip = Inductive.lookup_mind_specif env ind in
   let () =
-    let mib, _ = Inductive.lookup_mind_specif env ind in
     if (* dependent *) not (Vars.noccurn sigma 1 t) &&
          not (has_dependent_elim mib) then
       user_err
@@ -360,7 +360,7 @@ let make_project env sigma ind pred c branches ps =
               str" on inductive type " ++ Termops.Internal.print_constr_env env sigma (mkInd ind) ++ str ".")
   in
   let branch = branches.(0) in
-  let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in
+  let ctx, br = decompose_lam_n_decls sigma mip.mind_consnrealdecls.(0) branch in
   let n, len, ctx =
     List.fold_right
       (fun decl (i, j, ctx) ->
