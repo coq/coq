@@ -162,14 +162,14 @@ val eta_reduce_head : Evd.evar_map -> constr -> constr
 (** [prod_applist] [forall (x1:B1;...;xn:Bn), B] [a1...an] @return [B[a1...an]] *)
 val prod_applist : Evd.evar_map -> constr -> constr list -> constr
 
-(** In [prod_applist_assum n c args], [c] is supposed to have the
+(** In [prod_applist_decls n c args], [c] is supposed to have the
     form [∀Γ.c] with [Γ] of length [m] and possibly with let-ins; it
     returns [c] with the assumptions of [Γ] instantiated by [args] and
     the local definitions of [Γ] expanded.
     Note that [n] counts both let-ins and prods, while the length of [args]
     only counts prods. In other words, varying [n] changes how many
     trailing let-ins are expanded. *)
-val prod_applist_assum : Evd.evar_map -> int -> constr -> constr list -> constr
+val prod_applist_decls : Evd.evar_map -> int -> constr -> constr list -> constr
 
 (** Remove recursively the casts around a term i.e.
    [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)

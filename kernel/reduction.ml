@@ -943,7 +943,7 @@ let beta_appvect c v = beta_applist c (Array.to_list v)
 let beta_app c a = beta_applist c [a]
 
 (* Compatibility *)
-let betazeta_appvect = Term.lambda_appvect_assum
+let betazeta_appvect = Term.lambda_appvect_decls
 
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
@@ -963,7 +963,7 @@ let hnf_prod_app env t n =
 let hnf_prod_applist env t nl =
   List.fold_left (hnf_prod_app env) t nl
 
-let hnf_prod_applist_assum env n c l =
+let hnf_prod_applist_decls env n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t

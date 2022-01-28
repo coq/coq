@@ -418,7 +418,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
       let cstr = ith_constructor_of_inductive ind (i+1) in
       let dep_cstr = Term.applist (mkConstructU (cstr,u),lparams@(Context.Rel.instance_list mkRel 0 cstrsign)) in
       vargs @ [dep_cstr] in
-    let base = Term.lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
+    let base = Term.lambda_appvect_decls (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     Term.it_mkProd_or_LetIn base cstrsign in
   Array.mapi build_one_branch mip.mind_nf_lc
 

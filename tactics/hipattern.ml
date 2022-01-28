@@ -118,7 +118,7 @@ let match_with_one_constructor env sigma style onlybinary allow_rec t =
           let ctx, cty = mip.mind_nf_lc.(0) in
           let cty = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
           let ctyp = whd_beta_prod env sigma
-            (Termops.prod_applist_assum sigma (Context.Rel.length mib.mind_params_ctxt) cty args) in
+            (Termops.prod_applist_decls sigma (Context.Rel.length mib.mind_params_ctxt) cty args) in
           let cargs = List.map RelDecl.get_type (EConstr.prod_decls sigma ctyp) in
           if not (is_lax_conjunction style) || has_nodep_prod env sigma ctyp then
             (* Record or non strict conjunction *)

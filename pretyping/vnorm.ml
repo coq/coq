@@ -284,7 +284,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let params,realargs = Util.Array.chop nparams allargs in
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
-        hnf_prod_applist_assum env nparamdecls (type_of_ind env (ind,u)) (Array.to_list params) in
+        hnf_prod_applist_decls env nparamdecls (type_of_ind env (ind,u)) (Array.to_list params) in
       let pctx, p, relevance = nf_predicate env sigma (ind,u) mip params [] (type_of_switch sw) pT in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env sigma ind mib mip u params (pctx, p) in

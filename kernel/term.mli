@@ -87,12 +87,12 @@ val it_mkProd_or_LetIn : types -> Constr.rel_context -> types
 val lambda_applist : constr -> constr list -> constr
 val lambda_appvect : constr -> constr array -> constr
 
-(** In [lambda_applist_assum n c args], [c] is supposed to have the
+(** In [lambda_applist_decls n c args], [c] is supposed to have the
     form [λΓ.c] with [Γ] of length [n] and possibly with let-ins; it
     returns [c] with the assumptions of [Γ] instantiated by [args] and
     the local definitions of [Γ] expanded. *)
-val lambda_applist_assum : int -> constr -> constr list -> constr
-val lambda_appvect_assum : int -> constr -> constr array -> constr
+val lambda_applist_decls : int -> constr -> constr list -> constr
+val lambda_appvect_decls : int -> constr -> constr array -> constr
 
 (** pseudo-reduction rule *)
 
@@ -101,12 +101,12 @@ val lambda_appvect_assum : int -> constr -> constr array -> constr
 val prod_appvect : types -> constr array -> types
 val prod_applist : types -> constr list -> types
 
-(** In [prod_appvect_assum n c args], [c] is supposed to have the
+(** In [prod_appvect_decls n c args], [c] is supposed to have the
     form [∀Γ.c] with [Γ] of length [n] and possibly with let-ins; it
     returns [c] with the assumptions of [Γ] instantiated by [args] and
     the local definitions of [Γ] expanded. *)
-val prod_appvect_assum : int -> types -> constr array -> types
-val prod_applist_assum : int -> types -> constr list -> types
+val prod_appvect_decls : int -> types -> constr array -> types
+val prod_applist_decls : int -> types -> constr list -> types
 
 (** {5 Other term destructors. } *)
 

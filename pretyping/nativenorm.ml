@@ -327,7 +327,7 @@ and nf_atom_type env sigma atom =
       in
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
-        hnf_prod_applist_assum env nparamdecls
+        hnf_prod_applist_decls env nparamdecls
           (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
       let pctx, p = nf_predicate env sigma ind mip params [] p pT in
       (* Calcul du type des branches *)

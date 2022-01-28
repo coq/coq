@@ -150,7 +150,7 @@ let lambda_applist c l =
 
 let lambda_appvect c v = lambda_applist c (Array.to_list v)
 
-let lambda_applist_assum n c l =
+let lambda_applist_decls n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
@@ -162,7 +162,7 @@ let lambda_applist_assum n c l =
     | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   app n [] c l
 
-let lambda_appvect_assum n c v = lambda_applist_assum n c (Array.to_list v)
+let lambda_appvect_decls n c v = lambda_applist_decls n c (Array.to_list v)
 
 (* prod_applist T [ a1 ; ... ; an ] -> (T a1 ... an) *)
 let prod_applist c l =
@@ -176,7 +176,7 @@ let prod_applist c l =
 (* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
 let prod_appvect c v = prod_applist c (Array.to_list v)
 
-let prod_applist_assum n c l =
+let prod_applist_decls n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
@@ -188,7 +188,7 @@ let prod_applist_assum n c l =
     | _ -> anomaly (Pp.str "Not enough prod/let's.") in
   app n [] c l
 
-let prod_appvect_assum n c v = prod_applist_assum n c (Array.to_list v)
+let prod_appvect_decls n c v = prod_applist_decls n c (Array.to_list v)
 
 (*********************************)
 (* Other term destructors        *)
