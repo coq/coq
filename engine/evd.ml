@@ -1086,8 +1086,8 @@ let universe_subst evd =
 let merge_context_set ?loc ?(sideff=false) rigid evd ctx' =
   {evd with universes = UState.merge ?loc ~sideff rigid evd.universes ctx'}
 
-let with_context_set ?loc rigid d (a, ctx) =
-  (merge_context_set ?loc rigid d ctx, a)
+let with_context_set ?loc rigid evd (a, ctx) =
+  (merge_context_set ?loc rigid evd ctx, a)
 
 let new_univ_level_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
