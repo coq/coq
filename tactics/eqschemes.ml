@@ -93,7 +93,7 @@ let name_context env hyps =
           let d' = name_assumption env d in (push_rel d' env, d' :: hyps))
        (env,[]) (List.rev hyps))
 
-let my_it_mkLambda_or_LetIn s c = it_mkLambda_or_LetIn c s
+let my_it_mkLambda_or_LetIn s c = Term.it_mkLambda_or_LetIn c s
 let my_it_mkProd_or_LetIn s c = Term.it_mkProd_or_LetIn c s
 let my_it_mkLambda_or_LetIn_name env s c =
   let mkLambda_or_LetIn_name d b = mkLambda_or_LetIn (name_assumption env d) b in

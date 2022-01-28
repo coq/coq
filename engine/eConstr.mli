@@ -149,6 +149,14 @@ val type1 : t
 val applist : t * t list -> t
 val applistc : t -> t list -> t
 
+(** { Abstracting/generalizing over binders } *)
+
+(** it = iterated
+    or_LetIn = turn a local definition into a LetIn
+    wo_LetIn = inlines local definitions (i.e. substitute them in the body)
+    Named = binding is by name and the combinators turn it into a
+            binding by index (complexity is nb(binders) * size(term)) *)
+
 val it_mkProd : t -> (Name.t Context.binder_annot * t) list -> t
 val it_mkLambda : t -> (Name.t Context.binder_annot * t) list -> t
 
@@ -157,11 +165,22 @@ val mkLambda_or_LetIn : rel_declaration -> t -> t
 val it_mkProd_or_LetIn : t -> rel_context -> t
 val it_mkLambda_or_LetIn : t -> rel_context -> t
 
+val mkProd_wo_LetIn : rel_declaration -> t -> t
+val mkLambda_wo_LetIn : rel_declaration -> t -> t
+val it_mkProd_wo_LetIn : t -> rel_context -> t
+val it_mkLambda_wo_LetIn : t -> rel_context -> t
+
+val mkNamedProd : Evd.evar_map -> Id.t Context.binder_annot -> types -> types -> types
 val mkNamedLambda : Evd.evar_map -> Id.t Context.binder_annot -> types -> constr -> constr
 val mkNamedLetIn : Evd.evar_map -> Id.t Context.binder_annot -> constr -> types -> constr -> constr
-val mkNamedProd : Evd.evar_map -> Id.t Context.binder_annot -> types -> types -> types
-val mkNamedLambda_or_LetIn : Evd.evar_map -> named_declaration -> types -> types
+
 val mkNamedProd_or_LetIn : Evd.evar_map -> named_declaration -> types -> types
+val mkNamedLambda_or_LetIn : Evd.evar_map -> named_declaration -> types -> types
+val it_mkNamedProd_or_LetIn : Evd.evar_map -> t -> named_context -> t
+val it_mkNamedLambda_or_LetIn : Evd.evar_map -> t -> named_context -> t
+
+val mkNamedProd_wo_LetIn : Evd.evar_map -> named_declaration -> t -> t
+val it_mkNamedProd_wo_LetIn : Evd.evar_map -> t -> named_context -> t
 
 val mkLEvar : Evd.evar_map -> Evar.t * t list -> t
 (** Variant of {!mkEvar} that removes identity variable instances from its argument. *)

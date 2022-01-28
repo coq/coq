@@ -852,7 +852,7 @@ and treat_case env sigma ci lbrty lf acc' =
         if isMeta head then begin
           assert (args = Context.Rel.instance mkRel 0 ctx);
           let (r,_,s,head'') = mk_refgoals env sigma lacc ty head in
-          let fi' = it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
+          let fi' = Term.it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
           (r,s,fi'::bacc)
         end
         else

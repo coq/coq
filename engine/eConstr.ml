@@ -868,17 +868,31 @@ let destArity sigma =
   in
   prodec_rec []
 
+(* Constructs either [forall x:t, c] or [let x:=b:t in c] *)
 let mkProd_or_LetIn decl c =
   let open Context.Rel.Declaration in
   match decl with
   | LocalAssum (na,t) -> mkProd (na, t, c)
   | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
+(* Constructs either [forall x:t, c] or [c] in which [x] is replaced by [b] *)
+let mkProd_wo_LetIn decl c =
+  let open Context.Rel.Declaration in
+  match decl with
+  | LocalAssum (na,t) -> mkProd (na, t, c)
+  | LocalDef (_,b,_) -> Vars.subst1 b c
+
 let mkLambda_or_LetIn decl c =
   let open Context.Rel.Declaration in
   match decl with
   | LocalAssum (na,t) -> mkLambda (na, t, c)
   | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
+
+let mkLambda_wo_LetIn decl c =
+  let open Context.Rel.Declaration in
+  match decl with
+  | LocalAssum (na,t) -> mkLambda (na, t, c)
+  | LocalDef (_,b,_) -> Vars.subst1 b c
 
 let mkNamedProd sigma id typ c = mkProd (map_annot Name.mk_name id, typ, Vars.subst_var sigma id.binder_name c)
 let mkNamedLambda sigma id typ c = mkLambda (map_annot Name.mk_name id, typ, Vars.subst_var sigma id.binder_name c)
@@ -887,14 +901,20 @@ let mkNamedLetIn sigma id c1 t c2 = mkLetIn (map_annot Name.mk_name id, c1, t, V
 let mkNamedProd_or_LetIn sigma decl c =
   let open Context.Named.Declaration in
   match decl with
-    | LocalAssum (id,t) -> mkNamedProd sigma id t c
-    | LocalDef (id,b,t) -> mkNamedLetIn sigma id b t c
+  | LocalAssum (id,t) -> mkNamedProd sigma id t c
+  | LocalDef (id,b,t) -> mkNamedLetIn sigma id b t c
 
 let mkNamedLambda_or_LetIn sigma decl c =
   let open Context.Named.Declaration in
   match decl with
-    | LocalAssum (id,t) -> mkNamedLambda sigma id t c
-    | LocalDef (id,b,t) -> mkNamedLetIn sigma id b t c
+  | LocalAssum (id,t) -> mkNamedLambda sigma id t c
+  | LocalDef (id,b,t) -> mkNamedLetIn sigma id b t c
+
+let mkNamedProd_wo_LetIn sigma decl c =
+  let open Context.Named.Declaration in
+  match decl with
+  | LocalAssum (id,t) -> mkNamedProd sigma id t c
+  | LocalDef (id,b,t) -> Vars.subst1 b c
 
 let it_mkProd init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
 let it_mkLambda init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
@@ -903,6 +923,14 @@ let compose_lam l b = it_mkLambda b l
 
 let it_mkProd_or_LetIn t ctx = List.fold_left (fun c d -> mkProd_or_LetIn d c) t ctx
 let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d c) t ctx
+
+let it_mkProd_wo_LetIn t ctx = List.fold_left (fun c d -> mkProd_wo_LetIn d c) t ctx
+let it_mkLambda_wo_LetIn t ctx = List.fold_left (fun c d -> mkLambda_wo_LetIn d c) t ctx
+
+let it_mkNamedProd_or_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedProd_or_LetIn sigma d c) t ctx
+let it_mkNamedLambda_or_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedLambda_or_LetIn sigma d c) t ctx
+
+let it_mkNamedProd_wo_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedProd_wo_LetIn sigma d c) t ctx
 
 let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
 let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e

@@ -16,7 +16,6 @@ open Term
 open Constr
 open Context
 open Vars
-open Termops
 open Environ
 open Coercionops
 open Declare
@@ -186,7 +185,7 @@ let build_id_coercion idf_opt source poly =
     | None -> error_not_transparent source in
   let lams,t = decompose_lam_assum c in
   let val_f =
-    it_mkLambda_or_LetIn
+    Term.it_mkLambda_or_LetIn
       (mkLambda (make_annot (Name Namegen.default_dependent_ident) Sorts.Relevant,
                  applistc vs (Context.Rel.instance_list mkRel 0 lams),
                  mkRel 1))

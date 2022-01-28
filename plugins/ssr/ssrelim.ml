@@ -592,7 +592,7 @@ let perform_injection c =
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
   let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
   Proofview.Unsafe.tclEVARS sigma <*>
-  Tacticals.tclTHENLAST (Tactics.apply (Termops.it_mkLambda cl1 dc)) injtac
+  Tacticals.tclTHENLAST (Tactics.apply (EConstr.it_mkLambda cl1 dc)) injtac
   end
 
 let ssrscase_or_inj_tac c =

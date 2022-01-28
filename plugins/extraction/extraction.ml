@@ -20,7 +20,6 @@ open Environ
 open Reduction
 open Reductionops
 open Inductive
-open Termops
 open Inductiveops
 open Namegen
 open Miniml
@@ -41,11 +40,11 @@ let current_fixpoints = ref ([] : Constant.t list)
 
 let type_of env sg c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_type_of ~polyprop env sg (strip_outer_cast sg c)
+  Retyping.get_type_of ~polyprop env sg (Termops.strip_outer_cast sg c)
 
 let sort_of env sg c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_sort_family_of ~polyprop env sg (strip_outer_cast sg c)
+  Retyping.get_sort_family_of ~polyprop env sg (Termops.strip_outer_cast sg c)
 
 (*S Generation of flags and signatures. *)
 

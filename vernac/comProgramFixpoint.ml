@@ -292,8 +292,8 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
     (* Generalize by the recursive prototypes  *)
     let terms = [def; typ] in
     let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
-    let def = nf_evar evd (Termops.it_mkNamedLambda_or_LetIn evd def rec_sign) in
-    let typ = nf_evar evd (Termops.it_mkNamedProd_or_LetIn evd typ rec_sign) in
+    let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
+    let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evm

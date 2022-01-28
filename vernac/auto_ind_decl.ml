@@ -13,6 +13,7 @@
 
 open Util
 open Constr
+open Vars
 open Declarations
 open Names
 
@@ -522,7 +523,7 @@ let build_beq_scheme env handle kn =
     | Ind (ind',u) ->
       begin
         match find_ind_env_lift env_lift ind' with
-        | Some (_,recparamsctx,n) -> Some (Termops.it_mkLambda_or_LetIn (mkRel n) (translate_context env_lift recparamsctx))
+        | Some (_,recparamsctx,n) -> Some (Term.it_mkLambda_or_LetIn (mkRel n) (translate_context env_lift recparamsctx))
         | None ->
             try Some (mkConstU (get_scheme handle (!beq_scheme_kind_aux()) ind',u))
             with Not_found -> raise(EqNotFound ind')
@@ -837,14 +838,14 @@ let build_beq_scheme env handle kn =
               raise (NonSingletonProp (kn,i));
             let decrArg = Context.Rel.length nonrecparams_ctx_with_eqs in
             let fix = mkFix (((Array.make nb_ind decrArg),i),(names,types,cores)) in
-            Termops.it_mkLambda_or_LetIn fix recparams_ctx_with_eqs)
+            Term.it_mkLambda_or_LetIn fix recparams_ctx_with_eqs)
       | Finite | BiFinite ->
          assert (Int.equal nb_ind 1);
          (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)
          let kelim = Inductive.elim_sort (mib,mib.mind_packets.(0)) in
          if not (Sorts.family_leq InSet kelim) then raise (NonSingletonProp (kn,0));
-         [|Termops.it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
+         [|Term.it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
   in
   res, uctx
 
