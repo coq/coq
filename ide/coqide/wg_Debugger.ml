@@ -281,7 +281,8 @@ let debugger title sid =
         highlight 0
 
     method set_vars (vars_v : vars_t) =
-      vars := vars_v;
+      (* workaround: zero entries may show stale data GTK! :-( *)
+      vars := if vars_v = [] then [("", Pp.mt ())] else vars_v;
       store#clear ();
       let cwidth () =
         let open Gtk in
@@ -314,7 +315,8 @@ let debugger title sid =
                 let row = if insert then store#append () else store#get_iter path in
                 GtkTree.TreePath.next path;
                 if String.length value < width && (not (String.contains value '\n')) then begin
-                  store#set ~row ~column (name ^ " = " ^ value);
+                  let text = if name = "" then " " else (name ^ " = " ^ value) in
+                  store#set ~row ~column text;
                   if store#iter_has_child row then
                     ignore @@ store#remove (store#iter_children (Some row));
                 end else begin
@@ -326,7 +328,7 @@ let debugger title sid =
                   store#set ~row:row2 ~column:(find_string_col "Var" columns) value
                 end
               )
-          ) vars_v
+          ) !vars
       in
       let width = cwidth () in
       let pwidth = ref width in (* initially negative if not allocated *)
