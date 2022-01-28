@@ -34,14 +34,14 @@ let safe_flags oracle = {
 
 (** {6 Arities } *)
 
-let subst_decl_arity f g sub ar =
+let subst_decl_arity f g subst ar =
   match ar with
   | RegularArity x ->
-    let x' = f sub x in
+    let x' = f subst x in
       if x' == x then ar
       else RegularArity x'
   | TemplateArity x ->
-    let x' = g sub x in
+    let x' = g subst x in
       if x' == x then ar
       else TemplateArity x'
 
@@ -89,28 +89,28 @@ let is_opaque cb = match cb.const_body with
 
 (** {7 Constant substitutions } *)
 
-let subst_rel_declaration sub =
-  RelDecl.map_constr (subst_mps sub)
+let subst_rel_declaration subst =
+  RelDecl.map_constr (subst_mps subst)
 
-let subst_rel_context sub = List.Smart.map (subst_rel_declaration sub)
+let subst_rel_context subst = List.Smart.map (subst_rel_declaration subst)
 
-let subst_const_type sub arity =
-  if is_empty_subst sub then arity
-  else subst_mps sub arity
+let subst_const_type subst arity =
+  if is_empty_subst subst then arity
+  else subst_mps subst arity
 
 (** No need here to check for physical equality after substitution,
     at least for Def due to the delayed substitution [subst_constr_subst]. *)
-let subst_const_def sub def = match def with
+let subst_const_def subst def = match def with
   | Undef _ | Primitive _ -> def
-  | Def c -> Def (subst_mps sub c)
-  | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque sub o)
+  | Def c -> Def (subst_mps subst c)
+  | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque subst o)
 
-let subst_const_body sub cb =
+let subst_const_body subst cb =
   assert (List.is_empty cb.const_hyps); (* we're outside sections *)
-  if is_empty_subst sub then cb
+  if is_empty_subst subst then cb
   else
-    let body' = subst_const_def sub cb.const_body in
-    let type' = subst_const_type sub cb.const_type in
+    let body' = subst_const_def subst cb.const_body in
+    let type' = subst_const_type subst cb.const_type in
     if body' == cb.const_body && type' == cb.const_type
     then cb
     else
@@ -118,7 +118,7 @@ let subst_const_body sub cb =
         const_body = body';
         const_type = type';
         const_body_code =
-          Option.map (Vmemitcodes.subst_body_code sub) cb.const_body_code;
+          Option.map (Vmemitcodes.subst_body_code subst) cb.const_body_code;
         const_universes = cb.const_universes;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
@@ -181,21 +181,21 @@ let pp_recarg = let open Pp in function
 
 let pp_wf_paths x = Rtree.pp_tree pp_recarg x
 
-let subst_nested_type sub ty = match ty with
+let subst_nested_type subst ty = match ty with
 | NestedInd (kn,i) ->
-  let kn' = subst_mind sub kn in
+  let kn' = subst_mind subst kn in
   if kn==kn' then ty else NestedInd (kn',i)
 | NestedPrimitive c ->
-  let c',_ = subst_con sub c in
+  let c',_ = subst_con subst c in
   if c==c' then ty else NestedPrimitive c'
 
-let subst_recarg sub r = match r with
+let subst_recarg subst r = match r with
   | Norec -> r
   | Mrec (kn,i) ->
-    let kn' = subst_mind sub kn in
+    let kn' = subst_mind subst kn in
     if kn==kn' then r else Mrec (kn',i)
   | Nested ty ->
-    let ty' = subst_nested_type sub ty in
+    let ty' = subst_nested_type subst ty in
     if ty==ty' then r else Nested ty'
 
 let mk_norec = Rtree.mk_node Norec [||]
@@ -220,12 +220,12 @@ let recarg_length p j =
   let (_,cstrs) = Rtree.dest_node p in
   Array.length (snd (Rtree.dest_node cstrs.(j-1)))
 
-let subst_wf_paths sub p = Rtree.Smart.map (subst_recarg sub) p
+let subst_wf_paths subst p = Rtree.Smart.map (subst_recarg subst) p
 
 (** {7 Substitution of inductive declarations } *)
 
-let subst_regular_ind_arity sub s =
-  let uar' = subst_mps sub s.mind_user_arity in
+let subst_regular_ind_arity subst s =
+  let uar' = subst_mps subst s.mind_user_arity in
     if uar' == s.mind_user_arity then s
     else { mind_user_arity = uar'; mind_sort = s.mind_sort }
 
@@ -235,46 +235,46 @@ let subst_template_ind_arity _sub s = s
 let subst_ind_arity =
   subst_decl_arity subst_regular_ind_arity subst_template_ind_arity
 
-let subst_mind_packet sub mbp =
+let subst_mind_packet subst mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = Array.Smart.map (fun (ctx, c) -> Context.Rel.map (subst_mps sub) ctx, subst_mps sub c) mbp.mind_nf_lc;
-    mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
-    mind_arity = subst_ind_arity sub mbp.mind_arity;
-    mind_user_lc = Array.Smart.map (subst_mps sub) mbp.mind_user_lc;
+    mind_nf_lc = Array.Smart.map (fun (ctx, c) -> Context.Rel.map (subst_mps subst) ctx, subst_mps subst c) mbp.mind_nf_lc;
+    mind_arity_ctxt = subst_rel_context subst mbp.mind_arity_ctxt;
+    mind_arity = subst_ind_arity subst mbp.mind_arity;
+    mind_user_lc = Array.Smart.map (subst_mps subst) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealdecls = mbp.mind_nrealdecls;
     mind_kelim = mbp.mind_kelim;
-    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
+    mind_recargs = subst_wf_paths subst mbp.mind_recargs (*wf_paths*);
     mind_relevance = mbp.mind_relevance;
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
 
-let subst_mind_record sub r = match r with
+let subst_mind_record subst r = match r with
 | NotRecord -> NotRecord
 | FakeRecord -> FakeRecord
 | PrimRecord infos ->
   let map (id, ps, rs, pb as info) =
-    let pb' = Array.Smart.map (subst_mps sub) pb in
+    let pb' = Array.Smart.map (subst_mps subst) pb in
     if pb' == pb then info
     else (id, ps, rs, pb')
   in
   let infos' = Array.Smart.map map infos in
   if infos' == infos then r else PrimRecord infos'
 
-let subst_mind_body sub mib =
-  { mind_record = subst_mind_record sub mib.mind_record ;
+let subst_mind_body subst mib =
+  { mind_record = subst_mind_record subst mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
-      Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
-    mind_packets = Array.Smart.map (subst_mind_packet sub) mib.mind_packets ;
+      Context.Rel.map (subst_mps subst) mib.mind_params_ctxt;
+    mind_packets = Array.Smart.map (subst_mind_packet subst) mib.mind_packets ;
     mind_universes = mib.mind_universes;
     mind_template = mib.mind_template;
     mind_variance = mib.mind_variance;

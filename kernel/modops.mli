@@ -32,7 +32,7 @@ val module_body_of_type : ModPath.t -> module_type_body -> module_body
 
 val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
 
-val implem_smartmap :
+val implem_smart_map :
   (module_signature -> module_signature) ->
   (module_expression -> module_expression) ->
   (module_implementation -> module_implementation)
@@ -63,14 +63,16 @@ val add_retroknowledge : module_implementation module_retroknowledge -> env -> e
 
 val strengthen : module_type_body -> ModPath.t -> module_type_body
 
-val inline_delta_resolver :
-  env -> inline -> ModPath.t -> MBId.t -> module_type_body ->
-  delta_resolver -> delta_resolver
-
-val strengthen_and_subst_mb : module_body -> ModPath.t -> bool -> module_body
+val strengthen_and_subst_module_body : module_body -> ModPath.t -> bool -> module_body
 
 val subst_modtype_signature_and_resolver : ModPath.t -> ModPath.t ->
   module_signature -> delta_resolver -> module_signature * delta_resolver
+
+(** {6 Building map of constants to inline } *)
+
+val inline_delta_resolver :
+  env -> inline -> ModPath.t -> MBId.t -> module_type_body ->
+  delta_resolver -> delta_resolver
 
 (** {6 Cleaning a module expression from bounded parts }
 

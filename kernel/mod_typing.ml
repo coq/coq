@@ -54,7 +54,7 @@ let rec rebuild_mp mp l =
   | []-> mp
   | i::r -> rebuild_mp (MPdot(mp,Label.of_id i)) r
 
-let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
+let rec check_with_def env struc (idl,(c,ctx)) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> Label.of_id id, idl
@@ -62,7 +62,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
   try
     let modular = not (List.is_empty idl) in
     let before,spec,after = split_struc lab modular struc in
-    let env' = Modops.add_structure mp before equiv env in
+    let env' = Modops.add_structure mp before reso env in
     if List.is_empty idl then
       (* Toplevel definition *)
       let cb = match spec with
@@ -70,7 +70,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
         | _ -> error_not_a_constant lab
       in
       (* In the spirit of subtyping.check_constant, we accept
-         any implementations of parameters and opaques terms,
+         any implementations of parameters and opaque terms,
          as long as they have the right type *)
       let c', univs, ctx' =
         match cb.const_universes, ctx with
@@ -147,46 +147,46 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
   | Not_found -> error_no_such_label lab mp
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
-let rec check_with_mod env struc (idl,mp1) mp equiv =
+let rec check_with_mod env struc (idl,new_mp) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> Label.of_id id, idl
   in
   try
     let before,spec,after = split_struc lab true struc in
-    let env' = Modops.add_structure mp before equiv env in
+    let env' = Modops.add_structure mp before reso env in
     let old = match spec with
       | SFBmodule mb -> mb
       | _ -> error_not_a_module_label lab
     in
     if List.is_empty idl then
       (* Toplevel module definition *)
-      let mb_mp1 = lookup_module mp1 env in
-      let mtb_mp1 = module_type_of_module mb_mp1 in
+      let new_mb = lookup_module new_mp env in
+      let new_mtb = module_type_of_module new_mb in
       let cst = match old.mod_expr with
         | Abstract ->
           let mtb_old = module_type_of_module old in
-          let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
+          let chk_cst = Subtyping.check_subtypes env' new_mtb mtb_old in
           chk_cst
         | Algebraic (NoFunctor (MEident(mp'))) ->
-          check_modpath_equiv env' mp1 mp';
+          check_modpath_equiv env' new_mp mp';
           Univ.Constraints.empty
         | _ -> error_generative_module_expected lab
       in
       let mp' = MPdot (mp,lab) in
-      let new_mb = strengthen_and_subst_mb mb_mp1 mp' false in
+      let new_mb = strengthen_and_subst_module_body new_mb mp' false in
       let new_mb' =
         { new_mb with
           mod_mp = mp';
-          mod_expr = Algebraic (NoFunctor (MEident mp1));
+          mod_expr = Algebraic (NoFunctor (MEident new_mp));
         }
       in
-      let new_equiv = add_delta_resolver equiv new_mb.mod_delta in
+      let new_reso = add_delta_resolver reso new_mb.mod_delta in
       (* we propagate the new equality in the rest of the signature
          with the identity substitution accompanied by the new resolver*)
       let id_subst = map_mp mp' mp' new_mb.mod_delta in
       let new_after = subst_structure id_subst after in
-      before@(lab,SFBmodule new_mb')::new_after, new_equiv, cst
+      before@(lab,SFBmodule new_mb')::new_after, new_reso, cst
     else
       (* Module definition of a sub-module *)
       let mp' = MPdot (mp,lab) in
@@ -197,23 +197,23 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       begin match old.mod_expr with
       | Abstract ->
         let struc = destr_nofunctor mp' old.mod_type in
-        let struc',equiv',cst =
-          check_with_mod env' struc (idl,mp1) mp' old.mod_delta
+        let struc',reso',cst =
+          check_with_mod env' struc (idl,new_mp) mp' old.mod_delta
         in
         let new_mb =
           { old with
             mod_type = NoFunctor struc';
             mod_type_alg = None;
-            mod_delta = equiv' }
+            mod_delta = reso' }
         in
-        let new_equiv = add_delta_resolver equiv equiv' in
-        let id_subst = map_mp mp' mp' equiv' in
+        let new_reso = add_delta_resolver reso reso' in
+        let id_subst = map_mp mp' mp' reso' in
         let new_after = subst_structure id_subst after in
-        before@(lab,SFBmodule new_mb)::new_after, new_equiv, cst
+        before@(lab,SFBmodule new_mb)::new_after, new_reso, cst
       | Algebraic (NoFunctor (MEident mp0)) ->
         let mpnew = rebuild_mp mp0 idl in
         check_modpath_equiv env' mpnew mp;
-        before@(lab,spec)::after, equiv, Univ.Constraints.empty
+        before@(lab,spec)::after, reso, Univ.Constraints.empty
       | _ -> error_generative_module_expected lab
       end
   with
@@ -221,14 +221,14 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
 let check_with env mp (sign,alg,reso,cst) = function
-  |WithDef(idl, (c, ctx)) ->
+  | WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor mp sign in
     let struc', c', cst' = check_with_def env struc (idl, (c, ctx)) mp reso in
     let wd' = WithDef (idl, (c', ctx)) in
     NoFunctor struc', MEwith (alg,wd'), reso, Univ.Constraints.union cst' cst
-  |WithMod(idl,mp1) as wd ->
+  | WithMod(idl,new_mp) as wd ->
     let struc = destr_nofunctor mp sign in
-    let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in
+    let struc',reso',cst' = check_with_mod env struc (idl,new_mp) mp reso in
     NoFunctor struc', MEwith (alg,wd), reso', Univ.Constraints.union cst' cst
 
 let translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
@@ -253,15 +253,15 @@ let translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
 let mk_alg_app alg arg = MEapply (alg,arg)
 
 let rec translate_mse env mpo inl = function
-  |MEident mp1 as me ->
+  | MEident mp1 as me ->
     let mb = match mpo with
-      |Some mp -> strengthen_and_subst_mb (lookup_module mp1 env) mp false
-      |None ->
+      | Some mp -> strengthen_and_subst_module_body (lookup_module mp1 env) mp false
+      | None ->
         let mt = lookup_modtype mp1 env in
         module_body_of_type mt.mod_mp mt
     in
     mb.mod_type, me, mb.mod_delta, Univ.Constraints.empty
-  |MEapply (fe,mp1) ->
+  | MEapply (fe,mp1) ->
     translate_apply env inl (translate_mse env mpo inl fe) mp1 mk_alg_app
   |MEwith(me, with_decl) ->
     assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
@@ -324,7 +324,7 @@ let finalize_module env mp (sign,alg,reso,cst1) restype = match restype with
     Univ.Constraints.(union cst1 (union cst2 cst3))
 
 let translate_module env mp inl = function
-  |MType (params,ty) ->
+  | MType (params,ty) ->
     let mtb, cst = translate_modtype env mp inl (params,ty) in
     module_body_of_type mp mtb, cst
   |MExpr (params,mse,oty) ->
@@ -338,37 +338,37 @@ let translate_module env mp inl = function
     thanks to strengthening. *)
 
 let rec unfunct = function
-  |NoFunctor me -> me
-  |MoreFunctor(_,_,me) -> unfunct me
+  | NoFunctor me -> me
+  | MoreFunctor(_,_,me) -> unfunct me
 
 let rec forbid_incl_signed_functor env = function
-  |MEapply(fe,_) -> forbid_incl_signed_functor env fe
-  |MEwith _ -> assert false (* No 'with' syntax for modules *)
-  |MEident mp1 ->
+  | MEapply(fe,_) -> forbid_incl_signed_functor env fe
+  | MEwith _ -> assert false (* No 'with' syntax for modules *)
+  | MEident mp1 ->
     let mb = lookup_module mp1 env in
     match mb.mod_type, mb.mod_type_alg, mb.mod_expr with
-    |MoreFunctor _, Some _, _ ->
+    | MoreFunctor _, Some _, _ ->
       (* functor + restricted signature = error *)
       error_include_restricted_functor mp1
-    |MoreFunctor _, None, Algebraic me ->
+    | MoreFunctor _, None, Algebraic me ->
       (* functor, no signature yet, a definition which may be restricted *)
       forbid_incl_signed_functor env (unfunct me)
     |_ -> ()
 
-let rec translate_mse_inclmod env mp inl = function
-  |MEident mp1 ->
-    let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp true in
+let rec translate_mse_include_module env mp inl = function
+  | MEident mp1 ->
+    let mb = strengthen_and_subst_module_body (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr mb.mod_type in
     sign,(),mb.mod_delta,Univ.Constraints.empty
-  |MEapply (fe,arg) ->
-    let ftrans = translate_mse_inclmod env mp inl fe in
+  | MEapply (fe,arg) ->
+    let ftrans = translate_mse_include_module env mp inl fe in
     translate_apply env inl ftrans arg (fun _ _ -> ())
-  |MEwith _ -> assert false (* No 'with' syntax for modules *)
+  | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
-let translate_mse_incl is_mod env mp inl me =
+let translate_mse_include is_mod env mp inl me =
   if is_mod then
     let () = forbid_incl_signed_functor env me in
-    translate_mse_inclmod env mp inl me
+    translate_mse_include_module env mp inl me
   else
     let mtb, cst = translate_modtype env mp inl ([],me) in
     let sign = clean_bounded_mod_expr mtb.mod_type in

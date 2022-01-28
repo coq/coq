@@ -111,23 +111,23 @@ let error_include_restricted_functor mp =
 (** {6 Operations on functors } *)
 
 let is_functor = function
-  |NoFunctor _ -> false
-  |MoreFunctor _ -> true
+  | NoFunctor _ -> false
+  | MoreFunctor _ -> true
 
 let destr_functor = function
-  |NoFunctor _ -> error_not_a_functor ()
-  |MoreFunctor (mbid,ty,x) -> (mbid,ty,x)
+  | NoFunctor _ -> error_not_a_functor ()
+  | MoreFunctor (mbid,ty,x) -> (mbid,ty,x)
 
 let destr_nofunctor mp = function
-  |NoFunctor a -> a
-  |MoreFunctor _ -> error_is_a_functor mp
+  | NoFunctor a -> a
+  | MoreFunctor _ -> error_is_a_functor mp
 
 let rec functor_smart_map fty f0 funct = match funct with
-  |MoreFunctor (mbid,ty,e) ->
+  | MoreFunctor (mbid,ty,e) ->
     let ty' = fty ty in
     let e' = functor_smart_map fty f0 e in
     if ty==ty' && e==e' then funct else MoreFunctor (mbid,ty',e')
-  |NoFunctor a ->
+  | NoFunctor a ->
     let a' = f0 a in if a==a' then funct else NoFunctor a'
 
 (** {6 Misc operations } *)
@@ -148,39 +148,39 @@ let check_modpath_equiv env mp1 mp2 =
     if ModPath.equal mp1' mp2' then ()
     else error_not_equal_modpaths mp1 mp2
 
-let implem_smartmap fs fa impl = match impl with
-  |Struct e -> let e' = fs e in if e==e' then impl else Struct e'
-  |Algebraic a -> let a' = fa a in if a==a' then impl else Algebraic a'
-  |Abstract|FullStruct -> impl
+let implem_smart_map fs fa impl = match impl with
+  | Struct e -> let e' = fs e in if e==e' then impl else Struct e'
+  | Algebraic a -> let a' = fa a in if a==a' then impl else Algebraic a'
+  | Abstract | FullStruct -> impl
 
 (** {6 Substitutions of modular structures } *)
 
 let id_delta x _y = x
 
-let subst_with_body sub = function
-  |WithMod(id,mp) as orig ->
-    let mp' = subst_mp sub mp in
+let subst_with_body subst = function
+  | WithMod(id,mp) as orig ->
+    let mp' = subst_mp subst mp in
     if mp==mp' then orig else WithMod(id,mp')
-  |WithDef(id,(c,ctx)) as orig ->
-    let c' = subst_mps sub c in
+  | WithDef(id,(c,ctx)) as orig ->
+    let c' = subst_mps subst c in
     if c==c' then orig else WithDef(id,(c',ctx))
 
-let rec subst_structure sub do_delta sign =
-  let subst_body ((l,body) as orig) = match body with
-    |SFBconst cb ->
-      let cb' = subst_const_body sub cb in
+let rec subst_structure subst do_delta sign =
+  let subst_field ((l,body) as orig) = match body with
+    | SFBconst cb ->
+      let cb' = subst_const_body subst cb in
       if cb==cb' then orig else (l,SFBconst cb')
-    |SFBmind mib ->
-      let mib' = subst_mind_body sub mib in
+    | SFBmind mib ->
+      let mib' = subst_mind_body subst mib in
       if mib==mib' then orig else (l,SFBmind mib')
-    |SFBmodule mb ->
-      let mb' = subst_module sub do_delta mb in
+    | SFBmodule mb ->
+      let mb' = subst_module subst do_delta mb in
       if mb==mb' then orig else (l,SFBmodule mb')
-    |SFBmodtype mtb ->
-      let mtb' = subst_modtype sub do_delta mtb in
+    | SFBmodtype mtb ->
+      let mtb' = subst_modtype subst do_delta mtb in
       if mtb==mtb' then orig else (l,SFBmodtype mtb')
   in
-  List.Smart.map subst_body sign
+  List.Smart.map subst_field sign
 
 and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a module_retroknowledge =
   fun subst retro ->
@@ -190,21 +190,21 @@ and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a
       let l' = List.Smart.map (subst_retro_action subst) l in
       if l == l' then r else ModBodyRK l
 
-and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
-  fun is_mod sub subst_impl do_delta mb ->
+and subst_module_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
+  fun is_mod subst subst_impl do_delta mb ->
     let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty;
           mod_retroknowledge=retro; _ } = mb in
-  let mp' = subst_mp sub mp in
-  let sub =
-    if ModPath.equal mp mp' then sub
-    else if is_mod && not (is_functor ty) then sub
-    else add_mp mp mp' empty_delta_resolver sub
+  let mp' = subst_mp subst mp in
+  let subst =
+    if ModPath.equal mp mp' then subst
+    else if is_mod && not (is_functor ty) then subst
+    else add_mp mp mp' empty_delta_resolver subst
   in
-  let ty' = subst_signature sub do_delta ty in
-  let me' = subst_impl sub me in
-  let aty' = Option.Smart.map (subst_expression sub id_delta) aty in
-  let retro' = subst_retro sub retro in
-  let delta' = do_delta mb.mod_delta sub in
+  let ty' = subst_signature subst do_delta ty in
+  let me' = subst_impl subst me in
+  let aty' = Option.Smart.map (subst_expression subst id_delta) aty in
+  let retro' = subst_retro subst retro in
+  let delta' = do_delta mb.mod_delta subst in
   if mp==mp' && me==me' && ty==ty' && aty==aty'
      && retro==retro' && delta'==mb.mod_delta
   then mb
@@ -217,41 +217,41 @@ and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body ->
       mod_delta = delta';
     }
 
-and subst_module sub do_delta mb =
-  subst_body true sub subst_impl do_delta mb
+and subst_module subst do_delta mb =
+  subst_module_body true subst subst_impl do_delta mb
 
-and subst_impl sub me =
-  implem_smartmap
-    (subst_signature sub id_delta) (subst_expression sub id_delta) me
+and subst_impl subst me =
+  implem_smart_map
+    (subst_signature subst id_delta) (subst_expression subst id_delta) me
 
-and subst_modtype sub do_delta mtb = subst_body false sub (fun _ () -> ()) do_delta mtb
+and subst_modtype subst do_delta mtb = subst_module_body false subst (fun _ () -> ()) do_delta mtb
 
-and subst_expr sub do_delta seb = match seb with
-  |MEident mp ->
-    let mp' = subst_mp sub mp in
+and subst_expr subst do_delta seb = match seb with
+  | MEident mp ->
+    let mp' = subst_mp subst mp in
     if mp==mp' then seb else MEident mp'
-  |MEapply (meb1,mp2) ->
-    let meb1' = subst_expr sub do_delta meb1 in
-    let mp2' = subst_mp sub mp2 in
+  | MEapply (meb1,mp2) ->
+    let meb1' = subst_expr subst do_delta meb1 in
+    let mp2' = subst_mp subst mp2 in
     if meb1==meb1' && mp2==mp2' then seb else MEapply(meb1',mp2')
-  |MEwith (meb,wdb) ->
-    let meb' = subst_expr sub do_delta meb in
-    let wdb' = subst_with_body sub wdb in
+  | MEwith (meb,wdb) ->
+    let meb' = subst_expr subst do_delta meb in
+    let wdb' = subst_with_body subst wdb in
     if meb==meb' && wdb==wdb' then seb else MEwith(meb',wdb')
 
-and subst_expression sub do_delta =
+and subst_expression subst do_delta =
   functor_smart_map
-    (subst_modtype sub do_delta)
-    (subst_expr sub do_delta)
+    (subst_modtype subst do_delta)
+    (subst_expr subst do_delta)
 
-and subst_signature sub do_delta =
+and subst_signature subst do_delta =
   functor_smart_map
-    (subst_modtype sub do_delta)
-    (subst_structure sub do_delta)
+    (subst_modtype subst do_delta)
+    (subst_structure subst do_delta)
 
-let do_delta_dom reso sub = subst_dom_delta_resolver sub reso
-let do_delta_codom reso sub = subst_codom_delta_resolver sub reso
-let do_delta_dom_codom reso sub = subst_dom_codom_delta_resolver sub reso
+let do_delta_dom reso subst = subst_dom_delta_resolver subst reso
+let do_delta_codom reso subst = subst_codom_delta_resolver subst reso
+let do_delta_dom_codom reso subst = subst_dom_codom_delta_resolver subst reso
 
 let subst_dom_codom_signature subst = subst_signature subst do_delta_dom_codom
 let subst_signature subst = subst_signature subst do_delta_codom
@@ -264,11 +264,11 @@ let add_retroknowledge r env =
   | ModBodyRK l -> List.fold_left Primred.add_retroknowledge env l
 
 let rec add_structure mp sign resolver linkinfo env =
-  let add_one env (l,elem) = match elem with
-    |SFBconst cb ->
+  let add_field env (l,elem) = match elem with
+    | SFBconst cb ->
       let c = constant_of_delta_kn resolver (KerName.make mp l) in
       Environ.add_constant_key c cb linkinfo env
-    |SFBmind mib ->
+    | SFBmind mib ->
       let mind = mind_of_delta_kn resolver (KerName.make mp l) in
       let mib =
         if mib.mind_private != None then
@@ -276,19 +276,19 @@ let rec add_structure mp sign resolver linkinfo env =
         else mib
       in
       Environ.add_mind_key mind (mib,ref linkinfo) env
-    |SFBmodule mb -> add_module mb linkinfo env (* adds components as well *)
-    |SFBmodtype mtb -> Environ.add_modtype mtb env
+    | SFBmodule mb -> add_module mb linkinfo env (* adds components as well *)
+    | SFBmodtype mtb -> Environ.add_modtype mtb env
   in
-  List.fold_left add_one env sign
+  List.fold_left add_field env sign
 
 and add_module mb linkinfo env =
   let mp = mb.mod_mp in
   let env = Environ.shallow_add_module mb env in
   match mb.mod_type with
-  |NoFunctor struc ->
+  | NoFunctor struc ->
     add_retroknowledge mb.mod_retroknowledge
       (add_structure mp struc mb.mod_delta linkinfo env)
-  |MoreFunctor _ -> env
+  | MoreFunctor _ -> env
 
 let add_linked_module mb linkinfo env =
   add_module mb linkinfo env
@@ -302,12 +302,12 @@ let add_module mb env =
 let add_module_type mp mtb env =
   add_module (module_body_of_type mp mtb) env
 
-(** {6 Strengtening } *)
+(** {6 Strengthening a signature for subtyping } *)
 
 let strengthen_const mp_from l cb resolver =
   match cb.const_body with
-  |Def _ -> cb
-  |_ ->
+  | Def _ -> cb
+  | _ ->
     let kn = KerName.make mp_from l in
     let con = constant_of_delta_kn resolver kn in
     let u = Univ.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
@@ -315,77 +315,57 @@ let strengthen_const mp_from l cb resolver =
         const_body = Def (mkConstU (con,u));
         const_body_code = Some (Vmbytegen.compile_alias con) }
 
-let rec strengthen_mod mp_from mp_to mb =
+let rec strengthen_module mp_from mp_to mb =
   if mp_in_delta mb.mod_mp mb.mod_delta then mb
   else match mb.mod_type with
-  |NoFunctor struc ->
-    let reso,struc' = strengthen_sig mp_from struc mp_to mb.mod_delta in
+  | NoFunctor struc ->
+    let reso,struc' = strengthen_signature mp_from struc mp_to mb.mod_delta in
     { mb with
       mod_expr = Algebraic (NoFunctor (MEident mp_to));
       mod_type = NoFunctor struc';
       mod_delta =
         add_mp_delta_resolver mp_from mp_to
           (add_delta_resolver mb.mod_delta reso) }
-  |MoreFunctor _ -> mb
+  | MoreFunctor _ -> mb
 
-and strengthen_sig mp_from struc mp_to reso = match struc with
-  |[] -> empty_delta_resolver,[]
-  |(l,SFBconst cb) :: rest ->
+and strengthen_signature mp_from struc mp_to reso = match struc with
+  | [] -> empty_delta_resolver,[]
+  | (l,SFBconst cb) :: rest ->
     let item' = l,SFBconst (strengthen_const mp_from l cb reso) in
-    let reso',rest' = strengthen_sig mp_from rest mp_to reso in
+    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item'::rest'
-  |(_,SFBmind _ as item):: rest ->
-    let reso',rest' = strengthen_sig mp_from rest mp_to reso in
+  | (_,SFBmind _ as item):: rest ->
+    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item::rest'
-  |(l,SFBmodule mb) :: rest ->
+  | (l,SFBmodule mb) :: rest ->
     let mp_from' = MPdot (mp_from,l) in
     let mp_to' = MPdot(mp_to,l) in
-    let mb' = strengthen_mod mp_from' mp_to' mb in
+    let mb' = strengthen_module mp_from' mp_to' mb in
     let item' = l,SFBmodule mb' in
-    let reso',rest' = strengthen_sig mp_from rest mp_to reso in
+    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     add_delta_resolver reso' mb.mod_delta, item':: rest'
-  |(_l,SFBmodtype _mty as item) :: rest ->
-    let reso',rest' = strengthen_sig mp_from rest mp_to reso in
+  | (_l,SFBmodtype _mty as item) :: rest ->
+    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item::rest'
 
 let strengthen mtb mp =
   (* Has mtb already been strengthened ? *)
   if mp_in_delta mtb.mod_mp mtb.mod_delta then mtb
   else match mtb.mod_type with
-  |NoFunctor struc ->
-    let reso',struc' = strengthen_sig mtb.mod_mp struc mp mtb.mod_delta in
+  | NoFunctor struc ->
+    let reso',struc' = strengthen_signature mtb.mod_mp struc mp mtb.mod_delta in
     { mtb with
       mod_type = NoFunctor struc';
       mod_delta =
         add_delta_resolver mtb.mod_delta
           (add_mp_delta_resolver mtb.mod_mp mp reso') }
-  |MoreFunctor _ -> mtb
+  | MoreFunctor _ -> mtb
 
-let inline_delta_resolver env inl mp mbid mtb delta =
-  let constants = inline_of_delta inl mtb.mod_delta in
-  let rec make_inline delta = function
-    | [] -> delta
-    | (lev,kn)::r ->
-      let kn = replace_mp_in_kn (MPbound mbid) mp kn in
-      let con = constant_of_delta_kn delta kn in
-      if not (Environ.mem_constant con env) then
-        error_no_such_label_sub (Constant.label con)
-          (ModPath.to_string (Constant.modpath con))
-      else
-        let constant = lookup_constant con env in
-        let l = make_inline delta r in
-        match constant.const_body with
-        | Undef _ | OpaqueDef _ | Primitive _ -> l
-        | Def constr ->
-          let ctx = Declareops.constant_polymorphic_context constant in
-          let constr = Univ.{univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
-          add_inline_delta_resolver kn (lev, Some constr) l
-  in
-  make_inline delta constants
+(** {6 Strengthening a module for [Module M := M'] or [Include M] } *)
 
-let rec strengthen_and_subst_mod mb subst mp_from mp_to =
+let rec strengthen_and_subst_module mb subst mp_from mp_to =
   match mb.mod_type with
-  |NoFunctor struc ->
+  | NoFunctor struc ->
     let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
     if mb_is_an_alias then subst_module subst do_delta_dom mb
     else
@@ -398,83 +378,61 @@ let rec strengthen_and_subst_mod mb subst mp_from mp_to =
         mod_expr = Algebraic (NoFunctor (MEident mp_from));
         mod_type = NoFunctor struc';
         mod_delta = add_mp_delta_resolver mp_to mp_from reso' }
-  |MoreFunctor _ ->
+  | MoreFunctor _ ->
     let subst = add_mp mb.mod_mp mp_to empty_delta_resolver subst in
     subst_module subst do_delta_dom mb
 
-and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
-  match str with
-    | [] -> empty_delta_resolver,[]
-    | (l,SFBconst cb) as item :: rest ->
+and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
+  let strengthen_and_subst_field reso' item = match item with
+    | (l,SFBconst cb) ->
         let cb' = subst_const_body subst cb in
         let cb' =
-          if alias then cb'
+          if alias then (* optimization *) cb'
           else strengthen_const mp_from l cb' reso
         in
         let item' = if cb' == cb then item else (l, SFBconst cb') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
         if incl then
           (* If we are performing an inclusion we need to add
              the fact that the constant mp_to.l is \Delta-equivalent
              to reso(mp_from.l) *)
           let kn_from = KerName.make mp_from l in
           let kn_to = KerName.make mp_to l in
-          let old_name = kn_of_delta reso kn_from in
-          add_kn_delta_resolver kn_to old_name reso', str'
+          let kn_canonical = kn_of_delta reso kn_from in
+          add_kn_delta_resolver kn_to kn_canonical reso', item'
         else
           (* In this case the fact that the constant mp_to.l is
              \Delta-equivalent to resolver(mp_from.l) is already known
              because reso' contains mp_to maps to reso(mp_from) *)
-          reso', str'
-    | (l,SFBmind mib) as item :: rest ->
+          reso', item'
+    | (l,SFBmind mib) ->
         let mib' = subst_mind_body subst mib in
         let item' = if mib' == mib then item else (l, SFBmind mib') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
         (* Same as constant *)
         if incl then
           let kn_from = KerName.make mp_from l in
           let kn_to = KerName.make mp_to l in
-          let old_name = kn_of_delta reso kn_from in
-          add_kn_delta_resolver kn_to old_name reso', str'
+          let kn_canonical = kn_of_delta reso kn_from in
+          add_kn_delta_resolver kn_to kn_canonical reso', item'
         else
-          reso', str'
-    | (l,SFBmodule mb) as item :: rest ->
+          reso', item'
+    | (l,SFBmodule mb) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot (mp_to,l) in
         let mb' = if alias then
           subst_module subst do_delta_dom mb
         else
-          strengthen_and_subst_mod mb subst mp_from' mp_to'
+          strengthen_and_subst_module mb subst mp_from' mp_to'
         in
         let item' = if mb' == mb then item else (l, SFBmodule mb') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
         (* if mb is a functor we should not derive new equivalences
            on names, hence we add the fact that the functor can only
            be equivalent to itself. If we adopt an applicative
            semantic for functor this should be changed.*)
         if is_functor mb'.mod_type then
-          add_mp_delta_resolver mp_to' mp_to' reso', str'
+          add_mp_delta_resolver mp_to' mp_to' reso', item'
         else
-          add_delta_resolver reso' mb'.mod_delta, str'
-    | (l,SFBmodtype mty) as item :: rest ->
+          add_delta_resolver reso' mb'.mod_delta, item'
+    | (l,SFBmodtype mty) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot(mp_to,l) in
         let subst' = add_mp mp_from' mp_to' empty_delta_resolver subst in
@@ -483,24 +441,28 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
           mty
         in
         let item' = if mty' == mty then item else (l, SFBmodtype mty') in
-        let reso',rest' =
-          strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
-        in
-        let str' =
-          if rest' == rest && item' == item then str
-          else item' :: rest'
-        in
-        add_mp_delta_resolver mp_to' mp_to' reso', str'
-
+        add_mp_delta_resolver mp_to' mp_to' reso', item'
+  in
+  List.Smart.fold_left_map strengthen_and_subst_field empty_delta_resolver struc
 
 (** Let P be a module path when we write:
      "Module M:=P." or "Module M. Include P. End M."
     We need to perform two operations to compute the body of M.
-    - The first one is applying the substitution {P <- M} on the type of P
-    - The second one is strengthening. *)
+    - The first one is applying the substitution {P <- M} on the type of P, i.e.
+      to replace any expression in P referring to P itself by the same
+      expression referring instead to M
+    - The second one is strengthening, i.e. associating to each
+      abstract/opaque field t in P a defined field t := Q.t where Q is the
+      Delta-normal form of P (possibly P itself):
+      - in the alias case "Module M:=P." where "P" is already an alias
+        with canonical form "Q": add the module Delta-equivalence "M := Q"
+      - in the alias case where P is not itself an alias:
+        add the module Delta-equivalence "M := Q"
+      - in the "Include" case: add a Delta-equivalence "t := t'" where
+        "t'" is the canonical form of "P.t" on each field *)
 
-let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
-  |NoFunctor struc ->
+let strengthen_and_subst_module_body mb mp include_b = match mb.mod_type with
+  | NoFunctor struc ->
     let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
     (* if mb.mod_mp is an alias then the strengthening is useless
        (i.e. it is already done)*)
@@ -522,7 +484,7 @@ let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
       mod_delta =
         if include_b then reso'
         else add_delta_resolver new_resolver reso' }
-  |MoreFunctor _ ->
+  | MoreFunctor _ ->
     let subst = map_mp mb.mod_mp mp empty_delta_resolver in
     subst_module subst do_delta_dom_codom mb
 
@@ -549,7 +511,7 @@ let rec clean_module_body l mb =
   let typ' = clean_signature l typ in
   let impl' = match impl with
     | Algebraic (NoFunctor m) when is_bounded_expr l m -> FullStruct
-    | _ -> implem_smartmap (clean_signature l) (clean_expression l) impl
+    | _ -> implem_smart_map (clean_signature l) (clean_expression l) impl
   in
   if typ==typ' && impl==impl' then mb
   else { mb with mod_type=typ'; mod_expr=impl' }
@@ -561,10 +523,10 @@ and clean_module_type l mb =
   else { mb with mod_type=typ' }
 
 and clean_field l field = match field with
-  |(lab,SFBmodule mb) ->
+  | (lab,SFBmodule mb) ->
     let mb' = clean_module_body l mb in
     if mb==mb' then field else (lab,SFBmodule mb')
-  |_ -> field
+  | _ -> field
 
 and clean_structure l = List.Smart.map (clean_field l)
 
@@ -575,12 +537,36 @@ and clean_expression l =
   functor_smart_map (clean_module_type l) (fun me -> me)
 
 let rec collect_mbid l sign =  match sign with
-  |MoreFunctor (mbid,ty,m) ->
+  | MoreFunctor (mbid,ty,m) ->
     let m' = collect_mbid (MBIset.add mbid l) m in
     if m==m' then sign else MoreFunctor (mbid,ty,m')
-  |NoFunctor struc ->
+  | NoFunctor struc ->
     let struc' = clean_structure l struc in
     if struc==struc' then sign else NoFunctor struc'
 
 let clean_bounded_mod_expr sign =
   if is_functor sign then collect_mbid MBIset.empty sign else sign
+
+(** {6 Building map of constants to inline } *)
+
+let inline_delta_resolver env inl mp mbid mtb delta =
+  let constants = inline_of_delta inl mtb.mod_delta in
+  let rec make_inline delta = function
+    | [] -> delta
+    | (lev,kn)::r ->
+      let kn = replace_mp_in_kn (MPbound mbid) mp kn in
+      let con = constant_of_delta_kn delta kn in
+      if not (Environ.mem_constant con env) then
+        error_no_such_label_sub (Constant.label con)
+          (ModPath.to_string (Constant.modpath con))
+      else
+        let constant = lookup_constant con env in
+        let l = make_inline delta r in
+        match constant.const_body with
+        | Undef _ | OpaqueDef _ | Primitive _ -> l
+        | Def constr ->
+          let ctx = Declareops.constant_polymorphic_context constant in
+          let constr = Univ.{univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
+          add_inline_delta_resolver kn (lev, Some constr) l
+  in
+  make_inline delta constants

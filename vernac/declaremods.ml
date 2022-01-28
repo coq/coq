@@ -510,34 +510,34 @@ let rec replace_module_object idl mp0 objs0 mp1 objs1 =
   | idl,lobj::tail -> lobj::replace_module_object idl mp0 tail mp1 objs1
 
 let type_of_mod mp env = function
-  |true -> (Environ.lookup_module mp env).mod_type
-  |false -> (Environ.lookup_modtype mp env).mod_type
+  | true -> (Environ.lookup_module mp env).mod_type
+  | false -> (Environ.lookup_modtype mp env).mod_type
 
 let rec get_module_path = function
-  |MEident mp -> mp
-  |MEwith (me,_) -> get_module_path me
-  |MEapply (me,_) -> get_module_path me
+  | MEident mp -> mp
+  | MEwith (me,_) -> get_module_path me
+  | MEapply (me,_) -> get_module_path me
 
 (** Substitutive objects of a module expression (or module type) *)
 
 let rec get_module_sobjs is_mod env inl = function
-  |MEident mp ->
+  | MEident mp ->
     begin match ModSubstObjs.get mp with
-    |(mbids,Objs _) when not (ModPath.is_bound mp) ->
+    | (mbids,Objs _) when not (ModPath.is_bound mp) ->
       (mbids,Ref (mp, empty_subst)) (* we create an alias *)
-    |sobjs -> sobjs
+    | sobjs -> sobjs
     end
-  |MEwith (mty, WithDef _) -> get_module_sobjs is_mod env inl mty
-  |MEwith (mty, WithMod (idl,mp1)) ->
+  | MEwith (mty, WithDef _) -> get_module_sobjs is_mod env inl mty
+  | MEwith (mty, WithMod (idl,mp1)) ->
     assert (not is_mod);
     let sobjs0 = get_module_sobjs is_mod env inl mty in
     assert (sobjs_no_functor sobjs0);
-    (* For now, we expanse everything, to be safe *)
+    (* For now, we expand everything, to be safe *)
     let mp0 = get_module_path mty in
     let objs0 = expand_sobjs sobjs0 in
     let objs1 = expand_sobjs (ModSubstObjs.get mp1) in
     ([], Objs (replace_module_object idl mp0 objs0 mp1 objs1))
-  |MEapply _ as me ->
+  | MEapply _ as me ->
     let mp1, mp_l = get_applications me in
     let mbids, aobjs = get_module_sobjs is_mod env inl (MEident mp1) in
     let typ = type_of_mod mp1 env is_mod in
@@ -905,11 +905,15 @@ let rec decompose_functor mpl typ =
 exception NoIncludeSelf
 
 let type_of_incl env is_mod = function
-  |MEident mp -> type_of_mod mp env is_mod
-  |MEapply _ as me ->
+  | MEident mp -> type_of_mod mp env is_mod
+  | MEapply _ as me ->
     let mp0, mp_l = get_applications me in
     decompose_functor mp_l (type_of_mod mp0 env is_mod)
-  |MEwith _ -> raise NoIncludeSelf
+  | MEwith _ -> raise NoIncludeSelf
+
+(** Implements [Include F] where [F] has parameters [mbids] to be
+    instantiated by fields of the current "self" module, i.e. using
+    subtyping, by the current module itself. *)
 
 let declare_one_include (me_ast,annot) =
   let env = Global.env() in

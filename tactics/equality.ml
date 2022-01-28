@@ -363,7 +363,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
           | Some r -> destConstRef r
           | None ->
             let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
-            let mp,l = Constant.repr2 (Constant.make1 (Constant.canonical c1)) in
+            let mp,l = KerName.repr (Constant.canonical c1) in
             let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
             let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
             if not (Environ.mem_constant c1' (Global.env ())) then

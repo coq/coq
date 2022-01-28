@@ -1127,7 +1127,7 @@ let propagate_loads senv =
 let functorize_module params mb =
   let f x = functorize params x in
   { mb with
-    mod_expr = Modops.implem_smartmap f f mb.mod_expr;
+    mod_expr = Modops.implem_smart_map f f mb.mod_expr;
     mod_type = f mb.mod_type;
     mod_type_alg = Option.map f mb.mod_type_alg }
 
@@ -1215,7 +1215,7 @@ let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
   let sign,(),resolver,cst =
-    translate_mse_incl is_module senv.env mp_sup inl me
+    translate_mse_include is_module senv.env mp_sup inl me
   in
   let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   (* Include Self support  *)

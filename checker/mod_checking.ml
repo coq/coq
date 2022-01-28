@@ -98,7 +98,7 @@ let mk_mtb mp sign delta =
     mod_retroknowledge = ModTypeRK; }
 
 let rec collect_constants_without_body sign mp accu =
-  let collect_sf s lab = function
+  let collect_field s lab = function
   | SFBconst cb ->
      let c = Constant.make2 mp lab in
      if Declareops.constant_has_body cb then s else Cset.add c s
@@ -107,7 +107,7 @@ let rec collect_constants_without_body sign mp accu =
   match sign with
   | MoreFunctor _ -> Cset.empty  (* currently ignored *)
   | NoFunctor struc ->
-     List.fold_left (fun s (lab,mb) -> collect_sf s lab mb) accu struc
+     List.fold_left (fun s (lab,mb) -> collect_field s lab mb) accu struc
 
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
@@ -116,16 +116,16 @@ let rec check_module env opac mp mb opacify =
     check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
   in
   let optsign, opac = match mb.mod_expr with
-    |Struct sign_struct ->
+    | Struct sign_struct ->
       let opacify = collect_constants_without_body sign mb.mod_mp opacify in
       let sign, opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
       Some (sign, mb.mod_delta), opac
-    |Algebraic me -> Some (check_mexpression env opac me mb.mod_mp mb.mod_delta), opac
-    |Abstract|FullStruct -> None, opac
+    | Algebraic me -> Some (check_mexpression env opac me mb.mod_mp mb.mod_delta), opac
+    | Abstract|FullStruct -> None, opac
   in
   let () = match optsign with
-  |None -> ()
-  |Some (sign,delta) ->
+  | None -> ()
+  | Some (sign,delta) ->
     let mtb1 = mk_mtb mp sign delta
     and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
     let env = Modops.add_module_type mp mtb1 env in
@@ -159,7 +159,7 @@ and check_structure_field env opac mp lab res opacify = function
 and check_mexpr env opac mse mp_mse res = match mse with
   | MEident mp ->
       let mb = lookup_module mp env in
-      let mb = Modops.strengthen_and_subst_mb mb mp_mse false in
+      let mb = Modops.strengthen_and_subst_module_body mb mp_mse false in
       mb.mod_type, mb.mod_delta
   | MEapply (f,mp) ->
       let sign, delta = check_mexpr env opac f mp_mse res in

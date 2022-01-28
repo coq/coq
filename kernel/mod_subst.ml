@@ -21,7 +21,8 @@ open Names
 open Constr
 
 (* For Inline, the int is an inlining level, and the constr (if present)
-   is the term into which we should inline. *)
+   is the term into which we should inline.
+   Equiv gives the canonical name in the given context. *)
 
 type delta_hint =
   | Inline of int * constr Univ.univ_abstracted option
@@ -97,22 +98,22 @@ let debug_string_of_delta resolve =
   let l = Deltamap.fold mp_to_string kn_to_string resolve [] in
   String.concat ", " (List.rev l)
 
-let list_contents sub =
+let list_contents subst =
   let one_pair (mp,reso) = (ModPath.to_string mp,debug_string_of_delta reso) in
   let mp_one_pair mp0 p l = (ModPath.to_string mp0, one_pair p)::l in
-  Umap.fold mp_one_pair sub []
+  Umap.fold mp_one_pair subst []
 
-let debug_string_of_subst sub =
+let debug_string_of_subst subst =
   let l = List.map (fun (s1,(s2,s3)) -> s1^"|->"^s2^"["^s3^"]")
-    (list_contents sub)
+    (list_contents subst)
   in
   "{" ^ String.concat "; " l ^ "}"
 
 let debug_pr_delta resolve =
   str (debug_string_of_delta resolve)
 
-let debug_pr_subst sub =
-  let l = list_contents sub in
+let debug_pr_subst subst =
+  let l = list_contents subst in
   let f (s1,(s2,s3)) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2 ++
                               spc () ++ str "[" ++ str s3 ++ str "]")
   in
@@ -225,13 +226,13 @@ let search_delta_inline resolve kn1 kn2 =
       try find kn2
       with Not_found -> None
 
-let subst_mp0 sub mp = (* 's like subst *)
+let subst_mp_opt subst mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPfile _ | MPbound _ -> Umap.find mp sub
+    | MPfile _ | MPbound _ -> Umap.find mp subst
     | MPdot (mp1,l) as mp2 ->
         begin
-          try Umap.find mp2 sub
+          try Umap.find mp2 subst
           with Not_found ->
             let mp1',resolve = aux mp1 in
             MPdot (mp1',l),resolve
@@ -239,31 +240,31 @@ let subst_mp0 sub mp = (* 's like subst *)
  in
  try Some (aux mp) with Not_found -> None
 
-let subst_mp sub mp =
- match subst_mp0 sub mp with
+let subst_mp subst mp =
+ match subst_mp_opt subst mp with
     None -> mp
   | Some (mp',_) -> mp'
 
-let subst_kn_delta sub kn =
+let subst_kn_delta subst kn =
  let mp,l = KerName.repr kn in
-  match subst_mp0 sub mp with
+  match subst_mp_opt subst mp with
      Some (mp',resolve) ->
       solve_delta_kn resolve (KerName.make mp' l)
    | None -> kn
 
 
-let subst_kn sub kn =
+let subst_kn subst kn =
  let mp,l = KerName.repr kn in
-  match subst_mp0 sub mp with
+  match subst_mp_opt subst mp with
      Some (mp',_) ->
       (KerName.make mp' l)
    | None -> kn
 
 exception No_subst
 
-let subst_dual_mp sub mp1 mp2 =
-  let o1 = subst_mp0 sub mp1 in
-  let o2 = if mp1 == mp2 then o1 else subst_mp0 sub mp2 in
+let subst_dual_mp subst mp1 mp2 =
+  let o1 = subst_mp_opt subst mp1 in
+  let o2 = if mp1 == mp2 then o1 else subst_mp_opt subst mp2 in
   match o1, o2 with
     | None, None -> raise No_subst
     | Some (mp1',resolve), None -> mp1', mp2, resolve, true
@@ -274,11 +275,11 @@ let progress f x ~orelse =
   let y = f x in
   if y != x then y else orelse
 
-let subst_mind sub mind =
-  let mpu,l = MutInd.repr2 mind in
+let subst_mind subst mind =
+  let mpu,l = KerName.repr (MutInd.user mind) in
   let mpc = KerName.modpath (MutInd.canonical mind) in
   try
-    let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
+    let mpu,mpc,resolve,user = subst_dual_mp subst mpu mpc in
     let knu = KerName.make mpu l in
     let knc = if mpu == mpc then knu else KerName.make mpc l in
     let knc' =
@@ -287,8 +288,8 @@ let subst_mind sub mind =
     MutInd.make knu knc'
   with No_subst -> mind
 
-let subst_ind sub (ind,i as indi) =
-  let ind' = subst_mind sub ind in
+let subst_ind subst (ind,i as indi) =
+  let ind' = subst_mind subst ind in
     if ind' == ind then indi else ind',i
 
 let subst_constructor subst (ind,j as ref) =
@@ -296,13 +297,13 @@ let subst_constructor subst (ind,j as ref) =
   if ind==ind' then ref
   else (ind',j)
 
-let subst_pind sub (ind,u) =
-  (subst_ind sub ind, u)
+let subst_pind subst (ind,u) =
+  (subst_ind subst ind, u)
 
-let subst_con0 sub cst =
-  let mpu,l = Constant.repr2 cst in
+let subst_con0 subst cst =
+  let mpu,l = KerName.repr (Constant.user cst) in
   let mpc = KerName.modpath (Constant.canonical cst) in
-  let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
+  let mpu,mpc,resolve,user = subst_dual_mp subst mpu mpc in
   let knu = KerName.make mpu l in
   let knc = if mpu == mpc then knu else KerName.make mpc l in
   match search_delta_inline resolve knu knc with
@@ -316,24 +317,24 @@ let subst_con0 sub cst =
       let cst' = Constant.make knu knc' in
       cst', None
 
-let subst_con sub cst =
-  try subst_con0 sub cst
+let subst_con subst cst =
+  try subst_con0 subst cst
   with No_subst -> cst, None
 
-let subst_pcon sub (con,u as pcon) =
-  try let con', _can = subst_con0 sub con in
+let subst_pcon subst (con,u as pcon) =
+  try let con', _can = subst_con0 subst con in
         con',u
   with No_subst -> pcon
 
-let subst_constant sub con =
-  try fst (subst_con0 sub con)
+let subst_constant subst con =
+  try fst (subst_con0 subst con)
   with No_subst -> con
 
-let subst_proj_repr sub p =
-  Projection.Repr.map (subst_mind sub) p
+let subst_proj_repr subst p =
+  Projection.Repr.map (subst_mind subst) p
 
-let subst_proj sub p =
-  Projection.map (subst_mind sub) p
+let subst_proj subst p =
+  Projection.map (subst_mind subst) p
 
 let subst_retro_action subst action =
   let open Retroknowledge in
@@ -422,15 +423,15 @@ let rec map_kn f f' c =
             else mkCoFix (ln,(lna,tl',bl'))
       | _ -> c
 
-let subst_mps sub c =
-  let subst_pcon_term sub (con,u) =
-    let con', can = subst_con0 sub con in
+let subst_mps subst c =
+  let subst_pcon_term subst (con,u) =
+    let con', can = subst_con0 subst con in
     match can with
     | None -> mkConstU (con',u)
     | Some t -> Vars.univ_instantiate_constr u t
   in
-  if is_empty_subst sub then c
-  else map_kn (subst_mind sub) (subst_pcon_term sub) c
+  if is_empty_subst subst then c
+  else map_kn (subst_mind subst) (subst_pcon_term subst) c
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
@@ -474,8 +475,8 @@ let subst_dom_delta_resolver subst resolver =
   in
   Deltamap.fold mp_apply_subst kn_apply_subst resolver empty_delta_resolver
 
-let subst_mp_delta sub mp mkey =
- match subst_mp0 sub mp with
+let subst_mp_delta subst mp mkey =
+ match subst_mp_opt subst mp with
     None -> empty_delta_resolver,mp
   | Some (mp',resolve) ->
       let mp1 = find_prefix resolve mp' in
@@ -528,19 +529,19 @@ let add_delta_resolver resolver1 resolver2 =
   else
     update_delta_resolver resolver1 resolver2
 
-let substition_prefixed_by k mp subst =
-  let mp_prefixmp kmp (mp_to,reso) sub =
+let substitution_prefixed_by k mp subst =
+  let mp_prefixmp kmp (mp_to,reso) subst =
     if mp_in_mp mp kmp && not (ModPath.equal mp kmp) then
       let new_key = replace_mp_in_mp mp k kmp in
-      Umap.add_mp new_key (mp_to,reso) sub
-    else sub
+      Umap.add_mp new_key (mp_to,reso) subst
+    else subst
   in
   Umap.fold mp_prefixmp subst empty_subst
 
 let join subst1 subst2 =
   let apply_subst mpk add (mp,resolve) res =
     let mp',resolve' =
-      match subst_mp0 subst2 mp with
+      match subst_mp_opt subst2 mp with
         | None -> mp, None
         | Some (mp',resolve') ->  mp', Some resolve' in
     let resolve'' =
@@ -551,7 +552,7 @@ let join subst1 subst2 =
         | None ->
             subst_codom_delta_resolver subst2 resolve
     in
-    let prefixed_subst = substition_prefixed_by mpk mp' subst2 in
+    let prefixed_subst = substitution_prefixed_by mpk mp' subst2 in
     Umap.join prefixed_subst (add (mp',resolve'') res)
   in
   let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in

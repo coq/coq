@@ -59,8 +59,8 @@ let rec search_mind_label lab = function
 *)
 
 let rec fields_of_functor f subs mp0 args = function
-  |NoFunctor a -> f subs mp0 args a
-  |MoreFunctor (mbid,_,e) ->
+  | NoFunctor a -> f subs mp0 args a
+  | MoreFunctor (mbid,_,e) ->
     match args with
     | [] -> assert false (* we should only encounter applied functors *)
     | mpa :: args ->
@@ -95,9 +95,9 @@ and fields_of_mp mp =
   Modops.subst_structure subs fields
 
 and fields_of_mb subs mb args = match mb.mod_expr with
-  |Algebraic expr -> fields_of_expression subs mb.mod_mp args expr
-  |Struct sign -> fields_of_signature subs mb.mod_mp args sign
-  |Abstract|FullStruct -> fields_of_signature subs mb.mod_mp args mb.mod_type
+  | Algebraic expr -> fields_of_expression subs mb.mod_mp args expr
+  | Struct sign -> fields_of_signature subs mb.mod_mp args sign
+  | Abstract|FullStruct -> fields_of_signature subs mb.mod_mp args mb.mod_type
 
 (** The Abstract case above corresponds to [Declare Module] *)
 
@@ -108,11 +108,11 @@ and fields_of_signature x =
       (struc, mp0, subs)) x
 
 and fields_of_expr subs mp0 args = function
-  |MEident mp ->
+  | MEident mp ->
     let mb = lookup_module_in_impl (subst_mp subs mp) in
     fields_of_mb subs mb args
-  |MEapply (me1,mp2) -> fields_of_expr subs mp0 (mp2::args) me1
-  |MEwith _ -> assert false (* no 'with' in [mod_expr] *)
+  | MEapply (me1,mp2) -> fields_of_expr subs mp0 (mp2::args) me1
+  | MEwith _ -> assert false (* no 'with' in [mod_expr] *)
 
 and fields_of_expression x = fields_of_functor fields_of_expr x
 

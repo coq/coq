@@ -260,7 +260,7 @@ let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty2 =  module_type_of_module msb2 in
   check_modtypes cst env mty1 mty2 subst1 subst2 false
 
-and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
+and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2 =
   let map1 = make_labmap mp1 sig1 in
   let check_one_body cst (l,spec2) =
     match spec2 with
@@ -291,10 +291,10 @@ and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
 and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
   if mtb1==mtb2 || mtb1.mod_type == mtb2.mod_type then cst
   else
-    let rec check_structure cst env str1 str2 equiv subst1 subst2 =
-      match str1,str2 with
-      |NoFunctor list1,
-       NoFunctor list2 ->
+    let rec check_structure cst env struc1 struc2 equiv subst1 subst2 =
+      match struc1,struc2 with
+      | NoFunctor list1,
+        NoFunctor list2 ->
         if equiv then
           let subst2 = add_mp mtb2.mod_mp mtb1.mod_mp mtb1.mod_delta subst2 in
           let cst1 = check_signatures cst env
@@ -303,15 +303,15 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
           in
           let cst2 = check_signatures cst env
             mtb2.mod_mp list2 mtb1.mod_mp list1 subst2 subst1
-            mtb2.mod_delta  mtb1.mod_delta
+            mtb2.mod_delta mtb1.mod_delta
           in
           Univ.Constraints.union cst1 cst2
         else
           check_signatures cst env
             mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
             mtb1.mod_delta  mtb2.mod_delta
-      |MoreFunctor (arg_id1,arg_t1,body_t1),
-       MoreFunctor (arg_id2,arg_t2,body_t2) ->
+      | MoreFunctor (arg_id1,arg_t1,body_t1),
+        MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mp2 = MPbound arg_id2 in
         let subst1 = join (map_mbid arg_id1 mp2 arg_t2.mod_delta) subst1 in
         let cst = check_modtypes cst env arg_t2 arg_t1 subst2 subst1 equiv in
