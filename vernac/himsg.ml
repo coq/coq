@@ -249,7 +249,7 @@ let explain_elim_arity env sigma ind c okinds =
         | WrongArity ->
           "wrong arity" in
       let ppar = pr_disjunction (fun s -> quote (Sorts.pr_sort_family s)) sorts in
-      let ppt = pr_leconstr_env env sigma (snd (decompose_prod_assum sigma pj.uj_type)) in
+      let ppt = pr_leconstr_env env sigma (snd (decompose_prod_decls sigma pj.uj_type)) in
       hov 0
         (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
          str "while it" ++ spc () ++ str "should be " ++ ppar ++ str ".") ++

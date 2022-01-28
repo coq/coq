@@ -76,7 +76,7 @@ let type_constructor mind mib u (ctx, typ) params =
   let ndecls = Context.Rel.length mib.mind_params_ctxt in
   if Int.equal ndecls 0 then ctyp
   else
-    let _,ctyp = decompose_prod_n_assum ndecls ctyp in
+    let _,ctyp = decompose_prod_n_decls ndecls ctyp in
     substl (subst_of_rel_context_instance mib.mind_params_ctxt params)
       ctyp
 
@@ -114,7 +114,7 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params (pctx, p) =
   let p = it_mkLambda_or_LetIn p pctx in (* TODO: prevent useless cut? *)
   let build_one_branch i cty =
     let typi = type_constructor mind mib u cty params in
-    let decl,indapp = Reductionops.splay_prod env sigma (EConstr.of_constr typi) in
+    let decl,indapp = Reductionops.hnf_decompose_prod env sigma (EConstr.of_constr typi) in
     let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
     let ((ind,u),cargs) = find_rectype_a env sigma indapp in
     let nparams = Array.length params in

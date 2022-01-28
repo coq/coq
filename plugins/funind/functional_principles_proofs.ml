@@ -249,7 +249,7 @@ let change_eq env sigma hyp_id (context : rel_context) x t end_of_type =
   in
   let new_type_of_hyp = Reductionops.nf_betaiota env sigma new_type_of_hyp in
   let new_ctxt, new_end_of_type =
-    decompose_prod_n_assum sigma ctxt_size new_type_of_hyp
+    decompose_prod_n_decls sigma ctxt_size new_type_of_hyp
   in
   let prove_new_hyp =
     let open Tacticals in
@@ -352,7 +352,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       in
       (* length of context didn't change ? *)
       let new_context, new_typ_of_hyp =
-        decompose_prod_n_assum sigma (List.length context) reduced_type_of_hyp
+        decompose_prod_n_decls sigma (List.length context) reduced_type_of_hyp
       in
       tclTHENLIST
         [ h_reduce_with_zeta (Locusops.onHyp hyp_id)
@@ -830,7 +830,7 @@ let generate_equation_lemma env evd fnames f fun_num nb_params nb_args rec_args_
     Option.get (Global.body_of_constant_body Library.indirect_accessor f_def)
   in
   let f_body = EConstr.of_constr f_body in
-  let params, f_body_with_params = decompose_lam_n evd nb_params f_body in
+  let params, f_body_with_params = decompose_lambda_n evd nb_params f_body in
   let (_, num), (_, _, bodies) = destFix evd f_body_with_params in
   let fnames_with_params =
     let params = Array.init nb_params (fun i -> mkRel (nb_params - i)) in
@@ -855,7 +855,7 @@ let generate_equation_lemma env evd fnames f fun_num nb_params nb_args rec_args_
   (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
   let (type_ctxt, type_of_f), evd =
     let evd, t = Typing.type_of ~refresh:true env evd f in
-    (decompose_prod_n_assum evd (nb_params + nb_args) t, evd)
+    (decompose_prod_n_decls evd (nb_params + nb_args) t, evd)
   in
   let eqn = mkApp (Lazy.force eq, [|type_of_f; eq_lhs; eq_rhs|]) in
   let lemma_type = it_mkProd_or_LetIn eqn type_ctxt in
@@ -998,7 +998,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
         | None -> user_err Pp.(str "Cannot define a principle over an axiom ")
       in
       let fbody = get_body fnames.(fun_num) in
-      let f_ctxt, f_body = decompose_lam sigma fbody in
+      let f_ctxt, f_body = decompose_lambda sigma fbody in
       let f_ctxt_length = List.length f_ctxt in
       let diff_params = princ_info.nparams - f_ctxt_length in
       let full_params, princ_params, fbody_with_full_params =
@@ -1069,7 +1069,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
                 ; types
                 ; offset = fix_offset
                 ; nb_realargs =
-                    List.length (fst (decompose_lam sigma bodies.(i)))
+                    List.length (fst (decompose_lambda sigma bodies.(i)))
                     - fix_offset
                 ; body_with_param = bodies_with_all_params.(i)
                 ; num_in_block = i })
@@ -1168,7 +1168,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
         Proofview.Goal.enter (fun gl ->
             let sigma = Proofview.Goal.sigma gl in
             let ccl = Proofview.Goal.concl gl in
-            let ctxt, pte_app = decompose_prod_assum sigma ccl in
+            let ctxt, pte_app = decompose_prod_decls sigma ccl in
             let pte, pte_args = decompose_app sigma pte_app in
             try
               let pte =

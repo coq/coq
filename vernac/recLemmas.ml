@@ -18,7 +18,7 @@ let find_mutually_recursive_statements sigma thms =
     let n = List.length thms in
     let inds = List.map (fun x ->
       let typ = Declare.CInfo.get_typ x in
-      let (hyps,ccl) = EConstr.decompose_prod_assum sigma typ in
+      let (hyps,ccl) = EConstr.decompose_prod_decls sigma typ in
       let whnf_hyp_hds = EConstr.map_rel_context_in_env
         (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
         (Global.env()) hyps in

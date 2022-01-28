@@ -219,7 +219,7 @@ struct
     (* We used to consider the types of the product as well, but since the dnet
        is only computing an approximation rectified by [filtering] we do not
        anymore. *)
-    let (ctx, c) = Term.decompose_prod_assum c in
+    let (ctx, c) = Term.decompose_prod_decls c in
     let c = TDnet.pattern pat_of_constr c in
     TDnet.add dn c id
 
@@ -272,8 +272,8 @@ let filtering env sigma cv_pb c1 c2 =
   try let () = aux env cv_pb c1 c2 in true with CannotFilter -> false
 
 let align_prod_letin sigma c a =
-  let (lc,_) = EConstr.decompose_prod_assum sigma c in
-  let (l,a) = EConstr.decompose_prod_assum sigma a in
+  let (lc,_) = EConstr.decompose_prod_decls sigma c in
+  let (l,a) = EConstr.decompose_prod_decls sigma a in
   let lc = List.length lc in
   let n = List.length l in
   if n < lc then invalid_arg "align_prod_letin";
@@ -285,7 +285,7 @@ let align_prod_letin sigma c a =
   | Some (lbl, args) -> Dn.Label (lbl, args)
 
   let search_pattern dn cpat =
-    let _dctx, dpat = Term.decompose_prod_assum cpat in
+    let _dctx, dpat = Term.decompose_prod_decls cpat in
     let whole_c = EConstr.of_constr cpat in
     List.fold_left
       (fun acc id ->
@@ -521,7 +521,7 @@ let decompose_applied_relation env sigma c ctype left2right =
     match find_rel ctype with
     | Some c -> Some { hyp_pat = c; hyp_ty = ctype }
     | None ->
-        let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
+        let ctx,t' = Reductionops.hnf_decompose_prod_decls env sigma ctype in (* Search for underlying eq *)
         let ctype = EConstr.it_mkProd_or_LetIn t' ctx in
         match find_rel ctype with
         | Some c -> Some { hyp_pat = c; hyp_ty = ctype }

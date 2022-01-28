@@ -106,11 +106,11 @@ val betazeta_appvect : int -> constr -> constr array -> constr
 (***********************************************************************
   s Recognizing products and arities modulo reduction *)
 
-val dest_prod       : env -> types -> Constr.rel_context * types
-val dest_prod_assum : env -> types -> Constr.rel_context * types
-val dest_lam        : env -> constr -> Constr.rel_context * constr
-val dest_lam_assum  : env -> constr -> Constr.rel_context * constr
-val dest_lam_n_assum : env -> int -> constr -> Constr.rel_context * constr
+val hnf_decompose_prod         : env -> types -> Constr.rel_context * types
+val hnf_decompose_prod_decls   : env -> types -> Constr.rel_context * types
+val hnf_decompose_lambda       : env -> constr -> Constr.rel_context * constr
+val hnf_decompose_lambda_decls : env -> constr -> Constr.rel_context * constr
+val hnf_decompose_lambda_n_decls : env -> int -> constr -> Constr.rel_context * constr
 
 exception NotArity
 
@@ -118,3 +118,14 @@ val dest_arity : env -> types -> Term.arity (* raises NotArity if not an arity *
 val is_arity   : env -> types -> bool
 
 val eta_expand : env -> constr -> types -> constr
+
+(** Deprecated *)
+
+val dest_prod       : env -> types -> Constr.rel_context * types
+[@@ocaml.deprecated "Use [hnf_decompose_prod] instead."]
+val dest_prod_assum : env -> types -> Constr.rel_context * types
+[@@ocaml.deprecated "Use [hnf_decompose_prod_decls] instead."]
+val dest_lam        : env -> constr -> Constr.rel_context * constr
+[@@ocaml.deprecated "Use [hnf_decompose_lambda] instead."]
+val dest_lam_assum  : env -> constr -> Constr.rel_context * constr
+[@@ocaml.deprecated "Use [hnf_decompose_lambda_decls] instead."]

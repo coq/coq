@@ -154,7 +154,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
           (* eta-expansion to please branch contraction *)
           let ft = get_type (lookup_rel (ncons - i) env) in
           (* we need that to get the generated names for the branch *)
-          let (ctx, _) = decompose_prod_assum ft in
+          let (ctx, _) = decompose_prod_decls ft in
           let n = mkRel (List.length ctx + 1) in
           let args = Context.Rel.instance mkRel 0 ctx in
           let br = it_mkLambda_or_LetIn (mkApp (n, args)) ctx in

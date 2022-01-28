@@ -60,7 +60,7 @@ let compute_new_princ_type_from_rel env rel_to_fun sorts princ_type =
   let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
     let args, _ =
-      decompose_prod_assum (EConstr.Unsafe.to_constr (RelDecl.get_type decl))
+      decompose_prod_decls (EConstr.Unsafe.to_constr (RelDecl.get_type decl))
     in
     let real_args =
       if princ_type_info.indarg_in_concl then List.tl args else args

@@ -205,7 +205,7 @@ let check_allowed_sort env sigma ind c p =
   let specif = lookup_mind_specif env (fst ind) in
   let sorts = elim_sort specif in
   let pj = Retyping.get_judgment_of env sigma p in
-  let _, s = splay_prod env sigma pj.uj_type in
+  let _, s = hnf_decompose_prod env sigma pj.uj_type in
   let ksort = match EConstr.kind sigma s with
   | Sort s -> ESorts.family sigma s
   | _ -> error_elim_arity env sigma ind c None in

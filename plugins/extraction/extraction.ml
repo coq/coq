@@ -17,7 +17,6 @@ open Context
 open Declarations
 open Declareops
 open Environ
-open Reduction
 open Reductionops
 open Inductive
 open Inductiveops
@@ -125,10 +124,10 @@ let push_rec_types (lna,typarray,_) env =
   Array.fold_left (fun e assum -> EConstr.push_rel assum e) env ctxt
 
 (* Same as [Termops.nb_lam], but for [EConstr.t] *)
-let nb_lam sg c = List.length (fst (EConstr.decompose_lam sg c))
+let nb_lam sg c = List.length (fst (EConstr.decompose_lambda sg c))
 
-(* Same as [Term.decompose_lam_n] but for [EConstr.t] *)
-let decompose_lam_n sg n =
+(* Same as [Term.decompose_lambda_n] but for [EConstr.t] *)
+let decompose_lambda_n sg n =
   let rec lamdec_rec l n c =
     if n <= 0 then l,c
     else match EConstr.kind sg c with
@@ -348,7 +347,7 @@ and extract_type_app env sg db (r,s) args =
   let ml_args =
     List.fold_right
       (fun (b,c) a -> if b == Keep then
-         let p = List.length (fst (splay_prod env sg (type_of env sg c))) in
+         let p = List.length (fst (hnf_decompose_prod env sg (type_of env sg c))) in
          let db = iterate (fun l -> 0 :: l) p db in
          (extract_type_scheme env sg db c p) :: a
        else a)
@@ -372,7 +371,7 @@ and extract_type_scheme env sg db c p =
       | Lambda (n,t,d) ->
           extract_type_scheme (push_rel_assum (n,t) env) sg db d (p-1)
       | _ ->
-          let rels = fst (splay_prod env sg (type_of env sg c)) in
+          let rels = fst (hnf_decompose_prod env sg (type_of env sg c)) in
           let env = push_rels_assum rels env in
           let eta_args = List.rev_map EConstr.mkRel (List.interval 1 p) in
           extract_type env sg db 0 (EConstr.Vars.lift p c) eta_args
@@ -451,8 +450,8 @@ and extract_really_ind env kn mib =
       if not p.ip_logical then
         let types = arities_of_constructors env ((kn,i),u) in
         for j = 0 to Array.length types - 1 do
-          let t = snd (decompose_prod_n_assum ndecls types.(j)) in
-          let prods,head = dest_prod epar t in
+          let t = snd (decompose_prod_n_decls ndecls types.(j)) in
+          let prods,head = Reduction.hnf_decompose_prod epar t in
           let nprods = List.length prods in
           let args = match Constr.kind head with
             | App (f,args) -> args (* [Constr.kind f = Ind ip] *)
@@ -914,9 +913,9 @@ and extract_fix env sg mle i (fi,ti,ci as recd) mlt =
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
 let decomp_lams_eta_n n m env sg c t =
-  let rels = fst (splay_prod_n env sg n t) in
+  let rels = fst (hnf_decompose_prod_n_decls env sg n t) in
   let rels = List.map (fun (LocalAssum (id,c) | LocalDef (id,_,c)) -> (id,c)) rels in
-  let rels',c = EConstr.decompose_lam sg c in
+  let rels',c = EConstr.decompose_lambda sg c in
   let d = n - m in
   (* we'd better keep rels' as long as possible. *)
   let rels = (List.firstn d rels) @ rels' in
@@ -956,12 +955,12 @@ let extract_std_constant env sg kn body typ =
   let rels, c =
     let n = List.length s
     and m = nb_lam sg body in
-    if n <= m then decompose_lam_n sg n body
+    if n <= m then decompose_lambda_n sg n body
     else
       let s,s' = List.chop m s in
       if List.for_all ((==) Keep) s' &&
         (lang () == Haskell || sign_kind s != UnsafeLogicalSig)
-      then decompose_lam_n sg m body
+      then decompose_lambda_n sg m body
       else decomp_lams_eta_n n m env sg body typ
   in
   (* Should we do one eta-expansion to avoid non-generalizable '_a ? *)
@@ -1039,7 +1038,7 @@ let fake_match_projection env p =
     let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((fst ind, mib.mind_ntypes - i - 1), u)) in
     let (ctx, cty) = mip.mind_nf_lc.(0) in
     let cty = Term.it_mkProd_or_LetIn cty ctx in
-    let rctx, _ = decompose_prod_assum (Vars.substl subst cty) in
+    let rctx, _ = decompose_prod_decls (Vars.substl subst cty) in
     List.chop mip.mind_consnrealdecls.(0) rctx
   in
   let ci_pp_info = { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in

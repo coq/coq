@@ -314,7 +314,7 @@ let instantiate_params t params sign =
   let nnonrecpar = Context.Rel.nhyps sign - List.length params in
   (* Adjust the signature if recursively non-uniform parameters are not here *)
   let _,sign = Context.Rel.chop_nhyps nnonrecpar sign in
-  let _,t = decompose_prod_n_assum (Context.Rel.length sign) t in
+  let _,t = decompose_prod_n_decls (Context.Rel.length sign) t in
   let subst = subst_of_rel_context_instance_list sign params in
   substl subst t
 
@@ -326,7 +326,7 @@ let instantiate_constructor_params (_,u as cstru) (mib,_ as mind_specif) params 
 let get_constructor ((ind,u),mib,mip,params) j =
   assert (j <= Array.length mip.mind_consnames);
   let typi = instantiate_constructor_params ((ind,j),u) (mib,mip) params in
-  let (args,ccl) = decompose_prod_assum typi in
+  let (args,ccl) = decompose_prod_decls typi in
   let (_,allargs) = decompose_app ccl in
   let vargs = List.skipn (List.length params) allargs in
   { cs_cstr = (ith_constructor_of_inductive ind j,u);
@@ -360,7 +360,7 @@ let make_project env sigma ind pred c branches ps =
               str" on inductive type " ++ Termops.Internal.print_constr_env env sigma (mkInd ind) ++ str ".")
   in
   let branch = branches.(0) in
-  let ctx, br = decompose_lam_n_decls sigma mip.mind_consnrealdecls.(0) branch in
+  let ctx, br = decompose_lambda_n_decls sigma mip.mind_consnrealdecls.(0) branch in
   let n, len, ctx =
     List.fold_right
       (fun decl (i, j, ctx) ->
@@ -638,7 +638,7 @@ let is_elim_predicate_explicitly_dependent env sigma pred indf =
 
 let set_names env sigma n brty =
   let open EConstr in
-  let (ctxt,cl) = decompose_prod_n_assum sigma n brty in
+  let (ctxt,cl) = decompose_prod_n_decls sigma n brty in
   Namegen.it_mkProd_or_LetIn_name env sigma cl ctxt
 
 let set_pattern_names env sigma ind brv =

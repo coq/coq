@@ -156,7 +156,7 @@ let intern_term ist env (_, c) = glob_constr ist env c
 
 let splay_open_constr env (sigma, c) =
   let t = Retyping.get_type_of env sigma c in
-  Reductionops.splay_prod env sigma t
+  Reductionops.hnf_decompose_prod env sigma t
 
 let isAppInd env sigma c =
   let c = Reductionops.clos_whd_flags CClosure.all env sigma c in
@@ -771,7 +771,7 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
    let c, evs, ucst = abs_evars env sigma0 ty in
    let n = List.length evs in
    let lam_c = abs_cterm env sigma0 n c in
-   let ctx, c = EConstr.decompose_lam_n_assum sigma n lam_c in
+   let ctx, c = EConstr.decompose_lambda_n_assum sigma n lam_c in
    let sigma0 = Evd.merge_universe_context sigma0 ucst in
    sigma0, n, EConstr.it_mkProd_or_LetIn c ctx, lam_c
 
@@ -939,7 +939,7 @@ let rec intro_anon () =
   let open Tacmach in
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
-  let d = List.hd (fst (EConstr.decompose_prod_n_assum (project gl) 1 (pf_concl gl))) in
+  let d = List.hd (fst (EConstr.decompose_prod_n_decls (project gl) 1 (pf_concl gl))) in
   Proofview.tclORELSE (anontac d)
     (fun (err0, info) -> Proofview.tclORELSE
         (Tactics.red_in_concl <*> intro_anon ()) (fun _ -> Proofview.tclZERO ~info err0))

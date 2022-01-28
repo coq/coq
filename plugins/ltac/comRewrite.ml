@@ -144,7 +144,7 @@ let cHole = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)
 
 let proper_projection env sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
-  let ctx, inst = decompose_prod_assum sigma ty in
+  let ctx, inst = decompose_prod_decls sigma ty in
   let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
   let app = mkApp (PropGlobal.proper_proj env sigma,
@@ -159,7 +159,7 @@ let declare_projection name instance_id r =
   let ty = Retyping.get_type_of env sigma c in
   let body = proper_projection env sigma c ty in
   let sigma, typ = Typing.type_of env sigma body in
-  let ctx, typ = decompose_prod_assum sigma typ in
+  let ctx, typ = decompose_prod_decls sigma typ in
   let typ =
     let n =
       let rec aux t =
@@ -176,7 +176,7 @@ let declare_projection name instance_id r =
           | _ -> typ
       in aux init
     in
-    let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) typ
+    let ctx,ccl = Reductionops.hnf_decompose_prod_n_decls env sigma (3 * n) typ
     in it_mkProd_or_LetIn ccl ctx
   in
   let types = Some (it_mkProd_or_LetIn typ ctx) in

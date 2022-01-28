@@ -465,7 +465,7 @@ let generate_type evd g_to_f f graph =
   evd := evd';
   let sigma, graph_arity = Typing.type_of (Global.env ()) !evd graph in
   evd := sigma;
-  let ctxt, _ = decompose_prod_assum !evd graph_arity in
+  let ctxt, _ = decompose_prod_decls !evd graph_arity in
   let fun_ctxt, res_type =
     match ctxt with
     | [] | [_] -> CErrors.anomaly (Pp.str "Not a valid context.")
@@ -633,7 +633,7 @@ let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i :
                 CAst.make @@ Tactypes.IntroNaming (Namegen.IntroIdentifier id))
               (generate_fresh_id (Id.of_string "y") ids
                  (List.length
-                    (fst (decompose_prod_assum evd (RelDecl.get_type decl))))))
+                    (fst (decompose_prod_decls evd (RelDecl.get_type decl))))))
           branches
       in
       (* before building the full intro pattern for the principle *)
@@ -1242,7 +1242,7 @@ let get_funs_constant mp =
       List.map find_constant_body (Array.to_list (Array.map fst l_const))
     in
     let l_params, _l_fixes =
-      List.split (List.map Term.decompose_lam l_bodies)
+      List.split (List.map Term.decompose_lambda l_bodies)
     in
     (* all the parameters must be equal*)
     let _check_params =
@@ -1375,7 +1375,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
         other_princ_types
     in
     let first_princ_body = body in
-    let ctxt, fix = Term.decompose_lam_assum first_princ_body in
+    let ctxt, fix = Term.decompose_lambda_decls first_princ_body in
     (* the principle has for forall ...., fix .*)
     let (idxs, _), ((_, ta, _) as decl) = Constr.destFix fix in
     let other_result =
@@ -1383,7 +1383,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
         (fun scheme_type ->
           incr i;
           observe (Printer.pr_lconstr_env env sigma scheme_type);
-          let type_concl = Term.strip_prod_assum scheme_type in
+          let type_concl = Term.strip_prod_decls scheme_type in
           let applied_f =
             List.hd (List.rev (snd (Constr.decompose_app type_concl)))
           in
@@ -1392,7 +1392,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
             (* we search the number of the function in the fix block (name of the function) *)
             Array.iteri
               (fun j t ->
-                let t = Term.strip_prod_assum t in
+                let t = Term.strip_prod_decls t in
                 let applied_g =
                   List.hd (List.rev (snd (Constr.decompose_app t)))
                 in

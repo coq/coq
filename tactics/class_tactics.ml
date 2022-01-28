@@ -257,7 +257,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   tclSOLVE tacl
 
 and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl0 =
-  let prods, concl = EConstr.decompose_prod_assum sigma concl0 in
+  let prods, concl = EConstr.decompose_prod_decls sigma concl0 in
   let nprods = List.length prods in
   let allowed_evars =
     try
@@ -415,7 +415,7 @@ let make_resolve_hyp env sigma st only_classes decl db =
   let id = NamedDecl.get_id decl in
   let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
   let rec iscl env ty =
-    let ctx, ar = decompose_prod_assum sigma ty in
+    let ctx, ar = decompose_prod_decls sigma ty in
       match EConstr.kind sigma (fst (decompose_app sigma ar)) with
       | Const (c,_) -> is_class (GlobRef.ConstRef c)
       | Ind (i,_) -> is_class (GlobRef.IndRef i)

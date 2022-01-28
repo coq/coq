@@ -670,7 +670,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
          let sigma, env, concl = Goal.(sigma g, env g, concl g) in
          let sigma, eq =
            EConstr.fresh_global env sigma (Coqlib.lib_ref "core.eq.type") in
-         let ctx, last = EConstr.decompose_prod_assum sigma concl in
+         let ctx, last = EConstr.decompose_prod_decls sigma concl in
          let open EConstr in
          let args = match kind_of_type sigma last with
            | AtomicType (hd, args) ->

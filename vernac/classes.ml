@@ -287,7 +287,7 @@ let existing_instance glob g info =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let instance, _ = Typeops.type_of_global_in_context env c in
-  let ctx, r = Term.decompose_prod_assum instance in
+  let ctx, r = Term.decompose_prod_decls instance in
     match class_of_constr (Environ.push_rel_context ctx env) sigma (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance tc info glob c
       | None -> user_err ?loc:g.CAst.loc
@@ -530,7 +530,7 @@ let interp_instance_context ~program_mode env ctx pl tclass =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let sigma, (c', imps') = interp_type_evars_impls ~flags ~impls env' sigma tclass in
   let imps = imps @ imps' in
-  let ctx', c = decompose_prod_assum sigma c' in
+  let ctx', c = decompose_prod_decls sigma c' in
   let ctx'' = ctx' @ ctx in
   let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) sigma c in
   let u_s = EInstance.kind sigma u in

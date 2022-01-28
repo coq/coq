@@ -62,8 +62,8 @@ let ind_hyps env sigma nevar ind largs =
     let t = EConstr.of_constr t in
     let nparam_decls = Context.Rel.length (fst (Global.lookup_inductive (fst ind))).mind_params_ctxt in
     let t1=Termops.prod_applist_assum sigma nparam_decls t largs in
-    let t2=snd (decompose_prod_n_assum sigma nevar t1) in
-      fst (decompose_prod_assum sigma t2) in
+    let t2=snd (decompose_prod_n_decls sigma nevar t1) in
+      fst (decompose_prod_decls sigma t2) in
     Array.map myhyps types
 
 let special_nf ~flags env sigma t =

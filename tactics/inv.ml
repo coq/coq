@@ -106,7 +106,7 @@ let make_inv_predicate env evd indf realargs id status concl =
                   !evd p concl (realargs@[mkVar id])
                 in evd := evd'; p in
           (* abstract_list_all returns only lambda *)
-          let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in
+          let hyps,bodypred = decompose_lambda_n_assum !evd (nrealargs+1) pred in
           (* We lift to make room for the equations *)
           (hyps,lift nrealargs bodypred)
   in

@@ -99,7 +99,7 @@ val evaluable_of_global_reference :
 
 val list_rewrite : bool -> (EConstr.constr * bool) list -> unit Proofview.tactic
 
-val decompose_lam_n :
+val decompose_lambda_n :
      Evd.evar_map
   -> int
   -> EConstr.t

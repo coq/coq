@@ -440,7 +440,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
       let sigma = Tacmach.project gl in
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
-    let rels, t = decompose_prod_assum sigma (whd_betaiotazeta env sigma ctype) in
+    let rels, t = decompose_prod_decls sigma (whd_betaiotazeta env sigma ctype) in
       match match_with_equality_type env sigma t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
           let lft2rgt = adjust_rewriting_direction args lft2rgt in
@@ -456,7 +456,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
               | (e, info) ->
                   Proofview.tclEVARMAP >>= fun sigma ->
                   let env' = push_rel_context rels env in
-                  let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
+                  let rels',t' = hnf_decompose_prod_decls env' sigma t in (* Search for underlying eq *)
                   match match_with_equality_type env' sigma t' with
                     | Some (hdcncl,args) ->
                   let lft2rgt = adjust_rewriting_direction args lft2rgt in
@@ -1617,7 +1617,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   (* We build the expected goal *)
   let fold (e, t) body = lambda_create env sigma (Sorts.Relevant, t, subst_term sigma e body) in
   let abst_B = List.fold_right fold e1_list body in
-  let ctx, abst_B = decompose_lam_n_assum sigma (List.length e1_list) abst_B in
+  let ctx, abst_B = decompose_lambda_n_assum sigma (List.length e1_list) abst_B in
   (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)
   let sigma, _ = Typing.type_of (push_rel_context ctx env) sigma abst_B in
   let sigma =

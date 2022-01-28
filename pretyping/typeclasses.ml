@@ -121,7 +121,7 @@ let dest_class_app env sigma c =
 
 let dest_class_arity env sigma c =
   let open EConstr in
-  let rels, c = decompose_prod_assum sigma c in
+  let rels, c = decompose_prod_decls sigma c in
     rels, dest_class_app (push_rel_context rels env) sigma c
 
 let class_of_constr env sigma c =

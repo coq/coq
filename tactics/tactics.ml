@@ -1784,7 +1784,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
   try
     let t = Retyping.get_type_of env sigma c in
     let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
-    let sign,ccl = EConstr.decompose_prod_assum sigma t in
+    let sign,ccl = EConstr.decompose_prod_decls sigma t in
     match match_with_tuple env sigma ccl with
     | Some (_,_,isrec) ->
         let n = (constructors_nrealargs env ind).(0) in
@@ -2691,7 +2691,7 @@ let ipat_of_name = function
   | Name id -> Some (CAst.make @@ IntroNaming (IntroIdentifier id))
 
 let head_ident sigma c =
-   let c = fst (decompose_app sigma (snd (decompose_lam_assum sigma c))) in
+   let c = fst (decompose_app sigma (snd (decompose_lambda_decls sigma c))) in
    if isVar sigma c then Some (destVar sigma c) else None
 
 let assert_as first hd ipat t =
@@ -2966,7 +2966,7 @@ let generalized_name env sigma c t ids cl = function
 
 let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let open Context.Rel.Declaration in
-  let decls,cl = decompose_prod_n_assum sigma i cl in
+  let decls,cl = decompose_prod_n_decls sigma i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ =
     let arity = Array.length (snd (Termops.decompose_app_vect sigma c)) in
@@ -2983,7 +2983,7 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
          argument, so we have to ignore freshly generated sorts. *)
       EConstr.eq_constr_nounivs sigma c t
     in
-    decompose_prod_n_assum sigma i (replace_term_gen sigma eq arity (mkRel 1) dummy_prod)
+    decompose_prod_n_decls sigma i (replace_term_gen sigma eq arity (mkRel 1) dummy_prod)
   in
   let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name env sigma c t ids cl' na in
@@ -3167,7 +3167,7 @@ let specialize (c,lbind) ipat =
         | _ -> x in
       (* We grab names used in product to remember them at re-abstracting phase *)
       let typ_of_c_hd = pf_get_type_of gl thd in
-      let (lprod:rel_context), concl = decompose_prod_assum sigma typ_of_c_hd in
+      let (lprod:rel_context), concl = decompose_prod_decls sigma typ_of_c_hd in
       (* lprd = initial products (including letins).
          l(tstack initially) = the same products after unification vs lbind (some metas remain)
          args: accumulator : args to apply to hd: inferred args + metas reabstracted *)
@@ -3215,7 +3215,7 @@ let specialize (c,lbind) ipat =
       Evd.clear_metas sigma, hd, newtype
   in
   let tac =
-    match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
+    match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lambda_decls sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
       let ipat = match ipat with None -> Some (CAst.make (IntroNaming (IntroIdentifier id))) | _ -> ipat in
@@ -3943,7 +3943,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     *)
   let aux (sigma, prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars) arg =
     let name, ty_relevance, ty, arity =
-      let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
+      let rel, c = Reductionops.hnf_decompose_prod_n_decls env sigma 1 prod in
       let decl = List.hd rel in
       RelDecl.get_name decl, RelDecl.get_relevance decl, RelDecl.get_type decl, c
     in
@@ -4143,10 +4143,10 @@ let decompose_paramspred_branch_args sigma elimt =
   let rec cut_noccur elimt acc2 =
     match EConstr.kind sigma elimt with
       | Prod(nme,tpe,elimt') ->
-          let hd_tpe,_ = decompose_app sigma (snd (decompose_prod_assum sigma tpe)) in
+          let hd_tpe,_ = decompose_app sigma (snd (decompose_prod_decls sigma tpe)) in
           if not (occur_rel sigma 1 elimt') && isRel sigma hd_tpe
           then cut_noccur elimt' (LocalAssum (nme,tpe)::acc2)
-          else let acc3,ccl = decompose_prod_assum sigma elimt in acc2 , acc3 , ccl
+          else let acc3,ccl = decompose_prod_decls sigma elimt in acc2 , acc3 , ccl
       | App(_, _) | Rel _ -> acc2 , [] , elimt
       | _ -> error_ind_scheme "" in
   let rec cut_occur elimt acc1 =
@@ -4164,7 +4164,7 @@ let decompose_paramspred_branch_args sigma elimt =
      args. We suppose there is only one predicate here. *)
   match acc2 with
   | [] ->
-    let hyps,ccl = decompose_prod_assum sigma elimt in
+    let hyps,ccl = decompose_prod_decls sigma elimt in
     let hd_ccl_pred,_ = decompose_app sigma ccl in
     begin match EConstr.kind sigma hd_ccl_pred with
       | Rel i  -> let acc3,acc1 = List.chop (i-1) hyps in acc1 , [] , acc3 , ccl
@@ -4603,7 +4603,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
          known only by pattern-matching, as in the case of a term of
          the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
          matching. *)
-      let sign,t = splay_prod env sigma typ in it_mkProd t sign
+      let sign,t = hnf_decompose_prod env sigma typ in it_mkProd t sign
     | Some (elimc, _) ->
       (* Otherwise, we compute the induction reference of the scheme
          and go looking for that. *)
@@ -4631,7 +4631,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
 let check_expected_type env sigma (elimc,bl) elimt =
   (* Compute the expected template type of the term in case a using
      clause is given *)
-  let sign,_ = splay_prod env sigma elimt in
+  let sign,_ = hnf_decompose_prod env sigma elimt in
   let n = List.length sign in
   if n == 0 then error SchemeDontApply;
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
@@ -5046,7 +5046,7 @@ let (forward_setoid_symmetry_in, setoid_symmetry_in) = Hook.make ()
 let symmetry_in id =
   Proofview.Goal.enter begin fun gl ->
     let sigma, ctype = Tacmach.pf_type_of gl (mkVar id) in
-    let sign,t = decompose_prod_assum sigma ctype in
+    let sign,t = decompose_prod_decls sigma ctype in
     tclEVARSTHEN sigma
       (Proofview.tclORELSE
          begin

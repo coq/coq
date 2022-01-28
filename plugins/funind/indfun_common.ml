@@ -423,10 +423,10 @@ let list_rewrite (rev : bool) (eqs : (EConstr.constr * bool) list) =
         (if rev then List.rev eqs else eqs)
         (tclFAIL (mt ()))))
 
-let decompose_lam_n sigma n =
+let decompose_lambda_n sigma n =
   if n < 0 then
     CErrors.user_err
-      Pp.(str "decompose_lam_n: integer parameter must be positive");
+      Pp.(str "decompose_lambda_n: integer parameter must be positive");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then (l, c)
     else
@@ -434,7 +434,7 @@ let decompose_lam_n sigma n =
       | Lambda (x, t, c) -> lamdec_rec ((x, t) :: l) (n - 1) c
       | Cast (c, _, _) -> lamdec_rec l n c
       | _ ->
-        CErrors.user_err Pp.(str "decompose_lam_n: not enough abstractions")
+        CErrors.user_err Pp.(str "decompose_lambda_n: not enough abstractions")
   in
   lamdec_rec [] n
 

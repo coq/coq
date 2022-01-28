@@ -67,7 +67,7 @@ exception IllFormedInd of ill_formed_ind
    declaration, and checks that they are all present (and all the same)
    for all the given types. *)
 
-let mind_extract_params = decompose_prod_n_assum
+let mind_extract_params = decompose_prod_n_decls
 
 let explain_ind_err id ntyp env nparamsctxt c err =
   let open Type_errors in
@@ -489,7 +489,7 @@ let build_inductive env ~sec_univs names prv univs template variance
     (* Type of constructors in normal form *)
     let nf_lc =
       Array.map (fun (d, b) ->
-        decompose_prod_assum (substl subst (it_mkProd_or_LetIn b (d@paramsctxt))))
+        decompose_prod_decls (substl subst (it_mkProd_or_LetIn b (d@paramsctxt))))
         splayed_lc in
     let consnrealdecls =
       Array.map (fun (d,_) -> Context.Rel.length d)

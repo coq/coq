@@ -206,7 +206,7 @@ let decompose_prod =
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
-let decompose_lam =
+let decompose_lambda =
   let rec lamdec_rec l c = match kind c with
     | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) c
     | Cast (c,_,_)   -> lamdec_rec l c
@@ -229,20 +229,20 @@ let decompose_prod_n n =
 
 (* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
-let decompose_lam_n n =
-  if n < 0 then anomaly (str "decompose_lam_n: integer parameter must be positive.");
+let decompose_lambda_n n =
+  if n < 0 then anomaly (str "decompose_lambda_n: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else match kind c with
       | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)   -> lamdec_rec l n c
-      | _ -> anomaly (str "decompose_lam_n: not enough abstractions.")
+      | _ -> anomaly (str "decompose_lambda_n: not enough abstractions.")
   in
   lamdec_rec [] n
 
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
-let decompose_prod_assum =
+let decompose_prod_decls =
   let open Context.Rel.Declaration in
   let rec prodec_rec l c =
     match kind c with
@@ -255,7 +255,7 @@ let decompose_prod_assum =
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
-let decompose_lam_assum =
+let decompose_lambda_decls =
   let rec lamdec_rec l c =
     let open Context.Rel.Declaration in
     match kind c with
@@ -270,9 +270,9 @@ let decompose_lam_assum =
    of the form [forall (x1:T1)..(xi:=ci:Ti)..(xn:Tn), T] into the pair
    of the quantifying context [(xn,None,Tn);..;(xi,Some
    ci,Ti);..;(x1,None,T1)] and of the inner type [T]) *)
-let decompose_prod_n_assum n =
+let decompose_prod_n_decls n =
   if n < 0 then
-    anomaly (str "decompose_prod_n_assum: integer parameter must be positive.");
+    anomaly (str "decompose_prod_n_decls: integer parameter must be positive.");
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -280,36 +280,37 @@ let decompose_prod_n_assum n =
       match kind c with
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
-      | Cast (c,_,_)      -> prodec_rec l n c
-      | _ -> anomaly (str  "decompose_prod_n_assum: not enough declarations.")
+      | Cast (c,_,_)    -> prodec_rec l n c
+      | _ -> anomaly (str  "decompose_prod_n_decls: not enough declarations.")
   in
   prodec_rec Context.Rel.empty n
 
-(* Given a positive integer n, decompose a lambda or let-in term [fun
-   (x1:T1)..(xi:=ci:Ti)..(xn:Tn) => T] into the pair of the abstracted
-   context [(xn,None,Tn);...;(xi,Some ci,Ti);...;(x1,None,T1)] and of
-   the inner body [T].
-   Lets in between are not expanded but turn into local definitions,
-   but n is the actual number of destructurated lambdas. *)
-let decompose_lam_n_assum n =
+(** Given a positive integer n, decompose a lambda term [fun
+   (x1:T1)..(xn:Tn) => T] into the pair of the abstracted
+   context [(xn,None,Tn);...;(x1,None,T1)] and of the inner body [T]. *)
+let decompose_lambda_n_assum n =
   if n < 0 then
-    anomaly (str  "decompose_lam_n_assum: integer parameter must be positive.");
+    anomaly (str  "decompose_lambda_n_assum: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
       match kind c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
-      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)    -> lamdec_rec l n c
-      | _c -> anomaly (str "decompose_lam_n_assum: not enough abstractions.")
+      | _c -> anomaly (str "decompose_lambda_n_assum: not enough abstractions.")
   in
   lamdec_rec Context.Rel.empty n
 
-(* Same, counting let-in *)
-let decompose_lam_n_decls n =
+(* Given a positive integer n, decompose a lambda or let-in term [fun
+   (x1:T1)..(xi:=ci:Ti)..(xn:Tn) => T] into the pair of the abstracted
+   context [(xn,None,Tn);...;(xi,Some ci,Ti);...;(x1,None,T1)] and of
+   the inner body [T].
+   Lets in between are not expanded but turn into local definitions,
+   and n is the number of lambdas and lets to decompose. *)
+let decompose_lambda_n_decls n =
   if n < 0 then
-    anomaly (str "decompose_lam_n_decls: integer parameter must be positive.");
+    anomaly (str "decompose_lambda_n_decls: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -318,20 +319,20 @@ let decompose_lam_n_decls n =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)    -> lamdec_rec l n c
-      | _ -> anomaly (str "decompose_lam_n_decls: not enough declarations.")
+      | _ -> anomaly (str "decompose_lambda_n_decls: not enough declarations.")
   in
   lamdec_rec Context.Rel.empty n
 
-let prod_assum t = fst (decompose_prod_assum t)
-let prod_n_assum n t = fst (decompose_prod_n_assum n t)
-let strip_prod_assum t = snd (decompose_prod_assum t)
+let prod_decls t = fst (decompose_prod_decls t)
+let prod_n_decls n t = fst (decompose_prod_n_decls n t)
+let strip_prod_decls t = snd (decompose_prod_decls t)
 let strip_prod t = snd (decompose_prod t)
 let strip_prod_n n t = snd (decompose_prod_n n t)
-let lam_assum t = fst (decompose_lam_assum t)
-let lam_n_assum n t = fst (decompose_lam_n_assum n t)
-let strip_lam_assum t = snd (decompose_lam_assum t)
-let strip_lam t = snd (decompose_lam t)
-let strip_lam_n n t = snd (decompose_lam_n n t)
+let lambda_decls t = fst (decompose_lambda_decls t)
+let lam_n_assum n t = fst (decompose_lambda_n_assum n t)
+let strip_lambda_decls t = snd (decompose_lambda_decls t)
+let strip_lam t = snd (decompose_lambda t)
+let strip_lam_n n t = snd (decompose_lambda_n n t)
 
 (***************************)
 (* Arities                 *)
@@ -364,3 +365,18 @@ let rec isArity c =
   | Cast (c,_,_)      -> isArity c
   | Sort _          -> true
   | _               -> false
+
+(* Deprecated *)
+
+let decompose_prod_assum = decompose_prod_decls
+let decompose_lam_assum = decompose_lambda_decls
+let decompose_prod_n_assum = decompose_prod_n_decls
+let prod_assum = prod_decls
+let lam_assum = lambda_decls
+let prod_n_assum = prod_n_decls
+let strip_prod_assum = strip_prod_decls
+let strip_lam_assum = strip_lambda_decls
+let decompose_lam = decompose_lambda
+let decompose_lam_n = decompose_lambda_n
+let decompose_lam_n_assum = decompose_lambda_n_assum
+let decompose_lam_n_decls = decompose_lambda_n_decls

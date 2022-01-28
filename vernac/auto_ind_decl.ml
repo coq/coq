@@ -271,11 +271,11 @@ let push_rec_env_lift recdef env_lift =
   }
 
 let dest_lam_assum_expand env c =
-  let ctx, c = Reduction.dest_lam_assum env c in
+  let ctx, c = Reduction.hnf_decompose_lambda_decls env c in
   if List.is_empty ctx then ctx, c
   else
     let t = EConstr.Unsafe.to_constr (Retyping.get_type_of (Environ.push_rel_context ctx env) (Evd.from_env env) (EConstr.of_constr c)) in
-    let ctx', _ = Reduction.dest_prod_assum env t in
+    let ctx', _ = Reduction.hnf_decompose_prod_decls env t in
     ctx'@ctx, mkApp (lift (Context.Rel.length ctx') c, Context.Rel.instance mkRel 0 ctx')
 
 let pred_context env ci params u nas =
@@ -404,7 +404,7 @@ let build_beq_scheme env handle kn =
   *)
 
   let rec translate_type_eq env_lift na c t =
-    let ctx, t = Reduction.dest_prod_assum env t in
+    let ctx, t = Reduction.hnf_decompose_prod_decls env t in
     let env_lift', ctx_eq = translate_context_eq env_lift ctx in
     let inst = Array.map (translate_term env_lift') (Context.Rel.instance mkRel 0 ctx) in
     let env_lift'' = shiftn_env_lift (Context.Rel.length ctx_eq) env_lift in
@@ -723,10 +723,10 @@ let build_beq_scheme env handle kn =
       let rettyp = Inductive.type_of_inductive ((mib,cur_packet),u) in
       (* split rettyp in a list without the non rec params and the last ->
          e.g. Inductive vec (A:Set) : nat -> Set := ... will do [nat] *)
-      let _, rettyp = decompose_prod_n_assum nparamsdecls rettyp in
-      let rettyp_l, _ = decompose_prod_assum rettyp in
+      let _, rettyp = decompose_prod_n_decls nparamsdecls rettyp in
+      let rettyp_l, _ = decompose_prod_decls rettyp in
       (* construct the predicate for the Case part*)
-      it_mkLambda_or_LetIn
+      Term.it_mkLambda_or_LetIn
         (mkLambda (Context.make_annot Anonymous Sorts.Relevant,
                    mkFullInd env indu (List.length rettyp_l),
                    (bb ())))
@@ -803,7 +803,7 @@ let build_beq_scheme env handle kn =
                 ff ()
             in
             let cs_argsj = translate_context env_lift_recparams_fix_nonrecparams_tomatch_csargsi constrs.(j).cs_args in
-            it_mkLambda_or_LetIn cc cs_argsj)
+            Term.it_mkLambda_or_LetIn cc cs_argsj)
           in
           let predj = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch_csargsi pred) in
           let case =
@@ -812,7 +812,7 @@ let build_beq_scheme env handle kn =
               (EConstr.of_constr_array ar2)
           in
           let cs_argsi = translate_context env_lift_recparams_fix_nonrecparams_tomatch constrs.(i).cs_args in
-          it_mkLambda_or_LetIn (EConstr.Unsafe.to_constr case) cs_argsi)
+          Term.it_mkLambda_or_LetIn (EConstr.Unsafe.to_constr case) cs_argsi)
         in
         let predi = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch pred) in
         let case =
@@ -821,8 +821,8 @@ let build_beq_scheme env handle kn =
             (EConstr.of_constr_array ar) in
         EConstr.Unsafe.to_constr case
     in
-    it_mkLambda_or_LetIn
-      (it_mkLambda_or_LetIn body tomatch_ctx)
+    Term.it_mkLambda_or_LetIn
+      (Term.it_mkLambda_or_LetIn body tomatch_ctx)
       nonrecparams_ctx_with_eqs
   in (* build_beq_scheme *)
 
