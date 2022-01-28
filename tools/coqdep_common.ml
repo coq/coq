@@ -203,7 +203,7 @@ let error_findlib_name f s =
   Printf.eprintf "in file %s, %s is not a valid plugin name anymore.\n" f s;
   Printf.eprintf "Plugins should be loaded using their public name according to findlib,\n";
   Printf.eprintf "for example package-name.foo and not foo_plugin.\n";
-  Printf.eprintf "If you are building with dune < 2.9.2 you must specify both\n";
+  Printf.eprintf "If you are building with dune < 2.9.4 you must specify both\n";
   Printf.eprintf "the legacy and the findlib plugin name as in:\n";
   Printf.eprintf "Declare ML Module \"foo_plugin:package-name.foo\".\n";
   exit 1
