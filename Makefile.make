@@ -78,7 +78,7 @@ endef
 
 .DEFAULT_GOAL:=NOARG
 
-NOARG: world byte
+NOARG: world
 
 include Makefile.common
 

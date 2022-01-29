@@ -34,7 +34,6 @@ jobs:
         run: |
           eval $(opam env)
           ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no -coqide opt
-          make -j "$NJOBS" byte
           make -j "$NJOBS"
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.11"
@@ -43,7 +42,7 @@ jobs:
       - name: Install Coq
         run: |
           eval $(opam env)
-          make install install-byte
+          make install
 
       - name: Run Coq Test Suite
         run: |

@@ -27,9 +27,8 @@ endif
 
 install-doc-all: install-doc
 install-doc-no:
-install-byte:
 
-.PHONY: install install-byte install-coqide install-doc-all install-doc-no
+.PHONY: install install-coqide install-doc-all install-doc-no
 
 INSTALLLIB:=install -m 644
 

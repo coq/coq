@@ -40,5 +40,4 @@ build: [
 ]
 install: [
   [make "install"]
-  [make "install-byte"]
 ]
