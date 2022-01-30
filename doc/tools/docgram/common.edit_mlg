@@ -595,6 +595,9 @@ gallina: [
 | WITH "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | REPLACE "Scheme" LIST1 scheme SEP "with"
 | WITH "Scheme" scheme LIST0 ( "with" scheme )
+| DELETE "Scheme" "Boolean" "Equality" "for" smart_global
+| DELETE "Scheme" "Equality" "for" smart_global
+| "Scheme" OPT "Boolean" "Equality" "for" smart_global
 ]
 
 finite_token: [

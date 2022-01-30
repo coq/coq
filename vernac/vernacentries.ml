@@ -1021,10 +1021,10 @@ let vernac_scheme l =
       dump_global sch.sch_qualid) l;
   Indschemes.do_scheme (Global.env ()) l
 
-let vernac_scheme_equality id =
+let vernac_scheme_equality sch id =
   if Dumpglob.dump () then
     dump_global id;
-  Indschemes.do_scheme_equality id
+  Indschemes.do_scheme_equality sch id
 
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
@@ -2233,10 +2233,10 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_scheme l)
-  | VernacSchemeEquality id ->
+  | VernacSchemeEquality (sch,id) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
-        vernac_scheme_equality id)
+        vernac_scheme_equality sch id)
   | VernacCombinedScheme (id, l) ->
     vtdefault(fun () ->
         unsupported_attributes atts;

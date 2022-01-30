@@ -242,7 +242,10 @@ GRAMMAR EXTEND Gram
       | IDENT "Let"; "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
           { VernacCoFixpoint (DoDischarge, corecs) }
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> { VernacScheme l }
-      | IDENT "Scheme"; IDENT "Equality"; IDENT "for" ; id = smart_global -> { VernacSchemeEquality id }
+      | IDENT "Scheme"; IDENT "Equality"; IDENT "for" ; id = smart_global ->
+          { VernacSchemeEquality (SchemeEquality,id) }
+      | IDENT "Scheme"; IDENT "Boolean"; IDENT "Equality"; IDENT "for" ; id = smart_global ->
+          { VernacSchemeEquality (SchemeBooleanEquality,id) }
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
               l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
       | IDENT "Register"; g = global; "as"; quid = qualid ->
