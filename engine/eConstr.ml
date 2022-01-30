@@ -232,7 +232,7 @@ let decompose_lam_assum sigma c =
     match kind sigma c with
     | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
     | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
-    | Cast (c,_,_)      -> lamdec_rec l c
+    | Cast (c,_,_)    -> lamdec_rec l c
     | _               -> l,c
   in
   lamdec_rec Context.Rel.empty c
@@ -240,30 +240,30 @@ let decompose_lam_assum sigma c =
 let decompose_lam_n_assum sigma n c =
   let open Rel.Declaration in
   if n < 0 then
-    user_err Pp.(str "decompose_lam_n_assum: integer parameter must be positive");
+    anomaly Pp.(str "decompose_lam_n_assum: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
       match kind sigma c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
-      | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> user_err Pp.(str "decompose_lam_n_assum: not enough abstractions")
+      | Cast (c,_,_)    -> lamdec_rec l n c
+      | c -> anomaly Pp.(str "decompose_lam_n_assum: not enough abstractions.")
   in
   lamdec_rec Context.Rel.empty n c
 
 let decompose_lam_n_decls sigma n =
   let open Rel.Declaration in
   if n < 0 then
-    user_err Pp.(str "decompose_lam_n_decls: integer parameter must be positive");
+    anomaly Pp.(str "decompose_lam_n_decls: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
       match kind sigma c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
-      | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> user_err Pp.(str "decompose_lam_n_decls: not enough abstractions")
+      | Cast (c,_,_)    -> lamdec_rec l n c
+      | c -> anomaly Pp.(str "decompose_lam_n_decls: not enough abstractions.")
   in
   lamdec_rec Context.Rel.empty n
 
@@ -284,13 +284,13 @@ let rec to_lambda sigma n prod =
     match kind sigma prod with
       | Prod (na,ty,bd) -> mkLambda (na,ty,to_lambda sigma (n-1) bd)
       | Cast (c,_,_) -> to_lambda sigma n c
-      | _   -> user_err (Pp.mt ())
+      | _   -> anomaly Pp.(str "Not enough products.")
 
 let decompose_prod sigma c =
   let rec proddec_rec l c = match kind sigma c with
     | Prod (x,t,c) -> proddec_rec ((x,t)::l) c
-    | Cast (c,_,_)     -> proddec_rec l c
-    | _                -> l,c
+    | Cast (c,_,_) -> proddec_rec l c
+    | _            -> l,c
   in
   proddec_rec [] c
 
@@ -298,9 +298,9 @@ let decompose_prod_assum sigma c =
   let open Rel.Declaration in
   let rec proddec_rec l c =
     match kind sigma c with
-    | Prod (x,t,c)  -> proddec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
+    | Prod (x,t,c)    -> proddec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
     | LetIn (x,b,t,c) -> proddec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
-    | Cast (c,_,_)      -> proddec_rec l c
+    | Cast (c,_,_)    -> proddec_rec l c
     | _               -> l,c
   in
   proddec_rec Context.Rel.empty c
@@ -308,15 +308,15 @@ let decompose_prod_assum sigma c =
 let decompose_prod_n_assum sigma n c =
   let open Rel.Declaration in
   if n < 0 then
-    user_err Pp.(str "decompose_prod_n_assum: integer parameter must be positive");
+    anomaly Pp.(str "decompose_prod_n_assum: integer parameter must be positive.");
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else
       match kind sigma c with
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
-      | Cast (c,_,_)      -> prodec_rec l n c
-      | c -> user_err Pp.(str "decompose_prod_n_assum: not enough assumptions")
+      | Cast (c,_,_)    -> prodec_rec l n c
+      | c -> anomaly Pp.(str "decompose_prod_n_assum: not enough declarations.")
   in
   prodec_rec Context.Rel.empty n c
 
