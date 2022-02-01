@@ -465,7 +465,7 @@ let compute_displayed_name_in_gen f env sigma =
   let flag = RenamingForGoal in
   compute_displayed_name_in_gen_poly f env sigma flag
 
-let compute_displayed_let_name_in env sigma flags avoid na c =
+let compute_displayed_let_name_in env sigma flags avoid na =
   let fresh_id = next_name_for_display env sigma flags na avoid in
   (Name fresh_id, Id.Set.add fresh_id avoid)
 
@@ -480,7 +480,7 @@ let rename_bound_vars_as_displayed env sigma avoid tenv c =
     | LetIn (na,c1,t,c2) ->
         let na',avoid' =
           compute_displayed_let_name_in env sigma
-            (RenamingElsewhereFor (tenv,c2)) avoid na.binder_name c2 in
+            (RenamingElsewhereFor (tenv,c2)) avoid na.binder_name in
         mkLetIn ({na with binder_name=na'},c1,t, rename avoid' (na' :: tenv) c2)
     | Cast (c,k,t) -> mkCast (rename avoid tenv c, k,t)
     | _ -> c

@@ -153,7 +153,7 @@ match avoid with
     else RenamingElsewhereFor (fst env, c)
   in
   let na, avoid =
-    if let_in then compute_displayed_let_name_in (Global.env ()) sigma flags avoid na c
+    if let_in then compute_displayed_let_name_in (Global.env ()) sigma flags avoid na
     else compute_displayed_name_in (Global.env ()) sigma flags avoid na c
   in
   na, Nice avoid

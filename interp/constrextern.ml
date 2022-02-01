@@ -1486,7 +1486,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       let env' = Termops.add_name na' env in
       GProd (na',Explicit,glob_of_pat avoid env sigma t,glob_of_pat avoid' env' sigma c)
   | PLetIn (na,b,t,c) ->
-      let na',avoid' = Namegen.compute_displayed_let_name_in (Global.env ()) sigma Namegen.RenamingForGoal avoid na c in
+      let na',avoid' = Namegen.compute_displayed_let_name_in (Global.env ()) sigma Namegen.RenamingForGoal avoid na in
       let env' = Termops.add_name na' env in
       GLetIn (na',glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
               glob_of_pat avoid' env' sigma c)
