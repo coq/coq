@@ -283,7 +283,7 @@ let convert_constructors ctor nargs u1 u2 (s, check) =
 
 let conv_table_key infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
-  match k1, k2 with
+  match CClosure.table_key k1, CClosure.table_key k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when Constant.CanOrd.equal cst cst' ->
     if Univ.Instance.equal u u' then cuniv
     else if Int.equal nargs 1 && is_array_type (info_env infos) cst then cuniv
@@ -301,7 +301,7 @@ let unfold_ref_with_args infos tab fl v =
   match unfold_reference env flags tab fl with
   | Def def -> Some (def, v)
   | Primitive op when check_native_args op v ->
-    let c = match fl with ConstKey c -> c | _ -> assert false in
+    let c = match CClosure.table_key fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in
     Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
   | Undef _ | OpaqueDef _ | Primitive _ -> None
@@ -427,7 +427,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | Some t1, Some t2 ->
           (* else the oracle tells which constant is to be expanded *)
           let oracle = CClosure.oracle_of_infos infos.cnv_inf in
-          if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
+          if Conv_oracle.oracle_order Univ.out_punivs oracle l2r (CClosure.table_key fl1) (CClosure.table_key fl2) then
             eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
           else
             eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv

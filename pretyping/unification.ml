@@ -472,7 +472,7 @@ let use_metas_pattern_unification sigma flags nb l =
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
 type key =
-  | IsKey of CClosure.table_key
+  | IsKey of Constant.t Univ.puniverses tableKey
   | IsProj of Projection.t * EConstr.constr
 
 let expand_table_key env = function

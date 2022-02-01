@@ -39,7 +39,7 @@ let relevance_of_projection env p =
   let mib = lookup_mind mind env in
   Declareops.relevance_of_projection_repr mib (Projection.repr p)
 
-let relevance_of_flex env = function
+let relevance_of_flex env k = match CClosure.table_key k with
   | ConstKey (c,_) -> relevance_of_constant env c
   | VarKey x -> relevance_of_var env x
   | RelKey p -> relevance_of_rel env p

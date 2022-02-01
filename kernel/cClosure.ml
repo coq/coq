@@ -221,23 +221,36 @@ let nored = no_red
  * instantiations (cbv or lazy) are.
  *)
 
-type table_key = Constant.t Univ.puniverses tableKey
-
-let eq_pconstant_key (c,u) (c',u') =
-  eq_constant_key c c' && Univ.Instance.equal u u'
-
-module IdKeyHash =
+module Key =
 struct
-  open Hashset.Combine
-  type t = table_key
-  let equal = Names.eq_table_key eq_pconstant_key
-  let hash = function
-  | ConstKey (c, _) -> combinesmall 1 (Constant.UserOrd.hash c)
-  | VarKey id -> combinesmall 2 (Id.hash id)
-  | RelKey i -> combinesmall 3 (Int.hash i)
+  let eq_pconstant_key (c,u) (c',u') =
+    eq_constant_key c c' && Univ.Instance.equal u u'
+
+  type t = { key : Constant.t Univ.puniverses tableKey; mutable hash : int }
+  let key x = x.key
+  let equal k1 k2 = Names.eq_table_key eq_pconstant_key k1.key k2.key
+  let hash k =
+    if k.hash < 0 then
+      let open Hashset.Combine in
+      let hash = match k.key with
+      | ConstKey (c, _) -> combinesmall 1 (Constant.UserOrd.hash c)
+      | VarKey id -> combinesmall 2 (Id.hash id)
+      | RelKey i -> combinesmall 3 (Int.hash i)
+      in
+      let hash = hash land max_int in
+      let () = k.hash <- hash in
+      hash
+    else k.hash
+
+  let rel n = { key = RelKey n; hash = -1 }
+  let var id = { key = VarKey id; hash = -1 }
+  let const c = { key = ConstKey c; hash = -1 }
 end
 
-module KeyTable = Hashtbl.Make(IdKeyHash)
+type table_key = Key.t
+let table_key = Key.key
+
+module KeyTable = Hashtbl.Make(Key)
 
 open Context.Named.Declaration
 
@@ -439,7 +452,7 @@ let rec stack_args_size = function
 let rec lft_fconstr n ft =
   let r = Mark.relevance ft.mark in
   match ft.term with
-    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FInt _|FFloat _) -> ft
+    | (FInd _|FConstruct _|FFlex{ Key.key = (ConstKey _|VarKey _); _ }|FInt _|FFloat _) -> ft
     | FRel i -> {mark=mark Ntrl r;term=FRel(i+n)}
     | FLambda(k,tys,f,e) -> {mark=mark Cstr r; term=FLambda(k,tys,f,subs_shft(n,e))}
     | FFix(fx,e) ->
@@ -448,7 +461,7 @@ let rec lft_fconstr n ft =
       {mark=mark Cstr r; term=FCoFix(cfx,subs_shft(n,e))}
     | FLIFT(k,m) -> lft_fconstr (n+k) m
     | FLOCKED -> assert false
-    | FFlex (RelKey _) | FAtom _ | FApp _ | FProj _ | FCaseT _ | FCaseInvert _ | FProd _
+    | FFlex { Key.key = RelKey _; _ } | FAtom _ | FApp _ | FProj _ | FCaseT _ | FCaseInvert _ | FProd _
       | FLetIn _ | FEvar _ | FCLOS _ | FArray _ -> {mark=ft.mark; term=FLIFT(n,ft)}
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
@@ -460,7 +473,7 @@ let clos_rel e i =
     | Inl(n,mt) -> lift_fconstr n mt
     | Inr(k,None) -> {mark=mark Ntrl Unknown; term= FRel k}
     | Inr(k,Some p) ->
-        lift_fconstr (k-p) {mark=mark Red Unknown;term=FFlex(RelKey p)}
+        lift_fconstr (k-p) {mark=mark Red Unknown;term=FFlex(Key.rel p)}
 
 (* since the head may be reducible, we might introduce lifts of 0 *)
 let compact_stack head stk =
@@ -504,8 +517,8 @@ let destFLambda clos_fun t =
 let mk_clos e t =
   match kind t with
     | Rel i -> clos_rel e i
-    | Var x -> {mark = mark Red Unknown; term = FFlex (VarKey x) }
-    | Const c -> {mark = mark Red Unknown; term = FFlex (ConstKey c) }
+    | Var x -> {mark = mark Red Unknown; term = FFlex (Key.var x) }
+    | Const c -> {mark = mark Red Unknown; term = FFlex (Key.const c) }
     | Meta _ | Sort _ ->  {mark = mark Ntrl KnownR; term = FAtom t }
     | Ind kn -> {mark = mark Ntrl KnownR; term = FInd kn }
     | Construct kn -> {mark = mark Cstr Unknown; term = FConstruct kn }
@@ -540,7 +553,7 @@ let ref_value_cache env flags tab ref =
     let v =
       try
         let body =
-          match ref with
+          match Key.key ref with
           | RelKey n ->
             let open! Context.Rel.Declaration in
             let i = n - 1 in
@@ -572,10 +585,10 @@ let ref_value_cache env flags tab ref =
 let rec to_constr lfts v =
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
-    | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
-    | FFlex (VarKey x) -> mkVar x
+    | FFlex { Key.key = RelKey p; _ } -> mkRel (reloc_rel p lfts)
+    | FFlex { Key.key = VarKey x; _ } -> mkVar x
     | FAtom c -> exliftn lfts c
-    | FFlex (ConstKey op) -> mkConstU op
+    | FFlex { Key.key = ConstKey op; _ } -> mkConstU op
     | FInd op -> mkIndU op
     | FConstruct op -> mkConstructU op
     | FCaseT (ci, u, pms, p, c, ve, env) ->
@@ -710,7 +723,7 @@ let rec zip m stk =
         zip (update ~share:true rf m.mark m.term) s
     | Zprimitive(_op,c,rargs,kargs)::s ->
       let args = List.rev_append rargs (m::List.map snd kargs) in
-      let f = {mark = mark Red Unknown;term = FFlex (ConstKey c)} in
+      let f = {mark = mark Red Unknown;term = FFlex (Key.const c)} in
       zip {mark=mark (neutr (Mark.red_state m.mark)) KnownR; term = FApp (f, Array.of_list args)} s
 
 let fapp_stack (m,stk) = zip m stk
@@ -833,7 +846,7 @@ let get_native_args op c stk =
     | Zupdate(m) :: s ->
       strip_rec rnargs (update ~share:true m h.mark h.term) depth  kargs s
     | (Zprimitive _ | ZcaseT _ | Zproj _ | Zfix _) :: _ | [] -> assert false
-  in strip_rec [] {mark = mark Red Unknown;term = FFlex(ConstKey c)} 0 kargs stk
+  in strip_rec [] {mark = mark Red Unknown;term = FFlex(Key.const c)} 0 kargs stk
 
 let get_native_args1 op c stk =
   match get_native_args op c stk with
@@ -1058,7 +1071,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_int63 with
       | Some c ->
         defined_int := true;
-        fint := { mark = mark Ntrl KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
+        fint := { mark = mark Ntrl KnownR; term = FFlex (Key.const (Univ.in_punivs c)) }
       | None -> defined_int := false
 
     let defined_float = ref false
@@ -1068,7 +1081,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_float64 with
       | Some c ->
         defined_float := true;
-        ffloat := { mark = mark Ntrl KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
+        ffloat := { mark = mark Ntrl KnownR; term = FFlex (Key.const (Univ.in_punivs c)) }
       | None -> defined_float := false
 
     let defined_bool = ref false
@@ -1392,7 +1405,7 @@ let rec knr info tab m stk =
         | Def v -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
-            let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
+            let c = match Key.key fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
             let rargs, a, nargs, stk = get_native_args1 op c stk in
             kni info tab a (Zprimitive(op,c,rargs,nargs)::stk)
           else
@@ -1442,7 +1455,7 @@ let rec knr info tab m stk =
              | Some m ->
              kni info tab m s
              | None ->
-               let f = {mark = mark Whnf KnownR; term = FFlex (ConstKey c)} in
+               let f = {mark = mark Whnf KnownR; term = FFlex (Key.const c)} in
                let m = {mark = mark Whnf KnownR; term = FApp(f,args)} in
                (m,s)
            end
@@ -1457,7 +1470,7 @@ let rec knr info tab m stk =
       | Some c -> knit info tab env c stk
       | None -> (m, stk)
     end
-  | FLOCKED | FRel _ | FAtom _ | FFlex (RelKey _ | ConstKey _ | VarKey _) | FInd _ | FApp _ | FProj _
+  | FLOCKED | FRel _ | FAtom _ | FFlex { Key.key = RelKey _ | ConstKey _ | VarKey _; _ } | FInd _ | FApp _ | FProj _
     | FFix _ | FCoFix _ | FCaseT _ | FCaseInvert _ | FLambda _ | FProd _ | FLetIn _ | FLIFT _
     | FCLOS _ -> (m, stk)
 

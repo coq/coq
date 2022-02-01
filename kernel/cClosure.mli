@@ -82,9 +82,8 @@ val zeta              : reds
 val nored             : reds
 
 (***********************************************************************)
-type table_key = Constant.t Univ.puniverses tableKey
-
-module KeyTable : Hashtbl.S with type key = table_key
+type table_key
+val table_key : table_key -> Constant.t Univ.puniverses tableKey
 
 (***********************************************************************
   s Lazy reduction. *)

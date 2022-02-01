@@ -151,6 +151,20 @@ let mkSTACK = function
   | STACK(0,v0,stk0), stk -> STACK(0,v0,stack_concat stk0 stk)
   | v,stk -> STACK(0,v,stk)
 
+module IdKeyHash =
+struct
+  let eq_pconstant_key (c,u) (c',u') =
+    eq_constant_key c c' && Univ.Instance.equal u u'
+  open Hashset.Combine
+  type t = Constant.t Univ.puniverses tableKey
+  let equal = Names.eq_table_key eq_pconstant_key
+  let hash = function
+  | ConstKey (c, _) -> combinesmall 1 (Constant.UserOrd.hash c)
+  | VarKey id -> combinesmall 2 (Id.hash id)
+  | RelKey i -> combinesmall 3 (Int.hash i)
+end
+
+module KeyTable = Hashtbl.Make(IdKeyHash)
 type cbv_infos = {
   env : Environ.env;
   tab : (cbv_value, Empty.t) Declarations.constant_def KeyTable.t;
