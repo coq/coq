@@ -362,6 +362,11 @@ let esubst_of_rel_context_instance_list ctx u args e =
   in
   aux 0 e args (List.rev ctx)
 
+let irr_flex env = function
+  | ConstKey (con,_) -> Cset_env.mem con env.Environ.irr_constants
+  | VarKey x -> Context.Named.Declaration.get_relevance (Environ.lookup_named x env) == Sorts.Irrelevant
+  | RelKey x -> Context.Rel.Declaration.get_relevance (Environ.lookup_rel x env) == Sorts.Irrelevant
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
@@ -425,6 +430,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       (try
          let nargs = same_args_size v1 v2 in
          let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
+         let () = if irr_flex (info_env infos.cnv_inf) fl1 then raise NotConvertible (* trigger the fallback *) in
          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | Univ.UniverseInconsistency _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in

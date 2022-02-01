@@ -1351,14 +1351,11 @@ let rec skip_irrelevant_stack stk = match stk with
   let _ = update ~share:true m mk_irrelevant.mark mk_irrelevant.term in
   skip_irrelevant_stack s
 
-let is_irrelevant_constructor infos ((mi,i),_) = match infos.i_cache.i_mode with
-| Conversion ->
-  let decl = lookup_mind mi infos.i_cache.i_env in
-  let packet = decl.mind_packets.(i) in
-  packet.mind_relevance == Sorts.Irrelevant
+let is_irrelevant_constructor infos (ind,_) = match infos.i_cache.i_mode with
+| Conversion -> Indset_env.mem ind infos.i_cache.i_env.irr_inds
 | Reduction -> false
 
-(* FIXME: cache relevance in projection like Fix / Case nodes *)
+(* FIXME: cache relevance in projection like Fix / Case nodes or in env like constants and inds *)
 let is_irrelevant_projection infos p = match infos.i_cache.i_mode with
 | Conversion ->
   let mind = Projection.mind p in
