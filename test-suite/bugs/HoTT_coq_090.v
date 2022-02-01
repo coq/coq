@@ -10,9 +10,9 @@ Inductive paths {A : Type} (a : A) : A -> Type :=
 
 Arguments idpath {A a} , [A] a.
 
-Arguments paths_ind [A] a P f y p.
-Arguments paths_rec [A] a P f y p.
-Arguments paths_rect [A] a P f y p.
+Arguments paths_ind [A] a P f y p : rename.
+Arguments paths_rec [A] a P f y p : rename.
+Arguments paths_rect [A] a P f y p : rename.
 
 Notation "x = y :> A" := (@paths A x y) : type_scope.
 Notation "x = y" := (x = y :>_) : type_scope.

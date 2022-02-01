@@ -11,7 +11,7 @@ fooSProp_inds :
 forall P : fooSProp -> SProp, P aSP -> P bSP -> forall f1 : fooSProp, P f1
 
 fooSProp_inds is not universe polymorphic
-Arguments fooSProp_inds P%function_scope f f f
+Arguments fooSProp_inds P%function_scope f f0 f1
 fooSProp_inds is transparent
 Expands to: Constant SchemeNames.fooSProp_inds
 File "./output/SchemeNames.v", line 23, characters 2-48:
@@ -26,7 +26,7 @@ Induction on sort Type is not allowed for inductive definition fooSProp.
 fooSProp_inds_nodep : forall P : SProp, P -> P -> fooSProp -> P
 
 fooSProp_inds_nodep is not universe polymorphic
-Arguments fooSProp_inds_nodep P%type_scope f f f
+Arguments fooSProp_inds_nodep P%type_scope f f0 f1
 fooSProp_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooSProp_inds_nodep
 File "./output/SchemeNames.v", line 32, characters 2-49:
@@ -42,7 +42,7 @@ fooSProp_cases :
 forall P : fooSProp -> SProp, P aSP -> P bSP -> forall f1 : fooSProp, P f1
 
 fooSProp_cases is not universe polymorphic
-Arguments fooSProp_cases P%function_scope f f f
+Arguments fooSProp_cases P%function_scope f f0 f1
 fooSProp_cases is transparent
 Expands to: Constant SchemeNames.fooSProp_cases
 File "./output/SchemeNames.v", line 41, characters 2-42:
@@ -57,7 +57,7 @@ Induction on sort Type is not allowed for inductive definition fooSProp.
 fooSProp_cases_nodep : forall P : SProp, P -> P -> fooSProp -> P
 
 fooSProp_cases_nodep is not universe polymorphic
-Arguments fooSProp_cases_nodep P%type_scope f f f
+Arguments fooSProp_cases_nodep P%type_scope f f0 f1
 fooSProp_cases_nodep is transparent
 Expands to: Constant SchemeNames.fooSProp_cases_nodep
 File "./output/SchemeNames.v", line 49, characters 2-36:
@@ -74,14 +74,14 @@ fooProp_inds_dep :
 forall P : fooProp -> SProp, P aP -> P bP -> forall f1 : fooProp, P f1
 
 fooProp_inds_dep is not universe polymorphic
-Arguments fooProp_inds_dep P%function_scope f f f
+Arguments fooProp_inds_dep P%function_scope f f0 f1
 fooProp_inds_dep is transparent
 Expands to: Constant SchemeNames.fooProp_inds_dep
 fooProp_ind_dep :
 forall P : fooProp -> Prop, P aP -> P bP -> forall f1 : fooProp, P f1
 
 fooProp_ind_dep is not universe polymorphic
-Arguments fooProp_ind_dep P%function_scope f f f
+Arguments fooProp_ind_dep P%function_scope f f0 f1
 fooProp_ind_dep is transparent
 Expands to: Constant SchemeNames.fooProp_ind_dep
 File "./output/SchemeNames.v", line 71, characters 2-46:
@@ -93,13 +93,13 @@ Induction on sort Type is not allowed for inductive definition fooProp.
 fooProp_inds : forall P : SProp, P -> P -> fooProp -> P
 
 fooProp_inds is not universe polymorphic
-Arguments fooProp_inds P%type_scope f f f
+Arguments fooProp_inds P%type_scope f f0 f1
 fooProp_inds is transparent
 Expands to: Constant SchemeNames.fooProp_inds
 fooProp_ind : forall P : Prop, P -> P -> fooProp -> P
 
 fooProp_ind is not universe polymorphic
-Arguments fooProp_ind P%type_scope f f f
+Arguments fooProp_ind P%type_scope f f0 f1
 fooProp_ind is transparent
 Expands to: Constant SchemeNames.fooProp_ind
 File "./output/SchemeNames.v", line 81, characters 2-47:
@@ -112,14 +112,14 @@ fooProp_cases_dep :
 forall P : fooProp -> SProp, P aP -> P bP -> forall f1 : fooProp, P f1
 
 fooProp_cases_dep is not universe polymorphic
-Arguments fooProp_cases_dep P%function_scope f f f
+Arguments fooProp_cases_dep P%function_scope f f0 f1
 fooProp_cases_dep is transparent
 Expands to: Constant SchemeNames.fooProp_cases_dep
 fooProp_case_dep :
 forall P : fooProp -> Prop, P aP -> P bP -> forall f1 : fooProp, P f1
 
 fooProp_case_dep is not universe polymorphic
-Arguments fooProp_case_dep P%function_scope f f f
+Arguments fooProp_case_dep P%function_scope f f0 f1
 fooProp_case_dep is transparent
 Expands to: Constant SchemeNames.fooProp_case_dep
 File "./output/SchemeNames.v", line 91, characters 2-40:
@@ -131,13 +131,13 @@ Induction on sort Type is not allowed for inductive definition fooProp.
 fooProp_cases : forall P : SProp, P -> P -> fooProp -> P
 
 fooProp_cases is not universe polymorphic
-Arguments fooProp_cases P%type_scope f f f
+Arguments fooProp_cases P%type_scope f f0 f1
 fooProp_cases is transparent
 Expands to: Constant SchemeNames.fooProp_cases
 fooProp_case : forall P : Prop, P -> P -> fooProp -> P
 
 fooProp_case is not universe polymorphic
-Arguments fooProp_case P%type_scope f f f
+Arguments fooProp_case P%type_scope f f0 f1
 fooProp_case is transparent
 Expands to: Constant SchemeNames.fooProp_case
 File "./output/SchemeNames.v", line 99, characters 2-35:
@@ -148,104 +148,104 @@ fooSet_inds :
 forall P : fooSet -> SProp, P aS -> P bS -> forall f1 : fooSet, P f1
 
 fooSet_inds is not universe polymorphic
-Arguments fooSet_inds P%function_scope f f f
+Arguments fooSet_inds P%function_scope f f0 f1
 fooSet_inds is transparent
 Expands to: Constant SchemeNames.fooSet_inds
 fooSet_ind :
 forall P : fooSet -> Prop, P aS -> P bS -> forall f1 : fooSet, P f1
 
 fooSet_ind is not universe polymorphic
-Arguments fooSet_ind P%function_scope f f f
+Arguments fooSet_ind P%function_scope f f0 f1
 fooSet_ind is transparent
 Expands to: Constant SchemeNames.fooSet_ind
 fooSet_rec :
 forall P : fooSet -> Set, P aS -> P bS -> forall f1 : fooSet, P f1
 
 fooSet_rec is not universe polymorphic
-Arguments fooSet_rec P%function_scope f f f
+Arguments fooSet_rec P%function_scope f f0 f1
 fooSet_rec is transparent
 Expands to: Constant SchemeNames.fooSet_rec
 fooSet_rect :
 forall P : fooSet -> Type, P aS -> P bS -> forall f1 : fooSet, P f1
 
 fooSet_rect is not universe polymorphic
-Arguments fooSet_rect P%function_scope f f f
+Arguments fooSet_rect P%function_scope f f0 f1
 fooSet_rect is transparent
 Expands to: Constant SchemeNames.fooSet_rect
 fooSet_inds_nodep : forall P : SProp, P -> P -> fooSet -> P
 
 fooSet_inds_nodep is not universe polymorphic
-Arguments fooSet_inds_nodep P%type_scope f f f
+Arguments fooSet_inds_nodep P%type_scope f f0 f1
 fooSet_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_inds_nodep
 fooSet_ind_nodep : forall P : Prop, P -> P -> fooSet -> P
 
 fooSet_ind_nodep is not universe polymorphic
-Arguments fooSet_ind_nodep P%type_scope f f f
+Arguments fooSet_ind_nodep P%type_scope f f0 f1
 fooSet_ind_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_ind_nodep
 fooSet_rec_nodep : forall P : Set, P -> P -> fooSet -> P
 
 fooSet_rec_nodep is not universe polymorphic
-Arguments fooSet_rec_nodep P%type_scope f f f
+Arguments fooSet_rec_nodep P%type_scope f f0 f1
 fooSet_rec_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_rec_nodep
 fooSet_rect_nodep : forall P : Type, P -> P -> fooSet -> P
 
 fooSet_rect_nodep is not universe polymorphic
-Arguments fooSet_rect_nodep P%type_scope f f f
+Arguments fooSet_rect_nodep P%type_scope f f0 f1
 fooSet_rect_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_rect_nodep
 fooSet_cases :
 forall P : fooSet -> SProp, P aS -> P bS -> forall f1 : fooSet, P f1
 
 fooSet_cases is not universe polymorphic
-Arguments fooSet_cases P%function_scope f f f
+Arguments fooSet_cases P%function_scope f f0 f1
 fooSet_cases is transparent
 Expands to: Constant SchemeNames.fooSet_cases
 fooSet_case :
 forall P : fooSet -> Prop, P aS -> P bS -> forall f1 : fooSet, P f1
 
 fooSet_case is not universe polymorphic
-Arguments fooSet_case P%function_scope f f f
+Arguments fooSet_case P%function_scope f f0 f1
 fooSet_case is transparent
 Expands to: Constant SchemeNames.fooSet_case
 fooSet'_case :
 forall P : fooSet' -> Set, P aS' -> P bS' -> forall f1 : fooSet', P f1
 
 fooSet'_case is not universe polymorphic
-Arguments fooSet'_case P%function_scope f f f
+Arguments fooSet'_case P%function_scope f f0 f1
 fooSet'_case is transparent
 Expands to: Constant SchemeNames.fooSet'_case
 fooSet'_caset :
 forall P : fooSet' -> Type, P aS' -> P bS' -> forall f1 : fooSet', P f1
 
 fooSet'_caset is not universe polymorphic
-Arguments fooSet'_caset P%function_scope f f f
+Arguments fooSet'_caset P%function_scope f f0 f1
 fooSet'_caset is transparent
 Expands to: Constant SchemeNames.fooSet'_caset
 fooSet_cases_nodep : forall P : SProp, P -> P -> fooSet -> P
 
 fooSet_cases_nodep is not universe polymorphic
-Arguments fooSet_cases_nodep P%type_scope f f f
+Arguments fooSet_cases_nodep P%type_scope f f0 f1
 fooSet_cases_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_cases_nodep
 fooSet_case_nodep : forall P : Prop, P -> P -> fooSet -> P
 
 fooSet_case_nodep is not universe polymorphic
-Arguments fooSet_case_nodep P%type_scope f f f
+Arguments fooSet_case_nodep P%type_scope f f0 f1
 fooSet_case_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_case_nodep
 fooSet'_case_nodep : forall P : Set, P -> P -> fooSet' -> P
 
 fooSet'_case_nodep is not universe polymorphic
-Arguments fooSet'_case_nodep P%type_scope f f f
+Arguments fooSet'_case_nodep P%type_scope f f0 f1
 fooSet'_case_nodep is transparent
 Expands to: Constant SchemeNames.fooSet'_case_nodep
 fooSet'_caset_nodep : forall P : Type, P -> P -> fooSet' -> P
 
 fooSet'_caset_nodep is not universe polymorphic
-Arguments fooSet'_caset_nodep P%type_scope f f f
+Arguments fooSet'_caset_nodep P%type_scope f f0 f1
 fooSet'_caset_nodep is transparent
 Expands to: Constant SchemeNames.fooSet'_caset_nodep
 fooSet_beq : fooSet -> fooSet -> bool
@@ -279,104 +279,104 @@ fooType_inds :
 forall P : fooType -> SProp, P aT -> P bT -> forall f1 : fooType, P f1
 
 fooType_inds is not universe polymorphic
-Arguments fooType_inds P%function_scope f f f
+Arguments fooType_inds P%function_scope f f0 f1
 fooType_inds is transparent
 Expands to: Constant SchemeNames.fooType_inds
 fooType_ind :
 forall P : fooType -> Prop, P aT -> P bT -> forall f1 : fooType, P f1
 
 fooType_ind is not universe polymorphic
-Arguments fooType_ind P%function_scope f f f
+Arguments fooType_ind P%function_scope f f0 f1
 fooType_ind is transparent
 Expands to: Constant SchemeNames.fooType_ind
 fooType_rec :
 forall P : fooType -> Set, P aT -> P bT -> forall f1 : fooType, P f1
 
 fooType_rec is not universe polymorphic
-Arguments fooType_rec P%function_scope f f f
+Arguments fooType_rec P%function_scope f f0 f1
 fooType_rec is transparent
 Expands to: Constant SchemeNames.fooType_rec
 fooType_rect :
 forall P : fooType -> Type, P aT -> P bT -> forall f1 : fooType, P f1
 
 fooType_rect is not universe polymorphic
-Arguments fooType_rect P%function_scope f f f
+Arguments fooType_rect P%function_scope f f0 f1
 fooType_rect is transparent
 Expands to: Constant SchemeNames.fooType_rect
 fooType_inds_nodep : forall P : SProp, P -> P -> fooType -> P
 
 fooType_inds_nodep is not universe polymorphic
-Arguments fooType_inds_nodep P%type_scope f f f
+Arguments fooType_inds_nodep P%type_scope f f0 f1
 fooType_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooType_inds_nodep
 fooType_ind_nodep : forall P : Prop, P -> P -> fooType -> P
 
 fooType_ind_nodep is not universe polymorphic
-Arguments fooType_ind_nodep P%type_scope f f f
+Arguments fooType_ind_nodep P%type_scope f f0 f1
 fooType_ind_nodep is transparent
 Expands to: Constant SchemeNames.fooType_ind_nodep
 fooType_rec_nodep : forall P : Set, P -> P -> fooType -> P
 
 fooType_rec_nodep is not universe polymorphic
-Arguments fooType_rec_nodep P%type_scope f f f
+Arguments fooType_rec_nodep P%type_scope f f0 f1
 fooType_rec_nodep is transparent
 Expands to: Constant SchemeNames.fooType_rec_nodep
 fooType_rect_nodep : forall P : Type, P -> P -> fooType -> P
 
 fooType_rect_nodep is not universe polymorphic
-Arguments fooType_rect_nodep P%type_scope f f f
+Arguments fooType_rect_nodep P%type_scope f f0 f1
 fooType_rect_nodep is transparent
 Expands to: Constant SchemeNames.fooType_rect_nodep
 fooType_cases :
 forall P : fooType -> SProp, P aT -> P bT -> forall f1 : fooType, P f1
 
 fooType_cases is not universe polymorphic
-Arguments fooType_cases P%function_scope f f f
+Arguments fooType_cases P%function_scope f f0 f1
 fooType_cases is transparent
 Expands to: Constant SchemeNames.fooType_cases
 fooType_case :
 forall P : fooType -> Prop, P aT -> P bT -> forall f1 : fooType, P f1
 
 fooType_case is not universe polymorphic
-Arguments fooType_case P%function_scope f f f
+Arguments fooType_case P%function_scope f f0 f1
 fooType_case is transparent
 Expands to: Constant SchemeNames.fooType_case
 fooType'_case :
 forall P : fooType' -> Set, P aT' -> P bT' -> forall f1 : fooType', P f1
 
 fooType'_case is not universe polymorphic
-Arguments fooType'_case P%function_scope f f f
+Arguments fooType'_case P%function_scope f f0 f1
 fooType'_case is transparent
 Expands to: Constant SchemeNames.fooType'_case
 fooType'_caset :
 forall P : fooType' -> Type, P aT' -> P bT' -> forall f1 : fooType', P f1
 
 fooType'_caset is not universe polymorphic
-Arguments fooType'_caset P%function_scope f f f
+Arguments fooType'_caset P%function_scope f f0 f1
 fooType'_caset is transparent
 Expands to: Constant SchemeNames.fooType'_caset
 fooType_cases_nodep : forall P : SProp, P -> P -> fooType -> P
 
 fooType_cases_nodep is not universe polymorphic
-Arguments fooType_cases_nodep P%type_scope f f f
+Arguments fooType_cases_nodep P%type_scope f f0 f1
 fooType_cases_nodep is transparent
 Expands to: Constant SchemeNames.fooType_cases_nodep
 fooType_case_nodep : forall P : Prop, P -> P -> fooType -> P
 
 fooType_case_nodep is not universe polymorphic
-Arguments fooType_case_nodep P%type_scope f f f
+Arguments fooType_case_nodep P%type_scope f f0 f1
 fooType_case_nodep is transparent
 Expands to: Constant SchemeNames.fooType_case_nodep
 fooType'_case_nodep : forall P : Set, P -> P -> fooType' -> P
 
 fooType'_case_nodep is not universe polymorphic
-Arguments fooType'_case_nodep P%type_scope f f f
+Arguments fooType'_case_nodep P%type_scope f f0 f1
 fooType'_case_nodep is transparent
 Expands to: Constant SchemeNames.fooType'_case_nodep
 fooType'_caset_nodep : forall P : Type, P -> P -> fooType' -> P
 
 fooType'_caset_nodep is not universe polymorphic
-Arguments fooType'_caset_nodep P%type_scope f f f
+Arguments fooType'_caset_nodep P%type_scope f f0 f1
 fooType'_caset_nodep is transparent
 Expands to: Constant SchemeNames.fooType'_caset_nodep
 fooType_beq : fooType -> fooType -> bool
@@ -406,3 +406,19 @@ internal_fooType_dec_lb is not universe polymorphic
 Arguments internal_fooType_dec_lb x y _
 internal_fooType_dec_lb is transparent
 Expands to: Constant SchemeNames.internal_fooType_dec_lb
+F_rect :
+forall (f : Type) (P : F f -> Type),
+(forall f0 : f, P (C f f0)) -> forall f1 : F f, P f1
+
+F_rect is not universe polymorphic
+Arguments F_rect f%type_scope (P f0)%function_scope f1
+F_rect is transparent
+Expands to: Constant SchemeNames.F_rect
+PP_rect :
+forall (P : Type) (P0 : PP P -> Type),
+(forall p : P, P0 (D P p)) -> forall p : PP P, P0 p
+
+PP_rect is not universe polymorphic
+Arguments PP_rect P%type_scope (P0 f)%function_scope p
+PP_rect is transparent
+Expands to: Constant SchemeNames.PP_rect

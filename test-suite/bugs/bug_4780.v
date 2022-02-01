@@ -26,7 +26,7 @@ Notation "x .1" := (projT1 x) (at level 3) : fibration_scope.
 Notation "x .2" := (projT2 x) (at level 3) : fibration_scope.
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a.
 Arguments idpath {A a} , [A] a.
-Arguments paths_rect [A] a P f y p.
+Arguments paths_rect [A] a P f y p : rename.
 Notation "x = y :> A" := (@paths A x y) : type_scope.
 Notation "x = y" := (x = y :>_) : type_scope.
 Delimit Scope path_scope with path.
