@@ -169,6 +169,14 @@ sig
   (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
   val drop_bodies : ('c, 't) pt -> ('c, 't) pt
 
+  (** [chop_nhyps n Γ] returns [Γ'',Γ'] such that [Γ]=[Γ'Γ''], [Γ''] has
+      [n] hypotheses (i.e. [LocalAssum]), excluding local definitions
+      (i.e. [LocalDef]), and [Γ''], if [n] non zero, starts with an
+      hypothesis (i.e., [Γ''] has the form [x:A;Γ'''], i.e., local
+      definitions at the junction of the [n] hypotheses are put in
+      [Γ'] rather than in [Γ''] *)
+  val chop_nhyps : int -> ('c, 't) pt -> ('c, 't) pt * ('c, 't) pt
+
   (** [instance mk n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the {e local definitions} of [Γ] skipped in
       [args] where [mk] is used to build the corresponding variables.

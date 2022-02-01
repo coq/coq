@@ -55,6 +55,11 @@ let inductive_params (mib,_) = mib.mind_nparams
 let inductive_paramdecls (mib,u) =
   Vars.subst_instance_context u mib.mind_params_ctxt
 
+let inductive_nonrec_rec_paramdecls (mib,u) =
+  let nnonrecparamdecls = mib.mind_nparams - mib.mind_nparams_rec in
+  let paramdecls = inductive_paramdecls (mib,u) in
+  Context.Rel.chop_nhyps nnonrecparamdecls paramdecls
+
 let instantiate_inductive_constraints mib u =
   Univ.AbstractContext.instantiate u (Declareops.inductive_polymorphic_context mib)
 

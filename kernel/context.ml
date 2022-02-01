@@ -256,6 +256,16 @@ struct
 
   let drop_bodies l = List.Smart.map Declaration.drop_body l
 
+  (** Split a context so that the second part contains [n]
+      [LocalAssum], keeping all [LocalDef] in the middle in the first part *)
+  let chop_nhyps n l =
+    let rec aux l' = function
+      | (0, l) -> (List.rev l', l)
+      | (n, (Declaration.LocalDef _ as h) :: l) -> aux (h::l') (n, l)
+      | (n, (Declaration.LocalAssum _ as h) :: l) -> aux (h::l') (n-1, l)
+      | (_, []) -> CErrors.anomaly (Pp.str "chop_nhyps: not enough hypotheses.")
+    in aux [] (n,l)
+
   (** [extended_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the {e local definitions} of [Γ] skipped in
       [args]. Example: for [x:T, y:=c, z:U] and [n]=2, it gives [Rel 5, Rel 3]. *)

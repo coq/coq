@@ -101,11 +101,10 @@ let my_inj_tac x = Equality.inj inj_flags None false None (EConstr.mkVar x,NoBin
 (* reconstruct the inductive with the correct de Bruijn indexes *)
 let mkFullInd env (ind,u) n =
   let mib = Environ.lookup_mind (fst ind) env in
-  let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   (* params context divided *)
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) mib.mind_params_ctxt in
+    Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   if nparrec > 0
     then mkApp (mkIndU (ind,u),
       Array.of_list(Context.Rel.instance_list mkRel (nparrec+n) lnamesparrec))
@@ -137,7 +136,7 @@ let get_inductive_deps env kn =
     (* This function is only trying to recursively compute the inductive types
        appearing as arguments of the constructors. This is done to support
        equality decision over hereditarily first-order types. It could be
-       perfomed in a much cleaner way, e.g. using the kernel normal form of
+       performed in a much cleaner way, e.g. using the kernel normal form of
        constructor types and kernel whd_all for the argument types. *)
     let rec aux accu c =
       let (c,a) = Reductionops.whd_betaiota_stack env Evd.empty EConstr.(of_constr c) in
@@ -177,15 +176,19 @@ let build_beq_scheme env handle kn =
   check_bool_is_defined ();
   (* fetching the mutual inductive body *)
   let mib = Environ.lookup_mind kn env in
+
+  let auctx = Declareops.universes_context mib.mind_universes in
+  let u, uctx = UnivGen.fresh_instance_from auctx None in
+  let uctx = UState.of_context_set uctx in
+
   (* number of inductives in the mutual *)
   let nb_ind = Array.length mib.mind_packets in
   (* number of params in the type *)
-  let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   check_no_indices mib;
   (* params context divided *)
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) mib.mind_params_ctxt in
+    Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   (* predef coq's boolean type *)
   (* rec name *)
   let rec_name i =(Id.to_string (Array.get mib.mind_packets i).mind_typename)^
@@ -222,10 +225,10 @@ let build_beq_scheme env handle kn =
         mkNamedLambda x (RelDecl.get_type decl)  a) eq_input lnamesparrec
   in
   let make_one_eq cur =
-    let u = Univ.Instance.empty in
-    let ind = (kn,cur),u (* FIXME *) in
+    let ind = (kn,cur) in
+    let indu = (ind,u) in
     (* current inductive we are working on *)
-    let cur_packet = mib.mind_packets.(snd (fst ind)) in
+    let cur_packet = mib.mind_packets.(cur) in
     (* Inductive toto : [rettyp] := *)
     let rettyp = Inductive.type_of_inductive ((mib,cur_packet),u) in
     (* split rettyp in a list without the non rec params and the last ->
@@ -254,19 +257,19 @@ let build_beq_scheme env handle kn =
            mkVar eid
         | Cast (x,_,_) -> aux (Term.applist (x,a))
         | App _ -> assert false
-        | Ind ((kn',i as ind'),u) (*FIXME: universes *) ->
+        | Ind ((kn',i as ind'),u) ->
            if Environ.QMutInd.equal env kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
            else begin
                try
                  let c = get_scheme handle (!beq_scheme_kind_aux()) ind' in
-                 let eq = mkConst c in
+                 let eq = mkConstU (c,u) in
                  let eqa = Array.of_list @@ List.map aux a in
                  let args =
                    Array.append
                      (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
                  if Int.equal (Array.length args) 0 then eq
                  else mkApp (eq, args)
-               with Not_found -> raise(EqNotFound (ind', fst ind))
+               with Not_found -> raise(EqNotFound (ind', ind))
              end
         | Sort _  -> raise InductiveWithSort
         | Prod _ -> raise InductiveWithProduct
@@ -282,7 +285,7 @@ let build_beq_scheme env handle kn =
                let kneq = Constant.change_label kn eq_lbl in
                if Environ.mem_constant kneq env then
                  let _ = Environ.constant_opt_value_in env (kneq, u) in
-                 Term.applist (mkConst kneq,a)
+                 Term.applist (mkConstU (kneq,u),a)
                else raise (ParameterWithoutEquality (GlobRef.ConstRef kn)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
@@ -301,7 +304,7 @@ let build_beq_scheme env handle kn =
     let do_predicate rel_list n =
       List.fold_left (fun a b -> mkLambda(make_annot Anonymous Sorts.Relevant,b,a))
         (mkLambda (make_annot Anonymous Sorts.Relevant,
-                   mkFullInd env ind (n+3+(List.length rettyp_l)+nb_ind-1),
+                   mkFullInd env indu (n+3+(List.length rettyp_l)+nb_ind-1),
                    (bb ())))
         (List.rev rettyp_l) in
     (* make_one_eq *)
@@ -309,10 +312,10 @@ let build_beq_scheme env handle kn =
                ...
                Cn => match Y with ... end |]  part *)
     let rci = Sorts.Relevant in (* TODO relevance *)
-    let ci = make_case_info env (fst ind) rci MatchStyle in
+    let ci = make_case_info env ind rci MatchStyle in
     let constrs n =
       let params = Context.Rel.instance_list mkRel (n+nb_ind-1) mib.mind_params_ctxt in
-      get_constructors env (make_ind_family (ind, params))
+      get_constructors env (make_ind_family (indu, params))
     in
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
@@ -365,15 +368,14 @@ let build_beq_scheme env handle kn =
         ci pred NoInvert (EConstr.mkVar (Id.of_string "X"))
         (EConstr.of_constr_array ar)
     in
-    mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd env ind (nb_ind-1+1))  (
-        mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd env ind (nb_ind-1+2))  (
+    mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd env indu (nb_ind-1+1))  (
+        mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd env indu (nb_ind-1+2))  (
             (EConstr.Unsafe.to_constr case)))
   in (* build_beq_scheme *)
 
   let names = Array.make nb_ind (make_annot Anonymous Sorts.Relevant) and
       types = Array.make nb_ind mkSet and
       cores = Array.make nb_ind mkSet in
-  let u = Univ.Instance.empty in
   for i=0 to (nb_ind-1) do
     names.(i) <- make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant;
     types.(i) <- mkArrow (mkFullInd env ((kn,i),u) 0) Sorts.Relevant
@@ -398,7 +400,7 @@ let build_beq_scheme env handle kn =
     in
     create_input fix)
   in
-  res, UState.from_env env
+  res, uctx
 
 let beq_scheme_kind =
   declare_mutual_scheme_object "_beq"
@@ -442,13 +444,14 @@ let do_replace_lb handle aavoid narg p q =
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-    | Const (cst,_) ->
+    | Const (cst,u) ->
       (* Works in specific situations where the args have to be already declared as a
-         Parameter (see example "J" in test file SchemeEquality.v) *)
+         Parameter (see example "J" in test file SchemeEquality.v);
+         We assume the parameter to have the same polymorphic arity as cst *)
         let lbl = Label.to_string (Constant.label cst) in
         let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_lb") in
         let newcst = Constant.change_label cst (Label.make newlbl) in
-        if Environ.mem_constant newcst env then mkConst newcst
+        if Environ.mem_constant newcst env then mkConstU (newcst,u)
         else raise (ConstructorWithNonParametricInductiveType (fst hd))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
 
@@ -457,14 +460,14 @@ let do_replace_lb handle aavoid narg p q =
     let type_of_pq = Tacmach.pf_get_type_of gl p in
     let sigma = Tacmach.project gl in
     let env = Tacmach.pf_env gl in
-    let u,v = destruct_ind env sigma type_of_pq in
-    let c = get_scheme handle (!lb_scheme_kind_aux ()) (fst u) in
-    let lb_type_of_p = mkConst c in
+    let (ind,u as indu),v = destruct_ind env sigma type_of_pq in
+    let c = get_scheme handle (!lb_scheme_kind_aux ()) ind in
+    let lb_type_of_p = mkConstU (c,u) in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
                           v
-                          (Array.Smart.map (fun x -> do_arg env sigma u x 1) v))
-                          (Array.Smart.map (fun x -> do_arg env sigma u x 2) v)
+                          (Array.Smart.map (fun x -> do_arg env sigma indu x 1) v))
+                          (Array.Smart.map (fun x -> do_arg env sigma indu x 2) v)
         in let app =  if Array.is_empty lb_args
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
@@ -488,13 +491,14 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-    | Const (cst,_) ->
+    | Const (cst,u) ->
       (* Works in specific situations where the args have to be already declared as a
-         Parameter (see example "J" in test file SchemeEquality.v) *)
+         Parameter (see example "J" in test file SchemeEquality.v)
+         We assume the parameter to have the same polymorphic arith as cst *)
         let lbl = Label.to_string (Constant.label cst) in
         let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_bl") in
         let newcst = Constant.change_label cst (Label.make newlbl) in
-        if Environ.mem_constant newcst env then mkConst newcst
+        if Environ.mem_constant newcst env then mkConstU (newcst,u)
         else raise (ConstructorWithNonParametricInductiveType (fst hd))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
   in
@@ -508,19 +512,19 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
           let tt1 = Tacmach.pf_get_type_of gl t1 in
-          let u,v = try destruct_ind env sigma tt1
+          let (ind',u as indu),v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
-          in if Ind.CanOrd.equal (fst u) ind
+          in if Ind.CanOrd.equal ind' ind
              then Tacticals.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
-               let c = get_scheme handle (!bl_scheme_kind_aux ()) (fst u) in
-               let bl_t1 = mkConst c in
+               let c = get_scheme handle (!bl_scheme_kind_aux ()) ind' in
+               let bl_t1 = mkConstU (c,u) in
                let bl_args =
                         Array.append (Array.append
                           v
-                          (Array.Smart.map (fun x -> do_arg env sigma u x 1) v))
-                          (Array.Smart.map (fun x -> do_arg env sigma u x 2) v )
+                          (Array.Smart.map (fun x -> do_arg env sigma indu x 1) v))
+                          (Array.Smart.map (fun x -> do_arg env sigma indu x 2) v )
                 in
                 let app =  if Array.is_empty bl_args
                            then bl_t1 else mkApp (bl_t1,bl_args)
@@ -582,10 +586,10 @@ let avoid_of_list_id list_id =
 (*
   build the right eq_I A B.. N eq_A .. eq_N
 *)
-let eqI handle ind list_id =
+let eqI handle (ind,u) list_id =
   let eA = Array.of_list((List.map (fun (s,_,_,_) -> mkVar s) list_id)@
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
-  and e = mkConst (get_scheme handle beq_scheme_kind ind)
+  and e = mkConstU (get_scheme handle beq_scheme_kind ind,u)
   in mkApp(e,eA)
 
 (**********************************************************************)
@@ -593,9 +597,9 @@ let eqI handle ind list_id =
 
 open Namegen
 
-let compute_bl_goal env handle ind lnamesparrec nparrec =
+let compute_bl_goal env handle (ind,u) lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
-  let eqI = eqI handle ind list_id in
+  let eqI = eqI handle (ind,u) list_id in
   let avoid = avoid_of_list_id list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
@@ -625,7 +629,6 @@ let compute_bl_goal env handle ind lnamesparrec nparrec =
         in
         mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
-      let u = Univ.Instance.empty in
      create_input (
         mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) nparrec) (
           mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (nparrec+1)) (
@@ -699,18 +702,23 @@ let make_bl_scheme env handle mind =
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     user_err
       (str "Automatic building of boolean->Leibniz lemmas not supported");
+
+  (* Setting universes *)
+  let auctx = Declareops.universes_context mib.mind_universes in
+  let u, uctx = UnivGen.fresh_instance_from auctx None in
+  let uctx = UState.merge ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
+
   let ind = (mind,0) in
-  let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
-  let lnonparrec,lnamesparrec = (* TODO subst *)
-    context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let bl_goal = compute_bl_goal env handle ind lnamesparrec nparrec in
-  let uctx = UState.from_env env in
+  let lnonparrec,lnamesparrec =
+    Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
+  let bl_goal = compute_bl_goal env handle (ind,u) lnamesparrec nparrec in
   let bl_goal = EConstr.of_constr bl_goal in
-  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false env ~uctx ~typ:bl_goal
-    (compute_bl_tact handle (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
+  let poly = Declareops.inductive_is_polymorphic mib in
+  let (ans, _, _, _, uctx) = Declare.build_by_tactic ~poly ~side_eff:false env ~uctx ~typ:bl_goal
+    (compute_bl_tact handle (ind, EConstr.EInstance.make u) lnamesparrec nparrec)
   in
-  ([|ans|], ctx)
+  ([|ans|], uctx)
 
 let make_bl_scheme_deps env ind =
   let inds = get_inductive_deps env ind in
@@ -727,11 +735,11 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 (**********************************************************************)
 (* Leibniz->Boolean *)
 
-let compute_lb_goal env handle ind lnamesparrec nparrec =
+let compute_lb_goal env handle (ind,u) lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eq = eq () and tt = tt () and bb = bb () in
   let avoid = avoid_of_list_id list_id in
-  let eqI = eqI handle ind list_id in
+  let eqI = eqI handle (ind,u) list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
     let create_input c =
@@ -761,7 +769,6 @@ let compute_lb_goal env handle ind lnamesparrec nparrec =
           in
           mkNamedProd x (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
-      let u = Univ.Instance.empty in
       create_input (
         mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) nparrec) (
           mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (nparrec+1)) (
@@ -824,14 +831,19 @@ let make_lb_scheme env handle mind =
     user_err
       (str "Automatic building of Leibniz->boolean lemmas not supported");
   let ind = (mind,0) in
-  let nparams = mib.mind_nparams in
+
+  (* Setting universes *)
+  let auctx = Declareops.universes_context mib.mind_universes in
+  let u, uctx = UnivGen.fresh_instance_from auctx None in
+  let uctx = UState.merge ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
+
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let lb_goal = compute_lb_goal env handle ind lnamesparrec nparrec in
-  let uctx = UState.from_env env in
+    Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
+  let lb_goal = compute_lb_goal env handle (ind,u) lnamesparrec nparrec in
   let lb_goal = EConstr.of_constr lb_goal in
-  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false env ~uctx ~typ:lb_goal
+  let poly = Declareops.inductive_is_polymorphic mib in
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly ~side_eff:false env ~uctx ~typ:lb_goal
     (compute_lb_tact handle ind lnamesparrec nparrec)
   in
   ([|ans|], ctx)
@@ -913,12 +925,12 @@ let compute_dec_goal env ind lnamesparrec nparrec =
         )
       )
 
-let compute_dec_tact handle ind lnamesparrec nparrec =
+let compute_dec_tact handle (ind,u) lnamesparrec nparrec =
   let eq = eq () and tt = tt ()
       and ff = ff () and bb = bb () in
   let list_id = list_id lnamesparrec in
   let _ = get_scheme handle beq_scheme_kind ind in (* This is just an assertion? *)
-  let _non_fresh_eqI = eqI handle ind list_id in
+  let _non_fresh_eqI = eqI handle (ind,u) list_id in
   let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
   let eqfalse x = mkApp(eq,[|bb;x;ff|]) in
   let first_intros =
@@ -936,7 +948,7 @@ let compute_dec_tact handle ind lnamesparrec nparrec =
       let fresh_list_id =
         List.init n (fun i -> (Array.get a i, Array.get a (i+n),
                                Array.get a (i+2*n), Array.get a (i+3*n))) in
-      eqI handle ind fresh_list_id
+      eqI handle (ind,u) fresh_list_id
     in
     intro_using_then (Id.of_string "x") begin fun freshn ->
       intro_using_then (Id.of_string "y") begin fun freshm ->
@@ -946,9 +958,9 @@ let compute_dec_tact handle ind lnamesparrec nparrec =
           let arfresh = Array.of_list fresh_first_intros in
           let xargs = Array.sub arfresh 0 (2*nparrec) in
           let c = get_scheme handle bl_scheme_kind ind in
-          let blI = mkConst c in
+          let blI = mkConstU (c,u) in
           let c = get_scheme handle lb_scheme_kind ind in
-          let lbI = mkConst c in
+          let lbI = mkConstU (c,u) in
           Tacticals.tclTHENLIST [
               (*we do this so we don't have to prove the same goal twice *)
               assert_by (Name freshH) (EConstr.of_constr (
@@ -1003,15 +1015,19 @@ let make_eq_decidability env handle mind =
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     raise DecidabilityMutualNotSupported;
   let ind = (mind,0) in
-  let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
-  let u = Univ.Instance.empty in
-  let uctx = UState.from_env env in
+
+  (* Setting universes *)
+  let auctx = Declareops.universes_context mib.mind_universes in
+  let u, uctx = UnivGen.fresh_instance_from auctx None in
+  let uctx = UState.merge ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
+
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff:false env ~uctx
+    Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
+  let poly = Declareops.inductive_is_polymorphic mib in
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly ~side_eff:false env ~uctx
       ~typ:(EConstr.of_constr (compute_dec_goal env (ind,u) lnamesparrec nparrec))
-      (compute_dec_tact handle ind lnamesparrec nparrec)
+      (compute_dec_tact handle (ind,u) lnamesparrec nparrec)
   in
   ([|ans|], ctx)
 
