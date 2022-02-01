@@ -47,8 +47,6 @@ val factorize_eqns : 'a cases_clauses_g -> 'a disjunctive_cases_clauses_g
    [isgoal] tells if naming must avoid global-level synonyms as intro does
    [ctx] gives the names of the free variables *)
 
-val detype_names : bool -> Id.Set.t -> names_context -> env -> evar_map -> constr -> glob_constr
-
 val detype : 'a delay -> ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> constr -> 'a glob_constr_g
 
 val detype_sort : evar_map -> Sorts.t -> glob_sort

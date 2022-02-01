@@ -982,10 +982,6 @@ let detype_rel_context d flags where avoid env sigma sign =
       (na',Explicit,b',t') :: aux avoid' (add_name (set_name na' decl) env) rest
   in aux avoid env (List.rev sign)
 
-let detype_names isgoal avoid nenv env sigma t =
-  let flags = { flg_isgoal = isgoal; flg_lax = false } in
-  let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
-  detype Now flags avoid (nenv,env) sigma t
 let detype d ?(lax=false) isgoal avoid env sigma t =
   let flags = { flg_isgoal = isgoal; flg_lax = lax } in
   let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
