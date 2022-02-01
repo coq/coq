@@ -1309,12 +1309,13 @@ let applyHead env evd c cl =
     | a::cl ->
       match EConstr.kind evd (whd_all env evd cty) with
       | Prod ({binder_name},c1,c2) ->
-        let src =
+        let src, c1 =
           match EConstr.kind evd a with
-          | Meta mv -> Evd.evar_source_of_meta mv evd
+          | Meta mv -> Evd.evar_source_of_meta mv evd, Evd.meta_type evd mv
           | _ ->
             (* Does not matter, the evar will be later instantiated by [a] *)
-            Loc.tag Evar_kinds.InternalHole in
+            Loc.tag Evar_kinds.InternalHole, c1
+        in
         let (evd,evar) = Evarutil.new_evar env evd ~src c1 in
         apprec (mkApp(c,[|evar|])) cl (subst1 evar c2) evd
       | _ -> user_err Pp.(str "Apply_Head_Then")
