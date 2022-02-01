@@ -115,7 +115,7 @@ val make_all_name_different : env -> evar_map -> env
 val compute_displayed_name_in :
   Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
 val compute_displayed_let_name_in :
-  Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
+  Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> Name.t * Id.Set.t
 val rename_bound_vars_as_displayed :
   Environ.env -> evar_map -> Id.Set.t -> Name.t list -> types -> types
 
