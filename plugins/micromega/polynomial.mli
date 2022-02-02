@@ -22,7 +22,6 @@ module Monomial : sig
 
   (** [degree m] is the sum of the degrees of each variable *)
   val degree : t -> int
-
 end
 
 module MonMap : sig
@@ -233,6 +232,7 @@ module ProofFormat : sig
     | Annot of string * prf_rule
     | Hyp of int
     | Def of int
+    | Ref of int
     | Cst of Q.t
     | Zero
     | Square of Vect.t
@@ -241,6 +241,7 @@ module ProofFormat : sig
     | MulPrf of prf_rule * prf_rule
     | AddPrf of prf_rule * prf_rule
     | CutPrf of prf_rule
+    | LetPrf of prf_rule * prf_rule
 
   type proof =
     | Done
@@ -362,9 +363,9 @@ module WithProof : sig
   val is_substitution : bool -> t -> var option
 end
 
-module BoundWithProof :
-sig
+module BoundWithProof : sig
   type t
+
   val compare : t -> t -> int
   val make : WithProof.t -> t option
   val mul_bound : t -> t -> t option

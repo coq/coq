@@ -1738,6 +1738,7 @@ let opAdd o o' =
      | x -> Some x)
 
 type 'c psatz =
+| PsatzLet of 'c psatz * 'c psatz
 | PsatzIn of nat
 | PsatzSquare of 'c polC
 | PsatzMulC of 'c polC * 'c psatz
@@ -1797,6 +1798,10 @@ let nformula_plus_nformula cO cplus ceqb f1 f2 =
     nFormula option **)
 
 let rec eval_Psatz cO cI cplus ctimes ceqb cleb l = function
+| PsatzLet (p2, p3) ->
+  (match eval_Psatz cO cI cplus ctimes ceqb cleb l p2 with
+   | Some f -> eval_Psatz cO cI cplus ctimes ceqb cleb (f::l) p3
+   | None -> None)
 | PsatzIn n0 -> Some (nth n0 l ((Pc cO),Equal))
 | PsatzSquare e0 -> Some ((psquare cO cI cplus ctimes ceqb e0),NonStrict)
 | PsatzMulC (re, e0) ->

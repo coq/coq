@@ -25,6 +25,7 @@ open Mutils
 open Constr
 open Context
 open Tactypes
+open McPrinter
 
 (**
   * Debug flag
@@ -254,6 +255,7 @@ let coq_OpLe = lazy (constr_of_ref "micromega.Op2.OpLe")
 let coq_OpLt = lazy (constr_of_ref "micromega.Op2.OpLt")
 let coq_OpGe = lazy (constr_of_ref "micromega.Op2.OpGe")
 let coq_OpGt = lazy (constr_of_ref "micromega.Op2.OpGt")
+let coq_PsatzLet = lazy (constr_of_ref "micromega.Psatz.PsatzLet")
 let coq_PsatzIn = lazy (constr_of_ref "micromega.Psatz.PsatzIn")
 let coq_PsatzSquare = lazy (constr_of_ref "micromega.Psatz.PsatzSquare")
 let coq_PsatzMulE = lazy (constr_of_ref "micromega.Psatz.PsatzMulE")
@@ -322,8 +324,6 @@ let rec parse_nat sigma term =
   | 2 -> Mc.S (parse_nat sigma c.(0))
   | i -> raise ParseError
 
-let pp_nat o n = Printf.fprintf o "%i" (CoqToCaml.nat n)
-
 let rec dump_nat x =
   match x with
   | Mc.O -> Lazy.force coq_O
@@ -343,7 +343,6 @@ let rec dump_positive x =
   | Mc.XO p -> EConstr.mkApp (Lazy.force coq_xO, [|dump_positive p|])
   | Mc.XI p -> EConstr.mkApp (Lazy.force coq_xI, [|dump_positive p|])
 
-let pp_positive o x = Printf.fprintf o "%i" (CoqToCaml.positive x)
 
 let dump_n x =
   match x with
@@ -391,8 +390,6 @@ let dump_z x =
   | Mc.Zpos p -> EConstr.mkApp (Lazy.force coq_POS, [|dump_positive p|])
   | Mc.Zneg p -> EConstr.mkApp (Lazy.force coq_NEG, [|dump_positive p|])
 
-let pp_z o x =
-  Printf.fprintf o "%s" (NumCompat.Z.to_string (CoqToCaml.z_big_int x))
 
 let dump_q q =
   EConstr.mkApp
@@ -455,14 +452,6 @@ let rec dump_list typ dump_elt l =
     EConstr.mkApp
       (Lazy.force coq_cons, [|typ; dump_elt e; dump_list typ dump_elt l|])
 
-let pp_list op cl elt o l =
-  let rec _pp o l =
-    match l with
-    | [] -> ()
-    | [e] -> Printf.fprintf o "%a" elt e
-    | e :: l -> Printf.fprintf o "%a ,%a" elt e _pp l
-  in
-  Printf.fprintf o "%s%a%s" op _pp l cl
 
 let dump_var = dump_positive
 
@@ -496,16 +485,6 @@ let dump_pol typ dump_c e =
   in
   dump_pol e
 
-let pp_pol pp_c o e =
-  let rec pp_pol o e =
-    match e with
-    | Mc.Pc n -> Printf.fprintf o "Pc %a" pp_c n
-    | Mc.Pinj (p, pol) ->
-      Printf.fprintf o "Pinj(%a,%a)" pp_positive p pp_pol pol
-    | Mc.PX (pol1, p, pol2) ->
-      Printf.fprintf o "PX(%a,%a,%a)" pp_pol pol1 pp_positive p pp_pol pol2
-  in
-  pp_pol o e
 
 (* let pp_clause pp_c o (f: 'cst clause) =
    List.iter (fun ((p,_),(t,_)) -> Printf.fprintf o "(%a @%a)" (pp_pol pp_c)  p Tag.pp t) f *)
@@ -523,6 +502,8 @@ let dump_psatz typ dump_z e =
   let z = Lazy.force typ in
   let rec dump_cone e =
     match e with
+    | Mc.PsatzLet (e1, e2) ->
+      EConstr.mkApp (Lazy.force coq_PsatzLet, [|z; dump_cone e1; dump_cone e2|])
     | Mc.PsatzIn n -> EConstr.mkApp (Lazy.force coq_PsatzIn, [|z; dump_nat n|])
     | Mc.PsatzMulC (e, c) ->
       EConstr.mkApp
@@ -538,21 +519,6 @@ let dump_psatz typ dump_z e =
   in
   dump_cone e
 
-let pp_psatz pp_z o e =
-  let rec pp_cone o e =
-    match e with
-    | Mc.PsatzIn n -> Printf.fprintf o "(In %a)%%nat" pp_nat n
-    | Mc.PsatzMulC (e, c) ->
-      Printf.fprintf o "( %a [*] %a)" (pp_pol pp_z) e pp_cone c
-    | Mc.PsatzSquare e -> Printf.fprintf o "(%a^2)" (pp_pol pp_z) e
-    | Mc.PsatzAdd (e1, e2) ->
-      Printf.fprintf o "(%a [+] %a)" pp_cone e1 pp_cone e2
-    | Mc.PsatzMulE (e1, e2) ->
-      Printf.fprintf o "(%a [*] %a)" pp_cone e1 pp_cone e2
-    | Mc.PsatzC p -> Printf.fprintf o "(%a)%%positive" pp_z p
-    | Mc.PsatzZ -> Printf.fprintf o "0"
-  in
-  pp_cone o e
 
 let dump_op = function
   | Mc.OpEq -> Lazy.force coq_OpEq
@@ -1370,7 +1336,9 @@ let rec size_of_psatz = function
   | Micromega.PsatzIn _ -> 1
   | Micromega.PsatzSquare _ -> 1
   | Micromega.PsatzMulC (_, p) -> 1 + size_of_psatz p
-  | Micromega.PsatzMulE (p1, p2) | Micromega.PsatzAdd (p1, p2) ->
+  | Micromega.PsatzLet (p1, p2)
+   |Micromega.PsatzMulE (p1, p2)
+   |Micromega.PsatzAdd (p1, p2) ->
     size_of_psatz p1 + size_of_psatz p2
   | Micromega.PsatzC _ -> 1
   | Micromega.PsatzZ -> 1
@@ -1392,21 +1360,6 @@ let dump_proof_term t =
 let pp_q o q =
   Printf.fprintf o "%a/%a" pp_z q.Micromega.qnum pp_positive q.Micromega.qden
 
-let rec pp_proof_term o = function
-  | Micromega.DoneProof -> Printf.fprintf o "D"
-  | Micromega.RatProof (cone, rst) ->
-    Printf.fprintf o "R[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
-  | Micromega.CutProof (cone, rst) ->
-    Printf.fprintf o "C[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
-  | Micromega.SplitProof (p, p1, p2) ->
-    Printf.fprintf o "S[%a,%a,%a]" (pp_pol pp_z) p pp_proof_term p1
-      pp_proof_term p2
-  | Micromega.EnumProof (c1, c2, rst) ->
-    Printf.fprintf o "EP[%a,%a,%a]" (pp_psatz pp_z) c1 (pp_psatz pp_z) c2
-      (pp_list "[" "]" pp_proof_term)
-      rst
-  | Micromega.ExProof (p, prf) ->
-    Printf.fprintf o "Ex[%a,%a]" pp_positive p pp_proof_term prf
 
 let rec parse_hyps (genv, sigma) parse_arith env tg hyps =
   match hyps with
@@ -2185,31 +2138,19 @@ let call_csdpcert_z provername poly =
       flush stdout;
       Unknown )
 
-let xhyps_of_cone base acc prf =
-  let rec xtract e acc =
-    match e with
-    | Mc.PsatzC _ | Mc.PsatzZ | Mc.PsatzSquare _ -> acc
-    | Mc.PsatzIn n ->
-      let n = CoqToCaml.nat n in
-      if n >= base then ISet.add (n - base) acc else acc
-    | Mc.PsatzMulC (_, c) -> xtract c acc
-    | Mc.PsatzAdd (e1, e2) | Mc.PsatzMulE (e1, e2) -> xtract e1 (xtract e2 acc)
-  in
-  xtract prf acc
+let rec xhyps_of_cone base acc prf =
+  match prf with
+  | Mc.PsatzC _ | Mc.PsatzZ | Mc.PsatzSquare _ -> acc
+  | Mc.PsatzIn n ->
+    let n = CoqToCaml.nat n in
+    if n >= base then ISet.add (n - base) acc else acc
+  | Mc.PsatzLet (e1, e2) ->
+    xhyps_of_cone (base + 1) (xhyps_of_cone base acc e1) e2
+  | Mc.PsatzMulC (_, c) -> xhyps_of_cone base acc c
+  | Mc.PsatzAdd (e1, e2) | Mc.PsatzMulE (e1, e2) ->
+    xhyps_of_cone base (xhyps_of_cone base acc e2) e1
 
 let hyps_of_cone prf = xhyps_of_cone 0 ISet.empty prf
-
-let compact_cone prf f =
-  let np n = CamlToCoq.nat (f (CoqToCaml.nat n)) in
-  let rec xinterp prf =
-    match prf with
-    | Mc.PsatzC _ | Mc.PsatzZ | Mc.PsatzSquare _ -> prf
-    | Mc.PsatzIn n -> Mc.PsatzIn (np n)
-    | Mc.PsatzMulC (e, c) -> Mc.PsatzMulC (e, xinterp c)
-    | Mc.PsatzAdd (e1, e2) -> Mc.PsatzAdd (xinterp e1, xinterp e2)
-    | Mc.PsatzMulE (e1, e2) -> Mc.PsatzMulE (xinterp e1, xinterp e2)
-  in
-  xinterp prf
 
 let hyps_of_pt pt =
   let rec xhyps base pt acc =
@@ -2224,6 +2165,21 @@ let hyps_of_pt pt =
     | Mc.ExProof (_, pt) -> xhyps (base + 3) pt acc
   in
   xhyps 0 pt ISet.empty
+
+let compact_cone prf f =
+  let translate ofset x = if x < ofset then x else f (x - ofset) + ofset in
+  let np ofset n = CamlToCoq.nat (translate ofset (CoqToCaml.nat n)) in
+  let rec xinterp ofset prf =
+    match prf with
+    | Mc.PsatzC _ | Mc.PsatzZ | Mc.PsatzSquare _ -> prf
+    | Mc.PsatzIn n -> Mc.PsatzIn (np ofset n)
+    | Mc.PsatzLet (e1, e2) ->
+      Mc.PsatzLet (xinterp ofset e1, xinterp (ofset + 1) e2)
+    | Mc.PsatzMulC (e, c) -> Mc.PsatzMulC (e, xinterp ofset c)
+    | Mc.PsatzAdd (e1, e2) -> Mc.PsatzAdd (xinterp ofset e1, xinterp ofset e2)
+    | Mc.PsatzMulE (e1, e2) -> Mc.PsatzMulE (xinterp ofset e1, xinterp ofset e2)
+  in
+  xinterp 0 prf
 
 let compact_pt pt f =
   let translate ofset x = if x < ofset then x else f (x - ofset) + ofset in
