@@ -39,11 +39,24 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   else exact_check c
   end
 
-let assumption id = e_give_exact (mkVar id)
-
 let e_assumption =
   Proofview.Goal.enter begin fun gl ->
-    Tacticals.tclFIRST (List.map assumption (Tacmach.pf_ids_of_hyps gl))
+    let hyps = Proofview.Goal.hyps gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Tacmach.pf_concl gl in
+    if List.is_empty hyps then
+      Tacticals.tclZEROMSG (str "No applicable tactic.")
+    else
+      let not_ground = occur_existential sigma concl in
+      let map decl =
+        let id = NamedDecl.get_id decl in
+        let t = NamedDecl.get_type decl in
+        if not_ground || occur_existential sigma t then
+          Clenv.unify ~flags:eauto_unif_flags t <*> exact_no_check (mkVar id)
+        else
+          exact_check (mkVar id)
+      in
+      Tacticals.tclFIRST (List.map map hyps)
   end
 
 (************************************************************************)
