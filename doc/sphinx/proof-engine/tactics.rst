@@ -549,8 +549,15 @@ one or more of its hypotheses.
    which is equivalent to `in * |- *`.  Use `* |-` to select all occurrences
    in all hypotheses.
 
-   Tactics that select a specific hypothesis H to apply to other hypotheses,
-   such as :tacn:`rewrite` `H in * |-`, won't apply H to itself.
+   When rewriting in multiple hypotheses, they must not appear in the
+   term to rewrite. For instance `rewrite H in H,H'` is an error. If
+   an hypothesis appears only through a hole, it will be removed from
+   that hole's context.
+
+   With `rewrite term in *`, hypotheses on which the dependency cannot
+   be avoided are skipped, for instance `rewrite H in *` skips
+   rewriting in `H`. This is the case even if only one hypothesis ends
+   up rewritten.
 
    If multiple
    occurrences are given, such as in :tacn:`rewrite` `H at 1 2 3`, the tactic
