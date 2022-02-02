@@ -1036,7 +1036,7 @@ let compare_gen cmp_universes cmp_sorts eq cv_pb env t1 t2 =
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
     | CoFix _ | Int _ | Float _| Array _), _ -> false
 
-let gen_eq_univs pb env m n =
+let gen_eq_univs pb l2r reds evars env m n =
   let univs = Environ.universes env in
   let cmp_universes i1 i2 = UGraph.check_eq_instances univs i1 i2 in
   let cmp_sorts pb s1 s2 =
@@ -1046,18 +1046,26 @@ let gen_eq_univs pb env m n =
     | CUMUL ->
       UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
   in
-  let rec compare_rec pb env m n = compare_gen cmp_universes cmp_sorts compare_rec pb env m n in
+  let conv_leaf cv_pb env t1 t2 =
+    try
+      let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
+      true
+    with NotConvertible -> false
+  in
+  let rec compare_head pb env m n =
+    compare_gen cmp_universes cmp_sorts compare_rec pb env m n
+  and compare_rec pb env m n =
+    if compare_head pb env m n then true
+    else conv_leaf pb env m n
+  in
   compare_rec pb env m n
 
 end
 
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _ -> None)) t1 t2 =
-  let b = Eq.gen_eq_univs cv_pb env t1 t2 in
-    if b then ()
-    else
-      let univs = Environ.universes env in
-      let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
-        ()
+  let b = Eq.gen_eq_univs cv_pb l2r reds evars env t1 t2 in
+  if b then ()
+  else raise NotConvertible
 
 let conv = gen_conv CONV
 let conv_leq = gen_conv CUMUL
