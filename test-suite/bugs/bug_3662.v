@@ -37,10 +37,3 @@ Goal fst (pair nat nat) = nat.
 Defined.
 
 Lemma eta A B : forall x : prod A B, x = pair (fst x) (snd x). reflexivity. Qed.
-
-Goal forall x : prod nat nat, fst x = 0.
-  intros. unfold fst.
-  Fail match goal with
-    | [ |- fst ?x = 0 ] => idtac
-  end.
-Abort.
