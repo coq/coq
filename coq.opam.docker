@@ -36,7 +36,6 @@ build: [
     "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
   ]
   [make "-j%{jobs}%"]
-  [make "-j%{jobs}%" "byte"]
 ]
 install: [
   [make "install"]
