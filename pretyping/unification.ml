@@ -1071,6 +1071,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       | Some substn -> substn
       | None ->
       let cf1 = key_of curenv sigma opt flags f1 and cf2 = key_of curenv sigma opt flags f2 in
+        let whd_betaiotazeta env sigma c = Reductionops.clos_whd_flags CClosure.betaiotazeta env sigma c in
         match oracle_order curenv cf1 cf2 with
         | None -> error_cannot_unify curenv sigma (cM,cN)
         | Some true ->
