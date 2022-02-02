@@ -785,6 +785,11 @@ Usage
    :tacn:`setoid_rewrite` :n:`@one_term` is basically equivalent to
    :n:`rewrite_strat outermost @one_term`.
 
+
+.. tacn:: rewrite_db @ident__1 {? in @ident__2 }
+
+   Equivalent to :tacn:`rewrite_strat` :n:`(topdown (hints @ident__1)) {? in @ident__2 }`
+
 Definitions
 ~~~~~~~~~~~
 
