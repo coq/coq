@@ -922,6 +922,52 @@ let inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare =
 module Eq =
 struct
 
+let instantiate_context u subst nas ctx =
+  let rec instantiate i ctx = match ctx with
+  | [] -> assert (Int.equal i (-1)); []
+  | LocalAssum (_, ty) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    LocalAssum (nas.(i), ty) :: ctx
+  | LocalDef (_, ty, bdy) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    let bdy = substnl subst i (subst_instance_constr u bdy) in
+    LocalDef (nas.(i), ty, bdy) :: ctx
+  in
+  instantiate (Array.length nas - 1) ctx
+
+let expand_case_specif mib (ci, u, params, p, br) =
+  let open Univ in
+  (* Γ ⊢ c : I@{u} params args *)
+  (* Γ, indices, self : I@{u} params indices ⊢ p : Type *)
+  let mip = mib.mind_packets.(snd ci.ci_ind) in
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl params in
+  (* Expand the return clause *)
+  let ep =
+    let (nas, p) = p in
+    let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+    let self =
+      let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
+      let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
+      mkApp (mkIndU (ci.ci_ind, inst), args)
+    in
+    let realdecls = LocalAssum (Context.anonR, self) :: realdecls in
+    let realdecls = instantiate_context u paramsubst nas realdecls in
+    (realdecls, p)
+  in
+  (* Expand the branches *)
+  let ebr =
+    let build_one_branch i (nas, br) (ctx, _) =
+      let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
+      let ctx = instantiate_context u paramsubst nas ctx in
+      (ctx, br)
+    in
+    Array.map2_i build_one_branch br mip.mind_nf_lc
+  in
+  (ep, ebr)
+
 let eq_invert eq iv1 iv2 =
   match iv1, iv2 with
   | NoInvert, NoInvert -> true
@@ -929,10 +975,7 @@ let eq_invert eq iv1 iv2 =
   | CaseInvert {indices}, CaseInvert iv2 ->
     Array.equal eq indices iv2.indices
 
-let eq_under_context eq (_nas1, p1) (_nas2, p2) =
-  eq p1 p2
-
-let compare_gen cv_pb cmp_universes cmp_sorts eq t1 t2 =
+let compare_gen cmp_universes cmp_sorts eq cv_pb env t1 t2 =
   t1 == t2 ||
   match kind_nocast_gen kind t1, kind_nocast_gen kind t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
@@ -942,41 +985,59 @@ let compare_gen cv_pb cmp_universes cmp_sorts eq t1 t2 =
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
   | Sort s1, Sort s2 -> cmp_sorts cv_pb s1 s2
-  | Prod (_,t1,c1), Prod (_,t2,c2) -> eq CONV t1 t2 && eq cv_pb c1 c2
-  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq CONV t1 t2 && eq CONV c1 c2
-  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq CONV b1 b2 && eq CONV t1 t2 && eq cv_pb c1 c2
+  | Prod (na,t1,c1), Prod (_,t2,c2) ->
+    eq CONV env t1 t2 &&
+    eq cv_pb (push_rel (LocalAssum (na, t1)) env) c1 c2
+  | Lambda (na,t1,c1), Lambda (_,t2,c2) ->
+    eq CONV env t1 t2 &&
+    eq cv_pb (push_rel (LocalAssum (na, t1)) env) c1 c2
+  | LetIn (na,b1,t1,c1), LetIn (_,b2,t2,c2) ->
+    eq CONV env b1 b2 &&
+    eq CONV env t1 t2 &&
+    eq cv_pb (push_rel (LocalDef (na, b1, t1)) env) c1 c2
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
-    eq cv_pb c1 c2 && Array.equal (eq CONV) l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> Projection.CanOrd.equal p1 p2 && eq CONV c1 c2
-  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq CONV) l1 l2
+    eq cv_pb env c1 c2 && Array.equal (eq CONV env) l1 l2
+  | Proj (p1,c1), Proj (p2,c2) -> Projection.CanOrd.equal p1 p2 && eq CONV env c1 c2
+  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq CONV env) l1 l2
   | Const (c1,u1), Const (c2,u2) ->
-    (* The args length currently isn't used but may as well pass it. *)
     Constant.CanOrd.equal c1 c2 && cmp_universes u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && cmp_universes u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
     Construct.CanOrd.equal c1 c2 && cmp_universes u1 u2
   | Case (ci1,u1,pms1,p1,iv1,c1,bl1), Case (ci2,u2,pms2,p2,iv2,c2,bl2) ->
-    (** FIXME: what are we doing with u1 = u2 ? *)
-    Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && cmp_universes u1 u2 &&
-    Array.equal (eq CONV) pms1 pms2 && eq_under_context (eq CONV) p1 p2 &&
-    eq_invert (eq CONV) iv1 iv2 &&
-    eq CONV c1 c2 && Array.equal (eq_under_context (eq CONV)) bl1 bl2
-  | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
-    Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
-    && Array.equal (eq CONV) tl1 tl2 && Array.equal (eq CONV) bl1 bl2
-  | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-    Int.equal ln1 ln2 && Array.equal (eq CONV) tl1 tl2 && Array.equal (eq CONV) bl1 bl2
+    if
+      Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && cmp_universes u1 u2 && eq CONV env c1 c2 &&
+      Array.equal (eq CONV env) pms1 pms2 &&
+      eq_invert (eq CONV env) iv1 iv2
+    then
+      let mib = Environ.lookup_mind (fst ci1.ci_ind) env in
+      let ((ctxp, p1), bl1) = expand_case_specif mib (ci1, u1, pms1, p1, bl1) in
+      eq CONV (push_rel_context ctxp env) p1 (snd p2) &&
+      Array.for_all2 (fun (ctx, br1) (_, br2) -> eq CONV (push_rel_context ctx env) br1 br2) bl1 bl2
+    else false
+  | Fix ((ln1, i1),((_,tl1,bl1) as r)), Fix ((ln2, i2),(_,tl2,bl2)) ->
+    if Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
+    && Array.equal (eq CONV env) tl1 tl2 then
+      let env = push_rec_types r env in
+      Array.equal (eq CONV env) bl1 bl2
+    else false
+  | CoFix(ln1, ((_,tl1,bl1) as r)), CoFix(ln2,(_,tl2,bl2)) ->
+    if Int.equal ln1 ln2 && Array.equal (eq CONV env) tl1 tl2 then
+      let env = push_rec_types r env in
+      Array.equal (eq CONV env) bl1 bl2
+    else false
   | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
     cmp_universes u1 u2 &&
-    Array.equal (eq CONV) t1 t2 &&
-    eq CONV def1 def2 && eq CONV ty1 ty2
+    Array.equal (eq CONV env) t1 t2 &&
+    eq CONV env def1 def2 && eq CONV env ty1 ty2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
     | CoFix _ | Int _ | Float _| Array _), _ -> false
 
-let gen_eq_univs pb univs m n =
+let gen_eq_univs pb env m n =
+  let univs = Environ.universes env in
   let cmp_universes i1 i2 = UGraph.check_eq_instances univs i1 i2 in
   let cmp_sorts pb s1 s2 =
     s1 == s2 || match pb with
@@ -985,16 +1046,16 @@ let gen_eq_univs pb univs m n =
     | CUMUL ->
       UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
   in
-  let rec compare_rec pb m n = compare_gen pb cmp_universes cmp_sorts compare_rec m n in
-  compare_rec pb m n
+  let rec compare_rec pb env m n = compare_gen cmp_universes cmp_sorts compare_rec pb env m n in
+  compare_rec pb env m n
 
 end
 
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _ -> None)) t1 t2 =
-  let univs = Environ.universes env in
-  let b = Eq.gen_eq_univs cv_pb univs t1 t2 in
+  let b = Eq.gen_eq_univs cv_pb env t1 t2 in
     if b then ()
     else
+      let univs = Environ.universes env in
       let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
         ()
 
