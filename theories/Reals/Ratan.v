@@ -2177,3 +2177,27 @@ Unshelve.
     pose proof Rsqr_bounds_lt 1 x ltac:(lra) as Hxb; rewrite Rsqr_1 in Hxb.
     apply sqrt_lt_1; lra.
 Qed.
+
+Lemma sin_lt_x x : 0 < x -> sin x < x.
+Proof.
+  intros.
+  pose proof PI2_1.
+  destruct (SIN_bound x), (Rle_or_lt x (PI / 2)); try lra.
+  pose (f x := x - sin x).
+  cut (f 0 < f x); [now unfold f; rewrite sin_0; lra|].
+  eapply (MVT.derive_increasing_interv 0 (PI/2) (id - sin)%F); try lra.
+  intros t Ht.
+  rewrite derive_pt_minus, derive_pt_id, derive_pt_sin.
+  pose proof (COS_bound t).
+  pose proof cos_0.
+  pose proof (cos_inj 0 t).
+  lra.
+Qed.
+
+Lemma sin_gt_x x : x < 0 -> x < sin x.
+Proof.
+  intros.
+  pose proof (sin_lt_x (- x)).
+  pose proof (sin_neg x).
+  lra.
+Qed.
