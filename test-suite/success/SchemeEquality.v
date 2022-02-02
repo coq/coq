@@ -210,8 +210,13 @@ Inductive large :=
 | K26(_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool).
 Scheme Equality for large.
 
-Record fo_record := { f1 : peano; f2 : bool; }.
+Inductive prim_int := PI (i : Int63.int).
+Scheme Boolean Equality for prim_int.
 
+Inductive prim_float := PF (f : PrimFloat.float).
+Fail Scheme Boolean Equality for prim_float.
+
+Record fo_record := { f1 : peano; f2 : bool; }.
 Scheme Equality for fo_record.
 
 Record pa_record A := { f3 : peano; f4 : A; }.
