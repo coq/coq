@@ -200,6 +200,8 @@ Structure ConstructiveReals : Type :=
         CR_cauchy xn -> { l : CRcarrier  &  CR_cv xn l };
   }.
 
+Global Hint Transparent CRminus : rewrite.
+
 Declare Scope ConstructiveReals.
 
 Delimit Scope ConstructiveReals with ConstructiveReals.

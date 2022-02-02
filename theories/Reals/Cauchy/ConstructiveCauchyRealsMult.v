@@ -905,7 +905,7 @@ Proof.
   unfold CRealLt, CReal_mult, CReal_mult_seq, CReal_mult_scale in H0ltxy;
     rewrite CReal_red_seq in H0ltxy.
   destruct H0ltxy as [n nmaj].
-  cbn in nmaj; setoid_rewrite Qplus_0_r in nmaj.
+  cbn in nmaj; setoid_rewrite Qminus_0_r in nmaj.
   destruct (Q_dec 0 (seq y (n - scale x - 1)))%Q as [[H0lty|Hylt0]|Hyeq0].
   - apply (Qmult_lt_compat_r _ _ (/(seq y (n - scale x - 1)))%Q ) in nmaj.
       2: apply Qinv_lt_0_compat, H0lty.

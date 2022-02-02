@@ -251,6 +251,7 @@ Definition Qmult (x y : Q) := (Qnum x * Qnum y) # (Qden x * Qden y).
 Definition Qopp (x : Q) := (- Qnum x) # (Qden x).
 
 Definition Qminus (x y : Q) := Qplus x (Qopp y).
+Global Hint Transparent Qminus : rewrite.
 
 Definition Qinv (x : Q) :=
   match Qnum x with
@@ -260,6 +261,7 @@ Definition Qinv (x : Q) :=
   end.
 
 Definition Qdiv (x y : Q) := Qmult x (Qinv y).
+Global Hint Transparent Qdiv : rewrite.
 
 Infix "+" := Qplus : Q_scope.
 Notation "- x" := (Qopp x) : Q_scope.
@@ -607,6 +609,12 @@ Lemma Qplus_0_r : forall x, x+0 == x.
 Proof.
   intros (x1, x2); unfold Qeq, Qplus; simpl.
   rewrite Pos.mul_comm; simpl; ring.
+Qed.
+
+Lemma Qminus_0_r : forall x, x-0 == x.
+Proof.
+  intros x.
+  exact (Qplus_0_r x).
 Qed.
 
 (** Commutativity of addition: *)

@@ -250,7 +250,7 @@ Proof.
     - unfold CRminus. rewrite <- CR_of_Q_opp, <- CR_of_Q_plus.
       apply CR_of_Q_le.
       apply (Qplus_le_l _ _ (x0-(1#p))). ring_simplify.
-      setoid_replace (x -1 * (1 # p))%Q with (x - (1 # p))%Q.
+      setoid_replace (x + -1 * (1 # p))%Q with (x - (1 # p))%Q.
       2: ring. apply (Qle_trans _ (x- (1#Pos.of_nat i))).
       apply Qplus_le_r. apply H.
       apply Z2Nat.inj_le. discriminate. discriminate. simpl.
