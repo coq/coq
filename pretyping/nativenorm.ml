@@ -116,30 +116,20 @@ let find_rectype_a env sigma c =
 
 (* Instantiate inductives and parameters in constructor type *)
 
-let type_constructor mind mib u (ctx, typ) params =
-  let typ = it_mkProd_or_LetIn typ ctx in
-  let ctyp = subst_instance_constr u typ in
-  let nparams = Array.length params in
-  if Int.equal nparams 0 then ctyp
-  else
-    let _,ctyp = decompose_prod_n nparams ctyp in
-    substl (List.rev (Array.to_list params)) ctyp
-
-let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
+let construct_of_constr_notnative const env tag (ind,u) allargs =
   let mib,mip = lookup_mind_specif env ind in
   let nparams = mib.mind_nparams in
   let params = Array.sub allargs 0 nparams in
   let i = invert_tag const tag mip.mind_reloc_tbl in
-  let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(i-1)) params in
+  let ctyp = Inductiveops.instantiate_constructor_params ((ind,i),u) (mib,mip) (Array.to_list params) in
   (mkApp(mkConstructU((ind,i),u), params), ctyp)
-
 
 let construct_of_constr const env sigma tag typ =
   let typ = Reductionops.clos_whd_flags CClosure.all env sigma (EConstr.of_constr typ) in
   let t, l = decompose_appvect (EConstr.Unsafe.to_constr typ) in
   match Constr.kind t with
-  | Ind (ind,u) ->
-      construct_of_constr_notnative const env tag ind u l
+  | Ind indu ->
+      construct_of_constr_notnative const env tag indu l
   | _ ->
     assert (Constr.equal t (Typeops.type_of_int env));
     (mkInt (Uint63.of_int tag), t)
@@ -149,12 +139,13 @@ let construct_of_constr_const env sigma tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
-let build_branches_type env sigma (mind,_ as _ind) mib mip u params p =
+let build_branches_type env sigma mib mip (ind,u) params p =
   let rtbl = mip.mind_reloc_tbl in
+  let paramsl = Array.to_list params in
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
      a 0) et les lambda correspondant aux realargs *)
-  let build_one_branch i cty =
-    let typi = type_constructor mind mib u cty params in
+  let build_one_branch i =
+    let typi = Inductiveops.instantiate_constructor_params ((ind,i+1),u) (mib,mip) paramsl in
     let decl,indapp = Reductionops.splay_prod env sigma (EConstr.of_constr typi) in
     let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
     let decl_with_letin,_ = decompose_prod_assum typi in
@@ -172,7 +163,7 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params p =
       mkApp(papp,[|dep_cstr|])
     in
     decl, decl_with_letin, codom
-  in Array.mapi build_one_branch mip.mind_nf_lc
+  in Array.init (Array.length mip.mind_nf_lc) build_one_branch
 
 let build_case_type p realargs c =
   mkApp(mkApp(p, realargs), [|c|])
@@ -333,7 +324,7 @@ and nf_atom_type env sigma atom =
           (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
       let p = nf_predicate env sigma ind mip params p pT in
       (* Calcul du type des branches *)
-      let btypes = build_branches_type env sigma (fst ind) mib mip u params p in
+      let btypes = build_branches_type env sigma mib mip ind params p in
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) ans bs in
       let mkbranch i v =

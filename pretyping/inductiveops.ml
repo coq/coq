@@ -103,7 +103,7 @@ let mis_is_recursive (ind,mib,mip) =
   mis_is_recursive_subset (List.interval 0 (mib.mind_ntypes - 1))
     mip.mind_recargs
 
-let mis_nf_constructor_type ((ind,u),mib,mip) j =
+let mis_nf_constructor_type ((_,j),u) (mib,mip) =
   let nconstr = Array.length mip.mind_consnames in
   if j > nconstr then user_err Pp.(str "Not enough constructors in the type.");
   let (ctx, cty) = mip.mind_nf_lc.(j - 1) in
@@ -318,11 +318,14 @@ let instantiate_params t params sign =
   let subst = subst_of_rel_context_instance_list sign params in
   substl subst t
 
-let get_constructor ((ind,u as indu),mib,mip,params) j =
-  assert (j <= Array.length mip.mind_consnames);
-  let typi = mis_nf_constructor_type (indu,mib,mip) j in
+let instantiate_constructor_params (_,u as cstru) (mib,_ as mind_specif) params =
+  let typi = mis_nf_constructor_type cstru mind_specif in
   let ctx = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let typi = instantiate_params typi params ctx in
+  instantiate_params typi params ctx
+
+let get_constructor ((ind,u),mib,mip,params) j =
+  assert (j <= Array.length mip.mind_consnames);
+  let typi = instantiate_constructor_params ((ind,j),u) (mib,mip) params in
   let (args,ccl) = decompose_prod_assum typi in
   let (_,allargs) = decompose_app ccl in
   let vargs = List.skipn (List.length params) allargs in
