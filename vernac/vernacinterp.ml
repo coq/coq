@@ -12,16 +12,21 @@ open Vernacexpr
 
 let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
+let program_state = Summary.ref ~name:"program-state" (NeList.singleton Declare.OblState.empty)
+
+let get_program_state () = !program_state
+
 let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; outproof; run })
-    ~pm ~stack =
+    ~stack =
   let open Vernacextend in
   let module LStack = Vernacstate.LemmaStack in
   let proof = Option.map LStack.get_top stack in
+  let pm = !program_state in
   let pm', proof' = run
       ~pm:(InProg.cast (NeList.head pm) inprog)
       ~proof:(InProof.cast proof inproof)
   in
-  let pm = OutProg.cast pm' outprog pm in
+  program_state := OutProg.cast pm' outprog pm;
   let stack = let open OutProof in match stack, OutProof.cast proof' outproof with
     | stack, Ignored -> stack
     | Some stack, Closed -> snd (LStack.pop stack)
@@ -29,7 +34,7 @@ let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; ou
     | Some stack, Open proof -> Some (LStack.map_top ~f:(fun _ -> proof) stack)
     | None, Open proof -> Some (LStack.push None proof)
   in
-  stack, pm
+  stack
 
 (* Default proof mode, to be set at the beginning of proofs for
    programs that cannot be statically classified. *)
@@ -119,14 +124,14 @@ let mk_time_header =
   fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
 
 let interp_control_flag ~loc ~time_header (f : control_flag) ~st
-    (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t NeList.t) =
+    (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option) =
   match f with
   | ControlFail ->
     with_fail ~loc ~st (fun () -> fn ~st);
-    st.Vernacstate.lemmas, st.Vernacstate.program
+    st.Vernacstate.lemmas
   | ControlSucceed ->
     with_succeed ~st (fun () -> fn ~st);
-    st.Vernacstate.lemmas, st.Vernacstate.program
+    st.Vernacstate.lemmas
   | ControlTimeout timeout ->
     vernac_timeout ~timeout (fun () -> fn ~st) ()
   | ControlTime batch ->
@@ -160,8 +165,7 @@ let rec interp_expr ?loc ~atts ~st c =
   | v ->
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
     let stack = st.Vernacstate.lemmas in
-    let program = st.Vernacstate.program in
-    interp_typed_vernac ~pm:program ~stack fv
+    interp_typed_vernac ~stack fv
 
 and vernac_load ~verbosely fname =
   (* Note that no proof should be open here, so the state here is just token for now *)
@@ -179,22 +183,22 @@ and vernac_load ~verbosely fname =
   let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
       (Pcoq.Entry.parse (Pvernac.main_entry proof_mode))
   in
-  let rec load_loop ~pm ~stack =
+  let rec load_loop ~stack =
     let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
     match parse_sentence proof_mode input with
-    | None -> stack, pm
+    | None -> stack
     | Some stm ->
-      let stack, pm = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack; program = pm }) stm in
-      (load_loop [@ocaml.tailcall]) ~stack ~pm
+      let stack = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack }) stm in
+      (load_loop [@ocaml.tailcall]) ~stack
   in
-  let stack, pm =
+  let stack =
     Dumpglob.with_glob_output Dumpglob.NoGlob
-      (fun () -> load_loop ~pm:st.Vernacstate.program ~stack:st.Vernacstate.lemmas) ()
+      (fun () -> load_loop ~stack:st.Vernacstate.lemmas) ()
   in
   (* If Load left a proof open, we fail too. *)
   if Option.has_some stack then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
-  stack, pm
+  stack
 
 and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
   let time_header = mk_time_header vernac in
@@ -202,12 +206,12 @@ and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
     cmd.control
     (fun ~st ->
        let before_univs = Global.universes () in
-       let pstack, pm = interp_expr ?loc ~atts:cmd.attrs ~st cmd.expr in
+       let pstack = interp_expr ?loc ~atts:cmd.attrs ~st cmd.expr in
        let after_univs = Global.universes () in
-       if before_univs == after_univs then pstack, pm
+       if before_univs == after_univs then pstack
        else
          let f = Declare.Proof.update_sigma_univs after_univs in
-         Option.map (Vernacstate.LemmaStack.map ~f) pstack, pm)
+         Option.map (Vernacstate.LemmaStack.map ~f) pstack)
     ~st
 
 (* XXX: This won't properly set the proof mode, as of today, it is
@@ -220,7 +224,7 @@ and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
 (* Interpreting a possibly delayed proof *)
 let interp_qed_delayed ~proof ~st pe =
   let stack = st.Vernacstate.lemmas in
-  let pm = st.Vernacstate.program in
+  let pm = !program_state in
   let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
   let pm = NeList.map_head (fun pm -> match pe with
       | Admitted ->
@@ -230,7 +234,8 @@ let interp_qed_delayed ~proof ~st pe =
         pm)
       pm
   in
-  stack, pm
+  program_state := pm;
+  stack
 
 let interp_qed_delayed_control ~proof ~st ~control { CAst.loc; v=pe } =
   let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in

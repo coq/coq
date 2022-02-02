@@ -50,8 +50,6 @@ type t =
   (** summary + libstack *)
   ; lemmas  : LemmaStack.t option
   (** proofs of lemmas currently opened *)
-  ; program : Declare.OblState.t NeList.t
-  (** program mode table. One per open module/section including the toplevel module. *)
   ; opaques : Opaques.Summary.t
   (** qed-terminated proofs *)
   ; shallow : bool
@@ -124,8 +122,7 @@ module Declare : sig
 
   (* Low-level stuff *)
   val get : unit -> LemmaStack.t option
-  val get_program : unit -> Declare.OblState.t NeList.t
-  val set : LemmaStack.t option * Declare.OblState.t NeList.t -> unit
+  val set : LemmaStack.t option -> unit
 
   val get_pstate : unit -> Declare.Proof.t option
 

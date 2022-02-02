@@ -100,7 +100,7 @@ let check_pending_proofs filename =
                      |> List.rev
                      |> prlist_with_sep pr_comma Names.Id.print)
                  ++ str ".");
-  let pm = Vernacstate.Declare.get_program () [@ocaml.warning "-3"] in
+  let pm = Vernacinterp.get_program_state () in
   let what_for = Pp.str ("file " ^ filename) in
   NeList.iter (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm) pm
 

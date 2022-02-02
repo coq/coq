@@ -93,14 +93,12 @@ type t = {
   parsing : Parser.t;
   system  : System.t;              (* summary + libstack *)
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
-  program : Declare.OblState.t NeList.t;    (* obligations table *)
   opaques : Opaques.Summary.t;     (* opaque proof terms *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
 let s_cache = ref None
 let s_lemmas = ref None
-let s_program = ref (NeList.singleton Declare.OblState.empty)
 
 let invalidate_cache () =
   s_cache := None
@@ -120,16 +118,14 @@ let do_if_not_cached rf f v =
 let freeze_interp_state ~marshallable =
   { system = update_cache s_cache (System.freeze ~marshallable);
     lemmas = !s_lemmas;
-    program = !s_program;
     opaques = Opaques.Summary.freeze ~marshallable;
     shallow = false;
     parsing = Parser.cur_state ();
   }
 
-let unfreeze_interp_state { system; lemmas; program; parsing; opaques } =
+let unfreeze_interp_state { system; lemmas; parsing; opaques } =
   do_if_not_cached s_cache System.unfreeze system;
   s_lemmas := lemmas;
-  s_program := program;
   Opaques.Summary.unfreeze opaques;
   Pcoq.unfreeze parsing
 
@@ -137,11 +133,9 @@ let unfreeze_interp_state { system; lemmas; program; parsing; opaques } =
 module Declare_ = struct
 
   let get () = !s_lemmas
-  let get_program () = !s_program
 
-  let set (pstate,pm) =
-    s_lemmas := pstate;
-    s_program := pm
+  let set pstate =
+    s_lemmas := pstate
 
   let get_pstate () =
     Option.map (LemmaStack.with_top ~f:(fun x -> x)) !s_lemmas

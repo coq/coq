@@ -27,3 +27,5 @@ val test_mode : bool ref
 (** Default proof mode set by `start_proof` *)
 val get_default_proof_mode : unit -> Pvernac.proof_mode
 val proof_mode_opt_name : string list
+
+val get_program_state : unit -> Declare.OblState.t NeList.t
