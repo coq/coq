@@ -932,89 +932,67 @@ let eq_invert eq iv1 iv2 =
 let eq_under_context eq (_nas1, p1) (_nas2, p2) =
   eq p1 p2
 
-let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t1 t2 =
-  match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
+let compare_gen cv_pb cmp_universes cmp_sorts eq t1 t2 =
+  t1 == t2 ||
+  match kind_nocast_gen kind t1, kind_nocast_gen kind t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
-  | Sort s1, Sort s2 -> leq_sorts s1 s2
-  | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
-  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
-  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq 0 b1 b2 && eq 0 t1 t2 && leq nargs c1 c2
-  (* Why do we suddenly make a special case for Cast here? *)
+  | Sort s1, Sort s2 -> cmp_sorts cv_pb s1 s2
+  | Prod (_,t1,c1), Prod (_,t2,c2) -> eq CONV t1 t2 && eq cv_pb c1 c2
+  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq CONV t1 t2 && eq CONV c1 c2
+  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq CONV b1 b2 && eq CONV t1 t2 && eq cv_pb c1 c2
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
-    leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
-  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq 0) l1 l2
+    eq cv_pb c1 c2 && Array.equal (eq CONV) l1 l2
+  | Proj (p1,c1), Proj (p2,c2) -> Projection.CanOrd.equal p1 p2 && eq CONV c1 c2
+  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq CONV) l1 l2
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
-    Constant.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
-  | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
+    Constant.CanOrd.equal c1 c2 && cmp_universes u1 u2
+  | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && cmp_universes u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
-    Construct.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstructRef c1, nargs)) u1 u2
+    Construct.CanOrd.equal c1 c2 && cmp_universes u1 u2
   | Case (ci1,u1,pms1,p1,iv1,c1,bl1), Case (ci2,u2,pms2,p2,iv2,c2,bl2) ->
     (** FIXME: what are we doing with u1 = u2 ? *)
-    Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && leq_universes (Some (GlobRef.IndRef ci1.ci_ind, 0)) u1 u2 &&
-    Array.equal (eq 0) pms1 pms2 && eq_under_context (eq 0) p1 p2 &&
-    eq_invert (eq 0) iv1 iv2 &&
-    eq 0 c1 c2 && Array.equal (eq_under_context (eq 0)) bl1 bl2
+    Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && cmp_universes u1 u2 &&
+    Array.equal (eq CONV) pms1 pms2 && eq_under_context (eq CONV) p1 p2 &&
+    eq_invert (eq CONV) iv1 iv2 &&
+    eq CONV c1 c2 && Array.equal (eq_under_context (eq CONV)) bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
     Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
-    && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
+    && Array.equal (eq CONV) tl1 tl2 && Array.equal (eq CONV) bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-    Int.equal ln1 ln2 && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
+    Int.equal ln1 ln2 && Array.equal (eq CONV) tl1 tl2 && Array.equal (eq CONV) bl1 bl2
   | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
-    leq_universes None u1 u2 &&
-    Array.equal_norefl (eq 0) t1 t2 &&
-    eq 0 def1 def2 && eq 0 ty1 ty2
+    cmp_universes u1 u2 &&
+    Array.equal (eq CONV) t1 t2 &&
+    eq CONV def1 def2 && eq CONV ty1 ty2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
     | CoFix _ | Int _ | Float _| Array _), _ -> false
 
-let compare_head_gen_leq leq_universes leq_sorts eq leq t1 t2 =
-  compare_head_gen_leq_with kind kind leq_universes leq_sorts eq leq t1 t2
-
-let compare_head_gen eq_universes eq_sorts eq t1 t2 =
-  compare_head_gen_leq eq_universes eq_sorts eq eq t1 t2
-
-let eq_constr_univs univs m n =
-  if m == n then true
-  else
-    let eq_universes _ = UGraph.check_eq_instances univs in
-    let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
-    let rec eq_constr' nargs m n =
-      m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
-    in compare_head_gen eq_universes eq_sorts eq_constr' 0 m n
-
-let leq_constr_univs univs m n =
-  if m == n then true
-  else
-    let eq_universes _ = UGraph.check_eq_instances univs in
-    let eq_sorts s1 s2 = s1 == s2 ||
-      UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
-    let leq_sorts s1 s2 = s1 == s2 ||
-      UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
-    let rec eq_constr' nargs m n =
-      m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
-    in
-    let rec compare_leq nargs m n =
-      compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' nargs m n
-    and leq_constr' nargs m n = m == n || compare_leq nargs m n in
-    compare_leq 0 m n
+let gen_eq_univs pb univs m n =
+  let cmp_universes i1 i2 = UGraph.check_eq_instances univs i1 i2 in
+  let cmp_sorts pb s1 s2 =
+    s1 == s2 || match pb with
+    | CONV ->
+      UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+    | CUMUL ->
+      UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+  in
+  let rec compare_rec pb m n = compare_gen pb cmp_universes cmp_sorts compare_rec m n in
+  compare_rec pb m n
 
 end
 
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _ -> None)) t1 t2 =
   let univs = Environ.universes env in
-  let b =
-    if cv_pb = CUMUL then Eq.leq_constr_univs univs t1 t2
-    else Eq.eq_constr_univs univs t1 t2
-  in
+  let b = Eq.gen_eq_univs cv_pb univs t1 t2 in
     if b then ()
     else
       let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
