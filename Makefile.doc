@@ -33,10 +33,10 @@ HTMLSTYLE:=coqremote
 # Sphinx-related variables
 OSNAME:=$(shell uname -s)
 ifeq ($(findstring CYGWIN,$(OSNAME)),CYGWIN)
-WIN_CURDIR:=$(shell cygpath -w $(CURDIR))
-SPHINXENV:=COQBIN="$(CURDIR)/bin/" COQLIB="$(WIN_CURDIR)"
+WIN_CURDIR:=$(shell cygpath -m $(CURDIR))
+SPHINXENV:=OCAMLPATH="$(CURDIR);$(OCAMLPATH)" COQBIN="$(CURDIR)/bin/" COQLIB="$(WIN_CURDIR)"
 else
-SPHINXENV:=COQBIN="$(CURDIR)/$(CBIN)" COQLIB="$(CURDIR)/$(VO_OUT_DIR)"
+SPHINXENV:=OCAMLPATH="$(CURDIR):$(OCAMLPATH)" COQBIN="$(CURDIR)/$(CBIN)" COQLIB="$(CURDIR)/$(VO_OUT_DIR)"
 endif
 
 SPHINXWARNERROR ?= 1
@@ -128,7 +128,7 @@ sphinx-clean:
 plugin-tutorial: states $(BCONTEXT)/coq-core.install | $(VO_OUT_DIR)
 	mkdir -p $(VO_OUT_DIR)/tools/
 	cp tools/CoqMakefile.in $(VO_OUT_DIR)/tools/
-	+$(MAKE) COQBIN=$(shell pwd)/$(CBIN)/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/$(VO_OUT_DIR) -C $(PLUGINTUTO)
+	+$(MAKE) OCAMLPATH=$(shell pwd)/$(CONTEXT)/lib/ COQBIN=$(shell pwd)/$(CBIN)/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/$(VO_OUT_DIR) -C $(PLUGINTUTO)
 
 ######################################################################
 ### Implicit rules

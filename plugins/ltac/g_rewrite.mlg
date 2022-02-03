@@ -30,7 +30,7 @@ open Vernacextend
 
 }
 
-DECLARE PLUGIN "ltac_plugin"
+DECLARE PLUGIN "coq-core.plugins.ltac"
 
 {
 

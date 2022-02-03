@@ -2,14 +2,16 @@
 
 . ../template/init.sh
 
+sed -i.old 's/coq-core.plugins.ltac/coq-core.plugins.ltac,foo/' src/META.coq-test-suite
+
 echo "let () = Foolib.foo ();;" >> src/test_aux.ml
-export OCAMLPATH=$OCAMLPATH:$PWD/findlib
 if which cygpath 2>/dev/null; then
-  # the only way I found to pass OCAMLPATH on win is to have it contain
-  # only one entry
-  OCAMLPATH=$(cygpath -w "$PWD"/findlib)
-  export OCAMLPATH
+  # separator is ; on windows
+  OCAMLPATH=$OCAMLPATH;$(cygpath -m "$PWD"/findlib)
+else
+  OCAMLPATH=$OCAMLPATH:$PWD/findlib
 fi
+export OCAMLPATH
 make -C findlib/foo clean
 coq_makefile -f _CoqProject -o Makefile
 cat Makefile.conf

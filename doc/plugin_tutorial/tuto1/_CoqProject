@@ -1,3 +1,4 @@
+src/META.coq-plugin-tutorial
 -R theories Tuto1
 -I src
 

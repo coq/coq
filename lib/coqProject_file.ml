@@ -16,6 +16,8 @@ type arg_source = CmdLine | ProjectFile
 
 type 'a sourced = { thing : 'a; source : arg_source }
 
+type meta_file = Absent | Present of string | Generate of string
+
 type project = {
   project_file  : string option;
   makefile : string option;
@@ -28,6 +30,7 @@ type project = {
   ml_files : string sourced list;
   mllib_files : string sourced list;
   mlpack_files : string sourced list;
+  meta_file : meta_file;
 
   ml_includes : path sourced list;
   r_includes  : (path * logic_path) sourced list;
@@ -56,6 +59,7 @@ let mk_project project_file makefile native_compiler = {
   mllib_files = [];
   mlpack_files = [];
   ml_includes = [];
+  meta_file = Absent;
   r_includes = [];
   q_includes = [];
   extra_args = [];
@@ -236,6 +240,12 @@ let process_cmd_line ~warning_fn orig_dir proj args =
       error "Option -docroot given more than once";
     aux { proj with docroot = Some p } r
 
+  | "-generate-meta-for-package" :: m :: r ->
+    if proj.meta_file <> Absent then
+      error "Option -generate-meta-for-package cannot be repeated";
+    aux { proj with meta_file = Generate m } r
+
+
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
@@ -265,7 +275,14 @@ let process_cmd_line ~warning_fn orig_dir proj args =
         | ".mlpack" ->
           check_filename f;
           { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
-        | _ -> raise (Parsing_error ("Unknown option "^f')) in
+        | _ ->
+          if CString.is_prefix "META." (Filename.basename f) then
+            if proj.meta_file = Absent then
+              { proj with meta_file = Present f }
+            else
+              raise (Parsing_error "only one META.package file can be specified")
+          else
+            raise (Parsing_error ("Unknown option "^f')) in
       aux proj r
  in
   let proj = aux proj args in

@@ -11,7 +11,8 @@ export NJOBS
 # our docker-opam / Nix setup; we have to do this for all the 3 cases
 # below; would we fix ci-menhir, then we just do this for the first
 # branch [ci case]
-export OCAMLPATH="$PWD/_install_ci/lib:$OCAMLPATH"
+if which cygpath >/dev/null 2>&1; then OCAMLFINDSEP=\;; else OCAMLFINDSEP=:; fi
+export OCAMLPATH="$PWD/_install_ci/lib$OCAMLFINDSEP$OCAMLPATH"
 export PATH="$PWD/_install_ci/bin:$PATH"
 
 # We can remove setting COQLIB and COQCORELIB from here, but better to
@@ -29,7 +30,7 @@ then
 elif [ -d "$PWD/_build_vo/" ] && [ -z "$CI_PURE_DUNE" ]
 then
     # Dune Ocaml build, vo build using make
-    export OCAMLPATH="$PWD/_build_vo/default/lib/:$OCAMLPATH"
+    export OCAMLPATH="$PWD/_build_vo/default/lib/$OCAMLFINDSEP$OCAMLPATH"
     export COQBIN="$PWD/_build_vo/default/bin"
     export COQLIB="$PWD/_build_vo/default/lib/coq"
     export COQCORELIB="$PWD/_build_vo/default/lib/coq-core"
@@ -38,7 +39,7 @@ then
 elif [ -d "$PWD/_build/install/default/" ];
 then
     # Full Dune build, we basically do what `dune exec --` does
-    export OCAMLPATH="$PWD/_build/install/default/lib/:$OCAMLPATH"
+    export OCAMLPATH="$PWD/_build/install/default/lib/$OCAMLFINDSEP$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
     export COQCORELIB="$PWD/_build/install/default/lib/coq-core"

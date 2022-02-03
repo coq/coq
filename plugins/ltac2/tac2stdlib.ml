@@ -213,7 +213,7 @@ let generalize_arg = make_to_repr to_generalize_arg
 
 (** Standard tactics sharing their implementation with Ltac1 *)
 
-let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
+let pname s = { mltac_plugin = "coq-core.plugins.ltac2"; mltac_tactic = s }
 
 let lift tac = tac <*> return v_unit
 

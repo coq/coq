@@ -11,7 +11,7 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/equations"
-  ./configure.sh coq
+  [ -e Makefile.coq ] || ./configure.sh coq
   make ci
   make install
 )

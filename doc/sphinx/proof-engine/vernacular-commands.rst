@@ -619,12 +619,14 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Declare ML Module {+ @string }
 
-   This commands dynamically loads OCaml compiled code from
-   a :n:`.mllib` file.
-   It is used to load plugins dynamically.  The
-   files must be accessible in the current OCaml loadpath (see
-   :ref:`command line option <command-line-options>` :n:`-I` and command :cmd:`Add ML Path`).  The
-   :n:`.mllib` suffix may be omitted.
+   This commands dynamically loads OCaml plugins dynamically.  The string
+   argument must be a valid `findlib <http://projects.camlcity.org/projects/findlib.html>`
+   plugin name, for example ``coq-core.plugins.ltac``. The first component of
+   the plugin name is a package that has to be in scope of ``findlib``.
+   One can see the paths explored by ``findlib`` by running
+   ``ocamlfind printconf`` and get the list of available packages
+   by running ``ocamlfind list | grep coq`` (Coq packages are typically named
+   ``coq-something``).
 
    This command is reserved for plugin developers, who should provide
    a .v file containing the command. Users of the plugins will then generally

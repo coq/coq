@@ -1452,7 +1452,8 @@ let vernac_add_ml_path path =
 
 let vernac_declare_ml_module ~local l =
   let local = Option.default false local in
-  Mltop.declare_ml_modules local (List.map expand l)
+  let l = List.map expand l in
+  Mltop.declare_ml_modules local l
 
 let vernac_chdir = function
   | None -> Feedback.msg_notice (str (Sys.getcwd()))

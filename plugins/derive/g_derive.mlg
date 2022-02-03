@@ -14,7 +14,7 @@ open Stdarg
 
 }
 
-DECLARE PLUGIN "derive_plugin"
+DECLARE PLUGIN "coq-core.plugins.derive"
 
 {
 

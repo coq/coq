@@ -1,0 +1,21 @@
+package "evil" (
+    directory = "src"
+    version = "dev"
+    description = "An evil test plugin"
+    requires = "coq-core.plugins.ltac"
+    archive(byte) = "evil_plugin.cma"
+    archive(native) = "evil_plugin.cmxa"
+    plugin(byte) = "evil_plugin.cma"
+    plugin(native) = "evil_plugin.cmxs"
+)
+package "good" (
+    directory = "src"
+    version = "dev"
+    description = "A good test plugin"
+    requires = "coq-core.plugins.ltac"
+    archive(byte) = "good_plugin.cma"
+    archive(native) = "good_plugin.cmxa"
+    plugin(byte) = "good_plugin.cma"
+    plugin(native) = "good_plugin.cmxs"
+)
+directory = "."

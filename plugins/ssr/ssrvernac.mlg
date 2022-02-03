@@ -33,7 +33,7 @@ open Ssrcommon
 
 }
 
-DECLARE PLUGIN "ssreflect_plugin"
+DECLARE PLUGIN "coq-core.plugins.ssreflect"
 
 {
 

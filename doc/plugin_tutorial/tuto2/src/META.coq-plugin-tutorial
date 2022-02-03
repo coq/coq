@@ -1,0 +1,11 @@
+package "tuto2" (
+    directory = "."
+    version = "dev"
+    description = "A tuto2 plugin"
+    requires = "coq-core.plugins.ltac"
+    archive(byte) = "tuto2_plugin.cma"
+    archive(native) = "tuto2_plugin.cmxa"
+    plugin(byte) = "tuto2_plugin.cma"
+    plugin(native) = "tuto2_plugin.cmxs"
+)
+directory = "."

@@ -162,7 +162,7 @@ let fail ?(info = Exninfo.null) e =
   Proofview.tclZERO ~info e
 
 let return x = Proofview.tclUNIT x
-let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
+let pname s = { mltac_plugin = "coq-core.plugins.ltac2"; mltac_tactic = s }
 
 let wrap f =
   return () >>= fun () -> return (f ())
@@ -1551,7 +1551,7 @@ let () =
   in
   let () = Geninterp.register_interp0 wit_ltac2_val interp_fun in
   define1 "ltac1_lambda" valexpr begin fun f ->
-    let body = Tacexpr.TacGeneric (Some "ltac2", in_gen (glbwit wit_ltac2_val) ()) in
+    let body = Tacexpr.TacGeneric (Some "coq-core.plugins.ltac2", in_gen (glbwit wit_ltac2_val) ()) in
     let clos = CAst.make (Tacexpr.TacFun ([Name arg_id], CAst.make (Tacexpr.TacArg body))) in
     let f = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) f in
     let lfun = Id.Map.singleton tac_id f in
@@ -1562,7 +1562,7 @@ let () =
 let ltac2_eval =
   let open Ltac_plugin in
   let ml_name = {
-    Tacexpr.mltac_plugin = "ltac2";
+    Tacexpr.mltac_plugin = "coq-core.plugins.ltac2";
     mltac_tactic = "ltac2_eval";
   } in
   let eval_fun args ist = match args with

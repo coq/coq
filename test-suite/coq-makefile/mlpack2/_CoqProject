@@ -1,3 +1,4 @@
+src/META.coq-test-suite
 -R src/ test
 -R theories/ test
 -I src/

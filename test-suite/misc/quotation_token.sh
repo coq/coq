@@ -7,6 +7,9 @@ export PATH=$COQBIN:$PATH
 
 cd misc/quotation_token/
 
+if which cygpath >/dev/null 2>&1; then OCAMLFINDSEP=\;; else OCAMLFINDSEP=:; fi
+export OCAMLPATH=$PWD$OCAMLFINDSEP$OCAMLPATH
+
 coq_makefile -f _CoqProject -o Makefile
 
 make clean

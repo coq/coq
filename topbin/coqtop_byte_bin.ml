@@ -23,10 +23,9 @@ let _get_directive name =
   let dt = Toploop.directive_table [@ocaml.warning "-3"] in
   Hashtbl.find_opt dt name
 
-(* XXX: 4.13 deprecated Topdirs.load_file in favor of
-   Toopload.load_file, however that last function was introduced in
-   4.12 so it seems... *)
-let _load_file = Topdirs.load_file [@ocaml.warning "-3"]
+let load_file fmt = function
+  | Mltop.Legacy { obj_file_path; _ } -> (Topdirs.load_file [@ocaml.warning "-3"]) fmt obj_file_path
+  | Mltop.Findlib { fl_public_name } -> Topfind.load_deeply [fl_public_name]; true
 
 let drop_setup () =
   begin
@@ -39,8 +38,8 @@ let drop_setup () =
   end;
   let ppf = Format.std_formatter in
   Mltop.(set_top
-           { load_obj = (fun f -> if not (_load_file ppf f)
-                          then CErrors.user_err Pp.(str ("Could not load plugin "^f))
+           { load_obj = (fun f -> if not (load_file ppf f)
+                          then CErrors.user_err Pp.(str ("Could not load plugin "^pp_plugin f))
                         );
              add_dir  = Topdirs.dir_directory;
              ml_loop  = (fun () -> Toploop.loop ppf);

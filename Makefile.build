@@ -370,7 +370,7 @@ $(VFILED): $(BUILD_VFILES) $(COQDEP) | all-src
 	$(SHOW)'COQDEP    VFILES'
 	$(HIDE)find theories $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name '*.v' | \
 	sed 's|^|$(VO_OUT_DIR)|' | \
-	xargs $(COQDEP) -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) > "$@"
+	xargs $(COQDEP) -m $$PWD/_build/default/META.coq-core -boot $(DYNDEP) -R $(VO_OUT_DIR)theories Coq -Q $(VO_OUT_DIR)user-contrib "" $(PLUGININCLUDES) > "$@"
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 Makefile $(wildcard Makefile.*) config/Makefile : ;

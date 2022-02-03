@@ -117,6 +117,12 @@ let init_runtime opts =
   let ml_load_path, vo_load_path = Coqargs.build_load_path opts in
   List.iter Mltop.add_ml_dir ml_load_path;
   List.iter Loadpath.add_vo_path vo_load_path;
+  let ocamlpathsep = if Sys.unix then ":" else ";" in
+  let ocamlpath = String.concat ocamlpathsep ml_load_path in
+  let env_ocamlpath =
+    try Sys.getenv "OCAMLPATH" ^ ocamlpathsep ^ ocamlpath
+    with Not_found -> ocamlpath in
+  Findlib.init ~env_ocamlpath ();
 
   injection_commands opts
 

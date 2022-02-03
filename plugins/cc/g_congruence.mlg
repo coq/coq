@@ -16,7 +16,7 @@ open Stdarg
 
 }
 
-DECLARE PLUGIN "cc_plugin"
+DECLARE PLUGIN "coq-core.plugins.cc"
 
 (* Tactic registration *)
 

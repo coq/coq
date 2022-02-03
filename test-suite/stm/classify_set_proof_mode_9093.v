@@ -1,6 +1,6 @@
 (* -*- coq-prog-args: ("-async-proofs" "on" "-noinit"); -*- *)
 
-Declare ML Module "ltac_plugin".
+Declare ML Module "coq-core.plugins.ltac".
 
 Set Default Proof Mode "Classic".
 

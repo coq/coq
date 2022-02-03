@@ -16,7 +16,7 @@ open Tacarg
 
 }
 
-DECLARE PLUGIN "zify_plugin"
+DECLARE PLUGIN "coq-core.plugins.zify"
 
 VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
 | ["Add" "Zify" "InjTyp"   reference(t) ] -> { Zify.InjTable.register t }

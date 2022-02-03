@@ -25,7 +25,7 @@ open Pcoq.Prim
 
 }
 
-DECLARE PLUGIN "firstorder_plugin"
+DECLARE PLUGIN "coq-core.plugins.firstorder"
 
 (* declaring search depth as a global option *)
 
@@ -36,7 +36,7 @@ let ground_depth =
 
 let default_intuition_tac =
   let tac _ _ = Auto.h_auto None [] (Some []) in
-  let name = { Tacexpr.mltac_plugin = "firstorder_plugin"; mltac_tactic = "auto_with"; } in
+  let name = { Tacexpr.mltac_plugin = "coq-core.plugins.firstorder"; mltac_tactic = "auto_with"; } in
   let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
   Tacenv.register_ml_tactic name [| tac |];
   CAst.make (Tacexpr.TacML (entry, []))

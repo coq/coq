@@ -1,5 +1,5 @@
 
-Declare ML Module "evil_plugin".
+Declare ML Module "coq-test-suite.evil".
 
 Evil T f. (* <- if this doesn't fail then the rest goes through *)
 

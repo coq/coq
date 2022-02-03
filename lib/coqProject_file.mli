@@ -14,6 +14,8 @@ type arg_source = CmdLine | ProjectFile
 
 type 'a sourced = { thing : 'a; source : arg_source }
 
+type meta_file = Absent | Present of string | Generate of string
+
 type project = {
   project_file  : string option;
   makefile : string option;
@@ -28,6 +30,7 @@ type project = {
   ml_files : string sourced list;
   mllib_files : string sourced list;
   mlpack_files : string sourced list;
+  meta_file : meta_file;
 
   ml_includes : path sourced list;
   r_includes  : (path * logic_path) sourced list;

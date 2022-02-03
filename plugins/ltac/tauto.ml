@@ -20,7 +20,7 @@ open Util
 open Tacticals
 open Proofview.Notations
 
-let tauto_plugin = "tauto_plugin"
+let tauto_plugin = "coq-core.plugins.tauto"
 let () = Mltop.add_known_module tauto_plugin
 
 let assoc_var s ist =

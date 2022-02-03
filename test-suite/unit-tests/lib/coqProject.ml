@@ -28,6 +28,7 @@ let t () =
       mlg_files = [];
       mllib_files = [];
       mlpack_files = [];
+      meta_file = Absent;
 
       ml_includes = [];
       r_includes = [];
@@ -57,6 +58,7 @@ let t () =
       mlg_files = [];
       mllib_files = [];
       mlpack_files = [];
+      meta_file = Absent;
 
       ml_includes = [];
       r_includes = [];

@@ -8,28 +8,25 @@
  (public_name coqtop.opt)
  (package coq-core)
  (modules coqtop_bin)
- (libraries coq-core.toplevel)
- (link_flags -linkall))
+ (libraries coq-core.toplevel findlib.dynload))
 
 (executable
  (name coqtop_byte_bin)
  (public_name coqtop.byte)
  (package coq-core)
  (modules coqtop_byte_bin)
- (libraries compiler-libs.toplevel coq-core.toplevel)
- (modes byte)
- (link_flags -linkall))
+ (libraries compiler-libs.toplevel coq-core.toplevel findlib.top)
+ (modes byte))
 
 (executable
  (name coqc_bin)
  (public_name coqc)
  (package coq-core)
  (modules coqc_bin)
- (libraries coq-core.toplevel)
- (modes native byte)
+ (libraries coq-core.toplevel findlib.dynload)
+ (modes native byte))
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
- (link_flags -linkall))
 
 (install
  (section bin)
@@ -50,8 +47,7 @@
  (public_names coqqueryworker.opt coqtacticworker.opt coqproofworker.opt)
  (package coq-core)
  (modules :standard \ coqtop_byte_bin coqtop_bin coqc_bin coqnative_bin)
- (libraries coq-core.toplevel)
- (link_flags -linkall))
+ (libraries coq-core.toplevel findlib.dynload))
 
 ; Workers installed targets
 (alias

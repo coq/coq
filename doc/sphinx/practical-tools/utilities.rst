@@ -79,6 +79,7 @@ A simple example of a ``_CoqProject`` file follows:
     src/baz.mlg
     src/bazaux.ml
     src/qux_plugin.mlpack
+    -generate-meta-for-package my-package
 
 Lines in the form ``-arg foo`` pass the argument ``foo`` to ``coqc``: in the
 example, this allows to pass the two-word option ``-w all`` (see
@@ -87,6 +88,17 @@ example, this allows to pass the two-word option ``-w all`` (see
 Note that it is mandatory to specify a ``-R/-Q`` flag for your
 project, so its modules are properly qualified. Omitting it will
 generate object files that are not usable except for expert cases.
+
+Also note that when a project includes a plugin it also needs to include a
+``META`` file, as per `findlib <http://projects.camlcity.org/projects/findlib.html>`_.
+If the project includes exactly one plugin, the ``META`` file is
+generated automatically when the option ``-generate-meta-for-package my-package``
+is given. The generated file will make the plugin available
+to the :cmd:`Declare ML Module` as ``my-package.plugin``. If this does not suite
+you, or you project features more than one plugin, then a file named
+``META.my-package`` must be hand written and listed in the ``_CoqProject`` file.
+One can use ``ocamlfind lint META.my-package`` to lint the hand written file.
+Typically ``my-package`` is the name of the ``OPAM`` package for your project.
 
 The ``-native-compiler`` option given in the ``_CoqProject`` file will override
 the global one passed at configure time.

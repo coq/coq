@@ -17,7 +17,7 @@ open Classes
 
 }
 
-DECLARE PLUGIN "ltac_plugin"
+DECLARE PLUGIN "coq-core.plugins.ltac"
 
 (** Options: depth, debug and transparency settings. *)
 

@@ -1,5 +1,5 @@
 
-Declare ML Module "quotation_plugin".
+Declare ML Module "coq-test-suite.quotation".
 
 Definition x := foobar:{{ hello
   there

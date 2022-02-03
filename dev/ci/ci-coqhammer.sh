@@ -10,5 +10,7 @@ git_download coqhammer
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/coqhammer"
-  make
+  make tactics
+  make install-tactics
+  make plugin
 )

@@ -64,6 +64,7 @@ $(BUILD_OUT_DIR) $(VO_OUT_DIR):
 	$(HIDE)mkdir -p $(BUILD_OUT_DIR)/lib/coq
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(LEGACY_BIN_DIR)
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/bin/ $(BUILD_OUT_DIR)/bin
+	$(HIDE)mkdir -p $(shell pwd)/_build/install/default/lib/coq-core/
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/coq-core/ $(BUILD_OUT_DIR)/lib/coq-core
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/coqide-server/ $(BUILD_OUT_DIR)/lib/coqide-server
 	$(HIDE)ln -s $(shell pwd)/_build/install/default/lib/stublibs/ $(BUILD_OUT_DIR)/lib/stublibs
@@ -118,6 +119,14 @@ _DPROFILE?=$(CONFIGURE_DPROFILE)
 _DOPT:=--display=$(_DDISPLAY) $(_DPROFILE)
 _DBUILD:=$(FLOCK) .dune.lock dune build $(_DOPT)
 
+# setup findlib
+ifeq ($(shell which cygpath 2>/dev/null),)
+OCAMLPATH := $(shell pwd)/_build/install/default/lib/:$(OCAMLPATH)
+else
+OCAMLPATH := $(shell cygpath -m $(shell pwd)/_build/install/default/lib/);$(OCAMLPATH)
+endif
+export OCAMLPATH
+
 # We rerun dune when any of the source files have changed
 
 # touch is needed for all targets in `_build` as make won't track
@@ -138,14 +147,16 @@ $(CSHARE)/%: $(_DBUILD_DEPS)
 
 ALL_PLUGIN_SOURCE_FILES=$(shell find $(COQ_SRC_DIR)/plugins -name '*.ml' -or -name '*.mli' -or -name '*.mlg') $(ALL_ML_SOURCE_FILES)
 
-_build/default/plugins/%.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
+_build/default/plugins/%_plugin.cmxs: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
+	$(HIDE)$(_DBUILD) _build/install/default/lib/coq-core/plugins/$(addsuffix _plugin.cmxs, $(shell basename $*)/$(shell basename $*))
 	$(HIDE)touch $@
 
-_build/default/plugins/%.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
+_build/default/plugins/%_plugin.cma: $(ALL_PLUGIN_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      $@'
 	$(HIDE)$(_DBUILD) $@
+	$(HIDE)$(_DBUILD) _build/install/default/lib/coq-core/plugins/$(addsuffix _plugin.cma, $(shell basename $*)/$(shell basename $*))
 	$(HIDE)touch $@
 
 # Only used for the test-suite in local mode
@@ -189,6 +200,8 @@ ALL_SOURCE_FILES=$(ALL_PLUGIN_SOURCE_FILES) # NB includes $(ALL_ML_SOURCE_FILES)
 all-src: $(ALL_SOURCE_FILES) $(_DBUILD_DEPS)
 	$(SHOW)'DUNE      sources'
 	$(HIDE)$(_DBUILD) @all-src
+	$(HIDE)$(_DBUILD) _build/default/META.coq-core
+	$(HIDE)$(_DBUILD) _build/install/default/lib/coq-core/META
 
 # For docgram
 _build/default/doc/tools/%: $(ALL_ML_SOURCE_FILES) $(DOCGRAM_SOURCE_FILES) $(_DBUILD_DEPS)

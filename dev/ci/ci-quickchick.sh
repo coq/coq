@@ -11,7 +11,6 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/quickchick"
   make
-  mkdir -p "$CI_INSTALL_DIR/bin"
-  make install INSTALLDIR="$CI_INSTALL_DIR/bin"
+  make install
   make tests
 )

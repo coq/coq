@@ -24,3 +24,4 @@ cp_file src/test_aux.mli
 cp_file src/test.mli
 cp_file src/test_plugin.mlpack
 cp_file src/test_aux.ml
+cp_file src/META.coq-test-suite
