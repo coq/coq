@@ -7,7 +7,7 @@
   (with-stdout-to coqtop-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
     (run chmod +x %{targets})))))
 
 (rule
@@ -19,7 +19,7 @@
   (with-stdout-to coqc-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
 (rule
@@ -55,7 +55,7 @@
   (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
 (rule
@@ -76,5 +76,5 @@
   (with-stdout-to coqide-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
