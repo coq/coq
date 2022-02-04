@@ -245,7 +245,7 @@ type mutual_inductive_body = {
 
     mind_record : record_info; (** The record information *)
 
-    mind_finite : recursivity_kind;  (** Whether the type is inductive or coinductive *)
+    mind_finite : recursivity_kind;  (** Whether the type is inductive, coinductive or non-recursive *)
 
     mind_ntypes : int;  (** Number of types in the block *)
 
