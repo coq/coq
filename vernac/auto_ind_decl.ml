@@ -683,6 +683,12 @@ let build_beq_scheme env handle kn =
 
   (* number of inductives in the mutual *)
   let nb_ind = Array.length mib.mind_packets in
+  let truly_recursive =
+    let open Declarations in
+    let is_rec ra = match Declareops.dest_recarg ra with Mrec _ | Nested _ -> true | Norec -> false in
+    Array.exists
+      (fun mip -> Array.exists (List.exists is_rec) (Declareops.dest_subterms mip.mind_recargs))
+      mib.mind_packets in
   (* params context divided *)
   let nonrecparams_ctx,recparams_ctx = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   let params_ctx = nonrecparams_ctx @ recparams_ctx in
@@ -695,7 +701,7 @@ let build_beq_scheme env handle kn =
     match mib.mind_finite with
     | CoFinite ->
       raise NoDecidabilityCoInductive
-    | Finite ->
+    | Finite when truly_recursive || nb_ind > 1 (* Hum, there exist non-recursive mutual types... *) ->
       (* rec name *)
       let rec_name i =
         (Id.to_string (Array.get mib.mind_packets i).mind_typename)^"_eqrec"
@@ -704,7 +710,7 @@ let build_beq_scheme env handle kn =
       let types = Array.init nb_ind (fun i -> Option.get (translate_type_eq env_lift_recparams anonR (mkPartialInd env ((kn,i),u) 0) (Term.it_mkProd_or_LetIn (*any sort:*) mkSet nonrecparams_ctx))) in
       let fix_ctx = List.rev (Array.to_list (Array.map2 (fun na t -> RelDecl.LocalAssum (na,t)) names types)) in
       shift_fix_env_lift kn mib.mind_nparams_rec recparams_ctx nb_ind env_lift_recparams, fix_ctx, names, types
-    | BiFinite ->
+    | Finite | BiFinite ->
       env_lift_recparams, [], [||], [||]
   in
   let env_lift_recparams_fix_nonrecparams, nonrecparams_ctx_with_eqs =
@@ -834,7 +840,7 @@ let build_beq_scheme env handle kn =
     match mib.mind_finite with
       | CoFinite ->
          raise NoDecidabilityCoInductive
-      | Finite ->
+      | Finite when truly_recursive || nb_ind > 1 (* Hum... *) ->
          let cores = Array.init nb_ind make_one_eq in
          Array.init nb_ind (fun i ->
             let kelim = Inductive.elim_sort (mib,mib.mind_packets.(i)) in
@@ -843,7 +849,7 @@ let build_beq_scheme env handle kn =
             let decrArg = Context.Rel.length nonrecparams_ctx_with_eqs in
             let fix = mkFix (((Array.make nb_ind decrArg),i),(names,types,cores)) in
             it_mkLambda_or_LetIn fix recparams_ctx_with_eqs)
-      | BiFinite ->
+      | Finite | BiFinite ->
          assert (Int.equal nb_ind 1);
          (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)

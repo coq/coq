@@ -39,8 +39,7 @@ Module D.
   Inductive prodbox (A B:Type) := pairbox : box A -> box B -> prodbox A B.
   Scheme Equality for prodbox.
   Check eq_refl : prodbox_beq @{Set Set} =
-    fun (A B : Type@{Set}) eq_A eq_B =>
-    fix prodbox_eqrec (X Y : prodbox A B) {struct X} : bool :=
+    fun (A B : Type@{Set}) eq_A eq_B (X Y : prodbox A B) =>
       match X, Y with
       | pairbox _ _ x x0, pairbox _ _ x1 x2 =>
               (internal_box_beq A eq_A x x1 &&
@@ -238,7 +237,7 @@ Module L.
   Inductive A := C : forall n, seq n 0 -> A.
   Scheme Boolean Equality for A.
   Check eq_refl : A_beq =
-    fix A_eqrec (X Y : A) {struct X} : bool :=
+    fun (X Y : A) =>
       match X, Y with
       | C n _, C n0 _ => A.internal_nat_beq n n0
       end.
