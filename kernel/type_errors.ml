@@ -20,7 +20,7 @@ type 'constr pguard_error =
   (* Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType of 'constr
-  | RecursionOnIllegalTerm of int * (env * 'constr) * int list * int list
+  | RecursionOnIllegalTerm of int * (env * 'constr) * (int list * int list) Lazy.t
   | NotEnoughArgumentsForFixCall of int
   (* CoFixpoints *)
   | CodomainNotInductiveType of 'constr
@@ -170,7 +170,7 @@ let error_bad_variance env ~lev ~expected ~actual =
 let map_pguard_error f = function
 | NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
 | RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
-| RecursionOnIllegalTerm (n, (env, c), l1, l2) -> RecursionOnIllegalTerm (n, (env, f c), l1, l2)
+| RecursionOnIllegalTerm (n, (env, c), l1_l2) -> RecursionOnIllegalTerm (n, (env, f c), l1_l2)
 | NotEnoughArgumentsForFixCall n -> NotEnoughArgumentsForFixCall n
 | CodomainNotInductiveType c -> CodomainNotInductiveType (f c)
 | NestedRecursiveOccurrences -> NestedRecursiveOccurrences

@@ -21,7 +21,7 @@ type 'constr pguard_error =
   (** Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType of 'constr
-  | RecursionOnIllegalTerm of int * (env * 'constr) * int list * int list
+  | RecursionOnIllegalTerm of int * (env * 'constr) * (int list * int list) Lazy.t
   | NotEnoughArgumentsForFixCall of int
   (** CoFixpoints *)
   | CodomainNotInductiveType of 'constr

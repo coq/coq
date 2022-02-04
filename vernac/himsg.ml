@@ -463,7 +463,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   | RecursionNotOnInductiveType c ->
       str "Recursive definition on" ++ spc () ++ pr_lconstr_env env sigma c ++
       spc () ++ str "which should be a recursive inductive type"
-  | RecursionOnIllegalTerm(j,(arg_env, arg),le,lt) ->
+  | RecursionOnIllegalTerm(j,(arg_env, arg),le_lt) ->
       let arg_env = make_all_name_different arg_env sigma in
       let called =
         match names.(j).binder_name with
@@ -471,13 +471,13 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
       let pr_db x = quote (pr_db env x) in
       let vars =
-        match (lt,le) with
+        match Lazy.force le_lt with
             ([],[]) -> assert false
-          | ([],[x]) -> str "a subterm of " ++ pr_db x
-          | ([],_) -> str "a subterm of the following variables: " ++
+          | ([x],[]) -> str "a subterm of " ++ pr_db x
+          | (le,[]) -> str "a subterm of the following variables: " ++
               pr_sequence pr_db le
-          | ([x],_) -> pr_db x
-          | _ ->
+          | (_,[x]) -> pr_db x
+          | (_,lt) ->
               str "one of the following variables: " ++
               pr_sequence pr_db lt in
       str "Recursive call to " ++ called ++ spc () ++

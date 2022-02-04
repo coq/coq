@@ -1006,7 +1006,8 @@ let check_is_subterm x tree =
 exception FixGuardError of env * guard_error
 
 let error_illegal_rec_call renv fx (arg_renv,arg) =
-  let (_,le_vars,lt_vars) =
+  let le_lt_vars =
+  lazy (let (_,le_vars,lt_vars) =
     List.fold_left
       (fun (i,le,lt) sbt ->
         match Lazy.force sbt with
@@ -1014,9 +1015,10 @@ let error_illegal_rec_call renv fx (arg_renv,arg) =
           | (Subterm(Large,_)) -> (i+1, i::le, lt)
           | _ -> (i+1, le ,lt))
       (1,[],[]) renv.genv in
+        (le_vars,lt_vars)) in
   raise (FixGuardError (renv.env,
                         RecursionOnIllegalTerm(fx,(arg_renv.env, arg),
-                                               le_vars,lt_vars)))
+                                               le_lt_vars)))
 
 let error_partial_apply renv fx =
   raise (FixGuardError (renv.env,NotEnoughArgumentsForFixCall fx))
