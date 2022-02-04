@@ -510,7 +510,7 @@ let nlinear_prover prfdepth sys =
       (fun acc (_, r) -> max acc (ProofFormat.pr_rule_max_hyp r))
       0 sys
   in
-  let env = List.map (fun i -> ProofFormat.Hyp i) (CList.interval 0 id) in
+  let env = ProofFormat.Env.of_list  (CList.interval 0 id) in
   match linear_prover_cstr sys with
   | None -> Unknown
   | Some cert -> Prf (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q env cert)
@@ -524,7 +524,7 @@ let linear_prover_with_cert prfdepth sys =
   | Some cert ->
     Prf
       (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q
-         (List.mapi (fun i e -> ProofFormat.Hyp i) sys)
+         (ProofFormat.Env.of_listi sys)
          cert)
 
 (* The prover is (probably) incomplete --

@@ -881,31 +881,47 @@ module ProofFormat = struct
       Zero vect
 
   module Env = struct
+
+    type t =
+      {
+        lref  : int;
+        lhyps : prf_rule list
+      }
+
     let output_hyp_or_def o = function
       | Hyp i -> Printf.fprintf o "Hyp %i" i
       | Def i -> Printf.fprintf o "Def %i" i
       | _ -> ()
 
-    let rec output_hyps o l =
-      match l with
-      | [] -> ()
-      | i :: l -> Printf.fprintf o "%a,%a" output_hyp_or_def i output_hyps l
+    let output_hyps o l = pp_list "," output_hyp_or_def o l
 
-    let id_of_hyp hyp l =
+    let push_ref {lref;lhyps} =
+      {lref = lref +1 ; lhyps}
+
+    let push_def i {lref;lhyps} =
+      if lref <> 0 then failwith "Cannot push def";
+      {lref=lref;lhyps = Def i :: lhyps}
+
+    let of_list l  = {lref = 0 ;lhyps = List.map (fun i -> Hyp i) l}
+    let of_listi l = {lref = 0 ;lhyps = List.mapi (fun i _ -> Hyp i) l}
+
+    let id_of_hyp hyp {lref;lhyps} =
       let rec xid_of_hyp i l' =
         match l' with
         | [] ->
           Printf.fprintf stdout "\nid_of_hyp: %a notin [%a]\n" output_hyp_or_def
-            hyp output_hyps l;
+            hyp output_hyps lhyps;
           flush stdout;
           failwith "Cannot find hyp or def"
         | hyp' :: l' -> if hyp = hyp' then i else xid_of_hyp (i + 1) l'
       in
-      xid_of_hyp 0 l
+      match hyp with
+      | Ref i -> i
+      | _     -> xid_of_hyp lref lhyps
+
+
   end
 
-  let push_env env =
-    (Ref 0) ::(List.map (fun p -> match p with Ref i -> Ref (i+1) | x -> x) env)
 
   let cmpl_prf_rule norm (cst : Q.t -> 'a) env prf =
     let rec cmpl env = function
@@ -915,7 +931,7 @@ module ProofFormat = struct
       | Zero -> Mc.PsatzZ
       | MulPrf (p1, p2) -> Mc.PsatzMulE (cmpl env p1, cmpl env p2)
       | AddPrf (p1, p2) -> Mc.PsatzAdd (cmpl env p1, cmpl env p2)
-      | LetPrf (p1, p2) -> Mc.PsatzLet (cmpl env p1, cmpl (push_env env) p2)
+      | LetPrf (p1, p2) -> Mc.PsatzLet (cmpl env p1, cmpl (Env.push_ref env) p2)
       | MulC (lp, p) ->
         let lp = norm (LinPoly.coq_poly_of_linpol cst lp) in
         Mc.PsatzMulC (lp, cmpl env p)
@@ -941,27 +957,27 @@ module ProofFormat = struct
     | Step (i, p, prf) -> (
       match p with
       | CutPrf p' ->
-        Mc.CutProof (cmpl_prf_rule_z env p', cmpl_proof (Def i :: env) prf)
-      | _ -> Mc.RatProof (cmpl_prf_rule_z env p, cmpl_proof (Def i :: env) prf)
+        Mc.CutProof (cmpl_prf_rule_z env p', cmpl_proof (Env.push_def i env) prf)
+      | _ -> Mc.RatProof (cmpl_prf_rule_z env p, cmpl_proof (Env.push_def i  env) prf)
       )
     | Split (i, v, p1, p2) ->
       Mc.SplitProof
         ( cmpl_pol_z v
-        , cmpl_proof (Def i :: env) p1
-        , cmpl_proof (Def i :: env) p2 )
+        , cmpl_proof (Env.push_def i env) p1
+        , cmpl_proof (Env.push_def i env) p2 )
     | Enum (i, p1, _, p2, l) ->
       Mc.EnumProof
         ( cmpl_prf_rule_z env p1
         , cmpl_prf_rule_z env p2
-        , List.map (cmpl_proof (Def i :: env)) l )
+        , List.map (cmpl_proof (Env.push_def i env)) l )
     | ExProof (i, j, k, x, _, _, prf) ->
       Mc.ExProof
-        (CamlToCoq.positive x, cmpl_proof (Def i :: Def j :: Def k :: env) prf)
+        (CamlToCoq.positive x, cmpl_proof (Env.push_def i  (Env.push_def j (Env.push_def k env))) prf)
 
   let compile_proof env prf =
     let id = 1 + proof_max_def prf in
     let _, prf = normalise_proof id prf in
-    cmpl_proof (List.map (fun i -> Hyp i) env) prf
+    cmpl_proof (Env.of_list env) prf
 
   let rec eval_prf_rule env = function
     | Annot (s, p) -> eval_prf_rule env p
