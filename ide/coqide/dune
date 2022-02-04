@@ -31,7 +31,7 @@
   (language c)
   (names coqide_os_stubs))
  (optional)
- (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3))
+ (libraries coq-core.toplevel coqide-server.protocol coqide-server.core lablgtk3-sourceview3))
 
 (executable
  (name gen_gtk_platform)
