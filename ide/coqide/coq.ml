@@ -57,43 +57,39 @@ let rec read_all_lines in_chan =
     arg::(read_all_lines in_chan)
   with End_of_file -> []
 
-let fatal_error_popup msg =
-  let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok
-    ~message_type:`ERROR ~message:msg ()
-  in ignore (popup#run ()); exit 1
-
-let final_info_popup small msg =
-  if small then
-    let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok
-      ~message_type:`INFO ~message:msg ()
-    in
-    let _ = popup#run () in
-    exit 0
-  else
-    let popup = GWindow.dialog () in
-    let button = GButton.button ~label:"ok" ~packing:popup#action_area#add ()
-    in
-    let scroll = GBin.scrolled_window ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC
-      ~packing:popup#vbox#add ~height:500 ()
-    in
-    let _ = GMisc.label ~text:msg ~packing:scroll#add_with_viewport () in
-    let _ = popup#connect#destroy ~callback:(fun _ -> exit 0) in
-    let _ = button#connect#clicked ~callback:(fun _ -> exit 0) in
-    let _ = popup#run () in
-    exit 0
+let coq_error_popup ~code ~msg data =
+  let callback _ = exit code in
+  let popup = GWindow.dialog () in
+  let button = GButton.button ~stock:`OK ~packing:popup#action_area#add () in
+  let _ = GMisc.label ~text:msg ~packing:popup#vbox#add () in
+  let container = GPack.notebook ~packing:popup#vbox#add () in
+  let iter (label, data) =
+    let scroll = GBin.scrolled_window ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC ~height:500 () in
+    let label = GMisc.label ~text:label () in
+    let text = GText.view ~editable:false ~packing:scroll#add_with_viewport () in
+    let () = text#buffer#set_text data in
+    ignore (container#append_page ~tab_label:label#coerce scroll#coerce)
+  in
+  let () = List.iter iter data in
+  let _ = popup#connect#destroy ~callback in
+  let _ = button#connect#clicked ~callback in
+  let _ = popup#run () in
+  callback ()
 
 let connection_error cmd lines exn =
-  fatal_error_popup
-    ("Connection with coqtop failed!\n"^
-     "Command was: "^cmd^"\n"^
-     "Answer was: "^(String.concat "\n  " lines)^"\n"^
-     "Exception was: "^Printexc.to_string exn)
+  coq_error_popup ~code:1 ~msg:"Connection with coqtop failed!"
+    [
+      "Command", cmd;
+      "Answer", (String.concat "\n" lines);
+      "Exception", Printexc.to_string exn
+    ]
 
 let display_coqtop_answer cmd lines =
-  final_info_popup (List.length lines < 30)
-    ("Coqtop exited\n"^
-     "Command was: "^cmd^"\n"^
-     "Answer was: "^(String.concat "\n  " lines))
+  coq_error_popup ~code:0 ~msg:"The coqtop process has exited."
+    [
+      "Command", cmd;
+      "Answer", String.concat "\n" lines;
+    ]
 
 let rec filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
