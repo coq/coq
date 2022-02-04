@@ -42,15 +42,18 @@ let init_load_path ~coqenv =
   let coq_path = Names.DirPath.make [Libnames.coq_root] in
 
   (* ML includes *)
-  let unix_path = Boot.Env.plugins coqenv |> Boot.Path.to_string in
-  let plugins_dirs = System.all_subdirs ~unix_path |> List.map fst in
+  let core_dir = Boot.Env.corelib coqenv in
+  let core_dir = if Boot.Env.Path.(exists (relative core_dir "META"))
+    then [Boot.Env.Path.(to_string (relative core_dir ".."))]
+    else []
+  in
   let stdlib = Boot.Env.stdlib coqenv |> Boot.Path.to_string in
   let contrib_ml, contrib_vo = build_userlib_path ~unix_path:user_contrib in
 
   let misc_ml, misc_vo =
     List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ coqpath) |> List.split in
 
-  let ml_loadpath = plugins_dirs @ contrib_ml @ List.concat misc_ml in
+  let ml_loadpath = core_dir @ contrib_ml @ List.concat misc_ml in
   let vo_loadpath =
     (* current directory (not recursively!) *)
     [ { unix_path = "."
