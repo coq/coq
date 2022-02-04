@@ -341,7 +341,8 @@ let current_logpathroot () =
   let open Names in
   List.hd @@ List.rev @@ DirPath.repr @@ ModPath.dp @@ Global.current_modpath ()
 
-let cache_ml_objects mnames ~use_legacy_loading_if_possible =
+let cache_ml_objects mnames =
+  let use_legacy_loading_if_possible = true in
   let iter obj = trigger_ml_object ~verb:true ~cache:true ~reinit:true ~use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
@@ -371,7 +372,7 @@ let declare_ml_modules local l =
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
      the ML-MODULE object before them. *)
-  cache_ml_objects l ~use_legacy_loading_if_possible:true
+  cache_ml_objects l
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in
