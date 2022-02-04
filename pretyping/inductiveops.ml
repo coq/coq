@@ -575,7 +575,7 @@ let find_inductive env sigma c =
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind
-        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> CoFinite ->
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == Finite ->
         let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
     | _ -> raise Not_found

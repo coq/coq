@@ -453,7 +453,7 @@ let explain_ill_formed_fix_body env sigma names i = function
       str "Not enough abstractions in the definition"
   | RecursionNotOnInductiveType c ->
       str "Recursive definition on" ++ spc () ++ pr_leconstr_env env sigma c ++
-      spc () ++ str "which should be a recursive inductive type"
+      spc () ++ str "which should be an inductive type"
   | RecursionOnIllegalTerm(j,(arg_env, arg),le_lt) ->
       let arg_env = make_all_name_different arg_env sigma in
       let called =

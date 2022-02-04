@@ -96,3 +96,8 @@ assumption.
 apply bcons.
 assumption.
 Qed.
+
+Variant V := C.
+Lemma a2 : V -> V.
+Fail fix a 1. (* no fix on a variant *)
+Abort.

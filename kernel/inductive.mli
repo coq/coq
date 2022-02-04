@@ -16,11 +16,12 @@ open Environ
 
 (** {6 Extracting an inductive type from a construction } *)
 
-(** [find_m*type env sigma c] coerce [c] to an recursive type (I args).
+(** [find_*type env c] coerces [c] to an
+   inductive/coinductive/variant/record type of the form (I args).
    [find_rectype], [find_inductive] and [find_coinductive]
-   respectively accepts any recursive type, only an inductive type and
-   only a coinductive type.
-   They raise [Not_found] if not convertible to a recursive type. *)
+   respectively accept any inductive/coinductive/variant/record type,
+   only an inductive type and only a coinductive type.
+   They raise [Not_found] if not convertible to such type. *)
 
 val find_rectype     : env -> types -> pinductive * constr list
 val find_inductive   : env -> types -> pinductive * constr list

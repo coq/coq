@@ -40,7 +40,7 @@ let find_inductive env c =
   let (t, l) = decompose_app (whd_all env c) in
   match kind t with
     | Ind ind
-        when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite <> CoFinite -> (ind, l)
+        when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite == Finite -> (ind, l)
     | _ -> raise Not_found
 
 let find_coinductive env c =
@@ -1486,9 +1486,6 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
                   try find_inductive env a
                   with Not_found ->
                     raise_err env i (RecursionNotOnInductiveType a) in
-                let mib,_ = lookup_mind_specif env (out_punivs mind) in
-                if mib.mind_finite != Finite then
-                  raise_err env i (RecursionNotOnInductiveType a);
                 (mind, (env', b))
               else check_occur env' (n+1) b
             else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
