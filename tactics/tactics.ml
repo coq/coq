@@ -107,7 +107,7 @@ exception FixpointOnNonInductiveType
 exception NotEnoughProducts
 exception FixpointSameMutualInductiveType
 exception AllMethodsInCoinductiveType
-exception ReplacementIllTyped
+exception ReplacementIllTyped of exn
 exception UnsupportedWithClause
 exception UnsupportedEqnClause
 exception UnsupportedInClause of bool
@@ -263,8 +263,8 @@ let tactic_interp_error_handler = function
       str "Fixpoints should be on the same mutual inductive declaration."
   | AllMethodsInCoinductiveType ->
       str "All methods must construct elements in coinductive types."
-  | ReplacementIllTyped ->
-      str "Replacement would lead to an ill-typed term."
+  | ReplacementIllTyped e ->
+      str "Replacement would lead to an ill-typed term:" ++ spc () ++ CErrors.print e
   | UnsupportedEqnClause ->
       str "'eqn' clause not supported here."
   | UnsupportedWithClause ->
@@ -928,7 +928,7 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
     begin
       try fst (Typing.type_of env sigma c)
       with e when noncritical e ->
-        error ReplacementIllTyped
+        error (ReplacementIllTyped e)
     end else sigma
   in
   (sigma, c)

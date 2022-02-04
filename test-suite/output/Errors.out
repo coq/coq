@@ -28,3 +28,13 @@ File "./output/Errors.v", line 44, characters 0-24:
 The command has indeed failed with message:
 The first term has type "nat" while the second term has incompatible type
 "bool".
+File "./output/Errors.v", line 49, characters 2-25:
+The command has indeed failed with message:
+Replacement would lead to an ill-typed term: Illegal application: 
+The term "@eq" of type "forall A : Type, A -> A -> Prop"
+cannot be applied to the terms
+ "Set" : "Type"
+ "n" : "Type"
+ "n" : "Type"
+The 2nd term has type "Type" which should be coercible to 
+"Set".

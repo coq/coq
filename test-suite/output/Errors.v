@@ -44,4 +44,9 @@ Goal 0 = 0.
 Fail change 0 with true.
 Abort.
 
+Goal nat = nat.
+  pose (nat : Type) as n.
+  Fail change nat with n. (* Error: Replacement would lead to an ill-typed term. *)
+Abort.
+
 End Change.
