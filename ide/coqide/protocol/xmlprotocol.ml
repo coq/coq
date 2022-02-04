@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (** Protocol version of this file. This is the date of the last modification. *)
-let protocol_version = "20210918"
+let protocol_version = "20220205"
 
 (** See xml-protocol.md for a description of the protocol. *)
 (** UPDATE xml-protocol.md WHEN YOU UPDATE THE PROTOCOL *)
@@ -256,6 +256,22 @@ let to_goals = function
       given_up_goals = given_up }
   | x -> raise (Marshal_error("goals",x))
 
+let of_goal_flags f =
+  let mode = of_string f.gf_mode in
+  let fg = of_bool f.gf_fg in
+  let bg = of_bool f.gf_bg in
+  let shelved = of_bool f.gf_shelved in
+  let given_up = of_bool f.gf_given_up in
+  Element ("goal_flags", [], [mode; fg; bg; shelved; given_up])
+let to_goal_flags = function
+  | Element ("goal_flags", [], [mode; fg; bg; shelved; given_up]) ->
+    { gf_mode = to_string mode;
+      gf_fg = to_bool fg;
+      gf_bg = to_bool bg;
+      gf_shelved = to_bool shelved;
+      gf_given_up = to_bool given_up }
+  | x -> raise (Marshal_error("goal_flags", x))
+
 let of_coq_info info =
   let version = of_string info.coqtop_version in
   let protocol = of_string info.protocol_version in
@@ -291,6 +307,7 @@ module ReifType : sig
   val union_t        : 'a val_t -> 'b val_t -> ('a ,'b) union val_t
 
   val goals_t        : goals val_t
+  val goal_flags_t   : goal_flags val_t
   val evar_t         : evar val_t
   val state_t        : status val_t
   val option_state_t : option_state val_t
@@ -329,6 +346,7 @@ end = struct
     | Union : 'a val_t * 'b val_t -> ('a, 'b) union val_t
 
     | Goals : goals val_t
+    | Goal_flags : goal_flags val_t
     | Evar : evar val_t
     | State : status val_t
     | Option_state : option_state val_t
@@ -357,6 +375,7 @@ end = struct
   let union_t x y    = Union (x, y)
 
   let goals_t        = Goals
+  let goal_flags_t   = Goal_flags
   let evar_t         = Evar
   let state_t        = State
   let option_state_t = Option_state
@@ -381,6 +400,7 @@ end = struct
       | Option_value  -> of_option_value
       | Coq_info      -> of_coq_info
       | Goals         -> of_goals
+      | Goal_flags    -> of_goal_flags
       | Evar          -> of_evar
       | List t        -> (of_list (convert t))
       | Option t      -> (of_option (convert t))
@@ -407,6 +427,7 @@ end = struct
       | Option_value  -> to_option_value
       | Coq_info      -> to_coq_info
       | Goals         -> to_goals
+      | Goal_flags    -> to_goal_flags
       | Evar          -> to_evar
       | List t        -> (to_list (convert t))
       | Option t      -> (to_option (convert t))
@@ -441,6 +462,9 @@ end = struct
         "[" ^ String.concat "; " (List.map Pp.string_of_ppcmds hyps) ^ " |- " ^
             Pp.string_of_ppcmds goal ^ "]" in
       String.concat " " (List.map pr_goal g.fg_goals)
+  let pr_goal_flags (g : goal_flags) =
+    Printf.sprintf "{ fg := %s; bg := %s; shelved := %s; given_up := %s }"
+      (pr_bool g.gf_fg) (pr_bool g.gf_bg) (pr_bool g.gf_shelved) (pr_bool g.gf_given_up)
   let pr_evar (e : evar) = "[" ^ e.evar_info ^ "]"
   let pr_status (s : status) =
     let path =
@@ -495,6 +519,7 @@ end = struct
   | Search_cst    -> pr_search_cst
   | Coq_info      -> pr_coq_info
   | Goals         -> pr_goal
+  | Goal_flags    -> pr_goal_flags
   | Evar          -> pr_evar
   | List t        -> (pr_list (print t))
   | Option t      -> (pr_option (print t))
@@ -521,6 +546,7 @@ end = struct
   | Search_cst    -> assert(true : search_constraint exists); "Interface.search_constraint"
   | Coq_info      -> assert(true : coq_info exists); "Interface.coq_info"
   | Goals         -> assert(true : goals exists); "Interface.goals"
+  | Goal_flags    -> assert(true : goal_flags exists); "Interface.goal_flags"
   | Evar          -> assert(true : evar exists); "Interface.evar"
   | List t        -> Printf.sprintf "(%s list)" (print_val_t t)
   | Option t      -> Printf.sprintf "(%s option)" (print_val_t t)
@@ -593,6 +619,7 @@ let db_continue_sty_t : db_continue_sty val_t = db_cont_opt_t
 let db_stack_sty_t : db_stack_sty val_t = unit_t
 let db_vars_sty_t : db_vars_sty val_t = int_t
 let db_configd_sty_t : db_configd_sty val_t = unit_t
+let subgoals_sty_t : subgoals_sty val_t = goal_flags_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (union_t unit_t state_id_t)
@@ -627,6 +654,7 @@ let db_stack_rty_t : db_stack_rty val_t =
 let db_vars_rty_t : db_vars_rty val_t =
   list_t (pair_t string_t pp_t)
 let db_configd_rty_t : db_configd_rty val_t = unit_t
+let subgoals_rty_t : subgoals_rty val_t = option_t goals_t
 
 let ($) x = erase x
 let calls = [|
@@ -656,6 +684,7 @@ let calls = [|
   "Db_stack",   ($)db_stack_sty_t,    ($)db_stack_rty_t;
   "Db_vars",    ($)db_vars_sty_t,     ($)db_vars_rty_t;
   "Db_configd", ($)db_configd_sty_t,  ($)db_configd_rty_t;
+  "Subgoals",   ($)subgoals_sty_t,    ($)subgoals_rty_t;
 |]
 
 type 'a call =
@@ -687,6 +716,7 @@ type 'a call =
   | Db_stack   : db_stack_sty -> db_stack_rty call
   | Db_vars    : db_vars_sty -> db_vars_rty call
   | Db_configd : db_configd_sty -> db_configd_rty call
+  | Subgoals   : subgoals_sty -> subgoals_rty call
 
 (* the order of the entries must match the order in "calls" above *)
 let id_of_call : type a. a call -> int = function
@@ -716,6 +746,7 @@ let id_of_call : type a. a call -> int = function
   | Db_stack _   -> 23
   | Db_vars _    -> 24
   | Db_configd _ -> 25
+  | Subgoals _   -> 26
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -747,6 +778,7 @@ let db_continue x : db_continue_rty call = Db_continue x
 let db_stack x    : db_stack_rty call    = Db_stack x
 let db_vars x     : db_vars_rty call     = Db_vars x
 let db_configd x  : db_configd_rty call  = Db_configd x
+let subgoals x    : subgoals_rty call = Subgoals x
 
 let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c ->
   let send = ref true in
@@ -779,6 +811,7 @@ let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c -
     | Db_stack x   -> send := false; mkGood (handler.db_stack x)
     | Db_vars x    -> send := false; mkGood (handler.db_vars x)
     | Db_configd x -> mkGood (handler.db_configd x)
+    | Subgoals x   -> mkGood (handler.subgoals x)
   with any ->
     let any = Exninfo.capture any in
     true, Fail (handler.handle_exn any)
@@ -811,6 +844,7 @@ let of_answer : type a. a call -> a value -> xml = function
   | Db_stack _   -> of_value (of_value_type db_stack_rty_t   )
   | Db_vars _    -> of_value (of_value_type db_vars_rty_t    )
   | Db_configd _ -> of_value (of_value_type db_configd_rty_t )
+  | Subgoals _   -> of_value (of_value_type subgoals_rty_t)
 
 let of_answer msg_fmt =
   msg_format := msg_fmt; of_answer
@@ -842,6 +876,7 @@ let to_answer : type a. a call -> xml -> a value = function
   | Db_stack _   -> to_value (to_value_type db_stack_rty_t   )
   | Db_vars _    -> to_value (to_value_type db_vars_rty_t    )
   | Db_configd _ -> to_value (to_value_type db_configd_rty_t )
+  | Subgoals _   -> to_value (to_value_type subgoals_rty_t )
 
 let of_call : type a. a call -> xml = fun q ->
   let mkCall x = constructor "call" (str_of_call q) [x] in
@@ -872,6 +907,7 @@ let of_call : type a. a call -> xml = fun q ->
   | Db_stack x   -> mkCall (of_value_type db_stack_sty_t    x)
   | Db_vars x    -> mkCall (of_value_type db_vars_sty_t     x)
   | Db_configd x -> mkCall (of_value_type db_configd_sty_t  x)
+  | Subgoals x   -> mkCall (of_value_type subgoals_sty_t x)
 
 let to_call : xml -> unknown_call =
   do_match "call" (fun s a ->
@@ -903,6 +939,7 @@ let to_call : xml -> unknown_call =
     | "Db_stack"   -> Unknown (Db_stack   (mkCallArg db_stack_sty_t    a))
     | "Db_vars"    -> Unknown (Db_vars    (mkCallArg db_vars_sty_t     a))
     | "Db_configd" -> Unknown (Db_configd (mkCallArg db_configd_sty_t  a))
+    | "Subgoals"   -> Unknown (Subgoals   (mkCallArg subgoals_sty_t    a))
     | x -> raise (Marshal_error("call",PCData x)))
 
 (** Debug printing *)
@@ -941,6 +978,7 @@ let pr_full_value : type a. a call -> a value -> string = fun call value -> matc
   | Db_stack _   -> pr_value_gen (print db_stack_rty_t   ) value
   | Db_vars _    -> pr_value_gen (print db_vars_rty_t    ) value
   | Db_configd _ -> pr_value_gen (print db_configd_rty_t ) value
+  | Subgoals _   -> pr_value_gen (print subgoals_rty_t ) value
 let pr_call : type a. a call -> string = fun call ->
   let return what x = str_of_call call ^ " " ^ print what x in
   match call with
@@ -970,6 +1008,7 @@ let pr_call : type a. a call -> string = fun call ->
     | Db_stack x   -> return db_stack_sty_t x
     | Db_vars x    -> return db_vars_sty_t x
     | Db_configd x -> return db_configd_sty_t x
+    | Subgoals x   -> return subgoals_sty_t x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";

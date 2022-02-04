@@ -44,6 +44,7 @@ val db_continue : db_continue_sty -> db_continue_rty call
 val db_stack    : db_stack_sty    -> db_stack_rty call
 val db_vars     : db_vars_sty     -> db_vars_rty call
 val db_configd  : db_configd_sty  -> db_configd_rty call
+val subgoals    : subgoals_sty -> subgoals_rty call
 
 val abstract_eval_call : handler -> 'a call -> bool * 'a value
 
