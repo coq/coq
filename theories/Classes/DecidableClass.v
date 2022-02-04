@@ -77,33 +77,45 @@ Next Obligation.
 Qed.
 
 #[global]
-Program Instance Decidable_eq_bool : forall (x y : bool), Decidable (eq x y) := {
-  Decidable_witness := Bool.eqb x y
+Instance Decidable_eq_bool : forall (x y : bool), Decidable (eq x y) := {
+  Decidable_spec := eqb_true_iff x y
 }.
-Next Obligation.
- apply eqb_true_iff.
-Qed.
 
 #[global]
-Program Instance Decidable_eq_nat : forall (x y : nat), Decidable (eq x y) := {
-  Decidable_witness := Nat.eqb x y
+Instance Decidable_eq_nat : forall (x y : nat), Decidable (eq x y) := {
+  Decidable_spec := Nat.eqb_eq x y
 }.
-Next Obligation.
- apply Nat.eqb_eq.
-Qed.
 
 #[global]
-Program Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
-  Decidable_witness := Nat.leb x y
+Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
+  Decidable_spec := Nat.leb_le x y
 }.
-Next Obligation.
- apply Nat.leb_le.
-Qed.
+
+(* Note: Decidable_lt_nat, Decidable_ge_nat, Decidable_gt_nat are not required,
+   because lt, ge and gt are defined based on le in a way which type class
+   resolution seems to understand. *)
 
 #[global]
-Program Instance Decidable_eq_Z : forall (x y : Z), Decidable (eq x y) := {
-  Decidable_witness := Z.eqb x y
+Instance Decidable_eq_Z : forall (x y : Z), Decidable (eq x y) := {
+  Decidable_spec := Z.eqb_eq x y
 }.
-Next Obligation.
- apply Z.eqb_eq.
-Qed.
+
+#[global]
+Instance Decidable_le_Z : forall (x y : Z), DecidableClass.Decidable (x <= y)%Z := {
+  Decidable_spec := Z.leb_le x y
+}.
+
+#[global]
+Instance Decidable_lt_Z : forall (x y : Z), DecidableClass.Decidable (x < y)%Z := {
+  Decidable_spec := Z.ltb_lt x y
+}.
+
+#[global]
+Instance Decidable_ge_Z : forall (x y : Z), DecidableClass.Decidable (x >= y)%Z := {
+  Decidable_spec := Z.geb_ge x y
+}.
+
+#[global]
+Instance Decidable_gt_Z : forall (x y : Z), DecidableClass.Decidable (x > y)%Z := {
+  Decidable_spec := Z.gtb_gt x y
+}.
