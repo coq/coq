@@ -1032,18 +1032,14 @@ let cache_ltac2_init () =
 let load_ltac2_init _ () =
   Hook.get f_register_constr_quotations ()
 
-let open_ltac2_init _ () =
-  Goptions.set_string_option_value_gen ["Default"; "Proof"; "Mode"] "Ltac2"
-
 (** Dummy object that register global rules when Require is called *)
 let inTac2Init : unit -> obj =
   declare_object {(default_object "TAC2-INIT") with
     cache_function = cache_ltac2_init;
     load_function = load_ltac2_init;
-    open_function = simple_open open_ltac2_init;
   }
 
-let _ = Mltop.declare_cache_obj begin fun () ->
+let () = Mltop.declare_cache_obj begin fun () ->
   let unit = Id.of_string "unit" in
   Lib.add_leaf (inTypDef unit def_unit);
   register_prim_alg "list" 1 [

@@ -10,6 +10,8 @@
 
 Declare ML Module "ltac2_plugin".
 
+#[export] Set Default Proof Mode "Ltac2".
+
 (** Primitive types *)
 
 Ltac2 Type int.
