@@ -4,3 +4,4 @@
 Inductive foo : let T := Type in T := .
 Definition bob1 := Eval vm_compute in foo_rect.
 Definition bob2 := Eval native_compute in foo_rect.
+Definition bob3 := Eval lazy in foo_rect.
