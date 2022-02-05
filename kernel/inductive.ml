@@ -1024,15 +1024,18 @@ let error_partial_apply renv fx =
   raise (FixGuardError (renv.env,NotEnoughArgumentsForFixCall fx))
 
 let filter_stack_domain env p stack =
-  let absctx, ar = dest_lam_assum env p in
+  let absctx, ar = Term.decompose_lam_assum p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
   if noccur_with_meta 1 (Context.Rel.length absctx) ar then stack
   else let env = push_rel_context absctx env in
   let rec filter_stack env ar stack =
+    match stack with
+    | [] -> []
+    | elt :: stack' ->
     let t = whd_all env ar in
-    match stack, kind t with
-    | elt :: stack', Prod (n,a,c0) ->
+    match kind t with
+    | Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
       let ctx, a = dest_prod_assum env a in
       let env = push_rel_context ctx env in
@@ -1049,7 +1052,7 @@ let filter_stack_domain env p stack =
       | _ -> (SArg (lazy Not_subterm))
       in
       elt :: filter_stack (push_rel d env) c0 stack'
-    | _,_ -> List.fold_right (fun _ l -> SArg (lazy Not_subterm) :: l) stack []
+    | _ -> List.fold_right (fun _ l -> SArg (lazy Not_subterm) :: l) stack []
   in
   filter_stack env ar stack
 
