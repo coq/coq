@@ -222,3 +222,10 @@ Check [0 + + 1 | nil].
 Check [0 + + 1].
 
 End FactorizationListSeparators.
+
+Module TestNonExistentCustomOnlyPrinting.
+
+Fail Notation "[ x ]" := (id x) (x custom doesntexist, only printing).
+Fail Notation "# x" := (id x) (in custom doesntexist, only printing).
+
+End TestNonExistentCustomOnlyPrinting.
