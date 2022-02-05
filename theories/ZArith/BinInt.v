@@ -398,6 +398,16 @@ Proof.
  unfold leb, le. destruct compare; easy'.
 Qed.
 
+Lemma gtb_gt n m : (n >? m) = true <-> n > m.
+Proof.
+  unfold gtb, gt. destruct compare; easy'.
+Qed.
+
+Lemma geb_ge n m : (n >=? m) = true <-> n >= m.
+Proof.
+  unfold geb, ge. destruct compare; easy'.
+Qed.
+
 Lemma compare_eq_iff n m : (n ?= m) = Eq <-> n = m.
 Proof.
 destruct n, m; simpl; rewrite ?CompOpp_iff, ?Pos.compare_eq_iff;
