@@ -15,7 +15,6 @@ type goals =
   bg : Interface.goal list;
   shelved : Interface.goal list;
   given_up : Interface.goal list;
-  evars : Interface.evar list;
 }
 
 class type proof_view =

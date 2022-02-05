@@ -19,7 +19,6 @@ type goals =
   bg : Interface.goal list;
   shelved : Interface.goal list;
   given_up : Interface.goal list;
-  evars : Interface.evar list;
 }
 
 class type proof_view =
@@ -149,20 +148,11 @@ let display mode (view : #GText.view_skel) goals hints =
     (* No proof in progress *)
   | FocusGoals { fg; bg } ->
     mode view fg ~unfoc_goals:bg hints
-  | NoFocusGoals { bg; shelved; given_up; evars } ->
-    begin match (bg, shelved, given_up, evars) with
-    | [], [], [], [] ->
+  | NoFocusGoals { bg; shelved; given_up } ->
+    begin match (bg, shelved, given_up) with
+    | [], [], [] ->
       view#buffer#insert "No more goals."
-    | [], [], [], _ :: _ ->
-      (* A proof has been finished, but not concluded *)
-      view#buffer#insert "No more goals, but there are non-instantiated existential variables:\n\n";
-      let iter evar =
-        let msg = Printf.sprintf "%s\n" evar.Interface.evar_info in
-        view#buffer#insert msg
-      in
-      List.iter iter evars;
-      view#buffer#insert "\nYou can use Unshelve."
-    | [], [], _, _ ->
+    | [], [], _ ->
       (* The proof is finished, with the exception of given up goals. *)
       view#buffer#insert "No more goals, but there are some goals you gave up:\n\n";
       let iter goal =
@@ -171,7 +161,7 @@ let display mode (view : #GText.view_skel) goals hints =
       in
       List.iter iter given_up;
       view#buffer#insert "\nYou need to go back and solve them."
-    | [], _, _, _ ->
+    | [], _, _ ->
       (* All the goals have been resolved but those on the shelf. *)
       view#buffer#insert "All the remaining goals are on the shelf:\n\n";
       let iter goal =
@@ -179,7 +169,7 @@ let display mode (view : #GText.view_skel) goals hints =
         view#buffer#insert "\n"
       in
       List.iter iter shelved
-    | _, _, _, _ ->
+    | _, _, _ ->
       (* No foreground proofs, but still unfocused ones *)
       let total = List.length bg in
       let goal_str index id =

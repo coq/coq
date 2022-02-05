@@ -401,14 +401,12 @@ object(self)
       | Some { fg_goals = []; bg_goals = bg } ->
         let flags = { gf_mode = "short"; gf_fg = false; gf_bg = false; gf_shelved = true; gf_given_up = true } in
         Coq.subgoals flags >>= fun rem ->
-        Coq.evars () >>= fun evars ->
-        let evars = match evars with None -> [] | Some l -> l in
         let bg = flatten (List.rev bg) in
         let shelved, given_up = match rem with
         | None -> [], []
         | Some goals -> goals.shelved_goals, goals.given_up_goals
         in
-        return (Wg_ProofView.NoFocusGoals { bg; evars; shelved; given_up })
+        return (Wg_ProofView.NoFocusGoals { bg; shelved; given_up })
       end
     in
     Coq.bind call begin function
