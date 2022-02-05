@@ -323,6 +323,64 @@ module TagSet = struct
   include Set.Make (Tag)
 end
 
+module McPrinter = struct
+  module Mc = Micromega
+
+  let pp_nat o n = Printf.fprintf o "%i" (CoqToCaml.nat n)
+
+  let pp_positive o x = Printf.fprintf o "%i" (CoqToCaml.positive x)
+
+  let pp_z o x =
+  Printf.fprintf o "%s" (NumCompat.Z.to_string (CoqToCaml.z_big_int x))
+
+  let pp_pol pp_c o e =
+    let rec pp_pol o e =
+    match e with
+    | Mc.Pc n -> Printf.fprintf o "Pc %a" pp_c n
+    | Mc.Pinj (p, pol) ->
+      Printf.fprintf o "Pinj(%a,%a)" pp_positive p pp_pol pol
+    | Mc.PX (pol1, p, pol2) ->
+      Printf.fprintf o "PX(%a,%a,%a)" pp_pol pol1 pp_positive p pp_pol pol2
+  in
+  pp_pol o e
+
+  let pp_psatz pp_z o e =
+  let rec pp_cone o e =
+    match e with
+    | Mc.PsatzLet (e1, e2) ->
+      Printf.fprintf o "(Let %a %a)%%nat" pp_cone e1 pp_cone e2
+    | Mc.PsatzIn n -> Printf.fprintf o "(In %a)%%nat" pp_nat n
+    | Mc.PsatzMulC (e, c) ->
+      Printf.fprintf o "( %a [*] %a)" (pp_pol pp_z) e pp_cone c
+    | Mc.PsatzSquare e -> Printf.fprintf o "(%a^2)" (pp_pol pp_z) e
+    | Mc.PsatzAdd (e1, e2) ->
+      Printf.fprintf o "(%a [+] %a)" pp_cone e1 pp_cone e2
+    | Mc.PsatzMulE (e1, e2) ->
+      Printf.fprintf o "(%a [*] %a)" pp_cone e1 pp_cone e2
+    | Mc.PsatzC p -> Printf.fprintf o "(%a)%%positive" pp_z p
+    | Mc.PsatzZ -> Printf.fprintf o "0"
+  in
+  pp_cone o e
+
+let rec pp_proof_term o = function
+  | Micromega.DoneProof -> Printf.fprintf o "D"
+  | Micromega.RatProof (cone, rst) ->
+    Printf.fprintf o "R[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
+  | Micromega.CutProof (cone, rst) ->
+    Printf.fprintf o "C[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
+  | Micromega.SplitProof (p, p1, p2) ->
+    Printf.fprintf o "S[%a,%a,%a]" (pp_pol pp_z) p pp_proof_term p1
+      pp_proof_term p2
+  | Micromega.EnumProof (c1, c2, rst) ->
+    Printf.fprintf o "EP[%a,%a,%a]" (pp_psatz pp_z) c1 (pp_psatz pp_z) c2
+      (pp_list "," pp_proof_term)
+      rst
+  | Micromega.ExProof (p, prf) ->
+    Printf.fprintf o "Ex[%a,%a]" pp_positive p pp_proof_term prf
+
+end
+
+
 (** As for Unix.close_process, our Unix.waipid will ignore all EINTR *)
 
 let rec waitpid_non_intr pid =

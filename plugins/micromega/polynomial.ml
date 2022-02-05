@@ -492,6 +492,7 @@ module ProofFormat = struct
     | Annot of string * prf_rule
     | Hyp of int
     | Def of int
+    | Ref of int
     | Cst of Q.t
     | Zero
     | Square of Vect.t
@@ -500,6 +501,7 @@ module ProofFormat = struct
     | MulPrf of prf_rule * prf_rule
     | AddPrf of prf_rule * prf_rule
     | CutPrf of prf_rule
+    | LetPrf of prf_rule * prf_rule
 
   type proof =
     | Done
@@ -514,6 +516,9 @@ module ProofFormat = struct
     | Annot (s, p) -> Printf.fprintf o "(%a)@%s" output_prf_rule p s
     | Hyp i -> Printf.fprintf o "Hyp %i" i
     | Def i -> Printf.fprintf o "Def %i" i
+    | Ref i -> Printf.fprintf o "Ref %i" i
+    | LetPrf (p1, p2) ->
+      Printf.fprintf o "Let (%a) in %a" output_prf_rule p1 output_prf_rule p2
     | Cst c -> Printf.fprintf o "Cst %s" (Q.to_string c)
     | Zero -> Printf.fprintf o "Zero"
     | Square s -> Printf.fprintf o "(%a)^2" Poly.pp (LinPoly.pol_of_linpol s)
@@ -548,14 +553,16 @@ module ProofFormat = struct
       | Annot _ -> 0
       | Hyp _ -> 1
       | Def _ -> 2
-      | Cst _ -> 3
-      | Zero -> 4
-      | Square _ -> 5
-      | MulC _ -> 6
-      | Gcd _ -> 7
-      | MulPrf _ -> 8
-      | AddPrf _ -> 9
-      | CutPrf _ -> 10
+      | Ref _ -> 3
+      | Cst _ -> 4
+      | Zero -> 5
+      | Square _ -> 6
+      | MulC _ -> 7
+      | Gcd _ -> 8
+      | MulPrf _ -> 9
+      | AddPrf _ -> 10
+      | CutPrf _ -> 11
+      | LetPrf _ -> 12
 
     let cmp_pair c1 c2 (x1, x2) (y1, y2) =
       match c1 x1 y1 with 0 -> c2 x2 y2 | i -> i
@@ -566,6 +573,7 @@ module ProofFormat = struct
         if s1 = s2 then compare p1 p2 else String.compare s1 s2
       | Hyp i, Hyp j -> Int.compare i j
       | Def i, Def j -> Int.compare i j
+      | Ref i, Ref j -> Int.compare i j
       | Cst n, Cst m -> Q.compare n m
       | Zero, Zero -> 0
       | Square v1, Square v2 -> Vect.compare v1 v2
@@ -578,6 +586,8 @@ module ProofFormat = struct
       | AddPrf (p1, q1), AddPrf (p2, q2) ->
         cmp_pair compare compare (p1, q1) (p2, q2)
       | CutPrf p, CutPrf p' -> compare p p'
+      | LetPrf(p1,q1) , LetPrf(p2,q2) ->
+        cmp_pair compare compare (p1, q1) (p2, q2)
       | _, _ -> Int.compare (id_of_constr p1) (id_of_constr p2)
   end
 
@@ -588,28 +598,40 @@ module ProofFormat = struct
     | Zero | Square _ -> Q.zero
     | Hyp _ -> Q.one
     | Def _ -> Q.one
+    | Ref _ -> Q.one
     | Cst n -> n
     | Gcd (i, p) -> pr_size p // Q.of_bigint i
-    | MulPrf (p1, p2) | AddPrf (p1, p2) -> pr_size p1 +/ pr_size p2
+    | MulPrf (p1, p2) | AddPrf (p1, p2) | LetPrf (p1, p2) ->
+      pr_size p1 +/ pr_size p2
     | CutPrf p -> pr_size p
     | MulC (v, p) -> pr_size p
+
+  let rec pr_unit  = function
+    | Annot (_, p) -> pr_unit p
+    | Zero | Square _ -> true
+    | Hyp _ -> true
+    | Def _ -> true
+    | Cst n -> true
+    | _ -> false
 
   let rec pr_rule_max_hyp = function
     | Annot (_, p) -> pr_rule_max_hyp p
     | Hyp i -> i
     | Def i -> -1
+    | Ref i -> -1
     | Cst _ | Zero | Square _ -> -1
     | MulC (_, p) | CutPrf p | Gcd (_, p) -> pr_rule_max_hyp p
-    | MulPrf (p1, p2) | AddPrf (p1, p2) ->
+    | MulPrf (p1, p2) | AddPrf (p1, p2) | LetPrf (p1, p2) ->
       max (pr_rule_max_hyp p1) (pr_rule_max_hyp p2)
 
   let rec pr_rule_max_def = function
     | Annot (_, p) -> pr_rule_max_hyp p
     | Hyp i -> -1
     | Def i -> i
+    | Ref _ -> -1
     | Cst _ | Zero | Square _ -> -1
     | MulC (_, p) | CutPrf p | Gcd (_, p) -> pr_rule_max_def p
-    | MulPrf (p1, p2) | AddPrf (p1, p2) ->
+    | MulPrf (p1, p2) | AddPrf (p1, p2) | LetPrf (p1, p2) ->
       max (pr_rule_max_def p1) (pr_rule_max_def p2)
 
   let rec proof_max_def = function
@@ -638,6 +660,10 @@ module ProofFormat = struct
         let bds1, m, id, p1 = pr_rule_def_cut m id p1 in
         let bds2, m, id, p2 = pr_rule_def_cut m id p2 in
         (bds2 @ bds1, m, id, AddPrf (p1, p2))
+      | LetPrf (p1, p2) ->
+        let bds1, m, id, p1 = pr_rule_def_cut m id p1 in
+        let bds2, m, id, p2 = pr_rule_def_cut m id p2 in
+        (bds2 @ bds1, m, id, LetPrf (p1, p2))
       | CutPrf p | Gcd (_, p) -> (
         let bds, m, id, p = pr_rule_def_cut m id p in
         try
@@ -646,7 +672,7 @@ module ProofFormat = struct
         with Not_found ->
           let m = PrfRuleMap.add p id m in
           ((id, p) :: bds, m, id + 1, Def id) )
-      | (Square _ | Cst _ | Def _ | Hyp _ | Zero) as x -> ([], m, id, x)
+      | (Square _ | Cst _ | Def _ | Hyp _ | Ref _ | Zero) as x -> ([], m, id, x)
     in
     pr_rule_def_cut m id p
 
@@ -664,10 +690,12 @@ module ProofFormat = struct
     | Annot (_, pr) -> pr_rule_collect_defs pr
     | Def i -> ISet.add i ISet.empty
     | Hyp i -> ISet.empty
+    | Ref i -> ISet.empty
     | Cst _ | Zero | Square _ -> ISet.empty
     | MulC (_, pr) | Gcd (_, pr) | CutPrf pr -> pr_rule_collect_defs pr
-    | MulPrf (p1, p2) | AddPrf (p1, p2) ->
+    | MulPrf (p1, p2) | AddPrf (p1, p2) | LetPrf (p1, p2) ->
       ISet.union (pr_rule_collect_defs p1) (pr_rule_collect_defs p2)
+
 
   let add_proof x y =
     match (x, y) with Zero, p | p, Zero -> p | _ -> AddPrf (x, y)
@@ -700,7 +728,7 @@ module ProofFormat = struct
   let rec dev_prf_rule p =
     match p with
     | Annot (s, p) -> dev_prf_rule p
-    | Hyp _ | Def _ | Cst _ | Zero | Square _ ->
+    | Hyp _ | Def _ | Ref _ | Cst _ | Zero | Square _ ->
       PrfRuleMap.singleton p (LinPoly.constant Q.one)
     | MulC (v, p) ->
       PrfRuleMap.map (fun v1 -> LinPoly.product v v1) (dev_prf_rule p)
@@ -729,6 +757,12 @@ module ProofFormat = struct
       PrfRuleMap.singleton
         (CutPrf (prf_rule_of_map (dev_prf_rule p)))
         (LinPoly.constant Q.one)
+    | LetPrf (p1, p2) ->
+      let p1' = dev_prf_rule p1 in
+      let p2' = dev_prf_rule p2 in
+      let p1'' = prf_rule_of_map p1' in
+      let p2'' = prf_rule_of_map p2' in
+      PrfRuleMap.singleton (LetPrf (p1'', p2'')) (LinPoly.constant Q.one)
 
   let simplify_prf_rule p = prf_rule_of_map (dev_prf_rule p)
 
@@ -847,43 +881,64 @@ module ProofFormat = struct
       Zero vect
 
   module Env = struct
+
+    type t =
+      {
+        lref  : int;
+        lhyps : prf_rule list
+      }
+
     let output_hyp_or_def o = function
       | Hyp i -> Printf.fprintf o "Hyp %i" i
       | Def i -> Printf.fprintf o "Def %i" i
       | _ -> ()
 
-    let rec output_hyps o l =
-      match l with
-      | [] -> ()
-      | i :: l -> Printf.fprintf o "%a,%a" output_hyp_or_def i output_hyps l
+    let output_hyps o l = pp_list "," output_hyp_or_def o l
 
-    let id_of_hyp hyp l =
+    let push_ref {lref;lhyps} =
+      {lref = lref +1 ; lhyps}
+
+    let push_def i {lref;lhyps} =
+      if lref <> 0 then failwith "Cannot push def";
+      {lref=lref;lhyps = Def i :: lhyps}
+
+    let of_list l  = {lref = 0 ;lhyps = List.map (fun i -> Hyp i) l}
+    let of_listi l = {lref = 0 ;lhyps = List.mapi (fun i _ -> Hyp i) l}
+
+    let id_of_hyp hyp {lref;lhyps} =
       let rec xid_of_hyp i l' =
         match l' with
         | [] ->
           Printf.fprintf stdout "\nid_of_hyp: %a notin [%a]\n" output_hyp_or_def
-            hyp output_hyps l;
+            hyp output_hyps lhyps;
+          flush stdout;
           failwith "Cannot find hyp or def"
         | hyp' :: l' -> if hyp = hyp' then i else xid_of_hyp (i + 1) l'
       in
-      xid_of_hyp 0 l
+      match hyp with
+      | Ref i -> i
+      | _     -> xid_of_hyp lref lhyps
+
+
   end
 
+
   let cmpl_prf_rule norm (cst : Q.t -> 'a) env prf =
-    let rec cmpl = function
-      | Annot (s, p) -> cmpl p
-      | (Hyp _ | Def _) as h -> Mc.PsatzIn (CamlToCoq.nat (Env.id_of_hyp h env))
+    let rec cmpl env = function
+      | Annot (s, p) -> cmpl env p
+      | (Hyp _ | Def _| Ref _) as h -> Mc.PsatzIn (CamlToCoq.nat (Env.id_of_hyp h env))
       | Cst i -> Mc.PsatzC (cst i)
       | Zero -> Mc.PsatzZ
-      | MulPrf (p1, p2) -> Mc.PsatzMulE (cmpl p1, cmpl p2)
-      | AddPrf (p1, p2) -> Mc.PsatzAdd (cmpl p1, cmpl p2)
+      | MulPrf (p1, p2) -> Mc.PsatzMulE (cmpl env p1, cmpl env p2)
+      | AddPrf (p1, p2) -> Mc.PsatzAdd (cmpl env p1, cmpl env p2)
+      | LetPrf (p1, p2) -> Mc.PsatzLet (cmpl env p1, cmpl (Env.push_ref env) p2)
       | MulC (lp, p) ->
         let lp = norm (LinPoly.coq_poly_of_linpol cst lp) in
-        Mc.PsatzMulC (lp, cmpl p)
+        Mc.PsatzMulC (lp, cmpl env p)
       | Square lp -> Mc.PsatzSquare (norm (LinPoly.coq_poly_of_linpol cst lp))
       | _ -> failwith "Cuts should already be compiled"
     in
-    cmpl prf
+    cmpl env prf
 
   let cmpl_prf_rule_z env r =
     cmpl_prf_rule Mc.normZ (fun x -> CamlToCoq.bigint (Q.num x)) env r
@@ -902,31 +957,31 @@ module ProofFormat = struct
     | Step (i, p, prf) -> (
       match p with
       | CutPrf p' ->
-        Mc.CutProof (cmpl_prf_rule_z env p', cmpl_proof (Def i :: env) prf)
-      | _ -> Mc.RatProof (cmpl_prf_rule_z env p, cmpl_proof (Def i :: env) prf)
+        Mc.CutProof (cmpl_prf_rule_z env p', cmpl_proof (Env.push_def i env) prf)
+      | _ -> Mc.RatProof (cmpl_prf_rule_z env p, cmpl_proof (Env.push_def i  env) prf)
       )
     | Split (i, v, p1, p2) ->
       Mc.SplitProof
         ( cmpl_pol_z v
-        , cmpl_proof (Def i :: env) p1
-        , cmpl_proof (Def i :: env) p2 )
+        , cmpl_proof (Env.push_def i env) p1
+        , cmpl_proof (Env.push_def i env) p2 )
     | Enum (i, p1, _, p2, l) ->
       Mc.EnumProof
         ( cmpl_prf_rule_z env p1
         , cmpl_prf_rule_z env p2
-        , List.map (cmpl_proof (Def i :: env)) l )
+        , List.map (cmpl_proof (Env.push_def i env)) l )
     | ExProof (i, j, k, x, _, _, prf) ->
       Mc.ExProof
-        (CamlToCoq.positive x, cmpl_proof (Def i :: Def j :: Def k :: env) prf)
+        (CamlToCoq.positive x, cmpl_proof (Env.push_def i  (Env.push_def j (Env.push_def k env))) prf)
 
   let compile_proof env prf =
     let id = 1 + proof_max_def prf in
     let _, prf = normalise_proof id prf in
-    cmpl_proof (List.map (fun i -> Hyp i) env) prf
+    cmpl_proof (Env.of_list env) prf
 
   let rec eval_prf_rule env = function
     | Annot (s, p) -> eval_prf_rule env p
-    | Hyp i | Def i -> env i
+    | Hyp i | Def i | Ref i -> env i
     | Cst n -> (
       ( Vect.set 0 n Vect.null
       , match Q.compare n Q.zero with
@@ -955,6 +1010,12 @@ module ProofFormat = struct
       let v2, o2 = eval_prf_rule env p2 in
       (LinPoly.addition v1 v2, opAdd o1 o2)
     | CutPrf p -> eval_prf_rule env p
+    | LetPrf (p1, p2) ->
+      let v1, o1 = eval_prf_rule env p1 in
+      let v2, o2 =
+        eval_prf_rule (fun i -> if i = 0 then (v1, o1) else env (i - 1)) p2
+      in
+      (v2, o2)
 
   let is_unsat (p, o) =
     let c, r = Vect.decomp_cst p in
@@ -1242,7 +1303,22 @@ let make ((p, o), prf) = match Vect.Bound.of_vect p with
 | Some b -> Some (b, o, prf)
 
 let padd (o1, prf1) (o2, prf2) = (opAdd o1 o2, ProofFormat.add_proof prf1 prf2)
+
 let pmul (o1, prf1) (o2, prf2) = (opMult o1 o2, ProofFormat.mul_proof prf1 prf2)
+
+let plet (o1,p1) (o2,p2) f  =
+    match ProofFormat.pr_unit p1 , ProofFormat.pr_unit p2 with
+    | true , true -> f (o1,p1) (o2,p2)
+    | false , false ->
+      let (o,prf) = f (o1,ProofFormat.Ref 1) (o2,ProofFormat.Ref 0) in
+      (o, ProofFormat.LetPrf(p1,ProofFormat.LetPrf(p2,prf)))
+    | true , false ->
+      let (o,prf) = f (o1,p1) (o2,ProofFormat.Ref 0) in
+      (o, ProofFormat.LetPrf(p2,prf))
+    | false , true ->
+      let (o,prf) = f (o1,ProofFormat.Ref 0) (o2,p2) in
+      (o,ProofFormat.LetPrf(p1,prf))
+
 let pext c (o, prf) =
   if c =/ Q.zero then (Eq, ProofFormat.Zero)
   else (o, ProofFormat.mul_cst_proof c prf)
@@ -1262,7 +1338,7 @@ let mul_bound (b1, o1, prf1) (b2, o2, prf2) =
     | Some c1, Some c2 ->
       let w1 = (o1, prf1) in
       let w2 = (o2, prf2) in
-      let (o, prf) = padd (padd (pmul w1 w2) (pext c1 w2)) (pext c2 w1) in
+      let (o, prf) = plet w1 w2 (fun w1 w2 -> padd (padd (pmul w1 w2) (pext c1 w2)) (pext c2 w1)) in
       let b = {
         cst = Q.neg (c1 */ c2);
         var = LinPoly.MonT.register (Monomial.prod (LinPoly.MonT.retrieve v1) (LinPoly.MonT.retrieve v2));
@@ -1275,7 +1351,6 @@ let bound (b, _, _) = b
 let proof (b, o, w) =
   let p = Vect.Bound.to_vect b in
   ((p, o), w)
-
 end
 
 (* Local Variables: *)

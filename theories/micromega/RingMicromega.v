@@ -290,6 +290,7 @@ destruct o' ; rewrite H1 ; now rewrite  (Rplus_0_l sor).
 Qed.
 
 Inductive Psatz : Type :=
+| PsatzLet: Psatz -> Psatz -> Psatz
 | PsatzIn : nat -> Psatz
 | PsatzSquare : PolC -> Psatz
 | PsatzMulC : PolC -> Psatz -> Psatz
@@ -298,6 +299,7 @@ Inductive Psatz : Type :=
 | PsatzC    : C -> Psatz
 | PsatzZ    : Psatz.
 
+Register PsatzLet    as micromega.Psatz.PsatzLet.
 Register PsatzIn     as micromega.Psatz.PsatzIn.
 Register PsatzSquare as micromega.Psatz.PsatzSquare.
 Register PsatzMulC   as micromega.Psatz.PsatzMulC.
@@ -357,6 +359,10 @@ Definition nformula_times_nformula (f1 f2 : NFormula) : option NFormula :=
 
 Fixpoint eval_Psatz (l : list NFormula) (e : Psatz) {struct e} : option NFormula :=
   match e with
+    | PsatzLet p1 p2 => match eval_Psatz l p1 with
+                        | None => None
+                        | Some f => eval_Psatz (f::l) p2
+                        end
     | PsatzIn n => Some (nth n l (Pc cO, Equal))
     | PsatzSquare e => Some (Psquare cO cI cplus ctimes ceqb e  , NonStrict)
     | PsatzMulC re e => map_option (pexpr_times_nformula re) (eval_Psatz l e)
@@ -421,52 +427,59 @@ Lemma eval_Psatz_Sound :
       forall (e : Psatz) (f : NFormula), eval_Psatz l e = Some f ->
         eval_nformula env f.
 Proof.
-  intros l env H e;
-   induction e as [n|?|? e IHe|e1 IHe1 e2 IHe2|e1 IHe1 e2 IHe2|c|].
-  (* PsatzIn *)
-  simpl ; intros f H0.
+  intros l env H e.
+  revert l H.
+  induction e as [e1 IHe1 e2 IHe2 | n|?|? e IHe|e1 IHe1 e2 IHe2|e1 IHe1 e2 IHe2|c|];
+    simpl ; intros l IN f.
+  - (* PsatzLet *)
+    destruct (eval_Psatz l e1) as [f'|] eqn:EP; [|discriminate].
+    apply IHe2. intros f2 [EQ |IN'].
+    + subst.
+      eapply IHe1; eauto.
+    + eauto.
+  - (* PsatzIn *)
+  simpl ; intros H0.
   destruct (nth_in_or_default n l (Pc cO, Equal)) as [Hin|Heq].
   (* index is in bounds *)
-  apply H. congruence.
+  apply IN. congruence.
   (* index is out-of-bounds *)
   inversion H0.
   rewrite Heq. simpl.
   now apply  (morph0 (SORrm addon)).
-  (* PsatzSquare *)
-  simpl. intros ? H0. inversion H0.
-  simpl. unfold eval_pol.
+  - (* PsatzSquare *)
+    intros H0. inversion H0.
+    simpl. unfold eval_pol.
   rewrite (Psquare_ok (SORsetoid sor) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
   now apply (Rtimes_square_nonneg sor).
-  (* PsatzMulC *)
+  - (* PsatzMulC *)
+    case_eq  (eval_Psatz l e) ; simpl ; intros ? H0; [intros H1|].
+    apply IHe in H0.
+    apply pexpr_times_nformula_correct with (1:=H0) (2:= H1).
+    apply IN.
+    discriminate.
+  - (* PsatzMulC *)
   simpl.
-  intro.
-  case_eq  (eval_Psatz l e) ; simpl ; intros ? H0; [intros H1|].
-  apply IHe in H0.
-  apply pexpr_times_nformula_correct with (1:=H0) (2:= H1).
-  discriminate.
-  (* PsatzMulC *)
-  simpl ; intro.
   case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
   case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
-  intros n H0 n0 H1 ?.
-  apply IHe1 in H1. apply IHe2 in H0.
-  apply (nformula_times_nformula_correct env n0 n) ; assumption.
-  (* PsatzAdd *)
-  simpl ; intro.
+  intros n H0 n0 H1.
+  apply IHe1 in H1; auto. apply IHe2 in H0; auto.
+  apply (nformula_times_nformula_correct env n0 n); auto.
+  - (* PsatzAdd *)
+  simpl.
   case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
   case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
-  intros n H0 n0 H1 ?.
-  apply IHe1 in H1. apply IHe2 in H0.
+  intros n H0 n0 H1.
+  apply IHe1 in H1; auto. apply IHe2 in H0; auto.
   apply (nformula_plus_nformula_correct env n0 n) ; assumption.
-  (* PsatzC *)
+  - (* PsatzC *)
   simpl.
-  intro. case_eq (cO [<] c).
+  case_eq (cO [<] c).
   intros H0 H1.  inversion H1. simpl.
   rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
   discriminate.
-  (* PsatzZ *)
-  simpl. intros ? H0. inversion H0.
+  - (* PsatzZ *)
+  simpl. intros H0. inversion H0.
   simpl.   apply  (morph0 (SORrm addon)).
 Qed.
 
@@ -497,14 +510,16 @@ Fixpoint xhyps_of_psatz (base:nat) (acc : list nat) (prf : Psatz)  : list nat :=
     | PsatzMulC _ prf => xhyps_of_psatz base acc prf
     | PsatzAdd e1 e2 | PsatzMulE e1 e2 => xhyps_of_psatz base (xhyps_of_psatz base acc e2) e1
     | PsatzIn n => if ge_bool n base then (n::acc) else acc
+    | PsatzLet e1 e2 => xhyps_of_psatz base (xhyps_of_psatz (S base) acc e2) e1
   end.
 
-Fixpoint nhyps_of_psatz (prf : Psatz) : list nat :=
+Fixpoint nhyps_of_psatz (base:nat) (prf : Psatz) : list nat :=
   match prf with
     | PsatzC _ | PsatzZ | PsatzSquare _ => nil
-    | PsatzMulC _ prf => nhyps_of_psatz prf
-    | PsatzAdd e1 e2 | PsatzMulE e1 e2 => nhyps_of_psatz e1 ++ nhyps_of_psatz e2
-    | PsatzIn n => n :: nil
+    | PsatzMulC _ prf => nhyps_of_psatz base prf
+    | PsatzAdd e1 e2 | PsatzMulE e1 e2 => nhyps_of_psatz base e1 ++ nhyps_of_psatz base e2
+    | PsatzIn n => if ge_bool n base then (n::nil) else nil
+    | PsatzLet e1 e2 => nhyps_of_psatz base e1 ++ nhyps_of_psatz (S base) e2
   end.
 
 
@@ -525,72 +540,6 @@ Proof.
 Qed.
 
 Ltac inv H := inversion H ; try subst ; clear H.
-
-Lemma nhyps_of_psatz_correct :  forall (env : PolEnv) (e:Psatz)  (l : list NFormula)  (f: NFormula),
-  eval_Psatz l e = Some f ->
-  ((forall f', In f' (extract_hyps l (nhyps_of_psatz e)) -> eval_nformula env f') ->  eval_nformula env f).
-Proof.
-  intros env e; induction e as [n|?|? e IHe|e1 IHe1 e2 IHe2|e1 IHe1 e2 IHe2|c|];
-   intros l f H H0.
-  (*PsatzIn*)
-  simpl in *.
-  apply H0. intuition congruence.
-  (* PsatzSquare *)
-  simpl in *.
-  inv H.
-  simpl.
-  unfold eval_pol.
-  rewrite (Psquare_ok (SORsetoid sor) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
-  now apply (Rtimes_square_nonneg sor).
-  (* PsatzMulC *)
-  simpl in *.
-  case_eq (eval_Psatz l e).
-  intros ? H1. rewrite H1 in H. simpl in H.
-  apply pexpr_times_nformula_correct with (2:= H).
-  apply IHe with (1:= H1); auto.
-  intros H1. rewrite H1 in H. simpl in H ; discriminate.
-  (* PsatzMulE *)
-  simpl in *.
-  revert H.
-  case_eq (eval_Psatz l e1).
-  case_eq (eval_Psatz l e2) ; simpl ; intros ? H ? H1; [intros H2|].
-  apply nformula_times_nformula_correct with (3:= H2).
-  apply IHe1 with (1:= H1) ; auto.
-  intros. apply H0. rewrite extract_hyps_app.
-  apply in_or_app. tauto.
-  apply IHe2 with (1:= H) ; auto.
-  intros. apply H0. rewrite extract_hyps_app.
-  apply in_or_app. tauto.
-  discriminate. simpl. discriminate.
-  (* PsatzAdd *)
-  simpl in *.
-  revert H.
-  case_eq (eval_Psatz l e1).
-  case_eq (eval_Psatz l e2) ; simpl ; intros ? H ? H1; [intros H2|].
-  apply nformula_plus_nformula_correct with (3:= H2).
-  apply IHe1 with (1:= H1) ; auto.
-  intros. apply H0. rewrite extract_hyps_app.
-  apply in_or_app. tauto.
-  apply IHe2 with (1:= H) ; auto.
-  intros. apply H0. rewrite extract_hyps_app.
-  apply in_or_app. tauto.
-  discriminate. simpl. discriminate.
-  (* PsatzC *)
-  simpl in H.
-  case_eq (cO [<] c).
-  intros H1.  rewrite H1 in H. inv H.
-  unfold eval_nformula. simpl.
-  rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
-  intros H1. rewrite H1 in H. discriminate.
-  (* PsatzZ *)
-  simpl in *. inv H. 
-  unfold eval_nformula. simpl.
-  apply  (morph0 (SORrm addon)).
-Qed.
-
-
-
 
 
 

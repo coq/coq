@@ -48,6 +48,15 @@ end
 
 module TagSet : CSig.SetS with type elt = Tag.t
 
+module McPrinter : sig
+  module Mc = Micromega
+  val pp_nat : out_channel -> Mc.nat -> unit
+  val pp_positive : out_channel -> Mc.positive -> unit
+  val pp_z : out_channel -> Mc.z -> unit
+  val pp_pol : (out_channel -> 'a -> unit) -> out_channel -> 'a Mc.pol -> unit
+  val pp_psatz : (out_channel -> 'a -> unit) -> out_channel -> 'a Mc.psatz -> unit
+  val pp_proof_term : out_channel -> Mc.zArithProof -> unit
+end
 val pp_list :
   string -> (out_channel -> 'a -> unit) -> out_channel -> 'a list -> unit
 
