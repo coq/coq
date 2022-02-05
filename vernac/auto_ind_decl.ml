@@ -107,7 +107,9 @@ let mkPartialInd env (ind,u) n =
   let _, recparams_ctx = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   mkApp (mkIndU (ind,u), Context.Rel.instance mkRel n recparams_ctx)
 
-let mk_eqb_over u = mkArrow u Sorts.Relevant (mkArrow (lift 1 u) Sorts.Relevant (bb ()))
+let name_X = make_annot (Name (Id.of_string "X")) Sorts.Relevant
+let name_Y = make_annot (Name (Id.of_string "Y")) Sorts.Relevant
+let mk_eqb_over u = mkProd (name_X, u, (mkProd (name_Y, lift 1 u, bb ())))
 
 let check_bool_is_defined () =
   if not (Coqlib.has_ref "core.bool.type")
@@ -712,9 +714,9 @@ let build_beq_scheme env handle kn =
     let ind = (kn,cur) in
     let indu = (ind,u) in
     let tomatch_ctx = RelDecl.[
-        LocalAssum (make_annot (Name (Id.of_string "Y")) Sorts.Relevant,
+        LocalAssum (name_Y,
                     translate_term (shiftn_env_lift 1 env_lift_recparams_fix_nonrecparams) (mkFullInd env indu 0));
-        LocalAssum (make_annot (Name (Id.of_string "X")) Sorts.Relevant,
+        LocalAssum (name_X,
                     translate_term env_lift_recparams_fix_nonrecparams (mkFullInd env indu 0))
       ] in
     let env_lift_recparams_fix_nonrecparams_tomatch =
