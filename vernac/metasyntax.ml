@@ -886,6 +886,15 @@ let default = {
 
 end
 
+let check_custom_entry entry =
+  if not (Egramcoq.exists_custom_entry entry) then
+    user_err Pp.(str "Unknown custom entry: " ++ str entry ++ str ".")
+
+let check_entry_type = function
+  | ETConstr (InCustomEntry entry,_,_) -> check_custom_entry entry
+  | ETConstr (InConstrEntry,_,_) | ETPattern _
+  | ETIdent | ETGlobal | ETBigint | ETName _ | ETBinder _-> ()
+
 (* To be turned into a fatal warning in 8.14 *)
 let warn_deprecated_ident_entry =
   CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated"
@@ -897,6 +906,7 @@ let interp_modifiers entry modl = let open NotationMods in
   | CAst.{loc;v} :: l -> match v with
     | SetEntryType (s,typ) ->
         let id = Id.of_string s in
+        check_entry_type typ;
         if Id.List.mem_assoc id acc.etyps then
           user_err ?loc
             (str s ++ str " is already assigned to an entry or constr level.");
@@ -990,6 +1000,7 @@ let set_onlyprinting ?loc main_data =
   { main_data with onlyprinting = true }
 
 let set_custom_entry ?loc main_data entry' =
+  check_custom_entry entry';
   match main_data.entry with
   | InConstrEntry -> { main_data with entry = InCustomEntry entry' }
   | _ -> user_err ?loc (str "\"in custom\" is given more than once.")
