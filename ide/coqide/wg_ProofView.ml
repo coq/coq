@@ -12,6 +12,16 @@ open Util
 open Preferences
 open Ideutils
 
+type goals =
+| NoGoals
+| FocusGoals of { fg : Interface.goal list; bg : Interface.goal list }
+| NoFocusGoals of {
+  bg : Interface.goal list;
+  shelved : Interface.goal list;
+  given_up : Interface.goal list;
+  evars : Interface.evar list;
+}
+
 class type proof_view =
   object
     inherit GObj.widget
@@ -19,8 +29,7 @@ class type proof_view =
     method buffer : GText.buffer
     method refresh : force:bool -> unit
     method clear : unit -> unit
-    method set_goals : Interface.goals option -> unit
-    method set_evars : Interface.evar list option -> unit
+    method set_goals : goals -> unit
     method set_debug_goal : Pp.t -> unit
   end
 
@@ -121,11 +130,10 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       if Coq.PrintOpt.printing_unfocused () then
         begin
           ignore(proof#buffer#place_cursor ~where:(proof#buffer#end_iter));
-          let unfoc = List.flatten (List.rev (List.map (fun (x,y) -> x@y) unfoc_goals)) in
-          if unfoc<>[] then
+          if unfoc_goals<>[] then
             begin
               proof#buffer#insert "\nUnfocused Goals:\n";
-              Util.List.fold_left_i (fold_goal ~shownum:false) 0 () unfoc
+              Util.List.fold_left_i (fold_goal ~shownum:false) 0 () unfoc_goals
             end
         end;
       ignore(proof#buffer#place_cursor
@@ -133,22 +141,16 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
                          (Some Tags.Proof.goal)));
       ignore(proof#scroll_to_mark `INSERT)
 
-let rec flatten = function
-| [] -> []
-| (lg, rg) :: l ->
-  let inner = flatten l in
-  List.rev_append lg inner @ rg
-
-let display mode (view : #GText.view_skel) goals hints evars =
+let display mode (view : #GText.view_skel) goals hints =
   let () = view#buffer#set_text "" in
   let width = Ideutils.textview_width view in
   match goals with
-  | None -> ()
+  | NoGoals -> ()
     (* No proof in progress *)
-  | Some { Interface.fg_goals = []; bg_goals = bg; shelved_goals; given_up_goals; } ->
-    let bg = flatten (List.rev bg) in
-    let evars = match evars with None -> [] | Some evs -> evs in
-    begin match (bg, shelved_goals,given_up_goals, evars) with
+  | FocusGoals { fg; bg } ->
+    mode view fg ~unfoc_goals:bg hints
+  | NoFocusGoals { bg; shelved; given_up; evars } ->
+    begin match (bg, shelved, given_up, evars) with
     | [], [], [], [] ->
       view#buffer#insert "No more goals."
     | [], [], [], _ :: _ ->
@@ -167,7 +169,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
         insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
-      List.iter iter given_up_goals;
+      List.iter iter given_up;
       view#buffer#insert "\nYou need to go back and solve them."
     | [], _, _, _ ->
       (* All the goals have been resolved but those on the shelf. *)
@@ -176,7 +178,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
         insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
-      List.iter iter shelved_goals
+      List.iter iter shelved
     | _, _, _, _ ->
       (* No foreground proofs, but still unfocused ones *)
       let total = List.length bg in
@@ -195,8 +197,6 @@ let display mode (view : #GText.view_skel) goals hints evars =
       in
       List.iteri iter bg
     end
-  | Some { Interface.fg_goals = fg; bg_goals = bg } ->
-    mode view fg ~unfoc_goals:bg hints
 
 
 let proof_view () =
@@ -221,8 +221,7 @@ let proof_view () =
 
   let pf = object(self)
     inherit GObj.widget view#as_widget
-    val mutable goals = None
-    val mutable evars = None
+    val mutable goals = NoGoals
     val mutable debug_goal = None
     val mutable last_width = -1
 
@@ -233,8 +232,6 @@ let proof_view () =
     method clear () = buffer#set_text ""
 
     method set_goals gls = goals <- gls; debug_goal <- None
-
-    method set_evars evs = evars <- evs
 
     method set_debug_goal msg =
       (* Appearance is a bit different from the regular goals display.
@@ -260,7 +257,7 @@ let proof_view () =
         match debug_goal with
         | None ->
           let dummy _ () = () in
-          display (mode_tactic dummy) view goals None evars
+          display (mode_tactic dummy) view goals None
         | Some msg -> self#set_debug_goal msg
       end
   end

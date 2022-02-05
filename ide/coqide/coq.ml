@@ -716,5 +716,8 @@ end
 let goals x h k =
   PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.goals x) h k)
 
+let subgoals x h k =
+  PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.subgoals x) h k)
+
 let evars x h k =
   PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.evars x) h k)

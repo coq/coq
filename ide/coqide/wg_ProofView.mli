@@ -8,6 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type goals =
+| NoGoals
+| FocusGoals of { fg : Interface.goal list; bg : Interface.goal list }
+| NoFocusGoals of {
+  bg : Interface.goal list;
+  shelved : Interface.goal list;
+  given_up : Interface.goal list;
+  evars : Interface.evar list;
+}
+
 class type proof_view =
   object
     inherit GObj.widget
@@ -15,8 +25,7 @@ class type proof_view =
     method buffer : GText.buffer
     method refresh : force:bool -> unit
     method clear : unit -> unit
-    method set_goals : Interface.goals option -> unit
-    method set_evars : Interface.evar list option -> unit
+    method set_goals : goals -> unit
     method set_debug_goal : Pp.t -> unit
   end
 
