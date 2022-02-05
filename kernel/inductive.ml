@@ -1322,9 +1322,9 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
 
 
 let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
+  let (minds, rdef) = inductive_of_mutfix env fix in
   let flags = Environ.typing_flags env in
   if flags.check_guarded then
-    let (minds, rdef) = inductive_of_mutfix env fix in
     let get_tree (kn,i) =
       let mib = Environ.lookup_mind kn env in
       mib.mind_packets.(i).mind_recargs
