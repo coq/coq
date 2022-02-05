@@ -2,5 +2,5 @@
  (name Ltac2)
  (package coq-stdlib)
  (synopsis "Ltac2 tactic language")
- (flags -w -deprecated-native-compiler-option)
+ (flags -w -deprecated-native-compiler-option -noinit)
  (libraries coq-core.plugins.ltac2))

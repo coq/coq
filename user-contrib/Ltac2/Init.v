@@ -8,6 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Declare ML Module "ltac_plugin".
+(* This is already declared in the Stdlib prelude, however in order to use Ltac2
+    with the "-noinit" flag we need to compile the entire Ltac2 library with
+    this flag. This requires explicitly (re)declaring the preceding plugin.
+    Note that redeclaring does no harm since this is an idempotent operation. *)
+
 Declare ML Module "ltac2_plugin".
 
 #[export] Set Default Proof Mode "Ltac2".

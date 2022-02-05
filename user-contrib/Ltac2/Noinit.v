@@ -8,8 +8,25 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** The parts of Ltac2 that do not require the stdlib to be loaded. *)
+
 Require Export Ltac2.Init.
 
-Require Noinit.
-
-Require Export Ltac2.Notations.
+Require Ltac2.Array.
+Require Ltac2.Bool.
+Require Ltac2.Char.
+Require Ltac2.Constr.
+Require Ltac2.Control.
+Require Ltac2.Env.
+Require Ltac2.Fresh.
+Require Ltac2.Ident.
+Require Ltac2.Ind.
+Require Ltac2.Int.
+Require Ltac2.List.
+Require Ltac2.Ltac1.
+Require Ltac2.Message.
+Require Ltac2.Option.
+Require Ltac2.Pattern.
+Require Ltac2.Printf.
+Require Ltac2.Std.
+Require Ltac2.String.
