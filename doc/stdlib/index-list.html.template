@@ -667,6 +667,7 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     user-contrib/Ltac2/Ltac2.v
+    user-contrib/Ltac2/Noinit.v
     user-contrib/Ltac2/Array.v
     user-contrib/Ltac2/Bool.v
     user-contrib/Ltac2/Char.v
