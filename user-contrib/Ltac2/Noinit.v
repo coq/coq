@@ -23,7 +23,6 @@ Require Ltac2.Ident.
 Require Ltac2.Ind.
 Require Ltac2.Int.
 Require Ltac2.List.
-Require Ltac2.Ltac1.
 Require Ltac2.Message.
 Require Ltac2.Option.
 Require Ltac2.Pattern.

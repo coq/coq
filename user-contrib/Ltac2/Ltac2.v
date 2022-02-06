@@ -8,8 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Export Ltac2.Init.
-
-Require Noinit.
-
-Require Export Ltac2.Notations.
+From Ltac2 Require Export Init Notations.
+From Ltac2 Require Noinit Ltac1.
