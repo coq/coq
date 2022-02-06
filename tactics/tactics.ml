@@ -90,6 +90,7 @@ exception NothingToRewrite of Id.t
 exception IllFormedEliminationType
 exception SchemeDontApply
 exception UnableToApplyLemma of env * evar_map * constr * constr
+exception DependsOnBody of Id.t list * Id.Set.t * Id.t option
 exception NeedFullyAppliedArgument
 exception NotRightNumberConstructors of int
 exception NotEnoughConstructors
@@ -228,6 +229,16 @@ let tactic_interp_error_handler = function
       str "on hypothesis of type" ++ brk(1,1) ++
       quote (Printer.pr_leconstr_env env sigma t) ++
       str "."
+  | DependsOnBody (idl,ids,where) ->
+     let idl = List.filter (fun id -> Id.Set.mem id ids) idl in
+     let on_the_bodies = function
+       | [] -> assert false
+       | [id] -> str " depends on the body of " ++ Id.print id
+       | l -> str " depends on the bodies of " ++ pr_sequence Id.print l
+     in
+     (match where with
+     | None -> str "Conclusion" ++ on_the_bodies idl
+     | Some id -> str "Hypothesis " ++ Id.print id ++ on_the_bodies idl)
   | NeedFullyAppliedArgument ->
       str "Need a fully applied argument."
   | NotRightNumberConstructors n ->
@@ -2070,21 +2081,14 @@ let assumption =
 (*          Modification of a local context                      *)
 (*****************************************************************)
 
-let on_the_bodies = function
-| [] -> assert false
-| [id] -> str " depends on the body of " ++ Id.print id
-| l -> str " depends on the bodies of " ++ pr_sequence Id.print l
-
-exception DependsOnBody of Id.t option
-
-let check_is_type env sigma ty =
+let check_is_type env sigma idl ids ty =
   try
     let sigma, _ = Typing.sort_of env sigma ty in
     sigma
   with e when CErrors.noncritical e ->
-    raise (DependsOnBody None)
+    raise (DependsOnBody (idl, ids, None))
 
-let check_decl env sigma decl =
+let check_decl env sigma idl ids decl =
   let open Context.Named.Declaration in
   let ty = NamedDecl.get_type decl in
   try
@@ -2096,60 +2100,62 @@ let check_decl env sigma decl =
     sigma
   with e when CErrors.noncritical e ->
     let id = NamedDecl.get_id decl in
-    raise (DependsOnBody (Some id))
+    raise (DependsOnBody (idl, ids, Some id))
 
-let clear_body ids =
+let clear_body idl =
   let open Context.Named.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.project gl in
     let ctx = named_context env in
-    let map = function
-    | LocalAssum (id,t) as decl ->
-      let () = if List.mem_f Id.equal id.binder_name ids then
-        error (VariableHasNoValue id.binder_name);
-      in
-      decl
-    | LocalDef (id,_,t) as decl ->
-      if List.mem_f Id.equal id.binder_name ids then LocalAssum (id, t) else decl
-    in
-    let ctx = List.map map ctx in
-    let base_env = reset_context env in
-    let env = push_named_context ctx base_env in
-    let check =
-      try
-        let check (env, sigma, seen) decl =
-          (* Do no recheck hypotheses that do not depend *)
-          let sigma =
-            if not seen then sigma
-            else if List.exists (fun id -> occur_var_in_decl env sigma id decl) ids then
-              check_decl env sigma decl
-            else sigma
+    let ids = Id.Set.of_list idl in
+    (* We assume the context to respect dependencies *)
+    let rec fold ids ctx =
+      if Id.Set.is_empty ids then
+        let base_env = reset_context env in
+        let env = push_named_context ctx base_env in
+        env, sigma, Id.Set.empty
+      else
+        match ctx with
+        | [] -> assert false
+        | decl :: ctx ->
+          let decl, ids, found =
+            match decl with
+            | LocalAssum (id,t) ->
+              let () =
+                if Id.Set.mem id.binder_name ids then
+                  error (VariableHasNoValue id.binder_name)
+              in
+              decl, ids, false
+            | LocalDef (id,_,t) as decl ->
+               if Id.Set.mem id.binder_name ids
+               then LocalAssum (id, t), Id.Set.remove id.binder_name ids, true
+               else decl, ids, false
           in
-          let seen = seen || List.mem_f Id.equal (NamedDecl.get_id decl) ids in
-          (push_named decl env, sigma, seen)
-        in
-        let (env, sigma, _) = List.fold_left check (base_env, sigma, false) (List.rev ctx) in
-        let sigma =
-          if List.exists (fun id -> occur_var env sigma id concl) ids then
-            check_is_type env sigma concl
-          else sigma
-        in
-        Proofview.Unsafe.tclEVARS sigma
-      with DependsOnBody where as exn ->
-        let _, info = Exninfo.capture exn in
-        let msg = match where with
-        | None -> str "Conclusion" ++ on_the_bodies ids
-        | Some id -> str "Hypothesis " ++ Id.print id ++ on_the_bodies ids
-        in
-        Tacticals.tclZEROMSG ~info msg
+          let env, sigma, ids = fold ids ctx in
+          if Id.Set.exists (fun id -> occur_var_in_decl env sigma id decl) ids then
+            let sigma = check_decl env sigma idl ids decl in (* can sigma really change? *)
+            let ids = Id.Set.add (get_id decl) ids in
+            push_named decl env, sigma, Id.Set.add (get_id decl) ids
+          else
+            push_named decl env, sigma, if found then Id.Set.add (get_id decl) ids else ids
     in
-    check <*>
-    Refine.refine ~typecheck:false begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true concl
+    try
+      let env, sigma, ids = fold ids ctx in
+      let sigma =
+        if Id.Set.exists (fun id -> occur_var env sigma id concl) ids then
+          check_is_type env sigma idl ids concl
+        else sigma
+      in
+      Proofview.Unsafe.tclEVARS sigma <*>
+      Refine.refine ~typecheck:false begin fun sigma ->
+        Evarutil.new_evar env sigma ~principal:true concl
+        end
+    with DependsOnBody _ as exn ->
+      let _, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
     end
-  end
 
 let clear_wildcards ids =
   let clear_wildcards_msg ?loc env sigma _id err inglobal =
