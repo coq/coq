@@ -33,6 +33,10 @@ val caml_version : string    (* OCaml version used to compile Coq *)
 val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
 val vo_version : int32
 
+val version_hash : string (* SHA1 key of current commit *)
+val version_hash_short : string (* Unambiguous shortening of version_hash *)
+val is_a_released_version : bool (* Is this a released version of coq? Used to display version numbering. *)
+
 val all_src_dirs : string list
 
 val exec_extension : string (* "" under Unix, ".exe" under MS-windows *)

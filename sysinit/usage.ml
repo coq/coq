@@ -9,12 +9,16 @@
 (************************************************************************)
 
 let version () =
-  Printf.printf "The Coq Proof Assistant, version %s\n" Coq_config.version;
+  if Coq_config.is_a_released_version then
+    Printf.printf "The Coq Proof Assistant, version %s\n" Coq_config.version
+  else
+    Printf.printf "The Coq Proof Assistant, version %s %s\n"
+      Coq_config.version Coq_config.version_hash_short;
   Printf.printf "compiled with OCaml %s\n" Coq_config.caml_version
 
 let machine_readable_version () =
-  Printf.printf "%s %s\n"
-    Coq_config.version Coq_config.caml_version
+  Printf.printf "%s %s %s\n"
+    Coq_config.version Coq_config.version_hash Coq_config.caml_version
 
 (* print the usage of coqtop (or coqc) on channel co *)
 

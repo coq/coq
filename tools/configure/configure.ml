@@ -22,6 +22,8 @@ let (/) = Filename.concat
 let coq_version = "8.16+alpha"
 let vo_magic = 81591
 let is_a_released_version = false
+let coq_version_hash = fst (run "git" ["rev-parse"; "HEAD"])
+let coq_version_hash_short = fst (run "git" ["rev-parse"; "--short"; "HEAD"])
 
 (** Default OCaml binaries *)
 
@@ -469,6 +471,9 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   pr_s "ocamlfind" camlexec.find;
   pr_s "caml_flags" caml_flags;
   pr_s "version" coq_version;
+  pr_s "version_hash" coq_version_hash;
+  pr_s "version_hash_short" coq_version_hash_short;
+  pr_b "is_a_released_version" is_a_released_version;
   pr_s "caml_version" caml_version;
   pr_li "caml_version_nums" caml_version_nums;
   pr_s "arch" arch;
