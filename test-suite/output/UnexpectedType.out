@@ -1,0 +1,5 @@
+File "./output/UnexpectedType.v", line 33, characters 22-30:
+The command has indeed failed with message:
+Found type "A → UU" where "?T" was expected
+(unable to find a well-typed instantiation for "?T": cannot ensure that
+"Type" is a subtype of "UU").

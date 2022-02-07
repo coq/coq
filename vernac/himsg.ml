@@ -435,10 +435,11 @@ let explain_cant_apply_not_functional env sigma rator randl =
   str "cannot be applied to the " ++ str (String.plural nargs "term") ++
   fnl () ++ str " " ++ v 0 appl
 
-let explain_unexpected_type env sigma actual_type expected_type =
+let explain_unexpected_type env sigma actual_type expected_type e =
   let pract, prexp = pr_explicit env sigma actual_type expected_type in
   str "Found type" ++ spc () ++ pract ++ spc () ++
-  str "where" ++ spc () ++ prexp ++ str " was expected."
+  str "where" ++ spc () ++ prexp ++ str " was expected" ++
+  explain_unification_error env sigma actual_type expected_type (Some e) ++ str"."
 
 let explain_not_product env sigma c =
   let pr = pr_econstr_env env sigma c in
@@ -904,9 +905,9 @@ let rec explain_pretype_error env sigma err =
   | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id
   | EvarNotFound id -> explain_evar_not_found env sigma id
-  | UnexpectedType (actual,expect) ->
+  | UnexpectedType (actual,expect,e) ->
     let env, actual, expect = contract2 env sigma actual expect in
-    explain_unexpected_type env sigma actual expect
+    explain_unexpected_type env sigma actual expect e
   | NotProduct c -> explain_not_product env sigma c
   | CannotUnify (m,n,e) ->
     let env, m, n = contract2 env sigma m n in

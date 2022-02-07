@@ -1254,9 +1254,9 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
         | Some v ->
           begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
             | sigma -> sigma, tj
-            | exception Evarconv.UnableToUnify _ ->
+            | exception Evarconv.UnableToUnify (sigma,e) ->
               error_unexpected_type
-                ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v
+                ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v e
           end
 
   let pretype_int self i =

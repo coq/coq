@@ -62,7 +62,7 @@ type pretype_error =
   (** Pretyping *)
   | VarNotFound of Id.t
   | EvarNotFound of Id.t
-  | UnexpectedType of constr * constr
+  | UnexpectedType of constr * constr * unification_error
   | NotProduct of constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
@@ -152,7 +152,7 @@ val error_cant_find_case_type :
 (** {6 Pretyping errors } *)
 
 val error_unexpected_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> constr -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> constr -> unification_error -> 'b
 
 val error_not_product :
   ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
