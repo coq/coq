@@ -153,7 +153,7 @@ Proof with trivial.
   left; apply (Rmult_lt_0_compat 1 (/ sqrt 2))...
   prove_sup...
   apply Rinv_0_lt_compat; apply Rlt_sqrt2_0...
-  rewrite Rsqr_div...
+  rewrite Rsqr_div'.
   rewrite Rsqr_1; rewrite Rsqr_sqrt...
   unfold Rsqr; pattern (cos (PI / 4)) at 1;
     rewrite <- sin_cos_PI4;
@@ -163,7 +163,6 @@ Proof with trivial.
   rewrite sin_PI2...
   field.
   left; prove_sup...
-  apply sqrt2_neq_0...
 Qed.
 
 Lemma sin_PI4 : sin (PI / 4) = 1 / sqrt 2.
@@ -205,7 +204,7 @@ Proof with trivial.
   left; apply (Rmult_lt_0_compat (sqrt 3) (/ 2))...
   apply Rlt_sqrt3_0...
   apply Rinv_0_lt_compat; prove_sup0...
-  rewrite Rsqr_div...
+  rewrite Rsqr_div'.
   rewrite cos2; unfold Rsqr; rewrite sin_PI6; rewrite sqrt_def...
   field.
   left ; prove_sup0.
@@ -214,15 +213,11 @@ Qed.
 Lemma tan_PI6 : tan (PI / 6) = 1 / sqrt 3.
 Proof.
   unfold tan; rewrite sin_PI6; rewrite cos_PI6; unfold Rdiv;
-    repeat rewrite Rmult_1_l; rewrite Rinv_mult_distr.
-  rewrite Rinv_involutive.
+    repeat rewrite Rmult_1_l; rewrite Rinv_mult.
+  rewrite Rinv_inv.
   rewrite (Rmult_comm (/ 2)); rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
   apply Rmult_1_r.
   discrR.
-  discrR.
-  red; intro; assert (H1 := Rlt_sqrt3_0); rewrite H in H1;
-    elim (Rlt_irrefl 0 H1).
-  apply Rinv_neq_0_compat; discrR.
 Qed.
 
 Lemma sin_PI3 : sin (PI / 3) = sqrt 3 / 2.
@@ -238,10 +233,9 @@ Qed.
 Lemma tan_PI3 : tan (PI / 3) = sqrt 3.
 Proof.
   unfold tan; rewrite sin_PI3; rewrite cos_PI3; unfold Rdiv;
-    rewrite Rmult_1_l; rewrite Rinv_involutive.
+    rewrite Rmult_1_l; rewrite Rinv_inv.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   apply Rmult_1_r.
-  discrR.
   discrR.
 Qed.
 

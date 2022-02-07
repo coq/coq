@@ -548,14 +548,12 @@ Qed.
 Lemma powerRZ_Rpower x z : (0 < x)%R -> powerRZ x z = Rpower x (IZR z).
 Proof.
   intros Hx.
-  assert (x <> 0)%R
-    by now intros Habs; rewrite Habs in Hx; apply (Rlt_irrefl 0).
   destruct (intP z).
   - now rewrite Rpower_O.
   - rewrite <- pow_powerRZ, <- Rpower_pow by assumption.
     now rewrite INR_IZR_INZ.
   - rewrite opp_IZR, Rpower_Ropp.
-    rewrite powerRZ_neg, powerRZ_inv by assumption.
+    rewrite powerRZ_neg'.
     now rewrite <- pow_powerRZ, <- INR_IZR_INZ, Rpower_pow.
 Qed.
 
@@ -640,15 +638,9 @@ Proof.
   apply limit1_ext with
     (f := fun x:R => / ((exp (ln x) - exp (ln y)) / (ln x - ln y))).
   intros x [HD1 HD2]; repeat rewrite exp_ln.
-  unfold Rdiv; rewrite Rinv_mult_distr.
-  rewrite Rinv_involutive.
+  unfold Rdiv; rewrite Rinv_mult.
+  rewrite Rinv_inv.
   apply Rmult_comm.
-  apply Rminus_eq_contra.
-  red; intros H2; case HD2.
-  symmetry ; apply (ln_inv _ _ HD1 Hy H2).
-  apply Rminus_eq_contra; apply (not_eq_sym HD2).
-  apply Rinv_neq_0_compat; apply Rminus_eq_contra; red; intros H2;
-    case HD2; apply ln_inv; auto.
   assumption.
   assumption.
   apply limit_inv with

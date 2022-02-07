@@ -28,7 +28,7 @@ Lemma formule :
 Proof.
   intros; unfold Rdiv, Rminus, Rsqr.
   repeat rewrite Rmult_plus_distr_r; repeat rewrite Rmult_plus_distr_l;
-    repeat rewrite Rinv_mult_distr; try assumption.
+    repeat rewrite Rinv_mult.
   replace (l1 * f2 x * (/ f2 x * / f2 x)) with (l1 * / f2 x * (f2 x * / f2 x));
   [ idtac | ring ].
   replace (l1 * (/ f2 x * / f2 (x + h)) * f2 x) with
@@ -48,7 +48,6 @@ Proof.
   (- (l2 * f1 x * / f2 x * / f2 (x + h) * (f2 x * / f2 x)));
   [ idtac | ring ].
   repeat rewrite <- Rinv_r_sym; try assumption || ring.
-  apply prod_neq_R0; assumption.
 Qed.
 
 (* begin hide *)
@@ -80,7 +79,7 @@ Proof.
   rewrite Rabs_mult.
   apply Rmult_le_compat_r.
   apply Rabs_pos.
-  rewrite Rabs_Rinv; [ left; exact H7 | assumption ].
+  rewrite Rabs_inv; left; exact H7.
   apply Rlt_le_trans with (2 / Rabs (f2 x) * Rabs (eps * f2 x / 8)).
   apply Rmult_lt_compat_l.
   unfold Rdiv; apply Rmult_lt_0_compat;
@@ -88,7 +87,7 @@ Proof.
   exact H8.
   right; unfold Rdiv.
   repeat rewrite Rabs_mult.
-  rewrite Rabs_Rinv; discrR.
+  rewrite Rabs_inv.
   rewrite (Rabs_pos_eq 8) by now apply IZR_le.
   rewrite (Rabs_pos_eq eps).
   field.
@@ -130,7 +129,7 @@ Proof.
   red; intro H10; rewrite H10 in H; elim (Rlt_irrefl _ H).
   apply Rinv_neq_0_compat; apply prod_neq_R0; try assumption || discrR.
   unfold Rdiv.
-  repeat rewrite Rinv_mult_distr; try assumption.
+  repeat rewrite Rinv_mult.
   repeat rewrite Rabs_mult.
   replace (Rabs 2) with 2.
   rewrite (Rmult_comm 2).
@@ -140,21 +139,20 @@ Proof.
   repeat apply Rmult_lt_compat_l.
   apply Rabs_pos_lt; assumption.
   apply Rabs_pos_lt; apply Rinv_neq_0_compat; assumption.
-  repeat rewrite Rabs_Rinv; try assumption.
+  repeat rewrite Rabs_inv.
   rewrite <- (Rmult_comm 2).
   unfold Rdiv in H8; exact H8.
   symmetry ; apply Rabs_right; left; prove_sup0.
   right.
   unfold Rsqr, Rdiv.
-  do 1 rewrite Rinv_mult_distr; try assumption || discrR.
-  do 1 rewrite Rinv_mult_distr; try assumption || discrR.
+  rewrite 2!Rinv_mult.
   repeat rewrite Rabs_mult.
-  repeat rewrite Rabs_Rinv; try assumption || discrR.
+  repeat rewrite Rabs_inv.
   replace (Rabs eps) with eps.
   replace (Rabs 8) with 8.
   replace (Rabs 2) with 2.
   replace 8 with (4 * 2); [ idtac | ring ].
-  rewrite Rinv_mult_distr; discrR.
+  rewrite Rinv_mult.
   replace
   (2 * (Rabs l1 * (/ Rabs (f2 x) * / Rabs (f2 x))) *
     (eps * (Rabs (f2 x) * Rabs (f2 x)) * (/ 4 * / 2 * / Rabs l1))) with
@@ -205,7 +203,7 @@ Proof.
   red; intro H10; rewrite H10 in H; elim (Rlt_irrefl _ H).
   apply Rinv_neq_0_compat; apply prod_neq_R0; discrR || assumption.
   unfold Rdiv.
-  repeat rewrite Rinv_mult_distr; try assumption.
+  repeat rewrite Rinv_mult.
   repeat rewrite Rabs_mult.
   replace (Rabs 2) with 2.
   rewrite (Rmult_comm 2).
@@ -215,21 +213,20 @@ Proof.
   repeat apply Rmult_lt_compat_l.
   apply Rabs_pos_lt; assumption.
   apply Rabs_pos_lt; apply Rinv_neq_0_compat; assumption.
-  repeat rewrite Rabs_Rinv; assumption || idtac.
+  repeat rewrite Rabs_inv.
   rewrite <- (Rmult_comm 2).
   unfold Rdiv in H9; exact H9.
   symmetry ; apply Rabs_right; left; prove_sup0.
   right.
   unfold Rsqr, Rdiv.
-  rewrite Rinv_mult_distr; try assumption || discrR.
-  rewrite Rinv_mult_distr; try assumption || discrR.
+  rewrite 2!Rinv_mult.
   repeat rewrite Rabs_mult.
-  repeat rewrite Rabs_Rinv; try assumption || discrR.
+  repeat rewrite Rabs_inv.
   replace (Rabs eps) with eps.
   replace (Rabs 8) with 8.
   replace (Rabs 2) with 2.
   replace 8 with (4 * 2); [ idtac | ring ].
-  rewrite Rinv_mult_distr; discrR.
+  rewrite Rinv_mult.
   replace
   (2 * (Rabs (f1 x) * (/ Rabs (f2 x) * / Rabs (f2 x))) *
     (Rabs (f2 x) * Rabs (f2 x) * eps * (/ 4 * / 2 * / Rabs (f1 x)))) with
@@ -286,8 +283,7 @@ Proof.
   assumption.
   assumption.
   unfold Rdiv.
-  repeat rewrite Rinv_mult_distr;
-    try assumption || (unfold Rsqr; apply prod_neq_R0; assumption).
+  repeat rewrite Rinv_mult.
   repeat rewrite Rabs_mult.
   replace (Rabs 2) with 2.
   replace
@@ -303,22 +299,19 @@ Proof.
   apply Rabs_pos_lt; assumption.
   apply Rabs_pos_lt; apply Rinv_neq_0_compat; unfold Rsqr;
     apply prod_neq_R0; assumption.
-  repeat rewrite Rabs_Rinv; [ idtac | assumption | assumption ].
+  repeat rewrite Rabs_inv.
   rewrite <- (Rmult_comm 2).
   unfold Rdiv in H10; exact H10.
   symmetry ; apply Rabs_right; left; prove_sup0.
   right; unfold Rsqr, Rdiv.
-  rewrite Rinv_mult_distr; try assumption || discrR.
-  rewrite Rinv_mult_distr; try assumption || discrR.
-  rewrite Rinv_mult_distr; try assumption || discrR.
-  rewrite Rinv_mult_distr; try assumption || discrR.
+  rewrite 4!Rinv_mult.
   repeat rewrite Rabs_mult.
-  repeat rewrite Rabs_Rinv; try assumption || discrR.
+  repeat rewrite Rabs_inv.
   replace (Rabs eps) with eps.
   replace (Rabs 8) with 8.
   replace (Rabs 2) with 2.
   replace 8 with (4 * 2); [ idtac | ring ].
-  rewrite Rinv_mult_distr; discrR.
+  rewrite Rinv_mult.
   replace
   (2 * Rabs l2 *
     (Rabs (f1 x) * (/ Rabs (f2 x) * / Rabs (f2 x) * / Rabs (f2 x))) *
@@ -332,8 +325,6 @@ Proof.
   symmetry ; apply Rabs_right; left; prove_sup0.
   symmetry ; apply Rabs_right; left; prove_sup.
   symmetry ; apply Rabs_right; left; assumption.
-  apply prod_neq_R0; assumption || discrR.
-  apply prod_neq_R0; assumption.
 Qed.
 
 Lemma D_x_no_cond : forall x a:R, a <> 0 -> D_x no_cond x (x + a).

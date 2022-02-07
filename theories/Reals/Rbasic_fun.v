@@ -442,8 +442,8 @@ Proof.
   unfold Rabs; case (Rcase_abs r) as [Hlt|Hge];
     case (Rcase_abs (/ r)) as [Hlt'|Hge']; auto;
     intros.
-  apply Ropp_inv.
-  rewrite <- Ropp_inv.
+  apply eq_sym, Rinv_opp.
+  rewrite Rinv_opp.
   destruct Hge' as [| ->].
   apply Rinv_lt_0_compat, Rlt_asym in Hlt; contradiction.
   rewrite Ropp_0; trivial.

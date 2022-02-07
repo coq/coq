@@ -734,7 +734,7 @@ Proof.
   rewrite Rmult_1_l; rewrite (Rmult_comm (/ M)).
   apply Rlt_trans with (eps / (2 * M)).
   apply H8; assumption.
-  unfold Rdiv; rewrite Rinv_mult_distr.
+  unfold Rdiv; rewrite Rinv_mult.
   apply Rmult_lt_reg_l with 2.
   prove_sup0.
   replace (2 * (eps * (/ 2 * / M))) with (2 * / 2 * (eps * / M));
@@ -745,8 +745,6 @@ Proof.
   apply Rplus_lt_compat_l; apply Rmult_lt_0_compat;
     [ assumption | apply Rinv_0_lt_compat; assumption ].
   discrR.
-  discrR.
-  red; intro; rewrite H10 in H3; elim (Rlt_irrefl _ H3).
   red; intro; rewrite H10 in H3; elim (Rlt_irrefl _ H3).
   rewrite H7; do 2 rewrite Rmult_0_r; unfold Rminus;
     rewrite Rplus_opp_r; rewrite Rabs_R0; reflexivity.
@@ -783,10 +781,8 @@ Proof.
   unfold ge; apply Nat.le_trans with N.
   unfold N; apply Nat.le_max_r.
   assumption.
-  unfold Rdiv; rewrite Rinv_mult_distr.
+  unfold Rdiv; rewrite Rinv_mult.
   right; ring.
-  discrR.
-  red; intro; rewrite H12 in H3; elim (Rlt_irrefl _ H3).
   red; intro; rewrite H12 in H3; elim (Rlt_irrefl _ H3).
   apply Rmult_lt_reg_l with (/ Rabs l2).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
@@ -796,10 +792,8 @@ Proof.
   unfold ge; apply Nat.le_trans with N.
   unfold N; apply Nat.le_max_l.
   assumption.
-  unfold Rdiv; right; rewrite Rinv_mult_distr.
+  unfold Rdiv; right; rewrite Rinv_mult.
   ring.
-  discrR.
-  apply Rabs_no_R0; assumption.
   apply Rabs_no_R0; assumption.
   replace (An n * l2 - l1 * l2) with (l2 * (An n - l1));
   [ symmetry ; apply Rabs_mult | ring ].
@@ -1097,9 +1091,7 @@ Proof.
   apply Rinv_0_lt_compat; apply Rmult_lt_0_compat.
   apply Rabs_pos_lt; assumption.
   apply H7.
-  apply (cv_infty_cv_R0 (fun n:nat => INR (S n))).
-  intro; apply not_O_INR; discriminate.
-  assumption.
+  now apply (cv_infty_cv_0 (fun n:nat => INR (S n))).
   unfold cv_infty; intro;
     destruct (total_order_T M0 0) as [[Hlt|Heq]|Hgt].
   exists 0%nat; intros.
@@ -1126,7 +1118,7 @@ Proof.
   left; apply pow_lt; assumption.
   replace (M_nat + n + 1)%nat with (S (M_nat + n)).
   rewrite fact_simpl; rewrite Nat.mul_comm; rewrite mult_INR;
-    rewrite Rinv_mult_distr.
+    rewrite Rinv_mult.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply lt_INR_0; apply -> Nat.neq_0_lt_0; red;
     intro; elim (fact_neq_0 _ H9).
@@ -1136,8 +1128,6 @@ Proof.
   pattern n at 1; replace n with (0 + n)%nat; [ idtac | reflexivity ].
   apply Nat.add_lt_mono_r.
   apply Nat.lt_le_trans with 1%nat; [ apply Nat.lt_0_succ | assumption ].
-  apply INR_fact_neq_0.
-  apply not_O_INR; discriminate.
   ring.
   ring.
   unfold Vn; rewrite Rmult_assoc; unfold Rdiv;

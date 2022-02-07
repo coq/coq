@@ -86,9 +86,9 @@ Definition cos_n (n:nat) : R := (-1) ^ n / INR (fact (2 * n)).
 Lemma simpl_cos_n :
   forall n:nat, cos_n (S n) / cos_n n = - / INR (2 * S n * (2 * n + 1)).
 Proof.
-  intro; unfold cos_n; replace (S n) with (n + 1)%nat; [ idtac | ring ].
-  rewrite pow_add; unfold Rdiv; rewrite Rinv_mult_distr.
-  rewrite Rinv_involutive.
+  intro; unfold cos_n; replace (S n) with (n + 1)%nat by ring.
+  rewrite pow_add; unfold Rdiv; rewrite Rinv_mult.
+  rewrite Rinv_inv.
   replace
   ((-1) ^ n * (-1) ^ 1 * / INR (fact (2 * (n + 1))) *
     (/ (-1) ^ n * INR (fact (2 * n)))) with
@@ -96,25 +96,17 @@ Proof.
     (-1) ^ 1); [ idtac | ring ].
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l; unfold pow; rewrite Rmult_1_r.
-  replace (2 * (n + 1))%nat with (S (S (2 * n))); [ idtac | ring ].
+  replace (2 * (n + 1))%nat with (S (S (2 * n))) by ring.
   do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
-    repeat rewrite Rinv_mult_distr; try (apply not_O_INR; discriminate).
+    repeat rewrite Rinv_mult.
   rewrite <- (Rmult_comm (-1)).
   repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r.
-  replace (S (2 * n)) with (2 * n + 1)%nat; [ idtac | ring ].
-  rewrite mult_INR; rewrite Rinv_mult_distr.
+  replace (S (2 * n)) with (2 * n + 1)%nat by ring.
+  rewrite mult_INR; rewrite Rinv_mult.
   ring.
-  apply not_O_INR; discriminate.
-  replace (2 * n + 1)%nat with (S (2 * n));
-  [ apply not_O_INR; discriminate | ring ].
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
-  apply pow_nonzero; discrR.
   apply INR_fact_neq_0.
   apply pow_nonzero; discrR.
-  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
 Qed.
 
 Lemma archimed_cor1 :
@@ -142,11 +134,10 @@ Proof.
   red; intro; assert (H6 := Nat.le_max_r x 1); cut (0 < 1)%nat;
     [ intro | apply Nat.lt_0_succ ]; assert (H8 := Nat.lt_le_trans _ _ _ H7 H6);
       rewrite H5 in H8; elim (Nat.lt_irrefl _ H8).
-  pattern eps at 1; rewrite <- Rinv_involutive.
+  pattern eps at 1; rewrite <- Rinv_inv.
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat; [ apply Rinv_0_lt_compat; assumption | assumption ].
   rewrite H3 in H0; assumption.
-  red; intro; rewrite H5 in H; elim (Rlt_irrefl _ H).
   apply Rlt_trans with (/ eps).
   apply Rinv_0_lt_compat; assumption.
   rewrite H3 in H0; assumption.
@@ -166,7 +157,7 @@ Proof.
   intros; rewrite simpl_cos_n; unfold R_dist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
-  rewrite mult_INR; rewrite Rinv_mult_distr.
+  rewrite mult_INR; rewrite Rinv_mult.
   cut (/ INR (2 * S n) < 1).
   intro; cut (/ INR (2 * n + 1) < eps).
   intro; rewrite <- (Rmult_1_l eps).
@@ -202,9 +193,6 @@ Proof.
   apply -> Nat.succ_lt_mono; apply Nat.lt_0_succ.
   ring.
   apply not_O_INR; discriminate.
-  apply not_O_INR; discriminate.
-  replace (2 * n + 1)%nat with (S (2 * n));
-  [ apply not_O_INR; discriminate | ring ].
   apply Rle_ge; left; apply Rinv_0_lt_compat.
   apply lt_INR_0.
   replace (2 * S n * (2 * n + 1))%nat with (2 + (4 * (n * n) + 6 * n))%nat by ring.
@@ -240,8 +228,8 @@ Lemma simpl_sin_n :
   forall n:nat, sin_n (S n) / sin_n n = - / INR ((2 * S n + 1) * (2 * S n)).
 Proof.
   intro; unfold sin_n; replace (S n) with (n + 1)%nat; [ idtac | ring ].
-  rewrite pow_add; unfold Rdiv; rewrite Rinv_mult_distr.
-  rewrite Rinv_involutive.
+  rewrite pow_add; unfold Rdiv; rewrite Rinv_mult.
+  rewrite Rinv_inv.
   replace
   ((-1) ^ n * (-1) ^ 1 * / INR (fact (2 * (n + 1) + 1)) *
     (/ (-1) ^ n * INR (fact (2 * n + 1)))) with
@@ -251,35 +239,20 @@ Proof.
   rewrite Rmult_1_l; unfold pow; rewrite Rmult_1_r;
     replace (2 * (n + 1) + 1)%nat with (S (S (2 * n + 1))).
   do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
-    repeat rewrite Rinv_mult_distr.
+    repeat rewrite Rinv_mult.
   rewrite <- (Rmult_comm (-1)); repeat rewrite Rmult_assoc;
     rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; replace (S (2 * n + 1)) with (2 * (n + 1))%nat.
-  repeat rewrite mult_INR; repeat rewrite Rinv_mult_distr.
+  repeat rewrite mult_INR; repeat rewrite Rinv_mult.
   ring.
-  apply not_O_INR; discriminate.
-  replace (n + 1)%nat with (S n); [ apply not_O_INR; discriminate | ring ].
-  apply not_O_INR; discriminate.
-  apply prod_neq_R0.
-  apply not_O_INR; discriminate.
-  replace (n + 1)%nat with (S n); [ apply not_O_INR; discriminate | ring ].
-  apply not_O_INR; discriminate.
-  replace (n + 1)%nat with (S n); [ apply not_O_INR; discriminate | ring ].
   rewrite Nat.mul_add_distr_l; cut (forall n:nat, S n = (n + 1)%nat).
   intros; rewrite (H (2 * n + 1)%nat).
   ring.
   intros; ring.
   apply INR_fact_neq_0.
-  apply not_O_INR; discriminate.
-  apply INR_fact_neq_0.
-  apply not_O_INR; discriminate.
-  apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
   cut (forall n:nat, S (S n) = (n + 2)%nat);
     [ intros; rewrite (H (2 * n + 1)%nat); ring | intros; ring ].
   apply pow_nonzero; discrR.
-  apply INR_fact_neq_0.
-  apply pow_nonzero; discrR.
-  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
 Qed.
 
 Lemma Alembert_sin : Un_cv (fun n:nat => Rabs (sin_n (S n) / sin_n n)) 0.
@@ -289,7 +262,7 @@ Proof.
   intros; rewrite simpl_sin_n; unfold R_dist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
-  rewrite mult_INR; rewrite Rinv_mult_distr.
+  rewrite mult_INR; rewrite Rinv_mult.
   cut (/ INR (2 * S n) < 1).
   intro; cut (/ INR (2 * S n + 1) < eps).
   intro; rewrite <- (Rmult_1_l eps); rewrite (Rmult_comm (/ INR (2 * S n + 1)));
@@ -320,8 +293,6 @@ Proof.
   replace (2 * S n)%nat with (S (S (2 * n))).
   apply -> Nat.succ_lt_mono; apply Nat.lt_0_succ.
   ring.
-  apply not_O_INR; discriminate.
-  apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
   left; apply Rinv_0_lt_compat.
   apply lt_INR_0.

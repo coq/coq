@@ -87,7 +87,7 @@ assert (HN: (INR N + 1 = IZR (up (/ l)) - 1)%R).
   simpl.
   ring.
 assert (Hl': (/ (INR (S N) + 1) < l)%R).
-  rewrite <- (Rinv_involutive l) by now apply Rgt_not_eq.
+  rewrite <- (Rinv_inv l).
   apply Rinv_1_lt_contravar with (1 := H1l).
   rewrite S_INR.
   rewrite HN.
@@ -112,7 +112,7 @@ exfalso.
 destruct (proj1 (Nat.lt_eq_cases _ _) Hn) as [Hn'| ->].
 2: now apply Hp.
 apply Rlt_not_le with (2 := Hnp _ Hp).
-rewrite <- (Rinv_involutive l) by now apply Rgt_not_eq.
+rewrite <- (Rinv_inv l).
 apply Rinv_1_lt_contravar.
 rewrite <- S_INR.
 apply (le_INR 1); apply -> Nat.succ_le_mono; apply Nat.le_0_l.

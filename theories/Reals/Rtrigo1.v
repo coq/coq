@@ -83,24 +83,23 @@ Proof.
     rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); apply H5.
   unfold Rsqr in |- *; apply prod_neq_R0; assumption.
-  rewrite Rabs_Rinv.
+  rewrite Rabs_inv.
   rewrite Rabs_right.
   reflexivity.
   apply Rle_ge; apply Rle_0_sqr.
-  unfold Rsqr in |- *; apply prod_neq_R0; assumption.
   rewrite (Rmult_comm (Rsqr r)); unfold Rdiv in |- *; repeat rewrite Rabs_mult;
     rewrite Rabs_Rabsolu; rewrite pow_1_abs; rewrite Rmult_1_l;
       repeat rewrite Rmult_assoc; apply Rmult_eq_compat_l.
-  rewrite Rabs_Rinv.
+  rewrite Rabs_inv.
   rewrite Rabs_mult; rewrite (pow_1_abs n); rewrite Rmult_1_l;
-    rewrite <- Rabs_Rinv.
-  rewrite Rinv_involutive.
-  rewrite Rinv_mult_distr.
-  rewrite Rabs_Rinv.
-  rewrite Rinv_involutive.
+    rewrite <- Rabs_inv.
+  rewrite Rinv_inv.
+  rewrite Rinv_mult.
+  rewrite Rabs_inv.
+  rewrite Rinv_inv.
   rewrite (Rmult_comm (Rabs (Rabs (r ^ (2 * S n))))); rewrite Rabs_mult;
     rewrite Rabs_Rabsolu; rewrite Rmult_assoc; apply Rmult_eq_compat_l.
-  rewrite Rabs_Rinv.
+  rewrite Rabs_inv.
   do 2 rewrite Rabs_Rabsolu; repeat rewrite Rabs_right.
   replace (r ^ (2 * S n)) with (r ^ (2 * n) * r * r).
   repeat rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
@@ -111,16 +110,6 @@ Proof.
   ring.
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
-  apply Rabs_no_R0; apply pow_nonzero; assumption.
-  apply Rabs_no_R0; apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply Rabs_no_R0; apply Rinv_neq_0_compat; apply INR_fact_neq_0.
-  apply Rabs_no_R0; apply pow_nonzero; assumption.
-  apply INR_fact_neq_0.
-  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
-  apply prod_neq_R0.
-  apply pow_nonzero; discrR.
-  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
   unfold Rdiv in |- *; apply Rmult_lt_0_compat.
   apply H1.
   apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
@@ -401,19 +390,15 @@ Proof.
     unfold Rdiv in |- *;
       replace (cos x * cos y - sin x * sin y) with
       (cos x * cos y * (1 - sin x * / cos x * (sin y * / cos y))).
-  rewrite Rinv_mult_distr.
+  rewrite Rinv_mult.
   repeat rewrite <- Rmult_assoc;
     replace ((sin x * cos y + cos x * sin y) * / (cos x * cos y)) with
     (sin x * / cos x + sin y * / cos y).
   reflexivity.
-  rewrite Rmult_plus_distr_r; rewrite Rinv_mult_distr.
+  rewrite Rmult_plus_distr_r; rewrite Rinv_mult.
   repeat rewrite Rmult_assoc; repeat rewrite (Rmult_comm (sin x));
     repeat rewrite <- Rmult_assoc.
   repeat rewrite Rinv_r_simpl_m; [ reflexivity | assumption | assumption ].
-  assumption.
-  assumption.
-  apply prod_neq_R0; assumption.
-  assumption.
   unfold Rminus in |- *; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
     apply Rplus_eq_compat_l; repeat rewrite Rmult_assoc;
       rewrite (Rmult_comm (sin x)); rewrite (Rmult_comm (cos y));
@@ -1343,9 +1328,7 @@ Proof.
         (Rlt_le 0 (/ (cos x * cos y)) H12)); intro H13;
       elim
         (Rlt_irrefl 0 (Rle_lt_trans 0 (sin (x - y) * / (cos x * cos y)) 0 H13 H3)).
-  apply Rinv_mult_distr.
-  assumption.
-  assumption.
+  apply Rinv_mult.
 Qed.
 
 Lemma tan_increasing_1 :
@@ -1393,7 +1376,7 @@ Proof.
               generalize
                 (Rmult_lt_gt_compat_neg_l (sin (x - y)) 0 (/ (cos x * cos y)) H2 H8);
                 rewrite Rmult_0_r; intro H4; assumption.
-  apply Rinv_mult_distr; assumption.
+  apply Rinv_mult.
 Qed.
 
 Lemma sin_incr_0 :

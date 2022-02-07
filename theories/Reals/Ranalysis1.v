@@ -1582,10 +1582,9 @@ Proof.
   left; apply Rinv_0_lt_compat; rewrite <- Ropp_0; apply Ropp_lt_gt_contravar;
     assumption.
   unfold Rdiv.
-  rewrite <- Ropp_inv_permute.
+  rewrite Rinv_opp.
   rewrite Rmult_opp_opp.
   reflexivity.
-  unfold Rdiv in H11; assumption.
   generalize (Rplus_lt_compat_l c (Rmax (- (delta / 2)) ((a - c) / 2)) 0 H10);
     rewrite Rplus_0_r; intro; apply Rlt_trans with c;
       assumption.

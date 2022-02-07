@@ -150,7 +150,7 @@ Proof.
         rewrite (Rplus_comm (- a)); repeat rewrite Rplus_assoc;
           rewrite Rplus_opp_l; rewrite Rplus_0_r; apply Rmult_lt_reg_l with (/ Rabs a).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
-  pattern (/ Rabs a) at 1; rewrite <- (Rabs_Rinv a Hyp_a).
+  pattern (/ Rabs a) at 1; rewrite <- (Rabs_inv a).
   rewrite <- Rabs_mult, Rmult_plus_distr_l, <- 2!Rmult_assoc, <- Rinv_l_sym;
     [ rewrite Rmult_1_l | assumption ];
       rewrite (Rmult_comm (/ Rabs a)),

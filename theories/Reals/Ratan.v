@@ -510,9 +510,8 @@ split.
   apply Rlt_trans with (2 := vlt2).
   simpl; unfold u; apply tmp; auto; rewrite Rmult_1_r; assumption.
  apply Rlt_trans with (Rabs y + 1);[lra | ].
- pattern (Rabs y + 1) at 1; rewrite <- (Rinv_involutive (Rabs y + 1));
-  [ | apply Rgt_not_eq; lra].
- rewrite <- Rinv_mult_distr.
+ rewrite <- (Rinv_inv (Rabs y + 1)).
+ rewrite <- Rinv_mult.
    apply Rinv_lt_contravar.
     apply Rmult_lt_0_compat.
      apply Rmult_lt_0_compat;[lra | assumption].
@@ -520,8 +519,6 @@ split.
    replace (/(Rabs y + 1)) with (2 * u).
     lra.
    unfold u; field; apply Rgt_not_eq; clear -Hgt; lra.
-  solve[discrR].
- apply Rgt_not_eq; assumption.
 unfold tan.
 set (u' := PI / 2); unfold Rdiv; apply Rmult_lt_compat_r; unfold u'.
  apply Rinv_0_lt_compat.
@@ -719,18 +716,8 @@ apply tan_inj.
   unfold tan.
   rewrite sin_shift.
   rewrite cos_shift.
-  rewrite <- Rinv_Rdiv.
-  + apply f_equal, sym_eq, tan_atan.
-  + apply Rgt_not_eq, sin_gt_0.
-    * rewrite <- atan_0.
-      now apply atan_increasing.
-    * apply Rlt_trans with (2 := PI2_Rlt_PI).
-      apply atan_bound.
-  + apply Rgt_not_eq, cos_gt_0.
-    unfold Rdiv.
-    rewrite <- Ropp_mult_distr_l_reverse.
-    apply atan_bound.
-    apply atan_bound.
+  rewrite <- Rinv_div.
+  apply f_equal, sym_eq, tan_atan.
 Qed.
 
 (** ** Derivative of arctangent *)
@@ -821,9 +808,8 @@ intros x Hx n.
  destruct (proj1 Hx) as [Hx1|Hx1].
  destruct (proj2 Hx) as [Hx2|Hx2].
  (* . 0 < x < 1 *)
- rewrite <- (Rinv_involutive x).
- assert (/ x <> 0)%R by auto with real.
- repeat rewrite <- Rinv_pow with (1 := H).
+ rewrite <- (Rinv_inv x).
+ repeat rewrite (pow_inv (/ x)).
  apply Rlt_le.
  apply Rinv_lt_contravar.
  apply Rmult_lt_0_compat ; apply pow_lt ; auto with real.
@@ -834,8 +820,6 @@ intros x Hx n.
  exact Hx1.
  exact Hx2.
  lia.
- apply Rgt_not_eq.
- exact Hx1.
  (* . x = 1 *)
  rewrite Hx2.
  do 2 rewrite pow1.
@@ -892,7 +876,7 @@ intros x Hx eps Heps.
    lia.
    apply le_INR.
    lia.
-   rewrite <- (Rinv_involutive eps).
+   rewrite <- (Rinv_inv eps).
    apply Rinv_lt_contravar.
    apply Rmult_lt_0_compat.
    auto with real.
@@ -910,8 +894,6 @@ intros x Hx eps Heps.
    exact HN.
    apply lt_INR.
    lia.
-   apply Rgt_not_eq.
-   exact Heps.
    apply Rle_ge.
    unfold Rdiv.
    apply Rmult_le_pos.
@@ -1749,9 +1731,9 @@ Lemma asin_inv_sqrt2 : asin (/sqrt 2) = PI/4.
 Proof.
 rewrite asin_atan.
   pose proof sqrt2_neq_0 as SH.
-  rewrite Rsqr_pow2, <-Rinv_pow, <- Rsqr_pow2, Rsqr_sqrt; try lra.
+  rewrite Rsqr_pow2, pow_inv, <- Rsqr_pow2, Rsqr_sqrt; try lra.
   replace (1 - /2) with (/2) by lra.
-  rewrite <- inv_sqrt; try lra.
+  rewrite sqrt_inv.
   now rewrite <- atan_1; apply f_equal; field.
 split.
   apply (Rlt_trans _ 0); try lra.
@@ -1806,30 +1788,16 @@ unfold asin; repeat case Rle_dec.
   rewrite sin_antisym, sin_PI2; lra.
   rewrite sin_PI2; lra.
 intros Hx1 Hx2 Hx3.
+pose proof Rsqr_bounds_lt 1 x ltac:(lra) as Hxsqr; rewrite Rsqr_1 in Hxsqr.
 rewrite sin_atan.
-assert (forall a b c:R, b<>0 -> c<> 0 -> a/b/c = a/(b*c)) as R_divdiv_divmul by (intros; field; lra).
-rewrite R_divdiv_divmul.
-  rewrite <- sqrt_mult_alt.
-  rewrite Rsqr_div, Rsqr_sqrt.
-  field_simplify((1 - x²) * (1 + x² / (1 - x²))).
-  rewrite sqrt_1.
-  field.
-(* Pose a few things useful for several subgoals *)
-all: pose proof Rsqr_bounds_lt 1 x ltac:(lra) as Hxsqr;
-     rewrite Rsqr_1 in Hxsqr.
-all: pose proof sqrt_lt_R0 (1 - x²) ltac:(lra).
-(* Do 6 first, because it produces more subgoals *)
-all: swap 1 6.
-rewrite Rsqr_div, Rsqr_sqrt.
-field_simplify(1 + x² / (1 - x²)).
-rewrite sqrt_div.
+unfold Rdiv at 1 2.
+rewrite Rmult_assoc, <- Rinv_mult.
+rewrite <- sqrt_mult_alt by lra.
+rewrite Rsqr_div', Rsqr_sqrt by lra.
+field_simplify ((1 - x²) * (1 + x² / (1 - x²))).
 rewrite sqrt_1.
-pose proof Rdiv_lt_0_compat 1 (sqrt (- x² + 1)) ltac:(lra) as Hrange.
-pose proof sqrt_lt_R0 (- x² + 1) ltac:(lra) as Hrangep.
-specialize (Hrange Hrangep).
+field.
 lra.
-(* The rest can all be done with lra *)
-all: try lra.
 Qed.
 
 Lemma asin_sin : forall x, -(PI/2) <= x <= PI/2 ->

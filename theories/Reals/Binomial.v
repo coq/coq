@@ -31,16 +31,8 @@ Proof.
   intros; unfold C; replace (S n - i)%nat with (S (n - i)).
   cut (forall n:nat, fact (S n) = (S n * fact n)%nat).
   intro; repeat rewrite H0.
-  unfold Rdiv; repeat rewrite mult_INR; repeat rewrite Rinv_mult_distr.
+  unfold Rdiv; repeat rewrite mult_INR; repeat rewrite Rinv_mult.
   ring.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply not_O_INR; discriminate.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply prod_neq_R0.
-  apply not_O_INR; discriminate.
-  apply INR_fact_neq_0.
   intro; reflexivity.
   symmetry; apply Nat.sub_succ_l; assumption.
 Qed.
@@ -55,20 +47,12 @@ Proof.
   intro.
   pattern (n - i)%nat at 2; rewrite H1.
   repeat rewrite H0; unfold Rdiv; repeat rewrite mult_INR;
-    repeat rewrite Rinv_mult_distr.
+    repeat rewrite Rinv_mult.
   rewrite <- H1; rewrite (Rmult_comm (/ INR (n - i)));
     repeat rewrite Rmult_assoc; rewrite (Rmult_comm (INR (n - i)));
       repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   ring.
   apply not_O_INR; apply minus_neq_O; assumption.
-  apply not_O_INR; discriminate.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
-  apply not_O_INR; discriminate.
-  apply INR_fact_neq_0.
-  apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
-  apply INR_fact_neq_0.
   rewrite <- Nat.sub_succ_l.
   simpl; reflexivity.
   apply -> Nat.le_succ_l; assumption.

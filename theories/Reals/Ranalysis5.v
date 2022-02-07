@@ -1412,7 +1412,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
   rewrite Main ; reflexivity.
  reflexivity.
  replace ((f (x + h) - f x) / h - g x) with ((/h) * ((f (x + h) - f x) - h * g x)).
- rewrite Rabs_mult ; rewrite Rabs_Rinv.
+ rewrite Rabs_mult ; rewrite Rabs_inv.
  replace eps with (/ Rabs h * (Rabs h * eps)).
  apply Rmult_lt_compat_l.
  apply Rinv_0_lt_compat ; apply Rabs_pos_lt ; assumption.
@@ -1420,7 +1420,6 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
           (fn N (x + h) - fn N x - h * g x)) by field.
  assumption.
  field ; apply Rgt_not_eq ; apply Rabs_pos_lt ; assumption.
- assumption.
  field. assumption.
 Qed.
 

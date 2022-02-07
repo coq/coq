@@ -50,15 +50,13 @@ Qed.
 Lemma simpl_fact :
   forall n:nat, / INR (fact (S n)) * / / INR (fact n) = / INR (S n).
 Proof.
-  intro; rewrite (Rinv_involutive (INR (fact n)) (INR_fact_neq_0 n));
+  intro; rewrite (Rinv_inv (INR (fact n)));
     unfold fact at 1; cbv beta iota; fold fact;
       rewrite (mult_INR (S n) (fact n));
-        rewrite (Rinv_mult_distr (INR (S n)) (INR (fact n))).
+        rewrite (Rinv_mult (INR (S n)) (INR (fact n))).
   rewrite (Rmult_assoc (/ INR (S n)) (/ INR (fact n)) (INR (fact n)));
     rewrite (Rinv_l (INR (fact n)) (INR_fact_neq_0 n));
       apply (let (H1, H2) := Rmult_ne (/ INR (S n)) in H1).
-  apply not_O_INR; auto.
-  apply INR_fact_neq_0.
 Qed.
 
 (*******************************)
@@ -309,8 +307,8 @@ Proof.
   inversion GE; auto.
   cut (Rabs (/ x) > 1).
   intros; elim (Pow_x_infinity (/ x) H2 (/ y + 1)); intros N.
-  exists N; intros; rewrite <- (Rinv_involutive y).
-  rewrite <- (Rinv_involutive (Rabs (x ^ n))).
+  exists N; intros; rewrite <- (Rinv_inv y).
+  rewrite <- (Rinv_inv (Rabs (x ^ n))).
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat.
   apply Rinv_0_lt_compat.
@@ -319,8 +317,7 @@ Proof.
   apply Rabs_pos_lt.
   apply pow_nonzero.
   assumption.
-  rewrite <- Rabs_Rinv.
-  rewrite Rinv_pow.
+  rewrite <- Rabs_inv, <- pow_inv.
   apply (Rlt_le_trans (/ y) (/ y + 1) (Rabs ((/ x) ^ n))).
   pattern (/ y) at 1.
   rewrite <- (let (H1, H2) := Rplus_ne (/ y) in H1).
@@ -329,24 +326,14 @@ Proof.
   apply Rge_le.
   apply H3.
   assumption.
-  assumption.
-  apply pow_nonzero.
-  assumption.
-  apply Rabs_no_R0.
-  apply pow_nonzero.
-  assumption.
-  apply Rlt_dichotomy_converse.
-  right; unfold Rgt; assumption.
-  rewrite <- (Rinv_involutive 1).
-  rewrite Rabs_Rinv.
+  rewrite <- (Rinv_inv 1).
+  rewrite Rabs_inv.
   unfold Rgt; apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat.
   apply Rabs_pos_lt.
   assumption.
   rewrite Rinv_1; apply Rlt_0_1.
   rewrite Rinv_1; assumption.
-  assumption.
-  red; intro; apply R1_neq_R0; assumption.
 Qed.
 
 Lemma pow_R1 : forall (r:R) (n:nat), r ^ n = 1 -> Rabs r = 1 \/ n = 0%nat.
@@ -361,12 +348,11 @@ Proof.
   absurd (Rabs (/ r) ^ 0 < Rabs (/ r) ^ S n0); auto.
   replace (Rabs (/ r) ^ S n0) with 1.
   simpl; apply Rlt_irrefl; auto.
-  rewrite Rabs_Rinv; auto.
-  rewrite <- Rinv_pow; auto.
+  rewrite Rabs_inv, pow_inv.
   rewrite RPow_abs; auto.
   rewrite H'0; rewrite Rabs_right; auto with real rorders.
   apply Rlt_pow; auto with arith.
-  rewrite Rabs_Rinv; auto.
+  rewrite Rabs_inv.
   apply Rmult_lt_reg_l with (r := Rabs r).
   case (Rabs_pos r); auto.
   intros H'3; case Eq2; auto.
@@ -610,7 +596,7 @@ Proof.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat n)) by auto with real.
    rewrite Nat.sub_add; [ | apply Nat.lt_le_incl; assumption ].
-   rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
+   rewrite Rinv_mult, Rinv_inv; auto with real.
  - rewrite Pos2Nat.inj_sub by trivial.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat m)) by auto with real.
@@ -630,7 +616,7 @@ Proof.
   - (* - - *)
     rewrite Pos2Nat.inj_add; auto with real.
     rewrite pow_add; auto with real.
-    apply Rinv_mult_distr; apply pow_nonzero; auto.
+    apply Rinv_mult.
 Qed.
 #[local]
 Hint Resolve powerRZ_O powerRZ_1 powerRZ_NOR powerRZ_add: real.
@@ -693,7 +679,7 @@ Proof.
     ring.
   intros p; elim (Pos.to_nat p); simpl.
   exact Rinv_1.
-  intros n1 H'; rewrite Rinv_mult_distr; try rewrite Rinv_1; try rewrite H';
+  intros n1 H'; rewrite Rinv_mult; try rewrite Rinv_1; try rewrite H';
     auto with real.
 Qed.
 

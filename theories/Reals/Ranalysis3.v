@@ -379,14 +379,13 @@ Proof.
   unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0.
   apply Rabs_pos_lt.
   unfold Rdiv, Rsqr.
-  repeat rewrite Rinv_mult_distr; try assumption.
+  repeat rewrite Rinv_mult.
   repeat apply prod_neq_R0; try assumption.
   red; intro H18; rewrite H18 in H6; elim (Rlt_irrefl _ H6).
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; assumption.
   apply Rinv_neq_0_compat; assumption.
   discrR.
-  apply prod_neq_R0; [ discrR | assumption ].
   elim H13; intros.
   apply H19.
   split.
@@ -401,13 +400,12 @@ Proof.
   change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))).
   apply Rabs_pos_lt.
   unfold Rsqr, Rdiv.
-  repeat rewrite Rinv_mult_distr; try assumption || discrR.
+  repeat rewrite Rinv_mult.
   repeat apply prod_neq_R0; try assumption.
   red; intro H13; rewrite H13 in H6; elim (Rlt_irrefl _ H6).
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; assumption.
   apply Rinv_neq_0_compat; assumption.
-  apply prod_neq_R0; [ discrR | assumption ].
 (***********************************)
 (*         Fifth case              *)
 (*    (f1 x)<>0  l1<>0  l2=0       *)
@@ -492,7 +490,7 @@ Proof.
   rewrite H17; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
     rewrite Rabs_R0.
   apply Rabs_pos_lt.
-  unfold Rdiv; rewrite Rinv_mult_distr; try discrR || assumption.
+  unfold Rdiv; rewrite Rinv_mult.
   unfold Rsqr.
   repeat apply prod_neq_R0;
     assumption ||
@@ -511,7 +509,7 @@ Proof.
   apply (cond_pos alp_f2d).
   elim H11; intros; assumption.
   apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr; try discrR || assumption.
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   repeat apply prod_neq_R0;
     assumption ||
       (apply Rinv_neq_0_compat; assumption) ||
@@ -519,7 +517,7 @@ Proof.
           (red; intro H12; rewrite H12 in H6; elim (Rlt_irrefl _ H6)).
   change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
   apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr; try discrR || assumption.
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   repeat apply prod_neq_R0;
     assumption ||
       (apply Rinv_neq_0_compat; assumption) ||
@@ -620,15 +618,13 @@ Proof.
   case (Req_dec a 0); intro.
   rewrite H18; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
     rewrite Rabs_R0; apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr.
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   repeat apply prod_neq_R0;
     assumption ||
       (apply Rinv_neq_0_compat; assumption) ||
         (apply Rinv_neq_0_compat; discrR) ||
           (red; intro H28; rewrite H28 in H6; elim (Rlt_irrefl _ H6)).
   apply prod_neq_R0; [ discrR | assumption ].
-  apply prod_neq_R0; [ discrR | assumption ].
-  assumption.
   elim H13; intros.
   apply H20.
   split.
@@ -638,14 +634,12 @@ Proof.
   case (Req_dec a 0); intro.
   rewrite H18; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
     rewrite Rabs_R0; apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr.
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   repeat apply prod_neq_R0;
     assumption ||
       (apply Rinv_neq_0_compat; assumption) ||
         (apply Rinv_neq_0_compat; discrR) ||
           (red; intro H28; rewrite H28 in H6; elim (Rlt_irrefl _ H6)).
-  discrR.
-  assumption.
   elim H14; intros.
   apply H20.
   split.
@@ -662,7 +656,7 @@ Proof.
   elim H13; intros; assumption.
   elim H14; intros; assumption.
   change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))); apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr; try discrR || assumption.
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   repeat apply prod_neq_R0;
     assumption ||
       (apply Rinv_neq_0_compat; assumption) ||
@@ -670,18 +664,15 @@ Proof.
           (red; intro H14; rewrite H14 in H6; elim (Rlt_irrefl _ H6)).
   change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)));
     apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr.
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   repeat apply prod_neq_R0;
     assumption ||
       (apply Rinv_neq_0_compat; assumption) ||
         (apply Rinv_neq_0_compat; discrR) ||
           (red; intro H13; rewrite H13 in H6; elim (Rlt_irrefl _ H6)).
   apply prod_neq_R0; [ discrR | assumption ].
-  apply prod_neq_R0; [ discrR | assumption ].
-  assumption.
   apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr;
-    [ idtac | discrR | assumption ].
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   repeat apply prod_neq_R0;
     assumption ||
       (apply Rinv_neq_0_compat; assumption) ||

@@ -110,19 +110,19 @@ Proof.
     rewrite Rabs_Rabsolu; rewrite pow_1_abs.
   rewrite Rmult_1_l.
   repeat rewrite Rmult_assoc; apply Rmult_eq_compat_l.
-  rewrite Rinv_mult_distr.
-  rewrite Rinv_involutive.
+  rewrite Rinv_mult.
+  rewrite Rinv_inv.
   rewrite Rabs_mult.
-  rewrite Rabs_Rinv.
+  rewrite Rabs_inv.
   rewrite pow_1_abs; rewrite Rinv_1; rewrite Rmult_1_l.
-  rewrite Rinv_mult_distr.
-  rewrite <- Rabs_Rinv.
-  rewrite Rinv_involutive.
+  rewrite Rinv_mult.
+  rewrite <- Rabs_inv.
+  rewrite Rinv_inv.
   rewrite Rabs_mult.
   do 2 rewrite Rabs_Rabsolu.
   rewrite (Rmult_comm (Rabs (r ^ (2 * S n)))).
   rewrite Rmult_assoc; apply Rmult_eq_compat_l.
-  rewrite Rabs_Rinv.
+  rewrite Rabs_inv.
   rewrite Rabs_Rabsolu.
   repeat rewrite Rabs_right.
   replace (r ^ (2 * S n)) with (r ^ (2 * n) * r * r).
@@ -135,15 +135,6 @@ Proof.
   ring.
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
-  apply Rabs_no_R0; apply pow_nonzero; assumption.
-  apply INR_fact_neq_0.
-  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
-  apply Rabs_no_R0; apply Rinv_neq_0_compat; apply INR_fact_neq_0.
-  apply Rabs_no_R0; apply pow_nonzero; assumption.
-  apply pow_nonzero; discrR.
-  apply INR_fact_neq_0.
-  apply pow_nonzero; discrR.
-  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
   unfold Rdiv; apply Rmult_lt_0_compat;
     [ assumption | apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption ].
   assert (H0 := cond_pos r); red; intro; rewrite H1 in H0;
@@ -324,12 +315,10 @@ Proof.
       rewrite (Rmult_comm 2); unfold Rdiv, Rsqr.
   repeat rewrite Rmult_assoc.
   repeat apply Rmult_eq_compat_l.
-  rewrite Rinv_mult_distr.
-  rewrite Rinv_involutive.
+  rewrite Rinv_mult.
+  rewrite Rinv_inv.
   apply Rmult_comm.
   discrR.
-  apply H7.
-  apply Rinv_neq_0_compat; discrR.
   pattern h at 2; replace h with (2 * (h / 2)).
   rewrite (cos_2a_sin (h / 2)).
   rewrite cos_0; unfold Rsqr; ring.

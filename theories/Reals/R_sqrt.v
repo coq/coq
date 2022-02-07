@@ -198,13 +198,11 @@ Proof.
   apply Rle_mult_inv_pos.
   apply Rsqrt_positivity.
   now apply sqrt_lt_R0.
-  rewrite Rsqr_div, 2!Rsqr_sqrt.
+  rewrite Rsqr_div', 2!Rsqr_sqrt.
   unfold Rsqr.
   now rewrite Rsqrt_Rsqrt.
   now apply Rlt_le.
   now apply Rle_mult_inv_pos.
-  apply Rgt_not_eq.
-  now apply sqrt_lt_R0.
 Qed.
 
 Lemma sqrt_div :
@@ -469,21 +467,16 @@ Proof.
       replace (- (b / (2 * a)) + (x + b / (2 * a))) with x.
   intro; rewrite H6; unfold Rdiv; ring.
   ring.
-  rewrite Rsqr_div.
+  rewrite Rsqr_div'.
   rewrite Rsqr_sqrt.
   unfold Rdiv.
-  repeat rewrite Rmult_assoc.
   rewrite (Rmult_comm (/ a)).
   rewrite Rmult_assoc.
-  rewrite <- Rinv_mult_distr.
+  rewrite <- Rinv_mult.
   replace (4 * a * a) with (Rsqr (2 * a)).
   reflexivity.
   ring_Rsqr.
-  apply prod_neq_R0;
-    [ discrR | apply (cond_nonzero a) ].
-  apply (cond_nonzero a).
   assumption.
-  apply prod_neq_R0; [ discrR | apply (cond_nonzero a) ].
   rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
   symmetry ; apply Rmult_1_l.
   apply (cond_nonzero a).
