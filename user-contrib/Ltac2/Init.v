@@ -85,3 +85,6 @@ Ltac2 Type exn ::= [ Tactic_failure (message option) ].
 
 Ltac2 Type exn ::= [ Assertion_failure ].
 (** Used to indicate that an Ltac2 function ran into a situation that should never occcur. *)
+
+Ltac2 Type exn ::= [ Division_by_zero ].
+(** Int division by zero or modulus by zero *)
