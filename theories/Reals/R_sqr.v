@@ -65,19 +65,17 @@ Proof.
               apply Rmult_lt_0_compat; assumption ] ].
 Qed.
 
+Lemma Rsqr_div' x y : Rsqr (x / y) = Rsqr x / Rsqr y.
+Proof.
+  unfold Rsqr, Rdiv.
+  rewrite Rinv_mult.
+  ring.
+Qed.
+
 Lemma Rsqr_div : forall x y:R, y <> 0 -> Rsqr (x / y) = Rsqr x / Rsqr y.
 Proof.
-  intros; unfold Rsqr.
-  unfold Rdiv.
-  rewrite Rinv_mult_distr.
-  repeat rewrite Rmult_assoc.
-  apply Rmult_eq_compat_l.
-  rewrite Rmult_comm.
-  repeat rewrite Rmult_assoc.
-  apply Rmult_eq_compat_l.
-  reflexivity.
-  assumption.
-  assumption.
+  intros x y _.
+  apply Rsqr_div'.
 Qed.
 
 Lemma Rsqr_eq_0 : forall x:R, Rsqr x = 0 -> x = 0.
@@ -318,10 +316,16 @@ Proof.
           intro; apply Rsqr_le_abs_0; assumption ].
 Qed.
 
+Lemma Rsqr_inv' x : Rsqr (/ x) = / Rsqr x.
+Proof.
+  unfold Rsqr.
+  now rewrite Rinv_mult.
+Qed.
+
 Lemma Rsqr_inv : forall x:R, x <> 0 -> Rsqr (/ x) = / Rsqr x.
 Proof.
-  intros; unfold Rsqr.
-  rewrite Rinv_mult_distr; try reflexivity || assumption.
+  intros x _.
+  apply Rsqr_inv'.
 Qed.
 
 Lemma canonical_Rsqr :

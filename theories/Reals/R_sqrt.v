@@ -338,9 +338,9 @@ Proof.
             apply (Rmult_lt_compat_l (sqrt x) (sqrt x) 1 (sqrt_lt_R0 x H1) H3).
 Qed.
 
-Lemma inv_sqrt x : 0 < x -> / sqrt x = sqrt (/ x).
+Lemma sqrt_inv x : sqrt (/ x) = / sqrt x.
 Proof.
-intros x0.
+destruct (Rlt_or_le 0 x) as [H|H].
 assert (sqrt x <> 0).
   apply Rgt_not_eq.
   now apply sqrt_lt_R0.
@@ -350,6 +350,19 @@ rewrite <- sqrt_mult_alt.
   now rewrite -> Rinv_l, sqrt_1; auto with real.
 apply Rlt_le.
 now apply Rinv_0_lt_compat.
+rewrite sqrt_neg_0 with (1 := H).
+rewrite sqrt_neg_0.
+apply eq_sym, Rinv_0.
+destruct H as [H| ->].
+now apply Rlt_le, Rinv_lt_0_compat.
+rewrite Rinv_0.
+apply Rle_refl.
+Qed.
+
+Lemma inv_sqrt x : 0 < x -> / sqrt x = sqrt (/ x).
+Proof.
+intros _.
+apply eq_sym, sqrt_inv.
 Qed.
 
 Lemma sqrt_cauchy :

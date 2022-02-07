@@ -630,12 +630,8 @@ Qed.
 
 Theorem Rinv_Rdiv : forall x y:R, x <> 0 -> y <> 0 -> / (x / y) = y / x.
 Proof.
-  intros x y H1 H2; unfold Rdiv; rewrite Rinv_mult_distr.
-  rewrite Rinv_involutive.
-  apply Rmult_comm.
-  assumption.
-  assumption.
-  apply Rinv_neq_0_compat; assumption.
+  intros x y _ _.
+  apply Rinv_div.
 Qed.
 
 Theorem Dln : forall y:R, 0 < y -> D_in ln Rinv (fun x:R => 0 < x) y.

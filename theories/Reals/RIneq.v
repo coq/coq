@@ -857,6 +857,14 @@ Proof. intros; ring. Qed.
 (** ** Inverse                                           *)
 (*********************************************************)
 
+Lemma Rinv_0 : / 0 = 0.
+Proof.
+rewrite RinvImpl.Rinv_def.
+case Req_appart_dec.
+- easy.
+- intros [H|H] ; elim Rlt_irrefl with (1 := H).
+Qed.
+
 Lemma Rinv_1 : / 1 = 1.
 Proof.
   field.
@@ -874,24 +882,61 @@ Qed.
 Hint Resolve Rinv_neq_0_compat: real.
 
 (*********)
+Lemma Rinv_inv r : / / r = r.
+Proof.
+destruct (Req_dec r 0) as [->|H].
+- rewrite Rinv_0.
+  apply Rinv_0.
+- now field.
+Qed.
+
 Lemma Rinv_involutive : forall r, r <> 0 -> / / r = r.
 Proof.
-  intros; field; trivial.
+intros r _.
+apply Rinv_inv.
 Qed.
 #[global]
 Hint Resolve Rinv_involutive: real.
 
 (*********)
+Lemma Rinv_mult r1 r2 : / (r1 * r2) = / r1 * / r2.
+Proof.
+destruct (Req_dec r1 0) as [->|H1].
+- rewrite Rinv_0, 2!Rmult_0_l.
+  apply Rinv_0.
+- destruct (Req_dec r2 0) as [->|H2].
+  + rewrite Rinv_0, 2!Rmult_0_r.
+    apply Rinv_0.
+  + now field.
+Qed.
+
 Lemma Rinv_mult_distr :
   forall r1 r2, r1 <> 0 -> r2 <> 0 -> / (r1 * r2) = / r1 * / r2.
 Proof.
-  intros; field; auto.
+  intros r1 r2 _ _.
+  apply Rinv_mult.
 Qed.
 
 (*********)
+Lemma Rinv_opp r : / -r = - /r.
+Proof.
+destruct (Req_dec r 0) as [->|H].
+- rewrite Ropp_0, Rinv_0.
+  apply eq_sym, Ropp_0.
+- now field.
+Qed.
+
 Lemma Ropp_inv_permute : forall r, r <> 0 -> - / r = / - r.
 Proof.
-  intros; field; trivial.
+intros r H.
+apply eq_sym, Rinv_opp.
+Qed.
+
+Lemma Rinv_div x y : / (x / y) = y / x.
+Proof.
+  unfold Rdiv; rewrite Rinv_mult.
+  rewrite Rinv_inv.
+  apply Rmult_comm.
 Qed.
 
 Lemma Rinv_r_simpl_r : forall r1 r2, r1 <> 0 -> r1 * / r1 * r2 = r2.
@@ -2158,10 +2203,17 @@ Lemma Ropp_div : forall x y, -x/y = - (x / y).
   intros x y; unfold Rdiv; ring.
 Qed.
 
+Lemma Rdiv_opp_r x y : x / - y = - (x / y).
+Proof.
+  unfold Rdiv.
+  rewrite Rinv_opp.
+  ring.
+Qed.
+
 Lemma Ropp_div_den : forall x y : R, y<>0 -> x / - y = - (x / y).
 Proof.
-  intros.
-  field; assumption.
+  intros x y _.
+  apply Rdiv_opp_r.
 Qed.
 
 Lemma double : forall r1, 2 * r1 = r1 + r1.

@@ -954,15 +954,16 @@ Definition cv_infty (Un:nat -> R) : Prop :=
   forall M:R,  exists N : nat, (forall n:nat, (N <= n)%nat -> M < Un n).
 
 (** Un -> +oo => /Un -> O *)
-Lemma cv_infty_cv_R0 :
-  forall Un:nat -> R,
-    (forall n:nat, Un n <> 0) -> cv_infty Un -> Un_cv (fun n:nat => / Un n) 0.
+Lemma cv_infty_cv_0 :
+  forall Un:nat -> R, cv_infty Un -> Un_cv (fun n:nat => / Un n) 0.
 Proof.
-  unfold cv_infty, Un_cv; unfold R_dist; intros.
+  unfold cv_infty, Un_cv; unfold R_dist; intros Un H0 eps H1.
   elim (H0 (/ eps)); intros N0 H2.
-  exists N0; intros.
+  exists N0; intros n H3.
   unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r;
-    rewrite (Rabs_Rinv _ (H n)).
+    rewrite Rabs_inv.
+  destruct (Req_dec (Un n) 0) as [->|H].
+  { now rewrite Rabs_R0, Rinv_0. }
   apply Rmult_lt_reg_l with (Rabs (Un n)).
   apply Rabs_pos_lt; apply H.
   rewrite <- Rinv_r_sym.
@@ -975,6 +976,14 @@ Proof.
   apply RRle_abs.
   red; intro; rewrite H4 in H1; elim (Rlt_irrefl _ H1).
   apply Rabs_no_R0; apply H.
+Qed.
+
+Lemma cv_infty_cv_R0 :
+  forall Un:nat -> R,
+    (forall n:nat, Un n <> 0) -> cv_infty Un -> Un_cv (fun n:nat => / Un n) 0.
+Proof.
+  intros Un _.
+  apply cv_infty_cv_0.
 Qed.
 
 (**********)

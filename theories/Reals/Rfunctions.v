@@ -282,14 +282,18 @@ Proof.
   intros; simpl; apply Rmult_0_l.
 Qed.
 
+Lemma pow_inv x n : (/ x)^n = / x^n.
+Proof.
+induction n as [|n IH] ; simpl.
+- apply eq_sym, Rinv_1.
+- rewrite Rinv_mult.
+  now apply f_equal.
+Qed.
+
 Lemma Rinv_pow : forall (x:R) (n:nat), x <> 0 -> / x ^ n = (/ x) ^ n.
 Proof.
-  intros; elim n; simpl.
-  apply Rinv_1.
-  intro m; intro; rewrite Rinv_mult_distr.
-  rewrite H0; reflexivity; assumption.
-  assumption.
-  apply pow_nonzero; assumption.
+intros x n _.
+apply eq_sym, pow_inv.
 Qed.
 
 Lemma pow_lt_1_zero :
@@ -718,44 +722,54 @@ Proof.
     now rewrite <- Pos2Z.opp_pos, <- positive_nat_Z.
 Qed.
 
-Lemma powerRZ_inv x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
+Lemma powerRZ_inv' x alpha : powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
 Proof.
-  intros; destruct (intP alpha).
+  destruct (intP alpha).
   - now simpl; rewrite Rinv_1.
-  - now rewrite <-!pow_powerRZ, ?Rinv_pow, ?pow_powerRZ.
+  - now rewrite <-!pow_powerRZ, ?pow_inv, ?pow_powerRZ.
   - unfold powerRZ.
     destruct (- n).
     + now rewrite Rinv_1.
-    + now rewrite Rinv_pow.
-    + now rewrite <-Rinv_pow.
+    + apply pow_inv.
+    + now rewrite pow_inv.
+Qed.
+
+Lemma powerRZ_inv x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
+Proof.
+  intros _.
+  apply powerRZ_inv'.
+Qed.
+
+Lemma powerRZ_neg' x : forall alpha, powerRZ x (- alpha) = Rinv (powerRZ x alpha).
+Proof.
+  intros [|n|n] ; simpl.
+  - apply eq_sym, Rinv_1.
+  - easy.
+  - now rewrite Rinv_inv.
 Qed.
 
 Lemma powerRZ_neg x : forall alpha, x <> R0 -> powerRZ x (- alpha) = powerRZ (/ x) alpha.
 Proof.
-  intros [|n|n] H ; simpl.
-  - easy.
-  - now rewrite Rinv_pow.
-  - rewrite Rinv_pow by now apply Rinv_neq_0_compat.
-    now rewrite Rinv_involutive.
+  intros alpha _.
+  rewrite powerRZ_neg'.
+  apply eq_sym, powerRZ_inv'.
+Qed.
+
+Lemma powerRZ_mult m x y : (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
+Proof.
+  destruct (intP m) as [ | | n Hm ].
+  - now simpl; rewrite Rmult_1_l.
+  - now rewrite <- !pow_powerRZ, Rpow_mult_distr.
+  - rewrite !powerRZ_neg', <- Rinv_mult.
+    now rewrite <- !pow_powerRZ, Rpow_mult_distr.
 Qed.
 
 Lemma powerRZ_mult_distr :
   forall m x y, ((0 <= m)%Z \/ (x * y <> 0)%R) ->
            (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
 Proof.
-  intros m x0 y0 Hmxy.
-  destruct (intP m) as [ | | n Hm ].
-  - now simpl; rewrite Rmult_1_l.
-  - now rewrite <- !pow_powerRZ, Rpow_mult_distr.
-  - destruct Hmxy as [H|H].
-    + assert(m = 0) as -> by
-      (destruct n; [assumption| subst; simpl in H; lia_contr]).
-      now rewrite <- Hm, Rmult_1_l.
-    + assert(x0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_l.
-      assert(y0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_r.
-      rewrite !powerRZ_neg by assumption.
-      rewrite Rinv_mult_distr by assumption.
-      now rewrite <- !pow_powerRZ, Rpow_mult_distr.
+  intros m x y _.
+  apply powerRZ_mult.
 Qed.
 
 End PowerRZ.
