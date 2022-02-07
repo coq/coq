@@ -186,7 +186,7 @@ Ltac easy :=
   solve [ do_atom | use_hyps; do_ccl ] ||
   fail "Cannot solve this goal".
 
-Tactic Notation "now" tactic(t) := t; easy.
+Tactic Notation (at level 5) "now" tactic(t) := t; easy.
 
 (** Slightly more than [easy]*)
 
