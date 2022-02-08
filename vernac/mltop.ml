@@ -304,7 +304,7 @@ let if_verbose_load verb f name =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let trigger_ml_object verb cache reinit use_legacy_loading_if_possible s =
+let trigger_ml_object ~verb ~cache ~reinit ~use_legacy_loading_if_possible s =
   let plugin = Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed s in
   if plugin_is_known plugin then begin
     if reinit then init_ml_object plugin;
@@ -322,7 +322,7 @@ let trigger_ml_object verb cache reinit use_legacy_loading_if_possible s =
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
   List.iter
-    (fun (use_legacy_loading_if_possible,name) -> trigger_ml_object false false false use_legacy_loading_if_possible name) x
+    (fun (use_legacy_loading_if_possible,name) -> trigger_ml_object ~verb:false ~cache:false ~reinit:false ~use_legacy_loading_if_possible name) x
 
 let _ =
   Summary.declare_ml_modules_summary
@@ -341,14 +341,15 @@ let current_logpathroot () =
   let open Names in
   List.hd @@ List.rev @@ DirPath.repr @@ ModPath.dp @@ Global.current_modpath ()
 
-let cache_ml_objects mnames use_legacy_loading_if_possible =
-  let iter obj = trigger_ml_object true true true use_legacy_loading_if_possible obj in
+let cache_ml_objects mnames =
+  let use_legacy_loading_if_possible = true in
+  let iter obj = trigger_ml_object ~verb:true ~cache:true ~reinit:true ~use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames; dune_compat_logpathroot; _} =
   let use_legacy_loading_if_possible =
     Names.Id.equal dune_compat_logpathroot (current_logpathroot ()) in
-  let iter obj = trigger_ml_object true false true use_legacy_loading_if_possible obj in
+  let iter obj = trigger_ml_object ~verb:true ~cache:false ~reinit:true ~use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
@@ -371,7 +372,7 @@ let declare_ml_modules local l =
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
      the ML-MODULE object before them. *)
-  cache_ml_objects l true
+  cache_ml_objects l
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in
