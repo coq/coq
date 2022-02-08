@@ -32,6 +32,7 @@ type entry_type =
   | Notation
   | Section
   | Binder
+  | Other of string
 
 type index_entry =
   | Def of string * entry_type
@@ -178,6 +179,7 @@ let type_name = function
   | Notation -> "notation"
   | Section -> "section"
   | Binder -> "binder"
+  | Other s -> s
 
 let prepare_entry s = function
   | Notation ->

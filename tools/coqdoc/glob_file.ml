@@ -11,6 +11,8 @@
 open Printf
 open Index
 
+let other_types = Hashtbl.create 19
+
 let type_of_string = function
   | "def" | "coe" | "subclass" | "canonstruc" | "fix" | "cofix" | "ex"
    |"scheme" ->
@@ -32,7 +34,12 @@ let type_of_string = function
   | "tac" -> TacticDefinition
   | "sec" -> Section
   | "binder" -> Binder
-  | s -> invalid_arg ("type_of_string:" ^ s)
+  | s ->
+      let s =
+        match Hashtbl.find_opt other_types s with
+        | Some s -> s
+        | None -> Hashtbl.add other_types s s; s in
+      Other s
 
 let ill_formed_glob_file f =
   eprintf "Warning: ill-formed file %s (links will not be available)\n" f

@@ -31,6 +31,7 @@ type entry_type =
   | Notation
   | Section
   | Binder
+  | Other of string
 
 val type_name : entry_type -> string
 
