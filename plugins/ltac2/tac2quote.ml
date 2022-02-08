@@ -60,7 +60,7 @@ let std_proj ?loc name =
 let thunk e =
   let t_unit = coq_core "unit" in
   let loc = e.loc in
-  let ty = CAst.make?loc @@ CTypRef (AbsKn (Other t_unit), []) in
+  let ty = CAst.make?loc @@ CTypRef (AbsKn (Other (CAst.make t_unit)), []) in
   let pat = CAst.make ?loc @@ CPatVar (Anonymous) in
   let pat = CAst.make ?loc @@ CPatCnv (pat, ty) in
   CAst.make ?loc @@ CTacFun ([pat], e)
@@ -276,7 +276,7 @@ let abstract_vars loc ?typ vars tac =
   | None -> pat
   | Some typ ->
     let t_array = coq_core "array" in
-    let typ = CAst.make ?loc @@ CTypRef (AbsKn (Other t_array), [typ]) in
+    let typ = CAst.make ?loc @@ CTypRef (AbsKn (Other (CAst.make t_array)), [typ]) in
     CAst.make ?loc @@ CPatCnv (pat, typ)
   in
   CAst.make ?loc @@ CTacFun ([pat], tac)
@@ -424,7 +424,7 @@ let of_constr_matching {loc;v=m} =
     (* Annotate the bound array variable with constr type *)
     let typ =
       let t_constr = coq_core "constr" in
-      CAst.make ?loc @@ CTypRef (AbsKn (Other t_constr), [])
+      CAst.make ?loc @@ CTypRef (AbsKn (Other (CAst.make t_constr)), [])
     in
     let e = abstract_vars loc ~typ vars tac in
     let e = CAst.make ?loc @@ CTacFun ([CAst.make ?loc @@ CPatVar na], e) in

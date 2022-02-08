@@ -213,12 +213,12 @@ let rec intern_type env ({loc;v=t} : raw_typexpr) : UF.elt glb_typexpr = match t
 | CTypVar (Name id) -> GTypVar (get_alias (CAst.make ?loc id) env)
 | CTypVar Anonymous -> GTypVar (fresh_id env)
 | CTypRef (rel, args) ->
-  let (kn, nparams) = match rel with
+  let (kn, knloc, nparams) = match rel with
   | RelId qid ->
     let id = qualid_basename qid in
     if qualid_is_ident qid && Id.Map.mem id env.env_rec then
       let (kn, n) = Id.Map.find id env.env_rec in
-      (Other kn, n)
+      (Other kn, qid.CAst.loc, n)
     else
       let kn =
         try Tac2env.locate_type qid
@@ -226,25 +226,29 @@ let rec intern_type env ({loc;v=t} : raw_typexpr) : UF.elt glb_typexpr = match t
           user_err ?loc (str "Unbound type constructor " ++ pr_qualid qid)
       in
       let (nparams, _) = Tac2env.interp_type kn in
-      (Other kn, nparams)
-  | AbsKn (Other kn) ->
+      (Other kn, qid.CAst.loc, nparams)
+  | AbsKn (Other {loc;v=kn}) ->
     let (nparams, _) = Tac2env.interp_type kn in
-    (Other kn, nparams)
+    (Other kn, loc, nparams)
   | AbsKn (Tuple n) ->
-    (Tuple n, n)
+    (Tuple n, loc, n)
   in
   let nargs = List.length args in
   let () =
     if not (Int.equal nparams nargs) then
       let qid = match rel with
       | RelId lid -> lid
-      | AbsKn (Other kn) -> shortest_qualid_of_type ?loc kn
+      | AbsKn (Other {loc;v=kn}) -> shortest_qualid_of_type ?loc kn
       | AbsKn (Tuple _) -> assert false
       in
       user_err ?loc (strbrk "The type constructor " ++ pr_qualid qid ++
         strbrk " expects " ++ int nparams ++ strbrk " argument(s), but is here \
         applied to " ++ int nargs ++ strbrk "argument(s)")
   in
+  let () =
+    match kn with
+    | Other kn -> Dumpglob.dump_knref ?loc:knloc kn "tac2type"
+    | _ -> () in
   GTypRef (kn, List.map (fun t -> intern_type env t) args)
 | CTypArrow (t1, t2) -> GTypArrow (intern_type env t1, intern_type env t2)
 
@@ -1511,7 +1515,7 @@ let rec subst_rawtype subst ({loc;v=tr} as t) = match tr with
   let t2' = subst_rawtype subst t2 in
   if t1' == t1 && t2' == t2 then t else CAst.make ?loc @@ CTypArrow (t1', t2')
 | CTypRef (ref, tl) ->
-  let ref' = subst_or_relid subst ref in
+  let ref' = subst_or_relid_loc subst ref in
   let tl' = List.Smart.map (fun t -> subst_rawtype subst t) tl in
   if ref' == ref && tl' == tl then t else CAst.make ?loc @@ CTypRef (ref', tl')
 

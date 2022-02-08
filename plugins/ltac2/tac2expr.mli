@@ -47,7 +47,7 @@ type 'a or_tuple =
 type raw_typexpr_r =
 | CTypVar of Name.t
 | CTypArrow of raw_typexpr * raw_typexpr
-| CTypRef of type_constant or_tuple or_relid * raw_typexpr list
+| CTypRef of type_constant CAst.t or_tuple or_relid * raw_typexpr list
 
 and raw_typexpr = raw_typexpr_r CAst.t
 

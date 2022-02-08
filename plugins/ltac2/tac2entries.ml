@@ -395,6 +395,7 @@ let register_typedef ?(local = false) isrec types =
     List.iter check_existing_type types
   in
   let check ({loc;v=id}, (params, def)) =
+    Dumpglob.dump_kndef ?loc (Lib.make_kn id) "tac2type";
     let same_name {v=id1} {v=id2} = Id.equal id1 id2 in
     let () = match List.duplicates same_name params with
     | [] -> ()
