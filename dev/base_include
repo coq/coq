@@ -107,7 +107,6 @@ open Prettyp
 open Search
 
 open Evar_refiner
-open Goal
 open Logic
 open Proof
 open Proof_using
