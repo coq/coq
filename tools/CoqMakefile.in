@@ -752,7 +752,7 @@ $(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib
 
 $(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib
 	$(SHOW)'CAMLOPT -a -o $@'
-	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $^
+	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -a -o $@ $^
 
 
 $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmxa
@@ -760,9 +760,9 @@ $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmxa
 	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) \
 		-shared -o $@ $<
 
-$(MLPACKFILES:.mlpack=.cmxa): %.cmxa: %.cmx
+$(MLPACKFILES:.mlpack=.cmxa): %.cmxa: %.cmx | %.mlpack
 	$(SHOW)'CAMLOPT -a -o $@'
-	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $<
+	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -a -o $@ $<
 
 $(MLPACKFILES:.mlpack=.cma): %.cma: %.cmo | %.mlpack
 	$(SHOW)'CAMLC -a -o $@'
