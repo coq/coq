@@ -56,7 +56,7 @@ type pretype_error =
   (* Pretyping *)
   | VarNotFound of Id.t
   | EvarNotFound of Id.t
-  | UnexpectedType of constr * constr
+  | UnexpectedType of constr * constr * unification_error
   | NotProduct of constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
@@ -163,8 +163,8 @@ let error_cant_find_case_type ?loc env sigma expr =
 
 (*s Pretyping errors *)
 
-let error_unexpected_type ?loc env sigma actty expty =
-  raise_pretype_error ?loc (env, sigma, UnexpectedType (actty, expty))
+let error_unexpected_type ?loc env sigma actty expty e =
+  raise_pretype_error ?loc (env, sigma, UnexpectedType (actty, expty, e))
 
 let error_not_product ?loc env sigma c =
   raise_pretype_error ?loc (env, sigma, NotProduct c)
