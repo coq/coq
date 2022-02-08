@@ -55,6 +55,9 @@ val dump_constraint : Names.lname -> bool -> string -> unit
 
 val dump_string : string -> unit
 
+val dump_knref : ?loc:Loc.t -> Names.KerName.t -> string -> unit
+val dump_kndef : ?loc:Loc.t -> Names.KerName.t -> string -> unit
+
 val type_of_global_ref : Names.GlobRef.t -> string
 
 (** Registration of constant information *)

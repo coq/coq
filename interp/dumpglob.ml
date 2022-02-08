@@ -184,6 +184,13 @@ let dump_modref ?loc mp ty =
   let ident = "<>" in
   dump_ref ?loc filepath modpath ident ty
 
+let dump_knref ?loc kn ty =
+  let (dp, l) = Lib.split_modpath (Names.KerName.modpath kn) in
+  let filepath = Names.DirPath.to_string dp in
+  let modpath = Names.DirPath.to_string (Names.DirPath.make l) in
+  let ident = Names.Label.to_string (Names.KerName.label kn) in
+  dump_ref ?loc filepath modpath ident ty
+
 let dump_libref ?loc dp ty =
   dump_ref ?loc (Names.DirPath.to_string dp) "<>" "<>" ty
 
@@ -293,3 +300,9 @@ let dump_notation {CAst.loc;v=df} sc sec = Option.iter (fun loc ->
 
 let dump_binding ?loc uid =
   dump_def ?loc "binder" "<>" uid
+
+let dump_kndef ?loc kn ty =
+  let (_, l) = Lib.split_modpath (Names.KerName.modpath kn) in
+  let modpath = Names.DirPath.to_string (Names.DirPath.make l) in
+  let ident = Names.Label.to_string (Names.KerName.label kn) in
+  dump_def ?loc ty modpath ident
