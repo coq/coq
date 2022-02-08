@@ -173,7 +173,7 @@ let concl_next_tac =
     "right"
   ])
 
-let process_goal sigma g =
+let process_goal short sigma g =
   let evi = Evd.find sigma g in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
@@ -185,9 +185,14 @@ let process_goal sigma g =
     let d' = CompactedDecl.to_named_context d in
       (List.fold_right Environ.push_named d' env,
        (pr_compacted_decl env sigma d) :: l) in
-  let (_env, hyps) =
-    Context.Compacted.fold process_hyp
-      (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
+  let hyps =
+    if short then [] else
+      let (_env, hyps) =
+        Context.Compacted.fold process_hyp
+        (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[])
+      in
+      hyps
+  in
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = Proof.goal_uid g; Interface.goal_name = name }
 
 let process_goal_diffs diff_goal_map oldp nsigma ng =
@@ -201,17 +206,31 @@ let process_goal_diffs diff_goal_map oldp nsigma ng =
   { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
     Interface.goal_id = Proof.goal_uid ng; Interface.goal_name = name }
 
-let export_pre_goals Proof.{ sigma; goals; stack } process =
-  let process = List.map (process sigma) in
-  { Interface.fg_goals       = process goals
-  ; Interface.bg_goals       = List.(map (fun (lg,rg) -> process lg, process rg)) stack
-  ; Interface.shelved_goals  = process @@ Evd.shelf sigma
-  ; Interface.given_up_goals = process (Evar.Set.elements @@ Evd.given_up sigma)
-  }
+let export_pre_goals flags Proof.{ sigma; goals; stack } process =
+  let open Interface in
+  let process x = List.map (process sigma) x in
+  let fg_goals = if flags.gf_fg then process goals else [] in
+  let bg_goals =
+    if flags.gf_bg then List.(map (fun (lg,rg) -> process lg, process rg)) stack
+    else []
+  in
+  let shelved_goals =
+    if flags.gf_shelved then process @@ Evd.shelf sigma
+    else []
+  in
+  let given_up_goals =
+    if flags.gf_given_up then process (Evar.Set.elements @@ Evd.given_up sigma)
+    else []
+  in
+  { fg_goals; bg_goals; shelved_goals; given_up_goals }
 
-let goals () =
+let subgoals flags =
   let doc = get_doc () in
   set_doc @@ Stm.finish ~doc;
+  let short = match flags.Interface.gf_mode with
+  | "short" -> true
+  | _ -> false
+  in
   try
     let newp = Vernacstate.Declare.give_me_the_proof () in
     if Proof_diffs.show_diffs () then begin
@@ -221,14 +240,19 @@ let goals () =
         | None -> None
         | Some oldp -> Some (Proof_diffs.make_goal_map oldp newp)
         in
-        Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
+        Some (export_pre_goals flags Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
        with Pp_diff.Diff_Failure msg ->
          Proof_diffs.notify_proof_diff_failure msg;
-         Some (export_pre_goals Proof.(data newp) process_goal))
+         Some (export_pre_goals flags Proof.(data newp) (process_goal short)))
     end else
-      Some (export_pre_goals Proof.(data newp) process_goal)
+      Some (export_pre_goals flags Proof.(data newp) (process_goal short))
   with Vernacstate.Declare.NoCurrentProof -> None
-  [@@ocaml.warning "-3"];;
+  [@@ocaml.warning "-3"]
+
+let goals () =
+  let open Interface in
+  let all = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = true; gf_given_up = true } in
+  subgoals all
 
 let evars () =
   try
@@ -501,6 +525,7 @@ let eval_call c =
     Interface.stop_worker = Stm.stop_worker;
     Interface.print_ast = print_ast;
     Interface.annotate = interruptible annotate;
+    Interface.subgoals = interruptible subgoals;
   } in
   Xmlprotocol.abstract_eval_call handler c
 

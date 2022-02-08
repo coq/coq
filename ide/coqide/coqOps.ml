@@ -238,6 +238,12 @@ type queue_msg =
   | MsgFeedback of Feedback.feedback
   | MsgDebug of string * Pp.t
 
+let rec flatten = function
+| [] -> []
+| (lg, rg) :: l ->
+  let inner = flatten l in
+  List.rev_append lg inner @ rg
+
 class coqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
@@ -380,18 +386,37 @@ object(self)
         script#recenter_insert
       end
     end;
-    Coq.bind (Coq.goals ()) (function
+    let flags = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = false; gf_given_up = false } in
+    let return x = Coq.return (Good x) in
+    let (>>=) m f = Coq.bind m (function
+    | Fail x -> Coq.return (Fail x)
+    | Good v -> f v)
+    in
+    let call =
+      Coq.subgoals flags >>= begin function
+      | None -> return Wg_ProofView.NoGoals
+      | Some { fg_goals = ((_ :: _) as fg); bg_goals = bg } ->
+        let bg = flatten (List.rev bg) in
+        return (Wg_ProofView.FocusGoals { fg; bg; })
+      | Some { fg_goals = []; bg_goals = bg } ->
+        let flags = { gf_mode = "short"; gf_fg = false; gf_bg = false; gf_shelved = true; gf_given_up = true } in
+        Coq.subgoals flags >>= fun rem ->
+        let bg = flatten (List.rev bg) in
+        let shelved, given_up = match rem with
+        | None -> [], []
+        | Some goals -> goals.shelved_goals, goals.given_up_goals
+        in
+        return (Wg_ProofView.NoFocusGoals { bg; shelved; given_up })
+      end
+    in
+    Coq.bind call begin function
     | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
-      Coq.bind (Coq.evars ()) (function
-        | Fail x -> self#handle_failure_aux ~move_insert x
-        | Good evs ->
-          proof#set_goals goals;
-          proof#set_evars evs;
-          proof#refresh ~force:true;
-          Coq.return ()
-        )
-      )
+      proof#set_goals goals;
+      proof#refresh ~force:true;
+      Coq.return ()
+    end
+
   method show_goals = self#show_goals_aux ()
 
   (* This method is intended to perform stateless commands *)

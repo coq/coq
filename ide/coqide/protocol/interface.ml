@@ -97,6 +97,15 @@ type search_constraint =
     the flag should be negated. *)
 type search_flags = (search_constraint * bool) list
 
+(** Subset of goals to print. *)
+type goal_flags = {
+  gf_mode : string;
+  gf_fg : bool;
+  gf_bg : bool;
+  gf_shelved : bool;
+  gf_given_up : bool;
+}
+
 (** A named object in Coq. [coq_object_qualid] is the shortest path defined for
     the user. [coq_object_prefix] is the missing part to recover the fully
     qualified name, i.e [fully_qualified = coq_object_prefix + coq_object_qualid].
@@ -174,6 +183,11 @@ type query_rty = unit
     progress, [Some gl] otherwise. *)
 type goals_sty = unit
 type goals_rty = goals option
+
+(** Same as above, but specific kind of goals can be retrieved by setting the
+    flags. *)
+type subgoals_sty = goal_flags
+type subgoals_rty = goals option
 
 (** Retrieve the list of uninstantiated evars in the current proof. [None] if no
     proof is in progress. *)
@@ -302,5 +316,6 @@ type handler = {
   wait        : wait_sty        -> wait_rty;
   (* Retrocompatibility stuff *)
   interp      : interp_sty      -> interp_rty;
+  subgoals    : subgoals_sty -> subgoals_rty;
 }
 
