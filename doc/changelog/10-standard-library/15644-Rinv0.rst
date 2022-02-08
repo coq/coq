@@ -1,0 +1,7 @@
+- **Added:**
+  lemmas ``Rinv_inv``, ``Rinv_mult``, ``Rinv_opp``, ``Rinv_div``, ``Rdiv_opp_r``,
+  ``Rsqr_div'``, ``Rsqr_inv'``, ``sqrt_inv``, ``Rabs_inv``, ``pow_inv``,
+  ``powerRZ_inv'``, ``powerRZ_neg'``, ``powerRZ_mult``, ``cv_infty_cv_0``,
+  which are variants of existing lemmas, but without any hypothesis
+  (`#15644 <https://github.com/coq/coq/pull/15644>`_,
+  by Guillaume Melquiond).
