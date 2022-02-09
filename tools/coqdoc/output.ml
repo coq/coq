@@ -37,7 +37,7 @@ let is_keyword =
       "Hypothesis"; "Hypotheses";
       "Resolve"; "Unfold"; "Immediate"; "Extern"; "Constructors"; "Rewrite";
       "Implicit"; "Import"; "Inductive";
-      "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Locate"; "Ltac";
+      "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Locate"; "Ltac"; "Ltac2";
       "Module"; "Module Type"; "Declare Module"; "Include";
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Printing"; "All"; "Proof"; "Proof with"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme"; "Assumptions"; "Axioms"; "Universes";
