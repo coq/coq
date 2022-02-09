@@ -335,9 +335,14 @@ let () =
 
 (* Liboject entries of declared ML Modules *)
 
+type ml_module_digest =
+  | NoDigest
+  | AnyDigest of Digest.t list
+
 type ml_module_object = {
   mlocal : Vernacexpr.locality_flag;
   mnames : string list;
+  mdigests : ml_module_digest list;
   dune_compat_logpathroot : Names.module_ident
 }
 let current_logpathroot () =
@@ -367,11 +372,48 @@ let inMLModule : ml_module_object -> Libobject.obj =
       subst_function = (fun (_,o) -> o);
       classify_function = classify_ml_objects }
 
+(* Fl_split.in_words is not exported *)
+let fl_split_in_words s =
+  (* splits s in words separated by commas and/or whitespace *)
+  let l = String.length s in
+  let rec split i j =
+    if j < l then
+      match s.[j] with
+      | (' '|'\t'|'\n'|'\r'|',') ->
+        if i<j then (String.sub s i (j-i)) :: (split (j+1) (j+1))
+        else split (j+1) (j+1)
+      |	_ ->
+        split i (j+1)
+    else
+    if i<j then [ String.sub s i (j-i) ] else []
+  in
+  split 0 0
+
+let get_digest m =
+  match Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed m with
+  | Legacy { obj_file_path=f } -> AnyDigest [Digest.file f]
+  | Findlib { fl_public_name=f } -> begin
+      (* simulate what fl_dynload does *)
+      let d = Findlib.package_directory f in
+      let preds = Findlib.recorded_predicates () in
+      let archive = try Findlib.package_property preds f "plugin"
+        with Not_found ->
+        try fst (Findlib.package_property_2 ("plugin"::preds) f "archive")
+        with Not_found -> ""
+      in
+      let files = fl_split_in_words archive in
+      let digests = List.map (fun file -> Digest.file (Findlib.resolve_path ~base:d file)) files in
+      AnyDigest digests
+    end
+
+let get_digest m = try get_digest m with e when noncritical e -> NoDigest
+
 let declare_ml_modules local l =
   if Global.sections_are_opened()
   then user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
   let dune_compat_logpathroot = current_logpathroot () in
-  Lib.add_leaf (inMLModule {mlocal=local; mnames=l;dune_compat_logpathroot});
+  let mdigests = List.map get_digest l in
+  Lib.add_leaf (inMLModule {mlocal=local; mnames=l; mdigests; dune_compat_logpathroot});
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
      the ML-MODULE object before them. *)
