@@ -351,6 +351,7 @@ let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
         user_err ?loc (str "Tactic definition must be a syntactical value")
     in
     let kn = Lib.make_kn id in
+    Dumpglob.dump_kndef ?loc kn "tac2val";
     let exists =
       try let _ = Tac2env.interp_global kn in true with Not_found -> false
     in
@@ -464,6 +465,7 @@ let register_typedef ?(local = false) isrec types =
   List.iter iter types
 
 let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
+  Dumpglob.dump_kndef ?loc (Lib.make_kn id) "tac2val";
   let t = intern_open_type t in
   let rec count_arrow = function
   | GTypArrow (_, t) -> 1 + count_arrow t

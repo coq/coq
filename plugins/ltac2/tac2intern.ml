@@ -694,6 +694,7 @@ let rec intern_rec env {loc;v=e} = match e with
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
   | ArgArg (TacConstant kn) ->
+    Dumpglob.dump_knref ?loc kn "tac2val";
     let { Tac2env.gdata_type = sch; gdata_deprecation = depr } =
       try Tac2env.interp_global kn
       with Not_found ->
@@ -1278,6 +1279,9 @@ let rec globalize ids ({loc;v=er} as e) = match er with
   begin match get_variable0 mem ref with
   | ArgVar _ -> e
   | ArgArg kn ->
+    let () = match kn with
+      | TacConstant kn -> Dumpglob.dump_knref ?loc kn "tac2val"
+      | _ -> () in
     let () = check_deprecated_ltac2 ?loc ref kn in
     CAst.make ?loc @@ CTacRef (AbsKn kn)
   end
