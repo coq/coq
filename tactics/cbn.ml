@@ -14,7 +14,6 @@ open Constr
 open Context
 open Termops
 open Univ
-open Evd
 open Environ
 open EConstr
 open Vars
@@ -125,8 +124,6 @@ sig
 
   and 'a t = 'a member list
 
-  exception IncompatibleFold2
-
   val pr : ('a -> Pp.t) -> 'a t -> Pp.t
   val empty : 'a t
   val append_app : 'a array -> 'a t -> 'a t
@@ -140,8 +137,8 @@ sig
   val args_size : 'a t -> int
   val tail : int -> 'a t -> 'a t
   val nth : 'a t -> int -> 'a
-  val best_state : evar_map -> constr * constr t -> Cst_stack.t -> constr * constr t
-  val zip : ?refold:bool -> evar_map -> constr * constr t -> constr
+  val best_state : Evd.evar_map -> constr * constr t -> Cst_stack.t -> constr * constr t
+  val zip : ?refold:bool -> Evd.evar_map -> constr * constr t -> constr
   val check_native_args : CPrimitives.t -> 'a t -> bool
   val get_next_primitive_args : CPrimitives.args_red -> 'a t -> CPrimitives.args_red * ('a t * 'a * 'a t) option
 end =
@@ -270,8 +267,6 @@ struct
           && equal_rec s1' s2'
       | ((App _|Case _|Proj _|Fix _|Cst _|Primitive _)::_|[]), _ -> false
     in equal_rec (List.rev sk1) (List.rev sk2)
-
-  exception IncompatibleFold2
 
   let append_app_list l s =
     let a = Array.of_list l in
