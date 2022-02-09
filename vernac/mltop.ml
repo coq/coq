@@ -304,27 +304,25 @@ let if_verbose_load verb f name =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let trigger_ml_object ~verb ~cache ~reinit ~use_legacy_loading_if_possible s =
+let trigger_ml_object ~verbose ~cache ~reinit ~use_legacy_loading_if_possible s =
   let plugin = Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed s in
-  if plugin_is_known plugin then begin
-    if reinit then init_ml_object plugin;
-    add_loaded_module (use_legacy_loading_if_possible,plugin);
-    if cache then perform_cache_obj plugin
-  end else if not has_dynlink then
-    user_err
-      (str "Dynamic link not supported (module " ++ str (pp_plugin plugin) ++ str ").")
-  else begin
-    if_verbose_load (verb && not !Flags.quiet) (load_ml_object use_legacy_loading_if_possible) plugin;
-    add_loaded_module (use_legacy_loading_if_possible,plugin);
-    if cache then perform_cache_obj plugin
-  end
+  let () = if plugin_is_known plugin then
+      begin if reinit then init_ml_object plugin end
+    else if not has_dynlink then
+      user_err
+        (str "Dynamic link not supported (module " ++ str (pp_plugin plugin) ++ str ").")
+    else
+      if_verbose_load (verbose && not !Flags.quiet) (load_ml_object use_legacy_loading_if_possible) plugin
+  in
+  add_loaded_module (use_legacy_loading_if_possible,plugin);
+  if cache then perform_cache_obj plugin
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
   List.iter
-    (fun (use_legacy_loading_if_possible,name) -> trigger_ml_object ~verb:false ~cache:false ~reinit:false ~use_legacy_loading_if_possible name) x
+    (fun (use_legacy_loading_if_possible,name) -> trigger_ml_object ~verbose:false ~cache:false ~reinit:false ~use_legacy_loading_if_possible name) x
 
-let _ =
+let () =
   Summary.declare_ml_modules_summary
     { Summary.freeze_function = (fun ~marshallable -> get_loaded_modules ());
       Summary.unfreeze_function = unfreeze_ml_modules;
@@ -343,13 +341,13 @@ let current_logpathroot () =
 
 let cache_ml_objects mnames =
   let use_legacy_loading_if_possible = true in
-  let iter obj = trigger_ml_object ~verb:true ~cache:true ~reinit:true ~use_legacy_loading_if_possible obj in
+  let iter obj = trigger_ml_object ~verbose:true ~cache:true ~reinit:true ~use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames; dune_compat_logpathroot; _} =
   let use_legacy_loading_if_possible =
     Names.Id.equal dune_compat_logpathroot (current_logpathroot ()) in
-  let iter obj = trigger_ml_object ~verb:true ~cache:false ~reinit:true ~use_legacy_loading_if_possible obj in
+  let iter obj = trigger_ml_object ~verbose:true ~cache:false ~reinit:true ~use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
