@@ -606,23 +606,12 @@ let whd_state_gen ?csts flags env sigma =
                  UnfoldWhenNoMatch { nargs = Some n } )
                 when Stack.args_size stack < n ->
                 fold ()
-              | UnfoldWhenNoMatch { recargs; nargs } -> (* maybe unfolds *)
+              | UnfoldWhenNoMatch { recargs=_; nargs } -> (* maybe unfolds *)
+                  (* TODO do something with recargs? *)
                   let app_sk,sk = Stack.strip_app stack in
                   let volatile = Option.has_some nargs in
                   let (tm',sk'),cst_l' =
-                    match recargs with
-                    | [] ->
-                      whrec (Cst_stack.add_cst ~volatile (mkConstU const) cst_l) (body, app_sk)
-                    | curr :: remains -> match Stack.strip_n_app curr app_sk with
-                      | None -> (x,app_sk), cst_l
-                      | Some (bef,arg,app_sk') ->
-                        let cst_l = Stack.Cst
-                            { const = Stack.Cst_const (fst const, u');
-                              volatile;
-                              curr; remains; params=bef; cst_l;
-                            }
-                        in
-                        whrec Cst_stack.empty (arg,cst_l :: app_sk')
+                    whrec (Cst_stack.add_cst ~volatile (mkConstU const) cst_l) (body, app_sk)
                   in
                   let rec is_case x = match EConstr.kind sigma x with
                     | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x

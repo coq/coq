@@ -27,15 +27,3 @@ Goal forall x, thing x.
   intros. cbn.
   match goal with |- thing x => idtac end.
 Abort.
-
-Definition thing' n := n + n.
-
-Arguments thing' !_ / : simpl nomatch.
-Lemma bar n : thing' n = 0.
-Proof.
-  cbn.
-  match goal with |- thing' _ = _ => idtac end.
-  Arguments thing' _ / : simpl nomatch.
-  cbn.
-  match goal with |- _ + _ = _ => idtac end.
-Abort.
