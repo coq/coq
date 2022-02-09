@@ -670,6 +670,14 @@ the toplevel, and using them in source files is discouraged.
 
 .. cmd:: Add LoadPath @string as @dirpath
 
+   .. deprecated:: 8.16
+
+      Use command line `-Q` or `-R` or put them in your `_CoqProject` file instead.
+
+      If this command is an important feature for you, please open an
+      issue at https://github.com/coq/coq/issues and explain your
+      workflow.
+
    .. insertprodn dirpath dirpath
 
    .. prodn::
@@ -685,6 +693,8 @@ the toplevel, and using them in source files is discouraged.
      path because the parser will interpret that as the end of a command or tactic.
 
 .. cmd:: Add Rec LoadPath @string as @dirpath
+
+   .. deprecated:: 8.16
 
    This command is equivalent to the command line option
    :n:`-R @string @dirpath`. It adds the physical directory string and all its
