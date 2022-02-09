@@ -1454,7 +1454,7 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
     let app = apply_rule unify in
     let strat =
       Strategies.fix (fun aux ->
-        Strategies.choice app (subterm true default_flags aux))
+        Strategies.choice (Strategies.progress app) (subterm true default_flags aux))
     in
     let occs, res = strat.strategy { input with state = initialize_occurrence_counter occs } in
     check_used_occurrences occs;
