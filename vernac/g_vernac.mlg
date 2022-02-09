@@ -581,6 +581,12 @@ GRAMMAR EXTEND Gram
       | IDENT "Collection"; id = identref; ":="; expr = section_subset_expr ->
           { VernacNameSectionHypSet (id, expr) }
 
+      (* Requiring an external file *)
+      | IDENT "From" ; ns = global ;
+        IDENT "Extra"; IDENT "Dependency"; f = ne_string ;
+        id = OPT [ "as"; id = IDENT -> { id } ] ->
+          { VernacExtraDependency (ns, f, Option.map Id.of_string id) }
+
       (* Requiring an already compiled module *)
       | IDENT "Require"; export = export_token; qidl = LIST1 global ->
           { VernacRequire (None, export, qidl) }

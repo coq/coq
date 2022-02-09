@@ -153,7 +153,8 @@ let classify_vernac e =
     | VernacNameSectionHypSet _
     | VernacComments _
     | VernacSchemeEquality _
-    | VernacDeclareInstance _ -> VtSideff ([], VtLater)
+    | VernacDeclareInstance _
+    | VernacExtraDependency _ -> VtSideff ([], VtLater)
     (* Who knows *)
     | VernacLoad _ -> VtSideff ([], VtNow)
     (* (Local) Notations have to disappear *)
