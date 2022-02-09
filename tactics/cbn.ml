@@ -42,7 +42,7 @@ module Cst_stack = struct
   type t = (constr * constr list * (int * constr array) list * volatile)  list
 
   let empty = []
-  let is_empty = CList.is_empty
+  let all_volatile = CList.for_all (fun (_,_,_,{volatile}) -> volatile)
 
   let drop_useless = function
     | _ :: ((_,_,[],_)::_ as q) -> q
@@ -299,7 +299,7 @@ struct
   let will_expose_iota args =
     List.exists
       (function (Fix (_,_,l) | Case (_,l) |
-                 Proj (_,l) | Cst {cst_l=l}) when Cst_stack.is_empty l -> true | _ -> false)
+                 Proj (_,l) | Cst {cst_l=l}) when Cst_stack.all_volatile l -> true | _ -> false)
       args
 
   let list_of_app_stack s =
@@ -606,10 +606,23 @@ let whd_state_gen ?csts flags env sigma =
                  UnfoldWhenNoMatch { nargs = Some n } )
                 when Stack.args_size stack < n ->
                 fold ()
-              | UnfoldWhenNoMatch { recargs } -> (* maybe unfolds *)
+              | UnfoldWhenNoMatch { recargs; nargs } -> (* maybe unfolds *)
                   let app_sk,sk = Stack.strip_app stack in
+                  let volatile = Option.has_some nargs in
                   let (tm',sk'),cst_l' =
-                    whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk)
+                    match recargs with
+                    | [] ->
+                      whrec (Cst_stack.add_cst ~volatile (mkConstU const) cst_l) (body, app_sk)
+                    | curr :: remains -> match Stack.strip_n_app curr app_sk with
+                      | None -> (x,app_sk), cst_l
+                      | Some (bef,arg,app_sk') ->
+                        let cst_l = Stack.Cst
+                            { const = Stack.Cst_const (fst const, u');
+                              volatile;
+                              curr; remains; params=bef; cst_l;
+                            }
+                        in
+                        whrec Cst_stack.empty (arg,cst_l :: app_sk')
                   in
                   let rec is_case x = match EConstr.kind sigma x with
                     | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x
