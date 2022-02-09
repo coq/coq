@@ -164,10 +164,8 @@ let file_of_name name =
 
   let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
 
-  let rec resolve_legacy_name_if_needed m =
+  let resolve_legacy_name_if_needed m =
     match String.split_on_char ':' m with
-    | [x] when List.mem_assoc x legacy_mapping ->
-        resolve_legacy_name_if_needed (m ^ ":coq-core." ^ String.concat "." @@ List.assoc x legacy_mapping)
     | [x] when String.index_opt m '.' = None ->
         CErrors.user_err Pp.(str Printf.(sprintf
          "%s is not a valid plugin name anymore." m) ++ spc() ++
@@ -190,6 +188,13 @@ let file_of_name name =
           str "It should be a public findlib name, e.g. package-name.foo," ++ spc () ++
           str "or a legacy name followed by a findlib public name, e.g. "++ spc () ++
           str "legacy_plugin:package-name.plugin.")
+
+  let resolve_legacy_name_if_needed m =
+    let m = match List.assoc m legacy_mapping with
+      | exception Not_found -> m
+      | flname -> m ^ ":coq-core." ^ String.concat "." @@ flname
+    in
+    resolve_legacy_name_if_needed m
 
 end
 
