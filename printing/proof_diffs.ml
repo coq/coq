@@ -555,6 +555,10 @@ let to_constr pf =
   let x = Constrextern.extern_constr env sigma t in  (* todo: right options?? *)
   x.v
 
+let has_fg_goals pf =
+  let Proof.{goals} = Proof.data pf in
+  goals <> []
+
 
 module GoalMap = Evar.Map
 
@@ -608,6 +612,8 @@ let map_goal g (osigma, map) = match GoalMap.find_opt g map with
  2. The code assumes that proof changes only take the form of replacing
  one or more goal symbols (CEvars) with new terms.  Therefore:
  - if there are no removals, the proofs are the same.
+ - if there are no foreground goals in the new proof, the proofs are
+   considered the same for diffs
  - if there are removals but no additions, then there are no new goals
    that aren't the same as their associated old goals.  For the both of
    these cases, the map is empty because there are no new goals that differ
@@ -634,7 +640,8 @@ let make_goal_map op np =
     (* only 1 removal, some additions *)
     Evar.Set.fold (fun x accu -> GoalMap.add x hd accu) add_gs ng_to_og
   | elts ->
-    if Evar.Set.is_empty add_gs then ng_to_og (* only removals *)
+    if Evar.Set.is_empty add_gs || (* only removals *)
+        not (has_fg_goals np) (* only background goals *) then ng_to_og
     else
       (* >= 2 removals, >= 1 addition, need to match *)
       let nevar_to_oevar = match_goals (to_constr op) (to_constr np) in
