@@ -121,9 +121,9 @@ GRAMMAR EXTEND Gram
         else
           CErrors.user_err ~loc (Pp.str "Syntax error") }
       | qid = Prim.qualid -> { pattern_of_qualid qid }
-      | "["; "]" -> { CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), []) }
+      | "["; "]" -> { CAst.make ~loc @@ CPatRef (AbsKn (Other (CAst.make ~loc Tac2core.Core.c_nil)), []) }
       | p1 = tac2pat; "::"; p2 = tac2pat ->
-        { CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_cons), [p1; p2])}
+        { CAst.make ~loc @@ CPatRef (AbsKn (Other (CAst.make Tac2core.Core.c_cons)), [p1; p2])}
       ]
     | "0"
       [ "_" -> { CAst.make ~loc @@ CPatVar Anonymous }

@@ -91,7 +91,7 @@ type atom =
 (** Tactic expressions *)
 type raw_patexpr_r =
 | CPatVar of Name.t
-| CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
+| CPatRef of ltac_constructor CAst.t or_tuple or_relid * raw_patexpr list
 | CPatCnv of raw_patexpr * raw_typexpr
 
 and raw_patexpr = raw_patexpr_r CAst.t

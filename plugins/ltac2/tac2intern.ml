@@ -539,6 +539,17 @@ let get_constructor env var = match var with
   end
 | AbsKn knc -> knc
 
+let get_constructor_pattern env var = match var with
+| RelId qid ->
+  let c = try Some (Tac2env.locate_constructor qid) with Not_found -> None in
+  begin match c with
+  | Some knc -> Other (CAst.make ?loc:qid.CAst.loc knc)
+  | None ->
+    CErrors.user_err ?loc:qid.CAst.loc (str "Unbound constructor " ++ pr_qualid qid)
+  end
+| AbsKn (Other qid) -> Other qid
+| AbsKn (Tuple _ as qid) -> qid
+
 let get_projection var = match var with
 | RelId qid ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
@@ -569,7 +580,10 @@ type glb_patexpr =
 let rec intern_patexpr env {loc;v=pat} = match pat with
 | CPatVar na -> GPatVar na
 | CPatRef (qid, pl) ->
-  let kn = get_constructor env qid in
+  let kn = get_constructor_pattern env qid in
+  let kn = match kn with
+    | Other {v} -> Other v
+    | Tuple _ as v -> v in
   GPatRef (kn, List.map (fun p -> intern_patexpr env p) pl)
 | CPatCnv (pat, ty) ->
   user_err ?loc (str "Pattern not handled yet")
@@ -981,10 +995,11 @@ and intern_case env loc e pl =
         brT
       | CPatRef (qid, args) ->
         let loc = pat.loc in
-        let knc = get_constructor env qid in
+        let knc = get_constructor_pattern env qid in
         let kn', index, arity = match knc with
         | Tuple n -> Tuple n, 0, List.init n (fun i -> GTypVar i)
-        | Other knc ->
+        | Other {loc;v=knc} ->
+          Dumpglob.dump_knref ?loc knc "tac2ctor";
           let data = Tac2env.interp_constructor knc in
           let index = Option.get data.cdata_indx in
           Other data.cdata_type, index, data.cdata_args
@@ -1002,7 +1017,7 @@ and intern_case env loc e pl =
         let nargs = List.length arity in
         let () = match knc with
         | Tuple n -> assert (n == nids)
-        | Other knc ->
+        | Other {v=knc} ->
           if not (Int.equal nids nargs) then error_nargs_mismatch ?loc knc nargs nids
         in
         let fold env id tpe =
@@ -1067,6 +1082,7 @@ and intern_case env loc e pl =
         | Other knc -> knc
         | Tuple n -> invalid_pattern ?loc (Other kn) (Tuple n)
         in
+        Dumpglob.dump_knref ?loc knc "tac2ctor";
         let ids = List.map get args in
         let data = Tac2env.interp_constructor knc in
         let () =
@@ -1288,6 +1304,9 @@ let rec globalize ids ({loc;v=er} as e) = match er with
   end
 | CTacCst qid ->
   let knc = get_constructor () qid in
+  let () = match knc with
+    | Other knc -> Dumpglob.dump_knref ?loc knc "tac2ctor"
+    | _ -> () in
   CAst.make ?loc @@ CTacCst (AbsKn knc)
 | CTacFun (bnd, e) ->
   let fold (pats, accu) pat =
@@ -1357,7 +1376,10 @@ and globalize_case ids (p, e) =
 and globalize_pattern ids ({loc;v=pr} as p) = match pr with
 | CPatVar _ -> p
 | CPatRef (cst, pl) ->
-  let knc = get_constructor () cst in
+  let knc = get_constructor_pattern () cst in
+  let () = match knc with
+    | Other {loc;v=knc} -> Dumpglob.dump_knref ?loc knc "tac2ctor"
+    | _ -> () in
   let cst = AbsKn knc in
   let pl = List.map (fun p -> globalize_pattern ids p) pl in
   CAst.make ?loc @@ CPatRef (cst, pl)
@@ -1374,6 +1396,12 @@ let subst_or_tuple f subst o = match o with
 | Other v ->
   let v' = f subst v in
   if v' == v then o else Other v'
+
+let subst_or_tuple_loc f subst o = match o with
+| Tuple _ -> o
+| Other {loc;v} ->
+  let v' = f subst v in
+  if v' == v then o else Other (CAst.make ?loc v')
 
 let rec subst_type subst t = match t with
 | GTypVar _ -> t
@@ -1470,6 +1498,12 @@ let subst_or_relid subst ref = match ref with
   let kn' = subst_or_tuple subst_kn subst kn in
   if kn' == kn then ref else AbsKn kn'
 
+let subst_or_relid_loc subst ref = match ref with
+| RelId _ -> ref
+| AbsKn kn ->
+  let kn' = subst_or_tuple_loc subst_kn subst kn in
+  if kn' == kn then ref else AbsKn kn'
+
 let rec subst_rawtype subst ({loc;v=tr} as t) = match tr with
 | CTypVar _ -> t
 | CTypArrow (t1, t2) ->
@@ -1500,7 +1534,7 @@ let rec subst_rawpattern subst ({loc;v=pr} as p) = match pr with
 | CPatVar _ -> p
 | CPatRef (c, pl) ->
   let pl' = List.Smart.map (fun p -> subst_rawpattern subst p) pl in
-  let c' = subst_or_relid subst c in
+  let c' = subst_or_relid_loc subst c in
   if pl' == pl && c' == c then p else CAst.make ?loc @@ CPatRef (c', pl')
 | CPatCnv (pat, ty) ->
   let pat' = subst_rawpattern subst pat in
