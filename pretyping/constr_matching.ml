@@ -24,6 +24,44 @@ open Context.Rel.Declaration
 open Ltac_pretype
 (*i*)
 
+let error_instantiate_pattern id l =
+  let is = match l with
+  | [_] -> "is"
+  | _ -> "are"
+  in
+  user_err  (str "Cannot substitute the term bound to " ++ Id.print id
+    ++ strbrk " in pattern because the term refers to " ++ pr_enum Id.print l
+    ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
+
+type instantiated_pattern = constr_pattern
+
+let instantiate_pattern env sigma lvar c =
+  let open EConstr in
+  let open Vars in
+  let rec aux vars = function
+  | PVar id as x ->
+      (try
+        let ctx,c = Id.Map.find id lvar in
+        try
+          let inst =
+            List.map
+              (fun id -> mkRel (List.index Name.equal (Name id) vars))
+              ctx
+          in
+          let c = substl inst c in
+          (* FIXME: Stupid workaround to pattern_of_constr being evar sensitive *)
+          let c = Evarutil.nf_evar sigma c in
+          pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
+        with Not_found (* List.index failed *) ->
+          let vars =
+            List.map_filter (function Name id -> Some id | _ -> None) vars in
+          error_instantiate_pattern id (List.subtract Id.equal ctx vars)
+       with Not_found (* Map.find failed *) ->
+         x)
+  | c ->
+      map_pattern_with_binders (fun id vars -> id::vars) aux vars c in
+  if Id.Map.is_empty lvar then c else aux [] c
+
 (* Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using [SOAPP] to
    terms, this function will perform second-order, binding-preserving,

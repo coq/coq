@@ -17,6 +17,12 @@ open Environ
 open Pattern
 open Ltac_pretype
 
+type instantiated_pattern
+
+val instantiate_pattern : Environ.env ->
+  Evd.evar_map -> extended_patvar_map ->
+  constr_pattern -> instantiated_pattern
+
 type binding_bound_vars = Id.Set.t
 
 (** [PatternMatchingFailure] is the exception raised when pattern
@@ -47,7 +53,7 @@ val matches_head : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
    variables or metavariables have the same name, the metavariable,
    or else the rightmost bound variable, takes precedence *)
 val extended_matches :
-  env -> Evd.evar_map -> binding_bound_vars * constr_pattern ->
+  env -> Evd.evar_map -> binding_bound_vars * instantiated_pattern ->
   constr -> bound_ident_map * extended_patvar_map
 
 (** [is_matching pat c] just tells if [c] matches against [pat] *)
@@ -67,7 +73,7 @@ type matching_result =
    corresponding to each **closed** subterm of [c] matching [pat],
    considering application contexts as well. *)
 val match_subterm : env -> Evd.evar_map ->
-  binding_bound_vars * constr_pattern -> constr ->
+  binding_bound_vars * instantiated_pattern -> constr ->
   matching_result IStream.t
 
 (** [is_matching_appsubterm pat c] tells if a subterm of [c] matches
