@@ -1100,6 +1100,7 @@ and intern_case env loc e pl =
 
 and intern_constructor env loc kn args = match kn with
 | Other kn ->
+  Dumpglob.dump_knref ?loc kn "tac2ctor";
   let cstr = interp_constructor kn in
   let nargs = List.length cstr.cdata_args in
   if Int.equal nargs (List.length args) then
@@ -1222,7 +1223,7 @@ let intern_typedef self (ids, t) : glb_quant_typedef =
   | CTydDef None -> (count, GTydDef None)
   | CTydDef (Some t) -> (count, GTydDef (Some (intern t)))
   | CTydAlg constrs ->
-    let map (c, t) = (c, List.map intern t) in
+    let map ({v=c}, t) = (c, List.map intern t) in
     let constrs = List.map map constrs in
     let getn (const, nonconst) (c, args) = match args with
     | [] -> (succ const, nonconst)

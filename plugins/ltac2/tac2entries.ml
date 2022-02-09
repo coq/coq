@@ -408,22 +408,23 @@ let register_typedef ?(local = false) isrec types =
         user_err ?loc (str "The type abbreviation " ++ Id.print id ++
           str " cannot be recursive")
     | CTydAlg cs ->
-      let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
+      let same_name ({v=id1}, _) ({v=id2}, _) = Id.equal id1 id2 in
       let () = match List.duplicates same_name cs with
       | [] -> ()
-      | (id, _) :: _ ->
-        user_err (str "Multiple definitions of the constructor " ++ Id.print id)
+      | ({loc;v=id}, _) :: _ ->
+        user_err ?loc (str "Multiple definitions of the constructor " ++ Id.print id)
       in
       let () =
-        let check_uppercase_ident (id,_) =
+        let check_uppercase_ident ({loc;v=id},_) =
           if not (Tac2env.is_constructor_id id)
-          then user_err (str "Constructor name should start with an uppercase letter " ++ Id.print id)
+          then user_err ?loc (str "Constructor name should start with an uppercase letter " ++ Id.print id)
         in
         List.iter check_uppercase_ident cs
       in
       let () =
-        let check_existing_ctor (id, _) =
+        let check_existing_ctor ({loc;v=id}, _) =
           let (_, kn) = Lib.make_foname id in
+          Dumpglob.dump_kndef ?loc kn "tac2ctor";
           try let _ = Tac2env.interp_constructor kn in
             user_err (str "Constructor already defined in this module " ++ Id.print id)
           with Not_found -> ()
@@ -513,16 +514,17 @@ let register_open ?(local = false) qid (params, def) =
   | CTydOpn -> ()
   | CTydAlg def ->
     let () =
-      let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
+      let same_name ({v=id1}, _) ({v=id2}, _) = Id.equal id1 id2 in
       let () = match List.duplicates same_name def with
         | [] -> ()
-        | (id, _) :: _ ->
-          user_err (str "Multiple definitions of the constructor " ++ Id.print id)
+        | ({loc;v=id}, _) :: _ ->
+          user_err ?loc (str "Multiple definitions of the constructor " ++ Id.print id)
       in
-      let check_existing_ctor (id, _) =
+      let check_existing_ctor ({loc;v=id}, _) =
           let (_, kn) = Lib.make_foname id in
+          Dumpglob.dump_kndef ?loc kn "tac2ctor";
           try let _ = Tac2env.interp_constructor kn in
-            user_err (str "Constructor already defined in this module " ++ Id.print id)
+            user_err ?loc (str "Constructor already defined in this module " ++ Id.print id)
           with Not_found -> ()
       in
       let () = List.iter check_existing_ctor def in
@@ -535,9 +537,9 @@ let register_open ?(local = false) qid (params, def) =
       | GTydDef (Some t) -> t
       | _ -> assert false
     in
-    let map (id, tpe) =
+    let map ({loc;v=id}, tpe) =
       if not (Tac2env.is_constructor_id id)
-      then user_err (str "Constructor name should start with an uppercase letter " ++ Id.print id) ;
+      then user_err ?loc (str "Constructor name should start with an uppercase letter " ++ Id.print id) ;
       let tpe = List.map intern_type tpe in
       { edata_name = id; edata_args = tpe }
     in
