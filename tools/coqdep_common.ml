@@ -150,12 +150,17 @@ let add_mlpack_known, _, search_mlpack_known = mkknown ()
 let vKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
 (* The associated boolean is true if this is a root path. *)
 let coqlibKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
+let otherKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
 
 let search_table table ?(from=[]) s =
   Hashtbl.find table (from, s)
 
 let search_v_known ?from s =
   try Some (search_table vKnown ?from s)
+  with Not_found -> None
+
+let search_other_known ?from s =
+  try Some (search_table otherKnown ?from s)
   with Not_found -> None
 
 let is_in_coqlib ?from s =
@@ -212,55 +217,68 @@ let error_no_meta f package =
   Printf.eprintf "in file %s, could not find META.%s.\n" f package;
   exit 1
 
-let warning_module_notfound from f s =
+type what = Library | External
+let str_of_what = function Library -> "library" | External -> "external file"
+
+let warning_module_notfound ?(what=Library) from f s =
+  let what = str_of_what what in
   match from with
   | None ->
-      coqdep_warning "in file %s, library %s is required and has not been found in the loadpath!"
-        f (String.concat "." s)
+      coqdep_warning "in file %s, %s %s is required and has not been found in the loadpath!"
+        f what (String.concat "." s)
   | Some pth ->
-      coqdep_warning "in file %s, library %s is required from root %s and has not been found in the loadpath!"
-        f (String.concat "." s) (String.concat "." pth)
+      coqdep_warning "in file %s, %s %s is required from root %s and has not been found in the loadpath!"
+        f what (String.concat "." s) (String.concat "." pth)
 
 let warning_declare f s =
   coqdep_warning "in file %s, declared ML module %s has not been found!" f s
 
-let warning_clash exact file dir f1 = function
+
+let warn_if_clash ?(what=Library) exact file dir f1 = function
   | f2::fl ->
-      let f = Filename.basename f1 in
+      let f =
+        match what with
+        | Library -> Filename.basename f1 ^ ".v"
+        | External -> Filename.basename f1 in
+      let what = str_of_what what in
       let d1 = Filename.dirname f1 in
       let d2 = Filename.dirname f2 in
       let dl = List.rev_map Filename.dirname fl in
       if exact then
         begin
           eprintf
-            "*** Warning: in file %s, \n    required library %s exactly matches several files in path\n    (found %s.v in "
-            file (String.concat "." dir) f;
+            "*** Warning: in file %s, \n    required %s %s exactly matches several files in path\n    (found %s in "
+            file what (String.concat "." dir) f;
           List.iter (fun s -> eprintf "%s, " s) dl;
           eprintf "%s and %s; used the latter).\n" d2 d1
         end
       else
         begin
           eprintf
-            "*** Warning: in file %s, \n    required library %s matches several files in path\n    (found %s.v in "
-            file (String.concat "." dir) f;
+            "*** Warning: in file %s, \n    required %s %s matches several files in path\n    (found %s in "
+            file what (String.concat "." dir) f;
           List.iter (fun s -> eprintf "%s, " s) dl;
           eprintf "%s and %s; Require will fail).\n" d2 d1
         end
-  | [] -> assert false
+  | [] -> ()
 
 let warning_cannot_open_dir dir =
   coqdep_warning "cannot open %s" dir
 
-let safe_assoc from verbose file k =
-  match search_v_known ?from k with
+let safe_assoc ?(what=Library) from verbose file k =
+  let search =
+    match what with
+    | Library -> search_v_known
+    | External -> search_other_known in
+  match search ?from k with
   | None -> None
   | Some (ExactMatches (f :: l)) ->
-    if verbose && not (CList.is_empty l) then warning_clash true file k f l; Some [f]
+    if verbose then warn_if_clash ~what true file k f l; Some [f]
   | Some (PartialMatchesInSameRoot (root, l)) ->
     (match List.sort String.compare l with [] -> assert false | f :: l as all ->
     (* If several files match, it will fail at Require;
        To be "fair", in coqdep, we add dependencies on all matching files *)
-    if verbose && not (CList.is_empty l) then warning_clash false file k f l; Some all)
+    if verbose then warn_if_clash ~what false file k f l; Some all)
   | Some (ExactMatches []) -> assert false
 
 (** [find_dir_logpath dir] Return the logical path of directory [dir]
@@ -496,6 +514,12 @@ let rec find_dependencies basename =
               add_dep_other (sprintf "%s.v" canon);
               let deps = find_dependencies canon in
               List.iter add_dep deps) l)
+        | External(from,str) ->
+            begin match safe_assoc ~what:External (Some from) verbose f [str] with
+            | Some (file :: _) -> add_dep (DepOther (canonize file))
+            | Some [] -> assert false
+            | None -> warning_module_notfound ~what:External (Some from) f [str]
+            end
         | AddLoadPath _ | AddRecLoadPath _ -> (* TODO: will this be handled? *) ()
       done;
       List.rev !dependencies
@@ -568,13 +592,14 @@ let add_coqlib_known recur root phys_dir log_dir f =
         add_paths recur root coqlibKnown phys_dir log_dir basename
     | _ -> ()
 
-let add_v_known recur root phys_dir log_dir f =
+let add_known recur root phys_dir log_dir f =
   match get_extension f [".v"; ".vo"; ".vio"; ".vos"] with
     | (basename,".v") ->
         add_paths recur root vKnown phys_dir log_dir basename
     | (basename, (".vo" | ".vio" | ".vos")) when not(!option_boot) ->
         add_paths recur root vKnown phys_dir log_dir basename
-    | _ -> ()
+    | (f,_) ->
+        add_paths recur root otherKnown phys_dir log_dir f
 
 (** Visit all the directories under [dir], including [dir], in the
     same order as for [coqc]/[coqtop] in [System.all_subdirs], that
@@ -751,8 +776,8 @@ let option_sort = ref false
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
 
-let add_q_include path l = add_rec_dir_no_import add_v_known path (split_period l)
-let add_r_include path l = add_rec_dir_import add_v_known path (split_period l)
+let add_q_include path l = add_rec_dir_no_import add_known path (split_period l)
+let add_r_include path l = add_rec_dir_import add_known path (split_period l)
 
 let treat_coqproject f =
   let open CoqProject_file in

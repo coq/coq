@@ -17,7 +17,7 @@ let coqdep () =
      common coq.boot library *)
   (* Add current dir with empty logical path if not set by options above. *)
   (try ignore (CD.find_dir_logpath (Sys.getcwd()))
-   with Not_found -> CD.add_norec_dir_import CD.add_v_known "." []);
+   with Not_found -> CD.add_norec_dir_import CD.add_known "." []);
   (* We don't setup any loadpath if the -boot is passed *)
   if not !CD.option_boot then begin
     let env = Boot.Env.init () in

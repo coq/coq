@@ -18,6 +18,7 @@ type coq_token =
   | Load of load
   | AddLoadPath of string
   | AddRecLoadPath of string * qualid
+  | External of qualid * string
 
 exception Fin_fichier
 exception Syntax_error of int * int
