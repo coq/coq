@@ -752,7 +752,7 @@ $(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib
 
 $(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib
 	$(SHOW)'CAMLOPT -a -o $@'
-	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $^
+	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -a -o $@ $^
 
 
 $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmxa
@@ -760,9 +760,9 @@ $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmxa
 	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) \
 		-shared -o $@ $<
 
-$(MLPACKFILES:.mlpack=.cmxa): %.cmxa: %.cmx
+$(MLPACKFILES:.mlpack=.cmxa): %.cmxa: %.cmx | %.mlpack
 	$(SHOW)'CAMLOPT -a -o $@'
-	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $<
+	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -a -o $@ $<
 
 $(MLPACKFILES:.mlpack=.cma): %.cma: %.cmo | %.mlpack
 	$(SHOW)'CAMLC -a -o $@'
@@ -770,11 +770,11 @@ $(MLPACKFILES:.mlpack=.cma): %.cma: %.cmo | %.mlpack
 
 $(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack
 	$(SHOW)'CAMLC -pack -o $@'
-	$(HIDE)$(TIMER) $(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) -pack -o $@ $^
+	$(HIDE)$(TIMER) $(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -pack -o $@ $^
 
 $(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack
 	$(SHOW)'CAMLOPT -pack -o $@'
-	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -pack -o $@ $^
+	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -pack -o $@ $^
 
 # This rule is for _CoqProject with no .mllib nor .mlpack
 $(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(MLGFILES:.mlg=.cmxs)): %.cmxs: %.cmx
