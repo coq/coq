@@ -161,10 +161,10 @@ GRAMMAR EXTEND Gram
     | "4" LEFTA [ ]
     | "3" [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
         { let el = e0 :: el in
-          CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) } ]
+          CAst.make ~loc @@ CTacApp (CAst.make @@ CTacCst (AbsKn (Tuple (List.length el))), el) } ]
     | "2" RIGHTA
       [ e1 = ltac2_expr; "::"; e2 = ltac2_expr ->
-        { CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2]) }
+        { CAst.make ~loc @@ CTacApp (CAst.make @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2]) }
       ]
     | "1" LEFTA
       [ e = ltac2_expr; el = LIST1 ltac2_expr LEVEL "0" ->

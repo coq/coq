@@ -47,9 +47,9 @@ let global_ref ?loc kn =
   CAst.make ?loc @@ CTacRef (AbsKn (TacConstant kn))
 
 let constructor ?loc kn args =
-  let cst = CAst.make ?loc @@ CTacCst (AbsKn (Other kn)) in
-  if List.is_empty args then cst
-  else CAst.make ?loc @@ CTacApp (cst, args)
+  let cst = CTacCst (AbsKn (Other kn)) in
+  if List.is_empty args then CAst.make ?loc cst
+  else CAst.make ?loc @@ CTacApp (CAst.make cst, args)
 
 let std_constructor ?loc name args =
   constructor ?loc (std_core name) args
@@ -410,11 +410,11 @@ let of_constr_matching {loc;v=m} =
   let map {loc;v=({loc=ploc;v=pat}, tac)} =
     let (knd, pat, na) = match pat with
     | QConstrMatchPattern pat ->
-      let knd = constructor ?loc (pattern_core "MatchPattern") [] in
+      let knd = constructor (pattern_core "MatchPattern") [] in
       (knd, pat, Anonymous)
     | QConstrMatchContext (id, pat) ->
-      let na = extract_name ?loc id in
-      let knd = constructor ?loc (pattern_core "MatchContext") [] in
+      let na = extract_name ?loc:ploc id in
+      let knd = constructor (pattern_core "MatchContext") [] in
       (knd, pat, na)
     in
     let vars = pattern_vars pat in
