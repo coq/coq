@@ -813,12 +813,11 @@ and whd_simpl_stack (_, (behavior, _) as cache_reds) env sigma =
         end
       | Proj (p, r, c) ->
         let ans =
-           let unf = Projection.unfolded p in
-           if unf || is_evaluable env (EvalProjectionRef (Projection.repr p)) then
+           if is_evaluable env (EvalProjectionRef (Projection.repr p)) then
              let npars = Projection.npars p in
-             match unf, ReductionBehaviour.get behavior (Projection.constant p) with
-              | false, Some NeverUnfold -> NotReducible
-              | false, Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
+             match ReductionBehaviour.get behavior (Projection.constant p) with
+              | Some NeverUnfold -> NotReducible
+              | Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
                 when not (List.is_empty recargs) ->
                 let l' = List.map_filter (fun i ->
                     let idx = (i - (npars + 1)) in
