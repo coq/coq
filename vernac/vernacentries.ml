@@ -1334,8 +1334,6 @@ let vernac_begin_segment ~interactive f =
 let vernac_extra_dep ?loc from file id =
   if Global.sections_are_opened () then
     user_err ?loc Pp.(str "Extra Dependencies cannot be declared inside sections.");
-  if Lib.is_module_or_modtype () then
-    user_err ?loc Pp.(str "Extra Dependencies cannot be declared inside modules.");
   let hd, tl = Libnames.repr_qualid from in
   let from = Libnames.add_dirpath_suffix hd tl in
   ComExtraDeps.declare_extra_dep ?loc ~from ~file id
