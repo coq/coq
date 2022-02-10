@@ -1047,9 +1047,10 @@ let simpl env sigma c =
 (* Reduction at specific subterms *)
 
 let matches_head env sigma c t =
-  match EConstr.kind sigma t with
-    | App (f,_) -> Constr_matching.matches env sigma c f
-    | Proj (p, _) -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, EInstance.empty))
+  let t, l = decompose_app sigma t in
+  match EConstr.kind sigma t, l with
+    | Proj (p, _), _ -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, EInstance.empty))
+    | _, _::_ -> Constr_matching.matches env sigma c t
     | _ -> raise Constr_matching.PatternMatchingFailure
 
 (** FIXME: Specific function to handle projections: it ignores what happens on the
