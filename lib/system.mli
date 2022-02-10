@@ -87,6 +87,16 @@ exception Bad_version_number of magic_number_error
 
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 
+(** big-endian encoding and decoding of int32 (4 btyes) and int64 (8 bytes) *)
+
+val input_int32 : in_channel -> int32
+
+val input_int64 : in_channel -> int64
+
+val output_int32 : out_channel -> int32 -> unit
+
+val output_int64 : out_channel -> int64 -> unit
+
 (** Clones of Marshal.to_channel (with flush) and
     Marshal.from_channel (with nice error message) *)
 
