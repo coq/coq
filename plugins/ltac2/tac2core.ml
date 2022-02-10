@@ -140,6 +140,9 @@ let err_notfound =
 let err_matchfailure =
   Tac2interp.LtacError (coq_core "Match_failure", [||])
 
+let err_division_by_zero =
+  Tac2interp.LtacError (coq_core "Division_by_zero", [||])
+
 (** Helper functions *)
 
 let thaw f = Tac2ffi.apply f [v_unit]
@@ -386,6 +389,10 @@ let () = define2 "int_equal" int int begin fun m n ->
   return (Value.of_bool (m == n))
 end
 
+let unop n f = define1 n int begin fun m ->
+  return (Value.of_int (f m))
+end
+
 let binop n f = define2 n int int begin fun m n ->
   return (Value.of_int (f m n))
 end
@@ -394,10 +401,24 @@ let () = binop "int_compare" Int.compare
 let () = binop "int_add" (+)
 let () = binop "int_sub" (-)
 let () = binop "int_mul" ( * )
-
-let () = define1 "int_neg" int begin fun m ->
-  return (Value.of_int (~- m))
+let () = define2 "int_div" int int begin fun m n ->
+  if n == 0 then throw err_division_by_zero
+  else return (Value.of_int (m / n))
 end
+let () = define2 "int_mod" int int begin fun m n ->
+  if n == 0 then throw err_division_by_zero
+  else return (Value.of_int (m mod n))
+end
+let () = unop "int_neg" (~-)
+let () = unop "int_abs" abs
+
+let () = binop "int_asr" (asr)
+let () = binop "int_lsl" (lsl)
+let () = binop "int_lsr" (lsr)
+let () = binop "int_land" (land)
+let () = binop "int_lor" (lor)
+let () = binop "int_lxor" (lxor)
+let () = unop "int_lnot" lnot
 
 (** Char *)
 
