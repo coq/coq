@@ -672,12 +672,10 @@ let whd_nothing_for_iota env sigma s =
   in
   whrec s
 
-(* The reductions that should be performed as part of the simpl tactic,
-  excluding symbols that have the NeverUnfold flag. *)
-let make_simpl_reds env =
+(* The reductions that should be performed as part of the simpl and hnf tactic *)
+let make_reds env behavior =
   let open RedFlags in
   let open ReductionBehaviour in
-  let behavior = table () in
   let simpl_never = all_never_unfold behavior in
   let transparent_state = Conv_oracle.get_transp_state (Environ.oracle env) in
   let transparent_state =
@@ -699,6 +697,15 @@ let rec descend cache env sigma target (ref,u) args =
   else
     let c', lrest = whd_betalet_stack env sigma (applist (c, args)) in
     descend cache env sigma target (destEvalRefU sigma c') lrest
+
+(* The reductions that should be performed as part of the simpl tactic,
+  excluding symbols that have the NeverUnfold flag. *)
+let make_simpl_reds env =
+  make_reds env (ReductionBehaviour.table ())
+
+(* The reductions that should be performed as part of the hnf tactic *)
+let make_hnf_reds env =
+  make_reds env ReductionBehaviour.empty
 
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;
@@ -1070,7 +1077,7 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
    immediately hides a non reducible fix or a cofix *)
 
 let whd_simpl_orelse_delta_but_fix env sigma c =
-  let reds = make_simpl_reds env in
+  let reds = make_hnf_reds env in
   let cache = make_simpl_cache() in
   let rec redrec s =
     let (constr, stack as s') = whd_simpl_stack (cache,reds) env sigma s in
