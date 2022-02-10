@@ -1342,6 +1342,13 @@ let constrexpr_is_string s = function
   | { CAst.v = Constrexpr.CRef(x,None) } -> string_of_qualid x = s
   | _ -> false
 
+let warn_comments_extra_dep =
+  CWarnings.create ~name:"extra-dep-in-comments" ~category:"deprecated"
+    (fun () ->
+      strbrk "The command \"From .. Extra Dependency ..\" is "++
+      strbrk "available since Coq 8.16, if you don't need to compile the "++
+      strbrk "file with order version of Coq please remove \"Comments\".")
+
 let forward_compat_extra_dependency ?loc = function
   | [ CommentConstr from_str;
       CommentConstr { CAst.v = Constrexpr.CRef(from,None) };
@@ -1352,6 +1359,7 @@ let forward_compat_extra_dependency ?loc = function
         constrexpr_is_string "Extra" extra_str &&
         constrexpr_is_string "Dependency" dependency_str
       ->
+      warn_comments_extra_dep ();
       vernac_extra_dep ?loc from file None
   | _ -> ()
 
