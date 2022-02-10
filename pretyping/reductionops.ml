@@ -87,6 +87,8 @@ module ReductionBehaviour = struct
     | UnfoldWhen x -> UnfoldWhen (more_args_when k x)
     | UnfoldWhenNoMatch x -> UnfoldWhenNoMatch (more_args_when k x)
 
+  type table = Cpred.t * t Cmap.t
+
 (* We need to have a fast way to know the set of all constants that
   have the NeverUnfold flag.  Therefore, the table has a distinct subpart
   that is this set. *)
@@ -131,18 +133,22 @@ module ReductionBehaviour = struct
   let set ~local r b =
     Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
-  let get r =
-    if Cpred.mem r (fst !table) then
+  let get table r =
+    if Cpred.mem r (fst table) then
       Some NeverUnfold
     else
-      Cmap.find_opt r (snd !table)
+      Cmap.find_opt r (snd table)
 
-  let all_never_unfold () = fst !table
+  let all_never_unfold table = fst table
 
-  let print ref =
+  let table () = !table
+
+  let empty = (Cpred.empty, Cmap.empty)
+
+  let print table ref =
     let open Pp in
     let pr_global c = Nametab.pr_global_env Id.Set.empty (ConstRef c) in
-    match get ref with
+    match get table ref with
     | None -> mt ()
     | Some b ->
        let pp_nomatch = spc () ++ str "but avoid exposing match constructs" in
