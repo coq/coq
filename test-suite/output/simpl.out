@@ -39,7 +39,7 @@
      : nat
      = 0 + 0
      : nat
-     = 0 + 0
+     = 0
      : nat
 "** NonPrimitiveProjection"
      : string
