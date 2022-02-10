@@ -217,13 +217,15 @@ type simpl_infos = {
   constant_body_cache : EConstr.t option CacheTable.t;
   elim_cache : constant_elimination CacheTable.t;
   coelim_cache : constant_coelimination CacheTable.t;
+  red_behavior : ReductionBehaviour.Db.t;
   main_reds : RedFlags.reds;
 }
 
-let make_simpl_infos main_reds = {
+let make_simpl_infos (red_behavior, main_reds) = {
   constant_body_cache = CacheTable.create 12;
   elim_cache = CacheTable.create 12;
   coelim_cache = CacheTable.create 12;
+  red_behavior;
   main_reds;
 }
 
@@ -630,9 +632,9 @@ let push_app sigma (hd, stk as p) = match EConstr.kind sigma hd with
   (hd, Array.fold_right (fun x accu -> x :: accu) args stk)
 | _ -> p
 
-let recargs = function
+let recargs behavior = function
   | EvalVar _ | EvalRel _ | EvalEvar _ -> None
-  | EvalConst c -> ReductionBehaviour.get c
+  | EvalConst c -> ReductionBehaviour.get_from_db behavior c
 
 let fix_recarg ((recindices,bodynum),_) stack =
   assert (0 <= bodynum && bodynum < Array.length recindices);
@@ -713,7 +715,7 @@ let make_simpl_reds env =
   let reds = red_add reds fDELTA in
   let reds = red_add reds fZETA in
   let reds = red_add reds fBETA in
-  reds
+  behavior, reds
 
 let rec descend cache env sigma target (ref,u) args =
   let c = reference_value cache env sigma ref u in
@@ -731,7 +733,7 @@ let rec red_elim_const infos env sigma ref u largs =
   let open ReductionBehaviour in
   let nargs = List.length largs in
   let* largs, unfold_anyway, unfold_nonelim, nocase =
-    match recargs ref with
+    match recargs infos.red_behavior ref with
     | None -> Reduced (largs, false, false, false)
     | Some NeverUnfold -> NotReducible
     | Some (UnfoldWhen { nargs = Some n } | UnfoldWhenNoMatch { nargs = Some n })
@@ -837,7 +839,7 @@ and whd_simpl_stack infos env sigma =
            let unf = Projection.unfolded p in
            if unf || is_evaluable env (EvalProjectionRef (Projection.repr p)) then
              let npars = Projection.npars p in
-             match unf, ReductionBehaviour.get (Projection.constant p) with
+             match unf, ReductionBehaviour.get_from_db infos.red_behavior (Projection.constant p) with
               | false, Some NeverUnfold -> NotReducible
               | false, Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
                 when not (List.is_empty recargs) ->
@@ -1428,7 +1430,7 @@ let find_hnf_rectype env sigma t =
 exception NotStepReducible
 
 let one_step_reduce env sigma c =
-  let infos = make_simpl_infos RedFlags.betadeltazeta in
+  let infos = make_simpl_infos (ReductionBehaviour.Db.empty, RedFlags.betadeltazeta) in
   let rec redrec (x, stack) =
     match EConstr.kind sigma x with
       | Lambda (n,t,c)  ->
