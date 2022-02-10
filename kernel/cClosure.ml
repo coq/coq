@@ -1724,3 +1724,14 @@ let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
 let unfold_reference env st tab key = ref_value_cache env st Conversion tab key
+
+let unfold_ref_with_args infos tab fl v =
+  let env = info_env infos in
+  let flags = RedFlags.red_transparent (info_flags infos) in
+  match ref_value_cache env flags infos.i_cache.i_mode tab fl with
+  | Def def -> Some (def, v)
+  | Primitive op when check_native_args op v ->
+    let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
+    let rargs, a, nargs, v = get_native_args1 op c v in
+    Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
+  | Undef _ | OpaqueDef _ | Primitive _ -> None

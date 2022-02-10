@@ -44,3 +44,23 @@ Module WithAxiom.
     := match (C1@{u} x) : I1@{v} with C1 y => y end.
 
 End WithAxiom.
+
+Module WithVars.
+
+  Module Rel.
+    Fail Cumulative Inductive foo@{*u +} (X:=Type@{u}) := C (_:X).
+
+    Cumulative Inductive foo@{+u +} (X:=Type@{u}) := C (_:X).
+  End Rel.
+
+  Module Var.
+    Section S.
+      Let X:=Type.
+      Cumulative Inductive foo := C (_:X).
+    End S.
+
+    Fail Cumulative Inductive bar@{*u} := C' (_:foo@{u}).
+    Cumulative Inductive bar@{+u} := C' (_:foo@{u}).
+  End Var.
+
+End WithVars.
