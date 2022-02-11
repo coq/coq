@@ -15,7 +15,7 @@
 
 type ('a,'b) custom_toplevel =
   { parse_extra : string list -> 'a * string list
-  ; usage : Usage.specific_usage
+  ; usage : Boot.Usage.specific_usage
   ; init_extra : 'a -> Coqargs.injection_command list -> opts:Coqargs.t -> 'b
   ; initial_args : Coqargs.t
   ; run : 'a -> opts:Coqargs.t -> 'b -> unit

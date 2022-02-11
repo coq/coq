@@ -1802,7 +1802,7 @@ let main files =
     in the path. Note that the -coqtop option to coqide overrides
     this default coqtop path *)
 
-let coqide_specific_usage = Usage.{
+let coqide_specific_usage = Boot.Usage.{
   executable_name = "coqide";
   extra_args = "";
   extra_options = "\n\
@@ -1856,7 +1856,7 @@ let read_coqide_args argv =
       (* Unlike coqtop we don't accumulate queries so we exit immediately *)
       exit 0
     | ("-h"|"-H"|"-?"|"-help"|"--help") :: _ ->
-      Usage.print_usage stderr coqide_specific_usage;
+      Boot.Usage.print_usage stderr coqide_specific_usage;
       exit 0
     | arg::args when out = [] && CString.is_prefix "-psn_" arg ->
       (* argument added by MacOS during .app launch *)

@@ -6,7 +6,7 @@
  (public_name coqide-server.core)
  (wrapped false)
  (modules document)
- (libraries coq-core.lib))
+ (libraries coq-core.boot coq-core.lib))
 
 (executable
  (name idetop)
@@ -31,7 +31,7 @@
   (language c)
   (names coqide_os_stubs))
  (optional)
- (libraries coq-core.toplevel coqide-server.protocol coqide-server.core lablgtk3-sourceview3))
+ (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3))
 
 (executable
  (name gen_gtk_platform)

@@ -19,7 +19,7 @@ let coqc_init ((_,color_mode),_) injections ~opts =
     });
   injections
 
-let coqc_specific_usage = Usage.{
+let coqc_specific_usage = Boot.Usage.{
   executable_name = "coqc";
   extra_args = "file...";
   extra_options = "\n\

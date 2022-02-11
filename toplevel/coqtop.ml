@@ -48,7 +48,7 @@ let fatal_error_exn exn =
 
 type ('a,'b) custom_toplevel =
   { parse_extra : string list -> 'a * string list
-  ; usage : Usage.specific_usage
+  ; usage : Boot.Usage.specific_usage
   ; init_extra : 'a -> Coqargs.injection_command list -> opts:Coqargs.t -> 'b
   ; initial_args : Coqargs.t
   ; run : 'a -> opts:Coqargs.t -> 'b -> unit
@@ -247,7 +247,7 @@ let coqtop_run ({ run_mode; color_mode },_) ~opts state =
       exit 0
   | Batch -> exit 0
 
-let coqtop_specific_usage = Usage.{
+let coqtop_specific_usage = Boot.Usage.{
   executable_name = "coqtop";
   extra_args = "";
   extra_options = "\n\

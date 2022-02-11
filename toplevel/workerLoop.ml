@@ -17,7 +17,7 @@ let worker_init init ((),stm_opts)  injections ~opts : Vernac.State.t =
   init ();
   Coqtop.init_toploop opts stm_opts injections
 
-let worker_specific_usage name = Usage.{
+let worker_specific_usage name = Boot.Usage.{
   executable_name = name;
   extra_args = "";
   extra_options = ("\n" ^ name ^ " specific options:\
