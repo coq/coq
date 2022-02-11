@@ -74,31 +74,6 @@ type out_handle = {
   mutable out_segments : segment CString.Map.t;
 }
 
-let input_int32 ch =
-  let accu = ref 0l in
-  for _i = 0 to 3 do
-    let c = input_byte ch in
-    accu := Int32.add (Int32.shift_left !accu 8) (Int32.of_int c)
-  done;
-  !accu
-
-let input_int64 ch =
-  let accu = ref 0L in
-  for _i = 0 to 7 do
-    let c = input_byte ch in
-    accu := Int64.add (Int64.shift_left !accu 8) (Int64.of_int c)
-  done;
-  !accu
-
-let output_int32 ch n =
-  for i = 0 to 3 do
-    output_byte ch (Int32.to_int (Int32.shift_right_logical n (24 - 8 * i)))
-  done
-
-let output_int64 ch n =
-  for i = 0 to 7 do
-    output_byte ch (Int64.to_int (Int64.shift_right_logical n (56 - 8 * i)))
-  done
 
 let input_segment_summary ch =
   let nlen = input_int32 ch in
