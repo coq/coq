@@ -41,7 +41,10 @@ type recursion_scheme_error =
 
 exception RecursionSchemeError of env * recursion_scheme_error
 
-let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
+let ident_hd env ids t na =
+  let na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na in
+  next_name_away na ids
+let named_hd env t na = Name (ident_hd env Id.Set.empty t na)
 let name_assumption env = function
 | LocalAssum (na,t) -> LocalAssum (map_annot (named_hd env t) na, t)
 | LocalDef (na,c,t) -> LocalDef (map_annot (named_hd env c) na, c, t)
@@ -50,11 +53,18 @@ let mkLambda_or_LetIn_name env d b = mkLambda_or_LetIn (name_assumption env d) b
 let mkProd_or_LetIn_name env d b = mkProd_or_LetIn (name_assumption env d) b
 let mkLambda_name env (n,a,b) = mkLambda_or_LetIn_name env (LocalAssum (n,a)) b
 let mkProd_name env (n,a,b) = mkProd_or_LetIn_name env (LocalAssum (n,a)) b
-let it_mkProd_or_LetIn_name env b l = List.fold_left (fun c d -> mkProd_or_LetIn_name env d c) b l
-let it_mkLambda_or_LetIn_name env b l = List.fold_left (fun c d -> mkLambda_or_LetIn_name env d c) b l
+
+let set_names env_for_named_hd env_for_next_ident_away l =
+  let ids = Id.Set.of_list (Termops.ids_of_rel_context (rel_context env_for_next_ident_away)) in
+  snd (List.fold_right (fun d (ids,l) ->
+      let id = ident_hd env_for_named_hd ids (get_type d) (get_name d) in (Id.Set.add id ids, set_name (Name id) d :: l)) l (ids,[]))
+let it_mkLambda_or_LetIn_name env b l = it_mkLambda_or_LetIn b (set_names env env l)
+let it_mkProd_or_LetIn_name env b l = it_mkProd_or_LetIn b (set_names env env l)
+let it_mkLambda_or_LetIn_name_bug env env' b l = it_mkLambda_or_LetIn b (set_names env env' l)
 
 let make_prod_dep dep env = if dep then mkProd_name env else mkProd
-let mkLambda_string s r t c = mkLambda (make_annot (Name (Id.of_string s)) r, t, c)
+let make_name env s r =
+  make_annot (Name (next_ident_away (Id.of_string s) (Id.Set.of_list (Termops.ids_of_rel_context (rel_context env))))) r
 
 
 (*******************************************)
@@ -112,8 +122,8 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
            if dep then Context.Rel.instance mkRel 0 deparsign
            else Context.Rel.instance mkRel 1 arsign) in
       let p =
-        it_mkLambda_or_LetIn_name env'
-          ((if dep then mkLambda_name env' else mkLambda)
+        it_mkLambda_or_LetIn_name_bug env' env
+          ((if dep then mkLambda_name env else mkLambda)
            (make_annot Anonymous r,depind,pbody))
           arsign
       in
@@ -145,20 +155,22 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
                 mkCast (term, DEFAULTcast, ty)
             else term
       in
-        it_mkLambda_or_LetIn_name env' obj deparsign
+        it_mkLambda_or_LetIn_name_bug env' env obj deparsign
     else
       let cs = lift_constructor (k+1) constrs.(k) in
       let t = build_branch_type env sigma dep (mkRel (k+1)) cs in
-      mkLambda_string "f" relevance t
-        (add_branch (push_rel (LocalAssum (make_annot Anonymous relevance, t)) env) (k+1))
+      let namef = make_name env "f" relevance in
+      mkLambda (namef, t,
+        (add_branch (push_rel (LocalAssum (namef, t)) env) (k+1)))
   in
   let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
   let typP = make_arity env' sigma dep indf s in
   let typP = EConstr.Unsafe.to_constr typP in
+  let nameP = make_name env' "P" Sorts.Relevant in
   let c =
     it_mkLambda_or_LetIn_name env
-    (mkLambda_string "P" Sorts.Relevant typP
-     (add_branch (push_rel (LocalAssum (make_annot Anonymous Sorts.Relevant,typP)) env') 0)) lnamespar
+    (mkLambda (nameP, typP,
+     (add_branch (push_rel (LocalAssum (nameP,typP)) env') 0))) lnamespar
   in
   (sigma, c)
 
@@ -470,8 +482,9 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
                   true dep env !evdref (vargs,depPvec,i+j) tyi cs recarg
               in
               let r_0 = Sorts.relevance_of_sort_family sfam in
-                mkLambda_string "f" r_0 p_0
-                  (onerec (push_rel (LocalAssum (make_annot Anonymous r_0,p_0)) env) (j+1))
+              let namef = make_name env "f" r_0 in
+                mkLambda (namef, p_0,
+                  (onerec (push_rel (LocalAssum (namef,p_0)) env)) (j+1))
           in onerec env 0
       | [] ->
           makefix i listdepkind
@@ -485,8 +498,9 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
           in
           let typP = make_arity env !evdref dep indf s in
           let typP = EConstr.Unsafe.to_constr typP in
-            mkLambda_string "P" Sorts.Relevant typP
-              (put_arity (push_rel (LocalAssum (anonR,typP)) env) (i+1) rest)
+          let nameP = make_name env "P" Sorts.Relevant in
+            mkLambda (nameP,typP,
+              (put_arity (push_rel (LocalAssum (nameP,typP)) env)) (i+1) rest)
       | [] ->
           make_branch env 0 listdepkind
     in
