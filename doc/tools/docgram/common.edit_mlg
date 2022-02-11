@@ -1343,10 +1343,9 @@ command: [
 | DELETE "Undo" natural
 | REPLACE "Undo" "To" natural
 | WITH "Undo" OPT ( OPT "To" natural )
-| DELETE "Abort"
 | DELETE "Abort" "All"
-| REPLACE "Abort" identref
-| WITH "Abort" OPT [ "All" | identref ]
+| REPLACE "Abort"
+| WITH "Abort" OPT [ "All" ]
 
 (* show the locate options as separate commands *)
 | DELETE "Locate" locatable

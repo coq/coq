@@ -222,15 +222,11 @@ When the proof is completed, you can exit proof mode with commands such as
    This command is available in proof mode to give up
    the current proof and declare the initial goal as an axiom.
 
-.. cmd:: Abort {? {| All | @ident } }
+.. cmd:: Abort {? All }
 
-   Cancels the current proof development, switching back to
-   the previous proof development, or to the Coq toplevel if no other
-   proof was being edited.
-
-   :n:`@ident`
-     Aborts editing the proof named :n:`@ident` for use when you have
-     nested proofs.  See also :flag:`Nested Proofs Allowed`.
+   Aborts the current proof.  If the current proof is a nested proof, the previous
+   proof becomes current.  If :n:`All` is given, all nested proofs are aborted.
+   See :flag:`Nested Proofs Allowed`.
 
    :n:`All`
      Aborts all current proofs.

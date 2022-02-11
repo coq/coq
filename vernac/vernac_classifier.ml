@@ -60,7 +60,7 @@ let classify_vernac e =
         options_affecting_stm_scheduling ->
        VtSideff ([], VtNow)
     (* Qed *)
-    | VernacAbort _ -> VtQed VtDrop
+    | VernacAbort -> VtQed VtDrop
     | VernacEndProof Admitted -> VtQed (VtKeep VtKeepAxiom)
     | VernacEndProof (Proved (opaque,_)) -> VtQed (VtKeep (vtkeep_of_opaque opaque))
     | VernacExactProof _ -> VtQed (VtKeep VtKeepOpaque)

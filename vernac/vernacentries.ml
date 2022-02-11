@@ -717,6 +717,8 @@ let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
     let pm, _ = Declare.Proof.save ~pm ~proof:lemma ~opaque ~idopt
     in pm
 
+let vernac_abort ~lemma:_ ~pm = pm
+
 let vernac_exact_proof ~lemma ~pm c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
@@ -2155,8 +2157,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacUndoTo _
   | VernacResetName _
   | VernacResetInitial
-  | VernacBack _
-  | VernacAbort _ ->
+  | VernacBack _ ->
     anomaly (str "type_vernac")
   | VernacLoad _ ->
     anomaly (str "Load is not supported recursively")
@@ -2457,6 +2458,10 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacEndProof pe ->
     unsupported_attributes atts;
     vtcloseproof (vernac_end_proof pe)
+
+  | VernacAbort ->
+    unsupported_attributes atts;
+    vtcloseproof vernac_abort
 
   (* Extensions *)
   | VernacExtend (opn,args) ->

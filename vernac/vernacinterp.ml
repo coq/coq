@@ -154,8 +154,6 @@ let rec interp_expr ?loc ~atts ~st c =
   | VernacResetInitial -> CErrors.anomaly (Pp.str "VernacResetInitial not handled by Stm.")
   | VernacBack _       -> CErrors.anomaly (Pp.str "VernacBack not handled by Stm.")
 
-  (* This one is possible to handle here *)
-  | VernacAbort id    -> CErrors.user_err (Pp.str "Abort cannot be used through the Load command")
   | VernacLoad (verbosely, fname) ->
     Attributes.unsupported_attributes atts;
     vernac_load ~verbosely fname

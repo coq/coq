@@ -1031,7 +1031,7 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
   let is_filtered_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacRestart | VernacUndo _ | VernacUndoTo _
-    | VernacAbortAll | VernacAbort _ -> true
+    | VernacAbortAll -> true
     | _ -> false
   in
   (* XXX unsupported attributes *)

@@ -449,7 +449,7 @@ type nonrec vernac_expr =
   | VernacComments of comment list
 
   (* Proof management *)
-  | VernacAbort of lident option
+  | VernacAbort
   | VernacAbortAll
   | VernacRestart
   | VernacUndo of int
