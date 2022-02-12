@@ -399,7 +399,7 @@ let convert x y = convert_gen Reduction.CONV x y
 let convert_leq x y = convert_gen Reduction.CUMUL x y
 
 (* This tactic enables the user to remove hypotheses from the signature.
- * Some care is taken to prevent him from removing variables that are
+ * Some care is taken to prevent them from removing variables that are
  * subsequently used in other hypotheses or in the conclusion of the
  * goal. *)
 
