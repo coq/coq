@@ -613,9 +613,9 @@ library:ci-bedrock2:
     NJOBS: "1"
 
 library:ci-category_theory:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
+  - build:edge+flambda
   - plugin:ci-equations
 
 library:ci-color:
@@ -825,15 +825,15 @@ plugin:ci-elpi:
   extends: .ci-template
 
 plugin:ci-equations:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 plugin:ci-fiat_parsers:
   extends: .ci-template
 
 plugin:ci-metacoq:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
+  - build:edge+flambda
   - plugin:ci-equations
 
 plugin:ci-mtac2:
