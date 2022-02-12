@@ -20,7 +20,7 @@ Interactive use (coqtop)
 ------------------------
 
 In the interactive mode, also known as the Coq toplevel, the user can
-develop his theories and proofs step by step. The Coq toplevel is run
+develop their theories and proofs step by step. The Coq toplevel is run
 by the command ``coqtop``.
 
 There are two different binary images of Coq: the byte-code one and the
