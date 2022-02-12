@@ -29,6 +29,8 @@ open Context.Rel.Declaration
 (** Machinery to custom the behavior of the reduction *)
 module ReductionBehaviour = Reductionops.ReductionBehaviour
 
+type volatile = { volatile : bool } [@@unboxed]
+
 (** Machinery about stack of unfolded constants *)
 module Cst_stack = struct
   open EConstr
@@ -38,34 +40,34 @@ module Cst_stack = struct
 - constant applied to params = term in head applied to args
 - there is at most one arguments with an empty list of args, it must be the first.
 - in args, the int represents the indice of the first arg to consider *)
-  type t = (constr * constr list * (int * constr array) list)  list
+  type t = (constr * constr list * (int * constr array) list * volatile)  list
 
   let empty = []
   let is_empty = CList.is_empty
 
   let drop_useless = function
-    | _ :: ((_,_,[])::_ as q) -> q
+    | _ :: ((_,_,[],_)::_ as q) -> q
     | l -> l
 
   let add_param h cst_l =
     let append2cst = function
-      | (c,params,[]) -> (c, h::params, [])
-      | (c,params,((i,t)::q)) when i = pred (Array.length t) ->
-        (c, params, q)
-      | (c,params,(i,t)::q) ->
-        (c, params, (succ i,t)::q)
+      | (c,params,[],vol) -> (c, h::params, [], vol)
+      | (c,params,((i,t)::q),vol) when i = pred (Array.length t) ->
+        (c, params, q, vol)
+      | (c,params,(i,t)::q, vol) ->
+        (c, params, (succ i,t)::q, vol)
     in
       drop_useless (List.map append2cst cst_l)
 
   let add_args cl =
-    List.map (fun (a,b,args) -> (a,b,(0,cl)::args))
+    List.map (fun (a,b,args,vol) -> (a,b,(0,cl)::args,vol))
 
-  let add_cst cst = function
-    | (_,_,[]) :: q as l -> l
-    | l -> (cst,[],[])::l
+  let add_cst ?(volatile=false) cst = function
+    | (_,_,[],_) :: q as l -> l
+    | l -> (cst,[],[],{volatile})::l
 
   let best_cst = function
-    | (cst,params,[])::_ -> Some(cst,params)
+    | (cst,params,[],_)::_ -> Some(cst,params)
     | _ -> None
 
   let reference sigma t = match best_cst t with
@@ -78,7 +80,7 @@ module Cst_stack = struct
     let reconstruct_head = List.fold_left
       (fun t (i,args) -> mkApp (t,Array.sub args i (Array.length args - i))) in
     List.fold_right
-      (fun (cst,params,args) t -> Termops.replace_term sigma
+      (fun (cst,params,args,_) t -> Termops.replace_term sigma
         (reconstruct_head d args)
         (applist (cst, List.rev params))
         t) cst_l c
@@ -87,10 +89,11 @@ module Cst_stack = struct
     let open Pp in
     let p_c c = Termops.Internal.print_constr_env env sigma c in
     prlist_with_sep pr_semicolon
-      (fun (c,params,args) ->
+      (fun (c,params,args,{volatile}) ->
         hov 1 (str"(" ++ p_c c ++ str ")" ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
                  pr_sequence (fun (i,el) -> prvect_with_sep spc p_c (Array.sub el i (Array.length el - i))) args ++
-                 str ")")) l
+               str ")" ++
+              (if volatile then str " (volatile)" else mt()))) l
 end
 
 
@@ -337,12 +340,13 @@ struct
   (** This function breaks the abstraction of Cst_stack ! *)
   let best_state sigma (_,sk as s) l =
     let rec aux sk def = function
-      |(cst, params, []) -> (cst, append_app_list (List.rev params) sk)
-      |(cst, params, (i,t)::q) -> match decomp sk with
+      |(_,_,_,{volatile=true}) -> def
+      |(cst, params, [], _) -> (cst, append_app_list (List.rev params) sk)
+      |(cst, params, (i,t)::q, vol) -> match decomp sk with
         | Some (el,sk') when EConstr.eq_constr sigma el t.(i) ->
           if i = pred (Array.length t)
-          then aux sk' def (cst, params, q)
-          else aux sk' def (cst, params, (succ i,t)::q)
+          then aux sk' def (cst, params, q, vol)
+          else aux sk' def (cst, params, (succ i,t)::q, vol)
         | _ -> def
     in List.fold_left (aux sk) s l
 
@@ -753,7 +757,7 @@ let whd_state_gen ?csts flags env sigma =
               | Some body ->
                 let const = (fst const, EInstance.make (snd const)) in
                 let body = EConstr.of_constr body in
-                let cst_l = if volatile then cst_l else Cst_stack.add_cst (mkConstU const) cst_l in
+                let cst_l = Cst_stack.add_cst ~volatile (mkConstU const) cst_l in
                 whrec cst_l (body, s' @ (Stack.append_app [|x'|] s'')))
             | Stack.Cst_proj p ->
               let stack = s' @ (Stack.append_app [|x'|] s'') in
