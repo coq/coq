@@ -153,7 +153,7 @@ constr might get instantiated instead of generating equality constraints
 (Evd.univ_rigid does that).
 
 On this issue, I recommend forcing commands to take `global_reference`s
-only, the user can declare their specialized terms used as hints as
+only. Users can declare their specialized terms used as hints as
 constants and this is cleaner. Alas, backward-compatibility-wise,
 this is the only solution I found. In the case of global_references
 only, it's just a matter of using `Evd.fresh_global` /
