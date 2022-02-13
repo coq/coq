@@ -11,7 +11,7 @@ coqdoc is a documentation tool for the proof assistant Coq, similar to
 
 #. to produce a nice |Latex| and/or HTML document from Coq source files,
    readable for a human and not only for the proof assistant;
-#. to help the user navigate his own (or third-party) sources.
+#. to help users navigate their own (or third-party) sources.
 
 
 
