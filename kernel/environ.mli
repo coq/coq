@@ -80,6 +80,8 @@ type env = private {
   env_nb_rel        : int;
   env_universes : UGraph.t;
   env_universes_lbound : UGraph.Bound.t;
+  irr_constants : Cset_env.t;
+  irr_inds : Indset_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;

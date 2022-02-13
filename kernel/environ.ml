@@ -94,6 +94,8 @@ type env = {
   env_nb_rel        : int;
   env_universes : UGraph.t;
   env_universes_lbound : UGraph.Bound.t;
+  irr_constants : Cset_env.t;
+  irr_inds : Indset_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
@@ -122,6 +124,8 @@ let empty_env = {
   env_nb_rel = 0;
   env_universes = UGraph.initial_universes;
   env_universes_lbound = UGraph.Bound.Set;
+  irr_constants = Cset_env.empty;
+  irr_inds = Indset_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
   indirect_pterms = Opaqueproof.empty_opaquetab;
@@ -493,8 +497,13 @@ let add_constant_key kn cb linkinfo env =
     Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_globals.Globals.constants in
   let new_globals =
     { env.env_globals with
-        Globals.constants = new_constants } in
-  { env with env_globals = new_globals }
+      Globals.constants = new_constants }
+  in
+  let irr_constants = if cb.const_relevance == Sorts.Irrelevant
+    then Cset_env.add kn env.irr_constants
+    else env.irr_constants
+  in
+  { env with irr_constants; env_globals = new_globals }
 
 let add_constant kn cb env =
   add_constant_key kn cb no_link_info env
@@ -641,12 +650,18 @@ let template_polymorphic_pind (ind,u) env =
   if not (Univ.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
 
-let add_mind_key kn (_mind, _ as mind_key) env =
+let add_mind_key kn (mind, _ as mind_key) env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.Globals.inductives in
   let new_globals =
     { env.env_globals with
-        Globals.inductives = new_inds; } in
-  { env with env_globals = new_globals }
+      Globals.inductives = new_inds; }
+  in
+  let irr_inds = Array.fold_left_i (fun i irr_inds mip ->
+      if mip.mind_relevance == Sorts.Irrelevant
+      then Indset_env.add (kn, i) irr_inds
+      else irr_inds) env.irr_inds mind.mind_packets
+  in
+  { env with irr_inds; env_globals = new_globals }
 
 let add_mind kn mib env =
   let li = ref no_link_info in add_mind_key kn (mib, li) env
