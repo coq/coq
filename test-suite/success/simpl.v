@@ -105,3 +105,12 @@ Goal 2=1+1.
 match goal with |- (_ = ?c) => simpl c end.
 match goal with |- 2 = 2 => idtac end. (* Check that it reduced *)
 Abort.
+
+Module FurtherAppliedPrimitiveProjections.
+Set Primitive Projections.
+Record T := { u : nat -> nat }.
+Goal {| u:= fun x => x |}.(u) 0 = 0.
+simpl u.
+match goal with |- 0 = 0 => idtac end. (* Check that it reduced *)
+Abort.
+End FurtherAppliedPrimitiveProjections.
