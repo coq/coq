@@ -135,6 +135,7 @@ let rec to_prod n lam =
       | _   -> anomaly Pp.(str "Not enough prod's.")
 
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
+let it_mkProd_wo_LetIn   = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
 let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 
 (* Application with expected on-the-fly reduction *)

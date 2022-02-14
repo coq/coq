@@ -49,8 +49,8 @@
      E[Delta,Gamma] |-_G
      ------------------------
      E,c:T[Delta,Gamma] |-_G'
-
    add_mind(Ind(Ind[Gamma_p](Gamma_I:=Gamma_C))):
+
 
      E[Delta,Gamma] |-_G
      ------------------------
@@ -130,6 +130,7 @@ type section_data = {
   rev_univ : Univ.ContextSet.t;
   rev_objlabels : Label.Set.t;
   rev_reimport : reimport list;
+  rev_revstruct : structure_body;
 }
 
 module HandleMap = Opaqueproof.HandleMap
@@ -505,23 +506,23 @@ let safe_push_named d env =
 
 let push_named_def (id,de) senv =
   let sections = get_section senv.sections in
-  let sections = Section.push_local sections in
   let c, r, typ = Term_typing.translate_local_def senv.env id de in
-  let x = Context.make_annot id r in
-  let env'' = safe_push_named (LocalDef (x, c, typ)) senv.env in
+  let d = LocalDef (Context.make_annot id r, c, typ) in
+  let env'' = safe_push_named d senv.env in
+  let sections = Section.push_local d sections in
   { senv with sections=Some sections; env = env'' }
 
 let push_named_assum (x,t) senv =
   let sections = get_section senv.sections in
-  let sections = Section.push_local sections in
   let t, r = Term_typing.translate_local_assum senv.env t in
-  let x = Context.make_annot x r in
-  let env'' = safe_push_named (LocalAssum (x,t)) senv.env in
+  let d = LocalAssum (Context.make_annot x r, t) in
+  let sections = Section.push_local d sections in
+  let env'' = safe_push_named d senv.env in
   { senv with sections=Some sections; env = env'' }
 
 let push_section_context uctx senv =
   let sections = get_section senv.sections in
-  let sections = Section.push_context uctx sections in
+  let sections = Section.push_local_universe_context uctx sections in
   let senv = { senv with sections=Some sections } in
   let ctx = Univ.ContextSet.of_context uctx in
   (* We check that the universes are fresh. FIXME: This should be done
@@ -583,10 +584,10 @@ let add_field ((l,sfb) as field) gn senv =
       match sfb, gn with
       | SFBconst cb, C con ->
         let poly = Declareops.constant_is_polymorphic cb in
-        Some (Section.push_constant ~poly con sections)
+        Some Section.(push_global ~poly env' (SecDefinition con) sections)
       | SFBmind mib, I mind ->
         let poly = Declareops.inductive_is_polymorphic mib in
-        Some (Section.push_inductive ~poly mind sections)
+        Some Section.(push_global ~poly env' (SecInductive mind) sections)
       | _, (M | MT) -> Some sections
       | _ -> assert false
   in
@@ -617,7 +618,7 @@ type exported_private_constant = Constant.t * exported_opaque option
 let repr_exported_opaque o =
   let priv = match o .exp_univs with
   | None -> Opaqueproof.PrivateMonomorphic ()
-  | Some n -> Opaqueproof.PrivatePolymorphic (n, Univ.ContextSet.empty)
+  | Some _ -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
   in
   (o.exp_handle, (o.exp_body, priv))
 
@@ -768,7 +769,7 @@ let export_eff eff =
 
 let is_empty_private = function
 | Opaqueproof.PrivateMonomorphic ctx -> Univ.ContextSet.is_empty ctx
-| Opaqueproof.PrivatePolymorphic (_, ctx) -> Univ.ContextSet.is_empty ctx
+| Opaqueproof.PrivatePolymorphic ctx -> Univ.ContextSet.is_empty ctx
 
 (* Special function to call when the body of an opaque definition is provided.
   It performs the type-checking of the body immediately. *)
@@ -908,8 +909,8 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
   let ctx = match ctx with
   | Opaqueproof.PrivateMonomorphic u ->
     Opaqueproof.PrivateMonomorphic (Univ.hcons_universe_context_set u)
-  | Opaqueproof.PrivatePolymorphic (n, u) ->
-    Opaqueproof.PrivatePolymorphic (n, Univ.hcons_universe_context_set u)
+  | Opaqueproof.PrivatePolymorphic u ->
+    Opaqueproof.PrivatePolymorphic (Univ.hcons_universe_context_set u)
   in
   { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 
@@ -1344,6 +1345,7 @@ let open_section senv =
     rev_univ = senv.univ;
     rev_objlabels = senv.objlabels;
     rev_reimport = [];
+    rev_revstruct = senv.revstruct;
   } in
   let sections = Section.open_section ~custom senv.sections in
   { senv with sections=Some sections }
@@ -1354,34 +1356,15 @@ let close_section senv =
   let env0 = senv.env in
   (* First phase: revert the declarations added in the section *)
   let sections, entries, cstrs, revert = Section.close_section sections0 in
-  let rec pop_revstruct accu entries revstruct = match entries, revstruct with
-  | [], revstruct -> accu, revstruct
-  | _ :: _, [] ->
-    CErrors.anomaly (Pp.str "Unmatched section data")
-  | entry :: entries, (lbl, leaf) :: revstruct ->
-    let data = match entry, leaf with
-    | SecDefinition kn, SFBconst cb ->
-      let () = assert (Label.equal lbl (Constant.label kn)) in
-      `Definition (kn, cb)
-    | SecInductive ind, SFBmind mib ->
-      let () = assert (Label.equal lbl (MutInd.label ind)) in
-      `Inductive (ind, mib)
-    | (SecDefinition _ | SecInductive _), (SFBconst _ | SFBmind _) ->
-      CErrors.anomaly (Pp.str "Section content mismatch")
-    | (SecDefinition _ | SecInductive _), (SFBmodule _ | SFBmodtype _) ->
-      CErrors.anomaly (Pp.str "Module inside a section")
-    in
-    pop_revstruct (data :: accu) entries revstruct
-  in
-  let redo, revstruct = pop_revstruct [] entries senv.revstruct in
-  (* Don't revert the delayed constraints. If some delayed constraints were
-     forced inside the section, they have been turned into global monomorphic
+  (* Don't revert the delayed constraints (future_cst). If some delayed constraints
+     were forced inside the section, they have been turned into global monomorphic
      that are going to be replayed. Those that are not forced are not readded
      by {!add_constant_aux}. *)
-  let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels; rev_reimport } = revert in
+  let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels;
+        rev_reimport; rev_revstruct = revstruct } = revert in
   (* Do not revert the opaque table, the discharged opaque constants are
      referring to it. *)
-  let env = Environ.set_opaque_tables env (Environ.opaque_tables senv.env) in
+  let env = Environ.set_opaque_tables env (Environ.opaque_tables env0) in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay Requires *)
   let senv = List.fold_left (fun senv (lib,cst,vodigest) -> snd (import lib cst vodigest senv))
@@ -1389,21 +1372,21 @@ let close_section senv =
   in
   (* Third phase: replay the discharged section contents *)
   let senv = push_context_set ~strict:true cstrs senv in
-  let modlist = Section.replacement_context env0 sections0 in
-  let cooking_info abstract = { Declarations.modlist; abstract; } in
-  let fold senv = function
-  | `Definition (kn, cb) ->
-    let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
-    let r = { Cooking.from = cb; info } in
-    let cb = Term_typing.translate_recipe senv.env kn r in
+  let fold entry senv =
+    match entry with
+  | SecDefinition kn ->
+    let cb = Environ.lookup_constant kn env0 in
+    let info = Section.segment_of_constant kn sections0 in
+    let cb = Discharge.cook_constant senv.env info cb in
     (* Delayed constants are already in the global environment *)
     add_constant_aux senv (kn, cb)
-  | `Inductive (ind, mib) ->
-    let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
-    let mib = Cooking.cook_inductive info mib in
+  | SecInductive ind ->
+    let mib = Environ.lookup_mind ind env0 in
+    let info = Section.segment_of_inductive ind sections0 in
+    let mib = Discharge.cook_inductive info mib in
     add_checked_mind ind mib senv
   in
-  List.fold_left fold senv redo
+  List.fold_right fold entries senv
 
 (** {6 Safe typing } *)
 

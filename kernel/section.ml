@@ -11,7 +11,7 @@
 open Util
 open Names
 open Univ
-open Declarations
+open Cooking
 
 module NamedDecl = Context.Named.Declaration
 
@@ -19,24 +19,26 @@ type section_entry =
 | SecDefinition of Constant.t
 | SecInductive of MutInd.t
 
-type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
-
 type 'a t = {
   prev : 'a t option;
   (** Section surrounding the current one *)
-  context : int;
-  (** Length of the named context suffix that has been introduced locally *)
+  entries : section_entry list;
+  (** Global declarations introduced in the section *)
+  context : Constr.named_context;
+  (** Declarations local to the section, intended to be interleaved
+      with global declarations *)
   mono_universes : ContextSet.t;
+  (** Global universes introduced in the section *)
   poly_universes : UContext.t;
   (** Universes local to the section *)
   all_poly_univs : Univ.Level.t array;
   (** All polymorphic universes, including from previous sections. *)
   has_poly_univs : bool;
   (** Are there polymorphic universes or constraints, including in previous sections. *)
-  entries : section_entry list;
-  (** Definitions introduced in the section *)
-  data : (Instance.t * AbstractContext.t) entry_map;
-  (** Additional data synchronized with the section *)
+  expand_info_map : expand_info;
+  (** Tells how to re-instantiate global declarations when they are
+      generalized *)
+  cooking_info_map : cooking_info entry_map;
   custom : 'a;
 }
 
@@ -48,18 +50,11 @@ let all_poly_univs sec = sec.all_poly_univs
 
 let map_custom f sec = {sec with custom = f sec.custom}
 
-let find_emap e (cmap, imap) = match e with
-| SecDefinition con -> Cmap.find con cmap
-| SecInductive ind -> Mindmap.find ind imap
-
 let add_emap e v (cmap, imap) = match e with
 | SecDefinition con -> (Cmap.add con v cmap, imap)
 | SecInductive ind -> (cmap, Mindmap.add ind v imap)
 
-let push_local sec =
-  { sec with context = sec.context + 1 }
-
-let push_context ctx sec =
+let push_local_universe_context ctx sec =
   if UContext.is_empty ctx then sec
   else
     let sctx = sec.poly_universes in
@@ -88,89 +83,65 @@ let push_constraints uctx sec =
 let open_section ~custom prev =
   {
     prev;
-    context = 0;
+    context = [];
     mono_universes = ContextSet.empty;
     poly_universes = UContext.empty;
     all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) [| |] prev;
     has_poly_univs = Option.cata has_poly_univs false prev;
     entries = [];
-    data = (Cmap.empty, Mindmap.empty);
+    expand_info_map = (Cmap.empty, Mindmap.empty);
+    cooking_info_map = (Cmap.empty, Mindmap.empty);
     custom = custom;
   }
 
 let close_section sec =
   sec.prev, sec.entries, sec.mono_universes, sec.custom
 
-let push_global ~poly e sec =
+let push_local d sec =
+  { sec with context = d :: sec.context }
+
+let extract_hyps vars used =
+  (* Only keep the part that is used by the declaration *)
+  List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) used) vars
+
+let segment_of_entry env e uctx sec =
+  let hyps = match e with
+  | SecDefinition con -> (Environ.lookup_constant con env).Declarations.const_hyps
+  | SecInductive mind -> (Environ.lookup_mind mind env).Declarations.mind_hyps
+  in
+  let hyps = Context.Named.to_vars hyps in
+  (* [sec.context] are the named hypotheses, [hyps] the subset that is
+     declared by the global *)
+  let ctx = extract_hyps sec.context hyps in
+  let cooking_info = Cooking.make_cooking_info sec.expand_info_map ctx uctx in
+  (* Add recursive calls: projections are recursively referring to the
+     mind they belong to *)
+  match e with
+  | SecDefinition _ -> cooking_info
+  | SecInductive _ ->
+    { cooking_info with expand_info = add_emap e cooking_info.abstr_inst_info cooking_info.expand_info }
+
+let push_global env ~poly e sec =
   if has_poly_univs sec && not poly
   then CErrors.user_err
       Pp.(str "Cannot add a universe monomorphic declaration when \
                section polymorphic universes are present.")
   else
-    { sec with
-      entries = e :: sec.entries;
-      data = add_emap e (abstract_universes sec.poly_universes) sec.data;
-    }
+    let cooking_info = segment_of_entry env e sec.poly_universes sec in
+    let cooking_info_map = add_emap e cooking_info sec.cooking_info_map in
+    let expand_info_map = add_emap e cooking_info.abstr_inst_info sec.expand_info_map in
+    { sec with entries = e :: sec.entries; expand_info_map; cooking_info_map }
 
-let push_constant ~poly con s = push_global ~poly (SecDefinition con) s
+let segment_of_constant con sec = Cmap.find con (fst sec.cooking_info_map)
+let segment_of_inductive con sec = Mindmap.find con (snd sec.cooking_info_map)
 
-let push_inductive ~poly ind s = push_global ~poly (SecInductive ind) s
-
-let empty_segment = {
-  abstr_ctx = [];
-  abstr_subst = Instance.empty;
-  abstr_uctx = AbstractContext.empty;
-}
-
-let extract_hyps sec vars used =
-  (* Keep the section-local segment of variables *)
-  let vars = List.firstn sec.context vars in
-  (* Only keep the part that is used by the declaration *)
-  List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) used) vars
-
-let section_segment_of_entry vars e hyps sec =
-  (* [vars] are the named hypotheses, [hyps] the subset that is declared by the
-     global *)
-  let hyps = extract_hyps sec vars hyps in
-  let inst, auctx = find_emap e sec.data in
-  {
-    abstr_ctx = hyps;
-    abstr_subst = inst;
-    abstr_uctx = auctx;
-  }
-
-let segment_of_constant env con s =
-  let body = Environ.lookup_constant con env in
-  let vars = Environ.named_context env in
-  let used = Context.Named.to_vars body.Declarations.const_hyps in
-  section_segment_of_entry vars (SecDefinition con) used s
-
-let segment_of_inductive env mind s =
-  let mib = Environ.lookup_mind mind env in
-  let vars = Environ.named_context env in
-  let used = Context.Named.to_vars mib.Declarations.mind_hyps in
-  section_segment_of_entry vars (SecInductive mind) used s
-
-let instance_from_variable_context =
-  List.rev %> List.filter NamedDecl.is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
-
-let extract_worklist info =
-  let args = instance_from_variable_context info.abstr_ctx in
-  info.abstr_subst, args
-
-let replacement_context env sec =
-  let cmap, imap = sec.data in
-  let cmap = Cmap.mapi (fun con _ -> extract_worklist @@ segment_of_constant env con sec) cmap in
-  let imap = Mindmap.mapi (fun ind _ -> extract_worklist @@ segment_of_inductive env ind sec) imap in
-  (cmap, imap)
-
-let is_in_section env gr sec =
+let is_in_section _env gr sec =
   let open GlobRef in
   match gr with
   | VarRef id ->
-    let vars = List.firstn sec.context (Environ.named_context env) in
+    let vars = sec.context in
     List.exists (fun decl -> Id.equal id (NamedDecl.get_id decl)) vars
   | ConstRef con ->
-    Cmap.mem con (fst sec.data)
+    Cmap.mem con (fst sec.expand_info_map)
   | IndRef (ind, _) | ConstructRef ((ind, _), _) ->
-    Mindmap.mem ind (snd sec.data)
+    Mindmap.mem ind (snd sec.expand_info_map)

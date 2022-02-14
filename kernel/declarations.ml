@@ -102,23 +102,7 @@ type typing_flags = {
 
 }
 
-type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
-  (Univ.Instance.t * Id.t array) Mindmap.t
-
-(** Data needed to abstract over the section variable and universe hypotheses *)
-type abstr_info = {
-  abstr_ctx : Constr.named_context;
-  (** Section variables of this prefix *)
-  abstr_subst : Univ.Instance.t;
-  (** Actual names of the abstracted variables *)
-  abstr_uctx : Univ.AbstractContext.t;
-  (** Universe quantification, same length as the substitution *)
-}
-
-type cooking_info = {
-  modlist : work_list;
-  abstract : abstr_info;
-}
+(** {6 Representation of definitions/assumptions in the kernel } *)
 
 (* some contraints are in constant_constraints, some other may be in
  * the OpaqueDef *)
@@ -135,7 +119,7 @@ type 'opaque pconstant_body = {
                                            type-checking. *)
 }
 
-type constant_body = cooking_info Opaqueproof.opaque pconstant_body
+type constant_body = Opaqueproof.opaque pconstant_body
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 type nested_type =

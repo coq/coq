@@ -17,7 +17,6 @@ open Environ
 open Util
 open Libobject
 
-module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let name_table =
@@ -45,8 +44,7 @@ let subst_rename_args (subst, (_, (r, names as orig))) =
 let discharge_rename_args = function
   | ReqGlobal (c, names), _ as req when not (isVarRef c && Lib.is_in_section c) ->
      (try
-       let vars = Lib.variable_section_segment_of_reference c in
-       let var_names = List.map (NamedDecl.get_id %> Name.mk_name) vars in
+       let var_names = Array.map_to_list (fun c -> Name (destVar c)) (Lib.section_instance c) in
        let names' = var_names @ names in
        Some (ReqGlobal (c, names), (c, names'))
      with Not_found -> Some req)

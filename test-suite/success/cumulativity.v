@@ -146,3 +146,20 @@ Module CumulApp.
   Definition bar@{i j|i<=j} := fun x : foo@{i} 0 => x : foo@{j} 0.
 
 End CumulApp.
+
+Module InSection.
+
+Section S.
+Polymorphic Cumulative Structure T : Type := {sort : Type}.
+Polymorphic Universe u.
+Polymorphic Cumulative Structure T' : Type := {sort' : Type -> Type@{u}}.
+Polymorphic Cumulative Structure T'' : Type := {sort'' : Type}.
+End S.
+
+Check T@{Set}.
+Check T'@{Set Set}.
+
+(* T'' expects two universes, that is also u; do we really want it? *)
+Fail Check T''@{Set}.
+
+End InSection.

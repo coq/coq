@@ -1721,8 +1721,7 @@ end = struct (* {{{ *)
         let () = assert (Univ.AbstractContext.is_empty ctx) in
         let () = match priv with
         | Opaqueproof.PrivateMonomorphic () -> ()
-        | Opaqueproof.PrivatePolymorphic (univs, uctx) ->
-          let () = assert (Int.equal (Univ.AbstractContext.size ctx) univs) in
+        | Opaqueproof.PrivatePolymorphic uctx ->
           assert (Univ.ContextSet.is_empty uctx)
         in
         let () = Opaques.set_opaque_disk (Option.get bucket) (pr, priv) p in

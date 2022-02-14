@@ -1109,6 +1109,12 @@ let extend_in_context_set (a, ctx) ctx' =
 let empty_level_subst = Level.Map.empty
 let is_empty_level_subst = Level.Map.is_empty
 
+let lift_level_subst n =
+  Level.Map.map (function {Level.data=Level.Var p;_} -> Level.var (p+n) | u -> u)
+
+let merge_level_subst =
+  Level.Map.union (fun _ _ _ -> anomaly (str "Overlapping universe substitutions"))
+
 (** Substitution functions *)
 
 (** With level to level substitutions. *)

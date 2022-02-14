@@ -19,16 +19,14 @@ open Mod_subst
 
 type 'a delayed_universes =
 | PrivateMonomorphic of 'a
-| PrivatePolymorphic of int * Univ.ContextSet.t
-  (** Number of surrounding bound universes + local constraints *)
+| PrivatePolymorphic of Univ.ContextSet.t (** local constraints *)
 
 type opaquetab
-type 'cooking_info opaque
+type opaque
 
 val empty_opaquetab : opaquetab
 
-(** Create a fresh handle in the table. *)
-val create : DirPath.t -> opaquetab -> 'c opaque * opaquetab
+val create : DirPath.t -> opaquetab -> opaque * opaquetab
 
 type opaque_proofterm = Constr.t * unit delayed_universes
 
@@ -41,13 +39,12 @@ module HandleMap : CSig.MapS with type key = opaque_handle
     this indirect storage, by telling how to retrieve terms.
 *)
 
-val subst_opaque : substitution -> 'c opaque -> 'c opaque
+val subst_opaque : substitution -> opaque -> opaque
 
-val discharge_opaque :
-  'cooking_info -> 'cooking_info opaque -> 'cooking_info opaque
+val discharge_opaque : Cooking.cooking_info -> opaque -> opaque
 
 val repr_handle : opaque_handle -> int
 
 val mem_handle : opaque_handle -> opaquetab -> bool
 
-val repr : 'c opaque -> substitution list * 'c list * DirPath.t * opaque_handle
+val repr : opaque -> substitution list * Cooking.cooking_info list * DirPath.t * opaque_handle

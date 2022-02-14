@@ -775,7 +775,7 @@ struct
       (* if `f` is a global, we retrieve bidirectionality hints *)
         try
           let (gr,_) = destRef sigma fj.uj_val in
-          Option.default length @@ GlobRef.Map.find_opt gr !bidi_hints
+          Option.default length @@ get_bidirectionality_hint gr
         with DestKO ->
           length
     in

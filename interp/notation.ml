@@ -20,7 +20,6 @@ open Constrexpr
 open Notation_term
 open Glob_term
 open Glob_ops
-open Context.Named.Declaration
 open NumTok
 
 (*i*)
@@ -2047,8 +2046,7 @@ let discharge_arguments_scope (req,r,n,l,_) =
   else
     let n =
       try
-        let vars = Lib.variable_section_segment_of_reference r in
-        vars |> List.filter is_local_assum |> List.length
+        Array.length (Lib.section_instance r)
       with
         Not_found (* Not a ref defined in this section *) -> 0 in
     Some (req,r,n,l,[])

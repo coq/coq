@@ -19,12 +19,93 @@ open Util
 open Names
 open Term
 open Constr
-open Declarations
 open Univ
 open Context
 
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
+
+(** {6 Data needed to abstract over the section variables and section universes } *)
+
+(** The generalization to be done on a specific judgment:
+    [a:T,b:U,c:V(a) ⊢ w(a,c):W(a,c)
+     ~~>
+     ⊢ λxz.w(a,c)[a,c:=x,z]:(Πx:T.z:T(a).W(a,c))[a,c:=x,z]]
+    so, an abstr_info is both the context x:T,z:V(x) to generalize
+    (skipping y which does not occur), and the substitution [a↦x,c↦z]
+    where in practice, x and z are canonical (hence implicit) de
+    Bruijn indices, that is, only the instantiation [a,c] is kept *)
+
+type abstr_info = {
+  abstr_ctx : Constr.rel_context;
+  (** Context over which to generalize (e.g. x:T,z:V(x)) *)
+  abstr_auctx : Univ.AbstractContext.t;
+  (** Universe context over which to generalize *)
+  abstr_subst : Id.t list;
+  (** Canonical renaming represented by its domain made of the
+      actual names of the abstracted term variables (e.g. [a,c]);
+      the codomain made of de Bruijn indices is implicit *)
+  abstr_ausubst : Univ.universe_level_subst;
+  (** Universe substitution *)
+}
+
+(** The instantiation to apply to generalized declarations so that
+    they behave as if not generalized: this is the a1..an instance to
+    apply to a declaration c in the following transformation:
+    [a1:T1..an:Tn, C:U(a1..an) ⊢ v(a1..an,C):V(a1..an,C)
+     ~~>
+     C:Πx1..xn.U(x1..xn), a1:T1..an:Tn ⊢ v(a1..an,Ca1..an):V(a1..an,Ca1..an)]
+    note that the data looks close to the one for substitution above
+    (because the substitution are represented by their domain) but
+    here, local definitions of the context have been dropped *)
+
+type abstr_inst_info = {
+  abstr_rev_inst : Id.t list;
+  (** The variables to reapply (excluding "let"s of the context), in reverse order *)
+  abstr_uinst : Univ.Instance.t;
+  (** Abstracted universe variables to reapply *)
+}
+
+(** The collection of instantiations to apply to generalized
+    declarations so that they behave as if not generalized.
+    This accounts for the permutation (lambda-lifting) of global and
+    local declarations.
+    Using the notations above, a expand_info is a map [c ↦ a1..an]
+    over all generalized global declarations of the section *)
+
+type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
+type expand_info = abstr_inst_info entry_map
+
+(** The collection of instantiations to be done on generalized
+    declarations + the generalization to be done on a specific
+    judgment:
+    [a1:T1,a2:T2,C:U(a1) ⊢ v(a1,a2,C):V(a1,a2,C)
+     ~~>
+     c:Πx.U(x) ⊢ λx1x2.(v(a1,a2,cx1)[a1,a2:=x1,x2]):Πx1x2.(V(a1,a2,ca1)[a1,a2:=x1,x2])]
+    so, a cooking_info is the map [c ↦ x1..xn],
+    the context x:T,y:U to generalize, and the substitution [x,y] *)
+
+type cooking_info = {
+  expand_info : expand_info;
+  abstr_info : abstr_info;
+  abstr_inst_info : abstr_inst_info; (* relevant for recursive types *)
+  names_info : Id.Set.t; (* set of generalized names *)
+}
+
+let empty_cooking_info = {
+  expand_info = (Cmap.empty, Mindmap.empty);
+  abstr_info = {
+      abstr_ctx = [];
+      abstr_subst = [];
+      abstr_auctx = AbstractContext.empty;
+      abstr_ausubst = Level.Map.empty;
+    };
+  abstr_inst_info = {
+      abstr_rev_inst = [];
+      abstr_uinst = Univ.Instance.empty;
+    };
+  names_info = Id.Set.empty;
+}
 
 (*s Cooking the constants. *)
 
@@ -49,6 +130,7 @@ struct
 end
 
 module RefTable = Hashtbl.Make(RefHash)
+type internal_abstr_inst_info = Univ.Instance.t * int list * int
 
 let instantiate_my_gr gr u =
   match gr with
@@ -56,352 +138,237 @@ let instantiate_my_gr gr u =
   | IndRef i -> mkIndU (i, u)
   | ConstructRef c -> mkConstructU (c, u)
 
-let share cache r (cstl,knl) =
+let discharge_inst top_abst_subst sub_abst_rev_inst =
+  let rec aux k relargs top_abst_subst sub_abst_rev_inst =
+    match top_abst_subst, sub_abst_rev_inst with
+    | id :: top_abst_subst, id' :: sub_abst_rev_inst' ->
+      if Id.equal id id' then
+        aux (k+1) (k :: relargs) top_abst_subst sub_abst_rev_inst'
+      else
+        aux (k+1) relargs top_abst_subst sub_abst_rev_inst
+    | _, [] -> relargs
+    | [], _ -> assert false in
+  aux 1 [] top_abst_subst sub_abst_rev_inst
+
+let rec find_var k id = function
+| [] -> raise Not_found
+| idc :: subst ->
+  if Id.equal id idc then k+1
+  else find_var (k+1) id subst
+
+let share cache top_abst_subst r (cstl,knl) =
   try RefTable.find cache r
   with Not_found ->
-  let (u,l) =
+  let {abstr_uinst;abstr_rev_inst} =
     match r with
-    | IndRef (kn,_i) ->
-        Mindmap.find kn knl
-    | ConstructRef ((kn,_i),_j) ->
-        Mindmap.find kn knl
-    | ConstRef cst ->
-        Cmap.find cst cstl in
-  let c = (u, Array.map mkVar l) in
-  RefTable.add cache r c;
-  c
+    | IndRef (kn,_i) -> Mindmap.find kn knl
+    | ConstructRef ((kn,_i),_j) -> Mindmap.find kn knl
+    | ConstRef cst -> Cmap.find cst cstl
+  in
+  let inst = (abstr_uinst, discharge_inst top_abst_subst abstr_rev_inst, List.length abstr_rev_inst) in
+  RefTable.add cache r inst;
+  inst
 
-let share_univs cache r u l =
-  let (u', args) = share cache r l in
-    mkApp (instantiate_my_gr r (Instance.append u' u), args)
+let make_inst k abstr_inst_rel =
+  Array.map_of_list (fun n -> mkRel (k+n)) abstr_inst_rel
+
+let share_univs cache top_abst_subst k r u l =
+  let (abstr_uinst,abstr_inst_rel,_) = share cache top_abst_subst r l in
+  mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), make_inst k abstr_inst_rel)
+
+let discharge_proj_repr r p = (* To merge with discharge_proj *)
+  let nnewpars = List.length r.abstr_inst_info.abstr_rev_inst in
+  let map npars = npars + nnewpars in
+  Projection.Repr.map_npars map p
+
+let discharge_proj (_,_,abstr_inst_length) p =
+  let map npars = npars + abstr_inst_length in
+  Projection.map_npars map p
 
 let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
 
-let expmod_constr cache modlist c =
-  let share_univs = share_univs cache in
-  let rec substrec c =
+let expand_constr cache modlist top_abst_subst c =
+  let share_univs = share_univs cache top_abst_subst in
+  let rec substrec k c =
     match kind c with
       | Case (ci, u, pms, p, iv, t, br) ->
-        begin match share cache (IndRef ci.ci_ind) modlist with
-        | (u', prefix) ->
-          let u = Instance.append u' u in
-          let pms = Array.append prefix pms in
-          let ci = { ci with ci_npar = ci.ci_npar + Array.length prefix } in
-          Constr.map substrec (mkCase (ci,u,pms,p,iv,t,br))
+        begin match share cache top_abst_subst (IndRef ci.ci_ind) modlist with
+        | (abstr_uinst, abstr_inst_rel, abstr_inst_length) ->
+          let u = Instance.append abstr_uinst u in
+          let pms = Array.append (make_inst k abstr_inst_rel) pms in
+          let ci = { ci with ci_npar = ci.ci_npar + abstr_inst_length } in
+          Constr.map_with_binders succ substrec k (mkCase (ci,u,pms,p,iv,t,br))
         | exception Not_found ->
-          Constr.map substrec c
+          Constr.map_with_binders succ substrec k c
         end
 
       | Ind (ind,u) ->
           (try
-            share_univs (IndRef ind) u modlist
+            share_univs k (IndRef ind) u modlist
            with
-            | Not_found -> Constr.map substrec c)
+            | Not_found -> Constr.map_with_binders succ substrec k c)
 
       | Construct (cstr,u) ->
           (try
-             share_univs (ConstructRef cstr) u modlist
+             share_univs k (ConstructRef cstr) u modlist
            with
-            | Not_found -> Constr.map substrec c)
+            | Not_found -> Constr.map_with_binders succ substrec k c)
 
       | Const (cst,u) ->
           (try
-            share_univs (ConstRef cst) u modlist
+            share_univs k (ConstRef cst) u modlist
            with
-            | Not_found -> Constr.map substrec c)
+            | Not_found -> Constr.map_with_binders succ substrec k c)
 
       | Proj (p, c') ->
-        let map cst npars =
-          let _, newpars = Mindmap.find cst (snd modlist) in
-          (cst, npars + Array.length newpars)
-        in
-        let p' = try Projection.map_npars map p with Not_found -> p in
-        let c'' = substrec c' in
-        if p == p' && c' == c'' then c else mkProj (p', c'')
+          let ind = Names.Projection.inductive p in
+          let p' =
+            try
+              let exp = share cache top_abst_subst (IndRef ind) modlist in
+              discharge_proj exp p
+            with Not_found -> p in
+          let c'' = substrec k c' in
+          if p == p' && c' == c'' then c else mkProj (p', c'')
 
-  | _ -> Constr.map substrec c
+      | Var id ->
+          (try
+            mkRel (find_var k id top_abst_subst)
+           with Not_found -> c)
+
+  | _ -> Constr.map_with_binders succ substrec k c
 
   in
-  if is_empty_modlist modlist then c
-  else substrec c
+  if is_empty_modlist modlist && List.is_empty top_abst_subst then c
+  else substrec 0 c
 
-(** Transforms a named context into a rel context. Also returns the list of
-    variables [id1 ... idn] that need to be replaced by [Rel 1 ... Rel n] to
-    abstract a term that lived in that context. *)
-let abstract_context hyps =
-  let fold decl (ctx, subst) =
+(** Cooking is made of 4 steps:
+    1. expansion of global constants by applying them to the section
+       subcontext they depend on
+    2. substitution of named universe variables by de Bruijn universe variables
+    3. substitution of named term variables by de Bruijn term variables
+    3. generalization of terms over the section subcontext they depend on
+       (note that the generalization over universe variable is implicit) *)
+
+(** The main expanding/substitution functions, performing the three first steps *)
+let expand_subst cache expand_info abstr_info c =
+  let c = expand_constr cache expand_info abstr_info.abstr_subst c in
+  let c = Vars.subst_univs_level_constr abstr_info.abstr_ausubst c in
+  c
+
+(** Adding the final abstraction step, term case *)
+let abstract_as_type cache { expand_info; abstr_info; _ } t =
+  it_mkProd_wo_LetIn (expand_subst cache expand_info abstr_info t) abstr_info.abstr_ctx
+
+(** Adding the final abstraction step, type case *)
+let abstract_as_body cache { expand_info; abstr_info; _ } c =
+  it_mkLambda_or_LetIn (expand_subst cache expand_info abstr_info c) abstr_info.abstr_ctx
+
+(** Adding the final abstraction step, sort case (for universes) *)
+let abstract_as_sort cache { expand_info; abstr_info; _ } s =
+  destSort (expand_subst cache expand_info abstr_info (mkSort s))
+
+(** Absorb a named context in the transformation which turns a
+    judgment [G, Δ ⊢ ΠΩ.J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])], that is,
+    produces the context [Δ(Ω[σ][τ])] and substitutions [σ'] and [τ]
+    that turns a judgment [G, Δ, Ω[σ][τ] ⊢ J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])]
+    via [⊢ ΠG.ΠΔ.Π(Ω[σ][τ]).(J[σ'][τ])] *)
+let abstract_named_context expand_info abstr_info hyps =
+  let fold decl abstr_info =
+    let cache = RefTable.create 13 in
     let id, decl = match decl with
     | NamedDecl.LocalDef (id, b, t) ->
-      let b = Vars.subst_vars subst b in
-      let t = Vars.subst_vars subst t in
+      let b = expand_subst cache expand_info abstr_info b in
+      let t = expand_subst cache expand_info abstr_info t in
       id, RelDecl.LocalDef (map_annot Name.mk_name id, b, t)
     | NamedDecl.LocalAssum (id, t) ->
-      let t = Vars.subst_vars subst t in
+      let t = expand_subst cache expand_info abstr_info t in
       id, RelDecl.LocalAssum (map_annot Name.mk_name id, t)
     in
-    (decl :: ctx, id.binder_name :: subst)
+    { abstr_info with
+        abstr_ctx = decl :: abstr_info.abstr_ctx;
+        abstr_subst = id.binder_name :: abstr_info.abstr_subst }
   in
-  Context.Named.fold_outside fold hyps ~init:([], [])
+  Context.Named.fold_outside fold hyps ~init:abstr_info
 
-let abstract_as_type t (hyps, subst) =
-  let t = Vars.subst_vars subst t in
-  List.fold_left (fun c d -> mkProd_wo_LetIn d c) t hyps
+(** Turn a named context [Δ] (hyps) and a universe named context
+    [G] (uctx) into a rel context and abstract universe context
+    respectively; computing also the substitution [σ] and universe
+    substitution [τ] such that if [G, Δ ⊢ J] is valid then
+    [⊢ ΠG.ΠΔ.(J[σ][τ])] is too, that is, it produces the substitutions
+    which turns named binders into de Bruijn binders; computing also
+    the instance to apply to take the generalization into account;
+    collecting the information needed to do such as a transformation
+    of judgment into a [cooking_info] *)
+let make_cooking_info expand_info hyps uctx =
+  let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
+  let abstr_uinst, abstr_auctx = abstract_universes uctx in
+  let abstr_ausubst = Univ.make_instance_subst abstr_uinst in
+  let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
+  let abstr_info = abstract_named_context expand_info abstr_info hyps in
+  let abstr_inst_info = { abstr_rev_inst; abstr_uinst } in
+  let names_info = Context.Named.to_vars hyps in
+  { expand_info; abstr_info; abstr_inst_info; names_info }
 
-let abstract_as_body c (hyps, subst) =
-  let c = Vars.subst_vars subst c in
-  it_mkLambda_or_LetIn c hyps
+let rel_context_of_cooking_info info =
+  info.abstr_info.abstr_ctx
 
-type recipe = { from : constant_body; info : cooking_info }
-type inline = bool
+let universe_context_of_cooking_info info =
+  info.abstr_info.abstr_auctx
 
-type 'opaque result = {
-  cook_body : (constr, 'opaque) constant_def;
-  cook_type : types;
-  cook_universes : universes;
-  cook_relevance : Sorts.relevance;
-  cook_inline : inline;
-  cook_context : Id.Set.t option;
-  cook_flags : typing_flags;
-}
+let instance_of_cooking_info info =
+  Array.map_of_list mkVar (List.rev info.abstr_inst_info.abstr_rev_inst)
 
-let expmod_constr_subst cache modlist subst c =
-  let subst = Univ.make_instance_subst subst in
-  let c = expmod_constr cache modlist c in
-    Vars.subst_univs_level_constr subst c
-
-let discharge_abstract_universe_context subst abs_ctx auctx =
-  (** Given a named instance [subst := u₀ ... uₙ₋₁] together with an abstract
-      context [auctx0 := 0 ... n - 1 |= C{0, ..., n - 1}] of the same length,
+let discharge_abstract_universe_context abstr auctx =
+  (** Given a substitution [abstr.abstr_ausubst := u₀ ... uₙ₋₁] together with an abstract
+      context [abstr.abstr_ctx := 0 ... n - 1 |= C{0, ..., n - 1}] of the same length,
       and another abstract context relative to the former context
       [auctx := 0 ... m - 1 |= C'{u₀, ..., uₙ₋₁, 0, ..., m - 1}],
       construct the lifted abstract universe context
       [0 ... n - 1 n ... n + m - 1 |=
         C{0, ... n - 1} ∪
         C'{0, ..., n - 1, n, ..., n + m - 1} ]
-      together with the instance
-      [u₀ ... uₙ₋₁ Var(0) ... Var (m - 1)].
+      together with the substitution
+      [u₀ ↦ Var(0), ... ,uₙ₋₁ ↦ Var(n - 1), Var(0) ↦  Var(n), ..., Var(m - 1) ↦  Var (n + m - 1)].
   *)
-  if (Univ.Instance.is_empty subst) then
-    (** Still need to take the union for the constraints between globals *)
-    subst, (AbstractContext.union abs_ctx auctx)
+  let open Univ in
+  let n = AbstractContext.size abstr.abstr_auctx in
+  if (Int.equal n 0) then
+    (** Optimization: still need to take the union for the constraints between globals *)
+    abstr, AbstractContext.union abstr.abstr_auctx auctx
   else
-    let open Univ in
+    let subst = abstr.abstr_ausubst in
     let ainst = make_abstract_instance auctx in
-    let subst = Instance.append subst ainst in
-    let substf = make_instance_subst subst in
+    let substf = Univ.lift_level_subst n (make_instance_subst ainst) in
+    let substf = Univ.merge_level_subst subst substf in
     let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
-    subst, (AbstractContext.union abs_ctx auctx)
+    let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
+    { abstr with abstr_ausubst = substf }, auctx'
 
-let lift_univs subst auctx0 = function
-  | Monomorphic ->
-    assert (AbstractContext.is_empty auctx0);
-    subst, Monomorphic
-  | Polymorphic auctx ->
-    let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
-    subst, (Polymorphic auctx)
+let lift_mono_univs info ctx =
+  assert (AbstractContext.is_empty info.abstr_info.abstr_auctx); (* No monorphic constants in a polymorphic section *)
+  info, ctx
 
-let cook_constr { modlist; abstract = {abstr_ctx; abstr_subst; abstr_uctx;}; } (c, priv) =
-  let cache = RefTable.create 13 in
-  let abstr_subst, priv = match priv with
-  | Opaqueproof.PrivateMonomorphic () ->
-    let () = assert (AbstractContext.is_empty abstr_uctx) in
-    let () = assert (Instance.is_empty abstr_subst) in
-    abstr_subst, priv
-  | Opaqueproof.PrivatePolymorphic (univs, ctx) ->
-    let ainst = Instance.of_array (Array.init univs Level.var) in
-    let abstr_subst = Instance.append abstr_subst ainst in
-    let ctx = on_snd (Univ.subst_univs_level_constraints (Univ.make_instance_subst abstr_subst)) ctx in
-    let univs = univs + AbstractContext.size abstr_uctx in
-    abstr_subst, Opaqueproof.PrivatePolymorphic (univs, ctx)
-  in
-  let expmod = expmod_constr_subst cache modlist abstr_subst in
-  let hyps = Context.Named.map expmod abstr_ctx in
-  let hyps = abstract_context hyps in
-  let c = abstract_as_body (expmod c) hyps in
-  (c, priv)
+let lift_poly_univs info auctx =
+  (** The constant under consideration is quantified over a
+      universe context [auctx]; it has to be quantified further over
+      [abstr.abstr_auctx] leading to a new abstraction recipe valid
+      under the quantification; that is if we had a judgment
+      [G, Δ ⊢ ΠG'.J] to be turned, thanks to [abstr] =
+      [{ctx:=Δ;uctx:=G;subst:=σ;usubst:=τ}], into
+      [⊢ ΠG.ΠΔ.(ΠG'.J)[σ][τ])], we build the new
+      [{ctx:=Δ;uctx:=G(G'[ττ']);subst:=σ;usubst:=ττ'}], for some [τ']
+      built by [discharge_abstract_universe_context], that works on
+      [J], that is, that allows to turn [GG'[ττ'], Δ ⊢ J] into
+      [⊢ ΠG.ΠΔ.(ΠG'.J)[σ][τ]] via [⊢ ΠG(G'[ττ']).ΠΔ.(J[σ][ττ'])] *)
+  let abstr_info, auctx = discharge_abstract_universe_context info.abstr_info auctx in
+  { info with abstr_info }, auctx
 
-let cook_constr infos c =
-  let fold info c = cook_constr info c in
-  List.fold_right fold infos c
+let lift_private_mono_univs info a =
+  let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in
+  let () = assert (is_empty_level_subst info.abstr_info.abstr_ausubst) in
+  a
 
-let cook_constant { from = cb; info } =
-  let { modlist; abstract={abstr_ctx; abstr_subst; abstr_uctx;}; } = info in
-  let cache = RefTable.create 13 in
-  let abstr_subst, univs = lift_univs abstr_subst abstr_uctx cb.const_universes in
-  let expmod = expmod_constr_subst cache modlist abstr_subst in
-  let hyps0 = Context.Named.map expmod abstr_ctx in
-  let hyps = abstract_context hyps0 in
-  let map c = abstract_as_body (expmod c) hyps in
-  let body = match cb.const_body with
-  | Undef _ as x -> x
-  | Def cs -> Def (map cs)
-  | OpaqueDef o ->
-    OpaqueDef (Opaqueproof.discharge_opaque info o)
-  | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
-  in
-  let const_hyps = Id.Set.diff (Context.Named.to_vars cb.const_hyps) (Context.Named.to_vars hyps0) in
-  let typ = abstract_as_type (expmod cb.const_type) hyps in
-  {
-    cook_body = body;
-    cook_type = typ;
-    cook_universes = univs;
-    cook_relevance = cb.const_relevance;
-    cook_inline = cb.const_inline_code;
-    cook_context = Some const_hyps;
-    cook_flags = cb.const_typing_flags;
-  }
-
-(********************************)
-(* Discharging mutual inductive *)
-
-let it_mkProd_wo_LetIn = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
-
-let abstract_rel_ctx (section_decls,subst) ctx =
-  (* Dealing with substitutions between contexts is too annoying, so
-     we reify [ctx] into a big [forall] term and work on that. *)
-  let t = it_mkProd_or_LetIn mkProp ctx in
-  let t = Vars.subst_vars subst t in
-  let t = it_mkProd_wo_LetIn t section_decls in
-  let ctx, t = decompose_prod_assum t in
-  assert (Constr.equal t mkProp);
-  ctx
-
-let abstract_lc ~ntypes expmod (newparams,subst) c =
-  let args = Array.rev_of_list (CList.map_filter (fun d ->
-      if RelDecl.is_local_def d then None
-      else match RelDecl.get_name d with
-        | Anonymous -> assert false
-        | Name id -> Some (mkVar id))
-      newparams)
-  in
-  let diff = List.length newparams in
-  let subs = List.init ntypes (fun k ->
-      lift diff (mkApp (mkRel (k+1), args)))
-  in
-  let c = Vars.substl subs c in
-  let c = Vars.subst_vars subst (expmod c) in
-  let c = it_mkProd_wo_LetIn c newparams in
-  c
-
-let abstract_projection ~params expmod hyps t =
-  let t = it_mkProd_or_LetIn t params in
-  let t = mkArrowR mkProp t in (* dummy type standing in for the inductive *)
-  let t = abstract_as_type (expmod t) hyps in
-  let _, t = decompose_prod_n_assum (List.length params + 1 + Context.Rel.nhyps (fst hyps)) t in
-  t
-
-let cook_one_ind ~ntypes
-    hyps expmod mip =
-  let mind_arity = match mip.mind_arity with
-    | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
-      let arity = abstract_as_type (expmod arity) hyps in
-      let sort = destSort (expmod (mkSort sort)) in
-      RegularArity {mind_user_arity=arity; mind_sort=sort}
-    | TemplateArity {template_level} ->
-      TemplateArity {template_level}
-  in
-  let mind_arity_ctxt =
-    let ctx = Context.Rel.map expmod mip.mind_arity_ctxt in
-    abstract_rel_ctx hyps ctx
-  in
-  let mind_user_lc =
-    Array.map (abstract_lc ~ntypes expmod hyps)
-      mip.mind_user_lc
-  in
-  let mind_nf_lc = Array.map (fun (ctx,t) ->
-      let lc = it_mkProd_or_LetIn t ctx in
-      let lc = abstract_lc ~ntypes expmod hyps lc in
-      decompose_prod_assum lc)
-      mip.mind_nf_lc
-  in
-  { mind_typename = mip.mind_typename;
-    mind_arity_ctxt;
-    mind_arity;
-    mind_consnames = mip.mind_consnames;
-    mind_user_lc;
-    mind_nrealargs = mip.mind_nrealargs;
-    mind_nrealdecls = mip.mind_nrealdecls;
-    mind_kelim = mip.mind_kelim;
-    mind_nf_lc;
-    mind_consnrealargs = mip.mind_consnrealargs;
-    mind_consnrealdecls = mip.mind_consnrealdecls;
-    mind_recargs = mip.mind_recargs; (* TODO is this correct? checker should tell us. *)
-    mind_relevance = mip.mind_relevance;
-    mind_nb_constant = mip.mind_nb_constant;
-    mind_nb_args = mip.mind_nb_args;
-    mind_reloc_tbl = mip.mind_reloc_tbl;
-  }
-
-let cook_inductive { modlist; abstract={abstr_ctx; abstr_subst; abstr_uctx;}; } mib =
-  let abstr_subst, mind_universes = lift_univs abstr_subst abstr_uctx mib.mind_universes in
-  let cache = RefTable.create 13 in
-  let expmod = expmod_constr_subst cache modlist abstr_subst in
-  let abstr_ctx = Context.Named.map expmod abstr_ctx in
-  let removed_vars = Context.Named.to_vars abstr_ctx in
-  let abstr_ctx, _ as hyps = abstract_context abstr_ctx in
-  let nnewparams = Context.Rel.nhyps abstr_ctx in
-  let mind_params_ctxt =
-    let ctx = Context.Rel.map expmod mib.mind_params_ctxt in
-    abstract_rel_ctx hyps ctx
-  in
-  let ntypes = mib.mind_ntypes in
-  let mind_packets =
-    Array.map (cook_one_ind ~ntypes hyps expmod)
-      mib.mind_packets
-  in
-  let mind_record = match mib.mind_record with
-    | NotRecord -> NotRecord
-    | FakeRecord -> FakeRecord
-    | PrimRecord data ->
-      let data = Array.map (fun (id,projs,relevances,tys) ->
-          let tys = Array.map (abstract_projection ~params:mib.mind_params_ctxt expmod hyps) tys in
-          (id,projs,relevances,tys))
-          data
-      in
-      PrimRecord data
-  in
-  let mind_hyps =
-    List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) removed_vars))
-      mib.mind_hyps
-  in
-  let mind_variance, mind_sec_variance =
-    match mib.mind_variance, mib.mind_sec_variance with
-    | None, None -> None, None
-    | None, Some _ | Some _, None -> assert false
-    | Some variance, Some sec_variance ->
-      let sec_variance, newvariance =
-        Array.chop (Array.length sec_variance - AbstractContext.size abstr_uctx)
-          sec_variance
-      in
-      Some (Array.append newvariance variance), Some sec_variance
-  in
-  let mind_template = match mib.mind_template with
-  | None -> None
-  | Some {template_param_levels=levels; template_context} ->
-      let sec_levels = CList.map_filter (fun d ->
-          if RelDecl.is_local_assum d then Some None
-          else None)
-          abstr_ctx
-      in
-      let levels = List.rev_append sec_levels levels in
-      Some {template_param_levels=levels; template_context}
-  in
-  {
-    mind_packets;
-    mind_record;
-    mind_finite = mib.mind_finite;
-    mind_ntypes = mib.mind_ntypes;
-    mind_hyps;
-    mind_nparams = mib.mind_nparams + nnewparams;
-    mind_nparams_rec = mib.mind_nparams_rec + nnewparams;
-    mind_params_ctxt;
-    mind_universes;
-    mind_template;
-    mind_variance;
-    mind_sec_variance;
-    mind_private = mib.mind_private;
-    mind_typing_flags = mib.mind_typing_flags;
-  }
-
-let expmod_constr modlist c = expmod_constr (RefTable.create 13) modlist c
+let lift_private_poly_univs info (inst, cstrs) =
+  let cstrs = Univ.subst_univs_level_constraints info.abstr_info.abstr_ausubst cstrs in
+  (inst, cstrs)
