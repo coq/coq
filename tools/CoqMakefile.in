@@ -175,14 +175,14 @@ findlib_install = \
 	$(HIDE)if [ "$(METAFILE)" ]; then \
 	  $(FINDLIBPREINST) && \
 	  mv $(METAFILE) $(METAFILE).skip ; \
-	  $(OCAMLFIND) install $(2) $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) $(1); \
+	  "$(OCAMLFIND)" install $(2) $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) $(1); \
 	  rc=$$?; \
 	  mv $(METAFILE).skip $(METAFILE); \
 	  exit $$rc; \
 	fi
 findlib_remove = \
 	$(HIDE)if [ ! -z "$(METAFILE)" ]; then\
-	  $(OCAMLFIND) remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE); \
+	  "$(OCAMLFIND)" remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE); \
 	fi
 
 # Substitution of the path by appending $(DESTDIR) if needed.
