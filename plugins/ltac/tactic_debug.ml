@@ -20,11 +20,6 @@ let (ltac_trace_info : ltac_stack Exninfo.t) = Exninfo.make ()
 let prtac x =
   let env = Global.env () in
   Pptactic.pr_glob_tactic env x
-let prmatchpatt env sigma hyp =
-  Pptactic.pr_match_pattern (Printer.pr_constr_pattern_env env sigma) hyp
-let prmatchrl env sigma rl =
-  Pptactic.pr_match_rule false prtac
-    (fun (_,p) -> Printer.pr_constr_pattern_env env sigma p) rl
 
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -683,97 +678,6 @@ let db_constr debug env sigma c =
   is_debug debug >>= fun db ->
   if db then
     Comm.defer_output (fun () -> str "Evaluated term: " ++ Printer.pr_econstr_env env sigma c)
-  else return ()
-
-(* Prints the pattern rule *)
-let db_pattern_rule debug env sigma num r =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-  begin
-    Comm.defer_output (fun () ->
-        str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
-        str "|" ++ spc () ++ prmatchrl env sigma r)
-  end
-  else return ()
-
-(* Prints the hypothesis pattern identifier if it exists *)
-let hyp_bound = function
-  | Anonymous -> str " (unbound)"
-  | Name id -> str " (bound to " ++ Id.print id ++ str ")"
-
-(* Prints a matched hypothesis *)
-let db_matched_hyp debug env sigma (id,_,c) ido =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-    Comm.defer_output (fun () ->
-      str "Hypothesis " ++ Id.print id ++ hyp_bound ido ++
-      str " has been matched: " ++ Printer.pr_econstr_env env sigma c)
-  else return ()
-
-(* Prints the matched conclusion *)
-let db_matched_concl debug env sigma c =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-    Comm.defer_output (fun () ->
-      str "Conclusion has been matched: " ++ Printer.pr_econstr_env env sigma c)
-  else return ()
-
-(* Prints a success message when the goal has been matched *)
-let db_mc_pattern_success debug =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-    Comm.defer_output (fun () ->
-      str "The goal has been successfully matched!" ++ fnl() ++
-      str "Let us execute the right-hand side part..." ++ fnl())
-  else return ()
-
-(* Prints a failure message for a hypothesis pattern *)
-let db_hyp_pattern_failure debug env sigma (na,hyp) =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-    Comm.defer_output (fun () ->
-      str "The pattern hypothesis" ++ hyp_bound na ++
-      str " cannot match: " ++
-      prmatchpatt env sigma hyp)
-  else return ()
-
-(* Prints a matching failure message for a rule *)
-let db_matching_failure debug =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-    Comm.defer_output (fun () ->
-      str "This rule has failed due to matching errors!" ++ fnl() ++
-      str "Let us try the next one...")
-  else return ()
-
-(* Prints an evaluation failure message for a rule *)
-let db_eval_failure debug s =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-    let s = str "message \"" ++ s ++ str "\"" in
-    Comm.defer_output (fun () ->
-      str "This rule has failed due to \"Fail\" tactic (" ++
-      s ++ str ", level 0)!" ++ fnl() ++ str "Let us try the next one...")
-  else return ()
-
-(* Prints a logic failure message for a rule *)
-let db_logic_failure debug err =
-  let open Proofview.NonLogical in
-  is_debug debug >>= fun db ->
-  if db then
-  begin
-    Comm.defer_output (fun () -> explain_logic_error err) >>
-    Comm.defer_output (fun () ->
-      str "This rule has failed due to a logic error!" ++ fnl() ++
-      str "Let us try the next one...")
-  end
   else return ()
 
 let is_breakpoint brkname s = match brkname, s with
