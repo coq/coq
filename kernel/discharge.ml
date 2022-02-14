@@ -52,7 +52,7 @@ let lift_private_univs info = function
 let cook_opaque_proofterm info c =
   let fold info (c, priv) =
     let priv = lift_private_univs info priv in
-    let c = abstract_as_body (RefTable.create 13) info c in
+    let c = abstract_as_body (create_cache ()) info c in
     (c, priv)
   in
   List.fold_right fold info c
@@ -61,7 +61,7 @@ let cook_opaque_proofterm info c =
 (* Discharging constant         *)
 
 let cook_constant env info cb =
-  let cache = RefTable.create 13 in
+  let cache = create_cache () in
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
   let info, univs = lift_univs info cb.const_universes in
   let map c = abstract_as_body cache info c in
@@ -150,7 +150,7 @@ let cook_one_ind cache ~ntypes info mip =
 
 let cook_inductive info mib =
   let info, mind_universes = lift_univs info mib.mind_universes in
-  let cache = RefTable.create 13 in
+  let cache = create_cache () in
   let nnewparams = Context.Rel.nhyps (rel_context_of_cooking_info info) in
   let mind_params_ctxt = cook_rel_context cache info mib.mind_params_ctxt in
   let ntypes = mib.mind_ntypes in
@@ -210,4 +210,4 @@ let cook_inductive info mib =
   }
 
 let cook_rel_context info ctx =
-  cook_rel_context (RefTable.create 13) info ctx
+  cook_rel_context (create_cache ()) info ctx

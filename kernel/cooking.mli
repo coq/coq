@@ -63,15 +63,15 @@ val universe_context_of_cooking_info : cooking_info -> Univ.AbstractContext.t
 
 val instance_of_cooking_info : cooking_info -> Constr.t array
 
-type internal_abstr_inst_info
-type my_global_reference
-module RefTable : Hashtbl.S with type key = my_global_reference
+type cooking_cache
 
-val abstract_as_type : internal_abstr_inst_info RefTable.t -> cooking_info -> types -> types
+val create_cache : unit -> cooking_cache
 
-val abstract_as_body : internal_abstr_inst_info RefTable.t -> cooking_info -> constr -> constr
+val abstract_as_type : cooking_cache -> cooking_info -> types -> types
 
-val abstract_as_sort : internal_abstr_inst_info RefTable.t -> cooking_info -> Sorts.t -> Sorts.t
+val abstract_as_body : cooking_cache -> cooking_info -> constr -> constr
+
+val abstract_as_sort : cooking_cache -> cooking_info -> Sorts.t -> Sorts.t
 
 val lift_mono_univs : cooking_info -> Univ.ContextSet.t -> cooking_info * Univ.ContextSet.t
 

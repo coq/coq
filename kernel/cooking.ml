@@ -132,6 +132,10 @@ end
 module RefTable = Hashtbl.Make(RefHash)
 type internal_abstr_inst_info = Univ.Instance.t * int list * int
 
+type cooking_cache = internal_abstr_inst_info RefTable.t
+
+let create_cache () = RefTable.create 13
+
 let instantiate_my_gr gr u =
   match gr with
   | ConstRef c -> mkConstU (c, u)
