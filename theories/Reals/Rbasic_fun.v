@@ -453,11 +453,14 @@ Proof.
   apply Ropp_0.
 Qed.
 
-Lemma Rabs_Rinv : forall r, r <> 0 -> Rabs (/ r) = / Rabs r.
+Lemma Rabs_Rinv_depr : forall r, r <> 0 -> Rabs (/ r) = / Rabs r.
 Proof.
   intros r Hr.
   apply Rabs_inv.
 Qed.
+
+#[deprecated(since="8.16",note="Use Rabs_inv.")]
+Notation Rabs_Rinv := Rabs_Rinv_depr.
 
 Lemma Rabs_Ropp : forall x:R, Rabs (- x) = Rabs x.
 Proof.

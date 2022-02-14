@@ -357,11 +357,14 @@ rewrite Rinv_0.
 apply Rle_refl.
 Qed.
 
-Lemma inv_sqrt x : 0 < x -> / sqrt x = sqrt (/ x).
+Lemma inv_sqrt_depr x : 0 < x -> / sqrt x = sqrt (/ x).
 Proof.
 intros _.
 apply eq_sym, sqrt_inv.
 Qed.
+
+#[deprecated(since="8.16",note="Use sqrt_inv.")]
+Notation inv_sqrt := inv_sqrt_depr.
 
 Lemma sqrt_cauchy :
   forall a b c d:R,

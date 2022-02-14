@@ -890,13 +890,17 @@ destruct (Req_dec r 0) as [->|H].
 - now field.
 Qed.
 
-Lemma Rinv_involutive : forall r, r <> 0 -> / / r = r.
+
+Lemma Rinv_involutive_depr : forall r, r <> 0 -> / / r = r.
 Proof.
 intros r _.
 apply Rinv_inv.
 Qed.
 #[global]
-Hint Resolve Rinv_involutive: real.
+Hint Resolve Rinv_inv: real.
+
+#[deprecated(since="8.16",note="Use Rinv_inv.")]
+Notation Rinv_involutive := Rinv_involutive_depr.
 
 (*********)
 Lemma Rinv_mult r1 r2 : / (r1 * r2) = / r1 * / r2.
@@ -910,12 +914,15 @@ destruct (Req_dec r1 0) as [->|H1].
   + now field.
 Qed.
 
-Lemma Rinv_mult_distr :
+Lemma Rinv_mult_distr_depr :
   forall r1 r2, r1 <> 0 -> r2 <> 0 -> / (r1 * r2) = / r1 * / r2.
 Proof.
   intros r1 r2 _ _.
   apply Rinv_mult.
 Qed.
+
+#[deprecated(since="8.16",note="Use Rinv_mult.")]
+Notation Rinv_mult_distr := Rinv_mult_distr_depr.
 
 (*********)
 Lemma Rinv_opp r : / -r = - /r.
@@ -926,11 +933,14 @@ destruct (Req_dec r 0) as [->|H].
 - now field.
 Qed.
 
-Lemma Ropp_inv_permute : forall r, r <> 0 -> - / r = / - r.
+Lemma Ropp_inv_permute_depr : forall r, r <> 0 -> - / r = / - r.
 Proof.
 intros r H.
 apply eq_sym, Rinv_opp.
 Qed.
+
+#[deprecated(since="8.16",note="Use Rinv_opp.")]
+Notation Ropp_inv_permute := Ropp_inv_permute_depr.
 
 Lemma Rinv_div x y : / (x / y) = y / x.
 Proof.
@@ -2210,11 +2220,14 @@ Proof.
   ring.
 Qed.
 
-Lemma Ropp_div_den : forall x y : R, y<>0 -> x / - y = - (x / y).
+Lemma Ropp_div_den_depr : forall x y : R, y<>0 -> x / - y = - (x / y).
 Proof.
   intros x y _.
   apply Rdiv_opp_r.
 Qed.
+
+#[deprecated(since="8.16",note="Use Rdiv_opp_r.")]
+Notation Ropp_div_den := Ropp_div_den_depr.
 
 Lemma double : forall r1, 2 * r1 = r1 + r1.
 Proof.

@@ -626,11 +626,14 @@ Proof.
   intros d [H4 H5]; apply H3; split; auto.
 Qed.
 
-Theorem Rinv_Rdiv : forall x y:R, x <> 0 -> y <> 0 -> / (x / y) = y / x.
+Theorem Rinv_Rdiv_depr : forall x y:R, x <> 0 -> y <> 0 -> / (x / y) = y / x.
 Proof.
   intros x y _ _.
   apply Rinv_div.
 Qed.
+
+#[deprecated(since="8.16",note="Use Rinv_div.")]
+Notation Rinv_Rdiv := Rinv_Rdiv_depr.
 
 Theorem Dln : forall y:R, 0 < y -> D_in ln Rinv (fun x:R => 0 < x) y.
 Proof.

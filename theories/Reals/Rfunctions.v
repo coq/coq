@@ -288,11 +288,14 @@ induction n as [|n IH] ; simpl.
   now apply f_equal.
 Qed.
 
-Lemma Rinv_pow : forall (x:R) (n:nat), x <> 0 -> / x ^ n = (/ x) ^ n.
+Lemma Rinv_pow_depr : forall (x:R) (n:nat), x <> 0 -> / x ^ n = (/ x) ^ n.
 Proof.
 intros x n _.
 apply eq_sym, pow_inv.
 Qed.
+
+#[deprecated(since="8.16",note="Use pow_inv.")]
+Notation Rinv_pow := Rinv_pow_depr.
 
 Lemma pow_lt_1_zero :
   forall x:R,
@@ -720,7 +723,7 @@ Proof.
     + now rewrite pow_inv.
 Qed.
 
-Lemma powerRZ_inv x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
+Lemma powerRZ_inv_depr x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
 Proof.
   intros _.
   apply powerRZ_inv'.
@@ -734,7 +737,7 @@ Proof.
   - now rewrite Rinv_inv.
 Qed.
 
-Lemma powerRZ_neg x : forall alpha, x <> R0 -> powerRZ x (- alpha) = powerRZ (/ x) alpha.
+Lemma powerRZ_neg_depr x : forall alpha, x <> R0 -> powerRZ x (- alpha) = powerRZ (/ x) alpha.
 Proof.
   intros alpha _.
   rewrite powerRZ_neg'.
@@ -750,7 +753,7 @@ Proof.
     now rewrite <- !pow_powerRZ, Rpow_mult_distr.
 Qed.
 
-Lemma powerRZ_mult_distr :
+Lemma powerRZ_mult_distr_depr :
   forall m x y, ((0 <= m)%Z \/ (x * y <> 0)%R) ->
            (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
 Proof.
@@ -759,6 +762,15 @@ Proof.
 Qed.
 
 End PowerRZ.
+
+#[deprecated(since="8.16",note="Use powerRZ_inv'.")]
+Notation powerRZ_inv := powerRZ_inv_depr.
+
+#[deprecated(since="8.16",note="Use powerRZ_neg' and powerRZ_inv'.")]
+Notation powerRZ_neg := powerRZ_neg_depr.
+
+#[deprecated(since="8.16",note="Use powerRZ_mult.")]
+Notation powerRZ_mult_distr := powerRZ_mult_distr_depr.
 
 Local Infix "^Z" := powerRZ (at level 30, right associativity) : R_scope.
 

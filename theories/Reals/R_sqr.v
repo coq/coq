@@ -72,11 +72,14 @@ Proof.
   ring.
 Qed.
 
-Lemma Rsqr_div : forall x y:R, y <> 0 -> Rsqr (x / y) = Rsqr x / Rsqr y.
+Lemma Rsqr_div_depr : forall x y:R, y <> 0 -> Rsqr (x / y) = Rsqr x / Rsqr y.
 Proof.
   intros x y _.
   apply Rsqr_div'.
 Qed.
+
+#[deprecated(since="8.16",note="Use Rsqr_div'.")]
+Notation Rsqr_div := Rsqr_div_depr.
 
 Lemma Rsqr_eq_0 : forall x:R, Rsqr x = 0 -> x = 0.
 Proof.
@@ -322,11 +325,14 @@ Proof.
   now rewrite Rinv_mult.
 Qed.
 
-Lemma Rsqr_inv : forall x:R, x <> 0 -> Rsqr (/ x) = / Rsqr x.
+Lemma Rsqr_inv_depr : forall x:R, x <> 0 -> Rsqr (/ x) = / Rsqr x.
 Proof.
   intros x _.
   apply Rsqr_inv'.
 Qed.
+
+#[deprecated(since="8.16",note="Use Rsqr_inv'.")]
+Notation Rsqr_inv := Rsqr_inv_depr.
 
 Lemma canonical_Rsqr :
   forall (a:nonzeroreal) (b c x:R),

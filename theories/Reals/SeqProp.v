@@ -972,13 +972,16 @@ Proof.
   apply Rabs_no_R0; apply H.
 Qed.
 
-Lemma cv_infty_cv_R0 :
+Lemma cv_infty_cv_R0_depr :
   forall Un:nat -> R,
     (forall n:nat, Un n <> 0) -> cv_infty Un -> Un_cv (fun n:nat => / Un n) 0.
 Proof.
   intros Un _.
   apply cv_infty_cv_0.
 Qed.
+
+#[deprecated(since="8.16",note="Use cv_infty_cv_0.")]
+Notation cv_infty_cv_R0 := cv_infty_cv_R0_depr.
 
 (**********)
 Lemma decreasing_prop :
