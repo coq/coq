@@ -132,9 +132,15 @@ end
 module RefTable = Hashtbl.Make(RefHash)
 type internal_abstr_inst_info = Univ.Instance.t * int list * int
 
-type cooking_cache = internal_abstr_inst_info RefTable.t
+type cooking_cache = {
+  cache : internal_abstr_inst_info RefTable.t;
+  info : cooking_info;
+}
 
-let create_cache () = RefTable.create 13
+let create_cache info = {
+  cache = RefTable.create 13;
+  info;
+}
 
 let instantiate_my_gr gr u =
   match gr with
@@ -261,15 +267,15 @@ let expand_subst cache expand_info abstr_info c =
   c
 
 (** Adding the final abstraction step, term case *)
-let abstract_as_type cache { expand_info; abstr_info; _ } t =
+let abstract_as_type { cache; info = { expand_info; abstr_info; _ } } t =
   it_mkProd_wo_LetIn (expand_subst cache expand_info abstr_info t) abstr_info.abstr_ctx
 
 (** Adding the final abstraction step, type case *)
-let abstract_as_body cache { expand_info; abstr_info; _ } c =
+let abstract_as_body { cache; info = { expand_info; abstr_info; _ } } c =
   it_mkLambda_or_LetIn (expand_subst cache expand_info abstr_info c) abstr_info.abstr_ctx
 
 (** Adding the final abstraction step, sort case (for universes) *)
-let abstract_as_sort cache { expand_info; abstr_info; _ } s =
+let abstract_as_sort { cache; info = { expand_info; abstr_info; _ } } s =
   destSort (expand_subst cache expand_info abstr_info (mkSort s))
 
 (** Absorb a named context in the transformation which turns a
@@ -314,7 +320,7 @@ let make_cooking_info expand_info hyps uctx =
   let names_info = Context.Named.to_vars hyps in
   { expand_info; abstr_info; abstr_inst_info; names_info }
 
-let rel_context_of_cooking_info info =
+let rel_context_of_cooking_cache { info; _ } =
   info.abstr_info.abstr_ctx
 
 let universe_context_of_cooking_info info =
@@ -322,6 +328,9 @@ let universe_context_of_cooking_info info =
 
 let instance_of_cooking_info info =
   Array.map_of_list mkVar (List.rev info.abstr_inst_info.abstr_rev_inst)
+
+let instance_of_cooking_cache { info; _ } =
+  instance_of_cooking_info info
 
 let discharge_abstract_universe_context abstr auctx =
   (** Given a substitution [abstr.abstr_ausubst := u₀ ... uₙ₋₁] together with an abstract

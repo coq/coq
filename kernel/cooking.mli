@@ -57,21 +57,21 @@ val empty_cooking_info : cooking_info
 val make_cooking_info : expand_info -> named_context -> Univ.UContext.t -> cooking_info
   (** Abstract a context assumed to be de-Bruijn free for terms and universes *)
 
-val rel_context_of_cooking_info : cooking_info -> rel_context
-
 val universe_context_of_cooking_info : cooking_info -> Univ.AbstractContext.t
 
 val instance_of_cooking_info : cooking_info -> Constr.t array
 
 type cooking_cache
 
-val create_cache : unit -> cooking_cache
+val create_cache : cooking_info -> cooking_cache
+val instance_of_cooking_cache : cooking_cache -> Constr.t array
+val rel_context_of_cooking_cache : cooking_cache -> rel_context
 
-val abstract_as_type : cooking_cache -> cooking_info -> types -> types
+val abstract_as_type : cooking_cache -> types -> types
 
-val abstract_as_body : cooking_cache -> cooking_info -> constr -> constr
+val abstract_as_body : cooking_cache -> constr -> constr
 
-val abstract_as_sort : cooking_cache -> cooking_info -> Sorts.t -> Sorts.t
+val abstract_as_sort : cooking_cache -> Sorts.t -> Sorts.t
 
 val lift_mono_univs : cooking_info -> Univ.ContextSet.t -> cooking_info * Univ.ContextSet.t
 
