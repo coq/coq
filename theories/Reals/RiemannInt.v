@@ -384,7 +384,7 @@ Proof.
   apply Rinv_le_contravar.
   apply Rplus_le_lt_0_compat; [ apply pos_INR | apply Rlt_0_1 ].
   apply Rplus_le_compat_r; apply le_INR; apply H4.
-  rewrite <- (Rinv_involutive eps).
+  rewrite <- (Rinv_inv eps).
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat.
   apply Rinv_0_lt_compat; assumption.
@@ -393,7 +393,6 @@ Proof.
     [ rewrite INR_IZR_INZ; rewrite <- H3; apply H0
       | pattern (INR x) at 1; rewrite <- Rplus_0_r;
         apply Rplus_lt_compat_l; apply Rlt_0_1 ].
-  red; intro; rewrite H6 in H; elim (Rlt_irrefl _ H).
 Qed.
 
 Lemma Riemann_integrable_ext :
@@ -687,7 +686,7 @@ Proof.
     elim (SubEqui_P9 del f H); intros phi [H5 H6]; split with phi;
       split with (mkStepFun (StepFun_P4 a b (eps / (2 * (b - a)))));
         split.
-  2: rewrite StepFun_P18; unfold Rdiv; rewrite Rinv_mult_distr.
+  2: rewrite StepFun_P18; unfold Rdiv; rewrite Rinv_mult.
   2: do 2 rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   2: rewrite Rmult_1_r; rewrite Rabs_right.
   2: apply Rmult_lt_reg_l with 2.
@@ -700,9 +699,6 @@ Proof.
   2: apply Rle_ge; left; apply Rmult_lt_0_compat.
   2: apply (cond_pos eps).
   2: apply Rinv_0_lt_compat; prove_sup0.
-  2: apply Rminus_eq_contra; red; intro; clear H6; rewrite H7 in H;
-    elim (Rlt_irrefl _ H).
-  2: discrR.
   2: apply Rminus_eq_contra; red; intro; clear H6; rewrite H7 in H;
     elim (Rlt_irrefl _ H).
   intros; rewrite H2 in H7; rewrite H3 in H7; simpl;
@@ -1045,8 +1041,7 @@ Proof.
     [ rewrite Rmult_1_l;
       replace (/ Rabs l * (eps / 2)) with (eps / (2 * Rabs l));
       [ apply H2
-        | unfold Rdiv; rewrite Rinv_mult_distr;
-          [ ring | discrR | apply Rabs_no_R0; assumption ] ]
+        | unfold Rdiv; rewrite Rinv_mult; ring ]
       | apply Rabs_no_R0; assumption ].
 Qed.
 
@@ -1445,8 +1440,7 @@ Proof.
         [ apply Nat.le_trans with (max N2 N3);
           [ apply Nat.le_max_r | unfold N; apply Nat.le_max_r ]
           | assumption ] ].
-  unfold Rdiv; rewrite Rinv_mult_distr;
-    [ ring | discrR | apply Rabs_no_R0; assumption ].
+  unfold Rdiv; rewrite Rinv_mult; ring.
   apply Rabs_no_R0; assumption.
   apply H3; unfold ge; apply Nat.le_trans with (max N0 N1);
     [ apply Nat.le_max_l
@@ -1458,8 +1452,7 @@ Proof.
   apply H6; unfold ge; apply Nat.le_trans with (max N2 N3);
     [ apply Nat.le_max_l
       | apply Nat.le_trans with N; [ unfold N; apply Nat.le_max_r | assumption ] ].
-  unfold Rdiv; rewrite Rinv_mult_distr;
-    [ ring | discrR | apply Rabs_no_R0; assumption ].
+  unfold Rdiv; rewrite Rinv_mult; ring.
   apply Rabs_no_R0; assumption.
   apply Rmult_eq_reg_l with 5;
     [ unfold Rdiv; do 2 rewrite Rmult_plus_distr_l;

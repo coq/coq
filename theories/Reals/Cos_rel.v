@@ -206,14 +206,12 @@ unfold C.
 unfold Rdiv; repeat rewrite <- Rmult_assoc.
 rewrite <- Rinv_l_sym.
 rewrite Rmult_1_l.
-rewrite Rinv_mult_distr.
+rewrite Rinv_mult.
 replace (S (2 * i0)) with (2 * i0 + 1)%nat;
  [ apply Rmult_eq_compat_l | ring ].
 replace (2 * S i - (2 * i0 + 1))%nat with (2 * (i - i0) + 1)%nat.
 reflexivity.
 lia.
-apply INR_fact_neq_0.
-apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 reflexivity.
 apply Nat.lt_0_succ.
@@ -237,12 +235,10 @@ unfold C.
 unfold Rdiv; repeat rewrite <- Rmult_assoc.
 rewrite <- Rinv_l_sym.
 rewrite Rmult_1_l.
-rewrite Rinv_mult_distr.
+rewrite Rinv_mult.
 replace (2 * i - 2 * i0)%nat with (2 * (i - i0))%nat.
 reflexivity.
 lia.
-apply INR_fact_neq_0.
-apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 unfold Reste2; apply sum_eq; intros.
 apply sum_eq; intros.

@@ -145,10 +145,7 @@ Proof.
   intros x H.
   unfold tan.
   rewrite cos_sin_opp by lra.
-  rewrite Ropp_div_den.
-  reflexivity.
-  pose proof cos_sin_opp x.
-  lra.
+  apply Rdiv_opp_r.
 Qed.
 
 (** Note: tan_sin_Rabs wouldn't make a lot of sense, because one would need Rabs on both sides *)
@@ -180,20 +177,16 @@ Proof.
   intros.
   assert(Hcosle:0<=cos x) by lra.
   pose proof tan_sin x Hcosle as Htan.
+  pose proof (sin2 x); pose proof Rsqr_pos_lt (cos x).
   rewrite Htan.
-  repeat rewrite <- Rsqr_pow2 in *.
-  assert (forall a b c:R, b<>0 -> c<> 0 -> a/b/c = a/(b*c)) as R_divdiv_divmul by (intros; field; lra).
-  rewrite R_divdiv_divmul.
-  rewrite <- sqrt_mult_alt.
-  rewrite Rsqr_div, Rsqr_sqrt.
+  unfold Rdiv at 1 2.
+  rewrite Rmult_assoc, <- Rinv_mult.
+  rewrite <- sqrt_mult_alt by lra.
+  rewrite Rsqr_div', Rsqr_sqrt by lra.
   field_simplify ((1 - (sin x)²) * (1 + (sin x)² / (1 - (sin x)²))).
   rewrite sqrt_1.
   field.
-  all: pose proof (sin2 x); pose proof Rsqr_pos_lt (cos x); try lra.
-  all: assert( forall a, 0 < a -> a <> 0) as Hne by (intros; lra).
-  all: apply Hne, sqrt_lt_R0; try lra.
-  rewrite <- Htan.
-  pose proof Rle_0_sqr (tan x); lra.
+  lra.
 Qed.
 
 Lemma cos_tan : forall x, 0 < cos x ->
@@ -204,7 +197,7 @@ Proof.
   - assert(Hsinle:0>=sin x) by lra.
     pose proof tan_cos_opp x Hsinle as Htan.
     rewrite Htan.
-    rewrite Rsqr_div.
+    rewrite Rsqr_div'.
     rewrite <- Rsqr_neg.
     rewrite Rsqr_sqrt.
     field_simplify( 1 + (1 - (cos x)²) / (cos x)² ).
@@ -220,7 +213,7 @@ Proof.
   - assert(Hsinge:0<=sin x) by lra.
     pose proof tan_cos x Hsinge as Htan.
     rewrite Htan.
-    rewrite Rsqr_div.
+    rewrite Rsqr_div'.
     rewrite Rsqr_sqrt.
     field_simplify( 1 + (1 - (cos x)²) / (cos x)² ).
     rewrite sqrt_div_alt.

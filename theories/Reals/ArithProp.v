@@ -86,12 +86,12 @@ Proof.
   apply Rmult_le_reg_l with (/ - y).
   apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact Hlt.
   rewrite Rmult_0_r; rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
-    rewrite <- Ropp_inv_permute; [ idtac | assumption ].
+    rewrite Rinv_opp.
   rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
     rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ].
   apply Rplus_le_reg_l with (IZR (up (x / - y)) - x / - y).
   rewrite Rplus_0_r; unfold Rdiv; pattern (/ - y) at 4;
-    rewrite <- Ropp_inv_permute; [ idtac | assumption ].
+    rewrite Rinv_opp.
   replace
     (IZR (up (x * / - y)) - x * - / y +
       (- (x * / y) + - (IZR (up (x * / - y)) - 1))) with 1;
@@ -101,7 +101,7 @@ Proof.
   apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact Hlt.
   rewrite <- Rinv_l_sym.
   rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
-    rewrite <- Ropp_inv_permute; [ idtac | assumption ].
+    rewrite Rinv_opp.
   rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
     rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ];
       apply Rplus_lt_reg_l with (IZR (up (x / - y)) - 1).
@@ -109,7 +109,7 @@ Proof.
     [ idtac | ring ].
   replace (IZR (up (x / - y)) - 1 + (- (x * / y) + - (IZR (up (x / - y)) - 1)))
     with (- (x * / y)); [ idtac | ring ].
-  rewrite <- Ropp_mult_distr_r_reverse; rewrite (Ropp_inv_permute _ H); elim H0;
+  rewrite <- Ropp_mult_distr_r_reverse; rewrite <- Rinv_opp; elim H0;
     unfold Rdiv; intros H1 _; exact H1.
   apply Ropp_neq_0_compat; assumption.
   assert (H0 := archimed (x / y)); rewrite <- Z_R_minus; simpl;

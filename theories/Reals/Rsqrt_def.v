@@ -226,9 +226,7 @@ Proof.
     with ((dicho_up x y P n - dicho_lb x y P n) / 2).
   unfold Rdiv; rewrite Hrecn.
   unfold Rdiv.
-  rewrite Rinv_mult_distr.
-  ring.
-  discrR.
+  field.
   apply pow_nonzero; discrR.
   pattern (Dichotomy_lb x y P n) at 2;
     rewrite (double_var (Dichotomy_lb x y P n));
@@ -237,10 +235,7 @@ Proof.
   (Dichotomy_ub x y P n - (Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)
     with ((dicho_up x y P n - dicho_lb x y P n) / 2).
   unfold Rdiv; rewrite Hrecn.
-  unfold Rdiv.
-  rewrite Rinv_mult_distr.
-  ring.
-  discrR.
+  field.
   apply pow_nonzero; discrR.
   pattern (Dichotomy_ub x y P n) at 1;
     rewrite (double_var (Dichotomy_ub x y P n));
@@ -341,7 +336,7 @@ Proof.
   symmetry ; apply Rminus_diag_uniq_sym; assumption.
   unfold Un_cv; unfold R_dist.
   intros.
-  assert (H4 := cv_infty_cv_R0 pow_2_n pow_2_n_neq_R0 pow_2_n_infty).
+  assert (H4 := cv_infty_cv_0 pow_2_n pow_2_n_infty).
   destruct (total_order_T x y) as [[ Hlt | -> ]|Hgt].
   unfold Un_cv in H4; unfold R_dist in H4.
   cut (0 < y - x).
@@ -457,7 +452,7 @@ Lemma cv_pow_half : forall a, Un_cv (fun n => a/2^n) 0.
 intros a; unfold Rdiv; replace 0 with (a * 0) by ring.
 apply CV_mult.
  intros eps ep; exists 0%nat; rewrite R_dist_eq; intros n _; assumption.
-exact (cv_infty_cv_R0 pow_2_n pow_2_n_neq_R0 pow_2_n_infty).
+exact (cv_infty_cv_0 pow_2_n pow_2_n_infty).
 Qed.
 
 (** Intermediate Value Theorem *)

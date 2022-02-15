@@ -55,7 +55,7 @@ Proof.
         assumption.
   rewrite (Rminus_0_r ((f x1 - f x0) * / (x1 - x0))) in H1;
     rewrite Rabs_mult in H1; cut (x1 - x0 <> 0).
-  intro; rewrite (Rabs_Rinv (x1 - x0) H9) in H1;
+  intro; rewrite (Rabs_inv (x1 - x0)) in H1;
     generalize
       (Rmult_lt_compat_l (Rabs (x1 - x0)) (Rabs (f x1 - f x0) * / Rabs (x1 - x0))
         eps (Rabs_pos_lt (x1 - x0) H9) H1); intro; rewrite Rmult_comm in H10;
@@ -108,7 +108,7 @@ Proof.
                                           rewrite <-
                                             (Rmult_assoc (Rabs (x1 - x0)) (Rabs (/ (x1 - x0)))
                                               (Rabs (f x1 - f x0 + (x1 - x0) * - d x0)));
-                                            rewrite (Rabs_Rinv (x1 - x0) H9);
+                                            rewrite (Rabs_inv (x1 - x0));
                                               rewrite (Rinv_r (Rabs (x1 - x0)) (Rabs_no_R0 (x1 - x0) H9));
                                                 rewrite
                                                   (let (H1, H2) := Rmult_ne (Rabs (f x1 - f x0 + (x1 - x0) * - d x0)) in H2)
@@ -148,8 +148,7 @@ Proof.
                 rewrite (Rabs_mult 2 (d x0)) in H5; cut (Rabs 2 <> 0).
   intro; fold (Rabs (d x0) > 0) in H1;
     rewrite
-      (Rinv_mult_distr (Rabs 2) (Rabs (d x0)) H6
-        (Rlt_dichotomy_converse (Rabs (d x0)) 0 (or_intror (Rabs (d x0) < 0) H1)))
+      (Rinv_mult (Rabs 2) (Rabs (d x0)))
       in H5;
       rewrite (Rmult_comm (Rabs (d x0)) (eps * (/ Rabs 2 * / Rabs (d x0)))) in H5;
         rewrite <- (Rmult_assoc eps (/ Rabs 2) (/ Rabs (d x0))) in H5;

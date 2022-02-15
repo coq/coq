@@ -437,20 +437,30 @@ Proof.
 Qed.
 
 (*********)
-Lemma Rabs_Rinv : forall r, r <> 0 -> Rabs (/ r) = / Rabs r.
+Lemma Rabs_inv r : Rabs (/ r) = / Rabs r.
 Proof.
-  intro; unfold Rabs; case (Rcase_abs r) as [Hlt|Hge];
+  unfold Rabs; case (Rcase_abs r) as [Hlt|Hge];
     case (Rcase_abs (/ r)) as [Hlt'|Hge']; auto;
     intros.
-  apply Ropp_inv_permute; auto.
-  rewrite <- Ropp_inv_permute; trivial.
+  apply eq_sym, Rinv_opp.
+  rewrite Rinv_opp.
   destruct Hge' as [| ->].
   apply Rinv_lt_0_compat, Rlt_asym in Hlt; contradiction.
   rewrite Ropp_0; trivial.
-  destruct Hge as [| ->].
+  destruct Hge as [H0| ->].
   apply Rinv_0_lt_compat, Rlt_asym in H0; contradiction.
-  contradiction (refl_equal 0).
+  rewrite Rinv_0.
+  apply Ropp_0.
 Qed.
+
+Lemma Rabs_Rinv_depr : forall r, r <> 0 -> Rabs (/ r) = / Rabs r.
+Proof.
+  intros r Hr.
+  apply Rabs_inv.
+Qed.
+
+#[deprecated(since="8.16",note="Use Rabs_inv.")]
+Notation Rabs_Rinv := Rabs_Rinv_depr.
 
 Lemma Rabs_Ropp : forall x:R, Rabs (- x) = Rabs x.
 Proof.

@@ -431,7 +431,7 @@ Proof.
   unfold Rminus; rewrite Rplus_assoc; rewrite Rplus_opp_l;
     rewrite Rplus_0_r; intro; cut (f x <> 0).
   intro; replace (/ f x + - / l) with ((l - f x) * / (l * f x)).
-  rewrite Rabs_mult; rewrite Rabs_Rinv.
+  rewrite Rabs_mult; rewrite Rabs_inv.
   cut (/ Rabs (l * f x) < 2 / Rsqr l).
   intro; rewrite Rabs_minus_sym in H5; cut (0 <= / Rabs (l * f x)).
   intro;
@@ -440,28 +440,14 @@ Proof.
         (/ Rabs (l * f x)) (2 / Rsqr l) (Rabs_pos (l - f x)) H18 H5 H17);
       replace (eps * (Rsqr l / 2) * (2 / Rsqr l)) with eps.
   intro; assumption.
-  unfold Rdiv; unfold Rsqr; rewrite Rinv_mult_distr.
-  repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm l).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite (Rmult_comm l).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; reflexivity.
-  discrR.
-  exact H0.
-  exact H0.
-  exact H0.
+  unfold Rdiv; unfold Rsqr; rewrite Rinv_mult.
+  field.
   exact H0.
   left; apply Rinv_0_lt_compat; apply Rabs_pos_lt; apply prod_neq_R0;
     assumption.
-  rewrite Rmult_comm; rewrite Rabs_mult; rewrite Rinv_mult_distr.
+  rewrite Rmult_comm; rewrite Rabs_mult; rewrite Rinv_mult.
   rewrite (Rsqr_abs l); unfold Rsqr; unfold Rdiv;
-    rewrite Rinv_mult_distr.
+    rewrite Rinv_mult.
   repeat rewrite <- Rmult_assoc; apply Rmult_lt_compat_r.
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
   apply Rmult_lt_reg_l with (Rabs (f x) * Rabs l * / 2).
@@ -475,42 +461,13 @@ Proof.
   replace (Rabs (f x) * Rabs l * / 2 * / Rabs (f x)) with (Rabs l / 2).
   replace (Rabs (f x) * Rabs l * / 2 * (2 * / Rabs l)) with (Rabs (f x)).
   assumption.
-  repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm (Rabs l)).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; reflexivity.
-  discrR.
+  field.
   apply Rabs_no_R0.
   assumption.
-  unfold Rdiv.
-  repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm (Rabs (f x))).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  reflexivity.
+  field.
   apply Rabs_no_R0; assumption.
-  apply Rabs_no_R0; assumption.
-  apply Rabs_no_R0; assumption.
-  apply Rabs_no_R0; assumption.
-  apply Rabs_no_R0; assumption.
-  apply prod_neq_R0; assumption.
-  rewrite (Rinv_mult_distr _ _ H0 H16).
-  unfold Rminus; rewrite Rmult_plus_distr_r.
-  rewrite <- Rmult_assoc.
-  rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_l.
-  rewrite Ropp_mult_distr_l_reverse.
-  rewrite (Rmult_comm (f x)).
-  rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  reflexivity.
-  assumption.
-  assumption.
+  field.
+  now split.
   red; intro; rewrite H16 in H15; rewrite Rabs_R0 in H15;
     cut (0 < Rabs l / 2).
   intro; elim (Rlt_irrefl 0 (Rlt_trans 0 (Rabs l / 2) 0 H17 H15)).

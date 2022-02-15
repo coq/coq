@@ -177,7 +177,7 @@ Proof.
   unfold Rminus; rewrite Rplus_comm; rewrite <- Rplus_assoc;
     rewrite Rplus_opp_l; rewrite Rplus_0_l; elim H6; intros.
   unfold Rdiv; rewrite Rabs_mult.
-  rewrite Rabs_Rinv.
+  rewrite Rabs_inv.
   rewrite (Rabs_right x).
   rewrite Rmult_comm; apply Rmult_lt_reg_l with x.
   apply H.
@@ -188,7 +188,6 @@ Proof.
   apply Rmin_l.
   red; intro; rewrite H10 in H; elim (Rlt_irrefl _ H).
   apply Rle_ge; left; apply H.
-  red; intro; rewrite H10 in H; elim (Rlt_irrefl _ H).
   assert (H7 := sqrt_lt_R0 x H).
   red; intro; rewrite H8 in H7; elim (Rlt_irrefl _ H7).
   apply Rle_ge; apply sqrt_positivity.

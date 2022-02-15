@@ -51,10 +51,8 @@ Proof.
   unfold C; unfold Rdiv; repeat rewrite Rmult_assoc;
     rewrite (Rmult_comm (INR (fact i))); repeat rewrite Rmult_assoc;
       rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; rewrite Rinv_mult_distr.
+  rewrite Rmult_1_r; rewrite Rinv_mult.
   ring.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   apply H.
 Qed.
@@ -292,7 +290,7 @@ Proof.
   replace (C N N0 / INR (fact N)) with (/ Rsqr (INR (fact N0))).
   rewrite H4; rewrite div2_S_double; right; reflexivity.
   unfold Rsqr, C, Rdiv.
-  repeat rewrite Rinv_mult_distr.
+  repeat rewrite Rinv_mult.
   rewrite (Rmult_comm (INR (fact N))).
   repeat rewrite Rmult_assoc.
   rewrite <- Rinv_r_sym.
@@ -303,18 +301,12 @@ Proof.
   rewrite H4.
   ring.
   apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   unfold C, Rdiv.
   rewrite (Rmult_comm (INR (fact N))).
   repeat rewrite Rmult_assoc.
   rewrite <- Rinv_r_sym.
-  rewrite Rinv_mult_distr.
+  rewrite Rinv_mult.
   rewrite Rmult_1_r; ring.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   replace (/ INR (fact (S n0)) * / INR (fact (N - n0))) with
   (C (S N) (S n0) / INR (fact (S N))).
@@ -356,7 +348,7 @@ Proof.
   rewrite H5; rewrite div2_double.
   right; reflexivity.
   unfold Rsqr, C, Rdiv.
-  repeat rewrite Rinv_mult_distr.
+  repeat rewrite Rinv_mult.
   replace (S N - S N0)%nat with (S N0).
   rewrite (Rmult_comm (INR (fact (S N)))).
   repeat rewrite Rmult_assoc.
@@ -366,18 +358,12 @@ Proof.
   replace (S N) with (S N0 + S N0)%nat.
   symmetry; apply Nat.add_sub.
   rewrite H5; ring.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   rewrite H4; ring.
   unfold C, Rdiv.
   rewrite (Rmult_comm (INR (fact (S N)))).
   rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r; rewrite Rinv_mult_distr.
+  rewrite Rmult_1_r; rewrite Rinv_mult.
   reflexivity.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   unfold maj_Reste_E.
   unfold Rdiv; rewrite (Rmult_comm 4).
@@ -424,7 +410,7 @@ Proof.
   cut (Nat.div2 (S N) = S (Nat.div2 (pred N))).
   intro; rewrite H0.
   rewrite fact_simpl; rewrite Nat.mul_comm; rewrite mult_INR; rewrite Rsqr_mult.
-  rewrite Rinv_mult_distr.
+  rewrite Rinv_mult.
   rewrite (Rmult_comm (INR N)); repeat rewrite Rmult_assoc;
     apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply Rsqr_pos_lt; apply INR_fact_neq_0.
@@ -474,8 +460,6 @@ Proof.
   pattern 1 at 1; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
     apply Rlt_0_1.
   ring.
-  unfold Rsqr; apply prod_neq_R0; apply INR_fact_neq_0.
-  unfold Rsqr; apply prod_neq_R0; apply not_O_INR; discriminate.
   assert (H0 := even_odd_cor N).
   elim H0; intros N0 H1.
   elim H1; intro.
@@ -517,7 +501,7 @@ Proof.
         INR (fact (Nat.div2 (pred n))))).
   apply Rmult_le_compat_l.
   left; prove_sup0.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult_distr.
+  unfold Rdiv, Rsqr; rewrite Rinv_mult.
   rewrite (Rmult_comm (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (2 * n)));
     rewrite
       (Rmult_comm (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (4 * S (Nat.div2 (pred n)))))
@@ -567,8 +551,6 @@ Proof.
   ring.
   ring.
   reflexivity.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   apply Rmult_lt_reg_l with (/ 4).
   apply Rinv_0_lt_compat; prove_sup0.
   rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
@@ -907,10 +889,10 @@ Proof.
   apply Rle_ge; left; apply (cond_pos r).
   unfold Rdiv.
   repeat rewrite Rabs_mult.
-  repeat rewrite Rabs_Rinv.
-  rewrite Rinv_mult_distr.
+  repeat rewrite Rabs_inv.
+  rewrite Rinv_mult.
   repeat rewrite Rabs_right.
-  rewrite Rinv_involutive.
+  rewrite Rinv_inv.
   rewrite (Rmult_comm r).
   rewrite (Rmult_comm (r ^ S n)).
   repeat rewrite Rmult_assoc.
@@ -922,15 +904,10 @@ Proof.
   rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
   ring.
   apply pow_nonzero; assumption.
-  apply INR_fact_neq_0.
   apply Rle_ge; left; apply INR_fact_lt_0.
   apply Rle_ge; left; apply pow_lt; apply (cond_pos r).
   apply Rle_ge; left; apply INR_fact_lt_0.
   apply Rle_ge; left; apply pow_lt; apply (cond_pos r).
-  apply Rabs_no_R0; apply pow_nonzero; assumption.
-  apply Rinv_neq_0_compat; apply Rabs_no_R0; apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   unfold ge; apply Nat.le_trans with n.
   apply H5.
   apply Nat.le_succ_diag_r.

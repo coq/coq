@@ -128,7 +128,7 @@ Proof.
   rewrite (Rabs_right (/ INR (fact (2 * S (n0 + n))))).
   rewrite (Rabs_right (/ INR (fact (2 * (N - n0))))).
   rewrite mult_INR.
-  rewrite Rinv_mult_distr.
+  rewrite Rinv_mult.
   repeat rewrite Rmult_assoc.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
@@ -188,8 +188,6 @@ Proof.
   apply Nat.le_trans with (pred N).
   assumption.
   apply Nat.le_pred_l.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   apply Rle_ge; left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply Rle_ge; left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply Rle_trans with
@@ -243,10 +241,8 @@ Proof.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
   replace (2 * S (N + n) - S (N + n))%nat with (S (N + n)).
-  rewrite Rinv_mult_distr.
+  rewrite Rinv_mult.
   unfold Rsqr; reflexivity.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   lia.
   apply INR_fact_neq_0.
   unfold Rdiv; rewrite Rmult_comm.
@@ -324,7 +320,7 @@ Proof.
   do 2 rewrite fact_simpl.
   rewrite H0.
   repeat rewrite mult_INR.
-  repeat rewrite Rinv_mult_distr.
+  repeat rewrite Rinv_mult.
   rewrite (Rmult_comm (/ INR (S N))).
   repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_r_sym.
@@ -341,14 +337,6 @@ Proof.
   apply not_O_INR; discriminate.
   apply not_O_INR.
   red; intro; rewrite H1 in H; elim (Nat.lt_irrefl _ H).
-  apply not_O_INR.
-  red; intro; rewrite H1 in H; elim (Nat.lt_irrefl _ H).
-  apply INR_fact_neq_0.
-  apply not_O_INR; discriminate.
-  apply prod_neq_R0.
-  apply not_O_INR.
-  red; intro; rewrite H1 in H; elim (Nat.lt_irrefl _ H).
-  apply INR_fact_neq_0.
   apply Nat.lt_succ_pred with 0%nat; assumption.
   right.
   unfold Majxy.
@@ -421,7 +409,7 @@ Proof.
   rewrite (Rabs_right (/ INR (fact (2 * S (n0 + n) + 1)))).
   rewrite (Rabs_right (/ INR (fact (2 * (N - n0) + 1)))).
   rewrite mult_INR.
-  rewrite Rinv_mult_distr.
+  rewrite Rinv_mult.
   repeat rewrite Rmult_assoc.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
@@ -458,8 +446,6 @@ Proof.
   repeat rewrite pow_add.
   ring.
   lia.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   apply Rle_ge; left; apply Rinv_0_lt_compat.
   apply INR_fact_lt_0.
   apply Rle_ge; left; apply Rinv_0_lt_compat.
@@ -524,10 +510,8 @@ Proof.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
   replace (2 * S (S (N + n)) - S (S (N + n)))%nat with (S (S (N + n))).
-  rewrite Rinv_mult_distr.
+  rewrite Rinv_mult.
   unfold Rsqr; reflexivity.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
   lia.
   apply INR_fact_neq_0.
   unfold Rdiv; rewrite Rmult_comm.
@@ -606,7 +590,7 @@ Proof.
   intro; rewrite H0.
   do 2 rewrite fact_simpl.
   repeat rewrite mult_INR.
-  repeat rewrite Rinv_mult_distr.
+  repeat rewrite Rinv_mult.
   apply Rle_trans with
     (INR (S (S N)) * (/ INR (S (S N)) * (/ INR (S N) * / INR (fact N))) * INR N).
   repeat rewrite Rmult_assoc.
@@ -636,10 +620,6 @@ Proof.
   rewrite Rmult_1_r; right; reflexivity.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
-  apply not_O_INR; discriminate.
-  apply INR_fact_neq_0.
-  apply not_O_INR; discriminate.
-  apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
   apply Nat.lt_succ_pred with 0%nat; assumption.
   right.
   unfold Majxy.

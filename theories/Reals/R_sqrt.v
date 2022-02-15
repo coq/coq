@@ -198,13 +198,11 @@ Proof.
   apply Rle_mult_inv_pos.
   apply Rsqrt_positivity.
   now apply sqrt_lt_R0.
-  rewrite Rsqr_div, 2!Rsqr_sqrt.
+  rewrite Rsqr_div', 2!Rsqr_sqrt.
   unfold Rsqr.
   now rewrite Rsqrt_Rsqrt.
   now apply Rlt_le.
   now apply Rle_mult_inv_pos.
-  apply Rgt_not_eq.
-  now apply sqrt_lt_R0.
 Qed.
 
 Lemma sqrt_div :
@@ -338,9 +336,9 @@ Proof.
             apply (Rmult_lt_compat_l (sqrt x) (sqrt x) 1 (sqrt_lt_R0 x H1) H3).
 Qed.
 
-Lemma inv_sqrt x : 0 < x -> / sqrt x = sqrt (/ x).
+Lemma sqrt_inv x : sqrt (/ x) = / sqrt x.
 Proof.
-intros x0.
+destruct (Rlt_or_le 0 x) as [H|H].
 assert (sqrt x <> 0).
   apply Rgt_not_eq.
   now apply sqrt_lt_R0.
@@ -350,7 +348,23 @@ rewrite <- sqrt_mult_alt.
   now rewrite -> Rinv_l, sqrt_1; auto with real.
 apply Rlt_le.
 now apply Rinv_0_lt_compat.
+rewrite sqrt_neg_0 with (1 := H).
+rewrite sqrt_neg_0.
+apply eq_sym, Rinv_0.
+destruct H as [H| ->].
+now apply Rlt_le, Rinv_lt_0_compat.
+rewrite Rinv_0.
+apply Rle_refl.
 Qed.
+
+Lemma inv_sqrt_depr x : 0 < x -> / sqrt x = sqrt (/ x).
+Proof.
+intros _.
+apply eq_sym, sqrt_inv.
+Qed.
+
+#[deprecated(since="8.16",note="Use sqrt_inv.")]
+Notation inv_sqrt := inv_sqrt_depr.
 
 Lemma sqrt_cauchy :
   forall a b c d:R,
@@ -456,21 +470,16 @@ Proof.
       replace (- (b / (2 * a)) + (x + b / (2 * a))) with x.
   intro; rewrite H6; unfold Rdiv; ring.
   ring.
-  rewrite Rsqr_div.
+  rewrite Rsqr_div'.
   rewrite Rsqr_sqrt.
   unfold Rdiv.
-  repeat rewrite Rmult_assoc.
   rewrite (Rmult_comm (/ a)).
   rewrite Rmult_assoc.
-  rewrite <- Rinv_mult_distr.
+  rewrite <- Rinv_mult.
   replace (4 * a * a) with (Rsqr (2 * a)).
   reflexivity.
   ring_Rsqr.
-  apply prod_neq_R0;
-    [ discrR | apply (cond_nonzero a) ].
-  apply (cond_nonzero a).
   assumption.
-  apply prod_neq_R0; [ discrR | apply (cond_nonzero a) ].
   rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
   symmetry ; apply Rmult_1_l.
   apply (cond_nonzero a).

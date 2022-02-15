@@ -50,15 +50,13 @@ Qed.
 Lemma simpl_fact :
   forall n:nat, / INR (fact (S n)) * / / INR (fact n) = / INR (S n).
 Proof.
-  intro; rewrite (Rinv_involutive (INR (fact n)) (INR_fact_neq_0 n));
+  intro; rewrite (Rinv_inv (INR (fact n)));
     unfold fact at 1; cbv beta iota; fold fact;
       rewrite (mult_INR (S n) (fact n));
-        rewrite (Rinv_mult_distr (INR (S n)) (INR (fact n))).
+        rewrite (Rinv_mult (INR (S n)) (INR (fact n))).
   rewrite (Rmult_assoc (/ INR (S n)) (/ INR (fact n)) (INR (fact n)));
     rewrite (Rinv_l (INR (fact n)) (INR_fact_neq_0 n));
       apply (let (H1, H2) := Rmult_ne (/ INR (S n)) in H1).
-  apply not_O_INR; auto.
-  apply INR_fact_neq_0.
 Qed.
 
 (*******************************)
@@ -282,15 +280,22 @@ Proof.
   intros; simpl; apply Rmult_0_l.
 Qed.
 
-Lemma Rinv_pow : forall (x:R) (n:nat), x <> 0 -> / x ^ n = (/ x) ^ n.
+Lemma pow_inv x n : (/ x)^n = / x^n.
 Proof.
-  intros; elim n; simpl.
-  apply Rinv_1.
-  intro m; intro; rewrite Rinv_mult_distr.
-  rewrite H0; reflexivity; assumption.
-  assumption.
-  apply pow_nonzero; assumption.
+induction n as [|n IH] ; simpl.
+- apply eq_sym, Rinv_1.
+- rewrite Rinv_mult.
+  now apply f_equal.
 Qed.
+
+Lemma Rinv_pow_depr : forall (x:R) (n:nat), x <> 0 -> / x ^ n = (/ x) ^ n.
+Proof.
+intros x n _.
+apply eq_sym, pow_inv.
+Qed.
+
+#[deprecated(since="8.16",note="Use pow_inv.")]
+Notation Rinv_pow := Rinv_pow_depr.
 
 Lemma pow_lt_1_zero :
   forall x:R,
@@ -305,8 +310,8 @@ Proof.
   inversion GE; auto.
   cut (Rabs (/ x) > 1).
   intros; elim (Pow_x_infinity (/ x) H2 (/ y + 1)); intros N.
-  exists N; intros; rewrite <- (Rinv_involutive y).
-  rewrite <- (Rinv_involutive (Rabs (x ^ n))).
+  exists N; intros; rewrite <- (Rinv_inv y).
+  rewrite <- (Rinv_inv (Rabs (x ^ n))).
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat.
   apply Rinv_0_lt_compat.
@@ -315,8 +320,7 @@ Proof.
   apply Rabs_pos_lt.
   apply pow_nonzero.
   assumption.
-  rewrite <- Rabs_Rinv.
-  rewrite Rinv_pow.
+  rewrite <- Rabs_inv, <- pow_inv.
   apply (Rlt_le_trans (/ y) (/ y + 1) (Rabs ((/ x) ^ n))).
   pattern (/ y) at 1.
   rewrite <- (let (H1, H2) := Rplus_ne (/ y) in H1).
@@ -325,24 +329,14 @@ Proof.
   apply Rge_le.
   apply H3.
   assumption.
-  assumption.
-  apply pow_nonzero.
-  assumption.
-  apply Rabs_no_R0.
-  apply pow_nonzero.
-  assumption.
-  apply Rlt_dichotomy_converse.
-  right; unfold Rgt; assumption.
-  rewrite <- (Rinv_involutive 1).
-  rewrite Rabs_Rinv.
+  rewrite <- (Rinv_inv 1).
+  rewrite Rabs_inv.
   unfold Rgt; apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat.
   apply Rabs_pos_lt.
   assumption.
   rewrite Rinv_1; apply Rlt_0_1.
   rewrite Rinv_1; assumption.
-  assumption.
-  red; intro; apply R1_neq_R0; assumption.
 Qed.
 
 Lemma pow_R1 : forall (r:R) (n:nat), r ^ n = 1 -> Rabs r = 1 \/ n = 0%nat.
@@ -357,12 +351,11 @@ Proof.
   absurd (Rabs (/ r) ^ 0 < Rabs (/ r) ^ S n0); auto.
   replace (Rabs (/ r) ^ S n0) with 1.
   simpl; apply Rlt_irrefl; auto.
-  rewrite Rabs_Rinv; auto.
-  rewrite <- Rinv_pow; auto.
+  rewrite Rabs_inv, pow_inv.
   rewrite RPow_abs; auto.
   rewrite H'0; rewrite Rabs_right; auto with real rorders.
   apply Rlt_pow; auto with arith.
-  rewrite Rabs_Rinv; auto.
+  rewrite Rabs_inv.
   apply Rmult_lt_reg_l with (r := Rabs r).
   case (Rabs_pos r); auto.
   intros H'3; case Eq2; auto.
@@ -606,7 +599,7 @@ Proof.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat n)) by auto with real.
    rewrite Nat.sub_add; [ | apply Nat.lt_le_incl; assumption ].
-   rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
+   rewrite Rinv_mult, Rinv_inv; auto with real.
  - rewrite Pos2Nat.inj_sub by trivial.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat m)) by auto with real.
@@ -626,7 +619,7 @@ Proof.
   - (* - - *)
     rewrite Pos2Nat.inj_add; auto with real.
     rewrite pow_add; auto with real.
-    apply Rinv_mult_distr; apply pow_nonzero; auto.
+    apply Rinv_mult.
 Qed.
 #[local]
 Hint Resolve powerRZ_O powerRZ_1 powerRZ_NOR powerRZ_add: real.
@@ -689,7 +682,7 @@ Proof.
     ring.
   intros p; elim (Pos.to_nat p); simpl.
   exact Rinv_1.
-  intros n1 H'; rewrite Rinv_mult_distr; try rewrite Rinv_1; try rewrite H';
+  intros n1 H'; rewrite Rinv_mult; try rewrite Rinv_1; try rewrite H';
     auto with real.
 Qed.
 
@@ -718,47 +711,66 @@ Proof.
     now rewrite <- Pos2Z.opp_pos, <- positive_nat_Z.
 Qed.
 
-Lemma powerRZ_inv x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
+Lemma powerRZ_inv' x alpha : powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
 Proof.
-  intros; destruct (intP alpha).
+  destruct (intP alpha).
   - now simpl; rewrite Rinv_1.
-  - now rewrite <-!pow_powerRZ, ?Rinv_pow, ?pow_powerRZ.
+  - now rewrite <-!pow_powerRZ, ?pow_inv, ?pow_powerRZ.
   - unfold powerRZ.
     destruct (- n).
     + now rewrite Rinv_1.
-    + now rewrite Rinv_pow.
-    + now rewrite <-Rinv_pow.
+    + apply pow_inv.
+    + now rewrite pow_inv.
 Qed.
 
-Lemma powerRZ_neg x : forall alpha, x <> R0 -> powerRZ x (- alpha) = powerRZ (/ x) alpha.
+Lemma powerRZ_inv_depr x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
 Proof.
-  intros [|n|n] H ; simpl.
+  intros _.
+  apply powerRZ_inv'.
+Qed.
+
+Lemma powerRZ_neg' x : forall alpha, powerRZ x (- alpha) = Rinv (powerRZ x alpha).
+Proof.
+  intros [|n|n] ; simpl.
+  - apply eq_sym, Rinv_1.
   - easy.
-  - now rewrite Rinv_pow.
-  - rewrite Rinv_pow by now apply Rinv_neq_0_compat.
-    now rewrite Rinv_involutive.
+  - now rewrite Rinv_inv.
 Qed.
 
-Lemma powerRZ_mult_distr :
-  forall m x y, ((0 <= m)%Z \/ (x * y <> 0)%R) ->
-           (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
+Lemma powerRZ_neg_depr x : forall alpha, x <> R0 -> powerRZ x (- alpha) = powerRZ (/ x) alpha.
 Proof.
-  intros m x0 y0 Hmxy.
+  intros alpha _.
+  rewrite powerRZ_neg'.
+  apply eq_sym, powerRZ_inv'.
+Qed.
+
+Lemma powerRZ_mult m x y : (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
+Proof.
   destruct (intP m) as [ | | n Hm ].
   - now simpl; rewrite Rmult_1_l.
   - now rewrite <- !pow_powerRZ, Rpow_mult_distr.
-  - destruct Hmxy as [H|H].
-    + assert(m = 0) as -> by
-      (destruct n; [assumption| subst; simpl in H; lia_contr]).
-      now rewrite <- Hm, Rmult_1_l.
-    + assert(x0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_l.
-      assert(y0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_r.
-      rewrite !powerRZ_neg by assumption.
-      rewrite Rinv_mult_distr by assumption.
-      now rewrite <- !pow_powerRZ, Rpow_mult_distr.
+  - rewrite !powerRZ_neg', <- Rinv_mult.
+    now rewrite <- !pow_powerRZ, Rpow_mult_distr.
+Qed.
+
+Lemma powerRZ_mult_distr_depr :
+  forall m x y, ((0 <= m)%Z \/ (x * y <> 0)%R) ->
+           (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
+Proof.
+  intros m x y _.
+  apply powerRZ_mult.
 Qed.
 
 End PowerRZ.
+
+#[deprecated(since="8.16",note="Use powerRZ_inv'.")]
+Notation powerRZ_inv := powerRZ_inv_depr.
+
+#[deprecated(since="8.16",note="Use powerRZ_neg' and powerRZ_inv'.")]
+Notation powerRZ_neg := powerRZ_neg_depr.
+
+#[deprecated(since="8.16",note="Use powerRZ_mult.")]
+Notation powerRZ_mult_distr := powerRZ_mult_distr_depr.
 
 Local Infix "^Z" := powerRZ (at level 30, right associativity) : R_scope.
 
