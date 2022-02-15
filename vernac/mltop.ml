@@ -164,10 +164,8 @@ let file_of_name name =
 
   let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
 
-  let rec resolve_legacy_name_if_needed m =
+  let resolve_legacy_name_if_needed m =
     match String.split_on_char ':' m with
-    | [x] when List.mem_assoc x legacy_mapping ->
-        resolve_legacy_name_if_needed (m ^ ":coq-core." ^ String.concat "." @@ List.assoc x legacy_mapping)
     | [x] when String.index_opt m '.' = None ->
         CErrors.user_err Pp.(str Printf.(sprintf
          "%s is not a valid plugin name anymore." m) ++ spc() ++
@@ -190,6 +188,13 @@ let file_of_name name =
           str "It should be a public findlib name, e.g. package-name.foo," ++ spc () ++
           str "or a legacy name followed by a findlib public name, e.g. "++ spc () ++
           str "legacy_plugin:package-name.plugin.")
+
+  let resolve_legacy_name_if_needed m =
+    let m = match List.assoc m legacy_mapping with
+      | exception Not_found -> m
+      | flname -> m ^ ":coq-core." ^ String.concat "." @@ flname
+    in
+    resolve_legacy_name_if_needed m
 
 end
 
@@ -304,27 +309,25 @@ let if_verbose_load verb f name =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let trigger_ml_object ~verb ~cache ~reinit ~use_legacy_loading_if_possible s =
+let trigger_ml_object ~verbose ~cache ~reinit ~use_legacy_loading_if_possible s =
   let plugin = Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed s in
-  if plugin_is_known plugin then begin
-    if reinit then init_ml_object plugin;
-    add_loaded_module (use_legacy_loading_if_possible,plugin);
-    if cache then perform_cache_obj plugin
-  end else if not has_dynlink then
-    user_err
-      (str "Dynamic link not supported (module " ++ str (pp_plugin plugin) ++ str ").")
-  else begin
-    if_verbose_load (verb && not !Flags.quiet) (load_ml_object use_legacy_loading_if_possible) plugin;
-    add_loaded_module (use_legacy_loading_if_possible,plugin);
-    if cache then perform_cache_obj plugin
-  end
+  let () = if plugin_is_known plugin then
+      begin if reinit then init_ml_object plugin end
+    else if not has_dynlink then
+      user_err
+        (str "Dynamic link not supported (module " ++ str (pp_plugin plugin) ++ str ").")
+    else
+      if_verbose_load (verbose && not !Flags.quiet) (load_ml_object use_legacy_loading_if_possible) plugin
+  in
+  add_loaded_module (use_legacy_loading_if_possible,plugin);
+  if cache then perform_cache_obj plugin
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
   List.iter
-    (fun (use_legacy_loading_if_possible,name) -> trigger_ml_object ~verb:false ~cache:false ~reinit:false ~use_legacy_loading_if_possible name) x
+    (fun (use_legacy_loading_if_possible,name) -> trigger_ml_object ~verbose:false ~cache:false ~reinit:false ~use_legacy_loading_if_possible name) x
 
-let _ =
+let () =
   Summary.declare_ml_modules_summary
     { Summary.freeze_function = (fun ~marshallable -> get_loaded_modules ());
       Summary.unfreeze_function = unfreeze_ml_modules;
@@ -332,9 +335,14 @@ let _ =
 
 (* Liboject entries of declared ML Modules *)
 
+type ml_module_digest =
+  | NoDigest
+  | AnyDigest of Digest.t list
+
 type ml_module_object = {
   mlocal : Vernacexpr.locality_flag;
   mnames : string list;
+  mdigests : ml_module_digest list;
   dune_compat_logpathroot : Names.module_ident
 }
 let current_logpathroot () =
@@ -343,13 +351,13 @@ let current_logpathroot () =
 
 let cache_ml_objects mnames =
   let use_legacy_loading_if_possible = true in
-  let iter obj = trigger_ml_object ~verb:true ~cache:true ~reinit:true ~use_legacy_loading_if_possible obj in
+  let iter obj = trigger_ml_object ~verbose:true ~cache:true ~reinit:true ~use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames; dune_compat_logpathroot; _} =
   let use_legacy_loading_if_possible =
     Names.Id.equal dune_compat_logpathroot (current_logpathroot ()) in
-  let iter obj = trigger_ml_object ~verb:true ~cache:false ~reinit:true ~use_legacy_loading_if_possible obj in
+  let iter obj = trigger_ml_object ~verbose:true ~cache:false ~reinit:true ~use_legacy_loading_if_possible obj in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
@@ -364,11 +372,48 @@ let inMLModule : ml_module_object -> Libobject.obj =
       subst_function = (fun (_,o) -> o);
       classify_function = classify_ml_objects }
 
+(* Fl_split.in_words is not exported *)
+let fl_split_in_words s =
+  (* splits s in words separated by commas and/or whitespace *)
+  let l = String.length s in
+  let rec split i j =
+    if j < l then
+      match s.[j] with
+      | (' '|'\t'|'\n'|'\r'|',') ->
+        if i<j then (String.sub s i (j-i)) :: (split (j+1) (j+1))
+        else split (j+1) (j+1)
+      |	_ ->
+        split i (j+1)
+    else
+    if i<j then [ String.sub s i (j-i) ] else []
+  in
+  split 0 0
+
+let get_digest m =
+  match Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed m with
+  | Legacy { obj_file_path=f } -> AnyDigest [Digest.file f]
+  | Findlib { fl_public_name=f } -> begin
+      (* simulate what fl_dynload does *)
+      let d = Findlib.package_directory f in
+      let preds = Findlib.recorded_predicates () in
+      let archive = try Findlib.package_property preds f "plugin"
+        with Not_found ->
+        try fst (Findlib.package_property_2 ("plugin"::preds) f "archive")
+        with Not_found -> ""
+      in
+      let files = fl_split_in_words archive in
+      let digests = List.map (fun file -> Digest.file (Findlib.resolve_path ~base:d file)) files in
+      AnyDigest digests
+    end
+
+let get_digest m = try get_digest m with e when noncritical e -> NoDigest
+
 let declare_ml_modules local l =
   if Global.sections_are_opened()
   then user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
   let dune_compat_logpathroot = current_logpathroot () in
-  Lib.add_leaf (inMLModule {mlocal=local; mnames=l;dune_compat_logpathroot});
+  let mdigests = List.map get_digest l in
+  Lib.add_leaf (inMLModule {mlocal=local; mnames=l; mdigests; dune_compat_logpathroot});
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
      the ML-MODULE object before them. *)
