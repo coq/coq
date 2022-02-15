@@ -637,6 +637,10 @@ let pr_printable = function
     keyword "Print Strategy" ++ pr_smart_global qid
   | PrintRegistered ->
     keyword "Print Registered"
+  | PrintNotation (Constrexpr.InConstrEntry, ntn_key) ->
+    keyword "Print Notation" ++ spc() ++ str ntn_key
+  | PrintNotation (Constrexpr.InCustomEntry ent, ntn_key) ->
+    keyword "Print Notation" ++ spc() ++ str ent ++ str ntn_key
 
 let pr_using e =
   let rec aux = function

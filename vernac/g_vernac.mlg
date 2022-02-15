@@ -1017,6 +1017,11 @@ GRAMMAR EXTEND Gram
       | IDENT "LoadPath"; dir = OPT dirpath -> { PrintLoadPath dir }
       | IDENT "Libraries" -> { PrintLibraries }
 
+      | IDENT "Notation"; ntn = string ->
+        { PrintNotation (Constrexpr.InConstrEntry, ntn) }
+      | IDENT "Notation"; ntn = string; IDENT "in"; IDENT "custom"; ent = IDENT ->
+        { PrintNotation (Constrexpr.InCustomEntry ent, ntn) }
+
       | IDENT "ML"; IDENT "Path" -> { PrintMLLoadPath }
       | IDENT "ML"; IDENT "Modules" -> { PrintMLModules }
       | IDENT "Debug"; IDENT "GC" -> { PrintDebugGC }
@@ -1025,10 +1030,10 @@ GRAMMAR EXTEND Gram
       | IDENT "TypeClasses" -> { PrintTypeClasses }
       | IDENT "Instances"; qid = smart_global -> { PrintInstances qid }
       | IDENT "Coercions" -> { PrintCoercions }
-      | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
-         -> { PrintCoercionPaths (s,t) }
-      | IDENT "Canonical"; IDENT "Projections"; qids = LIST0 smart_global
-         -> { PrintCanonicalConversions qids }
+      | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr ->
+          { PrintCoercionPaths (s,t) }
+      | IDENT "Canonical"; IDENT "Projections"; qids = LIST0 smart_global ->
+          { PrintCanonicalConversions qids }
       | IDENT "Typing"; IDENT "Flags" -> { PrintTypingFlags }
       | IDENT "Tables" -> { PrintTables }
       | IDENT "Options" -> { PrintTables (* A Synonymous to Tables *) }

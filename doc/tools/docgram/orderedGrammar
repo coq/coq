@@ -892,6 +892,8 @@ command: [
 | "Print" "TypeClasses"
 | "Print" "Instances" reference
 | "Print" "Coercions"
+| "Print" "Notation" string
+| "Print" "Notation" string "in" "custom" ident
 | "Print" "Coercion" "Paths" class class
 | "Print" "Canonical" "Projections" LIST0 reference
 | "Print" "Typing" "Flags"

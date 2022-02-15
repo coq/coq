@@ -886,9 +886,15 @@ let default = {
 
 end
 
+exception UnknownCustomEntry of string
+
+let () = CErrors.register_handler @@ function
+  | UnknownCustomEntry entry -> Some Pp.(str "Unknown custom entry: " ++ str entry ++ str ".")
+  | _ -> None
+
 let check_custom_entry entry =
   if not (Egramcoq.exists_custom_entry entry) then
-    user_err Pp.(str "Unknown custom entry: " ++ str entry ++ str ".")
+    raise @@ UnknownCustomEntry entry
 
 let check_entry_type = function
   | ETConstr (InCustomEntry entry,_,_) -> check_custom_entry entry

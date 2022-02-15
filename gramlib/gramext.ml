@@ -9,3 +9,8 @@ type position =
   | After of string
 
 type g_assoc = NonA | RightA | LeftA
+
+let pr_assoc = function
+  | LeftA -> Pp.str "left associativity"
+  | RightA -> Pp.str "right associativity"
+  | NonA -> Pp.str "no associativity"

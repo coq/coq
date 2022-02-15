@@ -2002,6 +2002,7 @@ let vernac_print ~pstate =
   | PrintTypeClasses -> Prettyp.print_typeclasses()
   | PrintInstances c -> Prettyp.print_instances (smart_global c)
   | PrintCoercions -> Prettyp.print_coercions ()
+  | PrintNotation (entry, ntnstr) -> Prettyp.print_notation env sigma entry ntnstr
   | PrintCoercionPaths (cls,clt) ->
     Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt)
   | PrintCanonicalConversions qids ->

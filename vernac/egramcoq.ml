@@ -78,16 +78,19 @@ let create_assoc = function
   | None -> Gramlib.Gramext.RightA
   | Some a -> a
 
+exception NotationLevelMismatch
+  of entry_level * Gramlib.Gramext.g_assoc * Gramlib.Gramext.g_assoc
+
+let () = CErrors.register_handler (function
+  | NotationLevelMismatch (p, current, expected) ->
+      Some Pp.(str "Level " ++ int p ++ str " is already declared to have " ++
+        Gramlib.Gramext.pr_assoc current ++
+        str " while it is now expected to have " ++
+        Gramlib.Gramext.pr_assoc expected ++ str ".")
+  | _ -> None)
+
 let error_level_assoc p current expected =
-  let open Pp in
-  let pr_assoc = function
-    | Gramlib.Gramext.LeftA -> str "left"
-    | Gramlib.Gramext.RightA -> str "right"
-    | Gramlib.Gramext.NonA -> str "non" in
-  user_err
-    (str "Level " ++ int p ++ str " is already declared " ++
-     pr_assoc current ++ str " associative while it is now expected to be " ++
-     pr_assoc expected ++ str " associative.")
+  raise @@ NotationLevelMismatch (p, current, expected)
 
 type position = NewFirst | NewAfter of int | ReuseFirst | ReuseLevel of int
 

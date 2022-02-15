@@ -929,6 +929,47 @@ let print_name env sigma na udecl =
   | {loc; v=Constrexpr.AN ref} ->
     print_any_name env sigma (locate_any_name ref) udecl
 
+let print_notation_grammar env sigma ntn =
+  let ng = List.hd (Notgram_ops.grammar_of_notation ntn) in
+  let assoc = ng.Notation_gram.notgram_assoc in
+  let prdf () = Pp.str "no associativity" in
+  Pp.(pr_opt_no_spc_default prdf Gramlib.Gramext.pr_assoc assoc)
+
+exception PrintNotationNotFound of Constrexpr.notation_entry * string
+
+let () = CErrors.register_handler @@ function
+  | PrintNotationNotFound (entry, ntn_str) ->
+      let entry_string = match entry with
+      | Constrexpr.InConstrEntry -> "."
+      | Constrexpr.InCustomEntry e -> " in " ^ e ^ " entry."
+      in
+      Some Pp.(str "\"" ++ str ntn_str ++ str "\"" ++ spc ()
+        ++ str "cannot be interpreted as a known notation" ++ str entry_string ++ spc ()
+        ++ strbrk "Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by \"_\".")
+  | _ -> None
+
+let error_print_notation_not_found e s =
+  raise @@ PrintNotationNotFound (e, s)
+
+let print_notation env sigma entry raw_ntn =
+  (* make sure entry exists *)
+  let () =
+    match entry with
+    | Constrexpr.InConstrEntry -> ()
+    | Constrexpr.InCustomEntry e -> Metasyntax.check_custom_entry e
+  in
+  (* convert notation string to key. eg. "x + y" to "_ + _" *)
+  let interp_ntn = Notation.interpret_notation_string raw_ntn in
+  let ntn = (entry, interp_ntn) in
+  try
+    let lvl = Notation.level_of_notation ntn in
+    let args = Notgram_ops.subentries_of_notation ntn in
+    let pplvl = Metasyntax.pr_level ntn lvl args in
+    Pp.(str "Notation \"" ++ str interp_ntn ++ str "\"" ++ spc ()
+      ++ pplvl ++ pr_comma () ++ print_notation_grammar env sigma ntn
+      ++ str ".")
+  with Not_found -> error_print_notation_not_found entry raw_ntn
+
 let print_opaque_name env sigma qid =
   let open GlobRef in
   match Nametab.global qid with
