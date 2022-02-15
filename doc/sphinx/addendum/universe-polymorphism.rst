@@ -228,6 +228,41 @@ information: each universe is either invariant, covariant or
 irrelevant (there are no contravariant subtypings in Coq),
 respectively represented by the symbols `=`, `+` and `*`.
 
+The following example demonstrates this behavior:
+
+.. coqtop:: in
+
+    Set Printing Universes.
+    Set Universe Polymorphism.
+    Set Polymorphic Inductive Cumulativity.
+
+    Inductive Invariant@{=u} : Type@{u}.
+    Inductive Covariant@{+u} : Type@{u}.
+    Inductive Irrelevent@{*u} : Type@{u}.
+
+    Section Universes.
+      Universe u v.
+      Constraint u < v.
+
+      Axiom inv_u : Invariant@{u}.
+      Axiom inv_v : Invariant@{v}.
+      Fail Check (inv_u : Invariant@{v}).
+      Fail Check (inv_v : Invariant@{u}).
+
+      Axiom co_u : Covariant@{u}.
+      Axiom co_v : Covariant@{v}.
+      Check (co_u : Covariant@{v}).
+      Fail Check (co_v : Covariant@{u}).
+
+      Axiom irr_u : Irrelevent@{u}.
+      Axiom irr_v : Irrelevent@{v}.
+      Check (irr_u : Irrelevent@{v}).
+      Check (irr_v : Irrelevent@{u}).
+
+    End Universes.
+
+.. coqtop:: all
+
 Here we see that :g:`list` binds an irrelevant universe, so any two
 instances of :g:`list` are convertible: :math:`E[Γ] ⊢ \mathsf{list}@\{i\}~A
 =_{βδιζη} \mathsf{list}@\{j\}~B` whenever :math:`E[Γ] ⊢ A =_{βδιζη} B` and
