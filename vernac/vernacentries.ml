@@ -789,7 +789,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite records =
+let vernac_record_decl ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs, ido) =
     let idbuild = match nameopt with
     | None -> Nameops.add_prefix "Build_" name.v
@@ -819,22 +819,27 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_p
       Record.definition_structure ~template udecl k ~cumulative ~poly ~primitive_proj finite records in
     ()
 
+let extract_inductive_header_udecl ((coe,(id,udecl)),b,c) =
+  (udecl, (((coe,id),b,c)))
+
 let extract_inductive_udecl (indl:inductive_expr list) =
   match indl with
   | [] -> assert false
-  | (((coe,(id,udecl)),b,c),d,e) :: rest ->
-    let rest = List.map (fun (((coe,(id,udecl)),b,c),d,e) ->
-        if Option.has_some udecl
-        then user_err Pp.(strbrk "Universe binders must be on the first inductive of the block.")
-        else (((coe,id),b,c),d,e))
+  | (header,d,e) :: rest ->
+      let udecl, header = extract_inductive_header_udecl header in
+      let rest = List.map (fun (header,d,e) ->
+          let udecl', header = extract_inductive_header_udecl header in
+          if Option.has_some udecl'
+          then user_err Pp.(strbrk "Universe binders must be on the first inductive of the block.")
+          else (header,d,e))
         rest
     in
-    udecl, (((coe,id),b,c),d,e) :: rest
+    udecl, (header,d,e) :: rest
 
 let finite_of_kind = let open Declarations in function
   | Inductive_kw -> Finite
   | CoInductive -> CoFinite
-  | Variant | Record | Structure | Class _ -> BiFinite
+  | Variant | Class _ -> BiFinite
 
 let private_ind =
   let open Attributes in
@@ -863,6 +868,24 @@ let primitive_proj =
   | Some t -> return t
   | None -> return (primitive_flag ())
 
+let parse_inductive_attributes is_defclass only_records atts =
+  let prim_proj_attr : bool Attributes.Notations.t =
+    if only_records then primitive_proj else Notations.return false
+  in
+  Attributes.(
+    parse Notations.(
+        template
+        ++ polymorphic_cumulative ~is_defclass:(Option.has_some is_defclass)
+        ++ private_ind ++ typing_flags ++ prim_proj_attr)
+      atts)
+
+let vernac_record ~atts _kind (header,(oc, fs, ido),ntn) =
+  let udecl, (id, (bl,bl_opt), c) = extract_inductive_header_udecl header in
+  if Option.has_some bl_opt then CErrors.user_err Pp.(str "Records do not support the \"|\" syntax.");
+  let (((template, (poly, cumulative)), private_ind), typing_flags), primitive_proj =
+    parse_inductive_attributes None true atts in
+  vernac_record_decl ~template udecl ~cumulative Record.RegularStructure ~poly ?typing_flags ~primitive_proj Declarations.BiFinite [(id, bl, c, oc, fs, ido)]
+
 let vernac_inductive ~atts kind indl =
   let udecl, indl = extract_inductive_udecl indl in
   let is_defclass = match kind, indl with
@@ -880,17 +903,9 @@ let vernac_inductive ~atts kind indl =
   in
   (* We only allow the #[projections(primitive)] attribute
      for records. *)
-  let prim_proj_attr : bool Attributes.Notations.t =
-    if List.for_all is_record indl then primitive_proj
-    else Notations.return false
-  in
+  let only_records = List.for_all is_record indl in
   let (((template, (poly, cumulative)), private_ind), typing_flags), primitive_proj =
-    Attributes.(
-      parse Notations.(
-          template
-          ++ polymorphic_cumulative ~is_defclass:(Option.has_some is_defclass)
-          ++ private_ind ++ typing_flags ++ prim_proj_attr)
-        atts)
+    parse_inductive_attributes is_defclass only_records atts
   in
   if Dumpglob.dump () then
     List.iter (fun (((coe,lid), _, _), cstrs, _) ->
@@ -913,14 +928,14 @@ let vernac_inductive ~atts kind indl =
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
-    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags ~primitive_proj
+    vernac_record_decl ~template udecl ~cumulative (Record.ClassStructure true) ~poly ?typing_flags ~primitive_proj
       finite [id, bl, c, None, [f], None]
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
       | Variant ->
-        user_err (str "The Variant keyword does not support syntax { ... }.")
-      | Record | Structure | Class _ | Inductive_kw | CoInductive -> ()
+        user_err (str "The Variant keyword expects a list of constructors.")
+      | Class _ | Inductive_kw | CoInductive -> ()
     in
     let check_where ((_, _, _), _, wh) = match wh with
     | [] -> ()
@@ -937,14 +952,12 @@ let vernac_inductive ~atts kind indl =
       (id, bl, c, oc, fs, ido)
     | Constructors _ -> assert false (* ruled out above *)
     in
-    let kind = match kind with Class _ -> Class false | _ -> kind in
+    let kind = Record.(match kind with Class _ -> ClassStructure false | _ -> RegularStructure) in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl
+    vernac_record_decl ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
-    | (Record | Structure) ->
-      user_err (str "The Record keyword is for types defined using the syntax { ... }.")
     | Class _ ->
       user_err (str "Inductive classes not supported.")
     | Variant | Inductive_kw | CoInductive -> ()
@@ -2215,6 +2228,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
   | VernacInductive (finite, l) ->
     vtdefault(fun () -> vernac_inductive ~atts finite l)
+  | VernacRecord (key, record) ->
+    vtdefault(fun () -> vernac_record ~atts key record)
   | VernacFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     if opens then

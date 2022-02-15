@@ -175,7 +175,8 @@ type local_decl_expr =
   | AssumExpr of lname * local_binder_expr list * constr_expr
   | DefExpr of lname * local_binder_expr list * constr_expr * constr_expr option
 
-type inductive_kind = Inductive_kw | CoInductive | Variant | Record | Structure | Class of bool (* true = definitional, false = inductive *)
+type inductive_kind = Inductive_kw | CoInductive | Variant | Class of bool (* true = definitional, false = inductive *)
+type record_kind = Record | Structure
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
@@ -187,14 +188,18 @@ type record_field_attr = {
   rf_canonical: bool; (* use this projection in the search for canonical instances *)
   }
 type constructor_expr = (lident * constr_expr) with_coercion
+type record_decl = lident option * (local_decl_expr * record_field_attr) list * lident option
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of lident option * (local_decl_expr * record_field_attr) list * lident option
+  | RecordDecl of record_decl
 type inductive_params_expr = local_binder_expr list * local_binder_expr list option
 (** If the option is nonempty the "|" marker was used *)
 
 type inductive_header =
   cumul_ident_decl with_coercion * inductive_params_expr * constr_expr option
+
+type record_expr =
+  inductive_header * record_decl * decl_notation list
 
 type inductive_expr =
   inductive_header * constructor_list_or_record_decl_expr * decl_notation list
@@ -352,6 +357,7 @@ type nonrec vernac_expr =
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of inductive_kind * inductive_expr list
+  | VernacRecord of record_kind * record_expr
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list

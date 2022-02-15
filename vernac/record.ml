@@ -40,6 +40,8 @@ let typeclasses_unique =
     ~key:["Typeclasses";"Unique";"Instances"]
     ~value:false
 
+type structure_kind = ClassStructure of bool | RegularStructure
+
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   let _, sigma, impls, newfs, _ =
     List.fold_left2
@@ -835,7 +837,7 @@ let check_unique_names records =
   | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id) ++ str ".")
 
 let check_priorities kind records =
-  let isnot_class = match kind with Class false -> false | _ -> true in
+  let isnot_class = match kind with ClassStructure false -> false | _ -> true in
   let has_priority { Ast.cfs; _ } =
     List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
   in
@@ -919,14 +921,14 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
        is messing state beyond that.
     *)
     Vernacstate.System.protect (fun () ->
-        typecheck_params_and_fields (kind = Class true) poly udecl ps data) ()
+        typecheck_params_and_fields (kind = ClassStructure true) poly udecl ps data) ()
   in
   let template = template, auto_template in
   match kind with
-  | Class def ->
+  | ClassStructure def ->
     class_structure ~template ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
       def records data
-  | Inductive_kw | CoInductive | Variant | Record | Structure ->
+  | RegularStructure ->
     regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
       records data
 

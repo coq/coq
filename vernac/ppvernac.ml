@@ -519,6 +519,12 @@ let pr_lconstrarg c =
   spc () ++ pr_lconstr c
 let pr_intarg n = spc () ++ int n
 
+let pr_inductive_header ((coe,iddecl),(indupar,indpar),s) =
+  (if coe then str"> " else str"") ++ pr_cumul_ident_decl iddecl ++
+  pr_and_type_binders_arg indupar ++
+  pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
+  pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s
+
 let pr_oc = function
   | NoInstance -> str" :"
   | BackInstance -> str" :>"
@@ -542,7 +548,7 @@ let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = n
   let prpri = match pri with None -> mt() | Some i -> str "| " ++ int i in
   prx ++ prpri ++ prlist (pr_decl_notation @@ pr_constr) ntn
 
-let pr_record_decl c fs obinder =
+let pr_record_decl (c,fs,obinder) =
   pr_opt pr_lident c ++ pr_record "{" "}" pr_record_field fs ++
   pr_opt (fun id -> str "as " ++ pr_lident id) obinder
 
@@ -833,6 +839,11 @@ let pr_vernac_expr v =
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                    pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
+  | VernacRecord (f,(header,record_decl,ntn)) ->
+      let key = match f with Record -> "Record" | Structure -> "Structure" in
+      hov 0 (str key ++ spc() ++ pr_inductive_header header ++ str " :=") ++
+      pr_record_decl record_decl ++
+      prlist (pr_decl_notation @@ pr_constr) ntn
   | VernacInductive (f,l) ->
     let pr_constructor (coe,(id,c)) =
       hov 2 (pr_lident id ++ str" " ++
@@ -846,22 +857,16 @@ let pr_vernac_expr v =
         pr_com_at (begin_of_inductive l) ++
         fnl() ++ str fst_sep ++
         prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l
-      | RecordDecl (c,fs,obinder) ->
-        pr_record_decl c fs obinder
+      | RecordDecl record_decl ->
+        pr_record_decl record_decl
     in
-    let pr_oneind key (((coe,iddecl),(indupar,indpar),s),lc,ntn) =
-      hov 0 (
-        str key ++ spc() ++
-        (if coe then str"> " else str"") ++ pr_cumul_ident_decl iddecl ++
-        pr_and_type_binders_arg indupar ++
-        pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
-        pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++
-        str" :=") ++ pr_constructor_list lc ++
+    let pr_oneind key (header,lc,ntn) =
+      hov 0 (str key ++ spc() ++ pr_inductive_header header ++ str" :=") ++
+      pr_constructor_list lc ++
       prlist (pr_decl_notation @@ pr_constr) ntn
     in
     let kind =
       match f with
-      | Record -> "Record" | Structure -> "Structure"
       | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
       | Class _ -> "Class" | Variant -> "Variant"
     in

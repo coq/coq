@@ -234,7 +234,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Class"; cl = class_definition ->
           { VernacInductive (Class true, [cl]) }
       | r = record_token; record = record_definition ->
-          { VernacInductive (r, [record]) }
+          { VernacRecord (r, record) }
       | f = inductive_token; indl = LIST1 inductive_definition SEP "with" ->
           { VernacInductive (f, indl) }
       | "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
@@ -419,8 +419,7 @@ GRAMMAR EXTEND Gram
   ;
   record_definition_body:
     [ [ cstr = OPT [ cstr = identref -> { cstr } ]; "{"; fs = record_fields; "}";
-    id = default_inhabitant_ident ->
-          { RecordDecl (cstr,fs,id) } ] ]
+    id = default_inhabitant_ident -> { (cstr,fs,id) } ] ]
   ;
   class_definition_body:
     [ [ cstr = identref; "{"; fs = record_fields; "}"; id = default_inhabitant_ident ->
@@ -438,8 +437,7 @@ GRAMMAR EXTEND Gram
     [ [ header = inductive_header; ":=" ; record = record_definition_body; ntn = decl_notations ->
           { (header,record,ntn) }
       | header = inductive_header; ntn = decl_notations ->
-          { (header, RecordDecl (None, [], None), ntn) }
- ] ]
+          { (header, (None, [], None), ntn) } ] ]
   ;
 (*
   csort:

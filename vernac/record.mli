@@ -25,9 +25,11 @@ module Ast : sig
     }
 end
 
+type structure_kind = ClassStructure of bool | RegularStructure
+
 val definition_structure
   :  cumul_univ_decl_expr option
-  -> inductive_kind
+  -> structure_kind
   -> template:bool option
   -> cumulative:bool
   -> poly:bool

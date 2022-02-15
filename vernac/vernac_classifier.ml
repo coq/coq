@@ -50,6 +50,16 @@ let options_affecting_stm_scheduling =
     Proof_using.proof_using_opt_name;
   ]
 
+let find_inductive_ids l =
+  List.flatten (List.map (fun (((_,({v=id},_)),_,_),cl,_) ->
+  id :: match cl with
+        | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l
+        | RecordDecl (oid,l,obinder) -> (match oid with Some {v=x} -> [x] | _ -> []) @
+           (match obinder with Some {v=x} -> [x] | _ -> []) @
+           CList.map_filter (function
+            | AssumExpr({v=Names.Name n},_,_), _ -> Some n
+            | _ -> None) l) l)
+
 let classify_vernac e =
   let static_classifier ~atts e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
@@ -121,15 +131,8 @@ let classify_vernac e =
     | VernacPrimitive ((id,_),_,_) ->
         VtSideff ([id.CAst.v], VtLater)
     | VernacDefinition (_,({v=id},_),DefineBody _) -> VtSideff (idents_of_name id, VtLater)
-    | VernacInductive (_,l) ->
-        let ids = List.map (fun (((_,({v=id},_)),_,_),cl,_) -> id :: match cl with
-        | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l
-        | RecordDecl (oid,l,obinder) -> (match oid with Some {v=x} -> [x] | _ -> []) @
-           (match obinder with Some {v=x} -> [x] | _ -> []) @
-           CList.map_filter (function
-            | AssumExpr({v=Names.Name n},_,_), _ -> Some n
-            | _ -> None) l) l in
-        VtSideff (List.flatten ids, VtLater)
+    | VernacInductive (_,l) -> VtSideff (find_inductive_ids l, VtLater)
+    | VernacRecord (_,(h,r,n)) -> VtSideff (find_inductive_ids [h,RecordDecl r,n], VtLater)
     | VernacScheme l ->
         let ids = List.map (fun {v}->v) (CList.map_filter (fun (x,_) -> x) l) in
         VtSideff (ids, VtLater)
