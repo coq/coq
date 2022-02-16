@@ -10,4 +10,4 @@
 
 (** Don't use this module. *)
 
-type goal = Evar.t
+type goal = Evar.t [@@ocaml.deprecated]
