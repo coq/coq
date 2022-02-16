@@ -1,0 +1,6 @@
+File "./output/extra_dep.v", line 1, characters 0-55:
+The command has indeed failed with message:
+No LoadPath found for NonExistent.
+File "./output/extra_dep.v", line 2, characters 0-49:
+The command has indeed failed with message:
+File not_there not found in TestSuite.

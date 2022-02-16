@@ -930,6 +930,13 @@ let pr_vernac_expr v =
   | VernacNameSectionHypSet (id,set) ->
     return (hov 2 (keyword "Package" ++ spc() ++ pr_lident id ++ spc()++
                    str ":="++spc()++pr_using set))
+  | VernacExtraDependency(from,file,id) ->
+    return (
+      hov 2
+        (keyword "From" ++ spc () ++ pr_module from ++ spc () ++
+         keyword "Extra" ++ spc() ++ keyword "Dependency" ++ spc() ++ qs file ++
+         pr_opt (fun x -> spc() ++ keyword "as" ++ spc () ++ pr_id x) id)
+    )
   | VernacRequire (from, exp, l) ->
     let from = match from with
       | None -> mt ()

@@ -23,6 +23,7 @@
     | Load of load
     | AddLoadPath of string
     | AddRecLoadPath of string * qualid
+    | External of qualid * string
 
   exception Fin_fichier
   exception Syntax_error of int*int
@@ -64,6 +65,7 @@ let caml_low_ident = lowercase identchar*
 (* This is an overapproximation, we check correctness afterwards *)
 let coq_ident = ['A'-'Z' 'a'-'z' '_' '\128'-'\255'] ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9' '\128'-'\255']*
 let coq_field = '.' coq_ident
+let coq_qual_id_rex = coq_ident coq_field+
 
 let dot = '.' ( space+ | eof)
 
@@ -83,7 +85,9 @@ rule coq_action = parse
   | "Timeout" space+ ['0'-'9']+ space+
       { coq_action lexbuf }
   | "From" space+
-      { from_rule lexbuf }
+      { from_rule false lexbuf }
+  | "Comments" space+ "From" space+
+      { from_rule true lexbuf }
   | space+
       { coq_action lexbuf }
   | "(*"
@@ -93,18 +97,29 @@ rule coq_action = parse
   | _
       { skip_to_dot lexbuf; coq_action lexbuf }
 
-and from_rule = parse
+and from_rule only_extra_dep = parse
   | "(*"
-      { comment lexbuf; from_rule lexbuf }
+      { comment lexbuf; from_rule only_extra_dep lexbuf }
   | space+
-      { from_rule lexbuf }
+      { from_rule only_extra_dep lexbuf }
   | coq_ident
       { let from = coq_qual_id_tail [get_ident lexbuf] lexbuf in
-        consume_require (Some from) lexbuf }
+        consume_require_or_extradeps only_extra_dep (Some from) lexbuf }
   | eof
       { syntax_error lexbuf }
   | _
       { syntax_error lexbuf }
+
+and extra_dep_rule from = parse
+  | "(*"
+      { comment lexbuf; extra_dep_rule from lexbuf }
+  | space+
+      { extra_dep_rule from lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | '"' ([^ '"']+ as f) '"' (*'"'*)
+      { skip_to_dot lexbuf;
+        External (from,f) }
 
 and require_modifiers from = parse
   | "(*"
@@ -120,13 +135,17 @@ and require_modifiers from = parse
   | _
       { backtrack lexbuf ; require_file from lexbuf }
 
-and consume_require from = parse
+and consume_require_or_extradeps only_extra_dep from = parse
   | "(*"
-      { comment lexbuf; consume_require from lexbuf }
+      { comment lexbuf; consume_require_or_extradeps only_extra_dep from lexbuf }
   | space+
-      { consume_require from lexbuf }
+      { consume_require_or_extradeps only_extra_dep from lexbuf }
   | "Require" space+
-      { require_modifiers from lexbuf }
+      { if only_extra_dep then syntax_error lexbuf; require_modifiers from lexbuf }
+  | "Extra" space+ "Dependency" space+
+      { match from with
+        | None -> syntax_error lexbuf (* Extra Dependency requires From *)
+        | Some from -> extra_dep_rule from lexbuf }
   | _
       { syntax_error lexbuf }
 

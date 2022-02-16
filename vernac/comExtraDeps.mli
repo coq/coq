@@ -8,19 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type qualid = string list
+val declare_extra_dep :
+  ?loc:Loc.t -> from:Names.DirPath.t -> file:string -> Names.Id.t option -> unit
 
-type load = Logical of string | Physical of string
-
-type coq_token =
-  | Require of qualid option * qualid list
-  | Declare of string list
-  | Load of load
-  | AddLoadPath of string
-  | AddRecLoadPath of string * qualid
-  | External of qualid * string
-
-exception Fin_fichier
-exception Syntax_error of int * int
-
-val coq_action : Lexing.lexbuf -> coq_token
+val query_extra_dep : Names.Id.t -> string
+(* @raise Not_found *)

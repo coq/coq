@@ -362,6 +362,7 @@ type nonrec vernac_expr =
   (* Gallina extensions *)
   | VernacBeginSection of lident
   | VernacEndSegment of lident
+  | VernacExtraDependency of qualid * string * Id.t option
   | VernacRequire of
       qualid option * export_flag option * qualid list
   | VernacImport of export_flag * import_categories option * (qualid * import_filter_expr) list

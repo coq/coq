@@ -718,6 +718,33 @@ the toplevel, and using them in source files is discouraged.
    the :ref:`command line option <command-line-options>` :n:`-I @string` or by the command :cmd:`Add
    ML Path` `@string` (cf. :cmd:`Declare ML Module`).
 
+.. _extra_dependencies:
+
+Extra Dependencies
+------------------
+
+Dependencies on external files, i.e. non ``.v`` files, can be declared as
+follows:
+
+.. cmd:: From @dirpath Extra Dependency @string {? as @ident }
+   :name: From … Dependency
+
+   Adds an additional dependency of the current `.v`  file on an external file.  This
+   information is included in the ``coqdep`` tool generated list of dependencies.
+   The file name :n:`@string` must exist relative to only one of the top directories
+   associated with :n:`@dirpath`.  :n:`@string` can include directory separators
+   (``/``) to select a file in a subdirectory.
+   Path elements in :n:`@string` must be valid Coq identifiers, e.g. they cannot
+   contain characters such as ``-`` or ``,``.  See :ref:`lexical-conventions`.
+
+When :n:`@ident` is provided, that name can be used by OCaml code, typically
+in a plugin, to access the full path of the external file via the API
+``ComExtraDeps.query_extra_dep``.
+
+This command has been available through the :cmd:`Comments` command,
+e.g. :n:`Comments From … Dependency …`.  The :n:`Comments` form is deprecated
+in Coq 8.16.
+
 .. _backtracking_subsection:
 
 Backtracking

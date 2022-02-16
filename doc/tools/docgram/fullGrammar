@@ -1041,6 +1041,7 @@ gallina_ext: [
 | "Section" identref
 | "End" identref
 | "Collection" identref ":=" section_subset_expr
+| "From" global "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 | "Require" export_token LIST1 global
 | "From" global "Require" export_token LIST1 global
 | "Import" OPT import_categories LIST1 filtered_import

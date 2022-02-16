@@ -32,7 +32,7 @@ val option_boot : bool ref
 
 (** ML-related manipulation *)
 val coq_dependencies : unit -> unit
-val add_v_known : bool -> root -> dirname -> dirpath -> basename -> unit
+val add_known : bool -> root -> dirname -> dirpath -> basename -> unit
 val add_coqlib_known : bool -> root -> dirname -> dirpath -> basename -> unit
 
 (** Simply add this directory and imports it, no subdirs. This is used

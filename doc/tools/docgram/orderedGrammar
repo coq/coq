@@ -1070,6 +1070,7 @@ command: [
 | "Section" ident
 | "End" ident
 | "Collection" ident ":=" section_var_expr
+| "From" qualid "Extra" "Dependency" string OPT [ "as" ident ]
 | OPT [ "From" dirpath ] "Require" OPT [ "Import" | "Export" ] LIST1 qualid
 | "Import" OPT import_categories LIST1 filtered_import
 | "Export" OPT import_categories LIST1 filtered_import
