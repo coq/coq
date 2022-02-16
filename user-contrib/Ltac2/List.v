@@ -459,7 +459,7 @@ Ltac2 lastn (n : int) (ls : 'a list) :=
   let l := length ls in
   Control.assert_valid_argument "List.lastn" (Int.ge n 0);
   Control.assert_bounds "List.lastn" (Int.le n l);
-  skipn (Int.sub l n).
+  skipn (Int.sub l n) ls.
 
 Ltac2 rec nodup (eqb : 'a -> 'a -> bool) (ls : 'a list) :=
   match ls with
