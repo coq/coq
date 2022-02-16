@@ -29,14 +29,6 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
   generates a *proof cache* which makes it possible to rerun scripts
   even without `csdp`.
 
-.. flag:: Simplex
-
-   .. deprecated:: 8.14
-
-   This :term:`flag` (set by default) instructs the decision procedures to
-   use the Simplex method for solving linear goals instead of the
-   deprecated Fourier elimination.
-
 .. opt:: Dump Arith
 
    This :term:`option` (unset by default) may be set to a file path where
@@ -46,7 +38,7 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
    This command prints some statistics about the amount of pivoting
    operations needed by :tacn:`lia` and may be useful to detect
-   inefficiencies (only meaningful if flag :flag:`Simplex` is set).
+   inefficiencies.
 
 .. flag:: Lia Cache
 

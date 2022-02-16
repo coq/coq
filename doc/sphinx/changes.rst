@@ -1047,7 +1047,7 @@ Tactics
   (`#13696 <https://github.com/coq/coq/pull/13696>`_,
   by Jim Fehrle).
 - **Deprecated:**
-  The micromega option :flag:`Simplex`, which is currently set by default
+  The micromega option `Simplex`, which is currently set by default
   (`#13781 <https://github.com/coq/coq/pull/13781>`_, by Frédéric Besson).
 - **Deprecated:**
   the undocumented `new auto` tactic
@@ -4531,7 +4531,7 @@ reference manual. Here are the most important user-visible changes:
   by Pierre-Marie Pédrot).
 
 - The tactics :tacn:`lia`, :tacn:`nia`, :tacn:`lra`, :tacn:`nra` are now using a novel
-  Simplex-based proof engine. In case of regression, unset :flag:`Simplex`
+  Simplex-based proof engine. In case of regression, unset `Simplex`
   to get the venerable Fourier-based engine
   (`#8457 <https://github.com/coq/coq/pull/8457>`_, by Fréderic Besson).
 

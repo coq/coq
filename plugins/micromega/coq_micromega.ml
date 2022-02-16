@@ -49,7 +49,7 @@ let lia_proof_depth =
   declare_int_option_and_ref ~depr:true ~key:["Lia"; "Depth"] ~value:max_depth
 
 let get_lia_option () =
-  (Certificate.use_simplex (), lia_enum (), lia_proof_depth ())
+  (true, lia_enum (), lia_proof_depth ())
 
 (* Enable/disable caches *)
 
@@ -1475,8 +1475,14 @@ type ('option, 'a, 'prf, 'model) prover =
   *)
 
 let find_witness p polys1 =
+  try
   let polys1 = List.map fst polys1 in
   p.prover (p.get_option (), polys1)
+  with e ->
+    begin
+    Printf.printf "find_witness %s" (Printexc.to_string e);
+    raise e
+  end
 
 (**
   * Given a prover and a CNF, find a proof for each of the clauses.
@@ -1853,7 +1859,6 @@ Tacticals.tclTHEN
                   ( EConstr.mkVar goal_name
                   , arith_args @ List.map EConstr.mkVar ids )))
       with
-      | Mfourier.TimeOut -> Tacticals.tclFAIL (Pp.str "Timeout")
       | CsdpNotFound ->
         flush stdout;
         Tacticals.tclFAIL
@@ -1992,7 +1997,6 @@ let micromega_genr prover tac =
                 ; Tactics.exact_check
                     (EConstr.applist (EConstr.mkVar goal_name, arith_args)) ] ]
       with
-      | Mfourier.TimeOut -> Tacticals.tclFAIL (Pp.str "Timeout")
       | CsdpNotFound ->
         flush stdout;
         Tacticals.tclFAIL
@@ -2231,12 +2235,12 @@ module CacheQ = MakeCache (struct
 end)
 
 let memo_lia =
-  CacheZ.memo_opt use_lia_cache ".lia.cache" (fun ((_, ce, b), s) ->
-      lift_pexpr_prover (Certificate.lia ce b) s)
+  CacheZ.memo_opt use_lia_cache ".lia.cache" (fun ((_, _, b), s) ->
+      lift_pexpr_prover (Certificate.lia b) s)
 
 let memo_nlia =
-  CacheZ.memo_opt use_nia_cache ".nia.cache" (fun ((_, ce, b), s) ->
-      lift_pexpr_prover (Certificate.nlia ce b) s)
+  CacheZ.memo_opt use_nia_cache ".nia.cache" (fun ((_, _, b), s) ->
+      lift_pexpr_prover (Certificate.nlia b) s)
 
 let memo_nra =
   CacheQ.memo_opt use_nra_cache ".nra.cache" (fun (o, s) ->
