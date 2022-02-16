@@ -537,7 +537,7 @@ let clenv_unify_binding_type clenv c t u =
       TypeProcessed, { clenv with evd = evd }, c
     with
       | PretypeError (_,_,ActualTypeNotCoercible (_,_,
-          (NotClean _ | ConversionFailed _))) as e ->
+          (NotSameHead | NotClean _ | ConversionFailed _))) as e ->
           raise e
       | e when precatchable_exception e ->
           TypeNotProcessed, clenv, c
