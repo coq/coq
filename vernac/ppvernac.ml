@@ -959,12 +959,18 @@ let pr_vernac_expr v =
     return (
       keyword "Canonical Structure" ++ spc() ++ pr_smart_global q
     )
-  | VernacCoercion (id,c1,c2) ->
+  | VernacCoercion (id,Some(c1,c2)) ->
     return (
       hov 1 (
         keyword "Coercion" ++ spc() ++
         pr_smart_global id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
         spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
+    )
+  | VernacCoercion (id,None) ->
+    return (
+      hov 1 (
+        keyword "Coercion" ++ spc() ++
+        pr_smart_global id)
     )
   | VernacIdentityCoercion (id,c1,c2) ->
     return (

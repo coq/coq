@@ -198,7 +198,11 @@ let print_opacity ref =
 (*******************)
 
 let print_if_is_coercion ref =
-  if Coercionops.coercion_exists ref then [pr_global ref ++ str " is a coercion"] else []
+  if Coercionops.coercion_exists ref then
+    let i = Coercionops.coercion_info ref in
+    let r = if i.Coercionops.coe_reversible then " reversible" else "" in
+    [pr_global ref ++ str " is a" ++ str r ++ str " coercion"]
+  else []
 
 (*******************)
 (* *)
@@ -1038,7 +1042,8 @@ let print_path ((i,j),p) =
   hov 2 (
     str"[" ++ hov 0 (prlist_with_sep pr_semicolon print_coercion_value p) ++
     str"] : ") ++
-  pr_class i ++ str" >-> " ++ pr_class j
+  pr_class i ++ str" >-> " ++ pr_class j ++
+  str (if path_is_reversible p then " (reversible)" else "")
 
 let _ = Coercionops.install_path_printer print_path
 

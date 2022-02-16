@@ -66,6 +66,7 @@ type coe_info_typ = {
   coe_value : GlobRef.t;
   coe_typ : Constr.t;
   coe_local : bool;
+  coe_reversible : bool;
   coe_is_identity : bool;
   coe_is_projection : Projection.Repr.t option;
   coe_source : cl_typ;
@@ -91,6 +92,10 @@ let class_tab =
 
 let coercion_tab =
   Summary.ref ~name:"coercion_tab" (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
+
+let reachable_from cl =
+  try (ClTypMap.find cl !class_tab).cl_reachable_from
+  with Not_found -> ClTypSet.empty
 
 module ClGraph :
 sig
@@ -131,10 +136,10 @@ let inheritance_graph =
 let add_new_class cl s =
   class_tab := ClTypMap.add cl s !class_tab
 
-let add_new_coercion coe s =
+let add_coercion coe s =
   coercion_tab := CoeTypMap.add coe s !coercion_tab
 
-let add_new_path (x, y) p =
+let add_path (x, y) p =
   inheritance_graph := ClGraph.add x y p !inheritance_graph
 
 (* class_info : cl_typ -> int * cl_info_typ *)
@@ -282,6 +287,9 @@ let lookup_pattern_path_between env (s,t) =
   List.map (get_coercion_constructor env)
     (ClGraph.find (CL_IND s) (CL_IND t) !inheritance_graph)
 
+let path_is_reversible p =
+  List.for_all (fun c -> c.coe_reversible) p
+
 (* rajouter une coercion dans le graphe *)
 
 let path_printer : ((cl_typ * cl_typ) * inheritance_path -> Pp.t) ref =
@@ -319,7 +327,7 @@ let different_class_params env ci =
     | CL_CONST c -> Environ.is_polymorphic env (GlobRef.ConstRef c)
     | _ -> false
 
-let add_coercion_in_graph env sigma ic =
+let add_coercion_in_graph env sigma ?(update=false) ic =
   let source = ic.coe_source in
   let target = ic.coe_target in
   let source_info = class_info source in
@@ -348,9 +356,10 @@ let add_coercion_in_graph env sigma ic =
   let try_add_new_path (i,j as ij) p =
     if cl_typ_eq i j then check_coherence ij p [];
     if not (cl_typ_eq i j) || different_class_params env i then
-      match lookup_path_between_class ij with
-      | q -> (if not (cl_typ_eq i j) then check_coherence ij p q); false
-      | exception Not_found -> add_new_path ij p; true
+      if update then let () = add_path ij p in true else
+        match lookup_path_between_class ij with
+        | q -> (if not (cl_typ_eq i j) then check_coherence ij p q); false
+        | exception Not_found -> add_path ij p; true
     else
       false
   in
@@ -436,11 +445,11 @@ let add_class env sigma cl =
       cl_reachable_to = cl_singleton;
       cl_repr = cl }
 
-let declare_coercion env sigma c =
+let declare_coercion env sigma ?update c =
   let () = add_class env sigma c.coe_source in
   let () = add_class env sigma c.coe_target in
-  let () = add_new_coercion c.coe_value c in
-  add_coercion_in_graph env sigma c
+  let () = add_coercion c.coe_value c in
+  add_coercion_in_graph env sigma ?update c
 
 (* For printing purpose *)
 let classes () =

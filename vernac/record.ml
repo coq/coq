@@ -116,7 +116,6 @@ module DataI = struct
     }
 end
 
-
 (** [DataR.t] contains record data after interpretation /
    type-inference *)
 module DataR = struct
@@ -131,6 +130,7 @@ end
 module Data = struct
   type projection_flags = {
     pf_subclass: bool;
+    pf_reversible: bool;
     pf_canonical: bool;
   }
   type raw_data = DataR.t
@@ -382,7 +382,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   Impargs.maybe_declare_manual_implicits false refi impls;
   if flags.Data.pf_subclass then begin
     let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
-    ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~nonuniform:false ~source:cl
+    ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~nonuniform:false ~reversible:flags.Data.pf_reversible ~source:cl
   end;
   let i = if is_local_assum decl then i+1 else i in
   (Some kn, i, Projection term::subst)
@@ -689,11 +689,17 @@ let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj fini
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
   (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
   let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
-    let coers = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
-        { Data.pf_subclass =
-            (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
-          pf_canonical = rf_canonical })
-        cfs
+    let coers = List.map (fun (_, { rf_subclass ; rf_reverse ; rf_canonical }) ->
+      let pf_subclass, pf_reversible =
+        match rf_subclass with
+        | Vernacexpr.BackInstance -> true, Option.default true rf_reverse
+        | Vernacexpr.NoInstance ->
+          if rf_reverse <> None then
+            Attributes.(unsupported_attributes
+              [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
+          false, false in
+      { Data.pf_subclass; pf_reversible; pf_canonical = rf_canonical })
+      cfs
     in
     let inhabitant_id =
       match default_inhabitant_id with
@@ -715,7 +721,7 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
     let cstr = (rsp, 1) in
     let projections = declare_projections rsp (projunivs,ubinders) ~kind:projections_kind inhabitant_id coers implfs fields in
     let build = GlobRef.ConstructRef cstr in
-    let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly ~nonuniform:false in
+    let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly ~nonuniform:false ~reversible:true in
     let struc = Structure.make (Global.env ()) rsp projections in
     let () = declare_structure_entry struc in
     rsp
@@ -756,7 +762,7 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
   Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false;
-  let sub = List.hd coers in
+  let sub = fst (List.hd coers) in
   let m = {
     meth_name = Name proj_name;
     meth_info = sub;
@@ -773,10 +779,10 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
     (* to be replaced by the following line after deprecation phase
        (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
     (* ; is_coercion *)
-    ; coers = List.map (fun _ -> { Data.pf_subclass = false ; pf_canonical = true }) coers
+    ; coers = List.map (fun _ -> { Data.pf_subclass = false ; pf_reversible = false ; pf_canonical = true }) coers
     (* to be replaced by the following line after deprecation phase
        (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
-    (* ; coers = List.map (fun c -> { pf_subclass = c <> None ; pf_canonical = true }) coers *)
+    (* ; coers = List.map (fun (c, rev) -> { pf_subclass = c <> None ; pf_reversible = rev ; pf_canonical = true }) coers *)
     ; rdata
     ; inhabitant_id
     } in
@@ -785,7 +791,7 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
       params template ~projections_kind:Decls.Method rdata [record_data] in
   let inds = declare_structure structure in
   let map ind =
-    let map decl b y = {
+    let map decl (b, _) y = {
       meth_name = RelDecl.get_name decl;
       meth_info = b;
       meth_const = y;
@@ -946,10 +952,13 @@ let class_structure udecl kind def ~template ~cumulative ~poly ~primitive_proj f
   if is_coercion then warn_future_coercion_class_constructor ();
   if List.exists (function (_, { rf_subclass = Vernacexpr.BackInstance; _ }) -> true | _ -> false) cfs then
     warn_future_coercion_class_field ();
-  let coers = List.map (fun (_, { rf_subclass; rf_priority }) ->
+  let coers = List.map (fun (_, { rf_subclass; rf_reverse; rf_priority }) ->
+      if rf_reverse <> None then
+        Attributes.(unsupported_attributes
+          [CAst.make ("reversible (without coercion)",VernacFlagEmpty)]);
       match rf_subclass with
-      | Vernacexpr.BackInstance -> Some {hint_priority = rf_priority; hint_pattern = None}
-      | Vernacexpr.NoInstance -> None)
+      | Vernacexpr.BackInstance -> Some {hint_priority = rf_priority; hint_pattern = None}, Option.default true rf_reverse
+      | Vernacexpr.NoInstance -> None, false)
       cfs
   in
   let inhabitant_id =
@@ -980,6 +989,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
 module Internal = struct
   type nonrec projection_flags = Data.projection_flags = {
     pf_subclass: bool;
+    pf_reversible: bool;
     pf_canonical: bool;
   }
   let declare_projections = declare_projections

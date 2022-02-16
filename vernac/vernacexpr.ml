@@ -183,6 +183,7 @@ type 'a with_coercion = coercion_flag * 'a
 (* Attributes of a record field declaration *)
 type record_field_attr = {
   rf_subclass: instance_flag; (* the projection is an implicit coercion or an instance *)
+  rf_reverse: bool option;
   rf_priority: int option; (* priority of the instance, if relevant *)
   rf_notation: decl_notation list;
   rf_canonical: bool; (* use this projection in the search for canonical instances *)
@@ -369,7 +370,7 @@ type nonrec vernac_expr =
   | VernacImport of export_flag * import_categories option * (qualid * import_filter_expr) list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *
-      class_rawexpr * class_rawexpr
+      (class_rawexpr * class_rawexpr) option
   | VernacIdentityCoercion of lident * class_rawexpr * class_rawexpr
   | VernacNameSectionHypSet of lident * section_subset_expr
 

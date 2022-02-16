@@ -299,6 +299,8 @@ let vernac_polymorphic_flag loc =
 let vernac_monomorphic_flag loc =
   CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagLeaf (FlagIdent "no"))])
 
+let reversible = bool_attribute ~name:"reversible"
+
 let canonical_field =
   enable_attribute ~key:"canonical" ~default:(fun () -> true)
 let canonical_instance =

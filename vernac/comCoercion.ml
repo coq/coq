@@ -227,10 +227,10 @@ let check_source = function
 | Some (CL_FUN as s) -> raise (CoercionError (ForbiddenSourceClass s))
 | _ -> ()
 
-let cache_coercion c =
+let cache_coercion ?(update=false) c =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Coercionops.declare_coercion env sigma c
+  Coercionops.declare_coercion env sigma ~update c
 
 let open_coercion i o =
   if Int.equal i 1 then
@@ -266,7 +266,7 @@ let inCoercion : coe_info_typ -> obj =
     discharge_function = discharge_coercion;
     rebuild_function = rebuild_coercion }
 
-let declare_coercion coef typ ?(local = false) ~isid ~src:cls ~target:clt ~params:ps () =
+let declare_coercion coef typ ?(local = false) ~reversible ~isid ~src:cls ~target:clt ~params:ps () =
   let isproj =
     match coef with
     | GlobRef.ConstRef c -> Structures.PrimitiveProjections.find_opt c
@@ -276,6 +276,7 @@ let declare_coercion coef typ ?(local = false) ~isid ~src:cls ~target:clt ~param
     coe_value = coef;
     coe_typ = typ;
     coe_local = local;
+    coe_reversible = reversible;
     coe_is_identity = isid;
     coe_is_projection = isproj;
     coe_source = cls;
@@ -301,7 +302,7 @@ let warn_uniform_inheritance =
           Printer.pr_global g ++
             strbrk" does not respect the uniform inheritance condition.")
 
-let add_new_coercion_core coef stre poly ~nonuniform source target isid : unit =
+let add_new_coercion_core coef stre poly ~nonuniform ~reversible source target isid : unit =
   check_source source;
   let env = Global.env () in
   let t, _ = Typeops.type_of_global_in_context env coef in
@@ -333,48 +334,47 @@ let add_new_coercion_core coef stre poly ~nonuniform source target isid : unit =
   | `GLOBAL -> false
   in
   let params = List.length (Context.Rel.instance_list EConstr.mkRel 0 ctx) in
-  declare_coercion coef t ~local ~isid ~src:cls ~target:clt ~params ()
+  declare_coercion coef t ~local ~reversible ~isid ~src:cls ~target:clt ~params ()
 
 
-let try_add_new_coercion_core ref ~local c ~nonuniform d e f =
-  try add_new_coercion_core ref (loc_of_bool local) c ~nonuniform d e f
+let try_add_new_coercion_core ref ~local c ~nonuniform ~reversible d e f =
+  try add_new_coercion_core ref (loc_of_bool local) c ~nonuniform ~reversible d e f
   with CoercionError e ->
       user_err
         (explain_coercion_error ref e ++ str ".")
 
-let try_add_new_coercion ref ~local ~poly =
-  try_add_new_coercion_core ref ~local poly None None false
+let try_add_new_coercion ref ~local ~poly ~nonuniform ~reversible =
+  try_add_new_coercion_core ref ~local poly ~nonuniform ~reversible None None false
 
-let try_add_new_coercion_subclass cl ~local ~poly =
+let try_add_new_coercion_subclass cl ~local ~poly ~nonuniform ~reversible =
   let coe_ref = build_id_coercion None cl poly in
-  try_add_new_coercion_core coe_ref ~local poly (Some cl) None true
+  try_add_new_coercion_core coe_ref ~local poly ~nonuniform ~reversible (Some cl) None true
 
-let try_add_new_coercion_with_target ref ~local ~poly ~nonuniform
-      ~source ~target =
-  try_add_new_coercion_core ref ~local poly ~nonuniform
+let try_add_new_coercion_with_target ref ~local ~poly ~nonuniform ~reversible ~source ~target =
+  try_add_new_coercion_core ref ~local poly ~nonuniform ~reversible
     (Some source) (Some target) false
 
 let try_add_new_identity_coercion id ~local ~poly ~source ~target =
   let ref = build_id_coercion (Some id) source poly in
-  try_add_new_coercion_core ref ~local poly ~nonuniform:false
+  try_add_new_coercion_core ref ~local poly ~nonuniform:false ~reversible:true
     (Some source) (Some target) true
 
-let try_add_new_coercion_with_source ref ~local ~poly ~nonuniform ~source =
-  try_add_new_coercion_core ref ~local poly ~nonuniform (Some source) None false
+let try_add_new_coercion_with_source ref ~local ~poly ~nonuniform ~reversible ~source =
+  try_add_new_coercion_core ref ~local poly ~nonuniform ~reversible (Some source) None false
 
-let add_coercion_hook poly nonuniform { Declare.Hook.S.scope; dref; _ } =
+let add_coercion_hook poly nonuniform reversible { Declare.Hook.S.scope; dref; _ } =
   let open Locality in
   let local = match scope with
   | Discharge -> assert false (* Local Coercion in section behaves like Local Definition *)
   | Global ImportNeedQualified -> true
   | Global ImportDefaultBehavior -> false
   in
-  let () = try_add_new_coercion dref ~local ~poly ~nonuniform in
+  let () = try_add_new_coercion dref ~local ~poly ~nonuniform ~reversible in
   let msg = Nametab.pr_global_env Id.Set.empty dref ++ str " is now a coercion" in
   Flags.if_verbose Feedback.msg_info msg
 
-let add_coercion_hook ~poly ~nonuniform =
-  Declare.Hook.make (add_coercion_hook poly nonuniform)
+let add_coercion_hook ~poly ~nonuniform ~reversible =
+  Declare.Hook.make (add_coercion_hook poly nonuniform reversible)
 
 let add_subclass_hook ~poly { Declare.Hook.S.scope; dref; _ } =
   let open Locality in
@@ -386,6 +386,18 @@ let add_subclass_hook ~poly { Declare.Hook.S.scope; dref; _ } =
   let cl = class_of_global dref in
   try_add_new_coercion_subclass cl ~local:stre ~poly ~nonuniform:false
 
-let add_subclass_hook ~poly = Declare.Hook.make (add_subclass_hook ~poly)
-
 let nonuniform = Attributes.bool_attribute ~name:"nonuniform"
+
+let add_subclass_hook ~poly ~reversible =
+  Declare.Hook.make (add_subclass_hook ~poly ~reversible)
+
+let warn_reverse_no_change =
+  CWarnings.create ~name:"reversible-no-change" ~category:"coercions"
+    (fun () -> str "The reversible attribute is unchanged.")
+
+let change_reverse ref ~reversible =
+  if not (coercion_exists ref) then
+    user_err (Printer.pr_global ref ++ str" is not a coercion.");
+  let coe_info = coercion_info ref in
+  if reversible = coe_info.coe_reversible then warn_reverse_no_change ()
+  else cache_coercion ~update:true { coe_info with coe_reversible = reversible }

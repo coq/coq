@@ -147,7 +147,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
     with
       Evarconv.UnableToUnify _ -> coerce' env sigma x y
   and coerce' env sigma x y : evar_map * (evar_map -> EConstr.constr -> evar_map * EConstr.constr) option =
-    let subco sigma = subset_coerce env sigma x y in
+    let subco sigma = subset_inferred env sigma x y in
     let dest_prod c =
       match Reductionops.splay_prod_n env sigma 1 c with
       | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, t), c
@@ -317,7 +317,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
        | _ -> subco sigma)
     | _, _ ->  subco sigma
 
-  and subset_coerce env sigma x y =
+  and subset_inferred env sigma x y =
     match disc_subset sigma x with
       Some (u, p) ->
       let sigma, c = coerce_unify env sigma u y in
@@ -368,12 +368,14 @@ type coercion_trace =
       previous : coercion_trace;
     }
   | ProdCoe of { na : Name.t binder_annot; ty : econstr; dom : coercion_trace; body : coercion_trace }
+  | ReplaceCoe of econstr
 
 let empty_coercion_trace = IdCoe
 
 (* similar to iterated apply_coercion_args *)
 let rec reapply_coercions sigma trace c = match trace with
   | IdCoe -> c
+  | ReplaceCoe c -> c
   | PrimProjCoe { proj; args; previous } ->
     let c = reapply_coercions sigma previous c in
     let args = args@[c] in
@@ -584,19 +586,66 @@ let inh_coerce_to_base ?loc ~program_mode env sigma j =
     sigma, res
   else (sigma, j)
 
+let class_has_args = function
+  | CL_FUN
+  | CL_SORT -> false
+  | _ -> true
+let lookup_path_between_class_reflexive (c1,c2) =
+  if c1 = c2 then []
+  else lookup_path_between_class (c1,c2)
+
+(* We find a path to a common class such that the path from src_expected is
+   reversible (the casted term is unknown but inferrable via unification,
+   eg CS inference) *)
+let lookup_reversible_path_to_common_point env sigma ~src_expected ~src_inferred =
+  let _, c_expected = class_of env sigma src_expected in
+  let _, c_inferred = class_of env sigma src_inferred in
+  let reachable_from_expected = reachable_from c_expected in
+  let reachable_from_inferred = reachable_from c_inferred in
+  let r = ClTypSet.(elements (inter reachable_from_expected reachable_from_inferred)) in
+  (* XXX this order relation is not total ... *)
+  let r = List.sort (fun c1 c2 -> if ClTypSet.mem c1 (reachable_from c2) then 1 else -1) r in
+  let r = (if ClTypSet.mem c_inferred reachable_from_expected then [c_inferred] else []) @ r in
+  (* This is unneeded since there is a dedicated case in inh_coerce_to_fail:
+     let r = (if ClTypSet.mem c_expected reachable_from_inferred then [c_expected] else []) @ r in *)
+  let rec aux = function
+  | [] -> raise Not_found
+  | c :: cs ->
+      let reversible = lookup_path_between_class_reflexive (c_expected,c) in
+      if path_is_reversible reversible then
+        let direct = lookup_path_between_class_reflexive (c_inferred,c) in
+        class_has_args c_expected, class_has_args c_inferred, reversible, direct
+      else
+        aux cs
+  in
+    aux r
+
 let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty target_type =
   if not use_coercions || (rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr target_type) && Heads.is_rigid env (EConstr.Unsafe.to_constr v_ty)))
   then
     raise NoCoercion
   else
-    let sigma, v', v'_ty, trace =
-      try
-        let c = lookup_path_between env sigma ~src:v_ty ~tgt:target_type in
-        apply_coercion env sigma c v v_ty
-      with Not_found -> raise NoCoercion
-    in
-    try unify_leq_delay ~flags env sigma v'_ty target_type, v', trace
-    with Evarconv.UnableToUnify _ as exn ->
+    try
+      let sigma, v', v'_ty, trace =
+        try
+          (* 1 path c of direct coercions *)
+          let c = lookup_path_between env sigma ~src:v_ty ~tgt:target_type in
+          apply_coercion env sigma c v v_ty
+        with Not_found ->
+          (* 2 paths: one of direct coercions, one of reversible coercions *)
+          let target_type_has_args, v_ty_has_args, reversible, direct =
+            lookup_reversible_path_to_common_point env sigma ~src_expected:target_type ~src_inferred:v_ty in
+          if not (v_ty_has_args || target_type_has_args) then raise Not_found;
+          let sigma, x = Evarutil.new_evar env sigma target_type in
+          let sigma, rev_x, _, _ = apply_coercion env sigma reversible x target_type in
+          let sigma, direct_v, _, _ = apply_coercion env sigma direct v v_ty in
+          let sigma = unify_leq_delay ~flags env sigma direct_v rev_x in
+          (try let _ = Evarutil.head_evar sigma (whd_evar sigma x) in raise Not_found
+           with NoHeadEvar -> ());  (* fail if x is stil an unresolved evar *)
+          sigma, x, target_type, ReplaceCoe x
+      in
+      unify_leq_delay ~flags env sigma v'_ty target_type, v', trace
+    with (Evarconv.UnableToUnify _ | Not_found) as exn ->
       let _, info = Exninfo.capture exn in
       Exninfo.iraise (NoCoercion,info)
 

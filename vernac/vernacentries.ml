@@ -59,20 +59,22 @@ module DefAttributes = struct
     canonical_instance : bool;
     typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
-    nonuniform : bool
+    nonuniform : bool;
+    reversible : bool;
   }
 
   let parse ?(coercion=false) f =
     let open Attributes in
     let nonuniform = if coercion then ComCoercion.nonuniform else Notations.return None in
-    let ((((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using), nonuniform =
-      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using ++ nonuniform) f
+    let (((((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using), nonuniform), reversible =
+      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using ++ nonuniform ++ reversible) f
     in
     if Option.has_some deprecated then
       Attributes.unsupported_attributes [CAst.make ("deprecated (use a notation and deprecate that instead)",VernacFlagEmpty)];
     let using = Option.map Proof_using.using_from_string using in
+    let reversible = Option.default true reversible in
     let nonuniform = Option.default false nonuniform in
-    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; nonuniform }
+    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; nonuniform; reversible }
 end
 
 let module_locality = Attributes.Notations.(locality >>= fun l -> return (make_module_locality l))
@@ -638,13 +640,13 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook 
   (* XXX: This should be handled in start_with_initialization, see duplicate using in declare.ml *)
   |> vernac_set_used_variables_opt ?using
 
-let vernac_definition_hook ~canonical_instance ~local ~poly ~nonuniform = let open Decls in function
+let vernac_definition_hook ~canonical_instance ~local ~poly ~nonuniform ~reversible = let open Decls in function
 | Coercion ->
-  Some (ComCoercion.add_coercion_hook ~poly ~nonuniform)
+  Some (ComCoercion.add_coercion_hook ~poly ~nonuniform ~reversible)
 | CanonicalStructure ->
   Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
 | SubClass ->
-  Some (ComCoercion.add_subclass_hook ~poly)
+  Some (ComCoercion.add_subclass_hook ~poly ~reversible)
 | Definition when canonical_instance ->
   Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
 | Let when canonical_instance ->
@@ -672,7 +674,7 @@ let vernac_definition_name lid local =
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~nonuniform:atts.nonuniform kind in
+  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~nonuniform:atts.nonuniform ~reversible:atts.reversible kind in
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let typing_flags = atts.typing_flags in
@@ -682,7 +684,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~nonuniform:atts.nonuniform kind in
+  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind ~nonuniform:atts.nonuniform ~reversible:atts.reversible in
   let program_mode = atts.program in
   let typing_flags = atts.typing_flags in
   let name = vernac_definition_name lid scope in
@@ -921,7 +923,7 @@ let preprocess_inductive_decl ~atts kind indl =
     let (coe, (lid, ce)) = l in
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
-            { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
+            { rf_subclass = coe' ; rf_reverse = None ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
     let recordl = [id, bl, c, None, [f], None] in
     let kind = Class true in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
@@ -1446,18 +1448,24 @@ let vernac_require from import qidl =
 let vernac_canonical ~local r =
   Canonical.declare_canonical_structure ?local (smart_global r)
 
-let vernac_coercion ~atts ref qids qidt =
-  let (local, poly), nonuniform =
-    Attributes.parse
-      Notations.(locality ++ polymorphic ++ ComCoercion.nonuniform) atts in
-  let local = enforce_locality local in
-  let nonuniform = Option.default false nonuniform in
-  let target = cl_of_qualid qidt in
-  let source = cl_of_qualid qids in
+let vernac_coercion ~atts ref qidst =
   let ref' = smart_global ref in
-  ComCoercion.try_add_new_coercion_with_target ref' ~local ~poly ~nonuniform
-    ~source ~target;
-  Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
+  match qidst with
+  | Some (qids, qidt) ->
+     let ((local, poly), nonuniform), reversible =
+       Attributes.parse Notations.(locality ++ polymorphic ++ ComCoercion.nonuniform ++ reversible) atts in
+     let local = enforce_locality local in
+     let nonuniform = Option.default false nonuniform in
+     let reversible = Option.default false reversible in
+     let target = cl_of_qualid qidt in
+     let source = cl_of_qualid qids in
+     ComCoercion.try_add_new_coercion_with_target ref' ~local ~poly ~nonuniform ~reversible
+       ~source ~target;
+     Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
+  | None ->
+     match Attributes.parse reversible atts with
+     | None -> user_err (str "Expected `: Sourceclass >-> Targetclass`.")
+     | Some reversible -> ComCoercion.change_reverse ref' ~reversible
 
 let vernac_identity_coercion ~atts id qids qidt =
   let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
@@ -2284,8 +2292,9 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
       with_def_attributes ~coercion ~atts
        vernac_definition ~pm discharge lid bl red_option c typ)
   | VernacDefinition (discharge,lid,ProveBody(bl,typ)) ->
+    let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
-      with_def_attributes ~atts
+      with_def_attributes ~coercion ~atts
        vernac_definition_interactive discharge lid bl typ)
 
   | VernacStartTheoremProof (k,l) ->
@@ -2378,8 +2387,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacCanonical qid ->
     vtdefault(fun () ->
         vernac_canonical ~local:(only_locality atts) qid)
-  | VernacCoercion (r,s,t) ->
-    vtdefault(fun () -> vernac_coercion ~atts r s t)
+  | VernacCoercion (r,st) ->
+    vtdefault(fun () -> vernac_coercion ~atts r st)
   | VernacIdentityCoercion ({v=id},s,t) ->
     vtdefault(fun () -> vernac_identity_coercion ~atts id s t)
 
