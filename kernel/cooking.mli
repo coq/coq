@@ -13,8 +13,6 @@ open Constr
 
 (** {6 Data needed to abstract over the section variables and section universes } *)
 
-type abstr_info
-
 (** The instantiation to apply to generalized declarations so that
     they behave as if not generalized: this is the a1..an instance to
     apply to a declaration c in the following transformation:
@@ -25,12 +23,7 @@ type abstr_info
     (because the substitution are represented by their domain) but
     here, local definitions of the context have been dropped *)
 
-type abstr_inst_info = {
-  abstr_rev_inst : Id.t list;
-  (** The variables to reapply (excluding "let"s of the context), in reverse order *)
-  abstr_uinst : Univ.Instance.t;
-  (** Abstracted universe variables to reapply *)
-}
+type abstr_inst_info
 
 type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
 type expand_info = abstr_inst_info entry_map
@@ -44,18 +37,19 @@ type expand_info = abstr_inst_info entry_map
     so, a cooking_info is the map [c ↦ x1..xn],
     the context x:T,y:U to generalize, and the substitution [x,y] *)
 
-type cooking_info = {
-  expand_info : expand_info;
-  abstr_info : abstr_info;
-  abstr_inst_info : abstr_inst_info; (* relevant for recursive types *)
-  names_info : Id.Set.t; (* set of generalized names *)
-}
+type cooking_info
 
 val empty_cooking_info : cooking_info
   (** Nothing to abstract *)
 
 val make_cooking_info : expand_info -> named_context -> Univ.UContext.t -> cooking_info
   (** Abstract a context assumed to be de-Bruijn free for terms and universes *)
+
+val add_inductive_info : MutInd.t -> cooking_info -> cooking_info
+
+val names_info : cooking_info -> Id.Set.t
+
+val abstr_inst_info : cooking_info -> abstr_inst_info
 
 val universe_context_of_cooking_info : cooking_info -> Univ.AbstractContext.t
 

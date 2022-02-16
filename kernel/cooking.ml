@@ -320,6 +320,14 @@ let make_cooking_info expand_info hyps uctx =
   let names_info = Context.Named.to_vars hyps in
   { expand_info; abstr_info; abstr_inst_info; names_info }
 
+let add_inductive_info ind info =
+  let (cmap, imap) = info.expand_info in
+  { info with expand_info = (cmap, Mindmap.add ind info.abstr_inst_info imap) }
+
+let names_info info = info.names_info
+
+let abstr_inst_info info = info.abstr_inst_info
+
 let rel_context_of_cooking_cache { info; _ } =
   info.abstr_info.abstr_ctx
 
