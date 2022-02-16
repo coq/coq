@@ -832,6 +832,7 @@ plugin:ci-fiat_parsers:
 
 plugin:ci-metacoq:
   extends: .ci-template
+  allow_failure: true
   needs:
   - build:base
   - plugin:ci-equations
