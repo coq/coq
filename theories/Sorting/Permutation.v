@@ -106,7 +106,7 @@ Proof.
   now apply IHHP; rewrite <- app_assoc.
 Qed.
 
-#[global]
+#[export]
 Instance Permutation_cons A :
  Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A).
 Proof.
@@ -161,7 +161,7 @@ Proof.
   apply Permutation_app_tail; assumption.
 Qed.
 
-Global Instance Permutation_app' :
+#[export] Instance Permutation_app' :
  Proper (@Permutation A ==> @Permutation A ==> @Permutation A) (@app A).
 Proof.
   repeat intro; now apply Permutation_app.
