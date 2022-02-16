@@ -321,8 +321,8 @@ Binding arguments to a scope
 Effects of :cmd:`Arguments` on unfolding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-+ `simpl never` indicates that a :term:`constant` should never be unfolded by :tacn:`cbn`,
-  :tacn:`simpl` or :tacn:`hnf`:
++ `simpl never` indicates that a :term:`constant` should never be unfolded by :tacn:`cbn` or
+  :tacn:`simpl`:
 
   .. example::
 
