@@ -31,16 +31,21 @@
 
 ;;; Code:
 
+(require 'seq)
+(require 'subr-x)
+
 (defun coqdev-default-directory ()
   "Return the Coq repository containing `default-directory'."
-  (let ((dir (locate-dominating-file default-directory "coq-core.opam")))
+  (let ((dir (seq-some
+              (lambda (f) (locate-dominating-file default-directory f))
+              '("META.coq" "META.coq.in" "META.coq-core.in" "coqpp"))))
     (when dir (expand-file-name dir))))
 
 (defun coqdev-setup-compile-command ()
   "Setup `compile-command' for Coq development."
   (let ((dir (coqdev-default-directory)))
-    ;; we add a space at the end to make it easy to add arguments (eg -j or target)
-    (when dir (setq-local compile-command (concat "make -C " (shell-quote-argument dir) " ")))))
+    (when dir (setq-local compile-command (concat "cd " (shell-quote-argument dir) "
+dune build @check # coq-core.install dev/shim/coqtop-prelude")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-compile-command)
 
 (defvar camldebug-command-name) ; from camldebug.el (caml package)
@@ -81,12 +86,19 @@ Note that this function is executed before _Coqproject is read if it exists."
       (setq-local coq-prog-name (concat dir "_build/default/dev/shim/coqtop-prelude")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
-(defvar coqdev-ocamldebug-command "dune exec dev/dune-dbg"
+(defvar coqdev-ocamldebug-command "dune exec -- dev/dune-dbg coqc /tmp/foo.v"
   "Command run by `coqdev-ocamldebug'")
 
+(declare-function comint-check-proc "comint")
+(declare-function tuareg--split-args "tuareg")
+(declare-function ocamldebug-filter "ocamldebug")
+(declare-function ocamldebug-sentinel "ocamldebug")
+(declare-function ocamldebug-mode "ocamldebug")
+(declare-function ocamldebug-set-buffer "ocamldebug")
 (defun coqdev-ocamldebug ()
   "Runs a command in an ocamldebug buffer."
   (interactive)
+  (require 'ocamldebug)
   (let* ((dir (read-directory-name "Run from directory: "
                                    (coqdev-default-directory)))
          (name "ocamldebug-coq")
@@ -108,7 +120,56 @@ Note that this function is executed before _Coqproject is read if it exists."
         (set-process-sentinel (get-buffer-process (current-buffer))
                               #'ocamldebug-sentinel)
         (ocamldebug-mode)))
-  (ocamldebug-set-buffer)))
+    (ocamldebug-set-buffer)
+    (insert "source dune_db_409")))
+
+;; Provide correct breakpoint setting in dune wrapped libraries
+;; (assuming only 1 library/dune file)
+(defun coqdev--read-from-file (file)
+  "Read FILE as a list of sexps. If invalid syntax, return nil and message the error."
+  (with-temp-buffer
+    (save-excursion
+      (insert "(\n")
+      (insert-file-contents file)
+      (goto-char (point-max))
+      (insert "\n)\n"))
+    (condition-case err
+        (read (current-buffer))
+      ((error err) (progn (message "Error reading file %S: %S" file err) nil)))))
+
+(defun coqdev--find-single-library (sexps)
+  "If list SEXPS has an element whose `car' is \"library\", return the first one.
+Otherwise return `nil'."
+  (let ((libs (seq-filter (lambda (elt) (equal (car elt) 'library)) sexps)))
+    (and libs (car libs))))
+
+(defun coqdev--dune-library-name (lib)
+  "With LIB a dune-syntax library stanza, get its name as a string."
+  (let ((field (or (seq-find (lambda (field) (and (consp field) (equal (car field) 'name))) lib)
+                   (seq-find (lambda (field) (and (consp field) (equal (car field) 'public\_name))) lib))))
+    (symbol-name (car (cdr field)))))
+
+(defun coqdev--upcase-first-char (arg)
+  "Set the first character of ARG to uppercase."
+  (concat (upcase (substring arg 0 1)) (substring arg 1 (length arg))))
+
+(defun coqdev--real-module-name (filename)
+  "Return module name for ocamldebug, taking into account dune wrapping.
+(for now only understands dune files with a single library stanza)"
+  (let ((mod (substring filename (string-match "\\([^/]*\\)\\.ml$" filename) (match-end 1)))
+        (dune (concat (file-name-directory filename) "dune")))
+    (if (file-exists-p dune)
+        (if-let* ((contents (coqdev--read-from-file dune))
+                  (lib (coqdev--find-single-library contents))
+                  (is-wrapped (null (seq-contains-p lib '(wrapped false))))
+                  (libname (coqdev--dune-library-name lib)))
+            (concat libname "__" (coqdev--upcase-first-char mod))
+          mod)
+      mod)))
+
+(with-eval-after-load 'ocamldebug
+  (defun ocamldebug-module-name (arg)
+    (coqdev--real-module-name arg)))
 
 ;; This Elisp snippet adds a regexp parser for the format of Anomaly
 ;; backtraces (coqc -bt ...), to the error parser of the Compilation
@@ -136,7 +197,8 @@ This does not enable `bug-reference-mode'."
   (let ((dir (coqdev-default-directory)))
     (when dir
       (setq-local bug-reference-bug-regexp "#\\(?2:[0-9]+\\)")
-      (setq-local bug-reference-url-format "https://github.com/coq/coq/issues/%s"))))
+      (setq-local bug-reference-url-format "https://github.com/coq/coq/issues/%s")
+      (when (derived-mode-p 'prog-mode) (bug-reference-prog-mode 1)))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-bug-reference-mode)
 
 (defun coqdev-sphinx-quote-coq-refman-region (left right &optional offset beg end)
