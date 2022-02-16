@@ -159,7 +159,7 @@ the value term in Russell and generates proof
 obligations. Once solved using the commands shown below, it binds the
 final Coq term to the name :n:`@ident` in the global environment.
 
-:n:`Program Definition @ident : @type := @term`
+:n:`Program Definition @ident_decl : @type := @term`
 
 Interprets the type :n:`@type`, potentially generating proof
 obligations to be resolved. Once done with them, we have a Coq
@@ -168,6 +168,10 @@ term :n:`@term__0`, checking that the type of :n:`@term__0` is coercible to
 :n:`@type__0`, and registers :n:`@ident` as being of type :n:`@type__0` once the
 set of obligations generated during the interpretation of :n:`@term__0`
 and the aforementioned coercion derivation are solved.
+
+.. exn:: Non extensible universe declaration not supported with monomorphic Program Definition.
+
+   The absence of additional universes or constraints cannot be properly enforced even without Program.
 
 .. seealso:: Sections :ref:`controlling-the-reduction-strategies`, :tacn:`unfold`
 
