@@ -335,26 +335,18 @@ let register_library m =
    - called at module or module type closing when a Require occurs in
      the module or module type
    - not called from a library (i.e. a module identified with a file) *)
-let load_require _ (needed,modl,_) =
+let load_require _ needed =
   List.iter register_library needed
-
-let open_require i (_,modl,export) =
-  Option.iter (fun export ->
-      let mpl = List.map (fun m -> unfiltered, MPfile m) modl in
-      (* TODO support filters in Require *)
-      Declaremods.import_modules ~export mpl)
-    export
 
   (* [needed] is the ordered list of libraries not already loaded *)
 let cache_require o =
-  load_require 1 o;
-  open_require 1 o
+  load_require 1 o
 
 let discharge_require o = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-type require_obj = library_t list * DirPath.t list * bool option
+type require_obj = library_t list
 
 let in_require : require_obj -> obj =
   declare_object
@@ -377,17 +369,13 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
   let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
-  if Lib.is_module_or_modtype () then
-    begin
-      warn_require_in_module ();
-      Lib.add_leaf (in_require (needed,modrefl,None));
-      Option.iter (fun export ->
-          (* TODO import filters *)
-          List.iter (fun m -> Declaremods.import_module unfiltered ~export (MPfile m)) modrefl)
-        export
-    end
-  else
-    Lib.add_leaf (in_require (needed,modrefl,export))
+  if Lib.is_module_or_modtype () then warn_require_in_module ();
+  Lib.add_leaf (in_require needed);
+  Option.iter (fun export ->
+    let mpl = List.map (fun m -> unfiltered, MPfile m) modrefl in
+    (* TODO import filters *)
+    Declaremods.import_modules ~export mpl)
+    export
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
