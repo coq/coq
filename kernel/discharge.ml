@@ -52,7 +52,7 @@ let lift_private_univs info = function
 let cook_opaque_proofterm info c =
   let fold info (c, priv) =
     let priv = lift_private_univs info priv in
-    let c = abstract_as_body (RefTable.create 13) info c in
+    let c = abstract_as_body (create_cache info) c in
     (c, priv)
   in
   List.fold_right fold info c
@@ -61,10 +61,10 @@ let cook_opaque_proofterm info c =
 (* Discharging constant         *)
 
 let cook_constant env info cb =
-  let cache = RefTable.create 13 in
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
   let info, univs = lift_univs info cb.const_universes in
-  let map c = abstract_as_body cache info c in
+  let cache = create_cache info in
+  let map c = abstract_as_body cache c in
   let body = match cb.const_body with
   | Undef _ as x -> x
   | Def cs -> Def (map cs)
@@ -73,7 +73,7 @@ let cook_constant env info cb =
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   in
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs body in
-  let typ = abstract_as_type cache info cb.const_type in
+  let typ = abstract_as_type cache cb.const_type in
   let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) info.names_info)) cb.const_hyps in
   {
     const_hyps = hyps;
@@ -89,44 +89,45 @@ let cook_constant env info cb =
 (********************************)
 (* Discharging mutual inductive *)
 
-let cook_rel_context cache info ctx =
+let cook_rel_context cache ctx =
   (* Dealing with substitutions between contexts is too annoying, so
      we reify [ctx] into a big [forall] term and work on that. *)
   let t = it_mkProd_or_LetIn mkProp ctx in
-  let t = abstract_as_type cache info t in
+  let t = abstract_as_type cache t in
   let ctx, t = decompose_prod_assum t in
   assert (Constr.equal t mkProp);
   ctx
 
-let cook_lc cache ~ntypes info t =
+let cook_lc cache ~ntypes t =
   (* Expand the recursive call to the inductive types *)
-  let diff = Context.Rel.length (rel_context_of_cooking_info info) in
-  let subs = List.init ntypes (fun k -> mkApp (mkRel (k+diff+1), instance_of_cooking_info info)) in
+  let diff = Context.Rel.length (rel_context_of_cooking_cache cache) in
+  let subs = List.init ntypes (fun k -> mkApp (mkRel (k+diff+1), instance_of_cooking_cache cache)) in
   let t = Vars.substl subs t in
   (* Apply the abstraction *)
-  abstract_as_type cache info t
+  abstract_as_type cache t
 
-let cook_projection cache ~params info t =
+let cook_projection cache ~params t =
   let t = mkArrowR mkProp t in (* dummy type standing in for the inductive *)
   let t = it_mkProd_or_LetIn t params in
-  let t = abstract_as_type cache info t in
-  let _, t = decompose_prod_n_assum (Context.Rel.length params + 1 + Context.Rel.nhyps (rel_context_of_cooking_info info)) t in
+  let t = abstract_as_type cache t in
+  let nrels = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in
+  let _, t = decompose_prod_n_assum (Context.Rel.length params + 1 + nrels) t in
   t
 
-let cook_one_ind cache ~ntypes info mip =
+let cook_one_ind cache ~ntypes mip =
   let mind_arity = match mip.mind_arity with
     | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
-      let arity = abstract_as_type cache info arity in
-      let sort = abstract_as_sort cache info sort in
+      let arity = abstract_as_type cache arity in
+      let sort = abstract_as_sort cache sort in
       RegularArity {mind_user_arity=arity; mind_sort=sort}
     | TemplateArity {template_level} ->
       TemplateArity {template_level}
   in
-  let mind_arity_ctxt = cook_rel_context cache info mip.mind_arity_ctxt in
-  let mind_user_lc = Array.map (cook_lc cache ~ntypes info) mip.mind_user_lc in
+  let mind_arity_ctxt = cook_rel_context cache mip.mind_arity_ctxt in
+  let mind_user_lc = Array.map (cook_lc cache ~ntypes) mip.mind_user_lc in
   let mind_nf_lc = Array.map (fun (ctx,t) ->
       let lc = it_mkProd_or_LetIn t ctx in
-      let lc = cook_lc cache ~ntypes info lc in
+      let lc = cook_lc cache ~ntypes lc in
       decompose_prod_assum lc)
       mip.mind_nf_lc
   in
@@ -150,17 +151,17 @@ let cook_one_ind cache ~ntypes info mip =
 
 let cook_inductive info mib =
   let info, mind_universes = lift_univs info mib.mind_universes in
-  let cache = RefTable.create 13 in
-  let nnewparams = Context.Rel.nhyps (rel_context_of_cooking_info info) in
-  let mind_params_ctxt = cook_rel_context cache info mib.mind_params_ctxt in
+  let cache = create_cache info in
+  let nnewparams = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in
+  let mind_params_ctxt = cook_rel_context cache mib.mind_params_ctxt in
   let ntypes = mib.mind_ntypes in
-  let mind_packets = Array.map (cook_one_ind cache ~ntypes info) mib.mind_packets in
+  let mind_packets = Array.map (cook_one_ind cache ~ntypes) mib.mind_packets in
   let mind_record = match mib.mind_record with
     | NotRecord -> NotRecord
     | FakeRecord -> FakeRecord
     | PrimRecord data ->
       let data = Array.map (fun (id,projs,relevances,tys) ->
-          let tys = Array.map (cook_projection cache ~params:mib.mind_params_ctxt info) tys in
+          let tys = Array.map (cook_projection cache ~params:mib.mind_params_ctxt) tys in
           (id,projs,relevances,tys))
           data
       in
@@ -187,7 +188,7 @@ let cook_inductive info mib =
       let sec_levels = CList.map_filter (fun d ->
           if RelDecl.is_local_assum d then Some None
           else None)
-          (rel_context_of_cooking_info info)
+          (rel_context_of_cooking_cache cache)
       in
       let levels = List.rev_append sec_levels levels in
       Some {template_param_levels=levels; template_context}
@@ -210,4 +211,4 @@ let cook_inductive info mib =
   }
 
 let cook_rel_context info ctx =
-  cook_rel_context (RefTable.create 13) info ctx
+  cook_rel_context (create_cache info) ctx
