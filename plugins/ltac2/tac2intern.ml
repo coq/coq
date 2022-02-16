@@ -622,9 +622,18 @@ let loc_of_relid = function
 | RelId {loc} -> loc
 | AbsKn _ -> None
 
+let is_unit_pattern = function
+| CPatRef (AbsKn (Tuple 0), []) -> true
+| _ -> false
+
 let extract_pattern_type ({loc;v=p} as pat) = match p with
 | CPatCnv (pat, ty) -> pat, Some ty
-| CPatVar _ | CPatRef _ -> pat, None
+| CPatVar _ | CPatRef _ ->
+  if is_unit_pattern p then
+    (* Special handling of () patterns *)
+    let t_unit = CAst.make ?loc @@ CTypRef (AbsKn (Tuple 0), []) in
+    pat, Some t_unit
+  else pat, None
 
 (** Expand pattern: [p => t] becomes [x => match x with p => t end] *)
 let expand_pattern avoid bnd =
@@ -634,9 +643,12 @@ let expand_pattern avoid bnd =
       (* Don't expand variable patterns *)
       na, None
     | _ ->
-      let id = fresh_var avoid in
-      let qid = RelId (qualid_of_ident ?loc:pat.loc id) in
-      Name id, Some qid
+      if is_unit_pattern pat.v then
+        Anonymous, None
+      else
+        let id = fresh_var avoid in
+        let qid = RelId (qualid_of_ident ?loc:pat.loc id) in
+        Name id, Some qid
     in
     let avoid = ids_of_pattern avoid pat in
     let avoid = add_name avoid na in
