@@ -686,8 +686,8 @@ let pr_vernac_expr v =
     return (keyword "Unfocus")
   | VernacUnfocused ->
     return (keyword "Unfocused")
-  | VernacAbort id ->
-    return (keyword "Abort" ++ pr_opt pr_lident id)
+  | VernacAbort ->
+    return (keyword "Abort")
   | VernacUndo i ->
     return (
       if Int.equal i 1 then keyword "Undo" else keyword "Undo" ++ pr_intarg i

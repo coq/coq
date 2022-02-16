@@ -956,7 +956,7 @@ command: [
 | "Proof"
 | "Proof" "Mode" string
 | "Proof" term
-| "Abort" OPT [ "All" | ident ]
+| "Abort" OPT "All"
 | "Admitted"
 | "Qed"
 | "Save" ident

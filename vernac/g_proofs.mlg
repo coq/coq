@@ -61,9 +61,8 @@ GRAMMAR EXTEND Gram
           { VernacProof (None,Some l) }
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> { VernacProofMode mn }
       | IDENT "Proof"; c = lconstr -> { VernacExactProof c }
-      | IDENT "Abort" -> { VernacAbort None }
+      | IDENT "Abort" -> { VernacAbort }
       | IDENT "Abort"; IDENT "All" -> { VernacAbortAll }
-      | IDENT "Abort"; id = identref -> { VernacAbort (Some id) }
       | IDENT "Admitted" -> { VernacEndProof Admitted }
       | IDENT "Qed" -> { VernacEndProof (Proved (Opaque,None)) }
       | IDENT "Save"; id = identref ->
