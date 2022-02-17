@@ -30,6 +30,7 @@
 ;; ./configure to compile Coq it is already too late).
 
 ;;; Code:
+(require 'ocamldebug)
 
 (defun coqdev-default-directory ()
   "Return the Coq repository containing `default-directory'."
