@@ -203,7 +203,7 @@ let v_expand_info =
   Tuple ("expand_info", [|v_hmap v_cst v_abstr_inst_info; v_hmap v_cst v_abstr_inst_info|])
 
 let v_cooking_info =
-  Tuple ("cooking_info", [|v_expand_info; v_abstr_info; v_abstr_inst_info; v_set v_id|])
+  Tuple ("cooking_info", [|v_expand_info; v_abstr_info; v_abstr_inst_info|])
 
 let v_opaque =
   v_sum "opaque" 0 [|[|List v_subst; List v_cooking_info; v_dp; Int|]|]

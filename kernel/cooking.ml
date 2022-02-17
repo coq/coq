@@ -89,7 +89,6 @@ type cooking_info = {
   expand_info : expand_info;
   abstr_info : abstr_info;
   abstr_inst_info : abstr_inst_info; (* relevant for recursive types *)
-  names_info : Id.Set.t; (* set of generalized names *)
 }
 
 let empty_cooking_info = {
@@ -104,7 +103,6 @@ let empty_cooking_info = {
       abstr_rev_inst = [];
       abstr_uinst = Univ.Instance.empty;
     };
-  names_info = Id.Set.empty;
 }
 
 (*s Cooking the constants. *)
@@ -317,14 +315,15 @@ let make_cooking_info expand_info hyps uctx =
   let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
   let abstr_info = abstract_named_context expand_info abstr_info hyps in
   let abstr_inst_info = { abstr_rev_inst; abstr_uinst } in
-  let names_info = Context.Named.to_vars hyps in
-  { expand_info; abstr_info; abstr_inst_info; names_info }
+  { expand_info; abstr_info; abstr_inst_info; }
 
 let add_inductive_info ind info =
   let (cmap, imap) = info.expand_info in
   { info with expand_info = (cmap, Mindmap.add ind info.abstr_inst_info imap) }
 
-let names_info info = info.names_info
+let names_info info =
+  let fold accu id = Id.Set.add id accu in
+  List.fold_left fold Id.Set.empty info.abstr_info.abstr_subst
 
 let abstr_inst_info info = info.abstr_inst_info
 
