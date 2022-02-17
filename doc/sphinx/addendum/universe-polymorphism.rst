@@ -290,6 +290,7 @@ Insufficiently restrictive variance annotations lead to errors:
         Axiom inv_low  : Invariant@{low}.
         Axiom inv_high : Invariant@{high}.
    .. coqtop:: all
+
         Fail Check (inv_low : Invariant@{high}).
         Fail Check (inv_high : Invariant@{low}).
    .. coqtop:: in
@@ -298,6 +299,7 @@ Insufficiently restrictive variance annotations lead to errors:
         Axiom co_low  : Covariant@{low}.
         Axiom co_high : Covariant@{high}.
    .. coqtop:: all
+
         Check (co_low : Covariant@{high}).
         Fail Check (co_high : Covariant@{low}).
    .. coqtop:: in
@@ -306,6 +308,7 @@ Insufficiently restrictive variance annotations lead to errors:
         Axiom irr_low  : Irrelevent@{low}.
         Axiom irr_high : Irrelevent@{high}.
    .. coqtop:: all
+
         Check (irr_low : Irrelevent@{high}).
         Check (irr_high : Irrelevent@{low}).
    .. coqtop:: in
