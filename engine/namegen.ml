@@ -383,19 +383,24 @@ let next_name_away_with_default_using_types default na avoid t =
 
 let next_name_away = next_name_away_with_default default_non_dependent_string
 
-let make_all_name_different env sigma =
-  (* FIXME: this is inefficient, but only used in printing *)
-  let avoid = ref (ids_of_named_context_val (named_context_val env)) in
-  let sign = named_context_val env in
-  let rels = rel_context env in
-  let env0 = reset_with_named_context sign env in
+let make_all_rel_context_name_different env sigma ctx =
+  let avoid = ref (Id.Set.union (Context.Rel.to_vars (Environ.rel_context env)) (ids_of_named_context_val (named_context_val env))) in
   Context.Rel.fold_outside
-    (fun decl newenv ->
+    (fun decl (newenv,ctx) ->
        let na = named_hd newenv sigma (RelDecl.get_type decl) (RelDecl.get_name decl) in
        let id = next_name_away na !avoid in
        avoid := Id.Set.add id !avoid;
-       push_rel (RelDecl.set_name (Name id) decl) newenv)
-    rels ~init:env0
+       let decl = RelDecl.set_name (Name id) decl in
+       push_rel decl newenv, decl :: ctx)
+    ctx ~init:(env,[])
+
+let make_all_name_different env sigma =
+  (* FIXME: this is inefficient, but only used in printing *)
+  let sign = named_context_val env in
+  let rels = rel_context env in
+  let env0 = reset_with_named_context sign env in
+  let env,_ = make_all_rel_context_name_different env0 sigma rels in
+  env
 
 (* 5- Looks for next fresh name outside a list; avoids also to use names that
    would clash with short name of global references; if name is already used,
