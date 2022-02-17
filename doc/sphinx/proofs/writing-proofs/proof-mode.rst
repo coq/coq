@@ -461,7 +461,7 @@ be changed using the following option.
    activated with this command.
 
 Navigation in the proof tree
---------------------------------
+----------------------------
 
 .. cmd:: Undo {? {? To } @natural }
 
@@ -794,6 +794,60 @@ They can then be :gdef:`unshelved` to make them visible again.
 
    The ``give_up`` tactic can be used while editing a proof, to choose to
    write the proof script in a non-sequential order.
+
+
+Proving a subgoal as a separate lemma: abstract
+-----------------------------------------------
+
+.. tacn:: abstract @ltac_expr2 {? using @ident__name }
+
+   Does a :tacn:`solve` :n:`[ @ltac_expr2 ]` and saves the subproof as an auxiliary lemma.
+   if :n:`@ident__name` is specified, the lemma is saved with that name; otherwise
+   the lemma is saved with the name :n:`@ident`\ `_subproof`\ :n:`{? @natural }` where
+   :token:`ident` is the name of the current goal (e.g. the theorem name) and :token:`natural`
+   is chosen to get a fresh name.  If the proof is closed with :cmd:`Qed`, the auxiliary lemma
+   is inlined in the final proof term.
+
+   This is useful with tactics such as
+   :tacn:`discriminate` that generate huge proof terms with many intermediate
+   goals.  It can significantly reduce peak memory use.  In most cases it doesn't
+   have a significant impact on run time.  One case in which it can reduce run time
+   is when a tactic `foo` is known to always pass type checking when it
+   succeeds, such as in reflective proofs.  In this case, the idiom
+   ":tacn:`abstract` :tacn:`exact_no_check` `foo`" will save half the type
+   checking type time compared to ":tacn:`exact` `foo`".
+
+   :tacn:`abstract` is an :token:`l3_tactic`.
+
+   .. warning::
+
+      The abstract tactic, while very useful, still has some known
+      limitations.  See `#9146 <https://github.com/coq/coq/issues/9146>`_ for more
+      details. We recommend caution when using it in some
+      "non-standard" contexts. In particular, ``abstract`` doesn't
+      work properly when used inside quotations ``ltac:(...)``.
+      If used as part of typeclass resolution, it may produce incorrect
+      terms when in polymorphic universe mode.
+
+   .. warning::
+
+      Provide :n:`@ident__name` at your own risk; explicitly named and reused subterms
+      don’t play well with asynchronous proofs.
+
+   .. tacn:: transparent_abstract @ltac_expr3 {? using @ident }
+
+      Like :tacn:`abstract`, but save the subproof in a transparent lemma with a name in
+      the form :n:`@ident`\ :n:`_subterm`\ :n:`{? @natural }`.
+
+      .. warning::
+
+         Use this feature at your own risk; building computationally relevant terms
+         with tactics is fragile, and explicitly named and reused subterms
+         don’t play well with asynchronous proofs.
+
+      .. exn:: Proof is not complete.
+         :name: Proof is not complete. (abstract)
+         :undocumented:
 
 .. _requestinginformation:
 
