@@ -160,6 +160,9 @@ sig
       Outermost declarations are processed first. *)
   val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
 
+  (** Return the set of all named variables bound in a given rel-context. *)
+  val to_vars : ('c, 't) pt -> Id.Set.t
+
   (** Map a given rel-context to a list where each {e local
       assumption} is mapped to [true] and each {e local definition} is
       mapped to [false]. The resulting list is in reverse order
